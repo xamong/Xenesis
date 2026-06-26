@@ -9,6 +9,7 @@ reviewed: true
 confidence: high
 last_reviewed: 2026-06-26
 depends_on:
+  - "[[Final Goal]]"
   - "[[AI Agent Rules]]"
   - "[[Graph Schema]]"
   - "[[Source of Truth Map]]"
@@ -21,13 +22,14 @@ It is a context and navigation layer, not the executable source of truth.
 
 ## Read First
 
-1. [[AI Agent Rules]]
-2. [[Graph Schema]]
-3. [[Review Policy]]
-4. [[Source of Truth Map]]
-5. [[Module Index]]
-6. [[High Risk Areas]]
-7. [[Verification Map]]
+1. [[Final Goal]]
+2. [[AI Agent Rules]]
+3. [[Graph Schema]]
+4. [[Review Policy]]
+5. [[Source of Truth Map]]
+6. [[Module Index]]
+7. [[High Risk Areas]]
+8. [[Verification Map]]
 
 ## Core Graph Areas
 
@@ -61,6 +63,7 @@ It is a context and navigation layer, not the executable source of truth.
 
 ## Graph Links
 
+- Depends on [[Final Goal]]
 - Depends on [[AI Agent Rules]]
 - Depends on [[Graph Schema]]
 - Depends on [[Source of Truth Map]]
