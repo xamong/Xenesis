@@ -37,6 +37,7 @@ export function xenesisConnectionTone(status: XenesisConnectionStatus): XenesisC
 export function listXenesisConnectionSections(status: XenesisConnectionsStatus | null): XenesisConnectionSection[] {
   if (!status) return [];
   return [
+    status.sections.onboarding,
     status.sections.provider,
     status.sections.localCli,
     status.sections.mcp,

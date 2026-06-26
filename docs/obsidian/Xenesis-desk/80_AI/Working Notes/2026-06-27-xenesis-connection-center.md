@@ -57,6 +57,15 @@ Capability Registry instead of only through separate renderer settings panels.
   WhatsApp as planned/manual cards until verified runtime or MCP templates are
   selected.
 
+## Current Onboarding Checklist Slice
+
+- Add a first-class `onboarding` section to `xd.xenesis.connections.status`.
+- Keep the checklist derived from the same provider, local CLI, MCP, tool,
+  gateway, messenger, and guide cards so it is not a parallel source of truth.
+- Ordered checklist items: first chat, local CLI and MCP, recommended tools,
+  gateway, messenger routing, and end-to-end test send.
+- Checklist cards reuse existing CR-backed settings and guide actions.
+
 ## Current Verification
 
 - `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
@@ -76,6 +85,8 @@ Capability Registry instead of only through separate renderer settings panels.
 - `npm run lint` still fails repo-wide with existing Biome/CRLF/style findings.
 - `npm run check:public-release` fails in this worktree because
   `.github/workflows/ci.yml` is absent.
+- `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+  passed for the onboarding checklist shared model and renderer section order.
 
 ## Graph Links
 

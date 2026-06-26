@@ -7,7 +7,15 @@ import type {
   XenesisStatus,
 } from './types';
 
-export type XenesisConnectionKind = 'provider' | 'local-cli' | 'mcp' | 'gateway' | 'tool' | 'messenger' | 'guide';
+export type XenesisConnectionKind =
+  | 'onboarding'
+  | 'provider'
+  | 'local-cli'
+  | 'mcp'
+  | 'gateway'
+  | 'tool'
+  | 'messenger'
+  | 'guide';
 export type XenesisConnectionStatus = 'ready' | 'needs-setup' | 'disabled' | 'blocked' | 'planned' | 'unknown';
 export type XenesisConnectionSupportLevel = 'implemented' | 'manual' | 'planned';
 
@@ -52,6 +60,7 @@ export interface XenesisConnectionsStatus {
   updatedAt: string;
   summary: Record<XenesisConnectionStatus, number> & { total: number };
   sections: {
+    onboarding: XenesisConnectionSection;
     provider: XenesisConnectionSection;
     localCli: XenesisConnectionSection;
     mcp: XenesisConnectionSection;
@@ -500,8 +509,146 @@ function messengerItems(xenesis: XenesisStatus | null): XenesisConnectionItem[] 
   });
 }
 
+function hasReadyItem(items: XenesisConnectionItem[]): boolean {
+  return items.some((item) => item.status === 'ready');
+}
+
+function hasBlockedItem(items: XenesisConnectionItem[]): boolean {
+  return items.some((item) => item.status === 'blocked');
+}
+
+function onboardingStatusForReadyOrBlocked(
+  ready: boolean,
+  blocked: boolean,
+  fallback: XenesisConnectionStatus = 'needs-setup',
+): XenesisConnectionStatus {
+  if (ready) return 'ready';
+  if (blocked) return 'blocked';
+  return fallback;
+}
+
+function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'onboarding'>): XenesisConnectionItem[] {
+  const provider = sections.provider.items[0];
+  const mcp = sections.mcp.items[0];
+  const gateway = sections.gateway.items[0];
+  const implementedMessengers = sections.messengers.items.filter((item) => item.supportLevel === 'implemented');
+  const actionableTools = sections.tools.items.filter((item) => item.supportLevel === 'manual');
+  const localCliReady = hasReadyItem(sections.localCli.items);
+  const mcpReady = mcp?.status === 'ready';
+  const messengerReady = hasReadyItem(implementedMessengers);
+  const messengerBlocked = hasBlockedItem(implementedMessengers);
+  const gatewayReady = gateway?.status === 'ready';
+
+  return [
+    {
+      id: 'first-chat',
+      kind: 'onboarding',
+      label: '1. First chat',
+      status: provider?.status === 'ready' ? 'ready' : 'blocked',
+      supportLevel: 'implemented',
+      summary: 'AI provider and model readiness for the first Xenesis Agent response.',
+      settingsTarget: 'run-model',
+      settingsAction: { category: 'run-model', section: 'default' },
+      setupSteps: [
+        'Choose the active AI provider from user settings.',
+        'Confirm the selected provider has the required model and credential.',
+        'Run a normal Agent pane chat before testing Desk-control prompts.',
+      ],
+      crActions: ['xd.xenesis.connections.status'],
+      warnings: provider?.warnings,
+    },
+    {
+      id: 'local-cli-mcp',
+      kind: 'onboarding',
+      label: '2. Local CLI and MCP',
+      status: onboardingStatusForReadyOrBlocked(localCliReady && mcpReady, mcp?.status === 'blocked'),
+      supportLevel: 'implemented',
+      summary: 'Local CLI integration and Xenesis Desk MCP bridge readiness for CR-capable providers.',
+      settingsTarget: 'run-model',
+      settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
+      setupSteps: [
+        'Install the selected local CLI integration when the provider needs it.',
+        'Register the Xenesis Desk MCP bridge for that local CLI.',
+        'Verify MCP status through the Connection Center before relying on external agent control.',
+      ],
+      crActions: ['xd.mcp.settings.status', 'xd.xenesis.connections.status'],
+    },
+    {
+      id: 'recommended-tools',
+      kind: 'onboarding',
+      label: '3. Recommended tools',
+      status: actionableTools.length > 0 ? 'needs-setup' : 'ready',
+      supportLevel: 'manual',
+      summary: 'Manual MCP recipes for Fetch, Filesystem, GitHub, Notion, Linear, and planned Google tools.',
+      settingsTarget: 'mcp',
+      settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
+      setupSteps: [
+        'Install only the MCP tools needed for the current workspace.',
+        'Use narrow tokens and scopes for GitHub, Notion, Linear, Google Workspace, and Calendar integrations.',
+        'Verify read tools before enabling write workflows or remote actions.',
+      ],
+      sourceDocs: [{ label: 'Hermes integrations', url: 'https://hermes-agent.nousresearch.com/docs/integrations/' }],
+    },
+    {
+      id: 'gateway',
+      kind: 'onboarding',
+      label: '4. Gateway',
+      status: gateway?.status ?? 'unknown',
+      supportLevel: 'implemented',
+      summary: 'Gateway lifecycle readiness before any external messenger can deliver prompts.',
+      settingsTarget: 'xenesis-agent',
+      settingsAction: { category: 'xenesis-agent', mode: 'gateway', section: 'gateway' },
+      setupSteps: [
+        'Enable and start the Xenesis Gateway.',
+        'Verify the gateway URL and runtime status through CR readback.',
+        'Keep gateway restart/stop actions on CR paths so audit records remain visible.',
+      ],
+      crActions: ['xd.xenesis.gateway.status', 'xd.xenesis.gateway.start', 'xd.xenesis.gateway.restart'],
+      warnings: gateway?.warnings,
+    },
+    {
+      id: 'messenger-routing',
+      kind: 'onboarding',
+      label: '5. Messenger routing',
+      status: onboardingStatusForReadyOrBlocked(
+        messengerReady,
+        messengerBlocked,
+        gatewayReady ? 'needs-setup' : 'blocked',
+      ),
+      supportLevel: 'implemented',
+      summary: 'External messenger channel configuration, allowlists, and route safety.',
+      settingsTarget: 'xenesis-agent',
+      settingsAction: { category: 'xenesis-agent', mode: 'external-bots', section: 'external-bots' },
+      setupSteps: [
+        'Configure one supported channel: Telegram, Slack, Discord, or webhook.',
+        'Set required token or webhook environment variable names without storing secrets in Desk settings.',
+        'Add the chat, channel, guild, or webhook allowlist before enabling delivery.',
+        'Avoid channels where Xenesis can receive its own outbound messages.',
+      ],
+      sourceDocs: [{ label: 'OpenClaw channel routing', url: 'https://docs.openclaw.ai/channels/channel-routing' }],
+      crActions: ['xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
+    },
+    {
+      id: 'test-send',
+      kind: 'onboarding',
+      label: '6. End-to-end test',
+      status: onboardingStatusForReadyOrBlocked(provider?.status === 'ready' && gatewayReady && messengerReady, false),
+      supportLevel: 'implemented',
+      summary: 'Sanitized channel test send and CR readback after setup.',
+      settingsTarget: 'xenesis-agent',
+      settingsAction: { category: 'xenesis-agent', mode: 'external-bots', section: 'external-bots' },
+      setupSteps: [
+        'Use the per-channel test button or CR test path with a sanitized message.',
+        'Confirm the runtime status stays ready after the test send.',
+        'Inspect diagnostics or bot session records if delivery fails.',
+      ],
+      crActions: ['xd.xenesis.profiles.testChannel', 'xd.xenesis.connections.status'],
+    },
+  ];
+}
+
 export function buildXenesisConnectionsStatus(input: BuildXenesisConnectionsStatusInput): XenesisConnectionsStatus {
-  const sections: XenesisConnectionsStatus['sections'] = {
+  const baseSections: Omit<XenesisConnectionsStatus['sections'], 'onboarding'> = {
     provider: { id: 'provider', label: 'AI Provider', items: [providerItem(input.aiProvider)] },
     localCli: { id: 'local-cli', label: 'Local CLI integration', items: localCliItems(input.providerIntegration) },
     mcp: { id: 'mcp', label: 'MCP bridge', items: [mcpItem(input.mcp)] },
@@ -517,6 +664,10 @@ export function buildXenesisConnectionsStatus(input: BuildXenesisConnectionsStat
       label: 'Guides',
       items: withGuideOpenPaths(XENESIS_CONNECTION_GUIDES, input.repoRoot),
     },
+  };
+  const sections: XenesisConnectionsStatus['sections'] = {
+    onboarding: { id: 'onboarding', label: 'Onboarding checklist', items: onboardingItems(baseSections) },
+    ...baseSections,
   };
   const summary = countItems(sections);
   return {

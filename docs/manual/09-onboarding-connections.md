@@ -36,6 +36,23 @@ source documentation labels, and CR-first actions. `Open setup` routes through
 through `xd.files.open` so the same action path is available to the Agent pane
 and the renderer.
 
+The first section is an ordered onboarding checklist. It is derived from the
+same provider, MCP, tool, gateway, messenger, and guide cards, so it is a
+read-only progress view rather than a separate source of truth. Use it as the
+setup journey:
+
+1. First chat.
+2. Local CLI and MCP.
+3. Recommended tools.
+4. Gateway.
+5. Messenger routing.
+6. End-to-end test send.
+
+Each checklist card points to existing CR-backed settings or guide actions. A
+completed setup step should be confirmed through readback, such as
+`xd.xenesis.connections.status`, gateway status, channel runtime status, open
+content, or diagnostics.
+
 ## AI Provider
 
 The active provider comes from the user's settings and profile. Xenesis Desk does

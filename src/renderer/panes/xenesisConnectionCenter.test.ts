@@ -40,6 +40,7 @@ test('listXenesisConnectionSections preserves status section order', () => {
       total: 1,
     },
     sections: {
+      onboarding: { id: 'onboarding', label: 'Onboarding checklist', items: [] },
       provider: { id: 'provider', label: 'Provider', items: [] },
       localCli: { id: 'local-cli', label: 'Local CLI', items: [] },
       mcp: { id: 'mcp', label: 'MCP', items: [] },
@@ -53,7 +54,7 @@ test('listXenesisConnectionSections preserves status section order', () => {
 
   assert.deepEqual(
     listXenesisConnectionSections(status).map((section) => section.id),
-    ['provider', 'local-cli', 'mcp', 'tools', 'gateway', 'messengers', 'guides'],
+    ['onboarding', 'provider', 'local-cli', 'mcp', 'tools', 'gateway', 'messengers', 'guides'],
   );
   assert.deepEqual(listXenesisConnectionSections(null), []);
 });
