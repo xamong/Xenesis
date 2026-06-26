@@ -46,7 +46,12 @@ these criteria:
 - The path creates or resolves approval/action-inbox state.
 - The path starts or controls an Agent/provider run.
 
-## Current High-Risk Groups
+## Current High-Risk Seed Groups
+
+This table is a curated seed list for Phase 1 navigation, not the complete
+high-risk inventory. For the complete current inventory, inspect
+`docs/capability-registry-list.md` and run `npm run docs:capabilities:audit`
+after registry changes.
 
 | Group | Why It Is High Risk | Source |
 |---|---|---|

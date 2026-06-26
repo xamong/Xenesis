@@ -7,7 +7,7 @@ ai_edit_policy: proposal_only
 ai_generated: false
 reviewed: true
 confidence: high
-last_reviewed: 2026-06-26
+last_reviewed: 2026-06-27
 depends_on:
   - "[[module-capability-registry]]"
 touches:
