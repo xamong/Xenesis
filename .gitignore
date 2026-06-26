@@ -22,6 +22,10 @@ __pycache__/
 /index.js
 /server/database.db
 
+# Local-only development work log (and its rotated backups). Kept on disk, never tracked.
+handoff.md
+handoff_*.md
+
 # Internal development extensions are loaded locally but excluded from public source.
 extensions-private/
 draft/
