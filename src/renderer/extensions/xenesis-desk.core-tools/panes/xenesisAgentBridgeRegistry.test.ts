@@ -21,6 +21,7 @@ function state(overrides: Partial<XenesisAgentState> = {}): XenesisAgentState {
     running: false,
     error: '',
     messages: [],
+    promptQueue: [],
     rawStream: [],
     policyNotices: [],
     policySnapshot: null,

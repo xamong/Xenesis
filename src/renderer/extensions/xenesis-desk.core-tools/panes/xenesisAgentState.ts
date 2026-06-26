@@ -79,6 +79,7 @@ export function initialAgentState(): XenesisAgentState {
     running: false,
     error: '',
     messages: [],
+    promptQueue: [],
     rawStream: [],
     policyNotices: [],
     policySnapshot: null,
@@ -102,6 +103,9 @@ export function loadPersistedAgentState(): XenesisAgentState {
       ...parsed,
       loading: false,
       running: false,
+      // Never rehydrate a queue across a dock remount: an in-flight queue tied to a
+      // now-finished run is unsafe to auto-replay. Always start empty.
+      promptQueue: [],
       messages: Array.isArray(parsed.messages) ? (parsed.messages.slice(0, 80) as XenesisChatMessage[]) : [],
       rawStream: Array.isArray(parsed.rawStream) ? (parsed.rawStream.slice(0, 120) as XenesisRawStreamEntry[]) : [],
       policyNotices: Array.isArray(parsed.policyNotices)
@@ -151,6 +155,11 @@ let pendingPersistAgentStateTimer: ReturnType<typeof setTimeout> | null = null;
 
 function hasActiveAgentStreaming(state: XenesisAgentState): boolean {
   return state.running || state.loading || state.messages.some((message) => message.streaming);
+}
+
+/** True while a run is active or a message is still streaming. Used by the prompt-queue drain edge. */
+export function isXenesisAgentBusy(state: XenesisAgentState): boolean {
+  return hasActiveAgentStreaming(state);
 }
 
 function clearPendingPersistAgentState(): void {

@@ -10,7 +10,7 @@ import { runAgentPipeline, resumeAgentPipeline } from "../core/AgentRunPipeline.
 import type { ApprovalHandler } from "../core/AgentRunner.js";
 import type { AgentRunEvent } from "../core/events.js";
 import type { AgentMessage } from "../core/messages.js";
-import { resolveRuntimeMcpServers, type AgentRunMode } from "../core/AgentRuntimeFactory.js";
+import { createProvider, resolveRuntimeMcpServers, type AgentRunMode } from "../core/AgentRuntimeFactory.js";
 import {
   readConnectionReportEntry,
   readLatestConnectionReportEntry,
@@ -66,13 +66,6 @@ import type { IdeContextInput } from "../ide/index.js";
 import { filterToolsForApprovalMode } from "../permissions/policy.js";
 import { SqliteAgentTaskStore, SqliteScheduleStore, runAgentTask, type AgentTask, type ScheduleTrigger, type TaskSchedule } from "../orchestration/index.js";
 import {
-  AnthropicProvider,
-  ClaudeCliProvider,
-  ClaudeInteractiveProvider,
-  CodexAppServerProvider,
-  CodexCliProvider,
-  MockProvider,
-  OpenAIProvider,
   resolveProviderSettings,
   type AgentProvider
 } from "../providers/index.js";
@@ -2111,29 +2104,6 @@ async function runEffortCommand(parsed: ParsedArgs, cwd: string, env: NodeJS.Pro
   }
   emitEffortStatus(io, status);
   return 0;
-}
-
-function createProvider(config: XenesisConfig, env: NodeJS.ProcessEnv): AgentProvider {
-  if (config.provider === "mock") return new MockProvider();
-  if (config.provider === "codex-app-server") return new CodexAppServerProvider({ env });
-  if (config.provider === "codex-cli") return new CodexCliProvider({ env });
-  if (config.provider === "claude-interactive") return new ClaudeInteractiveProvider({ env });
-  if (config.provider === "claude-cli") return new ClaudeCliProvider({ env });
-  const settings = resolveProviderSettings(config, env);
-  if (settings.provider === "anthropic" || settings.provider === "claude") {
-    return new AnthropicProvider({
-      name: settings.provider,
-      model: config.model,
-      apiKey: settings.apiKey,
-      baseURL: settings.baseURL
-    });
-  }
-  return new OpenAIProvider({
-    name: settings.provider,
-    model: config.model,
-    apiKey: settings.apiKey,
-    baseURL: settings.baseURL
-  });
 }
 
 function createFallbackProviders(config: XenesisConfig, env: NodeJS.ProcessEnv): AgentProvider[] {

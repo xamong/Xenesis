@@ -7,9 +7,11 @@ ai_edit_policy: proposal_only
 ai_generated: false
 reviewed: true
 confidence: high
-last_reviewed: 2026-06-26
+last_reviewed: 2026-06-27
 verified_by:
   - "[[Verification Map]]"
+depends_on:
+  - "[[Final Goal]]"
 touches:
   - "scripts/capabilityCoverageAudit.mjs"
 ---
@@ -20,7 +22,20 @@ touches:
 
 Verifies CR coverage, registry paths, dispatcher wiring, and generated capability documentation.
 
+## Commands
+
+| Command | Expected Use |
+|---|---|
+| `npm run docs:capabilities:audit` | Verify missing registry paths, missing dispatch coverage, and undispatched static callable methods. |
+| `npm run docs:capabilities` | Regenerate CR docs after registry changes. |
+
+## Role In Final Goal
+
+This test note verifies that the CR-first control plane remains complete enough
+to trust as a release gate.
+
 ## Graph Links
 
 - Verified by [[Verification Map]]
+- Depends on [[Final Goal]]
 - Touches `scripts/capabilityCoverageAudit.mjs`

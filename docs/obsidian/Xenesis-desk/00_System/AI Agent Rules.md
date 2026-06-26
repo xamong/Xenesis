@@ -9,6 +9,7 @@ reviewed: true
 confidence: high
 last_reviewed: 2026-06-26
 depends_on:
+  - "[[Final Goal]]"
   - "[[Graph Schema]]"
   - "[[Review Policy]]"
   - "[[Source of Truth Map]]"
@@ -25,13 +26,14 @@ memory. The repo remains the executable source of truth.
 
 1. Repo AGENTS.md
 2. [[Xenesis-desk]]
-3. [[AI Agent Rules]]
-4. [[Graph Schema]]
-5. [[Review Policy]]
-6. [[Source of Truth Map]]
-7. Relevant index notes under _Indexes
-8. Relevant module, architecture, capability, data, test, ADR, risk, task, and handoff notes
-9. Actual repo source files and tests
+3. [[Final Goal]]
+4. [[AI Agent Rules]]
+5. [[Graph Schema]]
+6. [[Review Policy]]
+7. [[Source of Truth Map]]
+8. Relevant index notes under _Indexes
+9. Relevant module, architecture, capability, data, test, ADR, risk, task, and handoff notes
+10. Actual repo source files and tests
 
 ## Write Rules
 
@@ -42,6 +44,7 @@ memory. The repo remains the executable source of truth.
 
 ## Graph Links
 
+- Depends on [[Final Goal]]
 - Depends on [[Graph Schema]]
 - Depends on [[Review Policy]]
 - Depends on [[Source of Truth Map]]

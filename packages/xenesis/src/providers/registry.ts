@@ -65,6 +65,7 @@ const providerPresets: Record<ProviderName, ProviderPreset> = {
   },
   "codex-app-server": {},
   "codex-cli": {},
+  "codex-responses": { baseURL: "https://chatgpt.com/backend-api/codex" },
   "claude-interactive": {},
   "claude-cli": {}
 };
@@ -85,6 +86,7 @@ export const PROVIDER_CAPABILITIES: Record<ProviderName, ProviderCapabilities> =
   xai: { supportsTools: true, requiresApiKey: true, transport: "http-streaming", streaming: true, persistentSession: false },
   "codex-app-server": { supportsTools: true, requiresApiKey: false, transport: "cli-interactive", streaming: true, persistentSession: true },
   "codex-cli": { supportsTools: true, requiresApiKey: false, transport: "cli-oneshot", streaming: true, persistentSession: false },
+  "codex-responses": { supportsTools: true, requiresApiKey: false, transport: "http-streaming", streaming: true, persistentSession: false },
   "claude-interactive": { supportsTools: true, requiresApiKey: false, transport: "cli-interactive", streaming: true, persistentSession: true },
   "claude-cli": { supportsTools: true, requiresApiKey: false, transport: "cli-oneshot", streaming: true, persistentSession: false }
 };

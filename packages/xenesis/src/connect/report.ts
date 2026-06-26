@@ -10,13 +10,8 @@ import {
   xenesisStatePath
 } from "../config/index.js";
 import { createMcpClient, type McpToolClient } from "../extensions/index.js";
-import {
-  AnthropicProvider,
-  MockProvider,
-  OpenAIProvider,
-  resolveProviderSettings,
-  type AgentProvider
-} from "../providers/index.js";
+import { resolveProviderSettings } from "../providers/index.js";
+import { createProvider } from "../core/AgentRuntimeFactory.js";
 
 export type ConnectionCheckStatus = "passed" | "failed";
 export type ConnectionCheckKind = "provider" | "mcp";
@@ -123,30 +118,13 @@ function summarize(checks: ConnectionCheckResult[]) {
   };
 }
 
-function providerForConfig(config: XenesisConfig, env: NodeJS.ProcessEnv): AgentProvider {
-  if (config.provider === "mock") return new MockProvider();
-  const settings = resolveProviderSettings(config, env);
-  if (settings.provider === "anthropic" || settings.provider === "claude") {
-    return new AnthropicProvider({
-      name: settings.provider,
-      model: config.model,
-      apiKey: settings.apiKey,
-      baseURL: settings.baseURL
-    });
-  }
-  return new OpenAIProvider({
-    name: settings.provider,
-    model: config.model,
-    apiKey: settings.apiKey,
-    baseURL: settings.baseURL
-  });
-}
-
 async function runProviderProbe(config: XenesisConfig, env: NodeJS.ProcessEnv) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 30_000);
   try {
-    const response = await providerForConfig(config, env).complete({
+    // Registry-aware construction: routes codex-responses and any registered
+    // provider factory through the single canonical path (no local duplicate).
+    const response = await createProvider(config, env).complete({
       model: config.model,
       messages: [{ role: "user", content: "connection probe" }],
       tools: [],

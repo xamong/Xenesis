@@ -1,6 +1,7 @@
 import type { XenesisRunResult, XenesisStatus } from '../../../../shared/types';
 import type { XenesisDeskActionExecutionResult, XenesisDeskActionRequest } from './xenesisAgentDeskControl';
 import type { XenesisPolicyNotice, XenesisPolicySnapshot } from './xenesisPolicyNotices';
+import type { XenesisAgentAttachment } from './xenesisAgentAttachments';
 
 export const XENESIS_AGENT_STATE_STORAGE_KEY = 'xenesis:xenesis-agent-state:v1';
 export const XENESIS_AGENT_STATUS_BAR_KEYS_STORAGE_KEY = 'xenesis:xenesis-agent-status-bar-keys:v1';
@@ -11,6 +12,27 @@ export const XENESIS_CONTEXT_MESSAGE_LIMIT = 12;
 export const XENESIS_CONTEXT_MESSAGE_MAX_CHARS = 2000;
 
 export type XenesisMode = 'chat' | 'plan' | 'work';
+
+/** Routing overrides carried through a prompt submission (also used by queued prompts). */
+export interface XenesisAgentPromptRoutingOptions {
+  bypassDirectDeskRouting?: boolean;
+  bypassNaturalDeskRouting?: boolean;
+}
+
+/**
+ * A prompt the user submitted while a run was active. Snapshotted at enqueue time
+ * (mode/attachments/routing) so a later /mode change or attachment clear does not
+ * retroactively alter the queued turn. Drained FIFO when the active run completes.
+ */
+export interface QueuedPrompt {
+  id: string;
+  at: string;
+  input: string;
+  attachments: XenesisAgentAttachment[];
+  routingOptions: XenesisAgentPromptRoutingOptions;
+  mode: XenesisMode;
+}
+
 export type XenesisSlashMenuPlacement = 'above' | 'below';
 export type XenesisTerminalLineKind = 'message' | 'command' | 'tool' | 'approval' | 'status' | 'error';
 export type XenesisStatusBarItemKey =
@@ -66,6 +88,8 @@ export interface XenesisAgentState {
   running: boolean;
   error: string;
   messages: XenesisChatMessage[];
+  /** Type-ahead prompts submitted while a run was active; drained FIFO on completion. */
+  promptQueue: QueuedPrompt[];
   rawStream: XenesisRawStreamEntry[];
   policyNotices: XenesisPolicyNotice[];
   policySnapshot: XenesisPolicySnapshot | null;

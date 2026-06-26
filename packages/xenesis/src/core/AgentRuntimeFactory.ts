@@ -52,6 +52,7 @@ import {
   capabilitiesFor,
   getProviderFactory,
   presetApiKeyEnv,
+  registerCodexResponsesProvider,
   resolveProviderSettings,
   type AgentProvider
 } from "../providers/index.js";
@@ -160,6 +161,12 @@ function withProviderModel<T extends AgentProvider>(provider: T, model: string):
 }
 
 export function createProvider(config: XenesisConfig, env: NodeJS.ProcessEnv): AgentProvider {
+  // Option B: the codex-responses provider talks to the ChatGPT Codex backend
+  // directly (OAuth from ~/.codex/auth.json). Register lazily on first request so
+  // the factory map picks it up below; reasoning effort comes from the launch env.
+  if (config.provider === "codex-responses" && !getProviderFactory("codex-responses")) {
+    registerCodexResponsesProvider();
+  }
   const reg = getProviderFactory(config.provider);
   if (reg) {
     const regSettings = resolveProviderSettings(config, env);
@@ -182,6 +189,25 @@ export function createProvider(config: XenesisConfig, env: NodeJS.ProcessEnv): A
   const settings = resolveProviderSettings(config, env);
   const apiKey = settings.apiKey
     ?? ((capabilitiesFor(settings.provider) ?? PROVIDER_CAPABILITIES[settings.provider]).requiresApiKey ? undefined : "xenesis-local");
+  if (apiKey === undefined) {
+    // A key-requiring provider reached this fallthrough with no resolved credential.
+    // The OpenAI/Anthropic SDK would otherwise throw an opaque "Missing credentials".
+    // Only throw when there is also no ambient key (preserving the SDK's process.env
+    // fallback). This surfaces an actionable error AND catches the codex-responses
+    // routing regression, where the provider name was lost before the registry branch
+    // above and silently collapsed to a keyless key-based provider.
+    const keyEnvName = settings.apiKeyEnv;
+    const ambientKey = keyEnvName ? (env[keyEnvName] ?? process.env[keyEnvName]) : undefined;
+    if (!ambientKey) {
+      throw new Error(
+        `Cannot construct provider "${settings.provider}": it requires an API key` +
+          `${keyEnvName ? ` (set ${keyEnvName})` : ""} but none was resolved. ` +
+          `If you intended codex-responses (codex OAuth, no API key needed), the provider ` +
+          `name was lost in routing — ensure "codex-responses" is in the desk provider ` +
+          `allowlist and that config.provider survived loadConfig.`
+      );
+    }
+  }
   if (settings.provider === "anthropic" || settings.provider === "claude") {
     return new AnthropicProvider({
       name: settings.provider,

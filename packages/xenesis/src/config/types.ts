@@ -20,6 +20,7 @@ export const providerNames = [
   "xai",
   "codex-app-server",
   "codex-cli",
+  "codex-responses",
   "claude-interactive",
   "claude-cli"
 ] as const;

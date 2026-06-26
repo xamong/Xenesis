@@ -9,6 +9,7 @@ reviewed: true
 confidence: high
 last_reviewed: 2026-06-26
 depends_on:
+  - "[[Final Goal]]"
   - "[[Repo Overview]]"
   - "[[Graph Schema]]"
 verified_by:
@@ -23,6 +24,12 @@ verified_by:
 2. Repo-local Obsidian mirror at docs/obsidian
 3. External Obsidian app mirror at C:\Users\great\Documents\Obsidian Vault
 4. Agent working notes and handoff notes
+
+## Directional Goal
+
+[[Final Goal]] records the directional product and technical goal. It guides
+judgment, but executable truth still comes from source files, tests, generated
+CR docs, and verification commands.
 
 ## Key Repo Paths
 
@@ -40,6 +47,7 @@ handoff.md and [[AI Review Queue]].
 
 ## Graph Links
 
+- Depends on [[Final Goal]]
 - Depends on [[Repo Overview]]
 - Depends on [[Graph Schema]]
 - Verified by [[Verification Gates]]

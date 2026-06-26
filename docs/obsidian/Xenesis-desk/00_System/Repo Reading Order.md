@@ -20,6 +20,19 @@ verified_by:
 
 Defines the orientation order before CR, Agent, provider, approval, terminal, browser, or architecture work.
 
+## Sequence
+
+1. Repo AGENTS.md
+2. [[Xenesis-desk]]
+3. [[Final Goal]]
+4. [[AI Agent Rules]]
+5. [[Graph Schema]]
+6. [[Review Policy]]
+7. [[Source of Truth Map]]
+8. Relevant index notes under _Indexes
+9. Relevant module, architecture, capability, data, test, ADR, risk, task, and handoff notes
+10. Actual repo source files and tests
+
 ## Graph Links
 
 - Depends on [[AI Agent Rules]]

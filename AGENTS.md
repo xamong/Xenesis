@@ -138,13 +138,11 @@ The repo-local vault index note is:
 
 `docs/obsidian/Xenesis-desk.md`
 
-The Obsidian app mirror may also exist at:
-
-`C:\Users\great\Documents\Obsidian Vault\Xenesis-desk`
-
-The Obsidian app mirror index note is:
-
-`C:\Users\great\Documents\Obsidian Vault\Xenesis-desk.md`
+An external Obsidian app vault may also mirror this content, under a
+`Xenesis-desk` vault folder (its index note is `Xenesis-desk.md`). That
+location is per-machine — it is set when the vault is restored and is not
+recorded here. Treat `docs/obsidian` as the canonical path; the external
+app vault is only a convenience copy.
 
 The vault is an AI-readable context layer, not the source of truth. Use it to
 understand structure, design intent, risk areas, module ownership, ADRs, and
