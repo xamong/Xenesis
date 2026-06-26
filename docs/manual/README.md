@@ -32,6 +32,7 @@ The manual is written for two audiences:
 | Files, workspace, and settings | [06-files-workspace-settings.md](06-files-workspace-settings.md) |
 | Extensions, workflow, and operations | [07-extensions-workflow-ops.md](07-extensions-workflow-ops.md) |
 | Troubleshooting and agent routing | [08-troubleshooting-agent-routing.md](08-troubleshooting-agent-routing.md) |
+| Onboarding and connections | [09-onboarding-connections.md](09-onboarding-connections.md) |
 
 ## Core Model
 
@@ -47,7 +48,7 @@ Xenesis Desk separates the fixed shell from the docking workspace.
 The main settings areas are:
 
 - General: app-level preferences.
-- Xenesis Agent: agent runtime, gateway, external bot channels, and Gowoori agent tools.
+- Xenesis Agent: Connection Center, agent runtime, gateway, external bot channels, and Gowoori agent tools.
 - AI Provider: Hermes Plug-in, Local CLI MCP and Skill installer, and BYOK provider profiles.
 - Terminal Management: terminal profiles and captured terminal state.
 - Remote Files: remote workspace profiles and credentials.
