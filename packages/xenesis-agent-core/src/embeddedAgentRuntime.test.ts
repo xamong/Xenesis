@@ -12,6 +12,11 @@ test('mapDeskEmbeddedPromptResult preserves final doneContent from embedded runt
     exitCode: 0,
     traceId: 'trace-1',
     sessionId: 'session-1',
+    surface: {
+      name: 'embedded',
+      outputMode: 'stream-json',
+      interactive: true,
+    },
     output: '',
     errors: '',
     events: [],
