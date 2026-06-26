@@ -10,11 +10,9 @@ confidence: high
 last_reviewed: 2026-06-27
 reads:
   - "[[module-provider-runtime]]"
-writes:
-  - "[[module-approval-system]]"
 verified_by:
   - "[[Verification Map]]"
-supports:
+depends_on:
   - "[[Final Goal]]"
 touches:
   - "packages/xenesis/src/config/profiles.ts"
@@ -40,6 +38,7 @@ CR-first Desk control surface.
 
 | Source | Role |
 |---|---|
+| `packages/xenesis/src/config/profiles.ts` | Primary provider profile read/write source. |
 | `packages/xenesis/src/config/types.ts` | Provider/profile config schema. |
 | `packages/xenesis/src/core/AgentRuntimeFactory.ts` | Runtime provider resolution. |
 | `src/main/index.ts` | Embedded Desk runtime option assembly. |
@@ -69,9 +68,8 @@ CR-first Desk control surface.
 ## Graph Links
 
 - Read by [[module-provider-runtime]]
-- Written by [[module-approval-system]]
 - Verified by [[Verification Map]]
-- Supports [[Final Goal]]
+- Depends on [[Final Goal]]
 - Touches `packages/xenesis/src/config/profiles.ts`
 - Touches `packages/xenesis/src/config/types.ts`
 - Touches `packages/xenesis/src/core/AgentRuntimeFactory.ts`

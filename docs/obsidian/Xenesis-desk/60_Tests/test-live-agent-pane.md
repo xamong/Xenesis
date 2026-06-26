@@ -10,7 +10,7 @@ confidence: high
 last_reviewed: 2026-06-27
 verified_by:
   - "[[Verification Map]]"
-supports:
+depends_on:
   - "[[Final Goal]]"
 ---
 
@@ -36,6 +36,6 @@ selection, work log, approval UI, and Desk control.
 ## Graph Links
 
 - Verified by [[Verification Map]]
-- Supports [[Final Goal]]
+- Depends on [[Final Goal]]
 - Covers [[module-xenesis-agent-pane]]
 - Covers [[module-approval-system]]

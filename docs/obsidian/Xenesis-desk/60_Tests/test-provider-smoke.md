@@ -10,7 +10,7 @@ confidence: high
 last_reviewed: 2026-06-27
 verified_by:
   - "[[Verification Map]]"
-supports:
+depends_on:
   - "[[Final Goal]]"
 ---
 
@@ -35,5 +35,5 @@ while Desk behavior still reaches the same CR-first surface.
 ## Graph Links
 
 - Verified by [[Verification Map]]
-- Supports [[Final Goal]]
+- Depends on [[Final Goal]]
 - Covers [[module-provider-runtime]]

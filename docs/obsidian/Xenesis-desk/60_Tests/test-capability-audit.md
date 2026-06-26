@@ -10,7 +10,7 @@ confidence: high
 last_reviewed: 2026-06-27
 verified_by:
   - "[[Verification Map]]"
-supports:
+depends_on:
   - "[[Final Goal]]"
 touches:
   - "scripts/capabilityCoverageAudit.mjs"
@@ -37,5 +37,5 @@ to trust as a release gate.
 ## Graph Links
 
 - Verified by [[Verification Map]]
-- Supports [[Final Goal]]
+- Depends on [[Final Goal]]
 - Touches `scripts/capabilityCoverageAudit.mjs`

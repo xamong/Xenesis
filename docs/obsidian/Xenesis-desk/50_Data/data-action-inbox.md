@@ -14,7 +14,7 @@ writes:
   - "[[module-approval-system]]"
 verified_by:
   - "[[Verification Map]]"
-supports:
+depends_on:
   - "[[Final Goal]]"
 touches:
   - "src/main/mcpActionInbox.mjs"
@@ -67,6 +67,6 @@ approval UX.
 - Read by [[module-provider-runtime]]
 - Written by [[module-approval-system]]
 - Verified by [[Verification Map]]
-- Supports [[Final Goal]]
+- Depends on [[Final Goal]]
 - Touches `src/main/mcpActionInbox.mjs`
 - Touches `src/renderer/extensions/xenesis-desk.core-tools/panes/XenesisAgentPane.tsx`

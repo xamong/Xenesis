@@ -14,7 +14,7 @@ writes:
   - "[[module-approval-system]]"
 verified_by:
   - "[[Verification Map]]"
-supports:
+depends_on:
   - "[[Final Goal]]"
 touches:
   - "src/main/capabilityActionApproval.mjs"
@@ -65,7 +65,7 @@ uses real approval records for sensitive actions instead of chat-only consent.
 - Read by [[module-provider-runtime]]
 - Written by [[module-approval-system]]
 - Verified by [[Verification Map]]
-- Supports [[Final Goal]]
+- Depends on [[Final Goal]]
 - Touches `src/main/capabilityActionApproval.mjs`
 - Touches `src/main/index.ts`
 - Touches `src/shared/deskBridgeCapabilities.ts`
