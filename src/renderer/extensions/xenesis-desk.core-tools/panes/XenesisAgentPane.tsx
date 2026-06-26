@@ -112,6 +112,7 @@ import {
   mergeRawStreamEntry,
   replaceChatMessage,
   setPolicySnapshot,
+  isXenesisAgentBusy,
   setRawStreamOpen,
   useXenesisAgentState,
   xenesisAgentStateStore,
@@ -142,6 +143,7 @@ import {
   stringifyDetail,
   XENESIS_CONTEXT_MESSAGE_LIMIT,
   XENESIS_CONTEXT_MESSAGE_MAX_CHARS,
+  type XenesisAgentPromptRoutingOptions,
   type XenesisAssistantStreamFilterState,
   type XenesisChatMessage,
   type XenesisMode,
@@ -152,6 +154,13 @@ import {
   type XenesisStatusBarItemKey,
   type XenesisTerminalLineKind,
 } from './xenesisAgentTypes';
+import {
+  decideDrain,
+  dequeueQueuedPrompt,
+  enqueueQueuedPrompt,
+  makeQueuedPrompt,
+  removeQueuedPrompt,
+} from './xenesisPromptQueue';
 import {
   buildXenesisControlDemoWorkArgsFromInput,
   buildXenesisVisibleSubagentsDemoWorkers,
@@ -189,11 +198,6 @@ type XenesisAgentAutomationArtifactSnapshot = {
   source: string;
   sourceLength: number;
   updatedAt: number;
-};
-
-type XenesisAgentPromptRoutingOptions = {
-  bypassDirectDeskRouting?: boolean;
-  bypassNaturalDeskRouting?: boolean;
 };
 
 interface AssistantStreamStats {
@@ -1107,6 +1111,7 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
         input: string,
         inputAttachments?: XenesisAgentAttachment[],
         routingOptions?: XenesisAgentPromptRoutingOptions,
+        modeOverride?: XenesisMode,
       ) => Promise<void>)
     | null
   >(null);
@@ -1115,6 +1120,9 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
   const promptHistoryRef = useRef<string[]>([]);
   const promptHistoryIndexRef = useRef<number | null>(null);
   const pendingMarkdownSaveRef = useRef<XenesisPendingMarkdownSave | null>(null);
+  // Prompt-queue (Claude-Code-style type-ahead) drain bookkeeping.
+  const suppressNextDrainRef = useRef(false);
+  const drainPrevBusyRef = useRef(false);
   const initialProviderSettings = useMemo(() => normalizeProviderSettings(loadLegacyProviderSettings()), []);
   const [terminalFocused, setTerminalFocused] = useState(false);
   const [attachments, setAttachments] = useState<XenesisAgentAttachment[]>([]);
@@ -1137,6 +1145,7 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
     running,
     error,
     messages,
+    promptQueue,
     rawStream,
     policyNotices,
     policySnapshot,
@@ -1506,6 +1515,9 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
   }
 
   async function cancelActiveRun(displayInput = ''): Promise<void> {
+    // Cancel preserves the prompt queue but must NOT auto-fire the next queued prompt:
+    // consume exactly one busy->idle drain edge.
+    suppressNextDrainRef.current = true;
     if (displayInput) appendChatMessage({ role: 'user', content: displayInput, kind: 'command' });
     artifactAbortControllerRef.current?.abort();
     artifactAbortControllerRef.current = null;
@@ -3426,7 +3438,9 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
     input: string,
     inputAttachments?: XenesisAgentAttachment[],
     routingOptions: XenesisAgentPromptRoutingOptions = {},
+    modeOverride?: XenesisMode,
   ): Promise<void> {
+    const effectiveMode = modeOverride ?? mode;
     const trimmedInput = input.trim();
     const submittedAttachments = inputAttachments ?? attachments;
     const hasAttachments = submittedAttachments.length > 0;
@@ -3454,6 +3468,22 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
     if (!isXenesisApprovalIntent(baseInput)) {
       pendingMarkdownSaveRef.current = null;
     }
+    // Claude-Code-style type-ahead: while a run/stream is active, QUEUE this prompt
+    // (FIFO) instead of rejecting it; the drain watcher runs it on completion.
+    if (isXenesisAgentBusy(xenesisAgentStateStore.getSnapshot())) {
+      const queued = makeQueuedPrompt(
+        baseInput,
+        hasAttachments ? submittedAttachments : [],
+        routingOptions,
+        effectiveMode,
+      );
+      xenesisAgentStateStore.update((current) => ({
+        ...current,
+        promptQueue: enqueueQueuedPrompt(current.promptQueue, queued),
+      }));
+      if (hasAttachments) clearAttachments();
+      return;
+    }
     if (baseInput.startsWith('/')) {
       if (hasAttachments) clearAttachments();
       await runSlashCommand(baseInput, attachmentDisplayText, contextMessages);
@@ -3470,7 +3500,7 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
       if (hasAttachments) clearAttachments();
       await runPrompt(
         providerInput,
-        mode,
+        effectiveMode,
         directDeskActionRequest.visibleText || attachmentDisplayText || 'Desk action request',
         submittedAttachments,
         contextMessages,
@@ -3479,9 +3509,37 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
       return;
     }
     if (hasAttachments) clearAttachments();
-    await runPrompt(providerInput, mode, attachmentDisplayText, submittedAttachments, contextMessages, routingOptions);
+    await runPrompt(providerInput, effectiveMode, attachmentDisplayText, submittedAttachments, contextMessages, routingOptions);
   }
   runTerminalInputRef.current = runTerminalInput;
+
+  // Prompt-queue drain: when the agent transitions busy -> fully idle, auto-run the
+  // next queued prompt (FIFO). suppressNextDrainRef (set by cancel) skips exactly one
+  // idle edge so a cancel preserves the queue without auto-firing it.
+  useEffect(() => {
+    drainPrevBusyRef.current = isXenesisAgentBusy(xenesisAgentStateStore.getSnapshot());
+    return xenesisAgentStateStore.subscribe(() => {
+      const snapshot = xenesisAgentStateStore.getSnapshot();
+      const nextBusy = isXenesisAgentBusy(snapshot);
+      const decision = decideDrain({
+        prevBusy: drainPrevBusyRef.current,
+        nextBusy,
+        queue: snapshot.promptQueue,
+        suppressNextDrain: suppressNextDrainRef.current,
+      });
+      drainPrevBusyRef.current = nextBusy;
+      if (decision.resetSuppress) suppressNextDrainRef.current = false;
+      if (decision.action !== 'drain') return;
+      queueMicrotask(() => {
+        const snap = xenesisAgentStateStore.getSnapshot();
+        if (isXenesisAgentBusy(snap) || snap.promptQueue.length === 0) return;
+        const { head, rest } = dequeueQueuedPrompt(snap.promptQueue);
+        if (!head) return;
+        xenesisAgentStateStore.update((current) => ({ ...current, promptQueue: rest }));
+        void runTerminalInputRef.current?.(head.input, head.attachments, head.routingOptions, head.mode);
+      });
+    });
+  }, []);
 
   useEffect(() => {
     const root = terminalRootRef.current;
@@ -4179,6 +4237,32 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
                       Clear attachments
                     </button>
                   )}
+                </div>
+              )}
+              {promptQueue.length > 0 && (
+                <div className="xd-xenesis-prompt-queue" data-xenesis-no-terminal-focus="true">
+                  {promptQueue.map((queued, index) => (
+                    <section key={queued.id} className="xd-xenesis-desk-action-card is-pending">
+                      <div>
+                        <span>대기 중 {index + 1}</span>
+                        <strong>다음에 자동 실행</strong>
+                        <small>{queued.input}</small>
+                      </div>
+                      <button
+                        type="button"
+                        className="is-secondary"
+                        title="대기 중인 메시지 취소"
+                        onClick={() =>
+                          xenesisAgentStateStore.update((current) => ({
+                            ...current,
+                            promptQueue: removeQueuedPrompt(current.promptQueue, queued.id),
+                          }))
+                        }
+                      >
+                        취소
+                      </button>
+                    </section>
+                  ))}
                 </div>
               )}
               <form

@@ -2799,6 +2799,24 @@
   background: rgba(251, 191, 36, 0.08);
 }
 
+/* Claude-Code-style type-ahead queue: prompts waiting to auto-run after the active turn. */
+.xd-xenesis-prompt-queue {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 6px 0;
+}
+
+.xd-xenesis-prompt-queue .xd-xenesis-desk-action-card {
+  margin-top: 0;
+  border-color: rgba(125, 211, 252, 0.34);
+  background: rgba(56, 189, 248, 0.08);
+}
+
+.xd-xenesis-prompt-queue .xd-xenesis-desk-action-card small {
+  opacity: 0.85;
+}
+
 .xd-xenesis-desk-action-card.is-applied {
   border-color: rgba(52, 211, 153, 0.32);
   background: rgba(16, 185, 129, 0.08);

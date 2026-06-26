@@ -1156,3 +1156,104 @@ Result: read+control auto-approve; write/execute/danger still require approval (
 user can "항상 승인" each one once via Unit 1/2). Explicit per-node `{approval:'never'}`
 overrides unaffected; no `approval:'always'` nodes exist. Build ✓ (electron-vite 13.17s),
 typecheck = 1 pre-existing error only.
+
+## 2026-06-26 — Base-of-record move to new repo + messaging-queue fix (branch `uno`)
+
+### Big-picture state since the last entry
+- **Base of record changed.** The codex-backed agent work (former local `trunk`,
+  = session-wip 0512bd5) is now the trunk of record. origin/main (the public
+  `xamong/xenesis-desk`) was a ONE-TIME harvest source, then disconnected.
+- **Selective harvest of origin/main's 23 commits onto the codex trunk** (full
+  audit → units → per-unit approval), 11 commits, every unit vetted for hardcoded
+  heuristics + agent pollution: external app control U1-U6 (xd.apps.* drives
+  Windows GUI apps by explicit appId), U13 robust TUI launch, U7+U8 terminal
+  attach selector (+ Python mirror U9), U18 XD-Blaster (de-entangled — observational
+  instrumentation only, ZERO keyword routers), U16 unified scrollback TUI
+  (reimplemented). Skipped on principle: U15 (entangled w/ removed heuristics),
+  U17 keyword routers, U19 test-churn, U20 stale docs. Plus a separate commit
+  restoring docs/obsidian (66-note vault).
+- **New repo.** Squashed the whole trunk to a single `initial commit` (history
+  erased) and force-pushed to **git@github.com:xamong/Xenesis.git** main.
+  Removed `.github/workflows/ci.yml` (its `npm run typecheck` step failed on the
+  known baseline error embeddedAgentRuntime.test.ts TS2352). Auth: this machine's
+  default SSH key is GitHub user `uno2ai` (no write to xamong/Xenesis); a TEMP
+  `~/.ssh/id_ed25519_xamong` key + `github-xamong` host alias was created, origin =
+  `git@github-xamong:xamong/Xenesis.git`. Commit identity now reverted to
+  uno <uno@xamong.com>.
+- **Active branch `uno`** (from the clean initial commit). Backups kept locally:
+  `trunk` (full history), `session-wip`, `reconcile`, `merge/xenesis-final-main`.
+
+### Current objective: messaging queue / agent context
+User: "메시징 큐가 문제" + "Claude code codex와 같이 동작하도록" (a Claude-Code-style
+type-ahead queue, with codex as the backend). Approved behavior: "자동 순차 실행".
+
+### Root cause (systematic-debugging Phase 1 — FOUND)
+There is **no prompt message queue.** `runPrompt` (XenesisAgentPane.tsx:1857) guards
+`if (running) → append "Xenesis is already running. Use /cancel to stop the active
+run." + return`. A prompt submitted while a run is active (or in the gap before
+`running` clears) is **rejected, not queued.**
+- Evidence: 6-turn context-retention E2E — T3 hit "already running"; a later stale
+  response appeared. BUT **context retention itself is correct** (T4 recalled all 6
+  facts in order; T6 reasoned "2글자 × 7 = 14"). So the defect is the queue, not
+  context loss.
+- Guard layers: runtime `embeddedAgentRuntime.ts:210` (`activeController` serializes,
+  cleared in finally — OK) + renderer guards @1875/2085/2336/2450/2629. running:true
+  @1885/1941/2102/2343/2465; running:false @1518/1930/2066/2321/2440; cancelActiveRun
+  @1508; xenesisApi.run @1966.
+
+### Design decision (user-approved): auto-sequential queue, Claude-Code style
+Submit-while-running → ENQUEUE (don't reject); on run completion → auto-dequeue +
+run next (FIFO); multiple → in order. Cancel does NOT clear the queue but does NOT
+auto-fire the next. Input clears on submit (type-ahead). Detailed design via
+background workflow `w3vi7d649` (3 parallel maps + synthesis) — pending; will
+extract a pure testable `xenesisPromptQueue` module + wire it.
+
+### Known gaps / deferred (separate tasks)
+- codex/agent cold-start latency (~2.5min on the first tool-call turn).
+- Agent pane UI improvements.
+- xd.apps E2E: codex DOES discover + call the tool (1 tool), but the execute-approval
+  gate blocked the actual launch in the headless run (codex phrased it "desktop apps
+  blocked"); needs interactive-approval verification.
+
+### Next intended step
+Consume the design from w3vi7d649; implement TDD (pure queue module + test → wire
+into XenesisAgentPane enqueue/drain + queued-item UI → build/typecheck) → live-verify
+fast multi-turn sends queue instead of erroring.
+
+### Implementation progress (message queue — DONE, build green; live-verify running)
+Implemented the Claude-Code-style auto-sequential prompt queue. Files:
+- NEW `panes/xenesisPromptQueue.ts` — PURE module: `makeQueuedPrompt` (snapshots
+  input/attachments-copy/routingOptions/mode), `enqueueQueuedPrompt`/`dequeueQueuedPrompt`/
+  `peekQueuedPrompt`/`removeQueuedPrompt`/`replaceQueuedPrompt`, and `decideDrain` (pure
+  busy-edge decision: drains on prevBusy→!nextBusy with a non-empty, non-suppressed queue;
+  consumes the suppress flag once). NEW `xenesisPromptQueue.test.ts` (node:test, 11/11 pass).
+- `xenesisAgentTypes.ts` — exported `XenesisAgentPromptRoutingOptions` (moved out of the pane)
+  + `QueuedPrompt`; added `promptQueue: QueuedPrompt[]` to XenesisAgentState. (queueStatus/
+  queueId message fields were considered then reverted — see design choice below.)
+- `xenesisAgentState.ts` — initial + persisted-reset `promptQueue: []` (never rehydrated);
+  exported `isXenesisAgentBusy(state) = running||loading||streaming`.
+- `XenesisAgentPane.tsx` — ENQUEUE gate at the single chokepoint `runTerminalInput` (after the
+  approval-intent shortcuts, before slash/runPrompt dispatch): if busy → snapshot + push to
+  promptQueue + return (input already clears, type-ahead). DRAIN via a store subscriber
+  (busy true→false edge → queueMicrotask → dequeue head → re-invoke runTerminalInput with the
+  snapshot, incl. modeOverride so the queued turn keeps its enqueue-time mode). cancelActiveRun
+  sets suppressNextDrainRef so cancel preserves the queue but does not auto-fire next. Pending
+  queue rendered above the input from state.promptQueue (reuses the desk-action card; 취소 removes).
+- `styles.css` — `.xd-xenesis-prompt-queue` (blue-tinted pending cards).
+
+Design choice: render queued items from `state.promptQueue` as dedicated pending cards (NOT
+transcript messages), because `runPrompt` itself appends the user message on run — a transcript
+queued message would duplicate on drain. So queueStatus/queueId on XenesisChatMessage were
+reverted (YAGNI).
+
+Verification: tsc baseline 1 (only the pre-existing embeddedAgentRuntime.test TS2352);
+electron-vite ✓; queue unit tests 11/11. The bridge/registry test fixture got `promptQueue: []`.
+**Live-verify PASSED** (Playwright _electron, task `blyx4qn1w`): fired 3 prompts ~1.5s apart —
+while turn 1 ran, turns 2 & 3 appeared as "대기 중" pending cards (not rejected), then drained
+FIFO; responses 2 / 4 / 6 all returned in order; the "already running" error was ABSENT.
+
+### Next
+Committed the 7 queue files + this handoff entry on branch `uno`. Deferred items remaining:
+codex/agent cold-start latency (~2.5min first tool-call turn), agent pane UI. Watch:
+subagents/builds occasionally re-touch AGENTS.md / docs/obsidian — always stage commits with
+explicit file lists, never `git add -A`.
