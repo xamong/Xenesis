@@ -90,6 +90,14 @@ Google Workspace and Google Calendar intentionally do not expose install CR
 actions yet. They remain planned until OAuth scopes, token storage, and a
 verified MCP server template are selected and tested.
 
+Each tool card also exposes a `toolSetup` read model through
+`xd.xenesis.connections.status`. Use `xd.xenesis.tools.setup.status` when an
+agent needs only the external tool setup view. The setup model covers auth mode,
+data scopes, write scopes, credential storage, setup surface, verification
+steps, CR readback paths, and risk controls. Google Workspace and Google
+Calendar are visible here as planned OAuth connections, but they still have no
+install action or bundled MCP template.
+
 Use `xd.mcp.settings.status` to inspect MCP settings through the Capability
 Registry.
 
@@ -185,3 +193,9 @@ Discord, and Webhook route bindings, allowlist fields, auth or pairing mode,
 default agent, session scope, diagnostics, and delivery features. Channel writes
 still go through `xd.xenesis.profiles.updateChannels`, and delivery tests still
 go through `xd.xenesis.profiles.testChannel`.
+
+Use `xd.xenesis.tools.setup.status` to inspect external tool setup metadata
+through CR. The read model covers Fetch, Filesystem, GitHub, Notion, Linear,
+Google Workspace, and Google Calendar. It is read-only; MCP bridge state still
+comes from `xd.mcp.settings.status`, and mutating tool workflows must use their
+own verified provider/MCP/CR paths.

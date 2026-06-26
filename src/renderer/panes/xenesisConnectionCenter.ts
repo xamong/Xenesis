@@ -5,6 +5,7 @@ import type {
   XenesisConnectionSection,
   XenesisConnectionStatus,
   XenesisConnectionsStatus,
+  XenesisConnectionToolSetupTemplate,
 } from '../../shared/types';
 
 export type XenesisConnectionTone = 'success' | 'warning' | 'danger' | 'muted' | 'info' | 'neutral';
@@ -51,6 +52,10 @@ export function listXenesisConnectionSections(status: XenesisConnectionsStatus |
 
 export function formatXenesisChannelRoutingSummary(routing: XenesisConnectionChannelRoutingTemplate): string {
   return `${routing.routeBinding} -> ${routing.defaultAgent} (${routing.sessionScope})`;
+}
+
+export function formatXenesisToolSetupSummary(setup: XenesisConnectionToolSetupTemplate): string {
+  return `${setup.connection} / ${setup.authMode} / ${setup.setupSurface}`;
 }
 
 export function buildXenesisConnectionSettingsRequest(

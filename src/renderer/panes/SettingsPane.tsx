@@ -89,6 +89,7 @@ import {
   buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
   formatXenesisChannelRoutingSummary,
+  formatXenesisToolSetupSummary,
   listXenesisConnectionSections,
   xenesisConnectionTone,
 } from './xenesisConnectionCenter';
@@ -4249,6 +4250,7 @@ export default function SettingsPane() {
     const settingsRequest = buildXenesisConnectionSettingsRequest(item);
     const guideRequest = buildXenesisConnectionGuideRequest(item);
     const mcpTemplate = item.mcpTemplate;
+    const toolSetup = item.toolSetup;
     const channelTemplate = item.channelTemplate;
     return (
       <div
@@ -4342,6 +4344,38 @@ export default function SettingsPane() {
             <div>
               <span>{t('settings.xenesisConnectionsSources')}</span>
               <strong>{item.sourceDocs.map((source) => source.label).join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {toolSetup ? (
+          <div className="sp-info-list sp-info-list-compact" data-xenesis-tool-setup={item.id}>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolSetup')}</span>
+              <strong>{formatXenesisToolSetupSummary(toolSetup)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolDataScopes')}</span>
+              <strong>{toolSetup.dataScopes.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolWriteScopes')}</span>
+              <strong>{toolSetup.writeScopes.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolCredentials')}</span>
+              <strong>{toolSetup.credentialStorage}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolVerification')}</span>
+              <strong>{toolSetup.verification.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolCrReadback')}</span>
+              <strong>{toolSetup.crReadPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolRiskControls')}</span>
+              <strong>{toolSetup.riskControls.join(', ')}</strong>
             </div>
           </div>
         ) : null}

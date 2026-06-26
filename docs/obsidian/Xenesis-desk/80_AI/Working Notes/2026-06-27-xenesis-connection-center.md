@@ -220,6 +220,36 @@ Capability Registry instead of only through separate renderer settings panels.
   Settings DOM `[data-xenesis-channel-routing="telegram"]`, and Agent-pane
   fenced CR execution matching `Desk action completed`.
 
+## Current Tool Setup Read Model Slice
+
+- Add `toolSetup` metadata to Fetch, Filesystem, GitHub, Notion, Linear,
+  Google Workspace, and Google Calendar connection cards.
+- Add `xd.xenesis.tools.setup.status` as a read/no-approval CR path derived
+  from `xd.xenesis.connections.status`.
+- Render auth mode, data scopes, write scopes, credential storage,
+  verification steps, CR readback paths, and risk controls in Settings >
+  Xenesis Agent > Connections with `data-xenesis-tool-setup="<id>"`.
+- Keep Google Workspace and Google Calendar planned: no install action and no
+  bundled MCP template until OAuth scopes, token storage, and a verified MCP
+  server template are tested.
+- `npx tsx --test src\shared\xenesisConnections.test.ts`,
+  `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts`, and
+  `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` failed
+  first for missing `toolSetup`, CR path, and helper, then passed after
+  implementation.
+- Combined targeted tests passed with 23/23 tests.
+- Scoped Biome passed after import/export ordering was fixed.
+- `npm run typecheck`, `npm run docs:capabilities:audit`, and
+  `npm run build` passed. CR audit counters stayed at 0 for missing registered
+  paths, missing dispatched coverage paths, undispatched static callable
+  methods, and dispatcher paths missing from tree.
+- Live Electron smoke passed for direct `xd.xenesis.tools.setup.status`,
+  filtered Google Calendar setup, Settings DOM
+  `[data-xenesis-tool-setup="google-calendar"]`, and Agent-pane fenced CR
+  execution matching `Desk action completed`.
+- `npm run check:public-release` still fails because
+  `.github/workflows/ci.yml` is absent in this worktree.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

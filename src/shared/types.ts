@@ -9,6 +9,7 @@ export type {
   XenesisConnectionSection,
   XenesisConnectionStatus,
   XenesisConnectionsStatus,
+  XenesisConnectionToolSetupTemplate,
 } from './xenesisConnections';
 
 export type ShellKind = 'powershell' | 'cmd' | 'pwsh' | 'wsl' | 'zsh' | 'bash' | 'sh';

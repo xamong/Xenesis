@@ -457,6 +457,60 @@ test('buildXenesisConnectionsStatus keeps Google Calendar planned without fake i
   assert.ok(calendar?.setupSteps?.some((step) => step.includes('Google Calendar')));
 });
 
+test('buildXenesisConnectionsStatus exposes tool setup auth, scope, verification, and CR readback metadata', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+  const googleWorkspace = status.sections.tools.items.find((item) => item.id === 'google-workspace');
+  const googleCalendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+
+  assert.deepEqual(notion?.toolSetup, {
+    connection: 'mcp',
+    authMode: 'env-token',
+    dataScopes: ['notion:search', 'notion:read-pages', 'notion:read-databases'],
+    writeScopes: ['notion:writes-disabled-until-approved'],
+    credentialStorage: 'NOTION_TOKEN environment variable',
+    setupSurface: 'Settings > AI Provider > Local CLI MCP',
+    verification: ['mcp-server-listed', 'notion-search-read', 'cr-readback'],
+    crReadPaths: ['xd.xenesis.connections.status', 'xd.mcp.settings.status'],
+    riskControls: ['share only required pages/databases', 'verify read tools before writes'],
+  });
+  assert.equal(googleWorkspace?.toolSetup?.authMode, 'oauth');
+  assert.ok(googleWorkspace?.toolSetup?.dataScopes.includes('google-drive.readonly'));
+  assert.ok(googleWorkspace?.toolSetup?.writeScopes.includes('google-writes-disabled-until-template-verified'));
+  assert.equal(googleCalendar?.toolSetup?.authMode, 'oauth');
+  assert.ok(googleCalendar?.toolSetup?.dataScopes.includes('calendar.events.readonly'));
+  assert.ok(googleCalendar?.toolSetup?.verification.includes('calendar-list-read'));
+  assert.equal(googleCalendar?.mcpTemplate, undefined);
+  assert.equal(googleCalendar?.settingsAction, undefined);
+});
+
 test('buildXenesisConnectionsStatus exposes an OpenClaw-style messenger channel catalog', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {

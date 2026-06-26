@@ -207,6 +207,18 @@ const XENESIS_CHANNEL_ROUTING_STATUS_SCHEMA = {
   },
 } as const;
 
+const XENESIS_TOOL_SETUP_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: ['fetch', 'filesystem', 'github', 'notion', 'linear', 'google-workspace', 'google-calendar'],
+      description: 'Optional external tool connection id to filter.',
+    },
+  },
+} as const;
+
 export interface DeskBridgeCapabilityNode {
   path: string;
   label: string;
@@ -468,6 +480,7 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisStatus?: () => Promise<unknown> | unknown;
   getXenesisConnectionsStatus?: () => Promise<unknown> | unknown;
   getXenesisChannelRoutingStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisToolSetupStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisDiagnostics?: () => Promise<unknown> | unknown;
   openXenesisTui?: (args: unknown) => Promise<unknown> | unknown;
   listXenesisReports?: (args: unknown) => Promise<unknown> | unknown;
@@ -3421,6 +3434,17 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             'Read route binding, allowlist, pairing, default-agent, diagnostics, and delivery metadata for implemented Xenesis external bot channels.',
             'read',
             XENESIS_CHANNEL_ROUTING_STATUS_SCHEMA,
+          ),
+        ]),
+      ]),
+      group('xd.xenesis.tools', 'Tools', 'External tool connection setup state.', [
+        group('xd.xenesis.tools.setup', 'Setup', 'External tool auth, scope, verification, and CR readback metadata.', [
+          method(
+            'xd.xenesis.tools.setup.status',
+            'Read tool setup status',
+            'Read auth mode, data scopes, write scopes, credential storage, verification, setup surface, and CR readback metadata for Xenesis external tool connections.',
+            'read',
+            XENESIS_TOOL_SETUP_STATUS_SCHEMA,
           ),
         ]),
       ]),
@@ -9686,6 +9710,9 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.channels.routing.status') {
         return callAdapter(path, api?.getXenesisChannelRoutingStatus, request.args);
+      }
+      if (path === 'xd.xenesis.tools.setup.status') {
+        return callAdapter(path, api?.getXenesisToolSetupStatus, request.args);
       }
       if (path === 'xd.xenesis.gateway.status') {
         return callAdapter(path, api?.getXenesisStatus);

@@ -4843,6 +4843,65 @@ async function getXenesisChannelRoutingStatus(args?: unknown): Promise<Record<st
   };
 }
 
+const XENESIS_TOOL_SETUP_IDS = [
+  'fetch',
+  'filesystem',
+  'github',
+  'notion',
+  'linear',
+  'google-workspace',
+  'google-calendar',
+] as const;
+
+function isXenesisToolSetupId(value: string): value is (typeof XENESIS_TOOL_SETUP_IDS)[number] {
+  return (XENESIS_TOOL_SETUP_IDS as readonly string[]).includes(value);
+}
+
+async function getXenesisToolSetupStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (id && !isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.tools.items
+    .filter((item) => item.toolSetup)
+    .filter((item) => !id || item.id === id)
+    .map((item: XenesisConnectionItem) => ({
+      id: item.id,
+      label: item.label,
+      status: item.status,
+      supportLevel: item.supportLevel,
+      summary: item.summary,
+      connection: item.toolSetup?.connection,
+      authMode: item.toolSetup?.authMode,
+      dataScopes: item.toolSetup?.dataScopes ?? [],
+      writeScopes: item.toolSetup?.writeScopes ?? [],
+      credentialStorage: item.toolSetup?.credentialStorage,
+      setupSurface: item.toolSetup?.setupSurface,
+      verification: item.toolSetup?.verification ?? [],
+      crReadPaths: item.toolSetup?.crReadPaths ?? [],
+      riskControls: item.toolSetup?.riskControls ?? [],
+      mcpTemplate: item.mcpTemplate,
+      settingsAction: item.settingsAction,
+      crActions: item.crActions ?? [],
+      warnings: item.warnings ?? [],
+    }));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
 function getProviderIntegrationAssetRoot(): string {
   if (app.isPackaged) {
     return path.join(process.resourcesPath, 'provider-assets');
@@ -11765,6 +11824,7 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
       getXenesisStatusPayload().then((status) => ({ ok: true, status: redactXenesisStatusForCapability(status) })),
     getXenesisConnectionsStatus: () => getXenesisConnectionsStatus().then((status) => ({ ok: true, status })),
     getXenesisChannelRoutingStatus: (args: unknown) => getXenesisChannelRoutingStatus(args),
+    getXenesisToolSetupStatus: (args: unknown) => getXenesisToolSetupStatus(args),
     getXenesisDiagnostics: () => getXenesisOperationalDiagnostics().then((diagnostics) => ({ ok: true, diagnostics })),
     listXenesisReports: (args: unknown) =>
       listXenesisReports(

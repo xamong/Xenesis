@@ -6,6 +6,7 @@ import {
   buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
   formatXenesisChannelRoutingSummary,
+  formatXenesisToolSetupSummary,
   listXenesisConnectionSections,
   XENESIS_CONNECTION_STATUS_ORDER,
   xenesisConnectionTone,
@@ -144,5 +145,22 @@ test('formatXenesisChannelRoutingSummary describes route, default agent, and ses
       deliveryFeatures: ['direct-messages', 'groups'],
     }),
     'telegram.allowedChatIds -> xenesis-agent (chat)',
+  );
+});
+
+test('formatXenesisToolSetupSummary describes connection, auth, and setup surface', () => {
+  assert.equal(
+    formatXenesisToolSetupSummary({
+      connection: 'mcp',
+      authMode: 'env-token',
+      dataScopes: ['notion:search'],
+      writeScopes: ['notion:writes-disabled-until-approved'],
+      credentialStorage: 'NOTION_TOKEN environment variable',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      verification: ['notion-search-read'],
+      crReadPaths: ['xd.xenesis.connections.status'],
+      riskControls: ['share only required pages/databases'],
+    }),
+    'mcp / env-token / Settings > AI Provider > Local CLI MCP',
   );
 });

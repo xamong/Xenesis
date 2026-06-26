@@ -54,6 +54,18 @@ export interface XenesisConnectionMcpTemplate {
   configSnippets: XenesisConnectionMcpConfigSnippets;
 }
 
+export interface XenesisConnectionToolSetupTemplate {
+  connection: 'mcp' | 'oauth-mcp' | 'local';
+  authMode: 'none' | 'env-token' | 'oauth';
+  dataScopes: string[];
+  writeScopes: string[];
+  credentialStorage: string;
+  setupSurface: string;
+  verification: string[];
+  crReadPaths: string[];
+  riskControls: string[];
+}
+
 export interface XenesisConnectionChannelTemplate {
   category: 'consumer' | 'enterprise' | 'developer' | 'community' | 'regional' | 'iot';
   adapter: string;
@@ -90,6 +102,7 @@ export interface XenesisConnectionItem {
   guidePath?: string;
   guideOpenPath?: string;
   mcpTemplate?: XenesisConnectionMcpTemplate;
+  toolSetup?: XenesisConnectionToolSetupTemplate;
   channelTemplate?: XenesisConnectionChannelTemplate;
   warnings?: string[];
 }
@@ -267,6 +280,17 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     supportLevel: 'manual',
     settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
     mcpTemplate: mcpTemplateFor('fetch'),
+    toolSetup: {
+      connection: 'mcp',
+      authMode: 'none',
+      dataScopes: ['webpage:read'],
+      writeScopes: [],
+      credentialStorage: 'none',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      verification: ['mcp-server-listed', 'fetch-known-url', 'cr-readback'],
+      crReadPaths: ['xd.xenesis.connections.status', 'xd.mcp.settings.status'],
+      riskControls: ['verify fetched content source', 'avoid sending private URLs to untrusted providers'],
+    },
     setupSteps: [
       'Install the Fetch MCP server in the local CLI MCP settings.',
       'Verify the MCP bridge and provider CLI can list the fetch tools before relying on web context.',
@@ -283,6 +307,17 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     supportLevel: 'manual',
     settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
     mcpTemplate: mcpTemplateFor('filesystem'),
+    toolSetup: {
+      connection: 'mcp',
+      authMode: 'none',
+      dataScopes: ['workspace:read-files', 'workspace:list-files', 'workspace:search-files'],
+      writeScopes: [],
+      credentialStorage: 'workspace root in MCP config',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      verification: ['mcp-server-listed', 'workspace-directory-list', 'cr-readback'],
+      crReadPaths: ['xd.xenesis.connections.status', 'xd.mcp.settings.status'],
+      riskControls: ['scope filesystem to the active workspace', 'route writes through Desk approval paths'],
+    },
     setupSteps: [
       'Install the filesystem MCP server with the active workspace root as its only scope.',
       'Keep write operations routed through Xenesis Desk CR paths so approval and audit records stay aligned.',
@@ -300,6 +335,17 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     supportLevel: 'manual',
     settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
     mcpTemplate: mcpTemplateFor('github'),
+    toolSetup: {
+      connection: 'mcp',
+      authMode: 'env-token',
+      dataScopes: ['github:search-code', 'github:read-repos', 'github:read-issues', 'github:read-pull-requests'],
+      writeScopes: ['github:writes-disabled-until-approved'],
+      credentialStorage: 'GITHUB_TOKEN environment variable',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      verification: ['mcp-server-listed', 'github-repo-read', 'cr-readback'],
+      crReadPaths: ['xd.xenesis.connections.status', 'xd.mcp.settings.status'],
+      riskControls: ['use narrow repository scopes', 'verify read tools before writes'],
+    },
     setupSteps: [
       'Create a GitHub token with the narrow repository scopes needed for the workspace.',
       'Set GITHUB_TOKEN in the environment used by the provider CLI or MCP server.',
@@ -318,6 +364,17 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     supportLevel: 'manual',
     settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
     mcpTemplate: mcpTemplateFor('notion'),
+    toolSetup: {
+      connection: 'mcp',
+      authMode: 'env-token',
+      dataScopes: ['notion:search', 'notion:read-pages', 'notion:read-databases'],
+      writeScopes: ['notion:writes-disabled-until-approved'],
+      credentialStorage: 'NOTION_TOKEN environment variable',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      verification: ['mcp-server-listed', 'notion-search-read', 'cr-readback'],
+      crReadPaths: ['xd.xenesis.connections.status', 'xd.mcp.settings.status'],
+      riskControls: ['share only required pages/databases', 'verify read tools before writes'],
+    },
     setupSteps: [
       'Create a Notion integration and share the needed pages or databases with it.',
       'Set NOTION_TOKEN in the environment used by the provider CLI or MCP server.',
@@ -335,6 +392,17 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     supportLevel: 'manual',
     settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
     mcpTemplate: mcpTemplateFor('linear'),
+    toolSetup: {
+      connection: 'oauth-mcp',
+      authMode: 'oauth',
+      dataScopes: ['linear:read-issues', 'linear:read-projects', 'linear:read-comments'],
+      writeScopes: ['linear:update-issues-after-approval', 'linear:create-comments-after-approval'],
+      credentialStorage: 'OAuth token managed by the MCP client',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      verification: ['mcp-server-listed', 'oauth-authorized', 'linear-issue-read', 'cr-readback'],
+      crReadPaths: ['xd.xenesis.connections.status', 'xd.mcp.settings.status'],
+      riskControls: ['complete OAuth in the browser', 'keep issue updates approval-gated'],
+    },
     setupSteps: [
       'Add the Linear hosted MCP endpoint to the provider CLI or local MCP config.',
       'Complete the OAuth flow in the browser when the provider asks for authorization.',
@@ -351,6 +419,17 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     settingsTarget: 'mcp',
     supportLevel: 'planned',
     crActions: [],
+    toolSetup: {
+      connection: 'oauth-mcp',
+      authMode: 'oauth',
+      dataScopes: ['google-drive.readonly', 'gmail.readonly', 'documents.readonly'],
+      writeScopes: ['google-writes-disabled-until-template-verified'],
+      credentialStorage: 'OAuth token store from the selected MCP server',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      verification: ['oauth-consent-reviewed', 'drive-list-read', 'gmail-profile-read', 'cr-readback'],
+      crReadPaths: ['xd.xenesis.connections.status', 'xd.mcp.settings.status'],
+      riskControls: ['review OAuth consent scopes', 'prefer read-only workspace scopes until writes are verified'],
+    },
     setupSteps: [
       'Choose a verified Google Workspace MCP server with OAuth support before exposing install actions.',
       'Keep OAuth consent, token storage, and workspace data scopes visible in the setup view.',
@@ -368,6 +447,17 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     settingsTarget: 'mcp',
     supportLevel: 'planned',
     crActions: [],
+    toolSetup: {
+      connection: 'oauth-mcp',
+      authMode: 'oauth',
+      dataScopes: ['calendar.calendarlist.readonly', 'calendar.events.readonly', 'calendar.freebusy.readonly'],
+      writeScopes: ['calendar-writes-disabled-until-template-verified'],
+      credentialStorage: 'OAuth token store from the selected MCP server',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      verification: ['oauth-consent-reviewed', 'calendar-list-read', 'calendar-events-read', 'cr-readback'],
+      crReadPaths: ['xd.xenesis.connections.status', 'xd.mcp.settings.status'],
+      riskControls: ['review calendar scopes before scheduling', 'keep create/update/delete approval-gated'],
+    },
     setupSteps: [
       'Select a verified Google Calendar MCP/OAuth server before exposing install actions.',
       'Require explicit calendar scope review before scheduling or event mutation is enabled.',

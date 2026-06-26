@@ -118,6 +118,46 @@ test('xenesis channel routing status capability is registered and dispatches to 
   });
 });
 
+test('xenesis tool setup status capability is registered and dispatches to the adapter', async () => {
+  const capability = findDeskBridgeCapability('xd.xenesis.tools.setup.status');
+  const schemaProperties = (capability?.schema?.properties ?? {}) as Record<string, any>;
+  assert.equal(capability?.permission, 'read');
+  assert.equal(capability?.approval, 'never');
+  assert.deepEqual(schemaProperties.id?.enum, [
+    'fetch',
+    'filesystem',
+    'github',
+    'notion',
+    'linear',
+    'google-workspace',
+    'google-calendar',
+  ]);
+
+  let calledArgs: unknown = null;
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisToolSetupStatus: (args) => {
+      calledArgs = args;
+      return {
+        ok: true,
+        items: [{ id: 'google-calendar' }],
+      };
+    },
+  };
+
+  const result = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.tools.setup.status',
+    args: { id: 'google-calendar' },
+    source: 'xenesis',
+  });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(calledArgs, { id: 'google-calendar' });
+  assert.deepEqual(result.result, {
+    ok: true,
+    items: [{ id: 'google-calendar' }],
+  });
+});
+
 test('xenesis profile channel capabilities expose implemented guardrail fields', () => {
   const updateSchema = findDeskBridgeCapability('xd.xenesis.profiles.updateChannels')?.schema;
   const testSchema = findDeskBridgeCapability('xd.xenesis.profiles.testChannel')?.schema;
