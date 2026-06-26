@@ -22,6 +22,7 @@ import type {
   LocalCliApi,
   LocalTerminalCliSelection,
   LocalTerminalProfile,
+  McpBridgeCapabilityCallRequest,
   McpSettingsStatus,
   ProviderIntegrationApi,
   ProviderIntegrationCliTargetId,
@@ -83,7 +84,12 @@ import {
 import AutomationSettingsSection from '../terminal/AutomationSettingsSection';
 import { mergePendingLocalTerminalProfile } from '../terminal/terminalProfileSnapshot';
 import { SETTINGS_CATEGORIES, type SettingsCategoryId, VISIBLE_SETTINGS_CATEGORIES } from './settingsCatalog.mjs';
-import { listXenesisConnectionSections, xenesisConnectionTone } from './xenesisConnectionCenter';
+import {
+  buildXenesisConnectionGuideRequest,
+  buildXenesisConnectionSettingsRequest,
+  listXenesisConnectionSections,
+  xenesisConnectionTone,
+} from './xenesisConnectionCenter';
 
 const BUILTIN_EXTERNAL_APP_IDS = new Set(BUILTIN_EXTERNAL_APP_PROFILES.map((profile) => profile.id));
 
@@ -4167,48 +4173,115 @@ export default function SettingsPane() {
     return '';
   };
 
-  const renderXenesisConnectionItem = (item: XenesisConnectionItem) => (
-    <div className="sp-info-card" key={item.id} data-xenesis-connection={item.id}>
-      <div className="sp-section-heading">
-        <div>
-          <strong>{item.label}</strong>
-          <span>{item.summary}</span>
-        </div>
-        <span className={cls('sp-pill', xenesisConnectionPillClass(item.status))}>
-          {xenesisConnectionStatusLabel(item.status)}
-        </span>
-      </div>
-      {(item.missingEnv?.length || item.requiredEnv?.length || item.crActions?.length || item.guidePath) && (
-        <div className="sp-info-list sp-info-list-compact">
-          {item.missingEnv?.length ? (
-            <div>
-              <span>{t('settings.xenesisConnectionsMissingEnv')}</span>
-              <strong>{item.missingEnv.join(', ')}</strong>
-            </div>
-          ) : null}
-          {!item.missingEnv?.length && item.requiredEnv?.length ? (
-            <div>
-              <span>{t('settings.xenesisConnectionsRequiredEnv')}</span>
-              <strong>{item.requiredEnv.join(', ')}</strong>
-            </div>
-          ) : null}
-          {item.crActions?.length ? (
-            <div>
-              <span>{t('settings.xenesisConnectionsCrActions')}</span>
-              <strong>{item.crActions.join(', ')}</strong>
-            </div>
-          ) : null}
-          {item.guidePath ? (
-            <div>
-              <span>{t('settings.xenesisConnectionsGuide')}</span>
-              <strong>{item.guidePath}</strong>
-            </div>
-          ) : null}
-        </div>
-      )}
-      {item.warnings?.length ? <p className="sp-hint sp-warning-text">{item.warnings.join(' ')}</p> : null}
-    </div>
+  const handleXenesisConnectionRequest = useCallback(
+    async (request: McpBridgeCapabilityCallRequest | null) => {
+      if (!request) return;
+      if (!window.deskBridgeAPI?.callCapability) {
+        setXenesisConnectionsError('Desk bridge API is unavailable.');
+        return;
+      }
+      try {
+        const result = await window.deskBridgeAPI.callCapability(request);
+        if (!result.ok) {
+          setXenesisConnectionsError(result.error || t('settings.xenesisConnectionsActionFailed'));
+        }
+      } catch (error) {
+        setXenesisConnectionsError(error instanceof Error ? error.message : String(error));
+      }
+    },
+    [t],
   );
+
+  const renderXenesisConnectionItem = (item: XenesisConnectionItem) => {
+    const settingsRequest = buildXenesisConnectionSettingsRequest(item);
+    const guideRequest = buildXenesisConnectionGuideRequest(item);
+    return (
+      <div className="sp-info-card" key={item.id} data-xenesis-connection={item.id}>
+        <div className="sp-section-heading">
+          <div>
+            <strong>{item.label}</strong>
+            <span>{item.summary}</span>
+          </div>
+          <span className={cls('sp-pill', xenesisConnectionPillClass(item.status))}>
+            {xenesisConnectionStatusLabel(item.status)}
+          </span>
+        </div>
+        {(settingsRequest || guideRequest) && (
+          <div className="sp-actions-row sp-actions-row-tight">
+            {settingsRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(settingsRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsOpenSettings')}
+              </button>
+            ) : null}
+            {guideRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(guideRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsOpenGuide')}
+              </button>
+            ) : null}
+          </div>
+        )}
+        {(item.missingEnv?.length || item.requiredEnv?.length || item.crActions?.length || item.guidePath) && (
+          <div className="sp-info-list sp-info-list-compact">
+            {item.missingEnv?.length ? (
+              <div>
+                <span>{t('settings.xenesisConnectionsMissingEnv')}</span>
+                <strong>{item.missingEnv.join(', ')}</strong>
+              </div>
+            ) : null}
+            {!item.missingEnv?.length && item.requiredEnv?.length ? (
+              <div>
+                <span>{t('settings.xenesisConnectionsRequiredEnv')}</span>
+                <strong>{item.requiredEnv.join(', ')}</strong>
+              </div>
+            ) : null}
+            {item.crActions?.length ? (
+              <div>
+                <span>{t('settings.xenesisConnectionsCrActions')}</span>
+                <strong>{item.crActions.join(', ')}</strong>
+              </div>
+            ) : null}
+            {item.guidePath ? (
+              <div>
+                <span>{t('settings.xenesisConnectionsGuide')}</span>
+                <strong>{item.guidePath}</strong>
+              </div>
+            ) : null}
+          </div>
+        )}
+        {item.setupSteps?.length ? (
+          <div className="sp-info-list sp-info-list-compact">
+            {item.setupSteps.map((step, index) => (
+              <div key={`${item.id}-step-${index}`}>
+                <span>
+                  {t('settings.xenesisConnectionsSetupStep')} {index + 1}
+                </span>
+                <strong>{step}</strong>
+              </div>
+            ))}
+          </div>
+        ) : null}
+        {item.sourceDocs?.length ? (
+          <div className="sp-info-list sp-info-list-compact">
+            <div>
+              <span>{t('settings.xenesisConnectionsSources')}</span>
+              <strong>{item.sourceDocs.map((source) => source.label).join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {item.warnings?.length ? <p className="sp-hint sp-warning-text">{item.warnings.join(' ')}</p> : null}
+      </div>
+    );
+  };
 
   const renderXenesisConnections = () => {
     const sections = listXenesisConnectionSections(xenesisConnectionsStatus);

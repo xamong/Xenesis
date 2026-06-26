@@ -1,4 +1,10 @@
-import type { XenesisConnectionSection, XenesisConnectionStatus, XenesisConnectionsStatus } from '../../shared/types';
+import type {
+  McpBridgeCapabilityCallRequest,
+  XenesisConnectionItem,
+  XenesisConnectionSection,
+  XenesisConnectionStatus,
+  XenesisConnectionsStatus,
+} from '../../shared/types';
 
 export type XenesisConnectionTone = 'success' | 'warning' | 'danger' | 'muted' | 'info' | 'neutral';
 
@@ -39,4 +45,35 @@ export function listXenesisConnectionSections(status: XenesisConnectionsStatus |
     status.sections.messengers,
     status.sections.guides,
   ];
+}
+
+export function buildXenesisConnectionSettingsRequest(
+  item: XenesisConnectionItem,
+): McpBridgeCapabilityCallRequest | null {
+  if (!item.settingsAction) return null;
+  return {
+    path: 'xd.panes.settings.open',
+    args: {
+      category: item.settingsAction.category,
+      ...(item.settingsAction.mode ? { mode: item.settingsAction.mode } : {}),
+      ...(item.settingsAction.section ? { section: item.settingsAction.section } : {}),
+      ensureVisible: true,
+    },
+    source: 'xenesis',
+    approved: true,
+  };
+}
+
+export function buildXenesisConnectionGuideRequest(item: XenesisConnectionItem): McpBridgeCapabilityCallRequest | null {
+  const guidePath = item.guideOpenPath?.trim() || item.guidePath?.trim();
+  if (!guidePath) return null;
+  return {
+    path: 'xd.files.open',
+    args: {
+      filePath: guidePath,
+      placement: 'tab',
+    },
+    source: 'xenesis',
+    approved: true,
+  };
 }

@@ -30,6 +30,12 @@ place. The Connection Center summarizes:
 The same state is available through the Capability Registry at
 `xd.xenesis.connections.status`.
 
+Connection cards can include setup recipes, missing environment variables,
+source documentation labels, and CR-first actions. `Open setup` routes through
+`xd.panes.settings.open` to the relevant Settings surface. Guide cards route
+through `xd.files.open` so the same action path is available to the Agent pane
+and the renderer.
+
 ## AI Provider
 
 The active provider comes from the user's settings and profile. Xenesis Desk does
@@ -43,6 +49,15 @@ The Connection Center shows MCP readiness and recommended tool connections.
 Current recommended MCP templates include Fetch, Filesystem, GitHub, Notion, and
 Linear. Google Workspace and Google Calendar appear as planned/manual
 connections until a verified install template is bundled.
+
+The actionable tool cards are manual setup recipes, not automatic installers.
+They show required environment variables such as `GITHUB_TOKEN` or
+`NOTION_TOKEN`, point users to the local CLI MCP settings, and keep any write
+workflow behind the existing provider/MCP/CR verification path.
+
+Google Workspace and Google Calendar intentionally do not expose install CR
+actions yet. They remain planned until OAuth scopes, token storage, and a
+verified MCP server template are selected and tested.
 
 Use `xd.mcp.settings.status` to inspect MCP settings through the Capability
 Registry.
@@ -65,7 +80,9 @@ Useful CR paths:
 
 The first actionable messenger set is Telegram, Slack, Discord, and webhook.
 Each channel should be configured with environment variable names and allowlists
-instead of hardcoded secrets.
+instead of hardcoded secrets. Google Chat, Microsoft Teams, and WhatsApp appear
+as planned/manual cards until channel runtime support and verification are
+implemented.
 
 Useful CR paths:
 

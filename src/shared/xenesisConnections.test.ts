@@ -156,6 +156,125 @@ test('buildXenesisConnectionsStatus reports ready provider, MCP, gateway, and Te
   assert.equal(status.sections.tools.items.find((item) => item.id === 'google-calendar')?.status, 'planned');
 });
 
+test('buildXenesisConnectionsStatus includes actionable setup recipes for MCP tools', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+
+  assert.equal(notion?.supportLevel, 'manual');
+  assert.deepEqual(notion?.settingsAction, {
+    category: 'run-model',
+    mode: 'local',
+    section: 'local-cli',
+  });
+  assert.ok(notion?.setupSteps?.some((step) => step.includes('NOTION_TOKEN')));
+  assert.ok(
+    notion?.sourceDocs?.some((source) => source.url.includes('hermes-agent.nousresearch.com/docs/integrations')),
+  );
+});
+
+test('buildXenesisConnectionsStatus keeps Google Calendar planned without fake install actions', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const calendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+
+  assert.equal(calendar?.status, 'planned');
+  assert.equal(calendar?.supportLevel, 'planned');
+  assert.equal(calendar?.settingsAction, undefined);
+  assert.equal(
+    calendar?.crActions?.some((action) => action.includes('install')),
+    false,
+  );
+  assert.ok(calendar?.setupSteps?.some((step) => step.includes('Google Calendar')));
+});
+
+test('buildXenesisConnectionsStatus resolves repo-local guide open paths from the repo root', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+    repoRoot: 'E:\\xenesis-desk',
+  });
+  const guide = status.sections.guides.items.find((item) => item.id === 'onboarding-connections');
+
+  assert.equal(guide?.guidePath, 'docs/manual/09-onboarding-connections.md');
+  assert.equal(guide?.guideOpenPath, 'E:\\xenesis-desk\\docs\\manual\\09-onboarding-connections.md');
+});
+
 test('buildXenesisConnectionsStatus reports missing setup without leaking secrets', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {

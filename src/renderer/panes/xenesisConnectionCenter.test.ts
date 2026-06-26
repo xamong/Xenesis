@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import type { XenesisConnectionsStatus } from '../../shared/types';
+import type { XenesisConnectionItem, XenesisConnectionsStatus } from '../../shared/types';
 import {
+  buildXenesisConnectionGuideRequest,
+  buildXenesisConnectionSettingsRequest,
   listXenesisConnectionSections,
   XENESIS_CONNECTION_STATUS_ORDER,
   xenesisConnectionTone,
@@ -54,4 +56,55 @@ test('listXenesisConnectionSections preserves status section order', () => {
     ['provider', 'local-cli', 'mcp', 'tools', 'gateway', 'messengers', 'guides'],
   );
   assert.deepEqual(listXenesisConnectionSections(null), []);
+});
+
+test('buildXenesisConnectionSettingsRequest opens the configured settings target through CR', () => {
+  const item = {
+    id: 'notion',
+    kind: 'tool',
+    label: 'Notion',
+    status: 'needs-setup',
+    summary: 'Notion setup',
+    settingsAction: {
+      category: 'run-model',
+      mode: 'local',
+      section: 'local-cli',
+    },
+  } satisfies XenesisConnectionItem;
+
+  assert.deepEqual(buildXenesisConnectionSettingsRequest(item), {
+    path: 'xd.panes.settings.open',
+    args: {
+      category: 'run-model',
+      mode: 'local',
+      section: 'local-cli',
+      ensureVisible: true,
+    },
+    source: 'xenesis',
+    approved: true,
+  });
+});
+
+test('buildXenesisConnectionGuideRequest opens repo-local guide files through CR', () => {
+  const item = {
+    id: 'guide',
+    kind: 'guide',
+    label: 'Guide',
+    status: 'ready',
+    summary: 'Guide setup',
+    guidePath: 'docs/manual/09-onboarding-connections.md',
+    guideOpenPath: 'E:\\xenesis-desk\\docs\\manual\\09-onboarding-connections.md',
+  } satisfies XenesisConnectionItem;
+
+  assert.deepEqual(buildXenesisConnectionGuideRequest(item), {
+    path: 'xd.files.open',
+    args: {
+      filePath: 'E:\\xenesis-desk\\docs\\manual\\09-onboarding-connections.md',
+      placement: 'tab',
+    },
+    source: 'xenesis',
+    approved: true,
+  });
+
+  assert.equal(buildXenesisConnectionGuideRequest({ ...item, guidePath: '', guideOpenPath: '' }), null);
 });

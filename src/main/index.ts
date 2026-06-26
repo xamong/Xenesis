@@ -4794,6 +4794,7 @@ async function getXenesisConnectionsStatus(): Promise<XenesisConnectionsStatus> 
     mcp: getMcpSettingsStatus(),
     providerIntegration: getProviderIntegrationStatusSnapshot(),
     xenesis: await getXenesisStatusPayload(),
+    repoRoot: app.isPackaged ? app.getAppPath() : process.cwd(),
   });
 }
 
