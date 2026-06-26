@@ -52,6 +52,9 @@ import type {
   XamongCodeApi,
   XamongCodeServerStatus,
   XenesisApprovalMode,
+  XenesisConnectionItem,
+  XenesisConnectionStatus,
+  XenesisConnectionsStatus,
   XenesisGatewayChannelName,
   XenesisGatewayChannelRuntimeStatus,
   XenesisProfileChannelName,
@@ -80,6 +83,7 @@ import {
 import AutomationSettingsSection from '../terminal/AutomationSettingsSection';
 import { mergePendingLocalTerminalProfile } from '../terminal/terminalProfileSnapshot';
 import { SETTINGS_CATEGORIES, type SettingsCategoryId, VISIBLE_SETTINGS_CATEGORIES } from './settingsCatalog.mjs';
+import { listXenesisConnectionSections, xenesisConnectionTone } from './xenesisConnectionCenter';
 
 const BUILTIN_EXTERNAL_APP_IDS = new Set(BUILTIN_EXTERNAL_APP_PROFILES.map((profile) => profile.id));
 
@@ -893,7 +897,7 @@ const HERMES_BOT_PLATFORM_PLUGIN_PATH = 'providers/hermes/plugins/platforms/xene
 const HERMES_E2E_BOT_PATH = 'providers/hermes/plugins/xenesis_desk_gateway/e2e_bot';
 
 type SettingsRunModelMode = 'xamong' | 'hermes' | 'local' | 'byok';
-type SettingsXenesisTab = 'agent' | 'gateway' | 'external-bots' | 'gowoori';
+type SettingsXenesisTab = 'connections' | 'agent' | 'gateway' | 'external-bots' | 'gowoori';
 type SettingsInterfaceTab = 'language' | 'appearance' | 'keyboard-shortcuts' | 'window-sizer';
 type SettingsInfoTab = 'general' | 'secret-vault' | 'settings-backup';
 
@@ -973,6 +977,7 @@ function normalizeRunModelMode(value: unknown): SettingsRunModelMode | null {
 
 function normalizeXenesisTab(value: unknown): SettingsXenesisTab | null {
   const mode = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (mode === 'connections' || mode === 'connection-center' || mode === 'onboarding') return 'connections';
   if (mode === 'xenesis' || mode === 'xenis' || mode === 'agent' || mode === 'xenesis-agent') return 'agent';
   if (mode === 'gateway' || mode === 'gateway-control' || mode === 'xenesis-gateway') return 'gateway';
   if (mode === 'external-bots' || mode === 'external-bot' || mode === 'external-bot-channels' || mode === 'bots')
@@ -984,6 +989,8 @@ function normalizeXenesisTab(value: unknown): SettingsXenesisTab | null {
 function normalizeSettingsTargetSection(value: unknown): string {
   const section = typeof value === 'string' ? value.trim().toLowerCase() : '';
   if (section === 'overview' || section === 'top') return 'default';
+  if (section === 'connections' || section === 'connection-center' || section === 'onboarding')
+    return 'xenesis-connections';
   if (section === 'runtime' || section === 'xenesis') return 'xenesis-runtime';
   if (section === 'gateway' || section === 'gateway-control' || section === 'xenesis-gateway') return 'xenesis-gateway';
   if (section === 'external-bots' || section === 'external-bot') return 'external-bot-channels';
@@ -1011,6 +1018,7 @@ function getRunModelModeForSection(section: string): SettingsRunModelMode | null
 }
 
 function getXenesisTabForSection(section: string): SettingsXenesisTab | null {
+  if (section === 'xenesis-connections') return 'connections';
   if (section === 'xenesis-runtime') return 'agent';
   if (section === 'xenesis-gateway') return 'gateway';
   if (section === 'external-bot-channels') return 'external-bots';
@@ -1158,6 +1166,9 @@ export default function SettingsPane() {
   const [mcpStatus, setMcpStatus] = useState<McpSettingsStatus | null>(null);
   const [mcpStatusBusy, setMcpStatusBusy] = useState(false);
   const [mcpStatusError, setMcpStatusError] = useState('');
+  const [xenesisConnectionsStatus, setXenesisConnectionsStatus] = useState<XenesisConnectionsStatus | null>(null);
+  const [xenesisConnectionsBusy, setXenesisConnectionsBusy] = useState(false);
+  const [xenesisConnectionsError, setXenesisConnectionsError] = useState('');
   const [secretVaultMode, setSecretVaultMode] = useState<SecretVaultStorageMode>('plain');
   const [secretVaultStatus, setSecretVaultStatus] = useState<SecretVaultStatus | null>(null);
   const [secretVaultBusy, setSecretVaultBusy] = useState(false);
@@ -1465,6 +1476,19 @@ export default function SettingsPane() {
     }
   }, []);
 
+  const loadXenesisConnectionsStatus = useCallback(async () => {
+    setXenesisConnectionsBusy(true);
+    setXenesisConnectionsError('');
+    try {
+      setXenesisConnectionsStatus(await window.xenesisAPI.connectionsStatus());
+    } catch (error) {
+      setXenesisConnectionsStatus(null);
+      setXenesisConnectionsError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setXenesisConnectionsBusy(false);
+    }
+  }, []);
+
   const loadProviderIntegrationStatus = useCallback(
     async (hermesRoot = hermesInstallRoot) => {
       setProviderIntegrationBusy(true);
@@ -1527,6 +1551,10 @@ export default function SettingsPane() {
   useEffect(() => {
     void loadMcpStatus();
   }, [loadMcpStatus]);
+
+  useEffect(() => {
+    void loadXenesisConnectionsStatus();
+  }, [loadXenesisConnectionsStatus]);
 
   useEffect(() => {
     void loadXenesisProfiles();
@@ -4114,6 +4142,138 @@ export default function SettingsPane() {
     );
   };
 
+  const xenesisConnectionStatusLabel = (status: XenesisConnectionStatus) => {
+    switch (status) {
+      case 'ready':
+        return t('settings.xenesisConnectionsStatusReady');
+      case 'needs-setup':
+        return t('settings.xenesisConnectionsStatusNeedsSetup');
+      case 'disabled':
+        return t('settings.xenesisConnectionsStatusDisabled');
+      case 'blocked':
+        return t('settings.xenesisConnectionsStatusBlocked');
+      case 'planned':
+        return t('settings.xenesisConnectionsStatusPlanned');
+      default:
+        return t('settings.xenesisConnectionsStatusUnknown');
+    }
+  };
+
+  const xenesisConnectionPillClass = (status: XenesisConnectionStatus) => {
+    const tone = xenesisConnectionTone(status);
+    if (tone === 'success') return 'sp-pill-on';
+    if (tone === 'warning' || tone === 'info') return 'sp-pill-warning';
+    if (tone === 'danger') return 'sp-pill-danger';
+    return '';
+  };
+
+  const renderXenesisConnectionItem = (item: XenesisConnectionItem) => (
+    <div className="sp-info-card" key={item.id} data-xenesis-connection={item.id}>
+      <div className="sp-section-heading">
+        <div>
+          <strong>{item.label}</strong>
+          <span>{item.summary}</span>
+        </div>
+        <span className={cls('sp-pill', xenesisConnectionPillClass(item.status))}>
+          {xenesisConnectionStatusLabel(item.status)}
+        </span>
+      </div>
+      {(item.missingEnv?.length || item.requiredEnv?.length || item.crActions?.length || item.guidePath) && (
+        <div className="sp-info-list sp-info-list-compact">
+          {item.missingEnv?.length ? (
+            <div>
+              <span>{t('settings.xenesisConnectionsMissingEnv')}</span>
+              <strong>{item.missingEnv.join(', ')}</strong>
+            </div>
+          ) : null}
+          {!item.missingEnv?.length && item.requiredEnv?.length ? (
+            <div>
+              <span>{t('settings.xenesisConnectionsRequiredEnv')}</span>
+              <strong>{item.requiredEnv.join(', ')}</strong>
+            </div>
+          ) : null}
+          {item.crActions?.length ? (
+            <div>
+              <span>{t('settings.xenesisConnectionsCrActions')}</span>
+              <strong>{item.crActions.join(', ')}</strong>
+            </div>
+          ) : null}
+          {item.guidePath ? (
+            <div>
+              <span>{t('settings.xenesisConnectionsGuide')}</span>
+              <strong>{item.guidePath}</strong>
+            </div>
+          ) : null}
+        </div>
+      )}
+      {item.warnings?.length ? <p className="sp-hint sp-warning-text">{item.warnings.join(' ')}</p> : null}
+    </div>
+  );
+
+  const renderXenesisConnections = () => {
+    const sections = listXenesisConnectionSections(xenesisConnectionsStatus);
+    return (
+      <div className="sp-stack" data-settings-section="xenesis-connections">
+        <section className="sp-section">
+          <div className="sp-section-heading">
+            <div>
+              <h2>{t('settings.xenesisConnectionsTitle')}</h2>
+              <p>{t('settings.xenesisConnectionsDesc')}</p>
+            </div>
+            <div className="sp-actions-row sp-actions-row-tight">
+              <button
+                className="sp-btn"
+                disabled={xenesisConnectionsBusy}
+                onClick={() => {
+                  void loadXenesisConnectionsStatus();
+                }}
+              >
+                {xenesisConnectionsBusy ? t('common.checking') : t('settings.xenesisConnectionsRefresh')}
+              </button>
+            </div>
+          </div>
+
+          {xenesisConnectionsStatus ? (
+            <div className="sp-info-list">
+              <div>
+                <span>{t('settings.xenesisConnectionsReady')}</span>
+                <strong>
+                  {xenesisConnectionsStatus.summary.ready}/{xenesisConnectionsStatus.summary.total}
+                </strong>
+              </div>
+              <div>
+                <span>{t('settings.xenesisConnectionsBlocked')}</span>
+                <strong>{xenesisConnectionsStatus.summary.blocked}</strong>
+              </div>
+              <div>
+                <span>{t('settings.xenesisConnectionsPlanned')}</span>
+                <strong>{xenesisConnectionsStatus.summary.planned}</strong>
+              </div>
+            </div>
+          ) : (
+            <div className="sp-empty-block">{t('settings.xenesisConnectionsEmpty')}</div>
+          )}
+          {xenesisConnectionsError && (
+            <p className="sp-hint sp-warning-text">
+              {t('settings.xenesisConnectionsFailed', { message: xenesisConnectionsError })}
+            </p>
+          )}
+        </section>
+
+        {sections.map((section) => (
+          <section className="sp-section" key={section.id}>
+            <div className="sp-section-heading">
+              <div>
+                <h2>{section.label}</h2>
+              </div>
+            </div>
+            <div className="sp-grid two">{section.items.map(renderXenesisConnectionItem)}</div>
+          </section>
+        ))}
+      </div>
+    );
+  };
+
   const renderXenesisGateway = () => {
     const gatewayStatus = xenesisGatewayStatus?.gateway;
     const gatewayRunning = gatewayStatus?.running === true;
@@ -4751,6 +4911,21 @@ export default function SettingsPane() {
         </div>
         <div className="sp-mode-switch" role="tablist" aria-label={t('settings.xenesisDeskTabsAriaLabel')}>
           <button
+            className={cls('sp-mode-option', xenesisTab === 'connections' && 'is-active')}
+            data-settings-xenesis-tab="connections"
+            onClick={() => setXenesisTab('connections')}
+          >
+            <strong>{t('settings.xenesisDeskTabConnections')}</strong>
+            <span>
+              {xenesisConnectionsStatus
+                ? t('settings.xenesisDeskTabConnectionsDescReady', {
+                    ready: String(xenesisConnectionsStatus.summary.ready),
+                    total: String(xenesisConnectionsStatus.summary.total),
+                  })
+                : t('settings.xenesisDeskTabConnectionsDesc')}
+            </span>
+          </button>
+          <button
             className={cls('sp-mode-option', xenesisTab === 'agent' && 'is-active')}
             data-settings-xenesis-tab="agent"
             onClick={() => setXenesisTab('agent')}
@@ -4791,6 +4966,7 @@ export default function SettingsPane() {
         </div>
       </section>
 
+      {xenesisTab === 'connections' && renderXenesisConnections()}
       {xenesisTab === 'agent' && renderXenesisRuntime()}
       {xenesisTab === 'gateway' && renderXenesisGateway()}
       {xenesisTab === 'external-bots' && renderXenesisExternalBotChannels()}

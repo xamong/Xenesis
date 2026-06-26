@@ -1,6 +1,11 @@
 import type { ExternalAppSettings } from './externalAppControl';
 import type { XenesisConnectionsStatus } from './xenesisConnections';
-export type { XenesisConnectionItem, XenesisConnectionStatus, XenesisConnectionsStatus } from './xenesisConnections';
+export type {
+  XenesisConnectionItem,
+  XenesisConnectionSection,
+  XenesisConnectionStatus,
+  XenesisConnectionsStatus,
+} from './xenesisConnections';
 
 export type ShellKind = 'powershell' | 'cmd' | 'pwsh' | 'wsl' | 'zsh' | 'bash' | 'sh';
 
