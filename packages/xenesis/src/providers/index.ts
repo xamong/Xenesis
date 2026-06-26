@@ -8,3 +8,6 @@ export * from "./cliProvider.js";
 export * from "./deskNaturalIntentCatalog.js";
 export * from "./registry.js";
 export * from "./providerFactory.js";
+export * from "./codexAuth.js";
+export * from "./codexClient.js";
+export * from "./codexResponsesProvider.js";

@@ -100,6 +100,7 @@ const deskProviderNames = new Set<ProviderName>([
   'xai',
   'codex-cli',
   'codex-app-server',
+  'codex-responses',
   'claude-cli',
   'claude-interactive',
 ]);

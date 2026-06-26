@@ -4,6 +4,7 @@ import http from 'node:http';
 import https from 'node:https';
 import net from 'node:net';
 import path from 'node:path';
+import { readCodexModel } from './codexIsolatedHome.mjs';
 
 export const DEFAULT_XENESIS_GATEWAY_HOST = '127.0.0.1';
 export const DEFAULT_XENESIS_GATEWAY_PORT = 3338;
@@ -286,7 +287,11 @@ function resolveAutoProvider(env = {}) {
   // `codex app-server --stdio` process/thread, so the Windows sandbox is set up
   // once instead of per turn. CodexAppServerProvider falls back to one-shot
   // `codex exec` (codex-cli) automatically if app-server startup fails.
-  if (codexHome && fs.existsSync(path.join(codexHome, 'auth.json'))) return 'codex-app-server';
+  if (codexHome && fs.existsSync(path.join(codexHome, 'auth.json'))) {
+    // Opt-in Option B: talk to the ChatGPT Codex backend directly (no codex
+    // binary, Xenesis owns the loop). XENESIS_CODEX_TRANSPORT=responses selects it.
+    return trimmed(env.XENESIS_CODEX_TRANSPORT) === 'responses' ? 'codex-responses' : 'codex-app-server';
+  }
   if (home && fs.existsSync(path.join(home, '.claude', '.credentials.json'))) return 'claude-cli';
   if (trimmed(env.ANTHROPIC_API_KEY)) return 'anthropic';
   if (trimmed(env.OPENAI_API_KEY)) return 'openai';
@@ -304,7 +309,13 @@ export function buildXenesisProviderRuntimeOptions({ xenesisSettings = {}, aiPro
   const requested = trimmed(aiProvider.provider);
   // 'auto' (or unset) → scan credentials for the first available backend. An
   // explicit, recognized provider choice is ALWAYS respected (never overridden).
-  const provider = requested === 'auto' || requested === '' ? resolveAutoProvider(env) : requested;
+  const resolvedProvider = requested === 'auto' || requested === '' ? resolveAutoProvider(env) : requested;
+  // Option B opt-in: XENESIS_CODEX_TRANSPORT=responses redirects ANY codex variant
+  // (auto-resolved or explicitly pinned) to the direct-backend codex-responses provider.
+  const provider =
+    trimmed(env.XENESIS_CODEX_TRANSPORT) === 'responses' && /^codex/.test(String(resolvedProvider))
+      ? 'codex-responses'
+      : resolvedProvider;
   const apiKey = trimmed(aiProvider.apiKey);
   const baseURL = trimmed(aiProvider.baseUrl);
 
@@ -336,6 +347,22 @@ export function buildXenesisProviderRuntimeOptions({ xenesisSettings = {}, aiPro
         env?.OLLAMA_API_KEY || apiKey
           ? { OLLAMA_API_KEY: apiKey || env.OLLAMA_API_KEY }
           : { OLLAMA_API_KEY: 'xenesis-local' },
+    };
+  }
+
+  // Option B: codex-responses talks to the ChatGPT Codex backend directly using
+  // the OAuth token in ~/.codex/auth.json (no api key). The model is sent in the
+  // request, so resolve it from the Desk setting or mirror the user's codex model.
+  if (provider === 'codex-responses') {
+    const cxHome = trimmed(env.USERPROFILE) || trimmed(env.HOME) || '';
+    const codexHome = trimmed(env.CODEX_HOME) || (cxHome ? path.join(cxHome, '.codex') : '');
+    return {
+      provider: 'codex-responses',
+      model: preferredModel || readCodexModel(codexHome) || 'gpt-5.5',
+      profile,
+      baseURL: '',
+      apiKeyEnv: '',
+      env: {},
     };
   }
 

@@ -4,7 +4,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { DeskEmbeddedAgentRuntime, mapDeskEmbeddedPromptResult } from './embeddedAgentRuntime';
-import { createDeskEmbeddedPromptOptions, type DeskEmbeddedPromptResult } from './embeddedRuntime';
+import {
+  createDeskEmbeddedPromptOptions,
+  normalizeDeskProviderName,
+  type DeskEmbeddedPromptResult,
+} from './embeddedRuntime';
 
 test('mapDeskEmbeddedPromptResult preserves final doneContent from embedded runtime', () => {
   const result = mapDeskEmbeddedPromptResult({
@@ -88,6 +92,32 @@ test('createDeskEmbeddedPromptOptions preserves Qwen provider override for embed
   assert.equal(options.cli?.provider, 'qwen');
   assert.equal(options.cli?.model, 'qwen-plus');
   assert.equal(options.cli?.apiKeyEnv, 'DASHSCOPE_API_KEY');
+});
+
+test('normalizeDeskProviderName accepts codex-responses (Option B direct transport)', () => {
+  assert.equal(normalizeDeskProviderName('codex-responses'), 'codex-responses');
+});
+
+test('createDeskEmbeddedPromptOptions preserves codex-responses provider for embedded Xenesis runs', () => {
+  const options = createDeskEmbeddedPromptOptions({
+    workspace: 'D:/workspace',
+    xenesisHome: 'C:/Users/example/.xenesis-dev',
+    providerRuntime: {
+      provider: 'codex-responses',
+      model: 'gpt-5.5',
+      profile: '',
+      baseURL: '',
+      apiKeyEnv: '',
+      env: {},
+    },
+    approvalMode: 'safe',
+    maxTurns: 4,
+    request: {
+      prompt: '안녕',
+    },
+  });
+
+  assert.equal(options.cli?.provider, 'codex-responses');
 });
 
 test('DeskEmbeddedAgentRuntime status exposes sanitized effective provider runtime', () => {

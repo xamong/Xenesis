@@ -339,6 +339,7 @@ import {
 import { applySafeTextFileWrite, previewSafeTextFileWrite, restoreSafeTextFileBackup } from './safeFileEdit';
 import { type TerminalImageOptions, writeTerminalImage } from './terminalImageWriter';
 import { buildTerminalWarmupLaunch, shouldTerminalWarmupRun } from './terminalWarmup.mjs';
+import { prepareCodexIsolatedHome, readCodexModel } from './codexIsolatedHome.mjs';
 import { renderXconToPng, writeTerminalXconImage, type XconRenderOptions } from './terminalXconRenderer';
 import {
   buildXamongCodeApiLaunch,
@@ -14455,18 +14456,56 @@ function embeddedXenesisOptions(): XenesisEmbeddedAgentServiceOptions {
   // embedded run so the Desk agent does not inherit a slow global xhigh for
   // simple CR routing. 'default' -> no injection (codex config applies).
   const deskReasoningEffort = appSettings.aiProvider.reasoningEffort;
+  const isCodexProvider = (providerRuntime.provider || '').startsWith('codex');
+  const realCodexHome =
+    (process.env.CODEX_HOME || '').trim() || path.join(os.homedir(), '.codex');
+
+  // Force model + reasoning effort at the AGENT level via -c flags, independent of
+  // the global/isolated codex config. The model MUST be forced this way: in the
+  // isolated home (below) the user's chosen model (e.g. gpt-5.5, gated by the
+  // openai-primary-runtime plugins we drop) does not auto-resolve and codex falls
+  // back to a built-in mini. Model = the Desk AI Provider setting when set, else
+  // mirror the user's global ~/.codex model. Effort = the Desk setting.
+  const deskModel = (appSettings.aiProvider.model || '').trim();
+  const codexModel = isCodexProvider
+    ? deskModel && deskModel !== 'default'
+      ? deskModel
+      : readCodexModel(realCodexHome)
+    : '';
+  const codexCArgs = [
+    ...(codexModel ? [`-c model=${codexModel}`] : []),
+    ...(deskReasoningEffort && deskReasoningEffort !== 'default'
+      ? [`-c model_reasoning_effort=${deskReasoningEffort}`]
+      : []),
+  ].join(' ');
   const codexReasoningEnv =
-    (providerRuntime.provider || '').startsWith('codex') &&
-    deskReasoningEffort &&
-    deskReasoningEffort !== 'default'
+    isCodexProvider && codexCArgs
       ? {
           XENESIS_CODEX_APP_SERVER_ARGS:
-            process.env.XENESIS_CODEX_APP_SERVER_ARGS ??
-            `app-server --stdio -c model_reasoning_effort=${deskReasoningEffort}`,
+            process.env.XENESIS_CODEX_APP_SERVER_ARGS ?? `app-server --stdio ${codexCArgs}`,
           XENESIS_CODEX_CLI_ARGS:
             process.env.XENESIS_CODEX_CLI_ARGS ??
-            `exec --skip-git-repo-check --sandbox read-only -c model_reasoning_effort=${deskReasoningEffort} -`,
+            `exec --skip-git-repo-check --sandbox read-only ${codexCArgs} -`,
         }
+      : {};
+
+  // Isolate CODEX_HOME for the embedded codex so it does NOT inherit the user's
+  // enabled plugins/skills — those load into the codex model context every turn and
+  // are the dominant cold-start bloat (~31K tokens for a trivial prompt; the Desk
+  // agent only needs the injected xenesis_dev MCP tools). Keeps the gpt-5.5
+  // marketplace + auth; the model itself is forced via -c above. Opt out with
+  // XENESIS_CODEX_ISOLATED_HOME=0. The user's real ~/.codex is untouched.
+  const codexIsolatedHomeEnv =
+    process.env.XENESIS_CODEX_ISOLATED_HOME === '1' && isCodexProvider
+      ? (() => {
+          const prepared = prepareCodexIsolatedHome({
+            realCodexHome,
+            isolatedHome: path.join(xenesisHome, 'codex-home'),
+            reasoningEffort: deskReasoningEffort,
+            workspaceCwd: workspace,
+          });
+          return prepared ? { CODEX_HOME: prepared } : {};
+        })()
       : {};
 
   return {
@@ -14506,6 +14545,7 @@ function embeddedXenesisOptions(): XenesisEmbeddedAgentServiceOptions {
           }
         : {}),
       ...codexReasoningEnv,
+      ...codexIsolatedHomeEnv,
     },
     providerRuntime,
     approvalMode: settings.approvalMode,

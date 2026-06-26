@@ -1,7 +1,13 @@
 $ErrorActionPreference = 'Stop'
 
 $repoMirror = Join-Path (Get-Location) 'docs\obsidian'
-$externalVault = 'C:\Users\great\Documents\Obsidian Vault'
+# External app vault is per-machine. Allow override via env, else default to
+# the current user's Documents\Obsidian Vault (never a hardcoded profile name).
+$externalVault = if ($env:XENESIS_OBSIDIAN_VAULT) {
+  $env:XENESIS_OBSIDIAN_VAULT
+} else {
+  Join-Path $env:USERPROFILE 'Documents\Obsidian Vault'
+}
 $targets = @($repoMirror, $externalVault)
 $date = '2026-06-26'
 
