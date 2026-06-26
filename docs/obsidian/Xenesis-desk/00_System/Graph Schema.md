@@ -1,4 +1,4 @@
-﻿---
+---
 type: system
 repo: xenesis-desk
 status: active
@@ -7,7 +7,7 @@ ai_edit_policy: direct_edit_allowed
 ai_generated: false
 reviewed: true
 confidence: high
-last_reviewed: 2026-06-26
+last_reviewed: 2026-06-27
 depends_on:
   - "[[AI Agent Rules]]"
   - "[[Review Policy]]"
@@ -24,24 +24,24 @@ Folders store notes by type. YAML properties and Obsidian wikilinks create the g
 ## Note Types
 
 - system
-- epo-overview
-- rchitecture
+- repo-overview
+- architecture
 - module
 - capability
-- pi
+- api
 - data-store
-- 	est
-- dr
-- 	ask
-- gent-handoff
-- eview
-- isk
+- test
+- adr
+- task
+- agent-handoff
+- review
+- risk
 - index
-- 	emplate
+- template
 
 ## Common Properties
 
-`yaml
+```yaml
 repo: xenesis-desk
 status: active
 risk: low | medium | high
@@ -49,12 +49,12 @@ ai_edit_policy: read_only | proposal_only | direct_edit_allowed
 ai_generated: false
 reviewed: true
 confidence: high | medium | low
-last_reviewed: 2026-06-26
-`
+last_reviewed: 2026-06-27
+```
 
 ## Relation Properties
 
-`yaml
+```yaml
 depends_on:
 implements:
 verified_by:
@@ -69,7 +69,7 @@ reads:
 writes:
 owned_by:
 blocked_by:
-`
+```
 
 Repeat meaningful YAML relations in a ## Graph Links section.
 

@@ -1,4 +1,4 @@
-﻿---
+---
 type: system
 repo: xenesis-desk
 status: active
@@ -7,7 +7,7 @@ ai_edit_policy: direct_edit_allowed
 ai_generated: false
 reviewed: true
 confidence: high
-last_reviewed: 2026-06-26
+last_reviewed: 2026-06-27
 depends_on:
   - "[[Graph Schema]]"
 ---
@@ -36,12 +36,12 @@ The default model is read-wide / write-review-only.
 
 ## AI-Generated Defaults
 
-`yaml
+```yaml
 ai_generated: true
 reviewed: false
 confidence: low
 status: draft
-`
+```
 
 ## Graph Links
 
