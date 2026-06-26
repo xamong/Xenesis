@@ -77,6 +77,18 @@ Capability Registry instead of only through separate renderer settings panels.
   implemented until Xenesis runtime config, dispatcher behavior, and live
   verification exist.
 
+## Current MCP Tool Templates Slice
+
+- Reuse `packages/xenesis/src/extensions/recommendedMcpServers.ts` as the
+  source of truth for Fetch, Filesystem, GitHub, Notion, and Linear setup
+  metadata.
+- Add `mcpTemplate` to actionable tool cards in `xd.xenesis.connections.status`.
+- Render server name, transport, command/URL, default tool filters, and
+  copy-ready JSON/Codex TOML snippets in Settings > Xenesis Agent >
+  Connections.
+- Keep Google Workspace and Google Calendar as planned cards with no template or
+  install action until a verified OAuth/MCP template is selected.
+
 ## Current Verification
 
 - `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
@@ -100,6 +112,19 @@ Capability Registry instead of only through separate renderer settings panels.
   passed for the onboarding checklist shared model and renderer section order.
 - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts`
   passed after adding channel guardrail schema/type coverage.
+- `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+  passed after adding the MCP template read model.
+- `npx biome check src/shared/xenesisConnections.ts src/shared/xenesisConnections.test.ts src/shared/types.ts src/renderer/panes/SettingsPane.tsx src/renderer/i18n/en.ts src/renderer/i18n/ko.ts`
+  passed for touched TS/TSX/i18n files. `src/renderer/styles.css` still has
+  existing file-wide Biome specificity/`!important` diagnostics.
+- `npm run typecheck`, `npm run docs:capabilities:audit`, `npm run build`, and
+  `npm --prefix packages/xenesis run build` passed for the MCP template slice.
+- Capability audit counters stayed at 0 for missing registered paths, missing
+  dispatched coverage paths, undispatched static callable methods, and
+  dispatcher paths missing from tree.
+- Live Electron smoke verified Notion `mcpTemplate`, Google Calendar planned/no
+  template, five rendered `data-xenesis-mcp-template` blocks, `xd.xenesis.connections.status`
+  `ok=true`, and Agent-pane fenced CR execution matching `Desk action completed.`
 
 ## Graph Links
 

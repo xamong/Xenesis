@@ -1,3 +1,7 @@
+import {
+  listRecommendedMcpServers,
+  type RecommendedMcpServer,
+} from '../../packages/xenesis/src/extensions/recommendedMcpServers';
 import type {
   AiProviderSettings,
   McpSettingsStatus,
@@ -30,6 +34,26 @@ export interface XenesisConnectionSourceDoc {
   url: string;
 }
 
+export interface XenesisConnectionMcpConfigSnippets {
+  json: string;
+  codexToml: string;
+}
+
+export interface XenesisConnectionMcpTemplate {
+  serverName: string;
+  displayName: string;
+  description: string;
+  transport: 'stdio' | 'http' | 'sse';
+  command?: string;
+  args?: string[];
+  env?: Record<string, string>;
+  url?: string;
+  auth?: 'oauth' | 'none';
+  requiredEnv: string[];
+  defaultEnabledTools?: string[];
+  configSnippets: XenesisConnectionMcpConfigSnippets;
+}
+
 export interface XenesisConnectionItem {
   id: string;
   kind: XenesisConnectionKind;
@@ -46,6 +70,7 @@ export interface XenesisConnectionItem {
   settingsAction?: XenesisConnectionSettingsAction;
   guidePath?: string;
   guideOpenPath?: string;
+  mcpTemplate?: XenesisConnectionMcpTemplate;
   warnings?: string[];
 }
 
@@ -123,6 +148,94 @@ function withGuideOpenPaths(items: XenesisConnectionItem[], repoRoot: string | u
   });
 }
 
+const RECOMMENDED_MCP_BY_NAME = new Map(listRecommendedMcpServers().map((server) => [server.name, server]));
+
+function tomlString(value: string): string {
+  return JSON.stringify(value);
+}
+
+function tomlArray(values: string[] | undefined): string {
+  return `[${(values ?? []).map((value) => tomlString(value)).join(', ')}]`;
+}
+
+function jsonMcpServerEntry(server: RecommendedMcpServer): Record<string, unknown> {
+  if (server.template.type === 'stdio') {
+    return {
+      command: server.template.command,
+      args: server.template.args ?? [],
+      ...(server.template.env && Object.keys(server.template.env).length > 0 ? { env: server.template.env } : {}),
+    };
+  }
+  return {
+    url: server.template.url,
+    ...(server.template.transport ? { transport: server.template.transport } : {}),
+    ...(server.template.headers ? { headers: server.template.headers } : {}),
+    ...(server.template.auth ? { auth: server.template.auth } : {}),
+  };
+}
+
+function codexTomlMcpServerSnippet(server: RecommendedMcpServer): string {
+  const lines = [`[mcp_servers.${server.name}]`, 'enabled = true'];
+  if (server.template.type === 'stdio') {
+    lines.push(`command = ${tomlString(server.template.command)}`);
+    if (server.template.args?.length) lines.push(`args = ${tomlArray(server.template.args)}`);
+    if (server.defaultEnabledTools?.length) {
+      lines.push('');
+      lines.push(`[mcp_servers.${server.name}.tool_filter]`);
+      lines.push(`include = ${tomlArray(server.defaultEnabledTools)}`);
+    }
+    if (server.template.env && Object.keys(server.template.env).length > 0) {
+      lines.push('');
+      lines.push(`[mcp_servers.${server.name}.env]`);
+      for (const [key, value] of Object.entries(server.template.env)) {
+        lines.push(`${key} = ${tomlString(value)}`);
+      }
+    }
+    return `${lines.join('\n')}\n`;
+  }
+
+  lines.push(`url = ${tomlString(server.template.url)}`);
+  if (server.template.transport) lines.push(`transport = ${tomlString(server.template.transport)}`);
+  if (server.template.auth) lines.push(`auth = ${tomlString(server.template.auth)}`);
+  return `${lines.join('\n')}\n`;
+}
+
+function mcpTemplateFor(serverName: string): XenesisConnectionMcpTemplate | undefined {
+  const server = RECOMMENDED_MCP_BY_NAME.get(serverName);
+  if (!server) return undefined;
+  const jsonSnippet = JSON.stringify(
+    {
+      mcpServers: {
+        [server.name]: jsonMcpServerEntry(server),
+      },
+    },
+    null,
+    2,
+  );
+  return {
+    serverName: server.name,
+    displayName: server.displayName,
+    description: server.description,
+    transport: server.transport,
+    requiredEnv: [...(server.requiredEnv ?? [])],
+    ...(server.defaultEnabledTools?.length ? { defaultEnabledTools: [...server.defaultEnabledTools] } : {}),
+    ...(server.template.type === 'stdio'
+      ? {
+          command: server.template.command,
+          args: [...(server.template.args ?? [])],
+          env: { ...(server.template.env ?? {}) },
+        }
+      : {
+          url: server.template.url,
+          ...(server.template.auth ? { auth: server.template.auth } : {}),
+        }),
+    configSnippets: {
+      json: `${jsonSnippet}\n`,
+      codexToml: codexTomlMcpServerSnippet(server),
+    },
+  };
+}
+
 const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
   {
     id: 'fetch',
@@ -133,6 +246,7 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     settingsTarget: 'mcp',
     supportLevel: 'manual',
     settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
+    mcpTemplate: mcpTemplateFor('fetch'),
     setupSteps: [
       'Install the Fetch MCP server in the local CLI MCP settings.',
       'Verify the MCP bridge and provider CLI can list the fetch tools before relying on web context.',
@@ -148,6 +262,7 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     settingsTarget: 'mcp',
     supportLevel: 'manual',
     settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
+    mcpTemplate: mcpTemplateFor('filesystem'),
     setupSteps: [
       'Install the filesystem MCP server with the active workspace root as its only scope.',
       'Keep write operations routed through Xenesis Desk CR paths so approval and audit records stay aligned.',
@@ -164,6 +279,7 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     settingsTarget: 'mcp',
     supportLevel: 'manual',
     settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
+    mcpTemplate: mcpTemplateFor('github'),
     setupSteps: [
       'Create a GitHub token with the narrow repository scopes needed for the workspace.',
       'Set GITHUB_TOKEN in the environment used by the provider CLI or MCP server.',
@@ -181,6 +297,7 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     settingsTarget: 'mcp',
     supportLevel: 'manual',
     settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
+    mcpTemplate: mcpTemplateFor('notion'),
     setupSteps: [
       'Create a Notion integration and share the needed pages or databases with it.',
       'Set NOTION_TOKEN in the environment used by the provider CLI or MCP server.',
@@ -197,6 +314,7 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     settingsTarget: 'mcp',
     supportLevel: 'manual',
     settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
+    mcpTemplate: mcpTemplateFor('linear'),
     setupSteps: [
       'Add the Linear hosted MCP endpoint to the provider CLI or local MCP config.',
       'Complete the OAuth flow in the browser when the provider asks for authorization.',

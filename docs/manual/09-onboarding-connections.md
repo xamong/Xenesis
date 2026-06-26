@@ -72,6 +72,13 @@ They show required environment variables such as `GITHUB_TOKEN` or
 `NOTION_TOKEN`, point users to the local CLI MCP settings, and keep any write
 workflow behind the existing provider/MCP/CR verification path.
 
+For Fetch, Filesystem, GitHub, Notion, and Linear, the tool cards also expose a
+copy-ready `mcpTemplate` read model through `xd.xenesis.connections.status`.
+Settings renders the same template with server name, transport, command or URL,
+default tool filters, and JSON/Codex TOML snippets. These snippets come from the
+Xenesis recommended MCP server catalog and intentionally use environment
+variable placeholders instead of storing secrets in Desk settings.
+
 Google Workspace and Google Calendar intentionally do not expose install CR
 actions yet. They remain planned until OAuth scopes, token storage, and a
 verified MCP server template are selected and tested.

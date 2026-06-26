@@ -3,6 +3,7 @@ import type { XenesisConnectionsStatus } from './xenesisConnections';
 
 export type {
   XenesisConnectionItem,
+  XenesisConnectionMcpTemplate,
   XenesisConnectionSection,
   XenesisConnectionStatus,
   XenesisConnectionsStatus,
@@ -2365,7 +2366,16 @@ export interface McpBridgeDockActionResult {
 
 export interface McpBridgeBrowserActionPayload {
   requestId: string;
-  action: 'navigate' | 'back' | 'forward' | 'reload' | 'stop' | 'state' | 'textSnapshot' | 'domSnapshot' | 'elementAction';
+  action:
+    | 'navigate'
+    | 'back'
+    | 'forward'
+    | 'reload'
+    | 'stop'
+    | 'state'
+    | 'textSnapshot'
+    | 'domSnapshot'
+    | 'elementAction';
   contentId?: string;
   paneId?: string;
   url?: string;

@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BUILTIN_EXTERNAL_APP_PROFILES,
-  EXTERNAL_APP_PROFILE_TEMPLATES,
   createExternalAppProfileFromTemplate,
-  normalizeExternalAppSettings,
+  EXTERNAL_APP_PROFILE_TEMPLATES,
   type ExternalAppProfile,
+  normalizeExternalAppSettings,
 } from '../../shared/externalAppControl';
 import { filterXenisPhase5SecretVaultItems, isXenisPhase5EnabledFromSettings } from '../../shared/phase5';
 import type {
@@ -3309,7 +3309,7 @@ export default function SettingsPane() {
   );
 
   const handleRemoteConnect = useCallback((profile: RemoteTerminalProfile | null) => {
-    if (!profile || !profile.host.trim()) return;
+    if (!profile?.host.trim()) return;
     window.dispatchEvent(new CustomEvent<RemoteTerminalProfile>('app-open-remote-terminal', { detail: profile }));
   }, []);
 
@@ -3400,7 +3400,7 @@ export default function SettingsPane() {
 
   const handleRemoteFileTest = useCallback(
     async (profile: RemoteFileProfile | null) => {
-      if (!profile || !profile.host.trim()) return;
+      if (!profile?.host.trim()) return;
       setRemoteFileTesting(true);
       setRemoteFileTestMessage('');
       try {
@@ -4211,6 +4211,7 @@ export default function SettingsPane() {
   const renderXenesisConnectionItem = (item: XenesisConnectionItem) => {
     const settingsRequest = buildXenesisConnectionSettingsRequest(item);
     const guideRequest = buildXenesisConnectionGuideRequest(item);
+    const mcpTemplate = item.mcpTemplate;
     return (
       <div className="sp-info-card" key={item.id} data-xenesis-connection={item.id}>
         <div className="sp-section-heading">
@@ -4291,6 +4292,70 @@ export default function SettingsPane() {
             <div>
               <span>{t('settings.xenesisConnectionsSources')}</span>
               <strong>{item.sourceDocs.map((source) => source.label).join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {mcpTemplate ? (
+          <div className="sp-mcp-template" data-xenesis-mcp-template={mcpTemplate.serverName}>
+            <div className="sp-info-list sp-info-list-compact">
+              <div>
+                <span>{t('settings.xenesisConnectionsMcpServer')}</span>
+                <strong>{mcpTemplate.serverName}</strong>
+              </div>
+              <div>
+                <span>{t('settings.xenesisConnectionsMcpTransport')}</span>
+                <strong>{mcpTemplate.transport}</strong>
+              </div>
+              <div>
+                <span>
+                  {mcpTemplate.command
+                    ? t('settings.xenesisConnectionsMcpCommand')
+                    : t('settings.xenesisConnectionsMcpUrl')}
+                </span>
+                <strong>
+                  {mcpTemplate.command ? [mcpTemplate.command, ...(mcpTemplate.args ?? [])].join(' ') : mcpTemplate.url}
+                </strong>
+              </div>
+              <div>
+                <span>{t('settings.xenesisConnectionsMcpTools')}</span>
+                <strong>
+                  {mcpTemplate.defaultEnabledTools?.length
+                    ? mcpTemplate.defaultEnabledTools.join(', ')
+                    : t('settings.xenesisConnectionsMcpToolsAll')}
+                </strong>
+              </div>
+            </div>
+            <div className="sp-mcp-snippets">
+              {[
+                {
+                  id: 'json',
+                  label: t('settings.xenesisConnectionsMcpJsonSnippet'),
+                  content: mcpTemplate.configSnippets.json,
+                },
+                {
+                  id: 'codex',
+                  label: t('settings.xenesisConnectionsMcpCodexSnippet'),
+                  content: mcpTemplate.configSnippets.codexToml,
+                },
+              ].map((snippet) => (
+                <div className="sp-mcp-snippet" key={`${item.id}-${snippet.id}`}>
+                  <div className="sp-mcp-snippet-head">
+                    <strong>{snippet.label}</strong>
+                    <button
+                      className="sp-btn-ghost sp-btn-sm"
+                      type="button"
+                      onClick={() => {
+                        void navigator.clipboard?.writeText(snippet.content).catch(() => undefined);
+                      }}
+                    >
+                      {t('common.copy')}
+                    </button>
+                  </div>
+                  <pre>
+                    <code>{snippet.content}</code>
+                  </pre>
+                </div>
+              ))}
             </div>
           </div>
         ) : null}
@@ -8391,8 +8456,7 @@ export default function SettingsPane() {
             <span>Enable external desktop app control</span>
           </label>
           <p className="sp-hint">
-            Registered profiles are used by Xenesis Agent and the Capability Registry before arbitrary executable
-            paths.
+            Registered profiles are used by Xenesis Agent and the Capability Registry before arbitrary executable paths.
           </p>
         </div>
 

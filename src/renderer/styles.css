@@ -8087,6 +8087,48 @@ button:disabled {
   text-overflow: initial;
   white-space: normal;
 }
+.sp-mcp-template {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sp-mcp-template .sp-info-list-compact strong {
+  white-space: normal;
+  text-align: right;
+}
+.sp-mcp-snippets {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+.sp-mcp-snippet {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--panel) 86%, var(--bg-doc) 14%);
+}
+.sp-mcp-snippet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.sp-mcp-snippet pre {
+  max-height: 180px;
+  margin: 0;
+  padding: 10px;
+  overflow: auto;
+  color: var(--text);
+  font-family: "Cascadia Code", "Cascadia Mono", Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre;
+}
+.sp-mcp-snippet code {
+  font-family: inherit;
+}
 .sp-select-card-active .sp-chevron {
   color: var(--accent);
 }

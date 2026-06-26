@@ -373,6 +373,49 @@ test('buildXenesisConnectionsStatus includes actionable setup recipes for MCP to
   );
 });
 
+test('buildXenesisConnectionsStatus exposes copy-ready recommended MCP templates', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+    repoRoot: 'E:/workspace/project',
+  });
+
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+  const calendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+
+  assert.equal(notion?.mcpTemplate?.serverName, 'notion');
+  assert.equal(notion?.mcpTemplate?.transport, 'stdio');
+  assert.equal(notion?.mcpTemplate?.command, 'npx');
+  assert.ok(notion?.mcpTemplate?.args?.includes('@notionhq/notion-mcp-server'));
+  assert.deepEqual(notion?.mcpTemplate?.requiredEnv, ['NOTION_TOKEN']);
+  assert.ok(notion?.mcpTemplate?.configSnippets.json.includes('"notion"'));
+  assert.ok(notion?.mcpTemplate?.configSnippets.codexToml.includes('[mcp_servers.notion]'));
+  assert.equal(calendar?.mcpTemplate, undefined);
+});
+
 test('buildXenesisConnectionsStatus keeps Google Calendar planned without fake install actions', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {
