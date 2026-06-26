@@ -6,6 +6,7 @@ import {
   buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
   formatXenesisChannelRoutingSummary,
+  formatXenesisProviderSetupSummary,
   formatXenesisToolSetupSummary,
   listXenesisConnectionSections,
   XENESIS_CONNECTION_STATUS_ORDER,
@@ -162,5 +163,33 @@ test('formatXenesisToolSetupSummary describes connection, auth, and setup surfac
       riskControls: ['share only required pages/databases'],
     }),
     'mcp / env-token / Settings > AI Provider > Local CLI MCP',
+  );
+});
+
+test('formatXenesisProviderSetupSummary describes provider, model, and auth mode', () => {
+  assert.equal(
+    formatXenesisProviderSetupSummary({
+      source: 'user-settings',
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      authMode: 'local-login',
+      credentialState: 'not-required',
+      credentialStorage: 'local CLI login or app-server session',
+      endpoint: 'default',
+      runtimeProfile: 'desk',
+      runtimeProvider: 'codex-app-server',
+      runtimeModel: 'gpt-5-codex',
+      providerRetries: 0,
+      fallbackPolicy: 'configured-providerFallbacks',
+      localCliBoundary: 'provider identity is separate from local CLI integration',
+      verification: ['normal-chat', 'provider-footer', 'cr-readback'],
+      crReadPaths: ['xd.xenesis.connections.status', 'xd.xenesis.providers.setup.status', 'xd.xenesis.status'],
+      riskControls: [
+        'do not silently switch keyed providers when credentials are missing',
+        'keep local CLI selection separate from provider identity',
+        'verify live Agent pane provider before Desk-control claims',
+      ],
+    }),
+    'codex-app-server / gpt-5-codex / local-login',
   );
 });

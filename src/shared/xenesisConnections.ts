@@ -66,6 +66,25 @@ export interface XenesisConnectionToolSetupTemplate {
   riskControls: string[];
 }
 
+export interface XenesisConnectionProviderSetupTemplate {
+  source: 'user-settings' | 'auto-detect' | 'local-cli' | 'byok';
+  provider: string;
+  model: string;
+  authMode: 'auto-detect' | 'local-login' | 'api-key' | 'none';
+  credentialState: 'configured' | 'missing' | 'not-required';
+  credentialStorage: string;
+  endpoint: string;
+  runtimeProfile: string;
+  runtimeProvider: string;
+  runtimeModel: string;
+  providerRetries: number;
+  fallbackPolicy: string;
+  localCliBoundary: string;
+  verification: string[];
+  crReadPaths: string[];
+  riskControls: string[];
+}
+
 export interface XenesisConnectionChannelTemplate {
   category: 'consumer' | 'enterprise' | 'developer' | 'community' | 'regional' | 'iot';
   adapter: string;
@@ -102,6 +121,7 @@ export interface XenesisConnectionItem {
   guidePath?: string;
   guideOpenPath?: string;
   mcpTemplate?: XenesisConnectionMcpTemplate;
+  providerSetup?: XenesisConnectionProviderSetupTemplate;
   toolSetup?: XenesisConnectionToolSetupTemplate;
   channelTemplate?: XenesisConnectionChannelTemplate;
   warnings?: string[];
@@ -1074,7 +1094,60 @@ function countItems(sections: XenesisConnectionsStatus['sections']): XenesisConn
   return summary;
 }
 
-function providerItem(aiProvider: BuildXenesisConnectionsStatusInput['aiProvider']): XenesisConnectionItem {
+const LOCAL_PROVIDER_NAMES = ['codex-cli', 'codex-app-server', 'claude-cli', 'claude-interactive'] as const;
+
+function isLocalProviderName(provider: string): boolean {
+  return (LOCAL_PROVIDER_NAMES as readonly string[]).includes(provider);
+}
+
+function providerAuthMode(provider: string): XenesisConnectionProviderSetupTemplate['authMode'] {
+  if (provider === 'auto') return 'auto-detect';
+  if (isLocalProviderName(provider)) return 'local-login';
+  if (provider === 'ollama' || provider === 'lmstudio') return 'none';
+  return 'api-key';
+}
+
+function providerCredentialStorage(authMode: XenesisConnectionProviderSetupTemplate['authMode']): string {
+  if (authMode === 'auto-detect') return 'credential scan: Codex login, Claude login, then env keys';
+  if (authMode === 'local-login') return 'local CLI login or app-server session';
+  if (authMode === 'none') return 'none';
+  return 'AI Provider settings secret field';
+}
+
+function providerSetupTemplate(
+  aiProvider: BuildXenesisConnectionsStatusInput['aiProvider'],
+  xenesis: XenesisStatus | null,
+): XenesisConnectionProviderSetupTemplate {
+  const authMode = providerAuthMode(aiProvider.provider);
+  const needsCredential = authMode === 'api-key';
+  return {
+    source: aiProvider.provider === 'auto' ? 'auto-detect' : 'user-settings',
+    provider: aiProvider.provider,
+    model: aiProvider.model || 'default',
+    authMode,
+    credentialState: needsCredential ? (aiProvider.apiKey ? 'configured' : 'missing') : 'not-required',
+    credentialStorage: providerCredentialStorage(authMode),
+    endpoint: aiProvider.baseUrl || xenesis?.providerRuntime.baseURL || 'default',
+    runtimeProfile: xenesis?.providerRuntime.profile || xenesis?.profile.active || '',
+    runtimeProvider: xenesis?.providerRuntime.provider || aiProvider.provider,
+    runtimeModel: xenesis?.providerRuntime.model || aiProvider.model || 'default',
+    providerRetries: xenesis?.profile.policy.providerRetries ?? 0,
+    fallbackPolicy: 'configured-providerFallbacks',
+    localCliBoundary: 'provider identity is separate from local CLI integration',
+    verification: ['normal-chat', 'provider-footer', 'cr-readback'],
+    crReadPaths: ['xd.xenesis.connections.status', 'xd.xenesis.providers.setup.status', 'xd.xenesis.status'],
+    riskControls: [
+      'do not silently switch keyed providers when credentials are missing',
+      'keep local CLI selection separate from provider identity',
+      'verify live Agent pane provider before Desk-control claims',
+    ],
+  };
+}
+
+function providerItem(
+  aiProvider: BuildXenesisConnectionsStatusInput['aiProvider'],
+  xenesis: XenesisStatus | null,
+): XenesisConnectionItem {
   const isLocalProvider = [
     'auto',
     'codex-cli',
@@ -1098,6 +1171,7 @@ function providerItem(aiProvider: BuildXenesisConnectionsStatusInput['aiProvider
         : 'Provider needs a model or credential before reliable Agent use.',
     settingsTarget: 'run-model',
     settingsAction: { category: 'run-model', section: 'default' },
+    providerSetup: providerSetupTemplate(aiProvider, xenesis),
     setupSteps: [
       'Choose the provider in AI Provider settings.',
       'Set a model and credential only when the selected provider requires them.',
@@ -1364,7 +1438,7 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
 
 export function buildXenesisConnectionsStatus(input: BuildXenesisConnectionsStatusInput): XenesisConnectionsStatus {
   const baseSections: Omit<XenesisConnectionsStatus['sections'], 'onboarding'> = {
-    provider: { id: 'provider', label: 'AI Provider', items: [providerItem(input.aiProvider)] },
+    provider: { id: 'provider', label: 'AI Provider', items: [providerItem(input.aiProvider, input.xenesis)] },
     localCli: { id: 'local-cli', label: 'Local CLI integration', items: localCliItems(input.providerIntegration) },
     mcp: { id: 'mcp', label: 'MCP bridge', items: [mcpItem(input.mcp)] },
     tools: { id: 'tools', label: 'Tool connections', items: TOOL_CONNECTIONS },

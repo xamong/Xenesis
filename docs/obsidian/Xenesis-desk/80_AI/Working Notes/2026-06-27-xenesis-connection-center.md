@@ -250,6 +250,25 @@ Capability Registry instead of only through separate renderer settings panels.
 - `npm run check:public-release` still fails because
   `.github/workflows/ci.yml` is absent in this worktree.
 
+## Current Provider Setup Read Model Slice
+
+- Add `providerSetup` metadata to the active provider card in
+  `xd.xenesis.connections.status`.
+- Add `xd.xenesis.providers.setup.status` as a read/no-approval CR path derived
+  from the Connection Center provider section.
+- Render provider identity, model, auth mode, credential state, endpoint,
+  runtime profile, retry/fallback policy, local CLI boundary, verification, CR
+  readback paths, and risk controls in Settings > Xenesis Agent > Connections
+  with `data-xenesis-provider-setup="<id>"`.
+- Preserve the provider policy from [[Provider Model]]: user settings choose
+  provider identity, keyed providers do not silently fall back when credentials
+  are missing, and local CLI selection remains separate from provider identity.
+- `npx tsx --test src\shared\xenesisConnections.test.ts`,
+  `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts`, and
+  `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` failed
+  first for missing provider setup metadata/path/helper, then the combined
+  targeted run passed with 26/26 tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

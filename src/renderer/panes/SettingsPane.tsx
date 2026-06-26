@@ -89,6 +89,7 @@ import {
   buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
   formatXenesisChannelRoutingSummary,
+  formatXenesisProviderSetupSummary,
   formatXenesisToolSetupSummary,
   listXenesisConnectionSections,
   xenesisConnectionTone,
@@ -4250,6 +4251,7 @@ export default function SettingsPane() {
     const settingsRequest = buildXenesisConnectionSettingsRequest(item);
     const guideRequest = buildXenesisConnectionGuideRequest(item);
     const mcpTemplate = item.mcpTemplate;
+    const providerSetup = item.providerSetup;
     const toolSetup = item.toolSetup;
     const channelTemplate = item.channelTemplate;
     return (
@@ -4344,6 +4346,52 @@ export default function SettingsPane() {
             <div>
               <span>{t('settings.xenesisConnectionsSources')}</span>
               <strong>{item.sourceDocs.map((source) => source.label).join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {providerSetup ? (
+          <div className="sp-info-list sp-info-list-compact" data-xenesis-provider-setup={item.id}>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderSetup')}</span>
+              <strong>{formatXenesisProviderSetupSummary(providerSetup)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderCredential')}</span>
+              <strong>
+                {providerSetup.credentialState} / {providerSetup.credentialStorage}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderEndpoint')}</span>
+              <strong>{providerSetup.endpoint}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderRuntime')}</span>
+              <strong>
+                {providerSetup.runtimeProfile} / {providerSetup.runtimeProvider} / {providerSetup.runtimeModel}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderPolicy')}</span>
+              <strong>
+                {providerSetup.providerRetries} / {providerSetup.fallbackPolicy}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderLocalCli')}</span>
+              <strong>{providerSetup.localCliBoundary}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderVerification')}</span>
+              <strong>{providerSetup.verification.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderCrReadback')}</span>
+              <strong>{providerSetup.crReadPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderRiskControls')}</span>
+              <strong>{providerSetup.riskControls.join(', ')}</strong>
             </div>
           </div>
         ) : null}

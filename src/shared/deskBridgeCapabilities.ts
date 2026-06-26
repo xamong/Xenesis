@@ -219,6 +219,35 @@ const XENESIS_TOOL_SETUP_STATUS_SCHEMA = {
   },
 } as const;
 
+const XENESIS_PROVIDER_SETUP_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    provider: {
+      type: 'string',
+      title: 'Provider',
+      enum: [
+        'auto',
+        'openai',
+        'anthropic',
+        'gemini',
+        'groq',
+        'deepseek',
+        'qwen',
+        'ollama',
+        'lmstudio',
+        'together',
+        'fireworks',
+        'azure',
+        'codex-cli',
+        'codex-app-server',
+        'claude-cli',
+        'claude-interactive',
+      ],
+      description: 'Optional active provider id to filter.',
+    },
+  },
+} as const;
+
 export interface DeskBridgeCapabilityNode {
   path: string;
   label: string;
@@ -481,6 +510,7 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisConnectionsStatus?: () => Promise<unknown> | unknown;
   getXenesisChannelRoutingStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolSetupStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisProviderSetupStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisDiagnostics?: () => Promise<unknown> | unknown;
   openXenesisTui?: (args: unknown) => Promise<unknown> | unknown;
   listXenesisReports?: (args: unknown) => Promise<unknown> | unknown;
@@ -3445,6 +3475,17 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             'Read auth mode, data scopes, write scopes, credential storage, verification, setup surface, and CR readback metadata for Xenesis external tool connections.',
             'read',
             XENESIS_TOOL_SETUP_STATUS_SCHEMA,
+          ),
+        ]),
+      ]),
+      group('xd.xenesis.providers', 'Providers', 'AI provider setup and routing state.', [
+        group('xd.xenesis.providers.setup', 'Setup', 'AI provider auth, runtime, retry, fallback, and verification metadata.', [
+          method(
+            'xd.xenesis.providers.setup.status',
+            'Read provider setup status',
+            'Read provider identity, model, auth mode, credential state, endpoint, runtime profile, retry/fallback policy, verification, CR readback, and risk controls for the active Xenesis AI provider.',
+            'read',
+            XENESIS_PROVIDER_SETUP_STATUS_SCHEMA,
           ),
         ]),
       ]),
@@ -9713,6 +9754,9 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.tools.setup.status') {
         return callAdapter(path, api?.getXenesisToolSetupStatus, request.args);
+      }
+      if (path === 'xd.xenesis.providers.setup.status') {
+        return callAdapter(path, api?.getXenesisProviderSetupStatus, request.args);
       }
       if (path === 'xd.xenesis.gateway.status') {
         return callAdapter(path, api?.getXenesisStatus);

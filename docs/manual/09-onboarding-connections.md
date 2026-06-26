@@ -67,6 +67,14 @@ not silently switch to a different keyed provider when credentials are missing.
 `auto` resolves by credential scan, and local CLI selection remains separate from
 provider identity.
 
+The provider card also exposes a `providerSetup` read model through
+`xd.xenesis.connections.status`. Use `xd.xenesis.providers.setup.status` when an
+agent needs only provider setup metadata. The setup model covers configured
+provider, model, auth mode, credential state, credential storage location,
+endpoint, runtime profile, retry/fallback policy, local CLI boundary, verification
+steps, CR readback paths, and risk controls. It reports whether credentials are
+configured or missing without serializing API keys or bridge tokens.
+
 ## MCP And Tool Connections
 
 The Connection Center shows MCP readiness and recommended tool connections.
@@ -181,6 +189,12 @@ Use `xd.xenesis.connections.status` to inspect provider, MCP, tool, gateway,
 messenger, and guide readiness through the Capability Registry. Mutating setup
 actions stay on their existing CR paths so approval and audit behavior remains
 explicit.
+
+Use `xd.xenesis.providers.setup.status` to inspect the active AI provider setup
+metadata through CR. The read model is scoped to identity, auth mode, credential
+state, endpoint, runtime profile, retry/fallback policy, local CLI boundary,
+verification, CR readback paths, and risk controls. It is read-only and does not
+change provider selection or leak secret values.
 
 Use `xd.xenesis.connections.open` with `{ "id": "<connection-id>" }` to open
 Settings > Xenesis Agent > Connections and focus a specific provider, tool,

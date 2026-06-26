@@ -4902,6 +4902,80 @@ async function getXenesisToolSetupStatus(args?: unknown): Promise<Record<string,
   };
 }
 
+const XENESIS_PROVIDER_SETUP_IDS = [
+  'auto',
+  'openai',
+  'anthropic',
+  'gemini',
+  'groq',
+  'deepseek',
+  'qwen',
+  'ollama',
+  'lmstudio',
+  'together',
+  'fireworks',
+  'azure',
+  'codex-cli',
+  'codex-app-server',
+  'claude-cli',
+  'claude-interactive',
+] as const;
+
+function isXenesisProviderSetupId(value: string): value is (typeof XENESIS_PROVIDER_SETUP_IDS)[number] {
+  return (XENESIS_PROVIDER_SETUP_IDS as readonly string[]).includes(value);
+}
+
+async function getXenesisProviderSetupStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const provider = readCapabilityString(body, ['provider', 'id', 'name']);
+  if (provider && !isXenesisProviderSetupId(provider)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis provider: ${provider}`,
+      allowedProviders: XENESIS_PROVIDER_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.provider.items
+    .filter((item) => item.providerSetup)
+    .filter((item) => !provider || item.providerSetup?.provider === provider)
+    .map((item: XenesisConnectionItem) => ({
+      id: item.id,
+      label: item.label,
+      status: item.status,
+      supportLevel: item.supportLevel,
+      summary: item.summary,
+      source: item.providerSetup?.source,
+      provider: item.providerSetup?.provider,
+      model: item.providerSetup?.model,
+      authMode: item.providerSetup?.authMode,
+      credentialState: item.providerSetup?.credentialState,
+      credentialStorage: item.providerSetup?.credentialStorage,
+      endpoint: item.providerSetup?.endpoint,
+      runtimeProfile: item.providerSetup?.runtimeProfile,
+      runtimeProvider: item.providerSetup?.runtimeProvider,
+      runtimeModel: item.providerSetup?.runtimeModel,
+      providerRetries: item.providerSetup?.providerRetries ?? 0,
+      fallbackPolicy: item.providerSetup?.fallbackPolicy,
+      localCliBoundary: item.providerSetup?.localCliBoundary,
+      verification: item.providerSetup?.verification ?? [],
+      crReadPaths: item.providerSetup?.crReadPaths ?? [],
+      riskControls: item.providerSetup?.riskControls ?? [],
+      settingsAction: item.settingsAction,
+      crActions: item.crActions ?? [],
+      warnings: item.warnings ?? [],
+    }));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(provider ? { provider } : {}),
+    total: items.length,
+    items,
+  };
+}
+
 function getProviderIntegrationAssetRoot(): string {
   if (app.isPackaged) {
     return path.join(process.resourcesPath, 'provider-assets');
@@ -11825,6 +11899,7 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisConnectionsStatus: () => getXenesisConnectionsStatus().then((status) => ({ ok: true, status })),
     getXenesisChannelRoutingStatus: (args: unknown) => getXenesisChannelRoutingStatus(args),
     getXenesisToolSetupStatus: (args: unknown) => getXenesisToolSetupStatus(args),
+    getXenesisProviderSetupStatus: (args: unknown) => getXenesisProviderSetupStatus(args),
     getXenesisDiagnostics: () => getXenesisOperationalDiagnostics().then((diagnostics) => ({ ok: true, diagnostics })),
     listXenesisReports: (args: unknown) =>
       listXenesisReports(

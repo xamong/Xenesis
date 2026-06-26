@@ -158,6 +158,49 @@ test('xenesis tool setup status capability is registered and dispatches to the a
   });
 });
 
+test('xenesis provider setup status capability is registered and dispatches to the adapter', async () => {
+  const capability = findDeskBridgeCapability('xd.xenesis.providers.setup.status');
+  const schemaProperties = (capability?.schema?.properties ?? {}) as Record<string, any>;
+  assert.equal(capability?.permission, 'read');
+  assert.equal(capability?.approval, 'never');
+  for (const provider of [
+    'auto',
+    'openai',
+    'anthropic',
+    'gemini',
+    'codex-app-server',
+    'codex-cli',
+    'claude-cli',
+    'ollama',
+  ]) {
+    assert.equal(schemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
+  }
+
+  let calledArgs: unknown = null;
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisProviderSetupStatus: (args) => {
+      calledArgs = args;
+      return {
+        ok: true,
+        items: [{ provider: 'codex-app-server' }],
+      };
+    },
+  };
+
+  const result = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.providers.setup.status',
+    args: { provider: 'codex-app-server' },
+    source: 'xenesis',
+  });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(calledArgs, { provider: 'codex-app-server' });
+  assert.deepEqual(result.result, {
+    ok: true,
+    items: [{ provider: 'codex-app-server' }],
+  });
+});
+
 test('xenesis profile channel capabilities expose implemented guardrail fields', () => {
   const updateSchema = findDeskBridgeCapability('xd.xenesis.profiles.updateChannels')?.schema;
   const testSchema = findDeskBridgeCapability('xd.xenesis.profiles.testChannel')?.schema;

@@ -511,6 +511,131 @@ test('buildXenesisConnectionsStatus exposes tool setup auth, scope, verification
   assert.equal(googleCalendar?.settingsAction, undefined);
 });
 
+test('buildXenesisConnectionsStatus exposes provider setup identity, credential state, and fallback policy', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: {
+      ok: true,
+      running: true,
+      managed: true,
+      enabled: true,
+      runtimeMode: 'embedded',
+      url: 'http://127.0.0.1:3846',
+      runtimePath: 'embedded',
+      xenesisHome: 'C:/Users/example/.xenis',
+      workspace: 'E:/workspace/project',
+      providerRuntime: {
+        provider: 'codex-app-server',
+        model: 'gpt-5-codex',
+        profile: 'desk',
+        baseURL: '',
+        apiKeyEnv: '',
+      },
+      error: '',
+      updatedAt: '2026-06-27T00:00:00.000Z',
+      gateway: {
+        enabled: true,
+        running: false,
+        managed: true,
+        url: 'http://127.0.0.1:3846',
+        host: '127.0.0.1',
+        port: 3846,
+        workspace: 'E:/workspace/project',
+        error: '',
+        updatedAt: '2026-06-27T00:00:00.000Z',
+        channels: { total: 0, enabled: 0, ready: 0, blocked: 0, disabled: 0, items: [] },
+      },
+      profile: {
+        active: 'desk',
+        configured: 'desk',
+        installed: ['desk'],
+        templates: [],
+        channels: [],
+        channelSettings: {
+          telegram: { enabled: false, ...channelGuardrails, tokenEnv: 'TELEGRAM_BOT_TOKEN', allowedChatIds: '' },
+          slack: {
+            enabled: false,
+            ...channelGuardrails,
+            botTokenEnv: 'SLACK_BOT_TOKEN',
+            signingSecretEnv: 'SLACK_SIGNING_SECRET',
+            webhookUrlEnv: 'SLACK_WEBHOOK_URL',
+            allowedChannelIds: '',
+          },
+          discord: {
+            enabled: false,
+            ...channelGuardrails,
+            botTokenEnv: 'DISCORD_BOT_TOKEN',
+            webhookUrlEnv: 'DISCORD_WEBHOOK_URL',
+            allowedChannelIds: '',
+            allowedGuildIds: '',
+          },
+          webhook: { enabled: false, ...channelGuardrails, urlEnv: 'XENESIS_WEBHOOK_URL' },
+        },
+        policy: {
+          workflow: 'default',
+          approvalMode: 'safe',
+          maxTurns: 4,
+          providerRetries: 0,
+          contextAutoCompact: true,
+          memoryEnabled: true,
+          subagentsEnabled: true,
+          browserEnabled: true,
+          verificationAutoRun: false,
+          verificationAutoFix: false,
+        },
+      },
+    },
+  });
+
+  const provider = status.sections.provider.items[0];
+
+  assert.deepEqual(provider.providerSetup, {
+    source: 'user-settings',
+    provider: 'codex-app-server',
+    model: 'gpt-5-codex',
+    authMode: 'local-login',
+    credentialState: 'not-required',
+    credentialStorage: 'local CLI login or app-server session',
+    endpoint: 'default',
+    runtimeProfile: 'desk',
+    runtimeProvider: 'codex-app-server',
+    runtimeModel: 'gpt-5-codex',
+    providerRetries: 0,
+    fallbackPolicy: 'configured-providerFallbacks',
+    localCliBoundary: 'provider identity is separate from local CLI integration',
+    verification: ['normal-chat', 'provider-footer', 'cr-readback'],
+    crReadPaths: ['xd.xenesis.connections.status', 'xd.xenesis.providers.setup.status', 'xd.xenesis.status'],
+    riskControls: [
+      'do not silently switch keyed providers when credentials are missing',
+      'keep local CLI selection separate from provider identity',
+      'verify live Agent pane provider before Desk-control claims',
+    ],
+  });
+});
+
 test('buildXenesisConnectionsStatus exposes an OpenClaw-style messenger channel catalog', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {
@@ -701,6 +826,7 @@ test('buildXenesisConnectionsStatus reports missing setup without leaking secret
   const serialized = JSON.stringify(status);
   assert.equal(serialized.includes('sk-secret-value'), false);
   assert.equal(status.sections.provider.items[0].status, 'blocked');
+  assert.equal(status.sections.provider.items[0].providerSetup?.credentialState, 'configured');
   assert.equal(status.sections.mcp.items[0].status, 'blocked');
   assert.equal(status.sections.gateway.items[0].status, 'unknown');
   assert.ok(XENESIS_CONNECTION_GUIDES.some((guide) => guide.id === 'onboarding-connections'));
