@@ -134,6 +134,7 @@ declare global {
       category?: unknown;
       mode?: unknown;
       section?: unknown;
+      focusConnectionId?: unknown;
       ensureVisible?: unknown;
       selectedTerminalProfileId?: unknown;
       pendingLocalTerminalProfile?: unknown;
@@ -2660,6 +2661,7 @@ export default function App() {
       category?: unknown;
       mode?: unknown;
       section?: unknown;
+      focusConnectionId?: unknown;
       ensureVisible?: unknown;
       selectedTerminalProfileId?: unknown;
       pendingLocalTerminalProfile?: unknown;
@@ -2670,7 +2672,7 @@ export default function App() {
       openSettingsPane(placement, targetPaneId);
       const detail = {
         ...targetDetail,
-        expiresAt: Date.now() + 5000,
+        expiresAt: Date.now() + 30000,
         nonce: Date.now(),
       };
       window.__xenesisSettingsOpenTarget = detail;
@@ -2680,6 +2682,7 @@ export default function App() {
       setTimeout(dispatchTarget, 0);
       setTimeout(dispatchTarget, 100);
       setTimeout(dispatchTarget, 300);
+      setTimeout(dispatchTarget, 1000);
     },
     [openSettingsPane],
   );
@@ -2731,17 +2734,23 @@ export default function App() {
         category: payload.category,
         mode: payload.mode,
         section: payload.section,
+        focusConnectionId: payload.focusConnectionId,
         ensureVisible: payload.ensureVisible,
       };
       if (payload.kind === 'settings') {
         const hasSettingsTarget = Boolean(
-          payload.category || payload.mode || payload.section || typeof payload.ensureVisible === 'boolean',
+          payload.category ||
+            payload.mode ||
+            payload.section ||
+            payload.focusConnectionId ||
+            typeof payload.ensureVisible === 'boolean',
         );
         if (hasSettingsTarget) {
           openSettingsTarget({
             category: payload.category,
             mode: payload.mode,
             section: payload.section,
+            focusConnectionId: payload.focusConnectionId,
             ensureVisible: payload.ensureVisible,
             placement: payload.placement,
             targetPaneId: payload.targetPaneId,

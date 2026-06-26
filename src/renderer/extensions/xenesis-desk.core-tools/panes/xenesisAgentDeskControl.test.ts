@@ -119,6 +119,27 @@ test('parseXenesisDeskActionBlocks accepts approved CR workflow actions', () => 
   ]);
 });
 
+test('parseXenesisDeskActionBlocks accepts provider inline fence payloads', () => {
+  const parsed = parseXenesisDeskActionBlocks(
+    [
+      '상태를 확인하겠습니다.```xenesis-desk-action {"path":"xd.xenesis.connections.open","args":{"id":"notion","ensureVisible":true},"approved":true}',
+      '',
+      '노션 연결 카드를 열고 포커스했습니다.',
+    ].join('\n'),
+  );
+
+  assert.equal(parsed.visibleText, '상태를 확인하겠습니다.\n\n노션 연결 카드를 열고 포커스했습니다.');
+  assert.deepEqual(parsed.actions, [
+    {
+      id: 'desk-action-1',
+      path: 'xd.xenesis.connections.open',
+      args: { id: 'notion', ensureVisible: true },
+      approved: true,
+    },
+  ]);
+  assert.deepEqual(parsed.errors, []);
+});
+
 test('Desk action completion summaries include CR workflow run counts', () => {
   const completed = buildXenesisDeskActionCompletedMessage([
     {
@@ -275,6 +296,8 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.window\.sizer\.applyPreset/);
   assert.match(hint, /presetId/);
   assert.match(hint, /xd\.dock\.artifactTarget\.set/);
+  assert.match(hint, /xd\.xenesis\.connections\.open/);
+  assert.match(hint, /"id":"notion"/);
   assert.match(hint, /xd\.testing\.xenesisAgent\.submitPrompt/);
   assert.match(hint, /xd\.automation\.workflow\.preview/);
   assert.match(hint, /xd\.automation\.workflow\.run/);

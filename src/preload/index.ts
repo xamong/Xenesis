@@ -1015,6 +1015,7 @@ const mcpBridgeApi: McpBridgeApi = {
           category: payload?.category,
           mode: payload?.mode,
           section: payload?.section,
+          focusConnectionId: payload?.focusConnectionId,
           ensureVisible: payload?.ensureVisible,
           error: error instanceof Error ? error.message : String(error),
         });

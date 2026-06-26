@@ -5205,6 +5205,7 @@ function sendMcpOpenBuiltinPaneToRenderer(
       category: payload.category,
       mode: payload.mode,
       section: payload.section,
+      focusConnectionId: payload.focusConnectionId,
       ensureVisible: payload.ensureVisible,
       error: 'Xenesis Desk renderer window is not available',
     });
@@ -5223,6 +5224,7 @@ function sendMcpOpenBuiltinPaneToRenderer(
         category: payload.category,
         mode: payload.mode,
         section: payload.section,
+        focusConnectionId: payload.focusConnectionId,
         ensureVisible: payload.ensureVisible,
         error: 'Xenesis Desk built-in pane open timed out',
       });
@@ -6386,6 +6388,7 @@ function sanitizeMcpOpenBuiltinPaneResult(value: unknown): McpBridgeOpenBuiltinP
     category: sanitizeMcpDockActionText(raw.category, 120) || undefined,
     mode: sanitizeMcpDockActionText(raw.mode, 120) || undefined,
     section: sanitizeMcpDockActionText(raw.section, 120) || undefined,
+    focusConnectionId: sanitizeMcpDockActionText(raw.focusConnectionId, 120) || undefined,
     ensureVisible: typeof raw.ensureVisible === 'boolean' ? raw.ensureVisible : undefined,
     message: sanitizeMcpDockActionText(raw.message, 500) || undefined,
     error: sanitizeMcpDockActionText(raw.error, 500) || undefined,
@@ -9045,6 +9048,7 @@ async function openMcpBuiltinPaneCapability(args: unknown): Promise<Record<strin
   const category = kind === 'settings' ? normalizeMcpSettingsCategory(body.category) : undefined;
   const mode = kind === 'settings' ? normalizeMcpSettingsTargetText(body.mode) : undefined;
   const section = kind === 'settings' ? normalizeMcpSettingsTargetText(body.section) : undefined;
+  const focusConnectionId = kind === 'settings' ? normalizeMcpSettingsTargetText(body.focusConnectionId) : undefined;
   const ensureVisible = kind === 'settings' && typeof body.ensureVisible === 'boolean' ? body.ensureVisible : undefined;
   const result = await sendMcpOpenBuiltinPaneToRenderer({
     kind,
@@ -9053,6 +9057,7 @@ async function openMcpBuiltinPaneCapability(args: unknown): Promise<Record<strin
     category,
     mode,
     section,
+    focusConnectionId,
     ensureVisible,
   });
   if (!result.ok) return { ...result };
@@ -9062,9 +9067,9 @@ async function openMcpBuiltinPaneCapability(args: unknown): Promise<Record<strin
     source: 'main',
     scope: 'mcp',
     message: 'MCP opened built-in pane through capability',
-    detail: JSON.stringify({ kind, placement, targetPaneId, category, mode, section, ensureVisible }),
+    detail: JSON.stringify({ kind, placement, targetPaneId, category, mode, section, focusConnectionId, ensureVisible }),
   });
-  return { ok: true, kind, placement, targetPaneId, category, mode, section, ensureVisible, renderer: result };
+  return { ok: true, kind, placement, targetPaneId, category, mode, section, focusConnectionId, ensureVisible, renderer: result };
 }
 
 function openMcpFileCapability(args: unknown): Record<string, unknown> {

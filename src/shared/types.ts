@@ -2147,6 +2147,7 @@ export interface McpBridgeOpenBuiltinPanePayload {
   category?: string;
   mode?: string;
   section?: string;
+  focusConnectionId?: string;
   ensureVisible?: boolean;
 }
 
@@ -2159,6 +2160,7 @@ export interface McpBridgeOpenBuiltinPaneResult {
   category?: string;
   mode?: string;
   section?: string;
+  focusConnectionId?: string;
   ensureVisible?: boolean;
   message?: string;
   error?: string;

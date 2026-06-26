@@ -928,6 +928,7 @@ export const ko = {
     xenesisConnectionsGuide: '가이드',
     xenesisConnectionsSetupStep: '설정',
     xenesisConnectionsSources: '출처',
+    xenesisConnectionsFocusCard: '포커스',
     xenesisConnectionsOpenSettings: '설정 열기',
     xenesisConnectionsOpenGuide: '가이드 열기',
     xenesisConnectionsActionFailed: '연결 액션을 실행하지 못했습니다.',

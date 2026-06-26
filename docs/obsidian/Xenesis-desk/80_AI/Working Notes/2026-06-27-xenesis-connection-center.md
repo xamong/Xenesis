@@ -18,10 +18,16 @@ touches:
   - "src/shared/xenesisConnections.ts"
   - "src/shared/xenesisConnections.test.ts"
   - "src/shared/deskBridgeCapabilities.ts"
+  - "src/shared/types.ts"
   - "src/main/index.ts"
+  - "src/preload/index.ts"
+  - "src/renderer/App.tsx"
   - "src/renderer/panes/SettingsPane.tsx"
   - "src/renderer/panes/xenesisConnectionCenter.ts"
   - "src/renderer/panes/xenesisConnectionCenter.test.ts"
+  - "src/renderer/styles.css"
+  - "src/renderer/i18n/en.ts"
+  - "src/renderer/i18n/ko.ts"
   - "docs/manual/09-onboarding-connections.md"
 ---
 
@@ -104,6 +110,19 @@ Capability Registry instead of only through separate renderer settings panels.
 - Planned cards intentionally expose no CR mutation path until Xenesis gateway
   adapters, auth flows, allowlists, diagnostics, and live verification exist.
 
+## Current Connection Focus Capability Slice
+
+- Add `xd.xenesis.connections.open` as a CR control path with no approval
+  requirement. It opens Settings > Xenesis Agent > Connections and focuses a
+  specific card by `id`.
+- Reuse the existing built-in settings pane IPC bridge with `focusConnectionId`
+  instead of adding a parallel renderer control channel.
+- Add a renderer helper, card-level `Focus` action, and temporary
+  `.is-focused` card state so live smoke can prove the requested
+  `data-xenesis-connection="<id>"` card is visible.
+- This path is UI control only. It does not mutate provider, MCP, gateway, or
+  messenger settings.
+
 ## Current Verification
 
 - `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
@@ -151,6 +170,26 @@ Capability Registry instead of only through separate renderer settings panels.
   `data-xenesis-channel-template` blocks, Signal bridge/pairing metadata,
   Google Chat workspace metadata, `xd.xenesis.connections.status` `ok=true`,
   and Agent-pane fenced CR execution matching `Desk action completed.`
+- `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` failed
+  first because `xd.xenesis.connections.open` was not registered/dispatched,
+  then passed after implementation with 4/4 tests.
+- `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` failed
+  first because `buildXenesisConnectionOpenRequest` did not exist, then passed
+  after implementation with 5/5 tests.
+- `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+  failed first for provider inline ` ```xenesis-desk-action {json}` output,
+  then passed after parser support with 20/20 tests.
+- `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+  passed after adding the connection-card prompt example with 29/29 tests.
+- `npm run build` passed after the final parser and Agent prompt-hint updates.
+- `npm run docs:capabilities:audit` passed with registered nodes 683,
+  callable methods 415, subscribable events 54, dispatcher paths 395, and all
+  CR release-gate counters at 0.
+- Live Electron smoke passed for direct `xd.xenesis.connections.open`, Agent
+  direct fenced action, and provider-only `codex-app-server` Agent prompt. The
+  final provider run matched `Desk action completed`, logged
+  `xd.xenesis.connections.open`, and left the Notion connection card with
+  `sp-info-card is-focused`.
 
 ## Graph Links
 

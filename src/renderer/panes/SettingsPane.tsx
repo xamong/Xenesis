@@ -86,6 +86,7 @@ import { mergePendingLocalTerminalProfile } from '../terminal/terminalProfileSna
 import { SETTINGS_CATEGORIES, type SettingsCategoryId, VISIBLE_SETTINGS_CATEGORIES } from './settingsCatalog.mjs';
 import {
   buildXenesisConnectionGuideRequest,
+  buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
   listXenesisConnectionSections,
   xenesisConnectionTone,
@@ -927,6 +928,7 @@ type SettingsOpenTargetDetail = {
   category?: unknown;
   mode?: unknown;
   section?: unknown;
+  focusConnectionId?: unknown;
   ensureVisible?: unknown;
   selectedTerminalProfileId?: unknown;
   pendingLocalTerminalProfile?: unknown;
@@ -1029,6 +1031,15 @@ function normalizeSettingsTargetSection(value: unknown): string {
   if (section === 'secret-vault' || section === 'secrets') return 'settings-secret-vault';
   if (section === 'settings-backup' || section === 'backup') return 'settings-backup';
   return section;
+}
+
+function findXenesisConnectionElement(connectionId: string): HTMLElement | null {
+  const normalizedId = connectionId.trim();
+  if (!normalizedId) return null;
+  for (const element of document.querySelectorAll<HTMLElement>('[data-xenesis-connection]')) {
+    if (element.dataset.xenesisConnection === normalizedId) return element;
+  }
+  return null;
 }
 
 function getRunModelModeForSection(section: string): SettingsRunModelMode | null {
@@ -1151,6 +1162,7 @@ export default function SettingsPane() {
   const [activeCategory, setActiveCategory] = useState<SettingsCategoryId>('info');
   const [runMode, setRunMode] = useState<SettingsRunModelMode>('byok');
   const [xenesisTab, setXenesisTab] = useState<SettingsXenesisTab>('agent');
+  const [focusedXenesisConnectionId, setFocusedXenesisConnectionId] = useState('');
   const [interfaceTab, setInterfaceTab] = useState<SettingsInterfaceTab>('language');
   const [infoTab, setInfoTab] = useState<SettingsInfoTab>('general');
   const [xenisPhase5Enabled, setXenisPhase5Enabled] = useState(false);
@@ -1322,6 +1334,7 @@ export default function SettingsPane() {
   const remoteProfileSettingsLoadedRef = useRef(false);
   const remoteProfileSettingsSnapshotRef = useRef('');
   const remoteProfileSettingsDirtyRef = useRef(false);
+  const xenesisConnectionFocusTimeoutRef = useRef<number | null>(null);
 
   const markRemoteProfileSettingsDirty = useCallback(() => {
     remoteProfileSettingsDirtyRef.current = true;
@@ -1330,6 +1343,15 @@ export default function SettingsPane() {
   useEffect(() => {
     setDraftLocale(locale);
   }, [locale]);
+
+  useEffect(
+    () => () => {
+      if (xenesisConnectionFocusTimeoutRef.current !== null) {
+        window.clearTimeout(xenesisConnectionFocusTimeoutRef.current);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     window.terminalAPI
@@ -1637,6 +1659,7 @@ export default function SettingsPane() {
 
       const rawSection = normalizeSettingsTargetSection(detail.section);
       const section = !xenisPhase5Enabled && rawSection === 'xamong-runtime' ? 'default' : rawSection;
+      const requestedConnectionId = typeof detail.focusConnectionId === 'string' ? detail.focusConnectionId.trim() : '';
       const normalizedXenesisTab = normalizeXenesisTab(detail.mode) ?? getXenesisTabForSection(section);
       const normalizedCategory = normalizeSettingsTargetCategory(detail.category);
       const requestedCategory =
@@ -1671,6 +1694,16 @@ export default function SettingsPane() {
       if (targetCategory === 'xenesis-agent' && normalizedXenesisTab) {
         setXenesisTab(normalizedXenesisTab);
       }
+      if (requestedConnectionId) {
+        setFocusedXenesisConnectionId(requestedConnectionId);
+        if (xenesisConnectionFocusTimeoutRef.current !== null) {
+          window.clearTimeout(xenesisConnectionFocusTimeoutRef.current);
+        }
+        xenesisConnectionFocusTimeoutRef.current = window.setTimeout(() => {
+          setFocusedXenesisConnectionId((current) => (current === requestedConnectionId ? '' : current));
+          xenesisConnectionFocusTimeoutRef.current = null;
+        }, 60000);
+      }
       if (targetCategory === 'run-model' && normalizedMode) {
         setRunMode(normalizedMode);
       }
@@ -1684,9 +1717,11 @@ export default function SettingsPane() {
       }
       if (section && detail.ensureVisible !== false) {
         const scrollToSection = (attempt = 0) => {
-          const element = document.querySelector<HTMLElement>(`[data-settings-section="${section}"]`);
+          const element =
+            (requestedConnectionId ? findXenesisConnectionElement(requestedConnectionId) : null) ??
+            document.querySelector<HTMLElement>(`[data-settings-section="${section}"]`);
           if (element) {
-            element.scrollIntoView({ block: 'start', behavior: 'auto' });
+            element.scrollIntoView({ block: requestedConnectionId ? 'center' : 'start', behavior: 'auto' });
             return;
           }
           if (attempt < 12) {
@@ -4209,12 +4244,17 @@ export default function SettingsPane() {
   );
 
   const renderXenesisConnectionItem = (item: XenesisConnectionItem) => {
+    const openRequest = buildXenesisConnectionOpenRequest(item);
     const settingsRequest = buildXenesisConnectionSettingsRequest(item);
     const guideRequest = buildXenesisConnectionGuideRequest(item);
     const mcpTemplate = item.mcpTemplate;
     const channelTemplate = item.channelTemplate;
     return (
-      <div className="sp-info-card" key={item.id} data-xenesis-connection={item.id}>
+      <div
+        className={cls('sp-info-card', focusedXenesisConnectionId === item.id && 'is-focused')}
+        key={item.id}
+        data-xenesis-connection={item.id}
+      >
         <div className="sp-section-heading">
           <div>
             <strong>{item.label}</strong>
@@ -4224,8 +4264,16 @@ export default function SettingsPane() {
             {xenesisConnectionStatusLabel(item.status)}
           </span>
         </div>
-        {(settingsRequest || guideRequest) && (
+        {(openRequest || settingsRequest || guideRequest) && (
           <div className="sp-actions-row sp-actions-row-tight">
+            <button
+              className="sp-btn-ghost sp-btn-sm"
+              onClick={() => {
+                void handleXenesisConnectionRequest(openRequest);
+              }}
+            >
+              {t('settings.xenesisConnectionsFocusCard')}
+            </button>
             {settingsRequest ? (
               <button
                 className="sp-btn-ghost sp-btn-sm"

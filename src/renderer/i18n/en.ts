@@ -935,6 +935,7 @@ export const en = {
     xenesisConnectionsGuide: 'Guide',
     xenesisConnectionsSetupStep: 'Setup',
     xenesisConnectionsSources: 'Sources',
+    xenesisConnectionsFocusCard: 'Focus',
     xenesisConnectionsOpenSettings: 'Open setup',
     xenesisConnectionsOpenGuide: 'Open guide',
     xenesisConnectionsActionFailed: 'Connection action failed.',

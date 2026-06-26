@@ -28,13 +28,20 @@ place. The Connection Center summarizes:
 - Relevant setup guides.
 
 The same state is available through the Capability Registry at
-`xd.xenesis.connections.status`.
+`xd.xenesis.connections.status`. Agents can also open the Connection Center and
+focus one card with `xd.xenesis.connections.open`, for example:
+
+```json
+{ "id": "notion" }
+```
 
 Connection cards can include setup recipes, missing environment variables,
 source documentation labels, and CR-first actions. `Open setup` routes through
 `xd.panes.settings.open` to the relevant Settings surface. Guide cards route
 through `xd.files.open` so the same action path is available to the Agent pane
-and the renderer.
+and the renderer. The card-level `Focus` action routes through
+`xd.xenesis.connections.open` and highlights the matching
+`data-xenesis-connection="<id>"` card inside Settings.
 
 The first section is an ordered onboarding checklist. It is derived from the
 same provider, MCP, tool, gateway, messenger, and guide cards, so it is a
@@ -166,3 +173,8 @@ Use `xd.xenesis.connections.status` to inspect provider, MCP, tool, gateway,
 messenger, and guide readiness through the Capability Registry. Mutating setup
 actions stay on their existing CR paths so approval and audit behavior remains
 explicit.
+
+Use `xd.xenesis.connections.open` with `{ "id": "<connection-id>" }` to open
+Settings > Xenesis Agent > Connections and focus a specific provider, tool,
+guide, or messenger card. This is a UI-control path; it does not mutate
+connection settings.

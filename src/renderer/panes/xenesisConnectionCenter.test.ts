@@ -3,6 +3,7 @@ import test from 'node:test';
 import type { XenesisConnectionItem, XenesisConnectionsStatus } from '../../shared/types';
 import {
   buildXenesisConnectionGuideRequest,
+  buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
   listXenesisConnectionSections,
   XENESIS_CONNECTION_STATUS_ORDER,
@@ -57,6 +58,26 @@ test('listXenesisConnectionSections preserves status section order', () => {
     ['onboarding', 'provider', 'local-cli', 'mcp', 'tools', 'gateway', 'messengers', 'guides'],
   );
   assert.deepEqual(listXenesisConnectionSections(null), []);
+});
+
+test('buildXenesisConnectionOpenRequest focuses the connection card through CR', () => {
+  const item = {
+    id: 'signal',
+    kind: 'messenger',
+    label: 'Signal',
+    status: 'planned',
+    summary: 'Signal setup',
+  } satisfies XenesisConnectionItem;
+
+  assert.deepEqual(buildXenesisConnectionOpenRequest(item), {
+    path: 'xd.xenesis.connections.open',
+    args: {
+      id: 'signal',
+      ensureVisible: true,
+    },
+    source: 'xenesis',
+    approved: true,
+  });
 });
 
 test('buildXenesisConnectionSettingsRequest opens the configured settings target through CR', () => {

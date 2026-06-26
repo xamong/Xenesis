@@ -60,7 +60,8 @@ export interface XenesisDeskActionRunOptions {
   onActivity?: (activity: XenesisDeskActionActivity) => void;
 }
 
-const DESK_ACTION_FENCE_PATTERN = /^```xenesis-desk-actions?\s*\n([\s\S]*?)^```[ \t]*$/gim;
+const DESK_ACTION_FENCE_PATTERN =
+  /```xenesis-desk-actions?(?:[ \t]*\r?\n([\s\S]*?)^```[ \t]*$|[ \t]+([{\[][^\r\n]*))/gim;
 
 export interface XenesisDeskNaturalLanguagePlan extends XenesisDeskActionParseResult {
   matched: boolean;
@@ -868,7 +869,8 @@ export function parseXenesisDeskActionBlocks(text: string): XenesisDeskActionPar
 
   const sourceText = String(text || '');
   const visibleText = normalizeVisibleText(
-    sourceText.replace(DESK_ACTION_FENCE_PATTERN, (_block, jsonText: string) => {
+    sourceText.replace(DESK_ACTION_FENCE_PATTERN, (_block, blockJsonText: string, inlineJsonText?: string) => {
+      const jsonText = blockJsonText || inlineJsonText || '';
       try {
         const parsed = JSON.parse(jsonText);
         for (const record of actionRecordsFromJson(parsed)) {
@@ -1160,6 +1162,7 @@ export function buildXenesisDeskControlPromptHint(): string {
     '- Use `placement:"tab"`, `"right"`, `"left"`, `"top"`, or `"bottom"` when opening views. If a specific pane is known, pass `targetPaneId`.',
     '- Use `xd.window.sizer.applyPreset` with `args.presetId`, for example `{"presetId":"qhd"}`.',
     '- Use `xd.dock.artifactTarget.set` with `args.paneId` after opening a Gowoori pane that should receive artifacts.',
+    '- Use `xd.xenesis.connections.open` with `args.id` and `args.ensureVisible:true` to open Settings > Xenesis Agent > Connections and focus a specific provider, MCP tool, or messenger connection card.',
     '- For dashboard or XCON/SKETCH artifact generation, Xenesis Agent should own generation through `/artifact`; Gowoori is the render target and GowooriChat is fallback only.',
     '- Common natural Desk requests map to Capability Registry paths before the LLM run when they are clear commands: settings `xd.panes.settings.open`, files `xd.files.listOpen`, `xd.files.open`, `xd.files.read`, explorer `xd.explorer.local.show/navigate/setFilter`, capture `xd.capture.activePane`, terminals `xd.terminals.list/run/runMany`, layout `xd.dock.window.arrange`, `xd.dock.pane.arrange`, `xd.dock.arrangeHorizontal/arrangeVertical/arrangeGrid/mergeGroup/mergeAll`, pane focus/close `xd.dock.focus`, `xd.dock.close`, sizing `xd.dock.sizes.current/set`, panes `xd.dock.panes.list`, tools `xd.tools.core.capabilityExplorer.open` and other `xd.tools.core.*.open` surfaces.',
     '- If the user asks in natural language for a supported local Desk operation, prefer the exact CR path rather than explaining how to do it manually.',
@@ -1179,11 +1182,16 @@ export function buildXenesisDeskControlPromptHint(): string {
     ']',
     '```',
     '',
+    'Open and focus a Xenesis Agent connection card example:',
+    '```xenesis-desk-action',
+    '{"path":"xd.xenesis.connections.open","args":{"id":"notion","ensureVisible":true},"approved":true,"reason":"Open Settings > Xenesis Agent > Connections and focus Notion."}',
+    '```',
+    '',
     'Approved multi-step workflow example:',
     '```xenesis-desk-action',
     '{"path":"xd.automation.workflow.run","approved":true,"args":{"name":"settings-tour","steps":[{"path":"xd.dock.panes.list"},{"path":"xd.panes.settings.open","args":{"category":"run-model","mode":"hermes","section":"hermes-provider"}}]}}',
     '```',
     '',
-    'Useful direct CR paths include xd.app.status, xd.automation.workflow.preview, xd.automation.workflow.run, xd.views.open, xd.panes.settings.open, xd.panes.diagnostics.open, xd.files.listOpen, xd.files.open, xd.files.read, xd.explorer.local.show, xd.explorer.local.navigate, xd.explorer.local.setFilter, xd.window.bounds.current, xd.window.sizer.applyPreset, xd.dock.sizes.current, xd.dock.sizes.set, xd.dock.artifactTarget.current, xd.dock.artifactTarget.set, xd.dock.focus, xd.dock.close, xd.dock.closeOthers, xd.dock.closeRight, xd.dock.closeAll, xd.dock.window.arrange, xd.dock.window.merge, xd.dock.pane.arrange, xd.dock.pane.merge, xd.dock.arrangeHorizontal, xd.dock.arrangeVertical, xd.dock.arrangeGrid, xd.dock.panes.list, xd.terminals.list, xd.terminals.run, xd.terminals.runMany, xd.tools.core.capabilityExplorer.open, xd.tools.core.networkMonitor.open, xd.tools.core.runTaskPanel.open, xd.tools.core.aiWorkbench.open, xd.tools.core.artifactLibrary.open, xd.capture.activePane, xd.xenesis.status, xd.xenesis.runs.start, xd.testing.xenesisAgent.submitPrompt, dynamic xd.dock.panes.{paneId}.* paths, dynamic xd.dock.contents.{contentId}.* paths, and dynamic xd.terminals.sessions.{terminalId}.* paths.',
+    'Useful direct CR paths include xd.app.status, xd.automation.workflow.preview, xd.automation.workflow.run, xd.views.open, xd.panes.settings.open, xd.panes.diagnostics.open, xd.files.listOpen, xd.files.open, xd.files.read, xd.explorer.local.show, xd.explorer.local.navigate, xd.explorer.local.setFilter, xd.window.bounds.current, xd.window.sizer.applyPreset, xd.dock.sizes.current, xd.dock.sizes.set, xd.dock.artifactTarget.current, xd.dock.artifactTarget.set, xd.dock.focus, xd.dock.close, xd.dock.closeOthers, xd.dock.closeRight, xd.dock.closeAll, xd.dock.window.arrange, xd.dock.window.merge, xd.dock.pane.arrange, xd.dock.pane.merge, xd.dock.arrangeHorizontal, xd.dock.arrangeVertical, xd.dock.arrangeGrid, xd.dock.panes.list, xd.terminals.list, xd.terminals.run, xd.terminals.runMany, xd.tools.core.capabilityExplorer.open, xd.tools.core.networkMonitor.open, xd.tools.core.runTaskPanel.open, xd.tools.core.aiWorkbench.open, xd.tools.core.artifactLibrary.open, xd.capture.activePane, xd.xenesis.status, xd.xenesis.runs.start, xd.xenesis.connections.open, xd.testing.xenesisAgent.submitPrompt, dynamic xd.dock.panes.{paneId}.* paths, dynamic xd.dock.contents.{contentId}.* paths, and dynamic xd.terminals.sessions.{terminalId}.* paths.',
   ].join('\n');
 }

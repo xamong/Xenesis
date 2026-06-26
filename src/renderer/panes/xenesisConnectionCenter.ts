@@ -65,6 +65,18 @@ export function buildXenesisConnectionSettingsRequest(
   };
 }
 
+export function buildXenesisConnectionOpenRequest(item: XenesisConnectionItem): McpBridgeCapabilityCallRequest {
+  return {
+    path: 'xd.xenesis.connections.open',
+    args: {
+      id: item.id,
+      ensureVisible: true,
+    },
+    source: 'xenesis',
+    approved: true,
+  };
+}
+
 export function buildXenesisConnectionGuideRequest(item: XenesisConnectionItem): McpBridgeCapabilityCallRequest | null {
   const guidePath = item.guideOpenPath?.trim() || item.guidePath?.trim();
   if (!guidePath) return null;

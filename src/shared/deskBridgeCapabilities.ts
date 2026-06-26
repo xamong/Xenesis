@@ -176,6 +176,25 @@ const XENESIS_PROFILE_CHANNELS_SCHEMA = {
   },
 } as const;
 
+const XENESIS_CONNECTION_OPEN_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Connection id',
+      description: 'Connection Center item id to focus, such as a provider, tool, guide, or messenger connection card.',
+      examples: ['notion', 'google-calendar', 'signal'],
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused connection card into view after opening the Connection Center.',
+      default: true,
+    },
+  },
+} as const;
+
 export interface DeskBridgeCapabilityNode {
   path: string;
   label: string;
@@ -3372,6 +3391,13 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           'Read connection status',
           'Read provider, MCP, tool, gateway, messenger, and guide readiness for Xenesis onboarding.',
           'read',
+        ),
+        method(
+          'xd.xenesis.connections.open',
+          'Open connection card',
+          'Open Settings > Xenesis Agent > Connections and focus one provider, tool, guide, or messenger card.',
+          'control',
+          XENESIS_CONNECTION_OPEN_SCHEMA,
         ),
       ]),
       group('xd.xenesis.gateway', 'Gateway', 'Xenesis gateway lifecycle operations.', [
@@ -9618,6 +9644,21 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.connections.status') {
         return callAdapter(path, api?.getXenesisConnectionsStatus);
+      }
+      if (path === 'xd.xenesis.connections.open') {
+        const args = normalizeCapabilityArgs(request.args);
+        const focusConnectionId = readString(args.id) || readString(args.connectionId);
+        if (!focusConnectionId) {
+          return { ok: false, path, error: 'Connection id is required.' };
+        }
+        return callAdapter(path, api?.openBuiltinPane, {
+          kind: 'settings',
+          category: 'xenesis-agent',
+          mode: 'connections',
+          section: 'xenesis-connections',
+          focusConnectionId,
+          ensureVisible: args.ensureVisible !== false,
+        });
       }
       if (path === 'xd.xenesis.gateway.status') {
         return callAdapter(path, api?.getXenesisStatus);
