@@ -180,6 +180,13 @@ import {
 
 const XENESIS_API_UNAVAILABLE = 'Xenesis API is unavailable. Restart Xenesis Desk or check preload initialization.';
 const XENESIS_OPERATING_ROLE = 'LLM orchestration steward';
+
+/** Click-to-fill example prompts shown on the idle/onboarding empty state. */
+const XENESIS_EXAMPLE_PROMPTS: readonly string[] = [
+  '이 워크스페이스 구조를 간단히 설명해 줘',
+  '최근 변경된 파일들을 요약해 줘',
+  '지금 무엇을 도와줄 수 있어?',
+];
 const StableStreamingXconMarkdown = React.memo(StreamingXconMarkdown);
 const SYNTHETIC_REVEAL_MIN_MS = 360;
 const SYNTHETIC_REVEAL_MAX_MS = 1800;
@@ -985,16 +992,26 @@ function formatRunElapsed(elapsedMs: number): string {
   return `${seconds}s`;
 }
 
-function compactStatus(status: XenesisStatus | null): string {
-  const state = statusText(status);
-  const runtime = runtimeModeText(status);
-  const url = status?.url ? ` · ${status.url}` : '';
-  const workspace = status?.workspace ? ` · ${status.workspace}` : '';
-  return `${state} · ${runtime}${url}${workspace}`;
+type XenesisHeaderStateTone = 'busy' | 'ready' | 'stopped';
+
+/**
+ * The pane header shows a single, accurate at-a-glance state. When the renderer
+ * run state is live-busy we trust that over the backend status (which lags and
+ * can read "Stopped" mid-run). Otherwise we derive Ready/Stopped from status.
+ */
+function headerLiveState(status: XenesisStatus | null, busy: boolean): { label: string; tone: XenesisHeaderStateTone } {
+  if (busy) return { label: '실행 중', tone: 'busy' };
+  const backend = statusText(status);
+  if (backend === 'Ready' || backend === 'Starting') return { label: '준비됨', tone: 'ready' };
+  return { label: '중지됨', tone: 'stopped' };
 }
 
-function compactTerminalStatus(status: XenesisStatus | null, mode: XenesisMode): string {
-  return `${compactStatus(status)} · mode=${mode} · profile=${status?.profile?.active || 'desk'} · workflow=${status?.profile?.policy?.workflow || 'xenis'} · approval=${status?.profile?.policy?.approvalMode || 'safe'}`;
+/** Short, human-readable workspace name for the header (basename of the path). */
+function workspaceBasename(workspace: string | undefined | null): string {
+  if (!workspace) return '';
+  const normalized = workspace.replace(/[\\/]+$/, '');
+  const segments = normalized.split(/[\\/]/).filter(Boolean);
+  return segments.length > 0 ? segments[segments.length - 1] : normalized;
 }
 
 function unwrapDeskCapabilityValue(value: unknown): unknown {
@@ -1336,6 +1353,20 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
       ensureTerminalEndVisible();
       updateSlashMenuPlacement();
       ensureSelectedSlashOptionVisible();
+    });
+  }
+
+  /** Populate the prompt input with an example/onboarding prompt and focus it for editing. */
+  function fillPromptInput(value: string): void {
+    xenesisAgentStateStore.update({ prompt: value });
+    setSlashSelectionIndex(0);
+    window.requestAnimationFrame(() => {
+      const input = promptInputRef.current;
+      if (!input) return;
+      resizePromptInput();
+      input.focus();
+      input.setSelectionRange(value.length, value.length);
+      ensureTerminalEndVisible();
     });
   }
 
@@ -3767,7 +3798,26 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
         <div>
           <h2>Xenesis Agent</h2>
           <p className="xd-xenesis-terminal-status" title={runtimeConnectionText(status)}>
-            {compactTerminalStatus(status, mode)} · {agentId.slice(-8)}
+            {(() => {
+              const headerState = headerLiveState(status, isXenesisAgentBusy(state));
+              const workspaceName = workspaceBasename(status?.workspace);
+              return (
+                <>
+                  <span
+                    className={`xd-xenesis-header-state is-${headerState.tone}`}
+                    role="status"
+                    aria-label={`상태: ${headerState.label}`}
+                  >
+                    {headerState.label}
+                  </span>
+                  {workspaceName && (
+                    <span className="xd-xenesis-header-workspace" title={status?.workspace || undefined}>
+                      {workspaceName}
+                    </span>
+                  )}
+                </>
+              );
+            })()}
           </p>
         </div>
         <label className="xd-xenesis-artifact-provider" data-xenesis-no-terminal-focus="true">
@@ -3848,16 +3898,28 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
           {(policySnapshot ||
             policyNotices.length > 0 ||
             deskAuditEntries.length > 0 ||
-            taskAuditEntries.length > 0) && (
-            <details className="xd-xenesis-terminal-diagnostics">
-              <summary>
-                <span>Diagnostics</span>
-                <small>
-                  {policySnapshot ? `active policy ${policySnapshot.policyName} · ` : ''}
-                  {policyNotices.length} policy checks · {deskAuditEntries.length} Desk actions ·{' '}
-                  {taskAuditEntries.length} task events
-                </small>
-              </summary>
+            taskAuditEntries.length > 0) &&
+            (() => {
+              const diagnosticsActivity =
+                policyNotices.length + deskAuditEntries.length + taskAuditEntries.length;
+              return (
+                <details className="xd-xenesis-terminal-diagnostics" aria-label="Xenesis diagnostics">
+                  <summary>
+                    <span>Diagnostics</span>
+                    <small>
+                      {diagnosticsActivity > 0 ? (
+                        <>
+                          {policyNotices.length > 0 && <>{policyNotices.length} policy checks</>}
+                          {policyNotices.length > 0 && deskAuditEntries.length + taskAuditEntries.length > 0 && ' · '}
+                          {deskAuditEntries.length > 0 && <>{deskAuditEntries.length} Desk actions</>}
+                          {deskAuditEntries.length > 0 && taskAuditEntries.length > 0 && ' · '}
+                          {taskAuditEntries.length > 0 && <>{taskAuditEntries.length} task events</>}
+                        </>
+                      ) : (
+                        '특이사항 없음'
+                      )}
+                    </small>
+                  </summary>
 
               {policySnapshot && (
                 <section className="xd-xenesis-policy-active" aria-label="Xenesis active tool policy">
@@ -3928,7 +3990,7 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
                       >
                         <strong>{entry.kind === 'desk_tool_call' ? 'Call' : 'Result'}</strong>
                         <span title={entry.summary}>{entry.summary}</span>
-                        <small>{entry.at}</small>
+                        <small title={entry.at}>{formatXenesisMessageTime(entry.at)}</small>
                         <button type="button" onClick={() => focusRawStreamEntry(entry.id)}>
                           Detail
                         </button>
@@ -3952,7 +4014,7 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
                       >
                         <strong>{entry.error ? 'Issue' : 'Task'}</strong>
                         <span title={entry.summary}>{entry.summary}</span>
-                        <small>{entry.at}</small>
+                        <small title={entry.at}>{formatXenesisMessageTime(entry.at)}</small>
                         <button type="button" onClick={() => focusRawStreamEntry(entry.id)}>
                           Detail
                         </button>
@@ -3961,8 +4023,9 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
                   </div>
                 </section>
               )}
-            </details>
-          )}
+                </details>
+              );
+            })()}
 
           <section
             ref={terminalShellRef}
@@ -3991,9 +4054,26 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
                 </div>
               )}
               {chatMessages.length === 0 ? (
-                <div className="xd-xenesis-terminal-empty">
-                  <span className="xd-xenesis-terminal-prompt-token">{'>'}</span>
-                  <span>Type /help for commands.</span>
+                <div className="xd-xenesis-terminal-empty" role="group" aria-label="Xenesis 시작하기">
+                  <p className="xd-xenesis-terminal-empty-greeting">Xenesis Agent가 준비됐어요. 무엇을 도와드릴까요?</p>
+                  <div className="xd-xenesis-terminal-empty-chips">
+                    {XENESIS_EXAMPLE_PROMPTS.map((example) => (
+                      <button
+                        key={example}
+                        type="button"
+                        className="xd-xenesis-terminal-empty-chip"
+                        data-xenesis-no-terminal-focus="true"
+                        title="입력창에 채우기"
+                        onClick={() => fillPromptInput(example)}
+                      >
+                        {example}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="xd-xenesis-terminal-empty-hint">
+                    <span className="xd-xenesis-terminal-prompt-token">{'>'}</span>
+                    <span>/help 로 사용할 수 있는 명령을 볼 수 있어요</span>
+                  </p>
                 </div>
               ) : (
                 chatMessages.map((message) => {
@@ -4014,7 +4094,12 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
                       aria-label={`${roleLabel}: ${message.content.slice(0, 80)}`}
                     >
                       <div className="xd-xenesis-terminal-meta">
-                        <span className="xd-xenesis-terminal-role-badge">{roleLabel}</span>
+                        <span className="xd-xenesis-terminal-role-badge">
+                          <span className="xd-xenesis-terminal-role-glyph" aria-hidden="true">
+                            {message.role === 'user' ? '나' : message.role === 'assistant' ? 'AI' : 'SYS'}
+                          </span>
+                          {roleLabel}
+                        </span>
                         <strong className="xd-xenesis-terminal-source">{sourceLabel}</strong>
                         {kindLabel && <span className="xd-xenesis-terminal-kind">{kindLabel}</span>}
                         <time dateTime={message.at} title={message.at}>
@@ -4131,7 +4216,7 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
                 })
               )}
               {transcriptActivity.items.length > 0 && (
-                <details className="xd-xenesis-activity-panel" open={running || undefined}>
+                <details className="xd-xenesis-activity-panel">
                   <summary>
                     <span>Work log</span>
                     <small>{transcriptActivity.summary}</small>
@@ -4142,7 +4227,9 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
                         <span className="xd-xenesis-activity-status">{item.status}</span>
                         <strong>{item.label}</strong>
                         <span title={item.summary}>{item.summary}</span>
-                        <time dateTime={item.at}>{item.at}</time>
+                        <time dateTime={item.at} title={item.at}>
+                          {formatXenesisMessageTime(item.at)}
+                        </time>
                         <button
                           type="button"
                           disabled={!item.detail}
