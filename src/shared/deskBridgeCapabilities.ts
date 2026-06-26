@@ -195,6 +195,18 @@ const XENESIS_CONNECTION_OPEN_SCHEMA = {
   },
 } as const;
 
+const XENESIS_CHANNEL_ROUTING_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: ['telegram', 'slack', 'discord', 'webhook'],
+      description: 'Optional implemented external bot channel to filter.',
+    },
+  },
+} as const;
+
 export interface DeskBridgeCapabilityNode {
   path: string;
   label: string;
@@ -455,6 +467,7 @@ export interface DeskBridgeCapabilityAdapter {
   isXenisPhase5Enabled?: () => boolean;
   getXenesisStatus?: () => Promise<unknown> | unknown;
   getXenesisConnectionsStatus?: () => Promise<unknown> | unknown;
+  getXenesisChannelRoutingStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisDiagnostics?: () => Promise<unknown> | unknown;
   openXenesisTui?: (args: unknown) => Promise<unknown> | unknown;
   listXenesisReports?: (args: unknown) => Promise<unknown> | unknown;
@@ -3399,6 +3412,17 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           'control',
           XENESIS_CONNECTION_OPEN_SCHEMA,
         ),
+      ]),
+      group('xd.xenesis.channels', 'Channels', 'External bot channel routing and setup state.', [
+        group('xd.xenesis.channels.routing', 'Routing', 'External bot channel route bindings and safety metadata.', [
+          method(
+            'xd.xenesis.channels.routing.status',
+            'Read channel routing status',
+            'Read route binding, allowlist, pairing, default-agent, diagnostics, and delivery metadata for implemented Xenesis external bot channels.',
+            'read',
+            XENESIS_CHANNEL_ROUTING_STATUS_SCHEMA,
+          ),
+        ]),
       ]),
       group('xd.xenesis.gateway', 'Gateway', 'Xenesis gateway lifecycle operations.', [
         method('xd.xenesis.gateway.status', 'Read gateway status', 'Read the Xenesis gateway runtime status.', 'read'),
@@ -9659,6 +9683,9 @@ export async function callDeskBridgeCapability(
           focusConnectionId,
           ensureVisible: args.ensureVisible !== false,
         });
+      }
+      if (path === 'xd.xenesis.channels.routing.status') {
+        return callAdapter(path, api?.getXenesisChannelRoutingStatus, request.args);
       }
       if (path === 'xd.xenesis.gateway.status') {
         return callAdapter(path, api?.getXenesisStatus);

@@ -267,7 +267,11 @@ import type {
   XenesisTaskStatus,
   XenesisTaskSummary,
 } from '../shared/types';
-import { buildXenesisConnectionsStatus, type XenesisConnectionsStatus } from '../shared/xenesisConnections';
+import {
+  buildXenesisConnectionsStatus,
+  type XenesisConnectionItem,
+  type XenesisConnectionsStatus,
+} from '../shared/xenesisConnections';
 import { createAppControlService } from './appControl/appControlService';
 import { createAgentControlLockManager } from './agentControlLock';
 import { createAuditLogger } from './audit/auditLogger';
@@ -4796,6 +4800,47 @@ async function getXenesisConnectionsStatus(): Promise<XenesisConnectionsStatus> 
     xenesis: await getXenesisStatusPayload(),
     repoRoot: app.isPackaged ? app.getAppPath() : process.cwd(),
   });
+}
+
+async function getXenesisChannelRoutingStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const channel = readCapabilityString(body, ['channel', 'id', 'name']);
+  if (channel && !isXenesisProfileChannelName(channel)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis channel: ${channel}`,
+      allowedChannels: XENESIS_PROFILE_CHANNEL_NAMES,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.messengers.items
+    .filter((item) => item.supportLevel === 'implemented' && item.channelTemplate?.routing)
+    .filter((item) => !channel || item.id === channel)
+    .map((item: XenesisConnectionItem) => ({
+      id: item.id,
+      label: item.label,
+      status: item.status,
+      summary: item.summary,
+      routeBinding: item.channelTemplate?.routing?.routeBinding,
+      allowlistFields: item.channelTemplate?.routing?.allowlistFields ?? [],
+      pairing: item.channelTemplate?.routing?.pairing,
+      defaultAgent: item.channelTemplate?.routing?.defaultAgent,
+      sessionScope: item.channelTemplate?.routing?.sessionScope,
+      diagnostics: item.channelTemplate?.routing?.diagnostics ?? [],
+      deliveryFeatures: item.channelTemplate?.routing?.deliveryFeatures ?? [],
+      settingsAction: item.settingsAction,
+      crActions: item.crActions ?? [],
+      warnings: item.warnings ?? [],
+    }));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(channel ? { channel } : {}),
+    total: items.length,
+    items,
+  };
 }
 
 function getProviderIntegrationAssetRoot(): string {
@@ -11719,6 +11764,7 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisStatus: () =>
       getXenesisStatusPayload().then((status) => ({ ok: true, status: redactXenesisStatusForCapability(status) })),
     getXenesisConnectionsStatus: () => getXenesisConnectionsStatus().then((status) => ({ ok: true, status })),
+    getXenesisChannelRoutingStatus: (args: unknown) => getXenesisChannelRoutingStatus(args),
     getXenesisDiagnostics: () => getXenesisOperationalDiagnostics().then((diagnostics) => ({ ok: true, diagnostics })),
     listXenesisReports: (args: unknown) =>
       listXenesisReports(

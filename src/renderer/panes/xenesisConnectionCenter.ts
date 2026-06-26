@@ -1,5 +1,6 @@
 import type {
   McpBridgeCapabilityCallRequest,
+  XenesisConnectionChannelRoutingTemplate,
   XenesisConnectionItem,
   XenesisConnectionSection,
   XenesisConnectionStatus,
@@ -46,6 +47,10 @@ export function listXenesisConnectionSections(status: XenesisConnectionsStatus |
     status.sections.messengers,
     status.sections.guides,
   ];
+}
+
+export function formatXenesisChannelRoutingSummary(routing: XenesisConnectionChannelRoutingTemplate): string {
+  return `${routing.routeBinding} -> ${routing.defaultAgent} (${routing.sessionScope})`;
 }
 
 export function buildXenesisConnectionSettingsRequest(

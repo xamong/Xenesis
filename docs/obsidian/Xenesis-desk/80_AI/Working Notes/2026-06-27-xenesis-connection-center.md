@@ -191,6 +191,35 @@ Capability Registry instead of only through separate renderer settings panels.
   `xd.xenesis.connections.open`, and left the Notion connection card with
   `sp-info-card is-focused`.
 
+## Current Channel Routing Read Model Slice
+
+- Add `channelTemplate.routing` for implemented Telegram, Slack, Discord, and
+  Webhook cards.
+- Add `xd.xenesis.channels.routing.status` as a read/no-approval CR path for
+  route binding, allowlist fields, pairing/auth, default agent, session scope,
+  diagnostics, and delivery features.
+- Render the same routing metadata in Settings > Xenesis Agent > Connections
+  with `data-xenesis-channel-routing="<id>"`.
+- Keep mutation and test-send behavior on the existing profile channel CR
+  paths: `xd.xenesis.profiles.updateChannels` and
+  `xd.xenesis.profiles.testChannel`.
+- `npx tsx --test src\shared\xenesisConnections.test.ts`,
+  `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts`, and
+  `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` failed
+  first for missing routing metadata/path/helper and then passed after
+  implementation with 9/9, 5/5, and 6/6 tests respectively.
+- Combined targeted tests passed with 20/20 tests.
+- Scoped Biome passed after sorting the `src/shared/types.ts` export names.
+- `npm run typecheck` passed after narrowing the CR test schema properties.
+- `npm run docs:capabilities:audit` passed with registered nodes 686,
+  callable methods 416, subscribable events 54, dispatcher paths 396, and all
+  CR release-gate counters at 0.
+- `npm run build` passed.
+- Live Electron smoke passed for direct `xd.xenesis.channels.routing.status`
+  (`total=4`), filtered Telegram routing (`routeBinding=telegram.allowedChatIds`),
+  Settings DOM `[data-xenesis-channel-routing="telegram"]`, and Agent-pane
+  fenced CR execution matching `Desk action completed`.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

@@ -2,6 +2,7 @@ import type { ExternalAppSettings } from './externalAppControl';
 import type { XenesisConnectionsStatus } from './xenesisConnections';
 
 export type {
+  XenesisConnectionChannelRoutingTemplate,
   XenesisConnectionChannelTemplate,
   XenesisConnectionItem,
   XenesisConnectionMcpTemplate,

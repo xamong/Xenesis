@@ -5,6 +5,7 @@ import {
   buildXenesisConnectionGuideRequest,
   buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
+  formatXenesisChannelRoutingSummary,
   listXenesisConnectionSections,
   XENESIS_CONNECTION_STATUS_ORDER,
   xenesisConnectionTone,
@@ -129,4 +130,19 @@ test('buildXenesisConnectionGuideRequest opens repo-local guide files through CR
   });
 
   assert.equal(buildXenesisConnectionGuideRequest({ ...item, guidePath: '', guideOpenPath: '' }), null);
+});
+
+test('formatXenesisChannelRoutingSummary describes route, default agent, and session scope', () => {
+  assert.equal(
+    formatXenesisChannelRoutingSummary({
+      routeBinding: 'telegram.allowedChatIds',
+      allowlistFields: ['allowedChatIds'],
+      pairing: 'bot token',
+      defaultAgent: 'xenesis-agent',
+      sessionScope: 'chat',
+      diagnostics: ['missing-env', 'safe-to-deliver'],
+      deliveryFeatures: ['direct-messages', 'groups'],
+    }),
+    'telegram.allowedChatIds -> xenesis-agent (chat)',
+  );
 });

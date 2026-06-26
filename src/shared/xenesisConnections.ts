@@ -60,6 +60,17 @@ export interface XenesisConnectionChannelTemplate {
   auth: string;
   capabilities: string[];
   safetyControls: string[];
+  routing?: XenesisConnectionChannelRoutingTemplate;
+}
+
+export interface XenesisConnectionChannelRoutingTemplate {
+  routeBinding: string;
+  allowlistFields: string[];
+  pairing: string;
+  defaultAgent: string;
+  sessionScope: string;
+  diagnostics: string[];
+  deliveryFeatures: string[];
 }
 
 export interface XenesisConnectionItem {
@@ -389,6 +400,15 @@ const MESSENGERS: Array<{
       auth: 'bot token',
       capabilities: ['direct-messages', 'groups', 'files'],
       safetyControls: ['allowlist', 'bot-loop-protection', 'approval-guardrails'],
+      routing: {
+        routeBinding: 'telegram.allowedChatIds',
+        allowlistFields: ['allowedChatIds'],
+        pairing: 'bot token',
+        defaultAgent: 'xenesis-agent',
+        sessionScope: 'chat',
+        diagnostics: ['missing-env', 'safe-to-deliver', 'last-error'],
+        deliveryFeatures: ['direct-messages', 'groups', 'files'],
+      },
     },
   },
   {
@@ -406,6 +426,15 @@ const MESSENGERS: Array<{
       auth: 'bot token and signing secret',
       capabilities: ['channels', 'threads', 'files'],
       safetyControls: ['allowlist', 'signature-verification', 'bot-loop-protection', 'approval-guardrails'],
+      routing: {
+        routeBinding: 'slack.allowedChannelIds',
+        allowlistFields: ['allowedChannelIds'],
+        pairing: 'Slack app bot token and signing secret',
+        defaultAgent: 'xenesis-agent',
+        sessionScope: 'channel-thread',
+        diagnostics: ['missing-env', 'signature-check', 'safe-to-deliver', 'last-error'],
+        deliveryFeatures: ['channels', 'threads', 'files'],
+      },
     },
   },
   {
@@ -423,6 +452,15 @@ const MESSENGERS: Array<{
       auth: 'bot token or webhook URL',
       capabilities: ['channels', 'guilds', 'files'],
       safetyControls: ['allowlist', 'guild-scope', 'bot-loop-protection', 'approval-guardrails'],
+      routing: {
+        routeBinding: 'discord.allowedChannelIds',
+        allowlistFields: ['allowedChannelIds', 'allowedGuildIds'],
+        pairing: 'Discord bot token or webhook URL',
+        defaultAgent: 'xenesis-agent',
+        sessionScope: 'guild-channel',
+        diagnostics: ['missing-env', 'guild-scope', 'safe-to-deliver', 'last-error'],
+        deliveryFeatures: ['channels', 'guilds', 'files'],
+      },
     },
   },
   {
@@ -440,6 +478,15 @@ const MESSENGERS: Array<{
       auth: 'shared secret or protected inbound URL',
       capabilities: ['inbound-events', 'custom-routing'],
       safetyControls: ['network-boundary', 'request-auth', 'approval-guardrails'],
+      routing: {
+        routeBinding: 'webhook.urlEnv',
+        allowlistFields: ['urlEnv'],
+        pairing: 'protected inbound URL',
+        defaultAgent: 'xenesis-agent',
+        sessionScope: 'request',
+        diagnostics: ['missing-env', 'network-boundary', 'last-error'],
+        deliveryFeatures: ['inbound-events', 'custom-routing'],
+      },
     },
   },
 ];

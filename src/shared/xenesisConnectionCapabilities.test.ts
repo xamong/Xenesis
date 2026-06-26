@@ -86,6 +86,38 @@ test('xenesis connection open capability focuses a settings connection card thro
   });
 });
 
+test('xenesis channel routing status capability is registered and dispatches to the adapter', async () => {
+  const capability = findDeskBridgeCapability('xd.xenesis.channels.routing.status');
+  const schemaProperties = (capability?.schema?.properties ?? {}) as Record<string, any>;
+  assert.equal(capability?.permission, 'read');
+  assert.equal(capability?.approval, 'never');
+  assert.deepEqual(schemaProperties.channel?.enum, ['telegram', 'slack', 'discord', 'webhook']);
+
+  let calledArgs: unknown = null;
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisChannelRoutingStatus: (args) => {
+      calledArgs = args;
+      return {
+        ok: true,
+        items: [{ id: 'telegram' }],
+      };
+    },
+  };
+
+  const result = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.channels.routing.status',
+    args: { channel: 'telegram' },
+    source: 'xenesis',
+  });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(calledArgs, { channel: 'telegram' });
+  assert.deepEqual(result.result, {
+    ok: true,
+    items: [{ id: 'telegram' }],
+  });
+});
+
 test('xenesis profile channel capabilities expose implemented guardrail fields', () => {
   const updateSchema = findDeskBridgeCapability('xd.xenesis.profiles.updateChannels')?.schema;
   const testSchema = findDeskBridgeCapability('xd.xenesis.profiles.testChannel')?.schema;

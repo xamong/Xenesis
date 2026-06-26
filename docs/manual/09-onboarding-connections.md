@@ -178,3 +178,10 @@ Use `xd.xenesis.connections.open` with `{ "id": "<connection-id>" }` to open
 Settings > Xenesis Agent > Connections and focus a specific provider, tool,
 guide, or messenger card. This is a UI-control path; it does not mutate
 connection settings.
+
+Use `xd.xenesis.channels.routing.status` to inspect implemented external bot
+channel routing metadata through CR. The read model covers Telegram, Slack,
+Discord, and Webhook route bindings, allowlist fields, auth or pairing mode,
+default agent, session scope, diagnostics, and delivery features. Channel writes
+still go through `xd.xenesis.profiles.updateChannels`, and delivery tests still
+go through `xd.xenesis.profiles.testChannel`.

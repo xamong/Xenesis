@@ -88,6 +88,7 @@ import {
   buildXenesisConnectionGuideRequest,
   buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
+  formatXenesisChannelRoutingSummary,
   listXenesisConnectionSections,
   xenesisConnectionTone,
 } from './xenesisConnectionCenter';
@@ -4434,6 +4435,34 @@ export default function SettingsPane() {
                 <strong>{channelTemplate.safetyControls.join(', ')}</strong>
               </div>
             </div>
+            {channelTemplate.routing ? (
+              <div className="sp-info-list sp-info-list-compact" data-xenesis-channel-routing={item.id}>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelRoute')}</span>
+                  <strong>{formatXenesisChannelRoutingSummary(channelTemplate.routing)}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelDefaultAgent')}</span>
+                  <strong>{channelTemplate.routing.defaultAgent}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelSessionScope')}</span>
+                  <strong>{channelTemplate.routing.sessionScope}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelAllowlist')}</span>
+                  <strong>{channelTemplate.routing.allowlistFields.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelDiagnostics')}</span>
+                  <strong>{channelTemplate.routing.diagnostics.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelDelivery')}</span>
+                  <strong>{channelTemplate.routing.deliveryFeatures.join(', ')}</strong>
+                </div>
+              </div>
+            ) : null}
           </div>
         ) : null}
         {item.warnings?.length ? <p className="sp-hint sp-warning-text">{item.warnings.join(' ')}</p> : null}

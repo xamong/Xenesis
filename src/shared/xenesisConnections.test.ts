@@ -530,6 +530,56 @@ test('buildXenesisConnectionsStatus exposes an OpenClaw-style messenger channel 
   assert.equal(googleChat?.crActions?.length ?? 0, 0);
 });
 
+test('buildXenesisConnectionsStatus exposes OpenClaw-style routing metadata for implemented channels', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const implemented = status.sections.messengers.items.filter((item) => item.supportLevel === 'implemented');
+  const telegram = implemented.find((item) => item.id === 'telegram');
+
+  assert.deepEqual(telegram?.channelTemplate?.routing, {
+    routeBinding: 'telegram.allowedChatIds',
+    allowlistFields: ['allowedChatIds'],
+    pairing: 'bot token',
+    defaultAgent: 'xenesis-agent',
+    sessionScope: 'chat',
+    diagnostics: ['missing-env', 'safe-to-deliver', 'last-error'],
+    deliveryFeatures: ['direct-messages', 'groups', 'files'],
+  });
+
+  for (const item of implemented) {
+    assert.equal(typeof item.channelTemplate?.routing?.routeBinding, 'string', `${item.id} route binding`);
+    assert.ok(item.channelTemplate?.routing?.allowlistFields.length, `${item.id} allowlist fields`);
+    assert.ok(item.channelTemplate?.routing?.diagnostics.length, `${item.id} diagnostics`);
+    assert.ok(item.channelTemplate?.routing?.deliveryFeatures.length, `${item.id} delivery features`);
+  }
+});
+
 test('buildXenesisConnectionsStatus resolves repo-local guide open paths from the repo root', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {
