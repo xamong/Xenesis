@@ -4212,6 +4212,7 @@ export default function SettingsPane() {
     const settingsRequest = buildXenesisConnectionSettingsRequest(item);
     const guideRequest = buildXenesisConnectionGuideRequest(item);
     const mcpTemplate = item.mcpTemplate;
+    const channelTemplate = item.channelTemplate;
     return (
       <div className="sp-info-card" key={item.id} data-xenesis-connection={item.id}>
         <div className="sp-section-heading">
@@ -4356,6 +4357,34 @@ export default function SettingsPane() {
                   </pre>
                 </div>
               ))}
+            </div>
+          </div>
+        ) : null}
+        {channelTemplate ? (
+          <div className="sp-channel-template" data-xenesis-channel-template={item.id}>
+            <div className="sp-info-list sp-info-list-compact">
+              <div>
+                <span>{t('settings.xenesisConnectionsChannelCategory')}</span>
+                <strong>{channelTemplate.category}</strong>
+              </div>
+              <div>
+                <span>{t('settings.xenesisConnectionsChannelAdapter')}</span>
+                <strong>{channelTemplate.adapter}</strong>
+              </div>
+              <div>
+                <span>{t('settings.xenesisConnectionsChannelAuth')}</span>
+                <strong>{channelTemplate.auth}</strong>
+              </div>
+            </div>
+            <div className="sp-channel-chips">
+              <div>
+                <span>{t('settings.xenesisConnectionsChannelCapabilities')}</span>
+                <strong>{channelTemplate.capabilities.join(', ')}</strong>
+              </div>
+              <div>
+                <span>{t('settings.xenesisConnectionsChannelSafety')}</span>
+                <strong>{channelTemplate.safetyControls.join(', ')}</strong>
+              </div>
             </div>
           </div>
         ) : null}

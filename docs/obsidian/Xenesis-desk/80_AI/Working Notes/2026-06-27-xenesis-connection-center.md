@@ -89,6 +89,21 @@ Capability Registry instead of only through separate renderer settings panels.
 - Keep Google Workspace and Google Calendar as planned cards with no template or
   install action until a verified OAuth/MCP template is selected.
 
+## Current Messenger Channel Catalog Slice
+
+- Add `channelTemplate` metadata to messenger cards in
+  `xd.xenesis.connections.status`.
+- Implemented runtime channels remain Telegram, Slack, Discord, and webhook.
+  These keep CR write/test actions and Settings targets.
+- Planned catalog now includes OpenClaw/Hermes-style channels such as WhatsApp,
+  Signal, Microsoft Teams, Google Chat, iMessage, Matrix, IRC, Mattermost,
+  Nextcloud Talk, Nostr, Raft, Tlon, Synology Chat, Twitch, LINE, WeChat, QQ
+  Bot, Feishu/Lark, Yuanbao, Zalo, Email, SMS, Home Assistant, and ntfy.
+- Settings > Xenesis Agent > Connections renders category, adapter, auth/setup
+  mode, capabilities, and safety controls for messenger cards.
+- Planned cards intentionally expose no CR mutation path until Xenesis gateway
+  adapters, auth flows, allowlists, diagnostics, and live verification exist.
+
 ## Current Verification
 
 - `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
@@ -125,6 +140,17 @@ Capability Registry instead of only through separate renderer settings panels.
 - Live Electron smoke verified Notion `mcpTemplate`, Google Calendar planned/no
   template, five rendered `data-xenesis-mcp-template` blocks, `xd.xenesis.connections.status`
   `ok=true`, and Agent-pane fenced CR execution matching `Desk action completed.`
+- `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+  passed after adding the messenger channel catalog.
+- `npx biome check src/shared/xenesisConnections.ts src/shared/xenesisConnections.test.ts src/shared/types.ts src/renderer/panes/SettingsPane.tsx src/renderer/i18n/en.ts src/renderer/i18n/ko.ts --max-diagnostics 60`
+  passed for touched TS/TSX/i18n files after the channel catalog slice.
+- `npm run typecheck`, `npm run docs:capabilities:audit`, and
+  `npm run build` passed for the channel catalog slice. CR audit counters
+  remained 0.
+- Live Electron smoke verified 28 messenger cards, 28 rendered
+  `data-xenesis-channel-template` blocks, Signal bridge/pairing metadata,
+  Google Chat workspace metadata, `xd.xenesis.connections.status` `ok=true`,
+  and Agent-pane fenced CR execution matching `Desk action completed.`
 
 ## Graph Links
 

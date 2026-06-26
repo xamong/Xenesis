@@ -104,9 +104,21 @@ Useful CR paths:
 
 The first actionable messenger set is Telegram, Slack, Discord, and webhook.
 Each channel should be configured with environment variable names and allowlists
-instead of hardcoded secrets. Google Chat, Microsoft Teams, and WhatsApp appear
-as planned/manual cards until channel runtime support and verification are
-implemented.
+instead of hardcoded secrets.
+
+The messenger catalog also includes planned OpenClaw/Hermes-style channels such
+as WhatsApp, Signal, Microsoft Teams, Google Chat, iMessage, Matrix, IRC,
+Mattermost, Nextcloud Talk, Nostr, Raft, Tlon, Synology Chat, Twitch, LINE,
+WeChat, QQ Bot, Feishu/Lark, Yuanbao, Zalo, Email, SMS, Home Assistant, and
+ntfy. These cards are read-only setup catalog entries until matching Xenesis
+gateway adapters, authentication flows, allowlists, diagnostics, and live
+verification exist.
+
+Messenger cards expose `channelTemplate` metadata through
+`xd.xenesis.connections.status`: category, adapter style, auth/setup mode,
+expected capabilities, and required safety controls. Settings renders the same
+metadata so channel planning is visible inside Xenesis Desk without presenting
+planned channels as enabled runtime features.
 
 Each implemented channel also carries the routing guardrails that the runtime
 already enforces: `approvalMode`, `maxTurns`, and `maxTokens`. These settings

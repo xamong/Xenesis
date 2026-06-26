@@ -54,6 +54,14 @@ export interface XenesisConnectionMcpTemplate {
   configSnippets: XenesisConnectionMcpConfigSnippets;
 }
 
+export interface XenesisConnectionChannelTemplate {
+  category: 'consumer' | 'enterprise' | 'developer' | 'community' | 'regional' | 'iot';
+  adapter: string;
+  auth: string;
+  capabilities: string[];
+  safetyControls: string[];
+}
+
 export interface XenesisConnectionItem {
   id: string;
   kind: XenesisConnectionKind;
@@ -71,6 +79,7 @@ export interface XenesisConnectionItem {
   guidePath?: string;
   guideOpenPath?: string;
   mcpTemplate?: XenesisConnectionMcpTemplate;
+  channelTemplate?: XenesisConnectionChannelTemplate;
   warnings?: string[];
 }
 
@@ -363,6 +372,7 @@ const MESSENGERS: Array<{
   label: string;
   setupSteps: string[];
   sourceDocs: XenesisConnectionSourceDoc[];
+  channelTemplate: XenesisConnectionChannelTemplate;
 }> = [
   {
     id: 'telegram',
@@ -372,7 +382,14 @@ const MESSENGERS: Array<{
       'Limit allowed chat IDs before enabling delivery from the gateway.',
       'Use the channel test action before relying on remote prompts.',
     ],
-    sourceDocs: [{ label: 'OpenClaw channels', url: 'https://docs.openclaw.ai/channels' }],
+    sourceDocs: [{ label: 'OpenClaw Telegram', url: 'https://docs.openclaw.ai/channels/telegram' }],
+    channelTemplate: {
+      category: 'consumer',
+      adapter: 'bot-api',
+      auth: 'bot token',
+      capabilities: ['direct-messages', 'groups', 'files'],
+      safetyControls: ['allowlist', 'bot-loop-protection', 'approval-guardrails'],
+    },
   },
   {
     id: 'slack',
@@ -382,7 +399,14 @@ const MESSENGERS: Array<{
       'Limit allowed channel IDs before enabling delivery from the gateway.',
       'Use the channel test action before relying on remote prompts.',
     ],
-    sourceDocs: [{ label: 'OpenClaw channels', url: 'https://docs.openclaw.ai/channels' }],
+    sourceDocs: [{ label: 'OpenClaw Slack', url: 'https://docs.openclaw.ai/channels/slack' }],
+    channelTemplate: {
+      category: 'enterprise',
+      adapter: 'bot-api',
+      auth: 'bot token and signing secret',
+      capabilities: ['channels', 'threads', 'files'],
+      safetyControls: ['allowlist', 'signature-verification', 'bot-loop-protection', 'approval-guardrails'],
+    },
   },
   {
     id: 'discord',
@@ -392,7 +416,14 @@ const MESSENGERS: Array<{
       'Limit allowed channel and guild IDs before enabling delivery from the gateway.',
       'Use the channel test action before relying on remote prompts.',
     ],
-    sourceDocs: [{ label: 'OpenClaw channels', url: 'https://docs.openclaw.ai/channels' }],
+    sourceDocs: [{ label: 'OpenClaw Discord', url: 'https://docs.openclaw.ai/channels/discord' }],
+    channelTemplate: {
+      category: 'community',
+      adapter: 'bot-api',
+      auth: 'bot token or webhook URL',
+      capabilities: ['channels', 'guilds', 'files'],
+      safetyControls: ['allowlist', 'guild-scope', 'bot-loop-protection', 'approval-guardrails'],
+    },
   },
   {
     id: 'webhook',
@@ -403,60 +434,488 @@ const MESSENGERS: Array<{
       'Use the channel test action before relying on remote prompts.',
     ],
     sourceDocs: [{ label: 'Hermes user stories', url: 'https://hermes-agent.nousresearch.com/docs/user-stories' }],
+    channelTemplate: {
+      category: 'developer',
+      adapter: 'webhook',
+      auth: 'shared secret or protected inbound URL',
+      capabilities: ['inbound-events', 'custom-routing'],
+      safetyControls: ['network-boundary', 'request-auth', 'approval-guardrails'],
+    },
   },
 ];
 
-const PLANNED_MESSENGERS: XenesisConnectionItem[] = [
-  {
-    id: 'google-chat',
+type PlannedMessengerDefinition = Omit<XenesisConnectionItem, 'kind' | 'status' | 'supportLevel' | 'warnings'> & {
+  warnings?: string[];
+};
+
+function plannedMessenger(definition: PlannedMessengerDefinition): XenesisConnectionItem {
+  return {
+    ...definition,
     kind: 'messenger',
-    label: 'Google Chat',
     status: 'planned',
+    supportLevel: 'planned',
+    crActions: [],
+    warnings: definition.warnings ?? [`No ${definition.label} gateway adapter is bundled yet.`],
+  };
+}
+
+function openClawDoc(label: string, slug: string): XenesisConnectionSourceDoc {
+  return { label: `OpenClaw ${label}`, url: `https://docs.openclaw.ai/channels/${slug}` };
+}
+
+const PLANNED_MESSENGERS: XenesisConnectionItem[] = [
+  plannedMessenger({
+    id: 'whatsapp',
+    label: 'WhatsApp',
+    summary: 'Planned mobile messenger channel; keep manual until provider, webhook, and delivery safety are verified.',
+    setupSteps: [
+      'Select a verified WhatsApp Business or OpenClaw-compatible provider adapter.',
+      'Document allowed sender IDs before remote prompts are accepted.',
+      'Verify delivery and bot-loop behavior before enabling action workflows.',
+    ],
+    sourceDocs: [openClawDoc('WhatsApp', 'whatsapp')],
+    channelTemplate: {
+      category: 'consumer',
+      adapter: 'provider-webhook',
+      auth: 'business provider token and webhook signature',
+      capabilities: ['direct-messages', 'media'],
+      safetyControls: ['sender-allowlist', 'webhook-signature', 'bot-loop-protection', 'approval-guardrails'],
+    },
+  }),
+  plannedMessenger({
+    id: 'signal',
+    label: 'Signal',
+    summary: 'Planned privacy messenger channel after a verified bridge and account pairing flow are selected.',
+    setupSteps: [
+      'Select and document the Signal bridge or pairing runtime.',
+      'Require explicit account pairing and sender allowlists before accepting prompts.',
+      'Verify bridge reconnect behavior before enabling long-running sessions.',
+    ],
+    sourceDocs: [openClawDoc('Signal', 'signal')],
+    channelTemplate: {
+      category: 'consumer',
+      adapter: 'bridge',
+      auth: 'paired device or bridge account',
+      capabilities: ['direct-messages', 'groups', 'media'],
+      safetyControls: ['sender-allowlist', 'pairing-review', 'bot-loop-protection', 'approval-guardrails'],
+    },
+  }),
+  plannedMessenger({
+    id: 'microsoft-teams',
+    label: 'Microsoft Teams',
+    summary:
+      'Planned enterprise messenger channel; keep manual until adapter, auth, and allowed-team controls are verified.',
+    setupSteps: [
+      'Define the Teams app/bot registration path and tenant restrictions.',
+      'Verify allowed-team and allowed-channel controls before enabling remote prompts.',
+      'Confirm Graph or Bot Framework scopes before adding write actions.',
+    ],
+    sourceDocs: [openClawDoc('Microsoft Teams', 'msteams')],
+    channelTemplate: {
+      category: 'enterprise',
+      adapter: 'bot-framework',
+      auth: 'tenant app registration and bot secret',
+      capabilities: ['channels', 'threads', 'files'],
+      safetyControls: ['tenant-scope', 'channel-allowlist', 'bot-loop-protection', 'approval-guardrails'],
+    },
+  }),
+  plannedMessenger({
+    id: 'google-chat',
+    label: 'Google Chat',
     summary:
       'Planned external messenger channel after a verified gateway adapter and OAuth/service-account setup are selected.',
-    supportLevel: 'planned',
     setupSteps: [
       'Select a verified Google Chat app or webhook adapter before exposing runtime enablement.',
       'Document workspace installation, allowed spaces, and bot loop protection before activation.',
+      'Keep service-account or OAuth scopes visible in the setup view.',
     ],
     sourceDocs: [
+      openClawDoc('Google Chat', 'googlechat'),
       {
         label: 'Hermes Google Chat messaging',
         url: 'https://hermes-agent.nousresearch.com/docs/user-guide/messaging/google_chat',
       },
     ],
-    warnings: ['No Google Chat gateway adapter is bundled yet.'],
-  },
-  {
-    id: 'microsoft-teams',
-    kind: 'messenger',
-    label: 'Microsoft Teams',
-    status: 'planned',
+    channelTemplate: {
+      category: 'enterprise',
+      adapter: 'workspace-app',
+      auth: 'workspace app, service account, or OAuth',
+      capabilities: ['spaces', 'threads', 'cards'],
+      safetyControls: ['workspace-scope', 'space-allowlist', 'bot-loop-protection', 'approval-guardrails'],
+    },
+  }),
+  plannedMessenger({
+    id: 'imessage',
+    label: 'iMessage',
     summary:
-      'Planned enterprise messenger channel; keep as manual until adapter, auth, and allowed-team controls are verified.',
-    supportLevel: 'planned',
+      'Planned Apple Messages channel; keep manual until host pairing, routing, and privacy controls are verified.',
     setupSteps: [
-      'Define the Teams app/bot registration path and tenant restrictions.',
-      'Verify allowed-team and allowed-channel controls before enabling remote prompts.',
+      'Choose native iMessage or BlueBubbles bridge architecture.',
+      'Document host, account, and recipient allowlist requirements.',
+      'Verify local-host privacy and reconnect behavior before enabling delivery.',
+    ],
+    sourceDocs: [openClawDoc('iMessage', 'imessage'), openClawDoc('BlueBubbles iMessage', 'imessage-from-bluebubbles')],
+    channelTemplate: {
+      category: 'consumer',
+      adapter: 'desktop-bridge',
+      auth: 'paired Apple account or BlueBubbles server credentials',
+      capabilities: ['direct-messages', 'attachments'],
+      safetyControls: ['recipient-allowlist', 'host-boundary', 'bot-loop-protection', 'approval-guardrails'],
+    },
+  }),
+  plannedMessenger({
+    id: 'matrix',
+    label: 'Matrix',
+    summary: 'Planned federated chat channel after homeserver, room, and push-rule behavior are verified.',
+    setupSteps: [
+      'Configure the Matrix homeserver and bot account.',
+      'Restrict allowed rooms before enabling delivery.',
+      'Review push rules and migration behavior before long-running sessions.',
+    ],
+    sourceDocs: [
+      openClawDoc('Matrix', 'matrix'),
+      openClawDoc('Matrix migration', 'matrix-migration'),
+      openClawDoc('Matrix push rules', 'matrix-push-rules'),
+    ],
+    channelTemplate: {
+      category: 'community',
+      adapter: 'bot-api',
+      auth: 'homeserver access token',
+      capabilities: ['rooms', 'threads', 'files'],
+      safetyControls: ['room-allowlist', 'homeserver-scope', 'bot-loop-protection', 'approval-guardrails'],
+    },
+  }),
+  plannedMessenger({
+    id: 'irc',
+    label: 'IRC',
+    summary: 'Planned legacy chat channel after server, channel, and nickname controls are defined.',
+    setupSteps: [
+      'Define IRC server, TLS, nickname, and channel configuration.',
+      'Limit allowed channels before accepting prompts.',
+      'Keep command parsing conservative because IRC messages are plain text.',
+    ],
+    sourceDocs: [openClawDoc('IRC', 'irc')],
+    channelTemplate: {
+      category: 'community',
+      adapter: 'socket-bot',
+      auth: 'server password, NickServ, or none',
+      capabilities: ['channels', 'plain-text'],
+      safetyControls: ['channel-allowlist', 'command-prefix', 'bot-loop-protection', 'approval-guardrails'],
+    },
+  }),
+  plannedMessenger({
+    id: 'mattermost',
+    label: 'Mattermost',
+    summary: 'Planned self-hosted enterprise channel after server and team scopes are verified.',
+    setupSteps: [
+      'Configure the Mattermost server URL and bot token.',
+      'Restrict allowed teams and channels before enabling prompts.',
+      'Verify attachment and thread behavior before write workflows.',
+    ],
+    sourceDocs: [openClawDoc('Mattermost', 'mattermost')],
+    channelTemplate: {
+      category: 'enterprise',
+      adapter: 'bot-api',
+      auth: 'server URL and bot token',
+      capabilities: ['channels', 'threads', 'files'],
+      safetyControls: ['team-allowlist', 'channel-allowlist', 'bot-loop-protection', 'approval-guardrails'],
+    },
+  }),
+  plannedMessenger({
+    id: 'nextcloud-talk',
+    label: 'Nextcloud Talk',
+    summary: 'Planned collaboration channel after Nextcloud server, room, and credential handling are verified.',
+    setupSteps: [
+      'Configure the Nextcloud base URL and app password or token.',
+      'Restrict allowed conversations before accepting prompts.',
+      'Verify file sharing behavior before enabling write workflows.',
+    ],
+    sourceDocs: [openClawDoc('Nextcloud Talk', 'nextcloud-talk')],
+    channelTemplate: {
+      category: 'enterprise',
+      adapter: 'server-api',
+      auth: 'Nextcloud app password or token',
+      capabilities: ['rooms', 'files'],
+      safetyControls: ['room-allowlist', 'server-boundary', 'bot-loop-protection', 'approval-guardrails'],
+    },
+  }),
+  plannedMessenger({
+    id: 'nostr',
+    label: 'Nostr',
+    summary: 'Planned decentralized channel after relay, key, and identity controls are defined.',
+    setupSteps: [
+      'Define relay list and bot identity storage.',
+      'Restrict accepted authors or event kinds before accepting prompts.',
+      'Avoid exposing private keys in Desk settings.',
+    ],
+    sourceDocs: [openClawDoc('Nostr', 'nostr')],
+    channelTemplate: {
+      category: 'community',
+      adapter: 'relay-client',
+      auth: 'Nostr key material or signer',
+      capabilities: ['relays', 'events'],
+      safetyControls: ['author-allowlist', 'key-boundary', 'bot-loop-protection', 'approval-guardrails'],
+    },
+  }),
+  plannedMessenger({
+    id: 'raft',
+    label: 'Raft',
+    summary: 'Planned OpenClaw Raft channel until adapter semantics and routing controls are mapped into Xenesis.',
+    setupSteps: [
+      'Map the Raft channel adapter requirements into Xenesis gateway config.',
+      'Document route IDs and allowed peers before accepting prompts.',
+      'Verify loop protection before enabling delivery.',
+    ],
+    sourceDocs: [openClawDoc('Raft', 'raft')],
+    channelTemplate: {
+      category: 'developer',
+      adapter: 'openclaw-adapter',
+      auth: 'adapter-specific credentials',
+      capabilities: ['custom-routing'],
+      safetyControls: ['peer-allowlist', 'route-review', 'bot-loop-protection', 'approval-guardrails'],
+    },
+  }),
+  plannedMessenger({
+    id: 'tlon',
+    label: 'Tlon',
+    summary: 'Planned Tlon channel until identity, group, and routing behavior are verified.',
+    setupSteps: [
+      'Document Tlon identity and group requirements.',
+      'Restrict allowed groups before accepting prompts.',
+      'Verify inbound/outbound loop behavior.',
+    ],
+    sourceDocs: [openClawDoc('Tlon', 'tlon')],
+    channelTemplate: {
+      category: 'community',
+      adapter: 'platform-api',
+      auth: 'platform identity credentials',
+      capabilities: ['groups', 'direct-messages'],
+      safetyControls: ['group-allowlist', 'identity-review', 'bot-loop-protection', 'approval-guardrails'],
+    },
+  }),
+  plannedMessenger({
+    id: 'synology-chat',
+    label: 'Synology Chat',
+    summary: 'Planned self-hosted chat channel after webhook/token behavior is verified.',
+    setupSteps: [
+      'Configure the Synology Chat server and integration token.',
+      'Restrict allowed channels before accepting prompts.',
+      'Verify server trust and outbound delivery behavior.',
+    ],
+    sourceDocs: [openClawDoc('Synology Chat', 'synology-chat')],
+    channelTemplate: {
+      category: 'enterprise',
+      adapter: 'server-webhook',
+      auth: 'server token or webhook secret',
+      capabilities: ['channels', 'webhooks'],
+      safetyControls: ['server-boundary', 'channel-allowlist', 'bot-loop-protection', 'approval-guardrails'],
+    },
+  }),
+  plannedMessenger({
+    id: 'twitch',
+    label: 'Twitch',
+    summary: 'Planned livestream chat channel after broadcaster, moderator, and chat-rate controls are verified.',
+    setupSteps: [
+      'Configure Twitch app credentials or bot OAuth.',
+      'Restrict allowed channels and broadcaster IDs.',
+      'Apply conservative rate limits before enabling replies.',
+    ],
+    sourceDocs: [openClawDoc('Twitch', 'twitch')],
+    channelTemplate: {
+      category: 'community',
+      adapter: 'chat-api',
+      auth: 'OAuth token',
+      capabilities: ['channels', 'chat'],
+      safetyControls: ['channel-allowlist', 'rate-limit', 'bot-loop-protection', 'approval-guardrails'],
+    },
+  }),
+  plannedMessenger({
+    id: 'line',
+    label: 'LINE',
+    summary: 'Planned regional messenger channel after LINE bot credentials and allowed rooms are verified.',
+    setupSteps: [
+      'Configure LINE channel secret and access token.',
+      'Restrict allowed user, group, or room IDs before accepting prompts.',
+      'Verify webhook signature behavior before delivery.',
+    ],
+    sourceDocs: [openClawDoc('LINE', 'line')],
+    channelTemplate: {
+      category: 'regional',
+      adapter: 'bot-api',
+      auth: 'channel secret and access token',
+      capabilities: ['direct-messages', 'groups', 'media'],
+      safetyControls: ['signature-verification', 'room-allowlist', 'bot-loop-protection', 'approval-guardrails'],
+    },
+  }),
+  plannedMessenger({
+    id: 'wechat',
+    label: 'WeChat',
+    summary: 'Planned regional messenger channel after official account or bot adapter setup is verified.',
+    setupSteps: [
+      'Choose the WeChat official account or bot adapter path.',
+      'Document account verification, callback, and allowed sender requirements.',
+      'Verify delivery constraints before write workflows.',
+    ],
+    sourceDocs: [openClawDoc('WeChat', 'wechat')],
+    channelTemplate: {
+      category: 'regional',
+      adapter: 'official-account',
+      auth: 'official account token and callback secret',
+      capabilities: ['direct-messages', 'media'],
+      safetyControls: ['sender-allowlist', 'callback-verification', 'bot-loop-protection', 'approval-guardrails'],
+    },
+  }),
+  plannedMessenger({
+    id: 'qqbot',
+    label: 'QQ Bot',
+    summary: 'Planned regional bot channel after QQ bot app credentials and group controls are verified.',
+    setupSteps: [
+      'Configure QQ Bot app credentials and callback endpoint.',
+      'Restrict allowed groups before accepting prompts.',
+      'Verify callback signatures before enabling delivery.',
+    ],
+    sourceDocs: [openClawDoc('QQ Bot', 'qqbot')],
+    channelTemplate: {
+      category: 'regional',
+      adapter: 'bot-api',
+      auth: 'app credentials and callback signature',
+      capabilities: ['groups', 'direct-messages'],
+      safetyControls: ['group-allowlist', 'signature-verification', 'bot-loop-protection', 'approval-guardrails'],
+    },
+  }),
+  plannedMessenger({
+    id: 'feishu',
+    label: 'Feishu / Lark',
+    summary: 'Planned enterprise messenger channel after tenant app credentials and chat scopes are verified.',
+    setupSteps: [
+      'Configure Feishu/Lark app ID, secret, and event subscription.',
+      'Restrict allowed chats or tenant before accepting prompts.',
+      'Verify event signature behavior before enabling delivery.',
+    ],
+    sourceDocs: [openClawDoc('Feishu', 'feishu')],
+    channelTemplate: {
+      category: 'enterprise',
+      adapter: 'tenant-app',
+      auth: 'app ID, app secret, and event verification token',
+      capabilities: ['chats', 'threads', 'cards'],
+      safetyControls: ['tenant-scope', 'chat-allowlist', 'signature-verification', 'approval-guardrails'],
+    },
+  }),
+  plannedMessenger({
+    id: 'yuanbao',
+    label: 'Yuanbao',
+    summary: 'Planned regional assistant channel until adapter and account controls are mapped into Xenesis.',
+    setupSteps: [
+      'Document Yuanbao adapter credentials and supported message events.',
+      'Restrict allowed accounts or rooms before accepting prompts.',
+      'Verify human/bot loop behavior before enabling delivery.',
+    ],
+    sourceDocs: [openClawDoc('Yuanbao', 'yuanbao')],
+    channelTemplate: {
+      category: 'regional',
+      adapter: 'platform-adapter',
+      auth: 'platform-specific credentials',
+      capabilities: ['direct-messages'],
+      safetyControls: ['account-allowlist', 'bot-loop-protection', 'approval-guardrails'],
+    },
+  }),
+  plannedMessenger({
+    id: 'zalo',
+    label: 'Zalo',
+    summary: 'Planned regional messenger channel after Zalo bot/user adapter and delivery controls are verified.',
+    setupSteps: [
+      'Choose the Zalo bot or user adapter path.',
+      'Restrict allowed users or groups before accepting prompts.',
+      'Verify callback auth and rate limits before enabling replies.',
+    ],
+    sourceDocs: [
+      openClawDoc('Zalo', 'zalo'),
+      openClawDoc('Zalo Bot', 'zaloclawbot'),
+      openClawDoc('Zalo User', 'zalouser'),
+    ],
+    channelTemplate: {
+      category: 'regional',
+      adapter: 'bot-or-user-adapter',
+      auth: 'adapter-specific token or session',
+      capabilities: ['direct-messages', 'groups', 'media'],
+      safetyControls: ['sender-allowlist', 'rate-limit', 'bot-loop-protection', 'approval-guardrails'],
+    },
+  }),
+  plannedMessenger({
+    id: 'email',
+    label: 'Email',
+    summary: 'Planned asynchronous inbox channel after mailbox, sender, and thread controls are verified.',
+    setupSteps: [
+      'Select IMAP/SMTP, Gmail, or workspace mailbox adapter.',
+      'Restrict accepted sender addresses and target folders before accepting prompts.',
+      'Keep attachments and outbound replies approval-gated.',
+    ],
+    sourceDocs: [{ label: 'Hermes integrations', url: 'https://hermes-agent.nousresearch.com/docs/integrations/' }],
+    channelTemplate: {
+      category: 'enterprise',
+      adapter: 'mailbox',
+      auth: 'OAuth or app password',
+      capabilities: ['threads', 'attachments', 'asynchronous'],
+      safetyControls: ['sender-allowlist', 'folder-scope', 'attachment-review', 'approval-guardrails'],
+    },
+    warnings: ['No Email gateway adapter is bundled yet.'],
+  }),
+  plannedMessenger({
+    id: 'sms',
+    label: 'SMS',
+    summary: 'Planned SMS channel after provider, sender number, and recipient controls are verified.',
+    setupSteps: [
+      'Select the SMS provider and sender number.',
+      'Restrict allowed phone numbers before accepting prompts.',
+      'Keep outbound messages short and approval-gated.',
+    ],
+    sourceDocs: [openClawDoc('SMS', 'sms')],
+    channelTemplate: {
+      category: 'consumer',
+      adapter: 'provider-webhook',
+      auth: 'provider API key and webhook signature',
+      capabilities: ['direct-messages', 'asynchronous'],
+      safetyControls: ['phone-allowlist', 'webhook-signature', 'rate-limit', 'approval-guardrails'],
+    },
+  }),
+  plannedMessenger({
+    id: 'home-assistant',
+    label: 'Home Assistant',
+    summary: 'Planned automation channel after local network, entity, and action safety boundaries are defined.',
+    setupSteps: [
+      'Configure Home Assistant URL and long-lived token.',
+      'Restrict allowed entities and service calls before enabling prompts.',
+      'Route mutating home actions through explicit approval.',
     ],
     sourceDocs: [{ label: 'OpenClaw channels', url: 'https://docs.openclaw.ai/channels' }],
-    warnings: ['No Microsoft Teams gateway adapter is bundled yet.'],
-  },
-  {
-    id: 'whatsapp',
-    kind: 'messenger',
-    label: 'WhatsApp',
-    status: 'planned',
-    summary:
-      'Planned mobile messenger channel; keep as manual until provider, webhook, and delivery safety are verified.',
-    supportLevel: 'planned',
+    channelTemplate: {
+      category: 'iot',
+      adapter: 'local-api',
+      auth: 'long-lived access token',
+      capabilities: ['events', 'entity-state', 'automation'],
+      safetyControls: ['entity-allowlist', 'network-boundary', 'approval-guardrails'],
+    },
+    warnings: ['No Home Assistant gateway adapter is bundled yet.'],
+  }),
+  plannedMessenger({
+    id: 'ntfy',
+    label: 'ntfy',
+    summary: 'Planned push-notification channel after topic, token, and delivery controls are verified.',
     setupSteps: [
-      'Select a verified WhatsApp Business provider before exposing runtime enablement.',
-      'Document allowed sender IDs and approval behavior for remote actions.',
+      'Configure ntfy server, topic, and token if required.',
+      'Restrict allowed topics before accepting prompts.',
+      'Keep one-way notifications separate from interactive sessions until reply behavior exists.',
     ],
     sourceDocs: [{ label: 'OpenClaw channels', url: 'https://docs.openclaw.ai/channels' }],
-    warnings: ['No WhatsApp gateway adapter is bundled yet.'],
-  },
+    channelTemplate: {
+      category: 'developer',
+      adapter: 'push-topic',
+      auth: 'topic token or none',
+      capabilities: ['notifications'],
+      safetyControls: ['topic-allowlist', 'network-boundary', 'approval-guardrails'],
+    },
+    warnings: ['No ntfy gateway adapter is bundled yet.'],
+  }),
 ];
 
 function countItems(sections: XenesisConnectionsStatus['sections']): XenesisConnectionsStatus['summary'] {
@@ -607,7 +1066,7 @@ function channelStatus(xenesis: XenesisStatus | null, name: XenesisGatewayChanne
 }
 
 function messengerItems(xenesis: XenesisStatus | null): XenesisConnectionItem[] {
-  return MESSENGERS.map(({ id, label, setupSteps, sourceDocs }) => {
+  return MESSENGERS.map(({ id, label, setupSteps, sourceDocs, channelTemplate }) => {
     const runtime = xenesis?.gateway.channels?.[id];
     return {
       id,
@@ -622,6 +1081,7 @@ function messengerItems(xenesis: XenesisStatus | null): XenesisConnectionItem[] 
       crActions: ['xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
       setupSteps,
       sourceDocs,
+      channelTemplate,
       warnings: [...(runtime?.warnings ?? []), ...(runtime?.lastError ? [runtime.lastError.message] : [])],
     };
   });

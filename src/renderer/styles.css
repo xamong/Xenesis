@@ -8129,6 +8129,35 @@ button:disabled {
 .sp-mcp-snippet code {
   font-family: inherit;
 }
+.sp-channel-template {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sp-channel-template .sp-info-list-compact strong {
+  white-space: normal;
+  text-align: right;
+}
+.sp-channel-chips {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+.sp-channel-chips > div {
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--panel) 86%, var(--bg-doc) 14%);
+}
+.sp-channel-chips span,
+.sp-channel-chips strong {
+  display: block;
+}
+.sp-channel-chips strong {
+  margin-top: 4px;
+  white-space: normal;
+}
 .sp-select-card-active .sp-chevron {
   color: var(--accent);
 }

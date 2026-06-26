@@ -457,6 +457,79 @@ test('buildXenesisConnectionsStatus keeps Google Calendar planned without fake i
   assert.ok(calendar?.setupSteps?.some((step) => step.includes('Google Calendar')));
 });
 
+test('buildXenesisConnectionsStatus exposes an OpenClaw-style messenger channel catalog', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const messengerIds = new Set(status.sections.messengers.items.map((item) => item.id));
+  for (const id of [
+    'telegram',
+    'slack',
+    'discord',
+    'webhook',
+    'whatsapp',
+    'signal',
+    'microsoft-teams',
+    'google-chat',
+    'matrix',
+    'line',
+    'wechat',
+    'qqbot',
+    'feishu',
+    'email',
+    'sms',
+  ]) {
+    assert.equal(messengerIds.has(id), true, `${id} should be present`);
+  }
+
+  const telegram = status.sections.messengers.items.find((item) => item.id === 'telegram');
+  const signal = status.sections.messengers.items.find((item) => item.id === 'signal');
+  const googleChat = status.sections.messengers.items.find((item) => item.id === 'google-chat');
+
+  assert.equal(telegram?.supportLevel, 'implemented');
+  assert.equal(telegram?.channelTemplate?.category, 'consumer');
+  assert.equal(telegram?.channelTemplate?.adapter, 'bot-api');
+  assert.ok(telegram?.channelTemplate?.safetyControls.includes('allowlist'));
+  assert.ok(telegram?.channelTemplate?.capabilities.includes('direct-messages'));
+  assert.deepEqual(telegram?.crActions, ['xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel']);
+
+  assert.equal(signal?.status, 'planned');
+  assert.equal(signal?.supportLevel, 'planned');
+  assert.equal(signal?.settingsAction, undefined);
+  assert.equal(signal?.channelTemplate?.adapter, 'bridge');
+  assert.ok(signal?.sourceDocs?.some((source) => source.url.endsWith('/channels/signal')));
+
+  assert.equal(googleChat?.status, 'planned');
+  assert.equal(googleChat?.channelTemplate?.category, 'enterprise');
+  assert.ok(googleChat?.channelTemplate?.auth.includes('workspace'));
+  assert.equal(googleChat?.crActions?.length ?? 0, 0);
+});
+
 test('buildXenesisConnectionsStatus resolves repo-local guide open paths from the repo root', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {
