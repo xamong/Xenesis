@@ -1,0 +1,60 @@
+{
+  "provider": "mock",
+  "model": "mock-model",
+  "maxTurns": 16,
+  "workspace": ".",
+  "approvalMode": "safe",
+  "verification": {
+    "commands": [],
+    "autoRun": false,
+    "timeoutMs": 120000,
+    "maxOutputChars": 12000,
+    "maxRepairAttempts": 1,
+    "acceptOnPass": false,
+    "rollbackFailedRepairs": true
+  },
+  "guard": {
+    "enabled": true,
+    "useDefault": true,
+    "priorityTools": [],
+    "requiredBefore": {},
+    "requiredBeforeAny": {}
+  },
+  "workflow": "default",
+  "workflows": {
+    "default": {
+      "handler": "default",
+      "description": "Default agent workflow."
+    }
+  },
+  "channels": {},
+  "browser": {
+    "enabled": true,
+    "headless": true,
+    "allowedHosts": [],
+    "idleTimeoutMs": 300000
+  },
+  "extensions": {
+    "mcpServers": {},
+    "memory": {
+      "enabled": false,
+      "path": ".xenesis/memory.json"
+    },
+    "subagents": {
+      "enabled": false,
+      "maxConcurrent": 2
+    },
+    "plugins": {
+      "paths": []
+    },
+    "skills": {
+      "paths": [],
+      "autoLoad": false
+    }
+  },
+  "permissions": {
+    "blockedTools": [],
+    "toolPolicies": {},
+    "pathRules": []
+  }
+}

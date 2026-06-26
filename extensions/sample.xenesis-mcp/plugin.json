@@ -1,0 +1,24 @@
+{
+  "id": "sample.xenesis-mcp",
+  "name": "MCP Operator Runbook",
+  "version": "1.0.0",
+  "publisher": "Xamong9",
+  "description": "Opens an MCP operator runbook for CLI agents, Capability Registry discovery, and CR control smoke tests.",
+  "source": "public",
+  "permissions": ["commands", "panels.open"],
+  "main": "main.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "sample.xenesis-mcp.openGuide",
+        "title": "Open MCP Operator Runbook",
+        "category": "Extensions",
+        "icon": "M"
+      }
+    ],
+    "menus": {
+      "tools": ["sample.xenesis-mcp.openGuide"],
+      "commandPalette": ["sample.xenesis-mcp.openGuide"]
+    }
+  }
+}

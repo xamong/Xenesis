@@ -1,0 +1,5129 @@
+/* Xamong Auto-Layout — design tokens (component-showcase-basic.html 기반 축약) */
+*, *::before, *::after { box-sizing: border-box; }
+
+:root,
+html[data-theme="light"] {
+  color-scheme: light;
+  --bg: #F7F4EF;
+  --bg2: #EFEBE3;
+  --surface: #FDFCFA;
+  --surface2: #F2EDE5;
+  --border: rgba(60, 45, 25, 0.1);
+  --border2: rgba(60, 45, 25, 0.18);
+  --ink: #1C1710;
+  --ink-2: #6B5F4E;
+  --ink-3: #A8998A;
+  --accent: #C4622D;
+  --accent-2: #9A4A1F;
+  --accent-lt: #F0D5C4;
+  --accent-dk: #9A4A1F;
+  --accent-hover: #9A4A1F;
+  --accent-rgb: 196, 98, 45;
+  --accent-gradient-end: #E88B5A;
+  /* Status / semantic — component-showcase-basic.html 과 동일 (라벨 배지·태그용) */
+  --green: #2D7D4F;
+  --green-lt: #D1EAD9;
+  --red: #C03A2B;
+  --red-lt: #FAD7D3;
+  --blue: #2B5FA0;
+  --blue-lt: #D1DFF5;
+  --yellow: #B07D12;
+  --yellow-lt: #FAF0C0;
+  --r: 10px;
+  --r-sm: 6px;
+  --r-lg: 16px;
+  --shadow: 0 4px 16px rgba(60, 45, 25, 0.1), 0 2px 6px rgba(60, 45, 25, 0.06);
+  --shadow-sm: 0 1px 4px rgba(60, 45, 25, 0.08);
+  --shadow-md: 0 4px 16px rgba(60, 45, 25, 0.1), 0 2px 6px rgba(60, 45, 25, 0.06);
+  --shadow-lg: 0 12px 40px rgba(60, 45, 25, 0.14), 0 4px 12px rgba(60, 45, 25, 0.08);
+  --shadow-card: 0 12px 40px rgba(60, 45, 25, 0.12);
+  --shadow-pill: 0 1px 6px rgba(60, 45, 25, 0.12);
+  --tap-hover: rgba(60, 45, 25, 0.06);
+  --tap-hover-weak: rgba(60, 45, 25, 0.04);
+  --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+  --xa-gap-sm: 8px;
+  --xa-gap-md: 12px;
+  --xa-gap-lg: 20px;
+  --xa-pad-sm: 10px;
+  --xa-pad-md: 16px;
+  --xa-pad-lg: 24px;
+  /* 커스텀 셀렉트 등 오버레이 — 필요 시 테마에서 상향 */
+  --xa-z-dropdown: 60000;
+  --xa-z-panel-elevated: 100;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0C0C0F;
+  --bg2: #121218;
+  --surface: #16161A;
+  --surface2: #1E1E24;
+  /* 카드·구분선 — 너무 밝은 테두리 방지 (다크 패널과 자연스럽게 이어지도록 낮은 대비) */
+  --border: rgba(255, 255, 255, 0.055);
+  --border2: rgba(255, 255, 255, 0.1);
+  --ink: #F0EEF8;
+  --ink-2: #8B88A0;
+  --ink-3: #5A5770;
+  --accent: #7C6AF7;
+  --accent-2: #A594FF;
+  --accent-lt: rgba(124, 106, 247, 0.18);
+  --accent-dk: #C4B8FF;
+  --accent-hover: #A594FF;
+  --accent-rgb: 124, 106, 247;
+  --accent-gradient-end: #A594FF;
+  --green: #34D399;
+  --green-lt: rgba(52, 211, 153, 0.12);
+  --red: #F87171;
+  --red-lt: rgba(248, 113, 113, 0.12);
+  --blue: #60A5FA;
+  --blue-lt: rgba(96, 165, 250, 0.12);
+  --yellow: #FBBF24;
+  --yellow-lt: rgba(251, 191, 36, 0.12);
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.55);
+  --shadow-card: 0 12px 40px rgba(0, 0, 0, 0.5);
+  --shadow-pill: 0 1px 6px rgba(0, 0, 0, 0.3);
+  --tap-hover: rgba(255, 255, 255, 0.04);
+  --tap-hover-weak: rgba(255, 255, 255, 0.03);
+  --font-body: "Outfit", system-ui, sans-serif;
+  --xa-z-dropdown: 60000;
+  --xa-z-panel-elevated: 100;
+}
+
+html.xa-al-root,
+html.xa-al-root body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+#app-content.xa-al-app-host {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 폼·패너 공통 */
+.xa-al-form-root,
+.xa-al-panel {
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.xa-al-form__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--xa-gap-md);
+  padding: 12px 18px;
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.95) 0%, rgba(var(--accent-rgb), 0.65) 100%);
+  color: #fff;
+  font-weight: 600;
+  font-size: 16px;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+}
+
+/* XaButtonAL — 인라인 스타일과 함께 쓰는 보조 규칙 (호버·상태·스피너) */
+button.xa-al-btn:not(:disabled):not(.xa-al-btn--loading):not(.xa-al-btn--link):hover {
+  filter: brightness(1.04);
+}
+button.xa-al-btn:not(:disabled):not(.xa-al-btn--loading):not(.xa-al-btn--link):active {
+  filter: brightness(0.96);
+}
+.xa-al-btn--disabled,
+button.xa-al-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none !important;
+}
+.xa-al-btn--loading {
+  opacity: 0.88;
+  pointer-events: none;
+}
+.xa-al-btn--block {
+  width: 100%;
+  justify-content: center;
+}
+.xa-al-btn__icon {
+  flex-shrink: 0;
+  display: block;
+}
+/* XaButtonAL alButtonLayout: column — 아이콘 위·레이블 아래 (하단 탭 등) */
+button.xa-al-btn.xa-al-btn--stack-col {
+  line-height: 1.15;
+}
+.xa-al-btn--stack-col .xa-al-btn__label {
+  display: block;
+  max-width: 100%;
+  text-align: center;
+}
+.xa-al-btn--stack-col .xa-al-btn__icon {
+  width: 22px;
+  height: 22px;
+}
+.xa-al-btn__img {
+  flex-shrink: 0;
+  display: block;
+  max-height: 1.25em;
+  width: auto;
+}
+@keyframes xa-al-btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.xa-al-btn__spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+  animation: xa-al-btn-spin 0.65s linear infinite;
+  vertical-align: middle;
+  opacity: 0.9;
+}
+
+/* 세그먼트(버튼 그룹) — 바깥 모서리만 둥글게, 안쪽 경계는 한 줄 */
+button.xa-al-btn.xa-al-btn--seg-first {
+  border-radius: var(--r-sm) 0 0 var(--r-sm) !important;
+  border-right-width: 0 !important;
+  flex-shrink: 0;
+}
+button.xa-al-btn.xa-al-btn--seg-mid {
+  border-radius: 0 !important;
+  border-right-width: 0 !important;
+  flex-shrink: 0;
+}
+button.xa-al-btn.xa-al-btn--seg-last {
+  border-radius: 0 var(--r-sm) var(--r-sm) 0 !important;
+  flex-shrink: 0;
+}
+
+/* 스플릿 버튼 */
+button.xa-al-btn.xa-al-btn--split-main {
+  border-radius: var(--r-sm) 0 0 var(--r-sm) !important;
+  border-right: none !important;
+  flex-shrink: 0;
+}
+button.xa-al-btn.xa-al-btn--split-caret {
+  border-radius: 0 var(--r-sm) var(--r-sm) 0 !important;
+  border-left: 1px solid rgba(255, 255, 255, 0.38) !important;
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+  min-width: 40px;
+  flex-shrink: 0;
+}
+
+/* 텍스트 링크형 버튼 */
+button.xa-al-btn.xa-al-btn--link {
+  box-shadow: none !important;
+  text-decoration: none;
+  font-weight: 600;
+}
+button.xa-al-btn.xa-al-btn--link:hover {
+  filter: none !important;
+  opacity: 0.9;
+  text-decoration: underline;
+}
+
+/* 아이콘 전용 — 정사각·원형에 맞춤 */
+button.xa-al-btn.xa-al-btn--icon-only {
+  justify-content: center !important;
+}
+.xa-al-btn--icon-only .xa-al-btn__icon {
+  width: 18px;
+  height: 18px;
+}
+.xa-al-btn--icon-only .xa-al-btn__img {
+  max-height: 22px;
+  max-width: 22px;
+  width: 22px;
+  object-fit: contain;
+}
+.xa-al-btn__label--empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+button.xa-al-btn.xa-al-btn--icon-only {
+  position: relative;
+}
+
+/* ═══ TextField / TextView — component-showcase-basic.html .tf 정렬 ═══ */
+.xa-al-tf-root {
+  width: 100%;
+  min-width: 0;
+  display: block;
+}
+
+input.xa-al-tf,
+textarea.xa-al-tf {
+  width: 100%;
+  background: var(--surface);
+  border: 1.5px solid var(--border2);
+  border-radius: var(--r-sm);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  box-shadow: var(--shadow-sm);
+}
+
+input.xa-al-tf::placeholder,
+textarea.xa-al-tf::placeholder {
+  color: var(--ink-3);
+}
+
+input.xa-al-tf:focus,
+textarea.xa-al-tf:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.14), var(--shadow-sm);
+}
+
+input.xa-al-tf:disabled,
+textarea.xa-al-tf:disabled {
+  background: var(--bg2);
+  color: var(--ink-3);
+  cursor: not-allowed;
+}
+
+input.xa-al-tf--success {
+  border-color: var(--green) !important;
+  box-shadow: 0 0 0 3px rgba(45, 125, 79, 0.12), var(--shadow-sm) !important;
+}
+
+input.xa-al-tf--error {
+  border-color: var(--red) !important;
+  box-shadow: 0 0 0 3px rgba(192, 58, 43, 0.12), var(--shadow-sm) !important;
+}
+
+input.xa-al-tf--success:focus {
+  border-color: var(--green) !important;
+  box-shadow: 0 0 0 3px rgba(45, 125, 79, 0.14), var(--shadow-sm) !important;
+}
+
+input.xa-al-tf--error:focus {
+  border-color: var(--red) !important;
+  box-shadow: 0 0 0 3px rgba(192, 58, 43, 0.14), var(--shadow-sm) !important;
+}
+
+textarea.xa-al-tf-multiline {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.5;
+}
+
+/* 애드온 래퍼 */
+.xa-al-tf-addon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.xa-al-tf-addon-wrap .xa-al-tf {
+  flex: 1;
+  min-width: 0;
+}
+.xa-al-tf-prefix {
+  position: absolute;
+  left: 12px;
+  color: var(--ink-3);
+  pointer-events: none;
+  font-size: 14px;
+  z-index: 1;
+}
+.xa-al-tf-prefix-icon {
+  left: 12px;
+}
+.xa-al-tf-prefix-icon .xa-al-tf-ico {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+.xa-al-tf-addon-wrap.has-prefix .xa-al-tf {
+  padding-left: 38px;
+}
+.xa-al-tf-addon-wrap.has-prefix-text .xa-al-tf {
+  padding-left: 34px;
+}
+
+.xa-al-tf-suffix {
+  position: absolute;
+  right: 12px;
+  color: var(--ink-3);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+.xa-al-tf-suffix--success {
+  color: var(--green) !important;
+}
+.xa-al-tf-suffix-text {
+  font-size: 11px;
+  font-weight: 500;
+}
+.xa-al-tf-suffix-btn {
+  pointer-events: all;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--ink-3);
+  transition: color 0.15s;
+}
+.xa-al-tf-suffix-btn:hover {
+  color: var(--ink);
+}
+.xa-al-tf-suffix-btn .xa-al-tf-ico {
+  width: 15px;
+  height: 15px;
+  display: block;
+}
+.xa-al-tf-addon-wrap.has-suffix .xa-al-tf {
+  padding-right: 38px;
+}
+
+/* prefix + suffix 아이콘 */
+.xa-al-tf-suffix:not(.xa-al-tf-suffix-btn) .xa-al-tf-ico {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+/* 블록 prefix / post (https://, Apply) */
+.xa-al-tf-block-wrap {
+  display: flex;
+  width: 100%;
+  align-items: stretch;
+}
+.xa-al-tf-pre {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  background: var(--bg2);
+  border: 1.5px solid var(--border2);
+  border-right: none;
+  border-radius: var(--r-sm) 0 0 var(--r-sm);
+  font-size: 13px;
+  color: var(--ink-2);
+  white-space: nowrap;
+  font-family: "JetBrains Mono", monospace;
+}
+.xa-al-tf-block-wrap .xa-al-tf--with-leading {
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  flex: 1;
+}
+.xa-al-tf-post {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  background: var(--accent);
+  border: 1.5px solid var(--accent);
+  border-left: none;
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: var(--font-body);
+}
+.xa-al-tf-block-wrap .xa-al-tf--has-post {
+  border-radius: var(--r-sm) 0 0 var(--r-sm);
+  flex: 1;
+}
+
+/* 플로팅 라벨 */
+.xa-al-tf-float-group {
+  position: relative;
+  padding-top: 8px;
+  width: 100%;
+}
+.xa-al-tf-float {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1.5px solid var(--border2) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 10px 2px 6px !important;
+}
+.xa-al-tf-float:focus {
+  border-bottom-color: var(--accent) !important;
+  box-shadow: none !important;
+}
+.xa-al-tf-float-label {
+  position: absolute;
+  top: 18px;
+  left: 2px;
+  font-size: 14px;
+  color: var(--ink-3);
+  pointer-events: none;
+  transition: top 0.2s, font-size 0.2s, color 0.2s;
+  font-family: var(--font-body);
+}
+.xa-al-tf-float:focus ~ .xa-al-tf-float-label,
+.xa-al-tf-float.xa-al-tf-float--has-val ~ .xa-al-tf-float-label {
+  top: 0;
+  font-size: 10px;
+  color: var(--accent);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* OTP 한 글자 */
+input.xa-al-tf--otp {
+  width: 44px !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  padding: 10px 0 !important;
+  text-align: center;
+  font-family: "JetBrains Mono", monospace !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  flex-shrink: 0;
+}
+
+/* XaImageAL — overlayTag / overlayTitle / overlaySub (component-showcase-basic.html .img-overlay-* 과 동일 계열) */
+.xa-al-img-overlay-wrap {
+  position: relative;
+  box-sizing: border-box;
+}
+.xa-al-img-overlay-wrap img {
+  transition: transform 0.45s ease;
+}
+.xa-al-img-overlay-wrap:hover img {
+  transform: scale(1.03);
+}
+.xa-al-img-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(28, 23, 16, 0.88) 0%, rgba(28, 23, 16, 0) 58%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 18px 20px;
+  pointer-events: none;
+}
+.xa-al-img-overlay-title {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 18px;
+  color: #fff;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.xa-al-img-overlay-sub {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.72);
+  margin-top: 4px;
+}
+.xa-al-img-overlay-tag {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 1;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+/* 스켈레톤 데모 (AL 쇼케이스 라벨·패널과 함께 사용) */
+.xa-al-img-skeleton {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--bg2) 25%, var(--bg) 50%, var(--bg2) 75%);
+  background-size: 200% 100%;
+  animation: xa-al-shimmer-rtl 1.5s infinite;
+}
+
+/* 라벨 스켈레톤 쉬머 — XaLabelAL: shimmer + shimmerDirection(ltr|rtl) */
+.xa-al-sk-shimmer {
+  background: linear-gradient(90deg, var(--bg2) 25%, var(--bg) 50%, var(--bg2) 75%) !important;
+  background-size: 200% 100% !important;
+}
+.xa-al-sk-shimmer.xa-al-sk-shimmer--ltr {
+  animation: xa-al-shimmer-ltr 1.5s infinite !important;
+}
+.xa-al-sk-shimmer.xa-al-sk-shimmer--rtl {
+  animation: xa-al-shimmer-rtl 1.5s infinite !important;
+}
+/* 방향 미지정 시 우→좌(rtl) — component-showcase-basic.html 과 동일 체감 */
+.xa-al-sk-shimmer:not(.xa-al-sk-shimmer--ltr):not(.xa-al-sk-shimmer--rtl) {
+  animation: xa-al-shimmer-rtl 1.5s infinite !important;
+}
+
+@keyframes xa-al-shimmer-ltr {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+@keyframes xa-al-shimmer-rtl {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.xa-al-btn--primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: var(--r-sm);
+  border: 1px solid transparent;
+  background: linear-gradient(180deg, rgba(var(--accent-rgb), 1), rgba(var(--accent-rgb), 0.88));
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: filter 0.15s ease, transform 0.1s ease;
+}
+
+.xa-al-btn--primary:hover {
+  filter: brightness(1.05);
+}
+
+.xa-al-field {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--ink);
+  font: inherit;
+}
+
+.xa-al-label {
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.xa-al-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.xa-al-error {
+  padding: 12px;
+  border-radius: var(--r-sm);
+  background: var(--red-lt, #fee2e2);
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+/* ═══ Checkbox — component-showcase-basic.html §06 (.cb-item / .cb-card / pill) ═══ */
+.xa-al-cb-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  font-family: var(--font-body);
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.xa-al-cb-item--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.xa-al-cb-input {
+  display: none;
+}
+.xa-al-cb-box {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  border: 1.5px solid var(--border2);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.18s, border-color 0.18s, box-shadow 0.18s;
+  margin-top: 1px;
+}
+.xa-al-cb-box svg {
+  width: 10px;
+  height: 10px;
+  stroke: #fff;
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.xa-al-cb-item input:checked ~ .xa-al-cb-box {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 2px 6px rgba(var(--accent-rgb), 0.25);
+}
+.xa-al-cb-item input:checked ~ .xa-al-cb-box svg {
+  opacity: 1;
+}
+.xa-al-cb-item:hover .xa-al-cb-box {
+  border-color: var(--accent);
+}
+.xa-al-cb-box.xa-al-cb-box--indeterminate {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+.xa-al-cb-box.xa-al-cb-box--indeterminate svg {
+  opacity: 0 !important;
+}
+.xa-al-cb-box.xa-al-cb-box--indeterminate::before {
+  content: "";
+  display: block;
+  width: 8px;
+  height: 2px;
+  background: #fff;
+  border-radius: 1px;
+}
+.xa-al-cb-item input:checked ~ .xa-al-cb-box.xa-al-cb-box--indeterminate::before {
+  display: none;
+}
+.xa-al-cb-item input:checked ~ .xa-al-cb-box.xa-al-cb-box--indeterminate svg {
+  opacity: 1 !important;
+}
+.xa-al-cb-item input:checked ~ .xa-al-cb-box.xa-al-cb-box--green {
+  background: var(--green);
+  border-color: var(--green);
+  box-shadow: 0 2px 6px rgba(45, 125, 79, 0.25);
+}
+.xa-al-cb-item input:checked ~ .xa-al-cb-box.xa-al-cb-box--blue {
+  background: var(--blue);
+  border-color: var(--blue);
+  box-shadow: 0 2px 6px rgba(43, 95, 160, 0.25);
+}
+.xa-al-cb-label {
+  line-height: 1.5;
+  min-width: 0;
+}
+.xa-al-cb-label p {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  margin: 0;
+}
+.xa-al-cb-label small {
+  font-size: 11px;
+  color: var(--ink-3);
+  display: block;
+}
+.xa-al-cb-label--plain {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.xa-al-cb-terms-wrap {
+  font-size: 12px;
+  color: var(--ink-2);
+  line-height: 1.6;
+}
+.xa-al-cb-terms-wrap a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* 카드형 */
+.xa-al-cb-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1.5px solid var(--border2);
+  border-radius: var(--r, 10px);
+  padding: 16px 14px 14px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+  min-width: 0;
+  overflow: visible;
+  min-height: min-content;
+}
+.xa-al-cb-card-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.xa-al-cb-card:hover {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.02);
+}
+.xa-al-cb-card:has(.xa-al-cb-card-input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-lt);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.xa-al-cb-card-icon {
+  font-size: 22px;
+  line-height: 1.2;
+  margin: 0 0 4px 0;
+  overflow: visible;
+  flex-shrink: 0;
+}
+.xa-al-cb-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.35;
+  padding-right: 22px;
+}
+.xa-al-cb-card-sub {
+  font-size: 11px;
+  color: var(--ink-3);
+  line-height: 1.4;
+  padding-right: 22px;
+}
+.xa-al-cb-card-check {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent-lt);
+  border: 1.5px solid var(--accent);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.xa-al-cb-card:has(.xa-al-cb-card-input:checked) .xa-al-cb-card-check {
+  display: flex;
+}
+.xa-al-cb-card-check svg {
+  width: 9px;
+  height: 9px;
+  stroke: var(--accent);
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* 필터 알약 */
+.xa-al-cb-pill {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  flex: 0 0 auto;
+}
+.xa-al-cb-pill-input {
+  display: none;
+}
+.xa-al-cb-pill-lbl {
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1.5px solid var(--border2);
+  color: var(--ink-2);
+  transition: all 0.15s;
+  cursor: pointer;
+}
+.xa-al-cb-pill-input:checked + .xa-al-cb-pill-lbl {
+  border-color: var(--accent);
+  background: var(--accent-lt);
+  color: var(--accent);
+}
+.xa-al-cb-pill:hover .xa-al-cb-pill-lbl {
+  border-color: var(--accent);
+}
+
+/*
+ * stackMode:layers — 기본은 “가상 레이어”(포인터 통과).
+ * · 겹침 레이어 래퍼는 인라인 pointer-events:none(또는 alLayerPointerEvents:capture 시 auto + .xa-al-panel__layer--pe-capture).
+ * · 레이아웃 셸(레이어의 직계 패널)만 none — 후손 패널까지 전부 none 으로 두면 일부 브라우저에서 자식 클릭이 죽음 → 직계(>)만 지정.
+ * · 카드·알약 등: .xa-al-layer-hit. 직계가 이미지·버튼이면 이 규칙 미적용(아래 보조).
+ */
+html.xa-al-root .xa-al-panel__stack--layers > .xa-al-panel__layer:not(.xa-al-panel__layer--pe-capture) > .xa-al-panel-root:not(.xa-al-layer-hit) {
+  pointer-events: none !important;
+}
+/* 셸 없이 레이어 직계가 버튼·도형·이미지인 경우(배경 등) — 초깃값 auto 유지 */
+html.xa-al-root .xa-al-panel__stack--layers > .xa-al-panel__layer:not(.xa-al-panel__layer--pe-capture) > button,
+html.xa-al-root .xa-al-panel__stack--layers > .xa-al-panel__layer:not(.xa-al-panel__layer--pe-capture) > [data-component='shape'],
+html.xa-al-root .xa-al-panel__stack--layers > .xa-al-panel__layer:not(.xa-al-panel__layer--pe-capture) > [data-component='image'] {
+  pointer-events: auto !important;
+}
+
+/* ═══ Radio — component-showcase-basic.html §07 (.rb-item / .rb-btn-group / .rb-plan) ═══ */
+.xa-al-panel__stack.xa-al-rb-btn-group {
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: stretch !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  border: 1.5px solid var(--border2);
+  border-radius: var(--r-sm, 6px);
+  overflow: hidden;
+}
+.xa-al-panel__stack.xa-al-rb-plan-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  /* 배지 top:-8px 이 그리드 상단에 걸리지 않도록 여유 (overflow 보조) */
+  padding: 12px 0 0 !important;
+  align-items: stretch;
+}
+/* POPULAR 배지가 카드 위로 삐져나감 — 패널 overflow:hidden 이 배지를 자름 */
+.xa-al-panel-root:has(.xa-al-rb-plan) {
+  overflow: visible !important;
+}
+.xa-al-panel-root:has(.xa-al-rb-plan) > .xa-al-panel__body {
+  overflow: visible !important;
+}
+/* Subscription Plan: 섹션 타이틀(라벨)과 카드 그리드를 분리 — 바깥 스택은 세로, 안쪽만 3열 그리드 */
+.xa-al-panel__stack.xa-al-rb-plan-section {
+  flex-direction: column !important;
+  align-items: stretch !important;
+  width: 100%;
+}
+.xa-al-panel__stack.xa-al-rb-plan-section > [data-component="label"] {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 100%;
+}
+.xa-al-panel__stack.xa-al-rb-plan-section > [data-component="panel"] {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 100%;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  margin-top: 0;
+  box-sizing: border-box;
+}
+.xa-al-panel__stack.xa-al-rb-plan-grid.xa-al-rb-plan-grid--cards {
+  width: 100%;
+}
+
+.xa-al-rb-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  font-family: var(--font-body);
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.xa-al-rb-item--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.xa-al-rb-input {
+  display: none;
+}
+.xa-al-rb-circle {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1.5px solid var(--border2);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.18s, box-shadow 0.18s;
+  margin-top: 1px;
+}
+.xa-al-rb-circle::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: scale(0);
+  transition: transform 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.xa-al-rb-item input:checked ~ .xa-al-rb-circle {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12);
+}
+.xa-al-rb-item input:checked ~ .xa-al-rb-circle::after {
+  transform: scale(1);
+}
+.xa-al-rb-item:hover .xa-al-rb-circle {
+  border-color: var(--accent);
+}
+
+.xa-al-rb-btn-item {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+}
+.xa-al-rb-seg-inp {
+  position: absolute;
+  opacity: 0;
+}
+.xa-al-rb-btn-label {
+  display: block;
+  text-align: center;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  border-right: 1px solid var(--border);
+}
+.xa-al-rb-btn-item:last-child .xa-al-rb-btn-label {
+  border-right: none;
+}
+.xa-al-rb-btn-item input:checked ~ .xa-al-rb-btn-label {
+  background: var(--accent);
+  color: #fff;
+}
+.xa-al-rb-btn-item input:not(:checked) ~ .xa-al-rb-btn-label:hover {
+  background: var(--bg2);
+  color: var(--ink);
+}
+
+.xa-al-rb-plan {
+  position: relative;
+  border: 1.5px solid var(--border2);
+  border-radius: var(--r, 10px);
+  padding: 16px 14px;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+  min-width: 0;
+  display: block;
+}
+.xa-al-rb-plan-input {
+  position: absolute;
+  opacity: 0;
+}
+.xa-al-rb-plan:has(input:checked) {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), var(--shadow-sm);
+}
+.xa-al-rb-plan__badge {
+  display: none;
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+.xa-al-rb-plan:has(input:checked) .xa-al-rb-plan__badge {
+  display: block;
+}
+.xa-al-rb-plan__name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.xa-al-rb-plan__price {
+  font-family: "Playfair Display", serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+}
+.xa-al-rb-plan__per {
+  font-size: 10px;
+  color: var(--ink-3);
+  font-family: var(--font-body);
+  font-weight: 600;
+}
+.xa-al-rb-plan__features {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.xa-al-rb-plan__feat {
+  font-size: 11px;
+  color: var(--ink-2);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.xa-al-rb-plan__feat::before {
+  content: "✓";
+  color: var(--green);
+  font-weight: 700;
+  font-size: 10px;
+}
+
+.xa-al-rb-rating-row {
+  display: flex;
+  gap: 6px;
+}
+.xa-al-rb-star {
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--border2);
+  transition: color 0.15s, transform 0.1s;
+  line-height: 1;
+}
+.xa-al-rb-star:hover,
+.xa-al-rb-star.on {
+  color: #e8a020;
+  transform: scale(1.15);
+}
+.xa-al-rb-rating-cap {
+  font-size: 11px;
+  color: var(--ink-3);
+  margin: 6px 0 0 0;
+}
+
+/* ═══ TextView §08 — component-showcase-basic.html (.tv-article / .tv-code / …) ═══ */
+.xa-al-tv-root--html .xa-al-tv-html-chrome {
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+}
+.xa-al-tv-static {
+  min-width: 0;
+}
+
+html.xa-al-root .tv-showcase {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+html.xa-al-root .tv-article {
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--ink-2);
+  max-width: 560px;
+}
+html.xa-al-root .tv-article .tv-lead {
+  font-family: "Playfair Display", serif;
+  font-size: 20px;
+  line-height: 1.5;
+  color: var(--ink);
+  font-weight: 400;
+  margin-bottom: 16px;
+}
+html.xa-al-root .tv-article p {
+  margin-bottom: 12px;
+}
+html.xa-al-root .tv-article strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+html.xa-al-root .tv-article em {
+  font-style: italic;
+  color: var(--accent-dk);
+}
+html.xa-al-root .tv-article a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+html.xa-al-root .tv-article a:hover {
+  color: var(--accent-dk);
+}
+
+html.xa-al-root .tv-quote {
+  border-left: 3px solid var(--accent);
+  padding: 4px 0 4px 20px;
+  margin: 14px 0;
+}
+html.xa-al-root .tv-quote p {
+  font-family: "Playfair Display", serif;
+  font-size: 18px;
+  font-style: italic;
+  color: var(--ink);
+  line-height: 1.5;
+  margin: 0;
+}
+html.xa-al-root .tv-quote cite {
+  display: block;
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 6px;
+  font-style: normal;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+html.xa-al-root .tv-code {
+  background: var(--ink);
+  color: #e2dfda;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+  padding: 16px 18px;
+  border-radius: var(--r);
+  line-height: 1.7;
+  overflow-x: auto;
+  position: relative;
+}
+html.xa-al-root .tv-code__lang {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.3);
+}
+html.xa-al-root .tv-code .kw {
+  color: #c78cf0;
+}
+html.xa-al-root .tv-code .str {
+  color: #98d484;
+}
+html.xa-al-root .tv-code .fn {
+  color: #69c6f7;
+}
+html.xa-al-root .tv-code .num {
+  color: #f0a96e;
+}
+html.xa-al-root .tv-code .cmt {
+  color: rgba(255, 255, 255, 0.3);
+  font-style: italic;
+}
+
+html.xa-al-root .tv-truncate {
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.7;
+}
+html.xa-al-root .tv-truncate.collapsed {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+html.xa-al-root .tv-read-more {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 0 0;
+  font-family: var(--font-body);
+}
+
+html.xa-al-root .tv-highlight {
+  background: rgba(var(--accent-rgb), 0.12);
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: var(--accent-dk);
+}
+
+html.xa-al-root .tv-list {
+  padding-left: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+html.xa-al-root .tv-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+html.xa-al-root .tv-list li::before {
+  content: "→";
+  color: var(--accent);
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+/* ═══ VideoView §09 — component-showcase-basic.html (.vv-showcase / .video-player / …) ═══ */
+html.xa-al-root .vv-showcase {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+html.xa-al-root .video-player {
+  position: relative;
+  background: #000;
+  border-radius: var(--r);
+  overflow: hidden;
+  aspect-ratio: 16/9;
+  width: 100%;
+  box-shadow: var(--shadow-lg);
+}
+html.xa-al-root .video-player video {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+html.xa-al-root .video-player__poster {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #1c1710 0%, #3a2d1a 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+  cursor: pointer;
+}
+html.xa-al-root .video-player__poster img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.5;
+}
+html.xa-al-root .video-player__poster-inner {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+html.xa-al-root .video-player__play-btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+}
+html.xa-al-root .video-player__play-btn:hover {
+  background: rgba(var(--accent-rgb), 0.7);
+  border-color: var(--accent);
+  transform: scale(1.08);
+}
+html.xa-al-root .video-player__play-btn svg {
+  width: 24px;
+  height: 24px;
+  fill: #fff;
+  margin-left: 3px;
+}
+html.xa-al-root .video-player__title {
+  font-family: "Playfair Display", serif;
+  font-size: 18px;
+  color: #fff;
+}
+html.xa-al-root .video-player__sub {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 4px;
+}
+
+html.xa-al-root .video-controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, transparent 100%);
+  padding: 20px 16px 14px;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+html.xa-al-root .video-player:hover .video-controls {
+  opacity: 1;
+}
+html.xa-al-root .video-progress {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 2px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  position: relative;
+}
+html.xa-al-root .video-progress__fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  width: 35%;
+  transition: width 0.1s;
+}
+html.xa-al-root .video-progress__thumb {
+  position: absolute;
+  top: 50%;
+  right: calc(65% - 6px);
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+}
+html.xa-al-root .video-ctrl-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+html.xa-al-root .vc-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+html.xa-al-root .vc-btn:hover {
+  color: #fff;
+}
+html.xa-al-root .vc-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+html.xa-al-root .vc-btn.vc-fill svg {
+  fill: currentColor;
+  stroke: none;
+}
+html.xa-al-root .vc-time {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: "JetBrains Mono", monospace;
+}
+html.xa-al-root .vc-spacer {
+  flex: 1;
+}
+html.xa-al-root .vc-vol {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+html.xa-al-root .vc-vol-slider {
+  width: 60px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  cursor: pointer;
+}
+html.xa-al-root .vc-vol-fill {
+  height: 100%;
+  width: 70%;
+  background: #fff;
+  border-radius: 2px;
+}
+
+html.xa-al-root .vv-showcase .sub-label {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 10px;
+  margin-top: 18px;
+}
+html.xa-al-root .vv-showcase .sub-label:first-child {
+  margin-top: 0;
+}
+
+html.xa-al-root .video-thumb-strip {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+html.xa-al-root .video-thumb-strip::-webkit-scrollbar {
+  display: none;
+}
+html.xa-al-root .vt-item {
+  flex-shrink: 0;
+  position: relative;
+  cursor: pointer;
+  border-radius: 6px;
+  overflow: hidden;
+  width: 100px;
+}
+html.xa-al-root .vt-item img {
+  width: 100%;
+  height: 58px;
+  object-fit: cover;
+  display: block;
+  transition: opacity 0.2s;
+}
+html.xa-al-root .vt-item:hover img {
+  opacity: 0.8;
+}
+html.xa-al-root .vt-item.active::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--accent);
+  border-radius: 6px;
+  pointer-events: none;
+}
+html.xa-al-root .vt-dur {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  font-size: 9px;
+  font-family: "JetBrains Mono", monospace;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+/* VideoView 카드 상단 라벨 — component-showcase-basic .comp-card__label 정렬 */
+html.xa-al-root .xa-al-vv-card-cap {
+  font-family: "JetBrains Mono", monospace !important;
+  font-size: 10px !important;
+  letter-spacing: 0.02em;
+}
+
+/* ═══ WebView §10 — component-showcase-basic.html (.wv-showcase / .browser-frame / …) ═══ */
+html.xa-al-root .wv-showcase {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+html.xa-al-root .browser-frame {
+  border: 1px solid var(--border2);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+html.xa-al-root .browser-titlebar {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+html.xa-al-root .browser-dots {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+html.xa-al-root .browser-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+html.xa-al-root .browser-dot--red {
+  background: #ff5f57;
+}
+html.xa-al-root .browser-dot--yellow {
+  background: #febc2e;
+}
+html.xa-al-root .browser-dot--green {
+  background: #28c840;
+}
+
+html.xa-al-root .browser-nav-btns {
+  display: flex;
+  gap: 4px;
+}
+html.xa-al-root .browser-nav-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: none;
+  border: 1px solid var(--border2);
+  cursor: pointer;
+  color: var(--ink-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+html.xa-al-root .browser-nav-btn:hover {
+  background: var(--surface);
+  color: var(--ink);
+}
+html.xa-al-root .browser-nav-btn svg {
+  width: 12px;
+  height: 12px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+html.xa-al-root .browser-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+html.xa-al-root .browser-url-bar {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 5px 12px;
+  height: 32px;
+}
+html.xa-al-root .browser-url-bar .lock-icon {
+  color: var(--green);
+  flex-shrink: 0;
+}
+html.xa-al-root .browser-url-bar .lock-icon svg {
+  width: 12px;
+  height: 12px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+html.xa-al-root .browser-url-input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  color: var(--ink-2);
+}
+html.xa-al-root .browser-reload {
+  background: none;
+  border: none;
+  color: var(--ink-3);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+}
+html.xa-al-root .browser-reload svg {
+  width: 12px;
+  height: 12px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+html.xa-al-root .browser-body {
+  background: var(--surface);
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+}
+
+html.xa-al-root .browser-tabs {
+  display: flex;
+  gap: 0;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+html.xa-al-root .browser-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  font-size: 11px;
+  cursor: pointer;
+  border-right: 1px solid var(--border);
+  color: var(--ink-3);
+  white-space: nowrap;
+  flex-shrink: 0;
+  max-width: 160px;
+  transition: background 0.15s, color 0.15s;
+  position: relative;
+}
+html.xa-al-root .browser-tab:hover {
+  background: var(--surface);
+  color: var(--ink);
+}
+html.xa-al-root .browser-tab.active {
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 500;
+}
+html.xa-al-root .browser-tab.active::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--surface);
+}
+html.xa-al-root .browser-tab__favicon {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  font-size: 11px;
+}
+html.xa-al-root .browser-tab__close {
+  margin-left: auto;
+  padding: 1px;
+  font-size: 12px;
+  color: var(--ink-3);
+  transition: color 0.15s;
+}
+html.xa-al-root .browser-tab__close:hover {
+  color: var(--red);
+}
+html.xa-al-root .browser-tab__add {
+  padding: 7px 12px;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: color 0.15s;
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+html.xa-al-root .browser-tab__add:hover {
+  color: var(--ink);
+}
+
+html.xa-al-root .wv-content {
+  padding: 28px 32px;
+  font-size: 14px;
+  color: var(--ink-2);
+  line-height: 1.7;
+}
+html.xa-al-root .wv-content h1 {
+  font-family: "Playfair Display", serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+html.xa-al-root .wv-content h2 {
+  font-family: "Playfair Display", serif;
+  font-size: 20px;
+  color: var(--ink);
+  margin: 20px 0 8px;
+}
+html.xa-al-root .wv-content p {
+  margin-bottom: 12px;
+}
+html.xa-al-root .wv-content a {
+  color: var(--accent);
+}
+html.xa-al-root .wv-hero {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  display: block;
+}
+html.xa-al-root .wv-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+html.xa-al-root .wv-tag {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+html.xa-al-root .wv-load-bar {
+  height: 3px;
+  background: var(--bg2);
+}
+html.xa-al-root .wv-load-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-gradient-end));
+  width: 0%;
+  transition: width 0.4s ease;
+  border-radius: 0 2px 2px 0;
+}
+
+/* component-showcase-ext.html Form · passwordField — AL 데모와 동일 마크업(.f-label / .pw-wrap / .pw-strength) */
+html.xa-al-root .f-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-2);
+  margin-bottom: 6px;
+  letter-spacing: 0.3px;
+}
+html.xa-al-root .f-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+html.xa-al-root .f-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.18);
+}
+html.xa-al-root .f-input::placeholder {
+  color: var(--ink-3);
+}
+html.xa-al-root .f-hint {
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 5px;
+}
+html.xa-al-root .pw-wrap {
+  position: relative;
+}
+html.xa-al-root .pw-wrap .f-input {
+  padding-right: 44px;
+}
+html.xa-al-root .pw-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--ink-3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+html.xa-al-root .pw-toggle:hover {
+  color: var(--ink);
+}
+html.xa-al-root .pw-toggle svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+html.xa-al-root .pw-strength {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+}
+html.xa-al-root .pw-strength__bar {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border2);
+  transition: background 0.3s;
+}
+html.xa-al-root .pw-strength__bar.weak {
+  background: var(--red);
+}
+html.xa-al-root .pw-strength__bar.medium {
+  background: var(--yellow);
+}
+html.xa-al-root .pw-strength__bar.strong {
+  background: var(--green);
+}
+
+/* component-showcase-ext.html · textarea #02 — f-textarea + 글자 수 푸터 */
+html.xa-al-root .f-textarea {
+  width: 100%;
+  min-height: 100px;
+  resize: vertical;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  scrollbar-width: thin;
+}
+html.xa-al-root .f-textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.18);
+}
+html.xa-al-root .f-textarea::placeholder {
+  color: var(--ink-3);
+}
+html.xa-al-root .textarea-footer {
+  display: flex;
+  justify-content: flex-end;
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 5px;
+}
+
+/* component-showcase-ext.html · select #03 — Native + Custom */
+html.xa-al-root .f-select-wrap {
+  position: relative;
+}
+html.xa-al-root .f-select {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: 10px 40px 10px 14px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+html.xa-al-root .f-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.18);
+}
+html.xa-al-root .f-select-arrow {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--ink-3);
+}
+html.xa-al-root .f-select-arrow svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+html.xa-al-root .f-select option {
+  background: var(--surface2);
+}
+html.xa-al-root .custom-select {
+  position: relative;
+  z-index: 0;
+}
+/* 열린 커스텀 셀렉트: 형제 카드·패널 위로 올림 + 드롭다운 최상단 스택 */
+html.xa-al-root .custom-select.open {
+  z-index: var(--xa-z-dropdown, 60000);
+  isolation: isolate;
+}
+html.xa-al-root .custom-select__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
+  color: var(--ink);
+  font-size: 14px;
+  padding: 10px 14px;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+html.xa-al-root .custom-select__trigger:hover,
+html.xa-al-root .custom-select.open .custom-select__trigger {
+  border-color: var(--accent);
+}
+html.xa-al-root .custom-select__dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: calc(var(--xa-z-dropdown, 60000) + 1);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  transition: opacity 0.18s, transform 0.18s;
+}
+html.xa-al-root .custom-select.open .custom-select__dropdown {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: all;
+}
+html.xa-al-root .custom-select__opt {
+  padding: 9px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--ink-2);
+  transition: background 0.15s, color 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+html.xa-al-root .custom-select__opt:hover {
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--ink);
+}
+html.xa-al-root .custom-select__opt.selected {
+  color: var(--accent-2);
+  background: rgba(var(--accent-rgb), 0.08);
+}
+
+/*
+ * 커스텀 셀렉트 열림 시 AL 패널/폼의 overflow:hidden(인라인) 때문에 드롭다운이 잘리는 현상 방지.
+ * :has() — 모던 브라우저; z-index만으로는 부모 클리핑을 이길 수 없음.
+ */
+/* 열린 셀렉트가 있는 카드(패널) 전체를 아래쪽 섹션 위로 — 드롭다운이 카드 밖으로 나올 수 있게 */
+html.xa-al-root .xa-al-panel-root:has(.custom-select.open) {
+  overflow: visible !important;
+  z-index: var(--xa-z-panel-elevated, 100);
+}
+html.xa-al-root .xa-al-panel__body:has(.custom-select.open),
+html.xa-al-root .xa-al-form__body:has(.custom-select.open) {
+  overflow: visible !important;
+}
+html.xa-al-root .xa-al-panel__stack:has(.custom-select.open),
+html.xa-al-root .xa-al-form__stack:has(.custom-select.open) {
+  overflow: visible !important;
+}
+
+/* 툴팁 호버 시 AL 패널 overflow:hidden 때문에 버블이 잘리는 현상 방지 (z-index만으로는 부모 클리핑 불가) */
+html.xa-al-root .xa-al-panel-root:has(.tooltip-wrap:hover),
+html.xa-al-root .xa-al-panel-root:has(.tooltip-trigger:hover) {
+  overflow: visible !important;
+  z-index: var(--xa-z-panel-elevated, 100);
+}
+html.xa-al-root .xa-al-panel__body:has(.tooltip-wrap:hover),
+html.xa-al-root .xa-al-form__body:has(.tooltip-wrap:hover),
+html.xa-al-root .xa-al-panel__body:has(.tooltip-trigger:hover),
+html.xa-al-root .xa-al-form__body:has(.tooltip-trigger:hover) {
+  overflow: visible !important;
+}
+html.xa-al-root .xa-al-panel__stack:has(.tooltip-wrap:hover),
+html.xa-al-root .xa-al-form__stack:has(.tooltip-wrap:hover),
+html.xa-al-root .xa-al-panel__stack:has(.tooltip-trigger:hover),
+html.xa-al-root .xa-al-form__stack:has(.tooltip-trigger:hover) {
+  overflow: visible !important;
+}
+
+/* searchBar 결과 패널 — 포커스/열림 시 드롭다운이 카드 밖으로 보이도록 */
+html.xa-al-root .xa-al-panel-root:has(.search-outer:focus-within),
+html.xa-al-root .xa-al-panel-root:has(.search-results.show) {
+  overflow: visible !important;
+  z-index: var(--xa-z-panel-elevated, 100);
+}
+html.xa-al-root .xa-al-panel__body:has(.search-outer:focus-within),
+html.xa-al-root .xa-al-form__body:has(.search-outer:focus-within),
+html.xa-al-root .xa-al-panel__body:has(.search-results.show),
+html.xa-al-root .xa-al-form__body:has(.search-results.show) {
+  overflow: visible !important;
+}
+html.xa-al-root .xa-al-panel__stack:has(.search-outer:focus-within),
+html.xa-al-root .xa-al-form__stack:has(.search-outer:focus-within),
+html.xa-al-root .xa-al-panel__stack:has(.search-results.show),
+html.xa-al-root .xa-al-form__stack:has(.search-results.show) {
+  overflow: visible !important;
+}
+
+/* =============================================================================
+   component-showcase-ext.html #04–#08, #20 — AL 데모(extVariant/showcase)와 동일 마크업
+   (data-ext-showcase="1" 또는 html.xa-al-root 내부 범용 클래스)
+   ============================================================================= */
+
+/* 4. Slider */
+html.xa-al-root .slider-wrap {
+  padding: 8px 0;
+}
+html.xa-al-root .f-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: var(--border2);
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+  --fill: 40%;
+  background: linear-gradient(to right, var(--accent) var(--fill), var(--border2) var(--fill));
+}
+html.xa-al-root .f-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 2px solid var(--accent);
+  cursor: grab;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0);
+}
+html.xa-al-root .f-range::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.2);
+  box-shadow: 0 0 0 6px rgba(var(--accent-rgb), 0.25);
+}
+html.xa-al-root .f-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 2px solid var(--accent);
+  cursor: grab;
+}
+html.xa-al-root .slider-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 6px;
+}
+html.xa-al-root .slider-value {
+  text-align: center;
+  font-family: "Syne Mono", monospace;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+/* 5. Switch */
+html.xa-al-root .switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+html.xa-al-root .switch-row:last-child {
+  border-bottom: none;
+}
+html.xa-al-root .switch-info p {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+html.xa-al-root .switch-info small {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+html.xa-al-root .switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+html.xa-al-root .switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+html.xa-al-root .switch__track {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  cursor: pointer;
+  transition: background 0.25s, border-color 0.25s;
+}
+html.xa-al-root .switch__track::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--ink-3);
+  transition: transform 0.25s, background 0.25s;
+}
+html.xa-al-root .switch input:checked ~ .switch__track {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+html.xa-al-root .switch input:checked ~ .switch__track::after {
+  transform: translateX(20px);
+  background: #fff;
+}
+
+/* 6. Progress */
+html.xa-al-root .progress-item {
+  margin-bottom: 14px;
+}
+html.xa-al-root .progress-item:last-child {
+  margin-bottom: 0;
+}
+html.xa-al-root .progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--ink-2);
+  margin-bottom: 6px;
+}
+html.xa-al-root .progress-track {
+  height: 6px;
+  background: var(--surface2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+html.xa-al-root .progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+html.xa-al-root .progress-fill::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 40px;
+  height: 100%;
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.3));
+}
+html.xa-al-root .progress-fill--a {
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+}
+html.xa-al-root .progress-fill--b {
+  background: linear-gradient(90deg, var(--green), #6ee7b7);
+}
+html.xa-al-root .progress-fill--c {
+  background: linear-gradient(90deg, var(--yellow), #fde68a);
+}
+html.xa-al-root .progress-fill--d {
+  background: linear-gradient(90deg, var(--blue), #93c5fd);
+}
+
+/* ext showcase animated stripes — class on .progress-track (그라데이션 + 스트라이프 이중 배경) */
+html.xa-al-root .progress-track.xa-ext-progress-stripes .progress-fill::after {
+  display: none;
+}
+html.xa-al-root .progress-track.xa-ext-progress-stripes .progress-fill.progress-fill--a {
+  background-image: linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.15) 25%,
+      transparent 25%,
+      transparent 50%,
+      rgba(255, 255, 255, 0.15) 50%,
+      rgba(255, 255, 255, 0.15) 75%,
+      transparent 75%,
+      transparent
+    ),
+    linear-gradient(90deg, var(--accent), var(--accent-2));
+  background-size: 1rem 1rem, auto;
+  animation: xa-ext-progress-bar-stripes 1s linear infinite;
+}
+html.xa-al-root .progress-track.xa-ext-progress-stripes .progress-fill.progress-fill--b {
+  background-image: linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.15) 25%,
+      transparent 25%,
+      transparent 50%,
+      rgba(255, 255, 255, 0.15) 50%,
+      rgba(255, 255, 255, 0.15) 75%,
+      transparent 75%,
+      transparent
+    ),
+    linear-gradient(90deg, var(--green), #6ee7b7);
+  background-size: 1rem 1rem, auto;
+  animation: xa-ext-progress-bar-stripes 1s linear infinite;
+}
+html.xa-al-root .progress-track.xa-ext-progress-stripes .progress-fill.progress-fill--c {
+  background-image: linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.15) 25%,
+      transparent 25%,
+      transparent 50%,
+      rgba(255, 255, 255, 0.15) 50%,
+      rgba(255, 255, 255, 0.15) 75%,
+      transparent 75%,
+      transparent
+    ),
+    linear-gradient(90deg, var(--yellow), #fde68a);
+  background-size: 1rem 1rem, auto;
+  animation: xa-ext-progress-bar-stripes 1s linear infinite;
+}
+html.xa-al-root .progress-track.xa-ext-progress-stripes .progress-fill.progress-fill--d {
+  background-image: linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.15) 25%,
+      transparent 25%,
+      transparent 50%,
+      rgba(255, 255, 255, 0.15) 50%,
+      rgba(255, 255, 255, 0.15) 75%,
+      transparent 75%,
+      transparent
+    ),
+    linear-gradient(90deg, var(--blue), #93c5fd);
+  background-size: 1rem 1rem, auto;
+  animation: xa-ext-progress-bar-stripes 1s linear infinite;
+}
+@keyframes xa-ext-progress-bar-stripes {
+  0% {
+    background-position: 1rem 0, 0 0;
+  }
+  100% {
+    background-position: 0 0, 0 0;
+  }
+}
+
+/* 7. Spinner */
+html.xa-al-root .spinners-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+html.xa-al-root .spinner-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+html.xa-al-root .spinner-label {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+html.xa-al-root .sp-ring {
+  border-radius: 50%;
+  border-style: solid;
+  border-color: var(--border2);
+  border-top-color: var(--accent);
+  animation: xa-ext-spin 0.8s linear infinite;
+}
+html.xa-al-root .sp-ring--sm {
+  width: 20px;
+  height: 20px;
+  border-width: 2px;
+}
+html.xa-al-root .sp-ring--md {
+  width: 32px;
+  height: 32px;
+  border-width: 3px;
+}
+html.xa-al-root .sp-ring--lg {
+  width: 44px;
+  height: 44px;
+  border-width: 4px;
+}
+html.xa-al-root .sp-dots {
+  display: flex;
+  gap: 5px;
+}
+html.xa-al-root .sp-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: xa-ext-dot-bounce 0.9s ease-in-out infinite;
+}
+html.xa-al-root .sp-dots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+html.xa-al-root .sp-dots span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+html.xa-al-root .sp-pulse {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: xa-ext-pulse-scale 1.2s ease-in-out infinite;
+}
+html.xa-al-root .sp-bars {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  height: 32px;
+}
+html.xa-al-root .sp-bars span {
+  width: 4px;
+  border-radius: 2px;
+  background: var(--accent);
+  animation: xa-ext-bar-wave 0.9s ease-in-out infinite;
+}
+html.xa-al-root .sp-bars span:nth-child(1) {
+  animation-delay: 0s;
+}
+html.xa-al-root .sp-bars span:nth-child(2) {
+  animation-delay: 0.1s;
+}
+html.xa-al-root .sp-bars span:nth-child(3) {
+  animation-delay: 0.2s;
+}
+html.xa-al-root .sp-bars span:nth-child(4) {
+  animation-delay: 0.3s;
+}
+@keyframes xa-ext-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes xa-ext-dot-bounce {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: translateY(-8px);
+    opacity: 1;
+  }
+}
+@keyframes xa-ext-pulse-scale {
+  0%,
+  100% {
+    transform: scale(0.85);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes xa-ext-bar-wave {
+  0%,
+  100% {
+    height: 8px;
+    opacity: 0.5;
+  }
+  50% {
+    height: 28px;
+    opacity: 1;
+  }
+}
+
+/* 8. Badge */
+html.xa-al-root .badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+html.xa-al-root .bdg {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  letter-spacing: 0.3px;
+}
+html.xa-al-root .bdg--dot::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+html.xa-al-root .bdg-purple {
+  background: rgba(var(--accent-rgb), 0.18);
+  color: var(--accent-2);
+  border: 1px solid rgba(var(--accent-rgb), 0.25);
+}
+html.xa-al-root .bdg-green {
+  background: rgba(52, 211, 153, 0.15);
+  color: var(--green);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+}
+html.xa-al-root .bdg-red {
+  background: rgba(248, 113, 113, 0.15);
+  color: var(--red);
+  border: 1px solid rgba(248, 113, 113, 0.25);
+}
+html.xa-al-root .bdg-yellow {
+  background: rgba(251, 191, 36, 0.15);
+  color: var(--yellow);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+}
+html.xa-al-root .bdg-blue {
+  background: rgba(96, 165, 250, 0.15);
+  color: var(--blue);
+  border: 1px solid rgba(96, 165, 250, 0.25);
+}
+html.xa-al-root .bdg-outline {
+  background: transparent;
+  color: var(--ink-2);
+  border: 1px solid var(--border2);
+}
+html.xa-al-root .notif-badge-wrap {
+  position: relative;
+  display: inline-flex;
+}
+html.xa-al-root .notif-icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+html.xa-al-root .notif-icon-btn:hover {
+  background: var(--border2);
+}
+html.xa-al-root .notif-icon-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+html.xa-al-root .notif-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  background: var(--red);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 2px solid var(--surface);
+}
+
+/* 20. Alert */
+html.xa-al-root .alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--r-sm);
+  margin-bottom: 10px;
+  border: 1px solid transparent;
+}
+html.xa-al-root .alert:last-child {
+  margin-bottom: 0;
+}
+html.xa-al-root .alert__icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+html.xa-al-root .alert__body {
+  flex: 1;
+  min-width: 0;
+}
+html.xa-al-root .alert__title {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+html.xa-al-root .alert__text {
+  font-size: 12px;
+  line-height: 1.5;
+}
+html.xa-al-root .alert__close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.5;
+  padding: 0;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+html.xa-al-root .alert__close:hover {
+  opacity: 1;
+}
+html.xa-al-root .alert__close svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+html.xa-al-root .alert--info {
+  background: rgba(96, 165, 250, 0.08);
+  border-color: rgba(96, 165, 250, 0.25);
+  color: #93c5fd;
+}
+html.xa-al-root .alert--success {
+  background: rgba(52, 211, 153, 0.08);
+  border-color: rgba(52, 211, 153, 0.25);
+  color: #6ee7b7;
+}
+html.xa-al-root .alert--warning {
+  background: rgba(251, 191, 36, 0.08);
+  border-color: rgba(251, 191, 36, 0.25);
+  color: #fde68a;
+}
+html.xa-al-root .alert--error {
+  background: rgba(248, 113, 113, 0.08);
+  border-color: rgba(248, 113, 113, 0.25);
+  color: #fca5a5;
+}
+
+/* 9. Avatar — component-showcase-ext.html #09 (extVariant showcase) */
+html.xa-al-root .avatars-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+}
+html.xa-al-root .av {
+  position: relative;
+  flex-shrink: 0;
+}
+html.xa-al-root .av__img {
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+  border: 2px solid var(--surface);
+}
+html.xa-al-root .av__img--sm {
+  width: 28px;
+  height: 28px;
+}
+html.xa-al-root .av__img--md {
+  width: 40px;
+  height: 40px;
+}
+html.xa-al-root .av__img--lg {
+  width: 56px;
+  height: 56px;
+}
+html.xa-al-root .av__img--xl {
+  width: 72px;
+  height: 72px;
+}
+html.xa-al-root .av__initials {
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  color: #fff;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+html.xa-al-root .av__initials--sm {
+  width: 28px;
+  height: 28px;
+  font-size: 10px;
+}
+html.xa-al-root .av__initials--md {
+  width: 40px;
+  height: 40px;
+  font-size: 14px;
+}
+html.xa-al-root .av__initials--lg {
+  width: 56px;
+  height: 56px;
+  font-size: 18px;
+}
+html.xa-al-root .av__status {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+}
+html.xa-al-root .av__status--online {
+  background: var(--green);
+}
+html.xa-al-root .av__status--away {
+  background: var(--yellow);
+}
+html.xa-al-root .av__status--offline {
+  background: var(--ink-3);
+}
+html.xa-al-root .av-group {
+  display: flex;
+}
+html.xa-al-root .av-group .av {
+  margin-left: -10px;
+}
+html.xa-al-root .av-group .av:first-child {
+  margin-left: 0;
+}
+
+/* 10. Tabs — component-showcase-ext.html #10 (extVariant showcase) */
+@keyframes xa-ext-tabs-fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+html.xa-al-root .tabs-nav {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+  gap: 2px;
+}
+html.xa-al-root .tab-btn {
+  padding: 9px 18px;
+  background: none;
+  border: none;
+  color: var(--ink-3);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+html.xa-al-root .tab-btn:hover {
+  color: var(--ink);
+}
+html.xa-al-root .tab-btn.active {
+  color: var(--accent-2);
+  border-bottom-color: var(--accent);
+}
+html.xa-al-root .tab-content {
+  display: none;
+}
+html.xa-al-root .tab-content.active {
+  display: block;
+  animation: xa-ext-tabs-fadeIn 0.2s ease;
+}
+html.xa-al-root .tab-panel-inner {
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.7;
+}
+html.xa-al-root .tabs-nav--pill {
+  border-bottom: none;
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 4px;
+  gap: 2px;
+  margin-bottom: 16px;
+}
+html.xa-al-root .tabs-nav--pill .tab-btn {
+  border-radius: 6px;
+  border-bottom: none;
+  margin-bottom: 0;
+  padding: 7px 16px;
+}
+html.xa-al-root .tabs-nav--pill .tab-btn.active {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-pill);
+}
+
+/* 11. Card — component-showcase-ext.html #11 (extVariant showcase) */
+html.xa-al-root .ui-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+html.xa-al-root .ui-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-card);
+}
+html.xa-al-root .ui-card__img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  display: block;
+}
+html.xa-al-root .ui-card__body {
+  padding: 16px;
+}
+html.xa-al-root .ui-card__title {
+  font-family: "Syne", var(--font-body), sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+html.xa-al-root .ui-card__text {
+  font-size: 12px;
+  color: var(--ink-2);
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+html.xa-al-root .ui-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+html.xa-al-root .ui-card__footer .bdg {
+  font-size: 10px;
+  padding: 2px 8px;
+}
+html.xa-al-root .btn-sm {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  border: none;
+  font-family: var(--font-body);
+}
+html.xa-al-root .btn-sm:active {
+  transform: scale(0.96);
+}
+html.xa-al-root .btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+html.xa-al-root .btn-primary:hover {
+  background: var(--accent-hover);
+}
+html.xa-al-root .btn-ghost {
+  background: transparent;
+  color: var(--ink-2);
+  border: 1px solid var(--border2);
+}
+html.xa-al-root .btn-ghost:hover {
+  background: var(--surface2);
+  color: var(--ink);
+}
+
+/* Shared form label — component-showcase-ext.html (rating read-only row) */
+html.xa-al-root .f-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-2);
+  margin-bottom: 6px;
+  letter-spacing: 0.3px;
+}
+
+/* 17. Rating — component-showcase-ext.html #17 (extVariant showcase) */
+html.xa-al-root .rating-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+html.xa-al-root .rating-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+html.xa-al-root .rating-row__label {
+  font-size: 12px;
+  color: var(--ink-2);
+  width: 60px;
+  flex-shrink: 0;
+}
+html.xa-al-root .stars-input {
+  display: flex;
+  gap: 4px;
+}
+html.xa-al-root .stars-input label {
+  cursor: pointer;
+  font-size: 22px;
+  color: var(--border2);
+  transition: color 0.15s, transform 0.15s;
+}
+html.xa-al-root .stars-input label:hover,
+html.xa-al-root .stars-input label.active {
+  color: var(--yellow);
+  transform: scale(1.15);
+}
+html.xa-al-root .stars-input input {
+  display: none;
+}
+html.xa-al-root .rating-score {
+  font-family: "Syne Mono", "JetBrains Mono", ui-monospace, monospace;
+  font-size: 13px;
+  color: var(--ink-2);
+  min-width: 28px;
+}
+html.xa-al-root .hearts-input {
+  display: flex;
+  gap: 4px;
+}
+html.xa-al-root .hearts-input label {
+  cursor: pointer;
+  font-size: 20px;
+  color: var(--border2);
+  transition: color 0.15s, transform 0.15s;
+}
+html.xa-al-root .hearts-input label:hover,
+html.xa-al-root .hearts-input label.active {
+  color: var(--red);
+  transform: scale(1.15);
+}
+html.xa-al-root .hearts-input input {
+  display: none;
+}
+
+/* 18. Icon — component-showcase-ext.html #18 (extVariant showcase) */
+html.xa-al-root .icon-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+html.xa-al-root .icon-item {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  position: relative;
+}
+html.xa-al-root .icon-item:hover {
+  background: rgba(var(--accent-rgb), 0.12);
+  border-color: var(--accent);
+}
+html.xa-al-root .icon-item svg {
+  width: 18px;
+  height: 18px;
+  stroke: var(--ink-2);
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+html.xa-al-root .icon-item:hover svg {
+  stroke: var(--accent-2);
+}
+html.xa-al-root .icon-sizes {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+html.xa-al-root .icon-sizes svg {
+  stroke: var(--ink-2);
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* 19. Divider — component-showcase-ext.html #19 (extVariant showcase) */
+html.xa-al-root .divider {
+  height: 1px;
+  background: var(--border);
+  margin: 16px 0;
+}
+html.xa-al-root .divider--thick {
+  height: 2px;
+  background: var(--border2);
+}
+html.xa-al-root .divider--dashed {
+  height: 0;
+  border-top: 1px dashed var(--border2);
+}
+html.xa-al-root .divider--gradient {
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--accent), transparent);
+}
+html.xa-al-root .divider--label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+}
+html.xa-al-root .divider--label::before,
+html.xa-al-root .divider--label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+html.xa-al-root .divider--label span {
+  font-size: 11px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+/* 21. Accordion — component-showcase-ext.html #21 (extVariant showcase) */
+html.xa-al-root .accordion-item {
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  margin-bottom: 6px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+html.xa-al-root .accordion-item.open {
+  border-color: var(--accent);
+}
+html.xa-al-root .accordion-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 16px;
+  background: none;
+  border: none;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+html.xa-al-root .accordion-trigger:hover {
+  background: var(--tap-hover-weak);
+}
+html.xa-al-root .accordion-chevron {
+  width: 16px;
+  height: 16px;
+  stroke: var(--ink-3);
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+  transition: transform 0.25s;
+}
+html.xa-al-root .accordion-item.open .accordion-chevron {
+  transform: rotate(180deg);
+  stroke: var(--accent-2);
+}
+html.xa-al-root .accordion-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+html.xa-al-root .accordion-body-inner {
+  padding: 0 16px 14px;
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.7;
+}
+
+/* 22–25. Grid, Flexbox, Stack, Spacer — component-showcase-ext.html #22–25 (extVariant showcase) */
+html.xa-al-root .grid-demo {
+  width: 100%;
+}
+html.xa-al-root .grid-demo__controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+html.xa-al-root .grid-pill {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--ink-2);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+html.xa-al-root .grid-pill.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+html.xa-al-root .grid-canvas {
+  display: grid;
+  gap: 6px;
+}
+html.xa-al-root .grid-cell {
+  height: 40px;
+  border-radius: 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-family: "Syne Mono", monospace;
+  color: var(--ink-3);
+  transition: background 0.2s;
+}
+html.xa-al-root .grid-cell:nth-child(3n + 1) {
+  background: rgba(var(--accent-rgb), 0.1);
+  border-color: rgba(var(--accent-rgb), 0.2);
+  color: var(--accent-2);
+}
+html.xa-al-root .grid-cell:nth-child(3n + 2) {
+  background: rgba(52, 211, 153, 0.07);
+  border-color: rgba(52, 211, 153, 0.15);
+  color: var(--green);
+}
+
+html.xa-al-root .flex-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+html.xa-al-root .flex-ctrl-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+html.xa-al-root .flex-ctrl-group label {
+  font-size: 10px;
+  color: var(--ink-3);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+html.xa-al-root .flex-ctrl-group select {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 11px;
+  padding: 5px 8px;
+  outline: none;
+}
+html.xa-al-root .flex-canvas {
+  min-height: 100px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  transition: all 0.3s;
+}
+html.xa-al-root .flex-box {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  font-size: 10px;
+  font-family: "Syne Mono", monospace;
+  white-space: nowrap;
+}
+html.xa-al-root .flex-box:nth-child(1) {
+  background: rgba(var(--accent-rgb), 0.2);
+  color: var(--accent-2);
+  min-width: 60px;
+}
+html.xa-al-root .flex-box:nth-child(2) {
+  background: rgba(52, 211, 153, 0.15);
+  color: var(--green);
+  min-width: 80px;
+}
+html.xa-al-root .flex-box:nth-child(3) {
+  background: rgba(251, 191, 36, 0.15);
+  color: var(--yellow);
+  min-width: 50px;
+}
+html.xa-al-root .flex-box:nth-child(4) {
+  background: rgba(248, 113, 113, 0.15);
+  color: var(--red);
+  min-width: 70px;
+}
+html.xa-al-root .flex-box:nth-child(5) {
+  background: rgba(96, 165, 250, 0.15);
+  color: var(--blue);
+  min-width: 55px;
+}
+
+html.xa-al-root .stack-demo {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+html.xa-al-root .stack-v {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+html.xa-al-root .stack-h {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+html.xa-al-root .stack-item {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: var(--ink-2);
+  font-family: "Syne Mono", monospace;
+}
+html.xa-al-root .stack-label {
+  font-size: 10px;
+  color: var(--ink-3);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+html.xa-al-root .spacer-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 6px;
+}
+html.xa-al-root .spacer-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 11px;
+  color: var(--ink-2);
+}
+html.xa-al-root .spacer-visual {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(var(--accent-rgb), 0.05),
+    rgba(var(--accent-rgb), 0.05) 4px,
+    transparent 4px,
+    transparent 10px
+  );
+  border-left: 1px dashed rgba(var(--accent-rgb), 0.3);
+  border-right: 1px dashed rgba(var(--accent-rgb), 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Syne Mono", monospace;
+  font-size: 10px;
+  color: var(--accent);
+  opacity: 0.8;
+}
+
+/* 26–29. Tree, Tooltip, Modal, Search — component-showcase-ext.html #26–29 (extVariant showcase) */
+html.xa-al-root .tree {
+  width: 100%;
+}
+html.xa-al-root .tree-node {
+  user-select: none;
+}
+html.xa-al-root .tree-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 0 5px 4px;
+  border-radius: 5px;
+  cursor: pointer;
+  color: var(--ink-2);
+  font-size: 13px;
+  transition: background 0.15s, color 0.15s;
+}
+html.xa-al-root .tree-row:hover {
+  background: var(--tap-hover);
+  color: var(--ink);
+}
+html.xa-al-root .tree-row.selected {
+  background: rgba(var(--accent-rgb), 0.1);
+  color: var(--accent-2);
+}
+html.xa-al-root .tree-chevron {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.2s;
+  visibility: hidden;
+}
+html.xa-al-root .tree-row.has-children .tree-chevron {
+  visibility: visible;
+}
+html.xa-al-root .tree-row.has-children.expanded .tree-chevron {
+  transform: rotate(90deg);
+}
+html.xa-al-root .tree-icon {
+  font-size: 13px;
+  flex-shrink: 0;
+}
+html.xa-al-root .tree-label {
+  flex: 1;
+  font-size: 12px;
+}
+html.xa-al-root .tree-children {
+  margin-left: 16px;
+  border-left: 1px solid var(--border);
+  padding-left: 8px;
+  overflow: hidden;
+}
+html.xa-al-root .tree-children.collapsed {
+  display: none;
+}
+
+html.xa-al-root .tooltip-demo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+html.xa-al-root .tooltip-wrap {
+  position: relative;
+  display: inline-flex;
+  z-index: 0;
+}
+html.xa-al-root .tooltip-wrap:hover {
+  z-index: 13000;
+}
+html.xa-al-root .tooltip-target {
+  padding: 8px 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: default;
+  color: var(--ink-2);
+  transition: background 0.15s;
+}
+html.xa-al-root .tooltip-target:hover {
+  background: var(--border2);
+  color: var(--ink);
+}
+html.xa-al-root .tooltip-bubble {
+  position: absolute;
+  z-index: 13100;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 6px 10px;
+  border-radius: 5px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s, transform 0.15s;
+}
+html.xa-al-root .tooltip-bubble::after {
+  content: "";
+  position: absolute;
+  border: 4px solid transparent;
+}
+html.xa-al-root .tooltip-wrap.tip-top .tooltip-bubble {
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+}
+html.xa-al-root .tooltip-wrap.tip-top .tooltip-bubble::after {
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-top-color: var(--ink);
+}
+html.xa-al-root .tooltip-wrap.tip-top:hover .tooltip-bubble {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+html.xa-al-root .tooltip-wrap.tip-bottom .tooltip-bubble {
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+}
+html.xa-al-root .tooltip-wrap.tip-bottom .tooltip-bubble::after {
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-bottom-color: var(--ink);
+}
+html.xa-al-root .tooltip-wrap.tip-bottom:hover .tooltip-bubble {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+html.xa-al-root .tooltip-wrap.tip-right .tooltip-bubble {
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-4px);
+}
+html.xa-al-root .tooltip-wrap.tip-right .tooltip-bubble::after {
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border-right-color: var(--ink);
+}
+html.xa-al-root .tooltip-wrap.tip-right:hover .tooltip-bubble {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+html.xa-al-root .modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s;
+}
+html.xa-al-root .modal-backdrop.open {
+  opacity: 1;
+  pointer-events: all;
+}
+html.xa-al-root .modal-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  width: 480px;
+  max-width: calc(100vw - 32px);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+  transform: scale(0.95) translateY(10px);
+  transition: transform 0.25s;
+}
+html.xa-al-root .modal-backdrop.open .modal-box {
+  transform: scale(1) translateY(0);
+}
+html.xa-al-root .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+}
+html.xa-al-root .modal-header h3 {
+  font-family: "Syne", sans-serif;
+  font-weight: 700;
+  font-size: 17px;
+  margin: 0;
+  color: var(--ink);
+}
+html.xa-al-root .modal-close {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  color: var(--ink-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+html.xa-al-root .modal-close:hover {
+  background: var(--border2);
+  color: var(--ink);
+}
+html.xa-al-root .modal-close svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+html.xa-al-root .modal-body {
+  padding: 20px 24px;
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.7;
+}
+html.xa-al-root .modal-body p {
+  margin: 0;
+}
+html.xa-al-root .modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid var(--border);
+}
+html.xa-al-root .modal-trigger-btn {
+  padding: 10px 20px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+html.xa-al-root .modal-trigger-btn:hover {
+  background: var(--accent-2);
+}
+
+html.xa-al-root .search-outer {
+  position: relative;
+  z-index: 0;
+}
+html.xa-al-root .search-outer:focus-within,
+html.xa-al-root .search-outer:has(.search-results.show) {
+  z-index: 13200;
+}
+html.xa-al-root .search-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 0 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+html.xa-al-root .search-input-wrap:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.18);
+}
+html.xa-al-root .search-icon {
+  color: var(--ink-3);
+  flex-shrink: 0;
+}
+html.xa-al-root .search-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  display: block;
+}
+html.xa-al-root .search-field {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: 11px 0;
+}
+html.xa-al-root .search-field::placeholder {
+  color: var(--ink-3);
+}
+html.xa-al-root .search-kbd {
+  font-family: "Syne Mono", monospace;
+  font-size: 10px;
+  color: var(--ink-3);
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  padding: 2px 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+html.xa-al-root .search-clear {
+  background: none;
+  border: none;
+  color: var(--ink-3);
+  cursor: pointer;
+  padding: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s;
+}
+html.xa-al-root .search-clear.show {
+  display: flex;
+}
+html.xa-al-root .search-clear:hover {
+  color: var(--ink);
+}
+html.xa-al-root .search-clear svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+html.xa-al-root .search-results {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 13300;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  display: none;
+}
+html.xa-al-root .search-results.show {
+  display: block;
+}
+html.xa-al-root .search-result-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+html.xa-al-root .search-result-item:hover {
+  background: rgba(var(--accent-rgb), 0.08);
+  color: var(--ink);
+}
+html.xa-al-root .search-result-item .icon {
+  font-size: 14px;
+}
+html.xa-al-root .search-result-item .label {
+  flex: 1;
+}
+html.xa-al-root .search-result-item mark {
+  background: none;
+  color: var(--accent-2);
+  font-weight: 600;
+}
+html.xa-al-root .search-result-item .type {
+  font-size: 10px;
+  color: var(--ink-3);
+}
+html.xa-al-root .search-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+html.xa-al-root .search-recent-label {
+  padding: 6px 14px;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* 30–33. Gallery, QR, Barcode, Signature — component-showcase-ext.html #30–33 (extVariant showcase) */
+html.xa-al-root .gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: auto;
+  gap: 6px;
+}
+html.xa-al-root .gallery-item {
+  position: relative;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--surface2);
+}
+html.xa-al-root .gallery-item:nth-child(1) {
+  grid-row: span 2;
+}
+html.xa-al-root .gallery-item:nth-child(4) {
+  grid-column: span 2;
+}
+html.xa-al-root .gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s;
+  min-height: 80px;
+}
+html.xa-al-root .gallery-item:hover img {
+  transform: scale(1.06);
+}
+html.xa-al-root .gallery-item__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s;
+}
+html.xa-al-root .gallery-item:hover .gallery-item__overlay {
+  background: rgba(0, 0, 0, 0.35);
+}
+html.xa-al-root .gallery-item__overlay svg {
+  opacity: 0;
+  stroke: #fff;
+  fill: none;
+  width: 24px;
+  height: 24px;
+  stroke-width: 2;
+  transition: opacity 0.3s;
+}
+html.xa-al-root .gallery-item:hover .gallery-item__overlay svg {
+  opacity: 1;
+}
+html.xa-al-root .lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 20000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+html.xa-al-root .lightbox.open {
+  display: flex;
+}
+html.xa-al-root .lightbox img {
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 8px;
+  object-fit: contain;
+}
+html.xa-al-root .lightbox-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  cursor: pointer;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+html.xa-al-root .lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+html.xa-al-root .lightbox-close svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+html.xa-al-root .qr-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+html.xa-al-root .qr-canvas {
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #fff;
+}
+html.xa-al-root .qr-input-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+html.xa-al-root .qr-input-row .f-input {
+  flex: 1;
+}
+html.xa-al-root .qr-gen-btn {
+  padding: 0 16px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--r-sm);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+html.xa-al-root .qr-gen-btn:hover {
+  background: var(--accent-2);
+}
+
+html.xa-al-root .barcode-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+html.xa-al-root .barcode-canvas {
+  border-radius: 6px;
+  background: #fff;
+  padding: 12px;
+  border: 1px solid var(--border);
+}
+html.xa-al-root .barcode-text {
+  font-family: "Syne Mono", monospace;
+  font-size: 13px;
+  color: var(--ink-2);
+  letter-spacing: 3px;
+}
+
+html.xa-al-root .sig-canvas {
+  width: 100%;
+  height: 160px;
+  border-radius: 8px;
+  display: block;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  cursor: crosshair;
+  touch-action: none;
+}
+html.xa-al-root .sig-canvas.drawing {
+  cursor: none;
+}
+html.xa-al-root .sig-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+html.xa-al-root .sig-clear {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border2);
+  background: none;
+  color: var(--ink-2);
+  font-size: 12px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: background 0.15s, color 0.15s;
+}
+html.xa-al-root .sig-clear:hover {
+  background: var(--surface2);
+  color: var(--ink);
+}
+html.xa-al-root .sig-save {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: background 0.15s;
+}
+html.xa-al-root .sig-save:hover {
+  background: var(--accent-2);
+}
+html.xa-al-root .sig-color-row {
+  display: flex;
+  gap: 5px;
+}
+html.xa-al-root .sig-color-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: transform 0.15s, border-color 0.15s;
+}
+html.xa-al-root .sig-color-dot:hover {
+  transform: scale(1.2);
+}
+html.xa-al-root .sig-color-dot.selected {
+  border-color: var(--ink);
+}
+html.xa-al-root .sig-thickness {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+html.xa-al-root .sig-thickness label {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+html.xa-al-root .sig-thickness input {
+  width: 60px;
+}
+html.xa-al-root .sig-hint {
+  font-size: 11px;
+  color: var(--ink-3);
+  text-align: center;
+  margin-top: 6px;
+}
+
+/* 12. Color picker — component-showcase-ext.html #12 (extVariant showcase) */
+html.xa-al-root .color-preview {
+  width: 100%;
+  height: 60px;
+  border-radius: 8px;
+  margin-bottom: 14px;
+  border: 1px solid var(--border);
+  transition: background 0.2s;
+}
+html.xa-al-root .color-spectrum {
+  width: 100%;
+  height: 14px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  cursor: crosshair;
+}
+html.xa-al-root .color-swatches {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+html.xa-al-root .color-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: transform 0.15s, border-color 0.15s;
+}
+html.xa-al-root .color-swatch:hover {
+  transform: scale(1.2);
+}
+html.xa-al-root .color-swatch.selected {
+  border-color: var(--ink);
+}
+html.xa-al-root .color-hex-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+}
+html.xa-al-root .color-hex-row input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  color: var(--ink);
+  font-family: "Syne Mono", "JetBrains Mono", ui-monospace, monospace;
+  font-size: 13px;
+  padding: 8px 12px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+html.xa-al-root .color-hex-row input:focus {
+  border-color: var(--accent);
+}
+html.xa-al-root .color-hex-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border2);
+  flex-shrink: 0;
+}
+
+/* 13. Date picker — component-showcase-ext.html #13 */
+html.xa-al-root .date-picker__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+html.xa-al-root .date-picker__nav {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--ink-2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+html.xa-al-root .date-picker__nav:hover {
+  background: var(--border2);
+  color: var(--ink);
+}
+html.xa-al-root .date-picker__nav svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+html.xa-al-root .date-picker__month {
+  font-family: "Syne", var(--font-body), sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+}
+html.xa-al-root .date-picker__grid {
+  width: 100%;
+  border-collapse: collapse;
+}
+html.xa-al-root .date-picker__grid th {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--ink-3);
+  text-align: center;
+  padding: 4px 0 8px;
+  font-weight: 500;
+}
+html.xa-al-root .date-picker__grid td {
+  text-align: center;
+  padding: 2px;
+}
+html.xa-al-root .date-day {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: auto;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--ink-2);
+  transition: background 0.15s, color 0.15s;
+}
+html.xa-al-root .date-day:hover {
+  background: var(--surface2);
+  color: var(--ink);
+}
+html.xa-al-root .date-day.today {
+  color: var(--accent-2);
+  font-weight: 700;
+}
+html.xa-al-root .date-day.selected {
+  background: var(--accent);
+  color: #fff;
+}
+html.xa-al-root .date-day.other-month {
+  color: var(--ink-3);
+}
+html.xa-al-root .date-day.in-range {
+  background: rgba(var(--accent-rgb), 0.15);
+  border-radius: 0;
+  color: var(--ink);
+}
+
+/* 14. Time picker — component-showcase-ext.html #14 */
+html.xa-al-root .time-picker__display {
+  text-align: center;
+  padding: 14px;
+  background: var(--surface2);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+html.xa-al-root .time-picker__time {
+  font-family: "Syne Mono", "JetBrains Mono", ui-monospace, monospace;
+  font-size: 36px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: 2px;
+}
+html.xa-al-root .time-picker__ampm {
+  font-size: 13px;
+  color: var(--ink-3);
+  margin-left: 6px;
+}
+html.xa-al-root .time-picker__cols {
+  display: flex;
+  gap: 16px;
+}
+html.xa-al-root .time-picker__col {
+  flex: 1;
+}
+html.xa-al-root .time-picker__col-label {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  text-align: center;
+  margin-bottom: 8px;
+}
+html.xa-al-root .time-picker__scroll {
+  max-height: 140px;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  border-radius: 6px;
+  background: var(--surface2);
+}
+html.xa-al-root .time-picker__scroll::-webkit-scrollbar {
+  display: none;
+}
+html.xa-al-root .time-picker__item {
+  padding: 8px;
+  text-align: center;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--ink-3);
+  scroll-snap-align: start;
+  transition: background 0.15s, color 0.15s;
+}
+html.xa-al-root .time-picker__item:hover {
+  color: var(--ink);
+}
+html.xa-al-root .time-picker__item.selected {
+  color: var(--accent-2);
+  font-weight: 600;
+  background: rgba(var(--accent-rgb), 0.1);
+}
+
+/* 15. File picker — component-showcase-ext.html #15 */
+html.xa-al-root .file-dropzone {
+  position: relative;
+  border: 2px dashed var(--border2);
+  border-radius: var(--r);
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+html.xa-al-root .file-dropzone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+html.xa-al-root .file-dropzone:hover,
+html.xa-al-root .file-dropzone.drag-over {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.05);
+}
+html.xa-al-root .file-dropzone__icon {
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+html.xa-al-root .file-dropzone__text {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+html.xa-al-root .file-dropzone__text strong {
+  color: var(--accent-2);
+  cursor: pointer;
+}
+html.xa-al-root .file-dropzone__hint {
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 4px;
+}
+html.xa-al-root .file-list {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+html.xa-al-root .file-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+html.xa-al-root .file-item__icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+html.xa-al-root .file-item__info {
+  flex: 1;
+  min-width: 0;
+}
+html.xa-al-root .file-item__name {
+  font-size: 12px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+html.xa-al-root .file-item__size {
+  font-size: 10px;
+  color: var(--ink-3);
+}
+html.xa-al-root .file-item__rm {
+  background: none;
+  border: none;
+  color: var(--ink-3);
+  cursor: pointer;
+  padding: 2px;
+  transition: color 0.15s;
+}
+html.xa-al-root .file-item__rm:hover {
+  color: var(--red);
+}
+html.xa-al-root .file-item__rm svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* 16. Image picker — component-showcase-ext.html #16 */
+html.xa-al-root .image-dropzone {
+  position: relative;
+  border: 2px dashed var(--border2);
+  border-radius: var(--r);
+  height: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+html.xa-al-root .image-dropzone:hover {
+  border-color: var(--accent);
+}
+html.xa-al-root .image-dropzone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+html.xa-al-root .image-dropzone__placeholder {
+  text-align: center;
+  pointer-events: none;
+}
+html.xa-al-root .image-dropzone__icon {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+html.xa-al-root .image-dropzone__text {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+html.xa-al-root .image-dropzone__preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
+}
+html.xa-al-root .image-thumbnails {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+html.xa-al-root .img-thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 2px solid var(--border);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+html.xa-al-root .img-thumb.active {
+  border-color: var(--accent);
+}
+
+/* ── XaBannerAL · 랜딩/히어로 슬라이더 (component-showcase-basic-autolayout 등) ── */
+html.xa-al-root .xa-al-banner {
+  display: block;
+  flex-shrink: 0;
+}
+html.xa-al-root .xa-al-banner .banner-container {
+  border-radius: inherit;
+}
+
+/* 배너 슬롯(뷰포트)과 슬라이드 콘텐츠 폭·높이 일치 — pos 고정(560 등)으로 좁아지던 현상 방지 */
+html.xa-al-root .xa-al-banner .banner-container > .banner-slide {
+  flex: 0 0 auto;
+}
+html.xa-al-root .xa-al-banner .banner-container > .banner-slide > [data-key] {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  align-self: stretch;
+}
+/* 기본 팩토리(비-AL)로 렌더된 경우에도 슬롯 풀폭 보강 */
+html.xa-al-root .xa-al-banner .banner-container > .banner-slide > [data-key*="bannerView_"] {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+html.xa-al-root .xa-al-banner .banner-container > .banner-slide .xa-al-label {
+  justify-content: center !important;
+}
+html.xa-al-root .xa-al-banner .banner-container > .banner-slide .xa-al-img-overlay-wrap {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+html.xa-al-root .xa-al-banner--hero {
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.18);
+}
+html[data-theme="dark"] .xa-al-root .xa-al-banner--hero {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+}
+html.xa-al-root .xa-al-banner--hero [data-component="image"] {
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+/* 히어로(랜딩 크롬): 좌측 카피 + banner.html 유사 하단 바 */
+html.xa-al-root .xa-al-banner--landing .xa-al-img-overlay-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.72) 0%,
+    rgba(0, 0, 0, 0.28) 55%,
+    rgba(0, 0, 0, 0.08) 100%
+  );
+}
+html.xa-al-root .xa-al-banner--landing .xa-al-img-overlay-wrap img {
+  position: relative;
+  z-index: 0;
+}
+html.xa-al-root .xa-al-banner--landing .xa-al-img-overlay {
+  inset: auto;
+  left: clamp(20px, 4vw, 56px);
+  right: clamp(16px, 3vw, 40px);
+  bottom: clamp(88px, 14vw, 132px);
+  top: auto;
+  width: auto;
+  max-width: min(520px, 92%);
+  padding: 0;
+  background: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  z-index: 1;
+  pointer-events: none;
+}
+html.xa-al-root .xa-al-banner--landing .xa-al-img-overlay-tag {
+  top: clamp(40px, 8vw, 72px);
+  left: clamp(20px, 4vw, 56px);
+  z-index: 2;
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 2px;
+  font-family: "Syne", "Plus Jakarta Sans", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+html.xa-al-root .xa-al-banner--landing .xa-al-img-overlay-title {
+  font-family: "Syne", "Plus Jakarta Sans", sans-serif;
+  font-size: clamp(28px, 5.2vw, 56px);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.05;
+  text-transform: none;
+  color: #fff;
+}
+html.xa-al-root .xa-al-banner--landing .xa-al-img-overlay-sub {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 300;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.82);
+  margin-top: 10px;
+}
+html.xa-al-root .xa-al-banner--landing .xa-al-img-overlay-cta {
+  display: inline-block;
+  margin-top: 18px;
+  padding: 10px 24px;
+  background: #fff;
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  border-radius: 2px;
+}
+
+.xa-landing-banner__arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 12;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.xa-landing-banner__arrow:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+.xa-landing-banner__arrow--prev {
+  left: 14px;
+}
+.xa-landing-banner__arrow--next {
+  right: 14px;
+}
+.xa-landing-banner__bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 12;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 clamp(16px, 3vw, 40px);
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+.xa-landing-banner__dots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+.xa-landing-banner__counter {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: "Syne", sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.55);
+  pointer-events: none;
+}
+.xa-landing-banner__counter-current {
+  color: #fff;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.xa-landing-banner__pause {
+  margin-left: auto;
+  pointer-events: auto;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.xa-landing-banner__pause:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+.xa-landing-banner__dot--active {
+  transform: scale(1.35);
+}
+
+html.xa-al-root .xa-al-banner--compact .banner-indicator {
+  bottom: 6px;
+}
+html.xa-al-root .xa-al-banner--vertical .banner-container {
+  border-radius: inherit;
+}
+
+/* Hero banner slide: panel with bg image + foreground stack (component-showcase mkBannerSlideHeroPanel) */
+.xa-al-panel__stack.xa-al-banner-hero-slide {
+  display: grid !important;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+  align-items: stretch;
+  justify-items: stretch;
+  width: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+.xa-al-panel__stack.xa-al-banner-hero-slide > * {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+.xa-al-panel__stack.xa-al-banner-hero-slide > [data-component="image"] {
+  z-index: 0;
+}
+.xa-al-panel__stack.xa-al-banner-hero-slide > [data-component="panel"] {
+  z-index: 1;
+}
+
+/* Hero panel foreground: tag pill + CTA hug content (banner slide children get width:100% in AL) */
+.xa-al-panel__stack.xa-al-banner-hero-fg .xa-al-label.xa-al-banner-hero-tag {
+  width: fit-content !important;
+  max-width: 100%;
+  align-self: flex-start !important;
+  flex: 0 0 auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  align-items: flex-start !important;
+}
+.xa-al-panel__stack.xa-al-banner-hero-fg .xa-al-label.xa-al-banner-hero-tag > span {
+  width: auto !important;
+  max-width: 100%;
+}
+
+/* 배너 슬라이드 AL이 모든 자식에 flex:1 1 auto · height:100%를 주어 CTA가 세로로 늘어남 → 전경 스택 자식은 콘텐츠 높이만 사용 */
+.xa-al-panel__stack.xa-al-banner-hero-fg > [data-component] {
+  flex: 0 0 auto !important;
+  flex-grow: 0 !important;
+  flex-shrink: 0 !important;
+  flex-basis: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  align-self: flex-start !important;
+}
+.xa-al-panel__stack.xa-al-banner-hero-fg > .xa-al-label {
+  width: 100%;
+  max-width: 100%;
+}
+/* 히어로 전경: 태그~CTA 한 덩어리로 촘촘히 (gap + 라벨 바깥 여백 최소) */
+.xa-al-panel__stack.xa-al-banner-hero-fg {
+  justify-content: center !important;
+  row-gap: 6px !important;
+}
+.xa-al-panel__stack.xa-al-banner-hero-fg .xa-al-banner-hero-title,
+.xa-al-panel__stack.xa-al-banner-hero-fg .xa-al-banner-hero-sub {
+  margin-block: 0 !important;
+}
+.xa-al-panel__stack.xa-al-banner-hero-fg button.xa-al-btn {
+  width: auto !important;
+  max-width: min(280px, 92vw);
+}
+
+/* Panel showcase §05-C — static hero: slide + overlay chrome (arrows + bottom dock) */
+.xa-al-showcase-hero-wrap-grid {
+  display: grid !important;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+  align-items: stretch;
+  justify-items: stretch;
+  width: 100%;
+  min-height: min(420px, 72vw);
+  box-sizing: border-box;
+}
+.xa-al-showcase-hero-wrap-grid > * {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+.xa-al-showcase-hero-wrap-grid > [data-component="panel"]:nth-child(1) {
+  z-index: 1;
+}
+.xa-al-showcase-hero-wrap-grid > [data-component="panel"]:nth-child(2) {
+  z-index: 3;
+}
+.xa-al-panel__stack.xa-al-showcase-hero-chrome {
+  position: relative !important;
+  display: block !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  box-sizing: border-box;
+}
+
+/* §05-C 하단 도크: 가로 한 줄(패널 루트 width는 AL에서 기본 제거 — 특수 덮어쓰기 불필요) */
+.xa-al-panel__stack.xa-al-showcase-hero-dock {
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: stretch !important;
+}
+
+/* =============================================================================
+   Extended · XaSpinner — component-showcase-ext #07 (spinners-row / sp-ring·dots·pulse·bars)
+   루트에 인라인 --xa-spin-rgb: R, G, B (xamong-ui-components-ext.js XaSpinner)
+   ============================================================================= */
+[data-component="spinner"] .spinners-row,
+.xa-ext-spinner-host .spinners-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: 14px 18px;
+  width: 100%;
+  min-height: min-content;
+  box-sizing: border-box;
+}
+[data-component="spinner"] .spinner-item,
+.xa-ext-spinner-host .spinner-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 52px;
+}
+[data-component="spinner"] .spinner-label,
+.xa-ext-spinner-host .spinner-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3, #a8998a);
+}
+
+[data-component="spinner"] .sp-ring,
+.xa-ext-spinner-host .sp-ring {
+  display: inline-block;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border-style: solid;
+  border-color: rgb(var(--xa-spin-rgb, 0, 123, 255) / 0.22);
+  border-top-color: rgb(var(--xa-spin-rgb, 0, 123, 255) / 1);
+  animation: xa-ext-spin-ring 0.85s linear infinite;
+}
+[data-component="spinner"] .sp-ring--sm,
+.xa-ext-spinner-host .sp-ring--sm {
+  width: 18px;
+  height: 18px;
+  border-width: 2px;
+}
+[data-component="spinner"] .sp-ring--md,
+.xa-ext-spinner-host .sp-ring--md {
+  width: 28px;
+  height: 28px;
+  border-width: 3px;
+}
+[data-component="spinner"] .sp-ring--lg,
+.xa-ext-spinner-host .sp-ring--lg {
+  width: 40px;
+  height: 40px;
+  border-width: 4px;
+}
+
+[data-component="spinner"] .sp-dots,
+.xa-ext-spinner-host .sp-dots {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+[data-component="spinner"] .sp-dots span,
+.xa-ext-spinner-host .sp-dots span {
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgb(var(--xa-spin-rgb, 0, 123, 255) / 1);
+  animation: xa-ext-spin-dots 1.25s ease-in-out infinite both;
+}
+[data-component="spinner"] .sp-dots span:nth-child(2),
+.xa-ext-spinner-host .sp-dots span:nth-child(2) {
+  animation-delay: 0.14s;
+}
+[data-component="spinner"] .sp-dots span:nth-child(3),
+.xa-ext-spinner-host .sp-dots span:nth-child(3) {
+  animation-delay: 0.28s;
+}
+
+[data-component="spinner"] .sp-pulse,
+.xa-ext-spinner-host .sp-pulse {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgb(var(--xa-spin-rgb, 0, 123, 255) / 0.95);
+  animation: xa-ext-spin-pulse 1.15s ease-in-out infinite;
+}
+
+[data-component="spinner"] .sp-bars,
+.xa-ext-spinner-host .sp-bars {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  height: 28px;
+}
+[data-component="spinner"] .sp-bars span,
+.xa-ext-spinner-host .sp-bars span {
+  display: block;
+  width: 4px;
+  height: 22px;
+  border-radius: 2px;
+  background: rgb(var(--xa-spin-rgb, 0, 123, 255) / 1);
+  transform-origin: center bottom;
+  animation: xa-ext-spin-bars 0.9s ease-in-out infinite;
+}
+[data-component="spinner"] .sp-bars span:nth-child(2),
+.xa-ext-spinner-host .sp-bars span:nth-child(2) {
+  animation-delay: 0.1s;
+}
+[data-component="spinner"] .sp-bars span:nth-child(3),
+.xa-ext-spinner-host .sp-bars span:nth-child(3) {
+  animation-delay: 0.2s;
+}
+[data-component="spinner"] .sp-bars span:nth-child(4),
+.xa-ext-spinner-host .sp-bars span:nth-child(4) {
+  animation-delay: 0.3s;
+}
+
+.sp-dots.xa-ext-spin-scale--sm {
+  gap: 4px;
+}
+.sp-dots.xa-ext-spin-scale--sm span {
+  width: 5px;
+  height: 5px;
+}
+.sp-dots.xa-ext-spin-scale--lg {
+  gap: 6px;
+}
+.sp-dots.xa-ext-spin-scale--lg span {
+  width: 9px;
+  height: 9px;
+}
+.xa-ext-spin-scale--sm.sp-pulse {
+  width: 22px;
+  height: 22px;
+}
+.xa-ext-spin-scale--lg.sp-pulse {
+  width: 36px;
+  height: 36px;
+}
+.xa-ext-spin-scale--sm.sp-bars {
+  height: 22px;
+  gap: 3px;
+}
+.xa-ext-spin-scale--sm.sp-bars span {
+  width: 3px;
+  height: 16px;
+}
+.xa-ext-spin-scale--lg.sp-bars {
+  height: 34px;
+  gap: 5px;
+}
+.xa-ext-spin-scale--lg.sp-bars span {
+  width: 5px;
+  height: 28px;
+}
+
+@keyframes xa-ext-spin-ring {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes xa-ext-spin-dots {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.35);
+    opacity: 0.45;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes xa-ext-spin-pulse {
+  0%,
+  100% {
+    transform: scale(0.55);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes xa-ext-spin-bars {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+/* =============================================================================
+   Extended · XaProgressBar — component-showcase-ext #06 (progress-item / progress-fill--a–d)
+   ============================================================================= */
+.xa-ext-progress-host {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.xa-ext-progress-host--showcase {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.xa-ext-progress-host .progress-item {
+  width: 100%;
+  min-width: 0;
+}
+.xa-ext-progress-host .progress-label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2, #6b5f4e);
+}
+.xa-ext-progress-host .progress-label span:last-child {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink, #1c1710);
+}
+.xa-ext-progress-host .progress-track {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface2, #f2ede5);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.xa-ext-progress-host .progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  width: 0;
+  min-width: 0;
+  transition: width 0.35s ease;
+  box-sizing: border-box;
+}
+.xa-ext-progress-host .progress-fill--a {
+  background: linear-gradient(90deg, var(--accent, #c4622d) 0%, var(--accent-gradient-end, #e88b5a) 100%);
+}
+.xa-ext-progress-host .progress-fill--b {
+  background: linear-gradient(90deg, var(--blue, #2b5fa0) 0%, var(--blue-lt, #d1dff5) 100%);
+}
+.xa-ext-progress-host .progress-fill--c {
+  background: linear-gradient(90deg, var(--green, #2d7d4f) 0%, var(--green-lt, #d1ead9) 100%);
+}
+.xa-ext-progress-host .progress-fill--d {
+  background: linear-gradient(90deg, var(--ink-3, #a8998a) 0%, var(--border2, rgba(60, 45, 25, 0.18)) 100%);
+}
+
+.xa-ext-progress-host .progress-track.xa-ext-progress-stripes .progress-fill {
+  position: relative;
+  overflow: hidden;
+}
+.xa-ext-progress-host .progress-track.xa-ext-progress-stripes .progress-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.22) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.22) 50%,
+    rgba(255, 255, 255, 0.22) 75%,
+    transparent 75%,
+    transparent
+  );
+  background-size: 1rem 1rem;
+  animation: xa-ext-pb-stripes-move 1s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes xa-ext-pb-stripes-move {
+  0% {
+    background-position: 1rem 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+}
+
+/* =============================================================================
+   Extended · XaSwitch — component-showcase-ext #05 (switch-row / switch__track)
+   ============================================================================= */
+.xa-ext-switch-host {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.xa-ext-switch-host--showcase {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.xa-ext-switch-host .switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  width: 100%;
+  box-sizing: border-box;
+}
+.xa-ext-switch-host .switch-row:last-child {
+  border-bottom: none;
+}
+.xa-ext-switch-host .switch-row--control-only {
+  justify-content: flex-end;
+  border-bottom: none;
+  padding: 8px 0;
+}
+.xa-ext-switch-host .switch-info {
+  flex: 1;
+  min-width: 0;
+}
+.xa-ext-switch-host .switch-info p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.xa-ext-switch-host .switch-info small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--ink-3);
+  line-height: 1.35;
+}
+
+.xa-ext-switch-host .switch {
+  position: relative;
+  flex-shrink: 0;
+}
+.xa-ext-switch-host .switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+.xa-ext-switch-host .switch__track {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  cursor: pointer;
+  transition: background 0.25s, border-color 0.25s;
+  box-sizing: border-box;
+}
+.xa-ext-switch-host .switch__track::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  border-radius: 50%;
+  background: var(--ink-3);
+  transition: transform 0.25s, background 0.25s;
+}
+.xa-ext-switch-host .switch input:checked ~ .switch__track {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.xa-ext-switch-host .switch input:checked ~ .switch__track::after {
+  background: #fff;
+}
+
+/* medium — component-showcase-ext 기본 (44×24) */
+.xa-ext-switch-host .switch.switch--md {
+  width: 44px;
+  height: 24px;
+}
+.xa-ext-switch-host .switch.switch--md .switch__track {
+  border-radius: 12px;
+}
+.xa-ext-switch-host .switch.switch--md .switch__track::after {
+  width: 16px;
+  height: 16px;
+}
+.xa-ext-switch-host .switch.switch--md input:checked ~ .switch__track::after {
+  transform: translateX(20px);
+}
+
+/* small */
+.xa-ext-switch-host .switch.switch--sm {
+  width: 36px;
+  height: 20px;
+}
+.xa-ext-switch-host .switch.switch--sm .switch__track {
+  border-radius: 10px;
+}
+.xa-ext-switch-host .switch.switch--sm .switch__track::after {
+  width: 14px;
+  height: 14px;
+  top: 2px;
+  left: 2px;
+}
+.xa-ext-switch-host .switch.switch--sm input:checked ~ .switch__track::after {
+  transform: translateX(16px);
+}
+
+/* large */
+.xa-ext-switch-host .switch.switch--lg {
+  width: 52px;
+  height: 28px;
+}
+.xa-ext-switch-host .switch.switch--lg .switch__track {
+  border-radius: 14px;
+}
+.xa-ext-switch-host .switch.switch--lg .switch__track::after {
+  width: 20px;
+  height: 20px;
+  top: 3px;
+  left: 3px;
+}
+.xa-ext-switch-host .switch.switch--lg input:checked ~ .switch__track::after {
+  transform: translateX(24px);
+}
+
+/* =============================================================================
+   Extended · XaSlider — component-showcase-ext #04 (slider-wrap / f-range)
+   ============================================================================= */
+.xa-ext-slider-host {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.xa-ext-slider-host .f-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-2);
+  margin-bottom: 6px;
+  letter-spacing: 0.3px;
+}
+.xa-ext-slider-host .slider-wrap {
+  padding: 8px 0;
+}
+.xa-ext-slider-host .f-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: var(--border2);
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+  --fill: 40%;
+  background: linear-gradient(
+    to right,
+    var(--accent) var(--fill),
+    var(--border2) var(--fill)
+  );
+}
+.xa-ext-slider-host .f-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 2px solid var(--accent);
+  cursor: grab;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0);
+}
+.xa-ext-slider-host .f-range::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.2);
+  box-shadow: 0 0 0 6px rgba(var(--accent-rgb), 0.25);
+}
+.xa-ext-slider-host .f-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 2px solid var(--accent);
+  cursor: grab;
+}
+.xa-ext-slider-host .slider-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 6px;
+}
+.xa-ext-slider-host .slider-value {
+  text-align: center;
+  font-family: 'JetBrains Mono', 'Syne Mono', monospace;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 8px;
+}

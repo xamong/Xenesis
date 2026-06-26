@@ -1,0 +1,31 @@
+{
+  "name": "xenesis-desk-server",
+  "version": "1.0.0",
+  "description": "Local SQLite API server for Xenesis Desk (meta management, project info, DB admin)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "dev:debug": "node --inspect index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "sqlite",
+    "express",
+    "xamong",
+    "local-server"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "adm-zip": "^0.5.12",
+    "better-sqlite3": "^11.10.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}

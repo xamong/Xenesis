@@ -1,0 +1,1161 @@
+const globalHelp = [
+  "Usage: xenesis [options] <prompt>",
+  "       xenesis <command> [options]",
+  "",
+  "Commands:",
+  "  chat [prompt]                                  Run one or more chat prompts from args or stdin.",
+  "  connect <check|latest|show>                   Check connectivity or inspect reports.",
+  "  plan <prompt>                                  Produce a read-only execution plan.",
+  "  work <prompt>                                  Execute a task with the configured approval policy.",
+  "  ultraplan [prompt]                             Print a bounded local advanced-plan scaffold.",
+  "  fast [status|on|off|prompt]                    Print local fast-mode intent without changing providers.",
+  "  thinkback [query]                              Print a local session/context recall scaffold.",
+  "  thinkback-play                                 Report the bounded thinkback playback boundary.",
+  "  init [claude|verifiers]                       Create xenesis.config.json or print setup guidance.",
+  "  init-verifiers                                Print verifier-skill setup guidance without installers.",
+  "  install [target] [--force]                    Show native-install dry-run guidance only.",
+  "  install-github-app                            Show GitHub app setup boundaries without app install.",
+  "  install-slack-app                             Show Slack app setup boundaries without app install.",
+  "  oauth-refresh                                 No-op compatibility route for disabled OAuth refresh.",
+  "  onboarding                                    No-op compatibility route for disabled onboarding.",
+  "  passes                                        Show pass/referral boundaries without billing checks.",
+  "  privacy-settings                              Show privacy-settings boundaries without account calls.",
+  "  sandbox [exclude <pattern>]                   Show sandbox policy guidance without settings mutation.",
+  "  sandbox-toggle <...>                          Alias for sandbox.",
+  "  upgrade                                       Show upgrade boundaries without checkout or billing calls.",
+  "  doctor                                        Check bounded local runtime, config, tools, and reports.",
+  "  status                                        Print local runtime status without probing providers.",
+  "  clear                                         Clear bounded local chat context artifacts.",
+  "  files [list] [path]                           List workspace files with safe relative paths.",
+  "  diff                                          Print local git diff summary or no-diff/no-git status.",
+  "  branch                                        Print the current local git branch or no-git status.",
+  "  add-dir <path>                                Validate a local directory for workspace addition.",
+  "  commit [extra instruction]                    Build a commit prompt from local git context.",
+  "  bridge [status|setup|prompt]                  Print local Remote Control bridge setup intent only.",
+  "  bridge-kick [scenario]                        Dry-run bridge recovery fault-injection scenarios only.",
+  "  chrome [status|setup|prompt]                  Print local Chrome integration setup intent only.",
+  "  desktop [status|setup|prompt]                 Print local desktop handoff setup intent only.",
+  "  mobile [status|setup|prompt]                  Print local mobile handoff setup intent only.",
+  "  teleport [status|setup|prompt]                Print local teleport/remote-session intent only.",
+  "  remote-env [status|setup|prompt]              Print local remote environment setup intent only.",
+  "  remote-setup [status|setup|prompt]            Print local remote setup prompt without OAuth or APIs.",
+  "  terminal-setup [status|setup|prompt]          Print local terminal setup intent only.",
+  "  ide [status|setup|prompt]                     Print local IDE integration setup intent only.",
+  "  voice [status|setup|prompt]                   Print local voice mode setup intent only.",
+  "  color [name|default|current]                  Set or inspect local session color preference.",
+  "  theme [setting|list|current|default]           Set or inspect local terminal theme preference.",
+  "  vim [toggle|on|off|current]                   Toggle or inspect local editor mode preference.",
+  "  keybindings [show|path]                       Create or inspect local keybindings configuration.",
+  "  statusline [prompt|show|reset]                Record bounded local statusline setup intent.",
+  "  output-style                                  Print deprecation guidance for output style.",
+  "  exit                                          Exit command compatibility route.",
+  "  quit                                          Alias for exit.",
+  "  review [context]                              Build a local code-review prompt from git diagnostics.",
+  "  security-review [context]                     Build a local security-review prompt from git diagnostics.",
+  "  perf-issue [details]                          Build a local performance-issue diagnostic prompt.",
+  "  bughunter [context]                           Build a local bug-hunt prompt over changed code.",
+  "  autofix-pr [feedback]                         Build a local PR-feedback remediation prompt.",
+  "  issue [description]                           Build a local issue triage prompt.",
+  "  pr-comments [comments]                        Format or act on supplied PR comments without GitHub calls.",
+  "  commit-push-pr [instruction]                  Draft commit and PR material without pushing or opening a PR.",
+  "  advisor [model|off|status]                    Inspect or set local advisor model state only.",
+  "  agents [list|name]                            Inspect configured local subagent definitions.",
+  "  usage                                         Summarize local session, report, and task token usage.",
+  "  cost                                          Summarize local cost estimates without billing API calls.",
+  "  stats                                         Summarize local sessions, runs, tasks, and schedules.",
+  "  login [status]                                Print local credential/environment status only.",
+  "  logout                                        Clear local Xenesis auth state if present.",
+  "  rate-limit-options                            Print local retry and provider failure policy options.",
+  "  btw <question>                                Print local side-question guidance without model fork/TUI.",
+  "  feedback [description]                        Save a local feedback draft without upload/browser/TUI.",
+  "  stickers                                      Show local sticker catalogue guidance without ordering.",
+  "  moved-to-plugin [command] [plugin] [plugin-command]",
+  "                                                Print plugin migration guidance without marketplace install.",
+  "  ant-trace [trace-id]                          Inspect local trace ids across sessions and run reports.",
+  "  backfill-sessions                             Dry-run local session/report backfill diagnostics.",
+  "  break-cache                                   Clear bounded local cache state under $XENESIS_HOME/cache.",
+  "  debug-tool-call [tool]                        Dry-run local tool metadata lookup without invocation.",
+  "  heapdump                                      Write process memory metadata only; no heap dump is created.",
+  "  insights                                      Write a local usage insights JSON report without model/upload.",
+  "  mock-limits                                   Write local mock limit state under $XENESIS_HOME/diagnostics.",
+  "  reset-limits                                  Remove local mock limit state under $XENESIS_HOME/diagnostics.",
+  "  extra-usage                                   Print local extra-usage status without billing/browser calls.",
+  "  good-claude                                   Hidden-stub compatibility no-op.",
+  "  release-notes                                 Print local package release metadata without network access.",
+  "  config <list|show|get>                       Inspect effective local config without provider probes.",
+  "  settings <...>                               Alias for config.",
+  "  model [model|default|current|status|info]    Set or inspect local CLI model state.",
+  "  env                                          Print redacted local runtime environment summary.",
+  "  effort [level|current|status]                Set or inspect local CLI effort state.",
+  "  version                                       Print deterministic package name and version.",
+  "  smoke [run|latest|show]                       Run smoke checks or inspect smoke reports.",
+  "  scenario [run|latest|show]                    Run scenarios or inspect scenario reports.",
+  "  runs <report|verify|repair>                  Inspect reports, verify, and repair failed runs.",
+  "  sessions <list|show|compact|rewind|resume>    Inspect and reuse session logs.",
+  "  session <list|show|compact|rewind|resume>     Alias for sessions.",
+  "  resume <session-id> <prompt>                  Alias for sessions resume.",
+  "  compact <session-id>                          Alias for sessions compact.",
+  "  rewind <session-id> --events <count>           Alias for sessions rewind.",
+  "  profile <list|show|save|use|clear|delete|templates|install>",
+  "                                                Manage named runtime profiles and operating templates.",
+  "  extensions <list|doctor>                      Inspect extension configuration and plugin health.",
+  "  plugins <init|install|list|enable|disable|uninstall|remove|rm|update|reload|doctor>",
+  "                                                Manage local plugins.",
+  "  plugin <...>                                  Alias for plugins.",
+  "  reload-plugins                                Alias for plugins reload.",
+  "  skills <list|show>                            Inspect local skills.",
+  "  skill <...>                                   Alias for skills.",
+  "  memory <add|list|search>                      Manage the bounded local workspace memory store.",
+  "  mcp <list|serve|login>                        Inspect and manage MCP servers.",
+  "  context [index|show|search]                   Build and query the workspace context index.",
+  "  ctx-viz [query]                               Visualize the saved local context index.",
+  "  artifacts <save|list|show>                    Manage durable text artifacts.",
+  "  brief [status|on|off|toggle]                  Toggle local brief-only CLI state.",
+  "  copy [session-id] [N]                         Write a recent assistant response to local copy output.",
+  "  export [session-id] [filename]                Export a local session transcript to text.",
+  "  share [session-id]                            Save a local share artifact without remote APIs.",
+  "  summary [session-id]                          Summarize a local session log without provider calls.",
+  "  rename <session-id> [name]                    Store or locally generate a session display name.",
+  "  tag <session-id> <tag>                        Toggle a local searchable session tag.",
+  "  changes <list|show|diff|revert|accept>        Inspect, diff, revert, and accept tracked workspace changes.",
+  "  checkpoints <list|show|diff|revert|accept>    Inspect, diff, revert, and accept session/task change groups.",
+  "  permissions <list|audit>                      Show permission settings and session audit records.",
+  "  allowed-tools [list|audit]                    Alias for permissions; defaults to list.",
+  "  hooks <list>                                  List bounded local runtime hook event names.",
+  "  gateway                                      Run the local Xenesis gateway.",
+  "  tasks <start|list|show|run|retry|cancel>       Manage durable agent tasks.",
+  "  bashes [list|show|run|retry|cancel]            Alias for tasks; defaults to list.",
+  "  schedules <list|add|remove>                  Manage recurring agent task schedules.",
+  "",
+  "Common options:",
+  "  --config <path>       Use a config file instead of xenesis.config.json.",
+  "  --cwd <path>          Run against a different working directory.",
+  "  --home <path>         Use a Xenesis runtime home instead of the default user .xenesis directory.",
+  "  --profile <name>      Use a named profile from $XENESIS_HOME/profiles.json.",
+  "  --provider <name>     Override provider: openai, anthropic, claude, openai-compatible, gemini, ollama, openrouter, groq, deepseek, mistral, xai, mock.",
+  "  --model <name>        Override the configured model.",
+  "  --base-url <url>      Override OpenAI-compatible provider base URL.",
+  "  --api-key-env <name>  Read provider API key from this environment variable.",
+  "  --provider-retries <n> Retry each provider request before fallback.",
+  "  --fallback-provider <name> Add a fallback provider; may be repeated.",
+  "  --max-turns <count>   Limit agent turns for one run.",
+  "  --auto                Allow low-risk modifying tools without prompting.",
+  "  --trust-workspace     Allow medium-risk shell commands in this trusted workspace.",
+  "  --readonly            Hide or deny modifying tools where possible.",
+  "  --json                Emit JSON events.",
+  "  --print               Non-interactive mode for scripts and tests.",
+  "  --save-plan           Save plan output to $XENESIS_HOME/plans/latest.txt.",
+  "  --from-plan           Load $XENESIS_HOME/plans/latest.txt into work context.",
+  "  --use                 With profile install, activate the installed profile.",
+  "  --probe               For connect check, make a minimal provider request.",
+  "  -h, --help            Show help.",
+  "",
+  "Examples:",
+  "  xenesis init",
+  "  xenesis --print \"Summarize this project\"",
+  "  xenesis plan \"Implement a search tool\"",
+  "  xenesis sessions list",
+  "  xenesis sessions resume session-123 \"Continue from here\""
+];
+
+const commandHelp: Record<string, string[]> = {
+  status: [
+    "Usage: xenesis status [--json] [options]",
+    "",
+    "Print local runtime status without probing providers.",
+    "",
+    "Fields:",
+    "  provider       Effective provider name from config, env, profile, or CLI override.",
+    "  model          Effective model name.",
+    "  approvalMode   Effective approval mode.",
+    "  workspace      Resolved workspace path.",
+    "  xenesisHome    Resolved Xenesis runtime home.",
+    "",
+    "Options:",
+    "  --json          Print a single JSON object.",
+    "  --config <path> Use a config file.",
+    "  --cwd <path>    Select workspace root.",
+    "  --home <path>   Select the Xenesis runtime home.",
+    "  --provider <name> Override provider.",
+    "  --model <name>  Override model.",
+    "  --auto          Set approvalMode=auto.",
+    "  --readonly      Set approvalMode=readonly."
+  ],
+  clear: [
+    "Usage: xenesis clear [--json] [options]",
+    "",
+    "Clears bounded local chat context artifacts for this CLI.",
+    "",
+    "This command does not delete session logs, call providers, or claim reference-equivalent interactive context reset behavior."
+  ],
+  color: [
+    "Usage: xenesis color [red|blue|green|yellow|purple|orange|pink|cyan|default|current] [--json]",
+    "",
+    "Set or inspect the local session color preference stored under $XENESIS_HOME.",
+    "",
+    "Aliases default, reset, none, gray, and grey clear the local color preference.",
+    "This is local CLI state only and does not update a live TUI AppState."
+  ],
+  theme: [
+    "Usage: xenesis theme [auto|dark|light|dark-daltonized|light-daltonized|dark-ansi|light-ansi|list|current|default] [--json]",
+    "",
+    "Set or inspect the local terminal theme preference stored under $XENESIS_HOME.",
+    "",
+    "This bounded command does not open the reference interactive theme picker."
+  ],
+  vim: [
+    "Usage: xenesis vim [toggle|on|off|vim|normal|current] [--json]",
+    "",
+    "Toggle or inspect the local editor mode preference.",
+    "",
+    "No argument toggles between normal and vim. This does not mutate a live prompt input component."
+  ],
+  keybindings: [
+    "Usage: xenesis keybindings [show|path] [--json]",
+    "",
+    "Create $XENESIS_HOME/keybindings.json with a deterministic template if it does not exist.",
+    "",
+    "This bounded command does not launch an editor."
+  ],
+  statusline: [
+    "Usage: xenesis statusline [prompt|show|reset] [--json]",
+    "",
+    "Record local statusline setup intent under $XENESIS_HOME.",
+    "",
+    "This command does not spawn a setup subagent, edit external settings, or call providers."
+  ],
+  "output-style": [
+    "Usage: xenesis output-style [--json]",
+    "",
+    "Print deprecation guidance for output style.",
+    "",
+    "Use xenesis config to inspect local configuration."
+  ],
+  exit: [
+    "Usage: xenesis exit",
+    "       xenesis quit",
+    "",
+    "Compatibility route for the reference exit command. In non-interactive CLI mode this prints a deterministic goodbye and exits zero."
+  ],
+  usage: [
+    "Usage: xenesis usage [options]",
+    "",
+    "Summarizes local session, run report, and task usage snapshots without provider or billing probes.",
+    "",
+    "Reads only $XENESIS_HOME/sessions, $XENESIS_HOME/run_reports, and $XENESIS_HOME/agent_tasks.json."
+  ],
+  cost: [
+    "Usage: xenesis cost [options]",
+    "",
+    "Summarizes local token usage and stored cost estimates without calling a billing API.",
+    "",
+    "If no local cost estimates exist, the command reports deterministic zero/no-data output."
+  ],
+  stats: [
+    "Usage: xenesis stats [options]",
+    "",
+    "Summarizes local session, run report, task, and schedule counts.",
+    "",
+    "This command does not inspect remote account activity."
+  ],
+  login: [
+    "Usage: xenesis login [status] [options]",
+    "",
+    "Prints local credential and environment status only.",
+    "",
+    "No OAuth flow, browser launch, provider probe, or network login is attempted."
+  ],
+  logout: [
+    "Usage: xenesis logout [options]",
+    "",
+    "Clears only $XENESIS_HOME/auth.json when that local Xenesis auth state exists.",
+    "",
+    "Environment variables, profiles, configs, and unrelated user files are left untouched."
+  ],
+  "rate-limit-options": [
+    "Usage: xenesis rate-limit-options [options]",
+    "",
+    "Prints local retry, fallback-provider, max-turn, and context-compaction policy options.",
+    "",
+    "This command does not query live provider rate-limit state."
+  ],
+  btw: [
+    "Usage: xenesis btw <question> [options]",
+    "",
+    "Reports the bounded local replacement for the reference side-question UI.",
+    "",
+    "No model fork, prompt-cache reuse, TUI, provider call, or network request is attempted."
+  ],
+  feedback: [
+    "Usage: xenesis feedback [description] [options]",
+    "",
+    "With a description, saves a local draft to $XENESIS_HOME/feedback/draft.json.",
+    "Without a description, prints the local draft path and usage guidance.",
+    "",
+    "No feedback upload, browser launch, analytics, remote account call, or TUI is attempted."
+  ],
+  stickers: [
+    "Usage: xenesis stickers [options]",
+    "",
+    "Prints local catalogue guidance for the reference stickers command.",
+    "",
+    "No external assets, ordering flow, browser launch, or network request is attempted."
+  ],
+  "moved-to-plugin": [
+    "Usage: xenesis moved-to-plugin [legacy-command] [plugin-name] [plugin-command]",
+    "       xenesis plugin-moved [legacy-command] [plugin-name] [plugin-command]",
+    "",
+    "Prints deterministic plugin migration guidance for reference commands moved to plugins.",
+    "",
+    "No marketplace lookup, plugin install, browser launch, or network request is attempted."
+  ],
+  "ant-trace": [
+    "Usage: xenesis ant-trace [trace-id] [options]",
+    "",
+    "Scans local Xenesis session logs and run reports for trace ids.",
+    "",
+    "No Anthropic-internal diagnostics, provider calls, or network probes are attempted."
+  ],
+  "backfill-sessions": [
+    "Usage: xenesis backfill-sessions [options]",
+    "",
+    "Prints a dry-run summary of local sessions missing run-report metadata.",
+    "",
+    "This command does not mutate session logs or call providers."
+  ],
+  "break-cache": [
+    "Usage: xenesis break-cache [options]",
+    "",
+    "Clears only $XENESIS_HOME/cache after verifying the resolved path is inside XENESIS_HOME.",
+    "",
+    "Workspace files, provider caches outside XENESIS_HOME, and user-home paths are untouched."
+  ],
+  "debug-tool-call": [
+    "Usage: xenesis debug-tool-call [tool-name] [options]",
+    "",
+    "Looks up local built-in tool metadata without validating or invoking a tool call.",
+    "",
+    "This command is a dry-run diagnostic and does not call providers or MCP servers."
+  ],
+  heapdump: [
+    "Usage: xenesis heapdump [options]",
+    "",
+    "Writes process memory metadata to $XENESIS_HOME/diagnostics/heapdump-metadata.json.",
+    "",
+    "No process heap dump is created."
+  ],
+  insights: [
+    "Usage: xenesis insights [options]",
+    "",
+    "Writes a local usage insights JSON report under $XENESIS_HOME/diagnostics.",
+    "",
+    "This bounded command does not call models, collect remote homespaces, upload, or open a browser."
+  ],
+  "mock-limits": [
+    "Usage: xenesis mock-limits [options]",
+    "",
+    "Writes local mock limit state to $XENESIS_HOME/diagnostics/mock-limits.json.",
+    "",
+    "This is deterministic local test state, not a provider quota mutation."
+  ],
+  "reset-limits": [
+    "Usage: xenesis reset-limits [options]",
+    "",
+    "Removes local mock limit state from $XENESIS_HOME/diagnostics/mock-limits.json.",
+    "",
+    "This command does not reset provider account, subscription, or billing limits."
+  ],
+  "extra-usage": [
+    "Usage: xenesis extra-usage [options]",
+    "",
+    "Prints local extra-usage status from configured provider/model and local usage snapshots.",
+    "",
+    "No billing API, admin request, or browser launch is attempted."
+  ],
+  "good-claude": [
+    "Usage: xenesis good-claude [options]",
+    "",
+    "Compatibility no-op for a hidden disabled reference command.",
+    "",
+    "No provider call, state mutation, or network access is attempted."
+  ],
+  "release-notes": [
+    "Usage: xenesis release-notes [options]",
+    "",
+    "Prints local package name/version release metadata.",
+    "",
+    "This command does not fetch release notes from a network source."
+  ],
+  config: [
+    "Usage: xenesis config <list|show|get> [key] [--json] [options]",
+    "       xenesis settings <list|show|get> [key] [--json] [options]",
+    "",
+    "Inspect the effective local config from defaults, config file, active profile, environment, and CLI overrides.",
+    "This is a bounded Xenesis utility, not the reference interactive Settings UI.",
+    "This command does not connect to or probe providers.",
+    "",
+    "Subcommands:",
+    "  list            Print flattened effective config keys.",
+    "  show            Print the effective config snapshot. This is the default for xenesis config.",
+    "  get <key>       Print one dot-path config value.",
+    "",
+    "Options:",
+    "  --json          Print a single JSON payload.",
+    "  --config <path> Use a config file.",
+    "  --cwd <path>    Select workspace root.",
+    "  --home <path>   Select the Xenesis runtime home.",
+    "  --profile <name> Use a named runtime profile.",
+    "  --provider <name> Override provider.",
+    "  --model <name>  Override model."
+  ],
+  model: [
+    "Usage: xenesis model [modelName|default|current|status|info|list] [--json] [options]",
+    "",
+    "Set or inspect local CLI model state without remote provider validation.",
+    "This command does not list remote provider models or open an interactive picker.",
+    "",
+    "Subcommands:",
+    "  <modelName>     Persist a local CLI model override in XENESIS_HOME.",
+    "  default         Clear the local CLI model override and use configured model.",
+    "  current         Print the current local CLI model state. This is the default.",
+    "  status          Alias for current.",
+    "  info            Alias for current.",
+    "  list            Print the effective provider/model and configured fallbacks.",
+    "",
+    "Options:",
+    "  --json          Print a single JSON payload.",
+    "  --config <path> Use a config file.",
+    "  --cwd <path>    Select workspace root.",
+    "  --provider <name> Override provider.",
+    "  --model <name>  Override model."
+  ],
+  env: [
+    "Usage: xenesis env [--json] [options]",
+    "",
+    "Print a redacted local runtime environment and config summary.",
+    "Sensitive environment values are redacted and no network checks are performed.",
+    "This is a visible Xenesis diagnostic; the reference env command is hidden/disabled.",
+    "",
+    "Options:",
+    "  --json          Print a single JSON payload.",
+    "  --config <path> Use a config file.",
+    "  --cwd <path>    Select workspace root.",
+    "  --home <path>   Select the Xenesis runtime home."
+  ],
+  effort: [
+    "Usage: xenesis effort [low|medium|high|max|auto|current|status|show|set <level>] [--json]",
+    "",
+    "Set or inspect local CLI effort state. XENESIS_EFFORT and CLAUDE_CODE_EFFORT_LEVEL override persisted state.",
+    "This is local state only and does not call providers.",
+    "",
+    "Subcommands:",
+    "  <level>         Persist low, medium, high, max, or auto in XENESIS_HOME.",
+    "  current         Print effective effort status. This is the default.",
+    "  status          Alias for current.",
+    "  show            Alias for current.",
+    "  set <level>     Alias for setting an effort level.",
+    "",
+    "Levels: low, medium, high, max, auto."
+  ],
+  version: [
+    "Usage: xenesis version",
+    "       xenesis --version",
+    "",
+    "Print deterministic package name and version."
+  ],
+  files: [
+    "Usage: xenesis files [list] [path]",
+    "",
+    "Lists files under the configured workspace using safe relative paths.",
+    "Skips .git, .xenesis, and node_modules directories.",
+    "This command reads local filesystem state only and does not inspect remote context."
+  ],
+  diff: [
+    "Usage: xenesis diff",
+    "",
+    "Prints a local git diff summary for the configured workspace.",
+    "If the workspace is not a git repository or has no local diff, prints a deterministic friendly status."
+  ],
+  branch: [
+    "Usage: xenesis branch",
+    "",
+    "Prints the current local git branch for the configured workspace.",
+    "If the workspace is not a git repository, prints a deterministic friendly status."
+  ],
+  "add-dir": [
+    "Usage: xenesis add-dir <path>",
+    "",
+    "Validates that a local directory exists and reports whether Xenesis can treat it as an additional workspace directory.",
+    "This bounded CLI surface does not persist permission settings or claim remote workspace behavior."
+  ],
+  commit: [
+    "Usage: xenesis commit [extra instruction] [--print]",
+    "",
+    "Builds a commit prompt from local git status, diff HEAD, branch, and recent commits.",
+    "Normal use routes the prompt through the Xenesis agent path with shell as the only allowed tool.",
+    "With --print, prints the generated prompt locally and does not invoke a provider or create a commit."
+  ],
+  bridge: [
+    "Usage: xenesis bridge [status|setup|prompt] [details] [--json]",
+    "       xenesis remote-control [status|setup|prompt] [details] [--json]",
+    "",
+    "Prints local Remote Control bridge diagnostics, setup intent, or a prompt scaffold.",
+    "This bounded command does not register environments, poll for work, open sockets, or call remote services."
+  ],
+  "bridge-kick": [
+    "Usage: xenesis bridge-kick [scenario] [--json]",
+    "",
+    "Dry-runs bridge recovery fault-injection scenarios as local diagnostics only.",
+    "This command does not require or mutate a live bridge debug handle."
+  ],
+  chrome: [
+    "Usage: xenesis chrome [status|setup|prompt] [details] [--json]",
+    "",
+    "Prints local Chrome integration setup intent or a prompt scaffold.",
+    "This command does not launch Chrome, probe extensions, open permission URLs, or connect a browser MCP server."
+  ],
+  desktop: [
+    "Usage: xenesis desktop [status|setup|prompt] [details] [--json]",
+    "",
+    "Prints local desktop handoff setup intent or a prompt scaffold.",
+    "This command does not open a desktop app, IPC channel, or OS automation flow."
+  ],
+  mobile: [
+    "Usage: xenesis mobile [status|setup|prompt] [details] [--json]",
+    "       xenesis ios|android [status|setup|prompt] [details] [--json]",
+    "",
+    "Prints local mobile handoff setup intent or a prompt scaffold.",
+    "This command does not generate QR codes, open app stores, pair devices, or start push flows."
+  ],
+  teleport: [
+    "Usage: xenesis teleport [status|setup|prompt] [details] [--json]",
+    "",
+    "Prints local teleport or remote-session setup intent only.",
+    "This command does not create tunnels, sessions, remote shells, or hidden reference behavior."
+  ],
+  "remote-env": [
+    "Usage: xenesis remote-env [status|setup|prompt] [details] [--json]",
+    "",
+    "Prints local remote environment setup intent or a prompt scaffold.",
+    "This command does not check subscription policy or read/write remote environment defaults."
+  ],
+  "remote-setup": [
+    "Usage: xenesis remote-setup [status|setup|prompt] [details] [--json]",
+    "",
+    "Prints local remote setup intent or a prompt scaffold.",
+    "This command does not read GitHub tokens, start OAuth, fetch environments, or call provider APIs."
+  ],
+  "terminal-setup": [
+    "Usage: xenesis terminal-setup [status|setup|prompt] [details] [--json]",
+    "",
+    "Prints local terminal setup intent or a prompt scaffold.",
+    "This command does not edit terminal profiles, shell rc files, keybindings, or OS settings."
+  ],
+  ide: [
+    "Usage: xenesis ide [status|setup|prompt] [details] [--json]",
+    "",
+    "Prints local IDE integration setup intent or a prompt scaffold.",
+    "This command does not detect IDEs, install extensions, open projects, or mutate dynamic MCP config."
+  ],
+  voice: [
+    "Usage: xenesis voice [status|setup|prompt] [details] [--json]",
+    "",
+    "Prints local voice-mode setup intent or a prompt scaffold.",
+    "This command does not start microphones, audio streams, voice services, or feature-gate checks."
+  ],
+  review: [
+    "Usage: xenesis review [context] [--print]",
+    "",
+    "Builds a local code-review prompt from git status, branch, remotes, diffs, untracked files, and recent commits.",
+    "Normal use routes the prompt through the Xenesis agent path with local tools only.",
+    "With --print, prints the generated prompt locally and does not invoke a provider.",
+    "This command does not launch remote review, check billing, fetch PR state, or claim source-equivalent parity."
+  ],
+  "security-review": [
+    "Usage: xenesis security-review [context] [--print]",
+    "",
+    "Builds a security-focused local review prompt from git diagnostics.",
+    "The bounded behavior is local-only and asks for high-confidence findings; it does not use marketplace plugins, remote agents, GitHub APIs, or provider probes during prompt build."
+  ],
+  "perf-issue": [
+    "Usage: xenesis perf-issue [details] [--print]",
+    "",
+    "Builds a local performance-issue diagnostic prompt from user details and git diagnostics.",
+    "The reference command is a disabled stub; this bounded Xenesis command does not claim source-equivalent behavior."
+  ],
+  bughunter: [
+    "Usage: xenesis bughunter [context] [--print]",
+    "",
+    "Builds a local bug-hunt prompt over changed code and nearby behavior.",
+    "No remote bughunter fleet, cloud session, GitHub call, or billing path is used."
+  ],
+  "autofix-pr": [
+    "Usage: xenesis autofix-pr [feedback] [--print]",
+    "",
+    "Builds a local remediation prompt for user-supplied PR feedback.",
+    "This command does not fetch PR comments or push fixes; remote PR operations are left to the user."
+  ],
+  issue: [
+    "Usage: xenesis issue [description] [--print]",
+    "",
+    "Builds a local issue-triage prompt from supplied issue details and workspace git diagnostics.",
+    "No remote issue tracker is queried."
+  ],
+  "pr-comments": [
+    "Usage: xenesis pr-comments [comments] [--print]",
+    "",
+    "Formats or acts on user-supplied PR comments with local code context.",
+    "This command intentionally does not run gh or call GitHub APIs."
+  ],
+  "commit-push-pr": [
+    "Usage: xenesis commit-push-pr [instruction] [--print]",
+    "",
+    "Drafts commit readiness, commit message, and PR title/body material from local git diagnostics.",
+    "It does not push branches, create or edit PRs, merge PRs, or query GitHub."
+  ],
+  advisor: [
+    "Usage: xenesis advisor [model|off|status]",
+    "",
+    "Inspects or sets a local advisor model preference in XENESIS_HOME/advisor.json.",
+    "This bounded command does not validate models remotely and does not alter provider settings."
+  ],
+  agents: [
+    "Usage: xenesis agents [list|name]",
+    "",
+    "Prints configured local subagent definitions from the effective Xenesis config.",
+    "This is a non-interactive inspector rather than the reference JSX agents menu."
+  ],
+  connect: [
+    "Usage: xenesis connect <check|latest|show> [report-id-or-path] [options]",
+    "",
+    "Checks provider and MCP connectivity, or inspects saved connect reports.",
+    "",
+    "Subcommands:",
+    "  check                       Run connectivity checks.",
+    "  latest                      Print the newest connect report.",
+    "  show <report-id-or-path>     Print a selected connect report.",
+    "",
+    "Options:",
+    "  --probe         Make a live provider probe when running check.",
+    "  --config <path> Use a config file.",
+    "  --cwd <path>    Select workspace root.",
+    "  --json          Print the saved report as JSON."
+  ],
+  sessions: [
+    "Usage: xenesis sessions <command> [options]",
+    "",
+    "Commands:",
+    "  list                                  List session ids, newest first.",
+    "  show <session-id>                     Print raw JSONL session events.",
+    "  compact <session-id>                  Print a concise session summary.",
+    "  rewind <session-id> --events <count>  Print the first N session events.",
+    "  resume <session-id> <prompt>          Continue with prior session messages.",
+    "",
+    "Aliases:",
+    "  xenesis session <command>                     Alias for xenesis sessions <command>.",
+    "  xenesis resume <session-id> <prompt>          Alias for xenesis sessions resume.",
+    "  xenesis compact <session-id>                  Alias for xenesis sessions compact.",
+    "  xenesis rewind <session-id> --events <count>  Alias for xenesis sessions rewind.",
+    "",
+    "Options:",
+    "  --events <count>   Event count for rewind.",
+    "  --config <path>    Use a config file.",
+    "  --cwd <path>       Select workspace root."
+  ],
+  runs: [
+    "Usage: xenesis runs <report|verify|repair> <session-id>",
+    "",
+    "Commands:",
+    "  report <session-id>   Show status, tool usage, changes, artifacts, checkpoints, and verification metadata.",
+    "  verify <session-id>   Run configured verification commands and attach results to the report.",
+    "  repair <session-id>   Repair from failed verification output, then re-run verification.",
+    "",
+    "Options:",
+    "  --accept              After passed verification, accept the session checkpoint.",
+    "",
+    "Prompt runs save reports automatically under $XENESIS_HOME/run_reports/.",
+    "Reports include intent routing, context sources, run stages, verification, repair, and quality metrics."
+  ],
+  plugins: [
+    "Usage: xenesis plugins <command> [options]",
+    "       xenesis plugin <command> [options]",
+    "       xenesis reload-plugins",
+    "",
+    "Commands:",
+    "  init <path>      Create a xenesis.plugin.json manifest.",
+    "  install <path>   Add a plugin to $XENESIS_HOME/plugins.json and enable it.",
+    "  list             List state-managed and configured plugin paths.",
+    "  enable <path>    Enable an installed plugin.",
+    "  disable <path>   Disable an installed plugin.",
+    "  disable --all    Disable all state-managed plugins.",
+    "  uninstall <path> Remove an installed plugin from $XENESIS_HOME/plugins.json.",
+    "  remove <path>    Alias for uninstall.",
+    "  rm <path>        Alias for uninstall.",
+    "  update <path>    Refresh an installed plugin manifest while preserving enabled state.",
+    "  reload           Re-read enabled/configured plugin manifests and tool modules.",
+    "  doctor           Validate enabled/configured plugin manifests and tools."
+  ],
+  "reload-plugins": [
+    "Usage: xenesis reload-plugins [options]",
+    "",
+    "Alias for xenesis plugins reload.",
+    "Re-reads enabled/configured local plugin manifests and tool modules."
+  ],
+  profile: [
+    "Usage: xenesis profile <command> [options]",
+    "",
+    "Profiles are stored in $XENESIS_HOME/profiles.json.",
+    "",
+    "Commands:",
+    "  list             List saved profiles and the active profile.",
+    "  show <name>      Print a saved profile.",
+    "  save <name>      Save the current effective provider/model/runtime options as a profile.",
+    "  templates        List built-in operating profile templates.",
+    "  install <template> [name]",
+    "                   Install a built-in operating profile template.",
+    "  use <name>       Set the active profile.",
+    "  clear            Clear the active profile.",
+    "  delete <name>    Delete a saved profile.",
+    "",
+    "Options:",
+    "  --home <path>    Select the Xenesis runtime home.",
+    "  --profile <name> Load this profile before saving a derived profile.",
+    "  --use            With install, set the installed profile active.",
+    "",
+    "Built-in templates:",
+    "  analysis      Read-only project inspection and explanation.",
+    "  safe-edit     Safe local edits with read/search/diff before mutation.",
+    "  full-auto     Higher-autonomy local execution with verification guardrails.",
+    "  desk-control  Embedded Xenesis Desk/XV Desk control.",
+    "  external      Gateway/channel integrations.",
+    "  dev, desk, safe-analysis are compatibility aliases for common defaults."
+  ],
+  extensions: [
+    "Usage: xenesis extensions <list|doctor> [options]",
+    "",
+    "Commands:",
+    "  list     Print configured extension points with role, purpose, and status.",
+    "  doctor   Validate plugin runtime health."
+  ],
+  memory: [
+    "Usage: xenesis memory <command>",
+    "",
+    "Bounded local mapping for the reference memory command.",
+    "This stores Xenesis workspace memory records and does not open CLAUDE memory files or launch an editor.",
+    "",
+    "Commands:",
+    "  add <id> <text>     Save or replace a memory record.",
+    "  list                List all memory records.",
+    "  search <query>      Search memory records."
+  ],
+  context: [
+    "Usage: xenesis context [command]",
+    "",
+    "Commands:",
+    "  index           Build $XENESIS_HOME/context/index.json from workspace metadata and previews.",
+    "  show            Show the latest context index summary. This is the default.",
+    "  search <query>  Search the saved context index."
+  ],
+  "ctx-viz": [
+    "Usage: xenesis ctx-viz [query]",
+    "",
+    "Visualizes the saved local context index as deterministic text.",
+    "With a query, prints the top saved context matches.",
+    "",
+    "This command reads $XENESIS_HOME/context/index.json only and does not estimate provider token usage."
+  ],
+  artifacts: [
+    "Usage: xenesis artifacts <command>",
+    "",
+    "Commands:",
+    "  save <title> <content>  Save a text artifact under $XENESIS_HOME/artifacts.",
+    "  list                    List saved artifacts.",
+    "  show <id>               Show artifact metadata and content."
+  ],
+  brief: [
+    "Usage: xenesis brief [status|on|off|toggle] [options]",
+    "",
+    "Stores local brief-only CLI state in $XENESIS_HOME/cli_state.json.",
+    "",
+    "This does not check reference account entitlement, call providers, or change tool visibility for an already-running process."
+  ],
+  copy: [
+    "Usage: xenesis copy [session-id|latest] [N] [options]",
+    "       xenesis copy [N] [options]",
+    "",
+    "Writes the Nth most recent assistant response from a local session to $XENESIS_HOME/copy/response.md.",
+    "N defaults to 1. The session defaults to the latest local JSONL session.",
+    "",
+    "This bounded command does not use terminal clipboard protocols or an interactive code-block picker."
+  ],
+  export: [
+    "Usage: xenesis export [session-id|latest] [filename] [options]",
+    "",
+    "Exports a local JSONL session transcript to text.",
+    "Without a filename, writes under $XENESIS_HOME/exports.",
+    "With a filename, writes a .txt file inside the configured workspace.",
+    "",
+    "This command does not open an interactive export dialog."
+  ],
+  share: [
+    "Usage: xenesis share [session-id|latest] [options]",
+    "",
+    "Saves a local-share artifact containing the session export under $XENESIS_HOME/artifacts.",
+    "",
+    "Remote share links, OAuth, upload, and provider APIs are intentionally not called."
+  ],
+  summary: [
+    "Usage: xenesis summary [session-id|latest] [options]",
+    "",
+    "Prints a deterministic local summary from recorded session events.",
+    "",
+    "This does not call a provider summarizer."
+  ],
+  rename: [
+    "Usage: xenesis rename <session-id> [name] [options]",
+    "",
+    "Stores a local session display name in $XENESIS_HOME/sessions/metadata.json.",
+    "Without a name, derives a deterministic kebab-case name from the first user message.",
+    "",
+    "This does not call the reference model-backed name generator."
+  ],
+  tag: [
+    "Usage: xenesis tag <session-id> <tag> [options]",
+    "",
+    "Toggles a local searchable tag in $XENESIS_HOME/sessions/metadata.json.",
+    "Running the same tag again removes it.",
+    "",
+    "This command is non-interactive and does not open a confirmation UI."
+  ],
+  changes: [
+    "Usage: xenesis changes <command>",
+    "",
+    "Commands:",
+    "  list           List tracked workspace file changes.",
+    "  show <id>      Show one tracked change.",
+    "  diff <id>      Print the recorded before/after diff for one tracked change.",
+    "  revert <id>    Revert one tracked change if the file still matches the recorded after snapshot.",
+    "  accept <id>    Mark one tracked change as accepted so it is no longer pending."
+  ],
+  checkpoints: [
+    "Usage: xenesis checkpoints <command>",
+    "",
+    "Checkpoints are derived from tracked workspace changes grouped by session id.",
+    "",
+    "Commands:",
+    "  list           List session/task change groups.",
+    "  show <id>      Show one checkpoint and its changes.",
+    "  diff <id>      Print recorded before/after diffs for all changes in the checkpoint.",
+    "  revert <id>    Revert all pending changes in the checkpoint, newest first.",
+    "  accept <id>    Mark all pending changes in the checkpoint as accepted."
+  ],
+  skills: [
+    "Usage: xenesis skills <list|show>",
+    "       xenesis skill <list|show>",
+    "",
+    "Commands:",
+    "  list          List configured local skills.",
+    "  show <name>   Print a skill definition."
+  ],
+  mcp: [
+    "Usage: xenesis mcp <list|serve|login>",
+    "",
+    "Commands:",
+    "  list            List configured MCP servers from local config without connecting or probing.",
+    "  serve           Expose the Xenesis tool registry over MCP stdio (stdout is the MCP wire).",
+    "  login <server>  Authenticate with an OAuth-protected MCP server by name."
+  ],
+  permissions: [
+    "Usage: xenesis permissions <command>",
+    "       xenesis allowed-tools [command]",
+    "",
+    "Commands:",
+    "  list                  Show approvalMode, blocked tools, tool policies, and path rules.",
+    "  audit <session-id>    Show permission audit records from a session log.",
+    "",
+    "The allowed-tools alias defaults to list."
+  ],
+  hooks: [
+    "Usage: xenesis hooks list",
+    "",
+    "Lists hook names that AgentRunner and durable task orchestration can emit.",
+    "",
+    "This is a bounded local mapping of the reference hooks browser: it does not open a hook configuration UI, edit settings, or execute hooks."
+  ],
+  gateway: [
+    "Usage: xenesis gateway [options]",
+    "",
+    "Runs the local Xenesis gateway with JSON and SSE endpoints.",
+    "",
+    "Routes:",
+    "  GET  /health              Gateway health metadata.",
+    "  GET  /status              Gateway operational summary, including run quality metrics.",
+    "  GET  /dashboard           Xenesis Dashboard entry point.",
+    "  GET  /openapi.json        Gateway OpenAPI contract.",
+    "  GET  /runs                List active gateway runs.",
+    "  GET  /sessions            List session ids.",
+    "  GET  /sessions/status     List session lifecycle status.",
+    "  GET  /traces              List trace diagnostics summaries for filtering.",
+    "  GET  /traces/<traceId>    Trace drill-down across runs, sessions, reports, diagnostics, and observability.",
+    "  GET  /traces/<traceId>/compact  Return compact session context for a trace.",
+    "  GET  /traces/<traceId>/bundle   Export a trace diagnostic bundle.",
+    "  GET  /context             Return the latest workspace context index.",
+    "  GET  /artifacts           List saved artifacts.",
+    "  GET  /artifacts/<id>      Return artifact metadata and content.",
+    "  GET  /tasks               List durable agent tasks.",
+    "  POST /tasks               Create a queued durable agent task.",
+    "  GET  /schedules           List task schedules.",
+    "  POST /schedules           Create a task schedule.",
+    "  PATCH /schedules/<id>     Update a task schedule.",
+    "  DELETE /schedules/<id>    Remove a task schedule.",
+    "  GET  /observability/events  List recent SDK observability events; supports kind, traceId, limit.",
+    "  GET  /observability/events/export  Export retained SDK observability events.",
+    "  POST /observability/events  Record SDK observability events for the dashboard.",
+    "  POST /observability/events/clear  Clear retained SDK observability events.",
+    "  GET  /reports             List smoke, scenario, connect, and provider-live reports.",
+    "  GET  /reports/<kind>/<id>  Return a saved report detail.",
+    "  GET  /profiles            List saved profiles and the active profile.",
+    "  POST /profiles/use        Set the active profile.",
+    "  POST /profiles/clear      Clear the active profile.",
+    "  POST /run                 Run a prompt and return captured events.",
+    "  POST /run/stream          Run a prompt and stream events as SSE.",
+    "  POST /runs/<id>/cancel    Cancel an active gateway run.",
+    "",
+    "Options:",
+    "  --host <host>              Bind address. Default: 127.0.0.1.",
+    "  --port <port>              Bind port. Default: 8787.",
+    "  --auth-token-env <name>     Require Bearer auth using this environment variable.",
+    "  --allow-origin <origin>     Allow a cross-origin dashboard/API caller. May be repeated.",
+    "  --max-runs <count>          Limit concurrent prompt runs.",
+    "  --max-body-bytes <bytes>    Limit JSON request body size.",
+    "  --request-timeout-ms <ms>   Set request timeout. Default: 30000.",
+    "  --observability-max-events <count>  Keep the latest N observability events. Default: 500.",
+    "  --observability-max-age-days <days> Prune observability events older than N days.",
+    "  --config <path>            Use a config file.",
+    "  --cwd <path>               Select workspace root."
+  ],
+  tasks: [
+    "Usage: xenesis tasks <command>",
+    "       xenesis bashes [command]",
+    "",
+    "Commands:",
+    "  start <prompt>     Queue a durable agent task.",
+    "  list               List agent tasks.",
+    "  show <task-id>     Show task details.",
+    "  run <task-id>      Run a queued task in the current process.",
+    "  retry <task-id>    Move a failed/cancelled/completed task back to queued.",
+    "  cancel <task-id>   Mark a queued/running task as cancelled.",
+    "",
+    "The bashes alias defaults to list."
+  ],
+  schedules: [
+    "Usage: xenesis schedules <command>",
+    "",
+    "Commands:",
+    "  list                         List task schedules.",
+    "  add <trigger> <prompt>        Create a schedule. Triggers: 5m, 1h, daily:09:00.",
+    "  remove <schedule-id>          Remove a schedule."
+  ],
+  plan: [
+    "Usage: xenesis plan <prompt> [options]",
+    "",
+    "Runs the agent in read-only planning mode and injects plan-mode guidance.",
+    "",
+    "Reference parity note: this preserves the existing Xenesis local plan execution path.",
+    "It does not open the reference interactive plan command UI; advanced remote planning is mapped to the bounded ultraplan scaffold.",
+    "",
+    "Options:",
+    "  --save-plan   Save the final plan to $XENESIS_HOME/plans/latest.txt."
+  ],
+  ultraplan: [
+    "Usage: xenesis ultraplan [prompt] [--json] [options]",
+    "",
+    "Prints a bounded local advanced-plan scaffold.",
+    "",
+    "This command does not launch Claude Code on the web, poll remote approval, open a browser, archive remote sessions, or call providers.",
+    "Use xenesis plan <prompt> when you want the preserved local plan execution path."
+  ],
+  fast: [
+    "Usage: xenesis fast [status|on|off|prompt <prompt>] [--json] [options]",
+    "",
+    "Prints local fast-mode execution intent and optional prompt scaffolding.",
+    "",
+    "This command does not switch models, update billing mode, prefetch organization state, persist fast-mode settings, or call providers."
+  ],
+  thinkback: [
+    "Usage: xenesis thinkback [query] [--json] [options]",
+    "       xenesis think-back [query] [--json] [options]",
+    "",
+    "Prints a local session/context recall scaffold.",
+    "",
+    "This command does not call a year-in-review service, feature gate, analytics upload, hidden generator, browser, or network API."
+  ],
+  "thinkback-play": [
+    "Usage: xenesis thinkback-play [--json] [options]",
+    "       xenesis think-back-play [--json] [options]",
+    "",
+    "Reports the bounded playback boundary for reference thinkback animation playback.",
+    "",
+    "No recording, replay engine, browser, terminal animation, generated media, or hidden service is started."
+  ],
+  work: [
+    "Usage: xenesis work <prompt> [options]",
+    "",
+    "Runs the agent in execution mode with the configured approval policy.",
+    "",
+    "Options:",
+    "  --from-plan   Load $XENESIS_HOME/plans/latest.txt into system context."
+  ],
+  chat: [
+    "Usage: xenesis chat [prompt] [options]",
+    "",
+    "If no prompt is provided from a TTY, opens an interactive xenesis> input loop.",
+    "If stdin is piped, non-empty stdin lines are run as prompts.",
+    "Lines beginning with / are handled as chat slash commands.",
+    "",
+    "Common slash commands:",
+    "  /help      Show slash commands.",
+    "  /status    Show model, workspace, approval mode, and latest session.",
+    "  /tools     List available tools.",
+    "  /exit      Exit chat."
+  ],
+  init: [
+    "Usage: xenesis init [options]",
+    "       xenesis init claude [options]",
+    "       xenesis init verifiers [options]",
+    "",
+    "Bare init creates a full xenesis.config.json with provider, workspace, extensions, and permissions.",
+    "The claude/verifiers subcommands are bounded local compatibility routes that print setup guidance only.",
+    "They do not create CLAUDE.md, skills, hooks, verifier files, or run installers."
+  ],
+  "init-verifiers": [
+    "Usage: xenesis init-verifiers [options]",
+    "",
+    "Prints verifier-skill setup guidance for web, CLI, and API projects.",
+    "Does not create .claude/skills files, install Playwright, configure MCP, or run package managers."
+  ],
+  install: [
+    "Usage: xenesis install [target] [--force] [options]",
+    "",
+    "Dry local compatibility route for the reference native installer.",
+    "Does not download, install, update, clean packages, modify PATH, or call the network."
+  ],
+  "install-github-app": [
+    "Usage: xenesis install-github-app [options]",
+    "",
+    "Reports GitHub app/actions setup boundaries without side effects.",
+    "Does not open OAuth, create tokens, inspect repositories, create secrets, or write workflows."
+  ],
+  "install-slack-app": [
+    "Usage: xenesis install-slack-app [options]",
+    "",
+    "Reports Slack app setup boundaries without app installation.",
+    "Does not open OAuth, call Slack APIs, or write team/workspace app state."
+  ],
+  "oauth-refresh": [
+    "Usage: xenesis oauth-refresh [options]",
+    "",
+    "No-op compatibility route for the reference hidden disabled OAuth refresh stub.",
+    "Does not refresh tokens, read credentials, or call provider APIs."
+  ],
+  onboarding: [
+    "Usage: xenesis onboarding [options]",
+    "",
+    "No-op compatibility route for the reference hidden disabled onboarding stub.",
+    "Does not launch onboarding UI or mutate onboarding state."
+  ],
+  passes: [
+    "Usage: xenesis passes [options]",
+    "",
+    "Reports pass/referral command boundaries without billing or referral checks.",
+    "Does not query eligibility, subscription, billing, referral, or analytics APIs."
+  ],
+  "privacy-settings": [
+    "Usage: xenesis privacy-settings [options]",
+    "",
+    "Reports privacy settings command boundaries without account reads or writes.",
+    "Does not check subscription entitlement or call account/provider APIs."
+  ],
+  sandbox: [
+    "Usage: xenesis sandbox [exclude <pattern>] [options]",
+    "       xenesis sandbox-toggle [exclude <pattern>] [options]",
+    "",
+    "Reports local sandbox-policy guidance without changing settings.",
+    "The exclude form validates a pattern but does not write .claude settings."
+  ],
+  upgrade: [
+    "Usage: xenesis upgrade [options]",
+    "",
+    "Reports upgrade command boundaries without checkout or billing calls.",
+    "Does not check subscription type, rate limits, or open account upgrade flows."
+  ],
+  doctor: [
+    "Usage: xenesis doctor [options]",
+    "",
+    "Checks Node, config, workspace, latest smoke/scenario/connect reports, API key presence, built-in tools, and rg.",
+    "",
+    "This is a bounded local mapping of the reference diagnostics TUI: it does not check update channels, subscription state, account services, or provider connectivity."
+  ],
+  smoke: [
+    "Usage: xenesis smoke [run|latest|show <report-id-or-path>] [options]",
+    "",
+    "Runs local smoke checks for config loading, built-in tools, mock agent execution, and gateway /run.",
+    "Writes a JSON report to $XENESIS_HOME/reports/smoke-<timestamp>.json.",
+    "Use latest/show to inspect saved reports.",
+    "",
+    "Subcommands:",
+    "  run                         Run the smoke suite. This is the default.",
+    "  latest                      Print the newest smoke report.",
+    "  show <report-id-or-path>     Print a selected smoke report.",
+    "",
+    "Options:",
+    "  --config <path> Use a config file.",
+    "  --cwd <path>    Select workspace root.",
+    "  --json          Print the saved report as JSON."
+  ],
+  scenario: [
+    "Usage: xenesis scenario [run|latest|show <report-id-or-path>] [options]",
+    "",
+    "Runs a sandboxed real-use suite covering plan/work, chat context, memory, tasks, and gateway IDE context.",
+    "Writes a JSON report to $XENESIS_HOME/reports/scenario-<timestamp>.json.",
+    "Use latest/show to inspect saved reports and failure diagnostics.",
+    "",
+    "Subcommands:",
+    "  run                         Run the scenario suite. This is the default.",
+    "  latest                      Print the newest scenario report.",
+    "  show <report-id-or-path>     Print a selected scenario report.",
+    "",
+    "Options:",
+    "  --config <path> Validate this config before running sandbox scenarios.",
+    "  --cwd <path>    Select workspace root for report output.",
+    "  --json          Print the saved report as JSON."
+  ]
+};
+
+function normalizeHelpTopic(topic: string) {
+  if (topic === "think-back") return "thinkback";
+  if (topic === "think-back-play") return "thinkback-play";
+  if (topic === "session" || topic === "resume" || topic === "compact" || topic === "rewind") return "sessions";
+  if (topic === "remote-control") return "bridge";
+  if (topic === "ios" || topic === "android") return "mobile";
+  if (topic === "terminalSetup") return "terminal-setup";
+  if (topic === "plugin") return "plugins";
+  if (topic === "skill") return "skills";
+  if (topic === "settings") return "config";
+  if (topic === "allowed-tools") return "permissions";
+  if (topic === "bashes") return "tasks";
+  if (topic === "sandbox-toggle") return "sandbox";
+  if (topic === "quit") return "exit";
+  if (topic === "plugin-moved") return "moved-to-plugin";
+  return topic;
+}
+
+export function renderCliHelp(topic?: string) {
+  if (!topic) return globalHelp;
+  const normalizedTopic = normalizeHelpTopic(topic);
+  return commandHelp[normalizedTopic] ?? [
+    `No help topic found for "${topic}".`,
+    "",
+    ...globalHelp
+  ];
+}

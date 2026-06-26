@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Xenesis Desk E2E Bot</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="chat-panel" aria-label="가상 봇 시뮬레이터">
+        <header class="chat-header">
+          <div id="botAvatar" class="bot-avatar">TG</div>
+          <div>
+            <h1 id="botTitle">Telegram Bot</h1>
+            <p id="connectionText">연결 확인 중</p>
+          </div>
+          <button id="resetButton" class="icon-button" type="button" title="세션 캐시 초기화">Reset</button>
+        </header>
+
+        <div id="messages" class="messages" aria-live="polite"></div>
+
+        <form id="composer" class="composer">
+          <textarea id="messageInput" rows="2" autocomplete="off" spellcheck="false" placeholder="/xd mobile"></textarea>
+          <button type="submit">전송</button>
+        </form>
+      </section>
+
+      <aside class="control-panel" aria-label="테스트 컨트롤">
+        <section class="panel-section">
+          <h2>플랫폼 모드</h2>
+          <div id="platformMode" class="mode-segmented" role="group" aria-label="플랫폼 모드 선택"></div>
+          <p id="modeDescription" class="mode-description">대기 중</p>
+        </section>
+
+        <section class="panel-section">
+          <h2>세션</h2>
+          <label class="field-label" for="sessionKey">Gateway session key</label>
+          <input id="sessionKey" type="text" value="telegram:e2e-user:e2e-chat">
+          <div class="identity-grid">
+            <label>
+              <span class="field-label">User ID</span>
+              <input id="userId" type="text" value="e2e-user">
+            </label>
+            <label>
+              <span class="field-label">User name</span>
+              <input id="userName" type="text" value="E2E User">
+            </label>
+            <label>
+              <span class="field-label">Chat / channel ID</span>
+              <input id="chatId" type="text" value="e2e-chat">
+            </label>
+            <label>
+              <span class="field-label">Chat / channel name</span>
+              <input id="chatName" type="text" value="E2E Chat">
+            </label>
+          </div>
+          <div id="healthBox" class="health-box">대기 중</div>
+        </section>
+
+        <section class="panel-section">
+          <h2>연결 대상</h2>
+          <div class="endpoint-note">
+            <strong>Xenesis gateway</strong>는 <code>/desk status/health/runs/run</code> 확인에 사용합니다. 기본 포트는 <code>3338</code>입니다.
+          </div>
+          <label class="field-label" for="gatewayUrl">Xenesis gateway URL</label>
+          <input id="gatewayUrl" type="url" value="http://127.0.0.1:3338" spellcheck="false">
+          <div class="identity-grid endpoint-grid">
+            <label>
+              <span class="field-label">Workflow</span>
+              <input id="workflow" type="text" value="xenis" spellcheck="false">
+            </label>
+            <label>
+              <span class="field-label">Gateway token</span>
+              <input id="gatewayToken" type="password" autocomplete="off" spellcheck="false">
+            </label>
+          </div>
+          <div class="endpoint-note">
+            <strong>Desk bridge</strong>는 실제 채널과 같은 <code>/desk terminals/watch/send</code> 자동화 제어, <code>/desk agents/agent watch</code> 제니스 응답 수신, <code>/xd</code> 명령에 사용합니다. 기존 3847/3848 테스트 설정을 그대로 사용합니다.
+          </div>
+          <label class="field-label" for="bridgeTarget">Desk bridge target</label>
+          <select id="bridgeTarget" autocomplete="off">
+            <option value="">브릿지 목록 로딩 중</option>
+          </select>
+          <p id="bridgeTargetText" class="mode-description">3847/3848 브릿지를 선택할 수 있습니다.</p>
+        </section>
+
+        <section class="panel-section">
+          <h2>빠른 명령</h2>
+          <div class="quick-grid" id="quickCommands"></div>
+        </section>
+
+        <section class="panel-section">
+          <h2>번호 선택</h2>
+          <div class="number-grid" id="numberPad"></div>
+        </section>
+
+        <section class="panel-section">
+          <h2>최근 이벤트</h2>
+          <pre id="eventLog" class="event-log">아직 이벤트가 없습니다.</pre>
+        </section>
+      </aside>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>

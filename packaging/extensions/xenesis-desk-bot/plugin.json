@@ -1,0 +1,160 @@
+{
+  "id": "xenesis-desk.release-xenesis-bot",
+  "name": "Xenesis Bot",
+  "version": "1.0.0",
+  "publisher": "Xamong9",
+  "description": "Release-safe built-in commands for public Xenesis Desk tools.",
+  "source": "public",
+  "permissions": ["commands", "tools.open"],
+  "main": "main.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "xenesis-desk.core-tools.openXenisBot",
+        "title": "Xenesis Bot",
+        "titleKey": "app.toolsXenisBot",
+        "icon": "B"
+      },
+      {
+        "command": "xenesis-desk.core-tools.openAiWorkbench",
+        "title": "Xenesis Desk AI Workbench",
+        "icon": "AI"
+      },
+      {
+        "command": "xenesis-desk.core-tools.openArtifactLibrary",
+        "title": "Artifact Library",
+        "icon": "L"
+      },
+      {
+        "command": "xenesis-desk.core-tools.openTerminalInspector",
+        "title": "Terminal Inspector",
+        "icon": "T"
+      },
+      {
+        "command": "xenesis-desk.core-tools.openProcessViewer",
+        "title": "Process Viewer",
+        "icon": "P"
+      },
+      {
+        "command": "xenesis-desk.core-tools.openRemoteSyncPlanner",
+        "title": "Remote Sync Planner",
+        "icon": "S"
+      },
+      {
+        "command": "xenesis-desk.core-tools.openRunTaskPanel",
+        "title": "Run Task Panel",
+        "icon": "R"
+      },
+      {
+        "command": "xenesis-desk.core-tools.openSafeFileEditCenter",
+        "title": "Safe File Edit Center",
+        "icon": "E"
+      },
+      {
+        "command": "xenesis-desk.core-tools.openXenesisAgent",
+        "title": "Xenesis Agent",
+        "titleKey": "app.toolsXenesisAgent",
+        "icon": "XG"
+      },
+      {
+        "command": "xenesis-desk.core-tools.openHermesStatus",
+        "title": "Hermes Status",
+        "icon": "H"
+      },
+      {
+        "command": "xenesis-desk.core-tools.openHermesActionInbox",
+        "title": "Action Inbox",
+        "icon": "A"
+      },
+      {
+        "command": "xenesis-desk.core-tools.openCapabilityExplorer",
+        "title": "Capability Explorer",
+        "icon": "C"
+      },
+      {
+        "command": "xenesis-desk.core-tools.openHermesTimeline",
+        "title": "Hermes Timeline",
+        "icon": "T"
+      },
+      {
+        "command": "xenesis-desk.core-tools.openHermesStashOps",
+        "title": "Hermes Stash Operations",
+        "icon": "S"
+      },
+      {
+        "command": "xenesis-desk.workflow-runner.open",
+        "title": "Workflow Runner",
+        "category": "XCON",
+        "icon": "workflow"
+      },
+      {
+        "command": "xenesis-desk.workflow-runner.openDemoLabPlayer",
+        "title": "Demo Lab Player",
+        "category": "XCON",
+        "icon": "play"
+      },
+      {
+        "command": "xenesis-desk.workflow-runner.openDemoLabMaker",
+        "title": "Demo Lab Maker",
+        "category": "XCON",
+        "icon": "edit"
+      },
+      {
+        "command": "xenesis-desk.workflow-runner.openGowoori",
+        "title": "Gowoori / 거울이",
+        "category": "XCON",
+        "icon": "mirror"
+      },
+      {
+        "command": "xenesis-desk.workflow-runner.openGowooriChat",
+        "title": "GowooriChat",
+        "category": "XCON",
+        "icon": "message-square"
+      }
+    ],
+    "menus": {
+      "tools": [
+        "xenesis-desk.core-tools.openXenisBot",
+        "xenesis-desk.core-tools.openAiWorkbench",
+        "xenesis-desk.core-tools.openArtifactLibrary",
+        "xenesis-desk.core-tools.openTerminalInspector",
+        "xenesis-desk.core-tools.openProcessViewer",
+        "xenesis-desk.core-tools.openRemoteSyncPlanner",
+        "xenesis-desk.core-tools.openRunTaskPanel",
+        "xenesis-desk.core-tools.openSafeFileEditCenter",
+        "xenesis-desk.core-tools.openXenesisAgent",
+        "xenesis-desk.core-tools.openHermesStatus",
+        "xenesis-desk.core-tools.openHermesActionInbox",
+        "xenesis-desk.core-tools.openCapabilityExplorer",
+        "xenesis-desk.core-tools.openHermesTimeline",
+        "xenesis-desk.core-tools.openHermesStashOps",
+        "xenesis-desk.workflow-runner.open",
+        "xenesis-desk.workflow-runner.openDemoLabPlayer",
+        "xenesis-desk.workflow-runner.openDemoLabMaker",
+        "xenesis-desk.workflow-runner.openGowoori",
+        "xenesis-desk.workflow-runner.openGowooriChat"
+      ],
+      "commandPalette": [
+        "xenesis-desk.core-tools.openXenisBot",
+        "xenesis-desk.core-tools.openAiWorkbench",
+        "xenesis-desk.core-tools.openArtifactLibrary",
+        "xenesis-desk.core-tools.openTerminalInspector",
+        "xenesis-desk.core-tools.openProcessViewer",
+        "xenesis-desk.core-tools.openRemoteSyncPlanner",
+        "xenesis-desk.core-tools.openRunTaskPanel",
+        "xenesis-desk.core-tools.openSafeFileEditCenter",
+        "xenesis-desk.core-tools.openXenesisAgent",
+        "xenesis-desk.core-tools.openHermesStatus",
+        "xenesis-desk.core-tools.openHermesActionInbox",
+        "xenesis-desk.core-tools.openCapabilityExplorer",
+        "xenesis-desk.core-tools.openHermesTimeline",
+        "xenesis-desk.core-tools.openHermesStashOps",
+        "xenesis-desk.workflow-runner.open",
+        "xenesis-desk.workflow-runner.openDemoLabPlayer",
+        "xenesis-desk.workflow-runner.openDemoLabMaker",
+        "xenesis-desk.workflow-runner.openGowoori",
+        "xenesis-desk.workflow-runner.openGowooriChat"
+      ]
+    }
+  }
+}

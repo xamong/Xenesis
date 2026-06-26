@@ -1,0 +1,24 @@
+{
+  "id": "sample.markdown-tools",
+  "name": "Markdown Operations Brief",
+  "version": "1.0.0",
+  "publisher": "Xamong9",
+  "description": "Opens an operator-ready Markdown brief with decision log, checklist, and XCON preview content.",
+  "source": "public",
+  "permissions": ["commands", "panels.open"],
+  "main": "main.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "sample.markdown-tools.openGuide",
+        "title": "Open Markdown Operations Brief",
+        "category": "Extensions",
+        "icon": "M"
+      }
+    ],
+    "menus": {
+      "tools": ["sample.markdown-tools.openGuide"],
+      "commandPalette": ["sample.markdown-tools.openGuide"]
+    }
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "id": "xenesis-desk.data-tools",
+  "name": "Xcon Viewer Data Tools",
+  "version": "1.0.0",
+  "publisher": "Xamong9",
+  "description": "Data tools — Meta Management, Query Analyzer, and SQLite server controls.",
+  "source": "internal",
+  "permissions": ["commands", "tools.open", "settings.read", "settings.write"],
+  "main": "main.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "xenesis-desk.data-tools.openMetaManagement",
+        "title": "Matrix / Meta Management",
+        "titleKey": "app.toolsMeta",
+        "icon": "M"
+      },
+      {
+        "command": "xenesis-desk.data-tools.openQueryAnalyzer",
+        "title": "Query Analyzer",
+        "titleKey": "app.toolsQueryAnalyzer",
+        "icon": "Q"
+      },
+      {
+        "command": "xenesis-desk.data-tools.openQueryAnalyzerOD",
+        "title": "Query Analyzer (OD)",
+        "titleKey": "app.toolsQueryAnalyzerOD",
+        "icon": "O"
+      },
+      {
+        "command": "xenesis-desk.data-tools.openSqliteServerSettings",
+        "title": "SQLite Server Settings",
+        "titleKey": "settings.developerServerTitle",
+        "icon": "S"
+      }
+    ],
+    "menus": {
+      "tools": [
+        "xenesis-desk.data-tools.openMetaManagement",
+        "xenesis-desk.data-tools.openQueryAnalyzer",
+        "xenesis-desk.data-tools.openQueryAnalyzerOD"
+      ],
+      "commandPalette": [
+        "xenesis-desk.data-tools.openMetaManagement",
+        "xenesis-desk.data-tools.openQueryAnalyzer",
+        "xenesis-desk.data-tools.openQueryAnalyzerOD",
+        "xenesis-desk.data-tools.openSqliteServerSettings"
+      ],
+      "settings": ["xenesis-desk.data-tools.openSqliteServerSettings"]
+    }
+  }
+}

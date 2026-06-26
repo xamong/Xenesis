@@ -1,0 +1,14 @@
+interface:
+  display_name: "Xenesis Desk Control"
+  short_description: "Control Xenesis Desk, Hermes gateway, and stash ops."
+  brand_color: "#2563EB"
+  default_prompt: "Use $xd to control Xenesis Desk through MCP tools, Xenesis Bot panels, or the Hermes mobile gateway."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "xenis"
+      description: "Xenesis Desk MCP bridge for terminals, safe file writes, XCON, panels, commands, diagnostics, Playwright, and Hermes Bot panels."
+
+policy:
+  allow_implicit_invocation: true

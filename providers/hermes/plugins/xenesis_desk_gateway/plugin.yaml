@@ -1,0 +1,40 @@
+name: xenesis_desk_gateway
+version: 0.1.0
+description: Mobile gateway controls for Xenesis Desk.
+author: Xamong
+kind: standalone
+provides_hooks:
+  - pre_gateway_dispatch
+  - post_tool_call
+  - transform_tool_result
+  - transform_llm_output
+provides_tools:
+  - xenesis_desk_mobile_terminal_preview
+  - xenesis_desk_mobile_terminal_run
+  - xenesis_desk_mobile_terminal_tail
+  - xenesis_desk_mobile_terminal_stop
+  - xenesis_desk_mobile_terminal_list
+  - xenesis_desk_mobile_state
+  - xenesis_desk_mobile_active_context
+  - xenesis_desk_mobile_context_actions
+  - xenesis_desk_mobile_action_history
+  - xenesis_desk_mobile_action_clear
+  - xenesis_desk_mobile_dashboard
+  - xenesis_desk_mobile_list_panels
+  - xenesis_desk_mobile_list_open_files
+  - xenesis_desk_mobile_recent_diagnostics
+  - xenesis_desk_mobile_focus_content
+  - xenesis_desk_mobile_close_content
+  - xenesis_desk_mobile_open_file
+  - xenesis_desk_mobile_get_xcon_prompt
+  - xenesis_desk_mobile_validate_xcon_markdown
+  - xenesis_desk_mobile_create_xcon_markdown_from_content
+  - xenesis_desk_mobile_create_xcon_markdown
+  - xenesis_desk_mobile_export_xcon_pdf
+  - xenesis_desk_mobile_playwright_snapshot
+  - xenesis_desk_mobile_playwright_run
+  - xenesis_desk_mobile_command_palette
+  - xenesis_desk_mobile_run_command_palette
+  - xenesis_desk_mobile_list_extension_commands
+  - xenesis_desk_mobile_run_extension_command
+

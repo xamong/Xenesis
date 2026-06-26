@@ -1,0 +1,133 @@
+<!doctype html>
+<html>
+
+<!-- Mirrored from turnjs.com/catalog/magazine.html by HTTrack Website Copier/3.x [XR&CO'2014], Thu, 22 Oct 2020 18:11:47 GMT -->
+<head>
+    <title> Turn.js 5th release - HTML5 Flipbook </title>
+    <meta name="viewport" content="width = device-width, minimum-scale=1, maximum-scale=1, user-scalable = no" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
+    <!-- External JS dependencies -->
+    <!--script type="text/javascript" src="assets/js/jquery-2.0.3.min.js"></script-->
+    <!--script type="text/javascript" src="assets/js/underscore-min.js"></script-->
+    <!--script type="text/javascript" src="assets/js/backbone-min.js"></script-->
+
+    <script type="text/javascript" src="https://code.jquery.com/jquery-2.0.3.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.4.0/backbone-min.js"></script>
+
+    <!-- Turn.js UI Kit -->
+    <script type="text/javascript" src="assets/js/turn.min.js"></script>
+
+    <!-- App dependencies -->
+    <script type="text/javascript" src="assets/js/app.js"></script>
+
+
+     <!-- External CSS dependencies -->
+    <!--link type="text/css" rel="stylesheet" href="assets/css/font-awesome.min.css" /> -->
+    <link type="text/css" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" /> 
+
+    <link rel="icon" type="image/png" href="assets/img/favicon.png" />
+    <link href='http://fonts.googleapis.com/css?family=Carrois+Gothic+SC' rel='stylesheet' type='text/css'>
+
+    <!-- App CSS dependencies -->
+    <link type="text/css" rel="stylesheet" href="assets/css/main.css" /> 
+  </head>
+<body>
+  <div class="catalog-app">
+  <div id="viewer">
+    <div id="flipbook" class="ui-flipbook">
+      <!-- Do not place the content here -->
+      <a ignore="1" class="ui-arrow-control ui-arrow-next-page"></a>
+      <a ignore="1" class="ui-arrow-control ui-arrow-previous-page"></a>
+    </div>
+  </div>
+ 
+  <!-- controls -->
+  <div id="controls">
+    <div class="all">
+        <div class="ui-slider" id="page-slider">
+        <div class="bar">
+          <div class="progress-width">
+            <div class="progress">
+              <div class="handler"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ui-options" id="options">
+        <a class="ui-icon" id="ui-icon-table-contents">
+          <i class="fa fa-bars"></i>
+        </a>
+        <a class="ui-icon show-hint" title="Miniatures" id="ui-icon-miniature">
+          <i class="fa fa-th"></i>
+        </a>
+        <a class="ui-icon" id="ui-icon-zoom">
+          <i class="fa fa-file-o"></i>
+        </a>
+        <!-- <a class="ui-icon show-hint" title="Share" id="ui-icon-share">
+          <i class="fa fa-back"></i>
+        </a> -->
+        <a class="ui-icon show-hint" title="Back to website" href="javascript:/"    onclick="window.close();"  >
+          <i class="fa fa-undo"></i>
+        </a>
+        <a class="ui-icon show-hint" title="Full Screen" id="ui-icon-full-screen">
+          <i class="fa fa-expand"></i>
+        </a>
+        <a class="ui-icon show-hint" id="ui-icon-toggle">
+          <i class="fa fa-ellipsis-v"></i>
+        </a>
+      </div>
+
+      <!-- zoom slider -->
+      <div id="zoom-slider-view" class="zoom-slider">
+          <div class="bg">
+             <div class="ui-slider" id="zoom-slider">
+              <div class="bar">
+                <div class="progress-width">
+                  <div class="progress">
+                    <div class="handler"></div>
+                  </div>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- / zoom slider -->
+    </div>
+
+    <div id="ui-icon-expand-options">
+      <a class="ui-icon show-hint">
+        <i class="fa fa-ellipsis-h"></i>
+      </a>
+    </div>
+
+  </div>
+  <!-- / controls -->
+
+  <!-- miniatures -->
+  <div id="miniatures" class="ui-miniatures-slider">
+
+  </div>
+  <!-- / miniatures -->
+</div>
+
+<script type="text/javascript">
+  // Change these settings
+
+  FlipbookSettings = {
+    options: {
+      pageWidth: 600,
+      pageHeight: 900,
+      pages: 22
+    },
+    shareMessage: 'Introducing turn.js 5 - HTML5 Library for Flipbooks.',
+    pageFolder: 'content/magazine',
+    loadRegions: true
+  };
+  </script>
+  </body>
+
+<!-- Mirrored from turnjs.com/catalog/magazine.html by HTTrack Website Copier/3.x [XR&CO'2014], Thu, 22 Oct 2020 18:11:51 GMT -->
+</html>

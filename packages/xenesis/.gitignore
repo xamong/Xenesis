@@ -1,0 +1,7 @@
+node_modules/
+dist/
+coverage/
+.xenesis/
+.env
+xenesis.mock.config.json
+.worktrees/

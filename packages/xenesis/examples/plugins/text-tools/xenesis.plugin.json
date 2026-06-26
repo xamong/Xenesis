@@ -1,0 +1,53 @@
+{
+  "name": "text-tools",
+  "version": "0.1.0",
+  "tools": [
+    {
+      "name": "sample_echo",
+      "entry": "./text-tools.mjs",
+      "exportName": "sampleEchoTool",
+      "description": "Echo text with an optional prefix."
+    },
+    {
+      "name": "sample_slugify",
+      "entry": "./text-tools.mjs",
+      "exportName": "sampleSlugifyTool",
+      "description": "Convert text into a lowercase URL slug."
+    }
+  ],
+  "workflows": [
+    {
+      "name": "sample_review",
+      "description": "Run a concise review-style planning workflow.",
+      "mode": "plan",
+      "promptPrefix": "Review this request and provide concise findings:\n\n",
+      "promptSuffix": "\n\nFocus on risks, missing context, and next actions.",
+      "metadata": {
+        "source": "text-tools-plugin"
+      }
+    },
+    {
+      "name": "sample_review_then_apply",
+      "description": "Plan first, then execute from the generated plan.",
+      "metadata": {
+        "source": "text-tools-plugin",
+        "kind": "pipeline"
+      },
+      "steps": [
+        {
+          "name": "precheck",
+          "input": "original",
+          "mode": "plan",
+          "promptPrefix": "Review this request and produce a concise implementation plan:\n\n"
+        },
+        {
+          "name": "apply",
+          "input": "previous",
+          "mode": "work",
+          "promptPrefix": "Execute this plan:\n\n"
+        }
+      ]
+    }
+  ],
+  "mcpServers": {}
+}

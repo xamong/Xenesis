@@ -1,0 +1,32 @@
+{
+  "extensions": {
+    "recommendedMcpServers": ["filesystem", "fetch"],
+    "mcpServers": {
+      "github": {
+        "type": "stdio",
+        "command": "docker",
+        "args": ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"],
+        "env": { "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}" },
+        "toolFilter": {
+          "include": [
+            "search_repositories", "search_code", "get_file_contents",
+            "list_issues", "get_issue", "list_pull_requests", "get_pull_request"
+          ]
+        }
+      },
+      "linear": {
+        "type": "http",
+        "transport": "http",
+        "url": "https://mcp.linear.app/mcp",
+        "auth": "oauth"
+      },
+      "disabledExample": {
+        "type": "stdio",
+        "command": "npx",
+        "args": ["-y", "@notionhq/notion-mcp-server"],
+        "env": { "NOTION_TOKEN": "${NOTION_TOKEN}" },
+        "enabled": false
+      }
+    }
+  }
+}

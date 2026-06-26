@@ -1,0 +1,39 @@
+name: xenesis-bot-platform
+label: Xenesis Bot
+kind: platform
+version: 1.0.0
+description: >
+  Local Xenesis Desk bot adapter for Hermes Gateway. Streams Markdown replies to
+  Xenesis Desk and lets the Xenesis Bot pane send messages back to Hermes through
+  a loopback HTTP endpoint.
+author: Xamong9
+requires_env:
+  - name: XENIS_BOT_ENABLED
+    description: "Set true to enable the Xenesis Bot platform"
+    prompt: "Enable Xenesis Bot? (true/false)"
+    password: false
+optional_env:
+  - name: XENIS_MCP_BRIDGE_URL
+    description: "Xenesis Desk MCP bridge URL"
+    prompt: "Xenesis Desk bridge URL"
+    password: false
+  - name: XENIS_MCP_BRIDGE_TOKEN
+    description: "Xenesis Desk MCP bridge bearer token"
+    prompt: "Xenesis Desk bridge token"
+    password: true
+  - name: XENIS_BOT_LISTEN_HOST
+    description: "Loopback host for Xenesis Bot inbound messages"
+    prompt: "Inbound listen host"
+    password: false
+  - name: XENIS_BOT_LISTEN_PORT
+    description: "Loopback port for Xenesis Bot inbound messages"
+    prompt: "Inbound listen port"
+    password: false
+  - name: XENIS_BOT_ALLOWED_USERS
+    description: "Comma-separated Xenesis Bot user IDs allowed to send inbound messages; defaults to xenesis"
+    prompt: "Allowed Xenesis Bot users"
+    password: false
+  - name: XENIS_BOT_ALLOW_ALL_USERS
+    description: "Set true to allow every inbound Xenesis Bot user ID"
+    prompt: "Allow all Xenesis Bot users? (true/false)"
+    password: false

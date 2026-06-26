@@ -1,0 +1,24 @@
+{
+  "id": "sample.xcon-gallery",
+  "name": "XCON Operations Dashboard",
+  "version": "1.0.0",
+  "publisher": "Xamong9",
+  "description": "Opens a production-style XCON/SKETCH dashboard with rendered Markdown preview and editable source.",
+  "source": "public",
+  "permissions": ["commands", "panels.open"],
+  "main": "main.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "sample.xcon-gallery.openSketch",
+        "title": "Open XCON Operations Dashboard",
+        "category": "Extensions",
+        "icon": "X"
+      }
+    ],
+    "menus": {
+      "tools": ["sample.xcon-gallery.openSketch"],
+      "commandPalette": ["sample.xcon-gallery.openSketch"]
+    }
+  }
+}

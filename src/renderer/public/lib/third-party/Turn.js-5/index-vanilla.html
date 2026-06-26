@@ -1,0 +1,553 @@
+<!doctype html>
+<html>
+<head>
+    <title> Turn.js 5th release - HTML5 Flipbook (Vanilla JS) </title>
+    <meta name="viewport" content="width = device-width, minimum-scale=1, maximum-scale=1, user-scalable = no" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
+    <!-- Turn.js Vanilla JS (No jQuery/Backbone/Underscore dependencies) -->
+    <script type="text/javascript" src="assets/js/turn-vanilla.js"></script>
+
+    <!-- External CSS dependencies -->
+    <link type="text/css" rel="stylesheet" href="assets/css/font-awesome.min.css" /> 
+    <link rel="icon" type="image/png" href="assets/img/favicon.png" />
+    <link href='http://fonts.googleapis.com/css?family=Carrois+Gothic+SC' rel='stylesheet' type='text/css'>
+
+    <!-- App CSS dependencies -->
+    <link type="text/css" rel="stylesheet" href="assets/css/main.css" /> 
+</head>
+<body>
+  <div class="catalog-app">
+  <div id="viewer">
+    <div id="flipbook" class="ui-flipbook">
+      <!-- Do not place the content here -->
+      <a ignore="1" class="ui-arrow-control ui-arrow-next-page"></a>
+      <a ignore="1" class="ui-arrow-control ui-arrow-previous-page"></a>
+    </div>
+  </div>
+ 
+  <!-- controls -->
+  <div id="controls">
+    <div class="all">
+        <div class="ui-slider" id="page-slider">
+        <div class="bar">
+          <div class="progress-width">
+            <div class="progress">
+              <div class="handler"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ui-options" id="options">
+        <a class="ui-icon" id="ui-icon-table-contents">
+          <i class="fa fa-bars"></i>
+        </a>
+        <a class="ui-icon show-hint" title="Miniatures" id="ui-icon-miniature">
+          <i class="fa fa-th"></i>
+        </a>
+        <a class="ui-icon" id="ui-icon-zoom">
+          <i class="fa fa-file-o"></i>
+        </a>
+        <a class="ui-icon show-hint" title="Back to website" href="javascript:/" onclick="window.close();">
+          <i class="fa fa-undo"></i>
+        </a>
+        <a class="ui-icon show-hint" title="Full Screen" id="ui-icon-full-screen">
+          <i class="fa fa-expand"></i>
+        </a>
+        <a class="ui-icon show-hint" id="ui-icon-toggle">
+          <i class="fa fa-ellipsis-v"></i>
+        </a>
+      </div>
+
+      <!-- zoom slider -->
+      <div id="zoom-slider-view" class="zoom-slider">
+          <div class="bg">
+             <div class="ui-slider" id="zoom-slider">
+              <div class="bar">
+                <div class="progress-width">
+                  <div class="progress">
+                    <div class="handler"></div>
+                  </div>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- / zoom slider -->
+    </div>
+
+    <div id="ui-icon-expand-options">
+      <a class="ui-icon show-hint">
+        <i class="fa fa-ellipsis-h"></i>
+      </a>
+    </div>
+
+  </div>
+  <!-- / controls -->
+
+  <!-- miniatures -->
+  <div id="miniatures" class="ui-miniatures-slider">
+
+  </div>
+  <!-- / miniatures -->
+</div>
+
+  <script type="text/javascript">
+  // Flipbook settings
+  var FlipbookSettings = {
+    options: {
+      pageWidth: 600,
+      pageHeight: 900,
+      pages: 22
+    },
+    shareMessage: 'Introducing turn.js 5 - HTML5 Library for Flipbooks.',
+    pageFolder: 'content/magazine',
+    loadRegions: false
+  };
+
+  // Vanilla JS App - Wait for DOM to be ready
+  document.addEventListener('DOMContentLoaded', function() {
+    'use strict';
+
+    // Helper function to create DOM elements
+    function $(selector, context) {
+      if (typeof selector === 'string') {
+        return Array.prototype.slice.call((context || document).querySelectorAll(selector));
+      } else if (selector instanceof HTMLElement) {
+        return [selector];
+      } else if (Array.isArray(selector)) {
+        return selector;
+      }
+      return [];
+    }
+
+    // Helper to get first element
+    function $1(selector, context) {
+      var els = $(selector, context);
+      return els.length > 0 ? els[0] : null;
+    }
+
+    // Helper to add event listeners
+    function on(element, event, handler) {
+      if (Array.isArray(element)) {
+        element.forEach(function(el) {
+          el.addEventListener(event, handler);
+        });
+      } else if (element) {
+        element.addEventListener(event, handler);
+      }
+    }
+
+    // Helper to remove event listeners
+    function off(element, event, handler) {
+      if (Array.isArray(element)) {
+        element.forEach(function(el) {
+          el.removeEventListener(event, handler);
+        });
+      } else if (element) {
+        element.removeEventListener(event, handler);
+      }
+    }
+
+    // Helper to add/remove classes
+    function addClass(element, className) {
+      if (Array.isArray(element)) {
+        element.forEach(function(el) {
+          el.classList.add(className);
+        });
+      } else if (element) {
+        element.classList.add(className);
+      }
+    }
+
+    function removeClass(element, className) {
+      if (Array.isArray(element)) {
+        element.forEach(function(el) {
+          el.classList.remove(className);
+        });
+      } else if (element) {
+        element.classList.remove(className);
+      }
+    }
+
+    function hasClass(element, className) {
+      if (Array.isArray(element)) {
+        return element.some(function(el) {
+          return el.classList.contains(className);
+        });
+      } else if (element) {
+        return element.classList.contains(className);
+      }
+      return false;
+    }
+
+    function toggleClass(element, className) {
+      if (Array.isArray(element)) {
+        element.forEach(function(el) {
+          el.classList.toggle(className);
+        });
+      } else if (element) {
+        element.classList.toggle(className);
+      }
+    }
+
+    // Wait for Turn.js to be fully loaded
+    if (typeof window.$ === 'undefined' || typeof Turn === 'undefined') {
+      console.error('Turn.js not loaded');
+      return;
+    }
+    
+    // Get flipbook element using Turn's $ wrapper (exposed globally)
+    var flipbookEl = $1('#flipbook');
+    if (!flipbookEl) {
+      console.error('Flipbook element not found');
+      return;
+    }
+    
+    var $flipbook = window.$(flipbookEl);
+    
+    // Initialize flipbook
+    var flipbookOptions = {
+      responsive: false,  // Disable responsive initially to ensure size is set
+      animatedAutoCenter: true,
+      smartFlip: true,
+      autoScaleContent: true,
+      swipe: true,
+      width: FlipbookSettings.options.pageWidth ? 2 * FlipbookSettings.options.pageWidth : 1200,
+      height: FlipbookSettings.options.pageHeight || 900
+    };
+
+    // Merge with settings
+    for (var key in FlipbookSettings.options) {
+      if (FlipbookSettings.options.hasOwnProperty(key)) {
+        flipbookOptions[key] = FlipbookSettings.options[key];
+      }
+    }
+    
+    // Check if turn method exists
+    if (typeof $flipbook.turn !== 'function') {
+      console.error('turn method not available. Turn.js may not be fully loaded.');
+      return;
+    }
+    
+    // Initialize flipbook
+    $flipbook.turn(flipbookOptions);
+    
+    // Handle missing pages event (for dynamic loading)
+    // This event is triggered when Turn.js needs a page that hasn't been added yet
+    $flipbook.on('missing', function(event, pages) {
+      console.log('Missing pages event:', pages);
+      if (Array.isArray(pages)) {
+        pages.forEach(function(pageNum) {
+          var pageEl = createPageElement(pageNum);
+          $flipbook.turn('addPage', pageEl, pageNum);
+        });
+      } else if (typeof pages === 'number') {
+        var pageEl = createPageElement(pages);
+        $flipbook.turn('addPage', pageEl, pages);
+      }
+    });
+    
+    // Add all pages immediately after initialization
+    // This ensures all pages are available when Turn.js needs them
+    var totalPages = FlipbookSettings.options.pages || 22;
+    console.log('Adding', totalPages, 'pages to flipbook');
+    for (var i = 1; i <= totalPages; i++) {
+      var pageEl = createPageElement(i);
+      $flipbook.turn('addPage', pageEl, i);
+    }
+    
+    // Force update and size calculation to ensure pages are rendered
+    setTimeout(function() {
+      // If responsive, let Turn.js calculate size automatically
+      // Otherwise, set explicit size
+      if (!flipbookOptions.responsive) {
+        var pageWidth = FlipbookSettings.options.pageWidth || 600;
+        var pageHeight = FlipbookSettings.options.pageHeight || 900;
+        $flipbook.turn('size', pageWidth, pageHeight);
+      } else {
+        // For responsive, trigger resize calculation
+        $flipbook.turn('update');
+      }
+      
+      // Update the flipbook to recalculate sizes and positions
+      $flipbook.turn('update');
+      
+      // Check if size was calculated
+      var currentSize = $flipbook.turn('size');
+      console.log('Initial size:', currentSize);
+      
+      // If height is still 0, set explicit size and force CSS
+      if (!currentSize || currentSize.height === 0) {
+        var pageWidth = FlipbookSettings.options.pageWidth || 600;
+        var pageHeight = FlipbookSettings.options.pageHeight || 900;
+        console.log('Setting explicit size:', pageWidth, 'x', pageHeight);
+        
+        // Disable responsive temporarily to force explicit size
+        var wasResponsive = flipbookOptions.responsive;
+        if (wasResponsive) {
+          $flipbook.turn('responsive', false);
+        }
+        
+        $flipbook.turn('size', pageWidth, pageHeight);
+        
+        // Verify size was set
+        var checkSize = $flipbook.turn('size');
+        console.log('Size after setting:', checkSize);
+        
+        // If still 0, try direct CSS manipulation
+        if (!checkSize || checkSize.height === 0) {
+          console.log('Direct CSS manipulation');
+          var flipbookElement = document.getElementById('flipbook');
+          if (flipbookElement) {
+            // Set explicit size with !important to override any CSS
+            flipbookElement.style.setProperty('width', pageWidth + 'px', 'important');
+            flipbookElement.style.setProperty('height', pageHeight + 'px', 'important');
+            console.log('Direct CSS set, element size:', flipbookElement.offsetWidth, 'x', flipbookElement.offsetHeight);
+            
+            // Force size method again after direct CSS
+            setTimeout(function() {
+              $flipbook.turn('size', pageWidth, pageHeight);
+              $flipbook.turn('update');
+            }, 50);
+          }
+        } else {
+          $flipbook.turn('update');
+        }
+        
+        if (wasResponsive) {
+          $flipbook.turn('responsive', true);
+        }
+      }
+      
+      // Force resize all pages after size is set
+      setTimeout(function() {
+        $flipbook.turn('update');
+        // Force page 1 to recalculate sizes
+        $flipbook.turn('page', 1);
+      }, 150);
+      
+      // Go to first page to trigger rendering
+      var currentPage = $flipbook.turn('page') || 1;
+      
+      // Force page rendering by calling page method
+      $flipbook.turn('page', currentPage);
+      console.log('Flipbook initialized with page', currentPage);
+      
+      // Force makeRange to ensure pages are in DOM
+      // This should be called automatically, but we'll ensure it happens
+      setTimeout(function() {
+        // Force update one more time to ensure everything is rendered
+        $flipbook.turn('update');
+      }, 50);
+      
+      // Force another update after page change
+      setTimeout(function() {
+        $flipbook.turn('update');
+        var finalSize = $flipbook.turn('size');
+        console.log('Flipbook updated, size:', finalSize);
+        console.log('Current page:', $flipbook.turn('page'));
+        
+        // Debug: Check page elements
+        var flipbookEl = document.getElementById('flipbook');
+        if (flipbookEl) {
+          var pageWraps = flipbookEl.querySelectorAll('.page-wrapper, [class*="page"]');
+          console.log('Found page wrappers:', pageWraps.length);
+          if (pageWraps.length > 0) {
+            var firstPage = pageWraps[0];
+            var computedStyle = window.getComputedStyle(firstPage);
+            console.log('First page wrapper:', {
+              display: computedStyle.display,
+              visibility: computedStyle.visibility,
+              width: computedStyle.width,
+              height: computedStyle.height,
+              zIndex: computedStyle.zIndex,
+              position: computedStyle.position
+            });
+          }
+          
+          // Check for page elements
+          var pages = flipbookEl.querySelectorAll('.page, [data-page]');
+          console.log('Found page elements:', pages.length);
+          
+          // Check total pages
+          var totalPages = $flipbook.turn('pages');
+          console.log('Total pages:', totalPages);
+        }
+      }, 100);
+    }, 300);
+
+    // Handle turned event
+    $flipbook.on('turned', function(event, page, view) {
+      updatePageSlider(page || 1);
+      updateURL(page || 1);
+    });
+
+    // Handle zoomed event
+    $flipbook.on('zoomed', function(event, zoom) {
+      var arrows = document.querySelectorAll('.ui-arrow-control');
+      if (zoom === 1) {
+        arrows.forEach(function(el) {
+          el.style.display = '';
+        });
+      } else {
+        arrows.forEach(function(el) {
+          el.style.display = 'none';
+        });
+      }
+    });
+
+    // Create page element
+    function createPageElement(pageNumber) {
+      var settings = FlipbookSettings;
+      var pageEl = document.createElement('div');
+      var imgSrc = settings.pageFolder + '/' + pageNumber + '.jpg';
+      var img = document.createElement('img');
+      
+      img.style.width = '100%';
+      img.style.height = '100%';
+      img.style.display = 'none';
+      
+      var timerAddLoader = setTimeout(function() {
+        var loader = document.createElement('div');
+        loader.className = 'ui-spinner';
+        pageEl.appendChild(loader);
+        timerAddLoader = null;
+      }, 150);
+
+      img.onload = function() {
+        img.style.display = '';
+        var loader = pageEl.querySelector('.ui-spinner');
+        if (loader) {
+          loader.style.display = 'none';
+        } else if (timerAddLoader) {
+          clearTimeout(timerAddLoader);
+        }
+      };
+
+      img.src = imgSrc;
+      pageEl.appendChild(img);
+      return pageEl;
+    }
+
+    // Update page slider
+    function updatePageSlider(page) {
+      var slider = $1('#page-slider');
+      if (slider) {
+        var progress = slider.querySelector('.progress');
+        if (progress) {
+          var totalPages = $flipbook.turn('pages');
+          var percent = ((page - 1) / (totalPages - 1)) * 100;
+          progress.style.width = percent + '%';
+        }
+      }
+    }
+
+    // Update URL
+    function updateURL(page) {
+      if (window.history && window.history.pushState) {
+        window.history.pushState(null, '', '#page/' + page);
+      }
+    }
+
+    // Handle page slider click
+    var pageSlider = $1('#page-slider');
+    if (pageSlider) {
+      on(pageSlider, 'click', function(e) {
+        var bar = pageSlider.querySelector('.bar');
+        if (bar) {
+          var rect = bar.getBoundingClientRect();
+          var percent = (e.clientX - rect.left) / rect.width;
+          var totalPages = $flipbook.turn('pages');
+          var targetPage = Math.round(percent * (totalPages - 1)) + 1;
+          $flipbook.turn('page', targetPage);
+        }
+      });
+    }
+
+    // Arrow controls
+    var nextArrow = $1('.ui-arrow-next-page');
+    var prevArrow = $1('.ui-arrow-previous-page');
+
+    if (nextArrow) {
+      on(nextArrow, 'click', function(e) {
+        e.preventDefault();
+        $flipbook.turn('next');
+      });
+    }
+
+    if (prevArrow) {
+      on(prevArrow, 'click', function(e) {
+        e.preventDefault();
+        $flipbook.turn('previous');
+      });
+    }
+
+    // Keyboard navigation
+    on(window, 'keydown', function(e) {
+      if (e.keyCode === 37) { // Left arrow
+        $flipbook.turn('previous');
+      } else if (e.keyCode === 39) { // Right arrow
+        $flipbook.turn('next');
+      }
+    });
+
+    // Full screen
+    var fullScreenBtn = $1('#ui-icon-full-screen');
+    if (fullScreenBtn) {
+      on(fullScreenBtn, 'click', function() {
+        Turn.toggleFullScreen();
+      });
+    }
+
+    // Toggle options
+    var toggleBtn = $1('#ui-icon-toggle');
+    if (toggleBtn) {
+      on(toggleBtn, 'click', function() {
+        var controls = $1('#controls');
+        if (controls) {
+          toggleClass(controls, 'extend-ui-options');
+        }
+      });
+    }
+
+    // Initialize page slider
+    updatePageSlider($flipbook.turn('page') || 1);
+
+    // Handle URL hash on load
+    if (window.location.hash) {
+      var match = window.location.hash.match(/page\/(\d+)/);
+      if (match) {
+        var page = parseInt(match[1], 10);
+        $flipbook.turn('page', page);
+      }
+    }
+
+    // Handle window load
+    if (window.addEventListener) {
+      window.addEventListener('load', function() {
+        window.scrollTo(0, 0);
+      });
+    }
+
+    // Handle orientation change
+    if (window.addEventListener) {
+      window.addEventListener('orientationchange', function() {
+        window.scrollTo(0, 0);
+        setTimeout(function() {
+          if ($flipbook && typeof $flipbook.turn === 'function') {
+            var size = $flipbook.turn('size');
+            if (size && size.width && size.height) {
+              $flipbook.turn('size', size.width, size.height);
+            }
+          }
+        }, 200);
+      });
+    }
+
+  });
+</script>
+</body>
+</html>
+

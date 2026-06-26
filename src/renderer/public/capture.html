@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      cursor: crosshair;
+      background: #000;
+      user-select: none;
+    }
+
+    #canvas {
+      position: fixed;
+      inset: 0;
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+    }
+
+    #shade {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background: rgba(0, 0, 0, 0.45);
+    }
+
+    #selection {
+      position: fixed;
+      z-index: 2;
+      pointer-events: none;
+      box-sizing: border-box;
+      border: 2px solid #0078d7;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+    }
+
+    #selection[hidden],
+    #shade[hidden] {
+      display: none !important;
+    }
+
+    #selection-label {
+      position: absolute;
+      left: 0;
+      min-width: max-content;
+      height: 20px;
+      padding: 0 6px;
+      border-radius: 2px;
+      background: #0078d7;
+      color: #fff;
+      font: 700 12px/20px sans-serif;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <div id="shade"></div>
+  <div id="selection" hidden>
+    <span id="selection-label"></span>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    const canvas = document.getElementById('canvas');
+    const shade = document.getElementById('shade');
+    const selection = document.getElementById('selection');
+    const selectionLabel = document.getElementById('selection-label');
+    const ctx = canvas.getContext('2d');
+
+    const bgImage = new Image();
+    let hasScreenshot = false;
+    let startX = 0;
+    let startY = 0;
+    let isDragging = false;
+    let activePointerId = null;
+
+    ipcRenderer.on('prepare-canvas', (_event, { screenshot }) => {
+      bgImage.onload = () => {
+        hasScreenshot = true;
+        drawScreenshot();
+      };
+      bgImage.onerror = () => {
+        ipcRenderer.send('capture:cancel');
+      };
+      bgImage.src = screenshot;
+    });
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function setCanvasSize() {
+      canvas.width = Math.max(1, window.innerWidth);
+      canvas.height = Math.max(1, window.innerHeight);
+    }
+
+    function drawScreenshot() {
+      if (!hasScreenshot) return;
+
+      setCanvasSize();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+      resetSelection();
+    }
+
+    /**
+     * bgImage는 자연 크기(physical px)와 canvas 크기(logical px)가 다를 수 있다.
+     * source 좌표는 bgImage 픽셀 공간으로 변환해야 정확하게 잘린다.
+     */
+    function bgSrcRect(rx, ry, rw, rh) {
+      const sx = bgImage.naturalWidth / canvas.width;
+      const sy = bgImage.naturalHeight / canvas.height;
+      return [rx * sx, ry * sy, rw * sx, rh * sy];
+    }
+
+    function rectFromPoint(x, y) {
+      const currX = clamp(x, 0, canvas.width);
+      const currY = clamp(y, 0, canvas.height);
+      const left = Math.min(startX, currX);
+      const top = Math.min(startY, currY);
+      const width = Math.abs(currX - startX);
+      const height = Math.abs(currY - startY);
+
+      return { left, top, width, height };
+    }
+
+    function resetSelection() {
+      shade.hidden = false;
+      selection.hidden = true;
+      selection.style.left = '0px';
+      selection.style.top = '0px';
+      selection.style.width = '0px';
+      selection.style.height = '0px';
+    }
+
+    function updateSelection(x, y) {
+      const rect = rectFromPoint(x, y);
+
+      if (rect.width < 2 || rect.height < 2) {
+        resetSelection();
+        return rect;
+      }
+
+      shade.hidden = true;
+      selection.hidden = false;
+      selection.style.left = `${rect.left}px`;
+      selection.style.top = `${rect.top}px`;
+      selection.style.width = `${rect.width}px`;
+      selection.style.height = `${rect.height}px`;
+      selectionLabel.textContent = `${Math.round(rect.width)} × ${Math.round(rect.height)}`;
+      selectionLabel.style.top = rect.top > 24 ? '-24px' : `${rect.height + 4}px`;
+
+      return rect;
+    }
+
+    function saveSelection(rect) {
+      const cropCanvas = document.createElement('canvas');
+      cropCanvas.width = Math.round(rect.width);
+      cropCanvas.height = Math.round(rect.height);
+
+      const cropCtx = cropCanvas.getContext('2d');
+      cropCtx.drawImage(
+        bgImage,
+        ...bgSrcRect(rect.left, rect.top, rect.width, rect.height),
+        0,
+        0,
+        cropCanvas.width,
+        cropCanvas.height,
+      );
+
+      ipcRenderer.send('capture:save', cropCanvas.toDataURL('image/png'));
+    }
+
+    document.body.addEventListener('pointerdown', (e) => {
+      if (!hasScreenshot || e.button !== 0) return;
+
+      e.preventDefault();
+      document.body.setPointerCapture(e.pointerId);
+      activePointerId = e.pointerId;
+      startX = clamp(e.clientX, 0, canvas.width);
+      startY = clamp(e.clientY, 0, canvas.height);
+      isDragging = true;
+      resetSelection();
+    });
+
+    document.body.addEventListener('pointermove', (e) => {
+      if (!isDragging || e.pointerId !== activePointerId) return;
+
+      e.preventDefault();
+      updateSelection(e.clientX, e.clientY);
+    });
+
+    document.body.addEventListener('pointerup', (e) => {
+      if (!isDragging || e.pointerId !== activePointerId) return;
+
+      e.preventDefault();
+      const rect = updateSelection(e.clientX, e.clientY);
+      isDragging = false;
+      activePointerId = null;
+
+      if (document.body.hasPointerCapture(e.pointerId)) {
+        document.body.releasePointerCapture(e.pointerId);
+      }
+
+      if (rect.width < 5 || rect.height < 5) {
+        resetSelection();
+        return;
+      }
+
+      saveSelection(rect);
+    });
+
+    document.body.addEventListener('pointercancel', (e) => {
+      if (e.pointerId !== activePointerId) return;
+
+      isDragging = false;
+      activePointerId = null;
+      resetSelection();
+    });
+
+    window.addEventListener('resize', drawScreenshot);
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') ipcRenderer.send('capture:cancel');
+    });
+  </script>
+</body>
+</html>

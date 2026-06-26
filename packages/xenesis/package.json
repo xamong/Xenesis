@@ -1,0 +1,77 @@
+{
+  "name": "xenesis",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "xenesis": "dist/cli/main.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "docs/usage.md",
+    "docs/configuration.md",
+    "docs/channel-bots.ko.md",
+    "docs/remote-codex-bot-control.ko.md",
+    "docs/runtime-pipeline.md",
+    "docs/scenarios.md",
+    "docs/feature-tree.md",
+    "docs/config-tree.md",
+    "examples",
+    "xenesis.mock.config.example.json",
+    "xenesis.mcp.example.config.json"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "browser:smoke": "npm run build && node scripts/browser-smoke.mjs",
+    "capability:backlog": "tsx scripts/capability-backlog.ts",
+    "capability:eval": "tsx scripts/capability-eval.ts",
+    "capability:eval:full": "tsx scripts/capability-eval.ts --no-accepted --timeout-ms 420000 --report .xenesis/reports/full-capability-default.json",
+    "capability:improve": "tsx scripts/capability-improve.ts",
+    "capability:learn": "tsx scripts/capability-learn.ts",
+    "capability:loop": "tsx scripts/capability-loop.ts",
+    "capability:practice": "tsx scripts/capability-practice.ts",
+    "capability:tasks": "tsx scripts/capability-tasks.ts",
+    "dev": "tsx src/cli/main.ts",
+    "doctor": "tsx src/cli/main.ts doctor",
+    "package:smoke": "npm run build && node scripts/package-smoke.mjs",
+    "provider:matrix": "tsx scripts/provider-matrix.ts",
+    "provider:smoke": "npm run build && node scripts/provider-smoke.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@vscode/ripgrep": "^1.18.0",
+    "ajv": "^8.20.0",
+    "commander": "^14.0.0",
+    "ink": "^7.1.0",
+    "openai": "^6.0.0",
+    "playwright": "^1.60.0",
+    "react": "^19.2.7",
+    "react-devtools-core": "^6.1.5",
+    "zod": "^3.25.0",
+    "zod-to-json-schema": "^3.24.6"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "description": "Xenesis is the private internal sidecar runtime for Xenesis Desk, bundled from file:packages/xenesis with provider abstraction, approvals, sessions, memory, skills, plugins, MCP tools, channel adapters, task orchestration, workflows, and the managed gateway.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "directories": {
+    "doc": "docs",
+    "example": "examples",
+    "test": "tests"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

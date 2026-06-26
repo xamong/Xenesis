@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="ko" class="xa-al-root">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>XCON Viewer</title>
+
+  <!-- Google Fonts (UI용) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet" />
+
+  <!-- XCON 테마 -->
+  <link rel="stylesheet" href="./lib/xcon/xamong-autolayout-theme.css" />
+  <link rel="stylesheet" href="./xconviewer-showcase-example.css" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── 뷰어 전용 UI 변수 (XCON 테마 변수와 분리) ── */
+    :root {
+      --xv-bar-h: 42px;
+      --xv-bar-bg-light: rgba(253,252,250,0.96);
+      --xv-bar-bg-dark:  rgba(22,22,26,0.96);
+      --xv-bar-border-light: rgba(60,45,25,0.13);
+      --xv-bar-border-dark:  rgba(255,255,255,0.08);
+      --xv-error-bg-light: #fff1f1;
+      --xv-error-text-light: #b91c1c;
+      --xv-error-bg-dark: #450a0a;
+      --xv-error-text-dark: #fca5a5;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--bg, #F7F4EF);
+      color: var(--ink, #1C1710);
+      font-family: var(--font-body, 'Plus Jakarta Sans', system-ui, sans-serif);
+      font-size: 14px;
+      overflow: hidden;
+    }
+
+    /* ── 상단 테마 바 ── */
+    #xv-theme-bar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: var(--xv-bar-h);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 12px;
+      background: var(--xv-bar-bg-light);
+      border-bottom: 1px solid var(--xv-bar-border-light);
+      z-index: 9999;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      flex-shrink: 0;
+    }
+    html[data-theme="dark"] #xv-theme-bar {
+      background: var(--xv-bar-bg-dark);
+      border-bottom-color: var(--xv-bar-border-dark);
+    }
+
+    .xv-tb-label {
+      font-size: 9px;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--ink-3, #A8998A);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    /* Light / Dark 토글 */
+    .xv-tb-switch {
+      display: flex;
+      gap: 2px;
+      padding: 3px;
+      border-radius: var(--r-sm, 6px);
+      background: var(--surface2, #F2EDE5);
+      border: 1px solid var(--border, rgba(60,45,25,0.1));
+    }
+    .xv-tb-btn {
+      padding: 3px 10px;
+      border: none;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--ink-2, #6B5F4E);
+      font-family: var(--font-body, system-ui);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s, color .15s, box-shadow .15s;
+      white-space: nowrap;
+    }
+    .xv-tb-btn:hover { color: var(--ink, #1C1710); }
+    .xv-tb-btn.active {
+      background: var(--surface, #FDFCFA);
+      color: var(--accent, #C4622D);
+      box-shadow: var(--shadow-sm, 0 1px 4px rgba(60,45,25,0.08));
+    }
+
+    /* 구분선 */
+    .xv-tb-sep {
+      width: 1px;
+      height: 20px;
+      background: var(--border2, rgba(60,45,25,0.18));
+      flex-shrink: 0;
+      margin: 0 2px;
+    }
+
+    /* 액센트 색 컨트롤 */
+    .xv-tb-accent-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .xv-accent-swatch {
+      width: 28px; height: 26px;
+      padding: 0;
+      border: 1px solid var(--border2, rgba(60,45,25,0.18));
+      border-radius: 5px;
+      cursor: pointer;
+      background: var(--surface2);
+      flex-shrink: 0;
+    }
+    .xv-accent-swatch::-webkit-color-swatch-wrapper { padding: 3px; }
+    .xv-accent-swatch::-webkit-color-swatch { border-radius: 3px; border: none; }
+    .xv-accent-hex {
+      width: 76px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      padding: 4px 7px;
+      border: 1px solid var(--border2, rgba(60,45,25,0.18));
+      border-radius: 5px;
+      background: var(--surface2, #F2EDE5);
+      color: var(--ink, #1C1710);
+      outline: none;
+    }
+    .xv-accent-hex:focus {
+      border-color: var(--accent, #C4622D);
+      box-shadow: 0 0 0 2px rgba(var(--accent-rgb, 196,98,45), .12);
+    }
+    .xv-accent-reset {
+      padding: 4px 8px;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--ink-2);
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 5px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .xv-accent-reset:hover { background: var(--surface); }
+
+    /* 프리셋 도트 */
+    .xv-tb-presets {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+    .xv-preset-dot {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      border: 2px solid var(--surface, #FDFCFA);
+      box-shadow: 0 0 0 1px var(--border2, rgba(60,45,25,0.18));
+      cursor: pointer;
+      padding: 0;
+      transition: transform .12s;
+      flex-shrink: 0;
+    }
+    .xv-preset-dot:hover { transform: scale(1.2); box-shadow: 0 0 0 2px var(--accent); }
+
+    .xv-tb-flex { flex: 1; }
+
+    /* ── 디바이스 선택 버튼 ── */
+    .xv-device-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3px 8px;
+      font-size: 14px;
+      line-height: 1;
+      min-width: 28px;
+    }
+
+    /* ── 콘텐츠 영역 ── */
+    #xv-root {
+      position: absolute;
+      top: var(--xv-bar-h);
+      left: 0; right: 0; bottom: 0;
+      overflow: auto;
+      padding: 16px;
+      transition: background .25s;
+    }
+
+    /* ── 디바이스 외부 래퍼 (desktop: 패스스루) ── */
+    #xv-device-outer {
+      position: relative;
+      width: 100%;
+      min-height: 100%;
+    }
+    #xv-device-screen {
+      width: 100%;
+      min-height: 100%;
+    }
+    #xv-frame-deco > * { display: none; }
+
+    /* ── 상태 화면 ── */
+    #xv-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      min-height: calc(100vh - var(--xv-bar-h));
+      gap: 12px;
+      text-align: center;
+    }
+    #xv-state.hidden { display: none; }
+
+    .xv-state-icon { font-size: 36px; opacity: 0.4; }
+    .xv-state-title { font-size: 15px; font-weight: 600; color: var(--ink-3, #A8998A); }
+    .xv-state-detail {
+      font-size: 12px;
+      color: var(--ink-3, #A8998A);
+      max-width: 480px;
+      line-height: 1.6;
+    }
+    .xv-state-detail.error {
+      background: var(--red-lt, #FAD7D3);
+      color: var(--red, #C03A2B);
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      text-align: left;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    html[data-theme="dark"] .xv-state-detail.error {
+      background: rgba(248,113,113,0.1);
+      color: var(--red, #F87171);
+    }
+
+    /* ── 렌더링 결과 ── */
+    #xv-canvas { min-height: 100%; position: relative; }
+    #xv-canvas.hidden { display: none; }
+    #xv-canvas > .xv-canvas-layer { min-height: 100%; }
+    #xv-canvas > .xv-canvas-layer[data-xv-canvas-layer="pending"] {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    #xv-canvas .xa-al-app-host { min-height: 100%; }
+
+    .xv-parse-diagnostics {
+      width: min(960px, calc(100% - 24px));
+      margin: 10px auto 0;
+      padding: 8px 10px;
+      border: 1px solid rgba(202, 138, 4, 0.28);
+      border-radius: 8px;
+      background: rgba(254, 252, 232, 0.92);
+      color: #854d0e;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    html[data-theme="dark"] .xv-parse-diagnostics {
+      background: rgba(113, 63, 18, 0.22);
+      border-color: rgba(250, 204, 21, 0.25);
+      color: #fde68a;
+    }
+    .xv-parse-diagnostics summary {
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .xv-parse-diagnostics ul {
+      margin: 6px 0 0 18px;
+      padding: 0;
+    }
+    .xv-parse-diagnostics code {
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      font-size: 11px;
+      color: inherit;
+      opacity: 0.78;
+    }
+
+    .xa-list-al, .xa-al-root { max-width: 100%; }
+
+    /* ══════════════════════════════════════════════════════════════
+       디바이스 모드 공통 — phone / tablet
+    ══════════════════════════════════════════════════════════════ */
+    html[data-device="phone"] #xv-root,
+    html[data-device="tablet"] #xv-root {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 32px 20px 48px;
+      background: #c8c9cc;
+    }
+    html[data-theme="dark"][data-device="phone"] #xv-root,
+    html[data-theme="dark"][data-device="tablet"] #xv-root {
+      background: #18181b;
+    }
+    html[data-device="phone"] #xv-device-outer,
+    html[data-device="tablet"] #xv-device-outer {
+      width: auto;
+      min-height: auto;
+      flex-shrink: 0;
+      position: relative;
+    }
+    html[data-device="phone"] #xv-device-screen,
+    html[data-device="tablet"] #xv-device-screen {
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: none;
+      position: relative;
+      background: var(--bg, #F7F4EF);
+    }
+    html[data-device="phone"] #xv-device-screen::-webkit-scrollbar,
+    html[data-device="tablet"] #xv-device-screen::-webkit-scrollbar { display: none; }
+    html[data-device="phone"] #xv-state,
+    html[data-device="tablet"] #xv-state { min-height: 100%; }
+    html[data-device="phone"] #xv-canvas,
+    html[data-device="tablet"] #xv-canvas { min-height: auto; }
+
+    /* ══════════════════════════════════════════════════════════════
+       스마트폰 프레임 (390 × 844 화면)
+    ══════════════════════════════════════════════════════════════ */
+    html[data-device="phone"] #xv-device-outer {
+      background: #1c1c1e;
+      border-radius: 54px;
+      padding: 54px 12px 32px;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.18),
+        0 0 0 2px #0a0a0a,
+        0 0 0 3px rgba(255,255,255,0.05),
+        0 32px 88px rgba(0,0,0,0.58),
+        0 8px 24px rgba(0,0,0,0.32);
+    }
+    html[data-device="phone"] #xv-device-screen {
+      width: 390px;
+      height: 844px;
+      border-radius: 42px;
+    }
+
+    /* Dynamic Island */
+    html[data-device="phone"] #xv-device-outer::before {
+      content: '';
+      position: absolute;
+      top: 13px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 34px;
+      background: #000;
+      border-radius: 20px;
+      z-index: 20;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+    }
+    /* 화면 상단 라운드 마스크 (Dynamic Island 아랫부분 자연스럽게) */
+    html[data-device="phone"] #xv-device-outer::after {
+      content: '';
+      position: absolute;
+      top: 54px;
+      left: 12px;
+      right: 12px;
+      height: 2px;
+      background: transparent;
+      pointer-events: none;
+    }
+
+    /* 왼쪽 버튼들 (무음/볼륨) */
+    html[data-device="phone"] .xv-frame-btn-silent {
+      display: block;
+      position: absolute;
+      left: -4px;
+      top: 86px;
+      width: 4px; height: 28px;
+      background: linear-gradient(to right, #111, #2c2c2e);
+      border-radius: 3px 0 0 3px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.6);
+    }
+    html[data-device="phone"] .xv-frame-btn-v1 {
+      display: block;
+      position: absolute;
+      left: -4px;
+      top: 128px;
+      width: 4px; height: 62px;
+      background: linear-gradient(to right, #111, #2c2c2e);
+      border-radius: 3px 0 0 3px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.6);
+    }
+    html[data-device="phone"] .xv-frame-btn-v2 {
+      display: block;
+      position: absolute;
+      left: -4px;
+      top: 202px;
+      width: 4px; height: 62px;
+      background: linear-gradient(to right, #111, #2c2c2e);
+      border-radius: 3px 0 0 3px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.6);
+    }
+    /* 오른쪽 전원 버튼 */
+    html[data-device="phone"] .xv-frame-btn-pwr {
+      display: block;
+      position: absolute;
+      right: -4px;
+      top: 148px;
+      width: 4px; height: 80px;
+      background: linear-gradient(to left, #111, #2c2c2e);
+      border-radius: 0 3px 3px 0;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.6);
+    }
+    /* 홈 인디케이터 바 */
+    html[data-device="phone"] .xv-frame-home-bar {
+      display: block;
+      position: absolute;
+      bottom: 11px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 134px; height: 5px;
+      background: rgba(255,255,255,0.28);
+      border-radius: 3px;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       태블릿 프레임 (768 × 1024 화면)
+    ══════════════════════════════════════════════════════════════ */
+    html[data-device="tablet"] #xv-device-outer {
+      background: #1d1d1f;
+      border-radius: 22px;
+      padding: 44px 18px 44px;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.14),
+        0 0 0 2px #0a0a0a,
+        0 0 0 3px rgba(255,255,255,0.04),
+        0 28px 72px rgba(0,0,0,0.50),
+        0 6px 18px rgba(0,0,0,0.28);
+    }
+    html[data-device="tablet"] #xv-device-screen {
+      width: 768px;
+      height: 1024px;
+      border-radius: 6px;
+    }
+    /* 전면 카메라 */
+    html[data-device="tablet"] #xv-frame-camera-dot {
+      display: block;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      left: 8px;
+      width: 10px; height: 10px;
+      background: #2a2a2c;
+      border-radius: 50%;
+      border: 2px solid #3a3a3c;
+      box-shadow: inset 0 0 0 2px #111, 0 0 0 1px rgba(255,255,255,0.07);
+    }
+    /* 태블릿 오른쪽 전원 버튼 */
+    html[data-device="tablet"] .xv-frame-btn-pwr {
+      display: block;
+      position: absolute;
+      right: -4px;
+      top: 60px;
+      width: 4px; height: 48px;
+      background: linear-gradient(to left, #111, #2c2c2e);
+      border-radius: 0 3px 3px 0;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.6);
+    }
+    /* 태블릿 상단 볼륨 버튼 */
+    html[data-device="tablet"] .xv-frame-btn-v1 {
+      display: block;
+      position: absolute;
+      top: -4px;
+      left: 120px;
+      width: 52px; height: 4px;
+      background: linear-gradient(to bottom, #111, #2c2c2e);
+      border-radius: 3px 3px 0 0;
+      box-shadow: 0 -1px 2px rgba(0,0,0,0.6);
+    }
+    html[data-device="tablet"] .xv-frame-btn-v2 {
+      display: block;
+      position: absolute;
+      top: -4px;
+      left: 184px;
+      width: 52px; height: 4px;
+      background: linear-gradient(to bottom, #111, #2c2c2e);
+      border-radius: 3px 3px 0 0;
+      box-shadow: 0 -1px 2px rgba(0,0,0,0.6);
+    }
+    /* 태블릿 스피커 바 */
+    html[data-device="tablet"] .xv-frame-home-bar {
+      display: block;
+      position: absolute;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px; height: 4px;
+      background: rgba(255,255,255,0.14);
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── 테마 / 액센트 바 ── -->
+  <div id="xv-theme-bar">
+    <span class="xv-tb-label">THEME</span>
+    <div class="xv-tb-switch" role="group" aria-label="테마 선택">
+      <button type="button" class="xv-tb-btn" data-theme="light">Light</button>
+      <button type="button" class="xv-tb-btn" data-theme="dark">Dark</button>
+    </div>
+
+    <div class="xv-tb-sep"></div>
+
+    <span class="xv-tb-label">ACCENT</span>
+    <div class="xv-tb-accent-row">
+      <input type="color" id="xvAccentPicker" class="xv-accent-swatch" value="#C4622D" aria-label="액센트 색" />
+      <input type="text"  id="xvAccentHex"    class="xv-accent-hex" maxlength="7" spellcheck="false" placeholder="#RRGGBB" autocomplete="off" />
+      <button type="button" id="xvAccentReset" class="xv-accent-reset">기본값</button>
+    </div>
+    <div class="xv-tb-presets" role="group" aria-label="액센트 프리셋">
+      <button type="button" class="xv-preset-dot" data-hex="#C4622D" style="background:#C4622D" title="Terracotta"></button>
+      <button type="button" class="xv-preset-dot" data-hex="#7C6AF7" style="background:#7C6AF7" title="Violet"></button>
+      <button type="button" class="xv-preset-dot" data-hex="#2D7D4F" style="background:#2D7D4F" title="Forest"></button>
+      <button type="button" class="xv-preset-dot" data-hex="#2B5FA0" style="background:#2B5FA0" title="Ocean"></button>
+      <button type="button" class="xv-preset-dot" data-hex="#C03A2B" style="background:#C03A2B" title="Crimson"></button>
+      <button type="button" class="xv-preset-dot" data-hex="#B07D12" style="background:#B07D12" title="Amber"></button>
+      <button type="button" class="xv-preset-dot" data-hex="#0D9488" style="background:#0D9488" title="Teal"></button>
+      <button type="button" class="xv-preset-dot" data-hex="#DB2777" style="background:#DB2777" title="Pink"></button>
+    </div>
+    <div class="xv-tb-sep"></div>
+
+    <!-- 디바이스 선택 -->
+    <span class="xv-tb-label">DEVICE</span>
+    <div class="xv-tb-switch" role="group" aria-label="디바이스 선택">
+      <button type="button" class="xv-tb-btn xv-device-btn" data-device="desktop" title="데스크톱">
+        <i class="bi bi-display"></i>
+      </button>
+      <button type="button" class="xv-tb-btn xv-device-btn" data-device="tablet" title="태블릿">
+        <i class="bi bi-tablet"></i>
+      </button>
+      <button type="button" class="xv-tb-btn xv-device-btn" data-device="phone" title="스마트폰">
+        <i class="bi bi-phone"></i>
+      </button>
+    </div>
+
+    <div class="xv-tb-flex"></div>
+  </div>
+
+  <!-- ── 콘텐츠 영역 ── -->
+  <div id="xv-root">
+    <div id="xv-device-outer">
+      <!-- 프레임 장식 요소 (phone/tablet 모드에서만 표시) -->
+      <div id="xv-frame-deco" aria-hidden="true">
+        <div class="xv-frame-btn-silent"></div>
+        <div class="xv-frame-btn-v1"></div>
+        <div class="xv-frame-btn-v2"></div>
+        <div class="xv-frame-btn-pwr"></div>
+        <div class="xv-frame-home-bar"></div>
+        <div class="xv-frame-camera-dot"></div>
+      </div>
+      <!-- 디바이스 화면 영역 -->
+      <div id="xv-device-screen">
+        <!-- 상태 표시 (로딩 / 에러 / 대기) -->
+        <div id="xv-state">
+          <div class="xv-state-icon">⬡</div>
+          <div class="xv-state-title">XCON 뷰어 초기화 중…</div>
+        </div>
+        <!-- XCON 렌더링 결과 출력 -->
+        <div id="xv-canvas" class="hidden"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── XCON 라이브러리 로드 (순서 중요) ── -->
+  <script src="./lib/xcon/XCON.js"></script>
+  <script src="./lib/xcon/xamong-sketch.js"></script>
+  <script src="./lib/xcon/formula/calcengine.js"></script>
+  <script src="./lib/xcon/formula/calcengine-text-functions.js"></script>
+  <script src="./lib/xcon/formula/calcengine-datetime-functions.js"></script>
+  <script src="./lib/xcon/formula/calcengine-logical-functions.js"></script>
+  <script src="./lib/xcon/formula/calcengine-lookup-functions.js"></script>
+  <script src="./lib/xcon/formula/calcengine-math-functions.js"></script>
+  <script src="./lib/xcon/formula/calcengine-statistical-functions.js"></script>
+  <script src="./lib/xcon/formula/calcengine-financial-functions.js"></script>
+  <script src="./lib/xcon/formula/calcengine-extensions.js"></script>
+  <script src="./lib/xcon/formula/quickcalc.js"></script>
+  <script src="./lib/xcon/xamong-core.js"></script>
+  <script src="./lib/xcon/xamong-chain.js"></script>
+  <script src="./lib/xcon/xamong-public-props.js"></script>
+  <script src="./lib/xcon/xamong-ui-components.js"></script>
+  <script src="./lib/xcon/xamong-ui-components-ext.js"></script>
+  <script src="./lib/xcon/xamong-ui-components-advanced.js"></script>
+  <script src="./lib/xcon/xamong-ui-components-adapter.js"></script>
+  <script src="./lib/xcon/xamong-component-registry.js"></script>
+  <script src="./lib/xcon/xamong-ui-components-autolayout.js"></script>
+  <script src="./showcase-custom-components.js"></script>
+
+  <script>
+    (() => {
+      var stateEl   = document.getElementById('xv-state');
+      var canvasEl  = document.getElementById('xv-canvas');
+
+      /* ── 상태 헬퍼 ── */
+      function showState(icon, title, detail, isError) {
+        stateEl.innerHTML =
+          '<div class="xv-state-icon">' + icon + '</div>' +
+          '<div class="xv-state-title">' + title + '</div>' +
+          (detail
+            ? '<div class="xv-state-detail' + (isError ? ' error' : '') + '">' +
+              (isError ? escHtml(detail) : detail) +
+              '</div>'
+            : '');
+        stateEl.classList.remove('hidden');
+        canvasEl.classList.add('hidden');
+      }
+
+      function showRenderPendingState() {
+        if (canvasEl.classList.contains('hidden')) showState('⏳', '렌더링 중…', null, false);
+      }
+
+      function buildCanvasRenderHtml(html, diagnostics) {
+        return '<div id="al-root" class="xa-al-app-host">' + html + '</div>' + renderParseDiagnostics(diagnostics);
+      }
+
+      function replaceCanvasRenderLayer(nextLayer) {
+        [].slice.call(canvasEl.querySelectorAll('[data-xv-canvas-layer="pending"]')).forEach((layer) => {
+          layer.remove();
+        });
+
+        var activeLayers = [].slice.call(canvasEl.querySelectorAll('[data-xv-canvas-layer="active"]'));
+        nextLayer.className = 'xv-canvas-layer';
+        nextLayer.setAttribute('data-xv-canvas-layer', activeLayers.length ? 'pending' : 'active');
+        nextLayer.setAttribute('aria-hidden', activeLayers.length ? 'true' : 'false');
+        canvasEl.appendChild(nextLayer);
+        canvasEl.classList.remove('hidden');
+        stateEl.classList.add('hidden');
+
+        var activateLayer = () => {
+          if (!nextLayer.isConnected) return;
+          nextLayer.setAttribute('data-xv-canvas-layer', 'active');
+          nextLayer.removeAttribute('aria-hidden');
+          activeLayers.forEach((layer) => { layer.remove(); });
+          var screenEl = document.getElementById('xv-device-screen');
+          if (screenEl) screenEl.scrollTop = 0;
+          runPostRender(nextLayer);
+        };
+
+        if (activeLayers.length) requestAnimationFrame(activateLayer);
+        else activateLayer();
+      }
+
+      function showCanvas(html, diagnostics) {
+        var nextLayer = document.createElement('div');
+        nextLayer.innerHTML = buildCanvasRenderHtml(html, diagnostics);
+        replaceCanvasRenderLayer(nextLayer);
+      }
+
+      function renderParseDiagnostics(diagnostics) {
+        if (!diagnostics || !diagnostics.length) return '';
+        var items = diagnostics.map((item) => {
+          var message = String(item && item.message ? item.message : 'Unknown SKETCH parse warning')
+            .replace(/^XCON\/SKETCH parse error at line \d+:\s*/, '');
+          var source = item && item.source ? ' <code>' + escHtml(item.source) + '</code>' : '';
+          return '<li><strong>line ' + escHtml(item.line || '?') + '</strong>: ' + escHtml(message) + source + '</li>';
+        }).join('');
+        return '<details class="xv-parse-diagnostics" open>' +
+          '<summary>' + diagnostics.length + ' SKETCH parse warning' + (diagnostics.length === 1 ? '' : 's') + '</summary>' +
+          '<ul>' + items + '</ul>' +
+          '</details>';
+      }
+
+      /* ═══════════════════════════════════════════════════════════════
+         후처리(Post-Render) — 배너 / QR·바코드 / 캐러셀 / 텍스트 필드
+         showcase의 requestAnimationFrame 콜백 구조를 그대로 따름
+      ═══════════════════════════════════════════════════════════════ */
+
+      /** innerHTML에 삽입된 <script> 태그를 재실행한다.
+       *  (innerHTML 파싱 시 <script>는 실행되지 않으므로 바코드 초기화 등에 필요) */
+      function rerunInlineScripts(root) {
+        var scripts = root.querySelectorAll('script');
+        for (var i = 0; i < scripts.length; i++) {
+          var s = scripts[i];
+          if (s.getAttribute('data-xa-rerun')) continue;
+          s.setAttribute('data-xa-rerun', '1');
+          var ns = document.createElement('script');
+          ns.setAttribute('data-xa-rerun', '1');
+          if (s.src) {
+            ns.src = s.src;
+          } else {
+            ns.textContent = s.textContent;
+          }
+          document.body.appendChild(ns);
+        }
+      }
+
+      /** 캐러셀 컴포넌트 초기화 — 렌더된 모든 carousel을 순회 */
+      function initViewerCarousels(root) {
+        if (typeof window.initCarouselInstance !== 'function') return;
+        var nodes = root.querySelectorAll('[data-component="carousel"][data-key]');
+        for (var i = 0; i < nodes.length; i++) {
+          var key = nodes[i].getAttribute('data-key');
+          if (key) {
+            try { window.initCarouselInstance(key); } catch (e) {}
+          }
+        }
+      }
+
+      /** 텍스트 필드 추가 기능 — OTP, 별점, 비밀번호 토글 등
+       *  showcase의 initAlTextFieldExtras를 canvas 루트 기준으로 재구현 */
+      function initViewerTextFieldExtras(root) {
+        /* 비밀번호 표시/숨기기 토글 (onclick="xaAlTogglePasswordVisibility(this)") */
+        window.xaAlTogglePasswordVisibility = (btn) => {
+          var wrap = btn.closest('.xa-al-tf-addon-wrap');
+          var inp  = wrap && wrap.querySelector('input');
+          if (!inp) return;
+          inp.type = inp.type === 'password' ? 'text' : 'password';
+        };
+
+        /* OTP 입력 그룹 — 자동 포커스 이동 */
+        var otpInputs = [].slice.call(
+          root.querySelectorAll('input.xa-al-tf--otp[data-xa-otp-index]')
+        );
+        var groups = {};
+        otpInputs.forEach((inp) => {
+          var g = inp.getAttribute('data-xa-otp-group') || 'default';
+          if (!groups[g]) groups[g] = [];
+          groups[g].push(inp);
+        });
+        Object.keys(groups).forEach((gk) => {
+          var inputs = groups[gk].sort((a, b) => (+a.getAttribute('data-xa-otp-index')) - (+b.getAttribute('data-xa-otp-index')));
+          inputs.forEach((inp, i) => {
+            inp.addEventListener('input', function () {
+              var v = (this.value || '').replace(/\D/g, '').slice(0, 1);
+              this.value = v;
+              if (v && inputs[i + 1]) inputs[i + 1].focus();
+            });
+            inp.addEventListener('keydown', function (e) {
+              if (e.key === 'Backspace' && !this.value && inputs[i - 1]) inputs[i - 1].focus();
+            });
+          });
+        });
+
+        /* 별점(Star Rating) 인터랙션 */
+        var ratingWraps = [].slice.call(root.querySelectorAll('.xa-al-rb-rating-wrap'));
+        ratingWraps.forEach((wrap) => {
+          if (wrap.getAttribute('data-xa-rating-bound') === '1') return;
+          wrap.setAttribute('data-xa-rating-bound', '1');
+          var row   = wrap.querySelector('.xa-al-rb-rating-row');
+          var cap   = wrap.querySelector('.xa-al-rb-rating-cap');
+          if (!row) return;
+          var stars   = [].slice.call(row.querySelectorAll('.xa-al-rb-star'));
+          if (!stars.length) return;
+          var current = parseInt(row.getAttribute('data-xa-rating-value') || '4', 10);
+          if (isNaN(current)) current = 4;
+          function applyRating(v) {
+            stars.forEach((s) => {
+              s.classList.toggle('on', (+s.getAttribute('data-v')) <= v);
+            });
+            if (cap) cap.textContent = v.toFixed(1) + ' out of 5 stars';
+          }
+          stars.forEach((s) => {
+            s.addEventListener('mouseenter', () => { applyRating(+s.getAttribute('data-v')); });
+            s.addEventListener('click', () => {
+              current = +s.getAttribute('data-v');
+              row.setAttribute('data-xa-rating-value', String(current));
+              applyRating(current);
+            });
+          });
+          wrap.addEventListener('mouseleave', () => { applyRating(current); });
+          applyRating(current);
+        });
+
+        /* 비디오 썸네일 스트립 — 클릭 시 active 클래스 토글 */
+        if (!root.getAttribute('data-xa-vv-strip-bound')) {
+          root.setAttribute('data-xa-vv-strip-bound', '1');
+          root.addEventListener('click', (e) => {
+            var item = e.target && e.target.closest && e.target.closest('.video-thumb-strip .vt-item');
+            if (!item || !root.contains(item)) return;
+            var strip = item.closest('.video-thumb-strip');
+            if (!strip) return;
+            [].slice.call(strip.querySelectorAll('.vt-item')).forEach((el) => {
+              el.classList.remove('active');
+            });
+            item.classList.add('active');
+          });
+        }
+      }
+
+      /** 렌더 후 일괄 후처리 실행 */
+      function runPostRender(renderRoot) {
+        var rootEl = renderRoot || canvasEl;
+        requestAnimationFrame(() => {
+          /* 1. 배너 트랙 동기화 (XaBanner) */
+          if (typeof window.initializeBanners === 'function') {
+            try { window.initializeBanners(); } catch (e) {}
+          }
+
+          /* 2. innerHTML에 삽입된 <script> 재실행 — 바코드(generateBarcode) 등 */
+          rerunInlineScripts(rootEl);
+
+          /* 3. QR 코드 — data-qr-opts 속성 처리 (initQrCodeElements는 전역 함수) */
+          if (typeof initQrCodeElements === 'function') {
+            try { initQrCodeElements(rootEl); } catch (e) {}
+          }
+
+          /* 4. 캐러셀 초기화 */
+          initViewerCarousels(rootEl);
+
+          /* 5. 텍스트 필드 추가 기능 (OTP, 별점, 비밀번호 토글 등) */
+          initViewerTextFieldExtras(rootEl);
+        });
+      }
+
+      function escHtml(s) {
+        return String(s)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+      }
+
+      function parseViewerXcon(content, format) {
+        parseViewerXcon.lastDiagnostics = [];
+        var text = String(content || '');
+        var trimmed = text.trim();
+        var fmt = String(format || 'auto').toLowerCase();
+
+        if (fmt === 'xcon' || fmt === 'auto') {
+          if (/^[{[]/.test(trimmed)) fmt = 'json';
+          else if (/^</.test(trimmed)) fmt = 'xml';
+          else fmt = 'tagless';
+        }
+
+        if (fmt === 'json') return XCON.fromJSON(text);
+        if (fmt === 'xml') return XCON.fromXml(text);
+        if (fmt === 'tagless') {
+          if (XCON && typeof XCON.fromTagless === 'function') return XCON.fromTagless(text);
+          if (XCON && typeof XCON.deserialize === 'function') return XCON.deserialize(text);
+          throw new Error('TAGLESS 파서를 찾을 수 없습니다.');
+        }
+        if (fmt === 'sketch') {
+          if (XCON && typeof XCON.fromSketchLenient === 'function') {
+            var lenientResult = XCON.fromSketchLenient(text);
+            parseViewerXcon.lastDiagnostics = lenientResult && lenientResult.errors ? lenientResult.errors : [];
+            return lenientResult && lenientResult.document;
+          }
+          if (XCON && typeof XCON.fromSketch === 'function') return XCON.fromSketch(text);
+          if (XCON && typeof XCON.deserialize === 'function') return XCON.deserialize(text);
+          throw new Error('SKETCH 파서를 찾을 수 없습니다.');
+        }
+        throw new Error('지원하지 않는 XCON 형식입니다: ' + fmt);
+      }
+
+      /* ── 어댑터 준비 대기 후 렌더 ── */
+      var _pendingRender = null;
+
+      function waitAdapterThenRender(data) {
+        if (!window.ComponentFactory ||
+            !window.XamongComponentAdapter ||
+            !window.XamongUIComponentsAL ||
+            typeof window.XamongUIComponentsAL.renderComponent !== 'function') {
+          setTimeout(() => { waitAdapterThenRender(data); }, 30);
+          return;
+        }
+        setTimeout(() => { doRender(data); }, 50);
+      }
+
+      /* ── Showcase 방식과 동일한 서비스 컨텍스트 초기화 ──
+         XamongServices 없이 renderComponent 하면 체인 파서(parseChainWithSender)
+         내부에서 null 참조 에러가 발생한다. ── */
+      function initAppHost(appName) {
+        if (!window.XamongServices || !window.XamongServices.ServiceHelper) return;
+        try {
+          var ph = window.XamongServices.ServiceHelper.createPlayerHost(appName);
+          var sm = window.XamongServices.ServiceHelper.createServiceWithHost(ph);
+          var appService = sm && sm.getService ? sm.getService('ApplicationService') : null;
+          window.CURRENT_APP_NAME = appName;
+          window.appHost = {
+            appName: appName,
+            playerHost: ph,
+            serviceManager: sm,
+            appService: appService,
+            getCurrentOwner: () => window.currentXaForm || null
+          };
+          if (appService && typeof appService.attach === 'function') {
+            try { appService.attach(window.appHost); } catch (e) { /* ignore */ }
+          }
+        } catch (e) { /* XamongServices 초기화 실패 시 무시 — 부분 렌더 시도 */ }
+      }
+
+      function doRender(data) {
+        try {
+          var content = data.content || '';
+          var format  = data.format  || 'auto';
+          var theme   = data.theme   || 'dark';
+
+          /* 테마: 저장된 사용자 설정 우선, 없으면 부모 앱 테마 사용 */
+          var savedTheme = null;
+          try { savedTheme = localStorage.getItem(THEME_KEY); } catch(e) {}
+          applyTheme(savedTheme || theme);
+
+          if (!content.trim()) {
+            showState('📄', '내용이 없습니다', '편집 패널에 XCON JSON 또는 XML 내용을 입력하세요.', false);
+            return;
+          }
+
+          var tree = null;
+          var parseError = null;
+          var parseDiagnostics = [];
+
+          try {
+            tree = parseViewerXcon(content, format);
+            parseDiagnostics = parseViewerXcon.lastDiagnostics || [];
+            if (!tree) throw new Error('파서가 null을 반환했습니다. XCON 형식을 확인하세요.');
+          } catch (e) {
+            parseError = String(format || 'auto').toUpperCase() + ' 파싱 오류: ' + (e && e.message ? e.message : String(e));
+          }
+
+          if (parseError || !tree) {
+            showState('⚠', 'XCON 파싱 실패', parseError || '파싱 결과가 없습니다.', true);
+            return;
+          }
+
+          if (window.XamongPublicProps && typeof window.XamongPublicProps.migrateXCON === 'function') {
+            tree = window.XamongPublicProps.migrateXCON(tree);
+          }
+
+          if (typeof window.registerShowcaseCustomComponents === 'function') {
+            try { window.registerShowcaseCustomComponents(); } catch (e) {}
+          }
+
+          /* ── 렌더러 확인 ── */
+          if (!window.XamongUIComponentsAL) {
+            showState('⚠', '렌더러 로드 실패', 'XamongUIComponentsAL을 찾을 수 없습니다.', true);
+            return;
+          }
+
+          /* ── 앱 이름 추출 (tree.get('title') 또는 기본값) ── */
+          var appName = 'XconViewer';
+          try {
+            if (tree && typeof tree.get === 'function') {
+              var titleVal = tree.get('title');
+              if (titleVal && typeof titleVal === 'string') appName = titleVal;
+            }
+          } catch (e) { /* ignore */ }
+
+          /* ── 서비스 컨텍스트 초기화 (체인 파서가 이 컨텍스트를 필요로 함) ── */
+          initAppHost(appName);
+
+          /* ── 렌더링 ── */
+          var html = window.XamongUIComponentsAL.renderComponent(tree, 'root', null);
+          showCanvas(html, parseDiagnostics);
+
+        } catch (err) {
+          showState('⚠', '렌더링 오류', err ? (err.message || String(err)) : '알 수 없는 오류', true);
+        }
+      }
+
+      /* ═══════════════════════════════════════════════════════════════
+         테마 & 액센트 시스템 (showcase initThemeAndAccentUi 동일 방식)
+      ═══════════════════════════════════════════════════════════════ */
+      var THEME_KEY  = 'xcon-viewer-theme';
+      var ACCENT_KEY = 'xcon-viewer-accent';
+      var root = document.documentElement;
+
+      function hexToRgb(hex) {
+        var m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(String(hex).trim());
+        return m ? { r: parseInt(m[1],16), g: parseInt(m[2],16), b: parseInt(m[3],16) } : null;
+      }
+      function rgbToHex(r,g,b) {
+        return '#' + [r,g,b].map((x)=> Math.max(0,Math.min(255,Math.round(x))).toString(16).padStart(2,'0')).join('');
+      }
+      function rgbToHsl(r,g,b) {
+        r/=255; g/=255; b/=255;
+        var max=Math.max(r,g,b), min=Math.min(r,g,b), d=max-min, h=0, l=(max+min)/2, s;
+        if(d<1e-6) s=0;
+        else {
+          s = l>0.5 ? d/(2-max-min) : d/(max+min);
+          switch(max){ case r: h=((g-b)/d+(g<b?6:0)); break; case g: h=(b-r)/d+2; break; default: h=(r-g)/d+4; }
+          h/=6;
+        }
+        return {h:h*360, s:s, l:l};
+      }
+      function hslToRgb(h,s,l) {
+        h=(((h%360)+360)%360)/360;
+        if(s<=0) return {r:Math.round(l*255), g:Math.round(l*255), b:Math.round(l*255)};
+        var q=l<0.5?l*(1+s):l+s-l*s, p=2*l-q;
+        var h2r=(p,q,t)=> { if(t<0)t+=1; if(t>1)t-=1; if(t<1/6)return p+(q-p)*6*t; if(t<0.5)return q; if(t<2/3)return p+(q-p)*(2/3-t)*6; return p; };
+        return {r:Math.round(h2r(p,q,h+1/3)*255), g:Math.round(h2r(p,q,h)*255), b:Math.round(h2r(p,q,h-1/3)*255)};
+      }
+      function normalizeHex(hex) { var rgb=hexToRgb(hex); return rgb ? rgbToHex(rgb.r,rgb.g,rgb.b) : null; }
+      function getDefaultAccentHex() { return root.getAttribute('data-theme')==='dark' ? '#7C6AF7' : '#C4622D'; }
+
+      function syncAccentInputs(hex) {
+        var picker = document.getElementById('xvAccentPicker');
+        var input  = document.getElementById('xvAccentHex');
+        if (picker) picker.value = hex;
+        if (input && document.activeElement !== input) input.value = hex;
+      }
+
+      function applyCustomAccent(hex) {
+        var norm = normalizeHex(hex);
+        var rgb  = hexToRgb(norm);
+        if (!rgb || !norm) return false;
+        var isDark = root.getAttribute('data-theme') === 'dark';
+        var hsl = rgbToHsl(rgb.r,rgb.g,rgb.b);
+        var h=hsl.h, s=hsl.s, l=hsl.l;
+
+        root.style.setProperty('--accent', norm);
+        root.style.setProperty('--accent-rgb', rgb.r+', '+rgb.g+', '+rgb.b);
+
+        var hoverL = isDark ? Math.max(0.12,l-0.07) : Math.max(0.08,l-0.12);
+        var hov = hslToRgb(h,s,hoverL);
+        root.style.setProperty('--accent-hover', rgbToHex(hov.r,hov.g,hov.b));
+
+        var secL = isDark ? Math.min(0.92,l+0.1) : Math.max(0.06,l-0.15);
+        var sec  = hslToRgb(h,Math.min(1,s*0.96),secL);
+        root.style.setProperty('--accent-2', rgbToHex(sec.r,sec.g,sec.b));
+
+        if (!isDark) {
+          var lt = hslToRgb(h,Math.max(0.03,s*0.42),Math.min(0.94,l+0.35));
+          root.style.setProperty('--accent-lt', rgbToHex(lt.r,lt.g,lt.b));
+          var dk = hslToRgb(h,s,Math.max(0.08,l-0.13));
+          root.style.setProperty('--accent-dk', rgbToHex(dk.r,dk.g,dk.b));
+        } else {
+          root.style.setProperty('--accent-lt','rgba('+rgb.r+','+rgb.g+','+rgb.b+',0.22)');
+          var dk2 = hslToRgb(h,Math.min(1,s*0.78),Math.min(0.9,l+0.18));
+          root.style.setProperty('--accent-dk', rgbToHex(dk2.r,dk2.g,dk2.b));
+        }
+        var gL  = isDark ? Math.min(0.88,l+0.08) : Math.min(0.65,l+0.1);
+        var gCol= hslToRgb(h,Math.min(1,s*0.88),gL);
+        root.style.setProperty('--accent-gradient-end', rgbToHex(gCol.r,gCol.g,gCol.b));
+
+        try { localStorage.setItem(ACCENT_KEY, norm); } catch(e) {}
+        syncAccentInputs(norm);
+        return true;
+      }
+
+      function clearCustomAccent() {
+        ['--accent','--accent-rgb','--accent-hover','--accent-2','--accent-lt','--accent-dk','--accent-gradient-end'].forEach((p)=> { root.style.removeProperty(p); });
+        try { localStorage.removeItem(ACCENT_KEY); } catch(e) {}
+        syncAccentInputs(getDefaultAccentHex());
+      }
+
+      function refreshAccentForTheme() {
+        var saved = null;
+        try { saved = localStorage.getItem(ACCENT_KEY); } catch(e) {}
+        if (saved && normalizeHex(saved)) applyCustomAccent(saved);
+        else clearCustomAccent();
+      }
+
+      function applyTheme(theme) {
+        var t = theme === 'dark' ? 'dark' : 'light';
+        root.setAttribute('data-theme', t);
+        try { localStorage.setItem(THEME_KEY, t); } catch(e) {}
+        try { localStorage.setItem('xamong-al-theme', t); } catch(e) {}
+        document.querySelectorAll('.xv-tb-btn[data-theme]').forEach((btn) => {
+          var on = btn.getAttribute('data-theme') === t;
+          btn.classList.toggle('active', on);
+          btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
+        refreshAccentForTheme();
+      }
+
+      function initThemeBar() {
+        document.querySelectorAll('.xv-tb-btn[data-theme]').forEach((btn) => {
+          btn.addEventListener('click', ()=> { applyTheme(btn.getAttribute('data-theme')); });
+        });
+
+        var picker   = document.getElementById('xvAccentPicker');
+        var hexInput = document.getElementById('xvAccentHex');
+        var resetBtn = document.getElementById('xvAccentReset');
+
+        if (picker) {
+          picker.addEventListener('input',  ()=> { applyCustomAccent(picker.value); });
+          picker.addEventListener('change', ()=> { applyCustomAccent(picker.value); });
+        }
+        if (hexInput) {
+          hexInput.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            var raw = hexInput.value.trim();
+            var withHash = raw.startsWith('#') ? raw : '#' + raw;
+            if (normalizeHex(withHash) && applyCustomAccent(withHash)) hexInput.blur();
+            else hexInput.style.borderColor = 'var(--red, #C03A2B)';
+          });
+          hexInput.addEventListener('input', ()=> { hexInput.style.borderColor = ''; });
+          hexInput.addEventListener('blur', () => {
+            var raw = hexInput.value.trim();
+            if (!raw) { syncAccentInputs(picker ? picker.value : getDefaultAccentHex()); return; }
+            var withHash = raw.startsWith('#') ? raw : '#' + raw;
+            if (!applyCustomAccent(withHash)) hexInput.value = picker ? picker.value : getDefaultAccentHex();
+          });
+        }
+        if (resetBtn) resetBtn.addEventListener('click', ()=> { clearCustomAccent(); });
+        document.querySelectorAll('.xv-preset-dot').forEach((dot) => {
+          dot.addEventListener('click', ()=> {
+            var h = dot.getAttribute('data-hex');
+            if (h) applyCustomAccent(h);
+          });
+        });
+
+        /* 저장된 테마 또는 기본값 적용 */
+        var savedTheme = null;
+        try { savedTheme = localStorage.getItem(THEME_KEY); } catch(e) {}
+        applyTheme(savedTheme || 'light');
+      }
+
+      /* ═══════════════════════════════════════════════════════════════
+         디바이스 선택 시스템 — desktop / tablet / phone
+      ═══════════════════════════════════════════════════════════════ */
+      var DEVICE_KEY = 'xcon-viewer-device';
+
+      function applyDevice(device) {
+        var d = (device === 'tablet' || device === 'phone') ? device : 'desktop';
+        root.setAttribute('data-device', d);
+        try { localStorage.setItem(DEVICE_KEY, d); } catch (e) {}
+        document.querySelectorAll('.xv-device-btn').forEach((btn) => {
+          var on = btn.getAttribute('data-device') === d;
+          btn.classList.toggle('active', on);
+          btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
+      }
+
+      function initDeviceBar() {
+        document.querySelectorAll('.xv-device-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            applyDevice(btn.getAttribute('data-device'));
+          });
+        });
+        var saved = null;
+        try { saved = localStorage.getItem(DEVICE_KEY); } catch (e) {}
+        applyDevice(saved || 'desktop');
+      }
+
+      /* ── 외부 API: XconViewerPane에서 executeJavaScript로 호출 ── */
+      window.__xconViewerRender = (data) => {
+        showRenderPendingState();
+        waitAdapterThenRender(data);
+      };
+
+      /* 부모 앱의 테마 변경을 뷰어에 전달 (버튼 상태도 함께 동기화) */
+      window.__xconViewerSetTheme = (theme) => {
+        applyTheme(theme);
+      };
+
+      /* ── 초기 준비 완료 신호 ── */
+      function onReady() {
+        initThemeBar();
+        initDeviceBar();
+        showState('⬡', 'XCON 뷰어 준비됨', '파일을 열면 렌더링이 시작됩니다.', false);
+        try { window.parent.postMessage({ type: 'xcon-viewer-ready' }, '*'); } catch (e) {}
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', onReady);
+      } else {
+        onReady();
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "id": "sample.hello-world",
+  "name": "Extension Status Console",
+  "version": "1.0.0",
+  "publisher": "Xamong9",
+  "description": "Opens a production-ready extension panel that demonstrates command registration, scoped metadata, and dock placement.",
+  "source": "public",
+  "permissions": ["commands", "panels.open"],
+  "main": "main.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "sample.hello-world.openPanel",
+        "title": "Open Extension Status Console",
+        "category": "Extensions",
+        "icon": "S"
+      }
+    ],
+    "menus": {
+      "tools": ["sample.hello-world.openPanel"],
+      "commandPalette": ["sample.hello-world.openPanel"]
+    }
+  }
+}

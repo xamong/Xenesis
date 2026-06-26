@@ -1,0 +1,84 @@
+{
+  "id": "xenesis-desk.workflow-runner",
+  "name": "XCON Workflow Runner",
+  "version": "0.1.0",
+  "publisher": "Xamong9",
+  "description": "XCON Workflow Runner, Demo Lab, and Gowoori — AI-to-UI pipeline that turns LLM output into live rendered dashboards.",
+  "source": "internal",
+  "permissions": ["commands", "tools.open"],
+  "main": "main.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "xenesis-desk.workflow-runner.open",
+        "title": "Workflow Runner",
+        "category": "XCON",
+        "icon": "workflow"
+      },
+      {
+        "command": "xenesis-desk.workflow-runner.openDemoLabPlayer",
+        "title": "Demo Lab Player",
+        "category": "XCON",
+        "icon": "play"
+      },
+      {
+        "command": "xenesis-desk.workflow-runner.openDemoLabMaker",
+        "title": "Demo Lab Maker",
+        "category": "XCON",
+        "icon": "edit"
+      },
+      {
+        "command": "xenesis-desk.workflow-runner.openGowoori",
+        "title": "Gowoori / 거울이",
+        "category": "XCON",
+        "icon": "mirror"
+      },
+      {
+        "command": "xenesis-desk.workflow-runner.openGowooriChat",
+        "title": "GowooriChat",
+        "category": "XCON",
+        "icon": "message-square"
+      },
+      {
+        "command": "xenesis-desk.workflow-runner.openAlertRules",
+        "title": "Alert Rules",
+        "category": "XCON",
+        "icon": "zap"
+      },
+      {
+        "command": "xenesis-desk.workflow-runner.openTemplateCatalog",
+        "title": "Template Catalog",
+        "category": "XCON",
+        "icon": "layout"
+      },
+      {
+        "command": "xenesis-desk.workflow-runner.openArtifactVersions",
+        "title": "Artifact Versions",
+        "category": "XCON",
+        "icon": "git-branch"
+      }
+    ],
+    "menus": {
+      "tools": [
+        "xenesis-desk.workflow-runner.open",
+        "xenesis-desk.workflow-runner.openDemoLabPlayer",
+        "xenesis-desk.workflow-runner.openDemoLabMaker",
+        "xenesis-desk.workflow-runner.openGowoori",
+        "xenesis-desk.workflow-runner.openGowooriChat",
+        "xenesis-desk.workflow-runner.openAlertRules",
+        "xenesis-desk.workflow-runner.openTemplateCatalog",
+        "xenesis-desk.workflow-runner.openArtifactVersions"
+      ],
+      "commandPalette": [
+        "xenesis-desk.workflow-runner.open",
+        "xenesis-desk.workflow-runner.openDemoLabPlayer",
+        "xenesis-desk.workflow-runner.openDemoLabMaker",
+        "xenesis-desk.workflow-runner.openGowoori",
+        "xenesis-desk.workflow-runner.openGowooriChat",
+        "xenesis-desk.workflow-runner.openAlertRules",
+        "xenesis-desk.workflow-runner.openTemplateCatalog",
+        "xenesis-desk.workflow-runner.openArtifactVersions"
+      ]
+    }
+  }
+}

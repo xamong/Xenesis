@@ -1,0 +1,24 @@
+{
+  "id": "sample.file-helper",
+  "name": "Workspace Scratchpad",
+  "version": "1.0.0",
+  "publisher": "Xamong9",
+  "description": "Opens a durable extension-local scratchpad that demonstrates read/write text file APIs.",
+  "source": "public",
+  "permissions": ["commands", "files.read", "files.write", "panels.open"],
+  "main": "main.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "sample.file-helper.openScratch",
+        "title": "Open Workspace Scratchpad",
+        "category": "Extensions",
+        "icon": "F"
+      }
+    ],
+    "menus": {
+      "tools": ["sample.file-helper.openScratch"],
+      "commandPalette": ["sample.file-helper.openScratch"]
+    }
+  }
+}
