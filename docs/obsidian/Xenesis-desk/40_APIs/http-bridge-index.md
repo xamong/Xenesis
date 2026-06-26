@@ -21,6 +21,13 @@ touches:
 
 Indexes HTTP bridge surfaces that external tools use to reach Desk behavior.
 
+## Role In Final Goal
+
+HTTP bridge routes are external or semi-external control surfaces. Product
+behavior routes should map to CR paths, while registry transport routes such as
+`/capabilities/list`, `/capabilities/describe`, and `/capabilities/call` are the
+registry access mechanism itself.
+
 ## Graph Links
 
 - Depends on [[module-mcp-bridge]]

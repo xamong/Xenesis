@@ -21,6 +21,12 @@ touches:
 
 Indexes Electron main/preload IPC boundaries relevant to Desk control.
 
+## Role In Final Goal
+
+IPC is the renderer/main-process transport layer for Desk behavior. IPC methods
+that trigger product behavior should be covered by CR mappings so UI shortcuts
+and agents converge on the same control plane.
+
 ## Graph Links
 
 - Depends on [[module-capability-registry]]
