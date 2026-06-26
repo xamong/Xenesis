@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   callDeskBridgeCapability,
+  type DeskBridgeCapabilityAdapter,
   findDeskBridgeCapability,
   listDeskBridgeCapabilities,
-  type DeskBridgeCapabilityAdapter,
 } from './deskBridgeCapabilities';
 
 test('xenesis connection status capability is registered as a read path', () => {

@@ -52,8 +52,6 @@ import {
   type AppMenuGroupNode,
   type AppMenuNode,
 } from '../shared/appMenuModel';
-import { buildXenesisConnectionsStatus, type XenesisConnectionsStatus } from '../shared/xenesisConnections';
-import { createAppControlService } from './appControl/appControlService';
 import {
   callDeskBridgeCapability,
   DESK_BRIDGE_RENDERER_COMMAND_CAPABILITY_COVERAGE,
@@ -63,7 +61,6 @@ import {
   listDeskBridgeCapabilities,
 } from '../shared/deskBridgeCapabilities';
 import { normalizeExternalAppSettings } from '../shared/externalAppControl';
-import { buildMcpTerminalSessionList } from './mcpTerminalSessionList';
 import {
   canUseXenisPhase5XamongCodeCommand,
   isXenisPhase5Visible,
@@ -270,6 +267,8 @@ import type {
   XenesisTaskStatus,
   XenesisTaskSummary,
 } from '../shared/types';
+import { buildXenesisConnectionsStatus, type XenesisConnectionsStatus } from '../shared/xenesisConnections';
+import { createAppControlService } from './appControl/appControlService';
 import { createAgentControlLockManager } from './agentControlLock';
 import { createAuditLogger } from './audit/auditLogger';
 import { AutomationController } from './automation/automationController';
@@ -307,6 +306,7 @@ import {
 } from './mcpBotSessions.mjs';
 import { normalizeBotBridgeEvent } from './mcpBridgeBot.mjs';
 import { normalizeBridgePathFields, normalizeBridgePathForPlatform } from './mcpBridgePaths.mjs';
+import { buildMcpTerminalSessionList } from './mcpTerminalSessionList';
 import { createMetaBridge } from './metaBridge';
 import {
   emitMainInstantOperation,

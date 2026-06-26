@@ -28,9 +28,7 @@ export function xenesisConnectionTone(status: XenesisConnectionStatus): XenesisC
   }
 }
 
-export function listXenesisConnectionSections(
-  status: XenesisConnectionsStatus | null,
-): XenesisConnectionSection[] {
+export function listXenesisConnectionSections(status: XenesisConnectionsStatus | null): XenesisConnectionSection[] {
   if (!status) return [];
   return [
     status.sections.provider,

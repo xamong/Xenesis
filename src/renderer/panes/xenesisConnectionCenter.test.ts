@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import type { XenesisConnectionsStatus } from '../../shared/types';
 import {
   listXenesisConnectionSections,
-  xenesisConnectionTone,
   XENESIS_CONNECTION_STATUS_ORDER,
+  xenesisConnectionTone,
 } from './xenesisConnectionCenter';
-import type { XenesisConnectionsStatus } from '../../shared/types';
 
 test('xenesisConnectionTone maps every status to a stable UI tone', () => {
   assert.deepEqual(XENESIS_CONNECTION_STATUS_ORDER, [

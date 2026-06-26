@@ -194,7 +194,8 @@ function mcpItem(mcp: McpSettingsStatus): XenesisConnectionItem {
     kind: 'mcp',
     label: 'Xenesis Desk MCP',
     status: mcp.available && mcp.bridgeUrl ? 'ready' : 'blocked',
-    summary: mcp.available && mcp.bridgeUrl ? `Bridge available at ${mcp.bridgeUrl}.` : 'MCP bridge status is not available.',
+    summary:
+      mcp.available && mcp.bridgeUrl ? `Bridge available at ${mcp.bridgeUrl}.` : 'MCP bridge status is not available.',
     settingsTarget: 'mcp',
     crActions: ['xd.mcp.settings.status'],
     warnings: mcp.available ? [] : ['Install or start the Xenesis Desk MCP bridge.'],
@@ -233,7 +234,9 @@ function gatewayItem(xenesis: XenesisStatus | null): XenesisConnectionItem {
     kind: 'gateway',
     label: 'Xenesis Gateway',
     status: xenesis.gateway.running ? 'ready' : xenesis.gateway.enabled ? 'needs-setup' : 'disabled',
-    summary: xenesis.gateway.running ? `Gateway is running at ${xenesis.gateway.url || xenesis.url}.` : 'Gateway is stopped.',
+    summary: xenesis.gateway.running
+      ? `Gateway is running at ${xenesis.gateway.url || xenesis.url}.`
+      : 'Gateway is stopped.',
     settingsTarget: 'xenesis-agent',
     crActions: [
       'xd.xenesis.gateway.status',
