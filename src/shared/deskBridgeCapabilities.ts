@@ -8955,9 +8955,29 @@ export async function callDeskBridgeCapability(
       if (path === 'xd.app.status') {
         return callAdapter(path, api?.status);
       }
-      if (path.startsWith('xd.apps.')) {
-        const action = path.slice('xd.apps.'.length);
-        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action });
+      if (path === 'xd.apps.status') {
+        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'status' });
+      }
+      if (path === 'xd.apps.find') {
+        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'find' });
+      }
+      if (path === 'xd.apps.launch') {
+        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'launch' });
+      }
+      if (path === 'xd.apps.focus') {
+        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'focus' });
+      }
+      if (path === 'xd.apps.resize') {
+        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'resize' });
+      }
+      if (path === 'xd.apps.typeText') {
+        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'typeText' });
+      }
+      if (path === 'xd.apps.hotkey') {
+        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'hotkey' });
+      }
+      if (path === 'xd.apps.close') {
+        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'close' });
       }
       if (path === 'xd.diagnostics.state') {
         return callAdapter(path, api?.status);
