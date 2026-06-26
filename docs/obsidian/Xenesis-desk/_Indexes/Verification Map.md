@@ -7,7 +7,7 @@ ai_edit_policy: direct_edit_allowed
 ai_generated: false
 reviewed: true
 confidence: high
-last_reviewed: 2026-06-26
+last_reviewed: 2026-06-27
 depends_on:
   - "[[Verification Gates]]"
   - "[[Final Goal]]"
@@ -25,22 +25,14 @@ approval change.
 
 | Area | Command |
 |---|---|
-| Root typecheck | 
-pm run typecheck |
-| Lint | 
-pm run lint |
-| CR audit | 
-pm run docs:capabilities:audit |
-| Xenesis tests | 
-pm --prefix packages/xenesis test |
-| Xenesis typecheck | 
-pm --prefix packages/xenesis run typecheck |
-| Xenesis build | 
-pm --prefix packages/xenesis run build |
-| Provider smoke | 
-pm --prefix packages/xenesis run provider:smoke |
-| Public release | 
-pm run check:public-release |
+| Root typecheck | `npm run typecheck` |
+| Lint | `npm run lint` |
+| CR audit | `npm run docs:capabilities:audit` |
+| Xenesis tests | `npm --prefix packages/xenesis test` |
+| Xenesis typecheck | `npm --prefix packages/xenesis run typecheck` |
+| Xenesis build | `npm --prefix packages/xenesis run build` |
+| Provider smoke | `npm --prefix packages/xenesis run provider:smoke` |
+| Public release | `npm run check:public-release` |
 | Live Agent pane | Electron app + natural-language Desk-control prompt |
 
 ## Graph Links

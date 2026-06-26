@@ -39,7 +39,7 @@ Create or expand individual path notes when a CR path meets one or more of
 these criteria:
 
 - Permission is `write`, `execute`, or `danger`.
-- Approval is `when-external`.
+- Approval is `when-external` or `always`.
 - The path can cross a workspace boundary.
 - The path writes, restores, deletes, opens externally, or reveals local files.
 - The path starts, writes to, stops, or kills a terminal or process.
