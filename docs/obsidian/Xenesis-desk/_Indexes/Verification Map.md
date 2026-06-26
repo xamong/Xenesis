@@ -10,13 +10,16 @@ confidence: high
 last_reviewed: 2026-06-26
 depends_on:
   - "[[Verification Gates]]"
+  - "[[Final Goal]]"
 ---
 
 # Verification Map
 
 ## Filter Intent
 
-Map graph areas to repo verification commands.
+Maps graph areas to the repo commands or live checks that prove them. This is
+the first stop for choosing verification after a CR, MCP, Agent, provider, or
+approval change.
 
 ## Commands
 
@@ -43,3 +46,4 @@ pm run check:public-release |
 ## Graph Links
 
 - Depends on [[Verification Gates]]
+- Depends on [[Final Goal]]
