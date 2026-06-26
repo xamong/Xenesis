@@ -1,35 +1,136 @@
-# Xenesis Desk
+<div align="center">
 
-[한국어](README.ko.md) | [Community](#community)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./.github/social-preview.png">
+  <img alt="Xenesis Desk — a desktop where AI agents can see, click, type, run terminals, and render live UI while they work" src="./.github/social-preview.png" width="840">
+</picture>
 
-Repository: <https://github.com/xamong/xenesis-desk>
+<h1>Xenesis Desk</h1>
 
-> A desktop where AI agents can see, click, type, run terminals, and render live UI while they work.
+<p><strong>A desktop where AI agents can see, click, type, run terminals, and render live UI while they work.</strong></p>
 
-Most agent products stop at chat. Xenesis Desk gives agents a workbench: a 5-zone desktop with terminals, files, viewers, panels, approvals, MCP tools, and live UI rendering. Claude, Codex, Gemini, Cursor, Copilot, Hermes, and other agents can all control the same Desk through one Capability Registry.
+<p><sub>ONE DESK, DRIVEN BY</sub></p>
+<p>
+  <b>Claude</b> &nbsp;·&nbsp; <b>Codex</b> &nbsp;·&nbsp; <b>Gemini</b> &nbsp;·&nbsp; <b>Cursor</b> &nbsp;·&nbsp; <b>Copilot</b> &nbsp;·&nbsp; <b>Hermes</b>
+</p>
 
-When an agent answers, it does not have to send only text. Through **Gowoori** and **XCON**, the answer can become a live chart, table, map, network diagram, dashboard, or workflow surface streamed directly inside the conversation.
+<p>
+  <a href="https://github.com/xamong/Xenesis"><b>🛰️ Repo</b></a> &nbsp;·&nbsp;
+  <a href="docs/manual/README.md"><b>📖 Manual</b></a> &nbsp;·&nbsp;
+  <a href="#-capability-registry"><b>🗂️ Capability Registry</b></a> &nbsp;·&nbsp;
+  <a href="https://github.com/xamong/Xenesis/discussions"><b>💬 Discussions</b></a> &nbsp;·&nbsp;
+  <a href="https://github.com/xamong/Xenesis/issues/new/choose"><b>🐛 Issues</b></a>
+</p>
 
-## What Makes It Different
+<p>🌐 <b>English</b> | <a href="README.ko.md">한국어</a></p>
 
-| Idea | What it means |
-|---|---|
-| Agent workbench | The agent gets terminals, files, panes, viewers, and app control instead of a plain prompt box. |
-| Shared control plane | MCP, provider skills, workflows, and the native Xenesis runtime call the same `xd.*` Capability Registry. |
-| UI as the answer | LLM output can render as live XCON/Gowoori UI, not just Markdown text or static screenshots. |
-| Remote CLI operations | Codex, Claude Code, and other terminal agents can be watched and controlled through gateway channels with safety gates. |
-| Data-bound workflows | XCON fixtures, chains, sketches, and workflow actions keep generated dashboards alive as data changes. |
+<p>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge"></a>
+  <a href="https://github.com/xamong/Xenesis/releases"><img alt="Status: early alpha" src="https://img.shields.io/badge/status-early%20alpha-orange?style=for-the-badge"></a>
+  <img alt="Platforms: Windows, macOS, Linux" src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-2ea44f?style=for-the-badge">
+</p>
 
-## What To Try First
+<p>
+  <img alt="Electron 41" src="https://img.shields.io/badge/Electron-41-47848F?logo=electron&logoColor=white">
+  <img alt="React 19" src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black">
+  <img alt="TypeScript 5.9" src="https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white">
+  <a href="#-capability-registry"><img alt="Capability Registry: 650+ nodes, 390+ methods" src="https://img.shields.io/badge/Capability%20Registry-650%2B%20nodes%20%C2%B7%20390%2B%20methods-8957e5"></a>
+  <a href="CONTRIBUTING.md"><img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg"></a>
+</p>
 
-1. Run the development app with `npm install` and `npm run dev`.
-2. Open `Settings > AI Provider` and install a local MCP/Skill profile for a CLI agent.
-3. Ask an agent to inspect Desk state through the MCP bridge or `/xd` skill.
-4. Generate a Gowoori/XCON dashboard from Markdown and watch it render as UI.
+</div>
 
-Status: **Early alpha**. Xenesis Desk is already useful for experimentation, demos, and integration work, but the public API, packaging shape, provider installers, and UI workflows are still moving. We are looking for active community participation: try it, break it, open issues, propose demos, improve docs, add provider integrations, and help shape the agent workbench model. **Pull requests are welcome**, especially small focused PRs with clear reproduction steps or release-check coverage.
+---
 
-The source tree intentionally includes the desktop shell, the embedded Xenesis sidecar runtime, MCP bridge assets, sample extensions, and curated provider integration assets.
+Most agent products stop at chat. **Xenesis Desk gives agents a workbench** — a 5-zone desktop with terminals, files, viewers, panels, approvals, MCP tools, and live UI rendering. Claude, Codex, Gemini, Cursor, Copilot, Hermes, and other agents all control the **same Desk** through one **Capability Registry**.
+
+When an agent answers, it doesn't have to send only text. Through **Gowoori** and **XCON**, the answer can become a live chart, table, map, network diagram, dashboard, or workflow surface — streamed directly inside the conversation as tokens arrive.
+
+## ✨ Features
+
+- **🖥️ Agent workbench, not a prompt box**
+  - Agents get terminals (`@xterm` + node-pty / ConPTY), a file workspace (CodeMirror 6), viewers, docking panes, and full app control across a 5-zone desktop.
+- **🔌 One shared control plane**
+  - MCP tools, provider skills, workflows, and the native runtime all call the same `xd.*` **Capability Registry** — 650+ nodes, 390+ methods. Claude, Codex, Gemini, Cursor, Copilot, and Hermes drive the *same* Desk.
+- **📊 UI as the answer**
+  - LLM output renders as live **XCON / Gowoori** UI — charts, tables, maps, network diagrams, dashboards — streaming as tokens arrive, not just Markdown text or static screenshots.
+- **📱 Remote CLI control with safety gates**
+  - Watch and steer Codex / Claude Code from your phone through a gateway with Telegram, Discord, and Slack channels and approval gates.
+- **🧩 Dashboards on demand**
+  - XCON fixtures, chains, sketches, and workflow actions keep generated dashboards alive and data-bound as the underlying data changes.
+
+## ⚔️ Xenesis Desk vs a plain chat agent
+
+| Capability | Plain chat agent | **Xenesis Desk** |
+|---|:---:|:---:|
+| Send text replies | ✅ | ✅ |
+| Run real terminals (PTY) | ❌ | **✅ `@xterm` + node-pty / ConPTY** |
+| Read & edit a file workspace | ⚠️ via tool | **✅ native CodeMirror panes** |
+| Click / type / drive the app UI | ❌ | **✅ full Desk control** |
+| Render the answer as live UI | ❌ text only | **✅ XCON / Gowoori charts, tables, maps, dashboards** |
+| One control plane for many agents | ❌ | **✅ shared `xd.*` Capability Registry** |
+| Operate a CLI agent from your phone | ❌ | **✅ gateway + Telegram / Discord / Slack + safety gates** |
+| First-class MCP tool bridge | ⚠️ varies | **✅ bundled MCP server + HTTP bridge** |
+| Data-bound dashboards that stay live | ❌ | **✅ XCON fixtures / chains / workflows** |
+
+> [!NOTE]
+> Xenesis Desk is **early alpha**. The workbench, Capability Registry, MCP bridge, and live UI rendering work today; the public API, packaging, and some provider installers are still moving.
+
+## 🧠 How it works
+
+Every agent — native, MCP, provider skill, or workflow — calls the **same** `xd.*` Capability Registry. That shared surface is why so many different agents can control one Desk.
+
+```mermaid
+flowchart LR
+  subgraph Agents
+    A1[Claude / Claude Code]
+    A2[Codex]
+    A3[Gemini]
+    A4[Cursor]
+    A5[Copilot]
+    A6[Hermes]
+  end
+  subgraph Bridges
+    M[MCP bridge]
+    S[Provider skills]
+    W[Workflows]
+    N[Native runtime]
+  end
+  G[["Gateway<br/>Telegram · Discord · Slack"]]
+
+  Agents --> Bridges
+  Bridges --> CR[("xd.* Capability Registry<br/>650+ nodes · 390+ methods")]
+  G --> CR
+  CR --> D{{Xenesis Desk}}
+  D --> Z1[Terminals]
+  D --> Z2[Files]
+  D --> Z3[Viewers]
+  D --> Z4[Agent panel]
+  D --> Z5[Approvals]
+```
+
+## 🚀 Quick start
+
+Xenesis Desk is an **early-alpha** desktop app. There is no published installer yet — run the development shell:
+
+```bash
+git clone https://github.com/xamong/Xenesis.git
+cd Xenesis
+npm install
+npm run dev        # launches the Electron desktop shell
+```
+
+The `dev` script handles `npm install`, internal SQLite server setup, native module rebuild, and `electron-vite` dev.
+
+Then, inside the app:
+
+1. Open **Settings › AI Provider** and install a local MCP/Skill profile for a CLI agent.
+2. Ask an agent to inspect Desk state through the **MCP bridge** or the `/xd` skill.
+3. Generate a **Gowoori / XCON** dashboard from Markdown and watch it render as live UI.
+4. Optionally enable a **gateway channel** (Telegram / Discord / Slack) to drive a CLI agent remotely.
+
+> [!WARNING]
+> Remote CLI control executes commands on your machine. Keep **approval gates** enabled when exposing a Desk over a gateway channel.
 
 ---
 
@@ -70,7 +171,116 @@ No pre-built dashboards. When a situation arises, the AI generates a dashboard t
 
 ---
 
-## Tech Stack
+<a id="capability-registry"></a>
+
+## 🗂️ Capability Registry
+
+Every controllable feature in Xenesis Desk is exposed through a stable tree path like `xd.terminals.run`, `xd.files.open`, or `xd.capture.pane`. The registry is the shared contract used by the MCP bridge, agent tools, workflow runner, approval UI, CLI shortcuts, and external agents.
+
+```ts
+// Describe a capability
+await deskBridge.describe('xd.terminals.run');
+
+// Call a capability
+await deskBridge.call('xd.terminals.run', {
+  command: 'npm test',
+  shell: 'powershell'
+}, { approved: true });
+
+// Query capabilities
+await deskBridge.query({ kind: 'method', permission: 'read' });
+```
+
+<details>
+<summary><b>Full <code>xd.*</code> top-level namespaces (click to expand)</b></summary>
+
+<br/>
+
+`xd.app` · `xd.workspace` · `xd.window` · `xd.dock` · `xd.terminals` · `xd.files` · `xd.fs` · `xd.remoteFiles` · `xd.extensions` · `xd.settings` · `xd.capture` · `xd.diagnostics` · `xd.mcp` · `xd.gowoori` · `xd.xenesis` · `xd.services` · `xd.automation` · `xd.artifacts` · `xd.playwright` · `xd.xcon` · `xd.audit` · `xd.control` · `xd.meta`
+
+Each namespace exposes describe/query/call methods with per-permission gating (`read`, `write`, `control`, `execute`, `danger`).
+
+</details>
+
+## 🤝 Agents & channels
+
+All providers and channels control the same Desk through the same Capability Registry.
+
+| Agent / channel | Type | Drives the Desk via |
+|---|---|---|
+| Claude / Claude Code | CLI + provider | MCP bridge · `/xd` skill |
+| Codex | CLI | gateway · MCP |
+| Gemini | provider | provider skill |
+| Cursor | editor agent | MCP |
+| GitHub Copilot | provider | provider skill |
+| Kimi · OpenCode · Pi · Qoder · Qwen · Devin | CLI | generated `/xd` skill files |
+| Hermes | bot / provider surface | Python plug-ins (`xenesis_desk_gateway` + `xenesis_desk_bot`) |
+| Telegram / Discord / Slack | remote channels | gateway + safety gates |
+
+Installed public builds do not ship the full `providers/` development tree. **Settings › AI Provider** installs only the curated runtime assets under `provider-assets/**`: the Hermes Plug-in pair and the shared Xenesis Desk MCP/Skill template for local CLI clients.
+
+## 🔌 MCP Integration
+
+The bundled MCP server exposes the Desk control tools to external AI agents:
+
+```json
+{
+  "mcpServers": {
+    "xenesis-desk": {
+      "command": "node",
+      "args": ["path/to/mcp/xenesis-desk-mcp-server.mjs"]
+    }
+  }
+}
+```
+
+Tools include `xenesis_desk_state`, `xenesis_desk_terminal_run`, `xenesis_desk_call_capability`, `xenesis_desk_playwright_snapshot`, `xenesis_desk_create_xcon_markdown`, and more. The server also exposes XCON generation prompts as MCP resources and prompt templates.
+
+## 📊 XCON Viewer Integration
+
+Any LLM provider can render UI in its chat by connecting `@xcon-viewer/core` and `@xcon-viewer/viewer`:
+
+```js
+import { parseBySyntax } from '@xcon-viewer/core';
+import { render, viewerCss } from '@xcon-viewer/viewer';
+```
+
+When the Markdown renderer encounters an `xcon-sketch` fence, render it as a live UI component instead of a code block. Streaming rendering is supported — the UI builds progressively as tokens arrive.
+
+## 📱 Terminal Automation
+
+The automation engine monitors terminal output streams and provides intelligent auto-response:
+
+- **Stream filters** for Codex, Claude Code, and Gemini strip internal progress lines and extract meaningful narrative.
+- **Safety layer** blocks dangerous patterns (`rm -rf`, `drop database`, credential access).
+- **LLM engine** auto-responds to safe prompts (y/n confirmations, option selection).
+- **Regex and state-machine engines** for rule-based automation.
+
+Combined with the Xenesis Gateway and channel adapters, this enables mobile-quality remote control of CLI agents. External channels only receive terminal stream data after a channel explicitly runs `/desk watch`; unfiltered stream mode is kept local/e2e-only to avoid noisy or unsafe outbound bot traffic.
+
+## ⚙️ Settings Surfaces
+
+Xenesis Desk separates native Desk agent settings from external provider settings:
+
+- **Settings › Xenesis Agent** — native Xenesis Agent runtime, managed gateway, external bot channels, and Gowoori agent tool settings.
+- **Settings › AI Provider** — Hermes Plug-in installer, Local CLI MCP and Skill installer, and BYOK provider profiles.
+
+## 🧱 Extensions
+
+Extensions use a two-layer architecture:
+
+- **Main process** — `plugin.json` manifest + `main.js` with `exports.activate(api)` for command registration.
+- **Renderer process** — `renderer.tsx` implementing `RendererExtensionContribution` for React panel UI.
+
+| Extension | Panels |
+|---|---|
+| `xenesis-desk.core-tools` | Xenesis Agent, Xenesis Bot, AI Workbench, Artifact Library, Terminal Inspector, Process Viewer, Remote Sync Planner, Safe File Edit Center, Run Task Panel, Capability Explorer, Hermes panels, Activity Timeline, Network Monitor, Audit Log, Agent Performance, XApp Preview |
+| `xenesis-desk.data-tools` | Meta Management, Query Analyzer, SQLite Server Settings |
+| `xenesis-desk.workflow-runner` | Workflow Runner, Demo Lab Player/Maker, Gowoori, GowooriChat, Alert Rules, Template Catalog, Artifact Versions |
+
+Sample extensions (`sample.*`) demonstrate the extension API for third-party developers.
+
+## 🧰 Tech Stack
 
 | Layer | Technology |
 |---|---|
@@ -80,14 +290,13 @@ No pre-built dashboards. When a situation arises, the AI generates a dashboard t
 | Code editor | CodeMirror 6 (react-codemirror) |
 | Grid | SpanGrid (Canvas-based high-performance grid) |
 | XCON rendering | @xcon-viewer/core + @xcon-viewer/viewer |
-| Agent runtime | Xenesis (packages/xenesis) — providers, tools, workflows, sessions, channels |
+| Agent runtime | Xenesis (`packages/xenesis`) — providers, tools, workflows, sessions, channels |
 | MCP | @modelcontextprotocol/sdk (stdio server + HTTP bridge) |
 | Internal server | Node.js + Express + better-sqlite3 |
 | Packaging | electron-builder 26 (NSIS + portable) |
 
----
-
-## Project Structure
+<details>
+<summary><b>📁 Project structure (click to expand)</b></summary>
 
 ```
 xenesis-desk/
@@ -137,7 +346,6 @@ xenesis-desk/
 │   │       └── evaluation/          Capability eval + feedback loop
 │   └── xenesis-agent-core/          Embedded runtime bridge for Desk
 ├── extensions/                      Sample extension manifests (plugin.json + main.js)
-│   └── sample.*/                    Sample extensions for developers
 ├── mcp/
 │   ├── xenesis-desk-mcp-server.mjs  MCP stdio server
 │   ├── xenesis-desk-file-safety.mjs Safe file write (preview/apply/restore)
@@ -151,9 +359,17 @@ xenesis-desk/
 └── scripts/                         Dev, build, release, and registry helper scripts
 ```
 
----
+</details>
 
-## Getting Started
+## 🛠️ Build
+
+```bash
+npm run build                  # typecheck + production build
+npm run pack:win               # Windows unpacked build
+npm run dist:win               # Windows installer (NSIS + portable)
+npm run dist:mac               # macOS build (dmg + zip)
+npm run check:public-release   # public source boundary check
+```
 
 ### Requirements
 
@@ -164,190 +380,67 @@ xenesis-desk/
 | npm | 10 or later |
 | C++ build tools | Required for `better-sqlite3` (Visual Studio Build Tools 2022 on Windows) |
 
-### Development
+## 🔒 Security
 
-```bash
-npm install
-npm run dev
-```
+- Renderer runs in sandbox (`nodeIntegration: false`, `contextIsolation: true`, `sandbox: true`).
+- All IPC goes through `contextBridge` with validated payloads.
+- Capability calls from external sources require approval for `control`, `write`, `execute`, and `danger` operations.
+- Terminal automation blocks dangerous commands before auto-input.
+- AI API keys and bot tokens are stored locally through the settings / Secret Vault flow or referenced by environment variable names; secret values are never written into profiles.
+- Content-Security-Policy: `script-src 'self'`.
 
-Or use the platform script that also starts the internal SQLite server:
+See [SECURITY.md](SECURITY.md) to report a vulnerability.
 
-```powershell
-# Windows
-npm run dev
+## 🗺️ Roadmap
 
-# The script handles npm install, server setup,
-# native module rebuild, and electron-vite dev.
-```
+- [x] 5-zone docking workbench with terminals, files, viewers, panels
+- [x] `xd.*` Capability Registry (650+ nodes, 390+ methods)
+- [x] Bundled MCP server + HTTP bridge
+- [x] Gowoori / XCON streaming UI rendering
+- [x] Provider skills for 11 CLI agents + Hermes plug-ins
+- [x] Gateway + Telegram / Discord / Slack channels with approval gates
+- [x] Embedded codex agent with reasoning-effort control
+- [ ] Published platform installers (Windows / macOS / Linux)
+- [ ] Expanded data-bound dashboard workflow library
+- [ ] Broader provider + channel coverage
+- [ ] Public API & packaging stabilization
 
-### Build
+## 📚 Documentation
 
-```bash
-npm run build                  # typecheck + production build
-npm run pack:win               # Windows unpacked build
-npm run dist:win               # Windows installer (NSIS + portable)
-npm run dist:mac               # macOS build (dmg + zip)
-npm run check:docs-public      # scan public docs for local paths and token patterns
-npm run check:public-release   # public source boundary check
-npm run check:public-release:ci
-```
+The full user manual lives in [`docs/manual/`](docs/manual/README.md):
 
----
-
-## Documentation Map
-
-| Topic | Document |
+| Chapter | Topic |
 |---|---|
-| Full user manual | [docs/user-manual.md](docs/user-manual.md) |
-| Public English manual | [docs/manual/README.md](docs/manual/README.md) |
-| MCP setup and tools | [docs/mcp-integration.md](docs/mcp-integration.md), [docs/mcp-capabilities.md](docs/mcp-capabilities.md) |
-| Capability Registry contract | [docs/capability-registry.md](docs/capability-registry.md), [docs/capability-registry-list.md](docs/capability-registry-list.md) |
-| Provider and bot integration | [docs/xenesis-bot-hermes-setup.md](docs/xenesis-bot-hermes-setup.md) |
-| Release and packaging | [docs/deployment-and-update.md](docs/deployment-and-update.md), [docs/release-build-and-github-release.md](docs/release-build-and-github-release.md), [docs/macos-install.md](docs/macos-install.md) |
+| [01 · Workbench & docking](docs/manual/01-workbench-docking.md) | The 5-zone desktop, panes, and layout |
+| [02 · Terminal command center](docs/manual/02-terminal-command-center.md) | Terminals, command store, automation |
+| [03 · Xenesis Agent](docs/manual/03-xenesis-agent.md) | The native agent runtime |
+| [04 · Gowoori & artifacts](docs/manual/04-gowoori-artifacts.md) | AI-to-UI rendering and XCON artifacts |
+| [05 · CR, MCP, gateway & bots](docs/manual/05-cr-mcp-gateway-bots.md) | Capability Registry, MCP bridge, channels |
+| [06 · Files, workspace & settings](docs/manual/06-files-workspace-settings.md) | Files, workspace, and configuration |
+| [07 · Extensions & workflow ops](docs/manual/07-extensions-workflow-ops.md) | Extension model and workflow runner |
+| [08 · Troubleshooting & agent routing](docs/manual/08-troubleshooting-agent-routing.md) | Diagnostics, routing, and recovery |
 
-## Script Layout
+## 🙌 Community & Contributing
 
-Committed root scripts under `scripts/` are for app startup, packaging, provider sync, capability docs, public release checks, and runtime bridge helpers. Maintainer-only smoke tests and guided demo runners are intentionally kept out of the public npm script surface, so `package.json` should not depend on ignored local test or demo folders.
+Xenesis Desk is early alpha and we are looking for active community participation: try it, break it, open issues, propose demos, improve docs, add provider integrations, and help shape the agent workbench model. **Pull requests are welcome** — especially small, focused PRs with clear reproduction steps or release-check coverage.
 
----
+- 📖 Contributing guide — [CONTRIBUTING.md](CONTRIBUTING.md)
+- 🔒 Security policy — [SECURITY.md](SECURITY.md)
+- 💬 Support routes — [SUPPORT.md](SUPPORT.md)
+- 🤝 Code of conduct — [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- 📝 Changelog — [CHANGELOG.md](CHANGELOG.md)
+- 🐛 Issues — <https://github.com/xamong/Xenesis/issues>
+- 🗨️ Discussions — <https://github.com/xamong/Xenesis/discussions>
 
-## Capability Registry
+<a href="https://github.com/xamong/Xenesis/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=xamong/Xenesis" alt="Contributors" />
+</a>
 
-Every controllable feature in Xenesis Desk is exposed through a stable tree path like `xd.terminals.run`, `xd.files.open`, or `xd.capture.pane`.
+## ⚖️ License
 
-The registry is the shared contract used by the MCP bridge, agent tools, workflow runner, approval UI, CLI shortcuts, and external agents.
+[MIT](LICENSE) © Xamong
 
-```ts
-// Describe a capability
-await deskBridge.describe('xd.terminals.run');
-
-// Call a capability
-await deskBridge.call('xd.terminals.run', {
-  command: 'npm test',
-  shell: 'powershell'
-}, { approved: true });
-
-// Query capabilities
-await deskBridge.query({ kind: 'method', permission: 'read' });
-```
-
-Top-level namespaces include `xd.app`, `xd.workspace`, `xd.window`, `xd.dock`, `xd.terminals`, `xd.files`, `xd.fs`, `xd.remoteFiles`, `xd.extensions`, `xd.settings`, `xd.capture`, `xd.diagnostics`, `xd.mcp`, `xd.gowoori`, `xd.xenesis`, `xd.services`, `xd.automation`, `xd.artifacts`, `xd.playwright`, `xd.xcon`, `xd.audit`, `xd.control`, and `xd.meta`.
-
----
-
-## MCP Integration
-
-The bundled MCP server exposes the Desk control tools to external AI agents:
-
-```json
-{
-  "mcpServers": {
-    "xenesis-desk": {
-      "command": "node",
-      "args": ["path/to/mcp/xenesis-desk-mcp-server.mjs"]
-    }
-  }
-}
-```
-
-Tools include `xenesis_desk_state`, `xenesis_desk_terminal_run`, `xenesis_desk_call_capability`, `xenesis_desk_playwright_snapshot`, `xenesis_desk_create_xcon_markdown`, and more.
-
-The server also exposes XCON generation prompts as MCP resources and prompt templates.
-
----
-
-## XCON Viewer Integration
-
-Any LLM provider can render UI in its chat by connecting `@xcon-viewer/core` and `@xcon-viewer/viewer`:
-
-```js
-import { parseBySyntax } from '@xcon-viewer/core';
-import { render, viewerCss } from '@xcon-viewer/viewer';
-```
-
-When the Markdown renderer encounters an `xcon-sketch` fence, render it as a live UI component instead of a code block. Streaming rendering is supported — the UI builds progressively as tokens arrive.
-
----
-
-## Provider Skills
-
-The `providers/` folder packages Xenesis Desk integration for 11 CLI agents and Hermes/Xenesis gateway development:
-
-| Provider | Integration |
-|---|---|
-| Claude Code, Codex, Cursor, Gemini, GitHub Copilot, Kimi, OpenCode, Pi, Qoder, Qwen, Devin | Generated skill files (`/xd` slash command) |
-| Hermes | Python plug-ins (`xenesis_desk_gateway` + `xenesis_desk_bot` platform adapter) |
-| Xenesis Gateway E2E | Local browser simulator for Telegram, Discord, Slack, and Xenesis Bot flows |
-
-All providers control the same Desk through the same Capability Registry.
-
-Installed public builds do not ship the full `providers/` development tree. Settings > AI Provider installs only the curated runtime assets packaged under `provider-assets/**`: the Hermes Plug-in pair and the shared Xenesis Desk MCP/Skill template for local CLI clients.
-
-## Settings Surfaces
-
-Xenesis Desk separates native Desk agent settings from external provider settings:
-
-- **Settings > Xenesis Agent**: native Xenesis Agent runtime, managed gateway, external bot channels, and Gowoori agent tool settings.
-- **Settings > AI Provider**: Hermes Plug-in installer, Local CLI MCP and Skill installer, and BYOK provider profiles. Phase 5 XamongCode surfaces are hidden unless `XENIS_PHASE_5=true` or the matching global setting is enabled.
-
----
-
-## Terminal Automation
-
-The automation engine monitors terminal output streams and provides intelligent auto-response:
-
-- **Stream filters** for Codex, Claude Code, and Gemini strip internal progress lines and extract meaningful narrative
-- **Safety layer** blocks dangerous patterns (`rm -rf`, `drop database`, credential access)
-- **LLM engine** auto-responds to safe prompts (y/n confirmations, option selection)
-- **Regex and state-machine engines** for rule-based automation
-
-Combined with the Xenesis Gateway and channel adapters (Telegram, Discord, Slack), this enables mobile-quality remote control of CLI agents. External channels only receive terminal stream data after a channel explicitly runs `/desk watch`; unfiltered stream mode is kept local/e2e-only to avoid noisy or unsafe outbound bot traffic.
-
----
-
-## Extensions
-
-Extensions use a two-layer architecture:
-
-- **Main process**: `plugin.json` manifest + `main.js` with `exports.activate(api)` for command registration
-- **Renderer process**: `renderer.tsx` implementing `RendererExtensionContribution` for React panel UI
-
-Built-in extensions:
-
-| Extension | Panels |
-|---|---|
-| `xenesis-desk.core-tools` | Xenesis Agent, Xenesis Bot, AI Workbench, Artifact Library, Terminal Inspector, Process Viewer, Remote Sync Planner, Safe File Edit Center, Run Task Panel, Capability Explorer, Hermes panels, Activity Timeline, Network Monitor, Audit Log, Agent Performance, XApp Preview, and Phase 5 XamongCode (20 command ids; XamongCode hidden by default) |
-| `xenesis-desk.data-tools` | Meta Management, Query Analyzer, SQLite Server Settings (4 commands) |
-| `xenesis-desk.workflow-runner` | Workflow Runner, Demo Lab Player/Maker, Gowoori, GowooriChat, Alert Rules, Template Catalog, Artifact Versions (8 commands) |
-
-Sample extensions (`sample.*`) demonstrate the extension API for third-party developers.
-
----
-
-## Security
-
-- Renderer runs in sandbox (`nodeIntegration: false`, `contextIsolation: true`, `sandbox: true`)
-- All IPC goes through `contextBridge` with validated payloads
-- Capability calls from external sources require approval for `control`, `write`, `execute`, and `danger` operations
-- Terminal automation blocks dangerous commands before auto-input
-- AI API keys and bot tokens are stored locally through the settings/Secret Vault flow or referenced by environment variable names; secret values are never written into profiles
-- Content-Security-Policy: `script-src 'self'`
-
----
-
-## Community
-
-- Contributing guide: [CONTRIBUTING.md](CONTRIBUTING.md)
-- Security policy: [SECURITY.md](SECURITY.md)
-- Support routes: [SUPPORT.md](SUPPORT.md)
-- Code of conduct: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
-- Changelog: [CHANGELOG.md](CHANGELOG.md)
-- Issues: <https://github.com/xamong/xenesis-desk/issues>
-- Discussions: <https://github.com/xamong/xenesis-desk/discussions>
-
----
-
-## License
-
-[MIT](LICENSE)
+<div align="center">
+<br/>
+<sub>If Xenesis Desk is useful to you, a ⭐ helps others find it.</sub>
+</div>
