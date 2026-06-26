@@ -64,6 +64,7 @@ provider-specific, renderer-only, or chat-only behavior.
 - `npm --prefix packages/xenesis test`
 - `npm --prefix packages/xenesis run provider:smoke`
 - `npm --prefix packages/xenesis run typecheck`
+- Live Electron Agent pane provider footer/work-log check with the intended provider.
 
 ## Graph Links
 

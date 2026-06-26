@@ -64,6 +64,7 @@ provider-specific, renderer-only, or chat-only behavior.
 
 - `npm run docs:capabilities:audit`
 - `npm run docs:capabilities`
+- Live Electron Agent pane natural-language Desk-control prompt proving CR dispatch is reached.
 
 ## Graph Links
 
