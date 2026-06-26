@@ -7,8 +7,9 @@ ai_edit_policy: proposal_only
 ai_generated: false
 reviewed: true
 confidence: high
-last_reviewed: 2026-06-26
+last_reviewed: 2026-06-27
 depends_on:
+  - "[[Final Goal]]"
   - "[[Source of Truth Map]]"
 verified_by:
   - "[[Verification Map]]"
@@ -28,6 +29,7 @@ data stores, and tests that implement or verify Agent-control behavior.
 
 ## Graph Links
 
+- Depends on [[Final Goal]]
 - Depends on [[Source of Truth Map]]
 - Verified by [[Verification Map]]
 - Includes [[module-capability-registry]]
