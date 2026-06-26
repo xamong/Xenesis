@@ -46,3 +46,22 @@ test('xenesis connection status capability dispatches to the adapter', async () 
     },
   });
 });
+
+test('xenesis profile channel capabilities expose implemented guardrail fields', () => {
+  const updateSchema = findDeskBridgeCapability('xd.xenesis.profiles.updateChannels')?.schema;
+  const testSchema = findDeskBridgeCapability('xd.xenesis.profiles.testChannel')?.schema;
+
+  for (const schema of [updateSchema, testSchema]) {
+    const schemaProperties = (schema?.properties ?? {}) as Record<string, any>;
+    const channelProperties = (schemaProperties.channels?.properties ?? {}) as Record<string, any>;
+    for (const channel of ['telegram', 'slack', 'discord', 'webhook']) {
+      const properties = channelProperties[channel]?.properties ?? {};
+
+      assert.deepEqual(properties.approvalMode?.enum, ['readonly', 'safe', 'auto']);
+      assert.equal(properties.maxTurns?.type, 'number');
+      assert.equal(properties.maxTurns?.minimum, 1);
+      assert.equal(properties.maxTokens?.type, 'number');
+      assert.equal(properties.maxTokens?.minimum, 1);
+    }
+  }
+});

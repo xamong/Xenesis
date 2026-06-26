@@ -2,6 +2,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { buildXenesisConnectionsStatus, XENESIS_CONNECTION_GUIDES } from './xenesisConnections';
 
+const channelGuardrails = {
+  approvalMode: 'safe' as const,
+  maxTurns: 12,
+  maxTokens: 120000,
+};
+
 test('buildXenesisConnectionsStatus reports ready provider, MCP, gateway, and Telegram', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {
@@ -115,9 +121,10 @@ test('buildXenesisConnectionsStatus reports ready provider, MCP, gateway, and Te
           { name: 'webhook', enabled: false, configured: false, env: ['XENESIS_WEBHOOK_URL'] },
         ],
         channelSettings: {
-          telegram: { enabled: true, tokenEnv: 'TELEGRAM_BOT_TOKEN', allowedChatIds: '123' },
+          telegram: { enabled: true, ...channelGuardrails, tokenEnv: 'TELEGRAM_BOT_TOKEN', allowedChatIds: '123' },
           slack: {
             enabled: false,
+            ...channelGuardrails,
             botTokenEnv: 'SLACK_BOT_TOKEN',
             signingSecretEnv: 'SLACK_SIGNING_SECRET',
             webhookUrlEnv: 'SLACK_WEBHOOK_URL',
@@ -125,12 +132,13 @@ test('buildXenesisConnectionsStatus reports ready provider, MCP, gateway, and Te
           },
           discord: {
             enabled: false,
+            ...channelGuardrails,
             botTokenEnv: 'DISCORD_BOT_TOKEN',
             webhookUrlEnv: 'DISCORD_WEBHOOK_URL',
             allowedChannelIds: '',
             allowedGuildIds: '',
           },
-          webhook: { enabled: false, urlEnv: 'XENESIS_WEBHOOK_URL' },
+          webhook: { enabled: false, ...channelGuardrails, urlEnv: 'XENESIS_WEBHOOK_URL' },
         },
         policy: {
           workflow: '',
@@ -269,9 +277,10 @@ test('buildXenesisConnectionsStatus includes an ordered onboarding checklist', (
           { name: 'webhook', enabled: false, configured: false, env: ['XENESIS_WEBHOOK_URL'] },
         ],
         channelSettings: {
-          telegram: { enabled: true, tokenEnv: 'TELEGRAM_BOT_TOKEN', allowedChatIds: '123' },
+          telegram: { enabled: true, ...channelGuardrails, tokenEnv: 'TELEGRAM_BOT_TOKEN', allowedChatIds: '123' },
           slack: {
             enabled: false,
+            ...channelGuardrails,
             botTokenEnv: 'SLACK_BOT_TOKEN',
             signingSecretEnv: 'SLACK_SIGNING_SECRET',
             webhookUrlEnv: 'SLACK_WEBHOOK_URL',
@@ -279,12 +288,13 @@ test('buildXenesisConnectionsStatus includes an ordered onboarding checklist', (
           },
           discord: {
             enabled: false,
+            ...channelGuardrails,
             botTokenEnv: 'DISCORD_BOT_TOKEN',
             webhookUrlEnv: 'DISCORD_WEBHOOK_URL',
             allowedChannelIds: '',
             allowedGuildIds: '',
           },
-          webhook: { enabled: false, urlEnv: 'XENESIS_WEBHOOK_URL' },
+          webhook: { enabled: false, ...channelGuardrails, urlEnv: 'XENESIS_WEBHOOK_URL' },
         },
         policy: {
           workflow: '',

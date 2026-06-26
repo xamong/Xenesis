@@ -66,6 +66,17 @@ Capability Registry instead of only through separate renderer settings panels.
   gateway, messenger routing, and end-to-end test send.
 - Checklist cards reuse existing CR-backed settings and guide actions.
 
+## Current Channel Guardrails Slice
+
+- Expose implemented per-channel routing guardrails for Telegram, Slack,
+  Discord, and webhook: `approvalMode`, `maxTurns`, and `maxTokens`.
+- Keep CR writes on `xd.xenesis.profiles.updateChannels`; the schema now shows
+  the guardrail fields for each implemented channel.
+- Add Settings > Xenesis Agent > External bots controls for the same guardrails.
+- Treat OpenClaw-style richer route bindings/default-agent concepts as not yet
+  implemented until Xenesis runtime config, dispatcher behavior, and live
+  verification exist.
+
 ## Current Verification
 
 - `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
@@ -87,6 +98,8 @@ Capability Registry instead of only through separate renderer settings panels.
   `.github/workflows/ci.yml` is absent.
 - `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
   passed for the onboarding checklist shared model and renderer section order.
+- `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts`
+  passed after adding channel guardrail schema/type coverage.
 
 ## Graph Links
 

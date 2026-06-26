@@ -101,6 +101,13 @@ instead of hardcoded secrets. Google Chat, Microsoft Teams, and WhatsApp appear
 as planned/manual cards until channel runtime support and verification are
 implemented.
 
+Each implemented channel also carries the routing guardrails that the runtime
+already enforces: `approvalMode`, `maxTurns`, and `maxTokens`. These settings
+are editable in Settings and visible to CR callers through the channel update
+schema. Richer routing concepts such as per-account bindings or default-agent
+selection should not be treated as implemented until the Xenesis runtime has
+matching config, dispatcher behavior, and live verification.
+
 Useful CR paths:
 
 - `xd.xenesis.profiles.updateChannels`
@@ -114,8 +121,8 @@ webhook URL configuration. Treat allowlists as part of setup readiness.
 ## Routing
 
 Inbound channel sessions determine where replies are delivered. When debugging
-external bot behavior, inspect channel status, allowed IDs, gateway status, and
-bot session records before changing provider settings.
+external bot behavior, inspect channel status, allowed IDs, channel guardrails,
+gateway status, and bot session records before changing provider settings.
 
 ## Bot Loop Protection
 

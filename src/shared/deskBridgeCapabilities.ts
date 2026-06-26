@@ -84,6 +84,98 @@ const DESK_BRIDGE_WORKFLOW_SCHEMA = {
   },
 } as const;
 
+const XENESIS_CHANNEL_GUARDRAIL_SCHEMA = {
+  approvalMode: {
+    type: 'string',
+    title: 'Approval mode',
+    enum: ['readonly', 'safe', 'auto'],
+    description: 'Per-channel approval policy for prompts delivered through this external bot channel.',
+    default: 'safe',
+  },
+  maxTurns: {
+    type: 'number',
+    title: 'Max turns',
+    description: 'Maximum agent turns allowed for one channel-delivered prompt.',
+    minimum: 1,
+    default: 12,
+  },
+  maxTokens: {
+    type: 'number',
+    title: 'Max tokens',
+    description: 'Maximum token budget allowed for one channel-delivered prompt.',
+    minimum: 1,
+    default: 120000,
+  },
+} as const;
+
+const XENESIS_PROFILE_CHANNELS_SCHEMA = {
+  type: 'object',
+  title: 'Channel settings',
+  description:
+    'Telegram, Slack, Discord, and webhook channel settings. Secrets may be env var names; delivery is scoped by allowlists and guardrails.',
+  properties: {
+    telegram: {
+      type: 'object',
+      title: 'Telegram',
+      properties: {
+        enabled: { type: 'boolean', title: 'Enabled', default: false },
+        tokenEnv: { type: 'string', title: 'Token env', default: 'TELEGRAM_BOT_TOKEN' },
+        allowedChatIds: {
+          type: 'string',
+          title: 'Allowed chat ids',
+          description: 'Comma- or newline-separated Telegram chat ids allowed to deliver prompts.',
+        },
+        ...XENESIS_CHANNEL_GUARDRAIL_SCHEMA,
+      },
+    },
+    slack: {
+      type: 'object',
+      title: 'Slack',
+      properties: {
+        enabled: { type: 'boolean', title: 'Enabled', default: false },
+        botTokenEnv: { type: 'string', title: 'Bot token env', default: 'SLACK_BOT_TOKEN' },
+        signingSecretEnv: { type: 'string', title: 'Signing secret env', default: 'SLACK_SIGNING_SECRET' },
+        webhookUrlEnv: { type: 'string', title: 'Webhook URL env', default: 'SLACK_WEBHOOK_URL' },
+        allowedChannelIds: {
+          type: 'string',
+          title: 'Allowed channel ids',
+          description: 'Comma- or newline-separated Slack channel ids allowed to deliver prompts.',
+        },
+        ...XENESIS_CHANNEL_GUARDRAIL_SCHEMA,
+      },
+    },
+    discord: {
+      type: 'object',
+      title: 'Discord',
+      properties: {
+        enabled: { type: 'boolean', title: 'Enabled', default: false },
+        botTokenEnv: { type: 'string', title: 'Bot token env', default: 'DISCORD_BOT_TOKEN' },
+        webhookUrlEnv: { type: 'string', title: 'Webhook URL env', default: 'DISCORD_WEBHOOK_URL' },
+        allowedChannelIds: {
+          type: 'string',
+          title: 'Allowed channel ids',
+          description: 'Comma- or newline-separated Discord channel ids allowed to deliver prompts.',
+        },
+        allowedGuildIds: {
+          type: 'string',
+          title: 'Allowed guild ids',
+          description: 'Comma- or newline-separated Discord guild ids allowed to deliver prompts.',
+        },
+        ...XENESIS_CHANNEL_GUARDRAIL_SCHEMA,
+      },
+    },
+    webhook: {
+      type: 'object',
+      title: 'Webhook',
+      properties: {
+        enabled: { type: 'boolean', title: 'Enabled', default: false },
+        urlEnv: { type: 'string', title: 'URL env', default: 'XENESIS_WEBHOOK_URL' },
+        ...XENESIS_CHANNEL_GUARDRAIL_SCHEMA,
+      },
+    },
+  },
+} as const;
+
 export interface DeskBridgeCapabilityNode {
   path: string;
   label: string;
@@ -3383,9 +3475,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                   examples: ['external', 'xenis'],
                 },
                 channels: {
-                  type: 'object',
-                  title: 'Channel settings',
-                  description: 'Telegram, Slack, Discord, and webhook channel settings.',
+                  ...XENESIS_PROFILE_CHANNELS_SCHEMA,
                 },
               },
             },
@@ -3412,10 +3502,9 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                   description: 'External bot channel to test.',
                 },
                 channels: {
-                  type: 'object',
-                  title: 'Channel settings',
+                  ...XENESIS_PROFILE_CHANNELS_SCHEMA,
                   description:
-                    'Telegram, Slack, Discord, and webhook channel settings to test. Secrets are read from environment variables only.',
+                    'Telegram, Slack, Discord, and webhook channel settings to test. Secrets may be env var names; test delivery uses existing redaction.',
                 },
                 message: {
                   type: 'string',

@@ -128,13 +128,19 @@ export interface XenesisChannelState {
   env: string[];
 }
 
-export interface XenesisTelegramChannelSettings {
+export interface XenesisChannelGuardrailSettings {
+  approvalMode: XenesisApprovalMode;
+  maxTurns: number;
+  maxTokens: number;
+}
+
+export interface XenesisTelegramChannelSettings extends XenesisChannelGuardrailSettings {
   enabled: boolean;
   tokenEnv: string;
   allowedChatIds: string;
 }
 
-export interface XenesisSlackChannelSettings {
+export interface XenesisSlackChannelSettings extends XenesisChannelGuardrailSettings {
   enabled: boolean;
   botTokenEnv: string;
   signingSecretEnv: string;
@@ -142,7 +148,7 @@ export interface XenesisSlackChannelSettings {
   allowedChannelIds: string;
 }
 
-export interface XenesisDiscordChannelSettings {
+export interface XenesisDiscordChannelSettings extends XenesisChannelGuardrailSettings {
   enabled: boolean;
   botTokenEnv: string;
   webhookUrlEnv: string;
@@ -150,7 +156,7 @@ export interface XenesisDiscordChannelSettings {
   allowedGuildIds: string;
 }
 
-export interface XenesisWebhookChannelSettings {
+export interface XenesisWebhookChannelSettings extends XenesisChannelGuardrailSettings {
   enabled: boolean;
   urlEnv: string;
 }

@@ -105,11 +105,17 @@ declare global {
 const DEFAULT_XENESIS_PROFILE_CHANNEL_SETTINGS: XenesisProfileChannelSettings = {
   telegram: {
     enabled: false,
+    approvalMode: 'safe',
+    maxTurns: 12,
+    maxTokens: 120000,
     tokenEnv: 'TELEGRAM_BOT_TOKEN',
     allowedChatIds: '',
   },
   slack: {
     enabled: false,
+    approvalMode: 'safe',
+    maxTurns: 12,
+    maxTokens: 120000,
     botTokenEnv: 'SLACK_BOT_TOKEN',
     signingSecretEnv: 'SLACK_SIGNING_SECRET',
     webhookUrlEnv: 'SLACK_WEBHOOK_URL',
@@ -117,6 +123,9 @@ const DEFAULT_XENESIS_PROFILE_CHANNEL_SETTINGS: XenesisProfileChannelSettings = 
   },
   discord: {
     enabled: false,
+    approvalMode: 'safe',
+    maxTurns: 12,
+    maxTokens: 120000,
     botTokenEnv: 'DISCORD_BOT_TOKEN',
     webhookUrlEnv: 'DISCORD_WEBHOOK_URL',
     allowedChannelIds: '',
@@ -124,13 +133,20 @@ const DEFAULT_XENESIS_PROFILE_CHANNEL_SETTINGS: XenesisProfileChannelSettings = 
   },
   webhook: {
     enabled: false,
+    approvalMode: 'safe',
+    maxTurns: 12,
+    maxTokens: 120000,
     urlEnv: 'XENESIS_WEBHOOK_URL',
   },
 };
 
 function cloneXenesisProfileChannelSettings(settings?: XenesisProfileChannelSettings): XenesisProfileChannelSettings {
-  const source = settings ?? DEFAULT_XENESIS_PROFILE_CHANNEL_SETTINGS;
-  return JSON.parse(JSON.stringify(source)) as XenesisProfileChannelSettings;
+  return {
+    telegram: { ...DEFAULT_XENESIS_PROFILE_CHANNEL_SETTINGS.telegram, ...settings?.telegram },
+    slack: { ...DEFAULT_XENESIS_PROFILE_CHANNEL_SETTINGS.slack, ...settings?.slack },
+    discord: { ...DEFAULT_XENESIS_PROFILE_CHANNEL_SETTINGS.discord, ...settings?.discord },
+    webhook: { ...DEFAULT_XENESIS_PROFILE_CHANNEL_SETTINGS.webhook, ...settings?.webhook },
+  };
 }
 
 const XENESIS_ENV_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
@@ -4609,6 +4625,72 @@ export default function SettingsPane() {
     </button>
   );
 
+  const parseXenesisGuardrailNumber = (value: string, fallback: number) => {
+    const numeric = Number(value);
+    return Number.isSafeInteger(numeric) && numeric > 0 ? numeric : fallback;
+  };
+
+  const renderXenesisExternalBotGuardrails = (channel: XenesisProfileChannelName) => {
+    const settings = xenesisExternalBotChannels[channel];
+    return (
+      <div className="sp-grid three">
+        <div className="sp-field">
+          <label className="sp-label" htmlFor={`sp-xenesis-${channel}-approval-mode`}>
+            {t('settings.xenesisExternalBotApprovalMode')}
+          </label>
+          <select
+            id={`sp-xenesis-${channel}-approval-mode`}
+            className="sp-input"
+            value={settings.approvalMode}
+            onChange={(event) =>
+              patchXenesisExternalBotChannel(channel, { approvalMode: event.target.value as XenesisApprovalMode })
+            }
+          >
+            <option value="readonly">{t('settings.xenesisExternalBotApprovalReadonly')}</option>
+            <option value="safe">{t('settings.xenesisExternalBotApprovalSafe')}</option>
+            <option value="auto">{t('settings.xenesisExternalBotApprovalAuto')}</option>
+          </select>
+        </div>
+        <div className="sp-field">
+          <label className="sp-label" htmlFor={`sp-xenesis-${channel}-max-turns`}>
+            {t('settings.xenesisExternalBotMaxTurns')}
+          </label>
+          <input
+            id={`sp-xenesis-${channel}-max-turns`}
+            type="number"
+            min={1}
+            step={1}
+            className="sp-input"
+            value={settings.maxTurns}
+            onChange={(event) =>
+              patchXenesisExternalBotChannel(channel, {
+                maxTurns: parseXenesisGuardrailNumber(event.target.value, settings.maxTurns),
+              })
+            }
+          />
+        </div>
+        <div className="sp-field">
+          <label className="sp-label" htmlFor={`sp-xenesis-${channel}-max-tokens`}>
+            {t('settings.xenesisExternalBotMaxTokens')}
+          </label>
+          <input
+            id={`sp-xenesis-${channel}-max-tokens`}
+            type="number"
+            min={1}
+            step={1000}
+            className="sp-input"
+            value={settings.maxTokens}
+            onChange={(event) =>
+              patchXenesisExternalBotChannel(channel, {
+                maxTokens: parseXenesisGuardrailNumber(event.target.value, settings.maxTokens),
+              })
+            }
+          />
+        </div>
+      </div>
+    );
+  };
+
   const renderXenesisExternalBotChannels = () => (
     <section className="sp-section" data-settings-section="external-bot-channels">
       <div className="sp-section-heading">
@@ -4700,6 +4782,7 @@ export default function SettingsPane() {
               />
             </div>
           </div>
+          {renderXenesisExternalBotGuardrails('telegram')}
         </div>
 
         <div className="sp-xenesis-bot-channel-card">
@@ -4777,6 +4860,7 @@ export default function SettingsPane() {
               />
             </div>
           </div>
+          {renderXenesisExternalBotGuardrails('slack')}
         </div>
 
         <div className="sp-xenesis-bot-channel-card">
@@ -4855,6 +4939,7 @@ export default function SettingsPane() {
               />
             </div>
           </div>
+          {renderXenesisExternalBotGuardrails('discord')}
         </div>
 
         <div className="sp-xenesis-bot-channel-card">
@@ -4892,6 +4977,7 @@ export default function SettingsPane() {
               spellCheck={false}
             />
           </div>
+          {renderXenesisExternalBotGuardrails('webhook')}
         </div>
       </div>
 

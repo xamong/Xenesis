@@ -13886,6 +13886,42 @@ function csvFromValues(values: unknown): string {
   return Array.isArray(values) ? values.map((value) => String(value)).join(', ') : '';
 }
 
+const DEFAULT_XENESIS_CHANNEL_APPROVAL_MODE: XenesisApprovalMode = 'safe';
+const DEFAULT_XENESIS_CHANNEL_MAX_TURNS = 12;
+const DEFAULT_XENESIS_CHANNEL_MAX_TOKENS = 120000;
+
+function normalizeXenesisChannelApprovalMode(
+  value: unknown,
+  fallback: XenesisApprovalMode = DEFAULT_XENESIS_CHANNEL_APPROVAL_MODE,
+): XenesisApprovalMode {
+  return value === 'readonly' || value === 'safe' || value === 'auto' ? value : fallback;
+}
+
+function normalizeXenesisChannelPositiveInteger(value: unknown, fallback: number): number {
+  const numeric = typeof value === 'number' ? value : Number(value);
+  return Number.isSafeInteger(numeric) && numeric > 0 ? numeric : fallback;
+}
+
+function xenesisChannelGuardrailSettings(
+  channel: Record<string, unknown>,
+  fallback?: Partial<XenesisChannelRunLimits>,
+): XenesisChannelRunLimits {
+  const approvalModeFallback = fallback?.approvalMode ?? DEFAULT_XENESIS_CHANNEL_APPROVAL_MODE;
+  const maxTurnsFallback = normalizeXenesisChannelPositiveInteger(
+    fallback?.maxTurns,
+    DEFAULT_XENESIS_CHANNEL_MAX_TURNS,
+  );
+  const maxTokensFallback = normalizeXenesisChannelPositiveInteger(
+    fallback?.maxTokens,
+    DEFAULT_XENESIS_CHANNEL_MAX_TOKENS,
+  );
+  return {
+    approvalMode: normalizeXenesisChannelApprovalMode(channel.approvalMode, approvalModeFallback),
+    maxTurns: normalizeXenesisChannelPositiveInteger(channel.maxTurns, maxTurnsFallback),
+    maxTokens: normalizeXenesisChannelPositiveInteger(channel.maxTokens, maxTokensFallback),
+  };
+}
+
 function summarizeXenesisProfileChannelSettings(profile: ProfileConfig | undefined): XenesisProfileChannelSettings {
   const channels = isPlainRecord(profile?.channels) ? profile.channels : {};
   const telegram = isPlainRecord(channels.telegram) ? channels.telegram : {};
@@ -13895,6 +13931,7 @@ function summarizeXenesisProfileChannelSettings(profile: ProfileConfig | undefin
   return {
     telegram: {
       enabled: telegram.enabled === true,
+      ...xenesisChannelGuardrailSettings(telegram),
       tokenEnv:
         typeof telegram.tokenEnv === 'string' && telegram.tokenEnv.trim()
           ? telegram.tokenEnv.trim()
@@ -13903,6 +13940,7 @@ function summarizeXenesisProfileChannelSettings(profile: ProfileConfig | undefin
     },
     slack: {
       enabled: slack.enabled === true,
+      ...xenesisChannelGuardrailSettings(slack),
       botTokenEnv:
         typeof slack.botTokenEnv === 'string' && slack.botTokenEnv.trim()
           ? slack.botTokenEnv.trim()
@@ -13919,6 +13957,7 @@ function summarizeXenesisProfileChannelSettings(profile: ProfileConfig | undefin
     },
     discord: {
       enabled: discord.enabled === true,
+      ...xenesisChannelGuardrailSettings(discord),
       botTokenEnv:
         typeof discord.botTokenEnv === 'string' && discord.botTokenEnv.trim()
           ? discord.botTokenEnv.trim()
@@ -13932,6 +13971,7 @@ function summarizeXenesisProfileChannelSettings(profile: ProfileConfig | undefin
     },
     webhook: {
       enabled: webhook.enabled === true,
+      ...xenesisChannelGuardrailSettings(webhook),
       urlEnv:
         typeof webhook.urlEnv === 'string' && webhook.urlEnv.trim() ? webhook.urlEnv.trim() : 'XENESIS_WEBHOOK_URL',
     },
@@ -14020,63 +14060,44 @@ type NormalizedXenesisProfileChannels = {
 
 function normalizeXenesisProfileChannelSettings(
   request: XenesisProfileChannelsUpdateRequest,
+  previousChannels?: ProfileConfig['channels'],
 ): ProfileConfig['channels'] {
-  const channels = request.channels;
+  const channels = (isPlainRecord(request?.channels) ? request.channels : {}) as Record<string, unknown>;
+  const telegram = isPlainRecord(channels.telegram) ? channels.telegram : {};
+  const slack = isPlainRecord(channels.slack) ? channels.slack : {};
+  const discord = isPlainRecord(channels.discord) ? channels.discord : {};
+  const webhook = isPlainRecord(channels.webhook) ? channels.webhook : {};
   const normalized: NormalizedXenesisProfileChannels = {
     telegram: {
-      enabled: channels.telegram.enabled === true,
-      tokenEnv: envName(channels.telegram.tokenEnv, 'TELEGRAM_BOT_TOKEN'),
-      allowedChatIds: csvToSafeIntegers(channels.telegram.allowedChatIds),
-      approvalMode: 'safe',
-      maxTurns: 12,
-      maxTokens: 120000,
+      enabled: telegram.enabled === true,
+      tokenEnv: envName(telegram.tokenEnv, 'TELEGRAM_BOT_TOKEN'),
+      allowedChatIds: csvToSafeIntegers(telegram.allowedChatIds),
+      ...xenesisChannelGuardrailSettings(telegram, previousChannels?.telegram),
     },
     slack: {
-      enabled: channels.slack.enabled === true,
-      botTokenEnv: envName(channels.slack.botTokenEnv, 'SLACK_BOT_TOKEN'),
-      signingSecretEnv: envName(channels.slack.signingSecretEnv, 'SLACK_SIGNING_SECRET'),
-      allowedChannelIds: csvToStrings(channels.slack.allowedChannelIds),
-      webhookUrlEnv: envName(channels.slack.webhookUrlEnv, 'SLACK_WEBHOOK_URL'),
-      approvalMode: 'safe',
-      maxTurns: 12,
-      maxTokens: 120000,
+      enabled: slack.enabled === true,
+      botTokenEnv: envName(slack.botTokenEnv, 'SLACK_BOT_TOKEN'),
+      signingSecretEnv: envName(slack.signingSecretEnv, 'SLACK_SIGNING_SECRET'),
+      allowedChannelIds: csvToStrings(slack.allowedChannelIds),
+      webhookUrlEnv: envName(slack.webhookUrlEnv, 'SLACK_WEBHOOK_URL'),
+      ...xenesisChannelGuardrailSettings(slack, previousChannels?.slack),
     },
     discord: {
-      enabled: channels.discord.enabled === true,
-      botTokenEnv: envName(channels.discord.botTokenEnv, 'DISCORD_BOT_TOKEN'),
-      allowedChannelIds: csvToStrings(channels.discord.allowedChannelIds),
-      allowedGuildIds: csvToStrings(channels.discord.allowedGuildIds),
-      webhookUrlEnv: envName(channels.discord.webhookUrlEnv, 'DISCORD_WEBHOOK_URL'),
-      approvalMode: 'safe',
-      maxTurns: 12,
-      maxTokens: 120000,
+      enabled: discord.enabled === true,
+      botTokenEnv: envName(discord.botTokenEnv, 'DISCORD_BOT_TOKEN'),
+      allowedChannelIds: csvToStrings(discord.allowedChannelIds),
+      allowedGuildIds: csvToStrings(discord.allowedGuildIds),
+      webhookUrlEnv: envName(discord.webhookUrlEnv, 'DISCORD_WEBHOOK_URL'),
+      ...xenesisChannelGuardrailSettings(discord, previousChannels?.discord),
     },
     webhook: {
-      enabled: channels.webhook.enabled === true,
-      urlEnv: envName(channels.webhook.urlEnv, 'XENESIS_WEBHOOK_URL'),
+      enabled: webhook.enabled === true,
+      urlEnv: envName(webhook.urlEnv, 'XENESIS_WEBHOOK_URL'),
       headers: {},
-      approvalMode: 'safe',
-      maxTurns: 12,
-      maxTokens: 120000,
+      ...xenesisChannelGuardrailSettings(webhook, previousChannels?.webhook),
     },
   };
   return normalized;
-}
-
-function preserveXenesisChannelRunLimits<T extends XenesisChannelRunLimits>(
-  next: T,
-  previous: Partial<XenesisChannelRunLimits> | undefined,
-): T {
-  return {
-    ...next,
-    approvalMode: previous?.approvalMode ?? next.approvalMode,
-    maxTurns:
-      typeof previous?.maxTurns === 'number' && Number.isFinite(previous.maxTurns) ? previous.maxTurns : next.maxTurns,
-    maxTokens:
-      typeof previous?.maxTokens === 'number' && Number.isFinite(previous.maxTokens)
-        ? previous.maxTokens
-        : next.maxTokens,
-  };
 }
 
 function summarizeXenesisProfilePolicy(profile: ProfileConfig | undefined): XenesisProfilePolicyState {
@@ -14237,15 +14258,17 @@ async function updateXenesisProfileChannels(
   if (!profile) {
     throw new Error(`Xenesis profile not found: ${profileName}`);
   }
-  const nextChannels = normalizeXenesisProfileChannelSettings(request) as NormalizedXenesisProfileChannels;
-  const previousChannels = profile.channels;
+  const nextChannels = normalizeXenesisProfileChannelSettings(
+    request,
+    profile.channels,
+  ) as NormalizedXenesisProfileChannels;
   profiles.profiles[profileName] = {
     ...profile,
     channels: {
-      telegram: preserveXenesisChannelRunLimits(nextChannels.telegram, previousChannels?.telegram),
-      slack: preserveXenesisChannelRunLimits(nextChannels.slack, previousChannels?.slack),
-      discord: preserveXenesisChannelRunLimits(nextChannels.discord, previousChannels?.discord),
-      webhook: preserveXenesisChannelRunLimits(nextChannels.webhook, previousChannels?.webhook),
+      telegram: nextChannels.telegram,
+      slack: nextChannels.slack,
+      discord: nextChannels.discord,
+      webhook: nextChannels.webhook,
     },
   };
   profiles.active = profileName;
