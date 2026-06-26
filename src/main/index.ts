@@ -52,6 +52,7 @@ import {
   type AppMenuGroupNode,
   type AppMenuNode,
 } from '../shared/appMenuModel';
+import { buildXenesisConnectionsStatus, type XenesisConnectionsStatus } from '../shared/xenesisConnections';
 import { createAppControlService } from './appControl/appControlService';
 import {
   callDeskBridgeCapability,
@@ -4784,6 +4785,16 @@ function getMcpSettingsStatus(): McpSettingsStatus {
     bridgeStatePath: getMcpBridgeStateFilePath(),
     configFilePath: getMcpConfigSnippetFilePath(),
   };
+}
+
+async function getXenesisConnectionsStatus(): Promise<XenesisConnectionsStatus> {
+  const settings = loadSettings();
+  return buildXenesisConnectionsStatus({
+    aiProvider: settings.aiProvider,
+    mcp: getMcpSettingsStatus(),
+    providerIntegration: getProviderIntegrationStatusSnapshot(),
+    xenesis: await getXenesisStatusPayload(),
+  });
 }
 
 function getProviderIntegrationAssetRoot(): string {
@@ -11701,6 +11712,7 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     isXenisPhase5Enabled: () => isXenisPhase5Enabled(),
     getXenesisStatus: () =>
       getXenesisStatusPayload().then((status) => ({ ok: true, status: redactXenesisStatusForCapability(status) })),
+    getXenesisConnectionsStatus: () => getXenesisConnectionsStatus().then((status) => ({ ok: true, status })),
     getXenesisDiagnostics: () => getXenesisOperationalDiagnostics().then((diagnostics) => ({ ok: true, diagnostics })),
     listXenesisReports: (args: unknown) =>
       listXenesisReports(
@@ -17441,6 +17453,7 @@ function setupIpc(): void {
     (): Promise<XenesisOperationalDiagnostics> => getXenesisOperationalDiagnostics(),
   );
   ipcMain.handle('xenesis:gateway-status', (): Promise<XenesisStatus> => getXenesisStatusPayload());
+  ipcMain.handle('xenesis:connections-status', (): Promise<XenesisConnectionsStatus> => getXenesisConnectionsStatus());
   ipcMain.handle('xenesis:gateway-start', (): Promise<XenesisStatus> => startXenesisGatewayRuntime());
   ipcMain.handle('xenesis:gateway-stop', (): Promise<XenesisStatus> => stopXenesisGatewayRuntime());
   ipcMain.handle('xenesis:gateway-restart', async (): Promise<XenesisStatus> => {

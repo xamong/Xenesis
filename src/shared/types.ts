@@ -1,4 +1,6 @@
 import type { ExternalAppSettings } from './externalAppControl';
+import type { XenesisConnectionsStatus } from './xenesisConnections';
+export type { XenesisConnectionItem, XenesisConnectionStatus, XenesisConnectionsStatus } from './xenesisConnections';
 
 export type ShellKind = 'powershell' | 'cmd' | 'pwsh' | 'wsl' | 'zsh' | 'bash' | 'sh';
 
@@ -2009,6 +2011,7 @@ export interface XenesisApi {
   gatewayStop(): Promise<XenesisStatus>;
   gatewayRestart(): Promise<XenesisStatus>;
   gatewayOpenDashboard(): Promise<XenesisStatus>;
+  connectionsStatus(): Promise<XenesisConnectionsStatus>;
   start(): Promise<XenesisStatus>;
   stop(): Promise<XenesisStatus>;
   restart(): Promise<XenesisStatus>;

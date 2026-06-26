@@ -343,6 +343,7 @@ export interface DeskBridgeCapabilityAdapter {
   stopXamongCode?: () => Promise<unknown> | unknown;
   isXenisPhase5Enabled?: () => boolean;
   getXenesisStatus?: () => Promise<unknown> | unknown;
+  getXenesisConnectionsStatus?: () => Promise<unknown> | unknown;
   getXenesisDiagnostics?: () => Promise<unknown> | unknown;
   openXenesisTui?: (args: unknown) => Promise<unknown> | unknown;
   listXenesisReports?: (args: unknown) => Promise<unknown> | unknown;
@@ -589,6 +590,7 @@ export const DESK_BRIDGE_IPC_CAPABILITY_COVERAGE = {
   'xamong-code:status': { capabilityPath: 'xd.services.xamongCode.status' },
   'xamong-code:stop': { capabilityPath: 'xd.services.xamongCode.stop' },
   'xenesis:cancel': { capabilityPath: 'xd.services.xenesis.cancel' },
+  'xenesis:connections-status': { capabilityPath: 'xd.xenesis.connections.status' },
   'xenesis:diagnostics': { capabilityPath: 'xd.xenesis.diagnostics' },
   'xenesis:gateway-restart': { capabilityPath: 'xd.xenesis.gateway.restart' },
   'xenesis:gateway-start': { capabilityPath: 'xd.xenesis.gateway.start' },
@@ -3270,6 +3272,14 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               },
             },
           },
+        ),
+      ]),
+      group('xd.xenesis.connections', 'Connections', 'Xenesis onboarding and connection readiness.', [
+        method(
+          'xd.xenesis.connections.status',
+          'Read connection status',
+          'Read provider, MCP, tool, gateway, messenger, and guide readiness for Xenesis onboarding.',
+          'read',
         ),
       ]),
       group('xd.xenesis.gateway', 'Gateway', 'Xenesis gateway lifecycle operations.', [
@@ -9496,6 +9506,9 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.agents.events') {
         return callAdapter(path, api?.listXenesisAgentEvents, request.args);
+      }
+      if (path === 'xd.xenesis.connections.status') {
+        return callAdapter(path, api?.getXenesisConnectionsStatus);
       }
       if (path === 'xd.xenesis.gateway.status') {
         return callAdapter(path, api?.getXenesisStatus);

@@ -918,6 +918,9 @@ const xenesisApi: XenesisApi = {
   gatewayOpenDashboard() {
     return ipcRenderer.invoke('xenesis:gateway-open-dashboard');
   },
+  connectionsStatus() {
+    return ipcRenderer.invoke('xenesis:connections-status');
+  },
   start() {
     return ipcRenderer.invoke('xenesis:start');
   },
