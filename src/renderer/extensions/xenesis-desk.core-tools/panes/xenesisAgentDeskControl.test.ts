@@ -5,6 +5,8 @@ import {
   isXenesisNaturalConnectionMessengerTarget,
   isXenesisNaturalConnectionToolTarget,
   isXenesisNaturalPlannedGoogleToolTarget,
+  XENESIS_DESK_ACTION_PROTOCOL_FORMAT,
+  XENESIS_DESK_ACTION_PROTOCOL_RECORD_KEYS,
   XENESIS_DESK_ACTION_RESULT_SUMMARY_KEYS,
   XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT,
   XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES,
@@ -290,6 +292,8 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /terminal\\s\+run/);
   assert.match(source, /XENESIS_DESK_ACTION_PROTOCOL_PATTERNS/);
   assert.match(source, /XENESIS_DESK_ACTION_PROTOCOL_TEXT/);
+  assert.match(source, /XENESIS_DESK_ACTION_PROTOCOL_RECORD_KEYS/);
+  assert.match(source, /XENESIS_DESK_ACTION_PROTOCOL_FORMAT/);
   assert.match(source, /XENESIS_DESK_ACTION_RESULT_SUMMARY_PATHS/);
   assert.match(source, /XENESIS_DESK_ACTION_RESULT_SUMMARY_KEYS/);
   assert.match(source, /XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT/);
@@ -309,6 +313,21 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /renderer\.message/);
   assert.doesNotMatch(source, /compact === '\{\}'/);
   assert.doesNotMatch(source, /compact === '\[\]'/);
+  assert.doesNotMatch(source, /record\.path/);
+  assert.doesNotMatch(source, /record\.id/);
+  assert.doesNotMatch(source, /record\.reason/);
+  assert.doesNotMatch(source, /record\.approved/);
+  assert.doesNotMatch(source, /Object\.hasOwn\(record, 'args'\)/);
+  assert.doesNotMatch(source, /Record<string, unknown>\)\.actions/);
+  assert.doesNotMatch(source, /desk-action-\$\{index \+ 1\}/);
+  assert.doesNotMatch(source, /maxLength = 180/);
+  assert.doesNotMatch(source, /const reason = action\.reason \? ` - \$\{action\.reason\}` : ''/);
+  assert.doesNotMatch(source, /summary \? `- \$\{result\.path\}: \$\{summary\}` : `- \$\{result\.path\}`/);
+  assert.equal(XENESIS_DESK_ACTION_PROTOCOL_RECORD_KEYS.path, 'path');
+  assert.equal(XENESIS_DESK_ACTION_PROTOCOL_RECORD_KEYS.actions, 'actions');
+  assert.equal(XENESIS_DESK_ACTION_PROTOCOL_FORMAT.defaultActionId(0), 'desk-action-1');
+  assert.equal(XENESIS_DESK_ACTION_PROTOCOL_FORMAT.actionBullet('xd.test.path', 'because'), '- xd.test.path - because');
+  assert.equal(XENESIS_DESK_ACTION_PROTOCOL_FORMAT.resultBullet('xd.test.path', 'ok'), '- xd.test.path: ok');
   assert.deepEqual(XENESIS_DESK_ACTION_RESULT_SUMMARY_KEYS.fileList, ['openFiles', 'files', 'items', 'entries']);
   assert.equal(XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT.fileList(1, 'README.md'), '1 file, first: README.md');
   assert.equal(XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT.workflowMetric(2, 'passed'), '2 passed');

@@ -6,7 +6,9 @@ import {
   isXenesisNaturalConnectionToolTarget,
   isXenesisNaturalPlannedGoogleToolTarget,
   XENESIS_DESK_ACTION_PROTOCOL,
+  XENESIS_DESK_ACTION_PROTOCOL_FORMAT,
   XENESIS_DESK_ACTION_PROTOCOL_PATTERNS,
+  XENESIS_DESK_ACTION_PROTOCOL_RECORD_KEYS,
   XENESIS_DESK_ACTION_PROTOCOL_TEXT,
   XENESIS_DESK_ACTION_RESULT_SUMMARY_KEYS,
   XENESIS_DESK_ACTION_RESULT_SUMMARY_PATHS,
@@ -302,7 +304,9 @@ function naturalViewOpenAction(
 
 const DESK_ACTIONS = XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS;
 const DESK_ACTION_PROTOCOL = XENESIS_DESK_ACTION_PROTOCOL;
+const DESK_ACTION_PROTOCOL_FORMAT = XENESIS_DESK_ACTION_PROTOCOL_FORMAT;
 const DESK_ACTION_PROTOCOL_PATTERNS = XENESIS_DESK_ACTION_PROTOCOL_PATTERNS;
+const DESK_ACTION_PROTOCOL_RECORD_KEYS = XENESIS_DESK_ACTION_PROTOCOL_RECORD_KEYS;
 const DESK_ACTION_PROTOCOL_TEXT = XENESIS_DESK_ACTION_PROTOCOL_TEXT;
 const DESK_ACTION_RESULT_SUMMARY_KEYS = XENESIS_DESK_ACTION_RESULT_SUMMARY_KEYS;
 const DESK_ACTION_RESULT_SUMMARY_PATHS = XENESIS_DESK_ACTION_RESULT_SUMMARY_PATHS;
@@ -1765,21 +1769,27 @@ function normalizeDeskActionRecord(
   }
 
   const record = value as Record<string, unknown>;
-  const path = typeof record.path === 'string' ? record.path.trim() : '';
+  const pathValue = record[DESK_ACTION_PROTOCOL_RECORD_KEYS.path];
+  const path = typeof pathValue === 'string' ? pathValue.trim() : '';
   if (!path) return { error: DESK_ACTION_PROTOCOL_TEXT.missingPath(index) };
   if (!path.startsWith(DESK_ACTION_PROTOCOL.pathPrefix)) {
     return { error: DESK_ACTION_PROTOCOL_TEXT.invalidPathPrefix(index, path, DESK_ACTION_PROTOCOL.pathPrefix) };
   }
 
-  const id = typeof record.id === 'string' && record.id.trim() ? record.id.trim() : `desk-action-${index + 1}`;
-  const reason = typeof record.reason === 'string' && record.reason.trim() ? record.reason.trim() : undefined;
+  const idValue = record[DESK_ACTION_PROTOCOL_RECORD_KEYS.id];
+  const id =
+    typeof idValue === 'string' && idValue.trim() ? idValue.trim() : DESK_ACTION_PROTOCOL_FORMAT.defaultActionId(index);
+  const reasonValue = record[DESK_ACTION_PROTOCOL_RECORD_KEYS.reason];
+  const reason = typeof reasonValue === 'string' && reasonValue.trim() ? reasonValue.trim() : undefined;
 
   return {
     action: {
       id,
       path,
-      args: Object.hasOwn(record, 'args') ? record.args : {},
-      approved: record.approved === true,
+      args: Object.hasOwn(record, DESK_ACTION_PROTOCOL_RECORD_KEYS.args)
+        ? record[DESK_ACTION_PROTOCOL_RECORD_KEYS.args]
+        : {},
+      approved: record[DESK_ACTION_PROTOCOL_RECORD_KEYS.approved] === true,
       ...(reason ? { reason } : {}),
     },
   };
@@ -1787,16 +1797,17 @@ function normalizeDeskActionRecord(
 
 function actionRecordsFromJson(value: unknown): unknown[] {
   if (Array.isArray(value)) return value;
-  if (value && typeof value === 'object' && Array.isArray((value as Record<string, unknown>).actions)) {
-    return (value as Record<string, unknown>).actions as unknown[];
+  if (value && typeof value === 'object') {
+    const actions = (value as Record<string, unknown>)[DESK_ACTION_PROTOCOL_RECORD_KEYS.actions];
+    if (Array.isArray(actions)) return actions;
   }
   return [value];
 }
 
 function normalizeVisibleText(value: string): string {
   return value
-    .replace(/[ \t]+\n/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
+    .replace(DESK_ACTION_PROTOCOL_PATTERNS.visibleTextTrailingLineWhitespace, DESK_ACTION_PROTOCOL_FORMAT.lineBreak)
+    .replace(DESK_ACTION_PROTOCOL_PATTERNS.visibleTextRepeatedBlankLines, DESK_ACTION_PROTOCOL_FORMAT.paragraphBreak)
     .trim();
 }
 
@@ -1943,29 +1954,31 @@ export function approveXenesisDeskActions(actions: XenesisDeskActionRequest[]): 
 }
 
 function describeDeskAction(action: XenesisDeskActionRequest): string {
-  const reason = action.reason ? ` - ${action.reason}` : '';
-  return `- ${action.path}${reason}`;
+  return DESK_ACTION_PROTOCOL_FORMAT.actionBullet(action.path, action.reason);
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 }
 
-function compactJson(value: unknown, maxLength = 180): string {
+function compactJson(value: unknown, maxLength = DESK_ACTION_PROTOCOL_FORMAT.compactJsonMaxLength): string {
   try {
     const json = JSON.stringify(value);
-    if (!json) return '';
-    return json.length > maxLength ? `${json.slice(0, maxLength - 1)}...` : json;
+    if (!json) return DESK_ACTION_PROTOCOL_FORMAT.emptyText;
+    return json.length > maxLength ? DESK_ACTION_PROTOCOL_FORMAT.compactJsonOverflow(json, maxLength) : json;
   } catch {
-    return '';
+    return DESK_ACTION_PROTOCOL_FORMAT.emptyText;
   }
 }
 
 function basename(value: unknown): string {
   const text = typeof value === 'string' ? value.trim() : '';
-  if (!text) return '';
-  const normalized = text.replace(/\\/g, '/');
-  return normalized.split('/').filter(Boolean).pop() || text;
+  if (!text) return DESK_ACTION_PROTOCOL_FORMAT.emptyText;
+  const normalized = text.replace(
+    DESK_ACTION_PROTOCOL_PATTERNS.windowsPathSeparator,
+    DESK_ACTION_PROTOCOL_FORMAT.pathSeparator,
+  );
+  return normalized.split(DESK_ACTION_PROTOCOL_FORMAT.pathSeparator).filter(Boolean).pop() || text;
 }
 
 function arrayFromRecord(record: Record<string, unknown>, keys: readonly string[]): unknown[] {
@@ -2077,16 +2090,14 @@ function summarizeDeskActionResult(result: XenesisDeskActionExecutionResult): st
 }
 
 export function buildXenesisDeskActionPendingMessage(actions: XenesisDeskActionRequest[], leadText = ''): string {
-  return [
+  return DESK_ACTION_PROTOCOL_FORMAT.joinLines([
     leadText.trim(),
-    leadText.trim() ? '' : undefined,
+    leadText.trim() ? DESK_ACTION_PROTOCOL_FORMAT.blankLine : undefined,
     DESK_ACTION_PROTOCOL_TEXT.approvalRequiredHeader,
     DESK_ACTION_PROTOCOL_TEXT.approvalRequiredBody,
-    '',
+    DESK_ACTION_PROTOCOL_FORMAT.blankLine,
     ...actions.map(describeDeskAction),
-  ]
-    .filter((line): line is string => line !== undefined)
-    .join('\n');
+  ]);
 }
 
 export function buildXenesisDeskActionCompletedMessage(results: XenesisDeskActionExecutionResult[]): string {
@@ -2095,19 +2106,26 @@ export function buildXenesisDeskActionCompletedMessage(results: XenesisDeskActio
   const header = DESK_ACTION_PROTOCOL_TEXT.completedHeader(failed.length);
   const appliedLines = successful.map((result) => {
     const summary = summarizeDeskActionResult(result);
-    return summary ? `- ${result.path}: ${summary}` : `- ${result.path}`;
+    return DESK_ACTION_PROTOCOL_FORMAT.resultBullet(result.path, summary);
   });
-  return [
+  return DESK_ACTION_PROTOCOL_FORMAT.joinLines([
     header,
-    ...(successful.length > 0 ? ['', DESK_ACTION_PROTOCOL_TEXT.appliedHeader, ...appliedLines] : []),
+    ...(successful.length > 0
+      ? [DESK_ACTION_PROTOCOL_FORMAT.blankLine, DESK_ACTION_PROTOCOL_TEXT.appliedHeader, ...appliedLines]
+      : []),
     ...(failed.length > 0
       ? [
-          '',
+          DESK_ACTION_PROTOCOL_FORMAT.blankLine,
           DESK_ACTION_PROTOCOL_TEXT.needsAttentionHeader,
-          ...failed.map((result) => `- ${result.path}: ${result.error || DESK_ACTION_PROTOCOL_TEXT.failureFallback}`),
+          ...failed.map((result) =>
+            DESK_ACTION_PROTOCOL_FORMAT.resultBullet(
+              result.path,
+              result.error || DESK_ACTION_PROTOCOL_TEXT.failureFallback,
+            ),
+          ),
         ]
       : []),
-  ].join('\n');
+  ]);
 }
 
 export function summarizeXenesisDeskActionExecution(result: XenesisDeskActionExecutionResult): string {
@@ -2124,7 +2142,7 @@ function buildRegistryCapabilityPathSummary(prefixes: readonly string[]): string
     .map((node) => node.path)
     .filter((path) => prefixes.some((prefix) => isCapabilityPathUnderPrefix(path, prefix)))
     .sort()
-    .join(', ');
+    .join(DESK_ACTION_PROTOCOL_FORMAT.listSeparator);
 }
 
 function buildDirectCrPathSummary(lines: readonly string[]): string {
@@ -2142,7 +2160,7 @@ function buildDirectCrPathSummary(lines: readonly string[]): string {
       }
     }
   }
-  return [...referencedPaths].join(', ');
+  return [...referencedPaths].join(DESK_ACTION_PROTOCOL_FORMAT.listSeparator);
 }
 
 export function buildXenesisDeskControlPromptHint(): string {
@@ -2153,5 +2171,8 @@ export function buildXenesisDeskControlPromptHint(): string {
     )}.`,
     ...XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES,
   ];
-  return [...lines, DESK_ACTION_PROTOCOL_TEXT.usefulDirectCrPaths(buildDirectCrPathSummary(lines))].join('\n');
+  return DESK_ACTION_PROTOCOL_FORMAT.joinLines([
+    ...lines,
+    DESK_ACTION_PROTOCOL_TEXT.usefulDirectCrPaths(buildDirectCrPathSummary(lines)),
+  ]);
 }

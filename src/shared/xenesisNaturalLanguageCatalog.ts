@@ -64,11 +64,39 @@ export const XENESIS_DESK_ACTION_PROTOCOL = {
   pathPrefix: 'xd.',
 } as const;
 
+export const XENESIS_DESK_ACTION_PROTOCOL_RECORD_KEYS = {
+  actions: 'actions',
+  approved: 'approved',
+  args: 'args',
+  id: 'id',
+  path: 'path',
+  reason: 'reason',
+} as const;
+
 export const XENESIS_DESK_ACTION_PROTOCOL_PATTERNS = {
   approvalRequiredError: /requires approval|approval required/i,
   crPath: /\bxd\.[A-Za-z0-9.*{}.-]+/g,
   deskActionFence: /```xenesis-desk-actions?(?:[ \t]*\r?\n([\s\S]*?)^```[ \t]*$|[ \t]+([{[][^\r\n]*))/gim,
   trailingCrPathPunctuation: /[.,;:)]$/,
+  visibleTextRepeatedBlankLines: /\n{3,}/g,
+  visibleTextTrailingLineWhitespace: /[ \t]+\n/g,
+  windowsPathSeparator: /\\/g,
+} as const;
+
+export const XENESIS_DESK_ACTION_PROTOCOL_FORMAT = {
+  actionBullet: (path: string, reason = '') => `- ${path}${reason ? ` - ${reason}` : ''}`,
+  blankLine: '',
+  compactJsonMaxLength: 180,
+  compactJsonOverflow: (json: string, maxLength: number) => `${json.slice(0, maxLength - 1)}...`,
+  defaultActionId: (index: number) => `desk-action-${index + 1}`,
+  emptyText: '',
+  joinLines: (lines: readonly (string | undefined)[]) =>
+    lines.filter((line): line is string => line !== undefined).join('\n'),
+  lineBreak: '\n',
+  listSeparator: ', ',
+  paragraphBreak: '\n\n',
+  pathSeparator: '/',
+  resultBullet: (path: string, summary = '') => (summary ? `- ${path}: ${summary}` : `- ${path}`),
 } as const;
 
 export const XENESIS_DESK_ACTION_PROTOCOL_TEXT = {
