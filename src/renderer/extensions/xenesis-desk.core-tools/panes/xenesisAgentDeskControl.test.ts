@@ -1305,6 +1305,97 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 라우팅 전체 열어줘').actions, [
+    {
+      id: 'natural-xenesis-messengers-routing-catalog-open',
+      path: 'xd.panes.settings.open',
+      args: {
+        category: 'xenesis-agent',
+        mode: 'connections',
+        section: 'xenesis-connections',
+        placement: 'tab',
+      },
+      approved: false,
+      reason: 'Open external messenger routing catalog in Xenesis Connection Center from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 안전 전체 열어줘').actions, [
+    {
+      id: 'natural-xenesis-messengers-safety-catalog-open',
+      path: 'xd.panes.settings.open',
+      args: {
+        category: 'xenesis-agent',
+        mode: 'connections',
+        section: 'xenesis-connections',
+        placement: 'tab',
+      },
+      approved: false,
+      reason: 'Open external messenger safety catalog in Xenesis Connection Center from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 접근 그룹 전체 열어줘').actions, [
+    {
+      id: 'natural-xenesis-messengers-access-groups-catalog-open',
+      path: 'xd.panes.settings.open',
+      args: {
+        category: 'xenesis-agent',
+        mode: 'connections',
+        section: 'xenesis-connections',
+        placement: 'tab',
+      },
+      approved: false,
+      reason:
+        'Open external messenger access-group catalog in Xenesis Connection Center from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 페어링 전체 열어줘').actions, [
+    {
+      id: 'natural-xenesis-messengers-pairing-catalog-open',
+      path: 'xd.panes.settings.open',
+      args: {
+        category: 'xenesis-agent',
+        mode: 'connections',
+        section: 'xenesis-connections',
+        placement: 'tab',
+      },
+      approved: false,
+      reason: 'Open external messenger pairing catalog in Xenesis Connection Center from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 사용자 스토리 전체 열어줘').actions, [
+    {
+      id: 'natural-xenesis-messengers-user-stories-catalog-open',
+      path: 'xd.panes.settings.open',
+      args: {
+        category: 'xenesis-agent',
+        mode: 'connections',
+        section: 'xenesis-connections',
+        placement: 'tab',
+      },
+      approved: false,
+      reason: 'Open external messenger user-story catalog in Xenesis Connection Center from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 view 전체 열어줘').actions, [
+    {
+      id: 'natural-xenesis-messengers-views-catalog-open',
+      path: 'xd.panes.settings.open',
+      args: {
+        category: 'xenesis-agent',
+        mode: 'connections',
+        section: 'xenesis-connections',
+        placement: 'tab',
+      },
+      approved: false,
+      reason: 'Open external messenger view catalog in Xenesis Connection Center from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider setup 열어줘').actions, [
     {
       id: 'natural-xenesis-provider-view-open-auto',

@@ -458,6 +458,23 @@
   `channel profile draft 전체 열어줘` now focus the Xenesis Connection Center
   instead of using a focused profile-draft open path, because
   `xd.xenesis.channels.profileDrafts.open` requires one implemented channel.
+- Added matching detailed external-messenger catalog opens for broad messenger
+  setup work:
+  - `외부 메신저 라우팅 전체 열어줘` -> `xd.panes.settings.open` with the
+    Xenesis Agent Connection Center selected.
+  - `외부 메신저 안전 전체 열어줘` -> `xd.panes.settings.open` with the
+    Xenesis Agent Connection Center selected.
+  - `외부 메신저 접근 그룹 전체 열어줘` -> `xd.panes.settings.open` with
+    the Xenesis Agent Connection Center selected.
+  - `외부 메신저 페어링 전체 열어줘` -> `xd.panes.settings.open` with the
+    Xenesis Agent Connection Center selected.
+  - `외부 메신저 사용자 스토리 전체 열어줘` -> `xd.panes.settings.open`
+    with the Xenesis Agent Connection Center selected.
+  - `외부 메신저 view 전체 열어줘` -> `xd.panes.settings.open` with the
+    Xenesis Agent Connection Center selected.
+- `외부 메신저 setup 전체 열어줘` still uses the generic external-messenger
+  catalog open, while routing/safety/access-group/pairing/user-story/view opens
+  preserve their detailed catalog intent in the Agent action id and reason.
 - The English aggregate readback is checked before target resolution so the word
   `draft` does not accidentally match the planned `raft` messenger alias.
 - Scope boundary: this slice did not add CR nodes, dispatcher branches,

@@ -1730,6 +1730,66 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
     );
   }
 
+  if (hasExternalMessengerCatalogContext(value) && hasAny(value, ['라우팅', 'routing', 'route'])) {
+    return naturalAction(
+      'natural-xenesis-messengers-routing-catalog-open',
+      'xd.panes.settings.open',
+      xenesisConnectionCenterOpenArgs(),
+      'Open external messenger routing catalog in Xenesis Connection Center from natural language request.',
+    );
+  }
+
+  if (hasExternalMessengerCatalogContext(value) && hasAny(value, ['안전', 'safety', '가드레일', 'guardrail'])) {
+    return naturalAction(
+      'natural-xenesis-messengers-safety-catalog-open',
+      'xd.panes.settings.open',
+      xenesisConnectionCenterOpenArgs(),
+      'Open external messenger safety catalog in Xenesis Connection Center from natural language request.',
+    );
+  }
+
+  if (
+    hasExternalMessengerCatalogContext(value) &&
+    hasAny(value, ['접근 그룹', '액세스 그룹', '액세스그룹', 'access group', 'access groups', 'allowlist'])
+  ) {
+    return naturalAction(
+      'natural-xenesis-messengers-access-groups-catalog-open',
+      'xd.panes.settings.open',
+      xenesisConnectionCenterOpenArgs(),
+      'Open external messenger access-group catalog in Xenesis Connection Center from natural language request.',
+    );
+  }
+
+  if (hasExternalMessengerCatalogContext(value) && hasAny(value, ['페어링', 'pairing', 'pair', '연동'])) {
+    return naturalAction(
+      'natural-xenesis-messengers-pairing-catalog-open',
+      'xd.panes.settings.open',
+      xenesisConnectionCenterOpenArgs(),
+      'Open external messenger pairing catalog in Xenesis Connection Center from natural language request.',
+    );
+  }
+
+  if (
+    hasExternalMessengerCatalogContext(value) &&
+    hasAny(value, ['user story', 'user stories', '사용자 스토리', '스토리'])
+  ) {
+    return naturalAction(
+      'natural-xenesis-messengers-user-stories-catalog-open',
+      'xd.panes.settings.open',
+      xenesisConnectionCenterOpenArgs(),
+      'Open external messenger user-story catalog in Xenesis Connection Center from natural language request.',
+    );
+  }
+
+  if (hasExternalMessengerCatalogContext(value) && hasAny(value, ['view', 'views', '뷰', '화면', 'surface'])) {
+    return naturalAction(
+      'natural-xenesis-messengers-views-catalog-open',
+      'xd.panes.settings.open',
+      xenesisConnectionCenterOpenArgs(),
+      'Open external messenger view catalog in Xenesis Connection Center from natural language request.',
+    );
+  }
+
   if (hasExternalMessengerCatalogContext(value)) {
     return naturalAction(
       'natural-xenesis-messenger-catalog-open',
