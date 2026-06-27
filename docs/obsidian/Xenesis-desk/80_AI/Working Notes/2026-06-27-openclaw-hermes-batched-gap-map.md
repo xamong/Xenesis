@@ -2427,6 +2427,44 @@
 - External documentation handling: no browsing. This update used cached
   repo-local context, source code, and tests.
 
+## Layout Type/CR Separator Catalog Refactor Slice
+
+- Removed the remaining local layout/navigation type-union literals and CR path
+  dot separator literals from `xenesisAgentDeskControl.ts`.
+- Extended `src/shared/xenesisNaturalLanguageCatalog.ts` with:
+  - `XENESIS_DESK_ACTION_PROTOCOL_FORMAT.capabilityPathSeparator`.
+  - `XENESIS_DESK_ACTION_PROTOCOL_FORMAT.sentenceTerminator`.
+  - Derived id types from target catalogs:
+    `XenesisNaturalPlacementId`, `XenesisNaturalDockSideId`,
+    `XenesisNaturalDockWindowStateId`, and `XenesisNaturalArrangeModeId`.
+- Changed the placement, dock side, dock window state, and arrange mode target
+  arrays to `as const satisfies readonly XenesisNaturalWordsTarget[]` so ids
+  remain literal while preserving the shared target contract.
+- Scope boundary: refactor only. This preserved placement, dock side, window
+  state, arrange mode detection, CR path prefix matching, prompt hint text,
+  route order, generated CR paths, and action args.
+- Verification:
+  - RED source guard failed first on the local `XenesisDeskPlacement` literal
+    union.
+  - `rg -n "type XenesisDesk(Placement|DockSide|WindowState|ArrangeMode) = '|\$\{prefix\}\.|\)\}\." src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts`
+    returned no matches after implementation.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 36/36 tests.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 100/100 tests.
+  - `npx biome check src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --max-diagnostics 40`
+    passed after Biome sorted the new type imports.
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit` passed with Registered nodes 763,
+    Callable methods 468, Dispatcher paths 448, missing registered paths 0,
+    missing dispatched coverage paths 0, undispatched static callable methods
+    0, and dispatcher paths missing from tree 0. The generated audit file was
+    removed afterward.
+- Known gap: live Electron Agent-pane smoke was not run for this refactor-only
+  slice.
+- External documentation handling: no browsing. This update used cached
+  repo-local context, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

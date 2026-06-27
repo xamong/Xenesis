@@ -173,6 +173,10 @@ import {
   XENESIS_NATURAL_WORKSPACE_SET_CONTEXT_WORDS,
   XENESIS_NATURAL_XENESIS_CONTEXT_WORDS,
   type XenesisDeskActionActivityPhase as XenesisDeskActionActivityPhaseCatalog,
+  type XenesisNaturalArrangeModeId as XenesisDeskArrangeMode,
+  type XenesisNaturalDockSideId as XenesisDeskDockSide,
+  type XenesisNaturalPlacementId as XenesisDeskPlacement,
+  type XenesisNaturalDockWindowStateId as XenesisDeskWindowState,
   type XenesisNaturalConnectionTarget,
   type XenesisNaturalCoreToolTarget,
   type XenesisNaturalDeskActionDescriptor,
@@ -244,11 +248,6 @@ export interface XenesisDeskActionRunOptions {
 export interface XenesisDeskNaturalLanguagePlan extends XenesisDeskActionParseResult {
   matched: boolean;
 }
-
-type XenesisDeskPlacement = 'tab' | 'left' | 'right' | 'top' | 'bottom';
-type XenesisDeskDockSide = 'left' | 'right' | 'top' | 'bottom';
-type XenesisDeskWindowState = 'top' | 'left' | 'document' | 'right' | 'bottom';
-type XenesisDeskArrangeMode = 'row' | 'column' | 'grid';
 
 function normalizeNaturalLanguageText(value: string): string {
   return String(value || NATURAL_TEXT_DEFAULTS.empty)
@@ -2205,7 +2204,7 @@ export function summarizeXenesisDeskActionExecution(result: XenesisDeskActionExe
 }
 
 function isCapabilityPathUnderPrefix(path: string, prefix: string): boolean {
-  return path === prefix || path.startsWith(`${prefix}.`);
+  return path === prefix || path.startsWith(`${prefix}${DESK_ACTION_PROTOCOL_FORMAT.capabilityPathSeparator}`);
 }
 
 function buildRegistryCapabilityPathSummary(prefixes: readonly string[]): string {
@@ -2243,7 +2242,7 @@ export function buildXenesisDeskControlPromptHint(): string {
     ...XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES,
     `${XENESIS_DESK_CONTROL_PROMPT_HINT_CONNECTION_CENTER_DISCOVERY_PREFIX}${buildRegistryCapabilityPathSummary(
       XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES,
-    )}.`,
+    )}${DESK_ACTION_PROTOCOL_FORMAT.sentenceTerminator}`,
     ...XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES,
   ];
   return DESK_ACTION_PROTOCOL_FORMAT.joinLines([

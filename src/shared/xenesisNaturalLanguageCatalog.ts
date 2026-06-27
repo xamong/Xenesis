@@ -86,6 +86,7 @@ export const XENESIS_DESK_ACTION_PROTOCOL_PATTERNS = {
 export const XENESIS_DESK_ACTION_PROTOCOL_FORMAT = {
   actionBullet: (path: string, reason = '') => `- ${path}${reason ? ` - ${reason}` : ''}`,
   blankLine: '',
+  capabilityPathSeparator: '.',
   compactJsonMaxLength: 180,
   compactJsonOverflow: (json: string, maxLength: number) => `${json.slice(0, maxLength - 1)}...`,
   defaultActionId: (index: number) => `desk-action-${index + 1}`,
@@ -97,6 +98,7 @@ export const XENESIS_DESK_ACTION_PROTOCOL_FORMAT = {
   paragraphBreak: '\n\n',
   pathSeparator: '/',
   resultBullet: (path: string, summary = '') => (summary ? `- ${path}: ${summary}` : `- ${path}`),
+  sentenceTerminator: '.',
 } as const;
 
 export const XENESIS_DESK_ACTION_ACTIVITY_PHASES = {
@@ -2066,34 +2068,42 @@ export const XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS = {
   },
 } as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
 
-export const XENESIS_NATURAL_PLACEMENT_TARGETS: readonly XenesisNaturalWordsTarget[] = [
+export const XENESIS_NATURAL_PLACEMENT_TARGETS = [
   { id: 'right', label: 'right', words: ['오른쪽', '우측', 'right'] },
   { id: 'left', label: 'left', words: ['왼쪽', '좌측', 'left'] },
   { id: 'top', label: 'top', words: ['상단', '위쪽', '위에', 'top'] },
   { id: 'bottom', label: 'bottom', words: ['하단', '아래쪽', '아래에', 'bottom'] },
   { id: 'tab', label: 'tab', words: ['탭', '중앙', '문서 영역', 'document', 'tab', 'center'] },
-] as const;
+] as const satisfies readonly XenesisNaturalWordsTarget[];
 
-export const XENESIS_NATURAL_DOCK_SIDE_TARGETS: readonly XenesisNaturalWordsTarget[] = [
+export type XenesisNaturalPlacementId = (typeof XENESIS_NATURAL_PLACEMENT_TARGETS)[number]['id'];
+
+export const XENESIS_NATURAL_DOCK_SIDE_TARGETS = [
   { id: 'right', label: 'right', words: ['오른쪽', '우측', 'right'] },
   { id: 'left', label: 'left', words: ['왼쪽', '좌측', 'left'] },
   { id: 'top', label: 'top', words: ['상단', '위쪽', '위에', 'top'] },
   { id: 'bottom', label: 'bottom', words: ['하단', '아래쪽', '아래에', 'bottom'] },
-] as const;
+] as const satisfies readonly XenesisNaturalWordsTarget[];
 
-export const XENESIS_NATURAL_DOCK_WINDOW_STATE_TARGETS: readonly XenesisNaturalWordsTarget[] = [
+export type XenesisNaturalDockSideId = (typeof XENESIS_NATURAL_DOCK_SIDE_TARGETS)[number]['id'];
+
+export const XENESIS_NATURAL_DOCK_WINDOW_STATE_TARGETS = [
   { id: 'document', label: 'document', words: ['문서 영역', '문서영역', 'document', 'center', '중앙'] },
   { id: 'right', label: 'right', words: ['오른쪽 영역', '우측 영역', 'right area'] },
   { id: 'left', label: 'left', words: ['왼쪽 영역', '좌측 영역', 'left area'] },
   { id: 'top', label: 'top', words: ['상단 영역', '위쪽 영역', 'top area'] },
   { id: 'bottom', label: 'bottom', words: ['하단 영역', '아래쪽 영역', 'bottom area'] },
-] as const;
+] as const satisfies readonly XenesisNaturalWordsTarget[];
 
-export const XENESIS_NATURAL_ARRANGE_MODE_TARGETS: readonly XenesisNaturalWordsTarget[] = [
+export type XenesisNaturalDockWindowStateId = (typeof XENESIS_NATURAL_DOCK_WINDOW_STATE_TARGETS)[number]['id'];
+
+export const XENESIS_NATURAL_ARRANGE_MODE_TARGETS = [
   { id: 'grid', label: 'grid', words: ['바둑판', '타일', 'grid', 'tile'] },
   { id: 'column', label: 'column', words: ['세로', '수직', 'vertical', 'column'] },
   { id: 'row', label: 'row', words: ['가로', '수평', 'horizontal', 'row'] },
-] as const;
+] as const satisfies readonly XenesisNaturalWordsTarget[];
+
+export type XenesisNaturalArrangeModeId = (typeof XENESIS_NATURAL_ARRANGE_MODE_TARGETS)[number]['id'];
 
 export const XENESIS_NATURAL_WINDOW_SIZE_PRESET_TARGETS: readonly XenesisNaturalWordsTarget[] = [
   { id: 'uhd', label: 'uhd', words: ['uhd', '3840', '2160', '4k'] },

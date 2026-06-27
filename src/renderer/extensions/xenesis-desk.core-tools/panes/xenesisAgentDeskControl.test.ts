@@ -312,6 +312,18 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.equal(XENESIS_NATURAL_TEXT_DEFAULTS.wordSeparator, ' ');
   assert.equal(XENESIS_NATURAL_NUMERIC_LIMITS.dockSize.max, 4096);
   assert.equal(XENESIS_NATURAL_NUMERIC_LIMITS.terminalCount.max, 50);
+  assert.doesNotMatch(source, /type XenesisDeskPlacement = 'tab'/);
+  assert.doesNotMatch(source, /type XenesisDeskDockSide = 'left'/);
+  assert.doesNotMatch(source, /type XenesisDeskWindowState = 'top'/);
+  assert.doesNotMatch(source, /type XenesisDeskArrangeMode = 'row'/);
+  assert.doesNotMatch(source, /\$\{prefix\}\./);
+  assert.doesNotMatch(source, /\)\}\./);
+  assert.match(source, /XenesisNaturalPlacementId as XenesisDeskPlacement/);
+  assert.match(source, /XenesisNaturalDockSideId as XenesisDeskDockSide/);
+  assert.match(source, /XenesisNaturalDockWindowStateId as XenesisDeskWindowState/);
+  assert.match(source, /XenesisNaturalArrangeModeId as XenesisDeskArrangeMode/);
+  assert.equal(XENESIS_DESK_ACTION_PROTOCOL_FORMAT.capabilityPathSeparator, '.');
+  assert.equal(XENESIS_DESK_ACTION_PROTOCOL_FORMAT.sentenceTerminator, '.');
   assert.match(source, /XENESIS_DESK_ACTION_PROTOCOL_PATTERNS/);
   assert.match(source, /XENESIS_DESK_ACTION_PROTOCOL_TEXT/);
   assert.match(source, /XENESIS_DESK_ACTION_PROTOCOL_RECORD_KEYS/);
