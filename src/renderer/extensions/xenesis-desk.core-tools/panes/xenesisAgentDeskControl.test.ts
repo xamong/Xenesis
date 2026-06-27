@@ -357,6 +357,7 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.xenesis\.channels\.accessGroups\.status/);
   assert.match(hint, /xd\.xenesis\.channels\.pairing\.status/);
   assert.match(hint, /xd\.xenesis\.channels\.routing\.status/);
+  assert.match(hint, /xd\.xenesis\.channels\.routing\.open/);
   assert.match(hint, /xd\.xenesis\.channels\.safety\.status/);
   assert.match(hint, /xd\.xenesis\.messengers\.views\.status/);
   assert.match(hint, /xd\.xenesis\.messengers\.views\.open/);
@@ -1555,6 +1556,26 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
       args: { id: 'telegram', ensureVisible: true },
       approved: false,
       reason: 'Open Telegram messenger view from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('텔레그램 routing 열어줘').actions, [
+    {
+      id: 'natural-xenesis-channel-routing-open-telegram',
+      path: 'xd.xenesis.channels.routing.open',
+      args: { channel: 'telegram', ensureVisible: true },
+      approved: false,
+      reason: 'Open Telegram channel routing from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('슬랙 라우팅 열어줘').actions, [
+    {
+      id: 'natural-xenesis-channel-routing-open-slack',
+      path: 'xd.xenesis.channels.routing.open',
+      args: { channel: 'slack', ensureVisible: true },
+      approved: false,
+      reason: 'Open Slack channel routing from natural language request.',
     },
   ]);
 

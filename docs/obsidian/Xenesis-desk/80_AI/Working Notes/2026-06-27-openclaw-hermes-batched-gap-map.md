@@ -696,6 +696,25 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local Obsidian graph, source code, and tests.
 
+## Channel Routing Open CR Slice
+
+- Added a routing-specific CR open path for implemented external messenger
+  channels: `xd.xenesis.channels.routing.open`.
+- Xenesis Agent deterministic natural-language routing now preserves focused
+  channel routing intent:
+  - `텔레그램 routing 열어줘` -> `xd.xenesis.channels.routing.open` with
+    `channel=telegram`.
+  - `슬랙 라우팅 열어줘` -> `xd.xenesis.channels.routing.open` with
+    `channel=slack`.
+- Planned messenger routing opens still use the generic messenger view until
+  routing read/open models are widened to planned channels.
+- Scope boundary: this slice only opens internal Desk channel routing surfaces.
+  It did not mutate channel settings, update access groups, send test messages,
+  start the gateway, store secrets, create Action Inbox items, or bypass
+  approvals.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local Obsidian graph, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

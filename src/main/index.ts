@@ -5160,6 +5160,25 @@ async function openXenesisOnboardingStep(args?: unknown): Promise<Record<string,
   };
 }
 
+function xenesisChannelRoutingStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    summary: item.summary,
+    routeBinding: item.channelTemplate?.routing?.routeBinding,
+    allowlistFields: item.channelTemplate?.routing?.allowlistFields ?? [],
+    pairing: item.channelTemplate?.routing?.pairing,
+    defaultAgent: item.channelTemplate?.routing?.defaultAgent,
+    sessionScope: item.channelTemplate?.routing?.sessionScope,
+    diagnostics: item.channelTemplate?.routing?.diagnostics ?? [],
+    deliveryFeatures: item.channelTemplate?.routing?.deliveryFeatures ?? [],
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+    warnings: item.warnings ?? [],
+  };
+}
+
 async function getXenesisChannelRoutingStatus(args?: unknown): Promise<Record<string, unknown>> {
   const body = normalizeMcpCapabilityArgs(args);
   const channel = readCapabilityString(body, ['channel', 'id', 'name']);
@@ -5175,22 +5194,7 @@ async function getXenesisChannelRoutingStatus(args?: unknown): Promise<Record<st
   const items = status.sections.messengers.items
     .filter((item) => item.supportLevel === 'implemented' && item.channelTemplate?.routing)
     .filter((item) => !channel || item.id === channel)
-    .map((item: XenesisConnectionItem) => ({
-      id: item.id,
-      label: item.label,
-      status: item.status,
-      summary: item.summary,
-      routeBinding: item.channelTemplate?.routing?.routeBinding,
-      allowlistFields: item.channelTemplate?.routing?.allowlistFields ?? [],
-      pairing: item.channelTemplate?.routing?.pairing,
-      defaultAgent: item.channelTemplate?.routing?.defaultAgent,
-      sessionScope: item.channelTemplate?.routing?.sessionScope,
-      diagnostics: item.channelTemplate?.routing?.diagnostics ?? [],
-      deliveryFeatures: item.channelTemplate?.routing?.deliveryFeatures ?? [],
-      settingsAction: item.settingsAction,
-      crActions: item.crActions ?? [],
-      warnings: item.warnings ?? [],
-    }));
+    .map((item: XenesisConnectionItem) => xenesisChannelRoutingStatusItem(item));
 
   return {
     ok: true,
@@ -5198,6 +5202,47 @@ async function getXenesisChannelRoutingStatus(args?: unknown): Promise<Record<st
     ...(channel ? { channel } : {}),
     total: items.length,
     items,
+  };
+}
+
+async function openXenesisChannelRouting(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const channel = readCapabilityString(body, ['channel', 'id', 'name']);
+  if (!channel) {
+    return { ok: false, error: 'Channel is required.' };
+  }
+  if (!isXenesisProfileChannelName(channel)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis channel: ${channel}`,
+      allowedChannels: XENESIS_PROFILE_CHANNEL_NAMES,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.messengers.items.find(
+    (candidate) =>
+      candidate.id === channel && candidate.supportLevel === 'implemented' && candidate.channelTemplate?.routing,
+  );
+  if (!item) {
+    return { ok: false, channel, error: `Xenesis channel routing is not available: ${channel}` };
+  }
+
+  const renderer = await openMcpBuiltinPaneCapability({
+    kind: 'settings',
+    category: 'xenesis-agent',
+    mode: 'connections',
+    section: 'xenesis-connections',
+    focusConnectionId: item.id,
+    ensureVisible: body.ensureVisible !== false,
+  });
+
+  return {
+    ok: renderer.ok !== false,
+    channel: item.id,
+    id: item.id,
+    item: xenesisChannelRoutingStatusItem(item),
+    renderer,
   };
 }
 
@@ -14240,6 +14285,7 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisOnboardingStatus: (args: unknown) => getXenesisOnboardingStatus(args),
     openXenesisOnboardingStep: (args: unknown) => openXenesisOnboardingStep(args),
     getXenesisChannelRoutingStatus: (args: unknown) => getXenesisChannelRoutingStatus(args),
+    openXenesisChannelRouting: (args: unknown) => openXenesisChannelRouting(args),
     getXenesisChannelSafetyStatus: (args: unknown) => getXenesisChannelSafetyStatus(args),
     getXenesisChannelAccessGroupsStatus: (args: unknown) => getXenesisChannelAccessGroupsStatus(args),
     getXenesisChannelPairingStatus: (args: unknown) => getXenesisChannelPairingStatus(args),

@@ -346,6 +346,37 @@ const XENESIS_CHANNEL_ROUTING_STATUS_SCHEMA = {
   },
 } as const;
 
+const XENESIS_CHANNEL_ROUTING_OPEN_SCHEMA = {
+  type: 'object',
+  required: ['channel'],
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: ['telegram', 'slack', 'discord', 'webhook'],
+      description: 'Implemented external bot channel to focus.',
+    },
+    id: {
+      type: 'string',
+      title: 'Connection id',
+      enum: ['telegram', 'slack', 'discord', 'webhook'],
+      description: 'Alias for channel.',
+    },
+    name: {
+      type: 'string',
+      title: 'Connection name',
+      enum: ['telegram', 'slack', 'discord', 'webhook'],
+      description: 'Alias for channel.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused messenger routing card into view after opening the Connection Center.',
+      default: true,
+    },
+  },
+} as const;
+
 const XENESIS_CHANNEL_ACCESS_GROUP_STATUS_SCHEMA = {
   type: 'object',
   properties: {
@@ -1263,6 +1294,7 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisOnboardingStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisOnboardingStep?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisChannelRoutingStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisChannelRouting?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisChannelSafetyStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisChannelAccessGroupsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisChannelPairingStatus?: (args?: unknown) => Promise<unknown> | unknown;
@@ -4336,6 +4368,13 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             'Read route binding, allowlist, pairing, default-agent, diagnostics, and delivery metadata for implemented Xenesis external bot channels.',
             'read',
             XENESIS_CHANNEL_ROUTING_STATUS_SCHEMA,
+          ),
+          method(
+            'xd.xenesis.channels.routing.open',
+            'Open channel routing',
+            'Open Settings > Xenesis Agent > Connections and focus an implemented external messenger routing card inside Desk.',
+            'control',
+            XENESIS_CHANNEL_ROUTING_OPEN_SCHEMA,
           ),
         ]),
         group(
@@ -11120,6 +11159,9 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.channels.routing.status') {
         return callAdapter(path, api?.getXenesisChannelRoutingStatus, request.args);
+      }
+      if (path === 'xd.xenesis.channels.routing.open') {
+        return callAdapter(path, api?.openXenesisChannelRouting, request.args);
       }
       if (path === 'xd.xenesis.channels.safety.status') {
         return callAdapter(path, api?.getXenesisChannelSafetyStatus, request.args);
