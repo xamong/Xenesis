@@ -553,6 +553,16 @@
 - Aggregate provider routing requires explicit aggregate wording such as
   `전체`, `all`, or `catalog`, so provider-specific prompts like
   `codex app-server provider routing 상태 보여줘` remain provider-specific.
+- Added matching detailed provider catalog opens for broad provider setup work:
+  - `AI provider routing 전체 열어줘` -> `xd.panes.settings.open` with the
+    Xenesis Agent Connection Center selected.
+  - `AI provider view 전체 열어줘` -> `xd.panes.settings.open` with the Xenesis
+    Agent Connection Center selected.
+  - `AI provider profile draft 전체 열어줘` -> `xd.panes.settings.open` with the
+    Xenesis Agent Connection Center selected.
+- `AI provider setup 전체 열어줘` still uses the generic provider catalog open,
+  while routing/view/profile-draft opens preserve their detailed catalog intent
+  in the Agent action id and reason.
 - Scope boundary: this slice did not add CR nodes, dispatcher branches,
   renderer adapters, provider setting mutations, credential storage, local CLI
   switching, provider prompt execution, or approval bypasses. All new routes

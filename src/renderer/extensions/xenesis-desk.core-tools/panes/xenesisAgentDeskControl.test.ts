@@ -1124,6 +1124,51 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider routing 전체 열어줘').actions, [
+    {
+      id: 'natural-xenesis-providers-routing-catalog-open',
+      path: 'xd.panes.settings.open',
+      args: {
+        category: 'xenesis-agent',
+        mode: 'connections',
+        section: 'xenesis-connections',
+        placement: 'tab',
+      },
+      approved: false,
+      reason: 'Open AI provider routing catalog in Xenesis Connection Center from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider view 전체 열어줘').actions, [
+    {
+      id: 'natural-xenesis-providers-views-catalog-open',
+      path: 'xd.panes.settings.open',
+      args: {
+        category: 'xenesis-agent',
+        mode: 'connections',
+        section: 'xenesis-connections',
+        placement: 'tab',
+      },
+      approved: false,
+      reason: 'Open AI provider view catalog in Xenesis Connection Center from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider profile draft 전체 열어줘').actions, [
+    {
+      id: 'natural-xenesis-providers-profile-drafts-catalog-open',
+      path: 'xd.panes.settings.open',
+      args: {
+        category: 'xenesis-agent',
+        mode: 'connections',
+        section: 'xenesis-connections',
+        placement: 'tab',
+      },
+      approved: false,
+      reason: 'Open AI provider profile draft catalog in Xenesis Connection Center from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 툴 connector 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-tool-catalog-open',

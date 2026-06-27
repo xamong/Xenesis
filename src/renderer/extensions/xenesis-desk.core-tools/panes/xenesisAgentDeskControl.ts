@@ -1600,6 +1600,33 @@ function xenesisGuideCatalogOpenActionFromNaturalText(value: string): XenesisDes
 function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
   if (!hasXenesisAggregateCatalogContext(value)) return null;
 
+  if (hasXenesisProviderProfileContext(value) && hasAny(value, ['라우팅', 'routing', 'route', 'fallback', '폴백'])) {
+    return naturalAction(
+      'natural-xenesis-providers-routing-catalog-open',
+      'xd.panes.settings.open',
+      xenesisConnectionCenterOpenArgs(),
+      'Open AI provider routing catalog in Xenesis Connection Center from natural language request.',
+    );
+  }
+
+  if (hasXenesisProviderProfileContext(value) && hasAny(value, ['view', 'views', '뷰', '화면', 'surface'])) {
+    return naturalAction(
+      'natural-xenesis-providers-views-catalog-open',
+      'xd.panes.settings.open',
+      xenesisConnectionCenterOpenArgs(),
+      'Open AI provider view catalog in Xenesis Connection Center from natural language request.',
+    );
+  }
+
+  if (hasXenesisProviderProfileContext(value) && hasAny(value, ['profile', '프로필', 'draft', '초안'])) {
+    return naturalAction(
+      'natural-xenesis-providers-profile-drafts-catalog-open',
+      'xd.panes.settings.open',
+      xenesisConnectionCenterOpenArgs(),
+      'Open AI provider profile draft catalog in Xenesis Connection Center from natural language request.',
+    );
+  }
+
   if (hasXenesisProviderProfileContext(value)) {
     return naturalAction(
       'natural-xenesis-provider-catalog-open',
