@@ -394,12 +394,124 @@ function viewKindFromNaturalText(value: string): { id: string; kind: string; rea
   return null;
 }
 
+function xenesisConnectionTargetFromNaturalText(
+  value: string,
+): { id: string; label: string; kind: 'tool' | 'messenger' } | null {
+  const targets: Array<{
+    id: string;
+    label: string;
+    kind: 'tool' | 'messenger';
+    words: readonly string[];
+  }> = [
+    { id: 'notion', label: 'Notion', kind: 'tool', words: ['notion', '노션'] },
+    {
+      id: 'google-calendar',
+      label: 'Google Calendar',
+      kind: 'tool',
+      words: ['google calendar', '구글 캘린더', '캘린더'],
+    },
+    {
+      id: 'google-workspace',
+      label: 'Google Workspace',
+      kind: 'tool',
+      words: ['google workspace', '구글 워크스페이스', 'gmail', '지메일', 'google docs', '구글 문서'],
+    },
+    { id: 'github', label: 'GitHub', kind: 'tool', words: ['github', '깃허브'] },
+    { id: 'linear', label: 'Linear', kind: 'tool', words: ['linear', '리니어'] },
+    { id: 'fetch', label: 'Fetch', kind: 'tool', words: ['fetch', '웹 fetch', '웹 가져오기'] },
+    { id: 'filesystem', label: 'Filesystem', kind: 'tool', words: ['filesystem', 'file system', '파일시스템'] },
+    { id: 'telegram', label: 'Telegram', kind: 'messenger', words: ['telegram', '텔레그램'] },
+    { id: 'slack', label: 'Slack', kind: 'messenger', words: ['slack', '슬랙'] },
+    { id: 'discord', label: 'Discord', kind: 'messenger', words: ['discord', '디스코드'] },
+    { id: 'webhook', label: 'Webhook', kind: 'messenger', words: ['webhook', '웹훅'] },
+  ];
+
+  return targets.find((target) => hasAny(value, target.words)) || null;
+}
+
+function xenesisGuideActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
+  if (!hasAny(value, ['가이드', 'guide', '문서', 'playbook', '플레이북'])) return null;
+
+  let id = 'onboarding-connections';
+  let label = 'Onboarding and connections';
+  if (hasAny(value, ['user story', 'user stories', '사용자 스토리', '스토리', 'hermes', '헤르메스'])) {
+    id = 'agent-user-stories';
+    label = 'Agent user stories';
+  } else if (hasAny(value, ['cr', 'mcp', 'gateway', '게이트웨이', 'bot', '봇'])) {
+    id = 'cr-mcp-gateway-bots';
+    label = 'Capability Registry, MCP, gateway, and bots';
+  }
+
+  return naturalAction(
+    `natural-xenesis-guide-open-${id}`,
+    'xd.xenesis.guides.open',
+    { id, ensureVisible: true },
+    `Open ${label} guide from natural language request.`,
+  );
+}
+
+function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
+  const guideAction = xenesisGuideActionFromNaturalText(value);
+  if (guideAction) return guideAction;
+
+  if (hasAny(value, ['연결 센터', 'connection center', 'connections center', '연결 목록'])) {
+    return naturalAction(
+      'natural-xenesis-connections-center-open',
+      'xd.panes.settings.open',
+      {
+        category: 'xenesis-agent',
+        mode: 'connections',
+        section: 'xenesis-connections',
+        placement: 'tab',
+      },
+      'Open Xenesis Connection Center from natural language request.',
+    );
+  }
+
+  const target = xenesisConnectionTargetFromNaturalText(value);
+  if (!target) return null;
+
+  if (
+    target.kind === 'tool' &&
+    (target.id === 'google-calendar' || target.id === 'google-workspace') &&
+    hasAny(value, ['oauth', '오어스', '인증 초안', '초안', 'token', '토큰'])
+  ) {
+    return naturalAction(
+      `natural-xenesis-tool-oauth-draft-open-${target.id}`,
+      'xd.xenesis.tools.oauthDrafts.open',
+      { id: target.id, ensureVisible: true },
+      `Open ${target.label} OAuth draft from natural language request.`,
+    );
+  }
+
+  if (target.kind === 'messenger' && hasAny(value, ['메신저', 'messenger', '채널', 'channel', '설정', 'view', '뷰'])) {
+    return naturalAction(
+      `natural-xenesis-messenger-view-open-${target.id}`,
+      'xd.xenesis.messengers.views.open',
+      { id: target.id, ensureVisible: true },
+      `Open ${target.label} messenger view from natural language request.`,
+    );
+  }
+
+  return naturalAction(
+    `natural-xenesis-connection-open-${target.id}`,
+    'xd.xenesis.connections.open',
+    { id: target.id, ensureVisible: true },
+    `Open ${target.label} connection card from natural language request.`,
+  );
+}
+
 export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDeskNaturalLanguagePlan {
   const rawText = String(text || '').trim();
   const value = normalizeNaturalLanguageText(rawText);
   if (!value || !hasActionIntent(value)) return emptyNaturalPlan();
 
   const placement = detectPlacement(value);
+
+  const xenesisConnectionAction = xenesisConnectionActionFromNaturalText(value);
+  if (xenesisConnectionAction && hasAny(value, ['열어', '켜줘', '띄워', '보여', 'open', 'show'])) {
+    return naturalPlan('Xenesis 연결 표면을 엽니다.', [xenesisConnectionAction]);
+  }
 
   if (hasAny(value, ['설정', 'settings']) && hasAny(value, ['열어', '켜줘', '띄워', '보여', 'open', 'show'])) {
     return naturalPlan('설정 패인을 엽니다.', [

@@ -556,6 +556,48 @@ test('planXenesisDeskNaturalLanguageActions maps tools and explorer filter reque
   ]);
 });
 
+test('planXenesisDeskNaturalLanguageActions maps Connection Center requests to CR actions', () => {
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 연결 카드 열어줘').actions, [
+    {
+      id: 'natural-xenesis-connection-open-notion',
+      path: 'xd.xenesis.connections.open',
+      args: { id: 'notion', ensureVisible: true },
+      approved: false,
+      reason: 'Open Notion connection card from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('구글 캘린더 OAuth 초안 보여줘').actions, [
+    {
+      id: 'natural-xenesis-tool-oauth-draft-open-google-calendar',
+      path: 'xd.xenesis.tools.oauthDrafts.open',
+      args: { id: 'google-calendar', ensureVisible: true },
+      approved: false,
+      reason: 'Open Google Calendar OAuth draft from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('온보딩 가이드 열어줘').actions, [
+    {
+      id: 'natural-xenesis-guide-open-onboarding-connections',
+      path: 'xd.xenesis.guides.open',
+      args: { id: 'onboarding-connections', ensureVisible: true },
+      approved: false,
+      reason: 'Open Onboarding and connections guide from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('텔레그램 메신저 설정 보여줘').actions, [
+    {
+      id: 'natural-xenesis-messenger-view-open-telegram',
+      path: 'xd.xenesis.messengers.views.open',
+      args: { id: 'telegram', ensureVisible: true },
+      approved: false,
+      reason: 'Open Telegram messenger view from natural language request.',
+    },
+  ]);
+});
+
 test('buildXenesisDeskControlPromptHint describes settings files capture and layout control', () => {
   const hint = buildXenesisDeskControlPromptHint();
 

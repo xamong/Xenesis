@@ -843,6 +843,24 @@ Capability Registry instead of only through separate renderer settings panels.
   `xd.xenesis.guides.status`, then passed after implementation with 20/20
   tests.
 
+## Current Natural Connection Actions Slice
+
+- Add deterministic natural-language routing for clear Connection Center
+  requests before provider execution.
+- `노션 연결 카드 열어줘` maps to `xd.xenesis.connections.open` with
+  `id=notion`.
+- `구글 캘린더 OAuth 초안 보여줘` maps to
+  `xd.xenesis.tools.oauthDrafts.open` with `id=google-calendar`.
+- `온보딩 가이드 열어줘` maps to `xd.xenesis.guides.open` with
+  `id=onboarding-connections`.
+- `텔레그램 메신저 설정 보여줘` maps to
+  `xd.xenesis.messengers.views.open` with `id=telegram`.
+- This is deterministic routing, not agent reasoning. It emits existing CR
+  actions only and does not mutate settings, execute external tools, send
+  messages, complete OAuth, or add registry nodes.
+- TDD check: focused natural planner test failed first with no action for
+  `노션 연결 카드 열어줘`, then passed after implementation with 21/21 tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
