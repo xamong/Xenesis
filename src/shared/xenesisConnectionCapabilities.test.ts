@@ -129,6 +129,42 @@ test('xenesis connection open capability opens the Connection Center catalog or 
   });
 });
 
+test('xenesis connection center testing snapshot capability is registered and dispatches to the adapter', async () => {
+  const capability = findDeskBridgeCapability('xd.testing.connectionCenter.snapshot');
+  const schemaProperties = (capability?.schema?.properties ?? {}) as Record<string, any>;
+  assert.equal(capability?.permission, 'read');
+  assert.equal(capability?.approval, 'never');
+  assert.equal(schemaProperties.includeBodyText?.type, 'boolean');
+  assert.equal(schemaProperties.maxTextLength?.type, 'number');
+  assert.equal(schemaProperties.timeoutMs?.type, 'number');
+
+  const calls: unknown[] = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    snapshotConnectionCenter: (args) => {
+      calls.push(args);
+      return {
+        ok: true,
+        present: true,
+        checks: [{ id: 'connection-center-root', present: true }],
+      };
+    },
+  };
+
+  const result = await callDeskBridgeCapability(api, {
+    path: 'xd.testing.connectionCenter.snapshot',
+    args: { includeBodyText: true, maxTextLength: 640, timeoutMs: 1500 },
+    source: 'xenesis',
+  });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(calls, [{ includeBodyText: true, maxTextLength: 640, timeoutMs: 1500 }]);
+  assert.deepEqual(result.result, {
+    ok: true,
+    present: true,
+    checks: [{ id: 'connection-center-root', present: true }],
+  });
+});
+
 test('xenesis onboarding status capabilities are registered and dispatch to the adapter', async () => {
   const statusCapability = findDeskBridgeCapability('xd.xenesis.onboarding.status');
   const openCapability = findDeskBridgeCapability('xd.xenesis.onboarding.open');

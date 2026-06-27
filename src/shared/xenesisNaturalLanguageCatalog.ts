@@ -1053,6 +1053,7 @@ export const XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES = [
   'xd.xenesis.tools',
   'xd.xenesis.channels',
   'xd.xenesis.messengers',
+  'xd.testing.connectionCenter',
 ] as const;
 
 export const XENESIS_DESK_CONTROL_PROMPT_HINT_CONNECTION_CENTER_DISCOVERY_PREFIX =
@@ -1090,7 +1091,7 @@ export const XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES = [
   '- Use provider profile-draft CR paths from the Capability Registry to inspect field drafts, focus provider draft cards, or record local Action Inbox review items. Provider profile drafts are review-only and do not mutate provider settings, store credentials, switch local CLI selection, or run provider prompts.',
   '- Use external messenger routing, safety, access-group, pairing, view, user-story, and profile-draft CR paths from the Capability Registry before testing or changing external messenger setup.',
   '- Channel profile drafts are review-only and do not mutate channel settings, update allowlists, write profiles, send test messages, start the gateway, store secrets, or bypass approvals.',
-  '- Use `xd.testing.xenesisAgent.snapshot` and `xd.testing.xenesisAgent.submitPrompt` only for development smoke verification of the live Agent pane.',
+  '- Use `xd.testing.connectionCenter.snapshot`, `xd.testing.xenesisAgent.snapshot`, and `xd.testing.xenesisAgent.submitPrompt` only for development smoke verification of live Desk surfaces.',
   '- For dashboard or XCON/SKETCH artifact generation, Xenesis Agent should own generation through `/artifact`; Gowoori is the render target and GowooriChat is fallback only.',
 ] as const;
 

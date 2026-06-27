@@ -937,6 +937,7 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.xenesis\.connections\.setupRequests\.status/);
   assert.match(hint, /xd\.xenesis\.connections\.setupRequests\.open/);
   assert.match(hint, /xd\.xenesis\.connections\.setupRequests\.request/);
+  assert.match(hint, /xd\.testing\.connectionCenter\.snapshot/);
   assert.match(hint, /xd\.xenesis\.onboarding\.status/);
   assert.match(hint, /xd\.xenesis\.onboarding\.open/);
   assert.match(hint, /xd\.xenesis\.guides\.status/);

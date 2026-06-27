@@ -12761,6 +12761,113 @@ ${XENESIS_AGENT_PROGRESS_SANITIZER_SCRIPT}
   }
 }
 
+async function snapshotConnectionCenterForCapability(args: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const includeBodyText = typeof body.includeBodyText === 'boolean' ? body.includeBodyText : false;
+  const maxTextLength = clamp(Number(body.maxTextLength), 200, 10000, 2400);
+  const timeoutMs = clamp(Number(body.timeoutMs), 0, 10000, 3000);
+  if (app.isPackaged) {
+    return {
+      ok: false,
+      present: false,
+      error: 'xd.testing.connectionCenter.snapshot is only available in the development Electron app.',
+    };
+  }
+
+  const targetWindow = getMcpTargetWindow();
+  if (!targetWindow || targetWindow.isDestroyed()) {
+    return { ok: false, present: false, error: 'No Xenesis Desk window is available.' };
+  }
+
+  const script = `
+(async () => {
+  const config = ${JSON.stringify({ includeBodyText, maxTextLength, timeoutMs })};
+  const startedAt = Date.now();
+  const rootSelector = '[data-settings-section="xenesis-connections"]';
+  const checks = [
+    { id: 'connection-center-root', selector: rootSelector },
+    { id: 'connection-center-title', selector: rootSelector + ' h2', text: 'Connection Center' },
+    { id: 'onboarding-guided-steps', selector: '[data-xenesis-onboarding-plan]', text: 'guided step' },
+    { id: 'provider-profile-review-steps', selector: '[data-xenesis-provider-profile-draft]', text: 'review step' },
+    { id: 'tool-oauth-review-steps', selector: '[data-xenesis-tool-oauth-draft]', text: 'review step' },
+    { id: 'channel-profile-review-steps', selector: '[data-xenesis-channel-profile-draft]', text: 'review step' },
+  ];
+  const truncate = (value, fallback = '') => String(value || fallback || '').trim().slice(0, Number(config.maxTextLength || 2400));
+  const delay = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+  const readSnapshot = () => {
+    const root = document.querySelector(rootSelector);
+    const rootText = root ? String(root.textContent || '') : '';
+    const bodyText = String(document.body?.innerText || '');
+    const rect = root?.getBoundingClientRect();
+    const activeTabs = Array.from(document.querySelectorAll('[data-settings-xenesis-tab].is-active')).map((element) => ({
+      tab: element.getAttribute('data-settings-xenesis-tab') || '',
+      text: truncate(element.textContent, ''),
+    }));
+    const checkResults = checks.map((check) => {
+      const element = document.querySelector(check.selector);
+      const text = String(element?.textContent || '');
+      const textPresent = check.text ? text.toLowerCase().includes(String(check.text).toLowerCase()) : true;
+      return {
+        id: check.id,
+        selector: check.selector,
+        present: Boolean(element),
+        textPresent,
+        expectedText: check.text || '',
+        text: truncate(text, ''),
+      };
+    });
+    const failedChecks = checkResults.filter((check) => !check.present || !check.textPresent);
+    const result = {
+      ok: Boolean(root) && failedChecks.length === 0,
+      present: Boolean(root),
+      rootSelector,
+      rootText: truncate(rootText, ''),
+      activeTabs,
+      rootRect: rect ? {
+        x: rect.x,
+        y: rect.y,
+        width: rect.width,
+        height: rect.height,
+      } : null,
+      summary: {
+        total: checkResults.length,
+        passed: checkResults.length - failedChecks.length,
+        failed: failedChecks.length,
+      },
+      checks: checkResults,
+      waitedMs: Date.now() - startedAt,
+      timedOut: false,
+    };
+    if (config.includeBodyText) {
+      result.bodyTextPreview = bodyText.slice(0, 1200);
+      result.bodyTextTail = bodyText.slice(-2000);
+    }
+    return result;
+  };
+  const deadline = startedAt + Number(config.timeoutMs || 0);
+  let result = readSnapshot();
+  while (!result.ok && Date.now() < deadline) {
+    await delay(Math.min(100, Math.max(1, deadline - Date.now())));
+    result = readSnapshot();
+  }
+  result.timedOut = !result.ok && Date.now() >= deadline;
+  return result;
+})()
+`;
+
+  try {
+    const result = (await targetWindow.webContents.executeJavaScript(script, true)) as Record<string, unknown>;
+    return { ...result, windowId: targetWindow.id };
+  } catch (error) {
+    return {
+      ok: false,
+      present: false,
+      windowId: targetWindow.id,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 async function submitXenesisAgentPromptForCapability(args: unknown): Promise<Record<string, unknown>> {
   const body = normalizeMcpCapabilityArgs(args);
   const prompt = readCapabilityRawString(body, ['prompt', 'text', 'message']);
@@ -14399,6 +14506,7 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     submitXenesisAgentMessage: submitXenesisAgentMessageForCapability,
     listXenesisAgentEvents: listXenesisAgentEventsForCapability,
     snapshotXenesisAgent: snapshotXenesisAgentForCapability,
+    snapshotConnectionCenter: snapshotConnectionCenterForCapability,
     submitXenesisAgentPrompt: submitXenesisAgentPromptForCapability,
     dropXenesisAgentAttachments: dropXenesisAgentAttachmentsForCapability,
     submitGowooriChatPrompt: submitGowooriChatPromptForCapability,

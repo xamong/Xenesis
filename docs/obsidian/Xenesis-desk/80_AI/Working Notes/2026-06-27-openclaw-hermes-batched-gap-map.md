@@ -2788,6 +2788,52 @@
 - External documentation handling: no browsing. This used current repo code,
   cached gap context, and live Electron verification.
 
+## Connection Center Testing Snapshot Slice
+
+- Added development-only CR read path:
+  `xd.testing.connectionCenter.snapshot`.
+- The path reads the live Settings > Xenesis Agent > Connections renderer state
+  from inside the Electron app, returning root/title/detail-row checks for:
+  onboarding guided steps, provider profile review steps, tool OAuth review
+  steps, and channel profile review steps.
+- Added `timeoutMs` to make the snapshot wait for the Connection Center detail
+  rows to render after CR-driven Settings open. Live diagnosis showed the
+  immediate 0ms snapshot can still be in the `확인 중...` loading state, while
+  the 250ms snapshot passes.
+- Added the path to the Agent control prompt hint as a development smoke helper,
+  not a user-facing setup/mutation path.
+- Scope boundary:
+  - `xd.testing` read helper only. No provider/tool/channel data model changes,
+    setup request behavior changes, OAuth/install execution, settings mutation,
+    channel delivery, or approval-policy change.
+- Verification:
+  - RED:
+    `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` failed
+    when `xd.testing.connectionCenter.snapshot` and later its `timeoutMs`
+    schema were missing.
+  - GREEN:
+    `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` passed
+    with 32/32 tests.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 36/36 tests.
+  - Scoped Biome for changed code/test files exited 0 with existing repo
+    warnings/infos only.
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit` passed with missing registered paths 0,
+    missing dispatched coverage paths 0, undispatched static callable methods
+    0, and dispatcher paths missing from tree 0. The generated audit file was
+    removed afterward.
+  - `npm run build` passed and rebuilt `out/`; Vite emitted existing warnings
+    about browser `fs` externalization and dynamic import chunking.
+  - Live Electron CR verification passed: `xd.panes.settings.open` opened
+    Connection Center, then `xd.testing.connectionCenter.snapshot` passed 6/6
+    checks with `waitedMs=224` and `timedOut=false`.
+  - `git diff --check` exited 0 with LF-to-CRLF warnings only.
+  - `npm run check:public-release` remains blocked in this worktree because
+    `.github/workflows/ci.yml` is missing.
+- External documentation handling: no browsing. This used current repo code,
+  cached gap context, and live Electron verification.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

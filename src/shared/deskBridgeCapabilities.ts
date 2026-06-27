@@ -1491,6 +1491,7 @@ export interface DeskBridgeCapabilityAdapter {
   resetXenesisSession?: () => Promise<unknown> | unknown;
   runXenesis?: (args: unknown) => Promise<unknown> | unknown;
   snapshotXenesisAgent?: (args: unknown) => Promise<unknown> | unknown;
+  snapshotConnectionCenter?: (args: unknown) => Promise<unknown> | unknown;
   submitXenesisAgentPrompt?: (args: unknown) => Promise<unknown> | unknown;
   dropXenesisAgentAttachments?: (args: unknown) => Promise<unknown> | unknown;
   scanLocalCli?: () => Promise<unknown> | unknown;
@@ -5382,6 +5383,44 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                   title: 'Timeout',
                   description: 'Maximum time to wait for the attachment chips.',
                   default: 5000,
+                },
+              },
+            },
+            { approval: 'never' },
+          ),
+        ],
+      ),
+      group(
+        'xd.testing.connectionCenter',
+        'Connection Center testing',
+        'Development-only helpers for reading the live Connection Center renderer state in CR smoke workflows.',
+        [
+          method(
+            'xd.testing.connectionCenter.snapshot',
+            'Snapshot Connection Center',
+            'Read the current live Settings > Xenesis Agent > Connections renderer state for smoke verification.',
+            'read',
+            {
+              type: 'object',
+              properties: {
+                maxTextLength: {
+                  type: 'number',
+                  title: 'Maximum text length',
+                  description: 'Maximum Connection Center text characters to include.',
+                  default: 2400,
+                },
+                includeBodyText: {
+                  type: 'boolean',
+                  title: 'Include body text',
+                  description: 'Include document body preview and tail for diagnostics.',
+                  default: false,
+                },
+                timeoutMs: {
+                  type: 'number',
+                  title: 'Timeout',
+                  description: 'Maximum time to wait for Connection Center detail checks to render.',
+                  default: 3000,
+                  minimum: 0,
                 },
               },
             },
@@ -11504,6 +11543,9 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.testing.xenesisAgent.snapshot') {
         return callAdapter(path, api?.snapshotXenesisAgent, request.args);
+      }
+      if (path === 'xd.testing.connectionCenter.snapshot') {
+        return callAdapter(path, api?.snapshotConnectionCenter, request.args);
       }
       if (path === 'xd.testing.xenesisAgent.submitPrompt') {
         return callAdapter(path, api?.submitXenesisAgentPrompt, request.args);
