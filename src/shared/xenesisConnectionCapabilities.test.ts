@@ -230,101 +230,181 @@ test('xenesis channel routing capabilities are registered and dispatch to the ad
   });
 });
 
-test('xenesis channel safety status capability is registered and dispatches to the adapter', async () => {
-  const capability = findDeskBridgeCapability('xd.xenesis.channels.safety.status');
-  const schemaProperties = (capability?.schema?.properties ?? {}) as Record<string, any>;
-  assert.equal(capability?.permission, 'read');
-  assert.equal(capability?.approval, 'never');
-  assert.deepEqual(schemaProperties.channel?.enum, ['telegram', 'slack', 'discord', 'webhook']);
+test('xenesis channel safety capabilities are registered and dispatch to the adapter', async () => {
+  const statusCapability = findDeskBridgeCapability('xd.xenesis.channels.safety.status');
+  const openCapability = findDeskBridgeCapability('xd.xenesis.channels.safety.open');
+  const statusSchemaProperties = (statusCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
+  assert.equal(statusCapability?.permission, 'read');
+  assert.equal(statusCapability?.approval, 'never');
+  assert.equal(openCapability?.permission, 'control');
+  assert.equal(openCapability?.approval, 'never');
+  assert.deepEqual(openCapability?.schema?.required, ['channel']);
+  assert.deepEqual(statusSchemaProperties.channel?.enum, ['telegram', 'slack', 'discord', 'webhook']);
+  assert.deepEqual(openSchemaProperties.channel?.enum, ['telegram', 'slack', 'discord', 'webhook']);
 
-  let calledArgs: unknown = null;
+  const calls: Array<{ method: string; args: unknown }> = [];
   const api: DeskBridgeCapabilityAdapter = {
     getXenesisChannelSafetyStatus: (args) => {
-      calledArgs = args;
+      calls.push({ method: 'status', args });
       return {
         ok: true,
         items: [{ id: 'telegram', accessModel: 'allowlist' }],
       };
     },
+    openXenesisChannelSafety: (args) => {
+      calls.push({ method: 'open', args });
+      return {
+        ok: true,
+        item: { id: 'telegram', accessModel: 'allowlist' },
+      };
+    },
   };
 
-  const result = await callDeskBridgeCapability(api, {
+  const statusResult = await callDeskBridgeCapability(api, {
     path: 'xd.xenesis.channels.safety.status',
     args: { channel: 'telegram' },
     source: 'xenesis',
   });
+  const openResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.channels.safety.open',
+    args: { channel: 'telegram', ensureVisible: true },
+    source: 'xenesis',
+  });
 
-  assert.equal(result.ok, true);
-  assert.deepEqual(calledArgs, { channel: 'telegram' });
-  assert.deepEqual(result.result, {
+  assert.equal(statusResult.ok, true);
+  assert.equal(openResult.ok, true);
+  assert.deepEqual(calls, [
+    { method: 'status', args: { channel: 'telegram' } },
+    { method: 'open', args: { channel: 'telegram', ensureVisible: true } },
+  ]);
+  assert.deepEqual(statusResult.result, {
     ok: true,
     items: [{ id: 'telegram', accessModel: 'allowlist' }],
   });
+  assert.deepEqual(openResult.result, {
+    ok: true,
+    item: { id: 'telegram', accessModel: 'allowlist' },
+  });
 });
 
-test('xenesis channel access group status capability is registered and dispatches to the adapter', async () => {
-  const capability = findDeskBridgeCapability('xd.xenesis.channels.accessGroups.status');
-  const schemaProperties = (capability?.schema?.properties ?? {}) as Record<string, any>;
-  assert.equal(capability?.permission, 'read');
-  assert.equal(capability?.approval, 'never');
-  assert.deepEqual(schemaProperties.channel?.enum, ['telegram', 'slack', 'discord', 'webhook']);
+test('xenesis channel access group capabilities are registered and dispatch to the adapter', async () => {
+  const statusCapability = findDeskBridgeCapability('xd.xenesis.channels.accessGroups.status');
+  const openCapability = findDeskBridgeCapability('xd.xenesis.channels.accessGroups.open');
+  const statusSchemaProperties = (statusCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
+  assert.equal(statusCapability?.permission, 'read');
+  assert.equal(statusCapability?.approval, 'never');
+  assert.equal(openCapability?.permission, 'control');
+  assert.equal(openCapability?.approval, 'never');
+  assert.deepEqual(openCapability?.schema?.required, ['channel']);
+  assert.deepEqual(statusSchemaProperties.channel?.enum, ['telegram', 'slack', 'discord', 'webhook']);
+  assert.deepEqual(openSchemaProperties.channel?.enum, ['telegram', 'slack', 'discord', 'webhook']);
 
-  let calledArgs: unknown = null;
+  const calls: Array<{ method: string; args: unknown }> = [];
   const api: DeskBridgeCapabilityAdapter = {
     getXenesisChannelAccessGroupsStatus: (args) => {
-      calledArgs = args;
+      calls.push({ method: 'status', args });
       return {
         ok: true,
         items: [{ id: 'telegram', failClosed: true }],
       };
     },
+    openXenesisChannelAccessGroups: (args) => {
+      calls.push({ method: 'open', args });
+      return {
+        ok: true,
+        item: { id: 'telegram', failClosed: true },
+      };
+    },
   };
 
-  const result = await callDeskBridgeCapability(api, {
+  const statusResult = await callDeskBridgeCapability(api, {
     path: 'xd.xenesis.channels.accessGroups.status',
     args: { channel: 'telegram' },
     source: 'xenesis',
   });
+  const openResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.channels.accessGroups.open',
+    args: { channel: 'telegram', ensureVisible: true },
+    source: 'xenesis',
+  });
 
-  assert.equal(result.ok, true);
-  assert.deepEqual(calledArgs, { channel: 'telegram' });
-  assert.deepEqual(result.result, {
+  assert.equal(statusResult.ok, true);
+  assert.equal(openResult.ok, true);
+  assert.deepEqual(calls, [
+    { method: 'status', args: { channel: 'telegram' } },
+    { method: 'open', args: { channel: 'telegram', ensureVisible: true } },
+  ]);
+  assert.deepEqual(statusResult.result, {
     ok: true,
     items: [{ id: 'telegram', failClosed: true }],
   });
+  assert.deepEqual(openResult.result, {
+    ok: true,
+    item: { id: 'telegram', failClosed: true },
+  });
 });
 
-test('xenesis channel pairing status capability is registered and dispatches to the adapter', async () => {
-  const capability = findDeskBridgeCapability('xd.xenesis.channels.pairing.status');
-  const schemaProperties = (capability?.schema?.properties ?? {}) as Record<string, any>;
-  assert.equal(capability?.permission, 'read');
-  assert.equal(capability?.approval, 'never');
-  assert.equal(schemaProperties.channel?.enum.includes('telegram'), true);
-  assert.equal(schemaProperties.channel?.enum.includes('signal'), true);
-  assert.equal(schemaProperties.id?.enum.includes('whatsapp'), true);
+test('xenesis channel pairing capabilities are registered and dispatch to the adapter', async () => {
+  const statusCapability = findDeskBridgeCapability('xd.xenesis.channels.pairing.status');
+  const openCapability = findDeskBridgeCapability('xd.xenesis.channels.pairing.open');
+  const statusSchemaProperties = (statusCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
+  assert.equal(statusCapability?.permission, 'read');
+  assert.equal(statusCapability?.approval, 'never');
+  assert.equal(openCapability?.permission, 'control');
+  assert.equal(openCapability?.approval, 'never');
+  assert.deepEqual(openCapability?.schema?.required, ['channel']);
+  assert.equal(statusSchemaProperties.channel?.enum.includes('telegram'), true);
+  assert.equal(statusSchemaProperties.channel?.enum.includes('signal'), true);
+  assert.equal(statusSchemaProperties.id?.enum.includes('whatsapp'), true);
+  assert.equal(openSchemaProperties.channel?.enum.includes('telegram'), true);
+  assert.equal(openSchemaProperties.channel?.enum.includes('signal'), true);
+  assert.equal(openSchemaProperties.id?.enum.includes('whatsapp'), true);
 
-  let calledArgs: unknown = null;
+  const calls: Array<{ method: string; args: unknown }> = [];
   const api: DeskBridgeCapabilityAdapter = {
     getXenesisChannelPairingStatus: (args) => {
-      calledArgs = args;
+      calls.push({ method: 'status', args });
       return {
         ok: true,
         items: [{ id: 'signal', pairingState: 'planned' }],
       };
     },
+    openXenesisChannelPairing: (args) => {
+      calls.push({ method: 'open', args });
+      return {
+        ok: true,
+        item: { id: 'signal', pairingState: 'planned' },
+      };
+    },
   };
 
-  const result = await callDeskBridgeCapability(api, {
+  const statusResult = await callDeskBridgeCapability(api, {
     path: 'xd.xenesis.channels.pairing.status',
     args: { channel: 'signal' },
     source: 'xenesis',
   });
+  const openResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.channels.pairing.open',
+    args: { channel: 'signal', ensureVisible: true },
+    source: 'xenesis',
+  });
 
-  assert.equal(result.ok, true);
-  assert.deepEqual(calledArgs, { channel: 'signal' });
-  assert.deepEqual(result.result, {
+  assert.equal(statusResult.ok, true);
+  assert.equal(openResult.ok, true);
+  assert.deepEqual(calls, [
+    { method: 'status', args: { channel: 'signal' } },
+    { method: 'open', args: { channel: 'signal', ensureVisible: true } },
+  ]);
+  assert.deepEqual(statusResult.result, {
     ok: true,
     items: [{ id: 'signal', pairingState: 'planned' }],
+  });
+  assert.deepEqual(openResult.result, {
+    ok: true,
+    item: { id: 'signal', pairingState: 'planned' },
   });
 });
 

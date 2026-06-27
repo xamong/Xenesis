@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
   approveXenesisDeskActions,
@@ -11,6 +12,15 @@ import {
   runXenesisDeskActions,
   shouldRunXenesisDeskActionsDirectly,
 } from './xenesisAgentDeskControl';
+
+test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory out of the planner file', () => {
+  const source = readFileSync(new URL('./xenesisAgentDeskControl.ts', import.meta.url), 'utf8');
+
+  assert.doesNotMatch(source, /const targets:\s*Array/);
+  assert.doesNotMatch(source, /IMPLEMENTED_XENESIS_MESSENGER_IDS/);
+  assert.doesNotMatch(source, /Useful direct CR paths include xd\.app\.status/);
+  assert.doesNotMatch(source, /xd\.xenesis\.channels\.routing\.status, xd\.xenesis\.channels\.routing\.open/);
+});
 
 test('parseXenesisDeskActionBlocks extracts Desk CR actions and hides them from visible chat', () => {
   const parsed = parseXenesisDeskActionBlocks(
@@ -356,9 +366,12 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.xenesis\.channels\.profileDrafts\.request/);
   assert.match(hint, /xd\.xenesis\.channels\.accessGroups\.status/);
   assert.match(hint, /xd\.xenesis\.channels\.pairing\.status/);
+  assert.match(hint, /xd\.xenesis\.channels\.pairing\.open/);
   assert.match(hint, /xd\.xenesis\.channels\.routing\.status/);
   assert.match(hint, /xd\.xenesis\.channels\.routing\.open/);
   assert.match(hint, /xd\.xenesis\.channels\.safety\.status/);
+  assert.match(hint, /xd\.xenesis\.channels\.safety\.open/);
+  assert.match(hint, /xd\.xenesis\.channels\.accessGroups\.open/);
   assert.match(hint, /xd\.xenesis\.messengers\.views\.status/);
   assert.match(hint, /xd\.xenesis\.messengers\.views\.open/);
   assert.match(hint, /tool action catalogs are review-only/i);
@@ -1576,6 +1589,36 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
       args: { channel: 'slack', ensureVisible: true },
       approved: false,
       reason: 'Open Slack channel routing from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('텔레그램 안전 열어줘').actions, [
+    {
+      id: 'natural-xenesis-channel-safety-open-telegram',
+      path: 'xd.xenesis.channels.safety.open',
+      args: { channel: 'telegram', ensureVisible: true },
+      approved: false,
+      reason: 'Open Telegram channel safety from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('슬랙 access group 열어줘').actions, [
+    {
+      id: 'natural-xenesis-channel-access-groups-open-slack',
+      path: 'xd.xenesis.channels.accessGroups.open',
+      args: { channel: 'slack', ensureVisible: true },
+      approved: false,
+      reason: 'Open Slack channel access groups from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('Signal 페어링 열어줘').actions, [
+    {
+      id: 'natural-xenesis-channel-pairing-open-signal',
+      path: 'xd.xenesis.channels.pairing.open',
+      args: { channel: 'signal', ensureVisible: true },
+      approved: false,
+      reason: 'Open Signal channel pairing from natural language request.',
     },
   ]);
 

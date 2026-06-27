@@ -1,3 +1,14 @@
+import { listDeskBridgeCapabilities } from '../../../../shared/deskBridgeCapabilities';
+import {
+  findXenesisNaturalWordsTarget,
+  isXenesisNaturalImplementedMessengerTarget,
+  XENESIS_NATURAL_CONNECTION_TARGETS,
+  XENESIS_NATURAL_CORE_TOOL_TARGETS,
+  XENESIS_NATURAL_PROVIDER_TARGETS,
+  XENESIS_NATURAL_VIEW_TARGETS,
+  type XenesisNaturalConnectionTarget,
+} from '../../../../shared/xenesisNaturalLanguageCatalog';
+
 export interface XenesisDeskActionRequest {
   id: string;
   path: string;
@@ -293,111 +304,7 @@ function toolOpenActionFromNaturalText(
   value: string,
   placement: XenesisDeskPlacement | undefined,
 ): XenesisDeskActionRequest | null {
-  const toolDefinitions: Array<{
-    id: string;
-    path: string;
-    reasonName: string;
-    words: readonly string[];
-  }> = [
-    {
-      id: 'natural-tool-capability-explorer-open',
-      path: 'xd.tools.core.capabilityExplorer.open',
-      reasonName: 'Capability Explorer',
-      words: ['capability', 'cr', 'registry', '레지스트리', '기능 탐색', 'capability explorer'],
-    },
-    {
-      id: 'natural-tool-ai-workbench-open',
-      path: 'xd.tools.core.aiWorkbench.open',
-      reasonName: 'AI Workbench',
-      words: ['ai workbench', '워크벤치'],
-    },
-    {
-      id: 'natural-tool-artifact-library-open',
-      path: 'xd.tools.core.artifactLibrary.open',
-      reasonName: 'Artifact Library',
-      words: ['artifact library', '아티팩트 라이브러리'],
-    },
-    {
-      id: 'natural-tool-terminal-inspector-open',
-      path: 'xd.tools.core.terminalInspector.open',
-      reasonName: 'Terminal Inspector',
-      words: ['terminal inspector', '터미널 인스펙터'],
-    },
-    {
-      id: 'natural-tool-process-viewer-open',
-      path: 'xd.tools.core.processViewer.open',
-      reasonName: 'Process Viewer',
-      words: ['process viewer', '프로세스 뷰어', '프로세스'],
-    },
-    {
-      id: 'natural-tool-remote-sync-planner-open',
-      path: 'xd.tools.core.remoteSyncPlanner.open',
-      reasonName: 'Remote Sync Planner',
-      words: ['remote sync', '원격 동기화'],
-    },
-    {
-      id: 'natural-tool-run-task-panel-open',
-      path: 'xd.tools.core.runTaskPanel.open',
-      reasonName: 'Run Task Panel',
-      words: ['run task', '작업 실행', '작업 패널'],
-    },
-    {
-      id: 'natural-tool-safe-file-edit-center-open',
-      path: 'xd.tools.core.safeFileEditCenter.open',
-      reasonName: 'Safe File Edit Center',
-      words: ['safe file', '안전 파일', '파일 편집 센터'],
-    },
-    {
-      id: 'natural-tool-hermes-status-open',
-      path: 'xd.tools.core.hermesStatus.open',
-      reasonName: 'Hermes Status',
-      words: ['hermes status', '헤르메스 상태'],
-    },
-    {
-      id: 'natural-tool-hermes-action-inbox-open',
-      path: 'xd.tools.core.hermesActionInbox.open',
-      reasonName: 'Hermes Action Inbox',
-      words: ['hermes action', '헤르메스 액션'],
-    },
-    {
-      id: 'natural-tool-hermes-timeline-open',
-      path: 'xd.tools.core.hermesTimeline.open',
-      reasonName: 'Hermes Timeline',
-      words: ['hermes timeline', '헤르메스 타임라인'],
-    },
-    {
-      id: 'natural-tool-network-monitor-open',
-      path: 'xd.tools.core.networkMonitor.open',
-      reasonName: 'Network Monitor',
-      words: ['network monitor', '네트워크 모니터'],
-    },
-    {
-      id: 'natural-tool-audit-log-open',
-      path: 'xd.tools.core.auditLog.open',
-      reasonName: 'Audit Log',
-      words: ['audit log', '감사 로그'],
-    },
-    {
-      id: 'natural-tool-agent-performance-open',
-      path: 'xd.tools.core.agentPerformance.open',
-      reasonName: 'Agent Performance',
-      words: ['agent performance', '에이전트 성능'],
-    },
-    {
-      id: 'natural-tool-xapp-preview-open',
-      path: 'xd.tools.core.xappPreview.open',
-      reasonName: 'XApp Preview',
-      words: ['xapp preview', 'xapp'],
-    },
-    {
-      id: 'natural-tool-bot-open',
-      path: 'xd.tools.core.bot.open',
-      reasonName: 'Bot',
-      words: ['bot', '봇'],
-    },
-  ];
-
-  const definition = toolDefinitions.find((tool) => hasAny(value, tool.words));
+  const definition = findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_CORE_TOOL_TARGETS);
   if (!definition) return null;
   return naturalAction(
     definition.id,
@@ -408,172 +315,13 @@ function toolOpenActionFromNaturalText(
 }
 
 function viewKindFromNaturalText(value: string): { id: string; kind: string; reason: string } | null {
-  if (hasAny(value, ['거울이 챗', '거울이챗', 'gowoorichat', 'gowoori chat', 'kouri chat', 'kourichat'])) {
-    return {
-      id: 'natural-gowoori-chat-open',
-      kind: 'gowooriChat',
-      reason: 'Open GowooriChat from natural language request.',
-    };
-  }
-  if (hasAny(value, ['거울이', 'gowoori', 'kouri'])) {
-    return { id: 'natural-gowoori-open', kind: 'gowoori', reason: 'Open Gowoori from natural language request.' };
-  }
-  if (hasAny(value, ['제니스', 'xenis', 'xenesis agent', 'xenesisagent'])) {
-    return {
-      id: 'natural-xenesis-agent-open',
-      kind: 'xenesisAgent',
-      reason: 'Open Xenesis Agent from natural language request.',
-    };
-  }
-  if (hasAny(value, ['터미널', 'terminal', 'shell', '콘솔'])) {
-    return { id: 'natural-terminal-open', kind: 'terminal', reason: 'Open terminal from natural language request.' };
-  }
-  if (hasAny(value, ['브라우저', 'browser', '웹뷰', 'web'])) {
-    return { id: 'natural-browser-open', kind: 'browser', reason: 'Open browser from natural language request.' };
-  }
-  return null;
+  const target = findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_VIEW_TARGETS);
+  if (!target) return null;
+  return { id: target.id, kind: target.kind, reason: target.reason };
 }
 
-function xenesisConnectionTargetFromNaturalText(
-  value: string,
-): { id: string; label: string; kind: 'tool' | 'messenger' } | null {
-  const targets: Array<{
-    id: string;
-    label: string;
-    kind: 'tool' | 'messenger';
-    words: readonly string[];
-  }> = [
-    { id: 'notion', label: 'Notion', kind: 'tool', words: ['notion', '노션'] },
-    {
-      id: 'google-calendar',
-      label: 'Google Calendar',
-      kind: 'tool',
-      words: ['google calendar', '구글 캘린더', '캘린더'],
-    },
-    {
-      id: 'google-workspace',
-      label: 'Google Workspace',
-      kind: 'tool',
-      words: [
-        'google workspace',
-        '구글 워크스페이스',
-        'gmail',
-        '지메일',
-        'google docs',
-        'google drive',
-        '구글 문서',
-        '구글 독스',
-        '구글 드라이브',
-        'workspace',
-        '워크스페이스',
-      ],
-    },
-    { id: 'github', label: 'GitHub', kind: 'tool', words: ['github', '깃허브'] },
-    { id: 'linear', label: 'Linear', kind: 'tool', words: ['linear', '리니어'] },
-    {
-      id: 'fetch',
-      label: 'Fetch',
-      kind: 'tool',
-      words: [
-        'fetch',
-        '웹 fetch',
-        '웹 가져오기',
-        'web page fetch',
-        'webpage fetch',
-        '웹페이지 가져오기',
-        '웹 페이지 가져오기',
-      ],
-    },
-    {
-      id: 'filesystem',
-      label: 'Filesystem',
-      kind: 'tool',
-      words: ['filesystem', 'file system', '파일시스템', '파일 시스템', 'workspace files', '워크스페이스 파일'],
-    },
-    { id: 'telegram', label: 'Telegram', kind: 'messenger', words: ['telegram', '텔레그램'] },
-    { id: 'slack', label: 'Slack', kind: 'messenger', words: ['slack', '슬랙'] },
-    { id: 'discord', label: 'Discord', kind: 'messenger', words: ['discord', '디스코드'] },
-    { id: 'webhook', label: 'Webhook', kind: 'messenger', words: ['webhook', '웹훅'] },
-    { id: 'whatsapp', label: 'WhatsApp', kind: 'messenger', words: ['whatsapp', '왓츠앱', '와츠앱'] },
-    { id: 'signal', label: 'Signal', kind: 'messenger', words: ['signal', '시그널'] },
-    {
-      id: 'microsoft-teams',
-      label: 'Microsoft Teams',
-      kind: 'messenger',
-      words: ['microsoft teams', 'microsoft-teams', 'ms teams', 'teams', '팀즈', '마이크로소프트 팀즈'],
-    },
-    {
-      id: 'google-chat',
-      label: 'Google Chat',
-      kind: 'messenger',
-      words: ['google chat', 'google-chat', '구글 챗', '구글 채팅'],
-    },
-    {
-      id: 'imessage',
-      label: 'iMessage',
-      kind: 'messenger',
-      words: ['imessage', '아이메시지', '아이메세지', 'bluebubbles', '블루버블'],
-    },
-    { id: 'matrix', label: 'Matrix', kind: 'messenger', words: ['matrix', '매트릭스'] },
-    { id: 'irc', label: 'IRC', kind: 'messenger', words: ['irc', '아이알씨'] },
-    { id: 'mattermost', label: 'Mattermost', kind: 'messenger', words: ['mattermost', '매터모스트'] },
-    {
-      id: 'nextcloud-talk',
-      label: 'Nextcloud Talk',
-      kind: 'messenger',
-      words: ['nextcloud talk', 'nextcloud-talk', '넥스트클라우드 톡', '넥스트클라우드 토크'],
-    },
-    { id: 'nostr', label: 'Nostr', kind: 'messenger', words: ['nostr', '노스트르'] },
-    { id: 'raft', label: 'Raft', kind: 'messenger', words: ['raft', '래프트'] },
-    { id: 'tlon', label: 'Tlon', kind: 'messenger', words: ['tlon', '틀론'] },
-    {
-      id: 'synology-chat',
-      label: 'Synology Chat',
-      kind: 'messenger',
-      words: ['synology chat', 'synology-chat', '시놀로지 챗', '시놀로지 채팅'],
-    },
-    {
-      id: 'rocket-chat',
-      label: 'Rocket.Chat',
-      kind: 'messenger',
-      words: ['rocket chat', 'rocket-chat', 'rocketchat', '로켓챗', '로켓 채팅'],
-    },
-    { id: 'twitch', label: 'Twitch', kind: 'messenger', words: ['twitch', '트위치'] },
-    { id: 'line', label: 'LINE', kind: 'messenger', words: ['line', '라인'] },
-    { id: 'wechat', label: 'WeChat', kind: 'messenger', words: ['wechat', 'weixin', '위챗', '웨이신'] },
-    { id: 'qqbot', label: 'QQ Bot', kind: 'messenger', words: ['qqbot', 'qq bot', 'qq 봇', '큐큐봇'] },
-    {
-      id: 'feishu',
-      label: 'Feishu / Lark',
-      kind: 'messenger',
-      words: ['feishu', 'lark', '페이슈', '페이수', '라크'],
-    },
-    {
-      id: 'dingding',
-      label: 'DingTalk / Dingding',
-      kind: 'messenger',
-      words: ['dingtalk', 'ding talk', 'dingding', '딩톡', '딩딩'],
-    },
-    { id: 'yuanbao', label: 'Yuanbao', kind: 'messenger', words: ['yuanbao', '위안바오'] },
-    { id: 'zalo', label: 'Zalo', kind: 'messenger', words: ['zalo', '잘로'] },
-    { id: 'email', label: 'Email', kind: 'messenger', words: ['email', '이메일', 'mailbox', '메일박스', '메일'] },
-    { id: 'sms', label: 'SMS', kind: 'messenger', words: ['sms', '문자 메시지', '문자메시지', '문자'] },
-    {
-      id: 'home-assistant',
-      label: 'Home Assistant',
-      kind: 'messenger',
-      words: ['home assistant', 'home-assistant', '홈 어시스턴트', '홈어시스턴트'],
-    },
-    { id: 'ntfy', label: 'ntfy', kind: 'messenger', words: ['ntfy', '엔티파이'] },
-  ];
-
-  return targets.find((target) => hasAny(value, target.words)) || null;
-}
-
-const IMPLEMENTED_XENESIS_MESSENGER_IDS = new Set(['telegram', 'slack', 'discord', 'webhook']);
-
-function isImplementedXenesisMessengerTarget(target: { id: string; kind: 'tool' | 'messenger' }): boolean {
-  return target.kind === 'messenger' && IMPLEMENTED_XENESIS_MESSENGER_IDS.has(target.id);
+function xenesisConnectionTargetFromNaturalText(value: string): XenesisNaturalConnectionTarget | null {
+  return findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_CONNECTION_TARGETS);
 }
 
 function xenesisGuideFromNaturalText(value: string): { id: string; label: string } | null {
@@ -1050,33 +798,7 @@ function hasXenesisConnectionContext(value: string): boolean {
 }
 
 function xenesisProviderFromNaturalText(value: string): { id: string; label: string } | null {
-  const providers: Array<{ id: string; label: string; words: readonly string[] }> = [
-    {
-      id: 'codex-app-server',
-      label: 'codex-app-server',
-      words: ['codex app-server', 'codex-app-server', 'codex app server', 'app-server', 'app server'],
-    },
-    { id: 'codex-cli', label: 'codex-cli', words: ['codex cli', 'codex-cli'] },
-    { id: 'claude-cli', label: 'claude-cli', words: ['claude cli', 'claude-cli'] },
-    {
-      id: 'claude-interactive',
-      label: 'claude-interactive',
-      words: ['claude interactive', 'claude-interactive', '클로드 interactive', '클로드 인터랙티브'],
-    },
-    { id: 'azure', label: 'azure', words: ['azure openai', 'azure-openai', 'azure', '애저 오픈ai', '애저 오픈 ai'] },
-    { id: 'openai', label: 'openai', words: ['openai', '오픈ai', '오픈 ai'] },
-    { id: 'anthropic', label: 'anthropic', words: ['anthropic', 'anthropic claude', '앤트로픽'] },
-    { id: 'gemini', label: 'gemini', words: ['gemini', '제미나이'] },
-    { id: 'groq', label: 'groq', words: ['groq', '그록'] },
-    { id: 'deepseek', label: 'deepseek', words: ['deepseek', 'deep seek', '딥시크'] },
-    { id: 'qwen', label: 'qwen', words: ['qwen', 'dashscope', 'dash scope', '큐원', '큐웬'] },
-    { id: 'ollama', label: 'ollama', words: ['ollama', '올라마'] },
-    { id: 'lmstudio', label: 'lmstudio', words: ['lm studio', 'lmstudio', 'lm-studio', '엘엠 스튜디오'] },
-    { id: 'together', label: 'together', words: ['together ai', 'together', '투게더'] },
-    { id: 'fireworks', label: 'fireworks', words: ['fireworks ai', 'fireworks', '파이어웍스'] },
-    { id: 'auto', label: 'auto', words: ['auto', '자동'] },
-  ];
-  const provider = providers.find((item) => hasAny(value, item.words));
+  const provider = findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_PROVIDER_TARGETS);
   if (provider) return provider;
   if (hasXenesisProviderProfileContext(value)) return { id: 'auto', label: 'auto' };
   return null;
@@ -1278,7 +1000,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       );
     }
 
-    if (isImplementedXenesisMessengerTarget(target) && hasAny(value, ['라우팅', 'routing', 'route'])) {
+    if (isXenesisNaturalImplementedMessengerTarget(target) && hasAny(value, ['라우팅', 'routing', 'route'])) {
       return naturalAction(
         `natural-xenesis-channel-routing-status-${target.id}`,
         'xd.xenesis.channels.routing.status',
@@ -1287,7 +1009,10 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       );
     }
 
-    if (isImplementedXenesisMessengerTarget(target) && hasAny(value, ['안전', 'safety', '가드레일', 'guardrail'])) {
+    if (
+      isXenesisNaturalImplementedMessengerTarget(target) &&
+      hasAny(value, ['안전', 'safety', '가드레일', 'guardrail'])
+    ) {
       return naturalAction(
         `natural-xenesis-channel-safety-status-${target.id}`,
         'xd.xenesis.channels.safety.status',
@@ -1297,7 +1022,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
     }
 
     if (
-      isImplementedXenesisMessengerTarget(target) &&
+      isXenesisNaturalImplementedMessengerTarget(target) &&
       hasAny(value, ['접근 그룹', '액세스 그룹', '액세스그룹', 'access group', 'access groups', 'allowlist'])
     ) {
       return naturalAction(
@@ -1974,7 +1699,7 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
 
   if (
     target.kind === 'messenger' &&
-    isImplementedXenesisMessengerTarget(target) &&
+    isXenesisNaturalImplementedMessengerTarget(target) &&
     hasAny(value, ['라우팅', 'routing', 'route'])
   ) {
     return naturalAction(
@@ -1982,6 +1707,39 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
       'xd.xenesis.channels.routing.open',
       { channel: target.id, ensureVisible: true },
       `Open ${target.label} channel routing from natural language request.`,
+    );
+  }
+
+  if (
+    isXenesisNaturalImplementedMessengerTarget(target) &&
+    hasAny(value, ['안전', 'safety', '가드레일', 'guardrail'])
+  ) {
+    return naturalAction(
+      `natural-xenesis-channel-safety-open-${target.id}`,
+      'xd.xenesis.channels.safety.open',
+      { channel: target.id, ensureVisible: true },
+      `Open ${target.label} channel safety from natural language request.`,
+    );
+  }
+
+  if (
+    isXenesisNaturalImplementedMessengerTarget(target) &&
+    hasAny(value, ['접근 그룹', '액세스 그룹', '액세스그룹', 'access group', 'access groups', 'allowlist'])
+  ) {
+    return naturalAction(
+      `natural-xenesis-channel-access-groups-open-${target.id}`,
+      'xd.xenesis.channels.accessGroups.open',
+      { channel: target.id, ensureVisible: true },
+      `Open ${target.label} channel access groups from natural language request.`,
+    );
+  }
+
+  if (target.kind === 'messenger' && hasAny(value, ['페어링', 'pairing', 'pair', '연동'])) {
+    return naturalAction(
+      `natural-xenesis-channel-pairing-open-${target.id}`,
+      'xd.xenesis.channels.pairing.open',
+      { channel: target.id, ensureVisible: true },
+      `Open ${target.label} channel pairing from natural language request.`,
     );
   }
 
@@ -3138,8 +2896,27 @@ export function summarizeXenesisDeskActionExecution(result: XenesisDeskActionExe
   return `${result.ok ? 'Desk action applied' : 'Desk action failed'}: ${result.path}`;
 }
 
+function buildDirectCrPathSummary(lines: readonly string[]): string {
+  const callablePaths = new Set(
+    listDeskBridgeCapabilities()
+      .filter((node) => node.callable)
+      .map((node) => node.path),
+  );
+  const referencedPaths = new Set<string>();
+  const crPathPattern = /\bxd\.[A-Za-z0-9.*{}.-]+/g;
+  for (const line of lines) {
+    for (const match of line.matchAll(crPathPattern)) {
+      const path = match[0].replace(/[.,;:)]$/, '');
+      if (callablePaths.has(path)) {
+        referencedPaths.add(path);
+      }
+    }
+  }
+  return [...referencedPaths].join(', ');
+}
+
 export function buildXenesisDeskControlPromptHint(): string {
-  return [
+  const lines = [
     'Native Xenesis Desk Capability Registry control:',
     '- You are running inside Xenesis Desk. Use the native Capability Registry directly for Desk control; do not require external MCP, skills, or plugins for built-in Desk actions.',
     '- When a Desk action is needed, include a fenced JSON block using exactly ```xenesis-desk-action.',
@@ -3169,16 +2946,17 @@ export function buildXenesisDeskControlPromptHint(): string {
     '- Use `xd.xenesis.diagnostics`, `xd.xenesis.reports.list`, `xd.xenesis.tasks.list`, `xd.xenesis.agents.list`, `xd.xenesis.agents.status`, `xd.xenesis.agents.events`, and `xd.xenesis.agents.submit` to inspect runtime diagnostics, verification reports, task inventory, registered Agent panes, quoted Agent pane status/events, or submit a quoted Agent pane message before mutating broader runtime state. Agent status/events require `args.agentId`; Agent submit requires `args.agentId` and `args.text`.',
     '- Use `xd.xenesis.profiles.list` to inspect installed and active Xenesis profiles before installing profiles, switching the active profile, updating channel settings, or sending profile channel test messages.',
     '- Use `xd.xenesis.runs.start` only when the user clearly asks to run a quoted prompt through the Xenesis runtime. Use `xd.xenesis.runs.cancel` only for explicit user requests to cancel the active Xenesis runtime request, and `xd.xenesis.sessions.reset` only for explicit user requests to reset the active Xenesis conversation/session.',
-    '- Use `xd.xenesis.tools.setup.status`, `xd.xenesis.tools.setup.open`, `xd.xenesis.tools.connectors.status`, `xd.xenesis.tools.connectors.open`, `xd.xenesis.tools.views.status`, and `xd.xenesis.tools.views.open` to inspect or open internal Desk tool setup/readiness surfaces.',
+    '- Use `xd.xenesis.tools.setup.status`, `xd.xenesis.tools.setup.open`, `xd.xenesis.tools.connectors.status`, `xd.xenesis.tools.connectors.open`, `xd.xenesis.tools.views.status`, `xd.xenesis.tools.views.open`, `xd.xenesis.tools.userStories.status`, `xd.xenesis.tools.userStories.open`, `xd.xenesis.tools.installPlans.status`, and `xd.xenesis.tools.installPlans.open` to inspect or open internal Desk tool setup/readiness surfaces.',
     '- Use `xd.xenesis.tools.mcpInstallDrafts.status` to inspect review-only MCP install drafts, `xd.xenesis.tools.mcpInstallDrafts.open` to focus the owning tool card, and `xd.xenesis.tools.mcpInstallDrafts.request` to record a local Action Inbox review item without writing MCP config, running shell commands, completing OAuth, storing tokens, executing provider tools, or mutating settings.',
     '- Use `xd.xenesis.tools.oauthDrafts.status` to inspect review-only Google tool OAuth app and token-store drafts, `xd.xenesis.tools.oauthDrafts.open` to focus the owning tool card, and `xd.xenesis.tools.oauthDrafts.request` to record a local Action Inbox review item. Tool OAuth drafts are review-only and do not complete OAuth, store tokens, write MCP config, execute provider tools, send email, mutate documents, or mutate calendar events.',
     '- Use `xd.xenesis.tools.actions.status` to inspect review-only external tool action catalogs, `xd.xenesis.tools.actions.open` to focus the owning tool card, and `xd.xenesis.tools.actions.request` to record a local Action Inbox review item. Tool action catalogs are review-only and do not execute provider tools or mutate external systems.',
     '- Use `xd.xenesis.providers.profileDrafts.status` to inspect review-only AI provider profile field drafts, `xd.xenesis.providers.profileDrafts.open` to focus the provider draft card, and `xd.xenesis.providers.profileDrafts.request` to record a local Action Inbox review item. Provider profile drafts are review-only and do not mutate provider settings, store credentials, switch local CLI selection, or run provider prompts.',
-    '- Use `xd.xenesis.channels.routing.status`, `xd.xenesis.channels.routing.open`, `xd.xenesis.channels.safety.status`, `xd.xenesis.messengers.views.status`, and `xd.xenesis.messengers.views.open` before testing or changing external messenger setup.',
+    '- Use `xd.xenesis.channels.routing.status`, `xd.xenesis.channels.routing.open`, `xd.xenesis.channels.safety.status`, `xd.xenesis.channels.safety.open`, `xd.xenesis.channels.accessGroups.status`, `xd.xenesis.channels.accessGroups.open`, `xd.xenesis.channels.pairing.status`, `xd.xenesis.channels.pairing.open`, `xd.xenesis.messengers.views.status`, and `xd.xenesis.messengers.views.open` before testing or changing external messenger setup.',
     '- Use `xd.xenesis.channels.userStories.status` to inspect external messenger channel workflows and `xd.xenesis.channels.userStories.open` to focus one channel user-story card inside the Connection Center.',
     '- Use `xd.xenesis.channels.profileDrafts.status` to inspect review-only external messenger profile field drafts, `xd.xenesis.channels.profileDrafts.open` to focus one channel draft card, and `xd.xenesis.channels.profileDrafts.request` to record a local Action Inbox review item. Channel profile drafts are review-only and do not mutate channel settings, update allowlists, write profiles, send test messages, start the gateway, store secrets, or bypass approvals.',
+    '- Use `xd.testing.xenesisAgent.snapshot` and `xd.testing.xenesisAgent.submitPrompt` only for development smoke verification of the live Agent pane.',
     '- For dashboard or XCON/SKETCH artifact generation, Xenesis Agent should own generation through `/artifact`; Gowoori is the render target and GowooriChat is fallback only.',
-    '- Common natural Desk requests map to Capability Registry paths before the LLM run when they are clear commands: settings `xd.panes.settings.open`, files `xd.files.listOpen`, `xd.files.open`, `xd.files.read`, explorer `xd.explorer.local.show/navigate/setFilter`, capture `xd.capture.activePane`, terminals `xd.terminals.list/run/runMany`, layout `xd.dock.window.arrange`, `xd.dock.pane.arrange`, `xd.dock.arrangeHorizontal/arrangeVertical/arrangeGrid/mergeGroup/mergeAll`, pane focus/close `xd.dock.focus`, `xd.dock.close`, sizing `xd.dock.sizes.current/set`, panes `xd.dock.panes.list`, tools `xd.tools.core.capabilityExplorer.open` and other `xd.tools.core.*.open` surfaces.',
+    '- Common natural Desk requests map to Capability Registry paths before the LLM run when they are clear commands: settings `xd.panes.settings.open`, files `xd.files.listOpen`, `xd.files.open`, `xd.files.read`, explorer `xd.explorer.local.show`, `xd.explorer.local.navigate`, `xd.explorer.local.setFilter`, capture `xd.capture.activePane`, terminals `xd.terminals.list`, `xd.terminals.run`, `xd.terminals.runMany`, layout `xd.dock.window.arrange`, `xd.dock.pane.arrange`, `xd.dock.arrangeHorizontal`, `xd.dock.arrangeVertical`, `xd.dock.arrangeGrid`, `xd.dock.mergeGroup`, `xd.dock.mergeAll`, pane focus/close `xd.dock.focus`, `xd.dock.close`, sizing `xd.dock.sizes.current`, `xd.dock.sizes.set`, panes `xd.dock.panes.list`, tools `xd.tools.core.capabilityExplorer.open`, `xd.tools.core.networkMonitor.open`, and other `xd.tools.core.*.open` surfaces.',
     '- If the user asks in natural language for a supported local Desk operation, prefer the exact CR path rather than explaining how to do it manually.',
     '',
     'Open a right-side terminal example:',
@@ -3206,6 +2984,6 @@ export function buildXenesisDeskControlPromptHint(): string {
     '{"path":"xd.automation.workflow.run","approved":true,"args":{"name":"settings-tour","steps":[{"path":"xd.dock.panes.list"},{"path":"xd.panes.settings.open","args":{"category":"run-model","mode":"hermes","section":"hermes-provider"}}]}}',
     '```',
     '',
-    'Useful direct CR paths include xd.app.status, xd.automation.workflow.preview, xd.automation.workflow.run, xd.views.open, xd.panes.settings.open, xd.panes.diagnostics.open, xd.files.listOpen, xd.files.open, xd.files.read, xd.explorer.local.show, xd.explorer.local.navigate, xd.explorer.local.setFilter, xd.window.bounds.current, xd.window.sizer.applyPreset, xd.dock.sizes.current, xd.dock.sizes.set, xd.dock.artifactTarget.current, xd.dock.artifactTarget.set, xd.dock.focus, xd.dock.close, xd.dock.closeOthers, xd.dock.closeRight, xd.dock.closeAll, xd.dock.window.arrange, xd.dock.window.merge, xd.dock.pane.arrange, xd.dock.pane.merge, xd.dock.arrangeHorizontal, xd.dock.arrangeVertical, xd.dock.arrangeGrid, xd.dock.panes.list, xd.terminals.list, xd.terminals.run, xd.terminals.runMany, xd.tools.core.capabilityExplorer.open, xd.tools.core.networkMonitor.open, xd.tools.core.runTaskPanel.open, xd.tools.core.aiWorkbench.open, xd.tools.core.artifactLibrary.open, xd.capture.activePane, xd.xenesis.status, xd.xenesis.diagnostics, xd.xenesis.reports.list, xd.xenesis.tasks.list, xd.xenesis.agents.list, xd.xenesis.agents.status, xd.xenesis.agents.submit, xd.xenesis.agents.events, xd.xenesis.profiles.list, xd.xenesis.workspace.set, xd.xenesis.runs.start, xd.xenesis.runs.cancel, xd.xenesis.sessions.reset, xd.xenesis.connections.status, xd.xenesis.connections.open, xd.xenesis.connections.diagnostics.status, xd.xenesis.connections.diagnostics.open, xd.xenesis.connections.setupRequests.status, xd.xenesis.connections.setupRequests.open, xd.xenesis.connections.setupRequests.request, xd.xenesis.onboarding.status, xd.xenesis.onboarding.open, xd.xenesis.guides.status, xd.xenesis.guides.open, xd.localCli.scan, xd.mcp.settings.status, xd.mcp.bridge.status, xd.xenesis.gateway.status, xd.xenesis.gateway.openDashboard, xd.xenesis.providers.setup.status, xd.xenesis.providers.setup.open, xd.xenesis.providers.routing.status, xd.xenesis.providers.views.status, xd.xenesis.providers.views.open, xd.xenesis.tools.setup.status, xd.xenesis.tools.setup.open, xd.xenesis.tools.connectors.status, xd.xenesis.tools.connectors.open, xd.xenesis.tools.views.status, xd.xenesis.tools.views.open, xd.xenesis.tools.userStories.status, xd.xenesis.tools.userStories.open, xd.xenesis.tools.installPlans.status, xd.xenesis.tools.installPlans.open, xd.xenesis.tools.mcpInstallDrafts.status, xd.xenesis.tools.mcpInstallDrafts.open, xd.xenesis.tools.mcpInstallDrafts.request, xd.xenesis.tools.oauthDrafts.status, xd.xenesis.tools.oauthDrafts.open, xd.xenesis.tools.oauthDrafts.request, xd.xenesis.tools.actions.status, xd.xenesis.tools.actions.open, xd.xenesis.tools.actions.request, xd.xenesis.providers.profileDrafts.status, xd.xenesis.providers.profileDrafts.open, xd.xenesis.providers.profileDrafts.request, xd.xenesis.channels.routing.status, xd.xenesis.channels.routing.open, xd.xenesis.channels.safety.status, xd.xenesis.channels.accessGroups.status, xd.xenesis.channels.pairing.status, xd.xenesis.channels.userStories.status, xd.xenesis.channels.userStories.open, xd.xenesis.channels.profileDrafts.status, xd.xenesis.channels.profileDrafts.open, xd.xenesis.channels.profileDrafts.request, xd.xenesis.messengers.views.status, xd.xenesis.messengers.views.open, xd.testing.xenesisAgent.submitPrompt, dynamic xd.dock.panes.{paneId}.* paths, dynamic xd.dock.contents.{contentId}.* paths, and dynamic xd.terminals.sessions.{terminalId}.* paths.',
-  ].join('\n');
+  ];
+  return [...lines, `Useful direct CR paths include ${buildDirectCrPathSummary(lines)}.`].join('\n');
 }

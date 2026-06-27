@@ -219,6 +219,41 @@
   writes, local CLI switching, provider prompt execution, fallback rewrites,
   dispatcher branches, renderer adapters, or approval bypasses.
 
+## Channel Safety Access Pairing Open + Planner Catalog Reduction
+
+- Added CR open/focus paths for the existing channel setup read models:
+  - `xd.xenesis.channels.safety.open`
+  - `xd.xenesis.channels.accessGroups.open`
+  - `xd.xenesis.channels.pairing.open`
+- Natural-language examples now preserve the requested setup sub-surface:
+  - `텔레그램 안전 열어줘` -> `xd.xenesis.channels.safety.open`
+  - `슬랙 access group 열어줘` -> `xd.xenesis.channels.accessGroups.open`
+  - `Signal 페어링 열어줘` -> `xd.xenesis.channels.pairing.open`
+- Scope boundary: open/focus only. This does not mutate channel settings,
+  update allowlists, pair accounts, send test messages, start the gateway, store
+  secrets, create Action Inbox items, or bypass approvals.
+- Planner cleanup: moved the large built-in tool/view/connection/provider alias
+  catalogs out of
+  `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.ts`
+  into `src/shared/xenesisNaturalLanguageCatalog.ts`.
+- Prompt cleanup: the Agent control prompt no longer maintains a static direct
+  CR path inventory in the planner file. Its direct-path summary is derived from
+  CR paths referenced in the prompt and validated against
+  `listDeskBridgeCapabilities()`.
+- Regression coverage: `xenesisAgentDeskControl.test.ts` now includes a
+  source-level test that blocks reintroducing the old inline target catalog and
+  static direct-path dump patterns.
+- Verification:
+  - Focused Agent/CR tests passed: `npx tsx --test
+    src\shared\xenesisConnectionCapabilities.test.ts
+    src\shared\xenesisConnections.test.ts
+    src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> 95/95.
+  - CR audit passed with missing registered paths 0, missing dispatched
+    coverage paths 0, undispatched static callable methods 0, and dispatcher
+    paths missing from tree 0.
+  - No external web refresh was used for this slice.
+
 ## Local CLI MCP Readbacks Slice
 
 - Added deterministic Xenesis Agent natural-language readbacks for existing

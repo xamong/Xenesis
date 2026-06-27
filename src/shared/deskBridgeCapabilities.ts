@@ -389,6 +389,37 @@ const XENESIS_CHANNEL_ACCESS_GROUP_STATUS_SCHEMA = {
   },
 } as const;
 
+const XENESIS_CHANNEL_IMPLEMENTED_OPEN_SCHEMA = {
+  type: 'object',
+  required: ['channel'],
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: ['telegram', 'slack', 'discord', 'webhook'],
+      description: 'Implemented external bot channel to focus.',
+    },
+    id: {
+      type: 'string',
+      title: 'Connection id',
+      enum: ['telegram', 'slack', 'discord', 'webhook'],
+      description: 'Alias for channel.',
+    },
+    name: {
+      type: 'string',
+      title: 'Connection name',
+      enum: ['telegram', 'slack', 'discord', 'webhook'],
+      description: 'Alias for channel.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused messenger connection card into view after opening the Connection Center.',
+      default: true,
+    },
+  },
+} as const;
+
 const XENESIS_MESSENGER_VIEW_IDS = [
   'telegram',
   'slack',
@@ -533,6 +564,37 @@ const XENESIS_CHANNEL_PAIRING_STATUS_SCHEMA = {
       title: 'Channel',
       enum: XENESIS_MESSENGER_VIEW_IDS,
       description: 'Alias for channel.',
+    },
+  },
+} as const;
+
+const XENESIS_CHANNEL_PAIRING_OPEN_SCHEMA = {
+  type: 'object',
+  required: ['channel'],
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Implemented or planned external messenger channel to focus.',
+    },
+    id: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Alias for channel.',
+    },
+    name: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Alias for channel.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused messenger pairing card into view after opening the Connection Center.',
+      default: true,
     },
   },
 } as const;
@@ -1296,8 +1358,11 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisChannelRoutingStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisChannelRouting?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisChannelSafetyStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisChannelSafety?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisChannelAccessGroupsStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisChannelAccessGroups?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisChannelPairingStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisChannelPairing?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisChannelUserStoriesStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisChannelUserStory?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisChannelProfileDraftsStatus?: (args?: unknown) => Promise<unknown> | unknown;
@@ -4389,6 +4454,13 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               'read',
               XENESIS_CHANNEL_ROUTING_STATUS_SCHEMA,
             ),
+            method(
+              'xd.xenesis.channels.safety.open',
+              'Open channel safety',
+              'Open Settings > Xenesis Agent > Connections and focus an implemented external messenger safety card inside Desk.',
+              'control',
+              XENESIS_CHANNEL_IMPLEMENTED_OPEN_SCHEMA,
+            ),
           ],
         ),
         group(
@@ -4403,6 +4475,13 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               'read',
               XENESIS_CHANNEL_ACCESS_GROUP_STATUS_SCHEMA,
             ),
+            method(
+              'xd.xenesis.channels.accessGroups.open',
+              'Open channel access groups',
+              'Open Settings > Xenesis Agent > Connections and focus an implemented external messenger access-group card inside Desk.',
+              'control',
+              XENESIS_CHANNEL_IMPLEMENTED_OPEN_SCHEMA,
+            ),
           ],
         ),
         group(
@@ -4416,6 +4495,13 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               'Read pairing model, runtime support, account scope, redacted credential state, validation checks, diagnostics, and safety boundaries for implemented and planned Xenesis external messenger channels.',
               'read',
               XENESIS_CHANNEL_PAIRING_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.channels.pairing.open',
+              'Open channel pairing',
+              'Open Settings > Xenesis Agent > Connections and focus an external messenger pairing card inside Desk.',
+              'control',
+              XENESIS_CHANNEL_PAIRING_OPEN_SCHEMA,
             ),
           ],
         ),
@@ -11166,11 +11252,20 @@ export async function callDeskBridgeCapability(
       if (path === 'xd.xenesis.channels.safety.status') {
         return callAdapter(path, api?.getXenesisChannelSafetyStatus, request.args);
       }
+      if (path === 'xd.xenesis.channels.safety.open') {
+        return callAdapter(path, api?.openXenesisChannelSafety, request.args);
+      }
       if (path === 'xd.xenesis.channels.accessGroups.status') {
         return callAdapter(path, api?.getXenesisChannelAccessGroupsStatus, request.args);
       }
+      if (path === 'xd.xenesis.channels.accessGroups.open') {
+        return callAdapter(path, api?.openXenesisChannelAccessGroups, request.args);
+      }
       if (path === 'xd.xenesis.channels.pairing.status') {
         return callAdapter(path, api?.getXenesisChannelPairingStatus, request.args);
+      }
+      if (path === 'xd.xenesis.channels.pairing.open') {
+        return callAdapter(path, api?.openXenesisChannelPairing, request.args);
       }
       if (path === 'xd.xenesis.channels.userStories.status') {
         return callAdapter(path, api?.getXenesisChannelUserStoriesStatus, request.args);
