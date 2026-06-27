@@ -444,7 +444,7 @@ function xenesisConnectionTargetFromNaturalText(
   return targets.find((target) => hasAny(value, target.words)) || null;
 }
 
-function xenesisGuideActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
+function xenesisGuideFromNaturalText(value: string): { id: string; label: string } | null {
   if (!hasAny(value, ['가이드', 'guide', '문서', 'playbook', '플레이북'])) return null;
 
   let id = 'onboarding-connections';
@@ -457,11 +457,30 @@ function xenesisGuideActionFromNaturalText(value: string): XenesisDeskActionRequ
     label = 'Capability Registry, MCP, gateway, and bots';
   }
 
+  return { id, label };
+}
+
+function xenesisGuideActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
+  const guide = xenesisGuideFromNaturalText(value);
+  if (!guide) return null;
+
   return naturalAction(
-    `natural-xenesis-guide-open-${id}`,
+    `natural-xenesis-guide-open-${guide.id}`,
     'xd.xenesis.guides.open',
-    { id, ensureVisible: true },
-    `Open ${label} guide from natural language request.`,
+    { id: guide.id, ensureVisible: true },
+    `Open ${guide.label} guide from natural language request.`,
+  );
+}
+
+function xenesisGuideStatusActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
+  const guide = xenesisGuideFromNaturalText(value);
+  if (!guide) return null;
+
+  return naturalAction(
+    `natural-xenesis-guide-status-${guide.id}`,
+    'xd.xenesis.guides.status',
+    { id: guide.id },
+    `Read ${guide.label} guide catalog status from natural language request.`,
   );
 }
 
@@ -784,6 +803,9 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       `Read ${target.label} connection diagnostics from natural language request.`,
     );
   }
+
+  const guideStatusAction = xenesisGuideStatusActionFromNaturalText(value);
+  if (guideStatusAction) return guideStatusAction;
 
   if (hasAny(value, ['온보딩', 'onboarding'])) {
     const onboardingStatusAction = xenesisOnboardingStatusActionFromNaturalText(value);

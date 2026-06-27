@@ -1044,6 +1044,35 @@ Capability Registry instead of only through separate renderer settings panels.
     passed with 54/54 tests.
   - `npm run typecheck` passed.
 
+## Current Natural Guide Readbacks Slice
+
+- Add deterministic natural-language routing for guide-specific status requests
+  before provider execution.
+- `온보딩 가이드 상태 보여줘` maps to `xd.xenesis.guides.status` with
+  `id=onboarding-connections`.
+- `CR MCP 게이트웨이 가이드 상태 보여줘` maps to
+  `id=cr-mcp-gateway-bots`.
+- `사용자 스토리 가이드 상태 보여줘` maps to `id=agent-user-stories`.
+- Generic `가이드 상태 보여줘` still reads the full guide catalog with
+  `args={}`.
+- This fixes the previous ambiguity where `온보딩 가이드 상태 보여줘` could
+  read the onboarding checklist instead of the guide catalog card.
+- This is deterministic routing, not agent reasoning. It emits existing
+  read/no-approval CR status actions only and does not mutate settings, open
+  guide files, install tools, execute provider tools, or add registry nodes.
+- External documentation handling: no per-slice web browsing. Use local
+  Obsidian/docs/handoff/code/tests as the gap map; refresh external docs only
+  as a batched documentation pass if needed.
+- TDD check: focused natural planner test failed first with `온보딩 가이드
+  상태 보여줘` returning generic onboarding status, then passed after
+  implementation with 28/28 tests.
+- Verification:
+  - `npx biome check src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts --max-diagnostics 40`
+    passed.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 55/55 tests.
+  - `npm run typecheck` passed.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

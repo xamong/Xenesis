@@ -866,6 +866,38 @@ test('planXenesisDeskNaturalLanguageActions maps onboarding checklist readback r
   ]);
 });
 
+test('planXenesisDeskNaturalLanguageActions maps guide catalog readback requests to CR actions', () => {
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('온보딩 가이드 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-guide-status-onboarding-connections',
+      path: 'xd.xenesis.guides.status',
+      args: { id: 'onboarding-connections' },
+      approved: false,
+      reason: 'Read Onboarding and connections guide catalog status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('CR MCP 게이트웨이 가이드 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-guide-status-cr-mcp-gateway-bots',
+      path: 'xd.xenesis.guides.status',
+      args: { id: 'cr-mcp-gateway-bots' },
+      approved: false,
+      reason: 'Read Capability Registry, MCP, gateway, and bots guide catalog status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('사용자 스토리 가이드 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-guide-status-agent-user-stories',
+      path: 'xd.xenesis.guides.status',
+      args: { id: 'agent-user-stories' },
+      approved: false,
+      reason: 'Read Agent user stories guide catalog status from natural language request.',
+    },
+  ]);
+});
+
 test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center readbacks to CR actions', () => {
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider setup 상태 보여줘').actions, [
     {
