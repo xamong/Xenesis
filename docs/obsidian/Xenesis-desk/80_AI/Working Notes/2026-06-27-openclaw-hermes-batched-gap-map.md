@@ -115,6 +115,20 @@
   `xd.xenesis.connections.setupRequests.request`, not implemented-channel
   profile draft requests.
 
+## Tool Alias Coverage Slice
+
+- Expanded Agent natural-language target aliases for existing external tool
+  cards, without adding new CR nodes or executing installs/OAuth/tool calls.
+- Google Workspace now also matches Google Drive, Google Docs/독스, and
+  workspace wording so prompts such as `구글 드라이브 setup 열어줘`,
+  `Google Drive OAuth 상태 보여줘`, `구글 독스 액션 정책 상태 보여줘`, and
+  `구글 드라이브 OAuth 검토 요청해줘` route to the existing Google Workspace
+  tool view, OAuth draft, and action catalog CR paths.
+- Fetch now matches web page fetch wording such as
+  `웹페이지 가져오기 설치 계획 열어줘`.
+- Filesystem now matches spaced Korean and workspace-file wording such as
+  `파일 시스템 connector 열어줘`.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

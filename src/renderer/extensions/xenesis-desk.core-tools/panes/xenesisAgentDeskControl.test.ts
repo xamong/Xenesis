@@ -753,6 +753,36 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('구글 드라이브 setup 열어줘').actions, [
+    {
+      id: 'natural-xenesis-tool-view-open-google-workspace',
+      path: 'xd.xenesis.tools.views.open',
+      args: { id: 'google-workspace', ensureVisible: true },
+      approved: false,
+      reason: 'Open Google Workspace tool view from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('웹페이지 가져오기 설치 계획 열어줘').actions, [
+    {
+      id: 'natural-xenesis-tool-install-plan-open-fetch',
+      path: 'xd.xenesis.tools.installPlans.open',
+      args: { id: 'fetch', ensureVisible: true },
+      approved: false,
+      reason: 'Open Fetch tool install plan from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('파일 시스템 connector 열어줘').actions, [
+    {
+      id: 'natural-xenesis-tool-view-open-filesystem',
+      path: 'xd.xenesis.tools.views.open',
+      args: { id: 'filesystem', ensureVisible: true },
+      approved: false,
+      reason: 'Open Filesystem tool view from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 connector 열어줘').actions, [
     {
       id: 'natural-xenesis-tool-view-open-notion',
@@ -1104,6 +1134,26 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center read
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('Google Drive OAuth 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-tool-oauth-draft-status-google-workspace',
+      path: 'xd.xenesis.tools.oauthDrafts.status',
+      args: { id: 'google-workspace' },
+      approved: false,
+      reason: 'Read Google Workspace OAuth draft status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('구글 독스 액션 정책 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-tool-action-policy-status-google-workspace',
+      path: 'xd.xenesis.tools.actions.status',
+      args: { tool: 'google-workspace' },
+      approved: false,
+      reason: 'Read Google Workspace tool action policy status from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 설정 확인해줘').actions, [
     {
       id: 'natural-xenesis-tool-setup-status-notion',
@@ -1283,6 +1333,16 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center review reques
       args: { id: 'google-calendar' },
       approved: false,
       reason: 'Request Google Calendar OAuth draft review from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('구글 드라이브 OAuth 검토 요청해줘').actions, [
+    {
+      id: 'natural-xenesis-tool-oauth-draft-request-google-workspace',
+      path: 'xd.xenesis.tools.oauthDrafts.request',
+      args: { id: 'google-workspace' },
+      approved: false,
+      reason: 'Request Google Workspace OAuth draft review from natural language request.',
     },
   ]);
 
