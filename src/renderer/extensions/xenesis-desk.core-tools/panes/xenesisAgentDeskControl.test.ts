@@ -873,11 +873,13 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
     ['Raft setup 열어줘', 'raft', 'Raft'],
     ['Tlon setup 열어줘', 'tlon', 'Tlon'],
     ['시놀로지 챗 setup 열어줘', 'synology-chat', 'Synology Chat'],
+    ['로켓챗 setup 열어줘', 'rocket-chat', 'Rocket.Chat'],
     ['트위치 setup 열어줘', 'twitch', 'Twitch'],
     ['LINE setup 열어줘', 'line', 'LINE'],
     ['위챗 setup 열어줘', 'wechat', 'WeChat'],
     ['QQ 봇 setup 열어줘', 'qqbot', 'QQ Bot'],
     ['Lark setup 열어줘', 'feishu', 'Feishu / Lark'],
+    ['딩톡 setup 열어줘', 'dingding', 'DingTalk / Dingding'],
     ['위안바오 setup 열어줘', 'yuanbao', 'Yuanbao'],
     ['Zalo setup 열어줘', 'zalo', 'Zalo'],
     ['이메일 setup 열어줘', 'email', 'Email'],
@@ -1261,6 +1263,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center read
       args: { id: 'ntfy' },
       approved: false,
       reason: 'Read ntfy messenger view status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('딩딩 setup 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-messenger-view-status-dingding',
+      path: 'xd.xenesis.messengers.views.status',
+      args: { id: 'dingding' },
+      approved: false,
+      reason: 'Read DingTalk / Dingding messenger view status from natural language request.',
     },
   ]);
 

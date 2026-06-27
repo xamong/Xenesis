@@ -1656,6 +1656,8 @@ test('buildXenesisConnectionsStatus exposes an OpenClaw-style messenger channel 
     'wechat',
     'qqbot',
     'feishu',
+    'rocket-chat',
+    'dingding',
     'email',
     'sms',
   ]) {
@@ -1665,6 +1667,8 @@ test('buildXenesisConnectionsStatus exposes an OpenClaw-style messenger channel 
   const telegram = status.sections.messengers.items.find((item) => item.id === 'telegram');
   const signal = status.sections.messengers.items.find((item) => item.id === 'signal');
   const googleChat = status.sections.messengers.items.find((item) => item.id === 'google-chat');
+  const rocketChat = status.sections.messengers.items.find((item) => item.id === 'rocket-chat');
+  const dingding = status.sections.messengers.items.find((item) => item.id === 'dingding');
 
   assert.equal(telegram?.supportLevel, 'implemented');
   assert.equal(telegram?.channelTemplate?.category, 'consumer');
@@ -1683,6 +1687,20 @@ test('buildXenesisConnectionsStatus exposes an OpenClaw-style messenger channel 
   assert.equal(googleChat?.channelTemplate?.category, 'enterprise');
   assert.ok(googleChat?.channelTemplate?.auth.includes('workspace'));
   assert.equal(googleChat?.crActions?.length ?? 0, 0);
+
+  assert.equal(rocketChat?.status, 'planned');
+  assert.equal(rocketChat?.supportLevel, 'planned');
+  assert.equal(rocketChat?.channelTemplate?.category, 'enterprise');
+  assert.equal(rocketChat?.channelTemplate?.adapter, 'bot-api');
+  assert.ok(rocketChat?.sourceDocs?.some((source) => source.url.endsWith('/channels/rocket-chat')));
+  assert.equal(rocketChat?.messengerView?.openArgs.id, 'rocket-chat');
+
+  assert.equal(dingding?.status, 'planned');
+  assert.equal(dingding?.supportLevel, 'planned');
+  assert.equal(dingding?.channelTemplate?.category, 'enterprise');
+  assert.equal(dingding?.channelTemplate?.adapter, 'tenant-app');
+  assert.ok(dingding?.sourceDocs?.some((source) => source.url.endsWith('/channels/dingding')));
+  assert.equal(dingding?.messengerView?.openArgs.id, 'dingding');
 });
 
 test('buildXenesisConnectionsStatus exposes OpenClaw-style routing metadata for implemented channels', () => {

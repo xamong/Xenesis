@@ -129,6 +129,21 @@
 - Filesystem now matches spaced Korean and workspace-file wording such as
   `파일 시스템 connector 열어줘`.
 
+## Planned Enterprise Messenger Catalog Slice
+
+- Added planned-only Connection Center cards for Rocket.Chat and
+  DingTalk/Dingding, closing the mismatch between the cached channel gap map and
+  the actual `PLANNED_MESSENGERS` source list.
+- The new cards inherit existing planned messenger internals: safe messenger
+  views, pairing metadata, user-story planning, setup request templates,
+  diagnostics, and no delivery/profile mutation actions.
+- Agent natural-language prompts such as `로켓챗 setup 열어줘` and
+  `딩딩 setup 상태 보여줘` now route to existing
+  `xd.xenesis.messengers.views.open` / `xd.xenesis.messengers.views.status`
+  paths.
+- `Feishu / Lark` remains a combined card with Lark aliases; this slice does
+  not create a duplicate Lark ID.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

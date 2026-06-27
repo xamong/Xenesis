@@ -2920,6 +2920,24 @@ const PLANNED_MESSENGERS: XenesisConnectionItem[] = [
     },
   }),
   plannedMessenger({
+    id: 'rocket-chat',
+    label: 'Rocket.Chat',
+    summary: 'Planned self-hosted enterprise chat channel after server, bot user, and room controls are verified.',
+    setupSteps: [
+      'Configure the Rocket.Chat server URL and bot user credentials.',
+      'Restrict allowed rooms and teams before accepting prompts.',
+      'Verify thread, attachment, and bot-loop behavior before enabling delivery.',
+    ],
+    sourceDocs: [openClawDoc('Rocket.Chat', 'rocket-chat')],
+    channelTemplate: {
+      category: 'enterprise',
+      adapter: 'bot-api',
+      auth: 'server URL and bot user token',
+      capabilities: ['rooms', 'threads', 'files'],
+      safetyControls: ['room-allowlist', 'server-boundary', 'bot-loop-protection', 'approval-guardrails'],
+    },
+  }),
+  plannedMessenger({
     id: 'twitch',
     label: 'Twitch',
     summary: 'Planned livestream chat channel after broadcaster, moderator, and chat-rate controls are verified.',
@@ -3007,6 +3025,25 @@ const PLANNED_MESSENGERS: XenesisConnectionItem[] = [
       auth: 'app ID, app secret, and event verification token',
       capabilities: ['chats', 'threads', 'cards'],
       safetyControls: ['tenant-scope', 'chat-allowlist', 'signature-verification', 'approval-guardrails'],
+    },
+  }),
+  plannedMessenger({
+    id: 'dingding',
+    label: 'DingTalk / Dingding',
+    summary:
+      'Planned enterprise messenger channel after tenant robot credentials and conversation scopes are verified.',
+    setupSteps: [
+      'Configure DingTalk robot or tenant app credentials and callback verification.',
+      'Restrict allowed groups or conversations before accepting prompts.',
+      'Verify signature, tenant, and outbound delivery behavior before enabling replies.',
+    ],
+    sourceDocs: [openClawDoc('DingTalk / Dingding', 'dingding')],
+    channelTemplate: {
+      category: 'enterprise',
+      adapter: 'tenant-app',
+      auth: 'robot token, app secret, and event verification signature',
+      capabilities: ['groups', 'threads', 'cards'],
+      safetyControls: ['tenant-scope', 'conversation-allowlist', 'signature-verification', 'approval-guardrails'],
     },
   }),
   plannedMessenger({
