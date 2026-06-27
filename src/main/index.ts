@@ -46,6 +46,21 @@ import {
   writeProfiles,
 } from '../../packages/xenesis/src/config/index';
 import {
+  classifyMemoryWrite,
+  defaultMemoryWriteContext,
+  MemoryLedger,
+  SqliteMemoryLedgerStore,
+  SqliteMemoryStore,
+  writeMemoryObsidianProjection,
+  type MemoryApprovalProof,
+  type MemoryEvidenceRecord,
+  type MemoryInput,
+  type MemoryProposal,
+  type MemoryRecord,
+  type MemorySensitivity,
+  type MemoryWriteContext,
+} from '../../packages/xenesis/src/extensions/index';
+import {
   APP_MENU_MODEL,
   type AppMenuActionNode,
   type AppMenuCommandNode,
@@ -55,14 +70,27 @@ import {
 import { createAppControlService } from './appControl/appControlService';
 import {
   callDeskBridgeCapability,
+  createDeskBridgeCapabilityApprovalArgsHash,
   DESK_BRIDGE_RENDERER_COMMAND_CAPABILITY_COVERAGE,
   type DeskBridgeCapabilityAdapter,
+  type DeskBridgeCapabilityApprovalProof,
   type DeskBridgeCapabilitySource,
   findDeskBridgeCapability,
   listDeskBridgeCapabilities,
+  normalizeDeskBridgeCapabilitySource,
+  normalizeDeskBridgeCapabilityTransportSource,
+  shouldTrustDeskBridgeCallerApproval,
+  verifyDeskBridgeCapabilityApprovalProof,
 } from '../shared/deskBridgeCapabilities';
 import { normalizeExternalAppSettings } from '../shared/externalAppControl';
 import { buildMcpTerminalSessionList } from './mcpTerminalSessionList';
+import { resolveExistingRepoRootForObsidianProjection } from './memoryObsidianProjectionRoot';
+import {
+  redactMemoryEvidenceForCr,
+  redactMemoryLedgerEventForCr,
+  redactMemoryProposalForCr,
+  redactMemoryRecordForCr,
+} from './memoryRedaction';
 import {
   canUseXenisPhase5XamongCodeCommand,
   isXenisPhase5Visible,
@@ -5532,6 +5560,17 @@ async function resolveCapabilityActionInboxRequest(
       args: command.args,
       source: command.source as DeskBridgeCapabilitySource,
       approved: true,
+      approvalProof: verifyDeskBridgeCapabilityApprovalProof({
+        kind: 'action-inbox',
+        path: command.path,
+        source: command.source as DeskBridgeCapabilitySource,
+        approvalId: existing.id,
+        argsHash: createDeskBridgeCapabilityApprovalArgsHash(command.args),
+        resolvedBy: 'user',
+        resolution: request.scope === 'always' ? 'approve_always' : 'approve',
+        issuedAt: now,
+        expiresAt: existing.expiresAt,
+      }),
     });
     if (!result.ok) {
       const message = result.error || `Capability call failed after approval: ${command.path}`;
@@ -9101,6 +9140,313 @@ function readCapabilityRawString(body: Record<string, unknown>, keys: string[], 
   return fallback;
 }
 
+function readCapabilityNumber(body: Record<string, unknown>, keys: string[], fallback?: number): number | undefined {
+  for (const key of keys) {
+    const value = body[key];
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return numeric;
+  }
+  return fallback;
+}
+
+function isMemorySensitivity(value: unknown): value is MemorySensitivity {
+  return value === 'low' || value === 'medium' || value === 'high' || value === 'restricted';
+}
+
+function readCapabilityStringArray(body: Record<string, unknown>, keys: string[]): string[] | undefined {
+  for (const key of keys) {
+    const value = body[key];
+    if (!Array.isArray(value)) continue;
+    const items = value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
+    return items.length > 0 ? items.map((item) => item.trim()) : undefined;
+  }
+  return undefined;
+}
+
+function isMemoryKind(value: unknown): value is NonNullable<MemoryInput['kind']> {
+  return value === 'fact' || value === 'preference' || value === 'event' || value === 'decision' || value === 'procedure';
+}
+
+function isMemoryStatus(value: unknown): value is NonNullable<MemoryInput['status']> {
+  return value === 'active' || value === 'stale' || value === 'archived';
+}
+
+function isSupersedeMode(value: unknown): value is NonNullable<MemoryInput['supersedeMode']> {
+  return value === 'full' || value === 'partial';
+}
+
+function createDeskMemoryLedger(): MemoryLedger {
+  const xenesisHome = getXenesisStateHome();
+  return new MemoryLedger({
+    memoryStore: new SqliteMemoryStore({ xenesisHome }),
+    ledgerStore: new SqliteMemoryLedgerStore({ xenesisHome }),
+    evidenceVault: { xenesisHome },
+  });
+}
+
+function resolveRepoRootForObsidianProjection(): string {
+  return resolveExistingRepoRootForObsidianProjection([
+    process.cwd(),
+    app.getAppPath(),
+    path.resolve(app.getAppPath(), '..'),
+    path.resolve(__dirname, '..'),
+    path.resolve(__dirname, '..', '..'),
+    path.resolve(__dirname, '..', '..', '..'),
+  ]);
+}
+
+function normalizeMemoryInputArgs(body: Record<string, unknown>): MemoryInput {
+  const input = body.input && typeof body.input === 'object' && !Array.isArray(body.input) ? body.input : body;
+  const record = input as Record<string, unknown>;
+  const id = readCapabilityString(record, ['id', 'memoryId']);
+  const text = readCapabilityRawString(record, ['text', 'claim', 'content']);
+  if (!id) throw new Error('id is required');
+  if (!text.trim()) throw new Error('text is required');
+  const tags = Array.isArray(record.tags) ? record.tags.filter((tag): tag is string => typeof tag === 'string') : [];
+  const source = readCapabilityString(record, ['source']);
+  const priority = readCapabilityNumber(record, ['priority']);
+  const runbook = record.runbook && typeof record.runbook === 'object' && !Array.isArray(record.runbook) ? record.runbook : undefined;
+  const validFrom = readCapabilityString(record, ['validFrom']);
+  const validTo = readCapabilityString(record, ['validTo']);
+  const lastAccessedAt = readCapabilityString(record, ['lastAccessedAt']);
+  const createdAt = readCapabilityString(record, ['createdAt']);
+  const noEvidenceReason = readCapabilityString(record, ['noEvidenceReason']);
+  const archivedAt = readCapabilityString(record, ['archivedAt']);
+  const conflictsWith = readCapabilityStringArray(record, ['conflictsWith']);
+  const supersedes = readCapabilityStringArray(record, ['supersedes']);
+  const partialSupersededBy = readCapabilityStringArray(record, ['partialSupersededBy']);
+  const evidenceIds = readCapabilityStringArray(record, ['evidenceIds']);
+  const supersededBy = readCapabilityString(record, ['supersededBy']);
+  return {
+    id,
+    text,
+    tags,
+    ...(isMemoryKind(record.kind) ? { kind: record.kind } : {}),
+    ...(runbook ? { runbook: runbook as MemoryInput['runbook'] } : {}),
+    ...(source ? { source } : {}),
+    ...(priority !== undefined ? { priority } : {}),
+    ...(isMemoryStatus(record.status) ? { status: record.status } : {}),
+    ...(record.pinned === true || record.pinned === false ? { pinned: record.pinned } : {}),
+    ...(lastAccessedAt ? { lastAccessedAt } : {}),
+    ...(createdAt ? { createdAt } : {}),
+    ...(isMemorySensitivity(record.sensitivity) ? { sensitivity: record.sensitivity } : {}),
+    ...(conflictsWith ? { conflictsWith } : {}),
+    ...(validFrom ? { validFrom } : {}),
+    ...(validTo ? { validTo } : {}),
+    ...(supersedes ? { supersedes } : {}),
+    ...(supersededBy ? { supersededBy } : {}),
+    ...(partialSupersededBy ? { partialSupersededBy } : {}),
+    ...(isSupersedeMode(record.supersedeMode) ? { supersedeMode: record.supersedeMode } : {}),
+    ...(evidenceIds ? { evidenceIds } : {}),
+    ...(noEvidenceReason ? { noEvidenceReason } : {}),
+    ...(archivedAt ? { archivedAt } : {}),
+  };
+}
+
+function normalizeMemoryWriteContextArgs(body: Record<string, unknown>): MemoryWriteContext {
+  const context = body.context && typeof body.context === 'object' && !Array.isArray(body.context) ? body.context : body;
+  const record = context as Record<string, unknown>;
+  return defaultMemoryWriteContext({
+    runtime: readCapabilityString(record, ['runtime'], 'desk-cr'),
+    sourceKind:
+      record.sourceKind === 'conversation' ||
+      record.sourceKind === 'workspace_file' ||
+      record.sourceKind === 'tool_result' ||
+      record.sourceKind === 'external_document' ||
+      record.sourceKind === 'manual_note' ||
+      record.sourceKind === 'legacy' ||
+      record.sourceKind === 'agent'
+        ? record.sourceKind
+        : 'unknown',
+    trust:
+      record.trust === 'trusted' || record.trust === 'unknown' || record.trust === 'external_untrusted'
+        ? record.trust
+        : 'unknown',
+    externalTaint: record.externalTaint === true,
+    actor: record.actor === 'user' || record.actor === 'agent' || record.actor === 'system' ? record.actor : 'agent',
+    intent: record.intent === 'save' || record.intent === 'propose' || record.intent === 'delete' ? record.intent : 'propose',
+    sourceId: readCapabilityString(record, ['sourceId']) || undefined,
+    reason: readCapabilityString(record, ['reason']) || undefined,
+  });
+}
+
+function readMemoryProposalId(body: Record<string, unknown>): string {
+  return readCapabilityString(body, ['id', 'proposalId']);
+}
+
+function deskProofToMemoryApprovalProof(
+  proof: DeskBridgeCapabilityApprovalProof | undefined,
+  action: 'approve' | 'reject',
+): MemoryApprovalProof {
+  if (!proof) throw new Error('approval_proof_required');
+  return {
+    kind: 'approval-proof',
+    approvedBy: proof.resolvedBy ?? 'user',
+    approvalId: proof.approvalId ?? `${proof.kind}:${proof.path}`,
+    action: action === 'approve' ? (proof.resolution === 'approve_always' ? 'approve_always' : 'approve') : 'reject',
+    path: proof.path,
+    source: proof.source,
+    argsHash: proof.argsHash,
+    createdAt: proof.issuedAt ?? new Date().toISOString(),
+    expiresAt: proof.expiresAt,
+  };
+}
+
+async function memoryLedgerListCapability(args: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const records = await createDeskMemoryLedger().listRecords({
+    includeArchived: body.includeArchived === true,
+    status: body.status === 'active' || body.status === 'stale' || body.status === 'archived' ? body.status : undefined,
+    tag: readCapabilityString(body, ['tag']) || undefined,
+    source: readCapabilityString(body, ['source']) || undefined,
+  });
+  return { ok: true, records: records.map(redactMemoryRecordForCr), count: records.length };
+}
+
+async function memoryLedgerSearchCapability(args: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const query = readCapabilityRawString(body, ['query', 'q']);
+  if (!query.trim()) return { ok: false, error: 'query is required' };
+  const limit = Math.min(50, Math.max(1, Math.trunc(readCapabilityNumber(body, ['limit'], 10) ?? 10)));
+  const records = await createDeskMemoryLedger().searchRecords({
+    query,
+    limit,
+    includeArchived: body.includeArchived === true,
+  });
+  return { ok: true, records: records.map(redactMemoryRecordForCr), count: records.length };
+}
+
+async function memoryLedgerGetCapability(args: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'memoryId']);
+  if (!id) return { ok: false, error: 'id is required' };
+  const record = await createDeskMemoryLedger().getRecord(id);
+  return record
+    ? { ok: true, record: redactMemoryRecordForCr(record) }
+    : { ok: false, error: `Memory record not found: ${id}` };
+}
+
+async function memoryLedgerHistoryCapability(args: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const memoryId = readCapabilityString(body, ['memoryId', 'id']) || undefined;
+  const proposalId = readCapabilityString(body, ['proposalId']) || undefined;
+  const evidenceId = readCapabilityString(body, ['evidenceId']) || undefined;
+  const events = await createDeskMemoryLedger().history({ memoryId, proposalId, evidenceId });
+  return { ok: true, events: events.map(redactMemoryLedgerEventForCr), count: events.length };
+}
+
+async function memoryProposalCreateCapability(args: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const proposal = await createDeskMemoryLedger().propose(normalizeMemoryInputArgs(body), normalizeMemoryWriteContextArgs(body));
+  return { ok: true, proposal: redactMemoryProposalForCr(proposal) };
+}
+
+async function memoryProposalListCapability(args: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const status =
+    body.status === 'pending' || body.status === 'accepted' || body.status === 'rejected' ? body.status : undefined;
+  const proposals = await createDeskMemoryLedger().listProposals({ status });
+  return { ok: true, proposals: proposals.map(redactMemoryProposalForCr), count: proposals.length };
+}
+
+async function memoryProposalGetCapability(args: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readMemoryProposalId(body);
+  if (!id) return { ok: false, error: 'id is required' };
+  const proposal = await createDeskMemoryLedger().getProposal(id);
+  return proposal
+    ? { ok: true, proposal: redactMemoryProposalForCr(proposal) }
+    : { ok: false, error: `Memory proposal not found: ${id}` };
+}
+
+async function memoryProposalAcceptCapability(args: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readMemoryProposalId(body);
+  if (!id) return { ok: false, error: 'id is required' };
+  const result = await createDeskMemoryLedger().acceptProposal(
+    id,
+    deskProofToMemoryApprovalProof(body.approvalProof as DeskBridgeCapabilityApprovalProof | undefined, 'approve'),
+  );
+  return {
+    ok: true,
+    ...result,
+    record: result.record ? redactMemoryRecordForCr(result.record) : undefined,
+    proposal: result.proposal ? redactMemoryProposalForCr(result.proposal) : undefined,
+  };
+}
+
+async function memoryProposalRejectCapability(args: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readMemoryProposalId(body);
+  if (!id) return { ok: false, error: 'id is required' };
+  const proposal = await createDeskMemoryLedger().rejectProposal(
+    id,
+    deskProofToMemoryApprovalProof(body.approvalProof as DeskBridgeCapabilityApprovalProof | undefined, 'reject'),
+  );
+  return { ok: true, proposal: redactMemoryProposalForCr(proposal) };
+}
+
+async function memoryEvidenceListCapability(args: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const evidence = await createDeskMemoryLedger().listEvidence({
+    kind:
+      body.kind === 'conversation' ||
+      body.kind === 'workspace_file' ||
+      body.kind === 'tool_result' ||
+      body.kind === 'external_document' ||
+      body.kind === 'manual_note'
+        ? body.kind
+        : undefined,
+    sensitivity: isMemorySensitivity(body.sensitivity) ? body.sensitivity : undefined,
+  });
+  return { ok: true, evidence: evidence.map(redactMemoryEvidenceForCr), count: evidence.length };
+}
+
+async function memoryEvidenceGetCapability(args: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'evidenceId']);
+  if (!id) return { ok: false, error: 'id is required' };
+  const evidence = await createDeskMemoryLedger().getEvidence(id);
+  return evidence
+    ? { ok: true, evidence: redactMemoryEvidenceForCr(evidence) }
+    : { ok: false, error: `Memory evidence not found: ${id}` };
+}
+
+function memoryPolicyClassifyCapability(args: unknown): Record<string, unknown> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const input = normalizeMemoryInputArgs(body);
+  const context = normalizeMemoryWriteContextArgs(body);
+  return { ok: true, decision: classifyMemoryWrite(input, context) };
+}
+
+async function memoryObsidianProjectCapability(args: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const area = readCapabilityString(body, ['area'], 'outputs');
+  const fileName = readCapabilityString(body, ['fileName'], 'memory-dashboard.md');
+  const ledger = createDeskMemoryLedger();
+  const [records, proposals, evidence, events] = await Promise.all([
+    ledger.listRecords({ includeArchived: true, includeHistorical: true }),
+    ledger.listProposals({}),
+    ledger.listEvidence({}),
+    ledger.history({}),
+  ]);
+  const result = await writeMemoryObsidianProjection({
+    repoRoot: resolveRepoRootForObsidianProjection(),
+    area: area as Parameters<typeof writeMemoryObsidianProjection>[0]['area'],
+    fileName,
+    generatedAt: new Date().toISOString(),
+    records,
+    proposals,
+    evidence,
+    events,
+  });
+  return {
+    ok: true,
+    path: result.path,
+    counts: result.counts,
+  };
+}
+
 function readCapabilityProfile(body: Record<string, unknown>): RemoteFileProfile {
   const profile =
     body.profile && typeof body.profile === 'object' && !Array.isArray(body.profile) ? body.profile : body;
@@ -11114,6 +11460,19 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
       capabilityAuditLogger.clear();
       return { ok: true, records: [] };
     },
+    memoryLedgerList: (args: unknown) => memoryLedgerListCapability(args),
+    memoryLedgerSearch: (args: unknown) => memoryLedgerSearchCapability(args),
+    memoryLedgerGet: (args: unknown) => memoryLedgerGetCapability(args),
+    memoryLedgerHistory: (args: unknown) => memoryLedgerHistoryCapability(args),
+    memoryProposalCreate: (args: unknown) => memoryProposalCreateCapability(args),
+    memoryProposalList: (args: unknown) => memoryProposalListCapability(args),
+    memoryProposalGet: (args: unknown) => memoryProposalGetCapability(args),
+    memoryProposalAccept: (args: unknown) => memoryProposalAcceptCapability(args),
+    memoryProposalReject: (args: unknown) => memoryProposalRejectCapability(args),
+    memoryEvidenceList: (args: unknown) => memoryEvidenceListCapability(args),
+    memoryEvidenceGet: (args: unknown) => memoryEvidenceGetCapability(args),
+    memoryPolicyClassify: (args: unknown) => memoryPolicyClassifyCapability(args),
+    memoryObsidianProject: (args: unknown) => memoryObsidianProjectCapability(args),
     acquireControl: (args: unknown) => {
       const body = normalizeMcpCapabilityArgs(args);
       const agentId = readCapabilityString(body, ['agentId', 'agent', 'id', 'source'], 'agent');
@@ -12083,15 +12442,6 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
   };
 }
 
-function normalizeDeskBridgeCapabilitySource(
-  value: unknown,
-  fallback: DeskBridgeCapabilitySource,
-): DeskBridgeCapabilitySource {
-  return value === 'internal' || value === 'mcp' || value === 'gowoori' || value === 'workflow' || value === 'xenesis'
-    ? value
-    : fallback;
-}
-
 async function callMcpBridgeCapabilityFromRequest(
   rawRequest: unknown,
   defaultSource: DeskBridgeCapabilitySource,
@@ -12099,14 +12449,29 @@ async function callMcpBridgeCapabilityFromRequest(
   const body = normalizeMcpCapabilityArgs(rawRequest);
   const capabilityPath = typeof body.path === 'string' ? body.path : '';
   const capabilityArgs = body.args;
-  const source = normalizeDeskBridgeCapabilitySource(body.source, defaultSource);
-  const preApproved = body.approved === true;
+  const source = normalizeDeskBridgeCapabilityTransportSource(body.source, defaultSource);
+  const preApproved = shouldTrustDeskBridgeCallerApproval(defaultSource) && body.approved === true;
   const rememberedHit = isMcpCapabilityApprovalRemembered(capabilityPath, capabilityArgs, source);
   const result = await callDeskBridgeCapability(createMcpBridgeCapabilityAdapter(), {
     path: capabilityPath,
     args: capabilityArgs,
     source,
     approved: preApproved || rememberedHit,
+    approvalProof: rememberedHit
+      ? (() => {
+          const issuedAt = new Date();
+          return verifyDeskBridgeCapabilityApprovalProof({
+            kind: 'remembered',
+            path: capabilityPath,
+            source,
+            argsHash: createDeskBridgeCapabilityApprovalArgsHash(capabilityArgs),
+            resolvedBy: 'user',
+            resolution: 'approve_always',
+            issuedAt: issuedAt.toISOString(),
+            expiresAt: new Date(issuedAt.getTime() + 5 * 60 * 1000).toISOString(),
+          });
+        })()
+      : undefined,
   });
 
   if (!result.ok && result.approvalRequired) {

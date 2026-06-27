@@ -1,6 +1,7 @@
 import type { ExtensionsConfig } from "../config/index.js";
-import type { ToolRegistry } from "../tools/index.js";
 import type { ProviderCapabilities } from "../providers/registry.js";
+import type { ToolRegistry } from "../tools/index.js";
+import type { MemoryKind, MemoryRunbook } from "./memoryTypes.js";
 
 export type ExtensionKind = "mcp" | "subagent" | "memory" | "plugin" | "skill";
 export type ExtensionCapabilitySourceKind =
@@ -100,6 +101,9 @@ export interface MemoryRecord {
   id: string;
   text: string;
   tags: string[];
+  /** Memory semantic kind. Procedure memories carry a structured runbook payload. */
+  kind?: MemoryKind;
+  runbook?: MemoryRunbook;
   source?: string;
   priority?: number;
   updatedAt: string;
@@ -113,18 +117,66 @@ export interface MemoryRecord {
   createdAt?: string;
   /** Semantic embedding vector (Float32, L2-normalized). Persisted as BLOB in DB; absent = keyword fallback. */
   embedding?: Float32Array;
+  /** Governance classification attached by the Evidence-Governed Memory ledger. */
+  sensitivity?: "low" | "medium" | "high" | "restricted";
+  /** Proposal or memory IDs this record conflicts with; conflicts must not silently overwrite state. */
+  conflictsWith?: string[];
+  /** First instant when this memory should be treated as valid. Absent means valid from creation. */
+  validFrom?: string;
+  /** First instant when this memory should no longer be treated as current. Exclusive. */
+  validTo?: string;
+  /** Memory IDs this record supersedes. */
+  supersedes?: string[];
+  /** Memory ID that fully superseded this record. */
+  supersededBy?: string;
+  /** Memory IDs that partially supersede this record as scoped exceptions. */
+  partialSupersededBy?: string[];
+  /** Whether this record supersedes another record fully or as a scoped exception. */
+  supersedeMode?: "full" | "partial";
+  /** Durable evidence IDs that support this memory. */
+  evidenceIds?: string[];
+  /** Explicit reason used when accepted memory has no durable evidence snapshot. */
+  noEvidenceReason?: string;
+  /** When a record was archived by governed delete. */
+  archivedAt?: string;
 }
+
+export type MemoryTemporalField =
+  | "validFrom"
+  | "validTo"
+  | "supersedes"
+  | "supersededBy"
+  | "partialSupersededBy"
+  | "supersedeMode";
 
 export interface MemoryInput {
   id: string;
   text: string;
   tags?: string[];
+  kind?: MemoryKind;
+  runbook?: MemoryRunbook;
   source?: string;
   priority?: number;
+  status?: MemoryStatus;
+  pinned?: boolean;
+  lastAccessedAt?: string;
+  createdAt?: string;
+  sensitivity?: MemoryRecord["sensitivity"];
+  conflictsWith?: string[];
+  validFrom?: string;
+  validTo?: string;
+  supersedes?: string[];
+  supersededBy?: string;
+  partialSupersededBy?: string[];
+  supersedeMode?: MemoryRecord["supersedeMode"];
+  evidenceIds?: string[];
+  noEvidenceReason?: string;
+  archivedAt?: string;
 }
 
 export interface MemoryStore {
   upsert(input: MemoryInput): Promise<MemoryRecord>;
+  get(id: string): Promise<MemoryRecord | undefined>;
   remove(id: string): Promise<void>;
   list(): Promise<MemoryRecord[]>;
   search(query: string): Promise<MemoryRecord[]>;

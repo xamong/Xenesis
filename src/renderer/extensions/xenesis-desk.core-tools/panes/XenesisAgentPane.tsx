@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type {
   AppSettings,
   GowooriChatSettings,
+  McpBridgeActionInboxItem,
+  McpBridgeActionInboxResolution,
   XenesisApi,
   XenesisOperationalDiagnostics,
   XenesisProfileState,
@@ -49,6 +51,12 @@ import {
   writePendingGowooriApply,
 } from '../../xenesis-desk.workflow-runner/gowoori/shared/gowooriEvents';
 import { createXdBlasterEventsForDeskActionActivity, dispatchXdBlasterEvents } from './xenesisActivityBlaster';
+import {
+  buildXenesisMcpActionInboxPendingMessage,
+  collectXenesisMcpActionInboxItems,
+  type XenesisMcpActionInboxStatus,
+  xenesisMcpActionInboxStatus,
+} from './xenesisAgentActionInbox';
 import { hasRenderableXconArtifact, shouldAutoOpenXenesisArtifactInGowoori } from './xenesisAgentArtifactActions';
 import { buildXenesisArtifactPromptWithContext } from './xenesisAgentArtifactContext';
 import {
@@ -82,9 +90,7 @@ import {
   type XenesisDeskActionExecutionResult,
   type XenesisDeskActionRequest,
 } from './xenesisAgentDeskControl';
-import {
-  isXenesisApprovalIntent,
-} from './xenesisAgentInputRouting';
+import { isXenesisApprovalIntent } from './xenesisAgentInputRouting';
 import {
   buildXenesisMarkdownSaveDraft,
   resolveXenesisMarkdownSavePath,
@@ -109,10 +115,10 @@ import {
   clearChat,
   clearRawStream,
   focusRawStreamEntry,
+  isXenesisAgentBusy,
   mergeRawStreamEntry,
   replaceChatMessage,
   setPolicySnapshot,
-  isXenesisAgentBusy,
   setRawStreamOpen,
   useXenesisAgentState,
   xenesisAgentStateStore,
@@ -147,20 +153,12 @@ import {
   type XenesisAssistantStreamFilterState,
   type XenesisChatMessage,
   type XenesisMode,
-  type XenesisRawStreamEntry,
   type XenesisSlashCommand,
   type XenesisSlashCommandDescriptor,
   type XenesisSlashMenuPlacement,
   type XenesisStatusBarItemKey,
   type XenesisTerminalLineKind,
 } from './xenesisAgentTypes';
-import {
-  decideDrain,
-  dequeueQueuedPrompt,
-  enqueueQueuedPrompt,
-  makeQueuedPrompt,
-  removeQueuedPrompt,
-} from './xenesisPromptQueue';
 import {
   buildXenesisControlDemoWorkArgsFromInput,
   buildXenesisVisibleSubagentsDemoWorkers,
@@ -177,6 +175,13 @@ import {
   xenesisPolicyNoticeFromRecord,
   xenesisPolicySnapshotFromRecord,
 } from './xenesisPolicyNotices';
+import {
+  decideDrain,
+  dequeueQueuedPrompt,
+  enqueueQueuedPrompt,
+  makeQueuedPrompt,
+  removeQueuedPrompt,
+} from './xenesisPromptQueue';
 
 const XENESIS_API_UNAVAILABLE = 'Xenesis API is unavailable. Restart Xenesis Desk or check preload initialization.';
 const XENESIS_OPERATING_ROLE = 'LLM orchestration steward';
@@ -331,6 +336,12 @@ function getOrCreateActiveXenesisAssistantMessage(): string {
 }
 
 function handleXenesisRunEvent(event: XenesisRunEvent): void {
+  const actionInboxItems = collectXenesisMcpActionInboxItems(event);
+  if (actionInboxItems.length > 0) {
+    flushXenesisAssistantStream();
+    attachMcpActionInboxItemsToMessage(getOrCreateActiveXenesisAssistantMessage(), actionInboxItems);
+  }
+
   const delta = extractAssistantDeltaFromRunEvent(event);
   if (delta) {
     pushFilteredXenesisAssistantStreamDelta(getOrCreateActiveXenesisAssistantMessage(), delta);
@@ -834,6 +845,72 @@ function xenesisDeskActionStatusLabel(status: XenesisChatMessage['deskActionStat
     default:
       return 'Desk action';
   }
+}
+
+function xenesisMcpActionInboxStatusLabel(status: XenesisMcpActionInboxStatus | undefined): string {
+  switch (status) {
+    case 'pending':
+      return '승인 대기';
+    case 'running':
+      return '처리 중';
+    case 'approved':
+      return '승인됨';
+    case 'rejected':
+      return '거절됨';
+    case 'failed':
+      return '실패';
+    case 'expired':
+      return '만료됨';
+    default:
+      return '승인 요청';
+  }
+}
+
+function mergeXenesisMcpActionInboxItems(
+  existing: McpBridgeActionInboxItem[] | undefined,
+  next: McpBridgeActionInboxItem[],
+): McpBridgeActionInboxItem[] {
+  const byId = new Map<string, McpBridgeActionInboxItem>();
+  for (const item of existing || []) byId.set(item.id, item);
+  for (const item of next) byId.set(item.id, item);
+  return [...byId.values()];
+}
+
+function actionInboxCompletionMessage(
+  items: McpBridgeActionInboxItem[],
+  fallback = 'Desk 승인 요청을 처리했습니다.',
+): string {
+  const lines = items.map((item) => {
+    const detail = item.error || item.result || item.status;
+    return `- ${item.title || item.id}: ${detail}`;
+  });
+  return [fallback, '', ...lines].join('\n');
+}
+
+function attachMcpActionInboxItemsToMessage(
+  messageId: string,
+  nextItems: McpBridgeActionInboxItem[],
+  statusOverride?: XenesisMcpActionInboxStatus,
+  contentOverride?: string,
+): boolean {
+  if (nextItems.length === 0) return false;
+  const existingMessage = xenesisAgentStateStore.getSnapshot().messages.find((message) => message.id === messageId);
+  const items = mergeXenesisMcpActionInboxItems(existingMessage?.mcpActionInboxItems, nextItems);
+  const status = statusOverride || xenesisMcpActionInboxStatus(items);
+  replaceChatMessage(messageId, {
+    role: 'assistant',
+    kind: 'approval',
+    content:
+      contentOverride ||
+      (status === 'pending'
+        ? buildXenesisMcpActionInboxPendingMessage(items)
+        : actionInboxCompletionMessage(items)),
+    mcpActionInboxItems: items,
+    mcpActionInboxStatus: status,
+    error: status === 'failed' || status === 'expired',
+    streaming: false,
+  });
+  return true;
 }
 
 function formatXenesisMessageTime(value: string): string {
@@ -1752,6 +1829,14 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
     );
   }
 
+  function latestPendingMcpActionInboxMessage(): XenesisChatMessage | null {
+    return (
+      [...xenesisAgentStateStore.getSnapshot().messages]
+        .reverse()
+        .find((message) => (message.mcpActionInboxItems || []).some((item) => item.status === 'pending')) || null
+    );
+  }
+
   function settleXenesisDeskActionMessage(
     messageId: string,
     actions: XenesisDeskActionRequest[],
@@ -1759,6 +1844,12 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
     leadText = '',
   ): 'pending' | 'applied' | 'failed' {
     appendXenesisDeskActionResultsToLog(results);
+    const actionInboxItems = collectXenesisMcpActionInboxItems(results);
+    if (actionInboxItems.some((item) => item.status === 'pending')) {
+      attachMcpActionInboxItemsToMessage(messageId, actionInboxItems);
+      return 'pending';
+    }
+
     const pendingActions = pendingXenesisDeskActionsFromResults(actions, results);
     if (pendingActions.length > 0) {
       replaceChatMessage(messageId, {
@@ -1897,6 +1988,59 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
     });
   }
 
+  async function resolveMcpActionInboxMessage(
+    messageId: string,
+    resolution: McpBridgeActionInboxResolution,
+    scope: 'once' | 'always' = 'once',
+  ): Promise<boolean> {
+    const pendingMessage = xenesisAgentStateStore.getSnapshot().messages.find((message) => message.id === messageId);
+    const pendingItems = (pendingMessage?.mcpActionInboxItems || []).filter((item) => item.status === 'pending');
+    if (!pendingMessage || pendingItems.length === 0 || !window.mcpBridgeAPI) return false;
+
+    appendChatMessage({ role: 'user', content: resolution === 'reject' ? '거절' : scope === 'always' ? '항상 승인' : '승인' });
+    replaceChatMessage(messageId, {
+      role: 'assistant',
+      kind: 'approval',
+      content: 'Desk 승인 요청을 처리하고 있습니다...',
+      mcpActionInboxItems: pendingMessage.mcpActionInboxItems,
+      mcpActionInboxStatus: 'running',
+      streaming: true,
+      error: false,
+    });
+
+    const resolvedItems: McpBridgeActionInboxItem[] = [];
+    let failed = false;
+    for (const item of pendingItems) {
+      try {
+        const result = await window.mcpBridgeAPI.resolveActionInboxItem({
+          id: item.id,
+          resolution,
+          scope,
+        });
+        if (result.item) {
+          resolvedItems.push(result.item);
+        } else if (!result.ok) {
+          failed = true;
+          resolvedItems.push({ ...item, status: 'failed', error: result.error || 'Desk approval failed.' });
+        }
+        if (!result.ok) failed = true;
+      } catch (error) {
+        failed = true;
+        resolvedItems.push({
+          ...item,
+          status: 'failed',
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    const allItems = mergeXenesisMcpActionInboxItems(pendingMessage.mcpActionInboxItems, resolvedItems);
+    const status = failed ? 'failed' : xenesisMcpActionInboxStatus(allItems);
+    attachMcpActionInboxItemsToMessage(messageId, allItems, status, actionInboxCompletionMessage(allItems));
+    void refresh();
+    return true;
+  }
+
   async function runPrompt(
     input = prompt,
     runMode: XenesisMode = mode,
@@ -2031,6 +2175,7 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
       });
       appendPolicyNotices(extractXenesisPolicyNotices(result));
       setPolicySnapshot(extractXenesisPolicySnapshot(result));
+      const resultActionInboxItems = collectXenesisMcpActionInboxItems(result);
       flushXenesisAssistantStream();
       const streamedAssistantText =
         xenesisAgentStateStore.getSnapshot().messages.find((message) => message.id === assistantMessageId)?.content ||
@@ -2072,6 +2217,9 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
           error: !result.ok,
           streaming: false,
         });
+      }
+      if (resultActionInboxItems.length > 0) {
+        attachMcpActionInboxItemsToMessage(assistantMessageId, resultActionInboxItems);
       }
       if (result.ok && parsedFinalAssistantText.actions.length > 0) {
         for (const action of parsedFinalAssistantText.actions) {
@@ -3493,6 +3641,15 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
       await applyPendingMarkdownSave(baseInput);
       return;
     }
+    if (isXenesisApprovalIntent(baseInput)) {
+      const pendingMcpActionInboxMessage = latestPendingMcpActionInboxMessage();
+      if (
+        pendingMcpActionInboxMessage &&
+        (await resolveMcpActionInboxMessage(pendingMcpActionInboxMessage.id, 'approve', 'once'))
+      ) {
+        return;
+      }
+    }
     if (isXenesisApprovalIntent(baseInput) && (await approvePendingDeskActionMessage(undefined, baseInput))) {
       return;
     }
@@ -4087,6 +4244,11 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
                   const deskActions = message.deskActions || [];
                   const hasDeskActions = deskActions.length > 0;
                   const deskActionStatus = message.deskActionStatus || (hasDeskActions ? 'pending' : undefined);
+                  const mcpActionInboxItems = message.mcpActionInboxItems || [];
+                  const hasMcpActionInboxItems = mcpActionInboxItems.length > 0;
+                  const mcpActionInboxStatus =
+                    message.mcpActionInboxStatus ||
+                    (hasMcpActionInboxItems ? xenesisMcpActionInboxStatus(mcpActionInboxItems) : undefined);
                   return (
                     <article
                       key={message.id}
@@ -4163,6 +4325,45 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
                                 onClick={() => cancelPendingDeskActionMessage(message.id)}
                               >
                                 취소
+                              </button>
+                            </>
+                          )}
+                        </section>
+                      )}
+                      {hasMcpActionInboxItems && (
+                        <section
+                          className={`xd-xenesis-desk-action-card is-${mcpActionInboxStatus || 'pending'}`}
+                          data-xenesis-no-terminal-focus="true"
+                        >
+                          <div>
+                            <span>Capability Registry</span>
+                            <strong>{xenesisMcpActionInboxStatusLabel(mcpActionInboxStatus)}</strong>
+                            <small>{mcpActionInboxItems.map((item) => item.title || item.id).join(', ')}</small>
+                          </div>
+                          {mcpActionInboxStatus === 'pending' && (
+                            <>
+                              <button
+                                type="button"
+                                data-xenesis-agent-mcp-action-inbox-approve="true"
+                                onClick={() => void resolveMcpActionInboxMessage(message.id, 'approve', 'once')}
+                              >
+                                이번만 승인
+                              </button>
+                              <button
+                                type="button"
+                                data-xenesis-agent-mcp-action-inbox-approve-always="true"
+                                title="같은 작업을 항상 승인"
+                                onClick={() => void resolveMcpActionInboxMessage(message.id, 'approve', 'always')}
+                              >
+                                항상 승인
+                              </button>
+                              <button
+                                type="button"
+                                className="is-secondary"
+                                data-xenesis-agent-mcp-action-inbox-reject="true"
+                                onClick={() => void resolveMcpActionInboxMessage(message.id, 'reject', 'once')}
+                              >
+                                거절
                               </button>
                             </>
                           )}

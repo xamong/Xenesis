@@ -31,6 +31,7 @@
   "scripts": {
     "dev": "node scripts/run-dev.mjs",
     "dev:electron": "electron-vite dev",
+    "test": "node scripts/runRootTests.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",

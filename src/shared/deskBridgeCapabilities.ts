@@ -105,6 +105,7 @@ export interface DeskBridgeCapabilityCallRequest {
   args?: unknown;
   source?: DeskBridgeCapabilitySource;
   approved?: boolean;
+  approvalProof?: DeskBridgeCapabilityApprovalProof;
 }
 
 export interface DeskBridgeCapabilityCallResult {
@@ -122,6 +123,100 @@ export interface DeskBridgeCapabilityApprovalDecision {
   allowed: boolean;
   approvalRequired: boolean;
   reason?: string;
+}
+
+const DESK_BRIDGE_APPROVAL_PROOF_BRAND: unique symbol = Symbol('desk-bridge-approval-proof');
+
+export interface DeskBridgeCapabilityApprovalProof {
+  kind: 'action-inbox' | 'remembered';
+  path: string;
+  source: DeskBridgeCapabilitySource;
+  approvalId?: string;
+  argsHash?: string;
+  resolvedBy?: 'user';
+  resolution?: 'approve' | 'approve_always' | 'reject';
+  issuedAt?: string;
+  expiresAt?: string;
+  [DESK_BRIDGE_APPROVAL_PROOF_BRAND]?: true;
+}
+
+export function normalizeDeskBridgeCapabilitySource(
+  value: unknown,
+  fallback: DeskBridgeCapabilitySource,
+): DeskBridgeCapabilitySource {
+  return value === 'internal' || value === 'mcp' || value === 'gowoori' || value === 'workflow' || value === 'xenesis'
+    ? value
+    : fallback;
+}
+
+export function normalizeDeskBridgeCapabilityTransportSource(
+  value: unknown,
+  defaultSource: DeskBridgeCapabilitySource,
+): DeskBridgeCapabilitySource {
+  if (defaultSource === 'mcp') return 'mcp';
+  return normalizeDeskBridgeCapabilitySource(value, defaultSource);
+}
+
+export function shouldTrustDeskBridgeCallerApproval(defaultSource: DeskBridgeCapabilitySource): boolean {
+  return defaultSource !== 'mcp';
+}
+
+function stableDeskBridgeCapabilityApprovalJson(value: unknown, seen = new WeakSet<object>()): string {
+  if (value === null || value === undefined) return 'null';
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableDeskBridgeCapabilityApprovalJson(item, seen)).join(',')}]`;
+  }
+  if (typeof value === 'object') {
+    if (seen.has(value)) return JSON.stringify('[Circular]');
+    seen.add(value);
+    const record = value as Record<string, unknown>;
+    return `{${Object.keys(record)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${stableDeskBridgeCapabilityApprovalJson(record[key], seen)}`)
+      .join(',')}}`;
+  }
+  return JSON.stringify(String(value));
+}
+
+export function createDeskBridgeCapabilityApprovalArgsHash(args: unknown): string {
+  const serialized = stableDeskBridgeCapabilityApprovalJson(args);
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < serialized.length; index += 1) {
+    hash ^= serialized.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return `fnv1a:${(hash >>> 0).toString(16).padStart(8, '0')}`;
+}
+
+export function verifyDeskBridgeCapabilityApprovalProof(
+  proof: DeskBridgeCapabilityApprovalProof,
+): DeskBridgeCapabilityApprovalProof {
+  return { ...proof, [DESK_BRIDGE_APPROVAL_PROOF_BRAND]: true };
+}
+
+function isValidDeskBridgeCapabilityApprovalProof(
+  node: DeskBridgeCapabilityNode,
+  source: DeskBridgeCapabilitySource,
+  args: unknown,
+  approvalProof: DeskBridgeCapabilityApprovalProof | undefined,
+): boolean {
+  if (!approvalProof) return false;
+  if (approvalProof[DESK_BRIDGE_APPROVAL_PROOF_BRAND] !== true) return false;
+  if (approvalProof.path !== node.path || approvalProof.source !== source) return false;
+  if (approvalProof.kind !== 'action-inbox' && approvalProof.kind !== 'remembered') return false;
+  if (approvalProof.resolvedBy !== 'user') return false;
+  if (approvalProof.kind === 'action-inbox' && !approvalProof.approvalId) return false;
+  if (approvalProof.resolution !== 'approve' && approvalProof.resolution !== 'approve_always') return false;
+  if (approvalProof.argsHash !== createDeskBridgeCapabilityApprovalArgsHash(args)) return false;
+  if (approvalProof.kind === 'action-inbox' && !approvalProof.expiresAt) return false;
+  if (approvalProof.expiresAt) {
+    const expiresAt = Date.parse(approvalProof.expiresAt);
+    if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) return false;
+  }
+  return true;
 }
 
 export interface DeskBridgeCapabilityAuditRecord {
@@ -149,6 +244,19 @@ export interface DeskBridgeCapabilityAdapter {
   queryAudit?: (args: unknown) => Promise<unknown> | unknown;
   exportAudit?: (args: unknown) => Promise<unknown> | unknown;
   clearAudit?: (args: unknown) => Promise<unknown> | unknown;
+  memoryLedgerList?: (args: unknown) => Promise<unknown> | unknown;
+  memoryLedgerSearch?: (args: unknown) => Promise<unknown> | unknown;
+  memoryLedgerGet?: (args: unknown) => Promise<unknown> | unknown;
+  memoryLedgerHistory?: (args: unknown) => Promise<unknown> | unknown;
+  memoryProposalCreate?: (args: unknown) => Promise<unknown> | unknown;
+  memoryProposalList?: (args: unknown) => Promise<unknown> | unknown;
+  memoryProposalGet?: (args: unknown) => Promise<unknown> | unknown;
+  memoryProposalAccept?: (args: unknown) => Promise<unknown> | unknown;
+  memoryProposalReject?: (args: unknown) => Promise<unknown> | unknown;
+  memoryEvidenceList?: (args: unknown) => Promise<unknown> | unknown;
+  memoryEvidenceGet?: (args: unknown) => Promise<unknown> | unknown;
+  memoryObsidianProject?: (args: unknown) => Promise<unknown> | unknown;
+  memoryPolicyClassify?: (args: unknown) => Promise<unknown> | unknown;
   acquireControl?: (args: unknown) => Promise<unknown> | unknown;
   releaseControl?: (args: unknown) => Promise<unknown> | unknown;
   forceReleaseControl?: (args: unknown) => Promise<unknown> | unknown;
@@ -1033,6 +1141,10 @@ export const DESK_BRIDGE_COMMAND_CAPABILITY_COVERAGE = {
     commandCapabilityPath: 'xd.extensions.runCommand',
     notes: 'Built-in core tool panel opened through the extension command host.',
   },
+  'xenesis-desk.core-tools.openMemoryDashboard': {
+    commandCapabilityPath: 'xd.extensions.runCommand',
+    notes: 'Built-in core tool panel opened through the extension command host.',
+  },
   'xenesis-desk.core-tools.openCapabilityExplorer': {
     commandCapabilityPath: 'xd.extensions.runCommand',
     notes: 'Built-in core tool panel opened through the extension command host.',
@@ -1402,6 +1514,9 @@ export const DESK_BRIDGE_DOCK_CONTENT_CAPABILITY_COVERAGE = {
   'agent-performance': {
     contentCapabilityPath: 'xd.tools.core.agentPerformance.open',
   },
+  'memory-dashboard': {
+    contentCapabilityPath: 'xd.tools.core.memoryDashboard.open',
+  },
   'alert-rules': {
     contentCapabilityPath: 'xd.tools.workflow.alertRules.open',
   },
@@ -1697,6 +1812,11 @@ export const DESK_BRIDGE_EXTENSION_TOOL_CAPABILITY_COVERAGE = {
     toolCapabilityPath: 'xd.tools.core.agentPerformance.open',
     commandId: 'xenesis-desk.core-tools.openAgentPerformance',
     notes: 'Open Agent Performance panel.',
+  },
+  'xenesis-desk.core-tools.memory-dashboard': {
+    toolCapabilityPath: 'xd.tools.core.memoryDashboard.open',
+    commandId: 'xenesis-desk.core-tools.openMemoryDashboard',
+    notes: 'Open Memory Dashboard panel.',
   },
   'xenesis-desk.workflow-runner.alert-rules': {
     toolCapabilityPath: 'xd.tools.workflow.alertRules.open',
@@ -3140,6 +3260,136 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           ),
         ],
       ),
+    ]),
+    group('xd.memory', 'Memory', 'Evidence-governed long-term memory ledger, proposals, evidence, and policy.', [
+      group('xd.memory.ledger', 'Ledger', 'Governed long-term memory records and audit history.', [
+        method('xd.memory.ledger.list', 'List memory records', 'List governed memory records with redaction applied.', 'read'),
+        method(
+          'xd.memory.ledger.search',
+          'Search memory records',
+          'Search governed memory records with redaction applied.',
+          'read',
+          {
+            type: 'object',
+            required: ['query'],
+            properties: {
+              query: { type: 'string', title: 'Query' },
+              limit: { type: 'number', title: 'Limit', minimum: 1, maximum: 50 },
+              includeArchived: { type: 'boolean', title: 'Include archived' },
+            },
+          },
+        ),
+        method(
+          'xd.memory.ledger.get',
+          'Get memory record',
+          'Read one governed memory record with redaction applied.',
+          'read',
+          {
+            type: 'object',
+            required: ['id'],
+            properties: { id: { type: 'string', title: 'Memory id' } },
+          },
+        ),
+        method(
+          'xd.memory.ledger.history',
+          'Read memory history',
+          'Read ledger events for a memory, proposal, or evidence record.',
+          'read',
+        ),
+      ]),
+      group('xd.memory.proposals', 'Proposals', 'Memory write proposals and approval-gated decisions.', [
+        method(
+          'xd.memory.proposals.create',
+          'Create memory proposal',
+          'Create a governed memory proposal without committing it to active memory.',
+          'write',
+          undefined,
+          { approval: 'never' },
+        ),
+        method(
+          'xd.memory.proposals.list',
+          'List memory proposals',
+          'List governed memory proposals with sensitive input redacted.',
+          'read',
+        ),
+        method(
+          'xd.memory.proposals.get',
+          'Get memory proposal',
+          'Read one governed memory proposal with sensitive input redacted.',
+          'read',
+        ),
+        method(
+          'xd.memory.proposals.accept',
+          'Accept memory proposal',
+          'Accept a pending memory proposal. Requires a real Desk approval proof.',
+          'write',
+          {
+            type: 'object',
+            required: ['id'],
+            properties: { id: { type: 'string', title: 'Proposal id' } },
+          },
+          { approval: 'always' },
+        ),
+        method(
+          'xd.memory.proposals.reject',
+          'Reject memory proposal',
+          'Reject a pending memory proposal. Requires a real Desk approval proof.',
+          'write',
+          {
+            type: 'object',
+            required: ['id'],
+            properties: { id: { type: 'string', title: 'Proposal id' } },
+          },
+          { approval: 'always' },
+        ),
+      ]),
+      group('xd.memory.evidence', 'Evidence', 'Raw-evidence references linked to governed memory.', [
+        method(
+          'xd.memory.evidence.list',
+          'List memory evidence',
+          'List governed memory evidence references with sensitive fields redacted.',
+          'read',
+        ),
+        method(
+          'xd.memory.evidence.get',
+          'Get memory evidence',
+          'Read one governed memory evidence reference with sensitive fields redacted.',
+          'read',
+        ),
+      ]),
+      group('xd.memory.obsidian', 'Obsidian projection', 'Repo-local Obsidian projection generated from the memory ledger.', [
+        method(
+          'xd.memory.obsidian.project',
+          'Project memory to Obsidian',
+          'Write a regenerable memory projection under the repo-local docs/obsidian vault output areas.',
+          'write',
+          {
+            type: 'object',
+            required: ['area', 'fileName'],
+            properties: {
+              area: {
+                type: 'string',
+                title: 'Projection area',
+                enum: ['working-notes', 'outputs', 'review', 'tasks'],
+                default: 'outputs',
+              },
+              fileName: {
+                type: 'string',
+                title: 'Markdown filename',
+                examples: ['memory-dashboard.md'],
+              },
+            },
+          },
+        ),
+      ]),
+      group('xd.memory.policy', 'Policy', 'Memory sensitivity and write-policy classification.', [
+        method(
+          'xd.memory.policy.classify',
+          'Classify memory write',
+          'Classify a proposed memory write without storing it.',
+          'read',
+        ),
+      ]),
     ]),
     group('xd.xenesis', 'Xenesis', 'Xenesis agent and gateway control surface for Xenesis Desk orchestration.', [
       method(
@@ -6794,6 +7044,8 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           'Resolve action inbox item',
           'Resolve one MCP bridge action inbox item.',
           'control',
+          undefined,
+          { approval: 'when-external' },
         ),
       ]),
       group(
@@ -7088,6 +7340,12 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           'xd.tools.core.agentPerformance.open',
           'Open Agent Performance',
           'Open the Agent Performance panel.',
+          'control',
+        ),
+        method(
+          'xd.tools.core.memoryDashboard.open',
+          'Open Memory Dashboard',
+          'Open the memory inspection and correction dashboard panel.',
           'control',
         ),
       ]),
@@ -8892,7 +9150,13 @@ export async function callDeskBridgeCapability(
   const source = request.source ?? 'internal';
   const startedAt = Date.now();
   const dispatch = async (): Promise<DeskBridgeCapabilityCallResult> => {
-    const approvalDecision = evaluateDeskBridgeCapabilityApproval(node, source, request.approved === true);
+    const approvalDecision = evaluateDeskBridgeCapabilityApproval(
+      node,
+      source,
+      request.approved === true,
+      request.approvalProof,
+      request.args,
+    );
     if (!approvalDecision.allowed) {
       return {
         ok: false,
@@ -8945,6 +9209,30 @@ export async function callDeskBridgeCapability(
       if (path === 'xd.app.status') {
         return callAdapter(path, api?.status);
       }
+      if (path === 'xd.apps.status') {
+        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'status' });
+      }
+      if (path === 'xd.apps.find') {
+        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'find' });
+      }
+      if (path === 'xd.apps.launch') {
+        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'launch' });
+      }
+      if (path === 'xd.apps.focus') {
+        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'focus' });
+      }
+      if (path === 'xd.apps.resize') {
+        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'resize' });
+      }
+      if (path === 'xd.apps.typeText') {
+        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'typeText' });
+      }
+      if (path === 'xd.apps.hotkey') {
+        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'hotkey' });
+      }
+      if (path === 'xd.apps.close') {
+        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'close' });
+      }
       if (path.startsWith('xd.apps.')) {
         const action = path.slice('xd.apps.'.length);
         return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action });
@@ -8978,6 +9266,51 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.audit.clear') {
         return callAdapter(path, api?.clearAudit, request.args);
+      }
+      if (path === 'xd.memory.ledger.list') {
+        return callAdapter(path, api?.memoryLedgerList, request.args);
+      }
+      if (path === 'xd.memory.ledger.search') {
+        return callAdapter(path, api?.memoryLedgerSearch, request.args);
+      }
+      if (path === 'xd.memory.ledger.get') {
+        return callAdapter(path, api?.memoryLedgerGet, request.args);
+      }
+      if (path === 'xd.memory.ledger.history') {
+        return callAdapter(path, api?.memoryLedgerHistory, request.args);
+      }
+      if (path === 'xd.memory.proposals.create') {
+        return callAdapter(path, api?.memoryProposalCreate, request.args);
+      }
+      if (path === 'xd.memory.proposals.list') {
+        return callAdapter(path, api?.memoryProposalList, request.args);
+      }
+      if (path === 'xd.memory.proposals.get') {
+        return callAdapter(path, api?.memoryProposalGet, request.args);
+      }
+      if (path === 'xd.memory.proposals.accept') {
+        return callAdapter(path, api?.memoryProposalAccept, {
+          ...normalizeCapabilityArgs(request.args),
+          approvalProof: request.approvalProof,
+        });
+      }
+      if (path === 'xd.memory.proposals.reject') {
+        return callAdapter(path, api?.memoryProposalReject, {
+          ...normalizeCapabilityArgs(request.args),
+          approvalProof: request.approvalProof,
+        });
+      }
+      if (path === 'xd.memory.evidence.list') {
+        return callAdapter(path, api?.memoryEvidenceList, request.args);
+      }
+      if (path === 'xd.memory.evidence.get') {
+        return callAdapter(path, api?.memoryEvidenceGet, request.args);
+      }
+      if (path === 'xd.memory.obsidian.project') {
+        return callAdapter(path, api?.memoryObsidianProject, request.args);
+      }
+      if (path === 'xd.memory.policy.classify') {
+        return callAdapter(path, api?.memoryPolicyClassify, request.args);
       }
       if (path === 'xd.meta.tree.load') {
         return callAdapter(path, api?.loadMetaTree, request.args);
@@ -10183,6 +10516,9 @@ export async function callDeskBridgeCapability(
       if (path === 'xd.tools.core.agentPerformance.open') {
         return toolOpenArgs('xenesis-desk.core-tools.openAgentPerformance');
       }
+      if (path === 'xd.tools.core.memoryDashboard.open') {
+        return toolOpenArgs('xenesis-desk.core-tools.openMemoryDashboard');
+      }
       if (path === 'xd.tools.data.metaManagement.open') {
         return toolOpenArgs('xenesis-desk.data-tools.openMetaManagement');
       }
@@ -10258,18 +10594,24 @@ export function evaluateDeskBridgeCapabilityApproval(
   node: DeskBridgeCapabilityNode,
   source: DeskBridgeCapabilitySource = 'internal',
   approved = false,
+  approvalProof?: DeskBridgeCapabilityApprovalProof,
+  args?: unknown,
 ): DeskBridgeCapabilityApprovalDecision {
+  const trustedApproval =
+    approved &&
+    (source !== 'mcp' ||
+      isValidDeskBridgeCapabilityApprovalProof(node, source, args, approvalProof));
   if (node.approval === 'never') {
     return { allowed: true, approvalRequired: false };
   }
-  if (node.approval === 'always' && !approved) {
+  if (node.approval === 'always' && !trustedApproval) {
     return {
       allowed: false,
       approvalRequired: true,
       reason: `Capability requires approval: ${node.path}`,
     };
   }
-  if (node.approval === 'when-external' && source !== 'internal' && !approved) {
+  if (node.approval === 'when-external' && source !== 'internal' && !trustedApproval) {
     return {
       allowed: false,
       approvalRequired: true,
@@ -10310,7 +10652,7 @@ async function finalizeDeskBridgeCapabilityAudit(
     approval: normalizedResult.approval ?? node.approval,
     approved: request.approved === true,
     approvalRequired: normalizedResult.approvalRequired,
-    args: redactAuditValue(request.args),
+    args: redactAuditValueForCapability(normalizedResult.path, request.args),
     resultOk: normalizedResult.ok,
     error: normalizedResult.error,
     durationMs: Math.max(0, Date.now() - startedAt),
@@ -10334,15 +10676,21 @@ function readAuditString(value: Record<string, unknown>, keys: string[]): string
   return undefined;
 }
 
-function redactAuditValue(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map((item) => redactAuditValue(item));
+function redactAuditValueForCapability(path: string, value: unknown): unknown {
+  return redactAuditValue(value, { redactMemoryText: path.startsWith('xd.memory.') });
+}
+
+function redactAuditValue(value: unknown, options: { redactMemoryText?: boolean } = {}): unknown {
+  if (Array.isArray(value)) return value.map((item) => redactAuditValue(item, options));
   if (!value || typeof value !== 'object') return value;
   const result: Record<string, unknown> = {};
   for (const [key, nestedValue] of Object.entries(value as Record<string, unknown>)) {
     if (/token|secret|password|passphrase|apikey|apiKey|authorization/i.test(key)) {
       result[key] = '[redacted]';
+    } else if (options.redactMemoryText && /^(text|claim|content|summary|source|uri)$/i.test(key)) {
+      result[key] = '[redacted: memory audit]';
     } else {
-      result[key] = redactAuditValue(nestedValue);
+      result[key] = redactAuditValue(nestedValue, options);
     }
   }
   return result;

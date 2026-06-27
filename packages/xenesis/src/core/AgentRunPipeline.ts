@@ -1,11 +1,16 @@
 import {
-  loadConfig,
   type CliConfigOverrides,
+  loadConfig,
   type ToolGuardConfig,
   type XenesisConfig
 } from "../config/index.js";
 import type { IdeContextInput } from "../ide/index.js";
-import { JsonlSessionWriter } from "../sessions/index.js";
+import {
+  markAgentTasksContextInjected,
+  SqliteAgentMessageStore,
+  SqliteAgentTaskStore
+} from "../orchestration/index.js";
+import type { RunReport, RunReportSelfReview } from "../runReports/index.js";
 import {
   eventsToMessages,
   hasApprovalResolved,
@@ -13,33 +18,29 @@ import {
   latestRunSnapshot,
   readSessionLog
 } from "../sessions/history.js";
-import { executeAgentRun } from "./AgentRunExecutor.js";
-import { finalizeAgentRun, type AgentRunNoticeHandler } from "./AgentRunReporter.js";
-import { type AgentRunUsage, type ApprovalHandler, type ToolExecutionPolicy } from "./AgentRunner.js";
-import { buildAgentRunner } from "./AgentRunnerBuilder.js";
-import { saveLatestPlan, type AgentRunMode } from "./AgentRuntimeFactory.js";
-import { mergeToolExecutionPolicies } from "./agentCapabilityPolicy.js";
-import type { AgentRunEvent, ApprovalDecision, ApprovalRequest, RunStageEvent, WorkflowRunSummary, WorkflowStepSummary } from "./events.js";
-import { classifyPromptIntent } from "./intentRouter.js";
-import { repairToolResultPairing, type AgentMessage, type AgentMessageAttachment } from "./messages.js";
-import type { ResumableRunState } from "./resume/ResumableRunState.js";
-import {
-  buildOperationalRepairPreflightDecision,
-  collectOperationalFailureContext
-} from "./operationalFailureContext.js";
-import { runVerifyFixLoop } from "./verifyFix.js";
+import { JsonlSessionWriter } from "../sessions/index.js";
 import { runVerificationCommands } from "../verification/index.js";
-import {
-  SqliteAgentMessageStore,
-  SqliteAgentTaskStore,
-  markAgentTasksContextInjected
-} from "../orchestration/index.js";
-import type { RunReport, RunReportSelfReview } from "../runReports/index.js";
 import {
   configuredWorkflowHandlers,
   resolveWorkflow,
   type WorkflowSelection
 } from "../workflows/index.js";
+import { executeAgentRun } from "./AgentRunExecutor.js";
+import { type AgentRunUsage, type ApprovalHandler, type ToolExecutionPolicy } from "./AgentRunner.js";
+import { buildAgentRunner } from "./AgentRunnerBuilder.js";
+import { type AgentRunNoticeHandler, finalizeAgentRun } from "./AgentRunReporter.js";
+import { type AgentRunMode, saveLatestPlan } from "./AgentRuntimeFactory.js";
+import { mergeToolExecutionPolicies } from "./agentCapabilityPolicy.js";
+import type { AgentRunEvent, ApprovalDecision, ApprovalRequest, RunStageEvent, WorkflowRunSummary, WorkflowStepSummary } from "./events.js";
+import { classifyPromptIntent } from "./intentRouter.js";
+import { classifyDirectMemoryIntent, runDirectMemoryRoute } from "./memoryDirectRoute.js";
+import { type AgentMessage, type AgentMessageAttachment, repairToolResultPairing } from "./messages.js";
+import {
+  buildOperationalRepairPreflightDecision,
+  collectOperationalFailureContext
+} from "./operationalFailureContext.js";
+import type { ResumableRunState } from "./resume/ResumableRunState.js";
+import { runVerifyFixLoop } from "./verifyFix.js";
 
 export interface AgentRunPipelineWorkflowStep {
   workflow: WorkflowRunSummary;
@@ -329,6 +330,69 @@ export async function runAgentPipeline(options: AgentRunPipelineOptions): Promis
     options.toolExecutionPolicy
   );
   const sessionId = options.sessionId ?? `session-${globalThis.crypto.randomUUID()}`;
+  const directMemoryIntent = options.mode !== "plan"
+    && configuredWorkflow?.pipeline.mode !== "plan"
+    && !options.resuming
+    && !options.resumeState
+    ? classifyDirectMemoryIntent(prompt)
+    : undefined;
+  if (directMemoryIntent) {
+    const sessionWriter = new JsonlSessionWriter({
+      workspaceRoot: config.workspace,
+      xenesisHome: config.xenesisHome,
+      sessionId,
+      traceId: options.traceId,
+      ...(options.initialSeq !== undefined ? { initialSeq: options.initialSeq } : {})
+    });
+    options.onSessionWriter?.(sessionWriter, sessionId);
+    const publicEvents: AgentRunEvent[] = [];
+    const capturePublicEvent = async (event: AgentRunEvent) => {
+      if (isPublicPipelineEvent(event)) publicEvents.push(event);
+      await options.onEvent?.(event);
+    };
+    await emitPipelineEvent(sessionWriter, {
+      type: "intent_route",
+      intent: intentRoute.intent,
+      ...(intentRoute.mode ? { mode: intentRoute.mode } : {}),
+      ...(intentRoute.approvalMode ? { approvalMode: intentRoute.approvalMode } : {}),
+      reason: intentRoute.reason
+    }, capturePublicEvent);
+    await emitPipelineEvent(sessionWriter, {
+      type: "user_message",
+      message: { role: "user", content: prompt, id: `${sessionId}:m0` }
+    }, capturePublicEvent);
+
+    const directMemory = await runPipelineStage(sessionWriter, "run", capturePublicEvent, async () => {
+      const routed = await runDirectMemoryRoute(config, prompt);
+      if (!routed) throw new Error(`Direct memory route disappeared for intent: ${directMemoryIntent}`);
+      for (const event of routed.events) {
+        await emitPipelineEvent(sessionWriter, event, capturePublicEvent);
+      }
+      return routed;
+    });
+
+    const runReport = await runPipelineStage(sessionWriter, "report", capturePublicEvent, () => finalizeAgentRun({
+      config,
+      sessionWriter,
+      sessionId,
+      doneContent: directMemory.doneContent,
+      env,
+      onNotice: options.onNotice
+    }));
+
+    return {
+      exitCode: 0,
+      sessionId,
+      ...(options.traceId ? { traceId: options.traceId } : {}),
+      events: publicEvents,
+      doneContent: directMemory.doneContent,
+      turns: directMemory.turns,
+      usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+      runReport,
+      selfReview: runReport.selfReview,
+      status: "done"
+    };
+  }
   const built = await buildAgentRunner({
     config,
     env,
@@ -407,7 +471,7 @@ export async function runAgentPipeline(options: AgentRunPipelineOptions): Promis
     let finalEvents = execution.events;
     let finalDoneContent = execution.doneContent;
     let finalTurns = execution.turns;
-    let finalUsage = execution.usage;
+    const finalUsage = execution.usage;
     // S6 — a durably paused run (background/headless ask with no resolver) did not
     // complete; skip verify/fix and surface the paused status + pendingApproval so
     // the task store records a resumable paused state instead of a false success.

@@ -159,7 +159,7 @@ test('status bar keeps fixed UI typography outside terminal font scaling', () =>
   assert.match(terminalRule, /--xd-xenesis-terminal-font-size:\s*var\(--xd-terminal-font-size,\s*14px\)/);
   assert.match(terminalRule, /font-size:\s*var\(--xd-xenesis-terminal-font-size\)/);
 
-  assert.match(statusbarRule, /font:\s*600 11px\/1\.2 var\(--xd-ui-font,\s*system-ui,\s*sans-serif\)/);
+  assert.match(statusbarRule, /font:\s*600 11px\s*\/\s*1\.2 var\(--xd-ui-font,\s*system-ui,\s*sans-serif\)/);
   assert.doesNotMatch(statusbarRule, /--xd-xenesis-terminal-font-size|--xd-terminal-font-size/);
 });
 

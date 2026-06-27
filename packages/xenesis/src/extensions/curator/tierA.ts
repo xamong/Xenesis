@@ -26,6 +26,7 @@ export interface MemoryTransition {
   id: string;
   from: MemoryStatus;
   to: MemoryStatus;
+  reason?: string;
 }
 
 export const DEFAULT_STALE_AFTER_DAYS = 30;
@@ -40,13 +41,15 @@ function currentStatus(record: MemoryRecord): MemoryStatus {
 
 /**
  * The curation anchor = the most recent real activity timestamp.
- * Priority: lastAccessedAt ?? createdAt ?? updatedAt. updatedAt is always present so the anchor
- * is well-defined for every record. An unparseable anchor yields NaN, which makes both cutoff
- * comparisons false — i.e. the record is left untouched rather than wrongly archived.
+ * Use the max of lastAccessedAt, createdAt, and updatedAt. updatedAt is always present so the
+ * anchor is well-defined for every record. If no timestamp parses, return NaN so both cutoff
+ * comparisons are false — i.e. the record is left untouched rather than wrongly archived.
  */
 function anchorMs(record: MemoryRecord): number {
-  const anchor = record.lastAccessedAt ?? record.createdAt ?? record.updatedAt;
-  return Date.parse(anchor);
+  const parsed = [record.lastAccessedAt, record.createdAt, record.updatedAt]
+    .map((value) => (value ? Date.parse(value) : Number.NaN))
+    .filter(Number.isFinite);
+  return parsed.length > 0 ? Math.max(...parsed) : Number.NaN;
 }
 
 /**
@@ -78,9 +81,19 @@ export function computeMemoryTransitions(
     if (Number.isNaN(anchor)) continue; // undatable → leave alone
 
     if (anchor <= archiveCutoff && from !== "archived") {
-      transitions.push({ id: record.id, from, to: "archived" });
+      transitions.push({
+        id: record.id,
+        from,
+        to: "archived",
+        reason: `tier-a archive recommendation: inactive for at least ${archiveAfterDays} days`
+      });
     } else if (anchor <= staleCutoff && from === "active") {
-      transitions.push({ id: record.id, from, to: "stale" });
+      transitions.push({
+        id: record.id,
+        from,
+        to: "stale",
+        reason: `tier-a stale recommendation: inactive for at least ${staleAfterDays} days`
+      });
     }
   }
   return transitions;

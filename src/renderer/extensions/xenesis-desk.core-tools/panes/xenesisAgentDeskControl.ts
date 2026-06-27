@@ -1,3 +1,5 @@
+import type { McpBridgeActionInboxItem } from '../../../../shared/types';
+
 export interface XenesisDeskActionRequest {
   id: string;
   path: string;
@@ -25,6 +27,7 @@ export interface XenesisDeskActionCallResult {
   permission?: string;
   approval?: string;
   source?: string;
+  actionInboxItem?: McpBridgeActionInboxItem;
 }
 
 export interface XenesisDeskActionExecutionResult {
@@ -39,6 +42,7 @@ export interface XenesisDeskActionExecutionResult {
   permission?: string;
   approval?: string;
   source?: string;
+  actionInboxItem?: McpBridgeActionInboxItem;
 }
 
 export type XenesisDeskActionExecutor = (
@@ -938,6 +942,7 @@ export async function runXenesisDeskActions(
         ...(callResult.permission ? { permission: callResult.permission } : {}),
         ...(callResult.approval ? { approval: callResult.approval } : {}),
         ...(callResult.source ? { source: callResult.source } : {}),
+        ...(callResult.actionInboxItem ? { actionInboxItem: callResult.actionInboxItem } : {}),
       };
       results.push(result);
       reportActivity({

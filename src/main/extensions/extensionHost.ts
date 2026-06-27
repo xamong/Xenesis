@@ -110,6 +110,7 @@ const EXTENSION_TOOLS: ExtensionTool[] = [
   'xenesis-desk.core-tools.network-monitor',
   'xenesis-desk.core-tools.audit-log',
   'xenesis-desk.core-tools.agent-performance',
+  'xenesis-desk.core-tools.memory-dashboard',
   'xenesis-desk.workflow-runner.alert-rules',
   'xenesis-desk.workflow-runner.template-catalog',
   'xenesis-desk.workflow-runner.artifact-versions',

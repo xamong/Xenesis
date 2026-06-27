@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { loadConfig, type XenesisConfig } from "../../src/config/index.js";
 import { createProvider, createRuntimeTools } from "../../src/core/AgentRuntimeFactory.js";
 import { getProviderFactory, resetProviderFactories } from "../../src/providers/providerFactory.js";
+import type { ToolContext } from "../../src/tools/types.js";
 import { createTempWorkspace } from "../helpers/tempWorkspace.js";
 
 afterEach(() => resetProviderFactories());
@@ -48,6 +49,22 @@ async function writeMockConfig(root: string, extra: Record<string, unknown> = {}
     "utf8"
   );
   return configPath;
+}
+
+function toolContext(root: string): ToolContext {
+  return {
+    workspaceRoot: root,
+    cwd: root,
+    sessionId: "integration-test",
+    todos: [],
+    emit: () => undefined,
+    logger: {
+      debug: () => undefined,
+      info: () => undefined,
+      warn: () => undefined,
+      error: () => undefined
+    }
+  };
 }
 
 describe("plugin provider integration (createRuntimeTools wiring)", () => {
@@ -104,6 +121,39 @@ describe("plugin provider integration (createRuntimeTools wiring)", () => {
       await expect(createRuntimeTools(config, process.env)).resolves.toBeDefined();
       // The faulty provider was NOT registered.
       expect(getProviderFactory("myllm")).toBeUndefined();
+    } finally {
+      await workspace.cleanup();
+    }
+  });
+
+  it("registers the memory tool with ledger-backed history support when memory is enabled", async () => {
+    const workspace = await createTempWorkspace();
+    try {
+      const configPath = await writeMockConfig(workspace.root, {
+        extensions: { memory: { enabled: true, path: ".xenesis/runtime-memory.json" } }
+      });
+      const config = await loadConfig({
+        cwd: workspace.root,
+        configPath,
+        env: { XENESIS_HOME: join(workspace.root, ".xenesis-home") }
+      });
+      const registry = await createRuntimeTools(config, {});
+      const memoryTool = registry.get("memory");
+      expect(memoryTool).toBeDefined();
+
+      const context = toolContext(workspace.root);
+      const saved = await memoryTool!.run({
+        action: "save",
+        id: "runtime-ledger-1",
+        text: "runtime ledger-backed memory",
+        tags: ["runtime"]
+      }, context);
+      expect(saved.ok).toBe(true);
+      expect(saved.content).toContain("saved runtime-ledger-1");
+
+      const history = await memoryTool!.run({ action: "history", id: "runtime-ledger-1" }, context);
+      expect(history.ok).toBe(true);
+      expect(JSON.stringify(history.data)).toContain("memory_accepted");
     } finally {
       await workspace.cleanup();
     }

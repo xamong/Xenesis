@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import type { ExtensionTool, FsEntry, McpBridgeBotEvent } from '../../../shared/types';
 import type { DockContent, DockContentOptions, DockEngine } from '../../dock/engine';
 import type { ExtensionToolOpenContext, RendererExtensionContribution, TFunc } from '../types';
@@ -14,6 +14,7 @@ import { CapabilityExplorerPane } from './panes/CapabilityExplorerPane';
 import { HermesStashOpsPane } from './panes/HermesStashOpsPane';
 import { HermesStatusPane } from './panes/HermesStatusPane';
 import { HermesTimelinePane } from './panes/HermesTimelinePane';
+import { MemoryDashboardPane } from './panes/MemoryDashboardPane';
 import NetworkMonitorPane from './panes/NetworkMonitorPane';
 import { ProcessViewerPane } from './panes/ProcessViewerPane';
 import { RemoteSyncPlannerPane } from './panes/RemoteSyncPlannerPane';
@@ -26,10 +27,6 @@ import { XdBlasterPane } from './panes/XdBlasterPane';
 import { XenesisAgentPane } from './panes/XenesisAgentPane';
 import { XenisBotPane } from './panes/XenisBotPane';
 import { hydrateXenisBotSessions, recordXenisBotEvent } from './xenisBotStore';
-
-const COMMAND_IDS = {
-  xenesisAgent: 'xenesis-desk.core-tools.openXenesisAgent',
-} as const;
 
 const XENESIS_AGENT_CONTENT_ID = 'xenesis-agent-default';
 
@@ -55,6 +52,7 @@ const TOOL_IDS = {
   xdBlaster: 'xenesis-desk.core-tools.xd-blaster',
   auditLog: 'xenesis-desk.core-tools.audit-log',
   agentPerformance: 'xenesis-desk.core-tools.agent-performance',
+  memoryDashboard: 'xenesis-desk.core-tools.memory-dashboard',
 } as const satisfies Record<string, ExtensionTool>;
 
 function isXconPath(value: string): boolean {
@@ -132,7 +130,7 @@ function xamongCodeChatContent(t: TFunc): DockContentOptions {
   };
 }
 
-function xenisBotContent(t: TFunc, event?: Partial<McpBridgeBotEvent> & { sessionId?: string }): DockContentOptions {
+function xenisBotContent(_t: TFunc, event?: Partial<McpBridgeBotEvent> & { sessionId?: string }): DockContentOptions {
   const sessionId = event?.sessionId || 'xenesis-bot';
   return {
     id: `xenesis-bot-${sessionId}-${crypto.randomUUID()}`,
@@ -535,6 +533,23 @@ const contribution: RendererExtensionContribution = {
       return true;
     }
 
+    if (tool === TOOL_IDS.memoryDashboard) {
+      if (!focusExistingContent(context.engine, 'memory-dashboard')) {
+        context.openContent(
+          {
+            id: `memory-dashboard-${crypto.randomUUID()}`,
+            title: 'Memory Dashboard',
+            state: 'document',
+            html: '',
+            contentType: 'memory-dashboard',
+          },
+          context.requestedPlacement ?? 'tab',
+        );
+      }
+      context.onStatus('Memory Dashboard opened');
+      return true;
+    }
+
     if (tool === TOOL_IDS.xappPreview) {
       const filePath = await resolveXappPreviewPath(context);
       context.openContent(xappPreviewContent(context.t, filePath), context.requestedPlacement ?? 'tab');
@@ -743,6 +758,9 @@ const contribution: RendererExtensionContribution = {
     if (content.contentType === 'agent-performance') {
       return <AgentPerformancePane />;
     }
+    if (content.contentType === 'memory-dashboard') {
+      return <MemoryDashboardPane />;
+    }
     return null;
   },
 
@@ -769,6 +787,7 @@ const contribution: RendererExtensionContribution = {
       'xd-blaster': 'XB',
       'audit-log': 'AU',
       'agent-performance': 'AP',
+      'memory-dashboard': 'MD',
     };
     return icons[contentType];
   },
@@ -795,7 +814,8 @@ const contribution: RendererExtensionContribution = {
       contentType === 'network-monitor' ||
       contentType === 'xd-blaster' ||
       contentType === 'audit-log' ||
-      contentType === 'agent-performance'
+      contentType === 'agent-performance' ||
+      contentType === 'memory-dashboard'
     );
   },
 };

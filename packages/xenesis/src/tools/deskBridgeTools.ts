@@ -920,11 +920,7 @@ function resolveXvCommandRoute(command: string, approved: boolean): XvCommandRou
 
 function formatCapabilityCallResult(payload: BridgePayload, fallbackPath: string) {
   if (payload.approvalRequired) {
-    const item = payload.actionInboxItem && typeof payload.actionInboxItem === "object"
-      ? payload.actionInboxItem as { id?: unknown }
-      : {};
-    const id = typeof item.id === "string" && item.id ? ` Approval request: ${item.id}` : "";
-    return `Xenesis Desk capability approval required: ${String(payload.path ?? fallbackPath)}.${id}`;
+    return "Desk approval is required. Use the inline approval card in Xenesis Desk to continue.";
   }
   return `Called Xenesis Desk capability: ${String(payload.path ?? fallbackPath)}`;
 }
@@ -1158,13 +1154,9 @@ export const deskCallCapabilityTool: Tool<z.infer<typeof callCapabilityInput>> =
         approved: input.approved === true
       }, input.timeoutMs ?? 10_000);
       if (payload.approvalRequired) {
-        const item = payload.actionInboxItem && typeof payload.actionInboxItem === "object"
-          ? payload.actionInboxItem as { id?: unknown }
-          : {};
-        const id = typeof item.id === "string" && item.id ? ` Approval request: ${item.id}` : "";
         return {
           ok: true,
-          content: `Xenesis Desk capability approval required: ${String(payload.path ?? input.path)}.${id}`,
+          content: formatCapabilityCallResult(payload, input.path),
           data: payload
         };
       }
@@ -1192,6 +1184,13 @@ export const deskXvCommandTool: Tool<z.infer<typeof deskXvCommandInput>> = {
       const payload = await callDeskBridge(context, route.endpoint, route.body, input.timeoutMs ?? 10_000);
       if (payload.ok === false && !payload.approvalRequired) {
         return { ok: false, content: String(payload.error ?? `Xenesis Desk /xd command failed: ${route.label}`), data: payload };
+      }
+      if (payload.approvalRequired) {
+        return {
+          ok: true,
+          content: route.format(payload),
+          data: payload
+        };
       }
       return {
         ok: true,

@@ -236,13 +236,24 @@ const embedderSchema = z.object({
   minScore: z.number().min(0).max(1).optional()
 });
 
+const memoryGraphSchema = z.object({
+  enabled: z.boolean().optional(),
+  endpoint: z.string().url().optional(),
+  allowedEndpoints: z.array(z.string().url()).optional(),
+  localOnly: z.boolean().optional(),
+  allowSensitiveProjection: z.boolean().optional(),
+  redactEvidence: z.boolean().optional(),
+  timeoutMs: z.number().int().positive().optional()
+});
+
 const extensionsSchema = z.object({
   mcpServers: z.record(mcpServerSchema).optional(),
   recommendedMcpServers: z.array(z.string().min(1)).optional(),
   memory: z.object({
     enabled: z.boolean().optional(),
     path: z.string().min(1).optional(),
-    embedder: embedderSchema.optional()
+    embedder: embedderSchema.optional(),
+    graph: memoryGraphSchema.optional()
   }).optional(),
   subagents: z.object({
     enabled: z.boolean().optional(),

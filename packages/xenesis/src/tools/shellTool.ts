@@ -53,6 +53,7 @@ export interface ShellToolOptions {
 interface SessionEntry {
   session: ShellSession;
   idleTimer?: NodeJS.Timeout;
+  activeRuns: number;
   /** Last child pid reported via onSessionLifecycle, so a restart (new pid) re-emits "spawn" but a no-op exec does not. */
   lastReportedPid?: number;
 }
@@ -155,11 +156,38 @@ export function createShellTool(options: ShellToolOptions): Tool<ShellInput> {
     }
   }
 
+  function clearIdleTimer(entry: SessionEntry): void {
+    if (!entry.idleTimer) return;
+    clearTimeout(entry.idleTimer);
+    entry.idleTimer = undefined;
+  }
+
+  function scheduleIdleTimer(sessionId: string, entry: SessionEntry): void {
+    clearIdleTimer(entry);
+    entry.idleTimer = setTimeout(() => {
+      disposeSession(sessionId);
+    }, options.idleTimeoutMs);
+    entry.idleTimer.unref?.();
+  }
+
+  function beginSessionRun(entry: SessionEntry): void {
+    clearIdleTimer(entry);
+    entry.activeRuns += 1;
+  }
+
+  function endSessionRun(sessionId: string, entry: SessionEntry): void {
+    entry.activeRuns = Math.max(0, entry.activeRuns - 1);
+    if (entry.activeRuns === 0 && sessions.get(sessionId) === entry) {
+      scheduleIdleTimer(sessionId, entry);
+    }
+  }
+
   function entryFor(context: ToolContext, cwd: string): SessionEntry {
     let entry = sessions.get(context.sessionId);
     if (!entry) {
       const env = shellEnv(context);
       entry = {
+        activeRuns: 0,
         session: new ShellSession({
           workspaceRoot: context.workspaceRoot,
           cwd,
@@ -168,11 +196,7 @@ export function createShellTool(options: ShellToolOptions): Tool<ShellInput> {
       };
       sessions.set(context.sessionId, entry);
     }
-    if (entry.idleTimer) clearTimeout(entry.idleTimer);
-    entry.idleTimer = setTimeout(() => {
-      disposeSession(context.sessionId);
-    }, options.idleTimeoutMs);
-    entry.idleTimer.unref?.();
+    clearIdleTimer(entry);
     return entry;
   }
 
@@ -252,16 +276,17 @@ export function createShellTool(options: ShellToolOptions): Tool<ShellInput> {
       }
 
       let r: { output: string; exitCode: number; cwd: string; timedOut: boolean };
+      beginSessionRun(entry);
       try {
         r = await entry.session.exec(input.command, input.timeoutMs);
+        reportSpawn(context.sessionId, entry);
       } catch {
         // The session shell is unusable: tear it down and fall back to one-shot.
         disposeSession(context.sessionId);
         return await runStateless(input, context, cwd);
+      } finally {
+        endSessionRun(context.sessionId, entry);
       }
-      // The child is spawned lazily inside exec(); surface its tracked pid (and any
-      // post-timeout restart pid) to the observability seam after the command settles.
-      reportSpawn(context.sessionId, entry);
 
       if (r.timedOut) {
         return { ok: false, content: `Command timed out after ${input.timeoutMs}ms.` };

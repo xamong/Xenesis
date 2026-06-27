@@ -77,6 +77,44 @@ const MIGRATIONS: string[] = [
   // v4: semantic memory embedding vector (Float32 BLOB; NULL = not yet embedded -> keyword fallback)
   `
   ALTER TABLE memory ADD COLUMN embedding BLOB;
+  `,
+  // v5: Evidence-Governed Memory sidecar ledger tables. Active memory remains in `memory`.
+  `
+  CREATE TABLE IF NOT EXISTS memory_proposals (
+    id TEXT PRIMARY KEY,
+    status TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    rev INTEGER NOT NULL DEFAULT 0,
+    data TEXT NOT NULL);
+  CREATE INDEX IF NOT EXISTS idx_memory_proposals_status
+    ON memory_proposals(status, updated_at, id);
+
+  CREATE TABLE IF NOT EXISTS memory_evidence (
+    id TEXT PRIMARY KEY,
+    kind TEXT NOT NULL,
+    sensitivity TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    rev INTEGER NOT NULL DEFAULT 0,
+    data TEXT NOT NULL);
+  CREATE INDEX IF NOT EXISTS idx_memory_evidence_kind_created
+    ON memory_evidence(kind, created_at, id);
+
+  CREATE TABLE IF NOT EXISTS memory_ledger_events (
+    id TEXT PRIMARY KEY,
+    target_id TEXT NOT NULL,
+    memory_id TEXT,
+    proposal_id TEXT,
+    evidence_id TEXT,
+    created_at TEXT NOT NULL,
+    rev INTEGER NOT NULL DEFAULT 0,
+    data TEXT NOT NULL);
+  CREATE INDEX IF NOT EXISTS idx_memory_ledger_events_memory
+    ON memory_ledger_events(memory_id, created_at, id);
+  CREATE INDEX IF NOT EXISTS idx_memory_ledger_events_proposal
+    ON memory_ledger_events(proposal_id, created_at, id);
+  CREATE INDEX IF NOT EXISTS idx_memory_ledger_events_evidence
+    ON memory_ledger_events(evidence_id, created_at, id);
   `
 ];
 

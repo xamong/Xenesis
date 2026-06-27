@@ -2631,10 +2631,8 @@ async function callDeskCapability(args = {}) {
       approved: args.approved === true,
     });
     if (payload?.approvalRequired) {
-      const item = payload?.actionInboxItem;
-      const actionText = item?.id ? ` Approval request: ${item.id}` : '';
       return textResult(
-        `Xenesis Desk capability approval required: ${payload?.path || capabilityPath}.${actionText}`,
+        'Desk approval is required. Use the inline approval card in Xenesis Desk to continue.',
         payload,
       );
     }

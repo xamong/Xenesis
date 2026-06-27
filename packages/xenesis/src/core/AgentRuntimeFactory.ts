@@ -2,36 +2,40 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import {
   displayXenesisStatePath,
+  type McpServerConfig,
   type ProviderFallbackConfig,
   type ProviderName,
   type ProviderSetupEntry,
   resolveXenesisStatePath,
-  type McpServerConfig,
   type XenesisConfig,
   xenesisStatePath
 } from "../config/index.js";
 import { FileWorkspaceContextIndexStore } from "../context/index.js";
 import {
-  buildMemorySystemMessage,
+  buildMemoryEvidencePackSystemMessage,
   buildSkillCatalogSystemMessage,
   buildSkillSystemMessage,
   clampApprovalMode,
   createAgentRunnerSubagentExecutor,
+  createEmbedder,
   createRuntimeToolRegistry,
   createSubagentTaskTool,
   loadPluginProviders,
-  createEmbedder,
+  loadSkillRegistry,
+  MemoryLedger,
+  MemoryRetrievalPlanner,
   mergeRecommendedMcpServers,
   registerMcpServerTools,
+  type SkillDefinition,
   SqliteMcpAuthStore,
+  SqliteMemoryLedgerStore,
   SqliteMemoryStore,
   SqlitePluginStateStore,
   SqliteSubagentTaskStore,
-  loadSkillRegistry,
-  type SkillDefinition,
-  type SubagentTaskExecutor
+  type SubagentTaskExecutor,
+  trustedMemoryWriteContext
 } from "../extensions/index.js";
-import { buildIdeContextSystemMessage, normalizeIdeContext, type IdeContextInput } from "../ide/index.js";
+import { buildIdeContextSystemMessage, type IdeContextInput, normalizeIdeContext } from "../ide/index.js";
 import {
   collectAgentMessages,
   collectAgentTaskContext,
@@ -41,20 +45,20 @@ import {
 } from "../orchestration/index.js";
 import { filterToolsForApprovalMode } from "../permissions/policy.js";
 import {
+  type AgentProvider,
   AnthropicProvider,
   ClaudeCliProvider,
   ClaudeInteractiveProvider,
   CodexAppServerProvider,
   CodexCliProvider,
+  capabilitiesFor,
+  getProviderFactory,
   MockProvider,
   OpenAIProvider,
   PROVIDER_CAPABILITIES,
-  capabilitiesFor,
-  getProviderFactory,
   presetApiKeyEnv,
   registerCodexResponsesProvider,
-  resolveProviderSettings,
-  type AgentProvider
+  resolveProviderSettings
 } from "../providers/index.js";
 import {
   createAppE2ECheckTool,
@@ -66,16 +70,9 @@ import {
   createToolSearchTool,
   type ToolRegistry
 } from "../tools/index.js";
+import type { ApprovalHandler } from "./AgentRunner.js";
 import type { AdaptiveExecutionPolicy } from "./adaptiveExecutionPolicy.js";
 import { createAgentCapabilityPolicySystemMessage } from "./agentCapabilityPolicy.js";
-import type { ApprovalHandler } from "./AgentRunner.js";
-import type { ContextSourceKind } from "./events.js";
-import type { AgentMessage } from "./messages.js";
-import {
-  buildOperationalFailureSystemMessage,
-  collectOperationalFailureContext,
-  operationalFailureContextSource
-} from "./operationalFailureContext.js";
 import { staticRecordAdapter } from "./context/adapters.js";
 import type { ContextDropReason } from "./context/ContextBudget.js";
 import {
@@ -86,12 +83,19 @@ import {
 import { estimateContextTokens } from "./context/ContextRecord.js";
 import { createInstructionContextAdapter } from "./context/instructions/InstructionDiscovery.js";
 import { computeContextTokenBudget } from "./context/modelMetadata.js";
+import type { ContextSourceKind } from "./events.js";
+import type { AgentMessage } from "./messages.js";
+import {
+  buildOperationalFailureSystemMessage,
+  collectOperationalFailureContext,
+  operationalFailureContextSource
+} from "./operationalFailureContext.js";
 import {
   composeSystemPrompt,
   createSection13PromptBlocks,
-  toSection13PromptTrace,
   type PromptBlock,
-  type Section13ReferenceName
+  type Section13ReferenceName,
+  toSection13PromptTrace
 } from "./prompt/index.js";
 
 type SystemMessage = Extract<AgentMessage, { role: "system" }>;
@@ -445,7 +449,9 @@ export async function createRuntimeTools(
   });
 
   if (config.extensions.memory.enabled) {
-    const memoryTool = createMemoryTool(createMemoryStore(config));
+    const memoryTool = createMemoryTool(createMemoryLedger(config), {
+      writeContext: () => trustedMemoryWriteContext("agent-runtime", "conversation")
+    });
     if (registry.has(memoryTool.name)) throw new Error(`Tool "${memoryTool.name}" is already registered.`);
     registry.set(memoryTool.name, memoryTool);
   }
@@ -597,6 +603,14 @@ function createMemoryStore(config: XenesisConfig) {
   });
 }
 
+function createMemoryLedger(config: XenesisConfig) {
+  return new MemoryLedger({
+    memoryStore: createMemoryStore(config),
+    ledgerStore: new SqliteMemoryLedgerStore({ xenesisHome: config.xenesisHome }),
+    evidenceVault: { xenesisHome: config.xenesisHome }
+  });
+}
+
 const memoryGuidanceMessage: Extract<AgentMessage, { role: "system" }> = {
   role: "system",
   content: [
@@ -632,8 +646,8 @@ async function createMemorySystemContext(
     };
   }
   const messages = [memoryGuidanceMessage];
-  const records = (await createMemoryStore(config).search(prompt)).slice(0, 8);
-  const message = buildMemorySystemMessage(records);
+  const pack = await new MemoryRetrievalPlanner(createMemoryLedger(config)).retrieve({ query: prompt, limit: 8 });
+  const message = buildMemoryEvidencePackSystemMessage(pack);
   if (message) messages.push(message);
   return {
     messages,
@@ -641,8 +655,8 @@ async function createMemorySystemContext(
       source: "memory",
       name: "workspace memory",
       injected: true,
-      itemCount: records.length,
-      detail: config.extensions.memory.path
+      itemCount: pack.records.length,
+      detail: pack.abstainReason ?? config.extensions.memory.path
     }]
   };
 }
