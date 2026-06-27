@@ -183,6 +183,23 @@
   writes, local CLI switching, provider prompt execution, fallback rewrites,
   dispatcher branches, renderer adapters, or approval bypasses.
 
+## Local CLI MCP Readbacks Slice
+
+- Added deterministic Xenesis Agent natural-language readbacks for existing
+  local CLI and MCP CR paths without re-browsing external docs:
+  - `로컬 CLI 스캔해줘` -> `xd.localCli.scan`.
+  - `MCP 설정 상태 보여줘` -> `xd.mcp.settings.status`.
+  - `MCP 브리지 상태 보여줘` -> `xd.mcp.bridge.status`.
+- Added the same CR paths to the Agent control prompt hint so Agent-pane runs
+  prefer read-only local state inspection before any install/config guidance.
+- Preserved target-specific MCP install draft routing: prompts such as
+  `노션 MCP 설치 초안 열어줘` still route to
+  `xd.xenesis.tools.mcpInstallDrafts.open`.
+- Scope boundary: this slice did not install MCP servers, write MCP config,
+  run shell commands, mutate settings, change local CLI selection, start
+  gateway processes, execute provider tools, add CR nodes, change dispatcher
+  branches, write credentials, or bypass approvals.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

@@ -310,6 +310,9 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.xenesis\.providers\.routing\.status/);
   assert.match(hint, /xd\.xenesis\.providers\.views\.status/);
   assert.match(hint, /xd\.xenesis\.providers\.views\.open/);
+  assert.match(hint, /xd\.localCli\.scan/);
+  assert.match(hint, /xd\.mcp\.settings\.status/);
+  assert.match(hint, /xd\.mcp\.bridge\.status/);
   assert.match(hint, /xd\.xenesis\.tools\.setup\.status/);
   assert.match(hint, /xd\.xenesis\.tools\.connectors\.status/);
   assert.match(hint, /xd\.xenesis\.tools\.views\.status/);
@@ -372,6 +375,48 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.doesNotMatch(hint, /xd\.gowoori\.open/);
   assert.doesNotMatch(hint, /xd\.terminals\.spawn/);
   assert.match(hint, /xd\.dock\.panes\.list/);
+});
+
+test('planXenesisDeskNaturalLanguageActions maps local CLI and MCP readbacks to CR actions', () => {
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('MCP 설정 상태 보여줘').actions, [
+    {
+      id: 'natural-mcp-settings-status',
+      path: 'xd.mcp.settings.status',
+      args: {},
+      approved: false,
+      reason: 'Read MCP settings status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('MCP 브리지 상태 보여줘').actions, [
+    {
+      id: 'natural-mcp-bridge-status',
+      path: 'xd.mcp.bridge.status',
+      args: {},
+      approved: false,
+      reason: 'Read MCP bridge status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('로컬 CLI 스캔해줘').actions, [
+    {
+      id: 'natural-local-cli-scan',
+      path: 'xd.localCli.scan',
+      args: {},
+      approved: false,
+      reason: 'Scan local CLI agents from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 MCP 설치 초안 열어줘').actions, [
+    {
+      id: 'natural-xenesis-tool-mcp-install-draft-open-notion',
+      path: 'xd.xenesis.tools.mcpInstallDrafts.open',
+      args: { id: 'notion', ensureVisible: true },
+      approved: false,
+      reason: 'Open Notion MCP install draft from natural language request.',
+    },
+  ]);
 });
 
 test('planXenesisDeskNaturalLanguageActions maps common Korean Desk control requests to CR actions', () => {
