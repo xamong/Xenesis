@@ -824,6 +824,25 @@ Capability Registry instead of only through separate renderer settings panels.
   `data-xenesis-tool-oauth-draft="google-calendar"`; Agent-pane fenced CR prompt
   matched `Desk action completed`.
 
+## Current Agent CR Hint Parity Slice
+
+- Align Xenesis Agent's Desk-control prompt hint with existing Connection
+  Center CR surfaces that were already registered and dispatched but not all
+  listed in the high-value hint.
+- Added hint/test coverage for `xd.xenesis.guides.status/open`,
+  `xd.xenesis.providers.setup.status`, `xd.xenesis.providers.routing.status`,
+  `xd.xenesis.providers.views.status/open`, `xd.xenesis.tools.setup.status`,
+  `xd.xenesis.tools.views.status/open`, `xd.xenesis.channels.routing.status`,
+  `xd.xenesis.channels.safety.status`, and
+  `xd.xenesis.messengers.views.status/open`.
+- This slice adds no runtime mutation path, no external calls, no settings
+  writes, and no new registry node. It only improves model-visible CR guidance
+  so Agent-pane responses can choose the already-available Desk-native control
+  paths.
+- TDD check: focused prompt-hint test failed first on missing
+  `xd.xenesis.guides.status`, then passed after implementation with 20/20
+  tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

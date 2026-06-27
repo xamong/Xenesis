@@ -304,7 +304,16 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.xenesis\.connections\.setupRequests\.request/);
   assert.match(hint, /xd\.xenesis\.onboarding\.status/);
   assert.match(hint, /xd\.xenesis\.onboarding\.open/);
+  assert.match(hint, /xd\.xenesis\.guides\.status/);
+  assert.match(hint, /xd\.xenesis\.guides\.open/);
+  assert.match(hint, /xd\.xenesis\.providers\.setup\.status/);
+  assert.match(hint, /xd\.xenesis\.providers\.routing\.status/);
+  assert.match(hint, /xd\.xenesis\.providers\.views\.status/);
+  assert.match(hint, /xd\.xenesis\.providers\.views\.open/);
+  assert.match(hint, /xd\.xenesis\.tools\.setup\.status/);
   assert.match(hint, /xd\.xenesis\.tools\.connectors\.status/);
+  assert.match(hint, /xd\.xenesis\.tools\.views\.status/);
+  assert.match(hint, /xd\.xenesis\.tools\.views\.open/);
   assert.match(hint, /xd\.xenesis\.tools\.userStories\.status/);
   assert.match(hint, /xd\.xenesis\.tools\.userStories\.open/);
   assert.match(hint, /xd\.xenesis\.tools\.installPlans\.status/);
@@ -328,6 +337,10 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.xenesis\.channels\.profileDrafts\.request/);
   assert.match(hint, /xd\.xenesis\.channels\.accessGroups\.status/);
   assert.match(hint, /xd\.xenesis\.channels\.pairing\.status/);
+  assert.match(hint, /xd\.xenesis\.channels\.routing\.status/);
+  assert.match(hint, /xd\.xenesis\.channels\.safety\.status/);
+  assert.match(hint, /xd\.xenesis\.messengers\.views\.status/);
+  assert.match(hint, /xd\.xenesis\.messengers\.views\.open/);
   assert.match(hint, /tool action catalogs are review-only/i);
   assert.match(hint, /tool OAuth drafts are review-only/i);
   assert.match(hint, /do not complete OAuth/i);
