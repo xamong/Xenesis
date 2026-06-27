@@ -6,6 +6,7 @@ import {
   buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
   formatXenesisChannelRoutingSummary,
+  formatXenesisMessengerViewSummary,
   formatXenesisProviderSetupSummary,
   formatXenesisToolSetupSummary,
   formatXenesisToolViewSummary,
@@ -211,5 +212,25 @@ test('formatXenesisToolViewSummary describes internal Desk tool view surface and
       safetyBoundaries: ['view opens internal setup/readiness surfaces only'],
     }),
     'Settings > Xenesis Agent > Connections / connection-detail',
+  );
+});
+
+test('formatXenesisMessengerViewSummary describes internal Desk messenger view surface and runtime support', () => {
+  assert.equal(
+    formatXenesisMessengerViewSummary({
+      viewType: 'messenger-detail',
+      runtimeSupport: 'implemented',
+      primarySurface: 'Settings > Xenesis Agent > Connections',
+      setupSurface: 'Settings > Xenesis Agent > External bots',
+      openPath: 'xd.xenesis.messengers.views.open',
+      openArgs: { id: 'telegram' },
+      connectionCardId: 'telegram',
+      internalViews: ['connection-card', 'channel-template', 'routing', 'external-bot-settings'],
+      readPaths: ['xd.xenesis.connections.status'],
+      controlPaths: ['xd.xenesis.messengers.views.open'],
+      diagnostics: ['gateway-status'],
+      safetyBoundaries: ['implemented channels still require gateway readiness before delivery'],
+    }),
+    'Settings > Xenesis Agent > Connections / implemented',
   );
 });

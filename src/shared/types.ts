@@ -6,6 +6,7 @@ export type {
   XenesisConnectionChannelTemplate,
   XenesisConnectionItem,
   XenesisConnectionMcpTemplate,
+  XenesisConnectionMessengerViewTemplate,
   XenesisConnectionProviderSetupTemplate,
   XenesisConnectionSection,
   XenesisConnectionStatus,

@@ -207,6 +207,92 @@ const XENESIS_CHANNEL_ROUTING_STATUS_SCHEMA = {
   },
 } as const;
 
+const XENESIS_MESSENGER_VIEW_IDS = [
+  'telegram',
+  'slack',
+  'discord',
+  'webhook',
+  'whatsapp',
+  'signal',
+  'microsoft-teams',
+  'google-chat',
+  'imessage',
+  'matrix',
+  'irc',
+  'mattermost',
+  'nextcloud-talk',
+  'nostr',
+  'raft',
+  'tlon',
+  'synology-chat',
+  'twitch',
+  'line',
+  'wechat',
+  'qqbot',
+  'feishu',
+  'yuanbao',
+  'zalo',
+  'email',
+  'sms',
+  'home-assistant',
+  'ntfy',
+] as const;
+
+const XENESIS_MESSENGER_VIEW_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Messenger id',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Optional messenger connection id to filter.',
+    },
+    messenger: {
+      type: 'string',
+      title: 'Messenger id',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Alias for id.',
+    },
+    channel: {
+      type: 'string',
+      title: 'Messenger channel',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Alias for id.',
+    },
+  },
+} as const;
+
+const XENESIS_MESSENGER_VIEW_OPEN_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Messenger id',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Messenger connection id to open in the internal Desk Connection Center view.',
+    },
+    messenger: {
+      type: 'string',
+      title: 'Messenger id',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Alias for id.',
+    },
+    channel: {
+      type: 'string',
+      title: 'Messenger channel',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Alias for id.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused messenger connection card into view after opening the Connection Center.',
+      default: true,
+    },
+  },
+} as const;
+
 const XENESIS_EXTERNAL_TOOL_IDS = [
   'fetch',
   'filesystem',
@@ -565,6 +651,8 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisToolSetupStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolViewsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisToolView?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisMessengerViewsStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisMessengerView?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisProviderSetupStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisDiagnostics?: () => Promise<unknown> | unknown;
   openXenesisTui?: (args: unknown) => Promise<unknown> | unknown;
@@ -3521,6 +3609,29 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             XENESIS_CHANNEL_ROUTING_STATUS_SCHEMA,
           ),
         ]),
+      ]),
+      group('xd.xenesis.messengers', 'Messengers', 'External messenger connection views and readiness state.', [
+        group(
+          'xd.xenesis.messengers.views',
+          'Views',
+          'Internal Desk views for external messenger setup and readiness.',
+          [
+            method(
+              'xd.xenesis.messengers.views.status',
+              'Read messenger view status',
+              'Read internal Desk view surfaces, CR open/read paths, diagnostics, runtime support, and safety boundaries for Xenesis messenger connections.',
+              'read',
+              XENESIS_MESSENGER_VIEW_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.messengers.views.open',
+              'Open messenger view',
+              'Open Settings > Xenesis Agent > Connections and focus an external messenger connection card inside Desk.',
+              'control',
+              XENESIS_MESSENGER_VIEW_OPEN_SCHEMA,
+            ),
+          ],
+        ),
       ]),
       group('xd.xenesis.tools', 'Tools', 'External tool connection setup state.', [
         group('xd.xenesis.tools.setup', 'Setup', 'External tool auth, scope, verification, and CR readback metadata.', [
@@ -9831,6 +9942,12 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.tools.views.open') {
         return callAdapter(path, api?.openXenesisToolView, request.args);
+      }
+      if (path === 'xd.xenesis.messengers.views.status') {
+        return callAdapter(path, api?.getXenesisMessengerViewsStatus, request.args);
+      }
+      if (path === 'xd.xenesis.messengers.views.open') {
+        return callAdapter(path, api?.openXenesisMessengerView, request.args);
       }
       if (path === 'xd.xenesis.providers.setup.status') {
         return callAdapter(path, api?.getXenesisProviderSetupStatus, request.args);

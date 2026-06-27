@@ -817,6 +817,71 @@ test('buildXenesisConnectionsStatus exposes OpenClaw-style routing metadata for 
   }
 });
 
+test('buildXenesisConnectionsStatus exposes internal Desk messenger views for implemented and planned channels', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const telegram = status.sections.messengers.items.find((item) => item.id === 'telegram');
+  const signal = status.sections.messengers.items.find((item) => item.id === 'signal');
+
+  assert.deepEqual(telegram?.messengerView, {
+    viewType: 'messenger-detail',
+    runtimeSupport: 'implemented',
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    setupSurface: 'Settings > Xenesis Agent > External bots',
+    openPath: 'xd.xenesis.messengers.views.open',
+    openArgs: { id: 'telegram' },
+    connectionCardId: 'telegram',
+    internalViews: ['connection-card', 'channel-template', 'routing', 'external-bot-settings'],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.messengers.views.status',
+      'xd.xenesis.channels.routing.status',
+      'xd.xenesis.gateway.status',
+    ],
+    controlPaths: [
+      'xd.xenesis.messengers.views.open',
+      'xd.xenesis.connections.open',
+      'xd.xenesis.profiles.updateChannels',
+      'xd.xenesis.profiles.testChannel',
+      'xd.panes.settings.open',
+    ],
+    diagnostics: ['gateway-status', 'missing-env', 'allowlist', 'last-error'],
+    safetyBoundaries: [
+      'implemented channels still require gateway readiness before delivery',
+      'channel writes and test sends stay on existing profile CR paths',
+    ],
+  });
+  assert.equal(signal?.messengerView?.runtimeSupport, 'planned');
+  assert.deepEqual(signal?.messengerView?.internalViews, ['connection-card', 'channel-template', 'planning-card']);
+  assert.equal(signal?.messengerView?.controlPaths.includes('xd.xenesis.profiles.testChannel'), false);
+});
+
 test('buildXenesisConnectionsStatus resolves repo-local guide open paths from the repo root', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {

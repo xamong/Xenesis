@@ -118,6 +118,21 @@ export interface XenesisConnectionChannelRoutingTemplate {
   deliveryFeatures: string[];
 }
 
+export interface XenesisConnectionMessengerViewTemplate {
+  viewType: 'messenger-detail';
+  runtimeSupport: 'implemented' | 'planned';
+  primarySurface: string;
+  setupSurface: string;
+  openPath: 'xd.xenesis.messengers.views.open';
+  openArgs: { id: string };
+  connectionCardId: string;
+  internalViews: string[];
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  safetyBoundaries: string[];
+}
+
 export interface XenesisConnectionItem {
   id: string;
   kind: XenesisConnectionKind;
@@ -138,6 +153,7 @@ export interface XenesisConnectionItem {
   providerSetup?: XenesisConnectionProviderSetupTemplate;
   toolSetup?: XenesisConnectionToolSetupTemplate;
   toolView?: XenesisConnectionToolViewTemplate;
+  messengerView?: XenesisConnectionMessengerViewTemplate;
   channelTemplate?: XenesisConnectionChannelTemplate;
   warnings?: string[];
 }
@@ -659,12 +675,58 @@ type PlannedMessengerDefinition = Omit<XenesisConnectionItem, 'kind' | 'status' 
   warnings?: string[];
 };
 
+function messengerViewTemplate(
+  id: string,
+  runtimeSupport: XenesisConnectionMessengerViewTemplate['runtimeSupport'],
+): XenesisConnectionMessengerViewTemplate {
+  const implemented = runtimeSupport === 'implemented';
+  return {
+    viewType: 'messenger-detail',
+    runtimeSupport,
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    setupSurface: implemented ? 'Settings > Xenesis Agent > External bots' : 'Settings > Xenesis Agent > Connections',
+    openPath: 'xd.xenesis.messengers.views.open',
+    openArgs: { id },
+    connectionCardId: id,
+    internalViews: implemented
+      ? ['connection-card', 'channel-template', 'routing', 'external-bot-settings']
+      : ['connection-card', 'channel-template', 'planning-card'],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.messengers.views.status',
+      ...(implemented ? ['xd.xenesis.channels.routing.status', 'xd.xenesis.gateway.status'] : []),
+    ],
+    controlPaths: implemented
+      ? [
+          'xd.xenesis.messengers.views.open',
+          'xd.xenesis.connections.open',
+          'xd.xenesis.profiles.updateChannels',
+          'xd.xenesis.profiles.testChannel',
+          'xd.panes.settings.open',
+        ]
+      : ['xd.xenesis.messengers.views.open', 'xd.xenesis.connections.open', 'xd.panes.settings.open'],
+    diagnostics: implemented
+      ? ['gateway-status', 'missing-env', 'allowlist', 'last-error']
+      : ['planned-adapter', 'required-auth', 'safety-review'],
+    safetyBoundaries: implemented
+      ? [
+          'implemented channels still require gateway readiness before delivery',
+          'channel writes and test sends stay on existing profile CR paths',
+        ]
+      : [
+          'planned channels open setup/readiness planning views only',
+          'no gateway adapter, pairing flow, or delivery action is exposed until runtime support exists',
+        ],
+  };
+}
+
 function plannedMessenger(definition: PlannedMessengerDefinition): XenesisConnectionItem {
   return {
     ...definition,
     kind: 'messenger',
     status: 'planned',
     supportLevel: 'planned',
+    messengerView: messengerViewTemplate(definition.id, 'planned'),
     crActions: [],
     warnings: definition.warnings ?? [`No ${definition.label} gateway adapter is bundled yet.`],
   };
@@ -1347,6 +1409,7 @@ function messengerItems(xenesis: XenesisStatus | null): XenesisConnectionItem[] 
       setupSteps,
       sourceDocs,
       channelTemplate,
+      messengerView: messengerViewTemplate(id, 'implemented'),
       warnings: [...(runtime?.warnings ?? []), ...(runtime?.lastError ? [runtime.lastError.message] : [])],
     };
   });

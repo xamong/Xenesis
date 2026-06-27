@@ -152,6 +152,15 @@ expected capabilities, and required safety controls. Settings renders the same
 metadata so channel planning is visible inside Xenesis Desk without presenting
 planned channels as enabled runtime features.
 
+Messenger cards also expose a `messengerView` read model. Use
+`xd.xenesis.messengers.views.status` to inspect the internal Desk surface for a
+messenger, including runtime support, setup surface, CR open/read/control paths,
+diagnostics, and safety boundaries. Use `xd.xenesis.messengers.views.open` with
+`{ "id": "<messenger-id>" }` to open Settings > Xenesis Agent > Connections and
+focus the messenger card. Planned channels open setup/readiness planning views
+only; they do not expose a gateway adapter, account pairing flow, or delivery
+action until runtime support exists.
+
 Each implemented channel also carries the routing guardrails that the runtime
 already enforces: `approvalMode`, `maxTurns`, and `maxTokens`. These settings
 are editable in Settings and visible to CR callers through the channel update
@@ -163,6 +172,8 @@ Useful CR paths:
 
 - `xd.xenesis.profiles.updateChannels`
 - `xd.xenesis.profiles.testChannel`
+- `xd.xenesis.messengers.views.status`
+- `xd.xenesis.messengers.views.open`
 
 ## Access Control
 
@@ -216,6 +227,13 @@ Discord, and Webhook route bindings, allowlist fields, auth or pairing mode,
 default agent, session scope, diagnostics, and delivery features. Channel writes
 still go through `xd.xenesis.profiles.updateChannels`, and delivery tests still
 go through `xd.xenesis.profiles.testChannel`.
+
+Use `xd.xenesis.messengers.views.status` and
+`xd.xenesis.messengers.views.open` to inspect or open internal Desk
+setup/readiness views for external messengers. Implemented Telegram, Slack,
+Discord, and Webhook cards can point to existing profile channel update/test CR
+paths. Planned messenger cards are planning views only; they do not create a
+gateway adapter, pairing flow, delivery action, or approval bypass.
 
 Use `xd.xenesis.tools.setup.status` to inspect external tool setup metadata
 through CR. The read model covers Fetch, Filesystem, GitHub, Notion, Linear,

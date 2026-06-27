@@ -89,6 +89,7 @@ import {
   buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
   formatXenesisChannelRoutingSummary,
+  formatXenesisMessengerViewSummary,
   formatXenesisProviderSetupSummary,
   formatXenesisToolSetupSummary,
   formatXenesisToolViewSummary,
@@ -4255,6 +4256,7 @@ export default function SettingsPane() {
     const providerSetup = item.providerSetup;
     const toolSetup = item.toolSetup;
     const toolView = item.toolView;
+    const messengerView = item.messengerView;
     const channelTemplate = item.channelTemplate;
     return (
       <div
@@ -4464,6 +4466,48 @@ export default function SettingsPane() {
             <div>
               <span>{t('settings.xenesisConnectionsToolViewSafety')}</span>
               <strong>{toolView.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {messengerView ? (
+          <div className="sp-info-list sp-info-list-compact" data-xenesis-messenger-view={item.id}>
+            <div>
+              <span>{t('settings.xenesisConnectionsMessengerView')}</span>
+              <strong>{formatXenesisMessengerViewSummary(messengerView)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMessengerViewRuntime')}</span>
+              <strong>{messengerView.runtimeSupport}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMessengerViewSetupSurface')}</span>
+              <strong>{messengerView.setupSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMessengerViewOpen')}</span>
+              <strong>
+                {messengerView.openPath} {JSON.stringify(messengerView.openArgs)}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMessengerViewInternalViews')}</span>
+              <strong>{messengerView.internalViews.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMessengerViewReadback')}</span>
+              <strong>{messengerView.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMessengerViewControls')}</span>
+              <strong>{messengerView.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMessengerViewDiagnostics')}</span>
+              <strong>{messengerView.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMessengerViewSafety')}</span>
+              <strong>{messengerView.safetyBoundaries.join(', ')}</strong>
             </div>
           </div>
         ) : null}

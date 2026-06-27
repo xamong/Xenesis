@@ -2,6 +2,7 @@ import type {
   McpBridgeCapabilityCallRequest,
   XenesisConnectionChannelRoutingTemplate,
   XenesisConnectionItem,
+  XenesisConnectionMessengerViewTemplate,
   XenesisConnectionProviderSetupTemplate,
   XenesisConnectionSection,
   XenesisConnectionStatus,
@@ -66,6 +67,10 @@ export function formatXenesisToolSetupSummary(setup: XenesisConnectionToolSetupT
 
 export function formatXenesisToolViewSummary(view: XenesisConnectionToolViewTemplate): string {
   return `${view.primarySurface} / ${view.viewType}`;
+}
+
+export function formatXenesisMessengerViewSummary(view: XenesisConnectionMessengerViewTemplate): string {
+  return `${view.primarySurface} / ${view.runtimeSupport}`;
 }
 
 export function buildXenesisConnectionSettingsRequest(

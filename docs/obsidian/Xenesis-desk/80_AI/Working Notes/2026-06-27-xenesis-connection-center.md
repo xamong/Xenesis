@@ -123,6 +123,24 @@ Capability Registry instead of only through separate renderer settings panels.
 - This path is UI control only. It does not mutate provider, MCP, gateway, or
   messenger settings.
 
+## Current Messenger Views Slice
+
+- Add `messengerView` metadata to implemented and planned messenger cards in
+  `xd.xenesis.connections.status`.
+- Add `xd.xenesis.messengers.views.status` as a read/no-approval CR path for
+  internal Desk messenger surfaces, runtime support, setup surface, CR
+  open/read/control paths, diagnostics, and safety boundaries.
+- Add `xd.xenesis.messengers.views.open` as a control/no-approval CR path that
+  opens Settings > Xenesis Agent > Connections and focuses the requested
+  messenger card.
+- Implemented Telegram, Slack, Discord, and webhook views point back to the
+  existing channel update/test CR paths and gateway diagnostics.
+- Planned messenger views are planning/readiness surfaces only. They expose no
+  gateway adapter, pairing flow, delivery action, or approval bypass until the
+  runtime support exists and is verified.
+- Settings renders the same read model with
+  `data-xenesis-messenger-view="<id>"` for live smoke and agent readback.
+
 ## Current Verification
 
 - `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`

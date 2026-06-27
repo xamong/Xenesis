@@ -4843,6 +4843,130 @@ async function getXenesisChannelRoutingStatus(args?: unknown): Promise<Record<st
   };
 }
 
+const XENESIS_MESSENGER_VIEW_IDS = [
+  'telegram',
+  'slack',
+  'discord',
+  'webhook',
+  'whatsapp',
+  'signal',
+  'microsoft-teams',
+  'google-chat',
+  'imessage',
+  'matrix',
+  'irc',
+  'mattermost',
+  'nextcloud-talk',
+  'nostr',
+  'raft',
+  'tlon',
+  'synology-chat',
+  'twitch',
+  'line',
+  'wechat',
+  'qqbot',
+  'feishu',
+  'yuanbao',
+  'zalo',
+  'email',
+  'sms',
+  'home-assistant',
+  'ntfy',
+] as const;
+
+function isXenesisMessengerViewId(value: string): value is (typeof XENESIS_MESSENGER_VIEW_IDS)[number] {
+  return (XENESIS_MESSENGER_VIEW_IDS as readonly string[]).includes(value);
+}
+
+function xenesisMessengerViewStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    viewType: item.messengerView?.viewType,
+    runtimeSupport: item.messengerView?.runtimeSupport,
+    primarySurface: item.messengerView?.primarySurface,
+    setupSurface: item.messengerView?.setupSurface,
+    openPath: item.messengerView?.openPath,
+    openArgs: item.messengerView?.openArgs,
+    connectionCardId: item.messengerView?.connectionCardId,
+    internalViews: item.messengerView?.internalViews ?? [],
+    readPaths: item.messengerView?.readPaths ?? [],
+    controlPaths: item.messengerView?.controlPaths ?? [],
+    diagnostics: item.messengerView?.diagnostics ?? [],
+    safetyBoundaries: item.messengerView?.safetyBoundaries ?? [],
+    channelTemplate: item.channelTemplate,
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisMessengerViewsStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'messenger', 'channel', 'name']);
+  if (id && !isXenesisMessengerViewId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis messenger connection: ${id}`,
+      allowedMessengers: XENESIS_MESSENGER_VIEW_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.messengers.items
+    .filter((item) => item.messengerView)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisMessengerViewStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisMessengerView(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'messenger', 'channel', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Messenger id is required.' };
+  }
+  if (!isXenesisMessengerViewId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis messenger connection: ${id}`,
+      allowedMessengers: XENESIS_MESSENGER_VIEW_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.messengers.items.find((candidate) => candidate.id === id && candidate.messengerView);
+  if (!item) {
+    return { ok: false, id, error: `Xenesis messenger view is not available: ${id}` };
+  }
+
+  const renderer = await openMcpBuiltinPaneCapability({
+    kind: 'settings',
+    category: 'xenesis-agent',
+    mode: 'connections',
+    section: 'xenesis-connections',
+    focusConnectionId: id,
+    ensureVisible: body.ensureVisible !== false,
+  });
+
+  return {
+    ok: renderer.ok !== false,
+    id,
+    item: xenesisMessengerViewStatusItem(item),
+    renderer,
+  };
+}
+
 const XENESIS_TOOL_SETUP_IDS = [
   'fetch',
   'filesystem',
@@ -11988,6 +12112,8 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisToolSetupStatus: (args: unknown) => getXenesisToolSetupStatus(args),
     getXenesisToolViewsStatus: (args: unknown) => getXenesisToolViewsStatus(args),
     openXenesisToolView: (args: unknown) => openXenesisToolView(args),
+    getXenesisMessengerViewsStatus: (args: unknown) => getXenesisMessengerViewsStatus(args),
+    openXenesisMessengerView: (args: unknown) => openXenesisMessengerView(args),
     getXenesisProviderSetupStatus: (args: unknown) => getXenesisProviderSetupStatus(args),
     getXenesisDiagnostics: () => getXenesisOperationalDiagnostics().then((diagnostics) => ({ ok: true, diagnostics })),
     listXenesisReports: (args: unknown) =>
