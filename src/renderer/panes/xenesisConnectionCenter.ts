@@ -2,6 +2,7 @@ import type {
   McpBridgeCapabilityCallRequest,
   XenesisConnectionChannelRoutingTemplate,
   XenesisConnectionChannelSafetyTemplate,
+  XenesisConnectionGuideCatalogTemplate,
   XenesisConnectionItem,
   XenesisConnectionMessengerViewTemplate,
   XenesisConnectionProviderRoutingTemplate,
@@ -62,6 +63,10 @@ export function formatXenesisChannelRoutingSummary(routing: XenesisConnectionCha
 
 export function formatXenesisChannelSafetySummary(safety: XenesisConnectionChannelSafetyTemplate): string {
   return `${safety.accessModel} / ${safety.inboundBoundary} / ${safety.loopProtection.length} loop guard(s)`;
+}
+
+export function formatXenesisGuideCatalogSummary(guide: XenesisConnectionGuideCatalogTemplate): string {
+  return `${guide.guideType} / ${guide.audience} / ${guide.coveredSurfaces.length} surface(s)`;
 }
 
 export function formatXenesisProviderSetupSummary(setup: XenesisConnectionProviderSetupTemplate): string {

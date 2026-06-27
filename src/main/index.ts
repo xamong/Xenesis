@@ -4892,6 +4892,108 @@ async function getXenesisChannelSafetyStatus(args?: unknown): Promise<Record<str
   };
 }
 
+const XENESIS_GUIDE_IDS = ['onboarding-connections', 'cr-mcp-gateway-bots', 'agent-user-stories'] as const;
+
+function isXenesisGuideId(value: string): value is (typeof XENESIS_GUIDE_IDS)[number] {
+  return (XENESIS_GUIDE_IDS as readonly string[]).includes(value);
+}
+
+function xenesisGuideStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    guidePath: item.guidePath,
+    guideOpenPath: item.guideOpenPath,
+    sourceDocs: item.sourceDocs ?? [],
+    guideType: item.guideCatalog?.guideType,
+    audience: item.guideCatalog?.audience,
+    primarySurface: item.guideCatalog?.primarySurface,
+    coveredSurfaces: item.guideCatalog?.coveredSurfaces ?? [],
+    prerequisites: item.guideCatalog?.prerequisites ?? [],
+    validationChecks: item.guideCatalog?.validationChecks ?? [],
+    readPaths: item.guideCatalog?.readPaths ?? [],
+    controlPaths: item.guideCatalog?.controlPaths ?? [],
+    userStoryTemplates: item.guideCatalog?.userStoryTemplates ?? [],
+    safetyBoundaries: item.guideCatalog?.safetyBoundaries ?? [],
+    guideCatalog: item.guideCatalog,
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisGuidesStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'guide', 'name']);
+  if (id && !isXenesisGuideId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis guide: ${id}`,
+      allowedGuides: XENESIS_GUIDE_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.guides.items
+    .filter((item) => item.guideCatalog)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisGuideStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisGuide(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'guide', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Guide id is required.' };
+  }
+  if (!isXenesisGuideId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis guide: ${id}`,
+      allowedGuides: XENESIS_GUIDE_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.guides.items.find((candidate) => candidate.id === id && candidate.guideCatalog);
+  if (!item) {
+    return { ok: false, id, error: `Xenesis guide is not available: ${id}` };
+  }
+
+  const renderer = await openMcpBuiltinPaneCapability({
+    kind: 'settings',
+    category: 'xenesis-agent',
+    mode: 'connections',
+    section: 'xenesis-connections',
+    focusConnectionId: id,
+    ensureVisible: body.ensureVisible !== false,
+  });
+  const guideFilePath = item.guideOpenPath || item.guidePath;
+  const file =
+    body.openFile === true && guideFilePath
+      ? openMcpFileCapability({ filePath: guideFilePath, placement: 'tab' })
+      : undefined;
+
+  return {
+    ok: renderer.ok !== false && (!file || file.ok !== false),
+    id,
+    item: xenesisGuideStatusItem(item),
+    file,
+    renderer,
+  };
+}
+
 const XENESIS_MESSENGER_VIEW_IDS = [
   'telegram',
   'slack',
@@ -12307,6 +12409,8 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisConnectionsStatus: () => getXenesisConnectionsStatus().then((status) => ({ ok: true, status })),
     getXenesisChannelRoutingStatus: (args: unknown) => getXenesisChannelRoutingStatus(args),
     getXenesisChannelSafetyStatus: (args: unknown) => getXenesisChannelSafetyStatus(args),
+    getXenesisGuidesStatus: (args: unknown) => getXenesisGuidesStatus(args),
+    openXenesisGuide: (args: unknown) => openXenesisGuide(args),
     getXenesisToolSetupStatus: (args: unknown) => getXenesisToolSetupStatus(args),
     getXenesisToolViewsStatus: (args: unknown) => getXenesisToolViewsStatus(args),
     openXenesisToolView: (args: unknown) => openXenesisToolView(args),

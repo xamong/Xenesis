@@ -43,6 +43,15 @@ and the renderer. The card-level `Focus` action routes through
 `xd.xenesis.connections.open` and highlights the matching
 `data-xenesis-connection="<id>"` card inside Settings.
 
+Guide cards also expose a structured `guideCatalog` read model. Use
+`xd.xenesis.guides.status` to inspect setup playbooks, integration guides, and
+user-story templates for provider setup, MCP/external tools, gateway/channel
+readiness, and CR-controlled Desk workflows. Use `xd.xenesis.guides.open` with
+`{ "id": "<guide-id>" }` to focus the matching Settings guide card. Add
+`"openFile": true` when the caller also wants to open the repo-local guide file.
+This surface is read-only except for opening the guide/view; it does not install
+tools, create OAuth flows, send messages, or mutate provider/channel settings.
+
 The first section is an ordered onboarding checklist. It is derived from the
 same provider, MCP, tool, gateway, messenger, and guide cards, so it is a
 read-only progress view rather than a separate source of truth. Use it as the
@@ -261,6 +270,14 @@ Use `xd.xenesis.connections.open` with `{ "id": "<connection-id>" }` to open
 Settings > Xenesis Agent > Connections and focus a specific provider, tool,
 guide, or messenger card. This is a UI-control path; it does not mutate
 connection settings.
+
+Use `xd.xenesis.guides.status` and `xd.xenesis.guides.open` to inspect or open
+the guide catalog through CR. The guide catalog covers setup playbooks,
+integration guides, and user-story templates. It is a navigation/readiness
+surface only; `guides.open` focuses the Settings guide card by default and only
+opens the repo-local guide file when `openFile` is true. Actual setup and
+runtime actions stay on the provider, tool, channel, file, and settings CR paths
+listed by the selected guide.
 
 Use `xd.xenesis.channels.routing.status` to inspect implemented external bot
 channel routing metadata through CR. The read model covers Telegram, Slack,

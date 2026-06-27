@@ -335,6 +335,34 @@ Capability Registry instead of only through separate renderer settings panels.
   first because `formatXenesisProviderRoutingSummary` was not exported, then
   passed after renderer helper implementation with 12/12 tests.
 
+## Current Guide Catalog CR Surface Slice
+
+- Add `guideCatalog` metadata to guide cards in
+  `xd.xenesis.connections.status`.
+- Add `agent-user-stories` as a Hermes-style user-story guide card covering AI
+  providers, external tools, messengers, and CR-controlled Desk workflows.
+- Add `xd.xenesis.guides.status` as a read/no-approval CR path for setup
+  playbooks, integration guides, user-story templates, validation checks,
+  read/control paths, and safety boundaries.
+- Add `xd.xenesis.guides.open` as a control/no-approval CR path that focuses
+  the matching Settings guide card by default. Passing `openFile: true` also
+  opens the repo-local guide file when available.
+- Settings renders the same model with
+  `data-xenesis-guide-catalog="<guide-id>"`.
+- This slice is guide/readiness only. It does not install MCP servers, create
+  OAuth flows, send messages, enable planned adapters, or mutate provider/tool
+  or channel settings.
+- `npx tsx --test src\shared\xenesisConnections.test.ts` failed first because
+  `guideCatalog` was undefined, then passed after implementation with 17/17
+  tests.
+- `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` failed
+  first because `xd.xenesis.guides.status` was not registered, then passed
+  after CR registration/dispatch with 13/13 tests.
+- `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` failed
+  first because `formatXenesisGuideCatalogSummary` was not exported, then
+  passed after renderer helper implementation with 14/14 tests.
+- The combined focused run passed with 44/44 tests.
+
 ## Current Channel Safety Read Model Slice
 
 - Add `channelTemplate.safety` metadata to implemented Telegram, Slack,

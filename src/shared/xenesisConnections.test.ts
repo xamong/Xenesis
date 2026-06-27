@@ -177,7 +177,7 @@ test('buildXenesisConnectionsStatus reports ready provider, MCP, gateway, and Te
     },
   });
 
-  assert.equal(status.summary.ready, 12);
+  assert.equal(status.summary.ready, 13);
   assert.equal(status.sections.provider.items[0].status, 'ready');
   assert.equal(status.sections.mcp.items[0].status, 'ready');
   assert.equal(status.sections.gateway.items[0].status, 'ready');
@@ -1184,6 +1184,69 @@ test('buildXenesisConnectionsStatus resolves repo-local guide open paths from th
 
   assert.equal(guide?.guidePath, 'docs/manual/09-onboarding-connections.md');
   assert.equal(guide?.guideOpenPath, 'E:\\xenesis-desk\\docs\\manual\\09-onboarding-connections.md');
+});
+
+test('buildXenesisConnectionsStatus exposes guide catalog metadata for onboarding playbooks', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+    repoRoot: 'E:\\xenesis-desk',
+  });
+
+  const onboarding = status.sections.guides.items.find((item) => item.id === 'onboarding-connections');
+  const userStories = status.sections.guides.items.find((item) => item.id === 'agent-user-stories');
+
+  assert.deepEqual(onboarding?.guideCatalog, {
+    guideType: 'setup-playbook',
+    audience: 'operator',
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    coveredSurfaces: ['providers', 'mcp-tools', 'gateway', 'messengers', 'guides'],
+    prerequisites: ['choose AI provider', 'configure MCP bridge', 'review external bot gateway'],
+    validationChecks: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.providers.setup.status',
+      'xd.xenesis.tools.setup.status',
+      'xd.xenesis.messengers.views.status',
+    ],
+    readPaths: ['xd.xenesis.connections.status', 'xd.xenesis.guides.status'],
+    controlPaths: ['xd.xenesis.guides.open', 'xd.xenesis.connections.open', 'xd.files.open'],
+    userStoryTemplates: [
+      'first-run provider and MCP setup',
+      'connect a planned external tool without pretending it is installed',
+      'verify messenger routing before remote prompts',
+    ],
+    safetyBoundaries: [
+      'guide catalog is read-only',
+      'guide open may open a repo-local file or focus a Settings card',
+      'actual provider, tool, and channel mutations stay on their existing CR paths',
+    ],
+  });
+  assert.equal(onboarding?.guideOpenPath, 'E:\\xenesis-desk\\docs\\manual\\09-onboarding-connections.md');
+  assert.equal(userStories?.guideCatalog?.guideType, 'user-story-catalog');
+  assert.equal(userStories?.guideCatalog?.readPaths.includes('xd.xenesis.guides.status'), true);
 });
 
 test('buildXenesisConnectionsStatus reports missing setup without leaking secrets', () => {

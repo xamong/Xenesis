@@ -324,6 +324,68 @@ test('xenesis messenger view capabilities are registered and dispatch to the ada
   });
 });
 
+test('xenesis guide catalog capabilities are registered and dispatch to the adapter', async () => {
+  const statusCapability = findDeskBridgeCapability('xd.xenesis.guides.status');
+  const openCapability = findDeskBridgeCapability('xd.xenesis.guides.open');
+  const statusSchemaProperties = (statusCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
+  assert.equal(statusCapability?.permission, 'read');
+  assert.equal(statusCapability?.approval, 'never');
+  assert.equal(openCapability?.permission, 'control');
+  assert.equal(openCapability?.approval, 'never');
+  assert.deepEqual(openCapability?.schema?.required, ['id']);
+  assert.equal(openSchemaProperties.openFile?.type, 'boolean');
+  assert.equal(openSchemaProperties.openFile?.default, false);
+  for (const guide of ['onboarding-connections', 'cr-mcp-gateway-bots', 'agent-user-stories']) {
+    assert.equal(statusSchemaProperties.id?.enum.includes(guide), true, `${guide} should be accepted by status`);
+    assert.equal(openSchemaProperties.id?.enum.includes(guide), true, `${guide} should be accepted by open`);
+  }
+
+  const calls: Array<{ method: string; args: unknown }> = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisGuidesStatus: (args) => {
+      calls.push({ method: 'status', args });
+      return {
+        ok: true,
+        items: [{ id: 'agent-user-stories', guideType: 'user-story-catalog' }],
+      };
+    },
+    openXenesisGuide: (args) => {
+      calls.push({ method: 'open', args });
+      return {
+        ok: true,
+        item: { id: 'agent-user-stories' },
+      };
+    },
+  };
+
+  const statusResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.guides.status',
+    args: { id: 'agent-user-stories' },
+    source: 'xenesis',
+  });
+  const openResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.guides.open',
+    args: { id: 'agent-user-stories' },
+    source: 'xenesis',
+  });
+
+  assert.equal(statusResult.ok, true);
+  assert.equal(openResult.ok, true);
+  assert.deepEqual(calls, [
+    { method: 'status', args: { id: 'agent-user-stories' } },
+    { method: 'open', args: { id: 'agent-user-stories' } },
+  ]);
+  assert.deepEqual(statusResult.result, {
+    ok: true,
+    items: [{ id: 'agent-user-stories', guideType: 'user-story-catalog' }],
+  });
+  assert.deepEqual(openResult.result, {
+    ok: true,
+    item: { id: 'agent-user-stories' },
+  });
+});
+
 test('xenesis provider setup status capability is registered and dispatches to the adapter', async () => {
   const capability = findDeskBridgeCapability('xd.xenesis.providers.setup.status');
   const schemaProperties = (capability?.schema?.properties ?? {}) as Record<string, any>;

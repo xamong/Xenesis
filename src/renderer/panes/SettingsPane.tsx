@@ -90,6 +90,7 @@ import {
   buildXenesisConnectionSettingsRequest,
   formatXenesisChannelRoutingSummary,
   formatXenesisChannelSafetySummary,
+  formatXenesisGuideCatalogSummary,
   formatXenesisMessengerViewSummary,
   formatXenesisProviderRoutingSummary,
   formatXenesisProviderSetupSummary,
@@ -4355,6 +4356,42 @@ export default function SettingsPane() {
             <div>
               <span>{t('settings.xenesisConnectionsSources')}</span>
               <strong>{item.sourceDocs.map((source) => source.label).join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {item.guideCatalog ? (
+          <div className="sp-info-list sp-info-list-compact" data-xenesis-guide-catalog={item.id}>
+            <div>
+              <span>{t('settings.xenesisConnectionsGuideCatalog')}</span>
+              <strong>{formatXenesisGuideCatalogSummary(item.guideCatalog)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsGuideSurfaces')}</span>
+              <strong>{item.guideCatalog.coveredSurfaces.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsGuidePrerequisites')}</span>
+              <strong>{item.guideCatalog.prerequisites.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsGuideValidation')}</span>
+              <strong>{item.guideCatalog.validationChecks.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsGuideUserStories')}</span>
+              <strong>{item.guideCatalog.userStoryTemplates.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsGuideReadback')}</span>
+              <strong>{item.guideCatalog.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsGuideControls')}</span>
+              <strong>{item.guideCatalog.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsGuideBoundaries')}</span>
+              <strong>{item.guideCatalog.safetyBoundaries.join(', ')}</strong>
             </div>
           </div>
         ) : null}

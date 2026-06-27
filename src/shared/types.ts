@@ -5,6 +5,7 @@ export type {
   XenesisConnectionChannelRoutingTemplate,
   XenesisConnectionChannelSafetyTemplate,
   XenesisConnectionChannelTemplate,
+  XenesisConnectionGuideCatalogTemplate,
   XenesisConnectionItem,
   XenesisConnectionMcpTemplate,
   XenesisConnectionMessengerViewTemplate,

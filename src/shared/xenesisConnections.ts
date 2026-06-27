@@ -207,6 +207,19 @@ export interface XenesisConnectionMessengerViewTemplate {
   safetyBoundaries: string[];
 }
 
+export interface XenesisConnectionGuideCatalogTemplate {
+  guideType: 'setup-playbook' | 'integration-guide' | 'user-story-catalog';
+  audience: 'operator' | 'agent' | 'developer';
+  primarySurface: string;
+  coveredSurfaces: string[];
+  prerequisites: string[];
+  validationChecks: string[];
+  readPaths: string[];
+  controlPaths: string[];
+  userStoryTemplates: string[];
+  safetyBoundaries: string[];
+}
+
 export interface XenesisConnectionItem {
   id: string;
   kind: XenesisConnectionKind;
@@ -230,6 +243,7 @@ export interface XenesisConnectionItem {
   toolSetup?: XenesisConnectionToolSetupTemplate;
   toolView?: XenesisConnectionToolViewTemplate;
   messengerView?: XenesisConnectionMessengerViewTemplate;
+  guideCatalog?: XenesisConnectionGuideCatalogTemplate;
   channelTemplate?: XenesisConnectionChannelTemplate;
   warnings?: string[];
 }
@@ -276,6 +290,31 @@ export const XENESIS_CONNECTION_GUIDES: XenesisConnectionItem[] = [
     status: 'ready',
     summary: 'First-run setup order for providers, MCP tools, gateway, and external bot channels.',
     guidePath: 'docs/manual/09-onboarding-connections.md',
+    guideCatalog: {
+      guideType: 'setup-playbook',
+      audience: 'operator',
+      primarySurface: 'Settings > Xenesis Agent > Connections',
+      coveredSurfaces: ['providers', 'mcp-tools', 'gateway', 'messengers', 'guides'],
+      prerequisites: ['choose AI provider', 'configure MCP bridge', 'review external bot gateway'],
+      validationChecks: [
+        'xd.xenesis.connections.status',
+        'xd.xenesis.providers.setup.status',
+        'xd.xenesis.tools.setup.status',
+        'xd.xenesis.messengers.views.status',
+      ],
+      readPaths: ['xd.xenesis.connections.status', 'xd.xenesis.guides.status'],
+      controlPaths: ['xd.xenesis.guides.open', 'xd.xenesis.connections.open', 'xd.files.open'],
+      userStoryTemplates: [
+        'first-run provider and MCP setup',
+        'connect a planned external tool without pretending it is installed',
+        'verify messenger routing before remote prompts',
+      ],
+      safetyBoundaries: [
+        'guide catalog is read-only',
+        'guide open may open a repo-local file or focus a Settings card',
+        'actual provider, tool, and channel mutations stay on their existing CR paths',
+      ],
+    },
   },
   {
     id: 'cr-mcp-gateway-bots',
@@ -284,6 +323,81 @@ export const XENESIS_CONNECTION_GUIDES: XenesisConnectionItem[] = [
     status: 'ready',
     summary: 'Existing CR, MCP bridge, gateway, and bot session reference.',
     guidePath: 'docs/manual/05-cr-mcp-gateway-bots.md',
+    guideCatalog: {
+      guideType: 'integration-guide',
+      audience: 'developer',
+      primarySurface: 'Settings > Xenesis Agent > Connections',
+      coveredSurfaces: ['capability-registry', 'mcp-bridge', 'gateway', 'bot-sessions'],
+      prerequisites: ['MCP bridge configured', 'Xenesis gateway reviewed', 'CR caller available'],
+      validationChecks: [
+        'xd.xenesis.connections.status',
+        'xd.xenesis.gateway.status',
+        'xd.xenesis.channels.routing.status',
+        'xd.xenesis.channels.safety.status',
+      ],
+      readPaths: ['xd.xenesis.connections.status', 'xd.xenesis.guides.status'],
+      controlPaths: ['xd.xenesis.guides.open', 'xd.xenesis.connections.open', 'xd.files.open'],
+      userStoryTemplates: [
+        'inspect CR paths before driving Desk behavior',
+        'verify gateway state before external bot delivery',
+        'read channel routing and safety before profile mutations',
+      ],
+      safetyBoundaries: [
+        'guide catalog is read-only',
+        'CR mutations remain on their owning capability paths',
+        'gateway and bot delivery tests stay on existing runtime CR paths',
+      ],
+    },
+  },
+  {
+    id: 'agent-user-stories',
+    kind: 'guide',
+    label: 'Agent user stories',
+    status: 'ready',
+    summary:
+      'Hermes-style user story templates for provider setup, external tools, messenger ingress, and CR-controlled Desk workflows.',
+    guidePath: 'docs/manual/09-onboarding-connections.md',
+    sourceDocs: [
+      { label: 'Hermes user stories', url: 'https://hermes-agent.nousresearch.com/docs/user-stories' },
+      { label: 'Hermes MCP feature', url: 'https://hermes-agent.nousresearch.com/docs/user-guide/features/mcp' },
+      { label: 'OpenClaw channels', url: 'https://docs.openclaw.ai/channels' },
+    ],
+    guideCatalog: {
+      guideType: 'user-story-catalog',
+      audience: 'agent',
+      primarySurface: 'Settings > Xenesis Agent > Connections',
+      coveredSurfaces: ['ai-providers', 'external-tools', 'messengers', 'capability-registry'],
+      prerequisites: [
+        'connection catalog readback',
+        'provider routing readback',
+        'tool view readback',
+        'messenger view readback',
+      ],
+      validationChecks: [
+        'xd.xenesis.connections.status',
+        'xd.xenesis.providers.routing.status',
+        'xd.xenesis.tools.views.status',
+        'xd.xenesis.messengers.views.status',
+      ],
+      readPaths: ['xd.xenesis.connections.status', 'xd.xenesis.guides.status'],
+      controlPaths: [
+        'xd.xenesis.guides.open',
+        'xd.xenesis.providers.views.open',
+        'xd.xenesis.tools.views.open',
+        'xd.xenesis.messengers.views.open',
+      ],
+      userStoryTemplates: [
+        'inspect active provider routing before running a task',
+        'connect Notion or Google Calendar as a planned MCP/OAuth workflow',
+        'open a messenger setup view and verify routing/safety before remote prompts',
+        'drive Desk actions through CR and verify readback',
+      ],
+      safetyBoundaries: [
+        'guide catalog does not execute workflows',
+        'planned integrations remain setup/readiness views until runtime support exists',
+        'CR readback must verify any guide-driven action',
+      ],
+    },
   },
 ];
 

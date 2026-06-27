@@ -195,6 +195,46 @@ const XENESIS_CONNECTION_OPEN_SCHEMA = {
   },
 } as const;
 
+const XENESIS_GUIDE_IDS = ['onboarding-connections', 'cr-mcp-gateway-bots', 'agent-user-stories'] as const;
+
+const XENESIS_GUIDE_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Guide id',
+      enum: XENESIS_GUIDE_IDS,
+      description: 'Optional Xenesis guide card id to filter.',
+    },
+  },
+} as const;
+
+const XENESIS_GUIDE_OPEN_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Guide id',
+      enum: XENESIS_GUIDE_IDS,
+      description: 'Xenesis guide card id to open in the internal Desk Connection Center view.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused guide card into view after opening the Connection Center.',
+      default: true,
+    },
+    openFile: {
+      type: 'boolean',
+      title: 'Open guide file',
+      description:
+        'When true, also open the repo-local guide file. Defaults false so the Settings guide card remains focused.',
+      default: false,
+    },
+  },
+} as const;
+
 const XENESIS_CHANNEL_ROUTING_STATUS_SCHEMA = {
   type: 'object',
   properties: {
@@ -704,6 +744,8 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisConnectionsStatus?: () => Promise<unknown> | unknown;
   getXenesisChannelRoutingStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisChannelSafetyStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisGuidesStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisGuide?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolSetupStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolViewsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisToolView?: (args?: unknown) => Promise<unknown> | unknown;
@@ -3656,6 +3698,22 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           'Open Settings > Xenesis Agent > Connections and focus one provider, tool, guide, or messenger card.',
           'control',
           XENESIS_CONNECTION_OPEN_SCHEMA,
+        ),
+      ]),
+      group('xd.xenesis.guides', 'Guides', 'Xenesis setup playbooks, integration guides, and user-story templates.', [
+        method(
+          'xd.xenesis.guides.status',
+          'Read guide catalog status',
+          'Read structured guide catalog metadata for onboarding, provider/tool setup, external messenger setup, and CR-controlled Desk workflows.',
+          'read',
+          XENESIS_GUIDE_STATUS_SCHEMA,
+        ),
+        method(
+          'xd.xenesis.guides.open',
+          'Open guide',
+          'Open a Xenesis guide card in Settings and optionally open the repo-local guide file.',
+          'control',
+          XENESIS_GUIDE_OPEN_SCHEMA,
         ),
       ]),
       group('xd.xenesis.channels', 'Channels', 'External bot channel routing and setup state.', [
@@ -10029,6 +10087,12 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.channels.safety.status') {
         return callAdapter(path, api?.getXenesisChannelSafetyStatus, request.args);
+      }
+      if (path === 'xd.xenesis.guides.status') {
+        return callAdapter(path, api?.getXenesisGuidesStatus, request.args);
+      }
+      if (path === 'xd.xenesis.guides.open') {
+        return callAdapter(path, api?.openXenesisGuide, request.args);
       }
       if (path === 'xd.xenesis.tools.setup.status') {
         return callAdapter(path, api?.getXenesisToolSetupStatus, request.args);

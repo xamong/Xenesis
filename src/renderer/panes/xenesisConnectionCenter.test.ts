@@ -7,6 +7,7 @@ import {
   buildXenesisConnectionSettingsRequest,
   formatXenesisChannelRoutingSummary,
   formatXenesisChannelSafetySummary,
+  formatXenesisGuideCatalogSummary,
   formatXenesisMessengerViewSummary,
   formatXenesisProviderRoutingSummary,
   formatXenesisProviderSetupSummary,
@@ -173,6 +174,24 @@ test('formatXenesisChannelSafetySummary describes access model, inbound boundary
       safetyBoundaries: ['safety status is read-only'],
     }),
     'allowlist / telegram chat allowlist / 3 loop guard(s)',
+  );
+});
+
+test('formatXenesisGuideCatalogSummary describes guide type, audience, and surface count', () => {
+  assert.equal(
+    formatXenesisGuideCatalogSummary({
+      guideType: 'user-story-catalog',
+      audience: 'agent',
+      primarySurface: 'Settings > Xenesis Agent > Connections',
+      coveredSurfaces: ['ai-providers', 'external-tools', 'messengers', 'capability-registry'],
+      prerequisites: ['connection catalog readback'],
+      validationChecks: ['xd.xenesis.connections.status'],
+      readPaths: ['xd.xenesis.guides.status'],
+      controlPaths: ['xd.xenesis.guides.open'],
+      userStoryTemplates: ['inspect active provider routing before running a task'],
+      safetyBoundaries: ['guide catalog does not execute workflows'],
+    }),
+    'user-story-catalog / agent / 4 surface(s)',
   );
 });
 
