@@ -261,6 +261,22 @@
   bypass approvals. Both natural actions keep `approved=false` so CR approval
   policy remains authoritative.
 
+## Workspace Set Routing Slice
+
+- Added deterministic Xenesis Agent natural-language routing for the existing
+  approval-gated Xenesis workspace binding CR path:
+  - `Xenesis workspace를 "E:\Workspace\plane"로 설정해줘` ->
+    `xd.xenesis.workspace.set` with `path=E:\Workspace\plane`.
+  - `제네시스 워크스페이스를 "D:\Projects\desk app"로 바꿔줘` ->
+    `xd.xenesis.workspace.set` with `path=D:\Projects\desk app`.
+- Added the same CR path to the Agent control prompt hint so Agent-pane runs
+  bind workspaces through CR instead of giving chat-only setup instructions.
+- Scope boundary: this slice did not create directories, change git worktrees,
+  start runs, mutate provider settings, write credentials, install profiles,
+  send messages, add CR nodes, change dispatcher branches, or bypass approval
+  policy. Natural actions keep `approved=false`, including outside-workspace
+  paths.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

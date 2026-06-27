@@ -315,6 +315,7 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.mcp\.bridge\.status/);
   assert.match(hint, /xd\.xenesis\.gateway\.status/);
   assert.match(hint, /xd\.xenesis\.gateway\.openDashboard/);
+  assert.match(hint, /xd\.xenesis\.workspace\.set/);
   assert.match(hint, /xd\.xenesis\.diagnostics/);
   assert.match(hint, /xd\.xenesis\.reports\.list/);
   assert.match(hint, /xd\.xenesis\.tasks\.list/);
@@ -544,6 +545,34 @@ test('planXenesisDeskNaturalLanguageActions maps runtime control prompts to CR a
       reason: 'Reset active Xenesis session from natural language request.',
     },
   ]);
+});
+
+test('planXenesisDeskNaturalLanguageActions maps workspace binding prompts to CR actions', () => {
+  assert.deepEqual(
+    planXenesisDeskNaturalLanguageActions('Xenesis workspace를 "E:\\Workspace\\plane"로 설정해줘').actions,
+    [
+      {
+        id: 'natural-xenesis-workspace-set',
+        path: 'xd.xenesis.workspace.set',
+        args: { path: 'E:\\Workspace\\plane' },
+        approved: false,
+        reason: 'Set Xenesis workspace from natural language request.',
+      },
+    ],
+  );
+
+  assert.deepEqual(
+    planXenesisDeskNaturalLanguageActions('제네시스 워크스페이스를 "D:\\Projects\\desk app"로 바꿔줘').actions,
+    [
+      {
+        id: 'natural-xenesis-workspace-set',
+        path: 'xd.xenesis.workspace.set',
+        args: { path: 'D:\\Projects\\desk app' },
+        approved: false,
+        reason: 'Set Xenesis workspace from natural language request.',
+      },
+    ],
+  );
 });
 
 test('planXenesisDeskNaturalLanguageActions maps common Korean Desk control requests to CR actions', () => {
