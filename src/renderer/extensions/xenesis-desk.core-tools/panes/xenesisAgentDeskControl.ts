@@ -1520,6 +1520,71 @@ function xenesisRuntimeInventoryActionFromNaturalText(value: string, rawText: st
   const xenesisAgentReadbackAction = xenesisAgentReadbackActionFromNaturalText(value, rawText);
   if (xenesisAgentReadbackAction) return xenesisAgentReadbackAction;
 
+  const hasSpecificStatusTarget = hasAny(value, [
+    'connection center',
+    'connection',
+    'connections',
+    '연결',
+    'provider',
+    'providers',
+    '프로바이더',
+    'tool',
+    'tools',
+    '툴',
+    '도구',
+    'mcp',
+    'messenger',
+    'messengers',
+    '메신저',
+    'channel',
+    'channels',
+    '채널',
+    'onboarding',
+    '온보딩',
+    'checklist',
+    '체크리스트',
+    'guide',
+    'guides',
+    '가이드',
+    'gateway',
+    '게이트웨이',
+    'profile',
+    'profiles',
+    '프로필',
+    'agent',
+    'agents',
+    '에이전트',
+    'report',
+    'reports',
+    '리포트',
+    '보고서',
+    'task',
+    'tasks',
+    '태스크',
+    '작업',
+  ]);
+  const isBroadXenesisStatus =
+    hasAny(value, [
+      'xenesis status',
+      'xenesis 상태',
+      '제네시스 status',
+      '제네시스 상태',
+      'xenesis runtime status',
+      'xenesis runtime 상태',
+      '제네시스 런타임 status',
+      '제네시스 런타임 상태',
+    ]) ||
+    (hasAny(value, ['runtime', '런타임']) &&
+      hasAny(value, ['상태', 'status', '확인', 'check', '보여', 'show', '조회']));
+  if (isBroadXenesisStatus && !hasSpecificStatusTarget) {
+    return naturalAction(
+      'natural-xenesis-status',
+      'xd.xenesis.status',
+      {},
+      'Read Xenesis runtime status from natural language request.',
+    );
+  }
+
   if (hasAny(value, ['report', 'reports', '리포트', '보고서']) && hasAny(value, ['목록', 'list', '보여', 'show'])) {
     return naturalAction(
       'natural-xenesis-reports-list',
@@ -2496,6 +2561,7 @@ export function buildXenesisDeskControlPromptHint(): string {
     '- Use `xd.localCli.scan`, `xd.mcp.settings.status`, and `xd.mcp.bridge.status` to inspect local CLI discovery and MCP setup or bridge readiness before suggesting installs, config writes, gateway starts, or local CLI switching.',
     '- Use `xd.xenesis.gateway.status` to inspect runtime gateway readiness and `xd.xenesis.gateway.openDashboard` to open the Desk gateway dashboard; do not start, stop, or restart the gateway unless the user clearly asks and approval policy is satisfied.',
     '- Use `xd.xenesis.workspace.set` only when the user clearly asks to bind the Xenesis workspace to a specific local path; leave approval handling to the Capability Registry, especially for outside-workspace paths.',
+    '- Use `xd.xenesis.status` to inspect gateway, workspace, and active-run status before starting runs, changing workspaces, or troubleshooting runtime setup.',
     '- Use `xd.xenesis.diagnostics`, `xd.xenesis.reports.list`, `xd.xenesis.tasks.list`, `xd.xenesis.agents.list`, `xd.xenesis.agents.status`, `xd.xenesis.agents.events`, and `xd.xenesis.agents.submit` to inspect runtime diagnostics, verification reports, task inventory, registered Agent panes, quoted Agent pane status/events, or submit a quoted Agent pane message before mutating broader runtime state. Agent status/events require `args.agentId`; Agent submit requires `args.agentId` and `args.text`.',
     '- Use `xd.xenesis.profiles.list` to inspect installed and active Xenesis profiles before installing profiles, switching the active profile, updating channel settings, or sending profile channel test messages.',
     '- Use `xd.xenesis.runs.start` only when the user clearly asks to run a quoted prompt through the Xenesis runtime. Use `xd.xenesis.runs.cancel` only for explicit user requests to cancel the active Xenesis runtime request, and `xd.xenesis.sessions.reset` only for explicit user requests to reset the active Xenesis conversation/session.',

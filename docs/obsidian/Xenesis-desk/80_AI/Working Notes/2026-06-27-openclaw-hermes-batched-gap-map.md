@@ -331,6 +331,24 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local code, and tests.
 
+## Xenesis Status Readback Slice
+
+- Added deterministic Xenesis Agent natural-language routing for the existing
+  read-only runtime status CR path:
+  - `Xenesis 상태 보여줘` -> `xd.xenesis.status`.
+- Added prompt hint guidance that `xd.xenesis.status` reads gateway, workspace,
+  and active-run status before run starts, workspace changes, or runtime setup
+  troubleshooting.
+- The broad status route excludes provider, tool, messenger, onboarding, guide,
+  gateway, profile, Agent, report, task, and connection-specific status targets
+  so existing detailed CR paths remain preferred.
+- Scope boundary: this slice did not add CR nodes, dispatcher branches,
+  renderer adapters, execute paths, provider mutation paths, credential writes,
+  profile changes, workspace changes, external messenger delivery, or approval
+  bypasses.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

@@ -387,6 +387,7 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /Capability Registry will enforce/i);
   assert.match(hint, /quoted Agent pane message/i);
   assert.match(hint, /quoted prompt/i);
+  assert.match(hint, /gateway, workspace, and active-run status/i);
 
   assert.doesNotMatch(hint, /xd\.gowoori\.open/);
   assert.doesNotMatch(hint, /xd\.terminals\.spawn/);
@@ -468,6 +469,16 @@ test('planXenesisDeskNaturalLanguageActions maps gateway read and dashboard prom
 });
 
 test('planXenesisDeskNaturalLanguageActions maps runtime inventory readbacks to CR actions', () => {
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('Xenesis 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-status',
+      path: 'xd.xenesis.status',
+      args: {},
+      approved: false,
+      reason: 'Read Xenesis runtime status from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('Xenesis 운영 진단 보여줘').actions, [
     {
       id: 'natural-xenesis-diagnostics',
