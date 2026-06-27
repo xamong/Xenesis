@@ -394,6 +394,22 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local code, and tests.
 
+## Access Group Synonyms Slice
+
+- Added Korean access-group synonyms for external messenger readbacks:
+  - `액세스 그룹`
+  - `액세스그룹`
+- Prompts such as `디스코드 액세스 그룹 상태 보여줘` now route to
+  `xd.xenesis.channels.accessGroups.status` with `channel=discord`.
+- Broad prompts such as `외부 메신저 액세스 그룹 전체 상태 보여줘` now route
+  to `xd.xenesis.channels.accessGroups.status` with `{}`.
+- Scope boundary: this slice only extends deterministic natural-language
+  synonyms. It does not add CR nodes, mutate channel settings, update
+  allowlists, store credentials, send messages, start the gateway, or bypass
+  approvals.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local code, and tests.
+
 ## Aggregate Connection Center Opens Slice
 
 - Added deterministic Xenesis Agent natural-language routing for broad

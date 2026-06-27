@@ -1595,6 +1595,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center read
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 액세스 그룹 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-messengers-access-groups-status',
+      path: 'xd.xenesis.channels.accessGroups.status',
+      args: {},
+      approved: false,
+      reason: 'Read external messenger access-group catalog status from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 페어링 전체 상태 보여줘').actions, [
     {
       id: 'natural-xenesis-messengers-pairing-status',
@@ -1742,6 +1752,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center read
       args: { channel: 'telegram' },
       approved: false,
       reason: 'Read Telegram channel access groups status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('디스코드 액세스 그룹 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-channel-access-groups-status-discord',
+      path: 'xd.xenesis.channels.accessGroups.status',
+      args: { channel: 'discord' },
+      approved: false,
+      reason: 'Read Discord channel access groups status from natural language request.',
     },
   ]);
 

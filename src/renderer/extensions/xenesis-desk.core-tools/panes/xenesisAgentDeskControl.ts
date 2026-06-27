@@ -894,7 +894,7 @@ function xenesisMessengerAggregateStatusActionFromNaturalText(value: string): Xe
     );
   }
 
-  if (hasAny(value, ['접근 그룹', 'access group', 'access groups', 'allowlist'])) {
+  if (hasAny(value, ['접근 그룹', '액세스 그룹', '액세스그룹', 'access group', 'access groups', 'allowlist'])) {
     return naturalAction(
       'natural-xenesis-messengers-access-groups-status',
       'xd.xenesis.channels.accessGroups.status',
@@ -1190,7 +1190,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
 
     if (
       isImplementedXenesisMessengerTarget(target) &&
-      hasAny(value, ['접근 그룹', 'access group', 'access groups', 'allowlist'])
+      hasAny(value, ['접근 그룹', '액세스 그룹', '액세스그룹', 'access group', 'access groups', 'allowlist'])
     ) {
       return naturalAction(
         `natural-xenesis-channel-access-groups-status-${target.id}`,
@@ -1250,6 +1250,8 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
         '가드레일',
         'guardrail',
         '접근 그룹',
+        '액세스 그룹',
+        '액세스그룹',
         'access group',
         'access groups',
         'allowlist',
@@ -1644,6 +1646,12 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
       'profile',
       'draft',
       '초안',
+      '접근 그룹',
+      '액세스 그룹',
+      '액세스그룹',
+      'access group',
+      'access groups',
+      'allowlist',
     ])
   ) {
     return naturalAction(
