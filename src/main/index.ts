@@ -4884,26 +4884,33 @@ async function getXenesisConnectionDiagnosticRunbooksStatus(args?: unknown): Pro
 async function openXenesisConnectionDiagnosticRunbook(args?: unknown): Promise<Record<string, unknown>> {
   const body = normalizeMcpCapabilityArgs(args);
   const id = readCapabilityString(body, ['id', 'connection', 'connectionId', 'name']);
-  if (!id) {
-    return { ok: false, error: 'Connection id is required.' };
-  }
 
   const status = await getXenesisConnectionsStatus();
-  const item = listXenesisConnectionItems(status).find(
-    (candidate) => candidate.id === id && candidate.diagnosticRunbook,
-  );
-  if (!item) {
+  const catalogItems = listXenesisConnectionItems(status).filter((item) => item.diagnosticRunbook);
+  const item = id ? catalogItems.find((candidate) => candidate.id === id) : undefined;
+  if (id && !item) {
     return { ok: false, id, error: `Xenesis connection diagnostic runbook is not available: ${id}` };
   }
 
-  const renderer = await openMcpBuiltinPaneCapability({
+  const rendererArgs: Record<string, unknown> = {
     kind: 'settings',
     category: 'xenesis-agent',
     mode: 'connections',
     section: 'xenesis-connections',
-    focusConnectionId: item.id,
     ensureVisible: body.ensureVisible !== false,
-  });
+  };
+  if (item) rendererArgs.focusConnectionId = item.id;
+
+  const renderer = await openMcpBuiltinPaneCapability(rendererArgs);
+  if (!item) {
+    return {
+      ok: renderer.ok !== false,
+      updatedAt: status.updatedAt,
+      total: catalogItems.length,
+      items: catalogItems.map((candidate) => xenesisConnectionDiagnosticRunbookStatusItem(candidate)),
+      renderer,
+    };
+  }
 
   return {
     ok: renderer.ok !== false,
@@ -4975,24 +4982,33 @@ async function getXenesisConnectionSetupRequestsStatus(args?: unknown): Promise<
 async function openXenesisConnectionSetupRequest(args?: unknown): Promise<Record<string, unknown>> {
   const body = normalizeMcpCapabilityArgs(args);
   const id = readCapabilityString(body, ['id', 'connection', 'connectionId', 'name']);
-  if (!id) {
-    return { ok: false, error: 'Connection id is required.' };
-  }
 
   const status = await getXenesisConnectionsStatus();
-  const item = listXenesisConnectionItems(status).find((candidate) => candidate.id === id && candidate.setupRequest);
-  if (!item) {
+  const catalogItems = listXenesisConnectionItems(status).filter((item) => item.setupRequest);
+  const item = id ? catalogItems.find((candidate) => candidate.id === id) : undefined;
+  if (id && !item) {
     return { ok: false, id, error: `Xenesis connection setup request is not available: ${id}` };
   }
 
-  const renderer = await openMcpBuiltinPaneCapability({
+  const rendererArgs: Record<string, unknown> = {
     kind: 'settings',
     category: 'xenesis-agent',
     mode: 'connections',
     section: 'xenesis-connections',
-    focusConnectionId: item.id,
     ensureVisible: body.ensureVisible !== false,
-  });
+  };
+  if (item) rendererArgs.focusConnectionId = item.id;
+
+  const renderer = await openMcpBuiltinPaneCapability(rendererArgs);
+  if (!item) {
+    return {
+      ok: renderer.ok !== false,
+      updatedAt: status.updatedAt,
+      total: catalogItems.length,
+      items: catalogItems.map((candidate) => xenesisConnectionSetupRequestStatusItem(candidate)),
+      renderer,
+    };
+  }
 
   return {
     ok: renderer.ok !== false,
@@ -5509,10 +5525,7 @@ async function getXenesisGuidesStatus(args?: unknown): Promise<Record<string, un
 async function openXenesisGuide(args?: unknown): Promise<Record<string, unknown>> {
   const body = normalizeMcpCapabilityArgs(args);
   const id = readCapabilityString(body, ['id', 'guide', 'name']);
-  if (!id) {
-    return { ok: false, error: 'Guide id is required.' };
-  }
-  if (!isXenesisGuideId(id)) {
+  if (id && !isXenesisGuideId(id)) {
     return {
       ok: false,
       error: `Unsupported Xenesis guide: ${id}`,
@@ -5521,19 +5534,32 @@ async function openXenesisGuide(args?: unknown): Promise<Record<string, unknown>
   }
 
   const status = await getXenesisConnectionsStatus();
-  const item = status.sections.guides.items.find((candidate) => candidate.id === id && candidate.guideCatalog);
-  if (!item) {
+  const catalogItems = status.sections.guides.items.filter((item) => item.guideCatalog);
+  const item = id ? catalogItems.find((candidate) => candidate.id === id) : undefined;
+  if (id && !item) {
     return { ok: false, id, error: `Xenesis guide is not available: ${id}` };
   }
 
-  const renderer = await openMcpBuiltinPaneCapability({
+  const rendererArgs: Record<string, unknown> = {
     kind: 'settings',
     category: 'xenesis-agent',
     mode: 'connections',
     section: 'xenesis-connections',
-    focusConnectionId: id,
     ensureVisible: body.ensureVisible !== false,
-  });
+  };
+  if (item) rendererArgs.focusConnectionId = item.id;
+
+  const renderer = await openMcpBuiltinPaneCapability(rendererArgs);
+  if (!item) {
+    return {
+      ok: renderer.ok !== false,
+      updatedAt: status.updatedAt,
+      total: catalogItems.length,
+      items: catalogItems.map((candidate) => xenesisGuideStatusItem(candidate)),
+      renderer,
+    };
+  }
+
   const guideFilePath = item.guideOpenPath || item.guidePath;
   const file =
     body.openFile === true && guideFilePath

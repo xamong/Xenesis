@@ -1005,6 +1005,36 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local Obsidian graph, source code, and tests.
 
+## Guide Diagnostic Catalog CR Opens Slice
+
+- Guide, diagnostic runbook, and setup-request aggregate open prompts now use
+  CR open paths instead of the generic Settings fallback:
+  - `연결 진단 전체 열어줘` ->
+    `xd.xenesis.connections.diagnostics.open`
+  - `설정 요청 전체 열어줘` ->
+    `xd.xenesis.connections.setupRequests.open`
+  - `가이드 전체 열어줘` -> `xd.xenesis.guides.open`
+  - `guide catalog 열어줘` -> `xd.xenesis.guides.open`
+- `xd.xenesis.guides.open` now allows catalog opens without a focused `id`.
+- Diagnostic/setup-request catalog opens use a separate optional connection
+  catalog-open schema so the generic focused `xd.xenesis.connections.open`
+  contract still requires an `id`.
+- Main-process guide, diagnostic, and setup-request open handlers now open
+  Settings > Xenesis Agent > Connections without `focusConnectionId` for catalog
+  calls and focus a card when a selector is supplied.
+- Scope boundary: open/read internal Desk surfaces only. This slice does not
+  create setup request Action Inbox records, open external docs, execute
+  installs, mutate credentials, or run provider/tool/messenger prompts.
+- Verification:
+  - RED tests failed first for required `id` schemas and generic Settings
+    fallback routing.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 100/100 tests.
+  - Touched-file Biome check exited 0 with existing warnings/infos only.
+  - `npm run typecheck` passed.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local Obsidian graph, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

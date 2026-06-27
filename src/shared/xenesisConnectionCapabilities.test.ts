@@ -1428,7 +1428,7 @@ test('xenesis guide catalog capabilities are registered and dispatch to the adap
   assert.equal(statusCapability?.approval, 'never');
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
-  assert.deepEqual(openCapability?.schema?.required, ['id']);
+  assert.equal(schemaRequiredFields(openCapability).includes('id'), false);
   assert.equal(openSchemaProperties.openFile?.type, 'boolean');
   assert.equal(openSchemaProperties.openFile?.default, false);
   for (const guide of [
@@ -1817,7 +1817,7 @@ test('xenesis connection diagnostic runbook capabilities are registered and disp
   assert.equal(statusCapability?.approval, 'never');
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
-  assert.deepEqual(openCapability?.schema?.required, ['id']);
+  assert.equal(schemaRequiredFields(openCapability).includes('id'), false);
 
   const calls: Array<{ method: string; args: unknown }> = [];
   const api: DeskBridgeCapabilityAdapter = {
@@ -1872,7 +1872,7 @@ test('xenesis connection setup request capabilities are registered and dispatch 
   assert.equal(statusCapability?.approval, 'never');
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
-  assert.deepEqual(openCapability?.schema?.required, ['id']);
+  assert.equal(schemaRequiredFields(openCapability).includes('id'), false);
   assert.equal(requestCapability?.permission, 'write');
   assert.equal(requestCapability?.approval, 'when-external');
   assert.deepEqual(requestCapability?.schema?.required, ['id']);
@@ -1959,6 +1959,47 @@ test('xenesis connection setup request capabilities are registered and dispatch 
     id: 'notion',
     actionInboxItem: { id: 'setup-notion' },
   });
+});
+
+test('xenesis guide, diagnostic, and setup-request open capabilities allow catalog opens without focused ids', async () => {
+  const openPaths = [
+    'xd.xenesis.guides.open',
+    'xd.xenesis.connections.diagnostics.open',
+    'xd.xenesis.connections.setupRequests.open',
+  ];
+  for (const path of openPaths) {
+    assert.equal(schemaRequiredFields(findDeskBridgeCapability(path)).includes('id'), false, `${path} id optional`);
+  }
+
+  const calls: Array<{ path: string; args: unknown }> = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    openXenesisGuide: (args) => {
+      calls.push({ path: 'xd.xenesis.guides.open', args });
+      return { ok: true, total: 5 };
+    },
+    openXenesisConnectionDiagnosticRunbook: (args) => {
+      calls.push({ path: 'xd.xenesis.connections.diagnostics.open', args });
+      return { ok: true, total: 9 };
+    },
+    openXenesisConnectionSetupRequest: (args) => {
+      calls.push({ path: 'xd.xenesis.connections.setupRequests.open', args });
+      return { ok: true, total: 9 };
+    },
+  };
+
+  for (const path of openPaths) {
+    const result = await callDeskBridgeCapability(api, {
+      path,
+      args: { ensureVisible: true },
+      source: 'xenesis',
+    });
+    assert.equal(result.ok, true, `${path} should dispatch`);
+  }
+
+  assert.deepEqual(
+    calls,
+    openPaths.map((path) => ({ path, args: { ensureVisible: true } })),
+  );
 });
 
 test('xenesis profile channel capabilities expose implemented guardrail fields', () => {

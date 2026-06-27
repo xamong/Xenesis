@@ -195,6 +195,24 @@ const XENESIS_CONNECTION_OPEN_SCHEMA = {
   },
 } as const;
 
+const XENESIS_CONNECTION_CATALOG_OPEN_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Connection id',
+      description: 'Optional Connection Center item id to focus, such as a provider, tool, guide, or messenger card.',
+      examples: ['notion', 'google-calendar', 'signal'],
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused connection card into view after opening the Connection Center.',
+      default: true,
+    },
+  },
+} as const;
+
 const XENESIS_CONNECTION_DIAGNOSTIC_STATUS_SCHEMA = {
   type: 'object',
   properties: {
@@ -310,13 +328,12 @@ const XENESIS_GUIDE_STATUS_SCHEMA = {
 
 const XENESIS_GUIDE_OPEN_SCHEMA = {
   type: 'object',
-  required: ['id'],
   properties: {
     id: {
       type: 'string',
       title: 'Guide id',
       enum: XENESIS_GUIDE_IDS,
-      description: 'Xenesis guide card id to open in the internal Desk Connection Center view.',
+      description: 'Optional Xenesis guide card id to open in the internal Desk Connection Center view.',
     },
     ensureVisible: {
       type: 'boolean',
@@ -4412,7 +4429,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               'Open connection diagnostic runbook',
               'Open Settings > Xenesis Agent > Connections and focus the card that owns one diagnostic runbook.',
               'control',
-              XENESIS_CONNECTION_OPEN_SCHEMA,
+              XENESIS_CONNECTION_CATALOG_OPEN_SCHEMA,
             ),
           ],
         ),
@@ -4433,7 +4450,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               'Open connection setup request',
               'Open Settings > Xenesis Agent > Connections and focus the card that owns one setup request template.',
               'control',
-              XENESIS_CONNECTION_OPEN_SCHEMA,
+              XENESIS_CONNECTION_CATALOG_OPEN_SCHEMA,
             ),
             method(
               'xd.xenesis.connections.setupRequests.request',

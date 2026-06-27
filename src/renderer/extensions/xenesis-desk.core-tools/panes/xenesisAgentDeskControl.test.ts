@@ -847,13 +847,8 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center requests to C
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('연결 진단 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-connection-diagnostics-catalog-open',
-      path: 'xd.panes.settings.open',
-      args: {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      path: 'xd.xenesis.connections.diagnostics.open',
+      args: { ensureVisible: true },
       approved: false,
       reason: 'Open Xenesis connection diagnostics catalog in Connection Center from natural language request.',
     },
@@ -862,13 +857,8 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center requests to C
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('설정 요청 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-connection-setup-requests-catalog-open',
-      path: 'xd.panes.settings.open',
-      args: {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      path: 'xd.xenesis.connections.setupRequests.open',
+      args: { ensureVisible: true },
       approved: false,
       reason: 'Open Xenesis connection setup request catalog in Connection Center from natural language request.',
     },
@@ -899,13 +889,8 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center requests to C
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('가이드 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-guides-catalog-open',
-      path: 'xd.panes.settings.open',
-      args: {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      path: 'xd.xenesis.guides.open',
+      args: { ensureVisible: true },
       approved: false,
       reason: 'Open Xenesis guide catalog in Connection Center from natural language request.',
     },
@@ -914,13 +899,8 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center requests to C
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('guide catalog 열어줘').actions, [
     {
       id: 'natural-xenesis-guides-catalog-open',
-      path: 'xd.panes.settings.open',
-      args: {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      path: 'xd.xenesis.guides.open',
+      args: { ensureVisible: true },
       approved: false,
       reason: 'Open Xenesis guide catalog in Connection Center from natural language request.',
     },

@@ -1334,8 +1334,8 @@ function xenesisGuideCatalogOpenActionFromNaturalText(value: string): XenesisDes
 
   return naturalAction(
     'natural-xenesis-guides-catalog-open',
-    'xd.panes.settings.open',
-    xenesisConnectionCenterOpenArgs(),
+    'xd.xenesis.guides.open',
+    { ensureVisible: true },
     'Open Xenesis guide catalog in Connection Center from natural language request.',
   );
 }
@@ -1585,8 +1585,8 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
   if (hasXenesisConnectionDiagnosticsCatalogContext(value)) {
     return naturalAction(
       'natural-xenesis-connection-diagnostics-catalog-open',
-      'xd.panes.settings.open',
-      xenesisConnectionCenterOpenArgs(),
+      'xd.xenesis.connections.diagnostics.open',
+      { ensureVisible: true },
       'Open Xenesis connection diagnostics catalog in Connection Center from natural language request.',
     );
   }
@@ -1594,8 +1594,8 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
   if (hasXenesisConnectionSetupRequestCatalogContext(value)) {
     return naturalAction(
       'natural-xenesis-connection-setup-requests-catalog-open',
-      'xd.panes.settings.open',
-      xenesisConnectionCenterOpenArgs(),
+      'xd.xenesis.connections.setupRequests.open',
+      { ensureVisible: true },
       'Open Xenesis connection setup request catalog in Connection Center from natural language request.',
     );
   }
