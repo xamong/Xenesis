@@ -1035,6 +1035,32 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local Obsidian graph, source code, and tests.
 
+## Broad Provider/Tool Catalog CR Opens Slice
+
+- Broad provider/tool aggregate open prompts now use setup catalog CR open paths
+  instead of the generic Settings fallback:
+  - `AI provider 전체 열어줘` -> `xd.xenesis.providers.setup.open`
+  - `외부 툴 전체 열어줘` -> `xd.xenesis.tools.setup.open`
+- This is planner-only because provider/tool selector-less setup catalog opens
+  already existed from earlier CR catalog slices.
+- Scope boundary: this slice does not change provider/tool schemas,
+  main-process handlers, provider settings, tool credentials, OAuth, install
+  plans, Action Inbox records, or runtime provider/tool behavior.
+- Verification:
+  - RED planner test failed first because `AI provider 전체 열어줘` still routed
+    to `xd.panes.settings.open`.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 36/36 tests.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 100/100 tests.
+  - Touched-file Biome check passed.
+  - `npm run typecheck` passed.
+  - CR audit passed with missing registered paths 0, missing dispatched
+    coverage paths 0, undispatched static callable methods 0, and dispatcher
+    paths missing from tree 0.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local Obsidian graph, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

@@ -1385,8 +1385,8 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
   if (hasXenesisProviderProfileContext(value)) {
     return naturalAction(
       'natural-xenesis-provider-catalog-open',
-      'xd.panes.settings.open',
-      xenesisConnectionCenterOpenArgs(),
+      'xd.xenesis.providers.setup.open',
+      { ensureVisible: true },
       'Open AI provider catalog in Xenesis Connection Center from natural language request.',
     );
   }
@@ -1479,8 +1479,8 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
   if (hasExternalToolCatalogContext(value)) {
     return naturalAction(
       'natural-xenesis-tool-catalog-open',
-      'xd.panes.settings.open',
-      xenesisConnectionCenterOpenArgs(),
+      'xd.xenesis.tools.setup.open',
+      { ensureVisible: true },
       'Open external tool catalog in Xenesis Connection Center from natural language request.',
     );
   }

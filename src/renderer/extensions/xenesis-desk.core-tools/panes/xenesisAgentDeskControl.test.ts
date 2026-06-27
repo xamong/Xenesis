@@ -1142,6 +1142,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider 전체 열어줘').actions, [
+    {
+      id: 'natural-xenesis-provider-catalog-open',
+      path: 'xd.xenesis.providers.setup.open',
+      args: { ensureVisible: true },
+      approved: false,
+      reason: 'Open AI provider catalog in Xenesis Connection Center from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 툴 connector 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-tools-connectors-catalog-open',
@@ -1220,6 +1230,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
       args: { ensureVisible: true },
       approved: false,
       reason: 'Open external tool user-story catalog in Xenesis Connection Center from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 툴 전체 열어줘').actions, [
+    {
+      id: 'natural-xenesis-tool-catalog-open',
+      path: 'xd.xenesis.tools.setup.open',
+      args: { ensureVisible: true },
+      approved: false,
+      reason: 'Open external tool catalog in Xenesis Connection Center from natural language request.',
     },
   ]);
 
