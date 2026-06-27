@@ -9,26 +9,52 @@ import {
   XENESIS_NATURAL_AGENT_EVENT_CONTEXT_WORDS,
   XENESIS_NATURAL_AGENT_SUBMIT_CONTEXT_WORDS,
   XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_WORDS,
+  XENESIS_NATURAL_ALL_SCOPE_WORDS,
+  XENESIS_NATURAL_APP_STATUS_CONTEXT_WORDS,
+  XENESIS_NATURAL_APP_STATUS_TARGET_WORDS,
+  XENESIS_NATURAL_ARRANGE_CONTEXT_WORDS,
   XENESIS_NATURAL_ARRANGE_MODE_TARGETS,
+  XENESIS_NATURAL_ARTIFACT_TARGET_CONTEXT_WORDS,
   XENESIS_NATURAL_BROAD_RUNTIME_STATUS_WORDS,
   XENESIS_NATURAL_CANCEL_CONTEXT_WORDS,
+  XENESIS_NATURAL_CAPTURE_CONTEXT_WORDS,
   XENESIS_NATURAL_CHANNEL_PROFILE_CONTEXT_WORDS,
   XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_REQUEST_CONTEXT_WORDS,
+  XENESIS_NATURAL_CONNECTION_CENTER_OPEN_CONTEXT_WORDS,
   XENESIS_NATURAL_CONNECTION_CONTEXT_WORDS,
   XENESIS_NATURAL_CONNECTION_DIAGNOSTIC_CONTEXT_WORDS,
   XENESIS_NATURAL_CONNECTION_READBACK_INTENT_WORDS,
   XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CONTEXT_WORDS,
   XENESIS_NATURAL_CONNECTION_TARGETS,
   XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS,
+  XENESIS_NATURAL_CORE_CAPABILITY_CONTEXT_WORDS,
   XENESIS_NATURAL_CORE_TOOL_TARGETS,
   XENESIS_NATURAL_DASHBOARD_CONTEXT_WORDS,
+  XENESIS_NATURAL_DESK_DIAGNOSTICS_CONTEXT_WORDS,
+  XENESIS_NATURAL_DESK_SETTINGS_CONTEXT_WORDS,
+  XENESIS_NATURAL_DOCK_GRID_CONTEXT_WORDS,
+  XENESIS_NATURAL_DOCK_HORIZONTAL_CONTEXT_WORDS,
+  XENESIS_NATURAL_DOCK_MERGE_ALL_CONTEXT_WORDS,
+  XENESIS_NATURAL_DOCK_MERGE_CONTEXT_WORDS,
   XENESIS_NATURAL_DOCK_SIDE_TARGETS,
+  XENESIS_NATURAL_DOCK_VERTICAL_CONTEXT_WORDS,
   XENESIS_NATURAL_DOCK_WINDOW_STATE_TARGETS,
   XENESIS_NATURAL_DRAFT_CONTEXT_WORDS,
   XENESIS_NATURAL_EXPLICIT_OPEN_WORDS,
+  XENESIS_NATURAL_EXPLORER_CONTEXT_WORDS,
+  XENESIS_NATURAL_EXPLORER_HIDE_CONTEXT_WORDS,
   XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_WORDS,
   XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_WORDS,
+  XENESIS_NATURAL_FAVORITES_CONTEXT_WORDS,
+  XENESIS_NATURAL_FILE_CONTEXT_WORDS,
+  XENESIS_NATURAL_FILE_LIST_CONTEXT_WORDS,
+  XENESIS_NATURAL_FILE_READ_CONTEXT_WORDS,
+  XENESIS_NATURAL_FILTER_CONTEXT_WORDS,
   XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS,
+  XENESIS_NATURAL_GENERIC_CLOSE_CONTEXT_WORDS,
+  XENESIS_NATURAL_GENERIC_FOCUS_CONTEXT_WORDS,
+  XENESIS_NATURAL_GENERIC_LIST_CONTEXT_WORDS,
+  XENESIS_NATURAL_GENERIC_OPEN_WORDS,
   XENESIS_NATURAL_GUIDE_CONTEXT_WORDS,
   XENESIS_NATURAL_GUIDE_FILE_OPEN_WORDS,
   XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS,
@@ -47,17 +73,28 @@ import {
   XENESIS_NATURAL_OAUTH_DRAFT_CONTEXT_WORDS,
   XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS,
   XENESIS_NATURAL_ONBOARDING_STEP_TARGETS,
+  XENESIS_NATURAL_OPEN_COMMAND_WORDS,
+  XENESIS_NATURAL_OPEN_OR_SHOW_MINIMAL_WORDS,
   XENESIS_NATURAL_OPEN_OR_SHOW_WORDS,
+  XENESIS_NATURAL_OTHER_SCOPE_WORDS,
+  XENESIS_NATURAL_PANE_CONTEXT_WORDS,
+  XENESIS_NATURAL_PANE_LIST_CONTEXT_WORDS,
+  XENESIS_NATURAL_PANE_SIZE_CONTEXT_WORDS,
+  XENESIS_NATURAL_PANE_TAB_CURRENT_CONTEXT_WORDS,
+  XENESIS_NATURAL_PARENT_NAVIGATION_CONTEXT_WORDS,
   XENESIS_NATURAL_PLACEMENT_TARGETS,
   XENESIS_NATURAL_PROFILE_CONTEXT_WORDS,
   XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
   XENESIS_NATURAL_PROFILE_LIST_CONTEXT_WORDS,
   XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_WORDS,
   XENESIS_NATURAL_PROVIDER_TARGETS,
+  XENESIS_NATURAL_REFRESH_CONTEXT_WORDS,
   XENESIS_NATURAL_REPORT_CONTEXT_WORDS,
+  XENESIS_NATURAL_RESIZE_COMMAND_WORDS,
   XENESIS_NATURAL_REVIEW_REQUEST_CONTEXT_WORDS,
   XENESIS_NATURAL_REVIEW_REQUEST_INTENT_WORDS,
   XENESIS_NATURAL_REVIEW_REQUEST_TARGET_WORDS,
+  XENESIS_NATURAL_RIGHT_SCOPE_WORDS,
   XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS,
   XENESIS_NATURAL_RUN_CANCEL_CONTEXT_WORDS,
   XENESIS_NATURAL_RUN_CONTEXT_WORDS,
@@ -72,10 +109,16 @@ import {
   XENESIS_NATURAL_SETUP_CONTEXT_WORDS,
   XENESIS_NATURAL_SETUP_IMPERATIVE_WORDS,
   XENESIS_NATURAL_TASK_CONTEXT_WORDS,
+  XENESIS_NATURAL_TERMINAL_CONTEXT_WORDS,
+  XENESIS_NATURAL_TERMINAL_MULTI_CONTEXT_WORDS,
+  XENESIS_NATURAL_TERMINAL_RUN_CONTEXT_WORDS,
+  XENESIS_NATURAL_TOGGLE_CONTEXT_WORDS,
   XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
+  XENESIS_NATURAL_VIEW_OPEN_COMMAND_WORDS,
   XENESIS_NATURAL_VIEW_OR_SETUP_CONTEXT_WORDS,
   XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
   XENESIS_NATURAL_VIEW_TARGETS,
+  XENESIS_NATURAL_WINDOW_SIZE_CONTEXT_WORDS,
   XENESIS_NATURAL_WINDOW_SIZE_PRESET_TARGETS,
   XENESIS_NATURAL_WORKSPACE_CONTEXT_WORDS,
   XENESIS_NATURAL_WORKSPACE_SET_CONTEXT_WORDS,
@@ -926,7 +969,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
 }
 
 function hasXenesisConnectionReviewRequestIntent(value: string): boolean {
-  if (hasAny(value, ['열어', 'open'])) return false;
+  if (hasAny(value, XENESIS_NATURAL_GENERIC_OPEN_WORDS)) return false;
   if (hasXenesisConnectionReadbackIntent(value)) return false;
   const hasExplicitRequest = hasAny(value, XENESIS_NATURAL_REVIEW_REQUEST_INTENT_WORDS);
   const hasSetupImperative = hasAny(value, XENESIS_NATURAL_SETUP_IMPERATIVE_WORDS);
@@ -1315,7 +1358,7 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
     );
   }
 
-  if (hasAny(value, ['연결 센터', 'connection center', 'connections center', '연결 목록'])) {
+  if (hasAny(value, XENESIS_NATURAL_CONNECTION_CENTER_OPEN_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-connections-center-open',
       'xd.xenesis.connections.open',
@@ -1762,7 +1805,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
   }
 
   const explicitXenesisConnectionOpenAction = xenesisConnectionActionFromNaturalText(value);
-  if (explicitXenesisConnectionOpenAction && hasAny(value, ['열어', '켜줘', '띄워', 'open'])) {
+  if (explicitXenesisConnectionOpenAction && hasAny(value, XENESIS_NATURAL_OPEN_COMMAND_WORDS)) {
     return naturalPlan('Xenesis 연결 표면을 엽니다.', [explicitXenesisConnectionOpenAction]);
   }
 
@@ -1772,7 +1815,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
   }
 
   const xenesisConnectionAction = xenesisConnectionActionFromNaturalText(value);
-  if (xenesisConnectionAction && hasAny(value, ['열어', '켜줘', '띄워', '보여', 'open', 'show'])) {
+  if (xenesisConnectionAction && hasAny(value, XENESIS_NATURAL_OPEN_OR_SHOW_WORDS)) {
     return naturalPlan('Xenesis 연결 표면을 엽니다.', [xenesisConnectionAction]);
   }
 
@@ -1801,7 +1844,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     return naturalPlan('Xenesis 런타임 제어 요청을 기록합니다.', [xenesisRuntimeControlAction]);
   }
 
-  if (hasAny(value, ['설정', 'settings']) && hasAny(value, ['열어', '켜줘', '띄워', '보여', 'open', 'show'])) {
+  if (hasAny(value, XENESIS_NATURAL_DESK_SETTINGS_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_OPEN_OR_SHOW_WORDS)) {
     return naturalPlan('설정 패인을 엽니다.', [
       naturalAction(
         'natural-settings-open',
@@ -1812,7 +1855,10 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     ]);
   }
 
-  if (hasAny(value, ['진단', 'diagnostics', '로그']) && hasAny(value, ['열어', '보여', 'open', 'show'])) {
+  if (
+    hasAny(value, XENESIS_NATURAL_DESK_DIAGNOSTICS_CONTEXT_WORDS) &&
+    hasAny(value, XENESIS_NATURAL_OPEN_OR_SHOW_MINIMAL_WORDS)
+  ) {
     return naturalPlan('진단 패인을 엽니다.', [
       naturalAction(
         'natural-diagnostics-open',
@@ -1823,7 +1869,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     ]);
   }
 
-  if (hasAny(value, ['capability', 'cr', 'registry', '레지스트리', '기능 탐색', 'capability explorer'])) {
+  if (hasAny(value, XENESIS_NATURAL_CORE_CAPABILITY_CONTEXT_WORDS)) {
     return naturalPlan('Capability Explorer를 엽니다.', [
       naturalAction(
         'natural-capability-explorer-open',
@@ -1835,12 +1881,12 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
   }
 
   const toolOpenAction = toolOpenActionFromNaturalText(value, placement);
-  if (toolOpenAction && hasAny(value, ['열어', '켜줘', '띄워', '보여', 'open', 'show'])) {
+  if (toolOpenAction && hasAny(value, XENESIS_NATURAL_OPEN_OR_SHOW_WORDS)) {
     return naturalPlan('요청한 도구 패널을 엽니다.', [toolOpenAction]);
   }
 
-  if (hasAny(value, ['캡쳐', '캡처', '스크린샷', 'screenshot', 'capture'])) {
-    if (hasAny(value, ['목록', '리스트', 'list'])) {
+  if (hasAny(value, XENESIS_NATURAL_CAPTURE_CONTEXT_WORDS)) {
+    if (hasAny(value, XENESIS_NATURAL_GENERIC_LIST_CONTEXT_WORDS)) {
       return naturalPlan('캡처 목록을 조회합니다.', [
         naturalAction('natural-capture-list', 'xd.capture.list', {}, 'List captures from natural language request.'),
       ]);
@@ -1855,7 +1901,10 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     ]);
   }
 
-  if (hasAny(value, ['포커스', '집중', 'focus']) && hasAny(value, ['패인', '탭', 'pane', 'tab', '현재'])) {
+  if (
+    hasAny(value, XENESIS_NATURAL_GENERIC_FOCUS_CONTEXT_WORDS) &&
+    hasAny(value, XENESIS_NATURAL_PANE_TAB_CURRENT_CONTEXT_WORDS)
+  ) {
     return naturalPlan('현재 도킹 콘텐츠에 포커스를 맞춥니다.', [
       naturalAction(
         'natural-dock-focus-active',
@@ -1866,19 +1915,22 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     ]);
   }
 
-  if (hasAny(value, ['닫아', '닫기', 'close']) && hasAny(value, ['패인', '탭', 'pane', 'tab', '현재'])) {
+  if (
+    hasAny(value, XENESIS_NATURAL_GENERIC_CLOSE_CONTEXT_WORDS) &&
+    hasAny(value, XENESIS_NATURAL_PANE_TAB_CURRENT_CONTEXT_WORDS)
+  ) {
     let id = 'natural-dock-close-active';
     let path = 'xd.dock.close';
     let reason = 'Close the active dock content from natural language request.';
-    if (hasAny(value, ['오른쪽', '우측', 'right'])) {
+    if (hasAny(value, XENESIS_NATURAL_RIGHT_SCOPE_WORDS)) {
       id = 'natural-dock-close-right-active';
       path = 'xd.dock.closeRight';
       reason = 'Close tabs to the right of active dock content from natural language request.';
-    } else if (hasAny(value, ['나머지', '다른', 'others', 'other'])) {
+    } else if (hasAny(value, XENESIS_NATURAL_OTHER_SCOPE_WORDS)) {
       id = 'natural-dock-close-others-active';
       path = 'xd.dock.closeOthers';
       reason = 'Close other tabs around active dock content from natural language request.';
-    } else if (hasAny(value, ['모두', '전체', 'all'])) {
+    } else if (hasAny(value, XENESIS_NATURAL_ALL_SCOPE_WORDS)) {
       id = 'natural-dock-close-all-active';
       path = 'xd.dock.closeAll';
       reason = 'Close all tabs in active dock pane from natural language request.';
@@ -1891,8 +1943,8 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
   if (
     dockSide &&
     dockSize &&
-    hasAny(value, ['패인', '영역', '폭', '너비', '사이즈', 'pane', 'area', 'width', 'size']) &&
-    hasAny(value, ['바꿔', '변경', '설정', '조절', 'resize', 'set'])
+    hasAny(value, XENESIS_NATURAL_PANE_SIZE_CONTEXT_WORDS) &&
+    hasAny(value, XENESIS_NATURAL_RESIZE_COMMAND_WORDS)
   ) {
     return naturalPlan('도킹 영역 크기를 변경합니다.', [
       naturalAction(
@@ -1904,7 +1956,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     ]);
   }
 
-  if (hasAny(value, ['창 크기', 'window size', 'viewport', '해상도', '크기를']) || detectWindowSizerPreset(value)) {
+  if (hasAny(value, XENESIS_NATURAL_WINDOW_SIZE_CONTEXT_WORDS) || detectWindowSizerPreset(value)) {
     const presetId = detectWindowSizerPreset(value);
     if (presetId) {
       return naturalPlan(`창 크기를 ${presetId.toUpperCase()} 프리셋으로 변경합니다.`, [
@@ -1918,7 +1970,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     }
   }
 
-  if (hasAny(value, ['열린 파일', 'open files', '파일 목록', '파일 리스트'])) {
+  if (hasAny(value, XENESIS_NATURAL_FILE_LIST_CONTEXT_WORDS)) {
     return naturalPlan('열린 파일 목록을 조회합니다.', [
       naturalAction(
         'natural-files-list-open',
@@ -1929,7 +1981,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     ]);
   }
 
-  if (hasAny(value, ['파일', '문서']) && hasAny(value, ['열어', 'open'])) {
+  if (hasAny(value, XENESIS_NATURAL_FILE_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_GENERIC_OPEN_WORDS)) {
     const filePath = extractLocalPath(rawText);
     return naturalPlan('파일을 엽니다.', [
       naturalAction(
@@ -1941,7 +1993,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     ]);
   }
 
-  if (hasAny(value, ['파일', '문서']) && hasAny(value, ['읽어', 'read'])) {
+  if (hasAny(value, XENESIS_NATURAL_FILE_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_FILE_READ_CONTEXT_WORDS)) {
     const filePath = extractLocalPath(rawText);
     return naturalPlan('파일 내용을 읽습니다.', [
       naturalAction(
@@ -1953,8 +2005,8 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     ]);
   }
 
-  if (hasAny(value, ['탐색기', 'explorer', '파일 트리'])) {
-    if (hasAny(value, ['숨겨', '닫아', 'hide'])) {
+  if (hasAny(value, XENESIS_NATURAL_EXPLORER_CONTEXT_WORDS)) {
+    if (hasAny(value, XENESIS_NATURAL_EXPLORER_HIDE_CONTEXT_WORDS)) {
       return naturalPlan('탐색기를 숨깁니다.', [
         naturalAction(
           'natural-explorer-hide',
@@ -1964,7 +2016,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
         ),
       ]);
     }
-    if (hasAny(value, ['토글', 'toggle'])) {
+    if (hasAny(value, XENESIS_NATURAL_TOGGLE_CONTEXT_WORDS)) {
       return naturalPlan('탐색기 표시 상태를 전환합니다.', [
         naturalAction(
           'natural-explorer-toggle',
@@ -1974,7 +2026,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
         ),
       ]);
     }
-    if (hasAny(value, ['새로고침', 'refresh'])) {
+    if (hasAny(value, XENESIS_NATURAL_REFRESH_CONTEXT_WORDS)) {
       return naturalPlan('탐색기를 새로고침합니다.', [
         naturalAction(
           'natural-explorer-refresh',
@@ -1984,7 +2036,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
         ),
       ]);
     }
-    if (hasAny(value, ['상위', '부모', '위로', 'go up', 'parent'])) {
+    if (hasAny(value, XENESIS_NATURAL_PARENT_NAVIGATION_CONTEXT_WORDS)) {
       return naturalPlan('탐색기를 상위 폴더로 이동합니다.', [
         naturalAction(
           'natural-explorer-go-up',
@@ -1994,7 +2046,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
         ),
       ]);
     }
-    if (hasAny(value, ['필터', '검색', '찾아', 'filter', 'search'])) {
+    if (hasAny(value, XENESIS_NATURAL_FILTER_CONTEXT_WORDS)) {
       const query = extractFilterQuery(rawText);
       return naturalPlan('탐색기 필터를 적용합니다.', [
         naturalAction(
@@ -2026,7 +2078,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     ]);
   }
 
-  if (hasAny(value, ['즐겨찾기', 'favorites', 'favorite'])) {
+  if (hasAny(value, XENESIS_NATURAL_FAVORITES_CONTEXT_WORDS)) {
     return naturalPlan('즐겨찾기 패널을 표시합니다.', [
       naturalAction(
         'natural-favorites-show',
@@ -2037,8 +2089,8 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     ]);
   }
 
-  if (hasAny(value, ['터미널', 'terminal', 'shell', '콘솔'])) {
-    if (hasAny(value, ['목록', '리스트', 'list'])) {
+  if (hasAny(value, XENESIS_NATURAL_TERMINAL_CONTEXT_WORDS)) {
+    if (hasAny(value, XENESIS_NATURAL_GENERIC_LIST_CONTEXT_WORDS)) {
       return naturalPlan('터미널 목록을 조회합니다.', [
         naturalAction(
           'natural-terminals-list',
@@ -2050,7 +2102,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     }
 
     const count = extractFirstInteger(value, 1, 50);
-    if (count && count > 1 && hasAny(value, ['개', '여러', 'multiple', '띄워', '열어', 'open'])) {
+    if (count && count > 1 && hasAny(value, XENESIS_NATURAL_TERMINAL_MULTI_CONTEXT_WORDS)) {
       const actions = [
         naturalAction(
           'natural-terminal-run-many',
@@ -2066,7 +2118,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
         ),
       ];
       const arrangeMode = detectArrangeMode(value);
-      if (arrangeMode && hasAny(value, ['정렬', 'arrange'])) {
+      if (arrangeMode && hasAny(value, XENESIS_NATURAL_ARRANGE_CONTEXT_WORDS)) {
         actions.push(
           naturalAction(
             'natural-dock-window-arrange',
@@ -2079,7 +2131,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
       return naturalPlan('터미널을 여러 개 열고 필요한 배열을 적용합니다.', actions);
     }
 
-    if (hasAny(value, ['실행', '돌려', 'run', 'execute'])) {
+    if (hasAny(value, XENESIS_NATURAL_TERMINAL_RUN_CONTEXT_WORDS)) {
       const command = extractTerminalCommand(rawText);
       return naturalPlan('터미널 명령을 실행합니다.', [
         naturalAction(
@@ -2097,7 +2149,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
   }
 
   const scopedArrangeMode = detectArrangeMode(value);
-  if (scopedArrangeMode && hasAny(value, ['정렬', 'arrange'])) {
+  if (scopedArrangeMode && hasAny(value, XENESIS_NATURAL_ARRANGE_CONTEXT_WORDS)) {
     const windowState = detectDockWindowState(value);
     if (windowState) {
       return naturalPlan('지정한 Desk 영역을 정렬합니다.', [
@@ -2109,7 +2161,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
         ),
       ]);
     }
-    if (hasAny(value, ['패인', 'pane'])) {
+    if (hasAny(value, XENESIS_NATURAL_PANE_CONTEXT_WORDS)) {
       return naturalPlan('현재 도킹 패인을 정렬합니다.', [
         naturalAction(
           'natural-dock-pane-arrange',
@@ -2121,7 +2173,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     }
   }
 
-  if (hasAny(value, ['바둑판', 'grid'])) {
+  if (hasAny(value, XENESIS_NATURAL_DOCK_GRID_CONTEXT_WORDS)) {
     return naturalPlan('현재 도킹 그룹을 바둑판으로 정렬합니다.', [
       naturalAction(
         'natural-dock-arrange-grid',
@@ -2132,7 +2184,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     ]);
   }
 
-  if (hasAny(value, ['가로', '수평', 'horizontal'])) {
+  if (hasAny(value, XENESIS_NATURAL_DOCK_HORIZONTAL_CONTEXT_WORDS)) {
     return naturalPlan('현재 도킹 그룹을 가로로 정렬합니다.', [
       naturalAction(
         'natural-dock-arrange-horizontal',
@@ -2143,7 +2195,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     ]);
   }
 
-  if (hasAny(value, ['세로', '수직', 'vertical'])) {
+  if (hasAny(value, XENESIS_NATURAL_DOCK_VERTICAL_CONTEXT_WORDS)) {
     return naturalPlan('현재 도킹 그룹을 세로로 정렬합니다.', [
       naturalAction(
         'natural-dock-arrange-vertical',
@@ -2154,7 +2206,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     ]);
   }
 
-  if (hasAny(value, ['합쳐', '되돌리', 'merge'])) {
+  if (hasAny(value, XENESIS_NATURAL_DOCK_MERGE_CONTEXT_WORDS)) {
     const windowState = detectDockWindowState(value);
     if (windowState) {
       return naturalPlan('지정한 Desk 영역의 도킹 배열을 합칩니다.', [
@@ -2166,7 +2218,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
         ),
       ]);
     }
-    if (hasAny(value, ['패인', 'pane'])) {
+    if (hasAny(value, XENESIS_NATURAL_PANE_CONTEXT_WORDS)) {
       return naturalPlan('현재 도킹 패인의 배열을 합칩니다.', [
         naturalAction(
           'natural-dock-pane-merge',
@@ -2176,13 +2228,15 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
         ),
       ]);
     }
-    const path = hasAny(value, ['전체', '모든', 'all']) ? 'xd.dock.mergeAll' : 'xd.dock.mergeGroup';
+    const path = hasAny(value, XENESIS_NATURAL_DOCK_MERGE_ALL_CONTEXT_WORDS)
+      ? 'xd.dock.mergeAll'
+      : 'xd.dock.mergeGroup';
     return naturalPlan('도킹 배열을 합칩니다.', [
       naturalAction('natural-dock-merge', path, {}, 'Merge dock layout from natural language request.'),
     ]);
   }
 
-  if (hasAny(value, ['패인 목록', 'pane list', 'panes list', '열린 패인'])) {
+  if (hasAny(value, XENESIS_NATURAL_PANE_LIST_CONTEXT_WORDS)) {
     return naturalPlan('열린 패인 목록을 조회합니다.', [
       naturalAction(
         'natural-dock-panes-list',
@@ -2193,7 +2247,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     ]);
   }
 
-  if (hasAny(value, ['아티팩트 지정', 'artifact target', '아티팩트 타겟'])) {
+  if (hasAny(value, XENESIS_NATURAL_ARTIFACT_TARGET_CONTEXT_WORDS)) {
     return naturalPlan('현재 패인을 아티팩트 대상으로 지정합니다.', [
       naturalAction(
         'natural-artifact-target-set',
@@ -2204,14 +2258,17 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     ]);
   }
 
-  if (hasAny(value, ['상태', 'status']) && hasAny(value, ['앱', 'desk', 'xenesis', '보여', '확인'])) {
+  if (
+    hasAny(value, XENESIS_NATURAL_APP_STATUS_CONTEXT_WORDS) &&
+    hasAny(value, XENESIS_NATURAL_APP_STATUS_TARGET_WORDS)
+  ) {
     return naturalPlan('앱 상태를 조회합니다.', [
       naturalAction('natural-app-status', 'xd.app.status', {}, 'Read app status from natural language request.'),
     ]);
   }
 
   const view = viewKindFromNaturalText(value);
-  if (view && hasAny(value, ['열어', '켜줘', '띄워', '보여', 'open', 'show', 'start'])) {
+  if (view && hasAny(value, XENESIS_NATURAL_VIEW_OPEN_COMMAND_WORDS)) {
     return naturalPlan('요청한 화면을 엽니다.', [
       naturalAction(view.id, 'xd.views.open', withPlacement({ kind: view.kind }, placement, 'tab'), view.reason),
     ]);

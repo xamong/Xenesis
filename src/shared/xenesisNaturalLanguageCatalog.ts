@@ -622,6 +622,132 @@ export const XENESIS_NATURAL_WORKSPACE_SET_CONTEXT_WORDS = [
   'binding',
 ] as const;
 
+export const XENESIS_NATURAL_GENERIC_OPEN_WORDS = ['열어', 'open'] as const;
+
+export const XENESIS_NATURAL_OPEN_COMMAND_WORDS = ['열어', '켜줘', '띄워', 'open'] as const;
+
+export const XENESIS_NATURAL_OPEN_OR_SHOW_MINIMAL_WORDS = ['열어', '보여', 'open', 'show'] as const;
+
+export const XENESIS_NATURAL_CONNECTION_CENTER_OPEN_CONTEXT_WORDS = [
+  '연결 센터',
+  'connection center',
+  'connections center',
+  '연결 목록',
+] as const;
+
+export const XENESIS_NATURAL_DESK_SETTINGS_CONTEXT_WORDS = ['설정', 'settings'] as const;
+
+export const XENESIS_NATURAL_DESK_DIAGNOSTICS_CONTEXT_WORDS = ['진단', 'diagnostics', '로그'] as const;
+
+export const XENESIS_NATURAL_CORE_CAPABILITY_CONTEXT_WORDS = [
+  'capability',
+  'cr',
+  'registry',
+  '레지스트리',
+  '기능 탐색',
+  'capability explorer',
+] as const;
+
+export const XENESIS_NATURAL_CAPTURE_CONTEXT_WORDS = ['캡쳐', '캡처', '스크린샷', 'screenshot', 'capture'] as const;
+
+export const XENESIS_NATURAL_GENERIC_LIST_CONTEXT_WORDS = ['목록', '리스트', 'list'] as const;
+
+export const XENESIS_NATURAL_GENERIC_FOCUS_CONTEXT_WORDS = ['포커스', '집중', 'focus'] as const;
+
+export const XENESIS_NATURAL_GENERIC_CLOSE_CONTEXT_WORDS = ['닫아', '닫기', 'close'] as const;
+
+export const XENESIS_NATURAL_PANE_TAB_CURRENT_CONTEXT_WORDS = ['패인', '탭', 'pane', 'tab', '현재'] as const;
+
+export const XENESIS_NATURAL_RIGHT_SCOPE_WORDS = ['오른쪽', '우측', 'right'] as const;
+
+export const XENESIS_NATURAL_OTHER_SCOPE_WORDS = ['나머지', '다른', 'others', 'other'] as const;
+
+export const XENESIS_NATURAL_ALL_SCOPE_WORDS = ['모두', '전체', 'all'] as const;
+
+export const XENESIS_NATURAL_PANE_SIZE_CONTEXT_WORDS = [
+  '패인',
+  '영역',
+  '폭',
+  '너비',
+  '사이즈',
+  'pane',
+  'area',
+  'width',
+  'size',
+] as const;
+
+export const XENESIS_NATURAL_RESIZE_COMMAND_WORDS = ['바꿔', '변경', '설정', '조절', 'resize', 'set'] as const;
+
+export const XENESIS_NATURAL_WINDOW_SIZE_CONTEXT_WORDS = [
+  '창 크기',
+  'window size',
+  'viewport',
+  '해상도',
+  '크기를',
+] as const;
+
+export const XENESIS_NATURAL_FILE_LIST_CONTEXT_WORDS = ['열린 파일', 'open files', '파일 목록', '파일 리스트'] as const;
+
+export const XENESIS_NATURAL_FILE_CONTEXT_WORDS = ['파일', '문서'] as const;
+
+export const XENESIS_NATURAL_FILE_READ_CONTEXT_WORDS = ['읽어', 'read'] as const;
+
+export const XENESIS_NATURAL_EXPLORER_CONTEXT_WORDS = ['탐색기', 'explorer', '파일 트리'] as const;
+
+export const XENESIS_NATURAL_EXPLORER_HIDE_CONTEXT_WORDS = ['숨겨', '닫아', 'hide'] as const;
+
+export const XENESIS_NATURAL_TOGGLE_CONTEXT_WORDS = ['토글', 'toggle'] as const;
+
+export const XENESIS_NATURAL_REFRESH_CONTEXT_WORDS = ['새로고침', 'refresh'] as const;
+
+export const XENESIS_NATURAL_PARENT_NAVIGATION_CONTEXT_WORDS = ['상위', '부모', '위로', 'go up', 'parent'] as const;
+
+export const XENESIS_NATURAL_FILTER_CONTEXT_WORDS = ['필터', '검색', '찾아', 'filter', 'search'] as const;
+
+export const XENESIS_NATURAL_FAVORITES_CONTEXT_WORDS = ['즐겨찾기', 'favorites', 'favorite'] as const;
+
+export const XENESIS_NATURAL_TERMINAL_CONTEXT_WORDS = ['터미널', 'terminal', 'shell', '콘솔'] as const;
+
+export const XENESIS_NATURAL_TERMINAL_MULTI_CONTEXT_WORDS = ['개', '여러', 'multiple', '띄워', '열어', 'open'] as const;
+
+export const XENESIS_NATURAL_ARRANGE_CONTEXT_WORDS = ['정렬', 'arrange'] as const;
+
+export const XENESIS_NATURAL_TERMINAL_RUN_CONTEXT_WORDS = ['실행', '돌려', 'run', 'execute'] as const;
+
+export const XENESIS_NATURAL_PANE_CONTEXT_WORDS = ['패인', 'pane'] as const;
+
+export const XENESIS_NATURAL_DOCK_GRID_CONTEXT_WORDS = ['바둑판', 'grid'] as const;
+
+export const XENESIS_NATURAL_DOCK_HORIZONTAL_CONTEXT_WORDS = ['가로', '수평', 'horizontal'] as const;
+
+export const XENESIS_NATURAL_DOCK_VERTICAL_CONTEXT_WORDS = ['세로', '수직', 'vertical'] as const;
+
+export const XENESIS_NATURAL_DOCK_MERGE_CONTEXT_WORDS = ['합쳐', '되돌리', 'merge'] as const;
+
+export const XENESIS_NATURAL_DOCK_MERGE_ALL_CONTEXT_WORDS = ['전체', '모든', 'all'] as const;
+
+export const XENESIS_NATURAL_PANE_LIST_CONTEXT_WORDS = ['패인 목록', 'pane list', 'panes list', '열린 패인'] as const;
+
+export const XENESIS_NATURAL_ARTIFACT_TARGET_CONTEXT_WORDS = [
+  '아티팩트 지정',
+  'artifact target',
+  '아티팩트 타겟',
+] as const;
+
+export const XENESIS_NATURAL_APP_STATUS_CONTEXT_WORDS = ['상태', 'status'] as const;
+
+export const XENESIS_NATURAL_APP_STATUS_TARGET_WORDS = ['앱', 'desk', 'xenesis', '보여', '확인'] as const;
+
+export const XENESIS_NATURAL_VIEW_OPEN_COMMAND_WORDS = [
+  '열어',
+  '켜줘',
+  '띄워',
+  '보여',
+  'open',
+  'show',
+  'start',
+] as const;
+
 export const XENESIS_NATURAL_PLACEMENT_TARGETS: readonly XenesisNaturalWordsTarget[] = [
   { id: 'right', label: 'right', words: ['오른쪽', '우측', 'right'] },
   { id: 'left', label: 'left', words: ['왼쪽', '좌측', 'left'] },
