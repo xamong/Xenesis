@@ -290,6 +290,12 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /requires approval\|approval required/);
   assert.doesNotMatch(source, /'xd\.files\.listOpen'/);
   assert.doesNotMatch(source, /path\.startsWith\('xd\.'/);
+  assert.match(source, /XENESIS_NATURAL_INTENT_PATTERNS/);
+  assert.match(source, /XENESIS_NATURAL_PROVIDER_AUTO_TARGET/);
+  assert.match(source, /XENESIS_NATURAL_CORE_TOOL_OPEN_REASON/);
+  assert.doesNotMatch(source, /\/\\b\(open\|focus\)\\b\//);
+  assert.doesNotMatch(source, /id: 'auto'/);
+  assert.doesNotMatch(source, /Open \$\{definition\.reasonName\} from natural language request/);
   assert.match(source, /naturalCoreToolOpenAction/);
   assert.match(source, /naturalViewOpenAction/);
   assert.equal([...source.matchAll(/return naturalAction\(/g)].length, 2);

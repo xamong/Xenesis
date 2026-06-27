@@ -75,6 +75,18 @@ export const XENESIS_DESK_ACTION_RESULT_SUMMARY_PATHS = {
   workflowRun: 'xd.automation.workflow.run',
 } as const;
 
+export const XENESIS_NATURAL_CORE_TOOL_OPEN_REASON = (reasonName: string): string =>
+  `Open ${reasonName} from natural language request.`;
+
+export const XENESIS_NATURAL_INTENT_PATTERNS = {
+  explicitOpenEnglish: /\b(open|focus)\b/,
+} as const;
+
+export const XENESIS_NATURAL_PROVIDER_AUTO_TARGET = {
+  id: 'auto',
+  label: 'auto',
+} as const;
+
 export const XENESIS_NATURAL_EXTRACTION_PATTERNS = {
   filterQueryWords:
     /탐색기|파일|폴더|필터|검색|찾아|보여|표시|걸어줘|걸어|적용|에서|에|로|set|filter|search|find|explorer/gi,
