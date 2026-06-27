@@ -2081,6 +2081,42 @@
 - External documentation handling: no browsing. This update used the cached gap
   map, repo-local Obsidian graph, source code, and tests.
 
+## Desk Action Args Catalog Refactor Slice
+
+- Removed representative Desk action argument-shape hardcoding from
+  `xenesisAgentDeskControl.ts`.
+- Added shared arg catalogs to `src/shared/xenesisNaturalLanguageCatalog.ts`:
+  - `XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS`
+  - `XENESIS_NATURAL_DESK_ACTION_ARGS`
+- The planner now consumes shared arg builders for default placement/window
+  state, placement args, active-pane args, dock sizing and arranging, file path,
+  filter query, explorer path, window preset id, terminal run and multi-run
+  defaults, and view-kind placement.
+- Scope boundary: refactor only. This preserved planner route order, generated
+  CR paths, argument object shapes, default placement, terminal defaults,
+  approval behavior, and result summaries.
+- Verification:
+  - RED planner source guard failed first because
+    `XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS` was not referenced and
+    representative CR arg shapes still lived directly in the planner.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 36/36 tests after implementation.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 100/100 tests.
+  - `npx biome check src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --max-diagnostics 40`
+    passed after `npx biome check --write src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --max-diagnostics 40`
+    sorted the new test imports.
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit` passed with Registered nodes 763,
+    Callable methods 468, Dispatcher paths 448, missing registered paths 0,
+    missing dispatched coverage paths 0, undispatched static callable methods
+    0, and dispatcher paths missing from tree 0. The generated audit file was
+    removed afterward.
+- Known gap: live Electron Agent-pane smoke was not run for this refactor-only
+  slice.
+- External documentation handling: no browsing. This update used the cached gap
+  map, repo-local Obsidian graph, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

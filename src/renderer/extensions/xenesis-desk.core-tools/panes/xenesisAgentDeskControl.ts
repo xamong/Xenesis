@@ -45,8 +45,8 @@ import {
   XENESIS_NATURAL_CORE_TOOL_OPEN_REASON,
   XENESIS_NATURAL_CORE_TOOL_TARGETS,
   XENESIS_NATURAL_DASHBOARD_CONTEXT_WORDS,
-  XENESIS_NATURAL_DEFAULT_TERMINAL_COMMAND,
-  XENESIS_NATURAL_DEFAULT_TERMINAL_SHELL,
+  XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS,
+  XENESIS_NATURAL_DESK_ACTION_ARGS,
   XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_DESK_DIAGNOSTICS_CONTEXT_WORDS,
   XENESIS_NATURAL_DESK_SETTINGS_CONTEXT_WORDS,
@@ -142,7 +142,6 @@ import {
   XENESIS_NATURAL_SETUP_IMPERATIVE_WORDS,
   XENESIS_NATURAL_TASK_CONTEXT_WORDS,
   XENESIS_NATURAL_TERMINAL_CONTEXT_WORDS,
-  XENESIS_NATURAL_TERMINAL_ID_PREFIX,
   XENESIS_NATURAL_TERMINAL_MULTI_CONTEXT_WORDS,
   XENESIS_NATURAL_TERMINAL_RUN_CONTEXT_WORDS,
   XENESIS_NATURAL_TOGGLE_CONTEXT_WORDS,
@@ -279,7 +278,7 @@ function naturalCoreToolOpenAction(
   return {
     id: definition.id,
     path: definition.path,
-    args: { placement: placement || 'tab' },
+    args: DESK_ACTION_ARGS.placement(placement || DEFAULT_DESK_PLACEMENT),
     approved: false,
     reason: CORE_TOOL_OPEN_REASON(definition.reasonName),
   };
@@ -292,7 +291,7 @@ function naturalViewOpenAction(
   return {
     id: view.id,
     path: XENESIS_NATURAL_VIEW_OPEN_PATH,
-    args: withPlacement({ kind: view.kind }, placement, 'tab'),
+    args: DESK_ACTION_ARGS.withPlacement(DESK_ACTION_ARGS.viewKind(view.kind), placement || DEFAULT_DESK_PLACEMENT),
     approved: false,
     reason: view.reason,
   };
@@ -305,6 +304,9 @@ const DESK_ACTION_PROTOCOL_TEXT = XENESIS_DESK_ACTION_PROTOCOL_TEXT;
 const DESK_ACTION_RESULT_SUMMARY_KEYS = XENESIS_DESK_ACTION_RESULT_SUMMARY_KEYS;
 const DESK_ACTION_RESULT_SUMMARY_PATHS = XENESIS_DESK_ACTION_RESULT_SUMMARY_PATHS;
 const DESK_ACTION_RESULT_SUMMARY_TEXT = XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT;
+const DESK_ACTION_ARG_DEFAULTS = XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS;
+const DESK_ACTION_ARGS = XENESIS_NATURAL_DESK_ACTION_ARGS;
+const DEFAULT_DESK_PLACEMENT = DESK_ACTION_ARG_DEFAULTS.placement;
 const EXTRACTION_PATTERNS = XENESIS_NATURAL_EXTRACTION_PATTERNS;
 const CONNECTION_AGGREGATE_OPEN_ACTIONS = XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_ACTION_DESCRIPTORS;
 const CONNECTION_AGGREGATE_STATUS_ACTIONS = XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS;
@@ -343,14 +345,6 @@ function detectPlacement(value: string): XenesisDeskPlacement | undefined {
   return findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_PLACEMENT_TARGETS)?.id as
     | XenesisDeskPlacement
     | undefined;
-}
-
-function withPlacement(
-  args: Record<string, unknown>,
-  placement: XenesisDeskPlacement | undefined,
-  fallback: XenesisDeskPlacement,
-): Record<string, unknown> {
-  return { ...args, placement: placement || fallback };
 }
 
 function detectWindowSizerPreset(value: string): string | undefined {
@@ -1431,7 +1425,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
 
   if (hasAny(value, XENESIS_NATURAL_DESK_SETTINGS_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_OPEN_OR_SHOW_WORDS)) {
     return naturalPlan(PLAN_TEXT.settingsPaneOpen, [
-      naturalCatalogAction(DESK_ACTIONS.settingsOpen, { placement: placement || 'tab' }),
+      naturalCatalogAction(DESK_ACTIONS.settingsOpen, DESK_ACTION_ARGS.placement(placement)),
     ]);
   }
 
@@ -1440,13 +1434,13 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     hasAny(value, XENESIS_NATURAL_OPEN_OR_SHOW_MINIMAL_WORDS)
   ) {
     return naturalPlan(PLAN_TEXT.diagnosticsPaneOpen, [
-      naturalCatalogAction(DESK_ACTIONS.diagnosticsOpen, { placement: placement || 'tab' }),
+      naturalCatalogAction(DESK_ACTIONS.diagnosticsOpen, DESK_ACTION_ARGS.placement(placement)),
     ]);
   }
 
   if (hasAny(value, XENESIS_NATURAL_CORE_CAPABILITY_CONTEXT_WORDS)) {
     return naturalPlan(PLAN_TEXT.capabilityExplorerOpen, [
-      naturalCatalogAction(DESK_ACTIONS.capabilityExplorerOpen, { placement: placement || 'tab' }),
+      naturalCatalogAction(DESK_ACTIONS.capabilityExplorerOpen, DESK_ACTION_ARGS.placement(placement)),
     ]);
   }
 
@@ -1467,7 +1461,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     hasAny(value, XENESIS_NATURAL_PANE_TAB_CURRENT_CONTEXT_WORDS)
   ) {
     return naturalPlan(PLAN_TEXT.activeDockFocus, [
-      naturalCatalogAction(DESK_ACTIONS.dockFocusActive, { useActive: true }),
+      naturalCatalogAction(DESK_ACTIONS.dockFocusActive, DESK_ACTION_ARGS.useActive()),
     ]);
   }
 
@@ -1483,7 +1477,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     } else if (hasAny(value, XENESIS_NATURAL_ALL_SCOPE_WORDS)) {
       action = DESK_ACTIONS.dockCloseAll;
     }
-    return naturalPlan(PLAN_TEXT.activeDockClose, [naturalCatalogAction(action, { useActive: true })]);
+    return naturalPlan(PLAN_TEXT.activeDockClose, [naturalCatalogAction(action, DESK_ACTION_ARGS.useActive())]);
   }
 
   const dockSide = detectDockSide(value);
@@ -1495,7 +1489,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     hasAny(value, XENESIS_NATURAL_RESIZE_COMMAND_WORDS)
   ) {
     return naturalPlan(PLAN_TEXT.dockAreaResize, [
-      naturalCatalogAction(DESK_ACTIONS.dockSizeSet, { [dockSide]: dockSize }),
+      naturalCatalogAction(DESK_ACTIONS.dockSizeSet, DESK_ACTION_ARGS.dockSize(dockSide, dockSize)),
     ]);
   }
 
@@ -1503,7 +1497,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     const presetId = detectWindowSizerPreset(value);
     if (presetId) {
       return naturalPlan(PLAN_TEXT.windowSizePreset(presetId), [
-        naturalCatalogAction(DESK_ACTIONS.windowSizePreset, { presetId }),
+        naturalCatalogAction(DESK_ACTIONS.windowSizePreset, DESK_ACTION_ARGS.presetId(presetId)),
       ]);
     }
   }
@@ -1514,13 +1508,15 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
 
   if (hasAny(value, XENESIS_NATURAL_FILE_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_GENERIC_OPEN_WORDS)) {
     const filePath = extractLocalPath(rawText);
-    return naturalPlan(PLAN_TEXT.fileOpen, [naturalCatalogAction(DESK_ACTIONS.fileOpen, filePath ? { filePath } : {})]);
+    return naturalPlan(PLAN_TEXT.fileOpen, [
+      naturalCatalogAction(DESK_ACTIONS.fileOpen, DESK_ACTION_ARGS.optionalFilePath(filePath)),
+    ]);
   }
 
   if (hasAny(value, XENESIS_NATURAL_FILE_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_FILE_READ_CONTEXT_WORDS)) {
     const filePath = extractLocalPath(rawText);
     return naturalPlan(PLAN_TEXT.fileContentRead, [
-      naturalCatalogAction(DESK_ACTIONS.fileRead, filePath ? { filePath } : {}),
+      naturalCatalogAction(DESK_ACTIONS.fileRead, DESK_ACTION_ARGS.optionalFilePath(filePath)),
     ]);
   }
 
@@ -1539,11 +1535,15 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     }
     if (hasAny(value, XENESIS_NATURAL_FILTER_CONTEXT_WORDS)) {
       const query = extractFilterQuery(rawText);
-      return naturalPlan(PLAN_TEXT.explorerFilterApply, [naturalCatalogAction(DESK_ACTIONS.explorerFilter, { query })]);
+      return naturalPlan(PLAN_TEXT.explorerFilterApply, [
+        naturalCatalogAction(DESK_ACTIONS.explorerFilter, DESK_ACTION_ARGS.filterQuery(query)),
+      ]);
     }
     const path = extractLocalPath(rawText);
     if (path) {
-      return naturalPlan(PLAN_TEXT.explorerNavigate, [naturalCatalogAction(DESK_ACTIONS.explorerNavigate, { path })]);
+      return naturalPlan(PLAN_TEXT.explorerNavigate, [
+        naturalCatalogAction(DESK_ACTIONS.explorerNavigate, DESK_ACTION_ARGS.explorerPath(path)),
+      ]);
     }
     return naturalPlan(PLAN_TEXT.explorerShow, [naturalCatalogAction(DESK_ACTIONS.explorerShow, {})]);
   }
@@ -1560,21 +1560,15 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     const count = extractFirstInteger(value, 1, 50);
     if (count && count > 1 && hasAny(value, XENESIS_NATURAL_TERMINAL_MULTI_CONTEXT_WORDS)) {
       const actions = [
-        naturalCatalogAction(DESK_ACTIONS.terminalRunMany, {
-          count,
-          shell: XENESIS_NATURAL_DEFAULT_TERMINAL_SHELL,
-          command: XENESIS_NATURAL_DEFAULT_TERMINAL_COMMAND,
-          idPrefix: XENESIS_NATURAL_TERMINAL_ID_PREFIX,
-          placement: placement || 'tab',
-        }),
+        naturalCatalogAction(DESK_ACTIONS.terminalRunMany, DESK_ACTION_ARGS.terminalMany(count, placement)),
       ];
       const arrangeMode = detectArrangeMode(value);
       if (arrangeMode && hasAny(value, XENESIS_NATURAL_ARRANGE_CONTEXT_WORDS)) {
         actions.push(
-          naturalCatalogAction(DESK_ACTIONS.dockWindowArrange, {
-            windowState: detectDockWindowState(value) || 'document',
-            mode: arrangeMode,
-          }),
+          naturalCatalogAction(
+            DESK_ACTIONS.dockWindowArrange,
+            DESK_ACTION_ARGS.dockWindowArrange(detectDockWindowState(value), arrangeMode),
+          ),
         );
       }
       return naturalPlan(PLAN_TEXT.multipleTerminalsOpenAndArrange, actions);
@@ -1583,11 +1577,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     if (hasAny(value, XENESIS_NATURAL_TERMINAL_RUN_CONTEXT_WORDS)) {
       const command = extractTerminalCommand(rawText);
       return naturalPlan(PLAN_TEXT.terminalCommandRun, [
-        naturalCatalogAction(DESK_ACTIONS.terminalRun, {
-          command: command || XENESIS_NATURAL_DEFAULT_TERMINAL_COMMAND,
-          shell: XENESIS_NATURAL_DEFAULT_TERMINAL_SHELL,
-          placement: placement || 'tab',
-        }),
+        naturalCatalogAction(DESK_ACTIONS.terminalRun, DESK_ACTION_ARGS.terminalRun(command, placement)),
       ]);
     }
   }
@@ -1597,12 +1587,15 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     const windowState = detectDockWindowState(value);
     if (windowState) {
       return naturalPlan(PLAN_TEXT.scopedDeskAreaArrange, [
-        naturalCatalogAction(DESK_ACTIONS.dockWindowArrange, { windowState, mode: scopedArrangeMode }),
+        naturalCatalogAction(
+          DESK_ACTIONS.dockWindowArrange,
+          DESK_ACTION_ARGS.dockWindowArrange(windowState, scopedArrangeMode),
+        ),
       ]);
     }
     if (hasAny(value, XENESIS_NATURAL_PANE_CONTEXT_WORDS)) {
       return naturalPlan(PLAN_TEXT.activeDockPaneArrange, [
-        naturalCatalogAction(DESK_ACTIONS.dockPaneArrange, { useActive: true, mode: scopedArrangeMode }),
+        naturalCatalogAction(DESK_ACTIONS.dockPaneArrange, DESK_ACTION_ARGS.dockPaneArrange(scopedArrangeMode)),
       ]);
     }
   }
@@ -1628,7 +1621,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     }
     if (hasAny(value, XENESIS_NATURAL_PANE_CONTEXT_WORDS)) {
       return naturalPlan(PLAN_TEXT.activeDockPaneMerge, [
-        naturalCatalogAction(DESK_ACTIONS.dockPaneMerge, { useActive: true }),
+        naturalCatalogAction(DESK_ACTIONS.dockPaneMerge, DESK_ACTION_ARGS.useActive()),
       ]);
     }
     const action = hasAny(value, XENESIS_NATURAL_DOCK_MERGE_ALL_CONTEXT_WORDS)
@@ -1643,7 +1636,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
 
   if (hasAny(value, XENESIS_NATURAL_ARTIFACT_TARGET_CONTEXT_WORDS)) {
     return naturalPlan(PLAN_TEXT.artifactTargetSet, [
-      naturalCatalogAction(DESK_ACTIONS.artifactTargetSet, { useActive: true }),
+      naturalCatalogAction(DESK_ACTIONS.artifactTargetSet, DESK_ACTION_ARGS.useActive()),
     ]);
   }
 

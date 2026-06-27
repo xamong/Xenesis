@@ -28,6 +28,8 @@ import {
   XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS,
   XENESIS_NATURAL_DASHBOARD_CONTEXT_WORDS,
+  XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS,
+  XENESIS_NATURAL_DESK_ACTION_ARGS,
   XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_DESK_DIAGNOSTICS_CONTEXT_WORDS,
   XENESIS_NATURAL_DESK_SETTINGS_CONTEXT_WORDS,
@@ -313,6 +315,18 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /\/\\b\(open\|focus\)\\b\//);
   assert.doesNotMatch(source, /id: 'auto'/);
   assert.doesNotMatch(source, /Open \$\{definition\.reasonName\} from natural language request/);
+  assert.match(source, /XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS/);
+  assert.match(source, /XENESIS_NATURAL_DESK_ACTION_ARGS/);
+  assert.doesNotMatch(source, /placement: placement \|\| 'tab'/);
+  assert.doesNotMatch(source, /placement \|\| 'tab'/);
+  assert.doesNotMatch(source, /\{ useActive: true \}/);
+  assert.doesNotMatch(source, /filePath \? \{ filePath \} : \{\}/);
+  assert.doesNotMatch(source, /\{ presetId \}/);
+  assert.doesNotMatch(source, /windowState: detectDockWindowState\(value\) \|\| 'document'/);
+  assert.doesNotMatch(source, /command: command \|\| XENESIS_NATURAL_DEFAULT_TERMINAL_COMMAND/);
+  assert.equal(XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS.placement, 'tab');
+  assert.equal(XENESIS_NATURAL_DESK_ACTION_ARGS.useActive().useActive, true);
+  assert.deepEqual(XENESIS_NATURAL_DESK_ACTION_ARGS.optionalFilePath('README.md'), { filePath: 'README.md' });
   assert.match(source, /naturalCoreToolOpenAction/);
   assert.match(source, /naturalViewOpenAction/);
   assert.equal([...source.matchAll(/return naturalAction\(/g)].length, 2);

@@ -995,6 +995,46 @@ export const XENESIS_NATURAL_DEFAULT_TERMINAL_COMMAND = 'Write-Host Xenesis-Desk
 
 export const XENESIS_NATURAL_TERMINAL_ID_PREFIX = 'xenesis-agent-natural';
 
+export const XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS = {
+  placement: 'tab',
+  windowState: 'document',
+} as const;
+
+export const XENESIS_NATURAL_DESK_ACTION_ARGS = {
+  dockPaneArrange: (mode: string) => ({ useActive: true, mode }),
+  dockSize: (side: string, size: number) => ({ [side]: size }),
+  dockWindowArrange: (windowState: string | undefined, mode: string) => ({
+    windowState: windowState || XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS.windowState,
+    mode,
+  }),
+  empty: () => ({}),
+  explorerPath: (path: string) => ({ path }),
+  filterQuery: (query: string) => ({ query }),
+  optionalFilePath: (filePath: string) => (filePath ? { filePath } : {}),
+  placement: (placement: string | undefined) => ({
+    placement: placement || XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS.placement,
+  }),
+  presetId: (presetId: string) => ({ presetId }),
+  terminalMany: (count: number, placement: string | undefined) => ({
+    count,
+    shell: XENESIS_NATURAL_DEFAULT_TERMINAL_SHELL,
+    command: XENESIS_NATURAL_DEFAULT_TERMINAL_COMMAND,
+    idPrefix: XENESIS_NATURAL_TERMINAL_ID_PREFIX,
+    placement: placement || XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS.placement,
+  }),
+  terminalRun: (command: string, placement: string | undefined) => ({
+    command: command || XENESIS_NATURAL_DEFAULT_TERMINAL_COMMAND,
+    shell: XENESIS_NATURAL_DEFAULT_TERMINAL_SHELL,
+    placement: placement || XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS.placement,
+  }),
+  useActive: () => ({ useActive: true }),
+  viewKind: (kind: string) => ({ kind }),
+  withPlacement: (args: Record<string, unknown>, placement: string | undefined) => ({
+    ...args,
+    placement: placement || XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS.placement,
+  }),
+} as const;
+
 export const XENESIS_NATURAL_VIEW_OPEN_PATH = 'xd.views.open';
 
 export const XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS = {
