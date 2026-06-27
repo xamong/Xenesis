@@ -1413,37 +1413,70 @@ test('xenesis provider setup capabilities are registered and dispatch to the ada
   });
 });
 
-test('xenesis provider routing status capability is registered and dispatches to the adapter', async () => {
-  const capability = findDeskBridgeCapability('xd.xenesis.providers.routing.status');
-  const schemaProperties = (capability?.schema?.properties ?? {}) as Record<string, any>;
-  assert.equal(capability?.permission, 'read');
-  assert.equal(capability?.approval, 'never');
+test('xenesis provider routing capabilities are registered and dispatch to the adapter', async () => {
+  const statusCapability = findDeskBridgeCapability('xd.xenesis.providers.routing.status');
+  const openCapability = findDeskBridgeCapability('xd.xenesis.providers.routing.open');
+  const statusSchemaProperties = (statusCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const openRequired = Array.isArray(openCapability?.schema?.required)
+    ? (openCapability.schema.required as string[])
+    : [];
+  assert.equal(statusCapability?.permission, 'read');
+  assert.equal(statusCapability?.approval, 'never');
+  assert.equal(openCapability?.permission, 'control');
+  assert.equal(openCapability?.approval, 'never');
+  assert.equal(openRequired.includes('provider'), false);
   for (const provider of ALL_AI_PROVIDER_KINDS) {
-    assert.equal(schemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
+    assert.equal(statusSchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
+    assert.equal(
+      openSchemaProperties.provider?.enum.includes(provider),
+      true,
+      `${provider} should be accepted by open`,
+    );
   }
 
-  let calledArgs: unknown = null;
+  const calls: Array<{ method: string; args: unknown }> = [];
   const api: DeskBridgeCapabilityAdapter = {
     getXenesisProviderRoutingStatus: (args) => {
-      calledArgs = args;
+      calls.push({ method: 'status', args });
       return {
         ok: true,
         items: [{ provider: 'codex-app-server', fallbackChainVisible: true }],
       };
     },
+    openXenesisProviderRouting: (args) => {
+      calls.push({ method: 'open', args });
+      return {
+        ok: true,
+        item: { provider: 'codex-app-server', fallbackChainVisible: true },
+      };
+    },
   };
 
-  const result = await callDeskBridgeCapability(api, {
+  const statusResult = await callDeskBridgeCapability(api, {
     path: 'xd.xenesis.providers.routing.status',
     args: { provider: 'codex-app-server' },
     source: 'xenesis',
   });
+  const openResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.providers.routing.open',
+    args: { provider: 'codex-app-server', ensureVisible: true },
+    source: 'xenesis',
+  });
 
-  assert.equal(result.ok, true);
-  assert.deepEqual(calledArgs, { provider: 'codex-app-server' });
-  assert.deepEqual(result.result, {
+  assert.equal(statusResult.ok, true);
+  assert.equal(openResult.ok, true);
+  assert.deepEqual(calls, [
+    { method: 'status', args: { provider: 'codex-app-server' } },
+    { method: 'open', args: { provider: 'codex-app-server', ensureVisible: true } },
+  ]);
+  assert.deepEqual(statusResult.result, {
     ok: true,
     items: [{ provider: 'codex-app-server', fallbackChainVisible: true }],
+  });
+  assert.deepEqual(openResult.result, {
+    ok: true,
+    item: { provider: 'codex-app-server', fallbackChainVisible: true },
   });
 });
 

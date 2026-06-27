@@ -822,6 +822,46 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local Obsidian graph, source code, and tests.
 
+## Provider Routing Open CR Slice
+
+- Added a routing-specific CR open path for AI provider route/retry/fallback
+  and credential-pool cards: `xd.xenesis.providers.routing.open`.
+- The provider routing group now has read/open parity:
+  - `xd.xenesis.providers.routing.status`
+  - `xd.xenesis.providers.routing.open`
+- Main-process handling focuses the existing provider routing Connection Center
+  card and returns the same routing read model as status. It accepts either an
+  active provider id such as `codex-app-server` or a provider-card id such as
+  `provider-codex-app-server`; omitted provider opens the routing catalog card.
+- Xenesis Agent deterministic routing now preserves provider routing open
+  intent:
+  - `AI provider routing 전체 열어줘` ->
+    `xd.xenesis.providers.routing.open` with `ensureVisible=true`.
+  - `codex app-server provider routing 열어줘` ->
+    `xd.xenesis.providers.routing.open` with `provider=codex-app-server`.
+- Added explicit provider-open intent gating so names such as `OpenAI` do not
+  turn status/readback prompts into open actions.
+- Scope boundary: this slice only opens internal Desk provider routing
+  surfaces. It does not mutate provider settings, change active provider,
+  switch local CLI, write credentials, edit fallback chains, run provider
+  prompts, create Action Inbox items, or bypass approvals.
+- Verification:
+  - RED tests failed for missing `xd.xenesis.providers.routing.open` registry
+    coverage and generic settings fallback routing.
+  - Related 96-test slice passed.
+  - Focused provider capability test passed after the test typing fix.
+  - Scoped Biome check exited 0 with existing warnings only.
+  - Root typecheck passed.
+  - CR audit passed with missing registered paths 0, missing dispatched
+    coverage paths 0, undispatched static callable methods 0, and dispatcher
+    paths missing from tree 0.
+  - Full `npm run lint` still fails on existing repo-wide Biome diagnostics and
+    line-ending/format issues outside this slice.
+  - Public-release check still fails on the known missing
+    `.github/workflows/ci.yml` infra gap.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local Obsidian graph, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

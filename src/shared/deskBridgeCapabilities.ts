@@ -1031,6 +1031,35 @@ const XENESIS_PROVIDER_SETUP_OPEN_SCHEMA = {
   },
 } as const;
 
+const XENESIS_PROVIDER_ROUTING_OPEN_SCHEMA = {
+  type: 'object',
+  properties: {
+    provider: {
+      type: 'string',
+      title: 'Provider',
+      enum: XENESIS_PROVIDER_IDS,
+      description: 'Optional active provider id to focus in the internal Desk Connection Center routing surface.',
+    },
+    id: {
+      type: 'string',
+      title: 'Provider card id',
+      description: 'Alias for provider card id, such as provider-codex-app-server.',
+    },
+    name: {
+      type: 'string',
+      title: 'Provider',
+      enum: XENESIS_PROVIDER_IDS,
+      description: 'Alias for provider.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused provider routing card into view after opening the Connection Center.',
+      default: true,
+    },
+  },
+} as const;
+
 const XENESIS_PROVIDER_VIEW_STATUS_SCHEMA = {
   type: 'object',
   properties: {
@@ -1427,6 +1456,7 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisProviderSetupStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisProviderSetup?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisProviderRoutingStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisProviderRouting?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisProviderViewsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisProviderView?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisProviderProfileDraftsStatus?: (args?: unknown) => Promise<unknown> | unknown;
@@ -4837,6 +4867,13 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               'Read provider route source, runtime provider/model, retry policy, configured fallback chain, credential-pool state, diagnostics, and safety boundaries for the active Xenesis AI provider.',
               'read',
               XENESIS_PROVIDER_SETUP_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.providers.routing.open',
+              'Open provider routing',
+              'Open Settings > Xenesis Agent > Connections and focus the AI provider routing card inside Desk.',
+              'control',
+              XENESIS_PROVIDER_ROUTING_OPEN_SCHEMA,
             ),
           ],
         ),
@@ -11402,6 +11439,9 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.providers.routing.status') {
         return callAdapter(path, api?.getXenesisProviderRoutingStatus, request.args);
+      }
+      if (path === 'xd.xenesis.providers.routing.open') {
+        return callAdapter(path, api?.openXenesisProviderRouting, request.args);
       }
       if (path === 'xd.xenesis.providers.views.status') {
         return callAdapter(path, api?.getXenesisProviderViewsStatus, request.args);

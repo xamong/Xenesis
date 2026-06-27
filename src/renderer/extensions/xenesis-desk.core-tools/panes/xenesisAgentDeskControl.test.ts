@@ -320,6 +320,7 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.xenesis\.providers\.setup\.status/);
   assert.match(hint, /xd\.xenesis\.providers\.setup\.open/);
   assert.match(hint, /xd\.xenesis\.providers\.routing\.status/);
+  assert.match(hint, /xd\.xenesis\.providers\.routing\.open/);
   assert.match(hint, /xd\.xenesis\.providers\.views\.status/);
   assert.match(hint, /xd\.xenesis\.providers\.views\.open/);
   assert.match(hint, /xd\.localCli\.scan/);
@@ -1145,15 +1146,10 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider routing 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-providers-routing-catalog-open',
-      path: 'xd.panes.settings.open',
-      args: {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      path: 'xd.xenesis.providers.routing.open',
+      args: { ensureVisible: true },
       approved: false,
-      reason: 'Open AI provider routing catalog in Xenesis Connection Center from natural language request.',
+      reason: 'Open AI provider routing in Xenesis Connection Center from natural language request.',
     },
   ]);
 
@@ -1431,6 +1427,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
       args: { provider: 'codex-app-server', ensureVisible: true },
       approved: false,
       reason: 'Open codex-app-server provider view from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('codex app-server provider routing 열어줘').actions, [
+    {
+      id: 'natural-xenesis-provider-routing-open-codex-app-server',
+      path: 'xd.xenesis.providers.routing.open',
+      args: { provider: 'codex-app-server', ensureVisible: true },
+      approved: false,
+      reason: 'Open codex-app-server provider routing from natural language request.',
     },
   ]);
 

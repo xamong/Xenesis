@@ -94,6 +94,10 @@ function hasAny(value: string, words: readonly string[]): boolean {
   return words.some((word) => value.includes(word));
 }
 
+function hasExplicitOpenIntent(value: string): boolean {
+  return hasAny(value, ['열어', '켜줘', '띄워', '포커스', '집중']) || /\b(open|focus)\b/.test(value);
+}
+
 function hasActionIntent(value: string): boolean {
   return hasAny(value, [
     '열어',
@@ -1272,8 +1276,19 @@ function xenesisConnectionReviewRequestActionFromNaturalText(value: string): Xen
 }
 
 function xenesisProviderOpenActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
+  if (!hasExplicitOpenIntent(value)) return null;
+
   const provider = xenesisProviderFromNaturalText(value);
   if (!provider) return null;
+
+  if (hasAny(value, ['라우팅', 'routing', 'route', 'fallback', '폴백'])) {
+    return naturalAction(
+      `natural-xenesis-provider-routing-open-${provider.id}`,
+      'xd.xenesis.providers.routing.open',
+      { provider: provider.id, ensureVisible: true },
+      `Open ${provider.label} provider routing from natural language request.`,
+    );
+  }
 
   if (hasAny(value, ['profile', '프로필', 'draft', '초안'])) {
     return naturalAction(
@@ -1331,9 +1346,9 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
   if (hasXenesisProviderProfileContext(value) && hasAny(value, ['라우팅', 'routing', 'route', 'fallback', '폴백'])) {
     return naturalAction(
       'natural-xenesis-providers-routing-catalog-open',
-      'xd.panes.settings.open',
-      xenesisConnectionCenterOpenArgs(),
-      'Open AI provider routing catalog in Xenesis Connection Center from natural language request.',
+      'xd.xenesis.providers.routing.open',
+      { ensureVisible: true },
+      'Open AI provider routing in Xenesis Connection Center from natural language request.',
     );
   }
 
@@ -2939,7 +2954,7 @@ export function buildXenesisDeskControlPromptHint(): string {
     '- Use `xd.xenesis.connections.setupRequests.status` to inspect setup request templates, `xd.xenesis.connections.setupRequests.open` to focus the owning card, and `xd.xenesis.connections.setupRequests.request` to record a local Action Inbox review item without executing installs, OAuth, tokens, tool calls, messages, or settings mutations.',
     '- Use `xd.xenesis.onboarding.status` to inspect initial setup readiness and `xd.xenesis.onboarding.open` to focus one onboarding checklist step inside the Connection Center.',
     '- Use `xd.xenesis.guides.status` and `xd.xenesis.guides.open` to inspect or open repo-local setup playbooks, integration guides, and user-story guides.',
-    '- Use `xd.xenesis.providers.setup.status`, `xd.xenesis.providers.setup.open`, `xd.xenesis.providers.routing.status`, `xd.xenesis.providers.views.status`, and `xd.xenesis.providers.views.open` before changing provider-related Desk state.',
+    '- Use `xd.xenesis.providers.setup.status`, `xd.xenesis.providers.setup.open`, `xd.xenesis.providers.routing.status`, `xd.xenesis.providers.routing.open`, `xd.xenesis.providers.views.status`, and `xd.xenesis.providers.views.open` before changing provider-related Desk state.',
     '- Use `xd.localCli.scan`, `xd.mcp.settings.status`, and `xd.mcp.bridge.status` to inspect local CLI discovery and MCP setup or bridge readiness before suggesting installs, config writes, gateway starts, or local CLI switching.',
     '- Use `xd.xenesis.gateway.status` to inspect runtime gateway readiness and `xd.xenesis.gateway.openDashboard` to open the Desk gateway dashboard; do not start, stop, or restart the gateway unless the user clearly asks and approval policy is satisfied.',
     '- Use `xd.xenesis.workspace.set` only when the user clearly asks to bind the Xenesis workspace to a specific local path; leave approval handling to the Capability Registry, especially for outside-workspace paths.',

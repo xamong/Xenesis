@@ -7208,6 +7208,35 @@ async function openXenesisProviderSetup(args?: unknown): Promise<Record<string, 
   };
 }
 
+function xenesisProviderRoutingStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    provider: item.providerRouting?.activeProvider,
+    activeProvider: item.providerRouting?.activeProvider,
+    activeModel: item.providerRouting?.activeModel,
+    runtimeProfile: item.providerRouting?.runtimeProfile,
+    runtimeProvider: item.providerRouting?.runtimeProvider,
+    runtimeModel: item.providerRouting?.runtimeModel,
+    retryPolicy: item.providerRouting?.retryPolicy,
+    fallbackPolicy: item.providerRouting?.fallbackPolicy,
+    fallbackChainSource: item.providerRouting?.fallbackChainSource,
+    fallbackChainVisible: item.providerRouting?.fallbackChainVisible,
+    fallbackChain: item.providerRouting?.fallbackChain ?? [],
+    credentialPools: item.providerRouting?.credentialPools ?? [],
+    readPaths: item.providerRouting?.readPaths ?? [],
+    diagnostics: item.providerRouting?.diagnostics ?? [],
+    safetyBoundaries: item.providerRouting?.safetyBoundaries ?? [],
+    providerRouting: item.providerRouting,
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+    warnings: item.warnings ?? [],
+  };
+}
+
 async function getXenesisProviderRoutingStatus(args?: unknown): Promise<Record<string, unknown>> {
   const body = normalizeMcpCapabilityArgs(args);
   const provider = readCapabilityString(body, ['provider', 'id', 'name']);
@@ -7223,32 +7252,7 @@ async function getXenesisProviderRoutingStatus(args?: unknown): Promise<Record<s
   const items = status.sections.provider.items
     .filter((item) => item.providerRouting)
     .filter((item) => !provider || item.providerRouting?.activeProvider === provider)
-    .map((item: XenesisConnectionItem) => ({
-      id: item.id,
-      label: item.label,
-      status: item.status,
-      supportLevel: item.supportLevel,
-      summary: item.summary,
-      provider: item.providerRouting?.activeProvider,
-      activeProvider: item.providerRouting?.activeProvider,
-      activeModel: item.providerRouting?.activeModel,
-      runtimeProfile: item.providerRouting?.runtimeProfile,
-      runtimeProvider: item.providerRouting?.runtimeProvider,
-      runtimeModel: item.providerRouting?.runtimeModel,
-      retryPolicy: item.providerRouting?.retryPolicy,
-      fallbackPolicy: item.providerRouting?.fallbackPolicy,
-      fallbackChainSource: item.providerRouting?.fallbackChainSource,
-      fallbackChainVisible: item.providerRouting?.fallbackChainVisible,
-      fallbackChain: item.providerRouting?.fallbackChain ?? [],
-      credentialPools: item.providerRouting?.credentialPools ?? [],
-      readPaths: item.providerRouting?.readPaths ?? [],
-      diagnostics: item.providerRouting?.diagnostics ?? [],
-      safetyBoundaries: item.providerRouting?.safetyBoundaries ?? [],
-      providerRouting: item.providerRouting,
-      settingsAction: item.settingsAction,
-      crActions: item.crActions ?? [],
-      warnings: item.warnings ?? [],
-    }));
+    .map((item: XenesisConnectionItem) => xenesisProviderRoutingStatusItem(item));
 
   return {
     ok: true,
@@ -7256,6 +7260,55 @@ async function getXenesisProviderRoutingStatus(args?: unknown): Promise<Record<s
     ...(provider ? { provider } : {}),
     total: items.length,
     items,
+  };
+}
+
+function isXenesisProviderRoutingSelector(provider: string): boolean {
+  return isXenesisProviderSetupId(provider) || provider.startsWith('provider-');
+}
+
+async function openXenesisProviderRouting(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const provider = readCapabilityString(body, ['provider', 'id', 'name']);
+  if (provider && !isXenesisProviderRoutingSelector(provider)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis provider: ${provider}`,
+      allowedProviders: XENESIS_PROVIDER_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.provider.items.find(
+    (candidate) =>
+      Boolean(candidate.providerRouting) &&
+      (!provider || candidate.providerRouting?.activeProvider === provider || candidate.id === provider),
+  );
+  if (!item) {
+    return {
+      ok: false,
+      ...(provider ? { provider } : {}),
+      error: provider
+        ? `Xenesis provider routing is not available: ${provider}`
+        : 'Xenesis provider routing is not available.',
+    };
+  }
+
+  const renderer = await openMcpBuiltinPaneCapability({
+    kind: 'settings',
+    category: 'xenesis-agent',
+    mode: 'connections',
+    section: 'xenesis-connections',
+    focusConnectionId: item.id,
+    ensureVisible: body.ensureVisible !== false,
+  });
+
+  return {
+    ok: renderer.ok !== false,
+    provider: item.providerRouting?.activeProvider,
+    id: item.id,
+    item: xenesisProviderRoutingStatusItem(item),
+    renderer,
   };
 }
 
@@ -14540,6 +14593,7 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisProviderSetupStatus: (args: unknown) => getXenesisProviderSetupStatus(args),
     openXenesisProviderSetup: (args: unknown) => openXenesisProviderSetup(args),
     getXenesisProviderRoutingStatus: (args: unknown) => getXenesisProviderRoutingStatus(args),
+    openXenesisProviderRouting: (args: unknown) => openXenesisProviderRouting(args),
     getXenesisProviderViewsStatus: (args: unknown) => getXenesisProviderViewsStatus(args),
     openXenesisProviderView: (args: unknown) => openXenesisProviderView(args),
     getXenesisProviderProfileDraftsStatus: (args: unknown) => getXenesisProviderProfileDraftsStatus(args),
