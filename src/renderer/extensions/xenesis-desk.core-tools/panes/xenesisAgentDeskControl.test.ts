@@ -1081,6 +1081,26 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center read
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('텔레그램 setup 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-messenger-view-status-telegram',
+      path: 'xd.xenesis.messengers.views.status',
+      args: { id: 'telegram' },
+      approved: false,
+      reason: 'Read Telegram messenger view status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('슬랙 config 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-messenger-view-status-slack',
+      path: 'xd.xenesis.messengers.views.status',
+      args: { id: 'slack' },
+      approved: false,
+      reason: 'Read Slack messenger view status from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('텔레그램 사용자 스토리 상태 보여줘').actions, [
     {
       id: 'natural-xenesis-channel-user-story-status-telegram',

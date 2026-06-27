@@ -798,7 +798,23 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       );
     }
 
-    if (target.kind === 'messenger' && hasAny(value, ['view', 'views', '뷰', '화면', '메신저'])) {
+    if (
+      target.kind === 'messenger' &&
+      hasAny(value, [
+        'view',
+        'views',
+        '뷰',
+        '화면',
+        '메신저',
+        'setup',
+        '초기 설정',
+        '설정',
+        'config',
+        'configuration',
+        '구성',
+        'integration',
+      ])
+    ) {
       return naturalAction(
         `natural-xenesis-messenger-view-status-${target.id}`,
         'xd.xenesis.messengers.views.status',

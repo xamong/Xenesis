@@ -1188,6 +1188,33 @@ Capability Registry instead of only through separate renderer settings panels.
     passed with 56/56 tests.
   - `npm run typecheck` passed.
 
+## Current Natural Messenger Setup Readbacks Slice
+
+- Add deterministic natural-language routing for external messenger setup/config
+  status requests before provider execution.
+- `텔레그램 setup 상태 보여줘` maps to
+  `xd.xenesis.messengers.views.status` with `id=telegram`.
+- `슬랙 config 상태 보여줘` maps to
+  `xd.xenesis.messengers.views.status` with `id=slack`.
+- More specific messenger status branches still win first: routing, safety,
+  access groups, pairing, user stories, and profile drafts.
+- This is deterministic routing, not agent reasoning. It emits an existing
+  read/no-approval CR status action only and does not add CR nodes, mutate
+  messenger settings, update allowlists, write profiles, send test messages,
+  start gateway lifecycle actions, store secrets, or bypass approvals.
+- External documentation handling: no per-slice web browsing. Use local
+  Obsidian/docs/handoff/code/tests as the gap map; refresh external docs only
+  as a batched documentation pass if needed.
+- TDD check: focused natural planner test failed first because `텔레그램 setup
+  상태 보여줘` returned generic `xd.xenesis.connections.diagnostics.status`,
+  then passed after implementation with 29/29 tests.
+- Verification:
+  - `npx biome check src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts --max-diagnostics 40`
+    passed.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 56/56 tests.
+  - `npm run typecheck` passed.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
