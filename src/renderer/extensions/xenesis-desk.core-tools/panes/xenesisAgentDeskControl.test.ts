@@ -347,6 +347,7 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.xenesis\.tools\.userStories\.open/);
   assert.match(hint, /xd\.xenesis\.tools\.installPlans\.status/);
   assert.match(hint, /xd\.xenesis\.tools\.installPlans\.open/);
+  assert.match(hint, /xd\.xenesis\.tools\.installPlans\.request/);
   assert.match(hint, /xd\.xenesis\.tools\.mcpInstallDrafts\.status/);
   assert.match(hint, /xd\.xenesis\.tools\.mcpInstallDrafts\.open/);
   assert.match(hint, /xd\.xenesis\.tools\.mcpInstallDrafts\.request/);
@@ -397,6 +398,7 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /GowooriChat is fallback only/);
   assert.match(hint, /"kind":"xenesisAgent","placement":"right"/);
   assert.match(hint, /"useActive":true/);
+  assert.match(hint, /tool install plans are review-only/i);
   assert.match(hint, /ordered multi-step Desk control/i);
   assert.match(hint, /do not refuse/i);
   assert.match(hint, /runtime is read-only/i);
@@ -2484,6 +2486,16 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center review reques
       args: { id: 'notion' },
       approved: false,
       reason: 'Request Notion MCP install draft review from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 설치 계획 검토 요청해줘').actions, [
+    {
+      id: 'natural-xenesis-tool-install-plan-request-notion',
+      path: 'xd.xenesis.tools.installPlans.request',
+      args: { id: 'notion' },
+      approved: false,
+      reason: 'Request Notion tool install plan review from natural language request.',
     },
   ]);
 

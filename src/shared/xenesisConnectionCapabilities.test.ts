@@ -754,18 +754,29 @@ test('xenesis tool user story capabilities are registered and dispatch to the ad
 test('xenesis tool install plan capabilities are registered and dispatch to the adapter', async () => {
   const statusCapability = findDeskBridgeCapability('xd.xenesis.tools.installPlans.status');
   const openCapability = findDeskBridgeCapability('xd.xenesis.tools.installPlans.open');
+  const requestCapability = findDeskBridgeCapability('xd.xenesis.tools.installPlans.request');
   const statusSchemaProperties = (statusCapability?.schema?.properties ?? {}) as Record<string, any>;
   const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const requestSchemaProperties = (requestCapability?.schema?.properties ?? {}) as Record<string, any>;
   assert.equal(statusCapability?.permission, 'read');
   assert.equal(statusCapability?.approval, 'never');
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
   assert.deepEqual(openCapability?.schema?.required, ['id']);
+  assert.equal(requestCapability?.permission, 'write');
+  assert.equal(requestCapability?.approval, 'when-external');
+  assert.deepEqual(requestCapability?.schema?.required, ['id']);
   for (const tool of ['notion', 'linear', 'google-workspace', 'google-calendar']) {
     assert.equal(statusSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by status`);
     assert.equal(statusSchemaProperties.tool?.enum.includes(tool), true, `${tool} should be accepted by status alias`);
     assert.equal(openSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by open`);
     assert.equal(openSchemaProperties.tool?.enum.includes(tool), true, `${tool} should be accepted by open alias`);
+    assert.equal(requestSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by request`);
+    assert.equal(
+      requestSchemaProperties.tool?.enum.includes(tool),
+      true,
+      `${tool} should be accepted by request alias`,
+    );
   }
 
   const calls: Array<{ method: string; args: unknown }> = [];
@@ -784,6 +795,14 @@ test('xenesis tool install plan capabilities are registered and dispatch to the 
         item: { id: 'notion', installMode: 'copy-template' },
       };
     },
+    requestXenesisToolInstallPlan: (args) => {
+      calls.push({ method: 'request', args });
+      return {
+        ok: true,
+        item: { id: 'notion', installMode: 'copy-template' },
+        actionInboxItem: { id: 'install-plan-review' },
+      };
+    },
   };
 
   const statusResult = await callDeskBridgeCapability(api, {
@@ -796,12 +815,20 @@ test('xenesis tool install plan capabilities are registered and dispatch to the 
     args: { id: 'notion' },
     source: 'xenesis',
   });
+  const requestResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.tools.installPlans.request',
+    args: { id: 'notion' },
+    source: 'xenesis',
+    approved: true,
+  });
 
   assert.equal(statusResult.ok, true);
   assert.equal(openResult.ok, true);
+  assert.equal(requestResult.ok, true);
   assert.deepEqual(calls, [
     { method: 'status', args: { tool: 'notion' } },
     { method: 'open', args: { id: 'notion' } },
+    { method: 'request', args: { id: 'notion' } },
   ]);
   assert.deepEqual(statusResult.result, {
     ok: true,
@@ -810,6 +837,11 @@ test('xenesis tool install plan capabilities are registered and dispatch to the 
   assert.deepEqual(openResult.result, {
     ok: true,
     item: { id: 'notion', installMode: 'copy-template' },
+  });
+  assert.deepEqual(requestResult.result, {
+    ok: true,
+    item: { id: 'notion', installMode: 'copy-template' },
+    actionInboxItem: { id: 'install-plan-review' },
   });
 });
 

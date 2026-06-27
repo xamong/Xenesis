@@ -808,6 +808,34 @@ const XENESIS_TOOL_USER_STORY_STATUS_SCHEMA = XENESIS_TOOL_VIEW_STATUS_SCHEMA;
 const XENESIS_TOOL_USER_STORY_OPEN_SCHEMA = XENESIS_TOOL_VIEW_OPEN_SCHEMA;
 const XENESIS_TOOL_INSTALL_PLAN_STATUS_SCHEMA = XENESIS_TOOL_VIEW_STATUS_SCHEMA;
 const XENESIS_TOOL_INSTALL_PLAN_OPEN_SCHEMA = XENESIS_TOOL_VIEW_OPEN_SCHEMA;
+const XENESIS_TOOL_INSTALL_PLAN_REQUEST_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'External tool connection id to record as a tool install plan review request.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Alias for id.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity to include on the Action Inbox item.',
+    },
+    note: {
+      type: 'string',
+      title: 'Review note',
+      description: 'Optional note to append to the tool install plan description.',
+    },
+  },
+} as const;
 const XENESIS_TOOL_MCP_INSTALL_DRAFT_STATUS_SCHEMA = XENESIS_TOOL_VIEW_STATUS_SCHEMA;
 const XENESIS_TOOL_MCP_INSTALL_DRAFT_OPEN_SCHEMA = XENESIS_TOOL_VIEW_OPEN_SCHEMA;
 const XENESIS_TOOL_MCP_INSTALL_DRAFT_REQUEST_SCHEMA = {
@@ -1380,6 +1408,7 @@ export interface DeskBridgeCapabilityAdapter {
   openXenesisToolUserStory?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolInstallPlansStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisToolInstallPlan?: (args?: unknown) => Promise<unknown> | unknown;
+  requestXenesisToolInstallPlan?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolMcpInstallDraftsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisToolMcpInstallDraft?: (args?: unknown) => Promise<unknown> | unknown;
   requestXenesisToolMcpInstallDraft?: (args?: unknown) => Promise<unknown> | unknown;
@@ -4661,7 +4690,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
         group(
           'xd.xenesis.tools.installPlans',
           'Install plans',
-          'Read and open Desk setup surfaces for external tool install planning.',
+          'Read, open, and request review-only Desk setup surfaces for external tool install planning.',
           [
             method(
               'xd.xenesis.tools.installPlans.status',
@@ -4676,6 +4705,13 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               'Open Settings > Xenesis Agent > Connections and focus an external tool install-plan card inside Desk.',
               'control',
               XENESIS_TOOL_INSTALL_PLAN_OPEN_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.installPlans.request',
+              'Request tool install plan review',
+              'Record a local Action Inbox item for reviewing an external tool install plan without executing installs, writing MCP config, completing OAuth, storing tokens, executing provider tools, mutating settings, or mutating external systems.',
+              'write',
+              XENESIS_TOOL_INSTALL_PLAN_REQUEST_SCHEMA,
             ),
           ],
         ),
@@ -11317,6 +11353,9 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.tools.installPlans.open') {
         return callAdapter(path, api?.openXenesisToolInstallPlan, request.args);
+      }
+      if (path === 'xd.xenesis.tools.installPlans.request') {
+        return callAdapter(path, api?.requestXenesisToolInstallPlan, request.args);
       }
       if (path === 'xd.xenesis.tools.mcpInstallDrafts.status') {
         return callAdapter(path, api?.getXenesisToolMcpInstallDraftsStatus, request.args);

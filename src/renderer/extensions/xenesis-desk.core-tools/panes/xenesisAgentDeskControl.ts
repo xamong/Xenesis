@@ -1212,6 +1212,18 @@ function xenesisConnectionReviewRequestActionFromNaturalText(value: string): Xen
   const target = xenesisConnectionTargetFromNaturalText(value);
   if (!target) return null;
 
+  if (
+    target.kind === 'tool' &&
+    hasAny(value, ['설치 계획', '설치계획', '설치 플랜', 'install plan', 'install plans', 'install-plan'])
+  ) {
+    return naturalAction(
+      `natural-xenesis-tool-install-plan-request-${target.id}`,
+      'xd.xenesis.tools.installPlans.request',
+      { id: target.id },
+      `Request ${target.label} tool install plan review from natural language request.`,
+    );
+  }
+
   if (target.kind === 'tool' && hasAny(value, ['mcp', '설치', 'install', 'server', '서버'])) {
     return naturalAction(
       `natural-xenesis-tool-mcp-install-draft-request-${target.id}`,
@@ -2946,7 +2958,7 @@ export function buildXenesisDeskControlPromptHint(): string {
     '- Use `xd.xenesis.diagnostics`, `xd.xenesis.reports.list`, `xd.xenesis.tasks.list`, `xd.xenesis.agents.list`, `xd.xenesis.agents.status`, `xd.xenesis.agents.events`, and `xd.xenesis.agents.submit` to inspect runtime diagnostics, verification reports, task inventory, registered Agent panes, quoted Agent pane status/events, or submit a quoted Agent pane message before mutating broader runtime state. Agent status/events require `args.agentId`; Agent submit requires `args.agentId` and `args.text`.',
     '- Use `xd.xenesis.profiles.list` to inspect installed and active Xenesis profiles before installing profiles, switching the active profile, updating channel settings, or sending profile channel test messages.',
     '- Use `xd.xenesis.runs.start` only when the user clearly asks to run a quoted prompt through the Xenesis runtime. Use `xd.xenesis.runs.cancel` only for explicit user requests to cancel the active Xenesis runtime request, and `xd.xenesis.sessions.reset` only for explicit user requests to reset the active Xenesis conversation/session.',
-    '- Use `xd.xenesis.tools.setup.status`, `xd.xenesis.tools.setup.open`, `xd.xenesis.tools.connectors.status`, `xd.xenesis.tools.connectors.open`, `xd.xenesis.tools.views.status`, `xd.xenesis.tools.views.open`, `xd.xenesis.tools.userStories.status`, `xd.xenesis.tools.userStories.open`, `xd.xenesis.tools.installPlans.status`, and `xd.xenesis.tools.installPlans.open` to inspect or open internal Desk tool setup/readiness surfaces.',
+    '- Use `xd.xenesis.tools.setup.status`, `xd.xenesis.tools.setup.open`, `xd.xenesis.tools.connectors.status`, `xd.xenesis.tools.connectors.open`, `xd.xenesis.tools.views.status`, `xd.xenesis.tools.views.open`, `xd.xenesis.tools.userStories.status`, `xd.xenesis.tools.userStories.open`, `xd.xenesis.tools.installPlans.status`, `xd.xenesis.tools.installPlans.open`, and `xd.xenesis.tools.installPlans.request` to inspect, open, or request review of internal Desk tool setup/readiness surfaces. Tool install plans are review-only and do not execute installs, write MCP config, complete OAuth, store tokens, execute provider tools, mutate settings, or mutate external systems.',
     '- Use `xd.xenesis.tools.mcpInstallDrafts.status` to inspect review-only MCP install drafts, `xd.xenesis.tools.mcpInstallDrafts.open` to focus the owning tool card, and `xd.xenesis.tools.mcpInstallDrafts.request` to record a local Action Inbox review item without writing MCP config, running shell commands, completing OAuth, storing tokens, executing provider tools, or mutating settings.',
     '- Use `xd.xenesis.tools.oauthDrafts.status` to inspect review-only Google tool OAuth app and token-store drafts, `xd.xenesis.tools.oauthDrafts.open` to focus the owning tool card, and `xd.xenesis.tools.oauthDrafts.request` to record a local Action Inbox review item. Tool OAuth drafts are review-only and do not complete OAuth, store tokens, write MCP config, execute provider tools, send email, mutate documents, or mutate calendar events.',
     '- Use `xd.xenesis.tools.actions.status` to inspect review-only external tool action catalogs, `xd.xenesis.tools.actions.open` to focus the owning tool card, and `xd.xenesis.tools.actions.request` to record a local Action Inbox review item. Tool action catalogs are review-only and do not execute provider tools or mutate external systems.',

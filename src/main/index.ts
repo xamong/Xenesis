@@ -6506,6 +6506,83 @@ async function openXenesisToolInstallPlan(args?: unknown): Promise<Record<string
   };
 }
 
+async function requestXenesisToolInstallPlan(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Tool id is required.' };
+  }
+  if (!isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.tools.items.find((candidate) => candidate.id === id && candidate.toolInstallPlan);
+  if (!item?.toolInstallPlan) {
+    return { ok: false, id, error: `Xenesis tool install plan is not available: ${id}` };
+  }
+
+  const plan = item.toolInstallPlan;
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+  const requester = readCapabilityString(body, ['requester', 'user', 'userName']) || 'Xenesis Desk';
+  const description = [
+    `Review the ${plan.installMode} install plan for ${item.label}.`,
+    `Runtime support: ${plan.runtimeSupport}`,
+    `Primary surface: ${plan.primarySurface}`,
+    `Setup surface: ${plan.setupSurface}`,
+    `Install surface: ${plan.installSurface}`,
+    `Config targets: ${plan.configTargets.join(', ') || 'none'}`,
+    `Required env: ${plan.requiredEnv.join(', ') || 'none'}`,
+    '',
+    'Install actions:',
+    ...plan.installActions.map((action) => `- ${action}`),
+    '',
+    'Install steps:',
+    ...plan.installSteps.map((step) => `- ${step}`),
+    '',
+    'Read paths:',
+    ...plan.readPaths.map((path) => `- ${path}`),
+    '',
+    'Control paths:',
+    ...plan.controlPaths.map((path) => `- ${path}`),
+    '',
+    'Diagnostics:',
+    ...plan.diagnostics.map((diagnostic) => `- ${diagnostic}`),
+    '',
+    'Safety boundaries:',
+    ...plan.safetyBoundaries.map((boundary) => `- ${boundary}`),
+    note ? '' : undefined,
+    note ? `Note: ${note}` : undefined,
+  ]
+    .filter((line): line is string => typeof line === 'string')
+    .join('\n');
+
+  const actionInboxItem = recordMcpActionInboxRequest({
+    kind: 'xenesis-tool-install-plan',
+    title: `Review ${item.label} tool install plan`,
+    command: `Review tool install plan for ${item.id}`,
+    description,
+    source: 'Xenesis Connection Center',
+    sessionId: 'xenesis-tool-install-plan',
+    approvalSessionKey: `xenesis-tool-install-plan:${item.id}`,
+    requester,
+    risk: plan.runtimeSupport,
+    approveText: `Approve tool install plan for ${item.label}`,
+    rejectText: `Reject tool install plan for ${item.label}`,
+  });
+
+  return {
+    ok: true,
+    id: item.id,
+    item: xenesisToolInstallPlanStatusItem(item),
+    actionInboxItem,
+  };
+}
+
 function xenesisToolMcpInstallDraftStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
   return {
     id: item.id,
@@ -14449,6 +14526,7 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     openXenesisToolUserStory: (args: unknown) => openXenesisToolUserStory(args),
     getXenesisToolInstallPlansStatus: (args: unknown) => getXenesisToolInstallPlansStatus(args),
     openXenesisToolInstallPlan: (args: unknown) => openXenesisToolInstallPlan(args),
+    requestXenesisToolInstallPlan: (args: unknown) => requestXenesisToolInstallPlan(args),
     getXenesisToolMcpInstallDraftsStatus: (args: unknown) => getXenesisToolMcpInstallDraftsStatus(args),
     openXenesisToolMcpInstallDraft: (args: unknown) => openXenesisToolMcpInstallDraft(args),
     requestXenesisToolMcpInstallDraft: (args: unknown) => requestXenesisToolMcpInstallDraft(args),

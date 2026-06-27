@@ -750,6 +750,38 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local Obsidian graph, source code, and tests.
 
+## Tool Install Plan Request CR Slice
+
+- Added a review-only CR request path for external tool install plans:
+  `xd.xenesis.tools.installPlans.request`.
+- The install-plan group now has the same read/open/request shape as other
+  reviewable setup surfaces:
+  - `xd.xenesis.tools.installPlans.status`
+  - `xd.xenesis.tools.installPlans.open`
+  - `xd.xenesis.tools.installPlans.request`
+- Main-process handling records a local Action Inbox item for the selected
+  tool's install-plan review and returns the existing install-plan status item.
+- Xenesis Agent deterministic routing now preserves install-plan review intent:
+  - `노션 설치 계획 검토 요청해줘` ->
+    `xd.xenesis.tools.installPlans.request` with `id=notion`.
+- The Agent control prompt now lists
+  `xd.xenesis.tools.installPlans.request` and explicitly states tool install
+  plans are review-only.
+- Scope boundary: this slice does not execute installs, write MCP config,
+  complete OAuth, store tokens, execute provider tools, mutate settings, mutate
+  external systems, or bypass approvals. It only records a local review item.
+- Verification:
+  - Focused capability and Agent tests passed.
+  - Related 95-test slice passed.
+  - Root typecheck passed.
+  - CR audit passed with missing registered paths 0, missing dispatched
+    coverage paths 0, undispatched static callable methods 0, and dispatcher
+    paths missing from tree 0.
+  - Public-release check still fails on the known missing
+    `.github/workflows/ci.yml` infra gap.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local Obsidian graph, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
