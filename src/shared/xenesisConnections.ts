@@ -353,6 +353,7 @@ export type XenesisConnectionChannelProfileDraftFieldValueState =
   | 'empty'
   | 'missing-env'
   | 'not-required'
+  | 'planned'
   | 'unknown';
 
 export interface XenesisConnectionChannelProfileDraftField {
@@ -373,7 +374,7 @@ export interface XenesisConnectionChannelProfileDraftGuardrails {
 export interface XenesisConnectionChannelProfileDraftTemplate {
   draftStatus: XenesisConnectionChannelProfileDraftStatus;
   actionInboxKind: 'xenesis-channel-profile-draft';
-  channel: XenesisProfileChannelName;
+  channel: string;
   displayName: string;
   description?: string;
   setupSurface: string;
@@ -2769,19 +2770,36 @@ function messengerViewTemplate(
   };
 }
 
+const XENESIS_CHANNEL_PROFILE_DRAFT_BLOCKED_ACTIONS = [
+  'mutate channel settings',
+  'update allowlists',
+  'write profile config',
+  'send test message',
+  'start gateway',
+  'store secrets',
+  'bypass approvals',
+];
+
 function plannedMessenger(definition: PlannedMessengerDefinition): XenesisConnectionItem {
+  const channelTemplate = {
+    ...definition.channelTemplate,
+    pairing: definition.channelTemplate.pairing ?? plannedChannelPairingTemplate(definition.id),
+    userStory: definition.channelTemplate.userStory ?? plannedChannelUserStoryTemplate(definition.id, definition.label),
+  };
+
   return {
     ...definition,
-    channelTemplate: {
-      ...definition.channelTemplate,
-      pairing: definition.channelTemplate.pairing ?? plannedChannelPairingTemplate(definition.id),
-      userStory:
-        definition.channelTemplate.userStory ?? plannedChannelUserStoryTemplate(definition.id, definition.label),
-    },
+    channelTemplate,
     kind: 'messenger',
     status: 'planned',
     supportLevel: 'planned',
     messengerView: messengerViewTemplate(definition.id, 'planned'),
+    channelProfileDraft: buildXenesisPlannedChannelProfileDraft({
+      channel: definition.id,
+      label: definition.label,
+      channelTemplate,
+      warnings: definition.warnings,
+    }),
     crActions: [],
     warnings: definition.warnings ?? [`No ${definition.label} gateway adapter is bundled yet.`],
   };
@@ -3347,16 +3365,6 @@ function missingEnvFor(requiredEnv: readonly string[], env: Record<string, strin
   return uniqueStrings(requiredEnv.filter((ref) => !env[ref]?.trim()));
 }
 
-const XENESIS_CHANNEL_PROFILE_DRAFT_BLOCKED_ACTIONS = [
-  'mutate channel settings',
-  'update allowlists',
-  'write profile config',
-  'send test message',
-  'start gateway',
-  'store secrets',
-  'bypass approvals',
-];
-
 interface XenesisConnectionChannelProfileDraftFieldDefinition {
   field: string;
   label: string;
@@ -3609,6 +3617,108 @@ function buildXenesisChannelProfileDraft(
       ...(input.channelTemplate?.safety?.safetyBoundaries ?? []),
       ...(input.channelTemplate?.accessGroups?.safetyBoundaries ?? []),
       ...(input.channelTemplate?.pairing?.safetyBoundaries ?? []),
+      ...(input.warnings ?? []),
+    ]),
+  };
+}
+
+function buildXenesisPlannedChannelProfileDraft(input: {
+  channel: string;
+  label: string;
+  channelTemplate?: XenesisConnectionChannelTemplate;
+  warnings?: string[];
+}): XenesisConnectionChannelProfileDraftTemplate {
+  const adapter = input.channelTemplate?.adapter ?? 'planned-adapter';
+  const auth = input.channelTemplate?.auth ?? 'planned-auth';
+  const profileFields: XenesisConnectionChannelProfileDraftField[] = [
+    {
+      field: 'enabled',
+      label: 'Enabled',
+      required: false,
+      secretRef: false,
+      valueState: 'planned',
+      description: `Whether ${input.label} delivery is enabled after a verified adapter exists.`,
+    },
+    {
+      field: 'adapter',
+      label: 'Adapter',
+      required: true,
+      secretRef: false,
+      valueState: 'planned',
+      description: `Planned adapter: ${adapter}.`,
+    },
+    {
+      field: 'auth',
+      label: 'Auth',
+      required: true,
+      secretRef: false,
+      valueState: 'planned',
+      description: `Planned auth model: ${auth}.`,
+    },
+    {
+      field: 'routeScope',
+      label: 'Route scope',
+      required: true,
+      secretRef: false,
+      valueState: 'planned',
+      description: 'Allowed accounts, chats, rooms, senders, or topics must be reviewed before accepting prompts.',
+    },
+  ];
+
+  return {
+    draftStatus: 'planned',
+    actionInboxKind: 'xenesis-channel-profile-draft',
+    channel: input.channel,
+    displayName: input.label,
+    description: `Review planned ${input.label} channel profile intent before runtime adapter work starts.`,
+    setupSurface: 'Settings > Xenesis Agent > Connections',
+    reviewSurface: 'Desk Action Inbox',
+    profileFields,
+    missingRequiredFields: [],
+    guardrails: {
+      approvalMode: 'readonly',
+      maxTurns: 12,
+      maxTokens: 120000,
+    },
+    readPaths: uniqueStrings([
+      'xd.xenesis.channels.profileDrafts.status',
+      'xd.xenesis.connections.status',
+      'xd.xenesis.channels.routing.status',
+      'xd.xenesis.channels.safety.status',
+      'xd.xenesis.channels.accessGroups.status',
+      'xd.xenesis.channels.pairing.status',
+      'xd.xenesis.channels.userStories.status',
+      'xd.xenesis.messengers.views.status',
+    ]),
+    controlPaths: uniqueStrings([
+      'xd.xenesis.channels.profileDrafts.open',
+      'xd.xenesis.channels.profileDrafts.request',
+      'xd.xenesis.connections.open',
+      'xd.xenesis.messengers.views.open',
+    ]),
+    diagnostics: uniqueStrings([
+      'profile-draft-planned',
+      'planned-adapter',
+      `adapter:${adapter}`,
+      `auth:${auth}`,
+      ...(input.channelTemplate?.routing?.diagnostics ?? []),
+      ...(input.channelTemplate?.safety?.troubleshooting ?? []),
+      ...(input.channelTemplate?.accessGroups?.diagnostics ?? []),
+      ...(input.channelTemplate?.pairing?.diagnostics ?? []),
+      ...(input.channelTemplate?.userStory?.diagnostics ?? []),
+    ]),
+    blockedActions: [...XENESIS_CHANNEL_PROFILE_DRAFT_BLOCKED_ACTIONS],
+    safetyBoundaries: uniqueStrings([
+      'planned channel profile drafts are review-only',
+      'planned channel profile draft does not mutate channel settings or update allowlists',
+      'planned channel profile draft does not write profile config or send test messages',
+      'planned channel profile draft does not start gateway delivery adapters',
+      'secret values are never returned',
+      ...(input.channelTemplate?.safetyControls ?? []),
+      ...(input.channelTemplate?.safety?.safetyBoundaries ?? []),
+      ...(input.channelTemplate?.accessGroups?.safetyBoundaries ?? []),
+      ...(input.channelTemplate?.pairing?.safetyBoundaries ?? []),
+      ...(input.channelTemplate?.userStory?.safetyBoundaries ?? []),
       ...(input.warnings ?? []),
     ]),
   };

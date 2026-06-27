@@ -5635,17 +5635,17 @@ function xenesisChannelProfileDraftStatusItem(item: XenesisConnectionItem): Reco
 async function getXenesisChannelProfileDraftsStatus(args?: unknown): Promise<Record<string, unknown>> {
   const body = normalizeMcpCapabilityArgs(args);
   const channel = readCapabilityString(body, ['channel', 'id', 'name']);
-  if (channel && !isXenesisProfileChannelName(channel)) {
+  if (channel && !isXenesisMessengerViewId(channel)) {
     return {
       ok: false,
       error: `Unsupported Xenesis channel: ${channel}`,
-      allowedChannels: XENESIS_PROFILE_CHANNEL_NAMES,
+      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
     };
   }
 
   const status = await getXenesisConnectionsStatus();
   const items = status.sections.messengers.items
-    .filter((item) => item.supportLevel === 'implemented' && item.channelProfileDraft)
+    .filter((item) => item.channelProfileDraft)
     .filter((item) => !channel || item.id === channel)
     .map((item) => xenesisChannelProfileDraftStatusItem(item));
 
@@ -5664,11 +5664,11 @@ async function openXenesisChannelProfileDraft(args?: unknown): Promise<Record<st
   if (!channel) {
     return { ok: false, error: 'Channel is required.' };
   }
-  if (!isXenesisProfileChannelName(channel)) {
+  if (!isXenesisMessengerViewId(channel)) {
     return {
       ok: false,
       error: `Unsupported Xenesis channel: ${channel}`,
-      allowedChannels: XENESIS_PROFILE_CHANNEL_NAMES,
+      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
     };
   }
 
@@ -5703,11 +5703,11 @@ async function requestXenesisChannelProfileDraft(args?: unknown): Promise<Record
   if (!channel) {
     return { ok: false, error: 'Channel is required.' };
   }
-  if (!isXenesisProfileChannelName(channel)) {
+  if (!isXenesisMessengerViewId(channel)) {
     return {
       ok: false,
       error: `Unsupported Xenesis channel: ${channel}`,
-      allowedChannels: XENESIS_PROFILE_CHANNEL_NAMES,
+      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
     };
   }
 

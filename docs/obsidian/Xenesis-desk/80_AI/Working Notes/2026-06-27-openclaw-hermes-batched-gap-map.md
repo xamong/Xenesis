@@ -607,6 +607,31 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local code, and tests.
 
+## Planned Messenger Profile Drafts Slice
+
+- Planned external messenger cards now expose review-only channel profile draft
+  templates in the Connection Center data model, including Signal, WhatsApp,
+  Google Chat, and Zalo.
+- `xd.xenesis.channels.profileDrafts.status/open/request` now accept planned
+  messenger ids in addition to implemented Telegram, Slack, Discord, and
+  webhook ids.
+- Xenesis Agent deterministic natural-language routing now sends planned
+  messenger profile/draft prompts to channel profile draft CR paths:
+  - `Signal channel profile draft 열어줘` ->
+    `xd.xenesis.channels.profileDrafts.open` with `channel=signal`.
+  - `Signal channel profile draft 상태 보여줘` ->
+    `xd.xenesis.channels.profileDrafts.status` with `channel=signal`.
+  - `왓츠앱 프로필 검토 요청해줘` ->
+    `xd.xenesis.channels.profileDrafts.request` with `channel=whatsapp`.
+  - `Zalo 프로필 검토 요청해줘` ->
+    `xd.xenesis.channels.profileDrafts.request` with `channel=zalo`.
+- Scope boundary: planned messenger profile drafts are review-only. This slice
+  did not widen `XenesisProfileChannelName`, `XenesisGatewayChannelName`,
+  profile mutation, channel tests, gateway adapters, credential writes,
+  delivery actions, allowlist mutation, or approval bypasses.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

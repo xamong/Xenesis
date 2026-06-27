@@ -1326,7 +1326,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       );
     }
 
-    if (isImplementedXenesisMessengerTarget(target) && hasAny(value, ['프로필', 'profile', 'draft', '초안'])) {
+    if (target.kind === 'messenger' && hasAny(value, ['프로필', 'profile', 'draft', '초안'])) {
       return naturalAction(
         `natural-xenesis-channel-profile-draft-status-${target.id}`,
         'xd.xenesis.channels.profileDrafts.status',
@@ -1519,7 +1519,7 @@ function xenesisConnectionReviewRequestActionFromNaturalText(value: string): Xen
   }
 
   if (
-    isImplementedXenesisMessengerTarget(target) &&
+    target.kind === 'messenger' &&
     hasAny(value, ['프로필', 'profile', '채널', 'channel', '메신저', 'messenger', 'bot', '봇'])
   ) {
     return naturalAction(
@@ -1955,7 +1955,7 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
     );
   }
 
-  if (isImplementedXenesisMessengerTarget(target) && hasAny(value, ['프로필', 'profile', 'draft', '초안'])) {
+  if (target.kind === 'messenger' && hasAny(value, ['프로필', 'profile', 'draft', '초안'])) {
     return naturalAction(
       `natural-xenesis-channel-profile-draft-open-${target.id}`,
       'xd.xenesis.channels.profileDrafts.open',

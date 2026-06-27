@@ -2176,7 +2176,23 @@ test('buildXenesisConnectionsStatus exposes review-only channel profile drafts f
     'signingSecretEnv:env-secret',
     'allowedChannelIds',
   ]);
-  assert.equal(signal?.channelProfileDraft, undefined);
+
+  assert.equal(signal?.channelProfileDraft?.draftStatus, 'planned');
+  assert.equal(signal?.channelProfileDraft?.channel, 'signal');
+  assert.deepEqual(signal?.channelProfileDraft?.missingRequiredFields, []);
+  assert.deepEqual(
+    signal?.channelProfileDraft?.profileFields.map((field) => `${field.field}:${field.valueState}`),
+    ['enabled:planned', 'adapter:planned', 'auth:planned', 'routeScope:planned'],
+  );
+  assert.ok(signal?.channelProfileDraft?.readPaths.includes('xd.xenesis.channels.profileDrafts.status'));
+  assert.ok(signal?.channelProfileDraft?.controlPaths.includes('xd.xenesis.channels.profileDrafts.request'));
+  assert.ok(signal?.channelProfileDraft?.controlPaths.includes('xd.xenesis.messengers.views.open'));
+  assert.equal(signal?.channelProfileDraft?.controlPaths.includes('xd.xenesis.profiles.testChannel'), false);
+  assert.ok(
+    signal?.channelProfileDraft?.safetyBoundaries.some((boundary) =>
+      boundary.includes('planned channel profile drafts are review-only'),
+    ),
+  );
 });
 
 test('buildXenesisConnectionsStatus exposes internal Desk messenger views for implemented and planned channels', () => {

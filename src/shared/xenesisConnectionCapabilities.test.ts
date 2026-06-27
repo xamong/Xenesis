@@ -922,7 +922,7 @@ test('xenesis channel profile draft capabilities are registered and dispatch to 
   assert.equal(requestCapability?.permission, 'write');
   assert.equal(requestCapability?.approval, 'when-external');
   assert.deepEqual(requestCapability?.schema?.required, ['channel']);
-  for (const channel of ['telegram', 'slack', 'discord', 'webhook']) {
+  for (const channel of ['telegram', 'slack', 'discord', 'webhook', 'signal', 'google-chat', 'zalo']) {
     assert.equal(statusSchemaProperties.channel?.enum.includes(channel), true, `${channel} status channel enum`);
     assert.equal(statusSchemaProperties.id?.enum.includes(channel), true, `${channel} status id enum`);
     assert.equal(openSchemaProperties.channel?.enum.includes(channel), true, `${channel} open channel enum`);

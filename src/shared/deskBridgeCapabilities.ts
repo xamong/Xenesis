@@ -358,98 +358,6 @@ const XENESIS_CHANNEL_ACCESS_GROUP_STATUS_SCHEMA = {
   },
 } as const;
 
-const XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS = ['telegram', 'slack', 'discord', 'webhook'] as const;
-
-const XENESIS_CHANNEL_PROFILE_DRAFT_STATUS_SCHEMA = {
-  type: 'object',
-  properties: {
-    channel: {
-      type: 'string',
-      title: 'Channel',
-      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
-      description: 'Optional implemented external bot channel to filter.',
-    },
-    id: {
-      type: 'string',
-      title: 'Channel',
-      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
-      description: 'Alias for channel.',
-    },
-    name: {
-      type: 'string',
-      title: 'Channel',
-      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
-      description: 'Alias for channel.',
-    },
-  },
-} as const;
-
-const XENESIS_CHANNEL_PROFILE_DRAFT_OPEN_SCHEMA = {
-  type: 'object',
-  required: ['channel'],
-  properties: {
-    channel: {
-      type: 'string',
-      title: 'Channel',
-      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
-      description: 'Implemented external bot channel to open in the internal Desk Connection Center view.',
-    },
-    id: {
-      type: 'string',
-      title: 'Channel',
-      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
-      description: 'Alias for channel.',
-    },
-    name: {
-      type: 'string',
-      title: 'Channel',
-      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
-      description: 'Alias for channel.',
-    },
-    ensureVisible: {
-      type: 'boolean',
-      title: 'Ensure visible',
-      description: 'Scroll the focused messenger connection card into view after opening the Connection Center.',
-      default: true,
-    },
-  },
-} as const;
-
-const XENESIS_CHANNEL_PROFILE_DRAFT_REQUEST_SCHEMA = {
-  type: 'object',
-  required: ['channel'],
-  properties: {
-    channel: {
-      type: 'string',
-      title: 'Channel',
-      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
-      description: 'Implemented external bot channel to record as a profile draft review request.',
-    },
-    id: {
-      type: 'string',
-      title: 'Channel',
-      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
-      description: 'Alias for channel.',
-    },
-    name: {
-      type: 'string',
-      title: 'Channel',
-      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
-      description: 'Alias for channel.',
-    },
-    requester: {
-      type: 'string',
-      title: 'Requester',
-      description: 'Optional user or agent identity to include on the Action Inbox item.',
-    },
-    note: {
-      type: 'string',
-      title: 'Review note',
-      description: 'Optional note to append to the channel profile draft description.',
-    },
-  },
-} as const;
-
 const XENESIS_MESSENGER_VIEW_IDS = [
   'telegram',
   'slack',
@@ -480,6 +388,99 @@ const XENESIS_MESSENGER_VIEW_IDS = [
   'home-assistant',
   'ntfy',
 ] as const;
+
+const XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS = XENESIS_MESSENGER_VIEW_IDS;
+
+const XENESIS_CHANNEL_PROFILE_DRAFT_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
+      description: 'Optional implemented or planned external messenger channel to filter.',
+    },
+    id: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
+      description: 'Alias for channel.',
+    },
+    name: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
+      description: 'Alias for channel.',
+    },
+  },
+} as const;
+
+const XENESIS_CHANNEL_PROFILE_DRAFT_OPEN_SCHEMA = {
+  type: 'object',
+  required: ['channel'],
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
+      description:
+        'Implemented or planned external messenger channel to open in the internal Desk Connection Center view.',
+    },
+    id: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
+      description: 'Alias for channel.',
+    },
+    name: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
+      description: 'Alias for channel.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused messenger connection card into view after opening the Connection Center.',
+      default: true,
+    },
+  },
+} as const;
+
+const XENESIS_CHANNEL_PROFILE_DRAFT_REQUEST_SCHEMA = {
+  type: 'object',
+  required: ['channel'],
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
+      description: 'Implemented or planned external messenger channel to record as a profile draft review request.',
+    },
+    id: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
+      description: 'Alias for channel.',
+    },
+    name: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
+      description: 'Alias for channel.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity to include on the Action Inbox item.',
+    },
+    note: {
+      type: 'string',
+      title: 'Review note',
+      description: 'Optional note to append to the channel profile draft description.',
+    },
+  },
+} as const;
 
 const XENESIS_CHANNEL_PAIRING_STATUS_SCHEMA = {
   type: 'object',

@@ -1578,11 +1578,11 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
 
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('구글 챗 프로필 초안 열어줘').actions, [
     {
-      id: 'natural-xenesis-messenger-view-open-google-chat',
-      path: 'xd.xenesis.messengers.views.open',
-      args: { id: 'google-chat', ensureVisible: true },
+      id: 'natural-xenesis-channel-profile-draft-open-google-chat',
+      path: 'xd.xenesis.channels.profileDrafts.open',
+      args: { channel: 'google-chat', ensureVisible: true },
       approved: false,
-      reason: 'Open Google Chat messenger view from natural language request.',
+      reason: 'Open Google Chat channel profile draft from natural language request.',
     },
   ]);
 
@@ -1638,6 +1638,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
       args: { channel: 'telegram', ensureVisible: true },
       approved: false,
       reason: 'Open Telegram channel profile draft from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('Signal channel profile draft 열어줘').actions, [
+    {
+      id: 'natural-xenesis-channel-profile-draft-open-signal',
+      path: 'xd.xenesis.channels.profileDrafts.open',
+      args: { channel: 'signal', ensureVisible: true },
+      approved: false,
+      reason: 'Open Signal channel profile draft from natural language request.',
     },
   ]);
 
@@ -1750,6 +1760,16 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center readback requ
       args: { channel: 'telegram' },
       approved: false,
       reason: 'Read Telegram channel routing status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('Signal channel profile draft 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-channel-profile-draft-status-signal',
+      path: 'xd.xenesis.channels.profileDrafts.status',
+      args: { channel: 'signal' },
+      approved: false,
+      reason: 'Read Signal channel profile draft status from natural language request.',
     },
   ]);
 
@@ -2443,21 +2463,21 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center review reques
 
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('왓츠앱 프로필 검토 요청해줘').actions, [
     {
-      id: 'natural-xenesis-connection-setup-request-whatsapp',
-      path: 'xd.xenesis.connections.setupRequests.request',
-      args: { id: 'whatsapp' },
+      id: 'natural-xenesis-channel-profile-draft-request-whatsapp',
+      path: 'xd.xenesis.channels.profileDrafts.request',
+      args: { channel: 'whatsapp' },
       approved: false,
-      reason: 'Request WhatsApp connection setup review from natural language request.',
+      reason: 'Request WhatsApp channel profile draft review from natural language request.',
     },
   ]);
 
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('Zalo 프로필 검토 요청해줘').actions, [
     {
-      id: 'natural-xenesis-connection-setup-request-zalo',
-      path: 'xd.xenesis.connections.setupRequests.request',
-      args: { id: 'zalo' },
+      id: 'natural-xenesis-channel-profile-draft-request-zalo',
+      path: 'xd.xenesis.channels.profileDrafts.request',
+      args: { channel: 'zalo' },
       approved: false,
-      reason: 'Request Zalo connection setup review from natural language request.',
+      reason: 'Request Zalo channel profile draft review from natural language request.',
     },
   ]);
 
