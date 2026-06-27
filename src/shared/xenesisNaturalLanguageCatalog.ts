@@ -33,6 +33,12 @@ export interface XenesisNaturalDeskActionDescriptor {
   reason: string;
 }
 
+export interface XenesisNaturalDeskActionTemplateDescriptor<TArgs extends unknown[]> {
+  path: string;
+  idFor: (...args: TArgs) => string;
+  reasonFor: (...args: TArgs) => string;
+}
+
 export const XENESIS_NATURAL_EXPLICIT_OPEN_WORDS = ['열어', '켜줘', '띄워', '포커스', '집중'] as const;
 
 export const XENESIS_NATURAL_ACTION_INTENT_WORDS = [
@@ -1127,6 +1133,46 @@ export const XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS = {
     reason: 'Set Xenesis workspace from natural language request.',
   },
 } as const satisfies Record<string, XenesisNaturalDeskActionDescriptor>;
+
+export const XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS = {
+  open: {
+    path: 'xd.xenesis.guides.open',
+    idFor: (id: string, _label: string, _openFile: boolean) => `natural-xenesis-guide-open-${id}`,
+    reasonFor: (_id: string, label: string, openFile: boolean) =>
+      `Open ${label} guide${openFile ? ' file' : ''} from natural language request.`,
+  },
+  status: {
+    path: 'xd.xenesis.guides.status',
+    idFor: (id: string, _label: string) => `natural-xenesis-guide-status-${id}`,
+    reasonFor: (_id: string, label: string) => `Read ${label} guide catalog status from natural language request.`,
+  },
+} as const satisfies {
+  open: XenesisNaturalDeskActionTemplateDescriptor<[string, string, boolean]>;
+  status: XenesisNaturalDeskActionTemplateDescriptor<[string, string]>;
+};
+
+export const XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS = {
+  centerOpen: {
+    id: 'natural-xenesis-onboarding-center-open',
+    path: 'xd.xenesis.onboarding.open',
+    reason: 'Open Xenesis onboarding checklist in Connection Center from natural language request.',
+  },
+  stepOpen: {
+    path: 'xd.xenesis.onboarding.open',
+    idFor: (id: string, _label: string) => `natural-xenesis-onboarding-open-${id}`,
+    reasonFor: (_id: string, label: string) => `Open ${label} onboarding checklist step from natural language request.`,
+  },
+  stepStatus: {
+    path: 'xd.xenesis.onboarding.status',
+    idFor: (id: string, _label: string) => `natural-xenesis-onboarding-status-${id}`,
+    reasonFor: (_id: string, label: string) =>
+      `Read ${label} onboarding checklist status from natural language request.`,
+  },
+} as const satisfies {
+  centerOpen: XenesisNaturalDeskActionDescriptor;
+  stepOpen: XenesisNaturalDeskActionTemplateDescriptor<[string, string]>;
+  stepStatus: XenesisNaturalDeskActionTemplateDescriptor<[string, string]>;
+};
 
 export const XENESIS_NATURAL_PLACEMENT_TARGETS: readonly XenesisNaturalWordsTarget[] = [
   { id: 'right', label: 'right', words: ['오른쪽', '우측', 'right'] },

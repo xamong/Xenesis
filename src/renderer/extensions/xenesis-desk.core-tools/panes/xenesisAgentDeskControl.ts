@@ -62,6 +62,7 @@ import {
   XENESIS_NATURAL_GENERIC_FOCUS_CONTEXT_WORDS,
   XENESIS_NATURAL_GENERIC_LIST_CONTEXT_WORDS,
   XENESIS_NATURAL_GENERIC_OPEN_WORDS,
+  XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_GUIDE_CONTEXT_WORDS,
   XENESIS_NATURAL_GUIDE_FILE_OPEN_WORDS,
   XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS,
@@ -78,6 +79,7 @@ import {
   XENESIS_NATURAL_MESSENGER_VIEW_OPEN_FALLBACK_CONTEXT_WORDS,
   XENESIS_NATURAL_OAUTH_CONTEXT_WORDS,
   XENESIS_NATURAL_OAUTH_DRAFT_CONTEXT_WORDS,
+  XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS,
   XENESIS_NATURAL_ONBOARDING_STEP_TARGETS,
   XENESIS_NATURAL_OPEN_COMMAND_WORDS,
@@ -135,6 +137,7 @@ import {
   XENESIS_NATURAL_XENESIS_CONTEXT_WORDS,
   type XenesisNaturalConnectionTarget,
   type XenesisNaturalDeskActionDescriptor,
+  type XenesisNaturalDeskActionTemplateDescriptor,
 } from '../../../../shared/xenesisNaturalLanguageCatalog';
 
 export interface XenesisDeskActionRequest {
@@ -239,7 +242,17 @@ function naturalCatalogAction(descriptor: XenesisNaturalDeskActionDescriptor, ar
   return naturalAction(descriptor.id, descriptor.path, args, descriptor.reason);
 }
 
+function naturalTemplateAction<TArgs extends unknown[]>(
+  descriptor: XenesisNaturalDeskActionTemplateDescriptor<TArgs>,
+  templateArgs: TArgs,
+  args: unknown,
+): XenesisDeskActionRequest {
+  return naturalAction(descriptor.idFor(...templateArgs), descriptor.path, args, descriptor.reasonFor(...templateArgs));
+}
+
 const DESK_ACTIONS = XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS;
+const GUIDE_ACTIONS = XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS;
+const ONBOARDING_ACTIONS = XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS;
 const RUNTIME_ACTIONS = XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS;
 
 function naturalPlan(
@@ -385,24 +398,18 @@ function xenesisGuideActionFromNaturalText(value: string): XenesisDeskActionRequ
 
   const openFile = hasAny(value, XENESIS_NATURAL_GUIDE_FILE_OPEN_WORDS);
 
-  return naturalAction(
-    `natural-xenesis-guide-open-${guide.id}`,
-    'xd.xenesis.guides.open',
-    { id: guide.id, ensureVisible: true, ...(openFile ? { openFile: true } : {}) },
-    `Open ${guide.label} guide${openFile ? ' file' : ''} from natural language request.`,
-  );
+  return naturalTemplateAction(GUIDE_ACTIONS.open, [guide.id, guide.label, openFile], {
+    id: guide.id,
+    ensureVisible: true,
+    ...(openFile ? { openFile: true } : {}),
+  });
 }
 
 function xenesisGuideStatusActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
   const guide = xenesisGuideFromNaturalText(value);
   if (!guide) return null;
 
-  return naturalAction(
-    `natural-xenesis-guide-status-${guide.id}`,
-    'xd.xenesis.guides.status',
-    { id: guide.id },
-    `Read ${guide.label} guide catalog status from natural language request.`,
-  );
+  return naturalTemplateAction(GUIDE_ACTIONS.status, [guide.id, guide.label], { id: guide.id });
 }
 
 function hasXenesisOnboardingContext(value: string): boolean {
@@ -420,32 +427,20 @@ function xenesisOnboardingOpenActionFromNaturalText(value: string): XenesisDeskA
   if (!step) {
     if (!hasXenesisOnboardingContext(value)) return null;
 
-    return naturalAction(
-      'natural-xenesis-onboarding-center-open',
-      'xd.xenesis.onboarding.open',
-      { ensureVisible: true },
-      'Open Xenesis onboarding checklist in Connection Center from natural language request.',
-    );
+    return naturalCatalogAction(ONBOARDING_ACTIONS.centerOpen, { ensureVisible: true });
   }
 
-  return naturalAction(
-    `natural-xenesis-onboarding-open-${step.id}`,
-    'xd.xenesis.onboarding.open',
-    { id: step.id, ensureVisible: true },
-    `Open ${step.label} onboarding checklist step from natural language request.`,
-  );
+  return naturalTemplateAction(ONBOARDING_ACTIONS.stepOpen, [step.id, step.label], {
+    id: step.id,
+    ensureVisible: true,
+  });
 }
 
 function xenesisOnboardingStatusActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
   const step = xenesisOnboardingStepFromNaturalText(value);
   if (!step) return null;
 
-  return naturalAction(
-    `natural-xenesis-onboarding-status-${step.id}`,
-    'xd.xenesis.onboarding.status',
-    { id: step.id },
-    `Read ${step.label} onboarding checklist status from natural language request.`,
-  );
+  return naturalTemplateAction(ONBOARDING_ACTIONS.stepStatus, [step.id, step.label], { id: step.id });
 }
 
 function hasXenesisConnectionReadbackIntent(value: string): boolean {

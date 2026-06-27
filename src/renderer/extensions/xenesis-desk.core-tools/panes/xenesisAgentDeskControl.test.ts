@@ -37,6 +37,7 @@ import {
   XENESIS_NATURAL_GENERIC_CLOSE_CONTEXT_WORDS,
   XENESIS_NATURAL_GENERIC_LIST_CONTEXT_WORDS,
   XENESIS_NATURAL_GENERIC_OPEN_WORDS,
+  XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_GUIDE_CONTEXT_WORDS,
   XENESIS_NATURAL_GUIDE_FILE_OPEN_WORDS,
   XENESIS_NATURAL_GUIDE_TARGETS,
@@ -50,6 +51,7 @@ import {
   XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS,
   XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS,
   XENESIS_NATURAL_OAUTH_CONTEXT_WORDS,
+  XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS,
   XENESIS_NATURAL_ONBOARDING_STEP_TARGETS,
   XENESIS_NATURAL_OPEN_OR_SHOW_WORDS,
@@ -276,6 +278,17 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.equal(XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.localCliScan.path, 'xd.localCli.scan');
   assert.equal(XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.runtimeStatus.id, 'natural-xenesis-status');
   assert.equal(XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.runsStart.path, 'xd.xenesis.runs.start');
+  assert.match(source, /XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS/);
+  assert.match(source, /XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS/);
+  assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-guide-open-\$\{guide\.id\}`/);
+  assert.doesNotMatch(source, /naturalAction\(\s*'natural-xenesis-onboarding-center-open'/);
+  assert.equal(XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS.open.path, 'xd.xenesis.guides.open');
+  assert.equal(
+    XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS.status.idFor('provider', 'Provider'),
+    'natural-xenesis-guide-status-provider',
+  );
+  assert.equal(XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS.centerOpen.id, 'natural-xenesis-onboarding-center-open');
+  assert.equal(XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS.stepOpen.path, 'xd.xenesis.onboarding.open');
   assert.match(source, /XENESIS_NATURAL_PLACEMENT_TARGETS/);
   assert.match(source, /XENESIS_NATURAL_DOCK_SIDE_TARGETS/);
   assert.match(source, /XENESIS_NATURAL_DOCK_WINDOW_STATE_TARGETS/);

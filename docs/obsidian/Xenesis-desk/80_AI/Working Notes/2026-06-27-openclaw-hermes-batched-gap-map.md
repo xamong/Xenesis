@@ -1584,6 +1584,46 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local Obsidian graph, source code, and tests.
 
+## Guide/Onboarding Action Descriptor Refactor Slice
+
+- Removed guide and onboarding natural-language action id, CR path, and reason
+  descriptors from `xenesisAgentDeskControl.ts`.
+- Added `XenesisNaturalDeskActionTemplateDescriptor`,
+  `XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS`, and
+  `XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS` to
+  `src/shared/xenesisNaturalLanguageCatalog.ts`.
+- The planner now uses `naturalTemplateAction(...)` for dynamic guide and
+  onboarding step ids/reasons, and `naturalCatalogAction(...)` for the
+  onboarding center open descriptor.
+- Preserved route order, visible plan text, CR paths, action ids, args,
+  labels, open-file behavior, and approval behavior.
+- Added source-level guards so representative guide/onboarding descriptors are
+  not reintroduced directly into the planner.
+- Scope boundary: this slice did not move provider/tool/messenger/connection
+  catalog descriptors and did not browse external docs or mutate settings,
+  credentials, gateway, runtime, or external systems.
+- Verification:
+  - RED planner test failed first because the planner did not yet reference
+    `XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS`.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 36/36 tests after implementation.
+  - `npx biome format --write src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    formatted 3 files and fixed 2 files.
+  - `npx biome check --write src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --max-diagnostics 40`
+    fixed one organizeImports issue.
+  - Re-running the scoped Biome check passed.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 100/100 tests after the import-order fix.
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit` passed with Registered nodes 763,
+    Callable methods 468, Dispatcher paths 448, missing registered paths 0,
+    missing dispatched coverage paths 0, undispatched static callable methods
+    0, and dispatcher paths missing from tree 0. The generated audit file was
+    removed afterward.
+  - `git diff --check` exited 0 with line-ending warnings only.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local Obsidian graph, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
