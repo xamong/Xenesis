@@ -96,6 +96,25 @@
 - Pairing and user-story natural routing remains available for planned
   messengers because those CR schemas accept planned messenger IDs.
 
+## Planned Messenger Alias Coverage Slice
+
+- Expanded Agent natural-language target aliases for the remaining planned
+  messenger cards already modeled in `src/shared/xenesisConnections.ts`:
+  iMessage, Matrix, IRC, Mattermost, Nextcloud Talk, Nostr, Raft, Tlon,
+  Synology Chat, Twitch, LINE, WeChat, QQ Bot, Feishu/Lark, Yuanbao, Zalo,
+  Email, SMS, Home Assistant, and ntfy.
+- Prompts such as `아이메시지 setup 열어줘`, `LINE setup 열어줘`,
+  `이메일 setup 열어줘`, `홈 어시스턴트 setup 열어줘`, and `ntfy setup 열어줘`
+  now open the internal planned messenger view through
+  `xd.xenesis.messengers.views.open`.
+- Planned messenger readbacks such as `ntfy setup 상태 보여줘`,
+  `라크 사용자 스토리 상태 보여줘`, and `SMS 페어링 상태 보여줘` now route
+  to existing safe CR read paths without enabling delivery.
+- Planned messenger profile review prompts such as
+  `Zalo 프로필 검토 요청해줘` remain generic setup-request records through
+  `xd.xenesis.connections.setupRequests.request`, not implemented-channel
+  profile draft requests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

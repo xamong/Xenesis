@@ -833,6 +833,39 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
     },
   ]);
 
+  for (const [prompt, id, label] of [
+    ['아이메시지 setup 열어줘', 'imessage', 'iMessage'],
+    ['매트릭스 setup 열어줘', 'matrix', 'Matrix'],
+    ['IRC setup 열어줘', 'irc', 'IRC'],
+    ['Mattermost setup 열어줘', 'mattermost', 'Mattermost'],
+    ['넥스트클라우드 톡 setup 열어줘', 'nextcloud-talk', 'Nextcloud Talk'],
+    ['노스트르 setup 열어줘', 'nostr', 'Nostr'],
+    ['Raft setup 열어줘', 'raft', 'Raft'],
+    ['Tlon setup 열어줘', 'tlon', 'Tlon'],
+    ['시놀로지 챗 setup 열어줘', 'synology-chat', 'Synology Chat'],
+    ['트위치 setup 열어줘', 'twitch', 'Twitch'],
+    ['LINE setup 열어줘', 'line', 'LINE'],
+    ['위챗 setup 열어줘', 'wechat', 'WeChat'],
+    ['QQ 봇 setup 열어줘', 'qqbot', 'QQ Bot'],
+    ['Lark setup 열어줘', 'feishu', 'Feishu / Lark'],
+    ['위안바오 setup 열어줘', 'yuanbao', 'Yuanbao'],
+    ['Zalo setup 열어줘', 'zalo', 'Zalo'],
+    ['이메일 setup 열어줘', 'email', 'Email'],
+    ['SMS setup 열어줘', 'sms', 'SMS'],
+    ['홈 어시스턴트 setup 열어줘', 'home-assistant', 'Home Assistant'],
+    ['ntfy setup 열어줘', 'ntfy', 'ntfy'],
+  ] as const) {
+    assert.deepEqual(planXenesisDeskNaturalLanguageActions(prompt).actions, [
+      {
+        id: `natural-xenesis-messenger-view-open-${id}`,
+        path: 'xd.xenesis.messengers.views.open',
+        args: { id, ensureVisible: true },
+        approved: false,
+        reason: `Open ${label} messenger view from natural language request.`,
+      },
+    ]);
+  }
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('텔레그램 사용자 스토리 열어줘').actions, [
     {
       id: 'natural-xenesis-channel-user-story-open-telegram',
@@ -1171,6 +1204,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center read
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('ntfy setup 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-messenger-view-status-ntfy',
+      path: 'xd.xenesis.messengers.views.status',
+      args: { id: 'ntfy' },
+      approved: false,
+      reason: 'Read ntfy messenger view status from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('슬랙 config 상태 보여줘').actions, [
     {
       id: 'natural-xenesis-messenger-view-status-slack',
@@ -1178,6 +1221,26 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center read
       args: { id: 'slack' },
       approved: false,
       reason: 'Read Slack messenger view status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('라크 사용자 스토리 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-channel-user-story-status-feishu',
+      path: 'xd.xenesis.channels.userStories.status',
+      args: { id: 'feishu' },
+      approved: false,
+      reason: 'Read Feishu / Lark channel user story status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('SMS 페어링 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-channel-pairing-status-sms',
+      path: 'xd.xenesis.channels.pairing.status',
+      args: { channel: 'sms' },
+      approved: false,
+      reason: 'Read SMS channel pairing status from natural language request.',
     },
   ]);
 
@@ -1250,6 +1313,16 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center review reques
       args: { id: 'whatsapp' },
       approved: false,
       reason: 'Request WhatsApp connection setup review from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('Zalo 프로필 검토 요청해줘').actions, [
+    {
+      id: 'natural-xenesis-connection-setup-request-zalo',
+      path: 'xd.xenesis.connections.setupRequests.request',
+      args: { id: 'zalo' },
+      approved: false,
+      reason: 'Request Zalo connection setup review from natural language request.',
     },
   ]);
 
