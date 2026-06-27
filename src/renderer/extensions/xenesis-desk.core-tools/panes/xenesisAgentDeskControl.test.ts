@@ -63,6 +63,7 @@ import {
   XENESIS_NATURAL_PROFILE_CONTEXT_WORDS,
   XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
   XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
+  XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_WORDS,
   XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_REPORT_CONTEXT_WORDS,
@@ -319,6 +320,19 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.equal(
     XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS.connections.id,
     'natural-xenesis-connections-status',
+  );
+  assert.match(source, /XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS/);
+  assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-provider-routing-open-\$\{provider\.id\}`/);
+  assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-provider-profile-draft-open-\$\{provider\.id\}`/);
+  assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-provider-setup-open-\$\{provider\.id\}`/);
+  assert.equal(
+    XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS.routing.idFor('codex-app-server', 'Codex app-server'),
+    'natural-xenesis-provider-routing-open-codex-app-server',
+  );
+  assert.equal(XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS.views.path, 'xd.xenesis.providers.views.open');
+  assert.equal(
+    XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS.setup.reasonFor('claude', 'Claude'),
+    'Open Claude provider setup from natural language request.',
   );
   assert.match(source, /XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS/);
   assert.match(source, /XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS/);

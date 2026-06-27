@@ -1306,6 +1306,29 @@ export const XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS = {
   },
 } as const satisfies Record<string, XenesisNaturalDeskActionDescriptor>;
 
+export const XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS = {
+  routing: {
+    path: 'xd.xenesis.providers.routing.open',
+    idFor: (id: string, _label: string) => `natural-xenesis-provider-routing-open-${id}`,
+    reasonFor: (_id: string, label: string) => `Open ${label} provider routing from natural language request.`,
+  },
+  profileDrafts: {
+    path: 'xd.xenesis.providers.profileDrafts.open',
+    idFor: (id: string, _label: string) => `natural-xenesis-provider-profile-draft-open-${id}`,
+    reasonFor: (_id: string, label: string) => `Open ${label} provider profile draft from natural language request.`,
+  },
+  views: {
+    path: 'xd.xenesis.providers.views.open',
+    idFor: (id: string, _label: string) => `natural-xenesis-provider-view-open-${id}`,
+    reasonFor: (_id: string, label: string) => `Open ${label} provider view from natural language request.`,
+  },
+  setup: {
+    path: 'xd.xenesis.providers.setup.open',
+    idFor: (id: string, _label: string) => `natural-xenesis-provider-setup-open-${id}`,
+    reasonFor: (_id: string, label: string) => `Open ${label} provider setup from natural language request.`,
+  },
+} as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
+
 export const XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS = {
   routing: {
     path: 'xd.xenesis.providers.routing.status',

@@ -99,6 +99,7 @@ import {
   XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
   XENESIS_NATURAL_PROFILE_LIST_CONTEXT_WORDS,
   XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
+  XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_WORDS,
   XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_PROVIDER_TARGETS,
@@ -264,6 +265,7 @@ const GUIDE_ACTIONS = XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS;
 const MESSENGER_AGGREGATE_STATUS_ACTIONS = XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS;
 const ONBOARDING_ACTIONS = XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS;
 const PROVIDER_AGGREGATE_STATUS_ACTIONS = XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS;
+const PROVIDER_OPEN_ACTIONS = XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS;
 const PROVIDER_STATUS_ACTIONS = XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS;
 const REVIEW_REQUEST_ACTIONS = XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS;
 const RUNTIME_ACTIONS = XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS;
@@ -869,39 +871,31 @@ function xenesisProviderOpenActionFromNaturalText(value: string): XenesisDeskAct
   if (!provider) return null;
 
   if (hasAny(value, XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS)) {
-    return naturalAction(
-      `natural-xenesis-provider-routing-open-${provider.id}`,
-      'xd.xenesis.providers.routing.open',
-      { provider: provider.id, ensureVisible: true },
-      `Open ${provider.label} provider routing from natural language request.`,
-    );
+    return naturalTemplateAction(PROVIDER_OPEN_ACTIONS.routing, [provider.id, provider.label], {
+      provider: provider.id,
+      ensureVisible: true,
+    });
   }
 
   if (hasAny(value, XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS)) {
-    return naturalAction(
-      `natural-xenesis-provider-profile-draft-open-${provider.id}`,
-      'xd.xenesis.providers.profileDrafts.open',
-      { provider: provider.id, ensureVisible: true },
-      `Open ${provider.label} provider profile draft from natural language request.`,
-    );
+    return naturalTemplateAction(PROVIDER_OPEN_ACTIONS.profileDrafts, [provider.id, provider.label], {
+      provider: provider.id,
+      ensureVisible: true,
+    });
   }
 
   if (hasAny(value, XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS)) {
-    return naturalAction(
-      `natural-xenesis-provider-view-open-${provider.id}`,
-      'xd.xenesis.providers.views.open',
-      { provider: provider.id, ensureVisible: true },
-      `Open ${provider.label} provider view from natural language request.`,
-    );
+    return naturalTemplateAction(PROVIDER_OPEN_ACTIONS.views, [provider.id, provider.label], {
+      provider: provider.id,
+      ensureVisible: true,
+    });
   }
 
   if (hasAny(value, XENESIS_NATURAL_SETUP_CONTEXT_WORDS)) {
-    return naturalAction(
-      `natural-xenesis-provider-setup-open-${provider.id}`,
-      'xd.xenesis.providers.setup.open',
-      { provider: provider.id, ensureVisible: true },
-      `Open ${provider.label} provider setup from natural language request.`,
-    );
+    return naturalTemplateAction(PROVIDER_OPEN_ACTIONS.setup, [provider.id, provider.label], {
+      provider: provider.id,
+      ensureVisible: true,
+    });
   }
 
   return null;

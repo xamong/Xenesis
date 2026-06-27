@@ -1741,6 +1741,41 @@
 - External documentation handling: no browsing. This update used the cached gap
   map, repo-local Obsidian graph, source code, and tests.
 
+## Provider Open Action Descriptor Refactor Slice
+
+- Removed provider-specific open action descriptor templates from
+  `xenesisAgentDeskControl.ts`.
+- Added `XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS` to
+  `src/shared/xenesisNaturalLanguageCatalog.ts`.
+- The planner now uses `naturalTemplateAction(...)` for provider routing,
+  profile draft, view, and setup open routes.
+- Preserved provider target detection, route order, open-intent checks, CR
+  paths, action ids, args, reason strings, `ensureVisible=true`, visible plan
+  text, and approval behavior.
+- Scope boundary: this slice did not move aggregate open catalog descriptors,
+  target-specific tool/messenger open descriptors, core tool open descriptors,
+  or runtime mutation behavior.
+- Verification:
+  - RED planner test failed first because the planner did not yet reference
+    `XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS`.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 36/36 tests after implementation.
+  - `npx biome format --write src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    formatted 3 files with no fixes applied.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 100/100 tests.
+  - `npx biome check src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --max-diagnostics 40`
+    passed.
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit` passed with Registered nodes 763,
+    Callable methods 468, Dispatcher paths 448, missing registered paths 0,
+    missing dispatched coverage paths 0, undispatched static callable methods
+    0, and dispatcher paths missing from tree 0. The generated audit file was
+    removed afterward.
+  - `git diff --check` exited 0 with LF-to-CRLF warnings only.
+- External documentation handling: no browsing. This update used the cached gap
+  map, repo-local Obsidian graph, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
