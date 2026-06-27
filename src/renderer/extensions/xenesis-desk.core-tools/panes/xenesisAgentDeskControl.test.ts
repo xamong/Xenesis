@@ -297,6 +297,7 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /presetId/);
   assert.match(hint, /xd\.dock\.artifactTarget\.set/);
   assert.match(hint, /xd\.xenesis\.connections\.open/);
+  assert.match(hint, /xd\.xenesis\.connections\.status/);
   assert.match(hint, /xd\.xenesis\.connections\.diagnostics\.status/);
   assert.match(hint, /xd\.xenesis\.connections\.diagnostics\.open/);
   assert.match(hint, /xd\.xenesis\.connections\.setupRequests\.status/);
@@ -1192,6 +1193,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
 
 test('planXenesisDeskNaturalLanguageActions maps Connection Center readback requests to CR actions', () => {
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('연결 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-connections-status',
+      path: 'xd.xenesis.connections.status',
+      args: {},
+      approved: false,
+      reason: 'Read Xenesis connection status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('Connection Center 전체 상태 보여줘').actions, [
     {
       id: 'natural-xenesis-connections-status',
       path: 'xd.xenesis.connections.status',

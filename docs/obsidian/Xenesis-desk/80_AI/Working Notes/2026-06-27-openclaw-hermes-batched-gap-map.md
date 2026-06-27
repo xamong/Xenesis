@@ -277,6 +277,21 @@
   policy. Natural actions keep `approved=false`, including outside-workspace
   paths.
 
+## Connection Status Hint Slice
+
+- Added the existing read-only Connection Center-wide status CR path to the
+  Agent control prompt hint:
+  - `xd.xenesis.connections.status`.
+- Preserved the existing natural-language readback routing:
+  - `Connection Center 전체 상태 보여줘` ->
+    `xd.xenesis.connections.status`.
+- Scope boundary: this slice did not add CR nodes, dispatcher branches,
+  renderer adapters, installs, OAuth completion, provider tool execution,
+  profile writes, gateway lifecycle actions, channel delivery, settings
+  mutation, credential storage, or approval bypasses. It only made the
+  all-connection readiness read path visible before targeted provider, tool,
+  messenger, diagnostics, setup-request, onboarding, or guide actions.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
