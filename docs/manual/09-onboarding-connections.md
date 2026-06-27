@@ -189,6 +189,14 @@ no separate OpenClaw access-group runtime in this repo. Channel writes remain on
 `xd.xenesis.profiles.updateChannels`, and delivery tests remain on
 `xd.xenesis.profiles.testChannel`.
 
+Implemented channels also expose OpenClaw-style access-group readback through
+`xd.xenesis.channels.accessGroups.status`. The read model maps Xenesis profile
+allowlist fields such as `allowedChatIds`, `allowedChannelIds`,
+`allowedGuildIds`, and `urlEnv` to reusable access-group bindings, reports only
+`configured`, `empty`, or `unknown` value states, and treats empty required
+allowlists as fail-closed diagnostics. It is read-only; channel mutations remain
+on `xd.xenesis.profiles.updateChannels`.
+
 Messenger cards also expose a `messengerView` read model. Use
 `xd.xenesis.messengers.views.status` to inspect the internal Desk surface for a
 messenger, including runtime support, setup surface, CR open/read/control paths,
@@ -292,6 +300,13 @@ allowlist fields, inbound/outbound delivery boundaries, bot-loop protection,
 approval guardrails, troubleshooting signals, readback paths, and control paths.
 It is read-only; it does not create access groups, mutate channel settings,
 enable planned adapters, send test messages, or bypass approval paths.
+
+Use `xd.xenesis.channels.accessGroups.status` to inspect implemented external
+bot channel access-group metadata through CR. The read model covers Telegram,
+Slack, Discord, and Webhook profile allowlist bindings, redacted value states,
+fail-closed diagnostics, readback paths, and channel update/test control
+boundaries. It never returns raw chat IDs, channel IDs, guild IDs, endpoint
+values, or secrets.
 
 Use `xd.xenesis.messengers.views.status` and
 `xd.xenesis.messengers.views.open` to inspect or open internal Desk

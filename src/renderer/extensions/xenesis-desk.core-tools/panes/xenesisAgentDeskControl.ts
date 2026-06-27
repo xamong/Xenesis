@@ -61,7 +61,7 @@ export interface XenesisDeskActionRunOptions {
 }
 
 const DESK_ACTION_FENCE_PATTERN =
-  /```xenesis-desk-actions?(?:[ \t]*\r?\n([\s\S]*?)^```[ \t]*$|[ \t]+([{\[][^\r\n]*))/gim;
+  /```xenesis-desk-actions?(?:[ \t]*\r?\n([\s\S]*?)^```[ \t]*$|[ \t]+([{[][^\r\n]*))/gim;
 
 export interface XenesisDeskNaturalLanguagePlan extends XenesisDeskActionParseResult {
   matched: boolean;
@@ -1192,6 +1192,6 @@ export function buildXenesisDeskControlPromptHint(): string {
     '{"path":"xd.automation.workflow.run","approved":true,"args":{"name":"settings-tour","steps":[{"path":"xd.dock.panes.list"},{"path":"xd.panes.settings.open","args":{"category":"run-model","mode":"hermes","section":"hermes-provider"}}]}}',
     '```',
     '',
-    'Useful direct CR paths include xd.app.status, xd.automation.workflow.preview, xd.automation.workflow.run, xd.views.open, xd.panes.settings.open, xd.panes.diagnostics.open, xd.files.listOpen, xd.files.open, xd.files.read, xd.explorer.local.show, xd.explorer.local.navigate, xd.explorer.local.setFilter, xd.window.bounds.current, xd.window.sizer.applyPreset, xd.dock.sizes.current, xd.dock.sizes.set, xd.dock.artifactTarget.current, xd.dock.artifactTarget.set, xd.dock.focus, xd.dock.close, xd.dock.closeOthers, xd.dock.closeRight, xd.dock.closeAll, xd.dock.window.arrange, xd.dock.window.merge, xd.dock.pane.arrange, xd.dock.pane.merge, xd.dock.arrangeHorizontal, xd.dock.arrangeVertical, xd.dock.arrangeGrid, xd.dock.panes.list, xd.terminals.list, xd.terminals.run, xd.terminals.runMany, xd.tools.core.capabilityExplorer.open, xd.tools.core.networkMonitor.open, xd.tools.core.runTaskPanel.open, xd.tools.core.aiWorkbench.open, xd.tools.core.artifactLibrary.open, xd.capture.activePane, xd.xenesis.status, xd.xenesis.runs.start, xd.xenesis.connections.open, xd.testing.xenesisAgent.submitPrompt, dynamic xd.dock.panes.{paneId}.* paths, dynamic xd.dock.contents.{contentId}.* paths, and dynamic xd.terminals.sessions.{terminalId}.* paths.',
+    'Useful direct CR paths include xd.app.status, xd.automation.workflow.preview, xd.automation.workflow.run, xd.views.open, xd.panes.settings.open, xd.panes.diagnostics.open, xd.files.listOpen, xd.files.open, xd.files.read, xd.explorer.local.show, xd.explorer.local.navigate, xd.explorer.local.setFilter, xd.window.bounds.current, xd.window.sizer.applyPreset, xd.dock.sizes.current, xd.dock.sizes.set, xd.dock.artifactTarget.current, xd.dock.artifactTarget.set, xd.dock.focus, xd.dock.close, xd.dock.closeOthers, xd.dock.closeRight, xd.dock.closeAll, xd.dock.window.arrange, xd.dock.window.merge, xd.dock.pane.arrange, xd.dock.pane.merge, xd.dock.arrangeHorizontal, xd.dock.arrangeVertical, xd.dock.arrangeGrid, xd.dock.panes.list, xd.terminals.list, xd.terminals.run, xd.terminals.runMany, xd.tools.core.capabilityExplorer.open, xd.tools.core.networkMonitor.open, xd.tools.core.runTaskPanel.open, xd.tools.core.aiWorkbench.open, xd.tools.core.artifactLibrary.open, xd.capture.activePane, xd.xenesis.status, xd.xenesis.runs.start, xd.xenesis.connections.open, xd.xenesis.channels.accessGroups.status, xd.testing.xenesisAgent.submitPrompt, dynamic xd.dock.panes.{paneId}.* paths, dynamic xd.dock.contents.{contentId}.* paths, and dynamic xd.terminals.sessions.{terminalId}.* paths.',
   ].join('\n');
 }

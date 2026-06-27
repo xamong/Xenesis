@@ -408,6 +408,34 @@ Capability Registry instead of only through separate renderer settings panels.
   first for missing tool view metadata/path/helper, then the combined targeted
   run passed with 29/29 tests.
 
+## Current Channel Access Groups Read Model Slice
+
+- Add `channelTemplate.accessGroups` metadata to implemented Telegram, Slack,
+  Discord, and Webhook cards in `xd.xenesis.connections.status`.
+- Add `xd.xenesis.channels.accessGroups.status` as a read/no-approval CR path
+  for profile allowlist bindings, redacted value states, fail-closed
+  diagnostics, read/control paths, and safety boundaries.
+- Settings renders the same model with
+  `data-xenesis-channel-access-groups="<channel-id>"`.
+- The model maps OpenClaw-style access groups to existing Xenesis profile
+  fields: `allowedChatIds`, `allowedChannelIds`, `allowedGuildIds`, and
+  `urlEnv`. It does not create a separate OpenClaw runtime.
+- Raw chat IDs, channel IDs, guild IDs, endpoint values, and secrets are not
+  returned. CR status reports only `configured`, `empty`, or `unknown` value
+  states.
+- Empty required allowlists are fail-closed diagnostics. Channel writes remain
+  on `xd.xenesis.profiles.updateChannels`, and delivery tests remain on
+  `xd.xenesis.profiles.testChannel`.
+- `npx tsx --test src\shared\xenesisConnections.test.ts` failed first because
+  `channelTemplate.accessGroups` was undefined, then passed after
+  implementation with 18/18 tests.
+- `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` failed
+  first because `xd.xenesis.channels.accessGroups.status` was not registered,
+  then passed after CR registration/dispatch with 14/14 tests.
+- `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` failed
+  first because `formatXenesisChannelAccessGroupsSummary` was not exported,
+  then passed after renderer helper implementation with 15/15 tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

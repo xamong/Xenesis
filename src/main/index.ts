@@ -4892,6 +4892,77 @@ async function getXenesisChannelSafetyStatus(args?: unknown): Promise<Record<str
   };
 }
 
+type XenesisChannelAccessGroupValueState = 'configured' | 'empty' | 'unknown';
+
+function readChannelAccessGroupValueState(
+  settings: XenesisStatus['profile']['channelSettings'] | undefined,
+  channel: XenesisProfileChannelName,
+  field: string,
+): XenesisChannelAccessGroupValueState {
+  const channelSettings = settings?.[channel] as Record<string, unknown> | undefined;
+  const value = channelSettings?.[field];
+  if (typeof value !== 'string') return 'unknown';
+  return value.trim() ? 'configured' : 'empty';
+}
+
+async function getXenesisChannelAccessGroupsStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const channel = readCapabilityString(body, ['channel', 'id', 'name']);
+  if (channel && !isXenesisProfileChannelName(channel)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis channel: ${channel}`,
+      allowedChannels: XENESIS_PROFILE_CHANNEL_NAMES,
+    };
+  }
+
+  const [status, xenesis] = await Promise.all([getXenesisConnectionsStatus(), getXenesisStatusPayload()]);
+  const profileSettings = xenesis.profile.channelSettings;
+  const items = status.sections.messengers.items
+    .filter((item) => item.supportLevel === 'implemented' && item.channelTemplate?.accessGroups)
+    .filter((item) => !channel || item.id === channel)
+    .map((item: XenesisConnectionItem) => {
+      const channelName = item.id as XenesisProfileChannelName;
+      const template = item.channelTemplate?.accessGroups;
+      const bindings = (template?.bindings ?? []).map((binding) => {
+        const valueState = readChannelAccessGroupValueState(profileSettings, channelName, binding.field);
+        return {
+          ...binding,
+          valueState,
+          failClosed: binding.required && valueState !== 'configured',
+        };
+      });
+      const runtime = xenesis.gateway.channels?.[channelName];
+      return {
+        id: item.id,
+        label: item.label,
+        status: item.status,
+        summary: item.summary,
+        model: template?.model,
+        groupScope: template?.groupScope,
+        failClosed: bindings.some((binding) => binding.failClosed),
+        bindings,
+        diagnostics: template?.diagnostics ?? [],
+        readPaths: template?.readPaths ?? [],
+        controlPaths: template?.controlPaths ?? [],
+        safetyBoundaries: template?.safetyBoundaries ?? [],
+        runtimeStatus: runtime?.runtimeStatus,
+        safeToDeliver: runtime?.safeToDeliver,
+        runtimeWarnings: item.warnings ?? [],
+        settingsAction: item.settingsAction,
+        crActions: item.crActions ?? [],
+      };
+    });
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(channel ? { channel } : {}),
+    total: items.length,
+    items,
+  };
+}
+
 const XENESIS_GUIDE_IDS = ['onboarding-connections', 'cr-mcp-gateway-bots', 'agent-user-stories'] as const;
 
 function isXenesisGuideId(value: string): value is (typeof XENESIS_GUIDE_IDS)[number] {
@@ -12409,6 +12480,7 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisConnectionsStatus: () => getXenesisConnectionsStatus().then((status) => ({ ok: true, status })),
     getXenesisChannelRoutingStatus: (args: unknown) => getXenesisChannelRoutingStatus(args),
     getXenesisChannelSafetyStatus: (args: unknown) => getXenesisChannelSafetyStatus(args),
+    getXenesisChannelAccessGroupsStatus: (args: unknown) => getXenesisChannelAccessGroupsStatus(args),
     getXenesisGuidesStatus: (args: unknown) => getXenesisGuidesStatus(args),
     openXenesisGuide: (args: unknown) => openXenesisGuide(args),
     getXenesisToolSetupStatus: (args: unknown) => getXenesisToolSetupStatus(args),

@@ -1,5 +1,6 @@
 import type {
   McpBridgeCapabilityCallRequest,
+  XenesisConnectionChannelAccessGroupsTemplate,
   XenesisConnectionChannelRoutingTemplate,
   XenesisConnectionChannelSafetyTemplate,
   XenesisConnectionGuideCatalogTemplate,
@@ -63,6 +64,14 @@ export function formatXenesisChannelRoutingSummary(routing: XenesisConnectionCha
 
 export function formatXenesisChannelSafetySummary(safety: XenesisConnectionChannelSafetyTemplate): string {
   return `${safety.accessModel} / ${safety.inboundBoundary} / ${safety.loopProtection.length} loop guard(s)`;
+}
+
+export function formatXenesisChannelAccessGroupsSummary(
+  accessGroups: XenesisConnectionChannelAccessGroupsTemplate,
+): string {
+  return `${accessGroups.groupScope} / ${accessGroups.bindings.length} group binding(s) / ${
+    accessGroups.failClosed ? 'fail-closed' : 'advisory'
+  }`;
 }
 
 export function formatXenesisGuideCatalogSummary(guide: XenesisConnectionGuideCatalogTemplate): string {

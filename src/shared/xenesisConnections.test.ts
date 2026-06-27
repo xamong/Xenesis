@@ -1086,6 +1086,84 @@ test('buildXenesisConnectionsStatus exposes channel safety access and loop-prote
   });
 });
 
+test('buildXenesisConnectionsStatus exposes OpenClaw-style access group metadata for implemented channels', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const implemented = status.sections.messengers.items.filter((item) => item.supportLevel === 'implemented');
+  const telegram = implemented.find((item) => item.id === 'telegram');
+  const discord = implemented.find((item) => item.id === 'discord');
+
+  assert.deepEqual(telegram?.channelTemplate?.accessGroups, {
+    model: 'profile-allowlist-fields',
+    groupScope: 'chat',
+    failClosed: true,
+    bindings: [
+      {
+        groupId: 'telegram-allowed-chats',
+        field: 'allowedChatIds',
+        required: true,
+        emptyDiagnostic: 'allowedChatIds is empty',
+        description: 'Telegram chat ids allowed to deliver prompts.',
+      },
+    ],
+    diagnostics: ['profile-channel-settings', 'allowlist-empty', 'gateway-status', 'safe-to-deliver', 'last-error'],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.channels.accessGroups.status',
+      'xd.xenesis.channels.safety.status',
+      'xd.xenesis.status',
+    ],
+    controlPaths: ['xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
+    safetyBoundaries: [
+      'access-group status is read-only',
+      'raw chat, channel, guild, and endpoint values are never returned',
+      'empty required allowlists fail closed before delivery',
+      'channel writes stay on profile update CR paths',
+    ],
+  });
+
+  assert.deepEqual(
+    discord?.channelTemplate?.accessGroups?.bindings.map((binding) => binding.field),
+    ['allowedChannelIds', 'allowedGuildIds'],
+  );
+  assert.equal(discord?.channelTemplate?.accessGroups?.failClosed, true);
+
+  for (const item of implemented) {
+    assert.equal(item.channelTemplate?.accessGroups?.model, 'profile-allowlist-fields', `${item.id} model`);
+    assert.ok(item.channelTemplate?.accessGroups?.bindings.length, `${item.id} bindings`);
+    assert.equal(
+      item.channelTemplate?.accessGroups?.readPaths.includes('xd.xenesis.channels.accessGroups.status'),
+      true,
+    );
+  }
+});
+
 test('buildXenesisConnectionsStatus exposes internal Desk messenger views for implemented and planned channels', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {

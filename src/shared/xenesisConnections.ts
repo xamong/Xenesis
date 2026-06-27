@@ -167,6 +167,7 @@ export interface XenesisConnectionChannelTemplate {
   safetyControls: string[];
   routing?: XenesisConnectionChannelRoutingTemplate;
   safety?: XenesisConnectionChannelSafetyTemplate;
+  accessGroups?: XenesisConnectionChannelAccessGroupsTemplate;
 }
 
 export interface XenesisConnectionChannelRoutingTemplate {
@@ -187,6 +188,25 @@ export interface XenesisConnectionChannelSafetyTemplate {
   loopProtection: string[];
   approvalGuardrails: Array<'readonly' | 'safe' | 'auto'>;
   troubleshooting: string[];
+  readPaths: string[];
+  controlPaths: string[];
+  safetyBoundaries: string[];
+}
+
+export interface XenesisConnectionChannelAccessGroupBinding {
+  groupId: string;
+  field: string;
+  required: boolean;
+  emptyDiagnostic: string;
+  description: string;
+}
+
+export interface XenesisConnectionChannelAccessGroupsTemplate {
+  model: 'profile-allowlist-fields';
+  groupScope: 'chat' | 'channel' | 'guild' | 'endpoint';
+  failClosed: boolean;
+  bindings: XenesisConnectionChannelAccessGroupBinding[];
+  diagnostics: string[];
   readPaths: string[];
   controlPaths: string[];
   safetyBoundaries: string[];
@@ -806,6 +826,34 @@ const MESSENGERS: Array<{
           'delivery tests stay on profile test CR paths',
         ],
       },
+      accessGroups: {
+        model: 'profile-allowlist-fields',
+        groupScope: 'chat',
+        failClosed: true,
+        bindings: [
+          {
+            groupId: 'telegram-allowed-chats',
+            field: 'allowedChatIds',
+            required: true,
+            emptyDiagnostic: 'allowedChatIds is empty',
+            description: 'Telegram chat ids allowed to deliver prompts.',
+          },
+        ],
+        diagnostics: ['profile-channel-settings', 'allowlist-empty', 'gateway-status', 'safe-to-deliver', 'last-error'],
+        readPaths: [
+          'xd.xenesis.connections.status',
+          'xd.xenesis.channels.accessGroups.status',
+          'xd.xenesis.channels.safety.status',
+          'xd.xenesis.status',
+        ],
+        controlPaths: ['xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
+        safetyBoundaries: [
+          'access-group status is read-only',
+          'raw chat, channel, guild, and endpoint values are never returned',
+          'empty required allowlists fail closed before delivery',
+          'channel writes stay on profile update CR paths',
+        ],
+      },
     },
   },
   {
@@ -855,6 +903,34 @@ const MESSENGERS: Array<{
           'access groups are represented by configured allowlist fields, not a separate OpenClaw runtime',
           'channel writes stay on profile update CR paths',
           'delivery tests stay on profile test CR paths',
+        ],
+      },
+      accessGroups: {
+        model: 'profile-allowlist-fields',
+        groupScope: 'channel',
+        failClosed: true,
+        bindings: [
+          {
+            groupId: 'slack-allowed-channels',
+            field: 'allowedChannelIds',
+            required: true,
+            emptyDiagnostic: 'allowedChannelIds is empty',
+            description: 'Slack channel ids allowed to deliver prompts.',
+          },
+        ],
+        diagnostics: ['profile-channel-settings', 'allowlist-empty', 'gateway-status', 'safe-to-deliver', 'last-error'],
+        readPaths: [
+          'xd.xenesis.connections.status',
+          'xd.xenesis.channels.accessGroups.status',
+          'xd.xenesis.channels.safety.status',
+          'xd.xenesis.status',
+        ],
+        controlPaths: ['xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
+        safetyBoundaries: [
+          'access-group status is read-only',
+          'raw chat, channel, guild, and endpoint values are never returned',
+          'empty required allowlists fail closed before delivery',
+          'channel writes stay on profile update CR paths',
         ],
       },
     },
@@ -908,6 +984,41 @@ const MESSENGERS: Array<{
           'delivery tests stay on profile test CR paths',
         ],
       },
+      accessGroups: {
+        model: 'profile-allowlist-fields',
+        groupScope: 'guild',
+        failClosed: true,
+        bindings: [
+          {
+            groupId: 'discord-allowed-channels',
+            field: 'allowedChannelIds',
+            required: true,
+            emptyDiagnostic: 'allowedChannelIds and allowedGuildIds are empty',
+            description: 'Discord channel ids allowed to deliver prompts.',
+          },
+          {
+            groupId: 'discord-allowed-guilds',
+            field: 'allowedGuildIds',
+            required: false,
+            emptyDiagnostic: 'allowedChannelIds and allowedGuildIds are empty',
+            description: 'Discord guild ids allowed to deliver prompts.',
+          },
+        ],
+        diagnostics: ['profile-channel-settings', 'allowlist-empty', 'gateway-status', 'safe-to-deliver', 'last-error'],
+        readPaths: [
+          'xd.xenesis.connections.status',
+          'xd.xenesis.channels.accessGroups.status',
+          'xd.xenesis.channels.safety.status',
+          'xd.xenesis.status',
+        ],
+        controlPaths: ['xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
+        safetyBoundaries: [
+          'access-group status is read-only',
+          'raw chat, channel, guild, and endpoint values are never returned',
+          'empty required allowlists fail closed before delivery',
+          'channel writes stay on profile update CR paths',
+        ],
+      },
     },
   },
   {
@@ -957,6 +1068,34 @@ const MESSENGERS: Array<{
           'access groups are represented by configured allowlist fields, not a separate OpenClaw runtime',
           'channel writes stay on profile update CR paths',
           'delivery tests stay on profile test CR paths',
+        ],
+      },
+      accessGroups: {
+        model: 'profile-allowlist-fields',
+        groupScope: 'endpoint',
+        failClosed: true,
+        bindings: [
+          {
+            groupId: 'webhook-endpoint-env',
+            field: 'urlEnv',
+            required: true,
+            emptyDiagnostic: 'urlEnv is empty',
+            description: 'Webhook URL environment reference that defines the inbound endpoint boundary.',
+          },
+        ],
+        diagnostics: ['profile-channel-settings', 'allowlist-empty', 'gateway-status', 'safe-to-deliver', 'last-error'],
+        readPaths: [
+          'xd.xenesis.connections.status',
+          'xd.xenesis.channels.accessGroups.status',
+          'xd.xenesis.channels.safety.status',
+          'xd.xenesis.status',
+        ],
+        controlPaths: ['xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
+        safetyBoundaries: [
+          'access-group status is read-only',
+          'raw chat, channel, guild, and endpoint values are never returned',
+          'empty required allowlists fail closed before delivery',
+          'channel writes stay on profile update CR paths',
         ],
       },
     },

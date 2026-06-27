@@ -5,6 +5,7 @@ import {
   buildXenesisConnectionGuideRequest,
   buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
+  formatXenesisChannelAccessGroupsSummary,
   formatXenesisChannelRoutingSummary,
   formatXenesisChannelSafetySummary,
   formatXenesisGuideCatalogSummary,
@@ -174,6 +175,30 @@ test('formatXenesisChannelSafetySummary describes access model, inbound boundary
       safetyBoundaries: ['safety status is read-only'],
     }),
     'allowlist / telegram chat allowlist / 3 loop guard(s)',
+  );
+});
+
+test('formatXenesisChannelAccessGroupsSummary describes group scope and fail-closed bindings', () => {
+  assert.equal(
+    formatXenesisChannelAccessGroupsSummary({
+      model: 'profile-allowlist-fields',
+      groupScope: 'chat',
+      failClosed: true,
+      bindings: [
+        {
+          groupId: 'telegram-allowed-chats',
+          field: 'allowedChatIds',
+          required: true,
+          emptyDiagnostic: 'allowedChatIds is empty',
+          description: 'Telegram chat ids allowed to deliver prompts.',
+        },
+      ],
+      diagnostics: ['allowlist-empty'],
+      readPaths: ['xd.xenesis.channels.accessGroups.status'],
+      controlPaths: ['xd.xenesis.profiles.updateChannels'],
+      safetyBoundaries: ['raw values are never returned'],
+    }),
+    'chat / 1 group binding(s) / fail-closed',
   );
 });
 

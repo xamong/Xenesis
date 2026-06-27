@@ -88,6 +88,7 @@ import {
   buildXenesisConnectionGuideRequest,
   buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
+  formatXenesisChannelAccessGroupsSummary,
   formatXenesisChannelRoutingSummary,
   formatXenesisChannelSafetySummary,
   formatXenesisGuideCatalogSummary,
@@ -4795,6 +4796,38 @@ export default function SettingsPane() {
                 <div>
                   <span>{t('settings.xenesisConnectionsChannelSafetyBoundaries')}</span>
                   <strong>{channelTemplate.safety.safetyBoundaries.join(', ')}</strong>
+                </div>
+              </div>
+            ) : null}
+            {channelTemplate.accessGroups ? (
+              <div className="sp-info-list sp-info-list-compact" data-xenesis-channel-access-groups={item.id}>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelAccessGroupModel')}</span>
+                  <strong>{formatXenesisChannelAccessGroupsSummary(channelTemplate.accessGroups)}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelAccessGroupBindings')}</span>
+                  <strong>
+                    {channelTemplate.accessGroups.bindings
+                      .map((binding) => `${binding.groupId}:${binding.field}`)
+                      .join(', ')}
+                  </strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelAccessGroupDiagnostics')}</span>
+                  <strong>{channelTemplate.accessGroups.diagnostics.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelAccessGroupReadback')}</span>
+                  <strong>{channelTemplate.accessGroups.readPaths.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelAccessGroupControls')}</span>
+                  <strong>{channelTemplate.accessGroups.controlPaths.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelAccessGroupBoundaries')}</span>
+                  <strong>{channelTemplate.accessGroups.safetyBoundaries.join(', ')}</strong>
                 </div>
               </div>
             ) : null}

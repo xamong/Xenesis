@@ -247,6 +247,18 @@ const XENESIS_CHANNEL_ROUTING_STATUS_SCHEMA = {
   },
 } as const;
 
+const XENESIS_CHANNEL_ACCESS_GROUP_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: ['telegram', 'slack', 'discord', 'webhook'],
+      description: 'Optional implemented external bot channel to filter.',
+    },
+  },
+} as const;
+
 const XENESIS_MESSENGER_VIEW_IDS = [
   'telegram',
   'slack',
@@ -744,6 +756,7 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisConnectionsStatus?: () => Promise<unknown> | unknown;
   getXenesisChannelRoutingStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisChannelSafetyStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisChannelAccessGroupsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisGuidesStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisGuide?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolSetupStatus?: (args?: unknown) => Promise<unknown> | unknown;
@@ -3735,6 +3748,20 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             XENESIS_CHANNEL_ROUTING_STATUS_SCHEMA,
           ),
         ]),
+        group(
+          'xd.xenesis.channels.accessGroups',
+          'Access groups',
+          'External bot channel access-group bindings and fail-closed readiness metadata.',
+          [
+            method(
+              'xd.xenesis.channels.accessGroups.status',
+              'Read channel access-group status',
+              'Read profile allowlist bindings, redacted value states, fail-closed diagnostics, readback paths, and control boundaries for implemented Xenesis external bot channels.',
+              'read',
+              XENESIS_CHANNEL_ACCESS_GROUP_STATUS_SCHEMA,
+            ),
+          ],
+        ),
       ]),
       group('xd.xenesis.messengers', 'Messengers', 'External messenger connection views and readiness state.', [
         group(
@@ -10087,6 +10114,9 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.channels.safety.status') {
         return callAdapter(path, api?.getXenesisChannelSafetyStatus, request.args);
+      }
+      if (path === 'xd.xenesis.channels.accessGroups.status') {
+        return callAdapter(path, api?.getXenesisChannelAccessGroupsStatus, request.args);
       }
       if (path === 'xd.xenesis.guides.status') {
         return callAdapter(path, api?.getXenesisGuidesStatus, request.args);
