@@ -21,6 +21,7 @@ import {
   XENESIS_NATURAL_CONNECTION_DIAGNOSTIC_CONTEXT_WORDS,
   XENESIS_NATURAL_CONNECTION_READBACK_INTENT_WORDS,
   XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CONTEXT_WORDS,
+  XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS,
   XENESIS_NATURAL_DASHBOARD_CONTEXT_WORDS,
   XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS,
@@ -63,6 +64,7 @@ import {
   XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
   XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_WORDS,
+  XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_REPORT_CONTEXT_WORDS,
   XENESIS_NATURAL_RUN_CONTEXT_WORDS,
   XENESIS_NATURAL_RUN_START_CONTEXT_WORDS,
@@ -316,6 +318,23 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.equal(
     XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS.connections.id,
     'natural-xenesis-connections-status',
+  );
+  assert.match(source, /XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS/);
+  assert.match(source, /XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS/);
+  assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-provider-routing-status-\$\{provider\.id\}`/);
+  assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-tool-mcp-install-draft-status-\$\{target\.id\}`/);
+  assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-channel-routing-status-\$\{target\.id\}`/);
+  assert.equal(
+    XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS.routing.idFor('auto', 'auto'),
+    'natural-xenesis-provider-routing-status-auto',
+  );
+  assert.equal(
+    XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.toolMcpInstallDraft.path,
+    'xd.xenesis.tools.mcpInstallDrafts.status',
+  );
+  assert.equal(
+    XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.channelRouting.idFor('telegram', 'Telegram'),
+    'natural-xenesis-channel-routing-status-telegram',
   );
   assert.match(source, /XENESIS_NATURAL_PLACEMENT_TARGETS/);
   assert.match(source, /XENESIS_NATURAL_DOCK_SIDE_TARGETS/);

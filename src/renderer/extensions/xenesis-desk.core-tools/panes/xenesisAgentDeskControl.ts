@@ -30,6 +30,7 @@ import {
   XENESIS_NATURAL_CONNECTION_DIAGNOSTIC_CONTEXT_WORDS,
   XENESIS_NATURAL_CONNECTION_READBACK_INTENT_WORDS,
   XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CONTEXT_WORDS,
+  XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_CONNECTION_TARGETS,
   XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS,
   XENESIS_NATURAL_CORE_CAPABILITY_CONTEXT_WORDS,
@@ -99,6 +100,7 @@ import {
   XENESIS_NATURAL_PROFILE_LIST_CONTEXT_WORDS,
   XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_WORDS,
+  XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_PROVIDER_TARGETS,
   XENESIS_NATURAL_REFRESH_CONTEXT_WORDS,
   XENESIS_NATURAL_REPORT_CONTEXT_WORDS,
@@ -256,10 +258,12 @@ function naturalTemplateAction<TArgs extends unknown[]>(
 
 const DESK_ACTIONS = XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS;
 const CONNECTION_AGGREGATE_STATUS_ACTIONS = XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS;
+const CONNECTION_TARGET_STATUS_ACTIONS = XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS;
 const GUIDE_ACTIONS = XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS;
 const MESSENGER_AGGREGATE_STATUS_ACTIONS = XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS;
 const ONBOARDING_ACTIONS = XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS;
 const PROVIDER_AGGREGATE_STATUS_ACTIONS = XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS;
+const PROVIDER_STATUS_ACTIONS = XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS;
 const RUNTIME_ACTIONS = XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS;
 const TOOL_AGGREGATE_STATUS_ACTIONS = XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS;
 
@@ -609,38 +613,26 @@ function xenesisProviderReadbackActionFromNaturalText(value: string): XenesisDes
   if (!provider) return null;
 
   if (hasAny(value, XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS)) {
-    return naturalAction(
-      `natural-xenesis-provider-routing-status-${provider.id}`,
-      'xd.xenesis.providers.routing.status',
-      { provider: provider.id },
-      `Read ${provider.label} provider routing status from natural language request.`,
-    );
+    return naturalTemplateAction(PROVIDER_STATUS_ACTIONS.routing, [provider.id, provider.label], {
+      provider: provider.id,
+    });
   }
 
   if (hasAny(value, XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS)) {
-    return naturalAction(
-      `natural-xenesis-provider-view-status-${provider.id}`,
-      'xd.xenesis.providers.views.status',
-      { provider: provider.id },
-      `Read ${provider.label} provider view status from natural language request.`,
-    );
+    return naturalTemplateAction(PROVIDER_STATUS_ACTIONS.views, [provider.id, provider.label], {
+      provider: provider.id,
+    });
   }
 
   if (hasAny(value, XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS)) {
-    return naturalAction(
-      `natural-xenesis-provider-profile-draft-status-${provider.id}`,
-      'xd.xenesis.providers.profileDrafts.status',
-      { provider: provider.id },
-      `Read ${provider.label} provider profile draft status from natural language request.`,
-    );
+    return naturalTemplateAction(PROVIDER_STATUS_ACTIONS.profileDrafts, [provider.id, provider.label], {
+      provider: provider.id,
+    });
   }
 
-  return naturalAction(
-    `natural-xenesis-provider-setup-status-${provider.id}`,
-    'xd.xenesis.providers.setup.status',
-    { provider: provider.id },
-    `Read ${provider.label} provider setup status from natural language request.`,
-  );
+  return naturalTemplateAction(PROVIDER_STATUS_ACTIONS.setup, [provider.id, provider.label], {
+    provider: provider.id,
+  });
 }
 
 function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
@@ -656,30 +648,21 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
   const target = xenesisConnectionTargetFromNaturalText(value);
   if (target) {
     if (hasAny(value, XENESIS_NATURAL_CONNECTION_DIAGNOSTIC_CONTEXT_WORDS)) {
-      return naturalAction(
-        `natural-xenesis-connection-diagnostics-status-${target.id}`,
-        'xd.xenesis.connections.diagnostics.status',
-        { id: target.id },
-        `Read ${target.label} connection diagnostics from natural language request.`,
-      );
+      return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.diagnostics, [target.id, target.label], {
+        id: target.id,
+      });
     }
 
     if (hasAny(value, XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CONTEXT_WORDS)) {
-      return naturalAction(
-        `natural-xenesis-connection-setup-request-status-${target.id}`,
-        'xd.xenesis.connections.setupRequests.status',
-        { id: target.id },
-        `Read ${target.label} connection setup request status from natural language request.`,
-      );
+      return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.setupRequest, [target.id, target.label], {
+        id: target.id,
+      });
     }
 
     if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS)) {
-      return naturalAction(
-        `natural-xenesis-tool-mcp-install-draft-status-${target.id}`,
-        'xd.xenesis.tools.mcpInstallDrafts.status',
-        { tool: target.id },
-        `Read ${target.label} MCP install draft status from natural language request.`,
-      );
+      return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.toolMcpInstallDraft, [target.id, target.label], {
+        tool: target.id,
+      });
     }
 
     if (
@@ -687,137 +670,92 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       (target.id === 'google-calendar' || target.id === 'google-workspace') &&
       hasAny(value, XENESIS_NATURAL_OAUTH_CONTEXT_WORDS)
     ) {
-      return naturalAction(
-        `natural-xenesis-tool-oauth-draft-status-${target.id}`,
-        'xd.xenesis.tools.oauthDrafts.status',
-        { id: target.id },
-        `Read ${target.label} OAuth draft status from natural language request.`,
-      );
+      return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.toolOauthDraft, [target.id, target.label], {
+        id: target.id,
+      });
     }
 
     if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
-      return naturalAction(
-        `natural-xenesis-tool-user-story-status-${target.id}`,
-        'xd.xenesis.tools.userStories.status',
-        { tool: target.id },
-        `Read ${target.label} tool user story status from natural language request.`,
-      );
+      return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.toolUserStory, [target.id, target.label], {
+        tool: target.id,
+      });
     }
 
     if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS)) {
-      return naturalAction(
-        `natural-xenesis-tool-action-policy-status-${target.id}`,
-        'xd.xenesis.tools.actions.status',
-        { tool: target.id },
-        `Read ${target.label} tool action policy status from natural language request.`,
-      );
+      return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.toolActionPolicy, [target.id, target.label], {
+        tool: target.id,
+      });
     }
 
     if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS)) {
-      return naturalAction(
-        `natural-xenesis-tool-install-plan-status-${target.id}`,
-        'xd.xenesis.tools.installPlans.status',
-        { tool: target.id },
-        `Read ${target.label} tool install plan status from natural language request.`,
-      );
+      return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.toolInstallPlan, [target.id, target.label], {
+        tool: target.id,
+      });
     }
 
     if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_SETUP_CONTEXT_WORDS)) {
-      return naturalAction(
-        `natural-xenesis-tool-setup-status-${target.id}`,
-        'xd.xenesis.tools.setup.status',
-        { id: target.id },
-        `Read ${target.label} tool setup status from natural language request.`,
-      );
+      return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.toolSetup, [target.id, target.label], {
+        id: target.id,
+      });
     }
 
     if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS)) {
-      return naturalAction(
-        `natural-xenesis-tool-connector-status-${target.id}`,
-        'xd.xenesis.tools.connectors.status',
-        { tool: target.id },
-        `Read ${target.label} tool connector status from natural language request.`,
-      );
+      return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.toolConnector, [target.id, target.label], {
+        tool: target.id,
+      });
     }
 
     if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS)) {
-      return naturalAction(
-        `natural-xenesis-tool-view-status-${target.id}`,
-        'xd.xenesis.tools.views.status',
-        { id: target.id },
-        `Read ${target.label} tool view status from natural language request.`,
-      );
+      return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.toolView, [target.id, target.label], {
+        id: target.id,
+      });
     }
 
     if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS)) {
-      return naturalAction(
-        `natural-xenesis-channel-routing-status-${target.id}`,
-        'xd.xenesis.channels.routing.status',
-        { channel: target.id },
-        `Read ${target.label} channel routing status from natural language request.`,
-      );
+      return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.channelRouting, [target.id, target.label], {
+        channel: target.id,
+      });
     }
 
     if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_SAFETY_CONTEXT_WORDS)) {
-      return naturalAction(
-        `natural-xenesis-channel-safety-status-${target.id}`,
-        'xd.xenesis.channels.safety.status',
-        { channel: target.id },
-        `Read ${target.label} channel safety status from natural language request.`,
-      );
+      return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.channelSafety, [target.id, target.label], {
+        channel: target.id,
+      });
     }
 
     if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS)) {
-      return naturalAction(
-        `natural-xenesis-channel-access-groups-status-${target.id}`,
-        'xd.xenesis.channels.accessGroups.status',
-        { channel: target.id },
-        `Read ${target.label} channel access groups status from natural language request.`,
-      );
+      return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.channelAccessGroups, [target.id, target.label], {
+        channel: target.id,
+      });
     }
 
     if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS)) {
-      return naturalAction(
-        `natural-xenesis-channel-pairing-status-${target.id}`,
-        'xd.xenesis.channels.pairing.status',
-        { channel: target.id },
-        `Read ${target.label} channel pairing status from natural language request.`,
-      );
+      return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.channelPairing, [target.id, target.label], {
+        channel: target.id,
+      });
     }
 
     if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
-      return naturalAction(
-        `natural-xenesis-channel-user-story-status-${target.id}`,
-        'xd.xenesis.channels.userStories.status',
-        { id: target.id },
-        `Read ${target.label} channel user story status from natural language request.`,
-      );
+      return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.channelUserStory, [target.id, target.label], {
+        id: target.id,
+      });
     }
 
     if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS)) {
-      return naturalAction(
-        `natural-xenesis-channel-profile-draft-status-${target.id}`,
-        'xd.xenesis.channels.profileDrafts.status',
-        { channel: target.id },
-        `Read ${target.label} channel profile draft status from natural language request.`,
-      );
+      return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.channelProfileDraft, [target.id, target.label], {
+        channel: target.id,
+      });
     }
 
     if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_MESSENGER_VIEW_FALLBACK_CONTEXT_WORDS)) {
-      return naturalAction(
-        `natural-xenesis-messenger-view-status-${target.id}`,
-        'xd.xenesis.messengers.views.status',
-        { id: target.id },
-        `Read ${target.label} messenger view status from natural language request.`,
-      );
+      return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.messengerView, [target.id, target.label], {
+        id: target.id,
+      });
     }
 
-    return naturalAction(
-      `natural-xenesis-connection-diagnostics-status-${target.id}`,
-      'xd.xenesis.connections.diagnostics.status',
-      { id: target.id },
-      `Read ${target.label} connection diagnostics from natural language request.`,
-    );
+    return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.diagnostics, [target.id, target.label], {
+      id: target.id,
+    });
   }
 
   if (hasXenesisGuideCatalogContext(value)) {

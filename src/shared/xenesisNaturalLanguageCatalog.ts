@@ -1306,6 +1306,121 @@ export const XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS = {
   },
 } as const satisfies Record<string, XenesisNaturalDeskActionDescriptor>;
 
+export const XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS = {
+  routing: {
+    path: 'xd.xenesis.providers.routing.status',
+    idFor: (id: string, _label: string) => `natural-xenesis-provider-routing-status-${id}`,
+    reasonFor: (_id: string, label: string) => `Read ${label} provider routing status from natural language request.`,
+  },
+  views: {
+    path: 'xd.xenesis.providers.views.status',
+    idFor: (id: string, _label: string) => `natural-xenesis-provider-view-status-${id}`,
+    reasonFor: (_id: string, label: string) => `Read ${label} provider view status from natural language request.`,
+  },
+  profileDrafts: {
+    path: 'xd.xenesis.providers.profileDrafts.status',
+    idFor: (id: string, _label: string) => `natural-xenesis-provider-profile-draft-status-${id}`,
+    reasonFor: (_id: string, label: string) =>
+      `Read ${label} provider profile draft status from natural language request.`,
+  },
+  setup: {
+    path: 'xd.xenesis.providers.setup.status',
+    idFor: (id: string, _label: string) => `natural-xenesis-provider-setup-status-${id}`,
+    reasonFor: (_id: string, label: string) => `Read ${label} provider setup status from natural language request.`,
+  },
+} as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
+
+export const XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS = {
+  diagnostics: {
+    path: 'xd.xenesis.connections.diagnostics.status',
+    idFor: (id: string, _label: string) => `natural-xenesis-connection-diagnostics-status-${id}`,
+    reasonFor: (_id: string, label: string) => `Read ${label} connection diagnostics from natural language request.`,
+  },
+  setupRequest: {
+    path: 'xd.xenesis.connections.setupRequests.status',
+    idFor: (id: string, _label: string) => `natural-xenesis-connection-setup-request-status-${id}`,
+    reasonFor: (_id: string, label: string) =>
+      `Read ${label} connection setup request status from natural language request.`,
+  },
+  toolMcpInstallDraft: {
+    path: 'xd.xenesis.tools.mcpInstallDrafts.status',
+    idFor: (id: string, _label: string) => `natural-xenesis-tool-mcp-install-draft-status-${id}`,
+    reasonFor: (_id: string, label: string) => `Read ${label} MCP install draft status from natural language request.`,
+  },
+  toolOauthDraft: {
+    path: 'xd.xenesis.tools.oauthDrafts.status',
+    idFor: (id: string, _label: string) => `natural-xenesis-tool-oauth-draft-status-${id}`,
+    reasonFor: (_id: string, label: string) => `Read ${label} OAuth draft status from natural language request.`,
+  },
+  toolUserStory: {
+    path: 'xd.xenesis.tools.userStories.status',
+    idFor: (id: string, _label: string) => `natural-xenesis-tool-user-story-status-${id}`,
+    reasonFor: (_id: string, label: string) => `Read ${label} tool user story status from natural language request.`,
+  },
+  toolActionPolicy: {
+    path: 'xd.xenesis.tools.actions.status',
+    idFor: (id: string, _label: string) => `natural-xenesis-tool-action-policy-status-${id}`,
+    reasonFor: (_id: string, label: string) => `Read ${label} tool action policy status from natural language request.`,
+  },
+  toolInstallPlan: {
+    path: 'xd.xenesis.tools.installPlans.status',
+    idFor: (id: string, _label: string) => `natural-xenesis-tool-install-plan-status-${id}`,
+    reasonFor: (_id: string, label: string) => `Read ${label} tool install plan status from natural language request.`,
+  },
+  toolSetup: {
+    path: 'xd.xenesis.tools.setup.status',
+    idFor: (id: string, _label: string) => `natural-xenesis-tool-setup-status-${id}`,
+    reasonFor: (_id: string, label: string) => `Read ${label} tool setup status from natural language request.`,
+  },
+  toolConnector: {
+    path: 'xd.xenesis.tools.connectors.status',
+    idFor: (id: string, _label: string) => `natural-xenesis-tool-connector-status-${id}`,
+    reasonFor: (_id: string, label: string) => `Read ${label} tool connector status from natural language request.`,
+  },
+  toolView: {
+    path: 'xd.xenesis.tools.views.status',
+    idFor: (id: string, _label: string) => `natural-xenesis-tool-view-status-${id}`,
+    reasonFor: (_id: string, label: string) => `Read ${label} tool view status from natural language request.`,
+  },
+  channelRouting: {
+    path: 'xd.xenesis.channels.routing.status',
+    idFor: (id: string, _label: string) => `natural-xenesis-channel-routing-status-${id}`,
+    reasonFor: (_id: string, label: string) => `Read ${label} channel routing status from natural language request.`,
+  },
+  channelSafety: {
+    path: 'xd.xenesis.channels.safety.status',
+    idFor: (id: string, _label: string) => `natural-xenesis-channel-safety-status-${id}`,
+    reasonFor: (_id: string, label: string) => `Read ${label} channel safety status from natural language request.`,
+  },
+  channelAccessGroups: {
+    path: 'xd.xenesis.channels.accessGroups.status',
+    idFor: (id: string, _label: string) => `natural-xenesis-channel-access-groups-status-${id}`,
+    reasonFor: (_id: string, label: string) =>
+      `Read ${label} channel access groups status from natural language request.`,
+  },
+  channelPairing: {
+    path: 'xd.xenesis.channels.pairing.status',
+    idFor: (id: string, _label: string) => `natural-xenesis-channel-pairing-status-${id}`,
+    reasonFor: (_id: string, label: string) => `Read ${label} channel pairing status from natural language request.`,
+  },
+  channelUserStory: {
+    path: 'xd.xenesis.channels.userStories.status',
+    idFor: (id: string, _label: string) => `natural-xenesis-channel-user-story-status-${id}`,
+    reasonFor: (_id: string, label: string) => `Read ${label} channel user story status from natural language request.`,
+  },
+  channelProfileDraft: {
+    path: 'xd.xenesis.channels.profileDrafts.status',
+    idFor: (id: string, _label: string) => `natural-xenesis-channel-profile-draft-status-${id}`,
+    reasonFor: (_id: string, label: string) =>
+      `Read ${label} channel profile draft status from natural language request.`,
+  },
+  messengerView: {
+    path: 'xd.xenesis.messengers.views.status',
+    idFor: (id: string, _label: string) => `natural-xenesis-messenger-view-status-${id}`,
+    reasonFor: (_id: string, label: string) => `Read ${label} messenger view status from natural language request.`,
+  },
+} as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
+
 export const XENESIS_NATURAL_PLACEMENT_TARGETS: readonly XenesisNaturalWordsTarget[] = [
   { id: 'right', label: 'right', words: ['오른쪽', '우측', 'right'] },
   { id: 'left', label: 'left', words: ['왼쪽', '좌측', 'left'] },
