@@ -1041,6 +1041,26 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center read
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 설정 확인해줘').actions, [
+    {
+      id: 'natural-xenesis-tool-setup-status-notion',
+      path: 'xd.xenesis.tools.setup.status',
+      args: { id: 'notion' },
+      approved: false,
+      reason: 'Read Notion tool setup status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('리니어 config 확인해줘').actions, [
+    {
+      id: 'natural-xenesis-tool-setup-status-linear',
+      path: 'xd.xenesis.tools.setup.status',
+      args: { id: 'linear' },
+      approved: false,
+      reason: 'Read Linear tool setup status from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 설치 계획 상태 보여줘').actions, [
     {
       id: 'natural-xenesis-tool-install-plan-status-notion',

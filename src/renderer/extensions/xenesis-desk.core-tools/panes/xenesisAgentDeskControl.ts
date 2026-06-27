@@ -717,7 +717,10 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       );
     }
 
-    if (target.kind === 'tool' && hasAny(value, ['setup', '초기 설정', '설정 상태'])) {
+    if (
+      target.kind === 'tool' &&
+      hasAny(value, ['setup', '초기 설정', '설정 상태', '설정', 'settings', 'config', 'configuration', '구성'])
+    ) {
       return naturalAction(
         `natural-xenesis-tool-setup-status-${target.id}`,
         'xd.xenesis.tools.setup.status',

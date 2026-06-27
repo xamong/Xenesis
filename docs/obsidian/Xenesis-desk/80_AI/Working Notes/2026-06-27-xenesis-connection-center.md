@@ -1215,6 +1215,34 @@ Capability Registry instead of only through separate renderer settings panels.
     passed with 56/56 tests.
   - `npm run typecheck` passed.
 
+## Current Natural Tool Setup Readback Synonyms Slice
+
+- Add deterministic natural-language routing for external tool settings/config
+  readback requests before provider execution.
+- `노션 설정 확인해줘` maps to `xd.xenesis.tools.setup.status` with
+  `id=notion`.
+- `리니어 config 확인해줘` maps to `xd.xenesis.tools.setup.status` with
+  `id=linear`.
+- More specific tool readback branches still win first: MCP install drafts,
+  OAuth drafts, user stories, action policies, install plans, connectors, and
+  views.
+- This is deterministic routing, not agent reasoning. It emits an existing
+  read/no-approval CR status action only and does not add CR nodes, install MCP
+  servers, complete OAuth, store tokens, execute provider tools, mutate
+  settings, send messages, or write MCP config.
+- External documentation handling: no per-slice web browsing. Use local
+  Obsidian/docs/handoff/code/tests as the gap map; refresh external docs only
+  as a batched documentation pass if needed.
+- TDD check: focused natural planner test failed first because `노션 설정
+  확인해줘` returned generic `xd.xenesis.connections.diagnostics.status`, then
+  passed after implementation with 29/29 tests.
+- Verification:
+  - `npx biome check src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts --max-diagnostics 40`
+    passed.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 56/56 tests.
+  - `npm run typecheck` passed.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
