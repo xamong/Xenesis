@@ -3,9 +3,14 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
   XENESIS_NATURAL_ACTION_INTENT_WORDS,
+  XENESIS_NATURAL_ARRANGE_MODE_TARGETS,
+  XENESIS_NATURAL_DOCK_SIDE_TARGETS,
+  XENESIS_NATURAL_DOCK_WINDOW_STATE_TARGETS,
   XENESIS_NATURAL_EXPLICIT_OPEN_WORDS,
   XENESIS_NATURAL_GUIDE_TARGETS,
   XENESIS_NATURAL_ONBOARDING_STEP_TARGETS,
+  XENESIS_NATURAL_PLACEMENT_TARGETS,
+  XENESIS_NATURAL_WINDOW_SIZE_PRESET_TARGETS,
 } from '../../../../shared/xenesisNaturalLanguageCatalog';
 import {
   approveXenesisDeskActions,
@@ -29,6 +34,33 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /Use `xd\.xenesis\.providers\.setup\.status`, `xd\.xenesis\.providers\.setup\.open`/);
   assert.doesNotMatch(source, /Use `xd\.xenesis\.tools\.setup\.status`, `xd\.xenesis\.tools\.setup\.open`/);
   assert.doesNotMatch(source, /Use `xd\.xenesis\.channels\.routing\.status`, `xd\.xenesis\.channels\.routing\.open`/);
+  assert.match(source, /XENESIS_NATURAL_PLACEMENT_TARGETS/);
+  assert.match(source, /XENESIS_NATURAL_DOCK_SIDE_TARGETS/);
+  assert.match(source, /XENESIS_NATURAL_DOCK_WINDOW_STATE_TARGETS/);
+  assert.match(source, /XENESIS_NATURAL_ARRANGE_MODE_TARGETS/);
+  assert.match(source, /XENESIS_NATURAL_WINDOW_SIZE_PRESET_TARGETS/);
+  assert.doesNotMatch(source, /if \(hasAny\(value, \['오른쪽', '우측', 'right'\]\)\) return 'right';/);
+  assert.doesNotMatch(source, /if \(hasAny\(value, \['uhd', '3840', '2160', '4k'\]\)\) return 'uhd';/);
+  assert.deepEqual(
+    XENESIS_NATURAL_PLACEMENT_TARGETS.map((target) => target.id),
+    ['right', 'left', 'top', 'bottom', 'tab'],
+  );
+  assert.deepEqual(
+    XENESIS_NATURAL_DOCK_SIDE_TARGETS.map((target) => target.id),
+    ['right', 'left', 'top', 'bottom'],
+  );
+  assert.deepEqual(
+    XENESIS_NATURAL_DOCK_WINDOW_STATE_TARGETS.map((target) => target.id),
+    ['document', 'right', 'left', 'top', 'bottom'],
+  );
+  assert.deepEqual(
+    XENESIS_NATURAL_ARRANGE_MODE_TARGETS.map((target) => target.id),
+    ['grid', 'column', 'row'],
+  );
+  assert.deepEqual(
+    XENESIS_NATURAL_WINDOW_SIZE_PRESET_TARGETS.map((target) => target.id),
+    ['uhd', 'qhd', 'fhd', 'hd'],
+  );
   assert.match(source, /XENESIS_NATURAL_ACTION_INTENT_WORDS/);
   assert.match(source, /XENESIS_NATURAL_EXPLICIT_OPEN_WORDS/);
   assert.doesNotMatch(source, /return hasAny\(value, \[\s*'열어',\s*'켜줘'[\s\S]*?'terminal',\s*'pane',\s*\]\);/);

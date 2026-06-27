@@ -1255,6 +1255,43 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local Obsidian graph, source code, and tests.
 
+## Layout Vocabulary Refactor Slice
+
+- Removed deterministic layout/window vocabulary lists from
+  `xenesisAgentDeskControl.ts`.
+- Added shared layout target catalogs to
+  `src/shared/xenesisNaturalLanguageCatalog.ts`:
+  - `XENESIS_NATURAL_PLACEMENT_TARGETS`
+  - `XENESIS_NATURAL_DOCK_SIDE_TARGETS`
+  - `XENESIS_NATURAL_DOCK_WINDOW_STATE_TARGETS`
+  - `XENESIS_NATURAL_ARRANGE_MODE_TARGETS`
+  - `XENESIS_NATURAL_WINDOW_SIZE_PRESET_TARGETS`
+- The planner now resolves placement, dock side, dock window state, arrange
+  mode, and window-size preset through `findXenesisNaturalWordsTarget`.
+- Added a source-level guard so representative layout word arrays cannot be
+  reintroduced inline in the planner file.
+- Scope boundary: this slice preserves existing placement, dock, arrange, and
+  window-size behavior. It does not reorder natural-language routes, change CR
+  paths, browse external docs, or alter execution/approval behavior.
+- Verification:
+  - RED planner test failed first because the planner did not yet reference
+    `XENESIS_NATURAL_PLACEMENT_TARGETS`.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 36/36 tests.
+  - `npx biome format --write src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    formatted 3 files and fixed 1 file.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 100/100 tests.
+  - `npx biome check src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --max-diagnostics 40`
+    passed.
+  - `npm run typecheck` passed.
+  - CR audit passed with missing registered paths 0, missing dispatched
+    coverage paths 0, undispatched static callable methods 0, and dispatcher
+    paths missing from tree 0.
+  - `git diff --check` exited 0 with line-ending warnings only.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local Obsidian graph, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

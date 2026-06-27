@@ -117,6 +117,42 @@ export const XENESIS_NATURAL_ACTION_INTENT_WORDS = [
   'pane',
 ] as const;
 
+export const XENESIS_NATURAL_PLACEMENT_TARGETS: readonly XenesisNaturalWordsTarget[] = [
+  { id: 'right', label: 'right', words: ['오른쪽', '우측', 'right'] },
+  { id: 'left', label: 'left', words: ['왼쪽', '좌측', 'left'] },
+  { id: 'top', label: 'top', words: ['상단', '위쪽', '위에', 'top'] },
+  { id: 'bottom', label: 'bottom', words: ['하단', '아래쪽', '아래에', 'bottom'] },
+  { id: 'tab', label: 'tab', words: ['탭', '중앙', '문서 영역', 'document', 'tab', 'center'] },
+] as const;
+
+export const XENESIS_NATURAL_DOCK_SIDE_TARGETS: readonly XenesisNaturalWordsTarget[] = [
+  { id: 'right', label: 'right', words: ['오른쪽', '우측', 'right'] },
+  { id: 'left', label: 'left', words: ['왼쪽', '좌측', 'left'] },
+  { id: 'top', label: 'top', words: ['상단', '위쪽', '위에', 'top'] },
+  { id: 'bottom', label: 'bottom', words: ['하단', '아래쪽', '아래에', 'bottom'] },
+] as const;
+
+export const XENESIS_NATURAL_DOCK_WINDOW_STATE_TARGETS: readonly XenesisNaturalWordsTarget[] = [
+  { id: 'document', label: 'document', words: ['문서 영역', '문서영역', 'document', 'center', '중앙'] },
+  { id: 'right', label: 'right', words: ['오른쪽 영역', '우측 영역', 'right area'] },
+  { id: 'left', label: 'left', words: ['왼쪽 영역', '좌측 영역', 'left area'] },
+  { id: 'top', label: 'top', words: ['상단 영역', '위쪽 영역', 'top area'] },
+  { id: 'bottom', label: 'bottom', words: ['하단 영역', '아래쪽 영역', 'bottom area'] },
+] as const;
+
+export const XENESIS_NATURAL_ARRANGE_MODE_TARGETS: readonly XenesisNaturalWordsTarget[] = [
+  { id: 'grid', label: 'grid', words: ['바둑판', '타일', 'grid', 'tile'] },
+  { id: 'column', label: 'column', words: ['세로', '수직', 'vertical', 'column'] },
+  { id: 'row', label: 'row', words: ['가로', '수평', 'horizontal', 'row'] },
+] as const;
+
+export const XENESIS_NATURAL_WINDOW_SIZE_PRESET_TARGETS: readonly XenesisNaturalWordsTarget[] = [
+  { id: 'uhd', label: 'uhd', words: ['uhd', '3840', '2160', '4k'] },
+  { id: 'qhd', label: 'qhd', words: ['qhd', '2560', '1440'] },
+  { id: 'fhd', label: 'fhd', words: ['fhd', '1920', '1080'] },
+  { id: 'hd', label: 'hd', words: ['hd', '1280', '720'] },
+] as const;
+
 export const XENESIS_NATURAL_CORE_TOOL_TARGETS: readonly XenesisNaturalCoreToolTarget[] = [
   {
     id: 'natural-tool-capability-explorer-open',

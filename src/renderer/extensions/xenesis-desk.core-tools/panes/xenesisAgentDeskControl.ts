@@ -3,12 +3,17 @@ import {
   findXenesisNaturalGuideTarget,
   findXenesisNaturalWordsTarget,
   XENESIS_NATURAL_ACTION_INTENT_WORDS,
+  XENESIS_NATURAL_ARRANGE_MODE_TARGETS,
   XENESIS_NATURAL_CONNECTION_TARGETS,
   XENESIS_NATURAL_CORE_TOOL_TARGETS,
+  XENESIS_NATURAL_DOCK_SIDE_TARGETS,
+  XENESIS_NATURAL_DOCK_WINDOW_STATE_TARGETS,
   XENESIS_NATURAL_EXPLICIT_OPEN_WORDS,
   XENESIS_NATURAL_ONBOARDING_STEP_TARGETS,
+  XENESIS_NATURAL_PLACEMENT_TARGETS,
   XENESIS_NATURAL_PROVIDER_TARGETS,
   XENESIS_NATURAL_VIEW_TARGETS,
+  XENESIS_NATURAL_WINDOW_SIZE_PRESET_TARGETS,
   type XenesisNaturalConnectionTarget,
 } from '../../../../shared/xenesisNaturalLanguageCatalog';
 
@@ -123,12 +128,9 @@ function emptyNaturalPlan(): XenesisDeskNaturalLanguagePlan {
 }
 
 function detectPlacement(value: string): XenesisDeskPlacement | undefined {
-  if (hasAny(value, ['오른쪽', '우측', 'right'])) return 'right';
-  if (hasAny(value, ['왼쪽', '좌측', 'left'])) return 'left';
-  if (hasAny(value, ['상단', '위쪽', '위에', 'top'])) return 'top';
-  if (hasAny(value, ['하단', '아래쪽', '아래에', 'bottom'])) return 'bottom';
-  if (hasAny(value, ['탭', '중앙', '문서 영역', 'document', 'tab', 'center'])) return 'tab';
-  return undefined;
+  return findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_PLACEMENT_TARGETS)?.id as
+    | XenesisDeskPlacement
+    | undefined;
 }
 
 function withPlacement(
@@ -140,11 +142,7 @@ function withPlacement(
 }
 
 function detectWindowSizerPreset(value: string): string | undefined {
-  if (hasAny(value, ['uhd', '3840', '2160', '4k'])) return 'uhd';
-  if (hasAny(value, ['qhd', '2560', '1440'])) return 'qhd';
-  if (hasAny(value, ['fhd', '1920', '1080'])) return 'fhd';
-  if (hasAny(value, ['hd', '1280', '720'])) return 'hd';
-  return undefined;
+  return findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_WINDOW_SIZE_PRESET_TARGETS)?.id;
 }
 
 function extractFirstInteger(value: string, min = 1, max = 100): number | undefined {
@@ -156,27 +154,19 @@ function extractFirstInteger(value: string, min = 1, max = 100): number | undefi
 }
 
 function detectDockSide(value: string): XenesisDeskDockSide | undefined {
-  if (hasAny(value, ['오른쪽', '우측', 'right'])) return 'right';
-  if (hasAny(value, ['왼쪽', '좌측', 'left'])) return 'left';
-  if (hasAny(value, ['상단', '위쪽', '위에', 'top'])) return 'top';
-  if (hasAny(value, ['하단', '아래쪽', '아래에', 'bottom'])) return 'bottom';
-  return undefined;
+  return findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_DOCK_SIDE_TARGETS)?.id as XenesisDeskDockSide | undefined;
 }
 
 function detectDockWindowState(value: string): XenesisDeskWindowState | undefined {
-  if (hasAny(value, ['문서 영역', '문서영역', 'document', 'center', '중앙'])) return 'document';
-  if (hasAny(value, ['오른쪽 영역', '우측 영역', 'right area'])) return 'right';
-  if (hasAny(value, ['왼쪽 영역', '좌측 영역', 'left area'])) return 'left';
-  if (hasAny(value, ['상단 영역', '위쪽 영역', 'top area'])) return 'top';
-  if (hasAny(value, ['하단 영역', '아래쪽 영역', 'bottom area'])) return 'bottom';
-  return undefined;
+  return findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_DOCK_WINDOW_STATE_TARGETS)?.id as
+    | XenesisDeskWindowState
+    | undefined;
 }
 
 function detectArrangeMode(value: string): XenesisDeskArrangeMode | undefined {
-  if (hasAny(value, ['바둑판', '타일', 'grid', 'tile'])) return 'grid';
-  if (hasAny(value, ['세로', '수직', 'vertical', 'column'])) return 'column';
-  if (hasAny(value, ['가로', '수평', 'horizontal', 'row'])) return 'row';
-  return undefined;
+  return findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_ARRANGE_MODE_TARGETS)?.id as
+    | XenesisDeskArrangeMode
+    | undefined;
 }
 
 function stripQuotedText(value: string): string {
