@@ -807,6 +807,23 @@ function hasExternalToolCatalogContext(value: string): boolean {
   ]);
 }
 
+function hasExternalMessengerCatalogContext(value: string): boolean {
+  return hasAny(value, [
+    'external messenger',
+    'external messengers',
+    'messenger catalog',
+    'messenger catalogs',
+    'channel catalog',
+    'channel catalogs',
+    '외부 메신저',
+    '외부 채널',
+    '메신저 전체',
+    '채널 전체',
+    '전체 메신저',
+    '전체 채널',
+  ]);
+}
+
 function xenesisToolAggregateStatusActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
   if (!hasExternalToolCatalogContext(value)) return null;
   if (!hasXenesisConnectionReadbackIntent(value)) return null;
@@ -844,6 +861,68 @@ function xenesisToolAggregateStatusActionFromNaturalText(value: string): Xenesis
       'xd.xenesis.tools.userStories.status',
       {},
       'Read external tool user-story catalog status from natural language request.',
+    );
+  }
+
+  return null;
+}
+
+function xenesisMessengerAggregateStatusActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
+  if (!hasExternalMessengerCatalogContext(value)) return null;
+  if (!hasXenesisConnectionReadbackIntent(value)) return null;
+  if (!hasAny(value, ['전체', 'all', 'catalog', '카탈로그', '목록', 'list'])) return null;
+
+  if (hasAny(value, ['라우팅', 'routing', 'route'])) {
+    return naturalAction(
+      'natural-xenesis-messengers-routing-status',
+      'xd.xenesis.channels.routing.status',
+      {},
+      'Read external messenger routing catalog status from natural language request.',
+    );
+  }
+
+  if (hasAny(value, ['안전', 'safety', '가드레일', 'guardrail'])) {
+    return naturalAction(
+      'natural-xenesis-messengers-safety-status',
+      'xd.xenesis.channels.safety.status',
+      {},
+      'Read external messenger safety catalog status from natural language request.',
+    );
+  }
+
+  if (hasAny(value, ['접근 그룹', 'access group', 'access groups', 'allowlist'])) {
+    return naturalAction(
+      'natural-xenesis-messengers-access-groups-status',
+      'xd.xenesis.channels.accessGroups.status',
+      {},
+      'Read external messenger access-group catalog status from natural language request.',
+    );
+  }
+
+  if (hasAny(value, ['페어링', 'pairing', 'pair', '연동'])) {
+    return naturalAction(
+      'natural-xenesis-messengers-pairing-status',
+      'xd.xenesis.channels.pairing.status',
+      {},
+      'Read external messenger pairing catalog status from natural language request.',
+    );
+  }
+
+  if (hasAny(value, ['user story', 'user stories', '사용자 스토리', '스토리'])) {
+    return naturalAction(
+      'natural-xenesis-messengers-user-stories-status',
+      'xd.xenesis.channels.userStories.status',
+      {},
+      'Read external messenger user-story catalog status from natural language request.',
+    );
+  }
+
+  if (hasAny(value, ['view', 'views', '뷰', '화면', 'setup', '초기 설정', '설정', 'config', 'configuration', '구성'])) {
+    return naturalAction(
+      'natural-xenesis-messengers-views-status',
+      'xd.xenesis.messengers.views.status',
+      {},
+      'Read external messenger view catalog status from natural language request.',
     );
   }
 
@@ -1197,6 +1276,9 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
 
   const toolAggregateStatusAction = xenesisToolAggregateStatusActionFromNaturalText(value);
   if (toolAggregateStatusAction) return toolAggregateStatusAction;
+
+  const messengerAggregateStatusAction = xenesisMessengerAggregateStatusActionFromNaturalText(value);
+  if (messengerAggregateStatusAction) return messengerAggregateStatusAction;
 
   if (hasAny(value, ['온보딩', 'onboarding'])) {
     const onboardingStatusAction = xenesisOnboardingStatusActionFromNaturalText(value);

@@ -1520,6 +1520,66 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center read
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 라우팅 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-messengers-routing-status',
+      path: 'xd.xenesis.channels.routing.status',
+      args: {},
+      approved: false,
+      reason: 'Read external messenger routing catalog status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 안전 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-messengers-safety-status',
+      path: 'xd.xenesis.channels.safety.status',
+      args: {},
+      approved: false,
+      reason: 'Read external messenger safety catalog status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 접근 그룹 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-messengers-access-groups-status',
+      path: 'xd.xenesis.channels.accessGroups.status',
+      args: {},
+      approved: false,
+      reason: 'Read external messenger access-group catalog status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 페어링 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-messengers-pairing-status',
+      path: 'xd.xenesis.channels.pairing.status',
+      args: {},
+      approved: false,
+      reason: 'Read external messenger pairing catalog status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 사용자 스토리 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-messengers-user-stories-status',
+      path: 'xd.xenesis.channels.userStories.status',
+      args: {},
+      approved: false,
+      reason: 'Read external messenger user-story catalog status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 setup 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-messengers-views-status',
+      path: 'xd.xenesis.messengers.views.status',
+      args: {},
+      approved: false,
+      reason: 'Read external messenger view catalog status from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider setup 상태 보여줘').actions, [
     {
       id: 'natural-xenesis-provider-setup-status-auto',

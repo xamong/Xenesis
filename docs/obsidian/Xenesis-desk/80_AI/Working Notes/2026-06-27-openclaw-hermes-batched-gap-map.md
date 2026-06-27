@@ -349,6 +349,33 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local code, and tests.
 
+## Messenger Aggregate Readbacks Slice
+
+- Added deterministic Xenesis Agent natural-language routing for broad external
+  messenger/channel catalog status prompts that do not name a specific
+  messenger:
+  - `외부 메신저 라우팅 전체 상태 보여줘` ->
+    `xd.xenesis.channels.routing.status`.
+  - `외부 메신저 안전 전체 상태 보여줘` ->
+    `xd.xenesis.channels.safety.status`.
+  - `외부 메신저 접근 그룹 전체 상태 보여줘` ->
+    `xd.xenesis.channels.accessGroups.status`.
+  - `외부 메신저 페어링 전체 상태 보여줘` ->
+    `xd.xenesis.channels.pairing.status`.
+  - `외부 메신저 사용자 스토리 전체 상태 보여줘` ->
+    `xd.xenesis.channels.userStories.status`.
+  - `외부 메신저 setup 전체 상태 보여줘` ->
+    `xd.xenesis.messengers.views.status`.
+- The aggregate branch runs after target-specific messenger/tool routing and
+  before the generic Connection Center fallback, so prompts like `텔레그램
+  페어링 상태 보여줘` keep returning Telegram-specific pairing readbacks.
+- Scope boundary: this slice did not add CR nodes, dispatcher branches,
+  renderer adapters, gateway lifecycle actions, delivery sends, channel
+  settings mutation, allowlist updates, credential storage, external-system
+  mutation, or approval bypasses. All new routes are read-only.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local code, and tests.
+
 ## Tool Aggregate Readbacks Slice
 
 - Added deterministic Xenesis Agent natural-language routing for broad
