@@ -782,6 +782,46 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local Obsidian graph, source code, and tests.
 
+## Planned Messenger Channel Guards CR Slice
+
+- Added planned messenger routing, safety, and access-group guard metadata to
+  the existing Connection Center model.
+- `xd.xenesis.channels.routing.status/open`,
+  `xd.xenesis.channels.safety.status/open`, and
+  `xd.xenesis.channels.accessGroups.status/open` now accept planned messenger
+  ids instead of implemented-only channel ids.
+- Planned guard metadata is read/open only:
+  - route binding uses `<channel>.plannedRoute`
+  - access group binding uses `plannedAllowedRoutes`
+  - delivery features explicitly include `delivery-disabled`
+  - safety boundaries state planned channel delivery remains disabled
+- Xenesis Agent deterministic routing now preserves planned messenger guard
+  intent:
+  - `구글 챗 라우팅 상태 보여줘` ->
+    `xd.xenesis.channels.routing.status` with `channel=google-chat`.
+  - `왓츠앱 안전 상태 보여줘` ->
+    `xd.xenesis.channels.safety.status` with `channel=whatsapp`.
+  - `마이크로소프트 팀즈 access group 열어줘` ->
+    `xd.xenesis.channels.accessGroups.open` with
+    `channel=microsoft-teams`.
+- The messenger id catalog was also aligned with planned cards by adding the
+  previously missing `rocket-chat` and `dingding` ids to the CR/main validator
+  lists.
+- Scope boundary: this slice does not enable gateway delivery, send/test
+  messages, write profiles, update allowlists, store credentials, execute
+  pairing, start gateways, call external APIs, or bypass approvals.
+- Verification:
+  - Related 96-test slice passed.
+  - Scoped Biome check exited 0 with existing warnings only.
+  - Root typecheck passed.
+  - CR audit passed with missing registered paths 0, missing dispatched
+    coverage paths 0, undispatched static callable methods 0, and dispatcher
+    paths missing from tree 0.
+  - Public-release check was not rerun for this slice; same-session known gap is
+    missing `.github/workflows/ci.yml`.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local Obsidian graph, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

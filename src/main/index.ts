@@ -5182,17 +5182,17 @@ function xenesisChannelRoutingStatusItem(item: XenesisConnectionItem): Record<st
 async function getXenesisChannelRoutingStatus(args?: unknown): Promise<Record<string, unknown>> {
   const body = normalizeMcpCapabilityArgs(args);
   const channel = readCapabilityString(body, ['channel', 'id', 'name']);
-  if (channel && !isXenesisProfileChannelName(channel)) {
+  if (channel && !isXenesisMessengerViewId(channel)) {
     return {
       ok: false,
       error: `Unsupported Xenesis channel: ${channel}`,
-      allowedChannels: XENESIS_PROFILE_CHANNEL_NAMES,
+      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
     };
   }
 
   const status = await getXenesisConnectionsStatus();
   const items = status.sections.messengers.items
-    .filter((item) => item.supportLevel === 'implemented' && item.channelTemplate?.routing)
+    .filter((item) => item.channelTemplate?.routing)
     .filter((item) => !channel || item.id === channel)
     .map((item: XenesisConnectionItem) => xenesisChannelRoutingStatusItem(item));
 
@@ -5211,18 +5211,17 @@ async function openXenesisChannelRouting(args?: unknown): Promise<Record<string,
   if (!channel) {
     return { ok: false, error: 'Channel is required.' };
   }
-  if (!isXenesisProfileChannelName(channel)) {
+  if (!isXenesisMessengerViewId(channel)) {
     return {
       ok: false,
       error: `Unsupported Xenesis channel: ${channel}`,
-      allowedChannels: XENESIS_PROFILE_CHANNEL_NAMES,
+      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
     };
   }
 
   const status = await getXenesisConnectionsStatus();
   const item = status.sections.messengers.items.find(
-    (candidate) =>
-      candidate.id === channel && candidate.supportLevel === 'implemented' && candidate.channelTemplate?.routing,
+    (candidate) => candidate.id === channel && candidate.channelTemplate?.routing,
   );
   if (!item) {
     return { ok: false, channel, error: `Xenesis channel routing is not available: ${channel}` };
@@ -5273,17 +5272,17 @@ function xenesisChannelSafetyStatusItem(item: XenesisConnectionItem): Record<str
 async function getXenesisChannelSafetyStatus(args?: unknown): Promise<Record<string, unknown>> {
   const body = normalizeMcpCapabilityArgs(args);
   const channel = readCapabilityString(body, ['channel', 'id', 'name']);
-  if (channel && !isXenesisProfileChannelName(channel)) {
+  if (channel && !isXenesisMessengerViewId(channel)) {
     return {
       ok: false,
       error: `Unsupported Xenesis channel: ${channel}`,
-      allowedChannels: XENESIS_PROFILE_CHANNEL_NAMES,
+      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
     };
   }
 
   const status = await getXenesisConnectionsStatus();
   const items = status.sections.messengers.items
-    .filter((item) => item.supportLevel === 'implemented' && item.channelTemplate?.safety)
+    .filter((item) => item.channelTemplate?.safety)
     .filter((item) => !channel || item.id === channel)
     .map((item: XenesisConnectionItem) => xenesisChannelSafetyStatusItem(item));
 
@@ -5302,18 +5301,17 @@ async function openXenesisChannelSafety(args?: unknown): Promise<Record<string, 
   if (!channel) {
     return { ok: false, error: 'Channel is required.' };
   }
-  if (!isXenesisProfileChannelName(channel)) {
+  if (!isXenesisMessengerViewId(channel)) {
     return {
       ok: false,
       error: `Unsupported Xenesis channel: ${channel}`,
-      allowedChannels: XENESIS_PROFILE_CHANNEL_NAMES,
+      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
     };
   }
 
   const status = await getXenesisConnectionsStatus();
   const item = status.sections.messengers.items.find(
-    (candidate) =>
-      candidate.id === channel && candidate.supportLevel === 'implemented' && candidate.channelTemplate?.safety,
+    (candidate) => candidate.id === channel && candidate.channelTemplate?.safety,
   );
   if (!item) {
     return { ok: false, channel, error: `Xenesis channel safety is not available: ${channel}` };
@@ -5341,10 +5339,11 @@ type XenesisChannelAccessGroupValueState = 'configured' | 'empty' | 'unknown';
 
 function readChannelAccessGroupValueState(
   settings: XenesisStatus['profile']['channelSettings'] | undefined,
-  channel: XenesisProfileChannelName,
+  channel: string,
   field: string,
 ): XenesisChannelAccessGroupValueState {
-  const channelSettings = settings?.[channel] as Record<string, unknown> | undefined;
+  const settingsByChannel = settings as Record<string, Record<string, unknown> | undefined> | undefined;
+  const channelSettings = settingsByChannel?.[channel];
   const value = channelSettings?.[field];
   if (typeof value !== 'string') return 'unknown';
   return value.trim() ? 'configured' : 'empty';
@@ -5389,22 +5388,21 @@ function xenesisChannelAccessGroupsStatusItem(
 async function getXenesisChannelAccessGroupsStatus(args?: unknown): Promise<Record<string, unknown>> {
   const body = normalizeMcpCapabilityArgs(args);
   const channel = readCapabilityString(body, ['channel', 'id', 'name']);
-  if (channel && !isXenesisProfileChannelName(channel)) {
+  if (channel && !isXenesisMessengerViewId(channel)) {
     return {
       ok: false,
       error: `Unsupported Xenesis channel: ${channel}`,
-      allowedChannels: XENESIS_PROFILE_CHANNEL_NAMES,
+      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
     };
   }
 
   const [status, xenesis] = await Promise.all([getXenesisConnectionsStatus(), getXenesisStatusPayload()]);
   const profileSettings = xenesis.profile.channelSettings;
   const items = status.sections.messengers.items
-    .filter((item) => item.supportLevel === 'implemented' && item.channelTemplate?.accessGroups)
+    .filter((item) => item.channelTemplate?.accessGroups)
     .filter((item) => !channel || item.id === channel)
     .map((item: XenesisConnectionItem) => {
-      const channelName = item.id as XenesisProfileChannelName;
-      const runtime = xenesis.gateway.channels?.[channelName];
+      const runtime = xenesis.gateway.channels?.[item.id as XenesisProfileChannelName];
       return xenesisChannelAccessGroupsStatusItem(item, profileSettings, runtime);
     });
 
@@ -5423,18 +5421,17 @@ async function openXenesisChannelAccessGroups(args?: unknown): Promise<Record<st
   if (!channel) {
     return { ok: false, error: 'Channel is required.' };
   }
-  if (!isXenesisProfileChannelName(channel)) {
+  if (!isXenesisMessengerViewId(channel)) {
     return {
       ok: false,
       error: `Unsupported Xenesis channel: ${channel}`,
-      allowedChannels: XENESIS_PROFILE_CHANNEL_NAMES,
+      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
     };
   }
 
   const [status, xenesis] = await Promise.all([getXenesisConnectionsStatus(), getXenesisStatusPayload()]);
   const item = status.sections.messengers.items.find(
-    (candidate) =>
-      candidate.id === channel && candidate.supportLevel === 'implemented' && candidate.channelTemplate?.accessGroups,
+    (candidate) => candidate.id === channel && candidate.channelTemplate?.accessGroups,
   );
   if (!item) {
     return { ok: false, channel, error: `Xenesis channel access groups are not available: ${channel}` };
@@ -5589,11 +5586,13 @@ const XENESIS_MESSENGER_VIEW_IDS = [
   'raft',
   'tlon',
   'synology-chat',
+  'rocket-chat',
   'twitch',
   'line',
   'wechat',
   'qqbot',
   'feishu',
+  'dingding',
   'yuanbao',
   'zalo',
   'email',

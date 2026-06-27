@@ -182,8 +182,10 @@ test('xenesis channel routing capabilities are registered and dispatch to the ad
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
   assert.deepEqual(openCapability?.schema?.required, ['channel']);
-  assert.deepEqual(statusSchemaProperties.channel?.enum, ['telegram', 'slack', 'discord', 'webhook']);
-  assert.deepEqual(openSchemaProperties.channel?.enum, ['telegram', 'slack', 'discord', 'webhook']);
+  for (const channel of ['telegram', 'slack', 'discord', 'webhook', 'whatsapp', 'google-chat', 'microsoft-teams']) {
+    assert.equal(statusSchemaProperties.channel?.enum.includes(channel), true, `${channel} should be accepted`);
+    assert.equal(openSchemaProperties.channel?.enum.includes(channel), true, `${channel} should be accepted by open`);
+  }
 
   const calls: Array<{ method: string; args: unknown }> = [];
   const api: DeskBridgeCapabilityAdapter = {
@@ -240,8 +242,10 @@ test('xenesis channel safety capabilities are registered and dispatch to the ada
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
   assert.deepEqual(openCapability?.schema?.required, ['channel']);
-  assert.deepEqual(statusSchemaProperties.channel?.enum, ['telegram', 'slack', 'discord', 'webhook']);
-  assert.deepEqual(openSchemaProperties.channel?.enum, ['telegram', 'slack', 'discord', 'webhook']);
+  for (const channel of ['telegram', 'slack', 'discord', 'webhook', 'whatsapp', 'google-chat', 'microsoft-teams']) {
+    assert.equal(statusSchemaProperties.channel?.enum.includes(channel), true, `${channel} should be accepted`);
+    assert.equal(openSchemaProperties.channel?.enum.includes(channel), true, `${channel} should be accepted by open`);
+  }
 
   const calls: Array<{ method: string; args: unknown }> = [];
   const api: DeskBridgeCapabilityAdapter = {
@@ -298,8 +302,10 @@ test('xenesis channel access group capabilities are registered and dispatch to t
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
   assert.deepEqual(openCapability?.schema?.required, ['channel']);
-  assert.deepEqual(statusSchemaProperties.channel?.enum, ['telegram', 'slack', 'discord', 'webhook']);
-  assert.deepEqual(openSchemaProperties.channel?.enum, ['telegram', 'slack', 'discord', 'webhook']);
+  for (const channel of ['telegram', 'slack', 'discord', 'webhook', 'whatsapp', 'google-chat', 'microsoft-teams']) {
+    assert.equal(statusSchemaProperties.channel?.enum.includes(channel), true, `${channel} should be accepted`);
+    assert.equal(openSchemaProperties.channel?.enum.includes(channel), true, `${channel} should be accepted by open`);
+  }
 
   const calls: Array<{ method: string; args: unknown }> = [];
   const api: DeskBridgeCapabilityAdapter = {
@@ -1211,7 +1217,7 @@ test('xenesis messenger view capabilities are registered and dispatch to the ada
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
   assert.deepEqual(openCapability?.schema?.required, ['id']);
-  for (const messenger of ['telegram', 'signal', 'google-chat']) {
+  for (const messenger of ['telegram', 'signal', 'google-chat', 'rocket-chat', 'dingding']) {
     assert.equal(
       statusSchemaProperties.id?.enum.includes(messenger),
       true,

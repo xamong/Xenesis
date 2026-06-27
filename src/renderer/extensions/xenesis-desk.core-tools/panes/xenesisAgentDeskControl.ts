@@ -1,7 +1,6 @@
 import { listDeskBridgeCapabilities } from '../../../../shared/deskBridgeCapabilities';
 import {
   findXenesisNaturalWordsTarget,
-  isXenesisNaturalImplementedMessengerTarget,
   XENESIS_NATURAL_CONNECTION_TARGETS,
   XENESIS_NATURAL_CORE_TOOL_TARGETS,
   XENESIS_NATURAL_PROVIDER_TARGETS,
@@ -1000,7 +999,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       );
     }
 
-    if (isXenesisNaturalImplementedMessengerTarget(target) && hasAny(value, ['라우팅', 'routing', 'route'])) {
+    if (target.kind === 'messenger' && hasAny(value, ['라우팅', 'routing', 'route'])) {
       return naturalAction(
         `natural-xenesis-channel-routing-status-${target.id}`,
         'xd.xenesis.channels.routing.status',
@@ -1009,10 +1008,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       );
     }
 
-    if (
-      isXenesisNaturalImplementedMessengerTarget(target) &&
-      hasAny(value, ['안전', 'safety', '가드레일', 'guardrail'])
-    ) {
+    if (target.kind === 'messenger' && hasAny(value, ['안전', 'safety', '가드레일', 'guardrail'])) {
       return naturalAction(
         `natural-xenesis-channel-safety-status-${target.id}`,
         'xd.xenesis.channels.safety.status',
@@ -1022,7 +1018,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
     }
 
     if (
-      isXenesisNaturalImplementedMessengerTarget(target) &&
+      target.kind === 'messenger' &&
       hasAny(value, ['접근 그룹', '액세스 그룹', '액세스그룹', 'access group', 'access groups', 'allowlist'])
     ) {
       return naturalAction(
@@ -1709,11 +1705,7 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
     );
   }
 
-  if (
-    target.kind === 'messenger' &&
-    isXenesisNaturalImplementedMessengerTarget(target) &&
-    hasAny(value, ['라우팅', 'routing', 'route'])
-  ) {
+  if (target.kind === 'messenger' && hasAny(value, ['라우팅', 'routing', 'route'])) {
     return naturalAction(
       `natural-xenesis-channel-routing-open-${target.id}`,
       'xd.xenesis.channels.routing.open',
@@ -1722,10 +1714,7 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
     );
   }
 
-  if (
-    isXenesisNaturalImplementedMessengerTarget(target) &&
-    hasAny(value, ['안전', 'safety', '가드레일', 'guardrail'])
-  ) {
+  if (target.kind === 'messenger' && hasAny(value, ['안전', 'safety', '가드레일', 'guardrail'])) {
     return naturalAction(
       `natural-xenesis-channel-safety-open-${target.id}`,
       'xd.xenesis.channels.safety.open',
@@ -1735,7 +1724,7 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
   }
 
   if (
-    isXenesisNaturalImplementedMessengerTarget(target) &&
+    target.kind === 'messenger' &&
     hasAny(value, ['접근 그룹', '액세스 그룹', '액세스그룹', 'access group', 'access groups', 'allowlist'])
   ) {
     return naturalAction(

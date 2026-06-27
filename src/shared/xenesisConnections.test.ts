@@ -1889,6 +1889,65 @@ test('buildXenesisConnectionsStatus exposes OpenClaw-style access group metadata
   }
 });
 
+test('buildXenesisConnectionsStatus exposes planned messenger routing safety and access guards', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const googleChat = status.sections.messengers.items.find((item) => item.id === 'google-chat');
+  const whatsapp = status.sections.messengers.items.find((item) => item.id === 'whatsapp');
+  const teams = status.sections.messengers.items.find((item) => item.id === 'microsoft-teams');
+
+  assert.equal(googleChat?.supportLevel, 'planned');
+  assert.equal(googleChat?.channelTemplate?.routing?.routeBinding, 'google-chat.plannedRoute');
+  assert.deepEqual(googleChat?.channelTemplate?.routing?.allowlistFields, ['plannedAllowedRoutes']);
+  assert.equal(googleChat?.channelTemplate?.routing?.defaultAgent, 'xenesis-agent');
+  assert.equal(googleChat?.channelTemplate?.routing?.sessionScope, 'planned-channel');
+  assert.ok(googleChat?.channelTemplate?.routing?.diagnostics.includes('planned-adapter'));
+  assert.ok(googleChat?.channelTemplate?.routing?.deliveryFeatures.includes('delivery-disabled'));
+
+  assert.equal(whatsapp?.channelTemplate?.safety?.accessModel, 'allowlist');
+  assert.ok(whatsapp?.channelTemplate?.safety?.loopProtection.includes('planned delivery remains disabled'));
+  assert.ok(whatsapp?.channelTemplate?.safety?.safetyBoundaries.includes('planned channel delivery remains disabled'));
+  assert.deepEqual(teams?.channelTemplate?.accessGroups?.bindings, [
+    {
+      groupId: 'microsoft-teams-planned-routes',
+      field: 'plannedAllowedRoutes',
+      required: true,
+      emptyDiagnostic: 'planned route allowlist is not configured',
+      description: 'Planned Microsoft Teams route, sender, room, or tenant allowlist for future delivery.',
+    },
+  ]);
+  assert.ok(teams?.channelTemplate?.accessGroups?.safetyBoundaries.includes('access-group status is read-only'));
+  assert.ok(
+    teams?.channelTemplate?.accessGroups?.safetyBoundaries.includes('planned channel delivery remains disabled'),
+  );
+});
+
 test('buildXenesisConnectionsStatus exposes OpenClaw-style pairing metadata for implemented and planned channels', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {

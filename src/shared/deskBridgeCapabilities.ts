@@ -334,92 +334,6 @@ const XENESIS_GUIDE_OPEN_SCHEMA = {
   },
 } as const;
 
-const XENESIS_CHANNEL_ROUTING_STATUS_SCHEMA = {
-  type: 'object',
-  properties: {
-    channel: {
-      type: 'string',
-      title: 'Channel',
-      enum: ['telegram', 'slack', 'discord', 'webhook'],
-      description: 'Optional implemented external bot channel to filter.',
-    },
-  },
-} as const;
-
-const XENESIS_CHANNEL_ROUTING_OPEN_SCHEMA = {
-  type: 'object',
-  required: ['channel'],
-  properties: {
-    channel: {
-      type: 'string',
-      title: 'Channel',
-      enum: ['telegram', 'slack', 'discord', 'webhook'],
-      description: 'Implemented external bot channel to focus.',
-    },
-    id: {
-      type: 'string',
-      title: 'Connection id',
-      enum: ['telegram', 'slack', 'discord', 'webhook'],
-      description: 'Alias for channel.',
-    },
-    name: {
-      type: 'string',
-      title: 'Connection name',
-      enum: ['telegram', 'slack', 'discord', 'webhook'],
-      description: 'Alias for channel.',
-    },
-    ensureVisible: {
-      type: 'boolean',
-      title: 'Ensure visible',
-      description: 'Scroll the focused messenger routing card into view after opening the Connection Center.',
-      default: true,
-    },
-  },
-} as const;
-
-const XENESIS_CHANNEL_ACCESS_GROUP_STATUS_SCHEMA = {
-  type: 'object',
-  properties: {
-    channel: {
-      type: 'string',
-      title: 'Channel',
-      enum: ['telegram', 'slack', 'discord', 'webhook'],
-      description: 'Optional implemented external bot channel to filter.',
-    },
-  },
-} as const;
-
-const XENESIS_CHANNEL_IMPLEMENTED_OPEN_SCHEMA = {
-  type: 'object',
-  required: ['channel'],
-  properties: {
-    channel: {
-      type: 'string',
-      title: 'Channel',
-      enum: ['telegram', 'slack', 'discord', 'webhook'],
-      description: 'Implemented external bot channel to focus.',
-    },
-    id: {
-      type: 'string',
-      title: 'Connection id',
-      enum: ['telegram', 'slack', 'discord', 'webhook'],
-      description: 'Alias for channel.',
-    },
-    name: {
-      type: 'string',
-      title: 'Connection name',
-      enum: ['telegram', 'slack', 'discord', 'webhook'],
-      description: 'Alias for channel.',
-    },
-    ensureVisible: {
-      type: 'boolean',
-      title: 'Ensure visible',
-      description: 'Scroll the focused messenger connection card into view after opening the Connection Center.',
-      default: true,
-    },
-  },
-} as const;
-
 const XENESIS_MESSENGER_VIEW_IDS = [
   'telegram',
   'slack',
@@ -438,11 +352,13 @@ const XENESIS_MESSENGER_VIEW_IDS = [
   'raft',
   'tlon',
   'synology-chat',
+  'rocket-chat',
   'twitch',
   'line',
   'wechat',
   'qqbot',
   'feishu',
+  'dingding',
   'yuanbao',
   'zalo',
   'email',
@@ -450,6 +366,94 @@ const XENESIS_MESSENGER_VIEW_IDS = [
   'home-assistant',
   'ntfy',
 ] as const;
+
+const XENESIS_CHANNEL_GUARD_IDS = XENESIS_MESSENGER_VIEW_IDS;
+
+const XENESIS_CHANNEL_ROUTING_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_GUARD_IDS,
+      description: 'Optional implemented or planned external messenger channel to filter.',
+    },
+  },
+} as const;
+
+const XENESIS_CHANNEL_ROUTING_OPEN_SCHEMA = {
+  type: 'object',
+  required: ['channel'],
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_GUARD_IDS,
+      description: 'Implemented or planned external messenger channel to focus.',
+    },
+    id: {
+      type: 'string',
+      title: 'Connection id',
+      enum: XENESIS_CHANNEL_GUARD_IDS,
+      description: 'Alias for channel.',
+    },
+    name: {
+      type: 'string',
+      title: 'Connection name',
+      enum: XENESIS_CHANNEL_GUARD_IDS,
+      description: 'Alias for channel.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused messenger routing card into view after opening the Connection Center.',
+      default: true,
+    },
+  },
+} as const;
+
+const XENESIS_CHANNEL_ACCESS_GROUP_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_GUARD_IDS,
+      description: 'Optional implemented or planned external messenger channel to filter.',
+    },
+  },
+} as const;
+
+const XENESIS_CHANNEL_GUARD_OPEN_SCHEMA = {
+  type: 'object',
+  required: ['channel'],
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_GUARD_IDS,
+      description: 'Implemented or planned external messenger channel to focus.',
+    },
+    id: {
+      type: 'string',
+      title: 'Connection id',
+      enum: XENESIS_CHANNEL_GUARD_IDS,
+      description: 'Alias for channel.',
+    },
+    name: {
+      type: 'string',
+      title: 'Connection name',
+      enum: XENESIS_CHANNEL_GUARD_IDS,
+      description: 'Alias for channel.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused messenger connection card into view after opening the Connection Center.',
+      default: true,
+    },
+  },
+} as const;
 
 const XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS = XENESIS_MESSENGER_VIEW_IDS;
 
@@ -4459,14 +4463,14 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           method(
             'xd.xenesis.channels.routing.status',
             'Read channel routing status',
-            'Read route binding, allowlist, pairing, default-agent, diagnostics, and delivery metadata for implemented Xenesis external bot channels.',
+            'Read route binding, allowlist, pairing, default-agent, diagnostics, and delivery metadata for implemented and planned Xenesis external messenger channels.',
             'read',
             XENESIS_CHANNEL_ROUTING_STATUS_SCHEMA,
           ),
           method(
             'xd.xenesis.channels.routing.open',
             'Open channel routing',
-            'Open Settings > Xenesis Agent > Connections and focus an implemented external messenger routing card inside Desk.',
+            'Open Settings > Xenesis Agent > Connections and focus an implemented or planned external messenger routing card inside Desk.',
             'control',
             XENESIS_CHANNEL_ROUTING_OPEN_SCHEMA,
           ),
@@ -4479,16 +4483,16 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             method(
               'xd.xenesis.channels.safety.status',
               'Read channel safety status',
-              'Read access-group fields, inbound/outbound boundaries, bot-loop protection, approval guardrails, troubleshooting, and safety boundaries for implemented Xenesis external bot channels.',
+              'Read access-group fields, inbound/outbound boundaries, bot-loop protection, approval guardrails, troubleshooting, and safety boundaries for implemented and planned Xenesis external messenger channels.',
               'read',
               XENESIS_CHANNEL_ROUTING_STATUS_SCHEMA,
             ),
             method(
               'xd.xenesis.channels.safety.open',
               'Open channel safety',
-              'Open Settings > Xenesis Agent > Connections and focus an implemented external messenger safety card inside Desk.',
+              'Open Settings > Xenesis Agent > Connections and focus an implemented or planned external messenger safety card inside Desk.',
               'control',
-              XENESIS_CHANNEL_IMPLEMENTED_OPEN_SCHEMA,
+              XENESIS_CHANNEL_GUARD_OPEN_SCHEMA,
             ),
           ],
         ),
@@ -4500,16 +4504,16 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             method(
               'xd.xenesis.channels.accessGroups.status',
               'Read channel access-group status',
-              'Read profile allowlist bindings, redacted value states, fail-closed diagnostics, readback paths, and control boundaries for implemented Xenesis external bot channels.',
+              'Read profile allowlist bindings, redacted value states, fail-closed diagnostics, readback paths, and control boundaries for implemented and planned Xenesis external messenger channels.',
               'read',
               XENESIS_CHANNEL_ACCESS_GROUP_STATUS_SCHEMA,
             ),
             method(
               'xd.xenesis.channels.accessGroups.open',
               'Open channel access groups',
-              'Open Settings > Xenesis Agent > Connections and focus an implemented external messenger access-group card inside Desk.',
+              'Open Settings > Xenesis Agent > Connections and focus an implemented or planned external messenger access-group card inside Desk.',
               'control',
-              XENESIS_CHANNEL_IMPLEMENTED_OPEN_SCHEMA,
+              XENESIS_CHANNEL_GUARD_OPEN_SCHEMA,
             ),
           ],
         ),

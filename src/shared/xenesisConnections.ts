@@ -2318,6 +2318,86 @@ function plannedChannelPairingTemplate(id: string): XenesisConnectionChannelPair
   });
 }
 
+function plannedChannelGuardTemplates(
+  id: string,
+  label: string,
+): Pick<XenesisConnectionChannelTemplate, 'routing' | 'safety' | 'accessGroups'> {
+  const field = 'plannedAllowedRoutes';
+  const readPaths = [
+    'xd.xenesis.connections.status',
+    'xd.xenesis.channels.routing.status',
+    'xd.xenesis.channels.safety.status',
+    'xd.xenesis.channels.accessGroups.status',
+    'xd.xenesis.channels.pairing.status',
+    'xd.xenesis.messengers.views.status',
+  ];
+  const controlPaths = [
+    'xd.xenesis.channels.routing.open',
+    'xd.xenesis.channels.safety.open',
+    'xd.xenesis.channels.accessGroups.open',
+    'xd.xenesis.messengers.views.open',
+    'xd.xenesis.connections.open',
+  ];
+  const diagnostics = ['planned-adapter', 'routing-review-required', 'allowlist-review-required', 'delivery-disabled'];
+  const safetyBoundaries = [
+    'planned channel routing and safety are review metadata only',
+    'planned channel delivery remains disabled',
+    'planned channel settings are not mutated from guard readbacks',
+    'planned channel credentials are never returned',
+  ];
+
+  return {
+    routing: {
+      routeBinding: `${id}.plannedRoute`,
+      allowlistFields: [field],
+      pairing: `${label} planned pairing review`,
+      defaultAgent: 'xenesis-agent',
+      sessionScope: 'planned-channel',
+      diagnostics,
+      deliveryFeatures: ['delivery-disabled'],
+    },
+    safety: {
+      accessModel: 'allowlist',
+      accessGroupFields: [field],
+      inboundBoundary: `${label} planned sender, room, space, or tenant allowlist`,
+      outboundBoundary: `${label} delivery disabled until adapter verification`,
+      loopProtection: [
+        'planned delivery remains disabled',
+        'review bot-loop behavior before enabling runtime support',
+        'verify sanitized delivery tests only after a concrete adapter exists',
+      ],
+      approvalGuardrails: ['readonly'],
+      troubleshooting: ['planned-adapter', 'routing-review-required', 'pairing-review-required', 'delivery-disabled'],
+      readPaths,
+      controlPaths,
+      safetyBoundaries: ['safety status is read-only', ...safetyBoundaries],
+    },
+    accessGroups: {
+      model: 'profile-allowlist-fields',
+      groupScope: 'channel',
+      failClosed: true,
+      bindings: [
+        {
+          groupId: `${id}-planned-routes`,
+          field,
+          required: true,
+          emptyDiagnostic: 'planned route allowlist is not configured',
+          description: `Planned ${label} route, sender, room, or tenant allowlist for future delivery.`,
+        },
+      ],
+      diagnostics,
+      readPaths,
+      controlPaths,
+      safetyBoundaries: [
+        'access-group status is read-only',
+        'raw planned route, sender, room, tenant, and endpoint values are never returned',
+        'planned channel delivery remains disabled',
+        'planned channel settings are not mutated from access-group readbacks',
+      ],
+    },
+  };
+}
+
 const MESSENGERS: Array<{
   id: XenesisProfileChannelName;
   label: string;
@@ -2744,7 +2824,14 @@ function messengerViewTemplate(
     readPaths: [
       'xd.xenesis.connections.status',
       'xd.xenesis.messengers.views.status',
-      ...(implemented ? ['xd.xenesis.channels.routing.status', 'xd.xenesis.gateway.status'] : []),
+      ...(implemented
+        ? ['xd.xenesis.channels.routing.status', 'xd.xenesis.gateway.status']
+        : [
+            'xd.xenesis.channels.routing.status',
+            'xd.xenesis.channels.safety.status',
+            'xd.xenesis.channels.accessGroups.status',
+            'xd.xenesis.channels.pairing.status',
+          ]),
     ],
     controlPaths: implemented
       ? [
@@ -2781,8 +2868,12 @@ const XENESIS_CHANNEL_PROFILE_DRAFT_BLOCKED_ACTIONS = [
 ];
 
 function plannedMessenger(definition: PlannedMessengerDefinition): XenesisConnectionItem {
+  const guardTemplates = plannedChannelGuardTemplates(definition.id, definition.label);
   const channelTemplate = {
     ...definition.channelTemplate,
+    routing: definition.channelTemplate.routing ?? guardTemplates.routing,
+    safety: definition.channelTemplate.safety ?? guardTemplates.safety,
+    accessGroups: definition.channelTemplate.accessGroups ?? guardTemplates.accessGroups,
     pairing: definition.channelTemplate.pairing ?? plannedChannelPairingTemplate(definition.id),
     userStory: definition.channelTemplate.userStory ?? plannedChannelUserStoryTemplate(definition.id, definition.label),
   };

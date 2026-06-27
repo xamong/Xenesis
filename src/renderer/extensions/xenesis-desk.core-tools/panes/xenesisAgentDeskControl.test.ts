@@ -1614,6 +1614,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('마이크로소프트 팀즈 access group 열어줘').actions, [
+    {
+      id: 'natural-xenesis-channel-access-groups-open-microsoft-teams',
+      path: 'xd.xenesis.channels.accessGroups.open',
+      args: { channel: 'microsoft-teams', ensureVisible: true },
+      approved: false,
+      reason: 'Open Microsoft Teams channel access groups from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('Signal 페어링 열어줘').actions, [
     {
       id: 'natural-xenesis-channel-pairing-open-signal',
@@ -2389,21 +2399,21 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center read
 
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('구글 챗 라우팅 상태 보여줘').actions, [
     {
-      id: 'natural-xenesis-messenger-view-status-google-chat',
-      path: 'xd.xenesis.messengers.views.status',
-      args: { id: 'google-chat' },
+      id: 'natural-xenesis-channel-routing-status-google-chat',
+      path: 'xd.xenesis.channels.routing.status',
+      args: { channel: 'google-chat' },
       approved: false,
-      reason: 'Read Google Chat messenger view status from natural language request.',
+      reason: 'Read Google Chat channel routing status from natural language request.',
     },
   ]);
 
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('왓츠앱 안전 상태 보여줘').actions, [
     {
-      id: 'natural-xenesis-messenger-view-status-whatsapp',
-      path: 'xd.xenesis.messengers.views.status',
-      args: { id: 'whatsapp' },
+      id: 'natural-xenesis-channel-safety-status-whatsapp',
+      path: 'xd.xenesis.channels.safety.status',
+      args: { channel: 'whatsapp' },
       approved: false,
-      reason: 'Read WhatsApp messenger view status from natural language request.',
+      reason: 'Read WhatsApp channel safety status from natural language request.',
     },
   ]);
 
