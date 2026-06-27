@@ -523,8 +523,8 @@ function xenesisOnboardingOpenActionFromNaturalText(value: string): XenesisDeskA
 
     return naturalAction(
       'natural-xenesis-onboarding-center-open',
-      'xd.panes.settings.open',
-      xenesisConnectionCenterOpenArgs(),
+      'xd.xenesis.onboarding.open',
+      { ensureVisible: true },
       'Open Xenesis onboarding checklist in Connection Center from natural language request.',
     );
   }
@@ -1318,15 +1318,6 @@ function xenesisProviderOpenActionFromNaturalText(value: string): XenesisDeskAct
   }
 
   return null;
-}
-
-function xenesisConnectionCenterOpenArgs(): Record<string, string> {
-  return {
-    category: 'xenesis-agent',
-    mode: 'connections',
-    section: 'xenesis-connections',
-    placement: 'tab',
-  };
 }
 
 function xenesisGuideCatalogOpenActionFromNaturalText(value: string): XenesisDeskActionRequest | null {

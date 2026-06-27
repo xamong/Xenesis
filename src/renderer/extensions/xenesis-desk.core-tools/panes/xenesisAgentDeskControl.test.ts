@@ -1013,13 +1013,8 @@ test('planXenesisDeskNaturalLanguageActions maps onboarding checklist open reque
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('온보딩 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-onboarding-center-open',
-      path: 'xd.panes.settings.open',
-      args: {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      path: 'xd.xenesis.onboarding.open',
+      args: { ensureVisible: true },
       approved: false,
       reason: 'Open Xenesis onboarding checklist in Connection Center from natural language request.',
     },
@@ -1028,13 +1023,8 @@ test('planXenesisDeskNaturalLanguageActions maps onboarding checklist open reque
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('초기 설정 체크리스트 열어줘').actions, [
     {
       id: 'natural-xenesis-onboarding-center-open',
-      path: 'xd.panes.settings.open',
-      args: {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      path: 'xd.xenesis.onboarding.open',
+      args: { ensureVisible: true },
       approved: false,
       reason: 'Open Xenesis onboarding checklist in Connection Center from natural language request.',
     },

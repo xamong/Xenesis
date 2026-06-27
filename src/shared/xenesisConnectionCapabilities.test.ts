@@ -119,7 +119,7 @@ test('xenesis onboarding status capabilities are registered and dispatch to the 
   assert.equal(statusCapability?.approval, 'never');
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
-  assert.deepEqual(openCapability?.schema?.required, ['id']);
+  assert.equal(schemaRequiredFields(openCapability).includes('id'), false);
   for (const step of [
     'first-chat',
     'local-cli-mcp',
@@ -143,6 +143,12 @@ test('xenesis onboarding status capabilities are registered and dispatch to the 
     },
     openXenesisOnboardingStep: (args) => {
       calls.push({ method: 'open', args });
+      if (!(args as { id?: string } | undefined)?.id) {
+        return {
+          ok: true,
+          total: 6,
+        };
+      }
       return {
         ok: true,
         item: { id: 'first-chat' },
@@ -160,12 +166,19 @@ test('xenesis onboarding status capabilities are registered and dispatch to the 
     args: { id: 'first-chat' },
     source: 'xenesis',
   });
+  const catalogOpenResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.onboarding.open',
+    args: { ensureVisible: true },
+    source: 'xenesis',
+  });
 
   assert.equal(statusResult.ok, true);
   assert.equal(openResult.ok, true);
+  assert.equal(catalogOpenResult.ok, true);
   assert.deepEqual(calls, [
     { method: 'status', args: { id: 'first-chat' } },
     { method: 'open', args: { id: 'first-chat' } },
+    { method: 'open', args: { ensureVisible: true } },
   ]);
   assert.deepEqual(statusResult.result, {
     ok: true,
@@ -174,6 +187,10 @@ test('xenesis onboarding status capabilities are registered and dispatch to the 
   assert.deepEqual(openResult.result, {
     ok: true,
     item: { id: 'first-chat' },
+  });
+  assert.deepEqual(catalogOpenResult.result, {
+    ok: true,
+    total: 6,
   });
 });
 

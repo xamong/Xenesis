@@ -1061,6 +1061,35 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local Obsidian graph, source code, and tests.
 
+## Onboarding Catalog CR Open Slice
+
+- Broad onboarding checklist open prompts now use the onboarding CR open path
+  instead of the generic Settings fallback:
+  - `온보딩 전체 열어줘` -> `xd.xenesis.onboarding.open`
+  - `초기 설정 체크리스트 열어줘` -> `xd.xenesis.onboarding.open`
+- `xd.xenesis.onboarding.open` now supports selector-less catalog opens. A
+  focused `id` still opens a specific onboarding checklist step.
+- Main-process onboarding open handling now opens Settings > Xenesis Agent >
+  Connections without `focusConnectionId` for catalog calls and returns all
+  onboarding checklist items.
+- Scope boundary: this slice does not run onboarding steps, prepare/reset
+  sample workspaces, create demo-route artifacts, mutate provider/tool/messenger
+  settings, or bypass approvals.
+- Verification:
+  - RED tests failed first because broad onboarding prompts still routed to
+    `xd.panes.settings.open` and onboarding open schema still required `id`.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 67/67 tests.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 100/100 tests.
+  - Touched-file Biome check exited 0 with existing warnings/infos only.
+  - `npm run typecheck` passed.
+  - CR audit passed with missing registered paths 0, missing dispatched
+    coverage paths 0, undispatched static callable methods 0, and dispatcher
+    paths missing from tree 0.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local Obsidian graph, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

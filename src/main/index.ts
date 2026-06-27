@@ -5142,10 +5142,7 @@ async function getXenesisOnboardingStatus(args?: unknown): Promise<Record<string
 async function openXenesisOnboardingStep(args?: unknown): Promise<Record<string, unknown>> {
   const body = normalizeMcpCapabilityArgs(args);
   const id = readCapabilityString(body, ['id', 'step', 'name']);
-  if (!id) {
-    return { ok: false, error: 'Onboarding step id is required.' };
-  }
-  if (!isXenesisOnboardingStepId(id)) {
+  if (id && !isXenesisOnboardingStepId(id)) {
     return {
       ok: false,
       error: `Unsupported Xenesis onboarding step: ${id}`,
@@ -5154,23 +5151,35 @@ async function openXenesisOnboardingStep(args?: unknown): Promise<Record<string,
   }
 
   const status = await getXenesisConnectionsStatus();
-  const item = status.sections.onboarding.items.find((candidate) => candidate.id === id && candidate.onboardingPlan);
-  if (!item) {
+  const catalogItems = status.sections.onboarding.items.filter((item) => item.onboardingPlan);
+  const item = id ? catalogItems.find((candidate) => candidate.id === id) : undefined;
+  if (id && !item) {
     return { ok: false, id, error: `Xenesis onboarding step is not available: ${id}` };
   }
 
-  const renderer = await openMcpBuiltinPaneCapability({
+  const rendererArgs: Record<string, unknown> = {
     kind: 'settings',
     category: 'xenesis-agent',
     mode: 'connections',
     section: 'xenesis-connections',
-    focusConnectionId: id,
     ensureVisible: body.ensureVisible !== false,
-  });
+  };
+  if (item) rendererArgs.focusConnectionId = item.id;
+
+  const renderer = await openMcpBuiltinPaneCapability(rendererArgs);
+  if (!item) {
+    return {
+      ok: renderer.ok !== false,
+      updatedAt: status.updatedAt,
+      total: catalogItems.length,
+      items: catalogItems.map((candidate) => xenesisOnboardingStatusItem(candidate)),
+      renderer,
+    };
+  }
 
   return {
     ok: renderer.ok !== false,
-    id,
+    id: item.id,
     item: xenesisOnboardingStatusItem(item),
     renderer,
   };

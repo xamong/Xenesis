@@ -289,7 +289,6 @@ const XENESIS_ONBOARDING_STATUS_SCHEMA = {
 
 const XENESIS_ONBOARDING_OPEN_SCHEMA = {
   type: 'object',
-  required: ['id'],
   properties: {
     id: {
       type: 'string',
