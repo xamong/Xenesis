@@ -320,6 +320,8 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.xenesis\.tasks\.list/);
   assert.match(hint, /xd\.xenesis\.agents\.list/);
   assert.match(hint, /xd\.xenesis\.profiles\.list/);
+  assert.match(hint, /xd\.xenesis\.runs\.cancel/);
+  assert.match(hint, /xd\.xenesis\.sessions\.reset/);
   assert.match(hint, /xd\.xenesis\.tools\.setup\.status/);
   assert.match(hint, /xd\.xenesis\.tools\.connectors\.status/);
   assert.match(hint, /xd\.xenesis\.tools\.views\.status/);
@@ -518,6 +520,28 @@ test('planXenesisDeskNaturalLanguageActions maps profile inventory prompts to CR
       args: {},
       approved: false,
       reason: 'List Xenesis profiles from natural language request.',
+    },
+  ]);
+});
+
+test('planXenesisDeskNaturalLanguageActions maps runtime control prompts to CR actions', () => {
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('Xenesis runtime run 취소해줘').actions, [
+    {
+      id: 'natural-xenesis-runs-cancel',
+      path: 'xd.xenesis.runs.cancel',
+      args: {},
+      approved: false,
+      reason: 'Cancel active Xenesis run from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('제네시스 세션 초기화해줘').actions, [
+    {
+      id: 'natural-xenesis-sessions-reset',
+      path: 'xd.xenesis.sessions.reset',
+      args: {},
+      approved: false,
+      reason: 'Reset active Xenesis session from natural language request.',
     },
   ]);
 });

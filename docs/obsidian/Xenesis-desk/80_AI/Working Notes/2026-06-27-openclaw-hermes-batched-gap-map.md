@@ -246,6 +246,21 @@
   settings, write credentials, add CR nodes, change dispatcher branches, or
   bypass approvals.
 
+## Runtime Control Actions Slice
+
+- Added deterministic Xenesis Agent natural-language routing for existing
+  explicit runtime control CR paths:
+  - `Xenesis runtime run 취소해줘` -> `xd.xenesis.runs.cancel`.
+  - `제네시스 세션 초기화해줘` -> `xd.xenesis.sessions.reset`.
+- Added the same CR paths to the Agent control prompt hint so Agent-pane runs
+  can request active-run cancellation or active-session reset through CR instead
+  of chat-only instructions.
+- Scope boundary: this slice did not start runs, submit prompts, switch or
+  install profiles, mutate provider settings, write credentials, send messages,
+  start/stop/restart gateways, add CR nodes, change dispatcher branches, or
+  bypass approvals. Both natural actions keep `approved=false` so CR approval
+  policy remains authoritative.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
