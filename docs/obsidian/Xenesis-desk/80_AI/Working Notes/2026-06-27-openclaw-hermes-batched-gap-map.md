@@ -1090,6 +1090,34 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local Obsidian graph, source code, and tests.
 
+## Connection Center Catalog CR Open Slice
+
+- Broad Connection Center open prompts now use the connection CR open path
+  instead of direct Settings args:
+  - `연결 센터 열어줘` -> `xd.xenesis.connections.open`
+- `xd.xenesis.connections.open` now supports selector-less catalog opens. A
+  focused `id` or `connectionId` still opens a specific Connection Center card.
+- Shared CR dispatch now calls `openBuiltinPane` with Settings > Xenesis Agent >
+  Connections and only includes `focusConnectionId` when a selector is supplied.
+- Scope boundary: this slice does not mutate settings, credentials, OAuth,
+  installs, setup requests, onboarding steps, or provider/tool/messenger runtime
+  behavior.
+- Verification:
+  - RED tests failed first because broad Connection Center prompts still routed
+    to `xd.panes.settings.open`, connections open schema still required `id`,
+    and selector-less dispatch still returned a missing-id error.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 67/67 tests.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 100/100 tests.
+  - Touched-file Biome check exited 0 with existing warnings only.
+  - `npm run typecheck` passed.
+  - CR audit passed with missing registered paths 0, missing dispatched
+    coverage paths 0, undispatched static callable methods 0, and dispatcher
+    paths missing from tree 0.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local Obsidian graph, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

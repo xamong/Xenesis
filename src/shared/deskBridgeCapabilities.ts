@@ -178,12 +178,11 @@ const XENESIS_PROFILE_CHANNELS_SCHEMA = {
 
 const XENESIS_CONNECTION_OPEN_SCHEMA = {
   type: 'object',
-  required: ['id'],
   properties: {
     id: {
       type: 'string',
       title: 'Connection id',
-      description: 'Connection Center item id to focus, such as a provider, tool, guide, or messenger connection card.',
+      description: 'Optional Connection Center item id to focus, such as a provider, tool, guide, or messenger card.',
       examples: ['notion', 'google-calendar', 'signal'],
     },
     ensureVisible: {
@@ -4406,8 +4405,8 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
         ),
         method(
           'xd.xenesis.connections.open',
-          'Open connection card',
-          'Open Settings > Xenesis Agent > Connections and focus one provider, tool, guide, or messenger card.',
+          'Open connection catalog or card',
+          'Open Settings > Xenesis Agent > Connections and optionally focus one provider, tool, guide, or messenger card.',
           'control',
           XENESIS_CONNECTION_OPEN_SCHEMA,
         ),
@@ -11292,17 +11291,15 @@ export async function callDeskBridgeCapability(
       if (path === 'xd.xenesis.connections.open') {
         const args = normalizeCapabilityArgs(request.args);
         const focusConnectionId = readString(args.id) || readString(args.connectionId);
-        if (!focusConnectionId) {
-          return { ok: false, path, error: 'Connection id is required.' };
-        }
-        return callAdapter(path, api?.openBuiltinPane, {
+        const paneArgs: Record<string, unknown> = {
           kind: 'settings',
           category: 'xenesis-agent',
           mode: 'connections',
           section: 'xenesis-connections',
-          focusConnectionId,
           ensureVisible: args.ensureVisible !== false,
-        });
+        };
+        if (focusConnectionId) paneArgs.focusConnectionId = focusConnectionId;
+        return callAdapter(path, api?.openBuiltinPane, paneArgs);
       }
       if (path === 'xd.xenesis.connections.diagnostics.status') {
         return callAdapter(path, api?.getXenesisConnectionDiagnosticRunbooksStatus, request.args);

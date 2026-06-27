@@ -844,6 +844,16 @@ test('planXenesisDeskNaturalLanguageActions maps tools and explorer filter reque
 });
 
 test('planXenesisDeskNaturalLanguageActions maps Connection Center requests to CR actions', () => {
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('연결 센터 열어줘').actions, [
+    {
+      id: 'natural-xenesis-connections-center-open',
+      path: 'xd.xenesis.connections.open',
+      args: { ensureVisible: true },
+      approved: false,
+      reason: 'Open Xenesis Connection Center from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('연결 진단 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-connection-diagnostics-catalog-open',

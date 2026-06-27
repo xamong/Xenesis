@@ -1594,13 +1594,8 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
   if (hasAny(value, ['연결 센터', 'connection center', 'connections center', '연결 목록'])) {
     return naturalAction(
       'natural-xenesis-connections-center-open',
-      'xd.panes.settings.open',
-      {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      'xd.xenesis.connections.open',
+      { ensureVisible: true },
       'Open Xenesis Connection Center from natural language request.',
     );
   }

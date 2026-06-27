@@ -41,7 +41,7 @@ test('xenesis connection status capability is registered as a read path', () => 
   assert.equal(findDeskBridgeCapability('xd.xenesis.connections.status')?.approval, 'never');
   assert.equal(findDeskBridgeCapability('xd.xenesis.connections.open')?.permission, 'control');
   assert.equal(findDeskBridgeCapability('xd.xenesis.connections.open')?.approval, 'never');
-  assert.deepEqual(findDeskBridgeCapability('xd.xenesis.connections.open')?.schema?.required, ['id']);
+  assert.equal(schemaRequiredFields(findDeskBridgeCapability('xd.xenesis.connections.open')).includes('id'), false);
 });
 
 test('xenesis connection status capability dispatches to the adapter', async () => {
@@ -75,11 +75,11 @@ test('xenesis connection status capability dispatches to the adapter', async () 
   });
 });
 
-test('xenesis connection open capability focuses a settings connection card through the built-in pane adapter', async () => {
-  let openedArgs: unknown = null;
+test('xenesis connection open capability opens the Connection Center catalog or focuses a card', async () => {
+  const openedArgs: unknown[] = [];
   const api: DeskBridgeCapabilityAdapter = {
     openBuiltinPane: (args) => {
-      openedArgs = args;
+      openedArgs.push(args);
       return {
         ok: true,
         marker: 'connection-open',
@@ -94,17 +94,36 @@ test('xenesis connection open capability focuses a settings connection card thro
     },
     source: 'xenesis',
   });
+  const catalogResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.connections.open',
+    args: { ensureVisible: true },
+    source: 'xenesis',
+  });
 
   assert.equal(result.ok, true);
-  assert.deepEqual(openedArgs, {
-    kind: 'settings',
-    category: 'xenesis-agent',
-    mode: 'connections',
-    section: 'xenesis-connections',
-    focusConnectionId: 'notion',
-    ensureVisible: true,
-  });
+  assert.equal(catalogResult.ok, true);
+  assert.deepEqual(openedArgs, [
+    {
+      kind: 'settings',
+      category: 'xenesis-agent',
+      mode: 'connections',
+      section: 'xenesis-connections',
+      focusConnectionId: 'notion',
+      ensureVisible: true,
+    },
+    {
+      kind: 'settings',
+      category: 'xenesis-agent',
+      mode: 'connections',
+      section: 'xenesis-connections',
+      ensureVisible: true,
+    },
+  ]);
   assert.deepEqual(result.result, {
+    ok: true,
+    marker: 'connection-open',
+  });
+  assert.deepEqual(catalogResult.result, {
     ok: true,
     marker: 'connection-open',
   });
