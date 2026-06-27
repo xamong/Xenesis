@@ -371,6 +371,28 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local code, and tests.
 
+## Provider Aggregate Readbacks Slice
+
+- Added deterministic Xenesis Agent natural-language routing for broad AI
+  provider catalog status prompts that intentionally ask for all providers:
+  - `AI provider setup 전체 상태 보여줘` ->
+    `xd.xenesis.providers.setup.status`.
+  - `AI provider routing 전체 상태 보여줘` ->
+    `xd.xenesis.providers.routing.status`.
+  - `AI provider view 전체 상태 보여줘` ->
+    `xd.xenesis.providers.views.status`.
+  - `AI provider profile draft 전체 상태 보여줘` ->
+    `xd.xenesis.providers.profileDrafts.status`.
+- Aggregate provider routing requires explicit aggregate wording such as
+  `전체`, `all`, or `catalog`, so provider-specific prompts like
+  `codex app-server provider routing 상태 보여줘` remain provider-specific.
+- Scope boundary: this slice did not add CR nodes, dispatcher branches,
+  renderer adapters, provider setting mutations, credential storage, local CLI
+  switching, provider prompt execution, or approval bypasses. All new routes
+  are read-only.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

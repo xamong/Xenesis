@@ -1440,6 +1440,46 @@ test('planXenesisDeskNaturalLanguageActions maps guide catalog readback requests
 });
 
 test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center readbacks to CR actions', () => {
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider setup 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-providers-setup-status',
+      path: 'xd.xenesis.providers.setup.status',
+      args: {},
+      approved: false,
+      reason: 'Read AI provider setup catalog status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider routing 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-providers-routing-status',
+      path: 'xd.xenesis.providers.routing.status',
+      args: {},
+      approved: false,
+      reason: 'Read AI provider routing catalog status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider view 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-providers-views-status',
+      path: 'xd.xenesis.providers.views.status',
+      args: {},
+      approved: false,
+      reason: 'Read AI provider view catalog status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider profile draft 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-providers-profile-drafts-status',
+      path: 'xd.xenesis.providers.profileDrafts.status',
+      args: {},
+      approved: false,
+      reason: 'Read AI provider profile draft catalog status from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 툴 connector 전체 상태 보여줘').actions, [
     {
       id: 'natural-xenesis-tools-connectors-status',

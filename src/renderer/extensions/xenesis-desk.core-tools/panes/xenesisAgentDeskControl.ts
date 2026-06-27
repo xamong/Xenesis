@@ -900,7 +900,50 @@ function xenesisProviderFromNaturalText(value: string): { id: string; label: str
   return null;
 }
 
+function xenesisProviderAggregateStatusActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
+  if (!hasXenesisProviderProfileContext(value)) return null;
+  if (!hasXenesisConnectionReadbackIntent(value)) return null;
+  if (!hasAny(value, ['전체', 'all', 'catalog', '카탈로그', '목록', 'list'])) return null;
+
+  if (hasAny(value, ['라우팅', 'routing', 'route', 'fallback', '폴백'])) {
+    return naturalAction(
+      'natural-xenesis-providers-routing-status',
+      'xd.xenesis.providers.routing.status',
+      {},
+      'Read AI provider routing catalog status from natural language request.',
+    );
+  }
+
+  if (hasAny(value, ['view', 'views', '뷰', '화면', 'surface'])) {
+    return naturalAction(
+      'natural-xenesis-providers-views-status',
+      'xd.xenesis.providers.views.status',
+      {},
+      'Read AI provider view catalog status from natural language request.',
+    );
+  }
+
+  if (hasAny(value, ['profile', '프로필', 'draft', '초안'])) {
+    return naturalAction(
+      'natural-xenesis-providers-profile-drafts-status',
+      'xd.xenesis.providers.profileDrafts.status',
+      {},
+      'Read AI provider profile draft catalog status from natural language request.',
+    );
+  }
+
+  return naturalAction(
+    'natural-xenesis-providers-setup-status',
+    'xd.xenesis.providers.setup.status',
+    {},
+    'Read AI provider setup catalog status from natural language request.',
+  );
+}
+
 function xenesisProviderReadbackActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
+  const providerAggregateAction = xenesisProviderAggregateStatusActionFromNaturalText(value);
+  if (providerAggregateAction) return providerAggregateAction;
+
   const provider = xenesisProviderFromNaturalText(value);
   if (!provider) return null;
 
