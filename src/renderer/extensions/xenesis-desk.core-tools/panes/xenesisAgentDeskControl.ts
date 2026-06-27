@@ -365,7 +365,7 @@ function naturalPlan(
 }
 
 function emptyNaturalPlan(): XenesisDeskNaturalLanguagePlan {
-  return { visibleText: '', actions: [], errors: [], matched: false };
+  return { visibleText: NATURAL_TEXT_DEFAULTS.empty, actions: [], errors: [], matched: false };
 }
 
 function detectPlacement(value: string): XenesisDeskPlacement | undefined {
@@ -1494,7 +1494,7 @@ function xenesisWorkspaceSetActionFromNaturalText(value: string, rawText: string
 }
 
 export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDeskNaturalLanguagePlan {
-  const rawText = String(text || '').trim();
+  const rawText = String(text || NATURAL_TEXT_DEFAULTS.empty).trim();
   const value = normalizeNaturalLanguageText(rawText);
   if (!value || !hasActionIntent(value)) return emptyNaturalPlan();
 
@@ -1806,7 +1806,9 @@ function normalizeDeskActionRecord(
 
   const record = value;
   const pathValue = record[DESK_ACTION_PROTOCOL_RECORD_KEYS.path];
-  const path = isXenesisDeskActionValueType(pathValue, DESK_ACTION_VALUE_TYPE_NAMES.string) ? pathValue.trim() : '';
+  const path = isXenesisDeskActionValueType(pathValue, DESK_ACTION_VALUE_TYPE_NAMES.string)
+    ? pathValue.trim()
+    : DESK_ACTION_PROTOCOL_FORMAT.emptyText;
   if (!path) return { error: DESK_ACTION_PROTOCOL_TEXT.missingPath(index) };
   if (!path.startsWith(DESK_ACTION_PROTOCOL.pathPrefix)) {
     return { error: DESK_ACTION_PROTOCOL_TEXT.invalidPathPrefix(index, path, DESK_ACTION_PROTOCOL.pathPrefix) };
@@ -1857,12 +1859,12 @@ export function parseXenesisDeskActionBlocks(text: string): XenesisDeskActionPar
   const errors: string[] = [];
   let actionIndex = 0;
 
-  const sourceText = String(text || '');
+  const sourceText = String(text || DESK_ACTION_PROTOCOL_FORMAT.emptyText);
   const visibleText = normalizeVisibleText(
     sourceText.replace(
       DESK_ACTION_PROTOCOL_PATTERNS.deskActionFence,
       (_block, blockJsonText: string, inlineJsonText?: string) => {
-        const jsonText = blockJsonText || inlineJsonText || '';
+        const jsonText = blockJsonText || inlineJsonText || DESK_ACTION_PROTOCOL_FORMAT.emptyText;
         try {
           const parsed = JSON.parse(jsonText);
           for (const record of actionRecordsFromJson(parsed)) {
@@ -1876,7 +1878,7 @@ export function parseXenesisDeskActionBlocks(text: string): XenesisDeskActionPar
             DESK_ACTION_PROTOCOL_TEXT.jsonParseFailed(error instanceof Error ? error.message : String(error)),
           );
         }
-        return '';
+        return DESK_ACTION_PROTOCOL_FORMAT.emptyText;
       },
     ),
   );
@@ -1888,7 +1890,7 @@ export function parseXenesisDeskActionBlocks(text: string): XenesisDeskActionPar
       const normalizedRecords = rawRecords.map((record, index) => normalizeDeskActionRecord(record, index));
       if (normalizedRecords.some((record) => record.action)) {
         return {
-          visibleText: '',
+          visibleText: DESK_ACTION_PROTOCOL_FORMAT.emptyText,
           actions: normalizedRecords.flatMap((record) => (record.action ? [record.action] : [])),
           errors: normalizedRecords.flatMap((record) => (record.error ? [record.error] : [])),
         };
@@ -2025,7 +2027,9 @@ function compactJson(value: unknown, maxLength = DESK_ACTION_PROTOCOL_FORMAT.com
 }
 
 function basename(value: unknown): string {
-  const text = isXenesisDeskActionValueType(value, DESK_ACTION_VALUE_TYPE_NAMES.string) ? value.trim() : '';
+  const text = isXenesisDeskActionValueType(value, DESK_ACTION_VALUE_TYPE_NAMES.string)
+    ? value.trim()
+    : DESK_ACTION_PROTOCOL_FORMAT.emptyText;
   if (!text) return DESK_ACTION_PROTOCOL_FORMAT.emptyText;
   const normalized = text.replace(
     DESK_ACTION_PROTOCOL_PATTERNS.windowsPathSeparator,
@@ -2047,7 +2051,7 @@ function stringFromRecord(record: Record<string, unknown>, keys: readonly string
     const value = record[key];
     if (isXenesisDeskActionValueType(value, DESK_ACTION_VALUE_TYPE_NAMES.string) && value.trim()) return value.trim();
   }
-  return '';
+  return DESK_ACTION_PROTOCOL_FORMAT.emptyText;
 }
 
 function numberFromRecord(record: Record<string, unknown>, keys: readonly string[]): number | undefined {
@@ -2063,7 +2067,7 @@ function basenameFromRecord(record: Record<string, unknown>, keys: readonly stri
     const value = basename(record[key]);
     if (value) return value;
   }
-  return '';
+  return DESK_ACTION_PROTOCOL_FORMAT.emptyText;
 }
 
 function firstReadableTitle(value: unknown): string {
@@ -2074,7 +2078,7 @@ function firstReadableTitle(value: unknown): string {
 
 function summarizeFileList(record: Record<string, unknown>): string {
   const files = arrayFromRecord(record, DESK_ACTION_RESULT_SUMMARY_KEYS.fileList);
-  if (files.length === 0) return '';
+  if (files.length === 0) return DESK_ACTION_PROTOCOL_FORMAT.emptyText;
   const title = firstReadableTitle(files[0]);
   return DESK_ACTION_RESULT_SUMMARY_TEXT.fileList(files.length, title);
 }
@@ -2090,7 +2094,8 @@ function summarizeCaptureResult(record: Record<string, unknown>): string {
   const height =
     numberFromRecord(record, DESK_ACTION_RESULT_SUMMARY_KEYS.dimensionHeight) ??
     numberFromRecord(nested, DESK_ACTION_RESULT_SUMMARY_KEYS.dimensionHeight);
-  const size = width && height ? DESK_ACTION_RESULT_SUMMARY_TEXT.dimension(width, height) : '';
+  const size =
+    width && height ? DESK_ACTION_RESULT_SUMMARY_TEXT.dimension(width, height) : DESK_ACTION_PROTOCOL_FORMAT.emptyText;
   return DESK_ACTION_RESULT_SUMMARY_TEXT.joinParts([file, size]);
 }
 
@@ -2102,7 +2107,7 @@ function summarizeBoundsResult(record: Record<string, unknown>): string {
   const height =
     numberFromRecord(bounds, DESK_ACTION_RESULT_SUMMARY_KEYS.dimensionHeight) ??
     numberFromRecord(record, DESK_ACTION_RESULT_SUMMARY_KEYS.dimensionHeight);
-  if (!width || !height) return '';
+  if (!width || !height) return DESK_ACTION_PROTOCOL_FORMAT.emptyText;
   return DESK_ACTION_RESULT_SUMMARY_TEXT.dimension(width, height);
 }
 
@@ -2116,10 +2121,18 @@ function summarizeWorkflowResult(record: Record<string, unknown>): string {
   const skipped = numberFromRecord(record, DESK_ACTION_RESULT_SUMMARY_KEYS.workflowSkipped);
   const labels = DESK_ACTION_RESULT_SUMMARY_TEXT.workflowMetricLabels;
   const parts = [
-    completed !== undefined ? DESK_ACTION_RESULT_SUMMARY_TEXT.workflowMetric(completed, labels.completed) : '',
-    passed !== undefined ? DESK_ACTION_RESULT_SUMMARY_TEXT.workflowMetric(passed, labels.passed) : '',
-    failed !== undefined ? DESK_ACTION_RESULT_SUMMARY_TEXT.workflowMetric(failed, labels.failed) : '',
-    skipped !== undefined ? DESK_ACTION_RESULT_SUMMARY_TEXT.workflowMetric(skipped, labels.skipped) : '',
+    completed !== undefined
+      ? DESK_ACTION_RESULT_SUMMARY_TEXT.workflowMetric(completed, labels.completed)
+      : DESK_ACTION_PROTOCOL_FORMAT.emptyText,
+    passed !== undefined
+      ? DESK_ACTION_RESULT_SUMMARY_TEXT.workflowMetric(passed, labels.passed)
+      : DESK_ACTION_PROTOCOL_FORMAT.emptyText,
+    failed !== undefined
+      ? DESK_ACTION_RESULT_SUMMARY_TEXT.workflowMetric(failed, labels.failed)
+      : DESK_ACTION_PROTOCOL_FORMAT.emptyText,
+    skipped !== undefined
+      ? DESK_ACTION_RESULT_SUMMARY_TEXT.workflowMetric(skipped, labels.skipped)
+      : DESK_ACTION_PROTOCOL_FORMAT.emptyText,
   ].filter(Boolean);
   return DESK_ACTION_RESULT_SUMMARY_TEXT.workflowSummary(name, parts);
 }
@@ -2139,11 +2152,16 @@ function summarizeDeskActionResult(result: XenesisDeskActionExecutionResult): st
   if (message) return message;
 
   const compact = compactJson(resultValue);
-  if (!compact || DESK_ACTION_RESULT_SUMMARY_TEXT.compactEmptyJson.includes(compact)) return '';
+  if (!compact || DESK_ACTION_RESULT_SUMMARY_TEXT.compactEmptyJson.includes(compact)) {
+    return DESK_ACTION_PROTOCOL_FORMAT.emptyText;
+  }
   return compact;
 }
 
-export function buildXenesisDeskActionPendingMessage(actions: XenesisDeskActionRequest[], leadText = ''): string {
+export function buildXenesisDeskActionPendingMessage(
+  actions: XenesisDeskActionRequest[],
+  leadText: string = DESK_ACTION_PROTOCOL_FORMAT.emptyText,
+): string {
   return DESK_ACTION_PROTOCOL_FORMAT.joinLines([
     leadText.trim(),
     leadText.trim() ? DESK_ACTION_PROTOCOL_FORMAT.blankLine : undefined,
@@ -2208,7 +2226,10 @@ function buildDirectCrPathSummary(lines: readonly string[]): string {
   const referencedPaths = new Set<string>();
   for (const line of lines) {
     for (const match of line.matchAll(DESK_ACTION_PROTOCOL_PATTERNS.crPath)) {
-      const path = match[0].replace(DESK_ACTION_PROTOCOL_PATTERNS.trailingCrPathPunctuation, '');
+      const path = match[0].replace(
+        DESK_ACTION_PROTOCOL_PATTERNS.trailingCrPathPunctuation,
+        DESK_ACTION_PROTOCOL_FORMAT.emptyText,
+      );
       if (callablePaths.has(path)) {
         referencedPaths.add(path);
       }

@@ -306,6 +306,8 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /split\(' '\)/);
   assert.doesNotMatch(source, /extractFirstInteger\(value, 120, 4096\)/);
   assert.doesNotMatch(source, /extractFirstInteger\(value, 1, 50\)/);
+  assert.doesNotMatch(source, /(?:return|=|\|\||:|,\s*)\s*''/);
+  assert.equal(XENESIS_NATURAL_TEXT_DEFAULTS.empty, '');
   assert.equal(XENESIS_NATURAL_TEXT_DEFAULTS.unicodeNormalizationForm, 'NFKC');
   assert.equal(XENESIS_NATURAL_TEXT_DEFAULTS.wordSeparator, ' ');
   assert.equal(XENESIS_NATURAL_NUMERIC_LIMITS.dockSize.max, 4096);
