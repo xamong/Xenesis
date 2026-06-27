@@ -313,6 +313,8 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.localCli\.scan/);
   assert.match(hint, /xd\.mcp\.settings\.status/);
   assert.match(hint, /xd\.mcp\.bridge\.status/);
+  assert.match(hint, /xd\.xenesis\.gateway\.status/);
+  assert.match(hint, /xd\.xenesis\.gateway\.openDashboard/);
   assert.match(hint, /xd\.xenesis\.tools\.setup\.status/);
   assert.match(hint, /xd\.xenesis\.tools\.connectors\.status/);
   assert.match(hint, /xd\.xenesis\.tools\.views\.status/);
@@ -415,6 +417,38 @@ test('planXenesisDeskNaturalLanguageActions maps local CLI and MCP readbacks to 
       args: { id: 'notion', ensureVisible: true },
       approved: false,
       reason: 'Open Notion MCP install draft from natural language request.',
+    },
+  ]);
+});
+
+test('planXenesisDeskNaturalLanguageActions maps gateway read and dashboard prompts to CR actions', () => {
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('게이트웨이 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-gateway-status',
+      path: 'xd.xenesis.gateway.status',
+      args: {},
+      approved: false,
+      reason: 'Read Xenesis gateway status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('Xenesis gateway dashboard 열어줘').actions, [
+    {
+      id: 'natural-xenesis-gateway-dashboard-open',
+      path: 'xd.xenesis.gateway.openDashboard',
+      args: {},
+      approved: false,
+      reason: 'Open Xenesis gateway dashboard from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('게이트웨이 온보딩 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-onboarding-status-gateway',
+      path: 'xd.xenesis.onboarding.status',
+      args: { id: 'gateway' },
+      approved: false,
+      reason: 'Read Gateway onboarding checklist status from natural language request.',
     },
   ]);
 });

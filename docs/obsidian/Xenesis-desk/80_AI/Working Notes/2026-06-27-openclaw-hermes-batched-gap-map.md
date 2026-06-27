@@ -200,6 +200,23 @@
   gateway processes, execute provider tools, add CR nodes, change dispatcher
   branches, write credentials, or bypass approvals.
 
+## Gateway Read/Open Slice
+
+- Added deterministic Xenesis Agent natural-language routing for existing
+  runtime gateway read/open CR paths:
+  - `게이트웨이 상태 보여줘` -> `xd.xenesis.gateway.status`.
+  - `Xenesis gateway dashboard 열어줘` ->
+    `xd.xenesis.gateway.openDashboard`.
+- Preserved onboarding checklist routing: `게이트웨이 온보딩 상태 보여줘`
+  remains `xd.xenesis.onboarding.status` with `id=gateway`.
+- Added the same CR paths to the Agent control prompt hint with an explicit
+  boundary that gateway start/stop/restart require separate user intent and
+  approval handling.
+- Scope boundary: this slice did not start, stop, restart, configure, or
+  install the gateway; did not run provider prompts; did not change workspaces,
+  write credentials, enable messenger delivery, add CR nodes, change dispatcher
+  branches, or bypass approvals.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
