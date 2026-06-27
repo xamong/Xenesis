@@ -3,6 +3,7 @@ import {
   findXenesisNaturalWordsTarget,
   XENESIS_NATURAL_CONNECTION_TARGETS,
   XENESIS_NATURAL_CORE_TOOL_TARGETS,
+  XENESIS_NATURAL_ONBOARDING_STEP_TARGETS,
   XENESIS_NATURAL_PROVIDER_TARGETS,
   XENESIS_NATURAL_VIEW_TARGETS,
   type XenesisNaturalConnectionTarget,
@@ -491,40 +492,7 @@ function hasXenesisOnboardingContext(value: string): boolean {
 function xenesisOnboardingStepFromNaturalText(value: string): { id: string; label: string } | null {
   if (!hasXenesisOnboardingContext(value)) return null;
 
-  const steps: Array<{ id: string; label: string; words: readonly string[] }> = [
-    {
-      id: 'first-chat',
-      label: 'First chat',
-      words: ['first chat', '첫 채팅', '첫채팅', '첫 응답', 'first response'],
-    },
-    {
-      id: 'local-cli-mcp',
-      label: 'Local CLI and MCP',
-      words: ['local cli', '로컬 cli', 'local-cli', 'mcp', 'mcp bridge', 'mcp 브리지', '로컬 런타임'],
-    },
-    {
-      id: 'recommended-tools',
-      label: 'Recommended tools',
-      words: ['recommended tools', '추천 도구', '외부 도구', 'external tools', 'tool onboarding', '도구 온보딩'],
-    },
-    {
-      id: 'gateway',
-      label: 'Gateway',
-      words: ['gateway', '게이트웨이'],
-    },
-    {
-      id: 'messenger-routing',
-      label: 'Messenger routing',
-      words: ['messenger routing', '메신저 라우팅', 'channel routing', '채널 라우팅', 'external bots', '외부 봇'],
-    },
-    {
-      id: 'test-send',
-      label: 'End-to-end test',
-      words: ['end-to-end', 'e2e', '엔드투엔드', 'test send', '테스트 전송', '최종 테스트'],
-    },
-  ];
-
-  return steps.find((step) => hasAny(value, step.words)) || null;
+  return findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_ONBOARDING_STEP_TARGETS);
 }
 
 function xenesisOnboardingOpenActionFromNaturalText(value: string): XenesisDeskActionRequest | null {

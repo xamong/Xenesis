@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { XENESIS_NATURAL_ONBOARDING_STEP_TARGETS } from '../../../../shared/xenesisNaturalLanguageCatalog';
 import {
   approveXenesisDeskActions,
   buildXenesisDeskActionCompletedMessage,
@@ -23,6 +24,13 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /Use `xd\.xenesis\.providers\.setup\.status`, `xd\.xenesis\.providers\.setup\.open`/);
   assert.doesNotMatch(source, /Use `xd\.xenesis\.tools\.setup\.status`, `xd\.xenesis\.tools\.setup\.open`/);
   assert.doesNotMatch(source, /Use `xd\.xenesis\.channels\.routing\.status`, `xd\.xenesis\.channels\.routing\.open`/);
+  assert.match(source, /XENESIS_NATURAL_ONBOARDING_STEP_TARGETS/);
+  assert.doesNotMatch(source, /const steps:\s*Array<\{ id: string; label: string; words: readonly string\[\] \}>/);
+  assert.doesNotMatch(source, /words:\s*\['first chat'/);
+  assert.deepEqual(
+    XENESIS_NATURAL_ONBOARDING_STEP_TARGETS.map((target) => target.id),
+    ['first-chat', 'local-cli-mcp', 'recommended-tools', 'gateway', 'messenger-routing', 'test-send'],
+  );
 });
 
 test('parseXenesisDeskActionBlocks extracts Desk CR actions and hides them from visible chat', () => {

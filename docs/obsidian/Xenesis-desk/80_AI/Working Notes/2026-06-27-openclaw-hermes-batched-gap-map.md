@@ -1149,6 +1149,39 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local Obsidian graph, source code, and tests.
 
+## Onboarding Natural Catalog Refactor Slice
+
+- Removed the inline onboarding step natural-language target catalog from
+  `xenesisAgentDeskControl.ts`.
+- Added shared `XENESIS_NATURAL_ONBOARDING_STEP_TARGETS` to
+  `src/shared/xenesisNaturalLanguageCatalog.ts`, alongside the existing
+  provider/tool/messenger/view natural-language catalogs.
+- The planner now resolves onboarding steps through
+  `findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_ONBOARDING_STEP_TARGETS)`.
+- Added a source-level guard so the planner must reference the shared catalog
+  and cannot reintroduce the local `const steps` onboarding target list.
+- Scope boundary: this slice preserves existing onboarding CR open/status
+  behavior. It does not add new onboarding steps, change CR schemas, execute
+  setup actions, browse external docs, or change guide selection logic.
+- Verification:
+  - RED planner test failed first because the planner did not yet reference
+    `XENESIS_NATURAL_ONBOARDING_STEP_TARGETS`.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 36/36 tests.
+  - `npx biome format --write src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    formatted 3 files with no fixes applied.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 100/100 tests.
+  - `npx biome check src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --max-diagnostics 40`
+    passed.
+  - `npm run typecheck` passed.
+  - CR audit passed with missing registered paths 0, missing dispatched
+    coverage paths 0, undispatched static callable methods 0, and dispatcher
+    paths missing from tree 0.
+  - `git diff --check` exited 0 with line-ending warnings only.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local Obsidian graph, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
