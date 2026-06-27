@@ -308,6 +308,7 @@ export const XENESIS_NATURAL_PLAN_VISIBLE_TEXT = {
   filesListRead: '열린 파일 목록을 조회합니다.',
   gatewayStatusOrOpen: 'Xenesis gateway 상태를 조회하거나 엽니다.',
   localCliMcpStatusRead: '로컬 CLI/MCP 상태를 조회합니다.',
+  actionInboxListRead: 'Action Inbox 목록을 조회합니다.',
   multipleTerminalsOpenAndArrange: '터미널을 여러 개 열고 필요한 배열을 적용합니다.',
   profileInventoryRead: 'Xenesis 프로필 목록을 조회합니다.',
   requestedToolPanelOpen: '요청한 도구 패널을 엽니다.',
@@ -779,6 +780,13 @@ export const XENESIS_NATURAL_MCP_SETTINGS_CONTEXT_WORDS = [
   'mcp config',
   'mcp 구성',
   'mcp',
+] as const;
+
+export const XENESIS_NATURAL_ACTION_INBOX_CONTEXT_WORDS = [
+  'action inbox',
+  'action-inbox',
+  '액션 인박스',
+  '액션인박스',
 ] as const;
 
 export const XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS = ['gateway', '게이트웨이'] as const;
@@ -1400,6 +1408,11 @@ export const XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS = {
     id: 'natural-mcp-settings-status',
     path: 'xd.mcp.settings.status',
     reason: 'Read MCP settings status from natural language request.',
+  },
+  actionInboxList: {
+    id: 'natural-mcp-action-inbox-list',
+    path: 'xd.mcp.actionInbox.list',
+    reason: 'List Action Inbox items from natural language request.',
   },
   gatewayDashboardOpen: {
     id: 'natural-xenesis-gateway-dashboard-open',
@@ -2182,7 +2195,7 @@ export const XENESIS_NATURAL_CORE_TOOL_TARGETS: readonly XenesisNaturalCoreToolT
     path: 'xd.tools.core.hermesActionInbox.open',
     label: 'Hermes Action Inbox',
     reasonName: 'Hermes Action Inbox',
-    words: ['hermes action', '헤르메스 액션'],
+    words: ['hermes action', '헤르메스 액션', 'action inbox', 'action-inbox', '액션 인박스', '액션인박스'],
   },
   {
     id: 'natural-tool-hermes-timeline-open',

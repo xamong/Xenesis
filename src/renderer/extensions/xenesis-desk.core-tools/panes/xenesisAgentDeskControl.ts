@@ -25,6 +25,7 @@ import {
   XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES,
   XENESIS_DESK_CONTROL_PROMPT_HINT_CONNECTION_CENTER_DISCOVERY_PREFIX,
   XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS,
+  XENESIS_NATURAL_ACTION_INBOX_CONTEXT_WORDS,
   XENESIS_NATURAL_ACTION_INTENT_WORDS,
   XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS,
   XENESIS_NATURAL_AGENT_CONTEXT_WORDS,
@@ -1358,6 +1359,10 @@ function localCliMcpReadbackActionFromNaturalText(value: string): XenesisDeskAct
     return naturalCatalogAction(RUNTIME_ACTIONS.mcpSettingsStatus);
   }
 
+  if (wantsReadback && hasAny(value, XENESIS_NATURAL_ACTION_INBOX_CONTEXT_WORDS)) {
+    return naturalCatalogAction(RUNTIME_ACTIONS.actionInboxList);
+  }
+
   return null;
 }
 
@@ -1536,6 +1541,9 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
 
   const localCliMcpReadbackAction = localCliMcpReadbackActionFromNaturalText(value);
   if (localCliMcpReadbackAction) {
+    if (localCliMcpReadbackAction.path === RUNTIME_ACTIONS.actionInboxList.path) {
+      return naturalPlan(PLAN_TEXT.actionInboxListRead, [localCliMcpReadbackAction]);
+    }
     return naturalPlan(PLAN_TEXT.localCliMcpStatusRead, [localCliMcpReadbackAction]);
   }
 

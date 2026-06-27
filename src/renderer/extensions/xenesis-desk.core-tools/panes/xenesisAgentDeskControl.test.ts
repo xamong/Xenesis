@@ -645,6 +645,15 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   );
 });
 
+test('XenesisAgentPane wires natural-language plans before provider runs', () => {
+  const source = readFileSync(new URL('./XenesisAgentPane.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /planXenesisDeskNaturalLanguageActions/);
+  assert.match(source, /routingOptions\.bypassNaturalDeskRouting/);
+  assert.match(source, /shouldRunXenesisDeskActionsDirectly\(naturalDeskActionRequest\)/);
+  assert.match(source, /Direct natural Desk action prompt/);
+});
+
 test('parseXenesisDeskActionBlocks extracts Desk CR actions and hides them from visible chat', () => {
   const parsed = parseXenesisDeskActionBlocks(
     [
@@ -1310,6 +1319,27 @@ test('planXenesisDeskNaturalLanguageActions maps common Korean Desk control requ
       args: {},
       approved: false,
       reason: 'Capture the active pane from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('액션 인박스 목록 보여줘').actions, [
+    {
+      id: 'natural-mcp-action-inbox-list',
+      path: 'xd.mcp.actionInbox.list',
+      args: {},
+      approved: false,
+      reason: 'List Action Inbox items from natural language request.',
+    },
+  ]);
+  assert.equal(planXenesisDeskNaturalLanguageActions('액션 인박스 목록 보여줘').visibleText, 'Action Inbox 목록을 조회합니다.');
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('Action Inbox 열어줘').actions, [
+    {
+      id: 'natural-tool-hermes-action-inbox-open',
+      path: 'xd.tools.core.hermesActionInbox.open',
+      args: { placement: 'tab' },
+      approved: false,
+      reason: 'Open Hermes Action Inbox from natural language request.',
     },
   ]);
 });

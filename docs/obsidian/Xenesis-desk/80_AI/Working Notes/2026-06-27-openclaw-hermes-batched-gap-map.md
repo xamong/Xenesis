@@ -2871,6 +2871,58 @@
 - External documentation handling: no browsing. This used current repo code,
   cached gap context, and live Electron verification.
 
+## Action Inbox Natural Routing + Agent Wiring Slice
+
+- Added deterministic Action Inbox natural-language coverage for review queues
+  created by Connection Center setup/review request flows:
+  - `액션 인박스 목록 보여줘` -> `xd.mcp.actionInbox.list`.
+  - `Action Inbox 열어줘` -> `xd.tools.core.hermesActionInbox.open`.
+- Root-cause finding:
+  - `planXenesisDeskNaturalLanguageActions()` already carried many tested
+    deterministic CR routes, but live `XenesisAgentPane` input did not call it.
+  - Natural prompts fell through to the provider/mock path unless the prompt
+    contained an explicit fenced `xenesis-desk-action` block.
+- Implemented live wiring in `XenesisAgentPane.tsx`:
+  - explicit fenced CR blocks still run first;
+  - clear natural Desk plans run through the same Desk action executor before a
+    provider run;
+  - `bypassNaturalDeskRouting` remains honored for test/provider diagnostics.
+- Added Action Inbox-specific visible plan text:
+  `Action Inbox 목록을 조회합니다.`
+- Scope boundary:
+  - No Action Inbox storage changes, approval resolution changes,
+    setup-request creation changes, provider/tool/channel mutations,
+    OAuth/install execution, gateway lifecycle actions, or UI rendering changes.
+- Verification:
+  - RED:
+    focused planner test failed because `액션 인박스 목록 보여줘` returned no
+    CR action.
+  - RED:
+    source-level Agent-pane wiring test failed because `XenesisAgentPane.tsx`
+    did not import/call `planXenesisDeskNaturalLanguageActions()`.
+  - RED:
+    visible-text test failed because Action Inbox list used generic local
+    CLI/MCP text.
+  - GREEN:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 37/37 tests.
+  - Lint/type/build:
+    lint-only scoped Biome exited 0 with existing `XenesisAgentPane.tsx`
+    warnings; `npm run typecheck` passed; `npm run build` passed.
+  - CR audit:
+    `npm run docs:capabilities:audit` passed with missing registered paths 0,
+    missing dispatched coverage paths 0, undispatched static callable methods
+    0, and dispatcher paths missing from tree 0. The generated audit file was
+    removed afterward.
+  - Live Agent-pane:
+    `액션 인박스 목록 보여줘` rendered `Action Inbox 목록을 조회합니다.`,
+    `Desk action completed`, and applied `xd.mcp.actionInbox.list`.
+  - Live Agent-pane:
+    `Action Inbox 열어줘` rendered `Desk action completed` and applied
+    `xd.tools.core.hermesActionInbox.open`.
+- External documentation handling: no browsing. This used cached gap context,
+  current repo code, focused tests, CR audit, and live Electron verification.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
