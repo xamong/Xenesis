@@ -885,6 +885,34 @@ Capability Registry instead of only through separate renderer settings panels.
   falling through to generic `xd.app.status`, then passed after implementation
   with 22/22 tests.
 
+## Current Natural Connection Review Requests Slice
+
+- Add deterministic natural-language routing for clear Connection Center review
+  requests before provider execution.
+- `노션 연결 검토 요청해줘` maps to
+  `xd.xenesis.connections.setupRequests.request` with `id=notion`.
+- `노션 MCP 설치 검토 요청해줘` maps to
+  `xd.xenesis.tools.mcpInstallDrafts.request` with `id=notion`.
+- `구글 캘린더 OAuth 검토 요청해줘` maps to
+  `xd.xenesis.tools.oauthDrafts.request` with `id=google-calendar`.
+- `리니어 액션 정책 검토 요청해줘` maps to
+  `xd.xenesis.tools.actions.request` with `id=linear`.
+- `텔레그램 채널 프로필 검토 요청해줘` maps to
+  `xd.xenesis.channels.profileDrafts.request` with `channel=telegram`.
+- `AI provider profile 검토 요청해줘` maps to
+  `xd.xenesis.providers.profileDrafts.request` with `provider=auto`.
+- This is deterministic routing, not agent reasoning. It emits existing
+  review-only CR request actions and records Desk Action Inbox review requests
+  through the existing CR paths. It does not mutate settings, execute external
+  tools, write MCP config, send messages, complete OAuth, or add registry
+  nodes.
+- External documentation handling: no per-slice web browsing. Use local
+  Obsidian/docs/handoff/code/tests as the gap map; refresh external docs only
+  as a batched documentation pass if needed.
+- TDD check: focused natural planner test failed first with `노션 연결 검토
+  요청해줘` returning no action, then passed after implementation with 23/23
+  tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

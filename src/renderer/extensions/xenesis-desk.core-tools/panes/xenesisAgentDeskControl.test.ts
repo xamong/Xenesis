@@ -640,6 +640,68 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center readback requ
   ]);
 });
 
+test('planXenesisDeskNaturalLanguageActions maps Connection Center review requests to CR actions', () => {
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 연결 검토 요청해줘').actions, [
+    {
+      id: 'natural-xenesis-connection-setup-request-notion',
+      path: 'xd.xenesis.connections.setupRequests.request',
+      args: { id: 'notion' },
+      approved: false,
+      reason: 'Request Notion connection setup review from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 MCP 설치 검토 요청해줘').actions, [
+    {
+      id: 'natural-xenesis-tool-mcp-install-draft-request-notion',
+      path: 'xd.xenesis.tools.mcpInstallDrafts.request',
+      args: { id: 'notion' },
+      approved: false,
+      reason: 'Request Notion MCP install draft review from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('구글 캘린더 OAuth 검토 요청해줘').actions, [
+    {
+      id: 'natural-xenesis-tool-oauth-draft-request-google-calendar',
+      path: 'xd.xenesis.tools.oauthDrafts.request',
+      args: { id: 'google-calendar' },
+      approved: false,
+      reason: 'Request Google Calendar OAuth draft review from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('리니어 액션 정책 검토 요청해줘').actions, [
+    {
+      id: 'natural-xenesis-tool-action-policy-request-linear',
+      path: 'xd.xenesis.tools.actions.request',
+      args: { id: 'linear' },
+      approved: false,
+      reason: 'Request Linear tool action policy review from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('텔레그램 채널 프로필 검토 요청해줘').actions, [
+    {
+      id: 'natural-xenesis-channel-profile-draft-request-telegram',
+      path: 'xd.xenesis.channels.profileDrafts.request',
+      args: { channel: 'telegram' },
+      approved: false,
+      reason: 'Request Telegram channel profile draft review from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider profile 검토 요청해줘').actions, [
+    {
+      id: 'natural-xenesis-provider-profile-draft-request-auto',
+      path: 'xd.xenesis.providers.profileDrafts.request',
+      args: { provider: 'auto' },
+      approved: false,
+      reason: 'Request AI provider profile draft review from natural language request.',
+    },
+  ]);
+});
+
 test('buildXenesisDeskControlPromptHint describes settings files capture and layout control', () => {
   const hint = buildXenesisDeskControlPromptHint();
 

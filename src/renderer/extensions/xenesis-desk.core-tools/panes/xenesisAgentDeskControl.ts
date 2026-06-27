@@ -110,6 +110,10 @@ function hasActionIntent(value: string): boolean {
     '목록',
     '리스트',
     '새로고침',
+    '요청',
+    '검토',
+    '리뷰',
+    '등록',
     '포커스',
     '집중',
     '폭',
@@ -129,6 +133,9 @@ function hasActionIntent(value: string): boolean {
     'select',
     'filter',
     'refresh',
+    'request',
+    'review',
+    'approval',
     '확인',
     '상태',
     '진단',
@@ -574,6 +581,85 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
   return null;
 }
 
+function hasXenesisConnectionReviewRequestIntent(value: string): boolean {
+  if (!hasAny(value, ['요청', 'request', '등록', 'enqueue', '승인 요청'])) return false;
+  return (
+    hasAny(value, ['검토', '리뷰', 'review', 'approval', 'setup', '설정', '연결']) ||
+    hasXenesisConnectionContext(value) ||
+    hasAny(value, ['provider', '프로바이더', 'mcp', '설치', 'install', 'oauth', '오어스', '정책', 'policy', '프로필'])
+  );
+}
+
+function hasXenesisProviderProfileContext(value: string): boolean {
+  return hasAny(value, ['provider', '프로바이더', 'ai provider', 'ai 설정', '모델 provider', 'provider profile']);
+}
+
+function xenesisConnectionReviewRequestActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
+  if (!hasXenesisConnectionReviewRequestIntent(value)) return null;
+
+  if (hasXenesisProviderProfileContext(value)) {
+    return naturalAction(
+      'natural-xenesis-provider-profile-draft-request-auto',
+      'xd.xenesis.providers.profileDrafts.request',
+      { provider: 'auto' },
+      'Request AI provider profile draft review from natural language request.',
+    );
+  }
+
+  const target = xenesisConnectionTargetFromNaturalText(value);
+  if (!target) return null;
+
+  if (target.kind === 'tool' && hasAny(value, ['mcp', '설치', 'install', 'server', '서버'])) {
+    return naturalAction(
+      `natural-xenesis-tool-mcp-install-draft-request-${target.id}`,
+      'xd.xenesis.tools.mcpInstallDrafts.request',
+      { id: target.id },
+      `Request ${target.label} MCP install draft review from natural language request.`,
+    );
+  }
+
+  if (
+    target.kind === 'tool' &&
+    (target.id === 'google-calendar' || target.id === 'google-workspace') &&
+    hasAny(value, ['oauth', '오어스', '인증', 'token', '토큰'])
+  ) {
+    return naturalAction(
+      `natural-xenesis-tool-oauth-draft-request-${target.id}`,
+      'xd.xenesis.tools.oauthDrafts.request',
+      { id: target.id },
+      `Request ${target.label} OAuth draft review from natural language request.`,
+    );
+  }
+
+  if (target.kind === 'tool' && hasAny(value, ['액션', 'action', '정책', 'policy', '권한', 'permission'])) {
+    return naturalAction(
+      `natural-xenesis-tool-action-policy-request-${target.id}`,
+      'xd.xenesis.tools.actions.request',
+      { id: target.id },
+      `Request ${target.label} tool action policy review from natural language request.`,
+    );
+  }
+
+  if (
+    target.kind === 'messenger' &&
+    hasAny(value, ['프로필', 'profile', '채널', 'channel', '메신저', 'messenger', 'bot', '봇'])
+  ) {
+    return naturalAction(
+      `natural-xenesis-channel-profile-draft-request-${target.id}`,
+      'xd.xenesis.channels.profileDrafts.request',
+      { channel: target.id },
+      `Request ${target.label} channel profile draft review from natural language request.`,
+    );
+  }
+
+  return naturalAction(
+    `natural-xenesis-connection-setup-request-${target.id}`,
+    'xd.xenesis.connections.setupRequests.request',
+    { id: target.id },
+    `Request ${target.label} connection setup review from natural language request.`,
+  );
+}
+
 function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
   const guideAction = xenesisGuideActionFromNaturalText(value);
   if (guideAction) return guideAction;
@@ -631,6 +717,11 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
   if (!value || !hasActionIntent(value)) return emptyNaturalPlan();
 
   const placement = detectPlacement(value);
+
+  const xenesisConnectionReviewRequestAction = xenesisConnectionReviewRequestActionFromNaturalText(value);
+  if (xenesisConnectionReviewRequestAction) {
+    return naturalPlan('Xenesis 연결 검토 요청을 기록합니다.', [xenesisConnectionReviewRequestAction]);
+  }
 
   const xenesisConnectionReadbackAction = xenesisConnectionReadbackActionFromNaturalText(value);
   if (xenesisConnectionReadbackAction) {
