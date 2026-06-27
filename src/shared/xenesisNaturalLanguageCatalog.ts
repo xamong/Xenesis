@@ -1586,6 +1586,99 @@ export const XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS = {
   },
 } as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
 
+export const XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS = {
+  diagnostics: {
+    path: 'xd.xenesis.connections.diagnostics.open',
+    idFor: (id: string, _label: string) => `natural-xenesis-connection-diagnostics-open-${id}`,
+    reasonFor: (_id: string, label: string) => `Open ${label} connection diagnostics from natural language request.`,
+  },
+  setupRequest: {
+    path: 'xd.xenesis.connections.setupRequests.open',
+    idFor: (id: string, _label: string) => `natural-xenesis-connection-setup-request-open-${id}`,
+    reasonFor: (_id: string, label: string) => `Open ${label} connection setup request from natural language request.`,
+  },
+  toolOauthDraft: {
+    path: 'xd.xenesis.tools.oauthDrafts.open',
+    idFor: (id: string, _label: string) => `natural-xenesis-tool-oauth-draft-open-${id}`,
+    reasonFor: (_id: string, label: string) => `Open ${label} OAuth draft from natural language request.`,
+  },
+  toolMcpInstallDraft: {
+    path: 'xd.xenesis.tools.mcpInstallDrafts.open',
+    idFor: (id: string, _label: string) => `natural-xenesis-tool-mcp-install-draft-open-${id}`,
+    reasonFor: (_id: string, label: string) => `Open ${label} MCP install draft from natural language request.`,
+  },
+  toolUserStory: {
+    path: 'xd.xenesis.tools.userStories.open',
+    idFor: (id: string, _label: string) => `natural-xenesis-tool-user-story-open-${id}`,
+    reasonFor: (_id: string, label: string) => `Open ${label} tool user story from natural language request.`,
+  },
+  toolActionPolicy: {
+    path: 'xd.xenesis.tools.actions.open',
+    idFor: (id: string, _label: string) => `natural-xenesis-tool-action-policy-open-${id}`,
+    reasonFor: (_id: string, label: string) => `Open ${label} tool action policy from natural language request.`,
+  },
+  toolInstallPlan: {
+    path: 'xd.xenesis.tools.installPlans.open',
+    idFor: (id: string, _label: string) => `natural-xenesis-tool-install-plan-open-${id}`,
+    reasonFor: (_id: string, label: string) => `Open ${label} tool install plan from natural language request.`,
+  },
+  toolConnector: {
+    path: 'xd.xenesis.tools.connectors.open',
+    idFor: (id: string, _label: string) => `natural-xenesis-tool-connector-open-${id}`,
+    reasonFor: (_id: string, label: string) => `Open ${label} tool connector from natural language request.`,
+  },
+  toolSetup: {
+    path: 'xd.xenesis.tools.setup.open',
+    idFor: (id: string, _label: string) => `natural-xenesis-tool-setup-open-${id}`,
+    reasonFor: (_id: string, label: string) => `Open ${label} tool setup from natural language request.`,
+  },
+  toolView: {
+    path: 'xd.xenesis.tools.views.open',
+    idFor: (id: string, _label: string) => `natural-xenesis-tool-view-open-${id}`,
+    reasonFor: (_id: string, label: string) => `Open ${label} tool view from natural language request.`,
+  },
+  channelUserStory: {
+    path: 'xd.xenesis.channels.userStories.open',
+    idFor: (id: string, _label: string) => `natural-xenesis-channel-user-story-open-${id}`,
+    reasonFor: (_id: string, label: string) => `Open ${label} channel user story from natural language request.`,
+  },
+  channelProfileDraft: {
+    path: 'xd.xenesis.channels.profileDrafts.open',
+    idFor: (id: string, _label: string) => `natural-xenesis-channel-profile-draft-open-${id}`,
+    reasonFor: (_id: string, label: string) => `Open ${label} channel profile draft from natural language request.`,
+  },
+  channelRouting: {
+    path: 'xd.xenesis.channels.routing.open',
+    idFor: (id: string, _label: string) => `natural-xenesis-channel-routing-open-${id}`,
+    reasonFor: (_id: string, label: string) => `Open ${label} channel routing from natural language request.`,
+  },
+  channelSafety: {
+    path: 'xd.xenesis.channels.safety.open',
+    idFor: (id: string, _label: string) => `natural-xenesis-channel-safety-open-${id}`,
+    reasonFor: (_id: string, label: string) => `Open ${label} channel safety from natural language request.`,
+  },
+  channelAccessGroups: {
+    path: 'xd.xenesis.channels.accessGroups.open',
+    idFor: (id: string, _label: string) => `natural-xenesis-channel-access-groups-open-${id}`,
+    reasonFor: (_id: string, label: string) => `Open ${label} channel access groups from natural language request.`,
+  },
+  channelPairing: {
+    path: 'xd.xenesis.channels.pairing.open',
+    idFor: (id: string, _label: string) => `natural-xenesis-channel-pairing-open-${id}`,
+    reasonFor: (_id: string, label: string) => `Open ${label} channel pairing from natural language request.`,
+  },
+  messengerView: {
+    path: 'xd.xenesis.messengers.views.open',
+    idFor: (id: string, _label: string) => `natural-xenesis-messenger-view-open-${id}`,
+    reasonFor: (_id: string, label: string) => `Open ${label} messenger view from natural language request.`,
+  },
+  connectionCard: {
+    path: 'xd.xenesis.connections.open',
+    idFor: (id: string, _label: string) => `natural-xenesis-connection-open-${id}`,
+    reasonFor: (_id: string, label: string) => `Open ${label} connection card from natural language request.`,
+  },
+} as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
+
 export const XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS = {
   providerProfileDraft: {
     path: 'xd.xenesis.providers.profileDrafts.request',
