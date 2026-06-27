@@ -106,6 +106,15 @@ steps, CR readback paths, and risk controls. Google Workspace and Google
 Calendar are visible here as planned OAuth connections, but they still have no
 install action or bundled MCP template.
 
+Each tool card also exposes a `toolView` read model. Use
+`xd.xenesis.tools.views.status` to inspect the internal Desk surface for a tool,
+including the Connection Center card, setup recipe, optional MCP template view,
+readback paths, control paths, diagnostics, and safety boundaries. Use
+`xd.xenesis.tools.views.open` with `{ "id": "<tool-id>" }` to open Settings >
+Xenesis Agent > Connections and focus the tool card. This opens a Desk
+setup/readiness view only; it does not execute the external tool, install MCP
+servers, complete OAuth, or bypass approval paths.
+
 Use `xd.mcp.settings.status` to inspect MCP settings through the Capability
 Registry.
 
@@ -213,3 +222,9 @@ through CR. The read model covers Fetch, Filesystem, GitHub, Notion, Linear,
 Google Workspace, and Google Calendar. It is read-only; MCP bridge state still
 comes from `xd.mcp.settings.status`, and mutating tool workflows must use their
 own verified provider/MCP/CR paths.
+
+Use `xd.xenesis.tools.views.status` and `xd.xenesis.tools.views.open` to inspect
+or open internal Desk setup/readiness views for external tools. The open path
+focuses the matching Connection Center tool card and keeps planned Google
+Workspace/Google Calendar flows visibly planned until a verified OAuth/MCP
+template exists.

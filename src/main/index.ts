@@ -4902,6 +4902,93 @@ async function getXenesisToolSetupStatus(args?: unknown): Promise<Record<string,
   };
 }
 
+function xenesisToolViewStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    viewType: item.toolView?.viewType,
+    primarySurface: item.toolView?.primarySurface,
+    setupSurface: item.toolView?.setupSurface,
+    openPath: item.toolView?.openPath,
+    openArgs: item.toolView?.openArgs,
+    connectionCardId: item.toolView?.connectionCardId,
+    internalViews: item.toolView?.internalViews ?? [],
+    readPaths: item.toolView?.readPaths ?? [],
+    controlPaths: item.toolView?.controlPaths ?? [],
+    diagnostics: item.toolView?.diagnostics ?? [],
+    safetyBoundaries: item.toolView?.safetyBoundaries ?? [],
+    settingsAction: item.settingsAction,
+    mcpTemplate: item.mcpTemplate,
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisToolViewsStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (id && !isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.tools.items
+    .filter((item) => item.toolView)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisToolViewStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisToolView(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Tool id is required.' };
+  }
+  if (!isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.tools.items.find((candidate) => candidate.id === id && candidate.toolView);
+  if (!item) {
+    return { ok: false, id, error: `Xenesis tool view is not available: ${id}` };
+  }
+
+  const renderer = await openMcpBuiltinPaneCapability({
+    kind: 'settings',
+    category: 'xenesis-agent',
+    mode: 'connections',
+    section: 'xenesis-connections',
+    focusConnectionId: id,
+    ensureVisible: body.ensureVisible !== false,
+  });
+
+  return {
+    ok: renderer.ok !== false,
+    id,
+    item: xenesisToolViewStatusItem(item),
+    renderer,
+  };
+}
+
 const XENESIS_PROVIDER_SETUP_IDS = [
   'auto',
   'openai',
@@ -11899,6 +11986,8 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisConnectionsStatus: () => getXenesisConnectionsStatus().then((status) => ({ ok: true, status })),
     getXenesisChannelRoutingStatus: (args: unknown) => getXenesisChannelRoutingStatus(args),
     getXenesisToolSetupStatus: (args: unknown) => getXenesisToolSetupStatus(args),
+    getXenesisToolViewsStatus: (args: unknown) => getXenesisToolViewsStatus(args),
+    openXenesisToolView: (args: unknown) => openXenesisToolView(args),
     getXenesisProviderSetupStatus: (args: unknown) => getXenesisProviderSetupStatus(args),
     getXenesisDiagnostics: () => getXenesisOperationalDiagnostics().then((diagnostics) => ({ ok: true, diagnostics })),
     listXenesisReports: (args: unknown) =>

@@ -91,6 +91,7 @@ import {
   formatXenesisChannelRoutingSummary,
   formatXenesisProviderSetupSummary,
   formatXenesisToolSetupSummary,
+  formatXenesisToolViewSummary,
   listXenesisConnectionSections,
   xenesisConnectionTone,
 } from './xenesisConnectionCenter';
@@ -4253,6 +4254,7 @@ export default function SettingsPane() {
     const mcpTemplate = item.mcpTemplate;
     const providerSetup = item.providerSetup;
     const toolSetup = item.toolSetup;
+    const toolView = item.toolView;
     const channelTemplate = item.channelTemplate;
     return (
       <div
@@ -4424,6 +4426,44 @@ export default function SettingsPane() {
             <div>
               <span>{t('settings.xenesisConnectionsToolRiskControls')}</span>
               <strong>{toolSetup.riskControls.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {toolView ? (
+          <div className="sp-info-list sp-info-list-compact" data-xenesis-tool-view={item.id}>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolView')}</span>
+              <strong>{formatXenesisToolViewSummary(toolView)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolViewSetupSurface')}</span>
+              <strong>{toolView.setupSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolViewOpen')}</span>
+              <strong>
+                {toolView.openPath} {JSON.stringify(toolView.openArgs)}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolViewInternalViews')}</span>
+              <strong>{toolView.internalViews.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolViewReadback')}</span>
+              <strong>{toolView.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolViewControls')}</span>
+              <strong>{toolView.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolViewDiagnostics')}</span>
+              <strong>{toolView.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolViewSafety')}</span>
+              <strong>{toolView.safetyBoundaries.join(', ')}</strong>
             </div>
           </div>
         ) : null}

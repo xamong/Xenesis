@@ -7,6 +7,7 @@ import type {
   XenesisConnectionStatus,
   XenesisConnectionsStatus,
   XenesisConnectionToolSetupTemplate,
+  XenesisConnectionToolViewTemplate,
 } from '../../shared/types';
 
 export type XenesisConnectionTone = 'success' | 'warning' | 'danger' | 'muted' | 'info' | 'neutral';
@@ -61,6 +62,10 @@ export function formatXenesisProviderSetupSummary(setup: XenesisConnectionProvid
 
 export function formatXenesisToolSetupSummary(setup: XenesisConnectionToolSetupTemplate): string {
   return `${setup.connection} / ${setup.authMode} / ${setup.setupSurface}`;
+}
+
+export function formatXenesisToolViewSummary(view: XenesisConnectionToolViewTemplate): string {
+  return `${view.primarySurface} / ${view.viewType}`;
 }
 
 export function buildXenesisConnectionSettingsRequest(

@@ -66,6 +66,20 @@ export interface XenesisConnectionToolSetupTemplate {
   riskControls: string[];
 }
 
+export interface XenesisConnectionToolViewTemplate {
+  viewType: 'connection-detail';
+  primarySurface: string;
+  setupSurface: string;
+  openPath: 'xd.xenesis.tools.views.open';
+  openArgs: { id: string };
+  connectionCardId: string;
+  internalViews: string[];
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  safetyBoundaries: string[];
+}
+
 export interface XenesisConnectionProviderSetupTemplate {
   source: 'user-settings' | 'auto-detect' | 'local-cli' | 'byok';
   provider: string;
@@ -123,6 +137,7 @@ export interface XenesisConnectionItem {
   mcpTemplate?: XenesisConnectionMcpTemplate;
   providerSetup?: XenesisConnectionProviderSetupTemplate;
   toolSetup?: XenesisConnectionToolSetupTemplate;
+  toolView?: XenesisConnectionToolViewTemplate;
   channelTemplate?: XenesisConnectionChannelTemplate;
   warnings?: string[];
 }
@@ -289,6 +304,38 @@ function mcpTemplateFor(serverName: string): XenesisConnectionMcpTemplate | unde
   };
 }
 
+function toolViewTemplate(
+  id: string,
+  setupSurface: string,
+  options: { hasMcpTemplate?: boolean } = {},
+): XenesisConnectionToolViewTemplate {
+  return {
+    viewType: 'connection-detail',
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    setupSurface,
+    openPath: 'xd.xenesis.tools.views.open',
+    openArgs: { id },
+    connectionCardId: id,
+    internalViews: options.hasMcpTemplate
+      ? ['connection-card', 'setup-recipe', 'mcp-template']
+      : ['connection-card', 'setup-recipe'],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.tools.views.status',
+      'xd.xenesis.tools.setup.status',
+      'xd.mcp.settings.status',
+    ],
+    controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.connections.open', 'xd.panes.settings.open'],
+    diagnostics: options.hasMcpTemplate
+      ? ['mcp-settings-status', 'missing-env', 'template-snippet']
+      : ['mcp-settings-status', 'missing-env'],
+    safetyBoundaries: [
+      'view opens internal setup/readiness surfaces only',
+      'tool execution remains behind provider MCP tools and CR approval paths',
+    ],
+  };
+}
+
 const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
   {
     id: 'fetch',
@@ -300,6 +347,7 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     supportLevel: 'manual',
     settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
     mcpTemplate: mcpTemplateFor('fetch'),
+    toolView: toolViewTemplate('fetch', 'Settings > AI Provider > Local CLI MCP', { hasMcpTemplate: true }),
     toolSetup: {
       connection: 'mcp',
       authMode: 'none',
@@ -327,6 +375,7 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     supportLevel: 'manual',
     settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
     mcpTemplate: mcpTemplateFor('filesystem'),
+    toolView: toolViewTemplate('filesystem', 'Settings > AI Provider > Local CLI MCP', { hasMcpTemplate: true }),
     toolSetup: {
       connection: 'mcp',
       authMode: 'none',
@@ -355,6 +404,7 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     supportLevel: 'manual',
     settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
     mcpTemplate: mcpTemplateFor('github'),
+    toolView: toolViewTemplate('github', 'Settings > AI Provider > Local CLI MCP', { hasMcpTemplate: true }),
     toolSetup: {
       connection: 'mcp',
       authMode: 'env-token',
@@ -384,6 +434,7 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     supportLevel: 'manual',
     settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
     mcpTemplate: mcpTemplateFor('notion'),
+    toolView: toolViewTemplate('notion', 'Settings > AI Provider > Local CLI MCP', { hasMcpTemplate: true }),
     toolSetup: {
       connection: 'mcp',
       authMode: 'env-token',
@@ -412,6 +463,7 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     supportLevel: 'manual',
     settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
     mcpTemplate: mcpTemplateFor('linear'),
+    toolView: toolViewTemplate('linear', 'Settings > AI Provider > Local CLI MCP', { hasMcpTemplate: true }),
     toolSetup: {
       connection: 'oauth-mcp',
       authMode: 'oauth',
@@ -439,6 +491,7 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     settingsTarget: 'mcp',
     supportLevel: 'planned',
     crActions: [],
+    toolView: toolViewTemplate('google-workspace', 'Settings > AI Provider > Local CLI MCP'),
     toolSetup: {
       connection: 'oauth-mcp',
       authMode: 'oauth',
@@ -467,6 +520,7 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     settingsTarget: 'mcp',
     supportLevel: 'planned',
     crActions: [],
+    toolView: toolViewTemplate('google-calendar', 'Settings > AI Provider > Local CLI MCP'),
     toolSetup: {
       connection: 'oauth-mcp',
       authMode: 'oauth',

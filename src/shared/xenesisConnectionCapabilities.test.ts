@@ -158,6 +158,66 @@ test('xenesis tool setup status capability is registered and dispatches to the a
   });
 });
 
+test('xenesis tool view capabilities are registered and dispatch to the adapter', async () => {
+  const statusCapability = findDeskBridgeCapability('xd.xenesis.tools.views.status');
+  const openCapability = findDeskBridgeCapability('xd.xenesis.tools.views.open');
+  const statusSchemaProperties = (statusCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
+  assert.equal(statusCapability?.permission, 'read');
+  assert.equal(statusCapability?.approval, 'never');
+  assert.equal(openCapability?.permission, 'control');
+  assert.equal(openCapability?.approval, 'never');
+  assert.deepEqual(openCapability?.schema?.required, ['id']);
+  for (const tool of ['fetch', 'notion', 'google-calendar']) {
+    assert.equal(statusSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by status`);
+    assert.equal(openSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by open`);
+  }
+
+  const calls: Array<{ method: string; args: unknown }> = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisToolViewsStatus: (args) => {
+      calls.push({ method: 'status', args });
+      return {
+        ok: true,
+        items: [{ id: 'notion' }],
+      };
+    },
+    openXenesisToolView: (args) => {
+      calls.push({ method: 'open', args });
+      return {
+        ok: true,
+        item: { id: 'notion' },
+      };
+    },
+  };
+
+  const statusResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.tools.views.status',
+    args: { id: 'notion' },
+    source: 'xenesis',
+  });
+  const openResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.tools.views.open',
+    args: { id: 'notion' },
+    source: 'xenesis',
+  });
+
+  assert.equal(statusResult.ok, true);
+  assert.equal(openResult.ok, true);
+  assert.deepEqual(calls, [
+    { method: 'status', args: { id: 'notion' } },
+    { method: 'open', args: { id: 'notion' } },
+  ]);
+  assert.deepEqual(statusResult.result, {
+    ok: true,
+    items: [{ id: 'notion' }],
+  });
+  assert.deepEqual(openResult.result, {
+    ok: true,
+    item: { id: 'notion' },
+  });
+});
+
 test('xenesis provider setup status capability is registered and dispatches to the adapter', async () => {
   const capability = findDeskBridgeCapability('xd.xenesis.providers.setup.status');
   const schemaProperties = (capability?.schema?.properties ?? {}) as Record<string, any>;

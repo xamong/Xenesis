@@ -511,6 +511,64 @@ test('buildXenesisConnectionsStatus exposes tool setup auth, scope, verification
   assert.equal(googleCalendar?.settingsAction, undefined);
 });
 
+test('buildXenesisConnectionsStatus exposes internal Desk tool views for MCP and planned tools', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+  const googleCalendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+
+  assert.deepEqual(notion?.toolView, {
+    viewType: 'connection-detail',
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    setupSurface: 'Settings > AI Provider > Local CLI MCP',
+    openPath: 'xd.xenesis.tools.views.open',
+    openArgs: { id: 'notion' },
+    connectionCardId: 'notion',
+    internalViews: ['connection-card', 'setup-recipe', 'mcp-template'],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.tools.views.status',
+      'xd.xenesis.tools.setup.status',
+      'xd.mcp.settings.status',
+    ],
+    controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.connections.open', 'xd.panes.settings.open'],
+    diagnostics: ['mcp-settings-status', 'missing-env', 'template-snippet'],
+    safetyBoundaries: [
+      'view opens internal setup/readiness surfaces only',
+      'tool execution remains behind provider MCP tools and CR approval paths',
+    ],
+  });
+  assert.deepEqual(googleCalendar?.toolView?.internalViews, ['connection-card', 'setup-recipe']);
+  assert.equal(googleCalendar?.toolView?.openArgs.id, 'google-calendar');
+  assert.equal(googleCalendar?.toolView?.diagnostics.includes('template-snippet'), false);
+});
+
 test('buildXenesisConnectionsStatus exposes provider setup identity, credential state, and fallback policy', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {

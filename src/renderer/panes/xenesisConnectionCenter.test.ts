@@ -8,6 +8,7 @@ import {
   formatXenesisChannelRoutingSummary,
   formatXenesisProviderSetupSummary,
   formatXenesisToolSetupSummary,
+  formatXenesisToolViewSummary,
   listXenesisConnectionSections,
   XENESIS_CONNECTION_STATUS_ORDER,
   xenesisConnectionTone,
@@ -191,5 +192,24 @@ test('formatXenesisProviderSetupSummary describes provider, model, and auth mode
       ],
     }),
     'codex-app-server / gpt-5-codex / local-login',
+  );
+});
+
+test('formatXenesisToolViewSummary describes internal Desk tool view surface and type', () => {
+  assert.equal(
+    formatXenesisToolViewSummary({
+      viewType: 'connection-detail',
+      primarySurface: 'Settings > Xenesis Agent > Connections',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      openPath: 'xd.xenesis.tools.views.open',
+      openArgs: { id: 'notion' },
+      connectionCardId: 'notion',
+      internalViews: ['connection-card', 'setup-recipe', 'mcp-template'],
+      readPaths: ['xd.xenesis.connections.status'],
+      controlPaths: ['xd.xenesis.tools.views.open'],
+      diagnostics: ['mcp-settings-status'],
+      safetyBoundaries: ['view opens internal setup/readiness surfaces only'],
+    }),
+    'Settings > Xenesis Agent > Connections / connection-detail',
   );
 });

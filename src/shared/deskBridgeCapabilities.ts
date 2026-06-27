@@ -207,14 +207,67 @@ const XENESIS_CHANNEL_ROUTING_STATUS_SCHEMA = {
   },
 } as const;
 
+const XENESIS_EXTERNAL_TOOL_IDS = [
+  'fetch',
+  'filesystem',
+  'github',
+  'notion',
+  'linear',
+  'google-workspace',
+  'google-calendar',
+] as const;
+
 const XENESIS_TOOL_SETUP_STATUS_SCHEMA = {
   type: 'object',
   properties: {
     id: {
       type: 'string',
       title: 'Tool id',
-      enum: ['fetch', 'filesystem', 'github', 'notion', 'linear', 'google-workspace', 'google-calendar'],
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
       description: 'Optional external tool connection id to filter.',
+    },
+  },
+} as const;
+
+const XENESIS_TOOL_VIEW_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Optional external tool connection id to filter.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Alias for id.',
+    },
+  },
+} as const;
+
+const XENESIS_TOOL_VIEW_OPEN_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'External tool connection id to open in the internal Desk Connection Center view.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Alias for id.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused tool connection card into view after opening the Connection Center.',
+      default: true,
     },
   },
 } as const;
@@ -510,6 +563,8 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisConnectionsStatus?: () => Promise<unknown> | unknown;
   getXenesisChannelRoutingStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolSetupStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisToolViewsStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisToolView?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisProviderSetupStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisDiagnostics?: () => Promise<unknown> | unknown;
   openXenesisTui?: (args: unknown) => Promise<unknown> | unknown;
@@ -3475,6 +3530,22 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             'Read auth mode, data scopes, write scopes, credential storage, verification, setup surface, and CR readback metadata for Xenesis external tool connections.',
             'read',
             XENESIS_TOOL_SETUP_STATUS_SCHEMA,
+          ),
+        ]),
+        group('xd.xenesis.tools.views', 'Views', 'Internal Desk views for external tool connection setup and readiness.', [
+          method(
+            'xd.xenesis.tools.views.status',
+            'Read tool view status',
+            'Read internal Desk view surfaces, CR open/read paths, diagnostics, and safety boundaries for Xenesis external tool connections.',
+            'read',
+            XENESIS_TOOL_VIEW_STATUS_SCHEMA,
+          ),
+          method(
+            'xd.xenesis.tools.views.open',
+            'Open tool view',
+            'Open Settings > Xenesis Agent > Connections and focus an external tool connection card inside Desk.',
+            'control',
+            XENESIS_TOOL_VIEW_OPEN_SCHEMA,
           ),
         ]),
       ]),
@@ -9754,6 +9825,12 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.tools.setup.status') {
         return callAdapter(path, api?.getXenesisToolSetupStatus, request.args);
+      }
+      if (path === 'xd.xenesis.tools.views.status') {
+        return callAdapter(path, api?.getXenesisToolViewsStatus, request.args);
+      }
+      if (path === 'xd.xenesis.tools.views.open') {
+        return callAdapter(path, api?.openXenesisToolView, request.args);
       }
       if (path === 'xd.xenesis.providers.setup.status') {
         return callAdapter(path, api?.getXenesisProviderSetupStatus, request.args);

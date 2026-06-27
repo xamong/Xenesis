@@ -11,6 +11,7 @@ export type {
   XenesisConnectionStatus,
   XenesisConnectionsStatus,
   XenesisConnectionToolSetupTemplate,
+  XenesisConnectionToolViewTemplate,
 } from './xenesisConnections';
 
 export type ShellKind = 'powershell' | 'cmd' | 'pwsh' | 'wsl' | 'zsh' | 'bash' | 'sh';

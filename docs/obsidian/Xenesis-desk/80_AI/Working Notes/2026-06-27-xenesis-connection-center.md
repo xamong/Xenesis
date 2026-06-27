@@ -269,6 +269,26 @@ Capability Registry instead of only through separate renderer settings panels.
   first for missing provider setup metadata/path/helper, then the combined
   targeted run passed with 26/26 tests.
 
+## Current External Tool Views Slice
+
+- Add `toolView` metadata to Fetch, Filesystem, GitHub, Notion, Linear, Google
+  Workspace, and Google Calendar cards in `xd.xenesis.connections.status`.
+- Add `xd.xenesis.tools.views.status` as a read/no-approval CR path derived
+  from the Connection Center tool section.
+- Add `xd.xenesis.tools.views.open` as a control/no-approval CR path that opens
+  Settings > Xenesis Agent > Connections and focuses the requested tool card.
+- Render internal Desk view surface, setup surface, open path, readback paths,
+  control paths, diagnostics, and safety boundaries in Settings with
+  `data-xenesis-tool-view="<id>"`.
+- Keep planned Google Workspace and Google Calendar as internal setup/readiness
+  views only: no fake MCP install action, OAuth completion, or tool execution is
+  exposed until a verified template exists.
+- `npx tsx --test src\shared\xenesisConnections.test.ts`,
+  `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts`, and
+  `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` failed
+  first for missing tool view metadata/path/helper, then the combined targeted
+  run passed with 29/29 tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
