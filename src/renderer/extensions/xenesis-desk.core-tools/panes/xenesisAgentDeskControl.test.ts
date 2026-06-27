@@ -598,6 +598,38 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center requests to C
   ]);
 });
 
+test('planXenesisDeskNaturalLanguageActions maps guide file open requests to CR actions', () => {
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('온보딩 가이드 파일 열어줘').actions, [
+    {
+      id: 'natural-xenesis-guide-open-onboarding-connections',
+      path: 'xd.xenesis.guides.open',
+      args: { id: 'onboarding-connections', ensureVisible: true, openFile: true },
+      approved: false,
+      reason: 'Open Onboarding and connections guide file from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('CR MCP 게이트웨이 문서 파일 열어줘').actions, [
+    {
+      id: 'natural-xenesis-guide-open-cr-mcp-gateway-bots',
+      path: 'xd.xenesis.guides.open',
+      args: { id: 'cr-mcp-gateway-bots', ensureVisible: true, openFile: true },
+      approved: false,
+      reason: 'Open Capability Registry, MCP, gateway, and bots guide file from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('사용자 스토리 guide file 열어줘').actions, [
+    {
+      id: 'natural-xenesis-guide-open-agent-user-stories',
+      path: 'xd.xenesis.guides.open',
+      args: { id: 'agent-user-stories', ensureVisible: true, openFile: true },
+      approved: false,
+      reason: 'Open Agent user stories guide file from natural language request.',
+    },
+  ]);
+});
+
 test('planXenesisDeskNaturalLanguageActions maps onboarding checklist open requests to CR actions', () => {
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('첫 채팅 온보딩 열어줘').actions, [
     {

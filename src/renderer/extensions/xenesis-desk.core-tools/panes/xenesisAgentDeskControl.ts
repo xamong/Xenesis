@@ -464,11 +464,13 @@ function xenesisGuideActionFromNaturalText(value: string): XenesisDeskActionRequ
   const guide = xenesisGuideFromNaturalText(value);
   if (!guide) return null;
 
+  const openFile = hasAny(value, ['파일', 'file', 'manual file', '문서 파일', 'repo-local', 'repo local', '로컬 문서']);
+
   return naturalAction(
     `natural-xenesis-guide-open-${guide.id}`,
     'xd.xenesis.guides.open',
-    { id: guide.id, ensureVisible: true },
-    `Open ${guide.label} guide from natural language request.`,
+    { id: guide.id, ensureVisible: true, ...(openFile ? { openFile: true } : {}) },
+    `Open ${guide.label} guide${openFile ? ' file' : ''} from natural language request.`,
   );
 }
 

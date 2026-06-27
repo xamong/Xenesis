@@ -1073,6 +1073,34 @@ Capability Registry instead of only through separate renderer settings panels.
     passed with 55/55 tests.
   - `npm run typecheck` passed.
 
+## Current Natural Guide File Opens Slice
+
+- Add deterministic natural-language routing for explicit guide file/manual
+  open requests before provider execution.
+- `온보딩 가이드 파일 열어줘` maps to `xd.xenesis.guides.open` with
+  `id=onboarding-connections`, `ensureVisible=true`, and `openFile=true`.
+- `CR MCP 게이트웨이 문서 파일 열어줘` maps to `id=cr-mcp-gateway-bots` with
+  `openFile=true`.
+- `사용자 스토리 guide file 열어줘` maps to `id=agent-user-stories` with
+  `openFile=true`.
+- Ordinary requests like `온보딩 가이드 열어줘` still focus the Settings guide
+  card and omit `openFile`.
+- This is deterministic routing, not agent reasoning. It emits an existing
+  no-approval CR open action only and does not mutate settings, install tools,
+  execute provider tools, or add registry nodes.
+- External documentation handling: no per-slice web browsing. Use local
+  Obsidian/docs/handoff/code/tests as the gap map; refresh external docs only
+  as a batched documentation pass if needed.
+- TDD check: focused natural planner test failed first because explicit guide
+  file requests omitted `openFile=true`, then passed after implementation with
+  29/29 tests.
+- Verification:
+  - `npx biome check src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts --max-diagnostics 40`
+    passed.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 56/56 tests.
+  - `npm run typecheck` passed.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
