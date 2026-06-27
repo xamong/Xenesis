@@ -6852,6 +6852,35 @@ function isXenesisProviderSetupId(value: string): value is (typeof XENESIS_PROVI
   return (XENESIS_PROVIDER_SETUP_IDS as readonly string[]).includes(value);
 }
 
+function xenesisProviderSetupStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    source: item.providerSetup?.source,
+    provider: item.providerSetup?.provider,
+    model: item.providerSetup?.model,
+    authMode: item.providerSetup?.authMode,
+    credentialState: item.providerSetup?.credentialState,
+    credentialStorage: item.providerSetup?.credentialStorage,
+    endpoint: item.providerSetup?.endpoint,
+    runtimeProfile: item.providerSetup?.runtimeProfile,
+    runtimeProvider: item.providerSetup?.runtimeProvider,
+    runtimeModel: item.providerSetup?.runtimeModel,
+    providerRetries: item.providerSetup?.providerRetries ?? 0,
+    fallbackPolicy: item.providerSetup?.fallbackPolicy,
+    localCliBoundary: item.providerSetup?.localCliBoundary,
+    verification: item.providerSetup?.verification ?? [],
+    crReadPaths: item.providerSetup?.crReadPaths ?? [],
+    riskControls: item.providerSetup?.riskControls ?? [],
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+    warnings: item.warnings ?? [],
+  };
+}
+
 async function getXenesisProviderSetupStatus(args?: unknown): Promise<Record<string, unknown>> {
   const body = normalizeMcpCapabilityArgs(args);
   const provider = readCapabilityString(body, ['provider', 'id', 'name']);
@@ -6867,32 +6896,7 @@ async function getXenesisProviderSetupStatus(args?: unknown): Promise<Record<str
   const items = status.sections.provider.items
     .filter((item) => item.providerSetup)
     .filter((item) => !provider || item.providerSetup?.provider === provider)
-    .map((item: XenesisConnectionItem) => ({
-      id: item.id,
-      label: item.label,
-      status: item.status,
-      supportLevel: item.supportLevel,
-      summary: item.summary,
-      source: item.providerSetup?.source,
-      provider: item.providerSetup?.provider,
-      model: item.providerSetup?.model,
-      authMode: item.providerSetup?.authMode,
-      credentialState: item.providerSetup?.credentialState,
-      credentialStorage: item.providerSetup?.credentialStorage,
-      endpoint: item.providerSetup?.endpoint,
-      runtimeProfile: item.providerSetup?.runtimeProfile,
-      runtimeProvider: item.providerSetup?.runtimeProvider,
-      runtimeModel: item.providerSetup?.runtimeModel,
-      providerRetries: item.providerSetup?.providerRetries ?? 0,
-      fallbackPolicy: item.providerSetup?.fallbackPolicy,
-      localCliBoundary: item.providerSetup?.localCliBoundary,
-      verification: item.providerSetup?.verification ?? [],
-      crReadPaths: item.providerSetup?.crReadPaths ?? [],
-      riskControls: item.providerSetup?.riskControls ?? [],
-      settingsAction: item.settingsAction,
-      crActions: item.crActions ?? [],
-      warnings: item.warnings ?? [],
-    }));
+    .map((item: XenesisConnectionItem) => xenesisProviderSetupStatusItem(item));
 
   return {
     ok: true,
@@ -6900,6 +6904,46 @@ async function getXenesisProviderSetupStatus(args?: unknown): Promise<Record<str
     ...(provider ? { provider } : {}),
     total: items.length,
     items,
+  };
+}
+
+async function openXenesisProviderSetup(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const provider = readCapabilityString(body, ['provider', 'id', 'name']);
+  if (!provider) {
+    return { ok: false, error: 'Provider is required.' };
+  }
+  if (!isXenesisProviderSetupId(provider)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis provider: ${provider}`,
+      allowedProviders: XENESIS_PROVIDER_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.provider.items.find(
+    (candidate) => Boolean(candidate.providerSetup) && candidate.providerSetup?.provider === provider,
+  );
+  if (!item) {
+    return { ok: false, provider, error: `Xenesis provider setup is not available: ${provider}` };
+  }
+
+  const renderer = await openMcpBuiltinPaneCapability({
+    kind: 'settings',
+    category: 'xenesis-agent',
+    mode: 'connections',
+    section: 'xenesis-connections',
+    focusConnectionId: item.id,
+    ensureVisible: body.ensureVisible !== false,
+  });
+
+  return {
+    ok: renderer.ok !== false,
+    provider: item.providerSetup?.provider,
+    id: item.id,
+    item: xenesisProviderSetupStatusItem(item),
+    renderer,
   };
 }
 
@@ -14228,6 +14272,7 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisMessengerViewsStatus: (args: unknown) => getXenesisMessengerViewsStatus(args),
     openXenesisMessengerView: (args: unknown) => openXenesisMessengerView(args),
     getXenesisProviderSetupStatus: (args: unknown) => getXenesisProviderSetupStatus(args),
+    openXenesisProviderSetup: (args: unknown) => openXenesisProviderSetup(args),
     getXenesisProviderRoutingStatus: (args: unknown) => getXenesisProviderRoutingStatus(args),
     getXenesisProviderViewsStatus: (args: unknown) => getXenesisProviderViewsStatus(args),
     openXenesisProviderView: (args: unknown) => openXenesisProviderView(args),

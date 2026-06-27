@@ -674,6 +674,28 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local Obsidian graph, source code, and tests.
 
+## Provider Setup Open CR Slice
+
+- Added a setup-specific CR open path for AI provider setup cards:
+  `xd.xenesis.providers.setup.open`.
+- Xenesis Agent deterministic natural-language routing now preserves setup/config
+  intent for focused provider opens:
+  - `AI provider setup 열어줘` -> `xd.xenesis.providers.setup.open` with
+    `provider=auto`.
+  - `codex app-server provider setup 열어줘` ->
+    `xd.xenesis.providers.setup.open` with `provider=codex-app-server`.
+  - `LM Studio provider setup 열어줘` -> `xd.xenesis.providers.setup.open`
+    with `provider=lmstudio`.
+- Explicit provider view/화면 prompts still route to
+  `xd.xenesis.providers.views.open`; profile/draft prompts still route to
+  `xd.xenesis.providers.profileDrafts.open`.
+- Scope boundary: this slice only opens internal Desk provider setup surfaces.
+  It did not mutate provider settings, store credentials, switch local CLI
+  selection, run provider prompts, create Action Inbox items, or bypass
+  approvals.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local Obsidian graph, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

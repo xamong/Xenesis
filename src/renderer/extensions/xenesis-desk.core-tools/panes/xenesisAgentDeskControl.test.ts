@@ -308,6 +308,7 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.xenesis\.guides\.status/);
   assert.match(hint, /xd\.xenesis\.guides\.open/);
   assert.match(hint, /xd\.xenesis\.providers\.setup\.status/);
+  assert.match(hint, /xd\.xenesis\.providers\.setup\.open/);
   assert.match(hint, /xd\.xenesis\.providers\.routing\.status/);
   assert.match(hint, /xd\.xenesis\.providers\.views\.status/);
   assert.match(hint, /xd\.xenesis\.providers\.views\.open/);
@@ -1399,11 +1400,11 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
 
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider setup 열어줘').actions, [
     {
-      id: 'natural-xenesis-provider-view-open-auto',
-      path: 'xd.xenesis.providers.views.open',
+      id: 'natural-xenesis-provider-setup-open-auto',
+      path: 'xd.xenesis.providers.setup.open',
       args: { provider: 'auto', ensureVisible: true },
       approved: false,
-      reason: 'Open auto provider view from natural language request.',
+      reason: 'Open auto provider setup from natural language request.',
     },
   ]);
 
@@ -1419,21 +1420,21 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
 
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('codex app-server provider setup 열어줘').actions, [
     {
-      id: 'natural-xenesis-provider-view-open-codex-app-server',
-      path: 'xd.xenesis.providers.views.open',
+      id: 'natural-xenesis-provider-setup-open-codex-app-server',
+      path: 'xd.xenesis.providers.setup.open',
       args: { provider: 'codex-app-server', ensureVisible: true },
       approved: false,
-      reason: 'Open codex-app-server provider view from natural language request.',
+      reason: 'Open codex-app-server provider setup from natural language request.',
     },
   ]);
 
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('LM Studio provider setup 열어줘').actions, [
     {
-      id: 'natural-xenesis-provider-view-open-lmstudio',
-      path: 'xd.xenesis.providers.views.open',
+      id: 'natural-xenesis-provider-setup-open-lmstudio',
+      path: 'xd.xenesis.providers.setup.open',
       args: { provider: 'lmstudio', ensureVisible: true },
       approved: false,
-      reason: 'Open lmstudio provider view from natural language request.',
+      reason: 'Open lmstudio provider setup from natural language request.',
     },
   ]);
 
