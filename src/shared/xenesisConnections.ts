@@ -54,6 +54,25 @@ export interface XenesisConnectionMcpTemplate {
   configSnippets: XenesisConnectionMcpConfigSnippets;
 }
 
+export type XenesisConnectionOnboardingPlanPhase =
+  | 'first-chat'
+  | 'local-runtime'
+  | 'external-tools'
+  | 'gateway'
+  | 'messenger-routing'
+  | 'end-to-end-test';
+
+export interface XenesisConnectionOnboardingPlanTemplate {
+  phase: XenesisConnectionOnboardingPlanPhase;
+  primarySurface: string;
+  setupSurface: string;
+  statusReadPaths: string[];
+  controlPaths: string[];
+  validationChecks: string[];
+  diagnostics: string[];
+  safetyBoundaries: string[];
+}
+
 export interface XenesisConnectionToolSetupTemplate {
   connection: 'mcp' | 'oauth-mcp' | 'local';
   authMode: 'none' | 'env-token' | 'oauth';
@@ -380,6 +399,7 @@ export interface XenesisConnectionItem {
   guidePath?: string;
   guideOpenPath?: string;
   mcpTemplate?: XenesisConnectionMcpTemplate;
+  onboardingPlan?: XenesisConnectionOnboardingPlanTemplate;
   providerSetup?: XenesisConnectionProviderSetupTemplate;
   providerView?: XenesisConnectionProviderViewTemplate;
   providerRouting?: XenesisConnectionProviderRoutingTemplate;
@@ -2807,6 +2827,32 @@ function onboardingStatusForReadyOrBlocked(
   return fallback;
 }
 
+function onboardingPlanTemplate(input: {
+  phase: XenesisConnectionOnboardingPlanPhase;
+  setupSurface: string;
+  statusReadPaths: string[];
+  controlPaths: string[];
+  validationChecks: string[];
+  diagnostics: string[];
+  safetyBoundaries?: string[];
+}): XenesisConnectionOnboardingPlanTemplate {
+  return {
+    phase: input.phase,
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    setupSurface: input.setupSurface,
+    statusReadPaths: ['xd.xenesis.onboarding.status', 'xd.xenesis.connections.status', ...input.statusReadPaths],
+    controlPaths: ['xd.xenesis.onboarding.open', 'xd.xenesis.connections.open', ...input.controlPaths],
+    validationChecks: input.validationChecks,
+    diagnostics: input.diagnostics,
+    safetyBoundaries: [
+      'onboarding status is read-only',
+      ...(input.safetyBoundaries ?? [
+        'onboarding reads do not mutate provider, MCP, tool, gateway, or messenger settings',
+      ]),
+    ],
+  };
+}
+
 function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'onboarding'>): XenesisConnectionItem[] {
   const provider = sections.provider.items[0];
   const mcp = sections.mcp.items[0];
@@ -2835,6 +2881,18 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
         'Run a normal Agent pane chat before testing Desk-control prompts.',
       ],
       crActions: ['xd.xenesis.connections.status'],
+      onboardingPlan: onboardingPlanTemplate({
+        phase: 'first-chat',
+        setupSurface: 'Settings > AI Provider',
+        statusReadPaths: ['xd.xenesis.providers.setup.status'],
+        controlPaths: ['xd.panes.settings.open'],
+        validationChecks: ['provider-ready', 'normal-agent-chat', 'cr-readback'],
+        diagnostics: ['provider-footer', 'runtime-provider', 'missing-credential'],
+        safetyBoundaries: [
+          'provider settings are not mutated by onboarding reads',
+          'credential values are never returned',
+        ],
+      }),
       warnings: provider?.warnings,
     },
     {
@@ -2852,6 +2910,18 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
         'Verify MCP status through the Connection Center before relying on external agent control.',
       ],
       crActions: ['xd.mcp.settings.status', 'xd.xenesis.connections.status'],
+      onboardingPlan: onboardingPlanTemplate({
+        phase: 'local-runtime',
+        setupSurface: 'Settings > AI Provider > Local CLI MCP',
+        statusReadPaths: ['xd.mcp.settings.status', 'xd.xenesis.providers.setup.status'],
+        controlPaths: ['xd.panes.settings.open'],
+        validationChecks: ['local-cli-selected', 'mcp-bridge-registered', 'cr-readback'],
+        diagnostics: ['mcp-settings-status', 'local-cli-config', 'provider-runtime'],
+        safetyBoundaries: [
+          'local CLI and MCP setup reads do not install tools',
+          'MCP config mutations stay on explicit settings actions',
+        ],
+      }),
     },
     {
       id: 'recommended-tools',
@@ -2868,6 +2938,28 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
         'Verify read tools before enabling write workflows or remote actions.',
       ],
       sourceDocs: [{ label: 'Hermes integrations', url: 'https://hermes-agent.nousresearch.com/docs/integrations/' }],
+      onboardingPlan: onboardingPlanTemplate({
+        phase: 'external-tools',
+        setupSurface: 'Settings > Xenesis Agent > Connections',
+        statusReadPaths: [
+          'xd.xenesis.tools.setup.status',
+          'xd.xenesis.tools.connectors.status',
+          'xd.xenesis.tools.installPlans.status',
+          'xd.xenesis.tools.userStories.status',
+        ],
+        controlPaths: [
+          'xd.xenesis.tools.views.open',
+          'xd.xenesis.tools.installPlans.open',
+          'xd.xenesis.tools.userStories.open',
+        ],
+        validationChecks: ['tool-setup-reviewed', 'connector-readiness-reviewed', 'mcp-readback'],
+        diagnostics: ['missing-env', 'planned-oauth', 'mcp-settings-status'],
+        safetyBoundaries: [
+          'external tool onboarding does not install MCP servers',
+          'external tool onboarding does not execute provider tools',
+          'secret values are never returned',
+        ],
+      }),
     },
     {
       id: 'gateway',
@@ -2884,6 +2976,18 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
         'Keep gateway restart/stop actions on CR paths so audit records remain visible.',
       ],
       crActions: ['xd.xenesis.gateway.status', 'xd.xenesis.gateway.start', 'xd.xenesis.gateway.restart'],
+      onboardingPlan: onboardingPlanTemplate({
+        phase: 'gateway',
+        setupSurface: 'Settings > Xenesis Agent > Gateway',
+        statusReadPaths: ['xd.xenesis.gateway.status', 'xd.xenesis.status'],
+        controlPaths: ['xd.panes.settings.open', 'xd.xenesis.gateway.start', 'xd.xenesis.gateway.restart'],
+        validationChecks: ['gateway-enabled', 'gateway-running', 'gateway-cr-readback'],
+        diagnostics: ['gateway-status', 'gateway-url', 'gateway-last-error'],
+        safetyBoundaries: [
+          'gateway onboarding status does not start or restart the gateway',
+          'gateway lifecycle changes stay on explicit CR control paths',
+        ],
+      }),
       warnings: gateway?.warnings,
     },
     {
@@ -2907,6 +3011,24 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
       ],
       sourceDocs: [{ label: 'OpenClaw channel routing', url: 'https://docs.openclaw.ai/channels/channel-routing' }],
       crActions: ['xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
+      onboardingPlan: onboardingPlanTemplate({
+        phase: 'messenger-routing',
+        setupSurface: 'Settings > Xenesis Agent > External bots',
+        statusReadPaths: [
+          'xd.xenesis.channels.routing.status',
+          'xd.xenesis.channels.safety.status',
+          'xd.xenesis.channels.accessGroups.status',
+          'xd.xenesis.channels.pairing.status',
+        ],
+        controlPaths: ['xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
+        validationChecks: ['gateway-ready', 'channel-pairing-ready', 'allowlist-reviewed', 'loop-protection-reviewed'],
+        diagnostics: ['missing-env', 'allowlist-empty', 'safe-to-deliver', 'gateway-status'],
+        safetyBoundaries: [
+          'messenger onboarding status does not mutate channel settings',
+          'planned messenger adapters remain planning surfaces until verified',
+          'raw channel identifiers and secrets are never returned',
+        ],
+      }),
     },
     {
       id: 'test-send',
@@ -2923,6 +3045,18 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
         'Inspect diagnostics or bot session records if delivery fails.',
       ],
       crActions: ['xd.xenesis.profiles.testChannel', 'xd.xenesis.connections.status'],
+      onboardingPlan: onboardingPlanTemplate({
+        phase: 'end-to-end-test',
+        setupSurface: 'Settings > Xenesis Agent > External bots',
+        statusReadPaths: ['xd.xenesis.gateway.status', 'xd.xenesis.channels.routing.status'],
+        controlPaths: ['xd.xenesis.profiles.testChannel', 'xd.panes.settings.open'],
+        validationChecks: ['provider-ready', 'gateway-ready', 'messenger-ready', 'sanitized-test-send'],
+        diagnostics: ['test-channel-result', 'gateway-status', 'bot-session-records'],
+        safetyBoundaries: [
+          'test-send onboarding status does not send messages',
+          'message delivery stays on explicit channel test CR paths',
+        ],
+      }),
     },
   ];
 }

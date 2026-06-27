@@ -4805,6 +4805,107 @@ async function getXenesisConnectionsStatus(): Promise<XenesisConnectionsStatus> 
   });
 }
 
+const XENESIS_ONBOARDING_STEP_IDS = [
+  'first-chat',
+  'local-cli-mcp',
+  'recommended-tools',
+  'gateway',
+  'messenger-routing',
+  'test-send',
+] as const;
+
+function isXenesisOnboardingStepId(value: string): value is (typeof XENESIS_ONBOARDING_STEP_IDS)[number] {
+  return (XENESIS_ONBOARDING_STEP_IDS as readonly string[]).includes(value);
+}
+
+function xenesisOnboardingStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    setupSteps: item.setupSteps ?? [],
+    sourceDocs: item.sourceDocs ?? [],
+    settingsAction: item.settingsAction,
+    settingsTarget: item.settingsTarget,
+    crActions: item.crActions ?? [],
+    phase: item.onboardingPlan?.phase,
+    primarySurface: item.onboardingPlan?.primarySurface,
+    setupSurface: item.onboardingPlan?.setupSurface,
+    statusReadPaths: item.onboardingPlan?.statusReadPaths ?? [],
+    controlPaths: item.onboardingPlan?.controlPaths ?? [],
+    validationChecks: item.onboardingPlan?.validationChecks ?? [],
+    diagnostics: item.onboardingPlan?.diagnostics ?? [],
+    safetyBoundaries: item.onboardingPlan?.safetyBoundaries ?? [],
+    onboardingPlan: item.onboardingPlan,
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisOnboardingStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'step', 'name']);
+  if (id && !isXenesisOnboardingStepId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis onboarding step: ${id}`,
+      allowedSteps: XENESIS_ONBOARDING_STEP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.onboarding.items
+    .filter((item) => item.onboardingPlan)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisOnboardingStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisOnboardingStep(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'step', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Onboarding step id is required.' };
+  }
+  if (!isXenesisOnboardingStepId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis onboarding step: ${id}`,
+      allowedSteps: XENESIS_ONBOARDING_STEP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.onboarding.items.find((candidate) => candidate.id === id && candidate.onboardingPlan);
+  if (!item) {
+    return { ok: false, id, error: `Xenesis onboarding step is not available: ${id}` };
+  }
+
+  const renderer = await openMcpBuiltinPaneCapability({
+    kind: 'settings',
+    category: 'xenesis-agent',
+    mode: 'connections',
+    section: 'xenesis-connections',
+    focusConnectionId: id,
+    ensureVisible: body.ensureVisible !== false,
+  });
+
+  return {
+    ok: renderer.ok !== false,
+    id,
+    item: xenesisOnboardingStatusItem(item),
+    renderer,
+  };
+}
+
 async function getXenesisChannelRoutingStatus(args?: unknown): Promise<Record<string, unknown>> {
   const body = normalizeMcpCapabilityArgs(args);
   const channel = readCapabilityString(body, ['channel', 'id', 'name']);
@@ -12757,6 +12858,8 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisStatus: () =>
       getXenesisStatusPayload().then((status) => ({ ok: true, status: redactXenesisStatusForCapability(status) })),
     getXenesisConnectionsStatus: () => getXenesisConnectionsStatus().then((status) => ({ ok: true, status })),
+    getXenesisOnboardingStatus: (args: unknown) => getXenesisOnboardingStatus(args),
+    openXenesisOnboardingStep: (args: unknown) => openXenesisOnboardingStep(args),
     getXenesisChannelRoutingStatus: (args: unknown) => getXenesisChannelRoutingStatus(args),
     getXenesisChannelSafetyStatus: (args: unknown) => getXenesisChannelSafetyStatus(args),
     getXenesisChannelAccessGroupsStatus: (args: unknown) => getXenesisChannelAccessGroupsStatus(args),

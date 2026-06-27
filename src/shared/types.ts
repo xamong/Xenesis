@@ -17,6 +17,8 @@ export type {
   XenesisConnectionItem,
   XenesisConnectionMcpTemplate,
   XenesisConnectionMessengerViewTemplate,
+  XenesisConnectionOnboardingPlanPhase,
+  XenesisConnectionOnboardingPlanTemplate,
   XenesisConnectionProviderCredentialPoolItem,
   XenesisConnectionProviderCredentialState,
   XenesisConnectionProviderFallbackChainItem,

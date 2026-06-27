@@ -11,6 +11,7 @@ import {
   formatXenesisChannelSafetySummary,
   formatXenesisGuideCatalogSummary,
   formatXenesisMessengerViewSummary,
+  formatXenesisOnboardingPlanSummary,
   formatXenesisProviderRoutingSummary,
   formatXenesisProviderSetupSummary,
   formatXenesisProviderViewSummary,
@@ -92,6 +93,22 @@ test('buildXenesisConnectionOpenRequest focuses the connection card through CR',
     source: 'xenesis',
     approved: true,
   });
+});
+
+test('formatXenesisOnboardingPlanSummary describes phase and validation check count', () => {
+  assert.equal(
+    formatXenesisOnboardingPlanSummary({
+      phase: 'first-chat',
+      primarySurface: 'Settings > Xenesis Agent > Connections',
+      setupSurface: 'Settings > AI Provider',
+      statusReadPaths: ['xd.xenesis.onboarding.status', 'xd.xenesis.connections.status'],
+      controlPaths: ['xd.xenesis.onboarding.open', 'xd.xenesis.connections.open'],
+      validationChecks: ['provider-ready', 'normal-agent-chat', 'cr-readback'],
+      diagnostics: ['provider-footer'],
+      safetyBoundaries: ['onboarding status is read-only'],
+    }),
+    'first-chat / 3 validation check(s)',
+  );
 });
 
 test('buildXenesisConnectionSettingsRequest opens the configured settings target through CR', () => {

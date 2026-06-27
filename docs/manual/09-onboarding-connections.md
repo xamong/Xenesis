@@ -69,6 +69,15 @@ completed setup step should be confirmed through readback, such as
 `xd.xenesis.connections.status`, gateway status, channel runtime status, open
 content, or diagnostics.
 
+Each checklist card also exposes an `onboardingPlan` read model. Use
+`xd.xenesis.onboarding.status` to inspect the initial setup phase, setup
+surface, validation checks, diagnostics, CR readback paths, and safety
+boundaries for each onboarding step. Use `xd.xenesis.onboarding.open` with
+`{ "id": "<step-id>" }` to open Settings > Xenesis Agent > Connections and
+focus the matching checklist card. This surface is read/open only: it does not
+change provider, MCP, external tool, gateway, messenger, profile, credential, or
+channel settings.
+
 ## AI Provider
 
 The active provider comes from the user's settings and profile. Xenesis Desk does
@@ -300,6 +309,13 @@ Use `xd.xenesis.connections.status` to inspect provider, MCP, tool, gateway,
 messenger, and guide readiness through the Capability Registry. Mutating setup
 actions stay on their existing CR paths so approval and audit behavior remains
 explicit.
+
+Use `xd.xenesis.onboarding.status` and `xd.xenesis.onboarding.open` to inspect
+or focus the initial setup checklist through CR. The read model is derived from
+the Connection Center onboarding section and covers first chat, local CLI/MCP,
+recommended tools, gateway, messenger routing, and end-to-end test send. It is a
+setup/readiness surface only; mutating actions remain on the provider, MCP,
+gateway, tool, channel, and settings CR paths listed by each step.
 
 Use `xd.xenesis.providers.setup.status` to inspect the active AI provider setup
 metadata through CR. The read model is scoped to identity, auth mode, credential

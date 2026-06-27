@@ -72,6 +72,21 @@ Capability Registry instead of only through separate renderer settings panels.
   gateway, messenger routing, and end-to-end test send.
 - Checklist cards reuse existing CR-backed settings and guide actions.
 
+## Current Onboarding Status Read Model Slice
+
+- Add `onboardingPlan` metadata to each onboarding checklist card in
+  `xd.xenesis.connections.status`.
+- Add `xd.xenesis.onboarding.status` as a read/no-approval CR path for initial
+  setup phase, setup surface, validation checks, diagnostics, readback paths,
+  control paths, and safety boundaries.
+- Add `xd.xenesis.onboarding.open` as a control/no-approval CR path that opens
+  Settings > Xenesis Agent > Connections and focuses the requested onboarding
+  checklist step.
+- Settings renders the same read model with
+  `data-xenesis-onboarding-plan="<step-id>"` for live smoke and agent readback.
+- This surface is read/open only. It does not mutate provider, MCP, external
+  tool, gateway, messenger, profile, credential, or channel settings.
+
 ## Current Channel Guardrails Slice
 
 - Expose implemented per-channel routing guardrails for Telegram, Slack,

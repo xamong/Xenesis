@@ -94,6 +94,7 @@ import {
   formatXenesisChannelSafetySummary,
   formatXenesisGuideCatalogSummary,
   formatXenesisMessengerViewSummary,
+  formatXenesisOnboardingPlanSummary,
   formatXenesisProviderRoutingSummary,
   formatXenesisProviderSetupSummary,
   formatXenesisProviderViewSummary,
@@ -4262,6 +4263,7 @@ export default function SettingsPane() {
     const settingsRequest = buildXenesisConnectionSettingsRequest(item);
     const guideRequest = buildXenesisConnectionGuideRequest(item);
     const mcpTemplate = item.mcpTemplate;
+    const onboardingPlan = item.onboardingPlan;
     const providerSetup = item.providerSetup;
     const providerView = item.providerView;
     const providerRouting = item.providerRouting;
@@ -4364,6 +4366,38 @@ export default function SettingsPane() {
             <div>
               <span>{t('settings.xenesisConnectionsSources')}</span>
               <strong>{item.sourceDocs.map((source) => source.label).join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {onboardingPlan ? (
+          <div className="sp-info-list sp-info-list-compact" data-xenesis-onboarding-plan={item.id}>
+            <div>
+              <span>{t('settings.xenesisConnectionsOnboardingPlan')}</span>
+              <strong>{formatXenesisOnboardingPlanSummary(onboardingPlan)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsOnboardingSetupSurface')}</span>
+              <strong>{onboardingPlan.setupSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsOnboardingReadback')}</span>
+              <strong>{onboardingPlan.statusReadPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsOnboardingControls')}</span>
+              <strong>{onboardingPlan.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsOnboardingValidation')}</span>
+              <strong>{onboardingPlan.validationChecks.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsOnboardingDiagnostics')}</span>
+              <strong>{onboardingPlan.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsOnboardingSafety')}</span>
+              <strong>{onboardingPlan.safetyBoundaries.join(', ')}</strong>
             </div>
           </div>
         ) : null}

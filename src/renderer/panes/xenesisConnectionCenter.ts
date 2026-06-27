@@ -7,6 +7,7 @@ import type {
   XenesisConnectionGuideCatalogTemplate,
   XenesisConnectionItem,
   XenesisConnectionMessengerViewTemplate,
+  XenesisConnectionOnboardingPlanTemplate,
   XenesisConnectionProviderRoutingTemplate,
   XenesisConnectionProviderSetupTemplate,
   XenesisConnectionProviderViewTemplate,
@@ -84,6 +85,10 @@ export function formatXenesisChannelPairingSummary(pairing: XenesisConnectionCha
 
 export function formatXenesisGuideCatalogSummary(guide: XenesisConnectionGuideCatalogTemplate): string {
   return `${guide.guideType} / ${guide.audience} / ${guide.coveredSurfaces.length} surface(s)`;
+}
+
+export function formatXenesisOnboardingPlanSummary(plan: XenesisConnectionOnboardingPlanTemplate): string {
+  return `${plan.phase} / ${plan.validationChecks.length} validation check(s)`;
 }
 
 export function formatXenesisProviderSetupSummary(setup: XenesisConnectionProviderSetupTemplate): string {

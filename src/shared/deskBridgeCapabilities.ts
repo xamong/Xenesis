@@ -195,6 +195,46 @@ const XENESIS_CONNECTION_OPEN_SCHEMA = {
   },
 } as const;
 
+const XENESIS_ONBOARDING_STEP_IDS = [
+  'first-chat',
+  'local-cli-mcp',
+  'recommended-tools',
+  'gateway',
+  'messenger-routing',
+  'test-send',
+] as const;
+
+const XENESIS_ONBOARDING_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Onboarding step id',
+      enum: XENESIS_ONBOARDING_STEP_IDS,
+      description: 'Optional Xenesis onboarding checklist step id to filter.',
+    },
+  },
+} as const;
+
+const XENESIS_ONBOARDING_OPEN_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Onboarding step id',
+      enum: XENESIS_ONBOARDING_STEP_IDS,
+      description: 'Xenesis onboarding checklist step id to focus in Settings > Xenesis Agent > Connections.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused onboarding checklist step into view after opening the Connection Center.',
+      default: true,
+    },
+  },
+} as const;
+
 const XENESIS_GUIDE_IDS = ['onboarding-connections', 'cr-mcp-gateway-bots', 'agent-user-stories'] as const;
 
 const XENESIS_GUIDE_STATUS_SCHEMA = {
@@ -801,6 +841,8 @@ export interface DeskBridgeCapabilityAdapter {
   isXenisPhase5Enabled?: () => boolean;
   getXenesisStatus?: () => Promise<unknown> | unknown;
   getXenesisConnectionsStatus?: () => Promise<unknown> | unknown;
+  getXenesisOnboardingStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisOnboardingStep?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisChannelRoutingStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisChannelSafetyStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisChannelAccessGroupsStatus?: (args?: unknown) => Promise<unknown> | unknown;
@@ -3764,6 +3806,22 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           'Open Settings > Xenesis Agent > Connections and focus one provider, tool, guide, or messenger card.',
           'control',
           XENESIS_CONNECTION_OPEN_SCHEMA,
+        ),
+      ]),
+      group('xd.xenesis.onboarding', 'Onboarding', 'Xenesis initial setup checklist and readiness.', [
+        method(
+          'xd.xenesis.onboarding.status',
+          'Read onboarding status',
+          'Read the Xenesis initial setup checklist, setup surfaces, validation checks, diagnostics, and safety boundaries.',
+          'read',
+          XENESIS_ONBOARDING_STATUS_SCHEMA,
+        ),
+        method(
+          'xd.xenesis.onboarding.open',
+          'Open onboarding step',
+          'Open Settings > Xenesis Agent > Connections and focus one onboarding checklist step.',
+          'control',
+          XENESIS_ONBOARDING_OPEN_SCHEMA,
         ),
       ]),
       group('xd.xenesis.guides', 'Guides', 'Xenesis setup playbooks, integration guides, and user-story templates.', [
@@ -10231,6 +10289,12 @@ export async function callDeskBridgeCapability(
           focusConnectionId,
           ensureVisible: args.ensureVisible !== false,
         });
+      }
+      if (path === 'xd.xenesis.onboarding.status') {
+        return callAdapter(path, api?.getXenesisOnboardingStatus, request.args);
+      }
+      if (path === 'xd.xenesis.onboarding.open') {
+        return callAdapter(path, api?.openXenesisOnboardingStep, request.args);
       }
       if (path === 'xd.xenesis.channels.routing.status') {
         return callAdapter(path, api?.getXenesisChannelRoutingStatus, request.args);

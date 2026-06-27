@@ -86,6 +86,73 @@ test('xenesis connection open capability focuses a settings connection card thro
   });
 });
 
+test('xenesis onboarding status capabilities are registered and dispatch to the adapter', async () => {
+  const statusCapability = findDeskBridgeCapability('xd.xenesis.onboarding.status');
+  const openCapability = findDeskBridgeCapability('xd.xenesis.onboarding.open');
+  const statusSchemaProperties = (statusCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
+  assert.equal(statusCapability?.permission, 'read');
+  assert.equal(statusCapability?.approval, 'never');
+  assert.equal(openCapability?.permission, 'control');
+  assert.equal(openCapability?.approval, 'never');
+  assert.deepEqual(openCapability?.schema?.required, ['id']);
+  for (const step of [
+    'first-chat',
+    'local-cli-mcp',
+    'recommended-tools',
+    'gateway',
+    'messenger-routing',
+    'test-send',
+  ]) {
+    assert.equal(statusSchemaProperties.id?.enum.includes(step), true, `${step} should be accepted by status`);
+    assert.equal(openSchemaProperties.id?.enum.includes(step), true, `${step} should be accepted by open`);
+  }
+
+  const calls: Array<{ method: string; args: unknown }> = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisOnboardingStatus: (args) => {
+      calls.push({ method: 'status', args });
+      return {
+        ok: true,
+        items: [{ id: 'first-chat' }],
+      };
+    },
+    openXenesisOnboardingStep: (args) => {
+      calls.push({ method: 'open', args });
+      return {
+        ok: true,
+        item: { id: 'first-chat' },
+      };
+    },
+  };
+
+  const statusResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.onboarding.status',
+    args: { id: 'first-chat' },
+    source: 'xenesis',
+  });
+  const openResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.onboarding.open',
+    args: { id: 'first-chat' },
+    source: 'xenesis',
+  });
+
+  assert.equal(statusResult.ok, true);
+  assert.equal(openResult.ok, true);
+  assert.deepEqual(calls, [
+    { method: 'status', args: { id: 'first-chat' } },
+    { method: 'open', args: { id: 'first-chat' } },
+  ]);
+  assert.deepEqual(statusResult.result, {
+    ok: true,
+    items: [{ id: 'first-chat' }],
+  });
+  assert.deepEqual(openResult.result, {
+    ok: true,
+    item: { id: 'first-chat' },
+  });
+});
+
 test('xenesis channel routing status capability is registered and dispatches to the adapter', async () => {
   const capability = findDeskBridgeCapability('xd.xenesis.channels.routing.status');
   const schemaProperties = (capability?.schema?.properties ?? {}) as Record<string, any>;
