@@ -162,6 +162,21 @@ export const XENESIS_NATURAL_CONNECTION_READBACK_INTENT_WORDS = [
   'safety',
 ] as const;
 
+export const XENESIS_NATURAL_CONNECTION_CONTEXT_WORDS = [
+  '연결',
+  'connection',
+  'connections',
+  'connection center',
+  '도구',
+  'tool',
+  '메신저',
+  'messenger',
+  '채널',
+  'channel',
+  'oauth',
+  '오어스',
+] as const;
+
 export const XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_WORDS = [
   'external tool',
   'external tools',
@@ -198,6 +213,237 @@ export const XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_WORDS = [
   '카탈로그',
   '목록',
   'list',
+] as const;
+
+export const XENESIS_NATURAL_CONNECTION_DIAGNOSTIC_CONTEXT_WORDS = [
+  '진단',
+  'diagnostic',
+  'diagnostics',
+  'runbook',
+  'runbooks',
+  '런북',
+] as const;
+
+export const XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CONTEXT_WORDS = [
+  'setup request',
+  'setup requests',
+  '설정 요청',
+  '연결 요청',
+  'setup 요청',
+] as const;
+
+export const XENESIS_NATURAL_REVIEW_REQUEST_INTENT_WORDS = ['요청', 'request', '등록', 'enqueue', '승인 요청'] as const;
+
+export const XENESIS_NATURAL_SETUP_IMPERATIVE_WORDS = [
+  '연결해줘',
+  '연결 해줘',
+  '설정해줘',
+  '설정 해줘',
+  '구성해줘',
+  '구성 해줘',
+  '설치해줘',
+  '설치 해줘',
+  '인증해줘',
+  '인증 해줘',
+  '연동해줘',
+  '연동 해줘',
+  'connect',
+  'configure',
+  'install',
+  'authorize',
+  'set up',
+  'setup',
+] as const;
+
+export const XENESIS_NATURAL_REVIEW_REQUEST_CONTEXT_WORDS = [
+  '검토',
+  '리뷰',
+  'review',
+  'approval',
+  'setup',
+  '설정',
+  '연결',
+] as const;
+
+export const XENESIS_NATURAL_REVIEW_REQUEST_TARGET_WORDS = [
+  'provider',
+  '프로바이더',
+  'mcp',
+  '설치',
+  'install',
+  'oauth',
+  '오어스',
+  '정책',
+  'policy',
+  '프로필',
+] as const;
+
+export const XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS = ['프로필', 'profile', 'draft', 'drafts', '초안'] as const;
+
+export const XENESIS_NATURAL_CHANNEL_PROFILE_CONTEXT_WORDS = [
+  'channel profile',
+  'channel profiles',
+  '채널 프로필',
+] as const;
+
+export const XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_REQUEST_CONTEXT_WORDS = [
+  '프로필',
+  'profile',
+  '채널',
+  'channel',
+  '메신저',
+  'messenger',
+  'bot',
+  '봇',
+] as const;
+
+export const XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_WORDS = [
+  'provider',
+  '프로바이더',
+  'ai provider',
+  'ai 설정',
+  '모델 provider',
+  'provider profile',
+] as const;
+
+export const XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS = ['connector', 'connectors', '커넥터', '연결자'] as const;
+
+export const XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS = ['mcp', 'mcp install', 'mcp 설치'] as const;
+
+export const XENESIS_NATURAL_MCP_INSTALL_REVIEW_CONTEXT_WORDS = ['mcp', '설치', 'install', 'server', '서버'] as const;
+
+export const XENESIS_NATURAL_DRAFT_CONTEXT_WORDS = ['draft', 'drafts', '초안', '설치 초안', '인증 초안'] as const;
+
+export const XENESIS_NATURAL_OAUTH_CONTEXT_WORDS = ['oauth', '오어스', '인증', 'token', '토큰'] as const;
+
+export const XENESIS_NATURAL_OAUTH_DRAFT_CONTEXT_WORDS = [
+  ...XENESIS_NATURAL_OAUTH_CONTEXT_WORDS,
+  ...XENESIS_NATURAL_DRAFT_CONTEXT_WORDS,
+] as const;
+
+export const XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS = ['view', 'views', '뷰', '화면', 'surface'] as const;
+
+export const XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS = [
+  '설치 계획',
+  '설치계획',
+  '설치 플랜',
+  'install plan',
+  'install plans',
+  'install-plan',
+] as const;
+
+export const XENESIS_NATURAL_SETUP_CONTEXT_WORDS = [
+  'setup',
+  '초기 설정',
+  '설정 상태',
+  '설정',
+  'settings',
+  'config',
+  'configuration',
+  '구성',
+] as const;
+
+export const XENESIS_NATURAL_VIEW_OR_SETUP_CONTEXT_WORDS = [
+  ...XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
+  ...XENESIS_NATURAL_SETUP_CONTEXT_WORDS,
+] as const;
+
+export const XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS = [
+  '액션',
+  'action',
+  '정책',
+  'policy',
+  '권한',
+  'permission',
+] as const;
+
+export const XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS = [
+  'user story',
+  'user stories',
+  '사용자 스토리',
+  '스토리',
+] as const;
+
+export const XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS = ['라우팅', 'routing', 'route'] as const;
+
+export const XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS = [
+  '라우팅',
+  'routing',
+  'route',
+  'fallback',
+  '폴백',
+] as const;
+
+export const XENESIS_NATURAL_SAFETY_CONTEXT_WORDS = ['안전', 'safety', '가드레일', 'guardrail'] as const;
+
+export const XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS = [
+  '접근 그룹',
+  '액세스 그룹',
+  '액세스그룹',
+  'access group',
+  'access groups',
+  'allowlist',
+] as const;
+
+export const XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS = ['페어링', 'pairing', 'pair', '연동'] as const;
+
+export const XENESIS_NATURAL_MESSENGER_VIEW_FALLBACK_CONTEXT_WORDS = [
+  'view',
+  'views',
+  '뷰',
+  '화면',
+  '메신저',
+  'setup',
+  '초기 설정',
+  '설정',
+  'config',
+  'configuration',
+  '구성',
+  'integration',
+  '라우팅',
+  'routing',
+  'route',
+  '안전',
+  'safety',
+  '가드레일',
+  'guardrail',
+  '접근 그룹',
+  '액세스 그룹',
+  '액세스그룹',
+  'access group',
+  'access groups',
+  'allowlist',
+  '프로필',
+  'profile',
+  'draft',
+  '초안',
+] as const;
+
+export const XENESIS_NATURAL_MESSENGER_VIEW_OPEN_FALLBACK_CONTEXT_WORDS = [
+  '메신저',
+  'messenger',
+  '채널',
+  'channel',
+  '설정',
+  'view',
+  '뷰',
+  'setup',
+  '초기 설정',
+  'config',
+  'configuration',
+  '구성',
+  '연결',
+  'integration',
+  '프로필',
+  'profile',
+  'draft',
+  '초안',
+  '접근 그룹',
+  '액세스 그룹',
+  '액세스그룹',
+  'access group',
+  'access groups',
+  'allowlist',
 ] as const;
 
 export const XENESIS_NATURAL_PLACEMENT_TARGETS: readonly XenesisNaturalWordsTarget[] = [

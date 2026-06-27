@@ -2,23 +2,53 @@ import { listDeskBridgeCapabilities } from '../../../../shared/deskBridgeCapabil
 import {
   findXenesisNaturalGuideTarget,
   findXenesisNaturalWordsTarget,
+  XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS,
   XENESIS_NATURAL_ACTION_INTENT_WORDS,
+  XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS,
   XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_WORDS,
   XENESIS_NATURAL_ARRANGE_MODE_TARGETS,
+  XENESIS_NATURAL_CHANNEL_PROFILE_CONTEXT_WORDS,
+  XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_REQUEST_CONTEXT_WORDS,
+  XENESIS_NATURAL_CONNECTION_CONTEXT_WORDS,
+  XENESIS_NATURAL_CONNECTION_DIAGNOSTIC_CONTEXT_WORDS,
   XENESIS_NATURAL_CONNECTION_READBACK_INTENT_WORDS,
+  XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CONTEXT_WORDS,
   XENESIS_NATURAL_CONNECTION_TARGETS,
+  XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS,
   XENESIS_NATURAL_CORE_TOOL_TARGETS,
   XENESIS_NATURAL_DOCK_SIDE_TARGETS,
   XENESIS_NATURAL_DOCK_WINDOW_STATE_TARGETS,
+  XENESIS_NATURAL_DRAFT_CONTEXT_WORDS,
   XENESIS_NATURAL_EXPLICIT_OPEN_WORDS,
   XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_WORDS,
   XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_WORDS,
   XENESIS_NATURAL_GUIDE_CONTEXT_WORDS,
   XENESIS_NATURAL_GUIDE_FILE_OPEN_WORDS,
+  XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS,
+  XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS,
+  XENESIS_NATURAL_MCP_INSTALL_REVIEW_CONTEXT_WORDS,
+  XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS,
+  XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS,
+  XENESIS_NATURAL_MESSENGER_VIEW_FALLBACK_CONTEXT_WORDS,
+  XENESIS_NATURAL_MESSENGER_VIEW_OPEN_FALLBACK_CONTEXT_WORDS,
+  XENESIS_NATURAL_OAUTH_CONTEXT_WORDS,
+  XENESIS_NATURAL_OAUTH_DRAFT_CONTEXT_WORDS,
   XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS,
   XENESIS_NATURAL_ONBOARDING_STEP_TARGETS,
   XENESIS_NATURAL_PLACEMENT_TARGETS,
+  XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
+  XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_WORDS,
   XENESIS_NATURAL_PROVIDER_TARGETS,
+  XENESIS_NATURAL_REVIEW_REQUEST_CONTEXT_WORDS,
+  XENESIS_NATURAL_REVIEW_REQUEST_INTENT_WORDS,
+  XENESIS_NATURAL_REVIEW_REQUEST_TARGET_WORDS,
+  XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS,
+  XENESIS_NATURAL_SAFETY_CONTEXT_WORDS,
+  XENESIS_NATURAL_SETUP_CONTEXT_WORDS,
+  XENESIS_NATURAL_SETUP_IMPERATIVE_WORDS,
+  XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
+  XENESIS_NATURAL_VIEW_OR_SETUP_CONTEXT_WORDS,
+  XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
   XENESIS_NATURAL_VIEW_TARGETS,
   XENESIS_NATURAL_WINDOW_SIZE_PRESET_TARGETS,
   type XenesisNaturalConnectionTarget,
@@ -351,24 +381,24 @@ function hasXenesisGuideCatalogContext(value: string): boolean {
 function hasXenesisConnectionDiagnosticsCatalogContext(value: string): boolean {
   return (
     hasXenesisAggregateCatalogContext(value) &&
-    hasAny(value, ['진단', 'diagnostic', 'diagnostics', 'runbook', 'runbooks', '런북']) &&
-    hasAny(value, ['연결', 'connection', 'connections', 'connection center'])
+    hasAny(value, XENESIS_NATURAL_CONNECTION_DIAGNOSTIC_CONTEXT_WORDS) &&
+    hasAny(value, XENESIS_NATURAL_CONNECTION_CONTEXT_WORDS)
   );
 }
 
 function hasXenesisConnectionSetupRequestCatalogContext(value: string): boolean {
   return (
     hasXenesisAggregateCatalogContext(value) &&
-    hasAny(value, ['setup request', 'setup requests', '설정 요청', '연결 요청', 'setup 요청']) &&
-    (hasXenesisConnectionContext(value) || hasAny(value, ['setup request', 'setup requests', '설정 요청', '연결 요청']))
+    hasAny(value, XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CONTEXT_WORDS) &&
+    (hasXenesisConnectionContext(value) || hasAny(value, XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CONTEXT_WORDS))
   );
 }
 
 function hasXenesisMessengerProfileDraftCatalogContext(value: string): boolean {
   return (
     hasXenesisAggregateCatalogContext(value) &&
-    hasAny(value, ['프로필', 'profile', 'draft', 'drafts', '초안']) &&
-    (hasExternalMessengerCatalogContext(value) || hasAny(value, ['channel profile', 'channel profiles', '채널 프로필']))
+    hasAny(value, XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS) &&
+    (hasExternalMessengerCatalogContext(value) || hasAny(value, XENESIS_NATURAL_CHANNEL_PROFILE_CONTEXT_WORDS))
   );
 }
 
@@ -376,7 +406,7 @@ function xenesisToolAggregateStatusActionFromNaturalText(value: string): Xenesis
   if (!hasExternalToolCatalogContext(value)) return null;
   if (!hasXenesisConnectionReadbackIntent(value)) return null;
 
-  if (hasAny(value, ['connector', 'connectors', '커넥터', '연결자'])) {
+  if (hasAny(value, XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-tools-connectors-status',
       'xd.xenesis.tools.connectors.status',
@@ -385,7 +415,7 @@ function xenesisToolAggregateStatusActionFromNaturalText(value: string): Xenesis
     );
   }
 
-  if (hasAny(value, ['mcp', 'mcp install', 'mcp 설치']) && hasAny(value, ['draft', 'drafts', '초안', '설치 초안'])) {
+  if (hasAny(value, XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_DRAFT_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-tools-mcp-install-drafts-status',
       'xd.xenesis.tools.mcpInstallDrafts.status',
@@ -394,7 +424,7 @@ function xenesisToolAggregateStatusActionFromNaturalText(value: string): Xenesis
     );
   }
 
-  if (hasAny(value, ['oauth', '오어스', '인증', 'token', '토큰'])) {
+  if (hasAny(value, XENESIS_NATURAL_OAUTH_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-tools-oauth-drafts-status',
       'xd.xenesis.tools.oauthDrafts.status',
@@ -403,7 +433,7 @@ function xenesisToolAggregateStatusActionFromNaturalText(value: string): Xenesis
     );
   }
 
-  if (hasAny(value, ['view', 'views', '뷰', '화면', 'surface'])) {
+  if (hasAny(value, XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-tools-views-status',
       'xd.xenesis.tools.views.status',
@@ -412,7 +442,7 @@ function xenesisToolAggregateStatusActionFromNaturalText(value: string): Xenesis
     );
   }
 
-  if (hasAny(value, ['설치 계획', 'install plan', 'install plans'])) {
+  if (hasAny(value, XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-tools-install-plans-status',
       'xd.xenesis.tools.installPlans.status',
@@ -421,7 +451,7 @@ function xenesisToolAggregateStatusActionFromNaturalText(value: string): Xenesis
     );
   }
 
-  if (hasAny(value, ['setup', '초기 설정', '설정 상태', '설정', 'settings', 'config', 'configuration', '구성'])) {
+  if (hasAny(value, XENESIS_NATURAL_SETUP_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-tools-setup-status',
       'xd.xenesis.tools.setup.status',
@@ -430,7 +460,7 @@ function xenesisToolAggregateStatusActionFromNaturalText(value: string): Xenesis
     );
   }
 
-  if (hasAny(value, ['액션', 'action', '정책', 'policy', '권한', 'permission'])) {
+  if (hasAny(value, XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-tools-actions-status',
       'xd.xenesis.tools.actions.status',
@@ -439,7 +469,7 @@ function xenesisToolAggregateStatusActionFromNaturalText(value: string): Xenesis
     );
   }
 
-  if (hasAny(value, ['user story', 'user stories', '사용자 스토리', '스토리'])) {
+  if (hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-tools-user-stories-status',
       'xd.xenesis.tools.userStories.status',
@@ -465,7 +495,7 @@ function xenesisMessengerAggregateStatusActionFromNaturalText(value: string): Xe
     );
   }
 
-  if (hasAny(value, ['라우팅', 'routing', 'route'])) {
+  if (hasAny(value, XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-messengers-routing-status',
       'xd.xenesis.channels.routing.status',
@@ -474,7 +504,7 @@ function xenesisMessengerAggregateStatusActionFromNaturalText(value: string): Xe
     );
   }
 
-  if (hasAny(value, ['안전', 'safety', '가드레일', 'guardrail'])) {
+  if (hasAny(value, XENESIS_NATURAL_SAFETY_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-messengers-safety-status',
       'xd.xenesis.channels.safety.status',
@@ -483,7 +513,7 @@ function xenesisMessengerAggregateStatusActionFromNaturalText(value: string): Xe
     );
   }
 
-  if (hasAny(value, ['접근 그룹', '액세스 그룹', '액세스그룹', 'access group', 'access groups', 'allowlist'])) {
+  if (hasAny(value, XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-messengers-access-groups-status',
       'xd.xenesis.channels.accessGroups.status',
@@ -492,7 +522,7 @@ function xenesisMessengerAggregateStatusActionFromNaturalText(value: string): Xe
     );
   }
 
-  if (hasAny(value, ['페어링', 'pairing', 'pair', '연동'])) {
+  if (hasAny(value, XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-messengers-pairing-status',
       'xd.xenesis.channels.pairing.status',
@@ -501,7 +531,7 @@ function xenesisMessengerAggregateStatusActionFromNaturalText(value: string): Xe
     );
   }
 
-  if (hasAny(value, ['user story', 'user stories', '사용자 스토리', '스토리'])) {
+  if (hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-messengers-user-stories-status',
       'xd.xenesis.channels.userStories.status',
@@ -510,7 +540,7 @@ function xenesisMessengerAggregateStatusActionFromNaturalText(value: string): Xe
     );
   }
 
-  if (hasAny(value, ['view', 'views', '뷰', '화면', 'setup', '초기 설정', '설정', 'config', 'configuration', '구성'])) {
+  if (hasAny(value, XENESIS_NATURAL_VIEW_OR_SETUP_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-messengers-views-status',
       'xd.xenesis.messengers.views.status',
@@ -523,20 +553,7 @@ function xenesisMessengerAggregateStatusActionFromNaturalText(value: string): Xe
 }
 
 function hasXenesisConnectionContext(value: string): boolean {
-  return hasAny(value, [
-    '연결',
-    'connection',
-    'connections',
-    'connection center',
-    '도구',
-    'tool',
-    '메신저',
-    'messenger',
-    '채널',
-    'channel',
-    'oauth',
-    '오어스',
-  ]);
+  return hasAny(value, XENESIS_NATURAL_CONNECTION_CONTEXT_WORDS);
 }
 
 function xenesisProviderFromNaturalText(value: string): { id: string; label: string } | null {
@@ -549,9 +566,9 @@ function xenesisProviderFromNaturalText(value: string): { id: string; label: str
 function xenesisProviderAggregateStatusActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
   if (!hasXenesisProviderProfileContext(value)) return null;
   if (!hasXenesisConnectionReadbackIntent(value)) return null;
-  if (!hasAny(value, ['전체', 'all', 'catalog', '카탈로그', '목록', 'list'])) return null;
+  if (!hasXenesisAggregateCatalogContext(value)) return null;
 
-  if (hasAny(value, ['라우팅', 'routing', 'route', 'fallback', '폴백'])) {
+  if (hasAny(value, XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-providers-routing-status',
       'xd.xenesis.providers.routing.status',
@@ -560,7 +577,7 @@ function xenesisProviderAggregateStatusActionFromNaturalText(value: string): Xen
     );
   }
 
-  if (hasAny(value, ['view', 'views', '뷰', '화면', 'surface'])) {
+  if (hasAny(value, XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-providers-views-status',
       'xd.xenesis.providers.views.status',
@@ -569,7 +586,7 @@ function xenesisProviderAggregateStatusActionFromNaturalText(value: string): Xen
     );
   }
 
-  if (hasAny(value, ['profile', '프로필', 'draft', '초안'])) {
+  if (hasAny(value, XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-providers-profile-drafts-status',
       'xd.xenesis.providers.profileDrafts.status',
@@ -593,7 +610,7 @@ function xenesisProviderReadbackActionFromNaturalText(value: string): XenesisDes
   const provider = xenesisProviderFromNaturalText(value);
   if (!provider) return null;
 
-  if (hasAny(value, ['라우팅', 'routing', 'route', 'fallback', '폴백'])) {
+  if (hasAny(value, XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS)) {
     return naturalAction(
       `natural-xenesis-provider-routing-status-${provider.id}`,
       'xd.xenesis.providers.routing.status',
@@ -602,7 +619,7 @@ function xenesisProviderReadbackActionFromNaturalText(value: string): XenesisDes
     );
   }
 
-  if (hasAny(value, ['view', 'views', '뷰', '화면', 'surface'])) {
+  if (hasAny(value, XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS)) {
     return naturalAction(
       `natural-xenesis-provider-view-status-${provider.id}`,
       'xd.xenesis.providers.views.status',
@@ -611,7 +628,7 @@ function xenesisProviderReadbackActionFromNaturalText(value: string): XenesisDes
     );
   }
 
-  if (hasAny(value, ['profile', '프로필', 'draft', '초안'])) {
+  if (hasAny(value, XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS)) {
     return naturalAction(
       `natural-xenesis-provider-profile-draft-status-${provider.id}`,
       'xd.xenesis.providers.profileDrafts.status',
@@ -645,7 +662,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
 
   const target = xenesisConnectionTargetFromNaturalText(value);
   if (target) {
-    if (hasAny(value, ['진단', 'diagnostic', 'diagnostics'])) {
+    if (hasAny(value, XENESIS_NATURAL_CONNECTION_DIAGNOSTIC_CONTEXT_WORDS)) {
       return naturalAction(
         `natural-xenesis-connection-diagnostics-status-${target.id}`,
         'xd.xenesis.connections.diagnostics.status',
@@ -654,7 +671,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       );
     }
 
-    if (hasAny(value, ['setup request', '설정 요청', '연결 요청', 'setup 요청'])) {
+    if (hasAny(value, XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CONTEXT_WORDS)) {
       return naturalAction(
         `natural-xenesis-connection-setup-request-status-${target.id}`,
         'xd.xenesis.connections.setupRequests.status',
@@ -663,7 +680,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       );
     }
 
-    if (target.kind === 'tool' && hasAny(value, ['mcp', 'mcp install', 'mcp 설치'])) {
+    if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS)) {
       return naturalAction(
         `natural-xenesis-tool-mcp-install-draft-status-${target.id}`,
         'xd.xenesis.tools.mcpInstallDrafts.status',
@@ -675,7 +692,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
     if (
       target.kind === 'tool' &&
       (target.id === 'google-calendar' || target.id === 'google-workspace') &&
-      hasAny(value, ['oauth', '오어스', '인증', 'token', '토큰'])
+      hasAny(value, XENESIS_NATURAL_OAUTH_CONTEXT_WORDS)
     ) {
       return naturalAction(
         `natural-xenesis-tool-oauth-draft-status-${target.id}`,
@@ -685,7 +702,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       );
     }
 
-    if (target.kind === 'tool' && hasAny(value, ['user story', 'user stories', '사용자 스토리', '스토리'])) {
+    if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
       return naturalAction(
         `natural-xenesis-tool-user-story-status-${target.id}`,
         'xd.xenesis.tools.userStories.status',
@@ -694,7 +711,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       );
     }
 
-    if (target.kind === 'tool' && hasAny(value, ['액션', 'action', '정책', 'policy', '권한', 'permission'])) {
+    if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS)) {
       return naturalAction(
         `natural-xenesis-tool-action-policy-status-${target.id}`,
         'xd.xenesis.tools.actions.status',
@@ -703,7 +720,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       );
     }
 
-    if (target.kind === 'tool' && hasAny(value, ['설치 계획', 'install plan', 'install plans'])) {
+    if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS)) {
       return naturalAction(
         `natural-xenesis-tool-install-plan-status-${target.id}`,
         'xd.xenesis.tools.installPlans.status',
@@ -712,10 +729,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       );
     }
 
-    if (
-      target.kind === 'tool' &&
-      hasAny(value, ['setup', '초기 설정', '설정 상태', '설정', 'settings', 'config', 'configuration', '구성'])
-    ) {
+    if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_SETUP_CONTEXT_WORDS)) {
       return naturalAction(
         `natural-xenesis-tool-setup-status-${target.id}`,
         'xd.xenesis.tools.setup.status',
@@ -724,7 +738,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       );
     }
 
-    if (target.kind === 'tool' && hasAny(value, ['connector', 'connectors', '커넥터', '연결자'])) {
+    if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS)) {
       return naturalAction(
         `natural-xenesis-tool-connector-status-${target.id}`,
         'xd.xenesis.tools.connectors.status',
@@ -733,7 +747,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       );
     }
 
-    if (target.kind === 'tool' && hasAny(value, ['view', 'views', '뷰', '화면'])) {
+    if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS)) {
       return naturalAction(
         `natural-xenesis-tool-view-status-${target.id}`,
         'xd.xenesis.tools.views.status',
@@ -742,7 +756,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       );
     }
 
-    if (target.kind === 'messenger' && hasAny(value, ['라우팅', 'routing', 'route'])) {
+    if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS)) {
       return naturalAction(
         `natural-xenesis-channel-routing-status-${target.id}`,
         'xd.xenesis.channels.routing.status',
@@ -751,7 +765,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       );
     }
 
-    if (target.kind === 'messenger' && hasAny(value, ['안전', 'safety', '가드레일', 'guardrail'])) {
+    if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_SAFETY_CONTEXT_WORDS)) {
       return naturalAction(
         `natural-xenesis-channel-safety-status-${target.id}`,
         'xd.xenesis.channels.safety.status',
@@ -760,10 +774,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       );
     }
 
-    if (
-      target.kind === 'messenger' &&
-      hasAny(value, ['접근 그룹', '액세스 그룹', '액세스그룹', 'access group', 'access groups', 'allowlist'])
-    ) {
+    if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS)) {
       return naturalAction(
         `natural-xenesis-channel-access-groups-status-${target.id}`,
         'xd.xenesis.channels.accessGroups.status',
@@ -772,7 +783,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       );
     }
 
-    if (target.kind === 'messenger' && hasAny(value, ['페어링', 'pairing', 'pair', '연동'])) {
+    if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS)) {
       return naturalAction(
         `natural-xenesis-channel-pairing-status-${target.id}`,
         'xd.xenesis.channels.pairing.status',
@@ -781,7 +792,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       );
     }
 
-    if (target.kind === 'messenger' && hasAny(value, ['user story', 'user stories', '사용자 스토리', '스토리'])) {
+    if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
       return naturalAction(
         `natural-xenesis-channel-user-story-status-${target.id}`,
         'xd.xenesis.channels.userStories.status',
@@ -790,7 +801,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       );
     }
 
-    if (target.kind === 'messenger' && hasAny(value, ['프로필', 'profile', 'draft', '초안'])) {
+    if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS)) {
       return naturalAction(
         `natural-xenesis-channel-profile-draft-status-${target.id}`,
         'xd.xenesis.channels.profileDrafts.status',
@@ -799,40 +810,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       );
     }
 
-    if (
-      target.kind === 'messenger' &&
-      hasAny(value, [
-        'view',
-        'views',
-        '뷰',
-        '화면',
-        '메신저',
-        'setup',
-        '초기 설정',
-        '설정',
-        'config',
-        'configuration',
-        '구성',
-        'integration',
-        '라우팅',
-        'routing',
-        'route',
-        '안전',
-        'safety',
-        '가드레일',
-        'guardrail',
-        '접근 그룹',
-        '액세스 그룹',
-        '액세스그룹',
-        'access group',
-        'access groups',
-        'allowlist',
-        '프로필',
-        'profile',
-        'draft',
-        '초안',
-      ])
-    ) {
+    if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_MESSENGER_VIEW_FALLBACK_CONTEXT_WORDS)) {
       return naturalAction(
         `natural-xenesis-messenger-view-status-${target.id}`,
         'xd.xenesis.messengers.views.status',
@@ -897,7 +875,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
     );
   }
 
-  if (hasAny(value, ['가이드', 'guide', '문서', 'playbook', '플레이북'])) {
+  if (hasAny(value, XENESIS_NATURAL_GUIDE_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-guides-status',
       'xd.xenesis.guides.status',
@@ -921,37 +899,18 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
 function hasXenesisConnectionReviewRequestIntent(value: string): boolean {
   if (hasAny(value, ['열어', 'open'])) return false;
   if (hasXenesisConnectionReadbackIntent(value)) return false;
-  const hasExplicitRequest = hasAny(value, ['요청', 'request', '등록', 'enqueue', '승인 요청']);
-  const hasSetupImperative = hasAny(value, [
-    '연결해줘',
-    '연결 해줘',
-    '설정해줘',
-    '설정 해줘',
-    '구성해줘',
-    '구성 해줘',
-    '설치해줘',
-    '설치 해줘',
-    '인증해줘',
-    '인증 해줘',
-    '연동해줘',
-    '연동 해줘',
-    'connect',
-    'configure',
-    'install',
-    'authorize',
-    'set up',
-    'setup',
-  ]);
+  const hasExplicitRequest = hasAny(value, XENESIS_NATURAL_REVIEW_REQUEST_INTENT_WORDS);
+  const hasSetupImperative = hasAny(value, XENESIS_NATURAL_SETUP_IMPERATIVE_WORDS);
   if (!hasExplicitRequest && !hasSetupImperative) return false;
   return (
-    hasAny(value, ['검토', '리뷰', 'review', 'approval', 'setup', '설정', '연결']) ||
+    hasAny(value, XENESIS_NATURAL_REVIEW_REQUEST_CONTEXT_WORDS) ||
     hasXenesisConnectionContext(value) ||
-    hasAny(value, ['provider', '프로바이더', 'mcp', '설치', 'install', 'oauth', '오어스', '정책', 'policy', '프로필'])
+    hasAny(value, XENESIS_NATURAL_REVIEW_REQUEST_TARGET_WORDS)
   );
 }
 
 function hasXenesisProviderProfileContext(value: string): boolean {
-  return hasAny(value, ['provider', '프로바이더', 'ai provider', 'ai 설정', '모델 provider', 'provider profile']);
+  return hasAny(value, XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_WORDS);
 }
 
 function xenesisConnectionReviewRequestActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
@@ -972,10 +931,7 @@ function xenesisConnectionReviewRequestActionFromNaturalText(value: string): Xen
   const target = xenesisConnectionTargetFromNaturalText(value);
   if (!target) return null;
 
-  if (
-    target.kind === 'tool' &&
-    hasAny(value, ['설치 계획', '설치계획', '설치 플랜', 'install plan', 'install plans', 'install-plan'])
-  ) {
+  if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS)) {
     return naturalAction(
       `natural-xenesis-tool-install-plan-request-${target.id}`,
       'xd.xenesis.tools.installPlans.request',
@@ -984,7 +940,7 @@ function xenesisConnectionReviewRequestActionFromNaturalText(value: string): Xen
     );
   }
 
-  if (target.kind === 'tool' && hasAny(value, ['mcp', '설치', 'install', 'server', '서버'])) {
+  if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_MCP_INSTALL_REVIEW_CONTEXT_WORDS)) {
     return naturalAction(
       `natural-xenesis-tool-mcp-install-draft-request-${target.id}`,
       'xd.xenesis.tools.mcpInstallDrafts.request',
@@ -996,7 +952,7 @@ function xenesisConnectionReviewRequestActionFromNaturalText(value: string): Xen
   if (
     target.kind === 'tool' &&
     (target.id === 'google-calendar' || target.id === 'google-workspace') &&
-    hasAny(value, ['oauth', '오어스', '인증', 'token', '토큰'])
+    hasAny(value, XENESIS_NATURAL_OAUTH_CONTEXT_WORDS)
   ) {
     return naturalAction(
       `natural-xenesis-tool-oauth-draft-request-${target.id}`,
@@ -1006,7 +962,7 @@ function xenesisConnectionReviewRequestActionFromNaturalText(value: string): Xen
     );
   }
 
-  if (target.kind === 'tool' && hasAny(value, ['액션', 'action', '정책', 'policy', '권한', 'permission'])) {
+  if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS)) {
     return naturalAction(
       `natural-xenesis-tool-action-policy-request-${target.id}`,
       'xd.xenesis.tools.actions.request',
@@ -1015,10 +971,7 @@ function xenesisConnectionReviewRequestActionFromNaturalText(value: string): Xen
     );
   }
 
-  if (
-    target.kind === 'messenger' &&
-    hasAny(value, ['프로필', 'profile', '채널', 'channel', '메신저', 'messenger', 'bot', '봇'])
-  ) {
+  if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_REQUEST_CONTEXT_WORDS)) {
     return naturalAction(
       `natural-xenesis-channel-profile-draft-request-${target.id}`,
       'xd.xenesis.channels.profileDrafts.request',
@@ -1041,7 +994,7 @@ function xenesisProviderOpenActionFromNaturalText(value: string): XenesisDeskAct
   const provider = xenesisProviderFromNaturalText(value);
   if (!provider) return null;
 
-  if (hasAny(value, ['라우팅', 'routing', 'route', 'fallback', '폴백'])) {
+  if (hasAny(value, XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS)) {
     return naturalAction(
       `natural-xenesis-provider-routing-open-${provider.id}`,
       'xd.xenesis.providers.routing.open',
@@ -1050,7 +1003,7 @@ function xenesisProviderOpenActionFromNaturalText(value: string): XenesisDeskAct
     );
   }
 
-  if (hasAny(value, ['profile', '프로필', 'draft', '초안'])) {
+  if (hasAny(value, XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS)) {
     return naturalAction(
       `natural-xenesis-provider-profile-draft-open-${provider.id}`,
       'xd.xenesis.providers.profileDrafts.open',
@@ -1059,7 +1012,7 @@ function xenesisProviderOpenActionFromNaturalText(value: string): XenesisDeskAct
     );
   }
 
-  if (hasAny(value, ['view', 'views', '뷰', '화면', 'surface'])) {
+  if (hasAny(value, XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS)) {
     return naturalAction(
       `natural-xenesis-provider-view-open-${provider.id}`,
       'xd.xenesis.providers.views.open',
@@ -1068,7 +1021,7 @@ function xenesisProviderOpenActionFromNaturalText(value: string): XenesisDeskAct
     );
   }
 
-  if (hasAny(value, ['설정', 'settings', 'setup', '초기 설정', '구성', 'configuration', 'config'])) {
+  if (hasAny(value, XENESIS_NATURAL_SETUP_CONTEXT_WORDS)) {
     return naturalAction(
       `natural-xenesis-provider-setup-open-${provider.id}`,
       'xd.xenesis.providers.setup.open',
@@ -1094,7 +1047,7 @@ function xenesisGuideCatalogOpenActionFromNaturalText(value: string): XenesisDes
 function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
   if (!hasXenesisAggregateCatalogContext(value)) return null;
 
-  if (hasXenesisProviderProfileContext(value) && hasAny(value, ['라우팅', 'routing', 'route', 'fallback', '폴백'])) {
+  if (hasXenesisProviderProfileContext(value) && hasAny(value, XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-providers-routing-catalog-open',
       'xd.xenesis.providers.routing.open',
@@ -1103,10 +1056,7 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
     );
   }
 
-  if (
-    hasXenesisProviderProfileContext(value) &&
-    hasAny(value, ['설정', 'settings', 'setup', '초기 설정', '구성', 'configuration', 'config'])
-  ) {
+  if (hasXenesisProviderProfileContext(value) && hasAny(value, XENESIS_NATURAL_SETUP_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-providers-setup-catalog-open',
       'xd.xenesis.providers.setup.open',
@@ -1115,7 +1065,7 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
     );
   }
 
-  if (hasXenesisProviderProfileContext(value) && hasAny(value, ['view', 'views', '뷰', '화면', 'surface'])) {
+  if (hasXenesisProviderProfileContext(value) && hasAny(value, XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-providers-views-catalog-open',
       'xd.xenesis.providers.views.open',
@@ -1124,7 +1074,7 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
     );
   }
 
-  if (hasXenesisProviderProfileContext(value) && hasAny(value, ['profile', '프로필', 'draft', '초안'])) {
+  if (hasXenesisProviderProfileContext(value) && hasAny(value, XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-providers-profile-drafts-catalog-open',
       'xd.xenesis.providers.profileDrafts.open',
@@ -1142,7 +1092,7 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
     );
   }
 
-  if (hasExternalToolCatalogContext(value) && hasAny(value, ['connector', 'connectors', '커넥터', '연결자'])) {
+  if (hasExternalToolCatalogContext(value) && hasAny(value, XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-tools-connectors-catalog-open',
       'xd.xenesis.tools.connectors.open',
@@ -1153,8 +1103,8 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
 
   if (
     hasExternalToolCatalogContext(value) &&
-    hasAny(value, ['mcp', 'mcp install', 'mcp 설치']) &&
-    hasAny(value, ['draft', 'drafts', '초안', '설치 초안'])
+    hasAny(value, XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS) &&
+    hasAny(value, XENESIS_NATURAL_DRAFT_CONTEXT_WORDS)
   ) {
     return naturalAction(
       'natural-xenesis-tools-mcp-install-drafts-catalog-open',
@@ -1164,7 +1114,7 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
     );
   }
 
-  if (hasExternalToolCatalogContext(value) && hasAny(value, ['oauth', '오어스', '인증', 'token', '토큰'])) {
+  if (hasExternalToolCatalogContext(value) && hasAny(value, XENESIS_NATURAL_OAUTH_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-tools-oauth-drafts-catalog-open',
       'xd.xenesis.tools.oauthDrafts.open',
@@ -1173,7 +1123,7 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
     );
   }
 
-  if (hasExternalToolCatalogContext(value) && hasAny(value, ['view', 'views', '뷰', '화면', 'surface'])) {
+  if (hasExternalToolCatalogContext(value) && hasAny(value, XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-tools-views-catalog-open',
       'xd.xenesis.tools.views.open',
@@ -1182,7 +1132,7 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
     );
   }
 
-  if (hasExternalToolCatalogContext(value) && hasAny(value, ['설치 계획', 'install plan', 'install plans'])) {
+  if (hasExternalToolCatalogContext(value) && hasAny(value, XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-tools-install-plans-catalog-open',
       'xd.xenesis.tools.installPlans.open',
@@ -1191,10 +1141,7 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
     );
   }
 
-  if (
-    hasExternalToolCatalogContext(value) &&
-    hasAny(value, ['setup', '초기 설정', '설정', 'settings', 'config', 'configuration', '구성'])
-  ) {
+  if (hasExternalToolCatalogContext(value) && hasAny(value, XENESIS_NATURAL_SETUP_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-tools-setup-catalog-open',
       'xd.xenesis.tools.setup.open',
@@ -1203,10 +1150,7 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
     );
   }
 
-  if (
-    hasExternalToolCatalogContext(value) &&
-    hasAny(value, ['액션', 'action', '정책', 'policy', '권한', 'permission'])
-  ) {
+  if (hasExternalToolCatalogContext(value) && hasAny(value, XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-tools-actions-catalog-open',
       'xd.xenesis.tools.actions.open',
@@ -1215,10 +1159,7 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
     );
   }
 
-  if (
-    hasExternalToolCatalogContext(value) &&
-    hasAny(value, ['user story', 'user stories', '사용자 스토리', '스토리'])
-  ) {
+  if (hasExternalToolCatalogContext(value) && hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-tools-user-stories-catalog-open',
       'xd.xenesis.tools.userStories.open',
@@ -1245,7 +1186,7 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
     );
   }
 
-  if (hasExternalMessengerCatalogContext(value) && hasAny(value, ['라우팅', 'routing', 'route'])) {
+  if (hasExternalMessengerCatalogContext(value) && hasAny(value, XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-messengers-routing-catalog-open',
       'xd.xenesis.channels.routing.open',
@@ -1254,7 +1195,7 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
     );
   }
 
-  if (hasExternalMessengerCatalogContext(value) && hasAny(value, ['안전', 'safety', '가드레일', 'guardrail'])) {
+  if (hasExternalMessengerCatalogContext(value) && hasAny(value, XENESIS_NATURAL_SAFETY_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-messengers-safety-catalog-open',
       'xd.xenesis.channels.safety.open',
@@ -1263,10 +1204,7 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
     );
   }
 
-  if (
-    hasExternalMessengerCatalogContext(value) &&
-    hasAny(value, ['접근 그룹', '액세스 그룹', '액세스그룹', 'access group', 'access groups', 'allowlist'])
-  ) {
+  if (hasExternalMessengerCatalogContext(value) && hasAny(value, XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-messengers-access-groups-catalog-open',
       'xd.xenesis.channels.accessGroups.open',
@@ -1275,7 +1213,7 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
     );
   }
 
-  if (hasExternalMessengerCatalogContext(value) && hasAny(value, ['페어링', 'pairing', 'pair', '연동'])) {
+  if (hasExternalMessengerCatalogContext(value) && hasAny(value, XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-messengers-pairing-catalog-open',
       'xd.xenesis.channels.pairing.open',
@@ -1284,10 +1222,7 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
     );
   }
 
-  if (
-    hasExternalMessengerCatalogContext(value) &&
-    hasAny(value, ['user story', 'user stories', '사용자 스토리', '스토리'])
-  ) {
+  if (hasExternalMessengerCatalogContext(value) && hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-messengers-user-stories-catalog-open',
       'xd.xenesis.channels.userStories.open',
@@ -1296,7 +1231,7 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
     );
   }
 
-  if (hasExternalMessengerCatalogContext(value) && hasAny(value, ['view', 'views', '뷰', '화면', 'surface'])) {
+  if (hasExternalMessengerCatalogContext(value) && hasAny(value, XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-messengers-views-catalog-open',
       'xd.xenesis.messengers.views.open',
@@ -1363,7 +1298,7 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
   const target = xenesisConnectionTargetFromNaturalText(value);
   if (!target) return null;
 
-  if (hasAny(value, ['진단', 'diagnostic', 'diagnostics', 'runbook', '런북'])) {
+  if (hasAny(value, XENESIS_NATURAL_CONNECTION_DIAGNOSTIC_CONTEXT_WORDS)) {
     return naturalAction(
       `natural-xenesis-connection-diagnostics-open-${target.id}`,
       'xd.xenesis.connections.diagnostics.open',
@@ -1372,7 +1307,7 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
     );
   }
 
-  if (hasAny(value, ['setup request', '설정 요청', '연결 요청', 'setup 요청'])) {
+  if (hasAny(value, XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CONTEXT_WORDS)) {
     return naturalAction(
       `natural-xenesis-connection-setup-request-open-${target.id}`,
       'xd.xenesis.connections.setupRequests.open',
@@ -1384,7 +1319,7 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
   if (
     target.kind === 'tool' &&
     (target.id === 'google-calendar' || target.id === 'google-workspace') &&
-    hasAny(value, ['oauth', '오어스', '인증 초안', '초안', 'token', '토큰'])
+    hasAny(value, XENESIS_NATURAL_OAUTH_DRAFT_CONTEXT_WORDS)
   ) {
     return naturalAction(
       `natural-xenesis-tool-oauth-draft-open-${target.id}`,
@@ -1394,7 +1329,7 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
     );
   }
 
-  if (target.kind === 'tool' && hasAny(value, ['mcp', 'mcp install', 'mcp 설치'])) {
+  if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS)) {
     return naturalAction(
       `natural-xenesis-tool-mcp-install-draft-open-${target.id}`,
       'xd.xenesis.tools.mcpInstallDrafts.open',
@@ -1403,7 +1338,7 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
     );
   }
 
-  if (target.kind === 'tool' && hasAny(value, ['user story', 'user stories', '사용자 스토리', '스토리'])) {
+  if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
     return naturalAction(
       `natural-xenesis-tool-user-story-open-${target.id}`,
       'xd.xenesis.tools.userStories.open',
@@ -1412,7 +1347,7 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
     );
   }
 
-  if (target.kind === 'tool' && hasAny(value, ['액션', 'action', '정책', 'policy', '권한', 'permission'])) {
+  if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS)) {
     return naturalAction(
       `natural-xenesis-tool-action-policy-open-${target.id}`,
       'xd.xenesis.tools.actions.open',
@@ -1421,7 +1356,7 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
     );
   }
 
-  if (target.kind === 'tool' && hasAny(value, ['설치 계획', 'install plan', 'install plans'])) {
+  if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS)) {
     return naturalAction(
       `natural-xenesis-tool-install-plan-open-${target.id}`,
       'xd.xenesis.tools.installPlans.open',
@@ -1430,7 +1365,7 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
     );
   }
 
-  if (target.kind === 'tool' && hasAny(value, ['connector', 'connectors', '커넥터', '연결자'])) {
+  if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS)) {
     return naturalAction(
       `natural-xenesis-tool-connector-open-${target.id}`,
       'xd.xenesis.tools.connectors.open',
@@ -1439,10 +1374,7 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
     );
   }
 
-  if (
-    target.kind === 'tool' &&
-    hasAny(value, ['setup', '초기 설정', '설정', 'settings', 'config', 'configuration', '구성'])
-  ) {
+  if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_SETUP_CONTEXT_WORDS)) {
     return naturalAction(
       `natural-xenesis-tool-setup-open-${target.id}`,
       'xd.xenesis.tools.setup.open',
@@ -1451,7 +1383,7 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
     );
   }
 
-  if (target.kind === 'tool' && hasAny(value, ['view', 'views', '뷰', '화면'])) {
+  if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS)) {
     return naturalAction(
       `natural-xenesis-tool-view-open-${target.id}`,
       'xd.xenesis.tools.views.open',
@@ -1460,7 +1392,7 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
     );
   }
 
-  if (target.kind === 'messenger' && hasAny(value, ['user story', 'user stories', '사용자 스토리', '스토리'])) {
+  if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
     return naturalAction(
       `natural-xenesis-channel-user-story-open-${target.id}`,
       'xd.xenesis.channels.userStories.open',
@@ -1469,7 +1401,7 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
     );
   }
 
-  if (target.kind === 'messenger' && hasAny(value, ['프로필', 'profile', 'draft', '초안'])) {
+  if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS)) {
     return naturalAction(
       `natural-xenesis-channel-profile-draft-open-${target.id}`,
       'xd.xenesis.channels.profileDrafts.open',
@@ -1478,7 +1410,7 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
     );
   }
 
-  if (target.kind === 'messenger' && hasAny(value, ['라우팅', 'routing', 'route'])) {
+  if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS)) {
     return naturalAction(
       `natural-xenesis-channel-routing-open-${target.id}`,
       'xd.xenesis.channels.routing.open',
@@ -1487,7 +1419,7 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
     );
   }
 
-  if (target.kind === 'messenger' && hasAny(value, ['안전', 'safety', '가드레일', 'guardrail'])) {
+  if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_SAFETY_CONTEXT_WORDS)) {
     return naturalAction(
       `natural-xenesis-channel-safety-open-${target.id}`,
       'xd.xenesis.channels.safety.open',
@@ -1496,10 +1428,7 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
     );
   }
 
-  if (
-    target.kind === 'messenger' &&
-    hasAny(value, ['접근 그룹', '액세스 그룹', '액세스그룹', 'access group', 'access groups', 'allowlist'])
-  ) {
+  if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS)) {
     return naturalAction(
       `natural-xenesis-channel-access-groups-open-${target.id}`,
       'xd.xenesis.channels.accessGroups.open',
@@ -1508,7 +1437,7 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
     );
   }
 
-  if (target.kind === 'messenger' && hasAny(value, ['페어링', 'pairing', 'pair', '연동'])) {
+  if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS)) {
     return naturalAction(
       `natural-xenesis-channel-pairing-open-${target.id}`,
       'xd.xenesis.channels.pairing.open',
@@ -1517,35 +1446,7 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
     );
   }
 
-  if (
-    target.kind === 'messenger' &&
-    hasAny(value, [
-      '메신저',
-      'messenger',
-      '채널',
-      'channel',
-      '설정',
-      'view',
-      '뷰',
-      'setup',
-      '초기 설정',
-      'config',
-      'configuration',
-      '구성',
-      '연결',
-      'integration',
-      '프로필',
-      'profile',
-      'draft',
-      '초안',
-      '접근 그룹',
-      '액세스 그룹',
-      '액세스그룹',
-      'access group',
-      'access groups',
-      'allowlist',
-    ])
-  ) {
+  if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_MESSENGER_VIEW_OPEN_FALLBACK_CONTEXT_WORDS)) {
     return naturalAction(
       `natural-xenesis-messenger-view-open-${target.id}`,
       'xd.xenesis.messengers.views.open',
