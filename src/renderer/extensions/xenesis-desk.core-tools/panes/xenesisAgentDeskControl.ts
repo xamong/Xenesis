@@ -1488,8 +1488,8 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
   if (hasXenesisMessengerProfileDraftCatalogContext(value)) {
     return naturalAction(
       'natural-xenesis-messengers-profile-drafts-catalog-open',
-      'xd.panes.settings.open',
-      xenesisConnectionCenterOpenArgs(),
+      'xd.xenesis.channels.profileDrafts.open',
+      { ensureVisible: true },
       'Open external messenger profile draft catalog in Xenesis Connection Center from natural language request.',
     );
   }
@@ -1497,8 +1497,8 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
   if (hasExternalMessengerCatalogContext(value) && hasAny(value, ['라우팅', 'routing', 'route'])) {
     return naturalAction(
       'natural-xenesis-messengers-routing-catalog-open',
-      'xd.panes.settings.open',
-      xenesisConnectionCenterOpenArgs(),
+      'xd.xenesis.channels.routing.open',
+      { ensureVisible: true },
       'Open external messenger routing catalog in Xenesis Connection Center from natural language request.',
     );
   }
@@ -1506,8 +1506,8 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
   if (hasExternalMessengerCatalogContext(value) && hasAny(value, ['안전', 'safety', '가드레일', 'guardrail'])) {
     return naturalAction(
       'natural-xenesis-messengers-safety-catalog-open',
-      'xd.panes.settings.open',
-      xenesisConnectionCenterOpenArgs(),
+      'xd.xenesis.channels.safety.open',
+      { ensureVisible: true },
       'Open external messenger safety catalog in Xenesis Connection Center from natural language request.',
     );
   }
@@ -1518,8 +1518,8 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
   ) {
     return naturalAction(
       'natural-xenesis-messengers-access-groups-catalog-open',
-      'xd.panes.settings.open',
-      xenesisConnectionCenterOpenArgs(),
+      'xd.xenesis.channels.accessGroups.open',
+      { ensureVisible: true },
       'Open external messenger access-group catalog in Xenesis Connection Center from natural language request.',
     );
   }
@@ -1527,8 +1527,8 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
   if (hasExternalMessengerCatalogContext(value) && hasAny(value, ['페어링', 'pairing', 'pair', '연동'])) {
     return naturalAction(
       'natural-xenesis-messengers-pairing-catalog-open',
-      'xd.panes.settings.open',
-      xenesisConnectionCenterOpenArgs(),
+      'xd.xenesis.channels.pairing.open',
+      { ensureVisible: true },
       'Open external messenger pairing catalog in Xenesis Connection Center from natural language request.',
     );
   }
@@ -1539,8 +1539,8 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
   ) {
     return naturalAction(
       'natural-xenesis-messengers-user-stories-catalog-open',
-      'xd.panes.settings.open',
-      xenesisConnectionCenterOpenArgs(),
+      'xd.xenesis.channels.userStories.open',
+      { ensureVisible: true },
       'Open external messenger user-story catalog in Xenesis Connection Center from natural language request.',
     );
   }
@@ -1548,8 +1548,8 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
   if (hasExternalMessengerCatalogContext(value) && hasAny(value, ['view', 'views', '뷰', '화면', 'surface'])) {
     return naturalAction(
       'natural-xenesis-messengers-views-catalog-open',
-      'xd.panes.settings.open',
-      xenesisConnectionCenterOpenArgs(),
+      'xd.xenesis.messengers.views.open',
+      { ensureVisible: true },
       'Open external messenger view catalog in Xenesis Connection Center from natural language request.',
     );
   }
@@ -1557,8 +1557,8 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
   if (hasExternalMessengerCatalogContext(value)) {
     return naturalAction(
       'natural-xenesis-messenger-catalog-open',
-      'xd.panes.settings.open',
-      xenesisConnectionCenterOpenArgs(),
+      'xd.xenesis.messengers.views.open',
+      { ensureVisible: true },
       'Open external messenger catalog in Xenesis Connection Center from natural language request.',
     );
   }

@@ -383,13 +383,12 @@ const XENESIS_CHANNEL_ROUTING_STATUS_SCHEMA = {
 
 const XENESIS_CHANNEL_ROUTING_OPEN_SCHEMA = {
   type: 'object',
-  required: ['channel'],
   properties: {
     channel: {
       type: 'string',
       title: 'Channel',
       enum: XENESIS_CHANNEL_GUARD_IDS,
-      description: 'Implemented or planned external messenger channel to focus.',
+      description: 'Optional implemented or planned external messenger channel to focus.',
     },
     id: {
       type: 'string',
@@ -426,13 +425,12 @@ const XENESIS_CHANNEL_ACCESS_GROUP_STATUS_SCHEMA = {
 
 const XENESIS_CHANNEL_GUARD_OPEN_SCHEMA = {
   type: 'object',
-  required: ['channel'],
   properties: {
     channel: {
       type: 'string',
       title: 'Channel',
       enum: XENESIS_CHANNEL_GUARD_IDS,
-      description: 'Implemented or planned external messenger channel to focus.',
+      description: 'Optional implemented or planned external messenger channel to focus.',
     },
     id: {
       type: 'string',
@@ -483,14 +481,13 @@ const XENESIS_CHANNEL_PROFILE_DRAFT_STATUS_SCHEMA = {
 
 const XENESIS_CHANNEL_PROFILE_DRAFT_OPEN_SCHEMA = {
   type: 'object',
-  required: ['channel'],
   properties: {
     channel: {
       type: 'string',
       title: 'Channel',
       enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
       description:
-        'Implemented or planned external messenger channel to open in the internal Desk Connection Center view.',
+        'Optional implemented or planned external messenger channel to open in the internal Desk Connection Center view.',
     },
     id: {
       type: 'string',
@@ -574,13 +571,12 @@ const XENESIS_CHANNEL_PAIRING_STATUS_SCHEMA = {
 
 const XENESIS_CHANNEL_PAIRING_OPEN_SCHEMA = {
   type: 'object',
-  required: ['channel'],
   properties: {
     channel: {
       type: 'string',
       title: 'Channel',
       enum: XENESIS_MESSENGER_VIEW_IDS,
-      description: 'Implemented or planned external messenger channel to focus.',
+      description: 'Optional implemented or planned external messenger channel to focus.',
     },
     id: {
       type: 'string',
@@ -629,13 +625,12 @@ const XENESIS_MESSENGER_VIEW_STATUS_SCHEMA = {
 
 const XENESIS_MESSENGER_VIEW_OPEN_SCHEMA = {
   type: 'object',
-  required: ['id'],
   properties: {
     id: {
       type: 'string',
       title: 'Messenger id',
       enum: XENESIS_MESSENGER_VIEW_IDS,
-      description: 'Messenger connection id to open in the internal Desk Connection Center view.',
+      description: 'Optional messenger connection id to open in the internal Desk Connection Center view.',
     },
     messenger: {
       type: 'string',

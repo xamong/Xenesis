@@ -967,6 +967,44 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local Obsidian graph, source code, and tests.
 
+## Messenger Catalog CR Opens Slice
+
+- External messenger/channel aggregate open prompts now use channel/messenger
+  CR open paths instead of the generic Settings fallback:
+  - `외부 메신저 setup 전체 열어줘` ->
+    `xd.xenesis.messengers.views.open`
+  - `외부 메신저 라우팅 전체 열어줘` ->
+    `xd.xenesis.channels.routing.open`
+  - `외부 메신저 안전 전체 열어줘` ->
+    `xd.xenesis.channels.safety.open`
+  - `외부 메신저 접근 그룹 전체 열어줘` ->
+    `xd.xenesis.channels.accessGroups.open`
+  - `외부 메신저 페어링 전체 열어줘` ->
+    `xd.xenesis.channels.pairing.open`
+  - `외부 메신저 사용자 스토리 전체 열어줘` ->
+    `xd.xenesis.channels.userStories.open`
+  - `외부 메신저 view 전체 열어줘` ->
+    `xd.xenesis.messengers.views.open`
+  - `외부 메신저 프로필 초안 전체 열어줘` ->
+    `xd.xenesis.channels.profileDrafts.open`
+- The corresponding CR open schemas now allow catalog opens without focused
+  `channel`/`id` selectors. Focused channel/id opens remain supported.
+- Main-process messenger/channel open handlers share one catalog helper that
+  opens Settings > Xenesis Agent > Connections without a focus id for catalog
+  opens and focuses the channel/card when a selector is supplied.
+- Scope boundary: open/read internal Desk messenger surfaces only. This slice
+  does not send external messages, mutate channel credentials, change
+  allowlists, approve Action Inbox records, or run messenger/provider prompts.
+- Verification:
+  - RED tests failed first for required `channel`/`id` schemas and generic
+    Settings fallback routing.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 99/99 tests.
+  - Touched-file Biome check exited 0 with existing warnings/infos only.
+  - `npm run typecheck` passed after fixing the new helper option type.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local Obsidian graph, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

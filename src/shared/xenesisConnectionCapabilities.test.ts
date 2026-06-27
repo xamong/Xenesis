@@ -186,7 +186,7 @@ test('xenesis channel routing capabilities are registered and dispatch to the ad
   assert.equal(statusCapability?.approval, 'never');
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
-  assert.deepEqual(openCapability?.schema?.required, ['channel']);
+  assert.equal(schemaRequiredFields(openCapability).includes('channel'), false);
   for (const channel of ['telegram', 'slack', 'discord', 'webhook', 'whatsapp', 'google-chat', 'microsoft-teams']) {
     assert.equal(statusSchemaProperties.channel?.enum.includes(channel), true, `${channel} should be accepted`);
     assert.equal(openSchemaProperties.channel?.enum.includes(channel), true, `${channel} should be accepted by open`);
@@ -246,7 +246,7 @@ test('xenesis channel safety capabilities are registered and dispatch to the ada
   assert.equal(statusCapability?.approval, 'never');
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
-  assert.deepEqual(openCapability?.schema?.required, ['channel']);
+  assert.equal(schemaRequiredFields(openCapability).includes('channel'), false);
   for (const channel of ['telegram', 'slack', 'discord', 'webhook', 'whatsapp', 'google-chat', 'microsoft-teams']) {
     assert.equal(statusSchemaProperties.channel?.enum.includes(channel), true, `${channel} should be accepted`);
     assert.equal(openSchemaProperties.channel?.enum.includes(channel), true, `${channel} should be accepted by open`);
@@ -306,7 +306,7 @@ test('xenesis channel access group capabilities are registered and dispatch to t
   assert.equal(statusCapability?.approval, 'never');
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
-  assert.deepEqual(openCapability?.schema?.required, ['channel']);
+  assert.equal(schemaRequiredFields(openCapability).includes('channel'), false);
   for (const channel of ['telegram', 'slack', 'discord', 'webhook', 'whatsapp', 'google-chat', 'microsoft-teams']) {
     assert.equal(statusSchemaProperties.channel?.enum.includes(channel), true, `${channel} should be accepted`);
     assert.equal(openSchemaProperties.channel?.enum.includes(channel), true, `${channel} should be accepted by open`);
@@ -366,7 +366,7 @@ test('xenesis channel pairing capabilities are registered and dispatch to the ad
   assert.equal(statusCapability?.approval, 'never');
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
-  assert.deepEqual(openCapability?.schema?.required, ['channel']);
+  assert.equal(schemaRequiredFields(openCapability).includes('channel'), false);
   assert.equal(statusSchemaProperties.channel?.enum.includes('telegram'), true);
   assert.equal(statusSchemaProperties.channel?.enum.includes('signal'), true);
   assert.equal(statusSchemaProperties.id?.enum.includes('whatsapp'), true);
@@ -428,7 +428,7 @@ test('xenesis channel user story capabilities are registered and dispatch to the
   assert.equal(statusCapability?.approval, 'never');
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
-  assert.deepEqual(openCapability?.schema?.required, ['id']);
+  assert.equal(schemaRequiredFields(openCapability).includes('id'), false);
   for (const messenger of ['telegram', 'slack', 'discord', 'webhook', 'signal', 'google-chat', 'email']) {
     assert.equal(
       statusSchemaProperties.id?.enum.includes(messenger),
@@ -1201,7 +1201,7 @@ test('xenesis channel profile draft capabilities are registered and dispatch to 
   assert.equal(statusCapability?.approval, 'never');
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
-  assert.deepEqual(openCapability?.schema?.required, ['channel']);
+  assert.equal(schemaRequiredFields(openCapability).includes('channel'), false);
   assert.equal(requestCapability?.permission, 'write');
   assert.equal(requestCapability?.approval, 'when-external');
   assert.deepEqual(requestCapability?.schema?.required, ['channel']);
@@ -1287,7 +1287,7 @@ test('xenesis messenger view capabilities are registered and dispatch to the ada
   assert.equal(statusCapability?.approval, 'never');
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
-  assert.deepEqual(openCapability?.schema?.required, ['id']);
+  assert.equal(schemaRequiredFields(openCapability).includes('id'), false);
   for (const messenger of ['telegram', 'signal', 'google-chat', 'rocket-chat', 'dingding']) {
     assert.equal(
       statusSchemaProperties.id?.enum.includes(messenger),
@@ -1350,6 +1350,73 @@ test('xenesis messenger view capabilities are registered and dispatch to the ada
     ok: true,
     item: { id: 'telegram' },
   });
+});
+
+test('xenesis messenger and channel open capabilities allow catalog opens without focused selectors', async () => {
+  const openPaths = [
+    'xd.xenesis.channels.routing.open',
+    'xd.xenesis.channels.safety.open',
+    'xd.xenesis.channels.accessGroups.open',
+    'xd.xenesis.channels.pairing.open',
+    'xd.xenesis.channels.userStories.open',
+    'xd.xenesis.channels.profileDrafts.open',
+    'xd.xenesis.messengers.views.open',
+  ];
+  for (const path of openPaths) {
+    const selectorField =
+      path === 'xd.xenesis.messengers.views.open' || path === 'xd.xenesis.channels.userStories.open' ? 'id' : 'channel';
+    assert.equal(
+      schemaRequiredFields(findDeskBridgeCapability(path)).includes(selectorField),
+      false,
+      `${path} selector optional`,
+    );
+  }
+
+  const calls: Array<{ path: string; args: unknown }> = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    openXenesisChannelRouting: (args) => {
+      calls.push({ path: 'xd.xenesis.channels.routing.open', args });
+      return { ok: true, total: 7 };
+    },
+    openXenesisChannelSafety: (args) => {
+      calls.push({ path: 'xd.xenesis.channels.safety.open', args });
+      return { ok: true, total: 7 };
+    },
+    openXenesisChannelAccessGroups: (args) => {
+      calls.push({ path: 'xd.xenesis.channels.accessGroups.open', args });
+      return { ok: true, total: 7 };
+    },
+    openXenesisChannelPairing: (args) => {
+      calls.push({ path: 'xd.xenesis.channels.pairing.open', args });
+      return { ok: true, total: 7 };
+    },
+    openXenesisChannelUserStory: (args) => {
+      calls.push({ path: 'xd.xenesis.channels.userStories.open', args });
+      return { ok: true, total: 7 };
+    },
+    openXenesisChannelProfileDraft: (args) => {
+      calls.push({ path: 'xd.xenesis.channels.profileDrafts.open', args });
+      return { ok: true, total: 7 };
+    },
+    openXenesisMessengerView: (args) => {
+      calls.push({ path: 'xd.xenesis.messengers.views.open', args });
+      return { ok: true, total: 7 };
+    },
+  };
+
+  for (const path of openPaths) {
+    const result = await callDeskBridgeCapability(api, {
+      path,
+      args: { ensureVisible: true },
+      source: 'xenesis',
+    });
+    assert.equal(result.ok, true, `${path} should dispatch`);
+  }
+
+  assert.deepEqual(
+    calls,
+    openPaths.map((path) => ({ path, args: { ensureVisible: true } })),
+  );
 });
 
 test('xenesis guide catalog capabilities are registered and dispatch to the adapter', async () => {

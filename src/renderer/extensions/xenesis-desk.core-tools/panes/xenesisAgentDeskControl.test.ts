@@ -877,13 +877,8 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center requests to C
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 프로필 초안 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-messengers-profile-drafts-catalog-open',
-      path: 'xd.panes.settings.open',
-      args: {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      path: 'xd.xenesis.channels.profileDrafts.open',
+      args: { ensureVisible: true },
       approved: false,
       reason:
         'Open external messenger profile draft catalog in Xenesis Connection Center from natural language request.',
@@ -893,13 +888,8 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center requests to C
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('channel profile draft 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-messengers-profile-drafts-catalog-open',
-      path: 'xd.panes.settings.open',
-      args: {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      path: 'xd.xenesis.channels.profileDrafts.open',
+      args: { ensureVisible: true },
       approved: false,
       reason:
         'Open external messenger profile draft catalog in Xenesis Connection Center from natural language request.',
@@ -1256,13 +1246,8 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 setup 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-messenger-catalog-open',
-      path: 'xd.panes.settings.open',
-      args: {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      path: 'xd.xenesis.messengers.views.open',
+      args: { ensureVisible: true },
       approved: false,
       reason: 'Open external messenger catalog in Xenesis Connection Center from natural language request.',
     },
@@ -1271,13 +1256,8 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 라우팅 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-messengers-routing-catalog-open',
-      path: 'xd.panes.settings.open',
-      args: {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      path: 'xd.xenesis.channels.routing.open',
+      args: { ensureVisible: true },
       approved: false,
       reason: 'Open external messenger routing catalog in Xenesis Connection Center from natural language request.',
     },
@@ -1286,13 +1266,8 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 안전 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-messengers-safety-catalog-open',
-      path: 'xd.panes.settings.open',
-      args: {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      path: 'xd.xenesis.channels.safety.open',
+      args: { ensureVisible: true },
       approved: false,
       reason: 'Open external messenger safety catalog in Xenesis Connection Center from natural language request.',
     },
@@ -1301,13 +1276,8 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 접근 그룹 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-messengers-access-groups-catalog-open',
-      path: 'xd.panes.settings.open',
-      args: {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      path: 'xd.xenesis.channels.accessGroups.open',
+      args: { ensureVisible: true },
       approved: false,
       reason:
         'Open external messenger access-group catalog in Xenesis Connection Center from natural language request.',
@@ -1317,13 +1287,8 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 페어링 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-messengers-pairing-catalog-open',
-      path: 'xd.panes.settings.open',
-      args: {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      path: 'xd.xenesis.channels.pairing.open',
+      args: { ensureVisible: true },
       approved: false,
       reason: 'Open external messenger pairing catalog in Xenesis Connection Center from natural language request.',
     },
@@ -1332,13 +1297,8 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 사용자 스토리 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-messengers-user-stories-catalog-open',
-      path: 'xd.panes.settings.open',
-      args: {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      path: 'xd.xenesis.channels.userStories.open',
+      args: { ensureVisible: true },
       approved: false,
       reason: 'Open external messenger user-story catalog in Xenesis Connection Center from natural language request.',
     },
@@ -1347,13 +1307,8 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 view 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-messengers-views-catalog-open',
-      path: 'xd.panes.settings.open',
-      args: {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      path: 'xd.xenesis.messengers.views.open',
+      args: { ensureVisible: true },
       approved: false,
       reason: 'Open external messenger view catalog in Xenesis Connection Center from natural language request.',
     },

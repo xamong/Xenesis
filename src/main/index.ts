@@ -5179,6 +5179,68 @@ function xenesisChannelRoutingStatusItem(item: XenesisConnectionItem): Record<st
   };
 }
 
+async function openXenesisMessengerCatalogSurface<TContext = undefined>(
+  args: unknown,
+  options: {
+    selectorKey: 'channel' | 'id';
+    selectorKeys: string[];
+    allowedKey: 'allowedChannels' | 'allowedMessengers';
+    unsupportedMessage: (selector: string) => string;
+    itemPredicate: (item: XenesisConnectionItem) => boolean;
+    toStatusItem: (item: XenesisConnectionItem, context: TContext) => Record<string, unknown>;
+    unavailableMessage: (selector: string) => string;
+    prepareContext?: () => Promise<TContext>;
+  },
+): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const selector = readCapabilityString(body, options.selectorKeys);
+  if (selector && !isXenesisMessengerViewId(selector)) {
+    return {
+      ok: false,
+      error: options.unsupportedMessage(selector),
+      [options.allowedKey]: XENESIS_MESSENGER_VIEW_IDS,
+    };
+  }
+
+  const [status, context] = await Promise.all([
+    getXenesisConnectionsStatus(),
+    options.prepareContext ? options.prepareContext() : Promise.resolve(undefined as TContext),
+  ]);
+  const catalogItems = status.sections.messengers.items.filter(options.itemPredicate);
+  const item = selector ? catalogItems.find((candidate) => candidate.id === selector) : undefined;
+  if (selector && !item) {
+    return { ok: false, [options.selectorKey]: selector, error: options.unavailableMessage(selector) };
+  }
+
+  const rendererArgs: Record<string, unknown> = {
+    kind: 'settings',
+    category: 'xenesis-agent',
+    mode: 'connections',
+    section: 'xenesis-connections',
+    ensureVisible: body.ensureVisible !== false,
+  };
+  if (item) rendererArgs.focusConnectionId = item.id;
+
+  const renderer = await openMcpBuiltinPaneCapability(rendererArgs);
+  if (selector && item) {
+    const selectorPayload = options.selectorKey === 'channel' ? { channel: item.id, id: item.id } : { id: item.id };
+    return {
+      ok: renderer.ok !== false,
+      ...selectorPayload,
+      item: options.toStatusItem(item, context),
+      renderer,
+    };
+  }
+
+  return {
+    ok: renderer.ok !== false,
+    updatedAt: status.updatedAt,
+    total: catalogItems.length,
+    items: catalogItems.map((candidate) => options.toStatusItem(candidate, context)),
+    renderer,
+  };
+}
+
 async function getXenesisChannelRoutingStatus(args?: unknown): Promise<Record<string, unknown>> {
   const body = normalizeMcpCapabilityArgs(args);
   const channel = readCapabilityString(body, ['channel', 'id', 'name']);
@@ -5206,43 +5268,15 @@ async function getXenesisChannelRoutingStatus(args?: unknown): Promise<Record<st
 }
 
 async function openXenesisChannelRouting(args?: unknown): Promise<Record<string, unknown>> {
-  const body = normalizeMcpCapabilityArgs(args);
-  const channel = readCapabilityString(body, ['channel', 'id', 'name']);
-  if (!channel) {
-    return { ok: false, error: 'Channel is required.' };
-  }
-  if (!isXenesisMessengerViewId(channel)) {
-    return {
-      ok: false,
-      error: `Unsupported Xenesis channel: ${channel}`,
-      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
-    };
-  }
-
-  const status = await getXenesisConnectionsStatus();
-  const item = status.sections.messengers.items.find(
-    (candidate) => candidate.id === channel && candidate.channelTemplate?.routing,
-  );
-  if (!item) {
-    return { ok: false, channel, error: `Xenesis channel routing is not available: ${channel}` };
-  }
-
-  const renderer = await openMcpBuiltinPaneCapability({
-    kind: 'settings',
-    category: 'xenesis-agent',
-    mode: 'connections',
-    section: 'xenesis-connections',
-    focusConnectionId: item.id,
-    ensureVisible: body.ensureVisible !== false,
+  return openXenesisMessengerCatalogSurface(args, {
+    selectorKey: 'channel',
+    selectorKeys: ['channel', 'id', 'name'],
+    allowedKey: 'allowedChannels',
+    unsupportedMessage: (channel) => `Unsupported Xenesis channel: ${channel}`,
+    itemPredicate: (item) => Boolean(item.channelTemplate?.routing),
+    toStatusItem: (item) => xenesisChannelRoutingStatusItem(item),
+    unavailableMessage: (channel) => `Xenesis channel routing is not available: ${channel}`,
   });
-
-  return {
-    ok: renderer.ok !== false,
-    channel: item.id,
-    id: item.id,
-    item: xenesisChannelRoutingStatusItem(item),
-    renderer,
-  };
 }
 
 function xenesisChannelSafetyStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
@@ -5296,43 +5330,15 @@ async function getXenesisChannelSafetyStatus(args?: unknown): Promise<Record<str
 }
 
 async function openXenesisChannelSafety(args?: unknown): Promise<Record<string, unknown>> {
-  const body = normalizeMcpCapabilityArgs(args);
-  const channel = readCapabilityString(body, ['channel', 'id', 'name']);
-  if (!channel) {
-    return { ok: false, error: 'Channel is required.' };
-  }
-  if (!isXenesisMessengerViewId(channel)) {
-    return {
-      ok: false,
-      error: `Unsupported Xenesis channel: ${channel}`,
-      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
-    };
-  }
-
-  const status = await getXenesisConnectionsStatus();
-  const item = status.sections.messengers.items.find(
-    (candidate) => candidate.id === channel && candidate.channelTemplate?.safety,
-  );
-  if (!item) {
-    return { ok: false, channel, error: `Xenesis channel safety is not available: ${channel}` };
-  }
-
-  const renderer = await openMcpBuiltinPaneCapability({
-    kind: 'settings',
-    category: 'xenesis-agent',
-    mode: 'connections',
-    section: 'xenesis-connections',
-    focusConnectionId: item.id,
-    ensureVisible: body.ensureVisible !== false,
+  return openXenesisMessengerCatalogSurface(args, {
+    selectorKey: 'channel',
+    selectorKeys: ['channel', 'id', 'name'],
+    allowedKey: 'allowedChannels',
+    unsupportedMessage: (channel) => `Unsupported Xenesis channel: ${channel}`,
+    itemPredicate: (item) => Boolean(item.channelTemplate?.safety),
+    toStatusItem: (item) => xenesisChannelSafetyStatusItem(item),
+    unavailableMessage: (channel) => `Xenesis channel safety is not available: ${channel}`,
   });
-
-  return {
-    ok: renderer.ok !== false,
-    channel: item.id,
-    id: item.id,
-    item: xenesisChannelSafetyStatusItem(item),
-    renderer,
-  };
 }
 
 type XenesisChannelAccessGroupValueState = 'configured' | 'empty' | 'unknown';
@@ -5416,48 +5422,23 @@ async function getXenesisChannelAccessGroupsStatus(args?: unknown): Promise<Reco
 }
 
 async function openXenesisChannelAccessGroups(args?: unknown): Promise<Record<string, unknown>> {
-  const body = normalizeMcpCapabilityArgs(args);
-  const channel = readCapabilityString(body, ['channel', 'id', 'name']);
-  if (!channel) {
-    return { ok: false, error: 'Channel is required.' };
-  }
-  if (!isXenesisMessengerViewId(channel)) {
-    return {
-      ok: false,
-      error: `Unsupported Xenesis channel: ${channel}`,
-      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
-    };
-  }
-
-  const [status, xenesis] = await Promise.all([getXenesisConnectionsStatus(), getXenesisStatusPayload()]);
-  const item = status.sections.messengers.items.find(
-    (candidate) => candidate.id === channel && candidate.channelTemplate?.accessGroups,
-  );
-  if (!item) {
-    return { ok: false, channel, error: `Xenesis channel access groups are not available: ${channel}` };
-  }
-
-  const renderer = await openMcpBuiltinPaneCapability({
-    kind: 'settings',
-    category: 'xenesis-agent',
-    mode: 'connections',
-    section: 'xenesis-connections',
-    focusConnectionId: item.id,
-    ensureVisible: body.ensureVisible !== false,
+  return openXenesisMessengerCatalogSurface(args, {
+    selectorKey: 'channel',
+    selectorKeys: ['channel', 'id', 'name'],
+    allowedKey: 'allowedChannels',
+    unsupportedMessage: (channel) => `Unsupported Xenesis channel: ${channel}`,
+    itemPredicate: (item) => Boolean(item.channelTemplate?.accessGroups),
+    prepareContext: async () => getXenesisStatusPayload(),
+    toStatusItem: (item, xenesis) => {
+      const channelName = item.id as XenesisProfileChannelName;
+      return xenesisChannelAccessGroupsStatusItem(
+        item,
+        xenesis.profile.channelSettings,
+        xenesis.gateway.channels?.[channelName],
+      );
+    },
+    unavailableMessage: (channel) => `Xenesis channel access groups are not available: ${channel}`,
   });
-  const channelName = item.id as XenesisProfileChannelName;
-
-  return {
-    ok: renderer.ok !== false,
-    channel: item.id,
-    id: item.id,
-    item: xenesisChannelAccessGroupsStatusItem(
-      item,
-      xenesis.profile.channelSettings,
-      xenesis.gateway.channels?.[channelName],
-    ),
-    renderer,
-  };
 }
 
 const XENESIS_GUIDE_IDS = [
@@ -5657,43 +5638,15 @@ async function getXenesisChannelPairingStatus(args?: unknown): Promise<Record<st
 }
 
 async function openXenesisChannelPairing(args?: unknown): Promise<Record<string, unknown>> {
-  const body = normalizeMcpCapabilityArgs(args);
-  const id = readCapabilityString(body, ['channel', 'id', 'messenger', 'name']);
-  if (!id) {
-    return { ok: false, error: 'Messenger channel id is required.' };
-  }
-  if (!isXenesisMessengerViewId(id)) {
-    return {
-      ok: false,
-      error: `Unsupported Xenesis messenger channel: ${id}`,
-      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
-    };
-  }
-
-  const status = await getXenesisConnectionsStatus();
-  const item = status.sections.messengers.items.find(
-    (candidate) => candidate.id === id && candidate.channelTemplate?.pairing,
-  );
-  if (!item) {
-    return { ok: false, id, error: `Xenesis channel pairing is not available: ${id}` };
-  }
-
-  const renderer = await openMcpBuiltinPaneCapability({
-    kind: 'settings',
-    category: 'xenesis-agent',
-    mode: 'connections',
-    section: 'xenesis-connections',
-    focusConnectionId: id,
-    ensureVisible: body.ensureVisible !== false,
+  return openXenesisMessengerCatalogSurface(args, {
+    selectorKey: 'channel',
+    selectorKeys: ['channel', 'id', 'messenger', 'name'],
+    allowedKey: 'allowedChannels',
+    unsupportedMessage: (id) => `Unsupported Xenesis messenger channel: ${id}`,
+    itemPredicate: (item) => Boolean(item.channelTemplate?.pairing),
+    toStatusItem: (item) => xenesisChannelPairingStatusItem(item),
+    unavailableMessage: (id) => `Xenesis channel pairing is not available: ${id}`,
   });
-
-  return {
-    ok: renderer.ok !== false,
-    channel: item.id,
-    id: item.id,
-    item: xenesisChannelPairingStatusItem(item),
-    renderer,
-  };
 }
 
 function xenesisChannelUserStoryStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
@@ -5747,42 +5700,15 @@ async function getXenesisChannelUserStoriesStatus(args?: unknown): Promise<Recor
 }
 
 async function openXenesisChannelUserStory(args?: unknown): Promise<Record<string, unknown>> {
-  const body = normalizeMcpCapabilityArgs(args);
-  const id = readCapabilityString(body, ['id', 'messenger', 'channel', 'name']);
-  if (!id) {
-    return { ok: false, error: 'Messenger channel id is required.' };
-  }
-  if (!isXenesisMessengerViewId(id)) {
-    return {
-      ok: false,
-      error: `Unsupported Xenesis messenger channel: ${id}`,
-      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
-    };
-  }
-
-  const status = await getXenesisConnectionsStatus();
-  const item = status.sections.messengers.items.find(
-    (candidate) => candidate.id === id && candidate.channelTemplate?.userStory,
-  );
-  if (!item) {
-    return { ok: false, id, error: `Xenesis channel user story is not available: ${id}` };
-  }
-
-  const renderer = await openMcpBuiltinPaneCapability({
-    kind: 'settings',
-    category: 'xenesis-agent',
-    mode: 'connections',
-    section: 'xenesis-connections',
-    focusConnectionId: id,
-    ensureVisible: body.ensureVisible !== false,
+  return openXenesisMessengerCatalogSurface(args, {
+    selectorKey: 'id',
+    selectorKeys: ['id', 'messenger', 'channel', 'name'],
+    allowedKey: 'allowedChannels',
+    unsupportedMessage: (id) => `Unsupported Xenesis messenger channel: ${id}`,
+    itemPredicate: (item) => Boolean(item.channelTemplate?.userStory),
+    toStatusItem: (item) => xenesisChannelUserStoryStatusItem(item),
+    unavailableMessage: (id) => `Xenesis channel user story is not available: ${id}`,
   });
-
-  return {
-    ok: renderer.ok !== false,
-    id,
-    item: xenesisChannelUserStoryStatusItem(item),
-    renderer,
-  };
 }
 
 function xenesisChannelProfileDraftStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
@@ -5843,42 +5769,15 @@ async function getXenesisChannelProfileDraftsStatus(args?: unknown): Promise<Rec
 }
 
 async function openXenesisChannelProfileDraft(args?: unknown): Promise<Record<string, unknown>> {
-  const body = normalizeMcpCapabilityArgs(args);
-  const channel = readCapabilityString(body, ['channel', 'id', 'name']);
-  if (!channel) {
-    return { ok: false, error: 'Channel is required.' };
-  }
-  if (!isXenesisMessengerViewId(channel)) {
-    return {
-      ok: false,
-      error: `Unsupported Xenesis channel: ${channel}`,
-      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
-    };
-  }
-
-  const status = await getXenesisConnectionsStatus();
-  const item = status.sections.messengers.items.find(
-    (candidate) => candidate.id === channel && candidate.channelProfileDraft,
-  );
-  if (!item) {
-    return { ok: false, channel, error: `Xenesis channel profile draft is not available: ${channel}` };
-  }
-
-  const renderer = await openMcpBuiltinPaneCapability({
-    kind: 'settings',
-    category: 'xenesis-agent',
-    mode: 'connections',
-    section: 'xenesis-connections',
-    focusConnectionId: item.id,
-    ensureVisible: body.ensureVisible !== false,
+  return openXenesisMessengerCatalogSurface(args, {
+    selectorKey: 'channel',
+    selectorKeys: ['channel', 'id', 'name'],
+    allowedKey: 'allowedChannels',
+    unsupportedMessage: (channel) => `Unsupported Xenesis channel: ${channel}`,
+    itemPredicate: (item) => Boolean(item.channelProfileDraft),
+    toStatusItem: (item) => xenesisChannelProfileDraftStatusItem(item),
+    unavailableMessage: (channel) => `Xenesis channel profile draft is not available: ${channel}`,
   });
-
-  return {
-    ok: renderer.ok !== false,
-    channel: item.id,
-    item: xenesisChannelProfileDraftStatusItem(item),
-    renderer,
-  };
 }
 
 async function requestXenesisChannelProfileDraft(args?: unknown): Promise<Record<string, unknown>> {
@@ -6011,40 +5910,15 @@ async function getXenesisMessengerViewsStatus(args?: unknown): Promise<Record<st
 }
 
 async function openXenesisMessengerView(args?: unknown): Promise<Record<string, unknown>> {
-  const body = normalizeMcpCapabilityArgs(args);
-  const id = readCapabilityString(body, ['id', 'messenger', 'channel', 'name']);
-  if (!id) {
-    return { ok: false, error: 'Messenger id is required.' };
-  }
-  if (!isXenesisMessengerViewId(id)) {
-    return {
-      ok: false,
-      error: `Unsupported Xenesis messenger connection: ${id}`,
-      allowedMessengers: XENESIS_MESSENGER_VIEW_IDS,
-    };
-  }
-
-  const status = await getXenesisConnectionsStatus();
-  const item = status.sections.messengers.items.find((candidate) => candidate.id === id && candidate.messengerView);
-  if (!item) {
-    return { ok: false, id, error: `Xenesis messenger view is not available: ${id}` };
-  }
-
-  const renderer = await openMcpBuiltinPaneCapability({
-    kind: 'settings',
-    category: 'xenesis-agent',
-    mode: 'connections',
-    section: 'xenesis-connections',
-    focusConnectionId: id,
-    ensureVisible: body.ensureVisible !== false,
+  return openXenesisMessengerCatalogSurface(args, {
+    selectorKey: 'id',
+    selectorKeys: ['id', 'messenger', 'channel', 'name'],
+    allowedKey: 'allowedMessengers',
+    unsupportedMessage: (id) => `Unsupported Xenesis messenger connection: ${id}`,
+    itemPredicate: (item) => Boolean(item.messengerView),
+    toStatusItem: (item) => xenesisMessengerViewStatusItem(item),
+    unavailableMessage: (id) => `Xenesis messenger view is not available: ${id}`,
   });
-
-  return {
-    ok: renderer.ok !== false,
-    id,
-    item: xenesisMessengerViewStatusItem(item),
-    renderer,
-  };
 }
 
 const XENESIS_TOOL_SETUP_IDS = [
