@@ -163,6 +163,26 @@
   gateway lifecycle actions, channel delivery, settings mutation, credential
   storage, or approval bypasses.
 
+## Provider Alias Coverage Slice
+
+- Expanded Xenesis Agent natural-language provider target resolution for the
+  AI providers already modeled by Settings and provider CR schemas:
+  `claude-interactive`, `azure`, `groq`, `deepseek`, `qwen`, `lmstudio`,
+  `together`, and `fireworks`.
+- Provider prompts such as `LM Studio provider setup 열어줘`,
+  `Azure OpenAI provider routing 상태 보여줘`,
+  `Qwen provider profile draft 열어줘`, and
+  `Claude interactive provider profile 검토 요청해줘` now route through existing
+  `xd.xenesis.providers.views.open`,
+  `xd.xenesis.providers.routing.status`,
+  `xd.xenesis.providers.profileDrafts.open`, and
+  `xd.xenesis.providers.profileDrafts.request` paths.
+- Capability tests now assert that all Settings `AiProviderKind` values are
+  accepted by the provider setup, routing, view, and profile-draft schemas.
+- Scope boundary: this slice did not add provider mutation paths, credential
+  writes, local CLI switching, provider prompt execution, fallback rewrites,
+  dispatcher branches, renderer adapters, or approval bypasses.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

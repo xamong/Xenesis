@@ -792,10 +792,22 @@ function xenesisProviderFromNaturalText(value: string): { id: string; label: str
     },
     { id: 'codex-cli', label: 'codex-cli', words: ['codex cli', 'codex-cli'] },
     { id: 'claude-cli', label: 'claude-cli', words: ['claude cli', 'claude-cli'] },
+    {
+      id: 'claude-interactive',
+      label: 'claude-interactive',
+      words: ['claude interactive', 'claude-interactive', '클로드 interactive', '클로드 인터랙티브'],
+    },
+    { id: 'azure', label: 'azure', words: ['azure openai', 'azure-openai', 'azure', '애저 오픈ai', '애저 오픈 ai'] },
     { id: 'openai', label: 'openai', words: ['openai', '오픈ai', '오픈 ai'] },
     { id: 'anthropic', label: 'anthropic', words: ['anthropic', 'anthropic claude', '앤트로픽'] },
     { id: 'gemini', label: 'gemini', words: ['gemini', '제미나이'] },
+    { id: 'groq', label: 'groq', words: ['groq', '그록'] },
+    { id: 'deepseek', label: 'deepseek', words: ['deepseek', 'deep seek', '딥시크'] },
+    { id: 'qwen', label: 'qwen', words: ['qwen', 'dashscope', 'dash scope', '큐원', '큐웬'] },
     { id: 'ollama', label: 'ollama', words: ['ollama', '올라마'] },
+    { id: 'lmstudio', label: 'lmstudio', words: ['lm studio', 'lmstudio', 'lm-studio', '엘엠 스튜디오'] },
+    { id: 'together', label: 'together', words: ['together ai', 'together', '투게더'] },
+    { id: 'fireworks', label: 'fireworks', words: ['fireworks ai', 'fireworks', '파이어웍스'] },
     { id: 'auto', label: 'auto', words: ['auto', '자동'] },
   ];
   const provider = providers.find((item) => hasAny(value, item.words));
@@ -1107,12 +1119,15 @@ function hasXenesisProviderProfileContext(value: string): boolean {
 function xenesisConnectionReviewRequestActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
   if (!hasXenesisConnectionReviewRequestIntent(value)) return null;
 
-  if (hasXenesisProviderProfileContext(value)) {
+  const provider = xenesisProviderFromNaturalText(value);
+  if (provider) {
     return naturalAction(
-      'natural-xenesis-provider-profile-draft-request-auto',
+      `natural-xenesis-provider-profile-draft-request-${provider.id}`,
       'xd.xenesis.providers.profileDrafts.request',
-      { provider: 'auto' },
-      'Request AI provider profile draft review from natural language request.',
+      { provider: provider.id },
+      provider.id === 'auto'
+        ? 'Request AI provider profile draft review from natural language request.'
+        : `Request ${provider.label} provider profile draft review from natural language request.`,
     );
   }
 

@@ -753,6 +753,26 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('LM Studio provider setup 열어줘').actions, [
+    {
+      id: 'natural-xenesis-provider-view-open-lmstudio',
+      path: 'xd.xenesis.providers.views.open',
+      args: { provider: 'lmstudio', ensureVisible: true },
+      approved: false,
+      reason: 'Open lmstudio provider view from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('Qwen provider profile draft 열어줘').actions, [
+    {
+      id: 'natural-xenesis-provider-profile-draft-open-qwen',
+      path: 'xd.xenesis.providers.profileDrafts.open',
+      args: { provider: 'qwen', ensureVisible: true },
+      approved: false,
+      reason: 'Open qwen provider profile draft from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider profile draft 열어줘').actions, [
     {
       id: 'natural-xenesis-provider-profile-draft-open-auto',
@@ -1166,6 +1186,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center read
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('Azure OpenAI provider routing 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-provider-routing-status-azure',
+      path: 'xd.xenesis.providers.routing.status',
+      args: { provider: 'azure' },
+      approved: false,
+      reason: 'Read azure provider routing status from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 connector 상태 보여줘').actions, [
     {
       id: 'natural-xenesis-tool-connector-status-notion',
@@ -1455,6 +1485,16 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center review reques
       args: { provider: 'auto' },
       approved: false,
       reason: 'Request AI provider profile draft review from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('Claude interactive provider profile 검토 요청해줘').actions, [
+    {
+      id: 'natural-xenesis-provider-profile-draft-request-claude-interactive',
+      path: 'xd.xenesis.providers.profileDrafts.request',
+      args: { provider: 'claude-interactive' },
+      approved: false,
+      reason: 'Request claude-interactive provider profile draft review from natural language request.',
     },
   ]);
 });

@@ -7,6 +7,25 @@ import {
   listDeskBridgeCapabilities,
 } from './deskBridgeCapabilities';
 
+const ALL_AI_PROVIDER_KINDS = [
+  'auto',
+  'openai',
+  'anthropic',
+  'gemini',
+  'groq',
+  'deepseek',
+  'qwen',
+  'ollama',
+  'lmstudio',
+  'together',
+  'fireworks',
+  'azure',
+  'codex-cli',
+  'codex-app-server',
+  'claude-cli',
+  'claude-interactive',
+] as const;
+
 test('xenesis connection status capability is registered as a read path', () => {
   const paths = new Set(listDeskBridgeCapabilities().map((node) => node.path));
 
@@ -1117,16 +1136,7 @@ test('xenesis provider setup status capability is registered and dispatches to t
   const schemaProperties = (capability?.schema?.properties ?? {}) as Record<string, any>;
   assert.equal(capability?.permission, 'read');
   assert.equal(capability?.approval, 'never');
-  for (const provider of [
-    'auto',
-    'openai',
-    'anthropic',
-    'gemini',
-    'codex-app-server',
-    'codex-cli',
-    'claude-cli',
-    'ollama',
-  ]) {
+  for (const provider of ALL_AI_PROVIDER_KINDS) {
     assert.equal(schemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
   }
 
@@ -1160,7 +1170,7 @@ test('xenesis provider routing status capability is registered and dispatches to
   const schemaProperties = (capability?.schema?.properties ?? {}) as Record<string, any>;
   assert.equal(capability?.permission, 'read');
   assert.equal(capability?.approval, 'never');
-  for (const provider of ['auto', 'openai', 'anthropic', 'gemini', 'codex-app-server', 'codex-cli', 'ollama']) {
+  for (const provider of ALL_AI_PROVIDER_KINDS) {
     assert.equal(schemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
   }
 
@@ -1199,7 +1209,7 @@ test('xenesis provider view capabilities are registered and dispatch to the adap
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
   assert.deepEqual(openCapability?.schema?.required, ['provider']);
-  for (const provider of ['auto', 'openai', 'codex-app-server', 'codex-cli', 'ollama']) {
+  for (const provider of ALL_AI_PROVIDER_KINDS) {
     assert.equal(statusSchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
     assert.equal(openSchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
   }
@@ -1264,7 +1274,7 @@ test('xenesis provider profile draft capabilities are registered and dispatch to
   assert.equal(requestCapability?.permission, 'write');
   assert.equal(requestCapability?.approval, 'when-external');
   assert.deepEqual(requestCapability?.schema?.required, ['provider']);
-  for (const provider of ['auto', 'openai', 'codex-app-server', 'codex-cli', 'ollama']) {
+  for (const provider of ALL_AI_PROVIDER_KINDS) {
     assert.equal(statusSchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
     assert.equal(openSchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
     assert.equal(requestSchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
