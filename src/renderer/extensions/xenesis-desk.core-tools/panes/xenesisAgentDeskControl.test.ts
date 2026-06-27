@@ -628,6 +628,36 @@ test('planXenesisDeskNaturalLanguageActions maps guide file open requests to CR 
       reason: 'Open Agent user stories guide file from natural language request.',
     },
   ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('헤르메스 guide file 열어줘').actions, [
+    {
+      id: 'natural-xenesis-guide-open-agent-user-stories',
+      path: 'xd.xenesis.guides.open',
+      args: { id: 'agent-user-stories', ensureVisible: true, openFile: true },
+      approved: false,
+      reason: 'Open Agent user stories guide file from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('오픈클로 채널 가이드 파일 열어줘').actions, [
+    {
+      id: 'natural-xenesis-guide-open-openclaw-channel-setup',
+      path: 'xd.xenesis.guides.open',
+      args: { id: 'openclaw-channel-setup', ensureVisible: true, openFile: true },
+      approved: false,
+      reason: 'Open OpenClaw-style channel setup guide file from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('구글 드라이브 통합 guide file 열어줘').actions, [
+    {
+      id: 'natural-xenesis-guide-open-external-tool-integrations',
+      path: 'xd.xenesis.guides.open',
+      args: { id: 'external-tool-integrations', ensureVisible: true, openFile: true },
+      approved: false,
+      reason: 'Open External tool integrations guide file from natural language request.',
+    },
+  ]);
 });
 
 test('planXenesisDeskNaturalLanguageActions maps onboarding checklist open requests to CR actions', () => {
@@ -1091,6 +1121,26 @@ test('planXenesisDeskNaturalLanguageActions maps guide catalog readback requests
       args: { id: 'agent-user-stories' },
       approved: false,
       reason: 'Read Agent user stories guide catalog status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 도구 통합 가이드 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-guide-status-external-tool-integrations',
+      path: 'xd.xenesis.guides.status',
+      args: { id: 'external-tool-integrations' },
+      approved: false,
+      reason: 'Read External tool integrations guide catalog status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('Hermes 통합 가이드 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-guide-status-external-tool-integrations',
+      path: 'xd.xenesis.guides.status',
+      args: { id: 'external-tool-integrations' },
+      approved: false,
+      reason: 'Read External tool integrations guide catalog status from natural language request.',
     },
   ]);
 });

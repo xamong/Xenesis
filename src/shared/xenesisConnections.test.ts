@@ -181,7 +181,7 @@ test('buildXenesisConnectionsStatus reports ready provider, MCP, gateway, and Te
     },
   });
 
-  assert.equal(status.summary.ready, 13);
+  assert.equal(status.summary.ready, 15);
   assert.equal(status.sections.provider.items[0].status, 'ready');
   assert.equal(status.sections.mcp.items[0].status, 'ready');
   assert.equal(status.sections.gateway.items[0].status, 'ready');
@@ -2311,6 +2311,8 @@ test('buildXenesisConnectionsStatus exposes guide catalog metadata for onboardin
 
   const onboarding = status.sections.guides.items.find((item) => item.id === 'onboarding-connections');
   const userStories = status.sections.guides.items.find((item) => item.id === 'agent-user-stories');
+  const channelSetup = status.sections.guides.items.find((item) => item.id === 'openclaw-channel-setup');
+  const toolIntegrations = status.sections.guides.items.find((item) => item.id === 'external-tool-integrations');
 
   assert.deepEqual(onboarding?.guideCatalog, {
     guideType: 'setup-playbook',
@@ -2340,6 +2342,30 @@ test('buildXenesisConnectionsStatus exposes guide catalog metadata for onboardin
   assert.equal(onboarding?.guideOpenPath, 'E:\\xenesis-desk\\docs\\manual\\09-onboarding-connections.md');
   assert.equal(userStories?.guideCatalog?.guideType, 'user-story-catalog');
   assert.equal(userStories?.guideCatalog?.readPaths.includes('xd.xenesis.guides.status'), true);
+  assert.equal(channelSetup?.guidePath, 'docs/manual/10-openclaw-channel-setup.md');
+  assert.equal(channelSetup?.guideOpenPath, 'E:\\xenesis-desk\\docs\\manual\\10-openclaw-channel-setup.md');
+  assert.equal(channelSetup?.guideCatalog?.guideType, 'integration-guide');
+  assert.deepEqual(channelSetup?.guideCatalog?.coveredSurfaces, [
+    'messenger-catalog',
+    'channel-routing',
+    'access-groups',
+    'pairing',
+    'diagnostics',
+  ]);
+  assert.equal(channelSetup?.guideCatalog?.readPaths.includes('xd.xenesis.messengers.views.status'), true);
+  assert.equal(channelSetup?.guideCatalog?.readPaths.includes('xd.xenesis.channels.safety.status'), true);
+  assert.equal(toolIntegrations?.guidePath, 'docs/manual/11-external-tool-integrations.md');
+  assert.equal(toolIntegrations?.guideOpenPath, 'E:\\xenesis-desk\\docs\\manual\\11-external-tool-integrations.md');
+  assert.equal(toolIntegrations?.guideCatalog?.guideType, 'integration-guide');
+  assert.deepEqual(toolIntegrations?.guideCatalog?.coveredSurfaces, [
+    'external-tools',
+    'mcp-connectors',
+    'oauth-drafts',
+    'tool-actions',
+    'user-stories',
+  ]);
+  assert.equal(toolIntegrations?.guideCatalog?.readPaths.includes('xd.xenesis.tools.views.status'), true);
+  assert.equal(toolIntegrations?.guideCatalog?.controlPaths.includes('xd.xenesis.tools.views.open'), true);
 });
 
 test('buildXenesisConnectionsStatus exposes diagnostic runbooks for tools, planned tools, and channels', () => {

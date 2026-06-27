@@ -33,6 +33,8 @@ The manual is written for two audiences:
 | Extensions, workflow, and operations | [07-extensions-workflow-ops.md](07-extensions-workflow-ops.md) |
 | Troubleshooting and agent routing | [08-troubleshooting-agent-routing.md](08-troubleshooting-agent-routing.md) |
 | Onboarding and connections | [09-onboarding-connections.md](09-onboarding-connections.md) |
+| OpenClaw-style channel setup | [10-openclaw-channel-setup.md](10-openclaw-channel-setup.md) |
+| External tool integrations | [11-external-tool-integrations.md](11-external-tool-integrations.md) |
 
 ## Core Model
 

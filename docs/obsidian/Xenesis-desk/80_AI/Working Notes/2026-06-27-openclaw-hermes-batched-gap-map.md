@@ -144,6 +144,25 @@
 - `Feishu / Lark` remains a combined card with Lark aliases; this slice does
   not create a duplicate Lark ID.
 
+## Guide Doc Surfaces Slice
+
+- Added repo-local manual guide surfaces for the cached OpenClaw/Hermes gap map
+  without re-browsing external docs:
+  - `docs/manual/10-openclaw-channel-setup.md`
+  - `docs/manual/11-external-tool-integrations.md`
+- Added `openclaw-channel-setup` and `external-tool-integrations` to the
+  Connection Center guide catalog with read/open metadata, validation paths,
+  user-story templates, and explicit safety boundaries.
+- Agent natural-language guide prompts such as
+  `오픈클로 채널 가이드 파일 열어줘`,
+  `외부 도구 통합 가이드 상태 보여줘`, and
+  `구글 드라이브 통합 guide file 열어줘` now route through existing
+  `xd.xenesis.guides.open` / `xd.xenesis.guides.status` paths.
+- Scope boundary: this slice did not add CR nodes, dispatcher branches,
+  renderer adapters, MCP installs, OAuth completion, provider tool execution,
+  gateway lifecycle actions, channel delivery, settings mutation, credential
+  storage, or approval bypasses.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
