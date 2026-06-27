@@ -655,6 +655,25 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local code, and tests.
 
+## Tool Setup Open CR Slice
+
+- Added a setup-specific CR open path for external tool setup cards:
+  `xd.xenesis.tools.setup.open`.
+- Xenesis Agent deterministic natural-language routing now preserves setup/config
+  intent for focused external tool opens:
+  - `구글 캘린더 setup 열어줘` -> `xd.xenesis.tools.setup.open` with
+    `id=google-calendar`.
+  - `구글 드라이브 setup 열어줘` -> `xd.xenesis.tools.setup.open` with
+    `id=google-workspace`.
+- Explicit tool view/화면 prompts still route to `xd.xenesis.tools.views.open`;
+  connector prompts still route to `xd.xenesis.tools.connectors.open`.
+- Scope boundary: this slice only opens internal Desk setup surfaces. It did not
+  install MCP servers, write MCP config, complete OAuth, store tokens, execute
+  provider tools, mutate settings, change external systems, create Action Inbox
+  items, add credentials, or bypass approvals.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local Obsidian graph, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

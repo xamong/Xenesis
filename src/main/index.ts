@@ -5883,6 +5883,29 @@ function isXenesisToolOAuthDraftId(value: string): value is (typeof XENESIS_TOOL
   return (XENESIS_TOOL_OAUTH_DRAFT_IDS as readonly string[]).includes(value);
 }
 
+function xenesisToolSetupStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    connection: item.toolSetup?.connection,
+    authMode: item.toolSetup?.authMode,
+    dataScopes: item.toolSetup?.dataScopes ?? [],
+    writeScopes: item.toolSetup?.writeScopes ?? [],
+    credentialStorage: item.toolSetup?.credentialStorage,
+    setupSurface: item.toolSetup?.setupSurface,
+    verification: item.toolSetup?.verification ?? [],
+    crReadPaths: item.toolSetup?.crReadPaths ?? [],
+    riskControls: item.toolSetup?.riskControls ?? [],
+    mcpTemplate: item.mcpTemplate,
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+    warnings: item.warnings ?? [],
+  };
+}
+
 async function getXenesisToolSetupStatus(args?: unknown): Promise<Record<string, unknown>> {
   const body = normalizeMcpCapabilityArgs(args);
   const id = readCapabilityString(body, ['id', 'tool', 'name']);
@@ -5898,26 +5921,7 @@ async function getXenesisToolSetupStatus(args?: unknown): Promise<Record<string,
   const items = status.sections.tools.items
     .filter((item) => item.toolSetup)
     .filter((item) => !id || item.id === id)
-    .map((item: XenesisConnectionItem) => ({
-      id: item.id,
-      label: item.label,
-      status: item.status,
-      supportLevel: item.supportLevel,
-      summary: item.summary,
-      connection: item.toolSetup?.connection,
-      authMode: item.toolSetup?.authMode,
-      dataScopes: item.toolSetup?.dataScopes ?? [],
-      writeScopes: item.toolSetup?.writeScopes ?? [],
-      credentialStorage: item.toolSetup?.credentialStorage,
-      setupSurface: item.toolSetup?.setupSurface,
-      verification: item.toolSetup?.verification ?? [],
-      crReadPaths: item.toolSetup?.crReadPaths ?? [],
-      riskControls: item.toolSetup?.riskControls ?? [],
-      mcpTemplate: item.mcpTemplate,
-      settingsAction: item.settingsAction,
-      crActions: item.crActions ?? [],
-      warnings: item.warnings ?? [],
-    }));
+    .map((item: XenesisConnectionItem) => xenesisToolSetupStatusItem(item));
 
   return {
     ok: true,
@@ -5925,6 +5929,43 @@ async function getXenesisToolSetupStatus(args?: unknown): Promise<Record<string,
     ...(id ? { id } : {}),
     total: items.length,
     items,
+  };
+}
+
+async function openXenesisToolSetup(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Tool id is required.' };
+  }
+  if (!isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.tools.items.find((candidate) => candidate.id === id && candidate.toolSetup);
+  if (!item) {
+    return { ok: false, id, error: `Xenesis tool setup is not available: ${id}` };
+  }
+
+  const renderer = await openMcpBuiltinPaneCapability({
+    kind: 'settings',
+    category: 'xenesis-agent',
+    mode: 'connections',
+    section: 'xenesis-connections',
+    focusConnectionId: id,
+    ensureVisible: body.ensureVisible !== false,
+  });
+
+  return {
+    ok: renderer.ok !== false,
+    id,
+    item: xenesisToolSetupStatusItem(item),
+    renderer,
   };
 }
 
@@ -14166,6 +14207,7 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisGuidesStatus: (args: unknown) => getXenesisGuidesStatus(args),
     openXenesisGuide: (args: unknown) => openXenesisGuide(args),
     getXenesisToolSetupStatus: (args: unknown) => getXenesisToolSetupStatus(args),
+    openXenesisToolSetup: (args: unknown) => openXenesisToolSetup(args),
     getXenesisToolConnectorsStatus: (args: unknown) => getXenesisToolConnectorsStatus(args),
     openXenesisToolConnector: (args: unknown) => openXenesisToolConnector(args),
     getXenesisToolViewsStatus: (args: unknown) => getXenesisToolViewsStatus(args),

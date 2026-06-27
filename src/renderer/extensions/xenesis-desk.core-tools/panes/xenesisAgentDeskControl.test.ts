@@ -328,6 +328,7 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.xenesis\.runs\.cancel/);
   assert.match(hint, /xd\.xenesis\.sessions\.reset/);
   assert.match(hint, /xd\.xenesis\.tools\.setup\.status/);
+  assert.match(hint, /xd\.xenesis\.tools\.setup\.open/);
   assert.match(hint, /xd\.xenesis\.tools\.connectors\.status/);
   assert.match(hint, /xd\.xenesis\.tools\.views\.status/);
   assert.match(hint, /xd\.xenesis\.tools\.views\.open/);
@@ -1468,21 +1469,21 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
 
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('구글 캘린더 setup 열어줘').actions, [
     {
-      id: 'natural-xenesis-tool-view-open-google-calendar',
-      path: 'xd.xenesis.tools.views.open',
+      id: 'natural-xenesis-tool-setup-open-google-calendar',
+      path: 'xd.xenesis.tools.setup.open',
       args: { id: 'google-calendar', ensureVisible: true },
       approved: false,
-      reason: 'Open Google Calendar tool view from natural language request.',
+      reason: 'Open Google Calendar tool setup from natural language request.',
     },
   ]);
 
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('구글 드라이브 setup 열어줘').actions, [
     {
-      id: 'natural-xenesis-tool-view-open-google-workspace',
-      path: 'xd.xenesis.tools.views.open',
+      id: 'natural-xenesis-tool-setup-open-google-workspace',
+      path: 'xd.xenesis.tools.setup.open',
       args: { id: 'google-workspace', ensureVisible: true },
       approved: false,
-      reason: 'Open Google Workspace tool view from natural language request.',
+      reason: 'Open Google Workspace tool setup from natural language request.',
     },
   ]);
 
