@@ -24,6 +24,7 @@ import type {
   XenesisConnectionToolActionCatalogTemplate,
   XenesisConnectionToolConnectorTemplate,
   XenesisConnectionToolInstallPlanTemplate,
+  XenesisConnectionToolOAuthDraftTemplate,
   XenesisConnectionToolSetupTemplate,
   XenesisConnectionToolUserStoryTemplate,
   XenesisConnectionToolViewTemplate,
@@ -147,6 +148,10 @@ export function formatXenesisMcpInstallDraftSummary(draft: XenesisConnectionMcpI
   return `${draft.serverName ?? draft.displayName} / ${draft.transport ?? 'planned'} / ${draft.draftStatus}`;
 }
 
+export function formatXenesisToolOAuthDraftSummary(draft: XenesisConnectionToolOAuthDraftTemplate): string {
+  return `${draft.tool} / ${draft.draftStatus} / ${draft.scopes.length} scope(s)`;
+}
+
 export function formatXenesisToolUserStorySummary(workflow: XenesisConnectionToolUserStoryTemplate): string {
   return `${workflow.workflowType} / ${workflow.runtimeSupport} / ${workflow.userStories.length} user story/stories`;
 }
@@ -218,6 +223,18 @@ export function buildXenesisMcpInstallDraftRequest(item: XenesisConnectionItem):
   if (!item.mcpInstallDraft) return null;
   return {
     path: 'xd.xenesis.tools.mcpInstallDrafts.request',
+    args: {
+      id: item.id,
+    },
+    source: 'xenesis',
+    approved: true,
+  };
+}
+
+export function buildXenesisToolOAuthDraftRequest(item: XenesisConnectionItem): McpBridgeCapabilityCallRequest | null {
+  if (!item.toolOAuthDraft) return null;
+  return {
+    path: 'xd.xenesis.tools.oauthDrafts.request',
     args: {
       id: item.id,
     },

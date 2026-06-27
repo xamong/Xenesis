@@ -208,6 +208,45 @@ export interface XenesisConnectionToolConnectorTemplate {
   safetyBoundaries: string[];
 }
 
+export type XenesisConnectionToolOAuthDraftStatus = 'planned-template' | 'missing-required-field' | 'ready' | 'unknown';
+export type XenesisConnectionToolOAuthDraftFieldValueState =
+  | 'planned'
+  | 'missing'
+  | 'configured'
+  | 'not-required'
+  | 'unknown';
+
+export interface XenesisConnectionToolOAuthDraftField {
+  field: string;
+  label: string;
+  required: boolean;
+  secretRef: boolean;
+  valueState: XenesisConnectionToolOAuthDraftFieldValueState;
+  source: string;
+  description: string;
+}
+
+export interface XenesisConnectionToolOAuthDraftTemplate {
+  draftStatus: XenesisConnectionToolOAuthDraftStatus;
+  actionInboxKind: 'xenesis-tool-oauth-draft';
+  tool: string;
+  displayName: string;
+  description?: string;
+  runtimeSupport: 'planned-oauth' | 'ready-template';
+  authSurface: string;
+  reviewSurface: string;
+  profileFields: XenesisConnectionToolOAuthDraftField[];
+  missingRequiredFields: string[];
+  scopes: string[];
+  tokenStore: string;
+  consentMode: string;
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  blockedActions: string[];
+  safetyBoundaries: string[];
+}
+
 export interface XenesisConnectionToolViewTemplate {
   viewType: 'connection-detail';
   primarySurface: string;
@@ -669,6 +708,7 @@ export interface XenesisConnectionItem {
   toolSetup?: XenesisConnectionToolSetupTemplate;
   toolInstallPlan?: XenesisConnectionToolInstallPlanTemplate;
   toolConnector?: XenesisConnectionToolConnectorTemplate;
+  toolOAuthDraft?: XenesisConnectionToolOAuthDraftTemplate;
   mcpInstallDraft?: XenesisConnectionMcpInstallDraftTemplate;
   toolView?: XenesisConnectionToolViewTemplate;
   toolUserStory?: XenesisConnectionToolUserStoryTemplate;
@@ -3136,6 +3176,16 @@ const XENESIS_MCP_INSTALL_DRAFT_BLOCKED_ACTIONS = [
   'mutate settings',
 ];
 
+const XENESIS_TOOL_OAUTH_DRAFT_IDS = ['google-workspace', 'google-calendar'] as const;
+
+const XENESIS_TOOL_OAUTH_DRAFT_BLOCKED_ACTIONS = [
+  'complete OAuth',
+  'store tokens',
+  'write MCP config',
+  'execute provider tools',
+  'mutate settings',
+];
+
 function missingEnvFor(requiredEnv: readonly string[], env: Record<string, string | undefined>): string[] {
   return uniqueStrings(requiredEnv.filter((ref) => !env[ref]?.trim()));
 }
@@ -3480,6 +3530,139 @@ function buildXenesisMcpInstallDraft(
   };
 }
 
+function toolOAuthDraftField(
+  field: string,
+  label: string,
+  required: boolean,
+  secretRef: boolean,
+  valueState: XenesisConnectionToolOAuthDraftFieldValueState,
+  source: string,
+  description: string,
+): XenesisConnectionToolOAuthDraftField {
+  return {
+    field,
+    label,
+    required,
+    secretRef,
+    valueState,
+    source,
+    description,
+  };
+}
+
+function buildXenesisToolOAuthDraft(item: XenesisConnectionItem): XenesisConnectionToolOAuthDraftTemplate | undefined {
+  if (!(XENESIS_TOOL_OAUTH_DRAFT_IDS as readonly string[]).includes(item.id)) return undefined;
+  if (item.toolConnector?.authMode !== 'oauth') return undefined;
+
+  const missingRequiredFields = ['oauthClient', 'redirectUri', 'tokenStore'];
+  const scopes = uniqueStrings(item.toolConnector.dataScopes);
+  const calendarBlockedActions =
+    item.id === 'google-calendar'
+      ? ['create/update/delete calendar events without approval', 'mutate calendar events']
+      : [];
+  const workspaceBlockedActions =
+    item.id === 'google-workspace' ? ['send email', 'mutate Google documents', 'mutate documents'] : [];
+
+  return {
+    draftStatus: 'planned-template',
+    actionInboxKind: 'xenesis-tool-oauth-draft',
+    tool: item.id,
+    displayName: item.label,
+    description: `Review ${item.label} OAuth app, scopes, consent, and token-store readiness before any OAuth flow exists.`,
+    runtimeSupport: item.toolConnector.runtimeSupport === 'ready-template' ? 'ready-template' : 'planned-oauth',
+    authSurface: item.toolConnector.setupSurface,
+    reviewSurface: 'Desk Action Inbox',
+    profileFields: [
+      toolOAuthDraftField(
+        'oauthClient',
+        'OAuth client',
+        true,
+        true,
+        'planned',
+        'selected MCP OAuth app',
+        'OAuth client id and secret readiness state for the selected MCP server.',
+      ),
+      toolOAuthDraftField(
+        'redirectUri',
+        'Redirect URI',
+        true,
+        false,
+        'planned',
+        'selected MCP OAuth app',
+        'Redirect URI expected by the selected MCP OAuth flow.',
+      ),
+      toolOAuthDraftField(
+        'scopes',
+        'OAuth scopes',
+        true,
+        false,
+        scopes.length > 0 ? 'configured' : 'missing',
+        'tool connector data scopes',
+        'Read scopes proposed by the Connection Center for review.',
+      ),
+      toolOAuthDraftField(
+        'tokenStore',
+        'Token store',
+        true,
+        true,
+        'planned',
+        'selected MCP OAuth token store',
+        'Token storage is not configured until a verified MCP/OAuth template is selected.',
+      ),
+      toolOAuthDraftField(
+        'consentReview',
+        'Consent review',
+        false,
+        false,
+        'planned',
+        'Desk Action Inbox review',
+        'Human review record for requested scopes and OAuth boundaries.',
+      ),
+    ],
+    missingRequiredFields,
+    scopes,
+    tokenStore: 'selected MCP OAuth token store',
+    consentMode: 'review-only',
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.tools.oauthDrafts.status',
+      'xd.xenesis.tools.connectors.status',
+      'xd.xenesis.tools.installPlans.status',
+      'xd.xenesis.tools.actions.status',
+      'xd.mcp.settings.status',
+    ],
+    controlPaths: [
+      'xd.xenesis.tools.oauthDrafts.open',
+      'xd.xenesis.tools.oauthDrafts.request',
+      'xd.xenesis.connections.open',
+      'xd.panes.settings.open',
+    ],
+    diagnostics: uniqueStrings([
+      'planned-oauth-template',
+      'scope-review',
+      'token-store-review',
+      'oauth-consent-review',
+      'cr-readback',
+      ...(item.toolConnector.diagnostics ?? []),
+    ]),
+    blockedActions: uniqueStrings([
+      ...XENESIS_TOOL_OAUTH_DRAFT_BLOCKED_ACTIONS,
+      ...workspaceBlockedActions,
+      ...calendarBlockedActions,
+    ]),
+    safetyBoundaries: uniqueStrings([
+      'tool OAuth drafts are review-only',
+      'tool OAuth draft does not complete OAuth, store tokens, write MCP config, execute provider tools, mutate settings, send email, mutate documents, or mutate calendar events',
+      'credential values, OAuth client secrets, OAuth tokens, and consent responses are never returned',
+      'Google tool writes require separate verified approval-gated execution paths',
+      ...(item.toolConnector.safetyBoundaries ?? []),
+      ...(item.toolInstallPlan?.safetyBoundaries ?? []),
+      ...(item.toolActionCatalog?.safetyBoundaries ?? []),
+      ...(item.warnings ?? []),
+    ]),
+  };
+}
+
 function diagnosticRunbookReadiness(status: XenesisConnectionStatus): XenesisConnectionDiagnosticRunbookReadiness {
   if (status === 'needs-setup') return 'action-required';
   return status;
@@ -3511,6 +3694,7 @@ function diagnosticRunbookSetupSurface(item: XenesisConnectionItem): string {
     (item.providerSetup ? 'Settings > AI Provider' : undefined) ??
     item.toolSetup?.setupSurface ??
     item.toolConnector?.setupSurface ??
+    item.toolOAuthDraft?.authSurface ??
     item.toolView?.setupSurface ??
     item.toolActionCatalog?.primarySurface ??
     item.toolUserStory?.setupSurface ??
@@ -3532,6 +3716,7 @@ function diagnosticRunbookPrimarySurface(item: XenesisConnectionItem): string {
     item.providerView?.primarySurface ??
     (item.providerProfileDraft ? 'Settings > Xenesis Agent > Connections' : undefined) ??
     item.toolView?.primarySurface ??
+    (item.toolOAuthDraft ? 'Settings > Xenesis Agent > Connections' : undefined) ??
     item.toolActionCatalog?.primarySurface ??
     item.toolUserStory?.primarySurface ??
     item.toolInstallPlan?.primarySurface ??
@@ -3649,6 +3834,24 @@ function buildXenesisConnectionDiagnosticRunbook(
         readPaths: ['xd.xenesis.tools.connectors.status', ...item.toolConnector.readPaths],
         controlPaths: item.toolConnector.controlPaths,
         diagnostics: [...item.toolConnector.validationChecks, ...item.toolConnector.diagnostics],
+      }),
+    );
+  }
+
+  if (item.toolOAuthDraft) {
+    steps.push(
+      diagnosticRunbookStep({
+        id: 'tool-oauth-draft',
+        label: 'Tool OAuth draft',
+        expectedState:
+          'Review-only OAuth app, scope, consent, and token-store fields are visible before any OAuth flow or provider tool execution.',
+        readPaths: ['xd.xenesis.tools.oauthDrafts.status', ...item.toolOAuthDraft.readPaths],
+        controlPaths: item.toolOAuthDraft.controlPaths,
+        diagnostics: [
+          ...item.toolOAuthDraft.missingRequiredFields,
+          ...item.toolOAuthDraft.scopes,
+          ...item.toolOAuthDraft.diagnostics,
+        ],
       }),
     );
   }
@@ -3856,6 +4059,7 @@ function buildXenesisConnectionDiagnosticRunbook(
       ...(item.providerProfileDraft?.safetyBoundaries ?? []),
       ...(item.toolSetup?.riskControls ?? []),
       ...(item.toolConnector?.safetyBoundaries ?? []),
+      ...(item.toolOAuthDraft?.safetyBoundaries ?? []),
       ...(item.toolView?.safetyBoundaries ?? []),
       ...(item.toolActionCatalog?.safetyBoundaries ?? []),
       ...(item.toolUserStory?.safetyBoundaries ?? []),
@@ -3913,6 +4117,7 @@ function setupRequestDiagnosticItems(item: XenesisConnectionItem): string[] {
     ...(item.providerProfileDraft?.diagnostics ?? []),
     ...(item.toolSetup?.verification ?? []),
     ...(item.toolConnector?.validationChecks ?? []),
+    ...(item.toolOAuthDraft?.diagnostics ?? []),
     ...(item.toolActionCatalog?.diagnostics ?? []),
     ...(item.toolInstallPlan?.diagnostics ?? []),
     ...(item.mcpInstallDraft?.diagnostics ?? []),
@@ -3933,6 +4138,8 @@ function setupRequestStepItems(item: XenesisConnectionItem): string[] {
     ...(item.providerSetup?.verification.map((check) => `verify ${check}`) ?? []),
     ...(item.providerProfileDraft?.missingRequiredFields.map((field) => `review provider profile field: ${field}`) ??
       []),
+    ...(item.toolOAuthDraft?.missingRequiredFields.map((field) => `review OAuth draft field: ${field}`) ?? []),
+    ...(item.toolOAuthDraft?.scopes.map((scope) => `review OAuth scope: ${scope}`) ?? []),
     ...(item.toolInstallPlan?.installSteps ?? []),
     ...(item.mcpInstallDraft?.installSteps ?? []),
     ...(item.toolConnector?.validationChecks.map((check) => `validate ${check}`) ?? []),
@@ -3984,6 +4191,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.providerProfileDraft?.readPaths ?? []),
       ...(item.toolSetup?.crReadPaths ?? []),
       ...(item.toolConnector?.readPaths ?? []),
+      ...(item.toolOAuthDraft?.readPaths ?? []),
       ...(item.toolView?.readPaths ?? []),
       ...(item.toolUserStory?.readPaths ?? []),
       ...(item.toolInstallPlan?.readPaths ?? []),
@@ -4006,6 +4214,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.providerProfileDraft?.controlPaths ?? []),
       ...(item.crActions ?? []),
       ...(item.toolConnector?.controlPaths ?? []),
+      ...(item.toolOAuthDraft?.controlPaths ?? []),
       ...(item.toolView?.controlPaths ?? []),
       ...(item.toolActionCatalog?.controlPaths ?? []),
       ...(item.toolUserStory?.controlPaths ?? []),
@@ -4032,6 +4241,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.providerProfileDraft?.safetyBoundaries ?? []),
       ...(item.toolSetup?.riskControls ?? []),
       ...(item.toolConnector?.safetyBoundaries ?? []),
+      ...(item.toolOAuthDraft?.safetyBoundaries ?? []),
       ...(item.toolView?.safetyBoundaries ?? []),
       ...(item.toolActionCatalog?.safetyBoundaries ?? []),
       ...(item.toolUserStory?.safetyBoundaries ?? []),
@@ -4173,6 +4383,7 @@ function toolConnectionItems(env: Record<string, string | undefined> = {}): Xene
       : item;
     return {
       ...withCredentialState,
+      toolOAuthDraft: buildXenesisToolOAuthDraft(withCredentialState),
       mcpInstallDraft: buildXenesisMcpInstallDraft(withCredentialState, env),
     };
   });

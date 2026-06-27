@@ -312,6 +312,9 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.xenesis\.tools\.mcpInstallDrafts\.status/);
   assert.match(hint, /xd\.xenesis\.tools\.mcpInstallDrafts\.open/);
   assert.match(hint, /xd\.xenesis\.tools\.mcpInstallDrafts\.request/);
+  assert.match(hint, /xd\.xenesis\.tools\.oauthDrafts\.status/);
+  assert.match(hint, /xd\.xenesis\.tools\.oauthDrafts\.open/);
+  assert.match(hint, /xd\.xenesis\.tools\.oauthDrafts\.request/);
   assert.match(hint, /xd\.xenesis\.tools\.actions\.status/);
   assert.match(hint, /xd\.xenesis\.tools\.actions\.open/);
   assert.match(hint, /xd\.xenesis\.tools\.actions\.request/);
@@ -326,6 +329,14 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.xenesis\.channels\.accessGroups\.status/);
   assert.match(hint, /xd\.xenesis\.channels\.pairing\.status/);
   assert.match(hint, /tool action catalogs are review-only/i);
+  assert.match(hint, /tool OAuth drafts are review-only/i);
+  assert.match(hint, /do not complete OAuth/i);
+  assert.match(hint, /store tokens/i);
+  assert.match(hint, /write MCP config/i);
+  assert.match(hint, /execute provider tools/i);
+  assert.match(hint, /send email/i);
+  assert.match(hint, /mutate documents/i);
+  assert.match(hint, /mutate calendar events/i);
   assert.match(hint, /provider profile drafts are review-only/i);
   assert.match(hint, /do not mutate provider settings/i);
   assert.match(hint, /store credentials/i);

@@ -567,6 +567,8 @@ const XENESIS_EXTERNAL_TOOL_IDS = [
   'google-calendar',
 ] as const;
 
+const XENESIS_TOOL_OAUTH_DRAFT_IDS = ['google-workspace', 'google-calendar'] as const;
+
 const XENESIS_TOOL_SETUP_STATUS_SCHEMA = {
   type: 'object',
   properties: {
@@ -671,6 +673,75 @@ const XENESIS_TOOL_MCP_INSTALL_DRAFT_REQUEST_SCHEMA = {
       type: 'string',
       title: 'Review note',
       description: 'Optional note to append to the MCP install draft description.',
+    },
+  },
+} as const;
+const XENESIS_TOOL_OAUTH_DRAFT_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+      description: 'Optional external tool OAuth draft id to filter.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+      description: 'Alias for id.',
+    },
+  },
+} as const;
+const XENESIS_TOOL_OAUTH_DRAFT_OPEN_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+      description: 'External tool OAuth draft id to open in the Connection Center.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+      description: 'Alias for id.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused tool connection card into view after opening the Connection Center.',
+      default: true,
+    },
+  },
+} as const;
+const XENESIS_TOOL_OAUTH_DRAFT_REQUEST_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+      description: 'External tool OAuth draft id to record as an OAuth setup review request.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+      description: 'Alias for id.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity to include on the Action Inbox item.',
+    },
+    note: {
+      type: 'string',
+      title: 'Review note',
+      description: 'Optional note to append to the OAuth draft description.',
     },
   },
 } as const;
@@ -1114,6 +1185,9 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisToolMcpInstallDraftsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisToolMcpInstallDraft?: (args?: unknown) => Promise<unknown> | unknown;
   requestXenesisToolMcpInstallDraft?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisToolOAuthDraftsStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisToolOAuthDraft?: (args?: unknown) => Promise<unknown> | unknown;
+  requestXenesisToolOAuthDraft?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolActionCatalogStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisToolActionCatalog?: (args?: unknown) => Promise<unknown> | unknown;
   requestXenesisToolActionCatalog?: (args?: unknown) => Promise<unknown> | unknown;
@@ -4389,6 +4463,34 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               'Record a local Action Inbox item for reviewing an MCP install draft without writing config, running shell commands, completing OAuth, storing tokens, executing provider tools, or mutating settings.',
               'write',
               XENESIS_TOOL_MCP_INSTALL_DRAFT_REQUEST_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.tools.oauthDrafts',
+          'OAuth drafts',
+          'Read, open, and request review-only OAuth app and token-store drafts for planned Google tool connections.',
+          [
+            method(
+              'xd.xenesis.tools.oauthDrafts.status',
+              'Read tool OAuth drafts',
+              'Read review-only OAuth app, scope, consent, token-store, diagnostics, and safety-boundary metadata without completing OAuth, storing tokens, writing MCP config, or running provider tools.',
+              'read',
+              XENESIS_TOOL_OAUTH_DRAFT_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.oauthDrafts.open',
+              'Open tool OAuth draft',
+              'Open Settings > Xenesis Agent > Connections and focus an external tool OAuth draft card inside Desk.',
+              'control',
+              XENESIS_TOOL_OAUTH_DRAFT_OPEN_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.oauthDrafts.request',
+              'Request tool OAuth draft review',
+              'Record a local Action Inbox item for reviewing a tool OAuth draft without completing OAuth, storing tokens, writing MCP config, executing provider tools, sending email, mutating documents, or mutating calendar events.',
+              'write',
+              XENESIS_TOOL_OAUTH_DRAFT_REQUEST_SCHEMA,
             ),
           ],
         ),
@@ -10958,6 +11060,15 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.tools.mcpInstallDrafts.request') {
         return callAdapter(path, api?.requestXenesisToolMcpInstallDraft, request.args);
+      }
+      if (path === 'xd.xenesis.tools.oauthDrafts.status') {
+        return callAdapter(path, api?.getXenesisToolOAuthDraftsStatus, request.args);
+      }
+      if (path === 'xd.xenesis.tools.oauthDrafts.open') {
+        return callAdapter(path, api?.openXenesisToolOAuthDraft, request.args);
+      }
+      if (path === 'xd.xenesis.tools.oauthDrafts.request') {
+        return callAdapter(path, api?.requestXenesisToolOAuthDraft, request.args);
       }
       if (path === 'xd.xenesis.tools.actions.status') {
         return callAdapter(path, api?.getXenesisToolActionCatalogStatus, request.args);

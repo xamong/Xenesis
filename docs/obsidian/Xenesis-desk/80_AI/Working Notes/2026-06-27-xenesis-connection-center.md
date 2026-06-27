@@ -786,6 +786,44 @@ Capability Registry instead of only through separate renderer settings panels.
   renderer helper, and missing prompt-hint paths, then passed after
   implementation with 110/110 tests.
 
+## Current Tool OAuth Drafts Slice
+
+- Add `toolOAuthDraft` metadata to Google Workspace and Google Calendar cards
+  in `xd.xenesis.connections.status`.
+- Add `xd.xenesis.tools.oauthDrafts.status` as a read/no-approval CR path for
+  review-only OAuth app/client fields, redirect URI readiness, proposed scopes,
+  token-store intent, consent mode, diagnostics, blocked actions, and safety
+  boundaries.
+- Add `xd.xenesis.tools.oauthDrafts.open` as a control/no-approval CR path that
+  opens Settings > Xenesis Agent > Connections and focuses the requested
+  Google tool card.
+- Add `xd.xenesis.tools.oauthDrafts.request` as a write/when-external CR path
+  that records a local `xenesis-tool-oauth-draft` Action Inbox item for review.
+- Settings renders the same read model with
+  `data-xenesis-tool-oauth-draft="<tool-id>"`.
+- This is a review-only setup surface. It does not complete OAuth, store
+  tokens, write MCP config, execute provider tools, send email, mutate
+  documents/tasks, create/update/delete calendar events, mutate settings, or
+  bypass approvals.
+- External documentation handling for this slice: no per-slice web browsing.
+  Use local Obsidian/docs/handoff/code/tests as the gap map; refresh external
+  docs only as a batched documentation pass if needed.
+- `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+  failed first for missing OAuth draft metadata and renderer helpers, then
+  passed after implementation with 67/67 tests.
+- `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+  failed first for missing OAuth draft CR paths and prompt-hint coverage, then
+  passed after implementation with 47/47 tests.
+- Full focused regression after formatting passed with 114/114 tests. Root
+  typecheck, Xenesis package typecheck/test/build, CR audit, and app build
+  passed. Public-release check still fails on the known missing
+  `.github/workflows/ci.yml` gap.
+- Live Electron smoke passed: direct Google Calendar OAuth draft status returned
+  `planned-template`/`planned-oauth` with `calendar.events.readonly`; request
+  created `xenesis-tool-oauth-draft:google-calendar`; open rendered
+  `data-xenesis-tool-oauth-draft="google-calendar"`; Agent-pane fenced CR prompt
+  matched `Desk action completed`.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

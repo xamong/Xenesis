@@ -709,6 +709,95 @@ test('xenesis MCP install draft capabilities are registered and dispatch to the 
   });
 });
 
+test('xenesis tool OAuth draft capabilities are registered and dispatch to the adapter', async () => {
+  const statusCapability = findDeskBridgeCapability('xd.xenesis.tools.oauthDrafts.status');
+  const openCapability = findDeskBridgeCapability('xd.xenesis.tools.oauthDrafts.open');
+  const requestCapability = findDeskBridgeCapability('xd.xenesis.tools.oauthDrafts.request');
+  const statusSchemaProperties = (statusCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const requestSchemaProperties = (requestCapability?.schema?.properties ?? {}) as Record<string, any>;
+
+  assert.equal(statusCapability?.permission, 'read');
+  assert.equal(statusCapability?.approval, 'never');
+  assert.equal(openCapability?.permission, 'control');
+  assert.equal(openCapability?.approval, 'never');
+  assert.deepEqual(openCapability?.schema?.required, ['id']);
+  assert.equal(requestCapability?.permission, 'write');
+  assert.equal(requestCapability?.approval, 'when-external');
+  assert.deepEqual(requestCapability?.schema?.required, ['id']);
+  for (const tool of ['google-workspace', 'google-calendar']) {
+    assert.equal(statusSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by status`);
+    assert.equal(statusSchemaProperties.tool?.enum.includes(tool), true, `${tool} should be accepted by status alias`);
+    assert.equal(openSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by open`);
+    assert.equal(requestSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by request`);
+  }
+
+  const calls: Array<{ method: string; args: unknown }> = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisToolOAuthDraftsStatus: (args) => {
+      calls.push({ method: 'status', args });
+      return {
+        ok: true,
+        items: [{ id: 'google-calendar', draftStatus: 'planned-template' }],
+      };
+    },
+    openXenesisToolOAuthDraft: (args) => {
+      calls.push({ method: 'open', args });
+      return {
+        ok: true,
+        item: { id: 'google-calendar', draftStatus: 'planned-template' },
+      };
+    },
+    requestXenesisToolOAuthDraft: (args) => {
+      calls.push({ method: 'request', args });
+      return {
+        ok: true,
+        id: 'google-calendar',
+        actionInboxItem: { id: 'tool-oauth-draft-google-calendar' },
+      };
+    },
+  };
+
+  const statusResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.tools.oauthDrafts.status',
+    args: { tool: 'google-calendar' },
+    source: 'xenesis',
+  });
+  const openResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.tools.oauthDrafts.open',
+    args: { id: 'google-calendar' },
+    source: 'xenesis',
+  });
+  const requestResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.tools.oauthDrafts.request',
+    args: { id: 'google-calendar' },
+    source: 'xenesis',
+    approved: true,
+  });
+
+  assert.equal(statusResult.ok, true);
+  assert.equal(openResult.ok, true);
+  assert.equal(requestResult.ok, true);
+  assert.deepEqual(calls, [
+    { method: 'status', args: { tool: 'google-calendar' } },
+    { method: 'open', args: { id: 'google-calendar' } },
+    { method: 'request', args: { id: 'google-calendar' } },
+  ]);
+  assert.deepEqual(statusResult.result, {
+    ok: true,
+    items: [{ id: 'google-calendar', draftStatus: 'planned-template' }],
+  });
+  assert.deepEqual(openResult.result, {
+    ok: true,
+    item: { id: 'google-calendar', draftStatus: 'planned-template' },
+  });
+  assert.deepEqual(requestResult.result, {
+    ok: true,
+    id: 'google-calendar',
+    actionInboxItem: { id: 'tool-oauth-draft-google-calendar' },
+  });
+});
+
 test('xenesis tool action catalog capabilities are registered and dispatch to the adapter', async () => {
   const statusCapability = findDeskBridgeCapability('xd.xenesis.tools.actions.status');
   const openCapability = findDeskBridgeCapability('xd.xenesis.tools.actions.open');

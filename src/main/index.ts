@@ -5871,6 +5871,12 @@ function isXenesisToolSetupId(value: string): value is (typeof XENESIS_TOOL_SETU
   return (XENESIS_TOOL_SETUP_IDS as readonly string[]).includes(value);
 }
 
+const XENESIS_TOOL_OAUTH_DRAFT_IDS = ['google-workspace', 'google-calendar'] as const;
+
+function isXenesisToolOAuthDraftId(value: string): value is (typeof XENESIS_TOOL_OAUTH_DRAFT_IDS)[number] {
+  return (XENESIS_TOOL_OAUTH_DRAFT_IDS as readonly string[]).includes(value);
+}
+
 async function getXenesisToolSetupStatus(args?: unknown): Promise<Record<string, unknown>> {
   const body = normalizeMcpCapabilityArgs(args);
   const id = readCapabilityString(body, ['id', 'tool', 'name']);
@@ -6390,6 +6396,187 @@ async function requestXenesisToolMcpInstallDraft(args?: unknown): Promise<Record
     ok: true,
     id: item.id,
     item: xenesisToolMcpInstallDraftStatusItem(item),
+    actionInboxItem,
+  };
+}
+
+function xenesisToolOAuthDraftStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    draftStatus: item.toolOAuthDraft?.draftStatus,
+    actionInboxKind: item.toolOAuthDraft?.actionInboxKind,
+    tool: item.toolOAuthDraft?.tool,
+    displayName: item.toolOAuthDraft?.displayName,
+    description: item.toolOAuthDraft?.description,
+    runtimeSupport: item.toolOAuthDraft?.runtimeSupport,
+    authSurface: item.toolOAuthDraft?.authSurface,
+    reviewSurface: item.toolOAuthDraft?.reviewSurface,
+    profileFields: item.toolOAuthDraft?.profileFields ?? [],
+    missingRequiredFields: item.toolOAuthDraft?.missingRequiredFields ?? [],
+    scopes: item.toolOAuthDraft?.scopes ?? [],
+    tokenStore: item.toolOAuthDraft?.tokenStore,
+    consentMode: item.toolOAuthDraft?.consentMode,
+    readPaths: item.toolOAuthDraft?.readPaths ?? [],
+    controlPaths: item.toolOAuthDraft?.controlPaths ?? [],
+    diagnostics: item.toolOAuthDraft?.diagnostics ?? [],
+    blockedActions: item.toolOAuthDraft?.blockedActions ?? [],
+    safetyBoundaries: item.toolOAuthDraft?.safetyBoundaries ?? [],
+    toolOAuthDraft: item.toolOAuthDraft,
+    toolConnector: item.toolConnector,
+    toolInstallPlan: item.toolInstallPlan,
+    toolActionCatalog: item.toolActionCatalog,
+    settingsAction: item.settingsAction,
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisToolOAuthDraftsStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (id && !isXenesisToolOAuthDraftId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool OAuth draft: ${id}`,
+      allowedTools: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.tools.items
+    .filter((item) => item.toolOAuthDraft)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisToolOAuthDraftStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisToolOAuthDraft(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Tool id is required.' };
+  }
+  if (!isXenesisToolOAuthDraftId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool OAuth draft: ${id}`,
+      allowedTools: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.tools.items.find((candidate) => candidate.id === id && candidate.toolOAuthDraft);
+  if (!item) {
+    return { ok: false, id, error: `Xenesis tool OAuth draft is not available: ${id}` };
+  }
+
+  const renderer = await openMcpBuiltinPaneCapability({
+    kind: 'settings',
+    category: 'xenesis-agent',
+    mode: 'connections',
+    section: 'xenesis-connections',
+    focusConnectionId: id,
+    ensureVisible: body.ensureVisible !== false,
+  });
+
+  return {
+    ok: renderer.ok !== false,
+    id,
+    item: xenesisToolOAuthDraftStatusItem(item),
+    renderer,
+  };
+}
+
+async function requestXenesisToolOAuthDraft(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Tool id is required.' };
+  }
+  if (!isXenesisToolOAuthDraftId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool OAuth draft: ${id}`,
+      allowedTools: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.tools.items.find((candidate) => candidate.id === id && candidate.toolOAuthDraft);
+  if (!item?.toolOAuthDraft) {
+    return { ok: false, id, error: `Xenesis tool OAuth draft is not available: ${id}` };
+  }
+
+  const draft = item.toolOAuthDraft;
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+  const requester = readCapabilityString(body, ['requester', 'user', 'userName']) || 'Xenesis Desk';
+  const fieldLines = draft.profileFields.map(
+    (field) => `- ${field.field}: ${field.valueState}${field.required ? ' (required)' : ''}`,
+  );
+  const description = [
+    `Review the ${draft.draftStatus} OAuth draft for ${item.label}.`,
+    `Tool: ${draft.tool}`,
+    `Runtime support: ${draft.runtimeSupport}`,
+    `Auth surface: ${draft.authSurface}`,
+    `Review surface: ${draft.reviewSurface}`,
+    `Consent mode: ${draft.consentMode}`,
+    `Token store: ${draft.tokenStore}`,
+    `Missing required fields: ${draft.missingRequiredFields.join(', ') || 'none'}`,
+    '',
+    'Profile field state:',
+    ...fieldLines,
+    '',
+    'Scopes:',
+    ...draft.scopes.map((scope) => `- ${scope}`),
+    '',
+    'Read paths:',
+    ...draft.readPaths.map((path) => `- ${path}`),
+    '',
+    'Control paths:',
+    ...draft.controlPaths.map((path) => `- ${path}`),
+    '',
+    'Diagnostics:',
+    ...draft.diagnostics.map((diagnostic) => `- ${diagnostic}`),
+    '',
+    'Blocked actions:',
+    ...draft.blockedActions.map((action) => `- ${action}`),
+    '',
+    'Safety boundaries:',
+    ...draft.safetyBoundaries.map((boundary) => `- ${boundary}`),
+    note ? '' : undefined,
+    note ? `Note: ${note}` : undefined,
+  ]
+    .filter((line): line is string => typeof line === 'string')
+    .join('\n');
+
+  const actionInboxItem = recordMcpActionInboxRequest({
+    kind: draft.actionInboxKind,
+    title: `Review ${item.label} OAuth draft`,
+    command: `Review OAuth draft for ${item.id}`,
+    description,
+    source: 'Xenesis Connection Center',
+    sessionId: 'xenesis-tool-oauth-draft',
+    approvalSessionKey: `xenesis-tool-oauth-draft:${item.id}`,
+    requester,
+    risk: draft.draftStatus,
+    approveText: `Approve OAuth draft for ${item.label}`,
+    rejectText: `Reject OAuth draft for ${item.label}`,
+  });
+
+  return {
+    ok: true,
+    id: item.id,
+    item: xenesisToolOAuthDraftStatusItem(item),
     actionInboxItem,
   };
 }
@@ -13946,6 +14133,9 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisToolMcpInstallDraftsStatus: (args: unknown) => getXenesisToolMcpInstallDraftsStatus(args),
     openXenesisToolMcpInstallDraft: (args: unknown) => openXenesisToolMcpInstallDraft(args),
     requestXenesisToolMcpInstallDraft: (args: unknown) => requestXenesisToolMcpInstallDraft(args),
+    getXenesisToolOAuthDraftsStatus: (args: unknown) => getXenesisToolOAuthDraftsStatus(args),
+    openXenesisToolOAuthDraft: (args: unknown) => openXenesisToolOAuthDraft(args),
+    requestXenesisToolOAuthDraft: (args: unknown) => requestXenesisToolOAuthDraft(args),
     getXenesisToolActionCatalogStatus: (args: unknown) => getXenesisToolActionCatalogStatus(args),
     openXenesisToolActionCatalog: (args: unknown) => openXenesisToolActionCatalog(args),
     requestXenesisToolActionCatalog: (args: unknown) => requestXenesisToolActionCatalog(args),

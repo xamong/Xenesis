@@ -693,6 +693,68 @@ test('buildXenesisConnectionsStatus exposes review-only MCP install drafts', () 
   assert.equal(calendar?.mcpInstallDraft?.blockedActions.includes('install MCP server'), true);
 });
 
+test('buildXenesisConnectionsStatus exposes review-only tool OAuth drafts for planned Google tools', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+    env: {
+      GOOGLE_OAUTH_TOKEN_STORE: 'secret-value-must-not-appear',
+    },
+  });
+
+  const workspace = status.sections.tools.items.find((item) => item.id === 'google-workspace');
+  const calendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+
+  assert.equal(notion?.toolOAuthDraft, undefined);
+  assert.equal(workspace?.toolOAuthDraft?.draftStatus, 'planned-template');
+  assert.equal(workspace?.toolOAuthDraft?.actionInboxKind, 'xenesis-tool-oauth-draft');
+  assert.equal(workspace?.toolOAuthDraft?.tool, 'google-workspace');
+  assert.deepEqual(workspace?.toolOAuthDraft?.missingRequiredFields, ['oauthClient', 'redirectUri', 'tokenStore']);
+  assert.ok(workspace?.toolOAuthDraft?.scopes.includes('gmail.readonly'));
+  assert.ok(workspace?.toolOAuthDraft?.scopes.includes('documents.readonly'));
+  assert.ok(workspace?.toolOAuthDraft?.profileFields.some((field) => field.field === 'oauthClient'));
+  assert.ok(workspace?.toolOAuthDraft?.readPaths.includes('xd.xenesis.tools.oauthDrafts.status'));
+  assert.ok(workspace?.toolOAuthDraft?.controlPaths.includes('xd.xenesis.tools.oauthDrafts.request'));
+  assert.ok(workspace?.toolOAuthDraft?.blockedActions.includes('complete OAuth'));
+  assert.ok(workspace?.toolOAuthDraft?.blockedActions.includes('store tokens'));
+
+  assert.equal(calendar?.toolOAuthDraft?.draftStatus, 'planned-template');
+  assert.equal(calendar?.toolOAuthDraft?.runtimeSupport, 'planned-oauth');
+  assert.ok(calendar?.toolOAuthDraft?.scopes.includes('calendar.events.readonly'));
+  assert.ok(calendar?.toolOAuthDraft?.scopes.includes('calendar.freebusy.readonly'));
+  assert.ok(calendar?.toolOAuthDraft?.diagnostics.includes('scope-review'));
+  assert.ok(
+    calendar?.toolOAuthDraft?.safetyBoundaries.some((boundary) =>
+      boundary.includes('tool OAuth drafts are review-only'),
+    ),
+  );
+  assert.equal(JSON.stringify(calendar?.toolOAuthDraft).includes('secret-value-must-not-appear'), false);
+});
+
 test('buildXenesisConnectionsStatus exposes review-only tool action catalogs', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {

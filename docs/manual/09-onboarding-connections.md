@@ -106,6 +106,17 @@ provider tools, send messages, mutate settings, or bypass approvals. Google
 Workspace and Google Calendar remain planned until a verified MCP/OAuth
 template exists.
 
+Planned Google tool cards also expose a `toolOAuthDraft` read model. Use
+`xd.xenesis.tools.oauthDrafts.status` to inspect review-only OAuth app,
+redirect URI, scope, consent, token-store, diagnostics, blocked action, and
+safety-boundary metadata for Google Workspace and Google Calendar. Use
+`xd.xenesis.tools.oauthDrafts.open` with `{ "id": "<tool-id>" }` to focus the
+owning card, and `xd.xenesis.tools.oauthDrafts.request` with
+`{ "id": "<tool-id>" }` to record a local `xenesis-tool-oauth-draft` Action
+Inbox item for review. These drafts do not complete OAuth, store tokens, write
+MCP config, execute provider tools, send email, mutate documents, create or
+change calendar events, mutate settings, or bypass approvals.
+
 Tool cards also expose a `toolActionCatalog` read model. Use
 `xd.xenesis.tools.actions.status` to inspect review-only external tool action
 groups, data scopes, approval policies, diagnostics, blocked actions, and
@@ -273,6 +284,17 @@ complete OAuth, store tokens, execute provider MCP tools, mutate external tool
 settings, send email, update documents, or create/update/delete calendar events.
 Google Workspace and Google Calendar stay `planned-oauth` until a verified
 OAuth/MCP template and token storage path are implemented.
+
+Each planned Google tool card also exposes a `toolOAuthDraft` read model. Use
+`xd.xenesis.tools.oauthDrafts.status` to inspect the OAuth app/client draft,
+redirect URI requirement, proposed read scopes, token-store intent, consent
+mode, diagnostics, blocked actions, and safety boundaries. Use
+`xd.xenesis.tools.oauthDrafts.open` with `{ "id": "<tool-id>" }` to focus the
+matching card and `xd.xenesis.tools.oauthDrafts.request` with
+`{ "id": "<tool-id>" }` to record a local Action Inbox review item. This is a
+review-only setup surface: it does not complete OAuth, store tokens, write MCP
+config, execute provider MCP tools, send email, mutate documents/tasks, or
+create/update/delete calendar events.
 
 Each tool card also exposes a `toolActionCatalog` read model. Use
 `xd.xenesis.tools.actions.status` to inspect search/read/write action groups,
