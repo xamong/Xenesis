@@ -181,6 +181,24 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local code, and tests.
 
+## Guide Aggregate Catalog Slice
+
+- Added deterministic Xenesis Agent natural-language routing for broad guide
+  catalog prompts that do not name one guide:
+  - `가이드 전체 열어줘` -> `xd.panes.settings.open` with the Xenesis Agent
+    Connection Center selected.
+  - `guide catalog 열어줘` -> `xd.panes.settings.open` with the Xenesis Agent
+    Connection Center selected.
+  - `가이드 전체 상태 보여줘` -> `xd.xenesis.guides.status` with `{}`.
+  - `guide catalog 상태 보여줘` -> `xd.xenesis.guides.status` with `{}`.
+- Specific guide prompts such as `온보딩 가이드 열어줘` and
+  `외부 도구 통합 가이드 상태 보여줘` still route to the focused guide id.
+- Scope boundary: this slice did not create guide files, mutate guide content,
+  install MCP servers, complete OAuth, start gateways, send messages, change
+  providers, add CR nodes, change dispatcher branches, or bypass approvals.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local code, and tests.
+
 ## Provider Alias Coverage Slice
 
 - Expanded Xenesis Agent natural-language provider target resolution for the

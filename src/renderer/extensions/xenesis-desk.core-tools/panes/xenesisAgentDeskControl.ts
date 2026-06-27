@@ -851,6 +851,13 @@ function hasXenesisAggregateCatalogContext(value: string): boolean {
   return hasAny(value, ['전체', 'all', 'catalog', '카탈로그', '목록', 'list']);
 }
 
+function hasXenesisGuideCatalogContext(value: string): boolean {
+  return (
+    hasAny(value, ['가이드', 'guide', 'guides', '문서', 'playbook', '플레이북']) &&
+    hasXenesisAggregateCatalogContext(value)
+  );
+}
+
 function xenesisToolAggregateStatusActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
   if (!hasExternalToolCatalogContext(value)) return null;
   if (!hasXenesisConnectionReadbackIntent(value)) return null;
@@ -1336,6 +1343,15 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
     );
   }
 
+  if (hasXenesisGuideCatalogContext(value)) {
+    return naturalAction(
+      'natural-xenesis-guides-status',
+      'xd.xenesis.guides.status',
+      {},
+      'Read Xenesis guide catalog status from natural language request.',
+    );
+  }
+
   const guideStatusAction = xenesisGuideStatusActionFromNaturalText(value);
   if (guideStatusAction) return guideStatusAction;
 
@@ -1510,6 +1526,17 @@ function xenesisConnectionCenterOpenArgs(): Record<string, string> {
   };
 }
 
+function xenesisGuideCatalogOpenActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
+  if (!hasXenesisGuideCatalogContext(value)) return null;
+
+  return naturalAction(
+    'natural-xenesis-guides-catalog-open',
+    'xd.panes.settings.open',
+    xenesisConnectionCenterOpenArgs(),
+    'Open Xenesis guide catalog in Connection Center from natural language request.',
+  );
+}
+
 function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
   if (!hasXenesisAggregateCatalogContext(value)) return null;
 
@@ -1544,6 +1571,9 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
 }
 
 function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
+  const guideCatalogOpenAction = xenesisGuideCatalogOpenActionFromNaturalText(value);
+  if (guideCatalogOpenAction) return guideCatalogOpenAction;
+
   const guideAction = xenesisGuideActionFromNaturalText(value);
   if (guideAction) return guideAction;
 

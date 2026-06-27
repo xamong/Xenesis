@@ -821,6 +821,36 @@ test('planXenesisDeskNaturalLanguageActions maps tools and explorer filter reque
 });
 
 test('planXenesisDeskNaturalLanguageActions maps Connection Center requests to CR actions', () => {
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('가이드 전체 열어줘').actions, [
+    {
+      id: 'natural-xenesis-guides-catalog-open',
+      path: 'xd.panes.settings.open',
+      args: {
+        category: 'xenesis-agent',
+        mode: 'connections',
+        section: 'xenesis-connections',
+        placement: 'tab',
+      },
+      approved: false,
+      reason: 'Open Xenesis guide catalog in Connection Center from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('guide catalog 열어줘').actions, [
+    {
+      id: 'natural-xenesis-guides-catalog-open',
+      path: 'xd.panes.settings.open',
+      args: {
+        category: 'xenesis-agent',
+        mode: 'connections',
+        section: 'xenesis-connections',
+        placement: 'tab',
+      },
+      approved: false,
+      reason: 'Open Xenesis guide catalog in Connection Center from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 연결 카드 열어줘').actions, [
     {
       id: 'natural-xenesis-connection-open-notion',
@@ -1483,6 +1513,26 @@ test('planXenesisDeskNaturalLanguageActions maps onboarding checklist readback r
 });
 
 test('planXenesisDeskNaturalLanguageActions maps guide catalog readback requests to CR actions', () => {
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('가이드 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-guides-status',
+      path: 'xd.xenesis.guides.status',
+      args: {},
+      approved: false,
+      reason: 'Read Xenesis guide catalog status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('guide catalog 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-guides-status',
+      path: 'xd.xenesis.guides.status',
+      args: {},
+      approved: false,
+      reason: 'Read Xenesis guide catalog status from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('온보딩 가이드 상태 보여줘').actions, [
     {
       id: 'natural-xenesis-guide-status-onboarding-connections',
