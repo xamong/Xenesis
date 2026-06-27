@@ -101,6 +101,8 @@ import {
   formatXenesisChannelSafetySummary,
   formatXenesisChannelUserStorySummary,
   formatXenesisConnectionDiagnosticRunbookSummary,
+  formatXenesisConnectionGuidedStepDetail,
+  formatXenesisConnectionReviewStepDetail,
   formatXenesisConnectionSetupRequestSummary,
   formatXenesisConnectionSetupReviewSummary,
   formatXenesisGuideCatalogSummary,
@@ -4567,6 +4569,10 @@ export default function SettingsPane() {
               <strong>{onboardingPlan.validationChecks.join(', ')}</strong>
             </div>
             <div>
+              <span>{t('settings.xenesisConnectionsOnboardingGuidedSteps')}</span>
+              <strong>{onboardingPlan.guidedSteps.map(formatXenesisConnectionGuidedStepDetail).join(' | ')}</strong>
+            </div>
+            <div>
               <span>{t('settings.xenesisConnectionsOnboardingDiagnostics')}</span>
               <strong>{onboardingPlan.diagnostics.join(', ')}</strong>
             </div>
@@ -4647,6 +4653,12 @@ export default function SettingsPane() {
                 {providerProfileDraft.guardrails.approvalMode} / {providerProfileDraft.guardrails.providerRetries}{' '}
                 retries / {providerProfileDraft.guardrails.fallbackPolicy} /{' '}
                 {providerProfileDraft.guardrails.localCliBoundary}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderProfileDraftReviewSteps')}</span>
+              <strong>
+                {providerProfileDraft.reviewSteps.map(formatXenesisConnectionReviewStepDetail).join(' | ')}
               </strong>
             </div>
             <div>
@@ -4969,6 +4981,10 @@ export default function SettingsPane() {
               <strong>{toolOAuthDraft.consentMode}</strong>
             </div>
             <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthDraftReviewSteps')}</span>
+              <strong>{toolOAuthDraft.reviewSteps.map(formatXenesisConnectionReviewStepDetail).join(' | ')}</strong>
+            </div>
+            <div>
               <span>{t('settings.xenesisConnectionsToolOAuthDraftReadback')}</span>
               <strong>{toolOAuthDraft.readPaths.join(', ')}</strong>
             </div>
@@ -5070,6 +5086,12 @@ export default function SettingsPane() {
               <strong>
                 {channelProfileDraft.guardrails.approvalMode} / {channelProfileDraft.guardrails.maxTurns} turns /{' '}
                 {channelProfileDraft.guardrails.maxTokens} tokens
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelProfileDraftReviewSteps')}</span>
+              <strong>
+                {channelProfileDraft.reviewSteps.map(formatXenesisConnectionReviewStepDetail).join(' | ')}
               </strong>
             </div>
             <div>

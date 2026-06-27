@@ -2,6 +2,7 @@ import type {
   McpBridgeCapabilityCallRequest,
   XenesisConnectionChannelAccessGroupsTemplate,
   XenesisConnectionChannelPairingTemplate,
+  XenesisConnectionChannelProfileDraftReviewStep,
   XenesisConnectionChannelProfileDraftTemplate,
   XenesisConnectionChannelRoutingTemplate,
   XenesisConnectionChannelSafetyTemplate,
@@ -11,7 +12,9 @@ import type {
   XenesisConnectionItem,
   XenesisConnectionMcpInstallDraftTemplate,
   XenesisConnectionMessengerViewTemplate,
+  XenesisConnectionOnboardingGuidedStep,
   XenesisConnectionOnboardingPlanTemplate,
+  XenesisConnectionProviderProfileDraftReviewStep,
   XenesisConnectionProviderProfileDraftTemplate,
   XenesisConnectionProviderRoutingTemplate,
   XenesisConnectionProviderSetupTemplate,
@@ -24,6 +27,7 @@ import type {
   XenesisConnectionToolActionCatalogTemplate,
   XenesisConnectionToolConnectorTemplate,
   XenesisConnectionToolInstallPlanTemplate,
+  XenesisConnectionToolOAuthDraftReviewStep,
   XenesisConnectionToolOAuthDraftTemplate,
   XenesisConnectionToolSetupTemplate,
   XenesisConnectionToolUserStoryTemplate,
@@ -106,6 +110,19 @@ export function formatXenesisGuideCatalogSummary(guide: XenesisConnectionGuideCa
 
 export function formatXenesisOnboardingPlanSummary(plan: XenesisConnectionOnboardingPlanTemplate): string {
   return `${plan.phase} / ${plan.validationChecks.length} validation check(s) / ${plan.guidedSteps.length} guided step(s)`;
+}
+
+export function formatXenesisConnectionGuidedStepDetail(step: XenesisConnectionOnboardingGuidedStep): string {
+  return `${step.id} (${step.kind}): ${step.expectedState} / path ${step.crPath} / verify ${step.verifyWith.join(', ') || '-'} / safety ${step.safetyBoundary}`;
+}
+
+type XenesisConnectionReviewStep =
+  | XenesisConnectionProviderProfileDraftReviewStep
+  | XenesisConnectionToolOAuthDraftReviewStep
+  | XenesisConnectionChannelProfileDraftReviewStep;
+
+export function formatXenesisConnectionReviewStepDetail(step: XenesisConnectionReviewStep): string {
+  return `${step.id} (${step.label}): ${step.expectedState} / required ${step.requiredFields.join(', ') || '-'} / read ${step.readPaths.join(', ') || '-'} / controls ${step.controlPaths.join(', ') || '-'} / diagnostics ${step.diagnostics.join(', ') || '-'} / safety ${step.safetyBoundary}`;
 }
 
 export function formatXenesisProviderSetupSummary(setup: XenesisConnectionProviderSetupTemplate): string {

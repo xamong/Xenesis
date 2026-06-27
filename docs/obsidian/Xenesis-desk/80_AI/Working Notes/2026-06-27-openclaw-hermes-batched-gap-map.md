@@ -2683,6 +2683,46 @@
 - External documentation handling: no browsing. This used the cached gap map,
   source code, and tests.
 
+## Connection Center Review Detail UI Slice
+
+- Added renderer detail formatting for:
+  - onboarding guided setup steps,
+  - provider profile draft review steps,
+  - tool OAuth draft review steps,
+  - external messenger channel profile review steps.
+- `SettingsPane` now renders these detail rows inside Connection Center cards
+  instead of exposing only aggregate counts. The rows include expected state,
+  required fields where applicable, read/control paths, diagnostics, and safety
+  boundaries.
+- Added English/Korean labels for the new rows and re-exported the guided/review
+  step types through `src/shared/types.ts`.
+- Scope boundary:
+  - Renderer presentation only. No CR schema/dispatcher changes, setup request
+    behavior changes, provider/tool/channel mutations, OAuth completion,
+    install execution, channel delivery, or approval bypass.
+- Verification:
+  - RED:
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`
+    failed with 35/38 passing because the helper functions and SettingsPane
+    detail rows were missing.
+  - GREEN:
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`
+    passed with 38/38 tests.
+  - Related:
+    `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    passed with 102/102 tests.
+  - Scoped Biome:
+    `npx biome check src\shared\types.ts src\renderer\panes\SettingsPane.tsx src\renderer\panes\xenesisConnectionCenter.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\i18n\en.ts src\renderer\i18n\ko.ts --max-diagnostics 80`
+    passed after `npx biome check --write ...` formatted/import-sorted 3 files.
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit` passed with Registered nodes 763,
+    Callable methods 468, Dispatcher paths 448, missing registered paths 0,
+    missing dispatched coverage paths 0, undispatched static callable methods
+    0, and dispatcher paths missing from tree 0. The generated audit file was
+    removed afterward.
+- External documentation handling: no browsing. This used cached gap context,
+  source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

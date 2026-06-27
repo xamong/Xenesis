@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import type { XenesisConnectionItem, XenesisConnectionsStatus } from '../../shared/types';
+import type {
+  XenesisConnectionItem,
+  XenesisConnectionOnboardingGuidedStep,
+  XenesisConnectionProviderProfileDraftReviewStep,
+  XenesisConnectionsStatus,
+} from '../../shared/types';
 import {
   buildXenesisChannelProfileDraftRequest,
   buildXenesisConnectionGuideRequest,
@@ -18,6 +24,8 @@ import {
   formatXenesisChannelSafetySummary,
   formatXenesisChannelUserStorySummary,
   formatXenesisConnectionDiagnosticRunbookSummary,
+  formatXenesisConnectionGuidedStepDetail,
+  formatXenesisConnectionReviewStepDetail,
   formatXenesisConnectionSetupRequestSummary,
   formatXenesisConnectionSetupReviewSummary,
   formatXenesisGuideCatalogSummary,
@@ -135,6 +143,53 @@ test('formatXenesisOnboardingPlanSummary describes phase and validation check co
     }),
     'first-chat / 3 validation check(s) / 1 guided step(s)',
   );
+});
+
+test('formatXenesisConnectionGuidedStepDetail exposes guided CR path, verification, and safety detail', () => {
+  const step = {
+    id: 'open-provider-settings',
+    label: 'Open provider settings',
+    kind: 'open',
+    crPath: 'xd.panes.settings.open',
+    expectedState: 'Provider settings are visible before the first chat.',
+    verifyWith: ['provider-settings-visible', 'provider-footer-visible'],
+    safetyBoundary: 'Opening settings does not mutate provider config.',
+  } satisfies XenesisConnectionOnboardingGuidedStep;
+
+  assert.equal(
+    formatXenesisConnectionGuidedStepDetail(step),
+    'open-provider-settings (open): Provider settings are visible before the first chat. / path xd.panes.settings.open / verify provider-settings-visible, provider-footer-visible / safety Opening settings does not mutate provider config.',
+  );
+});
+
+test('formatXenesisConnectionReviewStepDetail exposes required fields, read/control paths, diagnostics, and safety detail', () => {
+  const step = {
+    id: 'runtime-routing',
+    label: 'Review runtime routing',
+    phase: 'runtime-routing',
+    expectedState: 'Runtime provider routing is visible without editing fallback chains.',
+    requiredFields: ['runtimeProvider', 'fallbackPolicy'],
+    readPaths: ['xd.xenesis.providers.routing.status'],
+    controlPaths: ['xd.xenesis.providers.profileDrafts.request'],
+    diagnostics: ['runtime-routing', 'credential-pools-reviewed'],
+    safetyBoundary: 'Provider routing review does not change fallback chains.',
+  } satisfies XenesisConnectionProviderProfileDraftReviewStep;
+
+  assert.equal(
+    formatXenesisConnectionReviewStepDetail(step),
+    'runtime-routing (Review runtime routing): Runtime provider routing is visible without editing fallback chains. / required runtimeProvider, fallbackPolicy / read xd.xenesis.providers.routing.status / controls xd.xenesis.providers.profileDrafts.request / diagnostics runtime-routing, credential-pools-reviewed / safety Provider routing review does not change fallback chains.',
+  );
+});
+
+test('SettingsPane renders Connection Center guided and review step details', () => {
+  const source = readFileSync('src/renderer/panes/SettingsPane.tsx', 'utf8');
+
+  assert.match(source, /formatXenesisConnectionGuidedStepDetail/);
+  assert.match(source, /formatXenesisConnectionReviewStepDetail/);
+  assert.match(source, /xenesisConnectionsOnboardingGuidedSteps/);
+  assert.match(source, /xenesisConnectionsProviderProfileDraftReviewSteps/);
+  assert.match(source, /xenesisConnectionsToolOAuthDraftReviewSteps/);
+  assert.match(source, /xenesisConnectionsChannelProfileDraftReviewSteps/);
 });
 
 test('buildXenesisConnectionSettingsRequest opens the configured settings target through CR', () => {
