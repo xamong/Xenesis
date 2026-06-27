@@ -458,6 +458,12 @@ function xenesisConnectionTargetFromNaturalText(
   return targets.find((target) => hasAny(value, target.words)) || null;
 }
 
+const IMPLEMENTED_XENESIS_MESSENGER_IDS = new Set(['telegram', 'slack', 'discord', 'webhook']);
+
+function isImplementedXenesisMessengerTarget(target: { id: string; kind: 'tool' | 'messenger' }): boolean {
+  return target.kind === 'messenger' && IMPLEMENTED_XENESIS_MESSENGER_IDS.has(target.id);
+}
+
 function xenesisGuideFromNaturalText(value: string): { id: string; label: string } | null {
   if (!hasAny(value, ['가이드', 'guide', '문서', 'playbook', '플레이북'])) return null;
 
@@ -761,7 +767,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       );
     }
 
-    if (target.kind === 'messenger' && hasAny(value, ['라우팅', 'routing', 'route'])) {
+    if (isImplementedXenesisMessengerTarget(target) && hasAny(value, ['라우팅', 'routing', 'route'])) {
       return naturalAction(
         `natural-xenesis-channel-routing-status-${target.id}`,
         'xd.xenesis.channels.routing.status',
@@ -770,7 +776,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       );
     }
 
-    if (target.kind === 'messenger' && hasAny(value, ['안전', 'safety', '가드레일', 'guardrail'])) {
+    if (isImplementedXenesisMessengerTarget(target) && hasAny(value, ['안전', 'safety', '가드레일', 'guardrail'])) {
       return naturalAction(
         `natural-xenesis-channel-safety-status-${target.id}`,
         'xd.xenesis.channels.safety.status',
@@ -779,7 +785,10 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       );
     }
 
-    if (target.kind === 'messenger' && hasAny(value, ['접근 그룹', 'access group', 'access groups', 'allowlist'])) {
+    if (
+      isImplementedXenesisMessengerTarget(target) &&
+      hasAny(value, ['접근 그룹', 'access group', 'access groups', 'allowlist'])
+    ) {
       return naturalAction(
         `natural-xenesis-channel-access-groups-status-${target.id}`,
         'xd.xenesis.channels.accessGroups.status',
@@ -806,7 +815,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       );
     }
 
-    if (target.kind === 'messenger' && hasAny(value, ['프로필', 'profile', 'draft', '초안'])) {
+    if (isImplementedXenesisMessengerTarget(target) && hasAny(value, ['프로필', 'profile', 'draft', '초안'])) {
       return naturalAction(
         `natural-xenesis-channel-profile-draft-status-${target.id}`,
         'xd.xenesis.channels.profileDrafts.status',
@@ -830,6 +839,21 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
         'configuration',
         '구성',
         'integration',
+        '라우팅',
+        'routing',
+        'route',
+        '안전',
+        'safety',
+        '가드레일',
+        'guardrail',
+        '접근 그룹',
+        'access group',
+        'access groups',
+        'allowlist',
+        '프로필',
+        'profile',
+        'draft',
+        '초안',
       ])
     ) {
       return naturalAction(
@@ -946,7 +970,7 @@ function xenesisConnectionReviewRequestActionFromNaturalText(value: string): Xen
   }
 
   if (
-    target.kind === 'messenger' &&
+    isImplementedXenesisMessengerTarget(target) &&
     hasAny(value, ['프로필', 'profile', '채널', 'channel', '메신저', 'messenger', 'bot', '봇'])
   ) {
     return naturalAction(
@@ -1133,7 +1157,7 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
     );
   }
 
-  if (target.kind === 'messenger' && hasAny(value, ['프로필', 'profile', 'draft', '초안'])) {
+  if (isImplementedXenesisMessengerTarget(target) && hasAny(value, ['프로필', 'profile', 'draft', '초안'])) {
     return naturalAction(
       `natural-xenesis-channel-profile-draft-open-${target.id}`,
       'xd.xenesis.channels.profileDrafts.open',
@@ -1159,6 +1183,10 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
       '구성',
       '연결',
       'integration',
+      '프로필',
+      'profile',
+      'draft',
+      '초안',
     ])
   ) {
     return naturalAction(

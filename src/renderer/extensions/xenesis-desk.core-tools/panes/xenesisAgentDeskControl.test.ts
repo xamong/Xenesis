@@ -823,6 +823,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('구글 챗 프로필 초안 열어줘').actions, [
+    {
+      id: 'natural-xenesis-messenger-view-open-google-chat',
+      path: 'xd.xenesis.messengers.views.open',
+      args: { id: 'google-chat', ensureVisible: true },
+      approved: false,
+      reason: 'Open Google Chat messenger view from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('텔레그램 사용자 스토리 열어줘').actions, [
     {
       id: 'natural-xenesis-channel-user-story-open-telegram',
@@ -1141,6 +1151,26 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center read
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('구글 챗 라우팅 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-messenger-view-status-google-chat',
+      path: 'xd.xenesis.messengers.views.status',
+      args: { id: 'google-chat' },
+      approved: false,
+      reason: 'Read Google Chat messenger view status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('왓츠앱 안전 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-messenger-view-status-whatsapp',
+      path: 'xd.xenesis.messengers.views.status',
+      args: { id: 'whatsapp' },
+      approved: false,
+      reason: 'Read WhatsApp messenger view status from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('슬랙 config 상태 보여줘').actions, [
     {
       id: 'natural-xenesis-messenger-view-status-slack',
@@ -1210,6 +1240,16 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center review reques
       args: { channel: 'telegram' },
       approved: false,
       reason: 'Request Telegram channel profile draft review from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('왓츠앱 프로필 검토 요청해줘').actions, [
+    {
+      id: 'natural-xenesis-connection-setup-request-whatsapp',
+      path: 'xd.xenesis.connections.setupRequests.request',
+      args: { id: 'whatsapp' },
+      approved: false,
+      reason: 'Request WhatsApp connection setup review from natural language request.',
     },
   ]);
 

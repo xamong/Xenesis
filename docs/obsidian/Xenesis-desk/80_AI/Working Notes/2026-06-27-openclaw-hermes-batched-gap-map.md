@@ -79,6 +79,23 @@
   execution for planned messengers unless their CR argument schema is verified
   separately.
 
+## Planned Messenger Channel Guard Slice
+
+- Added an implemented-channel guard in the Agent natural-language planner.
+- Planned messenger prompts such as `구글 챗 라우팅 상태 보여줘` and
+  `왓츠앱 안전 상태 보여줘` now fall back to
+  `xd.xenesis.messengers.views.status` instead of emitting implemented-channel
+  only paths such as `xd.xenesis.channels.routing.status` or
+  `xd.xenesis.channels.safety.status`.
+- Planned messenger profile prompts such as `구글 챗 프로필 초안 열어줘` now
+  open the internal messenger view rather than `xd.xenesis.channels.profileDrafts.open`.
+- Planned messenger profile review prompts such as `왓츠앱 프로필 검토 요청해줘`
+  now record a generic setup request through
+  `xd.xenesis.connections.setupRequests.request` rather than using channel
+  profile draft review paths that only accept implemented channels.
+- Pairing and user-story natural routing remains available for planned
+  messengers because those CR schemas accept planned messenger IDs.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
