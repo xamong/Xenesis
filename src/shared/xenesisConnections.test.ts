@@ -521,7 +521,61 @@ test('buildXenesisConnectionsStatus exposes onboarding plan metadata for initial
       'provider settings are not mutated by onboarding reads',
       'credential values are never returned',
     ],
+    guidedSteps: [
+      {
+        id: 'read-provider-setup',
+        label: 'Read provider setup',
+        kind: 'read',
+        crPath: 'xd.xenesis.providers.setup.status',
+        expectedState: 'Active provider, runtime profile, credential state, and fallback behavior are visible.',
+        verifyWith: ['provider-ready', 'runtime-provider', 'provider-footer'],
+        safetyBoundary: 'credential values are never returned',
+      },
+      {
+        id: 'open-provider-settings',
+        label: 'Open provider settings',
+        kind: 'open',
+        crPath: 'xd.panes.settings.open',
+        expectedState: 'The AI Provider settings surface is opened for explicit user edits.',
+        verifyWith: ['normal-agent-chat', 'cr-readback'],
+        safetyBoundary: 'provider settings changes stay on explicit user actions',
+      },
+    ],
   });
+
+  for (const item of status.sections.onboarding.items) {
+    assert.ok(item.onboardingPlan?.guidedSteps.length, `${item.id} exposes guided steps`);
+    for (const step of item.onboardingPlan?.guidedSteps ?? []) {
+      assert.match(step.crPath, /^xd\./, `${item.id}/${step.id} uses a Desk CR path`);
+      assert.ok(step.verifyWith.length > 0, `${item.id}/${step.id} exposes verification signals`);
+      assert.ok(step.safetyBoundary.length > 0, `${item.id}/${step.id} exposes a safety boundary`);
+    }
+  }
+
+  const recommendedTools = status.sections.onboarding.items.find((item) => item.id === 'recommended-tools');
+  assert.ok(
+    recommendedTools?.onboardingPlan?.guidedSteps.some(
+      (step) => step.crPath === 'xd.xenesis.tools.setup.status' && step.kind === 'read',
+    ),
+  );
+  assert.ok(
+    recommendedTools?.onboardingPlan?.guidedSteps.some(
+      (step) => step.crPath === 'xd.xenesis.tools.userStories.open' && step.kind === 'open',
+    ),
+  );
+
+  const gateway = status.sections.onboarding.items.find((item) => item.id === 'gateway');
+  assert.ok(
+    gateway?.onboardingPlan?.guidedSteps.some(
+      (step) => step.crPath === 'xd.xenesis.gateway.status' && step.kind === 'read',
+    ),
+  );
+  assert.ok(
+    gateway?.onboardingPlan?.guidedSteps.some(
+      (step) => step.crPath === 'xd.xenesis.gateway.start' && step.kind === 'control',
+    ),
+  );
+  assert.ok(gateway?.diagnosticRunbook?.controlPaths.includes('xd.xenesis.gateway.start'));
 
   const messengerRouting = status.sections.onboarding.items.find((item) => item.id === 'messenger-routing');
   assert.deepEqual(messengerRouting?.onboardingPlan?.statusReadPaths, [
@@ -538,6 +592,23 @@ test('buildXenesisConnectionsStatus exposes onboarding plan metadata for initial
     'xd.xenesis.profiles.updateChannels',
     'xd.xenesis.profiles.testChannel',
   ]);
+  assert.ok(
+    messengerRouting?.onboardingPlan?.guidedSteps.some(
+      (step) => step.crPath === 'xd.xenesis.channels.accessGroups.status' && step.kind === 'read',
+    ),
+  );
+
+  const testSend = status.sections.onboarding.items.find((item) => item.id === 'test-send');
+  assert.ok(
+    testSend?.onboardingPlan?.guidedSteps.some(
+      (step) =>
+        step.crPath === 'xd.xenesis.profiles.testChannel' &&
+        step.kind === 'control' &&
+        step.safetyBoundary.includes('sanitized'),
+    ),
+  );
+  assert.ok(testSend?.setupRequest?.steps.some((step) => step.includes('xd.xenesis.profiles.testChannel')));
+  assert.ok(testSend?.setupRequest?.diagnostics.includes('sanitized-test-send'));
 });
 
 test('buildXenesisConnectionsStatus includes actionable setup recipes for MCP tools', () => {

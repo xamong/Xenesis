@@ -140,6 +140,18 @@ export type XenesisConnectionOnboardingPlanPhase =
   | 'messenger-routing'
   | 'end-to-end-test';
 
+export type XenesisConnectionOnboardingGuidedStepKind = 'read' | 'open' | 'control';
+
+export interface XenesisConnectionOnboardingGuidedStep {
+  id: string;
+  label: string;
+  kind: XenesisConnectionOnboardingGuidedStepKind;
+  crPath: string;
+  expectedState: string;
+  verifyWith: string[];
+  safetyBoundary: string;
+}
+
 export interface XenesisConnectionOnboardingPlanTemplate {
   phase: XenesisConnectionOnboardingPlanPhase;
   primarySurface: string;
@@ -149,6 +161,7 @@ export interface XenesisConnectionOnboardingPlanTemplate {
   validationChecks: string[];
   diagnostics: string[];
   safetyBoundaries: string[];
+  guidedSteps: XenesisConnectionOnboardingGuidedStep[];
 }
 
 export interface XenesisConnectionToolSetupTemplate {
@@ -4107,9 +4120,20 @@ function buildXenesisConnectionDiagnosticRunbook(
         id: 'onboarding-plan',
         label: 'Onboarding plan',
         expectedState: `Validation checks are reviewed: ${item.onboardingPlan.validationChecks.join(', ') || 'none'}.`,
-        readPaths: ['xd.xenesis.onboarding.status', ...item.onboardingPlan.statusReadPaths],
-        controlPaths: item.onboardingPlan.controlPaths,
-        diagnostics: [...item.onboardingPlan.validationChecks, ...item.onboardingPlan.diagnostics],
+        readPaths: [
+          'xd.xenesis.onboarding.status',
+          ...item.onboardingPlan.statusReadPaths,
+          ...onboardingGuidedStepPaths(item.onboardingPlan, ['read']),
+        ],
+        controlPaths: [
+          ...item.onboardingPlan.controlPaths,
+          ...onboardingGuidedStepPaths(item.onboardingPlan, ['open', 'control']),
+        ],
+        diagnostics: uniqueStrings([
+          ...item.onboardingPlan.validationChecks,
+          ...item.onboardingPlan.diagnostics,
+          ...item.onboardingPlan.guidedSteps.flatMap((step) => step.verifyWith),
+        ]),
       }),
     );
   }
@@ -4411,6 +4435,7 @@ function buildXenesisConnectionDiagnosticRunbook(
       'diagnostic runbooks are read/open planning surfaces',
       'diagnostic runbooks do not execute tools, send messages, complete OAuth, install adapters, or mutate settings',
       ...(item.onboardingPlan?.safetyBoundaries ?? []),
+      ...(item.onboardingPlan?.guidedSteps.map((step) => step.safetyBoundary) ?? []),
       ...(item.providerSetup?.riskControls ?? []),
       ...(item.providerRouting?.safetyBoundaries ?? []),
       ...(item.providerView?.safetyBoundaries ?? []),
@@ -4470,6 +4495,7 @@ function setupRequestDiagnosticItems(item: XenesisConnectionItem): string[] {
     ...(item.missingEnv ?? []),
     ...(item.warnings ?? []),
     ...(item.onboardingPlan?.diagnostics ?? []),
+    ...(item.onboardingPlan?.guidedSteps.flatMap((step) => step.verifyWith) ?? []),
     ...(item.providerSetup?.verification ?? []),
     ...(item.providerRouting?.diagnostics ?? []),
     ...(item.providerProfileDraft?.diagnostics ?? []),
@@ -4492,6 +4518,7 @@ function setupRequestDiagnosticItems(item: XenesisConnectionItem): string[] {
 function setupRequestStepItems(item: XenesisConnectionItem): string[] {
   return uniqueStrings([
     ...(item.setupSteps ?? []),
+    ...(item.onboardingPlan?.guidedSteps.map((step) => `${step.kind} ${step.crPath}: ${step.expectedState}`) ?? []),
     ...(item.onboardingPlan?.validationChecks.map((check) => `verify ${check}`) ?? []),
     ...(item.providerSetup?.verification.map((check) => `verify ${check}`) ?? []),
     ...(item.providerProfileDraft?.missingRequiredFields.map((field) => `review provider profile field: ${field}`) ??
@@ -4543,6 +4570,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       'xd.xenesis.connections.diagnostics.status',
       ...(item.diagnosticRunbook?.readPaths ?? []),
       ...(item.onboardingPlan?.statusReadPaths ?? []),
+      ...onboardingGuidedStepPaths(item.onboardingPlan, ['read']),
       ...(item.providerSetup?.crReadPaths ?? []),
       ...(item.providerRouting?.readPaths ?? []),
       ...(item.providerView?.readPaths ?? []),
@@ -4568,6 +4596,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       'xd.xenesis.connections.open',
       ...(item.diagnosticRunbook?.controlPaths ?? []),
       ...(item.onboardingPlan?.controlPaths ?? []),
+      ...onboardingGuidedStepPaths(item.onboardingPlan, ['open', 'control']),
       ...(item.providerView?.controlPaths ?? []),
       ...(item.providerProfileDraft?.controlPaths ?? []),
       ...(item.crActions ?? []),
@@ -4593,6 +4622,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       'setup requests do not install MCP servers, complete OAuth, store tokens, execute provider tools, mutate settings, or send messages',
       ...(item.diagnosticRunbook?.safetyBoundaries ?? []),
       ...(item.onboardingPlan?.safetyBoundaries ?? []),
+      ...(item.onboardingPlan?.guidedSteps.map((step) => step.safetyBoundary) ?? []),
       ...(item.providerSetup?.riskControls ?? []),
       ...(item.providerRouting?.safetyBoundaries ?? []),
       ...(item.providerView?.safetyBoundaries ?? []),
@@ -5306,6 +5336,20 @@ function onboardingStatusForReadyOrBlocked(
   return fallback;
 }
 
+function onboardingGuidedStep(input: XenesisConnectionOnboardingGuidedStep): XenesisConnectionOnboardingGuidedStep {
+  return {
+    ...input,
+    verifyWith: uniqueStrings(input.verifyWith),
+  };
+}
+
+function onboardingGuidedStepPaths(
+  plan: XenesisConnectionOnboardingPlanTemplate | undefined,
+  kinds: XenesisConnectionOnboardingGuidedStepKind[],
+): string[] {
+  return uniqueStrings(plan?.guidedSteps.filter((step) => kinds.includes(step.kind)).map((step) => step.crPath) ?? []);
+}
+
 function onboardingPlanTemplate(input: {
   phase: XenesisConnectionOnboardingPlanPhase;
   setupSurface: string;
@@ -5314,6 +5358,7 @@ function onboardingPlanTemplate(input: {
   validationChecks: string[];
   diagnostics: string[];
   safetyBoundaries?: string[];
+  guidedSteps: XenesisConnectionOnboardingGuidedStep[];
 }): XenesisConnectionOnboardingPlanTemplate {
   return {
     phase: input.phase,
@@ -5329,6 +5374,7 @@ function onboardingPlanTemplate(input: {
         'onboarding reads do not mutate provider, MCP, tool, gateway, or messenger settings',
       ]),
     ],
+    guidedSteps: input.guidedSteps.map(onboardingGuidedStep),
   };
 }
 
@@ -5371,6 +5417,26 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
           'provider settings are not mutated by onboarding reads',
           'credential values are never returned',
         ],
+        guidedSteps: [
+          {
+            id: 'read-provider-setup',
+            label: 'Read provider setup',
+            kind: 'read',
+            crPath: 'xd.xenesis.providers.setup.status',
+            expectedState: 'Active provider, runtime profile, credential state, and fallback behavior are visible.',
+            verifyWith: ['provider-ready', 'runtime-provider', 'provider-footer'],
+            safetyBoundary: 'credential values are never returned',
+          },
+          {
+            id: 'open-provider-settings',
+            label: 'Open provider settings',
+            kind: 'open',
+            crPath: 'xd.panes.settings.open',
+            expectedState: 'The AI Provider settings surface is opened for explicit user edits.',
+            verifyWith: ['normal-agent-chat', 'cr-readback'],
+            safetyBoundary: 'provider settings changes stay on explicit user actions',
+          },
+        ],
       }),
       warnings: provider?.warnings,
     },
@@ -5399,6 +5465,35 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
         safetyBoundaries: [
           'local CLI and MCP setup reads do not install tools',
           'MCP config mutations stay on explicit settings actions',
+        ],
+        guidedSteps: [
+          {
+            id: 'read-mcp-settings',
+            label: 'Read MCP bridge settings',
+            kind: 'read',
+            crPath: 'xd.mcp.settings.status',
+            expectedState: 'Local CLI MCP config path, bridge URL, and registration state are visible.',
+            verifyWith: ['mcp-settings-status', 'mcp-bridge-registered'],
+            safetyBoundary: 'MCP bridge status reads do not rewrite local CLI config files',
+          },
+          {
+            id: 'read-provider-runtime',
+            label: 'Read provider runtime',
+            kind: 'read',
+            crPath: 'xd.xenesis.providers.setup.status',
+            expectedState: 'The selected provider runtime can reach the Desk MCP bridge when required.',
+            verifyWith: ['local-cli-selected', 'provider-runtime', 'cr-readback'],
+            safetyBoundary: 'provider runtime reads do not install local CLI adapters',
+          },
+          {
+            id: 'open-local-cli-settings',
+            label: 'Open local CLI settings',
+            kind: 'open',
+            crPath: 'xd.panes.settings.open',
+            expectedState: 'The Local CLI MCP settings surface is opened for explicit registration work.',
+            verifyWith: ['local-cli-config'],
+            safetyBoundary: 'MCP config mutations stay on explicit settings actions',
+          },
         ],
       }),
     },
@@ -5438,6 +5533,45 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
           'external tool onboarding does not execute provider tools',
           'secret values are never returned',
         ],
+        guidedSteps: [
+          {
+            id: 'read-tool-setup',
+            label: 'Read tool setup status',
+            kind: 'read',
+            crPath: 'xd.xenesis.tools.setup.status',
+            expectedState:
+              'Manual MCP templates and planned OAuth tools show auth mode, scopes, and verification state.',
+            verifyWith: ['tool-setup-reviewed', 'planned-oauth', 'missing-env'],
+            safetyBoundary: 'tool setup reads do not install MCP servers or start OAuth flows',
+          },
+          {
+            id: 'read-tool-connectors',
+            label: 'Read connector readiness',
+            kind: 'read',
+            crPath: 'xd.xenesis.tools.connectors.status',
+            expectedState: 'Connector credential state and runtime support are visible without exposing secret values.',
+            verifyWith: ['connector-readiness-reviewed', 'mcp-readback'],
+            safetyBoundary: 'secret values are never returned',
+          },
+          {
+            id: 'open-tool-install-plans',
+            label: 'Open tool install plans',
+            kind: 'open',
+            crPath: 'xd.xenesis.tools.installPlans.open',
+            expectedState: 'The install plan surface opens for copy-ready templates or review-only planned OAuth gaps.',
+            verifyWith: ['tool-setup-reviewed', 'planned-oauth'],
+            safetyBoundary: 'install plan opens do not execute package managers or write provider config',
+          },
+          {
+            id: 'open-tool-user-stories',
+            label: 'Open tool user stories',
+            kind: 'open',
+            crPath: 'xd.xenesis.tools.userStories.open',
+            expectedState: 'Hermes-style tool workflows are visible before enabling provider tool execution.',
+            verifyWith: ['mcp-readback', 'connector-readiness-reviewed'],
+            safetyBoundary: 'user-story opens do not execute provider tools',
+          },
+        ],
       }),
     },
     {
@@ -5465,6 +5599,45 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
         safetyBoundaries: [
           'gateway onboarding status does not start or restart the gateway',
           'gateway lifecycle changes stay on explicit CR control paths',
+        ],
+        guidedSteps: [
+          {
+            id: 'read-gateway-status',
+            label: 'Read gateway status',
+            kind: 'read',
+            crPath: 'xd.xenesis.gateway.status',
+            expectedState: 'Gateway enabled/running state, URL, workspace, and last error are visible.',
+            verifyWith: ['gateway-enabled', 'gateway-running', 'gateway-status', 'gateway-url'],
+            safetyBoundary: 'gateway status reads do not start or restart the gateway',
+          },
+          {
+            id: 'read-xenesis-status',
+            label: 'Read Xenesis runtime status',
+            kind: 'read',
+            crPath: 'xd.xenesis.status',
+            expectedState:
+              'Desk runtime state confirms the active workspace and provider runtime before channel setup.',
+            verifyWith: ['gateway-cr-readback', 'gateway-last-error'],
+            safetyBoundary: 'runtime status reads do not mutate gateway lifecycle settings',
+          },
+          {
+            id: 'open-gateway-settings',
+            label: 'Open gateway settings',
+            kind: 'open',
+            crPath: 'xd.panes.settings.open',
+            expectedState: 'Gateway settings open for explicit enable/start configuration.',
+            verifyWith: ['gateway-enabled'],
+            safetyBoundary: 'gateway configuration changes stay on explicit user actions',
+          },
+          {
+            id: 'start-gateway',
+            label: 'Start gateway',
+            kind: 'control',
+            crPath: 'xd.xenesis.gateway.start',
+            expectedState: 'The gateway starts only when the user explicitly invokes the control path.',
+            verifyWith: ['gateway-running', 'gateway-cr-readback'],
+            safetyBoundary: 'gateway lifecycle changes stay on explicit CR control paths',
+          },
         ],
       }),
       warnings: gateway?.warnings,
@@ -5507,6 +5680,53 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
           'planned messenger adapters remain planning surfaces until verified',
           'raw channel identifiers and secrets are never returned',
         ],
+        guidedSteps: [
+          {
+            id: 'read-channel-routing',
+            label: 'Read channel routing',
+            kind: 'read',
+            crPath: 'xd.xenesis.channels.routing.status',
+            expectedState: 'Implemented and planned channel routing state is visible with safe delivery indicators.',
+            verifyWith: ['gateway-ready', 'channel-pairing-ready', 'safe-to-deliver'],
+            safetyBoundary: 'messenger routing reads do not mutate channel settings',
+          },
+          {
+            id: 'read-channel-safety',
+            label: 'Read channel safety',
+            kind: 'read',
+            crPath: 'xd.xenesis.channels.safety.status',
+            expectedState: 'Loop protection, delivery safety, and secret redaction checks are visible.',
+            verifyWith: ['loop-protection-reviewed', 'safe-to-deliver'],
+            safetyBoundary: 'raw channel identifiers and secrets are never returned',
+          },
+          {
+            id: 'read-access-groups',
+            label: 'Read access groups',
+            kind: 'read',
+            crPath: 'xd.xenesis.channels.accessGroups.status',
+            expectedState: 'Allowlist binding fields are visible before delivery is enabled.',
+            verifyWith: ['allowlist-reviewed', 'allowlist-empty'],
+            safetyBoundary: 'access group reads do not add or remove allowlist entries',
+          },
+          {
+            id: 'read-channel-pairing',
+            label: 'Read channel pairing',
+            kind: 'read',
+            crPath: 'xd.xenesis.channels.pairing.status',
+            expectedState: 'Channel pairing prerequisites and missing environment bindings are visible.',
+            verifyWith: ['channel-pairing-ready', 'missing-env'],
+            safetyBoundary: 'pairing reads do not create external messenger subscriptions',
+          },
+          {
+            id: 'update-channel-profile',
+            label: 'Update channel profile',
+            kind: 'control',
+            crPath: 'xd.xenesis.profiles.updateChannels',
+            expectedState: 'Channel settings change only through the explicit profile update control path.',
+            verifyWith: ['allowlist-reviewed', 'gateway-ready'],
+            safetyBoundary: 'messenger settings changes stay on explicit CR control paths',
+          },
+        ],
       }),
     },
     {
@@ -5534,6 +5754,35 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
         safetyBoundaries: [
           'test-send onboarding status does not send messages',
           'message delivery stays on explicit channel test CR paths',
+        ],
+        guidedSteps: [
+          {
+            id: 'read-test-prerequisites',
+            label: 'Read test prerequisites',
+            kind: 'read',
+            crPath: 'xd.xenesis.gateway.status',
+            expectedState: 'Gateway, provider, and messenger prerequisites are ready before a channel test is offered.',
+            verifyWith: ['provider-ready', 'gateway-ready', 'messenger-ready'],
+            safetyBoundary: 'test-send onboarding status does not send messages',
+          },
+          {
+            id: 'read-routing-before-test',
+            label: 'Read routing before test',
+            kind: 'read',
+            crPath: 'xd.xenesis.channels.routing.status',
+            expectedState: 'The selected channel reports safe-to-deliver before a sanitized test send is allowed.',
+            verifyWith: ['messenger-ready', 'gateway-status'],
+            safetyBoundary: 'routing reads do not deliver channel messages',
+          },
+          {
+            id: 'send-sanitized-test',
+            label: 'Send sanitized test',
+            kind: 'control',
+            crPath: 'xd.xenesis.profiles.testChannel',
+            expectedState: 'A sanitized test message is sent only through the explicit channel test CR path.',
+            verifyWith: ['sanitized-test-send', 'test-channel-result', 'bot-session-records'],
+            safetyBoundary: 'sanitized message delivery stays on explicit channel test CR paths',
+          },
         ],
       }),
     },

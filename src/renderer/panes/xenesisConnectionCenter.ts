@@ -105,7 +105,7 @@ export function formatXenesisGuideCatalogSummary(guide: XenesisConnectionGuideCa
 }
 
 export function formatXenesisOnboardingPlanSummary(plan: XenesisConnectionOnboardingPlanTemplate): string {
-  return `${plan.phase} / ${plan.validationChecks.length} validation check(s)`;
+  return `${plan.phase} / ${plan.validationChecks.length} validation check(s) / ${plan.guidedSteps.length} guided step(s)`;
 }
 
 export function formatXenesisProviderSetupSummary(setup: XenesisConnectionProviderSetupTemplate): string {

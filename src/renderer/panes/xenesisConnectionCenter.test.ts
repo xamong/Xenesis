@@ -121,8 +121,19 @@ test('formatXenesisOnboardingPlanSummary describes phase and validation check co
       validationChecks: ['provider-ready', 'normal-agent-chat', 'cr-readback'],
       diagnostics: ['provider-footer'],
       safetyBoundaries: ['onboarding status is read-only'],
+      guidedSteps: [
+        {
+          id: 'read-provider-setup',
+          label: 'Read provider setup',
+          kind: 'read',
+          crPath: 'xd.xenesis.providers.setup.status',
+          expectedState: 'Provider setup is visible.',
+          verifyWith: ['provider-ready'],
+          safetyBoundary: 'credential values are never returned',
+        },
+      ],
     }),
-    'first-chat / 3 validation check(s)',
+    'first-chat / 3 validation check(s) / 1 guided step(s)',
   );
 });
 

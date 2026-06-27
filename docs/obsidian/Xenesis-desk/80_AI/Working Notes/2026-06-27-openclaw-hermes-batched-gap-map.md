@@ -2465,6 +2465,80 @@
 - External documentation handling: no browsing. This update used cached
   repo-local context, source code, and tests.
 
+## Onboarding Guided Setup Slice
+
+- Added Desk-native guided onboarding metadata to
+  `src/shared/xenesisConnections.ts` through
+  `XenesisConnectionOnboardingGuidedStep`.
+- Each onboarding checklist item now exposes concrete guided steps with:
+  - `kind`: `read`, `open`, or `control`.
+  - `crPath`: the CR path to inspect/open/invoke.
+  - `expectedState`, `verifyWith`, and `safetyBoundary`.
+- Covered onboarding phases:
+  - First chat/provider setup:
+    `xd.xenesis.providers.setup.status`, `xd.panes.settings.open`.
+  - Local CLI and MCP:
+    `xd.mcp.settings.status`, `xd.xenesis.providers.setup.status`,
+    `xd.panes.settings.open`.
+  - Recommended tools:
+    `xd.xenesis.tools.setup.status`,
+    `xd.xenesis.tools.connectors.status`,
+    `xd.xenesis.tools.installPlans.open`,
+    `xd.xenesis.tools.userStories.open`.
+  - Gateway:
+    `xd.xenesis.gateway.status`, `xd.xenesis.status`,
+    `xd.panes.settings.open`, `xd.xenesis.gateway.start`.
+  - Messenger routing:
+    `xd.xenesis.channels.routing.status`,
+    `xd.xenesis.channels.safety.status`,
+    `xd.xenesis.channels.accessGroups.status`,
+    `xd.xenesis.channels.pairing.status`,
+    `xd.xenesis.profiles.updateChannels`.
+  - End-to-end test:
+    `xd.xenesis.gateway.status`,
+    `xd.xenesis.channels.routing.status`,
+    `xd.xenesis.profiles.testChannel`.
+- Diagnostic runbooks and setup request templates now include guided step read
+  paths, open/control paths, verification signals, and safety boundaries, so
+  the data is visible in Desk review flows rather than only on the raw
+  onboarding card.
+- The Connection Center onboarding plan summary now includes guided step count
+  through `formatXenesisOnboardingPlanSummary`.
+- Scope boundary:
+  - No MCP installs, OAuth completion, provider tool execution, settings
+    mutation, or message delivery is performed by status/read surfaces.
+  - Google Workspace and Google Calendar remain `planned-oauth`; this slice did
+    not invent an unverified install template.
+- Verification so far:
+  - RED:
+    `npx tsx --test src\shared\xenesisConnections.test.ts` failed because
+    `onboardingPlan.guidedSteps` was missing.
+  - GREEN:
+    `npx tsx --test src\shared\xenesisConnections.test.ts` passed with 33/33
+    tests after implementation and propagation assertions.
+  - Renderer RED:
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` failed
+    because the onboarding summary did not include guided step count.
+  - Renderer GREEN:
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` passed
+    with 35/35 tests.
+  - Related:
+    `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    passed with 99/99 tests.
+  - Scoped Biome:
+    `npx biome check src\shared\xenesisConnections.ts src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.ts src\renderer\panes\xenesisConnectionCenter.test.ts --max-diagnostics 40`
+    passed.
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit` passed with Registered nodes 763,
+    Callable methods 468, Dispatcher paths 448, missing registered paths 0,
+    missing dispatched coverage paths 0, undispatched static callable methods
+    0, and dispatcher paths missing from tree 0. The generated audit file was
+    removed afterward.
+  - `npm run lint` failed on existing repo-wide Biome/CRLF/sample diagnostics
+    outside this slice; changed files passed scoped Biome.
+- External documentation handling: no browsing. This used the cached gap map,
+  source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
