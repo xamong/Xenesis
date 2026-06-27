@@ -1352,11 +1352,23 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
     );
   }
 
+  if (
+    hasXenesisProviderProfileContext(value) &&
+    hasAny(value, ['설정', 'settings', 'setup', '초기 설정', '구성', 'configuration', 'config'])
+  ) {
+    return naturalAction(
+      'natural-xenesis-providers-setup-catalog-open',
+      'xd.xenesis.providers.setup.open',
+      { ensureVisible: true },
+      'Open AI provider setup catalog in Xenesis Connection Center from natural language request.',
+    );
+  }
+
   if (hasXenesisProviderProfileContext(value) && hasAny(value, ['view', 'views', '뷰', '화면', 'surface'])) {
     return naturalAction(
       'natural-xenesis-providers-views-catalog-open',
-      'xd.panes.settings.open',
-      xenesisConnectionCenterOpenArgs(),
+      'xd.xenesis.providers.views.open',
+      { ensureVisible: true },
       'Open AI provider view catalog in Xenesis Connection Center from natural language request.',
     );
   }
@@ -1364,8 +1376,8 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
   if (hasXenesisProviderProfileContext(value) && hasAny(value, ['profile', '프로필', 'draft', '초안'])) {
     return naturalAction(
       'natural-xenesis-providers-profile-drafts-catalog-open',
-      'xd.panes.settings.open',
-      xenesisConnectionCenterOpenArgs(),
+      'xd.xenesis.providers.profileDrafts.open',
+      { ensureVisible: true },
       'Open AI provider profile draft catalog in Xenesis Connection Center from natural language request.',
     );
   }

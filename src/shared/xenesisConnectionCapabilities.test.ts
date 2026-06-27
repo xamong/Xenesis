@@ -1429,7 +1429,7 @@ test('xenesis provider setup capabilities are registered and dispatch to the ada
   assert.equal(statusCapability?.approval, 'never');
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
-  assert.deepEqual(openCapability?.schema?.required, ['provider']);
+  assert.equal(schemaRequiredFields(openCapability).includes('provider'), false);
   for (const provider of ALL_AI_PROVIDER_KINDS) {
     assert.equal(statusSchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
     assert.equal(
@@ -1560,7 +1560,7 @@ test('xenesis provider view capabilities are registered and dispatch to the adap
   assert.equal(statusCapability?.approval, 'never');
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
-  assert.deepEqual(openCapability?.schema?.required, ['provider']);
+  assert.equal(schemaRequiredFields(openCapability).includes('provider'), false);
   for (const provider of ALL_AI_PROVIDER_KINDS) {
     assert.equal(statusSchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
     assert.equal(openSchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
@@ -1622,7 +1622,7 @@ test('xenesis provider profile draft capabilities are registered and dispatch to
   assert.equal(statusCapability?.approval, 'never');
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
-  assert.deepEqual(openCapability?.schema?.required, ['provider']);
+  assert.equal(schemaRequiredFields(openCapability).includes('provider'), false);
   assert.equal(requestCapability?.permission, 'write');
   assert.equal(requestCapability?.approval, 'when-external');
   assert.deepEqual(requestCapability?.schema?.required, ['provider']);
@@ -1696,6 +1696,51 @@ test('xenesis provider profile draft capabilities are registered and dispatch to
     provider: 'codex-app-server',
     actionInboxItem: { id: 'provider-profile-draft-codex-app-server' },
   });
+});
+
+test('xenesis provider open capabilities allow catalog opens without focused providers', async () => {
+  const openPaths = [
+    'xd.xenesis.providers.setup.open',
+    'xd.xenesis.providers.views.open',
+    'xd.xenesis.providers.profileDrafts.open',
+  ];
+  for (const path of openPaths) {
+    assert.equal(
+      schemaRequiredFields(findDeskBridgeCapability(path)).includes('provider'),
+      false,
+      `${path} provider optional`,
+    );
+  }
+
+  const calls: Array<{ path: string; args: unknown }> = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    openXenesisProviderSetup: (args) => {
+      calls.push({ path: 'xd.xenesis.providers.setup.open', args });
+      return { ok: true, total: 16 };
+    },
+    openXenesisProviderView: (args) => {
+      calls.push({ path: 'xd.xenesis.providers.views.open', args });
+      return { ok: true, total: 16 };
+    },
+    openXenesisProviderProfileDraft: (args) => {
+      calls.push({ path: 'xd.xenesis.providers.profileDrafts.open', args });
+      return { ok: true, total: 16 };
+    },
+  };
+
+  for (const path of openPaths) {
+    const result = await callDeskBridgeCapability(api, {
+      path,
+      args: { ensureVisible: true },
+      source: 'xenesis',
+    });
+    assert.equal(result.ok, true, `${path} should dispatch`);
+  }
+
+  assert.deepEqual(
+    calls,
+    openPaths.map((path) => ({ path, args: { ensureVisible: true } })),
+  );
 });
 
 test('xenesis connection diagnostic runbook capabilities are registered and dispatch to the adapter', async () => {

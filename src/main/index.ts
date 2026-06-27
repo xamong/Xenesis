@@ -7017,13 +7017,20 @@ async function getXenesisProviderSetupStatus(args?: unknown): Promise<Record<str
   };
 }
 
-async function openXenesisProviderSetup(args?: unknown): Promise<Record<string, unknown>> {
+async function openXenesisProviderCatalogSurface(
+  args: unknown,
+  options: {
+    isAllowedProvider: (provider: string) => boolean;
+    itemPredicate: (item: XenesisConnectionItem) => boolean;
+    itemMatchesProvider: (item: XenesisConnectionItem, provider: string) => boolean;
+    providerForItem: (item: XenesisConnectionItem) => string | undefined;
+    toStatusItem: (item: XenesisConnectionItem) => Record<string, unknown>;
+    unavailableMessage: (provider: string) => string;
+  },
+): Promise<Record<string, unknown>> {
   const body = normalizeMcpCapabilityArgs(args);
   const provider = readCapabilityString(body, ['provider', 'id', 'name']);
-  if (!provider) {
-    return { ok: false, error: 'Provider is required.' };
-  }
-  if (!isXenesisProviderSetupId(provider)) {
+  if (provider && !options.isAllowedProvider(provider)) {
     return {
       ok: false,
       error: `Unsupported Xenesis provider: ${provider}`,
@@ -7032,29 +7039,53 @@ async function openXenesisProviderSetup(args?: unknown): Promise<Record<string, 
   }
 
   const status = await getXenesisConnectionsStatus();
-  const item = status.sections.provider.items.find(
-    (candidate) => Boolean(candidate.providerSetup) && candidate.providerSetup?.provider === provider,
-  );
-  if (!item) {
-    return { ok: false, provider, error: `Xenesis provider setup is not available: ${provider}` };
+  const catalogItems = status.sections.provider.items.filter(options.itemPredicate);
+  const item = provider
+    ? catalogItems.find((candidate) => options.itemMatchesProvider(candidate, provider))
+    : undefined;
+  if (provider && !item) {
+    return { ok: false, provider, error: options.unavailableMessage(provider) };
   }
 
-  const renderer = await openMcpBuiltinPaneCapability({
+  const rendererArgs: Record<string, unknown> = {
     kind: 'settings',
     category: 'xenesis-agent',
     mode: 'connections',
     section: 'xenesis-connections',
-    focusConnectionId: item.id,
     ensureVisible: body.ensureVisible !== false,
-  });
+  };
+  if (item) rendererArgs.focusConnectionId = item.id;
+
+  const renderer = await openMcpBuiltinPaneCapability(rendererArgs);
+
+  if (provider && item) {
+    return {
+      ok: renderer.ok !== false,
+      provider: options.providerForItem(item),
+      id: item.id,
+      item: options.toStatusItem(item),
+      renderer,
+    };
+  }
 
   return {
     ok: renderer.ok !== false,
-    provider: item.providerSetup?.provider,
-    id: item.id,
-    item: xenesisProviderSetupStatusItem(item),
+    updatedAt: status.updatedAt,
+    total: catalogItems.length,
+    items: catalogItems.map(options.toStatusItem),
     renderer,
   };
+}
+
+async function openXenesisProviderSetup(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisProviderCatalogSurface(args, {
+    isAllowedProvider: isXenesisProviderSetupId,
+    itemPredicate: (item) => Boolean(item.providerSetup),
+    itemMatchesProvider: (item, provider) => item.providerSetup?.provider === provider,
+    providerForItem: (item) => item.providerSetup?.provider,
+    toStatusItem: xenesisProviderSetupStatusItem,
+    unavailableMessage: (provider) => `Xenesis provider setup is not available: ${provider}`,
+  });
 }
 
 function xenesisProviderRoutingStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
@@ -7218,44 +7249,14 @@ async function getXenesisProviderViewsStatus(args?: unknown): Promise<Record<str
 }
 
 async function openXenesisProviderView(args?: unknown): Promise<Record<string, unknown>> {
-  const body = normalizeMcpCapabilityArgs(args);
-  const provider = readCapabilityString(body, ['provider', 'id', 'name']);
-  if (!provider) {
-    return { ok: false, error: 'Provider is required.' };
-  }
-  if (!isXenesisProviderViewSelector(provider)) {
-    return {
-      ok: false,
-      error: `Unsupported Xenesis provider: ${provider}`,
-      allowedProviders: XENESIS_PROVIDER_SETUP_IDS,
-    };
-  }
-
-  const status = await getXenesisConnectionsStatus();
-  const item = status.sections.provider.items.find(
-    (candidate) =>
-      Boolean(candidate.providerView) && (candidate.providerSetup?.provider === provider || candidate.id === provider),
-  );
-  if (!item) {
-    return { ok: false, provider, error: `Xenesis provider view is not available: ${provider}` };
-  }
-
-  const renderer = await openMcpBuiltinPaneCapability({
-    kind: 'settings',
-    category: 'xenesis-agent',
-    mode: 'connections',
-    section: 'xenesis-connections',
-    focusConnectionId: item.id,
-    ensureVisible: body.ensureVisible !== false,
+  return openXenesisProviderCatalogSurface(args, {
+    isAllowedProvider: isXenesisProviderViewSelector,
+    itemPredicate: (item) => Boolean(item.providerView),
+    itemMatchesProvider: (item, provider) => item.providerSetup?.provider === provider || item.id === provider,
+    providerForItem: (item) => item.providerSetup?.provider,
+    toStatusItem: xenesisProviderViewStatusItem,
+    unavailableMessage: (provider) => `Xenesis provider view is not available: ${provider}`,
   });
-
-  return {
-    ok: renderer.ok !== false,
-    provider: item.providerSetup?.provider,
-    id: item.id,
-    item: xenesisProviderViewStatusItem(item),
-    renderer,
-  };
 }
 
 function xenesisProviderProfileDraftStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
@@ -7316,45 +7317,14 @@ async function getXenesisProviderProfileDraftsStatus(args?: unknown): Promise<Re
 }
 
 async function openXenesisProviderProfileDraft(args?: unknown): Promise<Record<string, unknown>> {
-  const body = normalizeMcpCapabilityArgs(args);
-  const provider = readCapabilityString(body, ['provider', 'id', 'name']);
-  if (!provider) {
-    return { ok: false, error: 'Provider is required.' };
-  }
-  if (!isXenesisProviderViewSelector(provider)) {
-    return {
-      ok: false,
-      error: `Unsupported Xenesis provider: ${provider}`,
-      allowedProviders: XENESIS_PROVIDER_SETUP_IDS,
-    };
-  }
-
-  const status = await getXenesisConnectionsStatus();
-  const item = status.sections.provider.items.find(
-    (candidate) =>
-      Boolean(candidate.providerProfileDraft) &&
-      (candidate.providerProfileDraft?.provider === provider || candidate.id === provider),
-  );
-  if (!item) {
-    return { ok: false, provider, error: `Xenesis provider profile draft is not available: ${provider}` };
-  }
-
-  const renderer = await openMcpBuiltinPaneCapability({
-    kind: 'settings',
-    category: 'xenesis-agent',
-    mode: 'connections',
-    section: 'xenesis-connections',
-    focusConnectionId: item.id,
-    ensureVisible: body.ensureVisible !== false,
+  return openXenesisProviderCatalogSurface(args, {
+    isAllowedProvider: isXenesisProviderViewSelector,
+    itemPredicate: (item) => Boolean(item.providerProfileDraft),
+    itemMatchesProvider: (item, provider) => item.providerProfileDraft?.provider === provider || item.id === provider,
+    providerForItem: (item) => item.providerProfileDraft?.provider,
+    toStatusItem: xenesisProviderProfileDraftStatusItem,
+    unavailableMessage: (provider) => `Xenesis provider profile draft is not available: ${provider}`,
   });
-
-  return {
-    ok: renderer.ok !== false,
-    provider: item.providerProfileDraft?.provider,
-    id: item.id,
-    item: xenesisProviderProfileDraftStatusItem(item),
-    renderer,
-  };
 }
 
 async function requestXenesisProviderProfileDraft(args?: unknown): Promise<Record<string, unknown>> {

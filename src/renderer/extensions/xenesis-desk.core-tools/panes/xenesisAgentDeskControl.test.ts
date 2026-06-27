@@ -1134,16 +1134,11 @@ test('planXenesisDeskNaturalLanguageActions maps onboarding checklist open reque
 test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open requests to CR actions', () => {
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider setup 전체 열어줘').actions, [
     {
-      id: 'natural-xenesis-provider-catalog-open',
-      path: 'xd.panes.settings.open',
-      args: {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      id: 'natural-xenesis-providers-setup-catalog-open',
+      path: 'xd.xenesis.providers.setup.open',
+      args: { ensureVisible: true },
       approved: false,
-      reason: 'Open AI provider catalog in Xenesis Connection Center from natural language request.',
+      reason: 'Open AI provider setup catalog in Xenesis Connection Center from natural language request.',
     },
   ]);
 
@@ -1160,13 +1155,8 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider view 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-providers-views-catalog-open',
-      path: 'xd.panes.settings.open',
-      args: {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      path: 'xd.xenesis.providers.views.open',
+      args: { ensureVisible: true },
       approved: false,
       reason: 'Open AI provider view catalog in Xenesis Connection Center from natural language request.',
     },
@@ -1175,13 +1165,8 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider profile draft 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-providers-profile-drafts-catalog-open',
-      path: 'xd.panes.settings.open',
-      args: {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      path: 'xd.xenesis.providers.profileDrafts.open',
+      args: { ensureVisible: true },
       approved: false,
       reason: 'Open AI provider profile draft catalog in Xenesis Connection Center from natural language request.',
     },

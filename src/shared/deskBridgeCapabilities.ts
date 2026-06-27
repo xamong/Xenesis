@@ -999,13 +999,12 @@ const XENESIS_PROVIDER_SETUP_STATUS_SCHEMA = {
 
 const XENESIS_PROVIDER_SETUP_OPEN_SCHEMA = {
   type: 'object',
-  required: ['provider'],
   properties: {
     provider: {
       type: 'string',
       title: 'Provider',
       enum: XENESIS_PROVIDER_IDS,
-      description: 'Active provider id to open in the internal Desk Connection Center setup surface.',
+      description: 'Optional active provider id to focus in the internal Desk Connection Center setup surface.',
     },
     id: {
       type: 'string',
@@ -1081,13 +1080,12 @@ const XENESIS_PROVIDER_VIEW_STATUS_SCHEMA = {
 
 const XENESIS_PROVIDER_VIEW_OPEN_SCHEMA = {
   type: 'object',
-  required: ['provider'],
   properties: {
     provider: {
       type: 'string',
       title: 'Provider',
       enum: XENESIS_PROVIDER_IDS,
-      description: 'Active provider id to open in the internal Desk Connection Center view.',
+      description: 'Optional active provider id to focus in the internal Desk Connection Center view.',
     },
     id: {
       type: 'string',

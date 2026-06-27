@@ -936,6 +936,37 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local Obsidian graph, source code, and tests.
 
+## Provider Catalog CR Opens Slice
+
+- Provider aggregate open prompts now use provider-specific CR open paths
+  instead of the generic Settings fallback:
+  - `AI provider setup 전체 열어줘` -> `xd.xenesis.providers.setup.open`
+  - `AI provider view 전체 열어줘` -> `xd.xenesis.providers.views.open`
+  - `AI provider profile draft 전체 열어줘` ->
+    `xd.xenesis.providers.profileDrafts.open`
+- The corresponding provider CR open schemas now allow catalog opens without a
+  focused `provider`. Focused `provider/id/name` opens remain supported.
+- Main-process provider setup/view/profile-draft open handlers share one
+  catalog-open helper that opens Settings > Xenesis Agent > Connections without
+  a focus id for catalog opens and focuses the provider/card when a selector is
+  supplied.
+- Scope boundary: open/read internal Desk provider surfaces only. This slice
+  does not mutate provider settings, credentials, model selection, runtime
+  routing, fallback chains, local CLI selection, Action Inbox records, or
+  provider prompt runs.
+- Verification:
+  - RED tests failed first for required `provider` schemas and generic Settings
+    fallback routing.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 98/98 tests.
+  - Touched-file Biome check exited 0 with existing warnings/infos only.
+  - `npm run typecheck` passed.
+  - CR audit passed with missing registered paths 0, missing dispatched
+    coverage paths 0, undispatched static callable methods 0, and dispatcher
+    paths missing from tree 0.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local Obsidian graph, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
