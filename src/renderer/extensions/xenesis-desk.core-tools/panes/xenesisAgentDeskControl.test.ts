@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
+  XENESIS_DESK_ACTION_RESULT_SUMMARY_KEYS,
+  XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT,
   XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES,
   XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES,
   XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES,
@@ -284,12 +286,27 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.match(source, /XENESIS_DESK_ACTION_PROTOCOL_PATTERNS/);
   assert.match(source, /XENESIS_DESK_ACTION_PROTOCOL_TEXT/);
   assert.match(source, /XENESIS_DESK_ACTION_RESULT_SUMMARY_PATHS/);
+  assert.match(source, /XENESIS_DESK_ACTION_RESULT_SUMMARY_KEYS/);
+  assert.match(source, /XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT/);
   assert.doesNotMatch(source, /const DESK_ACTION_FENCE_PATTERN/);
   assert.doesNotMatch(source, /Desk action approval required/);
   assert.doesNotMatch(source, /Useful direct CR paths include/);
   assert.doesNotMatch(source, /requires approval\|approval required/);
   assert.doesNotMatch(source, /'xd\.files\.listOpen'/);
   assert.doesNotMatch(source, /path\.startsWith\('xd\.'/);
+  assert.doesNotMatch(source, /'openFiles'/);
+  assert.doesNotMatch(source, /'1 file'/);
+  assert.doesNotMatch(source, /first: \$\{title\}/);
+  assert.doesNotMatch(source, /'workflow'/);
+  assert.doesNotMatch(source, /\$\{completed\} completed/);
+  assert.doesNotMatch(source, /record\.renderer/);
+  assert.doesNotMatch(source, /record\.message/);
+  assert.doesNotMatch(source, /renderer\.message/);
+  assert.doesNotMatch(source, /compact === '\{\}'/);
+  assert.doesNotMatch(source, /compact === '\[\]'/);
+  assert.deepEqual(XENESIS_DESK_ACTION_RESULT_SUMMARY_KEYS.fileList, ['openFiles', 'files', 'items', 'entries']);
+  assert.equal(XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT.fileList(1, 'README.md'), '1 file, first: README.md');
+  assert.equal(XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT.workflowMetric(2, 'passed'), '2 passed');
   assert.match(source, /XENESIS_NATURAL_INTENT_PATTERNS/);
   assert.match(source, /XENESIS_NATURAL_PROVIDER_AUTO_TARGET/);
   assert.match(source, /XENESIS_NATURAL_CORE_TOOL_OPEN_REASON/);

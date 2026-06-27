@@ -5,7 +5,9 @@ import {
   XENESIS_DESK_ACTION_PROTOCOL,
   XENESIS_DESK_ACTION_PROTOCOL_PATTERNS,
   XENESIS_DESK_ACTION_PROTOCOL_TEXT,
+  XENESIS_DESK_ACTION_RESULT_SUMMARY_KEYS,
   XENESIS_DESK_ACTION_RESULT_SUMMARY_PATHS,
+  XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT,
   XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES,
   XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES,
   XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES,
@@ -300,7 +302,9 @@ const DESK_ACTIONS = XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS;
 const DESK_ACTION_PROTOCOL = XENESIS_DESK_ACTION_PROTOCOL;
 const DESK_ACTION_PROTOCOL_PATTERNS = XENESIS_DESK_ACTION_PROTOCOL_PATTERNS;
 const DESK_ACTION_PROTOCOL_TEXT = XENESIS_DESK_ACTION_PROTOCOL_TEXT;
+const DESK_ACTION_RESULT_SUMMARY_KEYS = XENESIS_DESK_ACTION_RESULT_SUMMARY_KEYS;
 const DESK_ACTION_RESULT_SUMMARY_PATHS = XENESIS_DESK_ACTION_RESULT_SUMMARY_PATHS;
+const DESK_ACTION_RESULT_SUMMARY_TEXT = XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT;
 const EXTRACTION_PATTERNS = XENESIS_NATURAL_EXTRACTION_PATTERNS;
 const CONNECTION_AGGREGATE_OPEN_ACTIONS = XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_ACTION_DESCRIPTORS;
 const CONNECTION_AGGREGATE_STATUS_ACTIONS = XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS;
@@ -1878,65 +1882,86 @@ function arrayFromRecord(record: Record<string, unknown>, keys: readonly string[
   return [];
 }
 
+function stringFromRecord(record: Record<string, unknown>, keys: readonly string[]): string {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return '';
+}
+
+function numberFromRecord(record: Record<string, unknown>, keys: readonly string[]): number | undefined {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === 'number') return value;
+  }
+  return undefined;
+}
+
+function basenameFromRecord(record: Record<string, unknown>, keys: readonly string[]): string {
+  for (const key of keys) {
+    const value = basename(record[key]);
+    if (value) return value;
+  }
+  return '';
+}
+
 function firstReadableTitle(value: unknown): string {
   if (typeof value === 'string') return basename(value) || value;
   const record = asRecord(value);
-  return (
-    basename(record.title) ||
-    basename(record.name) ||
-    basename(record.filePath) ||
-    basename(record.path) ||
-    basename(record.uri)
-  );
+  return basenameFromRecord(record, DESK_ACTION_RESULT_SUMMARY_KEYS.readableTitle);
 }
 
 function summarizeFileList(record: Record<string, unknown>): string {
-  const files = arrayFromRecord(record, ['openFiles', 'files', 'items', 'entries']);
+  const files = arrayFromRecord(record, DESK_ACTION_RESULT_SUMMARY_KEYS.fileList);
   if (files.length === 0) return '';
   const title = firstReadableTitle(files[0]);
-  const suffix = files.length === 1 ? '1 file' : `${files.length} files`;
-  return title ? `${suffix}, first: ${title}` : suffix;
+  return DESK_ACTION_RESULT_SUMMARY_TEXT.fileList(files.length, title);
 }
 
 function summarizeCaptureResult(record: Record<string, unknown>): string {
-  const nested = asRecord(record.capture);
+  const nested = asRecord(record[DESK_ACTION_RESULT_SUMMARY_KEYS.captureRecord]);
   const file =
-    basename(record.filePath) ||
-    basename(record.path) ||
-    basename(record.outputPath) ||
-    basename(nested.filePath) ||
-    basename(nested.path);
+    basenameFromRecord(record, DESK_ACTION_RESULT_SUMMARY_KEYS.captureFile) ||
+    basenameFromRecord(nested, DESK_ACTION_RESULT_SUMMARY_KEYS.captureNestedFile);
   const width =
-    typeof record.width === 'number' ? record.width : typeof nested.width === 'number' ? nested.width : undefined;
+    numberFromRecord(record, DESK_ACTION_RESULT_SUMMARY_KEYS.dimensionWidth) ??
+    numberFromRecord(nested, DESK_ACTION_RESULT_SUMMARY_KEYS.dimensionWidth);
   const height =
-    typeof record.height === 'number' ? record.height : typeof nested.height === 'number' ? nested.height : undefined;
-  const size = width && height ? `${width}x${height}` : '';
-  return [file, size].filter(Boolean).join(' ');
+    numberFromRecord(record, DESK_ACTION_RESULT_SUMMARY_KEYS.dimensionHeight) ??
+    numberFromRecord(nested, DESK_ACTION_RESULT_SUMMARY_KEYS.dimensionHeight);
+  const size = width && height ? DESK_ACTION_RESULT_SUMMARY_TEXT.dimension(width, height) : '';
+  return DESK_ACTION_RESULT_SUMMARY_TEXT.joinParts([file, size]);
 }
 
 function summarizeBoundsResult(record: Record<string, unknown>): string {
-  const bounds = asRecord(record.bounds);
+  const bounds = asRecord(record[DESK_ACTION_RESULT_SUMMARY_KEYS.boundsRecord]);
   const width =
-    typeof bounds.width === 'number' ? bounds.width : typeof record.width === 'number' ? record.width : undefined;
+    numberFromRecord(bounds, DESK_ACTION_RESULT_SUMMARY_KEYS.dimensionWidth) ??
+    numberFromRecord(record, DESK_ACTION_RESULT_SUMMARY_KEYS.dimensionWidth);
   const height =
-    typeof bounds.height === 'number' ? bounds.height : typeof record.height === 'number' ? record.height : undefined;
+    numberFromRecord(bounds, DESK_ACTION_RESULT_SUMMARY_KEYS.dimensionHeight) ??
+    numberFromRecord(record, DESK_ACTION_RESULT_SUMMARY_KEYS.dimensionHeight);
   if (!width || !height) return '';
-  return `${width}x${height}`;
+  return DESK_ACTION_RESULT_SUMMARY_TEXT.dimension(width, height);
 }
 
 function summarizeWorkflowResult(record: Record<string, unknown>): string {
-  const name = typeof record.name === 'string' && record.name.trim() ? record.name.trim() : 'workflow';
-  const completed = typeof record.completed === 'number' ? record.completed : undefined;
-  const passed = typeof record.passed === 'number' ? record.passed : undefined;
-  const failed = typeof record.failed === 'number' ? record.failed : undefined;
-  const skipped = typeof record.skipped === 'number' ? record.skipped : undefined;
+  const name =
+    stringFromRecord(record, DESK_ACTION_RESULT_SUMMARY_KEYS.workflowName) ||
+    DESK_ACTION_RESULT_SUMMARY_TEXT.workflowFallbackName;
+  const completed = numberFromRecord(record, DESK_ACTION_RESULT_SUMMARY_KEYS.workflowCompleted);
+  const passed = numberFromRecord(record, DESK_ACTION_RESULT_SUMMARY_KEYS.workflowPassed);
+  const failed = numberFromRecord(record, DESK_ACTION_RESULT_SUMMARY_KEYS.workflowFailed);
+  const skipped = numberFromRecord(record, DESK_ACTION_RESULT_SUMMARY_KEYS.workflowSkipped);
+  const labels = DESK_ACTION_RESULT_SUMMARY_TEXT.workflowMetricLabels;
   const parts = [
-    completed !== undefined ? `${completed} completed` : '',
-    passed !== undefined ? `${passed} passed` : '',
-    failed !== undefined ? `${failed} failed` : '',
-    skipped !== undefined ? `${skipped} skipped` : '',
+    completed !== undefined ? DESK_ACTION_RESULT_SUMMARY_TEXT.workflowMetric(completed, labels.completed) : '',
+    passed !== undefined ? DESK_ACTION_RESULT_SUMMARY_TEXT.workflowMetric(passed, labels.passed) : '',
+    failed !== undefined ? DESK_ACTION_RESULT_SUMMARY_TEXT.workflowMetric(failed, labels.failed) : '',
+    skipped !== undefined ? DESK_ACTION_RESULT_SUMMARY_TEXT.workflowMetric(skipped, labels.skipped) : '',
   ].filter(Boolean);
-  return parts.length ? `${name}: ${parts.join(', ')}` : name;
+  return DESK_ACTION_RESULT_SUMMARY_TEXT.workflowSummary(name, parts);
 }
 
 function summarizeDeskActionResult(result: XenesisDeskActionExecutionResult): string {
@@ -1946,13 +1971,14 @@ function summarizeDeskActionResult(result: XenesisDeskActionExecutionResult): st
   if (result.path === DESK_ACTION_RESULT_SUMMARY_PATHS.windowSizePreset) return summarizeBoundsResult(record);
   if (result.path === DESK_ACTION_RESULT_SUMMARY_PATHS.workflowRun) return summarizeWorkflowResult(record);
 
-  const renderer = asRecord(record.renderer);
+  const renderer = asRecord(record[DESK_ACTION_RESULT_SUMMARY_KEYS.rendererRecord]);
   const message =
-    typeof record.message === 'string' ? record.message : typeof renderer.message === 'string' ? renderer.message : '';
+    stringFromRecord(record, DESK_ACTION_RESULT_SUMMARY_KEYS.message) ||
+    stringFromRecord(renderer, DESK_ACTION_RESULT_SUMMARY_KEYS.message);
   if (message) return message;
 
   const compact = compactJson(result.result);
-  if (!compact || compact === '{}' || compact === '[]') return '';
+  if (!compact || DESK_ACTION_RESULT_SUMMARY_TEXT.compactEmptyJson.includes(compact)) return '';
   return compact;
 }
 

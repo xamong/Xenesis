@@ -75,6 +75,43 @@ export const XENESIS_DESK_ACTION_RESULT_SUMMARY_PATHS = {
   workflowRun: 'xd.automation.workflow.run',
 } as const;
 
+export const XENESIS_DESK_ACTION_RESULT_SUMMARY_KEYS = {
+  boundsRecord: 'bounds',
+  captureFile: ['filePath', 'path', 'outputPath'],
+  captureNestedFile: ['filePath', 'path'],
+  captureRecord: 'capture',
+  dimensionHeight: ['height'],
+  dimensionWidth: ['width'],
+  fileList: ['openFiles', 'files', 'items', 'entries'],
+  message: ['message'],
+  readableTitle: ['title', 'name', 'filePath', 'path', 'uri'],
+  rendererRecord: 'renderer',
+  workflowCompleted: ['completed'],
+  workflowFailed: ['failed'],
+  workflowName: ['name'],
+  workflowPassed: ['passed'],
+  workflowSkipped: ['skipped'],
+} as const;
+
+export const XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT = {
+  compactEmptyJson: ['{}', '[]'] as readonly string[],
+  dimension: (width: number, height: number) => `${width}x${height}`,
+  fileList: (fileCount: number, firstTitle: string) => {
+    const suffix = fileCount === 1 ? '1 file' : `${fileCount} files`;
+    return firstTitle ? `${suffix}, first: ${firstTitle}` : suffix;
+  },
+  joinParts: (parts: readonly string[]) => parts.filter(Boolean).join(' '),
+  workflowFallbackName: 'workflow',
+  workflowMetric: (value: number, label: string) => `${value} ${label}`,
+  workflowMetricLabels: {
+    completed: 'completed',
+    failed: 'failed',
+    passed: 'passed',
+    skipped: 'skipped',
+  },
+  workflowSummary: (name: string, parts: readonly string[]) => (parts.length ? `${name}: ${parts.join(', ')}` : name),
+} as const;
+
 export const XENESIS_NATURAL_CORE_TOOL_OPEN_REASON = (reasonName: string): string =>
   `Open ${reasonName} from natural language request.`;
 
