@@ -16,6 +16,12 @@ export interface XenesisNaturalViewTarget extends XenesisNaturalWordsTarget {
   reason: string;
 }
 
+export interface XenesisNaturalGuideTarget extends XenesisNaturalWordsTarget {
+  requiredWordGroups?: readonly (readonly string[])[];
+  blockedByMatchedTargetIds?: readonly string[];
+  fallback?: boolean;
+}
+
 export interface XenesisNaturalConnectionTarget extends XenesisNaturalWordsTarget {
   kind: XenesisNaturalConnectionTargetKind;
   supportLevel?: 'implemented' | 'planned' | 'manual';
@@ -171,6 +177,121 @@ export const XENESIS_NATURAL_VIEW_TARGETS: readonly XenesisNaturalViewTarget[] =
     kind: 'browser',
     reason: 'Open browser from natural language request.',
     words: ['브라우저', 'browser', '웹뷰', 'web'],
+  },
+] as const;
+
+export const XENESIS_NATURAL_GUIDE_TARGETS: readonly XenesisNaturalGuideTarget[] = [
+  {
+    id: 'agent-user-stories',
+    label: 'Agent user stories',
+    words: ['user story', 'user stories', '사용자 스토리', '스토리', 'hermes story', '헤르메스 스토리'],
+    requiredWordGroups: [['hermes', '헤르메스']],
+    blockedByMatchedTargetIds: ['external-tool-integrations', 'openclaw-channel-setup'],
+  },
+  {
+    id: 'external-tool-integrations',
+    label: 'External tool integrations',
+    words: [
+      'external tool',
+      'external tools',
+      'tool integration',
+      'tool integrations',
+      'mcp tool',
+      'mcp tools',
+      'hermes integration',
+      'hermes integrations',
+      '헤르메스 통합',
+      '외부 도구',
+      '도구 통합',
+      'oauth',
+      'connector',
+      '커넥터',
+      'google workspace',
+      'google drive',
+      'google docs',
+      'google calendar',
+      '구글 워크스페이스',
+      '구글 드라이브',
+      '구글 독스',
+      '구글 캘린더',
+      'notion',
+      '노션',
+      'linear',
+      '리니어',
+      'fetch',
+      'filesystem',
+      '파일 시스템',
+      '파일시스템',
+    ],
+    requiredWordGroups: [
+      ['integration', 'integrations', '통합'],
+      [
+        'tool',
+        'tools',
+        '도구',
+        'mcp',
+        'oauth',
+        'google',
+        '구글',
+        'notion',
+        '노션',
+        'linear',
+        '리니어',
+        'hermes',
+        '헤르메스',
+      ],
+    ],
+  },
+  {
+    id: 'openclaw-channel-setup',
+    label: 'OpenClaw-style channel setup',
+    words: [
+      'openclaw',
+      '오픈클로',
+      '오픈클로우',
+      'channel',
+      'channels',
+      '채널',
+      'messenger',
+      'messengers',
+      '메신저',
+      'access group',
+      'access groups',
+      '액세스 그룹',
+      '접근 그룹',
+      'routing',
+      '라우팅',
+      'pairing',
+      '페어링',
+      'troubleshooting',
+      'troubleshoot',
+      '문제 해결',
+      'telegram',
+      '텔레그램',
+      'slack',
+      '슬랙',
+      'discord',
+      '디스코드',
+      'whatsapp',
+      '왓츠앱',
+      'google chat',
+      '구글 챗',
+    ],
+    requiredWordGroups: [
+      ['integration', 'integrations', '통합'],
+      ['channel', 'channels', '채널', 'messenger', 'messengers', '메신저'],
+    ],
+  },
+  {
+    id: 'cr-mcp-gateway-bots',
+    label: 'Capability Registry, MCP, gateway, and bots',
+    words: ['cr', 'mcp', 'gateway', '게이트웨이', 'bot', '봇'],
+  },
+  {
+    id: 'onboarding-connections',
+    label: 'Onboarding and connections',
+    words: [],
+    fallback: true,
   },
 ] as const;
 
@@ -419,6 +540,31 @@ export function findXenesisNaturalWordsTarget<T extends XenesisNaturalWordsTarge
   targets: readonly T[],
 ): T | null {
   return targets.find((target) => target.words.some((word) => value.includes(word))) ?? null;
+}
+
+function matchesXenesisNaturalGuideTarget(value: string, target: XenesisNaturalGuideTarget): boolean {
+  if (target.words.some((word) => value.includes(word))) return true;
+  if (!target.requiredWordGroups?.length) return false;
+  return target.requiredWordGroups.every((wordGroup) => wordGroup.some((word) => value.includes(word)));
+}
+
+export function findXenesisNaturalGuideTarget(value: string): XenesisNaturalGuideTarget | null {
+  const matchedIds = new Set(
+    XENESIS_NATURAL_GUIDE_TARGETS.filter(
+      (target) => !target.fallback && matchesXenesisNaturalGuideTarget(value, target),
+    ).map((target) => target.id),
+  );
+
+  return (
+    XENESIS_NATURAL_GUIDE_TARGETS.find(
+      (target) =>
+        !target.fallback &&
+        matchedIds.has(target.id) &&
+        !target.blockedByMatchedTargetIds?.some((blockedId) => matchedIds.has(blockedId)),
+    ) ??
+    XENESIS_NATURAL_GUIDE_TARGETS.find((target) => target.fallback) ??
+    null
+  );
 }
 
 export function isXenesisNaturalImplementedMessengerTarget(target: {

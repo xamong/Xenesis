@@ -1,5 +1,6 @@
 import { listDeskBridgeCapabilities } from '../../../../shared/deskBridgeCapabilities';
 import {
+  findXenesisNaturalGuideTarget,
   findXenesisNaturalWordsTarget,
   XENESIS_NATURAL_CONNECTION_TARGETS,
   XENESIS_NATURAL_CORE_TOOL_TARGETS,
@@ -342,111 +343,7 @@ function xenesisConnectionTargetFromNaturalText(value: string): XenesisNaturalCo
 function xenesisGuideFromNaturalText(value: string): { id: string; label: string } | null {
   if (!hasAny(value, ['가이드', 'guide', '문서', 'playbook', '플레이북'])) return null;
 
-  let id = 'onboarding-connections';
-  let label = 'Onboarding and connections';
-  const toolIntegrationGuide =
-    hasAny(value, [
-      'external tool',
-      'external tools',
-      'tool integration',
-      'tool integrations',
-      'mcp tool',
-      'mcp tools',
-      'hermes integration',
-      'hermes integrations',
-      '헤르메스 통합',
-      '외부 도구',
-      '도구 통합',
-      'oauth',
-      'connector',
-      '커넥터',
-      'google workspace',
-      'google drive',
-      'google docs',
-      'google calendar',
-      '구글 워크스페이스',
-      '구글 드라이브',
-      '구글 독스',
-      '구글 캘린더',
-      'notion',
-      '노션',
-      'linear',
-      '리니어',
-      'fetch',
-      'filesystem',
-      '파일 시스템',
-      '파일시스템',
-    ]) ||
-    (hasAny(value, ['integration', 'integrations', '통합']) &&
-      hasAny(value, [
-        'tool',
-        'tools',
-        '도구',
-        'mcp',
-        'oauth',
-        'google',
-        '구글',
-        'notion',
-        '노션',
-        'linear',
-        '리니어',
-        'hermes',
-        '헤르메스',
-      ]));
-  const channelSetupGuide =
-    hasAny(value, [
-      'openclaw',
-      '오픈클로',
-      '오픈클로우',
-      'channel',
-      'channels',
-      '채널',
-      'messenger',
-      'messengers',
-      '메신저',
-      'access group',
-      'access groups',
-      '액세스 그룹',
-      '접근 그룹',
-      'routing',
-      '라우팅',
-      'pairing',
-      '페어링',
-      'troubleshooting',
-      'troubleshoot',
-      '문제 해결',
-      'telegram',
-      '텔레그램',
-      'slack',
-      '슬랙',
-      'discord',
-      '디스코드',
-      'whatsapp',
-      '왓츠앱',
-      'google chat',
-      '구글 챗',
-    ]) ||
-    (hasAny(value, ['integration', 'integrations', '통합']) &&
-      hasAny(value, ['channel', 'channels', '채널', 'messenger', 'messengers', '메신저']));
-
-  if (
-    hasAny(value, ['user story', 'user stories', '사용자 스토리', '스토리', 'hermes story', '헤르메스 스토리']) ||
-    (hasAny(value, ['hermes', '헤르메스']) && !toolIntegrationGuide && !channelSetupGuide)
-  ) {
-    id = 'agent-user-stories';
-    label = 'Agent user stories';
-  } else if (toolIntegrationGuide) {
-    id = 'external-tool-integrations';
-    label = 'External tool integrations';
-  } else if (channelSetupGuide) {
-    id = 'openclaw-channel-setup';
-    label = 'OpenClaw-style channel setup';
-  } else if (hasAny(value, ['cr', 'mcp', 'gateway', '게이트웨이', 'bot', '봇'])) {
-    id = 'cr-mcp-gateway-bots';
-    label = 'Capability Registry, MCP, gateway, and bots';
-  }
-
-  return { id, label };
+  return findXenesisNaturalGuideTarget(value);
 }
 
 function xenesisGuideActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
