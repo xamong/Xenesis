@@ -1,8 +1,9 @@
 import type { AgentMessage } from "../core/messages.js";
-import type { MemoryInput, MemoryRecord, MemoryStore } from "./types.js";
+import { wrapExternalContent } from "../core/prompt/ExternalContentPolicy.js";
 import type { Embedder } from "./embedding.js";
 import { semanticSearch } from "./embedding.js";
-import { wrapExternalContent } from "../core/prompt/ExternalContentPolicy.js";
+import { memoryRunbookSearchText, validateMemoryRunbookInput } from "./memoryRunbook.js";
+import type { MemoryInput, MemoryRecord, MemoryStore } from "./types.js";
 
 const DEFAULT_MIN_SCORE = 0.25;
 
@@ -24,6 +25,47 @@ function compareUpdatedAt(left: MemoryRecord, right: MemoryRecord) {
   return Date.parse(right.updatedAt) - Date.parse(left.updatedAt);
 }
 
+function hasOwn<T extends object>(value: T, key: keyof T): boolean {
+  return Object.hasOwn(value, key);
+}
+
+function optionalRecordField<K extends keyof MemoryRecord>(
+  input: MemoryInput,
+  existing: MemoryRecord | undefined,
+  key: K,
+): Pick<MemoryRecord, K> | Record<string, never> {
+  if (hasOwn(input, key as keyof MemoryInput)) {
+    const value = input[key as keyof MemoryInput] as MemoryRecord[K] | undefined;
+    return value !== undefined ? { [key]: value } as Pick<MemoryRecord, K> : {};
+  }
+  const value = existing?.[key];
+  return value !== undefined ? { [key]: value } as Pick<MemoryRecord, K> : {};
+}
+
+function evidenceFields(
+  input: MemoryInput,
+  existing: MemoryRecord | undefined,
+): Pick<MemoryRecord, "evidenceIds" | "noEvidenceReason"> | Record<string, never> {
+  if (hasOwn(input, "evidenceIds")) {
+    return input.evidenceIds !== undefined ? { evidenceIds: input.evidenceIds } : {};
+  }
+  if (hasOwn(input, "noEvidenceReason")) {
+    return input.noEvidenceReason !== undefined ? { noEvidenceReason: input.noEvidenceReason } : {};
+  }
+  return {
+    ...(existing?.evidenceIds ? { evidenceIds: existing.evidenceIds } : {}),
+    ...(existing?.noEvidenceReason ? { noEvidenceReason: existing.noEvidenceReason } : {})
+  };
+}
+
+function escapeMemoryAttribute(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 export function scoreRecord(record: MemoryRecord, query: string) {
   const normalized = query.trim().toLowerCase();
   if (!normalized) return 1;
@@ -31,9 +73,10 @@ export function scoreRecord(record: MemoryRecord, query: string) {
   const queryTokens = uniqueTokens(query);
   const id = normalizeText(record.id);
   const text = normalizeText(record.text);
+  const runbookText = normalizeText(memoryRunbookSearchText(record));
   const tags = record.tags.map(normalizeText);
   const source = normalizeText(record.source ?? "");
-  const haystack = [id, text, source, ...tags].join(" ");
+  const haystack = [id, text, runbookText, source, ...tags].join(" ");
   let score = 0;
 
   score += record.priority ?? 0;
@@ -52,6 +95,10 @@ export function scoreRecord(record: MemoryRecord, query: string) {
     }
     if (text.includes(token)) {
       score += 4;
+      matched = true;
+    }
+    if (runbookText.includes(token)) {
+      score += 5;
       matched = true;
     }
     if (id.includes(token)) {
@@ -96,17 +143,39 @@ export class InMemoryMemoryStore implements MemoryStore {
   }
 
   async upsert(input: MemoryInput): Promise<MemoryRecord> {
+    const normalizedInput = validateMemoryRunbookInput(input);
+    const existing = this.records.get(normalizedInput.id);
     const record: MemoryRecord = {
-      id: input.id,
-      text: input.text,
-      tags: input.tags ?? [],
-      ...(input.source ? { source: input.source } : {}),
-      ...(input.priority !== undefined ? { priority: input.priority } : {}),
-      updatedAt: this.now().toISOString()
+      id: normalizedInput.id,
+      text: normalizedInput.text,
+      tags: normalizedInput.tags ?? [],
+      ...optionalRecordField(normalizedInput, existing, "kind"),
+      ...optionalRecordField(normalizedInput, existing, "runbook"),
+      ...optionalRecordField(normalizedInput, existing, "source"),
+      ...optionalRecordField(normalizedInput, existing, "priority"),
+      updatedAt: this.now().toISOString(),
+      createdAt: normalizedInput.createdAt ?? existing?.createdAt ?? this.now().toISOString(),
+      ...(normalizedInput.status ? { status: normalizedInput.status } : existing?.status ? { status: existing.status } : { status: "active" }),
+      ...optionalRecordField(normalizedInput, existing, "pinned"),
+      ...optionalRecordField(normalizedInput, existing, "lastAccessedAt"),
+      ...optionalRecordField(normalizedInput, existing, "sensitivity"),
+      ...optionalRecordField(normalizedInput, existing, "conflictsWith"),
+      ...optionalRecordField(normalizedInput, existing, "validFrom"),
+      ...optionalRecordField(normalizedInput, existing, "validTo"),
+      ...optionalRecordField(normalizedInput, existing, "supersedes"),
+      ...optionalRecordField(normalizedInput, existing, "supersededBy"),
+      ...optionalRecordField(normalizedInput, existing, "partialSupersededBy"),
+      ...optionalRecordField(normalizedInput, existing, "supersedeMode"),
+      ...evidenceFields(normalizedInput, existing),
+      ...optionalRecordField(normalizedInput, existing, "archivedAt")
     };
     if (this.embedder) record.embedding = await this.embedder.embed(record.text);
     this.records.set(record.id, record);
     return record;
+  }
+
+  async get(id: string): Promise<MemoryRecord | undefined> {
+    return this.records.get(id);
   }
 
   async remove(id: string): Promise<void> {
@@ -134,8 +203,9 @@ export function buildMemorySystemMessage(records: MemoryRecord[]): SystemMessage
       authority: "untrusted",
       content: record.text
     });
+    const tags = record.tags.map(escapeMemoryAttribute).join(",");
     return [
-      `<memory id="${record.id}" tags="${record.tags.join(",")}"${record.source ? ` source="${record.source}"` : ""}${record.priority !== undefined ? ` priority="${record.priority}"` : ""} updatedAt="${record.updatedAt}">`,
+      `<memory id="${escapeMemoryAttribute(record.id)}" tags="${tags}"${record.source ? ` source="${escapeMemoryAttribute(record.source)}"` : ""}${record.priority !== undefined ? ` priority="${record.priority}"` : ""} updatedAt="${escapeMemoryAttribute(record.updatedAt)}">`,
       wrapped.content,
       "</memory>"
     ].join("\n");

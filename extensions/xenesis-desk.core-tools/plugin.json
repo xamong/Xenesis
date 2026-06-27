@@ -117,6 +117,11 @@
         "command": "xenesis-desk.core-tools.openAgentPerformance",
         "title": "Agent Performance",
         "icon": "AP"
+      },
+      {
+        "command": "xenesis-desk.core-tools.openMemoryDashboard",
+        "title": "Memory Dashboard",
+        "icon": "MD"
       }
     ],
     "menus": {
@@ -141,7 +146,8 @@
         "xenesis-desk.core-tools.openNetworkMonitor",
         "xenesis-desk.core-tools.openXdBlaster",
         "xenesis-desk.core-tools.openAuditLog",
-        "xenesis-desk.core-tools.openAgentPerformance"
+        "xenesis-desk.core-tools.openAgentPerformance",
+        "xenesis-desk.core-tools.openMemoryDashboard"
       ],
       "commandPalette": [
         "xenesis-desk.core-tools.openXamongCode",
@@ -164,7 +170,8 @@
         "xenesis-desk.core-tools.openNetworkMonitor",
         "xenesis-desk.core-tools.openXdBlaster",
         "xenesis-desk.core-tools.openAuditLog",
-        "xenesis-desk.core-tools.openAgentPerformance"
+        "xenesis-desk.core-tools.openAgentPerformance",
+        "xenesis-desk.core-tools.openMemoryDashboard"
       ]
     }
   }

@@ -45,11 +45,14 @@ import {
   diagnosePluginRuntime,
   registerMcpServerTools,
   runMcpOAuthLogin,
+  MemoryLedger,
   SqliteMcpAuthStore,
   SqliteMemoryStore,
+  SqliteMemoryLedgerStore,
   SqlitePluginStateStore,
   SqliteSubagentTaskStore,
   buildSkillSystemMessage,
+  trustedMemoryWriteContext,
   loadSkillRegistry,
   startXenesisMcpServer,
   type ExtensionDescriptor,
@@ -2173,7 +2176,9 @@ export async function createCliRuntimeTools(config: XenesisConfig, env: NodeJS.P
   });
 
   if (config.extensions.memory.enabled) {
-    const memoryTool = createMemoryTool(createMemoryStore(config));
+    const memoryTool = createMemoryTool(createMemoryLedger(config), {
+      writeContext: () => trustedMemoryWriteContext("cli-runtime", "manual_note")
+    });
     if (registry.has(memoryTool.name)) throw new Error(`Tool "${memoryTool.name}" is already registered.`);
     registry.set(memoryTool.name, memoryTool);
   }
@@ -2248,6 +2253,14 @@ function createMemoryStore(config: XenesisConfig) {
   return new SqliteMemoryStore({
     xenesisHome: config.xenesisHome,
     memoryPath: configuredStatePath(config, config.extensions.memory.path)
+  });
+}
+
+function createMemoryLedger(config: XenesisConfig) {
+  return new MemoryLedger({
+    memoryStore: createMemoryStore(config),
+    ledgerStore: new SqliteMemoryLedgerStore({ xenesisHome: config.xenesisHome }),
+    evidenceVault: { xenesisHome: config.xenesisHome }
   });
 }
 
@@ -3078,20 +3091,22 @@ async function runMemoryCommand(parsed: ParsedArgs, cwd: string, env: NodeJS.Pro
     env,
     cli: cliOverrides(parsed)
   });
-  const store = createMemoryStore(config);
+  const ledger = createMemoryLedger(config);
 
   if (parsed.memoryCommand === "add") {
-    const record = await store.upsert({
+    const result = await ledger.write({
       id: parsed.memoryId ?? "",
       text: parsed.memoryText ?? ""
-    });
-    emitStdout(io, `memory: saved ${record.id}`);
+    }, trustedMemoryWriteContext("cli-command", "manual_note"));
+    emitStdout(io, result.status === "accepted" && result.record
+      ? `memory: saved ${result.record.id}`
+      : `memory: proposed ${result.proposal?.id ?? "(unknown)"}`);
     return 0;
   }
 
   const records = parsed.memoryCommand === "search"
-    ? await store.search(parsed.memoryQuery ?? "")
-    : await store.list();
+    ? await ledger.searchRecords({ query: parsed.memoryQuery ?? "", limit: 20 })
+    : await ledger.listRecords();
 
   if (records.length === 0) {
     emitStdout(io, "no memory");

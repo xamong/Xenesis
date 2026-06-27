@@ -74,6 +74,17 @@ export interface MemoryConfig {
   enabled: boolean;
   path: string;
   embedder?: EmbedderConfig;
+  graph: MemoryGraphConfig;
+}
+
+export interface MemoryGraphConfig {
+  enabled: boolean;
+  endpoint?: string;
+  allowedEndpoints: string[];
+  localOnly: boolean;
+  allowSensitiveProjection: boolean;
+  redactEvidence: boolean;
+  timeoutMs: number;
 }
 
 export interface SubagentDefinitionConfig {
@@ -545,7 +556,18 @@ export const defaultConfig = {
   extensions: {
     mcpServers: {},
     recommendedMcpServers: [],
-    memory: { enabled: false, path: ".xenesis/memory.json" },
+    memory: {
+      enabled: false,
+      path: ".xenesis/memory.json",
+      graph: {
+        enabled: false,
+        allowedEndpoints: ["http://127.0.0.1:8000", "http://localhost:8000"],
+        localOnly: true,
+        allowSensitiveProjection: false,
+        redactEvidence: true,
+        timeoutMs: 15000
+      }
+    },
     subagents: {
       enabled: false,
       maxConcurrent: 2,

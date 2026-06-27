@@ -320,6 +320,7 @@ export const APP_MENU_MODEL: AppMenuGroupNode[] = [
         undefined,
         'AP',
       ),
+      command('memory-dashboard', 'Memory Dashboard', 'xenesis-desk.core-tools.openMemoryDashboard', undefined, 'MD'),
     ],
   },
   {

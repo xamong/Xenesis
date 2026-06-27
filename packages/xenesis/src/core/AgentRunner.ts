@@ -948,6 +948,16 @@ function guidanceToolIsSequenceRelated(toolName: string, sequence: string[], nex
 }
 
 function promptToolPriorityHint(content: string): ToolPriorityHint | undefined {
+  const memoryRequested = /기억|메모리|장기기억|\bmemory\b|\bremember\b|\brecall\b/i.test(content) &&
+    /기억해|기억해줘|기억해둬|저장|검색|찾아|확인|내용|뭐|무엇|\bremember\b|\brecall\b|\bsearch\b|\bsave\b|\bstore\b|\bstored\b/i.test(content);
+  if (memoryRequested) {
+    return {
+      reason: "durable_memory_request",
+      tools: ["memory"],
+      guidance: "For explicit durable-memory save/search/recall requests, call the memory tool before answering; do not rely only on the current transcript."
+    };
+  }
+
   const appVerificationRequested = userRequestedRepairOrVerification(content) &&
     /app|browser|ui|client|server|web|page|프론트|브라우저|웹|화면|앱|서버|클라이언트/i.test(content);
 

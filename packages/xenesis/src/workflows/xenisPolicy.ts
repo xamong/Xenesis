@@ -6,6 +6,7 @@ export type XenisTaskPolicyId =
   | "xd-command"
   | "visible-subagent"
   | "long-running-handoff"
+  | "context-memory"
   | "safe-file-edit"
   | "ui-inspection"
   | "terminal-followup"
@@ -202,6 +203,39 @@ function isVisibleSubagentPrompt(text: string) {
   return mentionsSubagent && wantsVisibleTerminal;
 }
 
+function isMemoryPrompt(text: string) {
+  const mentionsMemory = includesAny(text, [
+    "기억",
+    "메모리",
+    "장기기억",
+    "memory",
+    "remember",
+    "recall"
+  ]);
+  if (!mentionsMemory) return false;
+
+  return includesAny(text, [
+    "기억해",
+    "기억해줘",
+    "기억해둬",
+    "기억해 둬",
+    "저장",
+    "검색",
+    "찾아",
+    "찾아줘",
+    "확인",
+    "내용",
+    "뭐",
+    "무엇",
+    "remember",
+    "recall",
+    "search",
+    "save",
+    "store",
+    "stored"
+  ]);
+}
+
 function policyMessage(id: XenisTaskPolicyId, label: string, priorityTools: string[], rules: string[]): WorkflowSystemMessage {
   return {
     role: "system",
@@ -258,6 +292,27 @@ function naturalDeskControlPolicy(): XenisTaskPolicy {
       "Keep approval-gated control/write/execute actions inside the Desk bridge approval flow.",
       "Do not expose internal tool names, MCP names, CR/Capability Registry terminology, bridge terminology, Capability Registry paths, approval ids, raw bridge errors, or test markers in user-facing progress updates or final answers unless the user explicitly asks for diagnostics.",
       "Translate internal Desk reads into product language only: browser tab counts, file explorer open/closed state, current workspace, selected path, pane state, or terminal output."
+    ])
+  };
+}
+
+function contextMemoryPolicy(): XenisTaskPolicy {
+  const priorityTools = [
+    "memory",
+    "desk_active_context",
+    "desk_state"
+  ];
+  return {
+    id: "context-memory",
+    label: "Durable memory request",
+    priorityTools,
+    toolExecutionPolicy: toolExecutionPolicy("context-memory", priorityTools),
+    systemMessage: policyMessage("context-memory", "Durable memory request", priorityTools, [
+      "The user is asking to save, search, recall, inspect, or manage durable memory.",
+      "Use the `memory` tool before answering. For explicit remember/save requests, call `memory` with action `save` or `propose` before finalizing.",
+      "For memory search/recall/list/history requests, call `memory` with action `search`, `list`, `history`, or `proposals` before finalizing.",
+      "Do not answer a durable-memory request using only the current conversation transcript. If the memory tool is unavailable or denied, report that concrete limitation.",
+      "Do not store secrets, credentials, or sensitive personal details as active memory without an explicit confirmation path."
     ])
   };
 }
@@ -338,6 +393,10 @@ export function resolveXenisTaskPolicy(prompt: string): XenisTaskPolicy {
         "Keep the current turn focused on decomposition, risk checks, and the next visible user update rather than attempting all queued stages inline."
       ])
     };
+  }
+
+  if (isMemoryPrompt(text)) {
+    return contextMemoryPolicy();
   }
 
   if (includesAny(text, [

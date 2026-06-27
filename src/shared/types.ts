@@ -409,6 +409,7 @@ export type DockContentType =
   | 'xd-blaster'
   | 'audit-log'
   | 'agent-performance'
+  | 'memory-dashboard'
   | 'hex'
   | 'document-preview'
   | 'meta-management'
@@ -531,6 +532,7 @@ export type ExtensionTool =
   | 'xenesis-desk.core-tools.xd-blaster'
   | 'xenesis-desk.core-tools.audit-log'
   | 'xenesis-desk.core-tools.agent-performance'
+  | 'xenesis-desk.core-tools.memory-dashboard'
   | 'xenesis-desk.workflow-runner.alert-rules'
   | 'xenesis-desk.workflow-runner.template-catalog'
   | 'xenesis-desk.workflow-runner.artifact-versions';

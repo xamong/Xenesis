@@ -184,6 +184,35 @@ describe("createShellTool persistence + lifecycle", () => {
     expect(dead).toBe(true);
   }, 40000);
 
+  it("idle-timeout does not dispose a command while it is still running", async () => {
+    const root = await mkdtemp(join(tmpdir(), "s10t-"));
+    const events: LifecycleEvent[] = [];
+    const tool = createShellTool({
+      persistent: true,
+      idleTimeoutMs: 100,
+      onSessionLifecycle: (e) => events.push(e)
+    });
+
+    const r = await tool.run(
+      {
+        command: isWin ? "Start-Sleep -Milliseconds 250; Write-Output up" : "sleep 0.25; echo up",
+        timeoutMs: 2000
+      } as never,
+      ctx(root, "ACTIVE_IDLE")
+    );
+
+    expect(r.ok).toBe(true);
+    expect(r.content).toContain("up");
+    const spawn = events.find((e) => e.phase === "spawn" && e.sessionId === "ACTIVE_IDLE");
+    expect(spawn?.pid).toBeGreaterThan(0);
+    const pid = spawn!.pid!;
+    expect(isAlive(pid)).toBe(true);
+
+    await tool.cleanupSession?.("ACTIVE_IDLE");
+    const dead = await waitFor(() => !isAlive(pid), 15000);
+    expect(dead).toBe(true);
+  }, 10000);
+
   it("idle-timeout disposes a stale session — the tracked child PID is killed", async () => {
     // Spec §5: an idle-timer disposes a stale session. Existing tests use a 5-min
     // timeout and never fire it; here a short REAL idle timeout (the timer is unref'd

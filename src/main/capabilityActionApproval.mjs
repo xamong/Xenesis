@@ -64,15 +64,21 @@ export function createCapabilityApprovalRequest({ path, args, source, result } =
   const normalizedSource = cleanText(source || result?.source, 80) || 'mcp';
   const permission = cleanText(result?.permission, 80) || 'control';
   const error = cleanText(result?.error, 1000) || `Capability requires approval: ${normalizedPath}`;
+  const approvalKey = createCapabilityApprovalAllowKey({
+    path: normalizedPath,
+    args,
+    source: normalizedSource,
+  });
+  const approvalKeySuffix = approvalKey.split(':').pop() || normalizedPath;
   return {
-    id: `capability-${normalizedSource}-${normalizedPath}`.replace(/[^a-zA-Z0-9_.:-]+/g, '-'),
+    id: `capability-${normalizedSource}-${normalizedPath}-${approvalKeySuffix}`.replace(/[^a-zA-Z0-9_.:-]+/g, '-'),
     title: `Approve Xenesis Desk capability: ${normalizedPath}`,
     kind: CAPABILITY_APPROVAL_KIND,
     command: createCapabilityApprovalCommand({ path: normalizedPath, args, source: normalizedSource }),
     description: error,
     source: 'Xenesis Desk Capability Registry',
     sessionId: 'xenesis-capability',
-    approvalSessionKey: `capability:${normalizedSource}:${normalizedPath}`,
+    approvalSessionKey: approvalKey,
     requester: normalizedSource,
     risk: permission,
     callbackUrl: '',

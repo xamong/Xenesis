@@ -9,6 +9,7 @@ import {
   normalizeDeskProviderName,
   type DeskEmbeddedPromptResult,
 } from './embeddedRuntime';
+import { closeAllDatabases } from '../../xenesis/src/db/database';
 
 test('mapDeskEmbeddedPromptResult preserves final doneContent from embedded runtime', () => {
   const result = mapDeskEmbeddedPromptResult({
@@ -18,6 +19,11 @@ test('mapDeskEmbeddedPromptResult preserves final doneContent from embedded runt
     sessionId: 'session-1',
     output: '',
     errors: '',
+    surface: {
+      name: 'embedded',
+      outputMode: 'stream-json',
+      interactive: true,
+    },
     events: [],
     doneContent: '최종 응답입니다.',
   } as DeskEmbeddedPromptResult);
@@ -190,6 +196,7 @@ test('DeskEmbeddedAgentRuntime reuses session and history across embedded mock p
     assert.match(second.doneContent || '', /assistant: mock response: 첫 질문/);
     assert.match(second.doneContent || '', /user: mock:messages/);
   } finally {
+    closeAllDatabases();
     await rm(workspace, { recursive: true, force: true });
   }
 });

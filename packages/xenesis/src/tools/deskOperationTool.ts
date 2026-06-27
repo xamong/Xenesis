@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Tool, ToolContext } from "./types.js";
+import type { Tool } from "./types.js";
 import { callCapabilityPath } from "./deskBridgeTools.js";
 import {
   operationSchema,
@@ -63,30 +63,6 @@ function isNotWired(error: unknown): boolean {
 
 const NOT_AVAILABLE_MESSAGE =
   "Desk Operation runner not available; use the ms-office / pdf / media skill (headless path) instead.";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
-/**
- * Approval-relay extractor — mirrors computer_use / deskCallCapability. When the
- * Desk payload signals approvalRequired, surface the approval/inbox id WITHOUT
- * claiming the Operation succeeded.
- */
-function approvalInboxId(payload: Record<string, unknown>): string {
-  const item =
-    isRecord(payload.actionInboxItem) ? (payload.actionInboxItem as { id?: unknown }) : {};
-  const id = typeof item.id === "string" && item.id ? item.id : undefined;
-  if (id) return ` Approval request: ${id}`;
-  // Some runners may nest the inbox id under approval.actionInboxItemId.
-  if (isRecord(payload.approval)) {
-    const nested = payload.approval as { actionInboxItemId?: unknown };
-    if (typeof nested.actionInboxItemId === "string" && nested.actionInboxItemId) {
-      return ` Approval request: ${nested.actionInboxItemId}`;
-    }
-  }
-  return "";
-}
 
 export function createDeskOperationTool(): Tool<DeskOperationInput, Record<string, unknown>> {
   return {
@@ -177,13 +153,9 @@ export function createDeskOperationTool(): Tool<DeskOperationInput, Record<strin
         // Approval relay — return ok:true with the approval/inbox message; do NOT
         // claim the Operation succeeded (mirror computer_use / deskCallCapability).
         if (payload.approvalRequired) {
-          const id = approvalInboxId(payload as Record<string, unknown>);
           return {
             ok: true,
-            content:
-              `desk_operation ${mode} requires Desk approval before it can run: ` +
-              `${String(payload.path ?? `xd.ops.${mode}`)}.${id} ` +
-              "Re-run with approved=true after the Desk approval is granted.",
+            content: "Desk approval is required before this operation can run. Use the inline approval card in Xenesis Desk to continue.",
             data: payload
           };
         }

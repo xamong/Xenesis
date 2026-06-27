@@ -160,6 +160,43 @@ test('pendingXenesisDeskActionsFromResults preserves approval-required Desk acti
   assert.deepEqual(pendingXenesisDeskActionsFromResults(actions, results), [actions[0]]);
 });
 
+test('runXenesisDeskActions preserves Action Inbox items from approval-required results', async () => {
+  const actionInboxItem = {
+    id: 'approval-1',
+    title: 'Approve memory proposal',
+    kind: 'capability-approval',
+    command: JSON.stringify({ type: 'desk-capability-call', path: 'xd.memory.proposals.accept', args: { id: 'p1' } }),
+    description: '',
+    source: 'xenesis',
+    sessionId: 'xenesis-agent',
+    approvalSessionKey: 'approval-key',
+    requester: 'xenesis',
+    risk: 'write',
+    status: 'pending' as const,
+    callbackUrl: '',
+    approveText: 'approve',
+    rejectText: 'reject',
+    createdAt: '2026-06-27T00:00:00.000Z',
+    updatedAt: '2026-06-27T00:00:00.000Z',
+    expiresAt: '2026-06-27T00:05:00.000Z',
+    resolvedAt: '',
+    lastCallbackAt: '',
+    result: '',
+    error: '',
+  };
+  const [result] = await runXenesisDeskActions(
+    [{ id: 'a', path: 'xd.memory.proposals.accept', args: { id: 'p1' }, approved: false }],
+    async (path) => ({
+      ok: false,
+      path,
+      approvalRequired: true,
+      actionInboxItem,
+    }),
+  );
+
+  assert.equal(result?.actionInboxItem?.id, 'approval-1');
+});
+
 test('approveXenesisDeskActions creates approved copies without mutating pending actions', () => {
   const pending = [
     { id: 'a', path: 'xd.views.open', args: { kind: 'terminal' }, approved: false, reason: 'Open terminal' },

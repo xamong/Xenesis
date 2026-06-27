@@ -82,4 +82,8 @@ exports.activate = function activate(api) {
   api.registerCommand('xenesis-desk.core-tools.openAgentPerformance', function openAgentPerformance() {
     api.openTool('xenesis-desk.core-tools.agent-performance');
   });
+
+  api.registerCommand('xenesis-desk.core-tools.openMemoryDashboard', function openMemoryDashboard() {
+    api.openTool('xenesis-desk.core-tools.memory-dashboard');
+  });
 };

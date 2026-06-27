@@ -3,6 +3,7 @@ import { isAbsolute, resolve } from "node:path";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { resolveConfigEnvVars } from "./envInterpolation.js";
+import { readProfileConfig, resolveXenesisHome } from "./profiles.js";
 import {
   type ApprovalConfig,
   type ApprovalMode,
@@ -20,8 +21,8 @@ import {
   type ProviderName,
   type ProviderSetupEntry,
   providerNames,
-  type ShellConfig,
   type SecretRef,
+  type ShellConfig,
   type ToolGuardConfig,
   type VerificationConfig,
   type WebToolsConfig,
@@ -29,7 +30,6 @@ import {
   type WorkflowConfig,
   type XenesisConfig
 } from "./types.js";
-import { readProfileConfig, resolveXenesisHome } from "./profiles.js";
 
 const secretRefSchema: z.ZodType<SecretRef> = z.union([
   z.string().min(1),
@@ -99,7 +99,24 @@ const extensionsSchema = z.object({
       provider: z.enum(["deterministic"]),
       dimensions: z.number().int().positive().optional(),
       minScore: z.number().min(0).max(1).optional()
-    }).optional()
+    }).optional(),
+    graph: z.object({
+      enabled: z.boolean().default(defaultConfig.extensions.memory.graph.enabled),
+      endpoint: z.string().url().optional(),
+      allowedEndpoints: z.array(z.string().url()).default(defaultConfig.extensions.memory.graph.allowedEndpoints),
+      localOnly: z.boolean().default(defaultConfig.extensions.memory.graph.localOnly),
+      allowSensitiveProjection: z.boolean().default(defaultConfig.extensions.memory.graph.allowSensitiveProjection),
+      redactEvidence: z.boolean().default(defaultConfig.extensions.memory.graph.redactEvidence),
+      timeoutMs: z.number().int().positive().default(defaultConfig.extensions.memory.graph.timeoutMs)
+    }).superRefine((graph, ctx) => {
+      if (graph.enabled && !graph.endpoint) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "graph endpoint required when graph projection is enabled",
+          path: ["endpoint"]
+        });
+      }
+    }).default(defaultConfig.extensions.memory.graph)
   }).default(defaultConfig.extensions.memory),
   subagents: z.object({
     enabled: z.boolean().default(defaultConfig.extensions.subagents.enabled),

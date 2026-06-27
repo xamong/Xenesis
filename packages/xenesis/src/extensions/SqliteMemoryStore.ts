@@ -3,13 +3,58 @@ import type { DatabaseSync } from "node:sqlite";
 import { openDatabase } from "../db/database.js";
 import { runStartupImports } from "../db/startupImports.js";
 import { TableStore } from "../db/tableStore.js";
-import type { MemoryStore, MemoryRecord, MemoryInput } from "./types.js";
 import type { Embedder } from "./embedding.js";
 import { semanticSearch } from "./embedding.js";
 import { rankRecords } from "./memory.js";
+import { validateMemoryRunbookInput } from "./memoryRunbook.js";
+import type { MemoryInput, MemoryRecord, MemoryStore } from "./types.js";
 
 const DEFAULT_MAX_RECORDS = 500;
 const DEFAULT_MIN_SCORE = 0.25;
+
+function hasOwn<T extends object>(value: T, key: keyof T): boolean {
+  return Object.hasOwn(value, key);
+}
+
+function optionalRecordField<K extends keyof MemoryRecord>(
+  input: MemoryInput,
+  existing: MemoryRecord | undefined,
+  key: K,
+): Pick<MemoryRecord, K> | Record<string, never> {
+  if (hasOwn(input, key as keyof MemoryInput)) {
+    const value = input[key as keyof MemoryInput] as MemoryRecord[K] | undefined;
+    return value !== undefined ? { [key]: value } as Pick<MemoryRecord, K> : {};
+  }
+  const value = existing?.[key];
+  return value !== undefined ? { [key]: value } as Pick<MemoryRecord, K> : {};
+}
+
+function evidenceFields(
+  input: MemoryInput,
+  existing: MemoryRecord | undefined,
+): Pick<MemoryRecord, "evidenceIds" | "noEvidenceReason"> | Record<string, never> {
+  if (hasOwn(input, "evidenceIds")) {
+    return input.evidenceIds !== undefined ? { evidenceIds: input.evidenceIds } : {};
+  }
+  if (hasOwn(input, "noEvidenceReason")) {
+    return input.noEvidenceReason !== undefined ? { noEvidenceReason: input.noEvidenceReason } : {};
+  }
+  return {
+    ...(existing?.evidenceIds ? { evidenceIds: existing.evidenceIds } : {}),
+    ...(existing?.noEvidenceReason ? { noEvidenceReason: existing.noEvidenceReason } : {})
+  };
+}
+
+function pruneProtected(record: MemoryRecord): boolean {
+  return Boolean(
+    record.pinned ||
+      record.validTo ||
+      record.supersededBy ||
+      record.supersedes?.length ||
+      record.partialSupersededBy?.length ||
+      record.supersedeMode,
+  );
+}
 
 export class SqliteMemoryStore implements MemoryStore {
   private readonly db: DatabaseSync;
@@ -83,9 +128,30 @@ export class SqliteMemoryStore implements MemoryStore {
   }
   async upsert(input: MemoryInput): Promise<MemoryRecord> {
     await this.ready;
+    const normalizedInput = validateMemoryRunbookInput(input);
+    const existing = this.table.get(normalizedInput.id);
+    const timestamp = this.now().toISOString();
     const record: MemoryRecord = {
-      id: input.id, text: input.text, tags: input.tags ?? [],
-      source: input.source, priority: input.priority, updatedAt: this.now().toISOString(),
+      id: normalizedInput.id, text: normalizedInput.text, tags: normalizedInput.tags ?? [],
+      ...optionalRecordField(normalizedInput, existing, "kind"),
+      ...optionalRecordField(normalizedInput, existing, "runbook"),
+      ...optionalRecordField(normalizedInput, existing, "source"),
+      ...optionalRecordField(normalizedInput, existing, "priority"),
+      updatedAt: timestamp,
+      createdAt: normalizedInput.createdAt ?? existing?.createdAt ?? timestamp,
+      ...(normalizedInput.status ? { status: normalizedInput.status } : existing?.status ? { status: existing.status } : { status: "active" }),
+      ...optionalRecordField(normalizedInput, existing, "pinned"),
+      ...optionalRecordField(normalizedInput, existing, "lastAccessedAt"),
+      ...optionalRecordField(normalizedInput, existing, "sensitivity"),
+      ...optionalRecordField(normalizedInput, existing, "conflictsWith"),
+      ...optionalRecordField(normalizedInput, existing, "validFrom"),
+      ...optionalRecordField(normalizedInput, existing, "validTo"),
+      ...optionalRecordField(normalizedInput, existing, "supersedes"),
+      ...optionalRecordField(normalizedInput, existing, "supersededBy"),
+      ...optionalRecordField(normalizedInput, existing, "partialSupersededBy"),
+      ...optionalRecordField(normalizedInput, existing, "supersedeMode"),
+      ...evidenceFields(normalizedInput, existing),
+      ...optionalRecordField(normalizedInput, existing, "archivedAt"),
     };
     this.table.upsert(record);
     // Embedding lives in its own BLOB column (TableStore only writes the JSON `data` + index cols),
@@ -97,6 +163,10 @@ export class SqliteMemoryStore implements MemoryStore {
     }
     this.prune();
     return record;
+  }
+  async get(id: string): Promise<MemoryRecord | undefined> {
+    await this.ready;
+    return this.table.get(id);
   }
   async remove(id: string): Promise<void> {
     await this.ready;
@@ -130,9 +200,13 @@ export class SqliteMemoryStore implements MemoryStore {
   private prune(): void {
     const all = this.table.list();
     if (all.length <= this.maxRecords) return;
-    const victims = [...all]
+    const candidates = all.filter((record) => !pruneProtected(record));
+    const protectedCount = all.length - candidates.length;
+    const maxCandidateCount = Math.max(0, this.maxRecords - protectedCount);
+    if (candidates.length <= maxCandidateCount) return;
+    const victims = candidates
       .sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0) || Date.parse(a.updatedAt) - Date.parse(b.updatedAt))
-      .slice(0, all.length - this.maxRecords);
+      .slice(0, candidates.length - maxCandidateCount);
     for (const v of victims) this.table.delete(v.id);
   }
 }
