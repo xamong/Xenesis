@@ -1535,6 +1535,26 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center read
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 툴 setup 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-tools-setup-status',
+      path: 'xd.xenesis.tools.setup.status',
+      args: {},
+      approved: false,
+      reason: 'Read external tool setup catalog status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 툴 view 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-tools-views-status',
+      path: 'xd.xenesis.tools.views.status',
+      args: {},
+      approved: false,
+      reason: 'Read external tool view catalog status from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 툴 설치 계획 전체 상태 보여줘').actions, [
     {
       id: 'natural-xenesis-tools-install-plans-status',
@@ -1542,6 +1562,26 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center read
       args: {},
       approved: false,
       reason: 'Read external tool install plan catalog status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 툴 OAuth 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-tools-oauth-drafts-status',
+      path: 'xd.xenesis.tools.oauthDrafts.status',
+      args: {},
+      approved: false,
+      reason: 'Read external tool OAuth draft catalog status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 툴 MCP 설치 초안 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-tools-mcp-install-drafts-status',
+      path: 'xd.xenesis.tools.mcpInstallDrafts.status',
+      args: {},
+      approved: false,
+      reason: 'Read external tool MCP install draft catalog status from natural language request.',
     },
   ]);
 

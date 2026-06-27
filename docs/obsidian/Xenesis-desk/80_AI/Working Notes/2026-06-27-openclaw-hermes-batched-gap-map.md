@@ -441,8 +441,16 @@
   external-tool catalog status prompts that do not name a specific tool:
   - `외부 툴 connector 전체 상태 보여줘` ->
     `xd.xenesis.tools.connectors.status`.
+  - `외부 툴 setup 전체 상태 보여줘` ->
+    `xd.xenesis.tools.setup.status`.
+  - `외부 툴 view 전체 상태 보여줘` ->
+    `xd.xenesis.tools.views.status`.
   - `외부 툴 설치 계획 전체 상태 보여줘` ->
     `xd.xenesis.tools.installPlans.status`.
+  - `외부 툴 OAuth 전체 상태 보여줘` ->
+    `xd.xenesis.tools.oauthDrafts.status`.
+  - `외부 툴 MCP 설치 초안 전체 상태 보여줘` ->
+    `xd.xenesis.tools.mcpInstallDrafts.status`.
   - `외부 툴 액션 정책 전체 상태 보여줘` ->
     `xd.xenesis.tools.actions.status`.
   - `외부 툴 사용자 스토리 전체 상태 보여줘` ->

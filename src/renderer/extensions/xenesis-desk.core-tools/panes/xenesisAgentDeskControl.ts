@@ -841,12 +841,48 @@ function xenesisToolAggregateStatusActionFromNaturalText(value: string): Xenesis
     );
   }
 
+  if (hasAny(value, ['mcp', 'mcp install', 'mcp 설치']) && hasAny(value, ['draft', 'drafts', '초안', '설치 초안'])) {
+    return naturalAction(
+      'natural-xenesis-tools-mcp-install-drafts-status',
+      'xd.xenesis.tools.mcpInstallDrafts.status',
+      {},
+      'Read external tool MCP install draft catalog status from natural language request.',
+    );
+  }
+
+  if (hasAny(value, ['oauth', '오어스', '인증', 'token', '토큰'])) {
+    return naturalAction(
+      'natural-xenesis-tools-oauth-drafts-status',
+      'xd.xenesis.tools.oauthDrafts.status',
+      {},
+      'Read external tool OAuth draft catalog status from natural language request.',
+    );
+  }
+
+  if (hasAny(value, ['view', 'views', '뷰', '화면', 'surface'])) {
+    return naturalAction(
+      'natural-xenesis-tools-views-status',
+      'xd.xenesis.tools.views.status',
+      {},
+      'Read external tool view catalog status from natural language request.',
+    );
+  }
+
   if (hasAny(value, ['설치 계획', 'install plan', 'install plans'])) {
     return naturalAction(
       'natural-xenesis-tools-install-plans-status',
       'xd.xenesis.tools.installPlans.status',
       {},
       'Read external tool install plan catalog status from natural language request.',
+    );
+  }
+
+  if (hasAny(value, ['setup', '초기 설정', '설정 상태', '설정', 'settings', 'config', 'configuration', '구성'])) {
+    return naturalAction(
+      'natural-xenesis-tools-setup-status',
+      'xd.xenesis.tools.setup.status',
+      {},
+      'Read external tool setup catalog status from natural language request.',
     );
   }
 
