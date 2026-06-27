@@ -315,6 +315,10 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.mcp\.bridge\.status/);
   assert.match(hint, /xd\.xenesis\.gateway\.status/);
   assert.match(hint, /xd\.xenesis\.gateway\.openDashboard/);
+  assert.match(hint, /xd\.xenesis\.diagnostics/);
+  assert.match(hint, /xd\.xenesis\.reports\.list/);
+  assert.match(hint, /xd\.xenesis\.tasks\.list/);
+  assert.match(hint, /xd\.xenesis\.agents\.list/);
   assert.match(hint, /xd\.xenesis\.tools\.setup\.status/);
   assert.match(hint, /xd\.xenesis\.tools\.connectors\.status/);
   assert.match(hint, /xd\.xenesis\.tools\.views\.status/);
@@ -449,6 +453,48 @@ test('planXenesisDeskNaturalLanguageActions maps gateway read and dashboard prom
       args: { id: 'gateway' },
       approved: false,
       reason: 'Read Gateway onboarding checklist status from natural language request.',
+    },
+  ]);
+});
+
+test('planXenesisDeskNaturalLanguageActions maps runtime inventory readbacks to CR actions', () => {
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('Xenesis 운영 진단 보여줘').actions, [
+    {
+      id: 'natural-xenesis-diagnostics',
+      path: 'xd.xenesis.diagnostics',
+      args: {},
+      approved: false,
+      reason: 'Read Xenesis operational diagnostics from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('Xenesis 리포트 목록 보여줘').actions, [
+    {
+      id: 'natural-xenesis-reports-list',
+      path: 'xd.xenesis.reports.list',
+      args: {},
+      approved: false,
+      reason: 'List Xenesis reports from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('Xenesis 태스크 목록 보여줘').actions, [
+    {
+      id: 'natural-xenesis-tasks-list',
+      path: 'xd.xenesis.tasks.list',
+      args: {},
+      approved: false,
+      reason: 'List Xenesis tasks from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('Xenesis Agent 목록 보여줘').actions, [
+    {
+      id: 'natural-xenesis-agents-list',
+      path: 'xd.xenesis.agents.list',
+      args: {},
+      approved: false,
+      reason: 'List registered Xenesis Agent panes from natural language request.',
     },
   ]);
 });

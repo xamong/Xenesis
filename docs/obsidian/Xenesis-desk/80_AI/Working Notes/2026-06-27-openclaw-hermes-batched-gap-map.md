@@ -217,6 +217,21 @@
   write credentials, enable messenger delivery, add CR nodes, change dispatcher
   branches, or bypass approvals.
 
+## Runtime Inventory Readbacks Slice
+
+- Added deterministic Xenesis Agent natural-language routing for existing
+  read-only runtime inventory CR paths:
+  - `Xenesis 운영 진단 보여줘` -> `xd.xenesis.diagnostics`.
+  - `Xenesis 리포트 목록 보여줘` -> `xd.xenesis.reports.list`.
+  - `Xenesis 태스크 목록 보여줘` -> `xd.xenesis.tasks.list`.
+  - `Xenesis Agent 목록 보여줘` -> `xd.xenesis.agents.list`.
+- Added the same CR paths to the Agent control prompt hint so the Agent prefers
+  runtime inspection before prompt submission, run start, profile changes, or
+  other stateful operations.
+- Scope boundary: this slice did not submit prompts, start runs, install or use
+  profiles, mutate provider settings, write credentials, send messages, add CR
+  nodes, change dispatcher branches, or bypass approvals.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
