@@ -1190,13 +1190,8 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 툴 connector 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-tools-connectors-catalog-open',
-      path: 'xd.panes.settings.open',
-      args: {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      path: 'xd.xenesis.tools.connectors.open',
+      args: { ensureVisible: true },
       approved: false,
       reason: 'Open external tool connector catalog in Xenesis Connection Center from natural language request.',
     },
@@ -1205,13 +1200,8 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 툴 setup 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-tools-setup-catalog-open',
-      path: 'xd.panes.settings.open',
-      args: {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      path: 'xd.xenesis.tools.setup.open',
+      args: { ensureVisible: true },
       approved: false,
       reason: 'Open external tool setup catalog in Xenesis Connection Center from natural language request.',
     },
@@ -1220,13 +1210,8 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 툴 view 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-tools-views-catalog-open',
-      path: 'xd.panes.settings.open',
-      args: {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      path: 'xd.xenesis.tools.views.open',
+      args: { ensureVisible: true },
       approved: false,
       reason: 'Open external tool view catalog in Xenesis Connection Center from natural language request.',
     },
@@ -1235,13 +1220,8 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 툴 설치 계획 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-tools-install-plans-catalog-open',
-      path: 'xd.panes.settings.open',
-      args: {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      path: 'xd.xenesis.tools.installPlans.open',
+      args: { ensureVisible: true },
       approved: false,
       reason: 'Open external tool install plan catalog in Xenesis Connection Center from natural language request.',
     },
@@ -1250,13 +1230,8 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 툴 OAuth 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-tools-oauth-drafts-catalog-open',
-      path: 'xd.panes.settings.open',
-      args: {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      path: 'xd.xenesis.tools.oauthDrafts.open',
+      args: { ensureVisible: true },
       approved: false,
       reason: 'Open external tool OAuth draft catalog in Xenesis Connection Center from natural language request.',
     },
@@ -1265,13 +1240,8 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 툴 MCP 설치 초안 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-tools-mcp-install-drafts-catalog-open',
-      path: 'xd.panes.settings.open',
-      args: {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      path: 'xd.xenesis.tools.mcpInstallDrafts.open',
+      args: { ensureVisible: true },
       approved: false,
       reason:
         'Open external tool MCP install draft catalog in Xenesis Connection Center from natural language request.',
@@ -1281,13 +1251,8 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 툴 액션 정책 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-tools-actions-catalog-open',
-      path: 'xd.panes.settings.open',
-      args: {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      path: 'xd.xenesis.tools.actions.open',
+      args: { ensureVisible: true },
       approved: false,
       reason: 'Open external tool action policy catalog in Xenesis Connection Center from natural language request.',
     },
@@ -1296,13 +1261,8 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 툴 사용자 스토리 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-tools-user-stories-catalog-open',
-      path: 'xd.panes.settings.open',
-      args: {
-        category: 'xenesis-agent',
-        mode: 'connections',
-        section: 'xenesis-connections',
-        placement: 'tab',
-      },
+      path: 'xd.xenesis.tools.userStories.open',
+      args: { ensureVisible: true },
       approved: false,
       reason: 'Open external tool user-story catalog in Xenesis Connection Center from natural language request.',
     },

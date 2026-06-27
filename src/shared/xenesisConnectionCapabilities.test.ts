@@ -26,6 +26,11 @@ const ALL_AI_PROVIDER_KINDS = [
   'claude-interactive',
 ] as const;
 
+function schemaRequiredFields(capability: ReturnType<typeof findDeskBridgeCapability>): string[] {
+  const required = capability?.schema?.required;
+  return Array.isArray(required) ? [...required] : [];
+}
+
 test('xenesis connection status capability is registered as a read path', () => {
   const paths = new Set(listDeskBridgeCapabilities().map((node) => node.path));
 
@@ -487,7 +492,7 @@ test('xenesis tool setup capabilities are registered and dispatch to the adapter
   assert.equal(statusCapability?.approval, 'never');
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
-  assert.deepEqual(openCapability?.schema?.required, ['id']);
+  assert.equal(schemaRequiredFields(openCapability).includes('id'), false);
   assert.deepEqual(statusSchemaProperties.id?.enum, [
     'fetch',
     'filesystem',
@@ -561,7 +566,7 @@ test('xenesis tool connector status capability is registered and dispatches to t
   assert.equal(capability?.approval, 'never');
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
-  assert.deepEqual(openCapability?.schema?.required, ['id']);
+  assert.equal(schemaRequiredFields(openCapability).includes('id'), false);
   assert.deepEqual(schemaProperties.id?.enum, [
     'fetch',
     'filesystem',
@@ -644,7 +649,7 @@ test('xenesis tool view capabilities are registered and dispatch to the adapter'
   assert.equal(statusCapability?.approval, 'never');
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
-  assert.deepEqual(openCapability?.schema?.required, ['id']);
+  assert.equal(schemaRequiredFields(openCapability).includes('id'), false);
   for (const tool of ['fetch', 'notion', 'google-calendar']) {
     assert.equal(statusSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by status`);
     assert.equal(openSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by open`);
@@ -704,7 +709,7 @@ test('xenesis tool user story capabilities are registered and dispatch to the ad
   assert.equal(statusCapability?.approval, 'never');
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
-  assert.deepEqual(openCapability?.schema?.required, ['id']);
+  assert.equal(schemaRequiredFields(openCapability).includes('id'), false);
   for (const tool of ['notion', 'linear', 'google-workspace', 'google-calendar']) {
     assert.equal(statusSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by status`);
     assert.equal(statusSchemaProperties.tool?.enum.includes(tool), true, `${tool} should be accepted by status alias`);
@@ -768,7 +773,7 @@ test('xenesis tool install plan capabilities are registered and dispatch to the 
   assert.equal(statusCapability?.approval, 'never');
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
-  assert.deepEqual(openCapability?.schema?.required, ['id']);
+  assert.equal(schemaRequiredFields(openCapability).includes('id'), false);
   assert.equal(requestCapability?.permission, 'write');
   assert.equal(requestCapability?.approval, 'when-external');
   assert.deepEqual(requestCapability?.schema?.required, ['id']);
@@ -863,7 +868,7 @@ test('xenesis MCP install draft capabilities are registered and dispatch to the 
   assert.equal(statusCapability?.approval, 'never');
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
-  assert.deepEqual(openCapability?.schema?.required, ['id']);
+  assert.equal(schemaRequiredFields(openCapability).includes('id'), false);
   assert.equal(requestCapability?.permission, 'write');
   assert.equal(requestCapability?.approval, 'when-external');
   assert.deepEqual(requestCapability?.schema?.required, ['id']);
@@ -952,7 +957,7 @@ test('xenesis tool OAuth draft capabilities are registered and dispatch to the a
   assert.equal(statusCapability?.approval, 'never');
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
-  assert.deepEqual(openCapability?.schema?.required, ['id']);
+  assert.equal(schemaRequiredFields(openCapability).includes('id'), false);
   assert.equal(requestCapability?.permission, 'write');
   assert.equal(requestCapability?.approval, 'when-external');
   assert.deepEqual(requestCapability?.schema?.required, ['id']);
@@ -1041,7 +1046,7 @@ test('xenesis tool action catalog capabilities are registered and dispatch to th
   assert.equal(statusCapability?.approval, 'never');
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
-  assert.deepEqual(openCapability?.schema?.required, ['id']);
+  assert.equal(schemaRequiredFields(openCapability).includes('id'), false);
   assert.equal(requestCapability?.permission, 'write');
   assert.equal(requestCapability?.approval, 'when-external');
   assert.deepEqual(requestCapability?.schema?.required, ['id']);
@@ -1116,6 +1121,72 @@ test('xenesis tool action catalog capabilities are registered and dispatch to th
     id: 'notion',
     actionInboxItem: { id: 'tool-action-catalog-notion' },
   });
+});
+
+test('xenesis tool open capabilities allow catalog opens without focused ids', async () => {
+  const openPaths = [
+    'xd.xenesis.tools.setup.open',
+    'xd.xenesis.tools.connectors.open',
+    'xd.xenesis.tools.views.open',
+    'xd.xenesis.tools.userStories.open',
+    'xd.xenesis.tools.installPlans.open',
+    'xd.xenesis.tools.mcpInstallDrafts.open',
+    'xd.xenesis.tools.oauthDrafts.open',
+    'xd.xenesis.tools.actions.open',
+  ];
+  for (const path of openPaths) {
+    assert.equal(schemaRequiredFields(findDeskBridgeCapability(path)).includes('id'), false, `${path} id optional`);
+  }
+
+  const calls: Array<{ path: string; args: unknown }> = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    openXenesisToolSetup: (args) => {
+      calls.push({ path: 'xd.xenesis.tools.setup.open', args });
+      return { ok: true, total: 7 };
+    },
+    openXenesisToolConnector: (args) => {
+      calls.push({ path: 'xd.xenesis.tools.connectors.open', args });
+      return { ok: true, total: 7 };
+    },
+    openXenesisToolView: (args) => {
+      calls.push({ path: 'xd.xenesis.tools.views.open', args });
+      return { ok: true, total: 7 };
+    },
+    openXenesisToolUserStory: (args) => {
+      calls.push({ path: 'xd.xenesis.tools.userStories.open', args });
+      return { ok: true, total: 4 };
+    },
+    openXenesisToolInstallPlan: (args) => {
+      calls.push({ path: 'xd.xenesis.tools.installPlans.open', args });
+      return { ok: true, total: 4 };
+    },
+    openXenesisToolMcpInstallDraft: (args) => {
+      calls.push({ path: 'xd.xenesis.tools.mcpInstallDrafts.open', args });
+      return { ok: true, total: 5 };
+    },
+    openXenesisToolOAuthDraft: (args) => {
+      calls.push({ path: 'xd.xenesis.tools.oauthDrafts.open', args });
+      return { ok: true, total: 2 };
+    },
+    openXenesisToolActionCatalog: (args) => {
+      calls.push({ path: 'xd.xenesis.tools.actions.open', args });
+      return { ok: true, total: 7 };
+    },
+  };
+
+  for (const path of openPaths) {
+    const result = await callDeskBridgeCapability(api, {
+      path,
+      args: { ensureVisible: true },
+      source: 'xenesis',
+    });
+    assert.equal(result.ok, true, `${path} should dispatch`);
+  }
+
+  assert.deepEqual(
+    calls,
+    openPaths.map((path) => ({ path, args: { ensureVisible: true } })),
+  );
 });
 
 test('xenesis channel profile draft capabilities are registered and dispatch to the adapter', async () => {

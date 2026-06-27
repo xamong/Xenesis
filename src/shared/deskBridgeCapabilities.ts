@@ -687,13 +687,12 @@ const XENESIS_TOOL_SETUP_STATUS_SCHEMA = {
 
 const XENESIS_TOOL_SETUP_OPEN_SCHEMA = {
   type: 'object',
-  required: ['id'],
   properties: {
     id: {
       type: 'string',
       title: 'Tool id',
       enum: XENESIS_EXTERNAL_TOOL_IDS,
-      description: 'External tool setup card to open in the internal Desk Connection Center view.',
+      description: 'Optional external tool setup card to focus in the internal Desk Connection Center view.',
     },
     tool: {
       type: 'string',
@@ -736,13 +735,12 @@ const XENESIS_TOOL_CONNECTOR_STATUS_SCHEMA = {
 
 const XENESIS_TOOL_CONNECTOR_OPEN_SCHEMA = {
   type: 'object',
-  required: ['id'],
   properties: {
     id: {
       type: 'string',
       title: 'Tool id',
       enum: XENESIS_EXTERNAL_TOOL_IDS,
-      description: 'External tool connector card to open in the internal Desk Connection Center view.',
+      description: 'Optional external tool connector card to focus in the internal Desk Connection Center view.',
     },
     tool: {
       type: 'string',
@@ -785,13 +783,12 @@ const XENESIS_TOOL_VIEW_STATUS_SCHEMA = {
 
 const XENESIS_TOOL_VIEW_OPEN_SCHEMA = {
   type: 'object',
-  required: ['id'],
   properties: {
     id: {
       type: 'string',
       title: 'Tool id',
       enum: XENESIS_EXTERNAL_TOOL_IDS,
-      description: 'External tool connection id to open in the internal Desk Connection Center view.',
+      description: 'Optional external tool connection id to focus in the internal Desk Connection Center view.',
     },
     tool: {
       type: 'string',
@@ -889,13 +886,12 @@ const XENESIS_TOOL_OAUTH_DRAFT_STATUS_SCHEMA = {
 } as const;
 const XENESIS_TOOL_OAUTH_DRAFT_OPEN_SCHEMA = {
   type: 'object',
-  required: ['id'],
   properties: {
     id: {
       type: 'string',
       title: 'Tool id',
       enum: XENESIS_TOOL_OAUTH_DRAFT_IDS,
-      description: 'External tool OAuth draft id to open in the Connection Center.',
+      description: 'Optional external tool OAuth draft id to focus in the Connection Center.',
     },
     tool: {
       type: 'string',

@@ -894,6 +894,48 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local Obsidian graph, source code, and tests.
 
+## Tool Catalog CR Opens Slice
+
+- External-tool aggregate open prompts now use tool-specific CR open paths
+  instead of the generic Settings fallback:
+  - `외부 툴 connector 전체 열어줘` -> `xd.xenesis.tools.connectors.open`
+  - `외부 툴 setup 전체 열어줘` -> `xd.xenesis.tools.setup.open`
+  - `외부 툴 view 전체 열어줘` -> `xd.xenesis.tools.views.open`
+  - `외부 툴 설치 계획 전체 열어줘` ->
+    `xd.xenesis.tools.installPlans.open`
+  - `외부 툴 OAuth 전체 열어줘` ->
+    `xd.xenesis.tools.oauthDrafts.open`
+  - `외부 툴 MCP 설치 초안 전체 열어줘` ->
+    `xd.xenesis.tools.mcpInstallDrafts.open`
+  - `외부 툴 액션 정책 전체 열어줘` ->
+    `xd.xenesis.tools.actions.open`
+  - `외부 툴 사용자 스토리 전체 열어줘` ->
+    `xd.xenesis.tools.userStories.open`
+- The corresponding tool CR open schemas now allow catalog opens without a
+  focused `id`. Focused `id/tool/name` opens remain supported and still focus
+  the owning card.
+- Main-process tool open handlers share one catalog-open helper that opens
+  Settings > Xenesis Agent > Connections without a focus id when the caller asks
+  for the whole catalog, and returns the relevant read model.
+- Scope boundary: open/read internal Desk surfaces only. This slice does not
+  install MCP servers, write MCP config, complete OAuth, store tokens, execute
+  provider tools, mutate settings, mutate external systems, or bypass
+  approvals.
+- Verification:
+  - RED tests failed first for required `id` schemas and generic Settings
+    fallback routing.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 97/97 tests.
+  - Touched-file Biome check exited 0 with existing warnings/infos only.
+  - `npm run typecheck` passed.
+  - CR audit passed with missing registered paths 0, missing dispatched
+    coverage paths 0, undispatched static callable methods 0, and dispatcher
+    paths missing from tree 0.
+  - Full repo lint and public-release checks still fail on known existing
+    repo-wide Biome diagnostics and missing `.github/workflows/ci.yml`.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local Obsidian graph, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

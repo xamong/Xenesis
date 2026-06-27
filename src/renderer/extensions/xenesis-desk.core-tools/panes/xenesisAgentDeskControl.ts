@@ -1382,8 +1382,8 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
   if (hasExternalToolCatalogContext(value) && hasAny(value, ['connector', 'connectors', '커넥터', '연결자'])) {
     return naturalAction(
       'natural-xenesis-tools-connectors-catalog-open',
-      'xd.panes.settings.open',
-      xenesisConnectionCenterOpenArgs(),
+      'xd.xenesis.tools.connectors.open',
+      { ensureVisible: true },
       'Open external tool connector catalog in Xenesis Connection Center from natural language request.',
     );
   }
@@ -1395,8 +1395,8 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
   ) {
     return naturalAction(
       'natural-xenesis-tools-mcp-install-drafts-catalog-open',
-      'xd.panes.settings.open',
-      xenesisConnectionCenterOpenArgs(),
+      'xd.xenesis.tools.mcpInstallDrafts.open',
+      { ensureVisible: true },
       'Open external tool MCP install draft catalog in Xenesis Connection Center from natural language request.',
     );
   }
@@ -1404,8 +1404,8 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
   if (hasExternalToolCatalogContext(value) && hasAny(value, ['oauth', '오어스', '인증', 'token', '토큰'])) {
     return naturalAction(
       'natural-xenesis-tools-oauth-drafts-catalog-open',
-      'xd.panes.settings.open',
-      xenesisConnectionCenterOpenArgs(),
+      'xd.xenesis.tools.oauthDrafts.open',
+      { ensureVisible: true },
       'Open external tool OAuth draft catalog in Xenesis Connection Center from natural language request.',
     );
   }
@@ -1413,8 +1413,8 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
   if (hasExternalToolCatalogContext(value) && hasAny(value, ['view', 'views', '뷰', '화면', 'surface'])) {
     return naturalAction(
       'natural-xenesis-tools-views-catalog-open',
-      'xd.panes.settings.open',
-      xenesisConnectionCenterOpenArgs(),
+      'xd.xenesis.tools.views.open',
+      { ensureVisible: true },
       'Open external tool view catalog in Xenesis Connection Center from natural language request.',
     );
   }
@@ -1422,8 +1422,8 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
   if (hasExternalToolCatalogContext(value) && hasAny(value, ['설치 계획', 'install plan', 'install plans'])) {
     return naturalAction(
       'natural-xenesis-tools-install-plans-catalog-open',
-      'xd.panes.settings.open',
-      xenesisConnectionCenterOpenArgs(),
+      'xd.xenesis.tools.installPlans.open',
+      { ensureVisible: true },
       'Open external tool install plan catalog in Xenesis Connection Center from natural language request.',
     );
   }
@@ -1434,8 +1434,8 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
   ) {
     return naturalAction(
       'natural-xenesis-tools-setup-catalog-open',
-      'xd.panes.settings.open',
-      xenesisConnectionCenterOpenArgs(),
+      'xd.xenesis.tools.setup.open',
+      { ensureVisible: true },
       'Open external tool setup catalog in Xenesis Connection Center from natural language request.',
     );
   }
@@ -1446,8 +1446,8 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
   ) {
     return naturalAction(
       'natural-xenesis-tools-actions-catalog-open',
-      'xd.panes.settings.open',
-      xenesisConnectionCenterOpenArgs(),
+      'xd.xenesis.tools.actions.open',
+      { ensureVisible: true },
       'Open external tool action policy catalog in Xenesis Connection Center from natural language request.',
     );
   }
@@ -1458,8 +1458,8 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
   ) {
     return naturalAction(
       'natural-xenesis-tools-user-stories-catalog-open',
-      'xd.panes.settings.open',
-      xenesisConnectionCenterOpenArgs(),
+      'xd.xenesis.tools.userStories.open',
+      { ensureVisible: true },
       'Open external tool user-story catalog in Xenesis Connection Center from natural language request.',
     );
   }
