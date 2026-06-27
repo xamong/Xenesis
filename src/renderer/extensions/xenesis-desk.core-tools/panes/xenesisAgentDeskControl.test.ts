@@ -987,6 +987,51 @@ test('planXenesisDeskNaturalLanguageActions maps onboarding checklist open reque
 });
 
 test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open requests to CR actions', () => {
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider setup 전체 열어줘').actions, [
+    {
+      id: 'natural-xenesis-provider-catalog-open',
+      path: 'xd.panes.settings.open',
+      args: {
+        category: 'xenesis-agent',
+        mode: 'connections',
+        section: 'xenesis-connections',
+        placement: 'tab',
+      },
+      approved: false,
+      reason: 'Open AI provider catalog in Xenesis Connection Center from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 툴 connector 전체 열어줘').actions, [
+    {
+      id: 'natural-xenesis-tool-catalog-open',
+      path: 'xd.panes.settings.open',
+      args: {
+        category: 'xenesis-agent',
+        mode: 'connections',
+        section: 'xenesis-connections',
+        placement: 'tab',
+      },
+      approved: false,
+      reason: 'Open external tool catalog in Xenesis Connection Center from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 setup 전체 열어줘').actions, [
+    {
+      id: 'natural-xenesis-messenger-catalog-open',
+      path: 'xd.panes.settings.open',
+      args: {
+        category: 'xenesis-agent',
+        mode: 'connections',
+        section: 'xenesis-connections',
+        placement: 'tab',
+      },
+      approved: false,
+      reason: 'Open external messenger catalog in Xenesis Connection Center from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider setup 열어줘').actions, [
     {
       id: 'natural-xenesis-provider-view-open-auto',

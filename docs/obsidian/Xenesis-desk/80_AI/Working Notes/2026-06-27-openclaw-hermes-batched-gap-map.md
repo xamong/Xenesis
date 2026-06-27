@@ -376,6 +376,31 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local code, and tests.
 
+## Aggregate Connection Center Opens Slice
+
+- Added deterministic Xenesis Agent natural-language routing for broad
+  provider/tool/messenger catalog open prompts that intentionally ask for all
+  items:
+  - `AI provider setup 전체 열어줘` ->
+    `xd.panes.settings.open` with the Xenesis Agent Connection Center selected.
+  - `외부 툴 connector 전체 열어줘` ->
+    `xd.panes.settings.open` with the Xenesis Agent Connection Center selected.
+  - `외부 메신저 setup 전체 열어줘` ->
+    `xd.panes.settings.open` with the Xenesis Agent Connection Center selected.
+- This uses the existing internal Desk Connection Center as the aggregate
+  catalog surface because focused provider/tool/messenger open CR paths require
+  a specific provider, tool, or messenger id.
+- Non-aggregate prompts remain target-specific:
+  - `AI provider setup 열어줘` still opens the `auto` provider view.
+  - `노션 connector 열어줘` still opens the Notion tool view.
+  - `텔레그램 setup 열어줘` still opens the Telegram messenger view.
+- Scope boundary: this slice did not add CR nodes, dispatcher branches,
+  renderer adapters, MCP installs, OAuth completion, credential storage,
+  gateway lifecycle actions, channel delivery, settings mutation, or approval
+  bypasses.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local code, and tests.
+
 ## Tool Aggregate Readbacks Slice
 
 - Added deterministic Xenesis Agent natural-language routing for broad

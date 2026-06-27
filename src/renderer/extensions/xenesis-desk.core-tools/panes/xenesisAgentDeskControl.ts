@@ -824,6 +824,10 @@ function hasExternalMessengerCatalogContext(value: string): boolean {
   ]);
 }
 
+function hasXenesisAggregateCatalogContext(value: string): boolean {
+  return hasAny(value, ['전체', 'all', 'catalog', '카탈로그', '목록', 'list']);
+}
+
 function xenesisToolAggregateStatusActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
   if (!hasExternalToolCatalogContext(value)) return null;
   if (!hasXenesisConnectionReadbackIntent(value)) return null;
@@ -870,7 +874,7 @@ function xenesisToolAggregateStatusActionFromNaturalText(value: string): Xenesis
 function xenesisMessengerAggregateStatusActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
   if (!hasExternalMessengerCatalogContext(value)) return null;
   if (!hasXenesisConnectionReadbackIntent(value)) return null;
-  if (!hasAny(value, ['전체', 'all', 'catalog', '카탈로그', '목록', 'list'])) return null;
+  if (!hasXenesisAggregateCatalogContext(value)) return null;
 
   if (hasAny(value, ['라우팅', 'routing', 'route'])) {
     return naturalAction(
@@ -1436,9 +1440,54 @@ function xenesisProviderOpenActionFromNaturalText(value: string): XenesisDeskAct
   return null;
 }
 
+function xenesisConnectionCenterOpenArgs(): Record<string, string> {
+  return {
+    category: 'xenesis-agent',
+    mode: 'connections',
+    section: 'xenesis-connections',
+    placement: 'tab',
+  };
+}
+
+function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
+  if (!hasXenesisAggregateCatalogContext(value)) return null;
+
+  if (hasXenesisProviderProfileContext(value)) {
+    return naturalAction(
+      'natural-xenesis-provider-catalog-open',
+      'xd.panes.settings.open',
+      xenesisConnectionCenterOpenArgs(),
+      'Open AI provider catalog in Xenesis Connection Center from natural language request.',
+    );
+  }
+
+  if (hasExternalToolCatalogContext(value)) {
+    return naturalAction(
+      'natural-xenesis-tool-catalog-open',
+      'xd.panes.settings.open',
+      xenesisConnectionCenterOpenArgs(),
+      'Open external tool catalog in Xenesis Connection Center from natural language request.',
+    );
+  }
+
+  if (hasExternalMessengerCatalogContext(value)) {
+    return naturalAction(
+      'natural-xenesis-messenger-catalog-open',
+      'xd.panes.settings.open',
+      xenesisConnectionCenterOpenArgs(),
+      'Open external messenger catalog in Xenesis Connection Center from natural language request.',
+    );
+  }
+
+  return null;
+}
+
 function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
   const guideAction = xenesisGuideActionFromNaturalText(value);
   if (guideAction) return guideAction;
+
+  const aggregateOpenAction = xenesisAggregateConnectionCenterOpenActionFromNaturalText(value);
+  if (aggregateOpenAction) return aggregateOpenAction;
 
   const providerAction = xenesisProviderOpenActionFromNaturalText(value);
   if (providerAction) return providerAction;
