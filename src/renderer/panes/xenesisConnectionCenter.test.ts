@@ -6,6 +6,7 @@ import {
   buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
   formatXenesisChannelRoutingSummary,
+  formatXenesisChannelSafetySummary,
   formatXenesisMessengerViewSummary,
   formatXenesisProviderRoutingSummary,
   formatXenesisProviderSetupSummary,
@@ -150,6 +151,28 @@ test('formatXenesisChannelRoutingSummary describes route, default agent, and ses
       deliveryFeatures: ['direct-messages', 'groups'],
     }),
     'telegram.allowedChatIds -> xenesis-agent (chat)',
+  );
+});
+
+test('formatXenesisChannelSafetySummary describes access model, inbound boundary, and loop guard count', () => {
+  assert.equal(
+    formatXenesisChannelSafetySummary({
+      accessModel: 'allowlist',
+      accessGroupFields: ['allowedChatIds'],
+      inboundBoundary: 'telegram chat allowlist',
+      outboundBoundary: 'same chat scope as inbound route',
+      loopProtection: [
+        'ignore messages authored by the bot account',
+        'avoid channels where Xenesis can receive its own outbound messages',
+        'verify delivery with sanitized test messages before enabling action workflows',
+      ],
+      approvalGuardrails: ['readonly', 'safe', 'auto'],
+      troubleshooting: ['missing-env', 'allowlist-empty'],
+      readPaths: ['xd.xenesis.connections.status'],
+      controlPaths: ['xd.xenesis.profiles.updateChannels'],
+      safetyBoundaries: ['safety status is read-only'],
+    }),
+    'allowlist / telegram chat allowlist / 3 loop guard(s)',
   );
 });
 

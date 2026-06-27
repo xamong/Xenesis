@@ -3,6 +3,7 @@ import type { XenesisConnectionsStatus } from './xenesisConnections';
 
 export type {
   XenesisConnectionChannelRoutingTemplate,
+  XenesisConnectionChannelSafetyTemplate,
   XenesisConnectionChannelTemplate,
   XenesisConnectionItem,
   XenesisConnectionMcpTemplate,

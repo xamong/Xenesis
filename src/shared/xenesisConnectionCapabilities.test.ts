@@ -118,6 +118,38 @@ test('xenesis channel routing status capability is registered and dispatches to 
   });
 });
 
+test('xenesis channel safety status capability is registered and dispatches to the adapter', async () => {
+  const capability = findDeskBridgeCapability('xd.xenesis.channels.safety.status');
+  const schemaProperties = (capability?.schema?.properties ?? {}) as Record<string, any>;
+  assert.equal(capability?.permission, 'read');
+  assert.equal(capability?.approval, 'never');
+  assert.deepEqual(schemaProperties.channel?.enum, ['telegram', 'slack', 'discord', 'webhook']);
+
+  let calledArgs: unknown = null;
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisChannelSafetyStatus: (args) => {
+      calledArgs = args;
+      return {
+        ok: true,
+        items: [{ id: 'telegram', accessModel: 'allowlist' }],
+      };
+    },
+  };
+
+  const result = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.channels.safety.status',
+    args: { channel: 'telegram' },
+    source: 'xenesis',
+  });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(calledArgs, { channel: 'telegram' });
+  assert.deepEqual(result.result, {
+    ok: true,
+    items: [{ id: 'telegram', accessModel: 'allowlist' }],
+  });
+});
+
 test('xenesis tool setup status capability is registered and dispatches to the adapter', async () => {
   const capability = findDeskBridgeCapability('xd.xenesis.tools.setup.status');
   const schemaProperties = (capability?.schema?.properties ?? {}) as Record<string, any>;

@@ -89,6 +89,7 @@ import {
   buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
   formatXenesisChannelRoutingSummary,
+  formatXenesisChannelSafetySummary,
   formatXenesisMessengerViewSummary,
   formatXenesisProviderRoutingSummary,
   formatXenesisProviderSetupSummary,
@@ -4719,6 +4720,44 @@ export default function SettingsPane() {
                 <div>
                   <span>{t('settings.xenesisConnectionsChannelDelivery')}</span>
                   <strong>{channelTemplate.routing.deliveryFeatures.join(', ')}</strong>
+                </div>
+              </div>
+            ) : null}
+            {channelTemplate.safety ? (
+              <div className="sp-info-list sp-info-list-compact" data-xenesis-channel-safety={item.id}>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelSafetyModel')}</span>
+                  <strong>{formatXenesisChannelSafetySummary(channelTemplate.safety)}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelAccessGroups')}</span>
+                  <strong>{channelTemplate.safety.accessGroupFields.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelBoundaries')}</span>
+                  <strong>
+                    {channelTemplate.safety.inboundBoundary} / {channelTemplate.safety.outboundBoundary}
+                  </strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelLoopProtection')}</span>
+                  <strong>{channelTemplate.safety.loopProtection.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelTroubleshooting')}</span>
+                  <strong>{channelTemplate.safety.troubleshooting.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelSafetyReadback')}</span>
+                  <strong>{channelTemplate.safety.readPaths.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelSafetyControls')}</span>
+                  <strong>{channelTemplate.safety.controlPaths.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelSafetyBoundaries')}</span>
+                  <strong>{channelTemplate.safety.safetyBoundaries.join(', ')}</strong>
                 </div>
               </div>
             ) : null}

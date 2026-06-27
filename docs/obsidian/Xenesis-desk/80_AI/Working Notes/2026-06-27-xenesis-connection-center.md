@@ -335,6 +335,31 @@ Capability Registry instead of only through separate renderer settings panels.
   first because `formatXenesisProviderRoutingSummary` was not exported, then
   passed after renderer helper implementation with 12/12 tests.
 
+## Current Channel Safety Read Model Slice
+
+- Add `channelTemplate.safety` metadata to implemented Telegram, Slack,
+  Discord, and Webhook cards in `xd.xenesis.connections.status`.
+- Add `xd.xenesis.channels.safety.status` as a read/no-approval CR path for
+  access-group allowlist fields, inbound/outbound boundaries, bot-loop
+  protection, approval guardrails, troubleshooting, read/control paths, and
+  safety boundaries.
+- Settings renders the same read model with
+  `data-xenesis-channel-safety="<channel-id>"`.
+- This slice is read-only. It does not create OpenClaw access-group runtime,
+  mutate channel settings, enable planned adapters, send test messages, or
+  bypass approval paths. OpenClaw-style access groups are represented by the
+  runtime's actual allowlist fields such as `allowedChatIds`,
+  `allowedChannelIds`, `allowedGuildIds`, and `urlEnv`.
+- `npx tsx --test src\shared\xenesisConnections.test.ts` failed first because
+  `channelTemplate.safety` was undefined, then passed after implementation with
+  16/16 tests.
+- `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` failed
+  first because `xd.xenesis.channels.safety.status` was not registered, then
+  passed after CR registration/dispatch with 12/12 tests.
+- `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` failed
+  first because `formatXenesisChannelSafetySummary` was not exported, then
+  passed after renderer helper implementation with 13/13 tests.
+
 ## Current External Tool Views Slice
 
 - Add `toolView` metadata to Fetch, Filesystem, GitHub, Notion, Linear, Google

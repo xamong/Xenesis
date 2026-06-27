@@ -1028,6 +1028,64 @@ test('buildXenesisConnectionsStatus exposes OpenClaw-style routing metadata for 
   }
 });
 
+test('buildXenesisConnectionsStatus exposes channel safety access and loop-protection metadata', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const telegram = status.sections.messengers.items.find((item) => item.id === 'telegram');
+
+  assert.deepEqual(telegram?.channelTemplate?.safety, {
+    accessModel: 'allowlist',
+    accessGroupFields: ['allowedChatIds'],
+    inboundBoundary: 'telegram chat allowlist',
+    outboundBoundary: 'same chat scope as inbound route',
+    loopProtection: [
+      'ignore messages authored by the bot account',
+      'avoid channels where Xenesis can receive its own outbound messages',
+      'verify delivery with sanitized test messages before enabling action workflows',
+    ],
+    approvalGuardrails: ['readonly', 'safe', 'auto'],
+    troubleshooting: ['missing-env', 'allowlist-empty', 'safe-to-deliver', 'last-error', 'gateway-status'],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.channels.routing.status',
+      'xd.xenesis.channels.safety.status',
+    ],
+    controlPaths: ['xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
+    safetyBoundaries: [
+      'safety status is read-only',
+      'access groups are represented by configured allowlist fields, not a separate OpenClaw runtime',
+      'channel writes stay on profile update CR paths',
+      'delivery tests stay on profile test CR paths',
+    ],
+  });
+});
+
 test('buildXenesisConnectionsStatus exposes internal Desk messenger views for implemented and planned channels', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {

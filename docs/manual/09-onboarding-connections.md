@@ -169,6 +169,17 @@ expected capabilities, and required safety controls. Settings renders the same
 metadata so channel planning is visible inside Xenesis Desk without presenting
 planned channels as enabled runtime features.
 
+Implemented channel cards also expose `channelTemplate.safety` metadata. Use
+`xd.xenesis.channels.safety.status` to inspect access-group fields,
+inbound/outbound delivery boundaries, bot-loop protection, approval guardrails,
+troubleshooting signals, and read/control paths for Telegram, Slack, Discord,
+and Webhook. This is a read-only safety/readiness model. OpenClaw-style access
+groups are represented by the Xenesis runtime's actual allowlist fields such as
+`allowedChatIds`, `allowedChannelIds`, `allowedGuildIds`, and `urlEnv`; there is
+no separate OpenClaw access-group runtime in this repo. Channel writes remain on
+`xd.xenesis.profiles.updateChannels`, and delivery tests remain on
+`xd.xenesis.profiles.testChannel`.
+
 Messenger cards also expose a `messengerView` read model. Use
 `xd.xenesis.messengers.views.status` to inspect the internal Desk surface for a
 messenger, including runtime support, setup surface, CR open/read/control paths,
@@ -257,6 +268,13 @@ Discord, and Webhook route bindings, allowlist fields, auth or pairing mode,
 default agent, session scope, diagnostics, and delivery features. Channel writes
 still go through `xd.xenesis.profiles.updateChannels`, and delivery tests still
 go through `xd.xenesis.profiles.testChannel`.
+
+Use `xd.xenesis.channels.safety.status` to inspect implemented external bot
+channel safety metadata through CR. The read model covers access-group
+allowlist fields, inbound/outbound delivery boundaries, bot-loop protection,
+approval guardrails, troubleshooting signals, readback paths, and control paths.
+It is read-only; it does not create access groups, mutate channel settings,
+enable planned adapters, send test messages, or bypass approval paths.
 
 Use `xd.xenesis.messengers.views.status` and
 `xd.xenesis.messengers.views.open` to inspect or open internal Desk

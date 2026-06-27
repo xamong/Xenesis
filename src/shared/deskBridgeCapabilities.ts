@@ -703,6 +703,7 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisStatus?: () => Promise<unknown> | unknown;
   getXenesisConnectionsStatus?: () => Promise<unknown> | unknown;
   getXenesisChannelRoutingStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisChannelSafetyStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolSetupStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolViewsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisToolView?: (args?: unknown) => Promise<unknown> | unknown;
@@ -3663,6 +3664,15 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             'xd.xenesis.channels.routing.status',
             'Read channel routing status',
             'Read route binding, allowlist, pairing, default-agent, diagnostics, and delivery metadata for implemented Xenesis external bot channels.',
+            'read',
+            XENESIS_CHANNEL_ROUTING_STATUS_SCHEMA,
+          ),
+        ]),
+        group('xd.xenesis.channels.safety', 'Safety', 'External bot channel access, loop-protection, and troubleshooting metadata.', [
+          method(
+            'xd.xenesis.channels.safety.status',
+            'Read channel safety status',
+            'Read access-group fields, inbound/outbound boundaries, bot-loop protection, approval guardrails, troubleshooting, and safety boundaries for implemented Xenesis external bot channels.',
             'read',
             XENESIS_CHANNEL_ROUTING_STATUS_SCHEMA,
           ),
@@ -10016,6 +10026,9 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.channels.routing.status') {
         return callAdapter(path, api?.getXenesisChannelRoutingStatus, request.args);
+      }
+      if (path === 'xd.xenesis.channels.safety.status') {
+        return callAdapter(path, api?.getXenesisChannelSafetyStatus, request.args);
       }
       if (path === 'xd.xenesis.tools.setup.status') {
         return callAdapter(path, api?.getXenesisToolSetupStatus, request.args);

@@ -166,6 +166,7 @@ export interface XenesisConnectionChannelTemplate {
   capabilities: string[];
   safetyControls: string[];
   routing?: XenesisConnectionChannelRoutingTemplate;
+  safety?: XenesisConnectionChannelSafetyTemplate;
 }
 
 export interface XenesisConnectionChannelRoutingTemplate {
@@ -176,6 +177,19 @@ export interface XenesisConnectionChannelRoutingTemplate {
   sessionScope: string;
   diagnostics: string[];
   deliveryFeatures: string[];
+}
+
+export interface XenesisConnectionChannelSafetyTemplate {
+  accessModel: 'allowlist' | 'signature-verified' | 'network-boundary';
+  accessGroupFields: string[];
+  inboundBoundary: string;
+  outboundBoundary: string;
+  loopProtection: string[];
+  approvalGuardrails: Array<'readonly' | 'safe' | 'auto'>;
+  troubleshooting: string[];
+  readPaths: string[];
+  controlPaths: string[];
+  safetyBoundaries: string[];
 }
 
 export interface XenesisConnectionMessengerViewTemplate {
@@ -653,6 +667,31 @@ const MESSENGERS: Array<{
         diagnostics: ['missing-env', 'safe-to-deliver', 'last-error'],
         deliveryFeatures: ['direct-messages', 'groups', 'files'],
       },
+      safety: {
+        accessModel: 'allowlist',
+        accessGroupFields: ['allowedChatIds'],
+        inboundBoundary: 'telegram chat allowlist',
+        outboundBoundary: 'same chat scope as inbound route',
+        loopProtection: [
+          'ignore messages authored by the bot account',
+          'avoid channels where Xenesis can receive its own outbound messages',
+          'verify delivery with sanitized test messages before enabling action workflows',
+        ],
+        approvalGuardrails: ['readonly', 'safe', 'auto'],
+        troubleshooting: ['missing-env', 'allowlist-empty', 'safe-to-deliver', 'last-error', 'gateway-status'],
+        readPaths: [
+          'xd.xenesis.connections.status',
+          'xd.xenesis.channels.routing.status',
+          'xd.xenesis.channels.safety.status',
+        ],
+        controlPaths: ['xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
+        safetyBoundaries: [
+          'safety status is read-only',
+          'access groups are represented by configured allowlist fields, not a separate OpenClaw runtime',
+          'channel writes stay on profile update CR paths',
+          'delivery tests stay on profile test CR paths',
+        ],
+      },
     },
   },
   {
@@ -678,6 +717,31 @@ const MESSENGERS: Array<{
         sessionScope: 'channel-thread',
         diagnostics: ['missing-env', 'signature-check', 'safe-to-deliver', 'last-error'],
         deliveryFeatures: ['channels', 'threads', 'files'],
+      },
+      safety: {
+        accessModel: 'signature-verified',
+        accessGroupFields: ['allowedChannelIds'],
+        inboundBoundary: 'slack channel allowlist and signing secret',
+        outboundBoundary: 'same channel or thread scope as inbound route',
+        loopProtection: [
+          'ignore messages authored by the Slack bot user',
+          'avoid channels where Xenesis can receive its own webhook output',
+          'verify delivery with sanitized test messages before enabling action workflows',
+        ],
+        approvalGuardrails: ['readonly', 'safe', 'auto'],
+        troubleshooting: ['missing-env', 'signature-check', 'allowlist-empty', 'safe-to-deliver', 'last-error'],
+        readPaths: [
+          'xd.xenesis.connections.status',
+          'xd.xenesis.channels.routing.status',
+          'xd.xenesis.channels.safety.status',
+        ],
+        controlPaths: ['xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
+        safetyBoundaries: [
+          'safety status is read-only',
+          'access groups are represented by configured allowlist fields, not a separate OpenClaw runtime',
+          'channel writes stay on profile update CR paths',
+          'delivery tests stay on profile test CR paths',
+        ],
       },
     },
   },
@@ -705,6 +769,31 @@ const MESSENGERS: Array<{
         diagnostics: ['missing-env', 'guild-scope', 'safe-to-deliver', 'last-error'],
         deliveryFeatures: ['channels', 'guilds', 'files'],
       },
+      safety: {
+        accessModel: 'allowlist',
+        accessGroupFields: ['allowedChannelIds', 'allowedGuildIds'],
+        inboundBoundary: 'discord guild and channel allowlist',
+        outboundBoundary: 'same guild-channel scope as inbound route',
+        loopProtection: [
+          'ignore messages authored by the Discord bot account',
+          'avoid channels where Xenesis can receive its own webhook output',
+          'verify delivery with sanitized test messages before enabling action workflows',
+        ],
+        approvalGuardrails: ['readonly', 'safe', 'auto'],
+        troubleshooting: ['missing-env', 'guild-scope', 'allowlist-empty', 'safe-to-deliver', 'last-error'],
+        readPaths: [
+          'xd.xenesis.connections.status',
+          'xd.xenesis.channels.routing.status',
+          'xd.xenesis.channels.safety.status',
+        ],
+        controlPaths: ['xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
+        safetyBoundaries: [
+          'safety status is read-only',
+          'access groups are represented by configured allowlist fields, not a separate OpenClaw runtime',
+          'channel writes stay on profile update CR paths',
+          'delivery tests stay on profile test CR paths',
+        ],
+      },
     },
   },
   {
@@ -730,6 +819,31 @@ const MESSENGERS: Array<{
         sessionScope: 'request',
         diagnostics: ['missing-env', 'network-boundary', 'last-error'],
         deliveryFeatures: ['inbound-events', 'custom-routing'],
+      },
+      safety: {
+        accessModel: 'network-boundary',
+        accessGroupFields: ['urlEnv'],
+        inboundBoundary: 'protected webhook URL or shared secret boundary',
+        outboundBoundary: 'request-scoped response boundary',
+        loopProtection: [
+          'avoid endpoints that post responses back into the same inbound URL',
+          'keep webhook callers scoped to trusted automation',
+          'verify delivery with sanitized test messages before enabling action workflows',
+        ],
+        approvalGuardrails: ['readonly', 'safe', 'auto'],
+        troubleshooting: ['missing-env', 'network-boundary', 'request-auth', 'last-error', 'gateway-status'],
+        readPaths: [
+          'xd.xenesis.connections.status',
+          'xd.xenesis.channels.routing.status',
+          'xd.xenesis.channels.safety.status',
+        ],
+        controlPaths: ['xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
+        safetyBoundaries: [
+          'safety status is read-only',
+          'access groups are represented by configured allowlist fields, not a separate OpenClaw runtime',
+          'channel writes stay on profile update CR paths',
+          'delivery tests stay on profile test CR paths',
+        ],
       },
     },
   },

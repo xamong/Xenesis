@@ -4846,6 +4846,52 @@ async function getXenesisChannelRoutingStatus(args?: unknown): Promise<Record<st
   };
 }
 
+async function getXenesisChannelSafetyStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const channel = readCapabilityString(body, ['channel', 'id', 'name']);
+  if (channel && !isXenesisProfileChannelName(channel)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis channel: ${channel}`,
+      allowedChannels: XENESIS_PROFILE_CHANNEL_NAMES,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.messengers.items
+    .filter((item) => item.supportLevel === 'implemented' && item.channelTemplate?.safety)
+    .filter((item) => !channel || item.id === channel)
+    .map((item: XenesisConnectionItem) => ({
+      id: item.id,
+      label: item.label,
+      status: item.status,
+      summary: item.summary,
+      safetyControls: item.channelTemplate?.safetyControls ?? [],
+      accessModel: item.channelTemplate?.safety?.accessModel,
+      accessGroupFields: item.channelTemplate?.safety?.accessGroupFields ?? [],
+      inboundBoundary: item.channelTemplate?.safety?.inboundBoundary,
+      outboundBoundary: item.channelTemplate?.safety?.outboundBoundary,
+      loopProtection: item.channelTemplate?.safety?.loopProtection ?? [],
+      approvalGuardrails: item.channelTemplate?.safety?.approvalGuardrails ?? [],
+      troubleshooting: item.channelTemplate?.safety?.troubleshooting ?? [],
+      readPaths: item.channelTemplate?.safety?.readPaths ?? [],
+      controlPaths: item.channelTemplate?.safety?.controlPaths ?? [],
+      safetyBoundaries: item.channelTemplate?.safety?.safetyBoundaries ?? [],
+      safety: item.channelTemplate?.safety,
+      settingsAction: item.settingsAction,
+      crActions: item.crActions ?? [],
+      warnings: item.warnings ?? [],
+    }));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(channel ? { channel } : {}),
+    total: items.length,
+    items,
+  };
+}
+
 const XENESIS_MESSENGER_VIEW_IDS = [
   'telegram',
   'slack',
@@ -12260,6 +12306,7 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
       getXenesisStatusPayload().then((status) => ({ ok: true, status: redactXenesisStatusForCapability(status) })),
     getXenesisConnectionsStatus: () => getXenesisConnectionsStatus().then((status) => ({ ok: true, status })),
     getXenesisChannelRoutingStatus: (args: unknown) => getXenesisChannelRoutingStatus(args),
+    getXenesisChannelSafetyStatus: (args: unknown) => getXenesisChannelSafetyStatus(args),
     getXenesisToolSetupStatus: (args: unknown) => getXenesisToolSetupStatus(args),
     getXenesisToolViewsStatus: (args: unknown) => getXenesisToolViewsStatus(args),
     openXenesisToolView: (args: unknown) => openXenesisToolView(args),
