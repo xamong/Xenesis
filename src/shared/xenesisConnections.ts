@@ -1437,7 +1437,7 @@ function toolConnectorTemplate(input: {
       'xd.xenesis.tools.setup.status',
       'xd.mcp.settings.status',
     ],
-    controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.connections.open'],
+    controlPaths: ['xd.xenesis.tools.connectors.open', 'xd.xenesis.tools.views.open', 'xd.xenesis.connections.open'],
     diagnostics: input.diagnostics,
     safetyBoundaries: input.safetyBoundaries ?? [
       'credential values are never returned',

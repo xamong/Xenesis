@@ -998,7 +998,7 @@ test('buildXenesisConnectionsStatus exposes redacted external tool connector rea
       'xd.xenesis.tools.setup.status',
       'xd.mcp.settings.status',
     ],
-    controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.connections.open'],
+    controlPaths: ['xd.xenesis.tools.connectors.open', 'xd.xenesis.tools.views.open', 'xd.xenesis.connections.open'],
     diagnostics: ['missing-env', 'mcp-settings-status', 'template-snippet'],
     safetyBoundaries: [
       'credential values are never returned',

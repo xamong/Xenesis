@@ -606,6 +606,37 @@ const XENESIS_TOOL_CONNECTOR_STATUS_SCHEMA = {
   },
 } as const;
 
+const XENESIS_TOOL_CONNECTOR_OPEN_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'External tool connector card to open in the internal Desk Connection Center view.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Alias for id.',
+    },
+    name: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Alias for id.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused external tool connector card into view after opening the Connection Center.',
+      default: true,
+    },
+  },
+} as const;
+
 const XENESIS_TOOL_VIEW_STATUS_SCHEMA = {
   type: 'object',
   properties: {
@@ -1183,6 +1214,7 @@ export interface DeskBridgeCapabilityAdapter {
   openXenesisGuide?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolSetupStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolConnectorsStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisToolConnector?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolViewsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisToolView?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolUserStoriesStatus?: (args?: unknown) => Promise<unknown> | unknown;
@@ -4379,6 +4411,13 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               'Read connector type, auth mode, runtime support, redacted credential state, validation checks, CR paths, diagnostics, and safety boundaries for Xenesis external tool connections.',
               'read',
               XENESIS_TOOL_CONNECTOR_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.connectors.open',
+              'Open tool connector',
+              'Open Settings > Xenesis Agent > Connections and focus an external tool connector card inside Desk.',
+              'control',
+              XENESIS_TOOL_CONNECTOR_OPEN_SCHEMA,
             ),
           ],
         ),
@@ -11040,6 +11079,9 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.tools.connectors.status') {
         return callAdapter(path, api?.getXenesisToolConnectorsStatus, request.args);
+      }
+      if (path === 'xd.xenesis.tools.connectors.open') {
+        return callAdapter(path, api?.openXenesisToolConnector, request.args);
       }
       if (path === 'xd.xenesis.tools.views.status') {
         return callAdapter(path, api?.getXenesisToolViewsStatus, request.args);

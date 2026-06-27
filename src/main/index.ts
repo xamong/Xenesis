@@ -5980,6 +5980,43 @@ async function getXenesisToolConnectorsStatus(args?: unknown): Promise<Record<st
   };
 }
 
+async function openXenesisToolConnector(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Tool id is required.' };
+  }
+  if (!isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.tools.items.find((candidate) => candidate.id === id && candidate.toolConnector);
+  if (!item) {
+    return { ok: false, id, error: `Xenesis tool connector is not available: ${id}` };
+  }
+
+  const renderer = await openMcpBuiltinPaneCapability({
+    kind: 'settings',
+    category: 'xenesis-agent',
+    mode: 'connections',
+    section: 'xenesis-connections',
+    focusConnectionId: id,
+    ensureVisible: body.ensureVisible !== false,
+  });
+
+  return {
+    ok: renderer.ok !== false,
+    id,
+    item: xenesisToolConnectorStatusItem(item),
+    renderer,
+  };
+}
+
 function xenesisToolViewStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
   return {
     id: item.id,
@@ -14130,6 +14167,7 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     openXenesisGuide: (args: unknown) => openXenesisGuide(args),
     getXenesisToolSetupStatus: (args: unknown) => getXenesisToolSetupStatus(args),
     getXenesisToolConnectorsStatus: (args: unknown) => getXenesisToolConnectorsStatus(args),
+    openXenesisToolConnector: (args: unknown) => openXenesisToolConnector(args),
     getXenesisToolViewsStatus: (args: unknown) => getXenesisToolViewsStatus(args),
     openXenesisToolView: (args: unknown) => openXenesisToolView(args),
     getXenesisToolUserStoriesStatus: (args: unknown) => getXenesisToolUserStoriesStatus(args),

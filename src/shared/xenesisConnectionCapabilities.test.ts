@@ -408,9 +408,14 @@ test('xenesis tool setup status capability is registered and dispatches to the a
 
 test('xenesis tool connector status capability is registered and dispatches to the adapter', async () => {
   const capability = findDeskBridgeCapability('xd.xenesis.tools.connectors.status');
+  const openCapability = findDeskBridgeCapability('xd.xenesis.tools.connectors.open');
   const schemaProperties = (capability?.schema?.properties ?? {}) as Record<string, any>;
+  const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
   assert.equal(capability?.permission, 'read');
   assert.equal(capability?.approval, 'never');
+  assert.equal(openCapability?.permission, 'control');
+  assert.equal(openCapability?.approval, 'never');
+  assert.deepEqual(openCapability?.schema?.required, ['id']);
   assert.deepEqual(schemaProperties.id?.enum, [
     'fetch',
     'filesystem',
@@ -429,14 +434,30 @@ test('xenesis tool connector status capability is registered and dispatches to t
     'google-workspace',
     'google-calendar',
   ]);
+  assert.deepEqual(openSchemaProperties.id?.enum, [
+    'fetch',
+    'filesystem',
+    'github',
+    'notion',
+    'linear',
+    'google-workspace',
+    'google-calendar',
+  ]);
 
-  let calledArgs: unknown = null;
+  const calls: Array<{ method: string; args: unknown }> = [];
   const api: DeskBridgeCapabilityAdapter = {
     getXenesisToolConnectorsStatus: (args) => {
-      calledArgs = args;
+      calls.push({ method: 'status', args });
       return {
         ok: true,
         items: [{ id: 'google-calendar', credentialState: 'planned' }],
+      };
+    },
+    openXenesisToolConnector: (args) => {
+      calls.push({ method: 'open', args });
+      return {
+        ok: true,
+        item: { id: 'notion' },
       };
     },
   };
@@ -446,12 +467,25 @@ test('xenesis tool connector status capability is registered and dispatches to t
     args: { tool: 'google-calendar' },
     source: 'xenesis',
   });
+  const openResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.tools.connectors.open',
+    args: { id: 'notion', ensureVisible: true },
+    source: 'xenesis',
+  });
 
   assert.equal(result.ok, true);
-  assert.deepEqual(calledArgs, { tool: 'google-calendar' });
+  assert.equal(openResult.ok, true);
+  assert.deepEqual(calls, [
+    { method: 'status', args: { tool: 'google-calendar' } },
+    { method: 'open', args: { id: 'notion', ensureVisible: true } },
+  ]);
   assert.deepEqual(result.result, {
     ok: true,
     items: [{ id: 'google-calendar', credentialState: 'planned' }],
+  });
+  assert.deepEqual(openResult.result, {
+    ok: true,
+    item: { id: 'notion' },
   });
 });
 

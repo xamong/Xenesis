@@ -1171,7 +1171,7 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
 
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 툴 connector 전체 열어줘').actions, [
     {
-      id: 'natural-xenesis-tool-catalog-open',
+      id: 'natural-xenesis-tools-connectors-catalog-open',
       path: 'xd.panes.settings.open',
       args: {
         category: 'xenesis-agent',
@@ -1180,7 +1180,7 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
         placement: 'tab',
       },
       approved: false,
-      reason: 'Open external tool catalog in Xenesis Connection Center from natural language request.',
+      reason: 'Open external tool connector catalog in Xenesis Connection Center from natural language request.',
     },
   ]);
 
@@ -1498,21 +1498,21 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
 
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('파일 시스템 connector 열어줘').actions, [
     {
-      id: 'natural-xenesis-tool-view-open-filesystem',
-      path: 'xd.xenesis.tools.views.open',
+      id: 'natural-xenesis-tool-connector-open-filesystem',
+      path: 'xd.xenesis.tools.connectors.open',
       args: { id: 'filesystem', ensureVisible: true },
       approved: false,
-      reason: 'Open Filesystem tool view from natural language request.',
+      reason: 'Open Filesystem tool connector from natural language request.',
     },
   ]);
 
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 connector 열어줘').actions, [
     {
-      id: 'natural-xenesis-tool-view-open-notion',
-      path: 'xd.xenesis.tools.views.open',
+      id: 'natural-xenesis-tool-connector-open-notion',
+      path: 'xd.xenesis.tools.connectors.open',
       args: { id: 'notion', ensureVisible: true },
       approved: false,
-      reason: 'Open Notion tool view from natural language request.',
+      reason: 'Open Notion tool connector from natural language request.',
     },
   ]);
 

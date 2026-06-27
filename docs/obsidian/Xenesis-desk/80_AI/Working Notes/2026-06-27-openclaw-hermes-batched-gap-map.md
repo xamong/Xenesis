@@ -632,6 +632,29 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local code, and tests.
 
+## Tool Connector Open CR Slice
+
+- Added a connector-specific CR open path for external tool connector cards:
+  `xd.xenesis.tools.connectors.open`.
+- Connector metadata now advertises `xd.xenesis.tools.connectors.open` in
+  `toolConnector.controlPaths`, alongside the existing internal tool view and
+  generic Connection Center open paths.
+- Xenesis Agent deterministic natural-language routing now preserves connector
+  intent for focused and aggregate opens:
+  - `노션 connector 열어줘` ->
+    `xd.xenesis.tools.connectors.open` with `id=notion`.
+  - `파일 시스템 connector 열어줘` ->
+    `xd.xenesis.tools.connectors.open` with `id=filesystem`.
+  - `외부 툴 connector 전체 열어줘` -> `xd.panes.settings.open` with the
+    Xenesis Agent Connection Center selected, using a connector-specific action
+    id and reason.
+- Scope boundary: this slice only opens internal Desk connector surfaces. It did
+  not install MCP servers, write MCP config, complete OAuth, store tokens,
+  execute provider tools, mutate settings, change external systems, create
+  Action Inbox items, add credentials, or bypass approvals.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
