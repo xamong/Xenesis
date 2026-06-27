@@ -235,6 +235,25 @@
   write credentials, enable messenger delivery, add CR nodes, change dispatcher
   branches, or bypass approvals.
 
+## Onboarding Aggregate Natural Language Slice
+
+- Added deterministic Xenesis Agent natural-language routing for broad
+  onboarding and initial-setup prompts that do not name a specific checklist
+  step:
+  - `온보딩 전체 열어줘` -> `xd.panes.settings.open` with the Xenesis Agent
+    Connection Center selected.
+  - `초기 설정 체크리스트 열어줘` -> `xd.panes.settings.open` with the Xenesis
+    Agent Connection Center selected.
+  - `초기 설정 전체 상태 보여줘` -> `xd.xenesis.onboarding.status` with `{}`.
+  - `초기 설정 체크리스트 확인해줘` -> `xd.xenesis.onboarding.status` with `{}`.
+- Specific checklist prompts such as `게이트웨이 온보딩 열어줘` still use
+  `xd.xenesis.onboarding.open` with the focused step id.
+- Scope boundary: this slice did not mutate onboarding state, install tools,
+  complete OAuth, store tokens, start gateways, send messages, change provider
+  profiles, add CR nodes, change dispatcher branches, or bypass approvals.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local code, and tests.
+
 ## Runtime Inventory Readbacks Slice
 
 - Added deterministic Xenesis Agent natural-language routing for existing

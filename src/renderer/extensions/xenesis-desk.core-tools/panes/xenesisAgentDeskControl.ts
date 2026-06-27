@@ -712,8 +712,22 @@ function xenesisGuideStatusActionFromNaturalText(value: string): XenesisDeskActi
   );
 }
 
+function hasXenesisOnboardingContext(value: string): boolean {
+  return hasAny(value, [
+    '온보딩',
+    'onboarding',
+    '초기 설정',
+    '초기 셋팅',
+    '초기 세팅',
+    'initial setup',
+    'setup checklist',
+    '체크리스트',
+    'checklist',
+  ]);
+}
+
 function xenesisOnboardingStepFromNaturalText(value: string): { id: string; label: string } | null {
-  if (!hasAny(value, ['온보딩', 'onboarding', '초기 설정', 'initial setup', '체크리스트', 'checklist'])) return null;
+  if (!hasXenesisOnboardingContext(value)) return null;
 
   const steps: Array<{ id: string; label: string; words: readonly string[] }> = [
     {
@@ -753,7 +767,16 @@ function xenesisOnboardingStepFromNaturalText(value: string): { id: string; labe
 
 function xenesisOnboardingOpenActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
   const step = xenesisOnboardingStepFromNaturalText(value);
-  if (!step) return null;
+  if (!step) {
+    if (!hasXenesisOnboardingContext(value)) return null;
+
+    return naturalAction(
+      'natural-xenesis-onboarding-center-open',
+      'xd.panes.settings.open',
+      xenesisConnectionCenterOpenArgs(),
+      'Open Xenesis onboarding checklist in Connection Center from natural language request.',
+    );
+  }
 
   return naturalAction(
     `natural-xenesis-onboarding-open-${step.id}`,
@@ -1322,7 +1345,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
   const messengerAggregateStatusAction = xenesisMessengerAggregateStatusActionFromNaturalText(value);
   if (messengerAggregateStatusAction) return messengerAggregateStatusAction;
 
-  if (hasAny(value, ['온보딩', 'onboarding'])) {
+  if (hasXenesisOnboardingContext(value)) {
     const onboardingStatusAction = xenesisOnboardingStatusActionFromNaturalText(value);
     if (onboardingStatusAction) return onboardingStatusAction;
 

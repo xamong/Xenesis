@@ -925,6 +925,36 @@ test('planXenesisDeskNaturalLanguageActions maps guide file open requests to CR 
 });
 
 test('planXenesisDeskNaturalLanguageActions maps onboarding checklist open requests to CR actions', () => {
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('온보딩 전체 열어줘').actions, [
+    {
+      id: 'natural-xenesis-onboarding-center-open',
+      path: 'xd.panes.settings.open',
+      args: {
+        category: 'xenesis-agent',
+        mode: 'connections',
+        section: 'xenesis-connections',
+        placement: 'tab',
+      },
+      approved: false,
+      reason: 'Open Xenesis onboarding checklist in Connection Center from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('초기 설정 체크리스트 열어줘').actions, [
+    {
+      id: 'natural-xenesis-onboarding-center-open',
+      path: 'xd.panes.settings.open',
+      args: {
+        category: 'xenesis-agent',
+        mode: 'connections',
+        section: 'xenesis-connections',
+        placement: 'tab',
+      },
+      approved: false,
+      reason: 'Open Xenesis onboarding checklist in Connection Center from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('첫 채팅 온보딩 열어줘').actions, [
     {
       id: 'natural-xenesis-onboarding-open-first-chat',
@@ -1371,6 +1401,26 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center readback requ
 });
 
 test('planXenesisDeskNaturalLanguageActions maps onboarding checklist readback requests to CR actions', () => {
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('초기 설정 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-onboarding-status',
+      path: 'xd.xenesis.onboarding.status',
+      args: {},
+      approved: false,
+      reason: 'Read Xenesis onboarding status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('초기 설정 체크리스트 확인해줘').actions, [
+    {
+      id: 'natural-xenesis-onboarding-status',
+      path: 'xd.xenesis.onboarding.status',
+      args: {},
+      approved: false,
+      reason: 'Read Xenesis onboarding status from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('첫 채팅 온보딩 상태 보여줘').actions, [
     {
       id: 'natural-xenesis-onboarding-status-first-chat',
