@@ -48,6 +48,7 @@
     "clean": "node ./scripts/clean.mjs",
     "docs:capabilities": "node ./scripts/generateCapabilityRegistryDocs.mjs",
     "docs:capabilities:audit": "node ./scripts/capabilityCoverageAudit.mjs",
+    "smoke:xenesis:connection-center": "node ./scripts/xenesisConnectionCenterLiveSmoke.mjs",
     "check:docs-public": "node ./scripts/checkDocsPublicSafety.mjs",
     "check:public-release": "node ./scripts/publicReleaseCheck.mjs",
     "check:public-release:ci": "npm run check:public-release",

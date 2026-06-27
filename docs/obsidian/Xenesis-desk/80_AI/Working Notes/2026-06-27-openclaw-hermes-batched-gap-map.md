@@ -2749,6 +2749,45 @@
 - External documentation handling: no browsing. This used cached gap context,
   current docs, and current code behavior.
 
+## Connection Center Live Smoke Slice
+
+- Added a repeatable live Electron smoke script:
+  - `scripts/xenesisConnectionCenterLiveSmoke.mjs`
+  - `scripts/xenesisConnectionCenterLiveSmoke.test.mjs`
+  - package script `smoke:xenesis:connection-center`
+- The smoke launches the built Electron app, waits for the app shell, opens
+  Settings through CR path `xd.panes.settings.open`, then verifies Connection
+  Center root/title plus onboarding guided steps, provider profile review
+  steps, tool OAuth review steps, and channel profile review steps in the
+  renderer.
+- Root-cause note:
+  - Calling the CR path before the app shell listener is ready can time out.
+    The smoke now waits for `.btn-settings` before calling CR.
+  - The live Electron layout attaches Connection Center text while the root
+    element can report a zero-width bounding box, so the smoke checks attached
+    selectors plus text rather than Playwright `visible`.
+- Verification:
+  - RED:
+    `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs` first
+    failed because the smoke module was missing, then failed again when the
+    app-shell readiness constants were not exported.
+  - GREEN:
+    `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs` passed
+    with 3/3 tests.
+  - `npm run build` passed and rebuilt `out/`; Vite emitted existing warnings
+    about browser `fs` externalization and dynamic import chunking.
+  - `node scripts\xenesisConnectionCenterLiveSmoke.mjs --json` passed 6/6
+    after rebuild.
+  - `npm run smoke:xenesis:connection-center` passed 6/6.
+  - `npx biome check scripts\xenesisConnectionCenterLiveSmoke.mjs scripts\xenesisConnectionCenterLiveSmoke.test.mjs --max-diagnostics 80`
+    passed.
+  - `git diff --check` exited 0 with the existing package.json LF-to-CRLF
+    warning.
+  - `npm run check:public-release` is blocked in this worktree because
+    `.github/workflows/ci.yml` is missing.
+- External documentation handling: no browsing. This used current repo code,
+  cached gap context, and live Electron verification.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
