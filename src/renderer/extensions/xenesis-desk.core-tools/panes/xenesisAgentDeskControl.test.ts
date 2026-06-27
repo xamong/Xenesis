@@ -640,6 +640,98 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center readback requ
   ]);
 });
 
+test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center readbacks to CR actions', () => {
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider setup 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-provider-setup-status-auto',
+      path: 'xd.xenesis.providers.setup.status',
+      args: { provider: 'auto' },
+      approved: false,
+      reason: 'Read auto provider setup status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('codex app-server provider routing 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-provider-routing-status-codex-app-server',
+      path: 'xd.xenesis.providers.routing.status',
+      args: { provider: 'codex-app-server' },
+      approved: false,
+      reason: 'Read codex-app-server provider routing status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 connector 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-tool-connector-status-notion',
+      path: 'xd.xenesis.tools.connectors.status',
+      args: { tool: 'notion' },
+      approved: false,
+      reason: 'Read Notion tool connector status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('구글 캘린더 setup 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-tool-setup-status-google-calendar',
+      path: 'xd.xenesis.tools.setup.status',
+      args: { id: 'google-calendar' },
+      approved: false,
+      reason: 'Read Google Calendar tool setup status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 설치 계획 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-tool-install-plan-status-notion',
+      path: 'xd.xenesis.tools.installPlans.status',
+      args: { tool: 'notion' },
+      approved: false,
+      reason: 'Read Notion tool install plan status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('구글 캘린더 사용자 스토리 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-tool-user-story-status-google-calendar',
+      path: 'xd.xenesis.tools.userStories.status',
+      args: { tool: 'google-calendar' },
+      approved: false,
+      reason: 'Read Google Calendar tool user story status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('텔레그램 접근 그룹 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-channel-access-groups-status-telegram',
+      path: 'xd.xenesis.channels.accessGroups.status',
+      args: { channel: 'telegram' },
+      approved: false,
+      reason: 'Read Telegram channel access groups status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('텔레그램 페어링 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-channel-pairing-status-telegram',
+      path: 'xd.xenesis.channels.pairing.status',
+      args: { channel: 'telegram' },
+      approved: false,
+      reason: 'Read Telegram channel pairing status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('텔레그램 사용자 스토리 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-channel-user-story-status-telegram',
+      path: 'xd.xenesis.channels.userStories.status',
+      args: { id: 'telegram' },
+      approved: false,
+      reason: 'Read Telegram channel user story status from natural language request.',
+    },
+  ]);
+});
+
 test('planXenesisDeskNaturalLanguageActions maps Connection Center review requests to CR actions', () => {
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 연결 검토 요청해줘').actions, [
     {

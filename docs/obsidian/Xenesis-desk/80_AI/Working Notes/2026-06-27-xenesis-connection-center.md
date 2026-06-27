@@ -913,6 +913,39 @@ Capability Registry instead of only through separate renderer settings panels.
   요청해줘` returning no action, then passed after implementation with 23/23
   tests.
 
+## Current Natural Detailed Readbacks Slice
+
+- Add deterministic natural-language routing for detailed Connection Center
+  readback requests before provider execution.
+- `AI provider setup 상태 보여줘` maps to
+  `xd.xenesis.providers.setup.status` with `provider=auto`.
+- `codex app-server provider routing 상태 보여줘` maps to
+  `xd.xenesis.providers.routing.status` with `provider=codex-app-server`.
+- `노션 connector 상태 보여줘` maps to
+  `xd.xenesis.tools.connectors.status` with `tool=notion`.
+- `구글 캘린더 setup 상태 보여줘` maps to
+  `xd.xenesis.tools.setup.status` with `id=google-calendar`.
+- `노션 설치 계획 상태 보여줘` maps to
+  `xd.xenesis.tools.installPlans.status` with `tool=notion`.
+- `구글 캘린더 사용자 스토리 상태 보여줘` maps to
+  `xd.xenesis.tools.userStories.status` with `tool=google-calendar`.
+- `텔레그램 접근 그룹 상태 보여줘` maps to
+  `xd.xenesis.channels.accessGroups.status` with `channel=telegram`.
+- `텔레그램 페어링 상태 보여줘` maps to
+  `xd.xenesis.channels.pairing.status` with `channel=telegram`.
+- `텔레그램 사용자 스토리 상태 보여줘` maps to
+  `xd.xenesis.channels.userStories.status` with `id=telegram`.
+- This is deterministic routing, not agent reasoning. It emits existing
+  read-only CR status actions only and does not mutate settings, execute
+  external tools, write MCP config, send messages, complete OAuth, or add
+  registry nodes.
+- External documentation handling: no per-slice web browsing. Use local
+  Obsidian/docs/handoff/code/tests as the gap map; refresh external docs only
+  as a batched documentation pass if needed.
+- TDD check: focused natural planner test failed first with `AI provider setup
+  상태 보여줘` falling through to generic `xd.app.status`, then passed after
+  implementation with 24/24 tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

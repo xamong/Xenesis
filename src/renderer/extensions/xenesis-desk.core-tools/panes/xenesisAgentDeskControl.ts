@@ -498,8 +498,71 @@ function hasXenesisConnectionContext(value: string): boolean {
   ]);
 }
 
+function xenesisProviderFromNaturalText(value: string): { id: string; label: string } | null {
+  const providers: Array<{ id: string; label: string; words: readonly string[] }> = [
+    {
+      id: 'codex-app-server',
+      label: 'codex-app-server',
+      words: ['codex app-server', 'codex-app-server', 'codex app server', 'app-server', 'app server'],
+    },
+    { id: 'codex-cli', label: 'codex-cli', words: ['codex cli', 'codex-cli'] },
+    { id: 'claude-cli', label: 'claude-cli', words: ['claude cli', 'claude-cli'] },
+    { id: 'openai', label: 'openai', words: ['openai', '오픈ai', '오픈 ai'] },
+    { id: 'anthropic', label: 'anthropic', words: ['anthropic', 'anthropic claude', '앤트로픽'] },
+    { id: 'gemini', label: 'gemini', words: ['gemini', '제미나이'] },
+    { id: 'ollama', label: 'ollama', words: ['ollama', '올라마'] },
+    { id: 'auto', label: 'auto', words: ['auto', '자동'] },
+  ];
+  const provider = providers.find((item) => hasAny(value, item.words));
+  if (provider) return provider;
+  if (hasXenesisProviderProfileContext(value)) return { id: 'auto', label: 'auto' };
+  return null;
+}
+
+function xenesisProviderReadbackActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
+  const provider = xenesisProviderFromNaturalText(value);
+  if (!provider) return null;
+
+  if (hasAny(value, ['라우팅', 'routing', 'route', 'fallback', '폴백'])) {
+    return naturalAction(
+      `natural-xenesis-provider-routing-status-${provider.id}`,
+      'xd.xenesis.providers.routing.status',
+      { provider: provider.id },
+      `Read ${provider.label} provider routing status from natural language request.`,
+    );
+  }
+
+  if (hasAny(value, ['view', 'views', '뷰', '화면', 'surface'])) {
+    return naturalAction(
+      `natural-xenesis-provider-view-status-${provider.id}`,
+      'xd.xenesis.providers.views.status',
+      { provider: provider.id },
+      `Read ${provider.label} provider view status from natural language request.`,
+    );
+  }
+
+  if (hasAny(value, ['profile', '프로필', 'draft', '초안'])) {
+    return naturalAction(
+      `natural-xenesis-provider-profile-draft-status-${provider.id}`,
+      'xd.xenesis.providers.profileDrafts.status',
+      { provider: provider.id },
+      `Read ${provider.label} provider profile draft status from natural language request.`,
+    );
+  }
+
+  return naturalAction(
+    `natural-xenesis-provider-setup-status-${provider.id}`,
+    'xd.xenesis.providers.setup.status',
+    { provider: provider.id },
+    `Read ${provider.label} provider setup status from natural language request.`,
+  );
+}
+
 function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
   if (!hasXenesisConnectionReadbackIntent(value)) return null;
+
+  const providerAction = xenesisProviderReadbackActionFromNaturalText(value);
+  if (providerAction) return providerAction;
 
   const target = xenesisConnectionTargetFromNaturalText(value);
   if (target) {
@@ -509,6 +572,15 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
         'xd.xenesis.connections.diagnostics.status',
         { id: target.id },
         `Read ${target.label} connection diagnostics from natural language request.`,
+      );
+    }
+
+    if (target.kind === 'tool' && hasAny(value, ['mcp', 'mcp install', 'mcp 설치'])) {
+      return naturalAction(
+        `natural-xenesis-tool-mcp-install-draft-status-${target.id}`,
+        'xd.xenesis.tools.mcpInstallDrafts.status',
+        { tool: target.id },
+        `Read ${target.label} MCP install draft status from natural language request.`,
       );
     }
 
@@ -522,6 +594,60 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
         'xd.xenesis.tools.oauthDrafts.status',
         { id: target.id },
         `Read ${target.label} OAuth draft status from natural language request.`,
+      );
+    }
+
+    if (target.kind === 'tool' && hasAny(value, ['user story', 'user stories', '사용자 스토리', '스토리'])) {
+      return naturalAction(
+        `natural-xenesis-tool-user-story-status-${target.id}`,
+        'xd.xenesis.tools.userStories.status',
+        { tool: target.id },
+        `Read ${target.label} tool user story status from natural language request.`,
+      );
+    }
+
+    if (target.kind === 'tool' && hasAny(value, ['액션', 'action', '정책', 'policy', '권한', 'permission'])) {
+      return naturalAction(
+        `natural-xenesis-tool-action-policy-status-${target.id}`,
+        'xd.xenesis.tools.actions.status',
+        { tool: target.id },
+        `Read ${target.label} tool action policy status from natural language request.`,
+      );
+    }
+
+    if (target.kind === 'tool' && hasAny(value, ['설치 계획', 'install plan', 'install plans'])) {
+      return naturalAction(
+        `natural-xenesis-tool-install-plan-status-${target.id}`,
+        'xd.xenesis.tools.installPlans.status',
+        { tool: target.id },
+        `Read ${target.label} tool install plan status from natural language request.`,
+      );
+    }
+
+    if (target.kind === 'tool' && hasAny(value, ['setup', '초기 설정', '설정 상태'])) {
+      return naturalAction(
+        `natural-xenesis-tool-setup-status-${target.id}`,
+        'xd.xenesis.tools.setup.status',
+        { id: target.id },
+        `Read ${target.label} tool setup status from natural language request.`,
+      );
+    }
+
+    if (target.kind === 'tool' && hasAny(value, ['connector', 'connectors', '커넥터', '연결자'])) {
+      return naturalAction(
+        `natural-xenesis-tool-connector-status-${target.id}`,
+        'xd.xenesis.tools.connectors.status',
+        { tool: target.id },
+        `Read ${target.label} tool connector status from natural language request.`,
+      );
+    }
+
+    if (target.kind === 'tool' && hasAny(value, ['view', 'views', '뷰', '화면'])) {
+      return naturalAction(
+        `natural-xenesis-tool-view-status-${target.id}`,
+        'xd.xenesis.tools.views.status',
+        { id: target.id },
+        `Read ${target.label} tool view status from natural language request.`,
       );
     }
 
@@ -540,6 +666,51 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
         'xd.xenesis.channels.safety.status',
         { channel: target.id },
         `Read ${target.label} channel safety status from natural language request.`,
+      );
+    }
+
+    if (target.kind === 'messenger' && hasAny(value, ['접근 그룹', 'access group', 'access groups', 'allowlist'])) {
+      return naturalAction(
+        `natural-xenesis-channel-access-groups-status-${target.id}`,
+        'xd.xenesis.channels.accessGroups.status',
+        { channel: target.id },
+        `Read ${target.label} channel access groups status from natural language request.`,
+      );
+    }
+
+    if (target.kind === 'messenger' && hasAny(value, ['페어링', 'pairing', 'pair', '연동'])) {
+      return naturalAction(
+        `natural-xenesis-channel-pairing-status-${target.id}`,
+        'xd.xenesis.channels.pairing.status',
+        { channel: target.id },
+        `Read ${target.label} channel pairing status from natural language request.`,
+      );
+    }
+
+    if (target.kind === 'messenger' && hasAny(value, ['user story', 'user stories', '사용자 스토리', '스토리'])) {
+      return naturalAction(
+        `natural-xenesis-channel-user-story-status-${target.id}`,
+        'xd.xenesis.channels.userStories.status',
+        { id: target.id },
+        `Read ${target.label} channel user story status from natural language request.`,
+      );
+    }
+
+    if (target.kind === 'messenger' && hasAny(value, ['프로필', 'profile', 'draft', '초안'])) {
+      return naturalAction(
+        `natural-xenesis-channel-profile-draft-status-${target.id}`,
+        'xd.xenesis.channels.profileDrafts.status',
+        { channel: target.id },
+        `Read ${target.label} channel profile draft status from natural language request.`,
+      );
+    }
+
+    if (target.kind === 'messenger' && hasAny(value, ['view', 'views', '뷰', '화면', '메신저'])) {
+      return naturalAction(
+        `natural-xenesis-messenger-view-status-${target.id}`,
+        'xd.xenesis.messengers.views.status',
+        { id: target.id },
+        `Read ${target.label} messenger view status from natural language request.`,
       );
     }
 
