@@ -5,6 +5,9 @@ import {
   isXenesisNaturalConnectionMessengerTarget,
   isXenesisNaturalConnectionToolTarget,
   isXenesisNaturalPlannedGoogleToolTarget,
+  XENESIS_DESK_ACTION_ACTIVITY_PHASES,
+  XENESIS_DESK_ACTION_APPROVAL_STATE,
+  XENESIS_DESK_ACTION_EXECUTION_STATUS,
   XENESIS_DESK_ACTION_PROTOCOL,
   XENESIS_DESK_ACTION_PROTOCOL_FORMAT,
   XENESIS_DESK_ACTION_PROTOCOL_PATTERNS,
@@ -163,6 +166,7 @@ import {
   XENESIS_NATURAL_WORKSPACE_CONTEXT_WORDS,
   XENESIS_NATURAL_WORKSPACE_SET_CONTEXT_WORDS,
   XENESIS_NATURAL_XENESIS_CONTEXT_WORDS,
+  type XenesisDeskActionActivityPhase as XenesisDeskActionActivityPhaseCatalog,
   type XenesisNaturalConnectionTarget,
   type XenesisNaturalCoreToolTarget,
   type XenesisNaturalDeskActionDescriptor,
@@ -218,7 +222,7 @@ export type XenesisDeskActionExecutor = (
   options?: XenesisDeskActionCallOptions,
 ) => Promise<XenesisDeskActionCallResult>;
 
-export type XenesisDeskActionActivityPhase = 'start' | 'success' | 'failure' | 'approval-required';
+export type XenesisDeskActionActivityPhase = XenesisDeskActionActivityPhaseCatalog;
 
 export interface XenesisDeskActionActivity {
   phase: XenesisDeskActionActivityPhase;
@@ -261,7 +265,7 @@ function hasActionIntent(value: string): boolean {
 }
 
 function naturalAction(id: string, path: string, args: unknown, reason: string): XenesisDeskActionRequest {
-  return { id, path, args, approved: false, reason };
+  return { id, path, args, approved: DESK_ACTION_APPROVAL_STATE.pending, reason };
 }
 
 function naturalCatalogAction(
@@ -287,7 +291,7 @@ function naturalCoreToolOpenAction(
     id: definition.id,
     path: definition.path,
     args: DESK_ACTION_ARGS.placement(placement || DEFAULT_DESK_PLACEMENT),
-    approved: false,
+    approved: DESK_ACTION_APPROVAL_STATE.pending,
     reason: CORE_TOOL_OPEN_REASON(definition.reasonName),
   };
 }
@@ -300,12 +304,15 @@ function naturalViewOpenAction(
     id: view.id,
     path: XENESIS_NATURAL_VIEW_OPEN_PATH,
     args: DESK_ACTION_ARGS.withPlacement(DESK_ACTION_ARGS.viewKind(view.kind), placement || DEFAULT_DESK_PLACEMENT),
-    approved: false,
+    approved: DESK_ACTION_APPROVAL_STATE.pending,
     reason: view.reason,
   };
 }
 
 const DESK_ACTIONS = XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS;
+const DESK_ACTION_ACTIVITY_PHASES = XENESIS_DESK_ACTION_ACTIVITY_PHASES;
+const DESK_ACTION_APPROVAL_STATE = XENESIS_DESK_ACTION_APPROVAL_STATE;
+const DESK_ACTION_EXECUTION_STATUS = XENESIS_DESK_ACTION_EXECUTION_STATUS;
 const DESK_ACTION_PROTOCOL = XENESIS_DESK_ACTION_PROTOCOL;
 const DESK_ACTION_PROTOCOL_FORMAT = XENESIS_DESK_ACTION_PROTOCOL_FORMAT;
 const DESK_ACTION_PROTOCOL_PATTERNS = XENESIS_DESK_ACTION_PROTOCOL_PATTERNS;
@@ -1882,7 +1889,7 @@ export async function runXenesisDeskActions(
   };
 
   for (const action of actions) {
-    reportActivity({ phase: 'start', action });
+    reportActivity({ phase: DESK_ACTION_ACTIVITY_PHASES.start, action });
     try {
       const callResult = await executor(action.path, action.args, { approved: action.approved });
       const result: XenesisDeskActionExecutionResult = {
@@ -1890,7 +1897,7 @@ export async function runXenesisDeskActions(
         path: action.path,
         args: action.args,
         approved: action.approved,
-        ok: callResult.ok !== false,
+        ok: DESK_ACTION_EXECUTION_STATUS.isOk(callResult.ok),
         result: callResult.result ?? callResult,
         ...(callResult.error ? { error: callResult.error } : {}),
         ...(callResult.approvalRequired ? { approvalRequired: callResult.approvalRequired } : {}),
@@ -1901,10 +1908,10 @@ export async function runXenesisDeskActions(
       results.push(result);
       reportActivity({
         phase: isXenesisDeskActionApprovalRequiredResult(result)
-          ? 'approval-required'
+          ? DESK_ACTION_ACTIVITY_PHASES.approvalRequired
           : result.ok
-            ? 'success'
-            : 'failure',
+            ? DESK_ACTION_ACTIVITY_PHASES.success
+            : DESK_ACTION_ACTIVITY_PHASES.failure,
         action,
         result,
         ...(result.error ? { error: result.error } : {}),
@@ -1915,11 +1922,11 @@ export async function runXenesisDeskActions(
         path: action.path,
         args: action.args,
         approved: action.approved,
-        ok: false,
+        ok: DESK_ACTION_EXECUTION_STATUS.failed,
         error: error instanceof Error ? error.message : String(error),
       };
       results.push(result);
-      reportActivity({ phase: 'failure', action, result, error: result.error });
+      reportActivity({ phase: DESK_ACTION_ACTIVITY_PHASES.failure, action, result, error: result.error });
     }
   }
   return results;
@@ -1949,11 +1956,11 @@ export function pendingXenesisDeskActionsFromResults(
     .filter(isXenesisDeskActionApprovalRequiredResult)
     .map((result) => actionById.get(result.id))
     .filter((action): action is XenesisDeskActionRequest => Boolean(action))
-    .map((action) => ({ ...action, approved: false }));
+    .map((action) => ({ ...action, approved: DESK_ACTION_APPROVAL_STATE.pending }));
 }
 
 export function approveXenesisDeskActions(actions: XenesisDeskActionRequest[]): XenesisDeskActionRequest[] {
-  return actions.map((action) => ({ ...action, approved: true }));
+  return actions.map((action) => ({ ...action, approved: DESK_ACTION_APPROVAL_STATE.approved }));
 }
 
 function describeDeskAction(action: XenesisDeskActionRequest): string {

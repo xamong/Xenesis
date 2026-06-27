@@ -99,6 +99,26 @@ export const XENESIS_DESK_ACTION_PROTOCOL_FORMAT = {
   resultBullet: (path: string, summary = '') => (summary ? `- ${path}: ${summary}` : `- ${path}`),
 } as const;
 
+export const XENESIS_DESK_ACTION_ACTIVITY_PHASES = {
+  approvalRequired: 'approval-required',
+  failure: 'failure',
+  start: 'start',
+  success: 'success',
+} as const;
+
+export type XenesisDeskActionActivityPhase =
+  (typeof XENESIS_DESK_ACTION_ACTIVITY_PHASES)[keyof typeof XENESIS_DESK_ACTION_ACTIVITY_PHASES];
+
+export const XENESIS_DESK_ACTION_APPROVAL_STATE = {
+  approved: true,
+  pending: false,
+} as const;
+
+export const XENESIS_DESK_ACTION_EXECUTION_STATUS = {
+  failed: false,
+  isOk: (ok: boolean | undefined) => ok !== false,
+} as const;
+
 export const XENESIS_DESK_ACTION_PROTOCOL_TEXT = {
   appliedHeader: 'Applied:',
   approvalRequiredBody:

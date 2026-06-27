@@ -2269,6 +2269,46 @@
 - External documentation handling: no browsing. This update used cached
   repo-local context, source code, and tests.
 
+## Desk Action State/Phase Catalog Refactor Slice
+
+- Removed representative Desk action approval/execution/activity phase sentinel
+  literals from `xenesisAgentDeskControl.ts`.
+- Extended `src/shared/xenesisNaturalLanguageCatalog.ts` with:
+  - `XENESIS_DESK_ACTION_ACTIVITY_PHASES`
+  - `XENESIS_DESK_ACTION_APPROVAL_STATE`
+  - `XENESIS_DESK_ACTION_EXECUTION_STATUS`
+  - derived `XenesisDeskActionActivityPhase`
+- The Desk control source now consumes shared state/phase catalogs for pending
+  approval action creation, approval helper output, executor ok normalization,
+  failed execution results, and activity reports.
+- Scope boundary: refactor only. This preserved action request state, execution
+  result state, activity reporting phases, approval helpers, route order, parse
+  behavior, approval behavior, and user-facing text.
+- Verification:
+  - RED source guard failed first because
+    `XENESIS_DESK_ACTION_ACTIVITY_PHASES` was not yet referenced by
+    `xenesisAgentDeskControl.ts`.
+  - `rg -n "approved: (false|true)|phase: '(start|success|failure|approval-required)'|'approval-required'|ok: false|ok: callResult\.ok !== false" src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts`
+    returned no matches after implementation.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 36/36 tests.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 100/100 tests.
+  - Initial biome check failed only on type import ordering in
+    `xenesisAgentDeskControl.ts`; import order was fixed.
+  - `npx biome check src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --max-diagnostics 40`
+    passed.
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit` passed with Registered nodes 763,
+    Callable methods 468, Dispatcher paths 448, missing registered paths 0,
+    missing dispatched coverage paths 0, undispatched static callable methods
+    0, and dispatcher paths missing from tree 0. The generated audit file was
+    removed afterward.
+- Known gap: live Electron Agent-pane smoke was not run for this refactor-only
+  slice.
+- External documentation handling: no browsing. This update used cached
+  repo-local context, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

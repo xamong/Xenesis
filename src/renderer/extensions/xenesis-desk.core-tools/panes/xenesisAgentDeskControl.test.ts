@@ -5,6 +5,9 @@ import {
   isXenesisNaturalConnectionMessengerTarget,
   isXenesisNaturalConnectionToolTarget,
   isXenesisNaturalPlannedGoogleToolTarget,
+  XENESIS_DESK_ACTION_ACTIVITY_PHASES,
+  XENESIS_DESK_ACTION_APPROVAL_STATE,
+  XENESIS_DESK_ACTION_EXECUTION_STATUS,
   XENESIS_DESK_ACTION_PROTOCOL_FORMAT,
   XENESIS_DESK_ACTION_PROTOCOL_RECORD_KEYS,
   XENESIS_DESK_ACTION_RESULT_SUMMARY_KEYS,
@@ -328,6 +331,22 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.equal(XENESIS_DESK_ACTION_PROTOCOL_FORMAT.defaultActionId(0), 'desk-action-1');
   assert.equal(XENESIS_DESK_ACTION_PROTOCOL_FORMAT.actionBullet('xd.test.path', 'because'), '- xd.test.path - because');
   assert.equal(XENESIS_DESK_ACTION_PROTOCOL_FORMAT.resultBullet('xd.test.path', 'ok'), '- xd.test.path: ok');
+  assert.match(source, /XENESIS_DESK_ACTION_ACTIVITY_PHASES/);
+  assert.match(source, /XENESIS_DESK_ACTION_APPROVAL_STATE/);
+  assert.match(source, /XENESIS_DESK_ACTION_EXECUTION_STATUS/);
+  assert.doesNotMatch(source, /phase: 'start'/);
+  assert.doesNotMatch(source, /phase: 'failure'/);
+  assert.doesNotMatch(source, /'approval-required'/);
+  assert.doesNotMatch(source, /approved: false/);
+  assert.doesNotMatch(source, /approved: true/);
+  assert.doesNotMatch(source, /ok: false/);
+  assert.doesNotMatch(source, /ok: callResult\.ok !== false/);
+  assert.equal(XENESIS_DESK_ACTION_ACTIVITY_PHASES.approvalRequired, 'approval-required');
+  assert.equal(XENESIS_DESK_ACTION_APPROVAL_STATE.pending, false);
+  assert.equal(XENESIS_DESK_ACTION_APPROVAL_STATE.approved, true);
+  assert.equal(XENESIS_DESK_ACTION_EXECUTION_STATUS.failed, false);
+  assert.equal(XENESIS_DESK_ACTION_EXECUTION_STATUS.isOk(undefined), true);
+  assert.equal(XENESIS_DESK_ACTION_EXECUTION_STATUS.isOk(false), false);
   assert.deepEqual(XENESIS_DESK_ACTION_RESULT_SUMMARY_KEYS.fileList, ['openFiles', 'files', 'items', 'entries']);
   assert.equal(XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT.fileList(1, 'README.md'), '1 file, first: README.md');
   assert.equal(XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT.workflowMetric(2, 'passed'), '2 passed');
