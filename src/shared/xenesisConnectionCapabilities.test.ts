@@ -966,7 +966,16 @@ test('xenesis connection setup request capabilities are registered and dispatch 
       calls.push({ method: 'status', args });
       return {
         ok: true,
-        items: [{ id: 'notion' }],
+        items: [
+          {
+            id: 'notion',
+            review: {
+              status: 'pending',
+              approvalSessionKey: 'xenesis-connection-setup:notion',
+              actionInboxItemId: 'setup-notion',
+            },
+          },
+        ],
       };
     },
     openXenesisConnectionSetupRequest: (args) => {
@@ -1013,7 +1022,16 @@ test('xenesis connection setup request capabilities are registered and dispatch 
   ]);
   assert.deepEqual(statusResult.result, {
     ok: true,
-    items: [{ id: 'notion' }],
+    items: [
+      {
+        id: 'notion',
+        review: {
+          status: 'pending',
+          approvalSessionKey: 'xenesis-connection-setup:notion',
+          actionInboxItemId: 'setup-notion',
+        },
+      },
+    ],
   });
   assert.deepEqual(openResult.result, {
     ok: true,

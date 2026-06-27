@@ -70,7 +70,12 @@ Use `xd.xenesis.connections.setupRequests.open` with
 `{ "id": "<connection-id>" }` to focus the owning card, and
 `xd.xenesis.connections.setupRequests.request` with
 `{ "id": "<connection-id>" }` to record a local Desk Action Inbox item for
-review. This records the request, steps, diagnostics, blocked actions, and
+review. The status readback joins the latest matching Action Inbox item by the
+setup request `approvalSessionKey`, so `xd.xenesis.connections.status`,
+`xd.xenesis.connections.setupRequests.status`, and Settings can show whether
+the request is not requested, pending, approved, rejected, failed, or expired.
+Approval and rejection still use the existing Action Inbox resolve path. The
+request path records the request, steps, diagnostics, blocked actions, and
 safety boundaries only. It does not install MCP servers, complete OAuth, store
 tokens, execute provider tools, send messages, mutate provider/tool/channel
 settings, update allowlists, or bypass approvals.

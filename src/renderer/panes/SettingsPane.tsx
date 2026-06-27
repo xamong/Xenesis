@@ -96,6 +96,7 @@ import {
   formatXenesisChannelUserStorySummary,
   formatXenesisConnectionDiagnosticRunbookSummary,
   formatXenesisConnectionSetupRequestSummary,
+  formatXenesisConnectionSetupReviewSummary,
   formatXenesisGuideCatalogSummary,
   formatXenesisMessengerViewSummary,
   formatXenesisOnboardingPlanSummary,
@@ -4433,6 +4434,12 @@ export default function SettingsPane() {
               <span>{t('settings.xenesisConnectionsSetupRequestReviewSurface')}</span>
               <strong>{setupRequest.reviewSurface}</strong>
             </div>
+            {setupRequest.review ? (
+              <div data-xenesis-connection-setup-review={item.id}>
+                <span>{t('settings.xenesisConnectionsSetupRequestReviewStatus')}</span>
+                <strong>{formatXenesisConnectionSetupReviewSummary(setupRequest.review)}</strong>
+              </div>
+            ) : null}
             <div>
               <span>{t('settings.xenesisConnectionsSetupRequestSteps')}</span>
               <strong>{setupRequest.steps.join(', ')}</strong>

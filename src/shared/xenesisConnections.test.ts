@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildXenesisConnectionsStatus, XENESIS_CONNECTION_GUIDES } from './xenesisConnections';
+import {
+  buildXenesisConnectionsStatus,
+  withXenesisConnectionSetupRequestReviews,
+  XENESIS_CONNECTION_GUIDES,
+} from './xenesisConnections';
 
 const channelGuardrails = {
   approvalMode: 'safe' as const,
@@ -1993,6 +1997,64 @@ test('buildXenesisConnectionsStatus exposes setup request templates without exec
 
   assert.equal(telegram?.setupRequest?.requestType, 'messenger-setup');
   assert.equal(telegram?.setupRequest?.readPaths.includes('xd.xenesis.channels.pairing.status'), true);
+});
+
+test('withXenesisConnectionSetupRequestReviews joins Action Inbox review state by approval session key', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const enriched = withXenesisConnectionSetupRequestReviews(status, [
+    {
+      id: 'setup-notion',
+      kind: 'xenesis-connection-setup',
+      title: 'Review setup request for Notion',
+      approvalSessionKey: 'xenesis-connection-setup:notion',
+      requester: 'tester',
+      source: 'Xenesis Connection Center',
+      status: 'pending',
+      createdAt: '2026-06-27T01:00:00.000Z',
+      updatedAt: '2026-06-27T01:00:00.000Z',
+      expiresAt: '2026-06-27T01:05:00.000Z',
+      resolvedAt: '',
+      result: '',
+      error: '',
+    },
+  ]);
+
+  const notion = enriched.sections.tools.items.find((item) => item.id === 'notion');
+  const linear = enriched.sections.tools.items.find((item) => item.id === 'linear');
+
+  assert.equal(notion?.setupRequest?.review?.status, 'pending');
+  assert.equal(notion?.setupRequest?.review?.actionInboxItemId, 'setup-notion');
+  assert.equal(notion?.setupRequest?.review?.requester, 'tester');
+  assert.equal(notion?.setupRequest?.review?.approvalSessionKey, 'xenesis-connection-setup:notion');
+  assert.equal(linear?.setupRequest?.review?.status, 'not-requested');
+  assert.equal(linear?.setupRequest?.review?.approvalSessionKey, 'xenesis-connection-setup:linear');
 });
 
 test('buildXenesisConnectionsStatus reports missing setup without leaking secrets', () => {

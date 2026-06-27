@@ -14,6 +14,7 @@ import type {
   XenesisConnectionProviderSetupTemplate,
   XenesisConnectionProviderViewTemplate,
   XenesisConnectionSection,
+  XenesisConnectionSetupRequestReview,
   XenesisConnectionSetupRequestTemplate,
   XenesisConnectionStatus,
   XenesisConnectionsStatus,
@@ -142,6 +143,12 @@ export function formatXenesisConnectionDiagnosticRunbookSummary(
 
 export function formatXenesisConnectionSetupRequestSummary(request: XenesisConnectionSetupRequestTemplate): string {
   return `${request.requestType} / ${request.readiness} / ${request.steps.length} setup step(s)`;
+}
+
+export function formatXenesisConnectionSetupReviewSummary(review: XenesisConnectionSetupRequestReview): string {
+  return `${review.status} / ${review.actionInboxItemId ?? review.approvalSessionKey} / ${
+    review.requester || 'unknown requester'
+  }`;
 }
 
 export function buildXenesisConnectionSettingsRequest(

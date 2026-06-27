@@ -176,6 +176,35 @@ Capability Registry instead of only through separate renderer settings panels.
   servers, complete OAuth, store tokens, execute provider tools, send messages,
   mutate provider/tool/channel settings, update allowlists, or bypass approvals.
 
+## Current Setup Request Review Status Slice
+
+- Join existing `xenesis-connection-setup` Action Inbox items back into
+  Connection Center setup request cards by deterministic
+  `xenesis-connection-setup:<connection-id>` approval session keys.
+- Add `setupRequest.review` to `xd.xenesis.connections.status` and
+  `xd.xenesis.connections.setupRequests.status` so agents can read the current
+  request lifecycle without opening Action Inbox separately.
+- Render the same review state in Settings >
+  Xenesis Agent > Connections with
+  `data-xenesis-connection-setup-review="<connection-id>"`.
+- Reuse existing CR paths only:
+  `xd.xenesis.connections.setupRequests.status`,
+  `xd.xenesis.connections.setupRequests.request`, and
+  `xd.mcp.actionInbox.resolve`.
+- This slice is readback/enrichment only. It does not approve/reject setup
+  requests, install MCP servers, complete OAuth, store tokens, execute provider
+  tools, send messages, mutate provider/tool/channel settings, update
+  allowlists, or bypass approvals.
+- External documentation handling for this slice: no per-slice web browsing.
+  Use local Obsidian/docs/handoff/code as the gap map; refresh external docs
+  only as a batched documentation pass if needed.
+- `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+  failed first for missing review enrichment and renderer formatter, then
+  passed after implementation with 52/52 tests.
+- `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` passed
+  after preserving review fields through the setup request dispatcher contract
+  with 22/22 tests.
+
 ## Current Verification
 
 - `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`

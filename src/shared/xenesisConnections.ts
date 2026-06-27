@@ -39,6 +39,44 @@ export type XenesisConnectionSetupRequestType =
   | 'messenger-setup'
   | 'guide-review';
 
+export type XenesisConnectionSetupRequestReviewStatus =
+  | 'not-requested'
+  | 'pending'
+  | 'approved'
+  | 'rejected'
+  | 'failed'
+  | 'expired';
+
+export interface XenesisConnectionSetupRequestReview {
+  status: XenesisConnectionSetupRequestReviewStatus;
+  approvalSessionKey: string;
+  actionInboxItemId?: string;
+  requester?: string;
+  source?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  expiresAt?: string;
+  resolvedAt?: string;
+  result?: string;
+  error?: string;
+}
+
+export interface XenesisConnectionSetupRequestReviewInput {
+  id?: string;
+  kind?: string;
+  title?: string;
+  approvalSessionKey?: string;
+  requester?: string;
+  source?: string;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  expiresAt?: string;
+  resolvedAt?: string;
+  result?: string;
+  error?: string;
+}
+
 export interface XenesisConnectionSettingsAction {
   category: string;
   mode?: string;
@@ -456,6 +494,7 @@ export interface XenesisConnectionSetupRequestTemplate {
   diagnostics: string[];
   blockedActions: string[];
   safetyBoundaries: string[];
+  review?: XenesisConnectionSetupRequestReview;
 }
 
 export interface XenesisConnectionItem {
@@ -3146,6 +3185,102 @@ function withXenesisConnectionSetupRequests(
       { ...section, items: section.items.map((item) => withXenesisConnectionSetupRequest(item)) },
     ]),
   ) as XenesisConnectionsStatus['sections'];
+}
+
+const XENESIS_CONNECTION_SETUP_REVIEW_STATUSES: readonly XenesisConnectionSetupRequestReviewStatus[] = [
+  'pending',
+  'approved',
+  'rejected',
+  'failed',
+  'expired',
+];
+
+export function buildXenesisConnectionSetupApprovalSessionKey(id: string): string {
+  return `xenesis-connection-setup:${id}`;
+}
+
+function normalizeSetupRequestReviewStatus(value?: string): XenesisConnectionSetupRequestReviewStatus {
+  const status = typeof value === 'string' ? value.trim() : '';
+  return (XENESIS_CONNECTION_SETUP_REVIEW_STATUSES as readonly string[]).includes(status)
+    ? (status as XenesisConnectionSetupRequestReviewStatus)
+    : 'pending';
+}
+
+function setupRequestReviewSortValue(item: XenesisConnectionSetupRequestReviewInput): number {
+  const updatedAt = Date.parse(item.updatedAt || '');
+  if (Number.isFinite(updatedAt)) return updatedAt;
+  const createdAt = Date.parse(item.createdAt || '');
+  return Number.isFinite(createdAt) ? createdAt : 0;
+}
+
+function setupRequestReviewFromInboxItem(
+  approvalSessionKey: string,
+  item?: XenesisConnectionSetupRequestReviewInput,
+): XenesisConnectionSetupRequestReview {
+  if (!item) {
+    return {
+      status: 'not-requested',
+      approvalSessionKey,
+    };
+  }
+
+  return {
+    status: normalizeSetupRequestReviewStatus(item.status),
+    approvalSessionKey,
+    ...(item.id ? { actionInboxItemId: item.id } : {}),
+    ...(item.requester ? { requester: item.requester } : {}),
+    ...(item.source ? { source: item.source } : {}),
+    ...(item.createdAt ? { createdAt: item.createdAt } : {}),
+    ...(item.updatedAt ? { updatedAt: item.updatedAt } : {}),
+    ...(item.expiresAt ? { expiresAt: item.expiresAt } : {}),
+    ...(item.resolvedAt ? { resolvedAt: item.resolvedAt } : {}),
+    ...(item.result ? { result: item.result } : {}),
+    ...(item.error ? { error: item.error } : {}),
+  };
+}
+
+export function withXenesisConnectionSetupRequestReviews(
+  status: XenesisConnectionsStatus,
+  inboxItems: XenesisConnectionSetupRequestReviewInput[],
+): XenesisConnectionsStatus {
+  const latestByApprovalSessionKey = new Map<string, XenesisConnectionSetupRequestReviewInput>();
+  for (const item of inboxItems) {
+    const approvalSessionKey = item.approvalSessionKey?.trim();
+    if (!approvalSessionKey?.startsWith('xenesis-connection-setup:')) continue;
+    if (item.kind && item.kind !== 'xenesis-connection-setup') continue;
+    const existing = latestByApprovalSessionKey.get(approvalSessionKey);
+    if (!existing || setupRequestReviewSortValue(item) >= setupRequestReviewSortValue(existing)) {
+      latestByApprovalSessionKey.set(approvalSessionKey, item);
+    }
+  }
+
+  const sections = Object.fromEntries(
+    Object.entries(status.sections).map(([id, section]) => [
+      id,
+      {
+        ...section,
+        items: section.items.map((item) => {
+          if (!item.setupRequest) return { ...item };
+          const approvalSessionKey = buildXenesisConnectionSetupApprovalSessionKey(item.id);
+          return {
+            ...item,
+            setupRequest: {
+              ...item.setupRequest,
+              review: setupRequestReviewFromInboxItem(
+                approvalSessionKey,
+                latestByApprovalSessionKey.get(approvalSessionKey),
+              ),
+            },
+          };
+        }),
+      },
+    ]),
+  ) as XenesisConnectionsStatus['sections'];
+
+  return {
+    ...status,
+    sections,
+  };
 }
 
 function toolConnectionItems(env: Record<string, string | undefined> = {}): XenesisConnectionItem[] {

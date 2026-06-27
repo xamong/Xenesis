@@ -33,6 +33,9 @@ export type {
   XenesisConnectionProviderSetupTemplate,
   XenesisConnectionProviderViewTemplate,
   XenesisConnectionSection,
+  XenesisConnectionSetupRequestReview,
+  XenesisConnectionSetupRequestReviewInput,
+  XenesisConnectionSetupRequestReviewStatus,
   XenesisConnectionSetupRequestTemplate,
   XenesisConnectionSetupRequestType,
   XenesisConnectionStatus,
@@ -49,6 +52,11 @@ export type {
   XenesisConnectionToolUserStoryTemplate,
   XenesisConnectionToolUserStoryWorkflowType,
   XenesisConnectionToolViewTemplate,
+} from './xenesisConnections';
+
+export {
+  buildXenesisConnectionSetupApprovalSessionKey,
+  withXenesisConnectionSetupRequestReviews,
 } from './xenesisConnections';
 
 export type ShellKind = 'powershell' | 'cmd' | 'pwsh' | 'wsl' | 'zsh' | 'bash' | 'sh';

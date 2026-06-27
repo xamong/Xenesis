@@ -268,7 +268,9 @@ import type {
   XenesisTaskSummary,
 } from '../shared/types';
 import {
+  buildXenesisConnectionSetupApprovalSessionKey,
   buildXenesisConnectionsStatus,
+  withXenesisConnectionSetupRequestReviews,
   type XenesisConnectionItem,
   type XenesisConnectionKind,
   type XenesisConnectionsStatus,
@@ -4795,7 +4797,7 @@ function getMcpSettingsStatus(): McpSettingsStatus {
 async function getXenesisConnectionsStatus(): Promise<XenesisConnectionsStatus> {
   const settings = loadSettings();
   const [xenesis, activeProfile] = await Promise.all([getXenesisStatusPayload(), readActiveXenesisProfileConfig()]);
-  return buildXenesisConnectionsStatus({
+  const status = buildXenesisConnectionsStatus({
     aiProvider: settings.aiProvider,
     mcp: getMcpSettingsStatus(),
     providerIntegration: getProviderIntegrationStatusSnapshot(),
@@ -4804,6 +4806,7 @@ async function getXenesisConnectionsStatus(): Promise<XenesisConnectionsStatus> 
     env: process.env,
     repoRoot: app.isPackaged ? app.getAppPath() : process.cwd(),
   });
+  return withXenesisConnectionSetupRequestReviews(status, listMcpActionInboxSnapshot());
 }
 
 const XENESIS_CONNECTION_KINDS: readonly XenesisConnectionKind[] = [
@@ -4925,6 +4928,7 @@ function xenesisConnectionSetupRequestStatusItem(item: XenesisConnectionItem): R
     description: item.setupRequest?.description,
     setupSurface: item.setupRequest?.setupSurface,
     reviewSurface: item.setupRequest?.reviewSurface,
+    review: item.setupRequest?.review,
     steps: item.setupRequest?.steps ?? [],
     readPaths: item.setupRequest?.readPaths ?? [],
     controlPaths: item.setupRequest?.controlPaths ?? [],
@@ -5034,17 +5038,23 @@ async function requestXenesisConnectionSetup(args?: unknown): Promise<Record<str
     description,
     source: 'Xenesis Connection Center',
     sessionId: 'xenesis-connection-setup',
-    approvalSessionKey: `xenesis-connection-setup:${item.id}`,
+    approvalSessionKey: buildXenesisConnectionSetupApprovalSessionKey(item.id),
     requester,
     risk: item.setupRequest.readiness,
     approveText: `Approve setup request for ${item.label}`,
     rejectText: `Reject setup request for ${item.label}`,
   });
 
+  const enrichedStatus = withXenesisConnectionSetupRequestReviews(status, [actionInboxItem]);
+  const enrichedItem =
+    listXenesisConnectionItems(enrichedStatus).find(
+      (candidate) => candidate.id === item.id && candidate.setupRequest,
+    ) ?? item;
+
   return {
     ok: true,
     id: item.id,
-    item: xenesisConnectionSetupRequestStatusItem(item),
+    item: xenesisConnectionSetupRequestStatusItem(enrichedItem),
     actionInboxItem,
   };
 }

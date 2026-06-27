@@ -950,6 +950,7 @@ export const en = {
     xenesisConnectionsSetupRequest: 'Setup request',
     xenesisConnectionsSetupRequestSurface: 'Setup surface',
     xenesisConnectionsSetupRequestReviewSurface: 'Review surface',
+    xenesisConnectionsSetupRequestReviewStatus: 'Review status',
     xenesisConnectionsSetupRequestSteps: 'Setup steps',
     xenesisConnectionsSetupRequestReadback: 'Setup request readback',
     xenesisConnectionsSetupRequestControls: 'Setup request controls',

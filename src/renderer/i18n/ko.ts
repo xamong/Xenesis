@@ -943,6 +943,7 @@ export const ko = {
     xenesisConnectionsSetupRequest: '설정 요청',
     xenesisConnectionsSetupRequestSurface: '설정 화면',
     xenesisConnectionsSetupRequestReviewSurface: '검토 화면',
+    xenesisConnectionsSetupRequestReviewStatus: '검토 상태',
     xenesisConnectionsSetupRequestSteps: '설정 단계',
     xenesisConnectionsSetupRequestReadback: '설정 요청 읽기 확인',
     xenesisConnectionsSetupRequestControls: '설정 요청 제어',

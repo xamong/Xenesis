@@ -13,6 +13,7 @@ import {
   formatXenesisChannelUserStorySummary,
   formatXenesisConnectionDiagnosticRunbookSummary,
   formatXenesisConnectionSetupRequestSummary,
+  formatXenesisConnectionSetupReviewSummary,
   formatXenesisGuideCatalogSummary,
   formatXenesisMessengerViewSummary,
   formatXenesisOnboardingPlanSummary,
@@ -372,6 +373,25 @@ test('formatXenesisConnectionSetupRequestSummary describes request type, readine
       safetyBoundaries: ['records a local Action Inbox request only'],
     }),
     'tool-setup / action-required / 2 setup step(s)',
+  );
+});
+
+test('formatXenesisConnectionSetupReviewSummary describes Action Inbox review state', () => {
+  assert.equal(
+    formatXenesisConnectionSetupReviewSummary({
+      status: 'pending',
+      actionInboxItemId: 'setup-notion',
+      approvalSessionKey: 'xenesis-connection-setup:notion',
+      requester: 'tester',
+      source: 'Xenesis Connection Center',
+      createdAt: '2026-06-27T01:00:00.000Z',
+      updatedAt: '2026-06-27T01:00:00.000Z',
+      expiresAt: '2026-06-27T01:05:00.000Z',
+      resolvedAt: '',
+      result: '',
+      error: '',
+    }),
+    'pending / setup-notion / tester',
   );
 });
 
