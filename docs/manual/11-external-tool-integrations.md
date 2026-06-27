@@ -49,6 +49,13 @@ Use these paths for external tool setup and review:
 - `xd.xenesis.tools.userStories.open`
 - `xd.xenesis.connections.diagnostics.status`
 
+Google Workspace and Google Calendar OAuth draft readbacks include review steps
+for OAuth app registration, scope review, token-store readiness, and readback
+verification. The Settings Connection Center card renders these as
+`Review steps` with expected state, required fields, read/control paths,
+diagnostics, and safety boundary for each phase. These rows are planning and
+review metadata only; they do not make the planned OAuth flow executable.
+
 ## Safety Boundaries
 
 This guide does not install MCP servers, write MCP config, complete OAuth, store

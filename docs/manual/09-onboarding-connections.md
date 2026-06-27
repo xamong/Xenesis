@@ -43,6 +43,13 @@ and the renderer. The card-level `Focus` action routes through
 `xd.xenesis.connections.open` and highlights the matching
 `data-xenesis-connection="<id>"` card inside Settings.
 
+Cards with onboarding plans, provider profile drafts, OAuth drafts, or channel
+profile drafts also render detail rows in Settings. These rows show the
+expected state, required fields where applicable, CR read/control paths,
+diagnostics, and safety boundary for each guided or review step. Use the rows
+as an operator checklist; they are not executable shortcuts and do not perform
+external work by themselves.
+
 Guide cards also expose a structured `guideCatalog` read model. Use
 `xd.xenesis.guides.status` to inspect setup playbooks, integration guides, and
 user-story templates for provider setup, MCP/external tools, gateway/channel
@@ -92,6 +99,11 @@ field readiness states only; they do not mutate provider settings, model
 settings, fallback chains, credentials, local CLI selection, or run provider
 prompts.
 
+Provider profile drafts include review steps for provider identity,
+model/credential readiness, runtime routing, and local CLI boundary checks.
+Settings renders these as `Review steps` so an operator can inspect exactly
+which CR paths and diagnostics should be checked before approving profile work.
+
 Tool cards with recommended MCP metadata also expose an `mcpInstallDraft` read
 model. Use `xd.xenesis.tools.mcpInstallDrafts.status` to inspect review-only
 install drafts for Fetch, Filesystem, GitHub, Notion, Linear, and planned
@@ -116,6 +128,11 @@ owning card, and `xd.xenesis.tools.oauthDrafts.request` with
 Inbox item for review. These drafts do not complete OAuth, store tokens, write
 MCP config, execute provider tools, send email, mutate documents, create or
 change calendar events, mutate settings, or bypass approvals.
+
+OAuth drafts include review steps for app registration, scope review,
+token-store readiness, and readback verification. Settings renders these as
+`Review steps` on the Google Workspace and Google Calendar cards so planned
+OAuth work stays visible without implying OAuth support is complete.
 
 Tool cards also expose a `toolActionCatalog` read model. Use
 `xd.xenesis.tools.actions.status` to inspect review-only external tool action
@@ -142,6 +159,11 @@ they do not return raw env secret values, mutate channel settings, update
 allowlists, write profiles, send test messages, start gateway services, store
 secrets, or bypass approvals.
 
+Channel profile drafts include review steps for credential readiness,
+access/allowlist bindings, delivery guardrails, and pairing/readback checks.
+Settings renders these as `Review steps` so the channel profile review flow can
+be followed inside Desk before any channel update or test-send path is used.
+
 The first section is an ordered onboarding checklist. It is derived from the
 same provider, MCP, tool, gateway, messenger, and guide cards, so it is a
 read-only progress view rather than a separate source of truth. Use it as the
@@ -167,6 +189,12 @@ boundaries for each onboarding step. Use `xd.xenesis.onboarding.open` with
 focus the matching checklist card. This surface is read/open only: it does not
 change provider, MCP, external tool, gateway, messenger, profile, credential, or
 channel settings.
+
+Onboarding plans include guided steps. Settings renders them as `Guided steps`
+with the step kind, CR path, expected state, verification signal, and safety
+boundary. Use those rows to move through first chat, local CLI/MCP, tool setup,
+gateway readiness, messenger routing, and end-to-end test preparation without
+guessing which CR surface should be read or opened next.
 
 ## AI Provider
 

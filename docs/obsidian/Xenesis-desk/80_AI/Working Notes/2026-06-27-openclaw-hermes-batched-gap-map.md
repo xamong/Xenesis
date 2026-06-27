@@ -2723,6 +2723,32 @@
 - External documentation handling: no browsing. This used cached gap context,
   source code, and tests.
 
+## Connection Center Guide Detail Docs Slice
+
+- Updated repo-local guide docs so the manual layer matches the current
+  Connection Center detail UI:
+  - `docs/manual/09-onboarding-connections.md`
+  - `docs/manual/10-openclaw-channel-setup.md`
+  - `docs/manual/11-external-tool-integrations.md`
+- The onboarding guide now explains that Settings cards render guided/review
+  step rows with expected state, required fields where applicable,
+  read/control paths, diagnostics, and safety boundaries.
+- The channel guide now documents channel profile review-step phases:
+  credential readiness, access/allowlist bindings, delivery guardrails, and
+  pairing/readback checks.
+- The external tool guide now documents Google Workspace/Calendar OAuth review
+  steps and keeps planned OAuth boundaries explicit.
+- Scope boundary:
+  - Docs-only. No runtime code, CR schema/dispatcher, settings mutation,
+    OAuth/install execution, channel delivery, or approval-policy changes.
+- Verification:
+  - `git diff --check` passed with only LF-to-CRLF warnings.
+  - `npx biome check docs\manual\09-onboarding-connections.md docs\manual\10-openclaw-channel-setup.md docs\manual\11-external-tool-integrations.md --max-diagnostics 40`
+    exited 1 because the repo Biome config ignores these Markdown paths and
+    processed 0 files.
+- External documentation handling: no browsing. This used cached gap context,
+  current docs, and current code behavior.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

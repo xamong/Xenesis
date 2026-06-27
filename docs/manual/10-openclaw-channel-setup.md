@@ -60,6 +60,12 @@ Implemented channel profile draft review uses:
 - `xd.xenesis.channels.profileDrafts.open`
 - `xd.xenesis.channels.profileDrafts.request`
 
+Channel profile draft readbacks include review steps for credential readiness,
+access/allowlist bindings, delivery guardrails, and pairing/readback checks.
+The Settings Connection Center card renders these as `Review steps` with the
+expected state, required fields, read/control paths, diagnostics, and safety
+boundary for each phase.
+
 Planned messenger profile review prompts should stay on the generic setup
 request path:
 
