@@ -2,6 +2,10 @@ import { listDeskBridgeCapabilities } from '../../../../shared/deskBridgeCapabil
 import {
   findXenesisNaturalGuideTarget,
   findXenesisNaturalWordsTarget,
+  XENESIS_DESK_ACTION_PROTOCOL,
+  XENESIS_DESK_ACTION_PROTOCOL_PATTERNS,
+  XENESIS_DESK_ACTION_PROTOCOL_TEXT,
+  XENESIS_DESK_ACTION_RESULT_SUMMARY_PATHS,
   XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES,
   XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES,
   XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES,
@@ -218,9 +222,6 @@ export interface XenesisDeskActionRunOptions {
   onActivity?: (activity: XenesisDeskActionActivity) => void;
 }
 
-const DESK_ACTION_FENCE_PATTERN =
-  /```xenesis-desk-actions?(?:[ \t]*\r?\n([\s\S]*?)^```[ \t]*$|[ \t]+([{[][^\r\n]*))/gim;
-
 export interface XenesisDeskNaturalLanguagePlan extends XenesisDeskActionParseResult {
   matched: boolean;
 }
@@ -293,6 +294,10 @@ function naturalViewOpenAction(
 }
 
 const DESK_ACTIONS = XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS;
+const DESK_ACTION_PROTOCOL = XENESIS_DESK_ACTION_PROTOCOL;
+const DESK_ACTION_PROTOCOL_PATTERNS = XENESIS_DESK_ACTION_PROTOCOL_PATTERNS;
+const DESK_ACTION_PROTOCOL_TEXT = XENESIS_DESK_ACTION_PROTOCOL_TEXT;
+const DESK_ACTION_RESULT_SUMMARY_PATHS = XENESIS_DESK_ACTION_RESULT_SUMMARY_PATHS;
 const EXTRACTION_PATTERNS = XENESIS_NATURAL_EXTRACTION_PATTERNS;
 const CONNECTION_AGGREGATE_OPEN_ACTIONS = XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_ACTION_DESCRIPTORS;
 const CONNECTION_AGGREGATE_STATUS_ACTIONS = XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS;
@@ -1652,13 +1657,15 @@ function normalizeDeskActionRecord(
   index: number,
 ): { action?: XenesisDeskActionRequest; error?: string } {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return { error: `Desk action ${index + 1} must be a JSON object.` };
+    return { error: DESK_ACTION_PROTOCOL_TEXT.mustBeJsonObject(index) };
   }
 
   const record = value as Record<string, unknown>;
   const path = typeof record.path === 'string' ? record.path.trim() : '';
-  if (!path) return { error: `Desk action ${index + 1} is missing path.` };
-  if (!path.startsWith('xd.')) return { error: `Desk action ${index + 1} path must start with xd.: ${path}` };
+  if (!path) return { error: DESK_ACTION_PROTOCOL_TEXT.missingPath(index) };
+  if (!path.startsWith(DESK_ACTION_PROTOCOL.pathPrefix)) {
+    return { error: DESK_ACTION_PROTOCOL_TEXT.invalidPathPrefix(index, path, DESK_ACTION_PROTOCOL.pathPrefix) };
+  }
 
   const id = typeof record.id === 'string' && record.id.trim() ? record.id.trim() : `desk-action-${index + 1}`;
   const reason = typeof record.reason === 'string' && record.reason.trim() ? record.reason.trim() : undefined;
@@ -1696,21 +1703,26 @@ export function parseXenesisDeskActionBlocks(text: string): XenesisDeskActionPar
 
   const sourceText = String(text || '');
   const visibleText = normalizeVisibleText(
-    sourceText.replace(DESK_ACTION_FENCE_PATTERN, (_block, blockJsonText: string, inlineJsonText?: string) => {
-      const jsonText = blockJsonText || inlineJsonText || '';
-      try {
-        const parsed = JSON.parse(jsonText);
-        for (const record of actionRecordsFromJson(parsed)) {
-          const normalized = normalizeDeskActionRecord(record, actionIndex);
-          if (normalized.action) actions.push(normalized.action);
-          if (normalized.error) errors.push(normalized.error);
-          actionIndex += 1;
+    sourceText.replace(
+      DESK_ACTION_PROTOCOL_PATTERNS.deskActionFence,
+      (_block, blockJsonText: string, inlineJsonText?: string) => {
+        const jsonText = blockJsonText || inlineJsonText || '';
+        try {
+          const parsed = JSON.parse(jsonText);
+          for (const record of actionRecordsFromJson(parsed)) {
+            const normalized = normalizeDeskActionRecord(record, actionIndex);
+            if (normalized.action) actions.push(normalized.action);
+            if (normalized.error) errors.push(normalized.error);
+            actionIndex += 1;
+          }
+        } catch (error) {
+          errors.push(
+            DESK_ACTION_PROTOCOL_TEXT.jsonParseFailed(error instanceof Error ? error.message : String(error)),
+          );
         }
-      } catch (error) {
-        errors.push(`Desk action JSON parse failed: ${error instanceof Error ? error.message : String(error)}`);
-      }
-      return '';
-    }),
+        return '';
+      },
+    ),
   );
 
   if (actions.length === 0 && errors.length === 0 && visibleText) {
@@ -1806,7 +1818,7 @@ export function isXenesisDeskActionApprovalRequiredResult(result: XenesisDeskAct
   return (
     result.approvalRequired === true ||
     record.approvalRequired === true ||
-    (!result.ok && /requires approval|approval required/i.test(result.error || ''))
+    (!result.ok && DESK_ACTION_PROTOCOL_PATTERNS.approvalRequiredError.test(result.error || ''))
   );
 }
 
@@ -1923,10 +1935,10 @@ function summarizeWorkflowResult(record: Record<string, unknown>): string {
 
 function summarizeDeskActionResult(result: XenesisDeskActionExecutionResult): string {
   const record = asRecord(result.result);
-  if (result.path === 'xd.files.listOpen') return summarizeFileList(record);
-  if (result.path === 'xd.capture.activePane') return summarizeCaptureResult(record);
-  if (result.path === 'xd.window.sizer.applyPreset') return summarizeBoundsResult(record);
-  if (result.path === 'xd.automation.workflow.run') return summarizeWorkflowResult(record);
+  if (result.path === DESK_ACTION_RESULT_SUMMARY_PATHS.filesListOpen) return summarizeFileList(record);
+  if (result.path === DESK_ACTION_RESULT_SUMMARY_PATHS.captureActivePane) return summarizeCaptureResult(record);
+  if (result.path === DESK_ACTION_RESULT_SUMMARY_PATHS.windowSizePreset) return summarizeBoundsResult(record);
+  if (result.path === DESK_ACTION_RESULT_SUMMARY_PATHS.workflowRun) return summarizeWorkflowResult(record);
 
   const renderer = asRecord(record.renderer);
   const message =
@@ -1942,8 +1954,8 @@ export function buildXenesisDeskActionPendingMessage(actions: XenesisDeskActionR
   return [
     leadText.trim(),
     leadText.trim() ? '' : undefined,
-    'Desk action approval required.',
-    '아래 Desk 동작은 실행 전에 승인이 필요합니다. 계속하려면 `승인`이라고 입력하거나 승인 버튼을 눌러 주세요.',
+    DESK_ACTION_PROTOCOL_TEXT.approvalRequiredHeader,
+    DESK_ACTION_PROTOCOL_TEXT.approvalRequiredBody,
     '',
     ...actions.map(describeDeskAction),
   ]
@@ -1954,22 +1966,26 @@ export function buildXenesisDeskActionPendingMessage(actions: XenesisDeskActionR
 export function buildXenesisDeskActionCompletedMessage(results: XenesisDeskActionExecutionResult[]): string {
   const failed = results.filter((result) => !result.ok);
   const successful = results.filter((result) => result.ok);
-  const header = failed.length > 0 ? `Desk action completed with ${failed.length} issue(s).` : 'Desk action completed.';
+  const header = DESK_ACTION_PROTOCOL_TEXT.completedHeader(failed.length);
   const appliedLines = successful.map((result) => {
     const summary = summarizeDeskActionResult(result);
     return summary ? `- ${result.path}: ${summary}` : `- ${result.path}`;
   });
   return [
     header,
-    ...(successful.length > 0 ? ['', 'Applied:', ...appliedLines] : []),
+    ...(successful.length > 0 ? ['', DESK_ACTION_PROTOCOL_TEXT.appliedHeader, ...appliedLines] : []),
     ...(failed.length > 0
-      ? ['', 'Needs attention:', ...failed.map((result) => `- ${result.path}: ${result.error || 'failed'}`)]
+      ? [
+          '',
+          DESK_ACTION_PROTOCOL_TEXT.needsAttentionHeader,
+          ...failed.map((result) => `- ${result.path}: ${result.error || DESK_ACTION_PROTOCOL_TEXT.failureFallback}`),
+        ]
       : []),
   ].join('\n');
 }
 
 export function summarizeXenesisDeskActionExecution(result: XenesisDeskActionExecutionResult): string {
-  return `${result.ok ? 'Desk action applied' : 'Desk action failed'}: ${result.path}`;
+  return DESK_ACTION_PROTOCOL_TEXT.executionSummary(result.ok, result.path);
 }
 
 function isCapabilityPathUnderPrefix(path: string, prefix: string): boolean {
@@ -1992,10 +2008,9 @@ function buildDirectCrPathSummary(lines: readonly string[]): string {
       .map((node) => node.path),
   );
   const referencedPaths = new Set<string>();
-  const crPathPattern = /\bxd\.[A-Za-z0-9.*{}.-]+/g;
   for (const line of lines) {
-    for (const match of line.matchAll(crPathPattern)) {
-      const path = match[0].replace(/[.,;:)]$/, '');
+    for (const match of line.matchAll(DESK_ACTION_PROTOCOL_PATTERNS.crPath)) {
+      const path = match[0].replace(DESK_ACTION_PROTOCOL_PATTERNS.trailingCrPathPunctuation, '');
       if (callablePaths.has(path)) {
         referencedPaths.add(path);
       }
@@ -2012,5 +2027,5 @@ export function buildXenesisDeskControlPromptHint(): string {
     )}.`,
     ...XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES,
   ];
-  return [...lines, `Useful direct CR paths include ${buildDirectCrPathSummary(lines)}.`].join('\n');
+  return [...lines, DESK_ACTION_PROTOCOL_TEXT.usefulDirectCrPaths(buildDirectCrPathSummary(lines))].join('\n');
 }

@@ -39,6 +39,42 @@ export interface XenesisNaturalDeskActionTemplateDescriptor<TArgs extends unknow
   reasonFor: (...args: TArgs) => string;
 }
 
+export const XENESIS_DESK_ACTION_PROTOCOL = {
+  pathPrefix: 'xd.',
+} as const;
+
+export const XENESIS_DESK_ACTION_PROTOCOL_PATTERNS = {
+  approvalRequiredError: /requires approval|approval required/i,
+  crPath: /\bxd\.[A-Za-z0-9.*{}.-]+/g,
+  deskActionFence: /```xenesis-desk-actions?(?:[ \t]*\r?\n([\s\S]*?)^```[ \t]*$|[ \t]+([{[][^\r\n]*))/gim,
+  trailingCrPathPunctuation: /[.,;:)]$/,
+} as const;
+
+export const XENESIS_DESK_ACTION_PROTOCOL_TEXT = {
+  appliedHeader: 'Applied:',
+  approvalRequiredBody:
+    '아래 Desk 동작은 실행 전에 승인이 필요합니다. 계속하려면 `승인`이라고 입력하거나 승인 버튼을 눌러 주세요.',
+  approvalRequiredHeader: 'Desk action approval required.',
+  completedHeader: (failedCount: number) =>
+    failedCount > 0 ? `Desk action completed with ${failedCount} issue(s).` : 'Desk action completed.',
+  executionSummary: (ok: boolean, path: string) => `${ok ? 'Desk action applied' : 'Desk action failed'}: ${path}`,
+  failureFallback: 'failed',
+  invalidPathPrefix: (index: number, path: string, prefix: string) =>
+    `Desk action ${index + 1} path must start with ${prefix}: ${path}`,
+  jsonParseFailed: (message: string) => `Desk action JSON parse failed: ${message}`,
+  missingPath: (index: number) => `Desk action ${index + 1} is missing path.`,
+  mustBeJsonObject: (index: number) => `Desk action ${index + 1} must be a JSON object.`,
+  needsAttentionHeader: 'Needs attention:',
+  usefulDirectCrPaths: (paths: string) => `Useful direct CR paths include ${paths}.`,
+} as const;
+
+export const XENESIS_DESK_ACTION_RESULT_SUMMARY_PATHS = {
+  captureActivePane: 'xd.capture.activePane',
+  filesListOpen: 'xd.files.listOpen',
+  windowSizePreset: 'xd.window.sizer.applyPreset',
+  workflowRun: 'xd.automation.workflow.run',
+} as const;
+
 export const XENESIS_NATURAL_EXTRACTION_PATTERNS = {
   filterQueryWords:
     /탐색기|파일|폴더|필터|검색|찾아|보여|표시|걸어줘|걸어|적용|에서|에|로|set|filter|search|find|explorer/gi,
