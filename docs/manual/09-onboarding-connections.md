@@ -94,6 +94,19 @@ provider tools, send messages, mutate settings, or bypass approvals. Google
 Workspace and Google Calendar remain planned until a verified MCP/OAuth
 template exists.
 
+Implemented messenger cards also expose a `channelProfileDraft` read model. Use
+`xd.xenesis.channels.profileDrafts.status` to inspect review-only profile field
+state, missing required fields, guardrails, diagnostics, blocked actions, and
+safety boundaries for Telegram, Slack, Discord, and Webhook. Use
+`xd.xenesis.channels.profileDrafts.open` with `{ "channel": "<channel-id>" }`
+to focus the owning card, and `xd.xenesis.channels.profileDrafts.request` with
+`{ "channel": "<channel-id>" }` to record a local
+`xenesis-channel-profile-draft` Action Inbox item for review. Drafts return
+only field readiness states such as `configured`, `empty`, and `missing-env`;
+they do not return raw env secret values, mutate channel settings, update
+allowlists, write profiles, send test messages, start gateway services, store
+secrets, or bypass approvals.
+
 The first section is an ordered onboarding checklist. It is derived from the
 same provider, MCP, tool, gateway, messenger, and guide cards, so it is a
 read-only progress view rather than a separate source of truth. Use it as the
@@ -305,6 +318,17 @@ channels remain planning surfaces only: user-story metadata does not enable a
 gateway adapter, send messages, create pairing sessions, mutate allowlists, or
 bypass approval policy.
 
+Implemented messenger cards also expose `channelProfileDraft` metadata. Use
+`xd.xenesis.channels.profileDrafts.status` to inspect the profile env-reference
+fields, allowlist fields, guardrails, missing required field list, diagnostics,
+blocked actions, and safety boundaries before using
+`xd.xenesis.profiles.updateChannels`. Use
+`xd.xenesis.channels.profileDrafts.open` to focus the card and
+`xd.xenesis.channels.profileDrafts.request` to record a local Action Inbox
+review item. This is a review-only surface: it does not mutate channel
+settings, update allowlists, write profiles, send test messages, start the
+gateway, store secrets, or bypass approval policy.
+
 Messenger cards also expose a `messengerView` read model. Use
 `xd.xenesis.messengers.views.status` to inspect the internal Desk surface for a
 messenger, including runtime support, setup surface, CR open/read/control paths,
@@ -328,6 +352,9 @@ Useful CR paths:
 - `xd.xenesis.channels.pairing.status`
 - `xd.xenesis.channels.userStories.status`
 - `xd.xenesis.channels.userStories.open`
+- `xd.xenesis.channels.profileDrafts.status`
+- `xd.xenesis.channels.profileDrafts.open`
+- `xd.xenesis.channels.profileDrafts.request`
 - `xd.xenesis.messengers.views.status`
 - `xd.xenesis.messengers.views.open`
 
@@ -449,6 +476,16 @@ Discord, and Webhook workflows describe prompt intake, scoped replies, sanitized
 tests, and the existing read/test CR paths. Planned messenger workflows describe
 setup stories only and do not enable delivery, send replies, install adapters,
 create pairing flows, mutate channel settings, or bypass approval guardrails.
+
+Use `xd.xenesis.channels.profileDrafts.status`,
+`xd.xenesis.channels.profileDrafts.open`, and
+`xd.xenesis.channels.profileDrafts.request` to inspect, focus, or record a
+review-only profile draft for implemented external bot channels. The read model
+covers Telegram, Slack, Discord, and Webhook profile field readiness, guardrails,
+missing required settings, diagnostics, blocked actions, and safety boundaries.
+It returns env reference names and readiness states only; it does not return raw
+secret values, mutate channel settings, update allowlists, write profiles, send
+test messages, start the gateway, or bypass approval guardrails.
 
 Use `xd.xenesis.messengers.views.status` and
 `xd.xenesis.messengers.views.open` to inspect or open internal Desk

@@ -85,6 +85,7 @@ import AutomationSettingsSection from '../terminal/AutomationSettingsSection';
 import { mergePendingLocalTerminalProfile } from '../terminal/terminalProfileSnapshot';
 import { SETTINGS_CATEGORIES, type SettingsCategoryId, VISIBLE_SETTINGS_CATEGORIES } from './settingsCatalog.mjs';
 import {
+  buildXenesisChannelProfileDraftRequest,
   buildXenesisConnectionGuideRequest,
   buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
@@ -92,6 +93,7 @@ import {
   buildXenesisMcpInstallDraftRequest,
   formatXenesisChannelAccessGroupsSummary,
   formatXenesisChannelPairingSummary,
+  formatXenesisChannelProfileDraftSummary,
   formatXenesisChannelRoutingSummary,
   formatXenesisChannelSafetySummary,
   formatXenesisChannelUserStorySummary,
@@ -4271,6 +4273,7 @@ export default function SettingsPane() {
     const guideRequest = buildXenesisConnectionGuideRequest(item);
     const setupRequestCall = buildXenesisConnectionSetupRequestRequest(item);
     const mcpInstallDraftRequest = buildXenesisMcpInstallDraftRequest(item);
+    const channelProfileDraftRequest = buildXenesisChannelProfileDraftRequest(item);
     const mcpTemplate = item.mcpTemplate;
     const mcpInstallDraft = item.mcpInstallDraft;
     const onboardingPlan = item.onboardingPlan;
@@ -4283,6 +4286,7 @@ export default function SettingsPane() {
     const toolView = item.toolView;
     const toolUserStory = item.toolUserStory;
     const messengerView = item.messengerView;
+    const channelProfileDraft = item.channelProfileDraft;
     const channelTemplate = item.channelTemplate;
     const channelUserStory = channelTemplate?.userStory;
     const diagnosticRunbook = item.diagnosticRunbook;
@@ -4302,7 +4306,12 @@ export default function SettingsPane() {
             {xenesisConnectionStatusLabel(item.status)}
           </span>
         </div>
-        {(openRequest || settingsRequest || guideRequest || setupRequestCall || mcpInstallDraftRequest) && (
+        {(openRequest ||
+          settingsRequest ||
+          guideRequest ||
+          setupRequestCall ||
+          mcpInstallDraftRequest ||
+          channelProfileDraftRequest) && (
           <div className="sp-actions-row sp-actions-row-tight">
             <button
               className="sp-btn-ghost sp-btn-sm"
@@ -4350,6 +4359,16 @@ export default function SettingsPane() {
                 }}
               >
                 {t('settings.xenesisConnectionsRequestMcpInstallDraft')}
+              </button>
+            ) : null}
+            {channelProfileDraftRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(channelProfileDraftRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsRequestChannelProfileDraft')}
               </button>
             ) : null}
           </div>
@@ -4804,6 +4823,61 @@ export default function SettingsPane() {
             <div>
               <span>{t('settings.xenesisConnectionsMcpInstallDraftSafety')}</span>
               <strong>{mcpInstallDraft.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {channelProfileDraft ? (
+          <div className="sp-info-list sp-info-list-compact" data-xenesis-channel-profile-draft={item.id}>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelProfileDraft')}</span>
+              <strong>{formatXenesisChannelProfileDraftSummary(channelProfileDraft)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelProfileDraftSetupSurface')}</span>
+              <strong>{channelProfileDraft.setupSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelProfileDraftReviewSurface')}</span>
+              <strong>{channelProfileDraft.reviewSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelProfileDraftFields')}</span>
+              <strong>
+                {channelProfileDraft.profileFields
+                  .map((field) => `${field.field}:${field.valueState}${field.required ? ':required' : ''}`)
+                  .join(', ') || '-'}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelProfileDraftMissingFields')}</span>
+              <strong>{channelProfileDraft.missingRequiredFields.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelProfileDraftGuardrails')}</span>
+              <strong>
+                {channelProfileDraft.guardrails.approvalMode} / {channelProfileDraft.guardrails.maxTurns} turns /{' '}
+                {channelProfileDraft.guardrails.maxTokens} tokens
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelProfileDraftReadback')}</span>
+              <strong>{channelProfileDraft.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelProfileDraftControls')}</span>
+              <strong>{channelProfileDraft.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelProfileDraftDiagnostics')}</span>
+              <strong>{channelProfileDraft.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelProfileDraftBlockedActions')}</span>
+              <strong>{channelProfileDraft.blockedActions.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelProfileDraftSafety')}</span>
+              <strong>{channelProfileDraft.safetyBoundaries.join(', ')}</strong>
             </div>
           </div>
         ) : null}

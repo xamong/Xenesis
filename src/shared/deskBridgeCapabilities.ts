@@ -352,6 +352,98 @@ const XENESIS_CHANNEL_ACCESS_GROUP_STATUS_SCHEMA = {
   },
 } as const;
 
+const XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS = ['telegram', 'slack', 'discord', 'webhook'] as const;
+
+const XENESIS_CHANNEL_PROFILE_DRAFT_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
+      description: 'Optional implemented external bot channel to filter.',
+    },
+    id: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
+      description: 'Alias for channel.',
+    },
+    name: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
+      description: 'Alias for channel.',
+    },
+  },
+} as const;
+
+const XENESIS_CHANNEL_PROFILE_DRAFT_OPEN_SCHEMA = {
+  type: 'object',
+  required: ['channel'],
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
+      description: 'Implemented external bot channel to open in the internal Desk Connection Center view.',
+    },
+    id: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
+      description: 'Alias for channel.',
+    },
+    name: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
+      description: 'Alias for channel.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused messenger connection card into view after opening the Connection Center.',
+      default: true,
+    },
+  },
+} as const;
+
+const XENESIS_CHANNEL_PROFILE_DRAFT_REQUEST_SCHEMA = {
+  type: 'object',
+  required: ['channel'],
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
+      description: 'Implemented external bot channel to record as a profile draft review request.',
+    },
+    id: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
+      description: 'Alias for channel.',
+    },
+    name: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
+      description: 'Alias for channel.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity to include on the Action Inbox item.',
+    },
+    note: {
+      type: 'string',
+      title: 'Review note',
+      description: 'Optional note to append to the channel profile draft description.',
+    },
+  },
+} as const;
+
 const XENESIS_MESSENGER_VIEW_IDS = [
   'telegram',
   'slack',
@@ -940,6 +1032,9 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisChannelPairingStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisChannelUserStoriesStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisChannelUserStory?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisChannelProfileDraftsStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisChannelProfileDraft?: (args?: unknown) => Promise<unknown> | unknown;
+  requestXenesisChannelProfileDraft?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisGuidesStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisGuide?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolSetupStatus?: (args?: unknown) => Promise<unknown> | unknown;
@@ -4055,6 +4150,34 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               'Open Settings > Xenesis Agent > Connections and focus an external messenger channel user-story workflow card inside Desk.',
               'control',
               XENESIS_CHANNEL_USER_STORY_OPEN_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.channels.profileDrafts',
+          'Profile drafts',
+          'Read, open, and request review-only external messenger channel profile drafts.',
+          [
+            method(
+              'xd.xenesis.channels.profileDrafts.status',
+              'Read channel profile drafts',
+              'Read review-only channel profile draft field state, guardrails, missing required fields, diagnostics, and safety boundaries without mutating channel settings or exposing secrets.',
+              'read',
+              XENESIS_CHANNEL_PROFILE_DRAFT_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.channels.profileDrafts.open',
+              'Open channel profile draft',
+              'Open Settings > Xenesis Agent > Connections and focus an implemented external messenger channel profile-draft card inside Desk.',
+              'control',
+              XENESIS_CHANNEL_PROFILE_DRAFT_OPEN_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.channels.profileDrafts.request',
+              'Request channel profile draft review',
+              'Record a local Action Inbox item for reviewing a channel profile draft without mutating channel settings, updating allowlists, writing profiles, sending test messages, starting the gateway, storing secrets, or bypassing approvals.',
+              'write',
+              XENESIS_CHANNEL_PROFILE_DRAFT_REQUEST_SCHEMA,
             ),
           ],
         ),
@@ -10659,6 +10782,15 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.channels.userStories.open') {
         return callAdapter(path, api?.openXenesisChannelUserStory, request.args);
+      }
+      if (path === 'xd.xenesis.channels.profileDrafts.status') {
+        return callAdapter(path, api?.getXenesisChannelProfileDraftsStatus, request.args);
+      }
+      if (path === 'xd.xenesis.channels.profileDrafts.open') {
+        return callAdapter(path, api?.openXenesisChannelProfileDraft, request.args);
+      }
+      if (path === 'xd.xenesis.channels.profileDrafts.request') {
+        return callAdapter(path, api?.requestXenesisChannelProfileDraft, request.args);
       }
       if (path === 'xd.xenesis.guides.status') {
         return callAdapter(path, api?.getXenesisGuidesStatus, request.args);

@@ -709,6 +709,95 @@ test('xenesis MCP install draft capabilities are registered and dispatch to the 
   });
 });
 
+test('xenesis channel profile draft capabilities are registered and dispatch to the adapter', async () => {
+  const statusCapability = findDeskBridgeCapability('xd.xenesis.channels.profileDrafts.status');
+  const openCapability = findDeskBridgeCapability('xd.xenesis.channels.profileDrafts.open');
+  const requestCapability = findDeskBridgeCapability('xd.xenesis.channels.profileDrafts.request');
+  const statusSchemaProperties = (statusCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const requestSchemaProperties = (requestCapability?.schema?.properties ?? {}) as Record<string, any>;
+
+  assert.equal(statusCapability?.permission, 'read');
+  assert.equal(statusCapability?.approval, 'never');
+  assert.equal(openCapability?.permission, 'control');
+  assert.equal(openCapability?.approval, 'never');
+  assert.deepEqual(openCapability?.schema?.required, ['channel']);
+  assert.equal(requestCapability?.permission, 'write');
+  assert.equal(requestCapability?.approval, 'when-external');
+  assert.deepEqual(requestCapability?.schema?.required, ['channel']);
+  for (const channel of ['telegram', 'slack', 'discord', 'webhook']) {
+    assert.equal(statusSchemaProperties.channel?.enum.includes(channel), true, `${channel} status channel enum`);
+    assert.equal(statusSchemaProperties.id?.enum.includes(channel), true, `${channel} status id enum`);
+    assert.equal(openSchemaProperties.channel?.enum.includes(channel), true, `${channel} open channel enum`);
+    assert.equal(requestSchemaProperties.channel?.enum.includes(channel), true, `${channel} request channel enum`);
+  }
+
+  const calls: Array<{ method: string; args: unknown }> = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisChannelProfileDraftsStatus: (args) => {
+      calls.push({ method: 'status', args });
+      return {
+        ok: true,
+        items: [{ id: 'telegram', draftStatus: 'missing-required-field' }],
+      };
+    },
+    openXenesisChannelProfileDraft: (args) => {
+      calls.push({ method: 'open', args });
+      return {
+        ok: true,
+        item: { id: 'telegram', draftStatus: 'missing-required-field' },
+      };
+    },
+    requestXenesisChannelProfileDraft: (args) => {
+      calls.push({ method: 'request', args });
+      return {
+        ok: true,
+        channel: 'telegram',
+        actionInboxItem: { id: 'channel-profile-draft-telegram' },
+      };
+    },
+  };
+
+  const statusResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.channels.profileDrafts.status',
+    args: { channel: 'telegram' },
+    source: 'xenesis',
+  });
+  const openResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.channels.profileDrafts.open',
+    args: { channel: 'telegram' },
+    source: 'xenesis',
+  });
+  const requestResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.channels.profileDrafts.request',
+    args: { channel: 'telegram' },
+    source: 'xenesis',
+    approved: true,
+  });
+
+  assert.equal(statusResult.ok, true);
+  assert.equal(openResult.ok, true);
+  assert.equal(requestResult.ok, true);
+  assert.deepEqual(calls, [
+    { method: 'status', args: { channel: 'telegram' } },
+    { method: 'open', args: { channel: 'telegram' } },
+    { method: 'request', args: { channel: 'telegram' } },
+  ]);
+  assert.deepEqual(statusResult.result, {
+    ok: true,
+    items: [{ id: 'telegram', draftStatus: 'missing-required-field' }],
+  });
+  assert.deepEqual(openResult.result, {
+    ok: true,
+    item: { id: 'telegram', draftStatus: 'missing-required-field' },
+  });
+  assert.deepEqual(requestResult.result, {
+    ok: true,
+    channel: 'telegram',
+    actionInboxItem: { id: 'channel-profile-draft-telegram' },
+  });
+});
+
 test('xenesis messenger view capabilities are registered and dispatch to the adapter', async () => {
   const statusCapability = findDeskBridgeCapability('xd.xenesis.messengers.views.status');
   const openCapability = findDeskBridgeCapability('xd.xenesis.messengers.views.open');

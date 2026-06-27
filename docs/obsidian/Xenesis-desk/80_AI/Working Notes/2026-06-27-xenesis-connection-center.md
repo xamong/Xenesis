@@ -242,8 +242,45 @@ Capability Registry instead of only through separate renderer settings panels.
   `data-xenesis-mcp-install-draft="notion"`, and Agent-pane fenced CR execution
   matching `Desk action completed`.
 
+## Current Channel Profile Drafts Slice
+
+- Add `channelProfileDraft` metadata to implemented messenger cards in
+  `xd.xenesis.connections.status`; planned messenger cards stay without this
+  draft surface.
+- Add `xd.xenesis.channels.profileDrafts.status` as a read/no-approval CR path
+  for profile field readiness, missing required fields, guardrails,
+  diagnostics, blocked actions, and safety boundaries.
+- Add `xd.xenesis.channels.profileDrafts.open` as a control/no-approval CR path
+  that opens Settings > Xenesis Agent > Connections and focuses the requested
+  implemented channel card.
+- Add `xd.xenesis.channels.profileDrafts.request` as a write/when-external CR
+  path that records a local Desk Action Inbox item of kind
+  `xenesis-channel-profile-draft`.
+- Telegram, Slack, Discord, and Webhook expose field states only:
+  `configured`, `empty`, `missing-env`, `not-required`, or `unknown`. The draft
+  does not return raw env secret values.
+- Settings renders the same read model with
+  `data-xenesis-channel-profile-draft="<channel-id>"` and a card-level channel
+  draft review request action.
+- This surface records review-only draft requests. It does not mutate channel
+  settings, update allowlists, write profiles, send test messages, start the
+  gateway, store secrets, or bypass approvals.
+- External documentation handling for this slice: no per-slice web browsing.
+  Use local Obsidian/docs/handoff/code as the gap map; refresh external docs
+  only as a batched documentation pass if needed.
+- `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+  failed first with 5 expected RED failures, then passed after implementation
+  with 102/102 tests.
+- `npm run typecheck` passed.
+- `npm run docs:capabilities:audit` passed with registered nodes 742, callable
+  methods 450, coverage path references 689, dispatcher paths 430, and all CR
+  gap counters at 0.
+
 ## Current Verification
 
+- Channel profile draft slice focused test:
+  `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+  passed with 102/102 tests after implementation and formatting.
 - `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
   failed first with 5 expected RED failures for missing setup request metadata,
   CR paths, renderer helper/formatter, and Agent hint coverage, then passed

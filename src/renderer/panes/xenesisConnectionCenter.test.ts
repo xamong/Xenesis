@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { XenesisConnectionItem, XenesisConnectionsStatus } from '../../shared/types';
 import {
+  buildXenesisChannelProfileDraftRequest,
   buildXenesisConnectionGuideRequest,
   buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
@@ -9,6 +10,7 @@ import {
   buildXenesisMcpInstallDraftRequest,
   formatXenesisChannelAccessGroupsSummary,
   formatXenesisChannelPairingSummary,
+  formatXenesisChannelProfileDraftSummary,
   formatXenesisChannelRoutingSummary,
   formatXenesisChannelSafetySummary,
   formatXenesisChannelUserStorySummary,
@@ -303,6 +305,75 @@ test('formatXenesisChannelUserStorySummary describes workflow type, runtime supp
     }),
     'remote-prompt / implemented / 3 user story/stories',
   );
+});
+
+test('formatXenesisChannelProfileDraftSummary describes channel, status, and missing fields', () => {
+  assert.equal(
+    formatXenesisChannelProfileDraftSummary({
+      draftStatus: 'missing-required-field',
+      actionInboxKind: 'xenesis-channel-profile-draft',
+      channel: 'telegram',
+      displayName: 'Telegram',
+      description: 'Review Telegram profile settings.',
+      setupSurface: 'Settings > Xenesis Agent > External bots',
+      reviewSurface: 'Desk Action Inbox',
+      profileFields: [
+        {
+          field: 'allowedChatIds',
+          label: 'Allowed chat ids',
+          required: true,
+          secretRef: false,
+          valueState: 'empty',
+          description: 'Allowed Telegram chat ids.',
+        },
+      ],
+      missingRequiredFields: ['allowedChatIds'],
+      guardrails: { approvalMode: 'safe', maxTurns: 12, maxTokens: 120000 },
+      readPaths: ['xd.xenesis.channels.profileDrafts.status'],
+      controlPaths: ['xd.xenesis.channels.profileDrafts.request'],
+      diagnostics: ['allowlist-empty'],
+      blockedActions: ['mutate channel settings'],
+      safetyBoundaries: ['profile drafts are review-only'],
+    }),
+    'telegram / missing-required-field / 1 missing field(s)',
+  );
+});
+
+test('buildXenesisChannelProfileDraftRequest targets the review request CR path', () => {
+  const item = {
+    id: 'telegram',
+    kind: 'messenger',
+    label: 'Telegram',
+    status: 'needs-setup',
+    summary: 'Telegram setup',
+    channelProfileDraft: {
+      draftStatus: 'missing-required-field',
+      actionInboxKind: 'xenesis-channel-profile-draft',
+      channel: 'telegram',
+      displayName: 'Telegram',
+      setupSurface: 'Settings > Xenesis Agent > External bots',
+      reviewSurface: 'Desk Action Inbox',
+      profileFields: [],
+      missingRequiredFields: [],
+      guardrails: { approvalMode: 'safe', maxTurns: 12, maxTokens: 120000 },
+      readPaths: ['xd.xenesis.channels.profileDrafts.status'],
+      controlPaths: ['xd.xenesis.channels.profileDrafts.request'],
+      diagnostics: ['profile-channel-settings'],
+      blockedActions: ['mutate channel settings'],
+      safetyBoundaries: ['profile drafts are review-only'],
+    },
+  } satisfies XenesisConnectionItem;
+
+  assert.deepEqual(buildXenesisChannelProfileDraftRequest(item), {
+    path: 'xd.xenesis.channels.profileDrafts.request',
+    args: {
+      channel: 'telegram',
+    },
+    source: 'xenesis',
+    approved: true,
+  });
+
+  assert.equal(buildXenesisChannelProfileDraftRequest({ ...item, channelProfileDraft: undefined }), null);
 });
 
 test('formatXenesisGuideCatalogSummary describes guide type, audience, and surface count', () => {

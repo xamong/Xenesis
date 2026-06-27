@@ -2,6 +2,7 @@ import type {
   McpBridgeCapabilityCallRequest,
   XenesisConnectionChannelAccessGroupsTemplate,
   XenesisConnectionChannelPairingTemplate,
+  XenesisConnectionChannelProfileDraftTemplate,
   XenesisConnectionChannelRoutingTemplate,
   XenesisConnectionChannelSafetyTemplate,
   XenesisConnectionChannelUserStoryTemplate,
@@ -90,6 +91,10 @@ export function formatXenesisChannelPairingSummary(pairing: XenesisConnectionCha
 
 export function formatXenesisChannelUserStorySummary(workflow: XenesisConnectionChannelUserStoryTemplate): string {
   return `${workflow.workflowType} / ${workflow.runtimeSupport} / ${workflow.userStories.length} user story/stories`;
+}
+
+export function formatXenesisChannelProfileDraftSummary(draft: XenesisConnectionChannelProfileDraftTemplate): string {
+  return `${draft.channel} / ${draft.draftStatus} / ${draft.missingRequiredFields.length} missing field(s)`;
 }
 
 export function formatXenesisGuideCatalogSummary(guide: XenesisConnectionGuideCatalogTemplate): string {
@@ -205,6 +210,20 @@ export function buildXenesisMcpInstallDraftRequest(item: XenesisConnectionItem):
     path: 'xd.xenesis.tools.mcpInstallDrafts.request',
     args: {
       id: item.id,
+    },
+    source: 'xenesis',
+    approved: true,
+  };
+}
+
+export function buildXenesisChannelProfileDraftRequest(
+  item: XenesisConnectionItem,
+): McpBridgeCapabilityCallRequest | null {
+  if (!item.channelProfileDraft) return null;
+  return {
+    path: 'xd.xenesis.channels.profileDrafts.request',
+    args: {
+      channel: item.channelProfileDraft.channel,
     },
     source: 'xenesis',
     approved: true,

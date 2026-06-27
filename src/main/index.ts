@@ -5595,6 +5595,179 @@ async function openXenesisChannelUserStory(args?: unknown): Promise<Record<strin
   };
 }
 
+function xenesisChannelProfileDraftStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    draftStatus: item.channelProfileDraft?.draftStatus,
+    actionInboxKind: item.channelProfileDraft?.actionInboxKind,
+    channel: item.channelProfileDraft?.channel,
+    displayName: item.channelProfileDraft?.displayName,
+    description: item.channelProfileDraft?.description,
+    setupSurface: item.channelProfileDraft?.setupSurface,
+    reviewSurface: item.channelProfileDraft?.reviewSurface,
+    profileFields: item.channelProfileDraft?.profileFields ?? [],
+    missingRequiredFields: item.channelProfileDraft?.missingRequiredFields ?? [],
+    guardrails: item.channelProfileDraft?.guardrails,
+    readPaths: item.channelProfileDraft?.readPaths ?? [],
+    controlPaths: item.channelProfileDraft?.controlPaths ?? [],
+    diagnostics: item.channelProfileDraft?.diagnostics ?? [],
+    blockedActions: item.channelProfileDraft?.blockedActions ?? [],
+    safetyBoundaries: item.channelProfileDraft?.safetyBoundaries ?? [],
+    channelProfileDraft: item.channelProfileDraft,
+    channelTemplate: item.channelTemplate,
+    messengerView: item.messengerView,
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisChannelProfileDraftsStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const channel = readCapabilityString(body, ['channel', 'id', 'name']);
+  if (channel && !isXenesisProfileChannelName(channel)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis channel: ${channel}`,
+      allowedChannels: XENESIS_PROFILE_CHANNEL_NAMES,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.messengers.items
+    .filter((item) => item.supportLevel === 'implemented' && item.channelProfileDraft)
+    .filter((item) => !channel || item.id === channel)
+    .map((item) => xenesisChannelProfileDraftStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(channel ? { channel } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisChannelProfileDraft(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const channel = readCapabilityString(body, ['channel', 'id', 'name']);
+  if (!channel) {
+    return { ok: false, error: 'Channel is required.' };
+  }
+  if (!isXenesisProfileChannelName(channel)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis channel: ${channel}`,
+      allowedChannels: XENESIS_PROFILE_CHANNEL_NAMES,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.messengers.items.find(
+    (candidate) => candidate.id === channel && candidate.channelProfileDraft,
+  );
+  if (!item) {
+    return { ok: false, channel, error: `Xenesis channel profile draft is not available: ${channel}` };
+  }
+
+  const renderer = await openMcpBuiltinPaneCapability({
+    kind: 'settings',
+    category: 'xenesis-agent',
+    mode: 'connections',
+    section: 'xenesis-connections',
+    focusConnectionId: item.id,
+    ensureVisible: body.ensureVisible !== false,
+  });
+
+  return {
+    ok: renderer.ok !== false,
+    channel: item.id,
+    item: xenesisChannelProfileDraftStatusItem(item),
+    renderer,
+  };
+}
+
+async function requestXenesisChannelProfileDraft(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const channel = readCapabilityString(body, ['channel', 'id', 'name']);
+  if (!channel) {
+    return { ok: false, error: 'Channel is required.' };
+  }
+  if (!isXenesisProfileChannelName(channel)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis channel: ${channel}`,
+      allowedChannels: XENESIS_PROFILE_CHANNEL_NAMES,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.messengers.items.find(
+    (candidate) => candidate.id === channel && candidate.channelProfileDraft,
+  );
+  if (!item?.channelProfileDraft) {
+    return { ok: false, channel, error: `Xenesis channel profile draft is not available: ${channel}` };
+  }
+
+  const draft = item.channelProfileDraft;
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+  const requester = readCapabilityString(body, ['requester', 'user', 'userName']) || 'Xenesis Desk';
+  const fieldLines = draft.profileFields.map(
+    (field) => `- ${field.field}: ${field.valueState}${field.required ? ' (required)' : ''}`,
+  );
+  const description = [
+    `Review the ${draft.draftStatus} channel profile draft for ${item.label}.`,
+    `Channel: ${draft.channel}`,
+    `Setup surface: ${draft.setupSurface}`,
+    `Missing required fields: ${draft.missingRequiredFields.join(', ') || 'none'}`,
+    `Guardrails: ${draft.guardrails.approvalMode}, maxTurns ${draft.guardrails.maxTurns}, maxTokens ${draft.guardrails.maxTokens}`,
+    '',
+    'Profile field state:',
+    ...fieldLines,
+    '',
+    'Read paths:',
+    ...draft.readPaths.map((path) => `- ${path}`),
+    '',
+    'Control paths:',
+    ...draft.controlPaths.map((path) => `- ${path}`),
+    '',
+    'Diagnostics:',
+    ...draft.diagnostics.map((diagnostic) => `- ${diagnostic}`),
+    '',
+    'Blocked actions:',
+    ...draft.blockedActions.map((action) => `- ${action}`),
+    note ? '' : undefined,
+    note ? `Note: ${note}` : undefined,
+  ]
+    .filter((line): line is string => typeof line === 'string')
+    .join('\n');
+
+  const actionInboxItem = recordMcpActionInboxRequest({
+    kind: draft.actionInboxKind,
+    title: `Review ${item.label} channel profile draft`,
+    command: `Review channel profile draft for ${item.id}`,
+    description,
+    source: 'Xenesis Connection Center',
+    sessionId: 'xenesis-channel-profile-draft',
+    approvalSessionKey: `xenesis-channel-profile-draft:${item.id}`,
+    requester,
+    risk: draft.draftStatus,
+    approveText: `Approve channel profile draft for ${item.label}`,
+    rejectText: `Reject channel profile draft for ${item.label}`,
+  });
+
+  return {
+    ok: true,
+    channel: item.id,
+    item: xenesisChannelProfileDraftStatusItem(item),
+    actionInboxItem,
+  };
+}
+
 function xenesisMessengerViewStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
   return {
     id: item.id,
@@ -13410,6 +13583,9 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisChannelPairingStatus: (args: unknown) => getXenesisChannelPairingStatus(args),
     getXenesisChannelUserStoriesStatus: (args: unknown) => getXenesisChannelUserStoriesStatus(args),
     openXenesisChannelUserStory: (args: unknown) => openXenesisChannelUserStory(args),
+    getXenesisChannelProfileDraftsStatus: (args: unknown) => getXenesisChannelProfileDraftsStatus(args),
+    openXenesisChannelProfileDraft: (args: unknown) => openXenesisChannelProfileDraft(args),
+    requestXenesisChannelProfileDraft: (args: unknown) => requestXenesisChannelProfileDraft(args),
     getXenesisGuidesStatus: (args: unknown) => getXenesisGuidesStatus(args),
     openXenesisGuide: (args: unknown) => openXenesisGuide(args),
     getXenesisToolSetupStatus: (args: unknown) => getXenesisToolSetupStatus(args),

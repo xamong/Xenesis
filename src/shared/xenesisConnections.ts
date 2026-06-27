@@ -269,6 +269,52 @@ export interface XenesisConnectionChannelUserStoryTemplate {
   safetyBoundaries: string[];
 }
 
+export type XenesisConnectionChannelProfileDraftStatus =
+  | 'ready'
+  | 'missing-required-field'
+  | 'disabled'
+  | 'planned'
+  | 'unknown';
+export type XenesisConnectionChannelProfileDraftFieldValueState =
+  | 'configured'
+  | 'empty'
+  | 'missing-env'
+  | 'not-required'
+  | 'unknown';
+
+export interface XenesisConnectionChannelProfileDraftField {
+  field: string;
+  label: string;
+  required: boolean;
+  secretRef: boolean;
+  valueState: XenesisConnectionChannelProfileDraftFieldValueState;
+  description: string;
+}
+
+export interface XenesisConnectionChannelProfileDraftGuardrails {
+  approvalMode: 'readonly' | 'safe' | 'auto';
+  maxTurns: number;
+  maxTokens: number;
+}
+
+export interface XenesisConnectionChannelProfileDraftTemplate {
+  draftStatus: XenesisConnectionChannelProfileDraftStatus;
+  actionInboxKind: 'xenesis-channel-profile-draft';
+  channel: XenesisProfileChannelName;
+  displayName: string;
+  description?: string;
+  setupSurface: string;
+  reviewSurface: string;
+  profileFields: XenesisConnectionChannelProfileDraftField[];
+  missingRequiredFields: string[];
+  guardrails: XenesisConnectionChannelProfileDraftGuardrails;
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  blockedActions: string[];
+  safetyBoundaries: string[];
+}
+
 export interface XenesisConnectionProviderSetupTemplate {
   source: 'user-settings' | 'auto-detect' | 'local-cli' | 'byok';
   provider: string;
@@ -549,6 +595,7 @@ export interface XenesisConnectionItem {
   toolView?: XenesisConnectionToolViewTemplate;
   toolUserStory?: XenesisConnectionToolUserStoryTemplate;
   messengerView?: XenesisConnectionMessengerViewTemplate;
+  channelProfileDraft?: XenesisConnectionChannelProfileDraftTemplate;
   guideCatalog?: XenesisConnectionGuideCatalogTemplate;
   channelTemplate?: XenesisConnectionChannelTemplate;
   diagnosticRunbook?: XenesisConnectionDiagnosticRunbookTemplate;
@@ -2733,6 +2780,273 @@ function missingEnvFor(requiredEnv: readonly string[], env: Record<string, strin
   return uniqueStrings(requiredEnv.filter((ref) => !env[ref]?.trim()));
 }
 
+const XENESIS_CHANNEL_PROFILE_DRAFT_BLOCKED_ACTIONS = [
+  'mutate channel settings',
+  'update allowlists',
+  'write profile config',
+  'send test message',
+  'start gateway',
+  'store secrets',
+  'bypass approvals',
+];
+
+interface XenesisConnectionChannelProfileDraftFieldDefinition {
+  field: string;
+  label: string;
+  required: boolean;
+  secretRef: boolean;
+  description: string;
+}
+
+const XENESIS_CHANNEL_PROFILE_DRAFT_FIELDS: Record<
+  XenesisProfileChannelName,
+  XenesisConnectionChannelProfileDraftFieldDefinition[]
+> = {
+  telegram: [
+    {
+      field: 'enabled',
+      label: 'Enabled',
+      required: false,
+      secretRef: false,
+      description: 'Whether Telegram delivery is enabled in the active Xenesis profile.',
+    },
+    {
+      field: 'tokenEnv',
+      label: 'Token env',
+      required: true,
+      secretRef: true,
+      description: 'Environment variable reference for the Telegram bot token.',
+    },
+    {
+      field: 'allowedChatIds',
+      label: 'Allowed chat ids',
+      required: true,
+      secretRef: false,
+      description: 'Allowed Telegram chat ids for inbound prompts and replies.',
+    },
+  ],
+  slack: [
+    {
+      field: 'enabled',
+      label: 'Enabled',
+      required: false,
+      secretRef: false,
+      description: 'Whether Slack delivery is enabled in the active Xenesis profile.',
+    },
+    {
+      field: 'botTokenEnv',
+      label: 'Bot token env',
+      required: true,
+      secretRef: true,
+      description: 'Environment variable reference for the Slack bot token.',
+    },
+    {
+      field: 'signingSecretEnv',
+      label: 'Signing secret env',
+      required: true,
+      secretRef: true,
+      description: 'Environment variable reference for Slack request signature verification.',
+    },
+    {
+      field: 'webhookUrlEnv',
+      label: 'Webhook URL env',
+      required: false,
+      secretRef: true,
+      description: 'Optional environment variable reference for Slack webhook delivery.',
+    },
+    {
+      field: 'allowedChannelIds',
+      label: 'Allowed channel ids',
+      required: true,
+      secretRef: false,
+      description: 'Allowed Slack channel ids for inbound prompts and replies.',
+    },
+  ],
+  discord: [
+    {
+      field: 'enabled',
+      label: 'Enabled',
+      required: false,
+      secretRef: false,
+      description: 'Whether Discord delivery is enabled in the active Xenesis profile.',
+    },
+    {
+      field: 'botTokenEnv',
+      label: 'Bot token env',
+      required: true,
+      secretRef: true,
+      description: 'Environment variable reference for the Discord bot token.',
+    },
+    {
+      field: 'webhookUrlEnv',
+      label: 'Webhook URL env',
+      required: false,
+      secretRef: true,
+      description: 'Optional environment variable reference for Discord webhook delivery.',
+    },
+    {
+      field: 'allowedChannelIds',
+      label: 'Allowed channel ids',
+      required: true,
+      secretRef: false,
+      description: 'Allowed Discord channel ids for inbound prompts and replies.',
+    },
+    {
+      field: 'allowedGuildIds',
+      label: 'Allowed guild ids',
+      required: true,
+      secretRef: false,
+      description: 'Allowed Discord guild ids that constrain channel delivery.',
+    },
+  ],
+  webhook: [
+    {
+      field: 'enabled',
+      label: 'Enabled',
+      required: false,
+      secretRef: false,
+      description: 'Whether webhook ingress is enabled in the active Xenesis profile.',
+    },
+    {
+      field: 'urlEnv',
+      label: 'URL env',
+      required: true,
+      secretRef: true,
+      description: 'Environment variable reference for the protected webhook URL.',
+    },
+  ],
+};
+
+function channelProfileDraftApprovalMode(
+  value: unknown,
+): XenesisConnectionChannelProfileDraftGuardrails['approvalMode'] {
+  if (value === 'readonly' || value === 'safe' || value === 'auto') return value;
+  return 'safe';
+}
+
+function channelProfileDraftPositiveInteger(value: unknown, fallback: number): number {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) return Math.floor(value);
+  return fallback;
+}
+
+function channelProfileDraftFieldState(
+  field: XenesisConnectionChannelProfileDraftFieldDefinition,
+  settings: Record<string, unknown> | undefined,
+  env: Record<string, string | undefined>,
+): XenesisConnectionChannelProfileDraftFieldValueState {
+  const value = settings?.[field.field];
+  if (typeof value === 'boolean') return 'configured';
+  if (Array.isArray(value)) return value.length > 0 ? 'configured' : field.required ? 'empty' : 'not-required';
+  if (typeof value !== 'string') return field.required ? 'unknown' : 'not-required';
+
+  const ref = value.trim();
+  if (!ref) return field.required ? 'empty' : 'not-required';
+  if (field.secretRef) return env[ref]?.trim() ? 'configured' : 'missing-env';
+  return 'configured';
+}
+
+function channelProfileDraftMissingFieldKey(
+  field: XenesisConnectionChannelProfileDraftFieldDefinition,
+  valueState: XenesisConnectionChannelProfileDraftFieldValueState,
+): string | undefined {
+  if (!field.required || valueState === 'configured') return undefined;
+  if (!field.secretRef) return field.field;
+  return valueState === 'empty' ? `${field.field}:env-ref` : `${field.field}:env-secret`;
+}
+
+function buildXenesisChannelProfileDraft(
+  input: {
+    channel: XenesisProfileChannelName;
+    label: string;
+    status: XenesisConnectionStatus;
+    channelTemplate?: XenesisConnectionChannelTemplate;
+    warnings?: string[];
+  },
+  settings: Record<string, unknown> | undefined,
+  env: Record<string, string | undefined>,
+): XenesisConnectionChannelProfileDraftTemplate {
+  const profileFields = XENESIS_CHANNEL_PROFILE_DRAFT_FIELDS[input.channel].map((field) => ({
+    field: field.field,
+    label: field.label,
+    required: field.required,
+    secretRef: field.secretRef,
+    valueState: channelProfileDraftFieldState(field, settings, env),
+    description: field.description,
+  }));
+  const missingRequiredFields = uniqueStrings(
+    profileFields.map((field) =>
+      channelProfileDraftMissingFieldKey(
+        {
+          field: field.field,
+          label: field.label,
+          required: field.required,
+          secretRef: field.secretRef,
+          description: field.description,
+        },
+        field.valueState,
+      ),
+    ),
+  );
+  const draftStatus: XenesisConnectionChannelProfileDraftStatus =
+    missingRequiredFields.length > 0
+      ? 'missing-required-field'
+      : settings?.enabled === false || input.status === 'disabled'
+        ? 'disabled'
+        : 'ready';
+
+  return {
+    draftStatus,
+    actionInboxKind: 'xenesis-channel-profile-draft',
+    channel: input.channel,
+    displayName: input.label,
+    description: `Review ${input.label} channel profile settings before using updateChannels.`,
+    setupSurface: 'Settings > Xenesis Agent > External bots',
+    reviewSurface: 'Desk Action Inbox',
+    profileFields,
+    missingRequiredFields,
+    guardrails: {
+      approvalMode: channelProfileDraftApprovalMode(settings?.approvalMode),
+      maxTurns: channelProfileDraftPositiveInteger(settings?.maxTurns, 12),
+      maxTokens: channelProfileDraftPositiveInteger(settings?.maxTokens, 120000),
+    },
+    readPaths: uniqueStrings([
+      'xd.xenesis.channels.profileDrafts.status',
+      'xd.xenesis.connections.status',
+      'xd.xenesis.channels.routing.status',
+      'xd.xenesis.channels.safety.status',
+      'xd.xenesis.channels.accessGroups.status',
+      'xd.xenesis.channels.pairing.status',
+      'xd.xenesis.messengers.views.status',
+    ]),
+    controlPaths: uniqueStrings([
+      'xd.xenesis.channels.profileDrafts.open',
+      'xd.xenesis.channels.profileDrafts.request',
+      'xd.xenesis.connections.open',
+      'xd.xenesis.messengers.views.open',
+    ]),
+    diagnostics: uniqueStrings([
+      'profile-channel-settings',
+      draftStatus,
+      ...missingRequiredFields,
+      ...profileFields.map((field) => `${field.field}:${field.valueState}`),
+      ...(input.channelTemplate?.accessGroups?.diagnostics ?? []),
+      ...(input.channelTemplate?.pairing?.diagnostics ?? []),
+    ]),
+    blockedActions: [...XENESIS_CHANNEL_PROFILE_DRAFT_BLOCKED_ACTIONS],
+    safetyBoundaries: uniqueStrings([
+      'channel profile drafts are review-only',
+      'channel profile draft does not mutate channel settings or update allowlists',
+      'channel profile draft does not write profile config or send test messages',
+      'secret values are never returned',
+      ...(input.channelTemplate?.safetyControls ?? []),
+      ...(input.channelTemplate?.safety?.safetyBoundaries ?? []),
+      ...(input.channelTemplate?.accessGroups?.safetyBoundaries ?? []),
+      ...(input.channelTemplate?.pairing?.safetyBoundaries ?? []),
+      ...(input.warnings ?? []),
+    ]),
+  };
+}
+
 function buildXenesisMcpInstallDraft(
   item: XenesisConnectionItem,
   env: Record<string, string | undefined>,
@@ -2840,6 +3154,7 @@ function diagnosticRunbookSetupSurface(item: XenesisConnectionItem): string {
     item.toolUserStory?.setupSurface ??
     item.toolInstallPlan?.setupSurface ??
     item.mcpInstallDraft?.installSurface ??
+    item.channelProfileDraft?.setupSurface ??
     item.messengerView?.setupSurface ??
     item.channelTemplate?.pairing?.setupSurface ??
     item.channelTemplate?.userStory?.setupSurface ??
@@ -2857,6 +3172,7 @@ function diagnosticRunbookPrimarySurface(item: XenesisConnectionItem): string {
     item.toolUserStory?.primarySurface ??
     item.toolInstallPlan?.primarySurface ??
     (item.mcpInstallDraft ? 'Settings > Xenesis Agent > Connections' : undefined) ??
+    (item.channelProfileDraft ? 'Settings > Xenesis Agent > Connections' : undefined) ??
     item.messengerView?.primarySurface ??
     item.guideCatalog?.primarySurface ??
     'Settings > Xenesis Agent > Connections'
@@ -3079,6 +3395,20 @@ function buildXenesisConnectionDiagnosticRunbook(
     );
   }
 
+  if (item.channelProfileDraft) {
+    steps.push(
+      diagnosticRunbookStep({
+        id: 'channel-profile-draft',
+        label: 'Channel profile draft',
+        expectedState:
+          'Review-only channel profile fields and guardrails are visible before any updateChannels mutation.',
+        readPaths: ['xd.xenesis.channels.profileDrafts.status', ...item.channelProfileDraft.readPaths],
+        controlPaths: item.channelProfileDraft.controlPaths,
+        diagnostics: [...item.channelProfileDraft.missingRequiredFields, ...item.channelProfileDraft.diagnostics],
+      }),
+    );
+  }
+
   if (item.messengerView) {
     steps.push(
       diagnosticRunbookStep({
@@ -3135,6 +3465,7 @@ function buildXenesisConnectionDiagnosticRunbook(
       ...(item.channelTemplate?.accessGroups?.safetyBoundaries ?? []),
       ...(item.channelTemplate?.pairing?.safetyBoundaries ?? []),
       ...(item.channelTemplate?.userStory?.safetyBoundaries ?? []),
+      ...(item.channelProfileDraft?.safetyBoundaries ?? []),
       ...(item.messengerView?.safetyBoundaries ?? []),
       ...(item.guideCatalog?.safetyBoundaries ?? []),
     ]),
@@ -3187,6 +3518,7 @@ function setupRequestDiagnosticItems(item: XenesisConnectionItem): string[] {
     ...(item.channelTemplate?.accessGroups?.diagnostics ?? []),
     ...(item.channelTemplate?.pairing?.validationChecks ?? []),
     ...(item.channelTemplate?.userStory?.diagnostics ?? []),
+    ...(item.channelProfileDraft?.diagnostics ?? []),
     ...(item.guideCatalog?.validationChecks ?? []),
   ]);
 }
@@ -3205,6 +3537,7 @@ function setupRequestStepItems(item: XenesisConnectionItem): string[] {
       (binding) => `review ${binding.field}: ${binding.description}`,
     ) ?? []),
     ...(item.channelTemplate?.userStory?.prerequisiteSetup.map((check) => `verify ${check}`) ?? []),
+    ...(item.channelProfileDraft?.missingRequiredFields.map((field) => `review channel profile field: ${field}`) ?? []),
     ...(item.guideCatalog?.prerequisites.map((check) => `review prerequisite: ${check}`) ?? []),
     ...(item.guideCatalog?.validationChecks.map((check) => `validate ${check}`) ?? []),
     item.summary,
@@ -3253,6 +3586,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.channelTemplate?.accessGroups?.readPaths ?? []),
       ...(item.channelTemplate?.pairing?.readPaths ?? []),
       ...(item.channelTemplate?.userStory?.readPaths ?? []),
+      ...(item.channelProfileDraft?.readPaths ?? []),
       ...(item.messengerView?.readPaths ?? []),
       ...(item.guideCatalog?.readPaths ?? []),
     ]),
@@ -3273,6 +3607,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.channelTemplate?.accessGroups?.controlPaths ?? []),
       ...(item.channelTemplate?.pairing?.controlPaths ?? []),
       ...(item.channelTemplate?.userStory?.controlPaths ?? []),
+      ...(item.channelProfileDraft?.controlPaths ?? []),
       ...(item.messengerView?.controlPaths ?? []),
       ...(item.guideCatalog?.controlPaths ?? []),
     ]),
@@ -3297,6 +3632,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.channelTemplate?.accessGroups?.safetyBoundaries ?? []),
       ...(item.channelTemplate?.pairing?.safetyBoundaries ?? []),
       ...(item.channelTemplate?.userStory?.safetyBoundaries ?? []),
+      ...(item.channelProfileDraft?.safetyBoundaries ?? []),
       ...(item.messengerView?.safetyBoundaries ?? []),
       ...(item.guideCatalog?.safetyBoundaries ?? []),
     ]),
@@ -3764,11 +4100,20 @@ function messengerItems(
   return MESSENGERS.map(({ id, label, setupSteps, sourceDocs, channelTemplate }) => {
     const runtime = xenesis?.gateway.channels?.[id];
     const profileChannelSettings = xenesis?.profile.channelSettings?.[id] as Record<string, unknown> | undefined;
+    const channelName = id as XenesisProfileChannelName;
+    const warnings = [...(runtime?.warnings ?? []), ...(runtime?.lastError ? [runtime.lastError.message] : [])];
+    const channelTemplateWithState = {
+      ...channelTemplate,
+      pairing: channelTemplate.pairing
+        ? withChannelPairingCredentialState(channelTemplate.pairing, profileChannelSettings, env)
+        : undefined,
+    };
+    const status = channelStatus(xenesis, id);
     return {
       id,
       kind: 'messenger',
       label,
-      status: channelStatus(xenesis, id),
+      status,
       supportLevel: 'implemented',
       summary: runtime?.ready ? `${label} is ready to deliver messages.` : `${label} needs gateway and channel setup.`,
       missingEnv: runtime?.missingEnv,
@@ -3777,14 +4122,14 @@ function messengerItems(
       crActions: ['xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
       setupSteps,
       sourceDocs,
-      channelTemplate: {
-        ...channelTemplate,
-        pairing: channelTemplate.pairing
-          ? withChannelPairingCredentialState(channelTemplate.pairing, profileChannelSettings, env)
-          : undefined,
-      },
+      channelTemplate: channelTemplateWithState,
+      channelProfileDraft: buildXenesisChannelProfileDraft(
+        { channel: channelName, label, status, channelTemplate: channelTemplateWithState, warnings },
+        profileChannelSettings,
+        env,
+      ),
       messengerView: messengerViewTemplate(id, 'implemented'),
-      warnings: [...(runtime?.warnings ?? []), ...(runtime?.lastError ? [runtime.lastError.message] : [])],
+      warnings,
     };
   });
 }
