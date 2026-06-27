@@ -861,6 +861,30 @@ Capability Registry instead of only through separate renderer settings panels.
 - TDD check: focused natural planner test failed first with no action for
   `노션 연결 카드 열어줘`, then passed after implementation with 21/21 tests.
 
+## Current Natural Connection Readback Actions Slice
+
+- Add deterministic natural-language routing for clear Connection Center
+  readback requests before provider execution.
+- `연결 상태 보여줘` maps to `xd.xenesis.connections.status`.
+- `노션 연결 진단 보여줘` maps to
+  `xd.xenesis.connections.diagnostics.status` with `id=notion`.
+- `구글 캘린더 OAuth 상태 보여줘` maps to
+  `xd.xenesis.tools.oauthDrafts.status` with `id=google-calendar`.
+- `텔레그램 라우팅 상태 보여줘` maps to
+  `xd.xenesis.channels.routing.status` with `channel=telegram`.
+- Readback intent is intentionally narrower than open/show intent:
+  `구글 캘린더 OAuth 초안 보여줘` still opens
+  `xd.xenesis.tools.oauthDrafts.open` instead of reading status.
+- This is deterministic routing, not agent reasoning. It emits existing
+  read-only CR actions only and does not mutate settings, execute external
+  tools, send messages, complete OAuth, or add registry nodes.
+- External documentation handling: no per-slice web browsing. Use local
+  Obsidian/docs/handoff/code/tests as the gap map; refresh external docs only
+  as a batched documentation pass if needed.
+- TDD check: focused natural planner test failed first with `연결 상태 보여줘`
+  falling through to generic `xd.app.status`, then passed after implementation
+  with 22/22 tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

@@ -598,6 +598,48 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center requests to C
   ]);
 });
 
+test('planXenesisDeskNaturalLanguageActions maps Connection Center readback requests to CR actions', () => {
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('연결 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-connections-status',
+      path: 'xd.xenesis.connections.status',
+      args: {},
+      approved: false,
+      reason: 'Read Xenesis connection status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 연결 진단 보여줘').actions, [
+    {
+      id: 'natural-xenesis-connection-diagnostics-status-notion',
+      path: 'xd.xenesis.connections.diagnostics.status',
+      args: { id: 'notion' },
+      approved: false,
+      reason: 'Read Notion connection diagnostics from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('구글 캘린더 OAuth 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-tool-oauth-draft-status-google-calendar',
+      path: 'xd.xenesis.tools.oauthDrafts.status',
+      args: { id: 'google-calendar' },
+      approved: false,
+      reason: 'Read Google Calendar OAuth draft status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('텔레그램 라우팅 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-channel-routing-status-telegram',
+      path: 'xd.xenesis.channels.routing.status',
+      args: { channel: 'telegram' },
+      approved: false,
+      reason: 'Read Telegram channel routing status from natural language request.',
+    },
+  ]);
+});
+
 test('buildXenesisDeskControlPromptHint describes settings files capture and layout control', () => {
   const hint = buildXenesisDeskControlPromptHint();
 

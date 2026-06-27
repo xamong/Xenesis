@@ -129,10 +129,18 @@ function hasActionIntent(value: string): boolean {
     'select',
     'filter',
     'refresh',
+    '확인',
+    '상태',
+    '진단',
+    '라우팅',
     'focus',
     'close',
     'width',
     'height',
+    'status',
+    'diagnostic',
+    'diagnostics',
+    'routing',
     'terminal',
     'pane',
   ]);
@@ -450,6 +458,122 @@ function xenesisGuideActionFromNaturalText(value: string): XenesisDeskActionRequ
   );
 }
 
+function hasXenesisConnectionReadbackIntent(value: string): boolean {
+  return hasAny(value, [
+    '상태',
+    'status',
+    '확인',
+    'inspect',
+    '진단',
+    'diagnostic',
+    'diagnostics',
+    '라우팅',
+    'routing',
+    '안전',
+    'safety',
+  ]);
+}
+
+function hasXenesisConnectionContext(value: string): boolean {
+  return hasAny(value, [
+    '연결',
+    'connection',
+    'connections',
+    'connection center',
+    '도구',
+    'tool',
+    '메신저',
+    'messenger',
+    '채널',
+    'channel',
+    'oauth',
+    '오어스',
+  ]);
+}
+
+function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
+  if (!hasXenesisConnectionReadbackIntent(value)) return null;
+
+  const target = xenesisConnectionTargetFromNaturalText(value);
+  if (target) {
+    if (hasAny(value, ['진단', 'diagnostic', 'diagnostics'])) {
+      return naturalAction(
+        `natural-xenesis-connection-diagnostics-status-${target.id}`,
+        'xd.xenesis.connections.diagnostics.status',
+        { id: target.id },
+        `Read ${target.label} connection diagnostics from natural language request.`,
+      );
+    }
+
+    if (
+      target.kind === 'tool' &&
+      (target.id === 'google-calendar' || target.id === 'google-workspace') &&
+      hasAny(value, ['oauth', '오어스', '인증', 'token', '토큰'])
+    ) {
+      return naturalAction(
+        `natural-xenesis-tool-oauth-draft-status-${target.id}`,
+        'xd.xenesis.tools.oauthDrafts.status',
+        { id: target.id },
+        `Read ${target.label} OAuth draft status from natural language request.`,
+      );
+    }
+
+    if (target.kind === 'messenger' && hasAny(value, ['라우팅', 'routing', 'route'])) {
+      return naturalAction(
+        `natural-xenesis-channel-routing-status-${target.id}`,
+        'xd.xenesis.channels.routing.status',
+        { channel: target.id },
+        `Read ${target.label} channel routing status from natural language request.`,
+      );
+    }
+
+    if (target.kind === 'messenger' && hasAny(value, ['안전', 'safety', '가드레일', 'guardrail'])) {
+      return naturalAction(
+        `natural-xenesis-channel-safety-status-${target.id}`,
+        'xd.xenesis.channels.safety.status',
+        { channel: target.id },
+        `Read ${target.label} channel safety status from natural language request.`,
+      );
+    }
+
+    return naturalAction(
+      `natural-xenesis-connection-diagnostics-status-${target.id}`,
+      'xd.xenesis.connections.diagnostics.status',
+      { id: target.id },
+      `Read ${target.label} connection diagnostics from natural language request.`,
+    );
+  }
+
+  if (hasAny(value, ['온보딩', 'onboarding'])) {
+    return naturalAction(
+      'natural-xenesis-onboarding-status',
+      'xd.xenesis.onboarding.status',
+      {},
+      'Read Xenesis onboarding status from natural language request.',
+    );
+  }
+
+  if (hasAny(value, ['가이드', 'guide', '문서', 'playbook', '플레이북'])) {
+    return naturalAction(
+      'natural-xenesis-guides-status',
+      'xd.xenesis.guides.status',
+      {},
+      'Read Xenesis guide catalog status from natural language request.',
+    );
+  }
+
+  if (hasXenesisConnectionContext(value)) {
+    return naturalAction(
+      'natural-xenesis-connections-status',
+      'xd.xenesis.connections.status',
+      {},
+      'Read Xenesis connection status from natural language request.',
+    );
+  }
+
+  return null;
+}
+
 function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
   const guideAction = xenesisGuideActionFromNaturalText(value);
   if (guideAction) return guideAction;
@@ -507,6 +631,11 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
   if (!value || !hasActionIntent(value)) return emptyNaturalPlan();
 
   const placement = detectPlacement(value);
+
+  const xenesisConnectionReadbackAction = xenesisConnectionReadbackActionFromNaturalText(value);
+  if (xenesisConnectionReadbackAction) {
+    return naturalPlan('Xenesis 연결 상태를 조회합니다.', [xenesisConnectionReadbackAction]);
+  }
 
   const xenesisConnectionAction = xenesisConnectionActionFromNaturalText(value);
   if (xenesisConnectionAction && hasAny(value, ['열어', '켜줘', '띄워', '보여', 'open', 'show'])) {
