@@ -1022,6 +1022,10 @@ export const XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS = {
 } as const;
 
 export const XENESIS_NATURAL_DESK_ACTION_ARGS = {
+  agentId: (agentId: string) => ({ agentId }),
+  agentSubmit: (agentId: string, text: string) => ({ agentId, text }),
+  channel: (channel: string) => ({ channel }),
+  channelVisible: (channel: string) => ({ channel, ensureVisible: true }),
   dockPaneArrange: (mode: string) => ({ useActive: true, mode }),
   dockSize: (side: string, size: number) => ({ [side]: size }),
   dockWindowArrange: (windowState: string | undefined, mode: string) => ({
@@ -1029,13 +1033,24 @@ export const XENESIS_NATURAL_DESK_ACTION_ARGS = {
     mode,
   }),
   empty: () => ({}),
+  ensureVisible: () => ({ ensureVisible: true }),
   explorerPath: (path: string) => ({ path }),
   filterQuery: (query: string) => ({ query }),
+  openFileVisible: (id: string, openFile: boolean) => ({
+    id,
+    ensureVisible: true,
+    ...(openFile ? { openFile: true } : {}),
+  }),
   optionalFilePath: (filePath: string) => (filePath ? { filePath } : {}),
   placement: (placement: string | undefined) => ({
     placement: placement || XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS.placement,
   }),
+  prompt: (prompt: string) => ({ prompt }),
+  provider: (provider: string) => ({ provider }),
+  providerVisible: (provider: string) => ({ provider, ensureVisible: true }),
   presetId: (presetId: string) => ({ presetId }),
+  targetId: (id: string) => ({ id }),
+  targetIdVisible: (id: string) => ({ id, ensureVisible: true }),
   terminalMany: (count: number, placement: string | undefined) => ({
     count,
     shell: XENESIS_NATURAL_DEFAULT_TERMINAL_SHELL,
@@ -1048,12 +1063,15 @@ export const XENESIS_NATURAL_DESK_ACTION_ARGS = {
     shell: XENESIS_NATURAL_DEFAULT_TERMINAL_SHELL,
     placement: placement || XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS.placement,
   }),
+  tool: (tool: string) => ({ tool }),
+  toolVisible: (tool: string) => ({ tool, ensureVisible: true }),
   useActive: () => ({ useActive: true }),
   viewKind: (kind: string) => ({ kind }),
   withPlacement: (args: Record<string, unknown>, placement: string | undefined) => ({
     ...args,
     placement: placement || XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS.placement,
   }),
+  workspacePath: (path: string) => ({ path }),
 } as const;
 
 export const XENESIS_NATURAL_VIEW_OPEN_PATH = 'xd.views.open';

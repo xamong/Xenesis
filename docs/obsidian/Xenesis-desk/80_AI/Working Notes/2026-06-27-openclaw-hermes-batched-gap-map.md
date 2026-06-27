@@ -2154,6 +2154,45 @@
 - External documentation handling: no browsing. This update used the cached gap
   map, repo-local Obsidian graph, source code, and tests.
 
+## Connection Action Args Catalog Refactor Slice
+
+- Removed representative connection/open/review/runtime action arg-shape
+  hardcoding from `xenesisAgentDeskControl.ts`.
+- Extended `XENESIS_NATURAL_DESK_ACTION_ARGS` in
+  `src/shared/xenesisNaturalLanguageCatalog.ts` with builders for:
+  - `ensureVisible`, target id, visible target id, tool, channel, visible
+    channel, provider, visible provider, guide open-file args, agent id, agent
+    submit, prompt, and workspace path.
+- The planner now consumes shared arg builders in guide, onboarding, Connection
+  Center readback/open, review request, provider open, and runtime control
+  branches.
+- Scope boundary: refactor only. This preserved generated CR paths, target
+  matching, route order, exact arg object shapes, approval behavior, and result
+  summaries.
+- Verification:
+  - RED planner source guard failed first because `ensureVisible: true` and
+    related connection/open/review arg shapes still lived directly in the
+    planner.
+  - Initial GREEN run exposed a regression: guide open/file args lost the
+    existing guide `id`. The builder was corrected to preserve
+    `{ id, ensureVisible, openFile? }`.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 36/36 tests after correction.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 100/100 tests.
+  - `npx biome check src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --max-diagnostics 40`
+    passed.
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit` passed with Registered nodes 763,
+    Callable methods 468, Dispatcher paths 448, missing registered paths 0,
+    missing dispatched coverage paths 0, undispatched static callable methods
+    0, and dispatcher paths missing from tree 0. The generated audit file was
+    removed afterward.
+- Known gap: live Electron Agent-pane smoke was not run for this refactor-only
+  slice.
+- External documentation handling: no browsing. This update used the cached gap
+  map, repo-local Obsidian graph, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

@@ -330,6 +330,23 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.equal(XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS.placement, 'tab');
   assert.equal(XENESIS_NATURAL_DESK_ACTION_ARGS.useActive().useActive, true);
   assert.deepEqual(XENESIS_NATURAL_DESK_ACTION_ARGS.optionalFilePath('README.md'), { filePath: 'README.md' });
+  assert.doesNotMatch(source, /ensureVisible: true/);
+  assert.doesNotMatch(source, /naturalTemplateAction\([\s\S]{0,200}\{\s*id: target\.id/);
+  assert.doesNotMatch(source, /naturalTemplateAction\([\s\S]{0,200}\{\s*id: guide\.id/);
+  assert.doesNotMatch(source, /naturalTemplateAction\([\s\S]{0,200}\{\s*id: step\.id/);
+  assert.doesNotMatch(source, /naturalTemplateAction\([\s\S]{0,200}\{\s*tool: target\.id/);
+  assert.doesNotMatch(source, /naturalTemplateAction\([\s\S]{0,200}\{\s*channel: target\.id/);
+  assert.doesNotMatch(source, /\{ provider: provider\.id \}/);
+  assert.doesNotMatch(source, /\{ agentId \}/);
+  assert.doesNotMatch(source, /\{ agentId, text \}/);
+  assert.doesNotMatch(source, /\{ prompt \}/);
+  assert.doesNotMatch(source, /workspaceSet, \{ path \}/);
+  assert.equal(XENESIS_NATURAL_DESK_ACTION_ARGS.ensureVisible().ensureVisible, true);
+  assert.deepEqual(XENESIS_NATURAL_DESK_ACTION_ARGS.targetIdVisible('telegram'), {
+    id: 'telegram',
+    ensureVisible: true,
+  });
+  assert.deepEqual(XENESIS_NATURAL_DESK_ACTION_ARGS.channel('telegram'), { channel: 'telegram' });
   assert.match(source, /isXenesisNaturalConnectionToolTarget/);
   assert.match(source, /isXenesisNaturalConnectionMessengerTarget/);
   assert.match(source, /isXenesisNaturalPlannedGoogleToolTarget/);
