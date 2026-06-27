@@ -2,6 +2,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
+  XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES,
+  XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES,
+  XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES,
+  XENESIS_DESK_CONTROL_PROMPT_HINT_CONNECTION_CENTER_DISCOVERY_PREFIX,
   XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS,
   XENESIS_NATURAL_ACTION_INTENT_WORDS,
   XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS,
@@ -231,6 +235,26 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.equal(XENESIS_NATURAL_TERMINAL_CONTEXT_WORDS.includes('shell'), true);
   assert.equal(XENESIS_NATURAL_PANE_CONTEXT_WORDS.includes('pane'), true);
   assert.equal(XENESIS_NATURAL_GENERIC_CLOSE_CONTEXT_WORDS.includes('close'), true);
+  assert.match(source, /XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES/);
+  assert.match(source, /XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES/);
+  assert.match(source, /XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES/);
+  assert.doesNotMatch(source, /const XENESIS_CONNECTION_CENTER_HINT_PREFIXES = \[/);
+  assert.doesNotMatch(source, /Native Xenesis Desk Capability Registry control:/);
+  assert.doesNotMatch(source, /Common natural Desk requests map to Capability Registry paths/);
+  assert.doesNotMatch(source, /Open a right-side terminal example:/);
+  assert.equal(
+    XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES[0],
+    'Native Xenesis Desk Capability Registry control:',
+  );
+  assert.equal(
+    XENESIS_DESK_CONTROL_PROMPT_HINT_CONNECTION_CENTER_DISCOVERY_PREFIX,
+    '- Connection Center CR paths discovered from Capability Registry: ',
+  );
+  assert.equal(XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES.includes('xd.xenesis.connections'), true);
+  assert.equal(
+    XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES.includes('Open a right-side terminal example:'),
+    true,
+  );
   assert.match(source, /XENESIS_NATURAL_PLACEMENT_TARGETS/);
   assert.match(source, /XENESIS_NATURAL_DOCK_SIDE_TARGETS/);
   assert.match(source, /XENESIS_NATURAL_DOCK_WINDOW_STATE_TARGETS/);

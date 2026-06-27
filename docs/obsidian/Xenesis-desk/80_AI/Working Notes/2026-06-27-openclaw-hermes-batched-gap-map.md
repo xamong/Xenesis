@@ -1415,6 +1415,43 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local Obsidian graph, source code, and tests.
 
+## Prompt Hint Catalog Refactor Slice
+
+- Removed static Xenesis Desk control prompt hint strings, example
+  `xenesis-desk-action` blocks, and Connection Center hint prefixes from
+  `xenesisAgentDeskControl.ts`.
+- Added shared prompt hint constants to
+  `src/shared/xenesisNaturalLanguageCatalog.ts`:
+  - `XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES`
+  - `XENESIS_DESK_CONTROL_PROMPT_HINT_CONNECTION_CENTER_DISCOVERY_PREFIX`
+  - `XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES`
+  - `XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES`
+- The planner now assembles the hint from shared constants plus live
+  Capability Registry path summaries, preserving existing rendered hint
+  content and dynamic CR discovery behavior.
+- Added source-level guards so representative prompt text and the old inline
+  prefix array cannot be reintroduced into the planner.
+- Verification:
+  - RED planner test failed first because the planner did not yet reference
+    `XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES`.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 36/36 tests after implementation.
+  - `npx biome format --write src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    formatted 3 files with no fixes applied.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 100/100 tests.
+  - `npx biome check src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --max-diagnostics 40`
+    passed.
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit` passed with Registered nodes 763,
+    Callable methods 468, Dispatcher paths 448, missing registered paths 0,
+    missing dispatched coverage paths 0, undispatched static callable methods
+    0, and dispatcher paths missing from tree 0. The generated audit file was
+    removed afterward.
+  - `git diff --check` exited 0 with line-ending warnings only.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local Obsidian graph, source code, and tests.
+
 ## Generic Desk Vocabulary Refactor Slice
 
 - Removed remaining generic Desk-control word lists from
