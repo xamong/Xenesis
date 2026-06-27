@@ -99,6 +99,20 @@ export interface XenesisConnectionProviderSetupTemplate {
   riskControls: string[];
 }
 
+export interface XenesisConnectionProviderViewTemplate {
+  viewType: 'provider-detail';
+  primarySurface: string;
+  setupSurface: string;
+  openPath: 'xd.xenesis.providers.views.open';
+  openArgs: { provider: string };
+  connectionCardId: string;
+  internalViews: string[];
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  safetyBoundaries: string[];
+}
+
 export interface XenesisConnectionChannelTemplate {
   category: 'consumer' | 'enterprise' | 'developer' | 'community' | 'regional' | 'iot';
   adapter: string;
@@ -151,6 +165,7 @@ export interface XenesisConnectionItem {
   guideOpenPath?: string;
   mcpTemplate?: XenesisConnectionMcpTemplate;
   providerSetup?: XenesisConnectionProviderSetupTemplate;
+  providerView?: XenesisConnectionProviderViewTemplate;
   toolSetup?: XenesisConnectionToolSetupTemplate;
   toolView?: XenesisConnectionToolViewTemplate;
   messengerView?: XenesisConnectionMessengerViewTemplate;
@@ -1260,6 +1275,32 @@ function providerSetupTemplate(
   };
 }
 
+function providerViewTemplate(provider: string): XenesisConnectionProviderViewTemplate {
+  return {
+    viewType: 'provider-detail',
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    setupSurface: 'Settings > AI Provider',
+    openPath: 'xd.xenesis.providers.views.open',
+    openArgs: { provider },
+    connectionCardId: `provider-${provider}`,
+    internalViews: ['connection-card', 'provider-setup', 'provider-runtime', 'fallback-policy', 'credential-boundary'],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.providers.setup.status',
+      'xd.xenesis.providers.views.status',
+      'xd.xenesis.status',
+    ],
+    controlPaths: ['xd.xenesis.providers.views.open', 'xd.xenesis.connections.open', 'xd.panes.settings.open'],
+    diagnostics: ['provider-footer', 'work-log-provider', 'credential-state', 'runtime-profile', 'fallback-policy'],
+    safetyBoundaries: [
+      'provider view opens internal setup/readiness surfaces only',
+      'provider identity comes from user settings and profile',
+      'local CLI selection remains separate from provider identity',
+      'missing keyed-provider credentials must not silently fall back',
+    ],
+  };
+}
+
 function providerItem(
   aiProvider: BuildXenesisConnectionsStatusInput['aiProvider'],
   xenesis: XenesisStatus | null,
@@ -1288,6 +1329,7 @@ function providerItem(
     settingsTarget: 'run-model',
     settingsAction: { category: 'run-model', section: 'default' },
     providerSetup: providerSetupTemplate(aiProvider, xenesis),
+    providerView: providerViewTemplate(aiProvider.provider),
     setupSteps: [
       'Choose the provider in AI Provider settings.',
       'Set a model and credential only when the selected provider requires them.',

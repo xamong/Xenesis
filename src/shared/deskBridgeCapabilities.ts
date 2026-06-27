@@ -358,31 +358,86 @@ const XENESIS_TOOL_VIEW_OPEN_SCHEMA = {
   },
 } as const;
 
+const XENESIS_PROVIDER_IDS = [
+  'auto',
+  'openai',
+  'anthropic',
+  'gemini',
+  'groq',
+  'deepseek',
+  'qwen',
+  'ollama',
+  'lmstudio',
+  'together',
+  'fireworks',
+  'azure',
+  'codex-cli',
+  'codex-app-server',
+  'claude-cli',
+  'claude-interactive',
+] as const;
+
 const XENESIS_PROVIDER_SETUP_STATUS_SCHEMA = {
   type: 'object',
   properties: {
     provider: {
       type: 'string',
       title: 'Provider',
-      enum: [
-        'auto',
-        'openai',
-        'anthropic',
-        'gemini',
-        'groq',
-        'deepseek',
-        'qwen',
-        'ollama',
-        'lmstudio',
-        'together',
-        'fireworks',
-        'azure',
-        'codex-cli',
-        'codex-app-server',
-        'claude-cli',
-        'claude-interactive',
-      ],
+      enum: XENESIS_PROVIDER_IDS,
       description: 'Optional active provider id to filter.',
+    },
+  },
+} as const;
+
+const XENESIS_PROVIDER_VIEW_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    provider: {
+      type: 'string',
+      title: 'Provider',
+      enum: XENESIS_PROVIDER_IDS,
+      description: 'Optional active provider id to filter.',
+    },
+    id: {
+      type: 'string',
+      title: 'Provider card id',
+      description: 'Alias for provider card id, such as provider-codex-app-server.',
+    },
+    name: {
+      type: 'string',
+      title: 'Provider',
+      enum: XENESIS_PROVIDER_IDS,
+      description: 'Alias for provider.',
+    },
+  },
+} as const;
+
+const XENESIS_PROVIDER_VIEW_OPEN_SCHEMA = {
+  type: 'object',
+  required: ['provider'],
+  properties: {
+    provider: {
+      type: 'string',
+      title: 'Provider',
+      enum: XENESIS_PROVIDER_IDS,
+      description: 'Active provider id to open in the internal Desk Connection Center view.',
+    },
+    id: {
+      type: 'string',
+      title: 'Provider card id',
+      description: 'Alias for provider card id, such as provider-codex-app-server.',
+    },
+    name: {
+      type: 'string',
+      title: 'Provider',
+      enum: XENESIS_PROVIDER_IDS,
+      description: 'Alias for provider.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused provider connection card into view after opening the Connection Center.',
+      default: true,
     },
   },
 } as const;
@@ -654,6 +709,8 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisMessengerViewsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisMessengerView?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisProviderSetupStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisProviderViewsStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisProviderView?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisDiagnostics?: () => Promise<unknown> | unknown;
   openXenesisTui?: (args: unknown) => Promise<unknown> | unknown;
   listXenesisReports?: (args: unknown) => Promise<unknown> | unknown;
@@ -3668,6 +3725,22 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             'Read provider identity, model, auth mode, credential state, endpoint, runtime profile, retry/fallback policy, verification, CR readback, and risk controls for the active Xenesis AI provider.',
             'read',
             XENESIS_PROVIDER_SETUP_STATUS_SCHEMA,
+          ),
+        ]),
+        group('xd.xenesis.providers.views', 'Views', 'Internal Desk views for AI provider setup and readiness.', [
+          method(
+            'xd.xenesis.providers.views.status',
+            'Read provider view status',
+            'Read internal Desk view surfaces, CR open/read paths, diagnostics, and safety boundaries for the active Xenesis AI provider.',
+            'read',
+            XENESIS_PROVIDER_VIEW_STATUS_SCHEMA,
+          ),
+          method(
+            'xd.xenesis.providers.views.open',
+            'Open provider view',
+            'Open Settings > Xenesis Agent > Connections and focus the active AI provider connection card inside Desk.',
+            'control',
+            XENESIS_PROVIDER_VIEW_OPEN_SCHEMA,
           ),
         ]),
       ]),
@@ -9951,6 +10024,12 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.providers.setup.status') {
         return callAdapter(path, api?.getXenesisProviderSetupStatus, request.args);
+      }
+      if (path === 'xd.xenesis.providers.views.status') {
+        return callAdapter(path, api?.getXenesisProviderViewsStatus, request.args);
+      }
+      if (path === 'xd.xenesis.providers.views.open') {
+        return callAdapter(path, api?.openXenesisProviderView, request.args);
       }
       if (path === 'xd.xenesis.gateway.status') {
         return callAdapter(path, api?.getXenesisStatus);

@@ -5187,6 +5187,103 @@ async function getXenesisProviderSetupStatus(args?: unknown): Promise<Record<str
   };
 }
 
+function xenesisProviderViewStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    provider: item.providerSetup?.provider,
+    providerSetup: item.providerSetup,
+    viewType: item.providerView?.viewType,
+    primarySurface: item.providerView?.primarySurface,
+    setupSurface: item.providerView?.setupSurface,
+    openPath: item.providerView?.openPath,
+    openArgs: item.providerView?.openArgs,
+    connectionCardId: item.providerView?.connectionCardId,
+    internalViews: item.providerView?.internalViews ?? [],
+    readPaths: item.providerView?.readPaths ?? [],
+    controlPaths: item.providerView?.controlPaths ?? [],
+    diagnostics: item.providerView?.diagnostics ?? [],
+    safetyBoundaries: item.providerView?.safetyBoundaries ?? [],
+    providerView: item.providerView,
+    settingsAction: item.settingsAction,
+    warnings: item.warnings ?? [],
+  };
+}
+
+function isXenesisProviderViewSelector(provider: string): boolean {
+  return isXenesisProviderSetupId(provider) || provider.startsWith('provider-');
+}
+
+async function getXenesisProviderViewsStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const provider = readCapabilityString(body, ['provider', 'id', 'name']);
+  if (provider && !isXenesisProviderViewSelector(provider)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis provider: ${provider}`,
+      allowedProviders: XENESIS_PROVIDER_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.provider.items
+    .filter((item) => item.providerView)
+    .filter((item) => !provider || item.providerSetup?.provider === provider || item.id === provider)
+    .map((item) => xenesisProviderViewStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(provider ? { provider } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisProviderView(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const provider = readCapabilityString(body, ['provider', 'id', 'name']);
+  if (!provider) {
+    return { ok: false, error: 'Provider is required.' };
+  }
+  if (!isXenesisProviderViewSelector(provider)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis provider: ${provider}`,
+      allowedProviders: XENESIS_PROVIDER_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.provider.items.find(
+    (candidate) =>
+      Boolean(candidate.providerView) && (candidate.providerSetup?.provider === provider || candidate.id === provider),
+  );
+  if (!item) {
+    return { ok: false, provider, error: `Xenesis provider view is not available: ${provider}` };
+  }
+
+  const renderer = await openMcpBuiltinPaneCapability({
+    kind: 'settings',
+    category: 'xenesis-agent',
+    mode: 'connections',
+    section: 'xenesis-connections',
+    focusConnectionId: item.id,
+    ensureVisible: body.ensureVisible !== false,
+  });
+
+  return {
+    ok: renderer.ok !== false,
+    provider: item.providerSetup?.provider,
+    id: item.id,
+    item: xenesisProviderViewStatusItem(item),
+    renderer,
+  };
+}
+
 function getProviderIntegrationAssetRoot(): string {
   if (app.isPackaged) {
     return path.join(process.resourcesPath, 'provider-assets');
@@ -12115,6 +12212,8 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisMessengerViewsStatus: (args: unknown) => getXenesisMessengerViewsStatus(args),
     openXenesisMessengerView: (args: unknown) => openXenesisMessengerView(args),
     getXenesisProviderSetupStatus: (args: unknown) => getXenesisProviderSetupStatus(args),
+    getXenesisProviderViewsStatus: (args: unknown) => getXenesisProviderViewsStatus(args),
+    openXenesisProviderView: (args: unknown) => openXenesisProviderView(args),
     getXenesisDiagnostics: () => getXenesisOperationalDiagnostics().then((diagnostics) => ({ ok: true, diagnostics })),
     listXenesisReports: (args: unknown) =>
       listXenesisReports(

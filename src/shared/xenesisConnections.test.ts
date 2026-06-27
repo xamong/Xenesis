@@ -694,6 +694,60 @@ test('buildXenesisConnectionsStatus exposes provider setup identity, credential 
   });
 });
 
+test('buildXenesisConnectionsStatus exposes an internal Desk provider view', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  assert.deepEqual(status.sections.provider.items[0].providerView, {
+    viewType: 'provider-detail',
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    setupSurface: 'Settings > AI Provider',
+    openPath: 'xd.xenesis.providers.views.open',
+    openArgs: { provider: 'codex-app-server' },
+    connectionCardId: 'provider-codex-app-server',
+    internalViews: ['connection-card', 'provider-setup', 'provider-runtime', 'fallback-policy', 'credential-boundary'],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.providers.setup.status',
+      'xd.xenesis.providers.views.status',
+      'xd.xenesis.status',
+    ],
+    controlPaths: ['xd.xenesis.providers.views.open', 'xd.xenesis.connections.open', 'xd.panes.settings.open'],
+    diagnostics: ['provider-footer', 'work-log-provider', 'credential-state', 'runtime-profile', 'fallback-policy'],
+    safetyBoundaries: [
+      'provider view opens internal setup/readiness surfaces only',
+      'provider identity comes from user settings and profile',
+      'local CLI selection remains separate from provider identity',
+      'missing keyed-provider credentials must not silently fall back',
+    ],
+  });
+});
+
 test('buildXenesisConnectionsStatus exposes an OpenClaw-style messenger channel catalog', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {

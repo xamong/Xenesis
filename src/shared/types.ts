@@ -8,6 +8,7 @@ export type {
   XenesisConnectionMcpTemplate,
   XenesisConnectionMessengerViewTemplate,
   XenesisConnectionProviderSetupTemplate,
+  XenesisConnectionProviderViewTemplate,
   XenesisConnectionSection,
   XenesisConnectionStatus,
   XenesisConnectionsStatus,

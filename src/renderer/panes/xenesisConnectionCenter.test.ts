@@ -8,6 +8,7 @@ import {
   formatXenesisChannelRoutingSummary,
   formatXenesisMessengerViewSummary,
   formatXenesisProviderSetupSummary,
+  formatXenesisProviderViewSummary,
   formatXenesisToolSetupSummary,
   formatXenesisToolViewSummary,
   listXenesisConnectionSections,
@@ -193,6 +194,25 @@ test('formatXenesisProviderSetupSummary describes provider, model, and auth mode
       ],
     }),
     'codex-app-server / gpt-5-codex / local-login',
+  );
+});
+
+test('formatXenesisProviderViewSummary describes internal Desk provider view surface and type', () => {
+  assert.equal(
+    formatXenesisProviderViewSummary({
+      viewType: 'provider-detail',
+      primarySurface: 'Settings > Xenesis Agent > Connections',
+      setupSurface: 'Settings > AI Provider',
+      openPath: 'xd.xenesis.providers.views.open',
+      openArgs: { provider: 'codex-app-server' },
+      connectionCardId: 'provider-codex-app-server',
+      internalViews: ['connection-card', 'provider-setup', 'provider-runtime'],
+      readPaths: ['xd.xenesis.connections.status'],
+      controlPaths: ['xd.xenesis.providers.views.open'],
+      diagnostics: ['provider-footer'],
+      safetyBoundaries: ['provider view opens internal setup/readiness surfaces only'],
+    }),
+    'Settings > Xenesis Agent > Connections / provider-detail',
   );
 });
 

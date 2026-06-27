@@ -91,6 +91,7 @@ import {
   formatXenesisChannelRoutingSummary,
   formatXenesisMessengerViewSummary,
   formatXenesisProviderSetupSummary,
+  formatXenesisProviderViewSummary,
   formatXenesisToolSetupSummary,
   formatXenesisToolViewSummary,
   listXenesisConnectionSections,
@@ -4254,6 +4255,7 @@ export default function SettingsPane() {
     const guideRequest = buildXenesisConnectionGuideRequest(item);
     const mcpTemplate = item.mcpTemplate;
     const providerSetup = item.providerSetup;
+    const providerView = item.providerView;
     const toolSetup = item.toolSetup;
     const toolView = item.toolView;
     const messengerView = item.messengerView;
@@ -4396,6 +4398,44 @@ export default function SettingsPane() {
             <div>
               <span>{t('settings.xenesisConnectionsProviderRiskControls')}</span>
               <strong>{providerSetup.riskControls.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {providerView ? (
+          <div className="sp-info-list sp-info-list-compact" data-xenesis-provider-view={item.id}>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderView')}</span>
+              <strong>{formatXenesisProviderViewSummary(providerView)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderViewSetupSurface')}</span>
+              <strong>{providerView.setupSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderViewOpen')}</span>
+              <strong>
+                {providerView.openPath} {JSON.stringify(providerView.openArgs)}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderViewInternalViews')}</span>
+              <strong>{providerView.internalViews.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderViewReadback')}</span>
+              <strong>{providerView.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderViewControls')}</span>
+              <strong>{providerView.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderViewDiagnostics')}</span>
+              <strong>{providerView.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderViewSafety')}</span>
+              <strong>{providerView.safetyBoundaries.join(', ')}</strong>
             </div>
           </div>
         ) : null}

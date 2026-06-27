@@ -335,6 +335,66 @@ test('xenesis provider setup status capability is registered and dispatches to t
   });
 });
 
+test('xenesis provider view capabilities are registered and dispatch to the adapter', async () => {
+  const statusCapability = findDeskBridgeCapability('xd.xenesis.providers.views.status');
+  const openCapability = findDeskBridgeCapability('xd.xenesis.providers.views.open');
+  const statusSchemaProperties = (statusCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
+  assert.equal(statusCapability?.permission, 'read');
+  assert.equal(statusCapability?.approval, 'never');
+  assert.equal(openCapability?.permission, 'control');
+  assert.equal(openCapability?.approval, 'never');
+  assert.deepEqual(openCapability?.schema?.required, ['provider']);
+  for (const provider of ['auto', 'openai', 'codex-app-server', 'codex-cli', 'ollama']) {
+    assert.equal(statusSchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
+    assert.equal(openSchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
+  }
+
+  const calls: Array<{ method: string; args: unknown }> = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisProviderViewsStatus: (args) => {
+      calls.push({ method: 'status', args });
+      return {
+        ok: true,
+        items: [{ id: 'provider-codex-app-server' }],
+      };
+    },
+    openXenesisProviderView: (args) => {
+      calls.push({ method: 'open', args });
+      return {
+        ok: true,
+        item: { id: 'provider-codex-app-server' },
+      };
+    },
+  };
+
+  const statusResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.providers.views.status',
+    args: { provider: 'codex-app-server' },
+    source: 'xenesis',
+  });
+  const openResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.providers.views.open',
+    args: { provider: 'codex-app-server' },
+    source: 'xenesis',
+  });
+
+  assert.equal(statusResult.ok, true);
+  assert.equal(openResult.ok, true);
+  assert.deepEqual(calls, [
+    { method: 'status', args: { provider: 'codex-app-server' } },
+    { method: 'open', args: { provider: 'codex-app-server' } },
+  ]);
+  assert.deepEqual(statusResult.result, {
+    ok: true,
+    items: [{ id: 'provider-codex-app-server' }],
+  });
+  assert.deepEqual(openResult.result, {
+    ok: true,
+    item: { id: 'provider-codex-app-server' },
+  });
+});
+
 test('xenesis profile channel capabilities expose implemented guardrail fields', () => {
   const updateSchema = findDeskBridgeCapability('xd.xenesis.profiles.updateChannels')?.schema;
   const testSchema = findDeskBridgeCapability('xd.xenesis.profiles.testChannel')?.schema;

@@ -4,6 +4,7 @@ import type {
   XenesisConnectionItem,
   XenesisConnectionMessengerViewTemplate,
   XenesisConnectionProviderSetupTemplate,
+  XenesisConnectionProviderViewTemplate,
   XenesisConnectionSection,
   XenesisConnectionStatus,
   XenesisConnectionsStatus,
@@ -59,6 +60,10 @@ export function formatXenesisChannelRoutingSummary(routing: XenesisConnectionCha
 
 export function formatXenesisProviderSetupSummary(setup: XenesisConnectionProviderSetupTemplate): string {
   return `${setup.provider} / ${setup.model} / ${setup.authMode}`;
+}
+
+export function formatXenesisProviderViewSummary(view: XenesisConnectionProviderViewTemplate): string {
+  return `${view.primarySurface} / ${view.viewType}`;
 }
 
 export function formatXenesisToolSetupSummary(setup: XenesisConnectionToolSetupTemplate): string {

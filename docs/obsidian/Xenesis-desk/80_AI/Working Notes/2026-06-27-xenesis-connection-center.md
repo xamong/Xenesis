@@ -287,6 +287,28 @@ Capability Registry instead of only through separate renderer settings panels.
   first for missing provider setup metadata/path/helper, then the combined
   targeted run passed with 26/26 tests.
 
+## Current Provider Views Slice
+
+- Add `providerView` metadata to the active provider card in
+  `xd.xenesis.connections.status`.
+- Add `xd.xenesis.providers.views.status` as a read/no-approval CR path for
+  internal Desk provider view surfaces, setup surface, CR open/read/control
+  paths, diagnostics, and safety boundaries.
+- Add `xd.xenesis.providers.views.open` as a control/no-approval CR path that
+  opens Settings > Xenesis Agent > Connections and focuses the active provider
+  card.
+- Settings renders the same read model with
+  `data-xenesis-provider-view="<provider-card-id>"` for live smoke and agent
+  readback.
+- This slice is setup/readiness visibility only. It does not mutate provider
+  selection, credentials, model selection, runtime routing, fallback policy, or
+  local CLI behavior.
+- `npx tsx --test src\shared\xenesisConnections.test.ts`,
+  `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts`, and
+  `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` failed
+  first for missing provider view metadata/path/helper, then the combined
+  targeted run passed with 35/35 tests.
+
 ## Current External Tool Views Slice
 
 - Add `toolView` metadata to Fetch, Filesystem, GitHub, Notion, Linear, Google

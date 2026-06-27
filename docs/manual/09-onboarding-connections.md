@@ -75,6 +75,13 @@ endpoint, runtime profile, retry/fallback policy, local CLI boundary, verificati
 steps, CR readback paths, and risk controls. It reports whether credentials are
 configured or missing without serializing API keys or bridge tokens.
 
+The same provider card exposes a `providerView` read model for the internal Desk
+surface. Use `xd.xenesis.providers.views.status` to inspect the view metadata and
+`xd.xenesis.providers.views.open` to open Settings > Xenesis Agent > Connections
+focused on the active provider card. Provider views are setup/readiness surfaces
+only: they do not mutate provider selection, model selection, credentials,
+runtime routing, or fallback policy.
+
 ## MCP And Tool Connections
 
 The Connection Center shows MCP readiness and recommended tool connections.
@@ -215,6 +222,12 @@ metadata through CR. The read model is scoped to identity, auth mode, credential
 state, endpoint, runtime profile, retry/fallback policy, local CLI boundary,
 verification, CR readback paths, and risk controls. It is read-only and does not
 change provider selection or leak secret values.
+
+Use `xd.xenesis.providers.views.status` and
+`xd.xenesis.providers.views.open` to inspect or open the internal Desk provider
+setup/readiness view. The open path focuses the provider card in Settings >
+Xenesis Agent > Connections and is a UI-control path only. It does not change
+the active provider, credentials, model, runtime routing, or fallback policy.
 
 Use `xd.xenesis.connections.open` with `{ "id": "<connection-id>" }` to open
 Settings > Xenesis Agent > Connections and focus a specific provider, tool,
