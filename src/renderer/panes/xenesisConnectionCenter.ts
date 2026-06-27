@@ -14,6 +14,7 @@ import type {
   XenesisConnectionStatus,
   XenesisConnectionsStatus,
   XenesisConnectionToolConnectorTemplate,
+  XenesisConnectionToolInstallPlanTemplate,
   XenesisConnectionToolSetupTemplate,
   XenesisConnectionToolUserStoryTemplate,
   XenesisConnectionToolViewTemplate,
@@ -107,6 +108,10 @@ export function formatXenesisToolViewSummary(view: XenesisConnectionToolViewTemp
 
 export function formatXenesisToolConnectorSummary(connector: XenesisConnectionToolConnectorTemplate): string {
   return `${connector.connectorType} / ${connector.authMode} / ${connector.runtimeSupport}`;
+}
+
+export function formatXenesisToolInstallPlanSummary(plan: XenesisConnectionToolInstallPlanTemplate): string {
+  return `${plan.installMode} / ${plan.runtimeSupport} / ${plan.installSteps.length} step(s)`;
 }
 
 export function formatXenesisToolUserStorySummary(workflow: XenesisConnectionToolUserStoryTemplate): string {

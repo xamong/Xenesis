@@ -15,6 +15,7 @@ import {
   formatXenesisProviderSetupSummary,
   formatXenesisProviderViewSummary,
   formatXenesisToolConnectorSummary,
+  formatXenesisToolInstallPlanSummary,
   formatXenesisToolSetupSummary,
   formatXenesisToolUserStorySummary,
   formatXenesisToolViewSummary,
@@ -279,6 +280,31 @@ test('formatXenesisToolUserStorySummary describes workflow type, runtime support
       safetyBoundaries: ['planned OAuth calendar workflows do not create, update, or delete events'],
     }),
     'calendar-context / planned-oauth / 3 user story/stories',
+  );
+});
+
+test('formatXenesisToolInstallPlanSummary describes install mode, runtime support, and step count', () => {
+  assert.equal(
+    formatXenesisToolInstallPlanSummary({
+      installMode: 'copy-template',
+      runtimeSupport: 'ready-template',
+      primarySurface: 'Settings > Xenesis Agent > Connections',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      installSurface: 'Settings > AI Provider > Local CLI MCP',
+      installActions: ['open-local-cli-mcp-settings', 'copy-json-mcp-config', 'copy-codex-toml-config'],
+      installSteps: [
+        'copy the Notion MCP template into the selected local CLI MCP config',
+        'set NOTION_TOKEN in the provider runtime environment',
+        'verify xd.mcp.settings.status lists the server before tool use',
+      ],
+      configTargets: ['json-mcp-config', 'codex-toml'],
+      requiredEnv: ['NOTION_TOKEN'],
+      readPaths: ['xd.xenesis.tools.installPlans.status'],
+      controlPaths: ['xd.xenesis.tools.installPlans.open'],
+      diagnostics: ['missing-env'],
+      safetyBoundaries: ['install plans do not execute shell commands or mutate MCP settings'],
+    }),
+    'copy-template / ready-template / 3 step(s)',
   );
 });
 

@@ -98,6 +98,7 @@ import {
   formatXenesisProviderSetupSummary,
   formatXenesisProviderViewSummary,
   formatXenesisToolConnectorSummary,
+  formatXenesisToolInstallPlanSummary,
   formatXenesisToolSetupSummary,
   formatXenesisToolUserStorySummary,
   formatXenesisToolViewSummary,
@@ -4265,6 +4266,7 @@ export default function SettingsPane() {
     const providerView = item.providerView;
     const providerRouting = item.providerRouting;
     const toolSetup = item.toolSetup;
+    const toolInstallPlan = item.toolInstallPlan;
     const toolConnector = item.toolConnector;
     const toolView = item.toolView;
     const toolUserStory = item.toolUserStory;
@@ -4565,6 +4567,50 @@ export default function SettingsPane() {
             <div>
               <span>{t('settings.xenesisConnectionsToolRiskControls')}</span>
               <strong>{toolSetup.riskControls.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {toolInstallPlan ? (
+          <div className="sp-info-list sp-info-list-compact" data-xenesis-tool-install-plan={item.id}>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolInstallPlan')}</span>
+              <strong>{formatXenesisToolInstallPlanSummary(toolInstallPlan)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolInstallPlanSurface')}</span>
+              <strong>{toolInstallPlan.installSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolInstallPlanActions')}</span>
+              <strong>{toolInstallPlan.installActions.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolInstallPlanSteps')}</span>
+              <strong>{toolInstallPlan.installSteps.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolInstallPlanTargets')}</span>
+              <strong>{toolInstallPlan.configTargets.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolInstallPlanRequiredEnv')}</span>
+              <strong>{toolInstallPlan.requiredEnv.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolInstallPlanReadback')}</span>
+              <strong>{toolInstallPlan.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolInstallPlanControls')}</span>
+              <strong>{toolInstallPlan.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolInstallPlanDiagnostics')}</span>
+              <strong>{toolInstallPlan.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolInstallPlanSafety')}</span>
+              <strong>{toolInstallPlan.safetyBoundaries.join(', ')}</strong>
             </div>
           </div>
         ) : null}

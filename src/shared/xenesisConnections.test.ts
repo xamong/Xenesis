@@ -729,6 +729,84 @@ test('buildXenesisConnectionsStatus exposes Hermes-style tool user-story workflo
   );
 });
 
+test('buildXenesisConnectionsStatus exposes on-demand tool install plans without executing installs', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+  const googleCalendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+
+  assert.deepEqual(notion?.toolInstallPlan, {
+    installMode: 'copy-template',
+    runtimeSupport: 'ready-template',
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    setupSurface: 'Settings > AI Provider > Local CLI MCP',
+    installSurface: 'Settings > AI Provider > Local CLI MCP',
+    installActions: ['open-local-cli-mcp-settings', 'copy-json-mcp-config', 'copy-codex-toml-config'],
+    installSteps: [
+      'copy the Notion MCP template into the selected local CLI MCP config',
+      'set NOTION_TOKEN in the provider runtime environment',
+      'verify xd.mcp.settings.status lists the server before tool use',
+    ],
+    configTargets: ['json-mcp-config', 'codex-toml'],
+    requiredEnv: ['NOTION_TOKEN'],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.tools.installPlans.status',
+      'xd.xenesis.tools.setup.status',
+      'xd.xenesis.tools.connectors.status',
+      'xd.mcp.settings.status',
+    ],
+    controlPaths: [
+      'xd.xenesis.tools.installPlans.open',
+      'xd.xenesis.tools.views.open',
+      'xd.xenesis.connections.open',
+      'xd.panes.settings.open',
+    ],
+    diagnostics: ['missing-env', 'mcp-settings-status', 'template-snippet', 'cr-readback'],
+    safetyBoundaries: [
+      'install plans are read/open planning surfaces',
+      'install plans do not execute shell commands or mutate MCP settings',
+      'secret values are never stored or returned',
+      'tool writes require separate verified approval-gated actions',
+    ],
+  });
+  assert.equal(googleCalendar?.toolInstallPlan?.installMode, 'planned-oauth');
+  assert.equal(googleCalendar?.toolInstallPlan?.runtimeSupport, 'planned-oauth');
+  assert.deepEqual(googleCalendar?.toolInstallPlan?.installActions, []);
+  assert.deepEqual(googleCalendar?.toolInstallPlan?.requiredEnv, []);
+  assert.ok(
+    googleCalendar?.toolInstallPlan?.safetyBoundaries.includes(
+      'planned OAuth install plans do not complete OAuth or create calendar events',
+    ),
+  );
+});
+
 test('buildXenesisConnectionsStatus exposes provider setup identity, credential state, and fallback policy', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {

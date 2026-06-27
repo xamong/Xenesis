@@ -427,6 +427,68 @@ test('xenesis tool user story capabilities are registered and dispatch to the ad
   });
 });
 
+test('xenesis tool install plan capabilities are registered and dispatch to the adapter', async () => {
+  const statusCapability = findDeskBridgeCapability('xd.xenesis.tools.installPlans.status');
+  const openCapability = findDeskBridgeCapability('xd.xenesis.tools.installPlans.open');
+  const statusSchemaProperties = (statusCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
+  assert.equal(statusCapability?.permission, 'read');
+  assert.equal(statusCapability?.approval, 'never');
+  assert.equal(openCapability?.permission, 'control');
+  assert.equal(openCapability?.approval, 'never');
+  assert.deepEqual(openCapability?.schema?.required, ['id']);
+  for (const tool of ['notion', 'linear', 'google-workspace', 'google-calendar']) {
+    assert.equal(statusSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by status`);
+    assert.equal(statusSchemaProperties.tool?.enum.includes(tool), true, `${tool} should be accepted by status alias`);
+    assert.equal(openSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by open`);
+    assert.equal(openSchemaProperties.tool?.enum.includes(tool), true, `${tool} should be accepted by open alias`);
+  }
+
+  const calls: Array<{ method: string; args: unknown }> = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisToolInstallPlansStatus: (args) => {
+      calls.push({ method: 'status', args });
+      return {
+        ok: true,
+        items: [{ id: 'notion', installMode: 'copy-template' }],
+      };
+    },
+    openXenesisToolInstallPlan: (args) => {
+      calls.push({ method: 'open', args });
+      return {
+        ok: true,
+        item: { id: 'notion', installMode: 'copy-template' },
+      };
+    },
+  };
+
+  const statusResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.tools.installPlans.status',
+    args: { tool: 'notion' },
+    source: 'xenesis',
+  });
+  const openResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.tools.installPlans.open',
+    args: { id: 'notion' },
+    source: 'xenesis',
+  });
+
+  assert.equal(statusResult.ok, true);
+  assert.equal(openResult.ok, true);
+  assert.deepEqual(calls, [
+    { method: 'status', args: { tool: 'notion' } },
+    { method: 'open', args: { id: 'notion' } },
+  ]);
+  assert.deepEqual(statusResult.result, {
+    ok: true,
+    items: [{ id: 'notion', installMode: 'copy-template' }],
+  });
+  assert.deepEqual(openResult.result, {
+    ok: true,
+    item: { id: 'notion', installMode: 'copy-template' },
+  });
+});
+
 test('xenesis messenger view capabilities are registered and dispatch to the adapter', async () => {
   const statusCapability = findDeskBridgeCapability('xd.xenesis.messengers.views.status');
   const openCapability = findDeskBridgeCapability('xd.xenesis.messengers.views.open');

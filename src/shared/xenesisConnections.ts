@@ -66,6 +66,25 @@ export interface XenesisConnectionToolSetupTemplate {
   riskControls: string[];
 }
 
+export type XenesisConnectionToolInstallPlanMode = 'copy-template' | 'oauth-template' | 'planned-oauth';
+export type XenesisConnectionToolInstallPlanRuntimeSupport = 'ready-template' | 'planned-oauth';
+
+export interface XenesisConnectionToolInstallPlanTemplate {
+  installMode: XenesisConnectionToolInstallPlanMode;
+  runtimeSupport: XenesisConnectionToolInstallPlanRuntimeSupport;
+  primarySurface: string;
+  setupSurface: string;
+  installSurface: string;
+  installActions: string[];
+  installSteps: string[];
+  configTargets: string[];
+  requiredEnv: string[];
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  safetyBoundaries: string[];
+}
+
 export type XenesisConnectionToolConnectorCredentialState = XenesisConnectionProviderCredentialState | 'planned';
 export type XenesisConnectionToolConnectorCredentialSource = 'env' | 'oauth-client' | 'workspace-config' | 'none';
 
@@ -365,6 +384,7 @@ export interface XenesisConnectionItem {
   providerView?: XenesisConnectionProviderViewTemplate;
   providerRouting?: XenesisConnectionProviderRoutingTemplate;
   toolSetup?: XenesisConnectionToolSetupTemplate;
+  toolInstallPlan?: XenesisConnectionToolInstallPlanTemplate;
   toolConnector?: XenesisConnectionToolConnectorTemplate;
   toolView?: XenesisConnectionToolViewTemplate;
   toolUserStory?: XenesisConnectionToolUserStoryTemplate;
@@ -705,6 +725,51 @@ function toolUserStoryTemplate(input: {
   };
 }
 
+function toolInstallPlanTemplate(input: {
+  installMode: XenesisConnectionToolInstallPlanMode;
+  runtimeSupport: XenesisConnectionToolInstallPlanRuntimeSupport;
+  setupSurface: string;
+  installSurface?: string;
+  installActions: string[];
+  installSteps: string[];
+  configTargets: string[];
+  requiredEnv?: string[];
+  diagnostics: string[];
+  safetyBoundaries?: string[];
+}): XenesisConnectionToolInstallPlanTemplate {
+  return {
+    installMode: input.installMode,
+    runtimeSupport: input.runtimeSupport,
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    setupSurface: input.setupSurface,
+    installSurface: input.installSurface ?? input.setupSurface,
+    installActions: input.installActions,
+    installSteps: input.installSteps,
+    configTargets: input.configTargets,
+    requiredEnv: input.requiredEnv ?? [],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.tools.installPlans.status',
+      'xd.xenesis.tools.setup.status',
+      'xd.xenesis.tools.connectors.status',
+      'xd.mcp.settings.status',
+    ],
+    controlPaths: [
+      'xd.xenesis.tools.installPlans.open',
+      'xd.xenesis.tools.views.open',
+      'xd.xenesis.connections.open',
+      'xd.panes.settings.open',
+    ],
+    diagnostics: input.diagnostics,
+    safetyBoundaries: input.safetyBoundaries ?? [
+      'install plans are read/open planning surfaces',
+      'install plans do not execute shell commands or mutate MCP settings',
+      'secret values are never stored or returned',
+      'tool writes require separate verified approval-gated actions',
+    ],
+  };
+}
+
 type XenesisConnectionToolConnectorCredentialRefInput = Omit<XenesisConnectionToolConnectorCredentialRef, 'state'>;
 
 function toolConnectorCredentialState(
@@ -799,6 +864,19 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
     mcpTemplate: mcpTemplateFor('fetch'),
     toolView: toolViewTemplate('fetch', 'Settings > AI Provider > Local CLI MCP', { hasMcpTemplate: true }),
+    toolInstallPlan: toolInstallPlanTemplate({
+      installMode: 'copy-template',
+      runtimeSupport: 'ready-template',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      installActions: ['open-local-cli-mcp-settings', 'copy-json-mcp-config', 'copy-codex-toml-config'],
+      installSteps: [
+        'copy the Fetch MCP template into the selected local CLI MCP config',
+        'verify uvx can resolve mcp-server-fetch in the provider runtime environment',
+        'verify xd.mcp.settings.status lists the server before tool use',
+      ],
+      configTargets: ['json-mcp-config', 'codex-toml'],
+      diagnostics: ['mcp-settings-status', 'template-snippet', 'cr-readback'],
+    }),
     toolConnector: toolConnectorTemplate({
       connectorType: 'mcp-stdio',
       authMode: 'none',
@@ -850,6 +928,19 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
     mcpTemplate: mcpTemplateFor('filesystem'),
     toolView: toolViewTemplate('filesystem', 'Settings > AI Provider > Local CLI MCP', { hasMcpTemplate: true }),
+    toolInstallPlan: toolInstallPlanTemplate({
+      installMode: 'copy-template',
+      runtimeSupport: 'ready-template',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      installActions: ['open-local-cli-mcp-settings', 'copy-json-mcp-config', 'copy-codex-toml-config'],
+      installSteps: [
+        'copy the Filesystem MCP template into the selected local CLI MCP config',
+        'set the workspace root scope before enabling filesystem reads',
+        'verify xd.mcp.settings.status lists the server before tool use',
+      ],
+      configTargets: ['json-mcp-config', 'codex-toml'],
+      diagnostics: ['workspace-scope', 'mcp-settings-status', 'template-snippet', 'cr-readback'],
+    }),
     toolConnector: toolConnectorTemplate({
       connectorType: 'mcp-stdio',
       authMode: 'none',
@@ -902,6 +993,20 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
     mcpTemplate: mcpTemplateFor('github'),
     toolView: toolViewTemplate('github', 'Settings > AI Provider > Local CLI MCP', { hasMcpTemplate: true }),
+    toolInstallPlan: toolInstallPlanTemplate({
+      installMode: 'copy-template',
+      runtimeSupport: 'ready-template',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      installActions: ['open-local-cli-mcp-settings', 'copy-json-mcp-config', 'copy-codex-toml-config'],
+      installSteps: [
+        'copy the GitHub MCP template into the selected local CLI MCP config',
+        'set GITHUB_TOKEN in the provider runtime environment',
+        'verify xd.mcp.settings.status lists the server before tool use',
+      ],
+      configTargets: ['json-mcp-config', 'codex-toml'],
+      requiredEnv: ['GITHUB_TOKEN'],
+      diagnostics: ['missing-env', 'mcp-settings-status', 'template-snippet', 'cr-readback'],
+    }),
     toolConnector: toolConnectorTemplate({
       connectorType: 'mcp-stdio',
       authMode: 'env-token',
@@ -956,6 +1061,20 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
     mcpTemplate: mcpTemplateFor('notion'),
     toolView: toolViewTemplate('notion', 'Settings > AI Provider > Local CLI MCP', { hasMcpTemplate: true }),
+    toolInstallPlan: toolInstallPlanTemplate({
+      installMode: 'copy-template',
+      runtimeSupport: 'ready-template',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      installActions: ['open-local-cli-mcp-settings', 'copy-json-mcp-config', 'copy-codex-toml-config'],
+      installSteps: [
+        'copy the Notion MCP template into the selected local CLI MCP config',
+        'set NOTION_TOKEN in the provider runtime environment',
+        'verify xd.mcp.settings.status lists the server before tool use',
+      ],
+      configTargets: ['json-mcp-config', 'codex-toml'],
+      requiredEnv: ['NOTION_TOKEN'],
+      diagnostics: ['missing-env', 'mcp-settings-status', 'template-snippet', 'cr-readback'],
+    }),
     toolConnector: toolConnectorTemplate({
       connectorType: 'mcp-stdio',
       authMode: 'env-token',
@@ -1009,6 +1128,24 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
     mcpTemplate: mcpTemplateFor('linear'),
     toolView: toolViewTemplate('linear', 'Settings > AI Provider > Local CLI MCP', { hasMcpTemplate: true }),
+    toolInstallPlan: toolInstallPlanTemplate({
+      installMode: 'oauth-template',
+      runtimeSupport: 'ready-template',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      installActions: [
+        'open-local-cli-mcp-settings',
+        'copy-json-mcp-config',
+        'copy-codex-toml-config',
+        'review-oauth-consent',
+      ],
+      installSteps: [
+        'copy the Linear hosted MCP endpoint into the selected local CLI MCP config',
+        'complete OAuth in the browser when the provider MCP client prompts for it',
+        'verify xd.mcp.settings.status lists the server before tool use',
+      ],
+      configTargets: ['json-mcp-config', 'codex-toml'],
+      diagnostics: ['oauth-client', 'mcp-settings-status', 'template-snippet', 'cr-readback'],
+    }),
     toolConnector: toolConnectorTemplate({
       connectorType: 'mcp-http',
       authMode: 'oauth',
@@ -1061,6 +1198,25 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     supportLevel: 'planned',
     crActions: [],
     toolView: toolViewTemplate('google-workspace', 'Settings > AI Provider > Local CLI MCP'),
+    toolInstallPlan: toolInstallPlanTemplate({
+      installMode: 'planned-oauth',
+      runtimeSupport: 'planned-oauth',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      installActions: [],
+      installSteps: [
+        'select a verified Google Workspace MCP server with OAuth support',
+        'review Gmail, Drive, and Docs read-only OAuth scopes before install actions exist',
+        'verify read-only workspace context before enabling write workflows',
+      ],
+      configTargets: [],
+      diagnostics: ['planned-oauth-template', 'mcp-settings-status', 'scope-review', 'cr-readback'],
+      safetyBoundaries: [
+        'planned OAuth install plans do not complete OAuth or send email',
+        'install plans are read/open planning surfaces',
+        'secret values are never stored or returned',
+        'tool writes require separate verified approval-gated actions',
+      ],
+    }),
     toolConnector: toolConnectorTemplate({
       connectorType: 'oauth-mcp',
       authMode: 'oauth',
@@ -1123,6 +1279,25 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     supportLevel: 'planned',
     crActions: [],
     toolView: toolViewTemplate('google-calendar', 'Settings > AI Provider > Local CLI MCP'),
+    toolInstallPlan: toolInstallPlanTemplate({
+      installMode: 'planned-oauth',
+      runtimeSupport: 'planned-oauth',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      installActions: [],
+      installSteps: [
+        'select a verified Google Calendar MCP server with OAuth support',
+        'review calendar read-only OAuth scopes before install actions exist',
+        'verify calendar listing before enabling event mutation workflows',
+      ],
+      configTargets: [],
+      diagnostics: ['planned-oauth-template', 'mcp-settings-status', 'scope-review', 'cr-readback'],
+      safetyBoundaries: [
+        'planned OAuth install plans do not complete OAuth or create calendar events',
+        'install plans are read/open planning surfaces',
+        'secret values are never stored or returned',
+        'tool writes require separate verified approval-gated actions',
+      ],
+    }),
     toolConnector: toolConnectorTemplate({
       connectorType: 'oauth-mcp',
       authMode: 'oauth',

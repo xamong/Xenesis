@@ -132,6 +132,18 @@ steps, CR readback paths, and risk controls. Google Workspace and Google
 Calendar are visible here as planned OAuth connections, but they still have no
 install action or bundled MCP template.
 
+Each tool card also exposes a `toolInstallPlan` read model. Use
+`xd.xenesis.tools.installPlans.status` to inspect install mode, runtime support,
+setup/install surfaces, copy or OAuth setup actions, config targets, required
+environment variables, diagnostics, and safety boundaries. Use
+`xd.xenesis.tools.installPlans.open` with `{ "id": "<tool-id>" }` to open
+Settings > Xenesis Agent > Connections and focus the matching tool card. This
+is an on-demand setup/readiness surface only: it does not install MCP servers,
+complete OAuth, store tokens, mutate MCP/provider settings, execute provider
+tools, or enable write workflows. Fetch, Filesystem, GitHub, Notion, and Linear
+can expose copy-ready or OAuth template plans; Google Workspace and Google
+Calendar remain `planned-oauth` install plans until verified templates exist.
+
 Each tool card also exposes a `toolConnector` read model. Use
 `xd.xenesis.tools.connectors.status` to inspect connector type, auth mode,
 runtime support, redacted credential refs, credential state, scopes, validation
@@ -362,6 +374,13 @@ through CR. The read model covers Fetch, Filesystem, GitHub, Notion, Linear,
 Google Workspace, and Google Calendar. It is read-only; MCP bridge state still
 comes from `xd.mcp.settings.status`, and mutating tool workflows must use their
 own verified provider/MCP/CR paths.
+
+Use `xd.xenesis.tools.installPlans.status` and
+`xd.xenesis.tools.installPlans.open` to inspect or open on-demand external tool
+setup plans through CR. The open path focuses the matching Connection Center
+tool card. These plans expose copy/template/OAuth readiness only; they do not
+execute shell commands, install MCP servers, complete OAuth, write settings,
+store secrets, or execute tools.
 
 Use `xd.xenesis.tools.connectors.status` to inspect external tool connector
 readiness through CR. The read model is redacted: it exposes credential names and

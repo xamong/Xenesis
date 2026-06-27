@@ -454,6 +454,8 @@ const XENESIS_TOOL_VIEW_OPEN_SCHEMA = {
 
 const XENESIS_TOOL_USER_STORY_STATUS_SCHEMA = XENESIS_TOOL_VIEW_STATUS_SCHEMA;
 const XENESIS_TOOL_USER_STORY_OPEN_SCHEMA = XENESIS_TOOL_VIEW_OPEN_SCHEMA;
+const XENESIS_TOOL_INSTALL_PLAN_STATUS_SCHEMA = XENESIS_TOOL_VIEW_STATUS_SCHEMA;
+const XENESIS_TOOL_INSTALL_PLAN_OPEN_SCHEMA = XENESIS_TOOL_VIEW_OPEN_SCHEMA;
 
 const XENESIS_PROVIDER_IDS = [
   'auto',
@@ -811,6 +813,8 @@ export interface DeskBridgeCapabilityAdapter {
   openXenesisToolView?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolUserStoriesStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisToolUserStory?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisToolInstallPlansStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisToolInstallPlan?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisMessengerViewsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisMessengerView?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisProviderSetupStatus?: (args?: unknown) => Promise<unknown> | unknown;
@@ -3907,6 +3911,27 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               'Open Settings > Xenesis Agent > Connections and focus an external tool user-story workflow card inside Desk.',
               'control',
               XENESIS_TOOL_USER_STORY_OPEN_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.tools.installPlans',
+          'Install plans',
+          'Read and open Desk setup surfaces for external tool install planning.',
+          [
+            method(
+              'xd.xenesis.tools.installPlans.status',
+              'Read tool install plans',
+              'Read install mode, runtime support, setup surfaces, copy/OAuth actions, config targets, required env, diagnostics, and safety boundaries for Xenesis external tool setup.',
+              'read',
+              XENESIS_TOOL_INSTALL_PLAN_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.installPlans.open',
+              'Open tool install plan',
+              'Open Settings > Xenesis Agent > Connections and focus an external tool install-plan card inside Desk.',
+              'control',
+              XENESIS_TOOL_INSTALL_PLAN_OPEN_SCHEMA,
             ),
           ],
         ),
@@ -10242,6 +10267,12 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.tools.userStories.open') {
         return callAdapter(path, api?.openXenesisToolUserStory, request.args);
+      }
+      if (path === 'xd.xenesis.tools.installPlans.status') {
+        return callAdapter(path, api?.getXenesisToolInstallPlansStatus, request.args);
+      }
+      if (path === 'xd.xenesis.tools.installPlans.open') {
+        return callAdapter(path, api?.openXenesisToolInstallPlan, request.args);
       }
       if (path === 'xd.xenesis.messengers.views.status') {
         return callAdapter(path, api?.getXenesisMessengerViewsStatus, request.args);
