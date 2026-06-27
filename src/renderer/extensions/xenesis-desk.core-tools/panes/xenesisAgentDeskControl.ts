@@ -149,6 +149,7 @@ import {
   XENESIS_NATURAL_WORKSPACE_SET_CONTEXT_WORDS,
   XENESIS_NATURAL_XENESIS_CONTEXT_WORDS,
   type XenesisNaturalConnectionTarget,
+  type XenesisNaturalCoreToolTarget,
   type XenesisNaturalDeskActionDescriptor,
   type XenesisNaturalDeskActionTemplateDescriptor,
 } from '../../../../shared/xenesisNaturalLanguageCatalog';
@@ -261,6 +262,32 @@ function naturalTemplateAction<TArgs extends unknown[]>(
   args: unknown,
 ): XenesisDeskActionRequest {
   return naturalAction(descriptor.idFor(...templateArgs), descriptor.path, args, descriptor.reasonFor(...templateArgs));
+}
+
+function naturalCoreToolOpenAction(
+  definition: XenesisNaturalCoreToolTarget,
+  placement: XenesisDeskPlacement | undefined,
+): XenesisDeskActionRequest {
+  return {
+    id: definition.id,
+    path: definition.path,
+    args: { placement: placement || 'tab' },
+    approved: false,
+    reason: `Open ${definition.reasonName} from natural language request.`,
+  };
+}
+
+function naturalViewOpenAction(
+  view: { id: string; kind: string; reason: string },
+  placement: XenesisDeskPlacement | undefined,
+): XenesisDeskActionRequest {
+  return {
+    id: view.id,
+    path: XENESIS_NATURAL_VIEW_OPEN_PATH,
+    args: withPlacement({ kind: view.kind }, placement, 'tab'),
+    approved: false,
+    reason: view.reason,
+  };
 }
 
 const DESK_ACTIONS = XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS;
@@ -394,12 +421,7 @@ function toolOpenActionFromNaturalText(
 ): XenesisDeskActionRequest | null {
   const definition = findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_CORE_TOOL_TARGETS);
   if (!definition) return null;
-  return naturalAction(
-    definition.id,
-    definition.path,
-    { placement: placement || 'tab' },
-    `Open ${definition.reasonName} from natural language request.`,
-  );
+  return naturalCoreToolOpenAction(definition, placement);
 }
 
 function viewKindFromNaturalText(value: string): { id: string; kind: string; reason: string } | null {
@@ -1627,14 +1649,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
 
   const view = viewKindFromNaturalText(value);
   if (view && hasAny(value, XENESIS_NATURAL_VIEW_OPEN_COMMAND_WORDS)) {
-    return naturalPlan('요청한 화면을 엽니다.', [
-      naturalAction(
-        view.id,
-        XENESIS_NATURAL_VIEW_OPEN_PATH,
-        withPlacement({ kind: view.kind }, placement, 'tab'),
-        view.reason,
-      ),
-    ]);
+    return naturalPlan('요청한 화면을 엽니다.', [naturalViewOpenAction(view, placement)]);
   }
 
   return emptyNaturalPlan();

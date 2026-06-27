@@ -273,6 +273,9 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     true,
   );
   assert.match(source, /XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS/);
+  assert.match(source, /naturalCoreToolOpenAction/);
+  assert.match(source, /naturalViewOpenAction/);
+  assert.equal([...source.matchAll(/return naturalAction\(/g)].length, 2);
   assert.doesNotMatch(source, /naturalAction\(\s*'natural-settings-open'/);
   assert.doesNotMatch(source, /naturalAction\('natural-capture-list', 'xd\.capture\.list'/);
   assert.doesNotMatch(source, /let path = 'xd\.dock\.close';/);
