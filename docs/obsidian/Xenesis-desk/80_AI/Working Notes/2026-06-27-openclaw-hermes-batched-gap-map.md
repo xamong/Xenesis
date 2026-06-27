@@ -2834,6 +2834,43 @@
 - External documentation handling: no browsing. This used current repo code,
   cached gap context, and live Electron verification.
 
+## Connection Center CR Snapshot Smoke Integration Slice
+
+- Updated the repeatable live smoke script so it uses the Desk CR snapshot path
+  instead of duplicating renderer selector checks in Playwright:
+  - open Settings through `xd.panes.settings.open`;
+  - snapshot Connection Center through `xd.testing.connectionCenter.snapshot`;
+  - normalize returned CR snapshot checks into the existing smoke report shape.
+- The smoke still launches the built Electron app and waits for the app shell,
+  but renderer verification is now owned by the CR path added in the previous
+  slice.
+- Scope boundary:
+  - Smoke script/test only. No app UI, CR schema/dispatcher, data model,
+    setup-request, provider/tool/channel mutation, OAuth/install execution, or
+    approval-policy changes.
+- Verification:
+  - RED:
+    `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs` failed
+    because the smoke script did not yet export
+    `CONNECTION_CENTER_LIVE_SMOKE_SNAPSHOT_REQUEST`.
+  - GREEN:
+    `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs` passed
+    with 4/4 tests.
+  - Scoped Biome passed for
+    `scripts\xenesisConnectionCenterLiveSmoke.mjs` and
+    `scripts\xenesisConnectionCenterLiveSmoke.test.mjs` after a formatter line
+    wrap.
+  - `npm run smoke:xenesis:connection-center` passed 6/6 through the CR open
+    and CR snapshot paths.
+  - Live Agent-pane CR verification passed: a fenced `xenesis-desk-actions`
+    prompt submitted through `xd.testing.xenesisAgent.submitPrompt` ran
+    `xd.panes.settings.open` followed by
+    `xd.testing.connectionCenter.snapshot` and matched
+    `Desk action completed` in the Agent pane.
+  - `git diff --check` exited 0 with LF-to-CRLF warnings only.
+- External documentation handling: no browsing. This used current repo code,
+  cached gap context, and live Electron verification.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
