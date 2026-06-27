@@ -2234,6 +2234,41 @@
 - External documentation handling: no browsing. This update used cached
   repo-local context, source code, and tests.
 
+## Natural Empty Action Args Refactor Slice
+
+- Removed representative planner-local empty arg object literals from
+  `xenesisAgentDeskControl.ts`.
+- `naturalCatalogAction` now defaults to
+  `XENESIS_NATURAL_DESK_ACTION_ARGS.empty()`, so empty-arg CR actions call
+  `naturalCatalogAction(descriptor)` instead of
+  `naturalCatalogAction(descriptor, {})`.
+- Replaced aggregate status/readback, runtime status/control, and generic Desk
+  planner empty-arg calls.
+- Scope boundary: refactor only. This preserved action ids, paths, reasons,
+  empty arg object shape, route order, parse behavior, approval behavior, and
+  user-facing text.
+- Verification:
+  - RED source guard failed first on existing `naturalCatalogAction(..., {})`
+    calls.
+  - `rg -n "naturalCatalogAction\([^)]*, \{\}\)" src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts`
+    returned no matches after implementation.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 36/36 tests.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 100/100 tests.
+  - `npx biome check src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --max-diagnostics 40`
+    passed.
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit` passed with Registered nodes 763,
+    Callable methods 468, Dispatcher paths 448, missing registered paths 0,
+    missing dispatched coverage paths 0, undispatched static callable methods
+    0, and dispatcher paths missing from tree 0. The generated audit file was
+    removed afterward.
+- Known gap: live Electron Agent-pane smoke was not run for this refactor-only
+  slice.
+- External documentation handling: no browsing. This update used cached
+  repo-local context, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

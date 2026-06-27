@@ -360,6 +360,8 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /\{ agentId, text \}/);
   assert.doesNotMatch(source, /\{ prompt \}/);
   assert.doesNotMatch(source, /workspaceSet, \{ path \}/);
+  assert.doesNotMatch(source, /naturalCatalogAction\([^)]*, \{\}\)/);
+  assert.deepEqual(XENESIS_NATURAL_DESK_ACTION_ARGS.empty(), {});
   assert.equal(XENESIS_NATURAL_DESK_ACTION_ARGS.ensureVisible().ensureVisible, true);
   assert.deepEqual(XENESIS_NATURAL_DESK_ACTION_ARGS.targetIdVisible('telegram'), {
     id: 'telegram',

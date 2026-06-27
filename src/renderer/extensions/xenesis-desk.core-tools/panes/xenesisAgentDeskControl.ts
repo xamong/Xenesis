@@ -264,7 +264,10 @@ function naturalAction(id: string, path: string, args: unknown, reason: string):
   return { id, path, args, approved: false, reason };
 }
 
-function naturalCatalogAction(descriptor: XenesisNaturalDeskActionDescriptor, args: unknown): XenesisDeskActionRequest {
+function naturalCatalogAction(
+  descriptor: XenesisNaturalDeskActionDescriptor,
+  args: unknown = DESK_ACTION_ARGS.empty(),
+): XenesisDeskActionRequest {
   return naturalAction(descriptor.id, descriptor.path, args, descriptor.reason);
 }
 
@@ -559,35 +562,35 @@ function xenesisToolAggregateStatusActionFromNaturalText(value: string): Xenesis
   if (!hasXenesisConnectionReadbackIntent(value)) return null;
 
   if (hasAny(value, XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS)) {
-    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.connectors, {});
+    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.connectors);
   }
 
   if (hasAny(value, XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_DRAFT_CONTEXT_WORDS)) {
-    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.mcpInstallDrafts, {});
+    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.mcpInstallDrafts);
   }
 
   if (hasAny(value, XENESIS_NATURAL_OAUTH_CONTEXT_WORDS)) {
-    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.oauthDrafts, {});
+    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.oauthDrafts);
   }
 
   if (hasAny(value, XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS)) {
-    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.views, {});
+    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.views);
   }
 
   if (hasAny(value, XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS)) {
-    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.installPlans, {});
+    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.installPlans);
   }
 
   if (hasAny(value, XENESIS_NATURAL_SETUP_CONTEXT_WORDS)) {
-    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.setup, {});
+    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.setup);
   }
 
   if (hasAny(value, XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS)) {
-    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.actions, {});
+    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.actions);
   }
 
   if (hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
-    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.userStories, {});
+    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.userStories);
   }
 
   return null;
@@ -599,31 +602,31 @@ function xenesisMessengerAggregateStatusActionFromNaturalText(value: string): Xe
   if (!hasXenesisAggregateCatalogContext(value)) return null;
 
   if (hasXenesisMessengerProfileDraftCatalogContext(value)) {
-    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.profileDrafts, {});
+    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.profileDrafts);
   }
 
   if (hasAny(value, XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS)) {
-    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.routing, {});
+    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.routing);
   }
 
   if (hasAny(value, XENESIS_NATURAL_SAFETY_CONTEXT_WORDS)) {
-    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.safety, {});
+    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.safety);
   }
 
   if (hasAny(value, XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS)) {
-    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.accessGroups, {});
+    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.accessGroups);
   }
 
   if (hasAny(value, XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS)) {
-    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.pairing, {});
+    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.pairing);
   }
 
   if (hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
-    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.userStories, {});
+    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.userStories);
   }
 
   if (hasAny(value, XENESIS_NATURAL_VIEW_OR_SETUP_CONTEXT_WORDS)) {
-    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.views, {});
+    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.views);
   }
 
   return null;
@@ -646,18 +649,18 @@ function xenesisProviderAggregateStatusActionFromNaturalText(value: string): Xen
   if (!hasXenesisAggregateCatalogContext(value)) return null;
 
   if (hasAny(value, XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS)) {
-    return naturalCatalogAction(PROVIDER_AGGREGATE_STATUS_ACTIONS.routing, {});
+    return naturalCatalogAction(PROVIDER_AGGREGATE_STATUS_ACTIONS.routing);
   }
 
   if (hasAny(value, XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS)) {
-    return naturalCatalogAction(PROVIDER_AGGREGATE_STATUS_ACTIONS.views, {});
+    return naturalCatalogAction(PROVIDER_AGGREGATE_STATUS_ACTIONS.views);
   }
 
   if (hasAny(value, XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS)) {
-    return naturalCatalogAction(PROVIDER_AGGREGATE_STATUS_ACTIONS.profileDrafts, {});
+    return naturalCatalogAction(PROVIDER_AGGREGATE_STATUS_ACTIONS.profileDrafts);
   }
 
-  return naturalCatalogAction(PROVIDER_AGGREGATE_STATUS_ACTIONS.setup, {});
+  return naturalCatalogAction(PROVIDER_AGGREGATE_STATUS_ACTIONS.setup);
 }
 
 function xenesisProviderReadbackActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
@@ -697,7 +700,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
   if (providerAction) return providerAction;
 
   if (hasXenesisMessengerProfileDraftCatalogContext(value)) {
-    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.profileDrafts, {});
+    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.profileDrafts);
   }
 
   const target = xenesisConnectionTargetFromNaturalText(value);
@@ -861,15 +864,15 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
   }
 
   if (hasXenesisGuideCatalogContext(value)) {
-    return naturalCatalogAction(CONNECTION_AGGREGATE_STATUS_ACTIONS.guides, {});
+    return naturalCatalogAction(CONNECTION_AGGREGATE_STATUS_ACTIONS.guides);
   }
 
   if (hasXenesisConnectionDiagnosticsCatalogContext(value)) {
-    return naturalCatalogAction(CONNECTION_AGGREGATE_STATUS_ACTIONS.diagnostics, {});
+    return naturalCatalogAction(CONNECTION_AGGREGATE_STATUS_ACTIONS.diagnostics);
   }
 
   if (hasXenesisConnectionSetupRequestCatalogContext(value)) {
-    return naturalCatalogAction(CONNECTION_AGGREGATE_STATUS_ACTIONS.setupRequests, {});
+    return naturalCatalogAction(CONNECTION_AGGREGATE_STATUS_ACTIONS.setupRequests);
   }
 
   const guideStatusAction = xenesisGuideStatusActionFromNaturalText(value);
@@ -885,15 +888,15 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
     const onboardingStatusAction = xenesisOnboardingStatusActionFromNaturalText(value);
     if (onboardingStatusAction) return onboardingStatusAction;
 
-    return naturalCatalogAction(CONNECTION_AGGREGATE_STATUS_ACTIONS.onboarding, {});
+    return naturalCatalogAction(CONNECTION_AGGREGATE_STATUS_ACTIONS.onboarding);
   }
 
   if (hasAny(value, XENESIS_NATURAL_GUIDE_CONTEXT_WORDS)) {
-    return naturalCatalogAction(CONNECTION_AGGREGATE_STATUS_ACTIONS.guides, {});
+    return naturalCatalogAction(CONNECTION_AGGREGATE_STATUS_ACTIONS.guides);
   }
 
   if (hasXenesisConnectionContext(value)) {
-    return naturalCatalogAction(CONNECTION_AGGREGATE_STATUS_ACTIONS.connections, {});
+    return naturalCatalogAction(CONNECTION_AGGREGATE_STATUS_ACTIONS.connections);
   }
 
   return null;
@@ -1316,15 +1319,15 @@ function localCliMcpReadbackActionFromNaturalText(value: string): XenesisDeskAct
     hasAny(value, XENESIS_NATURAL_LOCAL_CLI_CONTEXT_WORDS) &&
     hasAny(value, XENESIS_NATURAL_LOCAL_CLI_SCAN_CONTEXT_WORDS)
   ) {
-    return naturalCatalogAction(RUNTIME_ACTIONS.localCliScan, {});
+    return naturalCatalogAction(RUNTIME_ACTIONS.localCliScan);
   }
 
   if (wantsReadback && hasAny(value, XENESIS_NATURAL_MCP_BRIDGE_CONTEXT_WORDS)) {
-    return naturalCatalogAction(RUNTIME_ACTIONS.mcpBridgeStatus, {});
+    return naturalCatalogAction(RUNTIME_ACTIONS.mcpBridgeStatus);
   }
 
   if (wantsReadback && hasAny(value, XENESIS_NATURAL_MCP_SETTINGS_CONTEXT_WORDS)) {
-    return naturalCatalogAction(RUNTIME_ACTIONS.mcpSettingsStatus, {});
+    return naturalCatalogAction(RUNTIME_ACTIONS.mcpSettingsStatus);
   }
 
   return null;
@@ -1334,11 +1337,11 @@ function xenesisGatewayActionFromNaturalText(value: string): XenesisDeskActionRe
   if (!hasAny(value, XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS)) return null;
 
   if (hasAny(value, XENESIS_NATURAL_DASHBOARD_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_OPEN_OR_SHOW_WORDS)) {
-    return naturalCatalogAction(RUNTIME_ACTIONS.gatewayDashboardOpen, {});
+    return naturalCatalogAction(RUNTIME_ACTIONS.gatewayDashboardOpen);
   }
 
   if (hasAny(value, XENESIS_NATURAL_RUNTIME_READBACK_WORDS)) {
-    return naturalCatalogAction(RUNTIME_ACTIONS.gatewayStatus, {});
+    return naturalCatalogAction(RUNTIME_ACTIONS.gatewayStatus);
   }
 
   return null;
@@ -1373,23 +1376,23 @@ function xenesisRuntimeInventoryActionFromNaturalText(value: string, rawText: st
     hasAny(value, XENESIS_NATURAL_BROAD_RUNTIME_STATUS_WORDS) ||
     (hasAny(value, XENESIS_NATURAL_RUNTIME_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_RUNTIME_READBACK_WORDS));
   if (isBroadXenesisStatus && !hasSpecificStatusTarget) {
-    return naturalCatalogAction(RUNTIME_ACTIONS.runtimeStatus, {});
+    return naturalCatalogAction(RUNTIME_ACTIONS.runtimeStatus);
   }
 
   if (hasAny(value, XENESIS_NATURAL_REPORT_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_LIST_OR_SHOW_WORDS)) {
-    return naturalCatalogAction(RUNTIME_ACTIONS.reportsList, {});
+    return naturalCatalogAction(RUNTIME_ACTIONS.reportsList);
   }
 
   if (hasAny(value, XENESIS_NATURAL_TASK_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_LIST_OR_SHOW_WORDS)) {
-    return naturalCatalogAction(RUNTIME_ACTIONS.tasksList, {});
+    return naturalCatalogAction(RUNTIME_ACTIONS.tasksList);
   }
 
   if (hasAny(value, XENESIS_NATURAL_AGENT_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_LIST_OR_SHOW_WORDS)) {
-    return naturalCatalogAction(RUNTIME_ACTIONS.agentsList, {});
+    return naturalCatalogAction(RUNTIME_ACTIONS.agentsList);
   }
 
   if (hasAny(value, XENESIS_NATURAL_RUNTIME_DIAGNOSTIC_CONTEXT_WORDS)) {
-    return naturalCatalogAction(RUNTIME_ACTIONS.diagnostics, {});
+    return naturalCatalogAction(RUNTIME_ACTIONS.diagnostics);
   }
 
   return null;
@@ -1400,7 +1403,7 @@ function xenesisProfileInventoryActionFromNaturalText(value: string): XenesisDes
   if (!hasAny(value, XENESIS_NATURAL_PROFILE_CONTEXT_WORDS)) return null;
 
   if (hasAny(value, XENESIS_NATURAL_PROFILE_LIST_CONTEXT_WORDS)) {
-    return naturalCatalogAction(RUNTIME_ACTIONS.profilesList, {});
+    return naturalCatalogAction(RUNTIME_ACTIONS.profilesList);
   }
 
   return null;
@@ -1437,14 +1440,14 @@ function xenesisRuntimeControlActionFromNaturalText(value: string): XenesisDeskA
   if (!hasAny(value, XENESIS_NATURAL_XENESIS_CONTEXT_WORDS)) return null;
 
   if (hasAny(value, XENESIS_NATURAL_RUN_CANCEL_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_CANCEL_CONTEXT_WORDS)) {
-    return naturalCatalogAction(RUNTIME_ACTIONS.runsCancel, {});
+    return naturalCatalogAction(RUNTIME_ACTIONS.runsCancel);
   }
 
   if (
     hasAny(value, XENESIS_NATURAL_SESSION_CONTEXT_WORDS) &&
     hasAny(value, XENESIS_NATURAL_SESSION_RESET_CONTEXT_WORDS)
   ) {
-    return naturalCatalogAction(RUNTIME_ACTIONS.sessionsReset, {});
+    return naturalCatalogAction(RUNTIME_ACTIONS.sessionsReset);
   }
 
   return null;
@@ -1556,9 +1559,9 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
 
   if (hasAny(value, XENESIS_NATURAL_CAPTURE_CONTEXT_WORDS)) {
     if (hasAny(value, XENESIS_NATURAL_GENERIC_LIST_CONTEXT_WORDS)) {
-      return naturalPlan(PLAN_TEXT.captureListRead, [naturalCatalogAction(DESK_ACTIONS.captureList, {})]);
+      return naturalPlan(PLAN_TEXT.captureListRead, [naturalCatalogAction(DESK_ACTIONS.captureList)]);
     }
-    return naturalPlan(PLAN_TEXT.activePaneCapture, [naturalCatalogAction(DESK_ACTIONS.captureActivePane, {})]);
+    return naturalPlan(PLAN_TEXT.activePaneCapture, [naturalCatalogAction(DESK_ACTIONS.captureActivePane)]);
   }
 
   if (
@@ -1608,7 +1611,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
   }
 
   if (hasAny(value, XENESIS_NATURAL_FILE_LIST_CONTEXT_WORDS)) {
-    return naturalPlan(PLAN_TEXT.filesListRead, [naturalCatalogAction(DESK_ACTIONS.filesListOpen, {})]);
+    return naturalPlan(PLAN_TEXT.filesListRead, [naturalCatalogAction(DESK_ACTIONS.filesListOpen)]);
   }
 
   if (hasAny(value, XENESIS_NATURAL_FILE_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_GENERIC_OPEN_WORDS)) {
@@ -1627,16 +1630,16 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
 
   if (hasAny(value, XENESIS_NATURAL_EXPLORER_CONTEXT_WORDS)) {
     if (hasAny(value, XENESIS_NATURAL_EXPLORER_HIDE_CONTEXT_WORDS)) {
-      return naturalPlan(PLAN_TEXT.explorerHide, [naturalCatalogAction(DESK_ACTIONS.explorerHide, {})]);
+      return naturalPlan(PLAN_TEXT.explorerHide, [naturalCatalogAction(DESK_ACTIONS.explorerHide)]);
     }
     if (hasAny(value, XENESIS_NATURAL_TOGGLE_CONTEXT_WORDS)) {
-      return naturalPlan(PLAN_TEXT.explorerToggle, [naturalCatalogAction(DESK_ACTIONS.explorerToggle, {})]);
+      return naturalPlan(PLAN_TEXT.explorerToggle, [naturalCatalogAction(DESK_ACTIONS.explorerToggle)]);
     }
     if (hasAny(value, XENESIS_NATURAL_REFRESH_CONTEXT_WORDS)) {
-      return naturalPlan(PLAN_TEXT.explorerRefresh, [naturalCatalogAction(DESK_ACTIONS.explorerRefresh, {})]);
+      return naturalPlan(PLAN_TEXT.explorerRefresh, [naturalCatalogAction(DESK_ACTIONS.explorerRefresh)]);
     }
     if (hasAny(value, XENESIS_NATURAL_PARENT_NAVIGATION_CONTEXT_WORDS)) {
-      return naturalPlan(PLAN_TEXT.explorerGoUp, [naturalCatalogAction(DESK_ACTIONS.explorerGoUp, {})]);
+      return naturalPlan(PLAN_TEXT.explorerGoUp, [naturalCatalogAction(DESK_ACTIONS.explorerGoUp)]);
     }
     if (hasAny(value, XENESIS_NATURAL_FILTER_CONTEXT_WORDS)) {
       const query = extractFilterQuery(rawText);
@@ -1650,16 +1653,16 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
         naturalCatalogAction(DESK_ACTIONS.explorerNavigate, DESK_ACTION_ARGS.explorerPath(path)),
       ]);
     }
-    return naturalPlan(PLAN_TEXT.explorerShow, [naturalCatalogAction(DESK_ACTIONS.explorerShow, {})]);
+    return naturalPlan(PLAN_TEXT.explorerShow, [naturalCatalogAction(DESK_ACTIONS.explorerShow)]);
   }
 
   if (hasAny(value, XENESIS_NATURAL_FAVORITES_CONTEXT_WORDS)) {
-    return naturalPlan(PLAN_TEXT.favoritesShow, [naturalCatalogAction(DESK_ACTIONS.favoritesShow, {})]);
+    return naturalPlan(PLAN_TEXT.favoritesShow, [naturalCatalogAction(DESK_ACTIONS.favoritesShow)]);
   }
 
   if (hasAny(value, XENESIS_NATURAL_TERMINAL_CONTEXT_WORDS)) {
     if (hasAny(value, XENESIS_NATURAL_GENERIC_LIST_CONTEXT_WORDS)) {
-      return naturalPlan(PLAN_TEXT.terminalListRead, [naturalCatalogAction(DESK_ACTIONS.terminalsList, {})]);
+      return naturalPlan(PLAN_TEXT.terminalListRead, [naturalCatalogAction(DESK_ACTIONS.terminalsList)]);
     }
 
     const count = extractFirstInteger(value, 1, 50);
@@ -1706,15 +1709,15 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
   }
 
   if (hasAny(value, XENESIS_NATURAL_DOCK_GRID_CONTEXT_WORDS)) {
-    return naturalPlan(PLAN_TEXT.dockGroupTile, [naturalCatalogAction(DESK_ACTIONS.dockArrangeGrid, {})]);
+    return naturalPlan(PLAN_TEXT.dockGroupTile, [naturalCatalogAction(DESK_ACTIONS.dockArrangeGrid)]);
   }
 
   if (hasAny(value, XENESIS_NATURAL_DOCK_HORIZONTAL_CONTEXT_WORDS)) {
-    return naturalPlan(PLAN_TEXT.dockGroupHorizontal, [naturalCatalogAction(DESK_ACTIONS.dockArrangeHorizontal, {})]);
+    return naturalPlan(PLAN_TEXT.dockGroupHorizontal, [naturalCatalogAction(DESK_ACTIONS.dockArrangeHorizontal)]);
   }
 
   if (hasAny(value, XENESIS_NATURAL_DOCK_VERTICAL_CONTEXT_WORDS)) {
-    return naturalPlan(PLAN_TEXT.dockGroupVertical, [naturalCatalogAction(DESK_ACTIONS.dockArrangeVertical, {})]);
+    return naturalPlan(PLAN_TEXT.dockGroupVertical, [naturalCatalogAction(DESK_ACTIONS.dockArrangeVertical)]);
   }
 
   if (hasAny(value, XENESIS_NATURAL_DOCK_MERGE_CONTEXT_WORDS)) {
@@ -1732,11 +1735,11 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     const action = hasAny(value, XENESIS_NATURAL_DOCK_MERGE_ALL_CONTEXT_WORDS)
       ? DESK_ACTIONS.dockMergeAll
       : DESK_ACTIONS.dockMergeGroup;
-    return naturalPlan(PLAN_TEXT.dockMerge, [naturalCatalogAction(action, {})]);
+    return naturalPlan(PLAN_TEXT.dockMerge, [naturalCatalogAction(action)]);
   }
 
   if (hasAny(value, XENESIS_NATURAL_PANE_LIST_CONTEXT_WORDS)) {
-    return naturalPlan(PLAN_TEXT.dockPanesListRead, [naturalCatalogAction(DESK_ACTIONS.dockPanesList, {})]);
+    return naturalPlan(PLAN_TEXT.dockPanesListRead, [naturalCatalogAction(DESK_ACTIONS.dockPanesList)]);
   }
 
   if (hasAny(value, XENESIS_NATURAL_ARTIFACT_TARGET_CONTEXT_WORDS)) {
@@ -1749,7 +1752,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     hasAny(value, XENESIS_NATURAL_APP_STATUS_CONTEXT_WORDS) &&
     hasAny(value, XENESIS_NATURAL_APP_STATUS_TARGET_WORDS)
   ) {
-    return naturalPlan(PLAN_TEXT.appStatusRead, [naturalCatalogAction(DESK_ACTIONS.appStatus, {})]);
+    return naturalPlan(PLAN_TEXT.appStatusRead, [naturalCatalogAction(DESK_ACTIONS.appStatus)]);
   }
 
   const view = viewKindFromNaturalText(value);
