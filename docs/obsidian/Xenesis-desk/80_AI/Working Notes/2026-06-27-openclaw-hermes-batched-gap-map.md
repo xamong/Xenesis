@@ -2923,6 +2923,44 @@
 - External documentation handling: no browsing. This used cached gap context,
   current repo code, focused tests, CR audit, and live Electron verification.
 
+## Natural Desk Routing Live Smoke Slice
+
+- Added repeatable live Electron smoke coverage for Xenesis Agent natural
+  Desk-routing behavior:
+  - package script `smoke:xenesis:natural-desk-routing`;
+  - script `scripts/xenesisNaturalDeskRoutingLiveSmoke.mjs`;
+  - script test `scripts/xenesisNaturalDeskRoutingLiveSmoke.test.mjs`.
+- The smoke opens Xenesis Agent through
+  `xd.tools.core.xenesisAgent.open`, then submits natural prompts through
+  `xd.testing.xenesisAgent.submitPrompt`:
+  - `액션 인박스 목록 보여줘` must apply `xd.mcp.actionInbox.list` and show
+    `Action Inbox 목록을 조회합니다.`;
+  - `Action Inbox 열어줘` must apply
+    `xd.tools.core.hermesActionInbox.open` and show `Desk action completed`.
+- Scope boundary:
+  - Smoke/test/package wiring only. No natural-language catalog changes,
+    Action Inbox storage changes, approval behavior changes, provider runs,
+    setup requests, CR registry/dispatcher changes, or UI rendering changes.
+- Verification:
+  - RED:
+    `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` failed
+    with `ERR_MODULE_NOT_FOUND` before the smoke script existed.
+  - GREEN:
+    `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` passed
+    with 4/4 tests.
+  - Scoped Biome passed for the new smoke script/test. Package JSON was checked
+    with formatter and assist disabled to avoid unrelated existing CRLF churn.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 5/5.
+  - `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
+    passed with 8/8 tests.
+  - `npm run typecheck` passed.
+  - `git diff --check` exited 0 with the existing `package.json` LF-to-CRLF
+    warning only.
+  - CR audit was not run because this slice did not change registry,
+    dispatcher, or capability code.
+- External documentation handling: no browsing. This used cached gap context,
+  current repo code, and live Electron verification.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
