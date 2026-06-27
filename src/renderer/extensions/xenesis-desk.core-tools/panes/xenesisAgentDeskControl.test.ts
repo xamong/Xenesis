@@ -321,6 +321,8 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.xenesis\.reports\.list/);
   assert.match(hint, /xd\.xenesis\.tasks\.list/);
   assert.match(hint, /xd\.xenesis\.agents\.list/);
+  assert.match(hint, /xd\.xenesis\.agents\.status/);
+  assert.match(hint, /xd\.xenesis\.agents\.events/);
   assert.match(hint, /xd\.xenesis\.profiles\.list/);
   assert.match(hint, /xd\.xenesis\.runs\.cancel/);
   assert.match(hint, /xd\.xenesis\.sessions\.reset/);
@@ -500,6 +502,26 @@ test('planXenesisDeskNaturalLanguageActions maps runtime inventory readbacks to 
       args: {},
       approved: false,
       reason: 'List registered Xenesis Agent panes from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('Xenesis Agent "xenesis-agent" 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-agent-status',
+      path: 'xd.xenesis.agents.status',
+      args: { agentId: 'xenesis-agent' },
+      approved: false,
+      reason: 'Read Xenesis Agent pane status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('Xenesis Agent "xenesis-agent" 이벤트 보여줘').actions, [
+    {
+      id: 'natural-xenesis-agent-events',
+      path: 'xd.xenesis.agents.events',
+      args: { agentId: 'xenesis-agent' },
+      approved: false,
+      reason: 'List Xenesis Agent pane events from natural language request.',
     },
   ]);
 });

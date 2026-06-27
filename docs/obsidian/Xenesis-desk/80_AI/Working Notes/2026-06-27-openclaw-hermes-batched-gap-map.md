@@ -292,6 +292,25 @@
   all-connection readiness read path visible before targeted provider, tool,
   messenger, diagnostics, setup-request, onboarding, or guide actions.
 
+## Agent Status Events Slice
+
+- Added deterministic Xenesis Agent natural-language routing for existing
+  read-only Agent pane readback CR paths when the prompt includes a quoted
+  agent id:
+  - `Xenesis Agent "xenesis-agent" 상태 보여줘` ->
+    `xd.xenesis.agents.status` with `agentId=xenesis-agent`.
+  - `Xenesis Agent "xenesis-agent" 이벤트 보여줘` ->
+    `xd.xenesis.agents.events` with `agentId=xenesis-agent`.
+- Added the same CR paths to the Agent control prompt hint and useful direct
+  CR path list so Agent-pane runs inspect quoted Agent pane state/events before
+  prompt submission or runtime mutation.
+- Scope boundary: this slice did not submit Agent messages, start runs, mutate
+  provider settings, write credentials, change workspaces, install profiles,
+  send messages, add CR nodes, change dispatcher branches, or bypass approvals.
+  `xd.xenesis.agents.submit` remains out of scope.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
