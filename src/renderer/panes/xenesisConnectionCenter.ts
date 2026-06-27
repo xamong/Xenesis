@@ -113,7 +113,7 @@ export function formatXenesisProviderSetupSummary(setup: XenesisConnectionProvid
 }
 
 export function formatXenesisProviderProfileDraftSummary(draft: XenesisConnectionProviderProfileDraftTemplate): string {
-  return `${draft.provider} / ${draft.draftStatus} / ${draft.missingRequiredFields.length} missing field(s)`;
+  return `${draft.provider} / ${draft.draftStatus} / ${draft.missingRequiredFields.length} missing field(s) / ${draft.reviewSteps.length} review step(s)`;
 }
 
 export function formatXenesisProviderViewSummary(view: XenesisConnectionProviderViewTemplate): string {

@@ -2588,6 +2588,53 @@
 - External documentation handling: no browsing. This used the cached gap map,
   source code, and tests.
 
+## Provider Profile Review Steps Slice
+
+- Added review-only provider profile setup steps in
+  `src/shared/xenesisConnections.ts` through
+  `XenesisConnectionProviderProfileDraftReviewStep`.
+- Covered review phases:
+  - `provider-identity`: provider identity and auth mode are visible before
+    settings changes.
+  - `model-credential-readiness`: model and credential readiness are visible
+    without returning provider secrets.
+  - `runtime-routing`: runtime profile, fallback policy, retry policy, and
+    credential pool state are visible without editing fallback chains.
+  - `local-cli-boundary`: provider identity remains separate from installed
+    local CLI selection.
+- Diagnostic runbooks and setup request templates now include provider
+  review-step read paths, control paths, diagnostics, and safety boundaries.
+- The Connection Center provider profile draft summary now includes review step
+  count through `formatXenesisProviderProfileDraftSummary`.
+- Scope boundary:
+  - No provider setting mutation, credential storage, model change, fallback
+    edit, local CLI selection switch, provider prompt run, or approval bypass.
+- Verification:
+  - RED:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    failed because provider profile `reviewSteps` and summary count were
+    missing.
+  - GREEN:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    passed with 68/68 tests.
+  - Related:
+    `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    passed with 99/99 tests.
+  - Scoped Biome:
+    `npx biome check src\shared\xenesisConnections.ts src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.ts src\renderer\panes\xenesisConnectionCenter.test.ts --max-diagnostics 40`
+    passed.
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit` passed with Registered nodes 763,
+    Callable methods 468, Dispatcher paths 448, missing registered paths 0,
+    missing dispatched coverage paths 0, undispatched static callable methods
+    0, and dispatcher paths missing from tree 0. The generated audit file was
+    removed afterward.
+  - Root `npm run lint` was not rerun in this slice; previous run failed on
+    existing repo-wide Biome/CRLF/sample diagnostics outside these changed
+    files.
+- External documentation handling: no browsing. This used the cached gap map,
+  source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

@@ -870,8 +870,21 @@ test('formatXenesisProviderProfileDraftSummary describes provider, status, and m
       diagnostics: ['credential-state'],
       blockedActions: ['store provider credentials'],
       safetyBoundaries: ['provider profile drafts are review-only'],
+      reviewSteps: [
+        {
+          id: 'model-credential-readiness',
+          label: 'Review model and credential readiness',
+          phase: 'model-credential-readiness',
+          expectedState: 'Model and API key readiness are visible before provider changes.',
+          requiredFields: ['model', 'apiKey'],
+          readPaths: ['xd.xenesis.providers.profileDrafts.status'],
+          controlPaths: ['xd.xenesis.providers.profileDrafts.request'],
+          diagnostics: ['credential-state'],
+          safetyBoundary: 'Provider profile review steps do not store credentials.',
+        },
+      ],
     }),
-    'openai / missing-required-field / 1 missing field(s)',
+    'openai / missing-required-field / 1 missing field(s) / 1 review step(s)',
   );
 });
 
@@ -902,6 +915,19 @@ test('buildXenesisProviderProfileDraftRequest targets the review request CR path
       diagnostics: ['credential-state'],
       blockedActions: ['store provider credentials'],
       safetyBoundaries: ['provider profile drafts are review-only'],
+      reviewSteps: [
+        {
+          id: 'model-credential-readiness',
+          label: 'Review model and credential readiness',
+          phase: 'model-credential-readiness',
+          expectedState: 'Model and API key readiness are visible before provider changes.',
+          requiredFields: ['model', 'apiKey'],
+          readPaths: ['xd.xenesis.providers.profileDrafts.status'],
+          controlPaths: ['xd.xenesis.providers.profileDrafts.request'],
+          diagnostics: ['credential-state'],
+          safetyBoundary: 'Provider profile review steps do not store credentials.',
+        },
+      ],
     },
   } satisfies XenesisConnectionItem;
 

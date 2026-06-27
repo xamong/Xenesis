@@ -446,6 +446,24 @@ export interface XenesisConnectionProviderProfileDraftGuardrails {
   localCliBoundary: string;
 }
 
+export type XenesisConnectionProviderProfileDraftReviewStepId =
+  | 'provider-identity'
+  | 'model-credential-readiness'
+  | 'runtime-routing'
+  | 'local-cli-boundary';
+
+export interface XenesisConnectionProviderProfileDraftReviewStep {
+  id: XenesisConnectionProviderProfileDraftReviewStepId;
+  label: string;
+  phase: XenesisConnectionProviderProfileDraftReviewStepId;
+  expectedState: string;
+  requiredFields: string[];
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  safetyBoundary: string;
+}
+
 export interface XenesisConnectionProviderProfileDraftTemplate {
   draftStatus: XenesisConnectionProviderProfileDraftStatus;
   actionInboxKind: 'xenesis-provider-profile-draft';
@@ -457,6 +475,7 @@ export interface XenesisConnectionProviderProfileDraftTemplate {
   profileFields: XenesisConnectionProviderProfileDraftField[];
   missingRequiredFields: string[];
   guardrails: XenesisConnectionProviderProfileDraftGuardrails;
+  reviewSteps: XenesisConnectionProviderProfileDraftReviewStep[];
   readPaths: string[];
   controlPaths: string[];
   diagnostics: string[];
@@ -4285,9 +4304,20 @@ function buildXenesisConnectionDiagnosticRunbook(
         label: 'Provider profile draft',
         expectedState:
           'Review-only provider profile fields and guardrails are visible before any provider setting mutation.',
-        readPaths: ['xd.xenesis.providers.profileDrafts.status', ...item.providerProfileDraft.readPaths],
-        controlPaths: item.providerProfileDraft.controlPaths,
-        diagnostics: [...item.providerProfileDraft.missingRequiredFields, ...item.providerProfileDraft.diagnostics],
+        readPaths: [
+          'xd.xenesis.providers.profileDrafts.status',
+          ...item.providerProfileDraft.readPaths,
+          ...item.providerProfileDraft.reviewSteps.flatMap((step) => step.readPaths),
+        ],
+        controlPaths: [
+          ...item.providerProfileDraft.controlPaths,
+          ...item.providerProfileDraft.reviewSteps.flatMap((step) => step.controlPaths),
+        ],
+        diagnostics: [
+          ...item.providerProfileDraft.missingRequiredFields,
+          ...item.providerProfileDraft.diagnostics,
+          ...item.providerProfileDraft.reviewSteps.flatMap((step) => step.diagnostics),
+        ],
       }),
     );
   }
@@ -4546,6 +4576,7 @@ function buildXenesisConnectionDiagnosticRunbook(
       ...(item.providerRouting?.safetyBoundaries ?? []),
       ...(item.providerView?.safetyBoundaries ?? []),
       ...(item.providerProfileDraft?.safetyBoundaries ?? []),
+      ...(item.providerProfileDraft?.reviewSteps.map((step) => step.safetyBoundary) ?? []),
       ...(item.toolSetup?.riskControls ?? []),
       ...(item.toolConnector?.safetyBoundaries ?? []),
       ...(item.toolOAuthDraft?.safetyBoundaries ?? []),
@@ -4606,6 +4637,7 @@ function setupRequestDiagnosticItems(item: XenesisConnectionItem): string[] {
     ...(item.providerSetup?.verification ?? []),
     ...(item.providerRouting?.diagnostics ?? []),
     ...(item.providerProfileDraft?.diagnostics ?? []),
+    ...(item.providerProfileDraft?.reviewSteps.flatMap((step) => step.diagnostics) ?? []),
     ...(item.toolSetup?.verification ?? []),
     ...(item.toolConnector?.validationChecks ?? []),
     ...(item.toolOAuthDraft?.diagnostics ?? []),
@@ -4631,6 +4663,7 @@ function setupRequestStepItems(item: XenesisConnectionItem): string[] {
     ...(item.providerSetup?.verification.map((check) => `verify ${check}`) ?? []),
     ...(item.providerProfileDraft?.missingRequiredFields.map((field) => `review provider profile field: ${field}`) ??
       []),
+    ...(item.providerProfileDraft?.reviewSteps.map((step) => `${step.id}: ${step.expectedState}`) ?? []),
     ...(item.toolOAuthDraft?.missingRequiredFields.map((field) => `review OAuth draft field: ${field}`) ?? []),
     ...(item.toolOAuthDraft?.scopes.map((scope) => `review OAuth scope: ${scope}`) ?? []),
     ...(item.toolOAuthDraft?.reviewSteps.map((step) => `${step.id}: ${step.expectedState}`) ?? []),
@@ -4684,6 +4717,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.providerRouting?.readPaths ?? []),
       ...(item.providerView?.readPaths ?? []),
       ...(item.providerProfileDraft?.readPaths ?? []),
+      ...(item.providerProfileDraft?.reviewSteps.flatMap((step) => step.readPaths) ?? []),
       ...(item.toolSetup?.crReadPaths ?? []),
       ...(item.toolConnector?.readPaths ?? []),
       ...(item.toolOAuthDraft?.readPaths ?? []),
@@ -4709,6 +4743,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...onboardingGuidedStepPaths(item.onboardingPlan, ['open', 'control']),
       ...(item.providerView?.controlPaths ?? []),
       ...(item.providerProfileDraft?.controlPaths ?? []),
+      ...(item.providerProfileDraft?.reviewSteps.flatMap((step) => step.controlPaths) ?? []),
       ...(item.crActions ?? []),
       ...(item.toolConnector?.controlPaths ?? []),
       ...(item.toolOAuthDraft?.controlPaths ?? []),
@@ -4738,6 +4773,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.providerRouting?.safetyBoundaries ?? []),
       ...(item.providerView?.safetyBoundaries ?? []),
       ...(item.providerProfileDraft?.safetyBoundaries ?? []),
+      ...(item.providerProfileDraft?.reviewSteps.map((step) => step.safetyBoundary) ?? []),
       ...(item.toolSetup?.riskControls ?? []),
       ...(item.toolConnector?.safetyBoundaries ?? []),
       ...(item.toolOAuthDraft?.safetyBoundaries ?? []),
@@ -5097,6 +5133,87 @@ function providerProfileDraftValueState(input: {
   return 'unknown';
 }
 
+function providerProfileDraftReviewStep(
+  input: XenesisConnectionProviderProfileDraftReviewStep,
+): XenesisConnectionProviderProfileDraftReviewStep {
+  return {
+    ...input,
+    requiredFields: uniqueStrings(input.requiredFields),
+    readPaths: uniqueStrings(input.readPaths),
+    controlPaths: uniqueStrings(input.controlPaths),
+    diagnostics: uniqueStrings(input.diagnostics),
+  };
+}
+
+function providerProfileDraftReviewSteps(input: {
+  provider: string;
+  credentialField: string;
+  modelRequired: boolean;
+  credentialRequired: boolean;
+  providerSetup: XenesisConnectionProviderSetupTemplate;
+  providerRouting: XenesisConnectionProviderRoutingTemplate;
+}): XenesisConnectionProviderProfileDraftReviewStep[] {
+  const modelCredentialFields = uniqueStrings([
+    input.modelRequired ? 'model' : undefined,
+    input.credentialRequired ? input.credentialField : undefined,
+  ]);
+  return [
+    providerProfileDraftReviewStep({
+      id: 'provider-identity',
+      label: 'Review provider identity',
+      phase: 'provider-identity',
+      expectedState: `${input.provider} provider identity and auth mode are visible before settings changes.`,
+      requiredFields: ['provider', 'authMode'],
+      readPaths: ['xd.xenesis.providers.profileDrafts.status', 'xd.xenesis.providers.setup.status'],
+      controlPaths: ['xd.xenesis.providers.profileDrafts.open', 'xd.xenesis.providers.profileDrafts.request'],
+      diagnostics: ['provider-identity', 'provider-profile-draft', 'credential-state'],
+      safetyBoundary: 'Provider identity review does not change the active provider.',
+    }),
+    providerProfileDraftReviewStep({
+      id: 'model-credential-readiness',
+      label: 'Review model and credential readiness',
+      phase: 'model-credential-readiness',
+      expectedState: `${input.provider} model and credential readiness are visible without returning secrets.`,
+      requiredFields: modelCredentialFields,
+      readPaths: ['xd.xenesis.providers.profileDrafts.status', 'xd.xenesis.providers.setup.status'],
+      controlPaths: ['xd.xenesis.providers.profileDrafts.open', 'xd.xenesis.providers.profileDrafts.request'],
+      diagnostics: ['model-credential-readiness', ...input.providerSetup.verification, 'credential-state'],
+      safetyBoundary: 'Model and credential review does not store credentials, change models, or run provider prompts.',
+    }),
+    providerProfileDraftReviewStep({
+      id: 'runtime-routing',
+      label: 'Review runtime routing',
+      phase: 'runtime-routing',
+      expectedState: `${input.provider} runtime profile, fallback policy, retry policy, and credential pool state are visible.`,
+      requiredFields: ['runtimeProfile', 'fallbackPolicy'],
+      readPaths: [
+        'xd.xenesis.providers.profileDrafts.status',
+        'xd.xenesis.providers.routing.status',
+        'xd.xenesis.status',
+      ],
+      controlPaths: ['xd.xenesis.providers.profileDrafts.open', 'xd.xenesis.providers.profileDrafts.request'],
+      diagnostics: [
+        'runtime-routing',
+        'fallback-policy',
+        ...input.providerRouting.diagnostics,
+        ...input.providerRouting.credentialPools.map((pool) => pool.apiKeyEnv),
+      ],
+      safetyBoundary: 'Runtime routing review does not edit fallback chains, retries, or credential pools.',
+    }),
+    providerProfileDraftReviewStep({
+      id: 'local-cli-boundary',
+      label: 'Review local CLI boundary',
+      phase: 'local-cli-boundary',
+      expectedState: `${input.provider} provider identity remains separate from installed local CLI selection.`,
+      requiredFields: ['localCliBoundary'],
+      readPaths: ['xd.xenesis.providers.profileDrafts.status', 'xd.xenesis.providers.setup.status'],
+      controlPaths: ['xd.xenesis.providers.profileDrafts.open', 'xd.panes.settings.open'],
+      diagnostics: ['local-cli-boundary', input.providerSetup.localCliBoundary],
+      safetyBoundary: 'Local CLI boundary review does not switch local CLI selection or rewrite CLI config.',
+    }),
+  ];
+}
+
 function providerProfileDraftTemplate(
   aiProvider: BuildXenesisConnectionsStatusInput['aiProvider'],
   xenesis: XenesisStatus | null,
@@ -5203,6 +5320,14 @@ function providerProfileDraftTemplate(
   const missingRequiredFields = profileFields
     .filter((field) => field.required && field.valueState === 'missing')
     .map((field) => field.field);
+  const reviewSteps = providerProfileDraftReviewSteps({
+    provider,
+    credentialField,
+    modelRequired,
+    credentialRequired,
+    providerSetup,
+    providerRouting,
+  });
   return {
     draftStatus: !provider ? 'unknown' : missingRequiredFields.length > 0 ? 'missing-required-field' : 'ready',
     actionInboxKind: 'xenesis-provider-profile-draft',
@@ -5219,6 +5344,7 @@ function providerProfileDraftTemplate(
       fallbackPolicy: providerRouting.fallbackPolicy,
       localCliBoundary: providerSetup.localCliBoundary,
     },
+    reviewSteps,
     readPaths: [
       'xd.xenesis.connections.status',
       'xd.xenesis.providers.setup.status',

@@ -1470,7 +1470,8 @@ test('buildXenesisConnectionsStatus exposes review-only provider profile drafts'
     xenesis: null,
   });
 
-  const readyDraft = readyStatus.sections.provider.items[0].providerProfileDraft;
+  const readyProvider = readyStatus.sections.provider.items[0];
+  const readyDraft = readyProvider.providerProfileDraft;
   assert.equal(readyDraft?.draftStatus, 'ready');
   assert.equal(readyDraft?.actionInboxKind, 'xenesis-provider-profile-draft');
   assert.equal(readyDraft?.provider, 'codex-app-server');
@@ -1481,6 +1482,18 @@ test('buildXenesisConnectionsStatus exposes review-only provider profile drafts'
   assert.ok(readyDraft?.controlPaths.includes('xd.xenesis.providers.profileDrafts.request'));
   assert.ok(readyDraft?.blockedActions.includes('store provider credentials'));
   assert.ok(readyDraft?.safetyBoundaries.includes('provider profile drafts are review-only'));
+  assert.deepEqual(
+    readyDraft?.reviewSteps.map((step) => step.id),
+    ['provider-identity', 'model-credential-readiness', 'runtime-routing', 'local-cli-boundary'],
+  );
+  for (const step of readyDraft?.reviewSteps ?? []) {
+    assert.ok(step.expectedState.length > 0, `${step.id} exposes expected state`);
+    assert.ok(step.readPaths.length > 0, `${step.id} exposes read paths`);
+    assert.ok(step.diagnostics.length > 0, `${step.id} exposes diagnostics`);
+    assert.ok(step.safetyBoundary.length > 0, `${step.id} exposes a safety boundary`);
+  }
+  assert.ok(readyProvider.diagnosticRunbook?.diagnostics.includes('provider-identity'));
+  assert.ok(readyProvider.setupRequest?.steps.some((step) => step.includes('runtime-routing')));
 
   const missingStatus = buildXenesisConnectionsStatus({
     aiProvider: {
@@ -1517,6 +1530,14 @@ test('buildXenesisConnectionsStatus exposes review-only provider profile drafts'
   assert.equal(missingDraft?.profileFields.find((field) => field.field === 'apiKey')?.valueState, 'missing');
   assert.ok(missingDraft?.blockedActions.includes('change active provider'));
   assert.ok(missingDraft?.safetyBoundaries.includes('provider secrets are never returned'));
+  assert.ok(
+    missingDraft?.reviewSteps.some(
+      (step) =>
+        step.id === 'model-credential-readiness' &&
+        step.requiredFields.includes('model') &&
+        step.requiredFields.includes('apiKey'),
+    ),
+  );
 });
 
 test('buildXenesisConnectionsStatus exposes an internal Desk provider view', () => {
