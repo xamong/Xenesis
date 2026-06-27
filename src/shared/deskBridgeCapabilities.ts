@@ -367,6 +367,24 @@ const XENESIS_TOOL_SETUP_STATUS_SCHEMA = {
   },
 } as const;
 
+const XENESIS_TOOL_CONNECTOR_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Optional external tool connection id to filter.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Alias for id.',
+    },
+  },
+} as const;
+
 const XENESIS_TOOL_VIEW_STATUS_SCHEMA = {
   type: 'object',
   properties: {
@@ -760,6 +778,7 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisGuidesStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisGuide?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolSetupStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisToolConnectorsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolViewsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisToolView?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisMessengerViewsStatus?: (args?: unknown) => Promise<unknown> | unknown;
@@ -3796,6 +3815,20 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             XENESIS_TOOL_SETUP_STATUS_SCHEMA,
           ),
         ]),
+        group(
+          'xd.xenesis.tools.connectors',
+          'Connectors',
+          'External tool connector type, auth, redacted credential state, scopes, diagnostics, and safety boundaries.',
+          [
+            method(
+              'xd.xenesis.tools.connectors.status',
+              'Read tool connector status',
+              'Read connector type, auth mode, runtime support, redacted credential state, validation checks, CR paths, diagnostics, and safety boundaries for Xenesis external tool connections.',
+              'read',
+              XENESIS_TOOL_CONNECTOR_STATUS_SCHEMA,
+            ),
+          ],
+        ),
         group('xd.xenesis.tools.views', 'Views', 'Internal Desk views for external tool connection setup and readiness.', [
           method(
             'xd.xenesis.tools.views.status',
@@ -10126,6 +10159,9 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.tools.setup.status') {
         return callAdapter(path, api?.getXenesisToolSetupStatus, request.args);
+      }
+      if (path === 'xd.xenesis.tools.connectors.status') {
+        return callAdapter(path, api?.getXenesisToolConnectorsStatus, request.args);
       }
       if (path === 'xd.xenesis.tools.views.status') {
         return callAdapter(path, api?.getXenesisToolViewsStatus, request.args);

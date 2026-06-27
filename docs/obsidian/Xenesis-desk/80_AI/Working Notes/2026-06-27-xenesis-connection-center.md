@@ -436,6 +436,29 @@ Capability Registry instead of only through separate renderer settings panels.
   first because `formatXenesisChannelAccessGroupsSummary` was not exported,
   then passed after renderer helper implementation with 15/15 tests.
 
+## Current Tool Connectors Read Model Slice
+
+- Add `toolConnector` metadata to Fetch, Filesystem, GitHub, Notion, Linear,
+  Google Workspace, and Google Calendar cards in
+  `xd.xenesis.connections.status`.
+- Add `xd.xenesis.tools.connectors.status` as a read/no-approval CR path for
+  connector type, auth mode, runtime support, redacted credential refs/states,
+  scopes, validation checks, diagnostics, read/control paths, and safety
+  boundaries.
+- Settings renders the same model with
+  `data-xenesis-tool-connector="<tool-id>"`.
+- Credential refs expose names and states only: `configured`, `missing`,
+  `not-required`, or `planned`. Raw token values are not returned.
+- Google Workspace and Google Calendar remain `planned-oauth` connectors until
+  a verified OAuth/MCP template, token store, and live read verification exist.
+  This slice does not install MCP servers, complete OAuth, store tokens, or add
+  tool write actions.
+- `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+  failed first for missing connector metadata, missing CR path, and missing
+  renderer helper.
+- `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+  passed after implementation with 70/70 tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

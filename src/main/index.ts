@@ -5248,6 +5248,58 @@ async function getXenesisToolSetupStatus(args?: unknown): Promise<Record<string,
   };
 }
 
+function xenesisToolConnectorStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    connectorType: item.toolConnector?.connectorType,
+    authMode: item.toolConnector?.authMode,
+    runtimeSupport: item.toolConnector?.runtimeSupport,
+    credentialRefs: item.toolConnector?.credentialRefs ?? [],
+    credentialState: item.toolConnector?.credentialState,
+    dataScopes: item.toolConnector?.dataScopes ?? [],
+    writeScopes: item.toolConnector?.writeScopes ?? [],
+    setupSurface: item.toolConnector?.setupSurface,
+    validationChecks: item.toolConnector?.validationChecks ?? [],
+    readPaths: item.toolConnector?.readPaths ?? [],
+    controlPaths: item.toolConnector?.controlPaths ?? [],
+    diagnostics: item.toolConnector?.diagnostics ?? [],
+    safetyBoundaries: item.toolConnector?.safetyBoundaries ?? [],
+    settingsAction: item.settingsAction,
+    mcpTemplate: item.mcpTemplate,
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisToolConnectorsStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (id && !isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.tools.items
+    .filter((item) => item.toolConnector)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisToolConnectorStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
 function xenesisToolViewStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
   return {
     id: item.id,
@@ -12484,6 +12536,7 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisGuidesStatus: (args: unknown) => getXenesisGuidesStatus(args),
     openXenesisGuide: (args: unknown) => openXenesisGuide(args),
     getXenesisToolSetupStatus: (args: unknown) => getXenesisToolSetupStatus(args),
+    getXenesisToolConnectorsStatus: (args: unknown) => getXenesisToolConnectorsStatus(args),
     getXenesisToolViewsStatus: (args: unknown) => getXenesisToolViewsStatus(args),
     openXenesisToolView: (args: unknown) => openXenesisToolView(args),
     getXenesisMessengerViewsStatus: (args: unknown) => getXenesisMessengerViewsStatus(args),

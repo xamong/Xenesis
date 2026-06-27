@@ -66,6 +66,32 @@ export interface XenesisConnectionToolSetupTemplate {
   riskControls: string[];
 }
 
+export type XenesisConnectionToolConnectorCredentialState = XenesisConnectionProviderCredentialState | 'planned';
+export type XenesisConnectionToolConnectorCredentialSource = 'env' | 'oauth-client' | 'workspace-config' | 'none';
+
+export interface XenesisConnectionToolConnectorCredentialRef {
+  ref: string;
+  source: XenesisConnectionToolConnectorCredentialSource;
+  required: boolean;
+  state: XenesisConnectionToolConnectorCredentialState;
+}
+
+export interface XenesisConnectionToolConnectorTemplate {
+  connectorType: 'mcp-stdio' | 'mcp-http' | 'oauth-mcp' | 'local';
+  authMode: 'none' | 'env-token' | 'oauth';
+  runtimeSupport: 'ready-template' | 'manual-config' | 'planned-oauth';
+  credentialRefs: XenesisConnectionToolConnectorCredentialRef[];
+  credentialState: XenesisConnectionToolConnectorCredentialState;
+  dataScopes: string[];
+  writeScopes: string[];
+  setupSurface: string;
+  validationChecks: string[];
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  safetyBoundaries: string[];
+}
+
 export interface XenesisConnectionToolViewTemplate {
   viewType: 'connection-detail';
   primarySurface: string;
@@ -261,6 +287,7 @@ export interface XenesisConnectionItem {
   providerView?: XenesisConnectionProviderViewTemplate;
   providerRouting?: XenesisConnectionProviderRoutingTemplate;
   toolSetup?: XenesisConnectionToolSetupTemplate;
+  toolConnector?: XenesisConnectionToolConnectorTemplate;
   toolView?: XenesisConnectionToolViewTemplate;
   messengerView?: XenesisConnectionMessengerViewTemplate;
   guideCatalog?: XenesisConnectionGuideCatalogTemplate;
@@ -564,6 +591,88 @@ function toolViewTemplate(
   };
 }
 
+type XenesisConnectionToolConnectorCredentialRefInput = Omit<XenesisConnectionToolConnectorCredentialRef, 'state'>;
+
+function toolConnectorCredentialState(
+  ref: XenesisConnectionToolConnectorCredentialRefInput,
+  runtimeSupport: XenesisConnectionToolConnectorTemplate['runtimeSupport'],
+  env: Record<string, string | undefined>,
+): XenesisConnectionToolConnectorCredentialState {
+  if (runtimeSupport === 'planned-oauth') return 'planned';
+  if (ref.source === 'none') return 'not-required';
+  if (ref.source === 'oauth-client' && !ref.required) return 'not-required';
+  if (ref.source === 'workspace-config' && !ref.required) return 'not-required';
+  if (!ref.required) return 'not-required';
+  return env[ref.ref]?.trim() ? 'configured' : 'missing';
+}
+
+function aggregateToolCredentialState(
+  refs: XenesisConnectionToolConnectorCredentialRef[],
+  runtimeSupport: XenesisConnectionToolConnectorTemplate['runtimeSupport'],
+): XenesisConnectionToolConnectorCredentialState {
+  if (runtimeSupport === 'planned-oauth') return 'planned';
+  if (refs.length === 0) return 'not-required';
+  if (refs.some((ref) => ref.required && ref.state === 'missing')) return 'missing';
+  if (refs.some((ref) => ref.required && ref.state === 'configured')) return 'configured';
+  return 'not-required';
+}
+
+function withToolConnectorCredentialState(
+  connector: XenesisConnectionToolConnectorTemplate,
+  env: Record<string, string | undefined>,
+): XenesisConnectionToolConnectorTemplate {
+  const credentialRefs = connector.credentialRefs.map((ref) => ({
+    ...ref,
+    state: toolConnectorCredentialState(ref, connector.runtimeSupport, env),
+  }));
+  return {
+    ...connector,
+    credentialRefs,
+    credentialState: aggregateToolCredentialState(credentialRefs, connector.runtimeSupport),
+  };
+}
+
+function toolConnectorTemplate(input: {
+  connectorType: XenesisConnectionToolConnectorTemplate['connectorType'];
+  authMode: XenesisConnectionToolConnectorTemplate['authMode'];
+  runtimeSupport: XenesisConnectionToolConnectorTemplate['runtimeSupport'];
+  credentialRefs?: XenesisConnectionToolConnectorCredentialRefInput[];
+  dataScopes: string[];
+  writeScopes: string[];
+  setupSurface: string;
+  validationChecks: string[];
+  diagnostics: string[];
+  safetyBoundaries?: string[];
+}): XenesisConnectionToolConnectorTemplate {
+  const credentialRefs = (input.credentialRefs ?? []).map((ref) => ({
+    ...ref,
+    state: toolConnectorCredentialState(ref, input.runtimeSupport, {}),
+  }));
+  return {
+    connectorType: input.connectorType,
+    authMode: input.authMode,
+    runtimeSupport: input.runtimeSupport,
+    credentialRefs,
+    credentialState: aggregateToolCredentialState(credentialRefs, input.runtimeSupport),
+    dataScopes: [...input.dataScopes],
+    writeScopes: [...input.writeScopes],
+    setupSurface: input.setupSurface,
+    validationChecks: input.validationChecks,
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.tools.connectors.status',
+      'xd.xenesis.tools.setup.status',
+      'xd.mcp.settings.status',
+    ],
+    controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.connections.open'],
+    diagnostics: input.diagnostics,
+    safetyBoundaries: input.safetyBoundaries ?? [
+      'credential values are never returned',
+      'tool execution remains behind provider MCP tools and CR approval paths',
+    ],
+  };
+}
+
 const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
   {
     id: 'fetch',
@@ -576,6 +685,16 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
     mcpTemplate: mcpTemplateFor('fetch'),
     toolView: toolViewTemplate('fetch', 'Settings > AI Provider > Local CLI MCP', { hasMcpTemplate: true }),
+    toolConnector: toolConnectorTemplate({
+      connectorType: 'mcp-stdio',
+      authMode: 'none',
+      runtimeSupport: 'ready-template',
+      dataScopes: ['webpage:read'],
+      writeScopes: [],
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      validationChecks: ['mcp-server-listed', 'credential-state-redacted', 'fetch-known-url', 'cr-readback'],
+      diagnostics: ['mcp-settings-status', 'template-snippet'],
+    }),
     toolSetup: {
       connection: 'mcp',
       authMode: 'none',
@@ -604,6 +723,16 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
     mcpTemplate: mcpTemplateFor('filesystem'),
     toolView: toolViewTemplate('filesystem', 'Settings > AI Provider > Local CLI MCP', { hasMcpTemplate: true }),
+    toolConnector: toolConnectorTemplate({
+      connectorType: 'mcp-stdio',
+      authMode: 'none',
+      runtimeSupport: 'ready-template',
+      dataScopes: ['workspace:read-files', 'workspace:list-files', 'workspace:search-files'],
+      writeScopes: [],
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      validationChecks: ['mcp-server-listed', 'credential-state-redacted', 'workspace-directory-list', 'cr-readback'],
+      diagnostics: ['workspace-scope', 'mcp-settings-status', 'template-snippet'],
+    }),
     toolSetup: {
       connection: 'mcp',
       authMode: 'none',
@@ -633,6 +762,17 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
     mcpTemplate: mcpTemplateFor('github'),
     toolView: toolViewTemplate('github', 'Settings > AI Provider > Local CLI MCP', { hasMcpTemplate: true }),
+    toolConnector: toolConnectorTemplate({
+      connectorType: 'mcp-stdio',
+      authMode: 'env-token',
+      runtimeSupport: 'ready-template',
+      credentialRefs: [{ ref: 'GITHUB_TOKEN', source: 'env', required: true }],
+      dataScopes: ['github:search-code', 'github:read-repos', 'github:read-issues', 'github:read-pull-requests'],
+      writeScopes: ['github:writes-disabled-until-approved'],
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      validationChecks: ['mcp-server-listed', 'credential-state-redacted', 'github-repo-read', 'cr-readback'],
+      diagnostics: ['missing-env', 'mcp-settings-status', 'template-snippet'],
+    }),
     toolSetup: {
       connection: 'mcp',
       authMode: 'env-token',
@@ -663,6 +803,17 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
     mcpTemplate: mcpTemplateFor('notion'),
     toolView: toolViewTemplate('notion', 'Settings > AI Provider > Local CLI MCP', { hasMcpTemplate: true }),
+    toolConnector: toolConnectorTemplate({
+      connectorType: 'mcp-stdio',
+      authMode: 'env-token',
+      runtimeSupport: 'ready-template',
+      credentialRefs: [{ ref: 'NOTION_TOKEN', source: 'env', required: true }],
+      dataScopes: ['notion:search', 'notion:read-pages', 'notion:read-databases'],
+      writeScopes: ['notion:writes-disabled-until-approved'],
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      validationChecks: ['mcp-server-listed', 'credential-state-redacted', 'notion-search-read', 'cr-readback'],
+      diagnostics: ['missing-env', 'mcp-settings-status', 'template-snippet'],
+    }),
     toolSetup: {
       connection: 'mcp',
       authMode: 'env-token',
@@ -692,6 +843,17 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
     mcpTemplate: mcpTemplateFor('linear'),
     toolView: toolViewTemplate('linear', 'Settings > AI Provider > Local CLI MCP', { hasMcpTemplate: true }),
+    toolConnector: toolConnectorTemplate({
+      connectorType: 'mcp-http',
+      authMode: 'oauth',
+      runtimeSupport: 'ready-template',
+      credentialRefs: [{ ref: 'LINEAR_OAUTH_TOKEN_STORE', source: 'oauth-client', required: false }],
+      dataScopes: ['linear:read-issues', 'linear:read-projects', 'linear:read-comments'],
+      writeScopes: ['linear:update-issues-after-approval', 'linear:create-comments-after-approval'],
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      validationChecks: ['mcp-server-listed', 'credential-state-redacted', 'oauth-authorized', 'linear-issue-read'],
+      diagnostics: ['oauth-client', 'mcp-settings-status', 'template-snippet'],
+    }),
     toolSetup: {
       connection: 'oauth-mcp',
       authMode: 'oauth',
@@ -720,6 +882,21 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     supportLevel: 'planned',
     crActions: [],
     toolView: toolViewTemplate('google-workspace', 'Settings > AI Provider > Local CLI MCP'),
+    toolConnector: toolConnectorTemplate({
+      connectorType: 'oauth-mcp',
+      authMode: 'oauth',
+      runtimeSupport: 'planned-oauth',
+      credentialRefs: [{ ref: 'GOOGLE_OAUTH_TOKEN_STORE', source: 'oauth-client', required: false }],
+      dataScopes: ['google-drive.readonly', 'gmail.readonly', 'documents.readonly'],
+      writeScopes: ['google-writes-disabled-until-template-verified'],
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      validationChecks: ['oauth-consent-reviewed', 'credential-state-redacted', 'drive-list-read', 'cr-readback'],
+      diagnostics: ['planned-oauth-template', 'mcp-settings-status'],
+      safetyBoundaries: [
+        'credential values are never returned',
+        'planned OAuth connector exposes readiness only until a verified MCP template exists',
+      ],
+    }),
     toolSetup: {
       connection: 'oauth-mcp',
       authMode: 'oauth',
@@ -749,6 +926,21 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     supportLevel: 'planned',
     crActions: [],
     toolView: toolViewTemplate('google-calendar', 'Settings > AI Provider > Local CLI MCP'),
+    toolConnector: toolConnectorTemplate({
+      connectorType: 'oauth-mcp',
+      authMode: 'oauth',
+      runtimeSupport: 'planned-oauth',
+      credentialRefs: [{ ref: 'GOOGLE_OAUTH_TOKEN_STORE', source: 'oauth-client', required: false }],
+      dataScopes: ['calendar.calendarlist.readonly', 'calendar.events.readonly', 'calendar.freebusy.readonly'],
+      writeScopes: ['calendar-writes-disabled-until-template-verified'],
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      validationChecks: ['oauth-consent-reviewed', 'credential-state-redacted', 'calendar-list-read', 'cr-readback'],
+      diagnostics: ['planned-oauth-template', 'mcp-settings-status'],
+      safetyBoundaries: [
+        'credential values are never returned',
+        'planned OAuth connector exposes readiness only until a verified MCP template exists',
+      ],
+    }),
     toolSetup: {
       connection: 'oauth-mcp',
       authMode: 'oauth',
@@ -1641,6 +1833,17 @@ function countItems(sections: XenesisConnectionsStatus['sections']): XenesisConn
   return summary;
 }
 
+function toolConnectionItems(env: Record<string, string | undefined> = {}): XenesisConnectionItem[] {
+  return TOOL_CONNECTIONS.map((item) =>
+    item.toolConnector
+      ? {
+          ...item,
+          toolConnector: withToolConnectorCredentialState(item.toolConnector, env),
+        }
+      : item,
+  );
+}
+
 const LOCAL_PROVIDER_NAMES = ['codex-cli', 'codex-app-server', 'claude-cli', 'claude-interactive'] as const;
 
 function isLocalProviderName(provider: string): boolean {
@@ -2102,7 +2305,7 @@ export function buildXenesisConnectionsStatus(input: BuildXenesisConnectionsStat
     },
     localCli: { id: 'local-cli', label: 'Local CLI integration', items: localCliItems(input.providerIntegration) },
     mcp: { id: 'mcp', label: 'MCP bridge', items: [mcpItem(input.mcp)] },
-    tools: { id: 'tools', label: 'Tool connections', items: TOOL_CONNECTIONS },
+    tools: { id: 'tools', label: 'Tool connections', items: toolConnectionItems(input.env) },
     gateway: { id: 'gateway', label: 'Gateway', items: [gatewayItem(input.xenesis)] },
     messengers: {
       id: 'messengers',

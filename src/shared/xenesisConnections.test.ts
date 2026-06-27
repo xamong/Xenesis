@@ -532,6 +532,74 @@ test('buildXenesisConnectionsStatus exposes tool setup auth, scope, verification
   assert.equal(googleCalendar?.settingsAction, undefined);
 });
 
+test('buildXenesisConnectionsStatus exposes redacted external tool connector readiness', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+    env: {
+      GITHUB_TOKEN: 'ghp_redacted',
+      NOTION_TOKEN: '',
+    },
+  });
+
+  const github = status.sections.tools.items.find((item) => item.id === 'github');
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+  const googleCalendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+
+  assert.equal(github?.toolConnector?.credentialState, 'configured');
+  assert.deepEqual(notion?.toolConnector, {
+    connectorType: 'mcp-stdio',
+    authMode: 'env-token',
+    runtimeSupport: 'ready-template',
+    credentialRefs: [{ ref: 'NOTION_TOKEN', source: 'env', required: true, state: 'missing' }],
+    credentialState: 'missing',
+    dataScopes: ['notion:search', 'notion:read-pages', 'notion:read-databases'],
+    writeScopes: ['notion:writes-disabled-until-approved'],
+    setupSurface: 'Settings > AI Provider > Local CLI MCP',
+    validationChecks: ['mcp-server-listed', 'credential-state-redacted', 'notion-search-read', 'cr-readback'],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.tools.connectors.status',
+      'xd.xenesis.tools.setup.status',
+      'xd.mcp.settings.status',
+    ],
+    controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.connections.open'],
+    diagnostics: ['missing-env', 'mcp-settings-status', 'template-snippet'],
+    safetyBoundaries: [
+      'credential values are never returned',
+      'tool execution remains behind provider MCP tools and CR approval paths',
+    ],
+  });
+  assert.equal(googleCalendar?.toolConnector?.runtimeSupport, 'planned-oauth');
+  assert.equal(googleCalendar?.toolConnector?.credentialState, 'planned');
+  assert.deepEqual(googleCalendar?.toolConnector?.credentialRefs, [
+    { ref: 'GOOGLE_OAUTH_TOKEN_STORE', source: 'oauth-client', required: false, state: 'planned' },
+  ]);
+});
+
 test('buildXenesisConnectionsStatus exposes internal Desk tool views for MCP and planned tools', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {

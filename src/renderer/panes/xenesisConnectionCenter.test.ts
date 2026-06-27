@@ -13,6 +13,7 @@ import {
   formatXenesisProviderRoutingSummary,
   formatXenesisProviderSetupSummary,
   formatXenesisProviderViewSummary,
+  formatXenesisToolConnectorSummary,
   formatXenesisToolSetupSummary,
   formatXenesisToolViewSummary,
   listXenesisConnectionSections,
@@ -300,6 +301,27 @@ test('formatXenesisToolViewSummary describes internal Desk tool view surface and
       safetyBoundaries: ['view opens internal setup/readiness surfaces only'],
     }),
     'Settings > Xenesis Agent > Connections / connection-detail',
+  );
+});
+
+test('formatXenesisToolConnectorSummary describes connector type, auth, and runtime support', () => {
+  assert.equal(
+    formatXenesisToolConnectorSummary({
+      connectorType: 'mcp-stdio',
+      authMode: 'env-token',
+      runtimeSupport: 'ready-template',
+      credentialRefs: [{ ref: 'NOTION_TOKEN', source: 'env', required: true, state: 'missing' }],
+      credentialState: 'missing',
+      dataScopes: ['notion:search'],
+      writeScopes: ['notion:writes-disabled-until-approved'],
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      validationChecks: ['credential-state-redacted'],
+      readPaths: ['xd.xenesis.tools.connectors.status'],
+      controlPaths: ['xd.xenesis.tools.views.open'],
+      diagnostics: ['missing-env'],
+      safetyBoundaries: ['credential values are never returned'],
+    }),
+    'mcp-stdio / env-token / ready-template',
   );
 });
 

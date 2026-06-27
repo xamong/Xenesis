@@ -21,6 +21,10 @@ export type {
   XenesisConnectionSection,
   XenesisConnectionStatus,
   XenesisConnectionsStatus,
+  XenesisConnectionToolConnectorCredentialRef,
+  XenesisConnectionToolConnectorCredentialSource,
+  XenesisConnectionToolConnectorCredentialState,
+  XenesisConnectionToolConnectorTemplate,
   XenesisConnectionToolSetupTemplate,
   XenesisConnectionToolViewTemplate,
 } from './xenesisConnections';

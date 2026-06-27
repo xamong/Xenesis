@@ -12,6 +12,7 @@ import type {
   XenesisConnectionSection,
   XenesisConnectionStatus,
   XenesisConnectionsStatus,
+  XenesisConnectionToolConnectorTemplate,
   XenesisConnectionToolSetupTemplate,
   XenesisConnectionToolViewTemplate,
 } from '../../shared/types';
@@ -96,6 +97,10 @@ export function formatXenesisToolSetupSummary(setup: XenesisConnectionToolSetupT
 
 export function formatXenesisToolViewSummary(view: XenesisConnectionToolViewTemplate): string {
   return `${view.primarySurface} / ${view.viewType}`;
+}
+
+export function formatXenesisToolConnectorSummary(connector: XenesisConnectionToolConnectorTemplate): string {
+  return `${connector.connectorType} / ${connector.authMode} / ${connector.runtimeSupport}`;
 }
 
 export function formatXenesisMessengerViewSummary(view: XenesisConnectionMessengerViewTemplate): string {

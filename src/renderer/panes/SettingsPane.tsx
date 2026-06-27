@@ -96,6 +96,7 @@ import {
   formatXenesisProviderRoutingSummary,
   formatXenesisProviderSetupSummary,
   formatXenesisProviderViewSummary,
+  formatXenesisToolConnectorSummary,
   formatXenesisToolSetupSummary,
   formatXenesisToolViewSummary,
   listXenesisConnectionSections,
@@ -4262,6 +4263,7 @@ export default function SettingsPane() {
     const providerView = item.providerView;
     const providerRouting = item.providerRouting;
     const toolSetup = item.toolSetup;
+    const toolConnector = item.toolConnector;
     const toolView = item.toolView;
     const messengerView = item.messengerView;
     const channelTemplate = item.channelTemplate;
@@ -4560,6 +4562,48 @@ export default function SettingsPane() {
             <div>
               <span>{t('settings.xenesisConnectionsToolRiskControls')}</span>
               <strong>{toolSetup.riskControls.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {toolConnector ? (
+          <div className="sp-info-list sp-info-list-compact" data-xenesis-tool-connector={item.id}>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolConnector')}</span>
+              <strong>{formatXenesisToolConnectorSummary(toolConnector)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolConnectorCredentialState')}</span>
+              <strong>{toolConnector.credentialState}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolConnectorCredentials')}</span>
+              <strong>
+                {toolConnector.credentialRefs.length
+                  ? toolConnector.credentialRefs
+                      .map((ref) => `${ref.source}:${ref.ref}:${ref.state}${ref.required ? ':required' : ''}`)
+                      .join(', ')
+                  : '-'}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolConnectorValidation')}</span>
+              <strong>{toolConnector.validationChecks.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolConnectorReadback')}</span>
+              <strong>{toolConnector.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolConnectorControls')}</span>
+              <strong>{toolConnector.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolConnectorDiagnostics')}</span>
+              <strong>{toolConnector.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolConnectorSafety')}</span>
+              <strong>{toolConnector.safetyBoundaries.join(', ')}</strong>
             </div>
           </div>
         ) : null}
