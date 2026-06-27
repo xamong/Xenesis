@@ -862,6 +862,38 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local Obsidian graph, source code, and tests.
 
+## Agent Hint Registry Inventory Slice
+
+- Reduced hardcoded CR path inventory inside
+  `xenesisAgentDeskControl.ts` for the Agent control prompt hint.
+- The hint now discovers Connection Center callable CR paths from the Capability
+  Registry using safe prefixes:
+  - `xd.xenesis.connections`
+  - `xd.xenesis.onboarding`
+  - `xd.xenesis.guides`
+  - `xd.xenesis.providers`
+  - `xd.xenesis.tools`
+  - `xd.xenesis.channels`
+  - `xd.xenesis.messengers`
+- Provider, tool, and channel prompt-hint bullets now describe behavior classes
+  and safety boundaries instead of manually listing every path in the planner
+  file.
+- Existing high-value CR path assertions still pass because the generated hint
+  includes the registry-discovered path list.
+- Scope boundary: prompt hint inventory only. This slice does not change
+  deterministic natural-language routing, CR dispatcher behavior, provider/tool
+  settings, Action Inbox behavior, OAuth, credentials, external calls, or Desk
+  mutations.
+- Verification:
+  - RED tests failed first because the source still contained exhaustive inline
+    provider path list text and the hint lacked the registry-discovered line.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 36/36 tests.
+  - Scoped Biome check exited 0 for the touched Agent control files.
+  - Root typecheck passed.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local Obsidian graph, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

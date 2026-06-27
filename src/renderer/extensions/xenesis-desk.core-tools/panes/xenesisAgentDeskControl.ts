@@ -2912,6 +2912,29 @@ export function summarizeXenesisDeskActionExecution(result: XenesisDeskActionExe
   return `${result.ok ? 'Desk action applied' : 'Desk action failed'}: ${result.path}`;
 }
 
+const XENESIS_CONNECTION_CENTER_HINT_PREFIXES = [
+  'xd.xenesis.connections',
+  'xd.xenesis.onboarding',
+  'xd.xenesis.guides',
+  'xd.xenesis.providers',
+  'xd.xenesis.tools',
+  'xd.xenesis.channels',
+  'xd.xenesis.messengers',
+] as const;
+
+function isCapabilityPathUnderPrefix(path: string, prefix: string): boolean {
+  return path === prefix || path.startsWith(`${prefix}.`);
+}
+
+function buildRegistryCapabilityPathSummary(prefixes: readonly string[]): string {
+  return listDeskBridgeCapabilities()
+    .filter((node) => node.callable)
+    .map((node) => node.path)
+    .filter((path) => prefixes.some((prefix) => isCapabilityPathUnderPrefix(path, prefix)))
+    .sort()
+    .join(', ');
+}
+
 function buildDirectCrPathSummary(lines: readonly string[]): string {
   const callablePaths = new Set(
     listDeskBridgeCapabilities()
@@ -2948,13 +2971,8 @@ export function buildXenesisDeskControlPromptHint(): string {
     '- Use `placement:"tab"`, `"right"`, `"left"`, `"top"`, or `"bottom"` when opening views. If a specific pane is known, pass `targetPaneId`.',
     '- Use `xd.window.sizer.applyPreset` with `args.presetId`, for example `{"presetId":"qhd"}`.',
     '- Use `xd.dock.artifactTarget.set` with `args.paneId` after opening a Gowoori pane that should receive artifacts.',
-    '- Use `xd.xenesis.connections.status` to inspect overall Connection Center readiness before targeted provider, tool, messenger, diagnostics, setup-request, onboarding, or guide actions.',
-    '- Use `xd.xenesis.connections.open` with `args.id` and `args.ensureVisible:true` to open Settings > Xenesis Agent > Connections and focus a specific provider, MCP tool, or messenger connection card.',
-    '- Use `xd.xenesis.connections.diagnostics.status` to inspect a connection diagnostic runbook and `xd.xenesis.connections.diagnostics.open` to focus the owning Connection Center card.',
-    '- Use `xd.xenesis.connections.setupRequests.status` to inspect setup request templates, `xd.xenesis.connections.setupRequests.open` to focus the owning card, and `xd.xenesis.connections.setupRequests.request` to record a local Action Inbox review item without executing installs, OAuth, tokens, tool calls, messages, or settings mutations.',
-    '- Use `xd.xenesis.onboarding.status` to inspect initial setup readiness and `xd.xenesis.onboarding.open` to focus one onboarding checklist step inside the Connection Center.',
-    '- Use `xd.xenesis.guides.status` and `xd.xenesis.guides.open` to inspect or open repo-local setup playbooks, integration guides, and user-story guides.',
-    '- Use `xd.xenesis.providers.setup.status`, `xd.xenesis.providers.setup.open`, `xd.xenesis.providers.routing.status`, `xd.xenesis.providers.routing.open`, `xd.xenesis.providers.views.status`, and `xd.xenesis.providers.views.open` before changing provider-related Desk state.',
+    '- Use Connection Center CR paths from the Capability Registry to inspect readiness, focus provider/tool/messenger cards, open diagnostics and setup requests, follow onboarding steps, and open repo-local guides.',
+    '- Use provider setup, routing, view, and profile-draft CR paths from the Capability Registry before changing provider-related Desk state.',
     '- Use `xd.localCli.scan`, `xd.mcp.settings.status`, and `xd.mcp.bridge.status` to inspect local CLI discovery and MCP setup or bridge readiness before suggesting installs, config writes, gateway starts, or local CLI switching.',
     '- Use `xd.xenesis.gateway.status` to inspect runtime gateway readiness and `xd.xenesis.gateway.openDashboard` to open the Desk gateway dashboard; do not start, stop, or restart the gateway unless the user clearly asks and approval policy is satisfied.',
     '- Use `xd.xenesis.workspace.set` only when the user clearly asks to bind the Xenesis workspace to a specific local path; leave approval handling to the Capability Registry, especially for outside-workspace paths.',
@@ -2962,16 +2980,16 @@ export function buildXenesisDeskControlPromptHint(): string {
     '- Use `xd.xenesis.diagnostics`, `xd.xenesis.reports.list`, `xd.xenesis.tasks.list`, `xd.xenesis.agents.list`, `xd.xenesis.agents.status`, `xd.xenesis.agents.events`, and `xd.xenesis.agents.submit` to inspect runtime diagnostics, verification reports, task inventory, registered Agent panes, quoted Agent pane status/events, or submit a quoted Agent pane message before mutating broader runtime state. Agent status/events require `args.agentId`; Agent submit requires `args.agentId` and `args.text`.',
     '- Use `xd.xenesis.profiles.list` to inspect installed and active Xenesis profiles before installing profiles, switching the active profile, updating channel settings, or sending profile channel test messages.',
     '- Use `xd.xenesis.runs.start` only when the user clearly asks to run a quoted prompt through the Xenesis runtime. Use `xd.xenesis.runs.cancel` only for explicit user requests to cancel the active Xenesis runtime request, and `xd.xenesis.sessions.reset` only for explicit user requests to reset the active Xenesis conversation/session.',
-    '- Use `xd.xenesis.tools.setup.status`, `xd.xenesis.tools.setup.open`, `xd.xenesis.tools.connectors.status`, `xd.xenesis.tools.connectors.open`, `xd.xenesis.tools.views.status`, `xd.xenesis.tools.views.open`, `xd.xenesis.tools.userStories.status`, `xd.xenesis.tools.userStories.open`, `xd.xenesis.tools.installPlans.status`, `xd.xenesis.tools.installPlans.open`, and `xd.xenesis.tools.installPlans.request` to inspect, open, or request review of internal Desk tool setup/readiness surfaces. Tool install plans are review-only and do not execute installs, write MCP config, complete OAuth, store tokens, execute provider tools, mutate settings, or mutate external systems.',
-    '- Use `xd.xenesis.tools.mcpInstallDrafts.status` to inspect review-only MCP install drafts, `xd.xenesis.tools.mcpInstallDrafts.open` to focus the owning tool card, and `xd.xenesis.tools.mcpInstallDrafts.request` to record a local Action Inbox review item without writing MCP config, running shell commands, completing OAuth, storing tokens, executing provider tools, or mutating settings.',
-    '- Use `xd.xenesis.tools.oauthDrafts.status` to inspect review-only Google tool OAuth app and token-store drafts, `xd.xenesis.tools.oauthDrafts.open` to focus the owning tool card, and `xd.xenesis.tools.oauthDrafts.request` to record a local Action Inbox review item. Tool OAuth drafts are review-only and do not complete OAuth, store tokens, write MCP config, execute provider tools, send email, mutate documents, or mutate calendar events.',
-    '- Use `xd.xenesis.tools.actions.status` to inspect review-only external tool action catalogs, `xd.xenesis.tools.actions.open` to focus the owning tool card, and `xd.xenesis.tools.actions.request` to record a local Action Inbox review item. Tool action catalogs are review-only and do not execute provider tools or mutate external systems.',
-    '- Use `xd.xenesis.providers.profileDrafts.status` to inspect review-only AI provider profile field drafts, `xd.xenesis.providers.profileDrafts.open` to focus the provider draft card, and `xd.xenesis.providers.profileDrafts.request` to record a local Action Inbox review item. Provider profile drafts are review-only and do not mutate provider settings, store credentials, switch local CLI selection, or run provider prompts.',
-    '- Use `xd.xenesis.channels.routing.status`, `xd.xenesis.channels.routing.open`, `xd.xenesis.channels.safety.status`, `xd.xenesis.channels.safety.open`, `xd.xenesis.channels.accessGroups.status`, `xd.xenesis.channels.accessGroups.open`, `xd.xenesis.channels.pairing.status`, `xd.xenesis.channels.pairing.open`, `xd.xenesis.messengers.views.status`, and `xd.xenesis.messengers.views.open` before testing or changing external messenger setup.',
-    '- Use `xd.xenesis.channels.userStories.status` to inspect external messenger channel workflows and `xd.xenesis.channels.userStories.open` to focus one channel user-story card inside the Connection Center.',
-    '- Use `xd.xenesis.channels.profileDrafts.status` to inspect review-only external messenger profile field drafts, `xd.xenesis.channels.profileDrafts.open` to focus one channel draft card, and `xd.xenesis.channels.profileDrafts.request` to record a local Action Inbox review item. Channel profile drafts are review-only and do not mutate channel settings, update allowlists, write profiles, send test messages, start the gateway, store secrets, or bypass approvals.',
+    '- Use external tool setup, connector, view, user-story, install-plan, MCP install draft, OAuth draft, and action-policy CR paths from the Capability Registry to inspect, open, or request review of internal Desk tool readiness surfaces. Tool install plans are review-only and do not execute installs, write MCP config, complete OAuth, store tokens, execute provider tools, mutate settings, or mutate external systems.',
+    '- Use tool MCP install draft CR paths from the Capability Registry to inspect templates, focus owning cards, or record local Action Inbox review items without writing MCP config, running shell commands, completing OAuth, storing tokens, executing provider tools, or mutating settings.',
+    '- Use tool OAuth draft CR paths from the Capability Registry to inspect Google OAuth app and token-store drafts, focus owning cards, or record local Action Inbox review items. Tool OAuth drafts are review-only and do not complete OAuth, store tokens, write MCP config, execute provider tools, send email, mutate documents, or mutate calendar events.',
+    '- Use external tool action-policy CR paths from the Capability Registry to inspect review-only action catalogs, focus owning cards, or record local Action Inbox review items. Tool action catalogs are review-only and do not execute provider tools or mutate external systems.',
+    '- Use provider profile-draft CR paths from the Capability Registry to inspect field drafts, focus provider draft cards, or record local Action Inbox review items. Provider profile drafts are review-only and do not mutate provider settings, store credentials, switch local CLI selection, or run provider prompts.',
+    '- Use external messenger routing, safety, access-group, pairing, view, user-story, and profile-draft CR paths from the Capability Registry before testing or changing external messenger setup.',
+    '- Channel profile drafts are review-only and do not mutate channel settings, update allowlists, write profiles, send test messages, start the gateway, store secrets, or bypass approvals.',
     '- Use `xd.testing.xenesisAgent.snapshot` and `xd.testing.xenesisAgent.submitPrompt` only for development smoke verification of the live Agent pane.',
     '- For dashboard or XCON/SKETCH artifact generation, Xenesis Agent should own generation through `/artifact`; Gowoori is the render target and GowooriChat is fallback only.',
+    `- Connection Center CR paths discovered from Capability Registry: ${buildRegistryCapabilityPathSummary(XENESIS_CONNECTION_CENTER_HINT_PREFIXES)}.`,
     '- Common natural Desk requests map to Capability Registry paths before the LLM run when they are clear commands: settings `xd.panes.settings.open`, files `xd.files.listOpen`, `xd.files.open`, `xd.files.read`, explorer `xd.explorer.local.show`, `xd.explorer.local.navigate`, `xd.explorer.local.setFilter`, capture `xd.capture.activePane`, terminals `xd.terminals.list`, `xd.terminals.run`, `xd.terminals.runMany`, layout `xd.dock.window.arrange`, `xd.dock.pane.arrange`, `xd.dock.arrangeHorizontal`, `xd.dock.arrangeVertical`, `xd.dock.arrangeGrid`, `xd.dock.mergeGroup`, `xd.dock.mergeAll`, pane focus/close `xd.dock.focus`, `xd.dock.close`, sizing `xd.dock.sizes.current`, `xd.dock.sizes.set`, panes `xd.dock.panes.list`, tools `xd.tools.core.capabilityExplorer.open`, `xd.tools.core.networkMonitor.open`, and other `xd.tools.core.*.open` surfaces.',
     '- If the user asks in natural language for a supported local Desk operation, prefer the exact CR path rather than explaining how to do it manually.',
     '',

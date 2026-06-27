@@ -20,6 +20,9 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /IMPLEMENTED_XENESIS_MESSENGER_IDS/);
   assert.doesNotMatch(source, /Useful direct CR paths include xd\.app\.status/);
   assert.doesNotMatch(source, /xd\.xenesis\.channels\.routing\.status, xd\.xenesis\.channels\.routing\.open/);
+  assert.doesNotMatch(source, /Use `xd\.xenesis\.providers\.setup\.status`, `xd\.xenesis\.providers\.setup\.open`/);
+  assert.doesNotMatch(source, /Use `xd\.xenesis\.tools\.setup\.status`, `xd\.xenesis\.tools\.setup\.open`/);
+  assert.doesNotMatch(source, /Use `xd\.xenesis\.channels\.routing\.status`, `xd\.xenesis\.channels\.routing\.open`/);
 });
 
 test('parseXenesisDeskActionBlocks extracts Desk CR actions and hides them from visible chat', () => {
@@ -303,6 +306,7 @@ test('buildXenesisDeskControlPromptHint describes native CR control without exte
 test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoids stale aliases', () => {
   const hint = buildXenesisDeskControlPromptHint();
 
+  assert.match(hint, /Connection Center CR paths discovered from Capability Registry/i);
   assert.match(hint, /xd\.window\.sizer\.applyPreset/);
   assert.match(hint, /presetId/);
   assert.match(hint, /xd\.dock\.artifactTarget\.set/);
