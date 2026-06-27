@@ -27,6 +27,12 @@ export interface XenesisNaturalConnectionTarget extends XenesisNaturalWordsTarge
   supportLevel?: 'implemented' | 'planned' | 'manual';
 }
 
+export interface XenesisNaturalDeskActionDescriptor {
+  id: string;
+  path: string;
+  reason: string;
+}
+
 export const XENESIS_NATURAL_EXPLICIT_OPEN_WORDS = ['열어', '켜줘', '띄워', '포커스', '집중'] as const;
 
 export const XENESIS_NATURAL_ACTION_INTENT_WORDS = [
@@ -827,6 +833,207 @@ export const XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES = [
   '```',
   '',
 ] as const;
+
+export const XENESIS_NATURAL_DEFAULT_TERMINAL_SHELL = 'powershell';
+
+export const XENESIS_NATURAL_DEFAULT_TERMINAL_COMMAND = 'Write-Host Xenesis-Desk-terminal';
+
+export const XENESIS_NATURAL_TERMINAL_ID_PREFIX = 'xenesis-agent-natural';
+
+export const XENESIS_NATURAL_VIEW_OPEN_PATH = 'xd.views.open';
+
+export const XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS = {
+  settingsOpen: {
+    id: 'natural-settings-open',
+    path: 'xd.panes.settings.open',
+    reason: 'Open settings from natural language request.',
+  },
+  diagnosticsOpen: {
+    id: 'natural-diagnostics-open',
+    path: 'xd.panes.diagnostics.open',
+    reason: 'Open diagnostics from natural language request.',
+  },
+  capabilityExplorerOpen: {
+    id: 'natural-capability-explorer-open',
+    path: 'xd.tools.core.capabilityExplorer.open',
+    reason: 'Open Capability Explorer from natural language request.',
+  },
+  captureList: {
+    id: 'natural-capture-list',
+    path: 'xd.capture.list',
+    reason: 'List captures from natural language request.',
+  },
+  captureActivePane: {
+    id: 'natural-capture-active-pane',
+    path: 'xd.capture.activePane',
+    reason: 'Capture the active pane from natural language request.',
+  },
+  dockFocusActive: {
+    id: 'natural-dock-focus-active',
+    path: 'xd.dock.focus',
+    reason: 'Focus the active dock content from natural language request.',
+  },
+  dockCloseActive: {
+    id: 'natural-dock-close-active',
+    path: 'xd.dock.close',
+    reason: 'Close the active dock content from natural language request.',
+  },
+  dockCloseRight: {
+    id: 'natural-dock-close-right-active',
+    path: 'xd.dock.closeRight',
+    reason: 'Close tabs to the right of active dock content from natural language request.',
+  },
+  dockCloseOthers: {
+    id: 'natural-dock-close-others-active',
+    path: 'xd.dock.closeOthers',
+    reason: 'Close other tabs around active dock content from natural language request.',
+  },
+  dockCloseAll: {
+    id: 'natural-dock-close-all-active',
+    path: 'xd.dock.closeAll',
+    reason: 'Close all tabs in active dock pane from natural language request.',
+  },
+  dockSizeSet: {
+    id: 'natural-dock-size-set',
+    path: 'xd.dock.sizes.set',
+    reason: 'Resize a dock side from natural language request.',
+  },
+  windowSizePreset: {
+    id: 'natural-window-size-preset',
+    path: 'xd.window.sizer.applyPreset',
+    reason: 'Apply window size preset from natural language request.',
+  },
+  filesListOpen: {
+    id: 'natural-files-list-open',
+    path: 'xd.files.listOpen',
+    reason: 'List open files from natural language request.',
+  },
+  fileOpen: {
+    id: 'natural-file-open',
+    path: 'xd.files.open',
+    reason: 'Open file from natural language request.',
+  },
+  fileRead: {
+    id: 'natural-file-read',
+    path: 'xd.files.read',
+    reason: 'Read file from natural language request.',
+  },
+  explorerHide: {
+    id: 'natural-explorer-hide',
+    path: 'xd.explorer.local.hide',
+    reason: 'Hide explorer from natural language request.',
+  },
+  explorerToggle: {
+    id: 'natural-explorer-toggle',
+    path: 'xd.explorer.local.toggle',
+    reason: 'Toggle explorer from natural language request.',
+  },
+  explorerRefresh: {
+    id: 'natural-explorer-refresh',
+    path: 'xd.explorer.local.refresh',
+    reason: 'Refresh explorer from natural language request.',
+  },
+  explorerGoUp: {
+    id: 'natural-explorer-go-up',
+    path: 'xd.explorer.local.goUp',
+    reason: 'Go to parent folder from natural language request.',
+  },
+  explorerFilter: {
+    id: 'natural-explorer-filter',
+    path: 'xd.explorer.local.setFilter',
+    reason: 'Filter explorer from natural language request.',
+  },
+  explorerNavigate: {
+    id: 'natural-explorer-navigate',
+    path: 'xd.explorer.local.navigate',
+    reason: 'Navigate explorer from natural language request.',
+  },
+  explorerShow: {
+    id: 'natural-explorer-show',
+    path: 'xd.explorer.local.show',
+    reason: 'Show explorer from natural language request.',
+  },
+  favoritesShow: {
+    id: 'natural-favorites-show',
+    path: 'xd.favorites.showTab',
+    reason: 'Show favorites from natural language request.',
+  },
+  terminalsList: {
+    id: 'natural-terminals-list',
+    path: 'xd.terminals.list',
+    reason: 'List terminals from natural language request.',
+  },
+  terminalRunMany: {
+    id: 'natural-terminal-run-many',
+    path: 'xd.terminals.runMany',
+    reason: 'Open multiple terminals from natural language request.',
+  },
+  terminalRun: {
+    id: 'natural-terminal-run',
+    path: 'xd.terminals.run',
+    reason: 'Run terminal command from natural language request.',
+  },
+  dockWindowArrange: {
+    id: 'natural-dock-window-arrange',
+    path: 'xd.dock.window.arrange',
+    reason: 'Arrange a Desk window area from natural language request.',
+  },
+  dockPaneArrange: {
+    id: 'natural-dock-pane-arrange',
+    path: 'xd.dock.pane.arrange',
+    reason: 'Arrange the active dock pane from natural language request.',
+  },
+  dockArrangeGrid: {
+    id: 'natural-dock-arrange-grid',
+    path: 'xd.dock.arrangeGrid',
+    reason: 'Arrange dock group as grid from natural language request.',
+  },
+  dockArrangeHorizontal: {
+    id: 'natural-dock-arrange-horizontal',
+    path: 'xd.dock.arrangeHorizontal',
+    reason: 'Arrange dock group horizontally from natural language request.',
+  },
+  dockArrangeVertical: {
+    id: 'natural-dock-arrange-vertical',
+    path: 'xd.dock.arrangeVertical',
+    reason: 'Arrange dock group vertically from natural language request.',
+  },
+  dockWindowMerge: {
+    id: 'natural-dock-window-merge',
+    path: 'xd.dock.window.merge',
+    reason: 'Merge a Desk window area from natural language request.',
+  },
+  dockPaneMerge: {
+    id: 'natural-dock-pane-merge',
+    path: 'xd.dock.pane.merge',
+    reason: 'Merge the active dock pane from natural language request.',
+  },
+  dockMergeGroup: {
+    id: 'natural-dock-merge',
+    path: 'xd.dock.mergeGroup',
+    reason: 'Merge dock layout from natural language request.',
+  },
+  dockMergeAll: {
+    id: 'natural-dock-merge',
+    path: 'xd.dock.mergeAll',
+    reason: 'Merge dock layout from natural language request.',
+  },
+  dockPanesList: {
+    id: 'natural-dock-panes-list',
+    path: 'xd.dock.panes.list',
+    reason: 'List dock panes from natural language request.',
+  },
+  artifactTargetSet: {
+    id: 'natural-artifact-target-set',
+    path: 'xd.dock.artifactTarget.set',
+    reason: 'Set active pane as artifact target from natural language request.',
+  },
+  appStatus: {
+    id: 'natural-app-status',
+    path: 'xd.app.status',
+    reason: 'Read app status from natural language request.',
+  },
+} as const satisfies Record<string, XenesisNaturalDeskActionDescriptor>;
 
 export const XENESIS_NATURAL_PLACEMENT_TARGETS: readonly XenesisNaturalWordsTarget[] = [
   { id: 'right', label: 'right', words: ['오른쪽', '우측', 'right'] },

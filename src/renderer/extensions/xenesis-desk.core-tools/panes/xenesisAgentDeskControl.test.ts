@@ -22,6 +22,7 @@ import {
   XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CONTEXT_WORDS,
   XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS,
   XENESIS_NATURAL_DASHBOARD_CONTEXT_WORDS,
+  XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_DESK_DIAGNOSTICS_CONTEXT_WORDS,
   XENESIS_NATURAL_DESK_SETTINGS_CONTEXT_WORDS,
   XENESIS_NATURAL_DOCK_SIDE_TARGETS,
@@ -254,6 +255,18 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.equal(
     XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES.includes('Open a right-side terminal example:'),
     true,
+  );
+  assert.match(source, /XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS/);
+  assert.doesNotMatch(source, /naturalAction\(\s*'natural-settings-open'/);
+  assert.doesNotMatch(source, /naturalAction\('natural-capture-list', 'xd\.capture\.list'/);
+  assert.doesNotMatch(source, /let path = 'xd\.dock\.close';/);
+  assert.doesNotMatch(source, /'xd\.explorer\.local\.show'/);
+  assert.equal(XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.settingsOpen.path, 'xd.panes.settings.open');
+  assert.equal(XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.captureList.id, 'natural-capture-list');
+  assert.equal(XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.dockCloseRight.path, 'xd.dock.closeRight');
+  assert.equal(
+    XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.explorerShow.reason,
+    'Show explorer from natural language request.',
   );
   assert.match(source, /XENESIS_NATURAL_PLACEMENT_TARGETS/);
   assert.match(source, /XENESIS_NATURAL_DOCK_SIDE_TARGETS/);

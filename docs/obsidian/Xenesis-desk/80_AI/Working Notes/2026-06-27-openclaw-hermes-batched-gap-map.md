@@ -1415,6 +1415,50 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local Obsidian graph, source code, and tests.
 
+## Generic Desk Action Descriptor Refactor Slice
+
+- Removed generic Desk `naturalAction(...)` id/path/reason descriptors from
+  `xenesisAgentDeskControl.ts`.
+- Added shared action descriptor catalog data to
+  `src/shared/xenesisNaturalLanguageCatalog.ts`:
+  - `XenesisNaturalDeskActionDescriptor`
+  - `XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS`
+  - `XENESIS_NATURAL_DEFAULT_TERMINAL_SHELL`
+  - `XENESIS_NATURAL_DEFAULT_TERMINAL_COMMAND`
+  - `XENESIS_NATURAL_TERMINAL_ID_PREFIX`
+  - `XENESIS_NATURAL_VIEW_OPEN_PATH`
+- The planner now uses `naturalCatalogAction()` for generic Desk routes while
+  preserving route order, visible plan text, CR paths, action ids, args,
+  placement defaults, terminal defaults, extracted paths/commands, and approval
+  behavior.
+- Added source-level guards so representative inline generic Desk action
+  descriptors cannot be reintroduced into the planner.
+- Verification:
+  - RED planner test failed first because the planner did not yet reference
+    `XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS`.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 36/36 tests after implementation.
+  - `npx biome format --write src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    formatted 3 files and fixed 2 files.
+  - First `npm run typecheck` failed because `let action =
+    DESK_ACTIONS.dockCloseActive` inferred a too-narrow literal descriptor
+    type; annotating it as `XenesisNaturalDeskActionDescriptor` fixed the root
+    cause.
+  - `npx biome check src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --max-diagnostics 40`
+    passed.
+  - Final related test run
+    `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 100/100 tests.
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit` passed with Registered nodes 763,
+    Callable methods 468, Dispatcher paths 448, missing registered paths 0,
+    missing dispatched coverage paths 0, undispatched static callable methods
+    0, and dispatcher paths missing from tree 0. The generated audit file was
+    removed afterward.
+  - `git diff --check` exited 0 with line-ending warnings only.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local Obsidian graph, source code, and tests.
+
 ## Prompt Hint Catalog Refactor Slice
 
 - Removed static Xenesis Desk control prompt hint strings, example
