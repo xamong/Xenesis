@@ -709,6 +709,7 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisMessengerViewsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisMessengerView?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisProviderSetupStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisProviderRoutingStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisProviderViewsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisProviderView?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisDiagnostics?: () => Promise<unknown> | unknown;
@@ -3723,6 +3724,15 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             'xd.xenesis.providers.setup.status',
             'Read provider setup status',
             'Read provider identity, model, auth mode, credential state, endpoint, runtime profile, retry/fallback policy, verification, CR readback, and risk controls for the active Xenesis AI provider.',
+            'read',
+            XENESIS_PROVIDER_SETUP_STATUS_SCHEMA,
+          ),
+        ]),
+        group('xd.xenesis.providers.routing', 'Routing', 'AI provider route, retry, fallback, and credential-pool read model.', [
+          method(
+            'xd.xenesis.providers.routing.status',
+            'Read provider routing status',
+            'Read provider route source, runtime provider/model, retry policy, configured fallback chain, credential-pool state, diagnostics, and safety boundaries for the active Xenesis AI provider.',
             'read',
             XENESIS_PROVIDER_SETUP_STATUS_SCHEMA,
           ),
@@ -10024,6 +10034,9 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.providers.setup.status') {
         return callAdapter(path, api?.getXenesisProviderSetupStatus, request.args);
+      }
+      if (path === 'xd.xenesis.providers.routing.status') {
+        return callAdapter(path, api?.getXenesisProviderRoutingStatus, request.args);
       }
       if (path === 'xd.xenesis.providers.views.status') {
         return callAdapter(path, api?.getXenesisProviderViewsStatus, request.args);

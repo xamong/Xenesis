@@ -82,6 +82,16 @@ focused on the active provider card. Provider views are setup/readiness surfaces
 only: they do not mutate provider selection, model selection, credentials,
 runtime routing, or fallback policy.
 
+The provider card also exposes a `providerRouting` read model. Use
+`xd.xenesis.providers.routing.status` to inspect route source, active
+provider/model, runtime provider/model, retry count, configured fallback
+providers, credential-pool state, diagnostics, and safety boundaries. The
+fallback chain is read from the active Xenesis profile's `providerFallbacks`.
+Credential pools expose provider names, env var names, and configured/missing or
+not-required state only. They never serialize API key values, bridge tokens, or
+provider secrets. This path is read-only and does not perform fallback, change
+the active provider, or change local CLI selection.
+
 ## MCP And Tool Connections
 
 The Connection Center shows MCP readiness and recommended tool connections.
@@ -222,6 +232,13 @@ metadata through CR. The read model is scoped to identity, auth mode, credential
 state, endpoint, runtime profile, retry/fallback policy, local CLI boundary,
 verification, CR readback paths, and risk controls. It is read-only and does not
 change provider selection or leak secret values.
+
+Use `xd.xenesis.providers.routing.status` to inspect the active AI provider
+routing metadata through CR. The read model covers user-settings/profile route
+source, runtime provider/model, retry policy, configured fallback chain,
+credential-pool state, diagnostics, and safety boundaries. It is read-only,
+never returns secret values, and does not mutate provider selection, model
+selection, runtime routing, fallback policy, credentials, or local CLI selection.
 
 Use `xd.xenesis.providers.views.status` and
 `xd.xenesis.providers.views.open` to inspect or open the internal Desk provider

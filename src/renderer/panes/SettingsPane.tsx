@@ -90,6 +90,7 @@ import {
   buildXenesisConnectionSettingsRequest,
   formatXenesisChannelRoutingSummary,
   formatXenesisMessengerViewSummary,
+  formatXenesisProviderRoutingSummary,
   formatXenesisProviderSetupSummary,
   formatXenesisProviderViewSummary,
   formatXenesisToolSetupSummary,
@@ -4256,6 +4257,7 @@ export default function SettingsPane() {
     const mcpTemplate = item.mcpTemplate;
     const providerSetup = item.providerSetup;
     const providerView = item.providerView;
+    const providerRouting = item.providerRouting;
     const toolSetup = item.toolSetup;
     const toolView = item.toolView;
     const messengerView = item.messengerView;
@@ -4398,6 +4400,57 @@ export default function SettingsPane() {
             <div>
               <span>{t('settings.xenesisConnectionsProviderRiskControls')}</span>
               <strong>{providerSetup.riskControls.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {providerRouting ? (
+          <div className="sp-info-list sp-info-list-compact" data-xenesis-provider-routing={item.id}>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderRouting')}</span>
+              <strong>{formatXenesisProviderRoutingSummary(providerRouting)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderRoutingRuntime')}</span>
+              <strong>
+                {providerRouting.runtimeProfile} / {providerRouting.runtimeProvider} / {providerRouting.runtimeModel}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderRoutingFallbacks')}</span>
+              <strong>
+                {providerRouting.fallbackChain.length
+                  ? providerRouting.fallbackChain
+                      .map(
+                        (fallback) =>
+                          `${fallback.index}. ${fallback.provider}/${fallback.model}/${fallback.credentialState}/${fallback.baseURLState}`,
+                      )
+                      .join(', ')
+                  : '-'}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderRoutingCredentialPools')}</span>
+              <strong>
+                {providerRouting.credentialPools
+                  .map((pool) =>
+                    pool.apiKeyEnv
+                      ? `${pool.source}:${pool.provider}:${pool.credentialState} (${pool.apiKeyEnv})`
+                      : `${pool.source}:${pool.provider}:${pool.credentialState}`,
+                  )
+                  .join(', ')}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderRoutingReadback')}</span>
+              <strong>{providerRouting.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderRoutingDiagnostics')}</span>
+              <strong>{providerRouting.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderRoutingSafety')}</span>
+              <strong>{providerRouting.safetyBoundaries.join(', ')}</strong>
             </div>
           </div>
         ) : null}

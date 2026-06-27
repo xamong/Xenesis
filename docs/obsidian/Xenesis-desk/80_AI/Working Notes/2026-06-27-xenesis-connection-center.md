@@ -309,6 +309,32 @@ Capability Registry instead of only through separate renderer settings panels.
   first for missing provider view metadata/path/helper, then the combined
   targeted run passed with 35/35 tests.
 
+## Current Provider Routing Read Model Slice
+
+- Add `providerRouting` metadata to the active provider card in
+  `xd.xenesis.connections.status`.
+- Add `xd.xenesis.providers.routing.status` as a read/no-approval CR path for
+  route source, active provider/model, runtime provider/model, retry policy,
+  configured fallback chain, credential-pool state, diagnostics, and safety
+  boundaries.
+- Main process reads the active Xenesis profile's configured
+  `providerFallbacks` and passes them to the Connection Center builder.
+- Settings renders the same read model with
+  `data-xenesis-provider-routing="<provider-card-id>"`.
+- This slice is read-only. It does not mutate provider selection, model
+  selection, runtime routing, fallback policy, credentials, or local CLI
+  selection. Credential-pool output exposes env var names and configured/missing
+  state only, never secret values.
+- `npx tsx --test src\shared\xenesisConnections.test.ts` failed first because
+  `providerRouting` was undefined, then passed after implementation with 15/15
+  tests.
+- `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` failed
+  first because `xd.xenesis.providers.routing.status` was not registered, then
+  passed after CR registration/dispatch.
+- `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` failed
+  first because `formatXenesisProviderRoutingSummary` was not exported, then
+  passed after renderer helper implementation with 12/12 tests.
+
 ## Current External Tool Views Slice
 
 - Add `toolView` metadata to Fetch, Filesystem, GitHub, Notion, Linear, Google

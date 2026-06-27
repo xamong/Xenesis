@@ -7,6 +7,7 @@ import {
   buildXenesisConnectionSettingsRequest,
   formatXenesisChannelRoutingSummary,
   formatXenesisMessengerViewSummary,
+  formatXenesisProviderRoutingSummary,
   formatXenesisProviderSetupSummary,
   formatXenesisProviderViewSummary,
   formatXenesisToolSetupSummary,
@@ -232,6 +233,46 @@ test('formatXenesisToolViewSummary describes internal Desk tool view surface and
       safetyBoundaries: ['view opens internal setup/readiness surfaces only'],
     }),
     'Settings > Xenesis Agent > Connections / connection-detail',
+  );
+});
+
+test('formatXenesisProviderRoutingSummary describes active provider, fallbacks, and retries', () => {
+  assert.equal(
+    formatXenesisProviderRoutingSummary({
+      routeSource: 'user-settings-profile',
+      activeProvider: 'openai',
+      activeModel: 'gpt-5.4-mini',
+      runtimeProfile: 'desk',
+      runtimeProvider: 'openai',
+      runtimeModel: 'gpt-5.4-mini',
+      retryPolicy: { maxRetries: 2, source: 'profile.policy.providerRetries' },
+      fallbackPolicy: 'configured-providerFallbacks',
+      fallbackChainSource: 'xenesis-runtime-config',
+      fallbackChainVisible: true,
+      fallbackChain: [
+        {
+          index: 1,
+          provider: 'anthropic',
+          model: 'claude-sonnet-4-5',
+          baseURLState: 'default',
+          apiKeyEnv: 'ANTHROPIC_API_KEY',
+          credentialState: 'configured',
+        },
+        {
+          index: 2,
+          provider: 'ollama',
+          model: 'llama3.1',
+          baseURLState: 'custom',
+          apiKeyEnv: '',
+          credentialState: 'not-required',
+        },
+      ],
+      credentialPools: [],
+      readPaths: [],
+      diagnostics: [],
+      safetyBoundaries: [],
+    }),
+    'openai -> 2 fallback(s) / retries 2',
   );
 });
 

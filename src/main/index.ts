@@ -4793,11 +4793,14 @@ function getMcpSettingsStatus(): McpSettingsStatus {
 
 async function getXenesisConnectionsStatus(): Promise<XenesisConnectionsStatus> {
   const settings = loadSettings();
+  const [xenesis, activeProfile] = await Promise.all([getXenesisStatusPayload(), readActiveXenesisProfileConfig()]);
   return buildXenesisConnectionsStatus({
     aiProvider: settings.aiProvider,
     mcp: getMcpSettingsStatus(),
     providerIntegration: getProviderIntegrationStatusSnapshot(),
-    xenesis: await getXenesisStatusPayload(),
+    xenesis,
+    providerFallbacks: activeProfile?.providerFallbacks ?? [],
+    env: process.env,
     repoRoot: app.isPackaged ? app.getAppPath() : process.cwd(),
   });
 }
@@ -5173,6 +5176,57 @@ async function getXenesisProviderSetupStatus(args?: unknown): Promise<Record<str
       verification: item.providerSetup?.verification ?? [],
       crReadPaths: item.providerSetup?.crReadPaths ?? [],
       riskControls: item.providerSetup?.riskControls ?? [],
+      settingsAction: item.settingsAction,
+      crActions: item.crActions ?? [],
+      warnings: item.warnings ?? [],
+    }));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(provider ? { provider } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function getXenesisProviderRoutingStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const provider = readCapabilityString(body, ['provider', 'id', 'name']);
+  if (provider && !isXenesisProviderSetupId(provider)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis provider: ${provider}`,
+      allowedProviders: XENESIS_PROVIDER_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.provider.items
+    .filter((item) => item.providerRouting)
+    .filter((item) => !provider || item.providerRouting?.activeProvider === provider)
+    .map((item: XenesisConnectionItem) => ({
+      id: item.id,
+      label: item.label,
+      status: item.status,
+      supportLevel: item.supportLevel,
+      summary: item.summary,
+      provider: item.providerRouting?.activeProvider,
+      activeProvider: item.providerRouting?.activeProvider,
+      activeModel: item.providerRouting?.activeModel,
+      runtimeProfile: item.providerRouting?.runtimeProfile,
+      runtimeProvider: item.providerRouting?.runtimeProvider,
+      runtimeModel: item.providerRouting?.runtimeModel,
+      retryPolicy: item.providerRouting?.retryPolicy,
+      fallbackPolicy: item.providerRouting?.fallbackPolicy,
+      fallbackChainSource: item.providerRouting?.fallbackChainSource,
+      fallbackChainVisible: item.providerRouting?.fallbackChainVisible,
+      fallbackChain: item.providerRouting?.fallbackChain ?? [],
+      credentialPools: item.providerRouting?.credentialPools ?? [],
+      readPaths: item.providerRouting?.readPaths ?? [],
+      diagnostics: item.providerRouting?.diagnostics ?? [],
+      safetyBoundaries: item.providerRouting?.safetyBoundaries ?? [],
+      providerRouting: item.providerRouting,
       settingsAction: item.settingsAction,
       crActions: item.crActions ?? [],
       warnings: item.warnings ?? [],
@@ -12212,6 +12266,7 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisMessengerViewsStatus: (args: unknown) => getXenesisMessengerViewsStatus(args),
     openXenesisMessengerView: (args: unknown) => openXenesisMessengerView(args),
     getXenesisProviderSetupStatus: (args: unknown) => getXenesisProviderSetupStatus(args),
+    getXenesisProviderRoutingStatus: (args: unknown) => getXenesisProviderRoutingStatus(args),
     getXenesisProviderViewsStatus: (args: unknown) => getXenesisProviderViewsStatus(args),
     openXenesisProviderView: (args: unknown) => openXenesisProviderView(args),
     getXenesisDiagnostics: () => getXenesisOperationalDiagnostics().then((diagnostics) => ({ ok: true, diagnostics })),
@@ -14331,6 +14386,18 @@ const DEFAULT_XENESIS_PROFILE_TEMPLATE = 'desk';
 
 function cloneXenesisProfileConfig<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
+}
+
+async function readActiveXenesisProfileConfig(): Promise<ProfileConfig | undefined> {
+  const settings = loadSettings().xenesis;
+  const profiles = await readProfiles(getXenesisStateHome());
+  const active = settings.profile || profiles.active || DEFAULT_XENESIS_PROFILE_TEMPLATE;
+  return (
+    profiles.profiles[active] ??
+    (active === DEFAULT_XENESIS_PROFILE_TEMPLATE
+      ? getOperatingProfileTemplate(DEFAULT_XENESIS_PROFILE_TEMPLATE)?.profile
+      : undefined)
+  );
 }
 
 function xenesisProfileTemplates(): XenesisProfileTemplate[] {

@@ -113,6 +113,52 @@ export interface XenesisConnectionProviderViewTemplate {
   safetyBoundaries: string[];
 }
 
+export type XenesisConnectionProviderCredentialState = 'configured' | 'missing' | 'not-required';
+
+export interface XenesisConnectionProviderFallbackInput {
+  provider: string;
+  model?: string;
+  baseURL?: string;
+  apiKeyEnv?: string;
+}
+
+export interface XenesisConnectionProviderFallbackChainItem {
+  index: number;
+  provider: string;
+  model: string;
+  baseURLState: 'default' | 'custom';
+  apiKeyEnv: string;
+  credentialState: XenesisConnectionProviderCredentialState;
+}
+
+export interface XenesisConnectionProviderCredentialPoolItem {
+  provider: string;
+  apiKeyEnv: string;
+  credentialState: XenesisConnectionProviderCredentialState;
+  source: 'runtime' | 'fallback';
+}
+
+export interface XenesisConnectionProviderRoutingTemplate {
+  routeSource: 'user-settings-profile';
+  activeProvider: string;
+  activeModel: string;
+  runtimeProfile: string;
+  runtimeProvider: string;
+  runtimeModel: string;
+  retryPolicy: {
+    maxRetries: number;
+    source: 'profile.policy.providerRetries';
+  };
+  fallbackPolicy: string;
+  fallbackChainSource: 'xenesis-runtime-config';
+  fallbackChainVisible: boolean;
+  fallbackChain: XenesisConnectionProviderFallbackChainItem[];
+  credentialPools: XenesisConnectionProviderCredentialPoolItem[];
+  readPaths: string[];
+  diagnostics: string[];
+  safetyBoundaries: string[];
+}
+
 export interface XenesisConnectionChannelTemplate {
   category: 'consumer' | 'enterprise' | 'developer' | 'community' | 'regional' | 'iot';
   adapter: string;
@@ -166,6 +212,7 @@ export interface XenesisConnectionItem {
   mcpTemplate?: XenesisConnectionMcpTemplate;
   providerSetup?: XenesisConnectionProviderSetupTemplate;
   providerView?: XenesisConnectionProviderViewTemplate;
+  providerRouting?: XenesisConnectionProviderRoutingTemplate;
   toolSetup?: XenesisConnectionToolSetupTemplate;
   toolView?: XenesisConnectionToolViewTemplate;
   messengerView?: XenesisConnectionMessengerViewTemplate;
@@ -201,6 +248,8 @@ export interface BuildXenesisConnectionsStatusInput {
   mcp: McpSettingsStatus;
   providerIntegration: ProviderIntegrationStatus;
   xenesis: XenesisStatus | null;
+  providerFallbacks?: XenesisConnectionProviderFallbackInput[];
+  env?: Record<string, string | undefined>;
   now?: Date;
   repoRoot?: string;
 }
@@ -1275,6 +1324,85 @@ function providerSetupTemplate(
   };
 }
 
+function providerCredentialState(
+  provider: string,
+  apiKeyEnv: string,
+  env: Record<string, string | undefined>,
+  directSecret = false,
+): XenesisConnectionProviderCredentialState {
+  const authMode = providerAuthMode(provider);
+  if (authMode === 'none' || authMode === 'local-login' || authMode === 'auto-detect') return 'not-required';
+  if (directSecret) return 'configured';
+  return apiKeyEnv && env[apiKeyEnv] ? 'configured' : 'missing';
+}
+
+function providerRoutingTemplate(
+  aiProvider: BuildXenesisConnectionsStatusInput['aiProvider'],
+  xenesis: XenesisStatus | null,
+  providerFallbacks: XenesisConnectionProviderFallbackInput[] = [],
+  env: Record<string, string | undefined> = {},
+): XenesisConnectionProviderRoutingTemplate {
+  const activeProvider = aiProvider.provider;
+  const activeModel = aiProvider.model || 'default';
+  const runtimeProvider = xenesis?.providerRuntime.provider || activeProvider;
+  const runtimeModel = xenesis?.providerRuntime.model || activeModel;
+  const runtimeProfile = xenesis?.providerRuntime.profile || xenesis?.profile.active || '';
+  const runtimeApiKeyEnv = xenesis?.providerRuntime.apiKeyEnv || '';
+  const fallbackChain = providerFallbacks.map((fallback, index) => ({
+    index: index + 1,
+    provider: fallback.provider,
+    model: fallback.model || runtimeModel,
+    baseURLState: fallback.baseURL ? ('custom' as const) : ('default' as const),
+    apiKeyEnv: fallback.apiKeyEnv || '',
+    credentialState: providerCredentialState(fallback.provider, fallback.apiKeyEnv || '', env),
+  }));
+
+  return {
+    routeSource: 'user-settings-profile',
+    activeProvider,
+    activeModel,
+    runtimeProfile,
+    runtimeProvider,
+    runtimeModel,
+    retryPolicy: {
+      maxRetries: xenesis?.profile.policy.providerRetries ?? 0,
+      source: 'profile.policy.providerRetries',
+    },
+    fallbackPolicy: 'configured-providerFallbacks',
+    fallbackChainSource: 'xenesis-runtime-config',
+    fallbackChainVisible: fallbackChain.length > 0,
+    fallbackChain,
+    credentialPools: [
+      {
+        provider: runtimeProvider,
+        apiKeyEnv: runtimeApiKeyEnv,
+        credentialState: providerCredentialState(runtimeProvider, runtimeApiKeyEnv, env, Boolean(aiProvider.apiKey)),
+        source: 'runtime',
+      },
+      ...fallbackChain.map((fallback) => ({
+        provider: fallback.provider,
+        apiKeyEnv: fallback.apiKeyEnv,
+        credentialState: fallback.credentialState,
+        source: 'fallback' as const,
+      })),
+    ],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.providers.setup.status',
+      'xd.xenesis.providers.routing.status',
+      'xd.xenesis.status',
+    ],
+    diagnostics: ['provider-footer', 'work-log-provider', 'provider_retry', 'provider_fallback', 'cr-readback'],
+    safetyBoundaries: [
+      'routing status is read-only',
+      'provider identity comes from user settings and profile',
+      'fallback entries expose env names and credential state only, never secret values',
+      'local CLI selection remains separate from provider identity',
+      'missing keyed-provider credentials must not silently fall back',
+    ],
+  };
+}
+
 function providerViewTemplate(provider: string): XenesisConnectionProviderViewTemplate {
   return {
     viewType: 'provider-detail',
@@ -1304,6 +1432,8 @@ function providerViewTemplate(provider: string): XenesisConnectionProviderViewTe
 function providerItem(
   aiProvider: BuildXenesisConnectionsStatusInput['aiProvider'],
   xenesis: XenesisStatus | null,
+  providerFallbacks: XenesisConnectionProviderFallbackInput[] = [],
+  env: Record<string, string | undefined> = {},
 ): XenesisConnectionItem {
   const isLocalProvider = [
     'auto',
@@ -1330,6 +1460,7 @@ function providerItem(
     settingsAction: { category: 'run-model', section: 'default' },
     providerSetup: providerSetupTemplate(aiProvider, xenesis),
     providerView: providerViewTemplate(aiProvider.provider),
+    providerRouting: providerRoutingTemplate(aiProvider, xenesis, providerFallbacks, env),
     setupSteps: [
       'Choose the provider in AI Provider settings.',
       'Set a model and credential only when the selected provider requires them.',
@@ -1597,7 +1728,11 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
 
 export function buildXenesisConnectionsStatus(input: BuildXenesisConnectionsStatusInput): XenesisConnectionsStatus {
   const baseSections: Omit<XenesisConnectionsStatus['sections'], 'onboarding'> = {
-    provider: { id: 'provider', label: 'AI Provider', items: [providerItem(input.aiProvider, input.xenesis)] },
+    provider: {
+      id: 'provider',
+      label: 'AI Provider',
+      items: [providerItem(input.aiProvider, input.xenesis, input.providerFallbacks, input.env)],
+    },
     localCli: { id: 'local-cli', label: 'Local CLI integration', items: localCliItems(input.providerIntegration) },
     mcp: { id: 'mcp', label: 'MCP bridge', items: [mcpItem(input.mcp)] },
     tools: { id: 'tools', label: 'Tool connections', items: TOOL_CONNECTIONS },

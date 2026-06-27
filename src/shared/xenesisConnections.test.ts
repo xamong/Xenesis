@@ -8,6 +8,27 @@ const channelGuardrails = {
   maxTokens: 120000,
 };
 
+const emptyChannelSettings = {
+  telegram: { enabled: false, ...channelGuardrails, tokenEnv: 'TELEGRAM_BOT_TOKEN', allowedChatIds: '' },
+  slack: {
+    enabled: false,
+    ...channelGuardrails,
+    botTokenEnv: 'SLACK_BOT_TOKEN',
+    signingSecretEnv: 'SLACK_SIGNING_SECRET',
+    webhookUrlEnv: 'SLACK_WEBHOOK_URL',
+    allowedChannelIds: '',
+  },
+  discord: {
+    enabled: false,
+    ...channelGuardrails,
+    botTokenEnv: 'DISCORD_BOT_TOKEN',
+    webhookUrlEnv: 'DISCORD_WEBHOOK_URL',
+    allowedChannelIds: '',
+    allowedGuildIds: '',
+  },
+  webhook: { enabled: false, ...channelGuardrails, urlEnv: 'XENESIS_WEBHOOK_URL' },
+};
+
 test('buildXenesisConnectionsStatus reports ready provider, MCP, gateway, and Telegram', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {
@@ -742,6 +763,142 @@ test('buildXenesisConnectionsStatus exposes an internal Desk provider view', () 
     safetyBoundaries: [
       'provider view opens internal setup/readiness surfaces only',
       'provider identity comes from user settings and profile',
+      'local CLI selection remains separate from provider identity',
+      'missing keyed-provider credentials must not silently fall back',
+    ],
+  });
+});
+
+test('buildXenesisConnectionsStatus exposes provider routing fallback and credential-pool metadata', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'openai',
+      model: 'gpt-5.4-mini',
+      apiKey: 'desk-secret',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    providerFallbacks: [
+      { provider: 'anthropic', model: 'claude-sonnet-4-5', apiKeyEnv: 'ANTHROPIC_API_KEY' },
+      { provider: 'ollama', model: 'llama3.1', baseURL: 'http://127.0.0.1:11434/v1' },
+    ],
+    env: { ANTHROPIC_API_KEY: 'configured-secret', OPENAI_API_KEY: 'runtime-secret' },
+    xenesis: {
+      ok: true,
+      running: true,
+      managed: true,
+      enabled: true,
+      runtimeMode: 'embedded',
+      url: 'http://127.0.0.1:3846',
+      runtimePath: 'embedded',
+      xenesisHome: 'C:/Users/example/.xenis',
+      workspace: 'E:/workspace/project',
+      providerRuntime: {
+        provider: 'openai',
+        model: 'gpt-5.4-mini',
+        profile: 'desk',
+        baseURL: '',
+        apiKeyEnv: 'OPENAI_API_KEY',
+      },
+      error: '',
+      updatedAt: '2026-06-27T00:00:00.000Z',
+      gateway: {
+        enabled: true,
+        running: false,
+        managed: true,
+        url: 'http://127.0.0.1:3846',
+        host: '127.0.0.1',
+        port: 3846,
+        workspace: 'E:/workspace/project',
+        error: '',
+        updatedAt: '2026-06-27T00:00:00.000Z',
+        channels: { total: 0, enabled: 0, ready: 0, blocked: 0, disabled: 0, items: [] },
+      },
+      profile: {
+        active: 'desk',
+        configured: 'desk',
+        installed: ['desk'],
+        templates: [],
+        channels: [],
+        channelSettings: emptyChannelSettings,
+        policy: {
+          workflow: 'default',
+          approvalMode: 'safe',
+          maxTurns: 4,
+          providerRetries: 2,
+          contextAutoCompact: true,
+          memoryEnabled: true,
+          subagentsEnabled: true,
+          browserEnabled: true,
+          verificationAutoRun: false,
+          verificationAutoFix: false,
+        },
+      },
+    },
+  });
+
+  assert.deepEqual(status.sections.provider.items[0].providerRouting, {
+    routeSource: 'user-settings-profile',
+    activeProvider: 'openai',
+    activeModel: 'gpt-5.4-mini',
+    runtimeProfile: 'desk',
+    runtimeProvider: 'openai',
+    runtimeModel: 'gpt-5.4-mini',
+    retryPolicy: { maxRetries: 2, source: 'profile.policy.providerRetries' },
+    fallbackPolicy: 'configured-providerFallbacks',
+    fallbackChainSource: 'xenesis-runtime-config',
+    fallbackChainVisible: true,
+    fallbackChain: [
+      {
+        index: 1,
+        provider: 'anthropic',
+        model: 'claude-sonnet-4-5',
+        baseURLState: 'default',
+        apiKeyEnv: 'ANTHROPIC_API_KEY',
+        credentialState: 'configured',
+      },
+      {
+        index: 2,
+        provider: 'ollama',
+        model: 'llama3.1',
+        baseURLState: 'custom',
+        apiKeyEnv: '',
+        credentialState: 'not-required',
+      },
+    ],
+    credentialPools: [
+      { provider: 'openai', apiKeyEnv: 'OPENAI_API_KEY', credentialState: 'configured', source: 'runtime' },
+      { provider: 'anthropic', apiKeyEnv: 'ANTHROPIC_API_KEY', credentialState: 'configured', source: 'fallback' },
+      { provider: 'ollama', apiKeyEnv: '', credentialState: 'not-required', source: 'fallback' },
+    ],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.providers.setup.status',
+      'xd.xenesis.providers.routing.status',
+      'xd.xenesis.status',
+    ],
+    diagnostics: ['provider-footer', 'work-log-provider', 'provider_retry', 'provider_fallback', 'cr-readback'],
+    safetyBoundaries: [
+      'routing status is read-only',
+      'provider identity comes from user settings and profile',
+      'fallback entries expose env names and credential state only, never secret values',
       'local CLI selection remains separate from provider identity',
       'missing keyed-provider credentials must not silently fall back',
     ],

@@ -335,6 +335,40 @@ test('xenesis provider setup status capability is registered and dispatches to t
   });
 });
 
+test('xenesis provider routing status capability is registered and dispatches to the adapter', async () => {
+  const capability = findDeskBridgeCapability('xd.xenesis.providers.routing.status');
+  const schemaProperties = (capability?.schema?.properties ?? {}) as Record<string, any>;
+  assert.equal(capability?.permission, 'read');
+  assert.equal(capability?.approval, 'never');
+  for (const provider of ['auto', 'openai', 'anthropic', 'gemini', 'codex-app-server', 'codex-cli', 'ollama']) {
+    assert.equal(schemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
+  }
+
+  let calledArgs: unknown = null;
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisProviderRoutingStatus: (args) => {
+      calledArgs = args;
+      return {
+        ok: true,
+        items: [{ provider: 'codex-app-server', fallbackChainVisible: true }],
+      };
+    },
+  };
+
+  const result = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.providers.routing.status',
+    args: { provider: 'codex-app-server' },
+    source: 'xenesis',
+  });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(calledArgs, { provider: 'codex-app-server' });
+  assert.deepEqual(result.result, {
+    ok: true,
+    items: [{ provider: 'codex-app-server', fallbackChainVisible: true }],
+  });
+});
+
 test('xenesis provider view capabilities are registered and dispatch to the adapter', async () => {
   const statusCapability = findDeskBridgeCapability('xd.xenesis.providers.views.status');
   const openCapability = findDeskBridgeCapability('xd.xenesis.providers.views.open');

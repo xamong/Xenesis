@@ -3,6 +3,7 @@ import type {
   XenesisConnectionChannelRoutingTemplate,
   XenesisConnectionItem,
   XenesisConnectionMessengerViewTemplate,
+  XenesisConnectionProviderRoutingTemplate,
   XenesisConnectionProviderSetupTemplate,
   XenesisConnectionProviderViewTemplate,
   XenesisConnectionSection,
@@ -64,6 +65,10 @@ export function formatXenesisProviderSetupSummary(setup: XenesisConnectionProvid
 
 export function formatXenesisProviderViewSummary(view: XenesisConnectionProviderViewTemplate): string {
   return `${view.primarySurface} / ${view.viewType}`;
+}
+
+export function formatXenesisProviderRoutingSummary(routing: XenesisConnectionProviderRoutingTemplate): string {
+  return `${routing.activeProvider} -> ${routing.fallbackChain.length} fallback(s) / retries ${routing.retryPolicy.maxRetries}`;
 }
 
 export function formatXenesisToolSetupSummary(setup: XenesisConnectionToolSetupTemplate): string {
