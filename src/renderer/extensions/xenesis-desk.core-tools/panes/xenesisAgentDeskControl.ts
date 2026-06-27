@@ -110,7 +110,12 @@ function hasActionIntent(value: string): boolean {
     '돌려',
     '바꿔',
     '변경',
+    '연결',
+    '설치',
+    '인증',
+    '연동',
     '설정',
+    '구성',
     '캡쳐',
     '캡처',
     '정렬',
@@ -141,6 +146,12 @@ function hasActionIntent(value: string): boolean {
     'open',
     'show',
     'display',
+    'connect',
+    'configure',
+    'install',
+    'authorize',
+    'setup',
+    'set up',
     'run',
     'execute',
     'start',
@@ -1182,7 +1193,28 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
 function hasXenesisConnectionReviewRequestIntent(value: string): boolean {
   if (hasAny(value, ['열어', 'open'])) return false;
   if (hasXenesisConnectionReadbackIntent(value)) return false;
-  if (!hasAny(value, ['요청', 'request', '등록', 'enqueue', '승인 요청'])) return false;
+  const hasExplicitRequest = hasAny(value, ['요청', 'request', '등록', 'enqueue', '승인 요청']);
+  const hasSetupImperative = hasAny(value, [
+    '연결해줘',
+    '연결 해줘',
+    '설정해줘',
+    '설정 해줘',
+    '구성해줘',
+    '구성 해줘',
+    '설치해줘',
+    '설치 해줘',
+    '인증해줘',
+    '인증 해줘',
+    '연동해줘',
+    '연동 해줘',
+    'connect',
+    'configure',
+    'install',
+    'authorize',
+    'set up',
+    'setup',
+  ]);
+  if (!hasExplicitRequest && !hasSetupImperative) return false;
   return (
     hasAny(value, ['검토', '리뷰', 'review', 'approval', 'setup', '설정', '연결']) ||
     hasXenesisConnectionContext(value) ||
@@ -2116,6 +2148,11 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     return naturalPlan('Xenesis 런타임 실행 요청을 기록합니다.', [xenesisRunStartAction]);
   }
 
+  const xenesisWorkspaceSetAction = xenesisWorkspaceSetActionFromNaturalText(value, rawText);
+  if (xenesisWorkspaceSetAction) {
+    return naturalPlan('Xenesis 워크스페이스 설정 요청을 기록합니다.', [xenesisWorkspaceSetAction]);
+  }
+
   const xenesisConnectionReviewRequestAction = xenesisConnectionReviewRequestActionFromNaturalText(value);
   if (xenesisConnectionReviewRequestAction) {
     return naturalPlan('Xenesis 연결 검토 요청을 기록합니다.', [xenesisConnectionReviewRequestAction]);
@@ -2159,11 +2196,6 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
   const xenesisRuntimeControlAction = xenesisRuntimeControlActionFromNaturalText(value);
   if (xenesisRuntimeControlAction) {
     return naturalPlan('Xenesis 런타임 제어 요청을 기록합니다.', [xenesisRuntimeControlAction]);
-  }
-
-  const xenesisWorkspaceSetAction = xenesisWorkspaceSetActionFromNaturalText(value, rawText);
-  if (xenesisWorkspaceSetAction) {
-    return naturalPlan('Xenesis 워크스페이스 설정 요청을 기록합니다.', [xenesisWorkspaceSetAction]);
   }
 
   if (hasAny(value, ['설정', 'settings']) && hasAny(value, ['열어', '켜줘', '띄워', '보여', 'open', 'show'])) {

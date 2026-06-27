@@ -2399,7 +2399,27 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center review reques
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 연결해줘').actions, [
+    {
+      id: 'natural-xenesis-connection-setup-request-notion',
+      path: 'xd.xenesis.connections.setupRequests.request',
+      args: { id: 'notion' },
+      approved: false,
+      reason: 'Request Notion connection setup review from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 MCP 설치 검토 요청해줘').actions, [
+    {
+      id: 'natural-xenesis-tool-mcp-install-draft-request-notion',
+      path: 'xd.xenesis.tools.mcpInstallDrafts.request',
+      args: { id: 'notion' },
+      approved: false,
+      reason: 'Request Notion MCP install draft review from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 MCP 설치해줘').actions, [
     {
       id: 'natural-xenesis-tool-mcp-install-draft-request-notion',
       path: 'xd.xenesis.tools.mcpInstallDrafts.request',
@@ -2420,6 +2440,16 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center review reques
   ]);
 
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('구글 캘린더 OAuth 검토 요청해줘').actions, [
+    {
+      id: 'natural-xenesis-tool-oauth-draft-request-google-calendar',
+      path: 'xd.xenesis.tools.oauthDrafts.request',
+      args: { id: 'google-calendar' },
+      approved: false,
+      reason: 'Request Google Calendar OAuth draft review from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('구글 캘린더 OAuth 인증해줘').actions, [
     {
       id: 'natural-xenesis-tool-oauth-draft-request-google-calendar',
       path: 'xd.xenesis.tools.oauthDrafts.request',
@@ -2480,6 +2510,16 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center review reques
   ]);
 
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider profile 검토 요청해줘').actions, [
+    {
+      id: 'natural-xenesis-provider-profile-draft-request-auto',
+      path: 'xd.xenesis.providers.profileDrafts.request',
+      args: { provider: 'auto' },
+      approved: false,
+      reason: 'Request AI provider profile draft review from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider 설정해줘').actions, [
     {
       id: 'natural-xenesis-provider-profile-draft-request-auto',
       path: 'xd.xenesis.providers.profileDrafts.request',

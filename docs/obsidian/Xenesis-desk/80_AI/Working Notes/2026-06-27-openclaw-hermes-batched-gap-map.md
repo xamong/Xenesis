@@ -1118,6 +1118,37 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local Obsidian graph, source code, and tests.
 
+## Imperative Setup Review Requests Slice
+
+- Natural setup imperatives now route to existing review-only CR request paths
+  instead of falling through or implying direct execution:
+  - `노션 연결해줘` -> `xd.xenesis.connections.setupRequests.request`
+  - `노션 MCP 설치해줘` -> `xd.xenesis.tools.mcpInstallDrafts.request`
+  - `구글 캘린더 OAuth 인증해줘` -> `xd.xenesis.tools.oauthDrafts.request`
+  - `AI provider 설정해줘` -> `xd.xenesis.providers.profileDrafts.request`
+- The planner still preserves explicit open/readback prompts, so `열어줘` and
+  status/show requests continue to use open/status CR paths.
+- Workspace path binding now runs before connection review routing so
+  `Xenesis workspace ... 설정해줘` remains `xd.xenesis.workspace.set` instead
+  of matching the Google Workspace tool alias.
+- Scope boundary: this slice does not execute installs, complete OAuth, write
+  MCP config, store credentials/tokens, mutate provider settings, send
+  messages, call external APIs, or bypass approvals.
+- Verification:
+  - RED planner test failed first because imperative setup wording without
+    `요청/request/등록` was not routed to review-only CR paths.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 36/36 tests.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 100/100 tests.
+  - Touched-file Biome check passed.
+  - `npm run typecheck` passed.
+  - CR audit passed with missing registered paths 0, missing dispatched
+    coverage paths 0, undispatched static callable methods 0, and dispatcher
+    paths missing from tree 0.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local Obsidian graph, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
