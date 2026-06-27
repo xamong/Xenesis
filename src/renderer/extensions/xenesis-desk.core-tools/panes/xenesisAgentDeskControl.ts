@@ -1636,6 +1636,82 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
     );
   }
 
+  if (
+    hasExternalToolCatalogContext(value) &&
+    hasAny(value, ['mcp', 'mcp install', 'mcp 설치']) &&
+    hasAny(value, ['draft', 'drafts', '초안', '설치 초안'])
+  ) {
+    return naturalAction(
+      'natural-xenesis-tools-mcp-install-drafts-catalog-open',
+      'xd.panes.settings.open',
+      xenesisConnectionCenterOpenArgs(),
+      'Open external tool MCP install draft catalog in Xenesis Connection Center from natural language request.',
+    );
+  }
+
+  if (hasExternalToolCatalogContext(value) && hasAny(value, ['oauth', '오어스', '인증', 'token', '토큰'])) {
+    return naturalAction(
+      'natural-xenesis-tools-oauth-drafts-catalog-open',
+      'xd.panes.settings.open',
+      xenesisConnectionCenterOpenArgs(),
+      'Open external tool OAuth draft catalog in Xenesis Connection Center from natural language request.',
+    );
+  }
+
+  if (hasExternalToolCatalogContext(value) && hasAny(value, ['view', 'views', '뷰', '화면', 'surface'])) {
+    return naturalAction(
+      'natural-xenesis-tools-views-catalog-open',
+      'xd.panes.settings.open',
+      xenesisConnectionCenterOpenArgs(),
+      'Open external tool view catalog in Xenesis Connection Center from natural language request.',
+    );
+  }
+
+  if (hasExternalToolCatalogContext(value) && hasAny(value, ['설치 계획', 'install plan', 'install plans'])) {
+    return naturalAction(
+      'natural-xenesis-tools-install-plans-catalog-open',
+      'xd.panes.settings.open',
+      xenesisConnectionCenterOpenArgs(),
+      'Open external tool install plan catalog in Xenesis Connection Center from natural language request.',
+    );
+  }
+
+  if (
+    hasExternalToolCatalogContext(value) &&
+    hasAny(value, ['setup', '초기 설정', '설정', 'settings', 'config', 'configuration', '구성'])
+  ) {
+    return naturalAction(
+      'natural-xenesis-tools-setup-catalog-open',
+      'xd.panes.settings.open',
+      xenesisConnectionCenterOpenArgs(),
+      'Open external tool setup catalog in Xenesis Connection Center from natural language request.',
+    );
+  }
+
+  if (
+    hasExternalToolCatalogContext(value) &&
+    hasAny(value, ['액션', 'action', '정책', 'policy', '권한', 'permission'])
+  ) {
+    return naturalAction(
+      'natural-xenesis-tools-actions-catalog-open',
+      'xd.panes.settings.open',
+      xenesisConnectionCenterOpenArgs(),
+      'Open external tool action policy catalog in Xenesis Connection Center from natural language request.',
+    );
+  }
+
+  if (
+    hasExternalToolCatalogContext(value) &&
+    hasAny(value, ['user story', 'user stories', '사용자 스토리', '스토리'])
+  ) {
+    return naturalAction(
+      'natural-xenesis-tools-user-stories-catalog-open',
+      'xd.panes.settings.open',
+      xenesisConnectionCenterOpenArgs(),
+      'Open external tool user-story catalog in Xenesis Connection Center from natural language request.',
+    );
+  }
+
   if (hasExternalToolCatalogContext(value)) {
     return naturalAction(
       'natural-xenesis-tool-catalog-open',

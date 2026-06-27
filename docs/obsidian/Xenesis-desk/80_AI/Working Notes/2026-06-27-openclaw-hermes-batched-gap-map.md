@@ -528,6 +528,26 @@
     `xd.xenesis.tools.actions.status`.
   - `외부 툴 사용자 스토리 전체 상태 보여줘` ->
     `xd.xenesis.tools.userStories.status`.
+- Added matching detailed external-tool catalog opens for broad tool setup
+  work:
+  - `외부 툴 setup 전체 열어줘` -> `xd.panes.settings.open` with the
+    Xenesis Agent Connection Center selected.
+  - `외부 툴 view 전체 열어줘` -> `xd.panes.settings.open` with the Xenesis
+    Agent Connection Center selected.
+  - `외부 툴 설치 계획 전체 열어줘` -> `xd.panes.settings.open` with the
+    Xenesis Agent Connection Center selected.
+  - `외부 툴 OAuth 전체 열어줘` -> `xd.panes.settings.open` with the Xenesis
+    Agent Connection Center selected.
+  - `외부 툴 MCP 설치 초안 전체 열어줘` -> `xd.panes.settings.open` with the
+    Xenesis Agent Connection Center selected.
+  - `외부 툴 액션 정책 전체 열어줘` -> `xd.panes.settings.open` with the
+    Xenesis Agent Connection Center selected.
+  - `외부 툴 사용자 스토리 전체 열어줘` -> `xd.panes.settings.open` with the
+    Xenesis Agent Connection Center selected.
+- `외부 툴 connector 전체 열어줘` still uses the generic external-tool catalog
+  open because there is no dedicated connector open surface, while
+  setup/view/install-plan/OAuth/MCP/action/user-story opens preserve their
+  detailed catalog intent in the Agent action id and reason.
 - The aggregate branch runs after target-specific tool routing and before the
   generic Connection Center fallback, so prompts like `노션 connector 상태
   보여줘` keep returning Notion-specific connector readbacks.
