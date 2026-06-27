@@ -349,6 +349,28 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local code, and tests.
 
+## Tool Aggregate Readbacks Slice
+
+- Added deterministic Xenesis Agent natural-language routing for broad
+  external-tool catalog status prompts that do not name a specific tool:
+  - `외부 툴 connector 전체 상태 보여줘` ->
+    `xd.xenesis.tools.connectors.status`.
+  - `외부 툴 설치 계획 전체 상태 보여줘` ->
+    `xd.xenesis.tools.installPlans.status`.
+  - `외부 툴 액션 정책 전체 상태 보여줘` ->
+    `xd.xenesis.tools.actions.status`.
+  - `외부 툴 사용자 스토리 전체 상태 보여줘` ->
+    `xd.xenesis.tools.userStories.status`.
+- The aggregate branch runs after target-specific tool routing and before the
+  generic Connection Center fallback, so prompts like `노션 connector 상태
+  보여줘` keep returning Notion-specific connector readbacks.
+- Scope boundary: this slice did not add CR nodes, dispatcher branches,
+  renderer adapters, MCP installs, MCP config writes, OAuth completion, token
+  storage, provider tool execution, external-system mutation, or approval
+  bypasses. All new routes are read-only.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

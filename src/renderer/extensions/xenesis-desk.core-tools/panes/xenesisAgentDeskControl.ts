@@ -791,6 +791,65 @@ function hasXenesisConnectionReadbackIntent(value: string): boolean {
   ]);
 }
 
+function hasExternalToolCatalogContext(value: string): boolean {
+  return hasAny(value, [
+    'external tool',
+    'external tools',
+    'tool catalog',
+    'tool catalogs',
+    'tools catalog',
+    '외부 툴',
+    '외부 도구',
+    '툴 전체',
+    '도구 전체',
+    '전체 툴',
+    '전체 도구',
+  ]);
+}
+
+function xenesisToolAggregateStatusActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
+  if (!hasExternalToolCatalogContext(value)) return null;
+  if (!hasXenesisConnectionReadbackIntent(value)) return null;
+
+  if (hasAny(value, ['connector', 'connectors', '커넥터', '연결자'])) {
+    return naturalAction(
+      'natural-xenesis-tools-connectors-status',
+      'xd.xenesis.tools.connectors.status',
+      {},
+      'Read external tool connector catalog status from natural language request.',
+    );
+  }
+
+  if (hasAny(value, ['설치 계획', 'install plan', 'install plans'])) {
+    return naturalAction(
+      'natural-xenesis-tools-install-plans-status',
+      'xd.xenesis.tools.installPlans.status',
+      {},
+      'Read external tool install plan catalog status from natural language request.',
+    );
+  }
+
+  if (hasAny(value, ['액션', 'action', '정책', 'policy', '권한', 'permission'])) {
+    return naturalAction(
+      'natural-xenesis-tools-actions-status',
+      'xd.xenesis.tools.actions.status',
+      {},
+      'Read external tool action policy catalog status from natural language request.',
+    );
+  }
+
+  if (hasAny(value, ['user story', 'user stories', '사용자 스토리', '스토리'])) {
+    return naturalAction(
+      'natural-xenesis-tools-user-stories-status',
+      'xd.xenesis.tools.userStories.status',
+      {},
+      'Read external tool user-story catalog status from natural language request.',
+    );
+  }
+
+  return null;
+}
+
 function hasXenesisConnectionContext(value: string): boolean {
   return hasAny(value, [
     '연결',
@@ -1092,6 +1151,9 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
 
   const guideStatusAction = xenesisGuideStatusActionFromNaturalText(value);
   if (guideStatusAction) return guideStatusAction;
+
+  const toolAggregateStatusAction = xenesisToolAggregateStatusActionFromNaturalText(value);
+  if (toolAggregateStatusAction) return toolAggregateStatusAction;
 
   if (hasAny(value, ['온보딩', 'onboarding'])) {
     const onboardingStatusAction = xenesisOnboardingStatusActionFromNaturalText(value);

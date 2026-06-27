@@ -1440,6 +1440,46 @@ test('planXenesisDeskNaturalLanguageActions maps guide catalog readback requests
 });
 
 test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center readbacks to CR actions', () => {
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 툴 connector 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-tools-connectors-status',
+      path: 'xd.xenesis.tools.connectors.status',
+      args: {},
+      approved: false,
+      reason: 'Read external tool connector catalog status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 툴 설치 계획 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-tools-install-plans-status',
+      path: 'xd.xenesis.tools.installPlans.status',
+      args: {},
+      approved: false,
+      reason: 'Read external tool install plan catalog status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 툴 액션 정책 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-tools-actions-status',
+      path: 'xd.xenesis.tools.actions.status',
+      args: {},
+      approved: false,
+      reason: 'Read external tool action policy catalog status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 툴 사용자 스토리 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-tools-user-stories-status',
+      path: 'xd.xenesis.tools.userStories.status',
+      args: {},
+      approved: false,
+      reason: 'Read external tool user-story catalog status from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider setup 상태 보여줘').actions, [
     {
       id: 'natural-xenesis-provider-setup-status-auto',
