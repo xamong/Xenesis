@@ -347,6 +347,32 @@
   all-connection readiness read path visible before targeted provider, tool,
   messenger, diagnostics, setup-request, onboarding, or guide actions.
 
+## Connection Diagnostics and Setup Request Aggregate Slice
+
+- Added deterministic Xenesis Agent natural-language routing for broad
+  Connection Center diagnostic and setup-request catalog prompts:
+  - `연결 진단 전체 열어줘` -> `xd.panes.settings.open` with the Xenesis Agent
+    Connection Center selected.
+  - `설정 요청 전체 열어줘` -> `xd.panes.settings.open` with the Xenesis Agent
+    Connection Center selected.
+  - `연결 진단 전체 상태 보여줘` ->
+    `xd.xenesis.connections.diagnostics.status` with `{}`.
+  - `Connection diagnostics 전체 상태 보여줘` ->
+    `xd.xenesis.connections.diagnostics.status` with `{}`.
+  - `설정 요청 전체 상태 보여줘` ->
+    `xd.xenesis.connections.setupRequests.status` with `{}`.
+  - `connection setup request 전체 상태 보여줘` ->
+    `xd.xenesis.connections.setupRequests.status` with `{}`.
+- Target-specific prompts such as `노션 연결 진단 보여줘` and
+  `텔레그램 설정 요청 상태 보여줘` still route to focused CR paths with the
+  owning connection id.
+- Scope boundary: this slice did not record setup request reviews, create
+  Action Inbox items, install MCP servers, complete OAuth, store tokens,
+  execute provider tools, send messages, mutate settings, add CR nodes, or
+  bypass approvals.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local code, and tests.
+
 ## Agent Status Events Slice
 
 - Added deterministic Xenesis Agent natural-language routing for existing

@@ -821,6 +821,36 @@ test('planXenesisDeskNaturalLanguageActions maps tools and explorer filter reque
 });
 
 test('planXenesisDeskNaturalLanguageActions maps Connection Center requests to CR actions', () => {
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('연결 진단 전체 열어줘').actions, [
+    {
+      id: 'natural-xenesis-connection-diagnostics-catalog-open',
+      path: 'xd.panes.settings.open',
+      args: {
+        category: 'xenesis-agent',
+        mode: 'connections',
+        section: 'xenesis-connections',
+        placement: 'tab',
+      },
+      approved: false,
+      reason: 'Open Xenesis connection diagnostics catalog in Connection Center from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('설정 요청 전체 열어줘').actions, [
+    {
+      id: 'natural-xenesis-connection-setup-requests-catalog-open',
+      path: 'xd.panes.settings.open',
+      args: {
+        category: 'xenesis-agent',
+        mode: 'connections',
+        section: 'xenesis-connections',
+        placement: 'tab',
+      },
+      approved: false,
+      reason: 'Open Xenesis connection setup request catalog in Connection Center from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('가이드 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-guides-catalog-open',
@@ -1359,6 +1389,46 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
 });
 
 test('planXenesisDeskNaturalLanguageActions maps Connection Center readback requests to CR actions', () => {
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('연결 진단 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-connection-diagnostics-status',
+      path: 'xd.xenesis.connections.diagnostics.status',
+      args: {},
+      approved: false,
+      reason: 'Read Xenesis connection diagnostics catalog from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('Connection diagnostics 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-connection-diagnostics-status',
+      path: 'xd.xenesis.connections.diagnostics.status',
+      args: {},
+      approved: false,
+      reason: 'Read Xenesis connection diagnostics catalog from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('설정 요청 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-connection-setup-requests-status',
+      path: 'xd.xenesis.connections.setupRequests.status',
+      args: {},
+      approved: false,
+      reason: 'Read Xenesis connection setup request catalog from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('connection setup request 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-connection-setup-requests-status',
+      path: 'xd.xenesis.connections.setupRequests.status',
+      args: {},
+      approved: false,
+      reason: 'Read Xenesis connection setup request catalog from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('연결 상태 보여줘').actions, [
     {
       id: 'natural-xenesis-connections-status',

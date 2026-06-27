@@ -858,6 +858,22 @@ function hasXenesisGuideCatalogContext(value: string): boolean {
   );
 }
 
+function hasXenesisConnectionDiagnosticsCatalogContext(value: string): boolean {
+  return (
+    hasXenesisAggregateCatalogContext(value) &&
+    hasAny(value, ['진단', 'diagnostic', 'diagnostics', 'runbook', 'runbooks', '런북']) &&
+    hasAny(value, ['연결', 'connection', 'connections', 'connection center'])
+  );
+}
+
+function hasXenesisConnectionSetupRequestCatalogContext(value: string): boolean {
+  return (
+    hasXenesisAggregateCatalogContext(value) &&
+    hasAny(value, ['setup request', 'setup requests', '설정 요청', '연결 요청', 'setup 요청']) &&
+    (hasXenesisConnectionContext(value) || hasAny(value, ['setup request', 'setup requests', '설정 요청', '연결 요청']))
+  );
+}
+
 function xenesisToolAggregateStatusActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
   if (!hasExternalToolCatalogContext(value)) return null;
   if (!hasXenesisConnectionReadbackIntent(value)) return null;
@@ -1352,6 +1368,24 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
     );
   }
 
+  if (hasXenesisConnectionDiagnosticsCatalogContext(value)) {
+    return naturalAction(
+      'natural-xenesis-connection-diagnostics-status',
+      'xd.xenesis.connections.diagnostics.status',
+      {},
+      'Read Xenesis connection diagnostics catalog from natural language request.',
+    );
+  }
+
+  if (hasXenesisConnectionSetupRequestCatalogContext(value)) {
+    return naturalAction(
+      'natural-xenesis-connection-setup-requests-status',
+      'xd.xenesis.connections.setupRequests.status',
+      {},
+      'Read Xenesis connection setup request catalog from natural language request.',
+    );
+  }
+
   const guideStatusAction = xenesisGuideStatusActionFromNaturalText(value);
   if (guideStatusAction) return guideStatusAction;
 
@@ -1585,6 +1619,24 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
 
   const onboardingAction = xenesisOnboardingOpenActionFromNaturalText(value);
   if (onboardingAction) return onboardingAction;
+
+  if (hasXenesisConnectionDiagnosticsCatalogContext(value)) {
+    return naturalAction(
+      'natural-xenesis-connection-diagnostics-catalog-open',
+      'xd.panes.settings.open',
+      xenesisConnectionCenterOpenArgs(),
+      'Open Xenesis connection diagnostics catalog in Connection Center from natural language request.',
+    );
+  }
+
+  if (hasXenesisConnectionSetupRequestCatalogContext(value)) {
+    return naturalAction(
+      'natural-xenesis-connection-setup-requests-catalog-open',
+      'xd.panes.settings.open',
+      xenesisConnectionCenterOpenArgs(),
+      'Open Xenesis connection setup request catalog in Connection Center from natural language request.',
+    );
+  }
 
   if (hasAny(value, ['연결 센터', 'connection center', 'connections center', '연결 목록'])) {
     return naturalAction(
