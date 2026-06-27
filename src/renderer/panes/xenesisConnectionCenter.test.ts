@@ -10,6 +10,7 @@ import {
   formatXenesisChannelRoutingSummary,
   formatXenesisChannelSafetySummary,
   formatXenesisChannelUserStorySummary,
+  formatXenesisConnectionDiagnosticRunbookSummary,
   formatXenesisGuideCatalogSummary,
   formatXenesisMessengerViewSummary,
   formatXenesisOnboardingPlanSummary,
@@ -280,6 +281,40 @@ test('formatXenesisGuideCatalogSummary describes guide type, audience, and surfa
       safetyBoundaries: ['guide catalog does not execute workflows'],
     }),
     'user-story-catalog / agent / 4 surface(s)',
+  );
+});
+
+test('formatXenesisConnectionDiagnosticRunbookSummary describes readiness and step count', () => {
+  assert.equal(
+    formatXenesisConnectionDiagnosticRunbookSummary({
+      scope: 'tool',
+      readiness: 'action-required',
+      primarySurface: 'Settings > Xenesis Agent > Connections',
+      setupSurface: 'Settings > Xenesis Agent > Connections',
+      steps: [
+        {
+          id: 'connection-status',
+          label: 'Connection status',
+          expectedState: 'Connection status is ready, planned, or actionable.',
+          readPaths: ['xd.xenesis.connections.status'],
+          controlPaths: ['xd.xenesis.connections.diagnostics.open'],
+          diagnostics: ['connection-status'],
+        },
+        {
+          id: 'tool-connector',
+          label: 'Tool connector',
+          expectedState: 'Connector credential state is configured or explicitly planned.',
+          readPaths: ['xd.xenesis.tools.connectors.status'],
+          controlPaths: ['xd.xenesis.tools.views.open'],
+          diagnostics: ['credential-state-redacted'],
+        },
+      ],
+      readPaths: ['xd.xenesis.connections.diagnostics.status'],
+      controlPaths: ['xd.xenesis.connections.diagnostics.open'],
+      diagnostics: ['connection-status', 'credential-state-redacted'],
+      safetyBoundaries: ['diagnostic runbooks are read/open planning surfaces'],
+    }),
+    'action-required / 2 diagnostic step(s)',
   );
 });
 

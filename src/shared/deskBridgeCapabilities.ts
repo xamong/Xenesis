@@ -195,6 +195,30 @@ const XENESIS_CONNECTION_OPEN_SCHEMA = {
   },
 } as const;
 
+const XENESIS_CONNECTION_DIAGNOSTIC_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Connection id',
+      description: 'Optional Connection Center item id to filter.',
+      examples: ['notion', 'google-calendar', 'telegram'],
+    },
+    connection: {
+      type: 'string',
+      title: 'Connection alias',
+      description: 'Alias for id.',
+      examples: ['notion', 'google-calendar', 'telegram'],
+    },
+    kind: {
+      type: 'string',
+      title: 'Connection kind',
+      enum: ['onboarding', 'provider', 'local-cli', 'mcp', 'gateway', 'tool', 'messenger', 'guide'],
+      description: 'Optional Connection Center kind to filter.',
+    },
+  },
+} as const;
+
 const XENESIS_ONBOARDING_STEP_IDS = [
   'first-chat',
   'local-cli-mcp',
@@ -844,6 +868,8 @@ export interface DeskBridgeCapabilityAdapter {
   isXenisPhase5Enabled?: () => boolean;
   getXenesisStatus?: () => Promise<unknown> | unknown;
   getXenesisConnectionsStatus?: () => Promise<unknown> | unknown;
+  getXenesisConnectionDiagnosticRunbooksStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisConnectionDiagnosticRunbook?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisOnboardingStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisOnboardingStep?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisChannelRoutingStatus?: (args?: unknown) => Promise<unknown> | unknown;
@@ -3811,6 +3837,27 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           'Open Settings > Xenesis Agent > Connections and focus one provider, tool, guide, or messenger card.',
           'control',
           XENESIS_CONNECTION_OPEN_SCHEMA,
+        ),
+        group(
+          'xd.xenesis.connections.diagnostics',
+          'Connection diagnostics',
+          'Read/open diagnostic runbooks for Connection Center cards.',
+          [
+            method(
+              'xd.xenesis.connections.diagnostics.status',
+              'Read connection diagnostic runbooks',
+              'Read Desk-native diagnostic runbooks that combine status, setup, connector, view, user-story, and safety metadata for Connection Center cards.',
+              'read',
+              XENESIS_CONNECTION_DIAGNOSTIC_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.connections.diagnostics.open',
+              'Open connection diagnostic runbook',
+              'Open Settings > Xenesis Agent > Connections and focus the card that owns one diagnostic runbook.',
+              'control',
+              XENESIS_CONNECTION_OPEN_SCHEMA,
+            ),
+          ],
         ),
       ]),
       group('xd.xenesis.onboarding', 'Onboarding', 'Xenesis initial setup checklist and readiness.', [
@@ -10315,6 +10362,12 @@ export async function callDeskBridgeCapability(
           focusConnectionId,
           ensureVisible: args.ensureVisible !== false,
         });
+      }
+      if (path === 'xd.xenesis.connections.diagnostics.status') {
+        return callAdapter(path, api?.getXenesisConnectionDiagnosticRunbooksStatus, request.args);
+      }
+      if (path === 'xd.xenesis.connections.diagnostics.open') {
+        return callAdapter(path, api?.openXenesisConnectionDiagnosticRunbook, request.args);
       }
       if (path === 'xd.xenesis.onboarding.status') {
         return callAdapter(path, api?.getXenesisOnboardingStatus, request.args);

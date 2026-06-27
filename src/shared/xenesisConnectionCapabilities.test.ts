@@ -893,6 +893,60 @@ test('xenesis provider view capabilities are registered and dispatch to the adap
   });
 });
 
+test('xenesis connection diagnostic runbook capabilities are registered and dispatch to the adapter', async () => {
+  const statusCapability = findDeskBridgeCapability('xd.xenesis.connections.diagnostics.status');
+  const openCapability = findDeskBridgeCapability('xd.xenesis.connections.diagnostics.open');
+  assert.equal(statusCapability?.permission, 'read');
+  assert.equal(statusCapability?.approval, 'never');
+  assert.equal(openCapability?.permission, 'control');
+  assert.equal(openCapability?.approval, 'never');
+  assert.deepEqual(openCapability?.schema?.required, ['id']);
+
+  const calls: Array<{ method: string; args: unknown }> = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisConnectionDiagnosticRunbooksStatus: (args) => {
+      calls.push({ method: 'status', args });
+      return {
+        ok: true,
+        items: [{ id: 'notion' }],
+      };
+    },
+    openXenesisConnectionDiagnosticRunbook: (args) => {
+      calls.push({ method: 'open', args });
+      return {
+        ok: true,
+        item: { id: 'notion' },
+      };
+    },
+  };
+
+  const statusResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.connections.diagnostics.status',
+    args: { id: 'notion' },
+    source: 'xenesis',
+  });
+  const openResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.connections.diagnostics.open',
+    args: { id: 'notion' },
+    source: 'xenesis',
+  });
+
+  assert.equal(statusResult.ok, true);
+  assert.equal(openResult.ok, true);
+  assert.deepEqual(calls, [
+    { method: 'status', args: { id: 'notion' } },
+    { method: 'open', args: { id: 'notion' } },
+  ]);
+  assert.deepEqual(statusResult.result, {
+    ok: true,
+    items: [{ id: 'notion' }],
+  });
+  assert.deepEqual(openResult.result, {
+    ok: true,
+    item: { id: 'notion' },
+  });
+});
+
 test('xenesis profile channel capabilities expose implemented guardrail fields', () => {
   const updateSchema = findDeskBridgeCapability('xd.xenesis.profiles.updateChannels')?.schema;
   const testSchema = findDeskBridgeCapability('xd.xenesis.profiles.testChannel')?.schema;

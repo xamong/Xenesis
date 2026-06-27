@@ -270,6 +270,7 @@ import type {
 import {
   buildXenesisConnectionsStatus,
   type XenesisConnectionItem,
+  type XenesisConnectionKind,
   type XenesisConnectionsStatus,
 } from '../shared/xenesisConnections';
 import { createAppControlService } from './appControl/appControlService';
@@ -4803,6 +4804,110 @@ async function getXenesisConnectionsStatus(): Promise<XenesisConnectionsStatus> 
     env: process.env,
     repoRoot: app.isPackaged ? app.getAppPath() : process.cwd(),
   });
+}
+
+const XENESIS_CONNECTION_KINDS: readonly XenesisConnectionKind[] = [
+  'onboarding',
+  'provider',
+  'local-cli',
+  'mcp',
+  'gateway',
+  'tool',
+  'messenger',
+  'guide',
+];
+
+function isXenesisConnectionKind(value: string): value is XenesisConnectionKind {
+  return (XENESIS_CONNECTION_KINDS as readonly string[]).includes(value);
+}
+
+function listXenesisConnectionItems(status: XenesisConnectionsStatus): XenesisConnectionItem[] {
+  return Object.values(status.sections).flatMap((section) => section.items);
+}
+
+function xenesisConnectionDiagnosticRunbookStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    kind: item.kind,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    readiness: item.diagnosticRunbook?.readiness,
+    scope: item.diagnosticRunbook?.scope,
+    primarySurface: item.diagnosticRunbook?.primarySurface,
+    setupSurface: item.diagnosticRunbook?.setupSurface,
+    steps: item.diagnosticRunbook?.steps ?? [],
+    readPaths: item.diagnosticRunbook?.readPaths ?? [],
+    controlPaths: item.diagnosticRunbook?.controlPaths ?? [],
+    diagnostics: item.diagnosticRunbook?.diagnostics ?? [],
+    safetyBoundaries: item.diagnosticRunbook?.safetyBoundaries ?? [],
+    diagnosticRunbook: item.diagnosticRunbook,
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisConnectionDiagnosticRunbooksStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'connection', 'connectionId', 'name']);
+  const kind = readCapabilityString(body, ['kind', 'scope']);
+  if (kind && !isXenesisConnectionKind(kind)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis connection kind: ${kind}`,
+      allowedKinds: XENESIS_CONNECTION_KINDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = listXenesisConnectionItems(status)
+    .filter((item) => item.diagnosticRunbook)
+    .filter((item) => !id || item.id === id)
+    .filter((item) => !kind || item.kind === kind)
+    .map((item) => xenesisConnectionDiagnosticRunbookStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    ...(kind ? { kind } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisConnectionDiagnosticRunbook(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'connection', 'connectionId', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Connection id is required.' };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = listXenesisConnectionItems(status).find(
+    (candidate) => candidate.id === id && candidate.diagnosticRunbook,
+  );
+  if (!item) {
+    return { ok: false, id, error: `Xenesis connection diagnostic runbook is not available: ${id}` };
+  }
+
+  const renderer = await openMcpBuiltinPaneCapability({
+    kind: 'settings',
+    category: 'xenesis-agent',
+    mode: 'connections',
+    section: 'xenesis-connections',
+    focusConnectionId: item.id,
+    ensureVisible: body.ensureVisible !== false,
+  });
+
+  return {
+    ok: renderer.ok !== false,
+    id: item.id,
+    item: xenesisConnectionDiagnosticRunbookStatusItem(item),
+    renderer,
+  };
 }
 
 const XENESIS_ONBOARDING_STEP_IDS = [
@@ -12947,6 +13052,9 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisStatus: () =>
       getXenesisStatusPayload().then((status) => ({ ok: true, status: redactXenesisStatusForCapability(status) })),
     getXenesisConnectionsStatus: () => getXenesisConnectionsStatus().then((status) => ({ ok: true, status })),
+    getXenesisConnectionDiagnosticRunbooksStatus: (args: unknown) =>
+      getXenesisConnectionDiagnosticRunbooksStatus(args),
+    openXenesisConnectionDiagnosticRunbook: (args: unknown) => openXenesisConnectionDiagnosticRunbook(args),
     getXenesisOnboardingStatus: (args: unknown) => getXenesisOnboardingStatus(args),
     openXenesisOnboardingStep: (args: unknown) => openXenesisOnboardingStep(args),
     getXenesisChannelRoutingStatus: (args: unknown) => getXenesisChannelRoutingStatus(args),

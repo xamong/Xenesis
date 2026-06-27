@@ -1871,6 +1871,77 @@ test('buildXenesisConnectionsStatus exposes guide catalog metadata for onboardin
   assert.equal(userStories?.guideCatalog?.readPaths.includes('xd.xenesis.guides.status'), true);
 });
 
+test('buildXenesisConnectionsStatus exposes diagnostic runbooks for tools, planned tools, and channels', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+  const calendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+  const telegram = status.sections.messengers.items.find((item) => item.id === 'telegram');
+
+  assert.equal(notion?.diagnosticRunbook?.scope, 'tool');
+  assert.equal(notion?.diagnosticRunbook?.readiness, 'action-required');
+  assert.deepEqual(
+    notion?.diagnosticRunbook?.steps.map((step) => step.id),
+    ['connection-status', 'tool-setup', 'tool-connector', 'tool-view', 'tool-user-story', 'tool-install-plan'],
+  );
+  assert.equal(notion?.diagnosticRunbook?.readPaths.includes('xd.xenesis.tools.connectors.status'), true);
+  assert.equal(notion?.diagnosticRunbook?.diagnostics.includes('notion-search-read'), true);
+
+  assert.equal(calendar?.diagnosticRunbook?.scope, 'tool');
+  assert.equal(calendar?.diagnosticRunbook?.readiness, 'planned');
+  assert.equal(
+    calendar?.diagnosticRunbook?.steps.some((step) => step.id === 'tool-install-plan'),
+    true,
+  );
+  assert.equal(calendar?.diagnosticRunbook?.diagnostics.includes('planned-oauth-template'), true);
+  assert.equal(
+    calendar?.diagnosticRunbook?.safetyBoundaries.includes('diagnostic runbooks are read/open planning surfaces'),
+    true,
+  );
+
+  assert.equal(telegram?.diagnosticRunbook?.scope, 'messenger');
+  assert.deepEqual(
+    telegram?.diagnosticRunbook?.steps.map((step) => step.id),
+    [
+      'connection-status',
+      'channel-routing',
+      'channel-safety',
+      'channel-access-groups',
+      'channel-pairing',
+      'channel-user-story',
+      'messenger-view',
+    ],
+  );
+  assert.equal(telegram?.diagnosticRunbook?.readPaths.includes('xd.xenesis.channels.userStories.status'), true);
+  assert.equal(telegram?.diagnosticRunbook?.controlPaths.includes('xd.xenesis.connections.diagnostics.open'), true);
+});
+
 test('buildXenesisConnectionsStatus reports missing setup without leaking secrets', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {

@@ -52,6 +52,17 @@ readiness, and CR-controlled Desk workflows. Use `xd.xenesis.guides.open` with
 This surface is read-only except for opening the guide/view; it does not install
 tools, create OAuth flows, send messages, or mutate provider/channel settings.
 
+Connection cards also expose a `diagnosticRunbook` read model. Use
+`xd.xenesis.connections.diagnostics.status` to inspect the unified runbook for a
+card, or filter by `{ "id": "<connection-id>" }` or `{ "kind": "tool" }`.
+Runbooks combine the card status with its setup, connector, view, user-story,
+readback, control, diagnostic, and safety metadata so the Agent/operator can see
+what to inspect next without jumping across separate CR surfaces. Use
+`xd.xenesis.connections.diagnostics.open` with `{ "id": "<connection-id>" }` to
+focus the owning Connection Center card. This is a read/open planning surface
+only: it does not run checks, install MCP servers, complete OAuth, store tokens,
+execute provider tools, send messages, mutate settings, or bypass approvals.
+
 The first section is an ordered onboarding checklist. It is derived from the
 same provider, MCP, tool, gateway, messenger, and guide cards, so it is a
 read-only progress view rather than a separate source of truth. Use it as the
@@ -354,6 +365,14 @@ Use `xd.xenesis.connections.open` with `{ "id": "<connection-id>" }` to open
 Settings > Xenesis Agent > Connections and focus a specific provider, tool,
 guide, or messenger card. This is a UI-control path; it does not mutate
 connection settings.
+
+Use `xd.xenesis.connections.diagnostics.status` and
+`xd.xenesis.connections.diagnostics.open` to inspect or open a unified
+diagnostic runbook for a Connection Center card. Runbooks aggregate the relevant
+status, setup, connector, view, user-story, readback, control, diagnostic, and
+safety metadata for the selected card. They are read/open planning surfaces only
+and do not run checks, install adapters, complete OAuth, store tokens, execute
+tools, send messages, mutate settings, or bypass approvals.
 
 Use `xd.xenesis.guides.status` and `xd.xenesis.guides.open` to inspect or open
 the guide catalog through CR. The guide catalog covers setup playbooks,

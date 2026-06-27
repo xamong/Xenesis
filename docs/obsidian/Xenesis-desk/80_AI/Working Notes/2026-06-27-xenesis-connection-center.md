@@ -578,6 +578,34 @@ Capability Registry instead of only through separate renderer settings panels.
   missing renderer helper, and missing prompt-hint paths, then passed after
   implementation with 85/85 tests.
 
+## Current Connection Diagnostic Runbooks Read Model Slice
+
+- Add `diagnosticRunbook` metadata to Connection Center cards in
+  `xd.xenesis.connections.status`.
+- Add `xd.xenesis.connections.diagnostics.status` as a read/no-approval CR path
+  for unified per-card runbooks. The runbook combines connection status,
+  setup/connector/view/user-story/readback/control/diagnostic/safety metadata
+  already exposed by the card.
+- Add `xd.xenesis.connections.diagnostics.open` as a control/no-approval CR
+  path that opens Settings > Xenesis Agent > Connections and focuses the
+  requested card.
+- Settings renders the same model with
+  `data-xenesis-connection-diagnostic-runbook="<connection-id>"`.
+- Tool runbooks aggregate tool setup, connector, internal view, user-story, and
+  install-plan diagnostics. Messenger runbooks aggregate routing, safety,
+  access-group, pairing, user-story, and internal messenger view diagnostics.
+- Diagnostic runbooks are planning/readiness surfaces only. They do not run
+  checks, install MCP servers, complete OAuth, store tokens, execute provider
+  tools, send messages, mutate provider/tool/channel settings, or bypass
+  approvals.
+- External documentation handling for this slice: no per-slice web browsing.
+  Use local Obsidian/docs/handoff as the gap map; refresh external docs only as
+  a batched documentation pass if needed.
+- `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+  failed first for missing runbook metadata, missing CR paths, missing renderer
+  helper, and missing prompt-hint paths, then passed after implementation with
+  88/88 tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

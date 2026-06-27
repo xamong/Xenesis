@@ -5,6 +5,7 @@ import type {
   XenesisConnectionChannelRoutingTemplate,
   XenesisConnectionChannelSafetyTemplate,
   XenesisConnectionChannelUserStoryTemplate,
+  XenesisConnectionDiagnosticRunbookTemplate,
   XenesisConnectionGuideCatalogTemplate,
   XenesisConnectionItem,
   XenesisConnectionMessengerViewTemplate,
@@ -130,6 +131,12 @@ export function formatXenesisToolUserStorySummary(workflow: XenesisConnectionToo
 
 export function formatXenesisMessengerViewSummary(view: XenesisConnectionMessengerViewTemplate): string {
   return `${view.primarySurface} / ${view.runtimeSupport}`;
+}
+
+export function formatXenesisConnectionDiagnosticRunbookSummary(
+  runbook: XenesisConnectionDiagnosticRunbookTemplate,
+): string {
+  return `${runbook.readiness} / ${runbook.steps.length} diagnostic step(s)`;
 }
 
 export function buildXenesisConnectionSettingsRequest(

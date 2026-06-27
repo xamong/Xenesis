@@ -93,6 +93,7 @@ import {
   formatXenesisChannelRoutingSummary,
   formatXenesisChannelSafetySummary,
   formatXenesisChannelUserStorySummary,
+  formatXenesisConnectionDiagnosticRunbookSummary,
   formatXenesisGuideCatalogSummary,
   formatXenesisMessengerViewSummary,
   formatXenesisOnboardingPlanSummary,
@@ -4276,6 +4277,7 @@ export default function SettingsPane() {
     const messengerView = item.messengerView;
     const channelTemplate = item.channelTemplate;
     const channelUserStory = channelTemplate?.userStory;
+    const diagnosticRunbook = item.diagnosticRunbook;
     return (
       <div
         className={cls('sp-info-card', focusedXenesisConnectionId === item.id && 'is-focused')}
@@ -4368,6 +4370,38 @@ export default function SettingsPane() {
             <div>
               <span>{t('settings.xenesisConnectionsSources')}</span>
               <strong>{item.sourceDocs.map((source) => source.label).join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {diagnosticRunbook ? (
+          <div className="sp-info-list sp-info-list-compact" data-xenesis-connection-diagnostic-runbook={item.id}>
+            <div>
+              <span>{t('settings.xenesisConnectionsDiagnosticRunbook')}</span>
+              <strong>{formatXenesisConnectionDiagnosticRunbookSummary(diagnosticRunbook)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsDiagnosticRunbookSetupSurface')}</span>
+              <strong>{diagnosticRunbook.setupSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsDiagnosticRunbookSteps')}</span>
+              <strong>{diagnosticRunbook.steps.map((step) => `${step.id}: ${step.expectedState}`).join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsDiagnosticRunbookReadback')}</span>
+              <strong>{diagnosticRunbook.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsDiagnosticRunbookControls')}</span>
+              <strong>{diagnosticRunbook.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsDiagnosticRunbookDiagnostics')}</span>
+              <strong>{diagnosticRunbook.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsDiagnosticRunbookSafety')}</span>
+              <strong>{diagnosticRunbook.safetyBoundaries.join(', ')}</strong>
             </div>
           </div>
         ) : null}

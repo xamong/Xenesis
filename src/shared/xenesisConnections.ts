@@ -22,6 +22,13 @@ export type XenesisConnectionKind =
   | 'guide';
 export type XenesisConnectionStatus = 'ready' | 'needs-setup' | 'disabled' | 'blocked' | 'planned' | 'unknown';
 export type XenesisConnectionSupportLevel = 'implemented' | 'manual' | 'planned';
+export type XenesisConnectionDiagnosticRunbookReadiness =
+  | 'ready'
+  | 'action-required'
+  | 'planned'
+  | 'disabled'
+  | 'blocked'
+  | 'unknown';
 
 export interface XenesisConnectionSettingsAction {
   category: string;
@@ -405,6 +412,27 @@ export interface XenesisConnectionGuideCatalogTemplate {
   safetyBoundaries: string[];
 }
 
+export interface XenesisConnectionDiagnosticRunbookStep {
+  id: string;
+  label: string;
+  expectedState: string;
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+}
+
+export interface XenesisConnectionDiagnosticRunbookTemplate {
+  scope: XenesisConnectionKind;
+  readiness: XenesisConnectionDiagnosticRunbookReadiness;
+  primarySurface: string;
+  setupSurface: string;
+  steps: XenesisConnectionDiagnosticRunbookStep[];
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  safetyBoundaries: string[];
+}
+
 export interface XenesisConnectionItem {
   id: string;
   kind: XenesisConnectionKind;
@@ -434,6 +462,7 @@ export interface XenesisConnectionItem {
   messengerView?: XenesisConnectionMessengerViewTemplate;
   guideCatalog?: XenesisConnectionGuideCatalogTemplate;
   channelTemplate?: XenesisConnectionChannelTemplate;
+  diagnosticRunbook?: XenesisConnectionDiagnosticRunbookTemplate;
   warnings?: string[];
 }
 
@@ -2579,6 +2608,354 @@ function countItems(sections: XenesisConnectionsStatus['sections']): XenesisConn
   return summary;
 }
 
+function uniqueStrings(values: Array<string | null | undefined>): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const value of values) {
+    const normalized = value?.trim();
+    if (!normalized || seen.has(normalized)) continue;
+    seen.add(normalized);
+    result.push(normalized);
+  }
+  return result;
+}
+
+function diagnosticRunbookReadiness(status: XenesisConnectionStatus): XenesisConnectionDiagnosticRunbookReadiness {
+  if (status === 'needs-setup') return 'action-required';
+  return status;
+}
+
+function diagnosticRunbookStep(input: {
+  id: string;
+  label: string;
+  expectedState: string;
+  readPaths?: string[];
+  controlPaths?: string[];
+  diagnostics?: string[];
+}): XenesisConnectionDiagnosticRunbookStep {
+  return {
+    id: input.id,
+    label: input.label,
+    expectedState: input.expectedState,
+    readPaths: uniqueStrings(input.readPaths ?? []),
+    controlPaths: uniqueStrings(input.controlPaths ?? []),
+    diagnostics: uniqueStrings(input.diagnostics ?? []),
+  };
+}
+
+function diagnosticRunbookSetupSurface(item: XenesisConnectionItem): string {
+  return (
+    item.onboardingPlan?.setupSurface ??
+    item.providerView?.setupSurface ??
+    (item.providerSetup ? 'Settings > AI Provider' : undefined) ??
+    item.toolSetup?.setupSurface ??
+    item.toolConnector?.setupSurface ??
+    item.toolView?.setupSurface ??
+    item.toolUserStory?.setupSurface ??
+    item.toolInstallPlan?.setupSurface ??
+    item.messengerView?.setupSurface ??
+    item.channelTemplate?.pairing?.setupSurface ??
+    item.channelTemplate?.userStory?.setupSurface ??
+    item.guideCatalog?.primarySurface ??
+    item.settingsTarget ??
+    'Settings > Xenesis Agent > Connections'
+  );
+}
+
+function diagnosticRunbookPrimarySurface(item: XenesisConnectionItem): string {
+  return (
+    item.onboardingPlan?.primarySurface ??
+    item.providerView?.primarySurface ??
+    item.toolView?.primarySurface ??
+    item.toolUserStory?.primarySurface ??
+    item.toolInstallPlan?.primarySurface ??
+    item.messengerView?.primarySurface ??
+    item.guideCatalog?.primarySurface ??
+    'Settings > Xenesis Agent > Connections'
+  );
+}
+
+function buildXenesisConnectionDiagnosticRunbook(
+  item: XenesisConnectionItem,
+): XenesisConnectionDiagnosticRunbookTemplate {
+  const steps: XenesisConnectionDiagnosticRunbookStep[] = [
+    diagnosticRunbookStep({
+      id: 'connection-status',
+      label: 'Connection status',
+      expectedState:
+        'Connection Center reports an explicit ready, actionable, planned, disabled, blocked, or unknown state.',
+      readPaths: ['xd.xenesis.connections.status'],
+      controlPaths: ['xd.xenesis.connections.diagnostics.open', 'xd.xenesis.connections.open'],
+      diagnostics: ['connection-status', item.status, ...(item.missingEnv ?? []), ...(item.warnings ?? [])],
+    }),
+  ];
+
+  if (item.onboardingPlan) {
+    steps.push(
+      diagnosticRunbookStep({
+        id: 'onboarding-plan',
+        label: 'Onboarding plan',
+        expectedState: `Validation checks are reviewed: ${item.onboardingPlan.validationChecks.join(', ') || 'none'}.`,
+        readPaths: ['xd.xenesis.onboarding.status', ...item.onboardingPlan.statusReadPaths],
+        controlPaths: item.onboardingPlan.controlPaths,
+        diagnostics: [...item.onboardingPlan.validationChecks, ...item.onboardingPlan.diagnostics],
+      }),
+    );
+  }
+
+  if (item.providerSetup) {
+    steps.push(
+      diagnosticRunbookStep({
+        id: 'provider-setup',
+        label: 'Provider setup',
+        expectedState: 'Provider credentials, model, runtime profile, fallback policy, and retry policy are visible.',
+        readPaths: ['xd.xenesis.providers.setup.status', ...item.providerSetup.crReadPaths],
+        controlPaths: item.crActions,
+        diagnostics: [...item.providerSetup.verification, ...item.providerSetup.riskControls],
+      }),
+    );
+  }
+
+  if (item.providerRouting) {
+    steps.push(
+      diagnosticRunbookStep({
+        id: 'provider-routing',
+        label: 'Provider routing',
+        expectedState: 'The active provider route and fallback chain are visible without exposing credentials.',
+        readPaths: ['xd.xenesis.providers.routing.status', ...item.providerRouting.readPaths],
+        diagnostics: [
+          ...item.providerRouting.diagnostics,
+          ...item.providerRouting.safetyBoundaries,
+          ...item.providerRouting.credentialPools.map((pool) => pool.apiKeyEnv),
+        ],
+      }),
+    );
+  }
+
+  if (item.providerView) {
+    steps.push(
+      diagnosticRunbookStep({
+        id: 'provider-view',
+        label: 'Provider view',
+        expectedState: 'The provider detail view can open the same card and read its supporting metadata.',
+        readPaths: ['xd.xenesis.providers.views.status', ...item.providerView.readPaths],
+        controlPaths: item.providerView.controlPaths,
+        diagnostics: item.providerView.diagnostics,
+      }),
+    );
+  }
+
+  if (item.toolSetup) {
+    steps.push(
+      diagnosticRunbookStep({
+        id: 'tool-setup',
+        label: 'Tool setup',
+        expectedState: 'Tool setup scopes, credential storage, and verification checks are visible.',
+        readPaths: ['xd.xenesis.tools.setup.status', ...item.toolSetup.crReadPaths],
+        controlPaths: item.crActions,
+        diagnostics: [...item.toolSetup.verification, ...item.toolSetup.riskControls],
+      }),
+    );
+  }
+
+  if (item.toolConnector) {
+    steps.push(
+      diagnosticRunbookStep({
+        id: 'tool-connector',
+        label: 'Tool connector',
+        expectedState: 'Connector runtime support, auth mode, and credential state are visible.',
+        readPaths: ['xd.xenesis.tools.connectors.status', ...item.toolConnector.readPaths],
+        controlPaths: item.toolConnector.controlPaths,
+        diagnostics: [...item.toolConnector.validationChecks, ...item.toolConnector.diagnostics],
+      }),
+    );
+  }
+
+  if (item.toolView) {
+    steps.push(
+      diagnosticRunbookStep({
+        id: 'tool-view',
+        label: 'Tool view',
+        expectedState: 'The internal tool detail view can open and read this connection card.',
+        readPaths: ['xd.xenesis.tools.views.status', ...item.toolView.readPaths],
+        controlPaths: item.toolView.controlPaths,
+        diagnostics: item.toolView.diagnostics,
+      }),
+    );
+  }
+
+  if (item.toolUserStory) {
+    steps.push(
+      diagnosticRunbookStep({
+        id: 'tool-user-story',
+        label: 'Tool user story',
+        expectedState: 'Tool-backed user stories and their prerequisite connectors are visible.',
+        readPaths: ['xd.xenesis.tools.userStories.status', ...item.toolUserStory.readPaths],
+        controlPaths: item.toolUserStory.controlPaths,
+        diagnostics: item.toolUserStory.diagnostics,
+      }),
+    );
+  }
+
+  if (item.toolInstallPlan) {
+    steps.push(
+      diagnosticRunbookStep({
+        id: 'tool-install-plan',
+        label: 'Tool install plan',
+        expectedState: 'Install mode, setup surfaces, config targets, and manual verification checks are visible.',
+        readPaths: ['xd.xenesis.tools.installPlans.status', ...item.toolInstallPlan.readPaths],
+        controlPaths: item.toolInstallPlan.controlPaths,
+        diagnostics: [...item.toolInstallPlan.installSteps, ...item.toolInstallPlan.diagnostics],
+      }),
+    );
+  }
+
+  if (item.channelTemplate?.routing) {
+    steps.push(
+      diagnosticRunbookStep({
+        id: 'channel-routing',
+        label: 'Channel routing',
+        expectedState: 'External messenger route binding, pairing mode, and delivery features are visible.',
+        readPaths: ['xd.xenesis.channels.routing.status'],
+        diagnostics: [...item.channelTemplate.routing.diagnostics, ...item.channelTemplate.routing.deliveryFeatures],
+      }),
+    );
+  }
+
+  if (item.channelTemplate?.safety) {
+    steps.push(
+      diagnosticRunbookStep({
+        id: 'channel-safety',
+        label: 'Channel safety',
+        expectedState: 'Inbound, outbound, approval, and loop-protection guardrails are visible.',
+        readPaths: ['xd.xenesis.channels.safety.status', ...item.channelTemplate.safety.readPaths],
+        controlPaths: item.channelTemplate.safety.controlPaths,
+        diagnostics: item.channelTemplate.safety.troubleshooting,
+      }),
+    );
+  }
+
+  if (item.channelTemplate?.accessGroups) {
+    steps.push(
+      diagnosticRunbookStep({
+        id: 'channel-access-groups',
+        label: 'Channel access groups',
+        expectedState: 'Allowlist fields, fail-closed bindings, and empty diagnostics are visible.',
+        readPaths: ['xd.xenesis.channels.accessGroups.status', ...item.channelTemplate.accessGroups.readPaths],
+        controlPaths: item.channelTemplate.accessGroups.controlPaths,
+        diagnostics: [
+          ...item.channelTemplate.accessGroups.diagnostics,
+          ...item.channelTemplate.accessGroups.bindings.map((binding) => binding.emptyDiagnostic),
+        ],
+      }),
+    );
+  }
+
+  if (item.channelTemplate?.pairing) {
+    steps.push(
+      diagnosticRunbookStep({
+        id: 'channel-pairing',
+        label: 'Channel pairing',
+        expectedState: 'Credential refs, pairing model, and pairing state are visible before any send path is used.',
+        readPaths: ['xd.xenesis.channels.pairing.status', ...item.channelTemplate.pairing.readPaths],
+        controlPaths: item.channelTemplate.pairing.controlPaths,
+        diagnostics: [...item.channelTemplate.pairing.validationChecks, ...item.channelTemplate.pairing.diagnostics],
+      }),
+    );
+  }
+
+  if (item.channelTemplate?.userStory) {
+    steps.push(
+      diagnosticRunbookStep({
+        id: 'channel-user-story',
+        label: 'Channel user story',
+        expectedState: 'Remote prompt user stories and prerequisite setup are visible.',
+        readPaths: ['xd.xenesis.channels.userStories.status', ...item.channelTemplate.userStory.readPaths],
+        controlPaths: item.channelTemplate.userStory.controlPaths,
+        diagnostics: item.channelTemplate.userStory.diagnostics,
+      }),
+    );
+  }
+
+  if (item.messengerView) {
+    steps.push(
+      diagnosticRunbookStep({
+        id: 'messenger-view',
+        label: 'Messenger view',
+        expectedState: 'The internal messenger detail view can open and read this connection card.',
+        readPaths: ['xd.xenesis.messengers.views.status', ...item.messengerView.readPaths],
+        controlPaths: item.messengerView.controlPaths,
+        diagnostics: item.messengerView.diagnostics,
+      }),
+    );
+  }
+
+  if (item.guideCatalog) {
+    steps.push(
+      diagnosticRunbookStep({
+        id: 'guide-catalog',
+        label: 'Guide catalog',
+        expectedState: 'The guide card exposes audience, covered surfaces, prerequisites, and validation checks.',
+        readPaths: ['xd.xenesis.guides.status', ...item.guideCatalog.readPaths],
+        controlPaths: item.guideCatalog.controlPaths,
+        diagnostics: [...item.guideCatalog.validationChecks, ...item.guideCatalog.userStoryTemplates],
+      }),
+    );
+  }
+
+  return {
+    scope: item.kind,
+    readiness: diagnosticRunbookReadiness(item.status),
+    primarySurface: diagnosticRunbookPrimarySurface(item),
+    setupSurface: diagnosticRunbookSetupSurface(item),
+    steps,
+    readPaths: uniqueStrings(['xd.xenesis.connections.diagnostics.status', ...steps.flatMap((step) => step.readPaths)]),
+    controlPaths: uniqueStrings([
+      'xd.xenesis.connections.diagnostics.open',
+      ...steps.flatMap((step) => step.controlPaths),
+    ]),
+    diagnostics: uniqueStrings(steps.flatMap((step) => step.diagnostics)),
+    safetyBoundaries: uniqueStrings([
+      'diagnostic runbooks are read/open planning surfaces',
+      'diagnostic runbooks do not execute tools, send messages, complete OAuth, install adapters, or mutate settings',
+      ...(item.onboardingPlan?.safetyBoundaries ?? []),
+      ...(item.providerSetup?.riskControls ?? []),
+      ...(item.providerRouting?.safetyBoundaries ?? []),
+      ...(item.providerView?.safetyBoundaries ?? []),
+      ...(item.toolSetup?.riskControls ?? []),
+      ...(item.toolConnector?.safetyBoundaries ?? []),
+      ...(item.toolView?.safetyBoundaries ?? []),
+      ...(item.toolUserStory?.safetyBoundaries ?? []),
+      ...(item.toolInstallPlan?.safetyBoundaries ?? []),
+      ...(item.channelTemplate?.safetyControls ?? []),
+      ...(item.channelTemplate?.safety?.safetyBoundaries ?? []),
+      ...(item.channelTemplate?.accessGroups?.safetyBoundaries ?? []),
+      ...(item.channelTemplate?.pairing?.safetyBoundaries ?? []),
+      ...(item.channelTemplate?.userStory?.safetyBoundaries ?? []),
+      ...(item.messengerView?.safetyBoundaries ?? []),
+      ...(item.guideCatalog?.safetyBoundaries ?? []),
+    ]),
+  };
+}
+
+function withXenesisConnectionDiagnosticRunbook(item: XenesisConnectionItem): XenesisConnectionItem {
+  return {
+    ...item,
+    diagnosticRunbook: buildXenesisConnectionDiagnosticRunbook(item),
+  };
+}
+
+function withXenesisConnectionDiagnosticRunbooks(
+  sections: XenesisConnectionsStatus['sections'],
+): XenesisConnectionsStatus['sections'] {
+  return Object.fromEntries(
+    Object.entries(sections).map(([id, section]) => [
+      id,
+      { ...section, items: section.items.map((item) => withXenesisConnectionDiagnosticRunbook(item)) },
+    ]),
+  ) as XenesisConnectionsStatus['sections'];
+}
+
 function toolConnectionItems(env: Record<string, string | undefined> = {}): XenesisConnectionItem[] {
   return TOOL_CONNECTIONS.map((item) =>
     item.toolConnector
@@ -3221,10 +3598,11 @@ export function buildXenesisConnectionsStatus(input: BuildXenesisConnectionsStat
       items: withGuideOpenPaths(XENESIS_CONNECTION_GUIDES, input.repoRoot),
     },
   };
-  const sections: XenesisConnectionsStatus['sections'] = {
+  const rawSections: XenesisConnectionsStatus['sections'] = {
     onboarding: { id: 'onboarding', label: 'Onboarding checklist', items: onboardingItems(baseSections) },
     ...baseSections,
   };
+  const sections = withXenesisConnectionDiagnosticRunbooks(rawSections);
   const summary = countItems(sections);
   return {
     ok: summary.blocked === 0,
