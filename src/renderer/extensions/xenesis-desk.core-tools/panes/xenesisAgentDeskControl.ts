@@ -1065,7 +1065,24 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
     );
   }
 
-  if (target.kind === 'tool' && hasAny(value, ['view', 'views', '뷰', '화면'])) {
+  if (
+    target.kind === 'tool' &&
+    hasAny(value, [
+      'view',
+      'views',
+      '뷰',
+      '화면',
+      'setup',
+      '초기 설정',
+      '설정',
+      'config',
+      'configuration',
+      '구성',
+      'connector',
+      'connectors',
+      '커넥터',
+    ])
+  ) {
     return naturalAction(
       `natural-xenesis-tool-view-open-${target.id}`,
       'xd.xenesis.tools.views.open',
@@ -1092,7 +1109,25 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
     );
   }
 
-  if (target.kind === 'messenger' && hasAny(value, ['메신저', 'messenger', '채널', 'channel', '설정', 'view', '뷰'])) {
+  if (
+    target.kind === 'messenger' &&
+    hasAny(value, [
+      '메신저',
+      'messenger',
+      '채널',
+      'channel',
+      '설정',
+      'view',
+      '뷰',
+      'setup',
+      '초기 설정',
+      'config',
+      'configuration',
+      '구성',
+      '연결',
+      'integration',
+    ])
+  ) {
     return naturalAction(
       `natural-xenesis-messenger-view-open-${target.id}`,
       'xd.xenesis.messengers.views.open',

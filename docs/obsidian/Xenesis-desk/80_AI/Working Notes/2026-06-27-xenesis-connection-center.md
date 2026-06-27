@@ -1158,6 +1158,36 @@ Capability Registry instead of only through separate renderer settings panels.
     passed with 56/56 tests.
   - `npm run typecheck` passed.
 
+## Current Natural Tool And Messenger Setup Opens Slice
+
+- Add deterministic natural-language routing for external tool and messenger
+  setup/config open requests before provider execution.
+- `구글 캘린더 setup 열어줘` maps to `xd.xenesis.tools.views.open` with
+  `id=google-calendar` and `ensureVisible=true`.
+- `노션 connector 열어줘` maps to `xd.xenesis.tools.views.open` with
+  `id=notion` and `ensureVisible=true`.
+- `텔레그램 setup 열어줘` maps to `xd.xenesis.messengers.views.open` with
+  `id=telegram` and `ensureVisible=true`.
+- More specific open branches still win first: setup requests, OAuth drafts,
+  MCP install drafts, install plans, user stories, action policies, and profile
+  drafts.
+- This is deterministic routing, not agent reasoning. It emits existing
+  no-approval CR open actions only and does not add CR nodes, install MCP
+  servers, complete OAuth, store tokens, execute provider tools, send messages,
+  start gateway lifecycle actions, mutate settings, or write profile drafts.
+- External documentation handling: no per-slice web browsing. Use local
+  Obsidian/docs/handoff/code/tests as the gap map; refresh external docs only
+  as a batched documentation pass if needed.
+- TDD check: focused natural planner test failed first because `구글 캘린더
+  setup 열어줘` returned generic `xd.xenesis.connections.open`, then passed
+  after implementation with 29/29 tests.
+- Verification:
+  - `npx biome check src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts --max-diagnostics 40`
+    passed.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 56/56 tests.
+  - `npm run typecheck` passed.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
