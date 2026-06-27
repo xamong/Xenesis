@@ -91,6 +91,7 @@ import {
   buildXenesisConnectionSettingsRequest,
   buildXenesisConnectionSetupRequestRequest,
   buildXenesisMcpInstallDraftRequest,
+  buildXenesisToolActionCatalogRequest,
   formatXenesisChannelAccessGroupsSummary,
   formatXenesisChannelPairingSummary,
   formatXenesisChannelProfileDraftSummary,
@@ -107,6 +108,7 @@ import {
   formatXenesisProviderRoutingSummary,
   formatXenesisProviderSetupSummary,
   formatXenesisProviderViewSummary,
+  formatXenesisToolActionCatalogSummary,
   formatXenesisToolConnectorSummary,
   formatXenesisToolInstallPlanSummary,
   formatXenesisToolSetupSummary,
@@ -4273,9 +4275,11 @@ export default function SettingsPane() {
     const guideRequest = buildXenesisConnectionGuideRequest(item);
     const setupRequestCall = buildXenesisConnectionSetupRequestRequest(item);
     const mcpInstallDraftRequest = buildXenesisMcpInstallDraftRequest(item);
+    const toolActionCatalogRequest = buildXenesisToolActionCatalogRequest(item);
     const channelProfileDraftRequest = buildXenesisChannelProfileDraftRequest(item);
     const mcpTemplate = item.mcpTemplate;
     const mcpInstallDraft = item.mcpInstallDraft;
+    const toolActionCatalog = item.toolActionCatalog;
     const onboardingPlan = item.onboardingPlan;
     const providerSetup = item.providerSetup;
     const providerView = item.providerView;
@@ -4311,6 +4315,7 @@ export default function SettingsPane() {
           guideRequest ||
           setupRequestCall ||
           mcpInstallDraftRequest ||
+          toolActionCatalogRequest ||
           channelProfileDraftRequest) && (
           <div className="sp-actions-row sp-actions-row-tight">
             <button
@@ -4359,6 +4364,16 @@ export default function SettingsPane() {
                 }}
               >
                 {t('settings.xenesisConnectionsRequestMcpInstallDraft')}
+              </button>
+            ) : null}
+            {toolActionCatalogRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(toolActionCatalogRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsRequestToolActionCatalog')}
               </button>
             ) : null}
             {channelProfileDraftRequest ? (
@@ -4823,6 +4838,55 @@ export default function SettingsPane() {
             <div>
               <span>{t('settings.xenesisConnectionsMcpInstallDraftSafety')}</span>
               <strong>{mcpInstallDraft.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {toolActionCatalog ? (
+          <div className="sp-info-list sp-info-list-compact" data-xenesis-tool-action-catalog={item.id}>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolActionCatalog')}</span>
+              <strong>{formatXenesisToolActionCatalogSummary(toolActionCatalog)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolActionCatalogPrimarySurface')}</span>
+              <strong>{toolActionCatalog.primarySurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolActionCatalogReviewSurface')}</span>
+              <strong>{toolActionCatalog.reviewSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolActionCatalogGroups')}</span>
+              <strong>
+                {toolActionCatalog.groups
+                  .map((group) => {
+                    const actions = group.actions
+                      .map((action) => `${action.label}:${action.risk}:${action.toolNames.join('+') || '-'}`)
+                      .join('; ');
+                    return `${group.kind}:${group.approvalPolicy}:${actions || '-'}`;
+                  })
+                  .join(', ')}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolActionCatalogReadback')}</span>
+              <strong>{toolActionCatalog.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolActionCatalogControls')}</span>
+              <strong>{toolActionCatalog.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolActionCatalogDiagnostics')}</span>
+              <strong>{toolActionCatalog.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolActionCatalogBlockedActions')}</span>
+              <strong>{toolActionCatalog.blockedActions.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolActionCatalogSafety')}</span>
+              <strong>{toolActionCatalog.safetyBoundaries.join(', ')}</strong>
             </div>
           </div>
         ) : null}

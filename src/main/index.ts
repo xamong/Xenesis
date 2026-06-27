@@ -6394,6 +6394,170 @@ async function requestXenesisToolMcpInstallDraft(args?: unknown): Promise<Record
   };
 }
 
+function xenesisToolActionCatalogStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    runtimeSupport: item.toolActionCatalog?.runtimeSupport,
+    actionInboxKind: item.toolActionCatalog?.actionInboxKind,
+    primarySurface: item.toolActionCatalog?.primarySurface,
+    reviewSurface: item.toolActionCatalog?.reviewSurface,
+    groups: item.toolActionCatalog?.groups ?? [],
+    readPaths: item.toolActionCatalog?.readPaths ?? [],
+    controlPaths: item.toolActionCatalog?.controlPaths ?? [],
+    diagnostics: item.toolActionCatalog?.diagnostics ?? [],
+    blockedActions: item.toolActionCatalog?.blockedActions ?? [],
+    safetyBoundaries: item.toolActionCatalog?.safetyBoundaries ?? [],
+    toolActionCatalog: item.toolActionCatalog,
+    toolConnector: item.toolConnector,
+    toolUserStory: item.toolUserStory,
+    toolInstallPlan: item.toolInstallPlan,
+    mcpInstallDraft: item.mcpInstallDraft,
+    settingsAction: item.settingsAction,
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisToolActionCatalogStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (id && !isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.tools.items
+    .filter((item) => item.toolActionCatalog)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisToolActionCatalogStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisToolActionCatalog(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Tool id is required.' };
+  }
+  if (!isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.tools.items.find((candidate) => candidate.id === id && candidate.toolActionCatalog);
+  if (!item) {
+    return { ok: false, id, error: `Xenesis tool action catalog is not available: ${id}` };
+  }
+
+  const renderer = await openMcpBuiltinPaneCapability({
+    kind: 'settings',
+    category: 'xenesis-agent',
+    mode: 'connections',
+    section: 'xenesis-connections',
+    focusConnectionId: id,
+    ensureVisible: body.ensureVisible !== false,
+  });
+
+  return {
+    ok: renderer.ok !== false,
+    id,
+    item: xenesisToolActionCatalogStatusItem(item),
+    renderer,
+  };
+}
+
+async function requestXenesisToolActionCatalog(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Tool id is required.' };
+  }
+  if (!isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.tools.items.find((candidate) => candidate.id === id && candidate.toolActionCatalog);
+  if (!item?.toolActionCatalog) {
+    return { ok: false, id, error: `Xenesis tool action catalog is not available: ${id}` };
+  }
+
+  const catalog = item.toolActionCatalog;
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+  const requester = readCapabilityString(body, ['requester', 'user', 'userName']) || 'Xenesis Desk';
+  const description = [
+    `Review the tool action policy catalog for ${item.label}.`,
+    `Runtime support: ${catalog.runtimeSupport}`,
+    `Primary surface: ${catalog.primarySurface}`,
+    `Review surface: ${catalog.reviewSurface}`,
+    '',
+    'Action groups:',
+    ...catalog.groups.map((group) => {
+      const actions =
+        group.actions
+          .map((action) => `${action.label} [${action.risk}] via ${action.toolNames.join(', ') || 'none'}`)
+          .join('; ') || 'none';
+      return `- ${group.kind}: ${group.label} (${group.approvalPolicy}) - ${actions}`;
+    }),
+    '',
+    'Diagnostics:',
+    ...catalog.diagnostics.map((diagnostic) => `- ${diagnostic}`),
+    '',
+    'Blocked actions:',
+    ...catalog.blockedActions.map((action) => `- ${action}`),
+    '',
+    'Safety boundaries:',
+    ...catalog.safetyBoundaries.map((boundary) => `- ${boundary}`),
+    note ? '' : undefined,
+    note ? `Note: ${note}` : undefined,
+  ]
+    .filter((line): line is string => typeof line === 'string')
+    .join('\n');
+
+  const actionInboxItem = recordMcpActionInboxRequest({
+    kind: catalog.actionInboxKind,
+    title: `Review ${item.label} tool action policy`,
+    command: `Review tool action policy for ${item.id}`,
+    description,
+    source: 'Xenesis Connection Center',
+    sessionId: 'xenesis-tool-action-policy',
+    approvalSessionKey: `xenesis-tool-action-policy:${item.id}`,
+    requester,
+    risk: catalog.runtimeSupport,
+    approveText: `Approve tool action policy for ${item.label}`,
+    rejectText: `Reject tool action policy for ${item.label}`,
+  });
+
+  return {
+    ok: true,
+    id: item.id,
+    item: xenesisToolActionCatalogStatusItem(item),
+    actionInboxItem,
+  };
+}
+
 const XENESIS_PROVIDER_SETUP_IDS = [
   'auto',
   'openai',
@@ -13599,6 +13763,9 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisToolMcpInstallDraftsStatus: (args: unknown) => getXenesisToolMcpInstallDraftsStatus(args),
     openXenesisToolMcpInstallDraft: (args: unknown) => openXenesisToolMcpInstallDraft(args),
     requestXenesisToolMcpInstallDraft: (args: unknown) => requestXenesisToolMcpInstallDraft(args),
+    getXenesisToolActionCatalogStatus: (args: unknown) => getXenesisToolActionCatalogStatus(args),
+    openXenesisToolActionCatalog: (args: unknown) => openXenesisToolActionCatalog(args),
+    requestXenesisToolActionCatalog: (args: unknown) => requestXenesisToolActionCatalog(args),
     getXenesisMessengerViewsStatus: (args: unknown) => getXenesisMessengerViewsStatus(args),
     openXenesisMessengerView: (args: unknown) => openXenesisMessengerView(args),
     getXenesisProviderSetupStatus: (args: unknown) => getXenesisProviderSetupStatus(args),

@@ -693,6 +693,100 @@ test('buildXenesisConnectionsStatus exposes review-only MCP install drafts', () 
   assert.equal(calendar?.mcpInstallDraft?.blockedActions.includes('install MCP server'), true);
 });
 
+test('buildXenesisConnectionsStatus exposes review-only tool action catalogs', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+    env: {
+      NOTION_TOKEN: 'secret-value-must-not-appear',
+    },
+  });
+
+  const fetch = status.sections.tools.items.find((item) => item.id === 'fetch');
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+  const linear = status.sections.tools.items.find((item) => item.id === 'linear');
+  const calendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+
+  assert.equal(fetch?.toolActionCatalog?.runtimeSupport, 'ready-template');
+  assert.equal(fetch?.toolActionCatalog?.actionInboxKind, 'xenesis-tool-action-policy');
+  assert.deepEqual(
+    fetch?.toolActionCatalog?.groups.map((group) => group.kind),
+    ['search', 'read'],
+  );
+  assert.equal(
+    fetch?.toolActionCatalog?.groups.some((group) => group.kind === 'write'),
+    false,
+  );
+  assert.ok(fetch?.toolActionCatalog?.readPaths.includes('xd.xenesis.tools.actions.status'));
+  assert.ok(fetch?.toolActionCatalog?.controlPaths.includes('xd.xenesis.tools.actions.request'));
+
+  assert.equal(notion?.toolActionCatalog?.runtimeSupport, 'ready-template');
+  assert.ok(
+    notion?.toolActionCatalog?.groups.some(
+      (group) =>
+        group.kind === 'search' &&
+        group.actions.some((action) => action.toolNames.includes('search')) &&
+        group.approvalPolicy === 'read-only',
+    ),
+  );
+  assert.ok(
+    notion?.toolActionCatalog?.groups.some(
+      (group) =>
+        group.kind === 'write' &&
+        group.approvalPolicy === 'approval-gated' &&
+        group.actions.some((action) => action.label.includes('Draft Notion updates')),
+    ),
+  );
+  assert.equal(JSON.stringify(notion?.toolActionCatalog).includes('secret-value-must-not-appear'), false);
+
+  assert.ok(
+    linear?.toolActionCatalog?.groups.some(
+      (group) =>
+        group.kind === 'write' &&
+        group.actions.some((action) => action.label.includes('issue updates and comments after approval')),
+    ),
+  );
+
+  assert.equal(calendar?.toolActionCatalog?.runtimeSupport, 'planned-oauth');
+  assert.ok(
+    calendar?.toolActionCatalog?.groups.some(
+      (group) =>
+        group.kind === 'search' && group.actions.some((action) => action.toolNames.includes('gcal_find_meeting_times')),
+    ),
+  );
+  assert.ok(
+    calendar?.toolActionCatalog?.blockedActions.includes('create/update/delete calendar events without approval'),
+  );
+  assert.ok(
+    calendar?.toolActionCatalog?.safetyBoundaries.some((boundary) =>
+      boundary.includes('does not execute provider tools or mutate external systems'),
+    ),
+  );
+});
+
 test('buildXenesisConnectionsStatus keeps Google Calendar planned without fake install actions', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {
@@ -2132,6 +2226,7 @@ test('buildXenesisConnectionsStatus exposes diagnostic runbooks for tools, plann
       'tool-setup',
       'tool-connector',
       'tool-view',
+      'tool-action-catalog',
       'tool-user-story',
       'tool-install-plan',
       'mcp-install-draft',

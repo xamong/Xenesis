@@ -674,6 +674,36 @@ const XENESIS_TOOL_MCP_INSTALL_DRAFT_REQUEST_SCHEMA = {
     },
   },
 } as const;
+const XENESIS_TOOL_ACTION_CATALOG_STATUS_SCHEMA = XENESIS_TOOL_VIEW_STATUS_SCHEMA;
+const XENESIS_TOOL_ACTION_CATALOG_OPEN_SCHEMA = XENESIS_TOOL_VIEW_OPEN_SCHEMA;
+const XENESIS_TOOL_ACTION_CATALOG_REQUEST_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'External tool connection id to record as a tool action policy review request.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Alias for id.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity to include on the Action Inbox item.',
+    },
+    note: {
+      type: 'string',
+      title: 'Review note',
+      description: 'Optional note to append to the tool action policy description.',
+    },
+  },
+} as const;
 
 const XENESIS_PROVIDER_IDS = [
   'auto',
@@ -1048,6 +1078,9 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisToolMcpInstallDraftsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisToolMcpInstallDraft?: (args?: unknown) => Promise<unknown> | unknown;
   requestXenesisToolMcpInstallDraft?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisToolActionCatalogStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisToolActionCatalog?: (args?: unknown) => Promise<unknown> | unknown;
+  requestXenesisToolActionCatalog?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisMessengerViewsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisMessengerView?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisProviderSetupStatus?: (args?: unknown) => Promise<unknown> | unknown;
@@ -4317,6 +4350,34 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               'Record a local Action Inbox item for reviewing an MCP install draft without writing config, running shell commands, completing OAuth, storing tokens, executing provider tools, or mutating settings.',
               'write',
               XENESIS_TOOL_MCP_INSTALL_DRAFT_REQUEST_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.tools.actions',
+          'Tool actions',
+          'Read, open, and request review-only external tool action policy catalogs before provider tool execution exists.',
+          [
+            method(
+              'xd.xenesis.tools.actions.status',
+              'Read tool action catalogs',
+              'Read review-only external tool action groups, approval policies, CR readback paths, diagnostics, blocked actions, and safety boundaries without executing provider tools or mutating external systems.',
+              'read',
+              XENESIS_TOOL_ACTION_CATALOG_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.actions.open',
+              'Open tool action catalog',
+              'Open Settings > Xenesis Agent > Connections and focus an external tool action policy catalog inside Desk.',
+              'control',
+              XENESIS_TOOL_ACTION_CATALOG_OPEN_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.actions.request',
+              'Request tool action policy review',
+              'Record a local Action Inbox item for reviewing an external tool action policy catalog without running provider tools, storing credentials, completing OAuth, writing MCP config, or mutating external systems.',
+              'write',
+              XENESIS_TOOL_ACTION_CATALOG_REQUEST_SCHEMA,
             ),
           ],
         ),
@@ -10830,6 +10891,15 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.tools.mcpInstallDrafts.request') {
         return callAdapter(path, api?.requestXenesisToolMcpInstallDraft, request.args);
+      }
+      if (path === 'xd.xenesis.tools.actions.status') {
+        return callAdapter(path, api?.getXenesisToolActionCatalogStatus, request.args);
+      }
+      if (path === 'xd.xenesis.tools.actions.open') {
+        return callAdapter(path, api?.openXenesisToolActionCatalog, request.args);
+      }
+      if (path === 'xd.xenesis.tools.actions.request') {
+        return callAdapter(path, api?.requestXenesisToolActionCatalog, request.args);
       }
       if (path === 'xd.xenesis.messengers.views.status') {
         return callAdapter(path, api?.getXenesisMessengerViewsStatus, request.args);

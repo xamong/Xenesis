@@ -8,6 +8,7 @@ import {
   buildXenesisConnectionSettingsRequest,
   buildXenesisConnectionSetupRequestRequest,
   buildXenesisMcpInstallDraftRequest,
+  buildXenesisToolActionCatalogRequest,
   formatXenesisChannelAccessGroupsSummary,
   formatXenesisChannelPairingSummary,
   formatXenesisChannelProfileDraftSummary,
@@ -24,6 +25,7 @@ import {
   formatXenesisProviderRoutingSummary,
   formatXenesisProviderSetupSummary,
   formatXenesisProviderViewSummary,
+  formatXenesisToolActionCatalogSummary,
   formatXenesisToolConnectorSummary,
   formatXenesisToolInstallPlanSummary,
   formatXenesisToolSetupSummary,
@@ -483,6 +485,98 @@ test('formatXenesisToolSetupSummary describes connection, auth, and setup surfac
     }),
     'mcp / env-token / Settings > AI Provider > Local CLI MCP',
   );
+});
+
+test('formatXenesisToolActionCatalogSummary describes runtime support, groups, and blocked actions', () => {
+  assert.equal(
+    formatXenesisToolActionCatalogSummary({
+      runtimeSupport: 'ready-template',
+      actionInboxKind: 'xenesis-tool-action-policy',
+      primarySurface: 'Settings > Xenesis Agent > Connections',
+      reviewSurface: 'Desk Action Inbox',
+      groups: [
+        {
+          kind: 'search',
+          label: 'Search actions',
+          approvalPolicy: 'read-only',
+          actions: [
+            {
+              label: 'Search Notion',
+              toolNames: ['search'],
+              dataScopes: ['notion:search'],
+              risk: 'low',
+            },
+          ],
+        },
+        {
+          kind: 'write',
+          label: 'Write actions',
+          approvalPolicy: 'approval-gated',
+          actions: [
+            {
+              label: 'Draft Notion updates',
+              toolNames: ['notion_update_page'],
+              dataScopes: ['notion:write-pages'],
+              risk: 'high',
+            },
+          ],
+        },
+      ],
+      readPaths: ['xd.xenesis.tools.actions.status'],
+      controlPaths: ['xd.xenesis.tools.actions.request'],
+      diagnostics: ['mcp-settings-status'],
+      blockedActions: ['execute provider tools'],
+      safetyBoundaries: ['tool action catalogs do not execute provider tools or mutate external systems'],
+    }),
+    'ready-template / 2 action group(s) / 1 blocked action(s)',
+  );
+});
+
+test('buildXenesisToolActionCatalogRequest targets the review request CR path', () => {
+  const item = {
+    id: 'notion',
+    kind: 'tool',
+    label: 'Notion',
+    status: 'needs-setup',
+    summary: 'Notion pages and databases.',
+    toolActionCatalog: {
+      runtimeSupport: 'ready-template',
+      actionInboxKind: 'xenesis-tool-action-policy',
+      primarySurface: 'Settings > Xenesis Agent > Connections',
+      reviewSurface: 'Desk Action Inbox',
+      groups: [
+        {
+          kind: 'read',
+          label: 'Read actions',
+          approvalPolicy: 'read-only',
+          actions: [
+            {
+              label: 'Read Notion pages',
+              toolNames: ['get_page'],
+              dataScopes: ['notion:read-pages'],
+              risk: 'low',
+            },
+          ],
+        },
+      ],
+      readPaths: ['xd.xenesis.tools.actions.status'],
+      controlPaths: ['xd.xenesis.tools.actions.request'],
+      diagnostics: ['mcp-settings-status'],
+      blockedActions: ['execute provider tools'],
+      safetyBoundaries: ['tool action catalogs are review-only'],
+    },
+  } satisfies XenesisConnectionItem;
+
+  assert.deepEqual(buildXenesisToolActionCatalogRequest(item), {
+    path: 'xd.xenesis.tools.actions.request',
+    args: {
+      id: 'notion',
+    },
+    source: 'xenesis',
+    approved: true,
+  });
+
+  assert.equal(buildXenesisToolActionCatalogRequest({ ...item, toolActionCatalog: undefined }), null);
 });
 
 test('formatXenesisToolUserStorySummary describes workflow type, runtime support, and story count', () => {

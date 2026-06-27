@@ -20,6 +20,7 @@ import type {
   XenesisConnectionSetupRequestTemplate,
   XenesisConnectionStatus,
   XenesisConnectionsStatus,
+  XenesisConnectionToolActionCatalogTemplate,
   XenesisConnectionToolConnectorTemplate,
   XenesisConnectionToolInstallPlanTemplate,
   XenesisConnectionToolSetupTemplate,
@@ -121,6 +122,10 @@ export function formatXenesisToolSetupSummary(setup: XenesisConnectionToolSetupT
   return `${setup.connection} / ${setup.authMode} / ${setup.setupSurface}`;
 }
 
+export function formatXenesisToolActionCatalogSummary(catalog: XenesisConnectionToolActionCatalogTemplate): string {
+  return `${catalog.runtimeSupport} / ${catalog.groups.length} action group(s) / ${catalog.blockedActions.length} blocked action(s)`;
+}
+
 export function formatXenesisToolViewSummary(view: XenesisConnectionToolViewTemplate): string {
   return `${view.primarySurface} / ${view.viewType}`;
 }
@@ -208,6 +213,20 @@ export function buildXenesisMcpInstallDraftRequest(item: XenesisConnectionItem):
   if (!item.mcpInstallDraft) return null;
   return {
     path: 'xd.xenesis.tools.mcpInstallDrafts.request',
+    args: {
+      id: item.id,
+    },
+    source: 'xenesis',
+    approved: true,
+  };
+}
+
+export function buildXenesisToolActionCatalogRequest(
+  item: XenesisConnectionItem,
+): McpBridgeCapabilityCallRequest | null {
+  if (!item.toolActionCatalog) return null;
+  return {
+    path: 'xd.xenesis.tools.actions.request',
     args: {
       id: item.id,
     },

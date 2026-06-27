@@ -247,6 +247,40 @@ export interface XenesisConnectionToolUserStoryTemplate {
   safetyBoundaries: string[];
 }
 
+export type XenesisConnectionToolActionCatalogRuntimeSupport = 'ready-template' | 'planned-oauth' | 'ready-local';
+export type XenesisConnectionToolActionCatalogGroupKind = 'search' | 'read' | 'write';
+export type XenesisConnectionToolActionCatalogApprovalPolicy =
+  | 'read-only'
+  | 'approval-gated'
+  | 'blocked-until-verified';
+
+export interface XenesisConnectionToolActionCatalogAction {
+  label: string;
+  toolNames: string[];
+  dataScopes: string[];
+  risk: 'low' | 'medium' | 'high';
+}
+
+export interface XenesisConnectionToolActionCatalogGroup {
+  kind: XenesisConnectionToolActionCatalogGroupKind;
+  label: string;
+  approvalPolicy: XenesisConnectionToolActionCatalogApprovalPolicy;
+  actions: XenesisConnectionToolActionCatalogAction[];
+}
+
+export interface XenesisConnectionToolActionCatalogTemplate {
+  runtimeSupport: XenesisConnectionToolActionCatalogRuntimeSupport;
+  actionInboxKind: 'xenesis-tool-action-policy';
+  primarySurface: string;
+  reviewSurface: string;
+  groups: XenesisConnectionToolActionCatalogGroup[];
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  blockedActions: string[];
+  safetyBoundaries: string[];
+}
+
 export type XenesisConnectionChannelUserStoryWorkflowType =
   | 'remote-prompt'
   | 'team-thread'
@@ -594,6 +628,7 @@ export interface XenesisConnectionItem {
   mcpInstallDraft?: XenesisConnectionMcpInstallDraftTemplate;
   toolView?: XenesisConnectionToolViewTemplate;
   toolUserStory?: XenesisConnectionToolUserStoryTemplate;
+  toolActionCatalog?: XenesisConnectionToolActionCatalogTemplate;
   messengerView?: XenesisConnectionMessengerViewTemplate;
   channelProfileDraft?: XenesisConnectionChannelProfileDraftTemplate;
   guideCatalog?: XenesisConnectionGuideCatalogTemplate;
@@ -934,6 +969,78 @@ function toolUserStoryTemplate(input: {
   };
 }
 
+function toolActionCatalogAction(
+  label: string,
+  toolNames: string[],
+  dataScopes: string[],
+  risk: XenesisConnectionToolActionCatalogAction['risk'] = 'low',
+): XenesisConnectionToolActionCatalogAction {
+  return {
+    label,
+    toolNames,
+    dataScopes,
+    risk,
+  };
+}
+
+function toolActionCatalogGroup(
+  kind: XenesisConnectionToolActionCatalogGroupKind,
+  label: string,
+  approvalPolicy: XenesisConnectionToolActionCatalogApprovalPolicy,
+  actions: XenesisConnectionToolActionCatalogAction[],
+): XenesisConnectionToolActionCatalogGroup {
+  return {
+    kind,
+    label,
+    approvalPolicy,
+    actions,
+  };
+}
+
+function toolActionCatalogTemplate(input: {
+  runtimeSupport: XenesisConnectionToolActionCatalogRuntimeSupport;
+  groups: XenesisConnectionToolActionCatalogGroup[];
+  diagnostics: string[];
+  blockedActions?: string[];
+  safetyBoundaries?: string[];
+}): XenesisConnectionToolActionCatalogTemplate {
+  return {
+    runtimeSupport: input.runtimeSupport,
+    actionInboxKind: 'xenesis-tool-action-policy',
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    reviewSurface: 'Desk Action Inbox',
+    groups: input.groups,
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.tools.actions.status',
+      'xd.xenesis.tools.connectors.status',
+      'xd.xenesis.tools.views.status',
+      'xd.xenesis.tools.userStories.status',
+      'xd.xenesis.tools.installPlans.status',
+    ],
+    controlPaths: [
+      'xd.xenesis.tools.actions.open',
+      'xd.xenesis.tools.actions.request',
+      'xd.xenesis.tools.views.open',
+      'xd.xenesis.connections.open',
+    ],
+    diagnostics: input.diagnostics,
+    blockedActions: input.blockedActions ?? [
+      'execute provider tools',
+      'run unapproved write actions',
+      'complete OAuth',
+      'store tokens',
+      'write MCP config',
+    ],
+    safetyBoundaries: input.safetyBoundaries ?? [
+      'tool action catalogs are review-only',
+      'tool action catalog does not execute provider tools or mutate external systems',
+      'write actions require separate verified approval-gated tool execution paths',
+      'credentials, OAuth tokens, request payloads, and provider output are never returned',
+    ],
+  };
+}
+
 const IMPLEMENTED_CHANNEL_USER_STORY_READ_PATHS = [
   'xd.xenesis.connections.status',
   'xd.xenesis.channels.userStories.status',
@@ -1182,6 +1289,18 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
       requiredScopes: ['webpage:read'],
       diagnostics: ['mcp-settings-status', 'template-snippet', 'cr-readback'],
     }),
+    toolActionCatalog: toolActionCatalogTemplate({
+      runtimeSupport: 'ready-template',
+      groups: [
+        toolActionCatalogGroup('search', 'Search actions', 'read-only', [
+          toolActionCatalogAction('Fetch and search user-provided web pages', ['fetch'], ['webpage:read'], 'low'),
+        ]),
+        toolActionCatalogGroup('read', 'Read actions', 'read-only', [
+          toolActionCatalogAction('Read fetched page content as model context', ['fetch'], ['webpage:read'], 'low'),
+        ]),
+      ],
+      diagnostics: ['mcp-settings-status', 'template-snippet', 'fetch-known-url', 'cr-readback'],
+    }),
     toolSetup: {
       connection: 'mcp',
       authMode: 'none',
@@ -1245,6 +1364,43 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
       prerequisiteConnectors: ['filesystem'],
       requiredScopes: ['workspace:read-files', 'workspace:list-files', 'workspace:search-files'],
       diagnostics: ['workspace-scope', 'mcp-settings-status', 'template-snippet', 'cr-readback'],
+    }),
+    toolActionCatalog: toolActionCatalogTemplate({
+      runtimeSupport: 'ready-template',
+      groups: [
+        toolActionCatalogGroup('search', 'Search actions', 'read-only', [
+          toolActionCatalogAction(
+            'Search workspace files within the configured root',
+            ['search_files'],
+            ['workspace:search-files'],
+            'low',
+          ),
+        ]),
+        toolActionCatalogGroup('read', 'Read actions', 'read-only', [
+          toolActionCatalogAction(
+            'List and read workspace-scoped files',
+            ['list_directory', 'directory_tree', 'read_file'],
+            ['workspace:list-files', 'workspace:read-files'],
+            'medium',
+          ),
+        ]),
+        toolActionCatalogGroup('write', 'Write actions', 'approval-gated', [
+          toolActionCatalogAction(
+            'Route workspace file writes through Desk CR approval paths',
+            ['xd.files.write', 'xd.safeFile.apply'],
+            ['workspace:write-files'],
+            'high',
+          ),
+        ]),
+      ],
+      diagnostics: ['workspace-scope', 'mcp-settings-status', 'template-snippet', 'cr-readback'],
+      blockedActions: [
+        'execute provider tools',
+        'write files outside the active workspace',
+        'run unapproved file writes',
+        'store tokens',
+        'write MCP config',
+      ],
     }),
     toolSetup: {
       connection: 'mcp',
@@ -1313,6 +1469,36 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
       requiredScopes: ['github:search-code', 'github:read-repos', 'github:read-issues', 'github:read-pull-requests'],
       diagnostics: ['missing-env', 'mcp-settings-status', 'template-snippet', 'cr-readback'],
     }),
+    toolActionCatalog: toolActionCatalogTemplate({
+      runtimeSupport: 'ready-template',
+      groups: [
+        toolActionCatalogGroup('search', 'Search actions', 'read-only', [
+          toolActionCatalogAction(
+            'Search repositories, code, issues, and pull requests',
+            ['search_code', 'search_repositories', 'search_issues', 'search_pull_requests'],
+            ['github:search-code', 'github:read-issues', 'github:read-pull-requests'],
+            'low',
+          ),
+        ]),
+        toolActionCatalogGroup('read', 'Read actions', 'read-only', [
+          toolActionCatalogAction(
+            'Read repository, issue, pull request, release, and security context',
+            ['get_file_contents', 'list_issues', 'get_issue', 'get_pull_request', 'list_releases'],
+            ['github:read-repos', 'github:read-issues', 'github:read-pull-requests'],
+            'medium',
+          ),
+        ]),
+        toolActionCatalogGroup('write', 'Write actions', 'approval-gated', [
+          toolActionCatalogAction(
+            'Draft repository, issue, or pull request changes after approval',
+            ['create_issue', 'update_issue', 'create_pull_request', 'add_issue_comment'],
+            ['github:writes-disabled-until-approved'],
+            'high',
+          ),
+        ]),
+      ],
+      diagnostics: ['missing-env', 'mcp-settings-status', 'template-snippet', 'cr-readback'],
+    }),
     toolSetup: {
       connection: 'mcp',
       authMode: 'env-token',
@@ -1379,6 +1565,31 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
       ],
       prerequisiteConnectors: ['notion'],
       requiredScopes: ['notion:search', 'notion:read-pages', 'notion:read-databases'],
+      diagnostics: ['missing-env', 'mcp-settings-status', 'template-snippet', 'cr-readback'],
+    }),
+    toolActionCatalog: toolActionCatalogTemplate({
+      runtimeSupport: 'ready-template',
+      groups: [
+        toolActionCatalogGroup('search', 'Search actions', 'read-only', [
+          toolActionCatalogAction('Search Notion pages and databases', ['search'], ['notion:search'], 'low'),
+        ]),
+        toolActionCatalogGroup('read', 'Read actions', 'read-only', [
+          toolActionCatalogAction(
+            'Read Notion pages and database context',
+            ['get_page', 'get_database', 'get_block_children'],
+            ['notion:read-pages', 'notion:read-databases'],
+            'medium',
+          ),
+        ]),
+        toolActionCatalogGroup('write', 'Write actions', 'approval-gated', [
+          toolActionCatalogAction(
+            'Draft Notion updates after approval',
+            ['create_page', 'update_page', 'append_block_children'],
+            ['notion:writes-disabled-until-approved'],
+            'high',
+          ),
+        ]),
+      ],
       diagnostics: ['missing-env', 'mcp-settings-status', 'template-snippet', 'cr-readback'],
     }),
     toolSetup: {
@@ -1450,6 +1661,36 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
       ],
       prerequisiteConnectors: ['linear'],
       requiredScopes: ['linear:read-issues', 'linear:read-projects', 'linear:read-comments'],
+      diagnostics: ['oauth-client', 'mcp-settings-status', 'template-snippet', 'cr-readback'],
+    }),
+    toolActionCatalog: toolActionCatalogTemplate({
+      runtimeSupport: 'ready-template',
+      groups: [
+        toolActionCatalogGroup('search', 'Search actions', 'read-only', [
+          toolActionCatalogAction(
+            'Find Linear issues, teams, projects, and comments',
+            ['find_issues', 'find_teams', 'find_projects'],
+            ['linear:read-issues', 'linear:read-projects'],
+            'low',
+          ),
+        ]),
+        toolActionCatalogGroup('read', 'Read actions', 'read-only', [
+          toolActionCatalogAction(
+            'Read Linear issue, project, team, and user details',
+            ['get_issue', 'list_projects', 'get_project', 'list_teams', 'get_user'],
+            ['linear:read-issues', 'linear:read-projects', 'linear:read-comments'],
+            'medium',
+          ),
+        ]),
+        toolActionCatalogGroup('write', 'Write actions', 'approval-gated', [
+          toolActionCatalogAction(
+            'Draft Linear issue updates and comments after approval',
+            ['update_issue', 'create_comment', 'create_issue'],
+            ['linear:update-issues-after-approval', 'linear:create-comments-after-approval'],
+            'high',
+          ),
+        ]),
+      ],
       diagnostics: ['oauth-client', 'mcp-settings-status', 'template-snippet', 'cr-readback'],
     }),
     toolSetup: {
@@ -1532,6 +1773,44 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
         'writes require separate verified tool actions',
       ],
     }),
+    toolActionCatalog: toolActionCatalogTemplate({
+      runtimeSupport: 'planned-oauth',
+      groups: [
+        toolActionCatalogGroup('search', 'Search actions', 'read-only', [
+          toolActionCatalogAction(
+            'Search Gmail and Google Drive context after OAuth is verified',
+            ['gmail_search_messages', 'google_drive_search'],
+            ['gmail.readonly', 'google-drive.readonly'],
+            'medium',
+          ),
+        ]),
+        toolActionCatalogGroup('read', 'Read actions', 'read-only', [
+          toolActionCatalogAction(
+            'Read Gmail, Drive, and Docs context with reviewed scopes',
+            ['gmail_get_profile', 'gmail_read_message', 'google_drive_fetch', 'google_drive_export'],
+            ['gmail.readonly', 'google-drive.readonly', 'documents.readonly'],
+            'medium',
+          ),
+        ]),
+        toolActionCatalogGroup('write', 'Write actions', 'blocked-until-verified', [
+          toolActionCatalogAction(
+            'Draft email or document changes only after verified approval gates exist',
+            ['gmail_send_message', 'google_docs_update_document'],
+            ['google-writes-disabled-until-template-verified'],
+            'high',
+          ),
+        ]),
+      ],
+      diagnostics: ['planned-oauth-template', 'mcp-settings-status', 'scope-review', 'cr-readback'],
+      blockedActions: [
+        'execute provider tools',
+        'send email',
+        'update Google documents',
+        'complete OAuth',
+        'store tokens',
+        'write MCP config',
+      ],
+    }),
     toolSetup: {
       connection: 'oauth-mcp',
       authMode: 'oauth',
@@ -1611,6 +1890,43 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
         'planned OAuth calendar workflows do not create, update, or delete events',
         'user-story workflows are read/open planning surfaces',
         'writes require separate verified tool actions',
+      ],
+    }),
+    toolActionCatalog: toolActionCatalogTemplate({
+      runtimeSupport: 'planned-oauth',
+      groups: [
+        toolActionCatalogGroup('search', 'Search actions', 'read-only', [
+          toolActionCatalogAction(
+            'Find free time, meeting times, and calendar users after OAuth is verified',
+            ['gcal_find_my_free_time', 'gcal_find_meeting_times', 'gcal_find_user_emails'],
+            ['calendar.freebusy.readonly', 'calendar.events.readonly'],
+            'medium',
+          ),
+        ]),
+        toolActionCatalogGroup('read', 'Read actions', 'read-only', [
+          toolActionCatalogAction(
+            'List calendars and read calendar events with reviewed scopes',
+            ['gcal_list_calendars', 'gcal_list_events', 'gcal_get_event'],
+            ['calendar.calendarlist.readonly', 'calendar.events.readonly'],
+            'medium',
+          ),
+        ]),
+        toolActionCatalogGroup('write', 'Write actions', 'blocked-until-verified', [
+          toolActionCatalogAction(
+            'Draft calendar event create/update/delete actions only after verified approval gates exist',
+            ['gcal_create_event', 'gcal_update_event', 'gcal_delete_event'],
+            ['calendar-writes-disabled-until-template-verified'],
+            'high',
+          ),
+        ]),
+      ],
+      diagnostics: ['planned-oauth-template', 'mcp-settings-status', 'scope-review', 'cr-readback'],
+      blockedActions: [
+        'execute provider tools',
+        'create/update/delete calendar events without approval',
+        'complete OAuth',
+        'store tokens',
+        'write MCP config',
       ],
     }),
     toolSetup: {
@@ -3151,6 +3467,7 @@ function diagnosticRunbookSetupSurface(item: XenesisConnectionItem): string {
     item.toolSetup?.setupSurface ??
     item.toolConnector?.setupSurface ??
     item.toolView?.setupSurface ??
+    item.toolActionCatalog?.primarySurface ??
     item.toolUserStory?.setupSurface ??
     item.toolInstallPlan?.setupSurface ??
     item.mcpInstallDraft?.installSurface ??
@@ -3169,6 +3486,7 @@ function diagnosticRunbookPrimarySurface(item: XenesisConnectionItem): string {
     item.onboardingPlan?.primarySurface ??
     item.providerView?.primarySurface ??
     item.toolView?.primarySurface ??
+    item.toolActionCatalog?.primarySurface ??
     item.toolUserStory?.primarySurface ??
     item.toolInstallPlan?.primarySurface ??
     (item.mcpInstallDraft ? 'Settings > Xenesis Agent > Connections' : undefined) ??
@@ -3284,6 +3602,27 @@ function buildXenesisConnectionDiagnosticRunbook(
         readPaths: ['xd.xenesis.tools.views.status', ...item.toolView.readPaths],
         controlPaths: item.toolView.controlPaths,
         diagnostics: item.toolView.diagnostics,
+      }),
+    );
+  }
+
+  if (item.toolActionCatalog) {
+    steps.push(
+      diagnosticRunbookStep({
+        id: 'tool-action-catalog',
+        label: 'Tool action catalog',
+        expectedState:
+          'External tool search, read, and write action policies are visible before any provider tool execution.',
+        readPaths: ['xd.xenesis.tools.actions.status', ...item.toolActionCatalog.readPaths],
+        controlPaths: item.toolActionCatalog.controlPaths,
+        diagnostics: [
+          ...item.toolActionCatalog.diagnostics,
+          ...item.toolActionCatalog.groups.flatMap((group) => [
+            group.kind,
+            group.approvalPolicy,
+            ...group.actions.map((action) => action.label),
+          ]),
+        ],
       }),
     );
   }
@@ -3457,6 +3796,7 @@ function buildXenesisConnectionDiagnosticRunbook(
       ...(item.toolSetup?.riskControls ?? []),
       ...(item.toolConnector?.safetyBoundaries ?? []),
       ...(item.toolView?.safetyBoundaries ?? []),
+      ...(item.toolActionCatalog?.safetyBoundaries ?? []),
       ...(item.toolUserStory?.safetyBoundaries ?? []),
       ...(item.toolInstallPlan?.safetyBoundaries ?? []),
       ...(item.mcpInstallDraft?.safetyBoundaries ?? []),
@@ -3511,6 +3851,7 @@ function setupRequestDiagnosticItems(item: XenesisConnectionItem): string[] {
     ...(item.providerRouting?.diagnostics ?? []),
     ...(item.toolSetup?.verification ?? []),
     ...(item.toolConnector?.validationChecks ?? []),
+    ...(item.toolActionCatalog?.diagnostics ?? []),
     ...(item.toolInstallPlan?.diagnostics ?? []),
     ...(item.mcpInstallDraft?.diagnostics ?? []),
     ...(item.channelTemplate?.routing?.diagnostics ?? []),
@@ -3600,6 +3941,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.crActions ?? []),
       ...(item.toolConnector?.controlPaths ?? []),
       ...(item.toolView?.controlPaths ?? []),
+      ...(item.toolActionCatalog?.controlPaths ?? []),
       ...(item.toolUserStory?.controlPaths ?? []),
       ...(item.toolInstallPlan?.controlPaths ?? []),
       ...(item.mcpInstallDraft?.controlPaths ?? []),
@@ -3624,6 +3966,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.toolSetup?.riskControls ?? []),
       ...(item.toolConnector?.safetyBoundaries ?? []),
       ...(item.toolView?.safetyBoundaries ?? []),
+      ...(item.toolActionCatalog?.safetyBoundaries ?? []),
       ...(item.toolUserStory?.safetyBoundaries ?? []),
       ...(item.toolInstallPlan?.safetyBoundaries ?? []),
       ...(item.mcpInstallDraft?.safetyBoundaries ?? []),

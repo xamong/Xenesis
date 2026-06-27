@@ -733,6 +733,33 @@ Capability Registry instead of only through separate renderer settings panels.
   helper, and missing prompt-hint paths, then passed after implementation with
   88/88 tests.
 
+## Current Tool Action Catalog Slice
+
+- Add `toolActionCatalog` metadata to Fetch, Filesystem, GitHub, Notion,
+  Linear, Google Workspace, and Google Calendar cards in
+  `xd.xenesis.connections.status`.
+- Add `xd.xenesis.tools.actions.status` as a read/no-approval CR path for
+  review-only action groups, tool names, data scopes, approval policies,
+  read/control paths, diagnostics, blocked actions, and safety boundaries.
+- Add `xd.xenesis.tools.actions.open` as a control/no-approval CR path that
+  opens Settings > Xenesis Agent > Connections and focuses the requested tool
+  card.
+- Add `xd.xenesis.tools.actions.request` as a write/approval-gated CR path that
+  records a local `xenesis-tool-action-policy` Action Inbox item for review.
+- Settings renders the same model with
+  `data-xenesis-tool-action-catalog="<tool-id>"`.
+- This is a review-only policy/readiness surface. It does not execute provider
+  MCP tools, complete OAuth, store tokens, write MCP config, send email, update
+  documents/tasks/issues, create/update/delete calendar events, mutate external
+  systems, or bypass approvals.
+- External documentation handling for this slice: no per-slice web browsing.
+  Use local Obsidian/docs/handoff as the gap map; refresh external docs only as
+  a batched documentation pass if needed.
+- `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+  failed first for missing action-catalog metadata, missing CR paths, missing
+  renderer helper, and missing prompt-hint paths, then passed after
+  implementation with 106/106 tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

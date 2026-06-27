@@ -94,6 +94,18 @@ provider tools, send messages, mutate settings, or bypass approvals. Google
 Workspace and Google Calendar remain planned until a verified MCP/OAuth
 template exists.
 
+Tool cards also expose a `toolActionCatalog` read model. Use
+`xd.xenesis.tools.actions.status` to inspect review-only external tool action
+groups, data scopes, approval policies, diagnostics, blocked actions, and
+safety boundaries before any provider MCP tool execution path exists. Use
+`xd.xenesis.tools.actions.open` with `{ "id": "<tool-id>" }` to focus the
+owning card, and `xd.xenesis.tools.actions.request` with
+`{ "id": "<tool-id>" }` to record a local `xenesis-tool-action-policy` Action
+Inbox item for review. These catalogs are policy/readiness surfaces only: they
+do not execute provider tools, complete OAuth, store tokens, write MCP config,
+send email, update documents/tasks/issues, create/update/delete calendar
+events, mutate external systems, or bypass approvals.
+
 Implemented messenger cards also expose a `channelProfileDraft` read model. Use
 `xd.xenesis.channels.profileDrafts.status` to inspect review-only profile field
 state, missing required fields, guardrails, diagnostics, blocked actions, and
@@ -238,6 +250,18 @@ complete OAuth, store tokens, execute provider MCP tools, mutate external tool
 settings, send email, update documents, or create/update/delete calendar events.
 Google Workspace and Google Calendar stay `planned-oauth` until a verified
 OAuth/MCP template and token storage path are implemented.
+
+Each tool card also exposes a `toolActionCatalog` read model. Use
+`xd.xenesis.tools.actions.status` to inspect search/read/write action groups,
+tool names, data scopes, approval policies, CR read/control paths, diagnostics,
+blocked actions, and safety boundaries for external tool usage. Use
+`xd.xenesis.tools.actions.open` with `{ "id": "<tool-id>" }` to focus the
+matching card and `xd.xenesis.tools.actions.request` with
+`{ "id": "<tool-id>" }` to record a local Action Inbox review item. This is a
+review-only policy catalog: it does not execute provider MCP tools, complete
+OAuth, store tokens, write MCP config, send email, update documents/tasks/issues,
+or create/update/delete calendar events. Write groups remain approval-gated or
+blocked until a separate verified execution path exists.
 
 Use `xd.mcp.settings.status` to inspect MCP settings through the Capability
 Registry.
@@ -526,3 +550,12 @@ triage, Notion knowledge capture, Linear task triage, Google inbox triage, and
 Google Calendar context workflows. It is read/open only and does not execute
 provider tools, complete OAuth, send email, update tasks/documents, or mutate
 calendar events.
+
+Use `xd.xenesis.tools.actions.status`, `xd.xenesis.tools.actions.open`, and
+`xd.xenesis.tools.actions.request` to inspect, open, or request review of
+external tool action policy catalogs. The request path records a local Action
+Inbox review item with action groups, approval policies, diagnostics, blocked
+actions, and safety boundaries only. It does not run provider tools, complete
+OAuth, store tokens, write MCP config, send email, update documents/tasks/issues,
+create/update/delete calendar events, mutate external systems, or bypass
+approvals.
