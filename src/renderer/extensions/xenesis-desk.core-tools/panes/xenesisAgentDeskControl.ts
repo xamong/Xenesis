@@ -516,6 +516,18 @@ function xenesisOnboardingOpenActionFromNaturalText(value: string): XenesisDeskA
   );
 }
 
+function xenesisOnboardingStatusActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
+  const step = xenesisOnboardingStepFromNaturalText(value);
+  if (!step) return null;
+
+  return naturalAction(
+    `natural-xenesis-onboarding-status-${step.id}`,
+    'xd.xenesis.onboarding.status',
+    { id: step.id },
+    `Read ${step.label} onboarding checklist status from natural language request.`,
+  );
+}
+
 function hasXenesisConnectionReadbackIntent(value: string): boolean {
   return hasAny(value, [
     '상태',
@@ -774,6 +786,9 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
   }
 
   if (hasAny(value, ['온보딩', 'onboarding'])) {
+    const onboardingStatusAction = xenesisOnboardingStatusActionFromNaturalText(value);
+    if (onboardingStatusAction) return onboardingStatusAction;
+
     return naturalAction(
       'natural-xenesis-onboarding-status',
       'xd.xenesis.onboarding.status',

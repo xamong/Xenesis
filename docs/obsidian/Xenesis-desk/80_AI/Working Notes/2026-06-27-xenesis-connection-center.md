@@ -1014,6 +1014,36 @@ Capability Registry instead of only through separate renderer settings panels.
     passed with 53/53 tests.
   - `npm run typecheck` passed.
 
+## Current Natural Onboarding Readbacks Slice
+
+- Add deterministic natural-language routing for existing onboarding checklist
+  status requests before provider execution.
+- `첫 채팅 온보딩 상태 보여줘` maps to `xd.xenesis.onboarding.status` with
+  `id=first-chat`.
+- `로컬 CLI MCP 온보딩 상태 보여줘` maps to `id=local-cli-mcp`.
+- `추천 도구 온보딩 상태 보여줘` maps to `id=recommended-tools`.
+- `게이트웨이 온보딩 상태 보여줘` maps to `id=gateway`.
+- `메신저 라우팅 온보딩 상태 보여줘` maps to `id=messenger-routing`.
+- `엔드투엔드 테스트 온보딩 상태 보여줘` maps to `id=test-send`.
+- Generic `온보딩 상태 보여줘` still reads the full onboarding checklist with
+  `args={}`.
+- This is deterministic routing, not agent reasoning. It emits existing
+  read/no-approval CR status actions only and does not mutate settings, install
+  MCP tools, complete OAuth, execute external tools, send messages, run gateway
+  lifecycle actions, or add registry nodes.
+- External documentation handling: no per-slice web browsing. Use local
+  Obsidian/docs/handoff/code/tests as the gap map; refresh external docs only
+  as a batched documentation pass if needed.
+- TDD check: focused natural planner test failed first with `첫 채팅 온보딩
+  상태 보여줘` returning generic `args={}`, then passed after implementation
+  with 27/27 tests.
+- Verification:
+  - `npx biome check src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts --max-diagnostics 40`
+    passed.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 54/54 tests.
+  - `npm run typecheck` passed.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

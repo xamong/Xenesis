@@ -804,6 +804,68 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center readback requ
   ]);
 });
 
+test('planXenesisDeskNaturalLanguageActions maps onboarding checklist readback requests to CR actions', () => {
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('첫 채팅 온보딩 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-onboarding-status-first-chat',
+      path: 'xd.xenesis.onboarding.status',
+      args: { id: 'first-chat' },
+      approved: false,
+      reason: 'Read First chat onboarding checklist status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('로컬 CLI MCP 온보딩 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-onboarding-status-local-cli-mcp',
+      path: 'xd.xenesis.onboarding.status',
+      args: { id: 'local-cli-mcp' },
+      approved: false,
+      reason: 'Read Local CLI and MCP onboarding checklist status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('추천 도구 온보딩 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-onboarding-status-recommended-tools',
+      path: 'xd.xenesis.onboarding.status',
+      args: { id: 'recommended-tools' },
+      approved: false,
+      reason: 'Read Recommended tools onboarding checklist status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('게이트웨이 온보딩 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-onboarding-status-gateway',
+      path: 'xd.xenesis.onboarding.status',
+      args: { id: 'gateway' },
+      approved: false,
+      reason: 'Read Gateway onboarding checklist status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('메신저 라우팅 온보딩 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-onboarding-status-messenger-routing',
+      path: 'xd.xenesis.onboarding.status',
+      args: { id: 'messenger-routing' },
+      approved: false,
+      reason: 'Read Messenger routing onboarding checklist status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('엔드투엔드 테스트 온보딩 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-onboarding-status-test-send',
+      path: 'xd.xenesis.onboarding.status',
+      args: { id: 'test-send' },
+      approved: false,
+      reason: 'Read End-to-end test onboarding checklist status from natural language request.',
+    },
+  ]);
+});
+
 test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center readbacks to CR actions', () => {
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider setup 상태 보여줘').actions, [
     {
