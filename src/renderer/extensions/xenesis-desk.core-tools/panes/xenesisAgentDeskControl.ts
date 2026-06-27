@@ -753,6 +753,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
 }
 
 function hasXenesisConnectionReviewRequestIntent(value: string): boolean {
+  if (hasAny(value, ['열어', 'open'])) return false;
   if (!hasAny(value, ['요청', 'request', '등록', 'enqueue', '승인 요청'])) return false;
   return (
     hasAny(value, ['검토', '리뷰', 'review', 'approval', 'setup', '설정', '연결']) ||
@@ -831,9 +832,37 @@ function xenesisConnectionReviewRequestActionFromNaturalText(value: string): Xen
   );
 }
 
+function xenesisProviderOpenActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
+  const provider = xenesisProviderFromNaturalText(value);
+  if (!provider) return null;
+
+  if (hasAny(value, ['profile', '프로필', 'draft', '초안'])) {
+    return naturalAction(
+      `natural-xenesis-provider-profile-draft-open-${provider.id}`,
+      'xd.xenesis.providers.profileDrafts.open',
+      { provider: provider.id, ensureVisible: true },
+      `Open ${provider.label} provider profile draft from natural language request.`,
+    );
+  }
+
+  if (hasAny(value, ['view', 'views', '뷰', '화면', '설정', 'settings'])) {
+    return naturalAction(
+      `natural-xenesis-provider-view-open-${provider.id}`,
+      'xd.xenesis.providers.views.open',
+      { provider: provider.id, ensureVisible: true },
+      `Open ${provider.label} provider view from natural language request.`,
+    );
+  }
+
+  return null;
+}
+
 function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
   const guideAction = xenesisGuideActionFromNaturalText(value);
   if (guideAction) return guideAction;
+
+  const providerAction = xenesisProviderOpenActionFromNaturalText(value);
+  if (providerAction) return providerAction;
 
   if (hasAny(value, ['연결 센터', 'connection center', 'connections center', '연결 목록'])) {
     return naturalAction(
@@ -852,6 +881,24 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
   const target = xenesisConnectionTargetFromNaturalText(value);
   if (!target) return null;
 
+  if (hasAny(value, ['진단', 'diagnostic', 'diagnostics', 'runbook', '런북'])) {
+    return naturalAction(
+      `natural-xenesis-connection-diagnostics-open-${target.id}`,
+      'xd.xenesis.connections.diagnostics.open',
+      { id: target.id, ensureVisible: true },
+      `Open ${target.label} connection diagnostics from natural language request.`,
+    );
+  }
+
+  if (hasAny(value, ['setup request', '설정 요청', '연결 요청', 'setup 요청'])) {
+    return naturalAction(
+      `natural-xenesis-connection-setup-request-open-${target.id}`,
+      'xd.xenesis.connections.setupRequests.open',
+      { id: target.id, ensureVisible: true },
+      `Open ${target.label} connection setup request from natural language request.`,
+    );
+  }
+
   if (
     target.kind === 'tool' &&
     (target.id === 'google-calendar' || target.id === 'google-workspace') &&
@@ -862,6 +909,69 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
       'xd.xenesis.tools.oauthDrafts.open',
       { id: target.id, ensureVisible: true },
       `Open ${target.label} OAuth draft from natural language request.`,
+    );
+  }
+
+  if (target.kind === 'tool' && hasAny(value, ['mcp', 'mcp install', 'mcp 설치'])) {
+    return naturalAction(
+      `natural-xenesis-tool-mcp-install-draft-open-${target.id}`,
+      'xd.xenesis.tools.mcpInstallDrafts.open',
+      { id: target.id, ensureVisible: true },
+      `Open ${target.label} MCP install draft from natural language request.`,
+    );
+  }
+
+  if (target.kind === 'tool' && hasAny(value, ['user story', 'user stories', '사용자 스토리', '스토리'])) {
+    return naturalAction(
+      `natural-xenesis-tool-user-story-open-${target.id}`,
+      'xd.xenesis.tools.userStories.open',
+      { id: target.id, ensureVisible: true },
+      `Open ${target.label} tool user story from natural language request.`,
+    );
+  }
+
+  if (target.kind === 'tool' && hasAny(value, ['액션', 'action', '정책', 'policy', '권한', 'permission'])) {
+    return naturalAction(
+      `natural-xenesis-tool-action-policy-open-${target.id}`,
+      'xd.xenesis.tools.actions.open',
+      { id: target.id, ensureVisible: true },
+      `Open ${target.label} tool action policy from natural language request.`,
+    );
+  }
+
+  if (target.kind === 'tool' && hasAny(value, ['설치 계획', 'install plan', 'install plans'])) {
+    return naturalAction(
+      `natural-xenesis-tool-install-plan-open-${target.id}`,
+      'xd.xenesis.tools.installPlans.open',
+      { id: target.id, ensureVisible: true },
+      `Open ${target.label} tool install plan from natural language request.`,
+    );
+  }
+
+  if (target.kind === 'tool' && hasAny(value, ['view', 'views', '뷰', '화면'])) {
+    return naturalAction(
+      `natural-xenesis-tool-view-open-${target.id}`,
+      'xd.xenesis.tools.views.open',
+      { id: target.id, ensureVisible: true },
+      `Open ${target.label} tool view from natural language request.`,
+    );
+  }
+
+  if (target.kind === 'messenger' && hasAny(value, ['user story', 'user stories', '사용자 스토리', '스토리'])) {
+    return naturalAction(
+      `natural-xenesis-channel-user-story-open-${target.id}`,
+      'xd.xenesis.channels.userStories.open',
+      { id: target.id, ensureVisible: true },
+      `Open ${target.label} channel user story from natural language request.`,
+    );
+  }
+
+  if (target.kind === 'messenger' && hasAny(value, ['프로필', 'profile', 'draft', '초안'])) {
+    return naturalAction(
+      `natural-xenesis-channel-profile-draft-open-${target.id}`,
+      'xd.xenesis.channels.profileDrafts.open',
+      { channel: target.id, ensureVisible: true },
+      `Open ${target.label} channel profile draft from natural language request.`,
     );
   }
 
@@ -892,6 +1002,11 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
   const xenesisConnectionReviewRequestAction = xenesisConnectionReviewRequestActionFromNaturalText(value);
   if (xenesisConnectionReviewRequestAction) {
     return naturalPlan('Xenesis 연결 검토 요청을 기록합니다.', [xenesisConnectionReviewRequestAction]);
+  }
+
+  const explicitXenesisConnectionOpenAction = xenesisConnectionActionFromNaturalText(value);
+  if (explicitXenesisConnectionOpenAction && hasAny(value, ['열어', '켜줘', '띄워', 'open'])) {
+    return naturalPlan('Xenesis 연결 표면을 엽니다.', [explicitXenesisConnectionOpenAction]);
   }
 
   const xenesisConnectionReadbackAction = xenesisConnectionReadbackActionFromNaturalText(value);

@@ -946,6 +946,44 @@ Capability Registry instead of only through separate renderer settings panels.
   상태 보여줘` falling through to generic `xd.app.status`, then passed after
   implementation with 24/24 tests.
 
+## Current Natural Detailed Opens Slice
+
+- Add deterministic natural-language routing for detailed Connection Center
+  open requests before provider execution.
+- `codex app-server provider view 열어줘` maps to
+  `xd.xenesis.providers.views.open` with `provider=codex-app-server`.
+- `AI provider profile draft 열어줘` maps to
+  `xd.xenesis.providers.profileDrafts.open` with `provider=auto`.
+- `노션 설치 계획 열어줘` maps to
+  `xd.xenesis.tools.installPlans.open` with `id=notion`.
+- `노션 MCP 설치 초안 열어줘` maps to
+  `xd.xenesis.tools.mcpInstallDrafts.open` with `id=notion`.
+- `구글 캘린더 사용자 스토리 열어줘` maps to
+  `xd.xenesis.tools.userStories.open` with `id=google-calendar`.
+- `리니어 액션 정책 열어줘` maps to
+  `xd.xenesis.tools.actions.open` with `id=linear`.
+- `텔레그램 사용자 스토리 열어줘` maps to
+  `xd.xenesis.channels.userStories.open` with `id=telegram`.
+- `텔레그램 채널 프로필 열어줘` maps to
+  `xd.xenesis.channels.profileDrafts.open` with `channel=telegram`.
+- `노션 진단 runbook 열어줘` maps to
+  `xd.xenesis.connections.diagnostics.open` with `id=notion`.
+- `노션 setup request 열어줘` maps to
+  `xd.xenesis.connections.setupRequests.open` with `id=notion`.
+- This is deterministic routing, not agent reasoning. It emits existing
+  no-approval CR open actions only and does not mutate settings, execute
+  external tools, write MCP config, send messages, complete OAuth, or add
+  registry nodes.
+- Explicit `열어/open` is evaluated before readback so diagnostic runbooks can
+  open. Review-request intent is narrowed so `setup request 열어줘` opens the
+  card instead of recording a new review item.
+- External documentation handling: no per-slice web browsing. Use local
+  Obsidian/docs/handoff/code/tests as the gap map; refresh external docs only
+  as a batched documentation pass if needed.
+- TDD check: focused natural planner test failed first with `codex app-server
+  provider view 열어줘` returning no action, then passed after implementation
+  with 25/25 tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

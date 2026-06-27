@@ -598,6 +598,108 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center requests to C
   ]);
 });
 
+test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open requests to CR actions', () => {
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('codex app-server provider view 열어줘').actions, [
+    {
+      id: 'natural-xenesis-provider-view-open-codex-app-server',
+      path: 'xd.xenesis.providers.views.open',
+      args: { provider: 'codex-app-server', ensureVisible: true },
+      approved: false,
+      reason: 'Open codex-app-server provider view from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider profile draft 열어줘').actions, [
+    {
+      id: 'natural-xenesis-provider-profile-draft-open-auto',
+      path: 'xd.xenesis.providers.profileDrafts.open',
+      args: { provider: 'auto', ensureVisible: true },
+      approved: false,
+      reason: 'Open auto provider profile draft from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 설치 계획 열어줘').actions, [
+    {
+      id: 'natural-xenesis-tool-install-plan-open-notion',
+      path: 'xd.xenesis.tools.installPlans.open',
+      args: { id: 'notion', ensureVisible: true },
+      approved: false,
+      reason: 'Open Notion tool install plan from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 MCP 설치 초안 열어줘').actions, [
+    {
+      id: 'natural-xenesis-tool-mcp-install-draft-open-notion',
+      path: 'xd.xenesis.tools.mcpInstallDrafts.open',
+      args: { id: 'notion', ensureVisible: true },
+      approved: false,
+      reason: 'Open Notion MCP install draft from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('구글 캘린더 사용자 스토리 열어줘').actions, [
+    {
+      id: 'natural-xenesis-tool-user-story-open-google-calendar',
+      path: 'xd.xenesis.tools.userStories.open',
+      args: { id: 'google-calendar', ensureVisible: true },
+      approved: false,
+      reason: 'Open Google Calendar tool user story from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('리니어 액션 정책 열어줘').actions, [
+    {
+      id: 'natural-xenesis-tool-action-policy-open-linear',
+      path: 'xd.xenesis.tools.actions.open',
+      args: { id: 'linear', ensureVisible: true },
+      approved: false,
+      reason: 'Open Linear tool action policy from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('텔레그램 사용자 스토리 열어줘').actions, [
+    {
+      id: 'natural-xenesis-channel-user-story-open-telegram',
+      path: 'xd.xenesis.channels.userStories.open',
+      args: { id: 'telegram', ensureVisible: true },
+      approved: false,
+      reason: 'Open Telegram channel user story from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('텔레그램 채널 프로필 열어줘').actions, [
+    {
+      id: 'natural-xenesis-channel-profile-draft-open-telegram',
+      path: 'xd.xenesis.channels.profileDrafts.open',
+      args: { channel: 'telegram', ensureVisible: true },
+      approved: false,
+      reason: 'Open Telegram channel profile draft from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 진단 runbook 열어줘').actions, [
+    {
+      id: 'natural-xenesis-connection-diagnostics-open-notion',
+      path: 'xd.xenesis.connections.diagnostics.open',
+      args: { id: 'notion', ensureVisible: true },
+      approved: false,
+      reason: 'Open Notion connection diagnostics from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 setup request 열어줘').actions, [
+    {
+      id: 'natural-xenesis-connection-setup-request-open-notion',
+      path: 'xd.xenesis.connections.setupRequests.open',
+      args: { id: 'notion', ensureVisible: true },
+      approved: false,
+      reason: 'Open Notion connection setup request from natural language request.',
+    },
+  ]);
+});
+
 test('planXenesisDeskNaturalLanguageActions maps Connection Center readback requests to CR actions', () => {
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('연결 상태 보여줘').actions, [
     {
