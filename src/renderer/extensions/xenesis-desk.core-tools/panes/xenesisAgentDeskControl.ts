@@ -2,6 +2,9 @@ import { listDeskBridgeCapabilities } from '../../../../shared/deskBridgeCapabil
 import {
   findXenesisNaturalGuideTarget,
   findXenesisNaturalWordsTarget,
+  isXenesisNaturalConnectionMessengerTarget,
+  isXenesisNaturalConnectionToolTarget,
+  isXenesisNaturalPlannedGoogleToolTarget,
   XENESIS_DESK_ACTION_PROTOCOL,
   XENESIS_DESK_ACTION_PROTOCOL_PATTERNS,
   XENESIS_DESK_ACTION_PROTOCOL_TEXT,
@@ -702,95 +705,106 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       });
     }
 
-    if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS)) {
+    if (isXenesisNaturalConnectionToolTarget(target) && hasAny(value, XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS)) {
       return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.toolMcpInstallDraft, [target.id, target.label], {
         tool: target.id,
       });
     }
 
-    if (
-      target.kind === 'tool' &&
-      (target.id === 'google-calendar' || target.id === 'google-workspace') &&
-      hasAny(value, XENESIS_NATURAL_OAUTH_CONTEXT_WORDS)
-    ) {
+    if (isXenesisNaturalPlannedGoogleToolTarget(target) && hasAny(value, XENESIS_NATURAL_OAUTH_CONTEXT_WORDS)) {
       return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.toolOauthDraft, [target.id, target.label], {
         id: target.id,
       });
     }
 
-    if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
+    if (isXenesisNaturalConnectionToolTarget(target) && hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
       return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.toolUserStory, [target.id, target.label], {
         tool: target.id,
       });
     }
 
-    if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS)) {
+    if (isXenesisNaturalConnectionToolTarget(target) && hasAny(value, XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS)) {
       return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.toolActionPolicy, [target.id, target.label], {
         tool: target.id,
       });
     }
 
-    if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS)) {
+    if (isXenesisNaturalConnectionToolTarget(target) && hasAny(value, XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS)) {
       return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.toolInstallPlan, [target.id, target.label], {
         tool: target.id,
       });
     }
 
-    if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_SETUP_CONTEXT_WORDS)) {
+    if (isXenesisNaturalConnectionToolTarget(target) && hasAny(value, XENESIS_NATURAL_SETUP_CONTEXT_WORDS)) {
       return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.toolSetup, [target.id, target.label], {
         id: target.id,
       });
     }
 
-    if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS)) {
+    if (isXenesisNaturalConnectionToolTarget(target) && hasAny(value, XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS)) {
       return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.toolConnector, [target.id, target.label], {
         tool: target.id,
       });
     }
 
-    if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS)) {
+    if (isXenesisNaturalConnectionToolTarget(target) && hasAny(value, XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS)) {
       return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.toolView, [target.id, target.label], {
         id: target.id,
       });
     }
 
-    if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS)) {
+    if (
+      isXenesisNaturalConnectionMessengerTarget(target) &&
+      hasAny(value, XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS)
+    ) {
       return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.channelRouting, [target.id, target.label], {
         channel: target.id,
       });
     }
 
-    if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_SAFETY_CONTEXT_WORDS)) {
+    if (isXenesisNaturalConnectionMessengerTarget(target) && hasAny(value, XENESIS_NATURAL_SAFETY_CONTEXT_WORDS)) {
       return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.channelSafety, [target.id, target.label], {
         channel: target.id,
       });
     }
 
-    if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS)) {
+    if (
+      isXenesisNaturalConnectionMessengerTarget(target) &&
+      hasAny(value, XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS)
+    ) {
       return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.channelAccessGroups, [target.id, target.label], {
         channel: target.id,
       });
     }
 
-    if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS)) {
+    if (
+      isXenesisNaturalConnectionMessengerTarget(target) &&
+      hasAny(value, XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS)
+    ) {
       return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.channelPairing, [target.id, target.label], {
         channel: target.id,
       });
     }
 
-    if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
+    if (isXenesisNaturalConnectionMessengerTarget(target) && hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
       return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.channelUserStory, [target.id, target.label], {
         id: target.id,
       });
     }
 
-    if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS)) {
+    if (
+      isXenesisNaturalConnectionMessengerTarget(target) &&
+      hasAny(value, XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS)
+    ) {
       return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.channelProfileDraft, [target.id, target.label], {
         channel: target.id,
       });
     }
 
-    if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_MESSENGER_VIEW_FALLBACK_CONTEXT_WORDS)) {
+    if (
+      isXenesisNaturalConnectionMessengerTarget(target) &&
+      hasAny(value, XENESIS_NATURAL_MESSENGER_VIEW_FALLBACK_CONTEXT_WORDS)
+    ) {
       return naturalTemplateAction(CONNECTION_TARGET_STATUS_ACTIONS.messengerView, [target.id, target.label], {
         id: target.id,
       });
@@ -870,29 +884,28 @@ function xenesisConnectionReviewRequestActionFromNaturalText(value: string): Xen
   const target = xenesisConnectionTargetFromNaturalText(value);
   if (!target) return null;
 
-  if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS)) {
+  if (isXenesisNaturalConnectionToolTarget(target) && hasAny(value, XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS)) {
     return naturalTemplateAction(REVIEW_REQUEST_ACTIONS.toolInstallPlan, [target.id, target.label], { id: target.id });
   }
 
-  if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_MCP_INSTALL_REVIEW_CONTEXT_WORDS)) {
+  if (isXenesisNaturalConnectionToolTarget(target) && hasAny(value, XENESIS_NATURAL_MCP_INSTALL_REVIEW_CONTEXT_WORDS)) {
     return naturalTemplateAction(REVIEW_REQUEST_ACTIONS.toolMcpInstallDraft, [target.id, target.label], {
       id: target.id,
     });
   }
 
-  if (
-    target.kind === 'tool' &&
-    (target.id === 'google-calendar' || target.id === 'google-workspace') &&
-    hasAny(value, XENESIS_NATURAL_OAUTH_CONTEXT_WORDS)
-  ) {
+  if (isXenesisNaturalPlannedGoogleToolTarget(target) && hasAny(value, XENESIS_NATURAL_OAUTH_CONTEXT_WORDS)) {
     return naturalTemplateAction(REVIEW_REQUEST_ACTIONS.toolOauthDraft, [target.id, target.label], { id: target.id });
   }
 
-  if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS)) {
+  if (isXenesisNaturalConnectionToolTarget(target) && hasAny(value, XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS)) {
     return naturalTemplateAction(REVIEW_REQUEST_ACTIONS.toolActionPolicy, [target.id, target.label], { id: target.id });
   }
 
-  if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_REQUEST_CONTEXT_WORDS)) {
+  if (
+    isXenesisNaturalConnectionMessengerTarget(target) &&
+    hasAny(value, XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_REQUEST_CONTEXT_WORDS)
+  ) {
     return naturalTemplateAction(REVIEW_REQUEST_ACTIONS.channelProfileDraft, [target.id, target.label], {
       channel: target.id,
     });
@@ -1089,109 +1102,114 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
     });
   }
 
-  if (
-    target.kind === 'tool' &&
-    (target.id === 'google-calendar' || target.id === 'google-workspace') &&
-    hasAny(value, XENESIS_NATURAL_OAUTH_DRAFT_CONTEXT_WORDS)
-  ) {
+  if (isXenesisNaturalPlannedGoogleToolTarget(target) && hasAny(value, XENESIS_NATURAL_OAUTH_DRAFT_CONTEXT_WORDS)) {
     return naturalTemplateAction(CONNECTION_TARGET_OPEN_ACTIONS.toolOauthDraft, [target.id, target.label], {
       id: target.id,
       ensureVisible: true,
     });
   }
 
-  if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS)) {
+  if (isXenesisNaturalConnectionToolTarget(target) && hasAny(value, XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS)) {
     return naturalTemplateAction(CONNECTION_TARGET_OPEN_ACTIONS.toolMcpInstallDraft, [target.id, target.label], {
       id: target.id,
       ensureVisible: true,
     });
   }
 
-  if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
+  if (isXenesisNaturalConnectionToolTarget(target) && hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
     return naturalTemplateAction(CONNECTION_TARGET_OPEN_ACTIONS.toolUserStory, [target.id, target.label], {
       id: target.id,
       ensureVisible: true,
     });
   }
 
-  if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS)) {
+  if (isXenesisNaturalConnectionToolTarget(target) && hasAny(value, XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS)) {
     return naturalTemplateAction(CONNECTION_TARGET_OPEN_ACTIONS.toolActionPolicy, [target.id, target.label], {
       id: target.id,
       ensureVisible: true,
     });
   }
 
-  if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS)) {
+  if (isXenesisNaturalConnectionToolTarget(target) && hasAny(value, XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS)) {
     return naturalTemplateAction(CONNECTION_TARGET_OPEN_ACTIONS.toolInstallPlan, [target.id, target.label], {
       id: target.id,
       ensureVisible: true,
     });
   }
 
-  if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS)) {
+  if (isXenesisNaturalConnectionToolTarget(target) && hasAny(value, XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS)) {
     return naturalTemplateAction(CONNECTION_TARGET_OPEN_ACTIONS.toolConnector, [target.id, target.label], {
       id: target.id,
       ensureVisible: true,
     });
   }
 
-  if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_SETUP_CONTEXT_WORDS)) {
+  if (isXenesisNaturalConnectionToolTarget(target) && hasAny(value, XENESIS_NATURAL_SETUP_CONTEXT_WORDS)) {
     return naturalTemplateAction(CONNECTION_TARGET_OPEN_ACTIONS.toolSetup, [target.id, target.label], {
       id: target.id,
       ensureVisible: true,
     });
   }
 
-  if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS)) {
+  if (isXenesisNaturalConnectionToolTarget(target) && hasAny(value, XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS)) {
     return naturalTemplateAction(CONNECTION_TARGET_OPEN_ACTIONS.toolView, [target.id, target.label], {
       id: target.id,
       ensureVisible: true,
     });
   }
 
-  if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
+  if (isXenesisNaturalConnectionMessengerTarget(target) && hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
     return naturalTemplateAction(CONNECTION_TARGET_OPEN_ACTIONS.channelUserStory, [target.id, target.label], {
       id: target.id,
       ensureVisible: true,
     });
   }
 
-  if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS)) {
+  if (isXenesisNaturalConnectionMessengerTarget(target) && hasAny(value, XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS)) {
     return naturalTemplateAction(CONNECTION_TARGET_OPEN_ACTIONS.channelProfileDraft, [target.id, target.label], {
       channel: target.id,
       ensureVisible: true,
     });
   }
 
-  if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS)) {
+  if (
+    isXenesisNaturalConnectionMessengerTarget(target) &&
+    hasAny(value, XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS)
+  ) {
     return naturalTemplateAction(CONNECTION_TARGET_OPEN_ACTIONS.channelRouting, [target.id, target.label], {
       channel: target.id,
       ensureVisible: true,
     });
   }
 
-  if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_SAFETY_CONTEXT_WORDS)) {
+  if (isXenesisNaturalConnectionMessengerTarget(target) && hasAny(value, XENESIS_NATURAL_SAFETY_CONTEXT_WORDS)) {
     return naturalTemplateAction(CONNECTION_TARGET_OPEN_ACTIONS.channelSafety, [target.id, target.label], {
       channel: target.id,
       ensureVisible: true,
     });
   }
 
-  if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS)) {
+  if (isXenesisNaturalConnectionMessengerTarget(target) && hasAny(value, XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS)) {
     return naturalTemplateAction(CONNECTION_TARGET_OPEN_ACTIONS.channelAccessGroups, [target.id, target.label], {
       channel: target.id,
       ensureVisible: true,
     });
   }
 
-  if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS)) {
+  if (
+    isXenesisNaturalConnectionMessengerTarget(target) &&
+    hasAny(value, XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS)
+  ) {
     return naturalTemplateAction(CONNECTION_TARGET_OPEN_ACTIONS.channelPairing, [target.id, target.label], {
       channel: target.id,
       ensureVisible: true,
     });
   }
 
-  if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_MESSENGER_VIEW_OPEN_FALLBACK_CONTEXT_WORDS)) {
+  if (
+    isXenesisNaturalConnectionMessengerTarget(target) &&
+    hasAny(value, XENESIS_NATURAL_MESSENGER_VIEW_OPEN_FALLBACK_CONTEXT_WORDS)
+  ) {
     return naturalTemplateAction(CONNECTION_TARGET_OPEN_ACTIONS.messengerView, [target.id, target.label], {
       id: target.id,
       ensureVisible: true,

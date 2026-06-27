@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
+  isXenesisNaturalConnectionMessengerTarget,
+  isXenesisNaturalConnectionToolTarget,
+  isXenesisNaturalPlannedGoogleToolTarget,
   XENESIS_DESK_ACTION_RESULT_SUMMARY_KEYS,
   XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT,
   XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES,
@@ -327,6 +330,16 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.equal(XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS.placement, 'tab');
   assert.equal(XENESIS_NATURAL_DESK_ACTION_ARGS.useActive().useActive, true);
   assert.deepEqual(XENESIS_NATURAL_DESK_ACTION_ARGS.optionalFilePath('README.md'), { filePath: 'README.md' });
+  assert.match(source, /isXenesisNaturalConnectionToolTarget/);
+  assert.match(source, /isXenesisNaturalConnectionMessengerTarget/);
+  assert.match(source, /isXenesisNaturalPlannedGoogleToolTarget/);
+  assert.doesNotMatch(source, /target\.kind === 'tool'/);
+  assert.doesNotMatch(source, /target\.kind === 'messenger'/);
+  assert.doesNotMatch(source, /google-calendar/);
+  assert.doesNotMatch(source, /google-workspace/);
+  assert.equal(isXenesisNaturalConnectionToolTarget({ kind: 'tool' }), true);
+  assert.equal(isXenesisNaturalConnectionMessengerTarget({ kind: 'messenger' }), true);
+  assert.equal(isXenesisNaturalPlannedGoogleToolTarget({ id: 'google-calendar', kind: 'tool' }), true);
   assert.match(source, /naturalCoreToolOpenAction/);
   assert.match(source, /naturalViewOpenAction/);
   assert.equal([...source.matchAll(/return naturalAction\(/g)].length, 2);

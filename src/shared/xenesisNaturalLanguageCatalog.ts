@@ -27,6 +27,27 @@ export interface XenesisNaturalConnectionTarget extends XenesisNaturalWordsTarge
   supportLevel?: 'implemented' | 'planned' | 'manual';
 }
 
+export const XENESIS_NATURAL_PLANNED_GOOGLE_TOOL_IDS = ['google-calendar', 'google-workspace'] as const;
+
+export function isXenesisNaturalConnectionToolTarget(target: Pick<XenesisNaturalConnectionTarget, 'kind'>): boolean {
+  return target.kind === 'tool';
+}
+
+export function isXenesisNaturalConnectionMessengerTarget(
+  target: Pick<XenesisNaturalConnectionTarget, 'kind'>,
+): boolean {
+  return target.kind === 'messenger';
+}
+
+export function isXenesisNaturalPlannedGoogleToolTarget(
+  target: Pick<XenesisNaturalConnectionTarget, 'id' | 'kind'>,
+): boolean {
+  return (
+    isXenesisNaturalConnectionToolTarget(target) &&
+    (XENESIS_NATURAL_PLANNED_GOOGLE_TOOL_IDS as readonly string[]).includes(target.id)
+  );
+}
+
 export interface XenesisNaturalDeskActionDescriptor {
   id: string;
   path: string;
