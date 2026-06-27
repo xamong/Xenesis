@@ -319,6 +319,7 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.xenesis\.reports\.list/);
   assert.match(hint, /xd\.xenesis\.tasks\.list/);
   assert.match(hint, /xd\.xenesis\.agents\.list/);
+  assert.match(hint, /xd\.xenesis\.profiles\.list/);
   assert.match(hint, /xd\.xenesis\.tools\.setup\.status/);
   assert.match(hint, /xd\.xenesis\.tools\.connectors\.status/);
   assert.match(hint, /xd\.xenesis\.tools\.views\.status/);
@@ -495,6 +496,28 @@ test('planXenesisDeskNaturalLanguageActions maps runtime inventory readbacks to 
       args: {},
       approved: false,
       reason: 'List registered Xenesis Agent panes from natural language request.',
+    },
+  ]);
+});
+
+test('planXenesisDeskNaturalLanguageActions maps profile inventory prompts to CR actions', () => {
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('Xenesis profile 목록 보여줘').actions, [
+    {
+      id: 'natural-xenesis-profiles-list',
+      path: 'xd.xenesis.profiles.list',
+      args: {},
+      approved: false,
+      reason: 'List Xenesis profiles from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('제네시스 active profile 확인해줘').actions, [
+    {
+      id: 'natural-xenesis-profiles-list',
+      path: 'xd.xenesis.profiles.list',
+      args: {},
+      approved: false,
+      reason: 'List Xenesis profiles from natural language request.',
     },
   ]);
 });

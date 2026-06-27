@@ -232,6 +232,20 @@
   profiles, mutate provider settings, write credentials, send messages, add CR
   nodes, change dispatcher branches, or bypass approvals.
 
+## Profile List Readback Slice
+
+- Added deterministic Xenesis Agent natural-language routing for the existing
+  read-only Xenesis profile inventory CR path:
+  - `Xenesis profile 목록 보여줘` -> `xd.xenesis.profiles.list`.
+  - `제네시스 active profile 확인해줘` -> `xd.xenesis.profiles.list`.
+- Added the same CR path to the Agent control prompt hint so Agent-pane runs
+  inspect installed/active profiles before profile installation, activation,
+  channel updates, or channel test messages.
+- Scope boundary: this slice did not install profiles, switch active profiles,
+  update channel settings, send profile test messages, mutate provider
+  settings, write credentials, add CR nodes, change dispatcher branches, or
+  bypass approvals.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
