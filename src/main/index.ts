@@ -6058,6 +6058,169 @@ async function openXenesisToolInstallPlan(args?: unknown): Promise<Record<string
   };
 }
 
+function xenesisToolMcpInstallDraftStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    draftStatus: item.mcpInstallDraft?.draftStatus,
+    actionInboxKind: item.mcpInstallDraft?.actionInboxKind,
+    serverName: item.mcpInstallDraft?.serverName,
+    displayName: item.mcpInstallDraft?.displayName,
+    description: item.mcpInstallDraft?.description,
+    transport: item.mcpInstallDraft?.transport,
+    auth: item.mcpInstallDraft?.auth,
+    installSurface: item.mcpInstallDraft?.installSurface,
+    reviewSurface: item.mcpInstallDraft?.reviewSurface,
+    configTargets: item.mcpInstallDraft?.configTargets ?? [],
+    requiredEnv: item.mcpInstallDraft?.requiredEnv ?? [],
+    missingEnv: item.mcpInstallDraft?.missingEnv ?? [],
+    installSteps: item.mcpInstallDraft?.installSteps ?? [],
+    readPaths: item.mcpInstallDraft?.readPaths ?? [],
+    controlPaths: item.mcpInstallDraft?.controlPaths ?? [],
+    diagnostics: item.mcpInstallDraft?.diagnostics ?? [],
+    blockedActions: item.mcpInstallDraft?.blockedActions ?? [],
+    safetyBoundaries: item.mcpInstallDraft?.safetyBoundaries ?? [],
+    configSnippets: item.mcpInstallDraft?.configSnippets,
+    mcpInstallDraft: item.mcpInstallDraft,
+    mcpTemplate: item.mcpTemplate,
+    toolInstallPlan: item.toolInstallPlan,
+    settingsAction: item.settingsAction,
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisToolMcpInstallDraftsStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (id && !isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.tools.items
+    .filter((item) => item.mcpInstallDraft)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisToolMcpInstallDraftStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisToolMcpInstallDraft(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Tool id is required.' };
+  }
+  if (!isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.tools.items.find((candidate) => candidate.id === id && candidate.mcpInstallDraft);
+  if (!item) {
+    return { ok: false, id, error: `Xenesis MCP install draft is not available: ${id}` };
+  }
+
+  const renderer = await openMcpBuiltinPaneCapability({
+    kind: 'settings',
+    category: 'xenesis-agent',
+    mode: 'connections',
+    section: 'xenesis-connections',
+    focusConnectionId: id,
+    ensureVisible: body.ensureVisible !== false,
+  });
+
+  return {
+    ok: renderer.ok !== false,
+    id,
+    item: xenesisToolMcpInstallDraftStatusItem(item),
+    renderer,
+  };
+}
+
+async function requestXenesisToolMcpInstallDraft(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Tool id is required.' };
+  }
+  if (!isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.tools.items.find((candidate) => candidate.id === id && candidate.mcpInstallDraft);
+  if (!item?.mcpInstallDraft) {
+    return { ok: false, id, error: `Xenesis MCP install draft is not available: ${id}` };
+  }
+
+  const draft = item.mcpInstallDraft;
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+  const requester = readCapabilityString(body, ['requester', 'user', 'userName']) || 'Xenesis Desk';
+  const description = [
+    `Review the ${draft.draftStatus} MCP install draft for ${item.label}.`,
+    draft.serverName ? `Server: ${draft.serverName}` : 'Server: verified template not selected',
+    draft.transport ? `Transport: ${draft.transport}` : undefined,
+    draft.auth ? `Auth: ${draft.auth}` : undefined,
+    `Install surface: ${draft.installSurface}`,
+    `Config targets: ${draft.configTargets.join(', ') || 'none'}`,
+    `Required env: ${draft.requiredEnv.join(', ') || 'none'}`,
+    `Missing env: ${draft.missingEnv.join(', ') || 'none'}`,
+    '',
+    'Install draft steps:',
+    ...draft.installSteps.map((step) => `- ${step}`),
+    '',
+    'Blocked actions:',
+    ...draft.blockedActions.map((action) => `- ${action}`),
+    note ? '' : undefined,
+    note ? `Note: ${note}` : undefined,
+  ]
+    .filter((line): line is string => typeof line === 'string')
+    .join('\n');
+
+  const actionInboxItem = recordMcpActionInboxRequest({
+    kind: draft.actionInboxKind,
+    title: `Review ${item.label} MCP install draft`,
+    command: `Review MCP install draft for ${item.id}`,
+    description,
+    source: 'Xenesis Connection Center',
+    sessionId: 'xenesis-mcp-install-draft',
+    approvalSessionKey: `xenesis-mcp-install-draft:${item.id}`,
+    requester,
+    risk: draft.draftStatus,
+    approveText: `Approve MCP install draft for ${item.label}`,
+    rejectText: `Reject MCP install draft for ${item.label}`,
+  });
+
+  return {
+    ok: true,
+    id: item.id,
+    item: xenesisToolMcpInstallDraftStatusItem(item),
+    actionInboxItem,
+  };
+}
+
 const XENESIS_PROVIDER_SETUP_IDS = [
   'auto',
   'openai',
@@ -6780,7 +6943,11 @@ function capabilityApprovalAllowKey(pathValue: string, args: unknown, source: De
   return createCapabilityApprovalAllowKey({ path: pathValue, args: keyArgs, source });
 }
 
-function isMcpCapabilityApprovalRemembered(pathValue: string, args: unknown, source: DeskBridgeCapabilitySource): boolean {
+function isMcpCapabilityApprovalRemembered(
+  pathValue: string,
+  args: unknown,
+  source: DeskBridgeCapabilitySource,
+): boolean {
   return mcpCapabilityApprovalAllowKeys.has(capabilityApprovalAllowKey(pathValue, args, source));
 }
 
@@ -6789,11 +6956,15 @@ function persistMcpCapabilityApprovalsSafely(): void {
     fs.mkdirSync(getMcpDir(), { recursive: true });
     fs.writeFileSync(
       getMcpCapabilityApprovalsStorePath(),
-      `${JSON.stringify({
-        version: 1,
-        savedAt: new Date().toISOString(),
-        keys: [...mcpCapabilityApprovalAllowKeys].sort(),
-      }, null, 2)}\n`,
+      `${JSON.stringify(
+        {
+          version: 1,
+          savedAt: new Date().toISOString(),
+          keys: [...mcpCapabilityApprovalAllowKeys].sort(),
+        },
+        null,
+        2,
+      )}\n`,
       'utf8',
     );
   } catch (error) {
@@ -6832,11 +7003,7 @@ function loadPersistedMcpCapabilityApprovals(): void {
 
 function rememberMcpCapabilityApproval(item: McpBridgeActionInboxItem): string {
   const command = parseCapabilityApprovalCommand(item.command);
-  const key = capabilityApprovalAllowKey(
-    command.path,
-    command.args,
-    command.source as DeskBridgeCapabilitySource,
-  );
+  const key = capabilityApprovalAllowKey(command.path, command.args, command.source as DeskBridgeCapabilitySource);
   mcpCapabilityApprovalAllowKeys.add(key);
   persistMcpCapabilityApprovalsSafely();
   return key;
@@ -9304,7 +9471,7 @@ function sanitizeMcpBrowserAction(value: unknown): McpBridgeBrowserActionPayload
 }
 
 function sanitizeMcpBrowserActionRequest(body: unknown): Omit<McpBridgeBrowserActionPayload, 'requestId'> {
-  const raw = body && typeof body === 'object' && !Array.isArray(body) ? body as Record<string, unknown> : {};
+  const raw = body && typeof body === 'object' && !Array.isArray(body) ? (body as Record<string, unknown>) : {};
   const action = sanitizeMcpBrowserAction(raw.action);
   const request: Omit<McpBridgeBrowserActionPayload, 'requestId'> = { action };
   const contentId = sanitizeMcpDockActionText(raw.contentId, 200);
@@ -9318,7 +9485,8 @@ function sanitizeMcpBrowserActionRequest(body: unknown): Omit<McpBridgeBrowserAc
   const maxChars = typeof raw.maxChars === 'number' && Number.isFinite(raw.maxChars) ? raw.maxChars : undefined;
   const maxLinks = typeof raw.maxLinks === 'number' && Number.isFinite(raw.maxLinks) ? raw.maxLinks : undefined;
   const maxNodes = typeof raw.maxNodes === 'number' && Number.isFinite(raw.maxNodes) ? raw.maxNodes : undefined;
-  const maxTextChars = typeof raw.maxTextChars === 'number' && Number.isFinite(raw.maxTextChars) ? raw.maxTextChars : undefined;
+  const maxTextChars =
+    typeof raw.maxTextChars === 'number' && Number.isFinite(raw.maxTextChars) ? raw.maxTextChars : undefined;
   if (contentId) request.contentId = contentId;
   if (paneId) request.paneId = paneId;
   if (url) request.url = url;
@@ -9360,7 +9528,7 @@ function sanitizeMcpBrowserActionResult(value: unknown): McpBridgeBrowserActionR
     canGoForward: typeof raw.canGoForward === 'boolean' ? raw.canGoForward : undefined,
     title: sanitizeMcpDockActionText(raw.title, 500) || undefined,
     text: typeof raw.text === 'string' ? raw.text : undefined,
-    links: Array.isArray(raw.links) ? raw.links as Array<{ text?: string; href?: string }> : undefined,
+    links: Array.isArray(raw.links) ? (raw.links as Array<{ text?: string; href?: string }>) : undefined,
     forms: Array.isArray(raw.forms) ? raw.forms : undefined,
     dom: raw.dom,
     elementAction: raw.elementAction,
@@ -9991,7 +10159,10 @@ function resolveOneShotShellSpawn(shellKind: ShellKind, command: string): { comm
   if (process.platform === 'win32') {
     if (shellKind === 'cmd') return { command: resolved.command, args: ['/d', '/s', '/c', command] };
     if (shellKind === 'wsl') return { command: resolved.command, args: ['sh', '-lc', command] };
-    return { command: resolved.command, args: ['-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', command] };
+    return {
+      command: resolved.command,
+      args: ['-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', command],
+    };
   }
   if (shellKind === 'pwsh') return { command: resolved.command, args: ['-NoLogo', '-NoProfile', '-Command', command] };
   const shellCommand = resolved.command || (shellKind === 'sh' ? '/bin/sh' : '/bin/bash');
@@ -10000,16 +10171,12 @@ function resolveOneShotShellSpawn(shellKind: ShellKind, command: string): { comm
 
 function normalizeMcpTerminalRunAndWaitTimeout(value: unknown): number {
   const requested = Number(value);
-  return Number.isFinite(requested)
-    ? clamp(Math.trunc(requested), 1000, 30 * 60 * 1000, 120_000)
-    : 120_000;
+  return Number.isFinite(requested) ? clamp(Math.trunc(requested), 1000, 30 * 60 * 1000, 120_000) : 120_000;
 }
 
 function normalizeMcpTerminalRunAndWaitMaxBytes(value: unknown): number {
   const requested = Number(value);
-  return Number.isFinite(requested)
-    ? clamp(Math.trunc(requested), 1024, SCROLLBACK_MAX_BYTES, 64 * 1024)
-    : 64 * 1024;
+  return Number.isFinite(requested) ? clamp(Math.trunc(requested), 1024, SCROLLBACK_MAX_BYTES, 64 * 1024) : 64 * 1024;
 }
 
 function trimCapturedOutput(value: string, maxBytes: number): string {
@@ -10040,7 +10207,12 @@ async function runMcpTerminalCommandAndWait(args: unknown): Promise<McpTerminalR
     let timedOut = false;
     let child: ChildProcess;
 
-    const finish = (result: Omit<McpTerminalRunAndWaitResult, 'ok' | 'command' | 'cwd' | 'shell' | 'durationMs' | 'output' | 'stdout' | 'stderr' | 'timedOut'>) => {
+    const finish = (
+      result: Omit<
+        McpTerminalRunAndWaitResult,
+        'ok' | 'command' | 'cwd' | 'shell' | 'durationMs' | 'output' | 'stdout' | 'stderr' | 'timedOut'
+      >,
+    ) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
@@ -10063,7 +10235,11 @@ async function runMcpTerminalCommandAndWait(args: unknown): Promise<McpTerminalR
 
     const timer = setTimeout(() => {
       timedOut = true;
-      try { child?.kill(); } catch { /* process already exited */ }
+      try {
+        child?.kill();
+      } catch {
+        /* process already exited */
+      }
       finish({ exitCode: null, signal: 'timeout', error: `Command timed out after ${timeoutMs}ms` });
     }, timeoutMs);
 
@@ -10549,9 +10725,29 @@ async function openMcpBuiltinPaneCapability(args: unknown): Promise<Record<strin
     source: 'main',
     scope: 'mcp',
     message: 'MCP opened built-in pane through capability',
-    detail: JSON.stringify({ kind, placement, targetPaneId, category, mode, section, focusConnectionId, ensureVisible }),
+    detail: JSON.stringify({
+      kind,
+      placement,
+      targetPaneId,
+      category,
+      mode,
+      section,
+      focusConnectionId,
+      ensureVisible,
+    }),
   });
-  return { ok: true, kind, placement, targetPaneId, category, mode, section, focusConnectionId, ensureVisible, renderer: result };
+  return {
+    ok: true,
+    kind,
+    placement,
+    targetPaneId,
+    category,
+    mode,
+    section,
+    focusConnectionId,
+    ensureVisible,
+    renderer: result,
+  };
 }
 
 function openMcpFileCapability(args: unknown): Record<string, unknown> {
@@ -13224,6 +13420,9 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     openXenesisToolUserStory: (args: unknown) => openXenesisToolUserStory(args),
     getXenesisToolInstallPlansStatus: (args: unknown) => getXenesisToolInstallPlansStatus(args),
     openXenesisToolInstallPlan: (args: unknown) => openXenesisToolInstallPlan(args),
+    getXenesisToolMcpInstallDraftsStatus: (args: unknown) => getXenesisToolMcpInstallDraftsStatus(args),
+    openXenesisToolMcpInstallDraft: (args: unknown) => openXenesisToolMcpInstallDraft(args),
+    requestXenesisToolMcpInstallDraft: (args: unknown) => requestXenesisToolMcpInstallDraft(args),
     getXenesisMessengerViewsStatus: (args: unknown) => getXenesisMessengerViewsStatus(args),
     openXenesisMessengerView: (args: unknown) => openXenesisMessengerView(args),
     getXenesisProviderSetupStatus: (args: unknown) => getXenesisProviderSetupStatus(args),
@@ -13663,8 +13862,11 @@ async function callMcpBridgeCapabilityFromRequest(
   // Executed (no approval prompt). Tag HOW it cleared the gate so downstream
   // reports "already ran" instead of a phantom "approval needed" for the
   // common case where the user previously approved this capability.
-  const approvalResolution: McpBridgeCapabilityCallResult['approvalResolution'] =
-    preApproved ? 'pre-approved' : rememberedHit ? 'auto-approved' : 'not-required';
+  const approvalResolution: McpBridgeCapabilityCallResult['approvalResolution'] = preApproved
+    ? 'pre-approved'
+    : rememberedHit
+      ? 'auto-approved'
+      : 'not-required';
   return { ...result, approvalResolution };
 }
 
@@ -16020,9 +16222,7 @@ function embeddedXenesisOptions(): XenesisEmbeddedAgentServiceOptions {
   // simple CR routing. 'default' -> no injection (codex config applies).
   const deskReasoningEffort = appSettings.aiProvider.reasoningEffort;
   const codexReasoningEnv =
-    (providerRuntime.provider || '').startsWith('codex') &&
-    deskReasoningEffort &&
-    deskReasoningEffort !== 'default'
+    (providerRuntime.provider || '').startsWith('codex') && deskReasoningEffort && deskReasoningEffort !== 'default'
       ? {
           XENESIS_CODEX_APP_SERVER_ARGS:
             process.env.XENESIS_CODEX_APP_SERVER_ARGS ??
@@ -16065,8 +16265,7 @@ function embeddedXenesisOptions(): XenesisEmbeddedAgentServiceOptions {
             // 120000ms". Give codex+MCP turns a much larger ceiling so slow,
             // high-effort turns complete. (Lower effort in ~/.codex/config.toml to
             // make turns faster; this only raises the kill ceiling.)
-            XENESIS_CODEX_APP_SERVER_TIMEOUT_MS:
-              process.env.XENESIS_CODEX_APP_SERVER_TIMEOUT_MS ?? '600000',
+            XENESIS_CODEX_APP_SERVER_TIMEOUT_MS: process.env.XENESIS_CODEX_APP_SERVER_TIMEOUT_MS ?? '600000',
           }
         : {}),
       ...codexReasoningEnv,

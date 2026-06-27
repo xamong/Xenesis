@@ -6,6 +6,7 @@ import {
   buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
   buildXenesisConnectionSetupRequestRequest,
+  buildXenesisMcpInstallDraftRequest,
   formatXenesisChannelAccessGroupsSummary,
   formatXenesisChannelPairingSummary,
   formatXenesisChannelRoutingSummary,
@@ -15,6 +16,7 @@ import {
   formatXenesisConnectionSetupRequestSummary,
   formatXenesisConnectionSetupReviewSummary,
   formatXenesisGuideCatalogSummary,
+  formatXenesisMcpInstallDraftSummary,
   formatXenesisMessengerViewSummary,
   formatXenesisOnboardingPlanSummary,
   formatXenesisProviderRoutingSummary,
@@ -458,6 +460,71 @@ test('formatXenesisToolInstallPlanSummary describes install mode, runtime suppor
     }),
     'copy-template / ready-template / 3 step(s)',
   );
+});
+
+test('formatXenesisMcpInstallDraftSummary describes server, transport, and draft status', () => {
+  assert.equal(
+    formatXenesisMcpInstallDraftSummary({
+      draftStatus: 'missing-env',
+      actionInboxKind: 'xenesis-mcp-install-draft',
+      serverName: 'notion',
+      displayName: 'Notion',
+      transport: 'stdio',
+      auth: 'none',
+      installSurface: 'Settings > AI Provider > Local CLI MCP',
+      reviewSurface: 'Desk Action Inbox',
+      configTargets: ['json-mcp-config', 'codex-toml'],
+      requiredEnv: ['NOTION_TOKEN'],
+      missingEnv: ['NOTION_TOKEN'],
+      installSteps: ['copy template'],
+      readPaths: ['xd.xenesis.tools.mcpInstallDrafts.status'],
+      controlPaths: ['xd.xenesis.tools.mcpInstallDrafts.request'],
+      diagnostics: ['missing-env'],
+      blockedActions: ['does not write MCP config'],
+      safetyBoundaries: ['MCP install drafts are review-only'],
+    }),
+    'notion / stdio / missing-env',
+  );
+});
+
+test('buildXenesisMcpInstallDraftRequest targets the review request CR path', () => {
+  const item = {
+    id: 'notion',
+    kind: 'tool',
+    label: 'Notion',
+    status: 'needs-setup',
+    summary: 'Notion pages and databases.',
+    mcpInstallDraft: {
+      draftStatus: 'ready',
+      actionInboxKind: 'xenesis-mcp-install-draft',
+      serverName: 'notion',
+      displayName: 'Notion',
+      transport: 'stdio',
+      auth: 'none',
+      installSurface: 'Settings > AI Provider > Local CLI MCP',
+      reviewSurface: 'Desk Action Inbox',
+      configTargets: ['json-mcp-config', 'codex-toml'],
+      requiredEnv: ['NOTION_TOKEN'],
+      missingEnv: [],
+      installSteps: ['copy template'],
+      readPaths: ['xd.xenesis.tools.mcpInstallDrafts.status'],
+      controlPaths: ['xd.xenesis.tools.mcpInstallDrafts.request'],
+      diagnostics: ['template-snippet'],
+      blockedActions: ['does not write MCP config'],
+      safetyBoundaries: ['MCP install drafts are review-only'],
+    },
+  } satisfies XenesisConnectionItem;
+
+  assert.deepEqual(buildXenesisMcpInstallDraftRequest(item), {
+    path: 'xd.xenesis.tools.mcpInstallDrafts.request',
+    args: {
+      id: 'notion',
+    },
+    source: 'xenesis',
+    approved: true,
+  });
+
+  assert.equal(buildXenesisMcpInstallDraftRequest({ ...item, mcpInstallDraft: undefined }), null);
 });
 
 test('formatXenesisProviderSetupSummary describes provider, model, and auth mode', () => {

@@ -21,6 +21,8 @@ export type {
   XenesisConnectionDiagnosticRunbookTemplate,
   XenesisConnectionGuideCatalogTemplate,
   XenesisConnectionItem,
+  XenesisConnectionMcpInstallDraftStatus,
+  XenesisConnectionMcpInstallDraftTemplate,
   XenesisConnectionMcpTemplate,
   XenesisConnectionMessengerViewTemplate,
   XenesisConnectionOnboardingPlanPhase,

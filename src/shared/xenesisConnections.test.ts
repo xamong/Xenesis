@@ -626,6 +626,73 @@ test('buildXenesisConnectionsStatus exposes copy-ready recommended MCP templates
   assert.equal(calendar?.mcpTemplate, undefined);
 });
 
+test('buildXenesisConnectionsStatus exposes review-only MCP install drafts', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+    repoRoot: 'E:/workspace/project',
+    env: {
+      GITHUB_TOKEN: '',
+      NOTION_TOKEN: 'secret-value-must-not-appear',
+    },
+  });
+
+  const fetch = status.sections.tools.items.find((item) => item.id === 'fetch');
+  const github = status.sections.tools.items.find((item) => item.id === 'github');
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+  const linear = status.sections.tools.items.find((item) => item.id === 'linear');
+  const calendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+
+  assert.equal(fetch?.mcpInstallDraft?.draftStatus, 'ready');
+  assert.equal(fetch?.mcpInstallDraft?.serverName, 'fetch');
+  assert.equal(fetch?.mcpInstallDraft?.actionInboxKind, 'xenesis-mcp-install-draft');
+  assert.ok(fetch?.mcpInstallDraft?.configSnippets?.json.includes('"fetch"'));
+  assert.ok(fetch?.mcpInstallDraft?.controlPaths.includes('xd.xenesis.tools.mcpInstallDrafts.request'));
+  assert.ok(
+    fetch?.mcpInstallDraft?.safetyBoundaries.some((boundary) => boundary.includes('does not write MCP config')),
+  );
+
+  assert.equal(github?.mcpInstallDraft?.draftStatus, 'missing-env');
+  assert.deepEqual(github?.mcpInstallDraft?.requiredEnv, ['GITHUB_TOKEN']);
+  assert.deepEqual(github?.mcpInstallDraft?.missingEnv, ['GITHUB_TOKEN']);
+
+  assert.equal(notion?.mcpInstallDraft?.draftStatus, 'ready');
+  assert.deepEqual(notion?.mcpInstallDraft?.missingEnv, []);
+  assert.equal(JSON.stringify(notion?.mcpInstallDraft).includes('secret-value-must-not-appear'), false);
+
+  assert.equal(linear?.mcpInstallDraft?.transport, 'http');
+  assert.equal(linear?.mcpInstallDraft?.auth, 'oauth');
+  assert.equal(linear?.mcpInstallDraft?.draftStatus, 'ready');
+
+  assert.equal(calendar?.mcpInstallDraft?.draftStatus, 'planned');
+  assert.equal(calendar?.mcpInstallDraft?.serverName, undefined);
+  assert.equal(calendar?.mcpInstallDraft?.configSnippets, undefined);
+  assert.equal(calendar?.mcpInstallDraft?.blockedActions.includes('install MCP server'), true);
+});
+
 test('buildXenesisConnectionsStatus keeps Google Calendar planned without fake install actions', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {
@@ -1912,7 +1979,15 @@ test('buildXenesisConnectionsStatus exposes diagnostic runbooks for tools, plann
   assert.equal(notion?.diagnosticRunbook?.readiness, 'action-required');
   assert.deepEqual(
     notion?.diagnosticRunbook?.steps.map((step) => step.id),
-    ['connection-status', 'tool-setup', 'tool-connector', 'tool-view', 'tool-user-story', 'tool-install-plan'],
+    [
+      'connection-status',
+      'tool-setup',
+      'tool-connector',
+      'tool-view',
+      'tool-user-story',
+      'tool-install-plan',
+      'mcp-install-draft',
+    ],
   );
   assert.equal(notion?.diagnosticRunbook?.readPaths.includes('xd.xenesis.tools.connectors.status'), true);
   assert.equal(notion?.diagnosticRunbook?.diagnostics.includes('notion-search-read'), true);

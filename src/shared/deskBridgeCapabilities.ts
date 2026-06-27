@@ -552,6 +552,36 @@ const XENESIS_TOOL_USER_STORY_STATUS_SCHEMA = XENESIS_TOOL_VIEW_STATUS_SCHEMA;
 const XENESIS_TOOL_USER_STORY_OPEN_SCHEMA = XENESIS_TOOL_VIEW_OPEN_SCHEMA;
 const XENESIS_TOOL_INSTALL_PLAN_STATUS_SCHEMA = XENESIS_TOOL_VIEW_STATUS_SCHEMA;
 const XENESIS_TOOL_INSTALL_PLAN_OPEN_SCHEMA = XENESIS_TOOL_VIEW_OPEN_SCHEMA;
+const XENESIS_TOOL_MCP_INSTALL_DRAFT_STATUS_SCHEMA = XENESIS_TOOL_VIEW_STATUS_SCHEMA;
+const XENESIS_TOOL_MCP_INSTALL_DRAFT_OPEN_SCHEMA = XENESIS_TOOL_VIEW_OPEN_SCHEMA;
+const XENESIS_TOOL_MCP_INSTALL_DRAFT_REQUEST_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'External tool connection id to record as an MCP install draft review request.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Alias for id.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity to include on the Action Inbox item.',
+    },
+    note: {
+      type: 'string',
+      title: 'Review note',
+      description: 'Optional note to append to the MCP install draft description.',
+    },
+  },
+} as const;
 
 const XENESIS_PROVIDER_IDS = [
   'auto',
@@ -920,6 +950,9 @@ export interface DeskBridgeCapabilityAdapter {
   openXenesisToolUserStory?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolInstallPlansStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisToolInstallPlan?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisToolMcpInstallDraftsStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisToolMcpInstallDraft?: (args?: unknown) => Promise<unknown> | unknown;
+  requestXenesisToolMcpInstallDraft?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisMessengerViewsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisMessengerView?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisProviderSetupStatus?: (args?: unknown) => Promise<unknown> | unknown;
@@ -3962,15 +3995,20 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             XENESIS_CHANNEL_ROUTING_STATUS_SCHEMA,
           ),
         ]),
-        group('xd.xenesis.channels.safety', 'Safety', 'External bot channel access, loop-protection, and troubleshooting metadata.', [
-          method(
-            'xd.xenesis.channels.safety.status',
-            'Read channel safety status',
-            'Read access-group fields, inbound/outbound boundaries, bot-loop protection, approval guardrails, troubleshooting, and safety boundaries for implemented Xenesis external bot channels.',
-            'read',
-            XENESIS_CHANNEL_ROUTING_STATUS_SCHEMA,
-          ),
-        ]),
+        group(
+          'xd.xenesis.channels.safety',
+          'Safety',
+          'External bot channel access, loop-protection, and troubleshooting metadata.',
+          [
+            method(
+              'xd.xenesis.channels.safety.status',
+              'Read channel safety status',
+              'Read access-group fields, inbound/outbound boundaries, bot-loop protection, approval guardrails, troubleshooting, and safety boundaries for implemented Xenesis external bot channels.',
+              'read',
+              XENESIS_CHANNEL_ROUTING_STATUS_SCHEMA,
+            ),
+          ],
+        ),
         group(
           'xd.xenesis.channels.accessGroups',
           'Access groups',
@@ -4068,22 +4106,27 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             ),
           ],
         ),
-        group('xd.xenesis.tools.views', 'Views', 'Internal Desk views for external tool connection setup and readiness.', [
-          method(
-            'xd.xenesis.tools.views.status',
-            'Read tool view status',
-            'Read internal Desk view surfaces, CR open/read paths, diagnostics, and safety boundaries for Xenesis external tool connections.',
-            'read',
-            XENESIS_TOOL_VIEW_STATUS_SCHEMA,
-          ),
-          method(
-            'xd.xenesis.tools.views.open',
-            'Open tool view',
-            'Open Settings > Xenesis Agent > Connections and focus an external tool connection card inside Desk.',
-            'control',
-            XENESIS_TOOL_VIEW_OPEN_SCHEMA,
-          ),
-        ]),
+        group(
+          'xd.xenesis.tools.views',
+          'Views',
+          'Internal Desk views for external tool connection setup and readiness.',
+          [
+            method(
+              'xd.xenesis.tools.views.status',
+              'Read tool view status',
+              'Read internal Desk view surfaces, CR open/read paths, diagnostics, and safety boundaries for Xenesis external tool connections.',
+              'read',
+              XENESIS_TOOL_VIEW_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.views.open',
+              'Open tool view',
+              'Open Settings > Xenesis Agent > Connections and focus an external tool connection card inside Desk.',
+              'control',
+              XENESIS_TOOL_VIEW_OPEN_SCHEMA,
+            ),
+          ],
+        ),
         group(
           'xd.xenesis.tools.userStories',
           'User stories',
@@ -4126,26 +4169,64 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             ),
           ],
         ),
+        group(
+          'xd.xenesis.tools.mcpInstallDrafts',
+          'MCP install drafts',
+          'Read, open, and request review-only MCP install drafts for recommended external tool connections.',
+          [
+            method(
+              'xd.xenesis.tools.mcpInstallDrafts.status',
+              'Read MCP install drafts',
+              'Read review-only MCP install drafts, template snippets, missing env, config targets, diagnostics, and safety boundaries without writing MCP config or running tools.',
+              'read',
+              XENESIS_TOOL_MCP_INSTALL_DRAFT_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.mcpInstallDrafts.open',
+              'Open MCP install draft',
+              'Open Settings > Xenesis Agent > Connections and focus an external tool MCP install-draft card inside Desk.',
+              'control',
+              XENESIS_TOOL_MCP_INSTALL_DRAFT_OPEN_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.mcpInstallDrafts.request',
+              'Request MCP install draft review',
+              'Record a local Action Inbox item for reviewing an MCP install draft without writing config, running shell commands, completing OAuth, storing tokens, executing provider tools, or mutating settings.',
+              'write',
+              XENESIS_TOOL_MCP_INSTALL_DRAFT_REQUEST_SCHEMA,
+            ),
+          ],
+        ),
       ]),
       group('xd.xenesis.providers', 'Providers', 'AI provider setup and routing state.', [
-        group('xd.xenesis.providers.setup', 'Setup', 'AI provider auth, runtime, retry, fallback, and verification metadata.', [
-          method(
-            'xd.xenesis.providers.setup.status',
-            'Read provider setup status',
-            'Read provider identity, model, auth mode, credential state, endpoint, runtime profile, retry/fallback policy, verification, CR readback, and risk controls for the active Xenesis AI provider.',
-            'read',
-            XENESIS_PROVIDER_SETUP_STATUS_SCHEMA,
-          ),
-        ]),
-        group('xd.xenesis.providers.routing', 'Routing', 'AI provider route, retry, fallback, and credential-pool read model.', [
-          method(
-            'xd.xenesis.providers.routing.status',
-            'Read provider routing status',
-            'Read provider route source, runtime provider/model, retry policy, configured fallback chain, credential-pool state, diagnostics, and safety boundaries for the active Xenesis AI provider.',
-            'read',
-            XENESIS_PROVIDER_SETUP_STATUS_SCHEMA,
-          ),
-        ]),
+        group(
+          'xd.xenesis.providers.setup',
+          'Setup',
+          'AI provider auth, runtime, retry, fallback, and verification metadata.',
+          [
+            method(
+              'xd.xenesis.providers.setup.status',
+              'Read provider setup status',
+              'Read provider identity, model, auth mode, credential state, endpoint, runtime profile, retry/fallback policy, verification, CR readback, and risk controls for the active Xenesis AI provider.',
+              'read',
+              XENESIS_PROVIDER_SETUP_STATUS_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.providers.routing',
+          'Routing',
+          'AI provider route, retry, fallback, and credential-pool read model.',
+          [
+            method(
+              'xd.xenesis.providers.routing.status',
+              'Read provider routing status',
+              'Read provider route source, runtime provider/model, retry policy, configured fallback chain, credential-pool state, diagnostics, and safety boundaries for the active Xenesis AI provider.',
+              'read',
+              XENESIS_PROVIDER_SETUP_STATUS_SCHEMA,
+            ),
+          ],
+        ),
         group('xd.xenesis.providers.views', 'Views', 'Internal Desk views for AI provider setup and readiness.', [
           method(
             'xd.xenesis.providers.views.status',
@@ -5034,54 +5115,135 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
     group('xd.panes', 'Built-in panes', 'Built-in non-extension panes opened by renderer commands.', [
       group('xd.panes.browser', 'Browser pane', 'Browser pane operations.', [
         method('xd.panes.browser.open', 'Open browser pane', 'Open a new Xenesis Desk browser pane.', 'control'),
-        method('xd.panes.browser.navigate', 'Navigate browser pane', 'Navigate an existing Xenesis Desk browser pane.', 'control', {
-          type: 'object',
-          properties: {
-            contentId: { type: 'string', description: 'Optional browser content id. Defaults to the active browser pane.' },
-            paneId: { type: 'string', description: 'Optional pane id containing a browser content.' },
-            url: { type: 'string', description: 'URL or search text to load in the Desk browser pane.' },
-          },
-          required: ['url'],
-        }, { approval: 'never' }),
-        method('xd.panes.browser.back', 'Go back in browser pane', 'Navigate an existing Desk browser pane backward.', 'control', undefined, { approval: 'never' }),
-        method('xd.panes.browser.forward', 'Go forward in browser pane', 'Navigate an existing Desk browser pane forward.', 'control', undefined, { approval: 'never' }),
-        method('xd.panes.browser.reload', 'Reload browser pane', 'Reload an existing Desk browser pane.', 'control', undefined, { approval: 'never' }),
-        method('xd.panes.browser.stop', 'Stop browser pane load', 'Stop loading an existing Desk browser pane.', 'control', undefined, { approval: 'never' }),
-        method('xd.panes.browser.state', 'Read browser pane state', 'Read navigation state from an existing Desk browser pane.', 'read'),
-        method('xd.panes.browser.textSnapshot', 'Read browser text snapshot', 'Read visible text, links, and form controls from an existing Desk browser pane.', 'read', {
-          type: 'object',
-          properties: {
-            contentId: { type: 'string', description: 'Optional browser content id. Defaults to the active browser pane.' },
-            paneId: { type: 'string', description: 'Optional pane id containing a browser content.' },
-            maxChars: { type: 'number', default: 20000, minimum: 1, description: 'Maximum body text characters to return.' },
-            maxLinks: { type: 'number', default: 100, minimum: 0, description: 'Maximum links to return.' },
-          },
-        }),
-        method('xd.panes.browser.domSnapshot', 'Read browser DOM snapshot', 'Read a bounded DOM structure summary from an existing Desk browser pane.', 'read', {
-          type: 'object',
-          properties: {
-            contentId: { type: 'string', description: 'Optional browser content id. Defaults to the active browser pane.' },
-            paneId: { type: 'string', description: 'Optional pane id containing a browser content.' },
-            maxNodes: { type: 'number', default: 250, minimum: 1, description: 'Maximum DOM nodes to return.' },
-            maxTextChars: { type: 'number', default: 5000, minimum: 1, description: 'Maximum cumulative text characters to return.' },
-          },
-        }),
-        method('xd.panes.browser.elementAction', 'Run browser element action', 'Run a bounded click, fill, select, or key press against a visible Desk browser pane. Prefer this over xd.automation.ui.run for simple visible Desk browser form fill, click, select, and press actions.', 'control', {
-          type: 'object',
-          properties: {
-            contentId: { type: 'string', description: 'Optional browser content id. Defaults to the active browser pane.' },
-            paneId: { type: 'string', description: 'Optional pane id containing a browser content.' },
-            elementAction: {
-              type: 'string',
-              enum: ['fill', 'click', 'select', 'press'],
-              description: 'Bounded element action to run in the visible browser pane.',
+        method(
+          'xd.panes.browser.navigate',
+          'Navigate browser pane',
+          'Navigate an existing Xenesis Desk browser pane.',
+          'control',
+          {
+            type: 'object',
+            properties: {
+              contentId: {
+                type: 'string',
+                description: 'Optional browser content id. Defaults to the active browser pane.',
+              },
+              paneId: { type: 'string', description: 'Optional pane id containing a browser content.' },
+              url: { type: 'string', description: 'URL or search text to load in the Desk browser pane.' },
             },
-            selector: { type: 'string', description: 'CSS selector for the target element.' },
-            text: { type: 'string', description: 'Optional visible text fallback when selector is omitted.' },
-            value: { type: 'string', description: 'Value used by fill or select actions.' },
-            key: { type: 'string', description: 'Keyboard key used by press actions.' },
+            required: ['url'],
           },
-        }, { approval: 'never' }),
+          { approval: 'never' },
+        ),
+        method(
+          'xd.panes.browser.back',
+          'Go back in browser pane',
+          'Navigate an existing Desk browser pane backward.',
+          'control',
+          undefined,
+          { approval: 'never' },
+        ),
+        method(
+          'xd.panes.browser.forward',
+          'Go forward in browser pane',
+          'Navigate an existing Desk browser pane forward.',
+          'control',
+          undefined,
+          { approval: 'never' },
+        ),
+        method(
+          'xd.panes.browser.reload',
+          'Reload browser pane',
+          'Reload an existing Desk browser pane.',
+          'control',
+          undefined,
+          { approval: 'never' },
+        ),
+        method(
+          'xd.panes.browser.stop',
+          'Stop browser pane load',
+          'Stop loading an existing Desk browser pane.',
+          'control',
+          undefined,
+          { approval: 'never' },
+        ),
+        method(
+          'xd.panes.browser.state',
+          'Read browser pane state',
+          'Read navigation state from an existing Desk browser pane.',
+          'read',
+        ),
+        method(
+          'xd.panes.browser.textSnapshot',
+          'Read browser text snapshot',
+          'Read visible text, links, and form controls from an existing Desk browser pane.',
+          'read',
+          {
+            type: 'object',
+            properties: {
+              contentId: {
+                type: 'string',
+                description: 'Optional browser content id. Defaults to the active browser pane.',
+              },
+              paneId: { type: 'string', description: 'Optional pane id containing a browser content.' },
+              maxChars: {
+                type: 'number',
+                default: 20000,
+                minimum: 1,
+                description: 'Maximum body text characters to return.',
+              },
+              maxLinks: { type: 'number', default: 100, minimum: 0, description: 'Maximum links to return.' },
+            },
+          },
+        ),
+        method(
+          'xd.panes.browser.domSnapshot',
+          'Read browser DOM snapshot',
+          'Read a bounded DOM structure summary from an existing Desk browser pane.',
+          'read',
+          {
+            type: 'object',
+            properties: {
+              contentId: {
+                type: 'string',
+                description: 'Optional browser content id. Defaults to the active browser pane.',
+              },
+              paneId: { type: 'string', description: 'Optional pane id containing a browser content.' },
+              maxNodes: { type: 'number', default: 250, minimum: 1, description: 'Maximum DOM nodes to return.' },
+              maxTextChars: {
+                type: 'number',
+                default: 5000,
+                minimum: 1,
+                description: 'Maximum cumulative text characters to return.',
+              },
+            },
+          },
+        ),
+        method(
+          'xd.panes.browser.elementAction',
+          'Run browser element action',
+          'Run a bounded click, fill, select, or key press against a visible Desk browser pane. Prefer this over xd.automation.ui.run for simple visible Desk browser form fill, click, select, and press actions.',
+          'control',
+          {
+            type: 'object',
+            properties: {
+              contentId: {
+                type: 'string',
+                description: 'Optional browser content id. Defaults to the active browser pane.',
+              },
+              paneId: { type: 'string', description: 'Optional pane id containing a browser content.' },
+              elementAction: {
+                type: 'string',
+                enum: ['fill', 'click', 'select', 'press'],
+                description: 'Bounded element action to run in the visible browser pane.',
+              },
+              selector: { type: 'string', description: 'CSS selector for the target element.' },
+              text: { type: 'string', description: 'Optional visible text fallback when selector is omitted.' },
+              value: { type: 'string', description: 'Value used by fill or select actions.' },
+              key: { type: 'string', description: 'Keyboard key used by press actions.' },
+            },
+          },
+          { approval: 'never' },
+        ),
       ]),
       group('xd.panes.commandCenter', 'Command Center pane', 'Command Center creation and restore.', [
         method(
@@ -6573,23 +6735,35 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           text: { type: 'string', title: 'Text' },
         },
       }),
-      method('xd.apps.hotkey', 'Send external app hotkey', 'Send a hotkey to a focused external app window.', 'execute', {
-        type: 'object',
-        required: ['keys'],
-        properties: {
-          appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
-          windowId: { type: 'string', title: 'Window handle' },
-          keys: { type: 'array', items: { type: 'string' }, examples: [['CTRL', 'S']] },
+      method(
+        'xd.apps.hotkey',
+        'Send external app hotkey',
+        'Send a hotkey to a focused external app window.',
+        'execute',
+        {
+          type: 'object',
+          required: ['keys'],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            windowId: { type: 'string', title: 'Window handle' },
+            keys: { type: 'array', items: { type: 'string' }, examples: [['CTRL', 'S']] },
+          },
         },
-      }),
-      method('xd.apps.close', 'Close external app window', 'Close a visible external app window or process.', 'control', {
-        type: 'object',
-        properties: {
-          appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
-          windowId: { type: 'string', title: 'Window handle' },
-          mode: { type: 'string', enum: ['window', 'process'], default: 'window' },
+      ),
+      method(
+        'xd.apps.close',
+        'Close external app window',
+        'Close a visible external app window or process.',
+        'control',
+        {
+          type: 'object',
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            windowId: { type: 'string', title: 'Window handle' },
+            mode: { type: 'string', enum: ['window', 'process'], default: 'window' },
+          },
         },
-      }),
+      ),
     ]),
     group('xd.files', 'Files', 'Local file open, preview, and safe-write control surface.', [
       method('xd.files.open', 'Open file', 'Request that Xenesis Desk opens a local file in a dock pane.', 'control', {
@@ -9834,28 +10008,52 @@ export async function callDeskBridgeCapability(
         return callAdapter(path, api?.status);
       }
       if (path === 'xd.apps.status') {
-        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'status' });
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'status',
+        });
       }
       if (path === 'xd.apps.find') {
-        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'find' });
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'find',
+        });
       }
       if (path === 'xd.apps.launch') {
-        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'launch' });
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'launch',
+        });
       }
       if (path === 'xd.apps.focus') {
-        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'focus' });
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'focus',
+        });
       }
       if (path === 'xd.apps.resize') {
-        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'resize' });
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'resize',
+        });
       }
       if (path === 'xd.apps.typeText') {
-        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'typeText' });
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'typeText',
+        });
       }
       if (path === 'xd.apps.hotkey') {
-        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'hotkey' });
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'hotkey',
+        });
       }
       if (path === 'xd.apps.close') {
-        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'close' });
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'close',
+        });
       }
       if (path === 'xd.diagnostics.state') {
         return callAdapter(path, api?.status);
@@ -10491,6 +10689,15 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.tools.installPlans.open') {
         return callAdapter(path, api?.openXenesisToolInstallPlan, request.args);
+      }
+      if (path === 'xd.xenesis.tools.mcpInstallDrafts.status') {
+        return callAdapter(path, api?.getXenesisToolMcpInstallDraftsStatus, request.args);
+      }
+      if (path === 'xd.xenesis.tools.mcpInstallDrafts.open') {
+        return callAdapter(path, api?.openXenesisToolMcpInstallDraft, request.args);
+      }
+      if (path === 'xd.xenesis.tools.mcpInstallDrafts.request') {
+        return callAdapter(path, api?.requestXenesisToolMcpInstallDraft, request.args);
       }
       if (path === 'xd.xenesis.messengers.views.status') {
         return callAdapter(path, api?.getXenesisMessengerViewsStatus, request.args);

@@ -89,6 +89,7 @@ import {
   buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
   buildXenesisConnectionSetupRequestRequest,
+  buildXenesisMcpInstallDraftRequest,
   formatXenesisChannelAccessGroupsSummary,
   formatXenesisChannelPairingSummary,
   formatXenesisChannelRoutingSummary,
@@ -98,6 +99,7 @@ import {
   formatXenesisConnectionSetupRequestSummary,
   formatXenesisConnectionSetupReviewSummary,
   formatXenesisGuideCatalogSummary,
+  formatXenesisMcpInstallDraftSummary,
   formatXenesisMessengerViewSummary,
   formatXenesisOnboardingPlanSummary,
   formatXenesisProviderRoutingSummary,
@@ -4268,7 +4270,9 @@ export default function SettingsPane() {
     const settingsRequest = buildXenesisConnectionSettingsRequest(item);
     const guideRequest = buildXenesisConnectionGuideRequest(item);
     const setupRequestCall = buildXenesisConnectionSetupRequestRequest(item);
+    const mcpInstallDraftRequest = buildXenesisMcpInstallDraftRequest(item);
     const mcpTemplate = item.mcpTemplate;
+    const mcpInstallDraft = item.mcpInstallDraft;
     const onboardingPlan = item.onboardingPlan;
     const providerSetup = item.providerSetup;
     const providerView = item.providerView;
@@ -4298,7 +4302,7 @@ export default function SettingsPane() {
             {xenesisConnectionStatusLabel(item.status)}
           </span>
         </div>
-        {(openRequest || settingsRequest || guideRequest || setupRequestCall) && (
+        {(openRequest || settingsRequest || guideRequest || setupRequestCall || mcpInstallDraftRequest) && (
           <div className="sp-actions-row sp-actions-row-tight">
             <button
               className="sp-btn-ghost sp-btn-sm"
@@ -4336,6 +4340,16 @@ export default function SettingsPane() {
                 }}
               >
                 {t('settings.xenesisConnectionsRequestSetup')}
+              </button>
+            ) : null}
+            {mcpInstallDraftRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(mcpInstallDraftRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsRequestMcpInstallDraft')}
               </button>
             ) : null}
           </div>
@@ -4742,6 +4756,54 @@ export default function SettingsPane() {
             <div>
               <span>{t('settings.xenesisConnectionsToolInstallPlanSafety')}</span>
               <strong>{toolInstallPlan.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {mcpInstallDraft ? (
+          <div className="sp-info-list sp-info-list-compact" data-xenesis-mcp-install-draft={item.id}>
+            <div>
+              <span>{t('settings.xenesisConnectionsMcpInstallDraft')}</span>
+              <strong>{formatXenesisMcpInstallDraftSummary(mcpInstallDraft)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMcpInstallDraftSurface')}</span>
+              <strong>{mcpInstallDraft.installSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMcpInstallDraftReviewSurface')}</span>
+              <strong>{mcpInstallDraft.reviewSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMcpInstallDraftTargets')}</span>
+              <strong>{mcpInstallDraft.configTargets.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMcpInstallDraftMissingEnv')}</span>
+              <strong>{mcpInstallDraft.missingEnv.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMcpInstallDraftSteps')}</span>
+              <strong>{mcpInstallDraft.installSteps.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMcpInstallDraftReadback')}</span>
+              <strong>{mcpInstallDraft.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMcpInstallDraftControls')}</span>
+              <strong>{mcpInstallDraft.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMcpInstallDraftDiagnostics')}</span>
+              <strong>{mcpInstallDraft.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMcpInstallDraftBlockedActions')}</span>
+              <strong>{mcpInstallDraft.blockedActions.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMcpInstallDraftSafety')}</span>
+              <strong>{mcpInstallDraft.safetyBoundaries.join(', ')}</strong>
             </div>
           </div>
         ) : null}

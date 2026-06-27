@@ -108,6 +108,30 @@ export interface XenesisConnectionMcpTemplate {
   configSnippets: XenesisConnectionMcpConfigSnippets;
 }
 
+export type XenesisConnectionMcpInstallDraftStatus = 'ready' | 'missing-env' | 'planned';
+
+export interface XenesisConnectionMcpInstallDraftTemplate {
+  draftStatus: XenesisConnectionMcpInstallDraftStatus;
+  actionInboxKind: 'xenesis-mcp-install-draft';
+  serverName?: string;
+  displayName: string;
+  description?: string;
+  transport?: 'stdio' | 'http' | 'sse';
+  auth?: 'oauth' | 'none';
+  installSurface: string;
+  reviewSurface: string;
+  configTargets: string[];
+  requiredEnv: string[];
+  missingEnv: string[];
+  installSteps: string[];
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  blockedActions: string[];
+  safetyBoundaries: string[];
+  configSnippets?: XenesisConnectionMcpConfigSnippets;
+}
+
 export type XenesisConnectionOnboardingPlanPhase =
   | 'first-chat'
   | 'local-runtime'
@@ -521,6 +545,7 @@ export interface XenesisConnectionItem {
   toolSetup?: XenesisConnectionToolSetupTemplate;
   toolInstallPlan?: XenesisConnectionToolInstallPlanTemplate;
   toolConnector?: XenesisConnectionToolConnectorTemplate;
+  mcpInstallDraft?: XenesisConnectionMcpInstallDraftTemplate;
   toolView?: XenesisConnectionToolViewTemplate;
   toolUserStory?: XenesisConnectionToolUserStoryTemplate;
   messengerView?: XenesisConnectionMessengerViewTemplate;
@@ -2694,6 +2719,93 @@ const XENESIS_CONNECTION_SETUP_REQUEST_BLOCKED_ACTIONS = [
   'does not send messages',
 ];
 
+const XENESIS_MCP_INSTALL_DRAFT_BLOCKED_ACTIONS = [
+  'install MCP server',
+  'write MCP config',
+  'run shell command',
+  'complete OAuth',
+  'store tokens',
+  'execute provider tools',
+  'mutate settings',
+];
+
+function missingEnvFor(requiredEnv: readonly string[], env: Record<string, string | undefined>): string[] {
+  return uniqueStrings(requiredEnv.filter((ref) => !env[ref]?.trim()));
+}
+
+function buildXenesisMcpInstallDraft(
+  item: XenesisConnectionItem,
+  env: Record<string, string | undefined>,
+): XenesisConnectionMcpInstallDraftTemplate | undefined {
+  const installPlan = item.toolInstallPlan;
+  if (!item.mcpTemplate && !installPlan) return undefined;
+
+  const requiredEnv = uniqueStrings([...(item.mcpTemplate?.requiredEnv ?? []), ...(installPlan?.requiredEnv ?? [])]);
+  const missingEnv = missingEnvFor(requiredEnv, env);
+  const draftStatus: XenesisConnectionMcpInstallDraftStatus = item.mcpTemplate
+    ? missingEnv.length > 0
+      ? 'missing-env'
+      : 'ready'
+    : 'planned';
+  const configTargets = item.mcpTemplate ? (installPlan?.configTargets ?? ['json-mcp-config', 'codex-toml']) : [];
+  const installSteps = installPlan?.installSteps ?? item.setupSteps ?? [];
+
+  return {
+    draftStatus,
+    actionInboxKind: 'xenesis-mcp-install-draft',
+    ...(item.mcpTemplate
+      ? {
+          serverName: item.mcpTemplate.serverName,
+          description: item.mcpTemplate.description,
+          transport: item.mcpTemplate.transport,
+          auth: item.mcpTemplate.auth ?? 'none',
+          configSnippets: item.mcpTemplate.configSnippets,
+        }
+      : {}),
+    displayName: item.mcpTemplate?.displayName ?? item.label,
+    installSurface:
+      installPlan?.installSurface ?? item.toolConnector?.setupSurface ?? 'Settings > AI Provider > Local CLI MCP',
+    reviewSurface: 'Desk Action Inbox',
+    configTargets,
+    requiredEnv,
+    missingEnv,
+    installSteps,
+    readPaths: uniqueStrings([
+      'xd.xenesis.tools.mcpInstallDrafts.status',
+      'xd.xenesis.connections.status',
+      'xd.xenesis.tools.installPlans.status',
+      'xd.xenesis.tools.connectors.status',
+      'xd.mcp.settings.status',
+      ...(installPlan?.readPaths ?? []),
+      ...(item.toolConnector?.readPaths ?? []),
+    ]),
+    controlPaths: uniqueStrings([
+      'xd.xenesis.tools.mcpInstallDrafts.open',
+      'xd.xenesis.tools.mcpInstallDrafts.request',
+      'xd.xenesis.connections.open',
+      ...(installPlan?.controlPaths ?? []),
+      ...(item.toolConnector?.controlPaths ?? []),
+    ]),
+    diagnostics: uniqueStrings([
+      draftStatus,
+      ...(missingEnv.length > 0 ? ['missing-env'] : []),
+      ...(item.mcpTemplate ? ['template-snippet'] : ['planned-template-missing']),
+      ...(installPlan?.diagnostics ?? []),
+      ...(item.toolConnector?.diagnostics ?? []),
+    ]),
+    blockedActions: [...XENESIS_MCP_INSTALL_DRAFT_BLOCKED_ACTIONS],
+    safetyBoundaries: uniqueStrings([
+      'MCP install drafts are review-only',
+      'MCP install draft does not write MCP config or run shell commands',
+      'MCP install drafts do not complete OAuth, store tokens, execute provider tools, mutate settings, or send messages',
+      'credential values are never returned',
+      ...(installPlan?.safetyBoundaries ?? []),
+      ...(item.toolConnector?.safetyBoundaries ?? []),
+      ...(item.warnings ?? []),
+    ]),
+  };
+}
+
 function diagnosticRunbookReadiness(status: XenesisConnectionStatus): XenesisConnectionDiagnosticRunbookReadiness {
   if (status === 'needs-setup') return 'action-required';
   return status;
@@ -2727,6 +2839,7 @@ function diagnosticRunbookSetupSurface(item: XenesisConnectionItem): string {
     item.toolView?.setupSurface ??
     item.toolUserStory?.setupSurface ??
     item.toolInstallPlan?.setupSurface ??
+    item.mcpInstallDraft?.installSurface ??
     item.messengerView?.setupSurface ??
     item.channelTemplate?.pairing?.setupSurface ??
     item.channelTemplate?.userStory?.setupSurface ??
@@ -2743,6 +2856,7 @@ function diagnosticRunbookPrimarySurface(item: XenesisConnectionItem): string {
     item.toolView?.primarySurface ??
     item.toolUserStory?.primarySurface ??
     item.toolInstallPlan?.primarySurface ??
+    (item.mcpInstallDraft ? 'Settings > Xenesis Agent > Connections' : undefined) ??
     item.messengerView?.primarySurface ??
     item.guideCatalog?.primarySurface ??
     'Settings > Xenesis Agent > Connections'
@@ -2884,6 +2998,20 @@ function buildXenesisConnectionDiagnosticRunbook(
     );
   }
 
+  if (item.mcpInstallDraft) {
+    steps.push(
+      diagnosticRunbookStep({
+        id: 'mcp-install-draft',
+        label: 'MCP install draft',
+        expectedState:
+          'Review-only MCP install draft metadata is visible before any config write or provider tool use.',
+        readPaths: ['xd.xenesis.tools.mcpInstallDrafts.status', ...item.mcpInstallDraft.readPaths],
+        controlPaths: item.mcpInstallDraft.controlPaths,
+        diagnostics: [...item.mcpInstallDraft.installSteps, ...item.mcpInstallDraft.diagnostics],
+      }),
+    );
+  }
+
   if (item.channelTemplate?.routing) {
     steps.push(
       diagnosticRunbookStep({
@@ -3001,6 +3129,7 @@ function buildXenesisConnectionDiagnosticRunbook(
       ...(item.toolView?.safetyBoundaries ?? []),
       ...(item.toolUserStory?.safetyBoundaries ?? []),
       ...(item.toolInstallPlan?.safetyBoundaries ?? []),
+      ...(item.mcpInstallDraft?.safetyBoundaries ?? []),
       ...(item.channelTemplate?.safetyControls ?? []),
       ...(item.channelTemplate?.safety?.safetyBoundaries ?? []),
       ...(item.channelTemplate?.accessGroups?.safetyBoundaries ?? []),
@@ -3052,6 +3181,7 @@ function setupRequestDiagnosticItems(item: XenesisConnectionItem): string[] {
     ...(item.toolSetup?.verification ?? []),
     ...(item.toolConnector?.validationChecks ?? []),
     ...(item.toolInstallPlan?.diagnostics ?? []),
+    ...(item.mcpInstallDraft?.diagnostics ?? []),
     ...(item.channelTemplate?.routing?.diagnostics ?? []),
     ...(item.channelTemplate?.safety?.troubleshooting ?? []),
     ...(item.channelTemplate?.accessGroups?.diagnostics ?? []),
@@ -3067,6 +3197,7 @@ function setupRequestStepItems(item: XenesisConnectionItem): string[] {
     ...(item.onboardingPlan?.validationChecks.map((check) => `verify ${check}`) ?? []),
     ...(item.providerSetup?.verification.map((check) => `verify ${check}`) ?? []),
     ...(item.toolInstallPlan?.installSteps ?? []),
+    ...(item.mcpInstallDraft?.installSteps ?? []),
     ...(item.toolConnector?.validationChecks.map((check) => `validate ${check}`) ?? []),
     ...(item.toolSetup?.verification.map((check) => `verify ${check}`) ?? []),
     ...(item.channelTemplate?.pairing?.validationChecks.map((check) => `validate ${check}`) ?? []),
@@ -3117,6 +3248,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.toolView?.readPaths ?? []),
       ...(item.toolUserStory?.readPaths ?? []),
       ...(item.toolInstallPlan?.readPaths ?? []),
+      ...(item.mcpInstallDraft?.readPaths ?? []),
       ...(item.channelTemplate?.safety?.readPaths ?? []),
       ...(item.channelTemplate?.accessGroups?.readPaths ?? []),
       ...(item.channelTemplate?.pairing?.readPaths ?? []),
@@ -3136,6 +3268,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.toolView?.controlPaths ?? []),
       ...(item.toolUserStory?.controlPaths ?? []),
       ...(item.toolInstallPlan?.controlPaths ?? []),
+      ...(item.mcpInstallDraft?.controlPaths ?? []),
       ...(item.channelTemplate?.safety?.controlPaths ?? []),
       ...(item.channelTemplate?.accessGroups?.controlPaths ?? []),
       ...(item.channelTemplate?.pairing?.controlPaths ?? []),
@@ -3158,6 +3291,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.toolView?.safetyBoundaries ?? []),
       ...(item.toolUserStory?.safetyBoundaries ?? []),
       ...(item.toolInstallPlan?.safetyBoundaries ?? []),
+      ...(item.mcpInstallDraft?.safetyBoundaries ?? []),
       ...(item.channelTemplate?.safetyControls ?? []),
       ...(item.channelTemplate?.safety?.safetyBoundaries ?? []),
       ...(item.channelTemplate?.accessGroups?.safetyBoundaries ?? []),
@@ -3284,14 +3418,18 @@ export function withXenesisConnectionSetupRequestReviews(
 }
 
 function toolConnectionItems(env: Record<string, string | undefined> = {}): XenesisConnectionItem[] {
-  return TOOL_CONNECTIONS.map((item) =>
-    item.toolConnector
+  return TOOL_CONNECTIONS.map((item) => {
+    const withCredentialState = item.toolConnector
       ? {
           ...item,
           toolConnector: withToolConnectorCredentialState(item.toolConnector, env),
         }
-      : item,
-  );
+      : item;
+    return {
+      ...withCredentialState,
+      mcpInstallDraft: buildXenesisMcpInstallDraft(withCredentialState, env),
+    };
+  });
 }
 
 function readChannelPairingCredentialState(

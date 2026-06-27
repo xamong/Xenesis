@@ -80,6 +80,20 @@ safety boundaries only. It does not install MCP servers, complete OAuth, store
 tokens, execute provider tools, send messages, mutate provider/tool/channel
 settings, update allowlists, or bypass approvals.
 
+Tool cards with recommended MCP metadata also expose an `mcpInstallDraft` read
+model. Use `xd.xenesis.tools.mcpInstallDrafts.status` to inspect review-only
+install drafts for Fetch, Filesystem, GitHub, Notion, Linear, and planned
+Google tool cards. Use `xd.xenesis.tools.mcpInstallDrafts.open` with
+`{ "id": "<tool-id>" }` to focus the owning card, and
+`xd.xenesis.tools.mcpInstallDrafts.request` with `{ "id": "<tool-id>" }` to
+record a local `xenesis-mcp-install-draft` Action Inbox item for review. These
+drafts expose server name, transport, missing env names, config targets, copy
+snippets, diagnostics, blocked actions, and safety boundaries. They do not
+write MCP config, run shell commands, complete OAuth, store tokens, execute
+provider tools, send messages, mutate settings, or bypass approvals. Google
+Workspace and Google Calendar remain planned until a verified MCP/OAuth
+template exists.
+
 The first section is an ordered onboarding checklist. It is derived from the
 same provider, MCP, tool, gateway, messenger, and guide cards, so it is a
 read-only progress view rather than a separate source of truth. Use it as the

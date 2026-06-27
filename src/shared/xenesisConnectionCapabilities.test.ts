@@ -620,6 +620,95 @@ test('xenesis tool install plan capabilities are registered and dispatch to the 
   });
 });
 
+test('xenesis MCP install draft capabilities are registered and dispatch to the adapter', async () => {
+  const statusCapability = findDeskBridgeCapability('xd.xenesis.tools.mcpInstallDrafts.status');
+  const openCapability = findDeskBridgeCapability('xd.xenesis.tools.mcpInstallDrafts.open');
+  const requestCapability = findDeskBridgeCapability('xd.xenesis.tools.mcpInstallDrafts.request');
+  const statusSchemaProperties = (statusCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const requestSchemaProperties = (requestCapability?.schema?.properties ?? {}) as Record<string, any>;
+
+  assert.equal(statusCapability?.permission, 'read');
+  assert.equal(statusCapability?.approval, 'never');
+  assert.equal(openCapability?.permission, 'control');
+  assert.equal(openCapability?.approval, 'never');
+  assert.deepEqual(openCapability?.schema?.required, ['id']);
+  assert.equal(requestCapability?.permission, 'write');
+  assert.equal(requestCapability?.approval, 'when-external');
+  assert.deepEqual(requestCapability?.schema?.required, ['id']);
+  for (const tool of ['fetch', 'github', 'notion', 'linear', 'google-calendar']) {
+    assert.equal(statusSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by status`);
+    assert.equal(statusSchemaProperties.tool?.enum.includes(tool), true, `${tool} should be accepted by status alias`);
+    assert.equal(openSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by open`);
+    assert.equal(requestSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by request`);
+  }
+
+  const calls: Array<{ method: string; args: unknown }> = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisToolMcpInstallDraftsStatus: (args) => {
+      calls.push({ method: 'status', args });
+      return {
+        ok: true,
+        items: [{ id: 'notion', draftStatus: 'ready' }],
+      };
+    },
+    openXenesisToolMcpInstallDraft: (args) => {
+      calls.push({ method: 'open', args });
+      return {
+        ok: true,
+        item: { id: 'notion', draftStatus: 'ready' },
+      };
+    },
+    requestXenesisToolMcpInstallDraft: (args) => {
+      calls.push({ method: 'request', args });
+      return {
+        ok: true,
+        id: 'notion',
+        actionInboxItem: { id: 'mcp-install-notion' },
+      };
+    },
+  };
+
+  const statusResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.tools.mcpInstallDrafts.status',
+    args: { tool: 'notion' },
+    source: 'xenesis',
+  });
+  const openResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.tools.mcpInstallDrafts.open',
+    args: { id: 'notion' },
+    source: 'xenesis',
+  });
+  const requestResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.tools.mcpInstallDrafts.request',
+    args: { id: 'notion' },
+    source: 'xenesis',
+    approved: true,
+  });
+
+  assert.equal(statusResult.ok, true);
+  assert.equal(openResult.ok, true);
+  assert.equal(requestResult.ok, true);
+  assert.deepEqual(calls, [
+    { method: 'status', args: { tool: 'notion' } },
+    { method: 'open', args: { id: 'notion' } },
+    { method: 'request', args: { id: 'notion' } },
+  ]);
+  assert.deepEqual(statusResult.result, {
+    ok: true,
+    items: [{ id: 'notion', draftStatus: 'ready' }],
+  });
+  assert.deepEqual(openResult.result, {
+    ok: true,
+    item: { id: 'notion', draftStatus: 'ready' },
+  });
+  assert.deepEqual(requestResult.result, {
+    ok: true,
+    id: 'notion',
+    actionInboxItem: { id: 'mcp-install-notion' },
+  });
+});
+
 test('xenesis messenger view capabilities are registered and dispatch to the adapter', async () => {
   const statusCapability = findDeskBridgeCapability('xd.xenesis.messengers.views.status');
   const openCapability = findDeskBridgeCapability('xd.xenesis.messengers.views.open');

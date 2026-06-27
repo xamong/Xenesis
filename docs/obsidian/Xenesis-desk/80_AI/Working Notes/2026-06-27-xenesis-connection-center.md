@@ -205,6 +205,43 @@ Capability Registry instead of only through separate renderer settings panels.
   after preserving review fields through the setup request dispatcher contract
   with 22/22 tests.
 
+## Current MCP Install Drafts Slice
+
+- Add `mcpInstallDraft` metadata to Connection Center tool cards in
+  `xd.xenesis.connections.status`.
+- Add `xd.xenesis.tools.mcpInstallDrafts.status` as a read/no-approval CR path
+  for draft status, server name, transport, missing env names, config targets,
+  copy snippets, read/control paths, diagnostics, blocked actions, and safety
+  boundaries.
+- Add `xd.xenesis.tools.mcpInstallDrafts.open` as a control/no-approval CR path
+  that opens Settings > Xenesis Agent > Connections and focuses the owning tool
+  card.
+- Add `xd.xenesis.tools.mcpInstallDrafts.request` as a write/when-external CR
+  path that records a local Desk Action Inbox item of kind
+  `xenesis-mcp-install-draft`.
+- Fetch, Filesystem, GitHub, Notion, and Linear use the existing recommended MCP
+  templates. GitHub/Notion report `missing-env` when their env-token names are
+  absent; Linear stays an OAuth hosted endpoint draft.
+- Google Workspace and Google Calendar remain `planned` with no fake server
+  name or config snippet until a verified MCP/OAuth template exists.
+- Settings renders the same read model with
+  `data-xenesis-mcp-install-draft="<tool-id>"` and a card-level MCP draft
+  review request action.
+- This surface records review-only draft requests. It does not write MCP
+  config, run shell commands, complete OAuth, store tokens, execute provider
+  tools, send messages, mutate settings, or bypass approvals.
+- External documentation handling for this slice: no per-slice web browsing.
+  Use local Obsidian/docs/handoff/code as the gap map; refresh external docs
+  only as a batched documentation pass if needed.
+- `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+  failed first with 5 expected RED failures, then passed after implementation
+  with 98/98 tests.
+- Live Electron smoke verified `xd.xenesis.tools.mcpInstallDrafts.status` for
+  Notion, `xd.xenesis.tools.mcpInstallDrafts.request` for Linear, Action Inbox
+  readback for `xenesis-mcp-install-draft:linear`, rendered Settings selector
+  `data-xenesis-mcp-install-draft="notion"`, and Agent-pane fenced CR execution
+  matching `Desk action completed`.
+
 ## Current Verification
 
 - `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
