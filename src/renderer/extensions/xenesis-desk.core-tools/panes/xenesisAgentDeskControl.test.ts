@@ -275,6 +275,12 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.match(source, /XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS/);
   assert.match(source, /XENESIS_NATURAL_PLAN_VISIBLE_TEXT/);
   assert.doesNotMatch(source, /naturalPlan\((?:'|`)/);
+  assert.match(source, /XENESIS_NATURAL_EXTRACTION_PATTERNS/);
+  assert.doesNotMatch(source, /match\(\/\\d\+\//);
+  assert.doesNotMatch(source, /const quotedPattern =/);
+  assert.doesNotMatch(source, /\[a-z\]:\\\\/);
+  assert.doesNotMatch(source, /탐색기\|파일\|폴더\|필터/);
+  assert.doesNotMatch(source, /terminal\\s\+run/);
   assert.match(source, /naturalCoreToolOpenAction/);
   assert.match(source, /naturalViewOpenAction/);
   assert.equal([...source.matchAll(/return naturalAction\(/g)].length, 2);

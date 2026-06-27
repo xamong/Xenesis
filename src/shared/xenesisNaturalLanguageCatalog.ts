@@ -39,6 +39,20 @@ export interface XenesisNaturalDeskActionTemplateDescriptor<TArgs extends unknow
   reasonFor: (...args: TArgs) => string;
 }
 
+export const XENESIS_NATURAL_EXTRACTION_PATTERNS = {
+  filterQueryWords:
+    /탐색기|파일|폴더|필터|검색|찾아|보여|표시|걸어줘|걸어|적용|에서|에|로|set|filter|search|find|explorer/gi,
+  firstInteger: /\d+/,
+  localUnixPath: /(?:\.{1,2}|~|\/)[^\s"'`]+/,
+  localWindowsPath: /[a-z]:\\[^\s"'`]+(?:\s+[^\s"'`]+)*/i,
+  normalizedWhitespace: /\s+/g,
+  quotedText: /["'“”‘’`](.+?)["'“”‘’`]/g,
+  terminalCommandPrefix: /^.*?(?:터미널에서|terminal\s+run|terminal에서|terminal)\s*/i,
+  terminalCommandSuffix: /(?:실행해줘|실행해|실행|돌려줘|돌려|run|execute|start).*$/i,
+  terminalCommandTrim: /^[\s:：-]+|[\s.。]+$/g,
+  trailingPathPunctuation: /[.,;]+$/,
+} as const;
+
 export const XENESIS_NATURAL_PLAN_VISIBLE_TEXT = {
   activeDockClose: '현재 도킹 콘텐츠를 닫습니다.',
   activeDockFocus: '현재 도킹 콘텐츠에 포커스를 맞춥니다.',

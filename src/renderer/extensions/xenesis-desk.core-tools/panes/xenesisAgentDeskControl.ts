@@ -56,6 +56,7 @@ import {
   XENESIS_NATURAL_EXPLORER_HIDE_CONTEXT_WORDS,
   XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_WORDS,
   XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_WORDS,
+  XENESIS_NATURAL_EXTRACTION_PATTERNS,
   XENESIS_NATURAL_FAVORITES_CONTEXT_WORDS,
   XENESIS_NATURAL_FILE_CONTEXT_WORDS,
   XENESIS_NATURAL_FILE_LIST_CONTEXT_WORDS,
@@ -232,7 +233,7 @@ type XenesisDeskArrangeMode = 'row' | 'column' | 'grid';
 function normalizeNaturalLanguageText(value: string): string {
   return String(value || '')
     .normalize('NFKC')
-    .replace(/\s+/g, ' ')
+    .replace(EXTRACTION_PATTERNS.normalizedWhitespace, ' ')
     .trim()
     .toLowerCase();
 }
@@ -292,6 +293,7 @@ function naturalViewOpenAction(
 }
 
 const DESK_ACTIONS = XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS;
+const EXTRACTION_PATTERNS = XENESIS_NATURAL_EXTRACTION_PATTERNS;
 const CONNECTION_AGGREGATE_OPEN_ACTIONS = XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_ACTION_DESCRIPTORS;
 const CONNECTION_AGGREGATE_STATUS_ACTIONS = XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS;
 const CONNECTION_TARGET_OPEN_ACTIONS = XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS;
@@ -341,7 +343,7 @@ function detectWindowSizerPreset(value: string): string | undefined {
 }
 
 function extractFirstInteger(value: string, min = 1, max = 100): number | undefined {
-  const match = String(value || '').match(/\d+/);
+  const match = String(value || '').match(EXTRACTION_PATTERNS.firstInteger);
   if (!match) return undefined;
   const parsed = Number.parseInt(match[0] || '', 10);
   if (!Number.isFinite(parsed)) return undefined;
@@ -365,17 +367,14 @@ function detectArrangeMode(value: string): XenesisDeskArrangeMode | undefined {
 }
 
 function stripQuotedText(value: string): string {
-  return String(value || '').replace(/["'“”‘’`](.+?)["'“”‘’`]/g, ' ');
+  return String(value || '').replace(EXTRACTION_PATTERNS.quotedText, ' ');
 }
 
 function extractQuotedTexts(value: string): string[] {
   const texts: string[] = [];
-  const quotedPattern = /["'“”‘’`](.+?)["'“”‘’`]/g;
-  let match = quotedPattern.exec(String(value || ''));
-  while (match) {
+  for (const match of String(value || '').matchAll(EXTRACTION_PATTERNS.quotedText)) {
     const quoted = match[1]?.trim();
     if (quoted) texts.push(quoted);
-    match = quotedPattern.exec(String(value || ''));
   }
   return texts;
 }
@@ -387,21 +386,18 @@ function extractQuotedText(value: string): string {
 function extractLocalPath(value: string): string {
   const quoted = extractQuotedText(value);
   if (quoted) return quoted;
-  const windowsPath = value.match(/[a-z]:\\[^\s"'`]+(?:\s+[^\s"'`]+)*/i);
-  if (windowsPath?.[0]) return windowsPath[0].trim().replace(/[.,;]+$/, '');
-  const unixPath = value.match(/(?:\.{1,2}|~|\/)[^\s"'`]+/);
-  return unixPath?.[0]?.trim().replace(/[.,;]+$/, '') || '';
+  const windowsPath = value.match(EXTRACTION_PATTERNS.localWindowsPath);
+  if (windowsPath?.[0]) return windowsPath[0].trim().replace(EXTRACTION_PATTERNS.trailingPathPunctuation, '');
+  const unixPath = value.match(EXTRACTION_PATTERNS.localUnixPath);
+  return unixPath?.[0]?.trim().replace(EXTRACTION_PATTERNS.trailingPathPunctuation, '') || '';
 }
 
 function extractFilterQuery(value: string): string {
   const quoted = extractQuotedText(value);
   if (quoted) return quoted;
   const cleaned = value
-    .replace(
-      /탐색기|파일|폴더|필터|검색|찾아|보여|표시|걸어줘|걸어|적용|에서|에|로|set|filter|search|find|explorer/gi,
-      ' ',
-    )
-    .replace(/\s+/g, ' ')
+    .replace(EXTRACTION_PATTERNS.filterQueryWords, ' ')
+    .replace(EXTRACTION_PATTERNS.normalizedWhitespace, ' ')
     .trim();
   const parts = cleaned.split(' ').filter(Boolean);
   return parts[parts.length - 1] || cleaned;
@@ -411,9 +407,9 @@ function extractTerminalCommand(rawText: string): string {
   const quoted = extractQuotedText(rawText);
   if (quoted) return quoted;
   return String(rawText || '')
-    .replace(/^.*?(?:터미널에서|terminal\s+run|terminal에서|terminal)\s*/i, '')
-    .replace(/(?:실행해줘|실행해|실행|돌려줘|돌려|run|execute|start).*$/i, '')
-    .replace(/^[\s:：-]+|[\s.。]+$/g, '')
+    .replace(EXTRACTION_PATTERNS.terminalCommandPrefix, '')
+    .replace(EXTRACTION_PATTERNS.terminalCommandSuffix, '')
+    .replace(EXTRACTION_PATTERNS.terminalCommandTrim, '')
     .trim();
 }
 
