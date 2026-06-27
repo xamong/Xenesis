@@ -5318,7 +5318,13 @@ async function getXenesisChannelAccessGroupsStatus(args?: unknown): Promise<Reco
   };
 }
 
-const XENESIS_GUIDE_IDS = ['onboarding-connections', 'cr-mcp-gateway-bots', 'agent-user-stories'] as const;
+const XENESIS_GUIDE_IDS = [
+  'onboarding-connections',
+  'cr-mcp-gateway-bots',
+  'openclaw-channel-setup',
+  'external-tool-integrations',
+  'agent-user-stories',
+] as const;
 
 function isXenesisGuideId(value: string): value is (typeof XENESIS_GUIDE_IDS)[number] {
   return (XENESIS_GUIDE_IDS as readonly string[]).includes(value);

@@ -1081,7 +1081,13 @@ test('xenesis guide catalog capabilities are registered and dispatch to the adap
   assert.deepEqual(openCapability?.schema?.required, ['id']);
   assert.equal(openSchemaProperties.openFile?.type, 'boolean');
   assert.equal(openSchemaProperties.openFile?.default, false);
-  for (const guide of ['onboarding-connections', 'cr-mcp-gateway-bots', 'agent-user-stories']) {
+  for (const guide of [
+    'onboarding-connections',
+    'cr-mcp-gateway-bots',
+    'openclaw-channel-setup',
+    'external-tool-integrations',
+    'agent-user-stories',
+  ]) {
     assert.equal(statusSchemaProperties.id?.enum.includes(guide), true, `${guide} should be accepted by status`);
     assert.equal(openSchemaProperties.id?.enum.includes(guide), true, `${guide} should be accepted by open`);
   }

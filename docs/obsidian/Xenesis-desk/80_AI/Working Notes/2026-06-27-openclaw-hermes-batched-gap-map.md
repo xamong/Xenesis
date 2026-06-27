@@ -163,6 +163,24 @@
   gateway lifecycle actions, channel delivery, settings mutation, credential
   storage, or approval bypasses.
 
+## Guide Id Parity Slice
+
+- Fixed guide catalog id parity for the repo-local OpenClaw/Hermes guide cards:
+  - `openclaw-channel-setup`
+  - `external-tool-integrations`
+- These guide cards already existed in `XENESIS_CONNECTION_GUIDES`, and the
+  Agent natural-language planner already emitted those ids for prompts such as:
+  - `오픈클로 채널 가이드 파일 열어줘`
+  - `외부 도구 통합 가이드 상태 보여줘`
+- The CR schema and main-process guide allowlist now accept those ids for:
+  - `xd.xenesis.guides.status`
+  - `xd.xenesis.guides.open`
+- Scope boundary: this slice did not add guides, mutate guide contents, change
+  dispatcher paths, install MCP servers, complete OAuth, enable messenger
+  delivery, start the gateway, or bypass approvals.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local code, and tests.
+
 ## Provider Alias Coverage Slice
 
 - Expanded Xenesis Agent natural-language provider target resolution for the

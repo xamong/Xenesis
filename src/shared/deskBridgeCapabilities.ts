@@ -288,7 +288,13 @@ const XENESIS_ONBOARDING_OPEN_SCHEMA = {
   },
 } as const;
 
-const XENESIS_GUIDE_IDS = ['onboarding-connections', 'cr-mcp-gateway-bots', 'agent-user-stories'] as const;
+const XENESIS_GUIDE_IDS = [
+  'onboarding-connections',
+  'cr-mcp-gateway-bots',
+  'openclaw-channel-setup',
+  'external-tool-integrations',
+  'agent-user-stories',
+] as const;
 
 const XENESIS_GUIDE_STATUS_SCHEMA = {
   type: 'object',
