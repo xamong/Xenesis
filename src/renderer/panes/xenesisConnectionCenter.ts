@@ -14,6 +14,7 @@ import type {
   XenesisConnectionProviderSetupTemplate,
   XenesisConnectionProviderViewTemplate,
   XenesisConnectionSection,
+  XenesisConnectionSetupRequestTemplate,
   XenesisConnectionStatus,
   XenesisConnectionsStatus,
   XenesisConnectionToolConnectorTemplate,
@@ -139,6 +140,10 @@ export function formatXenesisConnectionDiagnosticRunbookSummary(
   return `${runbook.readiness} / ${runbook.steps.length} diagnostic step(s)`;
 }
 
+export function formatXenesisConnectionSetupRequestSummary(request: XenesisConnectionSetupRequestTemplate): string {
+  return `${request.requestType} / ${request.readiness} / ${request.steps.length} setup step(s)`;
+}
+
 export function buildXenesisConnectionSettingsRequest(
   item: XenesisConnectionItem,
 ): McpBridgeCapabilityCallRequest | null {
@@ -162,6 +167,20 @@ export function buildXenesisConnectionOpenRequest(item: XenesisConnectionItem): 
     args: {
       id: item.id,
       ensureVisible: true,
+    },
+    source: 'xenesis',
+    approved: true,
+  };
+}
+
+export function buildXenesisConnectionSetupRequestRequest(
+  item: XenesisConnectionItem,
+): McpBridgeCapabilityCallRequest | null {
+  if (!item.setupRequest) return null;
+  return {
+    path: 'xd.xenesis.connections.setupRequests.request',
+    args: {
+      id: item.id,
     },
     source: 'xenesis',
     approved: true,

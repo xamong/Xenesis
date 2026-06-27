@@ -88,12 +88,14 @@ import {
   buildXenesisConnectionGuideRequest,
   buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
+  buildXenesisConnectionSetupRequestRequest,
   formatXenesisChannelAccessGroupsSummary,
   formatXenesisChannelPairingSummary,
   formatXenesisChannelRoutingSummary,
   formatXenesisChannelSafetySummary,
   formatXenesisChannelUserStorySummary,
   formatXenesisConnectionDiagnosticRunbookSummary,
+  formatXenesisConnectionSetupRequestSummary,
   formatXenesisGuideCatalogSummary,
   formatXenesisMessengerViewSummary,
   formatXenesisOnboardingPlanSummary,
@@ -4264,6 +4266,7 @@ export default function SettingsPane() {
     const openRequest = buildXenesisConnectionOpenRequest(item);
     const settingsRequest = buildXenesisConnectionSettingsRequest(item);
     const guideRequest = buildXenesisConnectionGuideRequest(item);
+    const setupRequestCall = buildXenesisConnectionSetupRequestRequest(item);
     const mcpTemplate = item.mcpTemplate;
     const onboardingPlan = item.onboardingPlan;
     const providerSetup = item.providerSetup;
@@ -4278,6 +4281,7 @@ export default function SettingsPane() {
     const channelTemplate = item.channelTemplate;
     const channelUserStory = channelTemplate?.userStory;
     const diagnosticRunbook = item.diagnosticRunbook;
+    const setupRequest = item.setupRequest;
     return (
       <div
         className={cls('sp-info-card', focusedXenesisConnectionId === item.id && 'is-focused')}
@@ -4293,7 +4297,7 @@ export default function SettingsPane() {
             {xenesisConnectionStatusLabel(item.status)}
           </span>
         </div>
-        {(openRequest || settingsRequest || guideRequest) && (
+        {(openRequest || settingsRequest || guideRequest || setupRequestCall) && (
           <div className="sp-actions-row sp-actions-row-tight">
             <button
               className="sp-btn-ghost sp-btn-sm"
@@ -4321,6 +4325,16 @@ export default function SettingsPane() {
                 }}
               >
                 {t('settings.xenesisConnectionsOpenGuide')}
+              </button>
+            ) : null}
+            {setupRequestCall ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(setupRequestCall);
+                }}
+              >
+                {t('settings.xenesisConnectionsRequestSetup')}
               </button>
             ) : null}
           </div>
@@ -4402,6 +4416,46 @@ export default function SettingsPane() {
             <div>
               <span>{t('settings.xenesisConnectionsDiagnosticRunbookSafety')}</span>
               <strong>{diagnosticRunbook.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {setupRequest ? (
+          <div className="sp-info-list sp-info-list-compact" data-xenesis-connection-setup-request={item.id}>
+            <div>
+              <span>{t('settings.xenesisConnectionsSetupRequest')}</span>
+              <strong>{formatXenesisConnectionSetupRequestSummary(setupRequest)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsSetupRequestSurface')}</span>
+              <strong>{setupRequest.setupSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsSetupRequestReviewSurface')}</span>
+              <strong>{setupRequest.reviewSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsSetupRequestSteps')}</span>
+              <strong>{setupRequest.steps.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsSetupRequestReadback')}</span>
+              <strong>{setupRequest.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsSetupRequestControls')}</span>
+              <strong>{setupRequest.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsSetupRequestDiagnostics')}</span>
+              <strong>{setupRequest.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsSetupRequestBlockedActions')}</span>
+              <strong>{setupRequest.blockedActions.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsSetupRequestSafety')}</span>
+              <strong>{setupRequest.safetyBoundaries.join(', ')}</strong>
             </div>
           </div>
         ) : null}

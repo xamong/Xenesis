@@ -63,6 +63,18 @@ focus the owning Connection Center card. This is a read/open planning surface
 only: it does not run checks, install MCP servers, complete OAuth, store tokens,
 execute provider tools, send messages, mutate settings, or bypass approvals.
 
+Connection cards also expose a `setupRequest` template. Use
+`xd.xenesis.connections.setupRequests.status` to inspect setup request
+metadata, or filter by `{ "id": "<connection-id>" }` or `{ "kind": "tool" }`.
+Use `xd.xenesis.connections.setupRequests.open` with
+`{ "id": "<connection-id>" }` to focus the owning card, and
+`xd.xenesis.connections.setupRequests.request` with
+`{ "id": "<connection-id>" }` to record a local Desk Action Inbox item for
+review. This records the request, steps, diagnostics, blocked actions, and
+safety boundaries only. It does not install MCP servers, complete OAuth, store
+tokens, execute provider tools, send messages, mutate provider/tool/channel
+settings, update allowlists, or bypass approvals.
+
 The first section is an ordered onboarding checklist. It is derived from the
 same provider, MCP, tool, gateway, messenger, and guide cards, so it is a
 read-only progress view rather than a separate source of truth. Use it as the

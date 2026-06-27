@@ -1942,6 +1942,59 @@ test('buildXenesisConnectionsStatus exposes diagnostic runbooks for tools, plann
   assert.equal(telegram?.diagnosticRunbook?.controlPaths.includes('xd.xenesis.connections.diagnostics.open'), true);
 });
 
+test('buildXenesisConnectionsStatus exposes setup request templates without executing external work', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+  const calendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+  const telegram = status.sections.messengers.items.find((item) => item.id === 'telegram');
+
+  assert.equal(notion?.setupRequest?.actionInboxKind, 'xenesis-connection-setup');
+  assert.equal(notion?.setupRequest?.readiness, 'action-required');
+  assert.deepEqual(notion?.setupRequest?.blockedActions, [
+    'does not install MCP servers',
+    'does not complete OAuth',
+    'does not store tokens',
+    'does not execute provider tools',
+    'does not mutate provider/tool/channel settings',
+    'does not send messages',
+  ]);
+  assert.equal(notion?.setupRequest?.controlPaths.includes('xd.xenesis.connections.setupRequests.request'), true);
+  assert.equal(notion?.setupRequest?.readPaths.includes('xd.xenesis.connections.diagnostics.status'), true);
+
+  assert.equal(calendar?.setupRequest?.readiness, 'planned');
+  assert.match(calendar?.setupRequest?.description ?? '', /planned OAuth/i);
+
+  assert.equal(telegram?.setupRequest?.requestType, 'messenger-setup');
+  assert.equal(telegram?.setupRequest?.readPaths.includes('xd.xenesis.channels.pairing.status'), true);
+});
+
 test('buildXenesisConnectionsStatus reports missing setup without leaking secrets', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {

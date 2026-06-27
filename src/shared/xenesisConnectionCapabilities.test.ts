@@ -947,6 +947,85 @@ test('xenesis connection diagnostic runbook capabilities are registered and disp
   });
 });
 
+test('xenesis connection setup request capabilities are registered and dispatch to the adapter', async () => {
+  const statusCapability = findDeskBridgeCapability('xd.xenesis.connections.setupRequests.status');
+  const openCapability = findDeskBridgeCapability('xd.xenesis.connections.setupRequests.open');
+  const requestCapability = findDeskBridgeCapability('xd.xenesis.connections.setupRequests.request');
+  assert.equal(statusCapability?.permission, 'read');
+  assert.equal(statusCapability?.approval, 'never');
+  assert.equal(openCapability?.permission, 'control');
+  assert.equal(openCapability?.approval, 'never');
+  assert.deepEqual(openCapability?.schema?.required, ['id']);
+  assert.equal(requestCapability?.permission, 'write');
+  assert.equal(requestCapability?.approval, 'when-external');
+  assert.deepEqual(requestCapability?.schema?.required, ['id']);
+
+  const calls: Array<{ method: string; args: unknown }> = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisConnectionSetupRequestsStatus: (args) => {
+      calls.push({ method: 'status', args });
+      return {
+        ok: true,
+        items: [{ id: 'notion' }],
+      };
+    },
+    openXenesisConnectionSetupRequest: (args) => {
+      calls.push({ method: 'open', args });
+      return {
+        ok: true,
+        item: { id: 'notion' },
+      };
+    },
+    requestXenesisConnectionSetup: (args) => {
+      calls.push({ method: 'request', args });
+      return {
+        ok: true,
+        id: 'notion',
+        actionInboxItem: { id: 'setup-notion' },
+      };
+    },
+  };
+
+  const statusResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.connections.setupRequests.status',
+    args: { id: 'notion' },
+    source: 'xenesis',
+  });
+  const openResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.connections.setupRequests.open',
+    args: { id: 'notion' },
+    source: 'xenesis',
+  });
+  const requestResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.connections.setupRequests.request',
+    args: { id: 'notion' },
+    source: 'xenesis',
+    approved: true,
+  });
+
+  assert.equal(statusResult.ok, true);
+  assert.equal(openResult.ok, true);
+  assert.equal(requestResult.ok, true);
+  assert.deepEqual(calls, [
+    { method: 'status', args: { id: 'notion' } },
+    { method: 'open', args: { id: 'notion' } },
+    { method: 'request', args: { id: 'notion' } },
+  ]);
+  assert.deepEqual(statusResult.result, {
+    ok: true,
+    items: [{ id: 'notion' }],
+  });
+  assert.deepEqual(openResult.result, {
+    ok: true,
+    item: { id: 'notion' },
+  });
+  assert.deepEqual(requestResult.result, {
+    ok: true,
+    id: 'notion',
+    actionInboxItem: { id: 'setup-notion' },
+  });
+});
+
 test('xenesis profile channel capabilities expose implemented guardrail fields', () => {
   const updateSchema = findDeskBridgeCapability('xd.xenesis.profiles.updateChannels')?.schema;
   const testSchema = findDeskBridgeCapability('xd.xenesis.profiles.testChannel')?.schema;

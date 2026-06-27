@@ -33,6 +33,8 @@ export type {
   XenesisConnectionProviderSetupTemplate,
   XenesisConnectionProviderViewTemplate,
   XenesisConnectionSection,
+  XenesisConnectionSetupRequestTemplate,
+  XenesisConnectionSetupRequestType,
   XenesisConnectionStatus,
   XenesisConnectionsStatus,
   XenesisConnectionToolConnectorCredentialRef,

@@ -156,8 +156,32 @@ Capability Registry instead of only through separate renderer settings panels.
 - Settings renders the same read model with
   `data-xenesis-messenger-view="<id>"` for live smoke and agent readback.
 
+## Current Connection Setup Requests Slice
+
+- Add `setupRequest` metadata to Connection Center cards in
+  `xd.xenesis.connections.status`.
+- Add `xd.xenesis.connections.setupRequests.status` as a read/no-approval CR
+  path for setup request type, readiness, setup surface, review surface, steps,
+  read/control paths, diagnostics, blocked actions, and safety boundaries.
+- Add `xd.xenesis.connections.setupRequests.open` as a control/no-approval CR
+  path that opens Settings > Xenesis Agent > Connections and focuses the
+  requested card.
+- Add `xd.xenesis.connections.setupRequests.request` as a write/when-external CR
+  path that records a local Desk Action Inbox item of kind
+  `xenesis-connection-setup`.
+- Settings renders the same read model with
+  `data-xenesis-connection-setup-request="<id>"` and a card-level setup request
+  action.
+- This surface records setup-review requests only. It does not install MCP
+  servers, complete OAuth, store tokens, execute provider tools, send messages,
+  mutate provider/tool/channel settings, update allowlists, or bypass approvals.
+
 ## Current Verification
 
+- `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+  failed first with 5 expected RED failures for missing setup request metadata,
+  CR paths, renderer helper/formatter, and Agent hint coverage, then passed
+  after implementation with 92/92 tests.
 - `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
   passed for the recipe model, absolute guide-open path regression, and renderer
   request helpers.

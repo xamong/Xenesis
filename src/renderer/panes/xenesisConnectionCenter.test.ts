@@ -5,12 +5,14 @@ import {
   buildXenesisConnectionGuideRequest,
   buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
+  buildXenesisConnectionSetupRequestRequest,
   formatXenesisChannelAccessGroupsSummary,
   formatXenesisChannelPairingSummary,
   formatXenesisChannelRoutingSummary,
   formatXenesisChannelSafetySummary,
   formatXenesisChannelUserStorySummary,
   formatXenesisConnectionDiagnosticRunbookSummary,
+  formatXenesisConnectionSetupRequestSummary,
   formatXenesisGuideCatalogSummary,
   formatXenesisMessengerViewSummary,
   formatXenesisOnboardingPlanSummary,
@@ -134,6 +136,40 @@ test('buildXenesisConnectionSettingsRequest opens the configured settings target
       mode: 'local',
       section: 'local-cli',
       ensureVisible: true,
+    },
+    source: 'xenesis',
+    approved: true,
+  });
+});
+
+test('buildXenesisConnectionSetupRequestRequest records setup review through CR', () => {
+  const item = {
+    id: 'notion',
+    kind: 'tool',
+    label: 'Notion',
+    status: 'needs-setup',
+    summary: 'Notion setup',
+    setupRequest: {
+      requestType: 'tool-setup',
+      actionInboxKind: 'xenesis-connection-setup',
+      readiness: 'action-required',
+      title: 'Review Notion setup request',
+      description: 'Review setup request for Notion.',
+      setupSurface: 'Settings > Xenesis Agent > Connections',
+      reviewSurface: 'Action Inbox',
+      steps: ['Create token', 'Paste env name'],
+      readPaths: ['xd.xenesis.connections.setupRequests.status'],
+      controlPaths: ['xd.xenesis.connections.setupRequests.request'],
+      diagnostics: ['notion-search-read'],
+      blockedActions: ['does not store tokens'],
+      safetyBoundaries: ['records a local Action Inbox request only'],
+    },
+  } satisfies XenesisConnectionItem;
+
+  assert.deepEqual(buildXenesisConnectionSetupRequestRequest(item), {
+    path: 'xd.xenesis.connections.setupRequests.request',
+    args: {
+      id: 'notion',
     },
     source: 'xenesis',
     approved: true,
@@ -315,6 +351,27 @@ test('formatXenesisConnectionDiagnosticRunbookSummary describes readiness and st
       safetyBoundaries: ['diagnostic runbooks are read/open planning surfaces'],
     }),
     'action-required / 2 diagnostic step(s)',
+  );
+});
+
+test('formatXenesisConnectionSetupRequestSummary describes request type, readiness, and step count', () => {
+  assert.equal(
+    formatXenesisConnectionSetupRequestSummary({
+      requestType: 'tool-setup',
+      actionInboxKind: 'xenesis-connection-setup',
+      readiness: 'action-required',
+      title: 'Review Notion setup request',
+      description: 'Review setup request for Notion.',
+      setupSurface: 'Settings > Xenesis Agent > Connections',
+      reviewSurface: 'Action Inbox',
+      steps: ['Create token', 'Paste env name'],
+      readPaths: ['xd.xenesis.connections.setupRequests.status'],
+      controlPaths: ['xd.xenesis.connections.setupRequests.request'],
+      diagnostics: ['notion-search-read'],
+      blockedActions: ['does not store tokens'],
+      safetyBoundaries: ['records a local Action Inbox request only'],
+    }),
+    'tool-setup / action-required / 2 setup step(s)',
   );
 });
 

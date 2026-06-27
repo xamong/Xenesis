@@ -108,17 +108,17 @@ import type {
   McpBridgeBotEvent,
   McpBridgeBotSession,
   McpBridgeBotSessionSaveResult,
-  McpBridgeCapabilityCallRequest,
-  McpBridgeCapabilityCallResult,
+  McpBridgeBrowserActionPayload,
+  McpBridgeBrowserActionResult,
   McpBridgeCapabilityApprovalRememberEntry,
   McpBridgeCapabilityApprovalRememberResult,
+  McpBridgeCapabilityCallRequest,
+  McpBridgeCapabilityCallResult,
   McpBridgeCaptureActivePanePayload,
   McpBridgeCaptureActivePaneResult,
   McpBridgeDemoLabPlaybackControlAction,
   McpBridgeDemoLabPlaybackControlPayload,
   McpBridgeDemoLabPlaybackControlResult,
-  McpBridgeBrowserActionPayload,
-  McpBridgeBrowserActionResult,
   McpBridgeDockActionPayload,
   McpBridgeDockActionResult,
   McpBridgeExplorerActionPayload,
@@ -273,8 +273,8 @@ import {
   type XenesisConnectionKind,
   type XenesisConnectionsStatus,
 } from '../shared/xenesisConnections';
-import { createAppControlService } from './appControl/appControlService';
 import { createAgentControlLockManager } from './agentControlLock';
+import { createAppControlService } from './appControl/appControlService';
 import { createAuditLogger } from './audit/auditLogger';
 import { AutomationController } from './automation/automationController';
 import { JsonlAutomationEventLogSink } from './automation/automationEventLog';
@@ -4907,6 +4907,145 @@ async function openXenesisConnectionDiagnosticRunbook(args?: unknown): Promise<R
     id: item.id,
     item: xenesisConnectionDiagnosticRunbookStatusItem(item),
     renderer,
+  };
+}
+
+function xenesisConnectionSetupRequestStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    kind: item.kind,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    readiness: item.setupRequest?.readiness,
+    requestType: item.setupRequest?.requestType,
+    actionInboxKind: item.setupRequest?.actionInboxKind,
+    title: item.setupRequest?.title,
+    description: item.setupRequest?.description,
+    setupSurface: item.setupRequest?.setupSurface,
+    reviewSurface: item.setupRequest?.reviewSurface,
+    steps: item.setupRequest?.steps ?? [],
+    readPaths: item.setupRequest?.readPaths ?? [],
+    controlPaths: item.setupRequest?.controlPaths ?? [],
+    diagnostics: item.setupRequest?.diagnostics ?? [],
+    blockedActions: item.setupRequest?.blockedActions ?? [],
+    safetyBoundaries: item.setupRequest?.safetyBoundaries ?? [],
+    setupRequest: item.setupRequest,
+    diagnosticRunbook: item.diagnosticRunbook,
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisConnectionSetupRequestsStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'connection', 'connectionId', 'name']);
+  const kind = readCapabilityString(body, ['kind', 'scope']);
+  if (kind && !isXenesisConnectionKind(kind)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis connection kind: ${kind}`,
+      allowedKinds: XENESIS_CONNECTION_KINDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = listXenesisConnectionItems(status)
+    .filter((item) => item.setupRequest)
+    .filter((item) => !id || item.id === id)
+    .filter((item) => !kind || item.kind === kind)
+    .map((item) => xenesisConnectionSetupRequestStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    ...(kind ? { kind } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisConnectionSetupRequest(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'connection', 'connectionId', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Connection id is required.' };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = listXenesisConnectionItems(status).find((candidate) => candidate.id === id && candidate.setupRequest);
+  if (!item) {
+    return { ok: false, id, error: `Xenesis connection setup request is not available: ${id}` };
+  }
+
+  const renderer = await openMcpBuiltinPaneCapability({
+    kind: 'settings',
+    category: 'xenesis-agent',
+    mode: 'connections',
+    section: 'xenesis-connections',
+    focusConnectionId: item.id,
+    ensureVisible: body.ensureVisible !== false,
+  });
+
+  return {
+    ok: renderer.ok !== false,
+    id: item.id,
+    item: xenesisConnectionSetupRequestStatusItem(item),
+    renderer,
+  };
+}
+
+async function requestXenesisConnectionSetup(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'connection', 'connectionId', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Connection id is required.' };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = listXenesisConnectionItems(status).find((candidate) => candidate.id === id && candidate.setupRequest);
+  if (!item?.setupRequest) {
+    return { ok: false, id, error: `Xenesis connection setup request is not available: ${id}` };
+  }
+
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+  const requester = readCapabilityString(body, ['requester', 'user', 'userName']) || 'Xenesis Desk';
+  const description = [
+    item.setupRequest.description,
+    '',
+    'Steps:',
+    ...item.setupRequest.steps.map((step) => `- ${step}`),
+    '',
+    'Blocked actions:',
+    ...item.setupRequest.blockedActions.map((action) => `- ${action}`),
+    note ? '' : undefined,
+    note ? `Note: ${note}` : undefined,
+  ]
+    .filter((line): line is string => typeof line === 'string')
+    .join('\n');
+
+  const actionInboxItem = recordMcpActionInboxRequest({
+    kind: item.setupRequest.actionInboxKind,
+    title: item.setupRequest.title,
+    command: `Review setup request for ${item.id}`,
+    description,
+    source: 'Xenesis Connection Center',
+    sessionId: 'xenesis-connection-setup',
+    approvalSessionKey: `xenesis-connection-setup:${item.id}`,
+    requester,
+    risk: item.setupRequest.readiness,
+    approveText: `Approve setup request for ${item.label}`,
+    rejectText: `Reject setup request for ${item.label}`,
+  });
+
+  return {
+    ok: true,
+    id: item.id,
+    item: xenesisConnectionSetupRequestStatusItem(item),
+    actionInboxItem,
   };
 }
 
@@ -13052,9 +13191,11 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisStatus: () =>
       getXenesisStatusPayload().then((status) => ({ ok: true, status: redactXenesisStatusForCapability(status) })),
     getXenesisConnectionsStatus: () => getXenesisConnectionsStatus().then((status) => ({ ok: true, status })),
-    getXenesisConnectionDiagnosticRunbooksStatus: (args: unknown) =>
-      getXenesisConnectionDiagnosticRunbooksStatus(args),
+    getXenesisConnectionDiagnosticRunbooksStatus: (args: unknown) => getXenesisConnectionDiagnosticRunbooksStatus(args),
     openXenesisConnectionDiagnosticRunbook: (args: unknown) => openXenesisConnectionDiagnosticRunbook(args),
+    getXenesisConnectionSetupRequestsStatus: (args: unknown) => getXenesisConnectionSetupRequestsStatus(args),
+    openXenesisConnectionSetupRequest: (args: unknown) => openXenesisConnectionSetupRequest(args),
+    requestXenesisConnectionSetup: (args: unknown) => requestXenesisConnectionSetup(args),
     getXenesisOnboardingStatus: (args: unknown) => getXenesisOnboardingStatus(args),
     openXenesisOnboardingStep: (args: unknown) => openXenesisOnboardingStep(args),
     getXenesisChannelRoutingStatus: (args: unknown) => getXenesisChannelRoutingStatus(args),

@@ -219,6 +219,35 @@ const XENESIS_CONNECTION_DIAGNOSTIC_STATUS_SCHEMA = {
   },
 } as const;
 
+const XENESIS_CONNECTION_SETUP_REQUEST_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Connection id',
+      description: 'Connection Center item id to record as a reviewed setup request.',
+      examples: ['notion', 'google-calendar', 'telegram'],
+    },
+    connection: {
+      type: 'string',
+      title: 'Connection alias',
+      description: 'Alias for id.',
+      examples: ['notion', 'google-calendar', 'telegram'],
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity to include on the Action Inbox item.',
+    },
+    note: {
+      type: 'string',
+      title: 'Review note',
+      description: 'Optional note to append to the setup request description.',
+    },
+  },
+} as const;
+
 const XENESIS_ONBOARDING_STEP_IDS = [
   'first-chat',
   'local-cli-mcp',
@@ -870,6 +899,9 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisConnectionsStatus?: () => Promise<unknown> | unknown;
   getXenesisConnectionDiagnosticRunbooksStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisConnectionDiagnosticRunbook?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisConnectionSetupRequestsStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisConnectionSetupRequest?: (args?: unknown) => Promise<unknown> | unknown;
+  requestXenesisConnectionSetup?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisOnboardingStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisOnboardingStep?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisChannelRoutingStatus?: (args?: unknown) => Promise<unknown> | unknown;
@@ -3856,6 +3888,34 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               'Open Settings > Xenesis Agent > Connections and focus the card that owns one diagnostic runbook.',
               'control',
               XENESIS_CONNECTION_OPEN_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.connections.setupRequests',
+          'Connection setup requests',
+          'Read/open setup request templates and record reviewed setup requests for Connection Center cards.',
+          [
+            method(
+              'xd.xenesis.connections.setupRequests.status',
+              'Read connection setup requests',
+              'Read Desk-native setup request templates that can be reviewed before any install, OAuth, token, tool, message, or settings mutation work is performed.',
+              'read',
+              XENESIS_CONNECTION_DIAGNOSTIC_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.connections.setupRequests.open',
+              'Open connection setup request',
+              'Open Settings > Xenesis Agent > Connections and focus the card that owns one setup request template.',
+              'control',
+              XENESIS_CONNECTION_OPEN_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.connections.setupRequests.request',
+              'Request connection setup review',
+              'Record a local Action Inbox item for reviewing a Connection Center setup request without executing installs, OAuth, token storage, provider tools, messages, or settings mutations.',
+              'write',
+              XENESIS_CONNECTION_SETUP_REQUEST_SCHEMA,
             ),
           ],
         ),
@@ -10368,6 +10428,15 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.connections.diagnostics.open') {
         return callAdapter(path, api?.openXenesisConnectionDiagnosticRunbook, request.args);
+      }
+      if (path === 'xd.xenesis.connections.setupRequests.status') {
+        return callAdapter(path, api?.getXenesisConnectionSetupRequestsStatus, request.args);
+      }
+      if (path === 'xd.xenesis.connections.setupRequests.open') {
+        return callAdapter(path, api?.openXenesisConnectionSetupRequest, request.args);
+      }
+      if (path === 'xd.xenesis.connections.setupRequests.request') {
+        return callAdapter(path, api?.requestXenesisConnectionSetup, request.args);
       }
       if (path === 'xd.xenesis.onboarding.status') {
         return callAdapter(path, api?.getXenesisOnboardingStatus, request.args);

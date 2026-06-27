@@ -29,6 +29,15 @@ export type XenesisConnectionDiagnosticRunbookReadiness =
   | 'disabled'
   | 'blocked'
   | 'unknown';
+export type XenesisConnectionSetupRequestType =
+  | 'onboarding-step'
+  | 'provider-setup'
+  | 'local-cli-setup'
+  | 'mcp-setup'
+  | 'gateway-setup'
+  | 'tool-setup'
+  | 'messenger-setup'
+  | 'guide-review';
 
 export interface XenesisConnectionSettingsAction {
   category: string;
@@ -433,6 +442,22 @@ export interface XenesisConnectionDiagnosticRunbookTemplate {
   safetyBoundaries: string[];
 }
 
+export interface XenesisConnectionSetupRequestTemplate {
+  requestType: XenesisConnectionSetupRequestType;
+  actionInboxKind: 'xenesis-connection-setup';
+  readiness: XenesisConnectionDiagnosticRunbookReadiness;
+  title: string;
+  description: string;
+  setupSurface: string;
+  reviewSurface: string;
+  steps: string[];
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  blockedActions: string[];
+  safetyBoundaries: string[];
+}
+
 export interface XenesisConnectionItem {
   id: string;
   kind: XenesisConnectionKind;
@@ -463,6 +488,7 @@ export interface XenesisConnectionItem {
   guideCatalog?: XenesisConnectionGuideCatalogTemplate;
   channelTemplate?: XenesisConnectionChannelTemplate;
   diagnosticRunbook?: XenesisConnectionDiagnosticRunbookTemplate;
+  setupRequest?: XenesisConnectionSetupRequestTemplate;
   warnings?: string[];
 }
 
@@ -2620,6 +2646,15 @@ function uniqueStrings(values: Array<string | null | undefined>): string[] {
   return result;
 }
 
+const XENESIS_CONNECTION_SETUP_REQUEST_BLOCKED_ACTIONS = [
+  'does not install MCP servers',
+  'does not complete OAuth',
+  'does not store tokens',
+  'does not execute provider tools',
+  'does not mutate provider/tool/channel settings',
+  'does not send messages',
+];
+
 function diagnosticRunbookReadiness(status: XenesisConnectionStatus): XenesisConnectionDiagnosticRunbookReadiness {
   if (status === 'needs-setup') return 'action-required';
   return status;
@@ -2952,6 +2987,163 @@ function withXenesisConnectionDiagnosticRunbooks(
     Object.entries(sections).map(([id, section]) => [
       id,
       { ...section, items: section.items.map((item) => withXenesisConnectionDiagnosticRunbook(item)) },
+    ]),
+  ) as XenesisConnectionsStatus['sections'];
+}
+
+function xenesisConnectionSetupRequestType(item: XenesisConnectionItem): XenesisConnectionSetupRequestType {
+  if (item.kind === 'onboarding') return 'onboarding-step';
+  if (item.kind === 'provider') return 'provider-setup';
+  if (item.kind === 'local-cli') return 'local-cli-setup';
+  if (item.kind === 'mcp') return 'mcp-setup';
+  if (item.kind === 'gateway') return 'gateway-setup';
+  if (item.kind === 'messenger') return 'messenger-setup';
+  if (item.kind === 'guide') return 'guide-review';
+  return 'tool-setup';
+}
+
+function setupRequestDiagnosticItems(item: XenesisConnectionItem): string[] {
+  return uniqueStrings([
+    ...(item.diagnosticRunbook?.diagnostics ?? []),
+    ...(item.missingEnv ?? []),
+    ...(item.warnings ?? []),
+    ...(item.onboardingPlan?.diagnostics ?? []),
+    ...(item.providerSetup?.verification ?? []),
+    ...(item.providerRouting?.diagnostics ?? []),
+    ...(item.toolSetup?.verification ?? []),
+    ...(item.toolConnector?.validationChecks ?? []),
+    ...(item.toolInstallPlan?.diagnostics ?? []),
+    ...(item.channelTemplate?.routing?.diagnostics ?? []),
+    ...(item.channelTemplate?.safety?.troubleshooting ?? []),
+    ...(item.channelTemplate?.accessGroups?.diagnostics ?? []),
+    ...(item.channelTemplate?.pairing?.validationChecks ?? []),
+    ...(item.channelTemplate?.userStory?.diagnostics ?? []),
+    ...(item.guideCatalog?.validationChecks ?? []),
+  ]);
+}
+
+function setupRequestStepItems(item: XenesisConnectionItem): string[] {
+  return uniqueStrings([
+    ...(item.setupSteps ?? []),
+    ...(item.onboardingPlan?.validationChecks.map((check) => `verify ${check}`) ?? []),
+    ...(item.providerSetup?.verification.map((check) => `verify ${check}`) ?? []),
+    ...(item.toolInstallPlan?.installSteps ?? []),
+    ...(item.toolConnector?.validationChecks.map((check) => `validate ${check}`) ?? []),
+    ...(item.toolSetup?.verification.map((check) => `verify ${check}`) ?? []),
+    ...(item.channelTemplate?.pairing?.validationChecks.map((check) => `validate ${check}`) ?? []),
+    ...(item.channelTemplate?.accessGroups?.bindings.map(
+      (binding) => `review ${binding.field}: ${binding.description}`,
+    ) ?? []),
+    ...(item.channelTemplate?.userStory?.prerequisiteSetup.map((check) => `verify ${check}`) ?? []),
+    ...(item.guideCatalog?.prerequisites.map((check) => `review prerequisite: ${check}`) ?? []),
+    ...(item.guideCatalog?.validationChecks.map((check) => `validate ${check}`) ?? []),
+    item.summary,
+  ]);
+}
+
+function setupRequestDescription(item: XenesisConnectionItem): string {
+  const plannedOAuth =
+    item.toolInstallPlan?.runtimeSupport === 'planned-oauth' ||
+    item.toolInstallPlan?.installMode === 'planned-oauth' ||
+    item.toolConnector?.runtimeSupport === 'planned-oauth' ||
+    item.toolSetup?.authMode === 'oauth';
+  if (plannedOAuth) {
+    return `Review the planned OAuth setup request for ${item.label} before any adapter, credential, or OAuth flow exists.`;
+  }
+  return `Review the setup request for ${item.label} from the Connection Center before any external work is performed.`;
+}
+
+function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): XenesisConnectionSetupRequestTemplate {
+  const diagnostics = setupRequestDiagnosticItems(item);
+  const steps = setupRequestStepItems(item);
+  return {
+    requestType: xenesisConnectionSetupRequestType(item),
+    actionInboxKind: 'xenesis-connection-setup',
+    readiness: item.diagnosticRunbook?.readiness ?? diagnosticRunbookReadiness(item.status),
+    title: `Review ${item.label} setup request`,
+    description: setupRequestDescription(item),
+    setupSurface: item.diagnosticRunbook?.setupSurface ?? diagnosticRunbookSetupSurface(item),
+    reviewSurface: 'Desk Action Inbox',
+    steps,
+    readPaths: uniqueStrings([
+      'xd.xenesis.connections.setupRequests.status',
+      'xd.xenesis.connections.diagnostics.status',
+      ...(item.diagnosticRunbook?.readPaths ?? []),
+      ...(item.onboardingPlan?.statusReadPaths ?? []),
+      ...(item.providerSetup?.crReadPaths ?? []),
+      ...(item.providerRouting?.readPaths ?? []),
+      ...(item.providerView?.readPaths ?? []),
+      ...(item.toolSetup?.crReadPaths ?? []),
+      ...(item.toolConnector?.readPaths ?? []),
+      ...(item.toolView?.readPaths ?? []),
+      ...(item.toolUserStory?.readPaths ?? []),
+      ...(item.toolInstallPlan?.readPaths ?? []),
+      ...(item.channelTemplate?.safety?.readPaths ?? []),
+      ...(item.channelTemplate?.accessGroups?.readPaths ?? []),
+      ...(item.channelTemplate?.pairing?.readPaths ?? []),
+      ...(item.channelTemplate?.userStory?.readPaths ?? []),
+      ...(item.messengerView?.readPaths ?? []),
+      ...(item.guideCatalog?.readPaths ?? []),
+    ]),
+    controlPaths: uniqueStrings([
+      'xd.xenesis.connections.setupRequests.open',
+      'xd.xenesis.connections.setupRequests.request',
+      'xd.xenesis.connections.open',
+      ...(item.diagnosticRunbook?.controlPaths ?? []),
+      ...(item.onboardingPlan?.controlPaths ?? []),
+      ...(item.providerView?.controlPaths ?? []),
+      ...(item.crActions ?? []),
+      ...(item.toolConnector?.controlPaths ?? []),
+      ...(item.toolView?.controlPaths ?? []),
+      ...(item.toolUserStory?.controlPaths ?? []),
+      ...(item.toolInstallPlan?.controlPaths ?? []),
+      ...(item.channelTemplate?.safety?.controlPaths ?? []),
+      ...(item.channelTemplate?.accessGroups?.controlPaths ?? []),
+      ...(item.channelTemplate?.pairing?.controlPaths ?? []),
+      ...(item.channelTemplate?.userStory?.controlPaths ?? []),
+      ...(item.messengerView?.controlPaths ?? []),
+      ...(item.guideCatalog?.controlPaths ?? []),
+    ]),
+    diagnostics,
+    blockedActions: [...XENESIS_CONNECTION_SETUP_REQUEST_BLOCKED_ACTIONS],
+    safetyBoundaries: uniqueStrings([
+      'setup requests record local Action Inbox review items only',
+      'setup requests do not install MCP servers, complete OAuth, store tokens, execute provider tools, mutate settings, or send messages',
+      ...(item.diagnosticRunbook?.safetyBoundaries ?? []),
+      ...(item.onboardingPlan?.safetyBoundaries ?? []),
+      ...(item.providerSetup?.riskControls ?? []),
+      ...(item.providerRouting?.safetyBoundaries ?? []),
+      ...(item.providerView?.safetyBoundaries ?? []),
+      ...(item.toolSetup?.riskControls ?? []),
+      ...(item.toolConnector?.safetyBoundaries ?? []),
+      ...(item.toolView?.safetyBoundaries ?? []),
+      ...(item.toolUserStory?.safetyBoundaries ?? []),
+      ...(item.toolInstallPlan?.safetyBoundaries ?? []),
+      ...(item.channelTemplate?.safetyControls ?? []),
+      ...(item.channelTemplate?.safety?.safetyBoundaries ?? []),
+      ...(item.channelTemplate?.accessGroups?.safetyBoundaries ?? []),
+      ...(item.channelTemplate?.pairing?.safetyBoundaries ?? []),
+      ...(item.channelTemplate?.userStory?.safetyBoundaries ?? []),
+      ...(item.messengerView?.safetyBoundaries ?? []),
+      ...(item.guideCatalog?.safetyBoundaries ?? []),
+    ]),
+  };
+}
+
+function withXenesisConnectionSetupRequest(item: XenesisConnectionItem): XenesisConnectionItem {
+  return {
+    ...item,
+    setupRequest: buildXenesisConnectionSetupRequest(item),
+  };
+}
+
+function withXenesisConnectionSetupRequests(
+  sections: XenesisConnectionsStatus['sections'],
+): XenesisConnectionsStatus['sections'] {
+  return Object.fromEntries(
+    Object.entries(sections).map(([id, section]) => [
+      id,
+      { ...section, items: section.items.map((item) => withXenesisConnectionSetupRequest(item)) },
     ]),
   ) as XenesisConnectionsStatus['sections'];
 }
@@ -3602,7 +3794,7 @@ export function buildXenesisConnectionsStatus(input: BuildXenesisConnectionsStat
     onboarding: { id: 'onboarding', label: 'Onboarding checklist', items: onboardingItems(baseSections) },
     ...baseSections,
   };
-  const sections = withXenesisConnectionDiagnosticRunbooks(rawSections);
+  const sections = withXenesisConnectionSetupRequests(withXenesisConnectionDiagnosticRunbooks(rawSections));
   const summary = countItems(sections);
   return {
     ok: summary.blocked === 0,
