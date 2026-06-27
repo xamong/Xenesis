@@ -984,6 +984,36 @@ Capability Registry instead of only through separate renderer settings panels.
   provider view 열어줘` returning no action, then passed after implementation
   with 25/25 tests.
 
+## Current Natural Onboarding Opens Slice
+
+- Add deterministic natural-language routing for existing onboarding checklist
+  open requests before provider execution.
+- `첫 채팅 온보딩 열어줘` maps to `xd.xenesis.onboarding.open` with
+  `id=first-chat`.
+- `로컬 CLI MCP 온보딩 열어줘` maps to `id=local-cli-mcp`.
+- `추천 도구 온보딩 열어줘` maps to `id=recommended-tools`.
+- `게이트웨이 온보딩 열어줘` maps to `id=gateway`.
+- `메신저 라우팅 온보딩 열어줘` maps to `id=messenger-routing`.
+- `엔드투엔드 테스트 온보딩 열어줘` maps to `id=test-send`.
+- This is deterministic routing, not agent reasoning. It emits existing
+  no-approval CR open actions only and does not mutate settings, install MCP
+  tools, complete OAuth, execute external tools, send messages, start gateway
+  lifecycle actions, or add registry nodes.
+- Guide opens stay ahead of onboarding step opens, so `온보딩 가이드 열어줘`
+  continues to open `xd.xenesis.guides.open`.
+- External documentation handling: no per-slice web browsing. Use local
+  Obsidian/docs/handoff/code/tests as the gap map; refresh external docs only
+  as a batched documentation pass if needed.
+- TDD check: focused natural planner test failed first with `첫 채팅 온보딩
+  열어줘` returning no action, then passed after implementation with 26/26
+  tests.
+- Verification:
+  - `npx biome check src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts --max-diagnostics 40`
+    passed.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 53/53 tests.
+  - `npm run typecheck` passed.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

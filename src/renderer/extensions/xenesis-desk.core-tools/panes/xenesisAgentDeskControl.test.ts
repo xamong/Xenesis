@@ -598,6 +598,68 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center requests to C
   ]);
 });
 
+test('planXenesisDeskNaturalLanguageActions maps onboarding checklist open requests to CR actions', () => {
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('첫 채팅 온보딩 열어줘').actions, [
+    {
+      id: 'natural-xenesis-onboarding-open-first-chat',
+      path: 'xd.xenesis.onboarding.open',
+      args: { id: 'first-chat', ensureVisible: true },
+      approved: false,
+      reason: 'Open First chat onboarding checklist step from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('로컬 CLI MCP 온보딩 열어줘').actions, [
+    {
+      id: 'natural-xenesis-onboarding-open-local-cli-mcp',
+      path: 'xd.xenesis.onboarding.open',
+      args: { id: 'local-cli-mcp', ensureVisible: true },
+      approved: false,
+      reason: 'Open Local CLI and MCP onboarding checklist step from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('추천 도구 온보딩 열어줘').actions, [
+    {
+      id: 'natural-xenesis-onboarding-open-recommended-tools',
+      path: 'xd.xenesis.onboarding.open',
+      args: { id: 'recommended-tools', ensureVisible: true },
+      approved: false,
+      reason: 'Open Recommended tools onboarding checklist step from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('게이트웨이 온보딩 열어줘').actions, [
+    {
+      id: 'natural-xenesis-onboarding-open-gateway',
+      path: 'xd.xenesis.onboarding.open',
+      args: { id: 'gateway', ensureVisible: true },
+      approved: false,
+      reason: 'Open Gateway onboarding checklist step from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('메신저 라우팅 온보딩 열어줘').actions, [
+    {
+      id: 'natural-xenesis-onboarding-open-messenger-routing',
+      path: 'xd.xenesis.onboarding.open',
+      args: { id: 'messenger-routing', ensureVisible: true },
+      approved: false,
+      reason: 'Open Messenger routing onboarding checklist step from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('엔드투엔드 테스트 온보딩 열어줘').actions, [
+    {
+      id: 'natural-xenesis-onboarding-open-test-send',
+      path: 'xd.xenesis.onboarding.open',
+      args: { id: 'test-send', ensureVisible: true },
+      approved: false,
+      reason: 'Open End-to-end test onboarding checklist step from natural language request.',
+    },
+  ]);
+});
+
 test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open requests to CR actions', () => {
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('codex app-server provider view 열어줘').actions, [
     {

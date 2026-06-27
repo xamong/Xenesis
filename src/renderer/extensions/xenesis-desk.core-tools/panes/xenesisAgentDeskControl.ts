@@ -465,6 +465,57 @@ function xenesisGuideActionFromNaturalText(value: string): XenesisDeskActionRequ
   );
 }
 
+function xenesisOnboardingStepFromNaturalText(value: string): { id: string; label: string } | null {
+  if (!hasAny(value, ['온보딩', 'onboarding', '초기 설정', 'initial setup', '체크리스트', 'checklist'])) return null;
+
+  const steps: Array<{ id: string; label: string; words: readonly string[] }> = [
+    {
+      id: 'first-chat',
+      label: 'First chat',
+      words: ['first chat', '첫 채팅', '첫채팅', '첫 응답', 'first response'],
+    },
+    {
+      id: 'local-cli-mcp',
+      label: 'Local CLI and MCP',
+      words: ['local cli', '로컬 cli', 'local-cli', 'mcp', 'mcp bridge', 'mcp 브리지', '로컬 런타임'],
+    },
+    {
+      id: 'recommended-tools',
+      label: 'Recommended tools',
+      words: ['recommended tools', '추천 도구', '외부 도구', 'external tools', 'tool onboarding', '도구 온보딩'],
+    },
+    {
+      id: 'gateway',
+      label: 'Gateway',
+      words: ['gateway', '게이트웨이'],
+    },
+    {
+      id: 'messenger-routing',
+      label: 'Messenger routing',
+      words: ['messenger routing', '메신저 라우팅', 'channel routing', '채널 라우팅', 'external bots', '외부 봇'],
+    },
+    {
+      id: 'test-send',
+      label: 'End-to-end test',
+      words: ['end-to-end', 'e2e', '엔드투엔드', 'test send', '테스트 전송', '최종 테스트'],
+    },
+  ];
+
+  return steps.find((step) => hasAny(value, step.words)) || null;
+}
+
+function xenesisOnboardingOpenActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
+  const step = xenesisOnboardingStepFromNaturalText(value);
+  if (!step) return null;
+
+  return naturalAction(
+    `natural-xenesis-onboarding-open-${step.id}`,
+    'xd.xenesis.onboarding.open',
+    { id: step.id, ensureVisible: true },
+    `Open ${step.label} onboarding checklist step from natural language request.`,
+  );
+}
+
 function hasXenesisConnectionReadbackIntent(value: string): boolean {
   return hasAny(value, [
     '상태',
@@ -863,6 +914,9 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
 
   const providerAction = xenesisProviderOpenActionFromNaturalText(value);
   if (providerAction) return providerAction;
+
+  const onboardingAction = xenesisOnboardingOpenActionFromNaturalText(value);
+  if (onboardingAction) return onboardingAction;
 
   if (hasAny(value, ['연결 센터', 'connection center', 'connections center', '연결 목록'])) {
     return naturalAction(
