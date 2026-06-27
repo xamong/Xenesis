@@ -98,6 +98,7 @@ import {
   XENESIS_NATURAL_PANE_TAB_CURRENT_CONTEXT_WORDS,
   XENESIS_NATURAL_PARENT_NAVIGATION_CONTEXT_WORDS,
   XENESIS_NATURAL_PLACEMENT_TARGETS,
+  XENESIS_NATURAL_PLAN_VISIBLE_TEXT,
   XENESIS_NATURAL_PROFILE_CONTEXT_WORDS,
   XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
   XENESIS_NATURAL_PROFILE_LIST_CONTEXT_WORDS,
@@ -299,6 +300,7 @@ const GUIDE_ACTIONS = XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS;
 const MESSENGER_AGGREGATE_OPEN_ACTIONS = XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_ACTION_DESCRIPTORS;
 const MESSENGER_AGGREGATE_STATUS_ACTIONS = XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS;
 const ONBOARDING_ACTIONS = XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS;
+const PLAN_TEXT = XENESIS_NATURAL_PLAN_VISIBLE_TEXT;
 const PROVIDER_AGGREGATE_OPEN_ACTIONS = XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS;
 const PROVIDER_AGGREGATE_STATUS_ACTIONS = XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS;
 const PROVIDER_OPEN_ACTIONS = XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS;
@@ -1358,66 +1360,66 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
 
   const xenesisAgentSubmitAction = xenesisAgentSubmitActionFromNaturalText(rawText);
   if (xenesisAgentSubmitAction) {
-    return naturalPlan('Xenesis Agent 메시지 제출 요청을 기록합니다.', [xenesisAgentSubmitAction]);
+    return naturalPlan(PLAN_TEXT.agentSubmitRecorded, [xenesisAgentSubmitAction]);
   }
 
   const xenesisRunStartAction = xenesisRunStartActionFromNaturalText(rawText);
   if (xenesisRunStartAction) {
-    return naturalPlan('Xenesis 런타임 실행 요청을 기록합니다.', [xenesisRunStartAction]);
+    return naturalPlan(PLAN_TEXT.runStartRecorded, [xenesisRunStartAction]);
   }
 
   const xenesisWorkspaceSetAction = xenesisWorkspaceSetActionFromNaturalText(value, rawText);
   if (xenesisWorkspaceSetAction) {
-    return naturalPlan('Xenesis 워크스페이스 설정 요청을 기록합니다.', [xenesisWorkspaceSetAction]);
+    return naturalPlan(PLAN_TEXT.workspaceSetRecorded, [xenesisWorkspaceSetAction]);
   }
 
   const xenesisConnectionReviewRequestAction = xenesisConnectionReviewRequestActionFromNaturalText(value);
   if (xenesisConnectionReviewRequestAction) {
-    return naturalPlan('Xenesis 연결 검토 요청을 기록합니다.', [xenesisConnectionReviewRequestAction]);
+    return naturalPlan(PLAN_TEXT.connectionReviewRequestRecorded, [xenesisConnectionReviewRequestAction]);
   }
 
   const explicitXenesisConnectionOpenAction = xenesisConnectionActionFromNaturalText(value);
   if (explicitXenesisConnectionOpenAction && hasAny(value, XENESIS_NATURAL_OPEN_COMMAND_WORDS)) {
-    return naturalPlan('Xenesis 연결 표면을 엽니다.', [explicitXenesisConnectionOpenAction]);
+    return naturalPlan(PLAN_TEXT.connectionSurfaceOpen, [explicitXenesisConnectionOpenAction]);
   }
 
   const xenesisConnectionReadbackAction = xenesisConnectionReadbackActionFromNaturalText(value);
   if (xenesisConnectionReadbackAction) {
-    return naturalPlan('Xenesis 연결 상태를 조회합니다.', [xenesisConnectionReadbackAction]);
+    return naturalPlan(PLAN_TEXT.connectionStatusRead, [xenesisConnectionReadbackAction]);
   }
 
   const xenesisConnectionAction = xenesisConnectionActionFromNaturalText(value);
   if (xenesisConnectionAction && hasAny(value, XENESIS_NATURAL_OPEN_OR_SHOW_WORDS)) {
-    return naturalPlan('Xenesis 연결 표면을 엽니다.', [xenesisConnectionAction]);
+    return naturalPlan(PLAN_TEXT.connectionSurfaceOpen, [xenesisConnectionAction]);
   }
 
   const localCliMcpReadbackAction = localCliMcpReadbackActionFromNaturalText(value);
   if (localCliMcpReadbackAction) {
-    return naturalPlan('로컬 CLI/MCP 상태를 조회합니다.', [localCliMcpReadbackAction]);
+    return naturalPlan(PLAN_TEXT.localCliMcpStatusRead, [localCliMcpReadbackAction]);
   }
 
   const xenesisGatewayAction = xenesisGatewayActionFromNaturalText(value);
   if (xenesisGatewayAction) {
-    return naturalPlan('Xenesis gateway 상태를 조회하거나 엽니다.', [xenesisGatewayAction]);
+    return naturalPlan(PLAN_TEXT.gatewayStatusOrOpen, [xenesisGatewayAction]);
   }
 
   const xenesisRuntimeInventoryAction = xenesisRuntimeInventoryActionFromNaturalText(value, rawText);
   if (xenesisRuntimeInventoryAction) {
-    return naturalPlan('Xenesis 런타임 인벤토리를 조회합니다.', [xenesisRuntimeInventoryAction]);
+    return naturalPlan(PLAN_TEXT.runtimeInventoryRead, [xenesisRuntimeInventoryAction]);
   }
 
   const xenesisProfileInventoryAction = xenesisProfileInventoryActionFromNaturalText(value);
   if (xenesisProfileInventoryAction) {
-    return naturalPlan('Xenesis 프로필 목록을 조회합니다.', [xenesisProfileInventoryAction]);
+    return naturalPlan(PLAN_TEXT.profileInventoryRead, [xenesisProfileInventoryAction]);
   }
 
   const xenesisRuntimeControlAction = xenesisRuntimeControlActionFromNaturalText(value);
   if (xenesisRuntimeControlAction) {
-    return naturalPlan('Xenesis 런타임 제어 요청을 기록합니다.', [xenesisRuntimeControlAction]);
+    return naturalPlan(PLAN_TEXT.runtimeControlRecorded, [xenesisRuntimeControlAction]);
   }
 
   if (hasAny(value, XENESIS_NATURAL_DESK_SETTINGS_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_OPEN_OR_SHOW_WORDS)) {
-    return naturalPlan('설정 패인을 엽니다.', [
+    return naturalPlan(PLAN_TEXT.settingsPaneOpen, [
       naturalCatalogAction(DESK_ACTIONS.settingsOpen, { placement: placement || 'tab' }),
     ]);
   }
@@ -1426,34 +1428,34 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     hasAny(value, XENESIS_NATURAL_DESK_DIAGNOSTICS_CONTEXT_WORDS) &&
     hasAny(value, XENESIS_NATURAL_OPEN_OR_SHOW_MINIMAL_WORDS)
   ) {
-    return naturalPlan('진단 패인을 엽니다.', [
+    return naturalPlan(PLAN_TEXT.diagnosticsPaneOpen, [
       naturalCatalogAction(DESK_ACTIONS.diagnosticsOpen, { placement: placement || 'tab' }),
     ]);
   }
 
   if (hasAny(value, XENESIS_NATURAL_CORE_CAPABILITY_CONTEXT_WORDS)) {
-    return naturalPlan('Capability Explorer를 엽니다.', [
+    return naturalPlan(PLAN_TEXT.capabilityExplorerOpen, [
       naturalCatalogAction(DESK_ACTIONS.capabilityExplorerOpen, { placement: placement || 'tab' }),
     ]);
   }
 
   const toolOpenAction = toolOpenActionFromNaturalText(value, placement);
   if (toolOpenAction && hasAny(value, XENESIS_NATURAL_OPEN_OR_SHOW_WORDS)) {
-    return naturalPlan('요청한 도구 패널을 엽니다.', [toolOpenAction]);
+    return naturalPlan(PLAN_TEXT.requestedToolPanelOpen, [toolOpenAction]);
   }
 
   if (hasAny(value, XENESIS_NATURAL_CAPTURE_CONTEXT_WORDS)) {
     if (hasAny(value, XENESIS_NATURAL_GENERIC_LIST_CONTEXT_WORDS)) {
-      return naturalPlan('캡처 목록을 조회합니다.', [naturalCatalogAction(DESK_ACTIONS.captureList, {})]);
+      return naturalPlan(PLAN_TEXT.captureListRead, [naturalCatalogAction(DESK_ACTIONS.captureList, {})]);
     }
-    return naturalPlan('현재 패인을 캡처합니다.', [naturalCatalogAction(DESK_ACTIONS.captureActivePane, {})]);
+    return naturalPlan(PLAN_TEXT.activePaneCapture, [naturalCatalogAction(DESK_ACTIONS.captureActivePane, {})]);
   }
 
   if (
     hasAny(value, XENESIS_NATURAL_GENERIC_FOCUS_CONTEXT_WORDS) &&
     hasAny(value, XENESIS_NATURAL_PANE_TAB_CURRENT_CONTEXT_WORDS)
   ) {
-    return naturalPlan('현재 도킹 콘텐츠에 포커스를 맞춥니다.', [
+    return naturalPlan(PLAN_TEXT.activeDockFocus, [
       naturalCatalogAction(DESK_ACTIONS.dockFocusActive, { useActive: true }),
     ]);
   }
@@ -1470,7 +1472,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     } else if (hasAny(value, XENESIS_NATURAL_ALL_SCOPE_WORDS)) {
       action = DESK_ACTIONS.dockCloseAll;
     }
-    return naturalPlan('현재 도킹 콘텐츠를 닫습니다.', [naturalCatalogAction(action, { useActive: true })]);
+    return naturalPlan(PLAN_TEXT.activeDockClose, [naturalCatalogAction(action, { useActive: true })]);
   }
 
   const dockSide = detectDockSide(value);
@@ -1481,7 +1483,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     hasAny(value, XENESIS_NATURAL_PANE_SIZE_CONTEXT_WORDS) &&
     hasAny(value, XENESIS_NATURAL_RESIZE_COMMAND_WORDS)
   ) {
-    return naturalPlan('도킹 영역 크기를 변경합니다.', [
+    return naturalPlan(PLAN_TEXT.dockAreaResize, [
       naturalCatalogAction(DESK_ACTIONS.dockSizeSet, { [dockSide]: dockSize }),
     ]);
   }
@@ -1489,59 +1491,59 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
   if (hasAny(value, XENESIS_NATURAL_WINDOW_SIZE_CONTEXT_WORDS) || detectWindowSizerPreset(value)) {
     const presetId = detectWindowSizerPreset(value);
     if (presetId) {
-      return naturalPlan(`창 크기를 ${presetId.toUpperCase()} 프리셋으로 변경합니다.`, [
+      return naturalPlan(PLAN_TEXT.windowSizePreset(presetId), [
         naturalCatalogAction(DESK_ACTIONS.windowSizePreset, { presetId }),
       ]);
     }
   }
 
   if (hasAny(value, XENESIS_NATURAL_FILE_LIST_CONTEXT_WORDS)) {
-    return naturalPlan('열린 파일 목록을 조회합니다.', [naturalCatalogAction(DESK_ACTIONS.filesListOpen, {})]);
+    return naturalPlan(PLAN_TEXT.filesListRead, [naturalCatalogAction(DESK_ACTIONS.filesListOpen, {})]);
   }
 
   if (hasAny(value, XENESIS_NATURAL_FILE_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_GENERIC_OPEN_WORDS)) {
     const filePath = extractLocalPath(rawText);
-    return naturalPlan('파일을 엽니다.', [naturalCatalogAction(DESK_ACTIONS.fileOpen, filePath ? { filePath } : {})]);
+    return naturalPlan(PLAN_TEXT.fileOpen, [naturalCatalogAction(DESK_ACTIONS.fileOpen, filePath ? { filePath } : {})]);
   }
 
   if (hasAny(value, XENESIS_NATURAL_FILE_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_FILE_READ_CONTEXT_WORDS)) {
     const filePath = extractLocalPath(rawText);
-    return naturalPlan('파일 내용을 읽습니다.', [
+    return naturalPlan(PLAN_TEXT.fileContentRead, [
       naturalCatalogAction(DESK_ACTIONS.fileRead, filePath ? { filePath } : {}),
     ]);
   }
 
   if (hasAny(value, XENESIS_NATURAL_EXPLORER_CONTEXT_WORDS)) {
     if (hasAny(value, XENESIS_NATURAL_EXPLORER_HIDE_CONTEXT_WORDS)) {
-      return naturalPlan('탐색기를 숨깁니다.', [naturalCatalogAction(DESK_ACTIONS.explorerHide, {})]);
+      return naturalPlan(PLAN_TEXT.explorerHide, [naturalCatalogAction(DESK_ACTIONS.explorerHide, {})]);
     }
     if (hasAny(value, XENESIS_NATURAL_TOGGLE_CONTEXT_WORDS)) {
-      return naturalPlan('탐색기 표시 상태를 전환합니다.', [naturalCatalogAction(DESK_ACTIONS.explorerToggle, {})]);
+      return naturalPlan(PLAN_TEXT.explorerToggle, [naturalCatalogAction(DESK_ACTIONS.explorerToggle, {})]);
     }
     if (hasAny(value, XENESIS_NATURAL_REFRESH_CONTEXT_WORDS)) {
-      return naturalPlan('탐색기를 새로고침합니다.', [naturalCatalogAction(DESK_ACTIONS.explorerRefresh, {})]);
+      return naturalPlan(PLAN_TEXT.explorerRefresh, [naturalCatalogAction(DESK_ACTIONS.explorerRefresh, {})]);
     }
     if (hasAny(value, XENESIS_NATURAL_PARENT_NAVIGATION_CONTEXT_WORDS)) {
-      return naturalPlan('탐색기를 상위 폴더로 이동합니다.', [naturalCatalogAction(DESK_ACTIONS.explorerGoUp, {})]);
+      return naturalPlan(PLAN_TEXT.explorerGoUp, [naturalCatalogAction(DESK_ACTIONS.explorerGoUp, {})]);
     }
     if (hasAny(value, XENESIS_NATURAL_FILTER_CONTEXT_WORDS)) {
       const query = extractFilterQuery(rawText);
-      return naturalPlan('탐색기 필터를 적용합니다.', [naturalCatalogAction(DESK_ACTIONS.explorerFilter, { query })]);
+      return naturalPlan(PLAN_TEXT.explorerFilterApply, [naturalCatalogAction(DESK_ACTIONS.explorerFilter, { query })]);
     }
     const path = extractLocalPath(rawText);
     if (path) {
-      return naturalPlan('탐색기 위치를 이동합니다.', [naturalCatalogAction(DESK_ACTIONS.explorerNavigate, { path })]);
+      return naturalPlan(PLAN_TEXT.explorerNavigate, [naturalCatalogAction(DESK_ACTIONS.explorerNavigate, { path })]);
     }
-    return naturalPlan('탐색기를 표시합니다.', [naturalCatalogAction(DESK_ACTIONS.explorerShow, {})]);
+    return naturalPlan(PLAN_TEXT.explorerShow, [naturalCatalogAction(DESK_ACTIONS.explorerShow, {})]);
   }
 
   if (hasAny(value, XENESIS_NATURAL_FAVORITES_CONTEXT_WORDS)) {
-    return naturalPlan('즐겨찾기 패널을 표시합니다.', [naturalCatalogAction(DESK_ACTIONS.favoritesShow, {})]);
+    return naturalPlan(PLAN_TEXT.favoritesShow, [naturalCatalogAction(DESK_ACTIONS.favoritesShow, {})]);
   }
 
   if (hasAny(value, XENESIS_NATURAL_TERMINAL_CONTEXT_WORDS)) {
     if (hasAny(value, XENESIS_NATURAL_GENERIC_LIST_CONTEXT_WORDS)) {
-      return naturalPlan('터미널 목록을 조회합니다.', [naturalCatalogAction(DESK_ACTIONS.terminalsList, {})]);
+      return naturalPlan(PLAN_TEXT.terminalListRead, [naturalCatalogAction(DESK_ACTIONS.terminalsList, {})]);
     }
 
     const count = extractFirstInteger(value, 1, 50);
@@ -1564,12 +1566,12 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
           }),
         );
       }
-      return naturalPlan('터미널을 여러 개 열고 필요한 배열을 적용합니다.', actions);
+      return naturalPlan(PLAN_TEXT.multipleTerminalsOpenAndArrange, actions);
     }
 
     if (hasAny(value, XENESIS_NATURAL_TERMINAL_RUN_CONTEXT_WORDS)) {
       const command = extractTerminalCommand(rawText);
-      return naturalPlan('터미널 명령을 실행합니다.', [
+      return naturalPlan(PLAN_TEXT.terminalCommandRun, [
         naturalCatalogAction(DESK_ACTIONS.terminalRun, {
           command: command || XENESIS_NATURAL_DEFAULT_TERMINAL_COMMAND,
           shell: XENESIS_NATURAL_DEFAULT_TERMINAL_SHELL,
@@ -1583,59 +1585,53 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
   if (scopedArrangeMode && hasAny(value, XENESIS_NATURAL_ARRANGE_CONTEXT_WORDS)) {
     const windowState = detectDockWindowState(value);
     if (windowState) {
-      return naturalPlan('지정한 Desk 영역을 정렬합니다.', [
+      return naturalPlan(PLAN_TEXT.scopedDeskAreaArrange, [
         naturalCatalogAction(DESK_ACTIONS.dockWindowArrange, { windowState, mode: scopedArrangeMode }),
       ]);
     }
     if (hasAny(value, XENESIS_NATURAL_PANE_CONTEXT_WORDS)) {
-      return naturalPlan('현재 도킹 패인을 정렬합니다.', [
+      return naturalPlan(PLAN_TEXT.activeDockPaneArrange, [
         naturalCatalogAction(DESK_ACTIONS.dockPaneArrange, { useActive: true, mode: scopedArrangeMode }),
       ]);
     }
   }
 
   if (hasAny(value, XENESIS_NATURAL_DOCK_GRID_CONTEXT_WORDS)) {
-    return naturalPlan('현재 도킹 그룹을 바둑판으로 정렬합니다.', [
-      naturalCatalogAction(DESK_ACTIONS.dockArrangeGrid, {}),
-    ]);
+    return naturalPlan(PLAN_TEXT.dockGroupTile, [naturalCatalogAction(DESK_ACTIONS.dockArrangeGrid, {})]);
   }
 
   if (hasAny(value, XENESIS_NATURAL_DOCK_HORIZONTAL_CONTEXT_WORDS)) {
-    return naturalPlan('현재 도킹 그룹을 가로로 정렬합니다.', [
-      naturalCatalogAction(DESK_ACTIONS.dockArrangeHorizontal, {}),
-    ]);
+    return naturalPlan(PLAN_TEXT.dockGroupHorizontal, [naturalCatalogAction(DESK_ACTIONS.dockArrangeHorizontal, {})]);
   }
 
   if (hasAny(value, XENESIS_NATURAL_DOCK_VERTICAL_CONTEXT_WORDS)) {
-    return naturalPlan('현재 도킹 그룹을 세로로 정렬합니다.', [
-      naturalCatalogAction(DESK_ACTIONS.dockArrangeVertical, {}),
-    ]);
+    return naturalPlan(PLAN_TEXT.dockGroupVertical, [naturalCatalogAction(DESK_ACTIONS.dockArrangeVertical, {})]);
   }
 
   if (hasAny(value, XENESIS_NATURAL_DOCK_MERGE_CONTEXT_WORDS)) {
     const windowState = detectDockWindowState(value);
     if (windowState) {
-      return naturalPlan('지정한 Desk 영역의 도킹 배열을 합칩니다.', [
+      return naturalPlan(PLAN_TEXT.scopedDockMerge, [
         naturalCatalogAction(DESK_ACTIONS.dockWindowMerge, { windowState }),
       ]);
     }
     if (hasAny(value, XENESIS_NATURAL_PANE_CONTEXT_WORDS)) {
-      return naturalPlan('현재 도킹 패인의 배열을 합칩니다.', [
+      return naturalPlan(PLAN_TEXT.activeDockPaneMerge, [
         naturalCatalogAction(DESK_ACTIONS.dockPaneMerge, { useActive: true }),
       ]);
     }
     const action = hasAny(value, XENESIS_NATURAL_DOCK_MERGE_ALL_CONTEXT_WORDS)
       ? DESK_ACTIONS.dockMergeAll
       : DESK_ACTIONS.dockMergeGroup;
-    return naturalPlan('도킹 배열을 합칩니다.', [naturalCatalogAction(action, {})]);
+    return naturalPlan(PLAN_TEXT.dockMerge, [naturalCatalogAction(action, {})]);
   }
 
   if (hasAny(value, XENESIS_NATURAL_PANE_LIST_CONTEXT_WORDS)) {
-    return naturalPlan('열린 패인 목록을 조회합니다.', [naturalCatalogAction(DESK_ACTIONS.dockPanesList, {})]);
+    return naturalPlan(PLAN_TEXT.dockPanesListRead, [naturalCatalogAction(DESK_ACTIONS.dockPanesList, {})]);
   }
 
   if (hasAny(value, XENESIS_NATURAL_ARTIFACT_TARGET_CONTEXT_WORDS)) {
-    return naturalPlan('현재 패인을 아티팩트 대상으로 지정합니다.', [
+    return naturalPlan(PLAN_TEXT.artifactTargetSet, [
       naturalCatalogAction(DESK_ACTIONS.artifactTargetSet, { useActive: true }),
     ]);
   }
@@ -1644,12 +1640,12 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     hasAny(value, XENESIS_NATURAL_APP_STATUS_CONTEXT_WORDS) &&
     hasAny(value, XENESIS_NATURAL_APP_STATUS_TARGET_WORDS)
   ) {
-    return naturalPlan('앱 상태를 조회합니다.', [naturalCatalogAction(DESK_ACTIONS.appStatus, {})]);
+    return naturalPlan(PLAN_TEXT.appStatusRead, [naturalCatalogAction(DESK_ACTIONS.appStatus, {})]);
   }
 
   const view = viewKindFromNaturalText(value);
   if (view && hasAny(value, XENESIS_NATURAL_VIEW_OPEN_COMMAND_WORDS)) {
-    return naturalPlan('요청한 화면을 엽니다.', [naturalViewOpenAction(view, placement)]);
+    return naturalPlan(PLAN_TEXT.requestedViewOpen, [naturalViewOpenAction(view, placement)]);
   }
 
   return emptyNaturalPlan();

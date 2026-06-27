@@ -1890,6 +1890,43 @@
 - External documentation handling: no browsing. This update used the cached gap
   map, repo-local Obsidian graph, source code, and tests.
 
+## Plan Visible Text Catalog Refactor Slice
+
+- Removed inline `naturalPlan('...')` and `naturalPlan(\`...\`)` visible-text
+  literals from `xenesisAgentDeskControl.ts`.
+- Added `XENESIS_NATURAL_PLAN_VISIBLE_TEXT` to
+  `src/shared/xenesisNaturalLanguageCatalog.ts`, including the dynamic
+  window-size preset visible-text formatter.
+- The planner now uses a local `PLAN_TEXT` alias for user-facing plan response
+  text while preserving the existing route order, matching logic, CR paths,
+  action args, text values, and approval behavior.
+- Scope boundary: refactor only. This did not change natural-language routing,
+  provider/tool/messenger setup semantics, or live Agent-pane execution.
+- Verification:
+  - RED planner source guard failed first because
+    `XENESIS_NATURAL_PLAN_VISIBLE_TEXT` was not referenced and inline
+    `naturalPlan('...')` calls remained.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 36/36 tests after implementation.
+  - `npx biome format --write src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    formatted 3 files and fixed 1 file.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 100/100 tests.
+  - Initial scoped Biome check failed on import ordering, then
+    `npx biome check --write ... --max-diagnostics 40` fixed 1 file and the
+    rerun passed.
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit` passed with Registered nodes 763,
+    Callable methods 468, Dispatcher paths 448, missing registered paths 0,
+    missing dispatched coverage paths 0, undispatched static callable methods
+    0, and dispatcher paths missing from tree 0. The generated audit file was
+    removed afterward.
+  - `git diff --check` exited 0 with LF-to-CRLF warnings only.
+- Known gap: live Electron Agent-pane smoke was not run for this refactor-only
+  slice.
+- External documentation handling: no browsing. This update used the cached gap
+  map, repo-local Obsidian graph, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

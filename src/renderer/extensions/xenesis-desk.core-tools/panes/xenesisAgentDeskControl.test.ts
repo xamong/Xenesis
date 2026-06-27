@@ -273,6 +273,8 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     true,
   );
   assert.match(source, /XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS/);
+  assert.match(source, /XENESIS_NATURAL_PLAN_VISIBLE_TEXT/);
+  assert.doesNotMatch(source, /naturalPlan\((?:'|`)/);
   assert.match(source, /naturalCoreToolOpenAction/);
   assert.match(source, /naturalViewOpenAction/);
   assert.equal([...source.matchAll(/return naturalAction\(/g)].length, 2);
