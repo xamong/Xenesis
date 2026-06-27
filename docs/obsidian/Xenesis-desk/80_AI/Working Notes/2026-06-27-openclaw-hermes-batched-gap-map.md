@@ -445,11 +445,21 @@
     `xd.xenesis.channels.pairing.status`.
   - `외부 메신저 사용자 스토리 전체 상태 보여줘` ->
     `xd.xenesis.channels.userStories.status`.
+  - `외부 메신저 프로필 초안 전체 상태 보여줘` ->
+    `xd.xenesis.channels.profileDrafts.status`.
+  - `channel profile draft 전체 상태 보여줘` ->
+    `xd.xenesis.channels.profileDrafts.status`.
   - `외부 메신저 setup 전체 상태 보여줘` ->
     `xd.xenesis.messengers.views.status`.
 - The aggregate branch runs after target-specific messenger/tool routing and
   before the generic Connection Center fallback, so prompts like `텔레그램
   페어링 상태 보여줘` keep returning Telegram-specific pairing readbacks.
+- Broad profile-draft opens such as `외부 메신저 프로필 초안 전체 열어줘` and
+  `channel profile draft 전체 열어줘` now focus the Xenesis Connection Center
+  instead of using a focused profile-draft open path, because
+  `xd.xenesis.channels.profileDrafts.open` requires one implemented channel.
+- The English aggregate readback is checked before target resolution so the word
+  `draft` does not accidentally match the planned `raft` messenger alias.
 - Scope boundary: this slice did not add CR nodes, dispatcher branches,
   renderer adapters, gateway lifecycle actions, delivery sends, channel
   settings mutation, allowlist updates, credential storage, external-system

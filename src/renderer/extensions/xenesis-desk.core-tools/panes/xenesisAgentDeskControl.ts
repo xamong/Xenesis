@@ -874,6 +874,14 @@ function hasXenesisConnectionSetupRequestCatalogContext(value: string): boolean 
   );
 }
 
+function hasXenesisMessengerProfileDraftCatalogContext(value: string): boolean {
+  return (
+    hasXenesisAggregateCatalogContext(value) &&
+    hasAny(value, ['프로필', 'profile', 'draft', 'drafts', '초안']) &&
+    (hasExternalMessengerCatalogContext(value) || hasAny(value, ['channel profile', 'channel profiles', '채널 프로필']))
+  );
+}
+
 function xenesisToolAggregateStatusActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
   if (!hasExternalToolCatalogContext(value)) return null;
   if (!hasXenesisConnectionReadbackIntent(value)) return null;
@@ -957,6 +965,15 @@ function xenesisMessengerAggregateStatusActionFromNaturalText(value: string): Xe
   if (!hasExternalMessengerCatalogContext(value)) return null;
   if (!hasXenesisConnectionReadbackIntent(value)) return null;
   if (!hasXenesisAggregateCatalogContext(value)) return null;
+
+  if (hasXenesisMessengerProfileDraftCatalogContext(value)) {
+    return naturalAction(
+      'natural-xenesis-messengers-profile-drafts-status',
+      'xd.xenesis.channels.profileDrafts.status',
+      {},
+      'Read external messenger profile draft catalog status from natural language request.',
+    );
+  }
 
   if (hasAny(value, ['라우팅', 'routing', 'route'])) {
     return naturalAction(
@@ -1152,6 +1169,15 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
 
   const providerAction = xenesisProviderReadbackActionFromNaturalText(value);
   if (providerAction) return providerAction;
+
+  if (hasXenesisMessengerProfileDraftCatalogContext(value)) {
+    return naturalAction(
+      'natural-xenesis-messengers-profile-drafts-status',
+      'xd.xenesis.channels.profileDrafts.status',
+      {},
+      'Read external messenger profile draft catalog status from natural language request.',
+    );
+  }
 
   const target = xenesisConnectionTargetFromNaturalText(value);
   if (target) {
@@ -1589,6 +1615,15 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
       'xd.panes.settings.open',
       xenesisConnectionCenterOpenArgs(),
       'Open external tool catalog in Xenesis Connection Center from natural language request.',
+    );
+  }
+
+  if (hasXenesisMessengerProfileDraftCatalogContext(value)) {
+    return naturalAction(
+      'natural-xenesis-messengers-profile-drafts-catalog-open',
+      'xd.panes.settings.open',
+      xenesisConnectionCenterOpenArgs(),
+      'Open external messenger profile draft catalog in Xenesis Connection Center from natural language request.',
     );
   }
 

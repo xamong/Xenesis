@@ -851,6 +851,38 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center requests to C
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 프로필 초안 전체 열어줘').actions, [
+    {
+      id: 'natural-xenesis-messengers-profile-drafts-catalog-open',
+      path: 'xd.panes.settings.open',
+      args: {
+        category: 'xenesis-agent',
+        mode: 'connections',
+        section: 'xenesis-connections',
+        placement: 'tab',
+      },
+      approved: false,
+      reason:
+        'Open external messenger profile draft catalog in Xenesis Connection Center from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('channel profile draft 전체 열어줘').actions, [
+    {
+      id: 'natural-xenesis-messengers-profile-drafts-catalog-open',
+      path: 'xd.panes.settings.open',
+      args: {
+        category: 'xenesis-agent',
+        mode: 'connections',
+        section: 'xenesis-connections',
+        placement: 'tab',
+      },
+      approved: false,
+      reason:
+        'Open external messenger profile draft catalog in Xenesis Connection Center from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('가이드 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-guides-catalog-open',
@@ -1692,6 +1724,26 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center read
       args: {},
       approved: false,
       reason: 'Read AI provider profile draft catalog status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 프로필 초안 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-messengers-profile-drafts-status',
+      path: 'xd.xenesis.channels.profileDrafts.status',
+      args: {},
+      approved: false,
+      reason: 'Read external messenger profile draft catalog status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('channel profile draft 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-messengers-profile-drafts-status',
+      path: 'xd.xenesis.channels.profileDrafts.status',
+      args: {},
+      approved: false,
+      reason: 'Read external messenger profile draft catalog status from natural language request.',
     },
   ]);
 
