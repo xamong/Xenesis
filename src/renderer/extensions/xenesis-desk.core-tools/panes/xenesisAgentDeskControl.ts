@@ -24,6 +24,7 @@ import {
   XENESIS_NATURAL_CAPTURE_CONTEXT_WORDS,
   XENESIS_NATURAL_CHANNEL_PROFILE_CONTEXT_WORDS,
   XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_REQUEST_CONTEXT_WORDS,
+  XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_CONNECTION_CENTER_OPEN_CONTEXT_WORDS,
   XENESIS_NATURAL_CONNECTION_CONTEXT_WORDS,
   XENESIS_NATURAL_CONNECTION_DIAGNOSTIC_CONTEXT_WORDS,
@@ -73,6 +74,7 @@ import {
   XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS,
   XENESIS_NATURAL_MCP_INSTALL_REVIEW_CONTEXT_WORDS,
   XENESIS_NATURAL_MCP_SETTINGS_CONTEXT_WORDS,
+  XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS,
   XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS,
   XENESIS_NATURAL_MESSENGER_VIEW_FALLBACK_CONTEXT_WORDS,
@@ -95,6 +97,7 @@ import {
   XENESIS_NATURAL_PROFILE_CONTEXT_WORDS,
   XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
   XENESIS_NATURAL_PROFILE_LIST_CONTEXT_WORDS,
+  XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_WORDS,
   XENESIS_NATURAL_PROVIDER_TARGETS,
   XENESIS_NATURAL_REFRESH_CONTEXT_WORDS,
@@ -124,6 +127,7 @@ import {
   XENESIS_NATURAL_TERMINAL_MULTI_CONTEXT_WORDS,
   XENESIS_NATURAL_TERMINAL_RUN_CONTEXT_WORDS,
   XENESIS_NATURAL_TOGGLE_CONTEXT_WORDS,
+  XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
   XENESIS_NATURAL_VIEW_OPEN_COMMAND_WORDS,
   XENESIS_NATURAL_VIEW_OPEN_PATH,
@@ -251,9 +255,13 @@ function naturalTemplateAction<TArgs extends unknown[]>(
 }
 
 const DESK_ACTIONS = XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS;
+const CONNECTION_AGGREGATE_STATUS_ACTIONS = XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS;
 const GUIDE_ACTIONS = XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS;
+const MESSENGER_AGGREGATE_STATUS_ACTIONS = XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS;
 const ONBOARDING_ACTIONS = XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS;
+const PROVIDER_AGGREGATE_STATUS_ACTIONS = XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS;
 const RUNTIME_ACTIONS = XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS;
+const TOOL_AGGREGATE_STATUS_ACTIONS = XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS;
 
 function naturalPlan(
   visibleText: string,
@@ -492,75 +500,35 @@ function xenesisToolAggregateStatusActionFromNaturalText(value: string): Xenesis
   if (!hasXenesisConnectionReadbackIntent(value)) return null;
 
   if (hasAny(value, XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-tools-connectors-status',
-      'xd.xenesis.tools.connectors.status',
-      {},
-      'Read external tool connector catalog status from natural language request.',
-    );
+    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.connectors, {});
   }
 
   if (hasAny(value, XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_DRAFT_CONTEXT_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-tools-mcp-install-drafts-status',
-      'xd.xenesis.tools.mcpInstallDrafts.status',
-      {},
-      'Read external tool MCP install draft catalog status from natural language request.',
-    );
+    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.mcpInstallDrafts, {});
   }
 
   if (hasAny(value, XENESIS_NATURAL_OAUTH_CONTEXT_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-tools-oauth-drafts-status',
-      'xd.xenesis.tools.oauthDrafts.status',
-      {},
-      'Read external tool OAuth draft catalog status from natural language request.',
-    );
+    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.oauthDrafts, {});
   }
 
   if (hasAny(value, XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-tools-views-status',
-      'xd.xenesis.tools.views.status',
-      {},
-      'Read external tool view catalog status from natural language request.',
-    );
+    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.views, {});
   }
 
   if (hasAny(value, XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-tools-install-plans-status',
-      'xd.xenesis.tools.installPlans.status',
-      {},
-      'Read external tool install plan catalog status from natural language request.',
-    );
+    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.installPlans, {});
   }
 
   if (hasAny(value, XENESIS_NATURAL_SETUP_CONTEXT_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-tools-setup-status',
-      'xd.xenesis.tools.setup.status',
-      {},
-      'Read external tool setup catalog status from natural language request.',
-    );
+    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.setup, {});
   }
 
   if (hasAny(value, XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-tools-actions-status',
-      'xd.xenesis.tools.actions.status',
-      {},
-      'Read external tool action policy catalog status from natural language request.',
-    );
+    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.actions, {});
   }
 
   if (hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-tools-user-stories-status',
-      'xd.xenesis.tools.userStories.status',
-      {},
-      'Read external tool user-story catalog status from natural language request.',
-    );
+    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.userStories, {});
   }
 
   return null;
@@ -572,66 +540,31 @@ function xenesisMessengerAggregateStatusActionFromNaturalText(value: string): Xe
   if (!hasXenesisAggregateCatalogContext(value)) return null;
 
   if (hasXenesisMessengerProfileDraftCatalogContext(value)) {
-    return naturalAction(
-      'natural-xenesis-messengers-profile-drafts-status',
-      'xd.xenesis.channels.profileDrafts.status',
-      {},
-      'Read external messenger profile draft catalog status from natural language request.',
-    );
+    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.profileDrafts, {});
   }
 
   if (hasAny(value, XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-messengers-routing-status',
-      'xd.xenesis.channels.routing.status',
-      {},
-      'Read external messenger routing catalog status from natural language request.',
-    );
+    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.routing, {});
   }
 
   if (hasAny(value, XENESIS_NATURAL_SAFETY_CONTEXT_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-messengers-safety-status',
-      'xd.xenesis.channels.safety.status',
-      {},
-      'Read external messenger safety catalog status from natural language request.',
-    );
+    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.safety, {});
   }
 
   if (hasAny(value, XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-messengers-access-groups-status',
-      'xd.xenesis.channels.accessGroups.status',
-      {},
-      'Read external messenger access-group catalog status from natural language request.',
-    );
+    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.accessGroups, {});
   }
 
   if (hasAny(value, XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-messengers-pairing-status',
-      'xd.xenesis.channels.pairing.status',
-      {},
-      'Read external messenger pairing catalog status from natural language request.',
-    );
+    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.pairing, {});
   }
 
   if (hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-messengers-user-stories-status',
-      'xd.xenesis.channels.userStories.status',
-      {},
-      'Read external messenger user-story catalog status from natural language request.',
-    );
+    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.userStories, {});
   }
 
   if (hasAny(value, XENESIS_NATURAL_VIEW_OR_SETUP_CONTEXT_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-messengers-views-status',
-      'xd.xenesis.messengers.views.status',
-      {},
-      'Read external messenger view catalog status from natural language request.',
-    );
+    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.views, {});
   }
 
   return null;
@@ -654,38 +587,18 @@ function xenesisProviderAggregateStatusActionFromNaturalText(value: string): Xen
   if (!hasXenesisAggregateCatalogContext(value)) return null;
 
   if (hasAny(value, XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-providers-routing-status',
-      'xd.xenesis.providers.routing.status',
-      {},
-      'Read AI provider routing catalog status from natural language request.',
-    );
+    return naturalCatalogAction(PROVIDER_AGGREGATE_STATUS_ACTIONS.routing, {});
   }
 
   if (hasAny(value, XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-providers-views-status',
-      'xd.xenesis.providers.views.status',
-      {},
-      'Read AI provider view catalog status from natural language request.',
-    );
+    return naturalCatalogAction(PROVIDER_AGGREGATE_STATUS_ACTIONS.views, {});
   }
 
   if (hasAny(value, XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-providers-profile-drafts-status',
-      'xd.xenesis.providers.profileDrafts.status',
-      {},
-      'Read AI provider profile draft catalog status from natural language request.',
-    );
+    return naturalCatalogAction(PROVIDER_AGGREGATE_STATUS_ACTIONS.profileDrafts, {});
   }
 
-  return naturalAction(
-    'natural-xenesis-providers-setup-status',
-    'xd.xenesis.providers.setup.status',
-    {},
-    'Read AI provider setup catalog status from natural language request.',
-  );
+  return naturalCatalogAction(PROVIDER_AGGREGATE_STATUS_ACTIONS.setup, {});
 }
 
 function xenesisProviderReadbackActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
@@ -737,12 +650,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
   if (providerAction) return providerAction;
 
   if (hasXenesisMessengerProfileDraftCatalogContext(value)) {
-    return naturalAction(
-      'natural-xenesis-messengers-profile-drafts-status',
-      'xd.xenesis.channels.profileDrafts.status',
-      {},
-      'Read external messenger profile draft catalog status from natural language request.',
-    );
+    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.profileDrafts, {});
   }
 
   const target = xenesisConnectionTargetFromNaturalText(value);
@@ -913,30 +821,15 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
   }
 
   if (hasXenesisGuideCatalogContext(value)) {
-    return naturalAction(
-      'natural-xenesis-guides-status',
-      'xd.xenesis.guides.status',
-      {},
-      'Read Xenesis guide catalog status from natural language request.',
-    );
+    return naturalCatalogAction(CONNECTION_AGGREGATE_STATUS_ACTIONS.guides, {});
   }
 
   if (hasXenesisConnectionDiagnosticsCatalogContext(value)) {
-    return naturalAction(
-      'natural-xenesis-connection-diagnostics-status',
-      'xd.xenesis.connections.diagnostics.status',
-      {},
-      'Read Xenesis connection diagnostics catalog from natural language request.',
-    );
+    return naturalCatalogAction(CONNECTION_AGGREGATE_STATUS_ACTIONS.diagnostics, {});
   }
 
   if (hasXenesisConnectionSetupRequestCatalogContext(value)) {
-    return naturalAction(
-      'natural-xenesis-connection-setup-requests-status',
-      'xd.xenesis.connections.setupRequests.status',
-      {},
-      'Read Xenesis connection setup request catalog from natural language request.',
-    );
+    return naturalCatalogAction(CONNECTION_AGGREGATE_STATUS_ACTIONS.setupRequests, {});
   }
 
   const guideStatusAction = xenesisGuideStatusActionFromNaturalText(value);
@@ -952,30 +845,15 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
     const onboardingStatusAction = xenesisOnboardingStatusActionFromNaturalText(value);
     if (onboardingStatusAction) return onboardingStatusAction;
 
-    return naturalAction(
-      'natural-xenesis-onboarding-status',
-      'xd.xenesis.onboarding.status',
-      {},
-      'Read Xenesis onboarding status from natural language request.',
-    );
+    return naturalCatalogAction(CONNECTION_AGGREGATE_STATUS_ACTIONS.onboarding, {});
   }
 
   if (hasAny(value, XENESIS_NATURAL_GUIDE_CONTEXT_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-guides-status',
-      'xd.xenesis.guides.status',
-      {},
-      'Read Xenesis guide catalog status from natural language request.',
-    );
+    return naturalCatalogAction(CONNECTION_AGGREGATE_STATUS_ACTIONS.guides, {});
   }
 
   if (hasXenesisConnectionContext(value)) {
-    return naturalAction(
-      'natural-xenesis-connections-status',
-      'xd.xenesis.connections.status',
-      {},
-      'Read Xenesis connection status from natural language request.',
-    );
+    return naturalCatalogAction(CONNECTION_AGGREGATE_STATUS_ACTIONS.connections, {});
   }
 
   return null;

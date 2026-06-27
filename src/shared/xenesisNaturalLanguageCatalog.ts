@@ -1174,6 +1174,138 @@ export const XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS = {
   stepStatus: XenesisNaturalDeskActionTemplateDescriptor<[string, string]>;
 };
 
+export const XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS = {
+  connectors: {
+    id: 'natural-xenesis-tools-connectors-status',
+    path: 'xd.xenesis.tools.connectors.status',
+    reason: 'Read external tool connector catalog status from natural language request.',
+  },
+  mcpInstallDrafts: {
+    id: 'natural-xenesis-tools-mcp-install-drafts-status',
+    path: 'xd.xenesis.tools.mcpInstallDrafts.status',
+    reason: 'Read external tool MCP install draft catalog status from natural language request.',
+  },
+  oauthDrafts: {
+    id: 'natural-xenesis-tools-oauth-drafts-status',
+    path: 'xd.xenesis.tools.oauthDrafts.status',
+    reason: 'Read external tool OAuth draft catalog status from natural language request.',
+  },
+  views: {
+    id: 'natural-xenesis-tools-views-status',
+    path: 'xd.xenesis.tools.views.status',
+    reason: 'Read external tool view catalog status from natural language request.',
+  },
+  installPlans: {
+    id: 'natural-xenesis-tools-install-plans-status',
+    path: 'xd.xenesis.tools.installPlans.status',
+    reason: 'Read external tool install plan catalog status from natural language request.',
+  },
+  setup: {
+    id: 'natural-xenesis-tools-setup-status',
+    path: 'xd.xenesis.tools.setup.status',
+    reason: 'Read external tool setup catalog status from natural language request.',
+  },
+  actions: {
+    id: 'natural-xenesis-tools-actions-status',
+    path: 'xd.xenesis.tools.actions.status',
+    reason: 'Read external tool action policy catalog status from natural language request.',
+  },
+  userStories: {
+    id: 'natural-xenesis-tools-user-stories-status',
+    path: 'xd.xenesis.tools.userStories.status',
+    reason: 'Read external tool user-story catalog status from natural language request.',
+  },
+} as const satisfies Record<string, XenesisNaturalDeskActionDescriptor>;
+
+export const XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS = {
+  profileDrafts: {
+    id: 'natural-xenesis-messengers-profile-drafts-status',
+    path: 'xd.xenesis.channels.profileDrafts.status',
+    reason: 'Read external messenger profile draft catalog status from natural language request.',
+  },
+  routing: {
+    id: 'natural-xenesis-messengers-routing-status',
+    path: 'xd.xenesis.channels.routing.status',
+    reason: 'Read external messenger routing catalog status from natural language request.',
+  },
+  safety: {
+    id: 'natural-xenesis-messengers-safety-status',
+    path: 'xd.xenesis.channels.safety.status',
+    reason: 'Read external messenger safety catalog status from natural language request.',
+  },
+  accessGroups: {
+    id: 'natural-xenesis-messengers-access-groups-status',
+    path: 'xd.xenesis.channels.accessGroups.status',
+    reason: 'Read external messenger access-group catalog status from natural language request.',
+  },
+  pairing: {
+    id: 'natural-xenesis-messengers-pairing-status',
+    path: 'xd.xenesis.channels.pairing.status',
+    reason: 'Read external messenger pairing catalog status from natural language request.',
+  },
+  userStories: {
+    id: 'natural-xenesis-messengers-user-stories-status',
+    path: 'xd.xenesis.channels.userStories.status',
+    reason: 'Read external messenger user-story catalog status from natural language request.',
+  },
+  views: {
+    id: 'natural-xenesis-messengers-views-status',
+    path: 'xd.xenesis.messengers.views.status',
+    reason: 'Read external messenger view catalog status from natural language request.',
+  },
+} as const satisfies Record<string, XenesisNaturalDeskActionDescriptor>;
+
+export const XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS = {
+  routing: {
+    id: 'natural-xenesis-providers-routing-status',
+    path: 'xd.xenesis.providers.routing.status',
+    reason: 'Read AI provider routing catalog status from natural language request.',
+  },
+  views: {
+    id: 'natural-xenesis-providers-views-status',
+    path: 'xd.xenesis.providers.views.status',
+    reason: 'Read AI provider view catalog status from natural language request.',
+  },
+  profileDrafts: {
+    id: 'natural-xenesis-providers-profile-drafts-status',
+    path: 'xd.xenesis.providers.profileDrafts.status',
+    reason: 'Read AI provider profile draft catalog status from natural language request.',
+  },
+  setup: {
+    id: 'natural-xenesis-providers-setup-status',
+    path: 'xd.xenesis.providers.setup.status',
+    reason: 'Read AI provider setup catalog status from natural language request.',
+  },
+} as const satisfies Record<string, XenesisNaturalDeskActionDescriptor>;
+
+export const XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS = {
+  guides: {
+    id: 'natural-xenesis-guides-status',
+    path: 'xd.xenesis.guides.status',
+    reason: 'Read Xenesis guide catalog status from natural language request.',
+  },
+  diagnostics: {
+    id: 'natural-xenesis-connection-diagnostics-status',
+    path: 'xd.xenesis.connections.diagnostics.status',
+    reason: 'Read Xenesis connection diagnostics catalog from natural language request.',
+  },
+  setupRequests: {
+    id: 'natural-xenesis-connection-setup-requests-status',
+    path: 'xd.xenesis.connections.setupRequests.status',
+    reason: 'Read Xenesis connection setup request catalog from natural language request.',
+  },
+  onboarding: {
+    id: 'natural-xenesis-onboarding-status',
+    path: 'xd.xenesis.onboarding.status',
+    reason: 'Read Xenesis onboarding status from natural language request.',
+  },
+  connections: {
+    id: 'natural-xenesis-connections-status',
+    path: 'xd.xenesis.connections.status',
+    reason: 'Read Xenesis connection status from natural language request.',
+  },
+} as const satisfies Record<string, XenesisNaturalDeskActionDescriptor>;
+
 export const XENESIS_NATURAL_PLACEMENT_TARGETS: readonly XenesisNaturalWordsTarget[] = [
   { id: 'right', label: 'right', words: ['오른쪽', '우측', 'right'] },
   { id: 'left', label: 'left', words: ['왼쪽', '좌측', 'left'] },
