@@ -5100,6 +5100,57 @@ function isXenesisMessengerViewId(value: string): value is (typeof XENESIS_MESSE
   return (XENESIS_MESSENGER_VIEW_IDS as readonly string[]).includes(value);
 }
 
+function xenesisChannelPairingStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    model: item.channelTemplate?.pairing?.model,
+    runtimeSupport: item.channelTemplate?.pairing?.runtimeSupport,
+    accountScope: item.channelTemplate?.pairing?.accountScope,
+    credentialRefs: item.channelTemplate?.pairing?.credentialRefs ?? [],
+    pairingState: item.channelTemplate?.pairing?.pairingState,
+    setupSurface: item.channelTemplate?.pairing?.setupSurface,
+    validationChecks: item.channelTemplate?.pairing?.validationChecks ?? [],
+    readPaths: item.channelTemplate?.pairing?.readPaths ?? [],
+    controlPaths: item.channelTemplate?.pairing?.controlPaths ?? [],
+    diagnostics: item.channelTemplate?.pairing?.diagnostics ?? [],
+    safetyBoundaries: item.channelTemplate?.pairing?.safetyBoundaries ?? [],
+    channelTemplate: item.channelTemplate,
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisChannelPairingStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['channel', 'id', 'messenger', 'name']);
+  if (id && !isXenesisMessengerViewId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis messenger channel: ${id}`,
+      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.messengers.items
+    .filter((item) => item.channelTemplate?.pairing)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisChannelPairingStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { channel: id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
 function xenesisMessengerViewStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
   return {
     id: item.id,
@@ -12533,6 +12584,7 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisChannelRoutingStatus: (args: unknown) => getXenesisChannelRoutingStatus(args),
     getXenesisChannelSafetyStatus: (args: unknown) => getXenesisChannelSafetyStatus(args),
     getXenesisChannelAccessGroupsStatus: (args: unknown) => getXenesisChannelAccessGroupsStatus(args),
+    getXenesisChannelPairingStatus: (args: unknown) => getXenesisChannelPairingStatus(args),
     getXenesisGuidesStatus: (args: unknown) => getXenesisGuidesStatus(args),
     openXenesisGuide: (args: unknown) => openXenesisGuide(args),
     getXenesisToolSetupStatus: (args: unknown) => getXenesisToolSetupStatus(args),

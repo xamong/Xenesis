@@ -4,6 +4,12 @@ import type { XenesisConnectionsStatus } from './xenesisConnections';
 export type {
   XenesisConnectionChannelAccessGroupBinding,
   XenesisConnectionChannelAccessGroupsTemplate,
+  XenesisConnectionChannelPairingCredentialRef,
+  XenesisConnectionChannelPairingCredentialSource,
+  XenesisConnectionChannelPairingModel,
+  XenesisConnectionChannelPairingRuntimeSupport,
+  XenesisConnectionChannelPairingState,
+  XenesisConnectionChannelPairingTemplate,
   XenesisConnectionChannelRoutingTemplate,
   XenesisConnectionChannelSafetyTemplate,
   XenesisConnectionChannelTemplate,

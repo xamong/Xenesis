@@ -1,6 +1,7 @@
 import type {
   McpBridgeCapabilityCallRequest,
   XenesisConnectionChannelAccessGroupsTemplate,
+  XenesisConnectionChannelPairingTemplate,
   XenesisConnectionChannelRoutingTemplate,
   XenesisConnectionChannelSafetyTemplate,
   XenesisConnectionGuideCatalogTemplate,
@@ -73,6 +74,10 @@ export function formatXenesisChannelAccessGroupsSummary(
   return `${accessGroups.groupScope} / ${accessGroups.bindings.length} group binding(s) / ${
     accessGroups.failClosed ? 'fail-closed' : 'advisory'
   }`;
+}
+
+export function formatXenesisChannelPairingSummary(pairing: XenesisConnectionChannelPairingTemplate): string {
+  return `${pairing.model} / ${pairing.accountScope} / ${pairing.pairingState}`;
 }
 
 export function formatXenesisGuideCatalogSummary(guide: XenesisConnectionGuideCatalogTemplate): string {

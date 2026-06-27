@@ -182,6 +182,40 @@ test('xenesis channel access group status capability is registered and dispatche
   });
 });
 
+test('xenesis channel pairing status capability is registered and dispatches to the adapter', async () => {
+  const capability = findDeskBridgeCapability('xd.xenesis.channels.pairing.status');
+  const schemaProperties = (capability?.schema?.properties ?? {}) as Record<string, any>;
+  assert.equal(capability?.permission, 'read');
+  assert.equal(capability?.approval, 'never');
+  assert.equal(schemaProperties.channel?.enum.includes('telegram'), true);
+  assert.equal(schemaProperties.channel?.enum.includes('signal'), true);
+  assert.equal(schemaProperties.id?.enum.includes('whatsapp'), true);
+
+  let calledArgs: unknown = null;
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisChannelPairingStatus: (args) => {
+      calledArgs = args;
+      return {
+        ok: true,
+        items: [{ id: 'signal', pairingState: 'planned' }],
+      };
+    },
+  };
+
+  const result = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.channels.pairing.status',
+    args: { channel: 'signal' },
+    source: 'xenesis',
+  });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(calledArgs, { channel: 'signal' });
+  assert.deepEqual(result.result, {
+    ok: true,
+    items: [{ id: 'signal', pairingState: 'planned' }],
+  });
+});
+
 test('xenesis tool setup status capability is registered and dispatches to the adapter', async () => {
   const capability = findDeskBridgeCapability('xd.xenesis.tools.setup.status');
   const schemaProperties = (capability?.schema?.properties ?? {}) as Record<string, any>;

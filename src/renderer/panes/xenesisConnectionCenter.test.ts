@@ -6,6 +6,7 @@ import {
   buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
   formatXenesisChannelAccessGroupsSummary,
+  formatXenesisChannelPairingSummary,
   formatXenesisChannelRoutingSummary,
   formatXenesisChannelSafetySummary,
   formatXenesisGuideCatalogSummary,
@@ -200,6 +201,25 @@ test('formatXenesisChannelAccessGroupsSummary describes group scope and fail-clo
       safetyBoundaries: ['raw values are never returned'],
     }),
     'chat / 1 group binding(s) / fail-closed',
+  );
+});
+
+test('formatXenesisChannelPairingSummary describes pairing model, account scope, and state', () => {
+  assert.equal(
+    formatXenesisChannelPairingSummary({
+      model: 'env-token',
+      runtimeSupport: 'implemented',
+      accountScope: 'bot-account',
+      credentialRefs: [{ ref: 'TELEGRAM_BOT_TOKEN', source: 'env', required: true, state: 'configured' }],
+      pairingState: 'configured',
+      setupSurface: 'Settings > Xenesis Agent > External bots',
+      validationChecks: ['env-secret-configured'],
+      readPaths: ['xd.xenesis.channels.pairing.status'],
+      controlPaths: ['xd.xenesis.profiles.updateChannels'],
+      diagnostics: ['pairing-secret-state'],
+      safetyBoundaries: ['credential values are never returned'],
+    }),
+    'env-token / bot-account / configured',
   );
 });
 

@@ -1232,6 +1232,69 @@ test('buildXenesisConnectionsStatus exposes OpenClaw-style access group metadata
   }
 });
 
+test('buildXenesisConnectionsStatus exposes OpenClaw-style pairing metadata for implemented and planned channels', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const telegram = status.sections.messengers.items.find((item) => item.id === 'telegram');
+  const signal = status.sections.messengers.items.find((item) => item.id === 'signal');
+
+  assert.deepEqual(telegram?.channelTemplate?.pairing, {
+    model: 'env-token',
+    runtimeSupport: 'implemented',
+    accountScope: 'bot-account',
+    credentialRefs: [{ ref: 'tokenEnv', source: 'profile-env-field', required: true, state: 'unknown' }],
+    pairingState: 'unknown',
+    setupSurface: 'Settings > Xenesis Agent > External bots',
+    validationChecks: ['profile-env-field-set', 'env-secret-configured', 'gateway-channel-ready', 'cr-readback'],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.channels.pairing.status',
+      'xd.xenesis.channels.routing.status',
+      'xd.xenesis.status',
+    ],
+    controlPaths: ['xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
+    diagnostics: ['missing-env', 'pairing-secret-state', 'gateway-status', 'last-error'],
+    safetyBoundaries: [
+      'pairing status is read-only',
+      'credential values are never returned',
+      'channel writes stay on profile update CR paths',
+      'delivery tests stay on profile test CR paths',
+    ],
+  });
+  assert.equal(signal?.channelTemplate?.pairing?.model, 'device-link');
+  assert.equal(signal?.channelTemplate?.pairing?.runtimeSupport, 'planned-adapter');
+  assert.equal(signal?.channelTemplate?.pairing?.pairingState, 'planned');
+  assert.deepEqual(signal?.channelTemplate?.pairing?.credentialRefs, [
+    { ref: 'SIGNAL_DEVICE_LINK', source: 'device-pairing', required: true, state: 'planned' },
+  ]);
+});
+
 test('buildXenesisConnectionsStatus exposes internal Desk messenger views for implemented and planned channels', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {

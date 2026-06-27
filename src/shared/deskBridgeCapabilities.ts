@@ -290,6 +290,30 @@ const XENESIS_MESSENGER_VIEW_IDS = [
   'ntfy',
 ] as const;
 
+const XENESIS_CHANNEL_PAIRING_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Optional implemented or planned external messenger channel to filter.',
+    },
+    id: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Alias for channel.',
+    },
+    name: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Alias for channel.',
+    },
+  },
+} as const;
+
 const XENESIS_MESSENGER_VIEW_STATUS_SCHEMA = {
   type: 'object',
   properties: {
@@ -775,6 +799,7 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisChannelRoutingStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisChannelSafetyStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisChannelAccessGroupsStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisChannelPairingStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisGuidesStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisGuide?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolSetupStatus?: (args?: unknown) => Promise<unknown> | unknown;
@@ -3778,6 +3803,20 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               'Read profile allowlist bindings, redacted value states, fail-closed diagnostics, readback paths, and control boundaries for implemented Xenesis external bot channels.',
               'read',
               XENESIS_CHANNEL_ACCESS_GROUP_STATUS_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.channels.pairing',
+          'Pairing',
+          'External bot channel pairing mode, credential readiness, validation checks, diagnostics, and safety boundaries.',
+          [
+            method(
+              'xd.xenesis.channels.pairing.status',
+              'Read channel pairing status',
+              'Read pairing model, runtime support, account scope, redacted credential state, validation checks, diagnostics, and safety boundaries for implemented and planned Xenesis external messenger channels.',
+              'read',
+              XENESIS_CHANNEL_PAIRING_STATUS_SCHEMA,
             ),
           ],
         ),
@@ -10150,6 +10189,9 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.channels.accessGroups.status') {
         return callAdapter(path, api?.getXenesisChannelAccessGroupsStatus, request.args);
+      }
+      if (path === 'xd.xenesis.channels.pairing.status') {
+        return callAdapter(path, api?.getXenesisChannelPairingStatus, request.args);
       }
       if (path === 'xd.xenesis.guides.status') {
         return callAdapter(path, api?.getXenesisGuidesStatus, request.args);

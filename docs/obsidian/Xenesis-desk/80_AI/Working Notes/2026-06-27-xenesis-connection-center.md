@@ -459,6 +459,31 @@ Capability Registry instead of only through separate renderer settings panels.
 - `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
   passed after implementation with 70/70 tests.
 
+## Current Channel Pairing Read Model Slice
+
+- Add `channelTemplate.pairing` metadata to implemented Telegram, Slack,
+  Discord, and Webhook cards in `xd.xenesis.connections.status`.
+- Add planned pairing metadata for WhatsApp, Signal, Teams, Google Chat,
+  iMessage, Matrix, IRC, Mattermost, Nextcloud Talk, Nostr, Raft, Tlon,
+  Synology Chat, Twitch, LINE, WeChat, QQ Bot, Feishu/Lark, Yuanbao, Zalo,
+  Email, SMS, Home Assistant, and ntfy without claiming runtime support.
+- Add `xd.xenesis.channels.pairing.status` as a read/no-approval CR path for
+  pairing model, runtime support, account scope, redacted credential refs,
+  validation checks, read/control paths, diagnostics, and safety boundaries.
+- Settings renders the same model with
+  `data-xenesis-channel-pairing="<channel-id>"`.
+- Implemented channel credential refs expose state only:
+  `configured`, `missing`, `not-required`, `planned`, or `unknown`. Raw token,
+  webhook, account, chat, QR, OAuth, and device-link values are not returned.
+- Planned channels are pairing requirement notes only. This slice does not
+  create QR sessions, OAuth flows, desktop bridge sessions, channel adapters,
+  channel setting mutations, or message delivery tests.
+- `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+  failed first for missing pairing metadata, missing CR path, and missing
+  renderer helper.
+- `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+  passed after implementation with 73/73 tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

@@ -207,6 +207,17 @@ allowlist fields such as `allowedChatIds`, `allowedChannelIds`,
 allowlists as fail-closed diagnostics. It is read-only; channel mutations remain
 on `xd.xenesis.profiles.updateChannels`.
 
+Messenger cards also expose `channelTemplate.pairing` metadata. Use
+`xd.xenesis.channels.pairing.status` to inspect channel pairing model, runtime
+support, account scope, redacted credential refs, validation checks, readback
+paths, diagnostics, and safety boundaries. Implemented channels report token or
+webhook readiness from configured profile env fields and environment state
+without returning raw values. Planned channels report expected pairing
+requirements such as device-link, OAuth app, desktop bridge, mailbox, or local
+network setup as planned metadata only; this path does not create QR sessions,
+open OAuth flows, install adapters, approve accounts, mutate channel settings,
+or send messages.
+
 Messenger cards also expose a `messengerView` read model. Use
 `xd.xenesis.messengers.views.status` to inspect the internal Desk surface for a
 messenger, including runtime support, setup surface, CR open/read/control paths,
@@ -227,6 +238,7 @@ Useful CR paths:
 
 - `xd.xenesis.profiles.updateChannels`
 - `xd.xenesis.profiles.testChannel`
+- `xd.xenesis.channels.pairing.status`
 - `xd.xenesis.messengers.views.status`
 - `xd.xenesis.messengers.views.open`
 
@@ -317,6 +329,14 @@ Slack, Discord, and Webhook profile allowlist bindings, redacted value states,
 fail-closed diagnostics, readback paths, and channel update/test control
 boundaries. It never returns raw chat IDs, channel IDs, guild IDs, endpoint
 values, or secrets.
+
+Use `xd.xenesis.channels.pairing.status` to inspect external bot channel pairing
+metadata through CR. Implemented Telegram, Slack, Discord, and Webhook entries
+report env-token, signed-token, or webhook-url readiness using redacted
+credential refs and configured/missing/not-required states only. Planned
+messenger entries remain planned pairing requirements; the path is read-only and
+does not create QR/device links, OAuth installs, desktop-host sessions, channel
+mutations, or delivery tests.
 
 Use `xd.xenesis.messengers.views.status` and
 `xd.xenesis.messengers.views.open` to inspect or open internal Desk

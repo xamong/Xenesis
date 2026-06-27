@@ -194,6 +194,7 @@ export interface XenesisConnectionChannelTemplate {
   routing?: XenesisConnectionChannelRoutingTemplate;
   safety?: XenesisConnectionChannelSafetyTemplate;
   accessGroups?: XenesisConnectionChannelAccessGroupsTemplate;
+  pairing?: XenesisConnectionChannelPairingTemplate;
 }
 
 export interface XenesisConnectionChannelRoutingTemplate {
@@ -235,6 +236,58 @@ export interface XenesisConnectionChannelAccessGroupsTemplate {
   diagnostics: string[];
   readPaths: string[];
   controlPaths: string[];
+  safetyBoundaries: string[];
+}
+
+export type XenesisConnectionChannelPairingModel =
+  | 'env-token'
+  | 'env-token-signature'
+  | 'webhook-url'
+  | 'device-link'
+  | 'oauth-app'
+  | 'desktop-bridge'
+  | 'provider-webhook'
+  | 'mailbox'
+  | 'local-network';
+export type XenesisConnectionChannelPairingRuntimeSupport = 'implemented' | 'planned-adapter';
+export type XenesisConnectionChannelPairingState = 'configured' | 'missing' | 'not-required' | 'planned' | 'unknown';
+export type XenesisConnectionChannelPairingCredentialSource =
+  | 'profile-env-field'
+  | 'env'
+  | 'device-pairing'
+  | 'oauth-client'
+  | 'desktop-host'
+  | 'provider-account'
+  | 'mailbox'
+  | 'local-network'
+  | 'none';
+
+export interface XenesisConnectionChannelPairingCredentialRef {
+  ref: string;
+  source: XenesisConnectionChannelPairingCredentialSource;
+  required: boolean;
+  state: XenesisConnectionChannelPairingState;
+}
+
+export interface XenesisConnectionChannelPairingTemplate {
+  model: XenesisConnectionChannelPairingModel;
+  runtimeSupport: XenesisConnectionChannelPairingRuntimeSupport;
+  accountScope:
+    | 'bot-account'
+    | 'workspace-app'
+    | 'device'
+    | 'desktop-host'
+    | 'provider-account'
+    | 'mailbox'
+    | 'endpoint'
+    | 'local-network';
+  credentialRefs: XenesisConnectionChannelPairingCredentialRef[];
+  pairingState: XenesisConnectionChannelPairingState;
+  setupSurface: string;
+  validationChecks: string[];
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
   safetyBoundaries: string[];
 }
 
@@ -962,6 +1015,169 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
   },
 ];
 
+type XenesisConnectionChannelPairingCredentialRefInput = Omit<XenesisConnectionChannelPairingCredentialRef, 'state'>;
+
+function aggregateChannelPairingState(
+  refs: XenesisConnectionChannelPairingCredentialRef[],
+  runtimeSupport: XenesisConnectionChannelPairingRuntimeSupport,
+): XenesisConnectionChannelPairingState {
+  if (runtimeSupport === 'planned-adapter') return 'planned';
+  if (refs.length === 0) return 'not-required';
+  if (refs.some((ref) => ref.required && ref.state === 'missing')) return 'missing';
+  if (refs.some((ref) => ref.required && ref.state === 'unknown')) return 'unknown';
+  if (refs.some((ref) => ref.required && ref.state === 'configured')) return 'configured';
+  return 'not-required';
+}
+
+function channelPairingTemplate(input: {
+  model: XenesisConnectionChannelPairingModel;
+  runtimeSupport: XenesisConnectionChannelPairingRuntimeSupport;
+  accountScope: XenesisConnectionChannelPairingTemplate['accountScope'];
+  credentialRefs: XenesisConnectionChannelPairingCredentialRefInput[];
+  setupSurface: string;
+  validationChecks: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  safetyBoundaries?: string[];
+}): XenesisConnectionChannelPairingTemplate {
+  const credentialRefs = input.credentialRefs.map((ref) => ({
+    ...ref,
+    state: input.runtimeSupport === 'planned-adapter' ? ('planned' as const) : ('unknown' as const),
+  }));
+  return {
+    model: input.model,
+    runtimeSupport: input.runtimeSupport,
+    accountScope: input.accountScope,
+    credentialRefs,
+    pairingState: aggregateChannelPairingState(credentialRefs, input.runtimeSupport),
+    setupSurface: input.setupSurface,
+    validationChecks: input.validationChecks,
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.channels.pairing.status',
+      'xd.xenesis.channels.routing.status',
+      'xd.xenesis.status',
+    ],
+    controlPaths: input.controlPaths,
+    diagnostics: input.diagnostics,
+    safetyBoundaries: input.safetyBoundaries ?? [
+      'pairing status is read-only',
+      'credential values are never returned',
+      'channel writes stay on profile update CR paths',
+      'delivery tests stay on profile test CR paths',
+    ],
+  };
+}
+
+function implementedChannelPairingTemplate(input: {
+  model: XenesisConnectionChannelPairingModel;
+  accountScope: XenesisConnectionChannelPairingTemplate['accountScope'];
+  credentialRefs: XenesisConnectionChannelPairingCredentialRefInput[];
+}): XenesisConnectionChannelPairingTemplate {
+  return channelPairingTemplate({
+    ...input,
+    runtimeSupport: 'implemented',
+    setupSurface: 'Settings > Xenesis Agent > External bots',
+    validationChecks: ['profile-env-field-set', 'env-secret-configured', 'gateway-channel-ready', 'cr-readback'],
+    controlPaths: ['xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
+    diagnostics: ['missing-env', 'pairing-secret-state', 'gateway-status', 'last-error'],
+  });
+}
+
+function plannedChannelPairingTemplate(id: string): XenesisConnectionChannelPairingTemplate {
+  const deviceChannels = new Set(['whatsapp', 'signal', 'wechat', 'qqbot', 'zalo']);
+  const oauthChannels = new Set(['microsoft-teams', 'google-chat', 'feishu']);
+  if (deviceChannels.has(id)) {
+    return channelPairingTemplate({
+      model: 'device-link',
+      runtimeSupport: 'planned-adapter',
+      accountScope: 'device',
+      credentialRefs: [
+        { ref: `${id.toUpperCase().replace(/-/g, '_')}_DEVICE_LINK`, source: 'device-pairing', required: true },
+      ],
+      setupSurface: 'Settings > Xenesis Agent > Connections',
+      validationChecks: ['adapter-selected', 'device-pairing-approved', 'allowlist-reviewed', 'cr-readback'],
+      controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.connections.open'],
+      diagnostics: ['planned-adapter', 'device-pairing-required', 'safety-review'],
+      safetyBoundaries: [
+        'planned pairing status is read-only',
+        'no QR or device-link session is created until runtime support exists',
+        'planned channel delivery remains disabled',
+      ],
+    });
+  }
+  if (oauthChannels.has(id)) {
+    return channelPairingTemplate({
+      model: 'oauth-app',
+      runtimeSupport: 'planned-adapter',
+      accountScope: 'workspace-app',
+      credentialRefs: [
+        { ref: `${id.toUpperCase().replace(/-/g, '_')}_OAUTH_APP`, source: 'oauth-client', required: true },
+      ],
+      setupSurface: 'Settings > Xenesis Agent > Connections',
+      validationChecks: ['app-registration-reviewed', 'oauth-consent-reviewed', 'allowlist-reviewed', 'cr-readback'],
+      controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.connections.open'],
+      diagnostics: ['planned-adapter', 'oauth-app-required', 'safety-review'],
+      safetyBoundaries: [
+        'planned pairing status is read-only',
+        'no OAuth flow is started until runtime support exists',
+        'planned channel delivery remains disabled',
+      ],
+    });
+  }
+  if (id === 'imessage') {
+    return channelPairingTemplate({
+      model: 'desktop-bridge',
+      runtimeSupport: 'planned-adapter',
+      accountScope: 'desktop-host',
+      credentialRefs: [{ ref: 'IMESSAGE_DESKTOP_HOST', source: 'desktop-host', required: true }],
+      setupSurface: 'Settings > Xenesis Agent > Connections',
+      validationChecks: ['desktop-host-reviewed', 'recipient-allowlist-reviewed', 'cr-readback'],
+      controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.connections.open'],
+      diagnostics: ['planned-adapter', 'desktop-host-required', 'safety-review'],
+      safetyBoundaries: [
+        'planned pairing status is read-only',
+        'no host pairing or bridge session is created until runtime support exists',
+        'planned channel delivery remains disabled',
+      ],
+    });
+  }
+  if (id === 'email') {
+    return channelPairingTemplate({
+      model: 'mailbox',
+      runtimeSupport: 'planned-adapter',
+      accountScope: 'mailbox',
+      credentialRefs: [{ ref: 'EMAIL_MAILBOX_AUTH', source: 'mailbox', required: true }],
+      setupSurface: 'Settings > Xenesis Agent > Connections',
+      validationChecks: ['mailbox-provider-reviewed', 'sender-allowlist-reviewed', 'cr-readback'],
+      controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.connections.open'],
+      diagnostics: ['planned-adapter', 'mailbox-auth-required', 'safety-review'],
+      safetyBoundaries: [
+        'planned pairing status is read-only',
+        'no mailbox session is created until runtime support exists',
+        'planned channel delivery remains disabled',
+      ],
+    });
+  }
+  return channelPairingTemplate({
+    model: id === 'home-assistant' || id === 'ntfy' ? 'local-network' : 'provider-webhook',
+    runtimeSupport: 'planned-adapter',
+    accountScope: id === 'home-assistant' || id === 'ntfy' ? 'local-network' : 'provider-account',
+    credentialRefs: [
+      { ref: `${id.toUpperCase().replace(/-/g, '_')}_PAIRING`, source: 'provider-account', required: true },
+    ],
+    setupSurface: 'Settings > Xenesis Agent > Connections',
+    validationChecks: ['adapter-selected', 'auth-reviewed', 'allowlist-reviewed', 'cr-readback'],
+    controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.connections.open'],
+    diagnostics: ['planned-adapter', 'pairing-required', 'safety-review'],
+    safetyBoundaries: [
+      'planned pairing status is read-only',
+      'no provider account pairing is started until runtime support exists',
+      'planned channel delivery remains disabled',
+    ],
+  });
+}
+
 const MESSENGERS: Array<{
   id: XenesisProfileChannelName;
   label: string;
@@ -1046,6 +1262,11 @@ const MESSENGERS: Array<{
           'channel writes stay on profile update CR paths',
         ],
       },
+      pairing: implementedChannelPairingTemplate({
+        model: 'env-token',
+        accountScope: 'bot-account',
+        credentialRefs: [{ ref: 'tokenEnv', source: 'profile-env-field', required: true }],
+      }),
     },
   },
   {
@@ -1125,6 +1346,15 @@ const MESSENGERS: Array<{
           'channel writes stay on profile update CR paths',
         ],
       },
+      pairing: implementedChannelPairingTemplate({
+        model: 'env-token-signature',
+        accountScope: 'bot-account',
+        credentialRefs: [
+          { ref: 'botTokenEnv', source: 'profile-env-field', required: true },
+          { ref: 'signingSecretEnv', source: 'profile-env-field', required: true },
+          { ref: 'webhookUrlEnv', source: 'profile-env-field', required: false },
+        ],
+      }),
     },
   },
   {
@@ -1211,6 +1441,14 @@ const MESSENGERS: Array<{
           'channel writes stay on profile update CR paths',
         ],
       },
+      pairing: implementedChannelPairingTemplate({
+        model: 'env-token',
+        accountScope: 'bot-account',
+        credentialRefs: [
+          { ref: 'botTokenEnv', source: 'profile-env-field', required: true },
+          { ref: 'webhookUrlEnv', source: 'profile-env-field', required: false },
+        ],
+      }),
     },
   },
   {
@@ -1290,11 +1528,20 @@ const MESSENGERS: Array<{
           'channel writes stay on profile update CR paths',
         ],
       },
+      pairing: implementedChannelPairingTemplate({
+        model: 'webhook-url',
+        accountScope: 'endpoint',
+        credentialRefs: [{ ref: 'urlEnv', source: 'profile-env-field', required: true }],
+      }),
     },
   },
 ];
 
-type PlannedMessengerDefinition = Omit<XenesisConnectionItem, 'kind' | 'status' | 'supportLevel' | 'warnings'> & {
+type PlannedMessengerDefinition = Omit<
+  XenesisConnectionItem,
+  'kind' | 'status' | 'supportLevel' | 'warnings' | 'channelTemplate'
+> & {
+  channelTemplate: XenesisConnectionChannelTemplate;
   warnings?: string[];
 };
 
@@ -1346,6 +1593,10 @@ function messengerViewTemplate(
 function plannedMessenger(definition: PlannedMessengerDefinition): XenesisConnectionItem {
   return {
     ...definition,
+    channelTemplate: {
+      ...definition.channelTemplate,
+      pairing: definition.channelTemplate.pairing ?? plannedChannelPairingTemplate(definition.id),
+    },
     kind: 'messenger',
     status: 'planned',
     supportLevel: 'planned',
@@ -1844,6 +2095,40 @@ function toolConnectionItems(env: Record<string, string | undefined> = {}): Xene
   );
 }
 
+function readChannelPairingCredentialState(
+  ref: XenesisConnectionChannelPairingCredentialRef,
+  channelSettings: Record<string, unknown> | undefined,
+  env: Record<string, string | undefined>,
+): XenesisConnectionChannelPairingState {
+  if (ref.state === 'planned') return 'planned';
+  if (!ref.required) return 'not-required';
+  if (ref.source === 'profile-env-field') {
+    if (!channelSettings) return 'unknown';
+    const envRef = channelSettings[ref.ref];
+    if (typeof envRef !== 'string' || !envRef.trim()) return 'missing';
+    return env[envRef.trim()]?.trim() ? 'configured' : 'missing';
+  }
+  if (ref.source === 'env') return env[ref.ref]?.trim() ? 'configured' : 'missing';
+  if (ref.source === 'none') return 'not-required';
+  return ref.state;
+}
+
+function withChannelPairingCredentialState(
+  pairing: XenesisConnectionChannelPairingTemplate,
+  channelSettings: Record<string, unknown> | undefined,
+  env: Record<string, string | undefined>,
+): XenesisConnectionChannelPairingTemplate {
+  const credentialRefs = pairing.credentialRefs.map((ref) => ({
+    ...ref,
+    state: readChannelPairingCredentialState(ref, channelSettings, env),
+  }));
+  return {
+    ...pairing,
+    credentialRefs,
+    pairingState: aggregateChannelPairingState(credentialRefs, pairing.runtimeSupport),
+  };
+}
+
 const LOCAL_PROVIDER_NAMES = ['codex-cli', 'codex-app-server', 'claude-cli', 'claude-interactive'] as const;
 
 function isLocalProviderName(provider: string): boolean {
@@ -2135,9 +2420,13 @@ function channelStatus(xenesis: XenesisStatus | null, name: XenesisGatewayChanne
   return runtime.runtimeStatus === 'error' || runtime.missingEnv.length > 0 ? 'blocked' : 'needs-setup';
 }
 
-function messengerItems(xenesis: XenesisStatus | null): XenesisConnectionItem[] {
+function messengerItems(
+  xenesis: XenesisStatus | null,
+  env: Record<string, string | undefined> = {},
+): XenesisConnectionItem[] {
   return MESSENGERS.map(({ id, label, setupSteps, sourceDocs, channelTemplate }) => {
     const runtime = xenesis?.gateway.channels?.[id];
+    const profileChannelSettings = xenesis?.profile.channelSettings?.[id] as Record<string, unknown> | undefined;
     return {
       id,
       kind: 'messenger',
@@ -2151,7 +2440,12 @@ function messengerItems(xenesis: XenesisStatus | null): XenesisConnectionItem[] 
       crActions: ['xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
       setupSteps,
       sourceDocs,
-      channelTemplate,
+      channelTemplate: {
+        ...channelTemplate,
+        pairing: channelTemplate.pairing
+          ? withChannelPairingCredentialState(channelTemplate.pairing, profileChannelSettings, env)
+          : undefined,
+      },
       messengerView: messengerViewTemplate(id, 'implemented'),
       warnings: [...(runtime?.warnings ?? []), ...(runtime?.lastError ? [runtime.lastError.message] : [])],
     };
@@ -2310,7 +2604,7 @@ export function buildXenesisConnectionsStatus(input: BuildXenesisConnectionsStat
     messengers: {
       id: 'messengers',
       label: 'Messengers',
-      items: [...messengerItems(input.xenesis), ...PLANNED_MESSENGERS],
+      items: [...messengerItems(input.xenesis, input.env), ...PLANNED_MESSENGERS],
     },
     guides: {
       id: 'guides',

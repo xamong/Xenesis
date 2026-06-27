@@ -89,6 +89,7 @@ import {
   buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
   formatXenesisChannelAccessGroupsSummary,
+  formatXenesisChannelPairingSummary,
   formatXenesisChannelRoutingSummary,
   formatXenesisChannelSafetySummary,
   formatXenesisGuideCatalogSummary,
@@ -4872,6 +4873,46 @@ export default function SettingsPane() {
                 <div>
                   <span>{t('settings.xenesisConnectionsChannelAccessGroupBoundaries')}</span>
                   <strong>{channelTemplate.accessGroups.safetyBoundaries.join(', ')}</strong>
+                </div>
+              </div>
+            ) : null}
+            {channelTemplate.pairing ? (
+              <div className="sp-info-list sp-info-list-compact" data-xenesis-channel-pairing={item.id}>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelPairing')}</span>
+                  <strong>{formatXenesisChannelPairingSummary(channelTemplate.pairing)}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelPairingRuntime')}</span>
+                  <strong>{channelTemplate.pairing.runtimeSupport}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelPairingCredentials')}</span>
+                  <strong>
+                    {channelTemplate.pairing.credentialRefs
+                      .map((ref) => `${ref.source}:${ref.ref}:${ref.state}${ref.required ? ':required' : ''}`)
+                      .join(', ') || '-'}
+                  </strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelPairingValidation')}</span>
+                  <strong>{channelTemplate.pairing.validationChecks.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelPairingReadback')}</span>
+                  <strong>{channelTemplate.pairing.readPaths.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelPairingControls')}</span>
+                  <strong>{channelTemplate.pairing.controlPaths.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelPairingDiagnostics')}</span>
+                  <strong>{channelTemplate.pairing.diagnostics.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelPairingSafety')}</span>
+                  <strong>{channelTemplate.pairing.safetyBoundaries.join(', ')}</strong>
                 </div>
               </div>
             ) : null}
