@@ -207,6 +207,28 @@ export const XENESIS_NATURAL_EXTRACTION_PATTERNS = {
   trailingPathPunctuation: /[.,;]+$/,
 } as const;
 
+export const XENESIS_NATURAL_TEXT_DEFAULTS = {
+  empty: '',
+  firstItemIndex: 0,
+  unicodeNormalizationForm: 'NFKC',
+  wordSeparator: ' ',
+} as const;
+
+export const XENESIS_NATURAL_NUMERIC_LIMITS = {
+  dockSize: {
+    max: 4096,
+    min: 120,
+  },
+  firstInteger: {
+    max: 100,
+    min: 1,
+  },
+  terminalCount: {
+    max: 50,
+    min: 1,
+  },
+} as const;
+
 export const XENESIS_NATURAL_PLAN_VISIBLE_TEXT = {
   activeDockClose: '현재 도킹 콘텐츠를 닫습니다.',
   activeDockFocus: '현재 도킹 콘텐츠에 포커스를 맞춥니다.',

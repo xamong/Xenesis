@@ -2309,6 +2309,46 @@
 - External documentation handling: no browsing. This update used cached
   repo-local context, source code, and tests.
 
+## Natural Parser Defaults Catalog Refactor Slice
+
+- Removed representative natural parser text/default numeric sentinel literals
+  from `xenesisAgentDeskControl.ts`.
+- Extended `src/shared/xenesisNaturalLanguageCatalog.ts` with:
+  - `XENESIS_NATURAL_TEXT_DEFAULTS` for empty text, first item index, Unicode
+    normalization form, and word separator.
+  - `XENESIS_NATURAL_NUMERIC_LIMITS` for first-integer, dock-size, and
+    terminal-count bounds.
+- The Desk control source now consumes shared parser defaults for normalization,
+  whitespace replacement, quoted text extraction, path cleanup, filter query
+  tokenization, terminal command cleanup, dock-size bounds, and terminal-count
+  bounds.
+- Scope boundary: refactor only. This preserved normalization, extraction,
+  route order, generated CR paths, and action args.
+- Verification:
+  - RED source guard failed first because `XENESIS_NATURAL_TEXT_DEFAULTS` was
+    not yet referenced by `xenesisAgentDeskControl.ts`.
+  - Typecheck initially failed because default numeric literal values narrowed
+    `extractFirstInteger`'s `min/max` parameters; the parameters were explicitly
+    typed as `number`.
+  - `rg -n "normalize\('NFKC'\)|replace\(EXTRACTION_PATTERNS\.normalizedWhitespace, ' '\)|split\(' '\)|extractFirstInteger\(value, 120, 4096\)|extractFirstInteger\(value, 1, 50\)" src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts`
+    returned no matches after implementation.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 36/36 tests.
+  - `npm run typecheck` passed after the numeric parameter annotation fix.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 100/100 tests.
+  - `npx biome check src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --max-diagnostics 40`
+    passed.
+  - `npm run docs:capabilities:audit` passed with Registered nodes 763,
+    Callable methods 468, Dispatcher paths 448, missing registered paths 0,
+    missing dispatched coverage paths 0, undispatched static callable methods
+    0, and dispatcher paths missing from tree 0. The generated audit file was
+    removed afterward.
+- Known gap: live Electron Agent-pane smoke was not run for this refactor-only
+  slice.
+- External documentation handling: no browsing. This update used cached
+  repo-local context, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

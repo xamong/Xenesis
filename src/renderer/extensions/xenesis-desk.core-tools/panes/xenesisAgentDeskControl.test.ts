@@ -68,6 +68,7 @@ import {
   XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS,
   XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS,
+  XENESIS_NATURAL_NUMERIC_LIMITS,
   XENESIS_NATURAL_OAUTH_CONTEXT_WORDS,
   XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS,
@@ -97,6 +98,7 @@ import {
   XENESIS_NATURAL_SETUP_CONTEXT_WORDS,
   XENESIS_NATURAL_TASK_CONTEXT_WORDS,
   XENESIS_NATURAL_TERMINAL_CONTEXT_WORDS,
+  XENESIS_NATURAL_TEXT_DEFAULTS,
   XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
@@ -293,6 +295,17 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /\[a-z\]:\\\\/);
   assert.doesNotMatch(source, /탐색기\|파일\|폴더\|필터/);
   assert.doesNotMatch(source, /terminal\\s\+run/);
+  assert.match(source, /XENESIS_NATURAL_TEXT_DEFAULTS/);
+  assert.match(source, /XENESIS_NATURAL_NUMERIC_LIMITS/);
+  assert.doesNotMatch(source, /normalize\('NFKC'\)/);
+  assert.doesNotMatch(source, /replace\(EXTRACTION_PATTERNS\.normalizedWhitespace, ' '\)/);
+  assert.doesNotMatch(source, /split\(' '\)/);
+  assert.doesNotMatch(source, /extractFirstInteger\(value, 120, 4096\)/);
+  assert.doesNotMatch(source, /extractFirstInteger\(value, 1, 50\)/);
+  assert.equal(XENESIS_NATURAL_TEXT_DEFAULTS.unicodeNormalizationForm, 'NFKC');
+  assert.equal(XENESIS_NATURAL_TEXT_DEFAULTS.wordSeparator, ' ');
+  assert.equal(XENESIS_NATURAL_NUMERIC_LIMITS.dockSize.max, 4096);
+  assert.equal(XENESIS_NATURAL_NUMERIC_LIMITS.terminalCount.max, 50);
   assert.match(source, /XENESIS_DESK_ACTION_PROTOCOL_PATTERNS/);
   assert.match(source, /XENESIS_DESK_ACTION_PROTOCOL_TEXT/);
   assert.match(source, /XENESIS_DESK_ACTION_PROTOCOL_RECORD_KEYS/);

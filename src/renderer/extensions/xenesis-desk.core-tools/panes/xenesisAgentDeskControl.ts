@@ -100,6 +100,7 @@ import {
   XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS,
   XENESIS_NATURAL_MESSENGER_VIEW_FALLBACK_CONTEXT_WORDS,
   XENESIS_NATURAL_MESSENGER_VIEW_OPEN_FALLBACK_CONTEXT_WORDS,
+  XENESIS_NATURAL_NUMERIC_LIMITS,
   XENESIS_NATURAL_OAUTH_CONTEXT_WORDS,
   XENESIS_NATURAL_OAUTH_DRAFT_CONTEXT_WORDS,
   XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS,
@@ -152,6 +153,7 @@ import {
   XENESIS_NATURAL_TERMINAL_CONTEXT_WORDS,
   XENESIS_NATURAL_TERMINAL_MULTI_CONTEXT_WORDS,
   XENESIS_NATURAL_TERMINAL_RUN_CONTEXT_WORDS,
+  XENESIS_NATURAL_TEXT_DEFAULTS,
   XENESIS_NATURAL_TOGGLE_CONTEXT_WORDS,
   XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
@@ -245,9 +247,9 @@ type XenesisDeskWindowState = 'top' | 'left' | 'document' | 'right' | 'bottom';
 type XenesisDeskArrangeMode = 'row' | 'column' | 'grid';
 
 function normalizeNaturalLanguageText(value: string): string {
-  return String(value || '')
-    .normalize('NFKC')
-    .replace(EXTRACTION_PATTERNS.normalizedWhitespace, ' ')
+  return String(value || NATURAL_TEXT_DEFAULTS.empty)
+    .normalize(NATURAL_TEXT_DEFAULTS.unicodeNormalizationForm)
+    .replace(EXTRACTION_PATTERNS.normalizedWhitespace, NATURAL_TEXT_DEFAULTS.wordSeparator)
     .trim()
     .toLowerCase();
 }
@@ -334,6 +336,8 @@ const GUIDE_ACTIONS = XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS;
 const INTENT_PATTERNS = XENESIS_NATURAL_INTENT_PATTERNS;
 const MESSENGER_AGGREGATE_OPEN_ACTIONS = XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_ACTION_DESCRIPTORS;
 const MESSENGER_AGGREGATE_STATUS_ACTIONS = XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS;
+const NATURAL_NUMERIC_LIMITS = XENESIS_NATURAL_NUMERIC_LIMITS;
+const NATURAL_TEXT_DEFAULTS = XENESIS_NATURAL_TEXT_DEFAULTS;
 const ONBOARDING_ACTIONS = XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS;
 const PLAN_TEXT = XENESIS_NATURAL_PLAN_VISIBLE_TEXT;
 const PROVIDER_AGGREGATE_OPEN_ACTIONS = XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS;
@@ -368,10 +372,14 @@ function detectWindowSizerPreset(value: string): string | undefined {
   return findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_WINDOW_SIZE_PRESET_TARGETS)?.id;
 }
 
-function extractFirstInteger(value: string, min = 1, max = 100): number | undefined {
-  const match = String(value || '').match(EXTRACTION_PATTERNS.firstInteger);
+function extractFirstInteger(
+  value: string,
+  min: number = NATURAL_NUMERIC_LIMITS.firstInteger.min,
+  max: number = NATURAL_NUMERIC_LIMITS.firstInteger.max,
+): number | undefined {
+  const match = String(value || NATURAL_TEXT_DEFAULTS.empty).match(EXTRACTION_PATTERNS.firstInteger);
   if (!match) return undefined;
-  const parsed = Number.parseInt(match[0] || '', 10);
+  const parsed = Number.parseInt(match[0] || NATURAL_TEXT_DEFAULTS.empty, 10);
   if (!Number.isFinite(parsed)) return undefined;
   return Math.max(min, Math.min(max, parsed));
 }
@@ -393,12 +401,15 @@ function detectArrangeMode(value: string): XenesisDeskArrangeMode | undefined {
 }
 
 function stripQuotedText(value: string): string {
-  return String(value || '').replace(EXTRACTION_PATTERNS.quotedText, ' ');
+  return String(value || NATURAL_TEXT_DEFAULTS.empty).replace(
+    EXTRACTION_PATTERNS.quotedText,
+    NATURAL_TEXT_DEFAULTS.wordSeparator,
+  );
 }
 
 function extractQuotedTexts(value: string): string[] {
   const texts: string[] = [];
-  for (const match of String(value || '').matchAll(EXTRACTION_PATTERNS.quotedText)) {
+  for (const match of String(value || NATURAL_TEXT_DEFAULTS.empty).matchAll(EXTRACTION_PATTERNS.quotedText)) {
     const quoted = match[1]?.trim();
     if (quoted) texts.push(quoted);
   }
@@ -406,36 +417,41 @@ function extractQuotedTexts(value: string): string[] {
 }
 
 function extractQuotedText(value: string): string {
-  return extractQuotedTexts(value)[0] || '';
+  return extractQuotedTexts(value)[NATURAL_TEXT_DEFAULTS.firstItemIndex] || NATURAL_TEXT_DEFAULTS.empty;
 }
 
 function extractLocalPath(value: string): string {
   const quoted = extractQuotedText(value);
   if (quoted) return quoted;
   const windowsPath = value.match(EXTRACTION_PATTERNS.localWindowsPath);
-  if (windowsPath?.[0]) return windowsPath[0].trim().replace(EXTRACTION_PATTERNS.trailingPathPunctuation, '');
+  if (windowsPath?.[0]) {
+    return windowsPath[0].trim().replace(EXTRACTION_PATTERNS.trailingPathPunctuation, NATURAL_TEXT_DEFAULTS.empty);
+  }
   const unixPath = value.match(EXTRACTION_PATTERNS.localUnixPath);
-  return unixPath?.[0]?.trim().replace(EXTRACTION_PATTERNS.trailingPathPunctuation, '') || '';
+  return (
+    unixPath?.[0]?.trim().replace(EXTRACTION_PATTERNS.trailingPathPunctuation, NATURAL_TEXT_DEFAULTS.empty) ||
+    NATURAL_TEXT_DEFAULTS.empty
+  );
 }
 
 function extractFilterQuery(value: string): string {
   const quoted = extractQuotedText(value);
   if (quoted) return quoted;
   const cleaned = value
-    .replace(EXTRACTION_PATTERNS.filterQueryWords, ' ')
-    .replace(EXTRACTION_PATTERNS.normalizedWhitespace, ' ')
+    .replace(EXTRACTION_PATTERNS.filterQueryWords, NATURAL_TEXT_DEFAULTS.wordSeparator)
+    .replace(EXTRACTION_PATTERNS.normalizedWhitespace, NATURAL_TEXT_DEFAULTS.wordSeparator)
     .trim();
-  const parts = cleaned.split(' ').filter(Boolean);
+  const parts = cleaned.split(NATURAL_TEXT_DEFAULTS.wordSeparator).filter(Boolean);
   return parts[parts.length - 1] || cleaned;
 }
 
 function extractTerminalCommand(rawText: string): string {
   const quoted = extractQuotedText(rawText);
   if (quoted) return quoted;
-  return String(rawText || '')
-    .replace(EXTRACTION_PATTERNS.terminalCommandPrefix, '')
-    .replace(EXTRACTION_PATTERNS.terminalCommandSuffix, '')
-    .replace(EXTRACTION_PATTERNS.terminalCommandTrim, '')
+  return String(rawText || NATURAL_TEXT_DEFAULTS.empty)
+    .replace(EXTRACTION_PATTERNS.terminalCommandPrefix, NATURAL_TEXT_DEFAULTS.empty)
+    .replace(EXTRACTION_PATTERNS.terminalCommandSuffix, NATURAL_TEXT_DEFAULTS.empty)
+    .replace(EXTRACTION_PATTERNS.terminalCommandTrim, NATURAL_TEXT_DEFAULTS.empty)
     .trim();
 }
 
@@ -1596,7 +1612,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
   }
 
   const dockSide = detectDockSide(value);
-  const dockSize = extractFirstInteger(value, 120, 4096);
+  const dockSize = extractFirstInteger(value, NATURAL_NUMERIC_LIMITS.dockSize.min, NATURAL_NUMERIC_LIMITS.dockSize.max);
   if (
     dockSide &&
     dockSize &&
@@ -1672,7 +1688,11 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
       return naturalPlan(PLAN_TEXT.terminalListRead, [naturalCatalogAction(DESK_ACTIONS.terminalsList)]);
     }
 
-    const count = extractFirstInteger(value, 1, 50);
+    const count = extractFirstInteger(
+      value,
+      NATURAL_NUMERIC_LIMITS.terminalCount.min,
+      NATURAL_NUMERIC_LIMITS.terminalCount.max,
+    );
     if (count && count > 1 && hasAny(value, XENESIS_NATURAL_TERMINAL_MULTI_CONTEXT_WORDS)) {
       const actions = [
         naturalCatalogAction(DESK_ACTIONS.terminalRunMany, DESK_ACTION_ARGS.terminalMany(count, placement)),
