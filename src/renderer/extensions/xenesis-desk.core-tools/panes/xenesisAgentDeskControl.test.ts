@@ -2,16 +2,20 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
+  isXenesisDeskActionRecordValue,
+  isXenesisDeskActionValueType,
   isXenesisNaturalConnectionMessengerTarget,
   isXenesisNaturalConnectionToolTarget,
   isXenesisNaturalPlannedGoogleToolTarget,
   XENESIS_DESK_ACTION_ACTIVITY_PHASES,
   XENESIS_DESK_ACTION_APPROVAL_STATE,
+  XENESIS_DESK_ACTION_CALL_RESULT_KEYS,
   XENESIS_DESK_ACTION_EXECUTION_STATUS,
   XENESIS_DESK_ACTION_PROTOCOL_FORMAT,
   XENESIS_DESK_ACTION_PROTOCOL_RECORD_KEYS,
   XENESIS_DESK_ACTION_RESULT_SUMMARY_KEYS,
   XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT,
+  XENESIS_DESK_ACTION_VALUE_TYPE_NAMES,
   XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES,
   XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES,
   XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES,
@@ -360,6 +364,26 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.equal(XENESIS_DESK_ACTION_EXECUTION_STATUS.failed, false);
   assert.equal(XENESIS_DESK_ACTION_EXECUTION_STATUS.isOk(undefined), true);
   assert.equal(XENESIS_DESK_ACTION_EXECUTION_STATUS.isOk(false), false);
+  assert.match(source, /XENESIS_DESK_ACTION_VALUE_TYPE_NAMES/);
+  assert.match(source, /XENESIS_DESK_ACTION_CALL_RESULT_KEYS/);
+  assert.match(source, /isXenesisDeskActionRecordValue/);
+  assert.match(source, /isXenesisDeskActionValueType/);
+  assert.doesNotMatch(source, /typeof [^;\n]+ === 'object'/);
+  assert.doesNotMatch(source, /typeof [^;\n]+ === 'string'/);
+  assert.doesNotMatch(source, /typeof [^;\n]+ === 'number'/);
+  assert.doesNotMatch(source, /typeof [^;\n]+ !== 'object'/);
+  assert.doesNotMatch(source, /callResult\.(ok|result|error|approvalRequired|permission|approval|source)/);
+  assert.doesNotMatch(source, /value\.result/);
+  assert.doesNotMatch(source, /result\.approvalRequired/);
+  assert.equal(XENESIS_DESK_ACTION_VALUE_TYPE_NAMES.object, 'object');
+  assert.equal(XENESIS_DESK_ACTION_VALUE_TYPE_NAMES.string, 'string');
+  assert.equal(XENESIS_DESK_ACTION_VALUE_TYPE_NAMES.number, 'number');
+  assert.equal(isXenesisDeskActionRecordValue({ result: true }), true);
+  assert.equal(isXenesisDeskActionRecordValue(['result']), false);
+  assert.equal(isXenesisDeskActionValueType('result', XENESIS_DESK_ACTION_VALUE_TYPE_NAMES.string), true);
+  assert.equal(isXenesisDeskActionValueType(1, XENESIS_DESK_ACTION_VALUE_TYPE_NAMES.number), true);
+  assert.equal(XENESIS_DESK_ACTION_CALL_RESULT_KEYS.approvalRequired, 'approvalRequired');
+  assert.equal(XENESIS_DESK_ACTION_CALL_RESULT_KEYS.source, 'source');
   assert.deepEqual(XENESIS_DESK_ACTION_RESULT_SUMMARY_KEYS.fileList, ['openFiles', 'files', 'items', 'entries']);
   assert.equal(XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT.fileList(1, 'README.md'), '1 file, first: README.md');
   assert.equal(XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT.workflowMetric(2, 'passed'), '2 passed');

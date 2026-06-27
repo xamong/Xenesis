@@ -2,11 +2,14 @@ import { listDeskBridgeCapabilities } from '../../../../shared/deskBridgeCapabil
 import {
   findXenesisNaturalGuideTarget,
   findXenesisNaturalWordsTarget,
+  isXenesisDeskActionRecordValue,
+  isXenesisDeskActionValueType,
   isXenesisNaturalConnectionMessengerTarget,
   isXenesisNaturalConnectionToolTarget,
   isXenesisNaturalPlannedGoogleToolTarget,
   XENESIS_DESK_ACTION_ACTIVITY_PHASES,
   XENESIS_DESK_ACTION_APPROVAL_STATE,
+  XENESIS_DESK_ACTION_CALL_RESULT_KEYS,
   XENESIS_DESK_ACTION_EXECUTION_STATUS,
   XENESIS_DESK_ACTION_PROTOCOL,
   XENESIS_DESK_ACTION_PROTOCOL_FORMAT,
@@ -16,6 +19,7 @@ import {
   XENESIS_DESK_ACTION_RESULT_SUMMARY_KEYS,
   XENESIS_DESK_ACTION_RESULT_SUMMARY_PATHS,
   XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT,
+  XENESIS_DESK_ACTION_VALUE_TYPE_NAMES,
   XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES,
   XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES,
   XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES,
@@ -314,6 +318,7 @@ function naturalViewOpenAction(
 const DESK_ACTIONS = XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS;
 const DESK_ACTION_ACTIVITY_PHASES = XENESIS_DESK_ACTION_ACTIVITY_PHASES;
 const DESK_ACTION_APPROVAL_STATE = XENESIS_DESK_ACTION_APPROVAL_STATE;
+const DESK_ACTION_CALL_RESULT_KEYS = XENESIS_DESK_ACTION_CALL_RESULT_KEYS;
 const DESK_ACTION_EXECUTION_STATUS = XENESIS_DESK_ACTION_EXECUTION_STATUS;
 const DESK_ACTION_PROTOCOL = XENESIS_DESK_ACTION_PROTOCOL;
 const DESK_ACTION_PROTOCOL_FORMAT = XENESIS_DESK_ACTION_PROTOCOL_FORMAT;
@@ -323,6 +328,7 @@ const DESK_ACTION_PROTOCOL_TEXT = XENESIS_DESK_ACTION_PROTOCOL_TEXT;
 const DESK_ACTION_RESULT_SUMMARY_KEYS = XENESIS_DESK_ACTION_RESULT_SUMMARY_KEYS;
 const DESK_ACTION_RESULT_SUMMARY_PATHS = XENESIS_DESK_ACTION_RESULT_SUMMARY_PATHS;
 const DESK_ACTION_RESULT_SUMMARY_TEXT = XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT;
+const DESK_ACTION_VALUE_TYPE_NAMES = XENESIS_DESK_ACTION_VALUE_TYPE_NAMES;
 const DESK_ACTION_ARG_DEFAULTS = XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS;
 const DESK_ACTION_ARGS = XENESIS_NATURAL_DESK_ACTION_ARGS;
 const DEFAULT_DESK_PLACEMENT = DESK_ACTION_ARG_DEFAULTS.placement;
@@ -1794,13 +1800,13 @@ function normalizeDeskActionRecord(
   value: unknown,
   index: number,
 ): { action?: XenesisDeskActionRequest; error?: string } {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+  if (!isXenesisDeskActionRecordValue(value)) {
     return { error: DESK_ACTION_PROTOCOL_TEXT.mustBeJsonObject(index) };
   }
 
-  const record = value as Record<string, unknown>;
+  const record = value;
   const pathValue = record[DESK_ACTION_PROTOCOL_RECORD_KEYS.path];
-  const path = typeof pathValue === 'string' ? pathValue.trim() : '';
+  const path = isXenesisDeskActionValueType(pathValue, DESK_ACTION_VALUE_TYPE_NAMES.string) ? pathValue.trim() : '';
   if (!path) return { error: DESK_ACTION_PROTOCOL_TEXT.missingPath(index) };
   if (!path.startsWith(DESK_ACTION_PROTOCOL.pathPrefix)) {
     return { error: DESK_ACTION_PROTOCOL_TEXT.invalidPathPrefix(index, path, DESK_ACTION_PROTOCOL.pathPrefix) };
@@ -1808,9 +1814,14 @@ function normalizeDeskActionRecord(
 
   const idValue = record[DESK_ACTION_PROTOCOL_RECORD_KEYS.id];
   const id =
-    typeof idValue === 'string' && idValue.trim() ? idValue.trim() : DESK_ACTION_PROTOCOL_FORMAT.defaultActionId(index);
+    isXenesisDeskActionValueType(idValue, DESK_ACTION_VALUE_TYPE_NAMES.string) && idValue.trim()
+      ? idValue.trim()
+      : DESK_ACTION_PROTOCOL_FORMAT.defaultActionId(index);
   const reasonValue = record[DESK_ACTION_PROTOCOL_RECORD_KEYS.reason];
-  const reason = typeof reasonValue === 'string' && reasonValue.trim() ? reasonValue.trim() : undefined;
+  const reason =
+    isXenesisDeskActionValueType(reasonValue, DESK_ACTION_VALUE_TYPE_NAMES.string) && reasonValue.trim()
+      ? reasonValue.trim()
+      : undefined;
 
   return {
     action: {
@@ -1827,8 +1838,8 @@ function normalizeDeskActionRecord(
 
 function actionRecordsFromJson(value: unknown): unknown[] {
   if (Array.isArray(value)) return value;
-  if (value && typeof value === 'object') {
-    const actions = (value as Record<string, unknown>)[DESK_ACTION_PROTOCOL_RECORD_KEYS.actions];
+  if (isXenesisDeskActionRecordValue(value)) {
+    const actions = value[DESK_ACTION_PROTOCOL_RECORD_KEYS.actions];
     if (Array.isArray(actions)) return actions;
   }
   return [value];
@@ -1912,18 +1923,23 @@ export async function runXenesisDeskActions(
     reportActivity({ phase: DESK_ACTION_ACTIVITY_PHASES.start, action });
     try {
       const callResult = await executor(action.path, action.args, { approved: action.approved });
+      const callError = callResult[DESK_ACTION_CALL_RESULT_KEYS.error];
+      const callApprovalRequired = callResult[DESK_ACTION_CALL_RESULT_KEYS.approvalRequired];
+      const callPermission = callResult[DESK_ACTION_CALL_RESULT_KEYS.permission];
+      const callApproval = callResult[DESK_ACTION_CALL_RESULT_KEYS.approval];
+      const callSource = callResult[DESK_ACTION_CALL_RESULT_KEYS.source];
       const result: XenesisDeskActionExecutionResult = {
         id: action.id,
         path: action.path,
         args: action.args,
         approved: action.approved,
-        ok: DESK_ACTION_EXECUTION_STATUS.isOk(callResult.ok),
-        result: callResult.result ?? callResult,
-        ...(callResult.error ? { error: callResult.error } : {}),
-        ...(callResult.approvalRequired ? { approvalRequired: callResult.approvalRequired } : {}),
-        ...(callResult.permission ? { permission: callResult.permission } : {}),
-        ...(callResult.approval ? { approval: callResult.approval } : {}),
-        ...(callResult.source ? { source: callResult.source } : {}),
+        ok: DESK_ACTION_EXECUTION_STATUS.isOk(callResult[DESK_ACTION_CALL_RESULT_KEYS.ok]),
+        result: callResult[DESK_ACTION_CALL_RESULT_KEYS.result] ?? callResult,
+        ...(callError ? { error: callError } : {}),
+        ...(callApprovalRequired ? { approvalRequired: callApprovalRequired } : {}),
+        ...(callPermission ? { permission: callPermission } : {}),
+        ...(callApproval ? { approval: callApproval } : {}),
+        ...(callSource ? { source: callSource } : {}),
       };
       results.push(result);
       reportActivity({
@@ -1934,7 +1950,7 @@ export async function runXenesisDeskActions(
             : DESK_ACTION_ACTIVITY_PHASES.failure,
         action,
         result,
-        ...(result.error ? { error: result.error } : {}),
+        ...(result[DESK_ACTION_CALL_RESULT_KEYS.error] ? { error: result[DESK_ACTION_CALL_RESULT_KEYS.error] } : {}),
       });
     } catch (error) {
       const result: XenesisDeskActionExecutionResult = {
@@ -1946,24 +1962,31 @@ export async function runXenesisDeskActions(
         error: error instanceof Error ? error.message : String(error),
       };
       results.push(result);
-      reportActivity({ phase: DESK_ACTION_ACTIVITY_PHASES.failure, action, result, error: result.error });
+      reportActivity({
+        phase: DESK_ACTION_ACTIVITY_PHASES.failure,
+        action,
+        result,
+        error: result[DESK_ACTION_CALL_RESULT_KEYS.error],
+      });
     }
   }
   return results;
 }
 
 function resultRecord(value: XenesisDeskActionExecutionResult): Record<string, unknown> {
-  return value.result && typeof value.result === 'object' && !Array.isArray(value.result)
-    ? (value.result as Record<string, unknown>)
-    : {};
+  const result = value[DESK_ACTION_CALL_RESULT_KEYS.result];
+  return isXenesisDeskActionRecordValue(result) ? result : {};
 }
 
 export function isXenesisDeskActionApprovalRequiredResult(result: XenesisDeskActionExecutionResult): boolean {
   const record = resultRecord(result);
   return (
-    result.approvalRequired === true ||
-    record.approvalRequired === true ||
-    (!result.ok && DESK_ACTION_PROTOCOL_PATTERNS.approvalRequiredError.test(result.error || ''))
+    result[DESK_ACTION_CALL_RESULT_KEYS.approvalRequired] === true ||
+    record[DESK_ACTION_CALL_RESULT_KEYS.approvalRequired] === true ||
+    (!result.ok &&
+      DESK_ACTION_PROTOCOL_PATTERNS.approvalRequiredError.test(
+        result[DESK_ACTION_CALL_RESULT_KEYS.error] || DESK_ACTION_PROTOCOL_FORMAT.emptyText,
+      ))
   );
 }
 
@@ -1988,7 +2011,7 @@ function describeDeskAction(action: XenesisDeskActionRequest): string {
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+  return isXenesisDeskActionRecordValue(value) ? value : {};
 }
 
 function compactJson(value: unknown, maxLength = DESK_ACTION_PROTOCOL_FORMAT.compactJsonMaxLength): string {
@@ -2002,7 +2025,7 @@ function compactJson(value: unknown, maxLength = DESK_ACTION_PROTOCOL_FORMAT.com
 }
 
 function basename(value: unknown): string {
-  const text = typeof value === 'string' ? value.trim() : '';
+  const text = isXenesisDeskActionValueType(value, DESK_ACTION_VALUE_TYPE_NAMES.string) ? value.trim() : '';
   if (!text) return DESK_ACTION_PROTOCOL_FORMAT.emptyText;
   const normalized = text.replace(
     DESK_ACTION_PROTOCOL_PATTERNS.windowsPathSeparator,
@@ -2022,7 +2045,7 @@ function arrayFromRecord(record: Record<string, unknown>, keys: readonly string[
 function stringFromRecord(record: Record<string, unknown>, keys: readonly string[]): string {
   for (const key of keys) {
     const value = record[key];
-    if (typeof value === 'string' && value.trim()) return value.trim();
+    if (isXenesisDeskActionValueType(value, DESK_ACTION_VALUE_TYPE_NAMES.string) && value.trim()) return value.trim();
   }
   return '';
 }
@@ -2030,7 +2053,7 @@ function stringFromRecord(record: Record<string, unknown>, keys: readonly string
 function numberFromRecord(record: Record<string, unknown>, keys: readonly string[]): number | undefined {
   for (const key of keys) {
     const value = record[key];
-    if (typeof value === 'number') return value;
+    if (isXenesisDeskActionValueType(value, DESK_ACTION_VALUE_TYPE_NAMES.number)) return value;
   }
   return undefined;
 }
@@ -2044,7 +2067,7 @@ function basenameFromRecord(record: Record<string, unknown>, keys: readonly stri
 }
 
 function firstReadableTitle(value: unknown): string {
-  if (typeof value === 'string') return basename(value) || value;
+  if (isXenesisDeskActionValueType(value, DESK_ACTION_VALUE_TYPE_NAMES.string)) return basename(value) || value;
   const record = asRecord(value);
   return basenameFromRecord(record, DESK_ACTION_RESULT_SUMMARY_KEYS.readableTitle);
 }
@@ -2102,7 +2125,8 @@ function summarizeWorkflowResult(record: Record<string, unknown>): string {
 }
 
 function summarizeDeskActionResult(result: XenesisDeskActionExecutionResult): string {
-  const record = asRecord(result.result);
+  const resultValue = result[DESK_ACTION_CALL_RESULT_KEYS.result];
+  const record = asRecord(resultValue);
   if (result.path === DESK_ACTION_RESULT_SUMMARY_PATHS.filesListOpen) return summarizeFileList(record);
   if (result.path === DESK_ACTION_RESULT_SUMMARY_PATHS.captureActivePane) return summarizeCaptureResult(record);
   if (result.path === DESK_ACTION_RESULT_SUMMARY_PATHS.windowSizePreset) return summarizeBoundsResult(record);
@@ -2114,7 +2138,7 @@ function summarizeDeskActionResult(result: XenesisDeskActionExecutionResult): st
     stringFromRecord(renderer, DESK_ACTION_RESULT_SUMMARY_KEYS.message);
   if (message) return message;
 
-  const compact = compactJson(result.result);
+  const compact = compactJson(resultValue);
   if (!compact || DESK_ACTION_RESULT_SUMMARY_TEXT.compactEmptyJson.includes(compact)) return '';
   return compact;
 }
@@ -2150,7 +2174,7 @@ export function buildXenesisDeskActionCompletedMessage(results: XenesisDeskActio
           ...failed.map((result) =>
             DESK_ACTION_PROTOCOL_FORMAT.resultBullet(
               result.path,
-              result.error || DESK_ACTION_PROTOCOL_TEXT.failureFallback,
+              result[DESK_ACTION_CALL_RESULT_KEYS.error] || DESK_ACTION_PROTOCOL_TEXT.failureFallback,
             ),
           ),
         ]

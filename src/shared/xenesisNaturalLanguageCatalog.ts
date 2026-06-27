@@ -119,6 +119,49 @@ export const XENESIS_DESK_ACTION_EXECUTION_STATUS = {
   isOk: (ok: boolean | undefined) => ok !== false,
 } as const;
 
+export const XENESIS_DESK_ACTION_VALUE_TYPE_NAMES = {
+  number: 'number',
+  object: 'object',
+  string: 'string',
+} as const;
+
+export type XenesisDeskActionValueTypeName =
+  (typeof XENESIS_DESK_ACTION_VALUE_TYPE_NAMES)[keyof typeof XENESIS_DESK_ACTION_VALUE_TYPE_NAMES];
+
+export function isXenesisDeskActionValueType(
+  value: unknown,
+  typeName: typeof XENESIS_DESK_ACTION_VALUE_TYPE_NAMES.string,
+): value is string;
+export function isXenesisDeskActionValueType(
+  value: unknown,
+  typeName: typeof XENESIS_DESK_ACTION_VALUE_TYPE_NAMES.number,
+): value is number;
+export function isXenesisDeskActionValueType(
+  value: unknown,
+  typeName: typeof XENESIS_DESK_ACTION_VALUE_TYPE_NAMES.object,
+): value is object;
+export function isXenesisDeskActionValueType(value: unknown, typeName: XenesisDeskActionValueTypeName): boolean {
+  return typeof value === typeName;
+}
+
+export function isXenesisDeskActionRecordValue(value: unknown): value is Record<string, unknown> {
+  return (
+    isXenesisDeskActionValueType(value, XENESIS_DESK_ACTION_VALUE_TYPE_NAMES.object) &&
+    value !== null &&
+    !Array.isArray(value)
+  );
+}
+
+export const XENESIS_DESK_ACTION_CALL_RESULT_KEYS = {
+  approval: 'approval',
+  approvalRequired: 'approvalRequired',
+  error: 'error',
+  ok: 'ok',
+  permission: 'permission',
+  result: 'result',
+  source: 'source',
+} as const;
+
 export const XENESIS_DESK_ACTION_PROTOCOL_TEXT = {
   appliedHeader: 'Applied:',
   approvalRequiredBody:

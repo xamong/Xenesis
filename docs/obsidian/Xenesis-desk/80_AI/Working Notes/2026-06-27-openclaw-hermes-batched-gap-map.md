@@ -2349,6 +2349,46 @@
 - External documentation handling: no browsing. This update used cached
   repo-local context, source code, and tests.
 
+## Desk Action Runtime Result Key/Type Catalog Refactor Slice
+
+- Removed representative runtime value-type and execution result key sentinels
+  from `xenesisAgentDeskControl.ts`.
+- Extended `src/shared/xenesisNaturalLanguageCatalog.ts` with:
+  - `XENESIS_DESK_ACTION_VALUE_TYPE_NAMES` for `object`, `string`, and
+    `number`.
+  - `XENESIS_DESK_ACTION_CALL_RESULT_KEYS` for `ok`, `result`, `error`,
+    `approvalRequired`, `permission`, `approval`, and `source`.
+  - `isXenesisDeskActionValueType` and `isXenesisDeskActionRecordValue` typed
+    helpers, because TypeScript does not narrow `unknown` when `typeof` is
+    compared against object-property catalog values.
+- The Desk control source now consumes shared value/type key catalogs in action
+  JSON normalization, executor call result normalization, approval-required
+  detection, record conversion, result summaries, and pending/completed message
+  helpers.
+- Scope boundary: refactor only. This preserved parse output, executor result
+  shape, approval-required detection, pending/completed messages, result
+  summaries, route order, generated CR paths, and action args.
+- Verification:
+  - RED source guard failed first because
+    `XENESIS_DESK_ACTION_VALUE_TYPE_NAMES` was not yet referenced by
+    `xenesisAgentDeskControl.ts`.
+  - `rg -n "typeof [^;\n]+ === 'object'|typeof [^;\n]+ === 'string'|typeof [^;\n]+ === 'number'|typeof [^;\n]+ !== 'object'|callResult\.(ok|result|error|approvalRequired|permission|approval|source)|value\.result|result\.approvalRequired" src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts`
+    returned no matches after implementation.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 100/100 tests.
+  - `npx biome check src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --max-diagnostics 40`
+    passed after Biome sorted the new test imports.
+  - `npm run typecheck` passed after adding the shared typed helper functions.
+  - `npm run docs:capabilities:audit` passed with Registered nodes 763,
+    Callable methods 468, Dispatcher paths 448, missing registered paths 0,
+    missing dispatched coverage paths 0, undispatched static callable methods
+    0, and dispatcher paths missing from tree 0. The generated audit file was
+    removed afterward.
+- Known gap: live Electron Agent-pane smoke was not run for this refactor-only
+  slice.
+- External documentation handling: no browsing. This update used cached
+  repo-local context, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
