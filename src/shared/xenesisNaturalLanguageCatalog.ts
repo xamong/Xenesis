@@ -117,6 +117,89 @@ export const XENESIS_NATURAL_ACTION_INTENT_WORDS = [
   'pane',
 ] as const;
 
+export const XENESIS_NATURAL_GUIDE_CONTEXT_WORDS = [
+  '가이드',
+  'guide',
+  'guides',
+  '문서',
+  'playbook',
+  '플레이북',
+] as const;
+
+export const XENESIS_NATURAL_GUIDE_FILE_OPEN_WORDS = [
+  '파일',
+  'file',
+  'manual file',
+  '문서 파일',
+  'repo-local',
+  'repo local',
+  '로컬 문서',
+] as const;
+
+export const XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS = [
+  '온보딩',
+  'onboarding',
+  '초기 설정',
+  '초기 셋팅',
+  '초기 세팅',
+  'initial setup',
+  'setup checklist',
+  '체크리스트',
+  'checklist',
+] as const;
+
+export const XENESIS_NATURAL_CONNECTION_READBACK_INTENT_WORDS = [
+  '상태',
+  'status',
+  '확인',
+  'inspect',
+  '진단',
+  'diagnostic',
+  'diagnostics',
+  '라우팅',
+  'routing',
+  '안전',
+  'safety',
+] as const;
+
+export const XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_WORDS = [
+  'external tool',
+  'external tools',
+  'tool catalog',
+  'tool catalogs',
+  'tools catalog',
+  '외부 툴',
+  '외부 도구',
+  '툴 전체',
+  '도구 전체',
+  '전체 툴',
+  '전체 도구',
+] as const;
+
+export const XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_WORDS = [
+  'external messenger',
+  'external messengers',
+  'messenger catalog',
+  'messenger catalogs',
+  'channel catalog',
+  'channel catalogs',
+  '외부 메신저',
+  '외부 채널',
+  '메신저 전체',
+  '채널 전체',
+  '전체 메신저',
+  '전체 채널',
+] as const;
+
+export const XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_WORDS = [
+  '전체',
+  'all',
+  'catalog',
+  '카탈로그',
+  '목록',
+  'list',
+] as const;
+
 export const XENESIS_NATURAL_PLACEMENT_TARGETS: readonly XenesisNaturalWordsTarget[] = [
   { id: 'right', label: 'right', words: ['오른쪽', '우측', 'right'] },
   { id: 'left', label: 'left', words: ['왼쪽', '좌측', 'left'] },

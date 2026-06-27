@@ -3,11 +3,18 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
   XENESIS_NATURAL_ACTION_INTENT_WORDS,
+  XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_WORDS,
   XENESIS_NATURAL_ARRANGE_MODE_TARGETS,
+  XENESIS_NATURAL_CONNECTION_READBACK_INTENT_WORDS,
   XENESIS_NATURAL_DOCK_SIDE_TARGETS,
   XENESIS_NATURAL_DOCK_WINDOW_STATE_TARGETS,
   XENESIS_NATURAL_EXPLICIT_OPEN_WORDS,
+  XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_WORDS,
+  XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_WORDS,
+  XENESIS_NATURAL_GUIDE_CONTEXT_WORDS,
+  XENESIS_NATURAL_GUIDE_FILE_OPEN_WORDS,
   XENESIS_NATURAL_GUIDE_TARGETS,
+  XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS,
   XENESIS_NATURAL_ONBOARDING_STEP_TARGETS,
   XENESIS_NATURAL_PLACEMENT_TARGETS,
   XENESIS_NATURAL_WINDOW_SIZE_PRESET_TARGETS,
@@ -34,6 +41,22 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /Use `xd\.xenesis\.providers\.setup\.status`, `xd\.xenesis\.providers\.setup\.open`/);
   assert.doesNotMatch(source, /Use `xd\.xenesis\.tools\.setup\.status`, `xd\.xenesis\.tools\.setup\.open`/);
   assert.doesNotMatch(source, /Use `xd\.xenesis\.channels\.routing\.status`, `xd\.xenesis\.channels\.routing\.open`/);
+  assert.match(source, /XENESIS_NATURAL_GUIDE_CONTEXT_WORDS/);
+  assert.match(source, /XENESIS_NATURAL_GUIDE_FILE_OPEN_WORDS/);
+  assert.match(source, /XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS/);
+  assert.match(source, /XENESIS_NATURAL_CONNECTION_READBACK_INTENT_WORDS/);
+  assert.match(source, /XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_WORDS/);
+  assert.match(source, /XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_WORDS/);
+  assert.match(source, /XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /hasAny\(value, \[\s*'온보딩'/);
+  assert.doesNotMatch(source, /hasAny\(value, \[\s*'external tool'/);
+  assert.deepEqual(XENESIS_NATURAL_GUIDE_CONTEXT_WORDS, ['가이드', 'guide', 'guides', '문서', 'playbook', '플레이북']);
+  assert.equal(XENESIS_NATURAL_GUIDE_FILE_OPEN_WORDS.includes('repo-local'), true);
+  assert.equal(XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS.includes('setup checklist'), true);
+  assert.equal(XENESIS_NATURAL_CONNECTION_READBACK_INTENT_WORDS.includes('diagnostics'), true);
+  assert.equal(XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_WORDS.includes('외부 도구'), true);
+  assert.equal(XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_WORDS.includes('channel catalogs'), true);
+  assert.equal(XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_WORDS.includes('catalog'), true);
   assert.match(source, /XENESIS_NATURAL_PLACEMENT_TARGETS/);
   assert.match(source, /XENESIS_NATURAL_DOCK_SIDE_TARGETS/);
   assert.match(source, /XENESIS_NATURAL_DOCK_WINDOW_STATE_TARGETS/);

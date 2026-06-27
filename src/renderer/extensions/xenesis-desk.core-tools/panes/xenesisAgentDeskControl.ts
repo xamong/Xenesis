@@ -3,12 +3,19 @@ import {
   findXenesisNaturalGuideTarget,
   findXenesisNaturalWordsTarget,
   XENESIS_NATURAL_ACTION_INTENT_WORDS,
+  XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_WORDS,
   XENESIS_NATURAL_ARRANGE_MODE_TARGETS,
+  XENESIS_NATURAL_CONNECTION_READBACK_INTENT_WORDS,
   XENESIS_NATURAL_CONNECTION_TARGETS,
   XENESIS_NATURAL_CORE_TOOL_TARGETS,
   XENESIS_NATURAL_DOCK_SIDE_TARGETS,
   XENESIS_NATURAL_DOCK_WINDOW_STATE_TARGETS,
   XENESIS_NATURAL_EXPLICIT_OPEN_WORDS,
+  XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_WORDS,
+  XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_WORDS,
+  XENESIS_NATURAL_GUIDE_CONTEXT_WORDS,
+  XENESIS_NATURAL_GUIDE_FILE_OPEN_WORDS,
+  XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS,
   XENESIS_NATURAL_ONBOARDING_STEP_TARGETS,
   XENESIS_NATURAL_PLACEMENT_TARGETS,
   XENESIS_NATURAL_PROVIDER_TARGETS,
@@ -247,7 +254,7 @@ function xenesisConnectionTargetFromNaturalText(value: string): XenesisNaturalCo
 }
 
 function xenesisGuideFromNaturalText(value: string): { id: string; label: string } | null {
-  if (!hasAny(value, ['가이드', 'guide', '문서', 'playbook', '플레이북'])) return null;
+  if (!hasAny(value, XENESIS_NATURAL_GUIDE_CONTEXT_WORDS)) return null;
 
   return findXenesisNaturalGuideTarget(value);
 }
@@ -256,7 +263,7 @@ function xenesisGuideActionFromNaturalText(value: string): XenesisDeskActionRequ
   const guide = xenesisGuideFromNaturalText(value);
   if (!guide) return null;
 
-  const openFile = hasAny(value, ['파일', 'file', 'manual file', '문서 파일', 'repo-local', 'repo local', '로컬 문서']);
+  const openFile = hasAny(value, XENESIS_NATURAL_GUIDE_FILE_OPEN_WORDS);
 
   return naturalAction(
     `natural-xenesis-guide-open-${guide.id}`,
@@ -279,17 +286,7 @@ function xenesisGuideStatusActionFromNaturalText(value: string): XenesisDeskActi
 }
 
 function hasXenesisOnboardingContext(value: string): boolean {
-  return hasAny(value, [
-    '온보딩',
-    'onboarding',
-    '초기 설정',
-    '초기 셋팅',
-    '초기 세팅',
-    'initial setup',
-    'setup checklist',
-    '체크리스트',
-    'checklist',
-  ]);
+  return hasAny(value, XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS);
 }
 
 function xenesisOnboardingStepFromNaturalText(value: string): { id: string; label: string } | null {
@@ -332,63 +329,23 @@ function xenesisOnboardingStatusActionFromNaturalText(value: string): XenesisDes
 }
 
 function hasXenesisConnectionReadbackIntent(value: string): boolean {
-  return hasAny(value, [
-    '상태',
-    'status',
-    '확인',
-    'inspect',
-    '진단',
-    'diagnostic',
-    'diagnostics',
-    '라우팅',
-    'routing',
-    '안전',
-    'safety',
-  ]);
+  return hasAny(value, XENESIS_NATURAL_CONNECTION_READBACK_INTENT_WORDS);
 }
 
 function hasExternalToolCatalogContext(value: string): boolean {
-  return hasAny(value, [
-    'external tool',
-    'external tools',
-    'tool catalog',
-    'tool catalogs',
-    'tools catalog',
-    '외부 툴',
-    '외부 도구',
-    '툴 전체',
-    '도구 전체',
-    '전체 툴',
-    '전체 도구',
-  ]);
+  return hasAny(value, XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_WORDS);
 }
 
 function hasExternalMessengerCatalogContext(value: string): boolean {
-  return hasAny(value, [
-    'external messenger',
-    'external messengers',
-    'messenger catalog',
-    'messenger catalogs',
-    'channel catalog',
-    'channel catalogs',
-    '외부 메신저',
-    '외부 채널',
-    '메신저 전체',
-    '채널 전체',
-    '전체 메신저',
-    '전체 채널',
-  ]);
+  return hasAny(value, XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_WORDS);
 }
 
 function hasXenesisAggregateCatalogContext(value: string): boolean {
-  return hasAny(value, ['전체', 'all', 'catalog', '카탈로그', '목록', 'list']);
+  return hasAny(value, XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_WORDS);
 }
 
 function hasXenesisGuideCatalogContext(value: string): boolean {
-  return (
-    hasAny(value, ['가이드', 'guide', 'guides', '문서', 'playbook', '플레이북']) &&
-    hasXenesisAggregateCatalogContext(value)
-  );
+  return hasAny(value, XENESIS_NATURAL_GUIDE_CONTEXT_WORDS) && hasXenesisAggregateCatalogContext(value);
 }
 
 function hasXenesisConnectionDiagnosticsCatalogContext(value: string): boolean {

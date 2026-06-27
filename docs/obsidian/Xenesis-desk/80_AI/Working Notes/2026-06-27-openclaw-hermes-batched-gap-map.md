@@ -1292,6 +1292,47 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local Obsidian graph, source code, and tests.
 
+## Context Vocabulary Refactor Slice
+
+- Removed deterministic guide/onboarding/catalog context word lists from
+  `xenesisAgentDeskControl.ts`.
+- Added shared context constants to
+  `src/shared/xenesisNaturalLanguageCatalog.ts`:
+  - `XENESIS_NATURAL_GUIDE_CONTEXT_WORDS`
+  - `XENESIS_NATURAL_GUIDE_FILE_OPEN_WORDS`
+  - `XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS`
+  - `XENESIS_NATURAL_CONNECTION_READBACK_INTENT_WORDS`
+  - `XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_WORDS`
+  - `XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_WORDS`
+  - `XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_WORDS`
+- The planner now consumes named shared context constants for guide detection,
+  repo-local guide file opens, onboarding checklist prompts, Connection Center
+  readbacks, external tool/messenger catalog prompts, and aggregate catalog
+  prompts.
+- Added source-level guards so representative context arrays cannot be
+  reintroduced inline in the planner file.
+- Scope boundary: this slice preserves existing route order, CR paths, and
+  approval/execution behavior. It does not add or remove vocabulary, browse
+  external docs, or change catalog semantics.
+- Verification:
+  - RED planner test failed first because the planner did not yet reference
+    `XENESIS_NATURAL_GUIDE_CONTEXT_WORDS`.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 36/36 tests.
+  - `npx biome format --write src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    formatted 3 files with no fixes applied.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 100/100 tests.
+  - `npx biome check src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --max-diagnostics 40`
+    passed.
+  - `npm run typecheck` passed.
+  - CR audit passed with missing registered paths 0, missing dispatched
+    coverage paths 0, undispatched static callable methods 0, and dispatcher
+    paths missing from tree 0.
+  - `git diff --check` exited 0 with line-ending warnings only.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local Obsidian graph, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
