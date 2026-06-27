@@ -812,18 +812,44 @@ test('buildXenesisConnectionsStatus exposes review-only tool OAuth drafts for pl
   assert.ok(workspace?.toolOAuthDraft?.controlPaths.includes('xd.xenesis.tools.oauthDrafts.request'));
   assert.ok(workspace?.toolOAuthDraft?.blockedActions.includes('complete OAuth'));
   assert.ok(workspace?.toolOAuthDraft?.blockedActions.includes('store tokens'));
+  assert.ok(
+    workspace?.toolOAuthDraft?.reviewSteps.some(
+      (step) =>
+        step.id === 'oauth-app-registration' &&
+        step.requiredFields.includes('oauthClient') &&
+        step.controlPaths.includes('xd.xenesis.tools.oauthDrafts.request'),
+    ),
+  );
+  assert.ok(
+    workspace?.toolOAuthDraft?.reviewSteps.some(
+      (step) => step.id === 'scope-review' && step.diagnostics.includes('scope-review'),
+    ),
+  );
 
   assert.equal(calendar?.toolOAuthDraft?.draftStatus, 'planned-template');
   assert.equal(calendar?.toolOAuthDraft?.runtimeSupport, 'planned-oauth');
   assert.ok(calendar?.toolOAuthDraft?.scopes.includes('calendar.events.readonly'));
   assert.ok(calendar?.toolOAuthDraft?.scopes.includes('calendar.freebusy.readonly'));
   assert.ok(calendar?.toolOAuthDraft?.diagnostics.includes('scope-review'));
+  assert.deepEqual(
+    calendar?.toolOAuthDraft?.reviewSteps.map((step) => step.id),
+    ['oauth-app-registration', 'scope-review', 'token-store-readiness', 'readback-verification'],
+  );
+  for (const step of calendar?.toolOAuthDraft?.reviewSteps ?? []) {
+    assert.ok(step.expectedState.length > 0, `${step.id} exposes expected state`);
+    assert.ok(step.readPaths.length > 0, `${step.id} exposes read paths`);
+    assert.ok(step.diagnostics.length > 0, `${step.id} exposes diagnostics`);
+    assert.ok(step.safetyBoundary.length > 0, `${step.id} exposes a safety boundary`);
+  }
   assert.ok(
     calendar?.toolOAuthDraft?.safetyBoundaries.some((boundary) =>
       boundary.includes('tool OAuth drafts are review-only'),
     ),
   );
   assert.equal(JSON.stringify(calendar?.toolOAuthDraft).includes('secret-value-must-not-appear'), false);
+  assert.ok(calendar?.diagnosticRunbook?.diagnostics.includes('readback-verification'));
+  assert.ok(calendar?.setupRequest?.steps.some((step) => step.includes('token-store-readiness')));
+  assert.ok(calendar?.setupRequest?.diagnostics.includes('oauth-app-registration'));
 });
 
 test('buildXenesisConnectionsStatus exposes review-only tool action catalogs', () => {

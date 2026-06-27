@@ -2539,6 +2539,55 @@
 - External documentation handling: no browsing. This used the cached gap map,
   source code, and tests.
 
+## Tool OAuth Review Steps Slice
+
+- Added review-only OAuth setup steps to Google planned OAuth tool drafts in
+  `src/shared/xenesisConnections.ts` through
+  `XenesisConnectionToolOAuthDraftReviewStep`.
+- Covered review phases:
+  - `oauth-app-registration`: OAuth client and redirect URI readiness before
+    any OAuth flow exists.
+  - `scope-review`: read-only scopes are reviewed and Google write scopes stay
+    blocked until a verified template exists.
+  - `token-store-readiness`: token storage remains planned until a selected MCP
+    OAuth template owns the store.
+  - `readback-verification`: read-only validation checks are identified before
+    provider tool execution is enabled.
+- Diagnostic runbooks and setup request templates now include OAuth review-step
+  read paths, control paths, diagnostics, and safety boundaries.
+- The Connection Center OAuth draft summary now includes review step count
+  through `formatXenesisToolOAuthDraftSummary`.
+- Scope boundary:
+  - No Google MCP package selection, MCP install, OAuth completion, token
+    storage, email send, document mutation, calendar event mutation, provider
+    tool execution, or settings mutation.
+  - Google Workspace and Google Calendar remain `planned-oauth`; this slice
+    makes the review flow clearer without claiming runtime OAuth support.
+- Verification:
+  - RED:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    failed because OAuth `reviewSteps` and summary count were missing.
+  - GREEN:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    passed with 68/68 tests.
+  - Related:
+    `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    passed with 99/99 tests.
+  - Scoped Biome:
+    `npx biome check src\shared\xenesisConnections.ts src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.ts src\renderer\panes\xenesisConnectionCenter.test.ts --max-diagnostics 40`
+    passed.
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit` passed with Registered nodes 763,
+    Callable methods 468, Dispatcher paths 448, missing registered paths 0,
+    missing dispatched coverage paths 0, undispatched static callable methods
+    0, and dispatcher paths missing from tree 0. The generated audit file was
+    removed afterward.
+  - Root `npm run lint` was not rerun in this slice; previous run failed on
+    existing repo-wide Biome/CRLF/sample diagnostics outside these changed
+    files.
+- External documentation handling: no browsing. This used the cached gap map,
+  source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

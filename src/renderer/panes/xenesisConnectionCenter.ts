@@ -149,7 +149,7 @@ export function formatXenesisMcpInstallDraftSummary(draft: XenesisConnectionMcpI
 }
 
 export function formatXenesisToolOAuthDraftSummary(draft: XenesisConnectionToolOAuthDraftTemplate): string {
-  return `${draft.tool} / ${draft.draftStatus} / ${draft.scopes.length} scope(s)`;
+  return `${draft.tool} / ${draft.draftStatus} / ${draft.scopes.length} scope(s) / ${draft.reviewSteps.length} review step(s)`;
 }
 
 export function formatXenesisToolUserStorySummary(workflow: XenesisConnectionToolUserStoryTemplate): string {

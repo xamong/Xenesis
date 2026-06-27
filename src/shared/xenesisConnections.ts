@@ -239,6 +239,24 @@ export interface XenesisConnectionToolOAuthDraftField {
   description: string;
 }
 
+export type XenesisConnectionToolOAuthDraftReviewStepId =
+  | 'oauth-app-registration'
+  | 'scope-review'
+  | 'token-store-readiness'
+  | 'readback-verification';
+
+export interface XenesisConnectionToolOAuthDraftReviewStep {
+  id: XenesisConnectionToolOAuthDraftReviewStepId;
+  label: string;
+  phase: XenesisConnectionToolOAuthDraftReviewStepId;
+  expectedState: string;
+  requiredFields: string[];
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  safetyBoundary: string;
+}
+
 export interface XenesisConnectionToolOAuthDraftTemplate {
   draftStatus: XenesisConnectionToolOAuthDraftStatus;
   actionInboxKind: 'xenesis-tool-oauth-draft';
@@ -253,6 +271,7 @@ export interface XenesisConnectionToolOAuthDraftTemplate {
   scopes: string[];
   tokenStore: string;
   consentMode: string;
+  reviewSteps: XenesisConnectionToolOAuthDraftReviewStep[];
   readPaths: string[];
   controlPaths: string[];
   diagnostics: string[];
@@ -3921,12 +3940,90 @@ function toolOAuthDraftField(
   };
 }
 
+function toolOAuthDraftReviewStep(
+  input: XenesisConnectionToolOAuthDraftReviewStep,
+): XenesisConnectionToolOAuthDraftReviewStep {
+  return {
+    ...input,
+    requiredFields: uniqueStrings(input.requiredFields),
+    readPaths: uniqueStrings(input.readPaths),
+    controlPaths: uniqueStrings(input.controlPaths),
+    diagnostics: uniqueStrings(input.diagnostics),
+  };
+}
+
+function toolOAuthDraftReviewSteps(
+  item: XenesisConnectionItem,
+  scopes: string[],
+): XenesisConnectionToolOAuthDraftReviewStep[] {
+  return [
+    toolOAuthDraftReviewStep({
+      id: 'oauth-app-registration',
+      label: 'Review OAuth app registration',
+      phase: 'oauth-app-registration',
+      expectedState: `${item.label} OAuth client, redirect URI, and selected MCP OAuth app requirements are visible before OAuth starts.`,
+      requiredFields: ['oauthClient', 'redirectUri'],
+      readPaths: [
+        'xd.xenesis.tools.oauthDrafts.status',
+        'xd.xenesis.tools.connectors.status',
+        'xd.xenesis.tools.installPlans.status',
+      ],
+      controlPaths: ['xd.xenesis.tools.oauthDrafts.open', 'xd.xenesis.tools.oauthDrafts.request'],
+      diagnostics: ['oauth-app-registration', 'planned-oauth-template', 'mcp-settings-status'],
+      safetyBoundary: 'OAuth app review does not create OAuth apps, expose client secrets, or complete OAuth.',
+    }),
+    toolOAuthDraftReviewStep({
+      id: 'scope-review',
+      label: 'Review OAuth scopes',
+      phase: 'scope-review',
+      expectedState: `${item.label} read scopes are reviewed and write scopes remain blocked until a verified template exists.`,
+      requiredFields: ['scopes', 'consentReview'],
+      readPaths: [
+        'xd.xenesis.tools.oauthDrafts.status',
+        'xd.xenesis.tools.actions.status',
+        'xd.xenesis.tools.connectors.status',
+      ],
+      controlPaths: ['xd.xenesis.tools.oauthDrafts.open', 'xd.xenesis.tools.oauthDrafts.request'],
+      diagnostics: ['scope-review', ...scopes],
+      safetyBoundary: 'Scope review does not grant consent, start OAuth, or enable Google write actions.',
+    }),
+    toolOAuthDraftReviewStep({
+      id: 'token-store-readiness',
+      label: 'Review token-store readiness',
+      phase: 'token-store-readiness',
+      expectedState: `${item.label} token storage remains planned until a selected MCP OAuth template owns the store.`,
+      requiredFields: ['tokenStore'],
+      readPaths: ['xd.xenesis.tools.oauthDrafts.status', 'xd.mcp.settings.status'],
+      controlPaths: ['xd.xenesis.tools.oauthDrafts.open', 'xd.xenesis.tools.oauthDrafts.request'],
+      diagnostics: ['token-store-readiness', 'token-store-review', 'mcp-settings-status'],
+      safetyBoundary: 'Token-store review does not create files, store tokens, or return credential values.',
+    }),
+    toolOAuthDraftReviewStep({
+      id: 'readback-verification',
+      label: 'Review readback verification',
+      phase: 'readback-verification',
+      expectedState: `${item.label} read-only validation checks are identified before provider tool execution is enabled.`,
+      requiredFields: [],
+      readPaths: [
+        'xd.xenesis.connections.status',
+        'xd.xenesis.tools.connectors.status',
+        'xd.xenesis.tools.oauthDrafts.status',
+        'xd.mcp.settings.status',
+      ],
+      controlPaths: ['xd.xenesis.tools.oauthDrafts.open'],
+      diagnostics: ['readback-verification', ...(item.toolConnector?.validationChecks ?? []), 'cr-readback'],
+      safetyBoundary: 'Readback verification is read-only and does not execute provider tools.',
+    }),
+  ];
+}
+
 function buildXenesisToolOAuthDraft(item: XenesisConnectionItem): XenesisConnectionToolOAuthDraftTemplate | undefined {
   if (!(XENESIS_TOOL_OAUTH_DRAFT_IDS as readonly string[]).includes(item.id)) return undefined;
   if (item.toolConnector?.authMode !== 'oauth') return undefined;
 
   const missingRequiredFields = ['oauthClient', 'redirectUri', 'tokenStore'];
   const scopes = uniqueStrings(item.toolConnector.dataScopes);
+  const reviewSteps = toolOAuthDraftReviewSteps(item, scopes);
   const calendarBlockedActions =
     item.id === 'google-calendar'
       ? ['create/update/delete calendar events without approval', 'mutate calendar events']
@@ -3994,6 +4091,7 @@ function buildXenesisToolOAuthDraft(item: XenesisConnectionItem): XenesisConnect
     scopes,
     tokenStore: 'selected MCP OAuth token store',
     consentMode: 'review-only',
+    reviewSteps,
     readPaths: [
       'xd.xenesis.connections.status',
       'xd.xenesis.tools.oauthDrafts.status',
@@ -4227,12 +4325,20 @@ function buildXenesisConnectionDiagnosticRunbook(
         label: 'Tool OAuth draft',
         expectedState:
           'Review-only OAuth app, scope, consent, and token-store fields are visible before any OAuth flow or provider tool execution.',
-        readPaths: ['xd.xenesis.tools.oauthDrafts.status', ...item.toolOAuthDraft.readPaths],
-        controlPaths: item.toolOAuthDraft.controlPaths,
+        readPaths: [
+          'xd.xenesis.tools.oauthDrafts.status',
+          ...item.toolOAuthDraft.readPaths,
+          ...item.toolOAuthDraft.reviewSteps.flatMap((step) => step.readPaths),
+        ],
+        controlPaths: [
+          ...item.toolOAuthDraft.controlPaths,
+          ...item.toolOAuthDraft.reviewSteps.flatMap((step) => step.controlPaths),
+        ],
         diagnostics: [
           ...item.toolOAuthDraft.missingRequiredFields,
           ...item.toolOAuthDraft.scopes,
           ...item.toolOAuthDraft.diagnostics,
+          ...item.toolOAuthDraft.reviewSteps.flatMap((step) => step.diagnostics),
         ],
       }),
     );
@@ -4443,6 +4549,7 @@ function buildXenesisConnectionDiagnosticRunbook(
       ...(item.toolSetup?.riskControls ?? []),
       ...(item.toolConnector?.safetyBoundaries ?? []),
       ...(item.toolOAuthDraft?.safetyBoundaries ?? []),
+      ...(item.toolOAuthDraft?.reviewSteps.map((step) => step.safetyBoundary) ?? []),
       ...(item.toolView?.safetyBoundaries ?? []),
       ...(item.toolActionCatalog?.safetyBoundaries ?? []),
       ...(item.toolUserStory?.safetyBoundaries ?? []),
@@ -4502,6 +4609,7 @@ function setupRequestDiagnosticItems(item: XenesisConnectionItem): string[] {
     ...(item.toolSetup?.verification ?? []),
     ...(item.toolConnector?.validationChecks ?? []),
     ...(item.toolOAuthDraft?.diagnostics ?? []),
+    ...(item.toolOAuthDraft?.reviewSteps.flatMap((step) => step.diagnostics) ?? []),
     ...(item.toolActionCatalog?.diagnostics ?? []),
     ...(item.toolInstallPlan?.diagnostics ?? []),
     ...(item.mcpInstallDraft?.diagnostics ?? []),
@@ -4525,6 +4633,7 @@ function setupRequestStepItems(item: XenesisConnectionItem): string[] {
       []),
     ...(item.toolOAuthDraft?.missingRequiredFields.map((field) => `review OAuth draft field: ${field}`) ?? []),
     ...(item.toolOAuthDraft?.scopes.map((scope) => `review OAuth scope: ${scope}`) ?? []),
+    ...(item.toolOAuthDraft?.reviewSteps.map((step) => `${step.id}: ${step.expectedState}`) ?? []),
     ...(item.toolInstallPlan?.installSteps ?? []),
     ...(item.mcpInstallDraft?.installSteps ?? []),
     ...(item.toolConnector?.validationChecks.map((check) => `validate ${check}`) ?? []),
@@ -4578,6 +4687,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.toolSetup?.crReadPaths ?? []),
       ...(item.toolConnector?.readPaths ?? []),
       ...(item.toolOAuthDraft?.readPaths ?? []),
+      ...(item.toolOAuthDraft?.reviewSteps.flatMap((step) => step.readPaths) ?? []),
       ...(item.toolView?.readPaths ?? []),
       ...(item.toolUserStory?.readPaths ?? []),
       ...(item.toolInstallPlan?.readPaths ?? []),
@@ -4602,6 +4712,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.crActions ?? []),
       ...(item.toolConnector?.controlPaths ?? []),
       ...(item.toolOAuthDraft?.controlPaths ?? []),
+      ...(item.toolOAuthDraft?.reviewSteps.flatMap((step) => step.controlPaths) ?? []),
       ...(item.toolView?.controlPaths ?? []),
       ...(item.toolActionCatalog?.controlPaths ?? []),
       ...(item.toolUserStory?.controlPaths ?? []),
@@ -4630,6 +4741,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.toolSetup?.riskControls ?? []),
       ...(item.toolConnector?.safetyBoundaries ?? []),
       ...(item.toolOAuthDraft?.safetyBoundaries ?? []),
+      ...(item.toolOAuthDraft?.reviewSteps.map((step) => step.safetyBoundary) ?? []),
       ...(item.toolView?.safetyBoundaries ?? []),
       ...(item.toolActionCatalog?.safetyBoundaries ?? []),
       ...(item.toolUserStory?.safetyBoundaries ?? []),

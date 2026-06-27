@@ -738,8 +738,21 @@ test('formatXenesisToolOAuthDraftSummary describes tool, status, and scope count
       diagnostics: ['scope-review'],
       blockedActions: ['complete OAuth'],
       safetyBoundaries: ['tool OAuth drafts are review-only'],
+      reviewSteps: [
+        {
+          id: 'scope-review',
+          label: 'Review OAuth scopes',
+          phase: 'scope-review',
+          expectedState: 'Read-only scopes are reviewed before OAuth starts.',
+          requiredFields: ['scopes', 'consentReview'],
+          readPaths: ['xd.xenesis.tools.oauthDrafts.status'],
+          controlPaths: ['xd.xenesis.tools.oauthDrafts.request'],
+          diagnostics: ['scope-review'],
+          safetyBoundary: 'OAuth review steps do not complete OAuth.',
+        },
+      ],
     }),
-    'google-calendar / planned-template / 1 scope(s)',
+    'google-calendar / planned-template / 1 scope(s) / 1 review step(s)',
   );
 });
 
@@ -768,6 +781,19 @@ test('buildXenesisToolOAuthDraftRequest targets the review request CR path', () 
       diagnostics: ['scope-review'],
       blockedActions: ['complete OAuth'],
       safetyBoundaries: ['tool OAuth drafts are review-only'],
+      reviewSteps: [
+        {
+          id: 'scope-review',
+          label: 'Review OAuth scopes',
+          phase: 'scope-review',
+          expectedState: 'Read-only scopes are reviewed before OAuth starts.',
+          requiredFields: ['scopes', 'consentReview'],
+          readPaths: ['xd.xenesis.tools.oauthDrafts.status'],
+          controlPaths: ['xd.xenesis.tools.oauthDrafts.request'],
+          diagnostics: ['scope-review'],
+          safetyBoundary: 'OAuth review steps do not complete OAuth.',
+        },
+      ],
     },
   } satisfies XenesisConnectionItem;
 
