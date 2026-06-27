@@ -659,6 +659,15 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
       );
     }
 
+    if (hasAny(value, ['setup request', '설정 요청', '연결 요청', 'setup 요청'])) {
+      return naturalAction(
+        `natural-xenesis-connection-setup-request-status-${target.id}`,
+        'xd.xenesis.connections.setupRequests.status',
+        { id: target.id },
+        `Read ${target.label} connection setup request status from natural language request.`,
+      );
+    }
+
     if (target.kind === 'tool' && hasAny(value, ['mcp', 'mcp install', 'mcp 설치'])) {
       return naturalAction(
         `natural-xenesis-tool-mcp-install-draft-status-${target.id}`,
@@ -844,6 +853,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
 
 function hasXenesisConnectionReviewRequestIntent(value: string): boolean {
   if (hasAny(value, ['열어', 'open'])) return false;
+  if (hasXenesisConnectionReadbackIntent(value)) return false;
   if (!hasAny(value, ['요청', 'request', '등록', 'enqueue', '승인 요청'])) return false;
   return (
     hasAny(value, ['검토', '리뷰', 'review', 'approval', 'setup', '설정', '연결']) ||

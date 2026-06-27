@@ -834,6 +834,26 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center readback requ
       reason: 'Read Telegram channel routing status from natural language request.',
     },
   ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 setup request 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-connection-setup-request-status-notion',
+      path: 'xd.xenesis.connections.setupRequests.status',
+      args: { id: 'notion' },
+      approved: false,
+      reason: 'Read Notion connection setup request status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('텔레그램 설정 요청 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-connection-setup-request-status-telegram',
+      path: 'xd.xenesis.connections.setupRequests.status',
+      args: { id: 'telegram' },
+      approved: false,
+      reason: 'Read Telegram connection setup request status from natural language request.',
+    },
+  ]);
 });
 
 test('planXenesisDeskNaturalLanguageActions maps onboarding checklist readback requests to CR actions', () => {

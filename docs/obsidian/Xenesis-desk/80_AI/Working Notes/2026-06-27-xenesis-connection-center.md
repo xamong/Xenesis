@@ -1101,6 +1101,35 @@ Capability Registry instead of only through separate renderer settings panels.
     passed with 56/56 tests.
   - `npm run typecheck` passed.
 
+## Current Natural Setup Request Readbacks Slice
+
+- Add deterministic natural-language routing for connection setup request
+  readbacks before provider execution.
+- `노션 setup request 상태 보여줘` maps to
+  `xd.xenesis.connections.setupRequests.status` with `id=notion`.
+- `텔레그램 설정 요청 상태 보여줘` maps to
+  `xd.xenesis.connections.setupRequests.status` with `id=telegram`.
+- This fixes the previous ambiguity where `setup request 상태` could be
+  interpreted as recording a new setup request review item.
+- Explicit `setup request 열어줘` and `setup request 요청해줘` behavior remains
+  on the existing open/request paths.
+- This is deterministic routing, not agent reasoning. It emits an existing
+  read/no-approval CR status action only and does not record Action Inbox items,
+  install MCP servers, complete OAuth, store tokens, execute provider tools,
+  mutate settings, send messages, or open Settings cards.
+- External documentation handling: no per-slice web browsing. Use local
+  Obsidian/docs/handoff/code/tests as the gap map; refresh external docs only
+  as a batched documentation pass if needed.
+- TDD check: focused natural planner test failed first because `노션 setup
+  request 상태 보여줘` returned `xd.xenesis.connections.setupRequests.request`,
+  then passed after implementation with 29/29 tests.
+- Verification:
+  - `npx biome check src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts --max-diagnostics 40`
+    passed.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 56/56 tests.
+  - `npm run typecheck` passed.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
