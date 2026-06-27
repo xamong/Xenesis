@@ -1421,6 +1421,52 @@ export const XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS = {
   },
 } as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
 
+export const XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS = {
+  providerProfileDraft: {
+    path: 'xd.xenesis.providers.profileDrafts.request',
+    idFor: (id: string, _label: string) => `natural-xenesis-provider-profile-draft-request-${id}`,
+    reasonFor: (id: string, label: string) =>
+      id === 'auto'
+        ? 'Request AI provider profile draft review from natural language request.'
+        : `Request ${label} provider profile draft review from natural language request.`,
+  },
+  toolInstallPlan: {
+    path: 'xd.xenesis.tools.installPlans.request',
+    idFor: (id: string, _label: string) => `natural-xenesis-tool-install-plan-request-${id}`,
+    reasonFor: (_id: string, label: string) =>
+      `Request ${label} tool install plan review from natural language request.`,
+  },
+  toolMcpInstallDraft: {
+    path: 'xd.xenesis.tools.mcpInstallDrafts.request',
+    idFor: (id: string, _label: string) => `natural-xenesis-tool-mcp-install-draft-request-${id}`,
+    reasonFor: (_id: string, label: string) =>
+      `Request ${label} MCP install draft review from natural language request.`,
+  },
+  toolOauthDraft: {
+    path: 'xd.xenesis.tools.oauthDrafts.request',
+    idFor: (id: string, _label: string) => `natural-xenesis-tool-oauth-draft-request-${id}`,
+    reasonFor: (_id: string, label: string) => `Request ${label} OAuth draft review from natural language request.`,
+  },
+  toolActionPolicy: {
+    path: 'xd.xenesis.tools.actions.request',
+    idFor: (id: string, _label: string) => `natural-xenesis-tool-action-policy-request-${id}`,
+    reasonFor: (_id: string, label: string) =>
+      `Request ${label} tool action policy review from natural language request.`,
+  },
+  channelProfileDraft: {
+    path: 'xd.xenesis.channels.profileDrafts.request',
+    idFor: (id: string, _label: string) => `natural-xenesis-channel-profile-draft-request-${id}`,
+    reasonFor: (_id: string, label: string) =>
+      `Request ${label} channel profile draft review from natural language request.`,
+  },
+  connectionSetupRequest: {
+    path: 'xd.xenesis.connections.setupRequests.request',
+    idFor: (id: string, _label: string) => `natural-xenesis-connection-setup-request-${id}`,
+    reasonFor: (_id: string, label: string) =>
+      `Request ${label} connection setup review from natural language request.`,
+  },
+} as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
+
 export const XENESIS_NATURAL_PLACEMENT_TARGETS: readonly XenesisNaturalWordsTarget[] = [
   { id: 'right', label: 'right', words: ['오른쪽', '우측', 'right'] },
   { id: 'left', label: 'left', words: ['왼쪽', '좌측', 'left'] },

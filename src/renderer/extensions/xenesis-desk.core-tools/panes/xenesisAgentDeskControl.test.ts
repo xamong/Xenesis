@@ -66,6 +66,7 @@ import {
   XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_WORDS,
   XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_REPORT_CONTEXT_WORDS,
+  XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_RUN_CONTEXT_WORDS,
   XENESIS_NATURAL_RUN_START_CONTEXT_WORDS,
   XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS,
@@ -335,6 +336,26 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.equal(
     XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.channelRouting.idFor('telegram', 'Telegram'),
     'natural-xenesis-channel-routing-status-telegram',
+  );
+  assert.match(source, /XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS/);
+  assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-provider-profile-draft-request-\$\{provider\.id\}`/);
+  assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-tool-mcp-install-draft-request-\$\{target\.id\}`/);
+  assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-connection-setup-request-\$\{target\.id\}`/);
+  assert.equal(
+    XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS.providerProfileDraft.idFor('auto', 'Auto'),
+    'natural-xenesis-provider-profile-draft-request-auto',
+  );
+  assert.equal(
+    XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS.providerProfileDraft.reasonFor('auto', 'Auto'),
+    'Request AI provider profile draft review from natural language request.',
+  );
+  assert.equal(
+    XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS.toolMcpInstallDraft.path,
+    'xd.xenesis.tools.mcpInstallDrafts.request',
+  );
+  assert.equal(
+    XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS.connectionSetupRequest.reasonFor('notion', 'Notion'),
+    'Request Notion connection setup review from natural language request.',
   );
   assert.match(source, /XENESIS_NATURAL_PLACEMENT_TARGETS/);
   assert.match(source, /XENESIS_NATURAL_DOCK_SIDE_TARGETS/);

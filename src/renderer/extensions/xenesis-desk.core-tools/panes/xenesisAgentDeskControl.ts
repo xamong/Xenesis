@@ -105,6 +105,7 @@ import {
   XENESIS_NATURAL_REFRESH_CONTEXT_WORDS,
   XENESIS_NATURAL_REPORT_CONTEXT_WORDS,
   XENESIS_NATURAL_RESIZE_COMMAND_WORDS,
+  XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_REVIEW_REQUEST_CONTEXT_WORDS,
   XENESIS_NATURAL_REVIEW_REQUEST_INTENT_WORDS,
   XENESIS_NATURAL_REVIEW_REQUEST_TARGET_WORDS,
@@ -264,6 +265,7 @@ const MESSENGER_AGGREGATE_STATUS_ACTIONS = XENESIS_NATURAL_MESSENGER_AGGREGATE_S
 const ONBOARDING_ACTIONS = XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS;
 const PROVIDER_AGGREGATE_STATUS_ACTIONS = XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS;
 const PROVIDER_STATUS_ACTIONS = XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS;
+const REVIEW_REQUEST_ACTIONS = XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS;
 const RUNTIME_ACTIONS = XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS;
 const TOOL_AGGREGATE_STATUS_ACTIONS = XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS;
 
@@ -819,35 +821,22 @@ function xenesisConnectionReviewRequestActionFromNaturalText(value: string): Xen
 
   const provider = xenesisProviderFromNaturalText(value);
   if (provider) {
-    return naturalAction(
-      `natural-xenesis-provider-profile-draft-request-${provider.id}`,
-      'xd.xenesis.providers.profileDrafts.request',
-      { provider: provider.id },
-      provider.id === 'auto'
-        ? 'Request AI provider profile draft review from natural language request.'
-        : `Request ${provider.label} provider profile draft review from natural language request.`,
-    );
+    return naturalTemplateAction(REVIEW_REQUEST_ACTIONS.providerProfileDraft, [provider.id, provider.label], {
+      provider: provider.id,
+    });
   }
 
   const target = xenesisConnectionTargetFromNaturalText(value);
   if (!target) return null;
 
   if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS)) {
-    return naturalAction(
-      `natural-xenesis-tool-install-plan-request-${target.id}`,
-      'xd.xenesis.tools.installPlans.request',
-      { id: target.id },
-      `Request ${target.label} tool install plan review from natural language request.`,
-    );
+    return naturalTemplateAction(REVIEW_REQUEST_ACTIONS.toolInstallPlan, [target.id, target.label], { id: target.id });
   }
 
   if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_MCP_INSTALL_REVIEW_CONTEXT_WORDS)) {
-    return naturalAction(
-      `natural-xenesis-tool-mcp-install-draft-request-${target.id}`,
-      'xd.xenesis.tools.mcpInstallDrafts.request',
-      { id: target.id },
-      `Request ${target.label} MCP install draft review from natural language request.`,
-    );
+    return naturalTemplateAction(REVIEW_REQUEST_ACTIONS.toolMcpInstallDraft, [target.id, target.label], {
+      id: target.id,
+    });
   }
 
   if (
@@ -855,38 +844,22 @@ function xenesisConnectionReviewRequestActionFromNaturalText(value: string): Xen
     (target.id === 'google-calendar' || target.id === 'google-workspace') &&
     hasAny(value, XENESIS_NATURAL_OAUTH_CONTEXT_WORDS)
   ) {
-    return naturalAction(
-      `natural-xenesis-tool-oauth-draft-request-${target.id}`,
-      'xd.xenesis.tools.oauthDrafts.request',
-      { id: target.id },
-      `Request ${target.label} OAuth draft review from natural language request.`,
-    );
+    return naturalTemplateAction(REVIEW_REQUEST_ACTIONS.toolOauthDraft, [target.id, target.label], { id: target.id });
   }
 
   if (target.kind === 'tool' && hasAny(value, XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS)) {
-    return naturalAction(
-      `natural-xenesis-tool-action-policy-request-${target.id}`,
-      'xd.xenesis.tools.actions.request',
-      { id: target.id },
-      `Request ${target.label} tool action policy review from natural language request.`,
-    );
+    return naturalTemplateAction(REVIEW_REQUEST_ACTIONS.toolActionPolicy, [target.id, target.label], { id: target.id });
   }
 
   if (target.kind === 'messenger' && hasAny(value, XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_REQUEST_CONTEXT_WORDS)) {
-    return naturalAction(
-      `natural-xenesis-channel-profile-draft-request-${target.id}`,
-      'xd.xenesis.channels.profileDrafts.request',
-      { channel: target.id },
-      `Request ${target.label} channel profile draft review from natural language request.`,
-    );
+    return naturalTemplateAction(REVIEW_REQUEST_ACTIONS.channelProfileDraft, [target.id, target.label], {
+      channel: target.id,
+    });
   }
 
-  return naturalAction(
-    `natural-xenesis-connection-setup-request-${target.id}`,
-    'xd.xenesis.connections.setupRequests.request',
-    { id: target.id },
-    `Request ${target.label} connection setup review from natural language request.`,
-  );
+  return naturalTemplateAction(REVIEW_REQUEST_ACTIONS.connectionSetupRequest, [target.id, target.label], {
+    id: target.id,
+  });
 }
 
 function xenesisProviderOpenActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
