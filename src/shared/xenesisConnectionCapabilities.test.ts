@@ -365,6 +365,68 @@ test('xenesis tool view capabilities are registered and dispatch to the adapter'
   });
 });
 
+test('xenesis tool user story capabilities are registered and dispatch to the adapter', async () => {
+  const statusCapability = findDeskBridgeCapability('xd.xenesis.tools.userStories.status');
+  const openCapability = findDeskBridgeCapability('xd.xenesis.tools.userStories.open');
+  const statusSchemaProperties = (statusCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
+  assert.equal(statusCapability?.permission, 'read');
+  assert.equal(statusCapability?.approval, 'never');
+  assert.equal(openCapability?.permission, 'control');
+  assert.equal(openCapability?.approval, 'never');
+  assert.deepEqual(openCapability?.schema?.required, ['id']);
+  for (const tool of ['notion', 'linear', 'google-workspace', 'google-calendar']) {
+    assert.equal(statusSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by status`);
+    assert.equal(statusSchemaProperties.tool?.enum.includes(tool), true, `${tool} should be accepted by status alias`);
+    assert.equal(openSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by open`);
+    assert.equal(openSchemaProperties.tool?.enum.includes(tool), true, `${tool} should be accepted by open alias`);
+  }
+
+  const calls: Array<{ method: string; args: unknown }> = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisToolUserStoriesStatus: (args) => {
+      calls.push({ method: 'status', args });
+      return {
+        ok: true,
+        items: [{ id: 'google-calendar', workflowType: 'calendar-context' }],
+      };
+    },
+    openXenesisToolUserStory: (args) => {
+      calls.push({ method: 'open', args });
+      return {
+        ok: true,
+        item: { id: 'google-calendar', workflowType: 'calendar-context' },
+      };
+    },
+  };
+
+  const statusResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.tools.userStories.status',
+    args: { tool: 'google-calendar' },
+    source: 'xenesis',
+  });
+  const openResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.tools.userStories.open',
+    args: { id: 'google-calendar' },
+    source: 'xenesis',
+  });
+
+  assert.equal(statusResult.ok, true);
+  assert.equal(openResult.ok, true);
+  assert.deepEqual(calls, [
+    { method: 'status', args: { tool: 'google-calendar' } },
+    { method: 'open', args: { id: 'google-calendar' } },
+  ]);
+  assert.deepEqual(statusResult.result, {
+    ok: true,
+    items: [{ id: 'google-calendar', workflowType: 'calendar-context' }],
+  });
+  assert.deepEqual(openResult.result, {
+    ok: true,
+    item: { id: 'google-calendar', workflowType: 'calendar-context' },
+  });
+});
+
 test('xenesis messenger view capabilities are registered and dispatch to the adapter', async () => {
   const statusCapability = findDeskBridgeCapability('xd.xenesis.messengers.views.status');
   const openCapability = findDeskBridgeCapability('xd.xenesis.messengers.views.open');

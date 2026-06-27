@@ -452,6 +452,9 @@ const XENESIS_TOOL_VIEW_OPEN_SCHEMA = {
   },
 } as const;
 
+const XENESIS_TOOL_USER_STORY_STATUS_SCHEMA = XENESIS_TOOL_VIEW_STATUS_SCHEMA;
+const XENESIS_TOOL_USER_STORY_OPEN_SCHEMA = XENESIS_TOOL_VIEW_OPEN_SCHEMA;
+
 const XENESIS_PROVIDER_IDS = [
   'auto',
   'openai',
@@ -806,6 +809,8 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisToolConnectorsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolViewsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisToolView?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisToolUserStoriesStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisToolUserStory?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisMessengerViewsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisMessengerView?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisProviderSetupStatus?: (args?: unknown) => Promise<unknown> | unknown;
@@ -3884,6 +3889,27 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             XENESIS_TOOL_VIEW_OPEN_SCHEMA,
           ),
         ]),
+        group(
+          'xd.xenesis.tools.userStories',
+          'User stories',
+          'Read and open Desk planning surfaces for external tool user-story workflows.',
+          [
+            method(
+              'xd.xenesis.tools.userStories.status',
+              'Read tool user-story workflows',
+              'Read workflow type, runtime support, user stories, prerequisite connectors, scopes, CR paths, diagnostics, and safety boundaries for Xenesis external tool workflows.',
+              'read',
+              XENESIS_TOOL_USER_STORY_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.userStories.open',
+              'Open tool user-story workflow',
+              'Open Settings > Xenesis Agent > Connections and focus an external tool user-story workflow card inside Desk.',
+              'control',
+              XENESIS_TOOL_USER_STORY_OPEN_SCHEMA,
+            ),
+          ],
+        ),
       ]),
       group('xd.xenesis.providers', 'Providers', 'AI provider setup and routing state.', [
         group('xd.xenesis.providers.setup', 'Setup', 'AI provider auth, runtime, retry, fallback, and verification metadata.', [
@@ -10210,6 +10236,12 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.tools.views.open') {
         return callAdapter(path, api?.openXenesisToolView, request.args);
+      }
+      if (path === 'xd.xenesis.tools.userStories.status') {
+        return callAdapter(path, api?.getXenesisToolUserStoriesStatus, request.args);
+      }
+      if (path === 'xd.xenesis.tools.userStories.open') {
+        return callAdapter(path, api?.openXenesisToolUserStory, request.args);
       }
       if (path === 'xd.xenesis.messengers.views.status') {
         return callAdapter(path, api?.getXenesisMessengerViewsStatus, request.args);

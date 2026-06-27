@@ -15,6 +15,7 @@ import type {
   XenesisConnectionsStatus,
   XenesisConnectionToolConnectorTemplate,
   XenesisConnectionToolSetupTemplate,
+  XenesisConnectionToolUserStoryTemplate,
   XenesisConnectionToolViewTemplate,
 } from '../../shared/types';
 
@@ -106,6 +107,10 @@ export function formatXenesisToolViewSummary(view: XenesisConnectionToolViewTemp
 
 export function formatXenesisToolConnectorSummary(connector: XenesisConnectionToolConnectorTemplate): string {
   return `${connector.connectorType} / ${connector.authMode} / ${connector.runtimeSupport}`;
+}
+
+export function formatXenesisToolUserStorySummary(workflow: XenesisConnectionToolUserStoryTemplate): string {
+  return `${workflow.workflowType} / ${workflow.runtimeSupport} / ${workflow.userStories.length} user story/stories`;
 }
 
 export function formatXenesisMessengerViewSummary(view: XenesisConnectionMessengerViewTemplate): string {

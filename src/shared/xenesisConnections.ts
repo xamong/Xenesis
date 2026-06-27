@@ -106,6 +106,31 @@ export interface XenesisConnectionToolViewTemplate {
   safetyBoundaries: string[];
 }
 
+export type XenesisConnectionToolUserStoryWorkflowType =
+  | 'web-context'
+  | 'workspace-context'
+  | 'repo-triage'
+  | 'knowledge-capture'
+  | 'task-triage'
+  | 'inbox-triage'
+  | 'calendar-context';
+
+export type XenesisConnectionToolUserStoryRuntimeSupport = 'ready-template' | 'planned-oauth' | 'ready-local';
+
+export interface XenesisConnectionToolUserStoryTemplate {
+  workflowType: XenesisConnectionToolUserStoryWorkflowType;
+  runtimeSupport: XenesisConnectionToolUserStoryRuntimeSupport;
+  primarySurface: string;
+  setupSurface: string;
+  userStories: string[];
+  prerequisiteConnectors: string[];
+  requiredScopes: string[];
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  safetyBoundaries: string[];
+}
+
 export interface XenesisConnectionProviderSetupTemplate {
   source: 'user-settings' | 'auto-detect' | 'local-cli' | 'byok';
   provider: string;
@@ -342,6 +367,7 @@ export interface XenesisConnectionItem {
   toolSetup?: XenesisConnectionToolSetupTemplate;
   toolConnector?: XenesisConnectionToolConnectorTemplate;
   toolView?: XenesisConnectionToolViewTemplate;
+  toolUserStory?: XenesisConnectionToolUserStoryTemplate;
   messengerView?: XenesisConnectionMessengerViewTemplate;
   guideCatalog?: XenesisConnectionGuideCatalogTemplate;
   channelTemplate?: XenesisConnectionChannelTemplate;
@@ -644,6 +670,41 @@ function toolViewTemplate(
   };
 }
 
+function toolUserStoryTemplate(input: {
+  workflowType: XenesisConnectionToolUserStoryWorkflowType;
+  runtimeSupport: XenesisConnectionToolUserStoryRuntimeSupport;
+  setupSurface: string;
+  userStories: string[];
+  prerequisiteConnectors: string[];
+  requiredScopes: string[];
+  diagnostics: string[];
+  safetyBoundaries?: string[];
+}): XenesisConnectionToolUserStoryTemplate {
+  return {
+    workflowType: input.workflowType,
+    runtimeSupport: input.runtimeSupport,
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    setupSurface: input.setupSurface,
+    userStories: input.userStories,
+    prerequisiteConnectors: input.prerequisiteConnectors,
+    requiredScopes: input.requiredScopes,
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.tools.userStories.status',
+      'xd.xenesis.tools.connectors.status',
+      'xd.xenesis.tools.views.status',
+      'xd.xenesis.guides.status',
+    ],
+    controlPaths: ['xd.xenesis.tools.userStories.open', 'xd.xenesis.tools.views.open', 'xd.xenesis.guides.open'],
+    diagnostics: input.diagnostics,
+    safetyBoundaries: input.safetyBoundaries ?? [
+      'user-story workflows are read/open planning surfaces',
+      'tool execution stays behind provider MCP tools and CR approval paths',
+      'writes require separate verified tool actions',
+    ],
+  };
+}
+
 type XenesisConnectionToolConnectorCredentialRefInput = Omit<XenesisConnectionToolConnectorCredentialRef, 'state'>;
 
 function toolConnectorCredentialState(
@@ -748,6 +809,19 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
       validationChecks: ['mcp-server-listed', 'credential-state-redacted', 'fetch-known-url', 'cr-readback'],
       diagnostics: ['mcp-settings-status', 'template-snippet'],
     }),
+    toolUserStory: toolUserStoryTemplate({
+      workflowType: 'web-context',
+      runtimeSupport: 'ready-template',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      userStories: [
+        'read a user-provided URL before answering a question',
+        'summarize fetched page content with source context',
+        'avoid external writes because Fetch is read-only context',
+      ],
+      prerequisiteConnectors: ['fetch'],
+      requiredScopes: ['webpage:read'],
+      diagnostics: ['mcp-settings-status', 'template-snippet', 'cr-readback'],
+    }),
     toolSetup: {
       connection: 'mcp',
       authMode: 'none',
@@ -785,6 +859,19 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
       setupSurface: 'Settings > AI Provider > Local CLI MCP',
       validationChecks: ['mcp-server-listed', 'credential-state-redacted', 'workspace-directory-list', 'cr-readback'],
       diagnostics: ['workspace-scope', 'mcp-settings-status', 'template-snippet'],
+    }),
+    toolUserStory: toolUserStoryTemplate({
+      workflowType: 'workspace-context',
+      runtimeSupport: 'ready-template',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      userStories: [
+        'read workspace files before planning an agent task',
+        'search project files for relevant implementation context',
+        'route file writes through Desk CR approval paths',
+      ],
+      prerequisiteConnectors: ['filesystem'],
+      requiredScopes: ['workspace:read-files', 'workspace:list-files', 'workspace:search-files'],
+      diagnostics: ['workspace-scope', 'mcp-settings-status', 'template-snippet', 'cr-readback'],
     }),
     toolSetup: {
       connection: 'mcp',
@@ -825,6 +912,19 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
       setupSurface: 'Settings > AI Provider > Local CLI MCP',
       validationChecks: ['mcp-server-listed', 'credential-state-redacted', 'github-repo-read', 'cr-readback'],
       diagnostics: ['missing-env', 'mcp-settings-status', 'template-snippet'],
+    }),
+    toolUserStory: toolUserStoryTemplate({
+      workflowType: 'repo-triage',
+      runtimeSupport: 'ready-template',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      userStories: [
+        'inspect repository context before a coding task',
+        'triage related issues and pull requests as task context',
+        'draft repository changes only after approval-gated write tooling exists',
+      ],
+      prerequisiteConnectors: ['github'],
+      requiredScopes: ['github:search-code', 'github:read-repos', 'github:read-issues', 'github:read-pull-requests'],
+      diagnostics: ['missing-env', 'mcp-settings-status', 'template-snippet', 'cr-readback'],
     }),
     toolSetup: {
       connection: 'mcp',
@@ -867,6 +967,19 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
       validationChecks: ['mcp-server-listed', 'credential-state-redacted', 'notion-search-read', 'cr-readback'],
       diagnostics: ['missing-env', 'mcp-settings-status', 'template-snippet'],
     }),
+    toolUserStory: toolUserStoryTemplate({
+      workflowType: 'knowledge-capture',
+      runtimeSupport: 'ready-template',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      userStories: [
+        'search Notion pages before answering a workspace question',
+        'summarize a selected Notion database as task context',
+        'draft Notion updates only after approval-gated write tooling exists',
+      ],
+      prerequisiteConnectors: ['notion'],
+      requiredScopes: ['notion:search', 'notion:read-pages', 'notion:read-databases'],
+      diagnostics: ['missing-env', 'mcp-settings-status', 'template-snippet', 'cr-readback'],
+    }),
     toolSetup: {
       connection: 'mcp',
       authMode: 'env-token',
@@ -906,6 +1019,19 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
       setupSurface: 'Settings > AI Provider > Local CLI MCP',
       validationChecks: ['mcp-server-listed', 'credential-state-redacted', 'oauth-authorized', 'linear-issue-read'],
       diagnostics: ['oauth-client', 'mcp-settings-status', 'template-snippet'],
+    }),
+    toolUserStory: toolUserStoryTemplate({
+      workflowType: 'task-triage',
+      runtimeSupport: 'ready-template',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      userStories: [
+        'read Linear issues before planning work',
+        'summarize project status as agent task context',
+        'draft issue updates only after approval-gated write tooling exists',
+      ],
+      prerequisiteConnectors: ['linear'],
+      requiredScopes: ['linear:read-issues', 'linear:read-projects', 'linear:read-comments'],
+      diagnostics: ['oauth-client', 'mcp-settings-status', 'template-snippet', 'cr-readback'],
     }),
     toolSetup: {
       connection: 'oauth-mcp',
@@ -950,6 +1076,24 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
         'planned OAuth connector exposes readiness only until a verified MCP template exists',
       ],
     }),
+    toolUserStory: toolUserStoryTemplate({
+      workflowType: 'inbox-triage',
+      runtimeSupport: 'planned-oauth',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      userStories: [
+        'summarize unread inbox context before an agent task',
+        'read Drive and Docs context with reviewed OAuth scopes',
+        'draft email or document actions only after verified approval gates exist',
+      ],
+      prerequisiteConnectors: ['google-workspace'],
+      requiredScopes: ['gmail.readonly', 'google-drive.readonly', 'documents.readonly'],
+      diagnostics: ['planned-oauth-template', 'mcp-settings-status', 'scope-review', 'cr-readback'],
+      safetyBoundaries: [
+        'planned OAuth inbox workflows do not send email or mutate documents',
+        'user-story workflows are read/open planning surfaces',
+        'writes require separate verified tool actions',
+      ],
+    }),
     toolSetup: {
       connection: 'oauth-mcp',
       authMode: 'oauth',
@@ -992,6 +1136,24 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
       safetyBoundaries: [
         'credential values are never returned',
         'planned OAuth connector exposes readiness only until a verified MCP template exists',
+      ],
+    }),
+    toolUserStory: toolUserStoryTemplate({
+      workflowType: 'calendar-context',
+      runtimeSupport: 'planned-oauth',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      userStories: [
+        'inspect upcoming meetings before an agent task',
+        'summarize calendar context with read-only scopes',
+        'draft scheduling actions only after explicit approval gates exist',
+      ],
+      prerequisiteConnectors: ['google-calendar'],
+      requiredScopes: ['calendar.calendarlist.readonly', 'calendar.events.readonly', 'calendar.freebusy.readonly'],
+      diagnostics: ['planned-oauth-template', 'mcp-settings-status', 'scope-review', 'cr-readback'],
+      safetyBoundaries: [
+        'planned OAuth calendar workflows do not create, update, or delete events',
+        'user-story workflows are read/open planning surfaces',
+        'writes require separate verified tool actions',
       ],
     }),
     toolSetup: {

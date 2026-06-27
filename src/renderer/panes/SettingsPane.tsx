@@ -99,6 +99,7 @@ import {
   formatXenesisProviderViewSummary,
   formatXenesisToolConnectorSummary,
   formatXenesisToolSetupSummary,
+  formatXenesisToolUserStorySummary,
   formatXenesisToolViewSummary,
   listXenesisConnectionSections,
   xenesisConnectionTone,
@@ -4266,6 +4267,7 @@ export default function SettingsPane() {
     const toolSetup = item.toolSetup;
     const toolConnector = item.toolConnector;
     const toolView = item.toolView;
+    const toolUserStory = item.toolUserStory;
     const messengerView = item.messengerView;
     const channelTemplate = item.channelTemplate;
     return (
@@ -4643,6 +4645,42 @@ export default function SettingsPane() {
             <div>
               <span>{t('settings.xenesisConnectionsToolViewSafety')}</span>
               <strong>{toolView.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {toolUserStory ? (
+          <div className="sp-info-list sp-info-list-compact" data-xenesis-tool-user-story={item.id}>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolUserStory')}</span>
+              <strong>{formatXenesisToolUserStorySummary(toolUserStory)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolUserStoryStories')}</span>
+              <strong>{toolUserStory.userStories.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolUserStoryConnectors')}</span>
+              <strong>{toolUserStory.prerequisiteConnectors.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolUserStoryScopes')}</span>
+              <strong>{toolUserStory.requiredScopes.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolUserStoryReadback')}</span>
+              <strong>{toolUserStory.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolUserStoryControls')}</span>
+              <strong>{toolUserStory.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolUserStoryDiagnostics')}</span>
+              <strong>{toolUserStory.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolUserStorySafety')}</span>
+              <strong>{toolUserStory.safetyBoundaries.join(', ')}</strong>
             </div>
           </div>
         ) : null}

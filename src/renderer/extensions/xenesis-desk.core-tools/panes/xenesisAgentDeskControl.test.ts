@@ -298,6 +298,8 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.dock\.artifactTarget\.set/);
   assert.match(hint, /xd\.xenesis\.connections\.open/);
   assert.match(hint, /xd\.xenesis\.tools\.connectors\.status/);
+  assert.match(hint, /xd\.xenesis\.tools\.userStories\.status/);
+  assert.match(hint, /xd\.xenesis\.tools\.userStories\.open/);
   assert.match(hint, /xd\.xenesis\.channels\.accessGroups\.status/);
   assert.match(hint, /xd\.xenesis\.channels\.pairing\.status/);
   assert.match(hint, /"id":"notion"/);

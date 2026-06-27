@@ -484,6 +484,31 @@ Capability Registry instead of only through separate renderer settings panels.
 - `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
   passed after implementation with 73/73 tests.
 
+## Current Tool User Stories Read Model Slice
+
+- Add `toolUserStory` metadata to Fetch, Filesystem, GitHub, Notion, Linear,
+  Google Workspace, and Google Calendar cards in
+  `xd.xenesis.connections.status`.
+- Add `xd.xenesis.tools.userStories.status` as a read/no-approval CR path for
+  workflow type, runtime support, user-story templates, prerequisite
+  connectors, required scopes, read/control paths, diagnostics, and safety
+  boundaries.
+- Add `xd.xenesis.tools.userStories.open` as a control/no-approval CR path that
+  opens Settings > Xenesis Agent > Connections and focuses the requested tool
+  card.
+- Settings renders the same model with
+  `data-xenesis-tool-user-story="<tool-id>"`.
+- Google Workspace and Google Calendar remain `planned-oauth` workflow
+  planning surfaces. This slice does not install MCP servers, complete OAuth,
+  store tokens, execute provider tools, send email, update documents/tasks, or
+  create/update/delete calendar events.
+- External documentation handling for this slice: no per-slice web browsing.
+  Use local Obsidian/docs/handoff as the gap map; refresh external docs only as
+  a batched documentation pass if needed.
+- `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+  failed first for missing user-story metadata, missing CR paths, and missing
+  renderer helper, then passed after implementation with 56/56 tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

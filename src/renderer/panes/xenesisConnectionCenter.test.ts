@@ -16,6 +16,7 @@ import {
   formatXenesisProviderViewSummary,
   formatXenesisToolConnectorSummary,
   formatXenesisToolSetupSummary,
+  formatXenesisToolUserStorySummary,
   formatXenesisToolViewSummary,
   listXenesisConnectionSections,
   XENESIS_CONNECTION_STATUS_ORDER,
@@ -255,6 +256,29 @@ test('formatXenesisToolSetupSummary describes connection, auth, and setup surfac
       riskControls: ['share only required pages/databases'],
     }),
     'mcp / env-token / Settings > AI Provider > Local CLI MCP',
+  );
+});
+
+test('formatXenesisToolUserStorySummary describes workflow type, runtime support, and story count', () => {
+  assert.equal(
+    formatXenesisToolUserStorySummary({
+      workflowType: 'calendar-context',
+      runtimeSupport: 'planned-oauth',
+      primarySurface: 'Settings > Xenesis Agent > Connections',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      userStories: [
+        'inspect upcoming meetings before an agent task',
+        'summarize calendar context with read-only scopes',
+        'draft scheduling actions only after explicit approval gates exist',
+      ],
+      prerequisiteConnectors: ['google-calendar'],
+      requiredScopes: ['calendar.calendarlist.readonly', 'calendar.events.readonly'],
+      readPaths: ['xd.xenesis.tools.userStories.status'],
+      controlPaths: ['xd.xenesis.tools.userStories.open'],
+      diagnostics: ['planned-oauth-template'],
+      safetyBoundaries: ['planned OAuth calendar workflows do not create, update, or delete events'],
+    }),
+    'calendar-context / planned-oauth / 3 user story/stories',
   );
 });
 

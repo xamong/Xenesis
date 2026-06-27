@@ -32,6 +32,9 @@ export type {
   XenesisConnectionToolConnectorCredentialState,
   XenesisConnectionToolConnectorTemplate,
   XenesisConnectionToolSetupTemplate,
+  XenesisConnectionToolUserStoryRuntimeSupport,
+  XenesisConnectionToolUserStoryTemplate,
+  XenesisConnectionToolUserStoryWorkflowType,
   XenesisConnectionToolViewTemplate,
 } from './xenesisConnections';
 

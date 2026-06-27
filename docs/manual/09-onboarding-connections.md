@@ -151,6 +151,18 @@ Xenesis Agent > Connections and focus the tool card. This opens a Desk
 setup/readiness view only; it does not execute the external tool, install MCP
 servers, complete OAuth, or bypass approval paths.
 
+Each tool card also exposes a `toolUserStory` read model. Use
+`xd.xenesis.tools.userStories.status` to inspect workflow type, runtime support,
+user-story templates, prerequisite connectors, required scopes, CR read/control
+paths, diagnostics, and safety boundaries for external tool workflows. Use
+`xd.xenesis.tools.userStories.open` with `{ "id": "<tool-id>" }` to open
+Settings > Xenesis Agent > Connections and focus the matching tool card. These
+workflows are planning/readiness surfaces only: they do not install tools,
+complete OAuth, store tokens, execute provider MCP tools, mutate external tool
+settings, send email, update documents, or create/update/delete calendar events.
+Google Workspace and Google Calendar stay `planned-oauth` until a verified
+OAuth/MCP template and token storage path are implemented.
+
 Use `xd.mcp.settings.status` to inspect MCP settings through the Capability
 Registry.
 
@@ -362,3 +374,11 @@ or open internal Desk setup/readiness views for external tools. The open path
 focuses the matching Connection Center tool card and keeps planned Google
 Workspace/Google Calendar flows visibly planned until a verified OAuth/MCP
 template exists.
+
+Use `xd.xenesis.tools.userStories.status` and
+`xd.xenesis.tools.userStories.open` to inspect or open external tool workflow
+planning surfaces. The read model covers web context, workspace context, repo
+triage, Notion knowledge capture, Linear task triage, Google inbox triage, and
+Google Calendar context workflows. It is read/open only and does not execute
+provider tools, complete OAuth, send email, update tasks/documents, or mutate
+calendar events.

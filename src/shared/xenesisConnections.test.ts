@@ -658,6 +658,77 @@ test('buildXenesisConnectionsStatus exposes internal Desk tool views for MCP and
   assert.equal(googleCalendar?.toolView?.diagnostics.includes('template-snippet'), false);
 });
 
+test('buildXenesisConnectionsStatus exposes Hermes-style tool user-story workflows', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+  const googleCalendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+  const googleWorkspace = status.sections.tools.items.find((item) => item.id === 'google-workspace');
+
+  assert.deepEqual(notion?.toolUserStory, {
+    workflowType: 'knowledge-capture',
+    runtimeSupport: 'ready-template',
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    setupSurface: 'Settings > AI Provider > Local CLI MCP',
+    userStories: [
+      'search Notion pages before answering a workspace question',
+      'summarize a selected Notion database as task context',
+      'draft Notion updates only after approval-gated write tooling exists',
+    ],
+    prerequisiteConnectors: ['notion'],
+    requiredScopes: ['notion:search', 'notion:read-pages', 'notion:read-databases'],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.tools.userStories.status',
+      'xd.xenesis.tools.connectors.status',
+      'xd.xenesis.tools.views.status',
+      'xd.xenesis.guides.status',
+    ],
+    controlPaths: ['xd.xenesis.tools.userStories.open', 'xd.xenesis.tools.views.open', 'xd.xenesis.guides.open'],
+    diagnostics: ['missing-env', 'mcp-settings-status', 'template-snippet', 'cr-readback'],
+    safetyBoundaries: [
+      'user-story workflows are read/open planning surfaces',
+      'tool execution stays behind provider MCP tools and CR approval paths',
+      'writes require separate verified tool actions',
+    ],
+  });
+  assert.equal(googleWorkspace?.toolUserStory?.workflowType, 'inbox-triage');
+  assert.equal(googleCalendar?.toolUserStory?.workflowType, 'calendar-context');
+  assert.equal(googleCalendar?.toolUserStory?.runtimeSupport, 'planned-oauth');
+  assert.ok(googleCalendar?.toolUserStory?.requiredScopes.includes('calendar.events.readonly'));
+  assert.ok(
+    googleCalendar?.toolUserStory?.safetyBoundaries.includes(
+      'planned OAuth calendar workflows do not create, update, or delete events',
+    ),
+  );
+});
+
 test('buildXenesisConnectionsStatus exposes provider setup identity, credential state, and fallback policy', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {
