@@ -945,7 +945,21 @@ function xenesisProviderOpenActionFromNaturalText(value: string): XenesisDeskAct
     );
   }
 
-  if (hasAny(value, ['view', 'views', '뷰', '화면', '설정', 'settings'])) {
+  if (
+    hasAny(value, [
+      'view',
+      'views',
+      '뷰',
+      '화면',
+      '설정',
+      'settings',
+      'setup',
+      '초기 설정',
+      '구성',
+      'configuration',
+      'config',
+    ])
+  ) {
     return naturalAction(
       `natural-xenesis-provider-view-open-${provider.id}`,
       'xd.xenesis.providers.views.open',

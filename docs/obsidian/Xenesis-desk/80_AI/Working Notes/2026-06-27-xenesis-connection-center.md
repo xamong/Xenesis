@@ -1130,6 +1130,34 @@ Capability Registry instead of only through separate renderer settings panels.
     passed with 56/56 tests.
   - `npm run typecheck` passed.
 
+## Current Natural Provider Setup Opens Slice
+
+- Add deterministic natural-language routing for provider setup open requests
+  before provider execution.
+- `AI provider setup 열어줘` maps to `xd.xenesis.providers.views.open` with
+  `provider=auto` and `ensureVisible=true`.
+- `codex app-server provider setup 열어줘` maps to
+  `xd.xenesis.providers.views.open` with `provider=codex-app-server` and
+  `ensureVisible=true`.
+- Provider profile/draft prompts still route first to
+  `xd.xenesis.providers.profileDrafts.open`.
+- This is deterministic routing, not agent reasoning. It emits an existing
+  no-approval CR open action only and does not add CR nodes, mutate provider
+  settings, store credentials, switch local CLI selection, run provider
+  prompts, or write profile drafts.
+- External documentation handling: no per-slice web browsing. Use local
+  Obsidian/docs/handoff/code/tests as the gap map; refresh external docs only
+  as a batched documentation pass if needed.
+- TDD check: focused natural planner test failed first because `AI provider
+  setup 열어줘` returned `[]`, then passed after implementation with 29/29
+  tests.
+- Verification:
+  - `npx biome check src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts --max-diagnostics 40`
+    passed.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 56/56 tests.
+  - `npm run typecheck` passed.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

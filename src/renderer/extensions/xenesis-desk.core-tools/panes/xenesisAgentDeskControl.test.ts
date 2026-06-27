@@ -693,7 +693,27 @@ test('planXenesisDeskNaturalLanguageActions maps onboarding checklist open reque
 });
 
 test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open requests to CR actions', () => {
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider setup 열어줘').actions, [
+    {
+      id: 'natural-xenesis-provider-view-open-auto',
+      path: 'xd.xenesis.providers.views.open',
+      args: { provider: 'auto', ensureVisible: true },
+      approved: false,
+      reason: 'Open auto provider view from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('codex app-server provider view 열어줘').actions, [
+    {
+      id: 'natural-xenesis-provider-view-open-codex-app-server',
+      path: 'xd.xenesis.providers.views.open',
+      args: { provider: 'codex-app-server', ensureVisible: true },
+      approved: false,
+      reason: 'Open codex-app-server provider view from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('codex app-server provider setup 열어줘').actions, [
     {
       id: 'natural-xenesis-provider-view-open-codex-app-server',
       path: 'xd.xenesis.providers.views.open',
