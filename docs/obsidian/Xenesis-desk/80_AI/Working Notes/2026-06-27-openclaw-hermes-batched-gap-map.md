@@ -311,6 +311,26 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local code, and tests.
 
+## Run Submit Routing Slice
+
+- Added deterministic Xenesis Agent natural-language routing for existing
+  execute CR paths only when executable text is quoted and intent is explicit:
+  - `Xenesis runtime run "연결 상태를 요약해줘" 실행해줘` ->
+    `xd.xenesis.runs.start` with `prompt=연결 상태를 요약해줘`.
+  - `Xenesis Agent "xenesis-agent"에 "연결 상태 요약해줘" 보내줘` ->
+    `xd.xenesis.agents.submit` with `agentId=xenesis-agent` and
+    `text=연결 상태 요약해줘`.
+- Intent detection strips quoted text before matching route keywords, so quoted
+  prompt content such as `연결 상태` does not accidentally trigger Connection
+  Center readbacks ahead of explicit runtime execution.
+- Natural execution actions keep `approved=false`; CR approval policy remains
+  authoritative for `when-external` execute paths.
+- Scope boundary: this slice did not add CR nodes, dispatcher branches,
+  renderer adapters, provider mutation paths, credential writes, profile
+  changes, workspace changes, external messenger delivery, or approval bypasses.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

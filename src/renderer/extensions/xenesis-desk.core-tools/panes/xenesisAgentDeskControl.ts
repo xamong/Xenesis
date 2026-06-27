@@ -236,9 +236,24 @@ function detectArrangeMode(value: string): XenesisDeskArrangeMode | undefined {
   return undefined;
 }
 
+function stripQuotedText(value: string): string {
+  return String(value || '').replace(/["'“”‘’`](.+?)["'“”‘’`]/g, ' ');
+}
+
+function extractQuotedTexts(value: string): string[] {
+  const texts: string[] = [];
+  const quotedPattern = /["'“”‘’`](.+?)["'“”‘’`]/g;
+  let match = quotedPattern.exec(String(value || ''));
+  while (match) {
+    const quoted = match[1]?.trim();
+    if (quoted) texts.push(quoted);
+    match = quotedPattern.exec(String(value || ''));
+  }
+  return texts;
+}
+
 function extractQuotedText(value: string): string {
-  const quoted = value.match(/["'“”‘’`](.+?)["'“”‘’`]/);
-  return quoted?.[1]?.trim() || '';
+  return extractQuotedTexts(value)[0] || '';
 }
 
 function extractLocalPath(value: string): string {
@@ -1560,6 +1575,43 @@ function xenesisProfileInventoryActionFromNaturalText(value: string): XenesisDes
   return null;
 }
 
+function xenesisAgentSubmitActionFromNaturalText(rawText: string): XenesisDeskActionRequest | null {
+  const intentValue = normalizeNaturalLanguageText(stripQuotedText(rawText));
+  if (!hasAny(intentValue, ['xenesis', '제네시스'])) return null;
+  if (!hasAny(intentValue, ['agent', 'agents', '에이전트'])) return null;
+  if (!hasAny(intentValue, ['보내', '전송', 'submit', 'send', 'message', '메시지', '말해', 'prompt', '프롬프트'])) {
+    return null;
+  }
+
+  const [agentId, text] = extractQuotedTexts(rawText);
+  if (!agentId || !text) return null;
+
+  return naturalAction(
+    'natural-xenesis-agent-submit',
+    'xd.xenesis.agents.submit',
+    { agentId, text },
+    'Submit Xenesis Agent pane message from natural language request.',
+  );
+}
+
+function xenesisRunStartActionFromNaturalText(rawText: string): XenesisDeskActionRequest | null {
+  const intentValue = normalizeNaturalLanguageText(stripQuotedText(rawText));
+  if (!hasAny(intentValue, ['xenesis', '제네시스'])) return null;
+  if (!hasAny(intentValue, ['run', 'runs', 'runtime', 'prompt', '프롬프트', '런'])) return null;
+  if (!hasAny(intentValue, ['실행', '돌려', 'start', 'run', 'execute'])) return null;
+  if (hasAny(intentValue, ['취소', '중단', 'cancel', 'stop'])) return null;
+
+  const prompt = extractQuotedText(rawText);
+  if (!prompt) return null;
+
+  return naturalAction(
+    'natural-xenesis-runs-start',
+    'xd.xenesis.runs.start',
+    { prompt },
+    'Start Xenesis run from natural language request.',
+  );
+}
+
 function xenesisRuntimeControlActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
   if (!hasAny(value, ['xenesis', '제네시스'])) return null;
 
@@ -1612,6 +1664,16 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
   if (!value || !hasActionIntent(value)) return emptyNaturalPlan();
 
   const placement = detectPlacement(value);
+
+  const xenesisAgentSubmitAction = xenesisAgentSubmitActionFromNaturalText(rawText);
+  if (xenesisAgentSubmitAction) {
+    return naturalPlan('Xenesis Agent 메시지 제출 요청을 기록합니다.', [xenesisAgentSubmitAction]);
+  }
+
+  const xenesisRunStartAction = xenesisRunStartActionFromNaturalText(rawText);
+  if (xenesisRunStartAction) {
+    return naturalPlan('Xenesis 런타임 실행 요청을 기록합니다.', [xenesisRunStartAction]);
+  }
 
   const xenesisConnectionReviewRequestAction = xenesisConnectionReviewRequestActionFromNaturalText(value);
   if (xenesisConnectionReviewRequestAction) {
@@ -2434,9 +2496,9 @@ export function buildXenesisDeskControlPromptHint(): string {
     '- Use `xd.localCli.scan`, `xd.mcp.settings.status`, and `xd.mcp.bridge.status` to inspect local CLI discovery and MCP setup or bridge readiness before suggesting installs, config writes, gateway starts, or local CLI switching.',
     '- Use `xd.xenesis.gateway.status` to inspect runtime gateway readiness and `xd.xenesis.gateway.openDashboard` to open the Desk gateway dashboard; do not start, stop, or restart the gateway unless the user clearly asks and approval policy is satisfied.',
     '- Use `xd.xenesis.workspace.set` only when the user clearly asks to bind the Xenesis workspace to a specific local path; leave approval handling to the Capability Registry, especially for outside-workspace paths.',
-    '- Use `xd.xenesis.diagnostics`, `xd.xenesis.reports.list`, `xd.xenesis.tasks.list`, `xd.xenesis.agents.list`, `xd.xenesis.agents.status`, and `xd.xenesis.agents.events` to inspect runtime diagnostics, verification reports, task inventory, registered Agent panes, and quoted Agent pane status/events before submitting prompts or mutating runtime state. Agent status/events require `args.agentId`.',
+    '- Use `xd.xenesis.diagnostics`, `xd.xenesis.reports.list`, `xd.xenesis.tasks.list`, `xd.xenesis.agents.list`, `xd.xenesis.agents.status`, `xd.xenesis.agents.events`, and `xd.xenesis.agents.submit` to inspect runtime diagnostics, verification reports, task inventory, registered Agent panes, quoted Agent pane status/events, or submit a quoted Agent pane message before mutating broader runtime state. Agent status/events require `args.agentId`; Agent submit requires `args.agentId` and `args.text`.',
     '- Use `xd.xenesis.profiles.list` to inspect installed and active Xenesis profiles before installing profiles, switching the active profile, updating channel settings, or sending profile channel test messages.',
-    '- Use `xd.xenesis.runs.cancel` only for explicit user requests to cancel the active Xenesis runtime request, and `xd.xenesis.sessions.reset` only for explicit user requests to reset the active Xenesis conversation/session.',
+    '- Use `xd.xenesis.runs.start` only when the user clearly asks to run a quoted prompt through the Xenesis runtime. Use `xd.xenesis.runs.cancel` only for explicit user requests to cancel the active Xenesis runtime request, and `xd.xenesis.sessions.reset` only for explicit user requests to reset the active Xenesis conversation/session.',
     '- Use `xd.xenesis.tools.setup.status`, `xd.xenesis.tools.views.status`, and `xd.xenesis.tools.views.open` to inspect or open internal Desk tool setup/readiness surfaces.',
     '- Use `xd.xenesis.tools.mcpInstallDrafts.status` to inspect review-only MCP install drafts, `xd.xenesis.tools.mcpInstallDrafts.open` to focus the owning tool card, and `xd.xenesis.tools.mcpInstallDrafts.request` to record a local Action Inbox review item without writing MCP config, running shell commands, completing OAuth, storing tokens, executing provider tools, or mutating settings.',
     '- Use `xd.xenesis.tools.oauthDrafts.status` to inspect review-only Google tool OAuth app and token-store drafts, `xd.xenesis.tools.oauthDrafts.open` to focus the owning tool card, and `xd.xenesis.tools.oauthDrafts.request` to record a local Action Inbox review item. Tool OAuth drafts are review-only and do not complete OAuth, store tokens, write MCP config, execute provider tools, send email, mutate documents, or mutate calendar events.',
@@ -2474,6 +2536,6 @@ export function buildXenesisDeskControlPromptHint(): string {
     '{"path":"xd.automation.workflow.run","approved":true,"args":{"name":"settings-tour","steps":[{"path":"xd.dock.panes.list"},{"path":"xd.panes.settings.open","args":{"category":"run-model","mode":"hermes","section":"hermes-provider"}}]}}',
     '```',
     '',
-    'Useful direct CR paths include xd.app.status, xd.automation.workflow.preview, xd.automation.workflow.run, xd.views.open, xd.panes.settings.open, xd.panes.diagnostics.open, xd.files.listOpen, xd.files.open, xd.files.read, xd.explorer.local.show, xd.explorer.local.navigate, xd.explorer.local.setFilter, xd.window.bounds.current, xd.window.sizer.applyPreset, xd.dock.sizes.current, xd.dock.sizes.set, xd.dock.artifactTarget.current, xd.dock.artifactTarget.set, xd.dock.focus, xd.dock.close, xd.dock.closeOthers, xd.dock.closeRight, xd.dock.closeAll, xd.dock.window.arrange, xd.dock.window.merge, xd.dock.pane.arrange, xd.dock.pane.merge, xd.dock.arrangeHorizontal, xd.dock.arrangeVertical, xd.dock.arrangeGrid, xd.dock.panes.list, xd.terminals.list, xd.terminals.run, xd.terminals.runMany, xd.tools.core.capabilityExplorer.open, xd.tools.core.networkMonitor.open, xd.tools.core.runTaskPanel.open, xd.tools.core.aiWorkbench.open, xd.tools.core.artifactLibrary.open, xd.capture.activePane, xd.xenesis.status, xd.xenesis.diagnostics, xd.xenesis.reports.list, xd.xenesis.tasks.list, xd.xenesis.agents.list, xd.xenesis.agents.status, xd.xenesis.agents.events, xd.xenesis.profiles.list, xd.xenesis.workspace.set, xd.xenesis.runs.start, xd.xenesis.runs.cancel, xd.xenesis.sessions.reset, xd.xenesis.connections.status, xd.xenesis.connections.open, xd.xenesis.connections.diagnostics.status, xd.xenesis.connections.diagnostics.open, xd.xenesis.connections.setupRequests.status, xd.xenesis.connections.setupRequests.open, xd.xenesis.connections.setupRequests.request, xd.xenesis.onboarding.status, xd.xenesis.onboarding.open, xd.xenesis.guides.status, xd.xenesis.guides.open, xd.localCli.scan, xd.mcp.settings.status, xd.mcp.bridge.status, xd.xenesis.gateway.status, xd.xenesis.gateway.openDashboard, xd.xenesis.providers.setup.status, xd.xenesis.providers.routing.status, xd.xenesis.providers.views.status, xd.xenesis.providers.views.open, xd.xenesis.tools.setup.status, xd.xenesis.tools.connectors.status, xd.xenesis.tools.views.status, xd.xenesis.tools.views.open, xd.xenesis.tools.userStories.status, xd.xenesis.tools.userStories.open, xd.xenesis.tools.installPlans.status, xd.xenesis.tools.installPlans.open, xd.xenesis.tools.mcpInstallDrafts.status, xd.xenesis.tools.mcpInstallDrafts.open, xd.xenesis.tools.mcpInstallDrafts.request, xd.xenesis.tools.oauthDrafts.status, xd.xenesis.tools.oauthDrafts.open, xd.xenesis.tools.oauthDrafts.request, xd.xenesis.tools.actions.status, xd.xenesis.tools.actions.open, xd.xenesis.tools.actions.request, xd.xenesis.providers.profileDrafts.status, xd.xenesis.providers.profileDrafts.open, xd.xenesis.providers.profileDrafts.request, xd.xenesis.channels.routing.status, xd.xenesis.channels.safety.status, xd.xenesis.channels.accessGroups.status, xd.xenesis.channels.pairing.status, xd.xenesis.channels.userStories.status, xd.xenesis.channels.userStories.open, xd.xenesis.channels.profileDrafts.status, xd.xenesis.channels.profileDrafts.open, xd.xenesis.channels.profileDrafts.request, xd.xenesis.messengers.views.status, xd.xenesis.messengers.views.open, xd.testing.xenesisAgent.submitPrompt, dynamic xd.dock.panes.{paneId}.* paths, dynamic xd.dock.contents.{contentId}.* paths, and dynamic xd.terminals.sessions.{terminalId}.* paths.',
+    'Useful direct CR paths include xd.app.status, xd.automation.workflow.preview, xd.automation.workflow.run, xd.views.open, xd.panes.settings.open, xd.panes.diagnostics.open, xd.files.listOpen, xd.files.open, xd.files.read, xd.explorer.local.show, xd.explorer.local.navigate, xd.explorer.local.setFilter, xd.window.bounds.current, xd.window.sizer.applyPreset, xd.dock.sizes.current, xd.dock.sizes.set, xd.dock.artifactTarget.current, xd.dock.artifactTarget.set, xd.dock.focus, xd.dock.close, xd.dock.closeOthers, xd.dock.closeRight, xd.dock.closeAll, xd.dock.window.arrange, xd.dock.window.merge, xd.dock.pane.arrange, xd.dock.pane.merge, xd.dock.arrangeHorizontal, xd.dock.arrangeVertical, xd.dock.arrangeGrid, xd.dock.panes.list, xd.terminals.list, xd.terminals.run, xd.terminals.runMany, xd.tools.core.capabilityExplorer.open, xd.tools.core.networkMonitor.open, xd.tools.core.runTaskPanel.open, xd.tools.core.aiWorkbench.open, xd.tools.core.artifactLibrary.open, xd.capture.activePane, xd.xenesis.status, xd.xenesis.diagnostics, xd.xenesis.reports.list, xd.xenesis.tasks.list, xd.xenesis.agents.list, xd.xenesis.agents.status, xd.xenesis.agents.submit, xd.xenesis.agents.events, xd.xenesis.profiles.list, xd.xenesis.workspace.set, xd.xenesis.runs.start, xd.xenesis.runs.cancel, xd.xenesis.sessions.reset, xd.xenesis.connections.status, xd.xenesis.connections.open, xd.xenesis.connections.diagnostics.status, xd.xenesis.connections.diagnostics.open, xd.xenesis.connections.setupRequests.status, xd.xenesis.connections.setupRequests.open, xd.xenesis.connections.setupRequests.request, xd.xenesis.onboarding.status, xd.xenesis.onboarding.open, xd.xenesis.guides.status, xd.xenesis.guides.open, xd.localCli.scan, xd.mcp.settings.status, xd.mcp.bridge.status, xd.xenesis.gateway.status, xd.xenesis.gateway.openDashboard, xd.xenesis.providers.setup.status, xd.xenesis.providers.routing.status, xd.xenesis.providers.views.status, xd.xenesis.providers.views.open, xd.xenesis.tools.setup.status, xd.xenesis.tools.connectors.status, xd.xenesis.tools.views.status, xd.xenesis.tools.views.open, xd.xenesis.tools.userStories.status, xd.xenesis.tools.userStories.open, xd.xenesis.tools.installPlans.status, xd.xenesis.tools.installPlans.open, xd.xenesis.tools.mcpInstallDrafts.status, xd.xenesis.tools.mcpInstallDrafts.open, xd.xenesis.tools.mcpInstallDrafts.request, xd.xenesis.tools.oauthDrafts.status, xd.xenesis.tools.oauthDrafts.open, xd.xenesis.tools.oauthDrafts.request, xd.xenesis.tools.actions.status, xd.xenesis.tools.actions.open, xd.xenesis.tools.actions.request, xd.xenesis.providers.profileDrafts.status, xd.xenesis.providers.profileDrafts.open, xd.xenesis.providers.profileDrafts.request, xd.xenesis.channels.routing.status, xd.xenesis.channels.safety.status, xd.xenesis.channels.accessGroups.status, xd.xenesis.channels.pairing.status, xd.xenesis.channels.userStories.status, xd.xenesis.channels.userStories.open, xd.xenesis.channels.profileDrafts.status, xd.xenesis.channels.profileDrafts.open, xd.xenesis.channels.profileDrafts.request, xd.xenesis.messengers.views.status, xd.xenesis.messengers.views.open, xd.testing.xenesisAgent.submitPrompt, dynamic xd.dock.panes.{paneId}.* paths, dynamic xd.dock.contents.{contentId}.* paths, and dynamic xd.terminals.sessions.{terminalId}.* paths.',
   ].join('\n');
 }

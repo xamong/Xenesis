@@ -323,6 +323,7 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.xenesis\.agents\.list/);
   assert.match(hint, /xd\.xenesis\.agents\.status/);
   assert.match(hint, /xd\.xenesis\.agents\.events/);
+  assert.match(hint, /xd\.xenesis\.agents\.submit/);
   assert.match(hint, /xd\.xenesis\.profiles\.list/);
   assert.match(hint, /xd\.xenesis\.runs\.cancel/);
   assert.match(hint, /xd\.xenesis\.sessions\.reset/);
@@ -384,6 +385,8 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /do not refuse/i);
   assert.match(hint, /runtime is read-only/i);
   assert.match(hint, /Capability Registry will enforce/i);
+  assert.match(hint, /quoted Agent pane message/i);
+  assert.match(hint, /quoted prompt/i);
 
   assert.doesNotMatch(hint, /xd\.gowoori\.open/);
   assert.doesNotMatch(hint, /xd\.terminals\.spawn/);
@@ -549,6 +552,32 @@ test('planXenesisDeskNaturalLanguageActions maps profile inventory prompts to CR
 });
 
 test('planXenesisDeskNaturalLanguageActions maps runtime control prompts to CR actions', () => {
+  assert.deepEqual(
+    planXenesisDeskNaturalLanguageActions('Xenesis runtime run "연결 상태를 요약해줘" 실행해줘').actions,
+    [
+      {
+        id: 'natural-xenesis-runs-start',
+        path: 'xd.xenesis.runs.start',
+        args: { prompt: '연결 상태를 요약해줘' },
+        approved: false,
+        reason: 'Start Xenesis run from natural language request.',
+      },
+    ],
+  );
+
+  assert.deepEqual(
+    planXenesisDeskNaturalLanguageActions('Xenesis Agent "xenesis-agent"에 "연결 상태 요약해줘" 보내줘').actions,
+    [
+      {
+        id: 'natural-xenesis-agent-submit',
+        path: 'xd.xenesis.agents.submit',
+        args: { agentId: 'xenesis-agent', text: '연결 상태 요약해줘' },
+        approved: false,
+        reason: 'Submit Xenesis Agent pane message from natural language request.',
+      },
+    ],
+  );
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('Xenesis runtime run 취소해줘').actions, [
     {
       id: 'natural-xenesis-runs-cancel',
