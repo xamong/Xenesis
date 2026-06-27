@@ -349,6 +349,49 @@ export interface XenesisConnectionChannelProfileDraftTemplate {
   safetyBoundaries: string[];
 }
 
+export type XenesisConnectionProviderProfileDraftStatus = 'ready' | 'missing-required-field' | 'unknown';
+export type XenesisConnectionProviderProfileDraftFieldValueState =
+  | 'configured'
+  | 'missing'
+  | 'not-required'
+  | 'default'
+  | 'unknown';
+
+export interface XenesisConnectionProviderProfileDraftField {
+  field: string;
+  label: string;
+  required: boolean;
+  secretRef: boolean;
+  valueState: XenesisConnectionProviderProfileDraftFieldValueState;
+  source: string;
+  description: string;
+}
+
+export interface XenesisConnectionProviderProfileDraftGuardrails {
+  approvalMode: 'readonly' | 'safe' | 'auto';
+  providerRetries: number;
+  fallbackPolicy: string;
+  localCliBoundary: string;
+}
+
+export interface XenesisConnectionProviderProfileDraftTemplate {
+  draftStatus: XenesisConnectionProviderProfileDraftStatus;
+  actionInboxKind: 'xenesis-provider-profile-draft';
+  provider: string;
+  displayName: string;
+  description?: string;
+  setupSurface: string;
+  reviewSurface: string;
+  profileFields: XenesisConnectionProviderProfileDraftField[];
+  missingRequiredFields: string[];
+  guardrails: XenesisConnectionProviderProfileDraftGuardrails;
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  blockedActions: string[];
+  safetyBoundaries: string[];
+}
+
 export interface XenesisConnectionProviderSetupTemplate {
   source: 'user-settings' | 'auto-detect' | 'local-cli' | 'byok';
   provider: string;
@@ -622,6 +665,7 @@ export interface XenesisConnectionItem {
   providerSetup?: XenesisConnectionProviderSetupTemplate;
   providerView?: XenesisConnectionProviderViewTemplate;
   providerRouting?: XenesisConnectionProviderRoutingTemplate;
+  providerProfileDraft?: XenesisConnectionProviderProfileDraftTemplate;
   toolSetup?: XenesisConnectionToolSetupTemplate;
   toolInstallPlan?: XenesisConnectionToolInstallPlanTemplate;
   toolConnector?: XenesisConnectionToolConnectorTemplate;
@@ -3463,6 +3507,7 @@ function diagnosticRunbookSetupSurface(item: XenesisConnectionItem): string {
   return (
     item.onboardingPlan?.setupSurface ??
     item.providerView?.setupSurface ??
+    item.providerProfileDraft?.setupSurface ??
     (item.providerSetup ? 'Settings > AI Provider' : undefined) ??
     item.toolSetup?.setupSurface ??
     item.toolConnector?.setupSurface ??
@@ -3485,6 +3530,7 @@ function diagnosticRunbookPrimarySurface(item: XenesisConnectionItem): string {
   return (
     item.onboardingPlan?.primarySurface ??
     item.providerView?.primarySurface ??
+    (item.providerProfileDraft ? 'Settings > Xenesis Agent > Connections' : undefined) ??
     item.toolView?.primarySurface ??
     item.toolActionCatalog?.primarySurface ??
     item.toolUserStory?.primarySurface ??
@@ -3563,6 +3609,20 @@ function buildXenesisConnectionDiagnosticRunbook(
         readPaths: ['xd.xenesis.providers.views.status', ...item.providerView.readPaths],
         controlPaths: item.providerView.controlPaths,
         diagnostics: item.providerView.diagnostics,
+      }),
+    );
+  }
+
+  if (item.providerProfileDraft) {
+    steps.push(
+      diagnosticRunbookStep({
+        id: 'provider-profile-draft',
+        label: 'Provider profile draft',
+        expectedState:
+          'Review-only provider profile fields and guardrails are visible before any provider setting mutation.',
+        readPaths: ['xd.xenesis.providers.profileDrafts.status', ...item.providerProfileDraft.readPaths],
+        controlPaths: item.providerProfileDraft.controlPaths,
+        diagnostics: [...item.providerProfileDraft.missingRequiredFields, ...item.providerProfileDraft.diagnostics],
       }),
     );
   }
@@ -3793,6 +3853,7 @@ function buildXenesisConnectionDiagnosticRunbook(
       ...(item.providerSetup?.riskControls ?? []),
       ...(item.providerRouting?.safetyBoundaries ?? []),
       ...(item.providerView?.safetyBoundaries ?? []),
+      ...(item.providerProfileDraft?.safetyBoundaries ?? []),
       ...(item.toolSetup?.riskControls ?? []),
       ...(item.toolConnector?.safetyBoundaries ?? []),
       ...(item.toolView?.safetyBoundaries ?? []),
@@ -3849,6 +3910,7 @@ function setupRequestDiagnosticItems(item: XenesisConnectionItem): string[] {
     ...(item.onboardingPlan?.diagnostics ?? []),
     ...(item.providerSetup?.verification ?? []),
     ...(item.providerRouting?.diagnostics ?? []),
+    ...(item.providerProfileDraft?.diagnostics ?? []),
     ...(item.toolSetup?.verification ?? []),
     ...(item.toolConnector?.validationChecks ?? []),
     ...(item.toolActionCatalog?.diagnostics ?? []),
@@ -3869,6 +3931,8 @@ function setupRequestStepItems(item: XenesisConnectionItem): string[] {
     ...(item.setupSteps ?? []),
     ...(item.onboardingPlan?.validationChecks.map((check) => `verify ${check}`) ?? []),
     ...(item.providerSetup?.verification.map((check) => `verify ${check}`) ?? []),
+    ...(item.providerProfileDraft?.missingRequiredFields.map((field) => `review provider profile field: ${field}`) ??
+      []),
     ...(item.toolInstallPlan?.installSteps ?? []),
     ...(item.mcpInstallDraft?.installSteps ?? []),
     ...(item.toolConnector?.validationChecks.map((check) => `validate ${check}`) ?? []),
@@ -3917,6 +3981,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.providerSetup?.crReadPaths ?? []),
       ...(item.providerRouting?.readPaths ?? []),
       ...(item.providerView?.readPaths ?? []),
+      ...(item.providerProfileDraft?.readPaths ?? []),
       ...(item.toolSetup?.crReadPaths ?? []),
       ...(item.toolConnector?.readPaths ?? []),
       ...(item.toolView?.readPaths ?? []),
@@ -3938,6 +4003,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.diagnosticRunbook?.controlPaths ?? []),
       ...(item.onboardingPlan?.controlPaths ?? []),
       ...(item.providerView?.controlPaths ?? []),
+      ...(item.providerProfileDraft?.controlPaths ?? []),
       ...(item.crActions ?? []),
       ...(item.toolConnector?.controlPaths ?? []),
       ...(item.toolView?.controlPaths ?? []),
@@ -3963,6 +4029,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.providerSetup?.riskControls ?? []),
       ...(item.providerRouting?.safetyBoundaries ?? []),
       ...(item.providerView?.safetyBoundaries ?? []),
+      ...(item.providerProfileDraft?.safetyBoundaries ?? []),
       ...(item.toolSetup?.riskControls ?? []),
       ...(item.toolConnector?.safetyBoundaries ?? []),
       ...(item.toolView?.safetyBoundaries ?? []),
@@ -4300,6 +4367,178 @@ function providerViewTemplate(provider: string): XenesisConnectionProviderViewTe
   };
 }
 
+function providerUsesDefaultModel(provider: string): boolean {
+  return ['auto', 'codex-cli', 'codex-app-server', 'claude-cli', 'claude-interactive', 'ollama', 'lmstudio'].includes(
+    provider,
+  );
+}
+
+function providerProfileDraftValueState(input: {
+  required: boolean;
+  configured: boolean;
+  notRequired?: boolean;
+  defaultValue?: boolean;
+}): XenesisConnectionProviderProfileDraftFieldValueState {
+  if (input.notRequired) return 'not-required';
+  if (input.configured) return 'configured';
+  if (input.defaultValue) return 'default';
+  if (input.required) return 'missing';
+  return 'unknown';
+}
+
+function providerProfileDraftTemplate(
+  aiProvider: BuildXenesisConnectionsStatusInput['aiProvider'],
+  xenesis: XenesisStatus | null,
+  providerSetup: XenesisConnectionProviderSetupTemplate,
+  providerRouting: XenesisConnectionProviderRoutingTemplate,
+): XenesisConnectionProviderProfileDraftTemplate {
+  const provider = aiProvider.provider.trim();
+  const authMode = providerSetup.authMode;
+  const modelRequired = !providerUsesDefaultModel(provider);
+  const modelConfigured = Boolean(aiProvider.model.trim());
+  const credentialRequired = authMode === 'api-key';
+  const credentialConfigured = Boolean(aiProvider.apiKey);
+  const credentialField = credentialRequired ? 'apiKey' : 'credential';
+  const profileFields: XenesisConnectionProviderProfileDraftField[] = [
+    {
+      field: 'provider',
+      label: 'Provider',
+      required: true,
+      secretRef: false,
+      valueState: providerProfileDraftValueState({
+        required: true,
+        configured: Boolean(provider),
+      }),
+      source: 'AI Provider settings provider field',
+      description: 'Active reasoning provider identity selected by the user settings profile.',
+    },
+    {
+      field: 'model',
+      label: 'Model',
+      required: modelRequired,
+      secretRef: false,
+      valueState: providerProfileDraftValueState({
+        required: modelRequired,
+        configured: modelConfigured,
+        notRequired: !modelRequired,
+      }),
+      source: 'AI Provider settings model field',
+      description: 'Model name used by the selected provider when that provider requires an explicit model.',
+    },
+    {
+      field: 'authMode',
+      label: 'Auth mode',
+      required: true,
+      secretRef: false,
+      valueState: providerProfileDraftValueState({
+        required: true,
+        configured: Boolean(authMode),
+      }),
+      source: 'provider auth policy',
+      description: 'Credential mode derived from the provider identity.',
+    },
+    {
+      field: credentialField,
+      label: credentialRequired ? 'API key' : 'Credential',
+      required: credentialRequired,
+      secretRef: credentialRequired,
+      valueState: providerProfileDraftValueState({
+        required: credentialRequired,
+        configured: credentialConfigured,
+        notRequired: !credentialRequired,
+      }),
+      source: providerSetup.credentialStorage,
+      description: credentialRequired
+        ? `${provider} API key secret state.`
+        : 'Credential state is represented as a non-secret readiness value.',
+    },
+    {
+      field: 'endpoint',
+      label: 'Endpoint',
+      required: false,
+      secretRef: false,
+      valueState: providerSetup.endpoint === 'default' ? 'default' : 'configured',
+      source: 'AI Provider settings base URL or runtime provider baseURL',
+      description: 'Optional provider endpoint override state.',
+    },
+    {
+      field: 'runtimeProfile',
+      label: 'Runtime profile',
+      required: false,
+      secretRef: false,
+      valueState: providerSetup.runtimeProfile ? 'configured' : 'default',
+      source: 'active ~/.xenis profile',
+      description: 'Runtime profile name used for provider routing, when loaded.',
+    },
+    {
+      field: 'fallbackPolicy',
+      label: 'Fallback policy',
+      required: false,
+      secretRef: false,
+      valueState: providerRouting.fallbackPolicy ? 'configured' : 'default',
+      source: 'xenesis runtime providerFallbacks',
+      description: 'Fallback chain policy state exposed without credential values.',
+    },
+    {
+      field: 'localCliBoundary',
+      label: 'Local CLI boundary',
+      required: true,
+      secretRef: false,
+      valueState: providerSetup.localCliBoundary ? 'configured' : 'unknown',
+      source: 'provider setup guardrail',
+      description: 'Provider identity remains separate from the installed local CLI integration.',
+    },
+  ];
+  const missingRequiredFields = profileFields
+    .filter((field) => field.required && field.valueState === 'missing')
+    .map((field) => field.field);
+  return {
+    draftStatus: !provider ? 'unknown' : missingRequiredFields.length > 0 ? 'missing-required-field' : 'ready',
+    actionInboxKind: 'xenesis-provider-profile-draft',
+    provider,
+    displayName: provider,
+    description: 'Review provider setup fields, routing guardrails, and credential readiness before mutations.',
+    setupSurface: 'Settings > AI Provider',
+    reviewSurface: 'Desk Action Inbox',
+    profileFields,
+    missingRequiredFields,
+    guardrails: {
+      approvalMode: xenesis?.profile.policy.approvalMode ?? 'safe',
+      providerRetries: providerSetup.providerRetries,
+      fallbackPolicy: providerRouting.fallbackPolicy,
+      localCliBoundary: providerSetup.localCliBoundary,
+    },
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.providers.setup.status',
+      'xd.xenesis.providers.routing.status',
+      'xd.xenesis.providers.profileDrafts.status',
+      'xd.xenesis.status',
+    ],
+    controlPaths: [
+      'xd.xenesis.providers.profileDrafts.open',
+      'xd.xenesis.providers.profileDrafts.request',
+      'xd.xenesis.connections.open',
+      'xd.panes.settings.open',
+    ],
+    diagnostics: ['provider-profile-draft', 'credential-state', 'provider-footer', 'fallback-policy', 'cr-readback'],
+    blockedActions: [
+      'change active provider',
+      'change provider model',
+      'store provider credentials',
+      'mutate fallback chain',
+      'switch local CLI selection',
+      'run provider prompts',
+    ],
+    safetyBoundaries: [
+      'provider profile drafts are review-only',
+      'provider secrets are never returned',
+      'provider profile draft does not mutate provider settings, model settings, fallback chains, credentials, or local CLI selection',
+      'provider prompt execution requires a separate verified Agent run path',
+    ],
+  };
+}
+
 function providerItem(
   aiProvider: BuildXenesisConnectionsStatusInput['aiProvider'],
   xenesis: XenesisStatus | null,
@@ -4317,6 +4556,8 @@ function providerItem(
   ].includes(aiProvider.provider);
   const hasCredential = isLocalProvider || Boolean(aiProvider.apiKey);
   const hasModel = isLocalProvider || Boolean(aiProvider.model);
+  const providerSetup = providerSetupTemplate(aiProvider, xenesis);
+  const providerRouting = providerRoutingTemplate(aiProvider, xenesis, providerFallbacks, env);
   return {
     id: `provider-${aiProvider.provider}`,
     kind: 'provider',
@@ -4329,9 +4570,10 @@ function providerItem(
         : 'Provider needs a model or credential before reliable Agent use.',
     settingsTarget: 'run-model',
     settingsAction: { category: 'run-model', section: 'default' },
-    providerSetup: providerSetupTemplate(aiProvider, xenesis),
+    providerSetup,
     providerView: providerViewTemplate(aiProvider.provider),
-    providerRouting: providerRoutingTemplate(aiProvider, xenesis, providerFallbacks, env),
+    providerRouting,
+    providerProfileDraft: providerProfileDraftTemplate(aiProvider, xenesis, providerSetup, providerRouting),
     setupSteps: [
       'Choose the provider in AI Provider settings.',
       'Set a model and credential only when the selected provider requires them.',

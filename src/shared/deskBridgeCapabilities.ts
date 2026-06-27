@@ -789,6 +789,42 @@ const XENESIS_PROVIDER_VIEW_OPEN_SCHEMA = {
   },
 } as const;
 
+const XENESIS_PROVIDER_PROFILE_DRAFT_STATUS_SCHEMA = XENESIS_PROVIDER_VIEW_STATUS_SCHEMA;
+const XENESIS_PROVIDER_PROFILE_DRAFT_OPEN_SCHEMA = XENESIS_PROVIDER_VIEW_OPEN_SCHEMA;
+const XENESIS_PROVIDER_PROFILE_DRAFT_REQUEST_SCHEMA = {
+  type: 'object',
+  required: ['provider'],
+  properties: {
+    provider: {
+      type: 'string',
+      title: 'Provider',
+      enum: XENESIS_PROVIDER_IDS,
+      description: 'Active provider id to record as a provider profile draft review request.',
+    },
+    id: {
+      type: 'string',
+      title: 'Provider card id',
+      description: 'Alias for provider card id, such as provider-codex-app-server.',
+    },
+    name: {
+      type: 'string',
+      title: 'Provider',
+      enum: XENESIS_PROVIDER_IDS,
+      description: 'Alias for provider.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity to include on the Action Inbox item.',
+    },
+    note: {
+      type: 'string',
+      title: 'Review note',
+      description: 'Optional note to append to the provider profile draft description.',
+    },
+  },
+} as const;
+
 export interface DeskBridgeCapabilityNode {
   path: string;
   label: string;
@@ -1087,6 +1123,9 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisProviderRoutingStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisProviderViewsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisProviderView?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisProviderProfileDraftsStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisProviderProfileDraft?: (args?: unknown) => Promise<unknown> | unknown;
+  requestXenesisProviderProfileDraft?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisDiagnostics?: () => Promise<unknown> | unknown;
   openXenesisTui?: (args: unknown) => Promise<unknown> | unknown;
   listXenesisReports?: (args: unknown) => Promise<unknown> | unknown;
@@ -4427,6 +4466,34 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             XENESIS_PROVIDER_VIEW_OPEN_SCHEMA,
           ),
         ]),
+        group(
+          'xd.xenesis.providers.profileDrafts',
+          'Profile drafts',
+          'Read, open, and request review-only AI provider profile drafts.',
+          [
+            method(
+              'xd.xenesis.providers.profileDrafts.status',
+              'Read provider profile drafts',
+              'Read review-only provider profile field state, guardrails, missing required fields, diagnostics, and safety boundaries without mutating provider settings or exposing secrets.',
+              'read',
+              XENESIS_PROVIDER_PROFILE_DRAFT_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.providers.profileDrafts.open',
+              'Open provider profile draft',
+              'Open Settings > Xenesis Agent > Connections and focus the active provider profile-draft card inside Desk.',
+              'control',
+              XENESIS_PROVIDER_PROFILE_DRAFT_OPEN_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.providers.profileDrafts.request',
+              'Request provider profile draft review',
+              'Record a local Action Inbox item for reviewing a provider profile draft without changing provider settings, model settings, fallback chains, credentials, local CLI selection, or running provider prompts.',
+              'write',
+              XENESIS_PROVIDER_PROFILE_DRAFT_REQUEST_SCHEMA,
+            ),
+          ],
+        ),
       ]),
       group('xd.xenesis.gateway', 'Gateway', 'Xenesis gateway lifecycle operations.', [
         method('xd.xenesis.gateway.status', 'Read gateway status', 'Read the Xenesis gateway runtime status.', 'read'),
@@ -10918,6 +10985,15 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.providers.views.open') {
         return callAdapter(path, api?.openXenesisProviderView, request.args);
+      }
+      if (path === 'xd.xenesis.providers.profileDrafts.status') {
+        return callAdapter(path, api?.getXenesisProviderProfileDraftsStatus, request.args);
+      }
+      if (path === 'xd.xenesis.providers.profileDrafts.open') {
+        return callAdapter(path, api?.openXenesisProviderProfileDraft, request.args);
+      }
+      if (path === 'xd.xenesis.providers.profileDrafts.request') {
+        return callAdapter(path, api?.requestXenesisProviderProfileDraft, request.args);
       }
       if (path === 'xd.xenesis.gateway.status') {
         return callAdapter(path, api?.getXenesisStatus);

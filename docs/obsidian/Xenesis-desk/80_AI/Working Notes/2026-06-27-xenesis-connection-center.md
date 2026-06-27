@@ -760,6 +760,32 @@ Capability Registry instead of only through separate renderer settings panels.
   renderer helper, and missing prompt-hint paths, then passed after
   implementation with 106/106 tests.
 
+## Current Provider Profile Drafts Slice
+
+- Add `providerProfileDraft` metadata to the active AI provider card in
+  `xd.xenesis.connections.status`.
+- Add `xd.xenesis.providers.profileDrafts.status` as a read/no-approval CR path
+  for provider field state, missing required fields, guardrails, read/control
+  paths, diagnostics, blocked actions, and safety boundaries.
+- Add `xd.xenesis.providers.profileDrafts.open` as a control/no-approval CR path
+  that opens Settings > Xenesis Agent > Connections and focuses the provider
+  draft card.
+- Add `xd.xenesis.providers.profileDrafts.request` as a write/approval-gated CR
+  path that records a local `xenesis-provider-profile-draft` Action Inbox item
+  for review.
+- Settings renders the same model with
+  `data-xenesis-provider-profile-draft="<provider-id>"`.
+- This is a review-only setup/readiness surface. It does not mutate provider
+  settings, model settings, fallback chains, credentials, local CLI selection,
+  or run provider prompts. Secret values are never returned.
+- External documentation handling for this slice: no per-slice web browsing.
+  Use local Obsidian/docs/handoff as the gap map; refresh external docs only as
+  a batched documentation pass if needed.
+- `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+  failed first for missing provider draft metadata, missing CR paths, missing
+  renderer helper, and missing prompt-hint paths, then passed after
+  implementation with 110/110 tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

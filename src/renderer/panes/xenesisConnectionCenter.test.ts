@@ -8,6 +8,7 @@ import {
   buildXenesisConnectionSettingsRequest,
   buildXenesisConnectionSetupRequestRequest,
   buildXenesisMcpInstallDraftRequest,
+  buildXenesisProviderProfileDraftRequest,
   buildXenesisToolActionCatalogRequest,
   formatXenesisChannelAccessGroupsSummary,
   formatXenesisChannelPairingSummary,
@@ -22,6 +23,7 @@ import {
   formatXenesisMcpInstallDraftSummary,
   formatXenesisMessengerViewSummary,
   formatXenesisOnboardingPlanSummary,
+  formatXenesisProviderProfileDraftSummary,
   formatXenesisProviderRoutingSummary,
   formatXenesisProviderSetupSummary,
   formatXenesisProviderViewSummary,
@@ -718,6 +720,86 @@ test('formatXenesisProviderSetupSummary describes provider, model, and auth mode
     }),
     'codex-app-server / gpt-5-codex / local-login',
   );
+});
+
+test('formatXenesisProviderProfileDraftSummary describes provider, status, and missing fields', () => {
+  assert.equal(
+    formatXenesisProviderProfileDraftSummary({
+      draftStatus: 'missing-required-field',
+      actionInboxKind: 'xenesis-provider-profile-draft',
+      provider: 'openai',
+      displayName: 'OpenAI',
+      description: 'Review OpenAI provider settings.',
+      setupSurface: 'Settings > AI Provider',
+      reviewSurface: 'Desk Action Inbox',
+      profileFields: [
+        {
+          field: 'apiKey',
+          label: 'API key',
+          required: true,
+          secretRef: true,
+          valueState: 'missing',
+          source: 'AI Provider settings secret field',
+          description: 'OpenAI API key secret state.',
+        },
+      ],
+      missingRequiredFields: ['apiKey'],
+      guardrails: {
+        approvalMode: 'safe',
+        providerRetries: 0,
+        fallbackPolicy: 'configured-providerFallbacks',
+        localCliBoundary: 'provider identity is separate from local CLI integration',
+      },
+      readPaths: ['xd.xenesis.providers.profileDrafts.status'],
+      controlPaths: ['xd.xenesis.providers.profileDrafts.request'],
+      diagnostics: ['credential-state'],
+      blockedActions: ['store provider credentials'],
+      safetyBoundaries: ['provider profile drafts are review-only'],
+    }),
+    'openai / missing-required-field / 1 missing field(s)',
+  );
+});
+
+test('buildXenesisProviderProfileDraftRequest targets the review request CR path', () => {
+  const item = {
+    id: 'provider-openai',
+    kind: 'provider',
+    label: 'AI provider: openai',
+    status: 'blocked',
+    summary: 'Provider setup',
+    providerProfileDraft: {
+      draftStatus: 'missing-required-field',
+      actionInboxKind: 'xenesis-provider-profile-draft',
+      provider: 'openai',
+      displayName: 'OpenAI',
+      setupSurface: 'Settings > AI Provider',
+      reviewSurface: 'Desk Action Inbox',
+      profileFields: [],
+      missingRequiredFields: ['apiKey'],
+      guardrails: {
+        approvalMode: 'safe',
+        providerRetries: 0,
+        fallbackPolicy: 'configured-providerFallbacks',
+        localCliBoundary: 'provider identity is separate from local CLI integration',
+      },
+      readPaths: ['xd.xenesis.providers.profileDrafts.status'],
+      controlPaths: ['xd.xenesis.providers.profileDrafts.request'],
+      diagnostics: ['credential-state'],
+      blockedActions: ['store provider credentials'],
+      safetyBoundaries: ['provider profile drafts are review-only'],
+    },
+  } satisfies XenesisConnectionItem;
+
+  assert.deepEqual(buildXenesisProviderProfileDraftRequest(item), {
+    path: 'xd.xenesis.providers.profileDrafts.request',
+    args: {
+      provider: 'openai',
+    },
+    source: 'xenesis',
+    approved: true,
+  });
+
+  assert.equal(buildXenesisProviderProfileDraftRequest({ ...item, providerProfileDraft: undefined }), null);
 });
 
 test('formatXenesisProviderViewSummary describes internal Desk provider view surface and type', () => {

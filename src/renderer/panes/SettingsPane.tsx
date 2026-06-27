@@ -91,6 +91,7 @@ import {
   buildXenesisConnectionSettingsRequest,
   buildXenesisConnectionSetupRequestRequest,
   buildXenesisMcpInstallDraftRequest,
+  buildXenesisProviderProfileDraftRequest,
   buildXenesisToolActionCatalogRequest,
   formatXenesisChannelAccessGroupsSummary,
   formatXenesisChannelPairingSummary,
@@ -105,6 +106,7 @@ import {
   formatXenesisMcpInstallDraftSummary,
   formatXenesisMessengerViewSummary,
   formatXenesisOnboardingPlanSummary,
+  formatXenesisProviderProfileDraftSummary,
   formatXenesisProviderRoutingSummary,
   formatXenesisProviderSetupSummary,
   formatXenesisProviderViewSummary,
@@ -4277,6 +4279,7 @@ export default function SettingsPane() {
     const mcpInstallDraftRequest = buildXenesisMcpInstallDraftRequest(item);
     const toolActionCatalogRequest = buildXenesisToolActionCatalogRequest(item);
     const channelProfileDraftRequest = buildXenesisChannelProfileDraftRequest(item);
+    const providerProfileDraftRequest = buildXenesisProviderProfileDraftRequest(item);
     const mcpTemplate = item.mcpTemplate;
     const mcpInstallDraft = item.mcpInstallDraft;
     const toolActionCatalog = item.toolActionCatalog;
@@ -4284,6 +4287,7 @@ export default function SettingsPane() {
     const providerSetup = item.providerSetup;
     const providerView = item.providerView;
     const providerRouting = item.providerRouting;
+    const providerProfileDraft = item.providerProfileDraft;
     const toolSetup = item.toolSetup;
     const toolInstallPlan = item.toolInstallPlan;
     const toolConnector = item.toolConnector;
@@ -4316,7 +4320,8 @@ export default function SettingsPane() {
           setupRequestCall ||
           mcpInstallDraftRequest ||
           toolActionCatalogRequest ||
-          channelProfileDraftRequest) && (
+          channelProfileDraftRequest ||
+          providerProfileDraftRequest) && (
           <div className="sp-actions-row sp-actions-row-tight">
             <button
               className="sp-btn-ghost sp-btn-sm"
@@ -4384,6 +4389,16 @@ export default function SettingsPane() {
                 }}
               >
                 {t('settings.xenesisConnectionsRequestChannelProfileDraft')}
+              </button>
+            ) : null}
+            {providerProfileDraftRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(providerProfileDraftRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsRequestProviderProfileDraft')}
               </button>
             ) : null}
           </div>
@@ -4579,6 +4594,65 @@ export default function SettingsPane() {
             <div>
               <span>{t('settings.xenesisConnectionsGuideBoundaries')}</span>
               <strong>{item.guideCatalog.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {providerProfileDraft ? (
+          <div
+            className="sp-info-list sp-info-list-compact"
+            data-xenesis-provider-profile-draft={providerProfileDraft.provider}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderProfileDraft')}</span>
+              <strong>{formatXenesisProviderProfileDraftSummary(providerProfileDraft)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderProfileDraftSetupSurface')}</span>
+              <strong>{providerProfileDraft.setupSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderProfileDraftReviewSurface')}</span>
+              <strong>{providerProfileDraft.reviewSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderProfileDraftFields')}</span>
+              <strong>
+                {providerProfileDraft.profileFields
+                  .map((field) => `${field.field}:${field.valueState}${field.required ? ':required' : ''}`)
+                  .join(', ') || '-'}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderProfileDraftMissingFields')}</span>
+              <strong>{providerProfileDraft.missingRequiredFields.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderProfileDraftGuardrails')}</span>
+              <strong>
+                {providerProfileDraft.guardrails.approvalMode} / {providerProfileDraft.guardrails.providerRetries}{' '}
+                retries / {providerProfileDraft.guardrails.fallbackPolicy} /{' '}
+                {providerProfileDraft.guardrails.localCliBoundary}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderProfileDraftReadback')}</span>
+              <strong>{providerProfileDraft.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderProfileDraftControls')}</span>
+              <strong>{providerProfileDraft.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderProfileDraftDiagnostics')}</span>
+              <strong>{providerProfileDraft.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderProfileDraftBlockedActions')}</span>
+              <strong>{providerProfileDraft.blockedActions.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderProfileDraftSafety')}</span>
+              <strong>{providerProfileDraft.safetyBoundaries.join(', ')}</strong>
             </div>
           </div>
         ) : null}

@@ -80,6 +80,18 @@ safety boundaries only. It does not install MCP servers, complete OAuth, store
 tokens, execute provider tools, send messages, mutate provider/tool/channel
 settings, update allowlists, or bypass approvals.
 
+Provider cards also expose a `providerProfileDraft` read model. Use
+`xd.xenesis.providers.profileDrafts.status` to inspect review-only provider
+field state, missing required fields, guardrails, diagnostics, blocked actions,
+and safety boundaries. Use `xd.xenesis.providers.profileDrafts.open` with
+`{ "provider": "<provider-id>" }` to focus the active provider card, and
+`xd.xenesis.providers.profileDrafts.request` with
+`{ "provider": "<provider-id>" }` to record a local
+`xenesis-provider-profile-draft` Action Inbox item for review. Drafts return
+field readiness states only; they do not mutate provider settings, model
+settings, fallback chains, credentials, local CLI selection, or run provider
+prompts.
+
 Tool cards with recommended MCP metadata also expose an `mcpInstallDraft` read
 model. Use `xd.xenesis.tools.mcpInstallDrafts.status` to inspect review-only
 install drafts for Fetch, Filesystem, GitHub, Notion, Linear, and planned
@@ -159,6 +171,17 @@ provider, model, auth mode, credential state, credential storage location,
 endpoint, runtime profile, retry/fallback policy, local CLI boundary, verification
 steps, CR readback paths, and risk controls. It reports whether credentials are
 configured or missing without serializing API keys or bridge tokens.
+
+The same provider card exposes a `providerProfileDraft` review model through
+`xd.xenesis.connections.status`. Use
+`xd.xenesis.providers.profileDrafts.status` to inspect provider, model, auth
+mode, credential, endpoint, runtime profile, fallback policy, and local CLI
+boundary field state. Use `xd.xenesis.providers.profileDrafts.open` to focus the
+draft in Settings, and `xd.xenesis.providers.profileDrafts.request` to record a
+local Action Inbox review item. This surface is status/open/request only: it
+does not change the active provider, change the model, mutate fallback chains,
+store credentials, switch local CLI selection, run provider prompts, or return
+secret values.
 
 The same provider card exposes a `providerView` read model for the internal Desk
 surface. Use `xd.xenesis.providers.views.status` to inspect the view metadata and
@@ -442,6 +465,15 @@ Use `xd.xenesis.providers.views.status` and
 setup/readiness view. The open path focuses the provider card in Settings >
 Xenesis Agent > Connections and is a UI-control path only. It does not change
 the active provider, credentials, model, runtime routing, or fallback policy.
+
+Use `xd.xenesis.providers.profileDrafts.status`,
+`xd.xenesis.providers.profileDrafts.open`, and
+`xd.xenesis.providers.profileDrafts.request` to inspect, open, or request review
+of the active AI provider profile draft. The request path records a local Action
+Inbox item with field states, missing required fields, guardrails, diagnostics,
+blocked actions, and safety boundaries only. It does not mutate provider
+settings, model settings, fallback chains, credentials, local CLI selection, or
+run provider prompts.
 
 Use `xd.xenesis.connections.open` with `{ "id": "<connection-id>" }` to open
 Settings > Xenesis Agent > Connections and focus a specific provider, tool,

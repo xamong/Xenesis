@@ -1282,6 +1282,84 @@ test('buildXenesisConnectionsStatus exposes provider setup identity, credential 
   });
 });
 
+test('buildXenesisConnectionsStatus exposes review-only provider profile drafts', () => {
+  const readyStatus = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const readyDraft = readyStatus.sections.provider.items[0].providerProfileDraft;
+  assert.equal(readyDraft?.draftStatus, 'ready');
+  assert.equal(readyDraft?.actionInboxKind, 'xenesis-provider-profile-draft');
+  assert.equal(readyDraft?.provider, 'codex-app-server');
+  assert.deepEqual(readyDraft?.missingRequiredFields, []);
+  assert.equal(readyDraft?.profileFields.find((field) => field.field === 'credential')?.valueState, 'not-required');
+  assert.equal(readyDraft?.guardrails.localCliBoundary, 'provider identity is separate from local CLI integration');
+  assert.ok(readyDraft?.readPaths.includes('xd.xenesis.providers.profileDrafts.status'));
+  assert.ok(readyDraft?.controlPaths.includes('xd.xenesis.providers.profileDrafts.request'));
+  assert.ok(readyDraft?.blockedActions.includes('store provider credentials'));
+  assert.ok(readyDraft?.safetyBoundaries.includes('provider profile drafts are review-only'));
+
+  const missingStatus = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'openai',
+      model: '',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const missingDraft = missingStatus.sections.provider.items[0].providerProfileDraft;
+  assert.equal(missingDraft?.draftStatus, 'missing-required-field');
+  assert.deepEqual(missingDraft?.missingRequiredFields, ['model', 'apiKey']);
+  assert.equal(missingDraft?.profileFields.find((field) => field.field === 'apiKey')?.secretRef, true);
+  assert.equal(missingDraft?.profileFields.find((field) => field.field === 'apiKey')?.valueState, 'missing');
+  assert.ok(missingDraft?.blockedActions.includes('change active provider'));
+  assert.ok(missingDraft?.safetyBoundaries.includes('provider secrets are never returned'));
+});
+
 test('buildXenesisConnectionsStatus exposes an internal Desk provider view', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {

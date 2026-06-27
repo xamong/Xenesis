@@ -315,6 +315,9 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.xenesis\.tools\.actions\.status/);
   assert.match(hint, /xd\.xenesis\.tools\.actions\.open/);
   assert.match(hint, /xd\.xenesis\.tools\.actions\.request/);
+  assert.match(hint, /xd\.xenesis\.providers\.profileDrafts\.status/);
+  assert.match(hint, /xd\.xenesis\.providers\.profileDrafts\.open/);
+  assert.match(hint, /xd\.xenesis\.providers\.profileDrafts\.request/);
   assert.match(hint, /xd\.xenesis\.channels\.userStories\.status/);
   assert.match(hint, /xd\.xenesis\.channels\.userStories\.open/);
   assert.match(hint, /xd\.xenesis\.channels\.profileDrafts\.status/);
@@ -323,6 +326,11 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.xenesis\.channels\.accessGroups\.status/);
   assert.match(hint, /xd\.xenesis\.channels\.pairing\.status/);
   assert.match(hint, /tool action catalogs are review-only/i);
+  assert.match(hint, /provider profile drafts are review-only/i);
+  assert.match(hint, /do not mutate provider settings/i);
+  assert.match(hint, /store credentials/i);
+  assert.match(hint, /switch local CLI/i);
+  assert.match(hint, /run provider prompts/i);
   assert.match(hint, /channel profile drafts are review-only/i);
   assert.match(hint, /"id":"notion"/);
   assert.match(hint, /xd\.testing\.xenesisAgent\.submitPrompt/);

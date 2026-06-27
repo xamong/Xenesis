@@ -6780,6 +6780,189 @@ async function openXenesisProviderView(args?: unknown): Promise<Record<string, u
   };
 }
 
+function xenesisProviderProfileDraftStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    draftStatus: item.providerProfileDraft?.draftStatus,
+    actionInboxKind: item.providerProfileDraft?.actionInboxKind,
+    provider: item.providerProfileDraft?.provider,
+    displayName: item.providerProfileDraft?.displayName,
+    description: item.providerProfileDraft?.description,
+    setupSurface: item.providerProfileDraft?.setupSurface,
+    reviewSurface: item.providerProfileDraft?.reviewSurface,
+    profileFields: item.providerProfileDraft?.profileFields ?? [],
+    missingRequiredFields: item.providerProfileDraft?.missingRequiredFields ?? [],
+    guardrails: item.providerProfileDraft?.guardrails,
+    readPaths: item.providerProfileDraft?.readPaths ?? [],
+    controlPaths: item.providerProfileDraft?.controlPaths ?? [],
+    diagnostics: item.providerProfileDraft?.diagnostics ?? [],
+    blockedActions: item.providerProfileDraft?.blockedActions ?? [],
+    safetyBoundaries: item.providerProfileDraft?.safetyBoundaries ?? [],
+    providerProfileDraft: item.providerProfileDraft,
+    providerSetup: item.providerSetup,
+    providerRouting: item.providerRouting,
+    providerView: item.providerView,
+    settingsAction: item.settingsAction,
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisProviderProfileDraftsStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const provider = readCapabilityString(body, ['provider', 'id', 'name']);
+  if (provider && !isXenesisProviderViewSelector(provider)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis provider: ${provider}`,
+      allowedProviders: XENESIS_PROVIDER_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.provider.items
+    .filter((item) => item.providerProfileDraft)
+    .filter((item) => !provider || item.providerProfileDraft?.provider === provider || item.id === provider)
+    .map((item) => xenesisProviderProfileDraftStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(provider ? { provider } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisProviderProfileDraft(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const provider = readCapabilityString(body, ['provider', 'id', 'name']);
+  if (!provider) {
+    return { ok: false, error: 'Provider is required.' };
+  }
+  if (!isXenesisProviderViewSelector(provider)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis provider: ${provider}`,
+      allowedProviders: XENESIS_PROVIDER_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.provider.items.find(
+    (candidate) =>
+      Boolean(candidate.providerProfileDraft) &&
+      (candidate.providerProfileDraft?.provider === provider || candidate.id === provider),
+  );
+  if (!item) {
+    return { ok: false, provider, error: `Xenesis provider profile draft is not available: ${provider}` };
+  }
+
+  const renderer = await openMcpBuiltinPaneCapability({
+    kind: 'settings',
+    category: 'xenesis-agent',
+    mode: 'connections',
+    section: 'xenesis-connections',
+    focusConnectionId: item.id,
+    ensureVisible: body.ensureVisible !== false,
+  });
+
+  return {
+    ok: renderer.ok !== false,
+    provider: item.providerProfileDraft?.provider,
+    id: item.id,
+    item: xenesisProviderProfileDraftStatusItem(item),
+    renderer,
+  };
+}
+
+async function requestXenesisProviderProfileDraft(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const provider = readCapabilityString(body, ['provider', 'id', 'name']);
+  if (!provider) {
+    return { ok: false, error: 'Provider is required.' };
+  }
+  if (!isXenesisProviderViewSelector(provider)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis provider: ${provider}`,
+      allowedProviders: XENESIS_PROVIDER_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.provider.items.find(
+    (candidate) =>
+      Boolean(candidate.providerProfileDraft) &&
+      (candidate.providerProfileDraft?.provider === provider || candidate.id === provider),
+  );
+  if (!item?.providerProfileDraft) {
+    return { ok: false, provider, error: `Xenesis provider profile draft is not available: ${provider}` };
+  }
+
+  const draft = item.providerProfileDraft;
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+  const requester = readCapabilityString(body, ['requester', 'user', 'userName']) || 'Xenesis Desk';
+  const fieldLines = draft.profileFields.map(
+    (field) => `- ${field.field}: ${field.valueState}${field.required ? ' (required)' : ''}`,
+  );
+  const description = [
+    `Review the ${draft.draftStatus} provider profile draft for ${item.label}.`,
+    `Provider: ${draft.provider}`,
+    `Setup surface: ${draft.setupSurface}`,
+    `Missing required fields: ${draft.missingRequiredFields.join(', ') || 'none'}`,
+    `Guardrails: ${draft.guardrails.approvalMode}, retries ${draft.guardrails.providerRetries}, ${draft.guardrails.fallbackPolicy}`,
+    `Local CLI boundary: ${draft.guardrails.localCliBoundary}`,
+    '',
+    'Profile field state:',
+    ...fieldLines,
+    '',
+    'Read paths:',
+    ...draft.readPaths.map((path) => `- ${path}`),
+    '',
+    'Control paths:',
+    ...draft.controlPaths.map((path) => `- ${path}`),
+    '',
+    'Diagnostics:',
+    ...draft.diagnostics.map((diagnostic) => `- ${diagnostic}`),
+    '',
+    'Blocked actions:',
+    ...draft.blockedActions.map((action) => `- ${action}`),
+    '',
+    'Safety boundaries:',
+    ...draft.safetyBoundaries.map((boundary) => `- ${boundary}`),
+    note ? '' : undefined,
+    note ? `Note: ${note}` : undefined,
+  ]
+    .filter((line): line is string => typeof line === 'string')
+    .join('\n');
+
+  const actionInboxItem = recordMcpActionInboxRequest({
+    kind: draft.actionInboxKind,
+    title: `Review ${draft.provider} provider profile draft`,
+    command: `Review provider profile draft for ${draft.provider}`,
+    description,
+    source: 'Xenesis Connection Center',
+    sessionId: 'xenesis-provider-profile-draft',
+    approvalSessionKey: `xenesis-provider-profile-draft:${draft.provider}`,
+    requester,
+    risk: draft.draftStatus,
+    approveText: `Approve provider profile draft for ${draft.provider}`,
+    rejectText: `Reject provider profile draft for ${draft.provider}`,
+  });
+
+  return {
+    ok: true,
+    provider: draft.provider,
+    id: item.id,
+    item: xenesisProviderProfileDraftStatusItem(item),
+    actionInboxItem,
+  };
+}
+
 function getProviderIntegrationAssetRoot(): string {
   if (app.isPackaged) {
     return path.join(process.resourcesPath, 'provider-assets');
@@ -13772,6 +13955,9 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisProviderRoutingStatus: (args: unknown) => getXenesisProviderRoutingStatus(args),
     getXenesisProviderViewsStatus: (args: unknown) => getXenesisProviderViewsStatus(args),
     openXenesisProviderView: (args: unknown) => openXenesisProviderView(args),
+    getXenesisProviderProfileDraftsStatus: (args: unknown) => getXenesisProviderProfileDraftsStatus(args),
+    openXenesisProviderProfileDraft: (args: unknown) => openXenesisProviderProfileDraft(args),
+    requestXenesisProviderProfileDraft: (args: unknown) => requestXenesisProviderProfileDraft(args),
     getXenesisDiagnostics: () => getXenesisOperationalDiagnostics().then((diagnostics) => ({ ok: true, diagnostics })),
     listXenesisReports: (args: unknown) =>
       listXenesisReports(

@@ -12,6 +12,7 @@ import type {
   XenesisConnectionMcpInstallDraftTemplate,
   XenesisConnectionMessengerViewTemplate,
   XenesisConnectionOnboardingPlanTemplate,
+  XenesisConnectionProviderProfileDraftTemplate,
   XenesisConnectionProviderRoutingTemplate,
   XenesisConnectionProviderSetupTemplate,
   XenesisConnectionProviderViewTemplate,
@@ -108,6 +109,10 @@ export function formatXenesisOnboardingPlanSummary(plan: XenesisConnectionOnboar
 
 export function formatXenesisProviderSetupSummary(setup: XenesisConnectionProviderSetupTemplate): string {
   return `${setup.provider} / ${setup.model} / ${setup.authMode}`;
+}
+
+export function formatXenesisProviderProfileDraftSummary(draft: XenesisConnectionProviderProfileDraftTemplate): string {
+  return `${draft.provider} / ${draft.draftStatus} / ${draft.missingRequiredFields.length} missing field(s)`;
 }
 
 export function formatXenesisProviderViewSummary(view: XenesisConnectionProviderViewTemplate): string {
@@ -243,6 +248,20 @@ export function buildXenesisChannelProfileDraftRequest(
     path: 'xd.xenesis.channels.profileDrafts.request',
     args: {
       channel: item.channelProfileDraft.channel,
+    },
+    source: 'xenesis',
+    approved: true,
+  };
+}
+
+export function buildXenesisProviderProfileDraftRequest(
+  item: XenesisConnectionItem,
+): McpBridgeCapabilityCallRequest | null {
+  if (!item.providerProfileDraft) return null;
+  return {
+    path: 'xd.xenesis.providers.profileDrafts.request',
+    args: {
+      provider: item.providerProfileDraft.provider,
     },
     source: 'xenesis',
     approved: true,

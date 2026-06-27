@@ -1160,6 +1160,93 @@ test('xenesis provider view capabilities are registered and dispatch to the adap
   });
 });
 
+test('xenesis provider profile draft capabilities are registered and dispatch to the adapter', async () => {
+  const statusCapability = findDeskBridgeCapability('xd.xenesis.providers.profileDrafts.status');
+  const openCapability = findDeskBridgeCapability('xd.xenesis.providers.profileDrafts.open');
+  const requestCapability = findDeskBridgeCapability('xd.xenesis.providers.profileDrafts.request');
+  const statusSchemaProperties = (statusCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const requestSchemaProperties = (requestCapability?.schema?.properties ?? {}) as Record<string, any>;
+  assert.equal(statusCapability?.permission, 'read');
+  assert.equal(statusCapability?.approval, 'never');
+  assert.equal(openCapability?.permission, 'control');
+  assert.equal(openCapability?.approval, 'never');
+  assert.deepEqual(openCapability?.schema?.required, ['provider']);
+  assert.equal(requestCapability?.permission, 'write');
+  assert.equal(requestCapability?.approval, 'when-external');
+  assert.deepEqual(requestCapability?.schema?.required, ['provider']);
+  for (const provider of ['auto', 'openai', 'codex-app-server', 'codex-cli', 'ollama']) {
+    assert.equal(statusSchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
+    assert.equal(openSchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
+    assert.equal(requestSchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
+  }
+
+  const calls: Array<{ method: string; args: unknown }> = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisProviderProfileDraftsStatus: (args) => {
+      calls.push({ method: 'status', args });
+      return {
+        ok: true,
+        items: [{ provider: 'codex-app-server', draftStatus: 'ready' }],
+      };
+    },
+    openXenesisProviderProfileDraft: (args) => {
+      calls.push({ method: 'open', args });
+      return {
+        ok: true,
+        item: { provider: 'codex-app-server', draftStatus: 'ready' },
+      };
+    },
+    requestXenesisProviderProfileDraft: (args) => {
+      calls.push({ method: 'request', args });
+      return {
+        ok: true,
+        provider: 'codex-app-server',
+        actionInboxItem: { id: 'provider-profile-draft-codex-app-server' },
+      };
+    },
+  };
+
+  const statusResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.providers.profileDrafts.status',
+    args: { provider: 'codex-app-server' },
+    source: 'xenesis',
+  });
+  const openResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.providers.profileDrafts.open',
+    args: { provider: 'codex-app-server' },
+    source: 'xenesis',
+  });
+  const requestResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.providers.profileDrafts.request',
+    args: { provider: 'codex-app-server' },
+    source: 'xenesis',
+    approved: true,
+  });
+
+  assert.equal(statusResult.ok, true);
+  assert.equal(openResult.ok, true);
+  assert.equal(requestResult.ok, true);
+  assert.deepEqual(calls, [
+    { method: 'status', args: { provider: 'codex-app-server' } },
+    { method: 'open', args: { provider: 'codex-app-server' } },
+    { method: 'request', args: { provider: 'codex-app-server' } },
+  ]);
+  assert.deepEqual(statusResult.result, {
+    ok: true,
+    items: [{ provider: 'codex-app-server', draftStatus: 'ready' }],
+  });
+  assert.deepEqual(openResult.result, {
+    ok: true,
+    item: { provider: 'codex-app-server', draftStatus: 'ready' },
+  });
+  assert.deepEqual(requestResult.result, {
+    ok: true,
+    provider: 'codex-app-server',
+    actionInboxItem: { id: 'provider-profile-draft-codex-app-server' },
+  });
+});
+
 test('xenesis connection diagnostic runbook capabilities are registered and dispatch to the adapter', async () => {
   const statusCapability = findDeskBridgeCapability('xd.xenesis.connections.diagnostics.status');
   const openCapability = findDeskBridgeCapability('xd.xenesis.connections.diagnostics.open');
