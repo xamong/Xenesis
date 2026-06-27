@@ -439,6 +439,20 @@ function xenesisConnectionTargetFromNaturalText(
     { id: 'slack', label: 'Slack', kind: 'messenger', words: ['slack', '슬랙'] },
     { id: 'discord', label: 'Discord', kind: 'messenger', words: ['discord', '디스코드'] },
     { id: 'webhook', label: 'Webhook', kind: 'messenger', words: ['webhook', '웹훅'] },
+    { id: 'whatsapp', label: 'WhatsApp', kind: 'messenger', words: ['whatsapp', '왓츠앱', '와츠앱'] },
+    { id: 'signal', label: 'Signal', kind: 'messenger', words: ['signal', '시그널'] },
+    {
+      id: 'microsoft-teams',
+      label: 'Microsoft Teams',
+      kind: 'messenger',
+      words: ['microsoft teams', 'microsoft-teams', 'ms teams', 'teams', '팀즈', '마이크로소프트 팀즈'],
+    },
+    {
+      id: 'google-chat',
+      label: 'Google Chat',
+      kind: 'messenger',
+      words: ['google chat', 'google-chat', '구글 챗', '구글 채팅'],
+    },
   ];
 
   return targets.find((target) => hasAny(value, target.words)) || null;

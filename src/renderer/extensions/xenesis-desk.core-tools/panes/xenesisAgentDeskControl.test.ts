@@ -803,6 +803,26 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('왓츠앱 setup 열어줘').actions, [
+    {
+      id: 'natural-xenesis-messenger-view-open-whatsapp',
+      path: 'xd.xenesis.messengers.views.open',
+      args: { id: 'whatsapp', ensureVisible: true },
+      approved: false,
+      reason: 'Open WhatsApp messenger view from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('마이크로소프트 팀즈 설정 열어줘').actions, [
+    {
+      id: 'natural-xenesis-messenger-view-open-microsoft-teams',
+      path: 'xd.xenesis.messengers.views.open',
+      args: { id: 'microsoft-teams', ensureVisible: true },
+      approved: false,
+      reason: 'Open Microsoft Teams messenger view from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('텔레그램 사용자 스토리 열어줘').actions, [
     {
       id: 'natural-xenesis-channel-user-story-open-telegram',
@@ -1108,6 +1128,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center read
       args: { id: 'telegram' },
       approved: false,
       reason: 'Read Telegram messenger view status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('구글 챗 setup 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-messenger-view-status-google-chat',
+      path: 'xd.xenesis.messengers.views.status',
+      args: { id: 'google-chat' },
+      approved: false,
+      reason: 'Read Google Chat messenger view status from natural language request.',
     },
   ]);
 

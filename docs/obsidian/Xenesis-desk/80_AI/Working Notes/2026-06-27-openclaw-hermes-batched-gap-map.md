@@ -1,0 +1,88 @@
+# 2026-06-27 OpenClaw Hermes Batched Gap Map
+
+## Purpose
+
+- One-time external documentation refresh for the active Xenesis Desk
+  Connection Center goal.
+- Do not re-browse these docs per implementation slice. Use this note,
+  `handoff.md`, repo code, and tests as the working gap map until a deliberate
+  future batch refresh is needed.
+
+## Sources Checked
+
+- OpenClaw channels index: https://docs.openclaw.ai/channels
+- OpenClaw channel concepts and setup pages:
+  - https://docs.openclaw.ai/channels/telegram
+  - https://docs.openclaw.ai/channels/slack
+  - https://docs.openclaw.ai/channels/discord
+  - https://docs.openclaw.ai/channels/whatsapp
+  - https://docs.openclaw.ai/channels/google-chat
+  - https://docs.openclaw.ai/channels/channel-routing
+  - https://docs.openclaw.ai/channels/access-groups
+  - https://docs.openclaw.ai/channels/troubleshooting
+- Hermes user stories and setup docs:
+  - https://hermes-agent.nousresearch.com/docs/user-stories
+  - https://hermes-agent.nousresearch.com/docs/getting-started/quick-start
+  - https://hermes-agent.nousresearch.com/docs/integrations/
+
+## External Pattern Summary
+
+- OpenClaw treats channels as first-class external ingress/egress surfaces with
+  per-channel setup, pairing, routing, access controls, and troubleshooting.
+- Implemented/common channel families include Telegram, Slack, Discord, WhatsApp,
+  Google Chat, and related enterprise or mobile messengers.
+- Channel setup must stay constrained by pairing readiness, allowlists/access
+  groups, route binding, and loop-protection before remote prompts are trusted.
+- Hermes-style user stories emphasize first-run setup, tool/provider
+  integrations, task-oriented workflows, and guided setup documentation rather
+  than raw provider-specific commands.
+
+## Current Xenesis Coverage Observed
+
+- `src/shared/xenesisConnections.ts` already models:
+  - Implemented messengers: `telegram`, `slack`, `discord`, `webhook`.
+  - Planned messengers including `whatsapp`, `signal`, `microsoft-teams`,
+    `google-chat`, `imessage`, `matrix`, `irc`, `mattermost`, `nextcloud-talk`,
+    `nostr`, `raft`, `tlon`, `rocket-chat`, `twitch`, `line`, `wechat`,
+    `qqbot`, `feishu`, `lark`, `dingding`, `zalo`, `email`, `sms`,
+    `home-assistant`, and `ntfy`.
+  - Read/open CR surfaces for messenger views, channel routing, safety, access
+    groups, pairing, user stories, and profile draft review.
+- Before the planned messenger target slice,
+  `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.ts`
+  resolved natural-language messenger targets only for `telegram`, `slack`,
+  `discord`, and `webhook`.
+
+## Gap Map
+
+- Planned messenger cards existed in the Connection Center but were not
+  reachable through natural-language target names such as WhatsApp, Signal,
+  Microsoft Teams, or Google Chat before the planned messenger target slice.
+- This blocks the user's preferred flow: ask Xenesis Agent in natural language
+  to open or inspect internal Desk setup/readiness views for external messengers.
+- Safe next slice: expand the Agent natural-language target resolver for planned
+  messenger view/status use cases without enabling delivery, gateway lifecycle
+  actions, credential writes, or profile mutations.
+
+## Next Implementation Candidate
+
+- Implemented in the planned messenger target slice:
+  - `왓츠앱 setup 열어줘` ->
+    `xd.xenesis.messengers.views.open` with `id=whatsapp`.
+  - `구글 챗 setup 상태 보여줘` ->
+    `xd.xenesis.messengers.views.status` with `id=google-chat`.
+  - `마이크로소프트 팀즈 설정 열어줘` ->
+    `xd.xenesis.messengers.views.open` with `id=microsoft-teams`.
+- Also added a natural target alias for `signal`.
+- Scope boundary: view/status only. Do not use this slice to route pairing,
+  access group, profile draft, test send, gateway lifecycle, or remote prompt
+  execution for planned messengers unless their CR argument schema is verified
+  separately.
+
+## Graph Links
+
+- Depends on [[Final Goal]]
+- Depends on [[Xenesis Agent Runtime]]
+- Depends on [[Capability Registry Architecture]]
+- Depends on [[Provider Model]]
+- Relates to [[2026-06-27-xenesis-connection-center]]
