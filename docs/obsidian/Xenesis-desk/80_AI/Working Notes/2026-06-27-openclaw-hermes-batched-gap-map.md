@@ -1222,6 +1222,39 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local Obsidian graph, source code, and tests.
 
+## Intent Vocabulary Refactor Slice
+
+- Removed the large inline action/open intent word lists from
+  `xenesisAgentDeskControl.ts`.
+- Added shared `XENESIS_NATURAL_EXPLICIT_OPEN_WORDS` and
+  `XENESIS_NATURAL_ACTION_INTENT_WORDS` to
+  `src/shared/xenesisNaturalLanguageCatalog.ts`.
+- The planner now keeps the regex checks and route ordering, but consumes named
+  shared vocabulary constants for natural action/open intent detection.
+- Added a source-level guard so the action intent list cannot be reintroduced
+  inline in the planner file.
+- Scope boundary: this slice preserves existing action detection behavior. It
+  does not add or remove intent words, reorder natural-language routes, change
+  CR paths, browse external docs, or change execution/approval behavior.
+- Verification:
+  - RED planner test failed first because the planner did not yet reference
+    `XENESIS_NATURAL_ACTION_INTENT_WORDS`.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 36/36 tests.
+  - `npx biome format --write src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    formatted 3 files with no fixes applied.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 100/100 tests.
+  - `npx biome check src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --max-diagnostics 40`
+    passed.
+  - `npm run typecheck` passed.
+  - CR audit passed with missing registered paths 0, missing dispatched
+    coverage paths 0, undispatched static callable methods 0, and dispatcher
+    paths missing from tree 0.
+  - `git diff --check` exited 0 with line-ending warnings only.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local Obsidian graph, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

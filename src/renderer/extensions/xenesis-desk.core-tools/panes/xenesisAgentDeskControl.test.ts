@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
+  XENESIS_NATURAL_ACTION_INTENT_WORDS,
+  XENESIS_NATURAL_EXPLICIT_OPEN_WORDS,
   XENESIS_NATURAL_GUIDE_TARGETS,
   XENESIS_NATURAL_ONBOARDING_STEP_TARGETS,
 } from '../../../../shared/xenesisNaturalLanguageCatalog';
@@ -27,6 +29,12 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /Use `xd\.xenesis\.providers\.setup\.status`, `xd\.xenesis\.providers\.setup\.open`/);
   assert.doesNotMatch(source, /Use `xd\.xenesis\.tools\.setup\.status`, `xd\.xenesis\.tools\.setup\.open`/);
   assert.doesNotMatch(source, /Use `xd\.xenesis\.channels\.routing\.status`, `xd\.xenesis\.channels\.routing\.open`/);
+  assert.match(source, /XENESIS_NATURAL_ACTION_INTENT_WORDS/);
+  assert.match(source, /XENESIS_NATURAL_EXPLICIT_OPEN_WORDS/);
+  assert.doesNotMatch(source, /return hasAny\(value, \[\s*'열어',\s*'켜줘'[\s\S]*?'terminal',\s*'pane',\s*\]\);/);
+  assert.deepEqual(XENESIS_NATURAL_EXPLICIT_OPEN_WORDS, ['열어', '켜줘', '띄워', '포커스', '집중']);
+  assert.equal(XENESIS_NATURAL_ACTION_INTENT_WORDS.includes('authorize'), true);
+  assert.equal(XENESIS_NATURAL_ACTION_INTENT_WORDS.includes('terminal'), true);
   assert.match(source, /findXenesisNaturalGuideTarget/);
   assert.doesNotMatch(source, /const toolIntegrationGuide/);
   assert.doesNotMatch(source, /const channelSetupGuide/);
