@@ -1035,6 +1035,99 @@ export const XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS = {
   },
 } as const satisfies Record<string, XenesisNaturalDeskActionDescriptor>;
 
+export const XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS = {
+  localCliScan: {
+    id: 'natural-local-cli-scan',
+    path: 'xd.localCli.scan',
+    reason: 'Scan local CLI agents from natural language request.',
+  },
+  mcpBridgeStatus: {
+    id: 'natural-mcp-bridge-status',
+    path: 'xd.mcp.bridge.status',
+    reason: 'Read MCP bridge status from natural language request.',
+  },
+  mcpSettingsStatus: {
+    id: 'natural-mcp-settings-status',
+    path: 'xd.mcp.settings.status',
+    reason: 'Read MCP settings status from natural language request.',
+  },
+  gatewayDashboardOpen: {
+    id: 'natural-xenesis-gateway-dashboard-open',
+    path: 'xd.xenesis.gateway.openDashboard',
+    reason: 'Open Xenesis gateway dashboard from natural language request.',
+  },
+  gatewayStatus: {
+    id: 'natural-xenesis-gateway-status',
+    path: 'xd.xenesis.gateway.status',
+    reason: 'Read Xenesis gateway status from natural language request.',
+  },
+  agentEvents: {
+    id: 'natural-xenesis-agent-events',
+    path: 'xd.xenesis.agents.events',
+    reason: 'List Xenesis Agent pane events from natural language request.',
+  },
+  agentStatus: {
+    id: 'natural-xenesis-agent-status',
+    path: 'xd.xenesis.agents.status',
+    reason: 'Read Xenesis Agent pane status from natural language request.',
+  },
+  runtimeStatus: {
+    id: 'natural-xenesis-status',
+    path: 'xd.xenesis.status',
+    reason: 'Read Xenesis runtime status from natural language request.',
+  },
+  reportsList: {
+    id: 'natural-xenesis-reports-list',
+    path: 'xd.xenesis.reports.list',
+    reason: 'List Xenesis reports from natural language request.',
+  },
+  tasksList: {
+    id: 'natural-xenesis-tasks-list',
+    path: 'xd.xenesis.tasks.list',
+    reason: 'List Xenesis tasks from natural language request.',
+  },
+  agentsList: {
+    id: 'natural-xenesis-agents-list',
+    path: 'xd.xenesis.agents.list',
+    reason: 'List registered Xenesis Agent panes from natural language request.',
+  },
+  diagnostics: {
+    id: 'natural-xenesis-diagnostics',
+    path: 'xd.xenesis.diagnostics',
+    reason: 'Read Xenesis operational diagnostics from natural language request.',
+  },
+  profilesList: {
+    id: 'natural-xenesis-profiles-list',
+    path: 'xd.xenesis.profiles.list',
+    reason: 'List Xenesis profiles from natural language request.',
+  },
+  agentSubmit: {
+    id: 'natural-xenesis-agent-submit',
+    path: 'xd.xenesis.agents.submit',
+    reason: 'Submit Xenesis Agent pane message from natural language request.',
+  },
+  runsStart: {
+    id: 'natural-xenesis-runs-start',
+    path: 'xd.xenesis.runs.start',
+    reason: 'Start Xenesis run from natural language request.',
+  },
+  runsCancel: {
+    id: 'natural-xenesis-runs-cancel',
+    path: 'xd.xenesis.runs.cancel',
+    reason: 'Cancel active Xenesis run from natural language request.',
+  },
+  sessionsReset: {
+    id: 'natural-xenesis-sessions-reset',
+    path: 'xd.xenesis.sessions.reset',
+    reason: 'Reset active Xenesis session from natural language request.',
+  },
+  workspaceSet: {
+    id: 'natural-xenesis-workspace-set',
+    path: 'xd.xenesis.workspace.set',
+    reason: 'Set Xenesis workspace from natural language request.',
+  },
+} as const satisfies Record<string, XenesisNaturalDeskActionDescriptor>;
+
 export const XENESIS_NATURAL_PLACEMENT_TARGETS: readonly XenesisNaturalWordsTarget[] = [
   { id: 'right', label: 'right', words: ['오른쪽', '우측', 'right'] },
   { id: 'left', label: 'left', words: ['왼쪽', '좌측', 'left'] },

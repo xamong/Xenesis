@@ -106,6 +106,7 @@ import {
   XENESIS_NATURAL_RUN_CANCEL_CONTEXT_WORDS,
   XENESIS_NATURAL_RUN_CONTEXT_WORDS,
   XENESIS_NATURAL_RUN_START_CONTEXT_WORDS,
+  XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_RUNTIME_CONTEXT_WORDS,
   XENESIS_NATURAL_RUNTIME_DIAGNOSTIC_CONTEXT_WORDS,
   XENESIS_NATURAL_RUNTIME_READBACK_WORDS,
@@ -239,6 +240,7 @@ function naturalCatalogAction(descriptor: XenesisNaturalDeskActionDescriptor, ar
 }
 
 const DESK_ACTIONS = XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS;
+const RUNTIME_ACTIONS = XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS;
 
 function naturalPlan(
   visibleText: string,
@@ -1558,30 +1560,15 @@ function localCliMcpReadbackActionFromNaturalText(value: string): XenesisDeskAct
     hasAny(value, XENESIS_NATURAL_LOCAL_CLI_CONTEXT_WORDS) &&
     hasAny(value, XENESIS_NATURAL_LOCAL_CLI_SCAN_CONTEXT_WORDS)
   ) {
-    return naturalAction(
-      'natural-local-cli-scan',
-      'xd.localCli.scan',
-      {},
-      'Scan local CLI agents from natural language request.',
-    );
+    return naturalCatalogAction(RUNTIME_ACTIONS.localCliScan, {});
   }
 
   if (wantsReadback && hasAny(value, XENESIS_NATURAL_MCP_BRIDGE_CONTEXT_WORDS)) {
-    return naturalAction(
-      'natural-mcp-bridge-status',
-      'xd.mcp.bridge.status',
-      {},
-      'Read MCP bridge status from natural language request.',
-    );
+    return naturalCatalogAction(RUNTIME_ACTIONS.mcpBridgeStatus, {});
   }
 
   if (wantsReadback && hasAny(value, XENESIS_NATURAL_MCP_SETTINGS_CONTEXT_WORDS)) {
-    return naturalAction(
-      'natural-mcp-settings-status',
-      'xd.mcp.settings.status',
-      {},
-      'Read MCP settings status from natural language request.',
-    );
+    return naturalCatalogAction(RUNTIME_ACTIONS.mcpSettingsStatus, {});
   }
 
   return null;
@@ -1591,21 +1578,11 @@ function xenesisGatewayActionFromNaturalText(value: string): XenesisDeskActionRe
   if (!hasAny(value, XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS)) return null;
 
   if (hasAny(value, XENESIS_NATURAL_DASHBOARD_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_OPEN_OR_SHOW_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-gateway-dashboard-open',
-      'xd.xenesis.gateway.openDashboard',
-      {},
-      'Open Xenesis gateway dashboard from natural language request.',
-    );
+    return naturalCatalogAction(RUNTIME_ACTIONS.gatewayDashboardOpen, {});
   }
 
   if (hasAny(value, XENESIS_NATURAL_RUNTIME_READBACK_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-gateway-status',
-      'xd.xenesis.gateway.status',
-      {},
-      'Read Xenesis gateway status from natural language request.',
-    );
+    return naturalCatalogAction(RUNTIME_ACTIONS.gatewayStatus, {});
   }
 
   return null;
@@ -1619,21 +1596,11 @@ function xenesisAgentReadbackActionFromNaturalText(value: string, rawText: strin
   if (!agentId) return null;
 
   if (hasAny(value, XENESIS_NATURAL_AGENT_EVENT_CONTEXT_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-agent-events',
-      'xd.xenesis.agents.events',
-      { agentId },
-      'List Xenesis Agent pane events from natural language request.',
-    );
+    return naturalCatalogAction(RUNTIME_ACTIONS.agentEvents, { agentId });
   }
 
   if (hasAny(value, XENESIS_NATURAL_RUNTIME_READBACK_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-agent-status',
-      'xd.xenesis.agents.status',
-      { agentId },
-      'Read Xenesis Agent pane status from natural language request.',
-    );
+    return naturalCatalogAction(RUNTIME_ACTIONS.agentStatus, { agentId });
   }
 
   return null;
@@ -1650,48 +1617,23 @@ function xenesisRuntimeInventoryActionFromNaturalText(value: string, rawText: st
     hasAny(value, XENESIS_NATURAL_BROAD_RUNTIME_STATUS_WORDS) ||
     (hasAny(value, XENESIS_NATURAL_RUNTIME_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_RUNTIME_READBACK_WORDS));
   if (isBroadXenesisStatus && !hasSpecificStatusTarget) {
-    return naturalAction(
-      'natural-xenesis-status',
-      'xd.xenesis.status',
-      {},
-      'Read Xenesis runtime status from natural language request.',
-    );
+    return naturalCatalogAction(RUNTIME_ACTIONS.runtimeStatus, {});
   }
 
   if (hasAny(value, XENESIS_NATURAL_REPORT_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_LIST_OR_SHOW_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-reports-list',
-      'xd.xenesis.reports.list',
-      {},
-      'List Xenesis reports from natural language request.',
-    );
+    return naturalCatalogAction(RUNTIME_ACTIONS.reportsList, {});
   }
 
   if (hasAny(value, XENESIS_NATURAL_TASK_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_LIST_OR_SHOW_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-tasks-list',
-      'xd.xenesis.tasks.list',
-      {},
-      'List Xenesis tasks from natural language request.',
-    );
+    return naturalCatalogAction(RUNTIME_ACTIONS.tasksList, {});
   }
 
   if (hasAny(value, XENESIS_NATURAL_AGENT_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_LIST_OR_SHOW_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-agents-list',
-      'xd.xenesis.agents.list',
-      {},
-      'List registered Xenesis Agent panes from natural language request.',
-    );
+    return naturalCatalogAction(RUNTIME_ACTIONS.agentsList, {});
   }
 
   if (hasAny(value, XENESIS_NATURAL_RUNTIME_DIAGNOSTIC_CONTEXT_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-diagnostics',
-      'xd.xenesis.diagnostics',
-      {},
-      'Read Xenesis operational diagnostics from natural language request.',
-    );
+    return naturalCatalogAction(RUNTIME_ACTIONS.diagnostics, {});
   }
 
   return null;
@@ -1702,12 +1644,7 @@ function xenesisProfileInventoryActionFromNaturalText(value: string): XenesisDes
   if (!hasAny(value, XENESIS_NATURAL_PROFILE_CONTEXT_WORDS)) return null;
 
   if (hasAny(value, XENESIS_NATURAL_PROFILE_LIST_CONTEXT_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-profiles-list',
-      'xd.xenesis.profiles.list',
-      {},
-      'List Xenesis profiles from natural language request.',
-    );
+    return naturalCatalogAction(RUNTIME_ACTIONS.profilesList, {});
   }
 
   return null;
@@ -1724,12 +1661,7 @@ function xenesisAgentSubmitActionFromNaturalText(rawText: string): XenesisDeskAc
   const [agentId, text] = extractQuotedTexts(rawText);
   if (!agentId || !text) return null;
 
-  return naturalAction(
-    'natural-xenesis-agent-submit',
-    'xd.xenesis.agents.submit',
-    { agentId, text },
-    'Submit Xenesis Agent pane message from natural language request.',
-  );
+  return naturalCatalogAction(RUNTIME_ACTIONS.agentSubmit, { agentId, text });
 }
 
 function xenesisRunStartActionFromNaturalText(rawText: string): XenesisDeskActionRequest | null {
@@ -1742,36 +1674,21 @@ function xenesisRunStartActionFromNaturalText(rawText: string): XenesisDeskActio
   const prompt = extractQuotedText(rawText);
   if (!prompt) return null;
 
-  return naturalAction(
-    'natural-xenesis-runs-start',
-    'xd.xenesis.runs.start',
-    { prompt },
-    'Start Xenesis run from natural language request.',
-  );
+  return naturalCatalogAction(RUNTIME_ACTIONS.runsStart, { prompt });
 }
 
 function xenesisRuntimeControlActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
   if (!hasAny(value, XENESIS_NATURAL_XENESIS_CONTEXT_WORDS)) return null;
 
   if (hasAny(value, XENESIS_NATURAL_RUN_CANCEL_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_CANCEL_CONTEXT_WORDS)) {
-    return naturalAction(
-      'natural-xenesis-runs-cancel',
-      'xd.xenesis.runs.cancel',
-      {},
-      'Cancel active Xenesis run from natural language request.',
-    );
+    return naturalCatalogAction(RUNTIME_ACTIONS.runsCancel, {});
   }
 
   if (
     hasAny(value, XENESIS_NATURAL_SESSION_CONTEXT_WORDS) &&
     hasAny(value, XENESIS_NATURAL_SESSION_RESET_CONTEXT_WORDS)
   ) {
-    return naturalAction(
-      'natural-xenesis-sessions-reset',
-      'xd.xenesis.sessions.reset',
-      {},
-      'Reset active Xenesis session from natural language request.',
-    );
+    return naturalCatalogAction(RUNTIME_ACTIONS.sessionsReset, {});
   }
 
   return null;
@@ -1785,12 +1702,7 @@ function xenesisWorkspaceSetActionFromNaturalText(value: string, rawText: string
   const path = extractLocalPath(rawText);
   if (!path) return null;
 
-  return naturalAction(
-    'natural-xenesis-workspace-set',
-    'xd.xenesis.workspace.set',
-    { path },
-    'Set Xenesis workspace from natural language request.',
-  );
+  return naturalCatalogAction(RUNTIME_ACTIONS.workspaceSet, { path });
 }
 
 export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDeskNaturalLanguagePlan {

@@ -61,6 +61,7 @@ import {
   XENESIS_NATURAL_REPORT_CONTEXT_WORDS,
   XENESIS_NATURAL_RUN_CONTEXT_WORDS,
   XENESIS_NATURAL_RUN_START_CONTEXT_WORDS,
+  XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_RUNTIME_CONTEXT_WORDS,
   XENESIS_NATURAL_RUNTIME_DIAGNOSTIC_CONTEXT_WORDS,
   XENESIS_NATURAL_RUNTIME_READBACK_WORDS,
@@ -268,6 +269,13 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.explorerShow.reason,
     'Show explorer from natural language request.',
   );
+  assert.match(source, /XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS/);
+  assert.doesNotMatch(source, /naturalAction\(\s*'natural-local-cli-scan'/);
+  assert.doesNotMatch(source, /naturalAction\(\s*'natural-xenesis-status'/);
+  assert.doesNotMatch(source, /'xd\.xenesis\.runs\.start'/);
+  assert.equal(XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.localCliScan.path, 'xd.localCli.scan');
+  assert.equal(XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.runtimeStatus.id, 'natural-xenesis-status');
+  assert.equal(XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.runsStart.path, 'xd.xenesis.runs.start');
   assert.match(source, /XENESIS_NATURAL_PLACEMENT_TARGETS/);
   assert.match(source, /XENESIS_NATURAL_DOCK_SIDE_TARGETS/);
   assert.match(source, /XENESIS_NATURAL_DOCK_WINDOW_STATE_TARGETS/);
