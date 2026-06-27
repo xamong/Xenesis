@@ -2341,6 +2341,34 @@ test('buildXenesisConnectionsStatus exposes review-only channel profile drafts f
   );
   assert.ok(telegram?.channelProfileDraft?.readPaths.includes('xd.xenesis.channels.profileDrafts.status'));
   assert.ok(telegram?.channelProfileDraft?.controlPaths.includes('xd.xenesis.channels.profileDrafts.request'));
+  assert.deepEqual(
+    telegram?.channelProfileDraft?.reviewSteps.map((step) => step.id),
+    ['channel-credential-readiness', 'access-allowlist-review', 'delivery-guardrails', 'pairing-readback'],
+  );
+  assert.ok(
+    telegram?.channelProfileDraft?.reviewSteps.some(
+      (step) =>
+        step.id === 'channel-credential-readiness' &&
+        step.requiredFields.includes('tokenEnv') &&
+        step.diagnostics.includes('tokenEnv:missing-env'),
+    ),
+  );
+  assert.ok(
+    telegram?.channelProfileDraft?.reviewSteps.some(
+      (step) =>
+        step.id === 'access-allowlist-review' &&
+        step.requiredFields.includes('allowedChatIds') &&
+        step.readPaths.includes('xd.xenesis.channels.accessGroups.status'),
+    ),
+  );
+  for (const step of telegram?.channelProfileDraft?.reviewSteps ?? []) {
+    assert.ok(step.expectedState.length > 0, `${step.id} exposes expected state`);
+    assert.ok(step.readPaths.length > 0, `${step.id} exposes read paths`);
+    assert.ok(step.diagnostics.length > 0, `${step.id} exposes diagnostics`);
+    assert.ok(step.safetyBoundary.length > 0, `${step.id} exposes a safety boundary`);
+  }
+  assert.ok(telegram?.diagnosticRunbook?.diagnostics.includes('channel-credential-readiness'));
+  assert.ok(telegram?.setupRequest?.steps.some((step) => step.includes('pairing-readback')));
   assert.ok(
     telegram?.channelProfileDraft?.safetyBoundaries.some((boundary) =>
       boundary.includes('does not mutate channel settings'),
@@ -2365,6 +2393,26 @@ test('buildXenesisConnectionsStatus exposes review-only channel profile drafts f
   assert.ok(signal?.channelProfileDraft?.controlPaths.includes('xd.xenesis.channels.profileDrafts.request'));
   assert.ok(signal?.channelProfileDraft?.controlPaths.includes('xd.xenesis.messengers.views.open'));
   assert.equal(signal?.channelProfileDraft?.controlPaths.includes('xd.xenesis.profiles.testChannel'), false);
+  assert.deepEqual(
+    signal?.channelProfileDraft?.reviewSteps.map((step) => step.id),
+    ['channel-credential-readiness', 'access-allowlist-review', 'delivery-guardrails', 'pairing-readback'],
+  );
+  assert.ok(
+    signal?.channelProfileDraft?.reviewSteps.some(
+      (step) =>
+        step.id === 'channel-credential-readiness' &&
+        step.requiredFields.includes('adapter') &&
+        step.requiredFields.includes('auth'),
+    ),
+  );
+  assert.ok(
+    signal?.channelProfileDraft?.reviewSteps.some(
+      (step) =>
+        step.id === 'access-allowlist-review' &&
+        step.requiredFields.includes('routeScope') &&
+        !step.controlPaths.includes('xd.xenesis.profiles.testChannel'),
+    ),
+  );
   assert.ok(
     signal?.channelProfileDraft?.safetyBoundaries.some((boundary) =>
       boundary.includes('planned channel profile drafts are review-only'),

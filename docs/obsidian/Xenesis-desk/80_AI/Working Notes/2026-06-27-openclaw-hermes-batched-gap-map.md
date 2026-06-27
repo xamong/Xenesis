@@ -2635,6 +2635,54 @@
 - External documentation handling: no browsing. This used the cached gap map,
   source code, and tests.
 
+## Channel Profile Review Steps Slice
+
+- Added review-only external messenger channel profile setup steps in
+  `src/shared/xenesisConnections.ts` through
+  `XenesisConnectionChannelProfileDraftReviewStep`.
+- Covered review phases:
+  - `channel-credential-readiness`: token/auth/adapter readiness is visible
+    before enabling a channel profile.
+  - `access-allowlist-review`: allowlist and access group bindings are reviewed
+    before remote channel use.
+  - `delivery-guardrails`: approval mode, turn limit, token limit, and
+    fail-closed behavior stay explicit before delivery is trusted.
+  - `pairing-readback`: pairing/readback checks are identified before test
+    sends or remote prompts.
+- Diagnostic runbooks and setup request templates now include channel
+  review-step read paths, control paths, diagnostics, and safety boundaries.
+- The Connection Center channel profile draft summary now includes review step
+  count through `formatXenesisChannelProfileDraftSummary`.
+- Scope boundary:
+  - No channel settings mutation, allowlist update, profile config write,
+    planned adapter start, test message send, gateway lifecycle action, or
+    approval bypass.
+- Verification:
+  - RED:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    failed because channel profile `reviewSteps` and summary count were
+    missing.
+  - GREEN:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    passed with 68/68 tests.
+  - Related:
+    `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    passed with 99/99 tests.
+  - Scoped Biome:
+    `npx biome check src\shared\xenesisConnections.ts src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.ts src\renderer\panes\xenesisConnectionCenter.test.ts --max-diagnostics 40`
+    passed.
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit` passed with Registered nodes 763,
+    Callable methods 468, Dispatcher paths 448, missing registered paths 0,
+    missing dispatched coverage paths 0, undispatched static callable methods
+    0, and dispatcher paths missing from tree 0. The generated audit file was
+    removed afterward.
+  - Root `npm run lint` was not rerun in this slice; previous run failed on
+    existing repo-wide Biome/CRLF/sample diagnostics outside these changed
+    files.
+- External documentation handling: no browsing. This used the cached gap map,
+  source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

@@ -351,8 +351,21 @@ test('formatXenesisChannelProfileDraftSummary describes channel, status, and mis
       diagnostics: ['allowlist-empty'],
       blockedActions: ['mutate channel settings'],
       safetyBoundaries: ['profile drafts are review-only'],
+      reviewSteps: [
+        {
+          id: 'access-allowlist-review',
+          label: 'Review access allowlist',
+          phase: 'access-allowlist-review',
+          expectedState: 'Allowlist fields are visible before delivery is enabled.',
+          requiredFields: ['allowedChatIds'],
+          readPaths: ['xd.xenesis.channels.profileDrafts.status', 'xd.xenesis.channels.accessGroups.status'],
+          controlPaths: ['xd.xenesis.channels.profileDrafts.request'],
+          diagnostics: ['allowlist-empty'],
+          safetyBoundary: 'Channel profile review steps do not update allowlists.',
+        },
+      ],
     }),
-    'telegram / missing-required-field / 1 missing field(s)',
+    'telegram / missing-required-field / 1 missing field(s) / 1 review step(s)',
   );
 });
 
@@ -378,6 +391,19 @@ test('buildXenesisChannelProfileDraftRequest targets the review request CR path'
       diagnostics: ['profile-channel-settings'],
       blockedActions: ['mutate channel settings'],
       safetyBoundaries: ['profile drafts are review-only'],
+      reviewSteps: [
+        {
+          id: 'access-allowlist-review',
+          label: 'Review access allowlist',
+          phase: 'access-allowlist-review',
+          expectedState: 'Allowlist fields are visible before delivery is enabled.',
+          requiredFields: ['allowedChatIds'],
+          readPaths: ['xd.xenesis.channels.profileDrafts.status', 'xd.xenesis.channels.accessGroups.status'],
+          controlPaths: ['xd.xenesis.channels.profileDrafts.request'],
+          diagnostics: ['allowlist-empty'],
+          safetyBoundary: 'Channel profile review steps do not update allowlists.',
+        },
+      ],
     },
   } satisfies XenesisConnectionItem;
 

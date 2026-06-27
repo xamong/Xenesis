@@ -97,7 +97,7 @@ export function formatXenesisChannelUserStorySummary(workflow: XenesisConnection
 }
 
 export function formatXenesisChannelProfileDraftSummary(draft: XenesisConnectionChannelProfileDraftTemplate): string {
-  return `${draft.channel} / ${draft.draftStatus} / ${draft.missingRequiredFields.length} missing field(s)`;
+  return `${draft.channel} / ${draft.draftStatus} / ${draft.missingRequiredFields.length} missing field(s) / ${draft.reviewSteps.length} review step(s)`;
 }
 
 export function formatXenesisGuideCatalogSummary(guide: XenesisConnectionGuideCatalogTemplate): string {

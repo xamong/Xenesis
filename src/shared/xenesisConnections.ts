@@ -403,6 +403,24 @@ export interface XenesisConnectionChannelProfileDraftGuardrails {
   maxTokens: number;
 }
 
+export type XenesisConnectionChannelProfileDraftReviewStepId =
+  | 'channel-credential-readiness'
+  | 'access-allowlist-review'
+  | 'delivery-guardrails'
+  | 'pairing-readback';
+
+export interface XenesisConnectionChannelProfileDraftReviewStep {
+  id: XenesisConnectionChannelProfileDraftReviewStepId;
+  label: string;
+  phase: XenesisConnectionChannelProfileDraftReviewStepId;
+  expectedState: string;
+  requiredFields: string[];
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  safetyBoundary: string;
+}
+
 export interface XenesisConnectionChannelProfileDraftTemplate {
   draftStatus: XenesisConnectionChannelProfileDraftStatus;
   actionInboxKind: 'xenesis-channel-profile-draft';
@@ -414,6 +432,7 @@ export interface XenesisConnectionChannelProfileDraftTemplate {
   profileFields: XenesisConnectionChannelProfileDraftField[];
   missingRequiredFields: string[];
   guardrails: XenesisConnectionChannelProfileDraftGuardrails;
+  reviewSteps: XenesisConnectionChannelProfileDraftReviewStep[];
   readPaths: string[];
   controlPaths: string[];
   diagnostics: string[];
@@ -3671,6 +3690,137 @@ function channelProfileDraftMissingFieldKey(
   return valueState === 'empty' ? `${field.field}:env-ref` : `${field.field}:env-secret`;
 }
 
+function channelProfileDraftReviewStep(
+  input: XenesisConnectionChannelProfileDraftReviewStep,
+): XenesisConnectionChannelProfileDraftReviewStep {
+  return {
+    ...input,
+    requiredFields: uniqueStrings(input.requiredFields),
+    readPaths: uniqueStrings(input.readPaths),
+    controlPaths: uniqueStrings(input.controlPaths),
+    diagnostics: uniqueStrings(input.diagnostics),
+  };
+}
+
+function channelProfileFieldDiagnostics(
+  fields: XenesisConnectionChannelProfileDraftField[],
+  missingRequiredFields: string[],
+): string[] {
+  const fieldNames = new Set(fields.map((field) => field.field));
+  return uniqueStrings([
+    ...fields.map((field) => `${field.field}:${field.valueState}`),
+    ...missingRequiredFields.filter((field) => fieldNames.has(field.split(':')[0] ?? field)),
+  ]);
+}
+
+function channelProfileDraftReviewSteps(input: {
+  channel: string;
+  label: string;
+  profileFields: XenesisConnectionChannelProfileDraftField[];
+  missingRequiredFields: string[];
+  guardrails: XenesisConnectionChannelProfileDraftGuardrails;
+  channelTemplate?: XenesisConnectionChannelTemplate;
+  planned: boolean;
+}): XenesisConnectionChannelProfileDraftReviewStep[] {
+  const credentialFields = input.profileFields.filter(
+    (field) => field.secretRef || (input.planned && ['adapter', 'auth'].includes(field.field)),
+  );
+  const accessFields = input.profileFields.filter(
+    (field) => field.field.startsWith('allowed') || field.field === 'routeScope',
+  );
+  return [
+    channelProfileDraftReviewStep({
+      id: 'channel-credential-readiness',
+      label: 'Review channel credential readiness',
+      phase: 'channel-credential-readiness',
+      expectedState: `${input.label} credential, adapter, or auth readiness is visible without returning secrets.`,
+      requiredFields: credentialFields.filter((field) => field.required).map((field) => field.field),
+      readPaths: [
+        'xd.xenesis.channels.profileDrafts.status',
+        'xd.xenesis.channels.pairing.status',
+        'xd.xenesis.messengers.views.status',
+      ],
+      controlPaths: [
+        'xd.xenesis.channels.profileDrafts.open',
+        'xd.xenesis.channels.profileDrafts.request',
+        'xd.xenesis.messengers.views.open',
+      ],
+      diagnostics: [
+        'channel-credential-readiness',
+        ...channelProfileFieldDiagnostics(credentialFields, input.missingRequiredFields),
+        ...(input.channelTemplate?.pairing?.diagnostics ?? []),
+      ],
+      safetyBoundary: 'Channel credential review does not return secrets, write profile config, or start adapters.',
+    }),
+    channelProfileDraftReviewStep({
+      id: 'access-allowlist-review',
+      label: 'Review access allowlist',
+      phase: 'access-allowlist-review',
+      expectedState: `${input.label} access or route-scope bindings are visible before delivery is enabled.`,
+      requiredFields: accessFields.filter((field) => field.required).map((field) => field.field),
+      readPaths: [
+        'xd.xenesis.channels.profileDrafts.status',
+        'xd.xenesis.channels.accessGroups.status',
+        'xd.xenesis.channels.safety.status',
+        'xd.xenesis.channels.routing.status',
+      ],
+      controlPaths: [
+        'xd.xenesis.channels.profileDrafts.open',
+        'xd.xenesis.channels.profileDrafts.request',
+        'xd.xenesis.messengers.views.open',
+      ],
+      diagnostics: [
+        'access-allowlist-review',
+        ...channelProfileFieldDiagnostics(accessFields, input.missingRequiredFields),
+        ...(input.channelTemplate?.accessGroups?.diagnostics ?? []),
+      ],
+      safetyBoundary: 'Access review does not update allowlists, route bindings, or channel settings.',
+    }),
+    channelProfileDraftReviewStep({
+      id: 'delivery-guardrails',
+      label: 'Review delivery guardrails',
+      phase: 'delivery-guardrails',
+      expectedState: `${input.label} approval mode, turn limit, and token limit are visible before remote delivery.`,
+      requiredFields: ['approvalMode', 'maxTurns', 'maxTokens'],
+      readPaths: [
+        'xd.xenesis.channels.profileDrafts.status',
+        'xd.xenesis.channels.safety.status',
+        'xd.xenesis.connections.status',
+      ],
+      controlPaths: ['xd.xenesis.channels.profileDrafts.open', 'xd.xenesis.channels.profileDrafts.request'],
+      diagnostics: [
+        'delivery-guardrails',
+        `approvalMode:${input.guardrails.approvalMode}`,
+        `maxTurns:${input.guardrails.maxTurns}`,
+        `maxTokens:${input.guardrails.maxTokens}`,
+        ...(input.channelTemplate?.safety?.troubleshooting ?? []),
+      ],
+      safetyBoundary: 'Delivery guardrail review does not change approval mode or send messages.',
+    }),
+    channelProfileDraftReviewStep({
+      id: 'pairing-readback',
+      label: 'Review pairing readback',
+      phase: 'pairing-readback',
+      expectedState: `${input.label} pairing, routing, and messenger detail readback are visible before channel tests.`,
+      requiredFields: input.planned ? ['adapter', 'auth', 'routeScope'] : [],
+      readPaths: [
+        'xd.xenesis.channels.profileDrafts.status',
+        'xd.xenesis.channels.pairing.status',
+        'xd.xenesis.channels.routing.status',
+        'xd.xenesis.gateway.status',
+        'xd.xenesis.messengers.views.status',
+      ],
+      controlPaths: ['xd.xenesis.channels.profileDrafts.open', 'xd.xenesis.messengers.views.open'],
+      diagnostics: [
+        'pairing-readback',
+        ...(input.channelTemplate?.pairing?.validationChecks ?? []),
+        ...(input.channelTemplate?.routing?.diagnostics ?? []),
+      ],
+      safetyBoundary: 'Pairing readback does not pair external accounts, start adapters, or send test messages.',
+    }),
+  ];
+}
+
 function buildXenesisChannelProfileDraft(
   input: {
     channel: XenesisProfileChannelName;
@@ -3710,6 +3860,11 @@ function buildXenesisChannelProfileDraft(
       : settings?.enabled === false || input.status === 'disabled'
         ? 'disabled'
         : 'ready';
+  const guardrails = {
+    approvalMode: channelProfileDraftApprovalMode(settings?.approvalMode),
+    maxTurns: channelProfileDraftPositiveInteger(settings?.maxTurns, 12),
+    maxTokens: channelProfileDraftPositiveInteger(settings?.maxTokens, 120000),
+  };
 
   return {
     draftStatus,
@@ -3721,11 +3876,16 @@ function buildXenesisChannelProfileDraft(
     reviewSurface: 'Desk Action Inbox',
     profileFields,
     missingRequiredFields,
-    guardrails: {
-      approvalMode: channelProfileDraftApprovalMode(settings?.approvalMode),
-      maxTurns: channelProfileDraftPositiveInteger(settings?.maxTurns, 12),
-      maxTokens: channelProfileDraftPositiveInteger(settings?.maxTokens, 120000),
-    },
+    guardrails,
+    reviewSteps: channelProfileDraftReviewSteps({
+      channel: input.channel,
+      label: input.label,
+      profileFields,
+      missingRequiredFields,
+      guardrails,
+      channelTemplate: input.channelTemplate,
+      planned: false,
+    }),
     readPaths: uniqueStrings([
       'xd.xenesis.channels.profileDrafts.status',
       'xd.xenesis.connections.status',
@@ -3806,6 +3966,11 @@ function buildXenesisPlannedChannelProfileDraft(input: {
       description: 'Allowed accounts, chats, rooms, senders, or topics must be reviewed before accepting prompts.',
     },
   ];
+  const guardrails: XenesisConnectionChannelProfileDraftGuardrails = {
+    approvalMode: 'readonly',
+    maxTurns: 12,
+    maxTokens: 120000,
+  };
 
   return {
     draftStatus: 'planned',
@@ -3817,11 +3982,16 @@ function buildXenesisPlannedChannelProfileDraft(input: {
     reviewSurface: 'Desk Action Inbox',
     profileFields,
     missingRequiredFields: [],
-    guardrails: {
-      approvalMode: 'readonly',
-      maxTurns: 12,
-      maxTokens: 120000,
-    },
+    guardrails,
+    reviewSteps: channelProfileDraftReviewSteps({
+      channel: input.channel,
+      label: input.label,
+      profileFields,
+      missingRequiredFields: [],
+      guardrails,
+      channelTemplate: input.channelTemplate,
+      planned: true,
+    }),
     readPaths: uniqueStrings([
       'xd.xenesis.channels.profileDrafts.status',
       'xd.xenesis.connections.status',
@@ -4522,9 +4692,20 @@ function buildXenesisConnectionDiagnosticRunbook(
         label: 'Channel profile draft',
         expectedState:
           'Review-only channel profile fields and guardrails are visible before any updateChannels mutation.',
-        readPaths: ['xd.xenesis.channels.profileDrafts.status', ...item.channelProfileDraft.readPaths],
-        controlPaths: item.channelProfileDraft.controlPaths,
-        diagnostics: [...item.channelProfileDraft.missingRequiredFields, ...item.channelProfileDraft.diagnostics],
+        readPaths: [
+          'xd.xenesis.channels.profileDrafts.status',
+          ...item.channelProfileDraft.readPaths,
+          ...item.channelProfileDraft.reviewSteps.flatMap((step) => step.readPaths),
+        ],
+        controlPaths: [
+          ...item.channelProfileDraft.controlPaths,
+          ...item.channelProfileDraft.reviewSteps.flatMap((step) => step.controlPaths),
+        ],
+        diagnostics: [
+          ...item.channelProfileDraft.missingRequiredFields,
+          ...item.channelProfileDraft.diagnostics,
+          ...item.channelProfileDraft.reviewSteps.flatMap((step) => step.diagnostics),
+        ],
       }),
     );
   }
@@ -4592,6 +4773,7 @@ function buildXenesisConnectionDiagnosticRunbook(
       ...(item.channelTemplate?.pairing?.safetyBoundaries ?? []),
       ...(item.channelTemplate?.userStory?.safetyBoundaries ?? []),
       ...(item.channelProfileDraft?.safetyBoundaries ?? []),
+      ...(item.channelProfileDraft?.reviewSteps.map((step) => step.safetyBoundary) ?? []),
       ...(item.messengerView?.safetyBoundaries ?? []),
       ...(item.guideCatalog?.safetyBoundaries ?? []),
     ]),
@@ -4651,6 +4833,7 @@ function setupRequestDiagnosticItems(item: XenesisConnectionItem): string[] {
     ...(item.channelTemplate?.pairing?.validationChecks ?? []),
     ...(item.channelTemplate?.userStory?.diagnostics ?? []),
     ...(item.channelProfileDraft?.diagnostics ?? []),
+    ...(item.channelProfileDraft?.reviewSteps.flatMap((step) => step.diagnostics) ?? []),
     ...(item.guideCatalog?.validationChecks ?? []),
   ]);
 }
@@ -4677,6 +4860,7 @@ function setupRequestStepItems(item: XenesisConnectionItem): string[] {
     ) ?? []),
     ...(item.channelTemplate?.userStory?.prerequisiteSetup.map((check) => `verify ${check}`) ?? []),
     ...(item.channelProfileDraft?.missingRequiredFields.map((field) => `review channel profile field: ${field}`) ?? []),
+    ...(item.channelProfileDraft?.reviewSteps.map((step) => `${step.id}: ${step.expectedState}`) ?? []),
     ...(item.guideCatalog?.prerequisites.map((check) => `review prerequisite: ${check}`) ?? []),
     ...(item.guideCatalog?.validationChecks.map((check) => `validate ${check}`) ?? []),
     item.summary,
@@ -4731,6 +4915,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.channelTemplate?.pairing?.readPaths ?? []),
       ...(item.channelTemplate?.userStory?.readPaths ?? []),
       ...(item.channelProfileDraft?.readPaths ?? []),
+      ...(item.channelProfileDraft?.reviewSteps.flatMap((step) => step.readPaths) ?? []),
       ...(item.messengerView?.readPaths ?? []),
       ...(item.guideCatalog?.readPaths ?? []),
     ]),
@@ -4758,6 +4943,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.channelTemplate?.pairing?.controlPaths ?? []),
       ...(item.channelTemplate?.userStory?.controlPaths ?? []),
       ...(item.channelProfileDraft?.controlPaths ?? []),
+      ...(item.channelProfileDraft?.reviewSteps.flatMap((step) => step.controlPaths) ?? []),
       ...(item.messengerView?.controlPaths ?? []),
       ...(item.guideCatalog?.controlPaths ?? []),
     ]),
@@ -4789,6 +4975,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.channelTemplate?.pairing?.safetyBoundaries ?? []),
       ...(item.channelTemplate?.userStory?.safetyBoundaries ?? []),
       ...(item.channelProfileDraft?.safetyBoundaries ?? []),
+      ...(item.channelProfileDraft?.reviewSteps.map((step) => step.safetyBoundary) ?? []),
       ...(item.messengerView?.safetyBoundaries ?? []),
       ...(item.guideCatalog?.safetyBoundaries ?? []),
     ]),
