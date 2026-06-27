@@ -1371,6 +1371,50 @@
 - External documentation handling: no web browsing. This update used the cached
   gap map, repo-local Obsidian graph, source code, and tests.
 
+## Runtime Vocabulary Refactor Slice
+
+- Removed repeated Xenesis runtime/local CLI/MCP/gateway/profile/run/session/
+  workspace word lists from `xenesisAgentDeskControl.ts`.
+- Added shared runtime constants to
+  `src/shared/xenesisNaturalLanguageCatalog.ts` for readback words, open/show
+  words, local CLI scan/status, MCP bridge/settings, gateway dashboard/status,
+  Xenesis runtime status targets, Agent events/status/submit, reports/tasks/
+  agents inventory, operational diagnostics, profile inventory, run start/
+  cancel, session reset, and workspace binding.
+- The planner now consumes named shared vocabulary constants for those runtime
+  and setup-adjacent surfaces while preserving route order and CR action
+  construction.
+- Added source-level guards so representative runtime arrays cannot be
+  reintroduced into the planner.
+- Scope boundary: this slice preserves route order, CR paths, action ids,
+  args, quoted-text/path extraction, and approval/execution behavior. It does
+  not browse external docs, execute runs, mutate workspaces, or start/stop
+  gateway processes.
+- Verification:
+  - RED planner test failed first because the planner did not yet reference
+    `XENESIS_NATURAL_RUNTIME_READBACK_WORDS`.
+  - The first GREEN planner run surfaced a missing production import for
+    `XENESIS_NATURAL_REPORT_CONTEXT_WORDS`; adding that import resolved the
+    runtime inventory tests.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 36/36 tests after implementation.
+  - `npx biome format --write src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    formatted 3 files and fixed 2 files.
+  - First scoped Biome check failed on unused test imports/import ordering;
+    adding representative constant value assertions and running
+    `npx biome check ... --write --max-diagnostics 40` fixed 2 files.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 100/100 tests.
+  - `npx biome check src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --max-diagnostics 40`
+    passed.
+  - `npm run typecheck` passed.
+  - CR audit passed with missing registered paths 0, missing dispatched
+    coverage paths 0, undispatched static callable methods 0, and dispatcher
+    paths missing from tree 0.
+  - `git diff --check` exited 0 with line-ending warnings only.
+- External documentation handling: no web browsing. This update used the cached
+  gap map, repo-local Obsidian graph, source code, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

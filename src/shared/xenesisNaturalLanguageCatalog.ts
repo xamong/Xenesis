@@ -446,6 +446,182 @@ export const XENESIS_NATURAL_MESSENGER_VIEW_OPEN_FALLBACK_CONTEXT_WORDS = [
   'allowlist',
 ] as const;
 
+export const XENESIS_NATURAL_RUNTIME_READBACK_WORDS = [
+  '상태',
+  'status',
+  '확인',
+  'check',
+  '보여',
+  'show',
+  '조회',
+] as const;
+
+export const XENESIS_NATURAL_OPEN_OR_SHOW_WORDS = ['열어', '켜줘', '띄워', 'open', 'show', '보여'] as const;
+
+export const XENESIS_NATURAL_LOCAL_CLI_CONTEXT_WORDS = ['local cli', 'local-cli', '로컬 cli', '로컬cli'] as const;
+
+export const XENESIS_NATURAL_LOCAL_CLI_SCAN_CONTEXT_WORDS = [
+  '스캔',
+  'scan',
+  '목록',
+  'list',
+  '상태',
+  'status',
+  '확인',
+  'check',
+  '보여',
+  'show',
+] as const;
+
+export const XENESIS_NATURAL_MCP_BRIDGE_CONTEXT_WORDS = ['mcp bridge', 'mcp 브리지', '브리지', 'bridge'] as const;
+
+export const XENESIS_NATURAL_MCP_SETTINGS_CONTEXT_WORDS = [
+  'mcp settings',
+  'mcp setting',
+  'mcp 설정',
+  'mcp config',
+  'mcp 구성',
+  'mcp',
+] as const;
+
+export const XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS = ['gateway', '게이트웨이'] as const;
+
+export const XENESIS_NATURAL_DASHBOARD_CONTEXT_WORDS = ['dashboard', '대시보드'] as const;
+
+export const XENESIS_NATURAL_XENESIS_CONTEXT_WORDS = ['xenesis', '제네시스'] as const;
+
+export const XENESIS_NATURAL_AGENT_CONTEXT_WORDS = ['agent', 'agents', '에이전트'] as const;
+
+export const XENESIS_NATURAL_AGENT_EVENT_CONTEXT_WORDS = ['event', 'events', '이벤트', '로그', 'log'] as const;
+
+export const XENESIS_NATURAL_RUNTIME_STATUS_TARGET_WORDS = [
+  'connection center',
+  'connection',
+  'connections',
+  '연결',
+  'provider',
+  'providers',
+  '프로바이더',
+  'tool',
+  'tools',
+  '툴',
+  '도구',
+  'mcp',
+  'messenger',
+  'messengers',
+  '메신저',
+  'channel',
+  'channels',
+  '채널',
+  'onboarding',
+  '온보딩',
+  'checklist',
+  '체크리스트',
+  'guide',
+  'guides',
+  '가이드',
+  'gateway',
+  '게이트웨이',
+  'profile',
+  'profiles',
+  '프로필',
+  'agent',
+  'agents',
+  '에이전트',
+  'report',
+  'reports',
+  '리포트',
+  '보고서',
+  'task',
+  'tasks',
+  '태스크',
+  '작업',
+] as const;
+
+export const XENESIS_NATURAL_BROAD_RUNTIME_STATUS_WORDS = [
+  'xenesis status',
+  'xenesis 상태',
+  '제네시스 status',
+  '제네시스 상태',
+  'xenesis runtime status',
+  'xenesis runtime 상태',
+  '제네시스 런타임 status',
+  '제네시스 런타임 상태',
+] as const;
+
+export const XENESIS_NATURAL_RUNTIME_CONTEXT_WORDS = ['runtime', '런타임'] as const;
+
+export const XENESIS_NATURAL_REPORT_CONTEXT_WORDS = ['report', 'reports', '리포트', '보고서'] as const;
+
+export const XENESIS_NATURAL_TASK_CONTEXT_WORDS = ['task', 'tasks', '태스크', '작업'] as const;
+
+export const XENESIS_NATURAL_LIST_OR_SHOW_WORDS = ['목록', 'list', '보여', 'show'] as const;
+
+export const XENESIS_NATURAL_RUNTIME_DIAGNOSTIC_CONTEXT_WORDS = [
+  '운영 진단',
+  'runtime diagnostics',
+  'operational diagnostics',
+  '진단',
+  'diagnostics',
+] as const;
+
+export const XENESIS_NATURAL_PROFILE_CONTEXT_WORDS = ['profile', 'profiles', '프로필'] as const;
+
+export const XENESIS_NATURAL_PROFILE_LIST_CONTEXT_WORDS = [
+  '목록',
+  'list',
+  '보여',
+  'show',
+  '확인',
+  'check',
+  'active',
+  '현재',
+] as const;
+
+export const XENESIS_NATURAL_AGENT_SUBMIT_CONTEXT_WORDS = [
+  '보내',
+  '전송',
+  'submit',
+  'send',
+  'message',
+  '메시지',
+  '말해',
+  'prompt',
+  '프롬프트',
+] as const;
+
+export const XENESIS_NATURAL_RUN_CONTEXT_WORDS = ['run', 'runs', 'runtime', 'prompt', '프롬프트', '런'] as const;
+
+export const XENESIS_NATURAL_RUN_START_CONTEXT_WORDS = ['실행', '돌려', 'start', 'run', 'execute'] as const;
+
+export const XENESIS_NATURAL_CANCEL_CONTEXT_WORDS = ['취소', '중단', 'cancel', 'stop'] as const;
+
+export const XENESIS_NATURAL_RUN_CANCEL_CONTEXT_WORDS = [
+  'run',
+  'runs',
+  'runtime',
+  '런',
+  '실행',
+  '요청',
+  'request',
+] as const;
+
+export const XENESIS_NATURAL_SESSION_CONTEXT_WORDS = ['session', 'sessions', '세션', 'conversation', '대화'] as const;
+
+export const XENESIS_NATURAL_SESSION_RESET_CONTEXT_WORDS = ['초기화', '리셋', 'reset', 'clear'] as const;
+
+export const XENESIS_NATURAL_WORKSPACE_CONTEXT_WORDS = ['workspace', '워크스페이스'] as const;
+
+export const XENESIS_NATURAL_WORKSPACE_SET_CONTEXT_WORDS = [
+  '설정',
+  '바꿔',
+  '변경',
+  'set',
+  'change',
+  'bind',
+  'binding',
+] as const;
+
 export const XENESIS_NATURAL_PLACEMENT_TARGETS: readonly XenesisNaturalWordsTarget[] = [
   { id: 'right', label: 'right', words: ['오른쪽', '우측', 'right'] },
   { id: 'left', label: 'left', words: ['왼쪽', '좌측', 'left'] },

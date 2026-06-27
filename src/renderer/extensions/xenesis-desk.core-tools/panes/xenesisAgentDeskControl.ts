@@ -5,8 +5,13 @@ import {
   XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS,
   XENESIS_NATURAL_ACTION_INTENT_WORDS,
   XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS,
+  XENESIS_NATURAL_AGENT_CONTEXT_WORDS,
+  XENESIS_NATURAL_AGENT_EVENT_CONTEXT_WORDS,
+  XENESIS_NATURAL_AGENT_SUBMIT_CONTEXT_WORDS,
   XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_WORDS,
   XENESIS_NATURAL_ARRANGE_MODE_TARGETS,
+  XENESIS_NATURAL_BROAD_RUNTIME_STATUS_WORDS,
+  XENESIS_NATURAL_CANCEL_CONTEXT_WORDS,
   XENESIS_NATURAL_CHANNEL_PROFILE_CONTEXT_WORDS,
   XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_REQUEST_CONTEXT_WORDS,
   XENESIS_NATURAL_CONNECTION_CONTEXT_WORDS,
@@ -16,17 +21,24 @@ import {
   XENESIS_NATURAL_CONNECTION_TARGETS,
   XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS,
   XENESIS_NATURAL_CORE_TOOL_TARGETS,
+  XENESIS_NATURAL_DASHBOARD_CONTEXT_WORDS,
   XENESIS_NATURAL_DOCK_SIDE_TARGETS,
   XENESIS_NATURAL_DOCK_WINDOW_STATE_TARGETS,
   XENESIS_NATURAL_DRAFT_CONTEXT_WORDS,
   XENESIS_NATURAL_EXPLICIT_OPEN_WORDS,
   XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_WORDS,
   XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_WORDS,
+  XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS,
   XENESIS_NATURAL_GUIDE_CONTEXT_WORDS,
   XENESIS_NATURAL_GUIDE_FILE_OPEN_WORDS,
   XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS,
+  XENESIS_NATURAL_LIST_OR_SHOW_WORDS,
+  XENESIS_NATURAL_LOCAL_CLI_CONTEXT_WORDS,
+  XENESIS_NATURAL_LOCAL_CLI_SCAN_CONTEXT_WORDS,
+  XENESIS_NATURAL_MCP_BRIDGE_CONTEXT_WORDS,
   XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS,
   XENESIS_NATURAL_MCP_INSTALL_REVIEW_CONTEXT_WORDS,
+  XENESIS_NATURAL_MCP_SETTINGS_CONTEXT_WORDS,
   XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS,
   XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS,
   XENESIS_NATURAL_MESSENGER_VIEW_FALLBACK_CONTEXT_WORDS,
@@ -35,22 +47,39 @@ import {
   XENESIS_NATURAL_OAUTH_DRAFT_CONTEXT_WORDS,
   XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS,
   XENESIS_NATURAL_ONBOARDING_STEP_TARGETS,
+  XENESIS_NATURAL_OPEN_OR_SHOW_WORDS,
   XENESIS_NATURAL_PLACEMENT_TARGETS,
+  XENESIS_NATURAL_PROFILE_CONTEXT_WORDS,
   XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
+  XENESIS_NATURAL_PROFILE_LIST_CONTEXT_WORDS,
   XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_WORDS,
   XENESIS_NATURAL_PROVIDER_TARGETS,
+  XENESIS_NATURAL_REPORT_CONTEXT_WORDS,
   XENESIS_NATURAL_REVIEW_REQUEST_CONTEXT_WORDS,
   XENESIS_NATURAL_REVIEW_REQUEST_INTENT_WORDS,
   XENESIS_NATURAL_REVIEW_REQUEST_TARGET_WORDS,
   XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS,
+  XENESIS_NATURAL_RUN_CANCEL_CONTEXT_WORDS,
+  XENESIS_NATURAL_RUN_CONTEXT_WORDS,
+  XENESIS_NATURAL_RUN_START_CONTEXT_WORDS,
+  XENESIS_NATURAL_RUNTIME_CONTEXT_WORDS,
+  XENESIS_NATURAL_RUNTIME_DIAGNOSTIC_CONTEXT_WORDS,
+  XENESIS_NATURAL_RUNTIME_READBACK_WORDS,
+  XENESIS_NATURAL_RUNTIME_STATUS_TARGET_WORDS,
   XENESIS_NATURAL_SAFETY_CONTEXT_WORDS,
+  XENESIS_NATURAL_SESSION_CONTEXT_WORDS,
+  XENESIS_NATURAL_SESSION_RESET_CONTEXT_WORDS,
   XENESIS_NATURAL_SETUP_CONTEXT_WORDS,
   XENESIS_NATURAL_SETUP_IMPERATIVE_WORDS,
+  XENESIS_NATURAL_TASK_CONTEXT_WORDS,
   XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
   XENESIS_NATURAL_VIEW_OR_SETUP_CONTEXT_WORDS,
   XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
   XENESIS_NATURAL_VIEW_TARGETS,
   XENESIS_NATURAL_WINDOW_SIZE_PRESET_TARGETS,
+  XENESIS_NATURAL_WORKSPACE_CONTEXT_WORDS,
+  XENESIS_NATURAL_WORKSPACE_SET_CONTEXT_WORDS,
+  XENESIS_NATURAL_XENESIS_CONTEXT_WORDS,
   type XenesisNaturalConnectionTarget,
 } from '../../../../shared/xenesisNaturalLanguageCatalog';
 
@@ -1464,11 +1493,11 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
 }
 
 function localCliMcpReadbackActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
-  const wantsReadback = hasAny(value, ['상태', 'status', '확인', 'check', '보여', 'show', '조회']);
+  const wantsReadback = hasAny(value, XENESIS_NATURAL_RUNTIME_READBACK_WORDS);
 
   if (
-    hasAny(value, ['local cli', 'local-cli', '로컬 cli', '로컬cli']) &&
-    hasAny(value, ['스캔', 'scan', '목록', 'list', '상태', 'status', '확인', 'check', '보여', 'show'])
+    hasAny(value, XENESIS_NATURAL_LOCAL_CLI_CONTEXT_WORDS) &&
+    hasAny(value, XENESIS_NATURAL_LOCAL_CLI_SCAN_CONTEXT_WORDS)
   ) {
     return naturalAction(
       'natural-local-cli-scan',
@@ -1478,7 +1507,7 @@ function localCliMcpReadbackActionFromNaturalText(value: string): XenesisDeskAct
     );
   }
 
-  if (wantsReadback && hasAny(value, ['mcp bridge', 'mcp 브리지', '브리지', 'bridge'])) {
+  if (wantsReadback && hasAny(value, XENESIS_NATURAL_MCP_BRIDGE_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-mcp-bridge-status',
       'xd.mcp.bridge.status',
@@ -1487,7 +1516,7 @@ function localCliMcpReadbackActionFromNaturalText(value: string): XenesisDeskAct
     );
   }
 
-  if (wantsReadback && hasAny(value, ['mcp settings', 'mcp setting', 'mcp 설정', 'mcp config', 'mcp 구성', 'mcp'])) {
+  if (wantsReadback && hasAny(value, XENESIS_NATURAL_MCP_SETTINGS_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-mcp-settings-status',
       'xd.mcp.settings.status',
@@ -1500,9 +1529,9 @@ function localCliMcpReadbackActionFromNaturalText(value: string): XenesisDeskAct
 }
 
 function xenesisGatewayActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
-  if (!hasAny(value, ['gateway', '게이트웨이'])) return null;
+  if (!hasAny(value, XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS)) return null;
 
-  if (hasAny(value, ['dashboard', '대시보드']) && hasAny(value, ['열어', '켜줘', '띄워', 'open', 'show', '보여'])) {
+  if (hasAny(value, XENESIS_NATURAL_DASHBOARD_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_OPEN_OR_SHOW_WORDS)) {
     return naturalAction(
       'natural-xenesis-gateway-dashboard-open',
       'xd.xenesis.gateway.openDashboard',
@@ -1511,7 +1540,7 @@ function xenesisGatewayActionFromNaturalText(value: string): XenesisDeskActionRe
     );
   }
 
-  if (hasAny(value, ['상태', 'status', '확인', 'check', '보여', 'show', '조회'])) {
+  if (hasAny(value, XENESIS_NATURAL_RUNTIME_READBACK_WORDS)) {
     return naturalAction(
       'natural-xenesis-gateway-status',
       'xd.xenesis.gateway.status',
@@ -1524,13 +1553,13 @@ function xenesisGatewayActionFromNaturalText(value: string): XenesisDeskActionRe
 }
 
 function xenesisAgentReadbackActionFromNaturalText(value: string, rawText: string): XenesisDeskActionRequest | null {
-  if (!hasAny(value, ['xenesis', '제네시스'])) return null;
-  if (!hasAny(value, ['agent', 'agents', '에이전트'])) return null;
+  if (!hasAny(value, XENESIS_NATURAL_XENESIS_CONTEXT_WORDS)) return null;
+  if (!hasAny(value, XENESIS_NATURAL_AGENT_CONTEXT_WORDS)) return null;
 
   const agentId = extractQuotedText(rawText);
   if (!agentId) return null;
 
-  if (hasAny(value, ['event', 'events', '이벤트', '로그', 'log'])) {
+  if (hasAny(value, XENESIS_NATURAL_AGENT_EVENT_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-agent-events',
       'xd.xenesis.agents.events',
@@ -1539,7 +1568,7 @@ function xenesisAgentReadbackActionFromNaturalText(value: string, rawText: strin
     );
   }
 
-  if (hasAny(value, ['상태', 'status', '확인', 'check', '보여', 'show', '조회'])) {
+  if (hasAny(value, XENESIS_NATURAL_RUNTIME_READBACK_WORDS)) {
     return naturalAction(
       'natural-xenesis-agent-status',
       'xd.xenesis.agents.status',
@@ -1552,67 +1581,15 @@ function xenesisAgentReadbackActionFromNaturalText(value: string, rawText: strin
 }
 
 function xenesisRuntimeInventoryActionFromNaturalText(value: string, rawText: string): XenesisDeskActionRequest | null {
-  if (!hasAny(value, ['xenesis', '제네시스'])) return null;
+  if (!hasAny(value, XENESIS_NATURAL_XENESIS_CONTEXT_WORDS)) return null;
 
   const xenesisAgentReadbackAction = xenesisAgentReadbackActionFromNaturalText(value, rawText);
   if (xenesisAgentReadbackAction) return xenesisAgentReadbackAction;
 
-  const hasSpecificStatusTarget = hasAny(value, [
-    'connection center',
-    'connection',
-    'connections',
-    '연결',
-    'provider',
-    'providers',
-    '프로바이더',
-    'tool',
-    'tools',
-    '툴',
-    '도구',
-    'mcp',
-    'messenger',
-    'messengers',
-    '메신저',
-    'channel',
-    'channels',
-    '채널',
-    'onboarding',
-    '온보딩',
-    'checklist',
-    '체크리스트',
-    'guide',
-    'guides',
-    '가이드',
-    'gateway',
-    '게이트웨이',
-    'profile',
-    'profiles',
-    '프로필',
-    'agent',
-    'agents',
-    '에이전트',
-    'report',
-    'reports',
-    '리포트',
-    '보고서',
-    'task',
-    'tasks',
-    '태스크',
-    '작업',
-  ]);
+  const hasSpecificStatusTarget = hasAny(value, XENESIS_NATURAL_RUNTIME_STATUS_TARGET_WORDS);
   const isBroadXenesisStatus =
-    hasAny(value, [
-      'xenesis status',
-      'xenesis 상태',
-      '제네시스 status',
-      '제네시스 상태',
-      'xenesis runtime status',
-      'xenesis runtime 상태',
-      '제네시스 런타임 status',
-      '제네시스 런타임 상태',
-    ]) ||
-    (hasAny(value, ['runtime', '런타임']) &&
-      hasAny(value, ['상태', 'status', '확인', 'check', '보여', 'show', '조회']));
+    hasAny(value, XENESIS_NATURAL_BROAD_RUNTIME_STATUS_WORDS) ||
+    (hasAny(value, XENESIS_NATURAL_RUNTIME_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_RUNTIME_READBACK_WORDS));
   if (isBroadXenesisStatus && !hasSpecificStatusTarget) {
     return naturalAction(
       'natural-xenesis-status',
@@ -1622,7 +1599,7 @@ function xenesisRuntimeInventoryActionFromNaturalText(value: string, rawText: st
     );
   }
 
-  if (hasAny(value, ['report', 'reports', '리포트', '보고서']) && hasAny(value, ['목록', 'list', '보여', 'show'])) {
+  if (hasAny(value, XENESIS_NATURAL_REPORT_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_LIST_OR_SHOW_WORDS)) {
     return naturalAction(
       'natural-xenesis-reports-list',
       'xd.xenesis.reports.list',
@@ -1631,7 +1608,7 @@ function xenesisRuntimeInventoryActionFromNaturalText(value: string, rawText: st
     );
   }
 
-  if (hasAny(value, ['task', 'tasks', '태스크', '작업']) && hasAny(value, ['목록', 'list', '보여', 'show'])) {
+  if (hasAny(value, XENESIS_NATURAL_TASK_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_LIST_OR_SHOW_WORDS)) {
     return naturalAction(
       'natural-xenesis-tasks-list',
       'xd.xenesis.tasks.list',
@@ -1640,7 +1617,7 @@ function xenesisRuntimeInventoryActionFromNaturalText(value: string, rawText: st
     );
   }
 
-  if (hasAny(value, ['agent', 'agents', '에이전트']) && hasAny(value, ['목록', 'list', '보여', 'show'])) {
+  if (hasAny(value, XENESIS_NATURAL_AGENT_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_LIST_OR_SHOW_WORDS)) {
     return naturalAction(
       'natural-xenesis-agents-list',
       'xd.xenesis.agents.list',
@@ -1649,7 +1626,7 @@ function xenesisRuntimeInventoryActionFromNaturalText(value: string, rawText: st
     );
   }
 
-  if (hasAny(value, ['운영 진단', 'runtime diagnostics', 'operational diagnostics', '진단', 'diagnostics'])) {
+  if (hasAny(value, XENESIS_NATURAL_RUNTIME_DIAGNOSTIC_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-diagnostics',
       'xd.xenesis.diagnostics',
@@ -1662,10 +1639,10 @@ function xenesisRuntimeInventoryActionFromNaturalText(value: string, rawText: st
 }
 
 function xenesisProfileInventoryActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
-  if (!hasAny(value, ['xenesis', '제네시스'])) return null;
-  if (!hasAny(value, ['profile', 'profiles', '프로필'])) return null;
+  if (!hasAny(value, XENESIS_NATURAL_XENESIS_CONTEXT_WORDS)) return null;
+  if (!hasAny(value, XENESIS_NATURAL_PROFILE_CONTEXT_WORDS)) return null;
 
-  if (hasAny(value, ['목록', 'list', '보여', 'show', '확인', 'check', 'active', '현재'])) {
+  if (hasAny(value, XENESIS_NATURAL_PROFILE_LIST_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-profiles-list',
       'xd.xenesis.profiles.list',
@@ -1679,9 +1656,9 @@ function xenesisProfileInventoryActionFromNaturalText(value: string): XenesisDes
 
 function xenesisAgentSubmitActionFromNaturalText(rawText: string): XenesisDeskActionRequest | null {
   const intentValue = normalizeNaturalLanguageText(stripQuotedText(rawText));
-  if (!hasAny(intentValue, ['xenesis', '제네시스'])) return null;
-  if (!hasAny(intentValue, ['agent', 'agents', '에이전트'])) return null;
-  if (!hasAny(intentValue, ['보내', '전송', 'submit', 'send', 'message', '메시지', '말해', 'prompt', '프롬프트'])) {
+  if (!hasAny(intentValue, XENESIS_NATURAL_XENESIS_CONTEXT_WORDS)) return null;
+  if (!hasAny(intentValue, XENESIS_NATURAL_AGENT_CONTEXT_WORDS)) return null;
+  if (!hasAny(intentValue, XENESIS_NATURAL_AGENT_SUBMIT_CONTEXT_WORDS)) {
     return null;
   }
 
@@ -1698,10 +1675,10 @@ function xenesisAgentSubmitActionFromNaturalText(rawText: string): XenesisDeskAc
 
 function xenesisRunStartActionFromNaturalText(rawText: string): XenesisDeskActionRequest | null {
   const intentValue = normalizeNaturalLanguageText(stripQuotedText(rawText));
-  if (!hasAny(intentValue, ['xenesis', '제네시스'])) return null;
-  if (!hasAny(intentValue, ['run', 'runs', 'runtime', 'prompt', '프롬프트', '런'])) return null;
-  if (!hasAny(intentValue, ['실행', '돌려', 'start', 'run', 'execute'])) return null;
-  if (hasAny(intentValue, ['취소', '중단', 'cancel', 'stop'])) return null;
+  if (!hasAny(intentValue, XENESIS_NATURAL_XENESIS_CONTEXT_WORDS)) return null;
+  if (!hasAny(intentValue, XENESIS_NATURAL_RUN_CONTEXT_WORDS)) return null;
+  if (!hasAny(intentValue, XENESIS_NATURAL_RUN_START_CONTEXT_WORDS)) return null;
+  if (hasAny(intentValue, XENESIS_NATURAL_CANCEL_CONTEXT_WORDS)) return null;
 
   const prompt = extractQuotedText(rawText);
   if (!prompt) return null;
@@ -1715,12 +1692,9 @@ function xenesisRunStartActionFromNaturalText(rawText: string): XenesisDeskActio
 }
 
 function xenesisRuntimeControlActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
-  if (!hasAny(value, ['xenesis', '제네시스'])) return null;
+  if (!hasAny(value, XENESIS_NATURAL_XENESIS_CONTEXT_WORDS)) return null;
 
-  if (
-    hasAny(value, ['run', 'runs', 'runtime', '런', '실행', '요청', 'request']) &&
-    hasAny(value, ['취소', '중단', 'cancel', 'stop'])
-  ) {
+  if (hasAny(value, XENESIS_NATURAL_RUN_CANCEL_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_CANCEL_CONTEXT_WORDS)) {
     return naturalAction(
       'natural-xenesis-runs-cancel',
       'xd.xenesis.runs.cancel',
@@ -1730,8 +1704,8 @@ function xenesisRuntimeControlActionFromNaturalText(value: string): XenesisDeskA
   }
 
   if (
-    hasAny(value, ['session', 'sessions', '세션', 'conversation', '대화']) &&
-    hasAny(value, ['초기화', '리셋', 'reset', 'clear'])
+    hasAny(value, XENESIS_NATURAL_SESSION_CONTEXT_WORDS) &&
+    hasAny(value, XENESIS_NATURAL_SESSION_RESET_CONTEXT_WORDS)
   ) {
     return naturalAction(
       'natural-xenesis-sessions-reset',
@@ -1745,9 +1719,9 @@ function xenesisRuntimeControlActionFromNaturalText(value: string): XenesisDeskA
 }
 
 function xenesisWorkspaceSetActionFromNaturalText(value: string, rawText: string): XenesisDeskActionRequest | null {
-  if (!hasAny(value, ['xenesis', '제네시스'])) return null;
-  if (!hasAny(value, ['workspace', '워크스페이스'])) return null;
-  if (!hasAny(value, ['설정', '바꿔', '변경', 'set', 'change', 'bind', 'binding'])) return null;
+  if (!hasAny(value, XENESIS_NATURAL_XENESIS_CONTEXT_WORDS)) return null;
+  if (!hasAny(value, XENESIS_NATURAL_WORKSPACE_CONTEXT_WORDS)) return null;
+  if (!hasAny(value, XENESIS_NATURAL_WORKSPACE_SET_CONTEXT_WORDS)) return null;
 
   const path = extractLocalPath(rawText);
   if (!path) return null;
