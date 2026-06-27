@@ -92,6 +92,7 @@ import {
   formatXenesisChannelPairingSummary,
   formatXenesisChannelRoutingSummary,
   formatXenesisChannelSafetySummary,
+  formatXenesisChannelUserStorySummary,
   formatXenesisGuideCatalogSummary,
   formatXenesisMessengerViewSummary,
   formatXenesisOnboardingPlanSummary,
@@ -4274,6 +4275,7 @@ export default function SettingsPane() {
     const toolUserStory = item.toolUserStory;
     const messengerView = item.messengerView;
     const channelTemplate = item.channelTemplate;
+    const channelUserStory = channelTemplate?.userStory;
     return (
       <div
         className={cls('sp-info-card', focusedXenesisConnectionId === item.id && 'is-focused')}
@@ -5031,6 +5033,42 @@ export default function SettingsPane() {
                 <div>
                   <span>{t('settings.xenesisConnectionsChannelPairingSafety')}</span>
                   <strong>{channelTemplate.pairing.safetyBoundaries.join(', ')}</strong>
+                </div>
+              </div>
+            ) : null}
+            {channelUserStory ? (
+              <div className="sp-info-list sp-info-list-compact" data-xenesis-channel-user-story={item.id}>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelUserStory')}</span>
+                  <strong>{formatXenesisChannelUserStorySummary(channelUserStory)}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelUserStorySetupSurface')}</span>
+                  <strong>{channelUserStory.setupSurface}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelUserStoryStories')}</span>
+                  <strong>{channelUserStory.userStories.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelUserStoryPrerequisites')}</span>
+                  <strong>{channelUserStory.prerequisiteSetup.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelUserStoryReadback')}</span>
+                  <strong>{channelUserStory.readPaths.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelUserStoryControls')}</span>
+                  <strong>{channelUserStory.controlPaths.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelUserStoryDiagnostics')}</span>
+                  <strong>{channelUserStory.diagnostics.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelUserStorySafety')}</span>
+                  <strong>{channelUserStory.safetyBoundaries.join(', ')}</strong>
                 </div>
               </div>
             ) : null}

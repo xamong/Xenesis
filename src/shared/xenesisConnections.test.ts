@@ -1629,6 +1629,85 @@ test('buildXenesisConnectionsStatus exposes OpenClaw-style pairing metadata for 
   ]);
 });
 
+test('buildXenesisConnectionsStatus exposes channel user-story workflows for implemented and planned channels', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const telegram = status.sections.messengers.items.find((item) => item.id === 'telegram');
+  const signal = status.sections.messengers.items.find((item) => item.id === 'signal');
+
+  assert.deepEqual(telegram?.channelTemplate?.userStory, {
+    workflowType: 'remote-prompt',
+    runtimeSupport: 'implemented',
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    setupSurface: 'Settings > Xenesis Agent > External bots',
+    userStories: [
+      'receive an allowed Telegram chat prompt and route it to Xenesis Agent',
+      'reply in the same chat scope after approval policy checks',
+      'run a sanitized channel test before relying on remote prompts',
+    ],
+    prerequisiteSetup: ['gateway-running', 'telegram-pairing-ready', 'telegram-allowlist-configured'],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.channels.userStories.status',
+      'xd.xenesis.channels.routing.status',
+      'xd.xenesis.channels.safety.status',
+      'xd.xenesis.channels.accessGroups.status',
+      'xd.xenesis.channels.pairing.status',
+      'xd.xenesis.gateway.status',
+    ],
+    controlPaths: [
+      'xd.xenesis.channels.userStories.open',
+      'xd.xenesis.messengers.views.open',
+      'xd.xenesis.profiles.testChannel',
+    ],
+    diagnostics: ['gateway-status', 'safe-to-deliver', 'allowlist-empty', 'last-error'],
+    safetyBoundaries: [
+      'channel user stories are read/open planning surfaces',
+      'message delivery stays on explicit channel test and gateway runtime paths',
+      'remote prompts stay constrained by channel allowlists and approval guardrails',
+    ],
+  });
+
+  assert.equal(signal?.channelTemplate?.userStory?.workflowType, 'planned-messenger');
+  assert.equal(signal?.channelTemplate?.userStory?.runtimeSupport, 'planned-adapter');
+  assert.deepEqual(signal?.channelTemplate?.userStory?.controlPaths, [
+    'xd.xenesis.channels.userStories.open',
+    'xd.xenesis.messengers.views.open',
+    'xd.xenesis.connections.open',
+  ]);
+  assert.ok(
+    signal?.channelTemplate?.userStory?.safetyBoundaries.some((boundary) =>
+      boundary.includes('planned messenger user stories do not enable delivery'),
+    ),
+  );
+});
+
 test('buildXenesisConnectionsStatus exposes internal Desk messenger views for implemented and planned channels', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {

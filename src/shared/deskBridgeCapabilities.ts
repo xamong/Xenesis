@@ -409,6 +409,9 @@ const XENESIS_MESSENGER_VIEW_OPEN_SCHEMA = {
   },
 } as const;
 
+const XENESIS_CHANNEL_USER_STORY_STATUS_SCHEMA = XENESIS_MESSENGER_VIEW_STATUS_SCHEMA;
+const XENESIS_CHANNEL_USER_STORY_OPEN_SCHEMA = XENESIS_MESSENGER_VIEW_OPEN_SCHEMA;
+
 const XENESIS_EXTERNAL_TOOL_IDS = [
   'fetch',
   'filesystem',
@@ -847,6 +850,8 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisChannelSafetyStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisChannelAccessGroupsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisChannelPairingStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisChannelUserStoriesStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisChannelUserStory?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisGuidesStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisGuide?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolSetupStatus?: (args?: unknown) => Promise<unknown> | unknown;
@@ -3884,6 +3889,27 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               'Read pairing model, runtime support, account scope, redacted credential state, validation checks, diagnostics, and safety boundaries for implemented and planned Xenesis external messenger channels.',
               'read',
               XENESIS_CHANNEL_PAIRING_STATUS_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.channels.userStories',
+          'User stories',
+          'Read and open Desk planning surfaces for external messenger channel user-story workflows.',
+          [
+            method(
+              'xd.xenesis.channels.userStories.status',
+              'Read channel user-story workflows',
+              'Read workflow type, runtime support, user stories, prerequisite setup, CR paths, diagnostics, and safety boundaries for implemented and planned Xenesis external messenger channels.',
+              'read',
+              XENESIS_CHANNEL_USER_STORY_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.channels.userStories.open',
+              'Open channel user-story workflow',
+              'Open Settings > Xenesis Agent > Connections and focus an external messenger channel user-story workflow card inside Desk.',
+              'control',
+              XENESIS_CHANNEL_USER_STORY_OPEN_SCHEMA,
             ),
           ],
         ),
@@ -10307,6 +10333,12 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.channels.pairing.status') {
         return callAdapter(path, api?.getXenesisChannelPairingStatus, request.args);
+      }
+      if (path === 'xd.xenesis.channels.userStories.status') {
+        return callAdapter(path, api?.getXenesisChannelUserStoriesStatus, request.args);
+      }
+      if (path === 'xd.xenesis.channels.userStories.open') {
+        return callAdapter(path, api?.openXenesisChannelUserStory, request.args);
       }
       if (path === 'xd.xenesis.guides.status') {
         return callAdapter(path, api?.getXenesisGuidesStatus, request.args);

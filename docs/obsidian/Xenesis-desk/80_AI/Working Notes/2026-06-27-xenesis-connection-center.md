@@ -552,6 +552,32 @@ Capability Registry instead of only through separate renderer settings panels.
   renderer helper, and missing prompt-hint paths, then passed after
   implementation with 79/79 tests.
 
+## Current Channel User Stories Read Model Slice
+
+- Add `channelTemplate.userStory` metadata to implemented Telegram, Slack,
+  Discord, Webhook, and planned messenger cards in
+  `xd.xenesis.connections.status`.
+- Add `xd.xenesis.channels.userStories.status` as a read/no-approval CR path
+  for workflow type, runtime support, user-story templates, prerequisite setup,
+  read/control paths, diagnostics, and safety boundaries.
+- Add `xd.xenesis.channels.userStories.open` as a control/no-approval CR path
+  that opens Settings > Xenesis Agent > Connections and focuses the requested
+  messenger card.
+- Settings renders the same model with
+  `data-xenesis-channel-user-story="<messenger-id>"`.
+- Telegram, Slack, Discord, and Webhook user stories point to existing gateway,
+  channel routing, safety, access-group, pairing, and channel test paths.
+- Planned messenger user stories are planning surfaces only. They do not enable
+  delivery, send replies, install adapters, create pairing flows, mutate
+  allowlists, or bypass approval guardrails.
+- External documentation handling for this slice: no per-slice web browsing.
+  Use local Obsidian/docs/handoff as the gap map; refresh external docs only as
+  a batched documentation pass if needed.
+- `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+  failed first for missing channel user-story metadata, missing CR paths,
+  missing renderer helper, and missing prompt-hint paths, then passed after
+  implementation with 85/85 tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

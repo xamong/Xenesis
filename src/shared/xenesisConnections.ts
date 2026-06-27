@@ -169,6 +169,28 @@ export interface XenesisConnectionToolUserStoryTemplate {
   safetyBoundaries: string[];
 }
 
+export type XenesisConnectionChannelUserStoryWorkflowType =
+  | 'remote-prompt'
+  | 'team-thread'
+  | 'webhook-ingress'
+  | 'planned-messenger'
+  | 'planned-mailbox';
+
+export type XenesisConnectionChannelUserStoryRuntimeSupport = 'implemented' | 'planned-adapter';
+
+export interface XenesisConnectionChannelUserStoryTemplate {
+  workflowType: XenesisConnectionChannelUserStoryWorkflowType;
+  runtimeSupport: XenesisConnectionChannelUserStoryRuntimeSupport;
+  primarySurface: string;
+  setupSurface: string;
+  userStories: string[];
+  prerequisiteSetup: string[];
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  safetyBoundaries: string[];
+}
+
 export interface XenesisConnectionProviderSetupTemplate {
   source: 'user-settings' | 'auto-detect' | 'local-cli' | 'byok';
   provider: string;
@@ -258,6 +280,7 @@ export interface XenesisConnectionChannelTemplate {
   safety?: XenesisConnectionChannelSafetyTemplate;
   accessGroups?: XenesisConnectionChannelAccessGroupsTemplate;
   pairing?: XenesisConnectionChannelPairingTemplate;
+  userStory?: XenesisConnectionChannelUserStoryTemplate;
 }
 
 export interface XenesisConnectionChannelRoutingTemplate {
@@ -741,6 +764,79 @@ function toolUserStoryTemplate(input: {
       'user-story workflows are read/open planning surfaces',
       'tool execution stays behind provider MCP tools and CR approval paths',
       'writes require separate verified tool actions',
+    ],
+  };
+}
+
+const IMPLEMENTED_CHANNEL_USER_STORY_READ_PATHS = [
+  'xd.xenesis.connections.status',
+  'xd.xenesis.channels.userStories.status',
+  'xd.xenesis.channels.routing.status',
+  'xd.xenesis.channels.safety.status',
+  'xd.xenesis.channels.accessGroups.status',
+  'xd.xenesis.channels.pairing.status',
+  'xd.xenesis.gateway.status',
+];
+
+function implementedChannelUserStoryTemplate(input: {
+  workflowType: Exclude<XenesisConnectionChannelUserStoryWorkflowType, 'planned-messenger' | 'planned-mailbox'>;
+  userStories: string[];
+  prerequisiteSetup: string[];
+  diagnostics: string[];
+}): XenesisConnectionChannelUserStoryTemplate {
+  return {
+    workflowType: input.workflowType,
+    runtimeSupport: 'implemented',
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    setupSurface: 'Settings > Xenesis Agent > External bots',
+    userStories: input.userStories,
+    prerequisiteSetup: input.prerequisiteSetup,
+    readPaths: IMPLEMENTED_CHANNEL_USER_STORY_READ_PATHS,
+    controlPaths: [
+      'xd.xenesis.channels.userStories.open',
+      'xd.xenesis.messengers.views.open',
+      'xd.xenesis.profiles.testChannel',
+    ],
+    diagnostics: input.diagnostics,
+    safetyBoundaries: [
+      'channel user stories are read/open planning surfaces',
+      'message delivery stays on explicit channel test and gateway runtime paths',
+      'remote prompts stay constrained by channel allowlists and approval guardrails',
+    ],
+  };
+}
+
+function plannedChannelUserStoryTemplate(id: string, label: string): XenesisConnectionChannelUserStoryTemplate {
+  const workflowType: XenesisConnectionChannelUserStoryWorkflowType =
+    id === 'email' ? 'planned-mailbox' : 'planned-messenger';
+  return {
+    workflowType,
+    runtimeSupport: 'planned-adapter',
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    setupSurface: 'Settings > Xenesis Agent > Connections',
+    userStories: [
+      `review the ${label} channel setup story before selecting an adapter`,
+      `define allowed ${workflowType === 'planned-mailbox' ? 'senders and folders' : 'accounts, chats, or rooms'} before accepting remote prompts`,
+      'keep delivery disabled until a verified gateway adapter and safety review exist',
+    ],
+    prerequisiteSetup: [`${id}-adapter-selected`, `${id}-pairing-ready`, `${id}-allowlist-defined`],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.channels.userStories.status',
+      'xd.xenesis.channels.pairing.status',
+      'xd.xenesis.messengers.views.status',
+      'xd.xenesis.guides.status',
+    ],
+    controlPaths: [
+      'xd.xenesis.channels.userStories.open',
+      'xd.xenesis.messengers.views.open',
+      'xd.xenesis.connections.open',
+    ],
+    diagnostics: ['planned-adapter', 'pairing-required', 'safety-review', 'delivery-disabled'],
+    safetyBoundaries: [
+      'planned messenger user stories do not enable delivery',
+      'planned adapters remain read/open planning surfaces until runtime support exists',
+      'message delivery and replies require separate verified gateway paths',
     ],
   };
 }
@@ -1624,6 +1720,16 @@ const MESSENGERS: Array<{
         accountScope: 'bot-account',
         credentialRefs: [{ ref: 'tokenEnv', source: 'profile-env-field', required: true }],
       }),
+      userStory: implementedChannelUserStoryTemplate({
+        workflowType: 'remote-prompt',
+        userStories: [
+          'receive an allowed Telegram chat prompt and route it to Xenesis Agent',
+          'reply in the same chat scope after approval policy checks',
+          'run a sanitized channel test before relying on remote prompts',
+        ],
+        prerequisiteSetup: ['gateway-running', 'telegram-pairing-ready', 'telegram-allowlist-configured'],
+        diagnostics: ['gateway-status', 'safe-to-deliver', 'allowlist-empty', 'last-error'],
+      }),
     },
   },
   {
@@ -1711,6 +1817,16 @@ const MESSENGERS: Array<{
           { ref: 'signingSecretEnv', source: 'profile-env-field', required: true },
           { ref: 'webhookUrlEnv', source: 'profile-env-field', required: false },
         ],
+      }),
+      userStory: implementedChannelUserStoryTemplate({
+        workflowType: 'team-thread',
+        userStories: [
+          'receive an allowed Slack channel or thread prompt and route it to Xenesis Agent',
+          'reply in the same channel or thread after approval policy checks',
+          'run a sanitized channel test before relying on remote prompts',
+        ],
+        prerequisiteSetup: ['gateway-running', 'slack-pairing-ready', 'slack-allowlist-configured'],
+        diagnostics: ['gateway-status', 'signature-check', 'safe-to-deliver', 'allowlist-empty', 'last-error'],
       }),
     },
   },
@@ -1806,6 +1922,16 @@ const MESSENGERS: Array<{
           { ref: 'webhookUrlEnv', source: 'profile-env-field', required: false },
         ],
       }),
+      userStory: implementedChannelUserStoryTemplate({
+        workflowType: 'team-thread',
+        userStories: [
+          'receive an allowed Discord guild-channel prompt and route it to Xenesis Agent',
+          'reply in the same guild-channel scope after approval policy checks',
+          'run a sanitized channel test before relying on remote prompts',
+        ],
+        prerequisiteSetup: ['gateway-running', 'discord-pairing-ready', 'discord-allowlist-configured'],
+        diagnostics: ['gateway-status', 'guild-scope', 'safe-to-deliver', 'allowlist-empty', 'last-error'],
+      }),
     },
   },
   {
@@ -1890,6 +2016,16 @@ const MESSENGERS: Array<{
         accountScope: 'endpoint',
         credentialRefs: [{ ref: 'urlEnv', source: 'profile-env-field', required: true }],
       }),
+      userStory: implementedChannelUserStoryTemplate({
+        workflowType: 'webhook-ingress',
+        userStories: [
+          'receive a trusted webhook event and route it to Xenesis Agent',
+          'return a request-scoped response only after approval policy checks',
+          'run a sanitized webhook test before relying on remote prompts',
+        ],
+        prerequisiteSetup: ['gateway-running', 'webhook-endpoint-ready', 'webhook-auth-boundary-configured'],
+        diagnostics: ['gateway-status', 'network-boundary', 'request-auth', 'last-error'],
+      }),
     },
   },
 ];
@@ -1953,6 +2089,8 @@ function plannedMessenger(definition: PlannedMessengerDefinition): XenesisConnec
     channelTemplate: {
       ...definition.channelTemplate,
       pairing: definition.channelTemplate.pairing ?? plannedChannelPairingTemplate(definition.id),
+      userStory:
+        definition.channelTemplate.userStory ?? plannedChannelUserStoryTemplate(definition.id, definition.label),
     },
     kind: 'messenger',
     status: 'planned',

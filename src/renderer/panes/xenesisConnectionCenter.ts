@@ -4,6 +4,7 @@ import type {
   XenesisConnectionChannelPairingTemplate,
   XenesisConnectionChannelRoutingTemplate,
   XenesisConnectionChannelSafetyTemplate,
+  XenesisConnectionChannelUserStoryTemplate,
   XenesisConnectionGuideCatalogTemplate,
   XenesisConnectionItem,
   XenesisConnectionMessengerViewTemplate,
@@ -81,6 +82,10 @@ export function formatXenesisChannelAccessGroupsSummary(
 
 export function formatXenesisChannelPairingSummary(pairing: XenesisConnectionChannelPairingTemplate): string {
   return `${pairing.model} / ${pairing.accountScope} / ${pairing.pairingState}`;
+}
+
+export function formatXenesisChannelUserStorySummary(workflow: XenesisConnectionChannelUserStoryTemplate): string {
+  return `${workflow.workflowType} / ${workflow.runtimeSupport} / ${workflow.userStories.length} user story/stories`;
 }
 
 export function formatXenesisGuideCatalogSummary(guide: XenesisConnectionGuideCatalogTemplate): string {

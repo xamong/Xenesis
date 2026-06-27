@@ -251,6 +251,18 @@ network setup as planned metadata only; this path does not create QR sessions,
 open OAuth flows, install adapters, approve accounts, mutate channel settings,
 or send messages.
 
+Messenger cards also expose `channelTemplate.userStory` metadata. Use
+`xd.xenesis.channels.userStories.status` to inspect workflow type, runtime
+support, user-story templates, prerequisite setup, CR read/control paths,
+diagnostics, and safety boundaries for implemented and planned external
+messenger channels. Use `xd.xenesis.channels.userStories.open` with
+`{ "id": "<messenger-id>" }` to open Settings > Xenesis Agent > Connections and
+focus the matching channel user-story card. Telegram, Slack, Discord, and
+Webhook point to the existing gateway/test/readback paths. Planned messenger
+channels remain planning surfaces only: user-story metadata does not enable a
+gateway adapter, send messages, create pairing sessions, mutate allowlists, or
+bypass approval policy.
+
 Messenger cards also expose a `messengerView` read model. Use
 `xd.xenesis.messengers.views.status` to inspect the internal Desk surface for a
 messenger, including runtime support, setup surface, CR open/read/control paths,
@@ -272,6 +284,8 @@ Useful CR paths:
 - `xd.xenesis.profiles.updateChannels`
 - `xd.xenesis.profiles.testChannel`
 - `xd.xenesis.channels.pairing.status`
+- `xd.xenesis.channels.userStories.status`
+- `xd.xenesis.channels.userStories.open`
 - `xd.xenesis.messengers.views.status`
 - `xd.xenesis.messengers.views.open`
 
@@ -377,6 +391,14 @@ credential refs and configured/missing/not-required states only. Planned
 messenger entries remain planned pairing requirements; the path is read-only and
 does not create QR/device links, OAuth installs, desktop-host sessions, channel
 mutations, or delivery tests.
+
+Use `xd.xenesis.channels.userStories.status` and
+`xd.xenesis.channels.userStories.open` to inspect or open external messenger
+channel workflow planning surfaces through CR. Implemented Telegram, Slack,
+Discord, and Webhook workflows describe prompt intake, scoped replies, sanitized
+tests, and the existing read/test CR paths. Planned messenger workflows describe
+setup stories only and do not enable delivery, send replies, install adapters,
+create pairing flows, mutate channel settings, or bypass approval guardrails.
 
 Use `xd.xenesis.messengers.views.status` and
 `xd.xenesis.messengers.views.open` to inspect or open internal Desk

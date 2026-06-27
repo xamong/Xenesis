@@ -5252,6 +5252,95 @@ async function getXenesisChannelPairingStatus(args?: unknown): Promise<Record<st
   };
 }
 
+function xenesisChannelUserStoryStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    workflowType: item.channelTemplate?.userStory?.workflowType,
+    runtimeSupport: item.channelTemplate?.userStory?.runtimeSupport,
+    primarySurface: item.channelTemplate?.userStory?.primarySurface,
+    setupSurface: item.channelTemplate?.userStory?.setupSurface,
+    userStories: item.channelTemplate?.userStory?.userStories ?? [],
+    prerequisiteSetup: item.channelTemplate?.userStory?.prerequisiteSetup ?? [],
+    readPaths: item.channelTemplate?.userStory?.readPaths ?? [],
+    controlPaths: item.channelTemplate?.userStory?.controlPaths ?? [],
+    diagnostics: item.channelTemplate?.userStory?.diagnostics ?? [],
+    safetyBoundaries: item.channelTemplate?.userStory?.safetyBoundaries ?? [],
+    channelTemplate: item.channelTemplate,
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisChannelUserStoriesStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['channel', 'id', 'messenger', 'name']);
+  if (id && !isXenesisMessengerViewId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis messenger channel: ${id}`,
+      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.messengers.items
+    .filter((item) => item.channelTemplate?.userStory)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisChannelUserStoryStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { channel: id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisChannelUserStory(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'messenger', 'channel', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Messenger channel id is required.' };
+  }
+  if (!isXenesisMessengerViewId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis messenger channel: ${id}`,
+      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.messengers.items.find(
+    (candidate) => candidate.id === id && candidate.channelTemplate?.userStory,
+  );
+  if (!item) {
+    return { ok: false, id, error: `Xenesis channel user story is not available: ${id}` };
+  }
+
+  const renderer = await openMcpBuiltinPaneCapability({
+    kind: 'settings',
+    category: 'xenesis-agent',
+    mode: 'connections',
+    section: 'xenesis-connections',
+    focusConnectionId: id,
+    ensureVisible: body.ensureVisible !== false,
+  });
+
+  return {
+    ok: renderer.ok !== false,
+    id,
+    item: xenesisChannelUserStoryStatusItem(item),
+    renderer,
+  };
+}
+
 function xenesisMessengerViewStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
   return {
     id: item.id,
@@ -12864,6 +12953,8 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisChannelSafetyStatus: (args: unknown) => getXenesisChannelSafetyStatus(args),
     getXenesisChannelAccessGroupsStatus: (args: unknown) => getXenesisChannelAccessGroupsStatus(args),
     getXenesisChannelPairingStatus: (args: unknown) => getXenesisChannelPairingStatus(args),
+    getXenesisChannelUserStoriesStatus: (args: unknown) => getXenesisChannelUserStoriesStatus(args),
+    openXenesisChannelUserStory: (args: unknown) => openXenesisChannelUserStory(args),
     getXenesisGuidesStatus: (args: unknown) => getXenesisGuidesStatus(args),
     openXenesisGuide: (args: unknown) => openXenesisGuide(args),
     getXenesisToolSetupStatus: (args: unknown) => getXenesisToolSetupStatus(args),

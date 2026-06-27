@@ -283,6 +283,70 @@ test('xenesis channel pairing status capability is registered and dispatches to 
   });
 });
 
+test('xenesis channel user story capabilities are registered and dispatch to the adapter', async () => {
+  const statusCapability = findDeskBridgeCapability('xd.xenesis.channels.userStories.status');
+  const openCapability = findDeskBridgeCapability('xd.xenesis.channels.userStories.open');
+  const statusSchemaProperties = (statusCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
+  assert.equal(statusCapability?.permission, 'read');
+  assert.equal(statusCapability?.approval, 'never');
+  assert.equal(openCapability?.permission, 'control');
+  assert.equal(openCapability?.approval, 'never');
+  assert.deepEqual(openCapability?.schema?.required, ['id']);
+  for (const messenger of ['telegram', 'slack', 'discord', 'webhook', 'signal', 'google-chat', 'email']) {
+    assert.equal(
+      statusSchemaProperties.id?.enum.includes(messenger),
+      true,
+      `${messenger} should be accepted by status`,
+    );
+    assert.equal(openSchemaProperties.id?.enum.includes(messenger), true, `${messenger} should be accepted by open`);
+  }
+
+  const calls: Array<{ method: string; args: unknown }> = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisChannelUserStoriesStatus: (args) => {
+      calls.push({ method: 'status', args });
+      return {
+        ok: true,
+        items: [{ id: 'telegram', workflowType: 'remote-prompt' }],
+      };
+    },
+    openXenesisChannelUserStory: (args) => {
+      calls.push({ method: 'open', args });
+      return {
+        ok: true,
+        item: { id: 'telegram' },
+      };
+    },
+  };
+
+  const statusResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.channels.userStories.status',
+    args: { id: 'telegram' },
+    source: 'xenesis',
+  });
+  const openResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.channels.userStories.open',
+    args: { id: 'telegram' },
+    source: 'xenesis',
+  });
+
+  assert.equal(statusResult.ok, true);
+  assert.equal(openResult.ok, true);
+  assert.deepEqual(calls, [
+    { method: 'status', args: { id: 'telegram' } },
+    { method: 'open', args: { id: 'telegram' } },
+  ]);
+  assert.deepEqual(statusResult.result, {
+    ok: true,
+    items: [{ id: 'telegram', workflowType: 'remote-prompt' }],
+  });
+  assert.deepEqual(openResult.result, {
+    ok: true,
+    item: { id: 'telegram' },
+  });
+});
+
 test('xenesis tool setup status capability is registered and dispatches to the adapter', async () => {
   const capability = findDeskBridgeCapability('xd.xenesis.tools.setup.status');
   const schemaProperties = (capability?.schema?.properties ?? {}) as Record<string, any>;

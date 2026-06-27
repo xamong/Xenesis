@@ -9,6 +9,7 @@ import {
   formatXenesisChannelPairingSummary,
   formatXenesisChannelRoutingSummary,
   formatXenesisChannelSafetySummary,
+  formatXenesisChannelUserStorySummary,
   formatXenesisGuideCatalogSummary,
   formatXenesisMessengerViewSummary,
   formatXenesisOnboardingPlanSummary,
@@ -239,6 +240,28 @@ test('formatXenesisChannelPairingSummary describes pairing model, account scope,
       safetyBoundaries: ['credential values are never returned'],
     }),
     'env-token / bot-account / configured',
+  );
+});
+
+test('formatXenesisChannelUserStorySummary describes workflow type, runtime support, and story count', () => {
+  assert.equal(
+    formatXenesisChannelUserStorySummary({
+      workflowType: 'remote-prompt',
+      runtimeSupport: 'implemented',
+      primarySurface: 'Settings > Xenesis Agent > Connections',
+      setupSurface: 'Settings > Xenesis Agent > External bots',
+      userStories: [
+        'receive an allowed Telegram chat prompt and route it to Xenesis Agent',
+        'reply in the same chat scope after approval policy checks',
+        'run a sanitized channel test before relying on remote prompts',
+      ],
+      prerequisiteSetup: ['gateway-running', 'telegram-pairing-ready'],
+      readPaths: ['xd.xenesis.channels.userStories.status'],
+      controlPaths: ['xd.xenesis.channels.userStories.open'],
+      diagnostics: ['gateway-status'],
+      safetyBoundaries: ['channel user stories are read/open planning surfaces'],
+    }),
+    'remote-prompt / implemented / 3 user story/stories',
   );
 });
 
