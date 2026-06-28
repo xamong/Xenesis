@@ -663,7 +663,7 @@ export const ko = {
       media: '미디어 프로바이더',
       mediaDesc: '이미지, 비디오, 오디오 생성/변환 프로바이더를 연결합니다.',
       connectors: 'Connectors',
-      connectorsDesc: '외부 시스템 연결을 등록합니다.',
+      connectorsDesc: '외부 도구와 메신저 연결을 확인합니다.',
       mcp: 'MCP 서버',
       mcpDesc: '코딩 에이전트를 연결합니다.',
       language: '언어',

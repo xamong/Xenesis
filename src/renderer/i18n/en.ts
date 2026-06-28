@@ -665,7 +665,7 @@ export const en = {
       media: 'Media Provider',
       mediaDesc: 'Connect image, video, and audio generation/conversion providers.',
       connectors: 'Connectors',
-      connectorsDesc: 'Register external system connections.',
+      connectorsDesc: 'Review external tool and messenger connections.',
       mcp: 'MCP Server',
       mcpDesc: 'Connect your coding agent.',
       language: 'Language',

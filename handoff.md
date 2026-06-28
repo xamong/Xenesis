@@ -130,6 +130,8 @@ into a Desk-native, CR-first setup and connection experience.
   - `src/renderer/panes/SettingsPane.tsx`
   - `src/renderer/i18n/en.ts`
   - `src/renderer/i18n/ko.ts`
+  - `docs/capability-registry-audit.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-settings-connectors-navigation.md`
   - `src/shared/xenesisNaturalLanguageCatalog.ts`
   - `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
   - `src/shared/xenesisNaturalLanguageActionResolvers.ts`
@@ -15443,3 +15445,66 @@ Verification so far:
 - Next intended step:
   - Review final diff, stage, and commit this Settings connectors surface
     slice.
+
+## Current Settings Connectors Navigation Slice
+
+- Current objective:
+  - Make the newly real Settings `connectors` surface directly reachable from
+    the Settings sidebar instead of only through hidden category dispatch.
+- Rationale:
+  - `renderConnectors` now exposes CR-backed external tool and messenger
+    connection cards, but `src/renderer/panes/settingsCatalog.mjs` still marks
+    `connectors` as `hiddenInSettingsPane: true`.
+  - A hidden category can still be opened by CR/event dispatch, but the visible
+    Settings metadata and sidebar selection are weaker than a first-class
+    Desk-native connection surface.
+- Scope:
+  - Add RED catalog coverage requiring `connectors` to be visible in
+    `VISIBLE_SETTINGS_CATEGORIES` near `external-apps`.
+  - Move the category into the visible external-apps area and update
+    category-level copy to describe tool and messenger connections.
+  - Do not change CR schemas, connection action builders, provider runtime
+    selection, OAuth behavior, MCP install execution, messenger delivery, or
+    external-system mutation behavior.
+- Touched files so far:
+  - `handoff.md`
+  - `src/renderer/panes/settingsCatalog.test.mjs`
+  - `src/renderer/panes/settingsCatalog.mjs`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
+- Commands run:
+  - `git status --short --branch` -> clean `agent/upcoming-work-20260627`.
+  - RED:
+    `node --test src\renderer\panes\settingsCatalog.test.mjs` -> failed 0/1
+    because `connectors.hiddenInSettingsPane` was still `true`.
+  - GREEN:
+    `node --test src\renderer\panes\settingsCatalog.test.mjs` -> passed 1/1.
+  - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` ->
+    passed 54/54.
+  - `npx biome format --write src\renderer\panes\settingsCatalog.mjs src\renderer\panes\settingsCatalog.test.mjs src\renderer\i18n\en.ts src\renderer\i18n\ko.ts handoff.md`
+    -> formatted 4 files, fixed 1 file.
+  - Post-format:
+    `node --test src\renderer\panes\settingsCatalog.test.mjs` -> passed 1/1;
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` ->
+    passed 54/54; `npm run typecheck` -> passed; changed-file Biome check ->
+    passed; `npm run docs:capabilities:audit` -> passed; CR audit gap check
+    -> all 0; `npm run smoke:xenesis:natural-desk-routing` -> passed
+    186/186; `git diff --check` -> passed with line-ending warnings only.
+  - Added Obsidian working note:
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-settings-connectors-navigation.md`.
+- Implemented:
+  - Added a catalog test requiring `connectors` to be visible in Settings and
+    placed between `external-apps` and `extensions`.
+  - Moved the `connectors` category next to `external-apps` and removed
+    `hiddenInSettingsPane: true`.
+  - Updated English/Korean category descriptions to match the external
+    tool/messenger connector surface.
+- Known gaps:
+  - This is a navigation/accessibility slice only. It does not execute OAuth,
+    install MCP servers, send messages, mutate external tools, or change
+    provider runtime behavior.
+  - Repository-wide `npm run lint` remains blocked by existing repo-wide Biome
+    diagnostics outside this slice; changed files passed the focused Biome
+    check.
+- Next intended step:
+  - Review diff, stage, and commit this Settings connectors navigation slice.

@@ -36,6 +36,12 @@ export const SETTINGS_CATEGORIES = [
     descriptionKey: 'settings.category.externalAppsDesc',
   },
   {
+    id: 'connectors',
+    icon: '☷',
+    titleKey: 'settings.category.connectors',
+    descriptionKey: 'settings.category.connectorsDesc',
+  },
+  {
     id: 'extensions',
     icon: '▦',
     titleKey: 'settings.category.extensions',
@@ -120,13 +126,6 @@ export const SETTINGS_CATEGORIES = [
     icon: '▧',
     titleKey: 'settings.category.media',
     descriptionKey: 'settings.category.mediaDesc',
-    hiddenInSettingsPane: true,
-  },
-  {
-    id: 'connectors',
-    icon: '☷',
-    titleKey: 'settings.category.connectors',
-    descriptionKey: 'settings.category.connectorsDesc',
     hiddenInSettingsPane: true,
   },
   {
