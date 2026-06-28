@@ -4511,6 +4511,40 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## CR-First Detail ControlPaths Metadata Slice
+
+- Continued the Connection Center source-of-truth cleanup by removing generic
+  Settings fallback control paths from provider/tool/messenger detail metadata
+  when a CR-specific detail open path already exists.
+- Updated detail metadata for:
+  - Tool views: `xd.xenesis.tools.views.open`.
+  - Tool install plans: `xd.xenesis.tools.installPlans.open`.
+  - Provider views: `xd.xenesis.providers.views.open`.
+  - Messenger views: `xd.xenesis.messengers.views.open`, while preserving
+    implemented channel profile/test CR paths.
+- Scope boundary:
+  - Metadata and tests only.
+  - Explicit onboarding guided steps that open user-edited settings remain on
+    `xd.panes.settings.open`.
+  - No registry schema, dispatcher, natural-language routing, provider runtime,
+    MCP config write, OAuth/install execution, messenger delivery, profile
+    write, or approval behavior changed.
+- RED/GREEN:
+  - `npx tsx --test src\shared\xenesisConnections.test.ts` failed 31/35 after
+    the RED expectations because the four templates still advertised
+    `xd.panes.settings.open`.
+  - After the template update, the same focused test passed 35/35 before and
+    after formatting.
+- Verification:
+  - Scoped Biome format/check passed for `src/shared/xenesisConnections.ts` and
+    `src/shared/xenesisConnections.test.ts`.
+  - `npm run typecheck` passed.
+  - `git diff --check` passed with LF-to-CRLF working-copy warnings only.
+  - CR audit was skipped because this slice only changes connection metadata
+    and tests, not registry schemas or dispatcher coverage.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

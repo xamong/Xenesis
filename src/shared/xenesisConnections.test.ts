@@ -1208,7 +1208,7 @@ test('buildXenesisConnectionsStatus exposes internal Desk tool views for MCP and
       'xd.xenesis.tools.setup.status',
       'xd.mcp.settings.status',
     ],
-    controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.connections.open', 'xd.panes.settings.open'],
+    controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.connections.open'],
     diagnostics: ['mcp-settings-status', 'missing-env', 'template-snippet'],
     safetyBoundaries: [
       'view opens internal setup/readiness surfaces only',
@@ -1344,12 +1344,7 @@ test('buildXenesisConnectionsStatus exposes on-demand tool install plans without
       'xd.xenesis.tools.connectors.status',
       'xd.mcp.settings.status',
     ],
-    controlPaths: [
-      'xd.xenesis.tools.installPlans.open',
-      'xd.xenesis.tools.views.open',
-      'xd.xenesis.connections.open',
-      'xd.panes.settings.open',
-    ],
+    controlPaths: ['xd.xenesis.tools.installPlans.open', 'xd.xenesis.tools.views.open', 'xd.xenesis.connections.open'],
     diagnostics: ['missing-env', 'mcp-settings-status', 'template-snippet', 'cr-readback'],
     safetyBoundaries: [
       'install plans are read/open planning surfaces',
@@ -1636,7 +1631,7 @@ test('buildXenesisConnectionsStatus exposes an internal Desk provider view', () 
       'xd.xenesis.providers.views.status',
       'xd.xenesis.status',
     ],
-    controlPaths: ['xd.xenesis.providers.views.open', 'xd.xenesis.connections.open', 'xd.panes.settings.open'],
+    controlPaths: ['xd.xenesis.providers.views.open', 'xd.xenesis.connections.open'],
     diagnostics: ['provider-footer', 'work-log-provider', 'credential-state', 'runtime-profile', 'fallback-policy'],
     safetyBoundaries: [
       'provider view opens internal setup/readiness surfaces only',
@@ -2525,7 +2520,6 @@ test('buildXenesisConnectionsStatus exposes internal Desk messenger views for im
       'xd.xenesis.connections.open',
       'xd.xenesis.profiles.updateChannels',
       'xd.xenesis.profiles.testChannel',
-      'xd.panes.settings.open',
     ],
     diagnostics: ['gateway-status', 'missing-env', 'allowlist', 'last-error'],
     safetyBoundaries: [
@@ -2535,6 +2529,10 @@ test('buildXenesisConnectionsStatus exposes internal Desk messenger views for im
   });
   assert.equal(signal?.messengerView?.runtimeSupport, 'planned');
   assert.deepEqual(signal?.messengerView?.internalViews, ['connection-card', 'channel-template', 'planning-card']);
+  assert.deepEqual(signal?.messengerView?.controlPaths, [
+    'xd.xenesis.messengers.views.open',
+    'xd.xenesis.connections.open',
+  ]);
   assert.equal(signal?.messengerView?.controlPaths.includes('xd.xenesis.profiles.testChannel'), false);
 });
 

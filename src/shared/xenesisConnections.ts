@@ -1287,7 +1287,7 @@ function toolViewTemplate(
       'xd.xenesis.tools.setup.status',
       'xd.mcp.settings.status',
     ],
-    controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.connections.open', 'xd.panes.settings.open'],
+    controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.connections.open'],
     diagnostics: options.hasMcpTemplate
       ? ['mcp-settings-status', 'missing-env', 'template-snippet']
       : ['mcp-settings-status', 'missing-env'],
@@ -1507,12 +1507,7 @@ function toolInstallPlanTemplate(input: {
       'xd.xenesis.tools.connectors.status',
       'xd.mcp.settings.status',
     ],
-    controlPaths: [
-      'xd.xenesis.tools.installPlans.open',
-      'xd.xenesis.tools.views.open',
-      'xd.xenesis.connections.open',
-      'xd.panes.settings.open',
-    ],
+    controlPaths: ['xd.xenesis.tools.installPlans.open', 'xd.xenesis.tools.views.open', 'xd.xenesis.connections.open'],
     diagnostics: input.diagnostics,
     safetyBoundaries: input.safetyBoundaries ?? [
       'install plans are read/open planning surfaces',
@@ -3002,9 +2997,8 @@ function messengerViewTemplate(
           'xd.xenesis.connections.open',
           'xd.xenesis.profiles.updateChannels',
           'xd.xenesis.profiles.testChannel',
-          'xd.panes.settings.open',
         ]
-      : ['xd.xenesis.messengers.views.open', 'xd.xenesis.connections.open', 'xd.panes.settings.open'],
+      : ['xd.xenesis.messengers.views.open', 'xd.xenesis.connections.open'],
     diagnostics: implemented
       ? ['gateway-status', 'missing-env', 'allowlist', 'last-error']
       : ['planned-adapter', 'required-auth', 'safety-review'],
@@ -5528,7 +5522,7 @@ function providerViewTemplate(provider: string): XenesisConnectionProviderViewTe
       'xd.xenesis.providers.views.status',
       'xd.xenesis.status',
     ],
-    controlPaths: ['xd.xenesis.providers.views.open', 'xd.xenesis.connections.open', 'xd.panes.settings.open'],
+    controlPaths: ['xd.xenesis.providers.views.open', 'xd.xenesis.connections.open'],
     diagnostics: ['provider-footer', 'work-log-provider', 'credential-state', 'runtime-profile', 'fallback-policy'],
     safetyBoundaries: [
       'provider view opens internal setup/readiness surfaces only',
