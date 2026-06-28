@@ -1272,83 +1272,206 @@ export const XENESIS_NATURAL_RUNTIME_CONTROL_RULES = buildXenesisNaturalRuntimeR
   'runtimeControl',
 );
 
-export const XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS = {
+export type XenesisNaturalGuideActionRuleGroup = 'open' | 'status';
+export interface XenesisNaturalGuideActionRuleSpec {
+  group: XenesisNaturalGuideActionRuleGroup;
+  contextWords: readonly string[];
+}
+
+type XenesisNaturalGuideActionSpecMap = {
+  open: XenesisNaturalDeskActionTemplateDescriptor<[string, string, boolean]> & {
+    rules: readonly XenesisNaturalGuideActionRuleSpec[];
+  };
+  status: XenesisNaturalDeskActionTemplateDescriptor<[string, string]> & {
+    rules: readonly XenesisNaturalGuideActionRuleSpec[];
+  };
+};
+
+export const XENESIS_NATURAL_GUIDE_ACTION_SPECS = {
   open: {
     path: 'xd.xenesis.guides.open',
     idFor: (id: string, _label: string, _openFile: boolean) => `natural-xenesis-guide-open-${id}`,
     reasonFor: (_id: string, label: string, openFile: boolean) =>
       `Open ${label} guide${openFile ? ' file' : ''} from natural language request.`,
+    rules: [
+      {
+        group: 'open',
+        contextWords: XENESIS_NATURAL_GUIDE_CONTEXT_WORDS,
+      },
+    ],
   },
   status: {
     path: 'xd.xenesis.guides.status',
     idFor: (id: string, _label: string) => `natural-xenesis-guide-status-${id}`,
     reasonFor: (_id: string, label: string) => `Read ${label} guide catalog status from natural language request.`,
+    rules: [
+      {
+        group: 'status',
+        contextWords: XENESIS_NATURAL_GUIDE_CONTEXT_WORDS,
+      },
+    ],
   },
-} as const satisfies {
-  open: XenesisNaturalDeskActionTemplateDescriptor<[string, string, boolean]>;
-  status: XenesisNaturalDeskActionTemplateDescriptor<[string, string]>;
+} as const satisfies XenesisNaturalGuideActionSpecMap;
+
+export type XenesisNaturalOnboardingActionRuleGroup = 'open' | 'status';
+export interface XenesisNaturalOnboardingActionRuleSpec {
+  group: XenesisNaturalOnboardingActionRuleGroup;
+  contextWords: readonly string[];
+  argsKind: XenesisNaturalOnboardingActionRule['argsKind'];
+  targetRequired: boolean;
+}
+
+type XenesisNaturalOnboardingActionSpecMap = {
+  stepOpen: XenesisNaturalDeskActionTemplateDescriptor<[string, string]> & {
+    rules: readonly XenesisNaturalOnboardingActionRuleSpec[];
+  };
+  centerOpen: XenesisNaturalDeskActionDescriptor & {
+    rules: readonly XenesisNaturalOnboardingActionRuleSpec[];
+  };
+  stepStatus: XenesisNaturalDeskActionTemplateDescriptor<[string, string]> & {
+    rules: readonly XenesisNaturalOnboardingActionRuleSpec[];
+  };
 };
 
-export const XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS = {
-  centerOpen: {
-    id: 'natural-xenesis-onboarding-center-open',
-    path: 'xd.xenesis.onboarding.open',
-    reason: 'Open Xenesis onboarding checklist in Connection Center from natural language request.',
-  },
+export const XENESIS_NATURAL_ONBOARDING_ACTION_SPECS = {
   stepOpen: {
     path: 'xd.xenesis.onboarding.open',
     idFor: (id: string, _label: string) => `natural-xenesis-onboarding-open-${id}`,
     reasonFor: (_id: string, label: string) => `Open ${label} onboarding checklist step from natural language request.`,
+    rules: [
+      {
+        group: 'open',
+        contextWords: XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS,
+        argsKind: 'targetIdVisible',
+        targetRequired: true,
+      },
+    ],
+  },
+  centerOpen: {
+    id: 'natural-xenesis-onboarding-center-open',
+    path: 'xd.xenesis.onboarding.open',
+    reason: 'Open Xenesis onboarding checklist in Connection Center from natural language request.',
+    rules: [
+      {
+        group: 'open',
+        contextWords: XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS,
+        argsKind: 'ensureVisible',
+        targetRequired: false,
+      },
+    ],
   },
   stepStatus: {
     path: 'xd.xenesis.onboarding.status',
     idFor: (id: string, _label: string) => `natural-xenesis-onboarding-status-${id}`,
     reasonFor: (_id: string, label: string) =>
       `Read ${label} onboarding checklist status from natural language request.`,
+    rules: [
+      {
+        group: 'status',
+        contextWords: XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS,
+        argsKind: 'targetId',
+        targetRequired: true,
+      },
+    ],
   },
-} as const satisfies {
-  centerOpen: XenesisNaturalDeskActionDescriptor;
-  stepOpen: XenesisNaturalDeskActionTemplateDescriptor<[string, string]>;
-  stepStatus: XenesisNaturalDeskActionTemplateDescriptor<[string, string]>;
-};
+} as const satisfies XenesisNaturalOnboardingActionSpecMap;
 
-export const XENESIS_NATURAL_GUIDE_OPEN_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_GUIDE_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS.open,
-  },
-] as const satisfies readonly XenesisNaturalGuideOpenRule[];
+const buildXenesisNaturalGuideActionDescriptors = (specs: XenesisNaturalGuideActionSpecMap) =>
+  Object.fromEntries(
+    Object.entries(specs).map(([key, spec]) => [
+      key,
+      {
+        path: spec.path,
+        idFor: spec.idFor,
+        reasonFor: spec.reasonFor,
+      },
+    ]),
+  ) as {
+    readonly open: XenesisNaturalDeskActionTemplateDescriptor<[string, string, boolean]>;
+    readonly status: XenesisNaturalDeskActionTemplateDescriptor<[string, string]>;
+  };
 
-export const XENESIS_NATURAL_GUIDE_STATUS_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_GUIDE_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS.status,
-  },
-] as const satisfies readonly XenesisNaturalGuideStatusRule[];
+const buildXenesisNaturalOnboardingActionDescriptors = (specs: XenesisNaturalOnboardingActionSpecMap) =>
+  ({
+    stepOpen: {
+      path: specs.stepOpen.path,
+      idFor: specs.stepOpen.idFor,
+      reasonFor: specs.stepOpen.reasonFor,
+    },
+    centerOpen: {
+      id: specs.centerOpen.id,
+      path: specs.centerOpen.path,
+      reason: specs.centerOpen.reason,
+    },
+    stepStatus: {
+      path: specs.stepStatus.path,
+      idFor: specs.stepStatus.idFor,
+      reasonFor: specs.stepStatus.reasonFor,
+    },
+  }) as const satisfies {
+    readonly stepOpen: XenesisNaturalDeskActionTemplateDescriptor<[string, string]>;
+    readonly centerOpen: XenesisNaturalDeskActionDescriptor;
+    readonly stepStatus: XenesisNaturalDeskActionTemplateDescriptor<[string, string]>;
+  };
 
-export const XENESIS_NATURAL_ONBOARDING_OPEN_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS.stepOpen,
-    argsKind: 'targetIdVisible',
-    targetRequired: true,
-  },
-  {
-    contextWords: XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS.centerOpen,
-    argsKind: 'ensureVisible',
-    targetRequired: false,
-  },
-] as const satisfies readonly XenesisNaturalOnboardingActionRule[];
+export const XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS = buildXenesisNaturalGuideActionDescriptors(
+  XENESIS_NATURAL_GUIDE_ACTION_SPECS,
+);
 
-export const XENESIS_NATURAL_ONBOARDING_STATUS_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS.stepStatus,
-    argsKind: 'targetId',
-    targetRequired: true,
-  },
-] as const satisfies readonly XenesisNaturalOnboardingActionRule[];
+export const XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS = buildXenesisNaturalOnboardingActionDescriptors(
+  XENESIS_NATURAL_ONBOARDING_ACTION_SPECS,
+);
+
+const buildXenesisNaturalGuideActionRules = (
+  specs: XenesisNaturalGuideActionSpecMap,
+  group: XenesisNaturalGuideActionRuleGroup,
+) =>
+  Object.entries(specs).flatMap(([key, spec]) =>
+    spec.rules
+      .filter((rule) => rule.group === group)
+      .map((rule) => ({
+        contextWords: rule.contextWords,
+        action: XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS[key as keyof typeof XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS],
+      })),
+  );
+
+const buildXenesisNaturalOnboardingActionRules = (
+  specs: XenesisNaturalOnboardingActionSpecMap,
+  group: XenesisNaturalOnboardingActionRuleGroup,
+) =>
+  Object.entries(specs).flatMap(([key, spec]) =>
+    spec.rules
+      .filter((rule) => rule.group === group)
+      .map((rule) => ({
+        contextWords: rule.contextWords,
+        action:
+          XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS[
+            key as keyof typeof XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS
+          ],
+        argsKind: rule.argsKind,
+        targetRequired: rule.targetRequired,
+      })),
+  );
+
+export const XENESIS_NATURAL_GUIDE_OPEN_RULES = buildXenesisNaturalGuideActionRules(
+  XENESIS_NATURAL_GUIDE_ACTION_SPECS,
+  'open',
+) as readonly XenesisNaturalGuideOpenRule[];
+
+export const XENESIS_NATURAL_GUIDE_STATUS_RULES = buildXenesisNaturalGuideActionRules(
+  XENESIS_NATURAL_GUIDE_ACTION_SPECS,
+  'status',
+) as readonly XenesisNaturalGuideStatusRule[];
+
+export const XENESIS_NATURAL_ONBOARDING_OPEN_RULES = buildXenesisNaturalOnboardingActionRules(
+  XENESIS_NATURAL_ONBOARDING_ACTION_SPECS,
+  'open',
+) as readonly XenesisNaturalOnboardingActionRule[];
+
+export const XENESIS_NATURAL_ONBOARDING_STATUS_RULES = buildXenesisNaturalOnboardingActionRules(
+  XENESIS_NATURAL_ONBOARDING_ACTION_SPECS,
+  'status',
+) as readonly XenesisNaturalOnboardingActionRule[];
 
 type XenesisNaturalAggregateMode = 'open' | 'status';
 interface XenesisNaturalAggregateCatalogRuleSpec extends Omit<XenesisNaturalCatalogActionRule, 'action'> {
@@ -2804,15 +2927,34 @@ export const XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES = buildXenesisNatura
   'status',
 );
 
-export const XENESIS_NATURAL_OAUTH_SETUP_PACKET_TARGET_RULES = [
+interface XenesisNaturalConnectionTargetActionKeyRuleSpec
+  extends Omit<XenesisNaturalConnectionTargetActionRule, 'action'> {
+  actionKey: keyof typeof XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS;
+}
+
+export const XENESIS_NATURAL_OAUTH_SETUP_PACKET_TARGET_RULE_SPECS = [
   {
+    actionKey: 'toolOauthSetupPacket',
     targetScope: 'planned-google-tool',
     contextWords: XENESIS_NATURAL_OAUTH_SETUP_PACKET_CONTEXT_WORDS,
     requiredContextWordGroups: [['패킷', 'packet', 'redirect uri', '리디렉션']],
-    action: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.toolOauthSetupPacket,
     argsKind: 'targetId',
   },
-] as const satisfies readonly XenesisNaturalConnectionTargetActionRule[];
+] as const satisfies readonly XenesisNaturalConnectionTargetActionKeyRuleSpec[];
+
+export const buildXenesisNaturalConnectionTargetActionKeyRules = (
+  actionDescriptors: typeof XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS,
+  specs: readonly XenesisNaturalConnectionTargetActionKeyRuleSpec[],
+) =>
+  specs.map(({ actionKey, ...rule }) => ({
+    ...rule,
+    action: actionDescriptors[actionKey],
+  })) as readonly XenesisNaturalConnectionTargetActionRule[];
+
+export const XENESIS_NATURAL_OAUTH_SETUP_PACKET_TARGET_RULES = buildXenesisNaturalConnectionTargetActionKeyRules(
+  XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS,
+  XENESIS_NATURAL_OAUTH_SETUP_PACKET_TARGET_RULE_SPECS,
+);
 
 export const XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS = buildXenesisNaturalTargetActionDescriptors(
   XENESIS_NATURAL_CONNECTION_TARGET_SURFACE_SPECS,
@@ -3024,15 +3166,41 @@ export const XENESIS_NATURAL_CONNECTION_SETUP_APPLY_TARGET_RULES =
     'connectionSetupApply',
   ]);
 
-export const XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS = {
-  providerProfileDraft: XENESIS_NATURAL_PROVIDER_ACTION_REQUEST_DESCRIPTORS.providerProfileDraftRequest,
-  toolInstallPlan: XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_DESCRIPTORS.toolInstallPlanRequest,
-  toolMcpInstallDraft: XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_DESCRIPTORS.toolMcpInstallDraftRequest,
-  toolOauthDraft: XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_DESCRIPTORS.toolOauthDraftRequest,
-  toolActionPolicy: XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_DESCRIPTORS.toolActionPolicyRequest,
-  channelProfileDraft: XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_DESCRIPTORS.channelProfileDraftRequest,
-  connectionSetupRequest: XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_DESCRIPTORS.connectionSetupRequest,
-} as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
+export const XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTOR_SPECS = [
+  { alias: 'providerProfileDraft', source: 'provider', key: 'providerProfileDraftRequest' },
+  { alias: 'toolInstallPlan', source: 'connectionTarget', key: 'toolInstallPlanRequest' },
+  { alias: 'toolMcpInstallDraft', source: 'connectionTarget', key: 'toolMcpInstallDraftRequest' },
+  { alias: 'toolOauthDraft', source: 'connectionTarget', key: 'toolOauthDraftRequest' },
+  { alias: 'toolActionPolicy', source: 'connectionTarget', key: 'toolActionPolicyRequest' },
+  { alias: 'channelProfileDraft', source: 'connectionTarget', key: 'channelProfileDraftRequest' },
+  { alias: 'connectionSetupRequest', source: 'connectionTarget', key: 'connectionSetupRequest' },
+] as const satisfies readonly {
+  alias: string;
+  source: 'provider' | 'connectionTarget';
+  key: string;
+}[];
+
+export const buildXenesisNaturalReviewRequestActionDescriptors = (
+  providerDescriptors: Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>,
+  connectionTargetDescriptors: Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>,
+  specs: typeof XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTOR_SPECS,
+) => {
+  const sources = {
+    provider: providerDescriptors,
+    connectionTarget: connectionTargetDescriptors,
+  } as const;
+
+  return Object.fromEntries(specs.map((spec) => [spec.alias, sources[spec.source][spec.key]])) as Record<
+    string,
+    XenesisNaturalDeskActionTemplateDescriptor<[string, string]>
+  >;
+};
+
+export const XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS = buildXenesisNaturalReviewRequestActionDescriptors(
+  XENESIS_NATURAL_PROVIDER_ACTION_REQUEST_DESCRIPTORS,
+  XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_DESCRIPTORS,
+  XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTOR_SPECS,
+);
 
 export const XENESIS_NATURAL_REVIEW_REQUEST_PROVIDER_RULES = buildXenesisNaturalProviderActionRequestRules(
   XENESIS_NATURAL_PROVIDER_ACTION_REQUEST_SPECS,

@@ -23,6 +23,7 @@ import {
   XENESIS_NATURAL_CONNECTION_AGGREGATE_SURFACE_SPECS,
   XENESIS_NATURAL_CONNECTION_SETUP_APPLY_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_CONNECTION_SETUP_APPLY_TARGET_RULES,
+  XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_DESCRIPTORS,
   XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_SPECS,
   XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES,
@@ -51,6 +52,7 @@ import {
   XENESIS_NATURAL_EXPLORER_SIMPLE_RULES,
   XENESIS_NATURAL_GATEWAY_ACTION_RULES,
   XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS,
+  XENESIS_NATURAL_GUIDE_ACTION_SPECS,
   XENESIS_NATURAL_GUIDE_OPEN_RULES,
   XENESIS_NATURAL_GUIDE_STATUS_RULES,
   XENESIS_NATURAL_MCP_INSTALL_DRAFT_APPLY_ACTION_DESCRIPTORS,
@@ -60,10 +62,14 @@ import {
   XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_RULES,
   XENESIS_NATURAL_MESSENGER_AGGREGATE_SURFACE_SPECS,
+  XENESIS_NATURAL_OAUTH_SETUP_PACKET_TARGET_RULE_SPECS,
+  XENESIS_NATURAL_OAUTH_SETUP_PACKET_TARGET_RULES,
   XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS,
+  XENESIS_NATURAL_ONBOARDING_ACTION_SPECS,
   XENESIS_NATURAL_ONBOARDING_OPEN_RULES,
   XENESIS_NATURAL_ONBOARDING_STATUS_RULES,
   XENESIS_NATURAL_PROFILE_INVENTORY_RULES,
+  XENESIS_NATURAL_PROVIDER_ACTION_REQUEST_DESCRIPTORS,
   XENESIS_NATURAL_PROVIDER_ACTION_REQUEST_SPECS,
   XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_RULES,
@@ -77,6 +83,7 @@ import {
   XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_PROVIDER_STATUS_RULES,
   XENESIS_NATURAL_PROVIDER_TARGET_SURFACE_SPECS,
+  XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTOR_SPECS,
   XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_REVIEW_REQUEST_PROVIDER_RULES,
   XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES,
@@ -2646,6 +2653,155 @@ test('natural runtime actions are generated from shared runtime action specs', (
   assert.deepEqual(
     runtimeRuleSummaries(XENESIS_NATURAL_RUNTIME_CONTROL_RULES),
     runtimeSpecRuleSummaries('runtimeControl'),
+  );
+});
+
+test('natural auxiliary actions are generated from shared auxiliary specs', () => {
+  type AuxiliaryRuleSpecLike = {
+    actionKey?: string;
+    argsKind?: string;
+    contextWords: readonly string[];
+    requiredContextWordGroups?: readonly (readonly string[])[];
+    targetRequired?: boolean;
+    targetScope?: string;
+  };
+  type AuxiliaryRuleLike = AuxiliaryRuleSpecLike & {
+    action: {
+      path: string;
+    };
+  };
+  const summarizeAuxiliaryRule = (path: string, rule: AuxiliaryRuleSpecLike) => ({
+    path,
+    targetScope: rule.targetScope ?? '',
+    contextWords: [...rule.contextWords],
+    requiredContextWordGroups: (rule.requiredContextWordGroups ?? []).map((words) => [...words]),
+    argsKind: rule.argsKind ?? '',
+    targetRequired: rule.targetRequired ?? null,
+  });
+  const summarizeAuxiliaryRules = (rules: readonly AuxiliaryRuleLike[]) =>
+    rules.map((rule) => summarizeAuxiliaryRule(rule.action.path, rule));
+
+  const guideSpecEntries = Object.entries(XENESIS_NATURAL_GUIDE_ACTION_SPECS);
+  const summarizeGuideDescriptor = (
+    key: string,
+    descriptor: (typeof XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS)[keyof typeof XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS],
+  ) => {
+    if (key === 'open') {
+      const openDescriptor = descriptor as typeof XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS.open;
+      return {
+        path: openDescriptor.path,
+        id: openDescriptor.idFor('provider', 'Provider', false),
+        fileId: openDescriptor.idFor('provider', 'Provider', true),
+        reason: openDescriptor.reasonFor('provider', 'Provider', false),
+        fileReason: openDescriptor.reasonFor('provider', 'Provider', true),
+      };
+    }
+
+    const statusDescriptor = descriptor as typeof XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS.status;
+    return {
+      path: statusDescriptor.path,
+      id: statusDescriptor.idFor('provider', 'Provider'),
+      reason: statusDescriptor.reasonFor('provider', 'Provider'),
+    };
+  };
+
+  assert.deepEqual(
+    Object.keys(XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS),
+    guideSpecEntries.map(([key]) => key),
+  );
+  assert.deepEqual(
+    Object.fromEntries(
+      Object.entries(XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS).map(([key, descriptor]) => [
+        key,
+        summarizeGuideDescriptor(key, descriptor),
+      ]),
+    ),
+    Object.fromEntries(guideSpecEntries.map(([key, spec]) => [key, summarizeGuideDescriptor(key, spec)])),
+  );
+  assert.deepEqual(
+    summarizeAuxiliaryRules(XENESIS_NATURAL_GUIDE_OPEN_RULES),
+    guideSpecEntries.flatMap(([, spec]) =>
+      (spec.rules ?? []).filter((rule) => rule.group === 'open').map((rule) => summarizeAuxiliaryRule(spec.path, rule)),
+    ),
+  );
+  assert.deepEqual(
+    summarizeAuxiliaryRules(XENESIS_NATURAL_GUIDE_STATUS_RULES),
+    guideSpecEntries.flatMap(([, spec]) =>
+      (spec.rules ?? [])
+        .filter((rule) => rule.group === 'status')
+        .map((rule) => summarizeAuxiliaryRule(spec.path, rule)),
+    ),
+  );
+
+  const onboardingSpecEntries = Object.entries(XENESIS_NATURAL_ONBOARDING_ACTION_SPECS);
+  const summarizeOnboardingDescriptor = (
+    key: string,
+    descriptor: (typeof XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS)[keyof typeof XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS],
+  ) =>
+    key === 'centerOpen'
+      ? {
+          id: 'id' in descriptor ? descriptor.id : '',
+          path: descriptor.path,
+          reason: 'reason' in descriptor ? descriptor.reason : '',
+        }
+      : {
+          path: descriptor.path,
+          id: 'idFor' in descriptor ? descriptor.idFor('gateway', 'Gateway') : '',
+          reason: 'reasonFor' in descriptor ? descriptor.reasonFor('gateway', 'Gateway') : '',
+        };
+
+  assert.deepEqual(
+    Object.keys(XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS),
+    onboardingSpecEntries.map(([key]) => key),
+  );
+  assert.deepEqual(
+    Object.fromEntries(
+      Object.entries(XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS).map(([key, descriptor]) => [
+        key,
+        summarizeOnboardingDescriptor(key, descriptor),
+      ]),
+    ),
+    Object.fromEntries(onboardingSpecEntries.map(([key, spec]) => [key, summarizeOnboardingDescriptor(key, spec)])),
+  );
+  assert.deepEqual(
+    summarizeAuxiliaryRules(XENESIS_NATURAL_ONBOARDING_OPEN_RULES),
+    onboardingSpecEntries.flatMap(([, spec]) =>
+      (spec.rules ?? []).filter((rule) => rule.group === 'open').map((rule) => summarizeAuxiliaryRule(spec.path, rule)),
+    ),
+  );
+  assert.deepEqual(
+    summarizeAuxiliaryRules(XENESIS_NATURAL_ONBOARDING_STATUS_RULES),
+    onboardingSpecEntries.flatMap(([, spec]) =>
+      (spec.rules ?? [])
+        .filter((rule) => rule.group === 'status')
+        .map((rule) => summarizeAuxiliaryRule(spec.path, rule)),
+    ),
+  );
+
+  assert.deepEqual(
+    summarizeAuxiliaryRules(XENESIS_NATURAL_OAUTH_SETUP_PACKET_TARGET_RULES),
+    XENESIS_NATURAL_OAUTH_SETUP_PACKET_TARGET_RULE_SPECS.map((spec) =>
+      summarizeAuxiliaryRule(
+        XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS[
+          spec.actionKey as keyof typeof XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS
+        ].path,
+        spec,
+      ),
+    ),
+  );
+
+  const descriptorSources = {
+    provider: XENESIS_NATURAL_PROVIDER_ACTION_REQUEST_DESCRIPTORS,
+    connectionTarget: XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_DESCRIPTORS,
+  } as Record<string, Record<string, unknown>>;
+  assert.deepEqual(
+    Object.fromEntries(Object.entries(XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS)),
+    Object.fromEntries(
+      XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTOR_SPECS.map((spec) => [
+        spec.alias,
+        descriptorSources[spec.source]?.[spec.key],
+      ]),
+    ),
   );
 });
 

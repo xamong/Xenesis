@@ -15040,3 +15040,64 @@ Verification so far:
     diagnostics outside this slice; scoped Biome check for changed files passes.
 - Next intended step:
   - Add Obsidian working note, stage, and commit this Desk core spec slice.
+
+## Current Auxiliary Natural Routing Surface Spec Slice
+
+- Current objective:
+  - Continue the hardcoding-removal cycle by deriving remaining auxiliary
+    natural routing descriptors/rules from shared specs.
+- Rationale:
+  - After aggregate, target, action-request, runtime, and Desk core routing
+    specs, the remaining direct natural routing data in
+    `xenesisNaturalLanguageCapabilityCatalog.ts` is concentrated in
+    guide/onboarding template descriptors, OAuth setup packet special rules, and
+    review-request descriptor aliases.
+- Scope:
+  - Add RED tests requiring shared specs for guide actions, onboarding actions,
+    OAuth setup packet target rules, and review-request descriptor aliases.
+  - Preserve existing exported names, action ids, CR paths, reasons, rule order,
+    context words, args behavior, and resolver behavior.
+- Touched files so far:
+  - `handoff.md`
+- Commands run:
+  - `git status --short --branch` -> clean `agent/upcoming-work-20260627`.
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> failed 43/44 because auxiliary specs such as
+    `XENESIS_NATURAL_GUIDE_ACTION_SPECS` were not implemented.
+  - GREEN:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 44/44.
+  - `npm run typecheck` -> passed after narrowing the guide descriptor test
+    helper.
+  - `npx biome check src\shared\xenesisNaturalLanguageCapabilityCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts handoff.md`
+    -> checked 2 files, no fixes applied.
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` -> passed
+    6/6.
+  - `npm run docs:capabilities:audit` -> passed, wrote
+    `docs/capability-registry-audit.md`.
+  - `npm run smoke:xenesis:natural-desk-routing` -> passed 180/180.
+  - `rg -n "Missing|Undispatched|Dispatcher paths missing" docs\capability-registry-audit.md`
+    -> missing registered paths 0, missing dispatched coverage paths 0,
+    undispatched static callable methods 0, dispatcher paths missing from tree
+    0.
+- Implemented:
+  - Added `XENESIS_NATURAL_GUIDE_ACTION_SPECS` and generated guide action
+    descriptors plus open/status rules from it.
+  - Added `XENESIS_NATURAL_ONBOARDING_ACTION_SPECS` and generated onboarding
+    action descriptors plus open/status rules from it.
+  - Added `XENESIS_NATURAL_OAUTH_SETUP_PACKET_TARGET_RULE_SPECS` and generated
+    the OAuth setup packet target rule from the status action descriptor key.
+  - Added `XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTOR_SPECS` and
+    generated review-request descriptor aliases from provider/connection
+    action-request descriptors.
+  - Preserved existing ids, CR paths, reasons, context words, target scopes,
+    args behavior, and visible smoke behavior.
+- Known gaps:
+  - Natural-language routing remains deterministic catalog routing, not model
+    reasoning.
+  - Repository-wide `npm run lint` was already known to fail on pre-existing
+    Biome diagnostics outside this slice; changed-file Biome check passes.
+- Next intended step:
+  - Add Obsidian working note, run final diff checks, and commit this auxiliary
+    spec slice.
