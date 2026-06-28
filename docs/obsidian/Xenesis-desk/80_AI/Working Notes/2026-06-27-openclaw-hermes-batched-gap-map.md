@@ -3323,6 +3323,71 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Review Request Rule Catalog Refactor Slice
+
+- Started the next hardcoding cleanup slice for Connection Center review/setup
+  request action selection.
+- Intended change:
+  - add shared review request provider and target rule catalogs;
+  - have `xenesisAgentDeskControl.ts` interpret those rules instead of
+    branching directly on `REVIEW_REQUEST_ACTIONS.*`;
+  - preserve current priority: provider profile draft, install plan, MCP install
+    review, OAuth draft, action policy, channel profile draft, generic setup
+    request fallback.
+- Scope boundary:
+  - Refactor only.
+  - Do not change registry/dispatcher paths, provider/tool/channel request
+    payloads, approval behavior, credentials, external execution, or UI
+    rendering.
+- Verification plan:
+  - RED focused planner/source-guard test first;
+  - GREEN focused planner test;
+  - scoped Biome for catalog/planner/test files;
+  - root typecheck, build, natural Desk routing live smoke, and diff check
+    before commit.
+- RED verification:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    failed as expected with 36/37 passing because the planner still imports and
+    references review request action descriptors directly.
+- Implementation:
+  - Added review request provider and target rule catalogs in
+    `xenesisNaturalLanguageCatalog.ts`.
+  - Replaced direct review request if-chains in `xenesisAgentDeskControl.ts`
+    with shared provider/connection-target rule interpretation.
+- GREEN verification:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 37/37 tests.
+  - `npx biome format --write src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    formatted 3 files and fixed 1 file; focused planner test still passed
+    with 37/37 tests afterward.
+  - `npx biome check src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --max-diagnostics 80`
+    failed with 1 unused-import error and 1 import-order warning in
+    `xenesisAgentDeskControl.ts`.
+  - After import cleanup, scoped Biome passed, but the focused planner test
+    failed with 36/37 passing because the source guard still expected
+    review-specific vocabulary such as `XENESIS_NATURAL_OAUTH_CONTEXT_WORDS`
+    to remain in the planner file.
+  - Updated the source guard so review-specific vocabulary is validated through
+    shared rule catalogs instead of the planner source. Focused planner test
+    then passed with 37/37 tests and scoped Biome exited 0 with no fixes
+    applied.
+  - `npm run typecheck` passed.
+  - `npm run build` passed; Vite emitted the existing browser `fs`
+    externalization warning for `hwp.js` and the existing dynamic/static import
+    chunking warning for `deskBridge.ts`.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 21/21 through the
+    built Electron app.
+  - Static hardcoding check found no remaining planner direct review request
+    action descriptor or `REVIEW_REQUEST_ACTIONS.*` matches in
+    `xenesisAgentDeskControl.ts`.
+  - `git diff --check` exited 0 with LF-to-CRLF working-copy warnings for
+    touched tracked files only.
+  - CR audit was not run because this slice only refactors planner/catalog rule
+    interpretation and does not change registry, dispatcher, or capability
+    coverage.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

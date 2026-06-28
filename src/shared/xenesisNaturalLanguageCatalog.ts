@@ -2655,6 +2655,55 @@ export const XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS = {
   },
 } as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
 
+export const XENESIS_NATURAL_REVIEW_REQUEST_PROVIDER_RULES = [
+  {
+    contextWords: [],
+    action: XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS.providerProfileDraft,
+    argsKind: 'provider',
+    fallback: true,
+  },
+] as const satisfies readonly XenesisNaturalProviderActionRule[];
+
+export const XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES = [
+  {
+    targetScope: 'tool',
+    contextWords: XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS.toolInstallPlan,
+    argsKind: 'targetId',
+  },
+  {
+    targetScope: 'tool',
+    contextWords: XENESIS_NATURAL_MCP_INSTALL_REVIEW_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS.toolMcpInstallDraft,
+    argsKind: 'targetId',
+  },
+  {
+    targetScope: 'planned-google-tool',
+    contextWords: XENESIS_NATURAL_OAUTH_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS.toolOauthDraft,
+    argsKind: 'targetId',
+  },
+  {
+    targetScope: 'tool',
+    contextWords: XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS.toolActionPolicy,
+    argsKind: 'targetId',
+  },
+  {
+    targetScope: 'messenger',
+    contextWords: XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_REQUEST_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS.channelProfileDraft,
+    argsKind: 'channel',
+  },
+  {
+    targetScope: 'any',
+    contextWords: [],
+    action: XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS.connectionSetupRequest,
+    argsKind: 'targetId',
+    fallback: true,
+  },
+] as const satisfies readonly XenesisNaturalConnectionTargetActionRule[];
+
 export const XENESIS_NATURAL_PLACEMENT_TARGETS = [
   { id: 'right', label: 'right', words: ['오른쪽', '우측', 'right'] },
   { id: 'left', label: 'left', words: ['왼쪽', '좌측', 'left'] },

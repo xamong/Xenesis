@@ -94,7 +94,8 @@ import {
   XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_PROVIDER_STATUS_RULES,
   XENESIS_NATURAL_REPORT_CONTEXT_WORDS,
-  XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS,
+  XENESIS_NATURAL_REVIEW_REQUEST_PROVIDER_RULES,
+  XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES,
   XENESIS_NATURAL_RUN_CONTEXT_WORDS,
   XENESIS_NATURAL_RUN_START_CONTEXT_WORDS,
   XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS,
@@ -162,11 +163,11 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_DRAFT_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_OAUTH_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_OAUTH_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_SETUP_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_SAFETY_CONTEXT_WORDS/);
@@ -1014,25 +1015,72 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.channelRouting.reasonFor('telegram', 'Telegram'),
     'Open Telegram channel routing from natural language request.',
   );
-  assert.match(source, /XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS/);
+  assert.match(source, /XENESIS_NATURAL_REVIEW_REQUEST_PROVIDER_RULES/);
+  assert.match(source, /XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES/);
   assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-provider-profile-draft-request-\$\{provider\.id\}`/);
   assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-tool-mcp-install-draft-request-\$\{target\.id\}`/);
   assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-connection-setup-request-\$\{target\.id\}`/);
-  assert.equal(
-    XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS.providerProfileDraft.idFor('auto', 'Auto'),
-    'natural-xenesis-provider-profile-draft-request-auto',
+  assert.doesNotMatch(source, /REVIEW_REQUEST_ACTIONS\.providerProfileDraft/);
+  assert.doesNotMatch(source, /REVIEW_REQUEST_ACTIONS\.toolInstallPlan/);
+  assert.doesNotMatch(source, /REVIEW_REQUEST_ACTIONS\.toolMcpInstallDraft/);
+  assert.doesNotMatch(source, /REVIEW_REQUEST_ACTIONS\.toolOauthDraft/);
+  assert.doesNotMatch(source, /REVIEW_REQUEST_ACTIONS\.toolActionPolicy/);
+  assert.doesNotMatch(source, /REVIEW_REQUEST_ACTIONS\.channelProfileDraft/);
+  assert.doesNotMatch(source, /REVIEW_REQUEST_ACTIONS\.connectionSetupRequest/);
+  assert.deepEqual(
+    XENESIS_NATURAL_REVIEW_REQUEST_PROVIDER_RULES.map((rule) => ({
+      argsKind: rule.argsKind,
+      path: rule.action.path,
+      fallback: 'fallback' in rule && rule.fallback === true,
+    })),
+    [{ argsKind: 'provider', path: 'xd.xenesis.providers.profileDrafts.request', fallback: true }],
   );
-  assert.equal(
-    XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS.providerProfileDraft.reasonFor('auto', 'Auto'),
-    'Request AI provider profile draft review from natural language request.',
-  );
-  assert.equal(
-    XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS.toolMcpInstallDraft.path,
-    'xd.xenesis.tools.mcpInstallDrafts.request',
-  );
-  assert.equal(
-    XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS.connectionSetupRequest.reasonFor('notion', 'Notion'),
-    'Request Notion connection setup review from natural language request.',
+  assert.deepEqual(
+    XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES.map((rule) => ({
+      targetScope: rule.targetScope,
+      argsKind: rule.argsKind,
+      path: rule.action.path,
+      fallback: 'fallback' in rule && rule.fallback === true,
+    })),
+    [
+      {
+        targetScope: 'tool',
+        argsKind: 'targetId',
+        path: 'xd.xenesis.tools.installPlans.request',
+        fallback: false,
+      },
+      {
+        targetScope: 'tool',
+        argsKind: 'targetId',
+        path: 'xd.xenesis.tools.mcpInstallDrafts.request',
+        fallback: false,
+      },
+      {
+        targetScope: 'planned-google-tool',
+        argsKind: 'targetId',
+        path: 'xd.xenesis.tools.oauthDrafts.request',
+        fallback: false,
+      },
+      {
+        targetScope: 'tool',
+        argsKind: 'targetId',
+        path: 'xd.xenesis.tools.actions.request',
+        fallback: false,
+      },
+      {
+        targetScope: 'messenger',
+        argsKind: 'channel',
+        path: 'xd.xenesis.channels.profileDrafts.request',
+        fallback: false,
+      },
+      {
+        targetScope: 'any',
+        argsKind: 'targetId',
+        path: 'xd.xenesis.connections.setupRequests.request',
+        fallback: true,
+      },
+    ],
   );
   assert.match(source, /XENESIS_NATURAL_PLACEMENT_TARGETS/);
   assert.match(source, /XENESIS_NATURAL_DOCK_SIDE_TARGETS/);
