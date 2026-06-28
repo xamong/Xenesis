@@ -6,6 +6,7 @@ import type {
   XenesisConnectionChannelProfileDraftTemplate,
   XenesisConnectionChannelRoutingTemplate,
   XenesisConnectionChannelSafetyTemplate,
+  XenesisConnectionChannelSetupPlanTemplate,
   XenesisConnectionChannelUserStoryTemplate,
   XenesisConnectionDiagnosticRunbookTemplate,
   XenesisConnectionGuideCatalogTemplate,
@@ -70,6 +71,7 @@ export const XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES = {
   'tool-view': 'data-xenesis-tool-view',
   'tool-user-story': 'data-xenesis-tool-user-story',
   'messenger-view': 'data-xenesis-messenger-view',
+  'channel-setup-plan': 'data-xenesis-channel-setup-plan',
   'mcp-template': 'data-xenesis-mcp-template',
   'channel-profile-draft': 'data-xenesis-channel-profile-draft',
   'channel-template': 'data-xenesis-channel-template',
@@ -203,6 +205,10 @@ export function formatXenesisToolInstallPlanSummary(plan: XenesisConnectionToolI
 }
 
 export function formatXenesisToolSetupPlanSummary(plan: XenesisConnectionToolSetupPlanTemplate): string {
+  return `${plan.runtimeSupport} / ${plan.steps.length} guided step(s) / ${plan.blockedActions.length} blocked action(s)`;
+}
+
+export function formatXenesisChannelSetupPlanSummary(plan: XenesisConnectionChannelSetupPlanTemplate): string {
   return `${plan.runtimeSupport} / ${plan.steps.length} guided step(s) / ${plan.blockedActions.length} blocked action(s)`;
 }
 
@@ -360,6 +366,20 @@ export function buildXenesisToolSetupPlanRequest(item: XenesisConnectionItem): M
   if (!item.toolSetupPlan) return null;
   return {
     path: 'xd.xenesis.tools.setupPlans.status',
+    args: {
+      id: item.id,
+    },
+    source: 'xenesis',
+    approved: false,
+  };
+}
+
+export function buildXenesisChannelSetupPlanRequest(
+  item: XenesisConnectionItem,
+): McpBridgeCapabilityCallRequest | null {
+  if (!item.channelSetupPlan) return null;
+  return {
+    path: 'xd.xenesis.channels.setupPlans.status',
     args: {
       id: item.id,
     },

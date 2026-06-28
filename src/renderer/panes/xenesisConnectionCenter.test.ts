@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import type {
+  XenesisConnectionChannelSetupPlanTemplate,
   XenesisConnectionItem,
   XenesisConnectionOnboardingGuidedStep,
   XenesisConnectionProviderProfileDraftReviewStep,
@@ -11,6 +12,7 @@ import type {
 import {
   buildXenesisChannelProfileDraftApplyRequest,
   buildXenesisChannelProfileDraftRequest,
+  buildXenesisChannelSetupPlanRequest,
   buildXenesisChannelTestRequest,
   buildXenesisConnectionGuideRequest,
   buildXenesisConnectionOpenRequest,
@@ -30,6 +32,7 @@ import {
   formatXenesisChannelProfileDraftSummary,
   formatXenesisChannelRoutingSummary,
   formatXenesisChannelSafetySummary,
+  formatXenesisChannelSetupPlanSummary,
   formatXenesisChannelUserStorySummary,
   formatXenesisConnectionDiagnosticRunbookSummary,
   formatXenesisConnectionGuidedStepDetail,
@@ -78,6 +81,10 @@ test('xenesisConnectionTone maps every status to a stable UI tone', () => {
 });
 
 test('xenesis detail focus selector maps CR detail values to existing data attributes', () => {
+  assert.equal(
+    XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['channel-setup-plan'],
+    'data-xenesis-channel-setup-plan',
+  );
   assert.equal(XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['tool-setup-plan'], 'data-xenesis-tool-setup-plan');
   assert.equal(XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['tool-oauth-draft'], 'data-xenesis-tool-oauth-draft');
   assert.equal(XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['channel-routing'], 'data-xenesis-channel-routing');
@@ -85,6 +92,7 @@ test('xenesis detail focus selector maps CR detail values to existing data attri
     XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['provider-profile-draft'],
     'data-xenesis-provider-profile-draft',
   );
+  assert.equal(xenesisConnectionDetailFocusSelector('channel-setup-plan'), '[data-xenesis-channel-setup-plan]');
   assert.equal(xenesisConnectionDetailFocusSelector('tool-setup-plan'), '[data-xenesis-tool-setup-plan]');
   assert.equal(xenesisConnectionDetailFocusSelector('tool-oauth-draft'), '[data-xenesis-tool-oauth-draft]');
   assert.equal(xenesisConnectionDetailFocusSelector('channel-routing'), '[data-xenesis-channel-routing]');
@@ -954,6 +962,73 @@ test('buildXenesisToolSetupPlanRequest targets the setup-plan CR read path', () 
   });
 
   assert.equal(buildXenesisToolSetupPlanRequest({ ...item, toolSetupPlan: undefined }), null);
+});
+
+test('formatXenesisChannelSetupPlanSummary describes runtime support, guided steps, and blocked actions', () => {
+  const plan: XenesisConnectionChannelSetupPlanTemplate = {
+    planStatus: 'planned',
+    runtimeSupport: 'planned-adapter',
+    guideId: 'openclaw-channel-setup',
+    guidePath: 'docs/manual/10-openclaw-channel-setup.md',
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    setupSurface: 'Settings > Xenesis Agent > External bots',
+    reviewSurface: 'Desk Action Inbox',
+    steps: [
+      {
+        id: 'channel-profile-draft',
+        label: 'Review channel profile draft',
+        kind: 'request',
+        crPath: 'xd.xenesis.channels.profileDrafts.request',
+        args: { id: 'signal' },
+        expectedState: 'Signal profile draft can be reviewed before adapter work exists.',
+        verifyWith: ['planned-channel-profile-draft'],
+        safetyBoundary: 'Profile draft review does not write settings or pair devices.',
+      },
+    ],
+    readPaths: ['xd.xenesis.channels.setupPlans.status', 'xd.xenesis.channels.profileDrafts.status'],
+    controlPaths: ['xd.xenesis.channels.setupPlans.open', 'xd.xenesis.channels.profileDrafts.request'],
+    diagnostics: ['planned-channel-template'],
+    blockedActions: ['start planned channel gateway adapters'],
+    safetyBoundaries: ['setup plans do not start gateway adapters'],
+  };
+
+  assert.equal(formatXenesisChannelSetupPlanSummary(plan), 'planned-adapter / 1 guided step(s) / 1 blocked action(s)');
+});
+
+test('buildXenesisChannelSetupPlanRequest targets the channel setup-plan CR read path', () => {
+  const item = {
+    id: 'telegram',
+    kind: 'messenger',
+    label: 'Telegram',
+    status: 'needs-setup',
+    summary: 'Telegram bot setup.',
+    channelSetupPlan: {
+      planStatus: 'action-required',
+      runtimeSupport: 'implemented',
+      guideId: 'openclaw-channel-setup',
+      guidePath: 'docs/manual/10-openclaw-channel-setup.md',
+      primarySurface: 'Settings > Xenesis Agent > Connections',
+      setupSurface: 'Settings > Xenesis Agent > External bots',
+      reviewSurface: 'Desk Action Inbox',
+      steps: [],
+      readPaths: ['xd.xenesis.channels.setupPlans.status'],
+      controlPaths: ['xd.xenesis.channels.setupPlans.open'],
+      diagnostics: ['gateway-status'],
+      blockedActions: ['send messages outside approved profile test path'],
+      safetyBoundaries: ['channel setup plans are review-only'],
+    },
+  } satisfies XenesisConnectionItem;
+
+  assert.deepEqual(buildXenesisChannelSetupPlanRequest(item), {
+    path: 'xd.xenesis.channels.setupPlans.status',
+    args: {
+      id: 'telegram',
+    },
+    source: 'xenesis',
+    approved: false,
+  });
+
+  assert.equal(buildXenesisChannelSetupPlanRequest({ ...item, channelSetupPlan: undefined }), null);
 });
 
 test('formatXenesisMcpInstallDraftSummary describes server, transport, and draft status', () => {

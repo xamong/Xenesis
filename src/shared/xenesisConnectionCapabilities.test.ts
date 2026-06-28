@@ -9,6 +9,7 @@ import {
 } from './deskBridgeCapabilities';
 import {
   buildXenesisConnectionCenterOpenArgs,
+  XENESIS_CONNECTION_MESSENGER_IDS,
   XENESIS_CONNECTION_PROVIDER_IDS,
   XENESIS_CONNECTION_TOOL_IDS,
 } from './xenesisConnections';
@@ -92,6 +93,7 @@ test('xenesis connection open capabilities expose detail focus selectors', () =>
   assertOpenCapabilityDetailFocus('xd.xenesis.channels.safety.open', 'channel-safety');
   assertOpenCapabilityDetailFocus('xd.xenesis.channels.accessGroups.open', 'channel-access-groups');
   assertOpenCapabilityDetailFocus('xd.xenesis.channels.pairing.open', 'channel-pairing');
+  assertOpenCapabilityDetailFocus('xd.xenesis.channels.setupPlans.open', 'channel-setup-plan');
   assertOpenCapabilityDetailFocus('xd.xenesis.channels.profileDrafts.open', 'channel-profile-draft');
   assertOpenCapabilityDetailFocus('xd.xenesis.messengers.views.open', 'messenger-view');
   assertOpenCapabilityDetailFocus('xd.xenesis.providers.routing.open', 'provider-routing');
@@ -1675,12 +1677,17 @@ test('xenesis messenger and channel open capabilities allow catalog opens withou
     'xd.xenesis.channels.accessGroups.open',
     'xd.xenesis.channels.pairing.open',
     'xd.xenesis.channels.userStories.open',
+    'xd.xenesis.channels.setupPlans.open',
     'xd.xenesis.channels.profileDrafts.open',
     'xd.xenesis.messengers.views.open',
   ];
   for (const path of openPaths) {
     const selectorField =
-      path === 'xd.xenesis.messengers.views.open' || path === 'xd.xenesis.channels.userStories.open' ? 'id' : 'channel';
+      path === 'xd.xenesis.messengers.views.open' ||
+      path === 'xd.xenesis.channels.userStories.open' ||
+      path === 'xd.xenesis.channels.setupPlans.open'
+        ? 'id'
+        : 'channel';
     assert.equal(
       schemaRequiredFields(findDeskBridgeCapability(path)).includes(selectorField),
       false,
@@ -1708,6 +1715,10 @@ test('xenesis messenger and channel open capabilities allow catalog opens withou
     },
     openXenesisChannelUserStory: (args) => {
       calls.push({ path: 'xd.xenesis.channels.userStories.open', args });
+      return { ok: true, total: 7 };
+    },
+    openXenesisChannelSetupPlan: (args) => {
+      calls.push({ path: 'xd.xenesis.channels.setupPlans.open', args });
       return { ok: true, total: 7 };
     },
     openXenesisChannelProfileDraft: (args) => {
@@ -1862,6 +1873,77 @@ test('xenesis tool setup plan capabilities are registered and dispatch to the ad
   assert.deepEqual(openResult.result, {
     ok: true,
     item: { id: 'google-calendar', runtimeSupport: 'planned-oauth' },
+  });
+});
+
+test('xenesis channel setup plan capabilities are registered and dispatch to the adapter', async () => {
+  const statusCapability = findDeskBridgeCapability('xd.xenesis.channels.setupPlans.status');
+  const openCapability = findDeskBridgeCapability('xd.xenesis.channels.setupPlans.open');
+  const statusSchemaProperties = (statusCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
+  assert.equal(statusCapability?.permission, 'read');
+  assert.equal(statusCapability?.approval, 'never');
+  assert.equal(openCapability?.permission, 'control');
+  assert.equal(openCapability?.approval, 'never');
+  assert.equal(schemaRequiredFields(openCapability).includes('id'), false);
+  assertOpenCapabilityDetailFocus('xd.xenesis.channels.setupPlans.open', 'channel-setup-plan');
+  for (const channel of XENESIS_CONNECTION_MESSENGER_IDS) {
+    assert.equal(statusSchemaProperties.id?.enum.includes(channel), true, `${channel} should be accepted by status`);
+    assert.equal(
+      statusSchemaProperties.channel?.enum.includes(channel),
+      true,
+      `${channel} should be accepted by status alias`,
+    );
+    assert.equal(openSchemaProperties.id?.enum.includes(channel), true, `${channel} should be accepted by open`);
+    assert.equal(
+      openSchemaProperties.channel?.enum.includes(channel),
+      true,
+      `${channel} should be accepted by open alias`,
+    );
+  }
+
+  const calls: Array<{ method: string; args: unknown }> = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisChannelSetupPlansStatus: (args) => {
+      calls.push({ method: 'status', args });
+      return {
+        ok: true,
+        items: [{ id: 'telegram', runtimeSupport: 'implemented' }],
+      };
+    },
+    openXenesisChannelSetupPlan: (args) => {
+      calls.push({ method: 'open', args });
+      return {
+        ok: true,
+        item: { id: 'telegram', runtimeSupport: 'implemented' },
+      };
+    },
+  };
+
+  const statusResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.channels.setupPlans.status',
+    args: { channel: 'telegram' },
+    source: 'xenesis',
+  });
+  const openResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.channels.setupPlans.open',
+    args: { id: 'telegram', ensureVisible: true },
+    source: 'xenesis',
+  });
+
+  assert.equal(statusResult.ok, true);
+  assert.equal(openResult.ok, true);
+  assert.deepEqual(calls, [
+    { method: 'status', args: { channel: 'telegram' } },
+    { method: 'open', args: { id: 'telegram', ensureVisible: true } },
+  ]);
+  assert.deepEqual(statusResult.result, {
+    ok: true,
+    items: [{ id: 'telegram', runtimeSupport: 'implemented' }],
+  });
+  assert.deepEqual(openResult.result, {
+    ok: true,
+    item: { id: 'telegram', runtimeSupport: 'implemented' },
   });
 });
 

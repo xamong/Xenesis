@@ -1274,6 +1274,84 @@ test('buildXenesisConnectionsStatus exposes guided external tool setup plans', (
   );
 });
 
+test('buildXenesisConnectionsStatus exposes guided external messenger channel setup plans', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const telegram = status.sections.messengers.items.find((item) => item.id === 'telegram');
+  const signal = status.sections.messengers.items.find((item) => item.id === 'signal');
+
+  assert.equal(telegram?.channelSetupPlan?.runtimeSupport, 'implemented');
+  assert.equal(telegram?.channelSetupPlan?.planStatus, 'unknown');
+  assert.equal(telegram?.channelSetupPlan?.guideId, 'openclaw-channel-setup');
+  assert.equal(telegram?.channelSetupPlan?.guidePath, 'docs/manual/10-openclaw-channel-setup.md');
+  assert.deepEqual(
+    telegram?.channelSetupPlan?.steps.map((step) => step.id),
+    [
+      'messenger-view',
+      'channel-routing',
+      'channel-safety',
+      'channel-access-groups',
+      'channel-pairing',
+      'channel-user-stories',
+      'channel-profile-draft',
+      'channel-profile-apply',
+      'channel-test',
+      'diagnostic-runbook',
+      'setup-request',
+    ],
+  );
+  assert.equal(telegram?.channelSetupPlan?.readPaths.includes('xd.xenesis.channels.setupPlans.status'), true);
+  assert.equal(telegram?.channelSetupPlan?.controlPaths.includes('xd.xenesis.channels.setupPlans.open'), true);
+  assert.equal(telegram?.channelSetupPlan?.controlPaths.includes('xd.xenesis.channels.profileDrafts.apply'), true);
+  assert.equal(telegram?.channelSetupPlan?.controlPaths.includes('xd.xenesis.profiles.testChannel'), true);
+  assert.equal(telegram?.setupRequest?.readPaths.includes('xd.xenesis.channels.setupPlans.status'), true);
+  assert.equal(telegram?.setupRequest?.controlPaths.includes('xd.xenesis.channels.setupPlans.open'), true);
+
+  assert.equal(signal?.channelSetupPlan?.runtimeSupport, 'planned-adapter');
+  assert.equal(signal?.channelSetupPlan?.planStatus, 'planned');
+  assert.equal(
+    signal?.channelSetupPlan?.steps.some((step) => step.id === 'channel-profile-apply'),
+    false,
+  );
+  assert.equal(
+    signal?.channelSetupPlan?.steps.some((step) => step.id === 'channel-test'),
+    false,
+  );
+  assert.equal(signal?.channelSetupPlan?.blockedActions.includes('start planned channel gateway adapters'), true);
+  assert.equal(
+    signal?.channelSetupPlan?.safetyBoundaries.some((boundary) =>
+      boundary.includes('setup plans do not start gateway adapters'),
+    ),
+    true,
+  );
+});
+
 test('buildXenesisConnectionsStatus exposes redacted external tool connector readiness', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {
@@ -2831,12 +2909,15 @@ test('buildXenesisConnectionsStatus exposes guide catalog metadata for onboardin
   assert.equal(channelSetup?.guideCatalog?.guideType, 'integration-guide');
   assert.deepEqual(channelSetup?.guideCatalog?.coveredSurfaces, [
     'messenger-catalog',
+    'channel-setup-plans',
     'channel-routing',
     'access-groups',
     'pairing',
     'diagnostics',
   ]);
   assert.equal(channelSetup?.guideCatalog?.readPaths.includes('xd.xenesis.messengers.views.status'), true);
+  assert.equal(channelSetup?.guideCatalog?.readPaths.includes('xd.xenesis.channels.setupPlans.status'), true);
+  assert.equal(channelSetup?.guideCatalog?.controlPaths.includes('xd.xenesis.channels.setupPlans.open'), true);
   assert.equal(channelSetup?.guideCatalog?.readPaths.includes('xd.xenesis.channels.safety.status'), true);
   assert.equal(toolIntegrations?.guidePath, 'docs/manual/11-external-tool-integrations.md');
   assert.equal(toolIntegrations?.guideOpenPath, 'E:\\xenesis-desk\\docs\\manual\\11-external-tool-integrations.md');
@@ -2929,10 +3010,12 @@ test('buildXenesisConnectionsStatus exposes diagnostic runbooks for tools, plann
       'channel-pairing',
       'channel-user-story',
       'channel-profile-draft',
+      'channel-setup-plan',
       'messenger-view',
     ],
   );
   assert.equal(telegram?.diagnosticRunbook?.readPaths.includes('xd.xenesis.channels.userStories.status'), true);
+  assert.equal(telegram?.diagnosticRunbook?.readPaths.includes('xd.xenesis.channels.setupPlans.status'), true);
   assert.equal(telegram?.diagnosticRunbook?.controlPaths.includes('xd.xenesis.connections.diagnostics.open'), true);
 });
 

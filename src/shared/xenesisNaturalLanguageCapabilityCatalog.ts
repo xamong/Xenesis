@@ -1162,6 +1162,11 @@ export const XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_ACTION_DESCRIPTORS = {
     path: 'xd.xenesis.channels.userStories.open',
     reason: 'Open external messenger user-story catalog in Xenesis Connection Center from natural language request.',
   },
+  setupPlans: {
+    id: 'natural-xenesis-messengers-setup-plans-catalog-open',
+    path: 'xd.xenesis.channels.setupPlans.open',
+    reason: 'Open external messenger setup plan catalog in Xenesis Connection Center from natural language request.',
+  },
   views: {
     id: 'natural-xenesis-messengers-views-catalog-open',
     path: 'xd.xenesis.messengers.views.open',
@@ -1198,6 +1203,10 @@ export const XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_RULES = [
   {
     contextWords: XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
     action: XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_ACTION_DESCRIPTORS.userStories,
+  },
+  {
+    contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_ACTION_DESCRIPTORS.setupPlans,
   },
   {
     contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
@@ -1357,6 +1366,11 @@ export const XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS = {
     path: 'xd.xenesis.channels.userStories.status',
     reason: 'Read external messenger user-story catalog status from natural language request.',
   },
+  setupPlans: {
+    id: 'natural-xenesis-messengers-setup-plans-status',
+    path: 'xd.xenesis.channels.setupPlans.status',
+    reason: 'Read external messenger setup plan catalog status from natural language request.',
+  },
   views: {
     id: 'natural-xenesis-messengers-views-status',
     path: 'xd.xenesis.messengers.views.status',
@@ -1388,6 +1402,10 @@ export const XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_RULES = [
   {
     contextWords: XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
     action: XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS.userStories,
+  },
+  {
+    contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS.setupPlans,
   },
   {
     contextWords: XENESIS_NATURAL_VIEW_OR_SETUP_CONTEXT_WORDS,
@@ -1705,6 +1723,11 @@ export const XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS = {
     idFor: (id: string, _label: string) => `natural-xenesis-channel-user-story-status-${id}`,
     reasonFor: (_id: string, label: string) => `Read ${label} channel user story status from natural language request.`,
   },
+  channelSetupPlan: {
+    path: 'xd.xenesis.channels.setupPlans.status',
+    idFor: (id: string, _label: string) => `natural-xenesis-channel-setup-plan-status-${id}`,
+    reasonFor: (_id: string, label: string) => `Read ${label} channel setup plan status from natural language request.`,
+  },
   channelProfileDraft: {
     path: 'xd.xenesis.channels.profileDrafts.status',
     idFor: (id: string, _label: string) => `natural-xenesis-channel-profile-draft-status-${id}`,
@@ -1817,6 +1840,12 @@ export const XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES = [
   },
   {
     targetScope: 'messenger',
+    contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.channelSetupPlan,
+    argsKind: 'targetId',
+  },
+  {
+    targetScope: 'messenger',
     contextWords: XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
     action: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.channelProfileDraft,
     argsKind: 'channel',
@@ -1906,6 +1935,11 @@ export const XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS = {
     path: 'xd.xenesis.channels.userStories.open',
     idFor: (id: string, _label: string) => `natural-xenesis-channel-user-story-open-${id}`,
     reasonFor: (_id: string, label: string) => `Open ${label} channel user story from natural language request.`,
+  },
+  channelSetupPlan: {
+    path: 'xd.xenesis.channels.setupPlans.open',
+    idFor: (id: string, _label: string) => `natural-xenesis-channel-setup-plan-open-${id}`,
+    reasonFor: (_id: string, label: string) => `Open ${label} channel setup plan from natural language request.`,
   },
   channelProfileDraft: {
     path: 'xd.xenesis.channels.profileDrafts.open',
@@ -2015,6 +2049,12 @@ export const XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES = [
     targetScope: 'messenger',
     contextWords: XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
     action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.channelUserStory,
+    argsKind: 'targetIdVisible',
+  },
+  {
+    targetScope: 'messenger',
+    contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.channelSetupPlan,
     argsKind: 'targetIdVisible',
   },
   {

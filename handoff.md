@@ -14314,3 +14314,106 @@ Verification so far:
     `.github/workflows/ci.yml` in this worktree.
 - Next intended step:
   - Inspect final diff/status and commit the setup-plan slice.
+
+## Current External Messenger Channel Setup Plan Slice
+
+- Objective: add a CR-first setup-plan layer for external messenger/channel
+  setup that joins messenger view, channel routing, safety, access groups,
+  pairing, user stories, channel profile drafts, diagnostics, and setup
+  requests into one ordered read/open surface per channel.
+- Slice size policy: use a larger cycle. Bundle model, CR registry/dispatcher,
+  main-process handlers, renderer UI, natural routing, smoke inventory, docs,
+  Obsidian note, broad verification, and commit together.
+- External documentation handling: no per-step web browsing. Use repo code,
+  repo-local Obsidian context, existing manual notes, and local verification.
+- Planned CR paths:
+  - `xd.xenesis.channels.setupPlans.status`
+  - `xd.xenesis.channels.setupPlans.open`
+- Planned constraints:
+  - Setup plans are read/open orchestration metadata only.
+  - They must not start gateway adapters, pair accounts/devices, send messages,
+    store credentials, mutate channel profiles, or bypass approval.
+  - Implemented channels may reference approval-gated profile apply/test paths as
+    explicit controlled steps; planned channels must remain review-only.
+- Commands run:
+  - `git status --short --branch` -> clean worktree on
+    `agent/upcoming-work-20260627`.
+  - `rg --files docs/manual` -> confirmed `docs/manual/10-openclaw-channel-setup.md`
+    and `docs/manual/09-onboarding-connections.md` are the relevant local docs.
+  - `rg -n "channels\\.profileDrafts|messengers\\.views|toolSetupPlan|setupPlans|messengerView|channelProfileDraft|channelTemplate" ...`
+    -> confirmed existing channel/messenger surfaces and prior tool setup-plan
+    pattern.
+- Exact verification result:
+  - RED `npx tsx --test src\shared\xenesisConnections.test.ts` failed as
+    expected: `telegram?.channelSetupPlan?.runtimeSupport` was `undefined`.
+  - RED `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts`
+    failed as expected: `xd.xenesis.channels.setupPlans.*` is not registered
+    and has no detail focus.
+  - RED `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`
+    failed as expected: no `channel-setup-plan` data attribute and no
+    channel setup-plan helper exports.
+  - RED `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    failed as expected: channel setup-plan inventory/routing is missing and
+    prompts fall through to messenger views.
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` passed
+    because the smoke manifest structural tests do not execute planner routing.
+- Implementation so far:
+  - Added `channelSetupPlan` model metadata and `channel-setup-plan` detail
+    focus.
+  - Added `xd.xenesis.channels.setupPlans.status` and
+    `xd.xenesis.channels.setupPlans.open` to the Capability Registry and main
+    adapter.
+  - Added Connection Center request/summary helpers and Settings detail block.
+  - Added natural routing for aggregate and targeted channel setup-plan prompts.
+  - Updated live smoke prompt cases, local manual docs, and Obsidian working
+    note.
+  - Fixed the existing messenger catalog open helper so it uses the requested
+    focus detail instead of always falling back to `guide-catalog`.
+- Focused verification:
+  - `npx tsx --test src\shared\xenesisConnections.test.ts` passed 39/39 after
+    updating guide/runbook expectations for the new setup-plan surface.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` passed
+    39/39.
+  - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`
+    passed 50/50.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed 38/38.
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` passed
+    5/5.
+  - Post-format focused rerun passed with the same scoped set:
+    shared connections 39/39, connection capabilities 39/39, connection center
+    50/50, agent desk control 38/38, routing manifest 5/5.
+- Broad verification:
+  - `npm run typecheck` passed.
+  - `npm --prefix packages/xenesis run typecheck` passed.
+  - `npm --prefix packages/xenesis test` initially hit unrelated/flaky runner
+    failures in shell session lifecycle/worker teardown; the single failing
+    file `tests/s10/shellTool.session.test.ts` then passed 8/8, and the package
+    test gate later passed 79 files / 367 tests.
+  - `npm run docs:capabilities:audit` passed and wrote
+    `docs/capability-registry-audit.md`: 776 nodes, 689 coverage path
+    references.
+  - `npm --prefix packages/xenesis run build` passed.
+  - `npm run build` passed.
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` passed
+    6/6 after adding approval-card visible-text coverage.
+  - `npm run smoke:xenesis:natural-desk-routing` initially failed one existing
+    approval visible-text check while the new channel setup-plan cases passed;
+    investigation showed path submission and direct approval UI text were
+    present. The smoke checker now accepts the inline approval card text
+    (`승인 대기` / `승인 후 실행`) as approval-visible evidence. Final live smoke
+    passed 174/174.
+  - `npx biome format --write scripts\xenesisNaturalDeskRoutingLiveSmoke.mjs scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
+    passed after the smoke checker change.
+  - `npx biome check --write scripts\xenesisNaturalDeskRoutingLiveSmoke.mjs scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs --max-diagnostics 80`
+    passed after the smoke checker change.
+  - `git diff --check` passed with line-ending warnings only.
+- Known gaps:
+  - `npm run lint` remains blocked by existing repo-wide Biome diagnostics:
+    1150 errors, 419 warnings, 92 infos.
+  - `npm --prefix packages/xenesis run provider:smoke` builds the package, then
+    stops because `OPENAI_API_KEY` is not set for `provider=openai`.
+  - `npm run check:public-release` remains blocked because this worktree is
+    missing `.github/workflows/ci.yml`.
+- Next intended step:
+  - Commit the setup-plan slice.

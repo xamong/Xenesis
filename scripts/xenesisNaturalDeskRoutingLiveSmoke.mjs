@@ -11,6 +11,11 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_TIMEOUT_MS = 30000;
 export const NATURAL_DESK_ROUTING_LIVE_SMOKE_APP_READY_SELECTOR = '.btn-settings';
 export const NATURAL_DESK_ROUTING_LIVE_SMOKE_SOURCE = 'xenesis-natural-desk-routing-live-smoke';
 export const NATURAL_DESK_ROUTING_LIVE_SMOKE_SUBMIT_PATH = 'xd.testing.xenesisAgent.submitPrompt';
+export const NATURAL_DESK_ROUTING_LIVE_SMOKE_APPROVAL_VISIBLE_TEXT_ALIASES = [
+  'Desk action approval required',
+  '승인 대기',
+  '승인 후 실행',
+];
 
 export const NATURAL_DESK_ROUTING_LIVE_SMOKE_OPEN_REQUEST = {
   path: 'xd.tools.core.xenesisAgent.open',
@@ -152,6 +157,18 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     id: 'notion-tool-setup-plan-open',
     prompt: '노션 외부 도구 설정 플랜 열어줘',
     expectedPath: 'xd.xenesis.tools.setupPlans.open',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'channel-setup-plans-status',
+    prompt: '외부 메신저 설정 플랜 전체 상태 보여줘',
+    expectedPath: 'xd.xenesis.channels.setupPlans.status',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'telegram-channel-setup-plan-open',
+    prompt: '텔레그램 채널 설정 플랜 열어줘',
+    expectedPath: 'xd.xenesis.channels.setupPlans.open',
     expectedVisibleText: 'Desk action completed',
   },
   {
@@ -451,7 +468,13 @@ function collectResultText(result) {
     .join('\n');
 }
 
-function normalizePromptChecks(promptCase, capabilityResult) {
+function visibleTextMatches(promptCase, text) {
+  if (text.includes(promptCase.expectedVisibleText)) return true;
+  if (promptCase.expectedVisibleText !== 'Desk action approval required') return false;
+  return NATURAL_DESK_ROUTING_LIVE_SMOKE_APPROVAL_VISIBLE_TEXT_ALIASES.some((alias) => text.includes(alias));
+}
+
+export function normalizePromptChecks(promptCase, capabilityResult) {
   const result = unwrapCapabilityResult(capabilityResult);
   const text = collectResultText(result);
   const capabilityOk = capabilityResult?.ok === true;
@@ -461,7 +484,7 @@ function normalizePromptChecks(promptCase, capabilityResult) {
     result.matchedExpectedText === true ||
     result.expectedText === promptCase.expectedPath ||
     text.includes(promptCase.expectedPath);
-  const visibleTextMatched = text.includes(promptCase.expectedVisibleText);
+  const visibleTextMatched = visibleTextMatches(promptCase, text);
 
   return [
     {

@@ -756,6 +756,8 @@ const XENESIS_MESSENGER_VIEW_OPEN_SCHEMA = {
 
 const XENESIS_CHANNEL_USER_STORY_STATUS_SCHEMA = XENESIS_MESSENGER_VIEW_STATUS_SCHEMA;
 const XENESIS_CHANNEL_USER_STORY_OPEN_SCHEMA = XENESIS_MESSENGER_VIEW_OPEN_SCHEMA;
+const XENESIS_CHANNEL_SETUP_PLAN_STATUS_SCHEMA = XENESIS_MESSENGER_VIEW_STATUS_SCHEMA;
+const XENESIS_CHANNEL_SETUP_PLAN_OPEN_SCHEMA = XENESIS_MESSENGER_VIEW_OPEN_SCHEMA;
 
 const XENESIS_EXTERNAL_TOOL_IDS = XENESIS_CONNECTION_TOOL_IDS;
 
@@ -1605,6 +1607,8 @@ export interface DeskBridgeCapabilityAdapter {
   openXenesisChannelPairing?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisChannelUserStoriesStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisChannelUserStory?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisChannelSetupPlansStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisChannelSetupPlan?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisChannelProfileDraftsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisChannelProfileDraft?: (args?: unknown) => Promise<unknown> | unknown;
   requestXenesisChannelProfileDraft?: (args?: unknown) => Promise<unknown> | unknown;
@@ -4779,6 +4783,27 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               'Open Settings > Xenesis Agent > Connections and focus an external messenger channel user-story workflow card inside Desk.',
               'control',
               XENESIS_CHANNEL_USER_STORY_OPEN_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.channels.setupPlans',
+          'Setup plans',
+          'Read and open ordered review plans for external messenger channel setup.',
+          [
+            method(
+              'xd.xenesis.channels.setupPlans.status',
+              'Read channel setup plans',
+              'Read ordered messenger/channel setup plans that collect view, routing, safety, access-group, pairing, user-story, profile-draft, diagnostic, and setup-request CR paths without starting gateways, pairing accounts, storing credentials, or sending messages.',
+              'read',
+              XENESIS_CHANNEL_SETUP_PLAN_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.channels.setupPlans.open',
+              'Open channel setup plan',
+              'Open Settings > Xenesis Agent > Connections and focus an external messenger channel setup-plan card inside Desk.',
+              'control',
+              XENESIS_CHANNEL_SETUP_PLAN_OPEN_SCHEMA,
             ),
           ],
         ),
@@ -11628,6 +11653,12 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.channels.userStories.open') {
         return callAdapter(path, api?.openXenesisChannelUserStory, request.args);
+      }
+      if (path === 'xd.xenesis.channels.setupPlans.status') {
+        return callAdapter(path, api?.getXenesisChannelSetupPlansStatus, request.args);
+      }
+      if (path === 'xd.xenesis.channels.setupPlans.open') {
+        return callAdapter(path, api?.openXenesisChannelSetupPlan, request.args);
       }
       if (path === 'xd.xenesis.channels.profileDrafts.status') {
         return callAdapter(path, api?.getXenesisChannelProfileDraftsStatus, request.args);

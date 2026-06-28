@@ -415,6 +415,18 @@ channels remain planning surfaces only: user-story metadata does not enable a
 gateway adapter, send messages, create pairing sessions, mutate allowlists, or
 bypass approval policy.
 
+Messenger cards also expose `channelSetupPlan` metadata. Use
+`xd.xenesis.channels.setupPlans.status` to inspect the ordered review plan for
+a messenger/channel and `xd.xenesis.channels.setupPlans.open` to focus that
+plan inside Settings > Xenesis Agent > Connections. The plan joins messenger
+view, channel routing, safety, access groups, pairing, user stories, channel
+profile drafts, diagnostics, and setup requests into one read/open surface. It
+is review-only orchestration metadata: it does not start gateway adapters, pair
+accounts or devices, send messages, store credentials, mutate channel profiles,
+or bypass approvals. Implemented channels may list existing approval-gated
+profile apply/test CR paths as controlled steps; planned channels remain
+review-only and do not expose apply/test steps.
+
 Implemented messenger cards also expose `channelProfileDraft` metadata. Use
 `xd.xenesis.channels.profileDrafts.status` to inspect the profile env-reference
 fields, allowlist fields, guardrails, missing required field list, diagnostics,
@@ -446,6 +458,8 @@ Useful CR paths:
 
 - `xd.xenesis.profiles.updateChannels`
 - `xd.xenesis.profiles.testChannel`
+- `xd.xenesis.channels.setupPlans.status`
+- `xd.xenesis.channels.setupPlans.open`
 - `xd.xenesis.channels.pairing.status`
 - `xd.xenesis.channels.userStories.status`
 - `xd.xenesis.channels.userStories.open`
@@ -582,6 +596,16 @@ Discord, and Webhook workflows describe prompt intake, scoped replies, sanitized
 tests, and the existing read/test CR paths. Planned messenger workflows describe
 setup stories only and do not enable delivery, send replies, install adapters,
 create pairing flows, mutate channel settings, or bypass approval guardrails.
+
+Use `xd.xenesis.channels.setupPlans.status` and
+`xd.xenesis.channels.setupPlans.open` to inspect or open unified external
+messenger channel setup plans through CR. Each plan orders messenger view,
+routing, safety, access-group, pairing, user-story, channel profile draft,
+diagnostic runbook, and setup-request steps. Setup plans are read/open
+orchestration metadata only; they do not start gateways, pair accounts or
+devices, send messages, store credentials, mutate channel profiles, or bypass
+approval. Implemented channels may reference existing approval-gated profile
+draft apply and sanitized test-send paths; planned channels stay review-only.
 
 Use `xd.xenesis.channels.profileDrafts.status`,
 `xd.xenesis.channels.profileDrafts.open`, and

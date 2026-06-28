@@ -8,9 +8,11 @@ import {
   buildNaturalDeskRoutingSubmitRequest,
   formatNaturalDeskRoutingLiveSmokePlan,
   NATURAL_DESK_ROUTING_LIVE_SMOKE_APP_READY_SELECTOR,
+  NATURAL_DESK_ROUTING_LIVE_SMOKE_APPROVAL_VISIBLE_TEXT_ALIASES,
   NATURAL_DESK_ROUTING_LIVE_SMOKE_OPEN_REQUEST,
   NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS,
   NATURAL_DESK_ROUTING_LIVE_SMOKE_SUBMIT_PATH,
+  normalizePromptChecks,
 } from './xenesisNaturalDeskRoutingLiveSmoke.mjs';
 
 test('natural Desk routing live smoke opens Agent and submits natural prompts through CR', () => {
@@ -157,6 +159,18 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
       id: 'notion-tool-setup-plan-open',
       prompt: '노션 외부 도구 설정 플랜 열어줘',
       expectedPath: 'xd.xenesis.tools.setupPlans.open',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
+      id: 'channel-setup-plans-status',
+      prompt: '외부 메신저 설정 플랜 전체 상태 보여줘',
+      expectedPath: 'xd.xenesis.channels.setupPlans.status',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
+      id: 'telegram-channel-setup-plan-open',
+      prompt: '텔레그램 채널 설정 플랜 열어줘',
+      expectedPath: 'xd.xenesis.channels.setupPlans.open',
       expectedVisibleText: 'Desk action completed',
     },
     {
@@ -507,6 +521,33 @@ test('natural Desk routing live smoke builds isolated state env', () => {
       XENESIS_NATURAL_DESK_ROUTING_LIVE_SMOKE: '1',
     },
   );
+});
+
+test('natural Desk routing live smoke treats inline approval card text as approval visible evidence', () => {
+  assert.ok(NATURAL_DESK_ROUTING_LIVE_SMOKE_APPROVAL_VISIBLE_TEXT_ALIASES.includes('승인 대기'));
+
+  const checks = normalizePromptChecks(
+    {
+      id: 'tool-mcp-install-draft-request-approval',
+      prompt: '노션 MCP 설치해줘',
+      expectedPath: 'xd.xenesis.tools.mcpInstallDrafts.request',
+      expectedVisibleText: 'Desk action approval required',
+    },
+    {
+      ok: true,
+      result: {
+        ok: true,
+        submitted: true,
+        matchedExpectedText: true,
+        expectedText: 'xd.xenesis.tools.mcpInstallDrafts.request',
+        bodyTextTail:
+          'xd.xenesis.tools.mcpInstallDrafts.request\nCAPABILITY REGISTRY\n승인 대기\n승인 후 실행\n항상 승인\n취소',
+      },
+    },
+  );
+
+  assert.equal(checks.find((check) => check.id.endsWith(':path'))?.ok, true);
+  assert.equal(checks.find((check) => check.id.endsWith(':visible-text'))?.ok, true);
 });
 
 test('natural Desk routing live smoke package script is exposed explicitly', () => {

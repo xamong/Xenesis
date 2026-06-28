@@ -87,6 +87,7 @@ import { SETTINGS_CATEGORIES, type SettingsCategoryId, VISIBLE_SETTINGS_CATEGORI
 import {
   buildXenesisChannelProfileDraftApplyRequest,
   buildXenesisChannelProfileDraftRequest,
+  buildXenesisChannelSetupPlanRequest,
   buildXenesisChannelTestRequest,
   buildXenesisConnectionGuideRequest,
   buildXenesisConnectionOpenRequest,
@@ -106,6 +107,7 @@ import {
   formatXenesisChannelProfileDraftSummary,
   formatXenesisChannelRoutingSummary,
   formatXenesisChannelSafetySummary,
+  formatXenesisChannelSetupPlanSummary,
   formatXenesisChannelUserStorySummary,
   formatXenesisConnectionDiagnosticRunbookSummary,
   formatXenesisConnectionGuidedStepDetail,
@@ -4318,6 +4320,7 @@ export default function SettingsPane() {
     const toolOAuthSetupPacketRequest = buildXenesisToolOAuthSetupPacketRequest(item);
     const toolSetupPlanRequest = buildXenesisToolSetupPlanRequest(item);
     const toolActionCatalogRequest = buildXenesisToolActionCatalogRequest(item);
+    const channelSetupPlanRequest = buildXenesisChannelSetupPlanRequest(item);
     const channelProfileDraftRequest = buildXenesisChannelProfileDraftRequest(item);
     const channelProfileDraftApplyRequest = buildXenesisChannelProfileDraftApplyRequest(item);
     const channelTestRequest = buildXenesisChannelTestRequest(item);
@@ -4340,6 +4343,7 @@ export default function SettingsPane() {
     const toolView = item.toolView;
     const toolUserStory = item.toolUserStory;
     const messengerView = item.messengerView;
+    const channelSetupPlan = item.channelSetupPlan;
     const channelProfileDraft = item.channelProfileDraft;
     const channelTemplate = item.channelTemplate;
     const channelUserStory = channelTemplate?.userStory;
@@ -4371,6 +4375,7 @@ export default function SettingsPane() {
           toolOAuthSetupPacketRequest ||
           toolSetupPlanRequest ||
           toolActionCatalogRequest ||
+          channelSetupPlanRequest ||
           channelProfileDraftRequest ||
           channelProfileDraftApplyRequest ||
           channelTestRequest ||
@@ -4463,6 +4468,16 @@ export default function SettingsPane() {
                 }}
               >
                 {t('settings.xenesisConnectionsRequestToolActionCatalog')}
+              </button>
+            ) : null}
+            {channelSetupPlanRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(channelSetupPlanRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsReadChannelSetupPlan')}
               </button>
             ) : null}
             {toolOAuthSetupPacketRequest ? (
@@ -5322,6 +5337,52 @@ export default function SettingsPane() {
             <div>
               <span>{t('settings.xenesisConnectionsToolActionCatalogSafety')}</span>
               <strong>{toolActionCatalog.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {channelSetupPlan ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'channel-setup-plan') && 'is-focused',
+            )}
+            data-xenesis-channel-setup-plan={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelSetupPlan')}</span>
+              <strong>{formatXenesisChannelSetupPlanSummary(channelSetupPlan)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelSetupPlanGuide')}</span>
+              <strong>{channelSetupPlan.guidePath}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelSetupPlanSteps')}</span>
+              <strong>
+                {channelSetupPlan.steps
+                  .map((step) => `${step.id}: ${step.kind} ${step.crPath} -> ${step.expectedState}`)
+                  .join(', ')}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelSetupPlanReadback')}</span>
+              <strong>{channelSetupPlan.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelSetupPlanControls')}</span>
+              <strong>{channelSetupPlan.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelSetupPlanDiagnostics')}</span>
+              <strong>{channelSetupPlan.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelSetupPlanBlocked')}</span>
+              <strong>{channelSetupPlan.blockedActions.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelSetupPlanSafety')}</span>
+              <strong>{channelSetupPlan.safetyBoundaries.join(', ')}</strong>
             </div>
           </div>
         ) : null}

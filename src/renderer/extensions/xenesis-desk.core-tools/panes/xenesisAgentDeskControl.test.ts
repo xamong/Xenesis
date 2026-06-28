@@ -1260,6 +1260,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /MESSENGER_AGGREGATE_STATUS_ACTIONS\.accessGroups/);
   assert.doesNotMatch(source, /MESSENGER_AGGREGATE_STATUS_ACTIONS\.pairing/);
   assert.doesNotMatch(source, /MESSENGER_AGGREGATE_STATUS_ACTIONS\.userStories/);
+  assert.doesNotMatch(source, /MESSENGER_AGGREGATE_STATUS_ACTIONS\.setupPlans/);
   assert.doesNotMatch(source, /MESSENGER_AGGREGATE_STATUS_ACTIONS\.views/);
   assert.doesNotMatch(source, /TOOL_AGGREGATE_STATUS_ACTIONS\.connectors/);
   assert.doesNotMatch(source, /TOOL_AGGREGATE_STATUS_ACTIONS\.mcpInstallDrafts/);
@@ -1300,6 +1301,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
       { path: 'xd.xenesis.channels.accessGroups.status', fallback: false },
       { path: 'xd.xenesis.channels.pairing.status', fallback: false },
       { path: 'xd.xenesis.channels.userStories.status', fallback: false },
+      { path: 'xd.xenesis.channels.setupPlans.status', fallback: false },
       { path: 'xd.xenesis.messengers.views.status', fallback: false },
     ],
   );
@@ -1361,6 +1363,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /MESSENGER_AGGREGATE_OPEN_ACTIONS\.accessGroups/);
   assert.doesNotMatch(source, /MESSENGER_AGGREGATE_OPEN_ACTIONS\.pairing/);
   assert.doesNotMatch(source, /MESSENGER_AGGREGATE_OPEN_ACTIONS\.userStories/);
+  assert.doesNotMatch(source, /MESSENGER_AGGREGATE_OPEN_ACTIONS\.setupPlans/);
   assert.doesNotMatch(source, /MESSENGER_AGGREGATE_OPEN_ACTIONS\.views/);
   assert.doesNotMatch(source, /MESSENGER_AGGREGATE_OPEN_ACTIONS\.catalog/);
   assert.doesNotMatch(source, /TOOL_AGGREGATE_OPEN_ACTIONS\.connectors/);
@@ -1434,6 +1437,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
       { path: 'xd.xenesis.channels.accessGroups.open', fallback: false },
       { path: 'xd.xenesis.channels.pairing.open', fallback: false },
       { path: 'xd.xenesis.channels.userStories.open', fallback: false },
+      { path: 'xd.xenesis.channels.setupPlans.open', fallback: false },
       { path: 'xd.xenesis.messengers.views.open', fallback: false },
       { path: 'xd.xenesis.messengers.views.open', fallback: true },
     ],
@@ -1573,6 +1577,12 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
         targetScope: 'messenger',
         argsKind: 'targetId',
         path: 'xd.xenesis.channels.userStories.status',
+        fallback: false,
+      },
+      {
+        targetScope: 'messenger',
+        argsKind: 'targetId',
+        path: 'xd.xenesis.channels.setupPlans.status',
         fallback: false,
       },
       {
@@ -1723,6 +1733,12 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
       },
       {
         targetScope: 'messenger',
+        argsKind: 'targetIdVisible',
+        path: 'xd.xenesis.channels.setupPlans.open',
+        fallback: false,
+      },
+      {
+        targetScope: 'messenger',
         argsKind: 'channelVisible',
         path: 'xd.xenesis.channels.profileDrafts.open',
         fallback: false,
@@ -1776,6 +1792,10 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.equal(
     XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.channelRouting.reasonFor('telegram', 'Telegram'),
     'Open Telegram channel routing from natural language request.',
+  );
+  assert.equal(
+    XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.channelSetupPlan.reasonFor('telegram', 'Telegram'),
+    'Open Telegram channel setup plan from natural language request.',
   );
   assert.doesNotMatch(source, /XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS/);
   assert.match(naturalResolverSource, /XENESIS_NATURAL_REVIEW_REQUEST_PROVIDER_RULES/);
@@ -3250,6 +3270,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 설정 플랜 전체 열어줘').actions, [
+    {
+      id: 'natural-xenesis-messengers-setup-plans-catalog-open',
+      path: 'xd.xenesis.channels.setupPlans.open',
+      args: { ensureVisible: true },
+      approved: false,
+      reason: 'Open external messenger setup plan catalog in Xenesis Connection Center from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 라우팅 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-messengers-routing-catalog-open',
@@ -3488,6 +3518,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
       args: { id: 'telegram', ensureVisible: true },
       approved: false,
       reason: 'Open Telegram messenger view from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('텔레그램 채널 설정 플랜 열어줘').actions, [
+    {
+      id: 'natural-xenesis-channel-setup-plan-open-telegram',
+      path: 'xd.xenesis.channels.setupPlans.open',
+      args: { id: 'telegram', ensureVisible: true },
+      approved: false,
+      reason: 'Open Telegram channel setup plan from natural language request.',
     },
   ]);
 
@@ -4164,6 +4204,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center read
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 설정 플랜 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-messengers-setup-plans-status',
+      path: 'xd.xenesis.channels.setupPlans.status',
+      args: {},
+      approved: false,
+      reason: 'Read external messenger setup plan catalog status from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 setup 전체 상태 보여줘').actions, [
     {
       id: 'natural-xenesis-messengers-views-status',
@@ -4231,6 +4281,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center read
       args: { id: 'google-calendar' },
       approved: false,
       reason: 'Read Google Calendar tool setup plan status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('텔레그램 채널 설정 플랜 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-channel-setup-plan-status-telegram',
+      path: 'xd.xenesis.channels.setupPlans.status',
+      args: { id: 'telegram' },
+      approved: false,
+      reason: 'Read Telegram channel setup plan status from natural language request.',
     },
   ]);
 

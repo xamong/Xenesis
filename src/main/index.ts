@@ -5335,7 +5335,7 @@ async function openXenesisMessengerCatalogSurface<TContext = undefined>(
 
   const rendererArgs = buildXenesisConnectionCenterOpenArgs({
     ensureVisible: body.ensureVisible !== false,
-    focusConnectionDetail: readXenesisConnectionDetailFocus(body, 'guide-catalog'),
+    focusConnectionDetail: readXenesisConnectionDetailFocus(body, options.focusConnectionDetail),
     ...(item ? { focusConnectionId: item.id } : {}),
   });
 
@@ -6099,6 +6099,77 @@ async function openXenesisMessengerView(args?: unknown): Promise<Record<string, 
     toStatusItem: (item) => xenesisMessengerViewStatusItem(item),
     unavailableMessage: (id) => `Xenesis messenger view is not available: ${id}`,
     focusConnectionDetail: 'messenger-view',
+  });
+}
+
+function xenesisChannelSetupPlanStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    planStatus: item.channelSetupPlan?.planStatus,
+    runtimeSupport: item.channelSetupPlan?.runtimeSupport,
+    guideId: item.channelSetupPlan?.guideId,
+    guidePath: item.channelSetupPlan?.guidePath,
+    primarySurface: item.channelSetupPlan?.primarySurface,
+    setupSurface: item.channelSetupPlan?.setupSurface,
+    reviewSurface: item.channelSetupPlan?.reviewSurface,
+    steps: item.channelSetupPlan?.steps ?? [],
+    readPaths: item.channelSetupPlan?.readPaths ?? [],
+    controlPaths: item.channelSetupPlan?.controlPaths ?? [],
+    diagnostics: item.channelSetupPlan?.diagnostics ?? [],
+    blockedActions: item.channelSetupPlan?.blockedActions ?? [],
+    safetyBoundaries: item.channelSetupPlan?.safetyBoundaries ?? [],
+    channelSetupPlan: item.channelSetupPlan,
+    messengerView: item.messengerView,
+    channelTemplate: item.channelTemplate,
+    channelProfileDraft: item.channelProfileDraft,
+    diagnosticRunbook: item.diagnosticRunbook,
+    setupRequest: item.setupRequest,
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisChannelSetupPlansStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'messenger', 'channel', 'name']);
+  if (id && !isXenesisMessengerViewId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis messenger connection: ${id}`,
+      allowedMessengers: XENESIS_MESSENGER_VIEW_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.messengers.items
+    .filter((item) => item.channelSetupPlan)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisChannelSetupPlanStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisChannelSetupPlan(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisMessengerCatalogSurface(args, {
+    selectorKey: 'id',
+    selectorKeys: ['id', 'messenger', 'channel', 'name'],
+    allowedKey: 'allowedMessengers',
+    unsupportedMessage: (id) => `Unsupported Xenesis messenger connection: ${id}`,
+    itemPredicate: (item) => Boolean(item.channelSetupPlan),
+    toStatusItem: (item) => xenesisChannelSetupPlanStatusItem(item),
+    unavailableMessage: (id) => `Xenesis channel setup plan is not available: ${id}`,
+    focusConnectionDetail: 'channel-setup-plan',
   });
 }
 
@@ -14924,6 +14995,8 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     openXenesisChannelPairing: (args: unknown) => openXenesisChannelPairing(args),
     getXenesisChannelUserStoriesStatus: (args: unknown) => getXenesisChannelUserStoriesStatus(args),
     openXenesisChannelUserStory: (args: unknown) => openXenesisChannelUserStory(args),
+    getXenesisChannelSetupPlansStatus: (args: unknown) => getXenesisChannelSetupPlansStatus(args),
+    openXenesisChannelSetupPlan: (args: unknown) => openXenesisChannelSetupPlan(args),
     getXenesisChannelProfileDraftsStatus: (args: unknown) => getXenesisChannelProfileDraftsStatus(args),
     openXenesisChannelProfileDraft: (args: unknown) => openXenesisChannelProfileDraft(args),
     requestXenesisChannelProfileDraft: (args: unknown) => requestXenesisChannelProfileDraft(args),
