@@ -95,6 +95,7 @@ test('xenesis connection open capabilities expose detail focus selectors', () =>
   assertOpenCapabilityDetailFocus('xd.xenesis.channels.safety.open', 'channel-safety');
   assertOpenCapabilityDetailFocus('xd.xenesis.channels.accessGroups.open', 'channel-access-groups');
   assertOpenCapabilityDetailFocus('xd.xenesis.channels.pairing.open', 'channel-pairing');
+  assertOpenCapabilityDetailFocus('xd.xenesis.channels.runtime.open', 'channel-runtime');
   assertOpenCapabilityDetailFocus('xd.xenesis.channels.setupPlans.open', 'channel-setup-plan');
   assertOpenCapabilityDetailFocus('xd.xenesis.channels.profileDrafts.open', 'channel-profile-draft');
   assertOpenCapabilityDetailFocus('xd.xenesis.messengers.views.open', 'messenger-view');
@@ -644,6 +645,95 @@ test('xenesis channel pairing capabilities are registered and dispatch to the ad
   assert.deepEqual(openResult.result, {
     ok: true,
     item: { id: 'signal', pairingState: 'planned' },
+  });
+});
+
+test('xenesis channel runtime readiness capabilities are registered and dispatch to the adapter', async () => {
+  const statusCapability = findDeskBridgeCapability('xd.xenesis.channels.runtime.status');
+  const openCapability = findDeskBridgeCapability('xd.xenesis.channels.runtime.open');
+  const requestCapability = findDeskBridgeCapability('xd.xenesis.channels.runtime.request');
+  const statusSchemaProperties = (statusCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const requestSchemaProperties = (requestCapability?.schema?.properties ?? {}) as Record<string, any>;
+
+  assert.equal(statusCapability?.permission, 'read');
+  assert.equal(statusCapability?.approval, 'never');
+  assert.equal(openCapability?.permission, 'control');
+  assert.equal(openCapability?.approval, 'never');
+  assert.equal(requestCapability?.permission, 'write');
+  assert.equal(requestCapability?.approval, 'when-external');
+  assert.equal(schemaRequiredFields(openCapability).includes('channel'), false);
+  assert.equal(schemaRequiredFields(requestCapability).includes('channel'), true);
+
+  for (const channel of ['telegram', 'slack', 'discord', 'webhook', 'whatsapp', 'google-chat', 'microsoft-teams']) {
+    assert.equal(statusSchemaProperties.channel?.enum.includes(channel), true, `${channel} status accepted`);
+    assert.equal(openSchemaProperties.channel?.enum.includes(channel), true, `${channel} open accepted`);
+    assert.equal(requestSchemaProperties.channel?.enum.includes(channel), true, `${channel} request accepted`);
+  }
+
+  const calls: Array<{ method: string; args: unknown }> = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisChannelRuntimeStatus: (args) => {
+      calls.push({ method: 'status', args });
+      return {
+        ok: true,
+        items: [{ id: 'whatsapp', runtimeStatus: 'planned-adapter' }],
+      };
+    },
+    openXenesisChannelRuntime: (args) => {
+      calls.push({ method: 'open', args });
+      return {
+        ok: true,
+        item: { id: 'whatsapp', runtimeStatus: 'planned-adapter' },
+      };
+    },
+    requestXenesisChannelRuntime: (args) => {
+      calls.push({ method: 'request', args });
+      return {
+        ok: true,
+        id: 'whatsapp',
+        actionInboxItem: { kind: 'xenesis-channel-runtime-readiness' },
+      };
+    },
+  };
+
+  const statusResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.channels.runtime.status',
+    args: { channel: 'whatsapp' },
+    source: 'xenesis',
+  });
+  const openResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.channels.runtime.open',
+    args: { channel: 'whatsapp', ensureVisible: true },
+    source: 'xenesis',
+  });
+  const requestResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.channels.runtime.request',
+    args: { channel: 'whatsapp', requester: 'tester', note: 'review runtime boundary' },
+    source: 'xenesis',
+    approved: true,
+  });
+
+  assert.equal(statusResult.ok, true);
+  assert.equal(openResult.ok, true);
+  assert.equal(requestResult.ok, true);
+  assert.deepEqual(calls, [
+    { method: 'status', args: { channel: 'whatsapp' } },
+    { method: 'open', args: { channel: 'whatsapp', ensureVisible: true } },
+    { method: 'request', args: { channel: 'whatsapp', requester: 'tester', note: 'review runtime boundary' } },
+  ]);
+  assert.deepEqual(statusResult.result, {
+    ok: true,
+    items: [{ id: 'whatsapp', runtimeStatus: 'planned-adapter' }],
+  });
+  assert.deepEqual(openResult.result, {
+    ok: true,
+    item: { id: 'whatsapp', runtimeStatus: 'planned-adapter' },
+  });
+  assert.deepEqual(requestResult.result, {
+    ok: true,
+    id: 'whatsapp',
+    actionInboxItem: { kind: 'xenesis-channel-runtime-readiness' },
   });
 });
 

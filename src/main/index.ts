@@ -5752,6 +5752,156 @@ async function openXenesisChannelPairing(args?: unknown): Promise<Record<string,
   });
 }
 
+function xenesisChannelRuntimeStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    runtimeStatus: item.channelRuntime?.runtimeStatus,
+    actionInboxKind: item.channelRuntime?.actionInboxKind,
+    channel: item.channelRuntime?.channel,
+    displayName: item.channelRuntime?.displayName,
+    adapter: item.channelRuntime?.adapter,
+    runtimeSupport: item.channelRuntime?.runtimeSupport,
+    primarySurface: item.channelRuntime?.primarySurface,
+    setupSurface: item.channelRuntime?.setupSurface,
+    reviewSurface: item.channelRuntime?.reviewSurface,
+    gatewayRequirement: item.channelRuntime?.gatewayRequirement,
+    readinessChecks: item.channelRuntime?.readinessChecks ?? [],
+    readPaths: item.channelRuntime?.readPaths ?? [],
+    controlPaths: item.channelRuntime?.controlPaths ?? [],
+    diagnostics: item.channelRuntime?.diagnostics ?? [],
+    blockedActions: item.channelRuntime?.blockedActions ?? [],
+    safetyBoundaries: item.channelRuntime?.safetyBoundaries ?? [],
+    channelRuntime: item.channelRuntime,
+    channelTemplate: item.channelTemplate,
+    channelProfileDraft: item.channelProfileDraft,
+    messengerView: item.messengerView,
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisChannelRuntimeStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const channel = readCapabilityString(body, ['channel', 'id', 'messenger', 'name']);
+  if (channel && !isXenesisMessengerViewId(channel)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis messenger channel: ${channel}`,
+      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.messengers.items
+    .filter((item) => item.channelRuntime)
+    .filter((item) => !channel || item.id === channel)
+    .map((item) => xenesisChannelRuntimeStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(channel ? { channel } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisChannelRuntime(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisMessengerCatalogSurface(args, {
+    selectorKey: 'channel',
+    selectorKeys: ['channel', 'id', 'messenger', 'name'],
+    allowedKey: 'allowedChannels',
+    unsupportedMessage: (channel) => `Unsupported Xenesis messenger channel: ${channel}`,
+    itemPredicate: (item) => Boolean(item.channelRuntime),
+    toStatusItem: (item) => xenesisChannelRuntimeStatusItem(item),
+    unavailableMessage: (channel) => `Xenesis channel runtime readiness is not available: ${channel}`,
+    focusConnectionDetail: 'channel-runtime',
+  });
+}
+
+async function requestXenesisChannelRuntime(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const channel = readCapabilityString(body, ['channel', 'id', 'messenger', 'name']);
+  if (!channel) {
+    return { ok: false, error: 'Channel is required.' };
+  }
+  if (!isXenesisMessengerViewId(channel)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis messenger channel: ${channel}`,
+      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.messengers.items.find(
+    (candidate) => candidate.id === channel && candidate.channelRuntime,
+  );
+  if (!item?.channelRuntime) {
+    return { ok: false, channel, error: `Xenesis channel runtime readiness is not available: ${channel}` };
+  }
+
+  const runtime = item.channelRuntime;
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+  const requester = readCapabilityString(body, ['requester', 'user', 'userName']) || 'Xenesis Desk';
+  const description = [
+    `Review ${runtime.runtimeStatus} channel runtime readiness for ${item.label}.`,
+    `Channel: ${runtime.channel}`,
+    `Runtime support: ${runtime.runtimeSupport}`,
+    `Adapter: ${runtime.adapter}`,
+    `Gateway requirement: ${runtime.gatewayRequirement}`,
+    `Setup surface: ${runtime.setupSurface}`,
+    '',
+    'Readiness checks:',
+    ...runtime.readinessChecks.map((check) => `- ${check}`),
+    '',
+    'Read paths:',
+    ...runtime.readPaths.map((path) => `- ${path}`),
+    '',
+    'Control paths:',
+    ...runtime.controlPaths.map((path) => `- ${path}`),
+    '',
+    'Diagnostics:',
+    ...runtime.diagnostics.map((diagnostic) => `- ${diagnostic}`),
+    '',
+    'Blocked actions:',
+    ...runtime.blockedActions.map((action) => `- ${action}`),
+    '',
+    'Safety boundaries:',
+    ...runtime.safetyBoundaries.map((boundary) => `- ${boundary}`),
+    note ? '' : undefined,
+    note ? `Note: ${note}` : undefined,
+  ]
+    .filter((line): line is string => typeof line === 'string')
+    .join('\n');
+
+  const actionInboxItem = recordMcpActionInboxRequest({
+    kind: runtime.actionInboxKind,
+    title: `Review ${item.label} channel runtime readiness`,
+    command: `Review channel runtime readiness for ${item.id}`,
+    description,
+    source: 'Xenesis Connection Center',
+    sessionId: 'xenesis-channel-runtime-readiness',
+    approvalSessionKey: `xenesis-channel-runtime-readiness:${item.id}`,
+    requester,
+    risk: runtime.runtimeStatus,
+    approveText: `Approve channel runtime readiness review for ${item.label}`,
+    rejectText: `Reject channel runtime readiness review for ${item.label}`,
+  });
+
+  return {
+    ok: true,
+    channel: item.id,
+    item: xenesisChannelRuntimeStatusItem(item),
+    actionInboxItem,
+  };
+}
+
 function xenesisChannelUserStoryStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
   return {
     id: item.id,
@@ -13868,6 +14018,7 @@ async function snapshotConnectionCenterForCapability(args: unknown): Promise<Rec
     { id: 'provider-profile-review-steps', selector: '[data-xenesis-provider-profile-draft]', text: 'review step' },
     { id: 'tool-oauth-review-steps', selector: '[data-xenesis-tool-oauth-draft]', text: 'review step' },
     { id: 'tool-oauth-runtime-readback', selector: '[data-xenesis-tool-oauth-runtime]', text: 'oauth-runtime-readiness' },
+    { id: 'channel-runtime-readback', selector: '[data-xenesis-channel-runtime]', text: 'channel-runtime-readiness' },
     { id: 'channel-profile-review-steps', selector: '[data-xenesis-channel-profile-draft]', text: 'review step' },
   ];
   const truncate = (value, fallback = '') => String(value || fallback || '').trim().slice(0, Number(config.maxTextLength || 2400));
@@ -15480,6 +15631,9 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     openXenesisChannelAccessGroups: (args: unknown) => openXenesisChannelAccessGroups(args),
     getXenesisChannelPairingStatus: (args: unknown) => getXenesisChannelPairingStatus(args),
     openXenesisChannelPairing: (args: unknown) => openXenesisChannelPairing(args),
+    getXenesisChannelRuntimeStatus: (args: unknown) => getXenesisChannelRuntimeStatus(args),
+    openXenesisChannelRuntime: (args: unknown) => openXenesisChannelRuntime(args),
+    requestXenesisChannelRuntime: (args: unknown) => requestXenesisChannelRuntime(args),
     getXenesisChannelUserStoriesStatus: (args: unknown) => getXenesisChannelUserStoriesStatus(args),
     openXenesisChannelUserStory: (args: unknown) => openXenesisChannelUserStory(args),
     getXenesisChannelSetupPlansStatus: (args: unknown) => getXenesisChannelSetupPlansStatus(args),

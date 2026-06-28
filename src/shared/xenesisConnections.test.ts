@@ -84,6 +84,7 @@ test('connection center settings target is owned by the shared connection catalo
   );
   assert.equal(XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES.includes('provider-profile-draft'), true);
   assert.equal(XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES.includes('channel-routing'), true);
+  assert.equal(XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES.includes('channel-runtime'), true);
   assert.equal(XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES.includes('tool-oauth-runtime'), true);
   assert.equal(XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES.includes('tool-setup-plan'), true);
   assert.equal(isXenesisConnectionCenterDetailFocus('tool-oauth-draft'), true);
@@ -1387,6 +1388,7 @@ test('buildXenesisConnectionsStatus exposes guided external messenger channel se
       'channel-safety',
       'channel-access-groups',
       'channel-pairing',
+      'channel-runtime',
       'channel-user-stories',
       'channel-profile-draft',
       'channel-profile-apply',
@@ -1397,8 +1399,32 @@ test('buildXenesisConnectionsStatus exposes guided external messenger channel se
   );
   assert.equal(telegram?.channelSetupPlan?.readPaths.includes('xd.xenesis.channels.setupPlans.status'), true);
   assert.equal(telegram?.channelSetupPlan?.controlPaths.includes('xd.xenesis.channels.setupPlans.open'), true);
+  assert.equal(telegram?.channelSetupPlan?.readPaths.includes('xd.xenesis.channels.runtime.status'), true);
+  assert.equal(telegram?.channelSetupPlan?.controlPaths.includes('xd.xenesis.channels.runtime.open'), true);
   assert.equal(telegram?.channelSetupPlan?.controlPaths.includes('xd.xenesis.channels.profileDrafts.apply'), true);
   assert.equal(telegram?.channelSetupPlan?.controlPaths.includes('xd.xenesis.profiles.testChannel'), true);
+  assert.equal(telegram?.channelRuntime?.runtimeSupport, 'implemented');
+  assert.equal(telegram?.channelRuntime?.runtimeStatus, 'unknown');
+  assert.equal(telegram?.channelRuntime?.adapter, 'telegram');
+  assert.equal(telegram?.channelRuntime?.actionInboxKind, 'xenesis-channel-runtime-readiness');
+  assert.equal(
+    telegram?.channelRuntime?.readinessChecks.includes('gateway-running') &&
+      telegram.channelRuntime.readinessChecks.includes('allowlist-configured') &&
+      telegram.channelRuntime.readinessChecks.includes('pairing-state-readback'),
+    true,
+  );
+  assert.equal(telegram?.channelRuntime?.readPaths.includes('xd.xenesis.channels.runtime.status'), true);
+  assert.equal(telegram?.channelRuntime?.controlPaths.includes('xd.xenesis.channels.runtime.request'), true);
+  assert.equal(
+    telegram?.channelRuntime?.blockedActions.includes('send messages outside approved profile test path'),
+    true,
+  );
+  assert.equal(
+    telegram?.channelRuntime?.safetyBoundaries.some((boundary) =>
+      boundary.includes('does not start gateways, send messages, mutate channel profiles, or store credentials'),
+    ),
+    true,
+  );
   assert.equal(telegram?.channelTemplate?.userStory?.storyContract.openPath, 'xd.xenesis.channels.userStories.open');
   assert.deepEqual(telegram?.channelTemplate?.userStory?.storyContract.openArgs, { id: 'telegram' });
   assert.equal(
@@ -1422,6 +1448,18 @@ test('buildXenesisConnectionsStatus exposes guided external messenger channel se
 
   assert.equal(signal?.channelSetupPlan?.runtimeSupport, 'planned-adapter');
   assert.equal(signal?.channelSetupPlan?.planStatus, 'planned');
+  assert.equal(signal?.channelRuntime?.runtimeSupport, 'planned-adapter');
+  assert.equal(signal?.channelRuntime?.runtimeStatus, 'planned-adapter');
+  assert.equal(signal?.channelRuntime?.adapter, 'signal');
+  assert.equal(signal?.channelRuntime?.readinessChecks.includes('adapter-verified'), true);
+  assert.equal(signal?.channelRuntime?.blockedActions.includes('start planned channel gateway adapters'), true);
+  assert.equal(signal?.channelRuntime?.blockedActions.includes('send messages through planned channel adapters'), true);
+  assert.equal(
+    signal?.channelRuntime?.safetyBoundaries.some((boundary) =>
+      boundary.includes('planned channel runtime readiness is review-only'),
+    ),
+    true,
+  );
   assert.equal(
     signal?.channelSetupPlan?.steps.some((step) => step.id === 'channel-profile-apply'),
     false,
@@ -3250,6 +3288,16 @@ test('buildXenesisConnectionsStatus exposes internal Desk messenger views for im
         safetyBoundaries: ['Pairing view opens do not create OAuth, QR, or device-link sessions.'],
       },
       {
+        id: 'runtime',
+        label: 'Runtime readiness',
+        focusConnectionDetail: 'channel-runtime',
+        openArgs: { id: 'telegram', section: 'runtime', ensureVisible: true },
+        readPaths: ['xd.xenesis.channels.runtime.status', 'xd.xenesis.gateway.status'],
+        controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.channels.runtime.open'],
+        diagnostics: ['channel-runtime-readiness', 'gateway-status', 'readback-verification'],
+        safetyBoundaries: ['Runtime readiness view opens do not start gateways, pair accounts, or send messages.'],
+      },
+      {
         id: 'setup-plan',
         label: 'Setup plan',
         focusConnectionDetail: 'channel-setup-plan',
@@ -3308,6 +3356,7 @@ test('buildXenesisConnectionsStatus exposes internal Desk messenger views for im
       'safety',
       'access-groups',
       'pairing',
+      'runtime',
       'setup-plan',
       'profile-draft',
       'user-stories',
@@ -3338,6 +3387,7 @@ test('buildXenesisConnectionsStatus exposes internal Desk messenger views for im
       'safety',
       'access-groups',
       'pairing',
+      'runtime',
       'setup-plan',
       'profile-draft',
       'user-stories',
@@ -3348,6 +3398,17 @@ test('buildXenesisConnectionsStatus exposes internal Desk messenger views for im
     section: 'profile-draft',
     ensureVisible: true,
   });
+  assert.deepEqual(signal?.messengerView?.viewSections.find((section) => section.id === 'runtime')?.openArgs, {
+    id: 'signal',
+    section: 'runtime',
+    ensureVisible: true,
+  });
+  assert.equal(
+    signal?.messengerView?.viewSections
+      .find((section) => section.id === 'runtime')
+      ?.readPaths.includes('xd.xenesis.channels.runtime.status'),
+    true,
+  );
   assert.deepEqual(signal?.messengerView?.controlPaths, [
     'xd.xenesis.messengers.views.open',
     'xd.xenesis.connections.open',
@@ -3661,6 +3722,7 @@ test('buildXenesisConnectionsStatus exposes diagnostic runbooks for tools, plann
       'channel-safety',
       'channel-access-groups',
       'channel-pairing',
+      'channel-runtime',
       'channel-user-story',
       'channel-profile-draft',
       'channel-setup-plan',

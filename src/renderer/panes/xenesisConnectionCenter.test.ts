@@ -17,6 +17,7 @@ import * as xenesisConnectionCenter from './xenesisConnectionCenter';
 import {
   buildXenesisChannelProfileDraftApplyRequest,
   buildXenesisChannelProfileDraftRequest,
+  buildXenesisChannelRuntimeRequest,
   buildXenesisChannelSetupPlanRequest,
   buildXenesisChannelTestRequest,
   buildXenesisConnectionGuideRequest,
@@ -40,6 +41,7 @@ import {
   formatXenesisChannelPairingSummary,
   formatXenesisChannelProfileDraftSummary,
   formatXenesisChannelRoutingSummary,
+  formatXenesisChannelRuntimeSummary,
   formatXenesisChannelSafetySummary,
   formatXenesisChannelSetupPlanSummary,
   formatXenesisChannelUserStorySummary,
@@ -128,6 +130,8 @@ test('xenesis detail focus selector maps CR detail values to existing data attri
   );
   assert.equal(xenesisConnectionDetailFocusSelector('tool-oauth-runtime'), '[data-xenesis-tool-oauth-runtime]');
   assert.equal(xenesisConnectionDetailFocusSelector('channel-routing'), '[data-xenesis-channel-routing]');
+  assert.equal(XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['channel-runtime'], 'data-xenesis-channel-runtime');
+  assert.equal(xenesisConnectionDetailFocusSelector('channel-runtime'), '[data-xenesis-channel-runtime]');
   assert.equal(xenesisConnectionDetailFocusSelector('provider-profile-draft'), '[data-xenesis-provider-profile-draft]');
   assert.equal(xenesisConnectionDetailFocusSelector('provider-setup-plan'), '[data-xenesis-provider-setup-plan]');
   assert.equal(xenesisConnectionDetailFocusSelector(''), null);
@@ -266,6 +270,10 @@ test('SettingsPane renders Connection Center guided and review step details', ()
   assert.match(source, /formatXenesisToolOAuthRuntimeSummary/);
   assert.match(source, /buildXenesisToolOAuthRuntimeRequest/);
   assert.match(source, /data-xenesis-tool-oauth-runtime/);
+  assert.match(source, /channelRuntime/);
+  assert.match(source, /formatXenesisChannelRuntimeSummary/);
+  assert.match(source, /buildXenesisChannelRuntimeRequest/);
+  assert.match(source, /data-xenesis-channel-runtime/);
   assert.match(source, /xenesisConnectionsChannelProfileDraftReviewSteps/);
   assert.match(source, /formatXenesisUserStoryContractSummary/);
   assert.match(source, /formatXenesisUserStoryContractDetail/);
@@ -285,6 +293,7 @@ test('SettingsPane renders the Connectors category from CR-backed tool and messe
   assert.match(source, /settings\.connectorsXenesisSetupPlans/);
   assert.match(source, /settings\.connectorsXenesisActionPolicies/);
   assert.match(source, /settings\.connectorsXenesisMessengerViews/);
+  assert.match(source, /settings\.connectorsXenesisChannelRuntime/);
   assert.match(source, /settings\.connectorsXenesisMessengerProfileDrafts/);
   assert.match(source, /settings\.connectorsXenesisChannelSetupPlans/);
   assert.match(source, /toolItems\.map\(renderXenesisConnectionItem\)/);
@@ -507,6 +516,30 @@ test('formatXenesisChannelPairingSummary describes pairing model, account scope,
   );
 });
 
+test('formatXenesisChannelRuntimeSummary describes runtime support, readiness checks, and blocked actions', () => {
+  assert.equal(
+    formatXenesisChannelRuntimeSummary({
+      runtimeStatus: 'planned-adapter',
+      actionInboxKind: 'xenesis-channel-runtime-readiness',
+      channel: 'whatsapp',
+      displayName: 'WhatsApp',
+      adapter: 'whatsapp',
+      runtimeSupport: 'planned-adapter',
+      primarySurface: 'Settings > Xenesis Agent > Connections',
+      setupSurface: 'Settings > Xenesis Agent > Connections',
+      reviewSurface: 'Desk Action Inbox',
+      gatewayRequirement: 'planned adapter must be implemented and verified before runtime use',
+      readinessChecks: ['adapter-verified', 'gateway-readback', 'allowlist-reviewed'],
+      readPaths: ['xd.xenesis.channels.runtime.status'],
+      controlPaths: ['xd.xenesis.channels.runtime.request'],
+      diagnostics: ['channel-runtime-readiness'],
+      blockedActions: ['start planned channel gateway adapters', 'send messages through planned channel adapters'],
+      safetyBoundaries: ['planned channel runtime readiness is review-only'],
+    }),
+    'whatsapp / planned-adapter / 3 readiness check(s) / 2 blocked action(s)',
+  );
+});
+
 test('formatXenesisChannelUserStorySummary describes workflow type, runtime support, and story count', () => {
   assert.equal(
     formatXenesisChannelUserStorySummary({
@@ -622,6 +655,44 @@ test('buildXenesisChannelProfileDraftRequest targets the review request CR path'
   });
 
   assert.equal(buildXenesisChannelProfileDraftRequest({ ...item, channelProfileDraft: undefined }), null);
+});
+
+test('buildXenesisChannelRuntimeRequest targets the review request CR path', () => {
+  const item = {
+    id: 'whatsapp',
+    kind: 'messenger',
+    label: 'WhatsApp',
+    status: 'planned',
+    summary: 'WhatsApp channel.',
+    channelRuntime: {
+      runtimeStatus: 'planned-adapter',
+      actionInboxKind: 'xenesis-channel-runtime-readiness',
+      channel: 'whatsapp',
+      displayName: 'WhatsApp',
+      adapter: 'whatsapp',
+      runtimeSupport: 'planned-adapter',
+      primarySurface: 'Settings > Xenesis Agent > Connections',
+      setupSurface: 'Settings > Xenesis Agent > Connections',
+      reviewSurface: 'Desk Action Inbox',
+      gatewayRequirement: 'planned adapter must be implemented and verified before runtime use',
+      readinessChecks: ['adapter-verified'],
+      readPaths: ['xd.xenesis.channels.runtime.status'],
+      controlPaths: ['xd.xenesis.channels.runtime.request'],
+      diagnostics: ['channel-runtime-readiness'],
+      blockedActions: ['send messages through planned channel adapters'],
+      safetyBoundaries: ['planned channel runtime readiness is review-only'],
+    },
+  } satisfies XenesisConnectionItem;
+
+  assert.deepEqual(buildXenesisChannelRuntimeRequest(item), {
+    path: 'xd.xenesis.channels.runtime.request',
+    args: {
+      channel: 'whatsapp',
+    },
+    source: 'xenesis',
+    approved: true,
+  });
+  assert.equal(buildXenesisChannelRuntimeRequest({ ...item, channelRuntime: undefined }), null);
 });
 
 test('buildXenesisChannelProfileDraftApplyRequest targets the approval-gated apply CR path', () => {

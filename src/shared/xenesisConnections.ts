@@ -114,6 +114,7 @@ export const XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES = [
   'channel-safety',
   'channel-access-groups',
   'channel-pairing',
+  'channel-runtime',
   'channel-user-story',
 ] as const;
 
@@ -300,6 +301,12 @@ export const XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_DEFINITIONS = [
     label: 'Pairing',
     naturalWords: ['pairing', '페어링', '연결 페어링'],
     focusConnectionDetail: 'channel-pairing',
+  },
+  {
+    id: 'runtime',
+    label: 'Runtime readiness',
+    naturalWords: ['runtime', 'runtime readiness', 'channel runtime', '런타임', '채널 런타임', '런타임 준비'],
+    focusConnectionDetail: 'channel-runtime',
   },
   {
     id: 'setup-plan',
@@ -631,6 +638,28 @@ export interface XenesisConnectionChannelSetupPlanTemplate {
   setupSurface: string;
   reviewSurface: string;
   steps: XenesisConnectionChannelSetupPlanStep[];
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  blockedActions: string[];
+  safetyBoundaries: string[];
+}
+
+export type XenesisConnectionChannelRuntimeSupport = 'implemented' | 'planned-adapter';
+export type XenesisConnectionChannelRuntimeStatus = 'ready' | 'needs-setup' | 'planned-adapter' | 'unknown';
+
+export interface XenesisConnectionChannelRuntimeTemplate {
+  runtimeStatus: XenesisConnectionChannelRuntimeStatus;
+  actionInboxKind: 'xenesis-channel-runtime-readiness';
+  channel: string;
+  displayName: string;
+  adapter: string;
+  runtimeSupport: XenesisConnectionChannelRuntimeSupport;
+  primarySurface: string;
+  setupSurface: string;
+  reviewSurface: string;
+  gatewayRequirement: string;
+  readinessChecks: string[];
   readPaths: string[];
   controlPaths: string[];
   diagnostics: string[];
@@ -1406,6 +1435,7 @@ export interface XenesisConnectionItem {
   toolUserStory?: XenesisConnectionToolUserStoryTemplate;
   toolActionCatalog?: XenesisConnectionToolActionCatalogTemplate;
   messengerView?: XenesisConnectionMessengerViewTemplate;
+  channelRuntime?: XenesisConnectionChannelRuntimeTemplate;
   channelSetupPlan?: XenesisConnectionChannelSetupPlanTemplate;
   channelProfileDraft?: XenesisConnectionChannelProfileDraftTemplate;
   guideCatalog?: XenesisConnectionGuideCatalogTemplate;
@@ -3987,6 +4017,13 @@ function messengerViewSections(messengerId: string): XenesisConnectionMessengerV
       safetyBoundaries: ['Pairing view opens do not create OAuth, QR, or device-link sessions.'],
     }),
     messengerViewSection(messengerId, {
+      id: 'runtime',
+      readPaths: ['xd.xenesis.channels.runtime.status', 'xd.xenesis.gateway.status'],
+      controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.channels.runtime.open'],
+      diagnostics: ['channel-runtime-readiness', 'gateway-status', 'readback-verification'],
+      safetyBoundaries: ['Runtime readiness view opens do not start gateways, pair accounts, or send messages.'],
+    }),
+    messengerViewSection(messengerId, {
       id: 'setup-plan',
       readPaths: ['xd.xenesis.channels.setupPlans.status', 'xd.xenesis.connections.status'],
       controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.channels.setupPlans.open'],
@@ -4060,6 +4097,146 @@ function messengerViewTemplate(
           'no gateway adapter, pairing flow, or delivery action is exposed until runtime support exists',
         ],
   };
+}
+
+function channelRuntimeStatus(item: XenesisConnectionItem): XenesisConnectionChannelRuntimeStatus {
+  if (item.messengerView?.runtimeSupport === 'planned' || item.supportLevel === 'planned') return 'planned-adapter';
+  if (item.status === 'ready') return 'ready';
+  if (item.status === 'needs-setup' || item.status === 'blocked' || item.status === 'disabled') return 'needs-setup';
+  return 'unknown';
+}
+
+function channelRuntimeReadinessChecks(item: XenesisConnectionItem, plannedAdapter: boolean): string[] {
+  if (plannedAdapter) {
+    return uniqueStrings([
+      'adapter-verified',
+      'gateway-readback',
+      'allowlist-reviewed',
+      'pairing-state-readback',
+      'profile-draft-reviewed',
+      ...(item.channelTemplate?.pairing?.validationChecks ?? []),
+      ...(item.channelProfileDraft?.diagnostics ?? []),
+    ]);
+  }
+  return uniqueStrings([
+    'gateway-running',
+    'allowlist-configured',
+    'pairing-state-readback',
+    'profile-draft-ready',
+    'approval-required-before-send',
+    ...(item.messengerView?.diagnostics ?? []),
+    ...(item.channelTemplate?.accessGroups?.diagnostics ?? []),
+    ...(item.channelTemplate?.pairing?.validationChecks ?? []),
+    ...(item.channelProfileDraft?.diagnostics ?? []),
+  ]);
+}
+
+function buildXenesisChannelRuntime(item: XenesisConnectionItem): XenesisConnectionChannelRuntimeTemplate | undefined {
+  if (item.kind !== 'messenger') return undefined;
+  const plannedAdapter = item.messengerView?.runtimeSupport === 'planned' || item.supportLevel === 'planned';
+  const runtimeSupport: XenesisConnectionChannelRuntimeSupport = plannedAdapter ? 'planned-adapter' : 'implemented';
+  const readinessChecks = channelRuntimeReadinessChecks(item, plannedAdapter);
+  return {
+    runtimeStatus: channelRuntimeStatus(item),
+    actionInboxKind: 'xenesis-channel-runtime-readiness',
+    channel: item.id,
+    displayName: item.label,
+    adapter: item.id,
+    runtimeSupport,
+    primarySurface: item.messengerView?.primarySurface ?? 'Settings > Xenesis Agent > Connections',
+    setupSurface:
+      item.messengerView?.setupSurface ??
+      item.channelProfileDraft?.setupSurface ??
+      item.channelTemplate?.pairing?.setupSurface ??
+      'Settings > Xenesis Agent > Connections',
+    reviewSurface: 'Desk Action Inbox',
+    gatewayRequirement: plannedAdapter
+      ? 'planned adapter must be implemented and verified before runtime use'
+      : 'gateway must be running and channel readiness must read back before delivery',
+    readinessChecks,
+    readPaths: uniqueStrings([
+      'xd.xenesis.channels.runtime.status',
+      'xd.xenesis.connections.status',
+      'xd.xenesis.gateway.status',
+      'xd.xenesis.messengers.views.status',
+      ...(item.messengerView?.readPaths ?? []),
+      ...(item.channelTemplate?.safety?.readPaths ?? []),
+      ...(item.channelTemplate?.accessGroups?.readPaths ?? []),
+      ...(item.channelTemplate?.pairing?.readPaths ?? []),
+      ...(item.channelProfileDraft?.readPaths ?? []),
+    ]),
+    controlPaths: uniqueStrings([
+      'xd.xenesis.channels.runtime.open',
+      'xd.xenesis.channels.runtime.request',
+      'xd.xenesis.messengers.views.open',
+      'xd.xenesis.connections.open',
+      ...(plannedAdapter ? [] : ['xd.xenesis.profiles.testChannel']),
+      ...(item.messengerView?.controlPaths ?? []),
+      ...(item.channelTemplate?.safety?.controlPaths ?? []),
+      ...(item.channelTemplate?.accessGroups?.controlPaths ?? []),
+      ...(item.channelTemplate?.pairing?.controlPaths ?? []),
+      ...(item.channelProfileDraft?.controlPaths ?? []),
+    ]),
+    diagnostics: uniqueStrings([
+      'channel-runtime-readiness',
+      'gateway-status',
+      'readback-verification',
+      ...(plannedAdapter ? ['planned-adapter'] : ['implemented-adapter']),
+      ...(item.messengerView?.diagnostics ?? []),
+      ...(item.channelTemplate?.routing?.diagnostics ?? []),
+      ...(item.channelTemplate?.safety?.troubleshooting ?? []),
+      ...(item.channelTemplate?.accessGroups?.diagnostics ?? []),
+      ...(item.channelTemplate?.pairing?.diagnostics ?? []),
+      ...(item.channelProfileDraft?.diagnostics ?? []),
+      `channel:${item.id}`,
+    ]),
+    blockedActions: uniqueStrings([
+      'send messages outside approved profile test path',
+      'start gateway outside approved runtime path',
+      'mutate channel profile outside approved channel profile draft apply path',
+      'store channel secrets in Desk settings',
+      'bypass approvals',
+      ...(plannedAdapter
+        ? [
+            'start planned channel gateway adapters',
+            'send messages through planned channel adapters',
+            'mutate planned channel profiles',
+            'pair accounts or devices from runtime readiness',
+          ]
+        : []),
+      ...(item.channelProfileDraft?.blockedActions ?? []),
+    ]),
+    safetyBoundaries: uniqueStrings([
+      plannedAdapter
+        ? 'planned channel runtime readiness is review-only until the adapter is implemented, paired, allowlisted, and verified'
+        : 'channel runtime readiness does not start gateways, send messages, mutate channel profiles, or store credentials',
+      'runtime readiness opens and requests create/read local Desk surfaces only',
+      'approval-gated profile draft apply and sanitized test-send paths remain separate',
+      ...(item.messengerView?.safetyBoundaries ?? []),
+      ...(item.channelTemplate?.safetyControls ?? []),
+      ...(item.channelTemplate?.safety?.safetyBoundaries ?? []),
+      ...(item.channelTemplate?.accessGroups?.safetyBoundaries ?? []),
+      ...(item.channelTemplate?.pairing?.safetyBoundaries ?? []),
+      ...(item.channelProfileDraft?.safetyBoundaries ?? []),
+    ]),
+  };
+}
+
+function withXenesisConnectionChannelRuntime(item: XenesisConnectionItem): XenesisConnectionItem {
+  const channelRuntime = buildXenesisChannelRuntime(item);
+  if (!channelRuntime) return item;
+  return { ...item, channelRuntime };
+}
+
+function withXenesisConnectionChannelRuntimes(
+  sections: XenesisConnectionsStatus['sections'],
+): XenesisConnectionsStatus['sections'] {
+  return Object.fromEntries(
+    Object.entries(sections).map(([id, section]) => [
+      id,
+      { ...section, items: section.items.map((item) => withXenesisConnectionChannelRuntime(item)) },
+    ]),
+  ) as XenesisConnectionsStatus['sections'];
 }
 
 const XENESIS_CHANNEL_PROFILE_DRAFT_BLOCKED_ACTIONS = [
@@ -6684,6 +6861,21 @@ function channelSetupPlanSteps(item: XenesisConnectionItem): XenesisConnectionCh
           }),
         ]
       : []),
+    ...(item.channelRuntime
+      ? [
+          channelSetupPlanStep({
+            id: 'channel-runtime',
+            label: 'Read channel runtime readiness',
+            kind: 'read',
+            crPath: 'xd.xenesis.channels.runtime.status',
+            args: channelArgs,
+            expectedState: `${item.label} channel runtime support, gateway requirement, readiness checks, and blocked actions are visible before delivery.`,
+            verifyWith: [...item.channelRuntime.readinessChecks, ...item.channelRuntime.diagnostics],
+            safetyBoundary:
+              'channel runtime reads do not start gateways, pair accounts, mutate profiles, or send messages',
+          }),
+        ]
+      : []),
     ...(item.channelTemplate?.userStory
       ? [
           channelSetupPlanStep({
@@ -6793,9 +6985,11 @@ function buildXenesisChannelSetupPlan(
       'xd.xenesis.channels.safety.status',
       'xd.xenesis.channels.accessGroups.status',
       'xd.xenesis.channels.pairing.status',
+      'xd.xenesis.channels.runtime.status',
       'xd.xenesis.channels.userStories.status',
       'xd.xenesis.channels.profileDrafts.status',
       ...(item.messengerView?.readPaths ?? []),
+      ...(item.channelRuntime?.readPaths ?? []),
       ...(item.channelTemplate?.safety?.readPaths ?? []),
       ...(item.channelTemplate?.accessGroups?.readPaths ?? []),
       ...(item.channelTemplate?.pairing?.readPaths ?? []),
@@ -6810,6 +7004,7 @@ function buildXenesisChannelSetupPlan(
       'xd.xenesis.connections.diagnostics.open',
       'xd.xenesis.connections.setupRequests.request',
       ...(item.messengerView?.controlPaths ?? []),
+      ...(item.channelRuntime?.controlPaths ?? []),
       ...(item.channelTemplate?.safety?.controlPaths ?? []),
       ...(item.channelTemplate?.accessGroups?.controlPaths ?? []),
       ...(item.channelTemplate?.pairing?.controlPaths ?? []),
@@ -6821,6 +7016,8 @@ function buildXenesisChannelSetupPlan(
       'channel-setup-plan',
       ...(plannedAdapter ? ['planned-channel-adapter'] : ['implemented-channel-adapter']),
       ...(item.messengerView?.diagnostics ?? []),
+      ...(item.channelRuntime?.diagnostics ?? []),
+      ...(item.channelRuntime?.readinessChecks ?? []),
       ...(item.channelTemplate?.routing?.diagnostics ?? []),
       ...(item.channelTemplate?.safety?.troubleshooting ?? []),
       ...(item.channelTemplate?.accessGroups?.diagnostics ?? []),
@@ -6843,6 +7040,7 @@ function buildXenesisChannelSetupPlan(
             'mutate planned channel profiles',
           ]
         : []),
+      ...(item.channelRuntime?.blockedActions ?? []),
       ...(item.channelProfileDraft?.blockedActions ?? []),
     ]),
     safetyBoundaries: uniqueStrings([
@@ -6853,6 +7051,7 @@ function buildXenesisChannelSetupPlan(
         ? 'planned channel setup plans are review-only until adapters are verified'
         : 'implemented channel setup plans reference only existing approval-gated apply and test paths',
       ...(item.messengerView?.safetyBoundaries ?? []),
+      ...(item.channelRuntime?.safetyBoundaries ?? []),
       ...(item.channelTemplate?.safetyControls ?? []),
       ...(item.channelTemplate?.safety?.safetyBoundaries ?? []),
       ...(item.channelTemplate?.accessGroups?.safetyBoundaries ?? []),
@@ -6922,6 +7121,7 @@ function diagnosticRunbookSetupSurface(item: XenesisConnectionItem): string {
     item.toolUserStory?.setupSurface ??
     item.toolInstallPlan?.setupSurface ??
     item.mcpInstallDraft?.installSurface ??
+    item.channelRuntime?.setupSurface ??
     item.channelProfileDraft?.setupSurface ??
     item.messengerView?.setupSurface ??
     item.channelTemplate?.pairing?.setupSurface ??
@@ -6945,6 +7145,7 @@ function diagnosticRunbookPrimarySurface(item: XenesisConnectionItem): string {
     item.toolUserStory?.primarySurface ??
     item.toolInstallPlan?.primarySurface ??
     (item.mcpInstallDraft ? 'Settings > Xenesis Agent > Connections' : undefined) ??
+    (item.channelRuntime ? 'Settings > Xenesis Agent > Connections' : undefined) ??
     (item.channelProfileDraft ? 'Settings > Xenesis Agent > Connections' : undefined) ??
     item.messengerView?.primarySurface ??
     item.guideCatalog?.primarySurface ??
@@ -7291,6 +7492,24 @@ function buildXenesisConnectionDiagnosticRunbook(
     );
   }
 
+  if (item.channelRuntime) {
+    steps.push(
+      diagnosticRunbookStep({
+        id: 'channel-runtime',
+        label: 'Channel runtime readiness',
+        expectedState:
+          'Runtime support, gateway requirement, readiness checks, and blocked actions are visible before delivery.',
+        readPaths: ['xd.xenesis.channels.runtime.status', ...item.channelRuntime.readPaths],
+        controlPaths: item.channelRuntime.controlPaths,
+        diagnostics: [
+          ...item.channelRuntime.readinessChecks,
+          ...item.channelRuntime.diagnostics,
+          ...item.channelRuntime.blockedActions,
+        ],
+      }),
+    );
+  }
+
   if (item.channelTemplate?.userStory) {
     steps.push(
       diagnosticRunbookStep({
@@ -7413,6 +7632,7 @@ function buildXenesisConnectionDiagnosticRunbook(
       ...(item.channelTemplate?.safety?.safetyBoundaries ?? []),
       ...(item.channelTemplate?.accessGroups?.safetyBoundaries ?? []),
       ...(item.channelTemplate?.pairing?.safetyBoundaries ?? []),
+      ...(item.channelRuntime?.safetyBoundaries ?? []),
       ...(item.channelTemplate?.userStory?.safetyBoundaries ?? []),
       ...(item.channelProfileDraft?.safetyBoundaries ?? []),
       ...(item.channelProfileDraft?.reviewSteps.map((step) => step.safetyBoundary) ?? []),
@@ -7479,6 +7699,8 @@ function setupRequestDiagnosticItems(item: XenesisConnectionItem): string[] {
     ...(item.channelTemplate?.safety?.troubleshooting ?? []),
     ...(item.channelTemplate?.accessGroups?.diagnostics ?? []),
     ...(item.channelTemplate?.pairing?.validationChecks ?? []),
+    ...(item.channelRuntime?.diagnostics ?? []),
+    ...(item.channelRuntime?.readinessChecks ?? []),
     ...(item.channelTemplate?.userStory?.diagnostics ?? []),
     ...(item.channelSetupPlan?.diagnostics ?? []),
     ...(item.channelProfileDraft?.diagnostics ?? []),
@@ -7510,6 +7732,8 @@ function setupRequestStepItems(item: XenesisConnectionItem): string[] {
     ...(item.toolConnector?.validationChecks.map((check) => `validate ${check}`) ?? []),
     ...(item.toolSetup?.verification.map((check) => `verify ${check}`) ?? []),
     ...(item.channelTemplate?.pairing?.validationChecks.map((check) => `validate ${check}`) ?? []),
+    ...(item.channelRuntime?.readinessChecks.map((check) => `verify channel runtime readiness: ${check}`) ?? []),
+    ...(item.channelRuntime?.blockedActions.map((action) => `confirm channel runtime blocks: ${action}`) ?? []),
     ...(item.channelTemplate?.accessGroups?.bindings.map(
       (binding) => `review ${binding.field}: ${binding.description}`,
     ) ?? []),
@@ -7590,6 +7814,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.channelTemplate?.safety?.readPaths ?? []),
       ...(item.channelTemplate?.accessGroups?.readPaths ?? []),
       ...(item.channelTemplate?.pairing?.readPaths ?? []),
+      ...(item.channelRuntime?.readPaths ?? []),
       ...(item.channelTemplate?.userStory?.readPaths ?? []),
       ...(item.channelSetupPlan?.readPaths ?? []),
       ...(item.channelProfileDraft?.readPaths ?? []),
@@ -7624,6 +7849,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.channelTemplate?.safety?.controlPaths ?? []),
       ...(item.channelTemplate?.accessGroups?.controlPaths ?? []),
       ...(item.channelTemplate?.pairing?.controlPaths ?? []),
+      ...(item.channelRuntime?.controlPaths ?? []),
       ...(item.channelTemplate?.userStory?.controlPaths ?? []),
       ...(item.channelSetupPlan?.controlPaths ?? []),
       ...(item.channelProfileDraft?.controlPaths ?? []),
@@ -7637,6 +7863,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.toolMcpOAuth?.blockedActions ?? []),
       ...(item.toolOAuthDraft?.blockedActions ?? []),
       ...(item.toolOAuthRuntime?.blockedActions ?? []),
+      ...(item.channelRuntime?.blockedActions ?? []),
     ]),
     safetyBoundaries: uniqueStrings([
       'setup request review records local Action Inbox items only',
@@ -7673,6 +7900,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.channelTemplate?.safety?.safetyBoundaries ?? []),
       ...(item.channelTemplate?.accessGroups?.safetyBoundaries ?? []),
       ...(item.channelTemplate?.pairing?.safetyBoundaries ?? []),
+      ...(item.channelRuntime?.safetyBoundaries ?? []),
       ...(item.channelTemplate?.userStory?.safetyBoundaries ?? []),
       ...(item.channelSetupPlan?.safetyBoundaries ?? []),
       ...(item.channelProfileDraft?.safetyBoundaries ?? []),
@@ -9066,7 +9294,9 @@ export function buildXenesisConnectionsStatus(input: BuildXenesisConnectionsStat
   const sections = withXenesisConnectionSetupRequests(
     withXenesisConnectionDiagnosticRunbooks(
       withXenesisConnectionChannelSetupPlans(
-        withXenesisConnectionToolSetupPlans(withXenesisConnectionProviderSetupPlans(rawSections)),
+        withXenesisConnectionChannelRuntimes(
+          withXenesisConnectionToolSetupPlans(withXenesisConnectionProviderSetupPlans(rawSections)),
+        ),
       ),
     ),
   );

@@ -5,6 +5,7 @@ import type {
   XenesisConnectionChannelProfileDraftReviewStep,
   XenesisConnectionChannelProfileDraftTemplate,
   XenesisConnectionChannelRoutingTemplate,
+  XenesisConnectionChannelRuntimeTemplate,
   XenesisConnectionChannelSafetyTemplate,
   XenesisConnectionChannelSetupPlanTemplate,
   XenesisConnectionChannelUserStoryTemplate,
@@ -91,6 +92,7 @@ export const XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES = {
   'channel-safety': 'data-xenesis-channel-safety',
   'channel-access-groups': 'data-xenesis-channel-access-groups',
   'channel-pairing': 'data-xenesis-channel-pairing',
+  'channel-runtime': 'data-xenesis-channel-runtime',
   'channel-user-story': 'data-xenesis-channel-user-story',
 } as const satisfies Record<XenesisConnectionCenterDetailFocus, string>;
 
@@ -149,6 +151,10 @@ export function formatXenesisChannelAccessGroupsSummary(
 
 export function formatXenesisChannelPairingSummary(pairing: XenesisConnectionChannelPairingTemplate): string {
   return `${pairing.model} / ${pairing.accountScope} / ${pairing.pairingState}`;
+}
+
+export function formatXenesisChannelRuntimeSummary(runtime: XenesisConnectionChannelRuntimeTemplate): string {
+  return `${runtime.channel} / ${runtime.runtimeStatus} / ${runtime.readinessChecks.length} readiness check(s) / ${runtime.blockedActions.length} blocked action(s)`;
 }
 
 export function formatXenesisChannelUserStorySummary(
@@ -481,6 +487,18 @@ export function buildXenesisChannelSetupPlanRequest(
     },
     source: 'xenesis',
     approved: false,
+  };
+}
+
+export function buildXenesisChannelRuntimeRequest(item: XenesisConnectionItem): McpBridgeCapabilityCallRequest | null {
+  if (!item.channelRuntime) return null;
+  return {
+    path: 'xd.xenesis.channels.runtime.request',
+    args: {
+      channel: item.channelRuntime.channel,
+    },
+    source: 'xenesis',
+    approved: true,
   };
 }
 

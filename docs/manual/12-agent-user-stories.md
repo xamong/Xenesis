@@ -138,6 +138,7 @@ User intent: "Prepare Google Workspace or Google Calendar OAuth."
 Read first:
 
 - `xd.xenesis.tools.oauthDrafts.status`
+- `xd.xenesis.tools.oauthRuntime.status`
 - `xd.xenesis.tools.actions.status`
 - `xd.xenesis.tools.userStories.status`
 
@@ -145,11 +146,13 @@ Open or focus:
 
 - `xd.xenesis.tools.oauthDrafts.open`
 - `xd.xenesis.tools.oauthDrafts.setupPacket`
+- `xd.xenesis.tools.oauthRuntime.open`
 - `xd.xenesis.tools.actions.open`
 
 Approval boundary:
 
 - `xd.xenesis.tools.oauthDrafts.request`
+- `xd.xenesis.tools.oauthRuntime.request`
 
 Safety boundary:
 
@@ -194,11 +197,13 @@ Read first:
 - `xd.xenesis.channels.safety.status`
 - `xd.xenesis.channels.accessGroups.status`
 - `xd.xenesis.channels.pairing.status`
+- `xd.xenesis.channels.runtime.status`
 - `xd.xenesis.channels.userStories.status`
 
 Open or focus:
 
 - `xd.xenesis.messengers.views.open`
+- `xd.xenesis.channels.runtime.open`
 - `xd.xenesis.channels.setupPlans.open`
 - `xd.xenesis.channels.userStories.open`
 - `xd.xenesis.connections.diagnostics.open`
@@ -206,13 +211,14 @@ Open or focus:
 Approval boundary:
 
 - `xd.xenesis.channels.profileDrafts.request`
+- `xd.xenesis.channels.runtime.request`
 - `xd.xenesis.channels.profileDrafts.apply`
 - `xd.xenesis.profiles.testChannel`
 
 Completion evidence:
 
 - Channel setup plan names the required settings, allowlist checks, pairing
-  evidence, route policy, and diagnostics.
+  evidence, runtime readiness, route policy, and diagnostics.
 - Test send remains approval-gated and should be verified with runtime
   readbacks, not chat-only text.
 
@@ -224,6 +230,7 @@ another planned messenger."
 Read first:
 
 - `xd.xenesis.messengers.views.status`
+- `xd.xenesis.channels.runtime.status`
 - `xd.xenesis.channels.userStories.status`
 - `xd.xenesis.channels.routing.status`
 - `xd.xenesis.channels.safety.status`
@@ -231,13 +238,25 @@ Read first:
 Open or focus:
 
 - `xd.xenesis.messengers.views.open`
+- `xd.xenesis.channels.runtime.open`
 - `xd.xenesis.channels.userStories.open`
+
+Approval boundary:
+
+- `xd.xenesis.channels.runtime.request`
 
 Safety boundary:
 
 - Planned messengers are readiness views and user-story templates only. They do
   not enable delivery, create adapters, send messages, write profiles, or
   mutate allowlists.
+
+Completion evidence:
+
+- Runtime readiness reports `planned-adapter`, adapter id, gateway requirement,
+  readiness checks, blocked actions, and safety boundaries.
+- Action Inbox contains a local runtime-readiness review item when review is
+  requested.
 
 ## Desk Workflow Stories
 

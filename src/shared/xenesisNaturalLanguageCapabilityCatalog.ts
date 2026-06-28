@@ -2204,6 +2204,22 @@ export const XENESIS_NATURAL_MESSENGER_AGGREGATE_SURFACE_SPECS = [
     },
   },
   {
+    key: 'runtime',
+    open: {
+      id: 'natural-xenesis-messengers-runtime-catalog-open',
+      path: 'xd.xenesis.channels.runtime.open',
+      reason:
+        'Open external messenger runtime readiness catalog in Xenesis Connection Center from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_RUNTIME_CONTEXT_WORDS }],
+    },
+    status: {
+      id: 'natural-xenesis-messengers-runtime-status',
+      path: 'xd.xenesis.channels.runtime.status',
+      reason: 'Read external messenger runtime readiness catalog status from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_RUNTIME_CONTEXT_WORDS }],
+    },
+  },
+  {
     key: 'userStories',
     open: {
       id: 'natural-xenesis-messengers-user-stories-catalog-open',
@@ -3167,6 +3183,37 @@ export const XENESIS_NATURAL_CONNECTION_TARGET_SURFACE_SPECS = [
     },
   },
   {
+    key: 'channelRuntime',
+    open: {
+      path: 'xd.xenesis.channels.runtime.open',
+      idPrefix: 'natural-xenesis-channel-runtime-open',
+      reasonFor: (_id: string, label: string) =>
+        `Open ${label} channel runtime readiness from natural language request.`,
+      rules: [
+        {
+          targetScope: 'messenger',
+          contextWords: XENESIS_NATURAL_RUNTIME_CONTEXT_WORDS,
+          argsKind: 'channelVisible',
+          order: 10,
+        },
+      ],
+    },
+    status: {
+      path: 'xd.xenesis.channels.runtime.status',
+      idPrefix: 'natural-xenesis-channel-runtime-status',
+      reasonFor: (_id: string, label: string) =>
+        `Read ${label} channel runtime readiness from natural language request.`,
+      rules: [
+        {
+          targetScope: 'messenger',
+          contextWords: XENESIS_NATURAL_RUNTIME_CONTEXT_WORDS,
+          argsKind: 'channel',
+          order: 10,
+        },
+      ],
+    },
+  },
+  {
     key: 'channelUserStory',
     open: {
       path: 'xd.xenesis.channels.userStories.open',
@@ -3474,6 +3521,21 @@ export const XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_SPECS = [
     ],
   },
   {
+    key: 'channelRuntimeRequest',
+    path: 'xd.xenesis.channels.runtime.request',
+    idPrefix: 'natural-xenesis-channel-runtime-request',
+    reasonFor: (_id: string, label: string) =>
+      `Request ${label} channel runtime readiness review from natural language request.`,
+    rules: [
+      {
+        targetScope: 'messenger',
+        contextWords: XENESIS_NATURAL_RUNTIME_CONTEXT_WORDS,
+        argsKind: 'channel',
+        order: 1,
+      },
+    ],
+  },
+  {
     key: 'connectionSetupRequest',
     path: 'xd.xenesis.connections.setupRequests.request',
     idPrefix: 'natural-xenesis-connection-setup-request',
@@ -3601,6 +3663,7 @@ export const XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTOR_SPECS = [
   { alias: 'toolOauthDraft', source: 'connectionTarget', key: 'toolOauthDraftRequest' },
   { alias: 'toolMcpOAuth', source: 'connectionTarget', key: 'toolMcpOAuthRequest' },
   { alias: 'toolActionPolicy', source: 'connectionTarget', key: 'toolActionPolicyRequest' },
+  { alias: 'channelRuntime', source: 'connectionTarget', key: 'channelRuntimeRequest' },
   { alias: 'channelProfileDraft', source: 'connectionTarget', key: 'channelProfileDraftRequest' },
   { alias: 'connectionSetupRequest', source: 'connectionTarget', key: 'connectionSetupRequest' },
 ] as const satisfies readonly {
@@ -3644,6 +3707,7 @@ export const XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES = buildXenesisNaturalCo
     'toolOauthDraftRequest',
     'toolMcpOAuthRequest',
     'toolActionPolicyRequest',
+    'channelRuntimeRequest',
     'channelProfileDraftRequest',
     'connectionSetupRequest',
   ],

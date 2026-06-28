@@ -87,6 +87,7 @@ import { SETTINGS_CATEGORIES, type SettingsCategoryId, VISIBLE_SETTINGS_CATEGORI
 import {
   buildXenesisChannelProfileDraftApplyRequest,
   buildXenesisChannelProfileDraftRequest,
+  buildXenesisChannelRuntimeRequest,
   buildXenesisChannelSetupPlanRequest,
   buildXenesisChannelTestRequest,
   buildXenesisConnectionGuideRequest,
@@ -110,6 +111,7 @@ import {
   formatXenesisChannelPairingSummary,
   formatXenesisChannelProfileDraftSummary,
   formatXenesisChannelRoutingSummary,
+  formatXenesisChannelRuntimeSummary,
   formatXenesisChannelSafetySummary,
   formatXenesisChannelSetupPlanSummary,
   formatXenesisChannelUserStorySummary,
@@ -4337,6 +4339,7 @@ export default function SettingsPane() {
     const toolSetupPlanRequest = buildXenesisToolSetupPlanRequest(item);
     const toolActionCatalogRequest = buildXenesisToolActionCatalogRequest(item);
     const channelSetupPlanRequest = buildXenesisChannelSetupPlanRequest(item);
+    const channelRuntimeRequest = buildXenesisChannelRuntimeRequest(item);
     const channelProfileDraftRequest = buildXenesisChannelProfileDraftRequest(item);
     const channelProfileDraftApplyRequest = buildXenesisChannelProfileDraftApplyRequest(item);
     const channelTestRequest = buildXenesisChannelTestRequest(item);
@@ -4363,6 +4366,7 @@ export default function SettingsPane() {
     const toolView = item.toolView;
     const toolUserStory = item.toolUserStory;
     const messengerView = item.messengerView;
+    const channelRuntime = item.channelRuntime;
     const channelSetupPlan = item.channelSetupPlan;
     const channelProfileDraft = item.channelProfileDraft;
     const channelTemplate = item.channelTemplate;
@@ -4399,6 +4403,7 @@ export default function SettingsPane() {
           toolSetupPlanRequest ||
           toolActionCatalogRequest ||
           channelSetupPlanRequest ||
+          channelRuntimeRequest ||
           channelProfileDraftRequest ||
           channelProfileDraftApplyRequest ||
           channelTestRequest ||
@@ -4512,6 +4517,16 @@ export default function SettingsPane() {
                 }}
               >
                 {t('settings.xenesisConnectionsReadChannelSetupPlan')}
+              </button>
+            ) : null}
+            {channelRuntimeRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(channelRuntimeRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsRequestChannelRuntime')}
               </button>
             ) : null}
             {toolOAuthSetupPacketRequest ? (
@@ -5633,6 +5648,56 @@ export default function SettingsPane() {
             </div>
           </div>
         ) : null}
+        {channelRuntime ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'channel-runtime') && 'is-focused',
+            )}
+            data-xenesis-channel-runtime={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelRuntime')}</span>
+              <strong>{formatXenesisChannelRuntimeSummary(channelRuntime)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelRuntimeAdapter')}</span>
+              <strong>{channelRuntime.adapter}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelRuntimeSupport')}</span>
+              <strong>{channelRuntime.runtimeSupport}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelRuntimeGateway')}</span>
+              <strong>{channelRuntime.gatewayRequirement}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelRuntimeReadinessChecks')}</span>
+              <strong>{channelRuntime.readinessChecks.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelRuntimeReadback')}</span>
+              <strong>{channelRuntime.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelRuntimeControls')}</span>
+              <strong>{channelRuntime.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelRuntimeDiagnostics')}</span>
+              <strong>{channelRuntime.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelRuntimeBlockedActions')}</span>
+              <strong>{channelRuntime.blockedActions.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelRuntimeSafety')}</span>
+              <strong>{channelRuntime.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
         {channelSetupPlan ? (
           <div
             className={cls(
@@ -6341,6 +6406,7 @@ export default function SettingsPane() {
     const actionPolicyItems = toolItems.filter((item) => item.toolActionCatalog);
     const messengerViewItems = messengerItems.filter((item) => item.messengerView);
     const messengerProfileDraftItems = messengerItems.filter((item) => item.channelProfileDraft);
+    const channelRuntimeItems = messengerItems.filter((item) => item.channelRuntime);
     const channelSetupPlanItems = messengerItems.filter((item) => item.channelSetupPlan);
 
     return (
@@ -6403,6 +6469,10 @@ export default function SettingsPane() {
               <div>
                 <span>{t('settings.connectorsXenesisMessengerProfileDrafts')}</span>
                 <strong>{messengerProfileDraftItems.length}</strong>
+              </div>
+              <div>
+                <span>{t('settings.connectorsXenesisChannelRuntime')}</span>
+                <strong>{channelRuntimeItems.length}</strong>
               </div>
               <div>
                 <span>{t('settings.connectorsXenesisChannelSetupPlans')}</span>

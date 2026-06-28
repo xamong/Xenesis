@@ -34,11 +34,13 @@ live verification exist.
 4. Open the channel setup plan with `xd.xenesis.channels.setupPlans.open`.
 5. Open the messenger card with `xd.xenesis.messengers.views.open`.
 6. Inspect the messenger setup view with `xd.xenesis.messengers.views.status`.
-7. For implemented channels, inspect routing, safety, access groups, and
-   pairing readbacks.
-8. Record setup requests or profile draft review items only when the operator
+7. For implemented channels, inspect routing, safety, access groups, pairing,
+   and runtime readiness readbacks.
+8. For planned channels, inspect runtime readiness as a review-only adapter
+   boundary before any delivery planning.
+9. Record setup requests, runtime-readiness reviews, or profile draft review items only when the operator
    explicitly asks for review.
-9. Run delivery tests only through the existing channel test paths after
+10. Run delivery tests only through the existing channel test paths after
    gateway and allowlist readiness are verified.
 
 ## CR Readbacks
@@ -53,10 +55,16 @@ Use these paths for channel setup and review:
 - `xd.xenesis.channels.safety.status`
 - `xd.xenesis.channels.accessGroups.status`
 - `xd.xenesis.channels.pairing.status`
+- `xd.xenesis.channels.runtime.status`
+- `xd.xenesis.channels.runtime.open`
 - `xd.xenesis.channels.userStories.status`
 - `xd.xenesis.channels.userStories.open`
 - `xd.xenesis.connections.diagnostics.status`
 - `xd.xenesis.connections.diagnostics.open`
+
+Channel runtime-readiness review uses:
+
+- `xd.xenesis.channels.runtime.request`
 
 Implemented channel profile draft review uses:
 
@@ -65,12 +73,20 @@ Implemented channel profile draft review uses:
 - `xd.xenesis.channels.profileDrafts.request`
 
 Channel setup plans collect messenger view, routing, safety, access group,
-pairing, user-story, profile-draft, diagnostic, and setup-request readbacks into
-one ordered plan. They are review-only orchestration metadata. They do not start
-gateways, pair accounts or devices, send messages, store credentials, mutate
-channel profiles, or bypass approval. Implemented channels may reference the
-existing approval-gated profile apply/test paths; planned channels remain
-review-only and do not expose apply/test steps.
+pairing, runtime-readiness, user-story, profile-draft, diagnostic, and
+setup-request readbacks into one ordered plan. They are review-only
+orchestration metadata. They do not start gateways, pair accounts or devices,
+send messages, store credentials, mutate channel profiles, or bypass approval.
+Implemented channels may reference the existing approval-gated profile
+apply/test paths; planned channels remain review-only and do not expose
+apply/test steps.
+
+Channel runtime readiness records adapter support, runtime status, gateway
+requirement, readiness checks, read/control paths, diagnostics, blocked actions,
+and safety boundaries. Implemented channels still require gateway, pairing,
+allowlist, profile, and approval readbacks before delivery. Planned channels
+report `planned-adapter` and remain review-only until a real adapter and live
+verification exist.
 
 Channel profile draft readbacks include review steps for credential readiness,
 access/allowlist bindings, delivery guardrails, and pairing/readback checks.
@@ -98,6 +114,9 @@ example:
 - `오픈클로 채널 가이드 파일 열어줘`
 - `왓츠앱 setup 상태 보여줘`
 - `구글 챗 페어링 상태 보여줘`
+- `구글 챗 runtime 상태 보여줘`
+- `텔레그램 channel runtime 열어줘`
+- `왓츠앱 runtime 검토 요청해줘`
 - `외부 메신저 설정 플랜 전체 상태 보여줘`
 - `텔레그램 채널 설정 플랜 열어줘`
 - `텔레그램 채널 안전 상태 보여줘`

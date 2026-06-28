@@ -442,6 +442,18 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     expectedVisibleText: 'Desk action completed',
   },
   {
+    id: 'google-chat-runtime-status',
+    prompt: '구글 챗 runtime 상태 보여줘',
+    expectedPath: 'xd.xenesis.channels.runtime.status',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'telegram-runtime-open',
+    prompt: '텔레그램 channel runtime 열어줘',
+    expectedPath: 'xd.xenesis.channels.runtime.open',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
     id: 'channel-user-stories-status',
     prompt: '외부 채널 user stories catalog 상태 보여줘',
     expectedPath: 'xd.xenesis.channels.userStories.status',
@@ -469,6 +481,12 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     id: 'channel-test-send-approval',
     prompt: '텔레그램 테스트 메시지 보내줘',
     expectedPath: 'xd.xenesis.profiles.testChannel',
+    expectedVisibleText: 'Desk action approval required',
+  },
+  {
+    id: 'whatsapp-runtime-request-approval',
+    prompt: '왓츠앱 runtime 검토 요청해줘',
+    expectedPath: 'xd.xenesis.channels.runtime.request',
     expectedVisibleText: 'Desk action approval required',
   },
   {

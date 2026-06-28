@@ -702,6 +702,80 @@ const XENESIS_CHANNEL_PAIRING_OPEN_SCHEMA = {
   },
 } as const;
 
+const XENESIS_CHANNEL_RUNTIME_STATUS_SCHEMA = XENESIS_CHANNEL_PAIRING_STATUS_SCHEMA;
+
+const XENESIS_CHANNEL_RUNTIME_OPEN_SCHEMA = {
+  type: 'object',
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Optional implemented or planned external messenger channel runtime readiness card to focus.',
+    },
+    id: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Alias for channel.',
+    },
+    messenger: {
+      type: 'string',
+      title: 'Messenger',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Alias for channel.',
+    },
+    name: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Alias for channel.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused messenger runtime readiness card into view after opening the Connection Center.',
+      default: true,
+    },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
+  },
+} as const;
+
+const XENESIS_CHANNEL_RUNTIME_REQUEST_SCHEMA = {
+  type: 'object',
+  required: ['channel'],
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Implemented or planned external messenger channel whose runtime readiness should be reviewed.',
+    },
+    id: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Alias for channel.',
+    },
+    messenger: {
+      type: 'string',
+      title: 'Messenger',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Alias for channel.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity for audit context.',
+    },
+    note: {
+      type: 'string',
+      title: 'Review note',
+      description: 'Optional note to include in the Action Inbox runtime readiness review item.',
+    },
+  },
+} as const;
+
 const XENESIS_MESSENGER_VIEW_STATUS_SCHEMA = {
   type: 'object',
   properties: {
@@ -1711,6 +1785,9 @@ export interface DeskBridgeCapabilityAdapter {
   openXenesisChannelAccessGroups?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisChannelPairingStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisChannelPairing?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisChannelRuntimeStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisChannelRuntime?: (args?: unknown) => Promise<unknown> | unknown;
+  requestXenesisChannelRuntime?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisChannelUserStoriesStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisChannelUserStory?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisChannelSetupPlansStatus?: (args?: unknown) => Promise<unknown> | unknown;
@@ -4877,6 +4954,34 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               'Open Settings > Xenesis Agent > Connections and focus an external messenger pairing card inside Desk.',
               'control',
               XENESIS_CHANNEL_PAIRING_OPEN_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.channels.runtime',
+          'Runtime readiness',
+          'External bot channel runtime support, gateway readiness, readback checks, blocked actions, and review requests.',
+          [
+            method(
+              'xd.xenesis.channels.runtime.status',
+              'Read channel runtime readiness',
+              'Read runtime support, runtime status, gateway requirement, readiness checks, diagnostics, blocked actions, and safety boundaries for implemented and planned external messenger channels without starting gateways, pairing accounts, mutating profiles, or sending messages.',
+              'read',
+              XENESIS_CHANNEL_RUNTIME_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.channels.runtime.open',
+              'Open channel runtime readiness',
+              'Open Settings > Xenesis Agent > Connections and focus an external messenger channel runtime-readiness card inside Desk.',
+              'control',
+              XENESIS_CHANNEL_RUNTIME_OPEN_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.channels.runtime.request',
+              'Request channel runtime readiness review',
+              'Record a local Action Inbox item for reviewing channel runtime readiness without starting gateways, pairing accounts, mutating channel profiles, storing credentials, sending messages, or bypassing approvals.',
+              'write',
+              XENESIS_CHANNEL_RUNTIME_REQUEST_SCHEMA,
             ),
           ],
         ),
@@ -11846,6 +11951,15 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.channels.pairing.open') {
         return callAdapter(path, api?.openXenesisChannelPairing, request.args);
+      }
+      if (path === 'xd.xenesis.channels.runtime.status') {
+        return callAdapter(path, api?.getXenesisChannelRuntimeStatus, request.args);
+      }
+      if (path === 'xd.xenesis.channels.runtime.open') {
+        return callAdapter(path, api?.openXenesisChannelRuntime, request.args);
+      }
+      if (path === 'xd.xenesis.channels.runtime.request') {
+        return callAdapter(path, api?.requestXenesisChannelRuntime, request.args);
       }
       if (path === 'xd.xenesis.channels.userStories.status') {
         return callAdapter(path, api?.getXenesisChannelUserStoriesStatus, request.args);

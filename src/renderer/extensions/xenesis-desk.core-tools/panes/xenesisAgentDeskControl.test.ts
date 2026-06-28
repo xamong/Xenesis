@@ -1398,6 +1398,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
       { path: 'xd.xenesis.channels.safety.status', fallback: false },
       { path: 'xd.xenesis.channels.accessGroups.status', fallback: false },
       { path: 'xd.xenesis.channels.pairing.status', fallback: false },
+      { path: 'xd.xenesis.channels.runtime.status', fallback: false },
       { path: 'xd.xenesis.channels.userStories.status', fallback: false },
       { path: 'xd.xenesis.channels.setupPlans.status', fallback: false },
       { path: 'xd.xenesis.messengers.views.status', fallback: false },
@@ -1539,6 +1540,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
       { path: 'xd.xenesis.channels.safety.open', fallback: false },
       { path: 'xd.xenesis.channels.accessGroups.open', fallback: false },
       { path: 'xd.xenesis.channels.pairing.open', fallback: false },
+      { path: 'xd.xenesis.channels.runtime.open', fallback: false },
       { path: 'xd.xenesis.channels.userStories.open', fallback: false },
       { path: 'xd.xenesis.channels.setupPlans.open', fallback: false },
       { path: 'xd.xenesis.messengers.views.open', fallback: false },
@@ -1664,6 +1666,12 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
         targetScope: 'tool',
         argsKind: 'targetId',
         path: 'xd.xenesis.tools.views.status',
+        fallback: false,
+      },
+      {
+        targetScope: 'messenger',
+        argsKind: 'channel',
+        path: 'xd.xenesis.channels.runtime.status',
         fallback: false,
       },
       {
@@ -1866,6 +1874,12 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
       },
       {
         targetScope: 'messenger',
+        argsKind: 'channelVisible',
+        path: 'xd.xenesis.channels.runtime.open',
+        fallback: false,
+      },
+      {
+        targetScope: 'messenger',
         argsKind: 'targetIdVisible',
         path: 'xd.xenesis.channels.userStories.open',
         fallback: false,
@@ -1983,6 +1997,12 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
         targetScope: 'tool',
         argsKind: 'targetId',
         path: 'xd.xenesis.tools.mcpOAuth.request',
+        fallback: false,
+      },
+      {
+        targetScope: 'messenger',
+        argsKind: 'channel',
+        path: 'xd.xenesis.channels.runtime.request',
         fallback: false,
       },
       {
@@ -2580,6 +2600,7 @@ test('natural approval request actions are generated from shared action request 
       'toolInstallPlanRequest',
       'toolOauthRuntimeRequest',
       'toolMcpOAuthRequest',
+      'channelRuntimeRequest',
       'toolMcpInstallDraftRequest',
       'toolOauthDraftRequest',
       'toolActionPolicyRequest',
@@ -4690,6 +4711,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('텔레그램 channel runtime 열어줘').actions, [
+    {
+      id: 'natural-xenesis-channel-runtime-open-telegram',
+      path: 'xd.xenesis.channels.runtime.open',
+      args: { channel: 'telegram', ensureVisible: true },
+      approved: false,
+      reason: 'Open Telegram channel runtime readiness from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('왓츠앱 setup 열어줘').actions, [
     {
       id: 'natural-xenesis-messenger-view-open-whatsapp',
@@ -5543,6 +5574,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center read
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('구글 챗 runtime 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-channel-runtime-status-google-chat',
+      path: 'xd.xenesis.channels.runtime.status',
+      args: { channel: 'google-chat' },
+      approved: false,
+      reason: 'Read Google Chat channel runtime readiness from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('텔레그램 setup 상태 보여줘').actions, [
     {
       id: 'natural-xenesis-messenger-view-status-telegram',
@@ -5802,6 +5843,16 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center review reques
       args: { channel: 'telegram' },
       approved: false,
       reason: 'Send a sanitized Telegram channel test message from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('왓츠앱 runtime 검토 요청해줘').actions, [
+    {
+      id: 'natural-xenesis-channel-runtime-request-whatsapp',
+      path: 'xd.xenesis.channels.runtime.request',
+      args: { channel: 'whatsapp' },
+      approved: false,
+      reason: 'Request WhatsApp channel runtime readiness review from natural language request.',
     },
   ]);
 

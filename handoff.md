@@ -16775,3 +16775,142 @@ Verification so far:
     scoped formatting.
 - Next intended step:
   - Review final diff and commit the Google OAuth runtime readiness slice.
+
+## Current Channel Runtime Readiness Slice
+
+- Current objective:
+  - Promote external messenger channel runtime readiness into a first-class
+    Connection Center and Capability Registry surface for implemented and
+    planned channels.
+- Rationale:
+  - OpenClaw-style channel work already exposes messenger views, routing,
+    safety, access groups, pairing, setup plans, profile drafts, and user
+    stories. The missing layer is a single runtime-readiness read/open/request
+    surface that lets the Agent inspect adapter support, gateway requirement,
+    pairing/allowlist preconditions, readback checks, blocked delivery actions,
+    and safety boundaries before any channel runtime is used.
+  - Planned messengers must stay review-only until adapters and live
+    verification exist. Implemented messengers should still require gateway,
+    profile, allowlist, pairing, and approval readbacks before delivery.
+- Scope:
+  - Add RED tests for a `channelRuntime` read model and CR paths:
+    `xd.xenesis.channels.runtime.status`,
+    `xd.xenesis.channels.runtime.open`, and
+    `xd.xenesis.channels.runtime.request`.
+  - Expose runtime readiness in Settings > Xenesis Agent > Connections and as a
+    messenger view section.
+  - Route natural prompts such as `구글 챗 runtime 상태 보여줘`,
+    `텔레그램 channel runtime 열어줘`, and
+    `왓츠앱 runtime 검토 요청해줘` through the new CR paths.
+  - Preserve safety: no gateway start, no adapter creation, no account/device
+    pairing, no profile writes, no allowlist mutation, no message send, no
+    credential storage, and no approval bypass.
+- Touched files so far:
+  - `handoff.md`
+  - `docs/manual/10-openclaw-channel-setup.md`
+  - `docs/manual/12-agent-user-stories.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-channel-runtime-readiness.md`
+  - `src/shared/xenesisConnections.ts`
+  - `src/shared/xenesisConnections.test.ts`
+  - `src/shared/types.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/shared/xenesisConnectionCapabilities.test.ts`
+  - `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
+  - `src/main/index.ts`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
+  - `scripts/xenesisNaturalDeskRoutingLiveSmoke.mjs`
+- Commands run:
+  - Context reads only.
+  - RED:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> failed as expected.
+  - RED summary:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts 2>&1 | Select-String -Pattern '# tests|# pass|# fail|not ok'`
+    -> 194 tests, 181 passed, 13 failed.
+  - GREEN focused:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed, 194/194.
+  - Broad:
+    `npm run docs:capabilities:audit` -> passed and wrote
+    `docs/capability-registry-audit.md`; audit summary is 792 nodes and 689
+    coverage path references.
+  - Audit counter readback:
+    `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> all 0.
+  - Broad:
+    `npm run build` -> passed; Vite emitted existing browser externalization,
+    dynamic/static import chunking, and large renderer chunk warnings only.
+  - Broad smoke:
+    `npm run smoke:xenesis:natural-desk-routing` -> passed 246/246, including
+    Google Chat runtime status, Telegram runtime open, and WhatsApp runtime
+    request approval.
+  - Hygiene:
+    `npx biome check --formatter-enabled=true --linter-enabled=false --assist-enabled=false ...`
+    -> initially found formatter-only differences in three touched files.
+  - Hygiene fix:
+    `npx biome format --write src/main/index.ts src/shared/xenesisConnections.ts src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
+    -> formatted 3 files.
+  - Hygiene recheck:
+    `npx biome check --formatter-enabled=true --linter-enabled=false --assist-enabled=false ...`
+    -> passed on 14 changed source/script files.
+  - Final recheck after formatter:
+    `npm run typecheck` -> passed.
+  - Hygiene:
+    `git diff --check` -> passed; Git printed LF/CRLF normalization warnings
+    only.
+  - Known blocked:
+    `npm run check:public-release` -> failed before checks with `ENOENT`
+    because `.github/workflows/ci.yml` is missing in this worktree.
+- Exact verification result:
+  - RED failures are the intended missing surface:
+    natural runtime prompts route to existing messenger/setup/diagnostics
+    fallbacks, `channel-runtime` detail focus selector is missing,
+    SettingsPane does not render `channelRuntime`, renderer summary/request
+    helpers are missing, `xd.xenesis.channels.runtime.status/open/request`
+    capabilities are missing, and the Connection Center read model lacks
+    `channelRuntime` plus the `runtime` messenger view section.
+  - Focused implementation verification passed 194/194 after wiring shared
+    model, CR registration/dispatch, main-process status/open/request handlers,
+    Settings renderer, natural-language routing, and generated-spec tests.
+  - Final CR audit gap counters are all 0:
+    missing registered paths 0, missing dispatched coverage paths 0,
+    undispatched static callable methods 0, dispatcher paths missing from tree
+    0.
+  - Final build and post-format typecheck passed.
+  - Final natural Desk routing smoke passed 246/246.
+  - Final formatter-only changed-file Biome check passed with linter disabled.
+  - `git diff --check` passed with LF/CRLF normalization warnings only.
+- Implemented:
+  - Added `channelRuntime` as a first-class read model for implemented and
+    planned external messenger channels.
+  - Added `channel-runtime` detail focus, `runtime` messenger view section,
+    renderer selector/data attribute, Settings detail block, action button, and
+    en/ko labels.
+  - Added CR paths:
+    `xd.xenesis.channels.runtime.status`,
+    `xd.xenesis.channels.runtime.open`, and
+    `xd.xenesis.channels.runtime.request`.
+  - Added main-process status/open/request handlers and Action Inbox review
+    records for channel runtime readiness. The request records runtime support,
+    adapter id, gateway requirement, readiness checks, blocked actions, and
+    safety boundaries.
+  - Added natural routing so prompts containing `runtime/런타임` plus a
+    messenger target route to channel runtime status/open/request.
+  - Added live smoke cases for Google Chat runtime status, Telegram runtime
+    open, and WhatsApp runtime request approval.
+  - Updated manual docs and added the Obsidian working note
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-channel-runtime-readiness.md`.
+- Known gaps:
+  - `npm run check:public-release` remains blocked by the known missing
+    `.github/workflows/ci.yml` file.
+  - Full changed-file Biome lint may still report pre-existing unrelated debt
+    in `src/main/index.ts` and `src/shared/deskBridgeCapabilities.ts`; use
+    focused formatter-only checks plus the relevant broad gates unless the debt
+    is directly touched by this slice.
+- Next intended step:
+  - Review final diff/status and commit the channel runtime readiness slice.
