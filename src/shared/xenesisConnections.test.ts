@@ -862,7 +862,11 @@ test('buildXenesisConnectionsStatus exposes review-only tool OAuth drafts for pl
   assert.ok(workspace?.toolOAuthDraft?.scopes.includes('documents.readonly'));
   assert.ok(workspace?.toolOAuthDraft?.profileFields.some((field) => field.field === 'oauthClient'));
   assert.ok(workspace?.toolOAuthDraft?.readPaths.includes('xd.xenesis.tools.oauthDrafts.status'));
-  assert.ok(workspace?.toolOAuthDraft?.controlPaths.includes('xd.xenesis.tools.oauthDrafts.request'));
+  assert.deepEqual(workspace?.toolOAuthDraft?.controlPaths, [
+    'xd.xenesis.tools.oauthDrafts.open',
+    'xd.xenesis.tools.oauthDrafts.request',
+    'xd.xenesis.connections.open',
+  ]);
   assert.ok(workspace?.toolOAuthDraft?.blockedActions.includes('complete OAuth'));
   assert.ok(workspace?.toolOAuthDraft?.blockedActions.includes('store tokens'));
   assert.ok(
@@ -1527,7 +1531,11 @@ test('buildXenesisConnectionsStatus exposes review-only provider profile drafts'
   assert.equal(readyDraft?.profileFields.find((field) => field.field === 'credential')?.valueState, 'not-required');
   assert.equal(readyDraft?.guardrails.localCliBoundary, 'provider identity is separate from local CLI integration');
   assert.ok(readyDraft?.readPaths.includes('xd.xenesis.providers.profileDrafts.status'));
-  assert.ok(readyDraft?.controlPaths.includes('xd.xenesis.providers.profileDrafts.request'));
+  assert.deepEqual(readyDraft?.controlPaths, [
+    'xd.xenesis.providers.profileDrafts.open',
+    'xd.xenesis.providers.profileDrafts.request',
+    'xd.xenesis.connections.open',
+  ]);
   assert.ok(readyDraft?.blockedActions.includes('store provider credentials'));
   assert.ok(readyDraft?.safetyBoundaries.includes('provider profile drafts are review-only'));
   assert.deepEqual(
@@ -1540,6 +1548,10 @@ test('buildXenesisConnectionsStatus exposes review-only provider profile drafts'
     assert.ok(step.diagnostics.length > 0, `${step.id} exposes diagnostics`);
     assert.ok(step.safetyBoundary.length > 0, `${step.id} exposes a safety boundary`);
   }
+  assert.deepEqual(readyDraft?.reviewSteps.find((step) => step.id === 'local-cli-boundary')?.controlPaths, [
+    'xd.xenesis.providers.profileDrafts.open',
+    'xd.xenesis.providers.profileDrafts.request',
+  ]);
   assert.ok(readyProvider.diagnosticRunbook?.diagnostics.includes('provider-identity'));
   assert.ok(readyProvider.setupRequest?.steps.some((step) => step.includes('runtime-routing')));
 

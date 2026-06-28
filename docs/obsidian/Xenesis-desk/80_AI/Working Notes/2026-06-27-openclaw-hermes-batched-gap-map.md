@@ -4545,6 +4545,45 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## CR-First Review Draft ControlPaths Metadata Slice
+
+- Continued the review-only metadata cleanup by removing generic Settings
+  fallback control paths from OAuth draft and provider profile draft surfaces
+  when CR-specific open/request paths already exist.
+- Updated review metadata for:
+  - Google Workspace/Calendar-style tool OAuth drafts:
+    `xd.xenesis.tools.oauthDrafts.open`,
+    `xd.xenesis.tools.oauthDrafts.request`, and
+    `xd.xenesis.connections.open`.
+  - AI provider profile drafts:
+    `xd.xenesis.providers.profileDrafts.open`,
+    `xd.xenesis.providers.profileDrafts.request`, and
+    `xd.xenesis.connections.open`.
+  - Provider profile draft `local-cli-boundary` review step, now using the
+    profile draft open/request paths instead of generic Settings.
+- Scope boundary:
+  - Metadata and tests only.
+  - Explicit onboarding guided steps that open user-edited provider/MCP/gateway
+    settings remain on `xd.panes.settings.open`.
+  - No registry schema, dispatcher, natural-language routing, provider
+    credentials, OAuth execution, MCP config write, Action Inbox mutation,
+    messenger delivery, profile write, or approval behavior changed.
+- RED/GREEN:
+  - `npx tsx --test src\shared\xenesisConnections.test.ts` failed 33/35 after
+    the RED expectations because OAuth and provider profile draft aggregates
+    still advertised `xd.panes.settings.open`.
+  - After the metadata update, the same focused test passed 35/35 before and
+    after formatting.
+- Verification:
+  - Scoped Biome format/check passed for `src/shared/xenesisConnections.ts` and
+    `src/shared/xenesisConnections.test.ts`.
+  - `npm run typecheck` passed.
+  - `git diff --check` passed with LF-to-CRLF working-copy warnings only.
+  - CR audit was skipped because this slice only changes connection metadata
+    and tests, not registry schemas or dispatcher coverage.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

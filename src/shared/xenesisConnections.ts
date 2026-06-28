@@ -4525,7 +4525,6 @@ function buildXenesisToolOAuthDraft(item: XenesisConnectionItem): XenesisConnect
       'xd.xenesis.tools.oauthDrafts.open',
       'xd.xenesis.tools.oauthDrafts.request',
       'xd.xenesis.connections.open',
-      'xd.panes.settings.open',
     ],
     diagnostics: uniqueStrings([
       'planned-oauth-template',
@@ -5626,7 +5625,7 @@ function providerProfileDraftReviewSteps(input: {
       expectedState: `${input.provider} provider identity remains separate from installed local CLI selection.`,
       requiredFields: ['localCliBoundary'],
       readPaths: ['xd.xenesis.providers.profileDrafts.status', 'xd.xenesis.providers.setup.status'],
-      controlPaths: ['xd.xenesis.providers.profileDrafts.open', 'xd.panes.settings.open'],
+      controlPaths: ['xd.xenesis.providers.profileDrafts.open', 'xd.xenesis.providers.profileDrafts.request'],
       diagnostics: ['local-cli-boundary', input.providerSetup.localCliBoundary],
       safetyBoundary: 'Local CLI boundary review does not switch local CLI selection or rewrite CLI config.',
     }),
@@ -5775,7 +5774,6 @@ function providerProfileDraftTemplate(
       'xd.xenesis.providers.profileDrafts.open',
       'xd.xenesis.providers.profileDrafts.request',
       'xd.xenesis.connections.open',
-      'xd.panes.settings.open',
     ],
     diagnostics: ['provider-profile-draft', 'credential-state', 'provider-footer', 'fallback-policy', 'cr-readback'],
     blockedActions: [
