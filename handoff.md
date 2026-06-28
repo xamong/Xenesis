@@ -16588,6 +16588,11 @@ Verification so far:
   - Hygiene:
     `git diff --check` -> passed; Git printed LF/CRLF normalization warnings
     only.
+  - Stage hygiene:
+    `git diff --cached --check` -> passed.
+  - Commit:
+    `git commit -m "Derive CR workflow registry from capabilities"` ->
+    created the workflow registry de-hardcoding slice commit.
   - Recheck after formatting:
     `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
     -> passed 46/46.
@@ -17067,5 +17072,106 @@ Verification so far:
   - Full `npm run lint` still reports repo-wide existing formatting/lint debt.
     Focused changed-file Biome exits 0, with unrelated warnings/infos in large
     touched files.
+- Next intended step:
+  - Continue with the next hardcoding/CR gap slice from the clean worktree.
+
+## Current CR Workflow Registry De-hardcoding Slice
+
+- Current objective:
+  - Remove the standalone hardcoded CR workflow default path registry from
+    `src/shared/deskBridgeWorkflow.ts` and make workflow callers use the
+    Capability Registry-derived registry.
+- Rationale:
+  - `src/shared/deskBridgeWorkflow.ts` still owns a manual `defaultRegistry`
+    array with individual `xd.*` paths.
+  - `src/shared/deskBridgeCapabilities.ts` already knows the executable
+    capability tree and can derive callable workflow entries with permission
+    metadata.
+  - The workflow module should normalize and enforce workflow safety, not
+    maintain a second source of truth for allowed CR paths.
+- Scope:
+  - Export the CR-derived workflow registry builder from
+    `src/shared/deskBridgeCapabilities.ts`.
+  - Remove the hardcoded `defaultRegistry` fallback from
+    `src/shared/deskBridgeWorkflow.ts`.
+  - Update workflow tests to pass the CR-derived registry explicitly and add a
+    source guard that blocks reintroducing the hardcoded default registry.
+  - Preserve safety: workflow recursion, write, danger, and explicit blocked
+    paths remain rejected; workflow run still requires external approval.
+- Plan:
+  - `docs/superpowers/plans/2026-06-29-cr-workflow-registry-dehardcoding.md`
+- Touched files so far:
+  - `handoff.md`
+  - `docs/capability-registry-audit.md`
+  - `docs/superpowers/plans/2026-06-29-cr-workflow-registry-dehardcoding.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-cr-workflow-registry-dehardcoding.md`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/shared/deskBridgeWorkflow.ts`
+  - `src/shared/deskBridgeWorkflow.test.ts`
+- Commands run:
+  - Context reads only.
+  - RED:
+    `npx tsx --test src\shared\deskBridgeWorkflow.test.ts` -> failed as
+    expected because `buildDeskBridgeWorkflowRegistry` was not exported and
+    `src/shared/deskBridgeWorkflow.ts` still contained `const defaultRegistry`.
+  - GREEN focused:
+    `npx tsx --test src\shared\deskBridgeWorkflow.test.ts` -> passed 9/9.
+  - Broad:
+    `npm run typecheck` -> passed.
+  - Hygiene:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true ...changed workflow files...`
+    -> initially failed on formatter differences in
+    `src/shared/deskBridgeWorkflow.ts` and
+    `src/shared/deskBridgeWorkflow.test.ts`; also reported two pre-existing
+    warnings in `src/shared/deskBridgeCapabilities.ts`.
+  - Hygiene fix:
+    `npx biome format --write src/shared/deskBridgeWorkflow.ts src/shared/deskBridgeWorkflow.test.ts src/shared/deskBridgeCapabilities.ts`
+    -> formatted 3 files and fixed 2 files.
+  - GREEN focused after formatting:
+    `npx tsx --test src\shared\deskBridgeWorkflow.test.ts` -> passed 9/9.
+  - Hygiene recheck:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true ...changed workflow files...`
+    -> exit 0; still reports two existing warnings in
+    `src/shared/deskBridgeCapabilities.ts`.
+  - Broad after formatting:
+    `npm run typecheck` -> passed.
+  - Broad CR audit:
+    `npm run docs:capabilities:audit` -> passed and wrote
+    `docs/capability-registry-audit.md`; audit summary remained 796 nodes and
+    689 coverage path references.
+  - Audit counter readback:
+    `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> all 0.
+  - Hygiene:
+    `git diff --check` -> passed; Git printed LF/CRLF normalization warnings
+    only.
+- Exact verification result:
+  - RED proved the stale local path allowlist still existed and direct workflow
+    tests could not import the CR-derived registry builder.
+  - GREEN passed after exporting `buildDeskBridgeWorkflowRegistry`, removing
+    `defaultRegistry`, and updating direct workflow tests to pass the
+    Capability Registry-derived registry explicitly.
+  - CR audit gap counters are all 0:
+    missing registered paths 0, missing dispatched coverage paths 0,
+    undispatched static callable methods 0, dispatcher paths missing from tree
+    0.
+  - The generated audit doc had timestamp/EOF formatting churn; the timestamp
+    churn was reverted, leaving only the generator's EOF blank-line
+    normalization.
+- Implemented:
+  - Exported `buildDeskBridgeWorkflowRegistry` from
+    `src/shared/deskBridgeCapabilities.ts`.
+  - Removed the manual `defaultRegistry` array from
+    `src/shared/deskBridgeWorkflow.ts`.
+  - Added a source guard that blocks reintroducing `const defaultRegistry` or
+    local `path: 'xd.*'` allowlist entries in the workflow module.
+  - Verified `xd.xenesis.connections.status`, which was not in the old manual
+    default list, is accepted when the CR-derived registry is passed.
+- Known gaps:
+  - `npm run check:public-release` is still expected to fail because this
+    worktree is missing `.github/workflows/ci.yml`.
+  - Full `npm run lint` still has known repo-wide existing debt; focused
+    changed-file Biome exits 0 with two unrelated existing warnings in
+    `src/shared/deskBridgeCapabilities.ts`.
 - Next intended step:
   - Continue with the next hardcoding/CR gap slice from the clean worktree.

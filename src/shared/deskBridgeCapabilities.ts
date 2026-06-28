@@ -10715,7 +10715,7 @@ export function findDeskBridgeCapability(
   );
 }
 
-function buildDeskBridgeWorkflowRegistry(
+export function buildDeskBridgeWorkflowRegistry(
   options: XenisPhase5VisibilityOptions = {},
 ): DeskBridgeWorkflowRegistryEntry[] {
   return listDeskBridgeCapabilities(createDeskBridgeCapabilityTree(options), options)

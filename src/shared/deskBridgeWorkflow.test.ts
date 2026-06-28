@@ -1,21 +1,32 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { callDeskBridgeCapability, listDeskBridgeCapabilities } from './deskBridgeCapabilities';
+import {
+  buildDeskBridgeWorkflowRegistry,
+  callDeskBridgeCapability,
+  listDeskBridgeCapabilities,
+} from './deskBridgeCapabilities';
 import { buildDeskBridgeWorkflowPreview, runDeskBridgeWorkflow } from './deskBridgeWorkflow';
 import { XENESIS_TUI_CAPABILITY_PATH } from './xenesisTui';
 
+const workflowRegistry = () => buildDeskBridgeWorkflowRegistry();
+const workflowSource = readFileSync(new URL('./deskBridgeWorkflow.ts', import.meta.url), 'utf8');
+
 test('CR workflow preview normalizes safe steps without executing them', () => {
-  const preview = buildDeskBridgeWorkflowPreview({
-    name: 'settings-tour',
-    delayMs: 25,
-    steps: [
-      { path: 'xd.dock.panes.list' },
-      {
-        path: 'xd.panes.settings.open',
-        args: { category: 'run-model', mode: 'hermes', section: 'hermes-provider' },
-      },
-    ],
-  });
+  const preview = buildDeskBridgeWorkflowPreview(
+    {
+      name: 'settings-tour',
+      delayMs: 25,
+      steps: [
+        { path: 'xd.dock.panes.list' },
+        {
+          path: 'xd.panes.settings.open',
+          args: { category: 'run-model', mode: 'hermes', section: 'hermes-provider' },
+        },
+      ],
+    },
+    { registry: workflowRegistry() },
+  );
 
   assert.equal(preview.ok, true);
   assert.equal(preview.name, 'settings-tour');
@@ -36,13 +47,16 @@ test('CR workflow preview normalizes safe steps without executing them', () => {
 });
 
 test('CR workflow preview rejects unknown and explicitly dangerous steps', () => {
-  const preview = buildDeskBridgeWorkflowPreview({
-    steps: [
-      { path: 'xd.capture.deleteAll' },
-      { path: 'xd.meta.snapshot.import', args: { filePath: 'D:\\unsafe.json' } },
-      { path: 'xd.not.registered' },
-    ],
-  });
+  const preview = buildDeskBridgeWorkflowPreview(
+    {
+      steps: [
+        { path: 'xd.capture.deleteAll' },
+        { path: 'xd.meta.snapshot.import', args: { filePath: 'D:\\unsafe.json' } },
+        { path: 'xd.not.registered' },
+      ],
+    },
+    { registry: workflowRegistry() },
+  );
 
   assert.equal(preview.ok, false);
   assert.deepEqual(
@@ -56,10 +70,39 @@ test('CR workflow preview rejects unknown and explicitly dangerous steps', () =>
 });
 
 test('CR workflow preview rejects empty workflows', () => {
-  const preview = buildDeskBridgeWorkflowPreview({ name: 'empty', steps: [] });
+  const preview = buildDeskBridgeWorkflowPreview({ name: 'empty', steps: [] }, { registry: workflowRegistry() });
 
   assert.equal(preview.ok, false);
   assert.deepEqual(preview.rejectedSteps, [{ index: 0, path: '', reason: 'Workflow must include at least one step.' }]);
+});
+
+test('CR workflow preview uses a Capability Registry-derived registry instead of a local path allowlist', () => {
+  assert.doesNotMatch(workflowSource, /const\s+defaultRegistry/);
+  assert.doesNotMatch(workflowSource, /path:\s*'xd\./);
+
+  const registry = workflowRegistry();
+  assert.equal(
+    registry.some((entry) => entry.path === 'xd.xenesis.connections.status'),
+    true,
+  );
+
+  const preview = buildDeskBridgeWorkflowPreview(
+    {
+      name: 'connection-status',
+      steps: [{ path: 'xd.xenesis.connections.status' }],
+    },
+    { registry },
+  );
+
+  assert.equal(preview.ok, true);
+  assert.deepEqual(
+    preview.steps.map((step) => ({
+      path: step.path,
+      permission: step.permission,
+      approved: step.approved,
+    })),
+    [{ path: 'xd.xenesis.connections.status', permission: 'read', approved: false }],
+  );
 });
 
 test('CR workflow runner executes normalized steps sequentially and stops on failure', async () => {
@@ -82,6 +125,7 @@ test('CR workflow runner executes normalized steps sequentially and stops on fai
         return { ok: true, path: step.path };
       },
       delay: async () => {},
+      registry: workflowRegistry(),
     },
   );
 

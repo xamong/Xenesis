@@ -725,4 +725,3 @@ None.
 | `DESK_BRIDGE_WINDOW_SIZER_MENU_CAPABILITY_COVERAGE` | `openSettings` | `appShellCapabilityPath` | method | `xd.settings.sections.window-sizer` |
 | `DESK_BRIDGE_WORKSPACE_MENU_CAPABILITY_COVERAGE` | `openRecentWorkspace` | `appShellCapabilityPath` | method | `xd.workspace.read` |
 | `DESK_BRIDGE_WORKSPACE_MENU_CAPABILITY_COVERAGE` | `openWorkspace` | `appShellCapabilityPath` | method | `xd.workspace.open` |
-
