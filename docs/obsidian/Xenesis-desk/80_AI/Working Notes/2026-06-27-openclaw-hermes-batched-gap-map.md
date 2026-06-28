@@ -4107,6 +4107,56 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Desk Control Prompt Hint Catalog Refactor Slice
+
+- Continued the larger hardcoding cleanup by moving Desk control prompt-hint
+  capability discovery and CR path summary helper ownership from
+  `xenesisAgentDeskControl.ts` into shared module
+  `xenesisDeskControlPromptHint.ts`.
+- Intended change:
+  - shared prompt-hint module owns capability-prefix matching, Connection
+    Center registry path summary, direct CR path summary, and full prompt-hint
+    assembly;
+  - planner keeps its existing public `buildXenesisDeskControlPromptHint`
+    export for compatibility but delegates to the shared module;
+  - source guards prevent reintroducing planner-local `listDeskBridgeCapabilities`
+    dependency, prompt hint constants, protocol text/pattern usage, and
+    prompt-hint helper functions.
+- Scope boundary:
+  - Refactor ownership only.
+  - Preserve prompt hint text, discovered Connection Center CR path summary,
+    useful direct CR path summary, capability filtering behavior, output text,
+    CR paths, natural routing, execution behavior, and UI behavior.
+  - No CR schema, dispatcher, provider, approval, Action Inbox mutation, or
+    live CR behavior changes.
+- RED verification:
+  - Focused Agent Desk Control test failed as expected with 36/37 passing. The
+    new source guard caught planner-local `listDeskBridgeCapabilities`
+    dependency before the helper move.
+- Implementation:
+  - Added `src/shared/xenesisDeskControlPromptHint.ts` with shared prompt-hint
+    helpers and full prompt-hint assembly.
+  - Removed the planner's direct `listDeskBridgeCapabilities` import and
+    local prompt-hint helper implementations.
+  - Made the planner public `buildXenesisDeskControlPromptHint` function
+    delegate to the shared module.
+  - Updated source guards so prompt hint lines and protocol text/pattern usage
+    are no longer planner-owned.
+- Verification:
+  - Focused Agent Desk Control test passed with 37/37 tests.
+  - Capability, connection catalog, and Agent Desk Control tests passed with
+    103/103 tests before and after formatting.
+  - Scoped Biome check passed with no diagnostics.
+  - `npm run typecheck`, `npm run build`,
+    `npm run smoke:xenesis:natural-desk-routing`, and `git diff --check`
+    passed. `build` reported existing Vite warnings only; `diff --check`
+    reported LF-to-CRLF working-copy warnings only.
+  - CR audit was skipped because this slice only refactors planner/shared
+    prompt-hint helper ownership and does not change registry, dispatcher, or
+    capability coverage.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

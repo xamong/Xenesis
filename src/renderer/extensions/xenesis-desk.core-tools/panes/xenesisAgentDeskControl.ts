@@ -1,4 +1,4 @@
-import { listDeskBridgeCapabilities } from '../../../../shared/deskBridgeCapabilities';
+import { buildXenesisDeskControlPromptHint as buildXenesisDeskControlPromptHintFromShared } from '../../../../shared/xenesisDeskControlPromptHint';
 import {
   approveXenesisDeskActions as approveXenesisDeskActionsFromCatalog,
   buildXenesisDeskActionCompletedMessage as buildXenesisDeskActionCompletedMessageFromCatalog,
@@ -45,12 +45,6 @@ import {
   XENESIS_DESK_ACTION_CALL_RESULT_KEYS,
   XENESIS_DESK_ACTION_EXECUTION_STATUS,
   XENESIS_DESK_ACTION_PROTOCOL_FORMAT,
-  XENESIS_DESK_ACTION_PROTOCOL_PATTERNS,
-  XENESIS_DESK_ACTION_PROTOCOL_TEXT,
-  XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES,
-  XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES,
-  XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES,
-  XENESIS_DESK_CONTROL_PROMPT_HINT_CONNECTION_CENTER_DISCOVERY_PREFIX,
   XENESIS_NATURAL_ACTION_INTENT_RULES,
   XENESIS_NATURAL_ACTIVE_DOCK_CLOSE_RULES,
   XENESIS_NATURAL_ACTIVE_DOCK_FOCUS_RULES,
@@ -223,8 +217,6 @@ const DESK_ACTION_ACTIVITY_PHASES = XENESIS_DESK_ACTION_ACTIVITY_PHASES;
 const DESK_ACTION_CALL_RESULT_KEYS = XENESIS_DESK_ACTION_CALL_RESULT_KEYS;
 const DESK_ACTION_EXECUTION_STATUS = XENESIS_DESK_ACTION_EXECUTION_STATUS;
 const DESK_ACTION_PROTOCOL_FORMAT = XENESIS_DESK_ACTION_PROTOCOL_FORMAT;
-const DESK_ACTION_PROTOCOL_PATTERNS = XENESIS_DESK_ACTION_PROTOCOL_PATTERNS;
-const DESK_ACTION_PROTOCOL_TEXT = XENESIS_DESK_ACTION_PROTOCOL_TEXT;
 const DESK_ACTION_ARGS = XENESIS_NATURAL_DESK_ACTION_ARGS;
 const INTENT_PATTERNS = XENESIS_NATURAL_INTENT_PATTERNS;
 const NATURAL_TEXT_DEFAULTS = XENESIS_NATURAL_TEXT_DEFAULTS;
@@ -975,50 +967,6 @@ export function summarizeXenesisDeskActionExecution(result: XenesisDeskActionExe
   return summarizeXenesisDeskActionExecutionFromCatalog(result);
 }
 
-function isCapabilityPathUnderPrefix(path: string, prefix: string): boolean {
-  return path === prefix || path.startsWith(`${prefix}${DESK_ACTION_PROTOCOL_FORMAT.capabilityPathSeparator}`);
-}
-
-function buildRegistryCapabilityPathSummary(prefixes: readonly string[]): string {
-  return listDeskBridgeCapabilities()
-    .filter((node) => node.callable)
-    .map((node) => node.path)
-    .filter((path) => prefixes.some((prefix) => isCapabilityPathUnderPrefix(path, prefix)))
-    .sort()
-    .join(DESK_ACTION_PROTOCOL_FORMAT.listSeparator);
-}
-
-function buildDirectCrPathSummary(lines: readonly string[]): string {
-  const callablePaths = new Set(
-    listDeskBridgeCapabilities()
-      .filter((node) => node.callable)
-      .map((node) => node.path),
-  );
-  const referencedPaths = new Set<string>();
-  for (const line of lines) {
-    for (const match of line.matchAll(DESK_ACTION_PROTOCOL_PATTERNS.crPath)) {
-      const path = match[0].replace(
-        DESK_ACTION_PROTOCOL_PATTERNS.trailingCrPathPunctuation,
-        DESK_ACTION_PROTOCOL_FORMAT.emptyText,
-      );
-      if (callablePaths.has(path)) {
-        referencedPaths.add(path);
-      }
-    }
-  }
-  return [...referencedPaths].join(DESK_ACTION_PROTOCOL_FORMAT.listSeparator);
-}
-
 export function buildXenesisDeskControlPromptHint(): string {
-  const lines = [
-    ...XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES,
-    `${XENESIS_DESK_CONTROL_PROMPT_HINT_CONNECTION_CENTER_DISCOVERY_PREFIX}${buildRegistryCapabilityPathSummary(
-      XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES,
-    )}${DESK_ACTION_PROTOCOL_FORMAT.sentenceTerminator}`,
-    ...XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES,
-  ];
-  return DESK_ACTION_PROTOCOL_FORMAT.joinLines([
-    ...lines,
-    DESK_ACTION_PROTOCOL_TEXT.usefulDirectCrPaths(buildDirectCrPathSummary(lines)),
-  ]);
+  return buildXenesisDeskControlPromptHintFromShared();
 }

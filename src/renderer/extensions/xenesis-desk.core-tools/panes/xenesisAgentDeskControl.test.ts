@@ -187,6 +187,15 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     new URL('../../../../shared/xenesisNaturalLanguageCatalog.ts', import.meta.url),
     'utf8',
   );
+  let promptHintSource = '';
+  try {
+    promptHintSource = readFileSync(
+      new URL('../../../../shared/xenesisDeskControlPromptHint.ts', import.meta.url),
+      'utf8',
+    );
+  } catch {
+    promptHintSource = '';
+  }
 
   assert.doesNotMatch(source, /const targets:\s*Array/);
   assert.doesNotMatch(source, /IMPLEMENTED_XENESIS_MESSENGER_IDS/);
@@ -415,9 +424,29 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.equal(XENESIS_NATURAL_TERMINAL_CONTEXT_WORDS.includes('shell'), true);
   assert.equal(XENESIS_NATURAL_PANE_CONTEXT_WORDS.includes('pane'), true);
   assert.equal(XENESIS_NATURAL_GENERIC_CLOSE_CONTEXT_WORDS.includes('close'), true);
-  assert.match(source, /XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES/);
-  assert.match(source, /XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES/);
-  assert.match(source, /XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES/);
+  assert.doesNotMatch(source, /listDeskBridgeCapabilities/);
+  assert.match(promptHintSource, /listDeskBridgeCapabilities/);
+  for (const localPromptHintFunction of [
+    'function isCapabilityPathUnderPrefix',
+    'function buildRegistryCapabilityPathSummary',
+    'function buildDirectCrPathSummary',
+  ]) {
+    assert.doesNotMatch(source, new RegExp(localPromptHintFunction));
+  }
+  for (const sharedPromptHintFunction of [
+    'isXenesisDeskCapabilityPathUnderPrefix',
+    'buildXenesisDeskRegistryCapabilityPathSummary',
+    'buildXenesisDeskDirectCrPathSummary',
+    'buildXenesisDeskControlPromptHint',
+  ]) {
+    assert.match(promptHintSource, new RegExp(`export function ${sharedPromptHintFunction}`));
+  }
+  assert.doesNotMatch(source, /XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES/);
+  assert.doesNotMatch(source, /XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES/);
+  assert.doesNotMatch(source, /XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES/);
+  assert.match(promptHintSource, /XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES/);
+  assert.match(promptHintSource, /XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES/);
+  assert.match(promptHintSource, /XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES/);
   assert.doesNotMatch(source, /const XENESIS_CONNECTION_CENTER_HINT_PREFIXES = \[/);
   assert.doesNotMatch(source, /Native Xenesis Desk Capability Registry control:/);
   assert.doesNotMatch(source, /Common natural Desk requests map to Capability Registry paths/);
@@ -471,8 +500,10 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /XenesisNaturalArrangeModeId as XenesisDeskArrangeMode/);
   assert.equal(XENESIS_DESK_ACTION_PROTOCOL_FORMAT.capabilityPathSeparator, '.');
   assert.equal(XENESIS_DESK_ACTION_PROTOCOL_FORMAT.sentenceTerminator, '.');
-  assert.match(source, /XENESIS_DESK_ACTION_PROTOCOL_PATTERNS/);
-  assert.match(source, /XENESIS_DESK_ACTION_PROTOCOL_TEXT/);
+  assert.doesNotMatch(source, /XENESIS_DESK_ACTION_PROTOCOL_PATTERNS/);
+  assert.doesNotMatch(source, /XENESIS_DESK_ACTION_PROTOCOL_TEXT/);
+  assert.match(promptHintSource, /XENESIS_DESK_ACTION_PROTOCOL_PATTERNS/);
+  assert.match(promptHintSource, /XENESIS_DESK_ACTION_PROTOCOL_TEXT/);
   assert.doesNotMatch(source, /XENESIS_DESK_ACTION_PROTOCOL_RECORD_KEYS/);
   assert.match(catalogSource, /XENESIS_DESK_ACTION_PROTOCOL_RECORD_KEYS/);
   assert.match(source, /XENESIS_DESK_ACTION_PROTOCOL_FORMAT/);
