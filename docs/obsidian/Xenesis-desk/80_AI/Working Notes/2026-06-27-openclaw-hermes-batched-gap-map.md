@@ -3388,6 +3388,76 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Runtime No-Arg Rule Catalog Refactor Slice
+
+- Started the next hardcoding cleanup slice for no-arg Xenesis runtime
+  catalog/readback/control action selection.
+- Intended change:
+  - add shared runtime support, gateway, inventory, profile inventory, and
+    control rule catalogs;
+  - have `xenesisAgentDeskControl.ts` interpret those rules instead of
+    branching directly on no-arg `RUNTIME_ACTIONS.*`;
+  - keep dynamic-arg paths (`agentId`, submit text, run prompt, workspace path)
+    out of scope.
+- Scope boundary:
+  - Refactor only.
+  - Do not change registry/dispatcher paths, approval behavior, credentials,
+    execution, dynamic argument extraction, or UI rendering.
+- Verification plan:
+  - RED focused planner/source-guard test first;
+  - GREEN focused planner test;
+  - scoped Biome for catalog/planner/test files;
+  - root typecheck, build, natural Desk routing live smoke, and diff check
+    before commit.
+- RED verification:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    failed as expected with 36/37 passing because the planner still branches
+    directly on no-arg `RUNTIME_ACTIONS.*`.
+- Implementation:
+  - Added runtime support, gateway, inventory, profile inventory, and control
+    rule catalogs in `xenesisNaturalLanguageCatalog.ts`.
+  - Added `blockedContextWords` support to catalog rule interpretation so broad
+    runtime status stays below specific reports/tasks/agents status targets.
+  - Replaced no-arg runtime direct branches in `xenesisAgentDeskControl.ts`
+    with shared rule interpretation.
+- GREEN verification:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 37/37 tests.
+  - `npx biome format --write src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    formatted 3 files and fixed 1 file; focused planner test still passed
+    with 37/37 tests afterward.
+  - `npx biome check src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --max-diagnostics 80`
+    failed with planner unused imports and import-order findings after moving
+    runtime vocabulary into shared rules.
+  - After import cleanup and Biome safe fixes, scoped Biome passed, but the
+    focused planner test failed with 36/37 passing because the source guard
+    still expected local CLI/MCP/gateway/runtime inventory vocabulary to remain
+    in the planner file.
+  - Updated the source guard so no-arg runtime vocabulary is validated through
+    shared rule catalogs instead of the planner source. Focused planner test
+    then passed with 37/37 tests and scoped Biome exited 0 with no fixes
+    applied.
+  - `npm run typecheck` passed.
+  - `npm run build` passed; Vite emitted the existing browser `fs`
+    externalization warning for `hwp.js` and the existing dynamic/static import
+    chunking warning for `deskBridge.ts`.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 21/21 through the
+    built Electron app.
+  - Static hardcoding check found no remaining planner direct no-arg runtime
+    `RUNTIME_ACTIONS.*` matches in `xenesisAgentDeskControl.ts` for local CLI
+    scan, MCP bridge/settings, gateway, runtime inventory, profile inventory,
+    run cancel, or session reset.
+  - `git diff --check` exited 0 with LF-to-CRLF working-copy warnings for
+    touched tracked files only.
+  - Diff inspection confirmed tracked changes are limited to the Obsidian
+    working note, `xenesisNaturalLanguageCatalog.ts`,
+    `xenesisAgentDeskControl.ts`, and `xenesisAgentDeskControl.test.ts`.
+  - CR audit was not run because this slice only refactors planner/catalog rule
+    interpretation and does not change registry, dispatcher, or capability
+    coverage.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

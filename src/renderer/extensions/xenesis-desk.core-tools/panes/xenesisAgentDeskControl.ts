@@ -24,7 +24,6 @@ import {
   XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES,
   XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES,
   XENESIS_DESK_CONTROL_PROMPT_HINT_CONNECTION_CENTER_DISCOVERY_PREFIX,
-  XENESIS_NATURAL_ACTION_INBOX_CONTEXT_WORDS,
   XENESIS_NATURAL_ACTION_INTENT_WORDS,
   XENESIS_NATURAL_AGENT_CONTEXT_WORDS,
   XENESIS_NATURAL_AGENT_EVENT_CONTEXT_WORDS,
@@ -36,7 +35,6 @@ import {
   XENESIS_NATURAL_ARRANGE_CONTEXT_WORDS,
   XENESIS_NATURAL_ARRANGE_MODE_TARGETS,
   XENESIS_NATURAL_ARTIFACT_TARGET_CONTEXT_WORDS,
-  XENESIS_NATURAL_BROAD_RUNTIME_STATUS_WORDS,
   XENESIS_NATURAL_CANCEL_CONTEXT_WORDS,
   XENESIS_NATURAL_CAPTURE_CONTEXT_WORDS,
   XENESIS_NATURAL_CHANNEL_PROFILE_CONTEXT_WORDS,
@@ -53,7 +51,6 @@ import {
   XENESIS_NATURAL_CORE_CAPABILITY_CONTEXT_WORDS,
   XENESIS_NATURAL_CORE_TOOL_OPEN_REASON,
   XENESIS_NATURAL_CORE_TOOL_TARGETS,
-  XENESIS_NATURAL_DASHBOARD_CONTEXT_WORDS,
   XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS,
   XENESIS_NATURAL_DESK_ACTION_ARGS,
   XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS,
@@ -77,7 +74,7 @@ import {
   XENESIS_NATURAL_FILE_LIST_CONTEXT_WORDS,
   XENESIS_NATURAL_FILE_READ_CONTEXT_WORDS,
   XENESIS_NATURAL_FILTER_CONTEXT_WORDS,
-  XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS,
+  XENESIS_NATURAL_GATEWAY_ACTION_RULES,
   XENESIS_NATURAL_GENERIC_CLOSE_CONTEXT_WORDS,
   XENESIS_NATURAL_GENERIC_FOCUS_CONTEXT_WORDS,
   XENESIS_NATURAL_GENERIC_LIST_CONTEXT_WORDS,
@@ -86,11 +83,6 @@ import {
   XENESIS_NATURAL_GUIDE_CONTEXT_WORDS,
   XENESIS_NATURAL_GUIDE_FILE_OPEN_WORDS,
   XENESIS_NATURAL_INTENT_PATTERNS,
-  XENESIS_NATURAL_LIST_OR_SHOW_WORDS,
-  XENESIS_NATURAL_LOCAL_CLI_CONTEXT_WORDS,
-  XENESIS_NATURAL_LOCAL_CLI_SCAN_CONTEXT_WORDS,
-  XENESIS_NATURAL_MCP_BRIDGE_CONTEXT_WORDS,
-  XENESIS_NATURAL_MCP_SETTINGS_CONTEXT_WORDS,
   XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_RULES,
   XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_RULES,
   XENESIS_NATURAL_NUMERIC_LIMITS,
@@ -110,7 +102,7 @@ import {
   XENESIS_NATURAL_PLAN_VISIBLE_TEXT,
   XENESIS_NATURAL_PROFILE_CONTEXT_WORDS,
   XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
-  XENESIS_NATURAL_PROFILE_LIST_CONTEXT_WORDS,
+  XENESIS_NATURAL_PROFILE_INVENTORY_RULES,
   XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_RULES,
   XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_RULES,
   XENESIS_NATURAL_PROVIDER_AUTO_TARGET,
@@ -119,7 +111,6 @@ import {
   XENESIS_NATURAL_PROVIDER_STATUS_RULES,
   XENESIS_NATURAL_PROVIDER_TARGETS,
   XENESIS_NATURAL_REFRESH_CONTEXT_WORDS,
-  XENESIS_NATURAL_REPORT_CONTEXT_WORDS,
   XENESIS_NATURAL_RESIZE_COMMAND_WORDS,
   XENESIS_NATURAL_REVIEW_REQUEST_CONTEXT_WORDS,
   XENESIS_NATURAL_REVIEW_REQUEST_INTENT_WORDS,
@@ -127,18 +118,14 @@ import {
   XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES,
   XENESIS_NATURAL_REVIEW_REQUEST_TARGET_WORDS,
   XENESIS_NATURAL_RIGHT_SCOPE_WORDS,
-  XENESIS_NATURAL_RUN_CANCEL_CONTEXT_WORDS,
   XENESIS_NATURAL_RUN_CONTEXT_WORDS,
   XENESIS_NATURAL_RUN_START_CONTEXT_WORDS,
   XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS,
-  XENESIS_NATURAL_RUNTIME_CONTEXT_WORDS,
-  XENESIS_NATURAL_RUNTIME_DIAGNOSTIC_CONTEXT_WORDS,
+  XENESIS_NATURAL_RUNTIME_CONTROL_RULES,
+  XENESIS_NATURAL_RUNTIME_INVENTORY_RULES,
   XENESIS_NATURAL_RUNTIME_READBACK_WORDS,
-  XENESIS_NATURAL_RUNTIME_STATUS_TARGET_WORDS,
-  XENESIS_NATURAL_SESSION_CONTEXT_WORDS,
-  XENESIS_NATURAL_SESSION_RESET_CONTEXT_WORDS,
+  XENESIS_NATURAL_RUNTIME_SUPPORT_RULES,
   XENESIS_NATURAL_SETUP_IMPERATIVE_WORDS,
-  XENESIS_NATURAL_TASK_CONTEXT_WORDS,
   XENESIS_NATURAL_TERMINAL_CONTEXT_WORDS,
   XENESIS_NATURAL_TERMINAL_MULTI_CONTEXT_WORDS,
   XENESIS_NATURAL_TERMINAL_RUN_CONTEXT_WORDS,
@@ -310,6 +297,7 @@ function naturalCatalogRuleActionFromNaturalText(
   for (const rule of rules) {
     if (rule.contextWords.length > 0 && !hasAny(value, rule.contextWords)) continue;
     if ((rule.requiredContextWordGroups ?? []).some((contextWords) => !hasAny(value, contextWords))) continue;
+    if (rule.blockedContextWords && hasAny(value, rule.blockedContextWords)) continue;
     return naturalCatalogAction(rule.action, args);
   }
 
@@ -898,42 +886,11 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
 }
 
 function localCliMcpReadbackActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
-  const wantsReadback = hasAny(value, XENESIS_NATURAL_RUNTIME_READBACK_WORDS);
-
-  if (
-    hasAny(value, XENESIS_NATURAL_LOCAL_CLI_CONTEXT_WORDS) &&
-    hasAny(value, XENESIS_NATURAL_LOCAL_CLI_SCAN_CONTEXT_WORDS)
-  ) {
-    return naturalCatalogAction(RUNTIME_ACTIONS.localCliScan);
-  }
-
-  if (wantsReadback && hasAny(value, XENESIS_NATURAL_MCP_BRIDGE_CONTEXT_WORDS)) {
-    return naturalCatalogAction(RUNTIME_ACTIONS.mcpBridgeStatus);
-  }
-
-  if (wantsReadback && hasAny(value, XENESIS_NATURAL_MCP_SETTINGS_CONTEXT_WORDS)) {
-    return naturalCatalogAction(RUNTIME_ACTIONS.mcpSettingsStatus);
-  }
-
-  if (wantsReadback && hasAny(value, XENESIS_NATURAL_ACTION_INBOX_CONTEXT_WORDS)) {
-    return naturalCatalogAction(RUNTIME_ACTIONS.actionInboxList);
-  }
-
-  return null;
+  return naturalCatalogRuleActionFromNaturalText(value, XENESIS_NATURAL_RUNTIME_SUPPORT_RULES);
 }
 
 function xenesisGatewayActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
-  if (!hasAny(value, XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS)) return null;
-
-  if (hasAny(value, XENESIS_NATURAL_DASHBOARD_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_OPEN_OR_SHOW_WORDS)) {
-    return naturalCatalogAction(RUNTIME_ACTIONS.gatewayDashboardOpen);
-  }
-
-  if (hasAny(value, XENESIS_NATURAL_RUNTIME_READBACK_WORDS)) {
-    return naturalCatalogAction(RUNTIME_ACTIONS.gatewayStatus);
-  }
-
-  return null;
+  return naturalCatalogRuleActionFromNaturalText(value, XENESIS_NATURAL_GATEWAY_ACTION_RULES);
 }
 
 function xenesisAgentReadbackActionFromNaturalText(value: string, rawText: string): XenesisDeskActionRequest | null {
@@ -960,42 +917,14 @@ function xenesisRuntimeInventoryActionFromNaturalText(value: string, rawText: st
   const xenesisAgentReadbackAction = xenesisAgentReadbackActionFromNaturalText(value, rawText);
   if (xenesisAgentReadbackAction) return xenesisAgentReadbackAction;
 
-  const hasSpecificStatusTarget = hasAny(value, XENESIS_NATURAL_RUNTIME_STATUS_TARGET_WORDS);
-  const isBroadXenesisStatus =
-    hasAny(value, XENESIS_NATURAL_BROAD_RUNTIME_STATUS_WORDS) ||
-    (hasAny(value, XENESIS_NATURAL_RUNTIME_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_RUNTIME_READBACK_WORDS));
-  if (isBroadXenesisStatus && !hasSpecificStatusTarget) {
-    return naturalCatalogAction(RUNTIME_ACTIONS.runtimeStatus);
-  }
-
-  if (hasAny(value, XENESIS_NATURAL_REPORT_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_LIST_OR_SHOW_WORDS)) {
-    return naturalCatalogAction(RUNTIME_ACTIONS.reportsList);
-  }
-
-  if (hasAny(value, XENESIS_NATURAL_TASK_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_LIST_OR_SHOW_WORDS)) {
-    return naturalCatalogAction(RUNTIME_ACTIONS.tasksList);
-  }
-
-  if (hasAny(value, XENESIS_NATURAL_AGENT_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_LIST_OR_SHOW_WORDS)) {
-    return naturalCatalogAction(RUNTIME_ACTIONS.agentsList);
-  }
-
-  if (hasAny(value, XENESIS_NATURAL_RUNTIME_DIAGNOSTIC_CONTEXT_WORDS)) {
-    return naturalCatalogAction(RUNTIME_ACTIONS.diagnostics);
-  }
-
-  return null;
+  return naturalCatalogRuleActionFromNaturalText(value, XENESIS_NATURAL_RUNTIME_INVENTORY_RULES);
 }
 
 function xenesisProfileInventoryActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
   if (!hasAny(value, XENESIS_NATURAL_XENESIS_CONTEXT_WORDS)) return null;
   if (!hasAny(value, XENESIS_NATURAL_PROFILE_CONTEXT_WORDS)) return null;
 
-  if (hasAny(value, XENESIS_NATURAL_PROFILE_LIST_CONTEXT_WORDS)) {
-    return naturalCatalogAction(RUNTIME_ACTIONS.profilesList);
-  }
-
-  return null;
+  return naturalCatalogRuleActionFromNaturalText(value, XENESIS_NATURAL_PROFILE_INVENTORY_RULES);
 }
 
 function xenesisAgentSubmitActionFromNaturalText(rawText: string): XenesisDeskActionRequest | null {
@@ -1028,18 +957,7 @@ function xenesisRunStartActionFromNaturalText(rawText: string): XenesisDeskActio
 function xenesisRuntimeControlActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
   if (!hasAny(value, XENESIS_NATURAL_XENESIS_CONTEXT_WORDS)) return null;
 
-  if (hasAny(value, XENESIS_NATURAL_RUN_CANCEL_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_CANCEL_CONTEXT_WORDS)) {
-    return naturalCatalogAction(RUNTIME_ACTIONS.runsCancel);
-  }
-
-  if (
-    hasAny(value, XENESIS_NATURAL_SESSION_CONTEXT_WORDS) &&
-    hasAny(value, XENESIS_NATURAL_SESSION_RESET_CONTEXT_WORDS)
-  ) {
-    return naturalCatalogAction(RUNTIME_ACTIONS.sessionsReset);
-  }
-
-  return null;
+  return naturalCatalogRuleActionFromNaturalText(value, XENESIS_NATURAL_RUNTIME_CONTROL_RULES);
 }
 
 function xenesisWorkspaceSetActionFromNaturalText(value: string, rawText: string): XenesisDeskActionRequest | null {

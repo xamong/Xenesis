@@ -55,6 +55,7 @@ import {
   XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_WORDS,
   XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_WORDS,
   XENESIS_NATURAL_FILE_CONTEXT_WORDS,
+  XENESIS_NATURAL_GATEWAY_ACTION_RULES,
   XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS,
   XENESIS_NATURAL_GENERIC_CLOSE_CONTEXT_WORDS,
   XENESIS_NATURAL_GENERIC_LIST_CONTEXT_WORDS,
@@ -84,6 +85,7 @@ import {
   XENESIS_NATURAL_PLACEMENT_TARGETS,
   XENESIS_NATURAL_PROFILE_CONTEXT_WORDS,
   XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
+  XENESIS_NATURAL_PROFILE_INVENTORY_RULES,
   XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_RULES,
   XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
@@ -100,9 +102,12 @@ import {
   XENESIS_NATURAL_RUN_START_CONTEXT_WORDS,
   XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_RUNTIME_CONTEXT_WORDS,
+  XENESIS_NATURAL_RUNTIME_CONTROL_RULES,
   XENESIS_NATURAL_RUNTIME_DIAGNOSTIC_CONTEXT_WORDS,
+  XENESIS_NATURAL_RUNTIME_INVENTORY_RULES,
   XENESIS_NATURAL_RUNTIME_READBACK_WORDS,
   XENESIS_NATURAL_RUNTIME_STATUS_TARGET_WORDS,
+  XENESIS_NATURAL_RUNTIME_SUPPORT_RULES,
   XENESIS_NATURAL_SAFETY_CONTEXT_WORDS,
   XENESIS_NATURAL_SESSION_CONTEXT_WORDS,
   XENESIS_NATURAL_SESSION_RESET_CONTEXT_WORDS,
@@ -197,32 +202,32 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.equal(XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS.includes('연동'), true);
   assert.equal(XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_WORDS.includes('provider profile'), true);
   assert.match(source, /XENESIS_NATURAL_RUNTIME_READBACK_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_LOCAL_CLI_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_LOCAL_CLI_SCAN_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_MCP_BRIDGE_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_MCP_SETTINGS_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_DASHBOARD_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_LOCAL_CLI_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_LOCAL_CLI_SCAN_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_MCP_BRIDGE_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_MCP_SETTINGS_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_DASHBOARD_CONTEXT_WORDS/);
   assert.match(source, /XENESIS_NATURAL_XENESIS_CONTEXT_WORDS/);
   assert.match(source, /XENESIS_NATURAL_AGENT_CONTEXT_WORDS/);
   assert.match(source, /XENESIS_NATURAL_AGENT_EVENT_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_RUNTIME_STATUS_TARGET_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_BROAD_RUNTIME_STATUS_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_REPORT_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_TASK_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_LIST_OR_SHOW_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_RUNTIME_DIAGNOSTIC_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_RUNTIME_STATUS_TARGET_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_BROAD_RUNTIME_STATUS_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_REPORT_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_TASK_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_LIST_OR_SHOW_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_RUNTIME_DIAGNOSTIC_CONTEXT_WORDS/);
   assert.match(source, /XENESIS_NATURAL_PROFILE_CONTEXT_WORDS/);
   assert.match(source, /XENESIS_NATURAL_AGENT_SUBMIT_CONTEXT_WORDS/);
   assert.match(source, /XENESIS_NATURAL_RUN_CONTEXT_WORDS/);
   assert.match(source, /XENESIS_NATURAL_RUN_START_CONTEXT_WORDS/);
   assert.match(source, /XENESIS_NATURAL_CANCEL_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_SESSION_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_SESSION_RESET_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_SESSION_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_SESSION_RESET_CONTEXT_WORDS/);
   assert.match(source, /XENESIS_NATURAL_WORKSPACE_CONTEXT_WORDS/);
   assert.match(source, /XENESIS_NATURAL_WORKSPACE_SET_CONTEXT_WORDS/);
   assert.match(source, /XENESIS_NATURAL_OPEN_OR_SHOW_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_RUNTIME_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_RUNTIME_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /hasAny\(value, \[\s*'local cli'/);
   assert.doesNotMatch(source, /hasAny\(value, \[\s*'gateway'/);
   assert.doesNotMatch(source, /hasAny\(value, \[\s*'xenesis'/);
@@ -470,11 +475,57 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'Show explorer from natural language request.',
   );
   assert.match(source, /XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS/);
+  assert.match(source, /XENESIS_NATURAL_RUNTIME_SUPPORT_RULES/);
+  assert.match(source, /XENESIS_NATURAL_GATEWAY_ACTION_RULES/);
+  assert.match(source, /XENESIS_NATURAL_RUNTIME_INVENTORY_RULES/);
+  assert.match(source, /XENESIS_NATURAL_PROFILE_INVENTORY_RULES/);
+  assert.match(source, /XENESIS_NATURAL_RUNTIME_CONTROL_RULES/);
   assert.doesNotMatch(source, /naturalAction\(\s*'natural-local-cli-scan'/);
   assert.doesNotMatch(source, /naturalAction\(\s*'natural-xenesis-status'/);
   assert.doesNotMatch(source, /'xd\.xenesis\.runs\.start'/);
-  assert.equal(XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.localCliScan.path, 'xd.localCli.scan');
-  assert.equal(XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.runtimeStatus.id, 'natural-xenesis-status');
+  assert.doesNotMatch(source, /RUNTIME_ACTIONS\.localCliScan/);
+  assert.doesNotMatch(source, /RUNTIME_ACTIONS\.mcpBridgeStatus/);
+  assert.doesNotMatch(source, /RUNTIME_ACTIONS\.mcpSettingsStatus/);
+  assert.doesNotMatch(source, /RUNTIME_ACTIONS\.gatewayDashboardOpen/);
+  assert.doesNotMatch(source, /RUNTIME_ACTIONS\.gatewayStatus/);
+  assert.doesNotMatch(source, /RUNTIME_ACTIONS\.runtimeStatus/);
+  assert.doesNotMatch(source, /RUNTIME_ACTIONS\.reportsList/);
+  assert.doesNotMatch(source, /RUNTIME_ACTIONS\.tasksList/);
+  assert.doesNotMatch(source, /RUNTIME_ACTIONS\.agentsList/);
+  assert.doesNotMatch(source, /RUNTIME_ACTIONS\.diagnostics/);
+  assert.doesNotMatch(source, /RUNTIME_ACTIONS\.profilesList/);
+  assert.doesNotMatch(source, /RUNTIME_ACTIONS\.runsCancel/);
+  assert.doesNotMatch(source, /RUNTIME_ACTIONS\.sessionsReset/);
+  assert.deepEqual(
+    XENESIS_NATURAL_RUNTIME_SUPPORT_RULES.map((rule) => rule.action.path),
+    ['xd.localCli.scan', 'xd.mcp.bridge.status', 'xd.mcp.settings.status', 'xd.mcp.actionInbox.list'],
+  );
+  assert.deepEqual(
+    XENESIS_NATURAL_GATEWAY_ACTION_RULES.map((rule) => rule.action.path),
+    ['xd.xenesis.gateway.openDashboard', 'xd.xenesis.gateway.status'],
+  );
+  assert.deepEqual(
+    XENESIS_NATURAL_RUNTIME_INVENTORY_RULES.map((rule) => ({
+      path: rule.action.path,
+      blockedContextWords: 'blockedContextWords' in rule ? rule.blockedContextWords.length : 0,
+    })),
+    [
+      { path: 'xd.xenesis.status', blockedContextWords: XENESIS_NATURAL_RUNTIME_STATUS_TARGET_WORDS.length },
+      { path: 'xd.xenesis.status', blockedContextWords: XENESIS_NATURAL_RUNTIME_STATUS_TARGET_WORDS.length },
+      { path: 'xd.xenesis.reports.list', blockedContextWords: 0 },
+      { path: 'xd.xenesis.tasks.list', blockedContextWords: 0 },
+      { path: 'xd.xenesis.agents.list', blockedContextWords: 0 },
+      { path: 'xd.xenesis.diagnostics', blockedContextWords: 0 },
+    ],
+  );
+  assert.deepEqual(
+    XENESIS_NATURAL_PROFILE_INVENTORY_RULES.map((rule) => rule.action.path),
+    ['xd.xenesis.profiles.list'],
+  );
+  assert.deepEqual(
+    XENESIS_NATURAL_RUNTIME_CONTROL_RULES.map((rule) => rule.action.path),
+    ['xd.xenesis.runs.cancel', 'xd.xenesis.sessions.reset'],
+  );
   assert.equal(XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.runsStart.path, 'xd.xenesis.runs.start');
   assert.match(source, /XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS/);
   assert.match(source, /XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS/);
