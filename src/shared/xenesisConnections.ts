@@ -83,6 +83,31 @@ export interface XenesisConnectionSettingsAction {
   section?: string;
 }
 
+export interface XenesisConnectionCenterOpenArgs extends XenesisConnectionSettingsAction {
+  kind: 'settings';
+  ensureVisible: boolean;
+  focusConnectionId?: string;
+}
+
+export const XENESIS_CONNECTION_CENTER_SETTINGS_ACTION = {
+  category: 'xenesis-agent',
+  mode: 'connections',
+  section: 'xenesis-connections',
+} as const satisfies XenesisConnectionSettingsAction;
+
+export const XENESIS_CONNECTION_CENTER_ROOT_SELECTOR = `[data-settings-section="${XENESIS_CONNECTION_CENTER_SETTINGS_ACTION.section}"]`;
+
+export function buildXenesisConnectionCenterOpenArgs(
+  input: { ensureVisible?: boolean; focusConnectionId?: string } = {},
+): XenesisConnectionCenterOpenArgs {
+  return {
+    kind: 'settings',
+    ...XENESIS_CONNECTION_CENTER_SETTINGS_ACTION,
+    ensureVisible: input.ensureVisible !== false,
+    ...(input.focusConnectionId ? { focusConnectionId: input.focusConnectionId } : {}),
+  };
+}
+
 export interface XenesisConnectionSourceDoc {
   label: string;
   url: string;

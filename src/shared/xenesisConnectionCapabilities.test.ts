@@ -7,7 +7,7 @@ import {
   findDeskBridgeCapability,
   listDeskBridgeCapabilities,
 } from './deskBridgeCapabilities';
-import { XENESIS_CONNECTION_PROVIDER_IDS } from './xenesisConnections';
+import { buildXenesisConnectionCenterOpenArgs, XENESIS_CONNECTION_PROVIDER_IDS } from './xenesisConnections';
 
 test('xenesis capability ID allowlists are owned by the shared connection catalog', () => {
   const capabilitySource = readFileSync(new URL('./deskBridgeCapabilities.ts', import.meta.url), 'utf8');
@@ -26,8 +26,16 @@ test('xenesis capability ID allowlists are owned by the shared connection catalo
     assert.doesNotMatch(source, /const XENESIS_TOOL_OAUTH_DRAFT_IDS = \[/, `${label} owns OAuth draft ids`);
     assert.doesNotMatch(source, /const XENESIS_PROVIDER_IDS = \[/, `${label} owns provider ids`);
     assert.doesNotMatch(source, /const XENESIS_PROVIDER_SETUP_IDS = \[/, `${label} owns provider setup ids`);
+    assert.doesNotMatch(source, /section:\s*'xenesis-connections'/, `${label} owns Connection Center section`);
+    assert.doesNotMatch(
+      source,
+      /\[data-settings-section="xenesis-connections"\]/,
+      `${label} owns Connection Center root selector`,
+    );
   }
 
+  assert.match(capabilitySource, /buildXenesisConnectionCenterOpenArgs/);
+  assert.match(mainSource, /buildXenesisConnectionCenterOpenArgs/);
   assert.doesNotMatch(testSource, /const ALL_AI_PROVIDER_KINDS = \[/);
 });
 
@@ -108,21 +116,8 @@ test('xenesis connection open capability opens the Connection Center catalog or 
   assert.equal(result.ok, true);
   assert.equal(catalogResult.ok, true);
   assert.deepEqual(openedArgs, [
-    {
-      kind: 'settings',
-      category: 'xenesis-agent',
-      mode: 'connections',
-      section: 'xenesis-connections',
-      focusConnectionId: 'notion',
-      ensureVisible: true,
-    },
-    {
-      kind: 'settings',
-      category: 'xenesis-agent',
-      mode: 'connections',
-      section: 'xenesis-connections',
-      ensureVisible: true,
-    },
+    buildXenesisConnectionCenterOpenArgs({ focusConnectionId: 'notion' }),
+    buildXenesisConnectionCenterOpenArgs({ ensureVisible: true }),
   ]);
   assert.deepEqual(result.result, {
     ok: true,

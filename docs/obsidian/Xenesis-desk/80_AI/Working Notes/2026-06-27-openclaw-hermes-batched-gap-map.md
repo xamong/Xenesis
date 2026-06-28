@@ -4380,6 +4380,54 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Connection Center Settings Target Source-of-Truth Slice
+
+- Continued the larger hardcoding cleanup by moving the Connection Center
+  settings target out of duplicated CR open helpers and into
+  `src/shared/xenesisConnections.ts`.
+- Intended change:
+  - `xenesisConnections.ts` owns `XENESIS_CONNECTION_CENTER_SETTINGS_ACTION`,
+    `XENESIS_CONNECTION_CENTER_ROOT_SELECTOR`, and
+    `buildXenesisConnectionCenterOpenArgs`.
+  - `src/shared/deskBridgeCapabilities.ts` and `src/main/index.ts` use the
+    shared builder for Connection Center renderer open args.
+  - The development Connection Center snapshot helper gets its root selector
+    from the shared constant instead of owning a duplicate selector literal.
+- Scope boundary:
+  - Refactor/source ownership only.
+  - No CR path names, capability schemas, approval policy, renderer behavior,
+    OAuth/install execution, provider runtime selection, messenger delivery,
+    profile writes, or Action Inbox mutation behavior changed.
+- RED verification:
+  - `npx tsx --test src\shared\xenesisConnections.test.ts
+    src\shared\xenesisConnectionCapabilities.test.ts` failed as expected before
+    implementation. The failures proved `deskBridgeCapabilities.ts` still owned
+    the Connection Center section literal and the shared builder/constants did
+    not exist yet.
+- Implementation:
+  - Added the shared Connection Center settings action, root selector, and open
+    args builder.
+  - Replaced repeated main/adapter renderer args across onboarding, setup
+    request, diagnostics, tool, messenger, guide, and provider open helpers.
+  - Updated the snapshot helper to inject the shared root selector into its
+    renderer-side script config.
+- Verification:
+  - Focused shared connection/capability tests passed with 67/67 tests before
+    and after formatting.
+  - Scoped Biome format/check passed; check exited 0 with existing warnings in
+    large main/shared files.
+  - `npm run docs:capabilities:audit` passed with missing registered paths 0,
+    missing dispatched coverage paths 0, undispatched static callable methods
+    0, and dispatcher paths missing from tree 0. The generated untracked audit
+    markdown was removed because this repo still treats generated audit docs as
+    a known infra gap.
+  - `npm run typecheck`, `npm run build`,
+    `npm run smoke:xenesis:connection-center`, and
+    `npm run smoke:xenesis:natural-desk-routing` passed. Build reported existing
+    Vite warnings; `git diff --check` reported LF-to-CRLF warnings only.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

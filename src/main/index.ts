@@ -268,9 +268,11 @@ import type {
   XenesisTaskSummary,
 } from '../shared/types';
 import {
+  buildXenesisConnectionCenterOpenArgs,
   buildXenesisConnectionSetupApprovalSessionKey,
   buildXenesisConnectionsStatus,
   withXenesisConnectionSetupRequestReviews,
+  XENESIS_CONNECTION_CENTER_ROOT_SELECTOR,
   XENESIS_CONNECTION_GUIDE_IDS,
   XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS,
   XENESIS_CONNECTION_MESSENGER_IDS,
@@ -4899,14 +4901,10 @@ async function openXenesisConnectionDiagnosticRunbook(args?: unknown): Promise<R
     return { ok: false, id, error: `Xenesis connection diagnostic runbook is not available: ${id}` };
   }
 
-  const rendererArgs: Record<string, unknown> = {
-    kind: 'settings',
-    category: 'xenesis-agent',
-    mode: 'connections',
-    section: 'xenesis-connections',
+  const rendererArgs = buildXenesisConnectionCenterOpenArgs({
     ensureVisible: body.ensureVisible !== false,
-  };
-  if (item) rendererArgs.focusConnectionId = item.id;
+    ...(item ? { focusConnectionId: item.id } : {}),
+  });
 
   const renderer = await openMcpBuiltinPaneCapability(rendererArgs);
   if (!item) {
@@ -4997,14 +4995,10 @@ async function openXenesisConnectionSetupRequest(args?: unknown): Promise<Record
     return { ok: false, id, error: `Xenesis connection setup request is not available: ${id}` };
   }
 
-  const rendererArgs: Record<string, unknown> = {
-    kind: 'settings',
-    category: 'xenesis-agent',
-    mode: 'connections',
-    section: 'xenesis-connections',
+  const rendererArgs = buildXenesisConnectionCenterOpenArgs({
     ensureVisible: body.ensureVisible !== false,
-  };
-  if (item) rendererArgs.focusConnectionId = item.id;
+    ...(item ? { focusConnectionId: item.id } : {}),
+  });
 
   const renderer = await openMcpBuiltinPaneCapability(rendererArgs);
   if (!item) {
@@ -5157,14 +5151,10 @@ async function openXenesisOnboardingStep(args?: unknown): Promise<Record<string,
     return { ok: false, id, error: `Xenesis onboarding step is not available: ${id}` };
   }
 
-  const rendererArgs: Record<string, unknown> = {
-    kind: 'settings',
-    category: 'xenesis-agent',
-    mode: 'connections',
-    section: 'xenesis-connections',
+  const rendererArgs = buildXenesisConnectionCenterOpenArgs({
     ensureVisible: body.ensureVisible !== false,
-  };
-  if (item) rendererArgs.focusConnectionId = item.id;
+    ...(item ? { focusConnectionId: item.id } : {}),
+  });
 
   const renderer = await openMcpBuiltinPaneCapability(rendererArgs);
   if (!item) {
@@ -5237,14 +5227,10 @@ async function openXenesisMessengerCatalogSurface<TContext = undefined>(
     return { ok: false, [options.selectorKey]: selector, error: options.unavailableMessage(selector) };
   }
 
-  const rendererArgs: Record<string, unknown> = {
-    kind: 'settings',
-    category: 'xenesis-agent',
-    mode: 'connections',
-    section: 'xenesis-connections',
+  const rendererArgs = buildXenesisConnectionCenterOpenArgs({
     ensureVisible: body.ensureVisible !== false,
-  };
-  if (item) rendererArgs.focusConnectionId = item.id;
+    ...(item ? { focusConnectionId: item.id } : {}),
+  });
 
   const renderer = await openMcpBuiltinPaneCapability(rendererArgs);
   if (selector && item) {
@@ -5543,14 +5529,10 @@ async function openXenesisGuide(args?: unknown): Promise<Record<string, unknown>
     return { ok: false, id, error: `Xenesis guide is not available: ${id}` };
   }
 
-  const rendererArgs: Record<string, unknown> = {
-    kind: 'settings',
-    category: 'xenesis-agent',
-    mode: 'connections',
-    section: 'xenesis-connections',
+  const rendererArgs = buildXenesisConnectionCenterOpenArgs({
     ensureVisible: body.ensureVisible !== false,
-  };
-  if (item) rendererArgs.focusConnectionId = item.id;
+    ...(item ? { focusConnectionId: item.id } : {}),
+  });
 
   const renderer = await openMcpBuiltinPaneCapability(rendererArgs);
   if (!item) {
@@ -6008,14 +5990,10 @@ async function openXenesisToolCatalogSurface(
     return { ok: false, id, error: options.unavailableMessage(id) };
   }
 
-  const rendererArgs: Record<string, unknown> = {
-    kind: 'settings',
-    category: 'xenesis-agent',
-    mode: 'connections',
-    section: 'xenesis-connections',
+  const rendererArgs = buildXenesisConnectionCenterOpenArgs({
     ensureVisible: body.ensureVisible !== false,
-  };
-  if (id) rendererArgs.focusConnectionId = id;
+    ...(id ? { focusConnectionId: id } : {}),
+  });
 
   const renderer = await openMcpBuiltinPaneCapability(rendererArgs);
 
@@ -6894,14 +6872,10 @@ async function openXenesisProviderCatalogSurface(
     return { ok: false, provider, error: options.unavailableMessage(provider) };
   }
 
-  const rendererArgs: Record<string, unknown> = {
-    kind: 'settings',
-    category: 'xenesis-agent',
-    mode: 'connections',
-    section: 'xenesis-connections',
+  const rendererArgs = buildXenesisConnectionCenterOpenArgs({
     ensureVisible: body.ensureVisible !== false,
-  };
-  if (item) rendererArgs.focusConnectionId = item.id;
+    ...(item ? { focusConnectionId: item.id } : {}),
+  });
 
   const renderer = await openMcpBuiltinPaneCapability(rendererArgs);
 
@@ -7021,14 +6995,12 @@ async function openXenesisProviderRouting(args?: unknown): Promise<Record<string
     };
   }
 
-  const renderer = await openMcpBuiltinPaneCapability({
-    kind: 'settings',
-    category: 'xenesis-agent',
-    mode: 'connections',
-    section: 'xenesis-connections',
-    focusConnectionId: item.id,
-    ensureVisible: body.ensureVisible !== false,
-  });
+  const renderer = await openMcpBuiltinPaneCapability(
+    buildXenesisConnectionCenterOpenArgs({
+      ensureVisible: body.ensureVisible !== false,
+      focusConnectionId: item.id,
+    }),
+  );
 
   return {
     ok: renderer.ok !== false,
@@ -12719,9 +12691,14 @@ async function snapshotConnectionCenterForCapability(args: unknown): Promise<Rec
 
   const script = `
 (async () => {
-  const config = ${JSON.stringify({ includeBodyText, maxTextLength, timeoutMs })};
+  const config = ${JSON.stringify({
+    includeBodyText,
+    maxTextLength,
+    rootSelector: XENESIS_CONNECTION_CENTER_ROOT_SELECTOR,
+    timeoutMs,
+  })};
   const startedAt = Date.now();
-  const rootSelector = '[data-settings-section="xenesis-connections"]';
+  const rootSelector = String(config.rootSelector || '');
   const checks = [
     { id: 'connection-center-root', selector: rootSelector },
     { id: 'connection-center-title', selector: rootSelector + ' h2', text: 'Connection Center' },

@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  buildXenesisConnectionCenterOpenArgs,
   buildXenesisConnectionsStatus,
   withXenesisConnectionSetupRequestReviews,
+  XENESIS_CONNECTION_CENTER_ROOT_SELECTOR,
+  XENESIS_CONNECTION_CENTER_SETTINGS_ACTION,
   XENESIS_CONNECTION_GUIDES,
 } from './xenesisConnections';
 
@@ -32,6 +35,31 @@ const emptyChannelSettings = {
   },
   webhook: { enabled: false, ...channelGuardrails, urlEnv: 'XENESIS_WEBHOOK_URL' },
 };
+
+test('connection center settings target is owned by the shared connection catalog', () => {
+  assert.deepEqual(XENESIS_CONNECTION_CENTER_SETTINGS_ACTION, {
+    category: 'xenesis-agent',
+    mode: 'connections',
+    section: 'xenesis-connections',
+  });
+  assert.equal(XENESIS_CONNECTION_CENTER_ROOT_SELECTOR, '[data-settings-section="xenesis-connections"]');
+
+  assert.deepEqual(buildXenesisConnectionCenterOpenArgs(), {
+    kind: 'settings',
+    category: 'xenesis-agent',
+    mode: 'connections',
+    section: 'xenesis-connections',
+    ensureVisible: true,
+  });
+  assert.deepEqual(buildXenesisConnectionCenterOpenArgs({ ensureVisible: false, focusConnectionId: 'notion' }), {
+    kind: 'settings',
+    category: 'xenesis-agent',
+    mode: 'connections',
+    section: 'xenesis-connections',
+    ensureVisible: false,
+    focusConnectionId: 'notion',
+  });
+});
 
 test('buildXenesisConnectionsStatus reports ready provider, MCP, gateway, and Telegram', () => {
   const status = buildXenesisConnectionsStatus({

@@ -10,6 +10,7 @@ import {
 } from './deskBridgeWorkflow';
 import { isXenisPhase5Visible, type XenisPhase5VisibilityOptions } from './phase5';
 import {
+  buildXenesisConnectionCenterOpenArgs,
   XENESIS_CONNECTION_GUIDE_IDS,
   XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS,
   XENESIS_CONNECTION_MESSENGER_IDS,
@@ -11270,14 +11271,10 @@ export async function callDeskBridgeCapability(
       if (path === 'xd.xenesis.connections.open') {
         const args = normalizeCapabilityArgs(request.args);
         const focusConnectionId = readString(args.id) || readString(args.connectionId);
-        const paneArgs: Record<string, unknown> = {
-          kind: 'settings',
-          category: 'xenesis-agent',
-          mode: 'connections',
-          section: 'xenesis-connections',
+        const paneArgs = buildXenesisConnectionCenterOpenArgs({
+          ...(focusConnectionId ? { focusConnectionId } : {}),
           ensureVisible: args.ensureVisible !== false,
-        };
-        if (focusConnectionId) paneArgs.focusConnectionId = focusConnectionId;
+        });
         return callAdapter(path, api?.openBuiltinPane, paneArgs);
       }
       if (path === 'xd.xenesis.connections.diagnostics.status') {
