@@ -35,6 +35,7 @@ import type {
   XenesisConnectionToolMcpOAuthTemplate,
   XenesisConnectionToolOAuthDraftReviewStep,
   XenesisConnectionToolOAuthDraftTemplate,
+  XenesisConnectionToolOAuthRuntimeTemplate,
   XenesisConnectionToolOAuthSetupPacket,
   XenesisConnectionToolSetupPlanTemplate,
   XenesisConnectionToolSetupTemplate,
@@ -76,6 +77,7 @@ export const XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES = {
   'tool-mcp-oauth': 'data-xenesis-tool-mcp-oauth',
   'tool-oauth-draft': 'data-xenesis-tool-oauth-draft',
   'tool-oauth-setup-packet': 'data-xenesis-tool-oauth-setup-packet',
+  'tool-oauth-runtime': 'data-xenesis-tool-oauth-runtime',
   'tool-action-catalog': 'data-xenesis-tool-action-catalog',
   'tool-connector': 'data-xenesis-tool-connector',
   'tool-view': 'data-xenesis-tool-view',
@@ -254,6 +256,10 @@ export function formatXenesisToolOAuthDraftSummary(draft: XenesisConnectionToolO
   return `${draft.tool} / ${draft.draftStatus} / ${draft.scopes.length} scope(s) / ${draft.reviewSteps.length} review step(s)`;
 }
 
+export function formatXenesisToolOAuthRuntimeSummary(runtime: XenesisConnectionToolOAuthRuntimeTemplate): string {
+  return `${runtime.tool} / ${runtime.runtimeStatus} / ${runtime.readbackChecks.length} readback check(s) / ${runtime.blockedActions.length} blocked action(s)`;
+}
+
 export function formatXenesisToolOAuthSetupPacketSummary(packet: XenesisConnectionToolOAuthSetupPacket): string {
   return `${packet.provider} / ${packet.packetStatus} / ${packet.credentialRefs.length} credential ref(s) / ${packet.checklist.length} setup step(s)`;
 }
@@ -401,6 +407,20 @@ export function buildXenesisToolOAuthDraftRequest(item: XenesisConnectionItem): 
   if (!item.toolOAuthDraft) return null;
   return {
     path: 'xd.xenesis.tools.oauthDrafts.request',
+    args: {
+      id: item.id,
+    },
+    source: 'xenesis',
+    approved: true,
+  };
+}
+
+export function buildXenesisToolOAuthRuntimeRequest(
+  item: XenesisConnectionItem,
+): McpBridgeCapabilityCallRequest | null {
+  if (!item.toolOAuthRuntime) return null;
+  return {
+    path: 'xd.xenesis.tools.oauthRuntime.request',
     args: {
       id: item.id,
     },

@@ -32,6 +32,7 @@ import {
   buildXenesisToolActionCatalogRequest,
   buildXenesisToolMcpOAuthRequest,
   buildXenesisToolOAuthDraftRequest,
+  buildXenesisToolOAuthRuntimeRequest,
   buildXenesisToolOAuthSetupPacketOpenRequest,
   buildXenesisToolOAuthSetupPacketRequest,
   buildXenesisToolSetupPlanRequest,
@@ -62,6 +63,7 @@ import {
   formatXenesisToolInstallPlanSummary,
   formatXenesisToolMcpOAuthSummary,
   formatXenesisToolOAuthDraftSummary,
+  formatXenesisToolOAuthRuntimeSummary,
   formatXenesisToolOAuthSetupPacketSummary,
   formatXenesisToolSetupPlanSummary,
   formatXenesisToolSetupSummary,
@@ -103,6 +105,10 @@ test('xenesis detail focus selector maps CR detail values to existing data attri
     XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['tool-oauth-setup-packet'],
     'data-xenesis-tool-oauth-setup-packet',
   );
+  assert.equal(
+    XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['tool-oauth-runtime'],
+    'data-xenesis-tool-oauth-runtime',
+  );
   assert.equal(XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['channel-routing'], 'data-xenesis-channel-routing');
   assert.equal(
     XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['provider-profile-draft'],
@@ -120,6 +126,7 @@ test('xenesis detail focus selector maps CR detail values to existing data attri
     xenesisConnectionDetailFocusSelector('tool-oauth-setup-packet'),
     '[data-xenesis-tool-oauth-setup-packet]',
   );
+  assert.equal(xenesisConnectionDetailFocusSelector('tool-oauth-runtime'), '[data-xenesis-tool-oauth-runtime]');
   assert.equal(xenesisConnectionDetailFocusSelector('channel-routing'), '[data-xenesis-channel-routing]');
   assert.equal(xenesisConnectionDetailFocusSelector('provider-profile-draft'), '[data-xenesis-provider-profile-draft]');
   assert.equal(xenesisConnectionDetailFocusSelector('provider-setup-plan'), '[data-xenesis-provider-setup-plan]');
@@ -255,6 +262,10 @@ test('SettingsPane renders Connection Center guided and review step details', ()
   assert.match(source, /toolMcpOAuth/);
   assert.match(source, /formatXenesisToolMcpOAuthSummary/);
   assert.match(source, /buildXenesisToolMcpOAuthRequest/);
+  assert.match(source, /toolOAuthRuntime/);
+  assert.match(source, /formatXenesisToolOAuthRuntimeSummary/);
+  assert.match(source, /buildXenesisToolOAuthRuntimeRequest/);
+  assert.match(source, /data-xenesis-tool-oauth-runtime/);
   assert.match(source, /xenesisConnectionsChannelProfileDraftReviewSteps/);
   assert.match(source, /formatXenesisUserStoryContractSummary/);
   assert.match(source, /formatXenesisUserStoryContractDetail/);
@@ -270,6 +281,7 @@ test('SettingsPane renders the Connectors category from CR-backed tool and messe
   assert.match(source, /xenesisConnectionsStatus\?\.sections\.messengers\.items/);
   assert.match(source, /settings\.connectorsXenesisToolConnectors/);
   assert.match(source, /settings\.connectorsXenesisOauthDrafts/);
+  assert.match(source, /settings\.connectorsXenesisOauthRuntime/);
   assert.match(source, /settings\.connectorsXenesisSetupPlans/);
   assert.match(source, /settings\.connectorsXenesisActionPolicies/);
   assert.match(source, /settings\.connectorsXenesisMessengerViews/);
@@ -1323,6 +1335,46 @@ test('formatXenesisToolOAuthDraftSummary describes tool, status, and scope count
   );
 });
 
+test('formatXenesisToolOAuthRuntimeSummary describes runtime readiness and readback checks', () => {
+  assert.equal(
+    formatXenesisToolOAuthRuntimeSummary({
+      runtimeStatus: 'planned-template',
+      actionInboxKind: 'xenesis-tool-oauth-runtime',
+      tool: 'google-calendar',
+      displayName: 'Google Calendar',
+      runtimeSupport: 'planned-oauth',
+      authSurface: 'Settings > AI Provider > Local CLI MCP',
+      reviewSurface: 'Desk Action Inbox',
+      callbackPolicy:
+        'Use the callback URI required by the selected MCP OAuth runtime; Desk does not host a callback server.',
+      callbackUriCandidates: ['selected MCP OAuth redirect URI'],
+      credentialRefs: [
+        {
+          ref: 'GOOGLE_OAUTH_TOKEN_STORE',
+          label: 'Google OAuth token store',
+          required: true,
+          secretRef: true,
+          valueState: 'planned',
+          source: 'selected MCP OAuth token store',
+          description: 'Token-store readiness state.',
+        },
+      ],
+      missingRequiredFields: ['oauthClient', 'redirectUri', 'tokenStore'],
+      scopes: ['calendar.events.readonly'],
+      tokenStore: 'selected MCP OAuth token store',
+      tokenStoreOwner: 'selected MCP OAuth runtime',
+      consentMode: 'review-only',
+      readbackChecks: ['calendar.events.readonly', 'calendar.freebusy.readonly', 'cr-readback'],
+      readPaths: ['xd.xenesis.tools.oauthRuntime.status'],
+      controlPaths: ['xd.xenesis.tools.oauthRuntime.request'],
+      diagnostics: ['oauth-runtime-readiness'],
+      blockedActions: ['start OAuth callback server', 'store OAuth tokens'],
+      safetyBoundaries: ['OAuth runtime readiness is review-only'],
+    }),
+    'google-calendar / planned-template / 3 readback check(s) / 2 blocked action(s)',
+  );
+});
+
 test('formatXenesisToolMcpOAuthSummary describes MCP OAuth runtime readiness', () => {
   assert.equal(
     formatXenesisToolMcpOAuthSummary({
@@ -1533,6 +1585,61 @@ test('buildXenesisToolOAuthDraftRequest targets the review request CR path', () 
   });
 
   assert.equal(buildXenesisToolOAuthDraftRequest({ ...item, toolOAuthDraft: undefined }), null);
+});
+
+test('buildXenesisToolOAuthRuntimeRequest targets the runtime readiness CR path', () => {
+  const item = {
+    id: 'google-calendar',
+    kind: 'tool',
+    label: 'Google Calendar',
+    status: 'planned',
+    summary: 'Planned calendar OAuth runtime readiness.',
+    toolOAuthRuntime: {
+      runtimeStatus: 'planned-template',
+      actionInboxKind: 'xenesis-tool-oauth-runtime',
+      tool: 'google-calendar',
+      displayName: 'Google Calendar',
+      runtimeSupport: 'planned-oauth',
+      authSurface: 'Settings > AI Provider > Local CLI MCP',
+      reviewSurface: 'Desk Action Inbox',
+      callbackPolicy:
+        'Use the callback URI required by the selected MCP OAuth runtime; Desk does not host a callback server.',
+      callbackUriCandidates: ['selected MCP OAuth redirect URI'],
+      credentialRefs: [
+        {
+          ref: 'GOOGLE_OAUTH_TOKEN_STORE',
+          label: 'Google OAuth token store',
+          required: true,
+          secretRef: true,
+          valueState: 'planned',
+          source: 'selected MCP OAuth token store',
+          description: 'Token-store readiness state.',
+        },
+      ],
+      missingRequiredFields: ['oauthClient', 'redirectUri', 'tokenStore'],
+      scopes: ['calendar.events.readonly'],
+      tokenStore: 'selected MCP OAuth token store',
+      tokenStoreOwner: 'selected MCP OAuth runtime',
+      consentMode: 'review-only',
+      readbackChecks: ['calendar.freebusy.readonly', 'cr-readback'],
+      readPaths: ['xd.xenesis.tools.oauthRuntime.status'],
+      controlPaths: ['xd.xenesis.tools.oauthRuntime.request'],
+      diagnostics: ['oauth-runtime-readiness'],
+      blockedActions: ['start OAuth callback server', 'store OAuth tokens'],
+      safetyBoundaries: ['OAuth runtime readiness is review-only'],
+    },
+  } satisfies XenesisConnectionItem;
+
+  assert.deepEqual(buildXenesisToolOAuthRuntimeRequest(item), {
+    path: 'xd.xenesis.tools.oauthRuntime.request',
+    args: {
+      id: 'google-calendar',
+    },
+    source: 'xenesis',
+    approved: true,
+  });
+
+  assert.equal(buildXenesisToolOAuthRuntimeRequest({ ...item, toolOAuthRuntime: undefined }), null);
 });
 
 test('buildXenesisToolOAuthSetupPacketRequest targets the setup packet CR read path', () => {

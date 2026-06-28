@@ -7379,6 +7379,170 @@ async function requestXenesisToolOAuthDraft(args?: unknown): Promise<Record<stri
   };
 }
 
+function xenesisToolOAuthRuntimeStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    runtimeStatus: item.toolOAuthRuntime?.runtimeStatus,
+    actionInboxKind: item.toolOAuthRuntime?.actionInboxKind,
+    tool: item.toolOAuthRuntime?.tool,
+    displayName: item.toolOAuthRuntime?.displayName,
+    runtimeSupport: item.toolOAuthRuntime?.runtimeSupport,
+    authSurface: item.toolOAuthRuntime?.authSurface,
+    reviewSurface: item.toolOAuthRuntime?.reviewSurface,
+    callbackPolicy: item.toolOAuthRuntime?.callbackPolicy,
+    callbackUriCandidates: item.toolOAuthRuntime?.callbackUriCandidates ?? [],
+    credentialRefs: item.toolOAuthRuntime?.credentialRefs ?? [],
+    missingRequiredFields: item.toolOAuthRuntime?.missingRequiredFields ?? [],
+    scopes: item.toolOAuthRuntime?.scopes ?? [],
+    tokenStore: item.toolOAuthRuntime?.tokenStore,
+    tokenStoreOwner: item.toolOAuthRuntime?.tokenStoreOwner,
+    consentMode: item.toolOAuthRuntime?.consentMode,
+    readbackChecks: item.toolOAuthRuntime?.readbackChecks ?? [],
+    readPaths: item.toolOAuthRuntime?.readPaths ?? [],
+    controlPaths: item.toolOAuthRuntime?.controlPaths ?? [],
+    diagnostics: item.toolOAuthRuntime?.diagnostics ?? [],
+    blockedActions: item.toolOAuthRuntime?.blockedActions ?? [],
+    safetyBoundaries: item.toolOAuthRuntime?.safetyBoundaries ?? [],
+    toolOAuthRuntime: item.toolOAuthRuntime,
+    toolOAuthDraft: item.toolOAuthDraft,
+    toolConnector: item.toolConnector,
+    settingsAction: item.settingsAction,
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisToolOAuthRuntimeStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (id && !isXenesisToolOAuthDraftId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool OAuth runtime readiness: ${id}`,
+      allowedTools: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.tools.items
+    .filter((item) => item.toolOAuthRuntime)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisToolOAuthRuntimeStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisToolOAuthRuntime(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisToolCatalogSurface(args, {
+    allowedTools: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+    isAllowedId: isXenesisToolOAuthDraftId,
+    itemPredicate: (item) => Boolean(item.toolOAuthRuntime),
+    toStatusItem: xenesisToolOAuthRuntimeStatusItem,
+    unsupportedMessage: (id) => `Unsupported Xenesis tool OAuth runtime readiness: ${id}`,
+    unavailableMessage: (id) => `Xenesis tool OAuth runtime readiness is not available: ${id}`,
+    focusConnectionDetail: 'tool-oauth-runtime',
+  });
+}
+
+async function requestXenesisToolOAuthRuntime(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Tool id is required.' };
+  }
+  if (!isXenesisToolOAuthDraftId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool OAuth runtime readiness: ${id}`,
+      allowedTools: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.tools.items.find((candidate) => candidate.id === id && candidate.toolOAuthRuntime);
+  if (!item?.toolOAuthRuntime) {
+    return { ok: false, id, error: `Xenesis tool OAuth runtime readiness is not available: ${id}` };
+  }
+
+  const runtime = item.toolOAuthRuntime;
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+  const requester = readCapabilityString(body, ['requester', 'user', 'userName']) || 'Xenesis Desk';
+  const credentialLines = runtime.credentialRefs.map(
+    (credential) => `- ${credential.ref}: ${credential.valueState}${credential.required ? ' (required)' : ''}`,
+  );
+  const description = [
+    `Review the ${runtime.runtimeStatus} OAuth runtime readiness surface for ${item.label}.`,
+    `Tool: ${runtime.tool}`,
+    `Runtime support: ${runtime.runtimeSupport}`,
+    `Auth surface: ${runtime.authSurface}`,
+    `Review surface: ${runtime.reviewSurface}`,
+    `Consent mode: ${runtime.consentMode}`,
+    `Callback policy: ${runtime.callbackPolicy}`,
+    `Callback URI candidates: ${runtime.callbackUriCandidates.join(', ') || 'none'}`,
+    `Token store: ${runtime.tokenStore}`,
+    `Token-store owner: ${runtime.tokenStoreOwner}`,
+    `Missing required fields: ${runtime.missingRequiredFields.join(', ') || 'none'}`,
+    '',
+    'Credential references:',
+    ...credentialLines,
+    '',
+    'Scopes:',
+    ...runtime.scopes.map((scope) => `- ${scope}`),
+    '',
+    'Readback checks:',
+    ...runtime.readbackChecks.map((check) => `- ${check}`),
+    '',
+    'Read paths:',
+    ...runtime.readPaths.map((path) => `- ${path}`),
+    '',
+    'Control paths:',
+    ...runtime.controlPaths.map((path) => `- ${path}`),
+    '',
+    'Diagnostics:',
+    ...runtime.diagnostics.map((diagnostic) => `- ${diagnostic}`),
+    '',
+    'Blocked actions:',
+    ...runtime.blockedActions.map((action) => `- ${action}`),
+    '',
+    'Safety boundaries:',
+    ...runtime.safetyBoundaries.map((boundary) => `- ${boundary}`),
+    note ? '' : undefined,
+    note ? `Note: ${note}` : undefined,
+  ]
+    .filter((line): line is string => typeof line === 'string')
+    .join('\n');
+
+  const actionInboxItem = recordMcpActionInboxRequest({
+    kind: runtime.actionInboxKind,
+    title: `Review ${item.label} OAuth runtime readiness`,
+    command: `Review OAuth runtime readiness for ${item.id}`,
+    description,
+    source: 'Xenesis Connection Center',
+    sessionId: 'xenesis-tool-oauth-runtime',
+    approvalSessionKey: `xenesis-tool-oauth-runtime:${item.id}`,
+    requester,
+    risk: runtime.runtimeStatus,
+    approveText: `Approve OAuth runtime readiness for ${item.label}`,
+    rejectText: `Reject OAuth runtime readiness for ${item.label}`,
+  });
+
+  return {
+    ok: true,
+    id: item.id,
+    item: xenesisToolOAuthRuntimeStatusItem(item),
+    actionInboxItem,
+  };
+}
+
 function xenesisToolActionCatalogStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
   return {
     id: item.id,
@@ -13703,6 +13867,7 @@ async function snapshotConnectionCenterForCapability(args: unknown): Promise<Rec
     { id: 'onboarding-guided-steps', selector: '[data-xenesis-onboarding-plan]', text: 'guided step' },
     { id: 'provider-profile-review-steps', selector: '[data-xenesis-provider-profile-draft]', text: 'review step' },
     { id: 'tool-oauth-review-steps', selector: '[data-xenesis-tool-oauth-draft]', text: 'review step' },
+    { id: 'tool-oauth-runtime-readback', selector: '[data-xenesis-tool-oauth-runtime]', text: 'oauth-runtime-readiness' },
     { id: 'channel-profile-review-steps', selector: '[data-xenesis-channel-profile-draft]', text: 'review step' },
   ];
   const truncate = (value, fallback = '') => String(value || fallback || '').trim().slice(0, Number(config.maxTextLength || 2400));
@@ -15350,6 +15515,9 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     openXenesisToolOAuthDraft: (args: unknown) => openXenesisToolOAuthDraft(args),
     openXenesisToolOAuthSetupPacket: (args: unknown) => openXenesisToolOAuthSetupPacket(args),
     requestXenesisToolOAuthDraft: (args: unknown) => requestXenesisToolOAuthDraft(args),
+    getXenesisToolOAuthRuntimeStatus: (args: unknown) => getXenesisToolOAuthRuntimeStatus(args),
+    openXenesisToolOAuthRuntime: (args: unknown) => openXenesisToolOAuthRuntime(args),
+    requestXenesisToolOAuthRuntime: (args: unknown) => requestXenesisToolOAuthRuntime(args),
     getXenesisToolActionCatalogStatus: (args: unknown) => getXenesisToolActionCatalogStatus(args),
     openXenesisToolActionCatalog: (args: unknown) => openXenesisToolActionCatalog(args),
     requestXenesisToolActionCatalog: (args: unknown) => requestXenesisToolActionCatalog(args),

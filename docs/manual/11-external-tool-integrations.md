@@ -9,8 +9,9 @@ paths, settings state, and verification commands.
 
 External tools are modeled as setup/readiness cards before they are used by an
 agent. A card can expose MCP install plans, connector readiness, OAuth drafts,
-MCP OAuth runtime readiness, action policies, user-story workflows, diagnostic
-runbooks, setup plans, and setup request templates.
+MCP OAuth runtime readiness, OAuth runtime readiness, action policies,
+user-story workflows, diagnostic runbooks, setup plans, and setup request
+templates.
 
 The current tool catalog includes Fetch, Filesystem, GitHub, Notion, Linear,
 Google Workspace, and Google Calendar. Planned Google tools stay visibly
@@ -24,9 +25,11 @@ planned until a verified OAuth and MCP setup exists.
 4. Inspect the tool setup view with `xd.xenesis.tools.views.status`.
 5. Inspect MCP connector readiness and install plans before changing config.
 6. Inspect MCP OAuth runtime readiness before OAuth-capable MCP tool setup.
-7. Inspect OAuth drafts before Google Workspace or Calendar setup.
-8. Inspect action policies before allowing provider tool execution.
-9. Record setup requests only when the operator explicitly asks for review.
+7. Inspect Google OAuth runtime readiness before any OAuth callback or token
+   storage work.
+8. Inspect OAuth drafts before Google Workspace or Calendar setup.
+9. Inspect action policies before allowing provider tool execution.
+10. Record setup requests only when the operator explicitly asks for review.
 
 ## CR Readbacks
 
@@ -49,6 +52,9 @@ Use these paths for external tool setup and review:
 - `xd.xenesis.tools.oauthDrafts.status`
 - `xd.xenesis.tools.oauthDrafts.open`
 - `xd.xenesis.tools.oauthDrafts.request`
+- `xd.xenesis.tools.oauthRuntime.status`
+- `xd.xenesis.tools.oauthRuntime.open`
+- `xd.xenesis.tools.oauthRuntime.request`
 - `xd.xenesis.tools.actions.status`
 - `xd.xenesis.tools.actions.open`
 - `xd.xenesis.tools.actions.request`
@@ -63,6 +69,14 @@ verification. The Settings Connection Center card renders these as
 diagnostics, and safety boundary for each phase. These rows are planning and
 review metadata only; they do not make the planned OAuth flow executable.
 
+Google Workspace and Google Calendar also expose review-only OAuth runtime
+readiness. The runtime readback includes callback policy, callback URI
+candidates, token-store owner, readback checks, diagnostics, blocked actions,
+and safety boundaries. Use this before any OAuth callback or token storage work.
+It is not an OAuth implementation: it does not start OAuth, host callback
+servers, store tokens, write MCP config, execute provider tools, send email,
+mutate documents, or mutate calendar events.
+
 Linear exposes a review-only MCP OAuth readiness surface when its recommended
 MCP template and tool connector metadata both declare OAuth. The readiness
 readback includes server name, transport, scopes, credential reference names,
@@ -73,8 +87,9 @@ before any runtime flow exists.
 Setup-plan readbacks (`xd.xenesis.tools.setupPlans.status`) collect the ordered
 CR paths for each tool into one reviewable packet. They connect the tool view,
 setup metadata, connector readiness, install plan, MCP install draft, MCP OAuth
-readiness, OAuth setup packet, action policy, user stories, diagnostics, and
-setup request without executing any of those downstream mutations.
+readiness, OAuth setup packet, OAuth runtime readiness, action policy, user
+stories, diagnostics, and setup request without executing any of those
+downstream mutations.
 
 ## Safety Boundaries
 
@@ -98,5 +113,8 @@ paths, for example:
 - `linear mcp oauth 열어줘`
 - `리니어 mcp oauth 검토 요청해줘`
 - `구글 캘린더 OAuth 상태 보여줘`
+- `구글 캘린더 OAuth runtime 상태 보여줘`
+- `구글 워크스페이스 OAuth runtime 열어줘`
+- `구글 캘린더 OAuth runtime 검토 요청해줘`
 - `리니어 액션 정책 상태 보여줘`
 - `웹페이지 가져오기 설치 계획 열어줘`

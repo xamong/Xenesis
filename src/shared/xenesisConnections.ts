@@ -100,6 +100,7 @@ export const XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES = [
   'tool-mcp-oauth',
   'tool-oauth-draft',
   'tool-oauth-setup-packet',
+  'tool-oauth-runtime',
   'tool-action-catalog',
   'tool-connector',
   'tool-view',
@@ -201,6 +202,18 @@ export const XENESIS_CONNECTION_TOOL_VIEW_SECTION_DEFINITIONS = [
     label: 'OAuth setup packet',
     naturalWords: ['oauth setup packet view', 'oauth 설정 패킷 view', 'oauth packet view'],
     focusConnectionDetail: 'tool-oauth-setup-packet',
+  },
+  {
+    id: 'oauth-runtime',
+    label: 'OAuth runtime readiness',
+    naturalWords: [
+      'oauth runtime',
+      'oauth runtime readiness',
+      'oauth runtime view',
+      'oauth 런타임',
+      'oauth 런타임 준비',
+    ],
+    focusConnectionDetail: 'tool-oauth-runtime',
   },
   {
     id: 'action-policy',
@@ -798,6 +811,32 @@ export interface XenesisConnectionToolOAuthDraftTemplate {
   safetyBoundaries: string[];
 }
 
+export type XenesisConnectionToolOAuthRuntimeStatus = XenesisConnectionToolOAuthDraftStatus;
+
+export interface XenesisConnectionToolOAuthRuntimeTemplate {
+  runtimeStatus: XenesisConnectionToolOAuthRuntimeStatus;
+  actionInboxKind: 'xenesis-tool-oauth-runtime';
+  tool: string;
+  displayName: string;
+  runtimeSupport: 'planned-oauth' | 'ready-template';
+  authSurface: string;
+  reviewSurface: string;
+  callbackPolicy: string;
+  callbackUriCandidates: string[];
+  credentialRefs: XenesisConnectionToolOAuthSetupPacketCredentialRef[];
+  missingRequiredFields: string[];
+  scopes: string[];
+  tokenStore: string;
+  tokenStoreOwner: string;
+  consentMode: string;
+  readbackChecks: string[];
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  blockedActions: string[];
+  safetyBoundaries: string[];
+}
+
 export interface XenesisConnectionToolViewTemplate {
   viewType: 'connection-detail';
   primarySurface: string;
@@ -1360,6 +1399,7 @@ export interface XenesisConnectionItem {
   toolConnector?: XenesisConnectionToolConnectorTemplate;
   toolMcpOAuth?: XenesisConnectionToolMcpOAuthTemplate;
   toolOAuthDraft?: XenesisConnectionToolOAuthDraftTemplate;
+  toolOAuthRuntime?: XenesisConnectionToolOAuthRuntimeTemplate;
   mcpInstallDraft?: XenesisConnectionMcpInstallDraftTemplate;
   toolView?: XenesisConnectionToolViewTemplate;
   toolSetupPlan?: XenesisConnectionToolSetupPlanTemplate;
@@ -2024,6 +2064,16 @@ function toolViewSections(
             diagnostics: ['oauth-setup-packet', 'oauth-app-registration', 'token-store-readiness'],
             safetyBoundaries: [
               'OAuth setup packet view opens do not start OAuth flows, store tokens, or expose secrets.',
+            ],
+          }),
+          toolViewSection({
+            toolId,
+            id: 'oauth-runtime',
+            readPaths: ['xd.xenesis.tools.oauthRuntime.status', 'xd.xenesis.tools.oauthDrafts.status'],
+            controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.oauthRuntime.open'],
+            diagnostics: ['oauth-runtime-readiness', 'token-store-readiness', 'readback-verification'],
+            safetyBoundaries: [
+              'OAuth runtime readiness view opens do not start OAuth flows, host callback servers, store tokens, or execute provider tools.',
             ],
           }),
         ]
@@ -5913,6 +5963,79 @@ function buildXenesisToolOAuthDraft(item: XenesisConnectionItem): XenesisConnect
   };
 }
 
+function buildXenesisToolOAuthRuntime(
+  item: XenesisConnectionItem,
+  draft: XenesisConnectionToolOAuthDraftTemplate | undefined,
+): XenesisConnectionToolOAuthRuntimeTemplate | undefined {
+  if (!draft) return undefined;
+
+  const readbackChecks = uniqueStrings([
+    ...draft.scopes,
+    ...(item.toolConnector?.validationChecks ?? []),
+    'mcp-settings-status',
+    'cr-readback',
+  ]);
+  const readPaths = uniqueStrings([
+    'xd.xenesis.connections.status',
+    'xd.xenesis.tools.oauthRuntime.status',
+    'xd.xenesis.tools.oauthDrafts.status',
+    'xd.xenesis.tools.oauthDrafts.setupPacket',
+    'xd.xenesis.tools.connectors.status',
+    'xd.mcp.settings.status',
+  ]);
+  const controlPaths = uniqueStrings([
+    'xd.xenesis.tools.oauthRuntime.open',
+    'xd.xenesis.tools.oauthRuntime.request',
+    'xd.xenesis.connections.open',
+  ]);
+
+  return {
+    runtimeStatus: draft.draftStatus,
+    actionInboxKind: 'xenesis-tool-oauth-runtime',
+    tool: item.id,
+    displayName: item.label,
+    runtimeSupport: draft.runtimeSupport,
+    authSurface: draft.authSurface,
+    reviewSurface: draft.reviewSurface,
+    callbackPolicy:
+      'Use the callback URI required by the selected MCP OAuth runtime; Desk does not start or host an OAuth callback server from this readiness surface.',
+    callbackUriCandidates: [...draft.setupPacket.redirectUriCandidates],
+    credentialRefs: [...draft.setupPacket.credentialRefs],
+    missingRequiredFields: [...draft.missingRequiredFields],
+    scopes: [...draft.scopes],
+    tokenStore: draft.tokenStore,
+    tokenStoreOwner: 'selected MCP OAuth runtime',
+    consentMode: draft.consentMode,
+    readbackChecks,
+    readPaths,
+    controlPaths,
+    diagnostics: uniqueStrings([
+      'oauth-runtime-readiness',
+      'callback-policy-review',
+      'token-store-readiness',
+      'readback-verification',
+      ...draft.diagnostics,
+      ...draft.reviewSteps.flatMap((step) => step.diagnostics),
+    ]),
+    blockedActions: uniqueStrings([
+      'start OAuth callback server',
+      'start OAuth browser flow',
+      'complete OAuth',
+      'store OAuth tokens',
+      'write MCP config',
+      'execute provider tools',
+      'mutate external systems',
+      ...draft.blockedActions,
+    ]),
+    safetyBoundaries: uniqueStrings([
+      'OAuth runtime readiness is review-only',
+      'OAuth runtime readiness does not start OAuth, host callback servers, store tokens, write MCP config, execute provider tools, or mutate Google data',
+      'credential values, OAuth client secrets, OAuth tokens, and consent responses are never returned',
+      ...draft.safetyBoundaries,
+    ]),
+  };
+}
+
 function providerSetupPlanRuntimeSupport(
   item: XenesisConnectionItem,
 ): XenesisConnectionProviderSetupPlanRuntimeSupport {
@@ -6139,7 +6262,8 @@ function toolSetupPlanRuntimeSupport(item: XenesisConnectionItem): XenesisConnec
   if (
     item.toolInstallPlan?.runtimeSupport === 'planned-oauth' ||
     item.toolConnector?.runtimeSupport === 'planned-oauth' ||
-    item.toolOAuthDraft?.runtimeSupport === 'planned-oauth'
+    item.toolOAuthDraft?.runtimeSupport === 'planned-oauth' ||
+    item.toolOAuthRuntime?.runtimeSupport === 'planned-oauth'
   ) {
     return 'planned-oauth';
   }
@@ -6279,6 +6403,21 @@ function toolSetupPlanSteps(item: XenesisConnectionItem): XenesisConnectionToolS
           }),
         ]
       : []),
+    ...(item.toolOAuthRuntime
+      ? [
+          toolSetupPlanStep({
+            id: 'oauth-runtime',
+            label: 'Read OAuth runtime readiness',
+            kind: 'read',
+            crPath: 'xd.xenesis.tools.oauthRuntime.status',
+            itemId: item.id,
+            expectedState: `${item.label} OAuth callback policy, token-store owner, and readback checks are reviewable before OAuth starts.`,
+            verifyWith: item.toolOAuthRuntime.diagnostics,
+            safetyBoundary:
+              'OAuth runtime readiness reads do not start callback servers, complete OAuth, store tokens, or execute provider tools',
+          }),
+        ]
+      : []),
     ...(item.toolActionCatalog
       ? [
           toolSetupPlanStep({
@@ -6358,6 +6497,7 @@ function buildXenesisToolSetupPlan(item: XenesisConnectionItem): XenesisConnecti
       ...(item.toolMcpOAuth?.readPaths ?? []),
       ...(item.toolOAuthDraft?.readPaths ?? []),
       ...(item.toolOAuthDraft?.setupPacket.readPaths ?? []),
+      ...(item.toolOAuthRuntime?.readPaths ?? []),
       ...(item.toolActionCatalog?.readPaths ?? []),
       ...(item.toolUserStory?.readPaths ?? []),
     ]),
@@ -6374,6 +6514,7 @@ function buildXenesisToolSetupPlan(item: XenesisConnectionItem): XenesisConnecti
       ...(item.toolMcpOAuth?.controlPaths ?? []),
       ...(item.toolOAuthDraft?.controlPaths ?? []),
       ...(item.toolOAuthDraft?.setupPacket.controlPaths ?? []),
+      ...(item.toolOAuthRuntime?.controlPaths ?? []),
       ...(item.toolActionCatalog?.controlPaths ?? []),
       ...(item.toolUserStory?.controlPaths ?? []),
     ]),
@@ -6387,6 +6528,7 @@ function buildXenesisToolSetupPlan(item: XenesisConnectionItem): XenesisConnecti
       ...(item.toolMcpOAuth?.diagnostics ?? []),
       ...(item.toolOAuthDraft?.diagnostics ?? []),
       ...(item.toolOAuthDraft?.setupPacket.diagnostics ?? []),
+      ...(item.toolOAuthRuntime?.diagnostics ?? []),
       ...(item.toolActionCatalog?.diagnostics ?? []),
       ...(item.toolUserStory?.diagnostics ?? []),
     ]),
@@ -6396,6 +6538,7 @@ function buildXenesisToolSetupPlan(item: XenesisConnectionItem): XenesisConnecti
       ...(item.toolMcpOAuth?.blockedActions ?? []),
       ...(item.toolOAuthDraft?.blockedActions ?? []),
       ...(item.toolOAuthDraft?.setupPacket.blockedActions ?? []),
+      ...(item.toolOAuthRuntime?.blockedActions ?? []),
       ...(item.toolActionCatalog?.blockedActions ?? []),
       ...(item.toolOAuthDraft ? ['complete OAuth or store Google OAuth tokens'] : []),
     ]),
@@ -6411,6 +6554,7 @@ function buildXenesisToolSetupPlan(item: XenesisConnectionItem): XenesisConnecti
       ...(item.toolMcpOAuth?.safetyBoundaries ?? []),
       ...(item.toolOAuthDraft?.safetyBoundaries ?? []),
       ...(item.toolOAuthDraft?.setupPacket.safetyBoundaries ?? []),
+      ...(item.toolOAuthRuntime?.safetyBoundaries ?? []),
       ...(item.toolActionCatalog?.safetyBoundaries ?? []),
       ...(item.toolUserStory?.safetyBoundaries ?? []),
     ]),
@@ -6772,6 +6916,7 @@ function diagnosticRunbookSetupSurface(item: XenesisConnectionItem): string {
     item.toolConnector?.setupSurface ??
     item.toolMcpOAuth?.authSurface ??
     item.toolOAuthDraft?.authSurface ??
+    item.toolOAuthRuntime?.authSurface ??
     item.toolView?.setupSurface ??
     item.toolActionCatalog?.primarySurface ??
     item.toolUserStory?.setupSurface ??
@@ -6795,6 +6940,7 @@ function diagnosticRunbookPrimarySurface(item: XenesisConnectionItem): string {
     item.toolView?.primarySurface ??
     (item.toolMcpOAuth ? 'Settings > Xenesis Agent > Connections' : undefined) ??
     (item.toolOAuthDraft ? 'Settings > Xenesis Agent > Connections' : undefined) ??
+    (item.toolOAuthRuntime ? 'Settings > Xenesis Agent > Connections' : undefined) ??
     item.toolActionCatalog?.primarySurface ??
     item.toolUserStory?.primarySurface ??
     item.toolInstallPlan?.primarySurface ??
@@ -6975,6 +7121,25 @@ function buildXenesisConnectionDiagnosticRunbook(
           ...item.toolOAuthDraft.scopes,
           ...item.toolOAuthDraft.diagnostics,
           ...item.toolOAuthDraft.reviewSteps.flatMap((step) => step.diagnostics),
+        ],
+      }),
+    );
+  }
+
+  if (item.toolOAuthRuntime) {
+    steps.push(
+      diagnosticRunbookStep({
+        id: 'tool-oauth-runtime',
+        label: 'Tool OAuth runtime readiness',
+        expectedState:
+          'Review-only OAuth runtime callback policy, token-store owner, and readback checks are visible before any OAuth flow or provider tool execution.',
+        readPaths: ['xd.xenesis.tools.oauthRuntime.status', ...item.toolOAuthRuntime.readPaths],
+        controlPaths: item.toolOAuthRuntime.controlPaths,
+        diagnostics: [
+          ...item.toolOAuthRuntime.missingRequiredFields,
+          ...item.toolOAuthRuntime.scopes,
+          ...item.toolOAuthRuntime.readbackChecks,
+          ...item.toolOAuthRuntime.diagnostics,
         ],
       }),
     );
@@ -7238,6 +7403,7 @@ function buildXenesisConnectionDiagnosticRunbook(
       ...(item.toolMcpOAuth?.safetyBoundaries ?? []),
       ...(item.toolOAuthDraft?.safetyBoundaries ?? []),
       ...(item.toolOAuthDraft?.reviewSteps.map((step) => step.safetyBoundary) ?? []),
+      ...(item.toolOAuthRuntime?.safetyBoundaries ?? []),
       ...(item.toolView?.safetyBoundaries ?? []),
       ...(item.toolActionCatalog?.safetyBoundaries ?? []),
       ...(item.toolUserStory?.safetyBoundaries ?? []),
@@ -7304,6 +7470,7 @@ function setupRequestDiagnosticItems(item: XenesisConnectionItem): string[] {
     ...(item.toolMcpOAuth?.diagnostics ?? []),
     ...(item.toolOAuthDraft?.diagnostics ?? []),
     ...(item.toolOAuthDraft?.reviewSteps.flatMap((step) => step.diagnostics) ?? []),
+    ...(item.toolOAuthRuntime?.diagnostics ?? []),
     ...(item.toolActionCatalog?.diagnostics ?? []),
     ...(item.toolSetupPlan?.diagnostics ?? []),
     ...(item.toolInstallPlan?.diagnostics ?? []),
@@ -7335,6 +7502,8 @@ function setupRequestStepItems(item: XenesisConnectionItem): string[] {
     ...(item.toolOAuthDraft?.missingRequiredFields.map((field) => `review OAuth draft field: ${field}`) ?? []),
     ...(item.toolOAuthDraft?.scopes.map((scope) => `review OAuth scope: ${scope}`) ?? []),
     ...(item.toolOAuthDraft?.reviewSteps.map((step) => `${step.id}: ${step.expectedState}`) ?? []),
+    ...(item.toolOAuthRuntime?.missingRequiredFields.map((field) => `review OAuth runtime field: ${field}`) ?? []),
+    ...(item.toolOAuthRuntime?.readbackChecks.map((check) => `verify OAuth runtime readback: ${check}`) ?? []),
     ...(item.toolSetupPlan?.steps.map((step) => `${step.id}: ${step.expectedState}`) ?? []),
     ...(item.toolInstallPlan?.installSteps ?? []),
     ...(item.mcpInstallDraft?.installSteps ?? []),
@@ -7359,6 +7528,7 @@ function setupRequestDescription(item: XenesisConnectionItem): string {
     item.toolInstallPlan?.runtimeSupport === 'planned-oauth' ||
     item.toolInstallPlan?.installMode === 'planned-oauth' ||
     item.toolConnector?.runtimeSupport === 'planned-oauth' ||
+    item.toolOAuthRuntime?.runtimeSupport === 'planned-oauth' ||
     item.toolSetup?.authMode === 'oauth';
   if (plannedOAuth) {
     return `Review the planned OAuth setup request for ${item.label} before any adapter, credential, or OAuth flow exists.`;
@@ -7411,6 +7581,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.toolMcpOAuth?.readPaths ?? []),
       ...(item.toolOAuthDraft?.readPaths ?? []),
       ...(item.toolOAuthDraft?.reviewSteps.flatMap((step) => step.readPaths) ?? []),
+      ...(item.toolOAuthRuntime?.readPaths ?? []),
       ...(item.toolSetupPlan?.readPaths ?? []),
       ...(item.toolView?.readPaths ?? []),
       ...(item.toolUserStory?.readPaths ?? []),
@@ -7443,6 +7614,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.toolMcpOAuth?.controlPaths ?? []),
       ...(item.toolOAuthDraft?.controlPaths ?? []),
       ...(item.toolOAuthDraft?.reviewSteps.flatMap((step) => step.controlPaths) ?? []),
+      ...(item.toolOAuthRuntime?.controlPaths ?? []),
       ...(item.toolSetupPlan?.controlPaths ?? []),
       ...(item.toolView?.controlPaths ?? []),
       ...(item.toolActionCatalog?.controlPaths ?? []),
@@ -7463,6 +7635,8 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
     blockedActions: uniqueStrings([
       ...XENESIS_CONNECTION_SETUP_REQUEST_BLOCKED_ACTIONS,
       ...(item.toolMcpOAuth?.blockedActions ?? []),
+      ...(item.toolOAuthDraft?.blockedActions ?? []),
+      ...(item.toolOAuthRuntime?.blockedActions ?? []),
     ]),
     safetyBoundaries: uniqueStrings([
       'setup request review records local Action Inbox items only',
@@ -7488,6 +7662,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.toolMcpOAuth?.safetyBoundaries ?? []),
       ...(item.toolOAuthDraft?.safetyBoundaries ?? []),
       ...(item.toolOAuthDraft?.reviewSteps.map((step) => step.safetyBoundary) ?? []),
+      ...(item.toolOAuthRuntime?.safetyBoundaries ?? []),
       ...(item.toolSetupPlan?.safetyBoundaries ?? []),
       ...(item.toolView?.safetyBoundaries ?? []),
       ...(item.toolActionCatalog?.safetyBoundaries ?? []),
@@ -7633,11 +7808,14 @@ function toolConnectionItems(env: Record<string, string | undefined> = {}): Xene
     const mcpInstallDraft = buildXenesisMcpInstallDraft(withCredentialState, env);
     const withMcpInstallDraft = { ...withCredentialState, mcpInstallDraft };
     const toolMcpOAuth = buildXenesisToolMcpOAuth(withMcpInstallDraft);
+    const toolOAuthDraft = buildXenesisToolOAuthDraft(withCredentialState);
+    const toolOAuthRuntime = buildXenesisToolOAuthRuntime(withCredentialState, toolOAuthDraft);
     return {
       ...withMcpInstallDraft,
       toolMcpOAuth,
       toolView: withXenesisToolMcpOAuthViewSection(withCredentialState.toolView, withCredentialState.id, toolMcpOAuth),
-      toolOAuthDraft: buildXenesisToolOAuthDraft(withCredentialState),
+      toolOAuthDraft,
+      toolOAuthRuntime,
     };
   });
 }

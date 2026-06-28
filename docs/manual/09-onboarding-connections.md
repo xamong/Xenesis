@@ -157,6 +157,17 @@ These drafts do not complete OAuth, start callback servers, store tokens, write
 MCP config, execute provider tools, send email, mutate documents, create or
 change calendar events, mutate settings, or bypass approvals.
 
+Planned Google tool cards also expose a `toolOAuthRuntime` read model. Use
+`xd.xenesis.tools.oauthRuntime.status` to inspect callback policy,
+token-store ownership, runtime readback checks, blocked actions, and safety
+boundaries for Google Workspace and Google Calendar. Use
+`xd.xenesis.tools.oauthRuntime.open` with `{ "id": "<tool-id>" }` to focus the
+runtime readiness rows, and `xd.xenesis.tools.oauthRuntime.request` with
+`{ "id": "<tool-id>" }` to record a local `xenesis-tool-oauth-runtime` Action
+Inbox review item. This surface is review-only: it does not start OAuth, host
+callback servers, store tokens, write MCP config, execute provider tools, or
+mutate Google data.
+
 OAuth drafts include review steps for app registration, scope review,
 token-store readiness, and readback verification. Settings renders these as
 `Review steps` on the Google Workspace and Google Calendar cards so planned
@@ -350,13 +361,15 @@ servers, complete OAuth, or bypass approval paths.
 Agent or operator needs to focus a specific internal tool-view section. Current
 section values are `connection-card`, `setup`, `connector`, `setup-plan`,
 `install-plan`, `mcp-template`, `oauth-draft`, `oauth-setup-packet`,
-`action-policy`, and
+`oauth-runtime`, `action-policy`, and
 `user-stories`. For example, `{ "id": "notion", "section": "mcp-template",
 "ensureVisible": true }` focuses the Notion MCP template section, while
 `{ "id": "google-calendar", "section": "oauth-draft", "ensureVisible": true }`
 focuses the Google Calendar OAuth draft section and
 `{ "id": "google-calendar", "section": "oauth-setup-packet", "ensureVisible": true }`
-focuses the OAuth setup packet. Section opens are still read/open planning
+focuses the OAuth setup packet.
+`{ "id": "google-calendar", "section": "oauth-runtime", "ensureVisible": true }`
+focuses OAuth runtime readiness. Section opens are still read/open planning
 surfaces only: they do not write MCP config, run installers, complete OAuth,
 start OAuth callback servers, store tokens, execute provider tools, mutate
 external systems, or approve write actions.
@@ -394,6 +407,17 @@ inside the matching card. This path is read/open navigation only: it does not
 complete OAuth, start callback servers, create OAuth clients, store tokens,
 write MCP config, execute provider tools, or mutate Google Workspace/Calendar
 data.
+
+Planned Google cards also expose `toolOAuthRuntime`. Use
+`xd.xenesis.tools.oauthRuntime.status`, `xd.xenesis.tools.oauthRuntime.open`,
+and `xd.xenesis.tools.oauthRuntime.request` to review callback policy,
+token-store owner, readback checks, diagnostics, blocked actions, and safety
+boundaries as a first-class Connection Center surface. Natural prompts with
+`OAuth runtime` or `OAuth 런타임` route to this surface; generic `OAuth 상태` and
+`OAuth 검토` prompts remain on the OAuth draft surface. Runtime readiness is
+still not an OAuth implementation and does not start callback servers, store
+tokens, write MCP config, execute provider tools, send email, mutate documents,
+or mutate calendar events.
 
 Each tool card also exposes a `toolActionCatalog` read model. Use
 `xd.xenesis.tools.actions.status` to inspect search/read/write action groups,

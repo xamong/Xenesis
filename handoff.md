@@ -290,6 +290,9 @@ into a Desk-native, CR-first setup and connection experience.
   - `src/renderer/panes/SettingsPane.tsx`
   - `src/renderer/i18n/en.ts`
   - `src/renderer/i18n/ko.ts`
+  - `docs/manual/09-onboarding-connections.md`
+  - `docs/manual/11-external-tool-integrations.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-google-oauth-runtime-readiness.md`
   - `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
   - `src/shared/xenesisNaturalLanguageActionResolvers.ts`
   - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
@@ -16627,3 +16630,148 @@ Verification so far:
 - Next intended step:
   - Continue the larger goal with the next locally-evidenced gap slice from the
     Connection Center/OpenClaw/Hermes workstream.
+
+## Current Google OAuth Runtime Readiness Slice
+
+- Current objective:
+  - Promote Google Workspace and Google Calendar OAuth runtime readiness from
+    draft review-step metadata into a first-class Connection Center/CR surface.
+- Rationale:
+  - Google Workspace and Google Calendar are still intentionally
+    `planned-oauth`. The current draft/setup-packet surfaces expose app
+    registration and token-store review, but the Agent cannot directly inspect
+    or focus a runtime readiness surface for callback policy, token-store
+    ownership, readback verification, and blocked execution boundaries.
+  - The next aligned step is not completing OAuth. It is making the missing
+    runtime boundary explicit, Desk-native, and CR-controllable.
+- Scope:
+  - Add RED tests for a `toolOAuthRuntime` read model and CR paths:
+    `xd.xenesis.tools.oauthRuntime.status`,
+    `xd.xenesis.tools.oauthRuntime.open`, and
+    `xd.xenesis.tools.oauthRuntime.request`.
+  - Expose Google Workspace and Google Calendar OAuth runtime readiness in
+    Settings > Xenesis Agent > Connections and as a tool view section.
+  - Route natural prompts such as `구글 캘린더 OAuth runtime 상태 보여줘` through
+    the new read/open/request CR paths.
+  - Preserve safety: no OAuth browser flow, no callback server, no token store
+    writes, no MCP config writes, no provider tool execution, no Google
+    mutations.
+- Touched files so far:
+  - `handoff.md`
+  - `docs/capability-registry-audit.md`
+  - `docs/manual/09-onboarding-connections.md`
+  - `docs/manual/11-external-tool-integrations.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-google-oauth-runtime-readiness.md`
+  - `src/shared/xenesisConnections.test.ts`
+  - `src/shared/xenesisConnectionCapabilities.test.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `scripts/xenesisNaturalDeskRoutingLiveSmoke.mjs`
+  - `src/shared/xenesisConnections.ts`
+  - `src/shared/types.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
+  - `src/main/index.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
+- Commands run:
+  - `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+  - `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+  - `npm run typecheck` -> passed.
+  - `npm run docs:capabilities:audit` -> passed and wrote
+    `docs/capability-registry-audit.md`; audit summary is 788 nodes and 689
+    coverage path references.
+  - `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> all 0.
+  - `npm run build` -> passed with existing Vite warnings for `hwp.js` browser
+    `fs` externalization, `deskBridge.ts` dynamic/static import chunking, and
+    large renderer chunks.
+  - `npm run smoke:xenesis:natural-desk-routing` -> passed 237/237.
+  - `npx biome check scripts\xenesisNaturalDeskRoutingLiveSmoke.mjs src\main\index.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts src\renderer\i18n\en.ts src\renderer\i18n\ko.ts src\renderer\panes\SettingsPane.tsx src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\panes\xenesisConnectionCenter.ts src\shared\deskBridgeCapabilities.ts src\shared\types.ts src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\shared\xenesisConnections.ts src\shared\xenesisNaturalLanguageCapabilityCatalog.ts --max-diagnostics 100`
+    -> failed on pre-existing lint debt in `src/main/index.ts` and
+    `src/shared/deskBridgeCapabilities.ts`, plus formatter-only differences in
+    touched files.
+  - `npx biome check src\renderer\panes\SettingsPane.tsx src\renderer\panes\xenesisConnectionCenter.test.ts src\shared\xenesisConnections.ts src\shared\xenesisNaturalLanguageCapabilityCatalog.ts --write --max-diagnostics 100`
+    -> fixed formatter-only differences in 4 files.
+  - `npx biome check scripts\xenesisNaturalDeskRoutingLiveSmoke.mjs src\main\index.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts src\renderer\i18n\en.ts src\renderer\i18n\ko.ts src\renderer\panes\SettingsPane.tsx src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\panes\xenesisConnectionCenter.ts src\shared\deskBridgeCapabilities.ts src\shared\types.ts src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\shared\xenesisConnections.ts src\shared\xenesisNaturalLanguageCapabilityCatalog.ts --linter-enabled=false --max-diagnostics 100`
+    -> passed.
+  - Focused recheck after formatter:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 191/191.
+  - Final recheck:
+    `npm run typecheck` -> passed.
+  - Final recheck:
+    `npm run docs:capabilities:audit` -> passed and wrote
+    `docs/capability-registry-audit.md`; audit summary is 788 nodes and 689
+    coverage path references.
+  - Final audit counter readback:
+    `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> all 0.
+  - Final recheck:
+    `npm run build` -> passed with the same existing Vite warnings.
+  - Final recheck:
+    `npm run smoke:xenesis:natural-desk-routing` -> passed 237/237.
+  - Known blocked:
+    `npm run check:public-release` -> failed before checks with `ENOENT`
+    because `.github/workflows/ci.yml` is missing in this worktree.
+  - Hygiene:
+    `git diff --check` -> passed; Git printed LF/CRLF normalization warnings
+    only.
+- Exact verification result:
+  - RED as expected: 191 tests executed, 180 passed, 11 failed.
+  - Failures are the intended missing surface:
+    `tool-oauth-runtime` focus value/selector, missing
+    `toolOAuthRuntime` read model, missing
+    `xd.xenesis.tools.oauthRuntime.status/open/request` CR registration and
+    dispatch, missing `oauth-runtime` tool view section, and natural prompts
+    containing `OAuth runtime` still routing to OAuth draft.
+  - After implementation, focused natural planner test passed 46/46.
+  - After implementation, focused shared model/CR/renderer/natural suite
+    passed 191/191.
+  - After formatter, focused shared model/CR/renderer/natural suite passed
+    191/191 again.
+  - Final typecheck passed.
+  - Final CR audit gap counters are all 0:
+    missing registered paths 0, missing dispatched coverage paths 0,
+    undispatched static callable methods 0, dispatcher paths missing from tree
+    0.
+  - Final build passed with existing non-blocking Vite warnings.
+  - Final natural Desk routing smoke passed 237/237, including Google Calendar
+    OAuth runtime status/request and Google Workspace OAuth runtime open.
+  - Final format-only Biome check passed with linter disabled. Full changed-file
+    Biome lint is still blocked by existing unrelated lint debt in the large
+    `src/main/index.ts` and `src/shared/deskBridgeCapabilities.ts` files.
+  - `git diff --check` passed with LF/CRLF normalization warnings only.
+- Implemented:
+  - Added `toolOAuthRuntime` as a first-class review-only read model for
+    planned Google Workspace and Google Calendar OAuth runtime readiness.
+  - Added `tool-oauth-runtime` detail focus, `oauth-runtime` tool view section,
+    renderer selector/data attribute, Settings detail block, action button, and
+    en/ko labels.
+  - Added CR paths:
+    `xd.xenesis.tools.oauthRuntime.status`,
+    `xd.xenesis.tools.oauthRuntime.open`, and
+    `xd.xenesis.tools.oauthRuntime.request`.
+  - Added main-process status/open/request handlers and Action Inbox review
+    records for OAuth runtime readiness. The request records callback policy,
+    token-store owner, readback checks, blocked actions, and safety boundaries.
+  - Added natural routing so `OAuth runtime/런타임` prompts route to runtime
+    status/open/request while generic `OAuth 상태/검토` remains on OAuth draft.
+  - Added live smoke cases for Google Calendar runtime status/request and
+    Google Workspace runtime open.
+  - Updated manual docs for OAuth runtime readiness CR paths and natural
+    prompt routing.
+  - Added the Obsidian working note
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-google-oauth-runtime-readiness.md`.
+- Known gaps:
+  - `npm run check:public-release` remains blocked by the known missing
+    `.github/workflows/ci.yml` file.
+  - Full changed-file Biome lint still reports pre-existing debt in
+    `src/main/index.ts` and `src/shared/deskBridgeCapabilities.ts` unrelated to
+    this OAuth runtime readiness slice. Formatter-only check passed after
+    scoped formatting.
+- Next intended step:
+  - Review final diff and commit the Google OAuth runtime readiness slice.

@@ -84,8 +84,10 @@ test('connection center settings target is owned by the shared connection catalo
   );
   assert.equal(XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES.includes('provider-profile-draft'), true);
   assert.equal(XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES.includes('channel-routing'), true);
+  assert.equal(XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES.includes('tool-oauth-runtime'), true);
   assert.equal(XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES.includes('tool-setup-plan'), true);
   assert.equal(isXenesisConnectionCenterDetailFocus('tool-oauth-draft'), true);
+  assert.equal(isXenesisConnectionCenterDetailFocus('tool-oauth-runtime'), true);
   assert.equal(isXenesisConnectionCenterDetailFocus('tool-setup-plan'), true);
   assert.equal(isXenesisConnectionCenterDetailFocus('unknown-detail'), false);
 });
@@ -1048,6 +1050,32 @@ test('buildXenesisConnectionsStatus exposes review-only tool OAuth drafts for pl
   assert.ok(calendar?.diagnosticRunbook?.diagnostics.includes('readback-verification'));
   assert.ok(calendar?.setupRequest?.steps.some((step) => step.includes('token-store-readiness')));
   assert.ok(calendar?.setupRequest?.diagnostics.includes('oauth-app-registration'));
+
+  assert.equal(workspace?.toolOAuthRuntime?.runtimeStatus, 'planned-template');
+  assert.equal(workspace?.toolOAuthRuntime?.actionInboxKind, 'xenesis-tool-oauth-runtime');
+  assert.equal(workspace?.toolOAuthRuntime?.tool, 'google-workspace');
+  assert.deepEqual(workspace?.toolOAuthRuntime?.missingRequiredFields, ['oauthClient', 'redirectUri', 'tokenStore']);
+  assert.deepEqual(workspace?.toolOAuthRuntime?.callbackUriCandidates, ['selected MCP OAuth redirect URI']);
+  assert.equal(workspace?.toolOAuthRuntime?.tokenStoreOwner, 'selected MCP OAuth runtime');
+  assert.ok(workspace?.toolOAuthRuntime?.readPaths.includes('xd.xenesis.tools.oauthRuntime.status'));
+  assert.ok(workspace?.toolOAuthRuntime?.controlPaths.includes('xd.xenesis.tools.oauthRuntime.open'));
+  assert.ok(workspace?.toolOAuthRuntime?.controlPaths.includes('xd.xenesis.tools.oauthRuntime.request'));
+  assert.ok(workspace?.toolOAuthRuntime?.diagnostics.includes('oauth-runtime-readiness'));
+  assert.ok(workspace?.toolOAuthRuntime?.readbackChecks.includes('cr-readback'));
+  assert.ok(workspace?.toolOAuthRuntime?.blockedActions.includes('start OAuth callback server'));
+  assert.ok(workspace?.toolOAuthRuntime?.blockedActions.includes('store OAuth tokens'));
+  assert.equal(JSON.stringify(workspace?.toolOAuthRuntime).includes('secret-value-must-not-appear'), false);
+
+  assert.equal(calendar?.toolOAuthRuntime?.runtimeStatus, 'planned-template');
+  assert.equal(calendar?.toolOAuthRuntime?.runtimeSupport, 'planned-oauth');
+  assert.ok(calendar?.toolOAuthRuntime?.scopes.includes('calendar.events.readonly'));
+  assert.ok(calendar?.toolOAuthRuntime?.readbackChecks.includes('calendar.freebusy.readonly'));
+  assert.ok(
+    calendar?.toolOAuthRuntime?.safetyBoundaries.some((boundary) =>
+      boundary.includes('OAuth runtime readiness is review-only'),
+    ),
+  );
+  assert.ok(calendar?.setupRequest?.diagnostics.includes('oauth-runtime-readiness'));
 });
 
 test('buildXenesisConnectionsStatus exposes review-only tool action catalogs', () => {
@@ -1685,6 +1713,7 @@ test('buildXenesisConnectionsStatus exposes internal Desk tool views for MCP and
       'install-plan',
       'oauth-draft',
       'oauth-setup-packet',
+      'oauth-runtime',
       'action-policy',
       'user-stories',
     ],
@@ -1703,6 +1732,21 @@ test('buildXenesisConnectionsStatus exposes internal Desk tool views for MCP and
   assert.deepEqual(
     googleCalendar?.toolView?.viewSections.find((section) => section.id === 'oauth-setup-packet')?.openArgs,
     { id: 'google-calendar', section: 'oauth-setup-packet', ensureVisible: true },
+  );
+  assert.equal(
+    googleCalendar?.toolView?.viewSections.find((section) => section.id === 'oauth-runtime')?.focusConnectionDetail,
+    'tool-oauth-runtime',
+  );
+  assert.deepEqual(googleCalendar?.toolView?.viewSections.find((section) => section.id === 'oauth-runtime')?.openArgs, {
+    id: 'google-calendar',
+    section: 'oauth-runtime',
+    ensureVisible: true,
+  });
+  assert.equal(
+    googleCalendar?.toolView?.viewSections
+      .find((section) => section.id === 'oauth-runtime')
+      ?.readPaths.includes('xd.xenesis.tools.oauthRuntime.status'),
+    true,
   );
   assert.equal(googleCalendar?.toolView?.diagnostics.includes('template-snippet'), false);
 });

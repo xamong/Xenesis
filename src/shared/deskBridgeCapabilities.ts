@@ -1131,6 +1131,36 @@ const XENESIS_TOOL_OAUTH_DRAFT_REQUEST_SCHEMA = {
     },
   },
 } as const;
+const XENESIS_TOOL_OAUTH_RUNTIME_STATUS_SCHEMA = XENESIS_TOOL_OAUTH_DRAFT_STATUS_SCHEMA;
+const XENESIS_TOOL_OAUTH_RUNTIME_OPEN_SCHEMA = XENESIS_TOOL_OAUTH_DRAFT_OPEN_SCHEMA;
+const XENESIS_TOOL_OAUTH_RUNTIME_REQUEST_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+      description: 'External tool OAuth runtime readiness id to record as a review request.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+      description: 'Alias for id.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity to include on the Action Inbox item.',
+    },
+    note: {
+      type: 'string',
+      title: 'Review note',
+      description: 'Optional note to append to the OAuth runtime readiness description.',
+    },
+  },
+} as const;
 const XENESIS_TOOL_ACTION_CATALOG_STATUS_SCHEMA = XENESIS_TOOL_VIEW_STATUS_SCHEMA;
 const XENESIS_TOOL_ACTION_CATALOG_OPEN_SCHEMA = XENESIS_TOOL_VIEW_OPEN_SCHEMA;
 const XENESIS_TOOL_ACTION_CATALOG_REQUEST_SCHEMA = {
@@ -1716,6 +1746,9 @@ export interface DeskBridgeCapabilityAdapter {
   openXenesisToolOAuthDraft?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisToolOAuthSetupPacket?: (args?: unknown) => Promise<unknown> | unknown;
   requestXenesisToolOAuthDraft?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisToolOAuthRuntimeStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisToolOAuthRuntime?: (args?: unknown) => Promise<unknown> | unknown;
+  requestXenesisToolOAuthRuntime?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolActionCatalogStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisToolActionCatalog?: (args?: unknown) => Promise<unknown> | unknown;
   requestXenesisToolActionCatalog?: (args?: unknown) => Promise<unknown> | unknown;
@@ -5179,6 +5212,34 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               'Record a local Action Inbox item for reviewing MCP OAuth runtime readiness without starting OAuth, storing tokens, writing MCP config, executing provider tools, or mutating external systems.',
               'write',
               XENESIS_TOOL_MCP_OAUTH_REQUEST_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.tools.oauthRuntime',
+          'OAuth runtime readiness',
+          'Read, open, and request review-only OAuth runtime readiness for planned Google tool connections.',
+          [
+            method(
+              'xd.xenesis.tools.oauthRuntime.status',
+              'Read tool OAuth runtime readiness',
+              'Read review-only OAuth runtime callback policy, token-store ownership, readback checks, diagnostics, and safety boundaries without starting OAuth, hosting callback servers, storing tokens, writing MCP config, or running provider tools.',
+              'read',
+              XENESIS_TOOL_OAUTH_RUNTIME_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.oauthRuntime.open',
+              'Open tool OAuth runtime readiness',
+              'Open Settings > Xenesis Agent > Connections and focus the review-only OAuth runtime readiness block for a planned Google tool.',
+              'control',
+              XENESIS_TOOL_OAUTH_RUNTIME_OPEN_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.oauthRuntime.request',
+              'Request tool OAuth runtime readiness review',
+              'Record a local Action Inbox item for reviewing OAuth runtime readiness without starting OAuth, hosting callback servers, storing tokens, writing MCP config, executing provider tools, or mutating Google data.',
+              'write',
+              XENESIS_TOOL_OAUTH_RUNTIME_REQUEST_SCHEMA,
             ),
           ],
         ),
@@ -11881,6 +11942,15 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.tools.oauthDrafts.request') {
         return callAdapter(path, api?.requestXenesisToolOAuthDraft, request.args);
+      }
+      if (path === 'xd.xenesis.tools.oauthRuntime.status') {
+        return callAdapter(path, api?.getXenesisToolOAuthRuntimeStatus, request.args);
+      }
+      if (path === 'xd.xenesis.tools.oauthRuntime.open') {
+        return callAdapter(path, api?.openXenesisToolOAuthRuntime, request.args);
+      }
+      if (path === 'xd.xenesis.tools.oauthRuntime.request') {
+        return callAdapter(path, api?.requestXenesisToolOAuthRuntime, request.args);
       }
       if (path === 'xd.xenesis.tools.mcpOAuth.status') {
         return callAdapter(path, api?.getXenesisToolMcpOAuthStatus, request.args);

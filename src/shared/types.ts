@@ -90,6 +90,8 @@ export type {
   XenesisConnectionToolOAuthDraftReviewStep,
   XenesisConnectionToolOAuthDraftStatus,
   XenesisConnectionToolOAuthDraftTemplate,
+  XenesisConnectionToolOAuthRuntimeStatus,
+  XenesisConnectionToolOAuthRuntimeTemplate,
   XenesisConnectionToolOAuthSetupPacket,
   XenesisConnectionToolOAuthSetupPacketCredentialRef,
   XenesisConnectionToolSetupPlanRuntimeSupport,

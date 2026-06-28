@@ -102,6 +102,7 @@ import {
   buildXenesisToolActionCatalogRequest,
   buildXenesisToolMcpOAuthRequest,
   buildXenesisToolOAuthDraftRequest,
+  buildXenesisToolOAuthRuntimeRequest,
   buildXenesisToolOAuthSetupPacketOpenRequest,
   buildXenesisToolOAuthSetupPacketRequest,
   buildXenesisToolSetupPlanRequest,
@@ -134,6 +135,7 @@ import {
   formatXenesisToolInstallPlanSummary,
   formatXenesisToolMcpOAuthSummary,
   formatXenesisToolOAuthDraftSummary,
+  formatXenesisToolOAuthRuntimeSummary,
   formatXenesisToolOAuthSetupPacketSummary,
   formatXenesisToolSetupPlanSummary,
   formatXenesisToolSetupSummary,
@@ -4329,6 +4331,7 @@ export default function SettingsPane() {
     const mcpInstallDraftApplyRequest = buildXenesisMcpInstallDraftApplyRequest(item);
     const toolMcpOAuthRequest = buildXenesisToolMcpOAuthRequest(item);
     const toolOAuthDraftRequest = buildXenesisToolOAuthDraftRequest(item);
+    const toolOAuthRuntimeRequest = buildXenesisToolOAuthRuntimeRequest(item);
     const toolOAuthSetupPacketRequest = buildXenesisToolOAuthSetupPacketRequest(item);
     const toolOAuthSetupPacketOpenRequest = buildXenesisToolOAuthSetupPacketOpenRequest(item);
     const toolSetupPlanRequest = buildXenesisToolSetupPlanRequest(item);
@@ -4344,6 +4347,7 @@ export default function SettingsPane() {
     const mcpInstallDraft = item.mcpInstallDraft;
     const toolMcpOAuth = item.toolMcpOAuth;
     const toolOAuthDraft = item.toolOAuthDraft;
+    const toolOAuthRuntime = item.toolOAuthRuntime;
     const toolOAuthSetupPacket = toolOAuthDraft?.setupPacket;
     const toolActionCatalog = item.toolActionCatalog;
     const onboardingPlan = item.onboardingPlan;
@@ -4390,6 +4394,7 @@ export default function SettingsPane() {
           mcpInstallDraftApplyRequest ||
           toolMcpOAuthRequest ||
           toolOAuthDraftRequest ||
+          toolOAuthRuntimeRequest ||
           toolOAuthSetupPacketRequest ||
           toolSetupPlanRequest ||
           toolActionCatalogRequest ||
@@ -4537,6 +4542,16 @@ export default function SettingsPane() {
                 }}
               >
                 {t('settings.xenesisConnectionsRequestToolOAuthDraft')}
+              </button>
+            ) : null}
+            {toolOAuthRuntimeRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(toolOAuthRuntimeRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsRequestToolOAuthRuntime')}
               </button>
             ) : null}
             {channelProfileDraftRequest ? (
@@ -5485,6 +5500,84 @@ export default function SettingsPane() {
             </div>
           </div>
         ) : null}
+        {toolOAuthRuntime ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'tool-oauth-runtime') && 'is-focused',
+            )}
+            data-xenesis-tool-oauth-runtime={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntime')}</span>
+              <strong>{formatXenesisToolOAuthRuntimeSummary(toolOAuthRuntime)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeAuthSurface')}</span>
+              <strong>{toolOAuthRuntime.authSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeReviewSurface')}</span>
+              <strong>{toolOAuthRuntime.reviewSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeCallbackPolicy')}</span>
+              <strong>
+                {[toolOAuthRuntime.callbackPolicy, ...toolOAuthRuntime.callbackUriCandidates].join(' | ')}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeCredentials')}</span>
+              <strong>
+                {toolOAuthRuntime.credentialRefs
+                  .map((credential) => `${credential.ref}:${credential.valueState}`)
+                  .join(', ') || '-'}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeMissingFields')}</span>
+              <strong>{toolOAuthRuntime.missingRequiredFields.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeScopes')}</span>
+              <strong>{toolOAuthRuntime.scopes.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeTokenStore')}</span>
+              <strong>
+                {[toolOAuthRuntime.tokenStore, toolOAuthRuntime.tokenStoreOwner].filter(Boolean).join(' | ')}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeConsentMode')}</span>
+              <strong>{toolOAuthRuntime.consentMode}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeReadbackChecks')}</span>
+              <strong>{toolOAuthRuntime.readbackChecks.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeReadback')}</span>
+              <strong>{toolOAuthRuntime.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeControls')}</span>
+              <strong>{toolOAuthRuntime.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeDiagnostics')}</span>
+              <strong>{toolOAuthRuntime.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeBlockedActions')}</span>
+              <strong>{toolOAuthRuntime.blockedActions.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeSafety')}</span>
+              <strong>{toolOAuthRuntime.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
         {toolActionCatalog ? (
           <div
             className={cls(
@@ -6243,6 +6336,7 @@ export default function SettingsPane() {
     const plannedMessengerItems = messengerItems.filter((item) => item.status === 'planned');
     const connectorItems = toolItems.filter((item) => item.toolConnector);
     const oauthDraftItems = toolItems.filter((item) => item.toolOAuthDraft);
+    const oauthRuntimeItems = toolItems.filter((item) => item.toolOAuthRuntime);
     const setupPlanItems = toolItems.filter((item) => item.toolSetupPlan);
     const actionPolicyItems = toolItems.filter((item) => item.toolActionCatalog);
     const messengerViewItems = messengerItems.filter((item) => item.messengerView);
@@ -6289,6 +6383,10 @@ export default function SettingsPane() {
               <div>
                 <span>{t('settings.connectorsXenesisOauthDrafts')}</span>
                 <strong>{oauthDraftItems.length}</strong>
+              </div>
+              <div>
+                <span>{t('settings.connectorsXenesisOauthRuntime')}</span>
+                <strong>{oauthRuntimeItems.length}</strong>
               </div>
               <div>
                 <span>{t('settings.connectorsXenesisSetupPlans')}</span>
