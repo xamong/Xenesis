@@ -96,6 +96,7 @@ import {
   XENESIS_NATURAL_RUNTIME_INVENTORY_RULES,
   XENESIS_NATURAL_RUNTIME_SUPPORT_RULES,
   XENESIS_NATURAL_RUNTIME_VISIBLE_PLAN_PATHS,
+  XENESIS_NATURAL_SETTINGS_CATEGORY_TARGETS,
   XENESIS_NATURAL_TERMINAL_LIST_RULES,
   XENESIS_NATURAL_TERMINAL_MANY_RULES,
   XENESIS_NATURAL_TERMINAL_RUN_RULES,
@@ -216,6 +217,7 @@ import {
   XENESIS_NATURAL_WORKSPACE_SET_CONTEXT_WORDS,
   XENESIS_NATURAL_XENESIS_CONTEXT_WORDS,
 } from '../../../../shared/xenesisNaturalLanguageCatalog';
+import { VISIBLE_SETTINGS_CATEGORIES } from '../../../../shared/xenesisSettingsCatalog.mjs';
 import {
   approveXenesisDeskActions,
   buildXenesisDeskActionCompletedMessage,
@@ -2830,6 +2832,38 @@ test('natural auxiliary actions are generated from shared auxiliary specs', () =
   );
 });
 
+test('natural Settings category actions are generated from the shared Settings catalog', () => {
+  const capabilityCatalogSource = readFileSync(
+    new URL('../../../../shared/xenesisNaturalLanguageCapabilityCatalog.ts', import.meta.url),
+    'utf8',
+  );
+  const settingsCatalogSource = readFileSync(
+    new URL('../../../../shared/xenesisSettingsCatalog.mjs', import.meta.url),
+    'utf8',
+  );
+  const visibleIds = VISIBLE_SETTINGS_CATEGORIES.map((category) => category.id);
+
+  assert.deepEqual(
+    XENESIS_NATURAL_SETTINGS_CATEGORY_TARGETS.map((target) => target.category),
+    visibleIds,
+  );
+  assert.deepEqual(
+    XENESIS_NATURAL_SETTINGS_CATEGORY_TARGETS.map((target) => target.action.path),
+    visibleIds.map(() => 'xd.panes.settings.open'),
+  );
+  assert.equal(
+    XENESIS_NATURAL_SETTINGS_CATEGORY_TARGETS.every((target) => target.words.length > 0),
+    true,
+  );
+  assert.match(
+    capabilityCatalogSource,
+    /VISIBLE_SETTINGS_CATEGORIES\.map\(buildXenesisNaturalSettingsCategoryTarget\)/,
+  );
+  assert.match(settingsCatalogSource, /id: 'external-apps'/);
+  assert.match(settingsCatalogSource, /naturalWords:/);
+  assert.doesNotMatch(capabilityCatalogSource, /category:\s*'connectors'/);
+});
+
 test('natural connection and provider targets stay aligned with the Connection Center catalog ids', () => {
   const connectionTargets = new Map(XENESIS_NATURAL_CONNECTION_TARGETS.map((target) => [target.id, target]));
   const providerTargets = new Map(XENESIS_NATURAL_PROVIDER_TARGETS.map((target) => [target.id, target]));
@@ -3545,6 +3579,18 @@ test('planXenesisDeskNaturalLanguageActions maps workspace binding prompts to CR
 });
 
 test('planXenesisDeskNaturalLanguageActions maps common Korean Desk control requests to CR actions', () => {
+  const assertSettingsCategoryPlan = (prompt: string, category: string) => {
+    assert.deepEqual(planXenesisDeskNaturalLanguageActions(prompt).actions, [
+      {
+        id: `natural-settings-${category}-open`,
+        path: 'xd.panes.settings.open',
+        args: { category, placement: 'tab', ensureVisible: true },
+        approved: false,
+        reason: `Open the ${category} settings category from natural language request.`,
+      },
+    ]);
+  };
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('설정 열어줘').actions, [
     {
       id: 'natural-settings-open',
@@ -3554,6 +3600,11 @@ test('planXenesisDeskNaturalLanguageActions maps common Korean Desk control requ
       reason: 'Open settings from natural language request.',
     },
   ]);
+
+  assertSettingsCategoryPlan('AI 모델 설정 열어줘', 'run-model');
+  assertSettingsCategoryPlan('외부 앱 설정 열어줘', 'external-apps');
+  assertSettingsCategoryPlan('Connectors 설정 열어줘', 'connectors');
+  assertSettingsCategoryPlan('작업공간 설정 열어줘', 'workspace');
 
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('오른쪽에 거울이 챗 열어줘').actions, [
     {

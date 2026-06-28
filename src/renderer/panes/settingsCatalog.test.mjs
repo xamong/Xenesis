@@ -19,3 +19,14 @@ test('Connectors is a visible Settings category near external app controls', () 
   assert.equal(connectorsIndex, externalAppsIndex + 1);
   assert.equal(extensionsIndex, connectorsIndex + 1);
 });
+
+test('visible Settings categories expose natural-language aliases for Agent routing', () => {
+  for (const category of VISIBLE_SETTINGS_CATEGORIES) {
+    assert.ok(category.naturalWords.length > 0, `${category.id} should have natural words`);
+  }
+
+  const runModel = SETTINGS_CATEGORIES.find((category) => category.id === 'run-model');
+  const externalApps = SETTINGS_CATEGORIES.find((category) => category.id === 'external-apps');
+  assert.ok(runModel?.naturalWords.includes('ai model'));
+  assert.ok(externalApps?.naturalWords.includes('외부 앱'));
+});

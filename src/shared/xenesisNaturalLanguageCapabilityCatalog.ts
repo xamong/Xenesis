@@ -136,6 +136,11 @@ import {
   type XenesisNaturalViewTarget,
   type XenesisNaturalWordsTarget,
 } from './xenesisNaturalLanguageCatalog';
+import {
+  type SettingsCategory,
+  type SettingsCategoryId,
+  VISIBLE_SETTINGS_CATEGORIES,
+} from './xenesisSettingsCatalog.mjs';
 
 export const XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS = {
   placement: 'tab',
@@ -171,6 +176,11 @@ export const XENESIS_NATURAL_DESK_ACTION_ARGS = {
   provider: (provider: string) => ({ provider }),
   providerVisible: (provider: string) => ({ provider, ensureVisible: true }),
   presetId: (presetId: string) => ({ presetId }),
+  settingsCategory: (category: string, placement: string | undefined) => ({
+    category,
+    placement: placement || XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS.placement,
+    ensureVisible: true,
+  }),
   targetId: (id: string) => ({ id }),
   targetIdVisible: (id: string) => ({ id, ensureVisible: true }),
   terminalMany: (count: number, placement: string | undefined) => ({
@@ -355,6 +365,43 @@ export const XENESIS_NATURAL_VIEW_TARGET_SPECS = [
 ] as const satisfies readonly XenesisNaturalViewTarget[];
 
 export const XENESIS_NATURAL_VIEW_TARGETS: readonly XenesisNaturalViewTarget[] = XENESIS_NATURAL_VIEW_TARGET_SPECS;
+
+export type XenesisNaturalSettingsCategoryTarget = XenesisNaturalWordsTarget & {
+  category: SettingsCategoryId;
+  action: XenesisNaturalDeskActionDescriptor;
+};
+
+function buildXenesisNaturalSettingsCategoryTarget(category: SettingsCategory): XenesisNaturalSettingsCategoryTarget {
+  const id = `natural-settings-${category.id}-open`;
+  return {
+    id,
+    category: category.id,
+    label: category.id,
+    words: category.naturalWords,
+    action: {
+      id,
+      path: 'xd.panes.settings.open',
+      reason: `Open the ${category.id} settings category from natural language request.`,
+    },
+  };
+}
+
+export const XENESIS_NATURAL_SETTINGS_CATEGORY_TARGET_SPECS: readonly XenesisNaturalSettingsCategoryTarget[] =
+  VISIBLE_SETTINGS_CATEGORIES.map(buildXenesisNaturalSettingsCategoryTarget);
+
+export const XENESIS_NATURAL_SETTINGS_CATEGORY_TARGETS: readonly XenesisNaturalSettingsCategoryTarget[] =
+  XENESIS_NATURAL_SETTINGS_CATEGORY_TARGET_SPECS;
+
+export function findXenesisNaturalSettingsCategoryTarget(value: string) {
+  return (
+    XENESIS_NATURAL_SETTINGS_CATEGORY_TARGETS.find((target) =>
+      matchesXenesisNaturalContextRule(value, {
+        contextWords: target.words,
+        requiredContextWordGroups: [XENESIS_NATURAL_DESK_SETTINGS_CONTEXT_WORDS, XENESIS_NATURAL_OPEN_OR_SHOW_WORDS],
+      }),
+    ) ?? null
+  );
+}
 
 export type XenesisNaturalDeskActionRuleGroup =
   | 'paneOpen'

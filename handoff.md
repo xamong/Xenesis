@@ -15508,3 +15508,106 @@ Verification so far:
     check.
 - Next intended step:
   - Review diff, stage, and commit this Settings connectors navigation slice.
+
+## Current Natural Settings Category Routing Slice
+
+- Current objective:
+  - Route natural-language prompts for visible Settings categories through
+    `xd.panes.settings.open` with concrete category args, using the same shared
+    Settings category catalog as the renderer Settings pane.
+- Rationale:
+  - The previous narrow target was `Connectors 설정 열어줘`, but the broader
+    product need is category-specific Settings navigation without adding more
+    planner/control hardcoding. This slice now covers the visible Settings
+    categories from a shared catalog while preserving specialized Connection
+    Center routes.
+- Scope:
+  - Add RED natural planner coverage for `Connectors 설정 열어줘`.
+  - Move Settings category metadata to `src/shared/xenesisSettingsCatalog.mjs`
+    and keep `src/renderer/panes/settingsCatalog.mjs` as a compatibility
+    re-export.
+  - Generate natural Settings category targets from
+    `VISIBLE_SETTINGS_CATEGORIES` instead of adding individual category logic in
+    the planner.
+  - Add representative prompt coverage for run model, external apps,
+    connectors, and app workspace (`작업공간`) category opens.
+  - Preserve generic `설정 열어줘`, Connection Center setup/status prompts, and
+    tool connector prompts like `노션 connector 열어줘`.
+- Touched files so far:
+  - `handoff.md`
+  - `src/shared/xenesisSettingsCatalog.mjs`
+  - `src/shared/xenesisSettingsCatalog.d.ts`
+  - `src/shared/xenesisSettingsCatalog.d.mts`
+  - `src/renderer/panes/settingsCatalog.mjs`
+  - `src/renderer/panes/settingsCatalog.d.ts`
+  - `src/renderer/panes/settingsCatalog.d.mts`
+  - `src/renderer/panes/settingsCatalog.test.mjs`
+  - `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
+  - `src/shared/xenesisNaturalLanguagePlanResolvers.ts`
+  - `src/shared/xenesisNaturalLanguagePlanner.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `scripts/xenesisNaturalDeskRoutingLiveSmoke.mjs`
+  - `scripts/xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
+  - `docs/capability-registry-audit.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-natural-settings-category-routing.md`
+- Commands run:
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> failed 43/44 because `Connectors 설정 열어줘` returned generic
+    `natural-settings-open` without category args.
+  - Focused after initial implementation:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> failed because the Settings category resolver ran before provider setup
+    plan routes and intercepted `AI provider 설정 플랜`.
+  - Focused after priority fix:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> failed because `워크스페이스 설정 열어줘` correctly remained owned by
+    Google Workspace setup routing.
+  - Focused after alias separation:
+    `node --test src\renderer\panes\settingsCatalog.test.mjs` -> passed 2/2.
+  - Focused after alias separation:
+    `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` ->
+    passed 6/6.
+  - Focused after alias separation:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 45/45.
+  - Broad:
+    `npm run typecheck` -> passed.
+  - Broad:
+    `npm run docs:capabilities:audit` -> passed and wrote
+    `docs/capability-registry-audit.md`; audit summary is 779 nodes, 689
+    coverage path references, missing registered paths 0, missing dispatched
+    coverage paths 0, undispatched static callable methods 0, dispatcher paths
+    missing from tree 0.
+  - Broad:
+    `npm run smoke:xenesis:natural-desk-routing` -> passed 198/198, including
+    `settings-run-model-open`, `settings-external-apps-open`,
+    `settings-connectors-open`, and `settings-workspace-open`.
+  - Hygiene:
+    `npx biome check ... --max-diagnostics 80` -> passed on 13 changed code/test
+    files after safe import organization.
+  - Hygiene:
+    `git diff --check` -> passed; Git reported existing LF/CRLF normalization
+    warnings only.
+- Implemented:
+  - Shared Settings catalog now includes renderer category metadata plus
+    natural-language aliases.
+  - Natural Settings category target specs are generated from visible Settings
+    categories and call `xd.panes.settings.open` with `{ category, placement:
+    'tab', ensureVisible: true }`.
+  - Resolver priority now keeps Connection Center/provider/tool setup routes
+    ahead of generic Settings category opens.
+  - Workspace category natural aliases use `작업공간`/`작업 공간` to avoid
+    colliding with the existing Google Workspace connector target.
+- Obsidian:
+  - Added
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-natural-settings-category-routing.md`.
+- Known gaps:
+  - This slice only changes Settings category navigation/routing. It does not
+    execute OAuth, install MCP servers, send messages, mutate external tools,
+    change workspace binding, or change provider runtime behavior.
+  - Full repo `npm run lint` remains known blocked by existing repo-wide Biome
+    diagnostics outside this slice; changed-file Biome passed.
+- Next intended step:
+  - Review final diff, stage, and commit the larger Settings category routing
+    slice.

@@ -24,6 +24,7 @@ import {
   buildXenesisNaturalViewOpenAction,
   findXenesisNaturalCatalogRule,
   findXenesisNaturalCatalogRulePlan,
+  findXenesisNaturalSettingsCategoryTarget,
   XENESIS_NATURAL_ACTIVE_DOCK_CLOSE_RULES,
   XENESIS_NATURAL_ACTIVE_DOCK_FOCUS_RULES,
   XENESIS_NATURAL_ARTIFACT_TARGET_RULES,
@@ -204,6 +205,21 @@ export function xenesisRuntimeControlPlanFromNaturalText(value: string): Xenesis
   const action = xenesisRuntimeControlActionFromNaturalText(value);
   if (!action) return null;
   return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.runtimeControlRecorded, [action]);
+}
+
+export function deskSettingsCategoryOpenPlanFromNaturalText(
+  value: string,
+  placement: string | undefined,
+): XenesisNaturalLanguagePlan | null {
+  const target = findXenesisNaturalSettingsCategoryTarget(value);
+  if (!target) return null;
+
+  return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.settingsPaneOpen, [
+    buildXenesisNaturalCatalogAction(
+      target.action,
+      XENESIS_NATURAL_DESK_ACTION_ARGS.settingsCategory(target.category, placement),
+    ),
+  ]);
 }
 
 export function deskPaneOpenPlanFromNaturalText(

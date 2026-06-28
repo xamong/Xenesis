@@ -144,6 +144,30 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
       expectedVisibleText: 'Desk action completed',
     },
     {
+      id: 'settings-run-model-open',
+      prompt: 'AI 모델 설정 열어줘',
+      expectedPath: 'xd.panes.settings.open',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
+      id: 'settings-external-apps-open',
+      prompt: '외부 앱 설정 열어줘',
+      expectedPath: 'xd.panes.settings.open',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
+      id: 'settings-connectors-open',
+      prompt: 'Connectors 설정 열어줘',
+      expectedPath: 'xd.panes.settings.open',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
+      id: 'settings-workspace-open',
+      prompt: '작업공간 설정 열어줘',
+      expectedPath: 'xd.panes.settings.open',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
       id: 'notion-connector-open',
       prompt: '노션 connector 열어줘',
       expectedPath: 'xd.xenesis.tools.connectors.open',
