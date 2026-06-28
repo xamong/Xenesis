@@ -4629,6 +4629,54 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Aggregate Open/Status Natural Live Smoke Expansion Slice
+
+- Continued the larger slice-cycle pass by broadening the repeatable Agent-pane
+  natural Desk routing live smoke from 23 prompt cases to 41 prompt cases.
+- Added live-smoked provider aggregate surfaces:
+  - `xd.xenesis.providers.routing.open`.
+  - `xd.xenesis.providers.views.open`.
+  - `xd.xenesis.providers.setup.status`.
+  - `xd.xenesis.providers.routing.status`.
+  - `xd.xenesis.providers.views.status`.
+- Added live-smoked external tool aggregate surfaces:
+  - `xd.xenesis.tools.connectors.status`.
+  - `xd.xenesis.tools.setup.open`.
+  - `xd.xenesis.tools.setup.status`.
+  - `xd.xenesis.tools.views.open`.
+  - `xd.xenesis.tools.views.status`.
+  - `xd.xenesis.tools.mcpInstallDrafts.open`.
+  - `xd.xenesis.tools.actions.open`.
+- Added live-smoked channel/messenger aggregate surfaces:
+  - `xd.xenesis.channels.routing.open`.
+  - `xd.xenesis.channels.safety.open`.
+  - `xd.xenesis.channels.accessGroups.open`.
+  - `xd.xenesis.channels.pairing.open`.
+  - `xd.xenesis.messengers.views.open` through a broad messenger-view prompt.
+  - `xd.xenesis.messengers.views.status`.
+- Scope boundary:
+  - Smoke script/test coverage only.
+  - No natural-language planner, CR schema, dispatcher, provider runtime,
+    OAuth/install execution, messenger delivery, profile write, or Action Inbox
+    mutation behavior changed.
+- RED/GREEN:
+  - Initial RED proved the live smoke script still exported the old 23-case
+    prompt catalog while the test expected the expanded 41-case catalog.
+  - Added the same 18 provider/tool/channel/messenger aggregate open/status
+    prompt cases to the live smoke script.
+- Verification:
+  - `npx tsx --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
+    passed 4/4 after the prompt catalog update and after formatting.
+  - Scoped Biome format/check passed for the two smoke files.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 123/123.
+  - `npm run typecheck` passed.
+  - `git diff --check` passed with LF-to-CRLF working-copy warnings only.
+  - CR audit was skipped because this slice only changes smoke scripts/tests;
+    it does not change registry, dispatcher, runtime implementation, or shared
+    route matching behavior.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

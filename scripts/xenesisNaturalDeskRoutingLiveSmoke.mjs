@@ -64,6 +64,36 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     expectedVisibleText: 'Desk action completed',
   },
   {
+    id: 'provider-routing-catalog-open',
+    prompt: 'AI provider routing 전체 열어줘',
+    expectedPath: 'xd.xenesis.providers.routing.open',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'provider-view-catalog-open',
+    prompt: 'AI provider view 전체 열어줘',
+    expectedPath: 'xd.xenesis.providers.views.open',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'provider-setup-status',
+    prompt: 'AI provider setup 전체 상태 보여줘',
+    expectedPath: 'xd.xenesis.providers.setup.status',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'provider-routing-status',
+    prompt: 'AI provider routing 전체 상태 보여줘',
+    expectedPath: 'xd.xenesis.providers.routing.status',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'provider-view-status',
+    prompt: 'AI provider view 전체 상태 보여줘',
+    expectedPath: 'xd.xenesis.providers.views.status',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
     id: 'provider-profile-draft-status',
     prompt: 'AI provider profile draft 상태 보여줘',
     expectedPath: 'xd.xenesis.providers.profileDrafts.status',
@@ -73,6 +103,36 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     id: 'notion-connector-open',
     prompt: '노션 connector 열어줘',
     expectedPath: 'xd.xenesis.tools.connectors.open',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'tool-connectors-status',
+    prompt: '외부 툴 connector 전체 상태 보여줘',
+    expectedPath: 'xd.xenesis.tools.connectors.status',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'tool-setup-catalog-open',
+    prompt: '외부 툴 setup 전체 열어줘',
+    expectedPath: 'xd.xenesis.tools.setup.open',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'tool-setup-status',
+    prompt: '외부 툴 setup 전체 상태 보여줘',
+    expectedPath: 'xd.xenesis.tools.setup.status',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'tool-view-catalog-open',
+    prompt: '외부 툴 view 전체 열어줘',
+    expectedPath: 'xd.xenesis.tools.views.open',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'tool-view-status',
+    prompt: '외부 툴 view 전체 상태 보여줘',
+    expectedPath: 'xd.xenesis.tools.views.status',
     expectedVisibleText: 'Desk action completed',
   },
   {
@@ -88,9 +148,21 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     expectedVisibleText: 'Desk action completed',
   },
   {
+    id: 'tool-mcp-install-drafts-open',
+    prompt: '외부 툴 MCP 설치 초안 전체 열어줘',
+    expectedPath: 'xd.xenesis.tools.mcpInstallDrafts.open',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
     id: 'tool-action-policy-status',
     prompt: '외부 툴 action policy catalog 상태 보여줘',
     expectedPath: 'xd.xenesis.tools.actions.status',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'tool-action-policy-open',
+    prompt: '외부 툴 액션 정책 전체 열어줘',
+    expectedPath: 'xd.xenesis.tools.actions.open',
     expectedVisibleText: 'Desk action completed',
   },
   {
@@ -112,9 +184,21 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     expectedVisibleText: 'Desk action completed',
   },
   {
+    id: 'channel-routing-catalog-open',
+    prompt: '외부 메신저 라우팅 전체 열어줘',
+    expectedPath: 'xd.xenesis.channels.routing.open',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
     id: 'channel-safety-status',
     prompt: '외부 채널 safety catalog 상태 보여줘',
     expectedPath: 'xd.xenesis.channels.safety.status',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'channel-safety-catalog-open',
+    prompt: '외부 메신저 안전 전체 열어줘',
+    expectedPath: 'xd.xenesis.channels.safety.open',
     expectedVisibleText: 'Desk action completed',
   },
   {
@@ -124,9 +208,21 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     expectedVisibleText: 'Desk action completed',
   },
   {
+    id: 'channel-access-groups-catalog-open',
+    prompt: '외부 메신저 접근 그룹 전체 열어줘',
+    expectedPath: 'xd.xenesis.channels.accessGroups.open',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
     id: 'channel-pairing-status',
     prompt: '외부 채널 pairing catalog 상태 보여줘',
     expectedPath: 'xd.xenesis.channels.pairing.status',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'channel-pairing-catalog-open',
+    prompt: '외부 메신저 페어링 전체 열어줘',
+    expectedPath: 'xd.xenesis.channels.pairing.open',
     expectedVisibleText: 'Desk action completed',
   },
   {
@@ -139,6 +235,18 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     id: 'channel-profile-draft-status',
     prompt: 'channel profile draft 전체 상태 보여줘',
     expectedPath: 'xd.xenesis.channels.profileDrafts.status',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'messenger-view-catalog-open',
+    prompt: '외부 메신저 view 전체 열어줘',
+    expectedPath: 'xd.xenesis.messengers.views.open',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'messenger-view-status',
+    prompt: '외부 메신저 setup 전체 상태 보여줘',
+    expectedPath: 'xd.xenesis.messengers.views.status',
     expectedVisibleText: 'Desk action completed',
   },
   {
