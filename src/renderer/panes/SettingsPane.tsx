@@ -125,6 +125,7 @@ import {
   formatXenesisProviderRoutingSummary,
   formatXenesisProviderSetupPlanSummary,
   formatXenesisProviderSetupSummary,
+  formatXenesisProviderViewSectionSummary,
   formatXenesisProviderViewSummary,
   formatXenesisToolActionCatalogSummary,
   formatXenesisToolConnectorSummary,
@@ -5069,6 +5070,16 @@ export default function SettingsPane() {
             <div>
               <span>{t('settings.xenesisConnectionsProviderViewInternalViews')}</span>
               <strong>{providerView.internalViews.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderViewSections')}</span>
+              <strong>{providerView.viewSections.map(formatXenesisProviderViewSectionSummary).join(' | ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderViewSectionOpenArgs')}</span>
+              <strong>
+                {providerView.viewSections.map((section) => JSON.stringify(section.openArgs)).join(' | ')}
+              </strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsProviderViewReadback')}</span>

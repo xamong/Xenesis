@@ -58,6 +58,8 @@ export type {
   XenesisConnectionProviderSetupPlanStepKind,
   XenesisConnectionProviderSetupPlanTemplate,
   XenesisConnectionProviderSetupTemplate,
+  XenesisConnectionProviderViewSection,
+  XenesisConnectionProviderViewSectionId,
   XenesisConnectionProviderViewTemplate,
   XenesisConnectionSection,
   XenesisConnectionSetupRequestReview,

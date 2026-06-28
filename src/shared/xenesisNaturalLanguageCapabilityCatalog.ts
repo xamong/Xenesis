@@ -1,7 +1,9 @@
 import {
   XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_IDS,
+  XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_IDS,
   XENESIS_CONNECTION_TOOL_VIEW_SECTION_IDS,
   type XenesisConnectionMessengerViewSectionId,
+  type XenesisConnectionProviderViewSectionId,
   type XenesisConnectionToolViewSectionId,
 } from './xenesisConnections';
 import {
@@ -181,6 +183,7 @@ export const XENESIS_NATURAL_DESK_ACTION_ARGS = {
   prompt: (prompt: string) => ({ prompt }),
   provider: (provider: string) => ({ provider }),
   providerVisible: (provider: string) => ({ provider, ensureVisible: true }),
+  providerViewSectionVisible: (provider: string, section: string) => ({ provider, section, ensureVisible: true }),
   presetId: (presetId: string) => ({ presetId }),
   settingsCategory: (category: string, placement: string | undefined) => ({
     category,
@@ -547,6 +550,65 @@ export function findXenesisNaturalMessengerViewSectionTarget(
     XENESIS_NATURAL_MESSENGER_VIEW_SECTION_TARGETS.find(
       (target) =>
         (XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_IDS as readonly string[]).includes(target.id) &&
+        matchesXenesisNaturalContextRule(value, { contextWords: target.words }),
+    ) ?? null
+  );
+}
+
+export type XenesisNaturalProviderViewSectionTarget = {
+  id: XenesisConnectionProviderViewSectionId;
+  label: string;
+  words: readonly string[];
+};
+
+export const XENESIS_NATURAL_PROVIDER_VIEW_SECTION_TARGET_SPECS = [
+  {
+    id: 'connection-card',
+    label: 'Connection card',
+    words: ['connection card', '연결 카드', '카드'],
+  },
+  {
+    id: 'setup',
+    label: 'Setup',
+    words: ['provider setup', 'setup', '설정', '셋업'],
+  },
+  {
+    id: 'runtime',
+    label: 'Runtime',
+    words: ['runtime', 'runtime route', 'provider runtime', '런타임', '런타임 라우트'],
+  },
+  {
+    id: 'fallback-policy',
+    label: 'Fallback policy',
+    words: ['fallback policy', 'fallback', 'fallback chain', '폴백', '폴백 정책'],
+  },
+  {
+    id: 'credential-boundary',
+    label: 'Credential boundary',
+    words: ['credential boundary', 'credential', 'credential state', '자격 증명 경계', '자격 증명'],
+  },
+  {
+    id: 'profile-draft',
+    label: 'Profile draft',
+    words: ['profile draft', 'profile', '프로필 초안', '프로필 draft', '프로필'],
+  },
+  {
+    id: 'setup-plan',
+    label: 'Setup plan',
+    words: ['setup plan', '설정 플랜', '설정 계획'],
+  },
+] as const satisfies readonly XenesisNaturalProviderViewSectionTarget[];
+
+export const XENESIS_NATURAL_PROVIDER_VIEW_SECTION_TARGETS: readonly XenesisNaturalProviderViewSectionTarget[] =
+  XENESIS_NATURAL_PROVIDER_VIEW_SECTION_TARGET_SPECS;
+
+export function findXenesisNaturalProviderViewSectionTarget(
+  value: string,
+): XenesisNaturalProviderViewSectionTarget | null {
+  return (
+    XENESIS_NATURAL_PROVIDER_VIEW_SECTION_TARGETS.find(
+      (target) =>
+        (XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_IDS as readonly string[]).includes(target.id) &&
         matchesXenesisNaturalContextRule(value, { contextWords: target.words }),
     ) ?? null
   );

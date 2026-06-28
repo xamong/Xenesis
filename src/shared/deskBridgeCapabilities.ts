@@ -19,6 +19,7 @@ import {
   XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_IDS,
   XENESIS_CONNECTION_ONBOARDING_STEP_IDS,
   XENESIS_CONNECTION_PROVIDER_IDS,
+  XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_IDS,
   XENESIS_CONNECTION_TOOL_IDS,
   XENESIS_CONNECTION_TOOL_OAUTH_DRAFT_IDS,
   XENESIS_CONNECTION_TOOL_VIEW_SECTION_IDS,
@@ -1252,6 +1253,25 @@ const XENESIS_PROVIDER_VIEW_OPEN_SCHEMA = {
       title: 'Ensure visible',
       description: 'Scroll the focused provider connection card into view after opening the Connection Center.',
       default: true,
+    },
+    section: {
+      type: 'string',
+      title: 'Provider view section',
+      enum: XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_IDS,
+      description:
+        'Optional internal Desk provider view section to focus inside the Connection Center provider detail.',
+    },
+    viewSection: {
+      type: 'string',
+      title: 'Provider view section',
+      enum: XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_IDS,
+      description: 'Alias for section.',
+    },
+    providerViewSection: {
+      type: 'string',
+      title: 'Provider view section',
+      enum: XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_IDS,
+      description: 'Alias for section.',
     },
     ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
   },

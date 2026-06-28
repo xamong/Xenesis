@@ -1022,6 +1022,8 @@ export const en = {
     xenesisConnectionsProviderViewSetupSurface: 'Setup surface',
     xenesisConnectionsProviderViewOpen: 'Open path',
     xenesisConnectionsProviderViewInternalViews: 'Internal views',
+    xenesisConnectionsProviderViewSections: 'View sections',
+    xenesisConnectionsProviderViewSectionOpenArgs: 'Section open args',
     xenesisConnectionsProviderViewReadback: 'View readback',
     xenesisConnectionsProviderViewControls: 'View controls',
     xenesisConnectionsProviderViewDiagnostics: 'Diagnostics',

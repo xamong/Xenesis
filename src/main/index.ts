@@ -281,6 +281,7 @@ import {
   buildXenesisConnectionsStatus,
   isXenesisConnectionCenterDetailFocus,
   isXenesisConnectionMessengerViewSectionId,
+  isXenesisConnectionProviderViewSectionId,
   isXenesisConnectionToolViewSectionId,
   withXenesisConnectionSetupRequestReviews,
   XENESIS_CONNECTION_CENTER_ROOT_SELECTOR,
@@ -290,6 +291,7 @@ import {
   XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_IDS,
   XENESIS_CONNECTION_ONBOARDING_STEP_IDS,
   XENESIS_CONNECTION_PROVIDER_IDS,
+  XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_IDS,
   XENESIS_CONNECTION_TOOL_IDS,
   XENESIS_CONNECTION_TOOL_OAUTH_DRAFT_IDS,
   XENESIS_CONNECTION_TOOL_VIEW_SECTION_IDS,
@@ -298,6 +300,7 @@ import {
   type XenesisConnectionKind,
   type XenesisConnectionsStatus,
   xenesisMessengerViewSectionDetailFocus,
+  xenesisProviderViewSectionDetailFocus,
   xenesisToolViewSectionDetailFocus,
 } from '../shared/xenesisConnections';
 import {
@@ -7595,6 +7598,7 @@ function xenesisProviderViewStatusItem(item: XenesisConnectionItem): Record<stri
     openArgs: item.providerView?.openArgs,
     connectionCardId: item.providerView?.connectionCardId,
     internalViews: item.providerView?.internalViews ?? [],
+    viewSections: item.providerView?.viewSections ?? [],
     readPaths: item.providerView?.readPaths ?? [],
     controlPaths: item.providerView?.controlPaths ?? [],
     diagnostics: item.providerView?.diagnostics ?? [],
@@ -7636,15 +7640,35 @@ async function getXenesisProviderViewsStatus(args?: unknown): Promise<Record<str
 }
 
 async function openXenesisProviderView(args?: unknown): Promise<Record<string, unknown>> {
-  return openXenesisProviderCatalogSurface(args, {
+  const body = normalizeMcpCapabilityArgs(args);
+  const section = readCapabilityString(body, ['section', 'viewSection', 'providerViewSection']);
+  if (section && !isXenesisConnectionProviderViewSectionId(section)) {
+    return {
+      ok: false,
+      section,
+      error: `Unsupported Xenesis provider view section: ${section}`,
+      allowedSections: XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_IDS,
+    };
+  }
+
+  const focusConnectionDetail = xenesisProviderViewSectionDetailFocus(section) ?? 'provider-view';
+  const result = await openXenesisProviderCatalogSurface(body, {
     isAllowedProvider: isXenesisProviderViewSelector,
     itemPredicate: (item) => Boolean(item.providerView),
     itemMatchesProvider: (item, provider) => item.providerSetup?.provider === provider || item.id === provider,
     providerForItem: (item) => item.providerSetup?.provider,
     toStatusItem: xenesisProviderViewStatusItem,
     unavailableMessage: (provider) => `Xenesis provider view is not available: ${provider}`,
-    focusConnectionDetail: 'provider-view',
+    focusConnectionDetail,
   });
+
+  return section
+    ? {
+        ...result,
+        section,
+        focusConnectionDetail,
+      }
+    : result;
 }
 
 function xenesisProviderSetupPlanStatusItem(item: XenesisConnectionItem): Record<string, unknown> {

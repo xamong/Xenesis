@@ -1015,6 +1015,8 @@ export const ko = {
     xenesisConnectionsProviderViewSetupSurface: '설정 화면',
     xenesisConnectionsProviderViewOpen: '열기 경로',
     xenesisConnectionsProviderViewInternalViews: '내부 뷰',
+    xenesisConnectionsProviderViewSections: '뷰 섹션',
+    xenesisConnectionsProviderViewSectionOpenArgs: '섹션 열기 인자',
     xenesisConnectionsProviderViewReadback: '뷰 읽기 확인',
     xenesisConnectionsProviderViewControls: '뷰 제어',
     xenesisConnectionsProviderViewDiagnostics: '진단',

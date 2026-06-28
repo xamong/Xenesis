@@ -198,6 +198,41 @@ export function xenesisMessengerViewSectionDetailFocus(
   return XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_DETAIL_FOCUS[section];
 }
 
+export const XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_IDS = [
+  'connection-card',
+  'setup',
+  'runtime',
+  'fallback-policy',
+  'credential-boundary',
+  'profile-draft',
+  'setup-plan',
+] as const;
+
+export type XenesisConnectionProviderViewSectionId = (typeof XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_IDS)[number];
+
+export const XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_DETAIL_FOCUS = {
+  'connection-card': 'provider-view',
+  setup: 'provider-setup',
+  runtime: 'provider-routing',
+  'fallback-policy': 'provider-routing',
+  'credential-boundary': 'provider-profile-draft',
+  'profile-draft': 'provider-profile-draft',
+  'setup-plan': 'provider-setup-plan',
+} as const satisfies Record<XenesisConnectionProviderViewSectionId, XenesisConnectionCenterDetailFocus>;
+
+export function isXenesisConnectionProviderViewSectionId(
+  value: string,
+): value is XenesisConnectionProviderViewSectionId {
+  return (XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_IDS as readonly string[]).includes(value);
+}
+
+export function xenesisProviderViewSectionDetailFocus(
+  section: string | undefined,
+): XenesisConnectionCenterDetailFocus | null {
+  if (!section || !isXenesisConnectionProviderViewSectionId(section)) return null;
+  return XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_DETAIL_FOCUS[section];
+}
+
 export interface XenesisConnectionCenterOpenArgs extends XenesisConnectionSettingsAction {
   kind: 'settings';
   ensureVisible: boolean;
@@ -844,6 +879,18 @@ export interface XenesisConnectionProviderViewTemplate {
   openArgs: { provider: string };
   connectionCardId: string;
   internalViews: string[];
+  viewSections: XenesisConnectionProviderViewSection[];
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  safetyBoundaries: string[];
+}
+
+export interface XenesisConnectionProviderViewSection {
+  id: XenesisConnectionProviderViewSectionId;
+  label: string;
+  focusConnectionDetail: XenesisConnectionCenterDetailFocus;
+  openArgs: { provider: string; section: XenesisConnectionProviderViewSectionId; ensureVisible: true };
   readPaths: string[];
   controlPaths: string[];
   diagnostics: string[];
@@ -7432,6 +7479,87 @@ function providerRoutingTemplate(
   };
 }
 
+function providerViewSections(provider: string): XenesisConnectionProviderViewSection[] {
+  return [
+    {
+      id: 'connection-card',
+      label: 'Connection card',
+      focusConnectionDetail: 'provider-view',
+      openArgs: { provider, section: 'connection-card', ensureVisible: true },
+      readPaths: ['xd.xenesis.connections.status', 'xd.xenesis.providers.views.status'],
+      controlPaths: ['xd.xenesis.providers.views.open', 'xd.xenesis.connections.open'],
+      diagnostics: ['connection-card', 'cr-readback'],
+      safetyBoundaries: ['Provider connection card opens do not change provider settings or run provider prompts.'],
+    },
+    {
+      id: 'setup',
+      label: 'Provider setup',
+      focusConnectionDetail: 'provider-setup',
+      openArgs: { provider, section: 'setup', ensureVisible: true },
+      readPaths: ['xd.xenesis.providers.setup.status', 'xd.xenesis.connections.status'],
+      controlPaths: ['xd.xenesis.providers.views.open', 'xd.xenesis.providers.setup.open'],
+      diagnostics: ['provider-setup', 'credential-state'],
+      safetyBoundaries: ['Provider setup section opens do not change provider settings or credentials.'],
+    },
+    {
+      id: 'runtime',
+      label: 'Runtime route',
+      focusConnectionDetail: 'provider-routing',
+      openArgs: { provider, section: 'runtime', ensureVisible: true },
+      readPaths: ['xd.xenesis.providers.routing.status', 'xd.xenesis.providers.setup.status'],
+      controlPaths: ['xd.xenesis.providers.views.open', 'xd.xenesis.providers.routing.open'],
+      diagnostics: ['provider-runtime', 'work-log-provider'],
+      safetyBoundaries: ['Runtime section opens do not run provider prompts or switch runtime providers.'],
+    },
+    {
+      id: 'fallback-policy',
+      label: 'Fallback policy',
+      focusConnectionDetail: 'provider-routing',
+      openArgs: { provider, section: 'fallback-policy', ensureVisible: true },
+      readPaths: ['xd.xenesis.providers.routing.status', 'xd.xenesis.providers.setup.status'],
+      controlPaths: ['xd.xenesis.providers.views.open', 'xd.xenesis.providers.routing.open'],
+      diagnostics: ['fallback-policy', 'credential-pool'],
+      safetyBoundaries: ['Fallback policy section opens do not edit fallback chains or retry policy.'],
+    },
+    {
+      id: 'credential-boundary',
+      label: 'Credential boundary',
+      focusConnectionDetail: 'provider-profile-draft',
+      openArgs: { provider, section: 'credential-boundary', ensureVisible: true },
+      readPaths: ['xd.xenesis.providers.profileDrafts.status', 'xd.xenesis.providers.setup.status'],
+      controlPaths: ['xd.xenesis.providers.views.open', 'xd.xenesis.providers.profileDrafts.open'],
+      diagnostics: ['credential-state', 'local-cli-boundary'],
+      safetyBoundaries: [
+        'Credential boundary section opens never return API keys, bridge tokens, or local login secrets.',
+      ],
+    },
+    {
+      id: 'profile-draft',
+      label: 'Profile draft',
+      focusConnectionDetail: 'provider-profile-draft',
+      openArgs: { provider, section: 'profile-draft', ensureVisible: true },
+      readPaths: ['xd.xenesis.providers.profileDrafts.status', 'xd.xenesis.connections.status'],
+      controlPaths: [
+        'xd.xenesis.providers.views.open',
+        'xd.xenesis.providers.profileDrafts.open',
+        'xd.xenesis.providers.profileDrafts.request',
+      ],
+      diagnostics: ['provider-profile-draft', 'missing-required-field'],
+      safetyBoundaries: ['Profile draft section opens do not apply provider profile changes.'],
+    },
+    {
+      id: 'setup-plan',
+      label: 'Setup plan',
+      focusConnectionDetail: 'provider-setup-plan',
+      openArgs: { provider, section: 'setup-plan', ensureVisible: true },
+      readPaths: ['xd.xenesis.providers.setupPlans.status', 'xd.xenesis.connections.status'],
+      controlPaths: ['xd.xenesis.providers.views.open', 'xd.xenesis.providers.setupPlans.open'],
+      diagnostics: ['provider-setup-plan', 'guided-steps'],
+      safetyBoundaries: ['Setup plan section opens do not run provider setup actions.'],
+    },
+  ];
+}
+
 function providerViewTemplate(provider: string): XenesisConnectionProviderViewTemplate {
   return {
     viewType: 'provider-detail',
@@ -7441,6 +7569,7 @@ function providerViewTemplate(provider: string): XenesisConnectionProviderViewTe
     openArgs: { provider },
     connectionCardId: `provider-${provider}`,
     internalViews: ['connection-card', 'provider-setup', 'provider-runtime', 'fallback-policy', 'credential-boundary'],
+    viewSections: providerViewSections(provider),
     readPaths: [
       'xd.xenesis.connections.status',
       'xd.xenesis.providers.setup.status',

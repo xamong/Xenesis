@@ -94,6 +94,12 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     expectedVisibleText: 'Desk action completed',
   },
   {
+    id: 'provider-runtime-view-section-open',
+    prompt: 'codex app-server runtime view 열어줘',
+    expectedPath: 'xd.xenesis.providers.views.open',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
     id: 'provider-setup-status',
     prompt: 'AI provider setup 전체 상태 보여줘',
     expectedPath: 'xd.xenesis.providers.setup.status',

@@ -10,6 +10,7 @@ import {
   findXenesisNaturalCoreToolTarget,
   findXenesisNaturalMessengerViewSectionTarget,
   findXenesisNaturalProviderRuleAction,
+  findXenesisNaturalProviderViewSectionTarget,
   findXenesisNaturalToolViewSectionTarget,
   findXenesisNaturalViewTarget,
   XENESIS_NATURAL_AGENT_READBACK_RULES,
@@ -374,6 +375,19 @@ function xenesisProviderOpenActionFromNaturalText(value: string): XenesisNatural
 
   const provider = xenesisProviderFromNaturalText(value);
   if (!provider) return null;
+
+  if (matchesXenesisNaturalContextRules(value, [{ contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS }])) {
+    const section = findXenesisNaturalProviderViewSectionTarget(value);
+    if (section) {
+      return {
+        id: `natural-xenesis-provider-view-section-open-${provider.id}-${section.id}`,
+        path: 'xd.xenesis.providers.views.open',
+        args: XENESIS_NATURAL_DESK_ACTION_ARGS.providerViewSectionVisible(provider.id, section.id),
+        approved: false,
+        reason: `Open ${provider.label} ${section.label} provider view section from natural language request.`,
+      };
+    }
+  }
 
   return findXenesisNaturalProviderRuleAction(value, provider, XENESIS_NATURAL_PROVIDER_OPEN_RULES);
 }

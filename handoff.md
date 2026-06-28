@@ -7,6 +7,119 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current Provider View Sections Slice
+
+- Objective: make `xd.xenesis.providers.views.status/open` address AI provider
+  view internals down to section level, matching the existing tool and messenger
+  view section behavior. Provider setup, runtime, fallback policy, credential
+  boundary, profile draft, and setup-plan sections should be visible in the
+  read model and openable through CR args.
+- Rationale:
+  - The active goal explicitly calls out onboarding, initial setup, and AI
+    provider settings as first-class Desk-native surfaces.
+  - Tool and messenger views already support `section` args, but provider views
+    still open only the generic provider card.
+  - Section-level provider view opens improve CR-controllable navigation without
+    mutating provider settings, changing credentials, or running providers.
+- Scope boundary:
+  - Do not change provider selection, model selection, credentials, fallback
+    policy, local CLI selection, or runtime execution.
+  - Do not add a new UI subsystem; reuse existing Connection Center detail-focus
+    blocks.
+  - Keep provider view sections read/open metadata only.
+- External documentation handling:
+  - No external web browsing for this slice. Use repo-local manuals, Obsidian
+    notes, source, tests, CR audit, and local smoke.
+- Plan:
+  - `docs/superpowers/plans/2026-06-29-xenesis-provider-view-sections.md`
+- Touched files so far:
+  - `docs/superpowers/plans/2026-06-29-xenesis-provider-view-sections.md`
+  - `handoff.md`
+  - `src/shared/xenesisConnections.test.ts`
+  - `src/shared/xenesisConnections.ts`
+  - `src/shared/types.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/shared/xenesisConnectionCapabilities.test.ts`
+  - `src/main/index.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.test.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
+  - `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
+  - `src/shared/xenesisNaturalLanguageActionResolvers.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `scripts/xenesisNaturalDeskRoutingLiveSmoke.mjs`
+  - `scripts/xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
+  - `docs/capability-registry-audit.md`
+  - `docs/manual/09-onboarding-connections.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-provider-view-sections.md`
+- Verification plan:
+  - RED shared model test for `providerView.viewSections`.
+  - RED CR schema/main-dispatch test for provider view `section`.
+  - RED renderer formatter and natural routing tests for provider view sections.
+  - GREEN focused tests, then typecheck, CR audit, build, natural routing smoke,
+    and diff hygiene.
+- RED verification:
+  - `npx tsx --test src\shared\xenesisConnections.test.ts` failed 40/41
+    because active provider views did not expose `viewSections`.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` failed
+    because `xd.xenesis.providers.views.open` had no provider section enum and
+    main dispatch ignored section args.
+  - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`
+    failed 57/58 because `formatXenesisProviderViewSectionSummary` was absent.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    failed 44/45 because `codex app-server runtime view 열어줘` opened the
+    generic provider view without `section`.
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` failed
+    5/6 because the provider runtime section prompt was absent from the live
+    smoke prompt inventory.
+- Implemented:
+  - Added provider view section ids, metadata, type exports, section guards,
+    and detail-focus mapping.
+  - Added `section`, `viewSection`, and `providerViewSection` schema aliases to
+    provider view open and mapped supported sections in main CR dispatch.
+  - Added renderer summaries/open-arg rows for provider view sections.
+  - Added deterministic natural routing for provider view section opens.
+  - Updated manual and Obsidian working note.
+- Verification result so far:
+  - `npx biome format --write ...` formatted 16 changed source/smoke files;
+    Biome fixed 3 files.
+  - `npx tsx --test src\shared\xenesisConnections.test.ts` passed 41/41.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` passed
+    40/40.
+  - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`
+    passed 58/58.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed 45/45.
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` passed
+    6/6.
+  - First `npm run typecheck` failed because one renderer provider-view test
+    fixture lacked required `viewSections`; fixture was updated to match the
+    new shared type.
+  - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` passed
+    58/58 after the fixture update.
+  - `npm run typecheck` passed.
+  - `npx biome check ... --max-diagnostics 100` exited 0 for changed files,
+    with existing warnings/infos in `src/main/index.ts` and
+    `src/shared/deskBridgeCapabilities.ts`.
+  - `npm run docs:capabilities:audit` passed and wrote
+    `docs/capability-registry-audit.md` with 779 nodes and 689 coverage path
+    references.
+  - `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    reported all four counters as 0.
+  - `npm run build` passed.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 213/213, including
+    `provider-runtime-view-section-open`.
+  - `git diff --check` exited 0 with line-ending warnings only.
+  - `npm run lint` failed on existing repo lint debt: 1147 errors, 419
+    warnings, 92 infos.
+  - `npm run check:public-release` failed on existing public-release infra gap:
+    missing `.github/workflows/ci.yml`.
+- Next intended step:
+  - Continue the larger active goal in the next slice with another Desk-native
+    CR-first setup or connection gap.
+
 ## Current User Story Contracts Slice
 
 - Objective: add structured Hermes/OpenClaw-style story contracts to existing

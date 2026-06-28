@@ -22,6 +22,7 @@ import type {
   XenesisConnectionProviderRoutingTemplate,
   XenesisConnectionProviderSetupPlanTemplate,
   XenesisConnectionProviderSetupTemplate,
+  XenesisConnectionProviderViewSection,
   XenesisConnectionProviderViewTemplate,
   XenesisConnectionSection,
   XenesisConnectionSetupRequestReview,
@@ -196,6 +197,10 @@ export function formatXenesisProviderSetupPlanSummary(plan: XenesisConnectionPro
 
 export function formatXenesisProviderViewSummary(view: XenesisConnectionProviderViewTemplate): string {
   return `${view.primarySurface} / ${view.viewType}`;
+}
+
+export function formatXenesisProviderViewSectionSummary(section: XenesisConnectionProviderViewSection): string {
+  return `${section.id} / ${section.focusConnectionDetail} / ${section.readPaths.length} read path(s) / ${section.controlPaths.length} control path(s)`;
 }
 
 export function formatXenesisProviderRoutingSummary(routing: XenesisConnectionProviderRoutingTemplate): string {

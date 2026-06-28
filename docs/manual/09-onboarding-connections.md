@@ -247,6 +247,14 @@ focused on the active provider card. Provider views are setup/readiness surfaces
 only: they do not mutate provider selection, model selection, credentials,
 runtime routing, or fallback policy.
 
+`xd.xenesis.providers.views.open` also accepts `section`, `viewSection`, or
+`providerViewSection` for section-level focus. Supported provider view sections
+are `connection-card`, `setup`, `runtime`, `fallback-policy`,
+`credential-boundary`, `profile-draft`, and `setup-plan`. These section opens
+reuse existing Connection Center detail-focus blocks and remain read/open-only:
+they do not edit provider settings, store credentials, switch runtime routing,
+change fallback policy, or run provider prompts.
+
 The provider card also exposes a `providerRouting` read model. Use
 `xd.xenesis.providers.routing.status` to inspect route source, active
 provider/model, runtime provider/model, retry count, configured fallback

@@ -4372,6 +4372,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('codex app-server runtime view 열어줘').actions, [
+    {
+      id: 'natural-xenesis-provider-view-section-open-codex-app-server-runtime',
+      path: 'xd.xenesis.providers.views.open',
+      args: { provider: 'codex-app-server', section: 'runtime', ensureVisible: true },
+      approved: false,
+      reason: 'Open codex-app-server Runtime provider view section from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('codex app-server provider routing 열어줘').actions, [
     {
       id: 'natural-xenesis-provider-routing-open-codex-app-server',

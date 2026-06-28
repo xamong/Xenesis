@@ -109,6 +109,8 @@ test('xenesis connection detail focus propagates through main and renderer bridg
   assert.match(mainSource, /focusConnectionDetail\s*=\s*kind === 'settings'/);
   assert.match(mainSource, /focusConnectionDetail:\s*payload\.focusConnectionDetail/);
   assert.match(mainSource, /focusConnectionDetail,\s*\n\s*ensureVisible/);
+  assert.match(mainSource, /xenesisProviderViewSectionDetailFocus/);
+  assert.match(mainSource, /readCapabilityString\(body, \['section', 'viewSection', 'providerViewSection'\]\)/);
   assert.match(appSource, /focusConnectionDetail\?: unknown/);
   assert.match(appSource, /focusConnectionDetail:\s*payload\.focusConnectionDetail/);
   assert.match(appSource, /focusConnectionDetail:\s*payload\.focusConnectionDetail,\s*\n\s*ensureVisible/);
@@ -2157,6 +2159,9 @@ test('xenesis provider view capabilities are registered and dispatch to the adap
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
   assert.equal(schemaRequiredFields(openCapability).includes('provider'), false);
+  assert.equal(openSchemaProperties.section?.enum.includes('runtime'), true);
+  assert.equal(openSchemaProperties.section?.enum.includes('fallback-policy'), true);
+  assert.equal(openSchemaProperties.section?.enum.includes('credential-boundary'), true);
   for (const provider of XENESIS_CONNECTION_PROVIDER_IDS) {
     assert.equal(statusSchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
     assert.equal(openSchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
@@ -2187,7 +2192,7 @@ test('xenesis provider view capabilities are registered and dispatch to the adap
   });
   const openResult = await callDeskBridgeCapability(api, {
     path: 'xd.xenesis.providers.views.open',
-    args: { provider: 'codex-app-server' },
+    args: { provider: 'codex-app-server', section: 'runtime' },
     source: 'xenesis',
   });
 
@@ -2195,7 +2200,7 @@ test('xenesis provider view capabilities are registered and dispatch to the adap
   assert.equal(openResult.ok, true);
   assert.deepEqual(calls, [
     { method: 'status', args: { provider: 'codex-app-server' } },
-    { method: 'open', args: { provider: 'codex-app-server' } },
+    { method: 'open', args: { provider: 'codex-app-server', section: 'runtime' } },
   ]);
   assert.deepEqual(statusResult.result, {
     ok: true,

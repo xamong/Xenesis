@@ -8,6 +8,7 @@ import type {
   XenesisConnectionOnboardingGuidedStep,
   XenesisConnectionProviderProfileDraftReviewStep,
   XenesisConnectionProviderSetupPlanTemplate,
+  XenesisConnectionProviderViewSection,
   XenesisConnectionsStatus,
   XenesisConnectionToolSetupPlanTemplate,
   XenesisConnectionToolViewSection,
@@ -1782,6 +1783,7 @@ test('formatXenesisProviderViewSummary describes internal Desk provider view sur
       openArgs: { provider: 'codex-app-server' },
       connectionCardId: 'provider-codex-app-server',
       internalViews: ['connection-card', 'provider-setup', 'provider-runtime'],
+      viewSections: [],
       readPaths: ['xd.xenesis.connections.status'],
       controlPaths: ['xd.xenesis.providers.views.open'],
       diagnostics: ['provider-footer'],
@@ -1844,6 +1846,24 @@ test('formatXenesisMessengerViewSectionSummary describes messenger view section 
   assert.equal(
     xenesisConnectionCenter.formatXenesisMessengerViewSectionSummary(section),
     'routing / channel-routing / 1 read path(s) / 1 control path(s)',
+  );
+});
+
+test('formatXenesisProviderViewSectionSummary describes provider view section focus and paths', () => {
+  const section: XenesisConnectionProviderViewSection = {
+    id: 'runtime',
+    label: 'Runtime route',
+    focusConnectionDetail: 'provider-routing',
+    openArgs: { provider: 'codex-app-server', section: 'runtime', ensureVisible: true },
+    readPaths: ['xd.xenesis.providers.routing.status'],
+    controlPaths: ['xd.xenesis.providers.views.open'],
+    diagnostics: ['provider-runtime'],
+    safetyBoundaries: ['Runtime section opens do not run provider prompts or switch runtime providers.'],
+  };
+  assert.equal(typeof xenesisConnectionCenter.formatXenesisProviderViewSectionSummary, 'function');
+  assert.equal(
+    xenesisConnectionCenter.formatXenesisProviderViewSectionSummary(section),
+    'runtime / provider-routing / 1 read path(s) / 1 control path(s)',
   );
 });
 
