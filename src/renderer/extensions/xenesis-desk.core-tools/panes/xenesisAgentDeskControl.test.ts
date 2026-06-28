@@ -371,7 +371,8 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /XENESIS_NATURAL_SAFETY_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS/);
-  assert.match(naturalPlannerSource, /XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_RULES/);
+  assert.match(catalogSource, /XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_RULES/);
+  assert.match(naturalPlannerSource, /hasXenesisNaturalProviderProfileContext/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /hasAny\(value, \[\s*'connector'/);
   assert.doesNotMatch(source, /hasAny\(value, \[\s*'oauth'/);
@@ -523,8 +524,6 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     true,
   );
   for (const localNaturalPlannerFunction of [
-    'function hasExplicitOpenIntent',
-    'function hasActionIntent',
     'function naturalCatalogRuleFromNaturalText',
     'function naturalCatalogRuleActionFromNaturalText',
     'function naturalCatalogRulePlanFromNaturalText',
@@ -541,6 +540,34 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   ]) {
     assert.doesNotMatch(source, new RegExp(localNaturalPlannerFunction));
     assert.match(naturalPlannerSource, new RegExp(localNaturalPlannerFunction));
+  }
+  for (const localNaturalPredicate of [
+    'function hasExplicitOpenIntent',
+    'function hasActionIntent',
+    'function hasXenesisOnboardingContext',
+    'function hasXenesisConnectionReadbackIntent',
+    'function hasExternalToolCatalogContext',
+    'function hasExternalMessengerCatalogContext',
+    'function hasXenesisAggregateCatalogContext',
+    'function hasXenesisMessengerProfileDraftCatalogContext',
+    'function hasXenesisConnectionReviewRequestIntent',
+    'function hasXenesisProviderProfileContext',
+  ]) {
+    assert.doesNotMatch(naturalPlannerSource, new RegExp(localNaturalPredicate));
+  }
+  for (const sharedNaturalPredicate of [
+    'hasXenesisNaturalExplicitOpenIntent',
+    'hasXenesisNaturalActionIntent',
+    'hasXenesisNaturalOnboardingContext',
+    'hasXenesisNaturalConnectionReadbackIntent',
+    'hasXenesisNaturalExternalToolCatalogContext',
+    'hasXenesisNaturalExternalMessengerCatalogContext',
+    'hasXenesisNaturalAggregateCatalogContext',
+    'hasXenesisNaturalMessengerProfileDraftCatalogContext',
+    'hasXenesisNaturalConnectionReviewRequestIntent',
+    'hasXenesisNaturalProviderProfileContext',
+  ]) {
+    assert.match(catalogSource, new RegExp(`export function ${sharedNaturalPredicate}`));
   }
   assert.match(naturalPlannerSource, /export function planXenesisDeskNaturalLanguageActions/);
   for (const sharedPlannerOwnedRule of [
@@ -773,7 +800,9 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.deepEqual(XENESIS_DESK_ACTION_RESULT_SUMMARY_KEYS.fileList, ['openFiles', 'files', 'items', 'entries']);
   assert.equal(XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT.fileList(1, 'README.md'), '1 file, first: README.md');
   assert.equal(XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT.workflowMetric(2, 'passed'), '2 passed');
-  assert.match(naturalPlannerSource, /XENESIS_NATURAL_INTENT_PATTERNS/);
+  assert.match(catalogSource, /XENESIS_NATURAL_INTENT_PATTERNS/);
+  assert.match(naturalPlannerSource, /hasXenesisNaturalActionIntent/);
+  assert.match(naturalPlannerSource, /hasXenesisNaturalExplicitOpenIntent/);
   assert.equal(XENESIS_NATURAL_ACTION_INTENT_RULES[0]?.contextWords.includes('authorize'), true);
   assert.equal(XENESIS_NATURAL_EXPLICIT_OPEN_INTENT_RULES[0]?.contextWords.includes('포커스'), true);
   assert.equal(XENESIS_NATURAL_OPEN_COMMAND_RULES[0]?.contextWords.includes('open'), true);
@@ -812,17 +841,22 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'connectionCenterOpen',
   ]);
   assert.equal(XENESIS_NATURAL_CONNECTION_AGGREGATE_MATCH_RULES.onboarding[0]?.contextWords.includes('온보딩'), true);
-  assert.match(naturalPlannerSource, /XENESIS_NATURAL_ACTION_INTENT_RULES/);
-  assert.match(naturalPlannerSource, /XENESIS_NATURAL_EXPLICIT_OPEN_INTENT_RULES/);
   assert.match(naturalPlannerSource, /XENESIS_NATURAL_OPEN_COMMAND_RULES/);
   assert.match(naturalPlannerSource, /XENESIS_NATURAL_OPEN_OR_SHOW_RULES/);
   assert.match(naturalPlannerSource, /XENESIS_NATURAL_VIEW_OPEN_COMMAND_RULES/);
   assert.match(naturalPlannerSource, /XENESIS_NATURAL_GUIDE_FILE_OPEN_RULES/);
-  assert.match(naturalPlannerSource, /XENESIS_NATURAL_CONNECTION_READBACK_INTENT_RULES/);
-  assert.match(naturalPlannerSource, /XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_RULES/);
-  assert.match(naturalPlannerSource, /XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_RULES/);
-  assert.match(naturalPlannerSource, /XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_RULES/);
-  assert.match(naturalPlannerSource, /XENESIS_NATURAL_CONNECTION_REVIEW_REQUEST_INTENT_RULES/);
+  for (const catalogOwnedNaturalPredicateRule of [
+    'XENESIS_NATURAL_ACTION_INTENT_RULES',
+    'XENESIS_NATURAL_EXPLICIT_OPEN_INTENT_RULES',
+    'XENESIS_NATURAL_CONNECTION_READBACK_INTENT_RULES',
+    'XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_RULES',
+    'XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_RULES',
+    'XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_RULES',
+    'XENESIS_NATURAL_CONNECTION_REVIEW_REQUEST_INTENT_RULES',
+  ]) {
+    assert.doesNotMatch(naturalPlannerSource, new RegExp(catalogOwnedNaturalPredicateRule));
+    assert.match(catalogSource, new RegExp(catalogOwnedNaturalPredicateRule));
+  }
   assert.doesNotMatch(source, /XENESIS_NATURAL_CONNECTION_AGGREGATE_MATCH_RULES/);
   for (const movedContextWordImport of [
     'XENESIS_NATURAL_ACTION_INTENT_WORDS',
@@ -1778,8 +1812,10 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     XENESIS_NATURAL_WINDOW_SIZE_PRESET_TARGETS.map((target) => target.id),
     ['uhd', 'qhd', 'fhd', 'hd'],
   );
-  assert.match(naturalPlannerSource, /XENESIS_NATURAL_ACTION_INTENT_RULES/);
-  assert.match(naturalPlannerSource, /XENESIS_NATURAL_EXPLICIT_OPEN_INTENT_RULES/);
+  assert.match(catalogSource, /XENESIS_NATURAL_ACTION_INTENT_RULES/);
+  assert.match(catalogSource, /XENESIS_NATURAL_EXPLICIT_OPEN_INTENT_RULES/);
+  assert.match(naturalPlannerSource, /hasXenesisNaturalActionIntent/);
+  assert.match(naturalPlannerSource, /hasXenesisNaturalExplicitOpenIntent/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_ACTION_INTENT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_EXPLICIT_OPEN_WORDS/);
   assert.doesNotMatch(source, /return hasAny\(value, \[\s*'열어',\s*'켜줘'[\s\S]*?'terminal',\s*'pane',\s*\]\);/);

@@ -4811,6 +4811,45 @@
 - External documentation handling: no browsing. Used cached Obsidian/source and
   local tests only.
 
+## Natural Intent Predicate Ownership Slice
+
+- Continued the larger slice-cycle hardcoding cleanup by moving remaining
+  natural-language intent/context predicate ownership out of
+  `src/shared/xenesisNaturalLanguagePlanner.ts` and into
+  `src/shared/xenesisNaturalLanguageCatalog.ts`.
+- Added shared catalog predicate helpers for:
+  - explicit open intent.
+  - action intent.
+  - onboarding context.
+  - connection readback intent.
+  - external tool and external messenger catalog context.
+  - aggregate catalog context.
+  - messenger profile draft catalog context.
+  - connection review request intent.
+  - provider profile context.
+- Kept the planner responsible for route ordering and action construction only;
+  it now calls shared semantic predicates instead of owning local `has...Intent`
+  and `has...Context` helpers.
+- Strengthened source-ownership guards in
+  `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  so moved predicate helpers and predicate rule constants cannot drift back into
+  the planner.
+- Verification:
+  - Focused RED failed 37/38 as expected before the shared catalog predicates
+    existed.
+  - Focused GREEN passed 38/38 after the predicate move.
+  - Scoped Biome format/check passed for the touched shared and renderer test
+    files.
+  - Focused shared/renderer coverage passed 74/74.
+  - `npm run typecheck` passed.
+  - `npm run build` passed, including typecheck.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 144/144.
+  - `git diff --check` passed with LF-to-CRLF working-copy warnings only.
+- CR audit was skipped because this slice does not change CR schemas,
+  dispatchers, generated coverage maps, or capability behavior.
+- External documentation handling: no browsing. Used cached Obsidian/source and
+  local tests only.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

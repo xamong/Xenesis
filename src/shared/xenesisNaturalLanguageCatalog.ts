@@ -1788,6 +1788,52 @@ export const XENESIS_NATURAL_CONNECTION_AGGREGATE_MATCH_RULES = {
   connectionCenterOpen: XENESIS_NATURAL_CONNECTION_CENTER_OPEN_CONTEXT_RULES,
 } as const satisfies XenesisNaturalConnectionAggregateMatchRules;
 
+export function hasXenesisNaturalExplicitOpenIntent(value: string): boolean {
+  return (
+    matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_EXPLICIT_OPEN_INTENT_RULES) ||
+    XENESIS_NATURAL_INTENT_PATTERNS.explicitOpenEnglish.test(value)
+  );
+}
+
+export function hasXenesisNaturalActionIntent(value: string): boolean {
+  return matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_ACTION_INTENT_RULES);
+}
+
+export function hasXenesisNaturalOnboardingContext(value: string): boolean {
+  return (
+    findXenesisNaturalContextRule(value, XENESIS_NATURAL_ONBOARDING_OPEN_RULES) !== null ||
+    findXenesisNaturalContextRule(value, XENESIS_NATURAL_ONBOARDING_STATUS_RULES) !== null
+  );
+}
+
+export function hasXenesisNaturalConnectionReadbackIntent(value: string): boolean {
+  return matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_CONNECTION_READBACK_INTENT_RULES);
+}
+
+export function hasXenesisNaturalExternalToolCatalogContext(value: string): boolean {
+  return matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_RULES);
+}
+
+export function hasXenesisNaturalExternalMessengerCatalogContext(value: string): boolean {
+  return matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_RULES);
+}
+
+export function hasXenesisNaturalAggregateCatalogContext(value: string): boolean {
+  return matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_RULES);
+}
+
+export function hasXenesisNaturalMessengerProfileDraftCatalogContext(value: string): boolean {
+  return matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_MESSENGER_PROFILE_DRAFT_CATALOG_CONTEXT_RULES);
+}
+
+export function hasXenesisNaturalConnectionReviewRequestIntent(value: string): boolean {
+  return matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_CONNECTION_REVIEW_REQUEST_INTENT_RULES);
+}
+
+export function hasXenesisNaturalProviderProfileContext(value: string): boolean {
+  return matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_RULES);
+}
+
 export const XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES = [
   'xd.xenesis.connections',
   'xd.xenesis.onboarding',
