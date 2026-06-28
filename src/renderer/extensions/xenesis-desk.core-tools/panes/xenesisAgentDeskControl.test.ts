@@ -21,6 +21,7 @@ import {
   XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES,
   XENESIS_DESK_CONTROL_PROMPT_HINT_CONNECTION_CENTER_DISCOVERY_PREFIX,
   XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS,
+  XENESIS_NATURAL_ACTION_INTENT_RULES,
   XENESIS_NATURAL_ACTION_INTENT_WORDS,
   XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS,
   XENESIS_NATURAL_ACTIVE_DOCK_CLOSE_RULES,
@@ -36,10 +37,14 @@ import {
   XENESIS_NATURAL_BROAD_RUNTIME_STATUS_WORDS,
   XENESIS_NATURAL_CANCEL_CONTEXT_WORDS,
   XENESIS_NATURAL_CAPTURE_CONTEXT_WORDS,
+  XENESIS_NATURAL_CONNECTION_AGGREGATE_MATCH_RULES,
   XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_RULES,
   XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_RULES,
+  XENESIS_NATURAL_CONNECTION_CONTEXT_RULES,
   XENESIS_NATURAL_CONNECTION_DIAGNOSTIC_CONTEXT_WORDS,
+  XENESIS_NATURAL_CONNECTION_READBACK_INTENT_RULES,
   XENESIS_NATURAL_CONNECTION_READBACK_INTENT_WORDS,
+  XENESIS_NATURAL_CONNECTION_REVIEW_REQUEST_INTENT_RULES,
   XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CONTEXT_WORDS,
   XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES,
@@ -68,12 +73,15 @@ import {
   XENESIS_NATURAL_DOCK_WINDOW_MERGE_RULES,
   XENESIS_NATURAL_DOCK_WINDOW_STATE_TARGETS,
   XENESIS_NATURAL_DRAFT_CONTEXT_WORDS,
+  XENESIS_NATURAL_EXPLICIT_OPEN_INTENT_RULES,
   XENESIS_NATURAL_EXPLICIT_OPEN_WORDS,
   XENESIS_NATURAL_EXPLORER_CONTEXT_WORDS,
   XENESIS_NATURAL_EXPLORER_FILTER_RULES,
   XENESIS_NATURAL_EXPLORER_NAVIGATE_RULES,
   XENESIS_NATURAL_EXPLORER_SIMPLE_RULES,
+  XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_RULES,
   XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_WORDS,
+  XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_RULES,
   XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_WORDS,
   XENESIS_NATURAL_FILE_CONTEXT_WORDS,
   XENESIS_NATURAL_GATEWAY_ACTION_RULES,
@@ -83,6 +91,7 @@ import {
   XENESIS_NATURAL_GENERIC_OPEN_WORDS,
   XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_GUIDE_CONTEXT_WORDS,
+  XENESIS_NATURAL_GUIDE_FILE_OPEN_RULES,
   XENESIS_NATURAL_GUIDE_FILE_OPEN_WORDS,
   XENESIS_NATURAL_GUIDE_OPEN_RULES,
   XENESIS_NATURAL_GUIDE_STATUS_RULES,
@@ -105,6 +114,8 @@ import {
   XENESIS_NATURAL_ONBOARDING_OPEN_RULES,
   XENESIS_NATURAL_ONBOARDING_STATUS_RULES,
   XENESIS_NATURAL_ONBOARDING_STEP_TARGETS,
+  XENESIS_NATURAL_OPEN_COMMAND_RULES,
+  XENESIS_NATURAL_OPEN_OR_SHOW_RULES,
   XENESIS_NATURAL_OPEN_OR_SHOW_WORDS,
   XENESIS_NATURAL_PANE_CONTEXT_WORDS,
   XENESIS_NATURAL_PLACEMENT_TARGETS,
@@ -117,6 +128,7 @@ import {
   XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_RULES,
   XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_PROVIDER_OPEN_RULES,
+  XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_RULES,
   XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_WORDS,
   XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_PROVIDER_STATUS_RULES,
@@ -148,6 +160,7 @@ import {
   XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_RULES,
   XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_RULES,
   XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
+  XENESIS_NATURAL_VIEW_OPEN_COMMAND_RULES,
   XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
   XENESIS_NATURAL_WINDOW_SIZE_PRESET_RULES,
   XENESIS_NATURAL_WINDOW_SIZE_PRESET_TARGETS,
@@ -178,13 +191,15 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /Use `xd\.xenesis\.providers\.setup\.status`, `xd\.xenesis\.providers\.setup\.open`/);
   assert.doesNotMatch(source, /Use `xd\.xenesis\.tools\.setup\.status`, `xd\.xenesis\.tools\.setup\.open`/);
   assert.doesNotMatch(source, /Use `xd\.xenesis\.channels\.routing\.status`, `xd\.xenesis\.channels\.routing\.open`/);
-  assert.match(source, /XENESIS_NATURAL_GUIDE_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_GUIDE_FILE_OPEN_WORDS/);
+  assert.match(source, /XENESIS_NATURAL_CONNECTION_AGGREGATE_MATCH_RULES/);
+  assert.match(source, /XENESIS_NATURAL_GUIDE_FILE_OPEN_RULES/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_GUIDE_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_GUIDE_FILE_OPEN_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_CONNECTION_READBACK_INTENT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_CONNECTION_READBACK_INTENT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /hasAny\(value, \[\s*'온보딩'/);
   assert.doesNotMatch(source, /hasAny\(value, \[\s*'external tool'/);
   assert.deepEqual(XENESIS_NATURAL_GUIDE_CONTEXT_WORDS, ['가이드', 'guide', 'guides', '문서', 'playbook', '플레이북']);
@@ -194,9 +209,9 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.equal(XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_WORDS.includes('외부 도구'), true);
   assert.equal(XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_WORDS.includes('channel catalogs'), true);
   assert.equal(XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_WORDS.includes('catalog'), true);
-  assert.match(source, /XENESIS_NATURAL_CONNECTION_DIAGNOSTIC_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_CONNECTION_DIAGNOSTIC_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_DRAFT_CONTEXT_WORDS/);
@@ -210,7 +225,8 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /XENESIS_NATURAL_SAFETY_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_WORDS/);
+  assert.match(source, /XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_RULES/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /hasAny\(value, \[\s*'connector'/);
   assert.doesNotMatch(source, /hasAny\(value, \[\s*'oauth'/);
   assert.doesNotMatch(source, /hasAny\(value, \[\s*'user story'/);
@@ -258,7 +274,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /XENESIS_NATURAL_SESSION_RESET_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_WORKSPACE_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_WORKSPACE_SET_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_OPEN_OR_SHOW_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_OPEN_OR_SHOW_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_RUNTIME_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /hasAny\(value, \[\s*'local cli'/);
   assert.doesNotMatch(source, /hasAny\(value, \[\s*'gateway'/);
@@ -296,7 +312,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /XENESIS_NATURAL_CORE_CAPABILITY_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_CAPTURE_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_GENERIC_LIST_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_GENERIC_OPEN_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_GENERIC_OPEN_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_FILE_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_FILE_LIST_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_FILE_READ_CONTEXT_WORDS/);
@@ -452,6 +468,82 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.equal(XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT.fileList(1, 'README.md'), '1 file, first: README.md');
   assert.equal(XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT.workflowMetric(2, 'passed'), '2 passed');
   assert.match(source, /XENESIS_NATURAL_INTENT_PATTERNS/);
+  assert.equal(XENESIS_NATURAL_ACTION_INTENT_RULES[0]?.contextWords.includes('authorize'), true);
+  assert.equal(XENESIS_NATURAL_EXPLICIT_OPEN_INTENT_RULES[0]?.contextWords.includes('포커스'), true);
+  assert.equal(XENESIS_NATURAL_OPEN_COMMAND_RULES[0]?.contextWords.includes('open'), true);
+  assert.equal(XENESIS_NATURAL_OPEN_OR_SHOW_RULES[0]?.contextWords.includes('보여'), true);
+  assert.equal(XENESIS_NATURAL_VIEW_OPEN_COMMAND_RULES[0]?.contextWords.includes('start'), true);
+  assert.equal(XENESIS_NATURAL_GUIDE_FILE_OPEN_RULES[0]?.contextWords.includes('repo-local'), true);
+  assert.equal(XENESIS_NATURAL_CONNECTION_READBACK_INTENT_RULES[0]?.contextWords.includes('diagnostics'), true);
+  assert.equal(XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_RULES[0]?.contextWords.includes('외부 도구'), true);
+  assert.equal(
+    XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_RULES[0]?.contextWords.includes('channel catalogs'),
+    true,
+  );
+  assert.equal(XENESIS_NATURAL_CONNECTION_CONTEXT_RULES[0]?.contextWords.includes('connection center'), true);
+  assert.equal(XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_RULES[0]?.contextWords.includes('provider profile'), true);
+  assert.deepEqual(
+    XENESIS_NATURAL_CONNECTION_REVIEW_REQUEST_INTENT_RULES.map((rule) => ({
+      requiredGroups: rule.requiredContextWordGroups?.length ?? 0,
+      blocked: rule.blockedContextWords?.includes('status') === true,
+    })),
+    [
+      { requiredGroups: 1, blocked: true },
+      { requiredGroups: 1, blocked: true },
+      { requiredGroups: 1, blocked: true },
+      { requiredGroups: 1, blocked: true },
+      { requiredGroups: 1, blocked: true },
+      { requiredGroups: 1, blocked: true },
+    ],
+  );
+  assert.deepEqual(Object.keys(XENESIS_NATURAL_CONNECTION_AGGREGATE_MATCH_RULES), [
+    'guideCatalog',
+    'diagnosticsCatalog',
+    'setupRequestCatalog',
+    'onboarding',
+    'guideContext',
+    'connectionContext',
+    'connectionCenterOpen',
+  ]);
+  assert.equal(XENESIS_NATURAL_CONNECTION_AGGREGATE_MATCH_RULES.onboarding[0]?.contextWords.includes('온보딩'), true);
+  assert.match(source, /XENESIS_NATURAL_ACTION_INTENT_RULES/);
+  assert.match(source, /XENESIS_NATURAL_EXPLICIT_OPEN_INTENT_RULES/);
+  assert.match(source, /XENESIS_NATURAL_OPEN_COMMAND_RULES/);
+  assert.match(source, /XENESIS_NATURAL_OPEN_OR_SHOW_RULES/);
+  assert.match(source, /XENESIS_NATURAL_VIEW_OPEN_COMMAND_RULES/);
+  assert.match(source, /XENESIS_NATURAL_GUIDE_FILE_OPEN_RULES/);
+  assert.match(source, /XENESIS_NATURAL_CONNECTION_READBACK_INTENT_RULES/);
+  assert.match(source, /XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_RULES/);
+  assert.match(source, /XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_RULES/);
+  assert.match(source, /XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_RULES/);
+  assert.match(source, /XENESIS_NATURAL_CONNECTION_REVIEW_REQUEST_INTENT_RULES/);
+  assert.match(source, /XENESIS_NATURAL_CONNECTION_AGGREGATE_MATCH_RULES/);
+  for (const movedContextWordImport of [
+    'XENESIS_NATURAL_ACTION_INTENT_WORDS',
+    'XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_WORDS',
+    'XENESIS_NATURAL_CHANNEL_PROFILE_CONTEXT_WORDS',
+    'XENESIS_NATURAL_CONNECTION_CENTER_OPEN_CONTEXT_WORDS',
+    'XENESIS_NATURAL_CONNECTION_CONTEXT_WORDS',
+    'XENESIS_NATURAL_CONNECTION_DIAGNOSTIC_CONTEXT_WORDS',
+    'XENESIS_NATURAL_CONNECTION_READBACK_INTENT_WORDS',
+    'XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CONTEXT_WORDS',
+    'XENESIS_NATURAL_EXPLICIT_OPEN_WORDS',
+    'XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_WORDS',
+    'XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_WORDS',
+    'XENESIS_NATURAL_GENERIC_OPEN_WORDS',
+    'XENESIS_NATURAL_GUIDE_FILE_OPEN_WORDS',
+    'XENESIS_NATURAL_OPEN_COMMAND_WORDS',
+    'XENESIS_NATURAL_OPEN_OR_SHOW_WORDS',
+    'XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS',
+    'XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_WORDS',
+    'XENESIS_NATURAL_REVIEW_REQUEST_CONTEXT_WORDS',
+    'XENESIS_NATURAL_REVIEW_REQUEST_INTENT_WORDS',
+    'XENESIS_NATURAL_REVIEW_REQUEST_TARGET_WORDS',
+    'XENESIS_NATURAL_SETUP_IMPERATIVE_WORDS',
+    'XENESIS_NATURAL_VIEW_OPEN_COMMAND_WORDS',
+  ]) {
+    assert.doesNotMatch(source, new RegExp(movedContextWordImport));
+  }
   assert.match(source, /XENESIS_NATURAL_PROVIDER_AUTO_TARGET/);
   assert.match(source, /XENESIS_NATURAL_CORE_TOOL_OPEN_REASON/);
   assert.doesNotMatch(source, /\/\\b\(open\|focus\)\\b\//);
@@ -1326,8 +1418,10 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     XENESIS_NATURAL_WINDOW_SIZE_PRESET_TARGETS.map((target) => target.id),
     ['uhd', 'qhd', 'fhd', 'hd'],
   );
-  assert.match(source, /XENESIS_NATURAL_ACTION_INTENT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_EXPLICIT_OPEN_WORDS/);
+  assert.match(source, /XENESIS_NATURAL_ACTION_INTENT_RULES/);
+  assert.match(source, /XENESIS_NATURAL_EXPLICIT_OPEN_INTENT_RULES/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_ACTION_INTENT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_EXPLICIT_OPEN_WORDS/);
   assert.doesNotMatch(source, /return hasAny\(value, \[\s*'열어',\s*'켜줘'[\s\S]*?'terminal',\s*'pane',\s*\]\);/);
   assert.deepEqual(XENESIS_NATURAL_EXPLICIT_OPEN_WORDS, ['열어', '켜줘', '띄워', '포커스', '집중']);
   assert.equal(XENESIS_NATURAL_ACTION_INTENT_WORDS.includes('authorize'), true);

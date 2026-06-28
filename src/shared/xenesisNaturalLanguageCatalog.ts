@@ -114,10 +114,13 @@ export type XenesisNaturalOnboardingActionRule =
   | XenesisNaturalOnboardingCenterActionRule
   | XenesisNaturalOnboardingStepActionRule;
 
-export interface XenesisNaturalCatalogActionRule {
+export interface XenesisNaturalContextRule {
   contextWords: readonly string[];
   requiredContextWordGroups?: readonly (readonly string[])[];
   blockedContextWords?: readonly string[];
+}
+
+export interface XenesisNaturalCatalogActionRule extends XenesisNaturalContextRule {
   action: XenesisNaturalDeskActionDescriptor;
   fallback?: boolean;
   visibleText?: string;
@@ -135,6 +138,11 @@ export type XenesisNaturalConnectionAggregateRuleMatchKind =
   | 'guideContext'
   | 'connectionContext'
   | 'connectionCenterOpen';
+
+export type XenesisNaturalConnectionAggregateMatchRules = Record<
+  XenesisNaturalConnectionAggregateRuleMatchKind,
+  readonly XenesisNaturalContextRule[]
+>;
 
 export interface XenesisNaturalConnectionAggregateStatusRule {
   stage: XenesisNaturalConnectionAggregateStatusRuleStage;
@@ -1140,6 +1148,183 @@ export const XENESIS_NATURAL_VIEW_OPEN_COMMAND_WORDS = [
   'show',
   'start',
 ] as const;
+
+export const XENESIS_NATURAL_ACTION_INTENT_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_ACTION_INTENT_WORDS,
+  },
+] as const satisfies readonly XenesisNaturalContextRule[];
+
+export const XENESIS_NATURAL_EXPLICIT_OPEN_INTENT_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_EXPLICIT_OPEN_WORDS,
+  },
+] as const satisfies readonly XenesisNaturalContextRule[];
+
+export const XENESIS_NATURAL_OPEN_COMMAND_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_OPEN_COMMAND_WORDS,
+  },
+] as const satisfies readonly XenesisNaturalContextRule[];
+
+export const XENESIS_NATURAL_OPEN_OR_SHOW_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_OPEN_OR_SHOW_WORDS,
+  },
+] as const satisfies readonly XenesisNaturalContextRule[];
+
+export const XENESIS_NATURAL_VIEW_OPEN_COMMAND_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_VIEW_OPEN_COMMAND_WORDS,
+  },
+] as const satisfies readonly XenesisNaturalContextRule[];
+
+export const XENESIS_NATURAL_GUIDE_FILE_OPEN_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_GUIDE_FILE_OPEN_WORDS,
+  },
+] as const satisfies readonly XenesisNaturalContextRule[];
+
+export const XENESIS_NATURAL_ONBOARDING_CONTEXT_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS,
+  },
+] as const satisfies readonly XenesisNaturalContextRule[];
+
+export const XENESIS_NATURAL_CONNECTION_READBACK_INTENT_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_CONNECTION_READBACK_INTENT_WORDS,
+  },
+] as const satisfies readonly XenesisNaturalContextRule[];
+
+export const XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_WORDS,
+  },
+] as const satisfies readonly XenesisNaturalContextRule[];
+
+export const XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_WORDS,
+  },
+] as const satisfies readonly XenesisNaturalContextRule[];
+
+export const XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_WORDS,
+  },
+] as const satisfies readonly XenesisNaturalContextRule[];
+
+export const XENESIS_NATURAL_GUIDE_CATALOG_CONTEXT_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_GUIDE_CONTEXT_WORDS,
+    requiredContextWordGroups: [XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_WORDS],
+  },
+] as const satisfies readonly XenesisNaturalContextRule[];
+
+export const XENESIS_NATURAL_CONNECTION_DIAGNOSTICS_CATALOG_CONTEXT_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_WORDS,
+    requiredContextWordGroups: [
+      XENESIS_NATURAL_CONNECTION_DIAGNOSTIC_CONTEXT_WORDS,
+      XENESIS_NATURAL_CONNECTION_CONTEXT_WORDS,
+    ],
+  },
+] as const satisfies readonly XenesisNaturalContextRule[];
+
+export const XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CATALOG_CONTEXT_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_WORDS,
+    requiredContextWordGroups: [XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CONTEXT_WORDS],
+  },
+] as const satisfies readonly XenesisNaturalContextRule[];
+
+export const XENESIS_NATURAL_MESSENGER_PROFILE_DRAFT_CATALOG_CONTEXT_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_WORDS,
+    requiredContextWordGroups: [
+      XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
+      XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_WORDS,
+    ],
+  },
+  {
+    contextWords: XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_WORDS,
+    requiredContextWordGroups: [
+      XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
+      XENESIS_NATURAL_CHANNEL_PROFILE_CONTEXT_WORDS,
+    ],
+  },
+] as const satisfies readonly XenesisNaturalContextRule[];
+
+export const XENESIS_NATURAL_CONNECTION_CONTEXT_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_CONNECTION_CONTEXT_WORDS,
+  },
+] as const satisfies readonly XenesisNaturalContextRule[];
+
+export const XENESIS_NATURAL_CONNECTION_CENTER_OPEN_CONTEXT_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_CONNECTION_CENTER_OPEN_CONTEXT_WORDS,
+  },
+] as const satisfies readonly XenesisNaturalContextRule[];
+
+export const XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_WORDS,
+  },
+] as const satisfies readonly XenesisNaturalContextRule[];
+
+const XENESIS_NATURAL_REVIEW_REQUEST_BLOCKED_WORDS = [
+  ...XENESIS_NATURAL_GENERIC_OPEN_WORDS,
+  ...XENESIS_NATURAL_CONNECTION_READBACK_INTENT_WORDS,
+] as const;
+
+export const XENESIS_NATURAL_CONNECTION_REVIEW_REQUEST_INTENT_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_REVIEW_REQUEST_INTENT_WORDS,
+    requiredContextWordGroups: [XENESIS_NATURAL_REVIEW_REQUEST_CONTEXT_WORDS],
+    blockedContextWords: XENESIS_NATURAL_REVIEW_REQUEST_BLOCKED_WORDS,
+  },
+  {
+    contextWords: XENESIS_NATURAL_REVIEW_REQUEST_INTENT_WORDS,
+    requiredContextWordGroups: [XENESIS_NATURAL_CONNECTION_CONTEXT_WORDS],
+    blockedContextWords: XENESIS_NATURAL_REVIEW_REQUEST_BLOCKED_WORDS,
+  },
+  {
+    contextWords: XENESIS_NATURAL_REVIEW_REQUEST_INTENT_WORDS,
+    requiredContextWordGroups: [XENESIS_NATURAL_REVIEW_REQUEST_TARGET_WORDS],
+    blockedContextWords: XENESIS_NATURAL_REVIEW_REQUEST_BLOCKED_WORDS,
+  },
+  {
+    contextWords: XENESIS_NATURAL_SETUP_IMPERATIVE_WORDS,
+    requiredContextWordGroups: [XENESIS_NATURAL_REVIEW_REQUEST_CONTEXT_WORDS],
+    blockedContextWords: XENESIS_NATURAL_REVIEW_REQUEST_BLOCKED_WORDS,
+  },
+  {
+    contextWords: XENESIS_NATURAL_SETUP_IMPERATIVE_WORDS,
+    requiredContextWordGroups: [XENESIS_NATURAL_CONNECTION_CONTEXT_WORDS],
+    blockedContextWords: XENESIS_NATURAL_REVIEW_REQUEST_BLOCKED_WORDS,
+  },
+  {
+    contextWords: XENESIS_NATURAL_SETUP_IMPERATIVE_WORDS,
+    requiredContextWordGroups: [XENESIS_NATURAL_REVIEW_REQUEST_TARGET_WORDS],
+    blockedContextWords: XENESIS_NATURAL_REVIEW_REQUEST_BLOCKED_WORDS,
+  },
+] as const satisfies readonly XenesisNaturalContextRule[];
+
+export const XENESIS_NATURAL_CONNECTION_AGGREGATE_MATCH_RULES = {
+  guideCatalog: XENESIS_NATURAL_GUIDE_CATALOG_CONTEXT_RULES,
+  diagnosticsCatalog: XENESIS_NATURAL_CONNECTION_DIAGNOSTICS_CATALOG_CONTEXT_RULES,
+  setupRequestCatalog: XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CATALOG_CONTEXT_RULES,
+  onboarding: XENESIS_NATURAL_ONBOARDING_CONTEXT_RULES,
+  guideContext: [
+    {
+      contextWords: XENESIS_NATURAL_GUIDE_CONTEXT_WORDS,
+    },
+  ],
+  connectionContext: XENESIS_NATURAL_CONNECTION_CONTEXT_RULES,
+  connectionCenterOpen: XENESIS_NATURAL_CONNECTION_CENTER_OPEN_CONTEXT_RULES,
+} as const satisfies XenesisNaturalConnectionAggregateMatchRules;
 
 export const XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES = [
   'xd.xenesis.connections',

@@ -3685,6 +3685,46 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Natural Context Predicate Catalog Refactor Slice
+
+- Continued the larger hardcoding cleanup with planner predicate data.
+- Intended change:
+  - add a shared `XenesisNaturalContextRule` type;
+  - move action/open intent, readback intent, external tool/messenger catalog
+    context, provider profile context, review-request intent, guide file open,
+    and connection aggregate match-kind context into shared catalog rules;
+  - have `xenesisAgentDeskControl.ts` interpret those rules instead of directly
+    importing the moved word arrays.
+- Scope boundary:
+  - Refactor only.
+  - Preserve CR paths, action reasons, dynamic extraction, target lookup, route
+    order, approval behavior, provider/tool/messenger behavior, and UI
+    rendering.
+- RED verification:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    failed as expected with 36/37 passing. The source guard first caught
+    remaining planner use of `XENESIS_NATURAL_OPEN_OR_SHOW_WORDS`.
+- Implementation:
+  - Added shared context-rule exports and an aggregate match-kind rule map.
+  - Replaced direct planner predicate branches with `naturalContextMatches(...)`.
+  - Replaced the aggregate match-kind switch with the shared match-rule map.
+- Focused GREEN verification:
+  - Focused planner test passed with 37/37 tests.
+  - Scoped Biome exited 0 with no fixes applied after import cleanup.
+  - Static predicate hardcoding grep found no moved word-array references in
+    `xenesisAgentDeskControl.ts`.
+- Broad verification:
+  - `npm run typecheck` passed.
+  - `npm run build` passed with existing Vite warnings only.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 21/21 through the
+    built Electron app.
+  - `git diff --check` exited 0 with LF-to-CRLF working-copy warnings only.
+  - CR audit was skipped because this slice only refactors planner/catalog rule
+    interpretation and does not change registry, dispatcher, or capability
+    coverage.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
