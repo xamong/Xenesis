@@ -30,6 +30,8 @@ import {
   XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES,
   XENESIS_NATURAL_CONNECTION_TARGET_SURFACE_SPECS,
+  XENESIS_NATURAL_CORE_TOOL_TARGET_SPECS,
+  XENESIS_NATURAL_CORE_TOOL_TARGETS,
   XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS,
   XENESIS_NATURAL_DESK_ACTION_ARGS,
   XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS,
@@ -102,6 +104,8 @@ import {
   XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_RULES,
   XENESIS_NATURAL_TOOL_AGGREGATE_SURFACE_SPECS,
+  XENESIS_NATURAL_VIEW_TARGET_SPECS,
+  XENESIS_NATURAL_VIEW_TARGETS,
   XENESIS_NATURAL_WINDOW_SIZE_PRESET_RULES,
   XENESIS_NATURAL_WORKSPACE_SET_RULES,
 } from '../../../../shared/xenesisNaturalLanguageCapabilityCatalog';
@@ -310,8 +314,14 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS',
     'XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES',
     'XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES',
+    'XENESIS_NATURAL_CORE_TOOL_TARGET_SPECS',
+    'XENESIS_NATURAL_CORE_TOOL_TARGETS',
+    'XENESIS_NATURAL_VIEW_TARGET_SPECS',
+    'XENESIS_NATURAL_VIEW_TARGETS',
     'buildXenesisNaturalCatalogAction',
     'findXenesisNaturalConnectionTargetRuleAction',
+    'findXenesisNaturalCoreToolTarget',
+    'findXenesisNaturalViewTarget',
   ]) {
     assert.match(capabilityCatalogSource, new RegExp(capabilityCatalogOwnedSymbol));
   }
@@ -321,8 +331,12 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'export const XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS',
     'export const XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES',
     'export const XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES',
+    'export const XENESIS_NATURAL_CORE_TOOL_TARGETS',
+    'export const XENESIS_NATURAL_VIEW_TARGETS',
     'export function buildXenesisNaturalCatalogAction',
     'export function findXenesisNaturalConnectionTargetRuleAction',
+    'export function findXenesisNaturalCoreToolTarget',
+    'export function findXenesisNaturalViewTarget',
   ]) {
     assert.doesNotMatch(catalogSource, new RegExp(naturalTextCatalogDisownedSymbol));
   }
@@ -1940,13 +1954,16 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   }
   for (const catalogFinder of [
     'findXenesisNaturalConnectionTarget',
-    'findXenesisNaturalCoreToolTarget',
     'findXenesisNaturalOnboardingStepTarget',
     'findXenesisNaturalProviderTarget',
-    'findXenesisNaturalViewTarget',
   ]) {
     assert.match(naturalResolverSource, new RegExp(catalogFinder));
     assert.match(catalogSource, new RegExp(`export function ${catalogFinder}`));
+  }
+  for (const capabilityCatalogFinder of ['findXenesisNaturalCoreToolTarget', 'findXenesisNaturalViewTarget']) {
+    assert.match(naturalResolverSource, new RegExp(capabilityCatalogFinder));
+    assert.match(capabilityCatalogSource, new RegExp(`export function ${capabilityCatalogFinder}`));
+    assert.doesNotMatch(catalogSource, new RegExp(`export function ${capabilityCatalogFinder}`));
   }
   for (const catalogFinder of [
     'findXenesisNaturalArrangeModeTarget',
@@ -1963,6 +1980,14 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.deepEqual(
     XENESIS_NATURAL_PLACEMENT_TARGETS.map((target) => target.id),
     ['right', 'left', 'top', 'bottom', 'tab'],
+  );
+  assert.deepEqual(
+    XENESIS_NATURAL_CORE_TOOL_TARGETS.map((target) => target.path),
+    XENESIS_NATURAL_CORE_TOOL_TARGET_SPECS.map((spec) => spec.path),
+  );
+  assert.deepEqual(
+    XENESIS_NATURAL_VIEW_TARGETS.map((target) => target.kind),
+    XENESIS_NATURAL_VIEW_TARGET_SPECS.map((spec) => spec.kind),
   );
   assert.deepEqual(
     XENESIS_NATURAL_DOCK_SIDE_TARGETS.map((target) => target.id),

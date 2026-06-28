@@ -15273,3 +15273,85 @@ Verification so far:
     check passed with `--linter-enabled=false`.
 - Next intended step:
   - Review final diff, stage, and commit this guide file readback batch.
+
+## Current Core Tool/View Natural Target Ownership Slice
+
+- Current objective:
+  - Increase slice size by moving remaining CR-path-bearing core tool and
+    built-in view natural-language targets out of the base natural-language text
+    catalog and into the capability/action catalog ownership boundary.
+- Rationale:
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.ts`
+    is now only re-exports; the remaining hardcoded routing surface is in
+    shared catalogs. Connection/provider/tool/messenger targets are already
+    derived from shared Connection Center catalogs, but core tool and view
+    targets still live as literal CR-path/kind arrays in
+    `src/shared/xenesisNaturalLanguageCatalog.ts`.
+- Scope:
+  - Add RED source-ownership guard requiring
+    `XENESIS_NATURAL_CORE_TOOL_TARGETS`, `XENESIS_NATURAL_VIEW_TARGETS`,
+    `findXenesisNaturalCoreToolTarget`, and `findXenesisNaturalViewTarget` to
+    move out of the base catalog.
+  - Move core tool/view target specs and finders into
+    `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`.
+  - Update action resolvers to import target finders from the capability
+    catalog.
+  - Keep behavior, route order, CR paths, args, reasons, and smoke prompts
+    unchanged.
+- Touched files so far:
+  - `handoff.md`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
+  - `src/shared/xenesisNaturalLanguageCatalog.ts`
+  - `src/shared/xenesisNaturalLanguageActionResolvers.ts`
+  - `docs/capability-registry-audit.md`
+- Commands run:
+  - `git status --short --branch` -> clean `agent/upcoming-work-20260627`
+    after commit `61a32c9`.
+  - `rg`/source reads confirmed
+    `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.ts`
+    is re-export-only and the remaining target arrays live in shared catalogs.
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> failed 43/44 because
+    `XENESIS_NATURAL_CORE_TOOL_TARGET_SPECS` was not in the capability catalog
+    yet.
+  - GREEN:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 44/44.
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` -> passed
+    6/6.
+  - `npm run typecheck` -> passed.
+  - `npm run docs:capabilities:audit` -> passed, wrote
+    `docs/capability-registry-audit.md` with 779 nodes and 689 coverage path
+    references.
+  - `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> missing registered paths 0, missing dispatched coverage paths 0,
+    undispatched static callable methods 0, dispatcher paths missing from tree
+    0.
+  - `npm run smoke:xenesis:natural-desk-routing` -> passed 186/186.
+  - `npx biome check src\shared\xenesisNaturalLanguageCapabilityCatalog.ts src\shared\xenesisNaturalLanguageCatalog.ts src\shared\xenesisNaturalLanguageActionResolvers.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --max-diagnostics 80`
+    -> checked 4 files, no fixes applied.
+  - `git diff --check` -> passed with line-ending warnings only.
+- Implemented:
+  - Added capability-owned
+    `XENESIS_NATURAL_CORE_TOOL_TARGET_SPECS`/`XENESIS_NATURAL_CORE_TOOL_TARGETS`
+    and `XENESIS_NATURAL_VIEW_TARGET_SPECS`/`XENESIS_NATURAL_VIEW_TARGETS`.
+  - Moved `findXenesisNaturalCoreToolTarget` and
+    `findXenesisNaturalViewTarget` to
+    `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`.
+  - Removed the CR-path-bearing core tool target array and view `kind` target
+    array from `src/shared/xenesisNaturalLanguageCatalog.ts`.
+  - Updated natural action resolvers to import the core/view finders from the
+    capability catalog.
+  - Strengthened ownership guards so base text catalog cannot re-own those
+    target arrays or finder functions.
+- Known gaps:
+  - Natural-language routing remains deterministic catalog routing, not model
+    reasoning.
+  - Repository-wide `npm run lint` remains blocked by existing repo-wide Biome
+    diagnostics outside this slice; changed files passed the focused Biome
+    check.
+- Next intended step:
+  - Add Obsidian working note, review final diff, stage, and commit this target
+    ownership slice.

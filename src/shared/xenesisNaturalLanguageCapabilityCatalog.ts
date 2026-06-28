@@ -1,6 +1,7 @@
 import {
   buildXenesisNaturalLanguagePlan,
   findXenesisNaturalContextRule,
+  findXenesisNaturalWordsTarget,
   isXenesisNaturalConnectionMessengerTarget,
   isXenesisNaturalConnectionToolTarget,
   isXenesisNaturalPlannedGoogleToolTarget,
@@ -196,6 +197,164 @@ export const XENESIS_NATURAL_DESK_ACTION_ARGS = {
 } as const;
 
 export const XENESIS_NATURAL_VIEW_OPEN_PATH = 'xd.views.open';
+
+export const XENESIS_NATURAL_CORE_TOOL_TARGET_SPECS = [
+  {
+    id: 'natural-tool-capability-explorer-open',
+    path: 'xd.tools.core.capabilityExplorer.open',
+    label: 'Capability Explorer',
+    reasonName: 'Capability Explorer',
+    words: ['capability', 'cr', 'registry', '레지스트리', '기능 탐색', 'capability explorer'],
+  },
+  {
+    id: 'natural-tool-ai-workbench-open',
+    path: 'xd.tools.core.aiWorkbench.open',
+    label: 'AI Workbench',
+    reasonName: 'AI Workbench',
+    words: ['ai workbench', '워크벤치'],
+  },
+  {
+    id: 'natural-tool-artifact-library-open',
+    path: 'xd.tools.core.artifactLibrary.open',
+    label: 'Artifact Library',
+    reasonName: 'Artifact Library',
+    words: ['artifact library', '아티팩트 라이브러리'],
+  },
+  {
+    id: 'natural-tool-terminal-inspector-open',
+    path: 'xd.tools.core.terminalInspector.open',
+    label: 'Terminal Inspector',
+    reasonName: 'Terminal Inspector',
+    words: ['terminal inspector', '터미널 인스펙터'],
+  },
+  {
+    id: 'natural-tool-process-viewer-open',
+    path: 'xd.tools.core.processViewer.open',
+    label: 'Process Viewer',
+    reasonName: 'Process Viewer',
+    words: ['process viewer', '프로세스 뷰어', '프로세스'],
+  },
+  {
+    id: 'natural-tool-remote-sync-planner-open',
+    path: 'xd.tools.core.remoteSyncPlanner.open',
+    label: 'Remote Sync Planner',
+    reasonName: 'Remote Sync Planner',
+    words: ['remote sync', '원격 동기화'],
+  },
+  {
+    id: 'natural-tool-run-task-panel-open',
+    path: 'xd.tools.core.runTaskPanel.open',
+    label: 'Run Task Panel',
+    reasonName: 'Run Task Panel',
+    words: ['run task', '작업 실행', '작업 패널'],
+  },
+  {
+    id: 'natural-tool-safe-file-edit-center-open',
+    path: 'xd.tools.core.safeFileEditCenter.open',
+    label: 'Safe File Edit Center',
+    reasonName: 'Safe File Edit Center',
+    words: ['safe file', '안전 파일', '파일 편집 센터'],
+  },
+  {
+    id: 'natural-tool-hermes-status-open',
+    path: 'xd.tools.core.hermesStatus.open',
+    label: 'Hermes Status',
+    reasonName: 'Hermes Status',
+    words: ['hermes status', '헤르메스 상태'],
+  },
+  {
+    id: 'natural-tool-hermes-action-inbox-open',
+    path: 'xd.tools.core.hermesActionInbox.open',
+    label: 'Hermes Action Inbox',
+    reasonName: 'Hermes Action Inbox',
+    words: ['hermes action', '헤르메스 액션', 'action inbox', 'action-inbox', '액션 인박스', '액션인박스'],
+  },
+  {
+    id: 'natural-tool-hermes-timeline-open',
+    path: 'xd.tools.core.hermesTimeline.open',
+    label: 'Hermes Timeline',
+    reasonName: 'Hermes Timeline',
+    words: ['hermes timeline', '헤르메스 타임라인'],
+  },
+  {
+    id: 'natural-tool-network-monitor-open',
+    path: 'xd.tools.core.networkMonitor.open',
+    label: 'Network Monitor',
+    reasonName: 'Network Monitor',
+    words: ['network monitor', '네트워크 모니터'],
+  },
+  {
+    id: 'natural-tool-audit-log-open',
+    path: 'xd.tools.core.auditLog.open',
+    label: 'Audit Log',
+    reasonName: 'Audit Log',
+    words: ['audit log', '감사 로그'],
+  },
+  {
+    id: 'natural-tool-agent-performance-open',
+    path: 'xd.tools.core.agentPerformance.open',
+    label: 'Agent Performance',
+    reasonName: 'Agent Performance',
+    words: ['agent performance', '에이전트 성능'],
+  },
+  {
+    id: 'natural-tool-xapp-preview-open',
+    path: 'xd.tools.core.xappPreview.open',
+    label: 'XApp Preview',
+    reasonName: 'XApp Preview',
+    words: ['xapp preview', 'xapp'],
+  },
+  {
+    id: 'natural-tool-bot-open',
+    path: 'xd.tools.core.bot.open',
+    label: 'Bot',
+    reasonName: 'Bot',
+    words: ['bot', '봇'],
+  },
+] as const satisfies readonly XenesisNaturalCoreToolTarget[];
+
+export const XENESIS_NATURAL_CORE_TOOL_TARGETS: readonly XenesisNaturalCoreToolTarget[] =
+  XENESIS_NATURAL_CORE_TOOL_TARGET_SPECS;
+
+export const XENESIS_NATURAL_VIEW_TARGET_SPECS = [
+  {
+    id: 'natural-gowoori-chat-open',
+    label: 'GowooriChat',
+    kind: 'gowooriChat',
+    reason: 'Open GowooriChat from natural language request.',
+    words: ['거울이 챗', '거울이챗', 'gowoorichat', 'gowoori chat', 'kouri chat', 'kourichat'],
+  },
+  {
+    id: 'natural-gowoori-open',
+    label: 'Gowoori',
+    kind: 'gowoori',
+    reason: 'Open Gowoori from natural language request.',
+    words: ['거울이', 'gowoori', 'kouri'],
+  },
+  {
+    id: 'natural-xenesis-agent-open',
+    label: 'Xenesis Agent',
+    kind: 'xenesisAgent',
+    reason: 'Open Xenesis Agent from natural language request.',
+    words: ['제니스', 'xenis', 'xenesis agent', 'xenesisagent'],
+  },
+  {
+    id: 'natural-terminal-open',
+    label: 'Terminal',
+    kind: 'terminal',
+    reason: 'Open terminal from natural language request.',
+    words: ['터미널', 'terminal', 'shell', '콘솔'],
+  },
+  {
+    id: 'natural-browser-open',
+    label: 'Browser',
+    kind: 'browser',
+    reason: 'Open browser from natural language request.',
+    words: ['브라우저', 'browser', '웹뷰', 'web'],
+  },
+] as const satisfies readonly XenesisNaturalViewTarget[];
+
+export const XENESIS_NATURAL_VIEW_TARGETS: readonly XenesisNaturalViewTarget[] = XENESIS_NATURAL_VIEW_TARGET_SPECS;
 
 export type XenesisNaturalDeskActionRuleGroup =
   | 'paneOpen'
@@ -3245,6 +3404,14 @@ export function buildXenesisNaturalTemplateAction<TArgs extends unknown[]>(
     args,
     descriptor.reasonFor(...templateArgs),
   );
+}
+
+export function findXenesisNaturalCoreToolTarget(value: string): XenesisNaturalCoreToolTarget | null {
+  return findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_CORE_TOOL_TARGETS);
+}
+
+export function findXenesisNaturalViewTarget(value: string): XenesisNaturalViewTarget | null {
+  return findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_VIEW_TARGETS);
 }
 
 export function buildXenesisNaturalCoreToolOpenAction(
