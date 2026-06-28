@@ -12,8 +12,11 @@ import {
   XENESIS_NATURAL_AGENT_READBACK_RULES,
   XENESIS_NATURAL_AGENT_SUBMIT_RULES,
   XENESIS_NATURAL_ARTIFACT_TARGET_RULES,
+  XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_RULES,
+  XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_RULES,
+  XENESIS_NATURAL_CONNECTION_AGGREGATE_SURFACE_SPECS,
   XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES,
   XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS,
@@ -41,8 +44,11 @@ import {
   XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_GUIDE_OPEN_RULES,
   XENESIS_NATURAL_GUIDE_STATUS_RULES,
+  XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_RULES,
+  XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_RULES,
+  XENESIS_NATURAL_MESSENGER_AGGREGATE_SURFACE_SPECS,
   XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_ONBOARDING_OPEN_RULES,
   XENESIS_NATURAL_ONBOARDING_STATUS_RULES,
@@ -51,6 +57,7 @@ import {
   XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_RULES,
   XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_RULES,
+  XENESIS_NATURAL_PROVIDER_AGGREGATE_SURFACE_SPECS,
   XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_PROVIDER_OPEN_RULES,
   XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS,
@@ -66,8 +73,11 @@ import {
   XENESIS_NATURAL_TERMINAL_LIST_RULES,
   XENESIS_NATURAL_TERMINAL_MANY_RULES,
   XENESIS_NATURAL_TERMINAL_RUN_RULES,
+  XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_RULES,
+  XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_RULES,
+  XENESIS_NATURAL_TOOL_AGGREGATE_SURFACE_SPECS,
   XENESIS_NATURAL_WINDOW_SIZE_PRESET_RULES,
   XENESIS_NATURAL_WORKSPACE_SET_RULES,
 } from '../../../../shared/xenesisNaturalLanguageCapabilityCatalog';
@@ -1275,7 +1285,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.deepEqual(
     XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_RULES.map((rule) => ({
       path: rule.action.path,
-      requiredGroups: 'requiredContextWordGroups' in rule ? rule.requiredContextWordGroups.length : 0,
+      requiredGroups: rule.requiredContextWordGroups?.length ?? 0,
       fallback: 'fallback' in rule && rule.fallback === true,
     })),
     [
@@ -1413,7 +1423,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.deepEqual(
     XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_RULES.map((rule) => ({
       path: rule.action.path,
-      requiredGroups: 'requiredContextWordGroups' in rule ? rule.requiredContextWordGroups.length : 0,
+      requiredGroups: rule.requiredContextWordGroups?.length ?? 0,
       fallback: 'fallback' in rule && rule.fallback === true,
     })),
     [
@@ -1970,6 +1980,106 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.deepEqual(
     XENESIS_NATURAL_ONBOARDING_STEP_TARGETS.map((target) => target.id),
     ['first-chat', 'local-cli-mcp', 'recommended-tools', 'gateway', 'messenger-routing', 'test-send'],
+  );
+});
+
+test('natural Connection Center aggregate actions are generated from shared surface specs', () => {
+  const capabilityCatalogSource = readFileSync(
+    new URL('../../../../shared/xenesisNaturalLanguageCapabilityCatalog.ts', import.meta.url),
+    'utf8',
+  );
+  const assertAggregateSurfaces = (input: {
+    name: string;
+    specs: readonly { key: string; open?: { id: string }; status?: { id: string } }[];
+    openDescriptors: Record<string, { id: string }>;
+    openRules: readonly { action: { id: string } }[];
+    statusDescriptors: Record<string, { id: string }>;
+    statusRules: readonly { action: { id: string } }[];
+  }) => {
+    const openSpecs = input.specs.filter((spec) => spec.open);
+    const statusSpecs = input.specs.filter((spec) => spec.status);
+    const openIds = new Set(openSpecs.map((spec) => spec.open?.id));
+    const statusIds = new Set(statusSpecs.map((spec) => spec.status?.id));
+
+    assert.deepEqual(
+      Object.keys(input.openDescriptors),
+      openSpecs.map((spec) => spec.key),
+      `${input.name} open keys`,
+    );
+    assert.deepEqual(
+      Object.values(input.openDescriptors).map((descriptor) => descriptor.id),
+      openSpecs.map((spec) => spec.open?.id),
+      `${input.name} open descriptor ids`,
+    );
+    assert.deepEqual(
+      Object.keys(input.statusDescriptors),
+      statusSpecs.map((spec) => spec.key),
+      `${input.name} status keys`,
+    );
+    assert.deepEqual(
+      Object.values(input.statusDescriptors).map((descriptor) => descriptor.id),
+      statusSpecs.map((spec) => spec.status?.id),
+      `${input.name} status descriptor ids`,
+    );
+
+    for (const rule of input.openRules) {
+      assert.equal(openIds.has(rule.action.id), true, `${input.name} open rule ${rule.action.id} should use a spec`);
+    }
+    for (const rule of input.statusRules) {
+      assert.equal(
+        statusIds.has(rule.action.id),
+        true,
+        `${input.name} status rule ${rule.action.id} should use a spec`,
+      );
+    }
+  };
+
+  assertAggregateSurfaces({
+    name: 'connection',
+    specs: XENESIS_NATURAL_CONNECTION_AGGREGATE_SURFACE_SPECS,
+    openDescriptors: XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_ACTION_DESCRIPTORS,
+    openRules: XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_RULES,
+    statusDescriptors: XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
+    statusRules: XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_RULES,
+  });
+  assertAggregateSurfaces({
+    name: 'tool',
+    specs: XENESIS_NATURAL_TOOL_AGGREGATE_SURFACE_SPECS,
+    openDescriptors: XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS,
+    openRules: XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_RULES,
+    statusDescriptors: XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
+    statusRules: XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_RULES,
+  });
+  assertAggregateSurfaces({
+    name: 'messenger',
+    specs: XENESIS_NATURAL_MESSENGER_AGGREGATE_SURFACE_SPECS,
+    openDescriptors: XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_ACTION_DESCRIPTORS,
+    openRules: XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_RULES,
+    statusDescriptors: XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
+    statusRules: XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_RULES,
+  });
+  assertAggregateSurfaces({
+    name: 'provider',
+    specs: XENESIS_NATURAL_PROVIDER_AGGREGATE_SURFACE_SPECS,
+    openDescriptors: XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS,
+    openRules: XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_RULES,
+    statusDescriptors: XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
+    statusRules: XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_RULES,
+  });
+
+  assert.match(capabilityCatalogSource, /function buildXenesisNaturalAggregateActionDescriptors/);
+  assert.match(capabilityCatalogSource, /function buildXenesisNaturalAggregateRules/);
+  assert.doesNotMatch(
+    capabilityCatalogSource,
+    /XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS = \{\s*connectors:/,
+  );
+  assert.doesNotMatch(
+    capabilityCatalogSource,
+    /XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_ACTION_DESCRIPTORS = \{\s*profileDrafts:/,
+  );
+  assert.doesNotMatch(
+    capabilityCatalogSource,
+    /XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS = \{\s*routing:/,
   );
 });
 

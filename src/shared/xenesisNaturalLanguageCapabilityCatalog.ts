@@ -987,577 +987,615 @@ export const XENESIS_NATURAL_ONBOARDING_STATUS_RULES = [
   },
 ] as const satisfies readonly XenesisNaturalOnboardingActionRule[];
 
-export const XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_ACTION_DESCRIPTORS = {
-  guides: {
-    id: 'natural-xenesis-guides-catalog-open',
-    path: 'xd.xenesis.guides.open',
-    reason: 'Open Xenesis guide catalog in Connection Center from natural language request.',
-  },
-  diagnostics: {
-    id: 'natural-xenesis-connection-diagnostics-catalog-open',
-    path: 'xd.xenesis.connections.diagnostics.open',
-    reason: 'Open Xenesis connection diagnostics catalog in Connection Center from natural language request.',
-  },
-  setupRequests: {
-    id: 'natural-xenesis-connection-setup-requests-catalog-open',
-    path: 'xd.xenesis.connections.setupRequests.open',
-    reason: 'Open Xenesis connection setup request catalog in Connection Center from natural language request.',
-  },
-  connections: {
-    id: 'natural-xenesis-connections-center-open',
-    path: 'xd.xenesis.connections.open',
-    reason: 'Open Xenesis Connection Center from natural language request.',
-  },
-} as const satisfies Record<string, XenesisNaturalDeskActionDescriptor>;
+type XenesisNaturalAggregateMode = 'open' | 'status';
+interface XenesisNaturalAggregateCatalogRuleSpec extends Omit<XenesisNaturalCatalogActionRule, 'action'> {
+  order?: number;
+}
+interface XenesisNaturalConnectionAggregateOpenRuleSpec
+  extends Omit<XenesisNaturalConnectionAggregateOpenRule, 'action'> {
+  order?: number;
+}
+interface XenesisNaturalConnectionAggregateStatusRuleSpec
+  extends Omit<XenesisNaturalConnectionAggregateStatusRule, 'action'> {
+  order?: number;
+}
 
-export const XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_RULES = [
-  {
-    stage: 'guide',
-    matchKind: 'guideCatalog',
-    action: XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_ACTION_DESCRIPTORS.guides,
-  },
-  {
-    stage: 'late',
-    matchKind: 'diagnosticsCatalog',
-    action: XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_ACTION_DESCRIPTORS.diagnostics,
-  },
-  {
-    stage: 'late',
-    matchKind: 'setupRequestCatalog',
-    action: XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_ACTION_DESCRIPTORS.setupRequests,
-  },
-  {
-    stage: 'late',
-    matchKind: 'connectionCenterOpen',
-    action: XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_ACTION_DESCRIPTORS.connections,
-  },
-] as const satisfies readonly XenesisNaturalConnectionAggregateOpenRule[];
+interface XenesisNaturalAggregateSurfaceActionSpec extends XenesisNaturalDeskActionDescriptor {
+  catalogRules?: readonly XenesisNaturalAggregateCatalogRuleSpec[];
+  connectionOpenRules?: readonly XenesisNaturalConnectionAggregateOpenRuleSpec[];
+  connectionStatusRules?: readonly XenesisNaturalConnectionAggregateStatusRuleSpec[];
+}
 
-export const XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS = {
-  connectors: {
-    id: 'natural-xenesis-tools-connectors-catalog-open',
-    path: 'xd.xenesis.tools.connectors.open',
-    reason: 'Open external tool connector catalog in Xenesis Connection Center from natural language request.',
-  },
-  mcpInstallDrafts: {
-    id: 'natural-xenesis-tools-mcp-install-drafts-catalog-open',
-    path: 'xd.xenesis.tools.mcpInstallDrafts.open',
-    reason: 'Open external tool MCP install draft catalog in Xenesis Connection Center from natural language request.',
-  },
-  oauthDrafts: {
-    id: 'natural-xenesis-tools-oauth-drafts-catalog-open',
-    path: 'xd.xenesis.tools.oauthDrafts.open',
-    reason: 'Open external tool OAuth draft catalog in Xenesis Connection Center from natural language request.',
-  },
-  views: {
-    id: 'natural-xenesis-tools-views-catalog-open',
-    path: 'xd.xenesis.tools.views.open',
-    reason: 'Open external tool view catalog in Xenesis Connection Center from natural language request.',
-  },
-  installPlans: {
-    id: 'natural-xenesis-tools-install-plans-catalog-open',
-    path: 'xd.xenesis.tools.installPlans.open',
-    reason: 'Open external tool install plan catalog in Xenesis Connection Center from natural language request.',
-  },
-  setupPlans: {
-    id: 'natural-xenesis-tools-setup-plans-catalog-open',
-    path: 'xd.xenesis.tools.setupPlans.open',
-    reason: 'Open external tool setup plan catalog in Xenesis Connection Center from natural language request.',
-  },
-  setup: {
-    id: 'natural-xenesis-tools-setup-catalog-open',
-    path: 'xd.xenesis.tools.setup.open',
-    reason: 'Open external tool setup catalog in Xenesis Connection Center from natural language request.',
-  },
-  actions: {
-    id: 'natural-xenesis-tools-actions-catalog-open',
-    path: 'xd.xenesis.tools.actions.open',
-    reason: 'Open external tool action policy catalog in Xenesis Connection Center from natural language request.',
-  },
-  userStories: {
-    id: 'natural-xenesis-tools-user-stories-catalog-open',
-    path: 'xd.xenesis.tools.userStories.open',
-    reason: 'Open external tool user-story catalog in Xenesis Connection Center from natural language request.',
-  },
-  catalog: {
-    id: 'natural-xenesis-tool-catalog-open',
-    path: 'xd.xenesis.tools.setup.open',
-    reason: 'Open external tool catalog in Xenesis Connection Center from natural language request.',
-  },
-} as const satisfies Record<string, XenesisNaturalDeskActionDescriptor>;
+interface XenesisNaturalAggregateSurfaceSpec {
+  key: string;
+  open?: XenesisNaturalAggregateSurfaceActionSpec;
+  status?: XenesisNaturalAggregateSurfaceActionSpec;
+}
 
-export const XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS.connectors,
-  },
-  {
-    contextWords: XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_DRAFT_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS.mcpInstallDrafts,
-  },
-  {
-    contextWords: XENESIS_NATURAL_OAUTH_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS.oauthDrafts,
-  },
-  {
-    contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS.views,
-  },
-  {
-    contextWords: XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS.installPlans,
-  },
-  {
-    contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS.setupPlans,
-  },
-  {
-    contextWords: XENESIS_NATURAL_SETUP_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS.setup,
-  },
-  {
-    contextWords: XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS.actions,
-  },
-  {
-    contextWords: XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS.userStories,
-  },
-  {
-    contextWords: [],
-    action: XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS.catalog,
-    fallback: true,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+function buildXenesisNaturalAggregateActionDescriptors(
+  specs: readonly XenesisNaturalAggregateSurfaceSpec[],
+  mode: XenesisNaturalAggregateMode,
+): Record<string, XenesisNaturalDeskActionDescriptor> {
+  return Object.fromEntries(
+    specs.flatMap((spec) => {
+      const action = spec[mode];
+      return action ? [[spec.key, { id: action.id, path: action.path, reason: action.reason }]] : [];
+    }),
+  );
+}
 
-export const XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_ACTION_DESCRIPTORS = {
-  profileDrafts: {
-    id: 'natural-xenesis-messengers-profile-drafts-catalog-open',
-    path: 'xd.xenesis.channels.profileDrafts.open',
-    reason: 'Open external messenger profile draft catalog in Xenesis Connection Center from natural language request.',
-  },
-  routing: {
-    id: 'natural-xenesis-messengers-routing-catalog-open',
-    path: 'xd.xenesis.channels.routing.open',
-    reason: 'Open external messenger routing catalog in Xenesis Connection Center from natural language request.',
-  },
-  safety: {
-    id: 'natural-xenesis-messengers-safety-catalog-open',
-    path: 'xd.xenesis.channels.safety.open',
-    reason: 'Open external messenger safety catalog in Xenesis Connection Center from natural language request.',
-  },
-  accessGroups: {
-    id: 'natural-xenesis-messengers-access-groups-catalog-open',
-    path: 'xd.xenesis.channels.accessGroups.open',
-    reason: 'Open external messenger access-group catalog in Xenesis Connection Center from natural language request.',
-  },
-  pairing: {
-    id: 'natural-xenesis-messengers-pairing-catalog-open',
-    path: 'xd.xenesis.channels.pairing.open',
-    reason: 'Open external messenger pairing catalog in Xenesis Connection Center from natural language request.',
-  },
-  userStories: {
-    id: 'natural-xenesis-messengers-user-stories-catalog-open',
-    path: 'xd.xenesis.channels.userStories.open',
-    reason: 'Open external messenger user-story catalog in Xenesis Connection Center from natural language request.',
-  },
-  setupPlans: {
-    id: 'natural-xenesis-messengers-setup-plans-catalog-open',
-    path: 'xd.xenesis.channels.setupPlans.open',
-    reason: 'Open external messenger setup plan catalog in Xenesis Connection Center from natural language request.',
-  },
-  views: {
-    id: 'natural-xenesis-messengers-views-catalog-open',
-    path: 'xd.xenesis.messengers.views.open',
-    reason: 'Open external messenger view catalog in Xenesis Connection Center from natural language request.',
-  },
-  catalog: {
-    id: 'natural-xenesis-messenger-catalog-open',
-    path: 'xd.xenesis.messengers.views.open',
-    reason: 'Open external messenger catalog in Xenesis Connection Center from natural language request.',
-  },
-} as const satisfies Record<string, XenesisNaturalDeskActionDescriptor>;
+function buildXenesisNaturalAggregateRules(
+  specs: readonly XenesisNaturalAggregateSurfaceSpec[],
+  mode: XenesisNaturalAggregateMode,
+): XenesisNaturalCatalogActionRule[] {
+  const descriptors = buildXenesisNaturalAggregateActionDescriptors(specs, mode);
+  return specs
+    .flatMap((spec, specIndex) => {
+      const action = spec[mode];
+      const descriptor = descriptors[spec.key];
+      if (!action || !descriptor) return [];
+      return (action.catalogRules ?? []).map((rule, ruleIndex) => ({
+        descriptor,
+        order: rule.order ?? specIndex * 100 + ruleIndex,
+        rule,
+      }));
+    })
+    .sort((left, right) => left.order - right.order)
+    .map(({ descriptor, rule }) => ({
+      contextWords: rule.contextWords,
+      ...(rule.requiredContextWordGroups ? { requiredContextWordGroups: rule.requiredContextWordGroups } : {}),
+      ...(rule.blockedContextWords ? { blockedContextWords: rule.blockedContextWords } : {}),
+      ...(rule.fallback ? { fallback: true } : {}),
+      ...(rule.visibleText ? { visibleText: rule.visibleText } : {}),
+      action: descriptor,
+    }));
+}
 
-export const XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_ACTION_DESCRIPTORS.profileDrafts,
-  },
-  {
-    contextWords: XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_ACTION_DESCRIPTORS.routing,
-  },
-  {
-    contextWords: XENESIS_NATURAL_SAFETY_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_ACTION_DESCRIPTORS.safety,
-  },
-  {
-    contextWords: XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_ACTION_DESCRIPTORS.accessGroups,
-  },
-  {
-    contextWords: XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_ACTION_DESCRIPTORS.pairing,
-  },
-  {
-    contextWords: XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_ACTION_DESCRIPTORS.userStories,
-  },
-  {
-    contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_ACTION_DESCRIPTORS.setupPlans,
-  },
-  {
-    contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_ACTION_DESCRIPTORS.views,
-  },
-  {
-    contextWords: [],
-    action: XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_ACTION_DESCRIPTORS.catalog,
-    fallback: true,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+function buildXenesisNaturalConnectionAggregateOpenRules(
+  specs: readonly XenesisNaturalAggregateSurfaceSpec[],
+): XenesisNaturalConnectionAggregateOpenRule[] {
+  const descriptors = buildXenesisNaturalAggregateActionDescriptors(specs, 'open');
+  return specs
+    .flatMap((spec, specIndex) => {
+      const descriptor = descriptors[spec.key];
+      if (!descriptor) return [];
+      return (spec.open?.connectionOpenRules ?? []).map((rule, ruleIndex) => ({
+        descriptor,
+        order: rule.order ?? specIndex * 100 + ruleIndex,
+        rule,
+      }));
+    })
+    .sort((left, right) => left.order - right.order)
+    .map(({ descriptor, rule }) => ({ stage: rule.stage, matchKind: rule.matchKind, action: descriptor }));
+}
 
-export const XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS = {
-  routing: {
-    id: 'natural-xenesis-providers-routing-catalog-open',
-    path: 'xd.xenesis.providers.routing.open',
-    reason: 'Open AI provider routing in Xenesis Connection Center from natural language request.',
-  },
-  setup: {
-    id: 'natural-xenesis-providers-setup-catalog-open',
-    path: 'xd.xenesis.providers.setup.open',
-    reason: 'Open AI provider setup catalog in Xenesis Connection Center from natural language request.',
-  },
-  setupPlans: {
-    id: 'natural-xenesis-providers-setup-plans-catalog-open',
-    path: 'xd.xenesis.providers.setupPlans.open',
-    reason: 'Open AI provider setup plan catalog in Xenesis Connection Center from natural language request.',
-  },
-  views: {
-    id: 'natural-xenesis-providers-views-catalog-open',
-    path: 'xd.xenesis.providers.views.open',
-    reason: 'Open AI provider view catalog in Xenesis Connection Center from natural language request.',
-  },
-  profileDrafts: {
-    id: 'natural-xenesis-providers-profile-drafts-catalog-open',
-    path: 'xd.xenesis.providers.profileDrafts.open',
-    reason: 'Open AI provider profile draft catalog in Xenesis Connection Center from natural language request.',
-  },
-  catalog: {
-    id: 'natural-xenesis-provider-catalog-open',
-    path: 'xd.xenesis.providers.setup.open',
-    reason: 'Open AI provider catalog in Xenesis Connection Center from natural language request.',
-  },
-} as const satisfies Record<string, XenesisNaturalDeskActionDescriptor>;
+function buildXenesisNaturalConnectionAggregateStatusRules(
+  specs: readonly XenesisNaturalAggregateSurfaceSpec[],
+): XenesisNaturalConnectionAggregateStatusRule[] {
+  const descriptors = buildXenesisNaturalAggregateActionDescriptors(specs, 'status');
+  return specs
+    .flatMap((spec, specIndex) => {
+      const descriptor = descriptors[spec.key];
+      if (!descriptor) return [];
+      return (spec.status?.connectionStatusRules ?? []).map((rule, ruleIndex) => ({
+        descriptor,
+        order: rule.order ?? specIndex * 100 + ruleIndex,
+        rule,
+      }));
+    })
+    .sort((left, right) => left.order - right.order)
+    .map(({ descriptor, rule }) => ({ stage: rule.stage, matchKind: rule.matchKind, action: descriptor }));
+}
 
-export const XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS = {
-  connectors: {
-    id: 'natural-xenesis-tools-connectors-status',
-    path: 'xd.xenesis.tools.connectors.status',
-    reason: 'Read external tool connector catalog status from natural language request.',
+export const XENESIS_NATURAL_CONNECTION_AGGREGATE_SURFACE_SPECS = [
+  {
+    key: 'guides',
+    open: {
+      id: 'natural-xenesis-guides-catalog-open',
+      path: 'xd.xenesis.guides.open',
+      reason: 'Open Xenesis guide catalog in Connection Center from natural language request.',
+      connectionOpenRules: [{ stage: 'guide', matchKind: 'guideCatalog', order: 0 }],
+    },
+    status: {
+      id: 'natural-xenesis-guides-status',
+      path: 'xd.xenesis.guides.status',
+      reason: 'Read Xenesis guide catalog status from natural language request.',
+      connectionStatusRules: [
+        { stage: 'early', matchKind: 'guideCatalog', order: 0 },
+        { stage: 'late', matchKind: 'guideContext', order: 4 },
+      ],
+    },
   },
-  mcpInstallDrafts: {
-    id: 'natural-xenesis-tools-mcp-install-drafts-status',
-    path: 'xd.xenesis.tools.mcpInstallDrafts.status',
-    reason: 'Read external tool MCP install draft catalog status from natural language request.',
+  {
+    key: 'diagnostics',
+    open: {
+      id: 'natural-xenesis-connection-diagnostics-catalog-open',
+      path: 'xd.xenesis.connections.diagnostics.open',
+      reason: 'Open Xenesis connection diagnostics catalog in Connection Center from natural language request.',
+      connectionOpenRules: [{ stage: 'late', matchKind: 'diagnosticsCatalog', order: 1 }],
+    },
+    status: {
+      id: 'natural-xenesis-connection-diagnostics-status',
+      path: 'xd.xenesis.connections.diagnostics.status',
+      reason: 'Read Xenesis connection diagnostics catalog from natural language request.',
+      connectionStatusRules: [{ stage: 'early', matchKind: 'diagnosticsCatalog', order: 1 }],
+    },
   },
-  oauthDrafts: {
-    id: 'natural-xenesis-tools-oauth-drafts-status',
-    path: 'xd.xenesis.tools.oauthDrafts.status',
-    reason: 'Read external tool OAuth draft catalog status from natural language request.',
+  {
+    key: 'setupRequests',
+    open: {
+      id: 'natural-xenesis-connection-setup-requests-catalog-open',
+      path: 'xd.xenesis.connections.setupRequests.open',
+      reason: 'Open Xenesis connection setup request catalog in Connection Center from natural language request.',
+      connectionOpenRules: [{ stage: 'late', matchKind: 'setupRequestCatalog', order: 2 }],
+    },
+    status: {
+      id: 'natural-xenesis-connection-setup-requests-status',
+      path: 'xd.xenesis.connections.setupRequests.status',
+      reason: 'Read Xenesis connection setup request catalog from natural language request.',
+      connectionStatusRules: [{ stage: 'early', matchKind: 'setupRequestCatalog', order: 2 }],
+    },
   },
-  views: {
-    id: 'natural-xenesis-tools-views-status',
-    path: 'xd.xenesis.tools.views.status',
-    reason: 'Read external tool view catalog status from natural language request.',
+  {
+    key: 'onboarding',
+    status: {
+      id: 'natural-xenesis-onboarding-status',
+      path: 'xd.xenesis.onboarding.status',
+      reason: 'Read Xenesis onboarding status from natural language request.',
+      connectionStatusRules: [{ stage: 'late', matchKind: 'onboarding', order: 3 }],
+    },
   },
-  installPlans: {
-    id: 'natural-xenesis-tools-install-plans-status',
-    path: 'xd.xenesis.tools.installPlans.status',
-    reason: 'Read external tool install plan catalog status from natural language request.',
+  {
+    key: 'connections',
+    open: {
+      id: 'natural-xenesis-connections-center-open',
+      path: 'xd.xenesis.connections.open',
+      reason: 'Open Xenesis Connection Center from natural language request.',
+      connectionOpenRules: [{ stage: 'late', matchKind: 'connectionCenterOpen', order: 3 }],
+    },
+    status: {
+      id: 'natural-xenesis-connections-status',
+      path: 'xd.xenesis.connections.status',
+      reason: 'Read Xenesis connection status from natural language request.',
+      connectionStatusRules: [{ stage: 'late', matchKind: 'connectionContext', order: 5 }],
+    },
   },
-  setupPlans: {
-    id: 'natural-xenesis-tools-setup-plans-status',
-    path: 'xd.xenesis.tools.setupPlans.status',
-    reason: 'Read external tool setup plan catalog status from natural language request.',
-  },
-  setup: {
-    id: 'natural-xenesis-tools-setup-status',
-    path: 'xd.xenesis.tools.setup.status',
-    reason: 'Read external tool setup catalog status from natural language request.',
-  },
-  actions: {
-    id: 'natural-xenesis-tools-actions-status',
-    path: 'xd.xenesis.tools.actions.status',
-    reason: 'Read external tool action policy catalog status from natural language request.',
-  },
-  userStories: {
-    id: 'natural-xenesis-tools-user-stories-status',
-    path: 'xd.xenesis.tools.userStories.status',
-    reason: 'Read external tool user-story catalog status from natural language request.',
-  },
-} as const satisfies Record<string, XenesisNaturalDeskActionDescriptor>;
+] as const satisfies readonly XenesisNaturalAggregateSurfaceSpec[];
 
-export const XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_RULES = [
+export const XENESIS_NATURAL_TOOL_AGGREGATE_SURFACE_SPECS = [
   {
-    contextWords: XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS.connectors,
+    key: 'connectors',
+    open: {
+      id: 'natural-xenesis-tools-connectors-catalog-open',
+      path: 'xd.xenesis.tools.connectors.open',
+      reason: 'Open external tool connector catalog in Xenesis Connection Center from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS }],
+    },
+    status: {
+      id: 'natural-xenesis-tools-connectors-status',
+      path: 'xd.xenesis.tools.connectors.status',
+      reason: 'Read external tool connector catalog status from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS }],
+    },
   },
   {
-    contextWords: XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_DRAFT_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS.mcpInstallDrafts,
+    key: 'mcpInstallDrafts',
+    open: {
+      id: 'natural-xenesis-tools-mcp-install-drafts-catalog-open',
+      path: 'xd.xenesis.tools.mcpInstallDrafts.open',
+      reason:
+        'Open external tool MCP install draft catalog in Xenesis Connection Center from natural language request.',
+      catalogRules: [
+        {
+          contextWords: XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS,
+          requiredContextWordGroups: [XENESIS_NATURAL_DRAFT_CONTEXT_WORDS],
+        },
+      ],
+    },
+    status: {
+      id: 'natural-xenesis-tools-mcp-install-drafts-status',
+      path: 'xd.xenesis.tools.mcpInstallDrafts.status',
+      reason: 'Read external tool MCP install draft catalog status from natural language request.',
+      catalogRules: [
+        {
+          contextWords: XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS,
+          requiredContextWordGroups: [XENESIS_NATURAL_DRAFT_CONTEXT_WORDS],
+        },
+      ],
+    },
   },
   {
-    contextWords: XENESIS_NATURAL_OAUTH_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS.oauthDrafts,
+    key: 'oauthDrafts',
+    open: {
+      id: 'natural-xenesis-tools-oauth-drafts-catalog-open',
+      path: 'xd.xenesis.tools.oauthDrafts.open',
+      reason: 'Open external tool OAuth draft catalog in Xenesis Connection Center from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_OAUTH_CONTEXT_WORDS }],
+    },
+    status: {
+      id: 'natural-xenesis-tools-oauth-drafts-status',
+      path: 'xd.xenesis.tools.oauthDrafts.status',
+      reason: 'Read external tool OAuth draft catalog status from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_OAUTH_CONTEXT_WORDS }],
+    },
   },
   {
-    contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS.views,
+    key: 'views',
+    open: {
+      id: 'natural-xenesis-tools-views-catalog-open',
+      path: 'xd.xenesis.tools.views.open',
+      reason: 'Open external tool view catalog in Xenesis Connection Center from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS }],
+    },
+    status: {
+      id: 'natural-xenesis-tools-views-status',
+      path: 'xd.xenesis.tools.views.status',
+      reason: 'Read external tool view catalog status from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS }],
+    },
   },
   {
-    contextWords: XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS.installPlans,
+    key: 'installPlans',
+    open: {
+      id: 'natural-xenesis-tools-install-plans-catalog-open',
+      path: 'xd.xenesis.tools.installPlans.open',
+      reason: 'Open external tool install plan catalog in Xenesis Connection Center from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS }],
+    },
+    status: {
+      id: 'natural-xenesis-tools-install-plans-status',
+      path: 'xd.xenesis.tools.installPlans.status',
+      reason: 'Read external tool install plan catalog status from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS }],
+    },
   },
   {
-    contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS.setupPlans,
+    key: 'setupPlans',
+    open: {
+      id: 'natural-xenesis-tools-setup-plans-catalog-open',
+      path: 'xd.xenesis.tools.setupPlans.open',
+      reason: 'Open external tool setup plan catalog in Xenesis Connection Center from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS }],
+    },
+    status: {
+      id: 'natural-xenesis-tools-setup-plans-status',
+      path: 'xd.xenesis.tools.setupPlans.status',
+      reason: 'Read external tool setup plan catalog status from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS }],
+    },
   },
   {
-    contextWords: XENESIS_NATURAL_SETUP_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS.setup,
+    key: 'setup',
+    open: {
+      id: 'natural-xenesis-tools-setup-catalog-open',
+      path: 'xd.xenesis.tools.setup.open',
+      reason: 'Open external tool setup catalog in Xenesis Connection Center from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_SETUP_CONTEXT_WORDS }],
+    },
+    status: {
+      id: 'natural-xenesis-tools-setup-status',
+      path: 'xd.xenesis.tools.setup.status',
+      reason: 'Read external tool setup catalog status from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_SETUP_CONTEXT_WORDS }],
+    },
   },
   {
-    contextWords: XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS.actions,
+    key: 'actions',
+    open: {
+      id: 'natural-xenesis-tools-actions-catalog-open',
+      path: 'xd.xenesis.tools.actions.open',
+      reason: 'Open external tool action policy catalog in Xenesis Connection Center from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS }],
+    },
+    status: {
+      id: 'natural-xenesis-tools-actions-status',
+      path: 'xd.xenesis.tools.actions.status',
+      reason: 'Read external tool action policy catalog status from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS }],
+    },
   },
   {
-    contextWords: XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS.userStories,
+    key: 'userStories',
+    open: {
+      id: 'natural-xenesis-tools-user-stories-catalog-open',
+      path: 'xd.xenesis.tools.userStories.open',
+      reason: 'Open external tool user-story catalog in Xenesis Connection Center from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS }],
+    },
+    status: {
+      id: 'natural-xenesis-tools-user-stories-status',
+      path: 'xd.xenesis.tools.userStories.status',
+      reason: 'Read external tool user-story catalog status from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS }],
+    },
   },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+  {
+    key: 'catalog',
+    open: {
+      id: 'natural-xenesis-tool-catalog-open',
+      path: 'xd.xenesis.tools.setup.open',
+      reason: 'Open external tool catalog in Xenesis Connection Center from natural language request.',
+      catalogRules: [{ contextWords: [], fallback: true }],
+    },
+  },
+] as const satisfies readonly XenesisNaturalAggregateSurfaceSpec[];
 
-export const XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS = {
-  profileDrafts: {
-    id: 'natural-xenesis-messengers-profile-drafts-status',
-    path: 'xd.xenesis.channels.profileDrafts.status',
-    reason: 'Read external messenger profile draft catalog status from natural language request.',
+export const XENESIS_NATURAL_MESSENGER_AGGREGATE_SURFACE_SPECS = [
+  {
+    key: 'profileDrafts',
+    open: {
+      id: 'natural-xenesis-messengers-profile-drafts-catalog-open',
+      path: 'xd.xenesis.channels.profileDrafts.open',
+      reason:
+        'Open external messenger profile draft catalog in Xenesis Connection Center from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS }],
+    },
+    status: {
+      id: 'natural-xenesis-messengers-profile-drafts-status',
+      path: 'xd.xenesis.channels.profileDrafts.status',
+      reason: 'Read external messenger profile draft catalog status from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS }],
+    },
   },
-  routing: {
-    id: 'natural-xenesis-messengers-routing-status',
-    path: 'xd.xenesis.channels.routing.status',
-    reason: 'Read external messenger routing catalog status from natural language request.',
+  {
+    key: 'routing',
+    open: {
+      id: 'natural-xenesis-messengers-routing-catalog-open',
+      path: 'xd.xenesis.channels.routing.open',
+      reason: 'Open external messenger routing catalog in Xenesis Connection Center from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS }],
+    },
+    status: {
+      id: 'natural-xenesis-messengers-routing-status',
+      path: 'xd.xenesis.channels.routing.status',
+      reason: 'Read external messenger routing catalog status from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS }],
+    },
   },
-  safety: {
-    id: 'natural-xenesis-messengers-safety-status',
-    path: 'xd.xenesis.channels.safety.status',
-    reason: 'Read external messenger safety catalog status from natural language request.',
+  {
+    key: 'safety',
+    open: {
+      id: 'natural-xenesis-messengers-safety-catalog-open',
+      path: 'xd.xenesis.channels.safety.open',
+      reason: 'Open external messenger safety catalog in Xenesis Connection Center from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_SAFETY_CONTEXT_WORDS }],
+    },
+    status: {
+      id: 'natural-xenesis-messengers-safety-status',
+      path: 'xd.xenesis.channels.safety.status',
+      reason: 'Read external messenger safety catalog status from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_SAFETY_CONTEXT_WORDS }],
+    },
   },
-  accessGroups: {
-    id: 'natural-xenesis-messengers-access-groups-status',
-    path: 'xd.xenesis.channels.accessGroups.status',
-    reason: 'Read external messenger access-group catalog status from natural language request.',
+  {
+    key: 'accessGroups',
+    open: {
+      id: 'natural-xenesis-messengers-access-groups-catalog-open',
+      path: 'xd.xenesis.channels.accessGroups.open',
+      reason:
+        'Open external messenger access-group catalog in Xenesis Connection Center from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS }],
+    },
+    status: {
+      id: 'natural-xenesis-messengers-access-groups-status',
+      path: 'xd.xenesis.channels.accessGroups.status',
+      reason: 'Read external messenger access-group catalog status from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS }],
+    },
   },
-  pairing: {
-    id: 'natural-xenesis-messengers-pairing-status',
-    path: 'xd.xenesis.channels.pairing.status',
-    reason: 'Read external messenger pairing catalog status from natural language request.',
+  {
+    key: 'pairing',
+    open: {
+      id: 'natural-xenesis-messengers-pairing-catalog-open',
+      path: 'xd.xenesis.channels.pairing.open',
+      reason: 'Open external messenger pairing catalog in Xenesis Connection Center from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS }],
+    },
+    status: {
+      id: 'natural-xenesis-messengers-pairing-status',
+      path: 'xd.xenesis.channels.pairing.status',
+      reason: 'Read external messenger pairing catalog status from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS }],
+    },
   },
-  userStories: {
-    id: 'natural-xenesis-messengers-user-stories-status',
-    path: 'xd.xenesis.channels.userStories.status',
-    reason: 'Read external messenger user-story catalog status from natural language request.',
+  {
+    key: 'userStories',
+    open: {
+      id: 'natural-xenesis-messengers-user-stories-catalog-open',
+      path: 'xd.xenesis.channels.userStories.open',
+      reason: 'Open external messenger user-story catalog in Xenesis Connection Center from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS }],
+    },
+    status: {
+      id: 'natural-xenesis-messengers-user-stories-status',
+      path: 'xd.xenesis.channels.userStories.status',
+      reason: 'Read external messenger user-story catalog status from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS }],
+    },
   },
-  setupPlans: {
-    id: 'natural-xenesis-messengers-setup-plans-status',
-    path: 'xd.xenesis.channels.setupPlans.status',
-    reason: 'Read external messenger setup plan catalog status from natural language request.',
+  {
+    key: 'setupPlans',
+    open: {
+      id: 'natural-xenesis-messengers-setup-plans-catalog-open',
+      path: 'xd.xenesis.channels.setupPlans.open',
+      reason: 'Open external messenger setup plan catalog in Xenesis Connection Center from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS }],
+    },
+    status: {
+      id: 'natural-xenesis-messengers-setup-plans-status',
+      path: 'xd.xenesis.channels.setupPlans.status',
+      reason: 'Read external messenger setup plan catalog status from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS }],
+    },
   },
-  views: {
-    id: 'natural-xenesis-messengers-views-status',
-    path: 'xd.xenesis.messengers.views.status',
-    reason: 'Read external messenger view catalog status from natural language request.',
+  {
+    key: 'views',
+    open: {
+      id: 'natural-xenesis-messengers-views-catalog-open',
+      path: 'xd.xenesis.messengers.views.open',
+      reason: 'Open external messenger view catalog in Xenesis Connection Center from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS }],
+    },
+    status: {
+      id: 'natural-xenesis-messengers-views-status',
+      path: 'xd.xenesis.messengers.views.status',
+      reason: 'Read external messenger view catalog status from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_VIEW_OR_SETUP_CONTEXT_WORDS }],
+    },
   },
-} as const satisfies Record<string, XenesisNaturalDeskActionDescriptor>;
+  {
+    key: 'catalog',
+    open: {
+      id: 'natural-xenesis-messenger-catalog-open',
+      path: 'xd.xenesis.messengers.views.open',
+      reason: 'Open external messenger catalog in Xenesis Connection Center from natural language request.',
+      catalogRules: [{ contextWords: [], fallback: true }],
+    },
+  },
+] as const satisfies readonly XenesisNaturalAggregateSurfaceSpec[];
 
-export const XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_RULES = [
+export const XENESIS_NATURAL_PROVIDER_AGGREGATE_SURFACE_SPECS = [
   {
-    contextWords: XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS.profileDrafts,
+    key: 'routing',
+    open: {
+      id: 'natural-xenesis-providers-routing-catalog-open',
+      path: 'xd.xenesis.providers.routing.open',
+      reason: 'Open AI provider routing in Xenesis Connection Center from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS, order: 0 }],
+    },
+    status: {
+      id: 'natural-xenesis-providers-routing-status',
+      path: 'xd.xenesis.providers.routing.status',
+      reason: 'Read AI provider routing catalog status from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS, order: 0 }],
+    },
   },
   {
-    contextWords: XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS.routing,
+    key: 'setupPlans',
+    open: {
+      id: 'natural-xenesis-providers-setup-plans-catalog-open',
+      path: 'xd.xenesis.providers.setupPlans.open',
+      reason: 'Open AI provider setup plan catalog in Xenesis Connection Center from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS, order: 1 }],
+    },
+    status: {
+      id: 'natural-xenesis-providers-setup-plans-status',
+      path: 'xd.xenesis.providers.setupPlans.status',
+      reason: 'Read AI provider setup plan catalog status from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS, order: 3 }],
+    },
   },
   {
-    contextWords: XENESIS_NATURAL_SAFETY_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS.safety,
+    key: 'views',
+    open: {
+      id: 'natural-xenesis-providers-views-catalog-open',
+      path: 'xd.xenesis.providers.views.open',
+      reason: 'Open AI provider view catalog in Xenesis Connection Center from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS, order: 3 }],
+    },
+    status: {
+      id: 'natural-xenesis-providers-views-status',
+      path: 'xd.xenesis.providers.views.status',
+      reason: 'Read AI provider view catalog status from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS, order: 1 }],
+    },
   },
   {
-    contextWords: XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS.accessGroups,
+    key: 'profileDrafts',
+    open: {
+      id: 'natural-xenesis-providers-profile-drafts-catalog-open',
+      path: 'xd.xenesis.providers.profileDrafts.open',
+      reason: 'Open AI provider profile draft catalog in Xenesis Connection Center from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS, order: 4 }],
+    },
+    status: {
+      id: 'natural-xenesis-providers-profile-drafts-status',
+      path: 'xd.xenesis.providers.profileDrafts.status',
+      reason: 'Read AI provider profile draft catalog status from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS, order: 2 }],
+    },
   },
   {
-    contextWords: XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS.pairing,
+    key: 'setup',
+    open: {
+      id: 'natural-xenesis-providers-setup-catalog-open',
+      path: 'xd.xenesis.providers.setup.open',
+      reason: 'Open AI provider setup catalog in Xenesis Connection Center from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_SETUP_CONTEXT_WORDS, order: 2 }],
+    },
+    status: {
+      id: 'natural-xenesis-providers-setup-status',
+      path: 'xd.xenesis.providers.setup.status',
+      reason: 'Read AI provider setup catalog status from natural language request.',
+      catalogRules: [{ contextWords: [], fallback: true, order: 4 }],
+    },
   },
   {
-    contextWords: XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS.userStories,
+    key: 'catalog',
+    open: {
+      id: 'natural-xenesis-provider-catalog-open',
+      path: 'xd.xenesis.providers.setup.open',
+      reason: 'Open AI provider catalog in Xenesis Connection Center from natural language request.',
+      catalogRules: [{ contextWords: [], fallback: true, order: 5 }],
+    },
   },
-  {
-    contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS.setupPlans,
-  },
-  {
-    contextWords: XENESIS_NATURAL_VIEW_OR_SETUP_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS.views,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+] as const satisfies readonly XenesisNaturalAggregateSurfaceSpec[];
 
-export const XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS = {
-  routing: {
-    id: 'natural-xenesis-providers-routing-status',
-    path: 'xd.xenesis.providers.routing.status',
-    reason: 'Read AI provider routing catalog status from natural language request.',
-  },
-  views: {
-    id: 'natural-xenesis-providers-views-status',
-    path: 'xd.xenesis.providers.views.status',
-    reason: 'Read AI provider view catalog status from natural language request.',
-  },
-  profileDrafts: {
-    id: 'natural-xenesis-providers-profile-drafts-status',
-    path: 'xd.xenesis.providers.profileDrafts.status',
-    reason: 'Read AI provider profile draft catalog status from natural language request.',
-  },
-  setupPlans: {
-    id: 'natural-xenesis-providers-setup-plans-status',
-    path: 'xd.xenesis.providers.setupPlans.status',
-    reason: 'Read AI provider setup plan catalog status from natural language request.',
-  },
-  setup: {
-    id: 'natural-xenesis-providers-setup-status',
-    path: 'xd.xenesis.providers.setup.status',
-    reason: 'Read AI provider setup catalog status from natural language request.',
-  },
-} as const satisfies Record<string, XenesisNaturalDeskActionDescriptor>;
+export const XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_ACTION_DESCRIPTORS =
+  buildXenesisNaturalAggregateActionDescriptors(XENESIS_NATURAL_CONNECTION_AGGREGATE_SURFACE_SPECS, 'open');
+export const XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS =
+  buildXenesisNaturalAggregateActionDescriptors(XENESIS_NATURAL_CONNECTION_AGGREGATE_SURFACE_SPECS, 'status');
+export const XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_RULES = buildXenesisNaturalConnectionAggregateOpenRules(
+  XENESIS_NATURAL_CONNECTION_AGGREGATE_SURFACE_SPECS,
+);
+export const XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_RULES = buildXenesisNaturalConnectionAggregateStatusRules(
+  XENESIS_NATURAL_CONNECTION_AGGREGATE_SURFACE_SPECS,
+);
 
-export const XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS.routing,
-  },
-  {
-    contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS.views,
-  },
-  {
-    contextWords: XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS.profileDrafts,
-  },
-  {
-    contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS.setupPlans,
-  },
-  {
-    contextWords: [],
-    action: XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS.setup,
-    fallback: true,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+export const XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS = buildXenesisNaturalAggregateActionDescriptors(
+  XENESIS_NATURAL_TOOL_AGGREGATE_SURFACE_SPECS,
+  'open',
+);
+export const XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS = buildXenesisNaturalAggregateActionDescriptors(
+  XENESIS_NATURAL_TOOL_AGGREGATE_SURFACE_SPECS,
+  'status',
+);
+export const XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_RULES = buildXenesisNaturalAggregateRules(
+  XENESIS_NATURAL_TOOL_AGGREGATE_SURFACE_SPECS,
+  'open',
+);
+export const XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_RULES = buildXenesisNaturalAggregateRules(
+  XENESIS_NATURAL_TOOL_AGGREGATE_SURFACE_SPECS,
+  'status',
+);
 
-export const XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS.routing,
-  },
-  {
-    contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS.setupPlans,
-  },
-  {
-    contextWords: XENESIS_NATURAL_SETUP_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS.setup,
-  },
-  {
-    contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS.views,
-  },
-  {
-    contextWords: XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS.profileDrafts,
-  },
-  {
-    contextWords: [],
-    action: XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS.catalog,
-    fallback: true,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+export const XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_ACTION_DESCRIPTORS =
+  buildXenesisNaturalAggregateActionDescriptors(XENESIS_NATURAL_MESSENGER_AGGREGATE_SURFACE_SPECS, 'open');
+export const XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS =
+  buildXenesisNaturalAggregateActionDescriptors(XENESIS_NATURAL_MESSENGER_AGGREGATE_SURFACE_SPECS, 'status');
+export const XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_RULES = buildXenesisNaturalAggregateRules(
+  XENESIS_NATURAL_MESSENGER_AGGREGATE_SURFACE_SPECS,
+  'open',
+);
+export const XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_RULES = buildXenesisNaturalAggregateRules(
+  XENESIS_NATURAL_MESSENGER_AGGREGATE_SURFACE_SPECS,
+  'status',
+);
 
-export const XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS = {
-  guides: {
-    id: 'natural-xenesis-guides-status',
-    path: 'xd.xenesis.guides.status',
-    reason: 'Read Xenesis guide catalog status from natural language request.',
-  },
-  diagnostics: {
-    id: 'natural-xenesis-connection-diagnostics-status',
-    path: 'xd.xenesis.connections.diagnostics.status',
-    reason: 'Read Xenesis connection diagnostics catalog from natural language request.',
-  },
-  setupRequests: {
-    id: 'natural-xenesis-connection-setup-requests-status',
-    path: 'xd.xenesis.connections.setupRequests.status',
-    reason: 'Read Xenesis connection setup request catalog from natural language request.',
-  },
-  onboarding: {
-    id: 'natural-xenesis-onboarding-status',
-    path: 'xd.xenesis.onboarding.status',
-    reason: 'Read Xenesis onboarding status from natural language request.',
-  },
-  connections: {
-    id: 'natural-xenesis-connections-status',
-    path: 'xd.xenesis.connections.status',
-    reason: 'Read Xenesis connection status from natural language request.',
-  },
-} as const satisfies Record<string, XenesisNaturalDeskActionDescriptor>;
-
-export const XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_RULES = [
-  {
-    stage: 'early',
-    matchKind: 'guideCatalog',
-    action: XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS.guides,
-  },
-  {
-    stage: 'early',
-    matchKind: 'diagnosticsCatalog',
-    action: XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS.diagnostics,
-  },
-  {
-    stage: 'early',
-    matchKind: 'setupRequestCatalog',
-    action: XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS.setupRequests,
-  },
-  {
-    stage: 'late',
-    matchKind: 'onboarding',
-    action: XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS.onboarding,
-  },
-  {
-    stage: 'late',
-    matchKind: 'guideContext',
-    action: XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS.guides,
-  },
-  {
-    stage: 'late',
-    matchKind: 'connectionContext',
-    action: XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS.connections,
-  },
-] as const satisfies readonly XenesisNaturalConnectionAggregateStatusRule[];
+export const XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS = buildXenesisNaturalAggregateActionDescriptors(
+  XENESIS_NATURAL_PROVIDER_AGGREGATE_SURFACE_SPECS,
+  'open',
+);
+export const XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS =
+  buildXenesisNaturalAggregateActionDescriptors(XENESIS_NATURAL_PROVIDER_AGGREGATE_SURFACE_SPECS, 'status');
+export const XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_RULES = buildXenesisNaturalAggregateRules(
+  XENESIS_NATURAL_PROVIDER_AGGREGATE_SURFACE_SPECS,
+  'open',
+);
+export const XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_RULES = buildXenesisNaturalAggregateRules(
+  XENESIS_NATURAL_PROVIDER_AGGREGATE_SURFACE_SPECS,
+  'status',
+);
 
 export const XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS = {
   routing: {

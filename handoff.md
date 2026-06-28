@@ -14556,6 +14556,86 @@ Verification so far:
     as a local plan artifact but is ignored by `.gitignore` via
     `docs/superpowers/`, so it is not forced into the public-release commit.
 
+## Current Natural Routing De-Hardcoding Slice
+
+- Current objective:
+  - Increase the slice size by taking the next substantial de-hardcoding unit:
+    derive Xenesis Connection Center aggregate natural-language routing
+    descriptors/rules from a single shared surface spec instead of maintaining
+    separate hardcoded open/status descriptor objects and rule arrays.
+- Rationale:
+  - The Agent pane source already no longer owns the connection target arrays,
+    but `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts` still repeats
+    aggregate CR paths and reasons across tool, messenger, provider, and
+    connection catalog open/status routing.
+  - This slice keeps deterministic natural-language routing explicit, but
+    makes the executable mapping data-driven from one local surface catalog.
+- Scope:
+  - TDD contract for aggregate surface specs.
+  - Refactor aggregate open/status descriptor and rule construction for
+    connection, tool, messenger, and provider surfaces.
+  - Preserve existing user-visible routing behavior and CR paths.
+  - No external web browsing.
+- Touched files so far:
+  - `handoff.md`
+- Commands run:
+  - `rg` scans over shared natural-language routing, Connection Center catalog,
+    Agent pane tests, and manual docs.
+  - `git status --short` -> tracked worktree clean after commit `c0873bf`;
+    ignored local plan remains under `docs/superpowers/`.
+- Known gaps:
+  - Implementation not started yet.
+- Next intended step:
+  - Add RED tests requiring aggregate natural-language surfaces to be generated
+    from shared surface specs, then refactor the catalog implementation.
+
+### Natural Routing Surface Spec Implementation
+
+- Touched files:
+  - `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-28-natural-routing-surface-specs.md`
+  - `handoff.md`
+- RED result:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    failed 1/39 because the new aggregate surface spec exports did not exist
+    yet.
+- Implementation:
+  - Added aggregate surface specs for connection, tool, messenger, and provider
+    Connection Center natural-language routing.
+  - Added builders for aggregate descriptors and catalog/connection aggregate
+    rules.
+  - Preserved existing CR paths, reason strings, fallback behavior, and rule
+    priority with explicit per-rule ordering where legacy order mattered.
+  - Added a regression test that exported aggregate descriptors/rules stay
+    aligned with the shared surface specs and that the old hand-listed
+    aggregate descriptor objects do not return.
+- Failed verification during implementation:
+  - First GREEN attempt failed existing route-order assertions for provider
+    status and then connection aggregate status; fixed with explicit rule order.
+  - First post-format `npm run typecheck` failed because tests accessed
+    optional `requiredContextWordGroups` as definitely present after rule
+    generation widened the type; fixed with optional chaining.
+- Exact verification result:
+  - `npx biome format --write src\shared\xenesisNaturalLanguageCapabilityCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> formatted 2 files, then reran with no further fixes.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 39/39.
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` ->
+    passed 6/6.
+  - `npm run typecheck` -> passed.
+  - `npm run smoke:xenesis:natural-desk-routing` -> passed 180/180, including
+    provider setup-plan, external tool setup-plan, channel setup-plan, and
+    aggregate catalog prompts.
+- Known gaps:
+  - This slice removes aggregate routing duplication only. Target-specific
+    natural-language action descriptors remain deterministic catalog entries
+    for a later de-hardcoding slice.
+- Next intended step:
+  - Run final diff/whitespace checks, commit this de-hardcoding slice, then
+    continue with a larger target-specific natural-routing or setup-apply
+    orchestration slice.
+
 ### Broad Verification
 
 - Commands run:
