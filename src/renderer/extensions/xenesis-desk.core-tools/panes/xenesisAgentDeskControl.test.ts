@@ -1266,6 +1266,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /TOOL_AGGREGATE_STATUS_ACTIONS\.oauthDrafts/);
   assert.doesNotMatch(source, /TOOL_AGGREGATE_STATUS_ACTIONS\.views/);
   assert.doesNotMatch(source, /TOOL_AGGREGATE_STATUS_ACTIONS\.installPlans/);
+  assert.doesNotMatch(source, /TOOL_AGGREGATE_STATUS_ACTIONS\.setupPlans/);
   assert.doesNotMatch(source, /TOOL_AGGREGATE_STATUS_ACTIONS\.setup/);
   assert.doesNotMatch(source, /TOOL_AGGREGATE_STATUS_ACTIONS\.actions/);
   assert.doesNotMatch(source, /TOOL_AGGREGATE_STATUS_ACTIONS\.userStories/);
@@ -1281,6 +1282,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
       { path: 'xd.xenesis.tools.oauthDrafts.status', requiredGroups: 0, fallback: false },
       { path: 'xd.xenesis.tools.views.status', requiredGroups: 0, fallback: false },
       { path: 'xd.xenesis.tools.installPlans.status', requiredGroups: 0, fallback: false },
+      { path: 'xd.xenesis.tools.setupPlans.status', requiredGroups: 0, fallback: false },
       { path: 'xd.xenesis.tools.setup.status', requiredGroups: 0, fallback: false },
       { path: 'xd.xenesis.tools.actions.status', requiredGroups: 0, fallback: false },
       { path: 'xd.xenesis.tools.userStories.status', requiredGroups: 0, fallback: false },
@@ -1366,6 +1368,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /TOOL_AGGREGATE_OPEN_ACTIONS\.oauthDrafts/);
   assert.doesNotMatch(source, /TOOL_AGGREGATE_OPEN_ACTIONS\.views/);
   assert.doesNotMatch(source, /TOOL_AGGREGATE_OPEN_ACTIONS\.installPlans/);
+  assert.doesNotMatch(source, /TOOL_AGGREGATE_OPEN_ACTIONS\.setupPlans/);
   assert.doesNotMatch(source, /TOOL_AGGREGATE_OPEN_ACTIONS\.setup/);
   assert.doesNotMatch(source, /TOOL_AGGREGATE_OPEN_ACTIONS\.actions/);
   assert.doesNotMatch(source, /TOOL_AGGREGATE_OPEN_ACTIONS\.userStories/);
@@ -1412,6 +1415,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
       { path: 'xd.xenesis.tools.oauthDrafts.open', requiredGroups: 0, fallback: false },
       { path: 'xd.xenesis.tools.views.open', requiredGroups: 0, fallback: false },
       { path: 'xd.xenesis.tools.installPlans.open', requiredGroups: 0, fallback: false },
+      { path: 'xd.xenesis.tools.setupPlans.open', requiredGroups: 0, fallback: false },
       { path: 'xd.xenesis.tools.setup.open', requiredGroups: 0, fallback: false },
       { path: 'xd.xenesis.tools.actions.open', requiredGroups: 0, fallback: false },
       { path: 'xd.xenesis.tools.userStories.open', requiredGroups: 0, fallback: false },
@@ -1515,6 +1519,12 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
         targetScope: 'tool',
         argsKind: 'tool',
         path: 'xd.xenesis.tools.installPlans.status',
+        fallback: false,
+      },
+      {
+        targetScope: 'tool',
+        argsKind: 'targetId',
+        path: 'xd.xenesis.tools.setupPlans.status',
         fallback: false,
       },
       {
@@ -1679,6 +1689,12 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
         targetScope: 'tool',
         argsKind: 'targetIdVisible',
         path: 'xd.xenesis.tools.installPlans.open',
+        fallback: false,
+      },
+      {
+        targetScope: 'tool',
+        argsKind: 'targetIdVisible',
+        path: 'xd.xenesis.tools.setupPlans.open',
         fallback: false,
       },
       {
@@ -2287,6 +2303,8 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.xenesis\.sessions\.reset/);
   assert.match(hint, /xd\.xenesis\.tools\.setup\.status/);
   assert.match(hint, /xd\.xenesis\.tools\.setup\.open/);
+  assert.match(hint, /xd\.xenesis\.tools\.setupPlans\.status/);
+  assert.match(hint, /xd\.xenesis\.tools\.setupPlans\.open/);
   assert.match(hint, /xd\.xenesis\.tools\.connectors\.status/);
   assert.match(hint, /xd\.xenesis\.tools\.views\.status/);
   assert.match(hint, /xd\.xenesis\.tools\.views\.open/);
@@ -3141,6 +3159,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 툴 설정 플랜 전체 열어줘').actions, [
+    {
+      id: 'natural-xenesis-tools-setup-plans-catalog-open',
+      path: 'xd.xenesis.tools.setupPlans.open',
+      args: { ensureVisible: true },
+      approved: false,
+      reason: 'Open external tool setup plan catalog in Xenesis Connection Center from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 툴 view 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-tools-views-catalog-open',
@@ -3360,6 +3388,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
       args: { id: 'notion', ensureVisible: true },
       approved: false,
       reason: 'Open Notion tool install plan from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 외부 도구 설정 플랜 열어줘').actions, [
+    {
+      id: 'natural-xenesis-tool-setup-plan-open-notion',
+      path: 'xd.xenesis.tools.setupPlans.open',
+      args: { id: 'notion', ensureVisible: true },
+      approved: false,
+      reason: 'Open Notion tool setup plan from natural language request.',
     },
   ]);
 
@@ -3996,6 +4034,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center read
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 툴 설정 플랜 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-tools-setup-plans-status',
+      path: 'xd.xenesis.tools.setupPlans.status',
+      args: {},
+      approved: false,
+      reason: 'Read external tool setup plan catalog status from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 툴 view 전체 상태 보여줘').actions, [
     {
       id: 'natural-xenesis-tools-views-status',
@@ -4173,6 +4221,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center read
       args: { id: 'google-calendar' },
       approved: false,
       reason: 'Read Google Calendar tool setup status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('구글 캘린더 설정 플랜 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-tool-setup-plan-status-google-calendar',
+      path: 'xd.xenesis.tools.setupPlans.status',
+      args: { id: 'google-calendar' },
+      approved: false,
+      reason: 'Read Google Calendar tool setup plan status from natural language request.',
     },
   ]);
 

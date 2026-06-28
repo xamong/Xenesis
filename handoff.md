@@ -7,6 +7,65 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current External Tool Setup Plan Slice
+
+- Objective: add a larger Desk-native setup-plan layer for external tools so an
+  operator or Agent can ask for a single CR-first plan for Notion, Linear,
+  Google Workspace, Google Calendar, Fetch, Filesystem, or GitHub and get the
+  ordered read/open/review paths that connect tool views, setup metadata,
+  connector readiness, install plans, MCP install drafts, OAuth setup packets,
+  action policies, user stories, diagnostics, and setup requests.
+- Slice size policy:
+  - Bundle read-model types, derived status data, CR status/open paths, main
+    handlers, Connection Center helper/UI, natural-language routing, smoke
+    inventory, manual guide update, Obsidian working note, focused tests, broad
+    verification, and commit in one larger cycle.
+- Scope boundary:
+  - Do not complete OAuth.
+  - Do not store OAuth tokens, client secrets, consent responses, or raw provider
+    credentials.
+  - Do not execute provider tools or mutate Notion, Linear, GitHub, Google
+    Workspace, Google Calendar, local files, or browser state.
+  - Do not write MCP config through this plan surface; ready apply paths remain
+    on their existing approval-gated CR methods.
+  - Keep the plan as CR-first read/open/review orchestration metadata plus
+    existing Action Inbox review request paths.
+- External documentation handling:
+  - No external web browsing for this slice. Use repo-local source, tests,
+    Obsidian notes, `handoff.md`, CR audit, and local smoke.
+- Plan:
+  - `docs/superpowers/plans/2026-06-28-xenesis-tool-setup-plan.md`
+- Next intended step:
+  - Add RED tests for the setup-plan model, CR registration/dispatch, renderer
+    summary/helper/focus behavior, natural-language route, smoke inventory, and
+    guide coverage before implementation.
+
+### RED Verification
+
+- Commands run:
+  - `npx tsx --test src\shared\xenesisConnections.test.ts`
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts`
+  - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
+- Expected failures:
+  - Connection status tests fail because `tool-setup-plan` is not a detail focus
+    value, `toolSetupPlan` metadata is absent, and the external tool guide has
+    no setup-plan coverage yet.
+  - Capability tests fail because `xd.xenesis.tools.setupPlans.status/open` are
+    not registered or dispatched.
+  - Connection Center tests fail because the setup-plan data attribute, summary
+    formatter, and read request helper do not exist.
+  - Natural-language tests fail because prompt hint and deterministic routing do
+    not include setup-plan paths; `설정 플랜` currently falls back to generic
+    tool setup paths.
+- Passed:
+  - Smoke inventory tests passed after adding setup-plan prompts because those
+    tests validate script shape/reporting rather than live CR availability.
+- Next intended step:
+  - Implement the setup-plan model, CR status/open paths, main adapter handlers,
+    renderer helper/UI, natural-language routing, and guide update.
+
 ## Current Tool OAuth Setup Packet Slice
 
 - Objective: expose a structured Google tool OAuth setup packet through the
@@ -14184,3 +14243,74 @@ Verification so far:
 - Next intended step:
   - Run final `git diff --check`, inspect status, and commit as
     `feat: apply xenesis channel profile drafts`.
+
+## Current External Tool Setup Plan Slice
+
+- Objective: add a CR-first setup-plan layer for external tools that joins tool
+  view, setup metadata, connector readiness, install plans, MCP install drafts,
+  OAuth setup packets, action policies, user stories, diagnostics, and setup
+  requests into one ordered read/open surface per tool.
+- Slice size policy: use a larger cycle. Bundle model, CR registry/dispatcher,
+  main-process handlers, renderer UI, natural routing, smoke inventory, docs,
+  Obsidian note, broad verification, and commit together.
+- External documentation handling: no web browsing. Use repo code,
+  repo-local Obsidian context, and local verification only.
+- Plan:
+  - `docs/superpowers/plans/2026-06-28-xenesis-tool-setup-plan.md`
+- Implementation so far:
+  - Added `toolSetupPlan` model metadata and `tool-setup-plan` detail focus.
+  - Added `xd.xenesis.tools.setupPlans.status` and
+    `xd.xenesis.tools.setupPlans.open`.
+  - Added main-process status/open handlers that reuse the Connection Center
+    focus mechanism.
+  - Added Connection Center summary/request helper and Settings detail block.
+  - Added natural routing for setup-plan status/open prompts.
+  - Updated external tool integration manual prompt examples and review-only
+    boundaries.
+- Focused verification:
+  - `npx tsx --test src\shared\xenesisConnections.test.ts` passed 38/38.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` passed
+    38/38.
+  - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`
+    passed 48/48.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed 38/38 after updating target rule inventory expectations and making
+    the Google Calendar setup-plan readback prompt explicitly request status.
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` passed
+    5/5.
+- Formatting/static check:
+  - `npx biome format --write ...` on touched files formatted 16 files and
+    fixed 1 file.
+  - `npx biome check --write ... --max-diagnostics 160` on touched files
+    exited 0, fixed 1 file, and reported 14 warnings / 8 infos from existing
+    `src/main/index.ts` and `src/shared/deskBridgeCapabilities.ts`
+    diagnostics.
+- Broad verification:
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit` passed and wrote
+    `docs\capability-registry-audit.md`; audit result: 773 nodes and 689
+    coverage path references.
+  - `npm run build` passed.
+  - `npm --prefix packages/xenesis test` passed with 79 files and 367/367
+    tests.
+  - `npm --prefix packages/xenesis run typecheck` passed.
+  - `npm --prefix packages/xenesis run build` passed.
+  - `npm run smoke:xenesis:natural-desk-routing` initially failed 164/168
+    while it was run in parallel with `npm run build`; the only failed checks
+    were the two new setup-plan live prompts. Root cause: the live Electron
+    smoke reads `out/` while the build rewrites `out/`. A standalone JSON
+    rerun passed 168/168, and the final standalone smoke command passed
+    168/168.
+  - `git diff --check` exited 0 with line-ending warnings only.
+- Obsidian:
+  - Added
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-28-tool-setup-plan.md`.
+- Known gaps:
+  - `npm run lint` still fails repo-wide with existing Biome/CRLF/style
+    diagnostics: 1150 errors, 419 warnings, 92 infos.
+  - `npm --prefix packages/xenesis run provider:smoke` is blocked by missing
+    `OPENAI_API_KEY`.
+  - `npm run check:public-release` is blocked by missing
+    `.github/workflows/ci.yml` in this worktree.
+- Next intended step:
+  - Inspect final diff/status and commit the setup-plan slice.

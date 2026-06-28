@@ -98,6 +98,7 @@ import {
   XENESIS_NATURAL_SESSION_CONTEXT_WORDS,
   XENESIS_NATURAL_SESSION_RESET_CONTEXT_WORDS,
   XENESIS_NATURAL_SETUP_CONTEXT_WORDS,
+  XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
   XENESIS_NATURAL_TASK_CONTEXT_WORDS,
   XENESIS_NATURAL_TERMINAL_CONTEXT_WORDS,
   XENESIS_NATURAL_TERMINAL_ID_PREFIX,
@@ -1058,6 +1059,11 @@ export const XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS = {
     path: 'xd.xenesis.tools.installPlans.open',
     reason: 'Open external tool install plan catalog in Xenesis Connection Center from natural language request.',
   },
+  setupPlans: {
+    id: 'natural-xenesis-tools-setup-plans-catalog-open',
+    path: 'xd.xenesis.tools.setupPlans.open',
+    reason: 'Open external tool setup plan catalog in Xenesis Connection Center from natural language request.',
+  },
   setup: {
     id: 'natural-xenesis-tools-setup-catalog-open',
     path: 'xd.xenesis.tools.setup.open',
@@ -1101,6 +1107,10 @@ export const XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_RULES = [
   {
     contextWords: XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS,
     action: XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS.installPlans,
+  },
+  {
+    contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS.setupPlans,
   },
   {
     contextWords: XENESIS_NATURAL_SETUP_CONTEXT_WORDS,
@@ -1254,6 +1264,11 @@ export const XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS = {
     path: 'xd.xenesis.tools.installPlans.status',
     reason: 'Read external tool install plan catalog status from natural language request.',
   },
+  setupPlans: {
+    id: 'natural-xenesis-tools-setup-plans-status',
+    path: 'xd.xenesis.tools.setupPlans.status',
+    reason: 'Read external tool setup plan catalog status from natural language request.',
+  },
   setup: {
     id: 'natural-xenesis-tools-setup-status',
     path: 'xd.xenesis.tools.setup.status',
@@ -1292,6 +1307,10 @@ export const XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_RULES = [
   {
     contextWords: XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS,
     action: XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS.installPlans,
+  },
+  {
+    contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS.setupPlans,
   },
   {
     contextWords: XENESIS_NATURAL_SETUP_CONTEXT_WORDS,
@@ -1640,6 +1659,11 @@ export const XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS = {
     idFor: (id: string, _label: string) => `natural-xenesis-tool-install-plan-status-${id}`,
     reasonFor: (_id: string, label: string) => `Read ${label} tool install plan status from natural language request.`,
   },
+  toolSetupPlan: {
+    path: 'xd.xenesis.tools.setupPlans.status',
+    idFor: (id: string, _label: string) => `natural-xenesis-tool-setup-plan-status-${id}`,
+    reasonFor: (_id: string, label: string) => `Read ${label} tool setup plan status from natural language request.`,
+  },
   toolSetup: {
     path: 'xd.xenesis.tools.setup.status',
     idFor: (id: string, _label: string) => `natural-xenesis-tool-setup-status-${id}`,
@@ -1736,6 +1760,12 @@ export const XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES = [
     contextWords: XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS,
     action: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.toolInstallPlan,
     argsKind: 'tool',
+  },
+  {
+    targetScope: 'tool',
+    contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.toolSetupPlan,
+    argsKind: 'targetId',
   },
   {
     targetScope: 'tool',
@@ -1852,6 +1882,11 @@ export const XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS = {
     idFor: (id: string, _label: string) => `natural-xenesis-tool-install-plan-open-${id}`,
     reasonFor: (_id: string, label: string) => `Open ${label} tool install plan from natural language request.`,
   },
+  toolSetupPlan: {
+    path: 'xd.xenesis.tools.setupPlans.open',
+    idFor: (id: string, _label: string) => `natural-xenesis-tool-setup-plan-open-${id}`,
+    reasonFor: (_id: string, label: string) => `Open ${label} tool setup plan from natural language request.`,
+  },
   toolConnector: {
     path: 'xd.xenesis.tools.connectors.open',
     idFor: (id: string, _label: string) => `natural-xenesis-tool-connector-open-${id}`,
@@ -1950,6 +1985,12 @@ export const XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES = [
     targetScope: 'tool',
     contextWords: XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS,
     action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.toolInstallPlan,
+    argsKind: 'targetIdVisible',
+  },
+  {
+    targetScope: 'tool',
+    contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.toolSetupPlan,
     argsKind: 'targetIdVisible',
   },
   {

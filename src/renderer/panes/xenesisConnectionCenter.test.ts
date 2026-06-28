@@ -6,6 +6,7 @@ import type {
   XenesisConnectionOnboardingGuidedStep,
   XenesisConnectionProviderProfileDraftReviewStep,
   XenesisConnectionsStatus,
+  XenesisConnectionToolSetupPlanTemplate,
 } from '../../shared/types';
 import {
   buildXenesisChannelProfileDraftApplyRequest,
@@ -23,6 +24,7 @@ import {
   buildXenesisToolActionCatalogRequest,
   buildXenesisToolOAuthDraftRequest,
   buildXenesisToolOAuthSetupPacketRequest,
+  buildXenesisToolSetupPlanRequest,
   formatXenesisChannelAccessGroupsSummary,
   formatXenesisChannelPairingSummary,
   formatXenesisChannelProfileDraftSummary,
@@ -47,6 +49,7 @@ import {
   formatXenesisToolInstallPlanSummary,
   formatXenesisToolOAuthDraftSummary,
   formatXenesisToolOAuthSetupPacketSummary,
+  formatXenesisToolSetupPlanSummary,
   formatXenesisToolSetupSummary,
   formatXenesisToolUserStorySummary,
   formatXenesisToolViewSummary,
@@ -75,12 +78,14 @@ test('xenesisConnectionTone maps every status to a stable UI tone', () => {
 });
 
 test('xenesis detail focus selector maps CR detail values to existing data attributes', () => {
+  assert.equal(XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['tool-setup-plan'], 'data-xenesis-tool-setup-plan');
   assert.equal(XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['tool-oauth-draft'], 'data-xenesis-tool-oauth-draft');
   assert.equal(XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['channel-routing'], 'data-xenesis-channel-routing');
   assert.equal(
     XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['provider-profile-draft'],
     'data-xenesis-provider-profile-draft',
   );
+  assert.equal(xenesisConnectionDetailFocusSelector('tool-setup-plan'), '[data-xenesis-tool-setup-plan]');
   assert.equal(xenesisConnectionDetailFocusSelector('tool-oauth-draft'), '[data-xenesis-tool-oauth-draft]');
   assert.equal(xenesisConnectionDetailFocusSelector('channel-routing'), '[data-xenesis-channel-routing]');
   assert.equal(xenesisConnectionDetailFocusSelector('provider-profile-draft'), '[data-xenesis-provider-profile-draft]');
@@ -882,6 +887,73 @@ test('formatXenesisToolInstallPlanSummary describes install mode, runtime suppor
     }),
     'copy-template / ready-template / 3 step(s)',
   );
+});
+
+test('formatXenesisToolSetupPlanSummary describes runtime support, guided steps, and blocked actions', () => {
+  const plan: XenesisConnectionToolSetupPlanTemplate = {
+    planStatus: 'planned',
+    runtimeSupport: 'planned-oauth',
+    guideId: 'external-tool-integrations',
+    guidePath: 'docs/manual/11-external-tool-integrations.md',
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    setupSurface: 'Settings > AI Provider > Local CLI MCP',
+    reviewSurface: 'Desk Action Inbox',
+    steps: [
+      {
+        id: 'oauth-setup-packet',
+        label: 'Read OAuth setup packet',
+        kind: 'read',
+        crPath: 'xd.xenesis.tools.oauthDrafts.setupPacket',
+        args: { id: 'google-calendar' },
+        expectedState: 'Google Calendar OAuth app registration and token-store checklist is reviewable.',
+        verifyWith: ['oauth-setup-packet'],
+        safetyBoundary: 'OAuth setup packet reads do not complete OAuth.',
+      },
+    ],
+    readPaths: ['xd.xenesis.tools.setupPlans.status', 'xd.xenesis.tools.oauthDrafts.setupPacket'],
+    controlPaths: ['xd.xenesis.tools.setupPlans.open', 'xd.xenesis.tools.oauthDrafts.request'],
+    diagnostics: ['planned-oauth-template'],
+    blockedActions: ['complete OAuth or store Google OAuth tokens'],
+    safetyBoundaries: ['setup plans do not execute provider tools or mutate external systems'],
+  };
+
+  assert.equal(formatXenesisToolSetupPlanSummary(plan), 'planned-oauth / 1 guided step(s) / 1 blocked action(s)');
+});
+
+test('buildXenesisToolSetupPlanRequest targets the setup-plan CR read path', () => {
+  const item = {
+    id: 'google-calendar',
+    kind: 'tool',
+    label: 'Google Calendar',
+    status: 'planned',
+    summary: 'Planned calendar OAuth setup.',
+    toolSetupPlan: {
+      planStatus: 'planned',
+      runtimeSupport: 'planned-oauth',
+      guideId: 'external-tool-integrations',
+      guidePath: 'docs/manual/11-external-tool-integrations.md',
+      primarySurface: 'Settings > Xenesis Agent > Connections',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      reviewSurface: 'Desk Action Inbox',
+      steps: [],
+      readPaths: ['xd.xenesis.tools.setupPlans.status'],
+      controlPaths: ['xd.xenesis.tools.setupPlans.open'],
+      diagnostics: ['planned-oauth-template'],
+      blockedActions: ['complete OAuth or store Google OAuth tokens'],
+      safetyBoundaries: ['setup plans are review-only'],
+    },
+  } satisfies XenesisConnectionItem;
+
+  assert.deepEqual(buildXenesisToolSetupPlanRequest(item), {
+    path: 'xd.xenesis.tools.setupPlans.status',
+    args: {
+      id: 'google-calendar',
+    },
+    source: 'xenesis',
+    approved: false,
+  });
+
+  assert.equal(buildXenesisToolSetupPlanRequest({ ...item, toolSetupPlan: undefined }), null);
 });
 
 test('formatXenesisMcpInstallDraftSummary describes server, transport, and draft status', () => {

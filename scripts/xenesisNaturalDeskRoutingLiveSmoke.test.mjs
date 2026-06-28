@@ -148,6 +148,18 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
       expectedVisibleText: 'Desk action completed',
     },
     {
+      id: 'tool-setup-plans-status',
+      prompt: '외부 툴 설정 플랜 전체 상태 보여줘',
+      expectedPath: 'xd.xenesis.tools.setupPlans.status',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
+      id: 'notion-tool-setup-plan-open',
+      prompt: '노션 외부 도구 설정 플랜 열어줘',
+      expectedPath: 'xd.xenesis.tools.setupPlans.open',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
       id: 'tool-view-catalog-open',
       prompt: '외부 툴 view 전체 열어줘',
       expectedPath: 'xd.xenesis.tools.views.open',

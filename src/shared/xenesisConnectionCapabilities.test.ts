@@ -7,7 +7,11 @@ import {
   findDeskBridgeCapability,
   listDeskBridgeCapabilities,
 } from './deskBridgeCapabilities';
-import { buildXenesisConnectionCenterOpenArgs, XENESIS_CONNECTION_PROVIDER_IDS } from './xenesisConnections';
+import {
+  buildXenesisConnectionCenterOpenArgs,
+  XENESIS_CONNECTION_PROVIDER_IDS,
+  XENESIS_CONNECTION_TOOL_IDS,
+} from './xenesisConnections';
 
 test('xenesis capability ID allowlists are owned by the shared connection catalog', () => {
   const capabilitySource = readFileSync(new URL('./deskBridgeCapabilities.ts', import.meta.url), 'utf8');
@@ -1796,6 +1800,68 @@ test('xenesis guide catalog capabilities are registered and dispatch to the adap
   assert.deepEqual(openResult.result, {
     ok: true,
     item: { id: 'agent-user-stories' },
+  });
+});
+
+test('xenesis tool setup plan capabilities are registered and dispatch to the adapter', async () => {
+  const statusCapability = findDeskBridgeCapability('xd.xenesis.tools.setupPlans.status');
+  const openCapability = findDeskBridgeCapability('xd.xenesis.tools.setupPlans.open');
+  const statusSchemaProperties = (statusCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
+  assert.equal(statusCapability?.permission, 'read');
+  assert.equal(statusCapability?.approval, 'never');
+  assert.equal(openCapability?.permission, 'control');
+  assert.equal(openCapability?.approval, 'never');
+  assert.equal(schemaRequiredFields(openCapability).includes('id'), false);
+  assertOpenCapabilityDetailFocus('xd.xenesis.tools.setupPlans.open', 'tool-setup-plan');
+  for (const tool of XENESIS_CONNECTION_TOOL_IDS) {
+    assert.equal(statusSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by status`);
+    assert.equal(openSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by open`);
+    assert.equal(openSchemaProperties.tool?.enum.includes(tool), true, `${tool} should be accepted by open alias`);
+  }
+
+  const calls: Array<{ method: string; args: unknown }> = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisToolSetupPlansStatus: (args) => {
+      calls.push({ method: 'status', args });
+      return {
+        ok: true,
+        items: [{ id: 'google-calendar', runtimeSupport: 'planned-oauth' }],
+      };
+    },
+    openXenesisToolSetupPlan: (args) => {
+      calls.push({ method: 'open', args });
+      return {
+        ok: true,
+        item: { id: 'google-calendar', runtimeSupport: 'planned-oauth' },
+      };
+    },
+  };
+
+  const statusResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.tools.setupPlans.status',
+    args: { id: 'google-calendar' },
+    source: 'xenesis',
+  });
+  const openResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.tools.setupPlans.open',
+    args: { id: 'google-calendar', ensureVisible: true },
+    source: 'xenesis',
+  });
+
+  assert.equal(statusResult.ok, true);
+  assert.equal(openResult.ok, true);
+  assert.deepEqual(calls, [
+    { method: 'status', args: { id: 'google-calendar' } },
+    { method: 'open', args: { id: 'google-calendar', ensureVisible: true } },
+  ]);
+  assert.deepEqual(statusResult.result, {
+    ok: true,
+    items: [{ id: 'google-calendar', runtimeSupport: 'planned-oauth' }],
+  });
+  assert.deepEqual(openResult.result, {
+    ok: true,
+    item: { id: 'google-calendar', runtimeSupport: 'planned-oauth' },
   });
 });
 

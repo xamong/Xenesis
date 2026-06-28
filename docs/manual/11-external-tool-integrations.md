@@ -9,8 +9,8 @@ paths, settings state, and verification commands.
 
 External tools are modeled as setup/readiness cards before they are used by an
 agent. A card can expose MCP install plans, connector readiness, OAuth drafts,
-action policies, user-story workflows, diagnostic runbooks, and setup request
-templates.
+action policies, user-story workflows, diagnostic runbooks, setup plans, and
+setup request templates.
 
 The current tool catalog includes Fetch, Filesystem, GitHub, Notion, Linear,
 Google Workspace, and Google Calendar. Planned Google tools stay visibly
@@ -20,11 +20,12 @@ planned until a verified OAuth and MCP setup exists.
 
 1. Read the full Connection Center state with `xd.xenesis.connections.status`.
 2. Verify provider setup and routing before tool execution.
-3. Inspect the tool setup view with `xd.xenesis.tools.views.status`.
-4. Inspect MCP connector readiness and install plans before changing config.
-5. Inspect OAuth drafts before Google Workspace or Calendar setup.
-6. Inspect action policies before allowing provider tool execution.
-7. Record setup requests only when the operator explicitly asks for review.
+3. Inspect the tool setup plan with `xd.xenesis.tools.setupPlans.status`.
+4. Inspect the tool setup view with `xd.xenesis.tools.views.status`.
+5. Inspect MCP connector readiness and install plans before changing config.
+6. Inspect OAuth drafts before Google Workspace or Calendar setup.
+7. Inspect action policies before allowing provider tool execution.
+8. Record setup requests only when the operator explicitly asks for review.
 
 ## CR Readbacks
 
@@ -32,6 +33,8 @@ Use these paths for external tool setup and review:
 
 - `xd.xenesis.tools.views.status`
 - `xd.xenesis.tools.views.open`
+- `xd.xenesis.tools.setupPlans.status`
+- `xd.xenesis.tools.setupPlans.open`
 - `xd.xenesis.tools.setup.status`
 - `xd.xenesis.tools.connectors.status`
 - `xd.xenesis.tools.installPlans.status`
@@ -56,6 +59,12 @@ verification. The Settings Connection Center card renders these as
 diagnostics, and safety boundary for each phase. These rows are planning and
 review metadata only; they do not make the planned OAuth flow executable.
 
+Setup-plan readbacks (`xd.xenesis.tools.setupPlans.status`) collect the ordered
+CR paths for each tool into one reviewable packet. They connect the tool view,
+setup metadata, connector readiness, install plan, MCP install draft, OAuth setup
+packet, action policy, user stories, diagnostics, and setup request without
+executing any of those downstream mutations.
+
 ## Safety Boundaries
 
 This guide does not install MCP servers, write MCP config, complete OAuth, store
@@ -70,6 +79,9 @@ paths, for example:
 
 - `외부 도구 통합 가이드 상태 보여줘`
 - `구글 드라이브 통합 guide file 열어줘`
+- `외부 툴 설정 플랜 전체 상태 보여줘`
+- `노션 외부 도구 설정 플랜 열어줘`
+- `구글 캘린더 설정 플랜 상태 보여줘`
 - `노션 connector 열어줘`
 - `구글 캘린더 OAuth 상태 보여줘`
 - `리니어 액션 정책 상태 보여줘`

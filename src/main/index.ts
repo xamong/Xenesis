@@ -6248,6 +6248,76 @@ async function openXenesisToolSetup(args?: unknown): Promise<Record<string, unkn
   });
 }
 
+function xenesisToolSetupPlanStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    planStatus: item.toolSetupPlan?.planStatus,
+    runtimeSupport: item.toolSetupPlan?.runtimeSupport,
+    guideId: item.toolSetupPlan?.guideId,
+    guidePath: item.toolSetupPlan?.guidePath,
+    primarySurface: item.toolSetupPlan?.primarySurface,
+    setupSurface: item.toolSetupPlan?.setupSurface,
+    reviewSurface: item.toolSetupPlan?.reviewSurface,
+    steps: item.toolSetupPlan?.steps ?? [],
+    readPaths: item.toolSetupPlan?.readPaths ?? [],
+    controlPaths: item.toolSetupPlan?.controlPaths ?? [],
+    diagnostics: item.toolSetupPlan?.diagnostics ?? [],
+    blockedActions: item.toolSetupPlan?.blockedActions ?? [],
+    safetyBoundaries: item.toolSetupPlan?.safetyBoundaries ?? [],
+    toolSetupPlan: item.toolSetupPlan,
+    toolSetup: item.toolSetup,
+    toolConnector: item.toolConnector,
+    toolInstallPlan: item.toolInstallPlan,
+    mcpInstallDraft: item.mcpInstallDraft,
+    toolOAuthDraft: item.toolOAuthDraft,
+    toolActionCatalog: item.toolActionCatalog,
+    toolUserStory: item.toolUserStory,
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisToolSetupPlansStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (id && !isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.tools.items
+    .filter((item) => item.toolSetupPlan)
+    .filter((item) => !id || item.id === id)
+    .map((item: XenesisConnectionItem) => xenesisToolSetupPlanStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisToolSetupPlan(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisToolCatalogSurface(args, {
+    allowedTools: XENESIS_TOOL_SETUP_IDS,
+    isAllowedId: isXenesisToolSetupId,
+    itemPredicate: (item) => Boolean(item.toolSetupPlan),
+    toStatusItem: xenesisToolSetupPlanStatusItem,
+    unsupportedMessage: (id) => `Unsupported Xenesis tool connection: ${id}`,
+    unavailableMessage: (id) => `Xenesis tool setup plan is not available: ${id}`,
+    focusConnectionDetail: 'tool-setup-plan',
+  });
+}
+
 function xenesisToolConnectorStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
   return {
     id: item.id,
@@ -14862,6 +14932,8 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     openXenesisGuide: (args: unknown) => openXenesisGuide(args),
     getXenesisToolSetupStatus: (args: unknown) => getXenesisToolSetupStatus(args),
     openXenesisToolSetup: (args: unknown) => openXenesisToolSetup(args),
+    getXenesisToolSetupPlansStatus: (args: unknown) => getXenesisToolSetupPlansStatus(args),
+    openXenesisToolSetupPlan: (args: unknown) => openXenesisToolSetupPlan(args),
     getXenesisToolConnectorsStatus: (args: unknown) => getXenesisToolConnectorsStatus(args),
     openXenesisToolConnector: (args: unknown) => openXenesisToolConnector(args),
     getXenesisToolViewsStatus: (args: unknown) => getXenesisToolViewsStatus(args),

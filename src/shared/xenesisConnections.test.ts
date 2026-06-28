@@ -84,7 +84,9 @@ test('connection center settings target is owned by the shared connection catalo
   );
   assert.equal(XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES.includes('provider-profile-draft'), true);
   assert.equal(XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES.includes('channel-routing'), true);
+  assert.equal(XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES.includes('tool-setup-plan'), true);
   assert.equal(isXenesisConnectionCenterDetailFocus('tool-oauth-draft'), true);
+  assert.equal(isXenesisConnectionCenterDetailFocus('tool-setup-plan'), true);
   assert.equal(isXenesisConnectionCenterDetailFocus('unknown-detail'), false);
 });
 
@@ -1194,6 +1196,82 @@ test('buildXenesisConnectionsStatus exposes tool setup auth, scope, verification
   assert.ok(googleCalendar?.toolSetup?.verification.includes('calendar-list-read'));
   assert.equal(googleCalendar?.mcpTemplate, undefined);
   assert.equal(googleCalendar?.settingsAction, undefined);
+});
+
+test('buildXenesisConnectionsStatus exposes guided external tool setup plans', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+    repoRoot: 'E:\\xenesis-desk',
+    env: {
+      NOTION_TOKEN: '',
+    },
+  });
+
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+  const calendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+
+  assert.equal(notion?.toolSetupPlan?.runtimeSupport, 'ready-template');
+  assert.equal(notion?.toolSetupPlan?.planStatus, 'action-required');
+  assert.equal(notion?.toolSetupPlan?.guideId, 'external-tool-integrations');
+  assert.equal(notion?.toolSetupPlan?.guidePath, 'docs/manual/11-external-tool-integrations.md');
+  assert.deepEqual(
+    notion?.toolSetupPlan?.steps.map((step) => step.id),
+    [
+      'tool-view',
+      'tool-setup',
+      'tool-connector',
+      'tool-install-plan',
+      'mcp-install-draft',
+      'tool-actions',
+      'tool-user-stories',
+      'diagnostic-runbook',
+      'setup-request',
+    ],
+  );
+  assert.equal(notion?.toolSetupPlan?.readPaths.includes('xd.xenesis.tools.setupPlans.status'), true);
+  assert.equal(notion?.toolSetupPlan?.controlPaths.includes('xd.xenesis.tools.setupPlans.open'), true);
+  assert.equal(notion?.toolSetupPlan?.controlPaths.includes('xd.xenesis.tools.mcpInstallDrafts.request'), true);
+  assert.equal(notion?.setupRequest?.readPaths.includes('xd.xenesis.tools.setupPlans.status'), true);
+  assert.equal(notion?.setupRequest?.controlPaths.includes('xd.xenesis.tools.setupPlans.open'), true);
+
+  assert.equal(calendar?.toolSetupPlan?.runtimeSupport, 'planned-oauth');
+  assert.equal(calendar?.toolSetupPlan?.planStatus, 'planned');
+  assert.equal(
+    calendar?.toolSetupPlan?.steps.some((step) => step.id === 'oauth-setup-packet'),
+    true,
+  );
+  assert.equal(calendar?.toolSetupPlan?.readPaths.includes('xd.xenesis.tools.oauthDrafts.setupPacket'), true);
+  assert.equal(calendar?.toolSetupPlan?.blockedActions.includes('complete OAuth or store Google OAuth tokens'), true);
+  assert.equal(
+    calendar?.toolSetupPlan?.safetyBoundaries.some((boundary) =>
+      boundary.includes('setup plans do not execute provider tools or mutate external systems'),
+    ),
+    true,
+  );
 });
 
 test('buildXenesisConnectionsStatus exposes redacted external tool connector readiness', () => {
@@ -2765,12 +2843,15 @@ test('buildXenesisConnectionsStatus exposes guide catalog metadata for onboardin
   assert.equal(toolIntegrations?.guideCatalog?.guideType, 'integration-guide');
   assert.deepEqual(toolIntegrations?.guideCatalog?.coveredSurfaces, [
     'external-tools',
+    'setup-plans',
     'mcp-connectors',
     'oauth-drafts',
     'tool-actions',
     'user-stories',
   ]);
   assert.equal(toolIntegrations?.guideCatalog?.readPaths.includes('xd.xenesis.tools.views.status'), true);
+  assert.equal(toolIntegrations?.guideCatalog?.readPaths.includes('xd.xenesis.tools.setupPlans.status'), true);
+  assert.equal(toolIntegrations?.guideCatalog?.controlPaths.includes('xd.xenesis.tools.setupPlans.open'), true);
   assert.equal(toolIntegrations?.guideCatalog?.controlPaths.includes('xd.xenesis.tools.views.open'), true);
 });
 

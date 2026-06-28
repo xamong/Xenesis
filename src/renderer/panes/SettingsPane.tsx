@@ -100,6 +100,7 @@ import {
   buildXenesisToolActionCatalogRequest,
   buildXenesisToolOAuthDraftRequest,
   buildXenesisToolOAuthSetupPacketRequest,
+  buildXenesisToolSetupPlanRequest,
   formatXenesisChannelAccessGroupsSummary,
   formatXenesisChannelPairingSummary,
   formatXenesisChannelProfileDraftSummary,
@@ -124,6 +125,7 @@ import {
   formatXenesisToolInstallPlanSummary,
   formatXenesisToolOAuthDraftSummary,
   formatXenesisToolOAuthSetupPacketSummary,
+  formatXenesisToolSetupPlanSummary,
   formatXenesisToolSetupSummary,
   formatXenesisToolUserStorySummary,
   formatXenesisToolViewSummary,
@@ -4314,6 +4316,7 @@ export default function SettingsPane() {
     const mcpInstallDraftApplyRequest = buildXenesisMcpInstallDraftApplyRequest(item);
     const toolOAuthDraftRequest = buildXenesisToolOAuthDraftRequest(item);
     const toolOAuthSetupPacketRequest = buildXenesisToolOAuthSetupPacketRequest(item);
+    const toolSetupPlanRequest = buildXenesisToolSetupPlanRequest(item);
     const toolActionCatalogRequest = buildXenesisToolActionCatalogRequest(item);
     const channelProfileDraftRequest = buildXenesisChannelProfileDraftRequest(item);
     const channelProfileDraftApplyRequest = buildXenesisChannelProfileDraftApplyRequest(item);
@@ -4331,6 +4334,7 @@ export default function SettingsPane() {
     const providerRouting = item.providerRouting;
     const providerProfileDraft = item.providerProfileDraft;
     const toolSetup = item.toolSetup;
+    const toolSetupPlan = item.toolSetupPlan;
     const toolInstallPlan = item.toolInstallPlan;
     const toolConnector = item.toolConnector;
     const toolView = item.toolView;
@@ -4365,6 +4369,7 @@ export default function SettingsPane() {
           mcpInstallDraftApplyRequest ||
           toolOAuthDraftRequest ||
           toolOAuthSetupPacketRequest ||
+          toolSetupPlanRequest ||
           toolActionCatalogRequest ||
           channelProfileDraftRequest ||
           channelProfileDraftApplyRequest ||
@@ -4438,6 +4443,16 @@ export default function SettingsPane() {
                 }}
               >
                 {t('settings.xenesisConnectionsApplyMcpInstallDraft')}
+              </button>
+            ) : null}
+            {toolSetupPlanRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(toolSetupPlanRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsReadToolSetupPlan')}
               </button>
             ) : null}
             {toolActionCatalogRequest ? (
@@ -5000,6 +5015,52 @@ export default function SettingsPane() {
             <div>
               <span>{t('settings.xenesisConnectionsToolRiskControls')}</span>
               <strong>{toolSetup.riskControls.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {toolSetupPlan ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'tool-setup-plan') && 'is-focused',
+            )}
+            data-xenesis-tool-setup-plan={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsToolSetupPlan')}</span>
+              <strong>{formatXenesisToolSetupPlanSummary(toolSetupPlan)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolSetupPlanGuide')}</span>
+              <strong>{toolSetupPlan.guidePath}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolSetupPlanSteps')}</span>
+              <strong>
+                {toolSetupPlan.steps
+                  .map((step) => `${step.id}: ${step.kind} ${step.crPath} -> ${step.expectedState}`)
+                  .join(', ')}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolSetupPlanReadback')}</span>
+              <strong>{toolSetupPlan.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolSetupPlanControls')}</span>
+              <strong>{toolSetupPlan.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolSetupPlanDiagnostics')}</span>
+              <strong>{toolSetupPlan.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolSetupPlanBlocked')}</span>
+              <strong>{toolSetupPlan.blockedActions.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolSetupPlanSafety')}</span>
+              <strong>{toolSetupPlan.safetyBoundaries.join(', ')}</strong>
             </div>
           </div>
         ) : null}

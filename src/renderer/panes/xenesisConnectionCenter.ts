@@ -30,6 +30,7 @@ import type {
   XenesisConnectionToolOAuthDraftReviewStep,
   XenesisConnectionToolOAuthDraftTemplate,
   XenesisConnectionToolOAuthSetupPacket,
+  XenesisConnectionToolSetupPlanTemplate,
   XenesisConnectionToolSetupTemplate,
   XenesisConnectionToolUserStoryTemplate,
   XenesisConnectionToolViewTemplate,
@@ -60,6 +61,7 @@ export const XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES = {
   'provider-routing': 'data-xenesis-provider-routing',
   'provider-view': 'data-xenesis-provider-view',
   'tool-setup': 'data-xenesis-tool-setup',
+  'tool-setup-plan': 'data-xenesis-tool-setup-plan',
   'tool-install-plan': 'data-xenesis-tool-install-plan',
   'mcp-install-draft': 'data-xenesis-mcp-install-draft',
   'tool-oauth-draft': 'data-xenesis-tool-oauth-draft',
@@ -198,6 +200,10 @@ export function formatXenesisToolConnectorSummary(connector: XenesisConnectionTo
 
 export function formatXenesisToolInstallPlanSummary(plan: XenesisConnectionToolInstallPlanTemplate): string {
   return `${plan.installMode} / ${plan.runtimeSupport} / ${plan.installSteps.length} step(s)`;
+}
+
+export function formatXenesisToolSetupPlanSummary(plan: XenesisConnectionToolSetupPlanTemplate): string {
+  return `${plan.runtimeSupport} / ${plan.steps.length} guided step(s) / ${plan.blockedActions.length} blocked action(s)`;
 }
 
 export function formatXenesisMcpInstallDraftSummary(draft: XenesisConnectionMcpInstallDraftTemplate): string {
@@ -342,6 +348,18 @@ export function buildXenesisToolOAuthSetupPacketRequest(
   if (!item.toolOAuthDraft?.setupPacket) return null;
   return {
     path: 'xd.xenesis.tools.oauthDrafts.setupPacket',
+    args: {
+      id: item.id,
+    },
+    source: 'xenesis',
+    approved: false,
+  };
+}
+
+export function buildXenesisToolSetupPlanRequest(item: XenesisConnectionItem): McpBridgeCapabilityCallRequest | null {
+  if (!item.toolSetupPlan) return null;
+  return {
+    path: 'xd.xenesis.tools.setupPlans.status',
     args: {
       id: item.id,
     },

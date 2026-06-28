@@ -93,6 +93,7 @@ export const XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES = [
   'provider-routing',
   'provider-view',
   'tool-setup',
+  'tool-setup-plan',
   'tool-install-plan',
   'mcp-install-draft',
   'tool-oauth-draft',
@@ -250,6 +251,36 @@ export interface XenesisConnectionOnboardingPlanTemplate {
   diagnostics: string[];
   safetyBoundaries: string[];
   guidedSteps: XenesisConnectionOnboardingGuidedStep[];
+}
+
+export type XenesisConnectionToolSetupPlanRuntimeSupport = 'ready-template' | 'planned-oauth' | 'ready-local';
+export type XenesisConnectionToolSetupPlanStepKind = 'read' | 'open' | 'request' | 'apply';
+
+export interface XenesisConnectionToolSetupPlanStep {
+  id: string;
+  label: string;
+  kind: XenesisConnectionToolSetupPlanStepKind;
+  crPath: string;
+  args?: Record<string, unknown>;
+  expectedState: string;
+  verifyWith: string[];
+  safetyBoundary: string;
+}
+
+export interface XenesisConnectionToolSetupPlanTemplate {
+  planStatus: XenesisConnectionDiagnosticRunbookReadiness;
+  runtimeSupport: XenesisConnectionToolSetupPlanRuntimeSupport;
+  guideId: 'external-tool-integrations';
+  guidePath: string;
+  primarySurface: string;
+  setupSurface: string;
+  reviewSurface: string;
+  steps: XenesisConnectionToolSetupPlanStep[];
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  blockedActions: string[];
+  safetyBoundaries: string[];
 }
 
 export interface XenesisConnectionToolSetupTemplate {
@@ -902,6 +933,7 @@ export interface XenesisConnectionItem {
   toolOAuthDraft?: XenesisConnectionToolOAuthDraftTemplate;
   mcpInstallDraft?: XenesisConnectionMcpInstallDraftTemplate;
   toolView?: XenesisConnectionToolViewTemplate;
+  toolSetupPlan?: XenesisConnectionToolSetupPlanTemplate;
   toolUserStory?: XenesisConnectionToolUserStoryTemplate;
   toolActionCatalog?: XenesisConnectionToolActionCatalogTemplate;
   messengerView?: XenesisConnectionMessengerViewTemplate;
@@ -1136,7 +1168,14 @@ export const XENESIS_CONNECTION_GUIDES: XenesisConnectionItem[] = [
       guideType: 'integration-guide',
       audience: 'operator',
       primarySurface: 'Settings > Xenesis Agent > Connections',
-      coveredSurfaces: ['external-tools', 'mcp-connectors', 'oauth-drafts', 'tool-actions', 'user-stories'],
+      coveredSurfaces: [
+        'external-tools',
+        'setup-plans',
+        'mcp-connectors',
+        'oauth-drafts',
+        'tool-actions',
+        'user-stories',
+      ],
       prerequisites: [
         'provider setup readback',
         'MCP settings readback',
@@ -1153,6 +1192,7 @@ export const XENESIS_CONNECTION_GUIDES: XenesisConnectionItem[] = [
       readPaths: [
         'xd.xenesis.connections.status',
         'xd.xenesis.guides.status',
+        'xd.xenesis.tools.setupPlans.status',
         'xd.xenesis.tools.views.status',
         'xd.xenesis.tools.setup.status',
         'xd.xenesis.tools.connectors.status',
@@ -1163,6 +1203,7 @@ export const XENESIS_CONNECTION_GUIDES: XenesisConnectionItem[] = [
       ],
       controlPaths: [
         'xd.xenesis.guides.open',
+        'xd.xenesis.tools.setupPlans.open',
         'xd.xenesis.tools.views.open',
         'xd.xenesis.tools.installPlans.open',
         'xd.xenesis.tools.oauthDrafts.open',
@@ -4908,6 +4949,286 @@ function buildXenesisToolOAuthDraft(item: XenesisConnectionItem): XenesisConnect
   };
 }
 
+function toolSetupPlanRuntimeSupport(item: XenesisConnectionItem): XenesisConnectionToolSetupPlanRuntimeSupport {
+  if (
+    item.toolInstallPlan?.runtimeSupport === 'planned-oauth' ||
+    item.toolConnector?.runtimeSupport === 'planned-oauth' ||
+    item.toolOAuthDraft?.runtimeSupport === 'planned-oauth'
+  ) {
+    return 'planned-oauth';
+  }
+  if (item.toolUserStory?.runtimeSupport === 'ready-local') return 'ready-local';
+  return 'ready-template';
+}
+
+function toolSetupPlanStep(input: {
+  id: string;
+  label: string;
+  kind: XenesisConnectionToolSetupPlanStepKind;
+  crPath: string;
+  itemId: string;
+  expectedState: string;
+  verifyWith: string[];
+  safetyBoundary: string;
+}): XenesisConnectionToolSetupPlanStep {
+  return {
+    id: input.id,
+    label: input.label,
+    kind: input.kind,
+    crPath: input.crPath,
+    args: { id: input.itemId },
+    expectedState: input.expectedState,
+    verifyWith: uniqueStrings(input.verifyWith),
+    safetyBoundary: input.safetyBoundary,
+  };
+}
+
+function toolSetupPlanSteps(item: XenesisConnectionItem): XenesisConnectionToolSetupPlanStep[] {
+  return [
+    ...(item.toolView
+      ? [
+          toolSetupPlanStep({
+            id: 'tool-view',
+            label: 'Open tool view',
+            kind: 'open',
+            crPath: 'xd.xenesis.tools.views.open',
+            itemId: item.id,
+            expectedState: `${item.label} internal Desk view is focusable before setup work starts.`,
+            verifyWith: item.toolView.diagnostics,
+            safetyBoundary: 'tool view opens do not mutate provider settings or external systems',
+          }),
+        ]
+      : []),
+    ...(item.toolSetup
+      ? [
+          toolSetupPlanStep({
+            id: 'tool-setup',
+            label: 'Read tool setup',
+            kind: 'read',
+            crPath: 'xd.xenesis.tools.setup.status',
+            itemId: item.id,
+            expectedState: `${item.label} auth mode, scopes, credential storage, and verification checks are visible.`,
+            verifyWith: item.toolSetup.verification,
+            safetyBoundary: 'tool setup reads do not install servers or store credentials',
+          }),
+        ]
+      : []),
+    ...(item.toolConnector
+      ? [
+          toolSetupPlanStep({
+            id: 'tool-connector',
+            label: 'Read connector readiness',
+            kind: 'read',
+            crPath: 'xd.xenesis.tools.connectors.status',
+            itemId: item.id,
+            expectedState: `${item.label} connector type, credential state, and validation checks are redacted and reviewable.`,
+            verifyWith: item.toolConnector.diagnostics,
+            safetyBoundary: 'connector reads never return raw credential values',
+          }),
+        ]
+      : []),
+    ...(item.toolInstallPlan
+      ? [
+          toolSetupPlanStep({
+            id: 'tool-install-plan',
+            label: 'Read install plan',
+            kind: 'read',
+            crPath: 'xd.xenesis.tools.installPlans.status',
+            itemId: item.id,
+            expectedState: `${item.label} install mode, config targets, required env, and install steps are reviewable.`,
+            verifyWith: item.toolInstallPlan.diagnostics,
+            safetyBoundary: 'install-plan reads do not execute installs or write MCP config',
+          }),
+        ]
+      : []),
+    ...(item.mcpInstallDraft
+      ? [
+          toolSetupPlanStep({
+            id: 'mcp-install-draft',
+            label: 'Review MCP install draft',
+            kind: 'request',
+            crPath: 'xd.xenesis.tools.mcpInstallDrafts.request',
+            itemId: item.id,
+            expectedState: `${item.label} MCP install draft can be reviewed before any approval-gated config write.`,
+            verifyWith: item.mcpInstallDraft.diagnostics,
+            safetyBoundary: 'MCP install draft review does not write config or run shell commands',
+          }),
+        ]
+      : []),
+    ...(item.toolOAuthDraft
+      ? [
+          toolSetupPlanStep({
+            id: 'oauth-draft',
+            label: 'Read OAuth draft',
+            kind: 'read',
+            crPath: 'xd.xenesis.tools.oauthDrafts.status',
+            itemId: item.id,
+            expectedState: `${item.label} OAuth app, scope, consent, and token-store draft is reviewable.`,
+            verifyWith: item.toolOAuthDraft.diagnostics,
+            safetyBoundary: 'OAuth draft reads do not complete OAuth or store tokens',
+          }),
+          toolSetupPlanStep({
+            id: 'oauth-setup-packet',
+            label: 'Read OAuth setup packet',
+            kind: 'read',
+            crPath: 'xd.xenesis.tools.oauthDrafts.setupPacket',
+            itemId: item.id,
+            expectedState: `${item.label} OAuth registration, redirect URI, credential refs, and token-store checklist are reviewable.`,
+            verifyWith: item.toolOAuthDraft.setupPacket.diagnostics,
+            safetyBoundary: 'OAuth setup packet reads do not complete OAuth, store tokens, or write MCP config',
+          }),
+        ]
+      : []),
+    ...(item.toolActionCatalog
+      ? [
+          toolSetupPlanStep({
+            id: 'tool-actions',
+            label: 'Read tool action policy',
+            kind: 'read',
+            crPath: 'xd.xenesis.tools.actions.status',
+            itemId: item.id,
+            expectedState: `${item.label} read/write action groups and approval policy boundaries are visible before tool use.`,
+            verifyWith: item.toolActionCatalog.diagnostics,
+            safetyBoundary: 'tool action policy reads do not execute provider tools',
+          }),
+        ]
+      : []),
+    ...(item.toolUserStory
+      ? [
+          toolSetupPlanStep({
+            id: 'tool-user-stories',
+            label: 'Read tool user stories',
+            kind: 'read',
+            crPath: 'xd.xenesis.tools.userStories.status',
+            itemId: item.id,
+            expectedState: `${item.label} user-story workflows and prerequisite connectors are visible before runtime use.`,
+            verifyWith: item.toolUserStory.diagnostics,
+            safetyBoundary: 'tool user-story reads do not execute workflows or mutate external systems',
+          }),
+        ]
+      : []),
+    toolSetupPlanStep({
+      id: 'diagnostic-runbook',
+      label: 'Open diagnostic runbook',
+      kind: 'open',
+      crPath: 'xd.xenesis.connections.diagnostics.open',
+      itemId: item.id,
+      expectedState: `${item.label} diagnostic runbook can be opened for readback verification.`,
+      verifyWith: item.diagnosticRunbook?.diagnostics ?? ['cr-readback'],
+      safetyBoundary: 'diagnostic runbooks are read/open planning surfaces',
+    }),
+    toolSetupPlanStep({
+      id: 'setup-request',
+      label: 'Request setup review',
+      kind: 'request',
+      crPath: 'xd.xenesis.connections.setupRequests.request',
+      itemId: item.id,
+      expectedState: `${item.label} setup review can be recorded in Desk Action Inbox before external work.`,
+      verifyWith: item.setupRequest?.diagnostics ?? ['action-inbox-review'],
+      safetyBoundary: 'setup request review records local Action Inbox items only',
+    }),
+  ];
+}
+
+function buildXenesisToolSetupPlan(item: XenesisConnectionItem): XenesisConnectionToolSetupPlanTemplate | undefined {
+  if (item.kind !== 'tool') return undefined;
+  const steps = toolSetupPlanSteps(item);
+  const setupSurface =
+    item.toolSetup?.setupSurface ?? item.toolView?.setupSurface ?? 'Settings > Xenesis Agent > Connections';
+  return {
+    planStatus: diagnosticRunbookReadiness(item.status),
+    runtimeSupport: toolSetupPlanRuntimeSupport(item),
+    guideId: 'external-tool-integrations',
+    guidePath: 'docs/manual/11-external-tool-integrations.md',
+    primarySurface: item.toolView?.primarySurface ?? 'Settings > Xenesis Agent > Connections',
+    setupSurface,
+    reviewSurface: 'Desk Action Inbox',
+    steps,
+    readPaths: uniqueStrings([
+      'xd.xenesis.tools.setupPlans.status',
+      'xd.xenesis.connections.status',
+      'xd.xenesis.guides.status',
+      'xd.xenesis.connections.diagnostics.status',
+      'xd.xenesis.connections.setupRequests.status',
+      ...(item.toolView?.readPaths ?? []),
+      ...(item.toolSetup?.crReadPaths ?? []),
+      ...(item.toolConnector?.readPaths ?? []),
+      ...(item.toolInstallPlan?.readPaths ?? []),
+      ...(item.mcpInstallDraft?.readPaths ?? []),
+      ...(item.toolOAuthDraft?.readPaths ?? []),
+      ...(item.toolOAuthDraft?.setupPacket.readPaths ?? []),
+      ...(item.toolActionCatalog?.readPaths ?? []),
+      ...(item.toolUserStory?.readPaths ?? []),
+    ]),
+    controlPaths: uniqueStrings([
+      'xd.xenesis.tools.setupPlans.open',
+      'xd.xenesis.connections.open',
+      'xd.xenesis.guides.open',
+      'xd.xenesis.connections.diagnostics.open',
+      'xd.xenesis.connections.setupRequests.request',
+      ...(item.toolView?.controlPaths ?? []),
+      ...(item.toolConnector?.controlPaths ?? []),
+      ...(item.toolInstallPlan?.controlPaths ?? []),
+      ...(item.mcpInstallDraft?.controlPaths ?? []),
+      ...(item.toolOAuthDraft?.controlPaths ?? []),
+      ...(item.toolOAuthDraft?.setupPacket.controlPaths ?? []),
+      ...(item.toolActionCatalog?.controlPaths ?? []),
+      ...(item.toolUserStory?.controlPaths ?? []),
+    ]),
+    diagnostics: uniqueStrings([
+      'tool-setup-plan',
+      ...(item.toolView?.diagnostics ?? []),
+      ...(item.toolSetup?.verification ?? []),
+      ...(item.toolConnector?.diagnostics ?? []),
+      ...(item.toolInstallPlan?.diagnostics ?? []),
+      ...(item.mcpInstallDraft?.diagnostics ?? []),
+      ...(item.toolOAuthDraft?.diagnostics ?? []),
+      ...(item.toolOAuthDraft?.setupPacket.diagnostics ?? []),
+      ...(item.toolActionCatalog?.diagnostics ?? []),
+      ...(item.toolUserStory?.diagnostics ?? []),
+    ]),
+    blockedActions: uniqueStrings([
+      ...XENESIS_CONNECTION_SETUP_REQUEST_BLOCKED_ACTIONS,
+      ...(item.mcpInstallDraft?.blockedActions ?? []),
+      ...(item.toolOAuthDraft?.blockedActions ?? []),
+      ...(item.toolOAuthDraft?.setupPacket.blockedActions ?? []),
+      ...(item.toolActionCatalog?.blockedActions ?? []),
+      ...(item.toolOAuthDraft ? ['complete OAuth or store Google OAuth tokens'] : []),
+    ]),
+    safetyBoundaries: uniqueStrings([
+      'tool setup plans are review-only orchestration metadata',
+      'setup plans do not execute provider tools or mutate external systems',
+      'setup plans do not complete OAuth, store tokens, write MCP config, send messages, or bypass approvals',
+      ...(item.toolView?.safetyBoundaries ?? []),
+      ...(item.toolSetup?.riskControls ?? []),
+      ...(item.toolConnector?.safetyBoundaries ?? []),
+      ...(item.toolInstallPlan?.safetyBoundaries ?? []),
+      ...(item.mcpInstallDraft?.safetyBoundaries ?? []),
+      ...(item.toolOAuthDraft?.safetyBoundaries ?? []),
+      ...(item.toolOAuthDraft?.setupPacket.safetyBoundaries ?? []),
+      ...(item.toolActionCatalog?.safetyBoundaries ?? []),
+      ...(item.toolUserStory?.safetyBoundaries ?? []),
+    ]),
+  };
+}
+
+function withXenesisConnectionToolSetupPlan(item: XenesisConnectionItem): XenesisConnectionItem {
+  const toolSetupPlan = buildXenesisToolSetupPlan(item);
+  if (!toolSetupPlan) return item;
+  return { ...item, toolSetupPlan };
+}
+
+function withXenesisConnectionToolSetupPlans(
+  sections: XenesisConnectionsStatus['sections'],
+): XenesisConnectionsStatus['sections'] {
+  return Object.fromEntries(
+    Object.entries(sections).map(([id, section]) => [
+      id,
+      { ...section, items: section.items.map((item) => withXenesisConnectionToolSetupPlan(item)) },
+    ]),
+  ) as XenesisConnectionsStatus['sections'];
+}
+
 function diagnosticRunbookReadiness(status: XenesisConnectionStatus): XenesisConnectionDiagnosticRunbookReadiness {
   if (status === 'needs-setup') return 'action-required';
   return status;
@@ -5412,6 +5733,7 @@ function setupRequestDiagnosticItems(item: XenesisConnectionItem): string[] {
     ...(item.toolOAuthDraft?.diagnostics ?? []),
     ...(item.toolOAuthDraft?.reviewSteps.flatMap((step) => step.diagnostics) ?? []),
     ...(item.toolActionCatalog?.diagnostics ?? []),
+    ...(item.toolSetupPlan?.diagnostics ?? []),
     ...(item.toolInstallPlan?.diagnostics ?? []),
     ...(item.mcpInstallDraft?.diagnostics ?? []),
     ...(item.channelTemplate?.routing?.diagnostics ?? []),
@@ -5437,6 +5759,7 @@ function setupRequestStepItems(item: XenesisConnectionItem): string[] {
     ...(item.toolOAuthDraft?.missingRequiredFields.map((field) => `review OAuth draft field: ${field}`) ?? []),
     ...(item.toolOAuthDraft?.scopes.map((scope) => `review OAuth scope: ${scope}`) ?? []),
     ...(item.toolOAuthDraft?.reviewSteps.map((step) => `${step.id}: ${step.expectedState}`) ?? []),
+    ...(item.toolSetupPlan?.steps.map((step) => `${step.id}: ${step.expectedState}`) ?? []),
     ...(item.toolInstallPlan?.installSteps ?? []),
     ...(item.mcpInstallDraft?.installSteps ?? []),
     ...(item.toolConnector?.validationChecks.map((check) => `validate ${check}`) ?? []),
@@ -5509,6 +5832,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.toolConnector?.readPaths ?? []),
       ...(item.toolOAuthDraft?.readPaths ?? []),
       ...(item.toolOAuthDraft?.reviewSteps.flatMap((step) => step.readPaths) ?? []),
+      ...(item.toolSetupPlan?.readPaths ?? []),
       ...(item.toolView?.readPaths ?? []),
       ...(item.toolUserStory?.readPaths ?? []),
       ...(item.toolInstallPlan?.readPaths ?? []),
@@ -5537,6 +5861,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.toolConnector?.controlPaths ?? []),
       ...(item.toolOAuthDraft?.controlPaths ?? []),
       ...(item.toolOAuthDraft?.reviewSteps.flatMap((step) => step.controlPaths) ?? []),
+      ...(item.toolSetupPlan?.controlPaths ?? []),
       ...(item.toolView?.controlPaths ?? []),
       ...(item.toolActionCatalog?.controlPaths ?? []),
       ...(item.toolUserStory?.controlPaths ?? []),
@@ -5575,6 +5900,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.toolConnector?.safetyBoundaries ?? []),
       ...(item.toolOAuthDraft?.safetyBoundaries ?? []),
       ...(item.toolOAuthDraft?.reviewSteps.map((step) => step.safetyBoundary) ?? []),
+      ...(item.toolSetupPlan?.safetyBoundaries ?? []),
       ...(item.toolView?.safetyBoundaries ?? []),
       ...(item.toolActionCatalog?.safetyBoundaries ?? []),
       ...(item.toolUserStory?.safetyBoundaries ?? []),
@@ -6853,7 +7179,9 @@ export function buildXenesisConnectionsStatus(input: BuildXenesisConnectionsStat
     onboarding: { id: 'onboarding', label: 'Onboarding checklist', items: onboardingItems(baseSections) },
     ...baseSections,
   };
-  const sections = withXenesisConnectionSetupRequests(withXenesisConnectionDiagnosticRunbooks(rawSections));
+  const sections = withXenesisConnectionSetupRequests(
+    withXenesisConnectionDiagnosticRunbooks(withXenesisConnectionToolSetupPlans(rawSections)),
+  );
   const summary = countItems(sections);
   return {
     ok: summary.blocked === 0,
