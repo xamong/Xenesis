@@ -38,6 +38,7 @@ import {
   XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CONTEXT_WORDS,
   XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS,
+  XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES,
   XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS,
   XENESIS_NATURAL_DASHBOARD_CONTEXT_WORDS,
   XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS,
@@ -536,10 +537,133 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'Open Claude provider setup from natural language request.',
   );
   assert.match(source, /XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS/);
-  assert.match(source, /XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS/);
+  assert.match(source, /XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS/);
   assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-provider-routing-status-\$\{provider\.id\}`/);
   assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-tool-mcp-install-draft-status-\$\{target\.id\}`/);
   assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-channel-routing-status-\$\{target\.id\}`/);
+  assert.doesNotMatch(source, /CONNECTION_TARGET_STATUS_ACTIONS\.toolMcpInstallDraft/);
+  assert.doesNotMatch(source, /CONNECTION_TARGET_STATUS_ACTIONS\.toolOauthDraft/);
+  assert.doesNotMatch(source, /CONNECTION_TARGET_STATUS_ACTIONS\.channelRouting/);
+  assert.doesNotMatch(source, /CONNECTION_TARGET_STATUS_ACTIONS\.messengerView/);
+  assert.deepEqual(
+    XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES.map((rule) => ({
+      targetScope: rule.targetScope,
+      argsKind: rule.argsKind,
+      path: rule.action.path,
+      fallback: 'fallback' in rule && rule.fallback === true,
+    })),
+    [
+      {
+        targetScope: 'any',
+        argsKind: 'targetId',
+        path: 'xd.xenesis.connections.diagnostics.status',
+        fallback: false,
+      },
+      {
+        targetScope: 'any',
+        argsKind: 'targetId',
+        path: 'xd.xenesis.connections.setupRequests.status',
+        fallback: false,
+      },
+      {
+        targetScope: 'tool',
+        argsKind: 'tool',
+        path: 'xd.xenesis.tools.mcpInstallDrafts.status',
+        fallback: false,
+      },
+      {
+        targetScope: 'planned-google-tool',
+        argsKind: 'targetId',
+        path: 'xd.xenesis.tools.oauthDrafts.status',
+        fallback: false,
+      },
+      {
+        targetScope: 'tool',
+        argsKind: 'tool',
+        path: 'xd.xenesis.tools.userStories.status',
+        fallback: false,
+      },
+      {
+        targetScope: 'tool',
+        argsKind: 'tool',
+        path: 'xd.xenesis.tools.actions.status',
+        fallback: false,
+      },
+      {
+        targetScope: 'tool',
+        argsKind: 'tool',
+        path: 'xd.xenesis.tools.installPlans.status',
+        fallback: false,
+      },
+      {
+        targetScope: 'tool',
+        argsKind: 'targetId',
+        path: 'xd.xenesis.tools.setup.status',
+        fallback: false,
+      },
+      {
+        targetScope: 'tool',
+        argsKind: 'tool',
+        path: 'xd.xenesis.tools.connectors.status',
+        fallback: false,
+      },
+      {
+        targetScope: 'tool',
+        argsKind: 'targetId',
+        path: 'xd.xenesis.tools.views.status',
+        fallback: false,
+      },
+      {
+        targetScope: 'messenger',
+        argsKind: 'channel',
+        path: 'xd.xenesis.channels.routing.status',
+        fallback: false,
+      },
+      {
+        targetScope: 'messenger',
+        argsKind: 'channel',
+        path: 'xd.xenesis.channels.safety.status',
+        fallback: false,
+      },
+      {
+        targetScope: 'messenger',
+        argsKind: 'channel',
+        path: 'xd.xenesis.channels.accessGroups.status',
+        fallback: false,
+      },
+      {
+        targetScope: 'messenger',
+        argsKind: 'channel',
+        path: 'xd.xenesis.channels.pairing.status',
+        fallback: false,
+      },
+      {
+        targetScope: 'messenger',
+        argsKind: 'targetId',
+        path: 'xd.xenesis.channels.userStories.status',
+        fallback: false,
+      },
+      {
+        targetScope: 'messenger',
+        argsKind: 'channel',
+        path: 'xd.xenesis.channels.profileDrafts.status',
+        fallback: false,
+      },
+      {
+        targetScope: 'messenger',
+        argsKind: 'targetId',
+        path: 'xd.xenesis.messengers.views.status',
+        fallback: false,
+      },
+      {
+        targetScope: 'any',
+        argsKind: 'targetId',
+        path: 'xd.xenesis.connections.diagnostics.status',
+        fallback: true,
+      },
+    ],
+  );
   assert.equal(
     XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS.routing.idFor('auto', 'auto'),
     'natural-xenesis-provider-routing-status-auto',
@@ -1331,7 +1455,10 @@ test('planXenesisDeskNaturalLanguageActions maps common Korean Desk control requ
       reason: 'List Action Inbox items from natural language request.',
     },
   ]);
-  assert.equal(planXenesisDeskNaturalLanguageActions('액션 인박스 목록 보여줘').visibleText, 'Action Inbox 목록을 조회합니다.');
+  assert.equal(
+    planXenesisDeskNaturalLanguageActions('액션 인박스 목록 보여줘').visibleText,
+    'Action Inbox 목록을 조회합니다.',
+  );
 
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('Action Inbox 열어줘').actions, [
     {

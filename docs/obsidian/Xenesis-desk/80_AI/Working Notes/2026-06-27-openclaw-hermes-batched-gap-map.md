@@ -2999,6 +2999,44 @@
 - External documentation handling: no browsing. This used cached gap context,
   current planner behavior, and live Electron verification.
 
+## Connection Target Status Rule Catalog Refactor Slice
+
+- Reduced remaining hardcoded natural-language CR routing in
+  `xenesisAgentDeskControl.ts` by moving connection target status selection
+  into the shared natural-language catalog:
+  - added `XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES`;
+  - planner now interprets target scope (`any`, `tool`, `messenger`,
+    `planned-google-tool`) plus args kind (`targetId`, `tool`, `channel`);
+  - the previous target-specific status if-chain was replaced by one rule
+    loop.
+- Behavior scope:
+  - Existing prompt semantics and CR paths are preserved. The rule catalog keeps
+    the same priority order for diagnostics, setup requests, MCP install
+    drafts, planned Google OAuth drafts, tool user stories/action
+    policy/install/setup/connector/view, messenger routing/safety/access
+    groups/pairing/user stories/profile drafts/view, and diagnostics fallback.
+- Scope boundary:
+  - Refactor only. No registry/dispatcher changes, provider/tool/messenger data
+    changes, setup request writes, credentials, OAuth/install execution,
+    approval behavior, or UI rendering changes.
+- Verification:
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    failed because the planner did not yet consume
+    `XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES`.
+  - GREEN:
+    the same focused planner test passed with 37/37 tests.
+  - Scoped Biome passed for `xenesisNaturalLanguageCatalog.ts`,
+    `xenesisAgentDeskControl.ts`, and `xenesisAgentDeskControl.test.ts`.
+  - `npm run typecheck` passed.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 21/21 through the live
+    Agent pane.
+  - `git diff --check` exited 0 with LF-to-CRLF warnings only.
+  - CR audit was not run because registry/dispatcher/capability code did not
+    change.
+- External documentation handling: no browsing. This used cached gap context,
+  current repo code, focused tests, and live Electron verification.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
