@@ -404,7 +404,10 @@ import {
 app.commandLine.appendSwitch('enable-features', 'AllowWgcScreenCapturer');
 
 const defaultElectronUserDataDir = app.getPath('userData');
-if (!app.isPackaged) {
+const configuredUserDataDir = String(process.env.XENESIS_DESK_USER_DATA_DIR || '').trim();
+if (configuredUserDataDir) {
+  app.setPath('userData', path.resolve(configuredUserDataDir));
+} else if (!app.isPackaged) {
   const devUserData = `${defaultElectronUserDataDir}-dev`;
   app.setPath('userData', devUserData);
 }
@@ -8051,6 +8054,62 @@ async function resolveCapabilityActionInboxRequest(
   }
 }
 
+function findPendingCapabilityApprovalActionInboxItem(
+  pathValue: string,
+  args: unknown,
+  source: DeskBridgeCapabilitySource,
+): McpBridgeActionInboxItem | null {
+  const expectedAllowKey = capabilityApprovalAllowKey(pathValue, args, source);
+  for (const item of listMcpActionInboxSnapshot()) {
+    if (item.status !== 'pending' || !isCapabilityApprovalItem(item)) continue;
+    try {
+      const command = parseCapabilityApprovalCommand(item.command);
+      const itemAllowKey = capabilityApprovalAllowKey(
+        command.path,
+        command.args,
+        command.source as DeskBridgeCapabilitySource,
+      );
+      const itemSourceAllowKey = capabilityApprovalAllowKey(
+        pathValue,
+        args,
+        command.source as DeskBridgeCapabilitySource,
+      );
+      if (itemAllowKey === expectedAllowKey || itemAllowKey === itemSourceAllowKey) return item;
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
+function resolveApprovedCapabilityActionInboxItem(
+  pathValue: string,
+  args: unknown,
+  source: DeskBridgeCapabilitySource,
+): McpBridgeActionInboxResolveResult | null {
+  const existing = findPendingCapabilityApprovalActionInboxItem(pathValue, args, source);
+  if (!existing) return null;
+
+  const now = new Date().toISOString();
+  const resolved = resolveMcpActionInboxItem(mcpActionInboxState, {
+    id: existing.id,
+    resolution: 'approve',
+    result: `Capability call approved and executed: ${pathValue}`,
+    at: now,
+    lastCallbackAt: now,
+  }) as McpBridgeActionInboxResolveResult;
+  persistMcpActionInboxStateSafely();
+  emitMcpActionInboxChanged();
+  recordDiagnosticLog({
+    level: 'info',
+    source: 'main',
+    scope: 'mcp',
+    message: `Capability approval marked approved after inline execution: ${pathValue}`,
+    detail: JSON.stringify({ id: existing.id, sessionId: existing.sessionId }),
+  });
+  return resolved;
+}
+
 async function resolveMcpActionInboxRequest(
   request: McpBridgeActionInboxResolveRequest,
 ): Promise<McpBridgeActionInboxResolveResult> {
@@ -12936,13 +12995,16 @@ ${XENESIS_AGENT_PROGRESS_SANITIZER_SCRIPT}
   const isApprovalPrompt = () => /^(?:승인|허용|진행|좋아|네|예|응|오케이|ok|okay|yes|approve|approved)(?:\\s*(?:승인)?(?:합니다|해|할게|진행해|저장|apply|please|it)?)?[.!。！]*$/i.test(String(config.prompt || '').trim());
   const findLatestDeskActionApproveButton = (agentRoot) => {
     if (!agentRoot || !config.clickApprovalButton || !isApprovalPrompt()) return null;
-    const buttons = Array.from(agentRoot.querySelectorAll('[data-xenesis-agent-desk-action-approve="true"], .xd-xenesis-desk-action-card.is-pending button'));
-    return buttons.reverse().find((button) => (
+    const findEligible = (buttons) => buttons.reverse().find((button) => (
       button instanceof HTMLButtonElement
       && !button.disabled
       && elementVisibleArea(button) > 0
+      && !button.matches('[data-xenesis-agent-desk-action-approve-always="true"], [data-xenesis-agent-desk-action-cancel="true"]')
       && /승인|approve|실행|run/i.test(button.innerText || button.textContent || '')
     )) || null;
+    const oneTimeButtons = Array.from(agentRoot.querySelectorAll('[data-xenesis-agent-desk-action-approve="true"]'));
+    const fallbackButtons = Array.from(agentRoot.querySelectorAll('.xd-xenesis-desk-action-card.is-pending button'));
+    return findEligible(oneTimeButtons) || findEligible(fallbackButtons);
   };
   const readTranscriptLines = (agentRoot) => {
     if (!agentRoot) return [];
@@ -13151,6 +13213,7 @@ ${XENESIS_AGENT_PROGRESS_SANITIZER_SCRIPT}
     const artifactBefore = readLatestArtifactSource();
     const approvalButton = findLatestDeskActionApproveButton(root);
     if (approvalButton) {
+      const approvalButtonText = approvalButton.innerText || approvalButton.textContent || '';
       approvalButton.click();
       const waitResult = await waitForRenderedText(config.expectedText, config.timeoutMs, transcriptBefore.length, root);
       const artifact = chooseArtifactSource(artifactBefore, waitResult.responseText);
@@ -13161,6 +13224,7 @@ ${XENESIS_AGENT_PROGRESS_SANITIZER_SCRIPT}
         valueAfterInput: beforeValue,
         afterValue: input.value,
         approvalButtonClicked: true,
+        approvalButtonText,
         customEventSubmitted: false,
         shouldFallbackSubmit: false,
         enterPrevented: false,
@@ -14788,6 +14852,9 @@ async function callMcpBridgeCapabilityFromRequest(
     : rememberedHit
       ? 'auto-approved'
       : 'not-required';
+  if (result.ok && (preApproved || rememberedHit)) {
+    resolveApprovedCapabilityActionInboxItem(capabilityPath, capabilityArgs, source);
+  }
   return { ...result, approvalResolution };
 }
 

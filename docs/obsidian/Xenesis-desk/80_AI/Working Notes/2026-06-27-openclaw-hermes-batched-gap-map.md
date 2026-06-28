@@ -4716,6 +4716,55 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Review Request Approval Execution Live Smoke Slice
+
+- Continued the larger slice-cycle pass by moving from approval-stop-only smoke
+  to one safe end-to-end approval execution.
+- Added dedicated mutating live smoke:
+  - `scripts/xenesisReviewRequestApprovalLiveSmoke.mjs`.
+  - `scripts/xenesisReviewRequestApprovalLiveSmoke.test.mjs`.
+  - package script `smoke:xenesis:review-request-approval`.
+- Live-smoked flow:
+  - Prompt: `노션 연결해줘`.
+  - Request path: `xd.xenesis.connections.setupRequests.request`.
+  - Expected approval stop: `Desk action approval required`.
+  - Approval prompt/button: `승인` / one-time `승인 후 실행`.
+  - Expected completion: `Desk action completed`.
+  - Expected Action Inbox approval record:
+    `Approve Xenesis Desk capability: xd.xenesis.connections.setupRequests.request`
+    with status `approved`.
+  - Expected local review item: pending `Review Notion setup request` with kind
+    `xenesis-connection-setup` and approval session key
+    `xenesis-connection-setup:notion`.
+- Product fixes discovered by the live run:
+  - Re-requesting the same capability approval after a persisted item expired
+    kept the old `expired` state. Fixed `applyMcpActionInboxRequest` so
+    implicit re-requests against non-pending items refresh to pending and clear
+    old resolution fields.
+  - The `xd.testing.xenesisAgent.submitPrompt` helper could click `항상 승인`
+    when the prompt was plain `승인`. It now prefers the one-time approve
+    button and reports the clicked `approvalButtonText`.
+  - Inline Agent-pane approval executed the capability but did not mark the
+    capability approval Action Inbox item `approved`. Main now marks a matching
+    pending capability approval item approved after successful approved
+    execution, including the `xenesis` request source to `internal` execution
+    source transition.
+  - The mutating live smoke now uses temporary `XENIS_HOME` and temporary
+    `XENESIS_DESK_USER_DATA_DIR` so it does not depend on or pollute user
+    approval state.
+- Verification:
+  - `node --test src/main/mcpActionInbox.test.mjs scripts/xenesisReviewRequestApprovalLiveSmoke.test.mjs`
+    passed 8/8.
+  - Scoped Biome check passed for the new/small files.
+  - `npm run build` passed, including typecheck.
+  - `node ./scripts/xenesisReviewRequestApprovalLiveSmoke.mjs --json --timeout=45000`
+    passed 6/6.
+  - `npm run docs:capabilities:audit` passed with 765 nodes and 689 coverage
+    path references; generated audit output was removed.
+  - `git diff --check` passed with LF-to-CRLF working-copy warnings only.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
