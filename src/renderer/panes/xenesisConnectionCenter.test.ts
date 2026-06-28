@@ -6,6 +6,7 @@ import type {
   XenesisConnectionItem,
   XenesisConnectionOnboardingGuidedStep,
   XenesisConnectionProviderProfileDraftReviewStep,
+  XenesisConnectionProviderSetupPlanTemplate,
   XenesisConnectionsStatus,
   XenesisConnectionToolSetupPlanTemplate,
 } from '../../shared/types';
@@ -23,6 +24,7 @@ import {
   buildXenesisMcpInstallDraftRequest,
   buildXenesisProviderProfileDraftApplyRequest,
   buildXenesisProviderProfileDraftRequest,
+  buildXenesisProviderSetupPlanRequest,
   buildXenesisToolActionCatalogRequest,
   buildXenesisToolOAuthDraftRequest,
   buildXenesisToolOAuthSetupPacketRequest,
@@ -45,6 +47,7 @@ import {
   formatXenesisOnboardingPlanSummary,
   formatXenesisProviderProfileDraftSummary,
   formatXenesisProviderRoutingSummary,
+  formatXenesisProviderSetupPlanSummary,
   formatXenesisProviderSetupSummary,
   formatXenesisProviderViewSummary,
   formatXenesisToolActionCatalogSummary,
@@ -92,11 +95,16 @@ test('xenesis detail focus selector maps CR detail values to existing data attri
     XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['provider-profile-draft'],
     'data-xenesis-provider-profile-draft',
   );
+  assert.equal(
+    XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['provider-setup-plan'],
+    'data-xenesis-provider-setup-plan',
+  );
   assert.equal(xenesisConnectionDetailFocusSelector('channel-setup-plan'), '[data-xenesis-channel-setup-plan]');
   assert.equal(xenesisConnectionDetailFocusSelector('tool-setup-plan'), '[data-xenesis-tool-setup-plan]');
   assert.equal(xenesisConnectionDetailFocusSelector('tool-oauth-draft'), '[data-xenesis-tool-oauth-draft]');
   assert.equal(xenesisConnectionDetailFocusSelector('channel-routing'), '[data-xenesis-channel-routing]');
   assert.equal(xenesisConnectionDetailFocusSelector('provider-profile-draft'), '[data-xenesis-provider-profile-draft]');
+  assert.equal(xenesisConnectionDetailFocusSelector('provider-setup-plan'), '[data-xenesis-provider-setup-plan]');
   assert.equal(xenesisConnectionDetailFocusSelector(''), null);
   assert.equal(xenesisConnectionDetailFocusSelector('unknown-detail'), null);
 });
@@ -1510,6 +1518,76 @@ test('formatXenesisProviderProfileDraftSummary describes provider, status, and m
     }),
     'openai / missing-required-field / 1 missing field(s) / 1 review step(s)',
   );
+});
+
+test('formatXenesisProviderSetupPlanSummary describes runtime support, guided steps, and blocked actions', () => {
+  const plan: XenesisConnectionProviderSetupPlanTemplate = {
+    planStatus: 'ready',
+    runtimeSupport: 'configured-provider',
+    guideId: 'onboarding-connections',
+    guidePath: 'docs/manual/09-onboarding-connections.md',
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    setupSurface: 'Settings > AI Provider',
+    reviewSurface: 'Desk Action Inbox',
+    steps: [
+      {
+        id: 'provider-profile-draft',
+        label: 'Review provider profile draft',
+        kind: 'request',
+        crPath: 'xd.xenesis.providers.profileDrafts.request',
+        args: { provider: 'codex-app-server' },
+        expectedState: 'Provider profile fields can be reviewed before changes.',
+        verifyWith: ['provider-profile-draft'],
+        safetyBoundary: 'Profile draft review does not write provider settings.',
+      },
+    ],
+    readPaths: ['xd.xenesis.providers.setupPlans.status', 'xd.xenesis.providers.profileDrafts.status'],
+    controlPaths: ['xd.xenesis.providers.setupPlans.open', 'xd.xenesis.providers.profileDrafts.request'],
+    diagnostics: ['provider-footer'],
+    blockedActions: ['store raw provider secrets'],
+    safetyBoundaries: ['setup plans do not change provider settings'],
+  };
+
+  assert.equal(
+    formatXenesisProviderSetupPlanSummary(plan),
+    'configured-provider / 1 guided step(s) / 1 blocked action(s)',
+  );
+});
+
+test('buildXenesisProviderSetupPlanRequest targets the provider setup-plan CR read path', () => {
+  const item = {
+    id: 'provider-codex-app-server',
+    kind: 'provider',
+    label: 'AI provider: codex-app-server',
+    status: 'ready',
+    summary: 'Provider setup',
+    providerSetupPlan: {
+      planStatus: 'ready',
+      runtimeSupport: 'configured-provider',
+      guideId: 'onboarding-connections',
+      guidePath: 'docs/manual/09-onboarding-connections.md',
+      primarySurface: 'Settings > Xenesis Agent > Connections',
+      setupSurface: 'Settings > AI Provider',
+      reviewSurface: 'Desk Action Inbox',
+      steps: [],
+      readPaths: ['xd.xenesis.providers.setupPlans.status'],
+      controlPaths: ['xd.xenesis.providers.setupPlans.open'],
+      diagnostics: ['provider-footer'],
+      blockedActions: ['store raw provider secrets'],
+      safetyBoundaries: ['provider setup plans are review-only'],
+    },
+  } satisfies XenesisConnectionItem;
+
+  assert.deepEqual(buildXenesisProviderSetupPlanRequest(item), {
+    path: 'xd.xenesis.providers.setupPlans.status',
+    args: {
+      provider: 'codex-app-server',
+    },
+    source: 'xenesis',
+    approved: false,
+  });
+
+  assert.equal(buildXenesisProviderSetupPlanRequest({ ...item, providerSetupPlan: undefined }), null);
 });
 
 test('buildXenesisProviderProfileDraftRequest targets the review request CR path', () => {

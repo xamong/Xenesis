@@ -7597,6 +7597,84 @@ async function openXenesisProviderView(args?: unknown): Promise<Record<string, u
   });
 }
 
+function xenesisProviderSetupPlanStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    provider: item.providerSetup?.provider ?? item.providerProfileDraft?.provider,
+    planStatus: item.providerSetupPlan?.planStatus,
+    runtimeSupport: item.providerSetupPlan?.runtimeSupport,
+    guideId: item.providerSetupPlan?.guideId,
+    guidePath: item.providerSetupPlan?.guidePath,
+    primarySurface: item.providerSetupPlan?.primarySurface,
+    setupSurface: item.providerSetupPlan?.setupSurface,
+    reviewSurface: item.providerSetupPlan?.reviewSurface,
+    steps: item.providerSetupPlan?.steps ?? [],
+    readPaths: item.providerSetupPlan?.readPaths ?? [],
+    controlPaths: item.providerSetupPlan?.controlPaths ?? [],
+    diagnostics: item.providerSetupPlan?.diagnostics ?? [],
+    blockedActions: item.providerSetupPlan?.blockedActions ?? [],
+    safetyBoundaries: item.providerSetupPlan?.safetyBoundaries ?? [],
+    providerSetupPlan: item.providerSetupPlan,
+    providerSetup: item.providerSetup,
+    providerRouting: item.providerRouting,
+    providerView: item.providerView,
+    providerProfileDraft: item.providerProfileDraft,
+    settingsAction: item.settingsAction,
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisProviderSetupPlansStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const provider = readCapabilityString(body, ['provider', 'id', 'name']);
+  if (provider && !isXenesisProviderViewSelector(provider)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis provider: ${provider}`,
+      allowedProviders: XENESIS_PROVIDER_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.provider.items
+    .filter((item) => item.providerSetupPlan)
+    .filter(
+      (item) =>
+        !provider ||
+        item.providerSetup?.provider === provider ||
+        item.providerProfileDraft?.provider === provider ||
+        item.id === provider,
+    )
+    .map((item) => xenesisProviderSetupPlanStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(provider ? { provider } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisProviderSetupPlan(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisProviderCatalogSurface(args, {
+    isAllowedProvider: isXenesisProviderViewSelector,
+    itemPredicate: (item) => Boolean(item.providerSetupPlan),
+    itemMatchesProvider: (item, provider) =>
+      item.providerSetup?.provider === provider ||
+      item.providerProfileDraft?.provider === provider ||
+      item.id === provider,
+    providerForItem: (item) => item.providerSetup?.provider ?? item.providerProfileDraft?.provider,
+    toStatusItem: xenesisProviderSetupPlanStatusItem,
+    unavailableMessage: (provider) => `Xenesis provider setup plan is not available: ${provider}`,
+    focusConnectionDetail: 'provider-setup-plan',
+  });
+}
+
 function xenesisProviderProfileDraftStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
   return {
     id: item.id,
@@ -15035,6 +15113,8 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     openXenesisProviderRouting: (args: unknown) => openXenesisProviderRouting(args),
     getXenesisProviderViewsStatus: (args: unknown) => getXenesisProviderViewsStatus(args),
     openXenesisProviderView: (args: unknown) => openXenesisProviderView(args),
+    getXenesisProviderSetupPlansStatus: (args: unknown) => getXenesisProviderSetupPlansStatus(args),
+    openXenesisProviderSetupPlan: (args: unknown) => openXenesisProviderSetupPlan(args),
     getXenesisProviderProfileDraftsStatus: (args: unknown) => getXenesisProviderProfileDraftsStatus(args),
     openXenesisProviderProfileDraft: (args: unknown) => openXenesisProviderProfileDraft(args),
     requestXenesisProviderProfileDraft: (args: unknown) => requestXenesisProviderProfileDraft(args),

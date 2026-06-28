@@ -1230,6 +1230,11 @@ export const XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS = {
     path: 'xd.xenesis.providers.setup.open',
     reason: 'Open AI provider setup catalog in Xenesis Connection Center from natural language request.',
   },
+  setupPlans: {
+    id: 'natural-xenesis-providers-setup-plans-catalog-open',
+    path: 'xd.xenesis.providers.setupPlans.open',
+    reason: 'Open AI provider setup plan catalog in Xenesis Connection Center from natural language request.',
+  },
   views: {
     id: 'natural-xenesis-providers-views-catalog-open',
     path: 'xd.xenesis.providers.views.open',
@@ -1429,6 +1434,11 @@ export const XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS = {
     path: 'xd.xenesis.providers.profileDrafts.status',
     reason: 'Read AI provider profile draft catalog status from natural language request.',
   },
+  setupPlans: {
+    id: 'natural-xenesis-providers-setup-plans-status',
+    path: 'xd.xenesis.providers.setupPlans.status',
+    reason: 'Read AI provider setup plan catalog status from natural language request.',
+  },
   setup: {
     id: 'natural-xenesis-providers-setup-status',
     path: 'xd.xenesis.providers.setup.status',
@@ -1450,6 +1460,10 @@ export const XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_RULES = [
     action: XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS.profileDrafts,
   },
   {
+    contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS.setupPlans,
+  },
+  {
     contextWords: [],
     action: XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS.setup,
     fallback: true,
@@ -1460,6 +1474,10 @@ export const XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_RULES = [
   {
     contextWords: XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS,
     action: XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS.routing,
+  },
+  {
+    contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS.setupPlans,
   },
   {
     contextWords: XENESIS_NATURAL_SETUP_CONTEXT_WORDS,
@@ -1562,6 +1580,11 @@ export const XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS = {
     idFor: (id: string, _label: string) => `natural-xenesis-provider-setup-open-${id}`,
     reasonFor: (_id: string, label: string) => `Open ${label} provider setup from natural language request.`,
   },
+  setupPlans: {
+    path: 'xd.xenesis.providers.setupPlans.open',
+    idFor: (id: string, _label: string) => `natural-xenesis-provider-setup-plan-open-${id}`,
+    reasonFor: (_id: string, label: string) => `Open ${label} provider setup plan from natural language request.`,
+  },
 } as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
 
 export const XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS = {
@@ -1586,6 +1609,12 @@ export const XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS = {
     idFor: (id: string, _label: string) => `natural-xenesis-provider-setup-status-${id}`,
     reasonFor: (_id: string, label: string) => `Read ${label} provider setup status from natural language request.`,
   },
+  setupPlans: {
+    path: 'xd.xenesis.providers.setupPlans.status',
+    idFor: (id: string, _label: string) => `natural-xenesis-provider-setup-plan-status-${id}`,
+    reasonFor: (_id: string, label: string) =>
+      `Read ${label} provider setup plan status from natural language request.`,
+  },
 } as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
 
 export const XENESIS_NATURAL_PROVIDER_STATUS_RULES = [
@@ -1602,6 +1631,11 @@ export const XENESIS_NATURAL_PROVIDER_STATUS_RULES = [
   {
     contextWords: XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
     action: XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS.profileDrafts,
+    argsKind: 'provider',
+  },
+  {
+    contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS.setupPlans,
     argsKind: 'provider',
   },
   {
@@ -1626,6 +1660,11 @@ export const XENESIS_NATURAL_PROVIDER_OPEN_RULES = [
   {
     contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
     action: XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS.views,
+    argsKind: 'providerVisible',
+  },
+  {
+    contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS.setupPlans,
     argsKind: 'providerVisible',
   },
   {

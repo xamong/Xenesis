@@ -1236,6 +1236,8 @@ const XENESIS_PROVIDER_VIEW_OPEN_SCHEMA = {
 
 const XENESIS_PROVIDER_PROFILE_DRAFT_STATUS_SCHEMA = XENESIS_PROVIDER_VIEW_STATUS_SCHEMA;
 const XENESIS_PROVIDER_PROFILE_DRAFT_OPEN_SCHEMA = XENESIS_PROVIDER_VIEW_OPEN_SCHEMA;
+const XENESIS_PROVIDER_SETUP_PLAN_STATUS_SCHEMA = XENESIS_PROVIDER_VIEW_STATUS_SCHEMA;
+const XENESIS_PROVIDER_SETUP_PLAN_OPEN_SCHEMA = XENESIS_PROVIDER_VIEW_OPEN_SCHEMA;
 const XENESIS_PROVIDER_PROFILE_DRAFT_REQUEST_SCHEMA = {
   type: 'object',
   required: ['provider'],
@@ -1647,6 +1649,8 @@ export interface DeskBridgeCapabilityAdapter {
   openXenesisProviderRouting?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisProviderViewsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisProviderView?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisProviderSetupPlansStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisProviderSetupPlan?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisProviderProfileDraftsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisProviderProfileDraft?: (args?: unknown) => Promise<unknown> | unknown;
   requestXenesisProviderProfileDraft?: (args?: unknown) => Promise<unknown> | unknown;
@@ -5153,6 +5157,27 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             XENESIS_PROVIDER_VIEW_OPEN_SCHEMA,
           ),
         ]),
+        group(
+          'xd.xenesis.providers.setupPlans',
+          'Setup plans',
+          'Ordered CR-first setup plans that connect provider setup, routing, views, profile drafts, diagnostics, and setup review requests.',
+          [
+            method(
+              'xd.xenesis.providers.setupPlans.status',
+              'Read provider setup plans',
+              'Read ordered setup-plan steps, CR read/open/review paths, diagnostics, blocked actions, and safety boundaries for Xenesis AI provider setup without changing provider settings, storing raw secrets, editing fallback chains, changing local CLI selection, or running provider prompts.',
+              'read',
+              XENESIS_PROVIDER_SETUP_PLAN_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.providers.setupPlans.open',
+              'Open provider setup plan',
+              'Open Settings > Xenesis Agent > Connections and focus the AI provider setup-plan card inside Desk.',
+              'control',
+              XENESIS_PROVIDER_SETUP_PLAN_OPEN_SCHEMA,
+            ),
+          ],
+        ),
         group(
           'xd.xenesis.providers.profileDrafts',
           'Profile drafts',
@@ -11773,6 +11798,12 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.providers.views.open') {
         return callAdapter(path, api?.openXenesisProviderView, request.args);
+      }
+      if (path === 'xd.xenesis.providers.setupPlans.status') {
+        return callAdapter(path, api?.getXenesisProviderSetupPlansStatus, request.args);
+      }
+      if (path === 'xd.xenesis.providers.setupPlans.open') {
+        return callAdapter(path, api?.openXenesisProviderSetupPlan, request.args);
       }
       if (path === 'xd.xenesis.providers.profileDrafts.status') {
         return callAdapter(path, api?.getXenesisProviderProfileDraftsStatus, request.args);

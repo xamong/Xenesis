@@ -1253,6 +1253,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /PROVIDER_AGGREGATE_STATUS_ACTIONS\.routing/);
   assert.doesNotMatch(source, /PROVIDER_AGGREGATE_STATUS_ACTIONS\.views/);
   assert.doesNotMatch(source, /PROVIDER_AGGREGATE_STATUS_ACTIONS\.profileDrafts/);
+  assert.doesNotMatch(source, /PROVIDER_AGGREGATE_STATUS_ACTIONS\.setupPlans/);
   assert.doesNotMatch(source, /PROVIDER_AGGREGATE_STATUS_ACTIONS\.setup/);
   assert.doesNotMatch(source, /MESSENGER_AGGREGATE_STATUS_ACTIONS\.profileDrafts/);
   assert.doesNotMatch(source, /MESSENGER_AGGREGATE_STATUS_ACTIONS\.routing/);
@@ -1318,6 +1319,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
       { path: 'xd.xenesis.providers.routing.status', fallback: false },
       { path: 'xd.xenesis.providers.views.status', fallback: false },
       { path: 'xd.xenesis.providers.profileDrafts.status', fallback: false },
+      { path: 'xd.xenesis.providers.setupPlans.status', fallback: false },
       { path: 'xd.xenesis.providers.setup.status', fallback: true },
     ],
   );
@@ -1356,6 +1358,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /PROVIDER_AGGREGATE_OPEN_ACTIONS\.setup/);
   assert.doesNotMatch(source, /PROVIDER_AGGREGATE_OPEN_ACTIONS\.views/);
   assert.doesNotMatch(source, /PROVIDER_AGGREGATE_OPEN_ACTIONS\.profileDrafts/);
+  assert.doesNotMatch(source, /PROVIDER_AGGREGATE_OPEN_ACTIONS\.setupPlans/);
   assert.doesNotMatch(source, /PROVIDER_AGGREGATE_OPEN_ACTIONS\.catalog/);
   assert.doesNotMatch(source, /MESSENGER_AGGREGATE_OPEN_ACTIONS\.profileDrafts/);
   assert.doesNotMatch(source, /MESSENGER_AGGREGATE_OPEN_ACTIONS\.routing/);
@@ -1400,6 +1403,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     })),
     [
       { path: 'xd.xenesis.providers.routing.open', fallback: false },
+      { path: 'xd.xenesis.providers.setupPlans.open', fallback: false },
       { path: 'xd.xenesis.providers.setup.open', fallback: false },
       { path: 'xd.xenesis.providers.views.open', fallback: false },
       { path: 'xd.xenesis.providers.profileDrafts.open', fallback: false },
@@ -1618,6 +1622,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
       { path: 'xd.xenesis.providers.routing.status', fallback: false },
       { path: 'xd.xenesis.providers.views.status', fallback: false },
       { path: 'xd.xenesis.providers.profileDrafts.status', fallback: false },
+      { path: 'xd.xenesis.providers.setupPlans.status', fallback: false },
       { path: 'xd.xenesis.providers.setup.status', fallback: true },
     ],
   );
@@ -1630,6 +1635,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
       { path: 'xd.xenesis.providers.routing.open', fallback: false },
       { path: 'xd.xenesis.providers.profileDrafts.open', fallback: false },
       { path: 'xd.xenesis.providers.views.open', fallback: false },
+      { path: 'xd.xenesis.providers.setupPlans.open', fallback: false },
       { path: 'xd.xenesis.providers.setup.open', fallback: false },
     ],
   );
@@ -3149,6 +3155,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider 설정 플랜 전체 열어줘').actions, [
+    {
+      id: 'natural-xenesis-providers-setup-plans-catalog-open',
+      path: 'xd.xenesis.providers.setupPlans.open',
+      args: { ensureVisible: true },
+      approved: false,
+      reason: 'Open AI provider setup plan catalog in Xenesis Connection Center from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider 전체 열어줘').actions, [
     {
       id: 'natural-xenesis-provider-catalog-open',
@@ -3408,6 +3424,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
       args: { provider: 'auto', ensureVisible: true },
       approved: false,
       reason: 'Open auto provider profile draft from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('codex app-server provider 설정 플랜 열어줘').actions, [
+    {
+      id: 'natural-xenesis-provider-setup-plan-open-codex-app-server',
+      path: 'xd.xenesis.providers.setupPlans.open',
+      args: { provider: 'codex-app-server', ensureVisible: true },
+      approved: false,
+      reason: 'Open codex-app-server provider setup plan from natural language request.',
     },
   ]);
 
@@ -4034,6 +4060,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center read
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider 설정 플랜 전체 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-providers-setup-plans-status',
+      path: 'xd.xenesis.providers.setupPlans.status',
+      args: {},
+      approved: false,
+      reason: 'Read AI provider setup plan catalog status from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('외부 메신저 프로필 초안 전체 상태 보여줘').actions, [
     {
       id: 'natural-xenesis-messengers-profile-drafts-status',
@@ -4241,6 +4277,16 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center read
       args: { provider: 'codex-app-server' },
       approved: false,
       reason: 'Read codex-app-server provider routing status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('codex app-server provider 설정 플랜 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-provider-setup-plan-status-codex-app-server',
+      path: 'xd.xenesis.providers.setupPlans.status',
+      args: { provider: 'codex-app-server' },
+      approved: false,
+      reason: 'Read codex-app-server provider setup plan status from natural language request.',
     },
   ]);
 

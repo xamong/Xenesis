@@ -43,8 +43,9 @@ and the renderer. The card-level `Focus` action routes through
 `xd.xenesis.connections.open` and highlights the matching
 `data-xenesis-connection="<id>"` card inside Settings.
 
-Cards with onboarding plans, provider profile drafts, OAuth drafts, or channel
-profile drafts also render detail rows in Settings. These rows show the
+Cards with onboarding plans, provider setup plans, provider profile drafts,
+OAuth drafts, or channel profile drafts also render detail rows in Settings.
+These rows show the
 expected state, required fields where applicable, CR read/control paths,
 diagnostics, and safety boundary for each guided or review step. Use the rows
 as an operator checklist; they are not executable shortcuts and do not perform
@@ -103,6 +104,17 @@ Provider profile drafts include review steps for provider identity,
 model/credential readiness, runtime routing, and local CLI boundary checks.
 Settings renders these as `Review steps` so an operator can inspect exactly
 which CR paths and diagnostics should be checked before approving profile work.
+
+Provider cards also expose a `providerSetupPlan` read model. Use
+`xd.xenesis.providers.setupPlans.status` to inspect the ordered provider setup
+plan and `xd.xenesis.providers.setupPlans.open` to focus the plan in Settings.
+The plan joins provider setup, routing, internal provider views, profile draft
+review/apply references, diagnostic runbooks, and setup requests into one
+operator checklist. Setup plans are read/open orchestration metadata only: they
+do not change provider settings, store raw secrets, edit fallback chains, change
+local CLI selection, run provider prompts, or bypass approvals. Ready profile
+setting writes remain on the existing approval-gated
+`xd.xenesis.providers.profileDrafts.apply` path.
 
 Tool cards with recommended MCP metadata also expose an `mcpInstallDraft` read
 model. Use `xd.xenesis.tools.mcpInstallDrafts.status` to inspect review-only
@@ -238,6 +250,15 @@ Credential pools expose provider names, env var names, and configured/missing or
 not-required state only. They never serialize API key values, bridge tokens, or
 provider secrets. This path is read-only and does not perform fallback, change
 the active provider, or change local CLI selection.
+
+The provider card also exposes a `providerSetupPlan` read model. Use
+`xd.xenesis.providers.setupPlans.status` and
+`xd.xenesis.providers.setupPlans.open` to inspect or focus a unified provider
+setup plan. Each plan orders setup readback, routing readback, provider view
+open, profile draft review, ready profile draft apply reference, diagnostic
+runbook, and setup request steps. The setup-plan surface is read/open metadata
+only. It does not change provider settings, store raw secrets, edit fallback
+chains, switch local CLI selection, run provider prompts, or bypass approvals.
 
 ## MCP And Tool Connections
 
@@ -529,6 +550,15 @@ Use `xd.xenesis.providers.views.status` and
 setup/readiness view. The open path focuses the provider card in Settings >
 Xenesis Agent > Connections and is a UI-control path only. It does not change
 the active provider, credentials, model, runtime routing, or fallback policy.
+
+Use `xd.xenesis.providers.setupPlans.status` and
+`xd.xenesis.providers.setupPlans.open` to inspect or open the unified AI
+provider setup plan through CR. The plan is derived from existing provider
+setup, routing, view, profile draft, diagnostic, and setup-request metadata.
+It can reference the ready approval-gated provider profile apply path, but the
+setup-plan path itself is read/open only and does not mutate provider settings,
+store raw secrets, edit fallback chains, change local CLI selection, run
+provider prompts, or bypass approvals.
 
 Use `xd.xenesis.providers.profileDrafts.status`,
 `xd.xenesis.providers.profileDrafts.open`, and

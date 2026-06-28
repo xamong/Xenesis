@@ -14417,3 +14417,177 @@ Verification so far:
     missing `.github/workflows/ci.yml`.
 - Next intended step:
   - Commit the setup-plan slice.
+
+## Current AI Provider Setup Plan Slice
+
+- Objective: add a CR-first setup-plan layer for AI provider setup that joins
+  provider setup, routing, internal view, profile draft review/apply reference,
+  diagnostics, and setup requests into one ordered read/open surface.
+- Planned CR paths:
+  - `xd.xenesis.providers.setupPlans.status`
+  - `xd.xenesis.providers.setupPlans.open`
+- Plan file:
+  - `docs/superpowers/plans/2026-06-28-xenesis-provider-setup-plan.md`
+- Safety constraints:
+  - Setup plans are read/open orchestration metadata only.
+  - They must not change active provider, write provider settings, store raw
+    secrets, edit fallback chains, change local CLI selection, or run provider
+    prompts.
+  - Ready provider profile apply stays on the existing approval-gated
+    `xd.xenesis.providers.profileDrafts.apply` path.
+- Commands run:
+  - `git status --short --branch` -> clean worktree on
+    `agent/upcoming-work-20260627`.
+  - Obsidian and module notes read: `Final Goal`, `AI Agent Rules`,
+    `Graph Schema`, `Review Policy`, `Source of Truth Map`, module index, CR
+    surface index, verification map, repo overview, capability registry module,
+    Xenesis Agent pane module, provider runtime module, and Capability Registry
+    Architecture.
+  - `rg -n "providers\\.setupPlans|providerSetupPlan|provider setup plan|Provider setup plan|setupPlans\\.provider|AI provider setup plan" src docs scripts`
+    -> no provider setup-plan surface found.
+- Known gaps:
+  - Implementation not started yet.
+- Exact verification result:
+  - RED focused suite:
+    `src\shared\xenesisConnections.test.ts` failed 1/40 because
+    `providerSetupPlan` is missing from provider items.
+    `src\shared\xenesisConnectionCapabilities.test.ts` failed 1/40 because
+    `xd.xenesis.providers.setupPlans.*` is not registered.
+    `src\renderer\panes\xenesisConnectionCenter.test.ts` failed 3/52 because
+    `provider-setup-plan` data attr, summary helper, and request helper are
+    missing.
+    `src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    failed 3/38 because provider setup-plan prompts route to provider setup.
+    `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` passed
+    6/6 because it only checks smoke inventory structure.
+- Next intended step:
+  - Implement `providerSetupPlan` model, CR registration/dispatch, main
+    handlers, renderer helpers/detail block, natural routing, and docs.
+
+### Implementation and Focus Verification
+
+- Touched files:
+  - `src/shared/xenesisConnections.ts`
+  - `src/shared/types.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/main/index.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
+  - `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
+  - `src/shared/xenesisNaturalLanguageCatalog.ts`
+  - `scripts/xenesisNaturalDeskRoutingLiveSmoke.mjs`
+  - `scripts/xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
+  - focused tests, manual guide, Obsidian working note, and this handoff.
+- Implementation:
+  - Added `providerSetupPlan` model metadata with ordered steps for provider
+    setup readback, routing readback, provider view open, profile draft review,
+    ready profile apply reference, diagnostics, and setup request.
+  - Registered `xd.xenesis.providers.setupPlans.status` and
+    `xd.xenesis.providers.setupPlans.open` as read/open CR paths and wired
+    adapter dispatch plus main-process handlers.
+  - Added `provider-setup-plan` detail focus support, renderer summary/request
+    helper, Settings action button/detail rows, and Korean/English labels.
+  - Added deterministic natural routing for aggregate and targeted provider
+    setup-plan status/open prompts. `setupPlans` rules now run before generic
+    provider setup where needed so `설정 플랜` does not fall through to
+    `xd.xenesis.providers.setup.*`.
+  - Updated `docs/manual/09-onboarding-connections.md` and added
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-28-provider-setup-plan.md`.
+- Safety boundary:
+  - Provider setup plans are read/open orchestration metadata only.
+  - They do not change provider settings, store raw secrets, edit fallback
+    chains, change local CLI selection, run provider prompts, or bypass
+    approvals.
+  - Ready non-secret provider setting writes remain on the approval-gated
+    `xd.xenesis.providers.profileDrafts.apply` path.
+- Commands run:
+  - An initial focused-suite wrapper failed due PowerShell argument expansion:
+    `npx` tried to read a package path named
+    `tsx --test src\shared\xenesisConnections.test.ts`. This was a command
+    construction error, not a test failure.
+  - Corrected focused commands:
+    - `npx tsx --test src\shared\xenesisConnections.test.ts`
+    - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts`
+    - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`
+    - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
+- Exact verification result:
+  - Focused tests pass: shared connections 40/40, connection capabilities
+    40/40, Connection Center helpers 52/52, Agent Desk Control natural routing
+    38/38, natural routing smoke inventory 6/6.
+- Known gaps:
+  - `npm run lint` remains blocked by existing repo-wide Biome/CRLF/style
+    diagnostics: 1150 errors, 419 warnings, 92 infos.
+  - `npm --prefix packages/xenesis run provider:smoke` remains blocked because
+    `OPENAI_API_KEY` is not set for provider `openai`.
+  - `npm run check:public-release` remains blocked because
+    `.github/workflows/ci.yml` is missing in this public-release worktree.
+- Next intended step:
+  - Review the final diff, commit the provider setup-plan slice, and continue
+    the larger final-goal graph/setup parity work in the next slice.
+
+### Pre-Commit Reverification
+
+- Commands run:
+  - `npx tsx --test src\shared\xenesisConnections.test.ts` -> passed, 40/40.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` ->
+    passed, 40/40.
+  - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` ->
+    passed, 52/52.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed, 38/38.
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` ->
+    passed, 6/6.
+  - `npm run typecheck` -> passed.
+  - `git diff --check` -> exited 0 with LF/CRLF normalization warnings only.
+  - `npm run docs:capabilities:audit` -> passed and regenerated
+    `docs/capability-registry-audit.md`.
+  - `rg -n "Missing|Undispatched|Dispatcher paths missing" docs\capability-registry-audit.md`
+    -> missing registered paths 0, missing dispatched coverage paths 0,
+    undispatched static callable methods 0, dispatcher paths missing from tree
+    0.
+- CR audit exact result:
+  - 779 nodes.
+  - 689 coverage path references.
+- Known local-only file:
+  - `docs/superpowers/plans/2026-06-28-xenesis-provider-setup-plan.md` exists
+    as a local plan artifact but is ignored by `.gitignore` via
+    `docs/superpowers/`, so it is not forced into the public-release commit.
+
+### Broad Verification
+
+- Commands run:
+  - `npx biome format --write ...` on touched TS/TSX/test files -> fixed 4
+    files.
+  - Focused suite rerun after formatting -> shared connections 40/40,
+    connection capabilities 40/40, Connection Center helpers 52/52, Agent Desk
+    Control natural routing 38/38, natural routing smoke inventory 6/6.
+  - `npm run typecheck` -> passed.
+  - `npm run docs:capabilities:audit` -> passed, wrote
+    `docs/capability-registry-audit.md`.
+  - `rg -n "Missing|Undispatched|Dispatcher paths missing" docs\capability-registry-audit.md`
+    -> missing registered paths 0, missing dispatched coverage paths 0,
+    undispatched static callable methods 0, dispatcher paths missing from tree
+    0.
+  - `npm run build` -> passed.
+  - `npm --prefix packages/xenesis test` -> passed, 79 files, 367 tests.
+  - `npm --prefix packages/xenesis run typecheck` -> passed.
+  - `npm --prefix packages/xenesis run build` -> passed.
+  - `npm run smoke:xenesis:natural-desk-routing` -> passed 180/180, including
+    `provider-setup-plans-status` and `codex-provider-setup-plan-open`.
+  - `npm run lint` -> blocked by existing repo-wide diagnostics: 1150 errors,
+    419 warnings, 92 infos.
+  - `npm --prefix packages/xenesis run provider:smoke` -> blocked by missing
+    `OPENAI_API_KEY`.
+  - `npm run check:public-release` -> blocked by missing
+    `.github/workflows/ci.yml`.
+  - `git diff --check` -> exited 0 with LF/CRLF normalization warnings only.
+- CR audit exact result:
+  - 779 nodes.
+  - 689 coverage path references.
+  - Missing registered paths: 0.
+  - Missing dispatched coverage paths: 0.
+  - Undispatched static callable methods: 0.
+  - Dispatcher paths missing from tree: 0.

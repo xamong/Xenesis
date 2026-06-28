@@ -1947,6 +1947,71 @@ test('xenesis channel setup plan capabilities are registered and dispatch to the
   });
 });
 
+test('xenesis provider setup plan capabilities are registered and dispatch to the adapter', async () => {
+  const statusCapability = findDeskBridgeCapability('xd.xenesis.providers.setupPlans.status');
+  const openCapability = findDeskBridgeCapability('xd.xenesis.providers.setupPlans.open');
+  const statusSchemaProperties = (statusCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
+  assert.equal(statusCapability?.permission, 'read');
+  assert.equal(statusCapability?.approval, 'never');
+  assert.equal(openCapability?.permission, 'control');
+  assert.equal(openCapability?.approval, 'never');
+  assert.equal(schemaRequiredFields(openCapability).includes('provider'), false);
+  assertOpenCapabilityDetailFocus('xd.xenesis.providers.setupPlans.open', 'provider-setup-plan');
+  for (const provider of XENESIS_CONNECTION_PROVIDER_IDS) {
+    assert.equal(statusSchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
+    assert.equal(
+      openSchemaProperties.provider?.enum.includes(provider),
+      true,
+      `${provider} should be accepted by open`,
+    );
+  }
+
+  const calls: Array<{ method: string; args: unknown }> = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisProviderSetupPlansStatus: (args) => {
+      calls.push({ method: 'status', args });
+      return {
+        ok: true,
+        items: [{ id: 'provider-codex-app-server', provider: 'codex-app-server' }],
+      };
+    },
+    openXenesisProviderSetupPlan: (args) => {
+      calls.push({ method: 'open', args });
+      return {
+        ok: true,
+        item: { id: 'provider-codex-app-server', provider: 'codex-app-server' },
+      };
+    },
+  };
+
+  const statusResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.providers.setupPlans.status',
+    args: { provider: 'codex-app-server' },
+    source: 'xenesis',
+  });
+  const openResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.providers.setupPlans.open',
+    args: { provider: 'codex-app-server', ensureVisible: true },
+    source: 'xenesis',
+  });
+
+  assert.equal(statusResult.ok, true);
+  assert.equal(openResult.ok, true);
+  assert.deepEqual(calls, [
+    { method: 'status', args: { provider: 'codex-app-server' } },
+    { method: 'open', args: { provider: 'codex-app-server', ensureVisible: true } },
+  ]);
+  assert.deepEqual(statusResult.result, {
+    ok: true,
+    items: [{ id: 'provider-codex-app-server', provider: 'codex-app-server' }],
+  });
+  assert.deepEqual(openResult.result, {
+    ok: true,
+    item: { id: 'provider-codex-app-server', provider: 'codex-app-server' },
+  });
+});
+
 test('xenesis provider setup capabilities are registered and dispatch to the adapter', async () => {
   const statusCapability = findDeskBridgeCapability('xd.xenesis.providers.setup.status');
   const openCapability = findDeskBridgeCapability('xd.xenesis.providers.setup.open');

@@ -18,6 +18,7 @@ import type {
   XenesisConnectionProviderProfileDraftReviewStep,
   XenesisConnectionProviderProfileDraftTemplate,
   XenesisConnectionProviderRoutingTemplate,
+  XenesisConnectionProviderSetupPlanTemplate,
   XenesisConnectionProviderSetupTemplate,
   XenesisConnectionProviderViewTemplate,
   XenesisConnectionSection,
@@ -59,6 +60,7 @@ export const XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES = {
   'guide-catalog': 'data-xenesis-guide-catalog',
   'provider-profile-draft': 'data-xenesis-provider-profile-draft',
   'provider-setup': 'data-xenesis-provider-setup',
+  'provider-setup-plan': 'data-xenesis-provider-setup-plan',
   'provider-routing': 'data-xenesis-provider-routing',
   'provider-view': 'data-xenesis-provider-view',
   'tool-setup': 'data-xenesis-tool-setup',
@@ -174,6 +176,10 @@ export function formatXenesisProviderSetupSummary(setup: XenesisConnectionProvid
 
 export function formatXenesisProviderProfileDraftSummary(draft: XenesisConnectionProviderProfileDraftTemplate): string {
   return `${draft.provider} / ${draft.draftStatus} / ${draft.missingRequiredFields.length} missing field(s) / ${draft.reviewSteps.length} review step(s)`;
+}
+
+export function formatXenesisProviderSetupPlanSummary(plan: XenesisConnectionProviderSetupPlanTemplate): string {
+  return `${plan.runtimeSupport} / ${plan.steps.length} guided step(s) / ${plan.blockedActions.length} blocked action(s)`;
 }
 
 export function formatXenesisProviderViewSummary(view: XenesisConnectionProviderViewTemplate): string {
@@ -382,6 +388,24 @@ export function buildXenesisChannelSetupPlanRequest(
     path: 'xd.xenesis.channels.setupPlans.status',
     args: {
       id: item.id,
+    },
+    source: 'xenesis',
+    approved: false,
+  };
+}
+
+function xenesisProviderSetupPlanProvider(item: XenesisConnectionItem): string {
+  return item.providerSetup?.provider ?? item.providerProfileDraft?.provider ?? item.id.replace(/^provider-/, '');
+}
+
+export function buildXenesisProviderSetupPlanRequest(
+  item: XenesisConnectionItem,
+): McpBridgeCapabilityCallRequest | null {
+  if (!item.providerSetupPlan) return null;
+  return {
+    path: 'xd.xenesis.providers.setupPlans.status',
+    args: {
+      provider: xenesisProviderSetupPlanProvider(item),
     },
     source: 'xenesis',
     approved: false,

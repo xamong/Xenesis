@@ -90,6 +90,7 @@ export const XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES = [
   'guide-catalog',
   'provider-profile-draft',
   'provider-setup',
+  'provider-setup-plan',
   'provider-routing',
   'provider-view',
   'tool-setup',
@@ -277,6 +278,36 @@ export interface XenesisConnectionToolSetupPlanTemplate {
   setupSurface: string;
   reviewSurface: string;
   steps: XenesisConnectionToolSetupPlanStep[];
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  blockedActions: string[];
+  safetyBoundaries: string[];
+}
+
+export type XenesisConnectionProviderSetupPlanRuntimeSupport = 'configured-provider' | 'missing-required-field';
+export type XenesisConnectionProviderSetupPlanStepKind = 'read' | 'open' | 'request' | 'apply';
+
+export interface XenesisConnectionProviderSetupPlanStep {
+  id: string;
+  label: string;
+  kind: XenesisConnectionProviderSetupPlanStepKind;
+  crPath: string;
+  args?: Record<string, unknown>;
+  expectedState: string;
+  verifyWith: string[];
+  safetyBoundary: string;
+}
+
+export interface XenesisConnectionProviderSetupPlanTemplate {
+  planStatus: XenesisConnectionDiagnosticRunbookReadiness;
+  runtimeSupport: XenesisConnectionProviderSetupPlanRuntimeSupport;
+  guideId: 'onboarding-connections';
+  guidePath: string;
+  primarySurface: string;
+  setupSurface: string;
+  reviewSurface: string;
+  steps: XenesisConnectionProviderSetupPlanStep[];
   readPaths: string[];
   controlPaths: string[];
   diagnostics: string[];
@@ -958,6 +989,7 @@ export interface XenesisConnectionItem {
   providerView?: XenesisConnectionProviderViewTemplate;
   providerRouting?: XenesisConnectionProviderRoutingTemplate;
   providerProfileDraft?: XenesisConnectionProviderProfileDraftTemplate;
+  providerSetupPlan?: XenesisConnectionProviderSetupPlanTemplate;
   toolSetup?: XenesisConnectionToolSetupTemplate;
   toolInstallPlan?: XenesisConnectionToolInstallPlanTemplate;
   toolConnector?: XenesisConnectionToolConnectorTemplate;
@@ -4992,6 +5024,228 @@ function buildXenesisToolOAuthDraft(item: XenesisConnectionItem): XenesisConnect
   };
 }
 
+function providerSetupPlanRuntimeSupport(
+  item: XenesisConnectionItem,
+): XenesisConnectionProviderSetupPlanRuntimeSupport {
+  return item.providerProfileDraft?.draftStatus === 'ready' ? 'configured-provider' : 'missing-required-field';
+}
+
+function providerSetupPlanStep(input: {
+  id: string;
+  label: string;
+  kind: XenesisConnectionProviderSetupPlanStepKind;
+  crPath: string;
+  args?: Record<string, unknown>;
+  expectedState: string;
+  verifyWith?: string[];
+  safetyBoundary: string;
+}): XenesisConnectionProviderSetupPlanStep {
+  return {
+    id: input.id,
+    label: input.label,
+    kind: input.kind,
+    crPath: input.crPath,
+    ...(input.args ? { args: input.args } : {}),
+    expectedState: input.expectedState,
+    verifyWith: uniqueStrings(input.verifyWith ?? []),
+    safetyBoundary: input.safetyBoundary,
+  };
+}
+
+function providerSetupPlanSteps(item: XenesisConnectionItem): XenesisConnectionProviderSetupPlanStep[] {
+  const provider =
+    item.providerSetup?.provider ?? item.providerProfileDraft?.provider ?? item.id.replace(/^provider-/, '');
+  const providerArgs = { provider };
+  return [
+    ...(item.providerSetup
+      ? [
+          providerSetupPlanStep({
+            id: 'provider-setup',
+            label: 'Read provider setup',
+            kind: 'read',
+            crPath: 'xd.xenesis.providers.setup.status',
+            args: providerArgs,
+            expectedState: `${provider} provider credentials, model, endpoint, runtime profile, fallback policy, and retry policy are visible.`,
+            verifyWith: item.providerSetup.verification,
+            safetyBoundary: 'provider setup reads do not change provider settings or expose secrets',
+          }),
+        ]
+      : []),
+    ...(item.providerRouting
+      ? [
+          providerSetupPlanStep({
+            id: 'provider-routing',
+            label: 'Read provider routing',
+            kind: 'read',
+            crPath: 'xd.xenesis.providers.routing.status',
+            args: providerArgs,
+            expectedState: `${provider} active route, fallback chain, retry policy, and credential pool states are visible.`,
+            verifyWith: item.providerRouting.diagnostics,
+            safetyBoundary: 'provider routing reads do not edit fallback chains or credential pools',
+          }),
+        ]
+      : []),
+    ...(item.providerView
+      ? [
+          providerSetupPlanStep({
+            id: 'provider-view',
+            label: 'Open provider view',
+            kind: 'open',
+            crPath: 'xd.xenesis.providers.views.open',
+            args: { ...providerArgs, ensureVisible: true },
+            expectedState: `${provider} provider setup surfaces can be focused inside Connection Center.`,
+            verifyWith: item.providerView.diagnostics,
+            safetyBoundary: 'provider view opens internal Desk surfaces only',
+          }),
+        ]
+      : []),
+    ...(item.providerProfileDraft
+      ? [
+          providerSetupPlanStep({
+            id: 'provider-profile-draft',
+            label: 'Review provider profile draft',
+            kind: 'request',
+            crPath: 'xd.xenesis.providers.profileDrafts.request',
+            args: providerArgs,
+            expectedState: `${provider} provider profile fields and guardrails can be reviewed before settings mutations.`,
+            verifyWith: item.providerProfileDraft.diagnostics,
+            safetyBoundary: 'provider profile draft review records local Action Inbox items only',
+          }),
+        ]
+      : []),
+    ...(item.providerProfileDraft?.controlPaths.includes('xd.xenesis.providers.profileDrafts.apply')
+      ? [
+          providerSetupPlanStep({
+            id: 'provider-profile-apply',
+            label: 'Apply provider profile draft',
+            kind: 'apply',
+            crPath: 'xd.xenesis.providers.profileDrafts.apply',
+            args: providerArgs,
+            expectedState: `${provider} non-secret provider profile settings can be applied only after Capability Registry approval.`,
+            verifyWith: item.providerProfileDraft.reviewSteps.flatMap((step) => step.diagnostics),
+            safetyBoundary: 'provider profile apply mutates only non-secret provider settings after approval',
+          }),
+        ]
+      : []),
+    providerSetupPlanStep({
+      id: 'diagnostic-runbook',
+      label: 'Open diagnostic runbook',
+      kind: 'open',
+      crPath: 'xd.xenesis.connections.diagnostics.open',
+      args: { id: item.id },
+      expectedState: `${item.label} diagnostic runbook can be opened for readback verification.`,
+      verifyWith: item.diagnosticRunbook?.diagnostics ?? ['cr-readback'],
+      safetyBoundary: 'diagnostic runbooks are read/open planning surfaces',
+    }),
+    providerSetupPlanStep({
+      id: 'setup-request',
+      label: 'Request setup review',
+      kind: 'request',
+      crPath: 'xd.xenesis.connections.setupRequests.request',
+      args: { id: item.id },
+      expectedState: `${item.label} setup review can be recorded in Desk Action Inbox before provider setup work.`,
+      verifyWith: item.setupRequest?.diagnostics ?? ['action-inbox-review'],
+      safetyBoundary: 'setup request review records local Action Inbox items only',
+    }),
+  ];
+}
+
+function buildXenesisProviderSetupPlan(
+  item: XenesisConnectionItem,
+): XenesisConnectionProviderSetupPlanTemplate | undefined {
+  if (item.kind !== 'provider') return undefined;
+  const steps = providerSetupPlanSteps(item);
+  const provider =
+    item.providerSetup?.provider ?? item.providerProfileDraft?.provider ?? item.id.replace(/^provider-/, '');
+  return {
+    planStatus: diagnosticRunbookReadiness(item.status),
+    runtimeSupport: providerSetupPlanRuntimeSupport(item),
+    guideId: 'onboarding-connections',
+    guidePath: 'docs/manual/09-onboarding-connections.md',
+    primarySurface: item.providerView?.primarySurface ?? 'Settings > Xenesis Agent > Connections',
+    setupSurface:
+      item.providerView?.setupSurface ?? item.providerProfileDraft?.setupSurface ?? 'Settings > AI Provider',
+    reviewSurface: 'Desk Action Inbox',
+    steps,
+    readPaths: uniqueStrings([
+      'xd.xenesis.providers.setupPlans.status',
+      'xd.xenesis.connections.status',
+      'xd.xenesis.guides.status',
+      'xd.xenesis.connections.diagnostics.status',
+      'xd.xenesis.connections.setupRequests.status',
+      'xd.xenesis.providers.setup.status',
+      'xd.xenesis.providers.routing.status',
+      'xd.xenesis.providers.views.status',
+      'xd.xenesis.providers.profileDrafts.status',
+      'xd.xenesis.status',
+      ...(item.providerSetup?.crReadPaths ?? []),
+      ...(item.providerRouting?.readPaths ?? []),
+      ...(item.providerView?.readPaths ?? []),
+      ...(item.providerProfileDraft?.readPaths ?? []),
+      ...(item.providerProfileDraft?.reviewSteps.flatMap((step) => step.readPaths) ?? []),
+    ]),
+    controlPaths: uniqueStrings([
+      'xd.xenesis.providers.setupPlans.open',
+      'xd.xenesis.connections.open',
+      'xd.xenesis.guides.open',
+      'xd.xenesis.connections.diagnostics.open',
+      'xd.xenesis.connections.setupRequests.request',
+      ...(item.providerView?.controlPaths ?? []),
+      ...(item.providerProfileDraft?.controlPaths ?? []),
+      ...(item.providerProfileDraft?.reviewSteps.flatMap((step) => step.controlPaths) ?? []),
+    ]),
+    diagnostics: uniqueStrings([
+      'provider-setup-plan',
+      provider,
+      ...(item.providerSetup?.verification ?? []),
+      ...(item.providerSetup?.riskControls ?? []),
+      ...(item.providerRouting?.diagnostics ?? []),
+      ...(item.providerRouting?.credentialPools.map((pool) => pool.apiKeyEnv) ?? []),
+      ...(item.providerView?.diagnostics ?? []),
+      ...(item.providerProfileDraft?.diagnostics ?? []),
+      ...(item.providerProfileDraft?.reviewSteps.flatMap((step) => step.diagnostics) ?? []),
+    ]),
+    blockedActions: uniqueStrings([
+      ...XENESIS_CONNECTION_SETUP_REQUEST_BLOCKED_ACTIONS,
+      'change active provider',
+      'write provider settings from setup plan metadata',
+      'store raw provider secrets',
+      'edit provider fallback chains',
+      'change local CLI selection',
+      'run provider prompts',
+      ...(item.providerProfileDraft?.blockedActions ?? []),
+    ]),
+    safetyBoundaries: uniqueStrings([
+      'provider setup plans are read/open orchestration metadata',
+      'setup plans do not change provider settings, store raw secrets, edit fallback chains, change local CLI selection, run provider prompts, or bypass approvals',
+      'setup plans do not change provider settings',
+      'ready provider setup plans reference only existing approval-gated profile draft apply paths',
+      ...(item.providerSetup?.riskControls ?? []),
+      ...(item.providerRouting?.safetyBoundaries ?? []),
+      ...(item.providerView?.safetyBoundaries ?? []),
+      ...(item.providerProfileDraft?.safetyBoundaries ?? []),
+      ...(item.providerProfileDraft?.reviewSteps.map((step) => step.safetyBoundary) ?? []),
+    ]),
+  };
+}
+
+function withXenesisConnectionProviderSetupPlan(item: XenesisConnectionItem): XenesisConnectionItem {
+  const providerSetupPlan = buildXenesisProviderSetupPlan(item);
+  if (!providerSetupPlan) return item;
+  return { ...item, providerSetupPlan };
+}
+
+function withXenesisConnectionProviderSetupPlans(
+  sections: XenesisConnectionsStatus['sections'],
+): XenesisConnectionsStatus['sections'] {
+  return Object.fromEntries(
+    Object.entries(sections).map(([id, section]) => [
+      id,
+      { ...section, items: section.items.map((item) => withXenesisConnectionProviderSetupPlan(item)) },
+    ]),
+  ) as XenesisConnectionsStatus['sections'];
+}
+
 function toolSetupPlanRuntimeSupport(item: XenesisConnectionItem): XenesisConnectionToolSetupPlanRuntimeSupport {
   if (
     item.toolInstallPlan?.runtimeSupport === 'planned-oauth' ||
@@ -5748,6 +6002,22 @@ function buildXenesisConnectionDiagnosticRunbook(
     );
   }
 
+  if (item.providerSetupPlan) {
+    steps.push(
+      diagnosticRunbookStep({
+        id: 'provider-setup-plan',
+        label: 'Provider setup plan',
+        expectedState: 'AI provider setup plan steps, readbacks, and approval-gated boundaries are visible.',
+        readPaths: ['xd.xenesis.providers.setupPlans.status', ...item.providerSetupPlan.readPaths],
+        controlPaths: item.providerSetupPlan.controlPaths,
+        diagnostics: [
+          ...item.providerSetupPlan.diagnostics,
+          ...item.providerSetupPlan.steps.flatMap((step) => step.verifyWith),
+        ],
+      }),
+    );
+  }
+
   if (item.toolSetup) {
     steps.push(
       diagnosticRunbookStep({
@@ -6030,6 +6300,7 @@ function buildXenesisConnectionDiagnosticRunbook(
       ...(item.providerView?.safetyBoundaries ?? []),
       ...(item.providerProfileDraft?.safetyBoundaries ?? []),
       ...(item.providerProfileDraft?.reviewSteps.map((step) => step.safetyBoundary) ?? []),
+      ...(item.providerSetupPlan?.safetyBoundaries ?? []),
       ...(item.toolSetup?.riskControls ?? []),
       ...(item.toolConnector?.safetyBoundaries ?? []),
       ...(item.toolOAuthDraft?.safetyBoundaries ?? []),
@@ -6092,6 +6363,8 @@ function setupRequestDiagnosticItems(item: XenesisConnectionItem): string[] {
     ...(item.providerRouting?.diagnostics ?? []),
     ...(item.providerProfileDraft?.diagnostics ?? []),
     ...(item.providerProfileDraft?.reviewSteps.flatMap((step) => step.diagnostics) ?? []),
+    ...(item.providerSetupPlan?.diagnostics ?? []),
+    ...(item.providerSetupPlan?.steps.flatMap((step) => step.verifyWith) ?? []),
     ...(item.toolSetup?.verification ?? []),
     ...(item.toolConnector?.validationChecks ?? []),
     ...(item.toolOAuthDraft?.diagnostics ?? []),
@@ -6121,6 +6394,7 @@ function setupRequestStepItems(item: XenesisConnectionItem): string[] {
     ...(item.providerProfileDraft?.missingRequiredFields.map((field) => `review provider profile field: ${field}`) ??
       []),
     ...(item.providerProfileDraft?.reviewSteps.map((step) => `${step.id}: ${step.expectedState}`) ?? []),
+    ...(item.providerSetupPlan?.steps.map((step) => `${step.id}: ${step.expectedState}`) ?? []),
     ...(item.toolOAuthDraft?.missingRequiredFields.map((field) => `review OAuth draft field: ${field}`) ?? []),
     ...(item.toolOAuthDraft?.scopes.map((scope) => `review OAuth scope: ${scope}`) ?? []),
     ...(item.toolOAuthDraft?.reviewSteps.map((step) => `${step.id}: ${step.expectedState}`) ?? []),
@@ -6194,6 +6468,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.providerView?.readPaths ?? []),
       ...(item.providerProfileDraft?.readPaths ?? []),
       ...(item.providerProfileDraft?.reviewSteps.flatMap((step) => step.readPaths) ?? []),
+      ...(item.providerSetupPlan?.readPaths ?? []),
       ...(item.toolSetup?.crReadPaths ?? []),
       ...(item.toolConnector?.readPaths ?? []),
       ...(item.toolOAuthDraft?.readPaths ?? []),
@@ -6224,6 +6499,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.providerView?.controlPaths ?? []),
       ...(item.providerProfileDraft?.controlPaths ?? []),
       ...(item.providerProfileDraft?.reviewSteps.flatMap((step) => step.controlPaths) ?? []),
+      ...(item.providerSetupPlan?.controlPaths ?? []),
       ...(item.crActions ?? []),
       ...(item.toolConnector?.controlPaths ?? []),
       ...(item.toolOAuthDraft?.controlPaths ?? []),
@@ -6264,6 +6540,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.providerView?.safetyBoundaries ?? []),
       ...(item.providerProfileDraft?.safetyBoundaries ?? []),
       ...(item.providerProfileDraft?.reviewSteps.map((step) => step.safetyBoundary) ?? []),
+      ...(item.providerSetupPlan?.safetyBoundaries ?? []),
       ...(item.toolSetup?.riskControls ?? []),
       ...(item.toolConnector?.safetyBoundaries ?? []),
       ...(item.toolOAuthDraft?.safetyBoundaries ?? []),
@@ -7550,7 +7827,9 @@ export function buildXenesisConnectionsStatus(input: BuildXenesisConnectionsStat
   };
   const sections = withXenesisConnectionSetupRequests(
     withXenesisConnectionDiagnosticRunbooks(
-      withXenesisConnectionChannelSetupPlans(withXenesisConnectionToolSetupPlans(rawSections)),
+      withXenesisConnectionChannelSetupPlans(
+        withXenesisConnectionToolSetupPlans(withXenesisConnectionProviderSetupPlans(rawSections)),
+      ),
     ),
   );
   const summary = countItems(sections);

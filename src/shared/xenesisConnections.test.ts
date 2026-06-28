@@ -1352,6 +1352,66 @@ test('buildXenesisConnectionsStatus exposes guided external messenger channel se
   );
 });
 
+test('buildXenesisConnectionsStatus exposes guided AI provider setup plans', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const provider = status.sections.provider.items.find((item) => item.id === 'provider-codex-app-server');
+
+  assert.equal(provider?.providerSetupPlan?.runtimeSupport, 'configured-provider');
+  assert.equal(provider?.providerSetupPlan?.planStatus, 'ready');
+  assert.equal(provider?.providerSetupPlan?.guideId, 'onboarding-connections');
+  assert.equal(provider?.providerSetupPlan?.guidePath, 'docs/manual/09-onboarding-connections.md');
+  assert.deepEqual(
+    provider?.providerSetupPlan?.steps.map((step) => step.id),
+    [
+      'provider-setup',
+      'provider-routing',
+      'provider-view',
+      'provider-profile-draft',
+      'provider-profile-apply',
+      'diagnostic-runbook',
+      'setup-request',
+    ],
+  );
+  assert.equal(provider?.providerSetupPlan?.readPaths.includes('xd.xenesis.providers.setupPlans.status'), true);
+  assert.equal(provider?.providerSetupPlan?.controlPaths.includes('xd.xenesis.providers.setupPlans.open'), true);
+  assert.equal(provider?.providerSetupPlan?.controlPaths.includes('xd.xenesis.providers.profileDrafts.apply'), true);
+  assert.equal(provider?.setupRequest?.readPaths.includes('xd.xenesis.providers.setupPlans.status'), true);
+  assert.equal(provider?.setupRequest?.controlPaths.includes('xd.xenesis.providers.setupPlans.open'), true);
+  assert.equal(
+    provider?.providerSetupPlan?.safetyBoundaries.some((boundary) =>
+      boundary.includes('setup plans do not change provider settings'),
+    ),
+    true,
+  );
+});
+
 test('buildXenesisConnectionsStatus exposes redacted external tool connector readiness', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {

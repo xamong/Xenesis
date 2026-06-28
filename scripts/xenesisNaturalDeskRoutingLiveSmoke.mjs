@@ -124,6 +124,18 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     expectedVisibleText: 'Desk action approval required',
   },
   {
+    id: 'provider-setup-plans-status',
+    prompt: 'AI provider 설정 플랜 전체 상태 보여줘',
+    expectedPath: 'xd.xenesis.providers.setupPlans.status',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'codex-provider-setup-plan-open',
+    prompt: 'codex app-server provider 설정 플랜 열어줘',
+    expectedPath: 'xd.xenesis.providers.setupPlans.open',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
     id: 'notion-connector-open',
     prompt: '노션 connector 열어줘',
     expectedPath: 'xd.xenesis.tools.connectors.open',

@@ -98,6 +98,7 @@ import {
   buildXenesisMcpInstallDraftRequest,
   buildXenesisProviderProfileDraftApplyRequest,
   buildXenesisProviderProfileDraftRequest,
+  buildXenesisProviderSetupPlanRequest,
   buildXenesisToolActionCatalogRequest,
   buildXenesisToolOAuthDraftRequest,
   buildXenesisToolOAuthSetupPacketRequest,
@@ -120,6 +121,7 @@ import {
   formatXenesisOnboardingPlanSummary,
   formatXenesisProviderProfileDraftSummary,
   formatXenesisProviderRoutingSummary,
+  formatXenesisProviderSetupPlanSummary,
   formatXenesisProviderSetupSummary,
   formatXenesisProviderViewSummary,
   formatXenesisToolActionCatalogSummary,
@@ -4324,6 +4326,7 @@ export default function SettingsPane() {
     const channelProfileDraftRequest = buildXenesisChannelProfileDraftRequest(item);
     const channelProfileDraftApplyRequest = buildXenesisChannelProfileDraftApplyRequest(item);
     const channelTestRequest = buildXenesisChannelTestRequest(item);
+    const providerSetupPlanRequest = buildXenesisProviderSetupPlanRequest(item);
     const providerProfileDraftRequest = buildXenesisProviderProfileDraftRequest(item);
     const providerProfileDraftApplyRequest = buildXenesisProviderProfileDraftApplyRequest(item);
     const mcpTemplate = item.mcpTemplate;
@@ -4335,6 +4338,7 @@ export default function SettingsPane() {
     const providerSetup = item.providerSetup;
     const providerView = item.providerView;
     const providerRouting = item.providerRouting;
+    const providerSetupPlan = item.providerSetupPlan;
     const providerProfileDraft = item.providerProfileDraft;
     const toolSetup = item.toolSetup;
     const toolSetupPlan = item.toolSetupPlan;
@@ -4379,6 +4383,7 @@ export default function SettingsPane() {
           channelProfileDraftRequest ||
           channelProfileDraftApplyRequest ||
           channelTestRequest ||
+          providerSetupPlanRequest ||
           providerProfileDraftRequest ||
           providerProfileDraftApplyRequest) && (
           <div className="sp-actions-row sp-actions-row-tight">
@@ -4538,6 +4543,16 @@ export default function SettingsPane() {
                 }}
               >
                 {t('settings.xenesisConnectionsRequestProviderProfileDraft')}
+              </button>
+            ) : null}
+            {providerSetupPlanRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(providerSetupPlanRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsReadProviderSetupPlan')}
               </button>
             ) : null}
             {providerProfileDraftApplyRequest ? (
@@ -4839,6 +4854,52 @@ export default function SettingsPane() {
             <div>
               <span>{t('settings.xenesisConnectionsProviderProfileDraftSafety')}</span>
               <strong>{providerProfileDraft.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {providerSetupPlan ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'provider-setup-plan') && 'is-focused',
+            )}
+            data-xenesis-provider-setup-plan={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderSetupPlan')}</span>
+              <strong>{formatXenesisProviderSetupPlanSummary(providerSetupPlan)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderSetupPlanGuide')}</span>
+              <strong>{providerSetupPlan.guidePath}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderSetupPlanSteps')}</span>
+              <strong>
+                {providerSetupPlan.steps
+                  .map((step) => `${step.id}: ${step.kind} ${step.crPath} -> ${step.expectedState}`)
+                  .join(', ')}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderSetupPlanReadback')}</span>
+              <strong>{providerSetupPlan.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderSetupPlanControls')}</span>
+              <strong>{providerSetupPlan.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderSetupPlanDiagnostics')}</span>
+              <strong>{providerSetupPlan.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderSetupPlanBlocked')}</span>
+              <strong>{providerSetupPlan.blockedActions.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderSetupPlanSafety')}</span>
+              <strong>{providerSetupPlan.safetyBoundaries.join(', ')}</strong>
             </div>
           </div>
         ) : null}
