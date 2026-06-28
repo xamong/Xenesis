@@ -29,12 +29,9 @@ import {
   XENESIS_NATURAL_AGENT_SUBMIT_RULES,
   XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_WORDS,
   XENESIS_NATURAL_ALL_SCOPE_WORDS,
-  XENESIS_NATURAL_APP_STATUS_CONTEXT_WORDS,
-  XENESIS_NATURAL_APP_STATUS_TARGET_WORDS,
   XENESIS_NATURAL_ARRANGE_CONTEXT_WORDS,
   XENESIS_NATURAL_ARRANGE_MODE_TARGETS,
   XENESIS_NATURAL_ARTIFACT_TARGET_CONTEXT_WORDS,
-  XENESIS_NATURAL_CAPTURE_CONTEXT_WORDS,
   XENESIS_NATURAL_CHANNEL_PROFILE_CONTEXT_WORDS,
   XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_RULES,
   XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_RULES,
@@ -46,14 +43,16 @@ import {
   XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES,
   XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES,
   XENESIS_NATURAL_CONNECTION_TARGETS,
-  XENESIS_NATURAL_CORE_CAPABILITY_CONTEXT_WORDS,
   XENESIS_NATURAL_CORE_TOOL_OPEN_REASON,
   XENESIS_NATURAL_CORE_TOOL_TARGETS,
   XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS,
   XENESIS_NATURAL_DESK_ACTION_ARGS,
   XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS,
-  XENESIS_NATURAL_DESK_DIAGNOSTICS_CONTEXT_WORDS,
-  XENESIS_NATURAL_DESK_SETTINGS_CONTEXT_WORDS,
+  XENESIS_NATURAL_DESK_CAPTURE_RULES,
+  XENESIS_NATURAL_DESK_FILE_LIST_RULES,
+  XENESIS_NATURAL_DESK_FILE_PATH_RULES,
+  XENESIS_NATURAL_DESK_MISC_READ_RULES,
+  XENESIS_NATURAL_DESK_PANE_OPEN_RULES,
   XENESIS_NATURAL_DOCK_GRID_CONTEXT_WORDS,
   XENESIS_NATURAL_DOCK_HORIZONTAL_CONTEXT_WORDS,
   XENESIS_NATURAL_DOCK_MERGE_ALL_CONTEXT_WORDS,
@@ -67,10 +66,6 @@ import {
   XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_WORDS,
   XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_WORDS,
   XENESIS_NATURAL_EXTRACTION_PATTERNS,
-  XENESIS_NATURAL_FAVORITES_CONTEXT_WORDS,
-  XENESIS_NATURAL_FILE_CONTEXT_WORDS,
-  XENESIS_NATURAL_FILE_LIST_CONTEXT_WORDS,
-  XENESIS_NATURAL_FILE_READ_CONTEXT_WORDS,
   XENESIS_NATURAL_FILTER_CONTEXT_WORDS,
   XENESIS_NATURAL_GATEWAY_ACTION_RULES,
   XENESIS_NATURAL_GENERIC_CLOSE_CONTEXT_WORDS,
@@ -88,7 +83,6 @@ import {
   XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS,
   XENESIS_NATURAL_ONBOARDING_STEP_TARGETS,
   XENESIS_NATURAL_OPEN_COMMAND_WORDS,
-  XENESIS_NATURAL_OPEN_OR_SHOW_MINIMAL_WORDS,
   XENESIS_NATURAL_OPEN_OR_SHOW_WORDS,
   XENESIS_NATURAL_OTHER_SCOPE_WORDS,
   XENESIS_NATURAL_PANE_CONTEXT_WORDS,
@@ -282,19 +276,37 @@ function naturalViewOpenAction(
   };
 }
 
+function naturalCatalogRuleFromNaturalText(
+  value: string,
+  rules: readonly XenesisNaturalCatalogActionRule[],
+): XenesisNaturalCatalogActionRule | null {
+  for (const rule of rules) {
+    if (rule.contextWords.length > 0 && !hasAny(value, rule.contextWords)) continue;
+    if ((rule.requiredContextWordGroups ?? []).some((contextWords) => !hasAny(value, contextWords))) continue;
+    if (rule.blockedContextWords && hasAny(value, rule.blockedContextWords)) continue;
+    return rule;
+  }
+
+  return null;
+}
+
 function naturalCatalogRuleActionFromNaturalText(
   value: string,
   rules: readonly XenesisNaturalCatalogActionRule[],
   args: unknown = DESK_ACTION_ARGS.empty(),
 ): XenesisDeskActionRequest | null {
-  for (const rule of rules) {
-    if (rule.contextWords.length > 0 && !hasAny(value, rule.contextWords)) continue;
-    if ((rule.requiredContextWordGroups ?? []).some((contextWords) => !hasAny(value, contextWords))) continue;
-    if (rule.blockedContextWords && hasAny(value, rule.blockedContextWords)) continue;
-    return naturalCatalogAction(rule.action, args);
-  }
+  const rule = naturalCatalogRuleFromNaturalText(value, rules);
+  return rule ? naturalCatalogAction(rule.action, args) : null;
+}
 
-  return null;
+function naturalCatalogRulePlanFromNaturalText(
+  value: string,
+  rules: readonly XenesisNaturalCatalogActionRule[],
+  args: unknown = DESK_ACTION_ARGS.empty(),
+): XenesisDeskNaturalLanguagePlan | null {
+  const rule = naturalCatalogRuleFromNaturalText(value, rules);
+  if (!rule?.visibleText) return null;
+  return naturalPlan(rule.visibleText, [naturalCatalogAction(rule.action, args)]);
 }
 
 const DESK_ACTIONS = XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS;
@@ -1016,38 +1028,20 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     return naturalPlan(PLAN_TEXT.runtimeControlRecorded, [xenesisRuntimeControlAction]);
   }
 
-  if (hasAny(value, XENESIS_NATURAL_DESK_SETTINGS_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_OPEN_OR_SHOW_WORDS)) {
-    return naturalPlan(PLAN_TEXT.settingsPaneOpen, [
-      naturalCatalogAction(DESK_ACTIONS.settingsOpen, DESK_ACTION_ARGS.placement(placement)),
-    ]);
-  }
-
-  if (
-    hasAny(value, XENESIS_NATURAL_DESK_DIAGNOSTICS_CONTEXT_WORDS) &&
-    hasAny(value, XENESIS_NATURAL_OPEN_OR_SHOW_MINIMAL_WORDS)
-  ) {
-    return naturalPlan(PLAN_TEXT.diagnosticsPaneOpen, [
-      naturalCatalogAction(DESK_ACTIONS.diagnosticsOpen, DESK_ACTION_ARGS.placement(placement)),
-    ]);
-  }
-
-  if (hasAny(value, XENESIS_NATURAL_CORE_CAPABILITY_CONTEXT_WORDS)) {
-    return naturalPlan(PLAN_TEXT.capabilityExplorerOpen, [
-      naturalCatalogAction(DESK_ACTIONS.capabilityExplorerOpen, DESK_ACTION_ARGS.placement(placement)),
-    ]);
-  }
+  const deskPaneOpenPlan = naturalCatalogRulePlanFromNaturalText(
+    value,
+    XENESIS_NATURAL_DESK_PANE_OPEN_RULES,
+    DESK_ACTION_ARGS.placement(placement),
+  );
+  if (deskPaneOpenPlan) return deskPaneOpenPlan;
 
   const toolOpenAction = toolOpenActionFromNaturalText(value, placement);
   if (toolOpenAction && hasAny(value, XENESIS_NATURAL_OPEN_OR_SHOW_WORDS)) {
     return naturalPlan(PLAN_TEXT.requestedToolPanelOpen, [toolOpenAction]);
   }
 
-  if (hasAny(value, XENESIS_NATURAL_CAPTURE_CONTEXT_WORDS)) {
-    if (hasAny(value, XENESIS_NATURAL_GENERIC_LIST_CONTEXT_WORDS)) {
-      return naturalPlan(PLAN_TEXT.captureListRead, [naturalCatalogAction(DESK_ACTIONS.captureList)]);
-    }
-    return naturalPlan(PLAN_TEXT.activePaneCapture, [naturalCatalogAction(DESK_ACTIONS.captureActivePane)]);
-  }
+  const deskCapturePlan = naturalCatalogRulePlanFromNaturalText(value, XENESIS_NATURAL_DESK_CAPTURE_RULES);
+  if (deskCapturePlan) return deskCapturePlan;
 
   if (
     hasAny(value, XENESIS_NATURAL_GENERIC_FOCUS_CONTEXT_WORDS) &&
@@ -1095,23 +1089,16 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     }
   }
 
-  if (hasAny(value, XENESIS_NATURAL_FILE_LIST_CONTEXT_WORDS)) {
-    return naturalPlan(PLAN_TEXT.filesListRead, [naturalCatalogAction(DESK_ACTIONS.filesListOpen)]);
-  }
+  const deskFileListPlan = naturalCatalogRulePlanFromNaturalText(value, XENESIS_NATURAL_DESK_FILE_LIST_RULES);
+  if (deskFileListPlan) return deskFileListPlan;
 
-  if (hasAny(value, XENESIS_NATURAL_FILE_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_GENERIC_OPEN_WORDS)) {
-    const filePath = extractLocalPath(rawText);
-    return naturalPlan(PLAN_TEXT.fileOpen, [
-      naturalCatalogAction(DESK_ACTIONS.fileOpen, DESK_ACTION_ARGS.optionalFilePath(filePath)),
-    ]);
-  }
-
-  if (hasAny(value, XENESIS_NATURAL_FILE_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_FILE_READ_CONTEXT_WORDS)) {
-    const filePath = extractLocalPath(rawText);
-    return naturalPlan(PLAN_TEXT.fileContentRead, [
-      naturalCatalogAction(DESK_ACTIONS.fileRead, DESK_ACTION_ARGS.optionalFilePath(filePath)),
-    ]);
-  }
+  const filePath = extractLocalPath(rawText);
+  const deskFilePathPlan = naturalCatalogRulePlanFromNaturalText(
+    value,
+    XENESIS_NATURAL_DESK_FILE_PATH_RULES,
+    DESK_ACTION_ARGS.optionalFilePath(filePath),
+  );
+  if (deskFilePathPlan) return deskFilePathPlan;
 
   if (hasAny(value, XENESIS_NATURAL_EXPLORER_CONTEXT_WORDS)) {
     if (hasAny(value, XENESIS_NATURAL_EXPLORER_HIDE_CONTEXT_WORDS)) {
@@ -1141,9 +1128,8 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     return naturalPlan(PLAN_TEXT.explorerShow, [naturalCatalogAction(DESK_ACTIONS.explorerShow)]);
   }
 
-  if (hasAny(value, XENESIS_NATURAL_FAVORITES_CONTEXT_WORDS)) {
-    return naturalPlan(PLAN_TEXT.favoritesShow, [naturalCatalogAction(DESK_ACTIONS.favoritesShow)]);
-  }
+  const deskMiscReadPlan = naturalCatalogRulePlanFromNaturalText(value, XENESIS_NATURAL_DESK_MISC_READ_RULES);
+  if (deskMiscReadPlan) return deskMiscReadPlan;
 
   if (hasAny(value, XENESIS_NATURAL_TERMINAL_CONTEXT_WORDS)) {
     if (hasAny(value, XENESIS_NATURAL_GENERIC_LIST_CONTEXT_WORDS)) {
@@ -1235,13 +1221,6 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     return naturalPlan(PLAN_TEXT.artifactTargetSet, [
       naturalCatalogAction(DESK_ACTIONS.artifactTargetSet, DESK_ACTION_ARGS.useActive()),
     ]);
-  }
-
-  if (
-    hasAny(value, XENESIS_NATURAL_APP_STATUS_CONTEXT_WORDS) &&
-    hasAny(value, XENESIS_NATURAL_APP_STATUS_TARGET_WORDS)
-  ) {
-    return naturalPlan(PLAN_TEXT.appStatusRead, [naturalCatalogAction(DESK_ACTIONS.appStatus)]);
   }
 
   const view = viewKindFromNaturalText(value);

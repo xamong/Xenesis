@@ -3523,6 +3523,69 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Desk Core Rule Catalog Refactor Slice
+
+- Started the next larger hardcoding cleanup slice for general Desk core
+  read/open action selection.
+- Intended change:
+  - add shared rule catalogs for settings, diagnostics, Capability Explorer,
+    capture list/active capture, file list/open/read, favorites, and app status;
+  - have `xenesisAgentDeskControl.ts` interpret those rules instead of
+    branching directly on the scoped `DESK_ACTIONS.*` descriptors and context
+    words;
+  - keep placement detection and optional file path extraction in the planner
+    because those are dynamic argument extraction.
+- Scope boundary:
+  - Refactor only.
+  - Do not change CR paths, registry/dispatcher paths, approval behavior,
+    execution, terminal/explorer/dock layout routing, or UI rendering.
+- Verification plan:
+  - RED focused planner/source-guard test first;
+  - GREEN focused planner test;
+  - scoped Biome for catalog/planner/test files;
+  - root typecheck, build, natural Desk routing smoke, and diff check before
+    commit.
+- RED verification:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    failed as expected with 36/37 passing because the planner still imports and
+    branches directly on Desk core context words such as
+    `XENESIS_NATURAL_DESK_SETTINGS_CONTEXT_WORDS`.
+- Implementation:
+  - Added shared Desk pane-open, capture, file-list, file-path, and misc-read
+    rule catalogs with fixed visible text.
+  - Split the planner rule matcher so matched rules can produce either actions
+    or complete plans.
+  - Replaced the scoped Desk core direct branches with rule-plan
+    interpretation while leaving placement and optional file path extraction in
+    the planner.
+- GREEN verification:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 37/37 tests.
+  - `npx biome format --write src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    formatted 3 files with no fixes applied.
+  - Focused planner test passed again with 37/37 tests.
+  - Initial scoped Biome exited 0 but reported one unused-import warning for
+    `XENESIS_NATURAL_OPEN_OR_SHOW_MINIMAL_WORDS`; that import was removed.
+  - Focused planner test then passed again with 37/37 tests, and scoped Biome
+    exited 0 with no fixes applied.
+  - `npm run typecheck` passed.
+  - Static hardcoding check found no remaining planner direct Desk core scoped
+    context-word imports or scoped `DESK_ACTIONS.*` descriptor matches for
+    settings, diagnostics, Capability Explorer, capture, file list/open/read,
+    favorites, or app status.
+  - `npm run build` passed; Vite emitted the existing browser `fs`
+    externalization warning for `hwp.js` and the existing dynamic/static import
+    chunking warning for `deskBridge.ts`.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 21/21 through the
+    built Electron app.
+  - `git diff --check` exited 0 with LF-to-CRLF working-copy warnings for
+    touched tracked files only.
+  - CR audit was not run because this slice only refactors planner/catalog rule
+    interpretation and does not change registry, dispatcher, or capability
+    coverage.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

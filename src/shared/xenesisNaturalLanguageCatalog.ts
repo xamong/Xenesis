@@ -92,6 +92,7 @@ export interface XenesisNaturalCatalogActionRule {
   blockedContextWords?: readonly string[];
   action: XenesisNaturalDeskActionDescriptor;
   fallback?: boolean;
+  visibleText?: string;
 }
 
 export type XenesisNaturalConnectionAggregateStatusRuleStage = 'early' | 'late';
@@ -1451,6 +1452,77 @@ export const XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS = {
     reason: 'Read app status from natural language request.',
   },
 } as const satisfies Record<string, XenesisNaturalDeskActionDescriptor>;
+
+export const XENESIS_NATURAL_DESK_PANE_OPEN_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_DESK_SETTINGS_CONTEXT_WORDS,
+    requiredContextWordGroups: [XENESIS_NATURAL_OPEN_OR_SHOW_WORDS],
+    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.settingsOpen,
+    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.settingsPaneOpen,
+  },
+  {
+    contextWords: XENESIS_NATURAL_DESK_DIAGNOSTICS_CONTEXT_WORDS,
+    requiredContextWordGroups: [XENESIS_NATURAL_OPEN_OR_SHOW_MINIMAL_WORDS],
+    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.diagnosticsOpen,
+    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.diagnosticsPaneOpen,
+  },
+  {
+    contextWords: XENESIS_NATURAL_CORE_CAPABILITY_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.capabilityExplorerOpen,
+    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.capabilityExplorerOpen,
+  },
+] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+
+export const XENESIS_NATURAL_DESK_CAPTURE_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_CAPTURE_CONTEXT_WORDS,
+    requiredContextWordGroups: [XENESIS_NATURAL_GENERIC_LIST_CONTEXT_WORDS],
+    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.captureList,
+    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.captureListRead,
+  },
+  {
+    contextWords: XENESIS_NATURAL_CAPTURE_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.captureActivePane,
+    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.activePaneCapture,
+  },
+] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+
+export const XENESIS_NATURAL_DESK_FILE_LIST_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_FILE_LIST_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.filesListOpen,
+    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.filesListRead,
+  },
+] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+
+export const XENESIS_NATURAL_DESK_FILE_PATH_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_FILE_CONTEXT_WORDS,
+    requiredContextWordGroups: [XENESIS_NATURAL_GENERIC_OPEN_WORDS],
+    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.fileOpen,
+    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.fileOpen,
+  },
+  {
+    contextWords: XENESIS_NATURAL_FILE_CONTEXT_WORDS,
+    requiredContextWordGroups: [XENESIS_NATURAL_FILE_READ_CONTEXT_WORDS],
+    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.fileRead,
+    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.fileContentRead,
+  },
+] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+
+export const XENESIS_NATURAL_DESK_MISC_READ_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_FAVORITES_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.favoritesShow,
+    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.favoritesShow,
+  },
+  {
+    contextWords: XENESIS_NATURAL_APP_STATUS_CONTEXT_WORDS,
+    requiredContextWordGroups: [XENESIS_NATURAL_APP_STATUS_TARGET_WORDS],
+    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.appStatus,
+    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.appStatusRead,
+  },
+] as const satisfies readonly XenesisNaturalCatalogActionRule[];
 
 export const XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS = {
   localCliScan: {
