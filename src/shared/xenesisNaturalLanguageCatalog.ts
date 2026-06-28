@@ -120,6 +120,35 @@ export interface XenesisNaturalContextRule {
   blockedContextWords?: readonly string[];
 }
 
+export function xenesisNaturalTextHasAny(value: string, words: readonly string[]): boolean {
+  return words.some((word) => value.includes(word));
+}
+
+export function matchesXenesisNaturalContextRule(value: string, rule: XenesisNaturalContextRule): boolean {
+  if (rule.contextWords.length > 0 && !xenesisNaturalTextHasAny(value, rule.contextWords)) return false;
+  if ((rule.requiredContextWordGroups ?? []).some((contextWords) => !xenesisNaturalTextHasAny(value, contextWords))) {
+    return false;
+  }
+  if (rule.blockedContextWords && xenesisNaturalTextHasAny(value, rule.blockedContextWords)) return false;
+  return true;
+}
+
+export function findXenesisNaturalContextRule<TRule extends XenesisNaturalContextRule>(
+  value: string,
+  rules: readonly TRule[],
+): TRule | null {
+  for (const rule of rules) {
+    if (!matchesXenesisNaturalContextRule(value, rule)) continue;
+    return rule;
+  }
+
+  return null;
+}
+
+export function matchesXenesisNaturalContextRules(value: string, rules: readonly XenesisNaturalContextRule[]): boolean {
+  return findXenesisNaturalContextRule(value, rules) !== null;
+}
+
 export interface XenesisNaturalCatalogActionRule extends XenesisNaturalContextRule {
   action: XenesisNaturalDeskActionDescriptor;
   fallback?: boolean;

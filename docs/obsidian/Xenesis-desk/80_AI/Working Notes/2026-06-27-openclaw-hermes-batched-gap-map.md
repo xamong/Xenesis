@@ -3769,6 +3769,53 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Natural Rule Matcher Catalog Refactor Slice
+
+- Continued with a larger hardcoding cleanup slice for generic natural
+  context-rule matching.
+- Intended change:
+  - move reusable text/context matching semantics into
+    `xenesisNaturalLanguageCatalog.ts`;
+  - remove planner-local `hasAny`, `naturalRuleMatches`,
+    `naturalContextRuleFromNaturalText`, and `naturalContextMatches`;
+  - have `xenesisAgentDeskControl.ts` call shared matcher helpers for catalog
+    rule lookup, connection/provider target rules, guide/onboarding rules, and
+    aggregate/open-intent checks.
+- Scope boundary:
+  - Refactor only.
+  - Preserve route order, rule arrays, target data, CR paths, action args,
+    dynamic extraction, visible text, provider behavior, approvals, and UI
+    behavior.
+  - No CR schema, dispatcher, generated docs, provider runtime, or approval
+    flow changes.
+- RED verification:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    failed as expected with 36/37 passing. The source guard caught
+    planner-local `function hasAny`.
+- Implementation:
+  - Added shared `xenesisNaturalTextHasAny`,
+    `matchesXenesisNaturalContextRule`, `findXenesisNaturalContextRule`, and
+    `matchesXenesisNaturalContextRules` exports.
+  - Replaced planner-local matcher definitions and all planner call sites with
+    the shared helpers.
+  - Extended source guards so the planner cannot reintroduce the local matcher
+    functions.
+- Verification:
+  - Focused planner test passed with 37/37 tests before and after formatting.
+  - Scoped Biome over the catalog/planner/test files exited 0 with no fixes
+    applied after formatting.
+  - Static grep found no remaining planner-local matcher helper names.
+  - `npm run typecheck` passed.
+  - `npm run build` passed with existing Vite warnings only.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 21/21 through the
+    built Electron app.
+  - `git diff --check` exited 0 with LF-to-CRLF working-copy warnings only.
+  - CR audit was skipped because this slice only refactors shared
+    natural-language matcher helpers and does not change registry, dispatcher,
+    or capability coverage.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

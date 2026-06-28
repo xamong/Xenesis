@@ -204,6 +204,23 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_WORDS/);
+  for (const localMatcherFunction of [
+    'function hasAny',
+    'function naturalRuleMatches',
+    'function naturalContextRuleFromNaturalText',
+    'function naturalContextMatches',
+  ]) {
+    assert.doesNotMatch(source, new RegExp(localMatcherFunction));
+  }
+  for (const sharedMatcherFunction of [
+    'findXenesisNaturalContextRule',
+    'matchesXenesisNaturalContextRule',
+    'matchesXenesisNaturalContextRules',
+  ]) {
+    assert.match(source, new RegExp(sharedMatcherFunction));
+    assert.match(catalogSource, new RegExp(`export function ${sharedMatcherFunction}`));
+  }
+  assert.match(catalogSource, /export function xenesisNaturalTextHasAny/);
   assert.doesNotMatch(source, /hasAny\(value, \[\s*'온보딩'/);
   assert.doesNotMatch(source, /hasAny\(value, \[\s*'external tool'/);
   assert.deepEqual(XENESIS_NATURAL_GUIDE_CONTEXT_WORDS, ['가이드', 'guide', 'guides', '문서', 'playbook', '플레이북']);

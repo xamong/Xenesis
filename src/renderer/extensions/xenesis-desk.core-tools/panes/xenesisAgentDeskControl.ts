@@ -2,6 +2,7 @@ import { listDeskBridgeCapabilities } from '../../../../shared/deskBridgeCapabil
 import {
   findXenesisNaturalArrangeModeTarget,
   findXenesisNaturalConnectionTarget,
+  findXenesisNaturalContextRule,
   findXenesisNaturalCoreToolTarget,
   findXenesisNaturalDockSideTarget,
   findXenesisNaturalDockWindowStateTarget,
@@ -16,6 +17,8 @@ import {
   isXenesisNaturalConnectionMessengerTarget,
   isXenesisNaturalConnectionToolTarget,
   isXenesisNaturalPlannedGoogleToolTarget,
+  matchesXenesisNaturalContextRule,
+  matchesXenesisNaturalContextRules,
   XENESIS_DESK_ACTION_ACTIVITY_PHASES,
   XENESIS_DESK_ACTION_APPROVAL_STATE,
   XENESIS_DESK_ACTION_CALL_RESULT_KEYS,
@@ -119,7 +122,6 @@ import {
   type XenesisNaturalConnectionAggregateStatusRuleStage,
   type XenesisNaturalConnectionTarget,
   type XenesisNaturalConnectionTargetActionRule,
-  type XenesisNaturalContextRule,
   type XenesisNaturalCoreToolTarget,
   type XenesisNaturalDeskActionDescriptor,
   type XenesisNaturalDeskActionTemplateDescriptor,
@@ -203,10 +205,6 @@ function normalizeNaturalLanguageText(value: string): string {
     .toLowerCase();
 }
 
-function hasAny(value: string, words: readonly string[]): boolean {
-  return words.some((word) => value.includes(word));
-}
-
 function naturalAction(id: string, path: string, args: unknown, reason: string): XenesisDeskActionRequest {
   return { id, path, args, approved: DESK_ACTION_APPROVAL_STATE.pending, reason };
 }
@@ -252,45 +250,22 @@ function naturalViewOpenAction(
   };
 }
 
-function naturalRuleMatches(value: string, rule: XenesisNaturalContextRule): boolean {
-  if (rule.contextWords.length > 0 && !hasAny(value, rule.contextWords)) return false;
-  if ((rule.requiredContextWordGroups ?? []).some((contextWords) => !hasAny(value, contextWords))) return false;
-  if (rule.blockedContextWords && hasAny(value, rule.blockedContextWords)) return false;
-  return true;
-}
-
-function naturalContextRuleFromNaturalText<TRule extends XenesisNaturalContextRule>(
-  value: string,
-  rules: readonly TRule[],
-): TRule | null {
-  for (const rule of rules) {
-    if (!naturalRuleMatches(value, rule)) continue;
-    return rule;
-  }
-
-  return null;
-}
-
-function naturalContextMatches(value: string, rules: readonly XenesisNaturalContextRule[]): boolean {
-  return naturalContextRuleFromNaturalText(value, rules) !== null;
-}
-
 function hasExplicitOpenIntent(value: string): boolean {
   return (
-    naturalContextMatches(value, XENESIS_NATURAL_EXPLICIT_OPEN_INTENT_RULES) ||
+    matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_EXPLICIT_OPEN_INTENT_RULES) ||
     INTENT_PATTERNS.explicitOpenEnglish.test(value)
   );
 }
 
 function hasActionIntent(value: string): boolean {
-  return naturalContextMatches(value, XENESIS_NATURAL_ACTION_INTENT_RULES);
+  return matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_ACTION_INTENT_RULES);
 }
 
 function naturalCatalogRuleFromNaturalText(
   value: string,
   rules: readonly XenesisNaturalCatalogActionRule[],
 ): XenesisNaturalCatalogActionRule | null {
-  return naturalContextRuleFromNaturalText(value, rules);
+  return findXenesisNaturalContextRule(value, rules);
 }
 
 function naturalCatalogRuleActionFromNaturalText(
@@ -482,7 +457,7 @@ function xenesisConnectionTargetRuleActionFromNaturalText(
 ): XenesisDeskActionRequest | null {
   for (const rule of rules) {
     if (!xenesisConnectionTargetMatchesRule(target, rule)) continue;
-    if (rule.contextWords.length > 0 && !hasAny(value, rule.contextWords)) continue;
+    if (!matchesXenesisNaturalContextRule(value, rule)) continue;
     return naturalTemplateAction(
       rule.action,
       [target.id, target.label],
@@ -525,7 +500,7 @@ function xenesisProviderRuleActionFromNaturalText(
   rules: readonly XenesisNaturalProviderActionRule[],
 ): XenesisDeskActionRequest | null {
   for (const rule of rules) {
-    if (rule.contextWords.length > 0 && !hasAny(value, rule.contextWords)) continue;
+    if (!matchesXenesisNaturalContextRule(value, rule)) continue;
     return naturalTemplateAction(
       rule.action,
       [provider.id, provider.label],
@@ -540,19 +515,19 @@ function xenesisGuideFromNaturalText(
   value: string,
   rule: XenesisNaturalGuideOpenRule | XenesisNaturalGuideStatusRule,
 ): { id: string; label: string } | null {
-  if (!naturalRuleMatches(value, rule)) return null;
+  if (!matchesXenesisNaturalContextRule(value, rule)) return null;
 
   return findXenesisNaturalGuideTarget(value);
 }
 
 function xenesisGuideActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
-  const rule = naturalContextRuleFromNaturalText(value, XENESIS_NATURAL_GUIDE_OPEN_RULES);
+  const rule = findXenesisNaturalContextRule(value, XENESIS_NATURAL_GUIDE_OPEN_RULES);
   if (!rule) return null;
 
   const guide = xenesisGuideFromNaturalText(value, rule);
   if (!guide) return null;
 
-  const openFile = naturalContextMatches(value, XENESIS_NATURAL_GUIDE_FILE_OPEN_RULES);
+  const openFile = matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_GUIDE_FILE_OPEN_RULES);
 
   return naturalTemplateAction(
     rule.action,
@@ -562,7 +537,7 @@ function xenesisGuideActionFromNaturalText(value: string): XenesisDeskActionRequ
 }
 
 function xenesisGuideStatusActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
-  const rule = naturalContextRuleFromNaturalText(value, XENESIS_NATURAL_GUIDE_STATUS_RULES);
+  const rule = findXenesisNaturalContextRule(value, XENESIS_NATURAL_GUIDE_STATUS_RULES);
   if (!rule) return null;
 
   const guide = xenesisGuideFromNaturalText(value, rule);
@@ -573,8 +548,8 @@ function xenesisGuideStatusActionFromNaturalText(value: string): XenesisDeskActi
 
 function hasXenesisOnboardingContext(value: string): boolean {
   return (
-    naturalContextRuleFromNaturalText(value, XENESIS_NATURAL_ONBOARDING_OPEN_RULES) !== null ||
-    naturalContextRuleFromNaturalText(value, XENESIS_NATURAL_ONBOARDING_STATUS_RULES) !== null
+    findXenesisNaturalContextRule(value, XENESIS_NATURAL_ONBOARDING_OPEN_RULES) !== null ||
+    findXenesisNaturalContextRule(value, XENESIS_NATURAL_ONBOARDING_STATUS_RULES) !== null
   );
 }
 
@@ -593,7 +568,7 @@ function xenesisOnboardingArgsForRule(rule: XenesisNaturalOnboardingActionRule, 
 function xenesisOnboardingOpenActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
   const step = xenesisOnboardingStepFromNaturalText(value);
   for (const rule of XENESIS_NATURAL_ONBOARDING_OPEN_RULES) {
-    if (!naturalRuleMatches(value, rule)) continue;
+    if (!matchesXenesisNaturalContextRule(value, rule)) continue;
 
     if (rule.targetRequired) {
       if (!step) continue;
@@ -614,7 +589,7 @@ function xenesisOnboardingStatusActionFromNaturalText(value: string): XenesisDes
   if (!step) return null;
 
   for (const rule of XENESIS_NATURAL_ONBOARDING_STATUS_RULES) {
-    if (!naturalRuleMatches(value, rule)) continue;
+    if (!matchesXenesisNaturalContextRule(value, rule)) continue;
     if (!rule.targetRequired) continue;
 
     return naturalTemplateAction(rule.action, [step.id, step.label], xenesisOnboardingArgsForRule(rule, step.id));
@@ -624,23 +599,23 @@ function xenesisOnboardingStatusActionFromNaturalText(value: string): XenesisDes
 }
 
 function hasXenesisConnectionReadbackIntent(value: string): boolean {
-  return naturalContextMatches(value, XENESIS_NATURAL_CONNECTION_READBACK_INTENT_RULES);
+  return matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_CONNECTION_READBACK_INTENT_RULES);
 }
 
 function hasExternalToolCatalogContext(value: string): boolean {
-  return naturalContextMatches(value, XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_RULES);
+  return matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_RULES);
 }
 
 function hasExternalMessengerCatalogContext(value: string): boolean {
-  return naturalContextMatches(value, XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_RULES);
+  return matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_RULES);
 }
 
 function hasXenesisAggregateCatalogContext(value: string): boolean {
-  return naturalContextMatches(value, XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_RULES);
+  return matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_RULES);
 }
 
 function hasXenesisMessengerProfileDraftCatalogContext(value: string): boolean {
-  return naturalContextMatches(value, XENESIS_NATURAL_MESSENGER_PROFILE_DRAFT_CATALOG_CONTEXT_RULES);
+  return matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_MESSENGER_PROFILE_DRAFT_CATALOG_CONTEXT_RULES);
 }
 
 function xenesisToolAggregateStatusActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
@@ -662,7 +637,7 @@ function xenesisConnectionAggregateRuleMatches(
   value: string,
   matchKind: XenesisNaturalConnectionAggregateRuleMatchKind,
 ): boolean {
-  return naturalContextMatches(value, XENESIS_NATURAL_CONNECTION_AGGREGATE_MATCH_RULES[matchKind]);
+  return matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_CONNECTION_AGGREGATE_MATCH_RULES[matchKind]);
 }
 
 function xenesisConnectionAggregateStatusRuleActionFromNaturalText(
@@ -759,11 +734,11 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
 }
 
 function hasXenesisConnectionReviewRequestIntent(value: string): boolean {
-  return naturalContextMatches(value, XENESIS_NATURAL_CONNECTION_REVIEW_REQUEST_INTENT_RULES);
+  return matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_CONNECTION_REVIEW_REQUEST_INTENT_RULES);
 }
 
 function hasXenesisProviderProfileContext(value: string): boolean {
-  return naturalContextMatches(value, XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_RULES);
+  return matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_RULES);
 }
 
 function xenesisConnectionReviewRequestActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
@@ -953,7 +928,10 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
   }
 
   const explicitXenesisConnectionOpenAction = xenesisConnectionActionFromNaturalText(value);
-  if (explicitXenesisConnectionOpenAction && naturalContextMatches(value, XENESIS_NATURAL_OPEN_COMMAND_RULES)) {
+  if (
+    explicitXenesisConnectionOpenAction &&
+    matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_OPEN_COMMAND_RULES)
+  ) {
     return naturalPlan(PLAN_TEXT.connectionSurfaceOpen, [explicitXenesisConnectionOpenAction]);
   }
 
@@ -963,7 +941,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
   }
 
   const xenesisConnectionAction = xenesisConnectionActionFromNaturalText(value);
-  if (xenesisConnectionAction && naturalContextMatches(value, XENESIS_NATURAL_OPEN_OR_SHOW_RULES)) {
+  if (xenesisConnectionAction && matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_OPEN_OR_SHOW_RULES)) {
     return naturalPlan(PLAN_TEXT.connectionSurfaceOpen, [xenesisConnectionAction]);
   }
 
@@ -1003,7 +981,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
   if (deskPaneOpenPlan) return deskPaneOpenPlan;
 
   const toolOpenAction = toolOpenActionFromNaturalText(value, placement);
-  if (toolOpenAction && naturalContextMatches(value, XENESIS_NATURAL_OPEN_OR_SHOW_RULES)) {
+  if (toolOpenAction && matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_OPEN_OR_SHOW_RULES)) {
     return naturalPlan(PLAN_TEXT.requestedToolPanelOpen, [toolOpenAction]);
   }
 
@@ -1158,7 +1136,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
   if (artifactTargetPlan) return artifactTargetPlan;
 
   const view = viewKindFromNaturalText(value);
-  if (view && naturalContextMatches(value, XENESIS_NATURAL_VIEW_OPEN_COMMAND_RULES)) {
+  if (view && matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_VIEW_OPEN_COMMAND_RULES)) {
     return naturalPlan(PLAN_TEXT.requestedViewOpen, [naturalViewOpenAction(view, placement)]);
   }
 
