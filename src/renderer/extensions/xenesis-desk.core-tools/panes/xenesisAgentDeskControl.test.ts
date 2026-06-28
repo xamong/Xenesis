@@ -475,9 +475,12 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.match(source, /XENESIS_DESK_ACTION_PROTOCOL_TEXT/);
   assert.match(source, /XENESIS_DESK_ACTION_PROTOCOL_RECORD_KEYS/);
   assert.match(source, /XENESIS_DESK_ACTION_PROTOCOL_FORMAT/);
-  assert.match(source, /XENESIS_DESK_ACTION_RESULT_SUMMARY_PATHS/);
-  assert.match(source, /XENESIS_DESK_ACTION_RESULT_SUMMARY_KEYS/);
-  assert.match(source, /XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT/);
+  assert.doesNotMatch(source, /XENESIS_DESK_ACTION_RESULT_SUMMARY_PATHS/);
+  assert.doesNotMatch(source, /XENESIS_DESK_ACTION_RESULT_SUMMARY_KEYS/);
+  assert.doesNotMatch(source, /XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT/);
+  assert.match(catalogSource, /XENESIS_DESK_ACTION_RESULT_SUMMARY_PATHS/);
+  assert.match(catalogSource, /XENESIS_DESK_ACTION_RESULT_SUMMARY_KEYS/);
+  assert.match(catalogSource, /XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT/);
   assert.doesNotMatch(source, /const DESK_ACTION_FENCE_PATTERN/);
   assert.doesNotMatch(source, /Desk action approval required/);
   assert.doesNotMatch(source, /Useful direct CR paths include/);
@@ -494,6 +497,44 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /renderer\.message/);
   assert.doesNotMatch(source, /compact === '\{\}'/);
   assert.doesNotMatch(source, /compact === '\[\]'/);
+  for (const localResultMessageFunction of [
+    'function describeDeskAction',
+    'function asRecord',
+    'function compactJson',
+    'function basename',
+    'function arrayFromRecord',
+    'function stringFromRecord',
+    'function numberFromRecord',
+    'function basenameFromRecord',
+    'function firstReadableTitle',
+    'function summarizeFileList',
+    'function summarizeCaptureResult',
+    'function summarizeBoundsResult',
+    'function summarizeWorkflowResult',
+    'function summarizeDeskActionResult',
+  ]) {
+    assert.doesNotMatch(source, new RegExp(localResultMessageFunction));
+  }
+  for (const sharedResultMessageFunction of [
+    'asXenesisDeskActionRecord',
+    'compactXenesisDeskActionJson',
+    'basenameXenesisDeskActionValue',
+    'arrayFromXenesisDeskActionRecord',
+    'stringFromXenesisDeskActionRecord',
+    'numberFromXenesisDeskActionRecord',
+    'basenameFromXenesisDeskActionRecord',
+    'firstReadableXenesisDeskActionTitle',
+    'summarizeXenesisDeskActionFileList',
+    'summarizeXenesisDeskActionCaptureResult',
+    'summarizeXenesisDeskActionBoundsResult',
+    'summarizeXenesisDeskActionWorkflowResult',
+    'summarizeXenesisDeskActionResult',
+    'buildXenesisDeskActionPendingMessage',
+    'buildXenesisDeskActionCompletedMessage',
+    'summarizeXenesisDeskActionExecution',
+  ]) {
+    assert.match(catalogSource, new RegExp(`export function ${sharedResultMessageFunction}`));
+  }
   assert.doesNotMatch(source, /record\.path/);
   assert.doesNotMatch(source, /record\.id/);
   assert.doesNotMatch(source, /record\.reason/);
