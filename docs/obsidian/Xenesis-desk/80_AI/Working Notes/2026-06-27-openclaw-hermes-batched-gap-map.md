@@ -4342,6 +4342,44 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## CR-first Live Smoke Expansion Slice
+
+- Continued the larger OpenClaw/Hermes verification cleanup by aligning the
+  repeatable live smoke scripts with the current CR-first Connection Center and
+  readback surfaces.
+- Intended change:
+  - `scripts/xenesisConnectionCenterLiveSmoke.mjs` should open Connection Center
+    through `xd.xenesis.connections.open` instead of generic
+    `xd.panes.settings.open` settings args.
+  - `scripts/xenesisNaturalDeskRoutingLiveSmoke.mjs` should live-smoke natural
+    prompts for Connection Center open, provider profile draft status, Google
+    Calendar OAuth draft status, and channel profile draft status.
+- Scope boundary:
+  - Smoke script/test coverage only.
+  - No registry schema changes, dispatcher changes, OAuth/install execution,
+    provider runtime selection, messenger delivery, profile writes, or Action
+    Inbox mutation behavior.
+- RED verification:
+  - `npx tsx --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs
+    scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` failed as expected.
+  - Failures proved the old smoke still used `xd.panes.settings.open`, and the
+    natural routing prompt catalog lacked the four new read/open prompt cases.
+- Implementation:
+  - Updated the Connection Center live smoke open request to
+    `xd.xenesis.connections.open` with `{ ensureVisible: true }`.
+  - Added the four natural prompt cases to the routing live smoke catalog.
+- Verification:
+  - Focused smoke tests passed with 8/8 tests.
+  - Scoped Biome format/check passed for the four changed smoke files.
+  - `npm run smoke:xenesis:connection-center` passed 6/6.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 33/33.
+  - `npm run typecheck` passed.
+  - `git diff --check` passed with LF-to-CRLF working-copy warnings only.
+  - CR audit was skipped because this slice only changes smoke scripts/tests;
+    it does not change registry, dispatcher, or static callable coverage.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

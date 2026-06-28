@@ -10,13 +10,10 @@ export const CONNECTION_CENTER_LIVE_SMOKE_TIMEOUT_MS = 30000;
 export const CONNECTION_CENTER_LIVE_SMOKE_APP_READY_SELECTOR = '.btn-settings';
 
 export const CONNECTION_CENTER_LIVE_SMOKE_OPEN_REQUEST = {
-  path: 'xd.panes.settings.open',
+  path: 'xd.xenesis.connections.open',
   source: 'xenesis-connection-center-live-smoke',
   approved: true,
   args: {
-    category: 'xenesis-agent',
-    mode: 'connections',
-    section: 'xenesis-connections',
     ensureVisible: true,
   },
 };

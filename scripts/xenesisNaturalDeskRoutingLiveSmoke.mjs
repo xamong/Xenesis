@@ -28,9 +28,21 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     expectedVisibleText: 'Desk action completed',
   },
   {
+    id: 'connection-center-open',
+    prompt: 'Connection Center 열어줘',
+    expectedPath: 'xd.xenesis.connections.open',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
     id: 'provider-setup-catalog-open',
     prompt: 'AI provider setup 전체 열어줘',
     expectedPath: 'xd.xenesis.providers.setup.open',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'provider-profile-draft-status',
+    prompt: 'AI provider profile draft 상태 보여줘',
+    expectedPath: 'xd.xenesis.providers.profileDrafts.status',
     expectedVisibleText: 'Desk action completed',
   },
   {
@@ -40,9 +52,21 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     expectedVisibleText: 'Desk action completed',
   },
   {
+    id: 'google-calendar-oauth-status',
+    prompt: '구글 캘린더 OAuth 상태 보여줘',
+    expectedPath: 'xd.xenesis.tools.oauthDrafts.status',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
     id: 'google-chat-routing-status',
     prompt: '구글 챗 라우팅 상태 보여줘',
     expectedPath: 'xd.xenesis.channels.routing.status',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'channel-profile-draft-status',
+    prompt: 'channel profile draft 전체 상태 보여줘',
+    expectedPath: 'xd.xenesis.channels.profileDrafts.status',
     expectedVisibleText: 'Desk action completed',
   },
   {

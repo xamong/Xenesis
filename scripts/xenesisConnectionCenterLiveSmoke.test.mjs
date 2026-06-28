@@ -11,15 +11,12 @@ import {
   normalizeConnectionCenterSnapshotChecks,
 } from './xenesisConnectionCenterLiveSmoke.mjs';
 
-test('connection center live smoke opens Settings and snapshots Connection Center through CR', () => {
+test('connection center live smoke opens Connection Center and snapshots it through CR', () => {
   assert.deepEqual(CONNECTION_CENTER_LIVE_SMOKE_OPEN_REQUEST, {
-    path: 'xd.panes.settings.open',
+    path: 'xd.xenesis.connections.open',
     source: 'xenesis-connection-center-live-smoke',
     approved: true,
     args: {
-      category: 'xenesis-agent',
-      mode: 'connections',
-      section: 'xenesis-connections',
       ensureVisible: true,
     },
   });
@@ -37,9 +34,11 @@ test('connection center live smoke opens Settings and snapshots Connection Cente
   assert.equal(CONNECTION_CENTER_LIVE_SMOKE_APP_READY_SELECTOR, '.btn-settings');
 
   const plan = formatConnectionCenterLiveSmokePlan();
-  assert.match(plan, /xd\.panes\.settings\.open/);
+  assert.match(plan, /xd\.xenesis\.connections\.open/);
   assert.match(plan, /xd\.testing\.connectionCenter\.snapshot/);
   assert.match(plan, /App shell readiness: \.btn-settings/);
+  assert.doesNotMatch(plan, /xd\.panes\.settings\.open/);
+  assert.doesNotMatch(plan, /xenesis-connections/);
   assert.doesNotMatch(plan, /selector state: attached/);
 });
 
