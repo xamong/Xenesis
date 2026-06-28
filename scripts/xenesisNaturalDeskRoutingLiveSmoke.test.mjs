@@ -240,6 +240,18 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
       expectedVisibleText: 'Desk action completed',
     },
     {
+      id: 'telegram-routing-messenger-view-section-open',
+      prompt: '텔레그램 routing view 열어줘',
+      expectedPath: 'xd.xenesis.messengers.views.open',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
+      id: 'slack-profile-draft-messenger-view-section-open',
+      prompt: '슬랙 profile draft view 열어줘',
+      expectedPath: 'xd.xenesis.messengers.views.open',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
       id: 'google-calendar-oauth-status',
       prompt: '구글 캘린더 OAuth 상태 보여줘',
       expectedPath: 'xd.xenesis.tools.oauthDrafts.status',

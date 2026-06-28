@@ -157,6 +157,47 @@ export function xenesisToolViewSectionDetailFocus(
   return XENESIS_CONNECTION_TOOL_VIEW_SECTION_DETAIL_FOCUS[section];
 }
 
+export const XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_IDS = [
+  'connection-card',
+  'setup',
+  'channel-template',
+  'routing',
+  'safety',
+  'access-groups',
+  'pairing',
+  'setup-plan',
+  'profile-draft',
+  'user-stories',
+] as const;
+
+export type XenesisConnectionMessengerViewSectionId = (typeof XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_IDS)[number];
+
+export const XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_DETAIL_FOCUS = {
+  'connection-card': 'messenger-view',
+  setup: 'messenger-view',
+  'channel-template': 'channel-template',
+  routing: 'channel-routing',
+  safety: 'channel-safety',
+  'access-groups': 'channel-access-groups',
+  pairing: 'channel-pairing',
+  'setup-plan': 'channel-setup-plan',
+  'profile-draft': 'channel-profile-draft',
+  'user-stories': 'channel-user-story',
+} as const satisfies Record<XenesisConnectionMessengerViewSectionId, XenesisConnectionCenterDetailFocus>;
+
+export function isXenesisConnectionMessengerViewSectionId(
+  value: string,
+): value is XenesisConnectionMessengerViewSectionId {
+  return (XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_IDS as readonly string[]).includes(value);
+}
+
+export function xenesisMessengerViewSectionDetailFocus(
+  section: string | undefined,
+): XenesisConnectionCenterDetailFocus | null {
+  if (!section || !isXenesisConnectionMessengerViewSectionId(section)) return null;
+  return XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_DETAIL_FOCUS[section];
+}
+
 export interface XenesisConnectionCenterOpenArgs extends XenesisConnectionSettingsAction {
   kind: 'settings';
   ensureVisible: boolean;
@@ -960,6 +1001,18 @@ export interface XenesisConnectionMessengerViewTemplate {
   openArgs: { id: string };
   connectionCardId: string;
   internalViews: string[];
+  viewSections: XenesisConnectionMessengerViewSection[];
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  safetyBoundaries: string[];
+}
+
+export interface XenesisConnectionMessengerViewSection {
+  id: XenesisConnectionMessengerViewSectionId;
+  label: string;
+  focusConnectionDetail: XenesisConnectionCenterDetailFocus;
+  openArgs: { id: string; section: XenesisConnectionMessengerViewSectionId; ensureVisible: true };
   readPaths: string[];
   controlPaths: string[];
   diagnostics: string[];
@@ -3423,6 +3476,111 @@ type PlannedMessengerDefinition = Omit<
   warnings?: string[];
 };
 
+function messengerViewSection(
+  messengerId: string,
+  input: Omit<XenesisConnectionMessengerViewSection, 'openArgs'>,
+): XenesisConnectionMessengerViewSection {
+  return {
+    ...input,
+    openArgs: { id: messengerId, section: input.id, ensureVisible: true },
+  };
+}
+
+function messengerViewSections(messengerId: string): XenesisConnectionMessengerViewSection[] {
+  return [
+    messengerViewSection(messengerId, {
+      id: 'connection-card',
+      label: 'Connection card',
+      focusConnectionDetail: 'messenger-view',
+      readPaths: ['xd.xenesis.connections.status', 'xd.xenesis.messengers.views.status'],
+      controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.connections.open'],
+      diagnostics: ['connection-card', 'cr-readback'],
+      safetyBoundaries: ['Connection card view opens do not start gateways or send messages.'],
+    }),
+    messengerViewSection(messengerId, {
+      id: 'setup',
+      label: 'Setup',
+      focusConnectionDetail: 'messenger-view',
+      readPaths: ['xd.xenesis.messengers.views.status', 'xd.xenesis.gateway.status'],
+      controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.connections.open'],
+      diagnostics: ['gateway-status', 'missing-env'],
+      safetyBoundaries: ['Setup view opens do not mutate channel settings or send messages.'],
+    }),
+    messengerViewSection(messengerId, {
+      id: 'channel-template',
+      label: 'Channel template',
+      focusConnectionDetail: 'channel-template',
+      readPaths: ['xd.xenesis.connections.status', 'xd.xenesis.messengers.views.status'],
+      controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.connections.open'],
+      diagnostics: ['channel-template', 'cr-readback'],
+      safetyBoundaries: ['Channel template view opens do not enable planned adapters.'],
+    }),
+    messengerViewSection(messengerId, {
+      id: 'routing',
+      label: 'Routing',
+      focusConnectionDetail: 'channel-routing',
+      readPaths: ['xd.xenesis.channels.routing.status', 'xd.xenesis.gateway.status'],
+      controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.channels.routing.open'],
+      diagnostics: ['gateway-status', 'route-binding'],
+      safetyBoundaries: ['Routing view opens do not mutate channel profiles or send messages.'],
+    }),
+    messengerViewSection(messengerId, {
+      id: 'safety',
+      label: 'Safety',
+      focusConnectionDetail: 'channel-safety',
+      readPaths: ['xd.xenesis.channels.safety.status', 'xd.xenesis.connections.status'],
+      controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.channels.safety.open'],
+      diagnostics: ['approval-guardrails', 'loop-protection'],
+      safetyBoundaries: ['Safety view opens do not change delivery or approval guardrails.'],
+    }),
+    messengerViewSection(messengerId, {
+      id: 'access-groups',
+      label: 'Access groups',
+      focusConnectionDetail: 'channel-access-groups',
+      readPaths: ['xd.xenesis.channels.accessGroups.status', 'xd.xenesis.connections.status'],
+      controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.channels.accessGroups.open'],
+      diagnostics: ['allowlist', 'fail-closed'],
+      safetyBoundaries: ['Access-group view opens do not mutate allowlists or expose raw identifiers.'],
+    }),
+    messengerViewSection(messengerId, {
+      id: 'pairing',
+      label: 'Pairing',
+      focusConnectionDetail: 'channel-pairing',
+      readPaths: ['xd.xenesis.channels.pairing.status', 'xd.xenesis.gateway.status'],
+      controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.channels.pairing.open'],
+      diagnostics: ['credential-readiness', 'pairing-state'],
+      safetyBoundaries: ['Pairing view opens do not create OAuth, QR, or device-link sessions.'],
+    }),
+    messengerViewSection(messengerId, {
+      id: 'setup-plan',
+      label: 'Setup plan',
+      focusConnectionDetail: 'channel-setup-plan',
+      readPaths: ['xd.xenesis.channels.setupPlans.status', 'xd.xenesis.connections.status'],
+      controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.channels.setupPlans.open'],
+      diagnostics: ['gateway-status', 'missing-env', 'cr-readback'],
+      safetyBoundaries: ['Setup plan view opens do not start gateways, apply profiles, or send tests.'],
+    }),
+    messengerViewSection(messengerId, {
+      id: 'profile-draft',
+      label: 'Profile draft',
+      focusConnectionDetail: 'channel-profile-draft',
+      readPaths: ['xd.xenesis.channels.profileDrafts.status', 'xd.xenesis.connections.status'],
+      controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.channels.profileDrafts.open'],
+      diagnostics: ['missing-required-fields', 'guardrails', 'cr-readback'],
+      safetyBoundaries: ['Profile draft view opens do not write profiles, store secrets, or update allowlists.'],
+    }),
+    messengerViewSection(messengerId, {
+      id: 'user-stories',
+      label: 'User stories',
+      focusConnectionDetail: 'channel-user-story',
+      readPaths: ['xd.xenesis.channels.userStories.status', 'xd.xenesis.guides.status'],
+      controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.channels.userStories.open'],
+      diagnostics: ['gateway-status', 'runtime-support', 'cr-readback'],
+      safetyBoundaries: ['User-story view opens do not enable adapters or send messages.'],
+    }),
+  ];
+}
+
 function messengerViewTemplate(
   id: string,
   runtimeSupport: XenesisConnectionMessengerViewTemplate['runtimeSupport'],
@@ -3439,6 +3597,7 @@ function messengerViewTemplate(
     internalViews: implemented
       ? ['connection-card', 'channel-template', 'routing', 'external-bot-settings']
       : ['connection-card', 'channel-template', 'planning-card'],
+    viewSections: messengerViewSections(id),
     readPaths: [
       'xd.xenesis.connections.status',
       'xd.xenesis.messengers.views.status',

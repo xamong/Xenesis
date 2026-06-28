@@ -1162,6 +1162,8 @@ export const en = {
     xenesisConnectionsMessengerViewSetupSurface: 'Setup surface',
     xenesisConnectionsMessengerViewOpen: 'Open path',
     xenesisConnectionsMessengerViewInternalViews: 'Internal views',
+    xenesisConnectionsMessengerViewSections: 'View sections',
+    xenesisConnectionsMessengerViewSectionOpens: 'Section opens',
     xenesisConnectionsMessengerViewReadback: 'View readback',
     xenesisConnectionsMessengerViewControls: 'View controls',
     xenesisConnectionsMessengerViewDiagnostics: 'Diagnostics',

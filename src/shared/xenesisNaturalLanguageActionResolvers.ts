@@ -8,6 +8,7 @@ import {
   findXenesisNaturalConnectionAggregateStatusAction,
   findXenesisNaturalConnectionTargetRuleAction,
   findXenesisNaturalCoreToolTarget,
+  findXenesisNaturalMessengerViewSectionTarget,
   findXenesisNaturalProviderRuleAction,
   findXenesisNaturalToolViewSectionTarget,
   findXenesisNaturalViewTarget,
@@ -62,6 +63,7 @@ import {
   hasXenesisNaturalMessengerProfileDraftCatalogContext,
   hasXenesisNaturalOnboardingContext,
   hasXenesisNaturalProviderProfileContext,
+  isXenesisNaturalConnectionMessengerTarget,
   isXenesisNaturalConnectionToolTarget,
   matchesXenesisNaturalContextRule,
   matchesXenesisNaturalContextRules,
@@ -398,6 +400,28 @@ function xenesisToolViewSectionOpenActionFromNaturalText(
   };
 }
 
+function xenesisMessengerViewSectionOpenActionFromNaturalText(
+  value: string,
+  target: XenesisNaturalConnectionTarget,
+): XenesisNaturalDeskActionRequest | null {
+  if (!isXenesisNaturalConnectionMessengerTarget(target)) return null;
+  if (!hasXenesisNaturalExplicitOpenIntent(value)) return null;
+  if (!matchesXenesisNaturalContextRules(value, [{ contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS }])) {
+    return null;
+  }
+
+  const section = findXenesisNaturalMessengerViewSectionTarget(value);
+  if (!section) return null;
+
+  return {
+    id: `natural-xenesis-messenger-view-section-open-${target.id}-${section.id}`,
+    path: 'xd.xenesis.messengers.views.open',
+    args: XENESIS_NATURAL_DESK_ACTION_ARGS.messengerViewSectionVisible(target.id, section.id),
+    approved: false,
+    reason: `Open ${target.label} ${section.label} messenger view section from natural language request.`,
+  };
+}
+
 function xenesisGuideCatalogOpenActionFromNaturalText(value: string): XenesisNaturalDeskActionRequest | null {
   return findXenesisNaturalConnectionAggregateOpenAction(value, 'guide');
 }
@@ -461,6 +485,9 @@ export function xenesisConnectionActionFromNaturalText(value: string): XenesisNa
 
   const targetToolViewSectionOpenAction = xenesisToolViewSectionOpenActionFromNaturalText(value, target);
   if (targetToolViewSectionOpenAction) return targetToolViewSectionOpenAction;
+
+  const targetMessengerViewSectionOpenAction = xenesisMessengerViewSectionOpenActionFromNaturalText(value, target);
+  if (targetMessengerViewSectionOpenAction) return targetMessengerViewSectionOpenAction;
 
   const targetOpenAction = xenesisConnectionTargetOpenActionFromNaturalText(value, target);
   if (targetOpenAction) return targetOpenAction;

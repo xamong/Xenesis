@@ -7,6 +7,114 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current Messenger View Sections Slice
+
+- Objective: make `xd.xenesis.messengers.views.status/open` address external
+  messenger views down to internal Desk sections, so Telegram, Slack, Discord,
+  webhook, and planned messenger channels can open routing, safety, access
+  groups, pairing, setup plan, profile draft, template, and user-story sections
+  through CR args instead of only focusing the generic messenger-view block.
+- Slice size policy:
+  - Keep this as one larger cycle: plan, handoff, RED tests, implementation,
+    renderer/natural routing, smoke inventory, manual docs, Obsidian working
+    note, broad verification, and commit.
+- Scope boundary:
+  - Do not start gateways, create pairing sessions, complete OAuth/device-link
+    flows, store secrets, mutate channel profiles, update allowlists, execute
+    provider tools, or send messages.
+  - Reuse the existing Connection Center detail-focus blocks rather than
+    creating a new UI subsystem.
+  - Keep messenger-view sections read/open metadata only; ready apply paths
+    remain on existing approval-gated CR methods.
+- External documentation handling:
+  - No external web browsing for this slice. Use repo-local source, tests,
+    manual docs, Obsidian notes, CR audit, and local smoke.
+- Plan:
+  - `docs/superpowers/plans/2026-06-29-xenesis-messenger-view-sections.md`
+- Touched files:
+  - `handoff.md`
+  - `src/shared/xenesisConnections.test.ts`
+  - `src/shared/xenesisConnections.ts`
+  - `src/shared/types.ts`
+  - `src/shared/xenesisConnectionCapabilities.test.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/main/index.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `scripts/xenesisNaturalDeskRoutingLiveSmoke.mjs`
+  - `scripts/xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
+  - `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
+  - `src/shared/xenesisNaturalLanguageActionResolvers.ts`
+  - `docs/manual/09-onboarding-connections.md`
+  - `docs/capability-registry-audit.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-messenger-view-sections.md`
+- RED verification:
+  - `npx tsx --test src\shared\xenesisConnections.test.ts` failed 40/41 as
+    expected because `messengerView.viewSections` was absent from the shared
+    connection model.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` failed
+    39/40 as expected because `xd.xenesis.messengers.views.open` did not expose
+    a `section` enum in its schema.
+  - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`
+    failed 55/56 as expected because
+    `formatXenesisMessengerViewSectionSummary` was absent.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    failed 44/45 as expected because `텔레그램 routing view 열어줘` still routed
+    to `xd.xenesis.channels.routing.open`.
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` passed
+    6/6 after adding the inventory cases; this test checks prompt inventory and
+    report shape, not live CR execution.
+- Implemented:
+  - Added shared messenger view section ids, detail-focus mapping, type guards,
+    and structured `messengerView.viewSections` metadata.
+  - Added `section` to the messenger view open CR schema.
+  - Extended `openXenesisMessengerView` to accept `section`, `viewSection`, or
+    `messengerViewSection`, reject unsupported sections, and map valid sections
+    to existing Connection Center detail-focus blocks.
+  - Added renderer formatting and Settings rows for messenger view sections and
+    their exact open args.
+  - Added deterministic natural-language routing for prompts such as
+    `텔레그램 routing view 열어줘` and `슬랙 profile draft view 열어줘` to
+    `xd.xenesis.messengers.views.open` with section args.
+- Verification result:
+  - `npx tsx --test src\shared\xenesisConnections.test.ts` passed 41/41 after
+    the shared model implementation.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` passed
+    40/40 after schema and main open routing implementation.
+  - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` passed
+    56/56 after renderer implementation.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed 45/45 after natural-language routing implementation.
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` passed
+    6/6.
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit` passed and wrote
+    `docs/capability-registry-audit.md`; audit gap counters are all 0.
+  - `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    confirmed missing registered paths 0, missing dispatched coverage paths 0,
+    undispatched static callable methods 0, and dispatcher paths missing from
+    tree 0.
+  - `npm run smoke:xenesis:natural-desk-routing` initially failed 206/210 only
+    on the two new messenger view section prompts. Root cause: the smoke runs
+    built Electron output under `out/`, and `out` did not yet contain
+    `findXenesisNaturalMessengerViewSectionTarget` or
+    `messengerViewSectionVisible`.
+  - `npm run build` passed and refreshed the built Electron output.
+  - `npm run smoke:xenesis:natural-desk-routing` then passed 210/210, including
+    `telegram-routing-messenger-view-section-open` and
+    `slack-profile-draft-messenger-view-section-open`.
+  - Final changed-file Biome check exited 0, checked 16 files, and reported
+    only existing warnings/infos in `src/main/index.ts` and
+    `src/shared/deskBridgeCapabilities.ts`.
+  - `git diff --check` passed with Git LF/CRLF normalization warnings only.
+- Next intended step:
+  - Stage and commit this slice as `feat: add messenger view sections`, then
+    continue the larger CR-first connection/agent goal in the next slice.
+
 ## Current Tool View Sections Slice
 
 - Objective: make `xd.xenesis.tools.views.status/open` address external tool

@@ -1155,6 +1155,8 @@ export const ko = {
     xenesisConnectionsMessengerViewSetupSurface: '설정 화면',
     xenesisConnectionsMessengerViewOpen: '열기 경로',
     xenesisConnectionsMessengerViewInternalViews: '내부 뷰',
+    xenesisConnectionsMessengerViewSections: '뷰 섹션',
+    xenesisConnectionsMessengerViewSectionOpens: '섹션 열기',
     xenesisConnectionsMessengerViewReadback: '뷰 읽기 확인',
     xenesisConnectionsMessengerViewControls: '뷰 제어',
     xenesisConnectionsMessengerViewDiagnostics: '진단',

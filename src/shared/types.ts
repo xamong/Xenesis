@@ -36,6 +36,8 @@ export type {
   XenesisConnectionMcpInstallDraftStatus,
   XenesisConnectionMcpInstallDraftTemplate,
   XenesisConnectionMcpTemplate,
+  XenesisConnectionMessengerViewSection,
+  XenesisConnectionMessengerViewSectionId,
   XenesisConnectionMessengerViewTemplate,
   XenesisConnectionOnboardingGuidedStep,
   XenesisConnectionOnboardingPlanPhase,

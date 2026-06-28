@@ -280,12 +280,14 @@ import {
   buildXenesisConnectionSetupApprovalSessionKey,
   buildXenesisConnectionsStatus,
   isXenesisConnectionCenterDetailFocus,
+  isXenesisConnectionMessengerViewSectionId,
   isXenesisConnectionToolViewSectionId,
   withXenesisConnectionSetupRequestReviews,
   XENESIS_CONNECTION_CENTER_ROOT_SELECTOR,
   XENESIS_CONNECTION_GUIDE_IDS,
   XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS,
   XENESIS_CONNECTION_MESSENGER_IDS,
+  XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_IDS,
   XENESIS_CONNECTION_ONBOARDING_STEP_IDS,
   XENESIS_CONNECTION_PROVIDER_IDS,
   XENESIS_CONNECTION_TOOL_IDS,
@@ -295,6 +297,7 @@ import {
   type XenesisConnectionItem,
   type XenesisConnectionKind,
   type XenesisConnectionsStatus,
+  xenesisMessengerViewSectionDetailFocus,
   xenesisToolViewSectionDetailFocus,
 } from '../shared/xenesisConnections';
 import {
@@ -6057,6 +6060,7 @@ function xenesisMessengerViewStatusItem(item: XenesisConnectionItem): Record<str
     openArgs: item.messengerView?.openArgs,
     connectionCardId: item.messengerView?.connectionCardId,
     internalViews: item.messengerView?.internalViews ?? [],
+    viewSections: item.messengerView?.viewSections ?? [],
     readPaths: item.messengerView?.readPaths ?? [],
     controlPaths: item.messengerView?.controlPaths ?? [],
     diagnostics: item.messengerView?.diagnostics ?? [],
@@ -6095,7 +6099,19 @@ async function getXenesisMessengerViewsStatus(args?: unknown): Promise<Record<st
 }
 
 async function openXenesisMessengerView(args?: unknown): Promise<Record<string, unknown>> {
-  return openXenesisMessengerCatalogSurface(args, {
+  const body = normalizeMcpCapabilityArgs(args);
+  const section = readCapabilityString(body, ['section', 'viewSection', 'messengerViewSection']);
+  if (section && !isXenesisConnectionMessengerViewSectionId(section)) {
+    return {
+      ok: false,
+      section,
+      error: `Unsupported Xenesis messenger view section: ${section}`,
+      allowedSections: XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_IDS,
+    };
+  }
+
+  const focusConnectionDetail = xenesisMessengerViewSectionDetailFocus(section) ?? 'messenger-view';
+  const result = await openXenesisMessengerCatalogSurface(body, {
     selectorKey: 'id',
     selectorKeys: ['id', 'messenger', 'channel', 'name'],
     allowedKey: 'allowedMessengers',
@@ -6103,8 +6119,16 @@ async function openXenesisMessengerView(args?: unknown): Promise<Record<string, 
     itemPredicate: (item) => Boolean(item.messengerView),
     toStatusItem: (item) => xenesisMessengerViewStatusItem(item),
     unavailableMessage: (id) => `Xenesis messenger view is not available: ${id}`,
-    focusConnectionDetail: 'messenger-view',
+    focusConnectionDetail,
   });
+
+  return section
+    ? {
+        ...result,
+        section,
+        focusConnectionDetail,
+      }
+    : result;
 }
 
 function xenesisChannelSetupPlanStatusItem(item: XenesisConnectionItem): Record<string, unknown> {

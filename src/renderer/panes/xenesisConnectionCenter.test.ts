@@ -4,6 +4,7 @@ import test from 'node:test';
 import type {
   XenesisConnectionChannelSetupPlanTemplate,
   XenesisConnectionItem,
+  XenesisConnectionMessengerViewSection,
   XenesisConnectionOnboardingGuidedStep,
   XenesisConnectionProviderProfileDraftReviewStep,
   XenesisConnectionProviderSetupPlanTemplate,
@@ -1800,6 +1801,24 @@ test('formatXenesisToolViewSectionSummary describes tool view section focus and 
   );
 });
 
+test('formatXenesisMessengerViewSectionSummary describes messenger view section focus and paths', () => {
+  const section: XenesisConnectionMessengerViewSection = {
+    id: 'routing',
+    label: 'Routing',
+    focusConnectionDetail: 'channel-routing',
+    openArgs: { id: 'telegram', section: 'routing', ensureVisible: true },
+    readPaths: ['xd.xenesis.channels.routing.status'],
+    controlPaths: ['xd.xenesis.messengers.views.open'],
+    diagnostics: ['gateway-status'],
+    safetyBoundaries: ['Routing view opens do not mutate channel profiles or send messages.'],
+  };
+  assert.equal(typeof xenesisConnectionCenter.formatXenesisMessengerViewSectionSummary, 'function');
+  assert.equal(
+    xenesisConnectionCenter.formatXenesisMessengerViewSectionSummary(section),
+    'routing / channel-routing / 1 read path(s) / 1 control path(s)',
+  );
+});
+
 test('formatXenesisToolConnectorSummary describes connector type, auth, and runtime support', () => {
   assert.equal(
     formatXenesisToolConnectorSummary({
@@ -1872,6 +1891,7 @@ test('formatXenesisMessengerViewSummary describes internal Desk messenger view s
       openArgs: { id: 'telegram' },
       connectionCardId: 'telegram',
       internalViews: ['connection-card', 'channel-template', 'routing', 'external-bot-settings'],
+      viewSections: [],
       readPaths: ['xd.xenesis.connections.status'],
       controlPaths: ['xd.xenesis.messengers.views.open'],
       diagnostics: ['gateway-status'],

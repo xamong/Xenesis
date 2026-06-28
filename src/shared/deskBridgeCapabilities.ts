@@ -16,6 +16,7 @@ import {
   XENESIS_CONNECTION_GUIDE_IDS,
   XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS,
   XENESIS_CONNECTION_MESSENGER_IDS,
+  XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_IDS,
   XENESIS_CONNECTION_ONBOARDING_STEP_IDS,
   XENESIS_CONNECTION_PROVIDER_IDS,
   XENESIS_CONNECTION_TOOL_IDS,
@@ -750,6 +751,13 @@ const XENESIS_MESSENGER_VIEW_OPEN_SCHEMA = {
       title: 'Ensure visible',
       description: 'Scroll the focused messenger connection card into view after opening the Connection Center.',
       default: true,
+    },
+    section: {
+      type: 'string',
+      title: 'Messenger view section',
+      enum: XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_IDS,
+      description:
+        'Optional internal Desk messenger view section to focus inside the Connection Center messenger detail.',
     },
     ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
   },

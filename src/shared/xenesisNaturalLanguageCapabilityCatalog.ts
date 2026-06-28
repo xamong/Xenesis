@@ -1,5 +1,7 @@
 import {
+  XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_IDS,
   XENESIS_CONNECTION_TOOL_VIEW_SECTION_IDS,
+  type XenesisConnectionMessengerViewSectionId,
   type XenesisConnectionToolViewSectionId,
 } from './xenesisConnections';
 import {
@@ -200,6 +202,7 @@ export const XENESIS_NATURAL_DESK_ACTION_ARGS = {
     placement: placement || XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS.placement,
   }),
   tool: (tool: string) => ({ tool }),
+  messengerViewSectionVisible: (id: string, section: string) => ({ id, section, ensureVisible: true }),
   toolViewSectionVisible: (id: string, section: string) => ({ id, section, ensureVisible: true }),
   toolVisible: (tool: string) => ({ tool, ensureVisible: true }),
   useActive: () => ({ useActive: true }),
@@ -470,6 +473,80 @@ export function findXenesisNaturalToolViewSectionTarget(value: string): XenesisN
     XENESIS_NATURAL_TOOL_VIEW_SECTION_TARGETS.find(
       (target) =>
         (XENESIS_CONNECTION_TOOL_VIEW_SECTION_IDS as readonly string[]).includes(target.id) &&
+        matchesXenesisNaturalContextRule(value, { contextWords: target.words }),
+    ) ?? null
+  );
+}
+
+export type XenesisNaturalMessengerViewSectionTarget = {
+  id: XenesisConnectionMessengerViewSectionId;
+  label: string;
+  words: readonly string[];
+};
+
+export const XENESIS_NATURAL_MESSENGER_VIEW_SECTION_TARGET_SPECS = [
+  {
+    id: 'connection-card',
+    label: 'Connection card',
+    words: ['connection card', '연결 카드', '카드'],
+  },
+  {
+    id: 'setup',
+    label: 'Setup',
+    words: ['setup', '설정', '셋업'],
+  },
+  {
+    id: 'channel-template',
+    label: 'Channel template',
+    words: ['channel template', '채널 템플릿', 'template', '템플릿'],
+  },
+  {
+    id: 'routing',
+    label: 'Routing',
+    words: ['routing', 'route', '라우팅', '경로'],
+  },
+  {
+    id: 'safety',
+    label: 'Safety',
+    words: ['safety', '안전', '세이프티', '가드레일'],
+  },
+  {
+    id: 'access-groups',
+    label: 'Access groups',
+    words: ['access group', 'access groups', '접근 그룹', '액세스 그룹', 'allowlist', '허용 목록', '허용 리스트'],
+  },
+  {
+    id: 'pairing',
+    label: 'Pairing',
+    words: ['pairing', '페어링', '연결 페어링'],
+  },
+  {
+    id: 'setup-plan',
+    label: 'Setup plan',
+    words: ['setup plan', '설정 플랜', '설정 계획'],
+  },
+  {
+    id: 'profile-draft',
+    label: 'Profile draft',
+    words: ['profile draft', 'profile', '프로필 초안', '프로필 draft', '프로필'],
+  },
+  {
+    id: 'user-stories',
+    label: 'User stories',
+    words: ['user stories', 'user story', '사용자 스토리', '유저 스토리'],
+  },
+] as const satisfies readonly XenesisNaturalMessengerViewSectionTarget[];
+
+export const XENESIS_NATURAL_MESSENGER_VIEW_SECTION_TARGETS: readonly XenesisNaturalMessengerViewSectionTarget[] =
+  XENESIS_NATURAL_MESSENGER_VIEW_SECTION_TARGET_SPECS;
+
+export function findXenesisNaturalMessengerViewSectionTarget(
+  value: string,
+): XenesisNaturalMessengerViewSectionTarget | null {
+  return (
+    XENESIS_NATURAL_MESSENGER_VIEW_SECTION_TARGETS.find(
+      (target) =>
+        (XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_IDS as readonly string[]).includes(target.id) &&
         matchesXenesisNaturalContextRule(value, { contextWords: target.words }),
     ) ?? null
   );

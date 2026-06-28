@@ -13,6 +13,7 @@ import type {
   XenesisConnectionGuideFileTemplate,
   XenesisConnectionItem,
   XenesisConnectionMcpInstallDraftTemplate,
+  XenesisConnectionMessengerViewSection,
   XenesisConnectionMessengerViewTemplate,
   XenesisConnectionOnboardingGuidedStep,
   XenesisConnectionOnboardingPlanTemplate,
@@ -247,6 +248,10 @@ export function formatXenesisToolUserStorySummary(workflow: XenesisConnectionToo
 
 export function formatXenesisMessengerViewSummary(view: XenesisConnectionMessengerViewTemplate): string {
   return `${view.primarySurface} / ${view.runtimeSupport}`;
+}
+
+export function formatXenesisMessengerViewSectionSummary(section: XenesisConnectionMessengerViewSection): string {
+  return `${section.id} / ${section.focusConnectionDetail} / ${section.readPaths.length} read path(s) / ${section.controlPaths.length} control path(s)`;
 }
 
 export function formatXenesisConnectionDiagnosticRunbookSummary(

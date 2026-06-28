@@ -3914,6 +3914,26 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center requests to C
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('텔레그램 routing view 열어줘').actions, [
+    {
+      id: 'natural-xenesis-messenger-view-section-open-telegram-routing',
+      path: 'xd.xenesis.messengers.views.open',
+      args: { id: 'telegram', section: 'routing', ensureVisible: true },
+      approved: false,
+      reason: 'Open Telegram Routing messenger view section from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('슬랙 profile draft view 열어줘').actions, [
+    {
+      id: 'natural-xenesis-messenger-view-section-open-slack-profile-draft',
+      path: 'xd.xenesis.messengers.views.open',
+      args: { id: 'slack', section: 'profile-draft', ensureVisible: true },
+      approved: false,
+      reason: 'Open Slack Profile draft messenger view section from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('온보딩 가이드 열어줘').actions, [
     {
       id: 'natural-xenesis-guide-open-onboarding-connections',

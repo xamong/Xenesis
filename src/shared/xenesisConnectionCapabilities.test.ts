@@ -1626,6 +1626,8 @@ test('xenesis messenger view capabilities are registered and dispatch to the ada
       `${messenger} should be accepted by open alias`,
     );
   }
+  assert.equal(openSchemaProperties.section?.enum.includes('routing'), true);
+  assert.equal(openSchemaProperties.section?.enum.includes('profile-draft'), true);
 
   const calls: Array<{ method: string; args: unknown }> = [];
   const api: DeskBridgeCapabilityAdapter = {
@@ -1652,7 +1654,7 @@ test('xenesis messenger view capabilities are registered and dispatch to the ada
   });
   const openResult = await callDeskBridgeCapability(api, {
     path: 'xd.xenesis.messengers.views.open',
-    args: { id: 'telegram' },
+    args: { id: 'telegram', section: 'routing' },
     source: 'xenesis',
   });
 
@@ -1660,7 +1662,7 @@ test('xenesis messenger view capabilities are registered and dispatch to the ada
   assert.equal(openResult.ok, true);
   assert.deepEqual(calls, [
     { method: 'status', args: { id: 'telegram' } },
-    { method: 'open', args: { id: 'telegram' } },
+    { method: 'open', args: { id: 'telegram', section: 'routing' } },
   ]);
   assert.deepEqual(statusResult.result, {
     ok: true,

@@ -118,6 +118,7 @@ import {
   formatXenesisGuideCatalogSummary,
   formatXenesisGuideFileSummary,
   formatXenesisMcpInstallDraftSummary,
+  formatXenesisMessengerViewSectionSummary,
   formatXenesisMessengerViewSummary,
   formatXenesisOnboardingPlanSummary,
   formatXenesisProviderProfileDraftSummary,
@@ -5714,6 +5715,16 @@ export default function SettingsPane() {
             <div>
               <span>{t('settings.xenesisConnectionsMessengerViewInternalViews')}</span>
               <strong>{messengerView.internalViews.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMessengerViewSections')}</span>
+              <strong>{messengerView.viewSections.map(formatXenesisMessengerViewSectionSummary).join(' | ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMessengerViewSectionOpens')}</span>
+              <strong>
+                {messengerView.viewSections.map((section) => JSON.stringify(section.openArgs)).join(' | ')}
+              </strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsMessengerViewReadback')}</span>
