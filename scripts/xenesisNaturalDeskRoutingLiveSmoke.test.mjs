@@ -306,6 +306,24 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
       expectedVisibleText: 'Desk action approval required',
     },
     {
+      id: 'linear-mcp-oauth-status',
+      prompt: '리니어 mcp oauth 상태 보여줘',
+      expectedPath: 'xd.xenesis.tools.mcpOAuth.status',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
+      id: 'linear-mcp-oauth-open',
+      prompt: 'linear mcp oauth 열어줘',
+      expectedPath: 'xd.xenesis.tools.mcpOAuth.open',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
+      id: 'linear-mcp-oauth-request-approval',
+      prompt: '리니어 mcp oauth 검토 요청해줘',
+      expectedPath: 'xd.xenesis.tools.mcpOAuth.request',
+      expectedVisibleText: 'Desk action approval required',
+    },
+    {
       id: 'tool-action-policy-status',
       prompt: '외부 툴 action policy catalog 상태 보여줘',
       expectedPath: 'xd.xenesis.tools.actions.status',

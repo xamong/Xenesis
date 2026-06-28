@@ -32,6 +32,7 @@ import type {
   XenesisConnectionToolActionCatalogTemplate,
   XenesisConnectionToolConnectorTemplate,
   XenesisConnectionToolInstallPlanTemplate,
+  XenesisConnectionToolMcpOAuthTemplate,
   XenesisConnectionToolOAuthDraftReviewStep,
   XenesisConnectionToolOAuthDraftTemplate,
   XenesisConnectionToolOAuthSetupPacket,
@@ -72,6 +73,7 @@ export const XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES = {
   'tool-setup-plan': 'data-xenesis-tool-setup-plan',
   'tool-install-plan': 'data-xenesis-tool-install-plan',
   'mcp-install-draft': 'data-xenesis-mcp-install-draft',
+  'tool-mcp-oauth': 'data-xenesis-tool-mcp-oauth',
   'tool-oauth-draft': 'data-xenesis-tool-oauth-draft',
   'tool-oauth-setup-packet': 'data-xenesis-tool-oauth-setup-packet',
   'tool-action-catalog': 'data-xenesis-tool-action-catalog',
@@ -244,6 +246,10 @@ export function formatXenesisMcpInstallDraftSummary(draft: XenesisConnectionMcpI
   return `${draft.serverName ?? draft.displayName} / ${draft.transport ?? 'planned'} / ${draft.draftStatus}`;
 }
 
+export function formatXenesisToolMcpOAuthSummary(oauth: XenesisConnectionToolMcpOAuthTemplate): string {
+  return `${oauth.serverName} / ${oauth.transport} / ${oauth.status} / ${oauth.scopes.length} scope(s)`;
+}
+
 export function formatXenesisToolOAuthDraftSummary(draft: XenesisConnectionToolOAuthDraftTemplate): string {
   return `${draft.tool} / ${draft.draftStatus} / ${draft.scopes.length} scope(s) / ${draft.reviewSteps.length} review step(s)`;
 }
@@ -376,6 +382,18 @@ export function buildXenesisMcpInstallDraftApplyRequest(
     },
     source: 'xenesis',
     approved: false,
+  };
+}
+
+export function buildXenesisToolMcpOAuthRequest(item: XenesisConnectionItem): McpBridgeCapabilityCallRequest | null {
+  if (!item.toolMcpOAuth) return null;
+  return {
+    path: 'xd.xenesis.tools.mcpOAuth.request',
+    args: {
+      id: item.id,
+    },
+    source: 'xenesis',
+    approved: true,
   };
 }
 

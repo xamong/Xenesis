@@ -866,6 +866,7 @@ test('buildXenesisConnectionsStatus exposes review-only MCP install drafts', () 
     env: {
       GITHUB_TOKEN: '',
       NOTION_TOKEN: 'secret-value-must-not-appear',
+      LINEAR_OAUTH_TOKEN_STORE: 'secret-value-must-not-appear',
     },
   });
 
@@ -899,6 +900,21 @@ test('buildXenesisConnectionsStatus exposes review-only MCP install drafts', () 
   assert.equal(linear?.mcpInstallDraft?.auth, 'oauth');
   assert.equal(linear?.mcpInstallDraft?.draftStatus, 'ready');
   assert.ok(linear?.mcpInstallDraft?.controlPaths.includes('xd.xenesis.tools.mcpInstallDrafts.apply'));
+  assert.equal(linear?.toolMcpOAuth?.status, 'ready-template');
+  assert.equal(linear?.toolMcpOAuth?.actionInboxKind, 'xenesis-tool-mcp-oauth');
+  assert.equal(linear?.toolMcpOAuth?.tool, 'linear');
+  assert.equal(linear?.toolMcpOAuth?.serverName, 'linear');
+  assert.equal(linear?.toolMcpOAuth?.authMode, 'oauth');
+  assert.equal(linear?.toolMcpOAuth?.transport, 'http');
+  assert.deepEqual(linear?.toolMcpOAuth?.missingRequiredFields, []);
+  assert.ok(linear?.toolMcpOAuth?.scopes.includes('linear:read-issues'));
+  assert.ok(linear?.toolMcpOAuth?.credentialRefs.some((credential) => credential.ref === 'LINEAR_OAUTH_TOKEN_STORE'));
+  assert.ok(linear?.toolMcpOAuth?.readPaths.includes('xd.xenesis.tools.mcpOAuth.status'));
+  assert.ok(linear?.toolMcpOAuth?.controlPaths.includes('xd.xenesis.tools.mcpOAuth.request'));
+  assert.ok(linear?.toolMcpOAuth?.blockedActions.includes('start OAuth flow'));
+  assert.equal(JSON.stringify(linear?.toolMcpOAuth).includes('secret-value-must-not-appear'), false);
+  assert.equal(notion?.toolMcpOAuth, undefined);
+  assert.equal(calendar?.toolMcpOAuth, undefined);
 
   assert.equal(calendar?.mcpInstallDraft?.draftStatus, 'planned');
   assert.equal(calendar?.mcpInstallDraft?.serverName, undefined);

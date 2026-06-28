@@ -2860,6 +2860,37 @@ export const XENESIS_NATURAL_CONNECTION_TARGET_SURFACE_SPECS = [
     },
   },
   {
+    key: 'toolMcpOAuth',
+    open: {
+      path: 'xd.xenesis.tools.mcpOAuth.open',
+      idPrefix: 'natural-xenesis-tool-mcp-oauth-open',
+      reasonFor: (_id: string, label: string) => `Open ${label} MCP OAuth readiness from natural language request.`,
+      rules: [
+        {
+          targetScope: 'tool',
+          contextWords: XENESIS_NATURAL_OAUTH_CONTEXT_WORDS,
+          requiredContextWordGroups: [XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS],
+          argsKind: 'targetIdVisible',
+          order: 2,
+        },
+      ],
+    },
+    status: {
+      path: 'xd.xenesis.tools.mcpOAuth.status',
+      idPrefix: 'natural-xenesis-tool-mcp-oauth-status',
+      reasonFor: (_id: string, label: string) => `Read ${label} MCP OAuth readiness from natural language request.`,
+      rules: [
+        {
+          targetScope: 'tool',
+          contextWords: XENESIS_NATURAL_OAUTH_CONTEXT_WORDS,
+          requiredContextWordGroups: [XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS],
+          argsKind: 'targetId',
+          order: 1,
+        },
+      ],
+    },
+  },
+  {
     key: 'toolOauthDraft',
     open: {
       path: 'xd.xenesis.tools.oauthDrafts.open',
@@ -3456,6 +3487,22 @@ export const XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_SPECS = [
     ],
   },
   {
+    key: 'toolMcpOAuthRequest',
+    path: 'xd.xenesis.tools.mcpOAuth.request',
+    idPrefix: 'natural-xenesis-tool-mcp-oauth-request',
+    reasonFor: (_id: string, label: string) =>
+      `Request ${label} MCP OAuth readiness review from natural language request.`,
+    rules: [
+      {
+        targetScope: 'tool',
+        contextWords: XENESIS_NATURAL_OAUTH_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS],
+        argsKind: 'targetId',
+        order: 1,
+      },
+    ],
+  },
+  {
     key: 'toolActionPolicyRequest',
     path: 'xd.xenesis.tools.actions.request',
     idPrefix: 'natural-xenesis-tool-action-policy-request',
@@ -3602,6 +3649,7 @@ export const XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTOR_SPECS = [
   { alias: 'toolInstallPlan', source: 'connectionTarget', key: 'toolInstallPlanRequest' },
   { alias: 'toolMcpInstallDraft', source: 'connectionTarget', key: 'toolMcpInstallDraftRequest' },
   { alias: 'toolOauthDraft', source: 'connectionTarget', key: 'toolOauthDraftRequest' },
+  { alias: 'toolMcpOAuth', source: 'connectionTarget', key: 'toolMcpOAuthRequest' },
   { alias: 'toolActionPolicy', source: 'connectionTarget', key: 'toolActionPolicyRequest' },
   { alias: 'channelProfileDraft', source: 'connectionTarget', key: 'channelProfileDraftRequest' },
   { alias: 'connectionSetupRequest', source: 'connectionTarget', key: 'connectionSetupRequest' },
@@ -3643,6 +3691,7 @@ export const XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES = buildXenesisNaturalCo
     'toolInstallPlanRequest',
     'toolMcpInstallDraftRequest',
     'toolOauthDraftRequest',
+    'toolMcpOAuthRequest',
     'toolActionPolicyRequest',
     'channelProfileDraftRequest',
     'connectionSetupRequest',

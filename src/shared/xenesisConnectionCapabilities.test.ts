@@ -1447,6 +1447,95 @@ test('xenesis tool action catalog capabilities are registered and dispatch to th
   });
 });
 
+test('xenesis MCP OAuth readiness capabilities are registered and dispatch to the adapter', async () => {
+  const statusCapability = findDeskBridgeCapability('xd.xenesis.tools.mcpOAuth.status');
+  const openCapability = findDeskBridgeCapability('xd.xenesis.tools.mcpOAuth.open');
+  const requestCapability = findDeskBridgeCapability('xd.xenesis.tools.mcpOAuth.request');
+  const statusSchemaProperties = (statusCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const requestSchemaProperties = (requestCapability?.schema?.properties ?? {}) as Record<string, any>;
+
+  assert.equal(statusCapability?.permission, 'read');
+  assert.equal(statusCapability?.approval, 'never');
+  assert.equal(openCapability?.permission, 'control');
+  assert.equal(openCapability?.approval, 'never');
+  assert.equal(schemaRequiredFields(openCapability).includes('id'), false);
+  assert.equal(requestCapability?.permission, 'write');
+  assert.equal(requestCapability?.approval, 'when-external');
+  assert.deepEqual(requestCapability?.schema?.required, ['id']);
+  for (const tool of ['linear']) {
+    assert.equal(statusSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by status`);
+    assert.equal(statusSchemaProperties.tool?.enum.includes(tool), true, `${tool} should be accepted by status alias`);
+    assert.equal(openSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by open`);
+    assert.equal(requestSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by request`);
+  }
+
+  const calls: Array<{ method: string; args: unknown }> = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisToolMcpOAuthStatus: (args) => {
+      calls.push({ method: 'status', args });
+      return {
+        ok: true,
+        items: [{ id: 'linear', status: 'ready-template' }],
+      };
+    },
+    openXenesisToolMcpOAuth: (args) => {
+      calls.push({ method: 'open', args });
+      return {
+        ok: true,
+        item: { id: 'linear', status: 'ready-template' },
+      };
+    },
+    requestXenesisToolMcpOAuth: (args) => {
+      calls.push({ method: 'request', args });
+      return {
+        ok: true,
+        id: 'linear',
+        actionInboxItem: { id: 'mcp-oauth-linear' },
+      };
+    },
+  };
+
+  const statusResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.tools.mcpOAuth.status',
+    args: { tool: 'linear' },
+    source: 'xenesis',
+  });
+  const openResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.tools.mcpOAuth.open',
+    args: { id: 'linear' },
+    source: 'xenesis',
+  });
+  const requestResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.tools.mcpOAuth.request',
+    args: { id: 'linear' },
+    source: 'xenesis',
+    approved: true,
+  });
+
+  assert.equal(statusResult.ok, true);
+  assert.equal(openResult.ok, true);
+  assert.equal(requestResult.ok, true);
+  assert.deepEqual(calls, [
+    { method: 'status', args: { tool: 'linear' } },
+    { method: 'open', args: { id: 'linear' } },
+    { method: 'request', args: { id: 'linear' } },
+  ]);
+  assert.deepEqual(statusResult.result, {
+    ok: true,
+    items: [{ id: 'linear', status: 'ready-template' }],
+  });
+  assert.deepEqual(openResult.result, {
+    ok: true,
+    item: { id: 'linear', status: 'ready-template' },
+  });
+  assert.deepEqual(requestResult.result, {
+    ok: true,
+    id: 'linear',
+    actionInboxItem: { id: 'mcp-oauth-linear' },
+  });
+});
+
 test('xenesis tool open capabilities allow catalog opens without focused ids', async () => {
   const openPaths = [
     'xd.xenesis.tools.setup.open',
@@ -1456,6 +1545,7 @@ test('xenesis tool open capabilities allow catalog opens without focused ids', a
     'xd.xenesis.tools.installPlans.open',
     'xd.xenesis.tools.mcpInstallDrafts.open',
     'xd.xenesis.tools.oauthDrafts.open',
+    'xd.xenesis.tools.mcpOAuth.open',
     'xd.xenesis.tools.actions.open',
   ];
   for (const path of openPaths) {
@@ -1491,6 +1581,10 @@ test('xenesis tool open capabilities allow catalog opens without focused ids', a
     openXenesisToolOAuthDraft: (args) => {
       calls.push({ path: 'xd.xenesis.tools.oauthDrafts.open', args });
       return { ok: true, total: 2 };
+    },
+    openXenesisToolMcpOAuth: (args) => {
+      calls.push({ path: 'xd.xenesis.tools.mcpOAuth.open', args });
+      return { ok: true, total: 1 };
     },
     openXenesisToolActionCatalog: (args) => {
       calls.push({ path: 'xd.xenesis.tools.actions.open', args });

@@ -30,6 +30,7 @@ import {
   buildXenesisProviderProfileDraftRequest,
   buildXenesisProviderSetupPlanRequest,
   buildXenesisToolActionCatalogRequest,
+  buildXenesisToolMcpOAuthRequest,
   buildXenesisToolOAuthDraftRequest,
   buildXenesisToolOAuthSetupPacketOpenRequest,
   buildXenesisToolOAuthSetupPacketRequest,
@@ -59,6 +60,7 @@ import {
   formatXenesisToolActionCatalogSummary,
   formatXenesisToolConnectorSummary,
   formatXenesisToolInstallPlanSummary,
+  formatXenesisToolMcpOAuthSummary,
   formatXenesisToolOAuthDraftSummary,
   formatXenesisToolOAuthSetupPacketSummary,
   formatXenesisToolSetupPlanSummary,
@@ -95,6 +97,7 @@ test('xenesis detail focus selector maps CR detail values to existing data attri
     'data-xenesis-channel-setup-plan',
   );
   assert.equal(XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['tool-setup-plan'], 'data-xenesis-tool-setup-plan');
+  assert.equal(XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['tool-mcp-oauth'], 'data-xenesis-tool-mcp-oauth');
   assert.equal(XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['tool-oauth-draft'], 'data-xenesis-tool-oauth-draft');
   assert.equal(
     XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['tool-oauth-setup-packet'],
@@ -111,6 +114,7 @@ test('xenesis detail focus selector maps CR detail values to existing data attri
   );
   assert.equal(xenesisConnectionDetailFocusSelector('channel-setup-plan'), '[data-xenesis-channel-setup-plan]');
   assert.equal(xenesisConnectionDetailFocusSelector('tool-setup-plan'), '[data-xenesis-tool-setup-plan]');
+  assert.equal(xenesisConnectionDetailFocusSelector('tool-mcp-oauth'), '[data-xenesis-tool-mcp-oauth]');
   assert.equal(xenesisConnectionDetailFocusSelector('tool-oauth-draft'), '[data-xenesis-tool-oauth-draft]');
   assert.equal(
     xenesisConnectionDetailFocusSelector('tool-oauth-setup-packet'),
@@ -248,6 +252,9 @@ test('SettingsPane renders Connection Center guided and review step details', ()
   assert.match(source, /xenesisConnectionsOnboardingGuidedSteps/);
   assert.match(source, /xenesisConnectionsProviderProfileDraftReviewSteps/);
   assert.match(source, /xenesisConnectionsToolOAuthDraftReviewSteps/);
+  assert.match(source, /toolMcpOAuth/);
+  assert.match(source, /formatXenesisToolMcpOAuthSummary/);
+  assert.match(source, /buildXenesisToolMcpOAuthRequest/);
   assert.match(source, /xenesisConnectionsChannelProfileDraftReviewSteps/);
   assert.match(source, /formatXenesisUserStoryContractSummary/);
   assert.match(source, /formatXenesisUserStoryContractDetail/);
@@ -1316,6 +1323,41 @@ test('formatXenesisToolOAuthDraftSummary describes tool, status, and scope count
   );
 });
 
+test('formatXenesisToolMcpOAuthSummary describes MCP OAuth runtime readiness', () => {
+  assert.equal(
+    formatXenesisToolMcpOAuthSummary({
+      status: 'ready-template',
+      actionInboxKind: 'xenesis-tool-mcp-oauth',
+      tool: 'linear',
+      displayName: 'Linear',
+      serverName: 'linear',
+      transport: 'http',
+      authMode: 'oauth',
+      runtimeSupport: 'ready-template',
+      authSurface: 'Settings > AI Provider > Local CLI MCP',
+      reviewSurface: 'Desk Action Inbox',
+      credentialRefs: [
+        {
+          ref: 'LINEAR_OAUTH_TOKEN_STORE',
+          source: 'oauth-client',
+          required: false,
+          state: 'not-required',
+        },
+      ],
+      missingRequiredFields: [],
+      scopes: ['linear:read-issues', 'linear:read-projects'],
+      tokenStore: 'OAuth token managed by the MCP client',
+      consentMode: 'provider-browser-oauth',
+      readPaths: ['xd.xenesis.tools.mcpOAuth.status'],
+      controlPaths: ['xd.xenesis.tools.mcpOAuth.request'],
+      diagnostics: ['mcp-oauth-runtime'],
+      blockedActions: ['start OAuth flow'],
+      safetyBoundaries: ['MCP OAuth readiness is review-only'],
+    }),
+    'linear / http / ready-template / 2 scope(s)',
+  );
+});
+
 test('formatXenesisToolOAuthSetupPacketSummary describes provider, credential refs, and checklist', () => {
   assert.equal(
     formatXenesisToolOAuthSetupPacketSummary({
@@ -1359,6 +1401,55 @@ test('formatXenesisToolOAuthSetupPacketSummary describes provider, credential re
     }),
     'google / planned-template / 2 credential ref(s) / 2 setup step(s)',
   );
+});
+
+test('buildXenesisToolMcpOAuthRequest targets the MCP OAuth review request CR path', () => {
+  const item = {
+    id: 'linear',
+    kind: 'tool',
+    label: 'Linear',
+    status: 'needs-setup',
+    summary: 'Linear OAuth MCP runtime readiness',
+    toolMcpOAuth: {
+      status: 'ready-template',
+      actionInboxKind: 'xenesis-tool-mcp-oauth',
+      tool: 'linear',
+      displayName: 'Linear',
+      serverName: 'linear',
+      transport: 'http',
+      authMode: 'oauth',
+      runtimeSupport: 'ready-template',
+      authSurface: 'Settings > AI Provider > Local CLI MCP',
+      reviewSurface: 'Desk Action Inbox',
+      credentialRefs: [
+        {
+          ref: 'LINEAR_OAUTH_TOKEN_STORE',
+          source: 'oauth-client',
+          required: false,
+          state: 'not-required',
+        },
+      ],
+      missingRequiredFields: [],
+      scopes: ['linear:read-issues'],
+      tokenStore: 'OAuth token managed by the MCP client',
+      consentMode: 'provider-browser-oauth',
+      readPaths: ['xd.xenesis.tools.mcpOAuth.status'],
+      controlPaths: ['xd.xenesis.tools.mcpOAuth.request'],
+      diagnostics: ['mcp-oauth-runtime'],
+      blockedActions: ['start OAuth flow'],
+      safetyBoundaries: ['MCP OAuth readiness is review-only'],
+    },
+  } satisfies XenesisConnectionItem;
+
+  assert.deepEqual(buildXenesisToolMcpOAuthRequest(item), {
+    path: 'xd.xenesis.tools.mcpOAuth.request',
+    args: {
+      id: 'linear',
+    },
+    source: 'xenesis',
+    approved: true,
+  });
+  assert.equal(buildXenesisToolMcpOAuthRequest({ ...item, toolMcpOAuth: undefined }), null);
 });
 
 test('buildXenesisToolOAuthDraftRequest targets the review request CR path', () => {

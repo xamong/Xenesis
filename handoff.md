@@ -7,6 +7,153 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current MCP OAuth Runtime Readiness Slice
+
+- Objective: increase slice size and add a CR-first, Desk-native MCP OAuth
+  runtime readiness surface for OAuth-capable recommended MCP tools, starting
+  with Linear through derived MCP template and connector metadata.
+- Rationale:
+  - Linear already has a recommended MCP template with `auth: "oauth"` and a
+    tool connector with `authMode: "oauth"`.
+  - Connection Center currently exposes MCP install drafts and planned Google
+    OAuth drafts, but it does not expose the runtime OAuth readiness boundary
+    for ready OAuth MCP tools.
+  - The active goal calls out external tool connections, settings, guides, and
+    CR-controllable internal Desk views. This slice keeps those in Desk without
+    starting OAuth or storing tokens.
+- Scope boundary:
+  - Do not browse external docs for this slice; use repo-local source, tests,
+    docs, and Obsidian context.
+  - Do not complete OAuth, start an OAuth browser flow, store OAuth tokens,
+    write MCP config, execute provider tools, or mutate external systems.
+  - Avoid Linear-only hardcoding where the existing recommended MCP template
+    and connector metadata can derive the readiness surface.
+- Plan:
+  - `docs/superpowers/plans/2026-06-29-xenesis-mcp-oauth-runtime-readiness.md`
+- Touched files so far:
+  - `docs/superpowers/plans/2026-06-29-xenesis-mcp-oauth-runtime-readiness.md`
+  - `handoff.md`
+  - `docs/manual/11-external-tool-integrations.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-mcp-oauth-runtime-readiness.md`
+  - `scripts/xenesisNaturalDeskRoutingLiveSmoke.mjs`
+  - `scripts/xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
+  - `src/main/index.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.test.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/shared/types.ts`
+  - `src/shared/xenesisConnectionCapabilities.test.ts`
+  - `src/shared/xenesisConnections.ts`
+  - `src/shared/xenesisConnections.test.ts`
+  - `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
+- Commands run:
+  - `git status --short --branch` -> clean
+    `agent/upcoming-work-20260627`.
+  - `git rev-parse --show-toplevel; git rev-parse --git-dir; git rev-parse --git-common-dir; git branch --show-current`
+    -> confirmed linked worktree at
+    `E:/xenesis-original/xenesis-desk/.worktrees/upcoming-work-20260627`.
+  - Read AGENTS/Obsidian context and inspected existing OAuth/MCP Connection
+    Center, CR, renderer, and natural-routing code paths.
+  - `npx tsx --test src\shared\xenesisConnections.test.ts` -> RED as
+    expected: `linear.toolMcpOAuth.status` was `undefined` instead of
+    `ready-template`.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` -> RED
+    as expected: `xd.xenesis.tools.mcpOAuth.status/open/request` are not
+    registered or dispatched.
+  - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` -> RED
+    as expected: `tool-mcp-oauth` focus attribute, formatter/request builder,
+    and SettingsPane render references are missing.
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` -> RED as
+    expected because the smoke inventory expects three new Linear MCP OAuth
+    cases before natural routing implementation.
+  - `npx tsx --test src\shared\xenesisConnections.test.ts` -> GREEN after
+    adding derived `toolMcpOAuth`, `tool-mcp-oauth` detail focus, `mcp-oauth`
+    tool view section, setup-plan aggregation, diagnostic runbook aggregation,
+    and setup-request aggregation.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` -> GREEN
+    after registering `xd.xenesis.tools.mcpOAuth.status/open/request`,
+    dispatcher methods, and adapter interface entries.
+  - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` ->
+    GREEN after adding renderer focus attributes, formatter/request helper, and
+    SettingsPane MCP OAuth readiness card/button.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> GREEN after adding `toolMcpOAuth` status/open/review request specs to the
+    shared natural-language capability catalog and updating static inventory
+    expectations.
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` -> GREEN
+    after adding Linear MCP OAuth status/open/review prompt cases to the smoke
+    inventory.
+  - `npx biome format --write ...` -> passed; final run formatted 12 files with
+    no fixes applied.
+  - `npx biome check ... --max-diagnostics 80` -> exit 0; reported two existing
+    warnings in `src/shared/deskBridgeCapabilities.ts` around
+    `TERMINAL_DYNAMIC_ROOT` and `describeDockDynamicCapabilityPath`.
+  - Focused tests passed:
+    `npx tsx --test src\shared\xenesisConnections.test.ts`,
+    `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts`,
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`,
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`,
+    and `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs`.
+  - `npm run typecheck` -> passed; `npm run build` -> passed and rebuilt
+    `out/main`, `out/preload`, and `out/renderer`.
+  - `npm run docs:capabilities:audit` -> passed; wrote
+    `docs/capability-registry-audit.md` with 784 nodes and 689 coverage path
+    references.
+  - `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> all four counters are 0.
+  - `npm run smoke:xenesis:natural-desk-routing` initially failed before rebuild
+    because live smoke executed stale `out/` code, then passed 228/228 after
+    rebuilding and adding explicit request-rule ordering for
+    `toolMcpOAuthRequest`.
+  - `npm run smoke:xenesis:connection-center` -> passed 6/6.
+  - `git diff --check` -> exit 0 with CRLF conversion warnings only.
+  - `npm run check:public-release` -> blocked before checks with `ENOENT` for
+    missing `.github/workflows/ci.yml` in this worktree/repo.
+  - `git commit -m "feat: expose mcp oauth readiness"` -> created a commit on
+    `agent/upcoming-work-20260627`.
+- Implemented so far:
+  - Added `XenesisConnectionToolMcpOAuthTemplate` and derived MCP OAuth
+    readiness builder in `src/shared/xenesisConnections.ts`.
+  - The builder requires a tool connector with `authMode: "oauth"` and a
+    recommended MCP template with `auth: "oauth"`, so Linear is covered without
+    a Linear-only branch.
+  - Added `toolMcpOAuth` to `XenesisConnectionItem`, shared type exports, tool
+    view detail focus, setup plans, diagnostics, and setup request read/control
+    aggregation.
+  - Added CR schemas, Capability Registry group, dispatcher wiring, and main
+    Electron adapter methods for MCP OAuth readiness status/open/request.
+  - Added `formatXenesisToolMcpOAuthSummary`,
+    `buildXenesisToolMcpOAuthRequest`, `data-xenesis-tool-mcp-oauth`, and the
+    SettingsPane readiness detail block.
+  - Added natural-language routing for `리니어 mcp oauth 상태 보여줘`,
+    `linear mcp oauth 열어줘`, and `리니어 mcp oauth 검토 요청해줘` through
+    `xd.xenesis.tools.mcpOAuth.status/open/request`.
+  - Updated the external tool integration manual and added a repo-local
+    Obsidian working note for MCP OAuth runtime readiness.
+- Verification plan:
+  - RED shared-model test for `linear.toolMcpOAuth` derived from OAuth MCP
+    metadata.
+  - RED CR dispatch test for `xd.xenesis.tools.mcpOAuth.status/open/request`.
+  - RED renderer tests for the focus attribute, formatter, request builder, and
+    SettingsPane render path.
+  - RED natural routing/live-smoke cases for Linear MCP OAuth status/open/review
+    requests.
+  - Then focused tests, typecheck, CR audit/gap counters, natural routing smoke,
+    Connection Center smoke, build, diff hygiene, and changed-file Biome.
+- Known gaps:
+  - This slice is review/readiness only. Actual OAuth browser flow integration
+    remains a later approval-gated runtime feature.
+  - `npm run check:public-release` is currently blocked by missing
+    `.github/workflows/ci.yml`; `.github` only contains issue/PR templates and
+    social preview assets in this worktree.
+  - Changed-file Biome check still reports two pre-existing warnings in
+    `src/shared/deskBridgeCapabilities.ts` outside this slice's touched logic.
+- Next intended step:
+  - Keep the verified worktree branch for the next larger slice or integration
+    choice.
+
 ## Current Prompt Hint Catalog Slice
 
 - Objective: increase the slice size and continue the hardcoding cleanup by

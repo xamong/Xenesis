@@ -100,6 +100,7 @@ import {
   buildXenesisProviderProfileDraftRequest,
   buildXenesisProviderSetupPlanRequest,
   buildXenesisToolActionCatalogRequest,
+  buildXenesisToolMcpOAuthRequest,
   buildXenesisToolOAuthDraftRequest,
   buildXenesisToolOAuthSetupPacketOpenRequest,
   buildXenesisToolOAuthSetupPacketRequest,
@@ -131,6 +132,7 @@ import {
   formatXenesisToolActionCatalogSummary,
   formatXenesisToolConnectorSummary,
   formatXenesisToolInstallPlanSummary,
+  formatXenesisToolMcpOAuthSummary,
   formatXenesisToolOAuthDraftSummary,
   formatXenesisToolOAuthSetupPacketSummary,
   formatXenesisToolSetupPlanSummary,
@@ -4325,6 +4327,7 @@ export default function SettingsPane() {
     const setupApplyRequest = buildXenesisConnectionSetupApplyRequest(item);
     const mcpInstallDraftRequest = buildXenesisMcpInstallDraftRequest(item);
     const mcpInstallDraftApplyRequest = buildXenesisMcpInstallDraftApplyRequest(item);
+    const toolMcpOAuthRequest = buildXenesisToolMcpOAuthRequest(item);
     const toolOAuthDraftRequest = buildXenesisToolOAuthDraftRequest(item);
     const toolOAuthSetupPacketRequest = buildXenesisToolOAuthSetupPacketRequest(item);
     const toolOAuthSetupPacketOpenRequest = buildXenesisToolOAuthSetupPacketOpenRequest(item);
@@ -4339,6 +4342,7 @@ export default function SettingsPane() {
     const providerProfileDraftApplyRequest = buildXenesisProviderProfileDraftApplyRequest(item);
     const mcpTemplate = item.mcpTemplate;
     const mcpInstallDraft = item.mcpInstallDraft;
+    const toolMcpOAuth = item.toolMcpOAuth;
     const toolOAuthDraft = item.toolOAuthDraft;
     const toolOAuthSetupPacket = toolOAuthDraft?.setupPacket;
     const toolActionCatalog = item.toolActionCatalog;
@@ -4384,6 +4388,7 @@ export default function SettingsPane() {
           setupApplyRequest ||
           mcpInstallDraftRequest ||
           mcpInstallDraftApplyRequest ||
+          toolMcpOAuthRequest ||
           toolOAuthDraftRequest ||
           toolOAuthSetupPacketRequest ||
           toolSetupPlanRequest ||
@@ -4462,6 +4467,16 @@ export default function SettingsPane() {
                 }}
               >
                 {t('settings.xenesisConnectionsApplyMcpInstallDraft')}
+              </button>
+            ) : null}
+            {toolMcpOAuthRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(toolMcpOAuthRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsRequestToolMcpOAuth')}
               </button>
             ) : null}
             {toolSetupPlanRequest ? (
@@ -5296,6 +5311,72 @@ export default function SettingsPane() {
             <div>
               <span>{t('settings.xenesisConnectionsMcpInstallDraftSafety')}</span>
               <strong>{mcpInstallDraft.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {toolMcpOAuth ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'tool-mcp-oauth') && 'is-focused',
+            )}
+            data-xenesis-tool-mcp-oauth={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsToolMcpOAuth')}</span>
+              <strong>{formatXenesisToolMcpOAuthSummary(toolMcpOAuth)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolMcpOAuthAuthSurface')}</span>
+              <strong>{toolMcpOAuth.authSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolMcpOAuthReviewSurface')}</span>
+              <strong>{toolMcpOAuth.reviewSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolMcpOAuthCredentials')}</span>
+              <strong>
+                {toolMcpOAuth.credentialRefs
+                  .map((credential) => `${credential.ref}:${credential.state}${credential.required ? ':required' : ''}`)
+                  .join(', ') || '-'}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolMcpOAuthMissingFields')}</span>
+              <strong>{toolMcpOAuth.missingRequiredFields.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolMcpOAuthScopes')}</span>
+              <strong>{toolMcpOAuth.scopes.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolMcpOAuthTokenStore')}</span>
+              <strong>{toolMcpOAuth.tokenStore}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolMcpOAuthConsentMode')}</span>
+              <strong>{toolMcpOAuth.consentMode}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolMcpOAuthReadback')}</span>
+              <strong>{toolMcpOAuth.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolMcpOAuthControls')}</span>
+              <strong>{toolMcpOAuth.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolMcpOAuthDiagnostics')}</span>
+              <strong>{toolMcpOAuth.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolMcpOAuthBlockedActions')}</span>
+              <strong>{toolMcpOAuth.blockedActions.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolMcpOAuthSafety')}</span>
+              <strong>{toolMcpOAuth.safetyBoundaries.join(', ')}</strong>
             </div>
           </div>
         ) : null}

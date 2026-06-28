@@ -1566,6 +1566,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-channel-routing-status-\$\{target\.id\}`/);
   assert.doesNotMatch(source, /CONNECTION_TARGET_STATUS_ACTIONS\.toolMcpInstallDraft/);
   assert.doesNotMatch(source, /CONNECTION_TARGET_STATUS_ACTIONS\.toolOauthDraft/);
+  assert.doesNotMatch(source, /CONNECTION_TARGET_STATUS_ACTIONS\.toolMcpOAuth/);
   assert.doesNotMatch(source, /CONNECTION_TARGET_STATUS_ACTIONS\.channelRouting/);
   assert.doesNotMatch(source, /CONNECTION_TARGET_STATUS_ACTIONS\.messengerView/);
   assert.deepEqual(
@@ -1586,6 +1587,12 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
         targetScope: 'any',
         argsKind: 'targetId',
         path: 'xd.xenesis.connections.setupRequests.status',
+        fallback: false,
+      },
+      {
+        targetScope: 'tool',
+        argsKind: 'targetId',
+        path: 'xd.xenesis.tools.mcpOAuth.status',
         fallback: false,
       },
       {
@@ -1744,6 +1751,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-connection-open-\$\{target\.id\}`/);
   assert.doesNotMatch(source, /CONNECTION_TARGET_OPEN_ACTIONS\.toolOauthDraft/);
   assert.doesNotMatch(source, /CONNECTION_TARGET_OPEN_ACTIONS\.toolMcpInstallDraft/);
+  assert.doesNotMatch(source, /CONNECTION_TARGET_OPEN_ACTIONS\.toolMcpOAuth/);
   assert.doesNotMatch(source, /CONNECTION_TARGET_OPEN_ACTIONS\.channelRouting/);
   assert.doesNotMatch(source, /CONNECTION_TARGET_OPEN_ACTIONS\.connectionCard/);
   assert.deepEqual(
@@ -1770,6 +1778,12 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
         targetScope: 'planned-google-tool',
         argsKind: 'targetIdVisible',
         path: 'xd.xenesis.tools.oauthDrafts.setupPacket.open',
+        fallback: false,
+      },
+      {
+        targetScope: 'tool',
+        argsKind: 'targetIdVisible',
+        path: 'xd.xenesis.tools.mcpOAuth.open',
         fallback: false,
       },
       {
@@ -1908,6 +1922,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /REVIEW_REQUEST_ACTIONS\.toolInstallPlan/);
   assert.doesNotMatch(source, /REVIEW_REQUEST_ACTIONS\.toolMcpInstallDraft/);
   assert.doesNotMatch(source, /REVIEW_REQUEST_ACTIONS\.toolOauthDraft/);
+  assert.doesNotMatch(source, /REVIEW_REQUEST_ACTIONS\.toolMcpOAuth/);
   assert.doesNotMatch(source, /REVIEW_REQUEST_ACTIONS\.toolActionPolicy/);
   assert.doesNotMatch(source, /REVIEW_REQUEST_ACTIONS\.channelProfileDraft/);
   assert.doesNotMatch(source, /REVIEW_REQUEST_ACTIONS\.connectionSetupRequest/);
@@ -1931,6 +1946,12 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
         targetScope: 'tool',
         argsKind: 'targetId',
         path: 'xd.xenesis.tools.installPlans.request',
+        fallback: false,
+      },
+      {
+        targetScope: 'tool',
+        argsKind: 'targetId',
+        path: 'xd.xenesis.tools.mcpOAuth.request',
         fallback: false,
       },
       {
@@ -2494,6 +2515,10 @@ test('natural approval request actions are generated from shared action request 
     connectionSpecsByKey.get('toolMcpInstallDraftRequest')?.path,
   );
   assert.equal(
+    XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS.toolMcpOAuth.path,
+    connectionSpecsByKey.get('toolMcpOAuthRequest')?.path,
+  );
+  assert.equal(
     XENESIS_NATURAL_MCP_INSTALL_DRAFT_APPLY_ACTION_DESCRIPTORS.toolMcpInstallDraft.path,
     connectionSpecsByKey.get('toolMcpInstallDraftApply')?.path,
   );
@@ -2523,6 +2548,7 @@ test('natural approval request actions are generated from shared action request 
     expectedConnectionRules([
       'toolInstallPlanRequest',
       'toolMcpInstallDraftRequest',
+      'toolMcpOAuthRequest',
       'toolOauthDraftRequest',
       'toolActionPolicyRequest',
       'channelProfileDraftRequest',
@@ -5633,6 +5659,16 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center review reques
       args: { id: 'google-workspace' },
       approved: false,
       reason: 'Request Google Workspace OAuth draft review from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('리니어 mcp oauth 검토 요청해줘').actions, [
+    {
+      id: 'natural-xenesis-tool-mcp-oauth-request-linear',
+      path: 'xd.xenesis.tools.mcpOAuth.request',
+      args: { id: 'linear' },
+      approved: false,
+      reason: 'Request Linear MCP OAuth readiness review from natural language request.',
     },
   ]);
 

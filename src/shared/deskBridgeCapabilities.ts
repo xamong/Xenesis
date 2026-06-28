@@ -1030,6 +1030,36 @@ const XENESIS_TOOL_MCP_INSTALL_DRAFT_APPLY_SCHEMA = {
     },
   },
 } as const;
+const XENESIS_TOOL_MCP_OAUTH_STATUS_SCHEMA = XENESIS_TOOL_VIEW_STATUS_SCHEMA;
+const XENESIS_TOOL_MCP_OAUTH_OPEN_SCHEMA = XENESIS_TOOL_VIEW_OPEN_SCHEMA;
+const XENESIS_TOOL_MCP_OAUTH_REQUEST_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'External tool connection id to record as an MCP OAuth readiness review request.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Alias for id.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity to include on the Action Inbox item.',
+    },
+    note: {
+      type: 'string',
+      title: 'Review note',
+      description: 'Optional note to append to the MCP OAuth readiness description.',
+    },
+  },
+} as const;
 const XENESIS_TOOL_OAUTH_DRAFT_STATUS_SCHEMA = {
   type: 'object',
   properties: {
@@ -1678,6 +1708,9 @@ export interface DeskBridgeCapabilityAdapter {
   openXenesisToolMcpInstallDraft?: (args?: unknown) => Promise<unknown> | unknown;
   requestXenesisToolMcpInstallDraft?: (args?: unknown) => Promise<unknown> | unknown;
   applyXenesisToolMcpInstallDraft?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisToolMcpOAuthStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisToolMcpOAuth?: (args?: unknown) => Promise<unknown> | unknown;
+  requestXenesisToolMcpOAuth?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolOAuthDraftsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolOAuthSetupPacket?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisToolOAuthDraft?: (args?: unknown) => Promise<unknown> | unknown;
@@ -5118,6 +5151,34 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               'Record a local Action Inbox item for reviewing a tool OAuth draft without completing OAuth, storing tokens, writing MCP config, executing provider tools, sending email, mutating documents, or mutating calendar events.',
               'write',
               XENESIS_TOOL_OAUTH_DRAFT_REQUEST_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.tools.mcpOAuth',
+          'MCP OAuth readiness',
+          'Read, open, and request review-only MCP OAuth runtime readiness for OAuth-capable recommended external tool connections.',
+          [
+            method(
+              'xd.xenesis.tools.mcpOAuth.status',
+              'Read MCP OAuth readiness',
+              'Read review-only MCP OAuth runtime readiness, credential references, scopes, diagnostics, and safety boundaries without starting OAuth, storing tokens, writing MCP config, or running provider tools.',
+              'read',
+              XENESIS_TOOL_MCP_OAUTH_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.mcpOAuth.open',
+              'Open MCP OAuth readiness',
+              'Open Settings > Xenesis Agent > Connections and focus an external tool MCP OAuth readiness card inside Desk.',
+              'control',
+              XENESIS_TOOL_MCP_OAUTH_OPEN_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.mcpOAuth.request',
+              'Request MCP OAuth readiness review',
+              'Record a local Action Inbox item for reviewing MCP OAuth runtime readiness without starting OAuth, storing tokens, writing MCP config, executing provider tools, or mutating external systems.',
+              'write',
+              XENESIS_TOOL_MCP_OAUTH_REQUEST_SCHEMA,
             ),
           ],
         ),
@@ -11820,6 +11881,15 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.tools.oauthDrafts.request') {
         return callAdapter(path, api?.requestXenesisToolOAuthDraft, request.args);
+      }
+      if (path === 'xd.xenesis.tools.mcpOAuth.status') {
+        return callAdapter(path, api?.getXenesisToolMcpOAuthStatus, request.args);
+      }
+      if (path === 'xd.xenesis.tools.mcpOAuth.open') {
+        return callAdapter(path, api?.openXenesisToolMcpOAuth, request.args);
+      }
+      if (path === 'xd.xenesis.tools.mcpOAuth.request') {
+        return callAdapter(path, api?.requestXenesisToolMcpOAuth, request.args);
       }
       if (path === 'xd.xenesis.tools.actions.status') {
         return callAdapter(path, api?.getXenesisToolActionCatalogStatus, request.args);

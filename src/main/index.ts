@@ -6376,6 +6376,7 @@ function xenesisToolSetupPlanStatusItem(item: XenesisConnectionItem): Record<str
     toolConnector: item.toolConnector,
     toolInstallPlan: item.toolInstallPlan,
     mcpInstallDraft: item.mcpInstallDraft,
+    toolMcpOAuth: item.toolMcpOAuth,
     toolOAuthDraft: item.toolOAuthDraft,
     toolActionCatalog: item.toolActionCatalog,
     toolUserStory: item.toolUserStory,
@@ -7007,6 +7008,163 @@ async function applyXenesisToolMcpInstallDraft(args?: unknown): Promise<Record<s
     targets: result.targets,
     item: xenesisToolMcpInstallDraftStatusItem(item),
     ...(note ? { note } : {}),
+  };
+}
+
+function xenesisToolMcpOAuthStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    readinessStatus: item.toolMcpOAuth?.status,
+    actionInboxKind: item.toolMcpOAuth?.actionInboxKind,
+    tool: item.toolMcpOAuth?.tool,
+    displayName: item.toolMcpOAuth?.displayName,
+    serverName: item.toolMcpOAuth?.serverName,
+    transport: item.toolMcpOAuth?.transport,
+    authMode: item.toolMcpOAuth?.authMode,
+    runtimeSupport: item.toolMcpOAuth?.runtimeSupport,
+    authSurface: item.toolMcpOAuth?.authSurface,
+    reviewSurface: item.toolMcpOAuth?.reviewSurface,
+    credentialRefs: item.toolMcpOAuth?.credentialRefs ?? [],
+    missingRequiredFields: item.toolMcpOAuth?.missingRequiredFields ?? [],
+    scopes: item.toolMcpOAuth?.scopes ?? [],
+    tokenStore: item.toolMcpOAuth?.tokenStore,
+    consentMode: item.toolMcpOAuth?.consentMode,
+    readPaths: item.toolMcpOAuth?.readPaths ?? [],
+    controlPaths: item.toolMcpOAuth?.controlPaths ?? [],
+    diagnostics: item.toolMcpOAuth?.diagnostics ?? [],
+    blockedActions: item.toolMcpOAuth?.blockedActions ?? [],
+    safetyBoundaries: item.toolMcpOAuth?.safetyBoundaries ?? [],
+    toolMcpOAuth: item.toolMcpOAuth,
+    toolConnector: item.toolConnector,
+    mcpInstallDraft: item.mcpInstallDraft,
+    mcpTemplate: item.mcpTemplate,
+    settingsAction: item.settingsAction,
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisToolMcpOAuthStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (id && !isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.tools.items
+    .filter((item) => item.toolMcpOAuth)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisToolMcpOAuthStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisToolMcpOAuth(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisToolCatalogSurface(args, {
+    allowedTools: XENESIS_TOOL_SETUP_IDS,
+    isAllowedId: isXenesisToolSetupId,
+    itemPredicate: (item) => Boolean(item.toolMcpOAuth),
+    toStatusItem: xenesisToolMcpOAuthStatusItem,
+    unsupportedMessage: (id) => `Unsupported Xenesis tool connection: ${id}`,
+    unavailableMessage: (id) => `Xenesis MCP OAuth readiness is not available: ${id}`,
+    focusConnectionDetail: 'tool-mcp-oauth',
+  });
+}
+
+async function requestXenesisToolMcpOAuth(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Tool id is required.' };
+  }
+  if (!isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.tools.items.find((candidate) => candidate.id === id && candidate.toolMcpOAuth);
+  if (!item?.toolMcpOAuth) {
+    return { ok: false, id, error: `Xenesis MCP OAuth readiness is not available: ${id}` };
+  }
+
+  const oauth = item.toolMcpOAuth;
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+  const requester = readCapabilityString(body, ['requester', 'user', 'userName']) || 'Xenesis Desk';
+  const description = [
+    `Review the ${oauth.status} MCP OAuth readiness surface for ${item.label}.`,
+    `Tool: ${oauth.tool}`,
+    `Server: ${oauth.serverName}`,
+    `Transport: ${oauth.transport}`,
+    `Runtime support: ${oauth.runtimeSupport}`,
+    `Auth surface: ${oauth.authSurface}`,
+    `Review surface: ${oauth.reviewSurface}`,
+    `Consent mode: ${oauth.consentMode}`,
+    `Token store: ${oauth.tokenStore}`,
+    `Missing required fields: ${oauth.missingRequiredFields.join(', ') || 'none'}`,
+    '',
+    'Credential references:',
+    ...oauth.credentialRefs.map((credential) => `- ${credential.ref}: ${credential.state}`),
+    '',
+    'Scopes:',
+    ...oauth.scopes.map((scope) => `- ${scope}`),
+    '',
+    'Read paths:',
+    ...oauth.readPaths.map((path) => `- ${path}`),
+    '',
+    'Control paths:',
+    ...oauth.controlPaths.map((path) => `- ${path}`),
+    '',
+    'Diagnostics:',
+    ...oauth.diagnostics.map((diagnostic) => `- ${diagnostic}`),
+    '',
+    'Blocked actions:',
+    ...oauth.blockedActions.map((action) => `- ${action}`),
+    '',
+    'Safety boundaries:',
+    ...oauth.safetyBoundaries.map((boundary) => `- ${boundary}`),
+    note ? '' : undefined,
+    note ? `Note: ${note}` : undefined,
+  ]
+    .filter((line): line is string => typeof line === 'string')
+    .join('\n');
+
+  const actionInboxItem = recordMcpActionInboxRequest({
+    kind: oauth.actionInboxKind,
+    title: `Review ${item.label} MCP OAuth readiness`,
+    command: `Review MCP OAuth readiness for ${item.id}`,
+    description,
+    source: 'Xenesis Connection Center',
+    sessionId: 'xenesis-tool-mcp-oauth',
+    approvalSessionKey: `xenesis-tool-mcp-oauth:${item.id}`,
+    requester,
+    risk: oauth.status,
+    approveText: `Approve MCP OAuth readiness for ${item.label}`,
+    rejectText: `Reject MCP OAuth readiness for ${item.label}`,
+  });
+
+  return {
+    ok: true,
+    id: item.id,
+    item: xenesisToolMcpOAuthStatusItem(item),
+    actionInboxItem,
   };
 }
 
@@ -15184,6 +15342,9 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     openXenesisToolMcpInstallDraft: (args: unknown) => openXenesisToolMcpInstallDraft(args),
     requestXenesisToolMcpInstallDraft: (args: unknown) => requestXenesisToolMcpInstallDraft(args),
     applyXenesisToolMcpInstallDraft: (args: unknown) => applyXenesisToolMcpInstallDraft(args),
+    getXenesisToolMcpOAuthStatus: (args: unknown) => getXenesisToolMcpOAuthStatus(args),
+    openXenesisToolMcpOAuth: (args: unknown) => openXenesisToolMcpOAuth(args),
+    requestXenesisToolMcpOAuth: (args: unknown) => requestXenesisToolMcpOAuth(args),
     getXenesisToolOAuthDraftsStatus: (args: unknown) => getXenesisToolOAuthDraftsStatus(args),
     getXenesisToolOAuthSetupPacket: (args: unknown) => getXenesisToolOAuthSetupPacket(args),
     openXenesisToolOAuthDraft: (args: unknown) => openXenesisToolOAuthDraft(args),
