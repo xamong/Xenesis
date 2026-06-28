@@ -3940,6 +3940,60 @@ export function findXenesisNaturalWordsTarget<T extends XenesisNaturalWordsTarge
   return targets.find((target) => target.words.some((word) => value.includes(word))) ?? null;
 }
 
+export function findXenesisNaturalPlacementTarget(
+  value: string,
+): (typeof XENESIS_NATURAL_PLACEMENT_TARGETS)[number] | null {
+  return findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_PLACEMENT_TARGETS);
+}
+
+export function findXenesisNaturalDockSideTarget(
+  value: string,
+): (typeof XENESIS_NATURAL_DOCK_SIDE_TARGETS)[number] | null {
+  return findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_DOCK_SIDE_TARGETS);
+}
+
+export function findXenesisNaturalDockWindowStateTarget(
+  value: string,
+): (typeof XENESIS_NATURAL_DOCK_WINDOW_STATE_TARGETS)[number] | null {
+  return findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_DOCK_WINDOW_STATE_TARGETS);
+}
+
+export function findXenesisNaturalArrangeModeTarget(
+  value: string,
+): (typeof XENESIS_NATURAL_ARRANGE_MODE_TARGETS)[number] | null {
+  return findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_ARRANGE_MODE_TARGETS);
+}
+
+export function findXenesisNaturalWindowSizePresetTarget(
+  value: string,
+): (typeof XENESIS_NATURAL_WINDOW_SIZE_PRESET_TARGETS)[number] | null {
+  return findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_WINDOW_SIZE_PRESET_TARGETS);
+}
+
+export function findXenesisNaturalCoreToolTarget(value: string): XenesisNaturalCoreToolTarget | null {
+  return findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_CORE_TOOL_TARGETS);
+}
+
+export function findXenesisNaturalViewTarget(value: string): XenesisNaturalViewTarget | null {
+  return findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_VIEW_TARGETS);
+}
+
+export function findXenesisNaturalConnectionTarget(value: string): XenesisNaturalConnectionTarget | null {
+  return findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_CONNECTION_TARGETS);
+}
+
+export function findXenesisNaturalOnboardingStepTarget(
+  value: string,
+): (typeof XENESIS_NATURAL_ONBOARDING_STEP_TARGETS)[number] | null {
+  return findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_ONBOARDING_STEP_TARGETS);
+}
+
+export function findXenesisNaturalProviderTarget(
+  value: string,
+): (typeof XENESIS_NATURAL_PROVIDER_TARGETS)[number] | null {
+  return findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_PROVIDER_TARGETS);
+}
+
 function matchesXenesisNaturalGuideTarget(value: string, target: XenesisNaturalGuideTarget): boolean {
   if (target.words.some((word) => value.includes(word))) return true;
   if (!target.requiredWordGroups?.length) return false;

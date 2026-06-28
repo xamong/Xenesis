@@ -183,6 +183,10 @@ import {
 
 test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory out of the planner file', () => {
   const source = readFileSync(new URL('./xenesisAgentDeskControl.ts', import.meta.url), 'utf8');
+  const catalogSource = readFileSync(
+    new URL('../../../../shared/xenesisNaturalLanguageCatalog.ts', import.meta.url),
+    'utf8',
+  );
 
   assert.doesNotMatch(source, /const targets:\s*Array/);
   assert.doesNotMatch(source, /IMPLEMENTED_XENESIS_MESSENGER_IDS/);
@@ -1391,11 +1395,49 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
       },
     ],
   );
-  assert.match(source, /XENESIS_NATURAL_PLACEMENT_TARGETS/);
-  assert.match(source, /XENESIS_NATURAL_DOCK_SIDE_TARGETS/);
-  assert.match(source, /XENESIS_NATURAL_DOCK_WINDOW_STATE_TARGETS/);
-  assert.match(source, /XENESIS_NATURAL_ARRANGE_MODE_TARGETS/);
-  assert.match(source, /XENESIS_NATURAL_WINDOW_SIZE_PRESET_TARGETS/);
+  for (const movedTargetArrayImport of [
+    'XENESIS_NATURAL_ARRANGE_MODE_TARGETS',
+    'XENESIS_NATURAL_CONNECTION_TARGETS',
+    'XENESIS_NATURAL_CORE_TOOL_TARGETS',
+    'XENESIS_NATURAL_DOCK_SIDE_TARGETS',
+    'XENESIS_NATURAL_DOCK_WINDOW_STATE_TARGETS',
+    'XENESIS_NATURAL_ONBOARDING_STEP_TARGETS',
+    'XENESIS_NATURAL_PLACEMENT_TARGETS',
+    'XENESIS_NATURAL_PROVIDER_TARGETS',
+    'XENESIS_NATURAL_VIEW_TARGETS',
+    'XENESIS_NATURAL_WINDOW_SIZE_PRESET_TARGETS',
+  ]) {
+    assert.doesNotMatch(source, new RegExp(movedTargetArrayImport));
+  }
+  for (const directTargetLookupPattern of [
+    'findXenesisNaturalWordsTarget\\(value, XENESIS_NATURAL_ARRANGE_MODE_TARGETS\\)',
+    'findXenesisNaturalWordsTarget\\(value, XENESIS_NATURAL_CONNECTION_TARGETS\\)',
+    'findXenesisNaturalWordsTarget\\(value, XENESIS_NATURAL_CORE_TOOL_TARGETS\\)',
+    'findXenesisNaturalWordsTarget\\(value, XENESIS_NATURAL_DOCK_SIDE_TARGETS\\)',
+    'findXenesisNaturalWordsTarget\\(value, XENESIS_NATURAL_DOCK_WINDOW_STATE_TARGETS\\)',
+    'findXenesisNaturalWordsTarget\\(value, XENESIS_NATURAL_ONBOARDING_STEP_TARGETS\\)',
+    'findXenesisNaturalWordsTarget\\(value, XENESIS_NATURAL_PLACEMENT_TARGETS\\)',
+    'findXenesisNaturalWordsTarget\\(value, XENESIS_NATURAL_PROVIDER_TARGETS\\)',
+    'findXenesisNaturalWordsTarget\\(value, XENESIS_NATURAL_VIEW_TARGETS\\)',
+    'findXenesisNaturalWordsTarget\\(value, XENESIS_NATURAL_WINDOW_SIZE_PRESET_TARGETS\\)',
+  ]) {
+    assert.doesNotMatch(source, new RegExp(directTargetLookupPattern));
+  }
+  for (const catalogFinder of [
+    'findXenesisNaturalArrangeModeTarget',
+    'findXenesisNaturalConnectionTarget',
+    'findXenesisNaturalCoreToolTarget',
+    'findXenesisNaturalDockSideTarget',
+    'findXenesisNaturalDockWindowStateTarget',
+    'findXenesisNaturalOnboardingStepTarget',
+    'findXenesisNaturalPlacementTarget',
+    'findXenesisNaturalProviderTarget',
+    'findXenesisNaturalViewTarget',
+    'findXenesisNaturalWindowSizePresetTarget',
+  ]) {
+    assert.match(source, new RegExp(catalogFinder));
+    assert.match(catalogSource, new RegExp(`export function ${catalogFinder}`));
+  }
   assert.doesNotMatch(source, /if \(hasAny\(value, \['오른쪽', '우측', 'right'\]\)\) return 'right';/);
   assert.doesNotMatch(source, /if \(hasAny\(value, \['uhd', '3840', '2160', '4k'\]\)\) return 'uhd';/);
   assert.deepEqual(
@@ -1440,7 +1482,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
       'onboarding-connections',
     ],
   );
-  assert.match(source, /XENESIS_NATURAL_ONBOARDING_STEP_TARGETS/);
+  assert.match(source, /findXenesisNaturalOnboardingStepTarget/);
   assert.doesNotMatch(source, /const steps:\s*Array<\{ id: string; label: string; words: readonly string\[\] \}>/);
   assert.doesNotMatch(source, /words:\s*\['first chat'/);
   assert.deepEqual(

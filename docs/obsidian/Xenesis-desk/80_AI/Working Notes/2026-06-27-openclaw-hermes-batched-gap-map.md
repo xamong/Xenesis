@@ -3725,6 +3725,50 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Natural Target Lookup Catalog Refactor Slice
+
+- Continued with a larger hardcoding cleanup slice for planner target lookup
+  ownership.
+- Intended change:
+  - keep natural target arrays in `xenesisNaturalLanguageCatalog.ts`;
+  - add shared finder functions for placement, window-size preset, dock side,
+    dock window state, arrange mode, core tool, view, connection, onboarding
+    step, and provider targets;
+  - have `xenesisAgentDeskControl.ts` call those finders instead of importing
+    the target arrays and choosing lookup arrays directly.
+- Scope boundary:
+  - Refactor only.
+  - Preserve target words, route order, CR paths, args, visible text, dynamic
+    extraction, provider semantics, approval behavior, and UI behavior.
+  - No CR schema, dispatcher, generated docs, provider runtime, or approval
+    flow changes.
+- RED verification:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    failed as expected with 36/37 passing. The source guard caught direct
+    planner import/use of `XENESIS_NATURAL_ARRANGE_MODE_TARGETS`.
+- Implementation:
+  - Added shared target finder exports in `xenesisNaturalLanguageCatalog.ts`.
+  - Replaced planner direct
+    `findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_*_TARGETS)` call
+    sites with specialized finder calls.
+  - Updated source guards so the planner cannot re-import the moved target
+    arrays.
+- Verification:
+  - Focused planner test passed with 37/37 tests.
+  - Scoped Biome over the catalog/planner/test files exited 0 with no fixes
+    applied.
+  - Static grep found no remaining planner direct target-array lookup patterns.
+  - `npm run typecheck` passed.
+  - `npm run build` passed with existing Vite warnings only.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 21/21 through the
+    built Electron app.
+  - `git diff --check` exited 0 with LF-to-CRLF working-copy warnings only.
+  - CR audit was skipped because this slice only refactors planner/catalog
+    target lookup and does not change registry, dispatcher, or capability
+    coverage.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
