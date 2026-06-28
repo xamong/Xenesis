@@ -286,6 +286,23 @@ export function buildXenesisMcpInstallDraftRequest(item: XenesisConnectionItem):
   };
 }
 
+export function buildXenesisMcpInstallDraftApplyRequest(
+  item: XenesisConnectionItem,
+): McpBridgeCapabilityCallRequest | null {
+  if (!item.mcpInstallDraft) return null;
+  if (item.mcpInstallDraft.draftStatus !== 'ready') return null;
+  if (!item.mcpInstallDraft.controlPaths.includes('xd.xenesis.tools.mcpInstallDrafts.apply')) return null;
+  return {
+    path: 'xd.xenesis.tools.mcpInstallDrafts.apply',
+    args: {
+      id: item.id,
+      target: 'codex',
+    },
+    source: 'xenesis',
+    approved: false,
+  };
+}
+
 export function buildXenesisToolOAuthDraftRequest(item: XenesisConnectionItem): McpBridgeCapabilityCallRequest | null {
   if (!item.toolOAuthDraft) return null;
   return {

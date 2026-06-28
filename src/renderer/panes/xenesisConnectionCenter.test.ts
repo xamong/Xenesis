@@ -13,6 +13,7 @@ import {
   buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
   buildXenesisConnectionSetupRequestRequest,
+  buildXenesisMcpInstallDraftApplyRequest,
   buildXenesisMcpInstallDraftRequest,
   buildXenesisProviderProfileDraftRequest,
   buildXenesisToolActionCatalogRequest,
@@ -802,6 +803,59 @@ test('buildXenesisMcpInstallDraftRequest targets the review request CR path', ()
   });
 
   assert.equal(buildXenesisMcpInstallDraftRequest({ ...item, mcpInstallDraft: undefined }), null);
+});
+
+test('buildXenesisMcpInstallDraftApplyRequest targets ready MCP install draft apply path only', () => {
+  const item = {
+    id: 'notion',
+    kind: 'tool',
+    label: 'Notion',
+    status: 'needs-setup',
+    summary: 'Notion pages and databases.',
+    mcpInstallDraft: {
+      draftStatus: 'ready',
+      actionInboxKind: 'xenesis-mcp-install-draft',
+      serverName: 'notion',
+      displayName: 'Notion',
+      transport: 'stdio',
+      auth: 'none',
+      installSurface: 'Settings > AI Provider > Local CLI MCP',
+      reviewSurface: 'Desk Action Inbox',
+      configTargets: ['json-mcp-config', 'codex-toml'],
+      requiredEnv: ['NOTION_TOKEN'],
+      missingEnv: [],
+      installSteps: ['copy template'],
+      readPaths: ['xd.xenesis.tools.mcpInstallDrafts.status'],
+      controlPaths: ['xd.xenesis.tools.mcpInstallDrafts.request', 'xd.xenesis.tools.mcpInstallDrafts.apply'],
+      diagnostics: ['template-snippet'],
+      blockedActions: ['does not run shell commands'],
+      safetyBoundaries: ['MCP install draft apply writes config only after approval'],
+    },
+  } satisfies XenesisConnectionItem;
+
+  assert.deepEqual(buildXenesisMcpInstallDraftApplyRequest(item), {
+    path: 'xd.xenesis.tools.mcpInstallDrafts.apply',
+    args: {
+      id: 'notion',
+      target: 'codex',
+    },
+    source: 'xenesis',
+    approved: false,
+  });
+
+  assert.equal(
+    buildXenesisMcpInstallDraftApplyRequest({
+      ...item,
+      mcpInstallDraft: {
+        ...item.mcpInstallDraft,
+        draftStatus: 'missing-env',
+        missingEnv: ['NOTION_TOKEN'],
+        controlPaths: ['xd.xenesis.tools.mcpInstallDrafts.request'],
+      },
+    }),
+    null,
+  );
+  assert.equal(buildXenesisMcpInstallDraftApplyRequest({ ...item, mcpInstallDraft: undefined }), null);
 });
 
 test('formatXenesisToolOAuthDraftSummary describes tool, status, and scope count', () => {

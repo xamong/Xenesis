@@ -831,6 +831,7 @@ const XENESIS_TOOL_INSTALL_PLAN_REQUEST_SCHEMA = {
 } as const;
 const XENESIS_TOOL_MCP_INSTALL_DRAFT_STATUS_SCHEMA = XENESIS_TOOL_VIEW_STATUS_SCHEMA;
 const XENESIS_TOOL_MCP_INSTALL_DRAFT_OPEN_SCHEMA = XENESIS_TOOL_VIEW_OPEN_SCHEMA;
+const XENESIS_MCP_INSTALL_DRAFT_APPLY_TARGET_IDS = ['codex', 'claude', 'cursor', 'all'] as const;
 const XENESIS_TOOL_MCP_INSTALL_DRAFT_REQUEST_SCHEMA = {
   type: 'object',
   required: ['id'],
@@ -856,6 +857,49 @@ const XENESIS_TOOL_MCP_INSTALL_DRAFT_REQUEST_SCHEMA = {
       type: 'string',
       title: 'Review note',
       description: 'Optional note to append to the MCP install draft description.',
+    },
+  },
+} as const;
+const XENESIS_TOOL_MCP_INSTALL_DRAFT_APPLY_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'External tool connection id whose ready MCP install draft should be applied.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Alias for id.',
+    },
+    target: {
+      type: 'string',
+      title: 'MCP config target',
+      enum: XENESIS_MCP_INSTALL_DRAFT_APPLY_TARGET_IDS,
+      description: 'Optional local MCP config target. Defaults to Codex. Use all to apply to every supported target.',
+    },
+    targets: {
+      type: 'array',
+      title: 'MCP config targets',
+      items: {
+        type: 'string',
+        enum: XENESIS_MCP_INSTALL_DRAFT_APPLY_TARGET_IDS,
+      },
+      description: 'Optional local MCP config targets. Defaults to Codex when omitted.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity to include in apply readback.',
+    },
+    note: {
+      type: 'string',
+      title: 'Apply note',
+      description: 'Optional note to include in the apply readback. It is not written to MCP config.',
     },
   },
 } as const;
@@ -1418,6 +1462,7 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisToolMcpInstallDraftsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisToolMcpInstallDraft?: (args?: unknown) => Promise<unknown> | unknown;
   requestXenesisToolMcpInstallDraft?: (args?: unknown) => Promise<unknown> | unknown;
+  applyXenesisToolMcpInstallDraft?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolOAuthDraftsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisToolOAuthDraft?: (args?: unknown) => Promise<unknown> | unknown;
   requestXenesisToolOAuthDraft?: (args?: unknown) => Promise<unknown> | unknown;
@@ -4726,7 +4771,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
         group(
           'xd.xenesis.tools.mcpInstallDrafts',
           'MCP install drafts',
-          'Read, open, and request review-only MCP install drafts for recommended external tool connections.',
+          'Read, open, request review, and apply approval-gated MCP install drafts for recommended external tool connections.',
           [
             method(
               'xd.xenesis.tools.mcpInstallDrafts.status',
@@ -4748,6 +4793,13 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               'Record a local Action Inbox item for reviewing an MCP install draft without writing config, running shell commands, completing OAuth, storing tokens, executing provider tools, or mutating settings.',
               'write',
               XENESIS_TOOL_MCP_INSTALL_DRAFT_REQUEST_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.mcpInstallDrafts.apply',
+              'Apply MCP install draft',
+              'After explicit approval, merge a ready recommended MCP install draft into selected local MCP config files with backups and redacted readback. Does not run shell commands, complete OAuth, store new tokens, execute provider tools, or mutate external systems.',
+              'write',
+              XENESIS_TOOL_MCP_INSTALL_DRAFT_APPLY_SCHEMA,
             ),
           ],
         ),
@@ -11414,6 +11466,9 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.tools.mcpInstallDrafts.request') {
         return callAdapter(path, api?.requestXenesisToolMcpInstallDraft, request.args);
+      }
+      if (path === 'xd.xenesis.tools.mcpInstallDrafts.apply') {
+        return callAdapter(path, api?.applyXenesisToolMcpInstallDraft, request.args);
       }
       if (path === 'xd.xenesis.tools.oauthDrafts.status') {
         return callAdapter(path, api?.getXenesisToolOAuthDraftsStatus, request.args);

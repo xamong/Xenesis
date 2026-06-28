@@ -57,6 +57,7 @@ import {
   XENESIS_NATURAL_LOCAL_CLI_CONTEXT_WORDS,
   XENESIS_NATURAL_LOCAL_CLI_SCAN_CONTEXT_WORDS,
   XENESIS_NATURAL_MCP_BRIDGE_CONTEXT_WORDS,
+  XENESIS_NATURAL_MCP_INSTALL_APPLY_INTENT_WORDS,
   XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS,
   XENESIS_NATURAL_MCP_INSTALL_REVIEW_CONTEXT_WORDS,
   XENESIS_NATURAL_MCP_SETTINGS_CONTEXT_WORDS,
@@ -155,6 +156,7 @@ export const XENESIS_NATURAL_DESK_ACTION_ARGS = {
     ...(openFile ? { openFile: true } : {}),
   }),
   optionalFilePath: (filePath: string) => (filePath ? { filePath } : {}),
+  mcpInstallApply: (id: string) => ({ id, target: 'codex' }),
   placement: (placement: string | undefined) => ({
     placement: placement || XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS.placement,
   }),
@@ -2002,6 +2004,24 @@ export const XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES = [
   },
 ] as const satisfies readonly XenesisNaturalConnectionTargetActionRule[];
 
+export const XENESIS_NATURAL_MCP_INSTALL_DRAFT_APPLY_ACTION_DESCRIPTORS = {
+  toolMcpInstallDraft: {
+    path: 'xd.xenesis.tools.mcpInstallDrafts.apply',
+    idFor: (id: string, _label: string) => `natural-xenesis-tool-mcp-install-draft-apply-${id}`,
+    reasonFor: (_id: string, label: string) => `Apply ${label} MCP install draft from natural language request.`,
+  },
+} as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
+
+export const XENESIS_NATURAL_MCP_INSTALL_DRAFT_APPLY_TARGET_RULES = [
+  {
+    targetScope: 'tool',
+    contextWords: XENESIS_NATURAL_MCP_INSTALL_APPLY_INTENT_WORDS,
+    requiredContextWordGroups: [XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS],
+    action: XENESIS_NATURAL_MCP_INSTALL_DRAFT_APPLY_ACTION_DESCRIPTORS.toolMcpInstallDraft,
+    argsKind: 'mcpInstallApply',
+  },
+] as const satisfies readonly XenesisNaturalConnectionTargetActionRule[];
+
 export const XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS = {
   providerProfileDraft: {
     path: 'xd.xenesis.providers.profileDrafts.request',
@@ -2198,6 +2218,7 @@ export function buildXenesisNaturalConnectionTargetArgsForRule(
   if (rule.argsKind === 'targetId') return XENESIS_NATURAL_DESK_ACTION_ARGS.targetId(target.id);
   if (rule.argsKind === 'targetIdVisible') return XENESIS_NATURAL_DESK_ACTION_ARGS.targetIdVisible(target.id);
   if (rule.argsKind === 'tool') return XENESIS_NATURAL_DESK_ACTION_ARGS.tool(target.id);
+  if (rule.argsKind === 'mcpInstallApply') return XENESIS_NATURAL_DESK_ACTION_ARGS.mcpInstallApply(target.id);
   if (rule.argsKind === 'channelVisible') return XENESIS_NATURAL_DESK_ACTION_ARGS.channelVisible(target.id);
   return XENESIS_NATURAL_DESK_ACTION_ARGS.channel(target.id);
 }

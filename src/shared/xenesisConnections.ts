@@ -4532,6 +4532,7 @@ function buildXenesisMcpInstallDraft(
     controlPaths: uniqueStrings([
       'xd.xenesis.tools.mcpInstallDrafts.open',
       'xd.xenesis.tools.mcpInstallDrafts.request',
+      ...(draftStatus === 'ready' ? ['xd.xenesis.tools.mcpInstallDrafts.apply'] : []),
       'xd.xenesis.connections.open',
       ...(installPlan?.controlPaths ?? []),
       ...(item.toolConnector?.controlPaths ?? []),
@@ -4546,7 +4547,8 @@ function buildXenesisMcpInstallDraft(
     blockedActions: [...XENESIS_MCP_INSTALL_DRAFT_BLOCKED_ACTIONS],
     safetyBoundaries: uniqueStrings([
       'MCP install drafts are review-only',
-      'MCP install draft does not write MCP config or run shell commands',
+      'MCP install draft apply allows approval-gated MCP config writes only for ready drafts',
+      'MCP install draft review does not write MCP config or run shell commands',
       'MCP install drafts do not complete OAuth, store tokens, execute provider tools, mutate settings, or send messages',
       'credential values are never returned',
       ...(installPlan?.safetyBoundaries ?? []),

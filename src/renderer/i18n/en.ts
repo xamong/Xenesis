@@ -940,6 +940,7 @@ export const en = {
     xenesisConnectionsOpenGuide: 'Open guide',
     xenesisConnectionsRequestSetup: 'Request setup',
     xenesisConnectionsRequestMcpInstallDraft: 'Request MCP draft',
+    xenesisConnectionsApplyMcpInstallDraft: 'Apply MCP draft',
     xenesisConnectionsRequestToolActionCatalog: 'Request action review',
     xenesisConnectionsRequestToolOAuthDraft: 'Request OAuth review',
     xenesisConnectionsRequestChannelProfileDraft: 'Request channel draft',

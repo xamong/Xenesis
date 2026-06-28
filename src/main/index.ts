@@ -46,6 +46,10 @@ import {
   writeProfiles,
 } from '../../packages/xenesis/src/config/index';
 import {
+  getRecommendedMcpServer,
+  resolveRecommendedServer,
+} from '../../packages/xenesis/src/extensions/recommendedMcpServers';
+import {
   APP_MENU_MODEL,
   type AppMenuActionNode,
   type AppMenuCommandNode,
@@ -353,6 +357,7 @@ import {
 import {
   getProviderIntegrationStatus,
   installCliIntegration,
+  installExternalMcpServer,
   installHermesPlugins,
 } from './providerIntegrationInstaller.mjs';
 import { applySafeTextFileWrite, previewSafeTextFileWrite, restoreSafeTextFileBackup } from './safeFileEdit';
@@ -5940,6 +5945,24 @@ function isXenesisToolOAuthDraftId(value: string): value is (typeof XENESIS_TOOL
   return (XENESIS_TOOL_OAUTH_DRAFT_IDS as readonly string[]).includes(value);
 }
 
+const XENESIS_MCP_INSTALL_DRAFT_APPLY_TARGET_IDS = ['codex', 'claude', 'cursor', 'all'] as const;
+
+function readXenesisMcpInstallDraftApplyTargetIds(body: Record<string, unknown>): string[] {
+  const rawTargets = body.targets;
+  const targets = Array.isArray(rawTargets)
+    ? rawTargets.map((value) => (typeof value === 'string' ? value.trim().toLowerCase() : '')).filter(Boolean)
+    : [];
+  const target = readCapabilityString(body, ['target', 'targetId']).toLowerCase();
+  const selected = targets.length > 0 ? targets : target ? [target] : ['codex'];
+  const invalid = selected.filter(
+    (value) => !(XENESIS_MCP_INSTALL_DRAFT_APPLY_TARGET_IDS as readonly string[]).includes(value),
+  );
+  if (invalid.length > 0) {
+    throw new Error(`Unsupported MCP install target: ${invalid.join(', ')}`);
+  }
+  return [...new Set(selected)];
+}
+
 function xenesisToolSetupStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
   return {
     id: item.id,
@@ -6520,6 +6543,107 @@ async function requestXenesisToolMcpInstallDraft(args?: unknown): Promise<Record
     id: item.id,
     item: xenesisToolMcpInstallDraftStatusItem(item),
     actionInboxItem,
+  };
+}
+
+async function applyXenesisToolMcpInstallDraft(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Tool id is required.' };
+  }
+  if (!isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  let targetIds: string[];
+  try {
+    targetIds = readXenesisMcpInstallDraftApplyTargetIds(body);
+  } catch (error) {
+    return {
+      ok: false,
+      id,
+      error: error instanceof Error ? error.message : 'Unsupported MCP install target.',
+      allowedTargets: XENESIS_MCP_INSTALL_DRAFT_APPLY_TARGET_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.tools.items.find((candidate) => candidate.id === id && candidate.mcpInstallDraft);
+  if (!item?.mcpInstallDraft) {
+    return { ok: false, id, error: `Xenesis MCP install draft is not available: ${id}` };
+  }
+
+  const draft = item.mcpInstallDraft;
+  if (draft.draftStatus !== 'ready') {
+    return {
+      ok: false,
+      id,
+      draftStatus: draft.draftStatus,
+      missingEnv: draft.missingEnv,
+      error: `Xenesis MCP install draft is not ready: ${id}`,
+    };
+  }
+  if (!draft.controlPaths.includes('xd.xenesis.tools.mcpInstallDrafts.apply')) {
+    return {
+      ok: false,
+      id,
+      draftStatus: draft.draftStatus,
+      error: `Xenesis MCP install draft cannot be applied: ${id}`,
+    };
+  }
+  if (!draft.serverName) {
+    return {
+      ok: false,
+      id,
+      draftStatus: draft.draftStatus,
+      error: `Xenesis MCP install draft has no recommended server template: ${id}`,
+    };
+  }
+
+  const recommended = getRecommendedMcpServer(draft.serverName);
+  if (!recommended) {
+    return {
+      ok: false,
+      id,
+      serverName: draft.serverName,
+      error: `Recommended MCP server template is not available: ${draft.serverName}`,
+    };
+  }
+
+  const workspaceRoot = loadSettings().workspace.currentPath || process.cwd();
+  const resolved = resolveRecommendedServer(recommended, { workspaceRoot, env: process.env });
+  if (resolved.missingEnv.length > 0) {
+    return {
+      ok: false,
+      id,
+      serverName: recommended.name,
+      missingEnv: resolved.missingEnv,
+      error: `Required environment variables are missing for ${recommended.name}: ${resolved.missingEnv.join(', ')}`,
+    };
+  }
+
+  const { missingEnv: _missingEnv, ...config } = resolved;
+  const result = installExternalMcpServer({
+    serverName: recommended.name,
+    config,
+    targetIds,
+    backupRoot: path.join(getMcpDir(), 'external-mcp-config-backups'),
+  });
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+
+  return {
+    ok: true,
+    id: item.id,
+    serverName: recommended.name,
+    draftStatus: draft.draftStatus,
+    targets: result.targets,
+    item: xenesisToolMcpInstallDraftStatusItem(item),
+    ...(note ? { note } : {}),
   };
 }
 
@@ -14443,6 +14567,7 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisToolMcpInstallDraftsStatus: (args: unknown) => getXenesisToolMcpInstallDraftsStatus(args),
     openXenesisToolMcpInstallDraft: (args: unknown) => openXenesisToolMcpInstallDraft(args),
     requestXenesisToolMcpInstallDraft: (args: unknown) => requestXenesisToolMcpInstallDraft(args),
+    applyXenesisToolMcpInstallDraft: (args: unknown) => applyXenesisToolMcpInstallDraft(args),
     getXenesisToolOAuthDraftsStatus: (args: unknown) => getXenesisToolOAuthDraftsStatus(args),
     openXenesisToolOAuthDraft: (args: unknown) => openXenesisToolOAuthDraft(args),
     requestXenesisToolOAuthDraft: (args: unknown) => requestXenesisToolOAuthDraft(args),

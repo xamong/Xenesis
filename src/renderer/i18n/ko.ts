@@ -933,6 +933,7 @@ export const ko = {
     xenesisConnectionsOpenGuide: '가이드 열기',
     xenesisConnectionsRequestSetup: '설정 요청',
     xenesisConnectionsRequestMcpInstallDraft: 'MCP 초안 요청',
+    xenesisConnectionsApplyMcpInstallDraft: 'MCP 적용 요청',
     xenesisConnectionsRequestToolActionCatalog: '액션 검토 요청',
     xenesisConnectionsRequestToolOAuthDraft: 'OAuth 검토 요청',
     xenesisConnectionsRequestChannelProfileDraft: '채널 초안 요청',

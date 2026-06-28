@@ -4,6 +4,7 @@ import {
   viewKindFromNaturalText,
   xenesisAgentSubmitActionFromNaturalText,
   xenesisConnectionActionFromNaturalText,
+  xenesisConnectionMcpInstallDraftApplyActionFromNaturalText,
   xenesisConnectionReadbackActionFromNaturalText,
   xenesisConnectionReviewRequestActionFromNaturalText,
   xenesisGatewayActionFromNaturalText,
@@ -89,6 +90,16 @@ export function xenesisConnectionReviewRequestPlanFromNaturalText(value: string)
   const action = xenesisConnectionReviewRequestActionFromNaturalText(value);
   if (!action) return null;
   return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.connectionReviewRequestRecorded, [action]);
+}
+
+export function xenesisConnectionMcpInstallDraftApplyPlanFromNaturalText(
+  value: string,
+): XenesisNaturalLanguagePlan | null {
+  const action = xenesisConnectionMcpInstallDraftApplyActionFromNaturalText(value);
+  if (!action) return null;
+  return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.connectionMcpInstallDraftApplyRecorded, [
+    action,
+  ]);
 }
 
 export function explicitXenesisConnectionOpenPlanFromNaturalText(value: string): XenesisNaturalLanguagePlan | null {

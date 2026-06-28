@@ -24,6 +24,22 @@ export declare function mergeJsonMcpConfig(
   },
 ): string;
 
+export declare function mergeCodexExternalMcpConfig(
+  existingText?: string,
+  options?: {
+    serverName?: string;
+    config?: Record<string, unknown>;
+  },
+): string;
+
+export declare function mergeJsonExternalMcpConfig(
+  existingText?: string,
+  options?: {
+    serverName?: string;
+    config?: Record<string, unknown>;
+  },
+): string;
+
 export declare function renderXenesisDeskSkill(options?: { serverName?: string }): string;
 
 export declare function buildCliIntegrationTargets(options?: {
@@ -61,6 +77,27 @@ export declare function installCliIntegration(
     fsImpl?: unknown;
   },
 ): ProviderIntegrationCliInstallResult;
+
+export declare function installExternalMcpServer(options?: {
+  serverName?: string;
+  config?: Record<string, unknown>;
+  targetIds?: string[];
+  homeDir?: string;
+  appDataDir?: string;
+  backupRoot?: string;
+  fsImpl?: unknown;
+}): {
+  ok: true;
+  serverName: string;
+  targets: Array<{
+    id: string;
+    label: string;
+    configType: string;
+    path: string;
+    changed: boolean;
+    backupPath: string;
+  }>;
+};
 
 export declare function installHermesPlugins(
   options?: ProviderIntegrationHermesInstallRequest & {

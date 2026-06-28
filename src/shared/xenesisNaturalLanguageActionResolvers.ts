@@ -16,6 +16,7 @@ import {
   XENESIS_NATURAL_GATEWAY_ACTION_RULES,
   XENESIS_NATURAL_GUIDE_OPEN_RULES,
   XENESIS_NATURAL_GUIDE_STATUS_RULES,
+  XENESIS_NATURAL_MCP_INSTALL_DRAFT_APPLY_TARGET_RULES,
   XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_RULES,
   XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_RULES,
   XENESIS_NATURAL_ONBOARDING_OPEN_RULES,
@@ -284,6 +285,19 @@ export function xenesisConnectionReviewRequestActionFromNaturalText(
   if (!target) return null;
 
   return findXenesisNaturalConnectionTargetRuleAction(value, target, XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES);
+}
+
+export function xenesisConnectionMcpInstallDraftApplyActionFromNaturalText(
+  value: string,
+): XenesisNaturalDeskActionRequest | null {
+  const target = xenesisConnectionTargetFromNaturalText(value);
+  if (!target) return null;
+
+  return findXenesisNaturalConnectionTargetRuleAction(
+    value,
+    target,
+    XENESIS_NATURAL_MCP_INSTALL_DRAFT_APPLY_TARGET_RULES,
+  );
 }
 
 function xenesisProviderOpenActionFromNaturalText(value: string): XenesisNaturalDeskActionRequest | null {

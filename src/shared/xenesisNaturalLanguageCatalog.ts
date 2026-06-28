@@ -92,12 +92,15 @@ export type XenesisNaturalConnectionTargetArgsKind =
   | 'targetId'
   | 'targetIdVisible'
   | 'tool'
+  | 'mcpInstallApply'
   | 'channel'
   | 'channelVisible';
 
 export interface XenesisNaturalConnectionTargetActionRule {
   targetScope: XenesisNaturalConnectionTargetRuleScope;
   contextWords: readonly string[];
+  requiredContextWordGroups?: readonly (readonly string[])[];
+  blockedContextWords?: readonly string[];
   action: XenesisNaturalDeskActionTemplateDescriptor<[string, string]>;
   argsKind: XenesisNaturalConnectionTargetArgsKind;
   fallback?: boolean;
@@ -848,6 +851,7 @@ export const XENESIS_NATURAL_PLAN_VISIBLE_TEXT = {
   capabilityExplorerOpen: 'Capability Explorer를 엽니다.',
   captureListRead: '캡처 목록을 조회합니다.',
   connectionReviewRequestRecorded: 'Xenesis 연결 검토 요청을 기록합니다.',
+  connectionMcpInstallDraftApplyRecorded: 'Xenesis MCP 설치 초안 적용 요청을 기록합니다.',
   connectionStatusRead: 'Xenesis 연결 상태를 조회합니다.',
   connectionSurfaceOpen: 'Xenesis 연결 표면을 엽니다.',
   diagnosticsPaneOpen: '진단 패인을 엽니다.',
@@ -906,6 +910,8 @@ export const XENESIS_NATURAL_ACTION_INTENT_WORDS = [
   '연동',
   '설정',
   '구성',
+  '적용',
+  '반영',
   '캡쳐',
   '캡처',
   '정렬',
@@ -961,6 +967,7 @@ export const XENESIS_NATURAL_ACTION_INTENT_WORDS = [
   'request',
   'review',
   'approval',
+  'apply',
   '확인',
   '상태',
   '진단',
@@ -1171,6 +1178,18 @@ export const XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS = ['connector', 'connectors
 export const XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS = ['mcp', 'mcp install', 'mcp 설치'] as const;
 
 export const XENESIS_NATURAL_MCP_INSTALL_REVIEW_CONTEXT_WORDS = ['mcp', '설치', 'install', 'server', '서버'] as const;
+
+export const XENESIS_NATURAL_MCP_INSTALL_APPLY_INTENT_WORDS = [
+  '적용',
+  '적용해줘',
+  '반영',
+  '반영해줘',
+  'config 반영',
+  '설정 반영',
+  'apply',
+  'apply config',
+  'write config',
+] as const;
 
 export const XENESIS_NATURAL_DRAFT_CONTEXT_WORDS = ['draft', 'drafts', '초안', '설치 초안', '인증 초안'] as const;
 
@@ -1874,8 +1893,8 @@ export const XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES = [
   '- Use `xd.xenesis.diagnostics`, `xd.xenesis.reports.list`, `xd.xenesis.tasks.list`, `xd.xenesis.agents.list`, `xd.xenesis.agents.status`, `xd.xenesis.agents.events`, and `xd.xenesis.agents.submit` to inspect runtime diagnostics, verification reports, task inventory, registered Agent panes, quoted Agent pane status/events, or submit a quoted Agent pane message before mutating broader runtime state. Agent status/events require `args.agentId`; Agent submit requires `args.agentId` and `args.text`.',
   '- Use `xd.xenesis.profiles.list` to inspect installed and active Xenesis profiles before installing profiles, switching the active profile, updating channel settings, or sending profile channel test messages.',
   '- Use `xd.xenesis.runs.start` only when the user clearly asks to run a quoted prompt through the Xenesis runtime. Use `xd.xenesis.runs.cancel` only for explicit user requests to cancel the active Xenesis runtime request, and `xd.xenesis.sessions.reset` only for explicit user requests to reset the active Xenesis conversation/session.',
-  '- Use external tool setup, connector, view, user-story, install-plan, MCP install draft, OAuth draft, and action-policy CR paths from the Capability Registry to inspect, open, or request review of internal Desk tool readiness surfaces. Tool install plans are review-only and do not execute installs, write MCP config, complete OAuth, store tokens, execute provider tools, mutate settings, or mutate external systems.',
-  '- Use tool MCP install draft CR paths from the Capability Registry to inspect templates, focus owning cards, or record local Action Inbox review items without writing MCP config, running shell commands, completing OAuth, storing tokens, executing provider tools, or mutating settings.',
+  '- Use external tool setup, connector, view, user-story, install-plan, MCP install draft, OAuth draft, and action-policy CR paths from the Capability Registry to inspect, open, request review, or apply approval-gated ready MCP config drafts for internal Desk tool readiness surfaces. Tool install plans are review-only and do not execute installs, write MCP config, complete OAuth, store tokens, execute provider tools, mutate settings, or mutate external systems.',
+  '- Use tool MCP install draft CR paths from the Capability Registry to inspect templates, focus owning cards, record local Action Inbox review items, or apply ready drafts through `xd.xenesis.tools.mcpInstallDrafts.apply` with approval. The apply path writes local MCP config with backups only; it does not run shell commands, complete OAuth, store tokens, execute provider tools, or mutate external systems.',
   '- Use tool OAuth draft CR paths from the Capability Registry to inspect Google OAuth app and token-store drafts, focus owning cards, or record local Action Inbox review items. Tool OAuth drafts are review-only and do not complete OAuth, store tokens, write MCP config, execute provider tools, send email, mutate documents, or mutate calendar events.',
   '- Use external tool action-policy CR paths from the Capability Registry to inspect review-only action catalogs, focus owning cards, or record local Action Inbox review items. Tool action catalogs are review-only and do not execute provider tools or mutate external systems.',
   '- Use provider profile-draft CR paths from the Capability Registry to inspect field drafts, focus provider draft cards, or record local Action Inbox review items. Provider profile drafts are review-only and do not mutate provider settings, store credentials, switch local CLI selection, or run provider prompts.',

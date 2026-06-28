@@ -7,6 +7,135 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current MCP Install Draft Apply Slice
+
+- Objective: continue the OpenClaw/Hermes integration goal by moving external
+  tool MCP setup from review-only draft metadata toward a Desk-internal,
+  approval-gated config apply path.
+- Observed gap:
+  - `xd.xenesis.tools.mcpInstallDrafts.status/open/request` can inspect, focus,
+    and review MCP install drafts for recommended external tools.
+  - The current request path records an Action Inbox review item but does not
+    write MCP config after explicit CR approval.
+  - Existing `src/main/providerIntegrationInstaller.mjs` already has safe
+    write-with-backup primitives for provider MCP config files, but only for the
+    Xenesis Desk MCP server itself.
+- Scope boundary:
+  - Add an approval-gated CR apply path for ready recommended MCP drafts.
+  - Default the apply target to Codex MCP config; allow explicit target
+    selection for Codex, Claude, Cursor, or all supported local CLI targets.
+  - Use recommended MCP server templates and env resolution; reject missing-env
+    or planned drafts before writing.
+  - Write config with backups and return redacted results. Do not run shell
+    commands, install packages, complete OAuth, store new tokens, execute
+    provider tools, send messages, mutate external systems, or bypass CR
+    approval.
+- External documentation handling: no browsing. Use cached Obsidian/source,
+  local tests, build, CR audit, and smoke only.
+- Intended larger-slice contents:
+  - Add pure provider-integration helper tests for merging external MCP server
+    templates into Codex TOML and JSON MCP config.
+  - Register `xd.xenesis.tools.mcpInstallDrafts.apply` with approval
+    `when-external`.
+  - Dispatch the new CR path through the generic capability caller and main
+    adapter.
+  - Add Settings Connection Center action affordance for ready MCP drafts.
+  - Update natural-language routing so explicit install/apply prompts can use
+    the apply path while review prompts continue using request.
+- Next intended step:
+  - Add RED tests for the helper and CR path, then implement minimal behavior.
+- RED progress:
+  - Added `src/main/providerIntegrationInstaller.test.mjs`.
+  - `node --test src\main\providerIntegrationInstaller.test.mjs` failed as
+    expected because `mergeCodexExternalMcpConfig`,
+    `mergeJsonExternalMcpConfig`, and `installExternalMcpServer` are not yet
+    exported.
+  - Extended `src/shared/xenesisConnectionCapabilities.test.ts` to require
+    `xd.xenesis.tools.mcpInstallDrafts.apply`.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` failed
+    as expected with 34/35 passing because the apply capability is not yet
+    registered.
+- Resume checkpoint:
+  - Slice cycle enlarged per user instruction: finish helper, CR, main adapter,
+    Settings UI, explicit natural-language apply routing, docs, and verification
+    together before committing.
+  - Confirmed `src/main/index.ts` currently only has the new recommended MCP
+    server and `installExternalMcpServer` imports; the apply handler and adapter
+    wiring are not implemented yet.
+- GREEN progress:
+  - Implemented external MCP helper writes in
+    `src/main/providerIntegrationInstaller.mjs` with Codex TOML and JSON MCP
+    merge support, backups, target selection, and redacted result metadata.
+  - Registered `xd.xenesis.tools.mcpInstallDrafts.apply` with approval
+    `when-external`, write permission, schema target enum
+    `codex/claude/cursor/all`, and generic dispatcher coverage.
+  - Added `applyXenesisToolMcpInstallDraft` in `src/main/index.ts`; it rejects
+    unsupported tools, not-ready drafts, missing recommended templates, and
+    missing env before writing config; ready drafts write via
+    `installExternalMcpServer` with backups under the MCP state directory.
+  - Added Settings Connection Center apply action for ready MCP install drafts
+    and i18n labels.
+  - Added explicit natural-language routing for prompts such as
+    `노션 MCP 설치 적용해줘` to
+    `xd.xenesis.tools.mcpInstallDrafts.apply` with `{ id, target: "codex" }`;
+    existing `노션 MCP 설치해줘` remains review-request routing.
+  - Focused GREEN verifications so far:
+    - `node --test src\main\providerIntegrationInstaller.test.mjs` passed with
+      3/3 tests.
+    - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` passed
+      with 35/35 tests after CR registration.
+    - `npx tsx --test src\shared\xenesisConnections.test.ts` passed with
+      36/36 tests after read-model apply path gating.
+    - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`
+      passed with 40/40 tests after renderer request helper.
+    - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+      passed with 38/38 tests after explicit apply routing and prompt hint
+      update.
+- Verification checkpoint:
+  - `npx biome format --write ...` formatted 18 files and fixed 3 files.
+  - Focused post-format tests passed:
+    `node --test src\main\providerIntegrationInstaller.test.mjs` passed with
+    3/3 and
+    `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 149/149.
+  - `npx biome check ... --max-diagnostics 120` exited 0 with 14 existing
+    warnings and 9 existing infos in broad touched files.
+  - `npm run docs:capabilities:audit` passed and generated
+    `docs/capability-registry-audit.md`; summary shows missing registered
+    paths 0, missing dispatched coverage paths 0, undispatched static callable
+    methods 0, and dispatcher paths missing from tree 0.
+  - First `npm run typecheck` failed because
+    `src/main/providerIntegrationInstaller.d.mts` did not declare the new
+    `installExternalMcpServer` export. Added declarations for external MCP merge
+    and install helpers.
+  - Re-run `npm run typecheck` passed.
+  - Added natural live smoke case for `노션 MCP 설치 적용해줘`. First re-run of
+    `npm run smoke:xenesis:natural-desk-routing` failed because the smoke
+    harness executes the stale `out/` build; detailed single-prompt diagnostic
+    showed the prompt fell through to provider execution and timed out instead
+    of using the new direct natural route. Next step: run `npm run build`, then
+    re-run the smoke.
+  - `npm run build` passed after rebuilding `out/`; output included existing
+    Vite warnings about `hwp.js` `fs` externalization, mixed dynamic/static
+    `deskBridge.ts` imports, and large renderer chunks.
+  - Re-run `npm run smoke:xenesis:natural-desk-routing` passed with 147/147,
+    including `tool-mcp-install-draft-apply-approval`.
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` passed
+    with 5/5 after adding the smoke case to the expected prompt list.
+  - Final post-format verification:
+    - `node --test src\main\providerIntegrationInstaller.test.mjs scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
+      passed with 8/8.
+    - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+      passed with 149/149.
+    - `npm run typecheck` passed.
+    - `npx biome check ... --max-diagnostics 120` exited 0 with the same
+      existing 14 warnings and 9 infos.
+    - `git diff --check` exited 0 with LF-to-CRLF working-copy warnings only.
+    - Final `npm run docs:capabilities:audit` passed; generated
+      `docs/capability-registry-audit.md` still reports missing registered
+      paths 0, missing dispatched coverage paths 0, undispatched static callable
+      methods 0, and dispatcher paths missing from tree 0.
+
 ## Current Natural Capability Action Catalog Slice
 
 - Objective: increase the slice size and continue the hardcoding cleanup by

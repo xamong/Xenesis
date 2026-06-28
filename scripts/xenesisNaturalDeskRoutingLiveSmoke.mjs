@@ -173,6 +173,12 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     expectedVisibleText: 'Desk action approval required',
   },
   {
+    id: 'tool-mcp-install-draft-apply-approval',
+    prompt: '노션 MCP 설치 적용해줘',
+    expectedPath: 'xd.xenesis.tools.mcpInstallDrafts.apply',
+    expectedVisibleText: 'Desk action approval required',
+  },
+  {
     id: 'tool-action-policy-status',
     prompt: '외부 툴 action policy catalog 상태 보여줘',
     expectedPath: 'xd.xenesis.tools.actions.status',

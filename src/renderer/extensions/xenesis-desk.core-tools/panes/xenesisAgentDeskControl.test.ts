@@ -2298,6 +2298,7 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.xenesis\.tools\.mcpInstallDrafts\.status/);
   assert.match(hint, /xd\.xenesis\.tools\.mcpInstallDrafts\.open/);
   assert.match(hint, /xd\.xenesis\.tools\.mcpInstallDrafts\.request/);
+  assert.match(hint, /xd\.xenesis\.tools\.mcpInstallDrafts\.apply/);
   assert.match(hint, /xd\.xenesis\.tools\.oauthDrafts\.status/);
   assert.match(hint, /xd\.xenesis\.tools\.oauthDrafts\.open/);
   assert.match(hint, /xd\.xenesis\.tools\.oauthDrafts\.request/);
@@ -4392,6 +4393,16 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center review reques
       args: { id: 'notion' },
       approved: false,
       reason: 'Request Notion MCP install draft review from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 MCP 설치 적용해줘').actions, [
+    {
+      id: 'natural-xenesis-tool-mcp-install-draft-apply-notion',
+      path: 'xd.xenesis.tools.mcpInstallDrafts.apply',
+      args: { id: 'notion', target: 'codex' },
+      approved: false,
+      reason: 'Apply Notion MCP install draft from natural language request.',
     },
   ]);
 

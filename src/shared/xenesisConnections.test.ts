@@ -856,26 +856,31 @@ test('buildXenesisConnectionsStatus exposes review-only MCP install drafts', () 
   assert.equal(fetch?.mcpInstallDraft?.actionInboxKind, 'xenesis-mcp-install-draft');
   assert.ok(fetch?.mcpInstallDraft?.configSnippets?.json.includes('"fetch"'));
   assert.ok(fetch?.mcpInstallDraft?.controlPaths.includes('xd.xenesis.tools.mcpInstallDrafts.request'));
+  assert.ok(fetch?.mcpInstallDraft?.controlPaths.includes('xd.xenesis.tools.mcpInstallDrafts.apply'));
   assert.ok(
-    fetch?.mcpInstallDraft?.safetyBoundaries.some((boundary) => boundary.includes('does not write MCP config')),
+    fetch?.mcpInstallDraft?.safetyBoundaries.some((boundary) => boundary.includes('approval-gated MCP config writes')),
   );
 
   assert.equal(github?.mcpInstallDraft?.draftStatus, 'missing-env');
   assert.deepEqual(github?.mcpInstallDraft?.requiredEnv, ['GITHUB_TOKEN']);
   assert.deepEqual(github?.mcpInstallDraft?.missingEnv, ['GITHUB_TOKEN']);
+  assert.equal(github?.mcpInstallDraft?.controlPaths.includes('xd.xenesis.tools.mcpInstallDrafts.apply'), false);
 
   assert.equal(notion?.mcpInstallDraft?.draftStatus, 'ready');
   assert.deepEqual(notion?.mcpInstallDraft?.missingEnv, []);
   assert.equal(JSON.stringify(notion?.mcpInstallDraft).includes('secret-value-must-not-appear'), false);
+  assert.ok(notion?.mcpInstallDraft?.controlPaths.includes('xd.xenesis.tools.mcpInstallDrafts.apply'));
 
   assert.equal(linear?.mcpInstallDraft?.transport, 'http');
   assert.equal(linear?.mcpInstallDraft?.auth, 'oauth');
   assert.equal(linear?.mcpInstallDraft?.draftStatus, 'ready');
+  assert.ok(linear?.mcpInstallDraft?.controlPaths.includes('xd.xenesis.tools.mcpInstallDrafts.apply'));
 
   assert.equal(calendar?.mcpInstallDraft?.draftStatus, 'planned');
   assert.equal(calendar?.mcpInstallDraft?.serverName, undefined);
   assert.equal(calendar?.mcpInstallDraft?.configSnippets, undefined);
   assert.equal(calendar?.mcpInstallDraft?.blockedActions.includes('install MCP server'), true);
+  assert.equal(calendar?.mcpInstallDraft?.controlPaths.includes('xd.xenesis.tools.mcpInstallDrafts.apply'), false);
 });
 
 test('buildXenesisConnectionsStatus exposes review-only tool OAuth drafts for planned Google tools', () => {

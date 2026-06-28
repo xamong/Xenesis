@@ -983,9 +983,11 @@ test('xenesis MCP install draft capabilities are registered and dispatch to the 
   const statusCapability = findDeskBridgeCapability('xd.xenesis.tools.mcpInstallDrafts.status');
   const openCapability = findDeskBridgeCapability('xd.xenesis.tools.mcpInstallDrafts.open');
   const requestCapability = findDeskBridgeCapability('xd.xenesis.tools.mcpInstallDrafts.request');
+  const applyCapability = findDeskBridgeCapability('xd.xenesis.tools.mcpInstallDrafts.apply');
   const statusSchemaProperties = (statusCapability?.schema?.properties ?? {}) as Record<string, any>;
   const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
   const requestSchemaProperties = (requestCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const applySchemaProperties = (applyCapability?.schema?.properties ?? {}) as Record<string, any>;
 
   assert.equal(statusCapability?.permission, 'read');
   assert.equal(statusCapability?.approval, 'never');
@@ -995,11 +997,16 @@ test('xenesis MCP install draft capabilities are registered and dispatch to the 
   assert.equal(requestCapability?.permission, 'write');
   assert.equal(requestCapability?.approval, 'when-external');
   assert.deepEqual(requestCapability?.schema?.required, ['id']);
+  assert.equal(applyCapability?.permission, 'write');
+  assert.equal(applyCapability?.approval, 'when-external');
+  assert.deepEqual(applyCapability?.schema?.required, ['id']);
+  assert.deepEqual(applySchemaProperties.target?.enum, ['codex', 'claude', 'cursor', 'all']);
   for (const tool of ['fetch', 'github', 'notion', 'linear', 'google-calendar']) {
     assert.equal(statusSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by status`);
     assert.equal(statusSchemaProperties.tool?.enum.includes(tool), true, `${tool} should be accepted by status alias`);
     assert.equal(openSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by open`);
     assert.equal(requestSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by request`);
+    assert.equal(applySchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by apply`);
   }
 
   const calls: Array<{ method: string; args: unknown }> = [];
@@ -1026,6 +1033,15 @@ test('xenesis MCP install draft capabilities are registered and dispatch to the 
         actionInboxItem: { id: 'mcp-install-notion' },
       };
     },
+    applyXenesisToolMcpInstallDraft: (args) => {
+      calls.push({ method: 'apply', args });
+      return {
+        ok: true,
+        id: 'notion',
+        serverName: 'notion',
+        targets: [{ id: 'codex', changed: true }],
+      };
+    },
   };
 
   const statusResult = await callDeskBridgeCapability(api, {
@@ -1044,14 +1060,22 @@ test('xenesis MCP install draft capabilities are registered and dispatch to the 
     source: 'xenesis',
     approved: true,
   });
+  const applyResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.tools.mcpInstallDrafts.apply',
+    args: { id: 'notion', target: 'codex' },
+    source: 'xenesis',
+    approved: true,
+  });
 
   assert.equal(statusResult.ok, true);
   assert.equal(openResult.ok, true);
   assert.equal(requestResult.ok, true);
+  assert.equal(applyResult.ok, true);
   assert.deepEqual(calls, [
     { method: 'status', args: { tool: 'notion' } },
     { method: 'open', args: { id: 'notion' } },
     { method: 'request', args: { id: 'notion' } },
+    { method: 'apply', args: { id: 'notion', target: 'codex' } },
   ]);
   assert.deepEqual(statusResult.result, {
     ok: true,
@@ -1065,6 +1089,12 @@ test('xenesis MCP install draft capabilities are registered and dispatch to the 
     ok: true,
     id: 'notion',
     actionInboxItem: { id: 'mcp-install-notion' },
+  });
+  assert.deepEqual(applyResult.result, {
+    ok: true,
+    id: 'notion',
+    serverName: 'notion',
+    targets: [{ id: 'codex', changed: true }],
   });
 });
 

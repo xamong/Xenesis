@@ -90,6 +90,7 @@ import {
   buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
   buildXenesisConnectionSetupRequestRequest,
+  buildXenesisMcpInstallDraftApplyRequest,
   buildXenesisMcpInstallDraftRequest,
   buildXenesisProviderProfileDraftRequest,
   buildXenesisToolActionCatalogRequest,
@@ -4303,6 +4304,7 @@ export default function SettingsPane() {
     const guideRequest = buildXenesisConnectionGuideRequest(item);
     const setupRequestCall = buildXenesisConnectionSetupRequestRequest(item);
     const mcpInstallDraftRequest = buildXenesisMcpInstallDraftRequest(item);
+    const mcpInstallDraftApplyRequest = buildXenesisMcpInstallDraftApplyRequest(item);
     const toolOAuthDraftRequest = buildXenesisToolOAuthDraftRequest(item);
     const toolActionCatalogRequest = buildXenesisToolActionCatalogRequest(item);
     const channelProfileDraftRequest = buildXenesisChannelProfileDraftRequest(item);
@@ -4347,6 +4349,7 @@ export default function SettingsPane() {
           guideRequest ||
           setupRequestCall ||
           mcpInstallDraftRequest ||
+          mcpInstallDraftApplyRequest ||
           toolOAuthDraftRequest ||
           toolActionCatalogRequest ||
           channelProfileDraftRequest ||
@@ -4398,6 +4401,16 @@ export default function SettingsPane() {
                 }}
               >
                 {t('settings.xenesisConnectionsRequestMcpInstallDraft')}
+              </button>
+            ) : null}
+            {mcpInstallDraftApplyRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(mcpInstallDraftApplyRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsApplyMcpInstallDraft')}
               </button>
             ) : null}
             {toolActionCatalogRequest ? (
