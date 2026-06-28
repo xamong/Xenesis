@@ -42,8 +42,8 @@ import {
   XENESIS_NATURAL_CAPTURE_CONTEXT_WORDS,
   XENESIS_NATURAL_CHANNEL_PROFILE_CONTEXT_WORDS,
   XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_REQUEST_CONTEXT_WORDS,
-  XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_ACTION_DESCRIPTORS,
-  XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
+  XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_RULES,
+  XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_RULES,
   XENESIS_NATURAL_CONNECTION_CENTER_OPEN_CONTEXT_WORDS,
   XENESIS_NATURAL_CONNECTION_CONTEXT_WORDS,
   XENESIS_NATURAL_CONNECTION_DIAGNOSTIC_CONTEXT_WORDS,
@@ -164,6 +164,9 @@ import {
   type XenesisNaturalPlacementId as XenesisDeskPlacement,
   type XenesisNaturalDockWindowStateId as XenesisDeskWindowState,
   type XenesisNaturalCatalogActionRule,
+  type XenesisNaturalConnectionAggregateOpenRuleStage,
+  type XenesisNaturalConnectionAggregateRuleMatchKind,
+  type XenesisNaturalConnectionAggregateStatusRuleStage,
   type XenesisNaturalConnectionTarget,
   type XenesisNaturalConnectionTargetActionRule,
   type XenesisNaturalCoreToolTarget,
@@ -335,8 +338,6 @@ const DESK_ACTION_ARG_DEFAULTS = XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS;
 const DESK_ACTION_ARGS = XENESIS_NATURAL_DESK_ACTION_ARGS;
 const DEFAULT_DESK_PLACEMENT = DESK_ACTION_ARG_DEFAULTS.placement;
 const EXTRACTION_PATTERNS = XENESIS_NATURAL_EXTRACTION_PATTERNS;
-const CONNECTION_AGGREGATE_OPEN_ACTIONS = XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_ACTION_DESCRIPTORS;
-const CONNECTION_AGGREGATE_STATUS_ACTIONS = XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS;
 const CORE_TOOL_OPEN_REASON = XENESIS_NATURAL_CORE_TOOL_OPEN_REASON;
 const GUIDE_ACTIONS = XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS;
 const INTENT_PATTERNS = XENESIS_NATURAL_INTENT_PATTERNS;
@@ -677,6 +678,54 @@ function hasXenesisConnectionContext(value: string): boolean {
   return hasAny(value, XENESIS_NATURAL_CONNECTION_CONTEXT_WORDS);
 }
 
+function xenesisConnectionAggregateRuleMatches(
+  value: string,
+  matchKind: XenesisNaturalConnectionAggregateRuleMatchKind,
+): boolean {
+  switch (matchKind) {
+    case 'guideCatalog':
+      return hasXenesisGuideCatalogContext(value);
+    case 'diagnosticsCatalog':
+      return hasXenesisConnectionDiagnosticsCatalogContext(value);
+    case 'setupRequestCatalog':
+      return hasXenesisConnectionSetupRequestCatalogContext(value);
+    case 'onboarding':
+      return hasXenesisOnboardingContext(value);
+    case 'guideContext':
+      return hasAny(value, XENESIS_NATURAL_GUIDE_CONTEXT_WORDS);
+    case 'connectionContext':
+      return hasXenesisConnectionContext(value);
+    case 'connectionCenterOpen':
+      return hasAny(value, XENESIS_NATURAL_CONNECTION_CENTER_OPEN_CONTEXT_WORDS);
+  }
+}
+
+function xenesisConnectionAggregateStatusRuleActionFromNaturalText(
+  value: string,
+  stage: XenesisNaturalConnectionAggregateStatusRuleStage,
+): XenesisDeskActionRequest | null {
+  for (const rule of XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_RULES) {
+    if (rule.stage !== stage) continue;
+    if (!xenesisConnectionAggregateRuleMatches(value, rule.matchKind)) continue;
+    return naturalCatalogAction(rule.action);
+  }
+
+  return null;
+}
+
+function xenesisConnectionAggregateOpenRuleActionFromNaturalText(
+  value: string,
+  stage: XenesisNaturalConnectionAggregateOpenRuleStage,
+): XenesisDeskActionRequest | null {
+  for (const rule of XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_RULES) {
+    if (rule.stage !== stage) continue;
+    if (!xenesisConnectionAggregateRuleMatches(value, rule.matchKind)) continue;
+    return naturalCatalogAction(rule.action, DESK_ACTION_ARGS.ensureVisible());
+  }
+
+  return null;
+}
+
 function xenesisProviderFromNaturalText(value: string): { id: string; label: string } | null {
   const provider = findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_PROVIDER_TARGETS);
   if (provider) return provider;
@@ -718,17 +767,11 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
     if (targetStatusAction) return targetStatusAction;
   }
 
-  if (hasXenesisGuideCatalogContext(value)) {
-    return naturalCatalogAction(CONNECTION_AGGREGATE_STATUS_ACTIONS.guides);
-  }
-
-  if (hasXenesisConnectionDiagnosticsCatalogContext(value)) {
-    return naturalCatalogAction(CONNECTION_AGGREGATE_STATUS_ACTIONS.diagnostics);
-  }
-
-  if (hasXenesisConnectionSetupRequestCatalogContext(value)) {
-    return naturalCatalogAction(CONNECTION_AGGREGATE_STATUS_ACTIONS.setupRequests);
-  }
+  const earlyConnectionAggregateStatusAction = xenesisConnectionAggregateStatusRuleActionFromNaturalText(
+    value,
+    'early',
+  );
+  if (earlyConnectionAggregateStatusAction) return earlyConnectionAggregateStatusAction;
 
   const guideStatusAction = xenesisGuideStatusActionFromNaturalText(value);
   if (guideStatusAction) return guideStatusAction;
@@ -743,18 +786,11 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
     const onboardingStatusAction = xenesisOnboardingStatusActionFromNaturalText(value);
     if (onboardingStatusAction) return onboardingStatusAction;
 
-    return naturalCatalogAction(CONNECTION_AGGREGATE_STATUS_ACTIONS.onboarding);
+    const onboardingAggregateStatusAction = xenesisConnectionAggregateStatusRuleActionFromNaturalText(value, 'late');
+    if (onboardingAggregateStatusAction) return onboardingAggregateStatusAction;
   }
 
-  if (hasAny(value, XENESIS_NATURAL_GUIDE_CONTEXT_WORDS)) {
-    return naturalCatalogAction(CONNECTION_AGGREGATE_STATUS_ACTIONS.guides);
-  }
-
-  if (hasXenesisConnectionContext(value)) {
-    return naturalCatalogAction(CONNECTION_AGGREGATE_STATUS_ACTIONS.connections);
-  }
-
-  return null;
+  return xenesisConnectionAggregateStatusRuleActionFromNaturalText(value, 'late');
 }
 
 function hasXenesisConnectionReviewRequestIntent(value: string): boolean {
@@ -849,9 +885,7 @@ function xenesisProviderOpenActionFromNaturalText(value: string): XenesisDeskAct
 }
 
 function xenesisGuideCatalogOpenActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
-  if (!hasXenesisGuideCatalogContext(value)) return null;
-
-  return naturalCatalogAction(CONNECTION_AGGREGATE_OPEN_ACTIONS.guides, DESK_ACTION_ARGS.ensureVisible());
+  return xenesisConnectionAggregateOpenRuleActionFromNaturalText(value, 'guide');
 }
 
 function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
@@ -900,17 +934,8 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
   const onboardingAction = xenesisOnboardingOpenActionFromNaturalText(value);
   if (onboardingAction) return onboardingAction;
 
-  if (hasXenesisConnectionDiagnosticsCatalogContext(value)) {
-    return naturalCatalogAction(CONNECTION_AGGREGATE_OPEN_ACTIONS.diagnostics, DESK_ACTION_ARGS.ensureVisible());
-  }
-
-  if (hasXenesisConnectionSetupRequestCatalogContext(value)) {
-    return naturalCatalogAction(CONNECTION_AGGREGATE_OPEN_ACTIONS.setupRequests, DESK_ACTION_ARGS.ensureVisible());
-  }
-
-  if (hasAny(value, XENESIS_NATURAL_CONNECTION_CENTER_OPEN_CONTEXT_WORDS)) {
-    return naturalCatalogAction(CONNECTION_AGGREGATE_OPEN_ACTIONS.connections, DESK_ACTION_ARGS.ensureVisible());
-  }
+  const lateConnectionAggregateOpenAction = xenesisConnectionAggregateOpenRuleActionFromNaturalText(value, 'late');
+  if (lateConnectionAggregateOpenAction) return lateConnectionAggregateOpenAction;
 
   const target = xenesisConnectionTargetFromNaturalText(value);
   if (!target) return null;

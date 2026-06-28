@@ -3266,6 +3266,63 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Connection Aggregate Rule Catalog Refactor Slice
+
+- Started the next hardcoding cleanup slice for broad Connection Center
+  aggregate status/open selection.
+- Intended change:
+  - add shared `XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_RULES` and
+    `XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_RULES`;
+  - have `xenesisAgentDeskControl.ts` interpret those staged rule arrays
+    instead of branching directly on `CONNECTION_AGGREGATE_STATUS_ACTIONS.*`
+    and `CONNECTION_AGGREGATE_OPEN_ACTIONS.*`;
+  - preserve existing priority by giving rules a `stage` plus `matchKind`.
+- Scope boundary:
+  - Refactor only.
+  - Do not change registry/dispatcher paths, guide/onboarding/diagnostic/
+    setup-request/provider/tool/messenger data, approval behavior, credentials,
+    execution, or UI rendering.
+- Verification plan:
+  - RED focused planner/source-guard test first;
+  - GREEN focused planner test;
+  - scoped Biome for catalog/planner/test files;
+  - root typecheck, build, natural Desk routing live smoke, and diff check
+    before commit.
+- RED verification:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    failed as expected with 36/37 passing because the planner still imports and
+    references the connection aggregate action descriptors directly.
+- Implementation:
+  - Added staged connection aggregate status/open rule catalogs in
+    `xenesisNaturalLanguageCatalog.ts`.
+  - Replaced the broad Connection Center aggregate status/open if-chains in
+    `xenesisAgentDeskControl.ts` with shared `stage` plus `matchKind` rule
+    interpretation.
+- GREEN verification:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 37/37 tests.
+  - `npx biome format --write src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    formatted 3 files and fixed 1 file; focused planner test still passed
+    with 37/37 tests afterward.
+  - `npx biome check src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --max-diagnostics 80`
+    exited 0 with no fixes applied.
+  - `npm run typecheck` passed.
+  - `npm run build` passed; Vite emitted the existing browser `fs`
+    externalization warning for `hwp.js` and the existing dynamic/static import
+    chunking warning for `deskBridge.ts`.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 21/21 through the
+    built Electron app.
+  - Static hardcoding check found no remaining planner direct connection
+    aggregate action descriptor or `CONNECTION_AGGREGATE_*_ACTIONS` matches in
+    `xenesisAgentDeskControl.ts`.
+  - `git diff --check` exited 0 with LF-to-CRLF working-copy warnings for
+    touched tracked files only.
+  - CR audit was not run because this slice only refactors planner/catalog rule
+    interpretation and does not change registry, dispatcher, or capability
+    coverage.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

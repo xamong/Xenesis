@@ -93,6 +93,31 @@ export interface XenesisNaturalCatalogActionRule {
   fallback?: boolean;
 }
 
+export type XenesisNaturalConnectionAggregateStatusRuleStage = 'early' | 'late';
+
+export type XenesisNaturalConnectionAggregateOpenRuleStage = 'guide' | 'late';
+
+export type XenesisNaturalConnectionAggregateRuleMatchKind =
+  | 'guideCatalog'
+  | 'diagnosticsCatalog'
+  | 'setupRequestCatalog'
+  | 'onboarding'
+  | 'guideContext'
+  | 'connectionContext'
+  | 'connectionCenterOpen';
+
+export interface XenesisNaturalConnectionAggregateStatusRule {
+  stage: XenesisNaturalConnectionAggregateStatusRuleStage;
+  matchKind: XenesisNaturalConnectionAggregateRuleMatchKind;
+  action: XenesisNaturalDeskActionDescriptor;
+}
+
+export interface XenesisNaturalConnectionAggregateOpenRule {
+  stage: XenesisNaturalConnectionAggregateOpenRuleStage;
+  matchKind: XenesisNaturalConnectionAggregateRuleMatchKind;
+  action: XenesisNaturalDeskActionDescriptor;
+}
+
 export const XENESIS_DESK_ACTION_PROTOCOL = {
   pathPrefix: 'xd.',
 } as const;
@@ -1587,6 +1612,29 @@ export const XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_ACTION_DESCRIPTORS = {
   },
 } as const satisfies Record<string, XenesisNaturalDeskActionDescriptor>;
 
+export const XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_RULES = [
+  {
+    stage: 'guide',
+    matchKind: 'guideCatalog',
+    action: XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_ACTION_DESCRIPTORS.guides,
+  },
+  {
+    stage: 'late',
+    matchKind: 'diagnosticsCatalog',
+    action: XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_ACTION_DESCRIPTORS.diagnostics,
+  },
+  {
+    stage: 'late',
+    matchKind: 'setupRequestCatalog',
+    action: XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_ACTION_DESCRIPTORS.setupRequests,
+  },
+  {
+    stage: 'late',
+    matchKind: 'connectionCenterOpen',
+    action: XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_ACTION_DESCRIPTORS.connections,
+  },
+] as const satisfies readonly XenesisNaturalConnectionAggregateOpenRule[];
+
 export const XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS = {
   connectors: {
     id: 'natural-xenesis-tools-connectors-catalog-open',
@@ -2025,6 +2073,39 @@ export const XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS = {
     reason: 'Read Xenesis connection status from natural language request.',
   },
 } as const satisfies Record<string, XenesisNaturalDeskActionDescriptor>;
+
+export const XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_RULES = [
+  {
+    stage: 'early',
+    matchKind: 'guideCatalog',
+    action: XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS.guides,
+  },
+  {
+    stage: 'early',
+    matchKind: 'diagnosticsCatalog',
+    action: XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS.diagnostics,
+  },
+  {
+    stage: 'early',
+    matchKind: 'setupRequestCatalog',
+    action: XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS.setupRequests,
+  },
+  {
+    stage: 'late',
+    matchKind: 'onboarding',
+    action: XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS.onboarding,
+  },
+  {
+    stage: 'late',
+    matchKind: 'guideContext',
+    action: XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS.guides,
+  },
+  {
+    stage: 'late',
+    matchKind: 'connectionContext',
+    action: XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS.connections,
+  },
+] as const satisfies readonly XenesisNaturalConnectionAggregateStatusRule[];
 
 export const XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS = {
   routing: {
