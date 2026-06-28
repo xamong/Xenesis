@@ -3896,6 +3896,65 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Natural Text Extraction Catalog Refactor Slice
+
+- Continued the larger hardcoding cleanup by moving natural-language text
+  extraction and detection helpers from `xenesisAgentDeskControl.ts` into
+  `xenesisNaturalLanguageCatalog.ts`.
+- Intended change:
+  - catalog owns natural text normalization, placement/dock/window-size
+    detection, first-integer/dock-size/terminal-count extraction, quoted text
+    extraction, local path extraction, explorer filter query extraction, and
+    terminal command extraction;
+  - planner imports shared helpers and keeps only route ordering plus action
+    assembly;
+  - source guards prevent reintroducing planner-local extraction helpers,
+    extraction patterns, numeric limits, and moved target finder ownership.
+- Scope boundary:
+  - Refactor ownership only.
+  - Preserve route order, CR paths, args payloads, approval state, visible text,
+    action ids/reasons, provider behavior, approvals, and UI behavior.
+  - No CR schema, dispatcher, generated docs, provider runtime, OAuth/MCP
+    install, messenger delivery, or Action Inbox mutation changes.
+- RED verification:
+  - Focused Agent Desk Control test failed as expected with 36/37 passing. The
+    new source guard caught planner-local
+    `function normalizeNaturalLanguageText`.
+- Implementation:
+  - Added shared `normalizeXenesisNaturalLanguageText`,
+    `detectXenesisNaturalPlacement`,
+    `detectXenesisNaturalDockSide`,
+    `detectXenesisNaturalDockWindowState`,
+    `detectXenesisNaturalArrangeMode`,
+    `detectXenesisNaturalWindowSizePreset`,
+    `extractXenesisNaturalFirstInteger`,
+    `extractXenesisNaturalDockSize`,
+    `extractXenesisNaturalTerminalCount`,
+    `stripXenesisNaturalQuotedText`,
+    `extractXenesisNaturalQuotedTexts`,
+    `extractXenesisNaturalQuotedText`,
+    `extractXenesisNaturalLocalPath`,
+    `extractXenesisNaturalFilterQuery`, and
+    `extractXenesisNaturalTerminalCommand`.
+  - Removed the matching planner-local helper implementations and replaced all
+    call sites with shared catalog imports.
+  - Updated source guards so extraction patterns and numeric limits are
+    verified as catalog-owned.
+- Verification:
+  - Focused Agent Desk Control test passed with 37/37 tests.
+  - Capability, connection catalog, and Agent Desk Control tests passed with
+    103/103 tests before and after formatting.
+  - Scoped Biome exited 0 with no diagnostics.
+  - `npm run typecheck`, `npm run build`,
+    `npm run smoke:xenesis:natural-desk-routing`, and `git diff --check`
+    passed. `build` reported existing Vite warnings only; `diff --check`
+    reported LF-to-CRLF working-copy warnings only.
+  - CR audit was skipped because this slice only refactors planner/catalog text
+    extraction helpers and does not change registry, dispatcher, or capability
+    coverage.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

@@ -242,6 +242,42 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   ]) {
     assert.match(catalogSource, new RegExp(`export function ${sharedActionBuilderFunction}`));
   }
+  for (const localExtractionFunction of [
+    'function normalizeNaturalLanguageText',
+    'function detectPlacement',
+    'function detectWindowSizerPreset',
+    'function extractFirstInteger',
+    'function detectDockSide',
+    'function detectDockWindowState',
+    'function detectArrangeMode',
+    'function stripQuotedText',
+    'function extractQuotedTexts',
+    'function extractQuotedText',
+    'function extractLocalPath',
+    'function extractFilterQuery',
+    'function extractTerminalCommand',
+  ]) {
+    assert.doesNotMatch(source, new RegExp(localExtractionFunction));
+  }
+  for (const sharedExtractionFunction of [
+    'normalizeXenesisNaturalLanguageText',
+    'detectXenesisNaturalPlacement',
+    'detectXenesisNaturalWindowSizePreset',
+    'extractXenesisNaturalFirstInteger',
+    'extractXenesisNaturalDockSize',
+    'extractXenesisNaturalTerminalCount',
+    'detectXenesisNaturalDockSide',
+    'detectXenesisNaturalDockWindowState',
+    'detectXenesisNaturalArrangeMode',
+    'stripXenesisNaturalQuotedText',
+    'extractXenesisNaturalQuotedTexts',
+    'extractXenesisNaturalQuotedText',
+    'extractXenesisNaturalLocalPath',
+    'extractXenesisNaturalFilterQuery',
+    'extractXenesisNaturalTerminalCommand',
+  ]) {
+    assert.match(catalogSource, new RegExp(`export function ${sharedExtractionFunction}`));
+  }
   assert.match(catalogSource, /export function xenesisNaturalTextHasAny/);
   assert.doesNotMatch(source, /hasAny\(value, \[\s*'온보딩'/);
   assert.doesNotMatch(source, /hasAny\(value, \[\s*'external tool'/);
@@ -402,14 +438,16 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS/);
   assert.match(source, /XENESIS_NATURAL_PLAN_VISIBLE_TEXT/);
   assert.doesNotMatch(source, /naturalPlan\((?:'|`)/);
-  assert.match(source, /XENESIS_NATURAL_EXTRACTION_PATTERNS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_EXTRACTION_PATTERNS/);
+  assert.match(catalogSource, /XENESIS_NATURAL_EXTRACTION_PATTERNS/);
   assert.doesNotMatch(source, /match\(\/\\d\+\//);
   assert.doesNotMatch(source, /const quotedPattern =/);
   assert.doesNotMatch(source, /\[a-z\]:\\\\/);
   assert.doesNotMatch(source, /탐색기\|파일\|폴더\|필터/);
   assert.doesNotMatch(source, /terminal\\s\+run/);
   assert.match(source, /XENESIS_NATURAL_TEXT_DEFAULTS/);
-  assert.match(source, /XENESIS_NATURAL_NUMERIC_LIMITS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_NUMERIC_LIMITS/);
+  assert.match(catalogSource, /XENESIS_NATURAL_NUMERIC_LIMITS/);
   assert.doesNotMatch(source, /normalize\('NFKC'\)/);
   assert.doesNotMatch(source, /replace\(EXTRACTION_PATTERNS\.normalizedWhitespace, ' '\)/);
   assert.doesNotMatch(source, /split\(' '\)/);
@@ -427,10 +465,10 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /type XenesisDeskArrangeMode = 'row'/);
   assert.doesNotMatch(source, /\$\{prefix\}\./);
   assert.doesNotMatch(source, /\)\}\./);
-  assert.match(source, /XenesisNaturalPlacementId as XenesisDeskPlacement/);
-  assert.match(source, /XenesisNaturalDockSideId as XenesisDeskDockSide/);
-  assert.match(source, /XenesisNaturalDockWindowStateId as XenesisDeskWindowState/);
-  assert.match(source, /XenesisNaturalArrangeModeId as XenesisDeskArrangeMode/);
+  assert.doesNotMatch(source, /XenesisNaturalPlacementId as XenesisDeskPlacement/);
+  assert.doesNotMatch(source, /XenesisNaturalDockSideId as XenesisDeskDockSide/);
+  assert.doesNotMatch(source, /XenesisNaturalDockWindowStateId as XenesisDeskWindowState/);
+  assert.doesNotMatch(source, /XenesisNaturalArrangeModeId as XenesisDeskArrangeMode/);
   assert.equal(XENESIS_DESK_ACTION_PROTOCOL_FORMAT.capabilityPathSeparator, '.');
   assert.equal(XENESIS_DESK_ACTION_PROTOCOL_FORMAT.sentenceTerminator, '.');
   assert.match(source, /XENESIS_DESK_ACTION_PROTOCOL_PATTERNS/);
@@ -1468,18 +1506,23 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     assert.doesNotMatch(source, new RegExp(directTargetLookupPattern));
   }
   for (const catalogFinder of [
-    'findXenesisNaturalArrangeModeTarget',
     'findXenesisNaturalConnectionTarget',
     'findXenesisNaturalCoreToolTarget',
-    'findXenesisNaturalDockSideTarget',
-    'findXenesisNaturalDockWindowStateTarget',
     'findXenesisNaturalOnboardingStepTarget',
-    'findXenesisNaturalPlacementTarget',
     'findXenesisNaturalProviderTarget',
     'findXenesisNaturalViewTarget',
-    'findXenesisNaturalWindowSizePresetTarget',
   ]) {
     assert.match(source, new RegExp(catalogFinder));
+    assert.match(catalogSource, new RegExp(`export function ${catalogFinder}`));
+  }
+  for (const catalogFinder of [
+    'findXenesisNaturalArrangeModeTarget',
+    'findXenesisNaturalDockSideTarget',
+    'findXenesisNaturalDockWindowStateTarget',
+    'findXenesisNaturalPlacementTarget',
+    'findXenesisNaturalWindowSizePresetTarget',
+  ]) {
+    assert.doesNotMatch(source, new RegExp(catalogFinder));
     assert.match(catalogSource, new RegExp(`export function ${catalogFinder}`));
   }
   assert.doesNotMatch(source, /if \(hasAny\(value, \['오른쪽', '우측', 'right'\]\)\) return 'right';/);

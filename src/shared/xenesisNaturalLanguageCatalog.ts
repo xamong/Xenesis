@@ -4007,6 +4007,128 @@ export function findXenesisNaturalWindowSizePresetTarget(
   return findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_WINDOW_SIZE_PRESET_TARGETS);
 }
 
+export function normalizeXenesisNaturalLanguageText(value: string): string {
+  return String(value || XENESIS_NATURAL_TEXT_DEFAULTS.empty)
+    .normalize(XENESIS_NATURAL_TEXT_DEFAULTS.unicodeNormalizationForm)
+    .replace(XENESIS_NATURAL_EXTRACTION_PATTERNS.normalizedWhitespace, XENESIS_NATURAL_TEXT_DEFAULTS.wordSeparator)
+    .trim()
+    .toLowerCase();
+}
+
+export function detectXenesisNaturalPlacement(value: string): XenesisNaturalPlacementId | undefined {
+  return findXenesisNaturalPlacementTarget(value)?.id;
+}
+
+export function detectXenesisNaturalDockSide(value: string): XenesisNaturalDockSideId | undefined {
+  return findXenesisNaturalDockSideTarget(value)?.id;
+}
+
+export function detectXenesisNaturalDockWindowState(value: string): XenesisNaturalDockWindowStateId | undefined {
+  return findXenesisNaturalDockWindowStateTarget(value)?.id;
+}
+
+export function detectXenesisNaturalArrangeMode(value: string): XenesisNaturalArrangeModeId | undefined {
+  return findXenesisNaturalArrangeModeTarget(value)?.id;
+}
+
+export function detectXenesisNaturalWindowSizePreset(value: string): string | undefined {
+  return findXenesisNaturalWindowSizePresetTarget(value)?.id;
+}
+
+export function extractXenesisNaturalFirstInteger(
+  value: string,
+  min: number = XENESIS_NATURAL_NUMERIC_LIMITS.firstInteger.min,
+  max: number = XENESIS_NATURAL_NUMERIC_LIMITS.firstInteger.max,
+): number | undefined {
+  const match = String(value || XENESIS_NATURAL_TEXT_DEFAULTS.empty).match(
+    XENESIS_NATURAL_EXTRACTION_PATTERNS.firstInteger,
+  );
+  if (!match) return undefined;
+  const parsed = Number.parseInt(match[0] || XENESIS_NATURAL_TEXT_DEFAULTS.empty, 10);
+  if (!Number.isFinite(parsed)) return undefined;
+  return Math.max(min, Math.min(max, parsed));
+}
+
+export function extractXenesisNaturalDockSize(value: string): number | undefined {
+  return extractXenesisNaturalFirstInteger(
+    value,
+    XENESIS_NATURAL_NUMERIC_LIMITS.dockSize.min,
+    XENESIS_NATURAL_NUMERIC_LIMITS.dockSize.max,
+  );
+}
+
+export function extractXenesisNaturalTerminalCount(value: string): number | undefined {
+  return extractXenesisNaturalFirstInteger(
+    value,
+    XENESIS_NATURAL_NUMERIC_LIMITS.terminalCount.min,
+    XENESIS_NATURAL_NUMERIC_LIMITS.terminalCount.max,
+  );
+}
+
+export function stripXenesisNaturalQuotedText(value: string): string {
+  return String(value || XENESIS_NATURAL_TEXT_DEFAULTS.empty).replace(
+    XENESIS_NATURAL_EXTRACTION_PATTERNS.quotedText,
+    XENESIS_NATURAL_TEXT_DEFAULTS.wordSeparator,
+  );
+}
+
+export function extractXenesisNaturalQuotedTexts(value: string): string[] {
+  const texts: string[] = [];
+  for (const match of String(value || XENESIS_NATURAL_TEXT_DEFAULTS.empty).matchAll(
+    XENESIS_NATURAL_EXTRACTION_PATTERNS.quotedText,
+  )) {
+    const quoted = match[1]?.trim();
+    if (quoted) texts.push(quoted);
+  }
+  return texts;
+}
+
+export function extractXenesisNaturalQuotedText(value: string): string {
+  return (
+    extractXenesisNaturalQuotedTexts(value)[XENESIS_NATURAL_TEXT_DEFAULTS.firstItemIndex] ||
+    XENESIS_NATURAL_TEXT_DEFAULTS.empty
+  );
+}
+
+export function extractXenesisNaturalLocalPath(value: string): string {
+  const quoted = extractXenesisNaturalQuotedText(value);
+  if (quoted) return quoted;
+  const windowsPath = value.match(XENESIS_NATURAL_EXTRACTION_PATTERNS.localWindowsPath);
+  if (windowsPath?.[0]) {
+    return windowsPath[0]
+      .trim()
+      .replace(XENESIS_NATURAL_EXTRACTION_PATTERNS.trailingPathPunctuation, XENESIS_NATURAL_TEXT_DEFAULTS.empty);
+  }
+  const unixPath = value.match(XENESIS_NATURAL_EXTRACTION_PATTERNS.localUnixPath);
+  return (
+    unixPath?.[0]
+      ?.trim()
+      .replace(XENESIS_NATURAL_EXTRACTION_PATTERNS.trailingPathPunctuation, XENESIS_NATURAL_TEXT_DEFAULTS.empty) ||
+    XENESIS_NATURAL_TEXT_DEFAULTS.empty
+  );
+}
+
+export function extractXenesisNaturalFilterQuery(value: string): string {
+  const quoted = extractXenesisNaturalQuotedText(value);
+  if (quoted) return quoted;
+  const cleaned = value
+    .replace(XENESIS_NATURAL_EXTRACTION_PATTERNS.filterQueryWords, XENESIS_NATURAL_TEXT_DEFAULTS.wordSeparator)
+    .replace(XENESIS_NATURAL_EXTRACTION_PATTERNS.normalizedWhitespace, XENESIS_NATURAL_TEXT_DEFAULTS.wordSeparator)
+    .trim();
+  const parts = cleaned.split(XENESIS_NATURAL_TEXT_DEFAULTS.wordSeparator).filter(Boolean);
+  return parts[parts.length - 1] || cleaned;
+}
+
+export function extractXenesisNaturalTerminalCommand(rawText: string): string {
+  const quoted = extractXenesisNaturalQuotedText(rawText);
+  if (quoted) return quoted;
+  return String(rawText || XENESIS_NATURAL_TEXT_DEFAULTS.empty)
+    .replace(XENESIS_NATURAL_EXTRACTION_PATTERNS.terminalCommandPrefix, XENESIS_NATURAL_TEXT_DEFAULTS.empty)
+    .replace(XENESIS_NATURAL_EXTRACTION_PATTERNS.terminalCommandSuffix, XENESIS_NATURAL_TEXT_DEFAULTS.empty)
+    .replace(XENESIS_NATURAL_EXTRACTION_PATTERNS.terminalCommandTrim, XENESIS_NATURAL_TEXT_DEFAULTS.empty)
+    .trim();
+}
+
 export function findXenesisNaturalCoreToolTarget(value: string): XenesisNaturalCoreToolTarget | null {
   return findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_CORE_TOOL_TARGETS);
 }

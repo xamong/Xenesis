@@ -5,7 +5,18 @@ import {
   buildXenesisNaturalOnboardingArgsForRule,
   buildXenesisNaturalTemplateAction,
   buildXenesisNaturalViewOpenAction,
-  findXenesisNaturalArrangeModeTarget,
+  detectXenesisNaturalArrangeMode,
+  detectXenesisNaturalDockSide,
+  detectXenesisNaturalDockWindowState,
+  detectXenesisNaturalPlacement,
+  detectXenesisNaturalWindowSizePreset,
+  extractXenesisNaturalDockSize,
+  extractXenesisNaturalFilterQuery,
+  extractXenesisNaturalLocalPath,
+  extractXenesisNaturalQuotedText,
+  extractXenesisNaturalQuotedTexts,
+  extractXenesisNaturalTerminalCommand,
+  extractXenesisNaturalTerminalCount,
   findXenesisNaturalCatalogRuleAction,
   findXenesisNaturalConnectionAggregateOpenAction,
   findXenesisNaturalConnectionAggregateStatusAction,
@@ -13,19 +24,17 @@ import {
   findXenesisNaturalConnectionTargetRuleAction,
   findXenesisNaturalContextRule,
   findXenesisNaturalCoreToolTarget,
-  findXenesisNaturalDockSideTarget,
-  findXenesisNaturalDockWindowStateTarget,
   findXenesisNaturalGuideTarget,
   findXenesisNaturalOnboardingStepTarget,
-  findXenesisNaturalPlacementTarget,
   findXenesisNaturalProviderRuleAction,
   findXenesisNaturalProviderTarget,
   findXenesisNaturalViewTarget,
-  findXenesisNaturalWindowSizePresetTarget,
   isXenesisDeskActionRecordValue,
   isXenesisDeskActionValueType,
   matchesXenesisNaturalContextRule,
   matchesXenesisNaturalContextRules,
+  normalizeXenesisNaturalLanguageText,
+  stripXenesisNaturalQuotedText,
   XENESIS_DESK_ACTION_ACTIVITY_PHASES,
   XENESIS_DESK_ACTION_APPROVAL_STATE,
   XENESIS_DESK_ACTION_CALL_RESULT_KEYS,
@@ -74,7 +83,6 @@ import {
   XENESIS_NATURAL_EXPLORER_SIMPLE_RULES,
   XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_RULES,
   XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_RULES,
-  XENESIS_NATURAL_EXTRACTION_PATTERNS,
   XENESIS_NATURAL_GATEWAY_ACTION_RULES,
   XENESIS_NATURAL_GUIDE_FILE_OPEN_RULES,
   XENESIS_NATURAL_GUIDE_OPEN_RULES,
@@ -83,7 +91,6 @@ import {
   XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_RULES,
   XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_RULES,
   XENESIS_NATURAL_MESSENGER_PROFILE_DRAFT_CATALOG_CONTEXT_RULES,
-  XENESIS_NATURAL_NUMERIC_LIMITS,
   XENESIS_NATURAL_ONBOARDING_OPEN_RULES,
   XENESIS_NATURAL_ONBOARDING_STATUS_RULES,
   XENESIS_NATURAL_OPEN_COMMAND_RULES,
@@ -113,10 +120,6 @@ import {
   XENESIS_NATURAL_WINDOW_SIZE_PRESET_RULES,
   XENESIS_NATURAL_WORKSPACE_SET_RULES,
   type XenesisDeskActionActivityPhase as XenesisDeskActionActivityPhaseCatalog,
-  type XenesisNaturalArrangeModeId as XenesisDeskArrangeMode,
-  type XenesisNaturalDockSideId as XenesisDeskDockSide,
-  type XenesisNaturalPlacementId as XenesisDeskPlacement,
-  type XenesisNaturalDockWindowStateId as XenesisDeskWindowState,
   type XenesisNaturalCatalogActionRule,
   type XenesisNaturalConnectionTarget,
   type XenesisNaturalDeskActionRequest,
@@ -184,14 +187,6 @@ export interface XenesisDeskNaturalLanguagePlan extends XenesisDeskActionParseRe
   matched: boolean;
 }
 
-function normalizeNaturalLanguageText(value: string): string {
-  return String(value || NATURAL_TEXT_DEFAULTS.empty)
-    .normalize(NATURAL_TEXT_DEFAULTS.unicodeNormalizationForm)
-    .replace(EXTRACTION_PATTERNS.normalizedWhitespace, NATURAL_TEXT_DEFAULTS.wordSeparator)
-    .trim()
-    .toLowerCase();
-}
-
 function hasExplicitOpenIntent(value: string): boolean {
   return (
     matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_EXPLICIT_OPEN_INTENT_RULES) ||
@@ -242,9 +237,7 @@ const DESK_ACTION_RESULT_SUMMARY_PATHS = XENESIS_DESK_ACTION_RESULT_SUMMARY_PATH
 const DESK_ACTION_RESULT_SUMMARY_TEXT = XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT;
 const DESK_ACTION_VALUE_TYPE_NAMES = XENESIS_DESK_ACTION_VALUE_TYPE_NAMES;
 const DESK_ACTION_ARGS = XENESIS_NATURAL_DESK_ACTION_ARGS;
-const EXTRACTION_PATTERNS = XENESIS_NATURAL_EXTRACTION_PATTERNS;
 const INTENT_PATTERNS = XENESIS_NATURAL_INTENT_PATTERNS;
-const NATURAL_NUMERIC_LIMITS = XENESIS_NATURAL_NUMERIC_LIMITS;
 const NATURAL_TEXT_DEFAULTS = XENESIS_NATURAL_TEXT_DEFAULTS;
 const PLAN_TEXT = XENESIS_NATURAL_PLAN_VISIBLE_TEXT;
 const PROVIDER_AUTO_TARGET = XENESIS_NATURAL_PROVIDER_AUTO_TARGET;
@@ -261,97 +254,7 @@ function emptyNaturalPlan(): XenesisDeskNaturalLanguagePlan {
   return { visibleText: NATURAL_TEXT_DEFAULTS.empty, actions: [], errors: [], matched: false };
 }
 
-function detectPlacement(value: string): XenesisDeskPlacement | undefined {
-  return findXenesisNaturalPlacementTarget(value)?.id as XenesisDeskPlacement | undefined;
-}
-
-function detectWindowSizerPreset(value: string): string | undefined {
-  return findXenesisNaturalWindowSizePresetTarget(value)?.id;
-}
-
-function extractFirstInteger(
-  value: string,
-  min: number = NATURAL_NUMERIC_LIMITS.firstInteger.min,
-  max: number = NATURAL_NUMERIC_LIMITS.firstInteger.max,
-): number | undefined {
-  const match = String(value || NATURAL_TEXT_DEFAULTS.empty).match(EXTRACTION_PATTERNS.firstInteger);
-  if (!match) return undefined;
-  const parsed = Number.parseInt(match[0] || NATURAL_TEXT_DEFAULTS.empty, 10);
-  if (!Number.isFinite(parsed)) return undefined;
-  return Math.max(min, Math.min(max, parsed));
-}
-
-function detectDockSide(value: string): XenesisDeskDockSide | undefined {
-  return findXenesisNaturalDockSideTarget(value)?.id as XenesisDeskDockSide | undefined;
-}
-
-function detectDockWindowState(value: string): XenesisDeskWindowState | undefined {
-  return findXenesisNaturalDockWindowStateTarget(value)?.id as XenesisDeskWindowState | undefined;
-}
-
-function detectArrangeMode(value: string): XenesisDeskArrangeMode | undefined {
-  return findXenesisNaturalArrangeModeTarget(value)?.id as XenesisDeskArrangeMode | undefined;
-}
-
-function stripQuotedText(value: string): string {
-  return String(value || NATURAL_TEXT_DEFAULTS.empty).replace(
-    EXTRACTION_PATTERNS.quotedText,
-    NATURAL_TEXT_DEFAULTS.wordSeparator,
-  );
-}
-
-function extractQuotedTexts(value: string): string[] {
-  const texts: string[] = [];
-  for (const match of String(value || NATURAL_TEXT_DEFAULTS.empty).matchAll(EXTRACTION_PATTERNS.quotedText)) {
-    const quoted = match[1]?.trim();
-    if (quoted) texts.push(quoted);
-  }
-  return texts;
-}
-
-function extractQuotedText(value: string): string {
-  return extractQuotedTexts(value)[NATURAL_TEXT_DEFAULTS.firstItemIndex] || NATURAL_TEXT_DEFAULTS.empty;
-}
-
-function extractLocalPath(value: string): string {
-  const quoted = extractQuotedText(value);
-  if (quoted) return quoted;
-  const windowsPath = value.match(EXTRACTION_PATTERNS.localWindowsPath);
-  if (windowsPath?.[0]) {
-    return windowsPath[0].trim().replace(EXTRACTION_PATTERNS.trailingPathPunctuation, NATURAL_TEXT_DEFAULTS.empty);
-  }
-  const unixPath = value.match(EXTRACTION_PATTERNS.localUnixPath);
-  return (
-    unixPath?.[0]?.trim().replace(EXTRACTION_PATTERNS.trailingPathPunctuation, NATURAL_TEXT_DEFAULTS.empty) ||
-    NATURAL_TEXT_DEFAULTS.empty
-  );
-}
-
-function extractFilterQuery(value: string): string {
-  const quoted = extractQuotedText(value);
-  if (quoted) return quoted;
-  const cleaned = value
-    .replace(EXTRACTION_PATTERNS.filterQueryWords, NATURAL_TEXT_DEFAULTS.wordSeparator)
-    .replace(EXTRACTION_PATTERNS.normalizedWhitespace, NATURAL_TEXT_DEFAULTS.wordSeparator)
-    .trim();
-  const parts = cleaned.split(NATURAL_TEXT_DEFAULTS.wordSeparator).filter(Boolean);
-  return parts[parts.length - 1] || cleaned;
-}
-
-function extractTerminalCommand(rawText: string): string {
-  const quoted = extractQuotedText(rawText);
-  if (quoted) return quoted;
-  return String(rawText || NATURAL_TEXT_DEFAULTS.empty)
-    .replace(EXTRACTION_PATTERNS.terminalCommandPrefix, NATURAL_TEXT_DEFAULTS.empty)
-    .replace(EXTRACTION_PATTERNS.terminalCommandSuffix, NATURAL_TEXT_DEFAULTS.empty)
-    .replace(EXTRACTION_PATTERNS.terminalCommandTrim, NATURAL_TEXT_DEFAULTS.empty)
-    .trim();
-}
-
-function toolOpenActionFromNaturalText(
-  value: string,
-  placement: XenesisDeskPlacement | undefined,
-): XenesisDeskActionRequest | null {
+function toolOpenActionFromNaturalText(value: string, placement: string | undefined): XenesisDeskActionRequest | null {
   const definition = findXenesisNaturalCoreToolTarget(value);
   if (!definition) return null;
   return buildXenesisNaturalCoreToolOpenAction(definition, placement);
@@ -676,7 +579,7 @@ function xenesisGatewayActionFromNaturalText(value: string): XenesisDeskActionRe
 }
 
 function xenesisAgentReadbackActionFromNaturalText(value: string, rawText: string): XenesisDeskActionRequest | null {
-  const agentId = extractQuotedText(rawText);
+  const agentId = extractXenesisNaturalQuotedText(rawText);
   if (!agentId) return null;
 
   return naturalCatalogRuleActionFromNaturalText(
@@ -698,8 +601,8 @@ function xenesisProfileInventoryActionFromNaturalText(value: string): XenesisDes
 }
 
 function xenesisAgentSubmitActionFromNaturalText(rawText: string): XenesisDeskActionRequest | null {
-  const intentValue = normalizeNaturalLanguageText(stripQuotedText(rawText));
-  const [agentId, text] = extractQuotedTexts(rawText);
+  const intentValue = normalizeXenesisNaturalLanguageText(stripXenesisNaturalQuotedText(rawText));
+  const [agentId, text] = extractXenesisNaturalQuotedTexts(rawText);
   if (!agentId || !text) return null;
 
   return naturalCatalogRuleActionFromNaturalText(
@@ -710,8 +613,8 @@ function xenesisAgentSubmitActionFromNaturalText(rawText: string): XenesisDeskAc
 }
 
 function xenesisRunStartActionFromNaturalText(rawText: string): XenesisDeskActionRequest | null {
-  const intentValue = normalizeNaturalLanguageText(stripQuotedText(rawText));
-  const prompt = extractQuotedText(rawText);
+  const intentValue = normalizeXenesisNaturalLanguageText(stripXenesisNaturalQuotedText(rawText));
+  const prompt = extractXenesisNaturalQuotedText(rawText);
   if (!prompt) return null;
 
   return naturalCatalogRuleActionFromNaturalText(
@@ -726,7 +629,7 @@ function xenesisRuntimeControlActionFromNaturalText(value: string): XenesisDeskA
 }
 
 function xenesisWorkspaceSetActionFromNaturalText(value: string, rawText: string): XenesisDeskActionRequest | null {
-  const path = extractLocalPath(rawText);
+  const path = extractXenesisNaturalLocalPath(rawText);
   if (!path) return null;
 
   return naturalCatalogRuleActionFromNaturalText(
@@ -738,10 +641,10 @@ function xenesisWorkspaceSetActionFromNaturalText(value: string, rawText: string
 
 export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDeskNaturalLanguagePlan {
   const rawText = String(text || NATURAL_TEXT_DEFAULTS.empty).trim();
-  const value = normalizeNaturalLanguageText(rawText);
+  const value = normalizeXenesisNaturalLanguageText(rawText);
   if (!value || !hasActionIntent(value)) return emptyNaturalPlan();
 
-  const placement = detectPlacement(value);
+  const placement = detectXenesisNaturalPlacement(value);
 
   const xenesisAgentSubmitAction = xenesisAgentSubmitActionFromNaturalText(rawText);
   if (xenesisAgentSubmitAction) {
@@ -838,8 +741,8 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
   );
   if (activeDockClosePlan) return activeDockClosePlan;
 
-  const dockSide = detectDockSide(value);
-  const dockSize = extractFirstInteger(value, NATURAL_NUMERIC_LIMITS.dockSize.min, NATURAL_NUMERIC_LIMITS.dockSize.max);
+  const dockSide = detectXenesisNaturalDockSide(value);
+  const dockSize = extractXenesisNaturalDockSize(value);
   const dockSizeRule = naturalCatalogRuleFromNaturalText(value, XENESIS_NATURAL_DOCK_SIZE_RULES);
   if (dockSizeRule?.visibleText && dockSide && dockSize) {
     return naturalPlan(dockSizeRule.visibleText, [
@@ -847,7 +750,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
     ]);
   }
 
-  const presetId = detectWindowSizerPreset(value);
+  const presetId = detectXenesisNaturalWindowSizePreset(value);
   const windowSizeRule = presetId
     ? naturalCatalogRuleFromNaturalText(value, XENESIS_NATURAL_WINDOW_SIZE_PRESET_RULES)
     : null;
@@ -860,7 +763,7 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
   const deskFileListPlan = naturalCatalogRulePlanFromNaturalText(value, XENESIS_NATURAL_DESK_FILE_LIST_RULES);
   if (deskFileListPlan) return deskFileListPlan;
 
-  const filePath = extractLocalPath(rawText);
+  const filePath = extractXenesisNaturalLocalPath(rawText);
   const deskFilePathPlan = naturalCatalogRulePlanFromNaturalText(
     value,
     XENESIS_NATURAL_DESK_FILE_PATH_RULES,
@@ -870,13 +773,13 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
 
   const explorerFilterRule = naturalCatalogRuleFromNaturalText(value, XENESIS_NATURAL_EXPLORER_FILTER_RULES);
   if (explorerFilterRule?.visibleText) {
-    const query = extractFilterQuery(rawText);
+    const query = extractXenesisNaturalFilterQuery(rawText);
     return naturalPlan(explorerFilterRule.visibleText, [
       buildXenesisNaturalCatalogAction(explorerFilterRule.action, DESK_ACTION_ARGS.filterQuery(query)),
     ]);
   }
 
-  const explorerPath = extractLocalPath(rawText);
+  const explorerPath = extractXenesisNaturalLocalPath(rawText);
   const explorerNavigateRule = naturalCatalogRuleFromNaturalText(value, XENESIS_NATURAL_EXPLORER_NAVIGATE_RULES);
   if (explorerNavigateRule?.visibleText && explorerPath) {
     return naturalPlan(explorerNavigateRule.visibleText, [
@@ -893,23 +796,19 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
   const terminalListPlan = naturalCatalogRulePlanFromNaturalText(value, XENESIS_NATURAL_TERMINAL_LIST_RULES);
   if (terminalListPlan) return terminalListPlan;
 
-  const count = extractFirstInteger(
-    value,
-    NATURAL_NUMERIC_LIMITS.terminalCount.min,
-    NATURAL_NUMERIC_LIMITS.terminalCount.max,
-  );
+  const count = extractXenesisNaturalTerminalCount(value);
   const terminalManyRule = naturalCatalogRuleFromNaturalText(value, XENESIS_NATURAL_TERMINAL_MANY_RULES);
   if (terminalManyRule?.visibleText && count && count > 1) {
     const actions = [
       buildXenesisNaturalCatalogAction(terminalManyRule.action, DESK_ACTION_ARGS.terminalMany(count, placement)),
     ];
-    const arrangeMode = detectArrangeMode(value);
+    const arrangeMode = detectXenesisNaturalArrangeMode(value);
     const terminalArrangeRule = naturalCatalogRuleFromNaturalText(value, XENESIS_NATURAL_DOCK_WINDOW_ARRANGE_RULES);
     if (arrangeMode && terminalArrangeRule) {
       actions.push(
         buildXenesisNaturalCatalogAction(
           terminalArrangeRule.action,
-          DESK_ACTION_ARGS.dockWindowArrange(detectDockWindowState(value), arrangeMode),
+          DESK_ACTION_ARGS.dockWindowArrange(detectXenesisNaturalDockWindowState(value), arrangeMode),
         ),
       );
     }
@@ -918,14 +817,14 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
 
   const terminalRunRule = naturalCatalogRuleFromNaturalText(value, XENESIS_NATURAL_TERMINAL_RUN_RULES);
   if (terminalRunRule?.visibleText) {
-    const command = extractTerminalCommand(rawText);
+    const command = extractXenesisNaturalTerminalCommand(rawText);
     return naturalPlan(terminalRunRule.visibleText, [
       buildXenesisNaturalCatalogAction(terminalRunRule.action, DESK_ACTION_ARGS.terminalRun(command, placement)),
     ]);
   }
 
-  const scopedArrangeMode = detectArrangeMode(value);
-  const windowState = detectDockWindowState(value);
+  const scopedArrangeMode = detectXenesisNaturalArrangeMode(value);
+  const windowState = detectXenesisNaturalDockWindowState(value);
   const windowArrangeRule = naturalCatalogRuleFromNaturalText(value, XENESIS_NATURAL_DOCK_WINDOW_ARRANGE_RULES);
   if (scopedArrangeMode && windowState && windowArrangeRule?.visibleText) {
     return naturalPlan(windowArrangeRule.visibleText, [
