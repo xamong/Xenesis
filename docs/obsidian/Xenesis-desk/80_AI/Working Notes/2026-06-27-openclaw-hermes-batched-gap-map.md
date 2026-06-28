@@ -4004,6 +4004,60 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Desk Action Parser Catalog Refactor Slice
+
+- Continued the larger hardcoding cleanup by moving Desk action block parser
+  helper ownership from `xenesisAgentDeskControl.ts` into
+  `xenesisNaturalLanguageCatalog.ts`.
+- Intended change:
+  - catalog owns action record normalization, action-array extraction from
+    parsed JSON, visible chat cleanup, fenced/raw Desk action parsing, and
+    direct-run detection;
+  - planner keeps its existing public parser/direct-run exports for
+    compatibility but delegates to shared catalog implementations;
+  - source guards prevent reintroducing planner-local parser helper functions,
+    record key ownership, value type guards, and parser-specific string
+    literals.
+- Scope boundary:
+  - Refactor ownership only.
+  - Preserve action block JSON parsing, visible chat cleanup, validation
+    errors, default action ids, approval flag parsing, raw JSON payload
+    handling, direct-run detection, execution behavior, output text, and UI
+    behavior.
+  - No natural-language route, CR schema, dispatcher, provider, approval,
+    Action Inbox mutation, or live CR behavior changes.
+- RED verification:
+  - Focused Agent Desk Control test failed as expected with 36/37 passing. The
+    new source guard caught planner-local
+    `function normalizeDeskActionRecord`.
+- Implementation:
+  - Added shared `XenesisDeskActionParseResult` and parser normalization
+    result contracts.
+  - Added shared `normalizeXenesisDeskActionRecord`,
+    `xenesisDeskActionRecordsFromJson`,
+    `normalizeXenesisDeskActionVisibleText`,
+    `parseXenesisDeskActionBlocks`, and
+    `shouldRunXenesisDeskActionsDirectly`.
+  - Removed the matching planner-local parser helper block and made
+    `parseXenesisDeskActionBlocks` and
+    `shouldRunXenesisDeskActionsDirectly` delegate to shared implementations.
+  - Updated source guards so parser record keys and value type guards are
+    catalog-owned.
+- Verification:
+  - Focused Agent Desk Control test passed with 37/37 tests.
+  - Capability, connection catalog, and Agent Desk Control tests passed with
+    103/103 tests before and after formatting.
+  - Scoped Biome check passed with no diagnostics.
+  - `npm run typecheck`, `npm run build`,
+    `npm run smoke:xenesis:natural-desk-routing`, and `git diff --check`
+    passed. `build` reported existing Vite warnings only; `diff --check`
+    reported LF-to-CRLF working-copy warnings only.
+  - CR audit was skipped because this slice only refactors planner/catalog
+    parser helpers and does not change registry, dispatcher, or capability
+    coverage.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

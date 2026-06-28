@@ -32,23 +32,20 @@ import {
   findXenesisNaturalProviderRuleAction,
   findXenesisNaturalProviderTarget,
   findXenesisNaturalViewTarget,
-  isXenesisDeskActionRecordValue,
-  isXenesisDeskActionValueType,
   matchesXenesisNaturalContextRule,
   matchesXenesisNaturalContextRules,
   normalizeXenesisNaturalLanguageText,
+  parseXenesisDeskActionBlocks as parseXenesisDeskActionBlocksFromCatalog,
+  shouldRunXenesisDeskActionsDirectly as shouldRunXenesisDeskActionsDirectlyFromCatalog,
   stripXenesisNaturalQuotedText,
   summarizeXenesisDeskActionExecution as summarizeXenesisDeskActionExecutionFromCatalog,
   XENESIS_DESK_ACTION_ACTIVITY_PHASES,
   XENESIS_DESK_ACTION_APPROVAL_STATE,
   XENESIS_DESK_ACTION_CALL_RESULT_KEYS,
   XENESIS_DESK_ACTION_EXECUTION_STATUS,
-  XENESIS_DESK_ACTION_PROTOCOL,
   XENESIS_DESK_ACTION_PROTOCOL_FORMAT,
   XENESIS_DESK_ACTION_PROTOCOL_PATTERNS,
-  XENESIS_DESK_ACTION_PROTOCOL_RECORD_KEYS,
   XENESIS_DESK_ACTION_PROTOCOL_TEXT,
-  XENESIS_DESK_ACTION_VALUE_TYPE_NAMES,
   XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES,
   XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES,
   XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES,
@@ -121,6 +118,7 @@ import {
   XENESIS_NATURAL_WINDOW_SIZE_PRESET_RULES,
   XENESIS_NATURAL_WORKSPACE_SET_RULES,
   type XenesisDeskActionActivityPhase as XenesisDeskActionActivityPhaseCatalog,
+  type XenesisDeskActionParseResult as XenesisDeskActionParseResultCatalog,
   type XenesisNaturalCatalogActionRule,
   type XenesisNaturalConnectionTarget,
   type XenesisNaturalDeskActionRequest,
@@ -130,11 +128,7 @@ import {
 
 export type XenesisDeskActionRequest = XenesisNaturalDeskActionRequest;
 
-export interface XenesisDeskActionParseResult {
-  visibleText: string;
-  actions: XenesisDeskActionRequest[];
-  errors: string[];
-}
+export type XenesisDeskActionParseResult = XenesisDeskActionParseResultCatalog;
 
 export interface XenesisDeskActionCallOptions {
   approved?: boolean;
@@ -228,12 +222,9 @@ const DESK_ACTION_ACTIVITY_PHASES = XENESIS_DESK_ACTION_ACTIVITY_PHASES;
 const DESK_ACTION_APPROVAL_STATE = XENESIS_DESK_ACTION_APPROVAL_STATE;
 const DESK_ACTION_CALL_RESULT_KEYS = XENESIS_DESK_ACTION_CALL_RESULT_KEYS;
 const DESK_ACTION_EXECUTION_STATUS = XENESIS_DESK_ACTION_EXECUTION_STATUS;
-const DESK_ACTION_PROTOCOL = XENESIS_DESK_ACTION_PROTOCOL;
 const DESK_ACTION_PROTOCOL_FORMAT = XENESIS_DESK_ACTION_PROTOCOL_FORMAT;
 const DESK_ACTION_PROTOCOL_PATTERNS = XENESIS_DESK_ACTION_PROTOCOL_PATTERNS;
-const DESK_ACTION_PROTOCOL_RECORD_KEYS = XENESIS_DESK_ACTION_PROTOCOL_RECORD_KEYS;
 const DESK_ACTION_PROTOCOL_TEXT = XENESIS_DESK_ACTION_PROTOCOL_TEXT;
-const DESK_ACTION_VALUE_TYPE_NAMES = XENESIS_DESK_ACTION_VALUE_TYPE_NAMES;
 const DESK_ACTION_ARGS = XENESIS_NATURAL_DESK_ACTION_ARGS;
 const INTENT_PATTERNS = XENESIS_NATURAL_INTENT_PATTERNS;
 const NATURAL_TEXT_DEFAULTS = XENESIS_NATURAL_TEXT_DEFAULTS;
@@ -878,115 +869,12 @@ export function planXenesisDeskNaturalLanguageActions(text: string): XenesisDesk
   return emptyNaturalPlan();
 }
 
-function normalizeDeskActionRecord(
-  value: unknown,
-  index: number,
-): { action?: XenesisDeskActionRequest; error?: string } {
-  if (!isXenesisDeskActionRecordValue(value)) {
-    return { error: DESK_ACTION_PROTOCOL_TEXT.mustBeJsonObject(index) };
-  }
-
-  const record = value;
-  const pathValue = record[DESK_ACTION_PROTOCOL_RECORD_KEYS.path];
-  const path = isXenesisDeskActionValueType(pathValue, DESK_ACTION_VALUE_TYPE_NAMES.string)
-    ? pathValue.trim()
-    : DESK_ACTION_PROTOCOL_FORMAT.emptyText;
-  if (!path) return { error: DESK_ACTION_PROTOCOL_TEXT.missingPath(index) };
-  if (!path.startsWith(DESK_ACTION_PROTOCOL.pathPrefix)) {
-    return { error: DESK_ACTION_PROTOCOL_TEXT.invalidPathPrefix(index, path, DESK_ACTION_PROTOCOL.pathPrefix) };
-  }
-
-  const idValue = record[DESK_ACTION_PROTOCOL_RECORD_KEYS.id];
-  const id =
-    isXenesisDeskActionValueType(idValue, DESK_ACTION_VALUE_TYPE_NAMES.string) && idValue.trim()
-      ? idValue.trim()
-      : DESK_ACTION_PROTOCOL_FORMAT.defaultActionId(index);
-  const reasonValue = record[DESK_ACTION_PROTOCOL_RECORD_KEYS.reason];
-  const reason =
-    isXenesisDeskActionValueType(reasonValue, DESK_ACTION_VALUE_TYPE_NAMES.string) && reasonValue.trim()
-      ? reasonValue.trim()
-      : undefined;
-
-  return {
-    action: {
-      id,
-      path,
-      args: Object.hasOwn(record, DESK_ACTION_PROTOCOL_RECORD_KEYS.args)
-        ? record[DESK_ACTION_PROTOCOL_RECORD_KEYS.args]
-        : {},
-      approved: record[DESK_ACTION_PROTOCOL_RECORD_KEYS.approved] === true,
-      ...(reason ? { reason } : {}),
-    },
-  };
-}
-
-function actionRecordsFromJson(value: unknown): unknown[] {
-  if (Array.isArray(value)) return value;
-  if (isXenesisDeskActionRecordValue(value)) {
-    const actions = value[DESK_ACTION_PROTOCOL_RECORD_KEYS.actions];
-    if (Array.isArray(actions)) return actions;
-  }
-  return [value];
-}
-
-function normalizeVisibleText(value: string): string {
-  return value
-    .replace(DESK_ACTION_PROTOCOL_PATTERNS.visibleTextTrailingLineWhitespace, DESK_ACTION_PROTOCOL_FORMAT.lineBreak)
-    .replace(DESK_ACTION_PROTOCOL_PATTERNS.visibleTextRepeatedBlankLines, DESK_ACTION_PROTOCOL_FORMAT.paragraphBreak)
-    .trim();
-}
-
 export function parseXenesisDeskActionBlocks(text: string): XenesisDeskActionParseResult {
-  const actions: XenesisDeskActionRequest[] = [];
-  const errors: string[] = [];
-  let actionIndex = 0;
-
-  const sourceText = String(text || DESK_ACTION_PROTOCOL_FORMAT.emptyText);
-  const visibleText = normalizeVisibleText(
-    sourceText.replace(
-      DESK_ACTION_PROTOCOL_PATTERNS.deskActionFence,
-      (_block, blockJsonText: string, inlineJsonText?: string) => {
-        const jsonText = blockJsonText || inlineJsonText || DESK_ACTION_PROTOCOL_FORMAT.emptyText;
-        try {
-          const parsed = JSON.parse(jsonText);
-          for (const record of actionRecordsFromJson(parsed)) {
-            const normalized = normalizeDeskActionRecord(record, actionIndex);
-            if (normalized.action) actions.push(normalized.action);
-            if (normalized.error) errors.push(normalized.error);
-            actionIndex += 1;
-          }
-        } catch (error) {
-          errors.push(
-            DESK_ACTION_PROTOCOL_TEXT.jsonParseFailed(error instanceof Error ? error.message : String(error)),
-          );
-        }
-        return DESK_ACTION_PROTOCOL_FORMAT.emptyText;
-      },
-    ),
-  );
-
-  if (actions.length === 0 && errors.length === 0 && visibleText) {
-    try {
-      const parsed = JSON.parse(visibleText);
-      const rawRecords = actionRecordsFromJson(parsed);
-      const normalizedRecords = rawRecords.map((record, index) => normalizeDeskActionRecord(record, index));
-      if (normalizedRecords.some((record) => record.action)) {
-        return {
-          visibleText: DESK_ACTION_PROTOCOL_FORMAT.emptyText,
-          actions: normalizedRecords.flatMap((record) => (record.action ? [record.action] : [])),
-          errors: normalizedRecords.flatMap((record) => (record.error ? [record.error] : [])),
-        };
-      }
-    } catch {
-      // Not a raw Desk action JSON payload. Keep it as ordinary chat text.
-    }
-  }
-
-  return { visibleText, actions, errors };
+  return parseXenesisDeskActionBlocksFromCatalog(text);
 }
 
 export function shouldRunXenesisDeskActionsDirectly(parsed: XenesisDeskActionParseResult): boolean {
-  return parsed.actions.length > 0;
+  return shouldRunXenesisDeskActionsDirectlyFromCatalog(parsed);
 }
 
 export async function runXenesisDeskActions(

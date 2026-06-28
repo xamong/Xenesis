@@ -473,7 +473,8 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.equal(XENESIS_DESK_ACTION_PROTOCOL_FORMAT.sentenceTerminator, '.');
   assert.match(source, /XENESIS_DESK_ACTION_PROTOCOL_PATTERNS/);
   assert.match(source, /XENESIS_DESK_ACTION_PROTOCOL_TEXT/);
-  assert.match(source, /XENESIS_DESK_ACTION_PROTOCOL_RECORD_KEYS/);
+  assert.doesNotMatch(source, /XENESIS_DESK_ACTION_PROTOCOL_RECORD_KEYS/);
+  assert.match(catalogSource, /XENESIS_DESK_ACTION_PROTOCOL_RECORD_KEYS/);
   assert.match(source, /XENESIS_DESK_ACTION_PROTOCOL_FORMAT/);
   assert.doesNotMatch(source, /XENESIS_DESK_ACTION_RESULT_SUMMARY_PATHS/);
   assert.doesNotMatch(source, /XENESIS_DESK_ACTION_RESULT_SUMMARY_KEYS/);
@@ -539,6 +540,22 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /record\.id/);
   assert.doesNotMatch(source, /record\.reason/);
   assert.doesNotMatch(source, /record\.approved/);
+  for (const localParserFunction of [
+    'function normalizeDeskActionRecord',
+    'function actionRecordsFromJson',
+    'function normalizeVisibleText',
+  ]) {
+    assert.doesNotMatch(source, new RegExp(localParserFunction));
+  }
+  for (const sharedParserFunction of [
+    'normalizeXenesisDeskActionRecord',
+    'xenesisDeskActionRecordsFromJson',
+    'normalizeXenesisDeskActionVisibleText',
+    'parseXenesisDeskActionBlocks',
+    'shouldRunXenesisDeskActionsDirectly',
+  ]) {
+    assert.match(catalogSource, new RegExp(`export function ${sharedParserFunction}`));
+  }
   assert.doesNotMatch(source, /Object\.hasOwn\(record, 'args'\)/);
   assert.doesNotMatch(source, /Record<string, unknown>\)\.actions/);
   assert.doesNotMatch(source, /desk-action-\$\{index \+ 1\}/);
@@ -566,10 +583,13 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.equal(XENESIS_DESK_ACTION_EXECUTION_STATUS.failed, false);
   assert.equal(XENESIS_DESK_ACTION_EXECUTION_STATUS.isOk(undefined), true);
   assert.equal(XENESIS_DESK_ACTION_EXECUTION_STATUS.isOk(false), false);
-  assert.match(source, /XENESIS_DESK_ACTION_VALUE_TYPE_NAMES/);
   assert.match(source, /XENESIS_DESK_ACTION_CALL_RESULT_KEYS/);
-  assert.match(source, /isXenesisDeskActionRecordValue/);
-  assert.match(source, /isXenesisDeskActionValueType/);
+  assert.doesNotMatch(source, /XENESIS_DESK_ACTION_VALUE_TYPE_NAMES/);
+  assert.doesNotMatch(source, /isXenesisDeskActionRecordValue/);
+  assert.doesNotMatch(source, /isXenesisDeskActionValueType/);
+  assert.match(catalogSource, /XENESIS_DESK_ACTION_VALUE_TYPE_NAMES/);
+  assert.match(catalogSource, /isXenesisDeskActionRecordValue/);
+  assert.match(catalogSource, /isXenesisDeskActionValueType/);
   assert.doesNotMatch(source, /typeof [^;\n]+ === 'object'/);
   assert.doesNotMatch(source, /typeof [^;\n]+ === 'string'/);
   assert.doesNotMatch(source, /typeof [^;\n]+ === 'number'/);
