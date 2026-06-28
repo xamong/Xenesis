@@ -42,6 +42,16 @@ machine-readable form:
 - `completionEvidence`: readbacks, diagnostics, work-log, open-file, or Action
   Inbox signals that can prove progress.
 - `safetyBoundary`: the non-mutation boundary for the story contract itself.
+- `workflowPreview`: a read/open-only payload for
+  `xd.automation.workflow.preview` and `xd.automation.workflow.run` review. Its
+  steps inspect the contract readbacks and then open the story Settings surface
+  with `ensureVisible=true`.
+
+The workflow preview payload is not a write plan. It must not include
+approval-boundary paths such as draft apply, tool action request, channel test,
+send, create, update, or delete paths. Running the preview as a workflow is a
+separate approval-gated Desk action and still obeys the CR workflow runner's
+path restrictions.
 
 ## Provider Stories
 

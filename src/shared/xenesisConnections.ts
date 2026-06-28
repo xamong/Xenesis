@@ -949,14 +949,35 @@ export interface XenesisConnectionToolUserStoryTemplate {
   safetyBoundaries: string[];
 }
 
+export interface XenesisConnectionUserStoryWorkflowStep {
+  label: string;
+  path: string;
+  args: Record<string, unknown>;
+  approved: boolean;
+}
+
+export interface XenesisConnectionUserStoryWorkflowPreview {
+  previewPath: 'xd.automation.workflow.preview';
+  runPath: 'xd.automation.workflow.run';
+  name: string;
+  description: string;
+  delayMs: 0;
+  stopOnFail: true;
+  steps: XenesisConnectionUserStoryWorkflowStep[];
+  safetyBoundary: string;
+}
+
 export interface XenesisConnectionUserStoryContract {
   readbackPaths: string[];
   openPath: string;
   openArgs: Record<string, string>;
+  workflowPreview: XenesisConnectionUserStoryWorkflowPreview;
   approvalBoundaries: string[];
   completionEvidence: string[];
   safetyBoundary: string;
 }
+
+type XenesisConnectionUserStoryContractInput = Omit<XenesisConnectionUserStoryContract, 'workflowPreview'>;
 
 export type XenesisConnectionToolActionCatalogRuntimeSupport = 'ready-template' | 'planned-oauth' | 'ready-local';
 export type XenesisConnectionToolActionCatalogGroupKind = 'search' | 'read' | 'write';
@@ -2193,11 +2214,45 @@ function withXenesisToolMcpOAuthViewSection(
   };
 }
 
-function userStoryContract(input: XenesisConnectionUserStoryContract): XenesisConnectionUserStoryContract {
+const userStoryWorkflowPreviewSafetyBoundary =
+  'Workflow preview metadata is read/open only and does not execute provider tools, send messages, or mutate external systems.';
+
+function userStoryWorkflowPreview(
+  input: Pick<XenesisConnectionUserStoryContractInput, 'readbackPaths' | 'openPath' | 'openArgs'>,
+): XenesisConnectionUserStoryWorkflowPreview {
+  const storyId =
+    typeof input.openArgs.id === 'string' && input.openArgs.id.trim() ? input.openArgs.id.trim() : 'xenesis';
+  return {
+    previewPath: 'xd.automation.workflow.preview',
+    runPath: 'xd.automation.workflow.run',
+    name: `${storyId}-user-story-preview`,
+    description: `Preview ${storyId} user-story readbacks and open the Settings surface.`,
+    delayMs: 0,
+    stopOnFail: true,
+    steps: [
+      ...input.readbackPaths.map((path) => ({
+        label: `Read ${path}`,
+        path,
+        args: {},
+        approved: false,
+      })),
+      {
+        label: 'Open user-story surface',
+        path: input.openPath,
+        args: { ...input.openArgs, ensureVisible: true },
+        approved: false,
+      },
+    ],
+    safetyBoundary: userStoryWorkflowPreviewSafetyBoundary,
+  };
+}
+
+function userStoryContract(input: XenesisConnectionUserStoryContractInput): XenesisConnectionUserStoryContract {
   return {
     readbackPaths: [...input.readbackPaths],
     openPath: input.openPath,
     openArgs: { ...input.openArgs },
+    workflowPreview: userStoryWorkflowPreview(input),
     approvalBoundaries: [...input.approvalBoundaries],
     completionEvidence: [...input.completionEvidence],
     safetyBoundary: input.safetyBoundary,

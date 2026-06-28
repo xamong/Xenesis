@@ -1897,6 +1897,54 @@ test('buildXenesisConnectionsStatus exposes Hermes-style tool user-story workflo
       ],
       openPath: 'xd.xenesis.tools.userStories.open',
       openArgs: { id: 'notion' },
+      workflowPreview: {
+        previewPath: 'xd.automation.workflow.preview',
+        runPath: 'xd.automation.workflow.run',
+        name: 'notion-user-story-preview',
+        description: 'Preview notion user-story readbacks and open the Settings surface.',
+        delayMs: 0,
+        stopOnFail: true,
+        steps: [
+          {
+            label: 'Read xd.xenesis.connections.status',
+            path: 'xd.xenesis.connections.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Read xd.xenesis.tools.userStories.status',
+            path: 'xd.xenesis.tools.userStories.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Read xd.xenesis.tools.connectors.status',
+            path: 'xd.xenesis.tools.connectors.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Read xd.xenesis.tools.views.status',
+            path: 'xd.xenesis.tools.views.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Read xd.xenesis.guides.status',
+            path: 'xd.xenesis.guides.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Open user-story surface',
+            path: 'xd.xenesis.tools.userStories.open',
+            args: { id: 'notion', ensureVisible: true },
+            approved: false,
+          },
+        ],
+        safetyBoundary:
+          'Workflow preview metadata is read/open only and does not execute provider tools, send messages, or mutate external systems.',
+      },
       approvalBoundaries: [
         'xd.xenesis.tools.mcpInstallDrafts.request',
         'xd.xenesis.tools.mcpInstallDrafts.apply',
@@ -1923,6 +1971,11 @@ test('buildXenesisConnectionsStatus exposes Hermes-style tool user-story workflo
   assert.ok(
     googleCalendar?.toolUserStory?.safetyBoundaries.includes(
       'planned OAuth calendar workflows do not create, update, or delete events',
+    ),
+  );
+  assert.ok(
+    notion?.toolUserStory?.storyContract.workflowPreview.steps.every(
+      (step) => !notion.toolUserStory?.storyContract.approvalBoundaries.includes(step.path),
     ),
   );
 });
@@ -2971,6 +3024,66 @@ test('buildXenesisConnectionsStatus exposes channel user-story workflows for imp
       ],
       openPath: 'xd.xenesis.channels.userStories.open',
       openArgs: { id: 'telegram' },
+      workflowPreview: {
+        previewPath: 'xd.automation.workflow.preview',
+        runPath: 'xd.automation.workflow.run',
+        name: 'telegram-user-story-preview',
+        description: 'Preview telegram user-story readbacks and open the Settings surface.',
+        delayMs: 0,
+        stopOnFail: true,
+        steps: [
+          {
+            label: 'Read xd.xenesis.connections.status',
+            path: 'xd.xenesis.connections.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Read xd.xenesis.channels.userStories.status',
+            path: 'xd.xenesis.channels.userStories.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Read xd.xenesis.channels.routing.status',
+            path: 'xd.xenesis.channels.routing.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Read xd.xenesis.channels.safety.status',
+            path: 'xd.xenesis.channels.safety.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Read xd.xenesis.channels.accessGroups.status',
+            path: 'xd.xenesis.channels.accessGroups.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Read xd.xenesis.channels.pairing.status',
+            path: 'xd.xenesis.channels.pairing.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Read xd.xenesis.gateway.status',
+            path: 'xd.xenesis.gateway.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Open user-story surface',
+            path: 'xd.xenesis.channels.userStories.open',
+            args: { id: 'telegram', ensureVisible: true },
+            approved: false,
+          },
+        ],
+        safetyBoundary:
+          'Workflow preview metadata is read/open only and does not execute provider tools, send messages, or mutate external systems.',
+      },
       approvalBoundaries: [
         'xd.xenesis.channels.profileDrafts.request',
         'xd.xenesis.channels.profileDrafts.apply',
@@ -3001,6 +3114,15 @@ test('buildXenesisConnectionsStatus exposes channel user-story workflows for imp
   assert.ok(
     signal?.channelTemplate?.userStory?.safetyBoundaries.some((boundary) =>
       boundary.includes('planned messenger user stories do not enable delivery'),
+    ),
+  );
+  assert.equal(
+    signal?.channelTemplate?.userStory?.storyContract.workflowPreview.previewPath,
+    'xd.automation.workflow.preview',
+  );
+  assert.ok(
+    signal?.channelTemplate?.userStory?.storyContract.workflowPreview.steps.every(
+      (step) => step.path !== 'xd.xenesis.profiles.testChannel',
     ),
   );
 });

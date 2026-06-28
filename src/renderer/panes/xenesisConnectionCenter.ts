@@ -284,11 +284,11 @@ export function formatXenesisToolUserStorySummary(
 }
 
 export function formatXenesisUserStoryContractSummary(contract: XenesisConnectionUserStoryContract): string {
-  return `${contract.openPath} / ${contract.readbackPaths.length} readback path(s) / ${contract.approvalBoundaries.length} approval boundary/boundaries / ${contract.completionEvidence.length} evidence signal(s)`;
+  return `${contract.openPath} / ${contract.readbackPaths.length} readback path(s) / ${contract.approvalBoundaries.length} approval boundary/boundaries / ${contract.completionEvidence.length} evidence signal(s) / ${contract.workflowPreview.previewPath} / ${contract.workflowPreview.steps.length} workflow step(s)`;
 }
 
 export function formatXenesisUserStoryContractDetail(contract: XenesisConnectionUserStoryContract): string {
-  return `open ${contract.openPath} ${JSON.stringify(contract.openArgs)} / read ${contract.readbackPaths.join(', ') || '-'} / approvals ${contract.approvalBoundaries.join(', ') || '-'} / evidence ${contract.completionEvidence.join('; ') || '-'} / safety ${contract.safetyBoundary}`;
+  return `open ${contract.openPath} ${JSON.stringify(contract.openArgs)} / read ${contract.readbackPaths.join(', ') || '-'} / approvals ${contract.approvalBoundaries.join(', ') || '-'} / evidence ${contract.completionEvidence.join('; ') || '-'} / workflow preview ${contract.workflowPreview.previewPath} -> ${contract.workflowPreview.runPath} / steps ${contract.workflowPreview.steps.length} / safety ${contract.safetyBoundary} / preview safety ${contract.workflowPreview.safetyBoundary}`;
 }
 
 export function formatXenesisMessengerViewSummary(view: XenesisConnectionMessengerViewTemplate): string {

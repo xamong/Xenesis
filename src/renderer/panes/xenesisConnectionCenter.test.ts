@@ -12,6 +12,7 @@ import type {
   XenesisConnectionsStatus,
   XenesisConnectionToolSetupPlanTemplate,
   XenesisConnectionToolViewSection,
+  XenesisConnectionUserStoryContract,
 } from '../../shared/types';
 import * as xenesisConnectionCenter from './xenesisConnectionCenter';
 import {
@@ -1034,10 +1035,40 @@ test('formatXenesisToolUserStorySummary describes workflow type, runtime support
 });
 
 test('formatXenesisUserStoryContract helpers describe readbacks, approvals, evidence, and safety boundary', () => {
-  const contract = {
+  const contract: XenesisConnectionUserStoryContract = {
     readbackPaths: ['xd.xenesis.tools.userStories.status', 'xd.xenesis.tools.connectors.status'],
     openPath: 'xd.xenesis.tools.userStories.open',
     openArgs: { id: 'notion' },
+    workflowPreview: {
+      previewPath: 'xd.automation.workflow.preview',
+      runPath: 'xd.automation.workflow.run',
+      name: 'notion-user-story-preview',
+      description: 'Preview notion user-story readbacks and open the Settings surface.',
+      delayMs: 0,
+      stopOnFail: true,
+      steps: [
+        {
+          label: 'Read xd.xenesis.tools.userStories.status',
+          path: 'xd.xenesis.tools.userStories.status',
+          args: {},
+          approved: false,
+        },
+        {
+          label: 'Read xd.xenesis.tools.connectors.status',
+          path: 'xd.xenesis.tools.connectors.status',
+          args: {},
+          approved: false,
+        },
+        {
+          label: 'Open user-story surface',
+          path: 'xd.xenesis.tools.userStories.open',
+          args: { id: 'notion', ensureVisible: true },
+          approved: false,
+        },
+      ],
+      safetyBoundary:
+        'Workflow preview metadata is read/open only and does not execute provider tools, send messages, or mutate external systems.',
+    },
     approvalBoundaries: ['xd.xenesis.tools.mcpInstallDrafts.apply'],
     completionEvidence: [
       'MCP settings readback lists the Notion server before tool use.',
@@ -1050,11 +1081,11 @@ test('formatXenesisUserStoryContract helpers describe readbacks, approvals, evid
   assert.equal(typeof xenesisConnectionCenter.formatXenesisUserStoryContractDetail, 'function');
   assert.equal(
     xenesisConnectionCenter.formatXenesisUserStoryContractSummary(contract),
-    'xd.xenesis.tools.userStories.open / 2 readback path(s) / 1 approval boundary/boundaries / 2 evidence signal(s)',
+    'xd.xenesis.tools.userStories.open / 2 readback path(s) / 1 approval boundary/boundaries / 2 evidence signal(s) / xd.automation.workflow.preview / 3 workflow step(s)',
   );
   assert.equal(
     xenesisConnectionCenter.formatXenesisUserStoryContractDetail(contract),
-    'open xd.xenesis.tools.userStories.open {"id":"notion"} / read xd.xenesis.tools.userStories.status, xd.xenesis.tools.connectors.status / approvals xd.xenesis.tools.mcpInstallDrafts.apply / evidence MCP settings readback lists the Notion server before tool use.; Action Inbox records explicit setup approval. / safety user-story contracts are read/open planning metadata',
+    'open xd.xenesis.tools.userStories.open {"id":"notion"} / read xd.xenesis.tools.userStories.status, xd.xenesis.tools.connectors.status / approvals xd.xenesis.tools.mcpInstallDrafts.apply / evidence MCP settings readback lists the Notion server before tool use.; Action Inbox records explicit setup approval. / workflow preview xd.automation.workflow.preview -> xd.automation.workflow.run / steps 3 / safety user-story contracts are read/open planning metadata / preview safety Workflow preview metadata is read/open only and does not execute provider tools, send messages, or mutate external systems.',
   );
 });
 

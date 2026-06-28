@@ -17075,6 +17075,99 @@ Verification so far:
 - Next intended step:
   - Continue with the next hardcoding/CR gap slice from the clean worktree.
 
+## 2026-06-29 - User Story CR Workflow Preview Slice
+
+- Objective:
+  - Extend Xenesis tool/channel user-story contracts with a structured CR
+    workflow preview payload so Hermes-style stories can be reviewed as
+    executable read/open workflow metadata without running provider tools,
+    sending messages, or mutating external systems.
+- Design:
+  - Add a `workflowPreview` object inside `XenesisConnectionUserStoryContract`.
+  - Keep the preview read/open only: readback steps use status paths and the
+    final open step focuses the existing Settings user-story card with
+    `ensureVisible=true`.
+  - Name CR preview/run paths explicitly as metadata
+    (`xd.automation.workflow.preview`, `xd.automation.workflow.run`) while the
+    contract safety boundary continues to say that the user-story contract does
+    not execute tools, send messages, or enable planned adapters.
+- Touched files so far:
+  - `handoff.md`
+  - `docs/superpowers/plans/2026-06-29-user-story-cr-workflow-preview.md`
+  - `src/shared/xenesisConnections.ts`
+  - `src/shared/xenesisConnections.test.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.test.ts`
+  - `docs/manual/12-agent-user-stories.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-user-story-cr-workflow-preview.md`
+- Commands run:
+  - `git status --short` -> clean.
+  - Context reads for `storyContract`, user-story tests, renderer formatters,
+    manual docs, and required Obsidian rules/index/module/architecture notes.
+  - RED shared:
+    `npx tsx --test src\shared\xenesisConnections.test.ts` -> failed 39/41 as
+    expected because tool and channel `storyContract` did not expose the new
+    `workflowPreview` payload.
+  - GREEN shared:
+    `npx tsx --test src\shared\xenesisConnections.test.ts` -> passed 41/41
+    after deriving workflow previews from `userStoryContract`.
+  - RED renderer:
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` ->
+    failed 65/66 as expected because
+    `formatXenesisUserStoryContractSummary` did not include workflow preview
+    metadata yet.
+  - GREEN renderer:
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` ->
+    passed 66/66 after surfacing preview path, run path, and step count in the
+    user-story contract formatters.
+  - Focused combined:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    -> passed 107/107.
+  - Typecheck:
+    `npm run typecheck` -> initially failed because the renderer formatter test
+    fixture widened workflow preview literal fields to `string`; fixed by
+    typing the fixture as `XenesisConnectionUserStoryContract`.
+  - Typecheck rerun:
+    `npm run typecheck` -> passed.
+  - CR audit:
+    `npm run docs:capabilities:audit` -> passed; generated audit counters
+    remained all 0. Timestamp/EOF-only audit doc churn was reverted.
+  - CR audit counter readback:
+    `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> all 0.
+  - Focused Biome:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true ...changed user-story files...`
+    -> initially failed only on import ordering in
+    `src/renderer/panes/xenesisConnectionCenter.test.ts`; fixed and rerun with
+    `src/shared/types.ts` included -> passed.
+  - Hygiene:
+    `git diff --check` -> passed; Git printed LF/CRLF normalization warnings
+    only.
+- Implemented:
+  - Added `XenesisConnectionUserStoryWorkflowPreview` and
+    `XenesisConnectionUserStoryWorkflowStep`.
+  - Exported the new workflow preview/step types through `src/shared/types.ts`.
+  - `userStoryContract` now derives a read/open-only preview payload from the
+    contract readback paths and open path.
+  - Tool and channel story previews keep all steps `approved=false` and exclude
+    approval-boundary paths such as apply, action request, send, or
+    `xd.xenesis.profiles.testChannel`.
+  - Renderer contract formatters now show `xd.automation.workflow.preview`,
+    `xd.automation.workflow.run`, and workflow step count.
+  - Manual and Obsidian working note document that the preview is metadata and
+    not an external write plan.
+- Planned RED:
+  - Add shared tests proving tool/channel `storyContract.workflowPreview`
+    contains preview/run path metadata, readback steps, a safe open step, and no
+    approval/write/test-channel boundary paths.
+  - Add renderer formatter expectations so Settings can surface preview path
+    and step count.
+- Known gaps:
+  - `npm run check:public-release` remains expected to fail because this
+    worktree is missing `.github/workflows/ci.yml`.
+- Next intended step:
+  - Commit the slice from the current worktree.
+
 ## Current CR Workflow Registry De-hardcoding Slice
 
 - Current objective:
