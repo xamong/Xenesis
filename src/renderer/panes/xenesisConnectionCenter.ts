@@ -33,6 +33,10 @@ import type {
   XenesisConnectionToolUserStoryTemplate,
   XenesisConnectionToolViewTemplate,
 } from '../../shared/types';
+import {
+  isXenesisConnectionCenterDetailFocus,
+  type XenesisConnectionCenterDetailFocus,
+} from '../../shared/xenesisConnections';
 
 export type XenesisConnectionTone = 'success' | 'warning' | 'danger' | 'muted' | 'info' | 'neutral';
 
@@ -44,6 +48,40 @@ export const XENESIS_CONNECTION_STATUS_ORDER: XenesisConnectionStatus[] = [
   'planned',
   'unknown',
 ];
+
+export const XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES = {
+  'diagnostic-runbook': 'data-xenesis-connection-diagnostic-runbook',
+  'setup-request': 'data-xenesis-connection-setup-request',
+  'onboarding-plan': 'data-xenesis-onboarding-plan',
+  'guide-catalog': 'data-xenesis-guide-catalog',
+  'provider-profile-draft': 'data-xenesis-provider-profile-draft',
+  'provider-setup': 'data-xenesis-provider-setup',
+  'provider-routing': 'data-xenesis-provider-routing',
+  'provider-view': 'data-xenesis-provider-view',
+  'tool-setup': 'data-xenesis-tool-setup',
+  'tool-install-plan': 'data-xenesis-tool-install-plan',
+  'mcp-install-draft': 'data-xenesis-mcp-install-draft',
+  'tool-oauth-draft': 'data-xenesis-tool-oauth-draft',
+  'tool-action-catalog': 'data-xenesis-tool-action-catalog',
+  'tool-connector': 'data-xenesis-tool-connector',
+  'tool-view': 'data-xenesis-tool-view',
+  'tool-user-story': 'data-xenesis-tool-user-story',
+  'messenger-view': 'data-xenesis-messenger-view',
+  'mcp-template': 'data-xenesis-mcp-template',
+  'channel-profile-draft': 'data-xenesis-channel-profile-draft',
+  'channel-template': 'data-xenesis-channel-template',
+  'channel-routing': 'data-xenesis-channel-routing',
+  'channel-safety': 'data-xenesis-channel-safety',
+  'channel-access-groups': 'data-xenesis-channel-access-groups',
+  'channel-pairing': 'data-xenesis-channel-pairing',
+  'channel-user-story': 'data-xenesis-channel-user-story',
+} as const satisfies Record<XenesisConnectionCenterDetailFocus, string>;
+
+export function xenesisConnectionDetailFocusSelector(value: unknown): string | null {
+  if (typeof value !== 'string' || !isXenesisConnectionCenterDetailFocus(value)) return null;
+  const attribute = XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES[value];
+  return attribute ? `[${attribute}]` : null;
+}
 
 export function xenesisConnectionTone(status: XenesisConnectionStatus): XenesisConnectionTone {
   switch (status) {

@@ -21,12 +21,12 @@ import type {
   ExtensionHostAction,
   ExtensionPanelPlacement,
   LocalTerminalProfile,
+  McpBridgeBrowserActionPayload,
+  McpBridgeBrowserActionResult,
   McpBridgeCaptureActivePanePayload,
   McpBridgeCaptureActivePaneResult,
   McpBridgeDemoLabPlaybackControlPayload,
   McpBridgeDemoLabPlaybackControlResult,
-  McpBridgeBrowserActionPayload,
-  McpBridgeBrowserActionResult,
   McpBridgeDockActionPayload,
   McpBridgeDockActionResult,
   McpBridgeExplorerActionPayload,
@@ -135,6 +135,7 @@ declare global {
       mode?: unknown;
       section?: unknown;
       focusConnectionId?: unknown;
+      focusConnectionDetail?: unknown;
       ensureVisible?: unknown;
       selectedTerminalProfileId?: unknown;
       pendingLocalTerminalProfile?: unknown;
@@ -145,7 +146,6 @@ declare global {
 }
 
 import { deskBridge, getDeskBridgeApi } from './deskBridge';
-import { runBrowserPaneAction } from './panes/BrowserPane';
 import { openExtensionTool, useRendererExtensionEvents } from './extensions/registry';
 import {
   buildFileBotContextMessage,
@@ -171,6 +171,7 @@ import {
   installRendererProducerObservability,
   uninstallRendererProducerObservability,
 } from './observability/rendererProducerObservability';
+import { runBrowserPaneAction } from './panes/BrowserPane';
 import type {
   CommandCenterPaneProps,
   CommandCenterTargetGroup,
@@ -2662,6 +2663,7 @@ export default function App() {
       mode?: unknown;
       section?: unknown;
       focusConnectionId?: unknown;
+      focusConnectionDetail?: unknown;
       ensureVisible?: unknown;
       selectedTerminalProfileId?: unknown;
       pendingLocalTerminalProfile?: unknown;
@@ -2735,6 +2737,7 @@ export default function App() {
         mode: payload.mode,
         section: payload.section,
         focusConnectionId: payload.focusConnectionId,
+        focusConnectionDetail: payload.focusConnectionDetail,
         ensureVisible: payload.ensureVisible,
       };
       if (payload.kind === 'settings') {
@@ -2743,6 +2746,7 @@ export default function App() {
             payload.mode ||
             payload.section ||
             payload.focusConnectionId ||
+            payload.focusConnectionDetail ||
             typeof payload.ensureVisible === 'boolean',
         );
         if (hasSettingsTarget) {
@@ -2751,6 +2755,7 @@ export default function App() {
             mode: payload.mode,
             section: payload.section,
             focusConnectionId: payload.focusConnectionId,
+            focusConnectionDetail: payload.focusConnectionDetail,
             ensureVisible: payload.ensureVisible,
             placement: payload.placement,
             targetPaneId: payload.targetPaneId,
@@ -3293,30 +3298,33 @@ export default function App() {
     return getDeskBridgeApi()?.onDockAction?.((payload) => handleMcpDockAction(payload));
   }, [handleMcpDockAction]);
 
-  const handleMcpBrowserAction = useCallback(async (payload: McpBridgeBrowserActionPayload): Promise<McpBridgeBrowserActionResult> => {
-    const explicitContentId = String(payload.contentId || '').trim();
-    const paneId = String(payload.paneId || '').trim();
-    const resolveBrowserContentId = (): string | undefined => {
-      const explicit = explicitContentId ? engine.contents.get(explicitContentId) : undefined;
-      if (explicit?.contentType === 'browser') return explicitContentId;
+  const handleMcpBrowserAction = useCallback(
+    async (payload: McpBridgeBrowserActionPayload): Promise<McpBridgeBrowserActionResult> => {
+      const explicitContentId = String(payload.contentId || '').trim();
+      const paneId = String(payload.paneId || '').trim();
+      const resolveBrowserContentId = (): string | undefined => {
+        const explicit = explicitContentId ? engine.contents.get(explicitContentId) : undefined;
+        if (explicit?.contentType === 'browser') return explicitContentId;
 
-      const pane = paneId ? engine.panes.get(paneId) : undefined;
-      if (pane) {
-        const active = pane.activeContentId ? engine.contents.get(pane.activeContentId) : undefined;
-        if (active?.contentType === 'browser') return pane.activeContentId ?? undefined;
-        const firstBrowser = pane.contents.find((id) => engine.contents.get(id)?.contentType === 'browser');
-        if (firstBrowser) return firstBrowser;
-      }
+        const pane = paneId ? engine.panes.get(paneId) : undefined;
+        if (pane) {
+          const active = pane.activeContentId ? engine.contents.get(pane.activeContentId) : undefined;
+          if (active?.contentType === 'browser') return pane.activeContentId ?? undefined;
+          const firstBrowser = pane.contents.find((id) => engine.contents.get(id)?.contentType === 'browser');
+          if (firstBrowser) return firstBrowser;
+        }
 
-      const activePane = engine.activePaneId ? engine.panes.get(engine.activePaneId) : undefined;
-      const activeContent = activePane?.activeContentId ? engine.contents.get(activePane.activeContentId) : undefined;
-      if (activeContent?.contentType === 'browser') return activePane?.activeContentId ?? undefined;
+        const activePane = engine.activePaneId ? engine.panes.get(engine.activePaneId) : undefined;
+        const activeContent = activePane?.activeContentId ? engine.contents.get(activePane.activeContentId) : undefined;
+        if (activeContent?.contentType === 'browser') return activePane?.activeContentId ?? undefined;
 
-      const firstBrowser = [...engine.contents.values()].find((content) => content.contentType === 'browser');
-      return firstBrowser?.id;
-    };
-    return runBrowserPaneAction(payload, resolveBrowserContentId());
-  }, [engine]);
+        const firstBrowser = [...engine.contents.values()].find((content) => content.contentType === 'browser');
+        return firstBrowser?.id;
+      };
+      return runBrowserPaneAction(payload, resolveBrowserContentId());
+    },
+    [engine],
+  );
 
   useEffect(() => {
     return getDeskBridgeApi()?.onBrowserAction?.((payload) => handleMcpBrowserAction(payload));

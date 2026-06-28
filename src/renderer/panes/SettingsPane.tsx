@@ -121,6 +121,7 @@ import {
   formatXenesisToolUserStorySummary,
   formatXenesisToolViewSummary,
   listXenesisConnectionSections,
+  xenesisConnectionDetailFocusSelector,
   xenesisConnectionTone,
 } from './xenesisConnectionCenter';
 
@@ -961,6 +962,7 @@ type SettingsOpenTargetDetail = {
   mode?: unknown;
   section?: unknown;
   focusConnectionId?: unknown;
+  focusConnectionDetail?: unknown;
   ensureVisible?: unknown;
   selectedTerminalProfileId?: unknown;
   pendingLocalTerminalProfile?: unknown;
@@ -1072,6 +1074,14 @@ function findXenesisConnectionElement(connectionId: string): HTMLElement | null 
     if (element.dataset.xenesisConnection === normalizedId) return element;
   }
   return null;
+}
+
+function findXenesisConnectionDetailElement(connectionId: string, focusConnectionDetail: unknown): HTMLElement | null {
+  const selector = xenesisConnectionDetailFocusSelector(focusConnectionDetail);
+  if (!selector) return null;
+  const connectionElement = findXenesisConnectionElement(connectionId);
+  if (connectionElement) return connectionElement.querySelector<HTMLElement>(selector);
+  return connectionId.trim() ? null : document.querySelector<HTMLElement>(selector);
 }
 
 function getRunModelModeForSection(section: string): SettingsRunModelMode | null {
@@ -1195,6 +1205,7 @@ export default function SettingsPane() {
   const [runMode, setRunMode] = useState<SettingsRunModelMode>('byok');
   const [xenesisTab, setXenesisTab] = useState<SettingsXenesisTab>('agent');
   const [focusedXenesisConnectionId, setFocusedXenesisConnectionId] = useState('');
+  const [focusedXenesisConnectionDetail, setFocusedXenesisConnectionDetail] = useState('');
   const [interfaceTab, setInterfaceTab] = useState<SettingsInterfaceTab>('language');
   const [infoTab, setInfoTab] = useState<SettingsInfoTab>('general');
   const [xenisPhase5Enabled, setXenisPhase5Enabled] = useState(false);
@@ -1692,6 +1703,8 @@ export default function SettingsPane() {
       const rawSection = normalizeSettingsTargetSection(detail.section);
       const section = !xenisPhase5Enabled && rawSection === 'xamong-runtime' ? 'default' : rawSection;
       const requestedConnectionId = typeof detail.focusConnectionId === 'string' ? detail.focusConnectionId.trim() : '';
+      const requestedConnectionDetail =
+        typeof detail.focusConnectionDetail === 'string' ? detail.focusConnectionDetail.trim() : '';
       const normalizedXenesisTab = normalizeXenesisTab(detail.mode) ?? getXenesisTabForSection(section);
       const normalizedCategory = normalizeSettingsTargetCategory(detail.category);
       const requestedCategory =
@@ -1726,13 +1739,15 @@ export default function SettingsPane() {
       if (targetCategory === 'xenesis-agent' && normalizedXenesisTab) {
         setXenesisTab(normalizedXenesisTab);
       }
-      if (requestedConnectionId) {
+      if (requestedConnectionId || requestedConnectionDetail) {
         setFocusedXenesisConnectionId(requestedConnectionId);
+        setFocusedXenesisConnectionDetail(requestedConnectionDetail);
         if (xenesisConnectionFocusTimeoutRef.current !== null) {
           window.clearTimeout(xenesisConnectionFocusTimeoutRef.current);
         }
         xenesisConnectionFocusTimeoutRef.current = window.setTimeout(() => {
           setFocusedXenesisConnectionId((current) => (current === requestedConnectionId ? '' : current));
+          setFocusedXenesisConnectionDetail((current) => (current === requestedConnectionDetail ? '' : current));
           xenesisConnectionFocusTimeoutRef.current = null;
         }, 60000);
       }
@@ -1750,10 +1765,14 @@ export default function SettingsPane() {
       if (section && detail.ensureVisible !== false) {
         const scrollToSection = (attempt = 0) => {
           const element =
+            findXenesisConnectionDetailElement(requestedConnectionId, requestedConnectionDetail) ??
             (requestedConnectionId ? findXenesisConnectionElement(requestedConnectionId) : null) ??
             document.querySelector<HTMLElement>(`[data-settings-section="${section}"]`);
           if (element) {
-            element.scrollIntoView({ block: requestedConnectionId ? 'center' : 'start', behavior: 'auto' });
+            element.scrollIntoView({
+              block: requestedConnectionId || requestedConnectionDetail ? 'center' : 'start',
+              behavior: 'auto',
+            });
             return;
           }
           if (attempt < 12) {
@@ -4275,6 +4294,9 @@ export default function SettingsPane() {
     [t],
   );
 
+  const isXenesisConnectionDetailFocused = (itemId: string, detail: string) =>
+    focusedXenesisConnectionDetail === detail && (!focusedXenesisConnectionId || focusedXenesisConnectionId === itemId);
+
   const renderXenesisConnectionItem = (item: XenesisConnectionItem) => {
     const openRequest = buildXenesisConnectionOpenRequest(item);
     const settingsRequest = buildXenesisConnectionSettingsRequest(item);
@@ -4469,7 +4491,13 @@ export default function SettingsPane() {
           </div>
         ) : null}
         {diagnosticRunbook ? (
-          <div className="sp-info-list sp-info-list-compact" data-xenesis-connection-diagnostic-runbook={item.id}>
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'diagnostic-runbook') && 'is-focused',
+            )}
+            data-xenesis-connection-diagnostic-runbook={item.id}
+          >
             <div>
               <span>{t('settings.xenesisConnectionsDiagnosticRunbook')}</span>
               <strong>{formatXenesisConnectionDiagnosticRunbookSummary(diagnosticRunbook)}</strong>
@@ -4501,7 +4529,13 @@ export default function SettingsPane() {
           </div>
         ) : null}
         {setupRequest ? (
-          <div className="sp-info-list sp-info-list-compact" data-xenesis-connection-setup-request={item.id}>
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'setup-request') && 'is-focused',
+            )}
+            data-xenesis-connection-setup-request={item.id}
+          >
             <div>
               <span>{t('settings.xenesisConnectionsSetupRequest')}</span>
               <strong>{formatXenesisConnectionSetupRequestSummary(setupRequest)}</strong>
@@ -4547,7 +4581,13 @@ export default function SettingsPane() {
           </div>
         ) : null}
         {onboardingPlan ? (
-          <div className="sp-info-list sp-info-list-compact" data-xenesis-onboarding-plan={item.id}>
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'onboarding-plan') && 'is-focused',
+            )}
+            data-xenesis-onboarding-plan={item.id}
+          >
             <div>
               <span>{t('settings.xenesisConnectionsOnboardingPlan')}</span>
               <strong>{formatXenesisOnboardingPlanSummary(onboardingPlan)}</strong>
@@ -4583,7 +4623,13 @@ export default function SettingsPane() {
           </div>
         ) : null}
         {item.guideCatalog ? (
-          <div className="sp-info-list sp-info-list-compact" data-xenesis-guide-catalog={item.id}>
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'guide-catalog') && 'is-focused',
+            )}
+            data-xenesis-guide-catalog={item.id}
+          >
             <div>
               <span>{t('settings.xenesisConnectionsGuideCatalog')}</span>
               <strong>{formatXenesisGuideCatalogSummary(item.guideCatalog)}</strong>
@@ -4620,7 +4666,10 @@ export default function SettingsPane() {
         ) : null}
         {providerProfileDraft ? (
           <div
-            className="sp-info-list sp-info-list-compact"
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'provider-profile-draft') && 'is-focused',
+            )}
             data-xenesis-provider-profile-draft={providerProfileDraft.provider}
           >
             <div>
@@ -4684,7 +4733,13 @@ export default function SettingsPane() {
           </div>
         ) : null}
         {providerSetup ? (
-          <div className="sp-info-list sp-info-list-compact" data-xenesis-provider-setup={item.id}>
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'provider-setup') && 'is-focused',
+            )}
+            data-xenesis-provider-setup={item.id}
+          >
             <div>
               <span>{t('settings.xenesisConnectionsProviderSetup')}</span>
               <strong>{formatXenesisProviderSetupSummary(providerSetup)}</strong>
@@ -4730,7 +4785,13 @@ export default function SettingsPane() {
           </div>
         ) : null}
         {providerRouting ? (
-          <div className="sp-info-list sp-info-list-compact" data-xenesis-provider-routing={item.id}>
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'provider-routing') && 'is-focused',
+            )}
+            data-xenesis-provider-routing={item.id}
+          >
             <div>
               <span>{t('settings.xenesisConnectionsProviderRouting')}</span>
               <strong>{formatXenesisProviderRoutingSummary(providerRouting)}</strong>
@@ -4781,7 +4842,13 @@ export default function SettingsPane() {
           </div>
         ) : null}
         {providerView ? (
-          <div className="sp-info-list sp-info-list-compact" data-xenesis-provider-view={item.id}>
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'provider-view') && 'is-focused',
+            )}
+            data-xenesis-provider-view={item.id}
+          >
             <div>
               <span>{t('settings.xenesisConnectionsProviderView')}</span>
               <strong>{formatXenesisProviderViewSummary(providerView)}</strong>
@@ -4819,7 +4886,13 @@ export default function SettingsPane() {
           </div>
         ) : null}
         {toolSetup ? (
-          <div className="sp-info-list sp-info-list-compact" data-xenesis-tool-setup={item.id}>
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'tool-setup') && 'is-focused',
+            )}
+            data-xenesis-tool-setup={item.id}
+          >
             <div>
               <span>{t('settings.xenesisConnectionsToolSetup')}</span>
               <strong>{formatXenesisToolSetupSummary(toolSetup)}</strong>
@@ -4851,7 +4924,13 @@ export default function SettingsPane() {
           </div>
         ) : null}
         {toolInstallPlan ? (
-          <div className="sp-info-list sp-info-list-compact" data-xenesis-tool-install-plan={item.id}>
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'tool-install-plan') && 'is-focused',
+            )}
+            data-xenesis-tool-install-plan={item.id}
+          >
             <div>
               <span>{t('settings.xenesisConnectionsToolInstallPlan')}</span>
               <strong>{formatXenesisToolInstallPlanSummary(toolInstallPlan)}</strong>
@@ -4895,7 +4974,13 @@ export default function SettingsPane() {
           </div>
         ) : null}
         {mcpInstallDraft ? (
-          <div className="sp-info-list sp-info-list-compact" data-xenesis-mcp-install-draft={item.id}>
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'mcp-install-draft') && 'is-focused',
+            )}
+            data-xenesis-mcp-install-draft={item.id}
+          >
             <div>
               <span>{t('settings.xenesisConnectionsMcpInstallDraft')}</span>
               <strong>{formatXenesisMcpInstallDraftSummary(mcpInstallDraft)}</strong>
@@ -4943,7 +5028,13 @@ export default function SettingsPane() {
           </div>
         ) : null}
         {toolOAuthDraft ? (
-          <div className="sp-info-list sp-info-list-compact" data-xenesis-tool-oauth-draft={item.id}>
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'tool-oauth-draft') && 'is-focused',
+            )}
+            data-xenesis-tool-oauth-draft={item.id}
+          >
             <div>
               <span>{t('settings.xenesisConnectionsToolOAuthDraft')}</span>
               <strong>{formatXenesisToolOAuthDraftSummary(toolOAuthDraft)}</strong>
@@ -5007,7 +5098,13 @@ export default function SettingsPane() {
           </div>
         ) : null}
         {toolActionCatalog ? (
-          <div className="sp-info-list sp-info-list-compact" data-xenesis-tool-action-catalog={item.id}>
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'tool-action-catalog') && 'is-focused',
+            )}
+            data-xenesis-tool-action-catalog={item.id}
+          >
             <div>
               <span>{t('settings.xenesisConnectionsToolActionCatalog')}</span>
               <strong>{formatXenesisToolActionCatalogSummary(toolActionCatalog)}</strong>
@@ -5056,7 +5153,13 @@ export default function SettingsPane() {
           </div>
         ) : null}
         {channelProfileDraft ? (
-          <div className="sp-info-list sp-info-list-compact" data-xenesis-channel-profile-draft={item.id}>
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'channel-profile-draft') && 'is-focused',
+            )}
+            data-xenesis-channel-profile-draft={item.id}
+          >
             <div>
               <span>{t('settings.xenesisConnectionsChannelProfileDraft')}</span>
               <strong>{formatXenesisChannelProfileDraftSummary(channelProfileDraft)}</strong>
@@ -5117,7 +5220,13 @@ export default function SettingsPane() {
           </div>
         ) : null}
         {toolConnector ? (
-          <div className="sp-info-list sp-info-list-compact" data-xenesis-tool-connector={item.id}>
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'tool-connector') && 'is-focused',
+            )}
+            data-xenesis-tool-connector={item.id}
+          >
             <div>
               <span>{t('settings.xenesisConnectionsToolConnector')}</span>
               <strong>{formatXenesisToolConnectorSummary(toolConnector)}</strong>
@@ -5159,7 +5268,13 @@ export default function SettingsPane() {
           </div>
         ) : null}
         {toolView ? (
-          <div className="sp-info-list sp-info-list-compact" data-xenesis-tool-view={item.id}>
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'tool-view') && 'is-focused',
+            )}
+            data-xenesis-tool-view={item.id}
+          >
             <div>
               <span>{t('settings.xenesisConnectionsToolView')}</span>
               <strong>{formatXenesisToolViewSummary(toolView)}</strong>
@@ -5197,7 +5312,13 @@ export default function SettingsPane() {
           </div>
         ) : null}
         {toolUserStory ? (
-          <div className="sp-info-list sp-info-list-compact" data-xenesis-tool-user-story={item.id}>
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'tool-user-story') && 'is-focused',
+            )}
+            data-xenesis-tool-user-story={item.id}
+          >
             <div>
               <span>{t('settings.xenesisConnectionsToolUserStory')}</span>
               <strong>{formatXenesisToolUserStorySummary(toolUserStory)}</strong>
@@ -5233,7 +5354,13 @@ export default function SettingsPane() {
           </div>
         ) : null}
         {messengerView ? (
-          <div className="sp-info-list sp-info-list-compact" data-xenesis-messenger-view={item.id}>
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'messenger-view') && 'is-focused',
+            )}
+            data-xenesis-messenger-view={item.id}
+          >
             <div>
               <span>{t('settings.xenesisConnectionsMessengerView')}</span>
               <strong>{formatXenesisMessengerViewSummary(messengerView)}</strong>
@@ -5365,7 +5492,13 @@ export default function SettingsPane() {
               </div>
             </div>
             {channelTemplate.routing ? (
-              <div className="sp-info-list sp-info-list-compact" data-xenesis-channel-routing={item.id}>
+              <div
+                className={cls(
+                  'sp-info-list sp-info-list-compact',
+                  isXenesisConnectionDetailFocused(item.id, 'channel-routing') && 'is-focused',
+                )}
+                data-xenesis-channel-routing={item.id}
+              >
                 <div>
                   <span>{t('settings.xenesisConnectionsChannelRoute')}</span>
                   <strong>{formatXenesisChannelRoutingSummary(channelTemplate.routing)}</strong>
@@ -5393,7 +5526,13 @@ export default function SettingsPane() {
               </div>
             ) : null}
             {channelTemplate.safety ? (
-              <div className="sp-info-list sp-info-list-compact" data-xenesis-channel-safety={item.id}>
+              <div
+                className={cls(
+                  'sp-info-list sp-info-list-compact',
+                  isXenesisConnectionDetailFocused(item.id, 'channel-safety') && 'is-focused',
+                )}
+                data-xenesis-channel-safety={item.id}
+              >
                 <div>
                   <span>{t('settings.xenesisConnectionsChannelSafetyModel')}</span>
                   <strong>{formatXenesisChannelSafetySummary(channelTemplate.safety)}</strong>
@@ -5431,7 +5570,13 @@ export default function SettingsPane() {
               </div>
             ) : null}
             {channelTemplate.accessGroups ? (
-              <div className="sp-info-list sp-info-list-compact" data-xenesis-channel-access-groups={item.id}>
+              <div
+                className={cls(
+                  'sp-info-list sp-info-list-compact',
+                  isXenesisConnectionDetailFocused(item.id, 'channel-access-groups') && 'is-focused',
+                )}
+                data-xenesis-channel-access-groups={item.id}
+              >
                 <div>
                   <span>{t('settings.xenesisConnectionsChannelAccessGroupModel')}</span>
                   <strong>{formatXenesisChannelAccessGroupsSummary(channelTemplate.accessGroups)}</strong>
@@ -5463,7 +5608,13 @@ export default function SettingsPane() {
               </div>
             ) : null}
             {channelTemplate.pairing ? (
-              <div className="sp-info-list sp-info-list-compact" data-xenesis-channel-pairing={item.id}>
+              <div
+                className={cls(
+                  'sp-info-list sp-info-list-compact',
+                  isXenesisConnectionDetailFocused(item.id, 'channel-pairing') && 'is-focused',
+                )}
+                data-xenesis-channel-pairing={item.id}
+              >
                 <div>
                   <span>{t('settings.xenesisConnectionsChannelPairing')}</span>
                   <strong>{formatXenesisChannelPairingSummary(channelTemplate.pairing)}</strong>
@@ -5503,7 +5654,13 @@ export default function SettingsPane() {
               </div>
             ) : null}
             {channelUserStory ? (
-              <div className="sp-info-list sp-info-list-compact" data-xenesis-channel-user-story={item.id}>
+              <div
+                className={cls(
+                  'sp-info-list sp-info-list-compact',
+                  isXenesisConnectionDetailFocused(item.id, 'channel-user-story') && 'is-focused',
+                )}
+                data-xenesis-channel-user-story={item.id}
+              >
                 <div>
                   <span>{t('settings.xenesisConnectionsChannelUserStory')}</span>
                   <strong>{formatXenesisChannelUserStorySummary(channelUserStory)}</strong>

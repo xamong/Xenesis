@@ -11,6 +11,8 @@ import {
 import { isXenisPhase5Visible, type XenisPhase5VisibilityOptions } from './phase5';
 import {
   buildXenesisConnectionCenterOpenArgs,
+  isXenesisConnectionCenterDetailFocus,
+  XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES,
   XENESIS_CONNECTION_GUIDE_IDS,
   XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS,
   XENESIS_CONNECTION_MESSENGER_IDS,
@@ -186,6 +188,16 @@ const XENESIS_PROFILE_CHANNELS_SCHEMA = {
   },
 } as const;
 
+const XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA = {
+  focusConnectionDetail: {
+    type: 'string',
+    title: 'Detail focus',
+    enum: XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES,
+    description:
+      'Optional Connection Center detail block to focus inside the selected connection card, such as a tool OAuth draft, provider routing, or messenger safety surface.',
+  },
+} as const;
+
 const XENESIS_CONNECTION_OPEN_SCHEMA = {
   type: 'object',
   properties: {
@@ -201,6 +213,7 @@ const XENESIS_CONNECTION_OPEN_SCHEMA = {
       description: 'Scroll the focused connection card into view after opening the Connection Center.',
       default: true,
     },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
   },
 } as const;
 
@@ -219,6 +232,7 @@ const XENESIS_CONNECTION_CATALOG_OPEN_SCHEMA = {
       description: 'Scroll the focused connection card into view after opening the Connection Center.',
       default: true,
     },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
   },
 } as const;
 
@@ -304,6 +318,7 @@ const XENESIS_ONBOARDING_OPEN_SCHEMA = {
       description: 'Scroll the focused onboarding checklist step into view after opening the Connection Center.',
       default: true,
     },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
   },
 } as const;
 
@@ -343,6 +358,7 @@ const XENESIS_GUIDE_OPEN_SCHEMA = {
         'When true, also open the repo-local guide file. Defaults false so the Settings guide card remains focused.',
       default: false,
     },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
   },
 } as const;
 
@@ -389,6 +405,7 @@ const XENESIS_CHANNEL_ROUTING_OPEN_SCHEMA = {
       description: 'Scroll the focused messenger routing card into view after opening the Connection Center.',
       default: true,
     },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
   },
 } as const;
 
@@ -431,6 +448,7 @@ const XENESIS_CHANNEL_GUARD_OPEN_SCHEMA = {
       description: 'Scroll the focused messenger connection card into view after opening the Connection Center.',
       default: true,
     },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
   },
 } as const;
 
@@ -488,6 +506,7 @@ const XENESIS_CHANNEL_PROFILE_DRAFT_OPEN_SCHEMA = {
       description: 'Scroll the focused messenger connection card into view after opening the Connection Center.',
       default: true,
     },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
   },
 } as const;
 
@@ -577,6 +596,7 @@ const XENESIS_CHANNEL_PAIRING_OPEN_SCHEMA = {
       description: 'Scroll the focused messenger pairing card into view after opening the Connection Center.',
       default: true,
     },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
   },
 } as const;
 
@@ -631,6 +651,7 @@ const XENESIS_MESSENGER_VIEW_OPEN_SCHEMA = {
       description: 'Scroll the focused messenger connection card into view after opening the Connection Center.',
       default: true,
     },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
   },
 } as const;
 
@@ -680,6 +701,7 @@ const XENESIS_TOOL_SETUP_OPEN_SCHEMA = {
       description: 'Scroll the focused external tool setup card into view after opening the Connection Center.',
       default: true,
     },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
   },
 } as const;
 
@@ -728,6 +750,7 @@ const XENESIS_TOOL_CONNECTOR_OPEN_SCHEMA = {
       description: 'Scroll the focused external tool connector card into view after opening the Connection Center.',
       default: true,
     },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
   },
 } as const;
 
@@ -770,6 +793,7 @@ const XENESIS_TOOL_VIEW_OPEN_SCHEMA = {
       description: 'Scroll the focused tool connection card into view after opening the Connection Center.',
       default: true,
     },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
   },
 } as const;
 
@@ -873,6 +897,7 @@ const XENESIS_TOOL_OAUTH_DRAFT_OPEN_SCHEMA = {
       description: 'Scroll the focused tool connection card into view after opening the Connection Center.',
       default: true,
     },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
   },
 } as const;
 const XENESIS_TOOL_OAUTH_DRAFT_REQUEST_SCHEMA = {
@@ -974,6 +999,7 @@ const XENESIS_PROVIDER_SETUP_OPEN_SCHEMA = {
       description: 'Scroll the focused provider setup card into view after opening the Connection Center.',
       default: true,
     },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
   },
 } as const;
 
@@ -1003,6 +1029,7 @@ const XENESIS_PROVIDER_ROUTING_OPEN_SCHEMA = {
       description: 'Scroll the focused provider routing card into view after opening the Connection Center.',
       default: true,
     },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
   },
 } as const;
 
@@ -1055,6 +1082,7 @@ const XENESIS_PROVIDER_VIEW_OPEN_SCHEMA = {
       description: 'Scroll the focused provider connection card into view after opening the Connection Center.',
       default: true,
     },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
   },
 } as const;
 
@@ -11271,8 +11299,10 @@ export async function callDeskBridgeCapability(
       if (path === 'xd.xenesis.connections.open') {
         const args = normalizeCapabilityArgs(request.args);
         const focusConnectionId = readString(args.id) || readString(args.connectionId);
+        const focusConnectionDetail = readString(args.focusConnectionDetail);
         const paneArgs = buildXenesisConnectionCenterOpenArgs({
           ...(focusConnectionId ? { focusConnectionId } : {}),
+          ...(isXenesisConnectionCenterDetailFocus(focusConnectionDetail) ? { focusConnectionDetail } : {}),
           ensureVisible: args.ensureVisible !== false,
         });
         return callAdapter(path, api?.openBuiltinPane, paneArgs);

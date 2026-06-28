@@ -83,10 +83,45 @@ export interface XenesisConnectionSettingsAction {
   section?: string;
 }
 
+export const XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES = [
+  'diagnostic-runbook',
+  'setup-request',
+  'onboarding-plan',
+  'guide-catalog',
+  'provider-profile-draft',
+  'provider-setup',
+  'provider-routing',
+  'provider-view',
+  'tool-setup',
+  'tool-install-plan',
+  'mcp-install-draft',
+  'tool-oauth-draft',
+  'tool-action-catalog',
+  'tool-connector',
+  'tool-view',
+  'tool-user-story',
+  'messenger-view',
+  'mcp-template',
+  'channel-profile-draft',
+  'channel-template',
+  'channel-routing',
+  'channel-safety',
+  'channel-access-groups',
+  'channel-pairing',
+  'channel-user-story',
+] as const;
+
+export type XenesisConnectionCenterDetailFocus = (typeof XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES)[number];
+
+export function isXenesisConnectionCenterDetailFocus(value: string): value is XenesisConnectionCenterDetailFocus {
+  return (XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES as readonly string[]).includes(value);
+}
+
 export interface XenesisConnectionCenterOpenArgs extends XenesisConnectionSettingsAction {
   kind: 'settings';
   ensureVisible: boolean;
   focusConnectionId?: string;
+  focusConnectionDetail?: XenesisConnectionCenterDetailFocus;
 }
 
 export const XENESIS_CONNECTION_CENTER_SETTINGS_ACTION = {
@@ -98,13 +133,18 @@ export const XENESIS_CONNECTION_CENTER_SETTINGS_ACTION = {
 export const XENESIS_CONNECTION_CENTER_ROOT_SELECTOR = `[data-settings-section="${XENESIS_CONNECTION_CENTER_SETTINGS_ACTION.section}"]`;
 
 export function buildXenesisConnectionCenterOpenArgs(
-  input: { ensureVisible?: boolean; focusConnectionId?: string } = {},
+  input: {
+    ensureVisible?: boolean;
+    focusConnectionId?: string;
+    focusConnectionDetail?: XenesisConnectionCenterDetailFocus;
+  } = {},
 ): XenesisConnectionCenterOpenArgs {
   return {
     kind: 'settings',
     ...XENESIS_CONNECTION_CENTER_SETTINGS_ACTION,
     ensureVisible: input.ensureVisible !== false,
     ...(input.focusConnectionId ? { focusConnectionId: input.focusConnectionId } : {}),
+    ...(input.focusConnectionDetail ? { focusConnectionDetail: input.focusConnectionDetail } : {}),
   };
 }
 

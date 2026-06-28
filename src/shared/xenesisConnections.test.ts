@@ -4,7 +4,9 @@ import test from 'node:test';
 import {
   buildXenesisConnectionCenterOpenArgs,
   buildXenesisConnectionsStatus,
+  isXenesisConnectionCenterDetailFocus,
   withXenesisConnectionSetupRequestReviews,
+  XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES,
   XENESIS_CONNECTION_CENTER_ROOT_SELECTOR,
   XENESIS_CONNECTION_CENTER_SETTINGS_ACTION,
   XENESIS_CONNECTION_EXTERNAL_BOTS_SETTINGS_ACTION,
@@ -64,6 +66,26 @@ test('connection center settings target is owned by the shared connection catalo
     ensureVisible: false,
     focusConnectionId: 'notion',
   });
+  assert.deepEqual(
+    buildXenesisConnectionCenterOpenArgs({
+      ensureVisible: true,
+      focusConnectionId: 'notion',
+      focusConnectionDetail: 'tool-oauth-draft',
+    }),
+    {
+      kind: 'settings',
+      category: 'xenesis-agent',
+      mode: 'connections',
+      section: 'xenesis-connections',
+      ensureVisible: true,
+      focusConnectionId: 'notion',
+      focusConnectionDetail: 'tool-oauth-draft',
+    },
+  );
+  assert.equal(XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES.includes('provider-profile-draft'), true);
+  assert.equal(XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES.includes('channel-routing'), true);
+  assert.equal(isXenesisConnectionCenterDetailFocus('tool-oauth-draft'), true);
+  assert.equal(isXenesisConnectionCenterDetailFocus('unknown-detail'), false);
 });
 
 test('connection catalog settings actions are owned by shared constants', () => {

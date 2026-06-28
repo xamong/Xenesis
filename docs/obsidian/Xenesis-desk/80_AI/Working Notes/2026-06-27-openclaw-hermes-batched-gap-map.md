@@ -4884,6 +4884,45 @@
 - External documentation handling: no browsing. Used cached Obsidian/source and
   local tests only.
 
+## Connection Center Detail Focus Slice
+
+- Increased the slice cycle size by carrying one CR/UI behavior through shared
+  catalog types, CR schemas, main-process open handlers, renderer bridge,
+  SettingsPane focus behavior, tests, CR audit, build, and live smoke together.
+- Added shared `focusConnectionDetail` ownership in
+  `src/shared/xenesisConnections.ts` with detail values for diagnostic runbooks,
+  setup requests, onboarding, guide catalogs, provider setup/routing/views/profile
+  drafts, tool setup/connectors/views/install plans/MCP drafts/OAuth/action
+  catalogs/user stories, messenger views, and channel routing/safety/access
+  groups/pairing/profile drafts/user stories.
+- Extended the MCP built-in pane payload/result contract and `xd.xenesis.*.open`
+  schemas so subtype open paths can express the exact internal Connection Center
+  block they represent instead of only focusing the parent card.
+- `src/main/index.ts` now supplies default detail focus values for focused
+  diagnostic/setup/onboarding/guide/provider/tool/messenger open handlers while
+  still accepting explicit `focusConnectionDetail`/`detail`/`detailFocus`
+  overrides when they match the shared enum.
+- `SettingsPane` now resolves detail focus through existing `data-xenesis-*`
+  attributes, scrolls detail blocks before falling back to cards/sections, and
+  highlights matching detail lists with `.sp-info-list.is-focused`.
+- Verification:
+  - RED failed as expected with 106/110 passing before the detail-focus contract
+    existed.
+  - Focused GREEN passed 110/110 after implementation and again after
+    formatting/import organization.
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit` passed with missing registered paths 0,
+    missing dispatched coverage paths 0, undispatched static callable methods 0,
+    and dispatcher paths missing from tree 0.
+  - `npm run build` passed with existing Vite warnings only.
+  - `node .\scripts\xenesisConnectionCenterLiveSmoke.mjs --json --timeout=45000`
+    passed with 6/6 checks.
+  - `git diff --check` passed with LF-to-CRLF working-copy warnings only.
+- Known gap: full repo lint was not rerun; scoped Biome check over all touched
+  large files still reports pre-existing diagnostics in main/App/styles.
+- External documentation handling: no browsing. Used cached Obsidian/source and
+  local tests/live smoke only.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

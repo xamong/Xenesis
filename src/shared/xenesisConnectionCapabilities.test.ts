@@ -44,6 +44,20 @@ function schemaRequiredFields(capability: ReturnType<typeof findDeskBridgeCapabi
   return Array.isArray(required) ? [...required] : [];
 }
 
+function schemaProperties(capability: ReturnType<typeof findDeskBridgeCapability>): Record<string, any> {
+  return (capability?.schema?.properties ?? {}) as Record<string, any>;
+}
+
+function assertOpenCapabilityDetailFocus(path: string, expectedDetail: string): void {
+  const properties = schemaProperties(findDeskBridgeCapability(path));
+  assert.equal(properties.focusConnectionDetail?.type, 'string', `${path} exposes detail focus type`);
+  assert.equal(
+    properties.focusConnectionDetail?.enum.includes(expectedDetail),
+    true,
+    `${path} exposes ${expectedDetail} detail focus`,
+  );
+}
+
 test('xenesis connection status capability is registered as a read path', () => {
   const paths = new Set(listDeskBridgeCapabilities().map((node) => node.path));
 
@@ -55,6 +69,43 @@ test('xenesis connection status capability is registered as a read path', () => 
   assert.equal(findDeskBridgeCapability('xd.xenesis.connections.open')?.permission, 'control');
   assert.equal(findDeskBridgeCapability('xd.xenesis.connections.open')?.approval, 'never');
   assert.equal(schemaRequiredFields(findDeskBridgeCapability('xd.xenesis.connections.open')).includes('id'), false);
+});
+
+test('xenesis connection open capabilities expose detail focus selectors', () => {
+  assertOpenCapabilityDetailFocus('xd.xenesis.connections.open', 'diagnostic-runbook');
+  assertOpenCapabilityDetailFocus('xd.xenesis.onboarding.open', 'onboarding-plan');
+  assertOpenCapabilityDetailFocus('xd.xenesis.guides.open', 'guide-catalog');
+  assertOpenCapabilityDetailFocus('xd.xenesis.connections.diagnostics.open', 'diagnostic-runbook');
+  assertOpenCapabilityDetailFocus('xd.xenesis.connections.setupRequests.open', 'setup-request');
+  assertOpenCapabilityDetailFocus('xd.xenesis.tools.oauthDrafts.open', 'tool-oauth-draft');
+  assertOpenCapabilityDetailFocus('xd.xenesis.tools.mcpInstallDrafts.open', 'mcp-install-draft');
+  assertOpenCapabilityDetailFocus('xd.xenesis.tools.installPlans.open', 'tool-install-plan');
+  assertOpenCapabilityDetailFocus('xd.xenesis.tools.actions.open', 'tool-action-catalog');
+  assertOpenCapabilityDetailFocus('xd.xenesis.tools.connectors.open', 'tool-connector');
+  assertOpenCapabilityDetailFocus('xd.xenesis.tools.setup.open', 'tool-setup');
+  assertOpenCapabilityDetailFocus('xd.xenesis.tools.views.open', 'tool-view');
+  assertOpenCapabilityDetailFocus('xd.xenesis.channels.routing.open', 'channel-routing');
+  assertOpenCapabilityDetailFocus('xd.xenesis.channels.safety.open', 'channel-safety');
+  assertOpenCapabilityDetailFocus('xd.xenesis.channels.accessGroups.open', 'channel-access-groups');
+  assertOpenCapabilityDetailFocus('xd.xenesis.channels.pairing.open', 'channel-pairing');
+  assertOpenCapabilityDetailFocus('xd.xenesis.channels.profileDrafts.open', 'channel-profile-draft');
+  assertOpenCapabilityDetailFocus('xd.xenesis.messengers.views.open', 'messenger-view');
+  assertOpenCapabilityDetailFocus('xd.xenesis.providers.routing.open', 'provider-routing');
+  assertOpenCapabilityDetailFocus('xd.xenesis.providers.profileDrafts.open', 'provider-profile-draft');
+  assertOpenCapabilityDetailFocus('xd.xenesis.providers.setup.open', 'provider-setup');
+  assertOpenCapabilityDetailFocus('xd.xenesis.providers.views.open', 'provider-view');
+});
+
+test('xenesis connection detail focus propagates through main and renderer bridge source', () => {
+  const mainSource = readFileSync(new URL('../main/index.ts', import.meta.url), 'utf8');
+  const appSource = readFileSync(new URL('../renderer/App.tsx', import.meta.url), 'utf8');
+
+  assert.match(mainSource, /focusConnectionDetail\s*=\s*kind === 'settings'/);
+  assert.match(mainSource, /focusConnectionDetail:\s*payload\.focusConnectionDetail/);
+  assert.match(mainSource, /focusConnectionDetail,\s*\n\s*ensureVisible/);
+  assert.match(appSource, /focusConnectionDetail\?: unknown/);
+  assert.match(appSource, /focusConnectionDetail:\s*payload\.focusConnectionDetail/);
+  assert.match(appSource, /focusConnectionDetail:\s*payload\.focusConnectionDetail,\s*\n\s*ensureVisible/);
 });
 
 test('xenesis connection status capability dispatches to the adapter', async () => {

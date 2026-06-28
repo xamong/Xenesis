@@ -44,7 +44,9 @@ import {
   formatXenesisToolUserStorySummary,
   formatXenesisToolViewSummary,
   listXenesisConnectionSections,
+  XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES,
   XENESIS_CONNECTION_STATUS_ORDER,
+  xenesisConnectionDetailFocusSelector,
   xenesisConnectionTone,
 } from './xenesisConnectionCenter';
 
@@ -63,6 +65,20 @@ test('xenesisConnectionTone maps every status to a stable UI tone', () => {
   assert.equal(xenesisConnectionTone('disabled'), 'muted');
   assert.equal(xenesisConnectionTone('planned'), 'info');
   assert.equal(xenesisConnectionTone('unknown'), 'neutral');
+});
+
+test('xenesis detail focus selector maps CR detail values to existing data attributes', () => {
+  assert.equal(XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['tool-oauth-draft'], 'data-xenesis-tool-oauth-draft');
+  assert.equal(XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['channel-routing'], 'data-xenesis-channel-routing');
+  assert.equal(
+    XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['provider-profile-draft'],
+    'data-xenesis-provider-profile-draft',
+  );
+  assert.equal(xenesisConnectionDetailFocusSelector('tool-oauth-draft'), '[data-xenesis-tool-oauth-draft]');
+  assert.equal(xenesisConnectionDetailFocusSelector('channel-routing'), '[data-xenesis-channel-routing]');
+  assert.equal(xenesisConnectionDetailFocusSelector('provider-profile-draft'), '[data-xenesis-provider-profile-draft]');
+  assert.equal(xenesisConnectionDetailFocusSelector(''), null);
+  assert.equal(xenesisConnectionDetailFocusSelector('unknown-detail'), null);
 });
 
 test('listXenesisConnectionSections preserves status section order', () => {

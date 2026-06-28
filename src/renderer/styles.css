@@ -7962,6 +7962,11 @@ button:disabled {
   border-radius: 6px;
   background: var(--bg-doc);
 }
+.sp-info-list.is-focused > div {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, var(--bg-doc));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent);
+}
 .sp-info-list span {
   color: var(--text-dim);
 }

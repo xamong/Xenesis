@@ -271,6 +271,7 @@ import {
   buildXenesisConnectionCenterOpenArgs,
   buildXenesisConnectionSetupApprovalSessionKey,
   buildXenesisConnectionsStatus,
+  isXenesisConnectionCenterDetailFocus,
   withXenesisConnectionSetupRequestReviews,
   XENESIS_CONNECTION_CENTER_ROOT_SELECTOR,
   XENESIS_CONNECTION_GUIDE_IDS,
@@ -280,6 +281,7 @@ import {
   XENESIS_CONNECTION_PROVIDER_IDS,
   XENESIS_CONNECTION_TOOL_IDS,
   XENESIS_CONNECTION_TOOL_OAUTH_DRAFT_IDS,
+  type XenesisConnectionCenterDetailFocus,
   type XenesisConnectionItem,
   type XenesisConnectionKind,
   type XenesisConnectionsStatus,
@@ -4821,6 +4823,15 @@ async function getXenesisConnectionsStatus(): Promise<XenesisConnectionsStatus> 
   return withXenesisConnectionSetupRequestReviews(status, listMcpActionInboxSnapshot());
 }
 
+function readXenesisConnectionDetailFocus(
+  body: Record<string, unknown>,
+  fallback?: XenesisConnectionCenterDetailFocus,
+): XenesisConnectionCenterDetailFocus | undefined {
+  const requested = readCapabilityString(body, ['focusConnectionDetail', 'detail', 'detailFocus']);
+  if (requested && isXenesisConnectionCenterDetailFocus(requested)) return requested;
+  return fallback;
+}
+
 const XENESIS_CONNECTION_KINDS: readonly XenesisConnectionKind[] = [
   'onboarding',
   'provider',
@@ -4906,6 +4917,7 @@ async function openXenesisConnectionDiagnosticRunbook(args?: unknown): Promise<R
 
   const rendererArgs = buildXenesisConnectionCenterOpenArgs({
     ensureVisible: body.ensureVisible !== false,
+    focusConnectionDetail: readXenesisConnectionDetailFocus(body, 'diagnostic-runbook'),
     ...(item ? { focusConnectionId: item.id } : {}),
   });
 
@@ -5000,6 +5012,7 @@ async function openXenesisConnectionSetupRequest(args?: unknown): Promise<Record
 
   const rendererArgs = buildXenesisConnectionCenterOpenArgs({
     ensureVisible: body.ensureVisible !== false,
+    focusConnectionDetail: readXenesisConnectionDetailFocus(body, 'setup-request'),
     ...(item ? { focusConnectionId: item.id } : {}),
   });
 
@@ -5156,6 +5169,7 @@ async function openXenesisOnboardingStep(args?: unknown): Promise<Record<string,
 
   const rendererArgs = buildXenesisConnectionCenterOpenArgs({
     ensureVisible: body.ensureVisible !== false,
+    focusConnectionDetail: readXenesisConnectionDetailFocus(body, 'onboarding-plan'),
     ...(item ? { focusConnectionId: item.id } : {}),
   });
 
@@ -5207,6 +5221,7 @@ async function openXenesisMessengerCatalogSurface<TContext = undefined>(
     itemPredicate: (item: XenesisConnectionItem) => boolean;
     toStatusItem: (item: XenesisConnectionItem, context: TContext) => Record<string, unknown>;
     unavailableMessage: (selector: string) => string;
+    focusConnectionDetail: XenesisConnectionCenterDetailFocus;
     prepareContext?: () => Promise<TContext>;
   },
 ): Promise<Record<string, unknown>> {
@@ -5232,6 +5247,7 @@ async function openXenesisMessengerCatalogSurface<TContext = undefined>(
 
   const rendererArgs = buildXenesisConnectionCenterOpenArgs({
     ensureVisible: body.ensureVisible !== false,
+    focusConnectionDetail: readXenesisConnectionDetailFocus(body, 'guide-catalog'),
     ...(item ? { focusConnectionId: item.id } : {}),
   });
 
@@ -5290,6 +5306,7 @@ async function openXenesisChannelRouting(args?: unknown): Promise<Record<string,
     itemPredicate: (item) => Boolean(item.channelTemplate?.routing),
     toStatusItem: (item) => xenesisChannelRoutingStatusItem(item),
     unavailableMessage: (channel) => `Xenesis channel routing is not available: ${channel}`,
+    focusConnectionDetail: 'channel-routing',
   });
 }
 
@@ -5352,6 +5369,7 @@ async function openXenesisChannelSafety(args?: unknown): Promise<Record<string, 
     itemPredicate: (item) => Boolean(item.channelTemplate?.safety),
     toStatusItem: (item) => xenesisChannelSafetyStatusItem(item),
     unavailableMessage: (channel) => `Xenesis channel safety is not available: ${channel}`,
+    focusConnectionDetail: 'channel-safety',
   });
 }
 
@@ -5452,6 +5470,7 @@ async function openXenesisChannelAccessGroups(args?: unknown): Promise<Record<st
       );
     },
     unavailableMessage: (channel) => `Xenesis channel access groups are not available: ${channel}`,
+    focusConnectionDetail: 'channel-access-groups',
   });
 }
 
@@ -5534,6 +5553,7 @@ async function openXenesisGuide(args?: unknown): Promise<Record<string, unknown>
 
   const rendererArgs = buildXenesisConnectionCenterOpenArgs({
     ensureVisible: body.ensureVisible !== false,
+    focusConnectionDetail: readXenesisConnectionDetailFocus(body, 'guide-catalog'),
     ...(item ? { focusConnectionId: item.id } : {}),
   });
 
@@ -5629,6 +5649,7 @@ async function openXenesisChannelPairing(args?: unknown): Promise<Record<string,
     itemPredicate: (item) => Boolean(item.channelTemplate?.pairing),
     toStatusItem: (item) => xenesisChannelPairingStatusItem(item),
     unavailableMessage: (id) => `Xenesis channel pairing is not available: ${id}`,
+    focusConnectionDetail: 'channel-pairing',
   });
 }
 
@@ -5691,6 +5712,7 @@ async function openXenesisChannelUserStory(args?: unknown): Promise<Record<strin
     itemPredicate: (item) => Boolean(item.channelTemplate?.userStory),
     toStatusItem: (item) => xenesisChannelUserStoryStatusItem(item),
     unavailableMessage: (id) => `Xenesis channel user story is not available: ${id}`,
+    focusConnectionDetail: 'channel-user-story',
   });
 }
 
@@ -5760,6 +5782,7 @@ async function openXenesisChannelProfileDraft(args?: unknown): Promise<Record<st
     itemPredicate: (item) => Boolean(item.channelProfileDraft),
     toStatusItem: (item) => xenesisChannelProfileDraftStatusItem(item),
     unavailableMessage: (channel) => `Xenesis channel profile draft is not available: ${channel}`,
+    focusConnectionDetail: 'channel-profile-draft',
   });
 }
 
@@ -5901,6 +5924,7 @@ async function openXenesisMessengerView(args?: unknown): Promise<Record<string, 
     itemPredicate: (item) => Boolean(item.messengerView),
     toStatusItem: (item) => xenesisMessengerViewStatusItem(item),
     unavailableMessage: (id) => `Xenesis messenger view is not available: ${id}`,
+    focusConnectionDetail: 'messenger-view',
   });
 }
 
@@ -5974,6 +5998,7 @@ async function openXenesisToolCatalogSurface(
     toStatusItem: (item: XenesisConnectionItem) => Record<string, unknown>;
     unsupportedMessage: (id: string) => string;
     unavailableMessage: (id: string) => string;
+    focusConnectionDetail: XenesisConnectionCenterDetailFocus;
   },
 ): Promise<Record<string, unknown>> {
   const body = normalizeMcpCapabilityArgs(args);
@@ -5995,6 +6020,7 @@ async function openXenesisToolCatalogSurface(
 
   const rendererArgs = buildXenesisConnectionCenterOpenArgs({
     ensureVisible: body.ensureVisible !== false,
+    focusConnectionDetail: readXenesisConnectionDetailFocus(body, options.focusConnectionDetail),
     ...(id ? { focusConnectionId: id } : {}),
   });
 
@@ -6026,6 +6052,7 @@ async function openXenesisToolSetup(args?: unknown): Promise<Record<string, unkn
     toStatusItem: xenesisToolSetupStatusItem,
     unsupportedMessage: (id) => `Unsupported Xenesis tool connection: ${id}`,
     unavailableMessage: (id) => `Xenesis tool setup is not available: ${id}`,
+    focusConnectionDetail: 'tool-setup',
   });
 }
 
@@ -6089,6 +6116,7 @@ async function openXenesisToolConnector(args?: unknown): Promise<Record<string, 
     toStatusItem: xenesisToolConnectorStatusItem,
     unsupportedMessage: (id) => `Unsupported Xenesis tool connection: ${id}`,
     unavailableMessage: (id) => `Xenesis tool connector is not available: ${id}`,
+    focusConnectionDetail: 'tool-connector',
   });
 }
 
@@ -6150,6 +6178,7 @@ async function openXenesisToolView(args?: unknown): Promise<Record<string, unkno
     toStatusItem: xenesisToolViewStatusItem,
     unsupportedMessage: (id) => `Unsupported Xenesis tool connection: ${id}`,
     unavailableMessage: (id) => `Xenesis tool view is not available: ${id}`,
+    focusConnectionDetail: 'tool-view',
   });
 }
 
@@ -6211,6 +6240,7 @@ async function openXenesisToolUserStory(args?: unknown): Promise<Record<string, 
     toStatusItem: xenesisToolUserStoryStatusItem,
     unsupportedMessage: (id) => `Unsupported Xenesis tool connection: ${id}`,
     unavailableMessage: (id) => `Xenesis tool user-story workflow is not available: ${id}`,
+    focusConnectionDetail: 'tool-user-story',
   });
 }
 
@@ -6274,6 +6304,7 @@ async function openXenesisToolInstallPlan(args?: unknown): Promise<Record<string
     toStatusItem: xenesisToolInstallPlanStatusItem,
     unsupportedMessage: (id) => `Unsupported Xenesis tool connection: ${id}`,
     unavailableMessage: (id) => `Xenesis tool install plan is not available: ${id}`,
+    focusConnectionDetail: 'tool-install-plan',
   });
 }
 
@@ -6422,6 +6453,7 @@ async function openXenesisToolMcpInstallDraft(args?: unknown): Promise<Record<st
     toStatusItem: xenesisToolMcpInstallDraftStatusItem,
     unsupportedMessage: (id) => `Unsupported Xenesis tool connection: ${id}`,
     unavailableMessage: (id) => `Xenesis MCP install draft is not available: ${id}`,
+    focusConnectionDetail: 'mcp-install-draft',
   });
 }
 
@@ -6559,6 +6591,7 @@ async function openXenesisToolOAuthDraft(args?: unknown): Promise<Record<string,
     toStatusItem: xenesisToolOAuthDraftStatusItem,
     unsupportedMessage: (id) => `Unsupported Xenesis tool OAuth draft: ${id}`,
     unavailableMessage: (id) => `Xenesis tool OAuth draft is not available: ${id}`,
+    focusConnectionDetail: 'tool-oauth-draft',
   });
 }
 
@@ -6707,6 +6740,7 @@ async function openXenesisToolActionCatalog(args?: unknown): Promise<Record<stri
     toStatusItem: xenesisToolActionCatalogStatusItem,
     unsupportedMessage: (id) => `Unsupported Xenesis tool connection: ${id}`,
     unavailableMessage: (id) => `Xenesis tool action catalog is not available: ${id}`,
+    focusConnectionDetail: 'tool-action-catalog',
   });
 }
 
@@ -6854,6 +6888,7 @@ async function openXenesisProviderCatalogSurface(
     providerForItem: (item: XenesisConnectionItem) => string | undefined;
     toStatusItem: (item: XenesisConnectionItem) => Record<string, unknown>;
     unavailableMessage: (provider: string) => string;
+    focusConnectionDetail: XenesisConnectionCenterDetailFocus;
   },
 ): Promise<Record<string, unknown>> {
   const body = normalizeMcpCapabilityArgs(args);
@@ -6877,6 +6912,7 @@ async function openXenesisProviderCatalogSurface(
 
   const rendererArgs = buildXenesisConnectionCenterOpenArgs({
     ensureVisible: body.ensureVisible !== false,
+    focusConnectionDetail: readXenesisConnectionDetailFocus(body, options.focusConnectionDetail),
     ...(item ? { focusConnectionId: item.id } : {}),
   });
 
@@ -6909,6 +6945,7 @@ async function openXenesisProviderSetup(args?: unknown): Promise<Record<string, 
     providerForItem: (item) => item.providerSetup?.provider,
     toStatusItem: xenesisProviderSetupStatusItem,
     unavailableMessage: (provider) => `Xenesis provider setup is not available: ${provider}`,
+    focusConnectionDetail: 'provider-setup',
   });
 }
 
@@ -7001,6 +7038,7 @@ async function openXenesisProviderRouting(args?: unknown): Promise<Record<string
   const renderer = await openMcpBuiltinPaneCapability(
     buildXenesisConnectionCenterOpenArgs({
       ensureVisible: body.ensureVisible !== false,
+      focusConnectionDetail: readXenesisConnectionDetailFocus(body, 'provider-routing'),
       focusConnectionId: item.id,
     }),
   );
@@ -7078,6 +7116,7 @@ async function openXenesisProviderView(args?: unknown): Promise<Record<string, u
     providerForItem: (item) => item.providerSetup?.provider,
     toStatusItem: xenesisProviderViewStatusItem,
     unavailableMessage: (provider) => `Xenesis provider view is not available: ${provider}`,
+    focusConnectionDetail: 'provider-view',
   });
 }
 
@@ -7146,6 +7185,7 @@ async function openXenesisProviderProfileDraft(args?: unknown): Promise<Record<s
     providerForItem: (item) => item.providerProfileDraft?.provider,
     toStatusItem: xenesisProviderProfileDraftStatusItem,
     unavailableMessage: (provider) => `Xenesis provider profile draft is not available: ${provider}`,
+    focusConnectionDetail: 'provider-profile-draft',
   });
 }
 
@@ -7641,6 +7681,7 @@ function sendMcpOpenBuiltinPaneToRenderer(
       mode: payload.mode,
       section: payload.section,
       focusConnectionId: payload.focusConnectionId,
+      focusConnectionDetail: payload.focusConnectionDetail,
       ensureVisible: payload.ensureVisible,
       error: 'Xenesis Desk renderer window is not available',
     });
@@ -7660,6 +7701,7 @@ function sendMcpOpenBuiltinPaneToRenderer(
         mode: payload.mode,
         section: payload.section,
         focusConnectionId: payload.focusConnectionId,
+        focusConnectionDetail: payload.focusConnectionDetail,
         ensureVisible: payload.ensureVisible,
         error: 'Xenesis Desk built-in pane open timed out',
       });
@@ -8884,6 +8926,7 @@ function sanitizeMcpOpenBuiltinPaneResult(value: unknown): McpBridgeOpenBuiltinP
     mode: sanitizeMcpDockActionText(raw.mode, 120) || undefined,
     section: sanitizeMcpDockActionText(raw.section, 120) || undefined,
     focusConnectionId: sanitizeMcpDockActionText(raw.focusConnectionId, 120) || undefined,
+    focusConnectionDetail: sanitizeMcpDockActionText(raw.focusConnectionDetail, 120) || undefined,
     ensureVisible: typeof raw.ensureVisible === 'boolean' ? raw.ensureVisible : undefined,
     message: sanitizeMcpDockActionText(raw.message, 500) || undefined,
     error: sanitizeMcpDockActionText(raw.error, 500) || undefined,
@@ -11553,6 +11596,7 @@ async function openMcpBuiltinPaneCapability(args: unknown): Promise<Record<strin
   const mode = kind === 'settings' ? normalizeMcpSettingsTargetText(body.mode) : undefined;
   const section = kind === 'settings' ? normalizeMcpSettingsTargetText(body.section) : undefined;
   const focusConnectionId = kind === 'settings' ? normalizeMcpSettingsTargetText(body.focusConnectionId) : undefined;
+  const focusConnectionDetail = kind === 'settings' ? readXenesisConnectionDetailFocus(body) : undefined;
   const ensureVisible = kind === 'settings' && typeof body.ensureVisible === 'boolean' ? body.ensureVisible : undefined;
   const result = await sendMcpOpenBuiltinPaneToRenderer({
     kind,
@@ -11562,6 +11606,7 @@ async function openMcpBuiltinPaneCapability(args: unknown): Promise<Record<strin
     mode,
     section,
     focusConnectionId,
+    focusConnectionDetail,
     ensureVisible,
   });
   if (!result.ok) return { ...result };
@@ -11579,6 +11624,7 @@ async function openMcpBuiltinPaneCapability(args: unknown): Promise<Record<strin
       mode,
       section,
       focusConnectionId,
+      focusConnectionDetail,
       ensureVisible,
     }),
   });
@@ -11591,6 +11637,7 @@ async function openMcpBuiltinPaneCapability(args: unknown): Promise<Record<strin
     mode,
     section,
     focusConnectionId,
+    focusConnectionDetail,
     ensureVisible,
     renderer: result,
   };
