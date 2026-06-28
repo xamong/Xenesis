@@ -3004,6 +3004,21 @@ export interface McpBridgeApi {
   listActionInbox(): Promise<McpBridgeActionInboxItem[]>;
   resolveActionInboxItem(request: McpBridgeActionInboxResolveRequest): Promise<McpBridgeActionInboxResolveResult>;
   callCapability(request: McpBridgeCapabilityCallRequest): Promise<McpBridgeCapabilityCallResult>;
+  agentTurnsList?: (args?: unknown) => Promise<unknown> | unknown;
+  agentTurnsCurrent?: (args?: unknown) => Promise<unknown> | unknown;
+  agentTurnsGet?: (args?: unknown) => Promise<unknown> | unknown;
+  agentTurnEvents?: (args?: unknown) => Promise<unknown> | unknown;
+  agentActionNeededList?: (args?: unknown) => Promise<unknown> | unknown;
+  agentActionNeededGet?: (args?: unknown) => Promise<unknown> | unknown;
+  agentActionNeededReply?: (args?: unknown) => Promise<unknown> | unknown;
+  agentActionNeededDismiss?: (args?: unknown) => Promise<unknown> | unknown;
+  agentReceiptsList?: (args?: unknown) => Promise<unknown> | unknown;
+  agentReceiptsGet?: (args?: unknown) => Promise<unknown> | unknown;
+  computerUseCall?: (
+    path: string,
+    args?: unknown,
+    options?: { approved?: boolean; source?: string },
+  ) => Promise<unknown> | unknown;
   rememberCapabilityApprovals(
     entries: McpBridgeCapabilityApprovalRememberEntry[],
   ): Promise<McpBridgeCapabilityApprovalRememberResult>;

@@ -45,6 +45,7 @@ import {
   readProfiles,
   writeProfiles,
 } from '../../packages/xenesis/src/config/index';
+import { createTurnLedger, type XenesisTurnRecord } from '../../packages/xenesis/src/core/turnLedger';
 import {
   classifyMemoryWrite,
   defaultMemoryWriteContext,
@@ -68,6 +69,13 @@ import {
   type AppMenuNode,
 } from '../shared/appMenuModel';
 import { createAppControlService } from './appControl/appControlService';
+import { createComputerUseService } from './computerUse/computerUseService';
+import {
+  createAgentActionRecordStore,
+  type AgentActionNeededListFilter,
+  type AgentWorkflowReceiptKind,
+  type AgentWorkflowReceiptListFilter,
+} from '../shared/agentActionRecords';
 import {
   callDeskBridgeCapability,
   createDeskBridgeCapabilityApprovalArgsHash,
@@ -368,6 +376,8 @@ import { applySafeTextFileWrite, previewSafeTextFileWrite, restoreSafeTextFileBa
 import { type TerminalImageOptions, writeTerminalImage } from './terminalImageWriter';
 import { buildTerminalWarmupLaunch, shouldTerminalWarmupRun } from './terminalWarmup.mjs';
 import { prepareCodexIsolatedHome, readCodexModel } from './codexIsolatedHome.mjs';
+import { createAgentTurnLedgerReadbackApi } from './agentTurnLedgerService';
+import { createLinkedApprovalActionNeeded, createLinkedApprovalReceipt } from './agentActionRecordBridge.mjs';
 import { renderXconToPng, writeTerminalXconImage, type XconRenderOptions } from './terminalXconRenderer';
 import {
   buildXamongCodeApiLaunch,
@@ -379,6 +389,10 @@ import {
 } from './xamongCodeSidecar.mjs';
 import { XenesisEmbeddedAgentService, type XenesisEmbeddedAgentServiceOptions } from './xenesisEmbeddedService';
 import { createXenesisRunEventObservation } from './xenesisRunObservability';
+import {
+  normalizeXenesisRunProviderRuntimeRequest,
+  type XenesisRunProviderRuntimeOverride,
+} from './xenesisRunProviderRuntime';
 import {
   buildXenesisGatewayLaunch,
   buildXenesisGatewayRunPayload,
@@ -424,6 +438,10 @@ const xenisHomeDir = resolveXenisHomeDir();
 fs.mkdirSync(xenisHomeDir, { recursive: true });
 const automationEventLogSink = new JsonlAutomationEventLogSink(path.join(xenisHomeDir, 'automation-logs'));
 const capabilityAuditLogger = createAuditLogger(path.join(xenisHomeDir, 'audit'));
+const agentTurnLedger = createTurnLedger();
+const agentTurnLedgerReadbackApi = createAgentTurnLedgerReadbackApi(agentTurnLedger);
+const agentActionRecordStore = createAgentActionRecordStore();
+const computerUseService = createComputerUseService();
 try {
   migrateLegacyUserData({
     legacyDirs: legacyUserDataMigrationCandidates({
@@ -5313,7 +5331,11 @@ function capabilityApprovalAllowKey(pathValue: string, args: unknown, source: De
   return createCapabilityApprovalAllowKey({ path: pathValue, args: keyArgs, source });
 }
 
-function isMcpCapabilityApprovalRemembered(pathValue: string, args: unknown, source: DeskBridgeCapabilitySource): boolean {
+function isMcpCapabilityApprovalRemembered(
+  pathValue: string,
+  args: unknown,
+  source: DeskBridgeCapabilitySource,
+): boolean {
   return mcpCapabilityApprovalAllowKeys.has(capabilityApprovalAllowKey(pathValue, args, source));
 }
 
@@ -5322,11 +5344,15 @@ function persistMcpCapabilityApprovalsSafely(): void {
     fs.mkdirSync(getMcpDir(), { recursive: true });
     fs.writeFileSync(
       getMcpCapabilityApprovalsStorePath(),
-      `${JSON.stringify({
-        version: 1,
-        savedAt: new Date().toISOString(),
-        keys: [...mcpCapabilityApprovalAllowKeys].sort(),
-      }, null, 2)}\n`,
+      `${JSON.stringify(
+        {
+          version: 1,
+          savedAt: new Date().toISOString(),
+          keys: [...mcpCapabilityApprovalAllowKeys].sort(),
+        },
+        null,
+        2,
+      )}\n`,
       'utf8',
     );
   } catch (error) {
@@ -5365,11 +5391,7 @@ function loadPersistedMcpCapabilityApprovals(): void {
 
 function rememberMcpCapabilityApproval(item: McpBridgeActionInboxItem): string {
   const command = parseCapabilityApprovalCommand(item.command);
-  const key = capabilityApprovalAllowKey(
-    command.path,
-    command.args,
-    command.source as DeskBridgeCapabilitySource,
-  );
+  const key = capabilityApprovalAllowKey(command.path, command.args, command.source as DeskBridgeCapabilitySource);
   mcpCapabilityApprovalAllowKeys.add(key);
   persistMcpCapabilityApprovalsSafely();
   return key;
@@ -5502,12 +5524,97 @@ function emitMcpActionInboxChanged(): void {
   sendToRenderer(targetWindow, 'mcp:action-inbox-changed', listMcpActionInboxSnapshot());
 }
 
+function currentAgentActionTurnId(): string {
+  return agentTurnLedger.current()?.id || 'unknown-turn';
+}
+
+function getLinkedApprovalActionNeeded(item: McpBridgeActionInboxItem): { id?: string } | null {
+  return (
+    agentActionRecordStore
+      .listActionNeeded()
+      .find((record) => record.refs?.actionInboxItemId === item.id && record.kind === 'approval') ?? null
+  );
+}
+
+function recordLinkedApprovalActionNeeded(item: McpBridgeActionInboxItem): void {
+  if (!isCapabilityApprovalItem(item)) return;
+  if (getLinkedApprovalActionNeeded(item)) return;
+  const turnId = currentAgentActionTurnId();
+  const actionNeeded = agentActionRecordStore.createActionNeeded(createLinkedApprovalActionNeeded({ turnId, item }));
+  agentActionRecordStore.appendReceipt(createLinkedApprovalReceipt({ turnId, actionNeededId: actionNeeded.id, item }));
+}
+
 function recordMcpActionInboxRequest(raw: unknown): McpBridgeActionInboxItem {
   const item = applyMcpActionInboxRequest(mcpActionInboxState, raw) as McpBridgeActionInboxItem;
+  recordLinkedApprovalActionNeeded(item);
   pruneMcpInventoryMap(mcpActionInboxState.items);
   persistMcpActionInboxStateSafely();
   emitMcpActionInboxChanged();
   return item;
+}
+
+function readAgentActionNeededStatus(value: unknown): AgentActionNeededListFilter['status'] | undefined {
+  return value === 'open' || value === 'resolved' || value === 'dismissed' ? value : undefined;
+}
+
+function readAgentReceiptKind(value: unknown): AgentWorkflowReceiptKind | undefined {
+  return value === 'action-needed-replied' || value === 'action-needed-dismissed' || value === 'workflow-receipt'
+    ? value
+    : undefined;
+}
+
+function listAgentActionNeededForCapability(args?: unknown): Record<string, unknown> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const filter: AgentActionNeededListFilter = {};
+  const status = readAgentActionNeededStatus(body.status);
+  if (status) filter.status = status;
+  const turnId = readCapabilityString(body, ['turnId']);
+  if (turnId) filter.turnId = turnId;
+  return { ok: true, actionNeeded: agentActionRecordStore.listActionNeeded(filter) };
+}
+
+function getAgentActionNeededForCapability(args?: unknown): Record<string, unknown> {
+  const id = readCapabilityString(normalizeMcpCapabilityArgs(args), ['id']);
+  if (!id) return { ok: false, error: 'id is required' };
+  return { ok: true, actionNeeded: agentActionRecordStore.getActionNeeded(id) };
+}
+
+function replyAgentActionNeededForCapability(args?: unknown): Record<string, unknown> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id']);
+  const text = readCapabilityString(body, ['text', 'reply']);
+  if (!id) return { ok: false, error: 'id is required' };
+  if (!text) return { ok: false, error: 'text is required' };
+  return agentActionRecordStore.replyActionNeeded(id, {
+    text,
+    repliedBy: readCapabilityString(body, ['repliedBy', 'userId', 'userName']) || 'user',
+  }) as unknown as Record<string, unknown>;
+}
+
+function dismissAgentActionNeededForCapability(args?: unknown): Record<string, unknown> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id']);
+  if (!id) return { ok: false, error: 'id is required' };
+  return agentActionRecordStore.dismissActionNeeded(id, {
+    reason: readCapabilityString(body, ['reason']),
+    dismissedBy: readCapabilityString(body, ['dismissedBy', 'userId', 'userName']) || 'user',
+  }) as unknown as Record<string, unknown>;
+}
+
+function listAgentReceiptsForCapability(args?: unknown): Record<string, unknown> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const filter: AgentWorkflowReceiptListFilter = {};
+  const turnId = readCapabilityString(body, ['turnId']);
+  if (turnId) filter.turnId = turnId;
+  const kind = readAgentReceiptKind(body.kind);
+  if (kind) filter.kind = kind;
+  return { ok: true, receipts: agentActionRecordStore.listReceipts(filter) };
+}
+
+function getAgentReceiptForCapability(args?: unknown): Record<string, unknown> {
+  const id = readCapabilityString(normalizeMcpCapabilityArgs(args), ['id']);
+  if (!id) return { ok: false, error: 'id is required' };
+  return { ok: true, receipt: agentActionRecordStore.getReceipt(id) };
 }
 
 async function postMcpActionInboxCallback(item: McpBridgeActionInboxItem, text: string): Promise<string> {
@@ -7847,7 +7954,7 @@ function sanitizeMcpBrowserAction(value: unknown): McpBridgeBrowserActionPayload
 }
 
 function sanitizeMcpBrowserActionRequest(body: unknown): Omit<McpBridgeBrowserActionPayload, 'requestId'> {
-  const raw = body && typeof body === 'object' && !Array.isArray(body) ? body as Record<string, unknown> : {};
+  const raw = body && typeof body === 'object' && !Array.isArray(body) ? (body as Record<string, unknown>) : {};
   const action = sanitizeMcpBrowserAction(raw.action);
   const request: Omit<McpBridgeBrowserActionPayload, 'requestId'> = { action };
   const contentId = sanitizeMcpDockActionText(raw.contentId, 200);
@@ -7861,7 +7968,8 @@ function sanitizeMcpBrowserActionRequest(body: unknown): Omit<McpBridgeBrowserAc
   const maxChars = typeof raw.maxChars === 'number' && Number.isFinite(raw.maxChars) ? raw.maxChars : undefined;
   const maxLinks = typeof raw.maxLinks === 'number' && Number.isFinite(raw.maxLinks) ? raw.maxLinks : undefined;
   const maxNodes = typeof raw.maxNodes === 'number' && Number.isFinite(raw.maxNodes) ? raw.maxNodes : undefined;
-  const maxTextChars = typeof raw.maxTextChars === 'number' && Number.isFinite(raw.maxTextChars) ? raw.maxTextChars : undefined;
+  const maxTextChars =
+    typeof raw.maxTextChars === 'number' && Number.isFinite(raw.maxTextChars) ? raw.maxTextChars : undefined;
   if (contentId) request.contentId = contentId;
   if (paneId) request.paneId = paneId;
   if (url) request.url = url;
@@ -7903,7 +8011,7 @@ function sanitizeMcpBrowserActionResult(value: unknown): McpBridgeBrowserActionR
     canGoForward: typeof raw.canGoForward === 'boolean' ? raw.canGoForward : undefined,
     title: sanitizeMcpDockActionText(raw.title, 500) || undefined,
     text: typeof raw.text === 'string' ? raw.text : undefined,
-    links: Array.isArray(raw.links) ? raw.links as Array<{ text?: string; href?: string }> : undefined,
+    links: Array.isArray(raw.links) ? (raw.links as Array<{ text?: string; href?: string }>) : undefined,
     forms: Array.isArray(raw.forms) ? raw.forms : undefined,
     dom: raw.dom,
     elementAction: raw.elementAction,
@@ -8534,7 +8642,10 @@ function resolveOneShotShellSpawn(shellKind: ShellKind, command: string): { comm
   if (process.platform === 'win32') {
     if (shellKind === 'cmd') return { command: resolved.command, args: ['/d', '/s', '/c', command] };
     if (shellKind === 'wsl') return { command: resolved.command, args: ['sh', '-lc', command] };
-    return { command: resolved.command, args: ['-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', command] };
+    return {
+      command: resolved.command,
+      args: ['-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', command],
+    };
   }
   if (shellKind === 'pwsh') return { command: resolved.command, args: ['-NoLogo', '-NoProfile', '-Command', command] };
   const shellCommand = resolved.command || (shellKind === 'sh' ? '/bin/sh' : '/bin/bash');
@@ -8543,16 +8654,12 @@ function resolveOneShotShellSpawn(shellKind: ShellKind, command: string): { comm
 
 function normalizeMcpTerminalRunAndWaitTimeout(value: unknown): number {
   const requested = Number(value);
-  return Number.isFinite(requested)
-    ? clamp(Math.trunc(requested), 1000, 30 * 60 * 1000, 120_000)
-    : 120_000;
+  return Number.isFinite(requested) ? clamp(Math.trunc(requested), 1000, 30 * 60 * 1000, 120_000) : 120_000;
 }
 
 function normalizeMcpTerminalRunAndWaitMaxBytes(value: unknown): number {
   const requested = Number(value);
-  return Number.isFinite(requested)
-    ? clamp(Math.trunc(requested), 1024, SCROLLBACK_MAX_BYTES, 64 * 1024)
-    : 64 * 1024;
+  return Number.isFinite(requested) ? clamp(Math.trunc(requested), 1024, SCROLLBACK_MAX_BYTES, 64 * 1024) : 64 * 1024;
 }
 
 function trimCapturedOutput(value: string, maxBytes: number): string {
@@ -8583,7 +8690,12 @@ async function runMcpTerminalCommandAndWait(args: unknown): Promise<McpTerminalR
     let timedOut = false;
     let child: ChildProcess;
 
-    const finish = (result: Omit<McpTerminalRunAndWaitResult, 'ok' | 'command' | 'cwd' | 'shell' | 'durationMs' | 'output' | 'stdout' | 'stderr' | 'timedOut'>) => {
+    const finish = (
+      result: Omit<
+        McpTerminalRunAndWaitResult,
+        'ok' | 'command' | 'cwd' | 'shell' | 'durationMs' | 'output' | 'stdout' | 'stderr' | 'timedOut'
+      >,
+    ) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
@@ -8606,7 +8718,11 @@ async function runMcpTerminalCommandAndWait(args: unknown): Promise<McpTerminalR
 
     const timer = setTimeout(() => {
       timedOut = true;
-      try { child?.kill(); } catch { /* process already exited */ }
+      try {
+        child?.kill();
+      } catch {
+        /* process already exited */
+      }
       finish({ exitCode: null, signal: 'timeout', error: `Command timed out after ${timeoutMs}ms` });
     }, timeoutMs);
 
@@ -9164,7 +9280,9 @@ function readCapabilityStringArray(body: Record<string, unknown>, keys: string[]
 }
 
 function isMemoryKind(value: unknown): value is NonNullable<MemoryInput['kind']> {
-  return value === 'fact' || value === 'preference' || value === 'event' || value === 'decision' || value === 'procedure';
+  return (
+    value === 'fact' || value === 'preference' || value === 'event' || value === 'decision' || value === 'procedure'
+  );
 }
 
 function isMemoryStatus(value: unknown): value is NonNullable<MemoryInput['status']> {
@@ -9205,7 +9323,8 @@ function normalizeMemoryInputArgs(body: Record<string, unknown>): MemoryInput {
   const tags = Array.isArray(record.tags) ? record.tags.filter((tag): tag is string => typeof tag === 'string') : [];
   const source = readCapabilityString(record, ['source']);
   const priority = readCapabilityNumber(record, ['priority']);
-  const runbook = record.runbook && typeof record.runbook === 'object' && !Array.isArray(record.runbook) ? record.runbook : undefined;
+  const runbook =
+    record.runbook && typeof record.runbook === 'object' && !Array.isArray(record.runbook) ? record.runbook : undefined;
   const validFrom = readCapabilityString(record, ['validFrom']);
   const validTo = readCapabilityString(record, ['validTo']);
   const lastAccessedAt = readCapabilityString(record, ['lastAccessedAt']);
@@ -9244,7 +9363,8 @@ function normalizeMemoryInputArgs(body: Record<string, unknown>): MemoryInput {
 }
 
 function normalizeMemoryWriteContextArgs(body: Record<string, unknown>): MemoryWriteContext {
-  const context = body.context && typeof body.context === 'object' && !Array.isArray(body.context) ? body.context : body;
+  const context =
+    body.context && typeof body.context === 'object' && !Array.isArray(body.context) ? body.context : body;
   const record = context as Record<string, unknown>;
   return defaultMemoryWriteContext({
     runtime: readCapabilityString(record, ['runtime'], 'desk-cr'),
@@ -9264,7 +9384,8 @@ function normalizeMemoryWriteContextArgs(body: Record<string, unknown>): MemoryW
         : 'unknown',
     externalTaint: record.externalTaint === true,
     actor: record.actor === 'user' || record.actor === 'agent' || record.actor === 'system' ? record.actor : 'agent',
-    intent: record.intent === 'save' || record.intent === 'propose' || record.intent === 'delete' ? record.intent : 'propose',
+    intent:
+      record.intent === 'save' || record.intent === 'propose' || record.intent === 'delete' ? record.intent : 'propose',
     sourceId: readCapabilityString(record, ['sourceId']) || undefined,
     reason: readCapabilityString(record, ['reason']) || undefined,
   });
@@ -9337,7 +9458,10 @@ async function memoryLedgerHistoryCapability(args: unknown): Promise<Record<stri
 
 async function memoryProposalCreateCapability(args: unknown): Promise<Record<string, unknown>> {
   const body = normalizeMcpCapabilityArgs(args);
-  const proposal = await createDeskMemoryLedger().propose(normalizeMemoryInputArgs(body), normalizeMemoryWriteContextArgs(body));
+  const proposal = await createDeskMemoryLedger().propose(
+    normalizeMemoryInputArgs(body),
+    normalizeMemoryWriteContextArgs(body),
+  );
   return { ok: true, proposal: redactMemoryProposalForCr(proposal) };
 }
 
@@ -11460,6 +11584,16 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
       capabilityAuditLogger.clear();
       return { ok: true, records: [] };
     },
+    agentTurnsList: agentTurnLedgerReadbackApi.agentTurnsList,
+    agentTurnsCurrent: agentTurnLedgerReadbackApi.agentTurnsCurrent,
+    agentTurnsGet: agentTurnLedgerReadbackApi.agentTurnsGet,
+    agentTurnEvents: agentTurnLedgerReadbackApi.agentTurnEvents,
+    agentActionNeededList: listAgentActionNeededForCapability,
+    agentActionNeededGet: getAgentActionNeededForCapability,
+    agentActionNeededReply: replyAgentActionNeededForCapability,
+    agentActionNeededDismiss: dismissAgentActionNeededForCapability,
+    agentReceiptsList: listAgentReceiptsForCapability,
+    agentReceiptsGet: getAgentReceiptForCapability,
     memoryLedgerList: (args: unknown) => memoryLedgerListCapability(args),
     memoryLedgerSearch: (args: unknown) => memoryLedgerSearchCapability(args),
     memoryLedgerGet: (args: unknown) => memoryLedgerGetCapability(args),
@@ -11518,6 +11652,8 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     browserAction: (args: unknown) => sendMcpBrowserActionToRenderer(sanitizeMcpBrowserActionRequest(args)),
     openBuiltinPane: openMcpBuiltinPaneCapability,
     runExternalAppAction: (args: unknown) => appControlService.run(args),
+    computerUseCall: (path: string, args?: unknown, options?: { approved?: boolean }) =>
+      computerUseService.call(path, args, options),
     getOnboardingSampleWorkspaceStatus: () => getOnboardingSampleWorkspaceStatus(),
     prepareOnboardingSampleWorkspace: () => prepareOnboardingSampleWorkspaceAndBroadcast(),
     resetOnboardingSampleWorkspace: () => resetOnboardingSampleWorkspaceAndBroadcast(),
@@ -12500,8 +12636,11 @@ async function callMcpBridgeCapabilityFromRequest(
   // Executed (no approval prompt). Tag HOW it cleared the gate so downstream
   // reports "already ran" instead of a phantom "approval needed" for the
   // common case where the user previously approved this capability.
-  const approvalResolution: McpBridgeCapabilityCallResult['approvalResolution'] =
-    preApproved ? 'pre-approved' : rememberedHit ? 'auto-approved' : 'not-required';
+  const approvalResolution: McpBridgeCapabilityCallResult['approvalResolution'] = preApproved
+    ? 'pre-approved'
+    : rememberedHit
+      ? 'auto-approved'
+      : 'not-required';
   return { ...result, approvalResolution };
 }
 
@@ -14822,8 +14961,7 @@ function embeddedXenesisOptions(): XenesisEmbeddedAgentServiceOptions {
   // simple CR routing. 'default' -> no injection (codex config applies).
   const deskReasoningEffort = appSettings.aiProvider.reasoningEffort;
   const isCodexProvider = (providerRuntime.provider || '').startsWith('codex');
-  const realCodexHome =
-    (process.env.CODEX_HOME || '').trim() || path.join(os.homedir(), '.codex');
+  const realCodexHome = (process.env.CODEX_HOME || '').trim() || path.join(os.homedir(), '.codex');
 
   // Force model + reasoning effort at the AGENT level via -c flags, independent of
   // the global/isolated codex config. The model MUST be forced this way: in the
@@ -14849,8 +14987,7 @@ function embeddedXenesisOptions(): XenesisEmbeddedAgentServiceOptions {
           XENESIS_CODEX_APP_SERVER_ARGS:
             process.env.XENESIS_CODEX_APP_SERVER_ARGS ?? `app-server --stdio ${codexCArgs}`,
           XENESIS_CODEX_CLI_ARGS:
-            process.env.XENESIS_CODEX_CLI_ARGS ??
-            `exec --skip-git-repo-check --sandbox read-only ${codexCArgs} -`,
+            process.env.XENESIS_CODEX_CLI_ARGS ?? `exec --skip-git-repo-check --sandbox read-only ${codexCArgs} -`,
         }
       : {};
 
@@ -14905,14 +15042,14 @@ function embeddedXenesisOptions(): XenesisEmbeddedAgentServiceOptions {
             // 120000ms". Give codex+MCP turns a much larger ceiling so slow,
             // high-effort turns complete. (Lower effort in ~/.codex/config.toml to
             // make turns faster; this only raises the kill ceiling.)
-            XENESIS_CODEX_APP_SERVER_TIMEOUT_MS:
-              process.env.XENESIS_CODEX_APP_SERVER_TIMEOUT_MS ?? '600000',
+            XENESIS_CODEX_APP_SERVER_TIMEOUT_MS: process.env.XENESIS_CODEX_APP_SERVER_TIMEOUT_MS ?? '600000',
           }
         : {}),
       ...codexReasoningEnv,
       ...codexIsolatedHomeEnv,
     },
     providerRuntime,
+    turnLedger: agentTurnLedger,
     approvalMode: settings.approvalMode,
     maxTurns: settings.maxTurns,
     profileName: profileSnapshot.name,
@@ -15372,36 +15509,10 @@ async function resetXenesisSession(): Promise<XenesisStatus> {
 
 const xenesisRunModes = new Set<XenesisRunRequest['mode']>(['chat', 'plan', 'work']);
 
-interface XenesisRunProviderRuntimeOverride {
-  provider?: string;
-  model?: string;
-  profile?: string;
-  baseURL?: string;
-  apiKeyEnv?: string;
-}
-
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const prototype = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
-}
-
-function normalizeXenesisRunProviderRuntime(
-  raw: Record<string, unknown>,
-): XenesisRunProviderRuntimeOverride | undefined {
-  const provider = optionalXenesisText(raw.provider);
-  const model = optionalXenesisText(raw.model);
-  const profile = optionalXenesisText(raw.providerProfile) ?? optionalXenesisText(raw.profile);
-  const baseURL = optionalXenesisText(raw.baseURL) ?? optionalXenesisText(raw.baseUrl);
-  const apiKeyEnv = optionalXenesisText(raw.apiKeyEnv);
-  const providerRuntime: XenesisRunProviderRuntimeOverride = {
-    ...(provider ? { provider } : {}),
-    ...(model ? { model } : {}),
-    ...(profile ? { profile } : {}),
-    ...(baseURL ? { baseURL } : {}),
-    ...(apiKeyEnv ? { apiKeyEnv } : {}),
-  };
-  return Object.keys(providerRuntime).length > 0 ? providerRuntime : undefined;
 }
 
 function normalizeXenesisRunAttachments(raw: unknown): XenesisRunRequest['attachments'] | undefined {
@@ -15477,7 +15588,7 @@ function normalizeXenesisRunRequest(request: XenesisRunRequest):
         .slice(-24)
     : undefined;
   const context = isPlainRecord(raw.context) ? raw.context : {};
-  const providerRuntime = normalizeXenesisRunProviderRuntime(raw);
+  const providerRuntime = normalizeXenesisRunProviderRuntimeRequest(raw);
   const attachments = normalizeXenesisRunAttachments(raw.attachments);
   const stream = raw.stream === false ? false : true;
 
@@ -15574,6 +15685,55 @@ function recordXenesisRunFailure(message: string): void {
   });
 }
 
+function agentTurnStatusLabel(status: string): string {
+  if (status === 'waiting_for_approval') return 'Desk approval needed';
+  if (status === 'blocked') return 'Run blocked';
+  if (status === 'failed') return 'Run failed';
+  if (status === 'completed') return 'Run completed';
+  return 'Run in progress';
+}
+
+function buildAgentTurnLedgerEventPayload(turn = agentTurnLedger.current()): Record<string, unknown> | null {
+  if (!turn) return null;
+  return {
+    type: 'turn_ledger',
+    turnId: turn.id,
+    status: turn.status,
+    summary: agentTurnStatusLabel(turn.status),
+    provider: turn.provider.resolved || turn.provider.requested,
+    ...(turn.provider.processModel ? { processModel: turn.provider.processModel } : {}),
+    evidenceCount: turn.evidence.length,
+    toolCallCount: turn.toolCalls.length,
+    approvalCount: turn.approvals.length,
+    updatedAt: turn.updatedAt,
+  };
+}
+
+function latestAgentTurnForRun(
+  previousTurnIds: ReadonlySet<string>,
+  sessionId?: string,
+): XenesisTurnRecord | undefined {
+  const turns = agentTurnLedger.list();
+  const newTurns = turns.filter(
+    (turn) => !previousTurnIds.has(turn.id) && (sessionId === undefined || turn.sessionId === sessionId),
+  );
+  if (newTurns.length > 0) {
+    return newTurns.sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.updatedAt.localeCompare(a.updatedAt))[0];
+  }
+  if (sessionId !== undefined) {
+    return turns
+      .filter((turn) => turn.sessionId === sessionId)
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || b.createdAt.localeCompare(a.createdAt))[0];
+  }
+  return agentTurnLedger.current();
+}
+
+function emitAgentTurnLedgerEvent(emitEvent?: (event: XenesisRunEvent) => void, turn?: XenesisTurnRecord): void {
+  const payload = buildAgentTurnLedgerEventPayload(turn);
+  if (!payload) return;
+  emitEvent?.({ event: 'turn_ledger', data: payload });
+}
+
 async function runXenesisEmbeddedRequest(
   request: XenesisRunRequest,
   emitEvent?: (event: XenesisRunEvent) => void,
@@ -15593,6 +15753,7 @@ async function runXenesisEmbeddedRequest(
     return { ok: false, error: message };
   }
 
+  const previousTurnIds = new Set(agentTurnLedger.list().map((turn) => turn.id));
   const result = await getEmbeddedXenesisService().run({
     prompt: normalized.prompt,
     workspace: status.workspace,
@@ -15607,13 +15768,18 @@ async function runXenesisEmbeddedRequest(
     ...(normalized.providerRuntime ? { providerRuntime: normalized.providerRuntime } : {}),
   });
 
+  const resultSessionId =
+    typeof result.sessionId === 'string' && result.sessionId.trim() ? result.sessionId.trim() : normalized.sessionId;
+  const runTurn = latestAgentTurnForRun(previousTurnIds, resultSessionId);
   if (!result.ok) {
     const message = result.error || result.errors || 'Xenesis run failed.';
+    emitAgentTurnLedgerEvent(emitEvent, runTurn);
     emitEvent?.({ event: 'gateway_error', data: result });
     recordXenesisRunFailure(message);
     return result;
   }
 
+  emitAgentTurnLedgerEvent(emitEvent, runTurn);
   emitEvent?.({ event: 'gateway_done', data: result });
   recordXenesisRunSuccess(result);
   return result;

@@ -182,3 +182,39 @@ test('summarizeXenesisRunEvent treats provider repair request as progress', () =
   const message = terminalMessageFromRunEventSummary(summary);
   assert.equal(message, null);
 });
+
+test('summarizeXenesisRunEvent summarizes sanitized turn ledger events', () => {
+  const event: XenesisRunEvent = {
+    event: 'turn_ledger',
+    data: {
+      type: 'turn_ledger',
+      status: 'waiting_for_approval',
+      provider: 'codex',
+      processModel: 'persistent-process',
+      turnId: 'turn-1',
+      summary: 'Desk approval needed',
+    },
+  };
+
+  const summary = summarizeXenesisRunEvent(event);
+
+  assert.equal(summary.kind, 'turn_ledger');
+  assert.equal(summary.summary, 'Desk approval needed');
+  assert.equal(summary.error, false);
+  assert.ok(summary.detail);
+  assert.match(summary.detail, /turn-1/);
+});
+
+test('summarizeXenesisRunEvent marks failed turn ledger events as errors', () => {
+  const summary = summarizeXenesisRunEvent({
+    event: 'turn_ledger',
+    data: {
+      type: 'turn_ledger',
+      status: 'failed',
+      summary: 'Run failed',
+    },
+  });
+
+  assert.equal(summary.kind, 'turn_ledger');
+  assert.equal(summary.error, true);
+});

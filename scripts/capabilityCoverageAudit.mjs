@@ -266,7 +266,11 @@ const audit = buildAudit();
 const markdown = buildDocument(audit);
 fs.writeFileSync(outputPath, markdown, 'utf8');
 
-const hasFailures = audit.missingRegistered.length > 0 || audit.dispatchMissingTree.length > 0;
+const hasFailures =
+  audit.missingRegistered.length > 0 ||
+  audit.missingDispatched.length > 0 ||
+  audit.undispatchedCallable.length > 0 ||
+  audit.dispatchMissingTree.length > 0;
 
 console.log(`Wrote ${path.relative(projectRoot, outputPath)}.`);
 console.log(`Capability audit: ${audit.nodes.length} nodes, ${audit.coverageRows.length} coverage path references.`);

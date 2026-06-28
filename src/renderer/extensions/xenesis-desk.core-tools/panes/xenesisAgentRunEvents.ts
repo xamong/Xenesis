@@ -137,6 +137,13 @@ function valueText(record: Record<string, unknown> | undefined, key: string): st
   return '';
 }
 
+function turnLedgerStatusLabel(status: string): string {
+  if (status === 'waiting_for_approval') return 'Desk approval needed';
+  if (status === 'failed') return 'Run failed';
+  if (status === 'completed') return 'Run completed';
+  return 'Run in progress';
+}
+
 function taskLifecycleRecordFromRunEvent(event: XenesisRunEvent): Record<string, unknown> | undefined {
   const data = isRecord(event.data) ? event.data : undefined;
   const runtimeEvent = nestedRecord(data, 'event');
@@ -169,6 +176,17 @@ export function summarizeXenesisRunEvent(event: XenesisRunEvent): Omit<XenesisRa
   const isDeskTool = toolName ? isDeskToolName(toolName, toolInput) : false;
   const detail = stringifyDetail(event.data);
   const taskLifecycleRecord = taskLifecycleRecordFromRunEvent(event);
+
+  if (eventType === 'turn_ledger') {
+    const data = isRecord(event.data) ? event.data : undefined;
+    const status = valueText(data, 'status');
+    return {
+      kind: 'turn_ledger',
+      summary: valueText(data, 'summary') || turnLedgerStatusLabel(status),
+      detail,
+      error: status === 'failed',
+    };
+  }
 
   if (taskLifecycleRecord) {
     return {

@@ -69,6 +69,7 @@ import type { IdeContextInput } from "../ide/index.js";
 import { filterToolsForApprovalMode } from "../permissions/policy.js";
 import { SqliteAgentTaskStore, SqliteScheduleStore, runAgentTask, type AgentTask, type ScheduleTrigger, type TaskSchedule } from "../orchestration/index.js";
 import {
+  capabilitiesFor,
   resolveProviderSettings,
   type AgentProvider
 } from "../providers/index.js";
@@ -1353,6 +1354,22 @@ interface CliStatus {
   approvalMode: ApprovalMode;
   workspace: string;
   xenesisHome: string;
+  processModel?: "persistent-process" | "process-per-turn" | "embedded";
+}
+
+function providerProcessModel(provider: string): CliStatus["processModel"] {
+  const capabilities = capabilitiesFor(provider);
+  if (capabilities?.transport === "mcp-agent") return "embedded";
+  if (capabilities?.persistentSession === true) return "persistent-process";
+  if (
+    capabilities?.persistentSession === false &&
+    (capabilities.transport === "cli-oneshot" || capabilities.transport === "cli-interactive")
+  ) {
+    return "process-per-turn";
+  }
+  if (provider === "codex-app-server") return "persistent-process";
+  if (provider === "codex-cli" || provider === "claude-cli") return "process-per-turn";
+  return undefined;
 }
 
 async function readCliStatus(parsed: ParsedArgs, cwd: string, env: NodeJS.ProcessEnv): Promise<CliStatus> {
@@ -1368,7 +1385,8 @@ async function readCliStatus(parsed: ParsedArgs, cwd: string, env: NodeJS.Proces
     model: config.model,
     approvalMode: config.approvalMode,
     workspace: config.workspace,
-    xenesisHome: config.xenesisHome
+    xenesisHome: config.xenesisHome,
+    ...(providerProcessModel(config.provider) ? { processModel: providerProcessModel(config.provider) } : {})
   };
 }
 
@@ -1381,6 +1399,7 @@ async function runStatusCommand(parsed: ParsedArgs, cwd: string, env: NodeJS.Pro
   }
 
   emitStdout(io, `status: provider=${status.provider}`);
+  if (status.processModel) emitStdout(io, `status: processModel=${status.processModel}`);
   emitStdout(io, `status: model=${status.model}`);
   emitStdout(io, `status: approvalMode=${status.approvalMode}`);
   emitStdout(io, `status: workspace=${status.workspace}`);
@@ -3974,6 +3993,7 @@ async function runPrompt(
       ideContext: options.ideContext ?? io.ideContext,
       abortSignal: options.abortSignal ?? io.abortSignal,
       stream: !parsed.print && !parsed.json,
+      disposeRunner: true,
       systemMessages: options.systemMessages,
       allowedTools: options.allowedTools,
       approvalHandlerFactory: (config) =>
@@ -4020,6 +4040,7 @@ async function resumePrompt(
       ideContext: options.ideContext ?? io.ideContext,
       abortSignal: options.abortSignal ?? io.abortSignal,
       stream: !parsed.print && !parsed.json,
+      disposeRunner: true,
       systemMessages: options.systemMessages,
       allowedTools: options.allowedTools,
       approvalHandlerFactory: (config) =>

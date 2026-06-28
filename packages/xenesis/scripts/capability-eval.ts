@@ -1,32 +1,40 @@
 #!/usr/bin/env node
-import { spawn } from "node:child_process";
-import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
-import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
-import { homedir, tmpdir } from "node:os";
+import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
+import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { spawn } from "node:child_process";
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import {
-  type ChannelAdapter,
-  ChannelManager,
-  type ChannelMessageHandler,
-  type ChannelOutgoingMessage,
-  SqliteChannelSessionStore
-} from "../src/channels/index.js";
-import { renderEvent } from "../src/cli/renderEvents.js";
-import { runAgentPipeline } from "../src/core/AgentRunPipeline.js";
-import type { AgentMessage } from "../src/core/messages.js";
-import {
-  type CapabilityEvalHistory,
-  type CapabilityEvalUsage,
-  type CapabilityScenario,
   defaultCapabilityScenarios,
   defaultMemoryEvaluationScenarios,
   extractCapabilityTranscriptTextFromSessionRecords,
   extractCapabilityUsageFromSessionRecords,
   mergeCapabilityScenarios,
   runCapabilityEvalSuite,
-  updateCapabilityEvalHistory
+  updateCapabilityEvalHistory,
+  type CapabilityAcceptanceEvidence,
+  type CapabilityEvalHistory,
+  type CapabilityEvalUsage,
+  type CapabilityScenario
 } from "../src/evaluation/index.js";
+import {
+  ChannelManager,
+  SqliteChannelSessionStore,
+  type ChannelAdapter,
+  type ChannelMessageHandler,
+  type ChannelOutgoingMessage
+} from "../src/channels/index.js";
+import { runAgentPipeline } from "../src/core/AgentRunPipeline.js";
+import type { AgentMessage } from "../src/core/messages.js";
+import { renderEvent } from "../src/cli/renderEvents.js";
+import {
+  collectAgentTaskContext,
+  markAgentTasksContextInjected,
+  runAgentTask,
+  SqliteAgentTaskStore
+} from "../src/orchestration/index.js";
 import {
   createRunbookMemoryInput,
   hashMemoryEvidenceContent,
@@ -34,15 +42,9 @@ import {
   InMemoryMemoryStore,
   MemoryLedger,
   MemoryRetrievalPlanner,
-  type MemoryWriteContext,
-  normalizeMemoryRunbook
+  normalizeMemoryRunbook,
+  type MemoryWriteContext
 } from "../src/extensions/index.js";
-import {
-  collectAgentTaskContext,
-  markAgentTasksContextInjected,
-  runAgentTask,
-  SqliteAgentTaskStore
-} from "../src/orchestration/index.js";
 import { createBuiltInTools, type ToolContext } from "../src/tools/index.js";
 
 interface ParsedArgs {
@@ -142,14 +144,6 @@ function npmSpawnCommand(args: string[]) {
 
 function packageRoot() {
   return resolve(dirname(fileURLToPath(import.meta.url)), "..");
-}
-
-function repoRoot() {
-  return resolve(packageRoot(), "..", "..");
-}
-
-function deskMcpServerPath() {
-  return join(repoRoot(), "mcp", "xenesis-desk-mcp-server.mjs");
 }
 
 function resolveXenesisHome() {
@@ -274,42 +268,29 @@ function sendJson(response: ServerResponse, status: number, payload: unknown) {
   response.end(JSON.stringify(payload));
 }
 
-function parseJsonRecord(text: string): Record<string, unknown> {
-  try {
-    const parsed = text.trim() ? JSON.parse(text) as unknown : {};
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {};
-  } catch {
-    return {};
-  }
-}
-
 async function startDeskBridgeFixture() {
   const server = createServer(async (request, response) => {
-    const body = parseJsonRecord(await readRequestBody(request));
-    const activeContext = {
-      paneId: "editor-capability",
-      kind: "markdown",
-      filePath: "capability-note.md",
-      title: "Capability Note",
-      content: "# Capability Note\nDesk active context fixture."
-    };
-    const state = {
-      terminals: [],
-      panels: [{ id: "editor-capability", title: "Capability Note" }],
-      openFiles: ["capability-note.md"],
-      diagnostics: []
-    };
+    await readRequestBody(request);
     if (request.url === "/active-context") {
       sendJson(response, 200, {
         ok: true,
-        activeContext
+        activeContext: {
+          paneId: "editor-capability",
+          kind: "markdown",
+          filePath: "capability-note.md",
+          title: "Capability Note",
+          content: "# Capability Note\nDesk active context fixture."
+        }
       });
       return;
     }
     if (request.url === "/state") {
       sendJson(response, 200, {
         ok: true,
-        ...state
+        terminals: [],
+        panels: [{ id: "editor-capability", title: "Capability Note" }],
+        openFiles: ["capability-note.md"],
+        diagnostics: []
       });
       return;
     }
@@ -317,55 +298,17 @@ async function startDeskBridgeFixture() {
       sendJson(response, 200, {
         ok: true,
         capabilities: [
-          { path: "xd.context.active", kind: "read", readable: true, callable: true },
           { path: "xd.context.actions", kind: "read", readable: true, callable: true },
-          { path: "xd.app.status", kind: "read", readable: true, callable: true },
           { path: "xd.files.open", kind: "control", readable: false, callable: true }
         ]
       });
       return;
     }
-    if (request.url === "/capabilities/describe") {
-      const path = String(body.path ?? "");
-      sendJson(response, 200, {
-        ok: true,
-        path,
-        capability: {
-          path,
-          kind: path === "xd.files.open" ? "control" : "read",
-          label: path === "xd.context.active" ? "Read active context" : path,
-          description: path === "xd.context.active"
-            ? "Read the currently active Xenesis Desk pane, content, file, panel, or terminal context."
-            : "Capability eval fixture path.",
-          readable: path !== "xd.files.open",
-          callable: true
-        }
-      });
-      return;
-    }
-    if (request.url === "/capabilities/call") {
-      const path = String(body.path ?? "");
-      if (path === "xd.context.active") {
-        sendJson(response, 200, { ok: true, path, result: { activeContext }, activeContext });
-        return;
-      }
-      if (path === "xd.app.status") {
-        sendJson(response, 200, { ok: true, path, result: state, ...state });
-        return;
-      }
-      if (path === "xd.context.actions") {
-        sendJson(response, 200, { ok: true, path, result: { actions: [] }, actions: [] });
-        return;
-      }
-    }
     sendJson(response, 200, { ok: true, result: {} });
   });
   const port = await listen(server);
   return {
-    env: {
-      XENIS_MCP_BRIDGE_URL: `http://127.0.0.1:${port}`,
-      XENIS_MCP_SERVER_PATH: deskMcpServerPath()
-    },
+    env: { XENIS_MCP_BRIDGE_URL: `http://127.0.0.1:${port}` },
     cleanup: () => new Promise<void>((resolveClose) => server.close(() => resolveClose()))
   };
 }
@@ -374,31 +317,27 @@ async function startDeskBridgeSwitchFixture() {
   let activeFilePath = "initial-note.md";
   let activeTitle = "Initial Note";
   const server = createServer(async (request, response) => {
-    const body = parseJsonRecord(await readRequestBody(request));
-    const activeContext = {
-      paneId: "editor-capability-switch",
-      kind: "markdown",
-      filePath: activeFilePath,
-      title: activeTitle,
-      content: `# ${activeTitle}\nDesk active context switch fixture.`
-    };
-    const state = {
-      terminals: [],
-      panels: [{ id: "editor-capability-switch", title: activeTitle }],
-      openFiles: [activeFilePath],
-      diagnostics: []
-    };
+    await readRequestBody(request);
     if (request.url === "/active-context") {
       sendJson(response, 200, {
         ok: true,
-        activeContext
+        activeContext: {
+          paneId: "editor-capability-switch",
+          kind: "markdown",
+          filePath: activeFilePath,
+          title: activeTitle,
+          content: `# ${activeTitle}\nDesk active context switch fixture.`
+        }
       });
       return;
     }
     if (request.url === "/state") {
       sendJson(response, 200, {
         ok: true,
-        ...state
+        terminals: [],
+        panels: [{ id: "editor-capability-switch", title: activeTitle }],
+        openFiles: [activeFilePath],
+        diagnostics: []
       });
       return;
     }
@@ -406,55 +345,17 @@ async function startDeskBridgeSwitchFixture() {
       sendJson(response, 200, {
         ok: true,
         capabilities: [
-          { path: "xd.context.active", kind: "read", readable: true, callable: true },
           { path: "xd.context.actions", kind: "read", readable: true, callable: true },
-          { path: "xd.app.status", kind: "read", readable: true, callable: true },
           { path: "xd.files.open", kind: "control", readable: false, callable: true }
         ]
       });
       return;
     }
-    if (request.url === "/capabilities/describe") {
-      const path = String(body.path ?? "");
-      sendJson(response, 200, {
-        ok: true,
-        path,
-        capability: {
-          path,
-          kind: path === "xd.files.open" ? "control" : "read",
-          label: path === "xd.context.active" ? "Read active context" : path,
-          description: path === "xd.context.active"
-            ? "Read the currently active Xenesis Desk pane, content, file, panel, or terminal context."
-            : "Capability eval fixture path.",
-          readable: path !== "xd.files.open",
-          callable: true
-        }
-      });
-      return;
-    }
-    if (request.url === "/capabilities/call") {
-      const path = String(body.path ?? "");
-      if (path === "xd.context.active") {
-        sendJson(response, 200, { ok: true, path, result: { activeContext }, activeContext });
-        return;
-      }
-      if (path === "xd.app.status") {
-        sendJson(response, 200, { ok: true, path, result: state, ...state });
-        return;
-      }
-      if (path === "xd.context.actions") {
-        sendJson(response, 200, { ok: true, path, result: { actions: [] }, actions: [] });
-        return;
-      }
-    }
     sendJson(response, 200, { ok: true, result: {} });
   });
   const port = await listen(server);
   return {
-    env: {
-      XENIS_MCP_BRIDGE_URL: `http://127.0.0.1:${port}`,
-      XENIS_MCP_SERVER_PATH: deskMcpServerPath()
-    },
+    env: { XENIS_MCP_BRIDGE_URL: `http://127.0.0.1:${port}` },
     switchTo: (filePath: string, title: string) => {
       activeFilePath = filePath;
       activeTitle = title;
@@ -525,10 +426,7 @@ async function startDeskFileVerifyFixture(workspace: string) {
   });
   const port = await listen(server);
   return {
-    env: {
-      XENIS_MCP_BRIDGE_URL: `http://127.0.0.1:${port}`,
-      XENIS_MCP_SERVER_PATH: deskMcpServerPath()
-    },
+    env: { XENIS_MCP_BRIDGE_URL: `http://127.0.0.1:${port}` },
     cleanup: () => new Promise<void>((resolveClose) => server.close(() => resolveClose()))
   };
 }
@@ -1046,6 +944,7 @@ interface CliRunResult {
   stdout: string;
   stderr: string;
   durationMs: number;
+  acceptanceEvidence?: CapabilityAcceptanceEvidence;
   usage?: CapabilityEvalUsage;
   usageUnavailableReason?: string;
 }
@@ -1108,15 +1007,208 @@ function parseSessionRecords(raw: string) {
     .filter((record): record is unknown => record !== undefined);
 }
 
-async function readSessionCapabilityTranscript(path: string): Promise<string> {
-  const raw = await readFile(path, "utf8");
-  return extractCapabilityTranscriptTextFromSessionRecords(parseSessionRecords(raw));
+function unique(values: string[]) {
+  return Array.from(new Set(values.filter(Boolean)));
 }
 
-async function readNewSessionUsage(
+function recordObject(value: unknown): Record<string, unknown> | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  return value as Record<string, unknown>;
+}
+
+async function readSessionRecords(path: string): Promise<unknown[]> {
+  return parseSessionRecords(await readFile(path, "utf8"));
+}
+
+async function readSessionCapabilityTranscript(path: string): Promise<string> {
+  return extractCapabilityTranscriptTextFromSessionRecords(await readSessionRecords(path));
+}
+
+function toolCallName(record: Record<string, unknown>) {
+  const toolCall = recordObject(record.toolCall);
+  return typeof toolCall?.name === "string" ? toolCall.name : undefined;
+}
+
+function toolCallId(record: Record<string, unknown>) {
+  const toolCall = recordObject(record.toolCall);
+  return typeof toolCall?.id === "string" ? toolCall.id : undefined;
+}
+
+function toolCallInput(record: Record<string, unknown>) {
+  const toolCall = recordObject(record.toolCall);
+  return recordObject(toolCall?.input);
+}
+
+function capabilityPathForTool(name: string, input?: Record<string, unknown>) {
+  if (name === "desk_active_context") return "xd.context.active";
+  if (name === "desk_state") return "xd.app.status";
+  if (name === "desk_recent_diagnostics") return "xd.diagnostics.recent";
+  if (name === "desk_safe_file_apply") return "xd.files.applyTextWrite";
+  if (name === "desk_call_capability" || name === "xenesis_desk_call_capability") {
+    return typeof input?.path === "string" && input.path.trim() ? input.path.trim() : undefined;
+  }
+  if (name === "desk_capability" || name === "xenesis_desk_capability") {
+    return typeof input?.path === "string" && input.path.trim() ? input.path.trim() : undefined;
+  }
+  return undefined;
+}
+
+function isReadbackTool(name: string) {
+  return (
+    name === "desk_active_context" ||
+    name === "desk_state" ||
+    name === "desk_recent_diagnostics" ||
+    name === "desk_capability" ||
+    name === "desk_capabilities" ||
+    name === "xenesis_desk_capability" ||
+    name === "xenesis_desk_capabilities"
+  );
+}
+
+function toolResultMessage(record: Record<string, unknown>) {
+  return recordObject(record.message);
+}
+
+function toolResultId(record: Record<string, unknown>) {
+  const message = toolResultMessage(record);
+  return typeof message?.toolCallId === "string" ? message.toolCallId : undefined;
+}
+
+function toolResultName(record: Record<string, unknown>) {
+  const message = toolResultMessage(record);
+  return typeof message?.name === "string" ? message.name : undefined;
+}
+
+function approvalRecordIdFromRecord(record: Record<string, unknown>) {
+  if (record.type === "permission_request") {
+    const request = recordObject(record.request);
+    return typeof request?.approvalId === "string" ? request.approvalId : undefined;
+  }
+  return undefined;
+}
+
+function assistantProviderEvidence(record: Record<string, unknown>) {
+  if (record.type !== "assistant_message") return undefined;
+  const message = recordObject(record.message);
+  const providerMetadata = recordObject(message?.providerMetadata);
+  if (!providerMetadata) return undefined;
+  const cli = recordObject(providerMetadata.cli);
+  if (cli) {
+    return {
+      provider: typeof cli.provider === "string" ? cli.provider : undefined,
+      processModel: processModelFromCliMetadata(cli),
+    };
+  }
+  if (recordObject(providerMetadata.openai)) return { provider: "openai" };
+  if (recordObject(providerMetadata.anthropic)) return { provider: "anthropic" };
+  return undefined;
+}
+
+function processModelFromCliMetadata(cli: Record<string, unknown>) {
+  if (typeof cli.processModel === "string") return cli.processModel;
+  if (cli.persistentSession === true) return "persistent-process";
+  if (cli.persistentSession === false) return "process-per-turn";
+  return undefined;
+}
+
+export function extractAcceptanceEvidenceFromSessionRecords(
+  records: readonly unknown[],
+): CapabilityAcceptanceEvidence | undefined {
+  let provider: string | undefined;
+  let processModel: string | undefined;
+  const toolCalls: string[] = [];
+  const capabilityPaths: string[] = [];
+  const readbacks: string[] = [];
+  const approvalRecords: string[] = [];
+  const toolPathById = new Map<string, string>();
+  const toolNameById = new Map<string, string>();
+
+  for (const raw of records) {
+    const record = recordObject(raw);
+    if (!record) continue;
+    const approvalId = approvalRecordIdFromRecord(record);
+    if (approvalId) approvalRecords.push(approvalId);
+    const assistantEvidence = assistantProviderEvidence(record);
+    if (assistantEvidence) {
+      provider = assistantEvidence.provider ?? provider;
+      processModel = assistantEvidence.processModel ?? processModel;
+    }
+
+    if (record.type === "tool_call") {
+      const name = toolCallName(record);
+      if (!name) continue;
+      const input = toolCallInput(record);
+      const id = toolCallId(record);
+      toolCalls.push(name);
+      const path = capabilityPathForTool(name, input);
+      if (path) capabilityPaths.push(path);
+      if (id) {
+        toolNameById.set(id, name);
+        if (path) toolPathById.set(id, path);
+      }
+      continue;
+    }
+
+    if (record.type === "tool_result" && record.ok === true) {
+      const id = toolResultId(record);
+      const name = (id ? toolNameById.get(id) : undefined) ?? toolResultName(record);
+      const path = id ? toolPathById.get(id) : undefined;
+      if (name && path && isReadbackTool(name)) readbacks.push(path);
+    }
+  }
+
+  const uniqueToolCalls = unique(toolCalls);
+  const uniqueCapabilityPaths = unique(capabilityPaths);
+  const uniqueReadbacks = unique(readbacks);
+  const uniqueApprovalRecords = unique(approvalRecords);
+  const evidence: CapabilityAcceptanceEvidence = {
+    ...(provider ? { provider, profileSource: "assistant-provider-metadata" } : {}),
+    ...(processModel ? { processModel } : {}),
+    toolCalls: uniqueToolCalls,
+    capabilityPaths: uniqueCapabilityPaths,
+    readbacks: uniqueReadbacks,
+    approvalRecords: uniqueApprovalRecords,
+  };
+  if (
+    !provider &&
+    !processModel &&
+    uniqueToolCalls.length === 0 &&
+    uniqueCapabilityPaths.length === 0 &&
+    uniqueReadbacks.length === 0 &&
+    uniqueApprovalRecords.length === 0
+  ) {
+    return undefined;
+  }
+  return evidence;
+}
+
+async function readSessionAcceptanceEvidence(path: string): Promise<CapabilityAcceptanceEvidence | undefined> {
+  return extractAcceptanceEvidenceFromSessionRecords(await readSessionRecords(path));
+}
+
+function mergeAcceptanceEvidence(
+  left: CapabilityAcceptanceEvidence | undefined,
+  right: CapabilityAcceptanceEvidence | undefined,
+): CapabilityAcceptanceEvidence | undefined {
+  if (!left) return right;
+  if (!right) return left;
+  return {
+    provider: right.provider ?? left.provider,
+    profileSource: right.profileSource ?? left.profileSource,
+    localCli: right.localCli ?? left.localCli,
+    processModel: right.processModel ?? left.processModel,
+    toolCalls: unique([...(left.toolCalls ?? []), ...(right.toolCalls ?? [])]),
+    capabilityPaths: unique([...(left.capabilityPaths ?? []), ...(right.capabilityPaths ?? [])]),
+    readbacks: unique([...(left.readbacks ?? []), ...(right.readbacks ?? [])]),
+    approvalRecords: unique([...(left.approvalRecords ?? []), ...(right.approvalRecords ?? [])]),
+    text: [left.text, right.text].filter(Boolean).join("\n"),
+  };
+}
+
+async function readNewSessionAcceptanceEvidence(
   xenesisHome: string,
   beforeFiles: ReadonlySet<string>
-): Promise<CapabilityEvalUsage | undefined> {
+): Promise<CapabilityAcceptanceEvidence | undefined> {
   const sessionsDir = sessionLogDir(xenesisHome);
   const files = await listSessionLogFiles(xenesisHome);
   const candidates = await Promise.all(
@@ -1128,11 +1220,11 @@ async function readNewSessionUsage(
       }))
   );
 
-  for (const candidate of candidates.sort((left, right) => right.mtimeMs - left.mtimeMs)) {
-    const usage = await readSessionUsage(join(sessionsDir, candidate.file));
-    if (usage) return usage;
+  let merged: CapabilityAcceptanceEvidence | undefined;
+  for (const candidate of candidates.sort((left, right) => left.mtimeMs - right.mtimeMs)) {
+    merged = mergeAcceptanceEvidence(merged, await readSessionAcceptanceEvidence(join(sessionsDir, candidate.file)));
   }
-  return undefined;
+  return merged;
 }
 
 async function readNewSessionCapabilityTranscript(
@@ -1157,6 +1249,28 @@ async function readNewSessionCapabilityTranscript(
   return lines.join("\n");
 }
 
+async function readNewSessionUsage(
+  xenesisHome: string,
+  beforeFiles: ReadonlySet<string>
+): Promise<CapabilityEvalUsage | undefined> {
+  const sessionsDir = sessionLogDir(xenesisHome);
+  const files = await listSessionLogFiles(xenesisHome);
+  const candidates = await Promise.all(
+    files
+      .filter((file) => !beforeFiles.has(file))
+      .map(async (file) => ({
+        file,
+        mtimeMs: (await stat(join(sessionsDir, file))).mtimeMs
+      }))
+  );
+
+  for (const candidate of candidates.sort((left, right) => right.mtimeMs - left.mtimeMs)) {
+    const usage = await readSessionUsage(join(sessionsDir, candidate.file));
+    if (usage) return usage;
+  }
+  return undefined;
+}
+
 async function buildSpawnedCliRunResult(options: {
   exitCode: number;
   stdout: string;
@@ -1167,12 +1281,18 @@ async function buildSpawnedCliRunResult(options: {
   usageUnavailableReason: string;
 }): Promise<CliRunResult> {
   let usage: CapabilityEvalUsage | undefined;
+  let acceptanceEvidence: CapabilityAcceptanceEvidence | undefined;
+  let capabilityTranscript = "";
   try {
     usage = await readNewSessionUsage(options.xenesisHome, options.beforeSessionFiles);
   } catch {
     usage = undefined;
   }
-  let capabilityTranscript = "";
+  try {
+    acceptanceEvidence = await readNewSessionAcceptanceEvidence(options.xenesisHome, options.beforeSessionFiles);
+  } catch {
+    acceptanceEvidence = undefined;
+  }
   try {
     capabilityTranscript = await readNewSessionCapabilityTranscript(options.xenesisHome, options.beforeSessionFiles);
   } catch {
@@ -1187,6 +1307,7 @@ async function buildSpawnedCliRunResult(options: {
     stdout,
     stderr: options.stderr,
     durationMs: Date.now() - options.startedAt,
+    ...(acceptanceEvidence ? { acceptanceEvidence } : {}),
     ...(usage ? { usage } : { usageUnavailableReason: options.usageUnavailableReason })
   };
 }
@@ -1314,11 +1435,16 @@ function runCliPrompt(options: {
 function combineRuns(runs: CliRunResult[]): CliRunResult {
   const usage = combineUsage(runs);
   const usageUnavailableReasons = combineUsageUnavailableReasons(runs);
+  const acceptanceEvidence = runs.reduce<CapabilityAcceptanceEvidence | undefined>(
+    (merged, run) => mergeAcceptanceEvidence(merged, run.acceptanceEvidence),
+    undefined
+  );
   return {
     exitCode: runs.find((run) => run.exitCode !== 0)?.exitCode ?? 0,
     stdout: runs.map((run) => run.stdout.trimEnd()).filter(Boolean).join("\n"),
     stderr: runs.map((run) => run.stderr.trimEnd()).filter(Boolean).join("\n"),
     durationMs: runs.reduce((sum, run) => sum + run.durationMs, 0),
+    ...(acceptanceEvidence ? { acceptanceEvidence } : {}),
     ...(usage ? { usage } : {}),
     ...(usageUnavailableReasons.length > 0 ? {
       usageUnavailableReason: usageUnavailableReasons.join(", ")
@@ -1560,6 +1686,7 @@ async function runContextCompactScenario(options: {
       historyMessages: compactFixtureHistory(),
       abortSignal: timeout,
       stream: false,
+      disposeRunner: true,
       onEvent: (event) => {
         const rendered = renderEvent(event);
         if (rendered) lines.push(rendered);
@@ -2116,7 +2243,9 @@ async function main() {
   process.exitCode = report.summary.failed === 0 ? 0 : 1;
 }
 
-main().catch((error) => {
-  console.error(`capability: error: ${error instanceof Error ? error.message : String(error)}`);
-  process.exitCode = 1;
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((error) => {
+    console.error(`capability: error: ${error instanceof Error ? error.message : String(error)}`);
+    process.exitCode = 1;
+  });
+}

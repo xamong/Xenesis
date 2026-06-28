@@ -198,7 +198,8 @@ async function defaultPracticeRunner(
       approvalMode: input.approvalMode,
       ...(input.maxTurns ? { maxTurns: input.maxTurns } : {})
     },
-    stream: false
+    stream: false,
+    disposeRunner: true
   });
   const config = await loadConfig({
     cwd: input.cwd,

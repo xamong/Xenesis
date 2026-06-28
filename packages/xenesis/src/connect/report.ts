@@ -12,6 +12,7 @@ import {
 import { createMcpClient, type McpToolClient } from "../extensions/index.js";
 import { resolveProviderSettings } from "../providers/index.js";
 import { createProvider } from "../core/AgentRuntimeFactory.js";
+import type { AgentProvider } from "../providers/types.js";
 
 export type ConnectionCheckStatus = "passed" | "failed";
 export type ConnectionCheckKind = "provider" | "mcp";
@@ -109,6 +110,18 @@ function connectionReportPathFromTarget(xenesisHome: string, target: string) {
   return join(reportsDir(xenesisHome), fileName);
 }
 
+const DEFAULT_PROVIDER_PROBE_TIMEOUT_MS = 90_000;
+
+function positiveIntegerEnv(env: NodeJS.ProcessEnv, name: string, fallback: number) {
+  const raw = env[name];
+  if (raw === undefined || raw.trim() === "") return fallback;
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new Error(`${name} must be a positive integer, got ${raw}`);
+  }
+  return value;
+}
+
 function summarize(checks: ConnectionCheckResult[]) {
   const passed = checks.filter((check) => check.status === "passed").length;
   return {
@@ -118,13 +131,29 @@ function summarize(checks: ConnectionCheckResult[]) {
   };
 }
 
+async function disposeProbeProvider(provider: AgentProvider) {
+  const disposable = provider as AgentProvider & {
+    dispose?: () => void | Promise<void>;
+    close?: () => void | Promise<void>;
+  };
+  if (typeof disposable.dispose === "function") {
+    await disposable.dispose();
+    return;
+  }
+  if (typeof disposable.close === "function") {
+    await disposable.close();
+  }
+}
+
 async function runProviderProbe(config: XenesisConfig, env: NodeJS.ProcessEnv) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30_000);
+  const timeoutMs = positiveIntegerEnv(env, "XENESIS_CONNECT_PROBE_TIMEOUT_MS", DEFAULT_PROVIDER_PROBE_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const provider = createProvider(config, env);
   try {
     // Registry-aware construction: routes codex-responses and any registered
     // provider factory through the single canonical path (no local duplicate).
-    const response = await createProvider(config, env).complete({
+    const response = await provider.complete({
       model: config.model,
       messages: [{ role: "user", content: "connection probe" }],
       tools: [],
@@ -133,6 +162,7 @@ async function runProviderProbe(config: XenesisConfig, env: NodeJS.ProcessEnv) {
     return response.message.content || "provider returned an empty response";
   } finally {
     clearTimeout(timeout);
+    await disposeProbeProvider(provider);
   }
 }
 

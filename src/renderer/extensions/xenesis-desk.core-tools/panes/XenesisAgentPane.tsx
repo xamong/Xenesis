@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import type { AgentActionNeeded } from '../../../../shared/agentActionRecords';
 import type {
   AppSettings,
   GowooriChatSettings,
@@ -57,6 +58,14 @@ import {
   type XenesisMcpActionInboxStatus,
   xenesisMcpActionInboxStatus,
 } from './xenesisAgentActionInbox';
+import {
+  collectAgentActionNeededFromCapabilityResult,
+  filterAgentActionNeededForInboxItems,
+  mergeXenesisAgentActionNeeded,
+  summarizeAgentActionNeededForCard,
+  xenesisAgentActionNeededStatus,
+  xenesisAgentActionNeededStatusLabel,
+} from './xenesisAgentActionNeeded';
 import { hasRenderableXconArtifact, shouldAutoOpenXenesisArtifactInGowoori } from './xenesisAgentArtifactActions';
 import { buildXenesisArtifactPromptWithContext } from './xenesisAgentArtifactContext';
 import {
@@ -876,6 +885,40 @@ function mergeXenesisMcpActionInboxItems(
   return [...byId.values()];
 }
 
+function attachAgentActionNeededItemsToMessage(messageId: string, nextItems: AgentActionNeeded[]): boolean {
+  if (nextItems.length === 0) return false;
+  const existingMessage = xenesisAgentStateStore.getSnapshot().messages.find((message) => message.id === messageId);
+  if (!existingMessage) return false;
+  const items = mergeXenesisAgentActionNeeded(existingMessage?.agentActionNeededItems, nextItems);
+  replaceChatMessage(messageId, {
+    content: existingMessage.content,
+    agentActionNeededItems: items,
+  });
+  return true;
+}
+
+async function refreshAgentActionNeededForMcpItems(
+  messageId: string,
+  actionInboxItems: McpBridgeActionInboxItem[],
+): Promise<void> {
+  if (typeof window === 'undefined' || !window.mcpBridgeAPI?.callCapability || actionInboxItems.length === 0) return;
+  try {
+    const result = await window.mcpBridgeAPI.callCapability({
+      path: 'xd.agent.actionNeeded.list',
+      args: { status: 'open' },
+      source: 'internal',
+    });
+    const records = filterAgentActionNeededForInboxItems(
+      collectAgentActionNeededFromCapabilityResult(result),
+      actionInboxItems,
+    );
+    attachAgentActionNeededItemsToMessage(messageId, records);
+  } catch {
+    // The approval card remains usable through Action Inbox even if the
+    // auxiliary action-needed readback is unavailable.
+  }
+}
+
 function actionInboxCompletionMessage(
   items: McpBridgeActionInboxItem[],
   fallback = 'Desk 승인 요청을 처리했습니다.',
@@ -910,6 +953,7 @@ function attachMcpActionInboxItemsToMessage(
     error: status === 'failed' || status === 'expired',
     streaming: false,
   });
+  void refreshAgentActionNeededForMcpItems(messageId, items);
   return true;
 }
 
@@ -4249,6 +4293,10 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
                   const mcpActionInboxStatus =
                     message.mcpActionInboxStatus ||
                     (hasMcpActionInboxItems ? xenesisMcpActionInboxStatus(mcpActionInboxItems) : undefined);
+                  const agentActionNeededItems = message.agentActionNeededItems || [];
+                  const hasAgentActionNeededItems = agentActionNeededItems.length > 0;
+                  const agentActionNeededStatus = xenesisAgentActionNeededStatus(agentActionNeededItems);
+                  const agentActionNeededSummary = summarizeAgentActionNeededForCard(agentActionNeededItems);
                   return (
                     <article
                       key={message.id}
@@ -4330,6 +4378,18 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
                           )}
                         </section>
                       )}
+                      {hasAgentActionNeededItems && (
+                        <section
+                          className={`xd-xenesis-desk-action-card is-${agentActionNeededStatus || 'open'}`}
+                          data-xenesis-no-terminal-focus="true"
+                        >
+                          <div>
+                            <span>Action needed</span>
+                            <strong>{xenesisAgentActionNeededStatusLabel(agentActionNeededStatus)}</strong>
+                            <small>{agentActionNeededSummary}</small>
+                          </div>
+                        </section>
+                      )}
                       {hasMcpActionInboxItems && (
                         <section
                           className={`xd-xenesis-desk-action-card is-${mcpActionInboxStatus || 'pending'}`}
@@ -4338,7 +4398,12 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
                           <div>
                             <span>Capability Registry</span>
                             <strong>{xenesisMcpActionInboxStatusLabel(mcpActionInboxStatus)}</strong>
-                            <small>{mcpActionInboxItems.map((item) => item.title || item.id).join(', ')}</small>
+                            <small>
+                              {agentActionNeededSummary ||
+                                `${mcpActionInboxItems.length} Desk approval request${
+                                  mcpActionInboxItems.length === 1 ? '' : 's'
+                                }`}
+                            </small>
                           </div>
                           {mcpActionInboxStatus === 'pending' && (
                             <>

@@ -4,6 +4,7 @@ import {
   createDeskEmbeddedPromptOptions,
   type DeskApprovalMode,
   type DeskEmbeddedProfilePolicyState,
+  type DeskEmbeddedPromptOptions,
   type DeskEmbeddedPromptResult,
   type DeskEmbeddedRunRequest,
   type DeskProviderRuntimeOptions,
@@ -41,6 +42,7 @@ export interface DeskEmbeddedAgentRuntimeOptions {
   profilePolicy?: DeskEmbeddedProfilePolicyState;
   bridgeUrl?: string;
   bridgeToken?: string;
+  turnLedger?: DeskEmbeddedPromptOptions['turnLedger'];
   onEvent?: (event: DeskEmbeddedAgentRunEvent) => void;
 }
 
@@ -238,6 +240,7 @@ export class DeskEmbeddedAgentRuntime {
           bridgeToken: this.options.bridgeToken,
           request: requestWithSession,
           abortSignal: controller.signal,
+          turnLedger: this.options.turnLedger,
           onSession: (sessionId) => {
             this.activeSessionId = sessionId;
           },

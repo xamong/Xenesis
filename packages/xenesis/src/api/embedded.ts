@@ -7,6 +7,7 @@ import {
 import type { AgentRunEvent } from "../core/events.js";
 import type { AgentMessage, AgentMessageAttachment } from "../core/messages.js";
 import type { RuntimeSurfaceDescriptor } from "../core/runtime/index.js";
+import type { XenesisTurnLedger } from "../core/turnLedger.js";
 import type { IdeContextInput } from "../ide/index.js";
 import { resolveWorkflow, runResolvedWorkflow, type WorkflowSelection } from "../workflows/index.js";
 
@@ -32,6 +33,7 @@ export interface EmbeddedPromptOptions {
   historyMessages?: AgentMessage[];
   abortSignal?: AbortSignal;
   stream?: boolean;
+  turnLedger?: XenesisTurnLedger;
   runPipeline?: EmbeddedRunPipeline;
   onEvent?: (event: AgentRunEvent) => void | Promise<void>;
   onSession?: (sessionId: string) => void | Promise<void>;
@@ -112,6 +114,7 @@ export async function runEmbeddedPrompt(options: EmbeddedPromptOptions): Promise
       abortSignal: options.abortSignal,
       stream,
       runPipeline,
+      turnLedger: options.turnLedger,
       onEvent: options.onEvent,
       onSession: options.onSession,
       onMessages: options.onMessages

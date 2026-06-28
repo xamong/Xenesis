@@ -9,6 +9,20 @@ export type ExternalAppActionName =
   | 'close'
   | 'status';
 export type ExternalAppApprovalLevel = 'low' | 'medium' | 'high';
+export type ExternalAppActionApproval = 'never' | 'once' | 'always';
+
+export interface ExternalAppActionPolicy {
+  allowed: boolean;
+  approval: ExternalAppActionApproval;
+  sensitivity: ExternalAppApprovalLevel;
+}
+
+export interface ExternalAppActionDecision {
+  allowed: boolean;
+  approvalLevel: ExternalAppApprovalLevel;
+  approval: ExternalAppActionApproval;
+  reason: string;
+}
 
 export interface ExternalAppProfile {
   id: string;
@@ -57,12 +71,26 @@ export interface ExternalAppWindowInfo {
   isForeground?: boolean;
 }
 
+export interface ExternalAppProfileStatusInfo {
+  id: string;
+  label: string;
+  enabled: boolean;
+  approvalLevel: ExternalAppApprovalLevel;
+  allowedActions: ExternalAppActionName[];
+}
+
 export interface ExternalAppActionResult {
   ok: boolean;
   action: ExternalAppActionName;
   appId?: string;
   path?: string;
+  controlEnabled?: boolean;
   approvalLevel: ExternalAppApprovalLevel;
+  profiles?: ExternalAppProfileStatusInfo[];
+  policy?: {
+    approval: ExternalAppActionApproval;
+    reason: string;
+  };
   processId?: number;
   windows: ExternalAppWindowInfo[];
   message: string;
@@ -120,9 +148,32 @@ export const EXTERNAL_APP_PROFILE_TEMPLATES: ExternalAppProfile[] = [
     approvalLevel: 'high',
     enabled: true,
   },
+  {
+    id: 'kakaotalk',
+    label: 'KakaoTalk',
+    platform: 'windows',
+    executable: 'KakaoTalk.exe',
+    allowedActions: ['launch', 'focus', 'resize', 'status', 'find'],
+    approvalLevel: 'high',
+    enabled: false,
+  },
 ];
 
 const VALID_ACTIONS = new Set<ExternalAppActionName>(EXTERNAL_APP_ACTIONS);
+
+const ACTION_POLICY_DEFAULTS: Record<ExternalAppActionName, ExternalAppActionPolicy> = {
+  launch: { allowed: true, approval: 'once', sensitivity: 'medium' },
+  find: { allowed: true, approval: 'never', sensitivity: 'low' },
+  focus: { allowed: true, approval: 'never', sensitivity: 'low' },
+  resize: { allowed: true, approval: 'never', sensitivity: 'low' },
+  typeText: { allowed: true, approval: 'always', sensitivity: 'medium' },
+  hotkey: { allowed: true, approval: 'always', sensitivity: 'medium' },
+  close: { allowed: true, approval: 'once', sensitivity: 'medium' },
+  status: { allowed: true, approval: 'never', sensitivity: 'low' },
+};
+
+const TERMINAL_KEYBOARD_PROFILE_IDS = new Set(['powershell', 'pwsh', 'cmd', 'windows-terminal']);
+const TERMINAL_KEYBOARD_EXECUTABLES = new Set(['powershell.exe', 'pwsh.exe', 'cmd.exe', 'wt.exe', 'windowsterminal.exe']);
 
 export function normalizeExternalAppSettings(raw: ExternalAppSettingsInput | undefined): ExternalAppSettings {
   const builtInIds = new Set(BUILTIN_EXTERNAL_APP_PROFILES.map((profile) => profile.id));
@@ -208,7 +259,9 @@ export function normalizeExternalAppAction(raw: unknown): ExternalAppAction {
   const appId = typeof input.appId === 'string' ? input.appId.trim() : undefined;
   const path = typeof input.path === 'string' ? input.path.trim() : undefined;
   const windowId = typeof input.windowId === 'string' ? input.windowId.trim() : undefined;
-  const hasTarget = Boolean(appId || path || windowId);
+  const processName = typeof input.processName === 'string' ? input.processName.trim() : undefined;
+  const titleContains = typeof input.titleContains === 'string' ? input.titleContains.trim() : undefined;
+  const hasTarget = Boolean(appId || path || processName || titleContains || windowId);
 
   if (action === 'launch' && !appId && !path) {
     throw new Error('appId or path is required for launch.');
@@ -233,12 +286,8 @@ export function normalizeExternalAppAction(raw: unknown): ExternalAppAction {
     ...(path ? { path } : {}),
     ...(Array.isArray(input.args) ? { args: input.args.map(String) } : {}),
     ...(typeof input.cwd === 'string' && input.cwd.trim() ? { cwd: input.cwd.trim() } : {}),
-    ...(typeof input.processName === 'string' && input.processName.trim()
-      ? { processName: input.processName.trim() }
-      : {}),
-    ...(typeof input.titleContains === 'string' && input.titleContains.trim()
-      ? { titleContains: input.titleContains.trim() }
-      : {}),
+    ...(processName ? { processName } : {}),
+    ...(titleContains ? { titleContains } : {}),
     ...(windowId ? { windowId } : {}),
     ...(Number.isFinite(Number(input.x)) ? { x: Number(input.x) } : {}),
     ...(Number.isFinite(Number(input.y)) ? { y: Number(input.y) } : {}),
@@ -258,4 +307,92 @@ export function classifyExternalAppApproval(
   if (['status', 'find', 'focus', 'resize'].includes(action.action)) return 'low';
   if (action.action === 'typeText' && (action.text?.length ?? 0) > 5000) return 'high';
   return 'medium';
+}
+
+export function strongestExternalAppApprovalLevel(
+  first: ExternalAppApprovalLevel,
+  second: ExternalAppApprovalLevel | undefined,
+): ExternalAppApprovalLevel {
+  const rank: Record<ExternalAppApprovalLevel, number> = { low: 0, medium: 1, high: 2 };
+  return second && rank[second] > rank[first] ? second : first;
+}
+
+export function externalAppActionDecision(
+  action: ExternalAppAction,
+  profile: ExternalAppProfile | undefined,
+): ExternalAppActionDecision {
+  if (action.appId && !profile) {
+    return {
+      allowed: false,
+      approvalLevel: 'high',
+      approval: 'always',
+      reason: `External app profile not found: ${action.appId}`,
+    };
+  }
+  if (action.appId && profile && action.appId !== profile.id) {
+    return {
+      allowed: false,
+      approvalLevel: 'high',
+      approval: 'always',
+      reason: `External app profile mismatch: ${action.appId} resolved to ${profile.id}`,
+    };
+  }
+  if (profile && !profile.enabled) {
+    const approvalLevel = externalAppApprovalLevel(action, profile);
+    return {
+      allowed: false,
+      approvalLevel,
+      approval: externalAppApproval(action, approvalLevel),
+      reason: `External app profile is disabled: ${profile.id}`,
+    };
+  }
+  if (profile && !profile.allowedActions.includes(action.action)) {
+    const approvalLevel = externalAppApprovalLevel(action, profile);
+    return {
+      allowed: false,
+      approvalLevel,
+      approval: externalAppApproval(action, approvalLevel),
+      reason: `External app action is not allowed for ${profile.id}: ${action.action}`,
+    };
+  }
+
+  const approvalLevel = externalAppApprovalLevel(action, profile);
+  return {
+    allowed: ACTION_POLICY_DEFAULTS[action.action].allowed,
+    approvalLevel,
+    approval: externalAppApproval(action, approvalLevel),
+    reason: `External app action allowed: ${action.action}`,
+  };
+}
+
+function externalAppApprovalLevel(
+  action: ExternalAppAction,
+  profile: ExternalAppProfile | undefined,
+): ExternalAppApprovalLevel {
+  const base = ACTION_POLICY_DEFAULTS[action.action];
+  const registeredProfile = Boolean(profile);
+  const classifiedApproval = classifyExternalAppApproval(action, registeredProfile);
+  const profileApproval = isTerminalKeyboardAction(action, profile) ? 'high' : profile?.approvalLevel;
+  return strongestExternalAppApprovalLevel(
+    strongestExternalAppApprovalLevel(classifiedApproval, base.sensitivity),
+    profileApproval,
+  );
+}
+
+function externalAppApproval(
+  action: ExternalAppAction,
+  approvalLevel: ExternalAppApprovalLevel,
+): ExternalAppActionApproval {
+  const base = ACTION_POLICY_DEFAULTS[action.action];
+  if (base.approval === 'never') return 'never';
+  if (approvalLevel === 'high' || base.approval === 'always') return 'always';
+  return base.approval;
+}
+
+function isTerminalKeyboardAction(action: ExternalAppAction, profile: ExternalAppProfile | undefined) {
+  if (action.action !== 'typeText' && action.action !== 'hotkey') return false;
+  const id = profile?.id.toLowerCase() ?? '';
+  const executable = profile?.executable.toLowerCase() ?? '';
+  const executableName = executable.replace(/\\/g, '/').split('/').pop() ?? executable;
+  return TERMINAL_KEYBOARD_PROFILE_IDS.has(id) || TERMINAL_KEYBOARD_EXECUTABLES.has(executableName);
 }
