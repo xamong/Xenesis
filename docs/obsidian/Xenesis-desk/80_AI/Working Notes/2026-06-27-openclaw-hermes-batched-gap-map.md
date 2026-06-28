@@ -3458,6 +3458,71 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Runtime Dynamic Rule Catalog Refactor Slice
+
+- Started the next hardcoding cleanup slice for remaining runtime dynamic-arg
+  action selection in the Agent natural-language planner.
+- Intended change:
+  - add shared `XENESIS_NATURAL_AGENT_READBACK_RULES`;
+  - add shared agent submit, run start, and workspace set rule catalogs;
+  - have `xenesisAgentDeskControl.ts` interpret those rules instead of
+    branching directly on any runtime `RUNTIME_ACTIONS.*` alias;
+  - keep quoted `agentId`, submit text, prompt, and workspace path extraction
+    in the planner because those are dynamic argument extraction, not static
+    action selection.
+- Scope boundary:
+  - Refactor only.
+  - Do not change registry/dispatcher paths, approval behavior, credentials,
+    execution, or UI rendering.
+- Verification plan:
+  - RED focused planner/source-guard test first;
+  - GREEN focused planner test;
+  - scoped Biome for catalog/planner/test files;
+  - root typecheck, build, natural Desk routing smoke, and diff check before
+    commit.
+- RED verification:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    failed as expected with 36/37 passing because the planner still imports and
+    references `XENESIS_NATURAL_AGENT_EVENT_CONTEXT_WORDS` and still branches
+    directly on quoted-agent readback `RUNTIME_ACTIONS.*`.
+  - After the user asked for larger slice cycles, the same focused planner test
+    failed as expected with 36/37 passing after the source guard was broadened
+    to require no runtime descriptor alias or runtime context-word
+    action-selection imports in the planner.
+- Implementation:
+  - Added `XENESIS_NATURAL_AGENT_READBACK_RULES` in
+    `xenesisNaturalLanguageCatalog.ts`.
+  - Added shared agent submit, run start, and workspace set rule catalogs plus
+    `XENESIS_NATURAL_RUNTIME_VISIBLE_PLAN_PATHS`.
+  - Moved Xenesis/Agent/Profile/Run/Workspace preconditions into shared rules
+    and removed the runtime descriptor alias from `xenesisAgentDeskControl.ts`.
+- GREEN verification:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 37/37 tests.
+  - `npx biome format --write src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    formatted 3 files and fixed 1 file.
+  - Re-running the focused planner test passed with 37/37 tests.
+  - Initial scoped Biome failed with 2 import-order errors; `npx biome check
+    --write` fixed 2 files.
+  - Focused planner test then passed again with 37/37 tests, and scoped Biome
+    exited 0 with no fixes applied.
+  - `npm run typecheck` passed.
+  - Static hardcoding check found no remaining planner runtime descriptor alias
+    or runtime context-word action-selection imports in
+    `xenesisAgentDeskControl.ts`.
+  - `npm run build` passed; Vite emitted the existing browser `fs`
+    externalization warning for `hwp.js` and the existing dynamic/static import
+    chunking warning for `deskBridge.ts`.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 21/21 through the
+    built Electron app.
+  - `git diff --check` exited 0 with LF-to-CRLF working-copy warnings for
+    touched tracked files only.
+  - CR audit was not run because this slice only refactors planner/catalog rule
+    interpretation and does not change registry, dispatcher, or capability
+    coverage.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

@@ -25,7 +25,9 @@ import {
   XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS,
   XENESIS_NATURAL_AGENT_CONTEXT_WORDS,
   XENESIS_NATURAL_AGENT_EVENT_CONTEXT_WORDS,
+  XENESIS_NATURAL_AGENT_READBACK_RULES,
   XENESIS_NATURAL_AGENT_SUBMIT_CONTEXT_WORDS,
+  XENESIS_NATURAL_AGENT_SUBMIT_RULES,
   XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_WORDS,
   XENESIS_NATURAL_ARRANGE_MODE_TARGETS,
   XENESIS_NATURAL_BROAD_RUNTIME_STATUS_WORDS,
@@ -100,6 +102,7 @@ import {
   XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES,
   XENESIS_NATURAL_RUN_CONTEXT_WORDS,
   XENESIS_NATURAL_RUN_START_CONTEXT_WORDS,
+  XENESIS_NATURAL_RUN_START_RULES,
   XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_RUNTIME_CONTEXT_WORDS,
   XENESIS_NATURAL_RUNTIME_CONTROL_RULES,
@@ -108,6 +111,7 @@ import {
   XENESIS_NATURAL_RUNTIME_READBACK_WORDS,
   XENESIS_NATURAL_RUNTIME_STATUS_TARGET_WORDS,
   XENESIS_NATURAL_RUNTIME_SUPPORT_RULES,
+  XENESIS_NATURAL_RUNTIME_VISIBLE_PLAN_PATHS,
   XENESIS_NATURAL_SAFETY_CONTEXT_WORDS,
   XENESIS_NATURAL_SESSION_CONTEXT_WORDS,
   XENESIS_NATURAL_SESSION_RESET_CONTEXT_WORDS,
@@ -122,6 +126,7 @@ import {
   XENESIS_NATURAL_WINDOW_SIZE_PRESET_TARGETS,
   XENESIS_NATURAL_WORKSPACE_CONTEXT_WORDS,
   XENESIS_NATURAL_WORKSPACE_SET_CONTEXT_WORDS,
+  XENESIS_NATURAL_WORKSPACE_SET_RULES,
   XENESIS_NATURAL_XENESIS_CONTEXT_WORDS,
 } from '../../../../shared/xenesisNaturalLanguageCatalog';
 import {
@@ -201,31 +206,31 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.equal(XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS.includes('allowlist'), true);
   assert.equal(XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS.includes('연동'), true);
   assert.equal(XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_WORDS.includes('provider profile'), true);
-  assert.match(source, /XENESIS_NATURAL_RUNTIME_READBACK_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_RUNTIME_READBACK_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_LOCAL_CLI_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_LOCAL_CLI_SCAN_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_MCP_BRIDGE_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_MCP_SETTINGS_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_DASHBOARD_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_XENESIS_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_AGENT_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_AGENT_EVENT_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_XENESIS_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_AGENT_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_AGENT_EVENT_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_RUNTIME_STATUS_TARGET_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_BROAD_RUNTIME_STATUS_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_REPORT_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_TASK_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_LIST_OR_SHOW_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_RUNTIME_DIAGNOSTIC_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_PROFILE_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_AGENT_SUBMIT_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_RUN_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_RUN_START_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_CANCEL_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_PROFILE_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_AGENT_SUBMIT_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_RUN_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_RUN_START_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_CANCEL_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_SESSION_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_SESSION_RESET_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_WORKSPACE_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_WORKSPACE_SET_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_WORKSPACE_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_WORKSPACE_SET_CONTEXT_WORDS/);
   assert.match(source, /XENESIS_NATURAL_OPEN_OR_SHOW_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_RUNTIME_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /hasAny\(value, \[\s*'local cli'/);
@@ -474,28 +479,30 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.explorerShow.reason,
     'Show explorer from natural language request.',
   );
-  assert.match(source, /XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS/);
+  assert.match(source, /XENESIS_NATURAL_AGENT_READBACK_RULES/);
+  assert.match(source, /XENESIS_NATURAL_AGENT_SUBMIT_RULES/);
   assert.match(source, /XENESIS_NATURAL_RUNTIME_SUPPORT_RULES/);
   assert.match(source, /XENESIS_NATURAL_GATEWAY_ACTION_RULES/);
   assert.match(source, /XENESIS_NATURAL_RUNTIME_INVENTORY_RULES/);
   assert.match(source, /XENESIS_NATURAL_PROFILE_INVENTORY_RULES/);
   assert.match(source, /XENESIS_NATURAL_RUNTIME_CONTROL_RULES/);
+  assert.match(source, /XENESIS_NATURAL_RUN_START_RULES/);
+  assert.match(source, /XENESIS_NATURAL_WORKSPACE_SET_RULES/);
+  assert.match(source, /XENESIS_NATURAL_RUNTIME_VISIBLE_PLAN_PATHS/);
   assert.doesNotMatch(source, /naturalAction\(\s*'natural-local-cli-scan'/);
   assert.doesNotMatch(source, /naturalAction\(\s*'natural-xenesis-status'/);
   assert.doesNotMatch(source, /'xd\.xenesis\.runs\.start'/);
-  assert.doesNotMatch(source, /RUNTIME_ACTIONS\.localCliScan/);
-  assert.doesNotMatch(source, /RUNTIME_ACTIONS\.mcpBridgeStatus/);
-  assert.doesNotMatch(source, /RUNTIME_ACTIONS\.mcpSettingsStatus/);
-  assert.doesNotMatch(source, /RUNTIME_ACTIONS\.gatewayDashboardOpen/);
-  assert.doesNotMatch(source, /RUNTIME_ACTIONS\.gatewayStatus/);
-  assert.doesNotMatch(source, /RUNTIME_ACTIONS\.runtimeStatus/);
-  assert.doesNotMatch(source, /RUNTIME_ACTIONS\.reportsList/);
-  assert.doesNotMatch(source, /RUNTIME_ACTIONS\.tasksList/);
-  assert.doesNotMatch(source, /RUNTIME_ACTIONS\.agentsList/);
-  assert.doesNotMatch(source, /RUNTIME_ACTIONS\.diagnostics/);
-  assert.doesNotMatch(source, /RUNTIME_ACTIONS\.profilesList/);
-  assert.doesNotMatch(source, /RUNTIME_ACTIONS\.runsCancel/);
-  assert.doesNotMatch(source, /RUNTIME_ACTIONS\.sessionsReset/);
+  assert.doesNotMatch(source, /const RUNTIME_ACTIONS =/);
+  assert.doesNotMatch(source, /RUNTIME_ACTIONS\./);
+  assert.deepEqual(
+    XENESIS_NATURAL_AGENT_READBACK_RULES.map((rule) => rule.action.path),
+    ['xd.xenesis.agents.events', 'xd.xenesis.agents.status'],
+  );
+  assert.deepEqual(
+    XENESIS_NATURAL_AGENT_SUBMIT_RULES.map((rule) => rule.action.path),
+    ['xd.xenesis.agents.submit'],
+  );
   assert.deepEqual(
     XENESIS_NATURAL_RUNTIME_SUPPORT_RULES.map((rule) => rule.action.path),
     ['xd.localCli.scan', 'xd.mcp.bridge.status', 'xd.mcp.settings.status', 'xd.mcp.actionInbox.list'],
@@ -526,6 +533,15 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     XENESIS_NATURAL_RUNTIME_CONTROL_RULES.map((rule) => rule.action.path),
     ['xd.xenesis.runs.cancel', 'xd.xenesis.sessions.reset'],
   );
+  assert.deepEqual(
+    XENESIS_NATURAL_RUN_START_RULES.map((rule) => rule.action.path),
+    ['xd.xenesis.runs.start'],
+  );
+  assert.deepEqual(
+    XENESIS_NATURAL_WORKSPACE_SET_RULES.map((rule) => rule.action.path),
+    ['xd.xenesis.workspace.set'],
+  );
+  assert.equal(XENESIS_NATURAL_RUNTIME_VISIBLE_PLAN_PATHS.actionInboxList, 'xd.mcp.actionInbox.list');
   assert.equal(XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.runsStart.path, 'xd.xenesis.runs.start');
   assert.match(source, /XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS/);
   assert.match(source, /XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS/);
