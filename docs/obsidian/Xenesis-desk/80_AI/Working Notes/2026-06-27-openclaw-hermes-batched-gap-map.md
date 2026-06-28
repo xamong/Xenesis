@@ -4677,6 +4677,45 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Review Request Approval Natural Live Smoke Expansion Slice
+
+- Continued the larger slice-cycle pass by broadening the repeatable Agent-pane
+  natural Desk routing live smoke from 41 prompt cases to 48 prompt cases.
+- Added live-smoked review/request approval-stop prompts for:
+  - Connection setup request: `xd.xenesis.connections.setupRequests.request`.
+  - Tool MCP install-draft request:
+    `xd.xenesis.tools.mcpInstallDrafts.request`.
+  - Tool install-plan request: `xd.xenesis.tools.installPlans.request`.
+  - Tool OAuth draft request: `xd.xenesis.tools.oauthDrafts.request`.
+  - Tool action-policy request: `xd.xenesis.tools.actions.request`.
+  - Channel profile-draft request:
+    `xd.xenesis.channels.profileDrafts.request`.
+  - Provider profile-draft request:
+    `xd.xenesis.providers.profileDrafts.request`.
+- Scope boundary:
+  - Smoke script/test coverage only.
+  - The smoke expects visible `Desk action approval required` text and does not
+    click approval, so it does not create Action Inbox records, write MCP/OAuth
+    config, mutate provider/channel profiles, store credentials, send messages,
+    or touch external systems.
+- RED/GREEN:
+  - Initial RED proved the live smoke script still exported the old 41-case
+    prompt catalog while the test expected the expanded 48-case review/request
+    approval catalog.
+  - Added the same 7 review/request prompt cases to the live smoke script.
+- Verification:
+  - `npx tsx --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
+    passed 4/4 after the prompt catalog update and after formatting.
+  - Scoped Biome format/check passed for the two smoke files.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 144/144.
+  - `npm run typecheck` passed.
+  - `git diff --check` passed with LF-to-CRLF working-copy warnings only.
+  - CR audit was skipped because this slice only changes smoke scripts/tests;
+    it does not change registry, dispatcher, runtime implementation, or shared
+    route matching behavior.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

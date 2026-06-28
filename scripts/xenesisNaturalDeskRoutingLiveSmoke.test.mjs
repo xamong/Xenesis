@@ -63,6 +63,12 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
       expectedVisibleText: 'Desk action completed',
     },
     {
+      id: 'connection-setup-request-approval',
+      prompt: '노션 연결해줘',
+      expectedPath: 'xd.xenesis.connections.setupRequests.request',
+      expectedVisibleText: 'Desk action approval required',
+    },
+    {
       id: 'provider-setup-catalog-open',
       prompt: 'AI provider setup 전체 열어줘',
       expectedPath: 'xd.xenesis.providers.setup.open',
@@ -103,6 +109,12 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
       prompt: 'AI provider profile draft 상태 보여줘',
       expectedPath: 'xd.xenesis.providers.profileDrafts.status',
       expectedVisibleText: 'Desk action completed',
+    },
+    {
+      id: 'provider-profile-draft-request-approval',
+      prompt: 'AI provider 설정해줘',
+      expectedPath: 'xd.xenesis.providers.profileDrafts.request',
+      expectedVisibleText: 'Desk action approval required',
     },
     {
       id: 'notion-connector-open',
@@ -159,6 +171,12 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
       expectedVisibleText: 'Desk action completed',
     },
     {
+      id: 'tool-mcp-install-draft-request-approval',
+      prompt: '노션 MCP 설치해줘',
+      expectedPath: 'xd.xenesis.tools.mcpInstallDrafts.request',
+      expectedVisibleText: 'Desk action approval required',
+    },
+    {
       id: 'tool-action-policy-status',
       prompt: '외부 툴 action policy catalog 상태 보여줘',
       expectedPath: 'xd.xenesis.tools.actions.status',
@@ -171,6 +189,12 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
       expectedVisibleText: 'Desk action completed',
     },
     {
+      id: 'tool-action-policy-request-approval',
+      prompt: '리니어 액션 정책 검토 요청해줘',
+      expectedPath: 'xd.xenesis.tools.actions.request',
+      expectedVisibleText: 'Desk action approval required',
+    },
+    {
       id: 'tool-user-stories-status',
       prompt: '외부 툴 user stories 상태 보여줘',
       expectedPath: 'xd.xenesis.tools.userStories.status',
@@ -181,6 +205,18 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
       prompt: '외부 툴 install plans catalog 열어줘',
       expectedPath: 'xd.xenesis.tools.installPlans.open',
       expectedVisibleText: 'Desk action completed',
+    },
+    {
+      id: 'tool-install-plan-request-approval',
+      prompt: '노션 설치 계획 검토 요청해줘',
+      expectedPath: 'xd.xenesis.tools.installPlans.request',
+      expectedVisibleText: 'Desk action approval required',
+    },
+    {
+      id: 'tool-oauth-draft-request-approval',
+      prompt: '구글 캘린더 OAuth 인증해줘',
+      expectedPath: 'xd.xenesis.tools.oauthDrafts.request',
+      expectedVisibleText: 'Desk action approval required',
     },
     {
       id: 'google-chat-routing-status',
@@ -243,6 +279,12 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
       expectedVisibleText: 'Desk action completed',
     },
     {
+      id: 'channel-profile-draft-request-approval',
+      prompt: '텔레그램 채널 프로필 검토 요청해줘',
+      expectedPath: 'xd.xenesis.channels.profileDrafts.request',
+      expectedVisibleText: 'Desk action approval required',
+    },
+    {
       id: 'messenger-view-catalog-open',
       prompt: '외부 메신저 view 전체 열어줘',
       expectedPath: 'xd.xenesis.messengers.views.open',
@@ -286,6 +328,7 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
   assert.match(plan, /OpenClaw channel setup guide 열어줘/);
   assert.match(plan, /Connection diagnostics catalog 열어줘/);
   assert.match(plan, /Connection setup requests catalog 상태 보여줘/);
+  assert.match(plan, /노션 연결해줘/);
   assert.match(plan, /AI provider setup 전체 열어줘/);
   assert.match(plan, /AI provider routing 전체 열어줘/);
   assert.match(plan, /AI provider view 전체 열어줘/);
@@ -293,6 +336,7 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
   assert.match(plan, /AI provider routing 전체 상태 보여줘/);
   assert.match(plan, /AI provider view 전체 상태 보여줘/);
   assert.match(plan, /AI provider profile draft 상태 보여줘/);
+  assert.match(plan, /AI provider 설정해줘/);
   assert.match(plan, /노션 connector 열어줘/);
   assert.match(plan, /외부 툴 connector 전체 상태 보여줘/);
   assert.match(plan, /외부 툴 setup 전체 열어줘/);
@@ -302,10 +346,14 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
   assert.match(plan, /구글 캘린더 OAuth 상태 보여줘/);
   assert.match(plan, /외부 툴 MCP 설치 초안 전체 상태 보여줘/);
   assert.match(plan, /외부 툴 MCP 설치 초안 전체 열어줘/);
+  assert.match(plan, /노션 MCP 설치해줘/);
   assert.match(plan, /외부 툴 action policy catalog 상태 보여줘/);
   assert.match(plan, /외부 툴 액션 정책 전체 열어줘/);
+  assert.match(plan, /리니어 액션 정책 검토 요청해줘/);
   assert.match(plan, /외부 툴 user stories 상태 보여줘/);
   assert.match(plan, /외부 툴 install plans catalog 열어줘/);
+  assert.match(plan, /노션 설치 계획 검토 요청해줘/);
+  assert.match(plan, /구글 캘린더 OAuth 인증해줘/);
   assert.match(plan, /구글 챗 라우팅 상태 보여줘/);
   assert.match(plan, /외부 메신저 라우팅 전체 열어줘/);
   assert.match(plan, /외부 채널 safety catalog 상태 보여줘/);
@@ -316,6 +364,7 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
   assert.match(plan, /외부 메신저 페어링 전체 열어줘/);
   assert.match(plan, /외부 채널 user stories catalog 상태 보여줘/);
   assert.match(plan, /channel profile draft 전체 상태 보여줘/);
+  assert.match(plan, /텔레그램 채널 프로필 검토 요청해줘/);
   assert.match(plan, /외부 메신저 view 전체 열어줘/);
   assert.match(plan, /외부 메신저 setup 전체 상태 보여줘/);
   assert.match(plan, /텔레그램 setup 열어줘/);
@@ -326,6 +375,7 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
   assert.match(plan, /xd\.xenesis\.guides\.open/);
   assert.match(plan, /xd\.xenesis\.connections\.diagnostics\.open/);
   assert.match(plan, /xd\.xenesis\.connections\.setupRequests\.status/);
+  assert.match(plan, /xd\.xenesis\.connections\.setupRequests\.request/);
   assert.match(plan, /xd\.xenesis\.providers\.setup\.open/);
   assert.match(plan, /xd\.xenesis\.providers\.routing\.open/);
   assert.match(plan, /xd\.xenesis\.providers\.views\.open/);
@@ -333,6 +383,7 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
   assert.match(plan, /xd\.xenesis\.providers\.routing\.status/);
   assert.match(plan, /xd\.xenesis\.providers\.views\.status/);
   assert.match(plan, /xd\.xenesis\.providers\.profileDrafts\.status/);
+  assert.match(plan, /xd\.xenesis\.providers\.profileDrafts\.request/);
   assert.match(plan, /xd\.xenesis\.tools\.connectors\.open/);
   assert.match(plan, /xd\.xenesis\.tools\.connectors\.status/);
   assert.match(plan, /xd\.xenesis\.tools\.setup\.open/);
@@ -342,10 +393,14 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
   assert.match(plan, /xd\.xenesis\.tools\.oauthDrafts\.status/);
   assert.match(plan, /xd\.xenesis\.tools\.mcpInstallDrafts\.status/);
   assert.match(plan, /xd\.xenesis\.tools\.mcpInstallDrafts\.open/);
+  assert.match(plan, /xd\.xenesis\.tools\.mcpInstallDrafts\.request/);
   assert.match(plan, /xd\.xenesis\.tools\.actions\.status/);
   assert.match(plan, /xd\.xenesis\.tools\.actions\.open/);
+  assert.match(plan, /xd\.xenesis\.tools\.actions\.request/);
   assert.match(plan, /xd\.xenesis\.tools\.userStories\.status/);
   assert.match(plan, /xd\.xenesis\.tools\.installPlans\.open/);
+  assert.match(plan, /xd\.xenesis\.tools\.installPlans\.request/);
+  assert.match(plan, /xd\.xenesis\.tools\.oauthDrafts\.request/);
   assert.match(plan, /xd\.xenesis\.channels\.routing\.status/);
   assert.match(plan, /xd\.xenesis\.channels\.routing\.open/);
   assert.match(plan, /xd\.xenesis\.channels\.safety\.status/);
@@ -356,8 +411,10 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
   assert.match(plan, /xd\.xenesis\.channels\.pairing\.open/);
   assert.match(plan, /xd\.xenesis\.channels\.userStories\.status/);
   assert.match(plan, /xd\.xenesis\.channels\.profileDrafts\.status/);
+  assert.match(plan, /xd\.xenesis\.channels\.profileDrafts\.request/);
   assert.match(plan, /xd\.xenesis\.messengers\.views\.open/);
   assert.match(plan, /xd\.xenesis\.messengers\.views\.status/);
+  assert.match(plan, /Desk action approval required/);
 });
 
 test('natural Desk routing live smoke builds submit requests that wait for applied CR paths', () => {

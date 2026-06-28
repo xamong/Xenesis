@@ -58,6 +58,12 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     expectedVisibleText: 'Desk action completed',
   },
   {
+    id: 'connection-setup-request-approval',
+    prompt: '노션 연결해줘',
+    expectedPath: 'xd.xenesis.connections.setupRequests.request',
+    expectedVisibleText: 'Desk action approval required',
+  },
+  {
     id: 'provider-setup-catalog-open',
     prompt: 'AI provider setup 전체 열어줘',
     expectedPath: 'xd.xenesis.providers.setup.open',
@@ -98,6 +104,12 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     prompt: 'AI provider profile draft 상태 보여줘',
     expectedPath: 'xd.xenesis.providers.profileDrafts.status',
     expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'provider-profile-draft-request-approval',
+    prompt: 'AI provider 설정해줘',
+    expectedPath: 'xd.xenesis.providers.profileDrafts.request',
+    expectedVisibleText: 'Desk action approval required',
   },
   {
     id: 'notion-connector-open',
@@ -154,6 +166,12 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     expectedVisibleText: 'Desk action completed',
   },
   {
+    id: 'tool-mcp-install-draft-request-approval',
+    prompt: '노션 MCP 설치해줘',
+    expectedPath: 'xd.xenesis.tools.mcpInstallDrafts.request',
+    expectedVisibleText: 'Desk action approval required',
+  },
+  {
     id: 'tool-action-policy-status',
     prompt: '외부 툴 action policy catalog 상태 보여줘',
     expectedPath: 'xd.xenesis.tools.actions.status',
@@ -166,6 +184,12 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     expectedVisibleText: 'Desk action completed',
   },
   {
+    id: 'tool-action-policy-request-approval',
+    prompt: '리니어 액션 정책 검토 요청해줘',
+    expectedPath: 'xd.xenesis.tools.actions.request',
+    expectedVisibleText: 'Desk action approval required',
+  },
+  {
     id: 'tool-user-stories-status',
     prompt: '외부 툴 user stories 상태 보여줘',
     expectedPath: 'xd.xenesis.tools.userStories.status',
@@ -176,6 +200,18 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     prompt: '외부 툴 install plans catalog 열어줘',
     expectedPath: 'xd.xenesis.tools.installPlans.open',
     expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'tool-install-plan-request-approval',
+    prompt: '노션 설치 계획 검토 요청해줘',
+    expectedPath: 'xd.xenesis.tools.installPlans.request',
+    expectedVisibleText: 'Desk action approval required',
+  },
+  {
+    id: 'tool-oauth-draft-request-approval',
+    prompt: '구글 캘린더 OAuth 인증해줘',
+    expectedPath: 'xd.xenesis.tools.oauthDrafts.request',
+    expectedVisibleText: 'Desk action approval required',
   },
   {
     id: 'google-chat-routing-status',
@@ -236,6 +272,12 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     prompt: 'channel profile draft 전체 상태 보여줘',
     expectedPath: 'xd.xenesis.channels.profileDrafts.status',
     expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'channel-profile-draft-request-approval',
+    prompt: '텔레그램 채널 프로필 검토 요청해줘',
+    expectedPath: 'xd.xenesis.channels.profileDrafts.request',
+    expectedVisibleText: 'Desk action approval required',
   },
   {
     id: 'messenger-view-catalog-open',
