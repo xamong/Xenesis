@@ -81,6 +81,11 @@ async function waitForGateway(child, timeoutMs = 30000) {
 }
 
 async function runGatewayChecks() {
+  const gatewayTokenEnv = "XENESIS_PROVIDER_SMOKE_GATEWAY_TOKEN";
+  const gatewayToken = process.env[gatewayTokenEnv] || process.env.XENESIS_GATEWAY_TOKEN || `provider-smoke-${process.pid}-${Date.now()}`;
+  const authHeaders = {
+    authorization: `Bearer ${gatewayToken}`
+  };
   const child = spawn(process.execPath, [
     entry,
     "--provider",
@@ -91,10 +96,15 @@ async function runGatewayChecks() {
     "--host",
     "127.0.0.1",
     "--port",
-    "0"
+    "0",
+    "--auth-token-env",
+    gatewayTokenEnv
   ], {
     cwd: repoRoot,
-    env: process.env,
+    env: {
+      ...process.env,
+      [gatewayTokenEnv]: gatewayToken
+    },
     windowsHide: true,
     stdio: ["ignore", "pipe", "pipe"]
   });
@@ -103,7 +113,7 @@ async function runGatewayChecks() {
     const { url } = await waitForGateway(child);
     const run = await fetch(`${url}/run`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { ...authHeaders, "content-type": "application/json" },
       body: JSON.stringify({ prompt: "Reply exactly: xenesis-provider-gateway-ok" })
     });
     const runBody = await run.json();
@@ -114,7 +124,7 @@ async function runGatewayChecks() {
 
     const stream = await fetch(`${url}/run/stream`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { ...authHeaders, "content-type": "application/json" },
       body: JSON.stringify({ prompt: "Reply exactly: xenesis-provider-gateway-stream-ok" })
     });
     const streamText = await stream.text();

@@ -1,4 +1,4 @@
-import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { type ChildProcessWithoutNullStreams, spawn, spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { delimiter, dirname, extname, isAbsolute, join } from "node:path";
@@ -199,7 +199,7 @@ function messageLabel(message: AgentMessage) {
 }
 
 function formatPrompt(messages: AgentMessage[]) {
-  return messages
+  return `${messages
     .map((message) => {
       const details = message.role === "tool"
         ? `toolCallId: ${message.toolCallId}\n${message.content}`
@@ -209,7 +209,7 @@ function formatPrompt(messages: AgentMessage[]) {
       return `## ${messageLabel(message)}\n${details}`;
     })
     .join("\n\n")
-    .trimEnd() + "\n";
+    .trimEnd()}\n`;
 }
 
 function parseArgsFromEnv(value: string | undefined, fallback: string[]) {
@@ -583,7 +583,11 @@ export function resolveCliSpawnRequest(input: CliSpawnRequestInput): CliSpawnReq
 const DESK_MCP_TOOL_NAMES = [
   "xenesis_desk_capabilities",
   "xenesis_desk_capability",
-  "xenesis_desk_call_capability"
+  "xenesis_desk_call_capability",
+  "xenesis_desk_state",
+  "xenesis_desk_active_context",
+  "xenesis_desk_context_actions",
+  "xenesis_desk_recent_diagnostics"
 ];
 
 const CLAUDE_DESK_MCP_SERVER_KEY = "xenesis-dev";
@@ -596,12 +600,16 @@ function resolveDeskMcpConfig(env: NodeJS.ProcessEnv, autoConfigEnvName: string)
   const stateFilePath = textEnv(env.XENIS_MCP_STATE_FILE)
     ?? (textEnv(env.XENIS_HOME) ? join(textEnv(env.XENIS_HOME)!, "mcp", "bridge.json") : undefined);
   const serverPath = textEnv(env.XENIS_MCP_SERVER_PATH) ?? readServerPathFromBridgeState(stateFilePath);
-  if (!stateFilePath || !serverPath) return undefined;
+  const bridgeUrl = textEnv(env.XENIS_MCP_BRIDGE_URL);
+  const bridgeToken = textEnv(env.XENIS_MCP_BRIDGE_TOKEN);
+  if (!serverPath || (!stateFilePath && !bridgeUrl)) return undefined;
   return {
     stateFilePath,
     serverPath,
     nodeCommand: textEnv(env.XENIS_MCP_NODE_COMMAND) ?? "node",
-    xenisHome: textEnv(env.XENIS_HOME)
+    xenisHome: textEnv(env.XENIS_HOME),
+    bridgeUrl,
+    bridgeToken
   };
 }
 
@@ -682,13 +690,21 @@ function codexDeskMcpArgs(env: NodeJS.ProcessEnv) {
     "-c", `mcp_servers.${serverKey}.enabled=true`,
     "-c", `mcp_servers.${serverKey}.command=${tomlString(config.nodeCommand)}`,
     "-c", `mcp_servers.${serverKey}.args=${tomlStringArray([config.serverPath])}`,
-    "-c", `mcp_servers.${serverKey}.env.XENIS_MCP_STATE_FILE=${tomlString(config.stateFilePath)}`,
     "-c", `mcp_servers.${serverKey}.enabled_tools=${tomlStringArray(DESK_MCP_TOOL_NAMES)}`,
     "-c", `mcp_servers.${serverKey}.default_tools_approval_mode='approve'`,
     "-c", `mcp_servers.${serverKey}.tools.xenesis_desk_capabilities.approval_mode='approve'`,
     "-c", `mcp_servers.${serverKey}.tools.xenesis_desk_capability.approval_mode='approve'`,
     "-c", `mcp_servers.${serverKey}.tools.xenesis_desk_call_capability.approval_mode='approve'`
   ];
+  if (config.stateFilePath) {
+    args.push("-c", `mcp_servers.${serverKey}.env.XENIS_MCP_STATE_FILE=${tomlString(config.stateFilePath)}`);
+  }
+  if (config.bridgeUrl) {
+    args.push("-c", `mcp_servers.${serverKey}.env.XENIS_MCP_BRIDGE_URL=${tomlString(config.bridgeUrl)}`);
+  }
+  if (config.bridgeToken) {
+    args.push("-c", `mcp_servers.${serverKey}.env.XENIS_MCP_BRIDGE_TOKEN=${tomlString(config.bridgeToken)}`);
+  }
   if (config.xenisHome) {
     args.push("-c", `mcp_servers.${serverKey}.env.XENIS_HOME=${tomlString(config.xenisHome)}`);
   }
@@ -704,7 +720,9 @@ function claudeDeskMcpArgs(providerName: "claude-cli" | "claude-interactive", en
         command: config.nodeCommand,
         args: [config.serverPath],
         env: {
-          XENIS_MCP_STATE_FILE: config.stateFilePath,
+          ...(config.stateFilePath ? { XENIS_MCP_STATE_FILE: config.stateFilePath } : {}),
+          ...(config.bridgeUrl ? { XENIS_MCP_BRIDGE_URL: config.bridgeUrl } : {}),
+          ...(config.bridgeToken ? { XENIS_MCP_BRIDGE_TOKEN: config.bridgeToken } : {}),
           ...(config.xenisHome ? { XENIS_HOME: config.xenisHome } : {})
         }
       }
@@ -773,13 +791,21 @@ function deskMcpPromptTools(providerName: string) {
     return {
       callTool: "mcp__xenesis-dev__xenesis_desk_call_capability",
       capabilitiesTool: "mcp__xenesis-dev__xenesis_desk_capabilities",
-      capabilityTool: "mcp__xenesis-dev__xenesis_desk_capability"
+      capabilityTool: "mcp__xenesis-dev__xenesis_desk_capability",
+      stateTool: "mcp__xenesis-dev__xenesis_desk_state",
+      activeContextTool: "mcp__xenesis-dev__xenesis_desk_active_context",
+      contextActionsTool: "mcp__xenesis-dev__xenesis_desk_context_actions",
+      recentDiagnosticsTool: "mcp__xenesis-dev__xenesis_desk_recent_diagnostics"
     };
   }
   return {
     callTool: "xenesis_dev.xenesis_desk_call_capability",
     capabilitiesTool: "xenesis_dev.xenesis_desk_capabilities",
-    capabilityTool: "xenesis_dev.xenesis_desk_capability"
+    capabilityTool: "xenesis_dev.xenesis_desk_capability",
+    stateTool: "xenesis_dev.xenesis_desk_state",
+    activeContextTool: "xenesis_dev.xenesis_desk_active_context",
+    contextActionsTool: "xenesis_dev.xenesis_desk_context_actions",
+    recentDiagnosticsTool: "xenesis_dev.xenesis_desk_recent_diagnostics"
   };
 }
 
@@ -791,6 +817,7 @@ export function deskMcpSystemMessage(providerName: string): AgentMessage {
       "Private execution interface: Xenesis Desk CR MCP tools are configured for this provider run.",
       `Use the fully qualified MCP tool \`${tools.callTool}\` for Capability Registry calls.`,
       `Use \`${tools.capabilitiesTool}\` to discover paths, \`${tools.capabilityTool}\` to inspect schemas/approval, and \`${tools.callTool}\` as the generic caller for every callable CR method.`,
+      `For common readback, use read-only Desk wrappers directly when they match the request: \`${tools.stateTool}\`, \`${tools.activeContextTool}\`, \`${tools.contextActionsTool}\`, and \`${tools.recentDiagnosticsTool}\`. These wrappers map back to Desk read paths and are preferred for current pane, selected file, diagnostics, and state questions.`,
       `For a known path such as \`xd.app.status\`, call \`${tools.callTool}\` with input \`{ "path": "xd.app.status", "args": {} }\`.`,
       `Desk capability families: status, explorer, terminal, browser, document, layout, office, ui.automation, agent.artifact, multi_step. Do not assume xd.* paths — discover the exact path and arg schema on demand with ${tools.capabilitiesTool} and ${tools.capabilityTool} before calling ${tools.callTool}.`,
       "Do not use shell or `tool_search` for CR calls when these fully qualified MCP tool names are configured.",
@@ -951,10 +978,10 @@ function messageError(message: Record<string, unknown>) {
 }
 
 function isCodexServerRequest(message: Record<string, unknown>) {
-  return Object.prototype.hasOwnProperty.call(message, "id")
+  return Object.hasOwn(message, "id")
     && typeof message.method === "string"
-    && !Object.prototype.hasOwnProperty.call(message, "result")
-    && !Object.prototype.hasOwnProperty.call(message, "error");
+    && !Object.hasOwn(message, "result")
+    && !Object.hasOwn(message, "error");
 }
 
 class CodexAppServerProcessClient implements CodexAppServerClient {
@@ -1138,13 +1165,13 @@ class CodexAppServerProcessClient implements CodexAppServerClient {
   }
 
   private handleMessage(message: Record<string, unknown>) {
-    if (Object.prototype.hasOwnProperty.call(message, "id")
-      && (Object.prototype.hasOwnProperty.call(message, "result") || Object.prototype.hasOwnProperty.call(message, "error"))) {
+    if (Object.hasOwn(message, "id")
+      && (Object.hasOwn(message, "result") || Object.hasOwn(message, "error"))) {
       const id = message.id as JsonRpcId;
       const pending = this.pending.get(id);
       if (!pending) return;
       this.pending.delete(id);
-      if (Object.prototype.hasOwnProperty.call(message, "error")) {
+      if (Object.hasOwn(message, "error")) {
         pending.reject(messageError(message));
         return;
       }
@@ -1421,7 +1448,7 @@ function textFromClaudeContent(value: unknown): string {
   if (typeof value.result === "string") return value.result;
   if (isJsonRecord(value.delta) && typeof value.delta.text === "string") return value.delta.text;
   if (isJsonRecord(value.message)) return textFromClaudeContent(value.message);
-  if (Object.prototype.hasOwnProperty.call(value, "content")) return textFromClaudeContent(value.content);
+  if (Object.hasOwn(value, "content")) return textFromClaudeContent(value.content);
   return "";
 }
 

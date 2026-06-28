@@ -99,6 +99,22 @@ export function extractCapabilityUsageFromSessionRecords(records: unknown[]): Ca
   return undefined;
 }
 
+export function extractCapabilityTranscriptTextFromSessionRecords(records: unknown[]): string {
+  const lines: string[] = [];
+  for (const record of records) {
+    if (!isRecord(record)) continue;
+    const message = isRecord(record.message) ? record.message : record;
+    const providerMetadata = isRecord(message.providerMetadata) ? message.providerMetadata : undefined;
+    const cli = providerMetadata && isRecord(providerMetadata.cli) ? providerMetadata.cli : undefined;
+    const stderr = typeof cli?.stderr === "string" ? cli.stderr : undefined;
+    if (!stderr) continue;
+    for (const line of stderr.split(/\r?\n/)) {
+      if (/^mcp:\s+\S+\s+started\b/.test(line)) lines.push(line);
+    }
+  }
+  return lines.join("\n");
+}
+
 export interface CapabilityEvalResult {
   id: string;
   category: CapabilityScenarioCategory;
@@ -680,12 +696,21 @@ function preview(value: string, maxChars = 1200) {
   return trimmed.length > maxChars ? `${trimmed.slice(0, maxChars)}...` : trimmed;
 }
 
+function logicalToolNameFromMcpTool(toolName: string) {
+  const rawName = toolName.split("/").pop() ?? toolName;
+  const name = rawName.split("__").pop() ?? rawName;
+  if (name.startsWith("xenesis_desk_")) return `desk_${name.slice("xenesis_desk_".length)}`;
+  return name;
+}
+
 export function parseCapabilityTranscript(stdout: string): CapabilityTranscript {
   const toolCalls: string[] = [];
   const events: string[] = [];
   for (const line of stdout.split(/\r?\n/)) {
     const match = line.match(/^tool:\s*([A-Za-z0-9_.:-]+)/);
     if (match) toolCalls.push(match[1]);
+    const mcpStarted = line.match(/^mcp:\s*([A-Za-z0-9_.:/-]+)\s+started\b/);
+    if (mcpStarted?.[1]) toolCalls.push(logicalToolNameFromMcpTool(mcpStarted[1]));
     if (line.startsWith("provider fallback:")) events.push("provider_fallback");
     else if (line.startsWith("provider retry:")) events.push("provider_retry");
     else if (line.startsWith("context recovery:")) events.push("context_recovery");

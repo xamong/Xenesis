@@ -10,6 +10,7 @@ import {
   type DeskEmbeddedPromptResult,
 } from './embeddedRuntime';
 import { closeAllDatabases } from '../../xenesis/src/db/database';
+import { createTurnLedger } from '../../xenesis/src/core/turnLedger';
 
 test('mapDeskEmbeddedPromptResult preserves final doneContent from embedded runtime', () => {
   const result = mapDeskEmbeddedPromptResult({
@@ -195,6 +196,49 @@ test('DeskEmbeddedAgentRuntime reuses session and history across embedded mock p
     assert.match(second.doneContent || '', /user: 첫 질문/);
     assert.match(second.doneContent || '', /assistant: mock response: 첫 질문/);
     assert.match(second.doneContent || '', /user: mock:messages/);
+  } finally {
+    closeAllDatabases();
+    await rm(workspace, { recursive: true, force: true });
+  }
+});
+
+test('DeskEmbeddedAgentRuntime writes embedded mock provider turns to the injected turn ledger', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'xenesis-desk-agent-runtime-ledger-'));
+  const turnLedger = createTurnLedger({
+    now: () => '2026-06-28T00:00:00.000Z',
+    idFactory: () => 'turn-runtime-ledger-1',
+  });
+
+  try {
+    const runtime = new DeskEmbeddedAgentRuntime({
+      enabled: true,
+      xenesisHome: join(workspace, '.xenesis'),
+      runtimePath: 'embedded',
+      workspace,
+      env: {},
+      providerRuntime: {
+        provider: 'mock',
+        model: 'mock-model',
+        profile: '',
+        baseURL: '',
+        apiKeyEnv: '',
+        env: {},
+      },
+      approvalMode: 'safe',
+      maxTurns: 4,
+      turnLedger,
+    });
+
+    runtime.start();
+    const result = await runtime.run({
+      prompt: 'ledger check',
+      stream: false,
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(turnLedger.current()?.id, 'turn-runtime-ledger-1');
+    assert.equal(turnLedger.current()?.sessionId, result.sessionId);
+    assert.equal(turnLedger.current()?.status, 'completed');
   } finally {
     closeAllDatabases();
     await rm(workspace, { recursive: true, force: true });
