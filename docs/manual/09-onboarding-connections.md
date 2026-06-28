@@ -35,6 +35,12 @@ focus one card with `xd.xenesis.connections.open`, for example:
 { "id": "notion" }
 ```
 
+The Xenesis Agent Desk-control prompt hint discovers Connection Center CR paths
+from the Capability Registry instead of maintaining a separate hand-written path
+list. Prompt policy text, safety boundaries, examples, and discovery prefixes
+live in `src/shared/xenesisDeskControlPromptHintCatalog.ts`; executable truth
+remains the registered CR tree and dispatcher coverage.
+
 Connection cards can include setup recipes, missing environment variables,
 source documentation labels, and CR-first actions. `Open setup` routes through
 `xd.panes.settings.open` to the relevant Settings surface. Guide cards route

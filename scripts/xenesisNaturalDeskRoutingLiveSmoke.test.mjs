@@ -42,6 +42,12 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
       expectedVisibleText: 'Desk action completed',
     },
     {
+      id: 'notion-connection-card-open',
+      prompt: '노션 연결 카드 열어줘',
+      expectedPath: 'xd.xenesis.connections.open',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
       id: 'hermes-user-stories-guide-open',
       prompt: 'Hermes user stories guide 열어줘',
       expectedPath: 'xd.xenesis.guides.open',

@@ -1,11 +1,17 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { listDeskBridgeCapabilities } from '../../../../shared/deskBridgeCapabilities';
 import {
   XENESIS_CONNECTION_MESSENGER_IDS,
   XENESIS_CONNECTION_PROVIDER_IDS,
   XENESIS_CONNECTION_TOOL_IDS,
 } from '../../../../shared/xenesisConnections';
+import { isXenesisDeskCapabilityPathUnderPrefix } from '../../../../shared/xenesisDeskControlPromptHint';
+import {
+  XENESIS_DESK_CONTROL_PROMPT_HINT_DISCOVERY_PREFIXES,
+  XENESIS_DESK_CONTROL_PROMPT_HINT_SECTIONS,
+} from '../../../../shared/xenesisDeskControlPromptHintCatalog';
 import {
   XENESIS_NATURAL_ACTIVE_DOCK_CLOSE_RULES,
   XENESIS_NATURAL_ACTIVE_DOCK_FOCUS_RULES,
@@ -125,10 +131,6 @@ import {
   XENESIS_DESK_ACTION_RESULT_SUMMARY_KEYS,
   XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT,
   XENESIS_DESK_ACTION_VALUE_TYPE_NAMES,
-  XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES,
-  XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES,
-  XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES,
-  XENESIS_DESK_CONTROL_PROMPT_HINT_CONNECTION_CENTER_DISCOVERY_PREFIX,
   XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS,
   XENESIS_NATURAL_ACTION_INTENT_RULES,
   XENESIS_NATURAL_ACTION_INTENT_WORDS,
@@ -249,6 +251,15 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     );
   } catch {
     promptHintSource = '';
+  }
+  let promptHintCatalogSource = '';
+  try {
+    promptHintCatalogSource = readFileSync(
+      new URL('../../../../shared/xenesisDeskControlPromptHintCatalog.ts', import.meta.url),
+      'utf8',
+    );
+  } catch {
+    promptHintCatalogSource = '';
   }
   let naturalPlannerSource = '';
   try {
@@ -600,24 +611,46 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES/);
   assert.doesNotMatch(source, /XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES/);
   assert.doesNotMatch(source, /XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES/);
-  assert.match(promptHintSource, /XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES/);
-  assert.match(promptHintSource, /XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES/);
-  assert.match(promptHintSource, /XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES/);
+  assert.doesNotMatch(catalogSource, /XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES/);
+  assert.doesNotMatch(catalogSource, /XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES/);
+  assert.doesNotMatch(catalogSource, /XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES/);
+  assert.match(promptHintSource, /XENESIS_DESK_CONTROL_PROMPT_HINT_SECTIONS/);
+  assert.match(promptHintCatalogSource, /XENESIS_DESK_CONTROL_PROMPT_HINT_SECTIONS/);
+  assert.match(promptHintCatalogSource, /XENESIS_DESK_CONTROL_PROMPT_HINT_DISCOVERY_PREFIXES/);
   assert.doesNotMatch(source, /const XENESIS_CONNECTION_CENTER_HINT_PREFIXES = \[/);
   assert.doesNotMatch(source, /Native Xenesis Desk Capability Registry control:/);
   assert.doesNotMatch(source, /Common natural Desk requests map to Capability Registry paths/);
   assert.doesNotMatch(source, /Open a right-side terminal example:/);
+  const nativeControlHintSection = XENESIS_DESK_CONTROL_PROMPT_HINT_SECTIONS.find(
+    (section) => section.id === 'native-control-policy',
+  );
+  assert.equal(nativeControlHintSection?.kind, 'static');
   assert.equal(
-    XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES[0],
+    nativeControlHintSection?.kind === 'static' ? nativeControlHintSection.lines[0] : undefined,
     'Native Xenesis Desk Capability Registry control:',
   );
+  const connectionCenterDiscoveryHintSection = XENESIS_DESK_CONTROL_PROMPT_HINT_SECTIONS.find(
+    (section) => section.id === 'connection-center-discovery',
+  );
+  assert.equal(connectionCenterDiscoveryHintSection?.kind, 'discovery');
   assert.equal(
-    XENESIS_DESK_CONTROL_PROMPT_HINT_CONNECTION_CENTER_DISCOVERY_PREFIX,
+    connectionCenterDiscoveryHintSection?.kind === 'discovery'
+      ? connectionCenterDiscoveryHintSection.linePrefix
+      : undefined,
     '- Connection Center CR paths discovered from Capability Registry: ',
   );
-  assert.equal(XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES.includes('xd.xenesis.connections'), true);
   assert.equal(
-    XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES.includes('Open a right-side terminal example:'),
+    XENESIS_DESK_CONTROL_PROMPT_HINT_DISCOVERY_PREFIXES.connectionCenter.includes('xd.xenesis.connections'),
+    true,
+  );
+  const examplesHintSection = XENESIS_DESK_CONTROL_PROMPT_HINT_SECTIONS.find(
+    (section) => section.id === 'examples-and-natural-routing',
+  );
+  assert.equal(examplesHintSection?.kind, 'static');
+  assert.equal(
+    examplesHintSection?.kind === 'static'
+      ? examplesHintSection.lines.includes('Open a right-side terminal example:')
+      : false,
     true,
   );
   for (const localNaturalPlannerFunction of [
@@ -3185,89 +3218,29 @@ test('buildXenesisDeskControlPromptHint describes native CR control without exte
 
 test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoids stale aliases', () => {
   const hint = buildXenesisDeskControlPromptHint();
+  const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const connectionCenterPromptPaths = listDeskBridgeCapabilities()
+    .filter((node) => node.callable)
+    .map((node) => node.path)
+    .filter((path) =>
+      XENESIS_DESK_CONTROL_PROMPT_HINT_DISCOVERY_PREFIXES.connectionCenter.some((prefix) =>
+        isXenesisDeskCapabilityPathUnderPrefix(path, prefix),
+      ),
+    )
+    .sort();
 
   assert.match(hint, /Connection Center CR paths discovered from Capability Registry/i);
+  assert.ok(connectionCenterPromptPaths.length > 50);
+  for (const path of connectionCenterPromptPaths) {
+    assert.match(hint, new RegExp(escapeRegExp(path)));
+  }
   assert.match(hint, /xd\.window\.sizer\.applyPreset/);
   assert.match(hint, /presetId/);
   assert.match(hint, /xd\.dock\.artifactTarget\.set/);
-  assert.match(hint, /xd\.xenesis\.connections\.open/);
-  assert.match(hint, /xd\.xenesis\.connections\.status/);
-  assert.match(hint, /xd\.xenesis\.connections\.diagnostics\.status/);
-  assert.match(hint, /xd\.xenesis\.connections\.diagnostics\.open/);
-  assert.match(hint, /xd\.xenesis\.connections\.setupRequests\.status/);
-  assert.match(hint, /xd\.xenesis\.connections\.setupRequests\.open/);
-  assert.match(hint, /xd\.xenesis\.connections\.setupRequests\.request/);
-  assert.match(hint, /xd\.testing\.connectionCenter\.snapshot/);
-  assert.match(hint, /xd\.xenesis\.onboarding\.status/);
-  assert.match(hint, /xd\.xenesis\.onboarding\.open/);
-  assert.match(hint, /xd\.xenesis\.guides\.status/);
-  assert.match(hint, /xd\.xenesis\.guides\.open/);
-  assert.match(hint, /xd\.xenesis\.providers\.setup\.status/);
-  assert.match(hint, /xd\.xenesis\.providers\.setup\.open/);
-  assert.match(hint, /xd\.xenesis\.providers\.routing\.status/);
-  assert.match(hint, /xd\.xenesis\.providers\.routing\.open/);
-  assert.match(hint, /xd\.xenesis\.providers\.views\.status/);
-  assert.match(hint, /xd\.xenesis\.providers\.views\.open/);
   assert.match(hint, /xd\.localCli\.scan/);
   assert.match(hint, /xd\.mcp\.settings\.status/);
   assert.match(hint, /xd\.mcp\.bridge\.status/);
   assert.match(hint, /xd\.xenesis\.gateway\.status/);
-  assert.match(hint, /xd\.xenesis\.gateway\.start/);
-  assert.match(hint, /xd\.xenesis\.gateway\.stop/);
-  assert.match(hint, /xd\.xenesis\.gateway\.restart/);
-  assert.match(hint, /xd\.xenesis\.gateway\.openDashboard/);
-  assert.match(hint, /xd\.xenesis\.workspace\.set/);
-  assert.match(hint, /xd\.xenesis\.diagnostics/);
-  assert.match(hint, /xd\.xenesis\.reports\.list/);
-  assert.match(hint, /xd\.xenesis\.tasks\.list/);
-  assert.match(hint, /xd\.xenesis\.agents\.list/);
-  assert.match(hint, /xd\.xenesis\.agents\.status/);
-  assert.match(hint, /xd\.xenesis\.agents\.events/);
-  assert.match(hint, /xd\.xenesis\.agents\.submit/);
-  assert.match(hint, /xd\.xenesis\.profiles\.list/);
-  assert.match(hint, /xd\.xenesis\.runs\.cancel/);
-  assert.match(hint, /xd\.xenesis\.sessions\.reset/);
-  assert.match(hint, /xd\.xenesis\.tools\.setup\.status/);
-  assert.match(hint, /xd\.xenesis\.tools\.setup\.open/);
-  assert.match(hint, /xd\.xenesis\.tools\.setupPlans\.status/);
-  assert.match(hint, /xd\.xenesis\.tools\.setupPlans\.open/);
-  assert.match(hint, /xd\.xenesis\.tools\.connectors\.status/);
-  assert.match(hint, /xd\.xenesis\.tools\.views\.status/);
-  assert.match(hint, /xd\.xenesis\.tools\.views\.open/);
-  assert.match(hint, /xd\.xenesis\.tools\.userStories\.status/);
-  assert.match(hint, /xd\.xenesis\.tools\.userStories\.open/);
-  assert.match(hint, /xd\.xenesis\.tools\.installPlans\.status/);
-  assert.match(hint, /xd\.xenesis\.tools\.installPlans\.open/);
-  assert.match(hint, /xd\.xenesis\.tools\.installPlans\.request/);
-  assert.match(hint, /xd\.xenesis\.tools\.mcpInstallDrafts\.status/);
-  assert.match(hint, /xd\.xenesis\.tools\.mcpInstallDrafts\.open/);
-  assert.match(hint, /xd\.xenesis\.tools\.mcpInstallDrafts\.request/);
-  assert.match(hint, /xd\.xenesis\.tools\.mcpInstallDrafts\.apply/);
-  assert.match(hint, /xd\.xenesis\.tools\.oauthDrafts\.status/);
-  assert.match(hint, /xd\.xenesis\.tools\.oauthDrafts\.open/);
-  assert.match(hint, /xd\.xenesis\.tools\.oauthDrafts\.request/);
-  assert.match(hint, /xd\.xenesis\.tools\.actions\.status/);
-  assert.match(hint, /xd\.xenesis\.tools\.actions\.open/);
-  assert.match(hint, /xd\.xenesis\.tools\.actions\.request/);
-  assert.match(hint, /xd\.xenesis\.providers\.profileDrafts\.status/);
-  assert.match(hint, /xd\.xenesis\.providers\.profileDrafts\.open/);
-  assert.match(hint, /xd\.xenesis\.providers\.profileDrafts\.request/);
-  assert.match(hint, /xd\.xenesis\.channels\.userStories\.status/);
-  assert.match(hint, /xd\.xenesis\.channels\.userStories\.open/);
-  assert.match(hint, /xd\.xenesis\.channels\.profileDrafts\.status/);
-  assert.match(hint, /xd\.xenesis\.channels\.profileDrafts\.open/);
-  assert.match(hint, /xd\.xenesis\.channels\.profileDrafts\.request/);
-  assert.match(hint, /xd\.xenesis\.channels\.profileDrafts\.apply/);
-  assert.match(hint, /xd\.xenesis\.channels\.accessGroups\.status/);
-  assert.match(hint, /xd\.xenesis\.channels\.pairing\.status/);
-  assert.match(hint, /xd\.xenesis\.channels\.pairing\.open/);
-  assert.match(hint, /xd\.xenesis\.channels\.routing\.status/);
-  assert.match(hint, /xd\.xenesis\.channels\.routing\.open/);
-  assert.match(hint, /xd\.xenesis\.channels\.safety\.status/);
-  assert.match(hint, /xd\.xenesis\.channels\.safety\.open/);
-  assert.match(hint, /xd\.xenesis\.channels\.accessGroups\.open/);
-  assert.match(hint, /xd\.xenesis\.messengers\.views\.status/);
-  assert.match(hint, /xd\.xenesis\.messengers\.views\.open/);
   assert.match(hint, /tool action catalogs are review-only/i);
   assert.match(hint, /tool OAuth drafts are review-only/i);
   assert.match(hint, /do not complete OAuth/i);

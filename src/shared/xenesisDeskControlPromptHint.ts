@@ -1,12 +1,9 @@
 import { listDeskBridgeCapabilities } from './deskBridgeCapabilities';
+import { XENESIS_DESK_CONTROL_PROMPT_HINT_SECTIONS } from './xenesisDeskControlPromptHintCatalog';
 import {
   XENESIS_DESK_ACTION_PROTOCOL_FORMAT,
   XENESIS_DESK_ACTION_PROTOCOL_PATTERNS,
   XENESIS_DESK_ACTION_PROTOCOL_TEXT,
-  XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES,
-  XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES,
-  XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES,
-  XENESIS_DESK_CONTROL_PROMPT_HINT_CONNECTION_CENTER_DISCOVERY_PREFIX,
 } from './xenesisNaturalLanguageCatalog';
 
 export function isXenesisDeskCapabilityPathUnderPrefix(path: string, prefix: string): boolean {
@@ -44,13 +41,12 @@ export function buildXenesisDeskDirectCrPathSummary(lines: readonly string[]): s
 }
 
 export function buildXenesisDeskControlPromptHint(): string {
-  const lines = [
-    ...XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES,
-    `${XENESIS_DESK_CONTROL_PROMPT_HINT_CONNECTION_CENTER_DISCOVERY_PREFIX}${buildXenesisDeskRegistryCapabilityPathSummary(
-      XENESIS_DESK_CONTROL_HINT_CONNECTION_CENTER_PREFIXES,
-    )}${XENESIS_DESK_ACTION_PROTOCOL_FORMAT.sentenceTerminator}`,
-    ...XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES,
-  ];
+  const lines = XENESIS_DESK_CONTROL_PROMPT_HINT_SECTIONS.flatMap((section) => {
+    if (section.kind === 'static') return [...section.lines];
+    return [
+      `${section.linePrefix}${buildXenesisDeskRegistryCapabilityPathSummary(section.prefixes)}${XENESIS_DESK_ACTION_PROTOCOL_FORMAT.sentenceTerminator}`,
+    ];
+  });
   return XENESIS_DESK_ACTION_PROTOCOL_FORMAT.joinLines([
     ...lines,
     XENESIS_DESK_ACTION_PROTOCOL_TEXT.usefulDirectCrPaths(buildXenesisDeskDirectCrPathSummary(lines)),

@@ -7,6 +7,106 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current Prompt Hint Catalog Slice
+
+- Objective: increase the slice size and continue the hardcoding cleanup by
+  moving Desk control prompt-hint policy/examples/discovery-prefix ownership out
+  of the broad natural-language catalog and into a focused shared prompt-hint
+  catalog, while keeping high-value CR path summaries generated from the live
+  Capability Registry.
+- Rationale:
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.ts`
+    is already a re-export facade with no local hardcoded routing.
+  - The remaining prompt-hint constants live in
+    `src/shared/xenesisNaturalLanguageCatalog.ts`, which mixes prompt policy
+    text with natural-language matching/routing data.
+  - The prompt hint already discovers Connection Center paths from
+    `listDeskBridgeCapabilities()`, so tests should validate generated registry
+    coverage instead of hand-listing every high-value CR path in the Agent pane
+    test.
+- Scope boundary:
+  - Do not add OAuth execution, token storage, provider tool execution, MCP
+    install execution, messenger delivery, or external-system mutation.
+  - Deterministic prompt policy and natural routing remain deterministic
+    catalog behavior, not model reasoning.
+  - No external web browsing; use repo-local source, tests, docs, and Obsidian
+    only.
+- Plan:
+  - `docs/superpowers/plans/2026-06-29-xenesis-prompt-hint-catalog.md`
+- Touched files so far:
+  - `docs/superpowers/plans/2026-06-29-xenesis-prompt-hint-catalog.md`
+  - `handoff.md`
+- Commands run:
+  - `git status --short --branch` -> clean `agent/upcoming-work-20260627`.
+  - `npm run smoke:xenesis:connection-center` -> passed 6/6 before edits,
+    confirming the current Connection Center UI smoke baseline.
+- Verification plan:
+  - RED ownership tests in
+    `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+    for the new prompt-hint catalog module.
+  - GREEN focused Agent control tests after extracting prompt hint policy.
+  - Natural routing smoke, Connection Center smoke, typecheck, CR audit/gap
+    check, changed-file Biome, and diff hygiene.
+- Next intended step:
+  - Add RED tests for prompt-hint catalog ownership and registry-derived
+    Connection Center path coverage.
+- RED verification:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    failed because `../../../../shared/xenesisDeskControlPromptHintCatalog`
+    does not exist yet, after the test was changed to import the new focused
+    prompt-hint catalog and derive Connection Center prompt paths from the
+    Capability Registry.
+- Implemented so far:
+  - Added `src/shared/xenesisDeskControlPromptHintCatalog.ts` with prompt hint
+    section specs, static policy/example lines, and Connection Center discovery
+    prefixes.
+  - Updated `src/shared/xenesisDeskControlPromptHint.ts` to assemble prompt
+    sections from the new catalog and continue discovering callable Connection
+    Center paths through `listDeskBridgeCapabilities()`.
+  - Removed prompt-hint policy/constants from
+    `src/shared/xenesisNaturalLanguageCatalog.ts`.
+  - Replaced the large hand-listed prompt path assertions with Registry-derived
+    Connection Center path coverage and representative policy/example checks.
+  - Added `notion-connection-card-open` to the natural Desk routing live smoke
+    inventory.
+  - Documented prompt-hint ownership in
+    `docs/manual/09-onboarding-connections.md`.
+  - Added Obsidian working note:
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-prompt-hint-catalog.md`.
+- Focused verification:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 45/45.
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` ->
+    passed 6/6.
+- Broad verification:
+  - `npx biome format --write ...` -> formatted 6 files, fixed 1 file.
+  - `npx biome check src\shared\xenesisDeskControlPromptHint.ts src\shared\xenesisDeskControlPromptHintCatalog.ts src\shared\xenesisNaturalLanguageCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts scripts\xenesisNaturalDeskRoutingLiveSmoke.mjs scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs --max-diagnostics 80`
+    -> checked 6 files, no fixes applied.
+  - `npm run typecheck` -> passed.
+  - `npm run docs:capabilities:audit` -> passed, wrote
+    `docs/capability-registry-audit.md`; audit summary now reports 780 nodes
+    and 689 coverage path references.
+  - `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> all four counters are 0.
+  - `npm run smoke:xenesis:natural-desk-routing` -> passed 219/219, including
+    new `notion-connection-card-open`.
+  - `npm run smoke:xenesis:connection-center` -> passed 6/6.
+  - `npm run build` -> passed; Vite emitted existing bundle-size/dynamic-import
+    and browser externalization warnings only.
+  - `git diff --check` -> passed with line-ending warnings only.
+  - `npm run lint` -> failed on existing repo-wide Biome/CRLF/style diagnostics
+    outside this slice: 1147 errors, 419 warnings, 92 infos. Changed-file
+    Biome check passed.
+- Known gaps:
+  - This slice does not execute OAuth, store tokens, install MCP servers, run
+    provider tools, send messenger messages, or mutate external systems.
+  - Full repo lint remains blocked by pre-existing repository-wide Biome
+    diagnostics; no changed-file Biome diagnostics remain.
+- Next intended step:
+  - Review final status, stage the ignored plan file with `git add -f`, commit
+    the prompt-hint catalog slice, then continue with the next large CR-first
+    setup/connection slice.
+
 ## Current OAuth Setup Packet Open Slice
 
 - Objective: make Google tool OAuth setup packets directly openable and
