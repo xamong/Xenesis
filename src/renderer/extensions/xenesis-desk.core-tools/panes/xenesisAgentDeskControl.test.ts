@@ -3880,6 +3880,16 @@ test('planXenesisDeskNaturalLanguageActions maps guide file open requests to CR 
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('Hermes task scenarios guide file 열어줘').actions, [
+    {
+      id: 'natural-xenesis-guide-open-agent-user-stories',
+      path: 'xd.xenesis.guides.open',
+      args: { id: 'agent-user-stories', ensureVisible: true, openFile: true },
+      approved: false,
+      reason: 'Open Agent user stories guide file from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('오픈클로 채널 가이드 파일 열어줘').actions, [
     {
       id: 'natural-xenesis-guide-open-openclaw-channel-setup',
@@ -4858,6 +4868,16 @@ test('planXenesisDeskNaturalLanguageActions maps guide catalog readback requests
   ]);
 
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('사용자 스토리 가이드 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-guide-status-agent-user-stories',
+      path: 'xd.xenesis.guides.status',
+      args: { id: 'agent-user-stories' },
+      approved: false,
+      reason: 'Read Agent user stories guide catalog status from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('헤르메스 작업 시나리오 가이드 상태 보여줘').actions, [
     {
       id: 'natural-xenesis-guide-status-agent-user-stories',
       path: 'xd.xenesis.guides.status',

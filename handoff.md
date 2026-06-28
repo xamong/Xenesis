@@ -14578,6 +14578,15 @@ Verification so far:
   - No external web browsing.
 - Touched files so far:
   - `handoff.md`
+  - `src/shared/xenesisConnections.ts`
+  - `src/shared/xenesisConnections.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `scripts/xenesisNaturalDeskRoutingLiveSmoke.mjs`
+  - `scripts/xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
+  - `docs/manual/README.md`
+  - `docs/manual/12-agent-user-stories.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-agent-user-stories-guide-batch.md`
+  - `docs/capability-registry-audit.md`
 - Commands run:
   - `rg` scans over shared natural-language routing, Connection Center catalog,
     Agent pane tests, and manual docs.
@@ -15101,3 +15110,80 @@ Verification so far:
 - Next intended step:
   - Add Obsidian working note, run final diff checks, and commit this auxiliary
     spec slice.
+
+## Current Agent User Stories Guide Batch Slice
+
+- Current objective:
+  - Increase the slice size by handling the Hermes/OpenClaw-style user-story
+    documentation gap as one batch across repo manual docs, Connection Center
+    guide catalog metadata, natural-language routing tests, live-smoke prompt
+    coverage, handoff, and Obsidian working notes.
+- Rationale:
+  - `agent-user-stories` is already a CR guide target, but its `guidePath`
+    points at the broader onboarding manual. That means the guide catalog can
+    route a Hermes user-story request, while the repo-local manual does not yet
+    have a dedicated page matching that target.
+- Scope:
+  - Add RED tests requiring `agent-user-stories` to resolve to a dedicated
+    `docs/manual/12-agent-user-stories.md` guide path and richer CR read/control
+    coverage.
+  - Add the dedicated manual page using cached OpenClaw/Hermes context already
+    captured in repo-local docs and Obsidian.
+  - Update the guide catalog, natural-language expectations, smoke prompt list,
+    and manual index together.
+- Touched files so far:
+  - `handoff.md`
+- Commands run:
+  - `git status --short --branch` -> clean `agent/upcoming-work-20260627`.
+  - `rg --files docs/manual` -> no dedicated user-story manual exists yet.
+  - `rg -n "XENESIS_CONNECTION_GUIDES|guideCatalog|agent-user-stories|openclaw-channel-setup|external-tool-integrations|hermes|userStories|userStory" ...`
+    -> `agent-user-stories` exists in CR/natural routing but points to
+    `docs/manual/09-onboarding-connections.md`.
+  - RED:
+    `npx tsx --test src\shared\xenesisConnections.test.ts` -> failed 39/40
+    because `agent-user-stories` still points to
+    `docs/manual/09-onboarding-connections.md` instead of the dedicated
+    `docs/manual/12-agent-user-stories.md` guide path.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    after adding task-scenario prompts -> passed 44/44, so the existing router
+    already handled the new prompt shape; the alias list was still made explicit.
+  - GREEN batch:
+    `npx tsx --test src\shared\xenesisConnections.test.ts` -> passed 40/40.
+  - GREEN batch:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 44/44.
+  - GREEN batch:
+    `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` -> passed
+    6/6.
+  - `npm run typecheck` -> passed.
+  - `npm run docs:capabilities:audit` -> passed, wrote
+    `docs/capability-registry-audit.md`.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` ->
+    passed 40/40.
+  - `npx biome check src\shared\xenesisConnections.ts src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts scripts\xenesisNaturalDeskRoutingLiveSmoke.mjs scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs docs\manual\README.md docs\manual\12-agent-user-stories.md handoff.md`
+    -> checked 5 TS/JS files, no fixes applied; Markdown files were ignored by
+    Biome config.
+  - `npm run smoke:xenesis:natural-desk-routing` -> passed 186/186.
+  - `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> missing registered paths 0, missing dispatched coverage paths 0,
+    undispatched static callable methods 0, dispatcher paths missing from tree
+    0.
+  - `git diff --check` -> passed with line-ending warnings only.
+- Implemented:
+  - Added `docs/manual/12-agent-user-stories.md` as the dedicated repo-local
+    Hermes/Xenesis user-story guide.
+  - Pointed the `agent-user-stories` guide catalog item at the new manual path.
+  - Expanded the guide catalog read/control paths to provider setup/routing,
+    tool user stories, channel user stories, and connection diagnostics.
+  - Added explicit task-scenario natural alias words for the guide target.
+  - Added live-smoke prompts for Hermes task scenario guide open/status.
+  - Added the new manual to `docs/manual/README.md`.
+  - Added an Obsidian Working Note for this batch.
+- Known gaps:
+  - Natural-language routing remains deterministic catalog routing, not model
+    reasoning.
+  - This guide/documentation slice does not add new provider/OAuth/MCP/channel
+    mutation paths; it makes the existing CR-controlled setup/story surfaces
+    visible and consistent.
+- Next intended step:
+  - Review final diff, stage, and commit this larger guide batch slice.

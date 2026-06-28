@@ -46,6 +46,12 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     expectedVisibleText: 'Desk action completed',
   },
   {
+    id: 'hermes-task-scenarios-guide-open',
+    prompt: 'Hermes task scenarios guide file 열어줘',
+    expectedPath: 'xd.xenesis.guides.open',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
     id: 'openclaw-channel-setup-guide-open',
     prompt: 'OpenClaw channel setup guide 열어줘',
     expectedPath: 'xd.xenesis.guides.open',
@@ -253,6 +259,12 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     id: 'tool-user-stories-status',
     prompt: '외부 툴 user stories 상태 보여줘',
     expectedPath: 'xd.xenesis.tools.userStories.status',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'hermes-task-scenarios-guide-status',
+    prompt: '헤르메스 작업 시나리오 가이드 상태 보여줘',
+    expectedPath: 'xd.xenesis.guides.status',
     expectedVisibleText: 'Desk action completed',
   },
   {

@@ -35,6 +35,7 @@ The manual is written for two audiences:
 | Onboarding and connections | [09-onboarding-connections.md](09-onboarding-connections.md) |
 | OpenClaw-style channel setup | [10-openclaw-channel-setup.md](10-openclaw-channel-setup.md) |
 | External tool integrations | [11-external-tool-integrations.md](11-external-tool-integrations.md) |
+| Agent user stories | [12-agent-user-stories.md](12-agent-user-stories.md) |
 
 ## Core Model
 

@@ -2963,7 +2963,22 @@ test('buildXenesisConnectionsStatus exposes guide catalog metadata for onboardin
   });
   assert.equal(onboarding?.guideOpenPath, 'E:\\xenesis-desk\\docs\\manual\\09-onboarding-connections.md');
   assert.equal(userStories?.guideCatalog?.guideType, 'user-story-catalog');
+  assert.equal(userStories?.guidePath, 'docs/manual/12-agent-user-stories.md');
+  assert.equal(userStories?.guideOpenPath, 'E:\\xenesis-desk\\docs\\manual\\12-agent-user-stories.md');
+  assert.deepEqual(userStories?.guideCatalog?.coveredSurfaces, [
+    'ai-provider-user-stories',
+    'external-tool-user-stories',
+    'messenger-user-stories',
+    'capability-registry-readbacks',
+  ]);
   assert.equal(userStories?.guideCatalog?.readPaths.includes('xd.xenesis.guides.status'), true);
+  assert.equal(userStories?.guideCatalog?.readPaths.includes('xd.xenesis.providers.routing.status'), true);
+  assert.equal(userStories?.guideCatalog?.readPaths.includes('xd.xenesis.tools.userStories.status'), true);
+  assert.equal(userStories?.guideCatalog?.readPaths.includes('xd.xenesis.channels.userStories.status'), true);
+  assert.equal(userStories?.guideCatalog?.readPaths.includes('xd.xenesis.connections.diagnostics.status'), true);
+  assert.equal(userStories?.guideCatalog?.controlPaths.includes('xd.xenesis.tools.userStories.open'), true);
+  assert.equal(userStories?.guideCatalog?.controlPaths.includes('xd.xenesis.channels.userStories.open'), true);
+  assert.equal(userStories?.guideCatalog?.controlPaths.includes('xd.xenesis.connections.diagnostics.open'), true);
   assert.equal(channelSetup?.guidePath, 'docs/manual/10-openclaw-channel-setup.md');
   assert.equal(channelSetup?.guideOpenPath, 'E:\\xenesis-desk\\docs\\manual\\10-openclaw-channel-setup.md');
   assert.equal(channelSetup?.guideCatalog?.guideType, 'integration-guide');
