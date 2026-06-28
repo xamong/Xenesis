@@ -34,6 +34,30 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     expectedVisibleText: 'Desk action completed',
   },
   {
+    id: 'hermes-user-stories-guide-open',
+    prompt: 'Hermes user stories guide 열어줘',
+    expectedPath: 'xd.xenesis.guides.open',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'openclaw-channel-setup-guide-open',
+    prompt: 'OpenClaw channel setup guide 열어줘',
+    expectedPath: 'xd.xenesis.guides.open',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'connection-diagnostics-open',
+    prompt: 'Connection diagnostics catalog 열어줘',
+    expectedPath: 'xd.xenesis.connections.diagnostics.open',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'connection-setup-requests-status',
+    prompt: 'Connection setup requests catalog 상태 보여줘',
+    expectedPath: 'xd.xenesis.connections.setupRequests.status',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
     id: 'provider-setup-catalog-open',
     prompt: 'AI provider setup 전체 열어줘',
     expectedPath: 'xd.xenesis.providers.setup.open',
@@ -58,9 +82,27 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     expectedVisibleText: 'Desk action completed',
   },
   {
+    id: 'tool-user-stories-status',
+    prompt: '외부 툴 user stories 상태 보여줘',
+    expectedPath: 'xd.xenesis.tools.userStories.status',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'tool-install-plans-open',
+    prompt: '외부 툴 install plans catalog 열어줘',
+    expectedPath: 'xd.xenesis.tools.installPlans.open',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
     id: 'google-chat-routing-status',
     prompt: '구글 챗 라우팅 상태 보여줘',
     expectedPath: 'xd.xenesis.channels.routing.status',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'channel-user-stories-status',
+    prompt: '외부 채널 user stories catalog 상태 보여줘',
+    expectedPath: 'xd.xenesis.channels.userStories.status',
     expectedVisibleText: 'Desk action completed',
   },
   {

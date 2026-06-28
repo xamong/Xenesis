@@ -4469,6 +4469,48 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Guide/User-Story Natural Live Smoke Expansion Slice
+
+- Continued the larger OpenClaw/Hermes coverage pass by broadening the
+  repeatable Agent-pane natural Desk routing live smoke from 11 prompt cases to
+  18 prompt cases.
+- Added live-smoked read/open surfaces for:
+  - Hermes user-story guide open.
+  - OpenClaw channel setup guide open.
+  - Connection diagnostics catalog open.
+  - Connection setup-request catalog status.
+  - External tool user-story catalog status.
+  - External tool install-plan catalog open.
+  - External channel user-story catalog status.
+- Scope boundary:
+  - Smoke script/test coverage only.
+  - No natural-language planner, CR schema, dispatcher, provider runtime,
+    OAuth/install execution, messenger delivery, profile write, or Action Inbox
+    mutation behavior changed.
+- RED/GREEN:
+  - Initial RED proved the live smoke script still exported the old 11-case
+    prompt catalog while the test expected the expanded 18-case catalog.
+  - First live smoke failed 46/54. Targeted Electron diagnostics showed four
+    prompts did not satisfy existing aggregate catalog match rules and routed
+    to `xd.xenesis.connections.status` or provider fallback text instead.
+  - The four prompts were corrected to include catalog-qualified wording:
+    `Connection diagnostics catalog 열어줘`,
+    `Connection setup requests catalog 상태 보여줘`,
+    `외부 툴 install plans catalog 열어줘`, and
+    `외부 채널 user stories catalog 상태 보여줘`.
+- Verification:
+  - `npx tsx --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
+    passed 4/4 after the prompt catalog update and after the wording
+    correction.
+  - Scoped Biome format/check passed for the two smoke files.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 54/54.
+  - `npm run typecheck` passed.
+  - `git diff --check` passed with LF-to-CRLF working-copy warnings only.
+  - CR audit was skipped because this slice only changes smoke scripts/tests;
+    it does not change registry, dispatcher, or runtime coverage.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
