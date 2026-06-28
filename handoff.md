@@ -7,6 +7,94 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current Natural Capability Action Catalog Slice
+
+- Objective: increase the slice size and continue the hardcoding cleanup by
+  moving natural-language CR action args, CR path descriptors, action-rule
+  tables, and action-builder helpers out of the broad
+  `src/shared/xenesisNaturalLanguageCatalog.ts` into a dedicated
+  `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`.
+- Observed gap:
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.ts`
+    is now a shared facade only.
+  - `src/shared/xenesisNaturalLanguagePlanner.ts` is now route-order only.
+  - `src/shared/xenesisNaturalLanguageActionResolvers.ts` and
+    `src/shared/xenesisNaturalLanguagePlanResolvers.ts` own resolver branches.
+  - `src/shared/xenesisNaturalLanguageCatalog.ts` still mixes natural-language
+    text/predicate/target metadata with CR action inventory such as
+    `XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS`,
+    `XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS`,
+    provider/tool/messenger/connection descriptor tables, and action-builder
+    helper functions.
+- Scope boundary:
+  - Source ownership refactor only.
+  - Preserve route order, CR paths, args, visible text, approval state, action
+    reasons, and smoke behavior.
+  - Do not change CR schemas, dispatchers, provider runtime selection,
+    settings writes, OAuth/MCP execution, messenger delivery, Action Inbox
+    semantics, or capability behavior.
+- External documentation handling: no browsing. Use cached Obsidian/source,
+  local tests, build, and smoke only.
+- Plan:
+  - `docs/superpowers/plans/2026-06-28-xenesis-natural-capability-action-catalog.md`.
+- Intended larger-slice contents:
+  - Add a source guard requiring
+    `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`.
+  - Move natural CR action args, descriptors, action-rule tables, and builder
+    helpers into that new module.
+  - Update action/plan resolvers and tests to import capability action
+    inventory from the new module while leaving protocol/text/target helpers in
+    the natural-language catalog.
+  - Verify with focused source guard, combined connection/natural tests,
+    typecheck, build, natural routing smoke, and diff check.
+- RED progress:
+  - Added a source guard in
+    `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+    requiring `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    failed as expected with 37/38 passing and one ENOENT for the missing new
+    capability catalog file.
+- Implementation progress:
+  - Added `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`.
+  - Moved natural-language CR action args, CR action descriptors, action-rule
+    tables, and action-builder/rule lookup helpers into the new capability
+    catalog module.
+  - Updated `src/shared/xenesisNaturalLanguageActionResolvers.ts`,
+    `src/shared/xenesisNaturalLanguagePlanResolvers.ts`, and the focused source
+    guard test to import action inventory from the capability catalog while
+    leaving protocol, text normalization, predicates, and target metadata in
+    `src/shared/xenesisNaturalLanguageCatalog.ts`.
+  - Changed `hasXenesisNaturalOnboardingContext` to use
+    `XENESIS_NATURAL_ONBOARDING_CONTEXT_RULES`, avoiding a reverse dependency
+    from the base natural-language catalog back to the capability action
+    catalog.
+- Verification progress:
+  - `npx tsc --noEmit --pretty false` passed after import boundary repair.
+  - First focused GREEN attempt failed 37/38 because source guards still checked
+    action builders in `xenesisNaturalLanguageCatalog.ts`; updated guards to
+    check `xenesisNaturalLanguageCapabilityCatalog.ts`.
+  - Second focused GREEN attempt failed 37/38 because source guards still
+    checked catalog-rule plan helpers in `xenesisNaturalLanguageCatalog.ts`;
+    updated ownership assertions for those helpers.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 38/38.
+  - `npx biome format --write src\shared\xenesisNaturalLanguageCapabilityCatalog.ts src\shared\xenesisNaturalLanguageCatalog.ts src\shared\xenesisNaturalLanguageActionResolvers.ts src\shared\xenesisNaturalLanguagePlanResolvers.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts handoff.md`
+    passed; fixed formatting/import ordering in touched TS files.
+  - `npx biome check --write src\shared\xenesisNaturalLanguageCapabilityCatalog.ts src\shared\xenesisNaturalLanguageCatalog.ts src\shared\xenesisNaturalLanguageActionResolvers.ts src\shared\xenesisNaturalLanguagePlanResolvers.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --max-diagnostics 80`
+    passed after applying safe import organization fixes.
+  - `npx biome check src\shared\xenesisNaturalLanguageCapabilityCatalog.ts src\shared\xenesisNaturalLanguageCatalog.ts src\shared\xenesisNaturalLanguageActionResolvers.ts src\shared\xenesisNaturalLanguagePlanResolvers.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --max-diagnostics 80`
+    passed with no fixes applied.
+  - `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 74/74.
+  - `npm run typecheck` passed.
+  - `npm run build` passed, including typecheck; existing Vite warnings remain
+    limited to browser-externalized `hwp.js` `fs`, dynamic/static
+    `deskBridge.ts` imports, and large renderer chunks.
+  - `npm run smoke:xenesis:natural-desk-routing` passed with 144/144.
+  - `git diff --check` passed with LF-to-CRLF working-copy warnings only.
+- Next intended step:
+  - Review final diff and prepare the slice commit.
+
 ## Current Natural Plan Resolver Ownership Slice
 
 - Objective: continue the larger hardcoding cleanup by moving branch-level
