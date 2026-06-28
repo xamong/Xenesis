@@ -21,6 +21,7 @@ import {
   XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES,
   XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES,
+  XENESIS_NATURAL_CONNECTION_TARGET_SURFACE_SPECS,
   XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS,
   XENESIS_NATURAL_DESK_ACTION_ARGS,
   XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS,
@@ -62,6 +63,7 @@ import {
   XENESIS_NATURAL_PROVIDER_OPEN_RULES,
   XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_PROVIDER_STATUS_RULES,
+  XENESIS_NATURAL_PROVIDER_TARGET_SURFACE_SPECS,
   XENESIS_NATURAL_REVIEW_REQUEST_PROVIDER_RULES,
   XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES,
   XENESIS_NATURAL_RUN_START_RULES,
@@ -2080,6 +2082,225 @@ test('natural Connection Center aggregate actions are generated from shared surf
   assert.doesNotMatch(
     capabilityCatalogSource,
     /XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS = \{\s*routing:/,
+  );
+});
+
+test('natural target actions are generated from shared target surface specs', () => {
+  const capabilityCatalogSource = readFileSync(
+    new URL('../../../../shared/xenesisNaturalLanguageCapabilityCatalog.ts', import.meta.url),
+    'utf8',
+  );
+  const assertProviderTargetSurfaces = (input: {
+    specs: readonly {
+      key: string;
+      open?: { path: string; idPrefix: string; rules?: readonly unknown[] };
+      status?: { path: string; idPrefix: string; rules?: readonly unknown[] };
+    }[];
+    openDescriptors: Record<string, { path: string; idFor: (id: string, label: string) => string }>;
+    openRules: readonly { action: { path: string }; argsKind: string; fallback?: boolean }[];
+    statusDescriptors: Record<string, { path: string; idFor: (id: string, label: string) => string }>;
+    statusRules: readonly { action: { path: string }; argsKind: string; fallback?: boolean }[];
+  }) => {
+    const openSpecs = input.specs.filter((spec) => spec.open);
+    const statusSpecs = input.specs.filter((spec) => spec.status);
+    const openRuleSpecs = openSpecs
+      .flatMap((spec, specIndex) =>
+        (spec.open?.rules ?? []).map((rule, ruleIndex) => ({
+          spec,
+          rule,
+          order: (rule as { order?: number }).order ?? specIndex * 100 + ruleIndex,
+        })),
+      )
+      .sort((left, right) => left.order - right.order);
+    const statusRuleSpecs = statusSpecs
+      .flatMap((spec, specIndex) =>
+        (spec.status?.rules ?? []).map((rule, ruleIndex) => ({
+          spec,
+          rule,
+          order: (rule as { order?: number }).order ?? specIndex * 100 + ruleIndex,
+        })),
+      )
+      .sort((left, right) => left.order - right.order);
+
+    assert.deepEqual(
+      Object.keys(input.openDescriptors),
+      openSpecs.map((spec) => spec.key),
+      'provider open keys',
+    );
+    assert.deepEqual(
+      Object.keys(input.statusDescriptors),
+      statusSpecs.map((spec) => spec.key),
+      'provider status keys',
+    );
+    assert.deepEqual(
+      Object.values(input.openDescriptors).map((descriptor) => descriptor.path),
+      openSpecs.map((spec) => spec.open?.path),
+      'provider open descriptor paths',
+    );
+    assert.deepEqual(
+      Object.values(input.statusDescriptors).map((descriptor) => descriptor.path),
+      statusSpecs.map((spec) => spec.status?.path),
+      'provider status descriptor paths',
+    );
+
+    for (const spec of openSpecs) {
+      assert.equal(
+        input.openDescriptors[spec.key]?.idFor('codex-app-server', 'Codex app-server'),
+        `${spec.open?.idPrefix}-codex-app-server`,
+      );
+    }
+    for (const spec of statusSpecs) {
+      assert.equal(input.statusDescriptors[spec.key]?.idFor('auto', 'auto'), `${spec.status?.idPrefix}-auto`);
+    }
+
+    assert.deepEqual(
+      input.openRules.map((rule) => ({
+        path: rule.action.path,
+        argsKind: rule.argsKind,
+        fallback: rule.fallback === true,
+      })),
+      openRuleSpecs.map(({ spec, rule }) => ({
+        path: spec.open?.path,
+        argsKind: (rule as { argsKind: string }).argsKind,
+        fallback: (rule as { fallback?: boolean }).fallback === true,
+      })),
+      'provider open rules',
+    );
+    assert.deepEqual(
+      input.statusRules.map((rule) => ({
+        path: rule.action.path,
+        argsKind: rule.argsKind,
+        fallback: rule.fallback === true,
+      })),
+      statusRuleSpecs.map(({ spec, rule }) => ({
+        path: spec.status?.path,
+        argsKind: (rule as { argsKind: string }).argsKind,
+        fallback: (rule as { fallback?: boolean }).fallback === true,
+      })),
+      'provider status rules',
+    );
+  };
+  const assertConnectionTargetSurfaces = (input: {
+    specs: readonly {
+      key: string;
+      open?: { path: string; idPrefix: string; rules?: readonly unknown[] };
+      status?: { path: string; idPrefix: string; rules?: readonly unknown[] };
+    }[];
+    openDescriptors: Record<string, { path: string; idFor: (id: string, label: string) => string }>;
+    openRules: readonly { action: { path: string }; targetScope: string; argsKind: string; fallback?: boolean }[];
+    statusDescriptors: Record<string, { path: string; idFor: (id: string, label: string) => string }>;
+    statusRules: readonly { action: { path: string }; targetScope: string; argsKind: string; fallback?: boolean }[];
+  }) => {
+    const openSpecs = input.specs.filter((spec) => spec.open);
+    const statusSpecs = input.specs.filter((spec) => spec.status);
+    const openRuleSpecs = openSpecs
+      .flatMap((spec, specIndex) =>
+        (spec.open?.rules ?? []).map((rule, ruleIndex) => ({
+          spec,
+          rule,
+          order: (rule as { order?: number }).order ?? specIndex * 100 + ruleIndex,
+        })),
+      )
+      .sort((left, right) => left.order - right.order);
+    const statusRuleSpecs = statusSpecs
+      .flatMap((spec, specIndex) =>
+        (spec.status?.rules ?? []).map((rule, ruleIndex) => ({
+          spec,
+          rule,
+          order: (rule as { order?: number }).order ?? specIndex * 100 + ruleIndex,
+        })),
+      )
+      .sort((left, right) => left.order - right.order);
+
+    assert.deepEqual(
+      Object.keys(input.openDescriptors),
+      openSpecs.map((spec) => spec.key),
+      'connection open keys',
+    );
+    assert.deepEqual(
+      Object.keys(input.statusDescriptors),
+      statusSpecs.map((spec) => spec.key),
+      'connection status keys',
+    );
+    assert.deepEqual(
+      Object.values(input.openDescriptors).map((descriptor) => descriptor.path),
+      openSpecs.map((spec) => spec.open?.path),
+      'connection open descriptor paths',
+    );
+    assert.deepEqual(
+      Object.values(input.statusDescriptors).map((descriptor) => descriptor.path),
+      statusSpecs.map((spec) => spec.status?.path),
+      'connection status descriptor paths',
+    );
+
+    for (const spec of openSpecs) {
+      assert.equal(input.openDescriptors[spec.key]?.idFor('notion', 'Notion'), `${spec.open?.idPrefix}-notion`);
+    }
+    for (const spec of statusSpecs) {
+      assert.equal(
+        input.statusDescriptors[spec.key]?.idFor('telegram', 'Telegram'),
+        `${spec.status?.idPrefix}-telegram`,
+      );
+    }
+
+    assert.deepEqual(
+      input.openRules.map((rule) => ({
+        targetScope: rule.targetScope,
+        argsKind: rule.argsKind,
+        path: rule.action.path,
+        fallback: rule.fallback === true,
+      })),
+      openRuleSpecs.map(({ spec, rule }) => ({
+        targetScope: (rule as { targetScope: string }).targetScope,
+        argsKind: (rule as { argsKind: string }).argsKind,
+        path: spec.open?.path,
+        fallback: (rule as { fallback?: boolean }).fallback === true,
+      })),
+      'connection open rules',
+    );
+    assert.deepEqual(
+      input.statusRules.map((rule) => ({
+        targetScope: rule.targetScope,
+        argsKind: rule.argsKind,
+        path: rule.action.path,
+        fallback: rule.fallback === true,
+      })),
+      statusRuleSpecs.map(({ spec, rule }) => ({
+        targetScope: (rule as { targetScope: string }).targetScope,
+        argsKind: (rule as { argsKind: string }).argsKind,
+        path: spec.status?.path,
+        fallback: (rule as { fallback?: boolean }).fallback === true,
+      })),
+      'connection status rules',
+    );
+  };
+
+  assertProviderTargetSurfaces({
+    specs: XENESIS_NATURAL_PROVIDER_TARGET_SURFACE_SPECS,
+    openDescriptors: XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS,
+    openRules: XENESIS_NATURAL_PROVIDER_OPEN_RULES,
+    statusDescriptors: XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS,
+    statusRules: XENESIS_NATURAL_PROVIDER_STATUS_RULES,
+  });
+  assertConnectionTargetSurfaces({
+    specs: XENESIS_NATURAL_CONNECTION_TARGET_SURFACE_SPECS,
+    openDescriptors: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS,
+    openRules: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES,
+    statusDescriptors: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS,
+    statusRules: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES,
+  });
+
+  assert.match(capabilityCatalogSource, /function buildXenesisNaturalTargetActionDescriptors/);
+  assert.match(capabilityCatalogSource, /function buildXenesisNaturalProviderTargetRules/);
+  assert.match(capabilityCatalogSource, /function buildXenesisNaturalConnectionTargetRules/);
+  assert.doesNotMatch(capabilityCatalogSource, /XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS = \{\s*routing:/);
+  assert.doesNotMatch(
+    capabilityCatalogSource,
+    /XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS = \{\s*diagnostics:/,
+  );
+  assert.doesNotMatch(
+    capabilityCatalogSource,
+    /XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS = \{\s*diagnostics:/,
   );
 });
 

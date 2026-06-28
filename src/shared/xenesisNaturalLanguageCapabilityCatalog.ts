@@ -1597,350 +1597,755 @@ export const XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_RULES = buildXenesisNatur
   'status',
 );
 
-export const XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS = {
-  routing: {
-    path: 'xd.xenesis.providers.routing.open',
-    idFor: (id: string, _label: string) => `natural-xenesis-provider-routing-open-${id}`,
-    reasonFor: (_id: string, label: string) => `Open ${label} provider routing from natural language request.`,
-  },
-  profileDrafts: {
-    path: 'xd.xenesis.providers.profileDrafts.open',
-    idFor: (id: string, _label: string) => `natural-xenesis-provider-profile-draft-open-${id}`,
-    reasonFor: (_id: string, label: string) => `Open ${label} provider profile draft from natural language request.`,
-  },
-  views: {
-    path: 'xd.xenesis.providers.views.open',
-    idFor: (id: string, _label: string) => `natural-xenesis-provider-view-open-${id}`,
-    reasonFor: (_id: string, label: string) => `Open ${label} provider view from natural language request.`,
-  },
-  setup: {
-    path: 'xd.xenesis.providers.setup.open',
-    idFor: (id: string, _label: string) => `natural-xenesis-provider-setup-open-${id}`,
-    reasonFor: (_id: string, label: string) => `Open ${label} provider setup from natural language request.`,
-  },
-  setupPlans: {
-    path: 'xd.xenesis.providers.setupPlans.open',
-    idFor: (id: string, _label: string) => `natural-xenesis-provider-setup-plan-open-${id}`,
-    reasonFor: (_id: string, label: string) => `Open ${label} provider setup plan from natural language request.`,
-  },
-} as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
+type XenesisNaturalTargetActionMode = 'open' | 'status';
+type XenesisNaturalProviderTargetRuleSpec = Omit<XenesisNaturalProviderActionRule, 'action'> & { order?: number };
+type XenesisNaturalConnectionTargetRuleSpec = Omit<XenesisNaturalConnectionTargetActionRule, 'action'> & {
+  order?: number;
+};
 
-export const XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS = {
-  routing: {
-    path: 'xd.xenesis.providers.routing.status',
-    idFor: (id: string, _label: string) => `natural-xenesis-provider-routing-status-${id}`,
-    reasonFor: (_id: string, label: string) => `Read ${label} provider routing status from natural language request.`,
-  },
-  views: {
-    path: 'xd.xenesis.providers.views.status',
-    idFor: (id: string, _label: string) => `natural-xenesis-provider-view-status-${id}`,
-    reasonFor: (_id: string, label: string) => `Read ${label} provider view status from natural language request.`,
-  },
-  profileDrafts: {
-    path: 'xd.xenesis.providers.profileDrafts.status',
-    idFor: (id: string, _label: string) => `natural-xenesis-provider-profile-draft-status-${id}`,
-    reasonFor: (_id: string, label: string) =>
-      `Read ${label} provider profile draft status from natural language request.`,
-  },
-  setup: {
-    path: 'xd.xenesis.providers.setup.status',
-    idFor: (id: string, _label: string) => `natural-xenesis-provider-setup-status-${id}`,
-    reasonFor: (_id: string, label: string) => `Read ${label} provider setup status from natural language request.`,
-  },
-  setupPlans: {
-    path: 'xd.xenesis.providers.setupPlans.status',
-    idFor: (id: string, _label: string) => `natural-xenesis-provider-setup-plan-status-${id}`,
-    reasonFor: (_id: string, label: string) =>
-      `Read ${label} provider setup plan status from natural language request.`,
-  },
-} as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
+interface XenesisNaturalTargetActionSpec<TRule> {
+  path: string;
+  idPrefix: string;
+  reasonFor: (id: string, label: string) => string;
+  rules?: readonly TRule[];
+}
 
-export const XENESIS_NATURAL_PROVIDER_STATUS_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS.routing,
-    argsKind: 'provider',
-  },
-  {
-    contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS.views,
-    argsKind: 'provider',
-  },
-  {
-    contextWords: XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS.profileDrafts,
-    argsKind: 'provider',
-  },
-  {
-    contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS.setupPlans,
-    argsKind: 'provider',
-  },
-  {
-    contextWords: [],
-    action: XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS.setup,
-    argsKind: 'provider',
-    fallback: true,
-  },
-] as const satisfies readonly XenesisNaturalProviderActionRule[];
+interface XenesisNaturalProviderTargetSurfaceSpec {
+  key: string;
+  open?: XenesisNaturalTargetActionSpec<XenesisNaturalProviderTargetRuleSpec>;
+  status?: XenesisNaturalTargetActionSpec<XenesisNaturalProviderTargetRuleSpec>;
+}
 
-export const XENESIS_NATURAL_PROVIDER_OPEN_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS.routing,
-    argsKind: 'providerVisible',
-  },
-  {
-    contextWords: XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS.profileDrafts,
-    argsKind: 'providerVisible',
-  },
-  {
-    contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS.views,
-    argsKind: 'providerVisible',
-  },
-  {
-    contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS.setupPlans,
-    argsKind: 'providerVisible',
-  },
-  {
-    contextWords: XENESIS_NATURAL_SETUP_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS.setup,
-    argsKind: 'providerVisible',
-  },
-] as const satisfies readonly XenesisNaturalProviderActionRule[];
+interface XenesisNaturalConnectionTargetSurfaceSpec {
+  key: string;
+  open?: XenesisNaturalTargetActionSpec<XenesisNaturalConnectionTargetRuleSpec>;
+  status?: XenesisNaturalTargetActionSpec<XenesisNaturalConnectionTargetRuleSpec>;
+}
 
-export const XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS = {
-  diagnostics: {
-    path: 'xd.xenesis.connections.diagnostics.status',
-    idFor: (id: string, _label: string) => `natural-xenesis-connection-diagnostics-status-${id}`,
-    reasonFor: (_id: string, label: string) => `Read ${label} connection diagnostics from natural language request.`,
-  },
-  setupRequest: {
-    path: 'xd.xenesis.connections.setupRequests.status',
-    idFor: (id: string, _label: string) => `natural-xenesis-connection-setup-request-status-${id}`,
-    reasonFor: (_id: string, label: string) =>
-      `Read ${label} connection setup request status from natural language request.`,
-  },
-  toolMcpInstallDraft: {
-    path: 'xd.xenesis.tools.mcpInstallDrafts.status',
-    idFor: (id: string, _label: string) => `natural-xenesis-tool-mcp-install-draft-status-${id}`,
-    reasonFor: (_id: string, label: string) => `Read ${label} MCP install draft status from natural language request.`,
-  },
-  toolOauthDraft: {
-    path: 'xd.xenesis.tools.oauthDrafts.status',
-    idFor: (id: string, _label: string) => `natural-xenesis-tool-oauth-draft-status-${id}`,
-    reasonFor: (_id: string, label: string) => `Read ${label} OAuth draft status from natural language request.`,
-  },
-  toolOauthSetupPacket: {
-    path: 'xd.xenesis.tools.oauthDrafts.setupPacket',
-    idFor: (id: string, _label: string) => `natural-xenesis-tool-oauth-setup-packet-${id}`,
-    reasonFor: (_id: string, label: string) => `Read ${label} OAuth setup packet from natural language request.`,
-  },
-  toolUserStory: {
-    path: 'xd.xenesis.tools.userStories.status',
-    idFor: (id: string, _label: string) => `natural-xenesis-tool-user-story-status-${id}`,
-    reasonFor: (_id: string, label: string) => `Read ${label} tool user story status from natural language request.`,
-  },
-  toolActionPolicy: {
-    path: 'xd.xenesis.tools.actions.status',
-    idFor: (id: string, _label: string) => `natural-xenesis-tool-action-policy-status-${id}`,
-    reasonFor: (_id: string, label: string) => `Read ${label} tool action policy status from natural language request.`,
-  },
-  toolInstallPlan: {
-    path: 'xd.xenesis.tools.installPlans.status',
-    idFor: (id: string, _label: string) => `natural-xenesis-tool-install-plan-status-${id}`,
-    reasonFor: (_id: string, label: string) => `Read ${label} tool install plan status from natural language request.`,
-  },
-  toolSetupPlan: {
-    path: 'xd.xenesis.tools.setupPlans.status',
-    idFor: (id: string, _label: string) => `natural-xenesis-tool-setup-plan-status-${id}`,
-    reasonFor: (_id: string, label: string) => `Read ${label} tool setup plan status from natural language request.`,
-  },
-  toolSetup: {
-    path: 'xd.xenesis.tools.setup.status',
-    idFor: (id: string, _label: string) => `natural-xenesis-tool-setup-status-${id}`,
-    reasonFor: (_id: string, label: string) => `Read ${label} tool setup status from natural language request.`,
-  },
-  toolConnector: {
-    path: 'xd.xenesis.tools.connectors.status',
-    idFor: (id: string, _label: string) => `natural-xenesis-tool-connector-status-${id}`,
-    reasonFor: (_id: string, label: string) => `Read ${label} tool connector status from natural language request.`,
-  },
-  toolView: {
-    path: 'xd.xenesis.tools.views.status',
-    idFor: (id: string, _label: string) => `natural-xenesis-tool-view-status-${id}`,
-    reasonFor: (_id: string, label: string) => `Read ${label} tool view status from natural language request.`,
-  },
-  channelRouting: {
-    path: 'xd.xenesis.channels.routing.status',
-    idFor: (id: string, _label: string) => `natural-xenesis-channel-routing-status-${id}`,
-    reasonFor: (_id: string, label: string) => `Read ${label} channel routing status from natural language request.`,
-  },
-  channelSafety: {
-    path: 'xd.xenesis.channels.safety.status',
-    idFor: (id: string, _label: string) => `natural-xenesis-channel-safety-status-${id}`,
-    reasonFor: (_id: string, label: string) => `Read ${label} channel safety status from natural language request.`,
-  },
-  channelAccessGroups: {
-    path: 'xd.xenesis.channels.accessGroups.status',
-    idFor: (id: string, _label: string) => `natural-xenesis-channel-access-groups-status-${id}`,
-    reasonFor: (_id: string, label: string) =>
-      `Read ${label} channel access groups status from natural language request.`,
-  },
-  channelPairing: {
-    path: 'xd.xenesis.channels.pairing.status',
-    idFor: (id: string, _label: string) => `natural-xenesis-channel-pairing-status-${id}`,
-    reasonFor: (_id: string, label: string) => `Read ${label} channel pairing status from natural language request.`,
-  },
-  channelUserStory: {
-    path: 'xd.xenesis.channels.userStories.status',
-    idFor: (id: string, _label: string) => `natural-xenesis-channel-user-story-status-${id}`,
-    reasonFor: (_id: string, label: string) => `Read ${label} channel user story status from natural language request.`,
-  },
-  channelSetupPlan: {
-    path: 'xd.xenesis.channels.setupPlans.status',
-    idFor: (id: string, _label: string) => `natural-xenesis-channel-setup-plan-status-${id}`,
-    reasonFor: (_id: string, label: string) => `Read ${label} channel setup plan status from natural language request.`,
-  },
-  channelProfileDraft: {
-    path: 'xd.xenesis.channels.profileDrafts.status',
-    idFor: (id: string, _label: string) => `natural-xenesis-channel-profile-draft-status-${id}`,
-    reasonFor: (_id: string, label: string) =>
-      `Read ${label} channel profile draft status from natural language request.`,
-  },
-  messengerView: {
-    path: 'xd.xenesis.messengers.views.status',
-    idFor: (id: string, _label: string) => `natural-xenesis-messenger-view-status-${id}`,
-    reasonFor: (_id: string, label: string) => `Read ${label} messenger view status from natural language request.`,
-  },
-} as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
+function buildXenesisNaturalTargetActionDescriptors(
+  specs: readonly {
+    key: string;
+    open?: XenesisNaturalTargetActionSpec<unknown>;
+    status?: XenesisNaturalTargetActionSpec<unknown>;
+  }[],
+  mode: XenesisNaturalTargetActionMode,
+): Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>> {
+  return Object.fromEntries(
+    specs.flatMap((spec) => {
+      const action = spec[mode];
+      return action
+        ? [
+            [
+              spec.key,
+              {
+                path: action.path,
+                idFor: (id: string, _label: string) => `${action.idPrefix}-${id}`,
+                reasonFor: action.reasonFor,
+              },
+            ],
+          ]
+        : [];
+    }),
+  );
+}
 
-export const XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES = [
+function buildXenesisNaturalProviderTargetRules(
+  specs: readonly XenesisNaturalProviderTargetSurfaceSpec[],
+  mode: XenesisNaturalTargetActionMode,
+): XenesisNaturalProviderActionRule[] {
+  const descriptors = buildXenesisNaturalTargetActionDescriptors(specs, mode);
+  return specs
+    .flatMap((spec, specIndex) => {
+      const action = spec[mode];
+      const descriptor = descriptors[spec.key];
+      if (!action || !descriptor) return [];
+      return (action.rules ?? []).map((rule, ruleIndex) => ({
+        descriptor,
+        order: rule.order ?? specIndex * 100 + ruleIndex,
+        rule,
+      }));
+    })
+    .sort((left, right) => left.order - right.order)
+    .map(({ descriptor, rule }) => {
+      const { order: _order, ...ruleInput } = rule;
+      return { ...ruleInput, action: descriptor };
+    });
+}
+
+function buildXenesisNaturalConnectionTargetRules(
+  specs: readonly XenesisNaturalConnectionTargetSurfaceSpec[],
+  mode: XenesisNaturalTargetActionMode,
+): XenesisNaturalConnectionTargetActionRule[] {
+  const descriptors = buildXenesisNaturalTargetActionDescriptors(specs, mode);
+  return specs
+    .flatMap((spec, specIndex) => {
+      const action = spec[mode];
+      const descriptor = descriptors[spec.key];
+      if (!action || !descriptor) return [];
+      return (action.rules ?? []).map((rule, ruleIndex) => ({
+        descriptor,
+        order: rule.order ?? specIndex * 100 + ruleIndex,
+        rule,
+      }));
+    })
+    .sort((left, right) => left.order - right.order)
+    .map(({ descriptor, rule }) => {
+      const { order: _order, ...ruleInput } = rule;
+      return { ...ruleInput, action: descriptor };
+    });
+}
+
+export const XENESIS_NATURAL_PROVIDER_TARGET_SURFACE_SPECS = [
   {
-    targetScope: 'any',
-    contextWords: XENESIS_NATURAL_CONNECTION_DIAGNOSTIC_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.diagnostics,
-    argsKind: 'targetId',
+    key: 'routing',
+    open: {
+      path: 'xd.xenesis.providers.routing.open',
+      idPrefix: 'natural-xenesis-provider-routing-open',
+      reasonFor: (_id: string, label: string) => `Open ${label} provider routing from natural language request.`,
+      rules: [{ contextWords: XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS, argsKind: 'providerVisible', order: 0 }],
+    },
+    status: {
+      path: 'xd.xenesis.providers.routing.status',
+      idPrefix: 'natural-xenesis-provider-routing-status',
+      reasonFor: (_id: string, label: string) => `Read ${label} provider routing status from natural language request.`,
+      rules: [{ contextWords: XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS, argsKind: 'provider', order: 0 }],
+    },
   },
   {
-    targetScope: 'any',
-    contextWords: XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.setupRequest,
-    argsKind: 'targetId',
+    key: 'profileDrafts',
+    open: {
+      path: 'xd.xenesis.providers.profileDrafts.open',
+      idPrefix: 'natural-xenesis-provider-profile-draft-open',
+      reasonFor: (_id: string, label: string) => `Open ${label} provider profile draft from natural language request.`,
+      rules: [{ contextWords: XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS, argsKind: 'providerVisible', order: 1 }],
+    },
+    status: {
+      path: 'xd.xenesis.providers.profileDrafts.status',
+      idPrefix: 'natural-xenesis-provider-profile-draft-status',
+      reasonFor: (_id: string, label: string) =>
+        `Read ${label} provider profile draft status from natural language request.`,
+      rules: [{ contextWords: XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS, argsKind: 'provider', order: 2 }],
+    },
   },
   {
-    targetScope: 'tool',
-    contextWords: XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.toolMcpInstallDraft,
-    argsKind: 'tool',
+    key: 'views',
+    open: {
+      path: 'xd.xenesis.providers.views.open',
+      idPrefix: 'natural-xenesis-provider-view-open',
+      reasonFor: (_id: string, label: string) => `Open ${label} provider view from natural language request.`,
+      rules: [{ contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS, argsKind: 'providerVisible', order: 2 }],
+    },
+    status: {
+      path: 'xd.xenesis.providers.views.status',
+      idPrefix: 'natural-xenesis-provider-view-status',
+      reasonFor: (_id: string, label: string) => `Read ${label} provider view status from natural language request.`,
+      rules: [{ contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS, argsKind: 'provider', order: 1 }],
+    },
   },
   {
-    targetScope: 'planned-google-tool',
-    contextWords: XENESIS_NATURAL_OAUTH_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.toolOauthDraft,
-    argsKind: 'targetId',
+    key: 'setupPlans',
+    open: {
+      path: 'xd.xenesis.providers.setupPlans.open',
+      idPrefix: 'natural-xenesis-provider-setup-plan-open',
+      reasonFor: (_id: string, label: string) => `Open ${label} provider setup plan from natural language request.`,
+      rules: [{ contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS, argsKind: 'providerVisible', order: 3 }],
+    },
+    status: {
+      path: 'xd.xenesis.providers.setupPlans.status',
+      idPrefix: 'natural-xenesis-provider-setup-plan-status',
+      reasonFor: (_id: string, label: string) =>
+        `Read ${label} provider setup plan status from natural language request.`,
+      rules: [{ contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS, argsKind: 'provider', order: 3 }],
+    },
   },
   {
-    targetScope: 'tool',
-    contextWords: XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.toolUserStory,
-    argsKind: 'tool',
+    key: 'setup',
+    open: {
+      path: 'xd.xenesis.providers.setup.open',
+      idPrefix: 'natural-xenesis-provider-setup-open',
+      reasonFor: (_id: string, label: string) => `Open ${label} provider setup from natural language request.`,
+      rules: [{ contextWords: XENESIS_NATURAL_SETUP_CONTEXT_WORDS, argsKind: 'providerVisible', order: 4 }],
+    },
+    status: {
+      path: 'xd.xenesis.providers.setup.status',
+      idPrefix: 'natural-xenesis-provider-setup-status',
+      reasonFor: (_id: string, label: string) => `Read ${label} provider setup status from natural language request.`,
+      rules: [{ contextWords: [], argsKind: 'provider', fallback: true, order: 4 }],
+    },
+  },
+] as const satisfies readonly XenesisNaturalProviderTargetSurfaceSpec[];
+
+export const XENESIS_NATURAL_CONNECTION_TARGET_SURFACE_SPECS = [
+  {
+    key: 'diagnostics',
+    open: {
+      path: 'xd.xenesis.connections.diagnostics.open',
+      idPrefix: 'natural-xenesis-connection-diagnostics-open',
+      reasonFor: (_id: string, label: string) => `Open ${label} connection diagnostics from natural language request.`,
+      rules: [
+        {
+          targetScope: 'any',
+          contextWords: XENESIS_NATURAL_CONNECTION_DIAGNOSTIC_CONTEXT_WORDS,
+          argsKind: 'targetIdVisible',
+          order: 0,
+        },
+      ],
+    },
+    status: {
+      path: 'xd.xenesis.connections.diagnostics.status',
+      idPrefix: 'natural-xenesis-connection-diagnostics-status',
+      reasonFor: (_id: string, label: string) => `Read ${label} connection diagnostics from natural language request.`,
+      rules: [
+        {
+          targetScope: 'any',
+          contextWords: XENESIS_NATURAL_CONNECTION_DIAGNOSTIC_CONTEXT_WORDS,
+          argsKind: 'targetId',
+          order: 0,
+        },
+        { targetScope: 'any', contextWords: [], argsKind: 'targetId', fallback: true, order: 19 },
+      ],
+    },
   },
   {
-    targetScope: 'tool',
-    contextWords: XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.toolActionPolicy,
-    argsKind: 'tool',
+    key: 'setupRequest',
+    open: {
+      path: 'xd.xenesis.connections.setupRequests.open',
+      idPrefix: 'natural-xenesis-connection-setup-request-open',
+      reasonFor: (_id: string, label: string) =>
+        `Open ${label} connection setup request from natural language request.`,
+      rules: [
+        {
+          targetScope: 'any',
+          contextWords: XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CONTEXT_WORDS,
+          argsKind: 'targetIdVisible',
+          order: 1,
+        },
+      ],
+    },
+    status: {
+      path: 'xd.xenesis.connections.setupRequests.status',
+      idPrefix: 'natural-xenesis-connection-setup-request-status',
+      reasonFor: (_id: string, label: string) =>
+        `Read ${label} connection setup request status from natural language request.`,
+      rules: [
+        {
+          targetScope: 'any',
+          contextWords: XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CONTEXT_WORDS,
+          argsKind: 'targetId',
+          order: 1,
+        },
+      ],
+    },
   },
   {
-    targetScope: 'tool',
-    contextWords: XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.toolInstallPlan,
-    argsKind: 'tool',
+    key: 'toolMcpInstallDraft',
+    open: {
+      path: 'xd.xenesis.tools.mcpInstallDrafts.open',
+      idPrefix: 'natural-xenesis-tool-mcp-install-draft-open',
+      reasonFor: (_id: string, label: string) => `Open ${label} MCP install draft from natural language request.`,
+      rules: [
+        {
+          targetScope: 'tool',
+          contextWords: XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS,
+          argsKind: 'targetIdVisible',
+          order: 3,
+        },
+      ],
+    },
+    status: {
+      path: 'xd.xenesis.tools.mcpInstallDrafts.status',
+      idPrefix: 'natural-xenesis-tool-mcp-install-draft-status',
+      reasonFor: (_id: string, label: string) =>
+        `Read ${label} MCP install draft status from natural language request.`,
+      rules: [
+        { targetScope: 'tool', contextWords: XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS, argsKind: 'tool', order: 2 },
+      ],
+    },
   },
   {
-    targetScope: 'tool',
-    contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.toolSetupPlan,
-    argsKind: 'targetId',
+    key: 'toolOauthDraft',
+    open: {
+      path: 'xd.xenesis.tools.oauthDrafts.open',
+      idPrefix: 'natural-xenesis-tool-oauth-draft-open',
+      reasonFor: (_id: string, label: string) => `Open ${label} OAuth draft from natural language request.`,
+      rules: [
+        {
+          targetScope: 'planned-google-tool',
+          contextWords: XENESIS_NATURAL_OAUTH_DRAFT_CONTEXT_WORDS,
+          argsKind: 'targetIdVisible',
+          order: 2,
+        },
+      ],
+    },
+    status: {
+      path: 'xd.xenesis.tools.oauthDrafts.status',
+      idPrefix: 'natural-xenesis-tool-oauth-draft-status',
+      reasonFor: (_id: string, label: string) => `Read ${label} OAuth draft status from natural language request.`,
+      rules: [
+        {
+          targetScope: 'planned-google-tool',
+          contextWords: XENESIS_NATURAL_OAUTH_CONTEXT_WORDS,
+          argsKind: 'targetId',
+          order: 3,
+        },
+      ],
+    },
   },
   {
-    targetScope: 'tool',
-    contextWords: XENESIS_NATURAL_SETUP_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.toolSetup,
-    argsKind: 'targetId',
+    key: 'toolOauthSetupPacket',
+    status: {
+      path: 'xd.xenesis.tools.oauthDrafts.setupPacket',
+      idPrefix: 'natural-xenesis-tool-oauth-setup-packet',
+      reasonFor: (_id: string, label: string) => `Read ${label} OAuth setup packet from natural language request.`,
+    },
   },
   {
-    targetScope: 'tool',
-    contextWords: XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.toolConnector,
-    argsKind: 'tool',
+    key: 'toolUserStory',
+    open: {
+      path: 'xd.xenesis.tools.userStories.open',
+      idPrefix: 'natural-xenesis-tool-user-story-open',
+      reasonFor: (_id: string, label: string) => `Open ${label} tool user story from natural language request.`,
+      rules: [
+        {
+          targetScope: 'tool',
+          contextWords: XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
+          argsKind: 'targetIdVisible',
+          order: 4,
+        },
+      ],
+    },
+    status: {
+      path: 'xd.xenesis.tools.userStories.status',
+      idPrefix: 'natural-xenesis-tool-user-story-status',
+      reasonFor: (_id: string, label: string) => `Read ${label} tool user story status from natural language request.`,
+      rules: [
+        { targetScope: 'tool', contextWords: XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS, argsKind: 'tool', order: 4 },
+      ],
+    },
   },
   {
-    targetScope: 'tool',
-    contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.toolView,
-    argsKind: 'targetId',
+    key: 'toolActionPolicy',
+    open: {
+      path: 'xd.xenesis.tools.actions.open',
+      idPrefix: 'natural-xenesis-tool-action-policy-open',
+      reasonFor: (_id: string, label: string) => `Open ${label} tool action policy from natural language request.`,
+      rules: [
+        {
+          targetScope: 'tool',
+          contextWords: XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS,
+          argsKind: 'targetIdVisible',
+          order: 5,
+        },
+      ],
+    },
+    status: {
+      path: 'xd.xenesis.tools.actions.status',
+      idPrefix: 'natural-xenesis-tool-action-policy-status',
+      reasonFor: (_id: string, label: string) =>
+        `Read ${label} tool action policy status from natural language request.`,
+      rules: [
+        { targetScope: 'tool', contextWords: XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS, argsKind: 'tool', order: 5 },
+      ],
+    },
   },
   {
-    targetScope: 'messenger',
-    contextWords: XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.channelRouting,
-    argsKind: 'channel',
+    key: 'toolInstallPlan',
+    open: {
+      path: 'xd.xenesis.tools.installPlans.open',
+      idPrefix: 'natural-xenesis-tool-install-plan-open',
+      reasonFor: (_id: string, label: string) => `Open ${label} tool install plan from natural language request.`,
+      rules: [
+        {
+          targetScope: 'tool',
+          contextWords: XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS,
+          argsKind: 'targetIdVisible',
+          order: 6,
+        },
+      ],
+    },
+    status: {
+      path: 'xd.xenesis.tools.installPlans.status',
+      idPrefix: 'natural-xenesis-tool-install-plan-status',
+      reasonFor: (_id: string, label: string) =>
+        `Read ${label} tool install plan status from natural language request.`,
+      rules: [
+        { targetScope: 'tool', contextWords: XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS, argsKind: 'tool', order: 6 },
+      ],
+    },
   },
   {
-    targetScope: 'messenger',
-    contextWords: XENESIS_NATURAL_SAFETY_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.channelSafety,
-    argsKind: 'channel',
+    key: 'toolSetupPlan',
+    open: {
+      path: 'xd.xenesis.tools.setupPlans.open',
+      idPrefix: 'natural-xenesis-tool-setup-plan-open',
+      reasonFor: (_id: string, label: string) => `Open ${label} tool setup plan from natural language request.`,
+      rules: [
+        {
+          targetScope: 'tool',
+          contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
+          argsKind: 'targetIdVisible',
+          order: 7,
+        },
+      ],
+    },
+    status: {
+      path: 'xd.xenesis.tools.setupPlans.status',
+      idPrefix: 'natural-xenesis-tool-setup-plan-status',
+      reasonFor: (_id: string, label: string) => `Read ${label} tool setup plan status from natural language request.`,
+      rules: [
+        { targetScope: 'tool', contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS, argsKind: 'targetId', order: 7 },
+      ],
+    },
   },
   {
-    targetScope: 'messenger',
-    contextWords: XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.channelAccessGroups,
-    argsKind: 'channel',
+    key: 'toolSetup',
+    open: {
+      path: 'xd.xenesis.tools.setup.open',
+      idPrefix: 'natural-xenesis-tool-setup-open',
+      reasonFor: (_id: string, label: string) => `Open ${label} tool setup from natural language request.`,
+      rules: [
+        {
+          targetScope: 'tool',
+          contextWords: XENESIS_NATURAL_SETUP_CONTEXT_WORDS,
+          argsKind: 'targetIdVisible',
+          order: 9,
+        },
+      ],
+    },
+    status: {
+      path: 'xd.xenesis.tools.setup.status',
+      idPrefix: 'natural-xenesis-tool-setup-status',
+      reasonFor: (_id: string, label: string) => `Read ${label} tool setup status from natural language request.`,
+      rules: [
+        { targetScope: 'tool', contextWords: XENESIS_NATURAL_SETUP_CONTEXT_WORDS, argsKind: 'targetId', order: 8 },
+      ],
+    },
   },
   {
-    targetScope: 'messenger',
-    contextWords: XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.channelPairing,
-    argsKind: 'channel',
+    key: 'toolConnector',
+    open: {
+      path: 'xd.xenesis.tools.connectors.open',
+      idPrefix: 'natural-xenesis-tool-connector-open',
+      reasonFor: (_id: string, label: string) => `Open ${label} tool connector from natural language request.`,
+      rules: [
+        {
+          targetScope: 'tool',
+          contextWords: XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS,
+          argsKind: 'targetIdVisible',
+          order: 8,
+        },
+      ],
+    },
+    status: {
+      path: 'xd.xenesis.tools.connectors.status',
+      idPrefix: 'natural-xenesis-tool-connector-status',
+      reasonFor: (_id: string, label: string) => `Read ${label} tool connector status from natural language request.`,
+      rules: [
+        { targetScope: 'tool', contextWords: XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS, argsKind: 'tool', order: 9 },
+      ],
+    },
   },
   {
-    targetScope: 'messenger',
-    contextWords: XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.channelUserStory,
-    argsKind: 'targetId',
+    key: 'toolView',
+    open: {
+      path: 'xd.xenesis.tools.views.open',
+      idPrefix: 'natural-xenesis-tool-view-open',
+      reasonFor: (_id: string, label: string) => `Open ${label} tool view from natural language request.`,
+      rules: [
+        {
+          targetScope: 'tool',
+          contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
+          argsKind: 'targetIdVisible',
+          order: 10,
+        },
+      ],
+    },
+    status: {
+      path: 'xd.xenesis.tools.views.status',
+      idPrefix: 'natural-xenesis-tool-view-status',
+      reasonFor: (_id: string, label: string) => `Read ${label} tool view status from natural language request.`,
+      rules: [
+        {
+          targetScope: 'tool',
+          contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
+          argsKind: 'targetId',
+          order: 10,
+        },
+      ],
+    },
   },
   {
-    targetScope: 'messenger',
-    contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.channelSetupPlan,
-    argsKind: 'targetId',
+    key: 'channelRouting',
+    open: {
+      path: 'xd.xenesis.channels.routing.open',
+      idPrefix: 'natural-xenesis-channel-routing-open',
+      reasonFor: (_id: string, label: string) => `Open ${label} channel routing from natural language request.`,
+      rules: [
+        {
+          targetScope: 'messenger',
+          contextWords: XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS,
+          argsKind: 'channelVisible',
+          order: 14,
+        },
+      ],
+    },
+    status: {
+      path: 'xd.xenesis.channels.routing.status',
+      idPrefix: 'natural-xenesis-channel-routing-status',
+      reasonFor: (_id: string, label: string) => `Read ${label} channel routing status from natural language request.`,
+      rules: [
+        {
+          targetScope: 'messenger',
+          contextWords: XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS,
+          argsKind: 'channel',
+          order: 11,
+        },
+      ],
+    },
   },
   {
-    targetScope: 'messenger',
-    contextWords: XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.channelProfileDraft,
-    argsKind: 'channel',
+    key: 'channelSafety',
+    open: {
+      path: 'xd.xenesis.channels.safety.open',
+      idPrefix: 'natural-xenesis-channel-safety-open',
+      reasonFor: (_id: string, label: string) => `Open ${label} channel safety from natural language request.`,
+      rules: [
+        {
+          targetScope: 'messenger',
+          contextWords: XENESIS_NATURAL_SAFETY_CONTEXT_WORDS,
+          argsKind: 'channelVisible',
+          order: 15,
+        },
+      ],
+    },
+    status: {
+      path: 'xd.xenesis.channels.safety.status',
+      idPrefix: 'natural-xenesis-channel-safety-status',
+      reasonFor: (_id: string, label: string) => `Read ${label} channel safety status from natural language request.`,
+      rules: [
+        {
+          targetScope: 'messenger',
+          contextWords: XENESIS_NATURAL_SAFETY_CONTEXT_WORDS,
+          argsKind: 'channel',
+          order: 12,
+        },
+      ],
+    },
   },
   {
-    targetScope: 'messenger',
-    contextWords: XENESIS_NATURAL_MESSENGER_VIEW_FALLBACK_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.messengerView,
-    argsKind: 'targetId',
+    key: 'channelAccessGroups',
+    open: {
+      path: 'xd.xenesis.channels.accessGroups.open',
+      idPrefix: 'natural-xenesis-channel-access-groups-open',
+      reasonFor: (_id: string, label: string) => `Open ${label} channel access groups from natural language request.`,
+      rules: [
+        {
+          targetScope: 'messenger',
+          contextWords: XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS,
+          argsKind: 'channelVisible',
+          order: 16,
+        },
+      ],
+    },
+    status: {
+      path: 'xd.xenesis.channels.accessGroups.status',
+      idPrefix: 'natural-xenesis-channel-access-groups-status',
+      reasonFor: (_id: string, label: string) =>
+        `Read ${label} channel access groups status from natural language request.`,
+      rules: [
+        {
+          targetScope: 'messenger',
+          contextWords: XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS,
+          argsKind: 'channel',
+          order: 13,
+        },
+      ],
+    },
   },
   {
-    targetScope: 'any',
-    contextWords: [],
-    action: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.diagnostics,
-    argsKind: 'targetId',
-    fallback: true,
+    key: 'channelPairing',
+    open: {
+      path: 'xd.xenesis.channels.pairing.open',
+      idPrefix: 'natural-xenesis-channel-pairing-open',
+      reasonFor: (_id: string, label: string) => `Open ${label} channel pairing from natural language request.`,
+      rules: [
+        {
+          targetScope: 'messenger',
+          contextWords: XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS,
+          argsKind: 'channelVisible',
+          order: 17,
+        },
+      ],
+    },
+    status: {
+      path: 'xd.xenesis.channels.pairing.status',
+      idPrefix: 'natural-xenesis-channel-pairing-status',
+      reasonFor: (_id: string, label: string) => `Read ${label} channel pairing status from natural language request.`,
+      rules: [
+        {
+          targetScope: 'messenger',
+          contextWords: XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS,
+          argsKind: 'channel',
+          order: 14,
+        },
+      ],
+    },
   },
-] as const satisfies readonly XenesisNaturalConnectionTargetActionRule[];
+  {
+    key: 'channelUserStory',
+    open: {
+      path: 'xd.xenesis.channels.userStories.open',
+      idPrefix: 'natural-xenesis-channel-user-story-open',
+      reasonFor: (_id: string, label: string) => `Open ${label} channel user story from natural language request.`,
+      rules: [
+        {
+          targetScope: 'messenger',
+          contextWords: XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
+          argsKind: 'targetIdVisible',
+          order: 11,
+        },
+      ],
+    },
+    status: {
+      path: 'xd.xenesis.channels.userStories.status',
+      idPrefix: 'natural-xenesis-channel-user-story-status',
+      reasonFor: (_id: string, label: string) =>
+        `Read ${label} channel user story status from natural language request.`,
+      rules: [
+        {
+          targetScope: 'messenger',
+          contextWords: XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
+          argsKind: 'targetId',
+          order: 15,
+        },
+      ],
+    },
+  },
+  {
+    key: 'channelSetupPlan',
+    open: {
+      path: 'xd.xenesis.channels.setupPlans.open',
+      idPrefix: 'natural-xenesis-channel-setup-plan-open',
+      reasonFor: (_id: string, label: string) => `Open ${label} channel setup plan from natural language request.`,
+      rules: [
+        {
+          targetScope: 'messenger',
+          contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
+          argsKind: 'targetIdVisible',
+          order: 12,
+        },
+      ],
+    },
+    status: {
+      path: 'xd.xenesis.channels.setupPlans.status',
+      idPrefix: 'natural-xenesis-channel-setup-plan-status',
+      reasonFor: (_id: string, label: string) =>
+        `Read ${label} channel setup plan status from natural language request.`,
+      rules: [
+        {
+          targetScope: 'messenger',
+          contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
+          argsKind: 'targetId',
+          order: 16,
+        },
+      ],
+    },
+  },
+  {
+    key: 'channelProfileDraft',
+    open: {
+      path: 'xd.xenesis.channels.profileDrafts.open',
+      idPrefix: 'natural-xenesis-channel-profile-draft-open',
+      reasonFor: (_id: string, label: string) => `Open ${label} channel profile draft from natural language request.`,
+      rules: [
+        {
+          targetScope: 'messenger',
+          contextWords: XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
+          argsKind: 'channelVisible',
+          order: 13,
+        },
+      ],
+    },
+    status: {
+      path: 'xd.xenesis.channels.profileDrafts.status',
+      idPrefix: 'natural-xenesis-channel-profile-draft-status',
+      reasonFor: (_id: string, label: string) =>
+        `Read ${label} channel profile draft status from natural language request.`,
+      rules: [
+        {
+          targetScope: 'messenger',
+          contextWords: XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
+          argsKind: 'channel',
+          order: 17,
+        },
+      ],
+    },
+  },
+  {
+    key: 'messengerView',
+    open: {
+      path: 'xd.xenesis.messengers.views.open',
+      idPrefix: 'natural-xenesis-messenger-view-open',
+      reasonFor: (_id: string, label: string) => `Open ${label} messenger view from natural language request.`,
+      rules: [
+        {
+          targetScope: 'messenger',
+          contextWords: XENESIS_NATURAL_MESSENGER_VIEW_OPEN_FALLBACK_CONTEXT_WORDS,
+          argsKind: 'targetIdVisible',
+          order: 18,
+        },
+      ],
+    },
+    status: {
+      path: 'xd.xenesis.messengers.views.status',
+      idPrefix: 'natural-xenesis-messenger-view-status',
+      reasonFor: (_id: string, label: string) => `Read ${label} messenger view status from natural language request.`,
+      rules: [
+        {
+          targetScope: 'messenger',
+          contextWords: XENESIS_NATURAL_MESSENGER_VIEW_FALLBACK_CONTEXT_WORDS,
+          argsKind: 'targetId',
+          order: 18,
+        },
+      ],
+    },
+  },
+  {
+    key: 'connectionCard',
+    open: {
+      path: 'xd.xenesis.connections.open',
+      idPrefix: 'natural-xenesis-connection-open',
+      reasonFor: (_id: string, label: string) => `Open ${label} connection card from natural language request.`,
+      rules: [{ targetScope: 'any', contextWords: [], argsKind: 'targetIdVisible', fallback: true, order: 19 }],
+    },
+  },
+] as const satisfies readonly XenesisNaturalConnectionTargetSurfaceSpec[];
+
+export const XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS = buildXenesisNaturalTargetActionDescriptors(
+  XENESIS_NATURAL_PROVIDER_TARGET_SURFACE_SPECS,
+  'open',
+);
+export const XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS = buildXenesisNaturalTargetActionDescriptors(
+  XENESIS_NATURAL_PROVIDER_TARGET_SURFACE_SPECS,
+  'status',
+);
+export const XENESIS_NATURAL_PROVIDER_STATUS_RULES = buildXenesisNaturalProviderTargetRules(
+  XENESIS_NATURAL_PROVIDER_TARGET_SURFACE_SPECS,
+  'status',
+);
+export const XENESIS_NATURAL_PROVIDER_OPEN_RULES = buildXenesisNaturalProviderTargetRules(
+  XENESIS_NATURAL_PROVIDER_TARGET_SURFACE_SPECS,
+  'open',
+);
+
+export const XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS = buildXenesisNaturalTargetActionDescriptors(
+  XENESIS_NATURAL_CONNECTION_TARGET_SURFACE_SPECS,
+  'status',
+);
+export const XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES = buildXenesisNaturalConnectionTargetRules(
+  XENESIS_NATURAL_CONNECTION_TARGET_SURFACE_SPECS,
+  'status',
+);
 
 export const XENESIS_NATURAL_OAUTH_SETUP_PACKET_TARGET_RULES = [
   {
@@ -1952,232 +2357,14 @@ export const XENESIS_NATURAL_OAUTH_SETUP_PACKET_TARGET_RULES = [
   },
 ] as const satisfies readonly XenesisNaturalConnectionTargetActionRule[];
 
-export const XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS = {
-  diagnostics: {
-    path: 'xd.xenesis.connections.diagnostics.open',
-    idFor: (id: string, _label: string) => `natural-xenesis-connection-diagnostics-open-${id}`,
-    reasonFor: (_id: string, label: string) => `Open ${label} connection diagnostics from natural language request.`,
-  },
-  setupRequest: {
-    path: 'xd.xenesis.connections.setupRequests.open',
-    idFor: (id: string, _label: string) => `natural-xenesis-connection-setup-request-open-${id}`,
-    reasonFor: (_id: string, label: string) => `Open ${label} connection setup request from natural language request.`,
-  },
-  toolOauthDraft: {
-    path: 'xd.xenesis.tools.oauthDrafts.open',
-    idFor: (id: string, _label: string) => `natural-xenesis-tool-oauth-draft-open-${id}`,
-    reasonFor: (_id: string, label: string) => `Open ${label} OAuth draft from natural language request.`,
-  },
-  toolMcpInstallDraft: {
-    path: 'xd.xenesis.tools.mcpInstallDrafts.open',
-    idFor: (id: string, _label: string) => `natural-xenesis-tool-mcp-install-draft-open-${id}`,
-    reasonFor: (_id: string, label: string) => `Open ${label} MCP install draft from natural language request.`,
-  },
-  toolUserStory: {
-    path: 'xd.xenesis.tools.userStories.open',
-    idFor: (id: string, _label: string) => `natural-xenesis-tool-user-story-open-${id}`,
-    reasonFor: (_id: string, label: string) => `Open ${label} tool user story from natural language request.`,
-  },
-  toolActionPolicy: {
-    path: 'xd.xenesis.tools.actions.open',
-    idFor: (id: string, _label: string) => `natural-xenesis-tool-action-policy-open-${id}`,
-    reasonFor: (_id: string, label: string) => `Open ${label} tool action policy from natural language request.`,
-  },
-  toolInstallPlan: {
-    path: 'xd.xenesis.tools.installPlans.open',
-    idFor: (id: string, _label: string) => `natural-xenesis-tool-install-plan-open-${id}`,
-    reasonFor: (_id: string, label: string) => `Open ${label} tool install plan from natural language request.`,
-  },
-  toolSetupPlan: {
-    path: 'xd.xenesis.tools.setupPlans.open',
-    idFor: (id: string, _label: string) => `natural-xenesis-tool-setup-plan-open-${id}`,
-    reasonFor: (_id: string, label: string) => `Open ${label} tool setup plan from natural language request.`,
-  },
-  toolConnector: {
-    path: 'xd.xenesis.tools.connectors.open',
-    idFor: (id: string, _label: string) => `natural-xenesis-tool-connector-open-${id}`,
-    reasonFor: (_id: string, label: string) => `Open ${label} tool connector from natural language request.`,
-  },
-  toolSetup: {
-    path: 'xd.xenesis.tools.setup.open',
-    idFor: (id: string, _label: string) => `natural-xenesis-tool-setup-open-${id}`,
-    reasonFor: (_id: string, label: string) => `Open ${label} tool setup from natural language request.`,
-  },
-  toolView: {
-    path: 'xd.xenesis.tools.views.open',
-    idFor: (id: string, _label: string) => `natural-xenesis-tool-view-open-${id}`,
-    reasonFor: (_id: string, label: string) => `Open ${label} tool view from natural language request.`,
-  },
-  channelUserStory: {
-    path: 'xd.xenesis.channels.userStories.open',
-    idFor: (id: string, _label: string) => `natural-xenesis-channel-user-story-open-${id}`,
-    reasonFor: (_id: string, label: string) => `Open ${label} channel user story from natural language request.`,
-  },
-  channelSetupPlan: {
-    path: 'xd.xenesis.channels.setupPlans.open',
-    idFor: (id: string, _label: string) => `natural-xenesis-channel-setup-plan-open-${id}`,
-    reasonFor: (_id: string, label: string) => `Open ${label} channel setup plan from natural language request.`,
-  },
-  channelProfileDraft: {
-    path: 'xd.xenesis.channels.profileDrafts.open',
-    idFor: (id: string, _label: string) => `natural-xenesis-channel-profile-draft-open-${id}`,
-    reasonFor: (_id: string, label: string) => `Open ${label} channel profile draft from natural language request.`,
-  },
-  channelRouting: {
-    path: 'xd.xenesis.channels.routing.open',
-    idFor: (id: string, _label: string) => `natural-xenesis-channel-routing-open-${id}`,
-    reasonFor: (_id: string, label: string) => `Open ${label} channel routing from natural language request.`,
-  },
-  channelSafety: {
-    path: 'xd.xenesis.channels.safety.open',
-    idFor: (id: string, _label: string) => `natural-xenesis-channel-safety-open-${id}`,
-    reasonFor: (_id: string, label: string) => `Open ${label} channel safety from natural language request.`,
-  },
-  channelAccessGroups: {
-    path: 'xd.xenesis.channels.accessGroups.open',
-    idFor: (id: string, _label: string) => `natural-xenesis-channel-access-groups-open-${id}`,
-    reasonFor: (_id: string, label: string) => `Open ${label} channel access groups from natural language request.`,
-  },
-  channelPairing: {
-    path: 'xd.xenesis.channels.pairing.open',
-    idFor: (id: string, _label: string) => `natural-xenesis-channel-pairing-open-${id}`,
-    reasonFor: (_id: string, label: string) => `Open ${label} channel pairing from natural language request.`,
-  },
-  messengerView: {
-    path: 'xd.xenesis.messengers.views.open',
-    idFor: (id: string, _label: string) => `natural-xenesis-messenger-view-open-${id}`,
-    reasonFor: (_id: string, label: string) => `Open ${label} messenger view from natural language request.`,
-  },
-  connectionCard: {
-    path: 'xd.xenesis.connections.open',
-    idFor: (id: string, _label: string) => `natural-xenesis-connection-open-${id}`,
-    reasonFor: (_id: string, label: string) => `Open ${label} connection card from natural language request.`,
-  },
-} as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
-
-export const XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES = [
-  {
-    targetScope: 'any',
-    contextWords: XENESIS_NATURAL_CONNECTION_DIAGNOSTIC_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.diagnostics,
-    argsKind: 'targetIdVisible',
-  },
-  {
-    targetScope: 'any',
-    contextWords: XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.setupRequest,
-    argsKind: 'targetIdVisible',
-  },
-  {
-    targetScope: 'planned-google-tool',
-    contextWords: XENESIS_NATURAL_OAUTH_DRAFT_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.toolOauthDraft,
-    argsKind: 'targetIdVisible',
-  },
-  {
-    targetScope: 'tool',
-    contextWords: XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.toolMcpInstallDraft,
-    argsKind: 'targetIdVisible',
-  },
-  {
-    targetScope: 'tool',
-    contextWords: XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.toolUserStory,
-    argsKind: 'targetIdVisible',
-  },
-  {
-    targetScope: 'tool',
-    contextWords: XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.toolActionPolicy,
-    argsKind: 'targetIdVisible',
-  },
-  {
-    targetScope: 'tool',
-    contextWords: XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.toolInstallPlan,
-    argsKind: 'targetIdVisible',
-  },
-  {
-    targetScope: 'tool',
-    contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.toolSetupPlan,
-    argsKind: 'targetIdVisible',
-  },
-  {
-    targetScope: 'tool',
-    contextWords: XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.toolConnector,
-    argsKind: 'targetIdVisible',
-  },
-  {
-    targetScope: 'tool',
-    contextWords: XENESIS_NATURAL_SETUP_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.toolSetup,
-    argsKind: 'targetIdVisible',
-  },
-  {
-    targetScope: 'tool',
-    contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.toolView,
-    argsKind: 'targetIdVisible',
-  },
-  {
-    targetScope: 'messenger',
-    contextWords: XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.channelUserStory,
-    argsKind: 'targetIdVisible',
-  },
-  {
-    targetScope: 'messenger',
-    contextWords: XENESIS_NATURAL_SETUP_PLAN_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.channelSetupPlan,
-    argsKind: 'targetIdVisible',
-  },
-  {
-    targetScope: 'messenger',
-    contextWords: XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.channelProfileDraft,
-    argsKind: 'channelVisible',
-  },
-  {
-    targetScope: 'messenger',
-    contextWords: XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.channelRouting,
-    argsKind: 'channelVisible',
-  },
-  {
-    targetScope: 'messenger',
-    contextWords: XENESIS_NATURAL_SAFETY_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.channelSafety,
-    argsKind: 'channelVisible',
-  },
-  {
-    targetScope: 'messenger',
-    contextWords: XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.channelAccessGroups,
-    argsKind: 'channelVisible',
-  },
-  {
-    targetScope: 'messenger',
-    contextWords: XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.channelPairing,
-    argsKind: 'channelVisible',
-  },
-  {
-    targetScope: 'messenger',
-    contextWords: XENESIS_NATURAL_MESSENGER_VIEW_OPEN_FALLBACK_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.messengerView,
-    argsKind: 'targetIdVisible',
-  },
-  {
-    targetScope: 'any',
-    contextWords: [],
-    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.connectionCard,
-    argsKind: 'targetIdVisible',
-    fallback: true,
-  },
-] as const satisfies readonly XenesisNaturalConnectionTargetActionRule[];
+export const XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS = buildXenesisNaturalTargetActionDescriptors(
+  XENESIS_NATURAL_CONNECTION_TARGET_SURFACE_SPECS,
+  'open',
+);
+export const XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES = buildXenesisNaturalConnectionTargetRules(
+  XENESIS_NATURAL_CONNECTION_TARGET_SURFACE_SPECS,
+  'open',
+);
 
 export const XENESIS_NATURAL_MCP_INSTALL_DRAFT_APPLY_ACTION_DESCRIPTORS = {
   toolMcpInstallDraft: {

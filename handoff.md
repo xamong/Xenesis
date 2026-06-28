@@ -14636,6 +14636,80 @@ Verification so far:
     continue with a larger target-specific natural-routing or setup-apply
     orchestration slice.
 
+## Current Target Natural Routing De-Hardcoding Slice
+
+- Current objective:
+  - Continue removing hardcoded natural-language routing tables by deriving
+    target-specific provider and connection open/status descriptors and rules
+    from shared target surface specs.
+- Rationale:
+  - Aggregate Connection Center natural routing is now generated from surface
+    specs, but `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts` still
+    hand-lists target-specific provider and connection descriptors/rules for
+    prompts such as `codex provider view 열어줘`, `notion install plan 상태`,
+    and `telegram pairing 열어줘`.
+  - Keeping target routing deterministic is intentional; duplicating path,
+    id, reason, scope, args, and priority across descriptor objects and rule
+    arrays is not.
+- Scope:
+  - Add RED tests for provider/connection target surface specs.
+  - Generate provider target open/status descriptors and rules from specs.
+  - Generate connection target open/status descriptors and rules from specs.
+  - Preserve existing CR paths, ids, reasons, args kind, fallback, required
+    groups, and rule priority.
+  - Leave apply/review request descriptors for a later slice.
+- Touched files:
+  - `handoff.md`
+  - `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `docs/capability-registry-audit.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-28-target-natural-routing-surface-specs.md`
+- Commands run:
+  - `git status --short` -> tracked worktree clean after commit `eed2933`.
+  - `git log -3 --oneline` -> latest commits are `eed2933`, `c0873bf`,
+    `aa1d333`.
+  - `rg` and targeted `Get-Content` reads over
+    `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts` and Agent Desk
+    Control tests.
+  - RED: `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> failed 1/40 because `XENESIS_NATURAL_PROVIDER_TARGET_SURFACE_SPECS`
+    and `XENESIS_NATURAL_CONNECTION_TARGET_SURFACE_SPECS` did not exist yet.
+  - `npx biome format --write src\shared\xenesisNaturalLanguageCapabilityCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> formatted 2 files.
+  - `npm run typecheck` -> passed.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 40/40.
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` ->
+    passed 6/6.
+  - `npm run smoke:xenesis:natural-desk-routing` -> passed 180/180.
+  - `git diff --check` -> exited 0 with LF/CRLF normalization warnings only.
+  - `npx biome check src\shared\xenesisNaturalLanguageCapabilityCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> checked 2 files, no fixes applied.
+  - `npm run docs:capabilities:audit` -> passed, wrote
+    `docs/capability-registry-audit.md`.
+  - `rg -n "Missing|Undispatched|Dispatcher paths missing" docs\capability-registry-audit.md`
+    -> missing registered paths 0, missing dispatched coverage paths 0,
+    undispatched static callable methods 0, dispatcher paths missing from tree
+    0.
+- Implemented:
+  - Added provider target surface specs for provider setup, routing, views,
+    profile drafts, and setup plans.
+  - Added connection target surface specs for diagnostics, setup requests,
+    tool OAuth/MCP/action-policy/user-story/install/setup/view surfaces,
+    channel routing/safety/access/pairing/user-story/setup-plan/profile draft
+    surfaces, messenger views, and connection-card fallback.
+  - Generated target open/status descriptors and rules from those specs while
+    preserving existing CR paths, action ids, reasons, rule priority,
+    fallback behavior, required context groups, and argument kind.
+  - Added regression coverage that reads the catalog source and rejects the old
+    hand-listed descriptor object shapes.
+- Known gaps:
+  - Apply/review request descriptors and rules are still hand-listed and are
+    intentionally left for the next larger de-hardcoding slice.
+- Next intended step:
+  - Commit this slice, then continue with apply/review request routing
+    generation or broader setup orchestration.
+
 ### Broad Verification
 
 - Commands run:
