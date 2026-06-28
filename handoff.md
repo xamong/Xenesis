@@ -14703,9 +14703,9 @@ Verification so far:
     fallback behavior, required context groups, and argument kind.
   - Added regression coverage that reads the catalog source and rejects the old
     hand-listed descriptor object shapes.
-- Known gaps:
-  - Apply/review request descriptors and rules are still hand-listed and are
-    intentionally left for the next larger de-hardcoding slice.
+- Follow-up:
+  - Apply/review request descriptor and rule generation is handled by the
+    current action request slice below.
 - Next intended step:
   - Commit this slice, then continue with apply/review request routing
     generation or broader setup orchestration.
@@ -14745,3 +14745,76 @@ Verification so far:
   - Missing dispatched coverage paths: 0.
   - Undispatched static callable methods: 0.
   - Dispatcher paths missing from tree: 0.
+
+## Current Action Request Natural Routing De-Hardcoding Slice
+
+- Current objective:
+  - Continue the larger hardcoding-removal cycle by deriving provider action
+    requests and connection-target review/apply/test request descriptors and
+    rules from shared action request specs.
+- Rationale:
+  - Target open/status routing is now generated from shared target surface
+    specs, but the approval-style actions still hand-list repeated path,
+    id-prefix, reason, args kind, fallback, and context rule data.
+  - Remaining affected surfaces are provider profile draft request/apply,
+    tool install/MCP/OAuth/action-policy review requests, MCP install apply,
+    connection setup request/apply, channel profile request/apply, and channel
+    test-send.
+- Scope:
+  - Add shared provider and connection-target action request specs.
+  - Generate descriptor maps and rule arrays from those specs.
+  - Preserve existing CR paths, action ids, reasons, args, fallback behavior,
+    required context groups, and route priority.
+  - Keep deterministic routing explicit; this is data-driven deterministic
+    routing, not model reasoning.
+- Touched files:
+  - `handoff.md`
+  - `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `docs/capability-registry-audit.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-28-action-request-natural-routing-surface-specs.md`
+- Commands run:
+  - RED: `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> failed 1/41 because
+    `XENESIS_NATURAL_PROVIDER_ACTION_REQUEST_SPECS` and
+    `XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_SPECS` do not exist yet.
+  - GREEN before formatting:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 41/41.
+  - `npx biome format --write src\shared\xenesisNaturalLanguageCapabilityCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> formatted 2 files, then one later import-sort fix via
+    `npx biome check --write ...`.
+  - First `npm run typecheck` after implementation failed on literal key/entry
+    narrowing only; fixed by typing the test Maps as string-keyed Maps and
+    casting `Object.entries(aliases)` to `[TAlias, string][]`.
+  - Final `npm run typecheck` -> passed.
+  - Final `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 41/41.
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` ->
+    passed 6/6.
+  - `npm run smoke:xenesis:natural-desk-routing` -> passed 180/180.
+  - `npx biome check src\shared\xenesisNaturalLanguageCapabilityCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> checked 2 files, no fixes applied.
+  - `npm run docs:capabilities:audit` -> passed, wrote
+    `docs/capability-registry-audit.md`.
+  - `rg -n "Missing|Undispatched|Dispatcher paths missing" docs\capability-registry-audit.md`
+    -> missing registered paths 0, missing dispatched coverage paths 0,
+    undispatched static callable methods 0, dispatcher paths missing from tree
+    0.
+- Implemented:
+  - Added `XENESIS_NATURAL_PROVIDER_ACTION_REQUEST_SPECS` for provider
+    profile draft request/apply.
+  - Added `XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_SPECS` for tool
+    install/MCP/OAuth/action-policy review requests, MCP install apply,
+    channel profile request/apply, channel test-send, and connection setup
+    request/apply.
+  - Added shared action request descriptor/rule builders and kept existing
+    exported descriptor/rule constant names as compatibility aliases.
+  - Added regression coverage rejecting the old hand-listed descriptor object
+    shapes.
+- Known gaps:
+  - Natural-language routing remains deterministic catalog routing. Do not
+    describe it as model reasoning.
+- Next intended step:
+  - Run final whitespace check, add Obsidian working note, stage, and commit
+    this action request de-hardcoding slice.

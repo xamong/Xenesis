@@ -1622,6 +1622,19 @@ interface XenesisNaturalConnectionTargetSurfaceSpec {
   status?: XenesisNaturalTargetActionSpec<XenesisNaturalConnectionTargetRuleSpec>;
 }
 
+type XenesisNaturalActionRequestRuleSpec<TRule> = Omit<TRule, 'action'> & { order?: number };
+type XenesisNaturalProviderActionRequestSpec = XenesisNaturalActionRequestSpec<XenesisNaturalProviderActionRule>;
+type XenesisNaturalConnectionTargetActionRequestSpec =
+  XenesisNaturalActionRequestSpec<XenesisNaturalConnectionTargetActionRule>;
+
+interface XenesisNaturalActionRequestSpec<TRule> {
+  key: string;
+  path: string;
+  idPrefix: string;
+  reasonFor: (id: string, label: string) => string;
+  rules?: readonly XenesisNaturalActionRequestRuleSpec<TRule>[];
+}
+
 function buildXenesisNaturalTargetActionDescriptors(
   specs: readonly {
     key: string;
@@ -1693,6 +1706,87 @@ function buildXenesisNaturalConnectionTargetRules(
       const { order: _order, ...ruleInput } = rule;
       return { ...ruleInput, action: descriptor };
     });
+}
+
+function buildXenesisNaturalActionRequestDescriptors(
+  specs: readonly {
+    key: string;
+    path: string;
+    idPrefix: string;
+    reasonFor: (id: string, label: string) => string;
+  }[],
+): Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>> {
+  return Object.fromEntries(
+    specs.map((spec) => [
+      spec.key,
+      {
+        path: spec.path,
+        idFor: (id: string, _label: string) => `${spec.idPrefix}-${id}`,
+        reasonFor: spec.reasonFor,
+      },
+    ]),
+  );
+}
+
+function buildXenesisNaturalProviderActionRequestRules(
+  specs: readonly XenesisNaturalProviderActionRequestSpec[],
+  keys: readonly string[],
+): XenesisNaturalProviderActionRule[] {
+  const keySet = new Set(keys);
+  const descriptors = buildXenesisNaturalActionRequestDescriptors(specs);
+  return specs
+    .flatMap((spec, specIndex) => {
+      const descriptor = descriptors[spec.key];
+      if (!keySet.has(spec.key) || !descriptor) return [];
+      return (spec.rules ?? []).map((rule, ruleIndex) => ({
+        descriptor,
+        order: rule.order ?? specIndex * 100 + ruleIndex,
+        rule,
+      }));
+    })
+    .sort((left, right) => left.order - right.order)
+    .map(({ descriptor, rule }) => {
+      const { order: _order, ...ruleInput } = rule;
+      return { ...ruleInput, action: descriptor };
+    });
+}
+
+function buildXenesisNaturalConnectionTargetActionRequestRules(
+  specs: readonly XenesisNaturalConnectionTargetActionRequestSpec[],
+  keys: readonly string[],
+): XenesisNaturalConnectionTargetActionRule[] {
+  const keySet = new Set(keys);
+  const descriptors = buildXenesisNaturalActionRequestDescriptors(specs);
+  return specs
+    .flatMap((spec, specIndex) => {
+      const descriptor = descriptors[spec.key];
+      if (!keySet.has(spec.key) || !descriptor) return [];
+      return (spec.rules ?? []).map((rule, ruleIndex) => ({
+        descriptor,
+        order: rule.order ?? specIndex * 100 + ruleIndex,
+        rule,
+      }));
+    })
+    .sort((left, right) => left.order - right.order)
+    .map(({ descriptor, rule }) => {
+      const { order: _order, ...ruleInput } = rule;
+      return { ...ruleInput, action: descriptor };
+    });
+}
+
+function pickXenesisNaturalActionRequestDescriptors<TAlias extends string>(
+  descriptors: Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>,
+  aliases: Record<TAlias, string>,
+): Record<TAlias, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>> {
+  return Object.fromEntries(
+    (Object.entries(aliases) as [TAlias, string][]).map(([alias, key]) => {
+      const descriptor = descriptors[key];
+      if (!descriptor) {
+        throw new Error(`Missing Xenesis natural action request descriptor for ${key}`);
+      }
+      return [alias, descriptor];
+    }),
+  ) as Record<TAlias, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
 }
 
 export const XENESIS_NATURAL_PROVIDER_TARGET_SURFACE_SPECS = [
@@ -2366,191 +2460,232 @@ export const XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES = buildXenesisNaturalC
   'open',
 );
 
-export const XENESIS_NATURAL_MCP_INSTALL_DRAFT_APPLY_ACTION_DESCRIPTORS = {
-  toolMcpInstallDraft: {
-    path: 'xd.xenesis.tools.mcpInstallDrafts.apply',
-    idFor: (id: string, _label: string) => `natural-xenesis-tool-mcp-install-draft-apply-${id}`,
-    reasonFor: (_id: string, label: string) => `Apply ${label} MCP install draft from natural language request.`,
-  },
-} as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
-
-export const XENESIS_NATURAL_MCP_INSTALL_DRAFT_APPLY_TARGET_RULES = [
+export const XENESIS_NATURAL_PROVIDER_ACTION_REQUEST_SPECS = [
   {
-    targetScope: 'tool',
-    contextWords: XENESIS_NATURAL_MCP_INSTALL_APPLY_INTENT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_MCP_INSTALL_DRAFT_APPLY_ACTION_DESCRIPTORS.toolMcpInstallDraft,
-    argsKind: 'mcpInstallApply',
-  },
-] as const satisfies readonly XenesisNaturalConnectionTargetActionRule[];
-
-export const XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_APPLY_ACTION_DESCRIPTORS = {
-  channelProfileDraft: {
-    path: 'xd.xenesis.channels.profileDrafts.apply',
-    idFor: (id: string, _label: string) => `natural-xenesis-channel-profile-draft-apply-${id}`,
-    reasonFor: (_id: string, label: string) => `Apply ${label} channel profile draft from natural language request.`,
-  },
-} as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
-
-export const XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_APPLY_TARGET_RULES = [
-  {
-    targetScope: 'messenger',
-    contextWords: XENESIS_NATURAL_MCP_INSTALL_APPLY_INTENT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_REQUEST_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_APPLY_ACTION_DESCRIPTORS.channelProfileDraft,
-    argsKind: 'channel',
-  },
-] as const satisfies readonly XenesisNaturalConnectionTargetActionRule[];
-
-export const XENESIS_NATURAL_CHANNEL_TEST_ACTION_DESCRIPTORS = {
-  channelTest: {
-    path: 'xd.xenesis.profiles.testChannel',
-    idFor: (id: string, _label: string) => `natural-xenesis-channel-test-${id}`,
-    reasonFor: (_id: string, label: string) =>
-      `Send a sanitized ${label} channel test message from natural language request.`,
-  },
-} as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
-
-export const XENESIS_NATURAL_CHANNEL_TEST_TARGET_RULES = [
-  {
-    targetScope: 'messenger',
-    contextWords: XENESIS_NATURAL_CHANNEL_TEST_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_CHANNEL_TEST_ACTION_DESCRIPTORS.channelTest,
-    argsKind: 'channel',
-  },
-] as const satisfies readonly XenesisNaturalConnectionTargetActionRule[];
-
-export const XENESIS_NATURAL_PROVIDER_PROFILE_DRAFT_APPLY_ACTION_DESCRIPTORS = {
-  providerProfileDraft: {
-    path: 'xd.xenesis.providers.profileDrafts.apply',
-    idFor: (id: string, _label: string) => `natural-xenesis-provider-profile-draft-apply-${id}`,
-    reasonFor: (id: string, label: string) =>
-      id === 'auto'
-        ? 'Apply AI provider profile draft from natural language request.'
-        : `Apply ${label} provider profile draft from natural language request.`,
-  },
-} as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
-
-export const XENESIS_NATURAL_PROVIDER_PROFILE_DRAFT_APPLY_PROVIDER_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_MCP_INSTALL_APPLY_INTENT_WORDS,
-    action: XENESIS_NATURAL_PROVIDER_PROFILE_DRAFT_APPLY_ACTION_DESCRIPTORS.providerProfileDraft,
-    argsKind: 'provider',
-  },
-] as const satisfies readonly XenesisNaturalProviderActionRule[];
-
-export const XENESIS_NATURAL_CONNECTION_SETUP_APPLY_ACTION_DESCRIPTORS = {
-  connectionSetupRequest: {
-    path: 'xd.xenesis.connections.setupRequests.apply',
-    idFor: (id: string, _label: string) => `natural-xenesis-connection-setup-apply-${id}`,
-    reasonFor: (_id: string, label: string) => `Apply ${label} connection setup request from natural language request.`,
-  },
-} as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
-
-export const XENESIS_NATURAL_CONNECTION_SETUP_APPLY_TARGET_RULES = [
-  {
-    targetScope: 'any',
-    contextWords: XENESIS_NATURAL_MCP_INSTALL_APPLY_INTENT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_SETUP_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_CONNECTION_SETUP_APPLY_ACTION_DESCRIPTORS.connectionSetupRequest,
-    argsKind: 'mcpInstallApply',
-  },
-] as const satisfies readonly XenesisNaturalConnectionTargetActionRule[];
-
-export const XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS = {
-  providerProfileDraft: {
+    key: 'providerProfileDraftRequest',
     path: 'xd.xenesis.providers.profileDrafts.request',
-    idFor: (id: string, _label: string) => `natural-xenesis-provider-profile-draft-request-${id}`,
+    idPrefix: 'natural-xenesis-provider-profile-draft-request',
     reasonFor: (id: string, label: string) =>
       id === 'auto'
         ? 'Request AI provider profile draft review from natural language request.'
         : `Request ${label} provider profile draft review from natural language request.`,
+    rules: [{ contextWords: [], argsKind: 'provider', fallback: true, order: 0 }],
   },
-  toolInstallPlan: {
+  {
+    key: 'providerProfileDraftApply',
+    path: 'xd.xenesis.providers.profileDrafts.apply',
+    idPrefix: 'natural-xenesis-provider-profile-draft-apply',
+    reasonFor: (id: string, label: string) =>
+      id === 'auto'
+        ? 'Apply AI provider profile draft from natural language request.'
+        : `Apply ${label} provider profile draft from natural language request.`,
+    rules: [{ contextWords: XENESIS_NATURAL_MCP_INSTALL_APPLY_INTENT_WORDS, argsKind: 'provider', order: 0 }],
+  },
+] as const satisfies readonly XenesisNaturalProviderActionRequestSpec[];
+
+export const XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_SPECS = [
+  {
+    key: 'toolInstallPlanRequest',
     path: 'xd.xenesis.tools.installPlans.request',
-    idFor: (id: string, _label: string) => `natural-xenesis-tool-install-plan-request-${id}`,
+    idPrefix: 'natural-xenesis-tool-install-plan-request',
     reasonFor: (_id: string, label: string) =>
       `Request ${label} tool install plan review from natural language request.`,
+    rules: [{ targetScope: 'tool', contextWords: XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS, argsKind: 'targetId' }],
   },
-  toolMcpInstallDraft: {
+  {
+    key: 'toolMcpInstallDraftRequest',
     path: 'xd.xenesis.tools.mcpInstallDrafts.request',
-    idFor: (id: string, _label: string) => `natural-xenesis-tool-mcp-install-draft-request-${id}`,
+    idPrefix: 'natural-xenesis-tool-mcp-install-draft-request',
     reasonFor: (_id: string, label: string) =>
       `Request ${label} MCP install draft review from natural language request.`,
+    rules: [
+      {
+        targetScope: 'tool',
+        contextWords: XENESIS_NATURAL_MCP_INSTALL_REVIEW_CONTEXT_WORDS,
+        argsKind: 'targetId',
+      },
+    ],
   },
-  toolOauthDraft: {
+  {
+    key: 'toolOauthDraftRequest',
     path: 'xd.xenesis.tools.oauthDrafts.request',
-    idFor: (id: string, _label: string) => `natural-xenesis-tool-oauth-draft-request-${id}`,
+    idPrefix: 'natural-xenesis-tool-oauth-draft-request',
     reasonFor: (_id: string, label: string) => `Request ${label} OAuth draft review from natural language request.`,
+    rules: [
+      {
+        targetScope: 'planned-google-tool',
+        contextWords: XENESIS_NATURAL_OAUTH_CONTEXT_WORDS,
+        argsKind: 'targetId',
+      },
+    ],
   },
-  toolActionPolicy: {
+  {
+    key: 'toolActionPolicyRequest',
     path: 'xd.xenesis.tools.actions.request',
-    idFor: (id: string, _label: string) => `natural-xenesis-tool-action-policy-request-${id}`,
+    idPrefix: 'natural-xenesis-tool-action-policy-request',
     reasonFor: (_id: string, label: string) =>
       `Request ${label} tool action policy review from natural language request.`,
+    rules: [{ targetScope: 'tool', contextWords: XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS, argsKind: 'targetId' }],
   },
-  channelProfileDraft: {
+  {
+    key: 'channelProfileDraftRequest',
     path: 'xd.xenesis.channels.profileDrafts.request',
-    idFor: (id: string, _label: string) => `natural-xenesis-channel-profile-draft-request-${id}`,
+    idPrefix: 'natural-xenesis-channel-profile-draft-request',
     reasonFor: (_id: string, label: string) =>
       `Request ${label} channel profile draft review from natural language request.`,
+    rules: [
+      {
+        targetScope: 'messenger',
+        contextWords: XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_REQUEST_CONTEXT_WORDS,
+        argsKind: 'channel',
+      },
+    ],
   },
-  connectionSetupRequest: {
+  {
+    key: 'connectionSetupRequest',
     path: 'xd.xenesis.connections.setupRequests.request',
-    idFor: (id: string, _label: string) => `natural-xenesis-connection-setup-request-${id}`,
+    idPrefix: 'natural-xenesis-connection-setup-request',
     reasonFor: (_id: string, label: string) =>
       `Request ${label} connection setup review from natural language request.`,
+    rules: [{ targetScope: 'any', contextWords: [], argsKind: 'targetId', fallback: true }],
   },
+  {
+    key: 'toolMcpInstallDraftApply',
+    path: 'xd.xenesis.tools.mcpInstallDrafts.apply',
+    idPrefix: 'natural-xenesis-tool-mcp-install-draft-apply',
+    reasonFor: (_id: string, label: string) => `Apply ${label} MCP install draft from natural language request.`,
+    rules: [
+      {
+        targetScope: 'tool',
+        contextWords: XENESIS_NATURAL_MCP_INSTALL_APPLY_INTENT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS],
+        argsKind: 'mcpInstallApply',
+      },
+    ],
+  },
+  {
+    key: 'channelProfileDraftApply',
+    path: 'xd.xenesis.channels.profileDrafts.apply',
+    idPrefix: 'natural-xenesis-channel-profile-draft-apply',
+    reasonFor: (_id: string, label: string) => `Apply ${label} channel profile draft from natural language request.`,
+    rules: [
+      {
+        targetScope: 'messenger',
+        contextWords: XENESIS_NATURAL_MCP_INSTALL_APPLY_INTENT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_REQUEST_CONTEXT_WORDS],
+        argsKind: 'channel',
+      },
+    ],
+  },
+  {
+    key: 'channelTest',
+    path: 'xd.xenesis.profiles.testChannel',
+    idPrefix: 'natural-xenesis-channel-test',
+    reasonFor: (_id: string, label: string) =>
+      `Send a sanitized ${label} channel test message from natural language request.`,
+    rules: [
+      {
+        targetScope: 'messenger',
+        contextWords: XENESIS_NATURAL_CHANNEL_TEST_CONTEXT_WORDS,
+        argsKind: 'channel',
+      },
+    ],
+  },
+  {
+    key: 'connectionSetupApply',
+    path: 'xd.xenesis.connections.setupRequests.apply',
+    idPrefix: 'natural-xenesis-connection-setup-apply',
+    reasonFor: (_id: string, label: string) => `Apply ${label} connection setup request from natural language request.`,
+    rules: [
+      {
+        targetScope: 'any',
+        contextWords: XENESIS_NATURAL_MCP_INSTALL_APPLY_INTENT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_SETUP_CONTEXT_WORDS],
+        argsKind: 'mcpInstallApply',
+      },
+    ],
+  },
+] as const satisfies readonly XenesisNaturalConnectionTargetActionRequestSpec[];
+
+export const XENESIS_NATURAL_PROVIDER_ACTION_REQUEST_DESCRIPTORS = buildXenesisNaturalActionRequestDescriptors(
+  XENESIS_NATURAL_PROVIDER_ACTION_REQUEST_SPECS,
+);
+export const XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_DESCRIPTORS = buildXenesisNaturalActionRequestDescriptors(
+  XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_SPECS,
+);
+
+export const XENESIS_NATURAL_MCP_INSTALL_DRAFT_APPLY_ACTION_DESCRIPTORS = pickXenesisNaturalActionRequestDescriptors(
+  XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_DESCRIPTORS,
+  { toolMcpInstallDraft: 'toolMcpInstallDraftApply' },
+);
+export const XENESIS_NATURAL_MCP_INSTALL_DRAFT_APPLY_TARGET_RULES =
+  buildXenesisNaturalConnectionTargetActionRequestRules(XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_SPECS, [
+    'toolMcpInstallDraftApply',
+  ]);
+
+export const XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_APPLY_ACTION_DESCRIPTORS =
+  pickXenesisNaturalActionRequestDescriptors(XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_DESCRIPTORS, {
+    channelProfileDraft: 'channelProfileDraftApply',
+  });
+export const XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_APPLY_TARGET_RULES =
+  buildXenesisNaturalConnectionTargetActionRequestRules(XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_SPECS, [
+    'channelProfileDraftApply',
+  ]);
+
+export const XENESIS_NATURAL_CHANNEL_TEST_ACTION_DESCRIPTORS = pickXenesisNaturalActionRequestDescriptors(
+  XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_DESCRIPTORS,
+  { channelTest: 'channelTest' },
+);
+export const XENESIS_NATURAL_CHANNEL_TEST_TARGET_RULES = buildXenesisNaturalConnectionTargetActionRequestRules(
+  XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_SPECS,
+  ['channelTest'],
+);
+
+export const XENESIS_NATURAL_PROVIDER_PROFILE_DRAFT_APPLY_ACTION_DESCRIPTORS =
+  pickXenesisNaturalActionRequestDescriptors(XENESIS_NATURAL_PROVIDER_ACTION_REQUEST_DESCRIPTORS, {
+    providerProfileDraft: 'providerProfileDraftApply',
+  });
+export const XENESIS_NATURAL_PROVIDER_PROFILE_DRAFT_APPLY_PROVIDER_RULES =
+  buildXenesisNaturalProviderActionRequestRules(XENESIS_NATURAL_PROVIDER_ACTION_REQUEST_SPECS, [
+    'providerProfileDraftApply',
+  ]);
+
+export const XENESIS_NATURAL_CONNECTION_SETUP_APPLY_ACTION_DESCRIPTORS = pickXenesisNaturalActionRequestDescriptors(
+  XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_DESCRIPTORS,
+  {
+    connectionSetupRequest: 'connectionSetupApply',
+  },
+);
+export const XENESIS_NATURAL_CONNECTION_SETUP_APPLY_TARGET_RULES =
+  buildXenesisNaturalConnectionTargetActionRequestRules(XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_SPECS, [
+    'connectionSetupApply',
+  ]);
+
+export const XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS = {
+  providerProfileDraft: XENESIS_NATURAL_PROVIDER_ACTION_REQUEST_DESCRIPTORS.providerProfileDraftRequest,
+  toolInstallPlan: XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_DESCRIPTORS.toolInstallPlanRequest,
+  toolMcpInstallDraft: XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_DESCRIPTORS.toolMcpInstallDraftRequest,
+  toolOauthDraft: XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_DESCRIPTORS.toolOauthDraftRequest,
+  toolActionPolicy: XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_DESCRIPTORS.toolActionPolicyRequest,
+  channelProfileDraft: XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_DESCRIPTORS.channelProfileDraftRequest,
+  connectionSetupRequest: XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_DESCRIPTORS.connectionSetupRequest,
 } as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
 
-export const XENESIS_NATURAL_REVIEW_REQUEST_PROVIDER_RULES = [
-  {
-    contextWords: [],
-    action: XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS.providerProfileDraft,
-    argsKind: 'provider',
-    fallback: true,
-  },
-] as const satisfies readonly XenesisNaturalProviderActionRule[];
-
-export const XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES = [
-  {
-    targetScope: 'tool',
-    contextWords: XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS.toolInstallPlan,
-    argsKind: 'targetId',
-  },
-  {
-    targetScope: 'tool',
-    contextWords: XENESIS_NATURAL_MCP_INSTALL_REVIEW_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS.toolMcpInstallDraft,
-    argsKind: 'targetId',
-  },
-  {
-    targetScope: 'planned-google-tool',
-    contextWords: XENESIS_NATURAL_OAUTH_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS.toolOauthDraft,
-    argsKind: 'targetId',
-  },
-  {
-    targetScope: 'tool',
-    contextWords: XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS.toolActionPolicy,
-    argsKind: 'targetId',
-  },
-  {
-    targetScope: 'messenger',
-    contextWords: XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_REQUEST_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS.channelProfileDraft,
-    argsKind: 'channel',
-  },
-  {
-    targetScope: 'any',
-    contextWords: [],
-    action: XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS.connectionSetupRequest,
-    argsKind: 'targetId',
-    fallback: true,
-  },
-] as const satisfies readonly XenesisNaturalConnectionTargetActionRule[];
+export const XENESIS_NATURAL_REVIEW_REQUEST_PROVIDER_RULES = buildXenesisNaturalProviderActionRequestRules(
+  XENESIS_NATURAL_PROVIDER_ACTION_REQUEST_SPECS,
+  ['providerProfileDraftRequest'],
+);
+export const XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES = buildXenesisNaturalConnectionTargetActionRequestRules(
+  XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_SPECS,
+  [
+    'toolInstallPlanRequest',
+    'toolMcpInstallDraftRequest',
+    'toolOauthDraftRequest',
+    'toolActionPolicyRequest',
+    'channelProfileDraftRequest',
+    'connectionSetupRequest',
+  ],
+);
 
 export function buildXenesisNaturalAction(
   id: string,

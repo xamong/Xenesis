@@ -12,11 +12,18 @@ import {
   XENESIS_NATURAL_AGENT_READBACK_RULES,
   XENESIS_NATURAL_AGENT_SUBMIT_RULES,
   XENESIS_NATURAL_ARTIFACT_TARGET_RULES,
+  XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_APPLY_ACTION_DESCRIPTORS,
+  XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_APPLY_TARGET_RULES,
+  XENESIS_NATURAL_CHANNEL_TEST_ACTION_DESCRIPTORS,
+  XENESIS_NATURAL_CHANNEL_TEST_TARGET_RULES,
   XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_RULES,
   XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_RULES,
   XENESIS_NATURAL_CONNECTION_AGGREGATE_SURFACE_SPECS,
+  XENESIS_NATURAL_CONNECTION_SETUP_APPLY_ACTION_DESCRIPTORS,
+  XENESIS_NATURAL_CONNECTION_SETUP_APPLY_TARGET_RULES,
+  XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_SPECS,
   XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES,
   XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS,
@@ -45,6 +52,8 @@ import {
   XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_GUIDE_OPEN_RULES,
   XENESIS_NATURAL_GUIDE_STATUS_RULES,
+  XENESIS_NATURAL_MCP_INSTALL_DRAFT_APPLY_ACTION_DESCRIPTORS,
+  XENESIS_NATURAL_MCP_INSTALL_DRAFT_APPLY_TARGET_RULES,
   XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_RULES,
   XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
@@ -54,6 +63,7 @@ import {
   XENESIS_NATURAL_ONBOARDING_OPEN_RULES,
   XENESIS_NATURAL_ONBOARDING_STATUS_RULES,
   XENESIS_NATURAL_PROFILE_INVENTORY_RULES,
+  XENESIS_NATURAL_PROVIDER_ACTION_REQUEST_SPECS,
   XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_RULES,
   XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
@@ -61,9 +71,12 @@ import {
   XENESIS_NATURAL_PROVIDER_AGGREGATE_SURFACE_SPECS,
   XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_PROVIDER_OPEN_RULES,
+  XENESIS_NATURAL_PROVIDER_PROFILE_DRAFT_APPLY_ACTION_DESCRIPTORS,
+  XENESIS_NATURAL_PROVIDER_PROFILE_DRAFT_APPLY_PROVIDER_RULES,
   XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_PROVIDER_STATUS_RULES,
   XENESIS_NATURAL_PROVIDER_TARGET_SURFACE_SPECS,
+  XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_REVIEW_REQUEST_PROVIDER_RULES,
   XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES,
   XENESIS_NATURAL_RUN_START_RULES,
@@ -2301,6 +2314,171 @@ test('natural target actions are generated from shared target surface specs', ()
   assert.doesNotMatch(
     capabilityCatalogSource,
     /XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS = \{\s*diagnostics:/,
+  );
+});
+
+test('natural approval request actions are generated from shared action request specs', () => {
+  const capabilityCatalogSource = readFileSync(
+    new URL('../../../../shared/xenesisNaturalLanguageCapabilityCatalog.ts', import.meta.url),
+    'utf8',
+  );
+  const providerSpecsByKey = new Map<
+    string,
+    (typeof XENESIS_NATURAL_PROVIDER_ACTION_REQUEST_SPECS)[number] & { specIndex: number }
+  >(XENESIS_NATURAL_PROVIDER_ACTION_REQUEST_SPECS.map((spec, specIndex) => [spec.key, { ...spec, specIndex }]));
+  const connectionSpecsByKey = new Map<
+    string,
+    (typeof XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_SPECS)[number] & { specIndex: number }
+  >(
+    XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_SPECS.map((spec, specIndex) => [spec.key, { ...spec, specIndex }]),
+  );
+  const providerSpecRules = (keys: readonly string[]) =>
+    keys
+      .flatMap((key) => {
+        const spec = providerSpecsByKey.get(key);
+        assert.ok(spec, `missing provider action request spec ${key}`);
+        return (spec.rules ?? []).map((rule, ruleIndex) => ({
+          spec,
+          rule,
+          order: (rule as { order?: number }).order ?? spec.specIndex * 100 + ruleIndex,
+        }));
+      })
+      .sort((left, right) => left.order - right.order);
+  const connectionSpecRules = (keys: readonly string[]) =>
+    keys
+      .flatMap((key) => {
+        const spec = connectionSpecsByKey.get(key);
+        assert.ok(spec, `missing connection action request spec ${key}`);
+        return (spec.rules ?? []).map((rule, ruleIndex) => ({
+          spec,
+          rule,
+          order: (rule as { order?: number }).order ?? spec.specIndex * 100 + ruleIndex,
+        }));
+      })
+      .sort((left, right) => left.order - right.order);
+  const summarizeProviderRules = (
+    rules: readonly { action: { path: string }; argsKind: string; fallback?: boolean }[],
+  ) =>
+    rules.map((rule) => ({
+      argsKind: rule.argsKind,
+      path: rule.action.path,
+      fallback: rule.fallback === true,
+    }));
+  const summarizeConnectionRules = (
+    rules: readonly {
+      action: { path: string };
+      targetScope: string;
+      argsKind: string;
+      fallback?: boolean;
+      requiredContextWordGroups?: readonly (readonly string[])[];
+    }[],
+  ) =>
+    rules.map((rule) => ({
+      targetScope: rule.targetScope,
+      argsKind: rule.argsKind,
+      path: rule.action.path,
+      fallback: rule.fallback === true,
+      requiredContextWordGroupCount: rule.requiredContextWordGroups?.length ?? 0,
+    }));
+  const expectedProviderRules = (keys: readonly string[]) =>
+    providerSpecRules(keys).map(({ spec, rule }) => ({
+      argsKind: (rule as { argsKind: string }).argsKind,
+      path: spec.path,
+      fallback: (rule as { fallback?: boolean }).fallback === true,
+    }));
+  const expectedConnectionRules = (keys: readonly string[]) =>
+    connectionSpecRules(keys).map(({ spec, rule }) => ({
+      targetScope: (rule as { targetScope: string }).targetScope,
+      argsKind: (rule as { argsKind: string }).argsKind,
+      path: spec.path,
+      fallback: (rule as { fallback?: boolean }).fallback === true,
+      requiredContextWordGroupCount:
+        (rule as { requiredContextWordGroups?: readonly (readonly string[])[] }).requiredContextWordGroups?.length ?? 0,
+    }));
+
+  assert.equal(
+    XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS.providerProfileDraft.path,
+    providerSpecsByKey.get('providerProfileDraftRequest')?.path,
+  );
+  assert.equal(
+    XENESIS_NATURAL_PROVIDER_PROFILE_DRAFT_APPLY_ACTION_DESCRIPTORS.providerProfileDraft.path,
+    providerSpecsByKey.get('providerProfileDraftApply')?.path,
+  );
+  assert.equal(
+    XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS.toolInstallPlan.path,
+    connectionSpecsByKey.get('toolInstallPlanRequest')?.path,
+  );
+  assert.equal(
+    XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS.toolMcpInstallDraft.path,
+    connectionSpecsByKey.get('toolMcpInstallDraftRequest')?.path,
+  );
+  assert.equal(
+    XENESIS_NATURAL_MCP_INSTALL_DRAFT_APPLY_ACTION_DESCRIPTORS.toolMcpInstallDraft.path,
+    connectionSpecsByKey.get('toolMcpInstallDraftApply')?.path,
+  );
+  assert.equal(
+    XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_APPLY_ACTION_DESCRIPTORS.channelProfileDraft.path,
+    connectionSpecsByKey.get('channelProfileDraftApply')?.path,
+  );
+  assert.equal(
+    XENESIS_NATURAL_CHANNEL_TEST_ACTION_DESCRIPTORS.channelTest.path,
+    connectionSpecsByKey.get('channelTest')?.path,
+  );
+  assert.equal(
+    XENESIS_NATURAL_CONNECTION_SETUP_APPLY_ACTION_DESCRIPTORS.connectionSetupRequest.path,
+    connectionSpecsByKey.get('connectionSetupApply')?.path,
+  );
+
+  assert.deepEqual(
+    summarizeProviderRules(XENESIS_NATURAL_REVIEW_REQUEST_PROVIDER_RULES),
+    expectedProviderRules(['providerProfileDraftRequest']),
+  );
+  assert.deepEqual(
+    summarizeProviderRules(XENESIS_NATURAL_PROVIDER_PROFILE_DRAFT_APPLY_PROVIDER_RULES),
+    expectedProviderRules(['providerProfileDraftApply']),
+  );
+  assert.deepEqual(
+    summarizeConnectionRules(XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES),
+    expectedConnectionRules([
+      'toolInstallPlanRequest',
+      'toolMcpInstallDraftRequest',
+      'toolOauthDraftRequest',
+      'toolActionPolicyRequest',
+      'channelProfileDraftRequest',
+      'connectionSetupRequest',
+    ]),
+  );
+  assert.deepEqual(
+    summarizeConnectionRules(XENESIS_NATURAL_MCP_INSTALL_DRAFT_APPLY_TARGET_RULES),
+    expectedConnectionRules(['toolMcpInstallDraftApply']),
+  );
+  assert.deepEqual(
+    summarizeConnectionRules(XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_APPLY_TARGET_RULES),
+    expectedConnectionRules(['channelProfileDraftApply']),
+  );
+  assert.deepEqual(
+    summarizeConnectionRules(XENESIS_NATURAL_CHANNEL_TEST_TARGET_RULES),
+    expectedConnectionRules(['channelTest']),
+  );
+  assert.deepEqual(
+    summarizeConnectionRules(XENESIS_NATURAL_CONNECTION_SETUP_APPLY_TARGET_RULES),
+    expectedConnectionRules(['connectionSetupApply']),
+  );
+
+  assert.match(capabilityCatalogSource, /function buildXenesisNaturalActionRequestDescriptors/);
+  assert.match(capabilityCatalogSource, /function buildXenesisNaturalProviderActionRequestRules/);
+  assert.match(capabilityCatalogSource, /function buildXenesisNaturalConnectionTargetActionRequestRules/);
+  assert.doesNotMatch(
+    capabilityCatalogSource,
+    /XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS = \{\s*providerProfileDraft:\s*\{\s*path:/,
+  );
+  assert.doesNotMatch(
+    capabilityCatalogSource,
+    /XENESIS_NATURAL_PROVIDER_PROFILE_DRAFT_APPLY_ACTION_DESCRIPTORS = \{\s*providerProfileDraft:\s*\{\s*path:/,
+  );
+  assert.doesNotMatch(
+    capabilityCatalogSource,
+    /XENESIS_NATURAL_CHANNEL_TEST_ACTION_DESCRIPTORS = \{\s*channelTest:\s*\{\s*path:/,
   );
 });
 
