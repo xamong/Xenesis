@@ -1195,14 +1195,18 @@ test('xenesis MCP install draft capabilities are registered and dispatch to the 
 
 test('xenesis tool OAuth draft capabilities are registered and dispatch to the adapter', async () => {
   const statusCapability = findDeskBridgeCapability('xd.xenesis.tools.oauthDrafts.status');
+  const setupPacketCapability = findDeskBridgeCapability('xd.xenesis.tools.oauthDrafts.setupPacket');
   const openCapability = findDeskBridgeCapability('xd.xenesis.tools.oauthDrafts.open');
   const requestCapability = findDeskBridgeCapability('xd.xenesis.tools.oauthDrafts.request');
   const statusSchemaProperties = (statusCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const setupPacketSchemaProperties = (setupPacketCapability?.schema?.properties ?? {}) as Record<string, any>;
   const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
   const requestSchemaProperties = (requestCapability?.schema?.properties ?? {}) as Record<string, any>;
 
   assert.equal(statusCapability?.permission, 'read');
   assert.equal(statusCapability?.approval, 'never');
+  assert.equal(setupPacketCapability?.permission, 'read');
+  assert.equal(setupPacketCapability?.approval, 'never');
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
   assert.equal(schemaRequiredFields(openCapability).includes('id'), false);
@@ -1212,6 +1216,16 @@ test('xenesis tool OAuth draft capabilities are registered and dispatch to the a
   for (const tool of ['google-workspace', 'google-calendar']) {
     assert.equal(statusSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by status`);
     assert.equal(statusSchemaProperties.tool?.enum.includes(tool), true, `${tool} should be accepted by status alias`);
+    assert.equal(
+      setupPacketSchemaProperties.id?.enum.includes(tool),
+      true,
+      `${tool} should be accepted by setup packet`,
+    );
+    assert.equal(
+      setupPacketSchemaProperties.tool?.enum.includes(tool),
+      true,
+      `${tool} should be accepted by setup packet alias`,
+    );
     assert.equal(openSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by open`);
     assert.equal(requestSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by request`);
   }
@@ -1223,6 +1237,13 @@ test('xenesis tool OAuth draft capabilities are registered and dispatch to the a
       return {
         ok: true,
         items: [{ id: 'google-calendar', draftStatus: 'planned-template' }],
+      };
+    },
+    getXenesisToolOAuthSetupPacket: (args) => {
+      calls.push({ method: 'setupPacket', args });
+      return {
+        ok: true,
+        items: [{ id: 'google-calendar', setupPacket: { packetStatus: 'planned-template' } }],
       };
     },
     openXenesisToolOAuthDraft: (args) => {
@@ -1247,6 +1268,11 @@ test('xenesis tool OAuth draft capabilities are registered and dispatch to the a
     args: { tool: 'google-calendar' },
     source: 'xenesis',
   });
+  const setupPacketResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.tools.oauthDrafts.setupPacket',
+    args: { id: 'google-calendar' },
+    source: 'xenesis',
+  });
   const openResult = await callDeskBridgeCapability(api, {
     path: 'xd.xenesis.tools.oauthDrafts.open',
     args: { id: 'google-calendar' },
@@ -1260,16 +1286,22 @@ test('xenesis tool OAuth draft capabilities are registered and dispatch to the a
   });
 
   assert.equal(statusResult.ok, true);
+  assert.equal(setupPacketResult.ok, true);
   assert.equal(openResult.ok, true);
   assert.equal(requestResult.ok, true);
   assert.deepEqual(calls, [
     { method: 'status', args: { tool: 'google-calendar' } },
+    { method: 'setupPacket', args: { id: 'google-calendar' } },
     { method: 'open', args: { id: 'google-calendar' } },
     { method: 'request', args: { id: 'google-calendar' } },
   ]);
   assert.deepEqual(statusResult.result, {
     ok: true,
     items: [{ id: 'google-calendar', draftStatus: 'planned-template' }],
+  });
+  assert.deepEqual(setupPacketResult.result, {
+    ok: true,
+    items: [{ id: 'google-calendar', setupPacket: { packetStatus: 'planned-template' } }],
   });
   assert.deepEqual(openResult.result, {
     ok: true,

@@ -1,16 +1,16 @@
 # Xenesis Desk Capability Registry Audit
 
-Generated: 2026-06-28, 08:37 p.m. KST
+Generated: 2026-06-28, 09:00 p.m. KST
 
 This audit checks that coverage metadata points to registered capability nodes and that callable method paths are wired in `callDeskBridgeCapability()`. It runs with Phase 5 capability visibility enabled so staged XamongCode wiring is audited without exposing it in the default registry list.
 
 ## Summary
 
-- Registered nodes: 769
-- Callable methods: 473
+- Registered nodes: 770
+- Callable methods: 474
 - Subscribable events: 54
 - Coverage path references: 689
-- Dispatcher paths: 453
+- Dispatcher paths: 454
 - Missing registered paths: 0
 - Missing dispatched coverage paths: 0
 - Undispatched static callable methods: 0

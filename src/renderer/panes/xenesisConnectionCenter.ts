@@ -29,6 +29,7 @@ import type {
   XenesisConnectionToolInstallPlanTemplate,
   XenesisConnectionToolOAuthDraftReviewStep,
   XenesisConnectionToolOAuthDraftTemplate,
+  XenesisConnectionToolOAuthSetupPacket,
   XenesisConnectionToolSetupTemplate,
   XenesisConnectionToolUserStoryTemplate,
   XenesisConnectionToolViewTemplate,
@@ -207,6 +208,10 @@ export function formatXenesisToolOAuthDraftSummary(draft: XenesisConnectionToolO
   return `${draft.tool} / ${draft.draftStatus} / ${draft.scopes.length} scope(s) / ${draft.reviewSteps.length} review step(s)`;
 }
 
+export function formatXenesisToolOAuthSetupPacketSummary(packet: XenesisConnectionToolOAuthSetupPacket): string {
+  return `${packet.provider} / ${packet.packetStatus} / ${packet.credentialRefs.length} credential ref(s) / ${packet.checklist.length} setup step(s)`;
+}
+
 export function formatXenesisToolUserStorySummary(workflow: XenesisConnectionToolUserStoryTemplate): string {
   return `${workflow.workflowType} / ${workflow.runtimeSupport} / ${workflow.userStories.length} user story/stories`;
 }
@@ -328,6 +333,20 @@ export function buildXenesisToolOAuthDraftRequest(item: XenesisConnectionItem): 
     },
     source: 'xenesis',
     approved: true,
+  };
+}
+
+export function buildXenesisToolOAuthSetupPacketRequest(
+  item: XenesisConnectionItem,
+): McpBridgeCapabilityCallRequest | null {
+  if (!item.toolOAuthDraft?.setupPacket) return null;
+  return {
+    path: 'xd.xenesis.tools.oauthDrafts.setupPacket',
+    args: {
+      id: item.id,
+    },
+    source: 'xenesis',
+    approved: false,
   };
 }
 

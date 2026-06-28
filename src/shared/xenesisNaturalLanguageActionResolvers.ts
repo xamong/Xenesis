@@ -22,6 +22,7 @@ import {
   XENESIS_NATURAL_MCP_INSTALL_DRAFT_APPLY_TARGET_RULES,
   XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_RULES,
   XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_RULES,
+  XENESIS_NATURAL_OAUTH_SETUP_PACKET_TARGET_RULES,
   XENESIS_NATURAL_ONBOARDING_OPEN_RULES,
   XENESIS_NATURAL_ONBOARDING_STATUS_RULES,
   XENESIS_NATURAL_PROFILE_INVENTORY_RULES,
@@ -268,6 +269,15 @@ export function xenesisConnectionReadbackActionFromNaturalText(value: string): X
   }
 
   return findXenesisNaturalConnectionAggregateStatusAction(value, 'late');
+}
+
+export function xenesisConnectionOAuthSetupPacketActionFromNaturalText(
+  value: string,
+): XenesisNaturalDeskActionRequest | null {
+  const target = xenesisConnectionTargetFromNaturalText(value);
+  if (!target) return null;
+
+  return findXenesisNaturalConnectionTargetRuleAction(value, target, XENESIS_NATURAL_OAUTH_SETUP_PACKET_TARGET_RULES);
 }
 
 export function xenesisConnectionReviewRequestActionFromNaturalText(

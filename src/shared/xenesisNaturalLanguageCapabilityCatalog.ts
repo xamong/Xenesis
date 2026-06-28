@@ -68,6 +68,7 @@ import {
   XENESIS_NATURAL_MESSENGER_VIEW_OPEN_FALLBACK_CONTEXT_WORDS,
   XENESIS_NATURAL_OAUTH_CONTEXT_WORDS,
   XENESIS_NATURAL_OAUTH_DRAFT_CONTEXT_WORDS,
+  XENESIS_NATURAL_OAUTH_SETUP_PACKET_CONTEXT_WORDS,
   XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS,
   XENESIS_NATURAL_OPEN_OR_SHOW_MINIMAL_WORDS,
   XENESIS_NATURAL_OPEN_OR_SHOW_WORDS,
@@ -1619,6 +1620,11 @@ export const XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS = {
     idFor: (id: string, _label: string) => `natural-xenesis-tool-oauth-draft-status-${id}`,
     reasonFor: (_id: string, label: string) => `Read ${label} OAuth draft status from natural language request.`,
   },
+  toolOauthSetupPacket: {
+    path: 'xd.xenesis.tools.oauthDrafts.setupPacket',
+    idFor: (id: string, _label: string) => `natural-xenesis-tool-oauth-setup-packet-${id}`,
+    reasonFor: (_id: string, label: string) => `Read ${label} OAuth setup packet from natural language request.`,
+  },
   toolUserStory: {
     path: 'xd.xenesis.tools.userStories.status',
     idFor: (id: string, _label: string) => `natural-xenesis-tool-user-story-status-${id}`,
@@ -1797,6 +1803,16 @@ export const XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES = [
     action: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.diagnostics,
     argsKind: 'targetId',
     fallback: true,
+  },
+] as const satisfies readonly XenesisNaturalConnectionTargetActionRule[];
+
+export const XENESIS_NATURAL_OAUTH_SETUP_PACKET_TARGET_RULES = [
+  {
+    targetScope: 'planned-google-tool',
+    contextWords: XENESIS_NATURAL_OAUTH_SETUP_PACKET_CONTEXT_WORDS,
+    requiredContextWordGroups: [['패킷', 'packet', 'redirect uri', '리디렉션']],
+    action: XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.toolOauthSetupPacket,
+    argsKind: 'targetId',
   },
 ] as const satisfies readonly XenesisNaturalConnectionTargetActionRule[];
 

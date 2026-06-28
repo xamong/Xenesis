@@ -1018,6 +1018,7 @@ const XENESIS_TOOL_OAUTH_DRAFT_STATUS_SCHEMA = {
     },
   },
 } as const;
+const XENESIS_TOOL_OAUTH_SETUP_PACKET_SCHEMA = XENESIS_TOOL_OAUTH_DRAFT_STATUS_SCHEMA;
 const XENESIS_TOOL_OAUTH_DRAFT_OPEN_SCHEMA = {
   type: 'object',
   properties: {
@@ -1623,6 +1624,7 @@ export interface DeskBridgeCapabilityAdapter {
   requestXenesisToolMcpInstallDraft?: (args?: unknown) => Promise<unknown> | unknown;
   applyXenesisToolMcpInstallDraft?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolOAuthDraftsStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisToolOAuthSetupPacket?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisToolOAuthDraft?: (args?: unknown) => Promise<unknown> | unknown;
   requestXenesisToolOAuthDraft?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolActionCatalogStatus?: (args?: unknown) => Promise<unknown> | unknown;
@@ -4988,6 +4990,13 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               'Read review-only OAuth app, scope, consent, token-store, diagnostics, and safety-boundary metadata without completing OAuth, storing tokens, writing MCP config, or running provider tools.',
               'read',
               XENESIS_TOOL_OAUTH_DRAFT_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.oauthDrafts.setupPacket',
+              'Read tool OAuth setup packet',
+              'Read the review-only OAuth setup packet for planned Google tool connections, including app registration, redirect URI policy, credential refs, scope review, token-store readiness, diagnostics, and safety boundaries without completing OAuth, storing tokens, writing MCP config, or running provider tools.',
+              'read',
+              XENESIS_TOOL_OAUTH_SETUP_PACKET_SCHEMA,
             ),
             method(
               'xd.xenesis.tools.oauthDrafts.open',
@@ -11659,6 +11668,9 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.tools.oauthDrafts.status') {
         return callAdapter(path, api?.getXenesisToolOAuthDraftsStatus, request.args);
+      }
+      if (path === 'xd.xenesis.tools.oauthDrafts.setupPacket') {
+        return callAdapter(path, api?.getXenesisToolOAuthSetupPacket, request.args);
       }
       if (path === 'xd.xenesis.tools.oauthDrafts.open') {
         return callAdapter(path, api?.openXenesisToolOAuthDraft, request.args);

@@ -7,6 +7,7 @@ import {
   xenesisConnectionChannelProfileDraftApplyActionFromNaturalText,
   xenesisConnectionChannelTestActionFromNaturalText,
   xenesisConnectionMcpInstallDraftApplyActionFromNaturalText,
+  xenesisConnectionOAuthSetupPacketActionFromNaturalText,
   xenesisConnectionProviderProfileDraftApplyActionFromNaturalText,
   xenesisConnectionReadbackActionFromNaturalText,
   xenesisConnectionReviewRequestActionFromNaturalText,
@@ -137,6 +138,12 @@ export function xenesisConnectionSetupApplyPlanFromNaturalText(value: string): X
   const action = xenesisConnectionSetupApplyActionFromNaturalText(value);
   if (!action) return null;
   return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.connectionSetupApplyRecorded, [action]);
+}
+
+export function xenesisConnectionOAuthSetupPacketPlanFromNaturalText(value: string): XenesisNaturalLanguagePlan | null {
+  const action = xenesisConnectionOAuthSetupPacketActionFromNaturalText(value);
+  if (!action) return null;
+  return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.connectionStatusRead, [action]);
 }
 
 export function explicitXenesisConnectionOpenPlanFromNaturalText(value: string): XenesisNaturalLanguagePlan | null {

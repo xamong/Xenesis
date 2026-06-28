@@ -1219,6 +1219,19 @@ export const XENESIS_NATURAL_OAUTH_DRAFT_CONTEXT_WORDS = [
   ...XENESIS_NATURAL_DRAFT_CONTEXT_WORDS,
 ] as const;
 
+export const XENESIS_NATURAL_OAUTH_SETUP_PACKET_CONTEXT_WORDS = [
+  ...XENESIS_NATURAL_OAUTH_CONTEXT_WORDS,
+  '설정 패킷',
+  '설정패킷',
+  'setup packet',
+  'oauth setup packet',
+  'oauth packet',
+  'registration packet',
+  'redirect uri',
+  '리디렉션',
+  '패킷',
+] as const;
+
 export const XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS = ['view', 'views', '뷰', '화면', 'surface'] as const;
 
 export const XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS = [
@@ -1915,7 +1928,7 @@ export const XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES = [
   '- Use `xd.xenesis.runs.start` only when the user clearly asks to run a quoted prompt through the Xenesis runtime. Use `xd.xenesis.runs.cancel` only for explicit user requests to cancel the active Xenesis runtime request, and `xd.xenesis.sessions.reset` only for explicit user requests to reset the active Xenesis conversation/session.',
   '- Use external tool setup, connector, view, user-story, install-plan, MCP install draft, OAuth draft, and action-policy CR paths from the Capability Registry to inspect, open, request review, or apply approval-gated ready MCP config drafts for internal Desk tool readiness surfaces. Tool install plans are review-only and do not execute installs, write MCP config, complete OAuth, store tokens, execute provider tools, mutate settings, or mutate external systems.',
   '- Use tool MCP install draft CR paths from the Capability Registry to inspect templates, focus owning cards, record local Action Inbox review items, or apply ready drafts through `xd.xenesis.tools.mcpInstallDrafts.apply` with approval. The apply path writes local MCP config with backups only; it does not run shell commands, complete OAuth, store tokens, execute provider tools, or mutate external systems.',
-  '- Use tool OAuth draft CR paths from the Capability Registry to inspect Google OAuth app and token-store drafts, focus owning cards, or record local Action Inbox review items. Tool OAuth drafts are review-only and do not complete OAuth, store tokens, write MCP config, execute provider tools, send email, mutate documents, or mutate calendar events.',
+  '- Use tool OAuth draft CR paths from the Capability Registry to inspect Google OAuth app and token-store drafts, read setup packets through `xd.xenesis.tools.oauthDrafts.setupPacket`, focus owning cards, or record local Action Inbox review items. Tool OAuth drafts are review-only; setup packets share that boundary and do not complete OAuth, store tokens, write MCP config, execute provider tools, send email, mutate documents, or mutate calendar events.',
   '- Use external tool action-policy CR paths from the Capability Registry to inspect review-only action catalogs, focus owning cards, or record local Action Inbox review items. Tool action catalogs are review-only and do not execute provider tools or mutate external systems.',
   '- Use provider profile-draft CR paths from the Capability Registry to inspect field drafts, focus provider draft cards, record local Action Inbox review items, or apply ready non-secret provider profile settings with approval. Provider profile draft apply does not accept raw credentials, mutate fallback chains, switch local CLI selection, or run provider prompts.',
   '- Use external messenger routing, safety, access-group, pairing, view, user-story, and profile-draft CR paths from the Capability Registry before testing or changing external messenger setup.',

@@ -928,6 +928,35 @@ test('buildXenesisConnectionsStatus exposes review-only tool OAuth drafts for pl
   assert.ok(workspace?.toolOAuthDraft?.scopes.includes('documents.readonly'));
   assert.ok(workspace?.toolOAuthDraft?.profileFields.some((field) => field.field === 'oauthClient'));
   assert.ok(workspace?.toolOAuthDraft?.readPaths.includes('xd.xenesis.tools.oauthDrafts.status'));
+  assert.ok(workspace?.toolOAuthDraft?.readPaths.includes('xd.xenesis.tools.oauthDrafts.setupPacket'));
+  assert.equal(workspace?.toolOAuthDraft?.setupPacket.packetStatus, 'planned-template');
+  assert.equal(workspace?.toolOAuthDraft?.setupPacket.provider, 'google');
+  assert.deepEqual(workspace?.toolOAuthDraft?.setupPacket.redirectUriCandidates, ['selected MCP OAuth redirect URI']);
+  assert.ok(
+    workspace?.toolOAuthDraft?.setupPacket.credentialRefs.some(
+      (credential) => credential.ref === 'GOOGLE_OAUTH_CLIENT_ID' && credential.secretRef,
+    ),
+  );
+  assert.ok(
+    workspace?.toolOAuthDraft?.setupPacket.credentialRefs.some(
+      (credential) => credential.ref === 'GOOGLE_OAUTH_CLIENT_SECRET' && credential.secretRef,
+    ),
+  );
+  assert.ok(
+    workspace?.toolOAuthDraft?.setupPacket.credentialRefs.some(
+      (credential) => credential.ref === 'GOOGLE_OAUTH_TOKEN_STORE' && credential.secretRef,
+    ),
+  );
+  assert.ok(
+    workspace?.toolOAuthDraft?.setupPacket.checklist.some((step) =>
+      step.includes('Create or select a Google OAuth app'),
+    ),
+  );
+  assert.ok(
+    workspace?.toolOAuthDraft?.setupPacket.checklist.some((step) =>
+      step.includes('Do not paste OAuth client secrets into chat'),
+    ),
+  );
   assert.deepEqual(workspace?.toolOAuthDraft?.controlPaths, [
     'xd.xenesis.tools.oauthDrafts.open',
     'xd.xenesis.tools.oauthDrafts.request',
@@ -953,6 +982,9 @@ test('buildXenesisConnectionsStatus exposes review-only tool OAuth drafts for pl
   assert.equal(calendar?.toolOAuthDraft?.runtimeSupport, 'planned-oauth');
   assert.ok(calendar?.toolOAuthDraft?.scopes.includes('calendar.events.readonly'));
   assert.ok(calendar?.toolOAuthDraft?.scopes.includes('calendar.freebusy.readonly'));
+  assert.ok(calendar?.toolOAuthDraft?.setupPacket.scopes.includes('calendar.freebusy.readonly'));
+  assert.ok(calendar?.toolOAuthDraft?.setupPacket.readPaths.includes('xd.xenesis.tools.oauthDrafts.setupPacket'));
+  assert.ok(calendar?.toolOAuthDraft?.setupPacket.controlPaths.includes('xd.xenesis.tools.oauthDrafts.request'));
   assert.ok(calendar?.toolOAuthDraft?.diagnostics.includes('scope-review'));
   assert.deepEqual(
     calendar?.toolOAuthDraft?.reviewSteps.map((step) => step.id),

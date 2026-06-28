@@ -22,6 +22,7 @@ import {
   buildXenesisProviderProfileDraftRequest,
   buildXenesisToolActionCatalogRequest,
   buildXenesisToolOAuthDraftRequest,
+  buildXenesisToolOAuthSetupPacketRequest,
   formatXenesisChannelAccessGroupsSummary,
   formatXenesisChannelPairingSummary,
   formatXenesisChannelProfileDraftSummary,
@@ -45,6 +46,7 @@ import {
   formatXenesisToolConnectorSummary,
   formatXenesisToolInstallPlanSummary,
   formatXenesisToolOAuthDraftSummary,
+  formatXenesisToolOAuthSetupPacketSummary,
   formatXenesisToolSetupSummary,
   formatXenesisToolUserStorySummary,
   formatXenesisToolViewSummary,
@@ -1026,6 +1028,36 @@ test('formatXenesisToolOAuthDraftSummary describes tool, status, and scope count
       scopes: ['calendar.events.readonly'],
       tokenStore: 'selected MCP OAuth token store',
       consentMode: 'review-only',
+      setupPacket: {
+        packetStatus: 'planned-template',
+        provider: 'google',
+        tool: 'google-calendar',
+        displayName: 'Google Calendar',
+        setupSurface: 'Settings > AI Provider > Local CLI MCP',
+        reviewSurface: 'Desk Action Inbox',
+        redirectUriPolicy: 'Use the redirect URI required by the selected MCP OAuth server.',
+        redirectUriCandidates: ['selected MCP OAuth redirect URI'],
+        credentialRefs: [
+          {
+            ref: 'GOOGLE_OAUTH_CLIENT_ID',
+            label: 'Google OAuth client id',
+            required: true,
+            secretRef: true,
+            valueState: 'planned',
+            source: 'selected MCP OAuth app',
+            description: 'OAuth client id readiness state.',
+          },
+        ],
+        scopes: ['calendar.events.readonly'],
+        tokenStore: 'selected MCP OAuth token store',
+        consentMode: 'review-only',
+        checklist: ['Create or select a Google OAuth app.'],
+        readPaths: ['xd.xenesis.tools.oauthDrafts.setupPacket'],
+        controlPaths: ['xd.xenesis.tools.oauthDrafts.request'],
+        diagnostics: ['oauth-setup-packet'],
+        blockedActions: ['complete OAuth'],
+        safetyBoundaries: ['tool OAuth setup packets are review-only'],
+      },
       readPaths: ['xd.xenesis.tools.oauthDrafts.status'],
       controlPaths: ['xd.xenesis.tools.oauthDrafts.request'],
       diagnostics: ['scope-review'],
@@ -1049,6 +1081,51 @@ test('formatXenesisToolOAuthDraftSummary describes tool, status, and scope count
   );
 });
 
+test('formatXenesisToolOAuthSetupPacketSummary describes provider, credential refs, and checklist', () => {
+  assert.equal(
+    formatXenesisToolOAuthSetupPacketSummary({
+      packetStatus: 'planned-template',
+      provider: 'google',
+      tool: 'google-calendar',
+      displayName: 'Google Calendar',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      reviewSurface: 'Desk Action Inbox',
+      redirectUriPolicy: 'Use the redirect URI required by the selected MCP OAuth server.',
+      redirectUriCandidates: ['selected MCP OAuth redirect URI'],
+      credentialRefs: [
+        {
+          ref: 'GOOGLE_OAUTH_CLIENT_ID',
+          label: 'Google OAuth client id',
+          required: true,
+          secretRef: true,
+          valueState: 'planned',
+          source: 'selected MCP OAuth app',
+          description: 'OAuth client id readiness state.',
+        },
+        {
+          ref: 'GOOGLE_OAUTH_TOKEN_STORE',
+          label: 'Google OAuth token store',
+          required: true,
+          secretRef: true,
+          valueState: 'planned',
+          source: 'selected MCP OAuth token store',
+          description: 'Token-store readiness state.',
+        },
+      ],
+      scopes: ['calendar.events.readonly'],
+      tokenStore: 'selected MCP OAuth token store',
+      consentMode: 'review-only',
+      checklist: ['Create or select a Google OAuth app.', 'Do not paste OAuth client secrets into chat.'],
+      readPaths: ['xd.xenesis.tools.oauthDrafts.setupPacket'],
+      controlPaths: ['xd.xenesis.tools.oauthDrafts.request'],
+      diagnostics: ['oauth-setup-packet'],
+      blockedActions: ['complete OAuth'],
+      safetyBoundaries: ['tool OAuth setup packets are review-only'],
+    }),
+    'google / planned-template / 2 credential ref(s) / 2 setup step(s)',
+  );
+});
+
 test('buildXenesisToolOAuthDraftRequest targets the review request CR path', () => {
   const item = {
     id: 'google-calendar',
@@ -1069,6 +1146,36 @@ test('buildXenesisToolOAuthDraftRequest targets the review request CR path', () 
       scopes: ['calendar.events.readonly'],
       tokenStore: 'selected MCP OAuth token store',
       consentMode: 'review-only',
+      setupPacket: {
+        packetStatus: 'planned-template',
+        provider: 'google',
+        tool: 'google-calendar',
+        displayName: 'Google Calendar',
+        setupSurface: 'Settings > AI Provider > Local CLI MCP',
+        reviewSurface: 'Desk Action Inbox',
+        redirectUriPolicy: 'Use the redirect URI required by the selected MCP OAuth server.',
+        redirectUriCandidates: ['selected MCP OAuth redirect URI'],
+        credentialRefs: [
+          {
+            ref: 'GOOGLE_OAUTH_CLIENT_ID',
+            label: 'Google OAuth client id',
+            required: true,
+            secretRef: true,
+            valueState: 'planned',
+            source: 'selected MCP OAuth app',
+            description: 'OAuth client id readiness state.',
+          },
+        ],
+        scopes: ['calendar.events.readonly'],
+        tokenStore: 'selected MCP OAuth token store',
+        consentMode: 'review-only',
+        checklist: ['Create or select a Google OAuth app.'],
+        readPaths: ['xd.xenesis.tools.oauthDrafts.setupPacket'],
+        controlPaths: ['xd.xenesis.tools.oauthDrafts.request'],
+        diagnostics: ['oauth-setup-packet'],
+        blockedActions: ['complete OAuth'],
+        safetyBoundaries: ['tool OAuth setup packets are review-only'],
+      },
       readPaths: ['xd.xenesis.tools.oauthDrafts.status'],
       controlPaths: ['xd.xenesis.tools.oauthDrafts.request'],
       diagnostics: ['scope-review'],
@@ -1100,6 +1207,83 @@ test('buildXenesisToolOAuthDraftRequest targets the review request CR path', () 
   });
 
   assert.equal(buildXenesisToolOAuthDraftRequest({ ...item, toolOAuthDraft: undefined }), null);
+});
+
+test('buildXenesisToolOAuthSetupPacketRequest targets the setup packet CR read path', () => {
+  const item = {
+    id: 'google-calendar',
+    kind: 'tool',
+    label: 'Google Calendar',
+    status: 'planned',
+    summary: 'Planned calendar OAuth setup.',
+    toolOAuthDraft: {
+      draftStatus: 'planned-template',
+      actionInboxKind: 'xenesis-tool-oauth-draft',
+      tool: 'google-calendar',
+      displayName: 'Google Calendar',
+      runtimeSupport: 'planned-oauth',
+      authSurface: 'Settings > AI Provider > Local CLI MCP',
+      reviewSurface: 'Desk Action Inbox',
+      profileFields: [],
+      missingRequiredFields: ['oauthClient', 'redirectUri', 'tokenStore'],
+      scopes: ['calendar.events.readonly'],
+      tokenStore: 'selected MCP OAuth token store',
+      consentMode: 'review-only',
+      setupPacket: {
+        packetStatus: 'planned-template',
+        provider: 'google',
+        tool: 'google-calendar',
+        displayName: 'Google Calendar',
+        setupSurface: 'Settings > AI Provider > Local CLI MCP',
+        reviewSurface: 'Desk Action Inbox',
+        redirectUriPolicy: 'Use the redirect URI required by the selected MCP OAuth server.',
+        redirectUriCandidates: ['selected MCP OAuth redirect URI'],
+        credentialRefs: [
+          {
+            ref: 'GOOGLE_OAUTH_CLIENT_ID',
+            label: 'Google OAuth client id',
+            required: true,
+            secretRef: true,
+            valueState: 'planned',
+            source: 'selected MCP OAuth app',
+            description: 'OAuth client id readiness state.',
+          },
+        ],
+        scopes: ['calendar.events.readonly'],
+        tokenStore: 'selected MCP OAuth token store',
+        consentMode: 'review-only',
+        checklist: ['Create or select a Google OAuth app.'],
+        readPaths: ['xd.xenesis.tools.oauthDrafts.setupPacket'],
+        controlPaths: ['xd.xenesis.tools.oauthDrafts.request'],
+        diagnostics: ['oauth-setup-packet'],
+        blockedActions: ['complete OAuth'],
+        safetyBoundaries: ['tool OAuth setup packets are review-only'],
+      },
+      readPaths: ['xd.xenesis.tools.oauthDrafts.status', 'xd.xenesis.tools.oauthDrafts.setupPacket'],
+      controlPaths: ['xd.xenesis.tools.oauthDrafts.request'],
+      diagnostics: ['scope-review'],
+      blockedActions: ['complete OAuth'],
+      safetyBoundaries: ['tool OAuth drafts are review-only'],
+      reviewSteps: [],
+    },
+  } satisfies XenesisConnectionItem;
+
+  assert.deepEqual(buildXenesisToolOAuthSetupPacketRequest(item), {
+    path: 'xd.xenesis.tools.oauthDrafts.setupPacket',
+    args: {
+      id: 'google-calendar',
+    },
+    source: 'xenesis',
+    approved: false,
+  });
+
+  assert.equal(
+    buildXenesisToolOAuthSetupPacketRequest({
+      ...item,
+      toolOAuthDraft: undefined,
+    }),
+    null,
+  );
 });
 
 test('formatXenesisProviderSetupSummary describes provider, model, and auth mode', () => {

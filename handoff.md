@@ -7,6 +7,142 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current Tool OAuth Setup Packet Slice
+
+- Objective: expose a structured Google tool OAuth setup packet through the
+  Capability Registry, Connection Center, and natural-language Agent routing so
+  Google Workspace/Calendar setup can move from vague `planned-oauth` metadata to
+  reviewable Desk-native registration, redirect URI, scope, token-store, and
+  safety-boundary preparation.
+- Slice size policy:
+  - Bundle read-model types, CR read path, main handler, renderer summary/UI,
+    natural-language routing, smoke inventory, focused tests, docs working note,
+    broad verification, and commit in one larger cycle.
+- Scope boundary:
+  - Do not complete OAuth.
+  - Do not store OAuth tokens, client secrets, or consent responses.
+  - Do not write MCP config.
+  - Do not execute Google provider tools, send email, mutate documents, or
+    mutate calendar events.
+  - Keep this as CR-first read/review metadata plus Action Inbox review request.
+- External documentation handling:
+  - No external web browsing for this slice. Use repo-local source, tests,
+    Obsidian notes, `handoff.md`, CR audit, and local smoke.
+- Plan:
+  - `docs/superpowers/plans/2026-06-28-xenesis-oauth-setup-packet.md`
+- Next intended step:
+  - Add RED tests for the setup packet model, CR registration/dispatch,
+    renderer summary/request helper behavior, natural-language route, and smoke
+    inventory prompt before implementation.
+
+### RED Verification
+
+- Commands run:
+  - `npx tsx --test src\shared\xenesisConnections.test.ts`
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts`
+  - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
+- Expected failures:
+  - Connection status test fails because `toolOAuthDraft.readPaths` does not yet
+    include `xd.xenesis.tools.oauthDrafts.setupPacket` and no `setupPacket`
+    model exists.
+  - Capability test fails because `xd.xenesis.tools.oauthDrafts.setupPacket` is
+    not registered or dispatched.
+  - Renderer tests fail because setup-packet summary and CR request helpers do
+    not exist.
+  - Natural-language planner maps `구글 캘린더 OAuth 설정 패킷 보여줘` to the
+    existing OAuth draft open path instead of the new setup-packet read path.
+- Passed:
+  - Smoke inventory tests pass after adding the expected prompt case, because
+    they only validate script shape/reporting at this stage.
+- Next intended step:
+  - Implement the setup packet model, CR path, main adapter, renderer helper/UI,
+    and natural-language route.
+
+### Implementation and Focus Verification
+
+- Touched files:
+  - `src/shared/xenesisConnections.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/shared/types.ts`
+  - `src/main/index.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
+  - `src/shared/xenesisNaturalLanguageCatalog.ts`
+  - `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
+  - `src/shared/xenesisNaturalLanguageActionResolvers.ts`
+  - `src/shared/xenesisNaturalLanguagePlanResolvers.ts`
+  - `src/shared/xenesisNaturalLanguagePlanner.ts`
+  - related tests and natural routing smoke inventory files.
+- Code changes:
+  - Added `toolOAuthDraft.setupPacket` for planned Google Workspace/Calendar
+    OAuth setup metadata.
+  - Registered `xd.xenesis.tools.oauthDrafts.setupPacket` as a read-only CR
+    path and wired adapter dispatch/main handler.
+  - Added Connection Center helper/button and Settings display rows for setup
+    packet summary, redirect policy, credential refs, checklist, and readback.
+  - Added natural-language route for `구글 캘린더 OAuth 설정 패킷 보여줘` to the
+    setup-packet read path before generic open/show handling.
+- Commands run:
+  - `npx biome format --write ...`
+  - `npx tsx --test src\shared\xenesisConnections.test.ts`
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts`
+  - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
+- Verification result:
+  - Focused tests pass: connection status 37/37, capability tests 37/37,
+    Connection Center tests 46/46, natural planner tests 38/38, natural routing
+    smoke inventory tests 5/5.
+- Next intended step:
+  - Run broader verification: typecheck, CR audit, build/smoke, package checks,
+    known infra-gap checks, and diff hygiene.
+
+### Broad Verification
+
+- Commands run:
+  - `npm run typecheck`
+  - `npm run docs:capabilities:audit`
+  - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`
+  - `npm run build`
+  - `npm --prefix packages/xenesis test`
+  - `npm --prefix packages/xenesis run typecheck`
+  - `npm --prefix packages/xenesis run build`
+  - `npm run smoke:xenesis:natural-desk-routing`
+  - `npx biome check --write ... --max-diagnostics 160`
+  - `npm run lint`
+  - `npm --prefix packages/xenesis run provider:smoke`
+  - `npm run check:public-release`
+  - `git diff --check`
+- Passed:
+  - Root typecheck passed.
+  - CR audit passed and regenerated `docs/capability-registry-audit.md`: 770
+    nodes, 689 coverage path references, missing registered paths 0, missing
+    dispatched coverage paths 0, undispatched static callable methods 0.
+  - Root build passed.
+  - packages/xenesis tests passed: 79 files, 367 tests.
+  - packages/xenesis typecheck and build passed.
+  - Live natural Desk routing smoke passed: 162/162, including
+    `google-calendar-oauth-setup-packet`.
+  - Touched-file Biome check exited 0 with no fixes applied; warnings are
+    existing `src/main/index.ts` / `src/shared/deskBridgeCapabilities.ts`
+    cleanup items unrelated to this slice.
+  - `git diff --check` exited 0; Git reported existing LF/CRLF normalization
+    warnings only.
+- Known gaps:
+  - `npm run lint` remains blocked by existing repo-wide Biome/CRLF and legacy
+    lint issues: 1150 errors, 419 warnings, 92 infos.
+  - `npm --prefix packages/xenesis run provider:smoke` remains blocked because
+    `OPENAI_API_KEY` is not set for `provider=openai`.
+  - `npm run check:public-release` remains blocked because
+    `.github/workflows/ci.yml` is missing in this public-release workspace.
+- Next intended step:
+  - Update Obsidian working note, commit the slice, then continue the larger
+    OpenClaw/Hermes external-tool setup goal in the next cycle.
+
 ## Current Channel Test Approval Slice
 
 - Objective: make implemented external messenger sanitized test sends

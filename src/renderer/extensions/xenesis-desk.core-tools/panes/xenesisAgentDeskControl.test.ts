@@ -3710,6 +3710,16 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center readback requ
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('구글 캘린더 OAuth 설정 패킷 보여줘').actions, [
+    {
+      id: 'natural-xenesis-tool-oauth-setup-packet-google-calendar',
+      path: 'xd.xenesis.tools.oauthDrafts.setupPacket',
+      args: { id: 'google-calendar' },
+      approved: false,
+      reason: 'Read Google Calendar OAuth setup packet from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('텔레그램 라우팅 상태 보여줘').actions, [
     {
       id: 'natural-xenesis-channel-routing-status-telegram',

@@ -345,6 +345,37 @@ export interface XenesisConnectionToolOAuthDraftReviewStep {
   safetyBoundary: string;
 }
 
+export interface XenesisConnectionToolOAuthSetupPacketCredentialRef {
+  ref: string;
+  label: string;
+  required: boolean;
+  secretRef: boolean;
+  valueState: XenesisConnectionToolOAuthDraftFieldValueState;
+  source: string;
+  description: string;
+}
+
+export interface XenesisConnectionToolOAuthSetupPacket {
+  packetStatus: XenesisConnectionToolOAuthDraftStatus;
+  provider: 'google';
+  tool: string;
+  displayName: string;
+  setupSurface: string;
+  reviewSurface: string;
+  redirectUriPolicy: string;
+  redirectUriCandidates: string[];
+  credentialRefs: XenesisConnectionToolOAuthSetupPacketCredentialRef[];
+  scopes: string[];
+  tokenStore: string;
+  consentMode: string;
+  checklist: string[];
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  blockedActions: string[];
+  safetyBoundaries: string[];
+}
+
 export interface XenesisConnectionToolOAuthDraftTemplate {
   draftStatus: XenesisConnectionToolOAuthDraftStatus;
   actionInboxKind: 'xenesis-tool-oauth-draft';
@@ -359,6 +390,7 @@ export interface XenesisConnectionToolOAuthDraftTemplate {
   scopes: string[];
   tokenStore: string;
   consentMode: string;
+  setupPacket: XenesisConnectionToolOAuthSetupPacket;
   reviewSteps: XenesisConnectionToolOAuthDraftReviewStep[];
   readPaths: string[];
   controlPaths: string[];
@@ -4656,6 +4688,107 @@ function toolOAuthDraftReviewSteps(
   ];
 }
 
+function toolOAuthSetupPacketCredentialRef(
+  ref: string,
+  label: string,
+  source: string,
+  description: string,
+): XenesisConnectionToolOAuthSetupPacketCredentialRef {
+  return {
+    ref,
+    label,
+    required: true,
+    secretRef: true,
+    valueState: 'planned',
+    source,
+    description,
+  };
+}
+
+function buildXenesisToolOAuthSetupPacket(input: {
+  item: XenesisConnectionItem;
+  scopes: string[];
+  blockedActions: string[];
+  safetyBoundaries: string[];
+}): XenesisConnectionToolOAuthSetupPacket {
+  const { item, scopes, blockedActions, safetyBoundaries } = input;
+  const readPaths = uniqueStrings([
+    'xd.xenesis.connections.status',
+    'xd.xenesis.tools.oauthDrafts.status',
+    'xd.xenesis.tools.oauthDrafts.setupPacket',
+    'xd.xenesis.tools.connectors.status',
+    'xd.xenesis.tools.installPlans.status',
+    'xd.xenesis.tools.actions.status',
+    'xd.mcp.settings.status',
+  ]);
+  const controlPaths = uniqueStrings([
+    'xd.xenesis.tools.oauthDrafts.open',
+    'xd.xenesis.tools.oauthDrafts.request',
+    'xd.xenesis.connections.open',
+  ]);
+  const diagnostics = uniqueStrings([
+    'oauth-setup-packet',
+    'oauth-app-registration',
+    'scope-review',
+    'token-store-readiness',
+    'oauth-consent-review',
+    'cr-readback',
+    ...(item.toolConnector?.diagnostics ?? []),
+  ]);
+
+  return {
+    packetStatus: 'planned-template',
+    provider: 'google',
+    tool: item.id,
+    displayName: item.label,
+    setupSurface: item.toolConnector?.setupSurface ?? 'Settings > AI Provider > Local CLI MCP',
+    reviewSurface: 'Desk Action Inbox',
+    redirectUriPolicy:
+      'Use the redirect URI required by the selected MCP OAuth server; Desk does not start an OAuth callback server from this draft.',
+    redirectUriCandidates: ['selected MCP OAuth redirect URI'],
+    credentialRefs: [
+      toolOAuthSetupPacketCredentialRef(
+        'GOOGLE_OAUTH_CLIENT_ID',
+        'Google OAuth client id',
+        'selected MCP OAuth app',
+        'OAuth client id readiness state for the selected MCP server.',
+      ),
+      toolOAuthSetupPacketCredentialRef(
+        'GOOGLE_OAUTH_CLIENT_SECRET',
+        'Google OAuth client secret',
+        'selected MCP OAuth app',
+        'OAuth client secret readiness state for the selected MCP server; the value is never returned.',
+      ),
+      toolOAuthSetupPacketCredentialRef(
+        'GOOGLE_OAUTH_TOKEN_STORE',
+        'Google OAuth token store',
+        'selected MCP OAuth token store',
+        'Token storage readiness state for the selected MCP OAuth flow; tokens are never returned.',
+      ),
+    ],
+    scopes,
+    tokenStore: 'selected MCP OAuth token store',
+    consentMode: 'review-only',
+    checklist: [
+      `Create or select a Google OAuth app for ${item.label}.`,
+      'Register the selected MCP OAuth redirect URI before starting OAuth.',
+      'Review the read-only scopes listed in this setup packet.',
+      'Prepare the selected MCP OAuth token store without storing tokens in Desk chat.',
+      'Do not paste OAuth client secrets into chat, docs, logs, or Action Inbox notes.',
+      'Request Desk Action Inbox review before any OAuth flow is started.',
+    ],
+    readPaths,
+    controlPaths,
+    diagnostics,
+    blockedActions: uniqueStrings(blockedActions),
+    safetyBoundaries: uniqueStrings([
+      'tool OAuth setup packets are review-only',
+      'tool OAuth setup packet does not complete OAuth, store tokens, write MCP config, execute provider tools, mutate settings, send email, mutate documents, or mutate calendar events',
+      ...safetyBoundaries,
+    ]),
+  };
+}
+
 function buildXenesisToolOAuthDraft(item: XenesisConnectionItem): XenesisConnectionToolOAuthDraftTemplate | undefined {
   if (!(XENESIS_CONNECTION_TOOL_OAUTH_DRAFT_IDS as readonly string[]).includes(item.id)) return undefined;
   if (item.toolConnector?.authMode !== 'oauth') return undefined;
@@ -4669,6 +4802,22 @@ function buildXenesisToolOAuthDraft(item: XenesisConnectionItem): XenesisConnect
       : [];
   const workspaceBlockedActions =
     item.id === 'google-workspace' ? ['send email', 'mutate Google documents', 'mutate documents'] : [];
+  const blockedActions = uniqueStrings([
+    ...XENESIS_TOOL_OAUTH_DRAFT_BLOCKED_ACTIONS,
+    ...workspaceBlockedActions,
+    ...calendarBlockedActions,
+  ]);
+  const safetyBoundaries = uniqueStrings([
+    'tool OAuth drafts are review-only',
+    'tool OAuth draft does not complete OAuth, store tokens, write MCP config, execute provider tools, mutate settings, send email, mutate documents, or mutate calendar events',
+    'credential values, OAuth client secrets, OAuth tokens, and consent responses are never returned',
+    'Google tool writes require separate verified approval-gated execution paths',
+    ...(item.toolConnector.safetyBoundaries ?? []),
+    ...(item.toolInstallPlan?.safetyBoundaries ?? []),
+    ...(item.toolActionCatalog?.safetyBoundaries ?? []),
+    ...(item.warnings ?? []),
+  ]);
+  const setupPacket = buildXenesisToolOAuthSetupPacket({ item, scopes, blockedActions, safetyBoundaries });
 
   return {
     draftStatus: 'planned-template',
@@ -4730,10 +4879,12 @@ function buildXenesisToolOAuthDraft(item: XenesisConnectionItem): XenesisConnect
     scopes,
     tokenStore: 'selected MCP OAuth token store',
     consentMode: 'review-only',
+    setupPacket,
     reviewSteps,
     readPaths: [
       'xd.xenesis.connections.status',
       'xd.xenesis.tools.oauthDrafts.status',
+      'xd.xenesis.tools.oauthDrafts.setupPacket',
       'xd.xenesis.tools.connectors.status',
       'xd.xenesis.tools.installPlans.status',
       'xd.xenesis.tools.actions.status',
@@ -4752,21 +4903,8 @@ function buildXenesisToolOAuthDraft(item: XenesisConnectionItem): XenesisConnect
       'cr-readback',
       ...(item.toolConnector.diagnostics ?? []),
     ]),
-    blockedActions: uniqueStrings([
-      ...XENESIS_TOOL_OAUTH_DRAFT_BLOCKED_ACTIONS,
-      ...workspaceBlockedActions,
-      ...calendarBlockedActions,
-    ]),
-    safetyBoundaries: uniqueStrings([
-      'tool OAuth drafts are review-only',
-      'tool OAuth draft does not complete OAuth, store tokens, write MCP config, execute provider tools, mutate settings, send email, mutate documents, or mutate calendar events',
-      'credential values, OAuth client secrets, OAuth tokens, and consent responses are never returned',
-      'Google tool writes require separate verified approval-gated execution paths',
-      ...(item.toolConnector.safetyBoundaries ?? []),
-      ...(item.toolInstallPlan?.safetyBoundaries ?? []),
-      ...(item.toolActionCatalog?.safetyBoundaries ?? []),
-      ...(item.warnings ?? []),
-    ]),
+    blockedActions,
+    safetyBoundaries,
   };
 }
 
