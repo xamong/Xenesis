@@ -122,8 +122,8 @@ import {
   XENESIS_NATURAL_PROFILE_CONTEXT_WORDS,
   XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
   XENESIS_NATURAL_PROFILE_LIST_CONTEXT_WORDS,
-  XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS,
-  XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
+  XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_RULES,
+  XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_RULES,
   XENESIS_NATURAL_PROVIDER_AUTO_TARGET,
   XENESIS_NATURAL_PROVIDER_OPEN_RULES,
   XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_WORDS,
@@ -137,7 +137,6 @@ import {
   XENESIS_NATURAL_REVIEW_REQUEST_INTENT_WORDS,
   XENESIS_NATURAL_REVIEW_REQUEST_TARGET_WORDS,
   XENESIS_NATURAL_RIGHT_SCOPE_WORDS,
-  XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS,
   XENESIS_NATURAL_RUN_CANCEL_CONTEXT_WORDS,
   XENESIS_NATURAL_RUN_CONTEXT_WORDS,
   XENESIS_NATURAL_RUN_START_CONTEXT_WORDS,
@@ -175,6 +174,7 @@ import {
   type XenesisNaturalDockSideId as XenesisDeskDockSide,
   type XenesisNaturalPlacementId as XenesisDeskPlacement,
   type XenesisNaturalDockWindowStateId as XenesisDeskWindowState,
+  type XenesisNaturalCatalogActionRule,
   type XenesisNaturalConnectionTarget,
   type XenesisNaturalConnectionTargetActionRule,
   type XenesisNaturalCoreToolTarget,
@@ -314,6 +314,19 @@ function naturalViewOpenAction(
   };
 }
 
+function naturalCatalogRuleActionFromNaturalText(
+  value: string,
+  rules: readonly XenesisNaturalCatalogActionRule[],
+  args: unknown = DESK_ACTION_ARGS.empty(),
+): XenesisDeskActionRequest | null {
+  for (const rule of rules) {
+    if (rule.contextWords.length > 0 && !hasAny(value, rule.contextWords)) continue;
+    return naturalCatalogAction(rule.action, args);
+  }
+
+  return null;
+}
+
 const DESK_ACTIONS = XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS;
 const DESK_ACTION_ACTIVITY_PHASES = XENESIS_DESK_ACTION_ACTIVITY_PHASES;
 const DESK_ACTION_APPROVAL_STATE = XENESIS_DESK_ACTION_APPROVAL_STATE;
@@ -343,8 +356,6 @@ const NATURAL_NUMERIC_LIMITS = XENESIS_NATURAL_NUMERIC_LIMITS;
 const NATURAL_TEXT_DEFAULTS = XENESIS_NATURAL_TEXT_DEFAULTS;
 const ONBOARDING_ACTIONS = XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS;
 const PLAN_TEXT = XENESIS_NATURAL_PLAN_VISIBLE_TEXT;
-const PROVIDER_AGGREGATE_OPEN_ACTIONS = XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS;
-const PROVIDER_AGGREGATE_STATUS_ACTIONS = XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS;
 const PROVIDER_AUTO_TARGET = XENESIS_NATURAL_PROVIDER_AUTO_TARGET;
 const REVIEW_REQUEST_ACTIONS = XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS;
 const RUNTIME_ACTIONS = XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS;
@@ -752,19 +763,7 @@ function xenesisProviderAggregateStatusActionFromNaturalText(value: string): Xen
   if (!hasXenesisConnectionReadbackIntent(value)) return null;
   if (!hasXenesisAggregateCatalogContext(value)) return null;
 
-  if (hasAny(value, XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS)) {
-    return naturalCatalogAction(PROVIDER_AGGREGATE_STATUS_ACTIONS.routing);
-  }
-
-  if (hasAny(value, XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS)) {
-    return naturalCatalogAction(PROVIDER_AGGREGATE_STATUS_ACTIONS.views);
-  }
-
-  if (hasAny(value, XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS)) {
-    return naturalCatalogAction(PROVIDER_AGGREGATE_STATUS_ACTIONS.profileDrafts);
-  }
-
-  return naturalCatalogAction(PROVIDER_AGGREGATE_STATUS_ACTIONS.setup);
+  return naturalCatalogRuleActionFromNaturalText(value, XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_RULES);
 }
 
 function xenesisProviderReadbackActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
@@ -932,24 +931,12 @@ function xenesisGuideCatalogOpenActionFromNaturalText(value: string): XenesisDes
 function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
   if (!hasXenesisAggregateCatalogContext(value)) return null;
 
-  if (hasXenesisProviderProfileContext(value) && hasAny(value, XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS)) {
-    return naturalCatalogAction(PROVIDER_AGGREGATE_OPEN_ACTIONS.routing, DESK_ACTION_ARGS.ensureVisible());
-  }
-
-  if (hasXenesisProviderProfileContext(value) && hasAny(value, XENESIS_NATURAL_SETUP_CONTEXT_WORDS)) {
-    return naturalCatalogAction(PROVIDER_AGGREGATE_OPEN_ACTIONS.setup, DESK_ACTION_ARGS.ensureVisible());
-  }
-
-  if (hasXenesisProviderProfileContext(value) && hasAny(value, XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS)) {
-    return naturalCatalogAction(PROVIDER_AGGREGATE_OPEN_ACTIONS.views, DESK_ACTION_ARGS.ensureVisible());
-  }
-
-  if (hasXenesisProviderProfileContext(value) && hasAny(value, XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS)) {
-    return naturalCatalogAction(PROVIDER_AGGREGATE_OPEN_ACTIONS.profileDrafts, DESK_ACTION_ARGS.ensureVisible());
-  }
-
   if (hasXenesisProviderProfileContext(value)) {
-    return naturalCatalogAction(PROVIDER_AGGREGATE_OPEN_ACTIONS.catalog, DESK_ACTION_ARGS.ensureVisible());
+    return naturalCatalogRuleActionFromNaturalText(
+      value,
+      XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_RULES,
+      DESK_ACTION_ARGS.ensureVisible(),
+    );
   }
 
   if (hasExternalToolCatalogContext(value) && hasAny(value, XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS)) {

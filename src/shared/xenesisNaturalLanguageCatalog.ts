@@ -86,6 +86,12 @@ export interface XenesisNaturalProviderActionRule {
   fallback?: boolean;
 }
 
+export interface XenesisNaturalCatalogActionRule {
+  contextWords: readonly string[];
+  action: XenesisNaturalDeskActionDescriptor;
+  fallback?: boolean;
+}
+
 export const XENESIS_DESK_ACTION_PROTOCOL = {
   pathPrefix: 'xd.',
 } as const;
@@ -1802,6 +1808,50 @@ export const XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS = {
     reason: 'Read AI provider setup catalog status from natural language request.',
   },
 } as const satisfies Record<string, XenesisNaturalDeskActionDescriptor>;
+
+export const XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS.routing,
+  },
+  {
+    contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS.views,
+  },
+  {
+    contextWords: XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS.profileDrafts,
+  },
+  {
+    contextWords: [],
+    action: XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS.setup,
+    fallback: true,
+  },
+] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+
+export const XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS.routing,
+  },
+  {
+    contextWords: XENESIS_NATURAL_SETUP_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS.setup,
+  },
+  {
+    contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS.views,
+  },
+  {
+    contextWords: XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS.profileDrafts,
+  },
+  {
+    contextWords: [],
+    action: XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS.catalog,
+    fallback: true,
+  },
+] as const satisfies readonly XenesisNaturalCatalogActionRule[];
 
 export const XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS = {
   guides: {

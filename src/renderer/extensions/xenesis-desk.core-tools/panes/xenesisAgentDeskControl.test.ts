@@ -85,7 +85,9 @@ import {
   XENESIS_NATURAL_PROFILE_CONTEXT_WORDS,
   XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
   XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS,
+  XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_RULES,
   XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
+  XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_RULES,
   XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_PROVIDER_OPEN_RULES,
   XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_WORDS,
@@ -486,12 +488,17 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.equal(XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS.stepOpen.path, 'xd.xenesis.onboarding.open');
   assert.match(source, /XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS/);
   assert.match(source, /XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS/);
-  assert.match(source, /XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS/);
+  assert.match(source, /XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_RULES/);
   assert.match(source, /XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS/);
   assert.doesNotMatch(source, /naturalAction\(\s*'natural-xenesis-tools-connectors-status'/);
   assert.doesNotMatch(source, /naturalAction\(\s*'natural-xenesis-messengers-routing-status'/);
   assert.doesNotMatch(source, /naturalAction\(\s*'natural-xenesis-providers-setup-status'/);
   assert.doesNotMatch(source, /naturalAction\(\s*'natural-xenesis-connections-status'/);
+  assert.doesNotMatch(source, /PROVIDER_AGGREGATE_STATUS_ACTIONS\.routing/);
+  assert.doesNotMatch(source, /PROVIDER_AGGREGATE_STATUS_ACTIONS\.views/);
+  assert.doesNotMatch(source, /PROVIDER_AGGREGATE_STATUS_ACTIONS\.profileDrafts/);
+  assert.doesNotMatch(source, /PROVIDER_AGGREGATE_STATUS_ACTIONS\.setup/);
   assert.equal(
     XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS.connectors.path,
     'xd.xenesis.tools.connectors.status',
@@ -504,18 +511,36 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS.setup.path,
     'xd.xenesis.providers.setup.status',
   );
+  assert.deepEqual(
+    XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_RULES.map((rule) => ({
+      path: rule.action.path,
+      fallback: 'fallback' in rule && rule.fallback === true,
+    })),
+    [
+      { path: 'xd.xenesis.providers.routing.status', fallback: false },
+      { path: 'xd.xenesis.providers.views.status', fallback: false },
+      { path: 'xd.xenesis.providers.profileDrafts.status', fallback: false },
+      { path: 'xd.xenesis.providers.setup.status', fallback: true },
+    ],
+  );
   assert.equal(
     XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS.connections.id,
     'natural-xenesis-connections-status',
   );
   assert.match(source, /XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_ACTION_DESCRIPTORS/);
-  assert.match(source, /XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS/);
+  assert.match(source, /XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_RULES/);
   assert.match(source, /XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS/);
   assert.match(source, /XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_ACTION_DESCRIPTORS/);
   assert.doesNotMatch(source, /naturalAction\(\s*'natural-xenesis-guides-catalog-open'/);
   assert.doesNotMatch(source, /naturalAction\(\s*'natural-xenesis-tools-actions-catalog-open'/);
   assert.doesNotMatch(source, /naturalAction\(\s*'natural-xenesis-messengers-routing-catalog-open'/);
   assert.doesNotMatch(source, /naturalAction\(\s*'natural-xenesis-connections-center-open'/);
+  assert.doesNotMatch(source, /PROVIDER_AGGREGATE_OPEN_ACTIONS\.routing/);
+  assert.doesNotMatch(source, /PROVIDER_AGGREGATE_OPEN_ACTIONS\.setup/);
+  assert.doesNotMatch(source, /PROVIDER_AGGREGATE_OPEN_ACTIONS\.views/);
+  assert.doesNotMatch(source, /PROVIDER_AGGREGATE_OPEN_ACTIONS\.profileDrafts/);
+  assert.doesNotMatch(source, /PROVIDER_AGGREGATE_OPEN_ACTIONS\.catalog/);
   assert.equal(XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_ACTION_DESCRIPTORS.guides.path, 'xd.xenesis.guides.open');
   assert.equal(
     XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS.routing.reason,
@@ -525,6 +550,19 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.equal(
     XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_ACTION_DESCRIPTORS.views.id,
     'natural-xenesis-messengers-views-catalog-open',
+  );
+  assert.deepEqual(
+    XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_RULES.map((rule) => ({
+      path: rule.action.path,
+      fallback: 'fallback' in rule && rule.fallback === true,
+    })),
+    [
+      { path: 'xd.xenesis.providers.routing.open', fallback: false },
+      { path: 'xd.xenesis.providers.setup.open', fallback: false },
+      { path: 'xd.xenesis.providers.views.open', fallback: false },
+      { path: 'xd.xenesis.providers.profileDrafts.open', fallback: false },
+      { path: 'xd.xenesis.providers.setup.open', fallback: true },
+    ],
   );
   assert.doesNotMatch(source, /XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS/);
   assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-provider-routing-open-\$\{provider\.id\}`/);

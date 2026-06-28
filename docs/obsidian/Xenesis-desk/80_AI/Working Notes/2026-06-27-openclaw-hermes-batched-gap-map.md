@@ -3110,6 +3110,43 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Provider Aggregate Rule Catalog Refactor Slice
+
+- Moved broad provider catalog status/open selection
+  out of `xenesisAgentDeskControl.ts` into shared catalog rule data.
+- Added `XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_RULES` and
+  `XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_RULES`; the planner now interprets
+  these rules instead of branching directly on provider aggregate action
+  descriptors.
+- Behavior scope:
+  - Existing broad provider catalog prompt semantics and CR paths are
+    preserved. Status keeps setup as the aggregate fallback; open keeps the
+    existing routing/setup/view/profile-draft priority and provider catalog
+    fallback.
+- Scope boundary:
+  - Refactor only.
+  - Do not change registry/dispatcher paths, provider settings, credential
+    handling, profile draft review writes, runtime execution, approval behavior,
+    or UI rendering.
+- Verification:
+  - RED:
+    focused planner test failed because the planner still imported provider
+    aggregate action descriptors directly.
+  - GREEN:
+    focused planner test passed with 37/37 tests.
+  - Scoped Biome passed for the touched catalog, planner, and planner test
+    files after removing one unused import and sorting type imports.
+  - `npm run typecheck` passed.
+  - `npm run build` passed; Vite emitted existing browser `fs`
+    externalization and dynamic import chunking warnings.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 21/21 through the
+    built Electron app.
+  - `git diff --check` exited 0 with LF-to-CRLF warnings only.
+  - CR audit was not run because registry/dispatcher/capability code did not
+    change.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
