@@ -5,6 +5,7 @@ import type { AgentMessage, AgentMessageAttachment } from "./messages.js";
 
 export interface AgentRunExecutorRunner {
   run(input: string | Extract<AgentMessage, { role: "user" }>): AsyncGenerator<AgentRunEvent, AgentRunResult, void>;
+  dispose?: () => void | Promise<void>;
 }
 
 export interface ExecuteAgentRunOptions {
@@ -12,6 +13,7 @@ export interface ExecuteAgentRunOptions {
   prompt: string;
   attachments?: AgentMessageAttachment[];
   sessionWriter: SessionWriter;
+  disposeRunner?: boolean;
   onEvent?: (event: AgentRunEvent) => void | Promise<void>;
   onMessages?: (messages: AgentMessage[]) => void | Promise<void>;
 }
@@ -36,73 +38,87 @@ function isAskEvent(event: AgentRunEvent): event is Extract<AgentRunEvent, { typ
 }
 
 export async function executeAgentRun(options: ExecuteAgentRunOptions): Promise<AgentRunExecutionResult> {
-  let turns = 0;
-  let pendingAskStop = false;
-  let doneContent: string | undefined;
-  let usage: AgentRunUsage | undefined;
-  let status: AgentRunResult["status"] | undefined;
-  let pendingApproval: ApprovalRequest | undefined;
-  const events: AgentRunEvent[] = [];
-  const runInput = options.attachments?.length
-    ? { role: "user" as const, content: options.prompt, attachments: options.attachments }
-    : options.prompt;
-  const iterator = options.runner.run(runInput);
+  let terminalError: unknown;
+  try {
+    let turns = 0;
+    let pendingAskStop = false;
+    let doneContent: string | undefined;
+    let usage: AgentRunUsage | undefined;
+    let status: AgentRunResult["status"] | undefined;
+    let pendingApproval: ApprovalRequest | undefined;
+    const events: AgentRunEvent[] = [];
+    const runInput = options.attachments?.length
+      ? { role: "user" as const, content: options.prompt, attachments: options.attachments }
+      : options.prompt;
+    const iterator = options.runner.run(runInput);
 
-  while (true) {
-    const step = await iterator.next();
-    if (step.done) {
-      usage = step.value.usage;
-      status = step.value.status;
-      if (step.value.status === "paused") pendingApproval = step.value.pendingApproval;
-      await options.onMessages?.(step.value.messages.filter((message) => message.role !== "system"));
-      break;
+    while (true) {
+      const step = await iterator.next();
+      if (step.done) {
+        usage = step.value.usage;
+        status = step.value.status;
+        if (step.value.status === "paused") pendingApproval = step.value.pendingApproval;
+        await options.onMessages?.(step.value.messages.filter((message) => message.role !== "system"));
+        break;
+      }
+
+      const event = step.value;
+      events.push(event);
+      if (event.type === "assistant_message") turns += 1;
+      if (event.type === "done") doneContent = event.content;
+      await options.onEvent?.(event);
+
+      if (isAskEvent(event)) {
+        pendingAskStop = true;
+      }
+
+      if (pendingAskStop && event.type === "tool_result") {
+        await options.sessionWriter.write({
+          type: "run_state",
+          status: "stopped",
+          phase: "terminal",
+          turns,
+          summary: "run stopped: user_input_required",
+          reason: "user_input_required"
+        });
+        const stoppedEvent: AgentRunEvent = {
+          type: "stopped",
+          reason: "user_input_required",
+          turns
+        };
+        await options.sessionWriter.write(stoppedEvent);
+        events.push(stoppedEvent);
+        await options.onEvent?.(stoppedEvent);
+        await iterator.return?.({
+          status: "stopped",
+          reason: "max_turns",
+          content: "",
+          messages: [],
+          turns,
+          usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 }
+        });
+        break;
+      }
     }
 
-    const event = step.value;
-    events.push(event);
-    if (event.type === "assistant_message") turns += 1;
-    if (event.type === "done") doneContent = event.content;
-    await options.onEvent?.(event);
-
-    if (isAskEvent(event)) {
-      pendingAskStop = true;
-    }
-
-    if (pendingAskStop && event.type === "tool_result") {
-      await options.sessionWriter.write({
-        type: "run_state",
-        status: "stopped",
-        phase: "terminal",
-        turns,
-        summary: "run stopped: user_input_required",
-        reason: "user_input_required"
-      });
-      const stoppedEvent: AgentRunEvent = {
-        type: "stopped",
-        reason: "user_input_required",
-        turns
-      };
-      await options.sessionWriter.write(stoppedEvent);
-      events.push(stoppedEvent);
-      await options.onEvent?.(stoppedEvent);
-      await iterator.return?.({
-        status: "stopped",
-        reason: "max_turns",
-        content: "",
-        messages: [],
-        turns,
-        usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 }
-      });
-      break;
+    return {
+      events,
+      ...(doneContent !== undefined ? { doneContent } : {}),
+      turns,
+      ...(usage ? { usage } : {}),
+      ...(status !== undefined ? { status } : {}),
+      ...(pendingApproval !== undefined ? { pendingApproval } : {})
+    };
+  } catch (error) {
+    terminalError = error;
+    throw error;
+  } finally {
+    if (options.disposeRunner === true) {
+      try {
+        await options.runner.dispose?.();
+      } catch (error) {
+        if (terminalError === undefined) throw error;
+      }
     }
   }
-
-  return {
-    events,
-    ...(doneContent !== undefined ? { doneContent } : {}),
-    turns,
-    ...(usage ? { usage } : {}),
-    ...(status !== undefined ? { status } : {}),
-    ...(pendingApproval !== undefined ? { pendingApproval } : {})
-  };
 }

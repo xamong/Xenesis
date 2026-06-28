@@ -336,6 +336,36 @@ export function buildXenesisProviderRuntimeOptions({ xenesisSettings = {}, aiPro
   if (provider === 'groq') return keyedProvider('groq', 'GROQ_API_KEY');
   if (provider === 'deepseek') return keyedProvider('deepseek', 'DEEPSEEK_API_KEY');
   if (provider === 'qwen') return keyedProvider('qwen', 'DASHSCOPE_API_KEY');
+  const compatibleProvider = {
+    lmstudio: {
+      apiKeyEnv: 'LMSTUDIO_API_KEY',
+      baseURL: 'http://127.0.0.1:1234/v1',
+      defaultApiKey: 'xenesis-local',
+    },
+    together: {
+      apiKeyEnv: 'TOGETHER_API_KEY',
+      baseURL: 'https://api.together.xyz/v1',
+    },
+    fireworks: {
+      apiKeyEnv: 'FIREWORKS_API_KEY',
+      baseURL: 'https://api.fireworks.ai/inference/v1',
+    },
+    azure: {
+      apiKeyEnv: 'AZURE_OPENAI_API_KEY',
+      baseURL: '',
+    },
+  }[provider];
+  if (compatibleProvider) {
+    const key = apiKey || env?.[compatibleProvider.apiKeyEnv] || compatibleProvider.defaultApiKey || '';
+    return {
+      provider: 'openai-compatible',
+      model: preferredModel,
+      profile,
+      baseURL: baseURL || compatibleProvider.baseURL,
+      apiKeyEnv: compatibleProvider.apiKeyEnv,
+      env: key ? { [compatibleProvider.apiKeyEnv]: key } : {},
+    };
+  }
   if (provider === 'ollama') {
     return {
       provider: 'ollama',

@@ -3,10 +3,11 @@ import type {
   ExternalAppActionResult,
   ExternalAppApprovalLevel,
   ExternalAppProfile,
+  ExternalAppProfileStatusInfo,
   ExternalAppSettings,
 } from '../../shared/externalAppControl';
 import {
-  classifyExternalAppApproval,
+  externalAppActionDecision,
   normalizeExternalAppAction,
   normalizeExternalAppSettings,
 } from '../../shared/externalAppControl';
@@ -34,25 +35,19 @@ export function createAppControlService(options: AppControlServiceOptions): AppC
       }
 
       const settings = normalizeExternalAppSettings(options.getSettings());
-      if (!settings.enabled) {
-        return failedResult(action.action, 'low', 'External app control is disabled.');
+      if (action.action === 'status' && !hasExternalAppTarget(action)) {
+        return profileStatusResult(settings);
       }
 
       const profile = resolveProfile(settings.profiles, action);
-      const registeredProfile = Boolean(profile);
-      const approvalLevel = strongestApprovalLevel(
-        classifyExternalAppApproval(action, registeredProfile),
-        profile?.approvalLevel,
-      );
+      const decision = externalAppActionDecision(action, profile);
 
-      if (action.appId && !profile) {
-        return failedResult(action.action, approvalLevel, `External app profile not found: ${action.appId}`);
+      if (!settings.enabled) {
+        return failedResult(action.action, decision.approvalLevel, 'External app control is disabled.');
       }
-      if (profile && !profile.enabled) {
-        return failedResult(action.action, approvalLevel, `External app profile is disabled: ${profile.id}`);
-      }
-      if (profile && !profile.allowedActions.includes(action.action)) {
-        return failedResult(action.action, approvalLevel, `External app action is not allowed for ${profile.id}: ${action.action}`);
+
+      if (!decision.allowed) {
+        return failedResult(action.action, decision.approvalLevel, decision.reason);
       }
 
       const executable = action.path || profile?.executable || '';
@@ -89,7 +84,11 @@ export function createAppControlService(options: AppControlServiceOptions): AppC
         action: action.action,
         appId: action.appId,
         path: action.path,
-        approvalLevel,
+        approvalLevel: decision.approvalLevel,
+        policy: {
+          approval: decision.approval,
+          reason: decision.reason,
+        },
       };
     },
   };
@@ -100,13 +99,34 @@ function resolveProfile(profiles: ExternalAppProfile[], action: ExternalAppActio
   return profiles.find((profile) => profile.id === action.appId);
 }
 
-function strongestApprovalLevel(
-  first: ExternalAppApprovalLevel,
-  second: ExternalAppApprovalLevel | undefined,
-): ExternalAppApprovalLevel {
-  const rank: Record<ExternalAppApprovalLevel, number> = { low: 0, medium: 1, high: 2 };
-  if (!second) return first;
-  return rank[second] > rank[first] ? second : first;
+function hasExternalAppTarget(action: ExternalAppAction): boolean {
+  return Boolean(action.appId || action.path || action.processName || action.titleContains || action.windowId);
+}
+
+function profileStatusResult(settings: ExternalAppSettings): ExternalAppActionResult {
+  return {
+    ok: true,
+    action: 'status',
+    controlEnabled: settings.enabled,
+    approvalLevel: 'low',
+    profiles: settings.profiles.map(profileStatusInfo),
+    windows: [],
+    message: 'External app profile status completed.',
+    policy: {
+      approval: 'never',
+      reason: 'External app profile status readback.',
+    },
+  };
+}
+
+function profileStatusInfo(profile: ExternalAppProfile): ExternalAppProfileStatusInfo {
+  return {
+    id: profile.id,
+    label: profile.label,
+    enabled: profile.enabled,
+    approvalLevel: profile.approvalLevel,
+    allowedActions: [...profile.allowedActions],
+  };
 }
 
 function failedResult(

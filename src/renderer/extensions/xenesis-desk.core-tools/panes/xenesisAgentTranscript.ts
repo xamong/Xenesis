@@ -53,6 +53,8 @@ function activityLabelForEntry(entry: XenesisRawStreamEntry): string {
       return 'Tool result';
     case 'task_lifecycle':
       return 'Task';
+    case 'turn_ledger':
+      return 'Turn';
     case 'approval':
     case 'artifact_tool_approval':
       return 'Approval';
@@ -69,8 +71,32 @@ function activityLabelForEntry(entry: XenesisRawStreamEntry): string {
   }
 }
 
+function turnLedgerStatusForEntry(entry: XenesisRawStreamEntry): string {
+  if (entry.detail) {
+    try {
+      const parsed = JSON.parse(entry.detail);
+      if (parsed && typeof parsed === 'object' && typeof (parsed as { status?: unknown }).status === 'string') {
+        return (parsed as { status: string }).status;
+      }
+    } catch {
+      // Detail is diagnostic text; fall through to summary heuristics when it is not JSON.
+    }
+  }
+  if (/approval needed/i.test(entry.summary)) return 'waiting_for_approval';
+  if (/failed/i.test(entry.summary)) return 'failed';
+  if (/completed/i.test(entry.summary)) return 'completed';
+  return '';
+}
+
 function activityStatusForEntry(entry: XenesisRawStreamEntry): XenesisTranscriptActivityStatus {
   if (entry.kind === 'approval' || entry.kind === 'artifact_tool_approval') return 'waiting';
+  if (entry.kind === 'turn_ledger') {
+    const status = turnLedgerStatusForEntry(entry);
+    if (status === 'waiting_for_approval') return 'waiting';
+    if (status === 'failed') return 'error';
+    if (status === 'completed') return 'ok';
+    return 'running';
+  }
   if (entry.error) return 'error';
   if (entry.kind === 'desk_tool_call' || entry.kind === 'tool_call' || entry.kind === 'run') return 'running';
   if (
@@ -85,7 +111,7 @@ function activityStatusForEntry(entry: XenesisRawStreamEntry): XenesisTranscript
 
 function isActivityEntry(entry: XenesisRawStreamEntry): boolean {
   if (entry.kind === 'artifact_stream' || entry.kind === 'assistant_delta') return false;
-  return /^(?:desk_tool_|tool_|task_lifecycle|approval|artifact_|run|result|run_error)/.test(entry.kind);
+  return /^(?:desk_tool_|tool_|task_lifecycle|turn_ledger|approval|artifact_|run|result|run_error)/.test(entry.kind);
 }
 
 export function summarizeXenesisTranscriptActivity(

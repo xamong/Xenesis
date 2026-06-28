@@ -1,49 +1,71 @@
-import { createServer } from "node:http";
-import { createHash } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { relative, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-import { FileWorkspaceChangeStore } from "../changes/index.js";
-import type { ApprovalMode, PermissionsConfig } from "../config/types.js";
-import type { HookEmitter, HookName } from "../hooks/index.js";
-import type { HookRegistry } from "../hooks/HookRegistry.js";
-import type { HandoffPriorityPolicy } from "../orchestration/index.js";
-import { evaluatePermission, workspacePathForToolInput } from "../permissions/policy.js";
-import type { AgentProvider, ProviderRequest, ProviderResponse } from "../providers/types.js";
-import { buildProviderQueryConfig, type ProviderQueryConfig } from "../providers/queryConfig.js";
-import { coerceToolArguments, buildSchemaGuidance } from "../providers/toolArgCoercion.js";
-import type { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
-import type { SessionWriter } from "../sessions/types.js";
-import type { TodoItem, Tool, ToolContext, ToolContextUpdates, ToolEvent, ToolLogger, ToolRegistry } from "../tools/types.js";
-import { assertInsideWorkspace } from "../utils/workspace.js";
-import type { AgentRunEvent, ApprovalDecision, ApprovalRequest, RunStateEvent, SessionEvent, ToolResultStoredEvent } from "./events.js";
-import { ApprovalPauseSignal } from "./hitl/ApprovalPauseSignal.js";
+import { createServer } from 'node:http';
+import { createHash } from 'node:crypto';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { relative, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { FileWorkspaceChangeStore } from '../changes/index.js';
+import type { ApprovalMode, PermissionsConfig } from '../config/types.js';
+import type { HookEmitter, HookName } from '../hooks/index.js';
+import type { HookRegistry } from '../hooks/HookRegistry.js';
+import type { HandoffPriorityPolicy } from '../orchestration/index.js';
+import { evaluatePermission, workspacePathForToolInput } from '../permissions/policy.js';
+import type { AgentProvider, ProviderRequest, ProviderResponse } from '../providers/types.js';
+import { buildProviderQueryConfig, type ProviderQueryConfig } from '../providers/queryConfig.js';
+import { coerceToolArguments, buildSchemaGuidance } from '../providers/toolArgCoercion.js';
+import type { z } from 'zod';
+import { zodToJsonSchema } from 'zod-to-json-schema';
+import type { SessionWriter } from '../sessions/types.js';
+import type {
+  TodoItem,
+  Tool,
+  ToolContext,
+  ToolContextUpdates,
+  ToolEvent,
+  ToolLogger,
+  ToolRegistry,
+} from '../tools/types.js';
+import { assertInsideWorkspace } from '../utils/workspace.js';
+import type {
+  AgentRunEvent,
+  ApprovalDecision,
+  ApprovalRequest,
+  RunStateEvent,
+  SessionEvent,
+  ToolResultStoredEvent,
+} from './events.js';
+import { ApprovalPauseSignal } from './hitl/ApprovalPauseSignal.js';
 import {
   classifyVerificationFailure,
   renderVerificationFailureClassification,
   type VerificationFailureClassification,
-  type VerificationToolName
-} from "./failureClassification.js";
-import { compactConversation, shouldThrash } from "./context/compaction/compactConversation.js";
-import { stripStaleImageAttachments } from "./context/compaction/stripStaleImages.js";
-import { pruneOlderMessages } from "./context/compaction/pruneToolResults.js";
-import { estimateContextTokens } from "./context/ContextRecord.js";
-import { computeContextTokenBudget } from "./context/modelMetadata.js";
-import { repairToolResultPairing, type AgentMessage, type ToolCall } from "./messages.js";
-import { buildRunSnapshot, type ResumableRunState, type RunSnapshotInput } from "./resume/ResumableRunState.js";
-import { wrapExternalContent, type WrappedExternalContent } from "./prompt/index.js";
-import { classifyProviderFailure, decideProviderAttempt, computeRetryDelayMs, extractRetryAfterMs } from "./providerFailurePolicy.js";
-import { LOCAL_BACKEND, type ExecutionBackend } from "./isolation/executionBackend.js";
+  type VerificationToolName,
+} from './failureClassification.js';
+import { compactConversation, shouldThrash } from './context/compaction/compactConversation.js';
+import { stripStaleImageAttachments } from './context/compaction/stripStaleImages.js';
+import { pruneOlderMessages } from './context/compaction/pruneToolResults.js';
+import { estimateContextTokens } from './context/ContextRecord.js';
+import { computeContextTokenBudget } from './context/modelMetadata.js';
+import { repairToolResultPairing, type AgentMessage, type ToolCall } from './messages.js';
+import { buildRunSnapshot, type ResumableRunState, type RunSnapshotInput } from './resume/ResumableRunState.js';
+import { wrapExternalContent, type WrappedExternalContent } from './prompt/index.js';
+import {
+  classifyProviderFailure,
+  decideProviderAttempt,
+  computeRetryDelayMs,
+  extractRetryAfterMs,
+} from './providerFailurePolicy.js';
+import { LOCAL_BACKEND, type ExecutionBackend } from './isolation/executionBackend.js';
+import type { XenesisTurnApprovalResolutionInput, XenesisTurnLedger, XenesisTurnProcessModel } from './turnLedger.js';
 
-type UserMessage = Extract<AgentMessage, { role: "user" }>;
-type SystemMessage = Extract<AgentMessage, { role: "system" }>;
-type AssistantMessage = Extract<AgentMessage, { role: "assistant" }>;
-type ToolMessage = Extract<AgentMessage, { role: "tool" }>;
+type UserMessage = Extract<AgentMessage, { role: 'user' }>;
+type SystemMessage = Extract<AgentMessage, { role: 'system' }>;
+type AssistantMessage = Extract<AgentMessage, { role: 'assistant' }>;
+type ToolMessage = Extract<AgentMessage, { role: 'tool' }>;
 type ToolRunOutcome = {
   ok: boolean;
   recordedMessage: ToolMessage;
   modelMessage: ToolMessage;
+  data?: unknown;
   externalContentWarnings?: string[];
   storedEvent?: ToolResultStoredEvent;
   inputPath?: string;
@@ -53,9 +75,9 @@ type ToolRunOutcome = {
   contextUpdates?: ToolContextUpdates;
 };
 type ToolLoopGuardrailReason =
-  | "repeated_exact_failure"
-  | "repeated_same_tool_failure"
-  | "repeated_readonly_no_progress";
+  | 'repeated_exact_failure'
+  | 'repeated_same_tool_failure'
+  | 'repeated_readonly_no_progress';
 type ToolLoopGuardrailEntry = {
   toolName: string;
   inputKey: string;
@@ -98,7 +120,7 @@ type ToolPolicyAuditOptions = {
   priorityTools?: string[];
 };
 type ToolRecoveryHint = {
-  kind: "missing_tool" | "invalid_tool_input" | "permission_denied" | "approval_denied" | "tool_failed" | "hook_denied";
+  kind: 'missing_tool' | 'invalid_tool_input' | 'permission_denied' | 'approval_denied' | 'tool_failed' | 'hook_denied';
   toolName: string;
   reason: string;
   nextAction: string;
@@ -183,7 +205,7 @@ export interface AgentRunnerOptions {
    * S6 — durable HITL fast-lane timeout behaviour: on `approvalHandler` timeout,
    * `allow` runs the tool, `deny` denies it. Defaults to `deny`.
    */
-  approvalTimeoutBehavior?: "allow" | "deny";
+  approvalTimeoutBehavior?: 'allow' | 'deny';
   /**
    * S6 — durable HITL resume. A human decision injected by `resumeAgentPipeline`
    * for the exact stored tool call. Consumed once at the approval gate: when its
@@ -241,6 +263,7 @@ export interface AgentRunnerOptions {
    * backend (Docker, remote) to intercept all one-shot shell/runtime tool exec.
    */
   executionBackend?: ExecutionBackend;
+  turnLedger?: XenesisTurnLedger;
 }
 
 export interface AgentRunUsage {
@@ -257,21 +280,21 @@ interface AgentRunResultBase {
 }
 
 export type AgentRunResult =
-  | (AgentRunResultBase & { status: "done" })
-  | (AgentRunResultBase & { status: "stopped"; reason: "max_turns" | "cancelled" | "budget" })
-  | (AgentRunResultBase & { status: "paused"; reason: "awaiting_approval"; pendingApproval: ApprovalRequest });
+  | (AgentRunResultBase & { status: 'done' })
+  | (AgentRunResultBase & { status: 'stopped'; reason: 'max_turns' | 'cancelled' | 'budget' })
+  | (AgentRunResultBase & { status: 'paused'; reason: 'awaiting_approval'; pendingApproval: ApprovalRequest });
 
 const defaultLogger: ToolLogger = {
   debug: () => undefined,
   info: () => undefined,
   warn: () => undefined,
-  error: () => undefined
+  error: () => undefined,
 };
 
 class RunnerCancelledError extends Error {
   constructor() {
-    super("Run cancelled");
-    this.name = "RunnerCancelledError";
+    super('Run cancelled');
+    this.name = 'RunnerCancelledError';
   }
 }
 
@@ -290,17 +313,19 @@ function safeStringify(value: unknown): string {
 function stableToolInputValue(value: unknown): unknown {
   if (value === null) return null;
   const valueType = typeof value;
-  if (valueType === "bigint") return String(value);
-  if (valueType === "number") return Number.isFinite(value as number) ? value : String(value);
-  if (valueType === "string" || valueType === "boolean") return value;
-  if (valueType === "undefined" || valueType === "function" || valueType === "symbol") return null;
+  if (valueType === 'bigint') return String(value);
+  if (valueType === 'number') return Number.isFinite(value as number) ? value : String(value);
+  if (valueType === 'string' || valueType === 'boolean') return value;
+  if (valueType === 'undefined' || valueType === 'function' || valueType === 'symbol') return null;
   if (Array.isArray(value)) return value.map((item) => stableToolInputValue(item));
 
   const input = value as Record<string, unknown>;
-  return Object.keys(input).sort().reduce<Record<string, unknown>>((acc, key) => {
-    acc[key] = stableToolInputValue(input[key]);
-    return acc;
-  }, {});
+  return Object.keys(input)
+    .sort()
+    .reduce<Record<string, unknown>>((acc, key) => {
+      acc[key] = stableToolInputValue(input[key]);
+      return acc;
+    }, {});
 }
 
 function canonicalToolInput(input: unknown) {
@@ -308,7 +333,7 @@ function canonicalToolInput(input: unknown) {
 }
 
 function shortHash(value: string) {
-  return createHash("sha256").update(value).digest("hex").slice(0, 16);
+  return createHash('sha256').update(value).digest('hex').slice(0, 16);
 }
 
 function toolLoopCallKey(toolCall: ToolCall) {
@@ -318,7 +343,7 @@ function toolLoopCallKey(toolCall: ToolCall) {
 function createToolLoopGuardrailState(): ToolLoopGuardrailState {
   return {
     byCallKey: new Map(),
-    consecutiveFailureCount: 0
+    consecutiveFailureCount: 0,
   };
 }
 
@@ -326,23 +351,27 @@ function usageSnapshot(usage: AgentRunUsage): AgentRunUsage {
   return {
     inputTokens: usage.inputTokens,
     outputTokens: usage.outputTokens,
-    totalTokens: usage.totalTokens
+    totalTokens: usage.totalTokens,
   };
 }
 
 function isAbortLikeError(error: unknown) {
-  return error instanceof RunnerCancelledError ||
-    (error instanceof Error && (error.name === "AbortError" || error.message.toLowerCase().includes("aborted")));
+  return (
+    error instanceof RunnerCancelledError ||
+    (error instanceof Error && (error.name === 'AbortError' || error.message.toLowerCase().includes('aborted')))
+  );
 }
 
 function isContextLimitError(error: unknown) {
   const message = errorMessage(error).toLowerCase();
-  return message.includes("context_length_exceeded") ||
-    message.includes("maximum context") ||
-    message.includes("context window") ||
-    message.includes("prompt is too long") ||
-    message.includes("too many tokens") ||
-    message.includes("token limit");
+  return (
+    message.includes('context_length_exceeded') ||
+    message.includes('maximum context') ||
+    message.includes('context window') ||
+    message.includes('prompt is too long') ||
+    message.includes('too many tokens') ||
+    message.includes('token limit')
+  );
 }
 
 function sleep(ms: number, signal?: AbortSignal) {
@@ -361,8 +390,8 @@ function sleep(ms: number, signal?: AbortSignal) {
       cleanup();
       reject(new RunnerCancelledError());
     };
-    const cleanup = () => signal?.removeEventListener("abort", onAbort);
-    signal?.addEventListener("abort", onAbort, { once: true });
+    const cleanup = () => signal?.removeEventListener('abort', onAbort);
+    signal?.addEventListener('abort', onAbort, { once: true });
   });
 }
 
@@ -373,10 +402,10 @@ function toolArray(tools: Tool[] | ToolRegistry | undefined) {
 
 function toolResultMessage(toolCall: ToolCall, content: string): ToolMessage {
   return {
-    role: "tool",
+    role: 'tool',
     toolCallId: toolCall.id,
     name: toolCall.name,
-    content
+    content,
   };
 }
 
@@ -387,65 +416,64 @@ function truncateToolContent(content: string, maxChars: number) {
   const omitted = content.length - headLength - tailLength;
   return [
     content.slice(0, headLength),
-    "",
+    '',
     `[output truncated: omitted ${omitted} characters from ${content.length}]`,
-    "",
-    content.slice(content.length - tailLength)
-  ].join("\n");
+    '',
+    content.slice(content.length - tailLength),
+  ].join('\n');
 }
 
 function toolResultAuthority(isReadOnly?: boolean, isMutation?: boolean) {
-  if (isMutation) return "tool_mutation";
-  if (isReadOnly) return "tool_readonly";
-  return "tool";
+  if (isMutation) return 'tool_mutation';
+  if (isReadOnly) return 'tool_readonly';
+  return 'tool';
 }
 
 function wrapModelVisibleToolResult(
   toolCall: ToolCall,
   content: string,
   isReadOnly?: boolean,
-  isMutation?: boolean
+  isMutation?: boolean,
 ): WrappedExternalContent {
   return wrapExternalContent({
-    kind: "tool_result",
+    kind: 'tool_result',
     source: toolCall.name,
     authority: toolResultAuthority(isReadOnly, isMutation),
-    content
+    content,
   });
 }
 
 function userFacingExternalContentWarnings(wrapped: WrappedExternalContent): string[] {
-  return wrapped.warnings.filter((warning) => (
-    warning.includes("prompt-injection") ||
-    warning.includes("truncated")
-  ));
+  return wrapped.warnings.filter((warning) => warning.includes('prompt-injection') || warning.includes('truncated'));
 }
 
 function compactHistoryMessages(messages: AgentMessage[], keepMessages: number): SystemMessage {
-  const summary = messages.map((message, index) => {
-    if (message.role === "tool") return `${index + 1}. tool ${message.name}: ${message.content}`;
-    return `${index + 1}. ${message.role}: ${message.content}`;
-  }).join("\n");
+  const summary = messages
+    .map((message, index) => {
+      if (message.role === 'tool') return `${index + 1}. tool ${message.name}: ${message.content}`;
+      return `${index + 1}. ${message.role}: ${message.content}`;
+    })
+    .join('\n');
 
   return {
-    role: "system",
+    role: 'system',
     content: [
-      "Xenesis compacted session context:",
-      "[REFERENCE ONLY — respond only to the latest user message after this summary. Topic overlap with this summary does NOT mean resume its task.]",
-      "",
+      'Xenesis compacted session context:',
+      '[REFERENCE ONLY — respond only to the latest user message after this summary. Topic overlap with this summary does NOT mean resume its task.]',
+      '',
       summary,
-      "",
-      "--- END OF CONTEXT SUMMARY ---",
-      `Recent ${keepMessages} messages are preserved after this summary.`
-    ].join("\n")
+      '',
+      '--- END OF CONTEXT SUMMARY ---',
+      `Recent ${keepMessages} messages are preserved after this summary.`,
+    ].join('\n'),
   };
 }
 
 function messageTokenText(message: AgentMessage) {
-  if (message.role === "assistant" && (message.toolCalls ?? []).length > 0) {
-    return [message.content, JSON.stringify(message.toolCalls)].join("\n");
+  if (message.role === 'assistant' && (message.toolCalls ?? []).length > 0) {
+    return [message.content, JSON.stringify(message.toolCalls)].join('\n');
   }
-  if (message.role === "tool") return [message.name, message.content].join("\n");
+  if (message.role === 'tool') return [message.name, message.content].join('\n');
   return message.content;
 }
 
@@ -454,10 +482,12 @@ export function estimateMessagesTokens(messages: AgentMessage[]) {
 }
 
 function deterministicCompactSummary(messages: AgentMessage[]) {
-  return messages.map((message, index) => {
-    if (message.role === "tool") return `${index + 1}. tool ${message.name}: ${message.content}`;
-    return `${index + 1}. ${message.role}: ${message.content}`;
-  }).join("\n");
+  return messages
+    .map((message, index) => {
+      if (message.role === 'tool') return `${index + 1}. tool ${message.name}: ${message.content}`;
+      return `${index + 1}. ${message.role}: ${message.content}`;
+    })
+    .join('\n');
 }
 
 function isProjectAnalysisPrompt(content: string) {
@@ -468,11 +498,11 @@ function isProjectAnalysisPrompt(content: string) {
 }
 
 function isProjectEvidenceToolName(name: string) {
-  return ["read", "search", "code_symbols", "lsp", "context_search"].includes(name);
+  return ['read', 'search', 'code_symbols', 'lsp', 'context_search'].includes(name);
 }
 
 function hasSuccessfulDiscoveryTool(successfulToolNames: ReadonlySet<string>) {
-  return ["tree", "glob", "list"].some((name) => successfulToolNames.has(name));
+  return ['tree', 'glob', 'list'].some((name) => successfulToolNames.has(name));
 }
 
 function projectAnalysisEvidenceRecoveryMessage(
@@ -480,106 +510,128 @@ function projectAnalysisEvidenceRecoveryMessage(
   successfulToolNames: ReadonlySet<string>,
   successfulEvidenceToolCount: number,
   successfulEvidencePathCount: number,
-  recoveryCount: number
+  recoveryCount: number,
 ): SystemMessage | undefined {
   if (recoveryCount >= 2) return undefined;
   if (!isProjectAnalysisPrompt(userMessage.content)) return undefined;
   if (successfulEvidenceToolCount >= 2 && successfulEvidencePathCount >= 2) return undefined;
 
   return {
-    role: "system",
+    role: 'system',
     content: [
-      "Project analysis requires file evidence before final answer.",
+      'Project analysis requires file evidence before final answer.',
       hasSuccessfulDiscoveryTool(successfulToolNames)
-        ? "You have only used discovery tools such as tree/glob/list so far."
-        : "You have not yet gathered file evidence.",
-      "Call read, search, code_symbols, lsp, or context_search on a small set of relevant files before finalizing.",
-      "Use at least two focused evidence reads/searches from distinct files or sources when the workspace has multiple entry, config, or documentation files. Configuration files or repeated ranges from one report alone are not enough for project-renewal analysis.",
-      "For large files, use read with startLine/maxLines or search first, then summarize the observed evidence."
-    ].join("\n")
+        ? 'You have only used discovery tools such as tree/glob/list so far.'
+        : 'You have not yet gathered file evidence.',
+      'Call read, search, code_symbols, lsp, or context_search on a small set of relevant files before finalizing.',
+      'Use at least two focused evidence reads/searches from distinct files or sources when the workspace has multiple entry, config, or documentation files. Configuration files or repeated ranges from one report alone are not enough for project-renewal analysis.',
+      'For large files, use read with startLine/maxLines or search first, then summarize the observed evidence.',
+    ].join('\n'),
   };
 }
 
-const verificationToolRecoveryNames = ["app_readiness", "diagnostics", "app_e2e_check"];
+const verificationToolRecoveryNames = ['app_readiness', 'diagnostics', 'app_e2e_check'];
 
 // Streaming idle watchdog: abort a provider stream that produces no events for this long.
-const STREAM_IDLE_MS = Number(process.env.XENESIS_STREAM_IDLE_MS ?? "60000") || 60000;
+const STREAM_IDLE_MS = Number(process.env.XENESIS_STREAM_IDLE_MS ?? '60000') || 60000;
 
 function userRequestedVerificationToolUse(content: string) {
-  return /app_readiness|app_e2e_check|diagnostics|verify|verification|test|diagnostic|검증|테스트|진단|수정|고쳐|복구/i.test(content);
+  return /app_readiness|app_e2e_check|diagnostics|verify|verification|test|diagnostic|검증|테스트|진단|수정|고쳐|복구/i.test(
+    content,
+  );
 }
 
 function containsToolUnavailableClaim(content: string) {
-  return /unable\s+to\s+use|can't\s+use|cannot\s+use|not\s+able\s+to\s+use|current\s+constraints|tool\s+constraints|tools?\s+(?:are\s+)?unavailable|사용할\s+수\s+없|도구[^.!?\n]{0,80}(?:사용|호출|실행)[^.!?\n]{0,40}(?:못|불가)/i.test(content);
+  return /unable\s+to\s+use|can't\s+use|cannot\s+use|not\s+able\s+to\s+use|current\s+constraints|tool\s+constraints|tools?\s+(?:are\s+)?unavailable|사용할\s+수\s+없|도구[^.!?\n]{0,80}(?:사용|호출|실행)[^.!?\n]{0,40}(?:못|불가)/i.test(
+    content,
+  );
 }
 
 function contentMentionsTool(content: string, toolName: string) {
-  return new RegExp(`(?:^|[^A-Za-z0-9_])${escapeRegExp(toolName)}(?:$|[^A-Za-z0-9_])`, "i").test(content);
+  return new RegExp(`(?:^|[^A-Za-z0-9_])${escapeRegExp(toolName)}(?:$|[^A-Za-z0-9_])`, 'i').test(content);
 }
 
 function userRequestedServerToolUse(content: string) {
-  return contentMentionsTool(content, "server") ||
-    /서버[^.!?\n]{0,30}(?:띄|실행|시작|구동|열|켜)|(?:띄|실행|시작|구동|열|켜)[^.!?\n]{0,30}서버|(?:start|run|launch|serve)[^.!?\n]{0,30}server|server[^.!?\n]{0,30}(?:start|run|launch|serve)/i.test(content);
+  return (
+    contentMentionsTool(content, 'server') ||
+    /서버[^.!?\n]{0,30}(?:띄|실행|시작|구동|열|켜)|(?:띄|실행|시작|구동|열|켜)[^.!?\n]{0,30}서버|(?:start|run|launch|serve)[^.!?\n]{0,30}server|server[^.!?\n]{0,30}(?:start|run|launch|serve)/i.test(
+      content,
+    )
+  );
 }
 
 function userRequestedVisualVerification(content: string) {
-  return contentMentionsTool(content, "browser") ||
-    contentMentionsTool(content, "app_e2e_check") ||
-    /브라우저|화면[^.!?\n]{0,30}(?:확인|검증|점검|테스트)|(?:확인|검증|점검|테스트)[^.!?\n]{0,30}화면|렌더링[^.!?\n]{0,30}(?:확인|검증|점검|테스트)/i.test(content);
+  return (
+    contentMentionsTool(content, 'browser') ||
+    contentMentionsTool(content, 'app_e2e_check') ||
+    /브라우저|화면[^.!?\n]{0,30}(?:확인|검증|점검|테스트)|(?:확인|검증|점검|테스트)[^.!?\n]{0,30}화면|렌더링[^.!?\n]{0,30}(?:확인|검증|점검|테스트)/i.test(
+      content,
+    )
+  );
 }
 
 function falseUnavailableToolRecoveryMessage(
   userMessage: UserMessage,
   assistantContent: string,
   availableToolNames: readonly string[],
-  alreadyUsed: boolean
+  alreadyUsed: boolean,
 ): SystemMessage | undefined {
   if (alreadyUsed) return undefined;
   if (!userRequestedVerificationToolUse(userMessage.content)) return undefined;
   if (!containsToolUnavailableClaim(assistantContent)) return undefined;
 
   const availableNames = new Set(availableToolNames);
-  const requestedVerificationTools = verificationToolRecoveryNames.filter((name) =>
-    availableNames.has(name) &&
-    (contentMentionsTool(userMessage.content, name) || contentMentionsTool(assistantContent, name))
+  const requestedVerificationTools = verificationToolRecoveryNames.filter(
+    (name) =>
+      availableNames.has(name) &&
+      (contentMentionsTool(userMessage.content, name) || contentMentionsTool(assistantContent, name)),
   );
   if (requestedVerificationTools.length === 0) return undefined;
 
   return {
-    role: "system",
+    role: 'system',
     content: [
-      "Requested verification tools are available in this run.",
-      `Available requested tools: ${requestedVerificationTools.join(", ")}`,
-      "Do not claim these tools are unavailable unless the runtime explicitly denies a tool call.",
-      "Call the first appropriate verification tool now. For generated client-server apps, start with app_readiness, then run diagnostics, then app_e2e_check when the app is browser-facing."
-    ].join("\n")
+      'Requested verification tools are available in this run.',
+      `Available requested tools: ${requestedVerificationTools.join(', ')}`,
+      'Do not claim these tools are unavailable unless the runtime explicitly denies a tool call.',
+      'Call the first appropriate verification tool now. For generated client-server apps, start with app_readiness, then run diagnostics, then app_e2e_check when the app is browser-facing.',
+    ].join('\n'),
   };
 }
 
 function explicitlyRequestedToolNames(content: string, availableToolNames: readonly string[]) {
   const available = new Set(availableToolNames);
-  const requestedTools = ["app_readiness", "diagnostics", "app_e2e_check", "browser", "read"].filter((toolName) =>
-    available.has(toolName) && contentMentionsTool(content, toolName)
+  const requestedTools = ['app_readiness', 'diagnostics', 'app_e2e_check', 'browser', 'read'].filter(
+    (toolName) => available.has(toolName) && contentMentionsTool(content, toolName),
   );
-  if (available.has("server") && userRequestedServerToolUse(content)) {
-    requestedTools.push("server");
+  if (available.has('server') && userRequestedServerToolUse(content)) {
+    requestedTools.push('server');
   }
   return Array.from(new Set(requestedTools));
 }
 
 function userRequestedPostMutationRead(content: string) {
-  return /(?:갱신|생성|작성|수정|변경|편집|추가|저장|업데이트|write|update|create|modify|edit|patch)[^.!?\n]{0,80}(?:후|뒤|다시|재확인|read\s*back|re-read)|(?:후|뒤|다시|재확인)[^.!?\n]{0,80}read|read\s+back|re-read|after\s+(?:writing|updating|editing|modifying)/i.test(content);
+  return /(?:갱신|생성|작성|수정|변경|편집|추가|저장|업데이트|write|update|create|modify|edit|patch)[^.!?\n]{0,80}(?:후|뒤|다시|재확인|read\s*back|re-read)|(?:후|뒤|다시|재확인)[^.!?\n]{0,80}read|read\s+back|re-read|after\s+(?:writing|updating|editing|modifying)/i.test(
+    content,
+  );
 }
 
 function userRequestedComplexImplementationTracking(content: string) {
-  const workRequested = /구현|수정|변경|추가|생성|검증|실행|완료|끝까지|implement|build|create|update|modify|fix|verify|run/i.test(content);
+  const workRequested =
+    /구현|수정|변경|추가|생성|검증|실행|완료|끝까지|implement|build|create|update|modify|fix|verify|run/i.test(content);
   if (!workRequested) return false;
 
-  const explicitPlanningOnly = /계획만|제안만|분석만|읽기만|수정하지\s*(?:마|말)|do\s+not\s+(?:modify|edit|write|change)|plan\s+only|proposal\s+only/i.test(content);
+  const explicitPlanningOnly =
+    /계획만|제안만|분석만|읽기만|수정하지\s*(?:마|말)|do\s+not\s+(?:modify|edit|write|change)|plan\s+only|proposal\s+only/i.test(
+      content,
+    );
   if (explicitPlanningOnly) return false;
 
   const numberedStepCount = content.match(/(?:^|\s)\d+[\).]/g)?.length ?? 0;
-  const sequencedWork = /먼저[^.!?\n]{0,120}(?:그\s*다음|이후|후)|(?:그\s*다음|이후|후)[^.!?\n]{0,120}(?:검증|실행|보고)|then|after(?:ward)?/i.test(content);
+  const sequencedWork =
+    /먼저[^.!?\n]{0,120}(?:그\s*다음|이후|후)|(?:그\s*다음|이후|후)[^.!?\n]{0,120}(?:검증|실행|보고)|then|after(?:ward)?/i.test(
+      content,
+    );
   const verificationRequested = /검증|테스트|diagnostics|npm\s+test|verify|verification|test/i.test(content);
   return numberedStepCount >= 2 || (sequencedWork && verificationRequested);
 }
@@ -590,7 +642,7 @@ function explicitToolCompletionRecoveryMessage(
   successfulToolNames: ReadonlySet<string>,
   attemptedToolNames: ReadonlySet<string>,
   mutationSinceLastRead: boolean,
-  recoveryCount: number
+  recoveryCount: number,
 ): SystemMessage | undefined {
   if (recoveryCount >= 2) return undefined;
   const constraints = detectUserRequestConstraints(userMessage.content);
@@ -598,22 +650,22 @@ function explicitToolCompletionRecoveryMessage(
   const visualVerificationAllowed = !constraints.noBrowser && !preferences.readinessOnly;
   const availableToolSet = new Set(availableToolNames);
   const visualVerificationTools = visualVerificationAllowed
-    ? ["browser", "app_e2e_check"].filter((toolName) => availableToolSet.has(toolName))
+    ? ['browser', 'app_e2e_check'].filter((toolName) => availableToolSet.has(toolName))
     : [];
   const requireVisualVerificationGroup =
     visualVerificationTools.length > 0 && userRequestedVisualVerification(userMessage.content);
   const requestedToolSet = new Set(explicitlyRequestedToolNames(userMessage.content, availableToolNames));
   const requireTodoTracking =
-    availableToolSet.has("todo") &&
+    availableToolSet.has('todo') &&
     !constraints.readOnly &&
     userRequestedComplexImplementationTracking(userMessage.content);
-  if (requireTodoTracking) requestedToolSet.add("todo");
+  if (requireTodoTracking) requestedToolSet.add('todo');
   const requestedTools = Array.from(requestedToolSet)
-    .filter((toolName) => visualVerificationAllowed || !["browser", "app_e2e_check"].includes(toolName))
+    .filter((toolName) => visualVerificationAllowed || !['browser', 'app_e2e_check'].includes(toolName))
     .filter((toolName) => !requireVisualVerificationGroup || !visualVerificationTools.includes(toolName));
   const requirePostMutationRead = mutationSinceLastRead && userRequestedPostMutationRead(userMessage.content);
   const missingTools = requestedTools.filter((toolName) => {
-    if (toolName === "read" && requirePostMutationRead) return true;
+    if (toolName === 'read' && requirePostMutationRead) return true;
     return !successfulToolNames.has(toolName);
   });
   const missingVisualVerificationGroup =
@@ -625,23 +677,29 @@ function explicitToolCompletionRecoveryMessage(
   if (missingTools.length === 0 && missingVisualVerificationGroup.length === 0) return undefined;
 
   return {
-    role: "system",
+    role: 'system',
     content: [
-      "Xenesis explicit tool completion required.",
+      'Xenesis explicit tool completion required.',
       ...(missingTools.length > 0
-        ? [`The user explicitly requested these tool(s), but they have not completed successfully yet: ${missingTools.join(", ")}.`]
+        ? [
+            `The user explicitly requested these tool(s), but they have not completed successfully yet: ${missingTools.join(', ')}.`,
+          ]
         : []),
       ...(missingVisualVerificationGroup.length > 0
-        ? [`The user explicitly requested one of these tool group(s), but none completed successfully yet: ${missingVisualVerificationGroup.join(" or ")}.`]
+        ? [
+            `The user explicitly requested one of these tool group(s), but none completed successfully yet: ${missingVisualVerificationGroup.join(' or ')}.`,
+          ]
         : []),
-      requirePostMutationRead && missingTools.includes("read")
-        ? "A file mutation succeeded after the last successful read, so read the changed file before finalizing."
-        : "Call the missing requested tool(s) before finalizing.",
+      requirePostMutationRead && missingTools.includes('read')
+        ? 'A file mutation succeeded after the last successful read, so read the changed file before finalizing.'
+        : 'Call the missing requested tool(s) before finalizing.',
       missingVisualVerificationGroup.length > 0
-        ? "Do not use task_handoff as a substitute for this explicit visual verification gate; perform browser/app_e2e_check in the current run or report a concrete blocker."
+        ? 'Do not use task_handoff as a substitute for this explicit visual verification gate; perform browser/app_e2e_check in the current run or report a concrete blocker.'
         : undefined,
-      "Do not finalize until the missing requested tools succeed. If a requested tool cannot be called, first attempt the tool or report the concrete runtime denial/error."
-    ].filter((line) => line !== undefined).join("\n")
+      'Do not finalize until the missing requested tools succeed. If a requested tool cannot be called, first attempt the tool or report the concrete runtime denial/error.',
+    ]
+      .filter((line) => line !== undefined)
+      .join('\n'),
   };
 }
 
@@ -653,39 +711,63 @@ function userRequestedWorkspaceFileMutation(content: string) {
   if (!scopedFileMutationRequest && userRequestedDocumentViewOrLayoutControl(content)) {
     return false;
   }
-  if (!scopedFileMutationRequest && /(?:파일|문서|코드|README|\.md|\.html|\.json)[^.!?\n]{0,80}(?:수정|변경|편집|저장|write|update|edit)[^.!?\n]{0,20}(?:하지\s*(?:마|말)|않|금지)|(?:do\s+not|don't|dont|never)[^.!?\n]{0,80}(?:modify|edit|write|change|update|save|touch)[^.!?\n]{0,80}(?:file|README|\.md|\.html|\.json)/i.test(content)) {
+  if (
+    !scopedFileMutationRequest &&
+    /(?:파일|문서|코드|README|\.md|\.html|\.json)[^.!?\n]{0,80}(?:수정|변경|편집|저장|write|update|edit)[^.!?\n]{0,20}(?:하지\s*(?:마|말)|않|금지)|(?:do\s+not|don't|dont|never)[^.!?\n]{0,80}(?:modify|edit|write|change|update|save|touch)[^.!?\n]{0,80}(?:file|README|\.md|\.html|\.json)/i.test(
+      content,
+    )
+  ) {
     return false;
   }
-  return scopedFileMutationRequest ||
-    /(?:파일|문서|코드|README|\.md|\.html|\.json|workspace|작업공간)[^.!?\n]{0,80}(?:갱신|생성|작성|수정|변경|편집|추가|저장|업데이트|만들|써|write|update|create|modify|edit|patch)|(?:갱신|생성|작성|수정|변경|편집|추가|저장|업데이트|만들|write|update|create|modify|edit|patch)[^.!?\n]{0,80}(?:파일|문서|코드|README|\.md|\.html|\.json)/i.test(content);
+  return (
+    scopedFileMutationRequest ||
+    /(?:파일|문서|코드|README|\.md|\.html|\.json|workspace|작업공간)[^.!?\n]{0,80}(?:갱신|생성|작성|수정|변경|편집|추가|저장|업데이트|만들|써|write|update|create|modify|edit|patch)|(?:갱신|생성|작성|수정|변경|편집|추가|저장|업데이트|만들|write|update|create|modify|edit|patch)[^.!?\n]{0,80}(?:파일|문서|코드|README|\.md|\.html|\.json)/i.test(
+      content,
+    )
+  );
 }
 
 function userRequestedDocumentViewOrLayoutControl(content: string) {
   const hasDeskDocumentSurface =
-    /(?:작업\s*영역|문서\s*영역|가운데|브라우저|웹\s*페이지|웹페이지|https?:\/\/|\.md\b|\.html\b|\.xcon\b|\.mermaid\b|\bfile\b|파일|문서)/i.test(content);
+    /(?:작업\s*영역|문서\s*영역|가운데|브라우저|웹\s*페이지|웹페이지|https?:\/\/|\.md\b|\.html\b|\.xcon\b|\.mermaid\b|\bfile\b|파일|문서)/i.test(
+      content,
+    );
   const hasViewModeIntent =
-    /(?:편집\s*[+\/&]\s*미리보기|미리보기\s*[+\/&]\s*편집|분할\s*(?:모드|보기)|미리보기|보기\s*모드|문서\s*모드|\bsplit\s*(?:mode|view)?\b|\bpreview\b|\bviewer\b|\bedit\s*mode\b|\bsource\s*mode\b)/i.test(content);
+    /(?:편집\s*[+\/&]\s*미리보기|미리보기\s*[+\/&]\s*편집|분할\s*(?:모드|보기)|미리보기|보기\s*모드|문서\s*모드|\bsplit\s*(?:mode|view)?\b|\bpreview\b|\bviewer\b|\bedit\s*mode\b|\bsource\s*mode\b)/i.test(
+      content,
+    );
   const hasLayoutIntent =
-    /(?:좌우|상하|나란히|붙여|정렬|오른쪽|왼쪽|위쪽|아래쪽|\barrange\b|\blayout\b|\bside\s*by\s*side\b|\bleft\s*right\b)/i.test(content);
+    /(?:좌우|상하|나란히|붙여|정렬|오른쪽|왼쪽|위쪽|아래쪽|\barrange\b|\blayout\b|\bside\s*by\s*side\b|\bleft\s*right\b)/i.test(
+      content,
+    );
   const hasContentMutationIntent =
-    /(?:본문|내용|문단|행|슬라이드|코드|\bcode\b|\bsource\b|\btext\b)[^.!?\n]{0,50}(?:추가|고쳐|고치|수정|변경|작성|저장|써|붙여|append|edit|update|write|replace)|(?:추가|고쳐|고치|수정|변경|작성|저장|써|붙여|append|update|write|replace)[^.!?\n]{0,50}(?:본문|내용|문단|행|슬라이드|코드|\bcode\b|\bsource\b|\btext\b)/i.test(content);
+    /(?:본문|내용|문단|행|슬라이드|코드|\bcode\b|\bsource\b|\btext\b)[^.!?\n]{0,50}(?:추가|고쳐|고치|수정|변경|작성|저장|써|붙여|append|edit|update|write|replace)|(?:추가|고쳐|고치|수정|변경|작성|저장|써|붙여|append|update|write|replace)[^.!?\n]{0,50}(?:본문|내용|문단|행|슬라이드|코드|\bcode\b|\bsource\b|\btext\b)/i.test(
+      content,
+    );
 
   return hasDeskDocumentSurface && (hasViewModeIntent || hasLayoutIntent) && !hasContentMutationIntent;
 }
 
 function userRequestedOfficeDocumentAutomation(content: string) {
   return (
-    /(?:\.docx|\.xlsx|\.pptx)\b/i.test(content) ||
-    /\b(?:word|excel|powerpoint|pptx|office)\b/i.test(content) ||
-    /(?:워드|엑셀|파워포인트|발표\s*자료|오피스|통합\s*문서|통합\s*문서를?)/i.test(content)
-  ) && /(?:생성|작성|만들|추가|수정|변경|편집|저장|내보내|export|create|generate|make|add|append|edit|update|modify)/i.test(content);
+    (/(?:\.docx|\.xlsx|\.pptx)\b/i.test(content) ||
+      /\b(?:word|excel|powerpoint|pptx|office)\b/i.test(content) ||
+      /(?:워드|엑셀|파워포인트|발표\s*자료|오피스|통합\s*문서|통합\s*문서를?)/i.test(content)) &&
+    /(?:생성|작성|만들|추가|수정|변경|편집|저장|내보내|export|create|generate|make|add|append|edit|update|modify)/i.test(
+      content,
+    )
+  );
 }
 
 function userRequestedAgentArtifactQualityLogRestore(content: string) {
   const namesSavedQualityEntry =
-    /(?:agent-quality-[a-z0-9_-]+|quality\s*log|qualityLog|quality\s*entry|품질\s*이력|저장된\s*이력|이력\s*항목)/i.test(content);
+    /(?:agent-quality-[a-z0-9_-]+|quality\s*log|qualityLog|quality\s*entry|품질\s*이력|저장된\s*이력|이력\s*항목)/i.test(
+      content,
+    );
   const asksForRestoreToFile =
-    /(?:결과물|아티팩트|artifact|source|소스)[^.!?\n]{0,140}(?:파일|경로|\.md|\.xcon|\.html|file|path|써|작성|저장|복원|되살려|apply|restore|write)|(?:파일|경로|\.md|\.xcon|\.html|file|path)[^.!?\n]{0,140}(?:결과물|아티팩트|artifact|source|소스|다시\s*써|써|작성|저장|복원|되살려|apply|restore|write)/i.test(content);
+    /(?:결과물|아티팩트|artifact|source|소스)[^.!?\n]{0,140}(?:파일|경로|\.md|\.xcon|\.html|file|path|써|작성|저장|복원|되살려|apply|restore|write)|(?:파일|경로|\.md|\.xcon|\.html|file|path)[^.!?\n]{0,140}(?:결과물|아티팩트|artifact|source|소스|다시\s*써|써|작성|저장|복원|되살려|apply|restore|write)/i.test(
+      content,
+    );
   return namesSavedQualityEntry && asksForRestoreToFile;
 }
 
@@ -693,7 +775,9 @@ function userRequestedDeskBrowserControl(content: string) {
   return (
     /(?:https?:\/\/|file:\/\/)/i.test(content) &&
     /\b(?:browser|web)\b|브라우저|웹/i.test(content) &&
-    /(?:form|field|input|button|click|fill|type|select|press|submit|save|양식|입력|입력칸|버튼|클릭|눌러|누르|선택|저장|제출)/i.test(content)
+    /(?:form|field|input|button|click|fill|type|select|press|submit|save|양식|입력|입력칸|버튼|클릭|눌러|누르|선택|저장|제출)/i.test(
+      content,
+    )
   );
 }
 
@@ -701,7 +785,7 @@ function fileMutationRequiredRecoveryMessage(
   userMessage: UserMessage,
   successfulMutationCount: number,
   recoveryCount: number,
-  assistantMessage?: AssistantMessage
+  assistantMessage?: AssistantMessage,
 ): SystemMessage | undefined {
   if (recoveryCount >= 2) return undefined;
   if (successfulMutationCount > 0) return undefined;
@@ -709,81 +793,81 @@ function fileMutationRequiredRecoveryMessage(
 
   if (userRequestedAgentArtifactQualityLogRestore(userMessage.content)) {
     return {
-      role: "system",
+      role: 'system',
       content: [
-        "Xenesis Agent artifact quality-log restore capability required.",
-        "The user requested restoring or applying a saved Agent artifact quality-log entry to a file path. Do not satisfy this through generic workspace file write, patch, edit, json, shell-generated file mutation, xd.files.previewTextWrite, or xd.files.applyTextWrite.",
-        "Call the available Desk capability caller, such as desk_call_capability or xenesis_desk_call_capability, before finalizing.",
-        "Call xd.agent.artifacts.qualityLog.applyEntry with approved=false using entryId for the saved quality-log entry and filePath for the requested output path so Desk creates the real inline approval request.",
-        "If the call returns pending approval, stop this provider turn with generic approval-needed product language and do not run same-turn post-approval verification.",
-        "If the action executes immediately, or in a later verification turn after approval execution, verify with xd.agent.artifacts.qualityLog.list and file readback, status, or visibility before reporting the user-facing result."
-      ].join("\n")
+        'Xenesis Agent artifact quality-log restore capability required.',
+        'The user requested restoring or applying a saved Agent artifact quality-log entry to a file path. Do not satisfy this through generic workspace file write, patch, edit, json, shell-generated file mutation, xd.files.previewTextWrite, or xd.files.applyTextWrite.',
+        'Call the available Desk capability caller, such as desk_call_capability or xenesis_desk_call_capability, before finalizing.',
+        'Call xd.agent.artifacts.qualityLog.applyEntry with approved=false using entryId for the saved quality-log entry and filePath for the requested output path so Desk creates the real inline approval request.',
+        'If the call returns pending approval, stop this provider turn with generic approval-needed product language and do not run same-turn post-approval verification.',
+        'If the action executes immediately, or in a later verification turn after approval execution, verify with xd.agent.artifacts.qualityLog.list and file readback, status, or visibility before reporting the user-facing result.',
+      ].join('\n'),
     };
   }
 
   if (userRequestedOfficeDocumentAutomation(userMessage.content)) {
     return {
-      role: "system",
+      role: 'system',
       content: [
-        "Xenesis Desk Office document capability required.",
-        "The user requested Word, Excel, PowerPoint, or Office file generation/editing. Do not satisfy this through generic workspace file write, patch, edit, json, or shell-generated file mutation.",
-        "Call the available Desk capability caller, such as desk_call_capability or xenesis_desk_call_capability, before finalizing.",
-        "For new Office files, call xd.documents.office.generate with approved=false so Desk creates the real inline approval request. Use kind=word/excel/powerpoint and the requested output file path/content fields.",
+        'Xenesis Desk Office document capability required.',
+        'The user requested Word, Excel, PowerPoint, or Office file generation/editing. Do not satisfy this through generic workspace file write, patch, edit, json, or shell-generated file mutation.',
+        'Call the available Desk capability caller, such as desk_call_capability or xenesis_desk_call_capability, before finalizing.',
+        'For new Office files, call xd.documents.office.generate with approved=false so Desk creates the real inline approval request. Use kind=word/excel/powerpoint and the requested output file path/content fields.',
         "For rich Word or PowerPoint generation, include intent and a layoutPlan. Word layoutPlan.sections should match the user's document type instead of always using the fallback brief shape. PowerPoint layoutPlan.slides should use roles such as title, agenda, comparison, timeline, metrics, matrix, recommendation, closing, or content as appropriate.",
-        "For Office edits, call xd.documents.office.edit with approved=false. Use appendParagraphs for Word/docx, appendRows with sheetName and rows for Excel/xlsx, and appendSlides for PowerPoint/pptx.",
-        "When an Office generate/edit/export call returns a pending approval, the user-facing approval stop must use generic Desk product language only. Do not echo hidden or remembered titles, marker-like identifiers, requested content/body text, file paths, raw args, approval ids, actionInboxItem, CR paths, or tool names in the normal assistant text; let the Agent chat render the inline approval buttons.",
-        "If the call returns pending approval, stop this provider turn and do not run same-turn inspect or verify.",
-        "If the Office action executes immediately, or in a later verification turn after approval execution, verify with xd.documents.office.inspect or xd.documents.office.verify before reporting the user-facing result."
-      ].join("\n")
+        'For Office edits, call xd.documents.office.edit with approved=false. Use appendParagraphs for Word/docx, appendRows with sheetName and rows for Excel/xlsx, and appendSlides for PowerPoint/pptx.',
+        'When an Office generate/edit/export call returns a pending approval, the user-facing approval stop must use generic Desk product language only. Do not echo hidden or remembered titles, marker-like identifiers, requested content/body text, file paths, raw args, approval ids, actionInboxItem, CR paths, or tool names in the normal assistant text; let the Agent chat render the inline approval buttons.',
+        'If the call returns pending approval, stop this provider turn and do not run same-turn inspect or verify.',
+        'If the Office action executes immediately, or in a later verification turn after approval execution, verify with xd.documents.office.inspect or xd.documents.office.verify before reporting the user-facing result.',
+      ].join('\n'),
     };
   }
 
   if (assistantMessage?.providerMetadata?.cli?.xenesisDeskMcpConfigured) {
     return {
-      role: "system",
+      role: 'system',
       content: [
-        "Xenesis Desk CR file mutation required.",
-        "The user requested a workspace file change, and this provider run has Desk CR MCP tools configured.",
-        "Do not satisfy this with native provider apply_patch, shell redirection, direct filesystem writes, or generic write, patch, edit, or json helpers.",
-        "Call the configured Desk capability caller before finalizing.",
-        "For text file generation or updates, use xd.files.applyTextWrite with approved=false so Desk creates the real inline approval request. Use xd.files.previewTextWrite first only when the user explicitly asks for a preview/edit-flow before applying.",
-        "Do not set maxBytes from requested character count, document length, or design complexity requirements. Omit maxBytes unless the user explicitly asks for a file-size safety cap.",
-        "If the call returns pending approval, stop this provider turn and do not run same-turn post-approval readback.",
-        "If the file action executes immediately, or in a later verification turn after approval execution, verify with xd.files.readText, viewer/open-content state, diagnostics, or another Desk CR readback path before reporting the user-facing result.",
-        "When an approval is pending, keep visible text generic and product-facing. Do not echo CR paths, raw args, approval ids, actionInboxItem, approvalRequired, or hidden marker values."
-      ].join("\n")
+        'Xenesis Desk CR file mutation required.',
+        'The user requested a workspace file change, and this provider run has Desk CR MCP tools configured.',
+        'Do not satisfy this with native provider apply_patch, shell redirection, direct filesystem writes, or generic write, patch, edit, or json helpers.',
+        'Call the configured Desk capability caller before finalizing.',
+        'For text file generation or updates, use xd.files.applyTextWrite with approved=false so Desk creates the real inline approval request. Use xd.files.previewTextWrite first only when the user explicitly asks for a preview/edit-flow before applying.',
+        'Do not set maxBytes from requested character count, document length, or design complexity requirements. Omit maxBytes unless the user explicitly asks for a file-size safety cap.',
+        'If the call returns pending approval, stop this provider turn and do not run same-turn post-approval readback.',
+        'If the file action executes immediately, or in a later verification turn after approval execution, verify with xd.files.readText, viewer/open-content state, diagnostics, or another Desk CR readback path before reporting the user-facing result.',
+        'When an approval is pending, keep visible text generic and product-facing. Do not echo CR paths, raw args, approval ids, actionInboxItem, approvalRequired, or hidden marker values.',
+      ].join('\n'),
     };
   }
 
   return {
-    role: "system",
+    role: 'system',
     content: [
-      "Xenesis file mutation required.",
-      "The user requested a workspace file change, but no file mutation tool has completed successfully yet.",
-      "Do not answer with a plan, proposed content, or a question about whether to proceed.",
-      "Call write, patch, edit, or json now after using the required read/list evidence. If the mutation is impossible, report the concrete tool denial or file error after attempting the appropriate tool."
-    ].join("\n")
+      'Xenesis file mutation required.',
+      'The user requested a workspace file change, but no file mutation tool has completed successfully yet.',
+      'Do not answer with a plan, proposed content, or a question about whether to proceed.',
+      'Call write, patch, edit, or json now after using the required read/list evidence. If the mutation is impossible, report the concrete tool denial or file error after attempting the appropriate tool.',
+    ].join('\n'),
   };
 }
 
 function userRequestedRepositoryTopic(content: string) {
   return /git|github|repo\b|repository|version control|hosting|deployment|버전\s*관리|저장소|배포/.test(
-    content.toLowerCase()
+    content.toLowerCase(),
   );
 }
 
 function userRequestedRepairOrVerification(content: string) {
   return /fix|repair|verify|verification|test|diagnostic|run|complete|finish|done|수정|복구|검증|테스트|실행|완료|끝까지|고쳐/.test(
-    content.toLowerCase()
+    content.toLowerCase(),
   );
 }
 
 function escapeRegExp(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function toolResultFieldValue(content: string, field: string) {
-  const match = new RegExp(`^\\s*${escapeRegExp(field)}\\s*:\\s*(.*?)\\s*$`, "im").exec(content);
+  const match = new RegExp(`^\\s*${escapeRegExp(field)}\\s*:\\s*(.*?)\\s*$`, 'im').exec(content);
   const value = match?.[1]?.trim();
   return value ? value : undefined;
 }
@@ -791,12 +875,10 @@ function toolResultFieldValue(content: string, field: string) {
 function splitToolNameList(value: string | undefined) {
   if (!value) return [];
   const parts = value
-    .replace(/\s*->\s*/g, ",")
-    .replace(/[;|]/g, ",")
+    .replace(/\s*->\s*/g, ',')
+    .replace(/[;|]/g, ',')
     .split(/[,\s]+/);
-  return parts
-    .map((part) => part.trim())
-    .filter(Boolean);
+  return parts.map((part) => part.trim()).filter(Boolean);
 }
 
 function uniqueToolNames(tools: string[]) {
@@ -811,81 +893,94 @@ function uniqueToolNames(tools: string[]) {
 }
 
 function toolResultLooksFailed(content: string) {
-  return /(?:status|verificationOk|repairRequired|timedOut|completionBlocked)\s*:\s*(?:fail|false|true)/i.test(content) &&
-    !/(?:status\s*:\s*pass|verificationOk\s*:\s*true|repairRequired\s*:\s*false)/i.test(content);
+  return (
+    /(?:status|verificationOk|repairRequired|timedOut|completionBlocked)\s*:\s*(?:fail|false|true)/i.test(content) &&
+    !/(?:status\s*:\s*pass|verificationOk\s*:\s*true|repairRequired\s*:\s*false)/i.test(content)
+  );
 }
 
 function parseToolResultGuidance(toolName: string, content: string): ToolResultGuidanceHint | undefined {
-  const knownGuidanceTool = toolName === "app_readiness" ||
-    toolName === "diagnostics" ||
-    toolName === "app_e2e_check" ||
-    toolName === "browser";
-  const status = toolResultFieldValue(content, "status");
-  const verificationOk = toolResultFieldValue(content, "verificationOk");
-  const repairRequired = toolResultFieldValue(content, "repairRequired");
-  const visualVerificationMethod = toolResultFieldValue(content, "visualVerificationMethod");
-  const directCanvasPixelStatus = toolResultFieldValue(content, "directCanvasPixelStatus");
-  const screenshotFallbackReason = toolResultFieldValue(content, "screenshotFallbackReason");
-  const explicitRecommendedTools = splitToolNameList(toolResultFieldValue(content, "nextRecommendedTools"));
-  const nextTools = splitToolNameList(toolResultFieldValue(content, "nextTools"));
+  const knownGuidanceTool =
+    toolName === 'app_readiness' ||
+    toolName === 'diagnostics' ||
+    toolName === 'app_e2e_check' ||
+    toolName === 'browser';
+  const status = toolResultFieldValue(content, 'status');
+  const verificationOk = toolResultFieldValue(content, 'verificationOk');
+  const repairRequired = toolResultFieldValue(content, 'repairRequired');
+  const visualVerificationMethod = toolResultFieldValue(content, 'visualVerificationMethod');
+  const directCanvasPixelStatus = toolResultFieldValue(content, 'directCanvasPixelStatus');
+  const screenshotFallbackReason = toolResultFieldValue(content, 'screenshotFallbackReason');
+  const explicitRecommendedTools = splitToolNameList(toolResultFieldValue(content, 'nextRecommendedTools'));
+  const nextTools = splitToolNameList(toolResultFieldValue(content, 'nextTools'));
   let nextRecommendedTools = explicitRecommendedTools.length > 0 ? explicitRecommendedTools : nextTools;
   let verificationSequence: string[] = [];
-  let nextRecommendedAction = toolResultFieldValue(content, "nextRecommendedAction");
+  let nextRecommendedAction = toolResultFieldValue(content, 'nextRecommendedAction');
   const guidance: string[] = [];
 
   if (!knownGuidanceTool && nextRecommendedTools.length === 0 && !nextRecommendedAction) {
     return undefined;
   }
 
-  if (toolName === "app_readiness") {
-    const failureCount = Number(toolResultFieldValue(content, "failures") ?? "0");
-    const readinessPassed = status === "pass" || (!Number.isNaN(failureCount) && failureCount === 0);
+  if (toolName === 'app_readiness') {
+    const failureCount = Number(toolResultFieldValue(content, 'failures') ?? '0');
+    const readinessPassed = status === 'pass' || (!Number.isNaN(failureCount) && failureCount === 0);
     if (readinessPassed) {
-      nextRecommendedTools = ["diagnostics", "app_e2e_check"];
-      verificationSequence = ["diagnostics", "app_e2e_check"];
-      nextRecommendedAction ??= "run_diagnostics_then_app_e2e_check_before_finalizing_browser_facing_app";
-      guidance.push("App readiness passed. Continue with diagnostics and browser-facing e2e verification before finalizing app work.");
-    } else if (status === "fail" || failureCount > 0) {
-      nextRecommendedTools = nextRecommendedTools.length > 0
-        ? nextRecommendedTools
-        : ["read", "patch", "app_readiness"];
-      nextRecommendedAction ??= "repair_readiness_findings_then_rerun_app_readiness";
-      guidance.push("App readiness failed. Repair the reported structural/client issues, then rerun app_readiness before downstream checks.");
+      nextRecommendedTools = ['diagnostics', 'app_e2e_check'];
+      verificationSequence = ['diagnostics', 'app_e2e_check'];
+      nextRecommendedAction ??= 'run_diagnostics_then_app_e2e_check_before_finalizing_browser_facing_app';
+      guidance.push(
+        'App readiness passed. Continue with diagnostics and browser-facing e2e verification before finalizing app work.',
+      );
+    } else if (status === 'fail' || failureCount > 0) {
+      nextRecommendedTools =
+        nextRecommendedTools.length > 0 ? nextRecommendedTools : ['read', 'patch', 'app_readiness'];
+      nextRecommendedAction ??= 'repair_readiness_findings_then_rerun_app_readiness';
+      guidance.push(
+        'App readiness failed. Repair the reported structural/client issues, then rerun app_readiness before downstream checks.',
+      );
     }
-  } else if (toolName === "diagnostics") {
-    const diagnosticsPassed = verificationOk === "true" || (
-      toolResultFieldValue(content, "exitCode") === "0" &&
-      toolResultFieldValue(content, "timedOut") === "false" &&
-      repairRequired === "false"
-    );
+  } else if (toolName === 'diagnostics') {
+    const diagnosticsPassed =
+      verificationOk === 'true' ||
+      (toolResultFieldValue(content, 'exitCode') === '0' &&
+        toolResultFieldValue(content, 'timedOut') === 'false' &&
+        repairRequired === 'false');
     if (diagnosticsPassed) {
-      nextRecommendedTools = ["app_e2e_check"];
-      verificationSequence = ["app_e2e_check"];
-      nextRecommendedAction ??= "run_app_e2e_check_for_browser_or_ui_apps_before_finalizing";
-      guidance.push("Diagnostics passed. Use app_e2e_check for browser-facing UI evidence before finalizing.");
-    } else if (repairRequired === "true" || toolResultLooksFailed(content)) {
-      nextRecommendedTools = nextRecommendedTools.length > 0
-        ? nextRecommendedTools
-        : ["read", "patch", "diagnostics", "app_e2e_check"];
-      nextRecommendedAction ??= "repair_diagnostics_failure_then_rerun_diagnostics_and_app_e2e_check";
-      guidance.push("Diagnostics failed. Repair the diagnosed cause, rerun diagnostics, then run app_e2e_check if the app has a browser UI.");
+      nextRecommendedTools = ['app_e2e_check'];
+      verificationSequence = ['app_e2e_check'];
+      nextRecommendedAction ??= 'run_app_e2e_check_for_browser_or_ui_apps_before_finalizing';
+      guidance.push('Diagnostics passed. Use app_e2e_check for browser-facing UI evidence before finalizing.');
+    } else if (repairRequired === 'true' || toolResultLooksFailed(content)) {
+      nextRecommendedTools =
+        nextRecommendedTools.length > 0 ? nextRecommendedTools : ['read', 'patch', 'diagnostics', 'app_e2e_check'];
+      nextRecommendedAction ??= 'repair_diagnostics_failure_then_rerun_diagnostics_and_app_e2e_check';
+      guidance.push(
+        'Diagnostics failed. Repair the diagnosed cause, rerun diagnostics, then run app_e2e_check if the app has a browser UI.',
+      );
     }
-  } else if (toolName === "browser") {
+  } else if (toolName === 'browser') {
     if (/ERR_CONNECTION_REFUSED|ECONNREFUSED|server\s+not\s+running/i.test(content)) {
-      nextRecommendedTools = ["app_launch_plan", "server", "browser", "app_e2e_check"];
-      verificationSequence = ["app_launch_plan", "server", "browser", "app_e2e_check"];
-      nextRecommendedAction ??= "start_or_recover_server_then_retry_browser_and_app_e2e_check";
-      guidance.push("Browser could not reach the app. Recover the local launch plan/server first, then retry browser and app_e2e_check.");
+      nextRecommendedTools = ['app_launch_plan', 'server', 'browser', 'app_e2e_check'];
+      verificationSequence = ['app_launch_plan', 'server', 'browser', 'app_e2e_check'];
+      nextRecommendedAction ??= 'start_or_recover_server_then_retry_browser_and_app_e2e_check';
+      guidance.push(
+        'Browser could not reach the app. Recover the local launch plan/server first, then retry browser and app_e2e_check.',
+      );
     } else if (/Only\s+HTTP\(S\)\s+URLs|file:\/\/|Invalid URL/i.test(content)) {
-      nextRecommendedTools = ["app_launch_plan", "server", "browser", "app_e2e_check"];
-      verificationSequence = ["app_launch_plan", "server", "browser", "app_e2e_check"];
-      nextRecommendedAction ??= "serve_local_file_over_http_then_retry_browser_and_app_e2e_check";
-      guidance.push("Browser requires an HTTP(S) URL. Serve the local app first, then retry browser and app_e2e_check.");
+      nextRecommendedTools = ['app_launch_plan', 'server', 'browser', 'app_e2e_check'];
+      verificationSequence = ['app_launch_plan', 'server', 'browser', 'app_e2e_check'];
+      nextRecommendedAction ??= 'serve_local_file_over_http_then_retry_browser_and_app_e2e_check';
+      guidance.push(
+        'Browser requires an HTTP(S) URL. Serve the local app first, then retry browser and app_e2e_check.',
+      );
     } else if (/browser:\s*screenshot captured/i.test(content)) {
-      nextRecommendedTools = ["app_e2e_check"];
-      verificationSequence = ["app_e2e_check"];
-      nextRecommendedAction ??= "use_screenshot_evidence_then_rerun_app_e2e_check_if_formal_verification_is_needed";
-      guidance.push("Browser screenshot evidence is available. Use it for visual reasoning and rerun app_e2e_check when formal verification is needed.");
+      nextRecommendedTools = ['app_e2e_check'];
+      verificationSequence = ['app_e2e_check'];
+      nextRecommendedAction ??= 'use_screenshot_evidence_then_rerun_app_e2e_check_if_formal_verification_is_needed';
+      guidance.push(
+        'Browser screenshot evidence is available. Use it for visual reasoning and rerun app_e2e_check when formal verification is needed.',
+      );
     }
   }
 
@@ -906,7 +1001,7 @@ function parseToolResultGuidance(toolName: string, content: string): ToolResultG
 
   const hint: ToolResultGuidanceHint = {
     toolName,
-    nextRecommendedTools: uniqueToolNames(nextRecommendedTools)
+    nextRecommendedTools: uniqueToolNames(nextRecommendedTools),
   };
   if (status) hint.status = status;
   if (verificationOk) hint.verificationOk = verificationOk;
@@ -920,68 +1015,73 @@ function parseToolResultGuidance(toolName: string, content: string): ToolResultG
   return hint;
 }
 
-function orderedMissingBefore(
-  sequence: string[],
-  toolName: string,
-  successfulToolNames: ReadonlySet<string>
-) {
+function orderedMissingBefore(sequence: string[], toolName: string, successfulToolNames: ReadonlySet<string>) {
   const index = sequence.indexOf(toolName);
-  const requiredBefore = index === -1 ? [sequence.find((name) => !successfulToolNames.has(name))].filter((name): name is string => Boolean(name)) : sequence.slice(0, index);
+  const requiredBefore =
+    index === -1
+      ? [sequence.find((name) => !successfulToolNames.has(name))].filter((name): name is string => Boolean(name))
+      : sequence.slice(0, index);
   return {
     requiredBefore,
-    missingBefore: requiredBefore.filter((name) => !successfulToolNames.has(name))
+    missingBefore: requiredBefore.filter((name) => !successfulToolNames.has(name)),
   };
 }
 
 function guidanceToolIsSequenceRelated(toolName: string, sequence: string[], nextRecommendedTools: string[]) {
   if (sequence.includes(toolName) || nextRecommendedTools.includes(toolName)) return true;
   if (
-    toolName === "browser" &&
-    (
-      sequence.includes("app_e2e_check") ||
-      sequence.includes("diagnostics") ||
-      nextRecommendedTools.includes("app_e2e_check")
-    )
-  ) return true;
-  if (toolName === "app_e2e_check" && sequence.includes("browser")) return true;
+    toolName === 'browser' &&
+    (sequence.includes('app_e2e_check') ||
+      sequence.includes('diagnostics') ||
+      nextRecommendedTools.includes('app_e2e_check'))
+  )
+    return true;
+  if (toolName === 'app_e2e_check' && sequence.includes('browser')) return true;
   return false;
 }
 
 function promptToolPriorityHint(content: string): ToolPriorityHint | undefined {
-  const memoryRequested = /기억|메모리|장기기억|\bmemory\b|\bremember\b|\brecall\b/i.test(content) &&
-    /기억해|기억해줘|기억해둬|저장|검색|찾아|확인|내용|뭐|무엇|\bremember\b|\brecall\b|\bsearch\b|\bsave\b|\bstore\b|\bstored\b/i.test(content);
+  const memoryRequested =
+    /기억|메모리|장기기억|\bmemory\b|\bremember\b|\brecall\b/i.test(content) &&
+    /기억해|기억해줘|기억해둬|저장|검색|찾아|확인|내용|뭐|무엇|\bremember\b|\brecall\b|\bsearch\b|\bsave\b|\bstore\b|\bstored\b/i.test(
+      content,
+    );
   if (memoryRequested) {
     return {
-      reason: "durable_memory_request",
-      tools: ["memory"],
-      guidance: "For explicit durable-memory save/search/recall requests, call the memory tool before answering; do not rely only on the current transcript."
+      reason: 'durable_memory_request',
+      tools: ['memory'],
+      guidance:
+        'For explicit durable-memory save/search/recall requests, call the memory tool before answering; do not rely only on the current transcript.',
     };
   }
 
-  const appVerificationRequested = userRequestedRepairOrVerification(content) &&
+  const appVerificationRequested =
+    userRequestedRepairOrVerification(content) &&
     /app|browser|ui|client|server|web|page|프론트|브라우저|웹|화면|앱|서버|클라이언트/i.test(content);
 
   if (appVerificationRequested) {
     return {
-      reason: "app_verification_chain",
-      tools: ["app_launch_plan", "app_readiness", "diagnostics", "server", "browser", "app_e2e_check"],
-      guidance: "For browser-facing app work, prefer launch planning, readiness, diagnostics, server/browser evidence, and app_e2e_check before shell-only conclusions."
+      reason: 'app_verification_chain',
+      tools: ['app_launch_plan', 'app_readiness', 'diagnostics', 'server', 'browser', 'app_e2e_check'],
+      guidance:
+        'For browser-facing app work, prefer launch planning, readiness, diagnostics, server/browser evidence, and app_e2e_check before shell-only conclusions.',
     };
   }
 
   if (isProjectAnalysisPrompt(content)) {
     return {
-      reason: "project_analysis_evidence",
-      tools: ["tree", "glob", "list", "search", "read", "code_symbols", "lsp", "context_search"],
-      guidance: "Prefer these tools before shell or mutation tools so project analysis starts from cheap structured evidence."
+      reason: 'project_analysis_evidence',
+      tools: ['tree', 'glob', 'list', 'search', 'read', 'code_symbols', 'lsp', 'context_search'],
+      guidance:
+        'Prefer these tools before shell or mutation tools so project analysis starts from cheap structured evidence.',
     };
   }
 
   if (userRequestedRepairOrVerification(content)) {
     return {
-      reason: "repair_verification_evidence",
-      tools: ["todo", "search", "read", "code_symbols", "lsp", "diff", "patch", "json", "diagnostics"],
-      guidance: "For repair work, gather focused evidence, patch narrowly, then verify with diagnostics."
+      reason: 'repair_verification_evidence',
+      tools: ['todo', 'search', 'read', 'code_symbols', 'lsp', 'diff', 'patch', 'json', 'diagnostics'],
+      guidance: 'For repair work, gather focused evidence, patch narrowly, then verify with diagnostics.',
     };
   }
 
@@ -990,16 +1090,25 @@ function promptToolPriorityHint(content: string): ToolPriorityHint | undefined {
 
 function userForbidsTool(content: string, toolName: string) {
   const escapedTool = escapeRegExp(toolName);
-  if (new RegExp(`${escapedTool}\\s*보다`, "i").test(content)) return false;
+  if (new RegExp(`${escapedTool}\\s*보다`, 'i').test(content)) return false;
   const englishForbidden = [
-    new RegExp(`(?:do\\s+not|don't|dont|never)\\s+(?:directly\\s+)?(?:call|use|run|execute|invoke|start)\\s+(?:the\\s+)?${escapedTool}(?:\\s+tool)?`, "i"),
-    new RegExp(`(?:do\\s+not|don't|dont|never)[^.!?\\n]{0,100}(?:${escapedTool}\\s+tool|tool\\s+${escapedTool}|${escapedTool})`, "i")
+    new RegExp(
+      `(?:do\\s+not|don't|dont|never)\\s+(?:directly\\s+)?(?:call|use|run|execute|invoke|start)\\s+(?:the\\s+)?${escapedTool}(?:\\s+tool)?`,
+      'i',
+    ),
+    new RegExp(
+      `(?:do\\s+not|don't|dont|never)[^.!?\\n]{0,100}(?:${escapedTool}\\s+tool|tool\\s+${escapedTool}|${escapedTool})`,
+      'i',
+    ),
   ];
   const koreanForbidden = [
-    new RegExp(`${escapedTool}\\s*(?:tool|도구)?(?:를|을|은|는)?\\s*(?:직접\\s*)?(?:호출|사용|실행|시작|쓰)\\s*하지\\s*(?:마|말|않|않도록)`, "i"),
-    new RegExp(`${escapedTool}\\s*(?:tool|도구)?(?:를|을|은|는)?\\s*(?:호출|사용|실행|시작|쓰)[^.!?\\n]{0,20}말`, "i"),
-    new RegExp(`${escapedTool}\\s*(?:tool|도구)?(?:를|을|은|는)?\\s*쓰지\\s*(?:마|말|않|않도록)?`, "i"),
-    new RegExp(`(?:호출|사용|실행|시작|쓰)\\s*하지\\s*(?:마|말|않)[^.!?\\n]{0,80}${escapedTool}`, "i")
+    new RegExp(
+      `${escapedTool}\\s*(?:tool|도구)?(?:를|을|은|는)?\\s*(?:직접\\s*)?(?:호출|사용|실행|시작|쓰)\\s*하지\\s*(?:마|말|않|않도록)`,
+      'i',
+    ),
+    new RegExp(`${escapedTool}\\s*(?:tool|도구)?(?:를|을|은|는)?\\s*(?:호출|사용|실행|시작|쓰)[^.!?\\n]{0,20}말`, 'i'),
+    new RegExp(`${escapedTool}\\s*(?:tool|도구)?(?:를|을|은|는)?\\s*쓰지\\s*(?:마|말|않|않도록)?`, 'i'),
+    new RegExp(`(?:호출|사용|실행|시작|쓰)\\s*하지\\s*(?:마|말|않)[^.!?\\n]{0,80}${escapedTool}`, 'i'),
   ];
   return [...englishForbidden, ...koreanForbidden].some((pattern) => pattern.test(content));
 }
@@ -1026,21 +1135,21 @@ const noUserRequestConstraints: UserRequestConstraints = {
   readOnly: false,
   noFileMutation: false,
   noCommandExecution: false,
-  noBrowser: false
+  noBrowser: false,
 };
 
 const noUserToolPreferences: UserToolPreferences = {
   shellRequiresPriorEvidence: false,
   mutationRequiresPriorEvidence: false,
   readinessOnly: false,
-  noExternalWeb: false
+  noExternalWeb: false,
 };
 
 function hasPattern(content: string, patterns: RegExp[]) {
   return patterns.some((pattern) => pattern.test(content));
 }
 
-type AnswerOnlyFinalKind = "confirmation" | "ready";
+type AnswerOnlyFinalKind = 'confirmation' | 'ready';
 
 type AnswerOnlyFinalRequest = {
   kind: AnswerOnlyFinalKind;
@@ -1048,21 +1157,25 @@ type AnswerOnlyFinalRequest = {
 };
 
 function detectAnswerOnlyFinalRequest(content: string): AnswerOnlyFinalRequest | undefined {
-  if (hasPattern(content, [
-    /준비\s*(?:됐|되었)\s*다고\s*만/i,
-    /준비\s*(?:됐|되었)?\s*(?:다고)?\s*만\s*(?:말|답|응답)/i,
-    /\b(?:just|only)\s+say\s+(?:ready|done)\b/i
-  ])) {
-    return { kind: "ready", content: "준비됐습니다." };
+  if (
+    hasPattern(content, [
+      /준비\s*(?:됐|되었)\s*다고\s*만/i,
+      /준비\s*(?:됐|되었)?\s*(?:다고)?\s*만\s*(?:말|답|응답)/i,
+      /\b(?:just|only)\s+say\s+(?:ready|done)\b/i,
+    ])
+  ) {
+    return { kind: 'ready', content: '준비됐습니다.' };
   }
 
-  if (hasPattern(content, [
-    /확인\s*(?:했|됐|되었)\s*다고\s*만/i,
-    /확인\s*(?:했|됐|되었)?\s*(?:다고)?\s*만\s*(?:말|답|응답)/i,
-    /확인만\s*(?:말|답|응답)/i,
-    /\b(?:just|only)\s+say\s+(?:confirmed|checked|ok|okay|yes)\b/i
-  ])) {
-    return { kind: "confirmation", content: "확인했습니다." };
+  if (
+    hasPattern(content, [
+      /확인\s*(?:했|됐|되었)\s*다고\s*만/i,
+      /확인\s*(?:했|됐|되었)?\s*(?:다고)?\s*만\s*(?:말|답|응답)/i,
+      /확인만\s*(?:말|답|응답)/i,
+      /\b(?:just|only)\s+say\s+(?:confirmed|checked|ok|okay|yes)\b/i,
+    ])
+  ) {
+    return { kind: 'confirmation', content: '확인했습니다.' };
   }
 
   return undefined;
@@ -1071,7 +1184,7 @@ function detectAnswerOnlyFinalRequest(content: string): AnswerOnlyFinalRequest |
 function assistantContentHasBlocker(content: string) {
   return hasPattern(content, [
     /(?:승인|권한|허가|permission|approval)[^.\n]{0,80}(?:필요|필요합니다|required|denied|거절)/i,
-    /(?:실패|오류|에러|불가|차단|거부|failed|error|blocked|cannot|can't)/i
+    /(?:실패|오류|에러|불가|차단|거부|failed|error|blocked|cannot|can't)/i,
   ]);
 }
 
@@ -1079,12 +1192,12 @@ function assistantContentHasNegativeAnswer(content: string) {
   return hasPattern(content, [
     /(?:없습니다|없어요|안\s*보|보이지\s*않|남아\s*있지\s*않|준비되지\s*않)/i,
     /\bnot\s+(?:visible|ready|found|available|present|done)\b/i,
-    /\b(?:no|none)\s+(?:visible|ready|result|state|output|content)\b/i
+    /\b(?:no|none)\s+(?:visible|ready|result|state|output|content)\b/i,
   ]);
 }
 
 function assistantContentSupportsAnswerOnlyKind(kind: AnswerOnlyFinalKind, content: string) {
-  if (kind === "ready") {
+  if (kind === 'ready') {
     return hasPattern(content, [/준비|완료|끝났|ready|done/i]);
   }
   return hasPattern(content, [/확인|보입니다|남아|있습니다|checked|confirmed|visible|present|\byes\b|\bok\b/i]);
@@ -1102,60 +1215,65 @@ function answerOnlyFinalContentForUserRequest(userContent: string, assistantCont
 function hasScopedFileMutationRequest(content: string) {
   return hasPattern(content, [
     /(?:수정|변경|편집|쓰기|삭제|생성|패치)\s*하지\s*(?:마|말|않|않도록)[^\n]{0,160}(?:만\s*)?(?:수정|변경|편집|고쳐|고치|패치|작성|저장|업데이트|write|update|edit|modify|fix|patch)/i,
-    /(?:do\s+not|don't|dont|never)[^\n]{0,80}(?:modify|change|edit|write|patch|delete|create)[^\n]{0,160}(?:only\s+)?(?:modify|change|edit|write|patch|update|fix)/i
+    /(?:do\s+not|don't|dont|never)[^\n]{0,80}(?:modify|change|edit|write|patch|delete|create)[^\n]{0,160}(?:only\s+)?(?:modify|change|edit|write|patch|update|fix)/i,
   ]);
 }
 
 function detectUserRequestConstraints(content: string): UserRequestConstraints {
   const readOnly = hasPattern(content, [
     /읽기\s*전용|읽기만|확인만|분석만|조회만/i,
-    /\bread[-\s]?only\b|\bonly\s+read\b|\binspect\s+only\b|\banaly[sz]e\s+only\b/i
+    /\bread[-\s]?only\b|\bonly\s+read\b|\binspect\s+only\b|\banaly[sz]e\s+only\b/i,
   ]);
   const scopedFileMutationRequest = hasScopedFileMutationRequest(content);
-  const noFileMutation = readOnly || (!scopedFileMutationRequest && hasPattern(content, [
-    /(?:파일|코드|앱|프로젝트|workspace|작업공간)?\s*(?:수정|변경|편집|쓰기|삭제|생성|패치)\s*하지\s*(?:마|말|않|않도록)/i,
-    /(?:수정|변경|편집|쓰기|삭제|생성|패치)[^.!?\n]{0,40}(?:하지\s*(?:마|말|않)|금지)/i,
-    /\bdo\s+not\s+(?:modify|change|edit|write|patch|delete|create)\b/i,
-    /\bdon't\s+(?:modify|change|edit|write|patch|delete|create)\b/i,
-    /\bwithout\s+(?:modifying|changing|editing|writing|patching|deleting)\b/i,
-    /\bno\s+(?:file\s+)?(?:changes|edits|writes|modifications|patches)\b/i
-  ]));
+  const noFileMutation =
+    readOnly ||
+    (!scopedFileMutationRequest &&
+      hasPattern(content, [
+        /(?:파일|코드|앱|프로젝트|workspace|작업공간)?\s*(?:수정|변경|편집|쓰기|삭제|생성|패치)\s*하지\s*(?:마|말|않|않도록)/i,
+        /(?:수정|변경|편집|쓰기|삭제|생성|패치)[^.!?\n]{0,40}(?:하지\s*(?:마|말|않)|금지)/i,
+        /\bdo\s+not\s+(?:modify|change|edit|write|patch|delete|create)\b/i,
+        /\bdon't\s+(?:modify|change|edit|write|patch|delete|create)\b/i,
+        /\bwithout\s+(?:modifying|changing|editing|writing|patching|deleting)\b/i,
+        /\bno\s+(?:file\s+)?(?:changes|edits|writes|modifications|patches)\b/i,
+      ]));
   const commandExecutionAlternativeAllowed = hasPattern(content, [
     /(?:shell|쉘|터미널|terminal|명령어|명령|command)\s*(?:말고|대신)[^.!?\n]{0,80}(?:server|서버)\s*(?:도구|tool)?/i,
     /(?:server|서버)\s*(?:도구|tool)?[^.!?\n]{0,80}(?:로|으로|사용|실행|쓰)[^.!?\n]{0,80}(?:shell|쉘|터미널|terminal|명령어|명령|command)\s*(?:말고|대신)/i,
     /\b(?:use|run|call|start)\s+(?:the\s+)?server\s+tool\s+(?:instead\s+of|rather\s+than)\s+(?:shell|terminal|commands?)\b/i,
-    /\b(?:instead\s+of|rather\s+than)\s+(?:shell|terminal|commands?)[^.!?\n]{0,80}(?:use|run|call|start)\s+(?:the\s+)?server\s+tool\b/i
+    /\b(?:instead\s+of|rather\s+than)\s+(?:shell|terminal|commands?)[^.!?\n]{0,80}(?:use|run|call|start)\s+(?:the\s+)?server\s+tool\b/i,
   ]);
-  const noCommandExecution = !commandExecutionAlternativeAllowed && hasPattern(content, [
-    /(?:shell|쉘|터미널|terminal|명령어|명령|command)\s*(?:을|를|은|는)?\s*(?:쓰지|사용하지|실행하지|호출하지)\s*(?:마|말|않|않도록)?/i,
-    /(?:shell|쉘|터미널|terminal|명령어|명령|command)[^.!?\n]{0,40}(?:금지|없이|말고)/i,
-    /\bdo\s+not\s+(?:run|execute|use)\s+(?:shell|terminal|commands?|command-line)\b/i,
-    /\bdon't\s+(?:run|execute|use)\s+(?:shell|terminal|commands?|command-line)\b/i,
-    /\bno\s+(?:shell|terminal|commands?|command-line)\b/i,
-    /\bwithout\s+(?:running|executing|using)\s+(?:shell|terminal|commands?)\b/i
-  ]);
+  const noCommandExecution =
+    !commandExecutionAlternativeAllowed &&
+    hasPattern(content, [
+      /(?:shell|쉘|터미널|terminal|명령어|명령|command)\s*(?:을|를|은|는)?\s*(?:쓰지|사용하지|실행하지|호출하지)\s*(?:마|말|않|않도록)?/i,
+      /(?:shell|쉘|터미널|terminal|명령어|명령|command)[^.!?\n]{0,40}(?:금지|없이|말고)/i,
+      /\bdo\s+not\s+(?:run|execute|use)\s+(?:shell|terminal|commands?|command-line)\b/i,
+      /\bdon't\s+(?:run|execute|use)\s+(?:shell|terminal|commands?|command-line)\b/i,
+      /\bno\s+(?:shell|terminal|commands?|command-line)\b/i,
+      /\bwithout\s+(?:running|executing|using)\s+(?:shell|terminal|commands?)\b/i,
+    ]);
   const noBrowser = hasPattern(content, [
     /브라우저\s*(?:를|을|은|는)?\s*(?:열지|띄우지|사용하지|실행하지|호출하지)\s*(?:마|말|않|않도록)?/i,
     /브라우저[^.!?\n]{0,40}(?:금지|없이|말고)/i,
     /\bdo\s+not\s+(?:open|use|run|launch)\s+(?:a\s+)?browser\b/i,
     /\bdon't\s+(?:open|use|run|launch)\s+(?:a\s+)?browser\b/i,
     /\bno\s+browser\b/i,
-    /\bwithout\s+(?:opening|using|launching)\s+(?:a\s+)?browser\b/i
+    /\bwithout\s+(?:opening|using|launching)\s+(?:a\s+)?browser\b/i,
   ]);
   return {
     readOnly,
     noFileMutation,
     noCommandExecution,
-    noBrowser
+    noBrowser,
   };
 }
 
 function activeUserConstraintNames(constraints: UserRequestConstraints) {
   const names: string[] = [];
-  if (constraints.readOnly) names.push("read_only");
-  if (constraints.noFileMutation) names.push("no_file_mutation");
-  if (constraints.noCommandExecution) names.push("no_command_execution");
-  if (constraints.noBrowser) names.push("no_browser");
+  if (constraints.readOnly) names.push('read_only');
+  if (constraints.noFileMutation) names.push('no_file_mutation');
+  if (constraints.noCommandExecution) names.push('no_command_execution');
+  if (constraints.noBrowser) names.push('no_browser');
   return names;
 }
 
@@ -1163,41 +1281,41 @@ function detectUserToolPreferences(content: string): UserToolPreferences {
   const shellRequiresPriorEvidence = hasPattern(content, [
     /(?:shell|쉘|터미널|terminal|명령어|명령|command)\s*보다[^.!?\n]{0,80}(?:lsp|read|search|code_symbols|읽|검색|확인|분석)[^.!?\n]{0,40}먼저/i,
     /(?:lsp|read|search|code_symbols|읽|검색|확인|분석)[^.!?\n]{0,40}먼저[^.!?\n]{0,80}(?:shell|쉘|터미널|terminal|명령어|명령|command)/i,
-    /(?:use|run)\s+(?:lsp|read|search|inspection|evidence)\s+(?:before|prior\s+to)\s+(?:shell|terminal|commands?)/i
+    /(?:use|run)\s+(?:lsp|read|search|inspection|evidence)\s+(?:before|prior\s+to)\s+(?:shell|terminal|commands?)/i,
   ]);
   const mutationRequiresPriorEvidence = hasPattern(content, [
     /(?:수정|변경|편집|쓰기|패치|write|edit|patch)[^.!?\n]{0,40}전에[^.!?\n]{0,80}(?:read|search|읽|검색|확인|분석)[^.!?\n]{0,40}먼저/i,
     /(?:read|search|읽|검색|확인|분석)[^.!?\n]{0,40}먼저[^.!?\n]{0,80}(?:수정|변경|편집|쓰기|패치|write|edit|patch)/i,
     /(?:read|search|inspect|analy[sz]e)[^.!?\n]{0,80}(?:before|prior\s+to)[^.!?\n]{0,80}(?:editing|modifying|patching|writing|changing)/i,
-    /(?:before|prior\s+to)[^.!?\n]{0,80}(?:editing|modifying|patching|writing|changing)[^.!?\n]{0,80}(?:read|search|inspect|analy[sz]e)/i
+    /(?:before|prior\s+to)[^.!?\n]{0,80}(?:editing|modifying|patching|writing|changing)[^.!?\n]{0,80}(?:read|search|inspect|analy[sz]e)/i,
   ]);
   const readinessOnly = hasPattern(content, [
     /브라우저\s*대신\s*app_readiness\s*만/i,
     /app_readiness\s*만[^.!?\n]{0,80}브라우저\s*(?:대신|말고)/i,
     /(?:use\s+)?(?:only\s+)?app_readiness\s+(?:only\s+)?(?:instead\s+of|rather\s+than)\s+(?:browser|app_e2e_check)/i,
-    /(?:browser|app_e2e_check)\s+(?:instead\s+use|rather\s+than)\s+app_readiness/i
+    /(?:browser|app_e2e_check)\s+(?:instead\s+use|rather\s+than)\s+app_readiness/i,
   ]);
   const noExternalWeb = hasPattern(content, [
     /외부\s*웹\s*(?:검색|조회|접속|사용)\s*하지\s*(?:마|말|않|않도록)?/i,
     /웹\s*검색\s*하지\s*(?:마|말|않|않도록)?/i,
     /(?:web_search|web_fetch)\s*(?:를|을|은|는)?\s*(?:쓰지|사용하지|호출하지)\s*(?:마|말|않|않도록)?/i,
     /\b(?:do\s+not|don't|dont|no)\s+(?:use\s+)?(?:external\s+)?web\s+(?:search|fetch|access|lookup)\b/i,
-    /\bwithout\s+(?:external\s+)?web\s+(?:search|fetch|access|lookup)\b/i
+    /\bwithout\s+(?:external\s+)?web\s+(?:search|fetch|access|lookup)\b/i,
   ]);
   return {
     shellRequiresPriorEvidence,
     mutationRequiresPriorEvidence,
     readinessOnly,
-    noExternalWeb
+    noExternalWeb,
   };
 }
 
 function activeUserToolPreferenceNames(preferences: UserToolPreferences) {
   const names: string[] = [];
-  if (preferences.shellRequiresPriorEvidence) names.push("shell_requires_prior_evidence");
-  if (preferences.mutationRequiresPriorEvidence) names.push("mutation_requires_prior_evidence");
-  if (preferences.readinessOnly) names.push("app_readiness_only");
-  if (preferences.noExternalWeb) names.push("no_external_web");
+  if (preferences.shellRequiresPriorEvidence) names.push('shell_requires_prior_evidence');
+  if (preferences.mutationRequiresPriorEvidence) names.push('mutation_requires_prior_evidence');
+  if (preferences.readinessOnly) names.push('app_readiness_only');
+  if (preferences.noExternalWeb) names.push('no_external_web');
   return names;
 }
 
@@ -1212,15 +1330,15 @@ interface VerificationFailure {
 type FailedVerificationToolMessage = ToolMessage & { name: VerificationToolName };
 
 type VerificationRecoveryDecision =
-  | { kind: "none" }
-  | { kind: "continue"; failure: VerificationFailure; attempt: number; message: SystemMessage }
-  | { kind: "blocked"; failure: VerificationFailure; attempt: number; content: string };
+  | { kind: 'none' }
+  | { kind: 'continue'; failure: VerificationFailure; attempt: number; message: SystemMessage }
+  | { kind: 'blocked'; failure: VerificationFailure; attempt: number; content: string };
 
 type AutoVerificationRepairResult =
-  | { status: "not_applicable"; reason: string }
-  | { status: "executed"; failure: VerificationFailure; summaryMessage: SystemMessage; guardRequired?: boolean }
-  | { status: "failed"; failure: VerificationFailure; reason: string }
-  | { status: "skipped"; failure: VerificationFailure; reason: string; allowFinal?: boolean };
+  | { status: 'not_applicable'; reason: string }
+  | { status: 'executed'; failure: VerificationFailure; summaryMessage: SystemMessage; guardRequired?: boolean }
+  | { status: 'failed'; failure: VerificationFailure; reason: string }
+  | { status: 'skipped'; failure: VerificationFailure; reason: string; allowFinal?: boolean };
 
 interface VerificationRepairGuard {
   failure: VerificationFailure;
@@ -1239,54 +1357,48 @@ interface VerificationRepairGuardHint {
 }
 
 function isVerificationToolName(name: string): name is VerificationToolName {
-  return name === "diagnostics" || name === "app_e2e_check" || name === "app_readiness";
+  return name === 'diagnostics' || name === 'app_e2e_check' || name === 'app_readiness';
 }
 
 function isVerificationRepairEvidenceToolName(name: string) {
-  return name === "read" ||
-    name === "search" ||
-    name === "code_symbols" ||
-    name === "lsp" ||
-    name === "context_search";
+  return name === 'read' || name === 'search' || name === 'code_symbols' || name === 'lsp' || name === 'context_search';
 }
 
 function isVerificationRepairMutationToolName(name: string) {
-  return name === "write" ||
-    name === "patch" ||
-    name === "edit" ||
-    name === "json" ||
-    name === "desk_safe_file_apply";
+  return name === 'write' || name === 'patch' || name === 'edit' || name === 'json' || name === 'desk_safe_file_apply';
 }
 
 function shellCommandAppearsToModifyFiles(input: unknown) {
-  if (typeof input !== "object" || input === null) return false;
+  if (typeof input !== 'object' || input === null) return false;
   const command = (input as { command?: unknown }).command;
-  if (typeof command !== "string") return false;
-  return /(?:^|[\s;&|])(?:Set-Content|Add-Content|Out-File|New-Item|Remove-Item|Move-Item|Copy-Item|Rename-Item|del|erase|rm|mv|cp|mkdir|rmdir|npm\s+(?:install|i|update)|pnpm\s+(?:install|add|update)|yarn\s+(?:add|install|upgrade))\b|(?:^|[^>])>{1,2}(?!>)/i.test(command);
+  if (typeof command !== 'string') return false;
+  return /(?:^|[\s;&|])(?:Set-Content|Add-Content|Out-File|New-Item|Remove-Item|Move-Item|Copy-Item|Rename-Item|del|erase|rm|mv|cp|mkdir|rmdir|npm\s+(?:install|i|update)|pnpm\s+(?:install|add|update)|yarn\s+(?:add|install|upgrade))\b|(?:^|[^>])>{1,2}(?!>)/i.test(
+    command,
+  );
 }
 
 function isVerificationRepairMutationToolCall(name: string, input: unknown, isReadOnly: boolean) {
-  if (name === "shell") return shellCommandAppearsToModifyFiles(input);
+  if (name === 'shell') return shellCommandAppearsToModifyFiles(input);
   return !isReadOnly && isVerificationRepairMutationToolName(name);
 }
 
-const fileMutationToolNames = new Set(["write", "patch", "edit", "json", "desk_safe_file_apply"]);
-const commandExecutionToolNames = new Set(["shell", "desk_terminal_run", "desk_terminal_stop", "server"]);
-const browserToolNames = new Set(["browser", "app_e2e_check"]);
-const externalWebToolNames = new Set(["web_search", "web_fetch"]);
-const evidencePreferenceToolNames = ["lsp", "read", "search", "code_symbols", "context_search"];
+const fileMutationToolNames = new Set(['write', 'patch', 'edit', 'json', 'desk_safe_file_apply']);
+const commandExecutionToolNames = new Set(['shell', 'desk_terminal_run', 'desk_terminal_stop', 'server']);
+const browserToolNames = new Set(['browser', 'app_e2e_check']);
+const externalWebToolNames = new Set(['web_search', 'web_fetch']);
+const evidencePreferenceToolNames = ['lsp', 'read', 'search', 'code_symbols', 'context_search'];
 const readOnlySideEffectToolNames = new Set([
   ...fileMutationToolNames,
   ...commandExecutionToolNames,
   ...browserToolNames,
-  "todo",
-  "memory",
-  "agent_task",
-  "task_handoff"
+  'todo',
+  'memory',
+  'agent_task',
+  'task_handoff',
 ]);
 
 function toolCallAppearsToMutateFiles(name: string, input: unknown, isReadOnly: boolean) {
-  if (name === "shell" || name === "desk_terminal_run") return shellCommandAppearsToModifyFiles(input);
+  if (name === 'shell' || name === 'desk_terminal_run') return shellCommandAppearsToModifyFiles(input);
   if (!fileMutationToolNames.has(name)) return false;
   return !isReadOnly;
 }
@@ -1297,34 +1409,36 @@ function hasSuccessfulEvidencePreferenceTool(successfulToolNames: ReadonlySet<st
 }
 
 function failedVerificationPatternFor(toolName: VerificationToolName) {
-  if (toolName === "diagnostics") {
+  if (toolName === 'diagnostics') {
     return /verificationOk:\s*false|repairRequired:\s*true|timedOut:\s*true|failureLikeOutput:\s*true|exitCode:\s*(?:none|[1-9]\d*)/i;
   }
-  if (toolName === "app_e2e_check") {
+  if (toolName === 'app_e2e_check') {
     return /status:\s*(?:fail|failed)|completionBlocked:\s*true|failures:\s*[1-9]\d*|pageErrors:\s*[1-9]\d*|app_e2e_check\s+failed|net::ERR_|page\.goto|page_error|http_status_error|http_error_page|server_default_page|httpStatus:\s*[45]\d\d|missing_expected_text|forbidden_text|text_below_min|interactive_elements_below_min/i;
   }
   return /status:\s*(?:fail|failed)|completionBlocked:\s*true|ready:\s*false|failures:\s*[1-9]\d*|client_script_syntax_error|smoke_client_contract_mismatch|server_start_failed|port_not_listening|readiness.*(?:failed|timeout)/i;
 }
 
 function isFailedVerificationToolMessage(message: AgentMessage): message is FailedVerificationToolMessage {
-  if (message.role !== "tool" || !isVerificationToolName(message.name)) return false;
+  if (message.role !== 'tool' || !isVerificationToolName(message.name)) return false;
   return failedVerificationPatternFor(message.name).test(message.content);
 }
 
 function isVerificationCleanupToolMessage(message: ToolMessage) {
-  if (message.name === "desk_terminal_stop") return true;
-  return message.name === "server" && /server\s+stopped|stopped:\s|server\s+stop/i.test(message.content);
+  if (message.name === 'desk_terminal_stop') return true;
+  return message.name === 'server' && /server\s+stopped|stopped:\s|server\s+stop/i.test(message.content);
 }
 
 function isVerificationRecoverySupportToolMessage(message: ToolMessage) {
   if (isVerificationCleanupToolMessage(message)) return true;
   if (isVerificationRepairEvidenceToolName(message.name)) return true;
-  if (message.name === "server" && !message.toolCallId.startsWith("auto-server-")) return true;
-  return message.name === "list" ||
-    message.name === "glob" ||
-    message.name === "tree" ||
-    message.name === "file_info" ||
-    message.name === "todo";
+  if (message.name === 'server' && !message.toolCallId.startsWith('auto-server-')) return true;
+  return (
+    message.name === 'list' ||
+    message.name === 'glob' ||
+    message.name === 'tree' ||
+    message.name === 'file_info' ||
+    message.name === 'todo'
+  );
 }
 
 function verificationFailureEvidence(content: string) {
@@ -1333,23 +1447,22 @@ function verificationFailureEvidence(content: string) {
     .map((line) => line.trim())
     .filter(Boolean);
   const importantLines = lines.filter((line) =>
-    /script:|status:|completionBlocked:|verificationOk:|repairRequired:|timedOut:|failureLikeOutput:|exitCode:|failures:|pageErrors:|app_e2e_check\s+failed|net::ERR_|page\.goto|page_error|http_status_error|http_error_page|server_default_page|httpStatus:\s*[45]\d\d|client_script_syntax_error|smoke_client_contract_mismatch|server_start_failed|port_not_listening|missing_expected_text|forbidden_text|text_below_min|interactive_elements_below_min/i.test(line)
+    /script:|status:|completionBlocked:|verificationOk:|repairRequired:|timedOut:|failureLikeOutput:|exitCode:|failures:|pageErrors:|app_e2e_check\s+failed|net::ERR_|page\.goto|page_error|http_status_error|http_error_page|server_default_page|httpStatus:\s*[45]\d\d|client_script_syntax_error|smoke_client_contract_mismatch|server_start_failed|port_not_listening|missing_expected_text|forbidden_text|text_below_min|interactive_elements_below_min/i.test(
+      line,
+    ),
   );
-  return (importantLines.length > 0 ? importantLines : lines).slice(0, 8).join("\n").slice(0, 1200);
+  return (importantLines.length > 0 ? importantLines : lines).slice(0, 8).join('\n').slice(0, 1200);
 }
 
 function verificationFailureSignature(toolName: VerificationToolName, content: string) {
-  return `${toolName}:${verificationFailureEvidence(content)
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .slice(0, 500)}`;
+  return `${toolName}:${verificationFailureEvidence(content).toLowerCase().replace(/\s+/g, ' ').slice(0, 500)}`;
 }
 
 function latestFailedVerificationMessage(messages: AgentMessage[]): VerificationFailure | undefined {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index];
-    if (message.role === "user") return undefined;
-    if (message.role === "tool") {
+    if (message.role === 'user') return undefined;
+    if (message.role === 'tool') {
       if (!isVerificationToolName(message.name)) {
         if (isVerificationRecoverySupportToolMessage(message)) continue;
         return undefined;
@@ -1363,8 +1476,8 @@ function latestFailedVerificationMessage(messages: AgentMessage[]): Verification
         evidence: verificationFailureEvidence(message.content),
         classification: classifyVerificationFailure({
           toolName,
-          content: message.content
-        })
+          content: message.content,
+        }),
       };
     }
   }
@@ -1374,7 +1487,7 @@ function latestFailedVerificationMessage(messages: AgentMessage[]): Verification
 function findToolCallById(messages: AgentMessage[], toolCallId: string): ToolCall | undefined {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index];
-    if (message.role !== "assistant") continue;
+    if (message.role !== 'assistant') continue;
     const toolCall = (message.toolCalls ?? []).find((candidate) => candidate.id === toolCallId);
     if (toolCall) return toolCall;
   }
@@ -1383,9 +1496,9 @@ function findToolCallById(messages: AgentMessage[], toolCallId: string): ToolCal
 
 function extractUrlFromVerificationFailure(failure: VerificationFailure, originalToolCall?: ToolCall) {
   const input = originalToolCall?.input;
-  if (typeof input === "object" && input !== null) {
+  if (typeof input === 'object' && input !== null) {
     const url = (input as { url?: unknown }).url;
-    if (typeof url === "string" && url.trim()) return url.trim();
+    if (typeof url === 'string' && url.trim()) return url.trim();
   }
 
   const match = failure.message.content.match(/https?:\/\/[^\s"'<>]+/i);
@@ -1395,7 +1508,7 @@ function extractUrlFromVerificationFailure(failure: VerificationFailure, origina
 function isHttpUrl(url: string) {
   try {
     const parsed = new URL(url);
-    return parsed.protocol === "http:" || parsed.protocol === "https:";
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
   } catch {
     return false;
   }
@@ -1404,17 +1517,17 @@ function isHttpUrl(url: string) {
 function localFilePathFromVerificationUrl(url: string) {
   const trimmed = url.trim();
   if (/^file:/i.test(trimmed)) return fileURLToPath(trimmed);
-  if (/^[A-Za-z]:[\\/]/.test(trimmed) || trimmed.startsWith("/") || trimmed.startsWith("\\")) return trimmed;
+  if (/^[A-Za-z]:[\\/]/.test(trimmed) || trimmed.startsWith('/') || trimmed.startsWith('\\')) return trimmed;
   if (!/^[A-Za-z][A-Za-z0-9+.-]*:/.test(trimmed)) return trimmed;
   return undefined;
 }
 
 function encodePathForUrl(path: string) {
   return path
-    .split("/")
+    .split('/')
     .filter((part) => part.length > 0)
     .map((part) => encodeURIComponent(part))
-    .join("/");
+    .join('/');
 }
 
 function localStaticHttpTarget(workspaceRoot: string, url: string, port: number) {
@@ -1422,11 +1535,11 @@ function localStaticHttpTarget(workspaceRoot: string, url: string, port: number)
   const localPath = localFilePathFromVerificationUrl(url);
   if (!localPath) return undefined;
   const absolutePath = assertInsideWorkspace(workspaceRoot, localPath);
-  const relativePath = relative(resolve(workspaceRoot), absolutePath).replace(/\\/g, "/");
-  const urlPath = encodePathForUrl(relativePath || "index.html");
+  const relativePath = relative(resolve(workspaceRoot), absolutePath).replace(/\\/g, '/');
+  const urlPath = encodePathForUrl(relativePath || 'index.html');
   return {
     relativePath,
-    url: `http://127.0.0.1:${port}/${urlPath}`
+    url: `http://127.0.0.1:${port}/${urlPath}`,
   };
 }
 
@@ -1435,8 +1548,8 @@ function workspaceRelativeLocalEntry(workspaceRoot: string, url: string) {
   const localPath = localFilePathFromVerificationUrl(url);
   if (!localPath) return undefined;
   const absolutePath = assertInsideWorkspace(workspaceRoot, localPath);
-  const relativePath = relative(resolve(workspaceRoot), absolutePath).replace(/\\/g, "/");
-  return relativePath || "index.html";
+  const relativePath = relative(resolve(workspaceRoot), absolutePath).replace(/\\/g, '/');
+  return relativePath || 'index.html';
 }
 
 async function workspaceFileExists(workspaceRoot: string, relativePath: string) {
@@ -1449,20 +1562,20 @@ async function workspaceFileExists(workspaceRoot: string, relativePath: string) 
 }
 
 function shouldRetryWithWorkspaceIndex(failure: VerificationFailure, causeId: string | undefined) {
-  if (causeId !== "server_not_running") return false;
+  if (causeId !== 'server_not_running') return false;
   return /server_default_page|IIS Windows Server|Apache(?:2)? Default Page|nginx welcome|It works!|http_error_page|http_status_error|httpStatus:\s*[45]\d\d/i.test(
-    failure.message.content
+    failure.message.content,
   );
 }
 
 async function allocateLocalHttpPort() {
   return await new Promise<number>((resolvePort, rejectPort) => {
     const server = createServer();
-    server.once("error", rejectPort);
-    server.listen(0, "127.0.0.1", () => {
+    server.once('error', rejectPort);
+    server.listen(0, '127.0.0.1', () => {
       const address = server.address();
-      if (!address || typeof address === "string") {
-        server.close(() => rejectPort(new Error("Failed to allocate a local HTTP port.")));
+      if (!address || typeof address === 'string') {
+        server.close(() => rejectPort(new Error('Failed to allocate a local HTTP port.')));
         return;
       }
       const port = address.port;
@@ -1472,31 +1585,34 @@ async function allocateLocalHttpPort() {
 }
 
 function nodeEvalCommand(script: string) {
-  const node = process.platform === "win32" ? `& ${JSON.stringify(process.execPath)}` : JSON.stringify(process.execPath);
+  const node =
+    process.platform === 'win32' ? `& ${JSON.stringify(process.execPath)}` : JSON.stringify(process.execPath);
   return `${node} -e ${JSON.stringify(script)}`;
 }
 
 function staticHttpServerCommand(port: number) {
-  return nodeEvalCommand([
-    "const http = require('http');",
-    "const fs = require('fs');",
-    "const path = require('path');",
-    "const root = path.resolve(process.cwd());",
-    "const mime = {'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.gif':'image/gif','.svg':'image/svg+xml','.webp':'image/webp','.ico':'image/x-icon','.ttf':'font/ttf','.woff':'font/woff','.woff2':'font/woff2','.mp3':'audio/mpeg','.wav':'audio/wav'};",
-    "http.createServer((req, res) => {",
-    "  const parsed = new URL(req.url || '/', 'http://127.0.0.1');",
-    "  let requestPath = decodeURIComponent(parsed.pathname);",
-    "  if (requestPath === '/' || requestPath.endsWith('/')) requestPath += 'index.html';",
-    "  const file = path.resolve(root, requestPath.replace(/^[/\\\\]+/, ''));",
-    "  if (file !== root && !file.startsWith(root + path.sep)) { res.writeHead(403); res.end('forbidden'); return; }",
-    "  fs.stat(file, (statError, stats) => {",
-    "    if (statError || !stats.isFile()) { res.writeHead(404); res.end('not found'); return; }",
-    "    res.writeHead(200, { 'content-type': mime[path.extname(file).toLowerCase()] || 'application/octet-stream' });",
-    "    fs.createReadStream(file).on('error', () => { res.destroy(); }).pipe(res);",
-    "  });",
-    `}).listen(${port}, '127.0.0.1', () => console.log('static server ready ${port}'));`,
-    "setInterval(() => {}, 1000);"
-  ].join(" "));
+  return nodeEvalCommand(
+    [
+      "const http = require('http');",
+      "const fs = require('fs');",
+      "const path = require('path');",
+      'const root = path.resolve(process.cwd());',
+      "const mime = {'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.gif':'image/gif','.svg':'image/svg+xml','.webp':'image/webp','.ico':'image/x-icon','.ttf':'font/ttf','.woff':'font/woff','.woff2':'font/woff2','.mp3':'audio/mpeg','.wav':'audio/wav'};",
+      'http.createServer((req, res) => {',
+      "  const parsed = new URL(req.url || '/', 'http://127.0.0.1');",
+      '  let requestPath = decodeURIComponent(parsed.pathname);',
+      "  if (requestPath === '/' || requestPath.endsWith('/')) requestPath += 'index.html';",
+      "  const file = path.resolve(root, requestPath.replace(/^[/\\\\]+/, ''));",
+      "  if (file !== root && !file.startsWith(root + path.sep)) { res.writeHead(403); res.end('forbidden'); return; }",
+      '  fs.stat(file, (statError, stats) => {',
+      "    if (statError || !stats.isFile()) { res.writeHead(404); res.end('not found'); return; }",
+      "    res.writeHead(200, { 'content-type': mime[path.extname(file).toLowerCase()] || 'application/octet-stream' });",
+      "    fs.createReadStream(file).on('error', () => { res.destroy(); }).pipe(res);",
+      '  });',
+      `}).listen(${port}, '127.0.0.1', () => console.log('static server ready ${port}'));`,
+      'setInterval(() => {}, 1000);',
+    ].join(' '),
+  );
 }
 
 interface AutoRepairLaunchPlan {
@@ -1508,7 +1624,7 @@ interface AutoRepairLaunchPlan {
 function keyValueFields(content: string) {
   const fields = new Map<string, string>();
   for (const line of content.split(/\r?\n/)) {
-    const separator = line.indexOf(":");
+    const separator = line.indexOf(':');
     if (separator <= 0) continue;
     const key = line.slice(0, separator).trim().toLowerCase();
     const value = line.slice(separator + 1).trim();
@@ -1520,13 +1636,13 @@ function keyValueFields(content: string) {
 
 function parseAutoRepairLaunchPlan(content: string): AutoRepairLaunchPlan | undefined {
   const fields = keyValueFields(content);
-  const command = fields.get("command");
-  const readinessUrl = fields.get("readinessurl");
+  const command = fields.get('command');
+  const readinessUrl = fields.get('readinessurl');
   if (!command || !readinessUrl || !isHttpUrl(readinessUrl)) return undefined;
   return {
     command,
-    cwd: fields.get("cwd") ?? ".",
-    readinessUrl
+    cwd: fields.get('cwd') ?? '.',
+    readinessUrl,
   };
 }
 
@@ -1534,234 +1650,238 @@ function appLaunchPlanInputForAutoRepair(
   workspaceRoot: string,
   failedUrl: string,
   causeId: string | undefined,
-  shouldUseWorkspaceIndex: boolean
-): { cwd: string; entry: string | null; target: "browser" } {
+  shouldUseWorkspaceIndex: boolean,
+): { cwd: string; entry: string | null; target: 'browser' } {
   let entry: string | null = null;
   if (shouldUseWorkspaceIndex) {
-    entry = "index.html";
-  } else if (causeId === "local_file_requires_server") {
+    entry = 'index.html';
+  } else if (causeId === 'local_file_requires_server') {
     entry = workspaceRelativeLocalEntry(workspaceRoot, failedUrl) ?? null;
   }
   return {
-    cwd: ".",
+    cwd: '.',
     entry,
-    target: "browser"
+    target: 'browser',
   };
 }
 
 function appE2EInputForAutoRepair(originalToolCall: ToolCall | undefined, url: string) {
-  if (originalToolCall?.input && typeof originalToolCall.input === "object" && !Array.isArray(originalToolCall.input)) {
+  if (originalToolCall?.input && typeof originalToolCall.input === 'object' && !Array.isArray(originalToolCall.input)) {
     return {
       ...originalToolCall.input,
-      url
+      url,
     };
   }
   return {
     url,
     expectedText: [],
-    forbiddenText: ["undefined", "NaN", "[object Object]"],
+    forbiddenText: ['undefined', 'NaN', '[object Object]'],
     minTextLength: 20,
-    minInteractiveElements: 0
+    minInteractiveElements: 0,
   };
 }
 
 function autoRepairSummaryMessage(failure: VerificationFailure, serverName: string): SystemMessage {
   return {
-    role: "system",
+    role: 'system',
     content: [
-      "Xenesis auto repair recipe completed.",
-      `repairRecipe: ${failure.classification.repairRecipe?.id ?? "unknown"}`,
-      `failureCause: ${failure.classification.primaryCause?.id ?? "unknown"}`,
+      'Xenesis auto repair recipe completed.',
+      `repairRecipe: ${failure.classification.repairRecipe?.id ?? 'unknown'}`,
+      `failureCause: ${failure.classification.primaryCause?.id ?? 'unknown'}`,
       `serverName: ${serverName}`,
-      "The failed verification was repaired by running the recipe tools directly.",
-      "Use the latest tool results as evidence. Report completion only if the final verification tool result passed."
-    ].join("\n")
+      'The failed verification was repaired by running the recipe tools directly.',
+      'Use the latest tool results as evidence. Report completion only if the final verification tool result passed.',
+    ].join('\n'),
   };
 }
 
 function repairCandidateNarrowingPolicy(failure: VerificationFailure) {
   const causeId = failure.classification.primaryCause?.id;
   const common = [
-    "Repair candidate narrowing policy:",
-    "Before patching, identify one primary candidate file/function from the failure evidence.",
-    "Prefer read, search, code_symbols, or lsp before shell. Inspect at most three candidate files before the first patch unless the evidence is ambiguous.",
-    "Patch the smallest candidate supported by verification evidence, then rerun the failed verification path."
+    'Repair candidate narrowing policy:',
+    'Before patching, identify one primary candidate file/function from the failure evidence.',
+    'Prefer read, search, code_symbols, or lsp before shell. Inspect at most three candidate files before the first patch unless the evidence is ambiguous.',
+    'Patch the smallest candidate supported by verification evidence, then rerun the failed verification path.',
   ];
 
-  if (causeId === "client_runtime_error") {
+  if (causeId === 'client_runtime_error') {
     return [
       ...common,
-      "Candidate source order: explicit path in page_error or client_script_syntax_error evidence -> script src from the HTML entry -> client entry/route/component referenced by the rendered page.",
-      "Patch only the directly implicated client runtime defect. Do not hide the error with generic fallback labels or unrelated UI changes."
+      'Candidate source order: explicit path in page_error or client_script_syntax_error evidence -> script src from the HTML entry -> client entry/route/component referenced by the rendered page.',
+      'Patch only the directly implicated client runtime defect. Do not hide the error with generic fallback labels or unrelated UI changes.',
     ];
   }
 
-  if (causeId === "smoke_test_structure") {
+  if (causeId === 'smoke_test_structure') {
     return [
       ...common,
-      "Candidate source order: smoke test script -> package script mapping -> server startup/readiness helper -> process cleanup helper.",
-      "Patch bounded readiness waits, response consumption, failure exit, and cleanup waits before rerunning diagnostics."
+      'Candidate source order: smoke test script -> package script mapping -> server startup/readiness helper -> process cleanup helper.',
+      'Patch bounded readiness waits, response consumption, failure exit, and cleanup waits before rerunning diagnostics.',
     ];
   }
 
-  if (causeId === "verification_timeout") {
+  if (causeId === 'verification_timeout') {
     return [
       ...common,
-      "Candidate source order: timed-out diagnostics script -> readiness wait loop -> child process cleanup/open handles -> server startup observability.",
-      "Do not rerun the same timed-out command until a bounded wait, explicit failure exit, or cleanup candidate has been patched."
+      'Candidate source order: timed-out diagnostics script -> readiness wait loop -> child process cleanup/open handles -> server startup observability.',
+      'Do not rerun the same timed-out command until a bounded wait, explicit failure exit, or cleanup candidate has been patched.',
     ];
   }
 
-  if (causeId === "server_not_running") {
+  if (causeId === 'server_not_running') {
     return [
       ...common,
-      "Candidate source order: package start script -> server entry -> readiness port/url config.",
-      "Prefer the managed server tool with readinessUrl before patching code. Patch startup code only if the server tool reports a concrete startup failure."
+      'Candidate source order: package start script -> server entry -> readiness port/url config.',
+      'Prefer the managed server tool with readinessUrl before patching code. Patch startup code only if the server tool reports a concrete startup failure.',
     ];
   }
 
   return [
     ...common,
-    "Candidate source order: failed verification output -> directly implicated source/config/test file -> nearest entrypoint or contract boundary.",
-    "If no concrete candidate is visible after focused inspection, stop and report the missing evidence instead of guessing."
+    'Candidate source order: failed verification output -> directly implicated source/config/test file -> nearest entrypoint or contract boundary.',
+    'If no concrete candidate is visible after focused inspection, stop and report the missing evidence instead of guessing.',
   ];
 }
 
 function autoTriageSummaryMessage(failure: VerificationFailure, toolName: string): SystemMessage {
   return {
-    role: "system",
+    role: 'system',
     content: [
-      "Xenesis auto triage recipe completed.",
-      `repairRecipe: ${failure.classification.repairRecipe?.id ?? "unknown"}`,
-      `failureCause: ${failure.classification.primaryCause?.id ?? "unknown"}`,
+      'Xenesis auto triage recipe completed.',
+      `repairRecipe: ${failure.classification.repairRecipe?.id ?? 'unknown'}`,
+      `failureCause: ${failure.classification.primaryCause?.id ?? 'unknown'}`,
       `triageTool: ${toolName}`,
-      "Additional evidence was collected by running a safe verification tool.",
+      'Additional evidence was collected by running a safe verification tool.',
       ...repairCandidateNarrowingPolicy(failure),
-      "Use the latest tool results as repair evidence. Do not report completion until the blocking defect is repaired and final verification passes."
-    ].join("\n")
+      'Use the latest tool results as repair evidence. Do not report completion until the blocking defect is repaired and final verification passes.',
+    ].join('\n'),
   };
 }
 
 function verificationToolRepairGuidance(toolName: VerificationToolName) {
-  if (toolName === "diagnostics") {
+  if (toolName === 'diagnostics') {
     return [
-      "Inspect the implicated script, server, test, route, readiness wait, open handle, or child process cleanup code.",
-      "Patch the concrete defect, read the changed file when it is small, then rerun diagnostics."
+      'Inspect the implicated script, server, test, route, readiness wait, open handle, or child process cleanup code.',
+      'Patch the concrete defect, read the changed file when it is small, then rerun diagnostics.',
     ];
   }
-  if (toolName === "app_e2e_check") {
+  if (toolName === 'app_e2e_check') {
     return [
-      "Inspect the rendered app path, browser page errors, data binding, fixture/API payload shape, and client script syntax.",
-      "Patch the concrete rendered-app defect, then rerun app_readiness or diagnostics if relevant and rerun app_e2e_check before completion."
+      'Inspect the rendered app path, browser page errors, data binding, fixture/API payload shape, and client script syntax.',
+      'Patch the concrete rendered-app defect, then rerun app_readiness or diagnostics if relevant and rerun app_e2e_check before completion.',
     ];
   }
   return [
-    "Inspect server startup, readiness URL, client script syntax, smoke/API contract shape, and reported readiness findings.",
-    "Patch the concrete readiness defect, then rerun app_readiness and follow with diagnostics or app_e2e_check when the app is browser-facing."
+    'Inspect server startup, readiness URL, client script syntax, smoke/API contract shape, and reported readiness findings.',
+    'Patch the concrete readiness defect, then rerun app_readiness and follow with diagnostics or app_e2e_check when the app is browser-facing.',
   ];
 }
 
 function verificationRecoveryRequiredMessage(failure: VerificationFailure, attempt: number): SystemMessage {
   return {
-    role: "system",
+    role: 'system',
     content: [
-      "Xenesis verification recovery required.",
+      'Xenesis verification recovery required.',
       `The most recent ${failure.toolName} tool result failed or blocked completion. Do not finalize, summarize next steps, or say you will fix it later.`,
       `Repair attempt ${attempt}/2.`,
-      "Failure evidence:",
+      'Failure evidence:',
       failure.evidence,
-      "Failure classification:",
+      'Failure classification:',
       renderVerificationFailureClassification(failure.classification),
       ...repairCandidateNarrowingPolicy(failure),
       ...verificationToolRepairGuidance(failure.toolName),
-      "Only report completion after diagnostics succeeds. If the same failure signature repeats after repair, stop with the failed command and evidence."
-    ].join("\n")
+      'Only report completion after diagnostics succeeds. If the same failure signature repeats after repair, stop with the failed command and evidence.',
+    ].join('\n'),
   };
 }
 
 function verificationBlockedContent(failure: VerificationFailure) {
   return [
-    "Verification repair is blocked because the same verification failure repeated after repair attempts.",
-    "",
+    'Verification repair is blocked because the same verification failure repeated after repair attempts.',
+    '',
     `Failed tool: ${failure.toolName}`,
-    "",
-    "Failure evidence:",
+    '',
+    'Failure evidence:',
     failure.evidence,
-    "",
-    "Failure classification:",
+    '',
+    'Failure classification:',
     renderVerificationFailureClassification(failure.classification),
-    "",
-    "I should not claim completion until the failed verification is repaired and rerun successfully."
-  ].join("\n");
+    '',
+    'I should not claim completion until the failed verification is repaired and rerun successfully.',
+  ].join('\n');
 }
 
 function contentClaimsVerificationResolved(content: string) {
-  return /(?:verification|diagnostics|readiness|e2e|smoke|test|검증|진단|준비|테스트|스모크)[^.!?\n]{0,100}(?:passed|succeeded|successful|green|fixed|repaired|complete|completed|done|통과|성공|수정|복구|해결|완료)|(?:passed|succeeded|successful|fixed|repaired|complete|completed|done|통과|성공|수정|복구|해결|완료)[^.!?\n]{0,100}(?:verification|diagnostics|readiness|e2e|smoke|test|검증|진단|준비|테스트|스모크)/i.test(content);
+  return /(?:verification|diagnostics|readiness|e2e|smoke|test|검증|진단|준비|테스트|스모크)[^.!?\n]{0,100}(?:passed|succeeded|successful|green|fixed|repaired|complete|completed|done|통과|성공|수정|복구|해결|완료)|(?:passed|succeeded|successful|fixed|repaired|complete|completed|done|통과|성공|수정|복구|해결|완료)[^.!?\n]{0,100}(?:verification|diagnostics|readiness|e2e|smoke|test|검증|진단|준비|테스트|스모크)/i.test(
+    content,
+  );
 }
 
 function verificationRecoveryDecision(
   userMessage: UserMessage,
   messages: AgentMessage[],
-  recoveryCounts: ReadonlyMap<string, number>
+  recoveryCounts: ReadonlyMap<string, number>,
 ): VerificationRecoveryDecision {
-  if (!userRequestedRepairOrVerification(userMessage.content)) return { kind: "none" };
+  if (!userRequestedRepairOrVerification(userMessage.content)) return { kind: 'none' };
   const failure = latestFailedVerificationMessage(messages);
-  if (!failure) return { kind: "none" };
+  if (!failure) return { kind: 'none' };
   const previousAttempts = recoveryCounts.get(failure.signature) ?? 0;
   if (previousAttempts >= 2) {
     return {
-      kind: "blocked",
+      kind: 'blocked',
       failure,
       attempt: previousAttempts,
-      content: verificationBlockedContent(failure)
+      content: verificationBlockedContent(failure),
     };
   }
   const attempt = previousAttempts + 1;
   return {
-    kind: "continue",
+    kind: 'continue',
     failure,
     attempt,
-    message: verificationRecoveryRequiredMessage(failure, attempt)
+    message: verificationRecoveryRequiredMessage(failure, attempt),
   };
 }
 
 function containsRepositoryRecommendation(content: string) {
   if (/do not recommend repository|remove unrequested repository/i.test(content)) return false;
-  return /git\s*(도입|설정|구축|사용)|github|버전\s*관리\s*(도입|설정|구축)|저장소\s*(도입|설정|구축)|repository hosting|version-control setup|version control setup|deployment process/i.test(content);
+  return /git\s*(도입|설정|구축|사용)|github|버전\s*관리\s*(도입|설정|구축)|저장소\s*(도입|설정|구축)|repository hosting|version-control setup|version control setup|deployment process/i.test(
+    content,
+  );
 }
 
 function unrequestedRepositoryRecommendationRecoveryMessage(
   userMessage: UserMessage,
   assistantContent: string,
-  alreadyUsed: boolean
+  alreadyUsed: boolean,
 ): SystemMessage | undefined {
   if (alreadyUsed) return undefined;
   if (userRequestedRepositoryTopic(userMessage.content)) return undefined;
   if (!containsRepositoryRecommendation(assistantContent)) return undefined;
   return {
-    role: "system",
+    role: 'system',
     content: [
-      "Remove unrequested repository, version-control, hosting, and deployment process recommendations.",
-      "The user did not ask for those topics. Revise the final answer to stay within the requested project analysis or renewal scope.",
-      "Do not mention Git, GitHub, repositories, version-control setup, or deployment process changes unless the user explicitly asks."
-    ].join("\n")
+      'Remove unrequested repository, version-control, hosting, and deployment process recommendations.',
+      'The user did not ask for those topics. Revise the final answer to stay within the requested project analysis or renewal scope.',
+      'Do not mention Git, GitHub, repositories, version-control setup, or deployment process changes unless the user explicitly asks.',
+    ].join('\n'),
   };
 }
 
 function isCompactSummaryMessage(message: AgentMessage): message is SystemMessage {
-  return message.role === "system" && message.content.startsWith("Xenesis compacted session context:");
+  return message.role === 'system' && message.content.startsWith('Xenesis compacted session context:');
 }
 
 function toolResultCallIds(messages: AgentMessage[]) {
-  return new Set(messages
-    .filter((message): message is ToolMessage => message.role === "tool")
-    .map((message) => message.toolCallId));
+  return new Set(
+    messages.filter((message): message is ToolMessage => message.role === 'tool').map((message) => message.toolCallId),
+  );
 }
 
 function assistantToolCallIds(messages: AgentMessage[]) {
   const ids = new Set<string>();
   for (const message of messages) {
-    if (message.role !== "assistant") continue;
+    if (message.role !== 'assistant') continue;
     for (const toolCall of message.toolCalls ?? []) ids.add(toolCall.id);
   }
   return ids;
@@ -1777,7 +1897,7 @@ function findAssistantIndexForToolCalls(messages: AgentMessage[], beforeIndex: n
   const missing = new Set(toolCallIds);
   for (let index = beforeIndex - 1; index >= 0; index -= 1) {
     const message = messages[index];
-    if (message.role !== "assistant") continue;
+    if (message.role !== 'assistant') continue;
     if ((message.toolCalls ?? []).some((toolCall) => missing.has(toolCall.id))) return index;
   }
   return -1;
@@ -1785,7 +1905,7 @@ function findAssistantIndexForToolCalls(messages: AgentMessage[], beforeIndex: n
 
 function dropOrphanToolResults(messages: AgentMessage[]) {
   const callIds = assistantToolCallIds(messages);
-  return messages.filter((message) => message.role !== "tool" || callIds.has(message.toolCallId));
+  return messages.filter((message) => message.role !== 'tool' || callIds.has(message.toolCallId));
 }
 
 export function compactMessageParts(historyMessages: AgentMessage[], keepMessages: number) {
@@ -1794,7 +1914,7 @@ export function compactMessageParts(historyMessages: AgentMessage[], keepMessage
     return {
       keepCount,
       olderMessages: historyMessages,
-      recentMessages: []
+      recentMessages: [],
     };
   }
 
@@ -1810,20 +1930,21 @@ export function compactMessageParts(historyMessages: AgentMessage[], keepMessage
   return {
     keepCount,
     olderMessages: historyMessages.slice(0, splitIndex),
-    recentMessages: dropOrphanToolResults(historyMessages.slice(splitIndex))
+    recentMessages: dropOrphanToolResults(historyMessages.slice(splitIndex)),
   };
 }
 
-export function compactedHistoryMessages(historyMessages: AgentMessage[], compactAfterMessages: number, keepMessages: number) {
+export function compactedHistoryMessages(
+  historyMessages: AgentMessage[],
+  compactAfterMessages: number,
+  keepMessages: number,
+) {
   if (historyMessages.length <= compactAfterMessages) {
     return historyMessages.map((message) => ({ ...message }));
   }
 
   const { keepCount, olderMessages, recentMessages } = compactMessageParts(historyMessages, keepMessages);
-  return [
-    compactHistoryMessages(olderMessages, keepCount),
-    ...recentMessages.map((message) => ({ ...message }))
-  ];
+  return [compactHistoryMessages(olderMessages, keepCount), ...recentMessages.map((message) => ({ ...message }))];
 }
 
 function toolRunOutcome(
@@ -1833,14 +1954,14 @@ function toolRunOutcome(
   maxToolResultChars: number,
   inputPath?: string,
   isReadOnly?: boolean,
-  isMutation?: boolean
+  isMutation?: boolean,
 ): ToolRunOutcome {
   const recordedMessage = toolResultMessage(toolCall, content);
   const wrapped = wrapModelVisibleToolResult(
     toolCall,
     truncateToolContent(content, maxToolResultChars),
     isReadOnly,
-    isMutation
+    isMutation,
   );
   const modelMessage = toolResultMessage(toolCall, wrapped.content);
   const warnings = userFacingExternalContentWarnings(wrapped);
@@ -1851,67 +1972,64 @@ function toolRunOutcome(
     ...(warnings.length > 0 ? { externalContentWarnings: warnings } : {}),
     ...(inputPath ? { inputPath } : {}),
     ...(isReadOnly !== undefined ? { isReadOnly } : {}),
-    ...(isMutation !== undefined ? { isMutation } : {})
+    ...(isMutation !== undefined ? { isMutation } : {}),
   };
 }
 
 function sanitizeFileSegment(value: string) {
-  return value.replace(/[^A-Za-z0-9_.-]+/g, "_").slice(0, 80) || "tool";
+  return value.replace(/[^A-Za-z0-9_.-]+/g, '_').slice(0, 80) || 'tool';
 }
 
-function storedToolResultContent(input: {
-  toolCall: ToolCall;
-  path: string;
-  originalChars: number;
-  preview: string;
-}) {
+function storedToolResultContent(input: { toolCall: ToolCall; path: string; originalChars: number; preview: string }) {
   return [
-    "[tool result stored]",
+    '[tool result stored]',
     `tool: ${input.toolCall.name}`,
     `toolCallId: ${input.toolCall.id}`,
     `originalChars: ${input.originalChars}`,
     `path: ${input.path}`,
-    "The full output was stored outside model context. Read the referenced file if full detail is required.",
-    "",
-    "Preview:",
-    input.preview
-  ].join("\n");
+    'The full output was stored outside model context. Read the referenced file if full detail is required.',
+    '',
+    'Preview:',
+    input.preview,
+  ].join('\n');
 }
 
 function toolInputPath(input: unknown) {
-  if (typeof input !== "object" || input === null) return undefined;
+  if (typeof input !== 'object' || input === null) return undefined;
   const path = (input as { path?: unknown }).path;
-  return typeof path === "string" && path.length > 0 ? path : undefined;
+  return typeof path === 'string' && path.length > 0 ? path : undefined;
 }
 
 const currentInfoToolRecoveryNames = new Set([
-  "weather_current",
-  "weather_forecast",
-  "market_quote",
-  "sports_scores",
-  "news_latest"
+  'weather_current',
+  'weather_forecast',
+  'market_quote',
+  'sports_scores',
+  'news_latest',
 ]);
 
 function isExternalWorkspaceOrSessionAccessBlock(content: string) {
-  return /(?:outside\s+(?:the\s+)?workspace|cwd\s+is\s+outside\s+(?:the\s+)?workspace|writes\s+outside\s+(?:the\s+)?workspace|CreateProcessAsUserW\s+failed:\s*1312)/i
-    .test(content);
+  return /(?:outside\s+(?:the\s+)?workspace|cwd\s+is\s+outside\s+(?:the\s+)?workspace|writes\s+outside\s+(?:the\s+)?workspace|CreateProcessAsUserW\s+failed:\s*1312)/i.test(
+    content,
+  );
 }
 
 function externalWorkspaceAccessNextAction(recoveryTools: string[]) {
-  const toolGuidance = recoveryTools.length > 0
-    ? [
-      `Use one of these available recovery tools before finalizing: ${recoveryTools.join(", ")}.`,
-      "Inspect the workspace capability with desk_capabilities, then call xd.services.xenesis.setWorkspace or xd.xenesis.workspace.set without approved=true so Desk can create a real approval request.",
-      "Do not synthesize chat-only approval text. A valid approval request must come from the CR/MCP capability call result so the Agent pane can render inline approval controls."
-    ]
-    : [
-      "No CR/MCP workspace recovery tool is available in this run, so report that concrete blocker instead of inventing an approval request."
-    ];
+  const toolGuidance =
+    recoveryTools.length > 0
+      ? [
+          `Use one of these available recovery tools before finalizing: ${recoveryTools.join(', ')}.`,
+          'Inspect the workspace capability with desk_capabilities, then call xd.services.xenesis.setWorkspace or xd.xenesis.workspace.set without approved=true so Desk can create a real approval request.',
+          'Do not synthesize chat-only approval text. A valid approval request must come from the CR/MCP capability call result so the Agent pane can render inline approval controls.',
+        ]
+      : [
+          'No CR/MCP workspace recovery tool is available in this run, so report that concrete blocker instead of inventing an approval request.',
+        ];
   return [
-    "The requested path or command is blocked by the current workspace/session boundary.",
-    "Do not answer as complete and do not merely report that the path cannot be opened.",
-    ...toolGuidance
-  ].join(" ");
+    'The requested path or command is blocked by the current workspace/session boundary.',
+    'Do not answer as complete and do not merely report that the path cannot be opened.',
+    ...toolGuidance,
+  ].join(' ');
 }
 
 function toolFailureNextAction(toolName: string, content: string, recoveryTools: string[] = []) {
@@ -1921,46 +2039,45 @@ function toolFailureNextAction(toolName: string, content: string, recoveryTools:
   if (currentInfoToolRecoveryNames.has(toolName) && recoveryTools.length > 0) {
     return [
       `The ${toolName} lookup failed or returned no useful current result.`,
-      `Use one of these available recovery tools before finalizing: ${recoveryTools.join(", ")}.`,
-      "Adjust the query or fetch a relevant source, then answer from the recovered evidence."
-    ].join(" ");
+      `Use one of these available recovery tools before finalizing: ${recoveryTools.join(', ')}.`,
+      'Adjust the query or fetch a relevant source, then answer from the recovered evidence.',
+    ].join(' ');
+  }
+  if (toolName === 'browser' && /(?:Only\s+HTTP\(S\)\s+URLs\s+are\s+allowed|file:\/\/|local\s+file)/i.test(content)) {
+    return [
+      'Local file browser URLs require an HTTP server.',
+      'Do not ask the user to open the file manually.',
+      'Start a local static server for the workspace or use server/app_e2e_check against an http:// URL, then rerun browser verification.',
+    ].join(' ');
   }
   if (
-    toolName === "browser" &&
-    /(?:Only\s+HTTP\(S\)\s+URLs\s+are\s+allowed|file:\/\/|local\s+file)/i.test(content)
+    toolName === 'patch' &&
+    /(?:text\s+not\s+found|replacement\s+text\s+did\s+not\s+match|no\s+changes\s+were\s+applied|patch\s+not\s+applied)/i.test(
+      content,
+    )
   ) {
     return [
-      "Local file browser URLs require an HTTP server.",
-      "Do not ask the user to open the file manually.",
-      "Start a local static server for the workspace or use server/app_e2e_check against an http:// URL, then rerun browser verification."
-    ].join(" ");
+      'Patch failed because the replacement text did not match the current file contents.',
+      'Do not ask the user to proceed.',
+      'Read the target file again, then retry patch with an exact current snippet or use write when replacing the whole small file is safer.',
+    ].join(' ');
   }
-  if (
-    toolName === "patch" &&
-    /(?:text\s+not\s+found|replacement\s+text\s+did\s+not\s+match|no\s+changes\s+were\s+applied|patch\s+not\s+applied)/i.test(content)
-  ) {
-    return [
-      "Patch failed because the replacement text did not match the current file contents.",
-      "Do not ask the user to proceed.",
-      "Read the target file again, then retry patch with an exact current snippet or use write when replacing the whole small file is safer."
-    ].join(" ");
-  }
-  return "Inspect the tool result and retry only with corrected input or choose another tool.";
+  return 'Inspect the tool result and retry only with corrected input or choose another tool.';
 }
 
 function permissionDeniedNextAction(reason: string, recoveryTools: string[] = []) {
   if (isExternalWorkspaceOrSessionAccessBlock(reason)) {
     return externalWorkspaceAccessNextAction(recoveryTools);
   }
-  return "Do not retry the denied tool. Use an allowed read-only tool, request user approval, or explain the limitation.";
+  return 'Do not retry the denied tool. Use an allowed read-only tool, request user approval, or explain the limitation.';
 }
 
 async function readWorkspaceTextSnapshot(workspaceRoot: string, path: string) {
   const absolutePath = assertInsideWorkspace(workspaceRoot, path);
   try {
-    return await readFile(absolutePath, "utf8");
+    return await readFile(absolutePath, 'utf8');
   } catch (error) {
-    if (error instanceof Error && "code" in error && (error.code === "ENOENT" || error.code === "EISDIR")) {
+    if (error instanceof Error && 'code' in error && (error.code === 'ENOENT' || error.code === 'EISDIR')) {
       return undefined;
     }
     throw error;
@@ -2031,7 +2148,7 @@ export class AgentRunner {
   private alwaysAllowedTools: Set<string>;
   private injectedApprovalDecision?: ApprovalDecision;
   private readonly approvalTimeoutMs: number;
-  private readonly approvalTimeoutBehavior: "allow" | "deny";
+  private readonly approvalTimeoutBehavior: 'allow' | 'deny';
   // S6 — latest per-turn snapshot input (loop locals), captured at the turn
   // boundary so the durable mid-gate approval snapshot can be built with the
   // current run state PLUS the pendingApproval, without threading the loop
@@ -2039,23 +2156,35 @@ export class AgentRunner {
   private currentRunSnapshotInput?: RunSnapshotInput;
   // I3 — execution backend seam (default LOCAL_BACKEND).
   private readonly executionBackend: ExecutionBackend;
+  private readonly turnLedger?: XenesisTurnLedger;
+  private currentTurnLedgerId?: string;
+  private turnLedgerToolEvidence = new Map<
+    string,
+    {
+      isCr: boolean;
+      isMcp: boolean;
+      isCrReadbackTool: boolean;
+      crKind?: 'call' | 'capabilities' | 'capability';
+      path?: string;
+    }
+  >();
 
   constructor(options: AgentRunnerOptions) {
     this.provider = options.provider;
     this.providers = [options.provider, ...(options.fallbackProviders ?? [])];
     this.providerSupportsTools = [
       options.supportsTools ?? true,
-      ...this.providers.slice(1).map((_, index) => options.fallbackSupportsTools?.[index] ?? true)
+      ...this.providers.slice(1).map((_, index) => options.fallbackSupportsTools?.[index] ?? true),
     ];
     this.model = options.model;
     this.providerModels = this.providers.map((provider) => provider.model ?? options.model);
     this.env = options.env ?? process.env;
     this.skillPaths = options.skillPaths ?? [];
     this.workspaceRoot = options.workspaceRoot;
-    this.xenesisHome = options.xenesisHome ?? resolve(options.workspaceRoot, ".xenesis");
+    this.xenesisHome = options.xenesisHome ?? resolve(options.workspaceRoot, '.xenesis');
     this.cwd = options.cwd ?? options.workspaceRoot;
     this.sessionId = options.sessionId ?? crypto.randomUUID();
-    this.approvalMode = options.approvalMode ?? "safe";
+    this.approvalMode = options.approvalMode ?? 'safe';
     this.maxTurns = options.maxTurns ?? 8;
     this.maxTokensBudget = options.maxTokensBudget;
     this.tools = toolArray(options.tools);
@@ -2068,7 +2197,7 @@ export class AgentRunner {
     this.permissions = {
       blockedTools: options.permissions?.blockedTools ?? options.blockedTools ?? [],
       toolPolicies: options.permissions?.toolPolicies ?? {},
-      pathRules: options.permissions?.pathRules ?? []
+      pathRules: options.permissions?.pathRules ?? [],
     };
     this.maxToolRetries = options.maxToolRetries ?? 1;
     this.maxArgsCorrectionRetries = options.maxArgsCorrectionRetries ?? 1;
@@ -2092,7 +2221,7 @@ export class AgentRunner {
       providerMaxRetries: this.providerMaxRetries,
       maxTokensBudget: this.maxTokensBudget,
       stream: this.stream,
-      env: this.env
+      env: this.env,
     });
     this.hooks = options.hooks;
     this.hookRegistry = options.hookRegistry;
@@ -2105,13 +2234,38 @@ export class AgentRunner {
     this.resuming = options.resuming ?? Boolean(options.resumeState);
     // S6 — durable HITL gate. Restore always-allowed tools from the explicit
     // option first, else from the resume snapshot (Task 6 wires this through).
-    this.alwaysAllowedTools = new Set(
-      options.alwaysAllowedTools ?? options.resumeState?.alwaysAllowedTools ?? []
-    );
+    this.alwaysAllowedTools = new Set(options.alwaysAllowedTools ?? options.resumeState?.alwaysAllowedTools ?? []);
     this.injectedApprovalDecision = options.injectedApprovalDecision;
     this.approvalTimeoutMs = options.approvalTimeoutMs ?? 300000;
-    this.approvalTimeoutBehavior = options.approvalTimeoutBehavior ?? "deny";
+    this.approvalTimeoutBehavior = options.approvalTimeoutBehavior ?? 'deny';
     this.executionBackend = options.executionBackend ?? LOCAL_BACKEND;
+    this.turnLedger = options.turnLedger;
+  }
+
+  async dispose(): Promise<void> {
+    const seen = new Set<AgentProvider>();
+    const errors: unknown[] = [];
+    for (const provider of this.providers) {
+      if (seen.has(provider)) continue;
+      seen.add(provider);
+      const disposable = provider as AgentProvider & {
+        dispose?: () => void | Promise<void>;
+        close?: () => void | Promise<void>;
+      };
+      try {
+        if (typeof disposable.dispose === 'function') {
+          await disposable.dispose();
+        } else if (typeof disposable.close === 'function') {
+          await disposable.close();
+        }
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+    if (errors.length > 0) {
+      const first = errors[0];
+      throw first instanceof Error ? first : new Error(String(first));
+    }
   }
 
   async *run(input: string | UserMessage): AsyncGenerator<AgentRunEvent, AgentRunResult, void> {
@@ -2120,6 +2274,7 @@ export class AgentRunner {
     this.argsCorrectionRetryCounts = new Map();
     this.toolResultGuidanceHints = [];
     this.toolLoopGuardrail = createToolLoopGuardrailState();
+    this.turnLedgerToolEvidence = new Map();
     this.verificationRepairGuard = undefined;
     this.verificationRepairGuardHint = undefined;
     this.userForbiddenTools = new Set();
@@ -2141,29 +2296,30 @@ export class AgentRunner {
       ...this.systemMessages.map((message) => ({ ...message })),
       ...(this.autoCompact
         ? compactedHistoryMessages(
-          this.historyMessages,
-          this.compactHistoryAfterMessages,
-          this.compactHistoryKeepMessages
-        )
-        : this.historyMessages.map((message) => ({ ...message })))
+            this.historyMessages,
+            this.compactHistoryAfterMessages,
+            this.compactHistoryKeepMessages,
+          )
+        : this.historyMessages.map((message) => ({ ...message }))),
     ];
     const todos: TodoItem[] = [];
     // S7 — seed the usage accumulator from the snapshot on resume so the
     // restored run continues against the same token budget; otherwise start at 0.
     const usage: AgentRunUsage = this.resumeState
       ? {
-        inputTokens: this.resumeState.usage.inputTokens,
-        outputTokens: this.resumeState.usage.outputTokens,
-        totalTokens: this.resumeState.usage.totalTokens
-      }
+          inputTokens: this.resumeState.usage.inputTokens,
+          outputTokens: this.resumeState.usage.outputTokens,
+          totalTokens: this.resumeState.usage.totalTokens,
+        }
       : { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
-    const rawUserMessage: UserMessage = typeof input === "string" ? { role: "user", content: input } : input;
+    const rawUserMessage: UserMessage = typeof input === 'string' ? { role: 'user', content: input } : input;
     // On resume the triggering user message is already the last turn in
     // `historyMessages`; it is NOT recorded again and must NOT consume a fresh
     // messageSeq id (the restored messageSeq belongs to the next NEW message).
     const userMessage: UserMessage = this.resuming
       ? { ...rawUserMessage }
       : { ...rawUserMessage, id: `${this.sessionId}:m${this.messageSeq++}` };
+    this.startTurnLedger(userMessage);
     this.userForbiddenTools = extractUserForbiddenTools(userMessage.content, this.toolMap.keys());
     this.userRequestConstraints = detectUserRequestConstraints(userMessage.content);
     this.userToolPreferences = detectUserToolPreferences(userMessage.content);
@@ -2177,19 +2333,19 @@ export class AgentRunner {
     // user message.
     if (!this.resuming) {
       messages.push(userMessage);
-      yield await this.record({ type: "user_message", message: userMessage });
+      yield await this.record({ type: 'user_message', message: userMessage });
     }
     const policySnapshot = await this.recordToolPolicySnapshot();
     if (policySnapshot) yield policySnapshot;
     await this.checkpoint({
-      status: "started",
-      phase: "planning",
+      status: 'started',
+      phase: 'planning',
       turns: 0,
-      summary: "run started"
+      summary: 'run started',
     });
-    await this.emitHook("run_started", {
+    await this.emitHook('run_started', {
       input: userMessage.content,
-      messageCount: messages.length
+      messageCount: messages.length,
     });
 
     // S7 — seed-state resume. When `resumeState` is present, initialize the
@@ -2217,7 +2373,8 @@ export class AgentRunner {
     const verificationRepairTurnExtension = Math.max(4, Math.min(8, Math.ceil(this.maxTurns / 2)));
     let verificationRepairExtensionActive = resume ? resume.verificationRepairExtensionActive : false;
     let verificationRepairExtensionRecorded = false;
-    const currentTurnLimit = () => this.maxTurns + (verificationRepairExtensionActive ? verificationRepairTurnExtension : 0);
+    const currentTurnLimit = () =>
+      this.maxTurns + (verificationRepairExtensionActive ? verificationRepairTurnExtension : 0);
     let activeModel = this.model;
     let activeAllowedTools: Set<string> | undefined;
     let activeEffort: string | undefined;
@@ -2237,10 +2394,10 @@ export class AgentRunner {
         verificationRepairExtensionActive = true;
       }
       if (!toolResult.ok) return;
-      if (toolResult.isMutation || toolName === "read" || isVerificationToolName(toolName)) {
+      if (toolResult.isMutation || toolName === 'read' || isVerificationToolName(toolName)) {
         explicitToolCompletionRecoveryCount = 0;
       }
-      if (toolResult.recordedMessage.name === "read") {
+      if (toolResult.recordedMessage.name === 'read') {
         mutationSinceLastRead = false;
         return;
       }
@@ -2264,21 +2421,31 @@ export class AgentRunner {
       pendingApproval &&
       injectedForPending &&
       injectedForPending.toolCallId === pendingApproval.toolCallId &&
-      !messages.some((m) => m.role === "tool" && m.toolCallId === pendingApproval.toolCallId)
+      !messages.some((m) => m.role === 'tool' && m.toolCallId === pendingApproval.toolCallId)
     ) {
       this.injectedApprovalDecision = undefined; // consume once
       const pendingToolCall: ToolCall = {
         id: pendingApproval.toolCallId,
         name: pendingApproval.toolName,
-        input: pendingApproval.toolInput
+        input: pendingApproval.toolInput,
       };
+      const resolvedAt = new Date().toISOString();
       yield await this.record({
-        type: "approval_resolved",
+        type: 'approval_resolved',
         toolCallId: pendingToolCall.id,
         approvalId: pendingApproval.approvalId,
         approved: injectedForPending.approved,
         decision: injectedForPending.decision,
-        resolvedAt: new Date().toISOString()
+        resolvedAt,
+      });
+      this.markTurnLedgerApprovalResolved({
+        approvalId: pendingApproval.approvalId,
+        approved: injectedForPending.approved,
+        decision: injectedForPending.decision,
+        resolvedAt,
+        name: pendingToolCall.name,
+        toolInput: pendingToolCall.input,
+        summary: pendingApproval.summary,
       });
       let resumeOutcome: ToolRunOutcome;
       if (injectedForPending.approved) {
@@ -2289,9 +2456,10 @@ export class AgentRunner {
         const wasAlwaysAllowed = this.alwaysAllowedTools.has(pendingToolCall.name);
         this.alwaysAllowedTools.add(pendingToolCall.name);
         try {
+          this.recordTurnLedgerToolCall(pendingToolCall);
           resumeOutcome = yield* this.runToolCall(pendingToolCall, todos, turns, usage, successfulToolNames);
         } finally {
-          if (injectedForPending.decision !== "always-allow" && !wasAlwaysAllowed) {
+          if (injectedForPending.decision !== 'always-allow' && !wasAlwaysAllowed) {
             this.alwaysAllowedTools.delete(pendingToolCall.name);
           }
         }
@@ -2300,14 +2468,14 @@ export class AgentRunner {
         resumeOutcome = await this.createObservedToolRunOutcome(
           pendingToolCall,
           false,
-          `Permission denied for tool "${pendingToolCall.name}": ${pendingApproval.reason}`
+          `Permission denied for tool "${pendingToolCall.name}": ${pendingApproval.reason}`,
         );
       }
       yield* this.finishToolCall(resumeOutcome, messages, turns, successfulToolNames);
       observeExplicitToolProgress(resumeOutcome);
       if (resumeOutcome.ok && isProjectEvidenceToolName(resumeOutcome.recordedMessage.name)) {
         successfulEvidenceToolCount += 1;
-        if (resumeOutcome.inputPath) successfulEvidencePaths.add(resumeOutcome.inputPath.replace(/\\/g, "/"));
+        if (resumeOutcome.inputPath) successfulEvidencePaths.add(resumeOutcome.inputPath.replace(/\\/g, '/'));
       }
     }
 
@@ -2317,69 +2485,71 @@ export class AgentRunner {
           messages,
           activeModel,
           lastResponseInputTokens,
-          recentCompactionSavedRatios
+          recentCompactionSavedRatios,
         );
         if (compactEvent) {
           lastResponseInputTokens = 0;
           yield await this.record(compactEvent);
-          await this.emitHook("context_compact", {
+          await this.emitHook('context_compact', {
             originalMessages: compactEvent.originalMessages,
             compactedMessages: compactEvent.compactedMessages,
-            keptMessages: compactEvent.keptMessages
+            keptMessages: compactEvent.keptMessages,
           });
         }
       }
       if (verificationRepairExtensionActive && !verificationRepairExtensionRecorded && turns >= this.maxTurns) {
         verificationRepairExtensionRecorded = true;
         yield await this.record({
-          type: "run_state",
-          status: "provider_request",
-          phase: "executing",
+          type: 'run_state',
+          status: 'provider_request',
+          phase: 'executing',
           turns,
-          summary: `extending run by up to ${verificationRepairTurnExtension} turns for verification repair`
+          summary: `extending run by up to ${verificationRepairTurnExtension} turns for verification repair`,
         });
       }
 
       if (this.isAborted()) {
-        await this.recordIncompleteRun("cancelled", turns, "run cancelled", usage);
-        yield await this.record({ type: "stopped", reason: "cancelled", turns, usage: usageSnapshot(usage) });
+        await this.recordIncompleteRun('cancelled', turns, 'run cancelled', usage);
+        yield await this.record({ type: 'stopped', reason: 'cancelled', turns, usage: usageSnapshot(usage) });
         await this.checkpoint({
-          status: "cancelled",
-          phase: "terminal",
+          status: 'cancelled',
+          phase: 'terminal',
           turns,
-          summary: "run cancelled",
-          reason: "cancelled"
+          summary: 'run cancelled',
+          reason: 'cancelled',
         });
-        await this.emitHook("run_cancelled", { turns });
+        await this.emitHook('run_cancelled', { turns });
         await this.cleanupToolSessions();
+        this.stopTurnLedger('cancelled', 'run cancelled');
         return {
-          status: "stopped",
-          reason: "cancelled",
-          content: lastAssistant?.content ?? "",
+          status: 'stopped',
+          reason: 'cancelled',
+          content: lastAssistant?.content ?? '',
           messages,
           turns,
-          usage
+          usage,
         };
       }
 
       if (this.maxTokensBudget !== undefined && usage.totalTokens >= this.maxTokensBudget) {
-        await this.recordIncompleteRun("budget", turns, "run stopped: budget", usage);
-        yield await this.record({ type: "stopped", reason: "budget", turns, usage: usageSnapshot(usage) });
+        await this.recordIncompleteRun('budget', turns, 'run stopped: budget', usage);
+        yield await this.record({ type: 'stopped', reason: 'budget', turns, usage: usageSnapshot(usage) });
         await this.checkpoint({
-          status: "stopped",
-          phase: "terminal",
+          status: 'stopped',
+          phase: 'terminal',
           turns,
-          summary: "run stopped: budget",
-          reason: "budget"
+          summary: 'run stopped: budget',
+          reason: 'budget',
         });
         await this.cleanupToolSessions();
+        this.stopTurnLedger('blocked', 'run stopped: budget');
         return {
-          status: "stopped",
-          reason: "budget",
-          content: lastAssistant?.content ?? "",
+          status: 'stopped',
+          reason: 'budget',
+          content: lastAssistant?.content ?? '',
           messages,
           turns,
-          usage
+          usage,
         };
       }
 
@@ -2415,112 +2585,116 @@ export class AgentRunner {
         previousCompactSummary: this.previousCompactSummary,
         stopHookContinuationCount: this.stopHookContinuationCount,
         messageSeq: this.messageSeq,
-        alwaysAllowedTools: this.alwaysAllowedTools
+        alwaysAllowedTools: this.alwaysAllowedTools,
       };
       this.currentRunSnapshotInput = turnSnapshotInput;
       await this.record({
-        type: "run_snapshot",
-        state: buildRunSnapshot(turnSnapshotInput)
+        type: 'run_snapshot',
+        state: buildRunSnapshot(turnSnapshotInput),
       });
       let response: ProviderResponse | undefined;
       let recoveredContextLimit = false;
       while (!response) {
         try {
           await this.checkpoint({
-            status: "provider_request",
-            phase: "executing",
+            status: 'provider_request',
+            phase: 'executing',
             turns,
-            summary: "requesting provider response"
+            summary: 'requesting provider response',
           });
+          this.markTurnLedgerRunning();
           response = yield* this.completeProvider({
             model: activeModel,
             messages: this.messagesForProvider(messages, activeEffort),
             tools: this.toolsForProvider(activeAllowedTools),
             signal: this.abortSignal,
-            queryConfig: this.providerQueryConfigForModel(activeModel)
+            queryConfig: this.providerQueryConfigForModel(activeModel),
           });
         } catch (error) {
           if (this.isCancellation(error)) {
-            await this.recordIncompleteRun("cancelled", turns - 1, "run cancelled", usage);
+            await this.recordIncompleteRun('cancelled', turns - 1, 'run cancelled', usage);
             yield await this.record({
-              type: "stopped",
-              reason: "cancelled",
+              type: 'stopped',
+              reason: 'cancelled',
               turns: turns - 1,
-              usage: usageSnapshot(usage)
+              usage: usageSnapshot(usage),
             });
             await this.checkpoint({
-              status: "cancelled",
-              phase: "terminal",
+              status: 'cancelled',
+              phase: 'terminal',
               turns: turns - 1,
-              summary: "run cancelled",
-              reason: "cancelled"
+              summary: 'run cancelled',
+              reason: 'cancelled',
             });
-            await this.emitHook("run_cancelled", { turns: turns - 1 });
+            await this.emitHook('run_cancelled', { turns: turns - 1 });
             await this.cleanupToolSessions();
+            this.stopTurnLedger('cancelled', 'run cancelled');
             return {
-              status: "stopped",
-              reason: "cancelled",
-              content: lastAssistant?.content ?? "",
+              status: 'stopped',
+              reason: 'cancelled',
+              content: lastAssistant?.content ?? '',
               messages,
               turns: turns - 1,
-              usage
+              usage,
             };
           }
 
-          const compactEvent = !recoveredContextLimit && isContextLimitError(error)
-            ? await this.forceCompactActiveMessages(messages, recentCompactionSavedRatios)
-            : undefined;
+          const compactEvent =
+            !recoveredContextLimit && isContextLimitError(error)
+              ? await this.forceCompactActiveMessages(messages, recentCompactionSavedRatios)
+              : undefined;
           if (compactEvent) {
             recoveredContextLimit = true;
             const recoveryEvent = {
-              type: "context_recovery",
-              reason: "provider_context_limit",
+              type: 'context_recovery',
+              reason: 'provider_context_limit',
               message: errorMessage(error),
               originalMessages: compactEvent.originalMessages,
-              compactedMessages: compactEvent.compactedMessages
+              compactedMessages: compactEvent.compactedMessages,
             } as const;
             yield await this.record(recoveryEvent);
             yield await this.record(compactEvent);
-            await this.emitHook("context_recovery", {
+            await this.emitHook('context_recovery', {
               reason: recoveryEvent.reason,
               message: recoveryEvent.message,
               originalMessages: recoveryEvent.originalMessages,
-              compactedMessages: recoveryEvent.compactedMessages
+              compactedMessages: recoveryEvent.compactedMessages,
             });
-            await this.emitHook("context_compact", {
+            await this.emitHook('context_compact', {
               originalMessages: compactEvent.originalMessages,
               compactedMessages: compactEvent.compactedMessages,
-              keptMessages: compactEvent.keptMessages
+              keptMessages: compactEvent.keptMessages,
             });
             continue;
           }
 
           const providerFailure = classifyProviderFailure(error);
-          if (providerFailure.kind === "max_output_tokens" && maxOutputTokensRecoveryCount < 3) {
+          if (providerFailure.kind === 'max_output_tokens' && maxOutputTokensRecoveryCount < 3) {
             maxOutputTokensRecoveryCount += 1;
             messages.push({
-              role: "user",
+              role: 'user',
               content:
-                "Output token limit hit. Resume directly; do not apologize, recap, or restart. " +
-                "Continue from the interrupted point and break remaining work into smaller pieces."
+                'Output token limit hit. Resume directly; do not apologize, recap, or restart. ' +
+                'Continue from the interrupted point and break remaining work into smaller pieces.',
             });
             yield await this.record({
-              type: "run_state",
-              status: "provider_request",
-              phase: "executing",
+              type: 'run_state',
+              status: 'provider_request',
+              phase: 'executing',
               turns,
-              summary: "recovering from max_output_tokens"
+              summary: 'recovering from max_output_tokens',
             });
             continue;
           }
 
           await this.checkpoint({
-            status: "failed",
-            phase: "terminal",
+            status: 'failed',
+            phase: 'terminal',
             turns,
-            summary: "run failed",
-            error: errorMessage(error)
+            summary: 'run failed',
+            error: errorMessage(error),
           });
+          this.failTurnLedger(error);
           await this.cleanupToolSessions();
           throw error;
         }
@@ -2539,36 +2713,38 @@ export class AgentRunner {
       maxOutputTokensRecoveryCount = 0;
       lastAssistant = assistantMessage;
       messages.push(assistantMessage);
+      this.recordTurnLedgerProviderCliMcpTranscript(assistantMessage);
       const toolCalls = assistantMessage.toolCalls ?? [];
       if (toolCalls.length === 0) {
         // A provider refusal / content-filter stop is final: surface the model's own
         // content as the answer and terminate the run rather than running it through the
         // recovery/verification gates (which would otherwise try to "repair" a refusal).
-        if (response.stopReason === "refusal" || response.stopReason === "content_filter") {
-          yield await this.record({ type: "assistant_message", message: assistantMessage });
+        if (response.stopReason === 'refusal' || response.stopReason === 'content_filter') {
+          yield await this.record({ type: 'assistant_message', message: assistantMessage });
           yield await this.record({
-            type: "done",
+            type: 'done',
             content: assistantMessage.content,
             turns,
-            usage: usageSnapshot(usage)
+            usage: usageSnapshot(usage),
           });
           await this.checkpoint({
-            status: "completed",
-            phase: "terminal",
+            status: 'completed',
+            phase: 'terminal',
             turns,
-            summary: `run stopped: provider ${response.stopReason}`
+            summary: `run stopped: provider ${response.stopReason}`,
           });
-          await this.emitHook("run_completed", {
+          await this.emitHook('run_completed', {
             contentLength: assistantMessage.content.length,
-            turns
+            turns,
           });
+          this.completeTurnLedger(assistantMessage.content);
           await this.cleanupToolSessions();
           return {
-            status: "done",
+            status: 'done',
             content: assistantMessage.content,
             messages,
             turns,
-            usage
+            usage,
           };
         }
 
@@ -2577,17 +2753,17 @@ export class AgentRunner {
           successfulToolNames,
           successfulEvidenceToolCount,
           successfulEvidencePaths.size,
-          projectAnalysisEvidenceRecoveryCount
+          projectAnalysisEvidenceRecoveryCount,
         );
         if (evidenceRecovery) {
           projectAnalysisEvidenceRecoveryCount += 1;
           messages.push(evidenceRecovery);
           yield await this.record({
-            type: "run_state",
-            status: "provider_request",
-            phase: "executing",
+            type: 'run_state',
+            status: 'provider_request',
+            phase: 'executing',
             turns,
-            summary: "requesting file evidence before final project analysis"
+            summary: 'requesting file evidence before final project analysis',
           });
           continue;
         }
@@ -2596,17 +2772,17 @@ export class AgentRunner {
           userMessage,
           assistantMessage.content,
           this.toolsForProvider(activeAllowedTools).map((tool) => tool.name),
-          falseUnavailableToolRecoveryUsed
+          falseUnavailableToolRecoveryUsed,
         );
         if (falseUnavailableToolRecovery) {
           falseUnavailableToolRecoveryUsed = true;
           messages.push(falseUnavailableToolRecovery);
           yield await this.record({
-            type: "run_state",
-            status: "provider_request",
-            phase: "executing",
+            type: 'run_state',
+            status: 'provider_request',
+            phase: 'executing',
             turns,
-            summary: "requesting tool call after false unavailable-tool claim"
+            summary: 'requesting tool call after false unavailable-tool claim',
           });
           continue;
         }
@@ -2615,17 +2791,17 @@ export class AgentRunner {
           userMessage,
           successfulMutationCount,
           fileMutationRequiredRecoveryCount,
-          assistantMessage
+          assistantMessage,
         );
         if (fileMutationRequiredRecovery) {
           fileMutationRequiredRecoveryCount += 1;
           messages.push(fileMutationRequiredRecovery);
           yield await this.record({
-            type: "run_state",
-            status: "provider_request",
-            phase: "executing",
+            type: 'run_state',
+            status: 'provider_request',
+            phase: 'executing',
             turns,
-            summary: "requesting required file mutation before final answer"
+            summary: 'requesting required file mutation before final answer',
           });
           continue;
         }
@@ -2633,26 +2809,26 @@ export class AgentRunner {
         const pendingVerificationRecovery = verificationRecoveryDecision(
           userMessage,
           messages.slice(0, -1),
-          verificationRecoveryCounts
+          verificationRecoveryCounts,
         );
-        if (pendingVerificationRecovery.kind === "none") {
+        if (pendingVerificationRecovery.kind === 'none') {
           const explicitToolCompletionRecovery = explicitToolCompletionRecoveryMessage(
             userMessage,
             Array.from(this.toolMap.keys()),
             successfulToolNames,
             attemptedToolNames,
             mutationSinceLastRead,
-            explicitToolCompletionRecoveryCount
+            explicitToolCompletionRecoveryCount,
           );
           if (explicitToolCompletionRecovery) {
             explicitToolCompletionRecoveryCount += 1;
             messages.push(explicitToolCompletionRecovery);
             yield await this.record({
-              type: "run_state",
-              status: "provider_request",
-              phase: "executing",
+              type: 'run_state',
+              status: 'provider_request',
+              phase: 'executing',
               turns,
-              summary: "requesting explicitly requested tool completion before final answer"
+              summary: 'requesting explicitly requested tool completion before final answer',
             });
             continue;
           }
@@ -2661,33 +2837,33 @@ export class AgentRunner {
         const repositoryRecovery = unrequestedRepositoryRecommendationRecoveryMessage(
           userMessage,
           assistantMessage.content,
-          repositoryRecommendationRecoveryUsed
+          repositoryRecommendationRecoveryUsed,
         );
         if (repositoryRecovery) {
           repositoryRecommendationRecoveryUsed = true;
           messages.push(repositoryRecovery);
           yield await this.record({
-            type: "run_state",
-            status: "provider_request",
-            phase: "executing",
+            type: 'run_state',
+            status: 'provider_request',
+            phase: 'executing',
             turns,
-            summary: "requesting revised answer without unrequested repository guidance"
+            summary: 'requesting revised answer without unrequested repository guidance',
           });
           continue;
         }
 
         const toolRecoveryFinalizationRecovery = this.toolRecoveryFinalizationRecoveryMessage(
-          toolRecoveryFinalizationRecoveryCount
+          toolRecoveryFinalizationRecoveryCount,
         );
         if (toolRecoveryFinalizationRecovery) {
           toolRecoveryFinalizationRecoveryCount += 1;
           messages.push(toolRecoveryFinalizationRecovery);
           yield await this.record({
-            type: "run_state",
-            status: "provider_request",
-            phase: "executing",
+            type: 'run_state',
+            status: 'provider_request',
+            phase: 'executing',
             turns,
-            summary: "requesting tool recovery before final answer"
+            summary: 'requesting tool recovery before final answer',
           });
           continue;
         }
@@ -2696,19 +2872,21 @@ export class AgentRunner {
         if (repeatedGuardStop) return repeatedGuardStop;
 
         const activeVerificationRepairGuard = this.verificationRepairGuard as VerificationRepairGuard | undefined;
-        const verificationGuardWasModified = Boolean(activeVerificationRepairGuard && activeVerificationRepairGuard.modified);
+        const verificationGuardWasModified = Boolean(
+          activeVerificationRepairGuard && activeVerificationRepairGuard.modified,
+        );
         const verificationGuardRecovery = this.verificationRepairGuardRequiredMessage(assistantMessage.content);
         if (verificationGuardRecovery) {
           const verificationGuardRecoverySummary = verificationGuardWasModified
-            ? "requesting original verification rerun after repair patch"
-            : "requesting pending verification rerun before final answer";
+            ? 'requesting original verification rerun after repair patch'
+            : 'requesting pending verification rerun before final answer';
           messages.push(verificationGuardRecovery);
           yield await this.record({
-            type: "run_state",
-            status: "provider_request",
-            phase: "executing",
+            type: 'run_state',
+            status: 'provider_request',
+            phase: 'executing',
             turns,
-            summary: verificationGuardRecoverySummary
+            summary: verificationGuardRecoverySummary,
           });
           continue;
         }
@@ -2716,9 +2894,9 @@ export class AgentRunner {
         const verificationRecovery = verificationRecoveryDecision(
           userMessage,
           messages.slice(0, -1),
-          verificationRecoveryCounts
+          verificationRecoveryCounts,
         );
-        if (verificationRecovery.kind === "continue") {
+        if (verificationRecovery.kind === 'continue') {
           const autoRepair = yield* this.tryAutoVerificationRepair(
             verificationRecovery.failure,
             messages.slice(0, -1),
@@ -2727,111 +2905,109 @@ export class AgentRunner {
             turns,
             usage,
             successfulToolNames,
-            autoVerificationRepairSignatures
+            autoVerificationRepairSignatures,
           );
-          if (autoRepair.status === "executed") {
+          if (autoRepair.status === 'executed') {
             if (autoRepair.guardRequired) this.activateVerificationRepairGuard(autoRepair.failure);
             messages.push(autoRepair.summaryMessage);
             yield await this.record({
-              type: "run_state",
-              status: "provider_request",
-              phase: "executing",
+              type: 'run_state',
+              status: 'provider_request',
+              phase: 'executing',
               turns,
-              summary: `requesting report after auto repair recipe for ${autoRepair.failure.toolName}`
+              summary: `requesting report after auto repair recipe for ${autoRepair.failure.toolName}`,
             });
             continue;
           }
-          if (autoRepair.status === "failed") {
+          if (autoRepair.status === 'failed') {
             yield await this.record({
-              type: "repair_decision",
-              status: "failed",
+              type: 'repair_decision',
+              status: 'failed',
               reason: `auto repair failed: ${autoRepair.reason}`,
               attempt: 1,
               maxAttempts: 1,
-              failedCommands: [autoRepair.failure.toolName]
+              failedCommands: [autoRepair.failure.toolName],
             });
           }
           let allowFinalAfterAutoRepairSkip = false;
-          if (autoRepair.status === "skipped") {
+          if (autoRepair.status === 'skipped') {
             yield await this.record({
-              type: "repair_decision",
-              status: "skipped",
+              type: 'repair_decision',
+              status: 'skipped',
               reason: autoRepair.reason,
               attempt: 1,
               maxAttempts: 1,
-              failedCommands: [autoRepair.failure.toolName]
+              failedCommands: [autoRepair.failure.toolName],
             });
             allowFinalAfterAutoRepairSkip = autoRepair.allowFinal === true;
           }
 
           if (!allowFinalAfterAutoRepairSkip) {
-            verificationRecoveryCounts.set(
-              verificationRecovery.failure.signature,
-              verificationRecovery.attempt
-            );
+            verificationRecoveryCounts.set(verificationRecovery.failure.signature, verificationRecovery.attempt);
             this.activateVerificationRepairGuard(verificationRecovery.failure);
             messages.push(verificationRecovery.message);
             yield await this.record({
-              type: "run_state",
-              status: "provider_request",
-              phase: "executing",
+              type: 'run_state',
+              status: 'provider_request',
+              phase: 'executing',
               turns,
-              summary: `requesting repair after failed ${verificationRecovery.failure.toolName}`
+              summary: `requesting repair after failed ${verificationRecovery.failure.toolName}`,
             });
             continue;
           }
         }
-        if (verificationRecovery.kind === "blocked") {
+        if (verificationRecovery.kind === 'blocked') {
           const blockedAssistant: AssistantMessage = {
-            role: "assistant",
-            content: verificationRecovery.content
+            role: 'assistant',
+            content: verificationRecovery.content,
           };
           messages.push(blockedAssistant);
           yield await this.record({
-            type: "repair_decision",
-            status: "blocked",
+            type: 'repair_decision',
+            status: 'blocked',
             reason: `repeated ${verificationRecovery.failure.toolName} failure`,
             attempt: verificationRecovery.attempt,
             maxAttempts: 2,
-            failedCommands: [verificationRecovery.failure.toolName]
+            failedCommands: [verificationRecovery.failure.toolName],
           });
-          yield await this.record({ type: "assistant_message", message: blockedAssistant });
+          yield await this.record({ type: 'assistant_message', message: blockedAssistant });
           yield await this.record({
-            type: "done",
+            type: 'done',
             content: blockedAssistant.content,
             turns,
-            usage: usageSnapshot(usage)
+            usage: usageSnapshot(usage),
           });
           await this.checkpoint({
-            status: "stopped",
-            phase: "terminal",
+            status: 'stopped',
+            phase: 'terminal',
             turns,
-            summary: `run blocked after repeated ${verificationRecovery.failure.toolName} failure`
+            summary: `run blocked after repeated ${verificationRecovery.failure.toolName} failure`,
           });
-          await this.emitHook("run_completed", {
+          await this.emitHook('run_completed', {
             contentLength: blockedAssistant.content.length,
-            turns
+            turns,
           });
+          this.completeTurnLedger(blockedAssistant.content);
           await this.cleanupToolSessions();
           return {
-            status: "done",
+            status: 'done',
             content: blockedAssistant.content,
             messages,
             turns,
-            usage
+            usage,
           };
         }
 
         const answerOnlyFinalContent = answerOnlyFinalContentForUserRequest(
           userMessage.content,
-          assistantMessage.content
+          assistantMessage.content,
         );
         if (answerOnlyFinalContent) {
           assistantMessage = { ...assistantMessage, content: answerOnlyFinalContent };
           messages[messages.length - 1] = assistantMessage;
         }
 
-        yield await this.record({ type: "assistant_message", message: assistantMessage });
+        yield await this.record({ type: 'assistant_message', message: assistantMessage });
 
         // Stop blocking-hook seam: a registered Stop hook may block this normal
         // completion and inject a continuation prompt, forcing the agent to keep
@@ -2841,62 +3017,63 @@ export class AgentRunner {
         if (this.hookRegistry?.hasStop()) {
           const stopDecision = await this.hookRegistry.runStop({
             stopHookActive: this.stopHookContinuationCount > 0,
-            continuationCount: this.stopHookContinuationCount
+            continuationCount: this.stopHookContinuationCount,
           });
-          if (stopDecision.decision === "block-stop") {
+          if (stopDecision.decision === 'block-stop') {
             if (this.stopHookContinuationCount < this.maxStopHookContinuations) {
               this.stopHookContinuationCount += 1;
-              messages.push({ role: "user", content: stopDecision.continuePrompt });
+              messages.push({ role: 'user', content: stopDecision.continuePrompt });
               yield await this.record({
-                type: "run_state",
-                status: "provider_request",
-                phase: "executing",
+                type: 'run_state',
+                status: 'provider_request',
+                phase: 'executing',
                 turns,
                 summary: `Stop hook requested continuation ${this.stopHookContinuationCount}/${this.maxStopHookContinuations}.`,
-                reason: stopDecision.reason
+                reason: stopDecision.reason,
               });
               continue;
             }
             // Cap reached: stop with a clear reason and fall through to done.
             yield await this.record({
-              type: "run_state",
-              status: "provider_request",
-              phase: "terminal",
+              type: 'run_state',
+              status: 'provider_request',
+              phase: 'terminal',
               turns,
               summary: `Stop hook continuation cap reached (${this.maxStopHookContinuations}); stopping.`,
-              reason: stopDecision.reason
+              reason: stopDecision.reason,
             });
           }
           // allow-stop (or cap reached): fall through to done.
         }
 
         yield await this.record({
-          type: "done",
+          type: 'done',
           content: assistantMessage.content,
           turns,
-          usage: usageSnapshot(usage)
+          usage: usageSnapshot(usage),
         });
         await this.checkpoint({
-          status: "completed",
-          phase: "terminal",
+          status: 'completed',
+          phase: 'terminal',
           turns,
-          summary: "run completed"
+          summary: 'run completed',
         });
-        await this.emitHook("run_completed", {
+        await this.emitHook('run_completed', {
           contentLength: assistantMessage.content.length,
-          turns
+          turns,
         });
+        this.completeTurnLedger(assistantMessage.content);
         await this.cleanupToolSessions();
         return {
-          status: "done",
+          status: 'done',
           content: assistantMessage.content,
           messages,
           turns,
-          usage
+          usage,
         };
       }
 
-      yield await this.record({ type: "assistant_message", message: assistantMessage });
+      yield await this.record({ type: 'assistant_message', message: assistantMessage });
 
       // S6 — durable HITL pause bubbling. A no-handler `ask` at the approval gate
       // throws ApprovalPauseSignal from runToolCall/collectToolRun; catch it here
@@ -2906,97 +3083,95 @@ export class AgentRunner {
       // tool_result (intentionally un-paired for resume to resolve). Mirrors the
       // RunnerCancelledError terminal-return structure.
       try {
-      for (const block of this.partitionToolCalls(toolCalls)) {
-        if (block.concurrent) {
+        for (const block of this.partitionToolCalls(toolCalls)) {
+          if (block.concurrent) {
+            for (const toolCall of block.toolCalls) {
+              yield await this.startToolCall(toolCall, turns);
+              const choiceAudit = await this.recordToolChoiceAudit(toolCall, successfulToolNames);
+              if (choiceAudit) yield choiceAudit;
+            }
+
+            const runs = await Promise.all(
+              block.toolCalls.map((toolCall) =>
+                this.collectToolRun(toolCall, todos, turns, usage, successfulToolNames),
+              ),
+            );
+            for (const run of runs) {
+              for (const event of run.events) yield event;
+              yield* this.finishToolCall(run.outcome, messages, turns, successfulToolNames);
+              applyToolContextUpdates(run.outcome.contextUpdates);
+              observeExplicitToolProgress(run.outcome);
+              const repeatedGuardStop = yield* this.stopForRepeatedVerificationRepairFailure(messages, turns, usage);
+              if (repeatedGuardStop) return repeatedGuardStop;
+              if (run.outcome.ok && isProjectEvidenceToolName(run.outcome.recordedMessage.name)) {
+                successfulEvidenceToolCount += 1;
+                if (run.outcome.inputPath) successfulEvidencePaths.add(run.outcome.inputPath.replace(/\\/g, '/'));
+              }
+            }
+            continue;
+          }
+
           for (const toolCall of block.toolCalls) {
             yield await this.startToolCall(toolCall, turns);
             const choiceAudit = await this.recordToolChoiceAudit(toolCall, successfulToolNames);
             if (choiceAudit) yield choiceAudit;
-          }
-
-          const runs = await Promise.all(
-            block.toolCalls.map((toolCall) => this.collectToolRun(
-              toolCall,
-              todos,
-              turns,
-              usage,
-              successfulToolNames
-            ))
-          );
-          for (const run of runs) {
-            for (const event of run.events) yield event;
-            yield* this.finishToolCall(run.outcome, messages, turns, successfulToolNames);
-            applyToolContextUpdates(run.outcome.contextUpdates);
-            observeExplicitToolProgress(run.outcome);
+            const toolResult = yield* this.runToolCall(toolCall, todos, turns, usage, successfulToolNames);
+            yield* this.finishToolCall(toolResult, messages, turns, successfulToolNames);
+            applyToolContextUpdates(toolResult.contextUpdates);
+            observeExplicitToolProgress(toolResult);
             const repeatedGuardStop = yield* this.stopForRepeatedVerificationRepairFailure(messages, turns, usage);
             if (repeatedGuardStop) return repeatedGuardStop;
-            if (run.outcome.ok && isProjectEvidenceToolName(run.outcome.recordedMessage.name)) {
+            if (toolResult.ok && isProjectEvidenceToolName(toolResult.recordedMessage.name)) {
               successfulEvidenceToolCount += 1;
-              if (run.outcome.inputPath) successfulEvidencePaths.add(run.outcome.inputPath.replace(/\\/g, "/"));
+              if (toolResult.inputPath) successfulEvidencePaths.add(toolResult.inputPath.replace(/\\/g, '/'));
             }
           }
-          continue;
         }
-
-        for (const toolCall of block.toolCalls) {
-          yield await this.startToolCall(toolCall, turns);
-          const choiceAudit = await this.recordToolChoiceAudit(toolCall, successfulToolNames);
-          if (choiceAudit) yield choiceAudit;
-          const toolResult = yield* this.runToolCall(toolCall, todos, turns, usage, successfulToolNames);
-          yield* this.finishToolCall(toolResult, messages, turns, successfulToolNames);
-          applyToolContextUpdates(toolResult.contextUpdates);
-          observeExplicitToolProgress(toolResult);
-          const repeatedGuardStop = yield* this.stopForRepeatedVerificationRepairFailure(messages, turns, usage);
-          if (repeatedGuardStop) return repeatedGuardStop;
-          if (toolResult.ok && isProjectEvidenceToolName(toolResult.recordedMessage.name)) {
-            successfulEvidenceToolCount += 1;
-            if (toolResult.inputPath) successfulEvidencePaths.add(toolResult.inputPath.replace(/\\/g, "/"));
-          }
-        }
-      }
       } catch (error) {
         if (error instanceof ApprovalPauseSignal) {
           await this.checkpoint({
-            status: "awaiting_approval",
-            phase: "approving",
+            status: 'awaiting_approval',
+            phase: 'approving',
             turns,
             summary: `paused awaiting approval for ${error.pendingApproval.name}`,
             toolCallId: error.pendingApproval.toolCallId,
             toolName: error.pendingApproval.name,
-            reason: error.pendingApproval.reason
+            reason: error.pendingApproval.reason,
           });
           await this.cleanupToolSessions();
           return {
-            status: "paused",
-            reason: "awaiting_approval",
+            status: 'paused',
+            reason: 'awaiting_approval',
             pendingApproval: error.pendingApproval,
-            content: lastAssistant?.content ?? "",
+            content: lastAssistant?.content ?? '',
             messages,
             turns,
-            usage
+            usage,
           };
         }
+        this.failTurnLedger(error);
         throw error;
       }
     }
 
-    await this.recordIncompleteRun("max_turns", turns, "run stopped: max_turns", usage);
-    yield await this.record({ type: "stopped", reason: "max_turns", turns, usage: usageSnapshot(usage) });
+    await this.recordIncompleteRun('max_turns', turns, 'run stopped: max_turns', usage);
+    yield await this.record({ type: 'stopped', reason: 'max_turns', turns, usage: usageSnapshot(usage) });
     await this.checkpoint({
-      status: "stopped",
-      phase: "terminal",
+      status: 'stopped',
+      phase: 'terminal',
       turns,
-      summary: "run stopped: max_turns",
-      reason: "max_turns"
+      summary: 'run stopped: max_turns',
+      reason: 'max_turns',
     });
     await this.cleanupToolSessions();
+    this.stopTurnLedger('blocked', 'run stopped: max_turns');
     return {
-      status: "stopped",
-      reason: "max_turns",
-      content: lastAssistant?.content ?? "",
+      status: 'stopped',
+      reason: 'max_turns',
+      content: lastAssistant?.content ?? '',
       messages,
       turns,
-      usage
+      usage,
     };
   }
 
@@ -3008,6 +3183,354 @@ export class AgentRunner {
     }
   }
 
+  private startTurnLedger(input: string | UserMessage) {
+    if (!this.turnLedger) return;
+
+    const prompt = typeof input === 'string' ? input : input.content;
+    const processModel = this.turnLedgerProcessModel(this.provider);
+    const turn = this.turnLedger.startTurn({
+      sessionId: this.sessionId,
+      prompt,
+      providerRequested: this.provider.name,
+      providerResolved: this.provider.name,
+      providerSource: 'runtime',
+      ...(processModel !== undefined ? { processModel } : {}),
+    });
+    this.currentTurnLedgerId = turn.id;
+  }
+
+  private turnLedgerProcessModel(provider: AgentProvider = this.provider): XenesisTurnProcessModel | undefined {
+    const capabilities = provider.capabilities;
+    if (capabilities?.transport === 'mcp-agent') return 'embedded';
+    if (capabilities?.persistentSession === true) return 'persistent-process';
+    if (
+      capabilities?.persistentSession === false &&
+      (capabilities.transport === 'cli-oneshot' || capabilities.transport === 'cli-interactive')
+    ) {
+      return 'process-per-turn';
+    }
+
+    if (provider.name === 'codex-app-server') return 'persistent-process';
+    if (provider.name === 'codex-cli' || provider.name === 'claude-cli') return 'process-per-turn';
+    return undefined;
+  }
+
+  private markTurnLedgerProviderStarting(provider: AgentProvider) {
+    if (!this.turnLedger || !this.currentTurnLedgerId) return;
+    this.withTurnLedger((ledger, turnId) => {
+      ledger.markProviderStarting(turnId, {
+        resolved: provider.name,
+        processModel: this.turnLedgerProcessModel(provider) ?? null,
+      });
+    });
+  }
+
+  private markTurnLedgerRunning() {
+    if (!this.turnLedger || !this.currentTurnLedgerId) return;
+    this.withTurnLedger((ledger, turnId) => {
+      ledger.markRunning(turnId);
+    });
+  }
+
+  private recordTurnLedgerProviderCliMcpTranscript(message: AssistantMessage) {
+    if (!this.turnLedger || !this.currentTurnLedgerId) return;
+    const cli = message.providerMetadata?.cli;
+    if (cli?.xenesisDeskMcpConfigured !== true || typeof cli.stderr !== 'string') return;
+
+    const completedToolNames = this.completedCliMcpToolNames(cli.stderr);
+    if (completedToolNames.length === 0) return;
+
+    this.withTurnLedger((ledger, turnId) => {
+      for (const tool of completedToolNames) {
+        const toolName = tool.name;
+        const canonical = this.canonicalTurnLedgerToolName(toolName);
+        const transcriptId = `${canonical}:cli-transcript:${tool.occurrence}`;
+        const crKind = this.turnLedgerCrToolKind(canonical);
+        const isCr = crKind !== undefined;
+
+        const turn = ledger.getTurn(turnId);
+        const alreadyRecorded = turn?.toolCalls.some((item) => item.id === transcriptId) === true;
+        if (alreadyRecorded) {
+          ledger.updateToolCall(turnId, {
+            id: transcriptId,
+            name: canonical,
+            status: 'completed',
+            summary: 'completed from CLI MCP transcript; readback not inferred',
+          });
+        } else {
+          ledger.addToolCall(turnId, {
+            id: transcriptId,
+            name: canonical,
+            status: 'completed',
+            summary: 'completed from CLI MCP transcript; readback not inferred',
+          });
+        }
+
+        this.turnLedgerToolEvidence.set(transcriptId, {
+          isCr,
+          isMcp: true,
+          isCrReadbackTool: crKind === 'capabilities' || crKind === 'capability',
+          ...(crKind !== undefined ? { crKind } : {}),
+        });
+
+        ledger.addEvidence(turnId, {
+          kind: 'mcp-tool-called',
+          id: transcriptId,
+          summary: `CLI MCP tool ${canonical} completed from provider transcript`,
+          verified: true,
+        });
+
+        if (isCr) {
+          ledger.addEvidence(turnId, {
+            kind: 'cr-capability-called',
+            id: transcriptId,
+            summary: `CR tool ${canonical} completed through provider MCP transcript; readback not inferred`,
+            verified: true,
+          });
+        }
+      }
+    });
+  }
+
+  private completedCliMcpToolNames(stderr: string) {
+    const tools: Array<{ name: string; occurrence: number }> = [];
+    const counts = new Map<string, number>();
+    for (const match of stderr.matchAll(/^\s*mcp:\s+[^/\s]+\/([^\s]+)\s+\(completed\)\s*$/gim)) {
+      const name = match[1]?.trim();
+      if (!name) continue;
+      const occurrence = (counts.get(name) ?? 0) + 1;
+      counts.set(name, occurrence);
+      tools.push({ name, occurrence });
+    }
+    return tools;
+  }
+
+  private recordTurnLedgerToolCall(toolCall: ToolCall) {
+    if (!this.turnLedger || !this.currentTurnLedgerId) return;
+    this.withTurnLedger((ledger, turnId) => {
+      const tool = this.toolMap.get(toolCall.name);
+      const crKind = this.turnLedgerCrToolKind(toolCall.name);
+      const isCr = crKind !== undefined;
+      const isMcp = tool?.isMcp === true;
+      const isCrReadbackTool = crKind === 'capabilities' || crKind === 'capability';
+      const path = this.turnLedgerCapabilityPath(toolCall.input);
+
+      const turn = ledger.getTurn(turnId);
+      const alreadyRecorded =
+        turn?.toolCalls.some(
+          (item) =>
+            (toolCall.id !== undefined && item.id === toolCall.id) ||
+            (toolCall.id === undefined && item.name === toolCall.name && item.path === path),
+        ) === true;
+      if (!alreadyRecorded) {
+        ledger.addToolCall(turnId, {
+          name: toolCall.name,
+          ...(toolCall.id !== undefined ? { id: toolCall.id } : {}),
+          ...(path !== undefined ? { path } : {}),
+          status: 'running',
+        });
+      }
+
+      if (isMcp || isCr) {
+        this.turnLedgerToolEvidence.set(toolCall.id, {
+          isCr,
+          isMcp,
+          isCrReadbackTool,
+          ...(crKind !== undefined ? { crKind } : {}),
+          ...(path !== undefined ? { path } : {}),
+        });
+      }
+
+      if (isMcp) {
+        ledger.addEvidence(turnId, {
+          kind: 'mcp-tool-called',
+          id: toolCall.id,
+          ...(path !== undefined ? { path } : {}),
+          summary: `MCP tool ${toolCall.name} called`,
+          verified: true,
+        });
+      }
+
+      if (isCr) {
+        ledger.addEvidence(turnId, {
+          kind: 'cr-capability-called',
+          id: toolCall.id,
+          ...(path !== undefined ? { path } : {}),
+          summary: path ? `CR capability ${path} called` : `CR tool ${toolCall.name} called`,
+          verified: true,
+        });
+      }
+    });
+  }
+
+  private recordTurnLedgerReadback(toolResult: ToolRunOutcome) {
+    if (!this.turnLedger || !this.currentTurnLedgerId || !toolResult.ok) return;
+    const meta = this.turnLedgerToolEvidence.get(toolResult.recordedMessage.toolCallId);
+    if (!meta || (!meta.isCr && !meta.isMcp)) return;
+    const canRecordReadback =
+      meta.crKind === 'call'
+        ? this.turnLedgerCallResultIsReadback(toolResult.data, meta.path)
+        : meta.isCrReadbackTool || toolResult.isReadOnly === true;
+    if (!canRecordReadback) return;
+
+    this.withTurnLedger((ledger, turnId) => {
+      ledger.addEvidence(turnId, {
+        kind: 'readback',
+        id: toolResult.recordedMessage.toolCallId,
+        ...(meta.path !== undefined ? { path: meta.path } : {}),
+        summary: meta.path ? `Readback from ${meta.path}` : `Readback from ${toolResult.recordedMessage.name}`,
+        verified: true,
+      });
+    });
+  }
+
+  private recordTurnLedgerToolResult(toolResult: ToolRunOutcome) {
+    if (!this.turnLedger || !this.currentTurnLedgerId) return;
+    const meta = this.turnLedgerToolEvidence.get(toolResult.recordedMessage.toolCallId);
+    this.withTurnLedger((ledger, turnId) => {
+      ledger.updateToolCall(turnId, {
+        id: toolResult.recordedMessage.toolCallId,
+        name: toolResult.recordedMessage.name,
+        ...(meta?.path !== undefined ? { path: meta.path } : {}),
+        status: toolResult.ok ? 'completed' : 'failed',
+      });
+    });
+  }
+
+  private turnLedgerCrToolKind(name: string): 'call' | 'capabilities' | 'capability' | undefined {
+    const canonical = this.canonicalTurnLedgerToolName(name);
+    if (canonical === 'desk_call_capability' || canonical === 'xenesis_desk_call_capability') return 'call';
+    if (canonical === 'desk_capabilities' || canonical === 'xenesis_desk_capabilities') return 'capabilities';
+    if (canonical === 'desk_capability' || canonical === 'xenesis_desk_capability') return 'capability';
+    return undefined;
+  }
+
+  private canonicalTurnLedgerToolName(name: string) {
+    const providerToolName = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1) : name;
+    return providerToolName.includes('__')
+      ? providerToolName.slice(providerToolName.lastIndexOf('__') + 2)
+      : providerToolName;
+  }
+
+  private turnLedgerCallResultIsReadback(data: unknown, expectedPath?: string) {
+    const payload = this.turnLedgerStructuredContent(data);
+    if (!payload) return false;
+    if (payload.ok === false || payload.approvalRequired === true) return false;
+
+    const path = typeof payload.path === 'string' ? payload.path.trim() : undefined;
+    if (expectedPath !== undefined && path !== undefined && path !== expectedPath) return false;
+
+    const permission = typeof payload.permission === 'string' ? payload.permission.toLowerCase() : undefined;
+    if (permission !== undefined) return permission === 'read';
+
+    const approval = typeof payload.approval === 'string' ? payload.approval.toLowerCase() : undefined;
+    return payload.readable === true && payload.approvalRequired === false && approval === 'never';
+  }
+
+  private turnLedgerStructuredContent(data: unknown): Record<string, unknown> | undefined {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return undefined;
+    const record = data as Record<string, unknown>;
+    const structuredContent = record.structuredContent;
+    if (structuredContent && typeof structuredContent === 'object' && !Array.isArray(structuredContent)) {
+      return structuredContent as Record<string, unknown>;
+    }
+    return record;
+  }
+
+  private turnLedgerCapabilityPath(input: unknown) {
+    if (!input || typeof input !== 'object' || Array.isArray(input)) return undefined;
+    const path = (input as { path?: unknown }).path;
+    if (typeof path !== 'string') return undefined;
+    const trimmed = path.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }
+
+  private markTurnLedgerWaitingForApproval(request: ApprovalRequest) {
+    if (!this.turnLedger || !this.currentTurnLedgerId) return;
+    this.withTurnLedger((ledger, turnId) => {
+      const capabilityPath = this.turnLedgerCapabilityPath(request.input) ?? request.name;
+      ledger.markWaitingForApproval(turnId, {
+        approvalId: request.approvalId,
+        capabilityPath,
+        summary: request.summary || request.reason,
+      });
+      ledger.updateToolCall(turnId, {
+        id: request.toolCallId,
+        name: request.name,
+        path: capabilityPath,
+        status: 'waiting_for_approval',
+        summary: request.summary || request.reason,
+      });
+    });
+  }
+
+  private markTurnLedgerApprovalResolved(input: {
+    approvalId?: string;
+    approved: boolean;
+    decision: ApprovalDecision['decision'];
+    resolvedAt?: string;
+    name?: string;
+    toolInput?: unknown;
+    summary?: string;
+  }) {
+    if (!this.turnLedger || !this.currentTurnLedgerId) return;
+    const status = this.turnLedgerApprovalStatus(input.approved, input.decision);
+    const capabilityPath = this.turnLedgerCapabilityPath(input.toolInput) ?? input.name;
+    const approval: XenesisTurnApprovalResolutionInput = {
+      status,
+      summary: input.summary ?? `Approval ${status}`,
+      ...(input.approvalId !== undefined ? { approvalId: input.approvalId } : {}),
+      ...(capabilityPath !== undefined ? { capabilityPath } : {}),
+      ...(input.resolvedAt !== undefined ? { at: input.resolvedAt } : {}),
+    };
+    this.withTurnLedger((ledger, turnId) => {
+      ledger.resolveApproval(turnId, approval);
+    });
+  }
+
+  private turnLedgerApprovalStatus(
+    approved: boolean,
+    decision: ApprovalDecision['decision'],
+  ): XenesisTurnApprovalResolutionInput['status'] {
+    if (approved) return 'approved';
+    if (decision === 'timeout') return 'expired';
+    return 'rejected';
+  }
+
+  private completeTurnLedger(responsePreview: string) {
+    if (!this.turnLedger || !this.currentTurnLedgerId) return;
+    this.withTurnLedger((ledger, turnId) => {
+      ledger.completeTurn(turnId, responsePreview);
+    });
+  }
+
+  private stopTurnLedger(status: 'blocked' | 'cancelled', reason: string) {
+    if (!this.turnLedger || !this.currentTurnLedgerId) return;
+    this.withTurnLedger((ledger, turnId) => {
+      ledger.stopTurn(turnId, status, reason);
+    });
+  }
+
+  private failTurnLedger(error: unknown) {
+    if (!this.turnLedger || !this.currentTurnLedgerId) return;
+    this.withTurnLedger((ledger, turnId) => {
+      ledger.failTurn(turnId, error instanceof Error ? error.name : 'Error', errorMessage(error));
+    });
+  }
+
+  private withTurnLedger(update: (ledger: XenesisTurnLedger, turnId: string) => void) {
+    if (!this.turnLedger || !this.currentTurnLedgerId) return;
+    try {
+      update(this.turnLedger, this.currentTurnLedgerId);
+    } catch (error) {
+      if (error instanceof Error && error.message.startsWith('turn_not_found:')) {
+        this.currentTurnLedgerId = undefined;
+        return;
+      }
+      throw error;
+    }
+  }
+
   private async record<T extends SessionEvent>(event: T): Promise<T> {
     await this.sessionWriter?.write(event);
     return event;
@@ -3016,31 +3539,31 @@ export class AgentRunner {
   private async recordToolPolicySnapshot() {
     if (!this.toolExecutionPolicy) return undefined;
     return await this.record({
-      type: "tool_policy_snapshot",
-      policyName: this.toolExecutionPolicy.name ?? "unnamed",
+      type: 'tool_policy_snapshot',
+      policyName: this.toolExecutionPolicy.name ?? 'unnamed',
       priorityTools: this.toolExecutionPolicy.priorityTools ?? [],
       requiredBefore: this.toolExecutionPolicy.requiredBefore ?? {},
-      requiredBeforeAny: this.toolExecutionPolicy.requiredBeforeAny ?? {}
+      requiredBeforeAny: this.toolExecutionPolicy.requiredBeforeAny ?? {},
     });
   }
 
-  private async checkpoint(event: Omit<RunStateEvent, "type">) {
+  private async checkpoint(event: Omit<RunStateEvent, 'type'>) {
     if (!this.recordLifecycle) return;
-    await this.record({ type: "run_state", ...event });
+    await this.record({ type: 'run_state', ...event });
   }
 
   private async recordIncompleteRun(
-    reason: "max_turns" | "cancelled" | "budget" | "user_input_required" | "provider_error",
+    reason: 'max_turns' | 'cancelled' | 'budget' | 'user_input_required' | 'provider_error',
     turns: number,
     summary: string,
-    usage?: AgentRunUsage
+    usage?: AgentRunUsage,
   ) {
     await this.record({
-      type: "incomplete_run",
+      type: 'incomplete_run',
       reason,
       turns,
       summary,
-      ...(usage ? { usage: usageSnapshot(usage) } : {})
+      ...(usage ? { usage: usageSnapshot(usage) } : {}),
     });
   }
 
@@ -3050,7 +3573,7 @@ export class AgentRunner {
       await this.hooks.emit({
         name,
         sessionId: this.sessionId,
-        payload
+        payload,
       });
     } catch (error) {
       this.logger.warn(`Hook "${name}" failed: ${errorMessage(error)}`);
@@ -3058,14 +3581,16 @@ export class AgentRunner {
   }
 
   private async cleanupToolSessions() {
-    await Promise.all(this.tools.map(async (tool) => {
-      if (!tool.cleanupSession) return;
-      try {
-        await tool.cleanupSession(this.sessionId);
-      } catch (error) {
-        this.logger.warn(`Tool "${tool.name}" cleanup failed: ${errorMessage(error)}`);
-      }
-    }));
+    await Promise.all(
+      this.tools.map(async (tool) => {
+        if (!tool.cleanupSession) return;
+        try {
+          await tool.cleanupSession(this.sessionId);
+        } catch (error) {
+          this.logger.warn(`Tool "${tool.name}" cleanup failed: ${errorMessage(error)}`);
+        }
+      }),
+    );
   }
 
   private userForbiddenToolReason(toolNames: string[]) {
@@ -3073,14 +3598,14 @@ export class AgentRunner {
       .map((name) => this.userToolDeniedReason(name))
       .filter((reason): reason is string => reason !== undefined);
     if (reasons.length === 0) return undefined;
-    return reasons.join("; ");
+    return reasons.join('; ');
   }
 
   private userToolDeniedReason(
     toolName: string,
     input?: unknown,
     isReadOnly?: boolean,
-    successfulToolNames?: ReadonlySet<string>
+    successfulToolNames?: ReadonlySet<string>,
   ) {
     if (this.userForbiddenTools.has(toolName)) return `user forbids tool: ${toolName}`;
     if (this.userRequestConstraints.noCommandExecution && commandExecutionToolNames.has(toolName)) {
@@ -3101,7 +3626,7 @@ export class AgentRunner {
       isReadOnly !== undefined &&
       toolCallAppearsToMutateFiles(toolName, input, isReadOnly)
     ) {
-      if (toolName === "shell" || toolName === "desk_terminal_run") {
+      if (toolName === 'shell' || toolName === 'desk_terminal_run') {
         return `user forbids file mutation: ${toolName} command appears to modify files`;
       }
       return `user forbids file mutation: ${toolName}`;
@@ -3114,7 +3639,7 @@ export class AgentRunner {
       commandExecutionToolNames.has(toolName) &&
       !hasSuccessfulEvidencePreferenceTool(successfulToolNames)
     ) {
-      return `requires preferred prior tool before ${toolName}: ${evidencePreferenceToolNames.join(", ")}`;
+      return `requires preferred prior tool before ${toolName}: ${evidencePreferenceToolNames.join(', ')}`;
     }
     if (
       this.userToolPreferences.mutationRequiresPriorEvidence &&
@@ -3123,7 +3648,7 @@ export class AgentRunner {
       toolCallAppearsToMutateFiles(toolName, input, isReadOnly) &&
       !hasSuccessfulEvidencePreferenceTool(successfulToolNames)
     ) {
-      return `requires prior evidence tool before file mutation: ${evidencePreferenceToolNames.join(", ")}`;
+      return `requires prior evidence tool before file mutation: ${evidencePreferenceToolNames.join(', ')}`;
     }
     return undefined;
   }
@@ -3148,128 +3673,132 @@ export class AgentRunner {
     turns: number,
     usage: AgentRunUsage,
     successfulToolNames: Set<string>,
-    attemptedSignatures: Set<string>
+    attemptedSignatures: Set<string>,
   ): AsyncGenerator<AgentRunEvent, AutoVerificationRepairResult, void> {
-    if (this.approvalMode !== "auto") return { status: "not_applicable", reason: "approval mode is not auto" };
-    if (attemptedSignatures.has(failure.signature)) return { status: "not_applicable", reason: "auto repair already attempted" };
+    if (this.approvalMode !== 'auto') return { status: 'not_applicable', reason: 'approval mode is not auto' };
+    if (attemptedSignatures.has(failure.signature))
+      return { status: 'not_applicable', reason: 'auto repair already attempted' };
     const causeId = failure.classification.primaryCause?.id;
 
-    if (causeId === "verification_timeout") {
+    if (causeId === 'verification_timeout') {
       if (!/timedOut:\s*true|timeoutHint:/i.test(failure.message.content)) {
-        return { status: "not_applicable", reason: "verification timeout evidence is not explicit enough to skip auto-rerun" };
+        return {
+          status: 'not_applicable',
+          reason: 'verification timeout evidence is not explicit enough to skip auto-rerun',
+        };
       }
       attemptedSignatures.add(failure.signature);
       return {
-        status: "skipped",
+        status: 'skipped',
         failure,
-        reason: `auto repair skipped for verification_timeout: timed-out verification must be bounded in code before rerun`
+        reason: `auto repair skipped for verification_timeout: timed-out verification must be bounded in code before rerun`,
       };
     }
 
-    if (causeId === "client_runtime_error") {
-      if (failure.toolName !== "app_e2e_check") {
-        return { status: "not_applicable", reason: "client runtime triage only runs after app_e2e_check failures" };
+    if (causeId === 'client_runtime_error') {
+      if (failure.toolName !== 'app_e2e_check') {
+        return { status: 'not_applicable', reason: 'client runtime triage only runs after app_e2e_check failures' };
       }
-      const forbiddenReason = this.userForbiddenToolReason(["app_readiness"]);
-      if (forbiddenReason) return { status: "skipped", failure, reason: forbiddenReason, allowFinal: true };
-      if (!this.toolMap.has("app_readiness")) {
-        return { status: "not_applicable", reason: "app_readiness tool is unavailable" };
+      const forbiddenReason = this.userForbiddenToolReason(['app_readiness']);
+      if (forbiddenReason) return { status: 'skipped', failure, reason: forbiddenReason, allowFinal: true };
+      if (!this.toolMap.has('app_readiness')) {
+        return { status: 'not_applicable', reason: 'app_readiness tool is unavailable' };
       }
 
       attemptedSignatures.add(failure.signature);
       const readinessCall: ToolCall = {
         id: `auto-app-readiness-${Date.now()}`,
-        name: "app_readiness",
-        input: {}
+        name: 'app_readiness',
+        input: {},
       };
       yield await this.record({
-        type: "repair_decision",
-        status: "auto_executed",
-        reason: `auto executing ${failure.classification.repairRecipe?.id ?? "fix_client_runtime_error"} triage for client_runtime_error`,
+        type: 'repair_decision',
+        status: 'auto_executed',
+        reason: `auto executing ${failure.classification.repairRecipe?.id ?? 'fix_client_runtime_error'} triage for client_runtime_error`,
         attempt: 1,
         maxAttempts: 1,
-        failedCommands: [failure.toolName]
+        failedCommands: [failure.toolName],
       });
       yield* this.runSyntheticToolCall(readinessCall, activeMessages, todos, turns, usage, successfulToolNames);
       return {
-        status: "executed",
+        status: 'executed',
         failure,
-        summaryMessage: autoTriageSummaryMessage(failure, "app_readiness"),
-        guardRequired: true
+        summaryMessage: autoTriageSummaryMessage(failure, 'app_readiness'),
+        guardRequired: true,
       };
     }
 
-    if (causeId === "smoke_test_structure") {
-      if (failure.toolName !== "app_readiness") {
-        return { status: "not_applicable", reason: "smoke structure triage only runs after app_readiness failures" };
+    if (causeId === 'smoke_test_structure') {
+      if (failure.toolName !== 'app_readiness') {
+        return { status: 'not_applicable', reason: 'smoke structure triage only runs after app_readiness failures' };
       }
-      const forbiddenReason = this.userForbiddenToolReason(["diagnostics"]);
-      if (forbiddenReason) return { status: "skipped", failure, reason: forbiddenReason, allowFinal: true };
-      if (!this.toolMap.has("diagnostics")) {
-        return { status: "not_applicable", reason: "diagnostics tool is unavailable" };
+      const forbiddenReason = this.userForbiddenToolReason(['diagnostics']);
+      if (forbiddenReason) return { status: 'skipped', failure, reason: forbiddenReason, allowFinal: true };
+      if (!this.toolMap.has('diagnostics')) {
+        return { status: 'not_applicable', reason: 'diagnostics tool is unavailable' };
       }
 
       attemptedSignatures.add(failure.signature);
       const diagnosticsCall: ToolCall = {
         id: `auto-diagnostics-${Date.now()}`,
-        name: "diagnostics",
+        name: 'diagnostics',
         input: {
-          script: "test",
+          script: 'test',
           timeoutMs: 15_000,
-          maxOutputChars: 12_000
-        }
+          maxOutputChars: 12_000,
+        },
       };
       yield await this.record({
-        type: "repair_decision",
-        status: "auto_executed",
-        reason: `auto executing ${failure.classification.repairRecipe?.id ?? "rewrite_smoke_test_structure"} triage for smoke_test_structure`,
+        type: 'repair_decision',
+        status: 'auto_executed',
+        reason: `auto executing ${failure.classification.repairRecipe?.id ?? 'rewrite_smoke_test_structure'} triage for smoke_test_structure`,
         attempt: 1,
         maxAttempts: 1,
-        failedCommands: [failure.toolName]
+        failedCommands: [failure.toolName],
       });
       yield* this.runSyntheticToolCall(diagnosticsCall, activeMessages, todos, turns, usage, successfulToolNames);
       return {
-        status: "executed",
+        status: 'executed',
         failure,
-        summaryMessage: autoTriageSummaryMessage(failure, "diagnostics"),
-        guardRequired: true
+        summaryMessage: autoTriageSummaryMessage(failure, 'diagnostics'),
+        guardRequired: true,
       };
     }
 
-    if (causeId !== "server_not_running" && causeId !== "local_file_requires_server") {
-      return { status: "not_applicable", reason: `failure cause is not auto-repairable: ${causeId ?? "unknown"}` };
+    if (causeId !== 'server_not_running' && causeId !== 'local_file_requires_server') {
+      return { status: 'not_applicable', reason: `failure cause is not auto-repairable: ${causeId ?? 'unknown'}` };
     }
-    const forbiddenReason = this.userForbiddenToolReason(["server", "app_e2e_check"]);
-    if (forbiddenReason) return { status: "skipped", failure, reason: forbiddenReason, allowFinal: true };
-    if (!this.toolMap.has("server") || !this.toolMap.has("app_e2e_check")) {
-      return { status: "not_applicable", reason: "required tools are unavailable" };
+    const forbiddenReason = this.userForbiddenToolReason(['server', 'app_e2e_check']);
+    if (forbiddenReason) return { status: 'skipped', failure, reason: forbiddenReason, allowFinal: true };
+    if (!this.toolMap.has('server') || !this.toolMap.has('app_e2e_check')) {
+      return { status: 'not_applicable', reason: 'required tools are unavailable' };
     }
 
     const originalToolCall = findToolCallById(priorMessages, failure.message.toolCallId);
     const failedUrl = extractUrlFromVerificationFailure(failure, originalToolCall);
-    if (!failedUrl) return { status: "not_applicable", reason: "failed app URL could not be determined" };
-    const shouldUseWorkspaceIndex = shouldRetryWithWorkspaceIndex(failure, causeId) &&
-      await workspaceFileExists(this.workspaceRoot, "index.html");
+    if (!failedUrl) return { status: 'not_applicable', reason: 'failed app URL could not be determined' };
+    const shouldUseWorkspaceIndex =
+      shouldRetryWithWorkspaceIndex(failure, causeId) && (await workspaceFileExists(this.workspaceRoot, 'index.html'));
 
     attemptedSignatures.add(failure.signature);
     const serverName = `auto-repair-${sanitizeFileSegment(this.sessionId)}`;
     let launchPlan: AutoRepairLaunchPlan | undefined;
 
     yield await this.record({
-      type: "repair_decision",
-      status: "auto_executed",
-      reason: `auto executing ${failure.classification.repairRecipe?.id ?? "repair recipe"} for ${causeId}`,
+      type: 'repair_decision',
+      status: 'auto_executed',
+      reason: `auto executing ${failure.classification.repairRecipe?.id ?? 'repair recipe'} for ${causeId}`,
       attempt: 1,
       maxAttempts: 1,
-      failedCommands: [failure.toolName]
+      failedCommands: [failure.toolName],
     });
 
-    const launchPlanForbiddenReason = this.userForbiddenToolReason(["app_launch_plan"]);
-    if (this.toolMap.has("app_launch_plan") && !launchPlanForbiddenReason) {
+    const launchPlanForbiddenReason = this.userForbiddenToolReason(['app_launch_plan']);
+    if (this.toolMap.has('app_launch_plan') && !launchPlanForbiddenReason) {
       const launchPlanCall: ToolCall = {
         id: `auto-app-launch-plan-${Date.now()}`,
-        name: "app_launch_plan",
-        input: appLaunchPlanInputForAutoRepair(this.workspaceRoot, failedUrl, causeId, shouldUseWorkspaceIndex)
+        name: 'app_launch_plan',
+        input: appLaunchPlanInputForAutoRepair(this.workspaceRoot, failedUrl, causeId, shouldUseWorkspaceIndex),
       };
       const launchPlanResult = yield* this.runSyntheticToolCall(
         launchPlanCall,
@@ -3277,59 +3806,73 @@ export class AgentRunner {
         todos,
         turns,
         usage,
-        successfulToolNames
+        successfulToolNames,
       );
       if (launchPlanResult.ok) {
         launchPlan = parseAutoRepairLaunchPlan(launchPlanResult.recordedMessage.content);
       }
     }
 
-    const localTarget = !launchPlan && (causeId === "local_file_requires_server" || shouldUseWorkspaceIndex)
-      ? localStaticHttpTarget(
-        this.workspaceRoot,
-        shouldUseWorkspaceIndex ? "index.html" : failedUrl,
-        await allocateLocalHttpPort()
-      )
-      : undefined;
-    if (!launchPlan && causeId === "local_file_requires_server" && !localTarget) {
-      return { status: "not_applicable", reason: "failed local file URL could not be converted to a workspace HTTP URL" };
+    const localTarget =
+      !launchPlan && (causeId === 'local_file_requires_server' || shouldUseWorkspaceIndex)
+        ? localStaticHttpTarget(
+            this.workspaceRoot,
+            shouldUseWorkspaceIndex ? 'index.html' : failedUrl,
+            await allocateLocalHttpPort(),
+          )
+        : undefined;
+    if (!launchPlan && causeId === 'local_file_requires_server' && !localTarget) {
+      return {
+        status: 'not_applicable',
+        reason: 'failed local file URL could not be converted to a workspace HTTP URL',
+      };
     }
     if (!launchPlan && shouldUseWorkspaceIndex && !localTarget) {
-      return { status: "not_applicable", reason: "workspace index.html could not be converted to a workspace HTTP URL" };
+      return {
+        status: 'not_applicable',
+        reason: 'workspace index.html could not be converted to a workspace HTTP URL',
+      };
     }
     const url = launchPlan?.readinessUrl ?? localTarget?.url ?? failedUrl;
-    const command = launchPlan?.command ?? (localTarget ? "xenesis:static ." : "npm start");
-    const cwd = launchPlan?.cwd ?? ".";
+    const command = launchPlan?.command ?? (localTarget ? 'xenesis:static .' : 'npm start');
+    const cwd = launchPlan?.cwd ?? '.';
 
     const startCall: ToolCall = {
       id: `auto-server-start-${Date.now()}`,
-      name: "server",
+      name: 'server',
       input: {
-        action: "start",
+        action: 'start',
         name: serverName,
         command,
         cwd,
         readinessUrl: url,
-        readinessTimeoutMs: 15_000
-      }
+        readinessTimeoutMs: 15_000,
+      },
     };
     const e2eCall: ToolCall = {
       id: `auto-e2e-${Date.now()}`,
-      name: "app_e2e_check",
-      input: appE2EInputForAutoRepair(originalToolCall, url)
+      name: 'app_e2e_check',
+      input: appE2EInputForAutoRepair(originalToolCall, url),
     };
     const stopCall: ToolCall = {
       id: `auto-server-stop-${Date.now()}`,
-      name: "server",
+      name: 'server',
       input: {
-        action: "stop",
-        name: serverName
-      }
+        action: 'stop',
+        name: serverName,
+      },
     };
 
-    const startResult = yield* this.runSyntheticToolCall(startCall, activeMessages, todos, turns, usage, successfulToolNames);
+    const startResult = yield* this.runSyntheticToolCall(
+      startCall,
+      activeMessages,
+      todos,
+      turns,
+      usage,
+      successfulToolNames,
+    );
     if (!startResult.ok) {
-      return { status: "failed", failure, reason: startResult.recordedMessage.content };
+      return { status: 'failed', failure, reason: startResult.recordedMessage.content };
     }
 
     let e2eResult: ToolRunOutcome | undefined;
@@ -3340,13 +3883,17 @@ export class AgentRunner {
     }
 
     if (!e2eResult?.ok) {
-      return { status: "failed", failure, reason: e2eResult?.recordedMessage.content ?? "app_e2e_check did not complete" };
+      return {
+        status: 'failed',
+        failure,
+        reason: e2eResult?.recordedMessage.content ?? 'app_e2e_check did not complete',
+      };
     }
 
     return {
-      status: "executed",
+      status: 'executed',
       failure,
-      summaryMessage: autoRepairSummaryMessage(failure, serverName)
+      summaryMessage: autoRepairSummaryMessage(failure, serverName),
     };
   }
 
@@ -3356,15 +3903,15 @@ export class AgentRunner {
     todos: TodoItem[],
     turns: number,
     usage: AgentRunUsage,
-    successfulToolNames: Set<string>
+    successfulToolNames: Set<string>,
   ): AsyncGenerator<AgentRunEvent, ToolRunOutcome, void> {
     const assistantMessage: AssistantMessage = {
-      role: "assistant",
-      content: "",
-      toolCalls: [toolCall]
+      role: 'assistant',
+      content: '',
+      toolCalls: [toolCall],
     };
     messages.push(assistantMessage);
-    yield await this.record({ type: "assistant_message", message: assistantMessage });
+    yield await this.record({ type: 'assistant_message', message: assistantMessage });
     yield await this.startToolCall(toolCall, turns);
     const choiceAudit = await this.recordToolChoiceAudit(toolCall, successfulToolNames);
     if (choiceAudit) yield choiceAudit;
@@ -3405,19 +3952,23 @@ export class AgentRunner {
     }
   }
 
-  private async startToolCall(toolCall: ToolCall, turns: number): Promise<Extract<AgentRunEvent, { type: "tool_call" }>> {
-    const event = await this.record({ type: "tool_call", toolCall });
+  private async startToolCall(
+    toolCall: ToolCall,
+    turns: number,
+  ): Promise<Extract<AgentRunEvent, { type: 'tool_call' }>> {
+    this.recordTurnLedgerToolCall(toolCall);
+    const event = await this.record({ type: 'tool_call', toolCall });
     await this.checkpoint({
-      status: "tool_call",
-      phase: "executing",
+      status: 'tool_call',
+      phase: 'executing',
       turns,
       summary: `running tool ${toolCall.name}`,
       toolCallId: toolCall.id,
-      toolName: toolCall.name
+      toolName: toolCall.name,
     });
-    await this.emitHook("tool_call", {
+    await this.emitHook('tool_call', {
       id: toolCall.id,
-      name: toolCall.name
+      name: toolCall.name,
     });
     return event;
   }
@@ -3427,7 +3978,7 @@ export class AgentRunner {
     todos: TodoItem[],
     turns: number,
     usage: AgentRunUsage,
-    successfulToolNames: ReadonlySet<string>
+    successfulToolNames: ReadonlySet<string>,
   ): Promise<CollectedToolRun> {
     const events: AgentRunEvent[] = [];
     const iterator = this.runToolCall(toolCall, todos, turns, usage, successfulToolNames);
@@ -3443,25 +3994,19 @@ export class AgentRunner {
     const entry = this.toolLoopGuardrail.byCallKey.get(callKey);
     if (entry && !entry.ok && entry.observations >= 2) {
       return {
-        reason: "repeated_exact_failure",
-        content: this.toolLoopGuardrailContent(toolCall, "repeated_exact_failure", entry),
+        reason: 'repeated_exact_failure',
+        content: this.toolLoopGuardrailContent(toolCall, 'repeated_exact_failure', entry),
         ...(entry.isReadOnly !== undefined ? { isReadOnly: entry.isReadOnly } : {}),
-        ...(entry.isMutation !== undefined ? { isMutation: entry.isMutation } : {})
+        ...(entry.isMutation !== undefined ? { isMutation: entry.isMutation } : {}),
       };
     }
 
-    if (
-      entry &&
-      entry.ok &&
-      entry.isReadOnly === true &&
-      entry.isMutation !== true &&
-      entry.observations >= 2
-    ) {
+    if (entry && entry.ok && entry.isReadOnly === true && entry.isMutation !== true && entry.observations >= 2) {
       return {
-        reason: "repeated_readonly_no_progress",
-        content: this.toolLoopGuardrailContent(toolCall, "repeated_readonly_no_progress", entry),
+        reason: 'repeated_readonly_no_progress',
+        content: this.toolLoopGuardrailContent(toolCall, 'repeated_readonly_no_progress', entry),
         isReadOnly: true,
-        isMutation: false
+        isMutation: false,
       };
     }
 
@@ -3470,8 +4015,8 @@ export class AgentRunner {
       this.toolLoopGuardrail.consecutiveFailureCount >= 2
     ) {
       return {
-        reason: "repeated_same_tool_failure",
-        content: this.toolLoopGuardrailContent(toolCall, "repeated_same_tool_failure", entry)
+        reason: 'repeated_same_tool_failure',
+        content: this.toolLoopGuardrailContent(toolCall, 'repeated_same_tool_failure', entry),
       };
     }
 
@@ -3481,26 +4026,27 @@ export class AgentRunner {
   private toolLoopGuardrailContent(
     toolCall: ToolCall,
     reason: ToolLoopGuardrailReason,
-    entry?: ToolLoopGuardrailEntry
+    entry?: ToolLoopGuardrailEntry,
   ) {
-    const reasonText = reason === "repeated_exact_failure"
-      ? "the same tool and canonical input have already produced the same failed result twice in this Agent turn"
-      : reason === "repeated_same_tool_failure"
-        ? "the same tool has failed twice in a row in this Agent turn"
-        : "the same read-only tool call has already returned an identical result twice without observable progress";
+    const reasonText =
+      reason === 'repeated_exact_failure'
+        ? 'the same tool and canonical input have already produced the same failed result twice in this Agent turn'
+        : reason === 'repeated_same_tool_failure'
+          ? 'the same tool has failed twice in a row in this Agent turn'
+          : 'the same read-only tool call has already returned an identical result twice without observable progress';
     const nextAction = [
-      "Inspect the latest tool result already in the conversation.",
-      "Do not retry the same tool call unchanged.",
-      "Change the query, path, selector, input, or tool; if no useful alternative exists, report the concrete limitation with the evidence already gathered."
-    ].join(" ");
+      'Inspect the latest tool result already in the conversation.',
+      'Do not retry the same tool call unchanged.',
+      'Change the query, path, selector, input, or tool; if no useful alternative exists, report the concrete limitation with the evidence already gathered.',
+    ].join(' ');
     return [
       `Xenesis tool-loop guardrail blocked repeated tool call "${toolCall.name}".`,
       `Reason: ${reasonText}.`,
       `Input hash: ${entry?.inputHash ?? shortHash(canonicalToolInput(toolCall.input))}.`,
       ...(entry ? [`Previous result hash: ${entry.resultHash}.`] : []),
-      ...(entry?.contentPreview ? ["Previous result preview:", entry.contentPreview] : []),
-      `Next action: ${nextAction}`
-    ].join("\n");
+      ...(entry?.contentPreview ? ['Previous result preview:', entry.contentPreview] : []),
+      `Next action: ${nextAction}`,
+    ].join('\n');
   }
 
   private observeToolLoopGuardrailOutcome(toolCall: ToolCall, outcome: ToolRunOutcome) {
@@ -3510,10 +4056,10 @@ export class AgentRunner {
     const existing = this.toolLoopGuardrail.byCallKey.get(callKey);
     const sameObservation = Boolean(
       existing &&
-      existing.ok === outcome.ok &&
-      existing.resultHash === resultHash &&
-      existing.isReadOnly === outcome.isReadOnly &&
-      existing.isMutation === outcome.isMutation
+        existing.ok === outcome.ok &&
+        existing.resultHash === resultHash &&
+        existing.isReadOnly === outcome.isReadOnly &&
+        existing.isMutation === outcome.isMutation,
     );
     this.toolLoopGuardrail.byCallKey.set(callKey, {
       toolName: toolCall.name,
@@ -3524,7 +4070,7 @@ export class AgentRunner {
       ok: outcome.ok,
       ...(outcome.isReadOnly !== undefined ? { isReadOnly: outcome.isReadOnly } : {}),
       ...(outcome.isMutation !== undefined ? { isMutation: outcome.isMutation } : {}),
-      contentPreview: truncateToolContent(outcome.recordedMessage.content, 400)
+      contentPreview: truncateToolContent(outcome.recordedMessage.content, 400),
     });
 
     if (outcome.ok) {
@@ -3554,7 +4100,7 @@ export class AgentRunner {
     content: string,
     inputPath?: string,
     isReadOnly?: boolean,
-    isMutation?: boolean
+    isMutation?: boolean,
   ) {
     const outcome = await this.createToolRunOutcome(toolCall, ok, content, inputPath, isReadOnly, isMutation);
     this.observeToolLoopGuardrailOutcome(toolCall, outcome);
@@ -3565,7 +4111,7 @@ export class AgentRunner {
     toolResult: ToolRunOutcome,
     messages: AgentMessage[],
     turns: number,
-    successfulToolNames: Set<string>
+    successfulToolNames: Set<string>,
   ): AsyncGenerator<AgentRunEvent, void, void> {
     if (toolResult.ok) {
       successfulToolNames.add(toolResult.recordedMessage.name);
@@ -3576,58 +4122,57 @@ export class AgentRunner {
       this.observeVerificationRepairGuardFailedToolResult(toolResult);
     }
     this.observeToolResultGuidance(toolResult);
+    this.recordTurnLedgerToolResult(toolResult);
+    this.recordTurnLedgerReadback(toolResult);
     if (toolResult.storedEvent) yield await this.record(toolResult.storedEvent);
     if (toolResult.externalContentWarnings && toolResult.externalContentWarnings.length > 0) {
       yield await this.record({
-        type: "tool_event",
+        type: 'tool_event',
         event: {
-          type: "external_content_warning",
-          source: "tool_result",
+          type: 'external_content_warning',
+          source: 'tool_result',
           toolCallId: toolResult.recordedMessage.toolCallId,
           toolName: toolResult.recordedMessage.name,
-          warnings: toolResult.externalContentWarnings
-        }
+          warnings: toolResult.externalContentWarnings,
+        },
       });
     }
     messages.push(toolResult.modelMessage);
     const toolResultEvent = await this.record({
-      type: "tool_result",
+      type: 'tool_result',
       ok: toolResult.ok,
-      message: toolResult.recordedMessage
+      message: toolResult.recordedMessage,
     });
     await this.checkpoint({
-      status: "tool_result",
-      phase: "executing",
+      status: 'tool_result',
+      phase: 'executing',
       turns,
-      summary: `${toolResult.recordedMessage.name} ${toolResult.ok ? "completed" : "failed"}`,
+      summary: `${toolResult.recordedMessage.name} ${toolResult.ok ? 'completed' : 'failed'}`,
       toolCallId: toolResult.recordedMessage.toolCallId,
-      toolName: toolResult.recordedMessage.name
+      toolName: toolResult.recordedMessage.name,
     });
     yield toolResultEvent;
-    await this.emitHook("tool_result", {
+    await this.emitHook('tool_result', {
       id: toolResult.recordedMessage.toolCallId,
       name: toolResult.recordedMessage.name,
       ok: toolResult.ok,
-      contentLength: toolResult.recordedMessage.content.length
+      contentLength: toolResult.recordedMessage.content.length,
     });
 
     for (const message of toolResult.newMessages ?? []) {
       messages.push(message);
-      if (message.role === "user") {
-        yield await this.record({ type: "user_message", message });
-      } else if (message.role === "assistant") {
-        yield await this.record({ type: "assistant_message", message });
+      if (message.role === 'user') {
+        yield await this.record({ type: 'user_message', message });
+      } else if (message.role === 'assistant') {
+        yield await this.record({ type: 'assistant_message', message });
       }
     }
   }
 
-  private async recordPermissionAudit(
-    toolCall: ToolCall,
-    permission: ReturnType<typeof evaluatePermission>
-  ) {
-    if (permission.status === "allow") return;
+  private async recordPermissionAudit(toolCall: ToolCall, permission: ReturnType<typeof evaluatePermission>) {
+    if (permission.status === 'allow') return;
     await this.record({
-      type: "permission_audit",
+      type: 'permission_audit',
       toolCallId: toolCall.id,
       name: toolCall.name,
       status: permission.status,
@@ -3635,7 +4180,7 @@ export class AgentRunner {
       riskLevel: permission.riskLevel,
       summary: permission.audit.summary,
       preview: permission.audit.preview,
-      hardDeny: permission.audit.hardDeny
+      hardDeny: permission.audit.hardDeny,
     });
   }
 
@@ -3654,48 +4199,69 @@ export class AgentRunner {
   // the fast-lane await is still resumable.
   private async *resolveApproval(
     toolCall: { id: string; name: string },
-    request: ApprovalRequest
-  ): AsyncGenerator<AgentRunEvent, "approved" | { denied: string }, void> {
+    request: ApprovalRequest,
+  ): AsyncGenerator<AgentRunEvent, 'approved' | { denied: string }, void> {
     // 1. always-allow short-circuit (a hard policy deny is evaluated separately
     //    and still wins; this only skips the soft ask gate).
-    if (this.alwaysAllowedTools.has(toolCall.name)) return "approved";
+    if (this.alwaysAllowedTools.has(toolCall.name)) return 'approved';
 
     // 2. durable records FIRST.
-    yield await this.record({ type: "permission_request", request });
+    yield await this.record({ type: 'permission_request', request });
     await this.record({
-      type: "run_snapshot",
-      state: this.buildSnapshotWithPendingApproval(request)
+      type: 'run_snapshot',
+      state: this.buildSnapshotWithPendingApproval(request),
     });
+    this.markTurnLedgerWaitingForApproval(request);
 
     // 3. injected-decision path (resume): apply the stored decision exactly once.
     const injected = this.injectedApprovalDecision;
     if (injected && injected.toolCallId === toolCall.id) {
       this.injectedApprovalDecision = undefined; // consume once
+      const resolvedAt = new Date().toISOString();
       yield await this.record({
-        type: "approval_resolved",
+        type: 'approval_resolved',
         toolCallId: toolCall.id,
         approvalId: request.approvalId,
         approved: injected.approved,
         decision: injected.decision,
-        resolvedAt: new Date().toISOString()
+        resolvedAt,
       });
-      if (injected.decision === "always-allow") this.alwaysAllowedTools.add(toolCall.name);
-      return injected.approved ? "approved" : { denied: request.reason };
+      this.markTurnLedgerApprovalResolved({
+        approvalId: request.approvalId,
+        approved: injected.approved,
+        decision: injected.decision,
+        resolvedAt,
+        name: request.name,
+        toolInput: request.input,
+        summary: request.summary,
+      });
+      if (injected.decision === 'always-allow') this.alwaysAllowedTools.add(toolCall.name);
+      return injected.approved ? 'approved' : { denied: request.reason };
     }
 
     // 4. fast-lane (interactive): await the in-process handler with a timeout.
     if (this.approvalHandler) {
       const decided = await this.awaitApprovalWithTimeout(request);
+      const resolvedAt = new Date().toISOString();
       yield await this.record({
-        type: "approval_resolved",
+        type: 'approval_resolved',
         toolCallId: toolCall.id,
         approvalId: request.approvalId,
         approved: decided.approved,
         decision: decided.decision,
-        resolvedAt: new Date().toISOString()
+        resolvedAt,
       });
-      if (decided.decision === "always-allow") this.alwaysAllowedTools.add(toolCall.name);
-      return decided.approved ? "approved" : { denied: request.reason };
+      this.markTurnLedgerApprovalResolved({
+        approvalId: request.approvalId,
+        approved: decided.approved,
+        decision: decided.decision,
+        resolvedAt,
+        name: request.name,
+        toolInput: request.input,
+        summary: request.summary,
+      });
+      if (decided.decision === 'always-allow') this.alwaysAllowedTools.add(toolCall.name);
+      return decided.approved ? 'approved' : { denied: request.reason };
     }
 
     // 5. durable pause (no handler): bubble up to run() → `paused` result. The
@@ -3729,9 +4295,9 @@ export class AgentRunner {
       recentCompactionSavedRatios: [],
       stopHookContinuationCount: this.stopHookContinuationCount,
       messageSeq: this.messageSeq,
-      alwaysAllowedTools: this.alwaysAllowedTools
+      alwaysAllowedTools: this.alwaysAllowedTools,
     };
-    const pendingApproval: ResumableRunState["pendingApproval"] = {
+    const pendingApproval: ResumableRunState['pendingApproval'] = {
       toolCallId: request.toolCallId,
       toolName: request.name,
       toolInput: request.input,
@@ -3739,7 +4305,7 @@ export class AgentRunner {
       reason: request.reason,
       riskLevel: request.riskLevel,
       summary: request.summary,
-      ...(request.preview !== undefined ? { preview: request.preview } : {})
+      ...(request.preview !== undefined ? { preview: request.preview } : {}),
     };
     return buildRunSnapshot({ ...base, alwaysAllowedTools: this.alwaysAllowedTools, pendingApproval });
   }
@@ -3747,27 +4313,24 @@ export class AgentRunner {
   // Race the in-process approvalHandler (boolean contract) against the approval
   // timeout. true→approve, false→deny, timeout→resolved per timeoutBehavior.
   private async awaitApprovalWithTimeout(
-    request: ApprovalRequest
-  ): Promise<{ approved: boolean; decision: ApprovalDecision["decision"] }> {
+    request: ApprovalRequest,
+  ): Promise<{ approved: boolean; decision: ApprovalDecision['decision'] }> {
     if (!this.approvalHandler) {
-      return { approved: false, decision: "deny" };
+      return { approved: false, decision: 'deny' };
     }
     const timeoutMs = request.timeoutMs ?? this.approvalTimeoutMs;
     const timeoutBehavior = request.timeoutBehavior ?? this.approvalTimeoutBehavior;
-    const TIMEOUT = Symbol("approval-timeout");
+    const TIMEOUT = Symbol('approval-timeout');
     let timer: ReturnType<typeof setTimeout> | undefined;
     const timeoutPromise = new Promise<typeof TIMEOUT>((resolveTimeout) => {
       timer = setTimeout(() => resolveTimeout(TIMEOUT), timeoutMs);
     });
     try {
-      const outcome = await Promise.race([
-        Promise.resolve(this.approvalHandler(request)),
-        timeoutPromise
-      ]);
+      const outcome = await Promise.race([Promise.resolve(this.approvalHandler(request)), timeoutPromise]);
       if (outcome === TIMEOUT) {
-        return { approved: timeoutBehavior === "allow", decision: "timeout" };
+        return { approved: timeoutBehavior === 'allow', decision: 'timeout' };
       }
-      return outcome ? { approved: true, decision: "approve" } : { approved: false, decision: "deny" };
+      return outcome ? { approved: true, decision: 'approve' } : { approved: false, decision: 'deny' };
     } finally {
       if (timer) clearTimeout(timer);
     }
@@ -3775,37 +4338,40 @@ export class AgentRunner {
 
   private async recordToolPolicyAudit(
     toolCall: ToolCall,
-    status: "allow" | "deny",
+    status: 'allow' | 'deny',
     requiredBefore: string[],
     missingBefore: string[],
     requiredBeforeAny: string[],
     missingBeforeAny: string[],
-    options: ToolPolicyAuditOptions = {}
+    options: ToolPolicyAuditOptions = {},
   ) {
     if ((!this.toolExecutionPolicy || this.toolExecutionPolicy.snapshotOnly) && !options.force) return undefined;
     const missing = [...missingBefore, ...missingBeforeAny];
-    const nextAction = missingBefore.length > 0
-      ? `Run these tools first: ${missingBefore.join(", ")}`
-      : missingBeforeAny.length > 0
-        ? `Run one of these tools first: ${missingBeforeAny.join(", ")}`
-        : undefined;
-    const policyName = options.policyName ?? this.toolExecutionPolicy?.name ?? "unnamed";
-    const reason = options.reason ?? (status === "allow"
-      ? "policy requirements satisfied"
-      : `requires successful prior tool call(s): ${missing.join(", ")}`);
+    const nextAction =
+      missingBefore.length > 0
+        ? `Run these tools first: ${missingBefore.join(', ')}`
+        : missingBeforeAny.length > 0
+          ? `Run one of these tools first: ${missingBeforeAny.join(', ')}`
+          : undefined;
+    const policyName = options.policyName ?? this.toolExecutionPolicy?.name ?? 'unnamed';
+    const reason =
+      options.reason ??
+      (status === 'allow'
+        ? 'policy requirements satisfied'
+        : `requires successful prior tool call(s): ${missing.join(', ')}`);
     const effectiveNextAction = options.nextAction ?? nextAction;
-    if (status === "deny") {
+    if (status === 'deny') {
       this.rememberToolPolicyRecoveryHint({
         policyName,
         toolName: toolCall.name,
         reason,
         ...(effectiveNextAction ? { nextAction: effectiveNextAction } : {}),
         missingBefore,
-        missingBeforeAny
+        missingBeforeAny,
       });
     }
     return await this.record({
-      type: "tool_policy_audit",
+      type: 'tool_policy_audit',
       toolCallId: toolCall.id,
       name: toolCall.name,
       policyName,
@@ -3820,7 +4386,7 @@ export class AgentRunner {
         ? { priorityTools: options.priorityTools }
         : this.toolExecutionPolicy?.priorityTools
           ? { priorityTools: this.toolExecutionPolicy.priorityTools }
-          : {})
+          : {}),
     });
   }
 
@@ -3828,30 +4394,28 @@ export class AgentRunner {
     toolName: string,
     requiredBefore: string[],
     requiredBeforeAny: string[],
-    successfulToolNames: ReadonlySet<string>
+    successfulToolNames: ReadonlySet<string>,
   ) {
-    const oneOfRequirementSatisfied = requiredBeforeAny.length > 0 &&
-      requiredBeforeAny.some((name) => successfulToolNames.has(name));
-    const interchangeableRequired = toolName === "task_handoff" && oneOfRequirementSatisfied
-      ? new Set(requiredBeforeAny)
-      : new Set<string>();
+    const oneOfRequirementSatisfied =
+      requiredBeforeAny.length > 0 && requiredBeforeAny.some((name) => successfulToolNames.has(name));
+    const interchangeableRequired =
+      toolName === 'task_handoff' && oneOfRequirementSatisfied ? new Set(requiredBeforeAny) : new Set<string>();
     const effectiveRequiredBefore = requiredBefore.filter((name) => !interchangeableRequired.has(name));
     const missingBefore = effectiveRequiredBefore.filter((name) => !successfulToolNames.has(name));
-    const missingBeforeAny = requiredBeforeAny.length > 0 && !oneOfRequirementSatisfied
-      ? requiredBeforeAny
-      : [];
+    const missingBeforeAny = requiredBeforeAny.length > 0 && !oneOfRequirementSatisfied ? requiredBeforeAny : [];
     return {
       requiredBefore: effectiveRequiredBefore,
       missingBefore,
       requiredBeforeAny,
-      missingBeforeAny
+      missingBeforeAny,
     };
   }
 
   private rememberToolPolicyRecoveryHint(hint: ToolPolicyRecoveryHint) {
-    const key = `${hint.policyName}|${hint.toolName}|${hint.reason}|${hint.nextAction ?? ""}`;
-    const existing = this.toolPolicyRecoveryHints.filter((candidate) =>
-      `${candidate.policyName}|${candidate.toolName}|${candidate.reason}|${candidate.nextAction ?? ""}` !== key
+    const key = `${hint.policyName}|${hint.toolName}|${hint.reason}|${hint.nextAction ?? ''}`;
+    const existing = this.toolPolicyRecoveryHints.filter(
+      (candidate) =>
+        `${candidate.policyName}|${candidate.toolName}|${candidate.reason}|${candidate.nextAction ?? ''}` !== key,
     );
     this.toolPolicyRecoveryHints = [...existing, hint].slice(-3);
   }
@@ -3862,7 +4426,7 @@ export class AgentRunner {
         hint.toolName,
         hint.missingBefore,
         hint.missingBeforeAny,
-        successfulToolNames
+        successfulToolNames,
       );
       return missing.missingBefore.length > 0 || missing.missingBeforeAny.length > 0;
     });
@@ -3871,25 +4435,23 @@ export class AgentRunner {
   private toolPolicyRecoverySystemMessage(): SystemMessage | undefined {
     if (this.toolPolicyRecoveryHints.length === 0) return undefined;
     const lines = [
-      "Xenesis tool policy recovery guidance:",
-      "A previous tool call was denied by the active guard. Use this guidance before selecting the next tool.",
+      'Xenesis tool policy recovery guidance:',
+      'A previous tool call was denied by the active guard. Use this guidance before selecting the next tool.',
       ...this.toolPolicyRecoveryHints.flatMap((hint) => [
         `- Policy: ${hint.policyName}`,
         `  Denied tool: ${hint.toolName}`,
         `  Reason: ${hint.reason}`,
         ...(hint.nextAction ? [`  Next action: ${hint.nextAction}`] : []),
-        ...(hint.missingBefore.length > 0
-          ? [`  Required predecessor tools: ${hint.missingBefore.join(", ")}`]
-          : []),
+        ...(hint.missingBefore.length > 0 ? [`  Required predecessor tools: ${hint.missingBefore.join(', ')}`] : []),
         ...(hint.missingBeforeAny.length > 0
-          ? [`  Required one-of predecessor tools: ${hint.missingBeforeAny.join(", ")}`]
-          : [])
+          ? [`  Required one-of predecessor tools: ${hint.missingBeforeAny.join(', ')}`]
+          : []),
       ]),
-      "Do not retry the denied tool until the required predecessor tool succeeds."
+      'Do not retry the denied tool until the required predecessor tool succeeds.',
     ];
     return {
-      role: "system",
-      content: lines.join("\n")
+      role: 'system',
+      content: lines.join('\n'),
     };
   }
 
@@ -3901,7 +4463,7 @@ export class AgentRunner {
       return;
     }
 
-    if (toolName === "app_e2e_check") {
+    if (toolName === 'app_e2e_check') {
       this.toolResultGuidanceHints = [];
       return;
     }
@@ -3914,7 +4476,7 @@ export class AgentRunner {
   private clearSatisfiedToolResultGuidanceHints(toolName: string) {
     this.toolResultGuidanceHints = this.toolResultGuidanceHints.filter((hint) => {
       if (hint.nextRecommendedTools.includes(toolName)) return false;
-      if (toolName === "browser" && hint.visualVerificationMethod === "screenshot_fallback") return false;
+      if (toolName === 'browser' && hint.visualVerificationMethod === 'screenshot_fallback') return false;
       return true;
     });
   }
@@ -3923,62 +4485,46 @@ export class AgentRunner {
     if (this.toolResultGuidanceHints.length === 0) return undefined;
 
     const lines = [
-      "Xenesis tool result guidance:",
-      "A previous tool returned structured next-step guidance. Use this before selecting the next tool or finalizing.",
+      'Xenesis tool result guidance:',
+      'A previous tool returned structured next-step guidance. Use this before selecting the next tool or finalizing.',
       ...this.toolResultGuidanceHints.flatMap((hint) => [
         `- Previous tool: ${hint.toolName}`,
-        ...(hint.status
-          ? [`  status: ${hint.status}`]
-          : []),
-        ...(hint.verificationOk
-          ? [`  verificationOk: ${hint.verificationOk}`]
-          : []),
-        ...(hint.repairRequired
-          ? [`  repairRequired: ${hint.repairRequired}`]
-          : []),
-        ...(hint.visualVerificationMethod
-          ? [`  visualVerificationMethod: ${hint.visualVerificationMethod}`]
-          : []),
-        ...(hint.directCanvasPixelStatus
-          ? [`  directCanvasPixelStatus: ${hint.directCanvasPixelStatus}`]
-          : []),
-        ...(hint.screenshotFallbackReason
-          ? [`  screenshotFallbackReason: ${hint.screenshotFallbackReason}`]
-          : []),
+        ...(hint.status ? [`  status: ${hint.status}`] : []),
+        ...(hint.verificationOk ? [`  verificationOk: ${hint.verificationOk}`] : []),
+        ...(hint.repairRequired ? [`  repairRequired: ${hint.repairRequired}`] : []),
+        ...(hint.visualVerificationMethod ? [`  visualVerificationMethod: ${hint.visualVerificationMethod}`] : []),
+        ...(hint.directCanvasPixelStatus ? [`  directCanvasPixelStatus: ${hint.directCanvasPixelStatus}`] : []),
+        ...(hint.screenshotFallbackReason ? [`  screenshotFallbackReason: ${hint.screenshotFallbackReason}`] : []),
         ...(hint.nextRecommendedTools.length > 0
-          ? [`  Recommended next tools: ${hint.nextRecommendedTools.join(", ")}`]
+          ? [`  Recommended next tools: ${hint.nextRecommendedTools.join(', ')}`]
           : []),
         ...(hint.verificationSequence && hint.verificationSequence.length > 0
-          ? [`  Recommended verification sequence: ${hint.verificationSequence.join(" -> ")}`]
+          ? [`  Recommended verification sequence: ${hint.verificationSequence.join(' -> ')}`]
           : []),
-        ...(hint.nextRecommendedAction
-          ? [`  Recommended next action: ${hint.nextRecommendedAction}`]
-          : []),
-        ...(hint.guidance && hint.guidance.length > 0
-          ? hint.guidance.map((line) => `  Guidance: ${line}`)
-          : []),
-        ...(hint.visualVerificationMethod === "screenshot_fallback"
+        ...(hint.nextRecommendedAction ? [`  Recommended next action: ${hint.nextRecommendedAction}`] : []),
+        ...(hint.guidance && hint.guidance.length > 0 ? hint.guidance.map((line) => `  Guidance: ${line}`) : []),
+        ...(hint.visualVerificationMethod === 'screenshot_fallback'
           ? [
-            "  Visual fallback guidance: direct canvas pixels were unavailable. If exact canvas text, layout, or rendered visual state matters, call browser for a screenshot or rerun app_e2e_check with focused expectations before finalizing."
-          ]
+              '  Visual fallback guidance: direct canvas pixels were unavailable. If exact canvas text, layout, or rendered visual state matters, call browser for a screenshot or rerun app_e2e_check with focused expectations before finalizing.',
+            ]
           : []),
-        ...(hint.visualVerificationMethod === "direct_canvas_pixels"
+        ...(hint.visualVerificationMethod === 'direct_canvas_pixels'
           ? [
-            "  Visual verification guidance: direct canvas pixels were observed. Prefer app_e2e_check evidence unless the user asks for exact screenshot-level visual review."
-          ]
-          : [])
-      ])
+              '  Visual verification guidance: direct canvas pixels were observed. Prefer app_e2e_check evidence unless the user asks for exact screenshot-level visual review.',
+            ]
+          : []),
+      ]),
     ];
 
     return {
-      role: "system",
-      content: lines.join("\n")
+      role: 'system',
+      content: lines.join('\n'),
     };
   }
 
   private toolResultGuidancePolicyDenial(
     toolName: string,
-    successfulToolNames: ReadonlySet<string>
+    successfulToolNames: ReadonlySet<string>,
   ): ToolResultGuidancePolicyDecision | undefined {
     for (const hint of this.toolResultGuidanceHints) {
       if (!hint.verificationSequence || hint.verificationSequence.length === 0) continue;
@@ -3998,23 +4544,19 @@ export class AgentRunner {
       const nextIndex = availableSequence.indexOf(nextRequiredTool);
       if (toolIndex !== -1 && toolIndex < nextIndex) continue;
 
-      const { requiredBefore, missingBefore } = orderedMissingBefore(
-        availableSequence,
-        toolName,
-        successfulToolNames
-      );
+      const { requiredBefore, missingBefore } = orderedMissingBefore(availableSequence, toolName, successfulToolNames);
       if (missingBefore.length === 0) continue;
 
       return {
-        policyName: "xenesis:tool-result-guidance",
+        policyName: 'xenesis:tool-result-guidance',
         reason: [
-          `requires successful prior tool call(s): ${missingBefore.join(", ")}.`,
-          `Previous tool "${hint.toolName}" recommended sequence: ${availableSequence.join(" -> ")}.`
-        ].join(" "),
-        nextAction: `Run these tools first: ${missingBefore.join(", ")}`,
+          `requires successful prior tool call(s): ${missingBefore.join(', ')}.`,
+          `Previous tool "${hint.toolName}" recommended sequence: ${availableSequence.join(' -> ')}.`,
+        ].join(' '),
+        nextAction: `Run these tools first: ${missingBefore.join(', ')}`,
         requiredBefore,
         missingBefore,
-        priorityTools: availableSequence
+        priorityTools: availableSequence,
       };
     }
     return undefined;
@@ -4024,39 +4566,40 @@ export class AgentRunner {
     const available = new Set(candidateTools.map((tool) => tool.name));
     const resultGuidanceHints = this.toolResultGuidanceHints
       .map((hint): ToolPriorityHint | undefined => {
-        const tools = uniqueToolNames([
-          ...(hint.verificationSequence ?? []),
-          ...hint.nextRecommendedTools
-        ]).filter((name) => available.has(name));
+        const tools = uniqueToolNames([...(hint.verificationSequence ?? []), ...hint.nextRecommendedTools]).filter(
+          (name) => available.has(name),
+        );
         if (tools.length === 0) return undefined;
         return {
           reason: `tool_result:${hint.toolName}`,
           tools,
           guidance: hint.nextRecommendedAction
             ? `Follow the previous ${hint.toolName} result: ${hint.nextRecommendedAction}.`
-            : `Follow the previous ${hint.toolName} result before choosing lower-priority tools.`
+            : `Follow the previous ${hint.toolName} result before choosing lower-priority tools.`,
         };
       })
       .filter((hint): hint is ToolPriorityHint => hint !== undefined);
 
     const promptHint = this.promptToolPriority
       ? {
-        ...this.promptToolPriority,
-        tools: this.promptToolPriority.tools.filter((name) => available.has(name))
-      }
+          ...this.promptToolPriority,
+          tools: this.promptToolPriority.tools.filter((name) => available.has(name)),
+        }
       : undefined;
-    const executionPolicyHint = this.toolExecutionPolicy?.priorityTools && this.toolExecutionPolicy.priorityTools.length > 0
-      ? {
-        reason: `execution_policy:${this.toolExecutionPolicy.name ?? "unnamed"}`,
-        tools: this.toolExecutionPolicy.priorityTools.filter((name) => available.has(name)),
-        guidance: "Follow the active execution policy priority tools before lower-priority or caution tools when they fit the task."
-      }
-      : undefined;
+    const executionPolicyHint =
+      this.toolExecutionPolicy?.priorityTools && this.toolExecutionPolicy.priorityTools.length > 0
+        ? {
+            reason: `execution_policy:${this.toolExecutionPolicy.name ?? 'unnamed'}`,
+            tools: this.toolExecutionPolicy.priorityTools.filter((name) => available.has(name)),
+            guidance:
+              'Follow the active execution policy priority tools before lower-priority or caution tools when they fit the task.',
+          }
+        : undefined;
 
     return [
       ...resultGuidanceHints,
       ...(promptHint && promptHint.tools.length > 0 ? [promptHint] : []),
-      ...(executionPolicyHint && executionPolicyHint.tools.length > 0 ? [executionPolicyHint] : [])
+      ...(executionPolicyHint && executionPolicyHint.tools.length > 0 ? [executionPolicyHint] : []),
     ];
   }
 
@@ -4066,8 +4609,8 @@ export class AgentRunner {
 
   private async recordToolChoiceAudit(
     toolCall: ToolCall,
-    successfulToolNames: ReadonlySet<string>
-  ): Promise<Extract<AgentRunEvent, { type: "tool_choice_audit" }> | undefined> {
+    successfulToolNames: ReadonlySet<string>,
+  ): Promise<Extract<AgentRunEvent, { type: 'tool_choice_audit' }> | undefined> {
     const visibleTools = this.tools.filter((tool) => !this.toolDeniedForProvider(tool));
     const hints = this.activeToolPriorityHints(visibleTools);
     if (hints.length === 0) return undefined;
@@ -4078,41 +4621,33 @@ export class AgentRunner {
 
     const priorityReasons = uniqueToolNames(hints.map((hint) => hint.reason));
     const followsExplicitPriority = priorityTools.includes(toolCall.name);
-    const followsPolicyReadyPriority = !followsExplicitPriority &&
-      this.toolCallFollowsPolicyReadyPriority(toolCall.name, successfulToolNames);
+    const followsPolicyReadyPriority =
+      !followsExplicitPriority && this.toolCallFollowsPolicyReadyPriority(toolCall.name, successfulToolNames);
     const followsPriority = followsExplicitPriority || followsPolicyReadyPriority;
     return await this.record({
-      type: "tool_choice_audit",
+      type: 'tool_choice_audit',
       toolCallId: toolCall.id,
       name: toolCall.name,
-      status: followsPriority ? "followed_priority" : "missed_priority",
+      status: followsPriority ? 'followed_priority' : 'missed_priority',
       reason: followsExplicitPriority
         ? `called priority tool ${toolCall.name}`
         : followsPolicyReadyPriority
           ? `called policy-ready tool ${toolCall.name}`
-        : `called ${toolCall.name} while higher-priority tools were available`,
+          : `called ${toolCall.name} while higher-priority tools were available`,
       priorityReasons,
       priorityTools,
-      unmetPriorityTools
+      unmetPriorityTools,
     });
   }
 
-  private toolCallFollowsPolicyReadyPriority(
-    toolName: string,
-    successfulToolNames: ReadonlySet<string>
-  ) {
-    if (toolName !== "task_handoff") return false;
+  private toolCallFollowsPolicyReadyPriority(toolName: string, successfulToolNames: ReadonlySet<string>) {
+    if (toolName !== 'task_handoff') return false;
 
     const requiredBefore = this.toolExecutionPolicy?.requiredBefore?.[toolName] ?? [];
     const requiredBeforeAny = this.toolExecutionPolicy?.requiredBeforeAny?.[toolName] ?? [];
     if (requiredBefore.length === 0 && requiredBeforeAny.length === 0) return false;
 
-    const missing = this.effectivePolicyMissingTools(
-      toolName,
-      requiredBefore,
-      requiredBeforeAny,
-      successfulToolNames
-    );
+    const missing = this.effectivePolicyMissingTools(toolName, requiredBefore, requiredBeforeAny, successfulToolNames);
     return missing.missingBefore.length === 0 && missing.missingBeforeAny.length === 0;
   }
 
@@ -4140,19 +4675,19 @@ export class AgentRunner {
     if (hints.length === 0) return undefined;
 
     const lines = [
-      "Xenesis tool priority guidance:",
-      "Use this to choose tools earlier in the run. This prioritizes tool choice but does not override permission, approval, or tool policy guards.",
+      'Xenesis tool priority guidance:',
+      'Use this to choose tools earlier in the run. This prioritizes tool choice but does not override permission, approval, or tool policy guards.',
       ...hints.flatMap((hint) => [
         `- Reason: ${hint.reason}`,
-        `  Priority tools: ${hint.tools.join(", ")}`,
-        `  Guidance: ${hint.guidance}`
+        `  Priority tools: ${hint.tools.join(', ')}`,
+        `  Guidance: ${hint.guidance}`,
       ]),
-      "Prefer these tools before shell or mutation tools when they fit the task. If a priority tool is unavailable or denied, use the next listed tool and report concrete limitations."
+      'Prefer these tools before shell or mutation tools when they fit the task. If a priority tool is unavailable or denied, use the next listed tool and report concrete limitations.',
     ];
 
     return {
-      role: "system",
-      content: lines.join("\n")
+      role: 'system',
+      content: lines.join('\n'),
     };
   }
 
@@ -4165,17 +4700,18 @@ export class AgentRunner {
       modified: false,
       evidencePaths: new Set(),
       requiredVerificationSequence: this.verificationSequenceForFailure(failure),
-      completedVerificationSteps: new Set()
+      completedVerificationSteps: new Set(),
     };
     this.verificationRepairGuardHint = undefined;
   }
 
   private verificationSequenceForFailure(failure: VerificationFailure): VerificationToolName[] {
-    const sequence: VerificationToolName[] = failure.toolName === "app_readiness"
-      ? ["app_readiness", "diagnostics", "app_e2e_check"]
-      : failure.toolName === "diagnostics"
-        ? ["diagnostics", "app_e2e_check"]
-        : ["app_e2e_check"];
+    const sequence: VerificationToolName[] =
+      failure.toolName === 'app_readiness'
+        ? ['app_readiness', 'diagnostics', 'app_e2e_check']
+        : failure.toolName === 'diagnostics'
+          ? ['diagnostics', 'app_e2e_check']
+          : ['app_e2e_check'];
     return sequence.filter((toolName) => {
       const tool = this.toolMap.get(toolName);
       if (!tool) return false;
@@ -4195,48 +4731,49 @@ export class AgentRunner {
     if (!this.verificationRepairGuard) return undefined;
     if (!isMutation) return undefined;
     if (this.verificationRepairGuard.evidencePaths.size > 3) {
-      const nextAction = "Stop and report evidence ambiguity before patching.";
-      const reason = "Evidence candidate limit exceeded: too many candidate evidence files were inspected";
+      const nextAction = 'Stop and report evidence ambiguity before patching.';
+      const reason = 'Evidence candidate limit exceeded: too many candidate evidence files were inspected';
       return {
         reason,
         nextAction,
         content: [
           `Verification repair guard denied tool "${toolName}": too many candidate evidence files.`,
           nextAction,
-          `Candidate evidence files: ${Array.from(this.verificationRepairGuard.evidencePaths).join(", ")}.`
-        ].join(" ")
+          `Candidate evidence files: ${Array.from(this.verificationRepairGuard.evidencePaths).join(', ')}.`,
+        ].join(' '),
       };
     }
     if (this.verificationRepairGuard.evidenceSatisfied) return undefined;
 
-    const requiredEvidenceTools = "read, search, code_symbols, lsp, context_search";
+    const requiredEvidenceTools = 'read, search, code_symbols, lsp, context_search';
     const nextAction = `Run one evidence tool first: ${requiredEvidenceTools}.`;
-    const reason = toolName === "shell"
-      ? "shell command appears to modify files before candidate evidence was read"
-      : "repair patch attempted before candidate evidence was read";
+    const reason =
+      toolName === 'shell'
+        ? 'shell command appears to modify files before candidate evidence was read'
+        : 'repair patch attempted before candidate evidence was read';
     return {
       reason,
       nextAction,
       content: [
         `Verification repair guard denied tool "${toolName}": ${reason}.`,
         nextAction,
-        `Original failed verification tool: ${this.verificationRepairGuard.failure.toolName}.`
-      ].join(" ")
+        `Original failed verification tool: ${this.verificationRepairGuard.failure.toolName}.`,
+      ].join(' '),
     };
   }
 
   private verificationRepairGuardSystemMessage(): SystemMessage | undefined {
     if (!this.verificationRepairGuardHint) return undefined;
     return {
-      role: "system",
+      role: 'system',
       content: [
-        "Xenesis verification repair guard guidance:",
+        'Xenesis verification repair guard guidance:',
         `Denied tool: ${this.verificationRepairGuardHint.deniedTool}`,
         `Reason: ${this.verificationRepairGuardHint.reason}`,
         `Next action: ${this.verificationRepairGuardHint.nextAction}`,
-        "Required evidence tools: read, search, code_symbols, lsp, context_search",
-        "Do not retry the denied mutation tool until one evidence tool succeeds."
-      ].join("\n")
+        'Required evidence tools: read, search, code_symbols, lsp, context_search',
+        'Do not retry the denied mutation tool until one evidence tool succeeds.',
+      ].join('\n'),
     };
   }
 
@@ -4248,35 +4785,36 @@ export class AgentRunner {
     if (!guard.modified) {
       if (!contentClaimsVerificationResolved(assistantContent)) return undefined;
       return {
-        role: "system",
+        role: 'system',
         content: [
-          "Xenesis verification repair is still pending.",
+          'Xenesis verification repair is still pending.',
           `Previous failed verification tool: ${guard.failure.toolName}.`,
-          "Do not finalize, summarize success, or claim the repair is complete while this verification failure remains unresolved.",
-          "Inspect focused evidence and apply a repair if needed.",
+          'Do not finalize, summarize success, or claim the repair is complete while this verification failure remains unresolved.',
+          'Inspect focused evidence and apply a repair if needed.',
           `Rerun the original failed verification tool: ${guard.failure.toolName}.`,
-          "Do not finalize until that verification passes."
-        ].join("\n")
+          'Do not finalize until that verification passes.',
+        ].join('\n'),
       };
     }
     const remainingSteps = this.pendingVerificationSteps(guard);
-    const guidance = guard.requiredVerificationSequence.length > 1
-      ? [
-        `Run the next app verification step: ${nextStep}.`,
-        `Remaining app verification steps: ${remainingSteps.join(" -> ")}.`,
-        "Do not finalize until the required verification sequence passes."
-      ]
-      : [
-        `Rerun the original failed verification tool: ${guard.failure.toolName}.`,
-        "Do not finalize until that verification passes."
-      ];
+    const guidance =
+      guard.requiredVerificationSequence.length > 1
+        ? [
+            `Run the next app verification step: ${nextStep}.`,
+            `Remaining app verification steps: ${remainingSteps.join(' -> ')}.`,
+            'Do not finalize until the required verification sequence passes.',
+          ]
+        : [
+            `Rerun the original failed verification tool: ${guard.failure.toolName}.`,
+            'Do not finalize until that verification passes.',
+          ];
     return {
-      role: "system",
+      role: 'system',
       content: [
-        "Xenesis verification repair guard required.",
+        'Xenesis verification repair guard required.',
         ...guidance,
-        "If the original failure repeats, continue the repair loop with the latest verification evidence instead of summarizing success."
-      ].join("\n")
+        'If the original failure repeats, continue the repair loop with the latest verification evidence instead of summarizing success.',
+      ].join('\n'),
     };
   }
 
@@ -4320,22 +4858,25 @@ export class AgentRunner {
       evidence: verificationFailureEvidence(message.content),
       classification: classifyVerificationFailure({
         toolName: message.name,
-        content: message.content
-      })
+        content: message.content,
+      }),
     };
     if (message.name === guard.failure.toolName && failure.signature === guard.failure.signature) {
       guard.repeatedFailureAfterPatch = failure;
       return;
     }
 
-    if (message.name === this.nextVerificationStep(guard) || guard.requiredVerificationSequence.includes(message.name)) {
+    if (
+      message.name === this.nextVerificationStep(guard) ||
+      guard.requiredVerificationSequence.includes(message.name)
+    ) {
       this.verificationRepairGuard = {
         failure,
         evidenceSatisfied: false,
         modified: false,
         evidencePaths: new Set(),
         requiredVerificationSequence: this.verificationSequenceForFailure(failure),
-        completedVerificationSteps: new Set()
+        completedVerificationSteps: new Set(),
       };
       this.verificationRepairGuardHint = undefined;
     }
@@ -4344,58 +4885,59 @@ export class AgentRunner {
   private async *stopForRepeatedVerificationRepairFailure(
     messages: AgentMessage[],
     turns: number,
-    usage: AgentRunUsage
+    usage: AgentRunUsage,
   ): AsyncGenerator<AgentRunEvent, AgentRunResult | undefined, void> {
     const repeatedGuardFailure = this.verificationRepairGuard?.repeatedFailureAfterPatch;
     if (!repeatedGuardFailure) return undefined;
 
     const blockedContent = [
-      "Verification repair is blocked because the same failure repeated after a patch.",
-      "",
+      'Verification repair is blocked because the same failure repeated after a patch.',
+      '',
       `Failed tool: ${repeatedGuardFailure.toolName}`,
-      "",
-      "Failure evidence:",
+      '',
+      'Failure evidence:',
       repeatedGuardFailure.evidence,
-      "",
-      "I should not continue patching without stronger evidence or user direction."
-    ].join("\n");
+      '',
+      'I should not continue patching without stronger evidence or user direction.',
+    ].join('\n');
     const blockedAssistant: AssistantMessage = {
-      role: "assistant",
-      content: blockedContent
+      role: 'assistant',
+      content: blockedContent,
     };
     messages.push(blockedAssistant);
     yield await this.record({
-      type: "repair_decision",
-      status: "blocked",
+      type: 'repair_decision',
+      status: 'blocked',
       reason: `same verification failure repeated after patch: ${repeatedGuardFailure.toolName}`,
       attempt: 1,
       maxAttempts: 1,
-      failedCommands: [repeatedGuardFailure.toolName]
+      failedCommands: [repeatedGuardFailure.toolName],
     });
-    yield await this.record({ type: "assistant_message", message: blockedAssistant });
+    yield await this.record({ type: 'assistant_message', message: blockedAssistant });
     yield await this.record({
-      type: "done",
+      type: 'done',
       content: blockedAssistant.content,
       turns,
-      usage: usageSnapshot(usage)
+      usage: usageSnapshot(usage),
     });
     await this.checkpoint({
-      status: "stopped",
-      phase: "terminal",
+      status: 'stopped',
+      phase: 'terminal',
       turns,
-      summary: `run blocked after repeated ${repeatedGuardFailure.toolName} failure after patch`
+      summary: `run blocked after repeated ${repeatedGuardFailure.toolName} failure after patch`,
     });
-    await this.emitHook("run_completed", {
+    await this.emitHook('run_completed', {
       contentLength: blockedAssistant.content.length,
-      turns
+      turns,
     });
+    this.stopTurnLedger('blocked', `run blocked after repeated ${repeatedGuardFailure.toolName} failure after patch`);
     await this.cleanupToolSessions();
     return {
-      status: "done",
+      status: 'done',
       content: blockedAssistant.content,
       messages,
       turns,
-      usage
+      usage,
     };
   }
 
@@ -4406,25 +4948,25 @@ export class AgentRunner {
     const recoveryMessages = [
       activeEffort
         ? {
-          role: "system" as const,
-          content: `Active skill effort override: ${activeEffort}`
-        }
+            role: 'system' as const,
+            content: `Active skill effort override: ${activeEffort}`,
+          }
         : undefined,
       this.userForbiddenToolsSystemMessage(),
       this.toolPrioritySystemMessage(),
       this.verificationRepairGuardSystemMessage(),
       this.toolPolicyRecoverySystemMessage(),
       this.toolResultGuidanceSystemMessage(),
-      this.toolRecoverySystemMessage()
+      this.toolRecoverySystemMessage(),
     ].filter((message): message is SystemMessage => message !== undefined);
     if (recoveryMessages.length === 0) return repairToolResultPairing(base);
 
-    let firstNonSystem = base.findIndex((message) => message.role !== "system");
+    let firstNonSystem = base.findIndex((message) => message.role !== 'system');
     if (firstNonSystem === -1) firstNonSystem = base.length;
     return repairToolResultPairing([
       ...base.slice(0, firstNonSystem),
       ...recoveryMessages,
-      ...base.slice(firstNonSystem)
+      ...base.slice(firstNonSystem),
     ]);
   }
 
@@ -4437,7 +4979,7 @@ export class AgentRunner {
       providerMaxRetries: this.providerMaxRetries,
       maxTokensBudget: this.maxTokensBudget,
       stream: this.stream,
-      env: this.env
+      env: this.env,
     });
   }
 
@@ -4463,20 +5005,20 @@ export class AgentRunner {
     if (this.userForbiddenTools.size === 0 && constraints.length === 0 && preferences.length === 0) return undefined;
     const tools = Array.from(this.userForbiddenTools).sort();
     const lines = [
-      ...(tools.length > 0 ? [`The current user request forbids these tools: ${tools.join(", ")}`] : []),
-      ...(constraints.length > 0 ? [`Active user constraints: ${constraints.join(", ")}`] : []),
-      ...(preferences.length > 0 ? [`Active user tool preferences: ${preferences.join(", ")}`] : []),
-      "Do not call tools blocked by these user constraints, and do not use automatic repair recipes that require them.",
-      "When a preference requires prior evidence, call one of these tools first and wait for success: lsp, read, search, code_symbols, context_search.",
-      "If the requested task cannot proceed without a forbidden tool or blocked action, report the observed limitation concisely."
+      ...(tools.length > 0 ? [`The current user request forbids these tools: ${tools.join(', ')}`] : []),
+      ...(constraints.length > 0 ? [`Active user constraints: ${constraints.join(', ')}`] : []),
+      ...(preferences.length > 0 ? [`Active user tool preferences: ${preferences.join(', ')}`] : []),
+      'Do not call tools blocked by these user constraints, and do not use automatic repair recipes that require them.',
+      'When a preference requires prior evidence, call one of these tools first and wait for success: lsp, read, search, code_symbols, context_search.',
+      'If the requested task cannot proceed without a forbidden tool or blocked action, report the observed limitation concisely.',
     ];
-    return { role: "system", content: lines.join("\n") };
+    return { role: 'system', content: lines.join('\n') };
   }
 
   private rememberToolRecoveryHint(hint: ToolRecoveryHint) {
     const key = `${hint.kind}|${hint.toolName}|${hint.reason}`;
-    const existing = this.toolRecoveryHints.filter((candidate) =>
-      `${candidate.kind}|${candidate.toolName}|${candidate.reason}` !== key
+    const existing = this.toolRecoveryHints.filter(
+      (candidate) => `${candidate.kind}|${candidate.toolName}|${candidate.reason}` !== key,
     );
     this.toolRecoveryHints = [...existing, hint].slice(-4);
   }
@@ -4487,9 +5029,7 @@ export class AgentRunner {
     // schema guidance for the tool that still has malformed args.
     this.toolRecoveryHints = this.toolRecoveryHints.filter(
       (hint) =>
-        hint.kind === "invalid_tool_input" &&
-        succeededToolName !== undefined &&
-        hint.toolName !== succeededToolName
+        hint.kind === 'invalid_tool_input' && succeededToolName !== undefined && hint.toolName !== succeededToolName,
     );
   }
 
@@ -4497,7 +5037,7 @@ export class AgentRunner {
     toolName: string,
     error: z.ZodError,
     schema: z.ZodType,
-    received: unknown
+    received: unknown,
   ): { content: string; schemaContext?: string } {
     const attempts = (this.argsCorrectionRetryCounts.get(toolName) ?? 0) + 1;
     this.argsCorrectionRetryCounts.set(toolName, attempts);
@@ -4508,16 +5048,16 @@ export class AgentRunner {
     }
     const guidance = buildSchemaGuidance(error, schema, received);
     const structured = {
-      error: "invalid_tool_input",
+      error: 'invalid_tool_input',
       tool: toolName,
       issues: guidance.issues,
       schema: guidance.schemaFragment,
-      received: guidance.received
+      received: guidance.received,
     };
     const schemaContext = safeStringify(structured);
     return {
       content: `Invalid input for tool "${toolName}". ${schemaContext}`,
-      schemaContext
+      schemaContext,
     };
   }
 
@@ -4525,7 +5065,7 @@ export class AgentRunner {
     toolName: string,
     message: string,
     schema: z.ZodType,
-    received: unknown
+    received: unknown,
   ): { content: string; schemaContext?: string } {
     const attempts = (this.argsCorrectionRetryCounts.get(toolName) ?? 0) + 1;
     this.argsCorrectionRetryCounts.set(toolName, attempts);
@@ -4539,50 +5079,50 @@ export class AgentRunner {
       schemaFragment = undefined;
     }
     const structured = {
-      error: "invalid_tool_input",
+      error: 'invalid_tool_input',
       tool: toolName,
       issues: [message],
       schema: schemaFragment,
-      received
+      received,
     };
     const schemaContext = safeStringify(structured);
     return {
       content: `${message} ${schemaContext}`,
-      schemaContext
+      schemaContext,
     };
   }
 
   private toolRecoverySystemMessage(): SystemMessage | undefined {
     if (this.toolRecoveryHints.length === 0) return undefined;
     const lines = [
-      "Xenesis tool recovery guidance:",
-      "A previous tool call failed before producing a useful result. Use this guidance before selecting the next tool.",
+      'Xenesis tool recovery guidance:',
+      'A previous tool call failed before producing a useful result. Use this guidance before selecting the next tool.',
       ...this.toolRecoveryHints.flatMap((hint) => [
         `- Failure type: ${hint.kind}`,
         `  Tool: ${hint.toolName}`,
         `  Reason: ${hint.reason}`,
         ...(hint.availableTools && hint.availableTools.length > 0
-          ? [`  Available tools: ${hint.availableTools.join(", ")}`]
+          ? [`  Available tools: ${hint.availableTools.join(', ')}`]
           : []),
         ...(hint.schemaContext ? [`  Schema guidance: ${hint.schemaContext}`] : []),
-        `  Next action: ${hint.nextAction}`
-      ])
+        `  Next action: ${hint.nextAction}`,
+      ]),
     ];
     return {
-      role: "system",
-      content: lines.join("\n")
+      role: 'system',
+      content: lines.join('\n'),
     };
   }
 
   private currentInfoFailureRecoveryTools(toolName: string) {
     if (!currentInfoToolRecoveryNames.has(toolName)) return [];
     if (this.userToolPreferences.noExternalWeb) return [];
-    return ["web_search", "web_fetch"].filter((name) => this.toolMap.has(name));
+    return ['web_search', 'web_fetch'].filter((name) => this.toolMap.has(name));
   }
 
   private externalWorkspaceAccessRecoveryTools(content: string) {
     if (!isExternalWorkspaceOrSessionAccessBlock(content)) return [];
-    return ["desk_capabilities", "desk_call_capability"].filter((name) => this.toolMap.has(name));
+    return ['desk_capabilities', 'desk_call_capability'].filter((name) => this.toolMap.has(name));
   }
 
   private toolFailureRecoveryTools(toolName: string, content: string) {
@@ -4592,28 +5132,26 @@ export class AgentRunner {
   }
 
   private recoverableToolFailureHint() {
-    return this.toolRecoveryHints.find((hint) =>
-      (hint.kind === "tool_failed" || hint.kind === "permission_denied") &&
-      (hint.availableTools?.length ?? 0) > 0
+    return this.toolRecoveryHints.find(
+      (hint) =>
+        (hint.kind === 'tool_failed' || hint.kind === 'permission_denied') && (hint.availableTools?.length ?? 0) > 0,
     );
   }
 
-  private toolRecoveryFinalizationRecoveryMessage(
-    recoveryCount: number
-  ): SystemMessage | undefined {
+  private toolRecoveryFinalizationRecoveryMessage(recoveryCount: number): SystemMessage | undefined {
     if (recoveryCount > 0) return undefined;
     const hint = this.recoverableToolFailureHint();
     if (!hint || !hint.availableTools || hint.availableTools.length === 0) return undefined;
 
     return {
-      role: "system",
+      role: 'system',
       content: [
-        "Xenesis tool recovery required before final answer.",
-        `The previous ${hint.toolName} ${hint.kind === "tool_failed" ? "call failed" : "attempt was denied"}: ${hint.reason}`,
-        `Use one of these available recovery tools before finalizing: ${hint.availableTools.join(", ")}`,
+        'Xenesis tool recovery required before final answer.',
+        `The previous ${hint.toolName} ${hint.kind === 'tool_failed' ? 'call failed' : 'attempt was denied'}: ${hint.reason}`,
+        `Use one of these available recovery tools before finalizing: ${hint.availableTools.join(', ')}`,
         `Next action: ${hint.nextAction}`,
-        "If the recovery tool also fails or cannot provide relevant evidence, then report the concrete limitation with the attempted recovery evidence."
-      ].join("\n")
+        'If the recovery tool also fails or cannot provide relevant evidence, then report the concrete limitation with the attempted recovery evidence.',
+      ].join('\n'),
     };
   }
 
@@ -4633,18 +5171,18 @@ export class AgentRunner {
     messages: AgentMessage[],
     model: string,
     lastResponseInputTokens: number,
-    recentSavedRatios: number[]
+    recentSavedRatios: number[],
   ) {
     if (!this.autoCompact) return undefined;
 
-    let firstNonSystem = messages.findIndex((message) => message.role !== "system");
+    let firstNonSystem = messages.findIndex((message) => message.role !== 'system');
     if (firstNonSystem === -1) firstNonSystem = messages.length;
 
     const leadingSystemMessages = messages.slice(0, firstNonSystem);
     const baseSystemMessages = leadingSystemMessages.filter((message) => !isCompactSummaryMessage(message));
     const compactableMessages = [
       ...leadingSystemMessages.filter(isCompactSummaryMessage),
-      ...messages.slice(firstNonSystem)
+      ...messages.slice(firstNonSystem),
     ];
 
     const scaffoldTokens = estimateMessagesTokens(baseSystemMessages);
@@ -4661,19 +5199,19 @@ export class AgentRunner {
   private async forceCompactActiveMessages(messages: AgentMessage[], recentSavedRatios: number[]) {
     if (!this.autoCompact) return undefined;
 
-    let firstNonSystem = messages.findIndex((message) => message.role !== "system");
+    let firstNonSystem = messages.findIndex((message) => message.role !== 'system');
     if (firstNonSystem === -1) firstNonSystem = messages.length;
 
     const leadingSystemMessages = messages.slice(0, firstNonSystem);
     const baseSystemMessages = leadingSystemMessages.filter((message) => !isCompactSummaryMessage(message));
     const compactableMessages = [
       ...leadingSystemMessages.filter(isCompactSummaryMessage),
-      ...messages.slice(firstNonSystem)
+      ...messages.slice(firstNonSystem),
     ];
     if (compactableMessages.length <= 1) return undefined;
 
     return await this.applyStructuredCompaction(messages, baseSystemMessages, compactableMessages, recentSavedRatios, {
-      force: true
+      force: true,
     });
   }
 
@@ -4682,13 +5220,13 @@ export class AgentRunner {
     baseSystemMessages: AgentMessage[],
     compactableMessages: AgentMessage[],
     recentSavedRatios: number[],
-    options: { force?: boolean } = {}
+    options: { force?: boolean } = {},
   ) {
     if (!options.force && shouldThrash(recentSavedRatios)) return undefined;
 
     const effectiveKeepMessages = Math.max(
       0,
-      Math.min(this.compactHistoryKeepMessages, Math.max(0, compactableMessages.length - 1))
+      Math.min(this.compactHistoryKeepMessages, Math.max(0, compactableMessages.length - 1)),
     );
     const { keepCount, recentMessages } = compactMessageParts(compactableMessages, effectiveKeepMessages);
     const keepRecentTokens = Math.max(0, estimateMessagesTokens(recentMessages));
@@ -4702,7 +5240,7 @@ export class AgentRunner {
         ? (olderMessages) => pruneOlderMessages(olderMessages, { threshold: this.pruneToolResultThreshold }).messages
         : undefined,
       estimateTokens: estimateMessagesTokens,
-      abortSignal: this.abortSignal
+      abortSignal: this.abortSignal,
     });
 
     if (!result.summarized && !options.force) return undefined;
@@ -4711,40 +5249,37 @@ export class AgentRunner {
     if (recentSavedRatios.length > 4) recentSavedRatios.splice(0, recentSavedRatios.length - 4);
     messages.splice(0, messages.length, ...baseSystemMessages, ...result.messages);
 
-    if (typeof result.summary === "string" && result.summary.length > 0) {
+    if (typeof result.summary === 'string' && result.summary.length > 0) {
       this.previousCompactSummary = result.summary;
     }
 
     return {
-      type: "context_compact" as const,
+      type: 'context_compact' as const,
       originalMessages: compactableMessages.length,
       compactedMessages: result.messages.length,
       keptMessages: keepCount,
       summary: result.summary,
       summarizedFrom: 0,
-      summarizedTo: Math.max(0, compactableMessages.length - keepCount)
+      summarizedTo: Math.max(0, compactableMessages.length - keepCount),
     };
   }
 
-  private async *completeProvider(
-    request: ProviderRequest
-  ): AsyncGenerator<AgentRunEvent, ProviderResponse, void> {
+  private async *completeProvider(request: ProviderRequest): AsyncGenerator<AgentRunEvent, ProviderResponse, void> {
     let lastError: unknown;
 
     for (let providerIndex = 0; providerIndex < this.providers.length; providerIndex += 1) {
       const provider = this.providers[providerIndex];
-      const providerModel = providerIndex === 0
-        ? request.model
-        : this.providerModels[providerIndex] ?? request.model;
+      const providerModel = providerIndex === 0 ? request.model : (this.providerModels[providerIndex] ?? request.model);
       const providerRequest: ProviderRequest = {
         ...request,
         model: providerModel,
-        queryConfig: this.providerQueryConfigForModel(providerModel)
+        queryConfig: this.providerQueryConfigForModel(providerModel),
       };
 
       for (let attempt = 0; attempt <= this.providerMaxRetries; attempt += 1) {
         this.throwIfAborted();
         try {
+          this.markTurnLedgerProviderStarting(provider);
           return yield* this.invokeProvider(provider, providerRequest);
         } catch (error) {
           if (this.isCancellation(error)) throw new RunnerCancelledError();
@@ -4757,70 +5292,70 @@ export class AgentRunner {
             maxRetries: this.providerMaxRetries,
             nextProviderIndex: providerIndex + 1,
             remainingProviderSupportsTools: this.providerSupportsTools.slice(providerIndex + 1),
-            toolsRequired: providerRequest.tools.length > 0
+            toolsRequired: providerRequest.tools.length > 0,
           });
 
-          if (decision.kind === "retry") {
+          if (decision.kind === 'retry') {
             const retryEvent = {
-              type: "provider_retry",
+              type: 'provider_retry',
               provider: provider.name,
               attempt: attempt + 1,
               maxRetries: this.providerMaxRetries,
               message,
               failureKind: failure.kind,
               retryable: failure.retryable,
-              remainingRetries: this.providerMaxRetries - attempt - 1
+              remainingRetries: this.providerMaxRetries - attempt - 1,
             } as const;
             yield await this.record(retryEvent);
-            await this.emitHook("provider_retry", {
+            await this.emitHook('provider_retry', {
               provider: retryEvent.provider,
               attempt: retryEvent.attempt,
               maxRetries: retryEvent.maxRetries,
               message: retryEvent.message,
               failureKind: retryEvent.failureKind,
               retryable: retryEvent.retryable,
-              remainingRetries: retryEvent.remainingRetries
+              remainingRetries: retryEvent.remainingRetries,
             });
             const delayMs = computeRetryDelayMs({
               attempt,
               baseDelayMs: this.providerRetryDelayMs,
-              retryAfterMs: extractRetryAfterMs(error)
+              retryAfterMs: extractRetryAfterMs(error),
             });
             await sleep(delayMs, this.abortSignal);
             continue;
           }
 
-          if (decision.kind === "fallback") {
+          if (decision.kind === 'fallback') {
             const fallback = this.providers[decision.toIndex];
             const fromModel = this.providerModels[providerIndex];
             const toModel = this.providerModels[decision.toIndex];
             const fallbackEvent = {
-              type: "provider_fallback",
+              type: 'provider_fallback',
               from: provider.name,
               to: fallback.name,
               message,
               failureKind: failure.kind,
               fromModel,
               toModel,
-              modelSwitch: provider.name === fallback.name && fromModel !== toModel
+              modelSwitch: provider.name === fallback.name && fromModel !== toModel,
             } as const;
             yield await this.record(fallbackEvent);
-            await this.emitHook("provider_fallback", {
+            await this.emitHook('provider_fallback', {
               from: fallbackEvent.from,
               to: fallbackEvent.to,
               message: fallbackEvent.message,
               failureKind: fallbackEvent.failureKind,
               fromModel: fallbackEvent.fromModel,
               toModel: fallbackEvent.toModel,
-              modelSwitch: fallbackEvent.modelSwitch
+              modelSwitch: fallbackEvent.modelSwitch,
             });
             providerIndex = decision.toIndex - 1;
             break;
           }
 
-          if (decision.kind === "fail-closed") {
+          if (decision.kind === 'fail-closed') {
             throw new Error(
-              `Provider fallback refused: request includes tools, but no remaining tool-capable fallback provider is available after "${provider.name}" failed: ${message}`
+              `Provider fallback refused: request includes tools, but no remaining tool-capable fallback provider is available after "${provider.name}" failed: ${message}`,
             );
           }
 
@@ -4829,31 +5364,31 @@ export class AgentRunner {
       }
     }
 
-    throw lastError instanceof Error ? lastError : new Error(errorMessage(lastError ?? "Provider request failed"));
+    throw lastError instanceof Error ? lastError : new Error(errorMessage(lastError ?? 'Provider request failed'));
   }
 
   private async *invokeProvider(
     provider: AgentProvider,
-    request: ProviderRequest
+    request: ProviderRequest,
   ): AsyncGenerator<AgentRunEvent, ProviderResponse, void> {
     this.throwIfAborted();
     const providerStream = this.resolveProviderStream(provider);
     const useProviderStream = Boolean(providerStream);
-    await this.emitHook("provider_request", {
+    await this.emitHook('provider_request', {
       provider: provider.name,
       model: request.model,
       messageCount: request.messages.length,
       toolCount: request.tools.length,
       stream: useProviderStream,
-      providerCapabilities: provider.capabilities
+      providerCapabilities: provider.capabilities,
     });
 
     if (!providerStream) {
       const response = await provider.complete(request);
-      await this.emitHook("provider_response", {
+      await this.emitHook('provider_response', {
         provider: provider.name,
         contentLength: response.message.content.length,
-        toolCallCount: response.message.toolCalls?.length ?? 0
+        toolCallCount: response.message.toolCalls?.length ?? 0,
       });
       return response;
     }
@@ -4868,16 +5403,16 @@ export class AgentRunner {
         new Promise<never>((_, reject) => {
           idleTimer = setTimeout(
             () => reject(new Error(`Provider "${provider.name}" stream idle for ${STREAM_IDLE_MS}ms`)),
-            STREAM_IDLE_MS
+            STREAM_IDLE_MS,
           );
-        })
+        }),
       ]).finally(() => {
         if (idleTimer) clearTimeout(idleTimer);
       });
       if (next.done) break;
       const event = next.value;
-      if (event.type === "text_delta") {
-        yield { type: "assistant_delta", delta: event.delta };
+      if (event.type === 'text_delta') {
+        yield { type: 'assistant_delta', delta: event.delta };
       } else {
         finalResponse = event.response;
       }
@@ -4887,15 +5422,15 @@ export class AgentRunner {
       throw new Error(`Provider "${provider.name}" stream ended without a final response.`);
     }
 
-    await this.emitHook("provider_response", {
+    await this.emitHook('provider_response', {
       provider: provider.name,
       contentLength: finalResponse.message.content.length,
-      toolCallCount: finalResponse.message.toolCalls?.length ?? 0
+      toolCallCount: finalResponse.message.toolCalls?.length ?? 0,
     });
     return finalResponse;
   }
 
-  private resolveProviderStream(provider: AgentProvider): AgentProvider["stream"] {
+  private resolveProviderStream(provider: AgentProvider): AgentProvider['stream'] {
     if (!this.stream || !provider.stream) return undefined;
     if (provider.capabilities?.streaming === false) return undefined;
     return provider.stream.bind(provider);
@@ -4915,57 +5450,56 @@ export class AgentRunner {
     toolCall: ToolCall,
     tool: Tool,
     parsedData: Record<string, unknown>,
-    meta: { isReadOnly: boolean; isMutation: boolean; inputPath?: string }
+    meta: { isReadOnly: boolean; isMutation: boolean; inputPath?: string },
   ): Promise<
-    | { kind: "allow" }
-    | { kind: "deny"; outcome: ToolRunOutcome; auditEvent?: AgentRunEvent }
-    | { kind: "modify"; parsedData: Record<string, unknown>; isReadOnly: boolean; isMutation: boolean; inputPath?: string }
-    | { kind: "ask"; request: ApprovalRequest }
+    | { kind: 'allow' }
+    | { kind: 'deny'; outcome: ToolRunOutcome; auditEvent?: AgentRunEvent }
+    | {
+        kind: 'modify';
+        parsedData: Record<string, unknown>;
+        isReadOnly: boolean;
+        isMutation: boolean;
+        inputPath?: string;
+      }
+    | { kind: 'ask'; request: ApprovalRequest }
   > {
-    if (!this.hookRegistry?.hasPreToolUse()) return { kind: "allow" };
+    if (!this.hookRegistry?.hasPreToolUse()) return { kind: 'allow' };
 
     const decision = await this.hookRegistry.runPreToolUse({
       toolName: tool.name,
       toolInput: parsedData,
       isReadOnly: meta.isReadOnly,
       isMutation: meta.isMutation,
-      ...(meta.inputPath !== undefined ? { inputPath: meta.inputPath } : {})
+      ...(meta.inputPath !== undefined ? { inputPath: meta.inputPath } : {}),
     });
 
-    if (decision.decision === "block") {
+    if (decision.decision === 'block') {
       this.rememberToolRecoveryHint({
-        kind: "hook_denied",
+        kind: 'hook_denied',
         toolName: tool.name,
         reason: decision.reason,
-        nextAction: "Do not retry; this tool call was blocked by a PreToolUse hook. Change approach or report the limitation."
+        nextAction:
+          'Do not retry; this tool call was blocked by a PreToolUse hook. Change approach or report the limitation.',
       });
-      const hookAudit = await this.recordToolPolicyAudit(
-        toolCall,
-        "deny",
-        [],
-        [],
-        [],
-        [],
-        {
-          force: true,
-          policyName: "hook:PreToolUse",
-          reason: decision.reason
-        }
-      );
+      const hookAudit = await this.recordToolPolicyAudit(toolCall, 'deny', [], [], [], [], {
+        force: true,
+        policyName: 'hook:PreToolUse',
+        reason: decision.reason,
+      });
       const outcome = await this.createObservedToolRunOutcome(
         toolCall,
         false,
         decision.content ?? decision.reason,
         meta.inputPath,
         meta.isReadOnly,
-        meta.isMutation
+        meta.isMutation,
       );
       // evaluatePreToolUse is not a generator; the audit event is returned to the
       // generator caller (runToolCall) so it can be yielded before the deny outcome.
-      return hookAudit ? { kind: "deny", outcome, auditEvent: hookAudit } : { kind: "deny", outcome };
+      return hookAudit ? { kind: 'deny', outcome, auditEvent: hookAudit } : { kind: 'deny', outcome };
     }
 
-    if (decision.decision === "modify") {
+    if (decision.decision === 'modify') {
       const coerced = coerceToolArguments(decision.modifiedArgs, tool.inputSchema);
       const reparsed = tool.inputSchema.safeParse(coerced);
       if (!reparsed.success) {
@@ -4974,25 +5508,25 @@ export class AgentRunner {
           false,
           `PreToolUse hook produced invalid modified arguments for tool "${tool.name}": ${reparsed.error.issues
             .map((issue) => issue.message)
-            .join("; ")}`,
+            .join('; ')}`,
           meta.inputPath,
           meta.isReadOnly,
-          meta.isMutation
+          meta.isMutation,
         );
-        return { kind: "deny", outcome };
+        return { kind: 'deny', outcome };
       }
       const newData = reparsed.data as Record<string, unknown>;
       const newReadOnly = tool.isReadOnly(newData);
       return {
-        kind: "modify",
+        kind: 'modify',
         parsedData: newData,
         isReadOnly: newReadOnly,
         isMutation: isVerificationRepairMutationToolCall(tool.name, newData, newReadOnly),
-        inputPath: workspacePathForToolInput(tool.name, newData)
+        inputPath: workspacePathForToolInput(tool.name, newData),
       };
     }
 
-    if (decision.decision === "ask") {
+    if (decision.decision === 'ask') {
       // S6 — hook-ask routes through the SAME durable HITL gate as permission-ask.
       // Build an ApprovalRequest from the payload + ask fields; runToolCall calls
       // resolveApproval with it (resolveApproval is a generator; evaluatePreToolUse
@@ -5002,20 +5536,20 @@ export class AgentRunner {
         approvalId: crypto.randomUUID(),
         name: tool.name,
         input: parsedData,
-        reason: decision.reason ?? "PreToolUse hook requested approval",
-        riskLevel: meta.isMutation ? "high" : "low",
+        reason: decision.reason ?? 'PreToolUse hook requested approval',
+        riskLevel: meta.isMutation ? 'high' : 'low',
         summary: decision.title ?? tool.name,
         ...(decision.description !== undefined ? { preview: decision.description } : {}),
         ...(decision.severity !== undefined ? { severity: decision.severity } : {}),
         ...(decision.allowedDecisions !== undefined ? { allowedDecisions: decision.allowedDecisions } : {}),
         ...(decision.timeoutMs !== undefined ? { timeoutMs: decision.timeoutMs } : {}),
-        ...(decision.timeoutBehavior !== undefined ? { timeoutBehavior: decision.timeoutBehavior } : {})
+        ...(decision.timeoutBehavior !== undefined ? { timeoutBehavior: decision.timeoutBehavior } : {}),
       };
-      return { kind: "ask", request };
+      return { kind: 'ask', request };
     }
 
     // allow falls through (no gate).
-    return { kind: "allow" };
+    return { kind: 'allow' };
   }
 
   private async *runToolCall(
@@ -5023,15 +5557,15 @@ export class AgentRunner {
     todos: TodoItem[],
     turns: number,
     usage: AgentRunUsage,
-    successfulToolNames: ReadonlySet<string>
+    successfulToolNames: ReadonlySet<string>,
   ): AsyncGenerator<AgentRunEvent, ToolRunOutcome, void> {
     const loopGuardrailDecision = this.toolLoopGuardrailDecision(toolCall);
     if (loopGuardrailDecision) {
       this.rememberToolRecoveryHint({
-        kind: "tool_failed",
+        kind: 'tool_failed',
         toolName: toolCall.name,
         reason: loopGuardrailDecision.content,
-        nextAction: "Inspect the latest tool result, change strategy, and do not retry the same tool call unchanged."
+        nextAction: 'Inspect the latest tool result, change strategy, and do not retry the same tool call unchanged.',
       });
       return await this.createObservedToolRunOutcome(
         toolCall,
@@ -5039,24 +5573,20 @@ export class AgentRunner {
         loopGuardrailDecision.content,
         undefined,
         loopGuardrailDecision.isReadOnly,
-        loopGuardrailDecision.isMutation
+        loopGuardrailDecision.isMutation,
       );
     }
 
     const tool = this.toolMap.get(toolCall.name);
     if (!tool) {
       this.rememberToolRecoveryHint({
-        kind: "missing_tool",
+        kind: 'missing_tool',
         toolName: toolCall.name,
         reason: `Tool "${toolCall.name}" is not available.`,
         availableTools: Array.from(this.toolMap.keys()).sort(),
-        nextAction: `Choose an available tool instead of \`${toolCall.name}\`, or answer without a tool if no suitable tool exists.`
+        nextAction: `Choose an available tool instead of \`${toolCall.name}\`, or answer without a tool if no suitable tool exists.`,
       });
-      return await this.createObservedToolRunOutcome(
-        toolCall,
-        false,
-        `Tool "${toolCall.name}" is not available.`
-      );
+      return await this.createObservedToolRunOutcome(toolCall, false, `Tool "${toolCall.name}" is not available.`);
     }
 
     const coerced = coerceToolArguments(toolCall.input, tool.inputSchema);
@@ -5064,17 +5594,13 @@ export class AgentRunner {
     if (!parsed.success) {
       const guidance = this.buildArgsCorrectionGuidance(toolCall.name, parsed.error, tool.inputSchema, coerced);
       this.rememberToolRecoveryHint({
-        kind: "invalid_tool_input",
+        kind: 'invalid_tool_input',
         toolName: toolCall.name,
         reason: `Invalid input for tool "${toolCall.name}": ${parsed.error.message}`,
-        nextAction: "Retry the tool with input that matches its schema.",
-        schemaContext: guidance.schemaContext
+        nextAction: 'Retry the tool with input that matches its schema.',
+        schemaContext: guidance.schemaContext,
       });
-      return await this.createObservedToolRunOutcome(
-        toolCall,
-        false,
-        guidance.content
-      );
+      return await this.createObservedToolRunOutcome(toolCall, false, guidance.content);
     }
 
     const emittedEvents: ToolEvent[] = [];
@@ -5101,7 +5627,7 @@ export class AgentRunner {
         usage.outputTokens += childUsage.outputTokens;
         usage.totalTokens = usage.inputTokens + usage.outputTokens;
       },
-      logger: this.logger
+      logger: this.logger,
     };
 
     if (tool.validateInput) {
@@ -5111,20 +5637,16 @@ export class AgentRunner {
           toolCall.name,
           validation.message,
           tool.inputSchema,
-          parsed.data
+          parsed.data,
         );
         this.rememberToolRecoveryHint({
-          kind: "invalid_tool_input",
+          kind: 'invalid_tool_input',
           toolName: toolCall.name,
           reason: validation.message,
-          nextAction: "Retry the tool with valid input or choose a different available tool.",
-          schemaContext: guidance.schemaContext
+          nextAction: 'Retry the tool with valid input or choose a different available tool.',
+          schemaContext: guidance.schemaContext,
         });
-        return await this.createObservedToolRunOutcome(
-          toolCall,
-          false,
-          guidance.content
-        );
+        return await this.createObservedToolRunOutcome(toolCall, false, guidance.content);
       }
     }
 
@@ -5135,33 +5657,33 @@ export class AgentRunner {
     // PreToolUse blocking-hook seam. Runs after schema/validateInput and before
     // the user/permission/policy gates so a hook can ADD a deny (never bypass a
     // built-in safety deny) and a `modify` falls through to be re-gated.
-    const preHook = await this.evaluatePreToolUse(
-      toolCall,
-      tool,
-      parsed.data as Record<string, unknown>,
-      { isReadOnly, isMutation, ...(inputPath !== undefined ? { inputPath } : {}) }
-    );
-    if (preHook.kind === "deny") {
+    const preHook = await this.evaluatePreToolUse(toolCall, tool, parsed.data as Record<string, unknown>, {
+      isReadOnly,
+      isMutation,
+      ...(inputPath !== undefined ? { inputPath } : {}),
+    });
+    if (preHook.kind === 'deny') {
       if (preHook.auditEvent) yield preHook.auditEvent;
       return preHook.outcome;
     }
-    if (preHook.kind === "modify") {
+    if (preHook.kind === 'modify') {
       parsed.data = preHook.parsedData as typeof parsed.data;
       isReadOnly = preHook.isReadOnly;
       isMutation = preHook.isMutation;
       inputPath = preHook.inputPath;
     }
-    if (preHook.kind === "ask") {
+    if (preHook.kind === 'ask') {
       // S6 — hook-ask shares the SAME durable HITL gate as permission-ask. The
       // pause path throws ApprovalPauseSignal which bubbles to run() with no extra
       // handling here; approve falls through to the remaining gates + execution.
       const outcome = yield* this.resolveApproval(toolCall, preHook.request);
-      if (outcome !== "approved") {
+      if (outcome !== 'approved') {
         this.rememberToolRecoveryHint({
-          kind: "approval_denied",
+          kind: 'approval_denied',
           toolName: toolCall.name,
           reason: preHook.request.reason,
-          nextAction: "Do not retry the rejected tool call. Ask the user for explicit approval or choose a lower-risk alternative."
+          nextAction:
+            'Do not retry the rejected tool call. Ask the user for explicit approval or choose a lower-risk alternative.',
         });
         return await this.createObservedToolRunOutcome(
           toolCall,
@@ -5169,7 +5691,7 @@ export class AgentRunner {
           `Permission denied for tool "${toolCall.name}": ${preHook.request.reason}`,
           inputPath,
           isReadOnly,
-          isMutation
+          isMutation,
         );
       }
     }
@@ -5180,10 +5702,11 @@ export class AgentRunner {
         ? `The current user request explicitly forbids tool "${tool.name}".`
         : userDeniedReason;
       this.rememberToolRecoveryHint({
-        kind: "permission_denied",
+        kind: 'permission_denied',
         toolName: tool.name,
         reason,
-        nextAction: "Do not retry the forbidden or constrained tool. Report the limitation or choose an allowed alternative."
+        nextAction:
+          'Do not retry the forbidden or constrained tool. Report the limitation or choose an allowed alternative.',
       });
       return await this.createObservedToolRunOutcome(
         toolCall,
@@ -5191,7 +5714,7 @@ export class AgentRunner {
         `Permission denied for tool "${tool.name}": ${reason}`,
         inputPath,
         isReadOnly,
-        isMutation
+        isMutation,
       );
     }
 
@@ -5200,7 +5723,7 @@ export class AgentRunner {
       this.verificationRepairGuardHint = {
         deniedTool: tool.name,
         reason: guardDenial.reason,
-        nextAction: guardDenial.nextAction
+        nextAction: guardDenial.nextAction,
       };
       return await this.createObservedToolRunOutcome(
         toolCall,
@@ -5208,7 +5731,7 @@ export class AgentRunner {
         guardDenial.content,
         inputPath,
         isReadOnly,
-        isMutation
+        isMutation,
       );
     }
 
@@ -5216,15 +5739,15 @@ export class AgentRunner {
       tool.name,
       this.toolExecutionPolicy?.requiredBefore?.[tool.name] ?? [],
       this.toolExecutionPolicy?.requiredBeforeAny?.[tool.name] ?? [],
-      successfulToolNames
+      successfulToolNames,
     );
     const policyAudit = await this.recordToolPolicyAudit(
       toolCall,
-      policyRequirements.missingBefore.length > 0 || policyRequirements.missingBeforeAny.length > 0 ? "deny" : "allow",
+      policyRequirements.missingBefore.length > 0 || policyRequirements.missingBeforeAny.length > 0 ? 'deny' : 'allow',
       policyRequirements.requiredBefore,
       policyRequirements.missingBefore,
       policyRequirements.requiredBeforeAny,
-      policyRequirements.missingBeforeAny
+      policyRequirements.missingBeforeAny,
     );
     if (policyAudit) yield policyAudit;
     if (policyRequirements.missingBefore.length > 0 || policyRequirements.missingBeforeAny.length > 0) {
@@ -5232,10 +5755,10 @@ export class AgentRunner {
         toolCall,
         false,
         [
-          `Tool policy "${this.toolExecutionPolicy?.name ?? "unnamed"}" denied tool "${tool.name}":`,
-          `requires successful prior tool call(s): ${[...policyRequirements.missingBefore, ...policyRequirements.missingBeforeAny].join(", ")}.`
-        ].join(" "),
-        inputPath
+          `Tool policy "${this.toolExecutionPolicy?.name ?? 'unnamed'}" denied tool "${tool.name}":`,
+          `requires successful prior tool call(s): ${[...policyRequirements.missingBefore, ...policyRequirements.missingBeforeAny].join(', ')}.`,
+        ].join(' '),
+        inputPath,
       );
     }
 
@@ -5243,7 +5766,7 @@ export class AgentRunner {
     if (guidancePolicyDenial) {
       const guidancePolicyAudit = await this.recordToolPolicyAudit(
         toolCall,
-        "deny",
+        'deny',
         guidancePolicyDenial.requiredBefore,
         guidancePolicyDenial.missingBefore,
         [],
@@ -5253,8 +5776,8 @@ export class AgentRunner {
           policyName: guidancePolicyDenial.policyName,
           reason: guidancePolicyDenial.reason,
           nextAction: guidancePolicyDenial.nextAction,
-          priorityTools: guidancePolicyDenial.priorityTools
-        }
+          priorityTools: guidancePolicyDenial.priorityTools,
+        },
       );
       if (guidancePolicyAudit) yield guidancePolicyAudit;
       return await this.createObservedToolRunOutcome(
@@ -5263,11 +5786,11 @@ export class AgentRunner {
         [
           `Tool policy "${guidancePolicyDenial.policyName}" denied tool "${tool.name}":`,
           guidancePolicyDenial.reason,
-          guidancePolicyDenial.nextAction
-        ].join(" "),
+          guidancePolicyDenial.nextAction,
+        ].join(' '),
         inputPath,
         isReadOnly,
-        isMutation
+        isMutation,
       );
     }
 
@@ -5279,28 +5802,28 @@ export class AgentRunner {
       workspaceRoot: this.workspaceRoot,
       blockedTools: this.permissions.blockedTools,
       toolPolicies: this.permissions.toolPolicies,
-      pathRules: this.permissions.pathRules
+      pathRules: this.permissions.pathRules,
     });
 
-    if (permission.status === "deny") {
+    if (permission.status === 'deny') {
       await this.recordPermissionAudit(toolCall, permission);
       const recoveryTools = this.externalWorkspaceAccessRecoveryTools(permission.reason);
       this.rememberToolRecoveryHint({
-        kind: "permission_denied",
+        kind: 'permission_denied',
         toolName: toolCall.name,
         reason: permission.reason,
         ...(recoveryTools.length > 0 ? { availableTools: recoveryTools } : {}),
-        nextAction: permissionDeniedNextAction(permission.reason, recoveryTools)
+        nextAction: permissionDeniedNextAction(permission.reason, recoveryTools),
       });
       return await this.createObservedToolRunOutcome(
         toolCall,
         false,
         `Permission denied for tool "${toolCall.name}": ${permission.reason}`,
-        inputPath
+        inputPath,
       );
     }
 
-    if (permission.status === "ask") {
+    if (permission.status === 'ask') {
       const request: ApprovalRequest = {
         toolCallId: toolCall.id,
         approvalId: crypto.randomUUID(),
@@ -5309,17 +5832,17 @@ export class AgentRunner {
         reason: permission.reason,
         riskLevel: permission.riskLevel,
         summary: permission.audit.summary,
-        preview: permission.audit.preview
+        preview: permission.audit.preview,
       };
       await this.recordPermissionAudit(toolCall, permission);
       await this.checkpoint({
-        status: "awaiting_approval",
-        phase: "approving",
+        status: 'awaiting_approval',
+        phase: 'approving',
         turns,
         summary: `awaiting approval for ${tool.name}`,
         toolCallId: toolCall.id,
         toolName: tool.name,
-        reason: permission.reason
+        reason: permission.reason,
       });
 
       // S6 — route through the single durable HITL gate. It writes the
@@ -5327,28 +5850,29 @@ export class AgentRunner {
       // decision / fast-lane handler, or throws ApprovalPauseSignal (durable
       // pause) which bubbles to run() → a `paused` result.
       const outcome = yield* this.resolveApproval(toolCall, request);
-      if (outcome !== "approved") {
+      if (outcome !== 'approved') {
         this.rememberToolRecoveryHint({
-          kind: "approval_denied",
+          kind: 'approval_denied',
           toolName: toolCall.name,
           reason: permission.reason,
-          nextAction: "Do not retry the rejected tool call. Ask the user for explicit approval or choose a lower-risk alternative."
+          nextAction:
+            'Do not retry the rejected tool call. Ask the user for explicit approval or choose a lower-risk alternative.',
         });
         return await this.createObservedToolRunOutcome(
           toolCall,
           false,
           `Permission denied for tool "${toolCall.name}": ${permission.reason}`,
-          inputPath
+          inputPath,
         );
       }
     }
 
     const changePath = isReadOnly ? undefined : inputPath;
-    const beforeChangeContent = changePath === undefined
-      ? undefined
-      : await readWorkspaceTextSnapshot(this.workspaceRoot, changePath);
+    const beforeChangeContent =
+      changePath === undefined ? undefined : await readWorkspaceTextSnapshot(this.workspaceRoot, changePath);
     let ok = false;
-    let content = "";
+    let content = '';
+    let data: unknown;
     let newMessages: AgentMessage[] | undefined;
     let contextUpdates: ToolContextUpdates | undefined;
     for (let attempt = 0; attempt <= this.maxToolRetries; attempt += 1) {
@@ -5356,12 +5880,14 @@ export class AgentRunner {
         const result = await tool.run(parsed.data, context);
         ok = result.ok;
         content = result.content;
+        data = result.data;
         newMessages = result.newMessages;
         contextUpdates = result.contextUpdates;
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         ok = false;
         content = `Tool "${tool.name}" failed: ${message}`;
+        data = undefined;
         newMessages = undefined;
         contextUpdates = undefined;
       }
@@ -5371,11 +5897,11 @@ export class AgentRunner {
     if (!ok) {
       const recoveryTools = this.toolFailureRecoveryTools(tool.name, content);
       this.rememberToolRecoveryHint({
-        kind: "tool_failed",
+        kind: 'tool_failed',
         toolName: tool.name,
         reason: content,
         ...(recoveryTools.length > 0 ? { availableTools: recoveryTools } : {}),
-        nextAction: toolFailureNextAction(tool.name, content, recoveryTools)
+        nextAction: toolFailureNextAction(tool.name, content, recoveryTools),
       });
     }
 
@@ -5384,34 +5910,35 @@ export class AgentRunner {
       if (beforeChangeContent !== afterChangeContent) {
         const change = await new FileWorkspaceChangeStore({
           workspaceRoot: this.workspaceRoot,
-          xenesisHome: this.xenesisHome
+          xenesisHome: this.xenesisHome,
         }).record({
           sessionId: this.sessionId,
           toolCallId: toolCall.id,
           toolName: tool.name,
           path: changePath,
           beforeContent: beforeChangeContent,
-          afterContent: afterChangeContent
+          afterContent: afterChangeContent,
         });
         yield await this.record({
-          type: "workspace_change",
+          type: 'workspace_change',
           changeId: change.id,
           action: change.action,
           path: change.path,
-          toolName: change.toolName
+          toolName: change.toolName,
         });
       }
     }
 
     for (const event of emittedEvents) {
-      yield await this.record({ type: "tool_event", event });
+      yield await this.record({ type: 'tool_event', event });
     }
 
     const outcome = await this.createObservedToolRunOutcome(toolCall, ok, content, inputPath, isReadOnly, isMutation);
     return {
       ...outcome,
+      ...(data !== undefined ? { data } : {}),
       ...(newMessages && newMessages.length > 0 ? { newMessages } : {}),
-      ...(contextUpdates ? { contextUpdates } : {})
+      ...(contextUpdates ? { contextUpdates } : {}),
     };
   }
 
@@ -5421,27 +5948,29 @@ export class AgentRunner {
     content: string,
     inputPath?: string,
     isReadOnly?: boolean,
-    isMutation?: boolean
+    isMutation?: boolean,
   ): Promise<ToolRunOutcome> {
     if (content.length <= this.maxToolResultChars) {
       return toolRunOutcome(toolCall, ok, content, this.maxToolResultChars, inputPath, isReadOnly, isMutation);
     }
 
-    const directory = resolve(this.xenesisHome, "tool-results", sanitizeFileSegment(this.sessionId));
+    const directory = resolve(this.xenesisHome, 'tool-results', sanitizeFileSegment(this.sessionId));
     await mkdir(directory, { recursive: true });
-    const path = resolve(
-      directory,
-      `${sanitizeFileSegment(toolCall.id)}-${sanitizeFileSegment(toolCall.name)}.txt`
-    );
-    await writeFile(path, content, "utf8");
+    const path = resolve(directory, `${sanitizeFileSegment(toolCall.id)}-${sanitizeFileSegment(toolCall.name)}.txt`);
+    await writeFile(path, content, 'utf8');
 
     const preview = truncateToolContent(content, this.maxToolResultChars);
-    const wrapped = wrapModelVisibleToolResult(toolCall, storedToolResultContent({
+    const wrapped = wrapModelVisibleToolResult(
       toolCall,
-      path,
-      originalChars: content.length,
-      preview
-    }), isReadOnly, isMutation);
+      storedToolResultContent({
+        toolCall,
+        path,
+        originalChars: content.length,
+        preview,
+      }),
+      isReadOnly,
+      isMutation,
+    );
     const warnings = userFacingExternalContentWarnings(wrapped);
     return {
       ok,
@@ -5452,13 +5981,13 @@ export class AgentRunner {
       ...(isReadOnly !== undefined ? { isReadOnly } : {}),
       ...(isMutation !== undefined ? { isMutation } : {}),
       storedEvent: {
-        type: "tool_result_stored",
+        type: 'tool_result_stored',
         toolCallId: toolCall.id,
         name: toolCall.name,
         path,
         originalChars: content.length,
-        previewChars: preview.length
-      }
+        previewChars: preview.length,
+      },
     };
   }
 }

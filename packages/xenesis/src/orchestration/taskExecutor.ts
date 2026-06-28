@@ -97,7 +97,8 @@ export function createPipelineTaskExecutor(options: PipelineTaskExecutorOptions)
         // auto-denying every approval (the prior `() => false` bug).
         abortSignal: context.signal,
         maxTokensBudget: maxTokens,
-        stream: false
+        stream: false,
+        disposeRunner: true
       });
     } catch (error) {
       runError = error;

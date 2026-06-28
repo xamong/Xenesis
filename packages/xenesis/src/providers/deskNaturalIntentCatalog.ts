@@ -69,6 +69,9 @@ export const APP_AUTOMATION_STRATEGY = [
   "Use browser or UI automation only when no stable API, SDK/CLI, file format, add-in route, or visible Desk browser elementAction route exists. Use xd.automation.ui.plan/run for complex/headless web automation or desktop application control. For Windows desktop tasks, xd.automation.ui.plan/run routes bounded window inventory, inspect, focus, sendKeys, invoke, setValue, and click actions through Windows UIAutomation.",
   "For desktop UI automation, if the user says only a generic control such as input field, textbox, or button without a visible control name, do an inspect-only run first, then use the inspected name, automationId, or controlType in a second run. Do not combine inspect with generic setValue/click actions in the same approval payload.",
   "For Windows desktop tasks, inspect once when discovery is needed, then move to concrete setValue, invoke, click, sendKeys, or focusWindow actions when the user names visible controls and values or an earlier turn already inspected the target. Do not repeat inspect-only approvals as the next step for the same requested desktop action.",
+  "For visible external desktop app requests such as Notepad or KakaoTalk, first call xd.apps.status without a target to read registered profiles and disabled state when the appId is uncertain.",
+  "Use registered appId values from profile readback; prefer xd.apps.launch, xd.apps.find, xd.apps.focus, xd.apps.resize, and targeted xd.apps.status for window management before generic UI automation.",
+  "Do not type, hotkey, send, delete, or submit inside external desktop apps unless the user asked for that exact action; call approval-required xd.apps.typeText or xd.apps.hotkey with approved=false and stop if pending.",
   "Route available Desk actions through the registered CR capability families; do not invent xd.office or xd.appAutomation path names.",
   "Before final answers for immediately executed or read-only app/document work, verify with render/export/readback evidence such as file readback, open document state, document mode readback, terminal output, browser state, screenshot/capture, or exported artifact status. Pending approval is a stop state, not a completed result.",
   "For send/delete/external share/payment/legal/financial submissions or other irreversible external actions, create the real Desk approval request instead of completing silently."
@@ -322,12 +325,40 @@ export const DESK_NATURAL_INTENT_CATALOG: readonly DeskNaturalIntent[] = [
     guidance: "Use Office file-format CR executors for Word/Excel/PowerPoint work first. For generate, set intent and provide layoutPlan for Word/docx or PowerPoint/pptx unless the user explicitly asks for a plain/simple file. Word layoutPlan.sections can use types cover, summary, heading, paragraphs/content, callout, table/comparison/matrix, checklist/action-items, timeline/process/roadmap, quote, and appendix. PowerPoint layoutPlan.slides can use roles title, agenda, section, comparison, timeline/process, metrics/scorecard, matrix/risk, recommendation/decision, closing, and content. Use paragraphs/slides as legacy fallback content, not as the only structure for rich documents. For Excel/xlsx, use sheets. For edit, use appendParagraphs for Word/docx, appendRows with sheetName and rows for Excel/xlsx, and appendSlides for PowerPoint/pptx; do not send generation-only paragraphs, sheets, slides, or layoutPlan fields to xd.documents.office.edit. If generate, edit, or export needs approval, create the approved=false request and answer with generic Desk approval language only; if the result is pending approval, stop this provider turn and do not run same-turn inspect or verify. Do not echo hidden or remembered titles, marker identifiers, content values, file paths, raw args, CR paths, tool names, approval ids, approvalRequired, or actionInboxItem in user-facing text. After generate or edit has executed immediately, or in a later verification turn after approval execution, call inspect or verify before answering. Use Graph, Office.js, or COM plan paths before execute paths when the user needs host/API/app behavior that file-format execution cannot provide; execute only when the required credentials, host bridge, or installed Office app support are available."
   },
   {
+    id: "external.app",
+    family: "app_automation",
+    description: "For natural registered external desktop app launch, status, window management, and explicitly requested keyboard input requests.",
+    sampleUserRequests: [
+      "메모장 열어줘",
+      "KakaoTalk 상태 확인해",
+      "Notepad 창 찾아서 오른쪽으로 옮겨줘"
+    ],
+    slots: ["appId", "windowId", "processName", "titleContains", "path", "text", "keys", "x", "y", "width", "height", "mode"],
+    execute: { path: "xd.apps.status" },
+    alternativePaths: [
+      "xd.apps.launch",
+      "xd.apps.find",
+      "xd.apps.focus",
+      "xd.apps.resize",
+      "xd.apps.typeText",
+      "xd.apps.hotkey",
+      "xd.apps.close",
+      "xd.automation.ui.plan",
+      "xd.automation.ui.run"
+    ],
+    readbackPaths: [
+      "xd.apps.status",
+      "xd.apps.find"
+    ],
+    guidance: "For visible external desktop app requests, use no-target xd.apps.status first when the registered appId or enabled/disabled profile state is uncertain. Use registered appId values from profile readback and prefer xd.apps.launch/find/focus/resize/status for launch and window management before generic UI automation. Only use xd.apps.typeText or xd.apps.hotkey when the user explicitly asks to type, send keys, or perform a hotkey; call them with approved=false when approval is required and stop if pending. Use xd.automation.ui.plan/run only after registered app control cannot identify or control the needed desktop UI element."
+  },
+  {
     id: "ui.automation",
     family: "app_automation",
-    description: "For natural UI automation requests over web pages or desktop applications.",
+    description: "For natural UI automation requests over web pages or desktop controls after stable browser and registered external app CR paths are insufficient.",
     sampleUserRequests: [
       "웹 페이지에서 이 버튼을 눌러보고 결과 확인해",
-      "데스크톱 앱 제어가 가능한지 먼저 확인해",
+      "등록되지 않은 데스크톱 앱의 특정 버튼을 검사해",
       "브라우저에서 실제 화면 조작으로 입력하고 캡처를 남겨줘"
     ],
     slots: ["target", "actions", "url", "app"],
@@ -337,7 +368,9 @@ export const DESK_NATURAL_INTENT_CATALOG: readonly DeskNaturalIntent[] = [
       "xd.playwright.snapshot",
       "xd.playwright.run",
       "xd.panes.browser.open",
-      "xd.panes.browser.state"
+      "xd.panes.browser.state",
+      "xd.apps.status",
+      "xd.apps.find"
     ],
     readbackPaths: [
       "xd.automation.ui.plan",
@@ -345,7 +378,7 @@ export const DESK_NATURAL_INTENT_CATALOG: readonly DeskNaturalIntent[] = [
       "xd.panes.browser.state",
       "xd.capture.activePane"
     ],
-    guidance: "Plan UI automation first for desktop targets. Use UI automation for clicking, typing, selecting, focusing, invoking, or inspecting desktop controls, not for simple read-only Desk browser/document text extraction and not for simple visible Desk browser form fill/click/select/press controls. For visible Desk browser forms, use browser.control with xd.panes.browser.elementAction first. Web targets can run through xd.automation.ui.run and Playwright when complex or headless interaction is required after visible Desk browser elementAction is insufficient, when the user explicitly asks for actual screen operation, or when a screenshot/capture artifact is part of the requested proof. For web actions, use the supported action names fill, click, press, waitForSelector, waitForTimeout, text, expectText, and screenshot; prefer expectText for assertions. The executor also normalizes common assertion aliases assertText and waitForText to expectText. Windows desktop targets can run through xd.automation.ui.run and Windows UIAutomation for listWindows, inspect, focusWindow, sendKeys, invoke, setValue, and click actions. If approval is required, call the concrete UI automation capability with approved=false so the Agent chat can render inline approval; if the call returns pending approval, stop this provider turn with generic approval-needed product language. Do not answer only that approval is needed before creating the real record. If the user says only a generic desktop control name such as input field, textbox, or button, run inspect by itself first, then use the inspected name, automationId, or controlType in a second run; do not combine inspect with generic setValue/click actions in the same approval payload. Inspect once when discovery is needed, then move to concrete setValue/invoke/click/sendKeys/focusWindow actions when the user names visible controls and values or an earlier turn already inspected the target; do not repeat inspect-only approvals as the next step for the same requested desktop action. If the platform cannot provide a desktop backend, report that concrete blocker instead of pretending the action ran."
+    guidance: "Use UI automation for clicking, typing, selecting, focusing, invoking, or inspecting desktop controls only after simple read-only Desk browser/document extraction, visible Desk browser elementAction, and registered external app xd.apps.* paths are insufficient. For visible Desk browser forms, use browser.control with xd.panes.browser.elementAction first. For registered external desktop apps, use external.app and xd.apps.status/find/launch/focus/resize/status first. Web targets can run through xd.automation.ui.run and Playwright when complex or headless interaction is required after visible Desk browser elementAction is insufficient, when the user explicitly asks for actual screen operation, or when a screenshot/capture artifact is part of the requested proof. For web actions, use the supported action names fill, click, press, waitForSelector, waitForTimeout, text, expectText, and screenshot; prefer expectText for assertions. The executor also normalizes common assertion aliases assertText and waitForText to expectText. Windows desktop targets can run through xd.automation.ui.run and Windows UIAutomation for listWindows, inspect, focusWindow, sendKeys, invoke, setValue, and click actions. If approval is required, call the concrete UI automation capability with approved=false so the Agent chat can render inline approval; if the call returns pending approval, stop this provider turn with generic approval-needed product language. Do not answer only that approval is needed before creating the real record. If the user says only a generic desktop control name such as input field, textbox, or button without a registered app control path, run inspect by itself first, then use the inspected name, automationId, or controlType in a second run; do not combine inspect with generic setValue/click actions in the same approval payload. Inspect once when discovery is needed, then move to concrete setValue/invoke/click/sendKeys/focusWindow actions when the user names visible controls and values or an earlier turn already inspected the target; do not repeat inspect-only approvals as the next step for the same requested desktop action. If the platform cannot provide a desktop backend, report that concrete blocker instead of pretending the action ran."
   },
   {
     id: "agent.artifact",

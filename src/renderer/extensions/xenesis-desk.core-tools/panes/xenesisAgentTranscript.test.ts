@@ -77,3 +77,28 @@ test('summarizeXenesisTranscriptActivity excludes noisy streaming byte entries',
   assert.equal(summary.totalCount, 1);
   assert.equal(summary.items[0]?.kind, 'result');
 });
+
+test('summarizeXenesisTranscriptActivity includes turn ledger status entries', () => {
+  const summary = summarizeXenesisTranscriptActivity([
+    {
+      id: 'turn-1',
+      at: '2026-06-28T00:00:00.000Z',
+      kind: 'turn_ledger',
+      summary: 'Desk approval needed',
+      detail: JSON.stringify({ status: 'waiting_for_approval', turnId: 'turn-1' }),
+    },
+    {
+      id: 'turn-2',
+      at: '2026-06-28T00:00:01.000Z',
+      kind: 'turn_ledger',
+      summary: 'Run completed',
+      detail: JSON.stringify({ status: 'completed', turnId: 'turn-2' }),
+    },
+  ]);
+
+  assert.equal(summary.totalCount, 2);
+  assert.equal(summary.items[0]?.label, 'Turn');
+  assert.equal(summary.items[0]?.status, 'waiting');
+  assert.equal(summary.items[1]?.label, 'Turn');
+  assert.equal(summary.items[1]?.status, 'ok');
+});

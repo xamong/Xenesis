@@ -46,3 +46,15 @@ test("explicit keyed provider with no key is not silently switched (honest auth 
   });
   assert.equal(result.provider, 'openai');
 });
+
+test('explicit OpenAI-compatible UI providers do not silently fall back to codex-cli', () => {
+  for (const provider of ['lmstudio', 'together', 'fireworks', 'azure']) {
+    const result = buildXenesisProviderRuntimeOptions({
+      aiProvider: { provider, model: 'provider-model', apiKey: '', baseUrl: '' },
+      env: {},
+    });
+
+    assert.notEqual(result.provider, 'codex-cli', `${provider} should not become codex-cli`);
+    assert.equal(result.provider, 'openai-compatible', `${provider} should use the compatible runtime adapter`);
+  }
+});

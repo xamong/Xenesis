@@ -133,10 +133,12 @@ export async function runResolvedWorkflow(options: RunResolvedWorkflowOptions) {
         attachments: index === 0 ? options.attachments : undefined,
         abortSignal: options.abortSignal,
         stream: options.stream,
+        disposeRunner: options.disposeRunner,
         ideContext: options.workflow.ideContext,
         traceId: options.traceId,
         sessionId: options.sessionId ?? sessionId,
         historyMessages: index === 0 ? options.historyMessages : undefined,
+        turnLedger: options.turnLedger,
         ...workflowStepPipeline(options.workflow, step),
         applyConfiguredWorkflow: false,
         ...(hasExplicitSteps ? {

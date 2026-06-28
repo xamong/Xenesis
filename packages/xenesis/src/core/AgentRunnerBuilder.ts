@@ -24,6 +24,7 @@ import {
 } from "./AgentRuntimeFactory.js";
 import type { AgentMessage } from "./messages.js";
 import type { ToolRegistry } from "../tools/index.js";
+import type { XenesisTurnLedger } from "./turnLedger.js";
 import { modelContextWindow } from "./context/modelMetadata.js";
 import { createLlmSummarizer, SUMMARIZER_MIN_CONTEXT } from "./context/compaction/llmSummarizer.js";
 import { buildProviderQueryConfig } from "../providers/queryConfig.js";
@@ -90,6 +91,7 @@ export interface BuildAgentRunnerOptions {
    * LOCAL_BACKEND (byte-for-byte today). Inject for Docker / remote exec.
    */
   executionBackend?: ExecutionBackend;
+  turnLedger?: XenesisTurnLedger;
 }
 
 interface SimpleLogger {
@@ -350,7 +352,8 @@ export async function buildAgentRunner(options: BuildAgentRunnerOptions): Promis
         recordLifecycle: true,
         hookRegistry,
         maxStopHookContinuations: options.config.hooks?.maxStopHookContinuations ?? 3,
-        ...(options.executionBackend !== undefined ? { executionBackend: options.executionBackend } : {})
+        ...(options.executionBackend !== undefined ? { executionBackend: options.executionBackend } : {}),
+        ...(options.turnLedger !== undefined ? { turnLedger: options.turnLedger } : {})
       })
     };
   } catch (error) {

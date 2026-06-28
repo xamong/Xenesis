@@ -1,8 +1,8 @@
 import { z } from "zod";
-import type { Tool, ToolContext } from "./types.js";
-import { callCapabilityPath } from "./deskBridgeTools.js";
-import { renderSurfaceSnapshot, type SurfaceElement, type SurfaceSnapshot } from "../core/surface/index.js";
 import { wrapExternalContent } from "../core/prompt/ExternalContentPolicy.js";
+import { renderSurfaceSnapshot, type SurfaceElement, type SurfaceSnapshot } from "../core/surface/index.js";
+import { callCapabilityPath } from "./deskBridgeTools.js";
+import type { Tool, ToolContext } from "./types.js";
 
 /**
  * P7 AGENT-SIDE: `computer_use` — native Windows app perception + control via the
@@ -35,7 +35,8 @@ const computerUseInput = z.object({
     "drag",
     "set_value",
     "focus_app",
-    "list_apps"
+    "list_apps",
+    "stop",
   ]),
   mode: captureModeSchema.default("som"),
   app: z.string().min(1).optional(),
@@ -49,7 +50,7 @@ const computerUseInput = z.object({
   amount: z.number().int().positive().default(3),
   raise_window: z.boolean().default(false),
   approved: z.boolean().default(false),
-  timeoutMs: z.number().int().positive().max(60_000).default(15_000)
+  timeoutMs: z.number().int().positive().max(60_000).default(15_000),
 });
 
 // OpenAI/strict-schema twin: every optional becomes .nullable() with NO .default/.optional.
@@ -63,7 +64,8 @@ const computerUseOpenAIInput = z.object({
     "drag",
     "set_value",
     "focus_app",
-    "list_apps"
+    "list_apps",
+    "stop",
   ]),
   mode: captureModeSchema.nullable(),
   app: z.string().min(1).nullable(),
@@ -77,7 +79,7 @@ const computerUseOpenAIInput = z.object({
   amount: z.number().int().positive().nullable(),
   raise_window: z.boolean().nullable(),
   approved: z.boolean().nullable(),
-  timeoutMs: z.number().int().positive().max(60_000).nullable()
+  timeoutMs: z.number().int().positive().max(60_000).nullable(),
 });
 
 type ComputerUseInput = z.infer<typeof computerUseInput>;
@@ -228,7 +230,7 @@ export function createComputerUseTool(): Tool<ComputerUseInput, Record<string, u
     ].join(" "),
     inputSchema: computerUseInput,
     openaiInputSchema: computerUseOpenAIInput,
-    isReadOnly: (input) => input.action === "capture" || input.action === "list_apps",
+    isReadOnly: (input) => input.action === "capture" || input.action === "list_apps" || input.action === "stop",
     shouldDefer: true,
     searchHint: "computer use windows native app gui desktop screen automation accessibility uia capture click type key scroll drag set value focus app som vision",
     cleanupSession: async (sessionId) => {
@@ -350,6 +352,15 @@ export function createComputerUseTool(): Tool<ComputerUseInput, Record<string, u
           };
         }
 
+        if (action === "stop") {
+          const payload = await dispatch(context, "stop", {}, approved, input.timeoutMs ?? 15_000);
+          if (payload.ok === false) {
+            if (isNotWired(payload.error)) return { ok: false, content: NOT_AVAILABLE_MESSAGE, data: payload };
+            return { ok: false, content: String(payload.error ?? "computer_use stop failed."), data: payload };
+          }
+          return { ok: true, content: "computer_use stop: stopped.", data: payload };
+        }
+
         // -------------------------------------------------------------------
         // Build normalized args + run CLIENT-SIDE safety hard-blocks BEFORE dispatch.
         // -------------------------------------------------------------------
@@ -417,7 +428,7 @@ export function createComputerUseTool(): Tool<ComputerUseInput, Record<string, u
               content: `computer_use set_value refused: element [${input.element}] "${label}" looks like a permission/sign-in/payment/secret control.${DESK_MUST_ENFORCE_NOTE}`
             };
           }
-          args = { element: input.element, value: input.text };
+          args = { element: input.element, text: input.text };
         } else if (action === "drag") {
           if (input.from === undefined || input.from === null || input.to === undefined || input.to === null) {
             return { ok: false, content: 'computer_use drag requires "from" and "to".' };

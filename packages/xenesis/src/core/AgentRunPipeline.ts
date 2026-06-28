@@ -40,6 +40,7 @@ import {
   collectOperationalFailureContext
 } from "./operationalFailureContext.js";
 import type { ResumableRunState } from "./resume/ResumableRunState.js";
+import type { XenesisTurnLedger } from "./turnLedger.js";
 import { runVerifyFixLoop } from "./verifyFix.js";
 
 export interface AgentRunPipelineWorkflowStep {
@@ -99,6 +100,13 @@ export interface AgentRunPipelineOptions {
    */
   injectedApprovalDecision?: ApprovalDecision;
   stream?: boolean;
+  /**
+   * Dispose the built runner and its providers when this pipeline attempt ends.
+   * One-shot CLI/background callers opt in so persistent CLI providers do not
+   * keep the process alive. Embedded Desk Agent turns leave this false to reuse
+   * persistent provider sessions across turns.
+   */
+  disposeRunner?: boolean;
   onEvent?: (event: AgentRunEvent) => void | Promise<void>;
   onMessages?: (messages: AgentMessage[]) => void | Promise<void>;
   onSessionWriter?: (writer: JsonlSessionWriter, sessionId: string) => void;
@@ -108,6 +116,7 @@ export interface AgentRunPipelineOptions {
   toolExecutionPolicy?: ToolExecutionPolicy;
   allowedTools?: string[];
   applyConfiguredWorkflow?: boolean;
+  turnLedger?: XenesisTurnLedger;
 }
 
 export interface AgentRunPipelineResult {
@@ -420,7 +429,8 @@ export async function runAgentPipeline(options: AgentRunPipelineOptions): Promis
     guard,
     toolExecutionPolicy,
     allowedTools: options.allowedTools,
-    onNotice: options.onNotice
+    onNotice: options.onNotice,
+    turnLedger: options.turnLedger
   });
   options.onSessionWriter?.(built.sessionWriter, built.sessionId);
   await emitPipelineEvent(built.sessionWriter, {
@@ -454,6 +464,7 @@ export async function runAgentPipeline(options: AgentRunPipelineOptions): Promis
         prompt,
         attachments: options.attachments,
         sessionWriter: built.sessionWriter,
+        disposeRunner: options.disposeRunner === true,
         onEvent: options.onEvent,
         onMessages: async (messages) => {
           capturedMessages = messages;
@@ -525,13 +536,15 @@ export async function runAgentPipeline(options: AgentRunPipelineOptions): Promis
             guard,
             toolExecutionPolicy,
             allowedTools: options.allowedTools,
-            onNotice: options.onNotice
+            onNotice: options.onNotice,
+            turnLedger: options.turnLedger
           });
           let fixMessages: AgentMessage[] = [];
           const fixExecution = await executeAgentRun({
             runner: fixBuilt.runner,
             prompt,
             sessionWriter: fixBuilt.sessionWriter,
+            disposeRunner: options.disposeRunner === true,
             onEvent: options.onEvent,
             onMessages: async (messages) => {
               fixMessages = messages;

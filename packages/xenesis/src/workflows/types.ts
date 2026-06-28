@@ -99,7 +99,9 @@ export interface RunResolvedWorkflowOptions {
   attachments?: AgentMessageAttachment[];
   abortSignal?: AbortSignal;
   stream?: boolean;
+  disposeRunner?: AgentRunPipelineOptions["disposeRunner"];
   runPipeline: WorkflowRunPipeline;
+  turnLedger?: AgentRunPipelineOptions["turnLedger"];
   onEvent?: (event: AgentRunPipelineResult["events"][number]) => void | Promise<void>;
   onNotice?: (line: string) => void | Promise<void>;
   onSession?: (sessionId: string) => void | Promise<void>;

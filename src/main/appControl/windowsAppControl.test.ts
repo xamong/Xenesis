@@ -55,3 +55,21 @@ test('Windows adapter builds focus resize and keyboard scripts', async () => {
   assert.match(commands[3] || '', /SendKeys/);
   assert.match(commands[3] || '', /\^s/i);
 });
+
+test('Windows adapter status can target a specific window id', async () => {
+  const commands: string[] = [];
+  const adapter = createWindowsAppControlAdapter({
+    runPowerShell: async (script) => {
+      commands.push(script);
+      return JSON.stringify({
+        ok: true,
+        action: 'status',
+        windows: [{ windowId: '1001', title: 'Untitled - Notepad' }],
+      });
+    },
+  });
+
+  await adapter.status({ windowId: '1001' });
+
+  assert.match(commands[0] || '', /-WindowId '1001'/);
+});

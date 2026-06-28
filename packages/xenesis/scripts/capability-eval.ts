@@ -3,7 +3,7 @@ import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawn } from "node:child_process";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import {
@@ -13,6 +13,7 @@ import {
   mergeCapabilityScenarios,
   runCapabilityEvalSuite,
   updateCapabilityEvalHistory,
+  type CapabilityAcceptanceEvidence,
   type CapabilityEvalHistory,
   type CapabilityEvalUsage,
   type CapabilityScenario
@@ -942,6 +943,7 @@ interface CliRunResult {
   stdout: string;
   stderr: string;
   durationMs: number;
+  acceptanceEvidence?: CapabilityAcceptanceEvidence;
   usage?: CapabilityEvalUsage;
   usageUnavailableReason?: string;
 }
@@ -1001,6 +1003,234 @@ async function readSessionUsage(path: string): Promise<CapabilityEvalUsage | und
   return extractCapabilityUsageFromSessionRecords(records);
 }
 
+function unique(values: string[]) {
+  return Array.from(new Set(values.filter(Boolean)));
+}
+
+function recordObject(value: unknown): Record<string, unknown> | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  return value as Record<string, unknown>;
+}
+
+async function readSessionRecords(path: string): Promise<unknown[]> {
+  const raw = await readFile(path, "utf8");
+  return raw
+    .trimEnd()
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map((line) => {
+      try {
+        return JSON.parse(line) as unknown;
+      } catch {
+        return undefined;
+      }
+    })
+    .filter((record): record is unknown => record !== undefined);
+}
+
+function toolCallName(record: Record<string, unknown>) {
+  const toolCall = recordObject(record.toolCall);
+  return typeof toolCall?.name === "string" ? toolCall.name : undefined;
+}
+
+function toolCallId(record: Record<string, unknown>) {
+  const toolCall = recordObject(record.toolCall);
+  return typeof toolCall?.id === "string" ? toolCall.id : undefined;
+}
+
+function toolCallInput(record: Record<string, unknown>) {
+  const toolCall = recordObject(record.toolCall);
+  return recordObject(toolCall?.input);
+}
+
+function capabilityPathForTool(name: string, input?: Record<string, unknown>) {
+  if (name === "desk_active_context") return "xd.context.active";
+  if (name === "desk_state") return "xd.app.status";
+  if (name === "desk_recent_diagnostics") return "xd.diagnostics.recent";
+  if (name === "desk_safe_file_apply") return "xd.files.applyTextWrite";
+  if (name === "desk_call_capability" || name === "xenesis_desk_call_capability") {
+    return typeof input?.path === "string" && input.path.trim() ? input.path.trim() : undefined;
+  }
+  if (name === "desk_capability" || name === "xenesis_desk_capability") {
+    return typeof input?.path === "string" && input.path.trim() ? input.path.trim() : undefined;
+  }
+  return undefined;
+}
+
+function isReadbackTool(name: string) {
+  return (
+    name === "desk_active_context" ||
+    name === "desk_state" ||
+    name === "desk_recent_diagnostics" ||
+    name === "desk_capability" ||
+    name === "desk_capabilities" ||
+    name === "xenesis_desk_capability" ||
+    name === "xenesis_desk_capabilities"
+  );
+}
+
+function toolResultMessage(record: Record<string, unknown>) {
+  return recordObject(record.message);
+}
+
+function toolResultId(record: Record<string, unknown>) {
+  const message = toolResultMessage(record);
+  return typeof message?.toolCallId === "string" ? message.toolCallId : undefined;
+}
+
+function toolResultName(record: Record<string, unknown>) {
+  const message = toolResultMessage(record);
+  return typeof message?.name === "string" ? message.name : undefined;
+}
+
+function approvalRecordIdFromRecord(record: Record<string, unknown>) {
+  if (record.type === "permission_request") {
+    const request = recordObject(record.request);
+    return typeof request?.approvalId === "string" ? request.approvalId : undefined;
+  }
+  return undefined;
+}
+
+function assistantProviderEvidence(record: Record<string, unknown>) {
+  if (record.type !== "assistant_message") return undefined;
+  const message = recordObject(record.message);
+  const providerMetadata = recordObject(message?.providerMetadata);
+  if (!providerMetadata) return undefined;
+  const cli = recordObject(providerMetadata.cli);
+  if (cli) {
+    return {
+      provider: typeof cli.provider === "string" ? cli.provider : undefined,
+      processModel: processModelFromCliMetadata(cli),
+    };
+  }
+  if (recordObject(providerMetadata.openai)) return { provider: "openai" };
+  if (recordObject(providerMetadata.anthropic)) return { provider: "anthropic" };
+  return undefined;
+}
+
+function processModelFromCliMetadata(cli: Record<string, unknown>) {
+  if (typeof cli.processModel === "string") return cli.processModel;
+  if (cli.persistentSession === true) return "persistent-process";
+  if (cli.persistentSession === false) return "process-per-turn";
+  return undefined;
+}
+
+export function extractAcceptanceEvidenceFromSessionRecords(
+  records: readonly unknown[],
+): CapabilityAcceptanceEvidence | undefined {
+  let provider: string | undefined;
+  let processModel: string | undefined;
+  const toolCalls: string[] = [];
+  const capabilityPaths: string[] = [];
+  const readbacks: string[] = [];
+  const approvalRecords: string[] = [];
+  const toolPathById = new Map<string, string>();
+  const toolNameById = new Map<string, string>();
+
+  for (const raw of records) {
+    const record = recordObject(raw);
+    if (!record) continue;
+    const approvalId = approvalRecordIdFromRecord(record);
+    if (approvalId) approvalRecords.push(approvalId);
+    const assistantEvidence = assistantProviderEvidence(record);
+    if (assistantEvidence) {
+      provider = assistantEvidence.provider ?? provider;
+      processModel = assistantEvidence.processModel ?? processModel;
+    }
+
+    if (record.type === "tool_call") {
+      const name = toolCallName(record);
+      if (!name) continue;
+      const input = toolCallInput(record);
+      const id = toolCallId(record);
+      toolCalls.push(name);
+      const path = capabilityPathForTool(name, input);
+      if (path) capabilityPaths.push(path);
+      if (id) {
+        toolNameById.set(id, name);
+        if (path) toolPathById.set(id, path);
+      }
+      continue;
+    }
+
+    if (record.type === "tool_result" && record.ok === true) {
+      const id = toolResultId(record);
+      const name = (id ? toolNameById.get(id) : undefined) ?? toolResultName(record);
+      const path = id ? toolPathById.get(id) : undefined;
+      if (name && path && isReadbackTool(name)) readbacks.push(path);
+    }
+  }
+
+  const uniqueToolCalls = unique(toolCalls);
+  const uniqueCapabilityPaths = unique(capabilityPaths);
+  const uniqueReadbacks = unique(readbacks);
+  const uniqueApprovalRecords = unique(approvalRecords);
+  const evidence: CapabilityAcceptanceEvidence = {
+    ...(provider ? { provider, profileSource: "assistant-provider-metadata" } : {}),
+    ...(processModel ? { processModel } : {}),
+    toolCalls: uniqueToolCalls,
+    capabilityPaths: uniqueCapabilityPaths,
+    readbacks: uniqueReadbacks,
+    approvalRecords: uniqueApprovalRecords,
+  };
+  if (
+    !provider &&
+    !processModel &&
+    uniqueToolCalls.length === 0 &&
+    uniqueCapabilityPaths.length === 0 &&
+    uniqueReadbacks.length === 0 &&
+    uniqueApprovalRecords.length === 0
+  ) {
+    return undefined;
+  }
+  return evidence;
+}
+
+async function readSessionAcceptanceEvidence(path: string): Promise<CapabilityAcceptanceEvidence | undefined> {
+  return extractAcceptanceEvidenceFromSessionRecords(await readSessionRecords(path));
+}
+
+function mergeAcceptanceEvidence(
+  left: CapabilityAcceptanceEvidence | undefined,
+  right: CapabilityAcceptanceEvidence | undefined,
+): CapabilityAcceptanceEvidence | undefined {
+  if (!left) return right;
+  if (!right) return left;
+  return {
+    provider: right.provider ?? left.provider,
+    profileSource: right.profileSource ?? left.profileSource,
+    localCli: right.localCli ?? left.localCli,
+    processModel: right.processModel ?? left.processModel,
+    toolCalls: unique([...(left.toolCalls ?? []), ...(right.toolCalls ?? [])]),
+    capabilityPaths: unique([...(left.capabilityPaths ?? []), ...(right.capabilityPaths ?? [])]),
+    readbacks: unique([...(left.readbacks ?? []), ...(right.readbacks ?? [])]),
+    approvalRecords: unique([...(left.approvalRecords ?? []), ...(right.approvalRecords ?? [])]),
+    text: [left.text, right.text].filter(Boolean).join("\n"),
+  };
+}
+
+async function readNewSessionAcceptanceEvidence(
+  xenesisHome: string,
+  beforeFiles: ReadonlySet<string>
+): Promise<CapabilityAcceptanceEvidence | undefined> {
+  const sessionsDir = sessionLogDir(xenesisHome);
+  const files = await listSessionLogFiles(xenesisHome);
+  const candidates = await Promise.all(
+    files
+      .filter((file) => !beforeFiles.has(file))
+      .map(async (file) => ({
+        file,
+        mtimeMs: (await stat(join(sessionsDir, file))).mtimeMs
+      }))
+  );
+
+  let merged: CapabilityAcceptanceEvidence | undefined;
+  for (const candidate of candidates.sort((left, right) => left.mtimeMs - right.mtimeMs)) {
+    merged = mergeAcceptanceEvidence(merged, await readSessionAcceptanceEvidence(join(sessionsDir, candidate.file)));
+  }
+  return merged;
+}
+
 async function readNewSessionUsage(
   xenesisHome: string,
   beforeFiles: ReadonlySet<string>
@@ -1033,10 +1263,16 @@ async function buildSpawnedCliRunResult(options: {
   usageUnavailableReason: string;
 }): Promise<CliRunResult> {
   let usage: CapabilityEvalUsage | undefined;
+  let acceptanceEvidence: CapabilityAcceptanceEvidence | undefined;
   try {
     usage = await readNewSessionUsage(options.xenesisHome, options.beforeSessionFiles);
   } catch {
     usage = undefined;
+  }
+  try {
+    acceptanceEvidence = await readNewSessionAcceptanceEvidence(options.xenesisHome, options.beforeSessionFiles);
+  } catch {
+    acceptanceEvidence = undefined;
   }
 
   return {
@@ -1044,6 +1280,7 @@ async function buildSpawnedCliRunResult(options: {
     stdout: options.stdout,
     stderr: options.stderr,
     durationMs: Date.now() - options.startedAt,
+    ...(acceptanceEvidence ? { acceptanceEvidence } : {}),
     ...(usage ? { usage } : { usageUnavailableReason: options.usageUnavailableReason })
   };
 }
@@ -1171,11 +1408,16 @@ function runCliPrompt(options: {
 function combineRuns(runs: CliRunResult[]): CliRunResult {
   const usage = combineUsage(runs);
   const usageUnavailableReasons = combineUsageUnavailableReasons(runs);
+  const acceptanceEvidence = runs.reduce<CapabilityAcceptanceEvidence | undefined>(
+    (merged, run) => mergeAcceptanceEvidence(merged, run.acceptanceEvidence),
+    undefined
+  );
   return {
     exitCode: runs.find((run) => run.exitCode !== 0)?.exitCode ?? 0,
     stdout: runs.map((run) => run.stdout.trimEnd()).filter(Boolean).join("\n"),
     stderr: runs.map((run) => run.stderr.trimEnd()).filter(Boolean).join("\n"),
     durationMs: runs.reduce((sum, run) => sum + run.durationMs, 0),
+    ...(acceptanceEvidence ? { acceptanceEvidence } : {}),
     ...(usage ? { usage } : {}),
     ...(usageUnavailableReasons.length > 0 ? {
       usageUnavailableReason: usageUnavailableReasons.join(", ")
@@ -1417,6 +1659,7 @@ async function runContextCompactScenario(options: {
       historyMessages: compactFixtureHistory(),
       abortSignal: timeout,
       stream: false,
+      disposeRunner: true,
       onEvent: (event) => {
         const rendered = renderEvent(event);
         if (rendered) lines.push(rendered);
@@ -1973,7 +2216,9 @@ async function main() {
   process.exitCode = report.summary.failed === 0 ? 0 : 1;
 }
 
-main().catch((error) => {
-  console.error(`capability: error: ${error instanceof Error ? error.message : String(error)}`);
-  process.exitCode = 1;
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((error) => {
+    console.error(`capability: error: ${error instanceof Error ? error.message : String(error)}`);
+    process.exitCode = 1;
+  });
+}

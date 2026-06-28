@@ -1,4 +1,5 @@
 import type { McpBridgeActionInboxItem, XenesisRunResult, XenesisStatus } from '../../../../shared/types';
+import type { AgentActionNeeded } from '../../../../shared/agentActionRecords';
 import type { XenesisAgentAttachment } from './xenesisAgentAttachments';
 import type { XenesisDeskActionExecutionResult, XenesisDeskActionRequest } from './xenesisAgentDeskControl';
 import type { XenesisPolicyNotice, XenesisPolicySnapshot } from './xenesisPolicyNotices';
@@ -72,6 +73,7 @@ export interface XenesisChatMessage {
   mcpActionInboxItems?: McpBridgeActionInboxItem[];
   mcpActionInboxStatus?: 'pending' | 'running' | 'approved' | 'rejected' | 'failed' | 'expired';
   mcpActionInboxResult?: string;
+  agentActionNeededItems?: AgentActionNeeded[];
 }
 
 export interface XenesisRawStreamEntry {

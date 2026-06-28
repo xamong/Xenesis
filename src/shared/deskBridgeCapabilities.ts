@@ -125,6 +125,11 @@ export interface DeskBridgeCapabilityApprovalDecision {
   reason?: string;
 }
 
+export interface DeskBridgeComputerUseCallOptions {
+  approved?: boolean;
+  source?: DeskBridgeCapabilitySource;
+}
+
 const DESK_BRIDGE_APPROVAL_PROOF_BRAND: unique symbol = Symbol('desk-bridge-approval-proof');
 
 export interface DeskBridgeCapabilityApprovalProof {
@@ -280,6 +285,11 @@ export interface DeskBridgeCapabilityAdapter {
   browserAction?: (args: unknown) => Promise<unknown> | unknown;
   openBuiltinPane?: (args: unknown) => Promise<unknown> | unknown;
   runExternalAppAction?: (args: unknown) => Promise<unknown> | unknown;
+  computerUseCall?: (
+    path: string,
+    args?: unknown,
+    options?: DeskBridgeComputerUseCallOptions,
+  ) => Promise<unknown> | unknown;
   getOnboardingSampleWorkspaceStatus?: () => Promise<unknown> | unknown;
   prepareOnboardingSampleWorkspace?: () => Promise<unknown> | unknown;
   resetOnboardingSampleWorkspace?: () => Promise<unknown> | unknown;
@@ -459,6 +469,16 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisAgentStatus?: (args: unknown) => Promise<unknown> | unknown;
   submitXenesisAgentMessage?: (args: unknown) => Promise<unknown> | unknown;
   listXenesisAgentEvents?: (args: unknown) => Promise<unknown> | unknown;
+  agentTurnsList?: (args?: unknown) => Promise<unknown> | unknown;
+  agentTurnsCurrent?: (args?: unknown) => Promise<unknown> | unknown;
+  agentTurnsGet?: (args?: unknown) => Promise<unknown> | unknown;
+  agentTurnEvents?: (args?: unknown) => Promise<unknown> | unknown;
+  agentActionNeededList?: (args?: unknown) => Promise<unknown> | unknown;
+  agentActionNeededGet?: (args?: unknown) => Promise<unknown> | unknown;
+  agentActionNeededReply?: (args?: unknown) => Promise<unknown> | unknown;
+  agentActionNeededDismiss?: (args?: unknown) => Promise<unknown> | unknown;
+  agentReceiptsList?: (args?: unknown) => Promise<unknown> | unknown;
+  agentReceiptsGet?: (args?: unknown) => Promise<unknown> | unknown;
   setXenesisWorkspace?: (args: unknown) => Promise<unknown> | unknown;
   listXenesisProfiles?: () => Promise<unknown> | unknown;
   installXenesisProfile?: (args: unknown) => Promise<unknown> | unknown;
@@ -3390,6 +3410,190 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           'read',
         ),
       ]),
+      group(
+        'xd.agent.actionNeeded',
+        'Action needed',
+        'Open Agent action-needed records that require user reply, approval, or external unblocking.',
+        [
+          method(
+            'xd.agent.actionNeeded.list',
+            'List action-needed records',
+            'List Agent action-needed records by status or turn id.',
+            'read',
+            {
+              type: 'object',
+              properties: {
+                status: {
+                  type: 'string',
+                  title: 'Status',
+                  enum: ['open', 'resolved', 'dismissed'],
+                },
+                turnId: {
+                  type: 'string',
+                  title: 'Turn id',
+                },
+              },
+            },
+          ),
+          method(
+            'xd.agent.actionNeeded.get',
+            'Get action-needed record',
+            'Read one Agent action-needed record by id.',
+            'read',
+            {
+              type: 'object',
+              required: ['id'],
+              properties: {
+                id: {
+                  type: 'string',
+                  title: 'Action-needed id',
+                  examples: ['action-needed-1'],
+                },
+              },
+            },
+          ),
+          method(
+            'xd.agent.actionNeeded.reply',
+            'Reply to action-needed record',
+            'Resolve a non-approval action-needed record with explicit user reply text.',
+            'write',
+            {
+              type: 'object',
+              required: ['id', 'text'],
+              properties: {
+                id: {
+                  type: 'string',
+                  title: 'Action-needed id',
+                },
+                text: {
+                  type: 'string',
+                  title: 'Reply text',
+                },
+                repliedBy: {
+                  type: 'string',
+                  title: 'Reply actor',
+                  default: 'user',
+                },
+              },
+            },
+          ),
+          method(
+            'xd.agent.actionNeeded.dismiss',
+            'Dismiss action-needed record',
+            'Dismiss an open action-needed record and record the dismissal receipt.',
+            'write',
+            {
+              type: 'object',
+              required: ['id'],
+              properties: {
+                id: {
+                  type: 'string',
+                  title: 'Action-needed id',
+                },
+                reason: {
+                  type: 'string',
+                  title: 'Dismissal reason',
+                },
+                dismissedBy: {
+                  type: 'string',
+                  title: 'Dismissal actor',
+                  default: 'user',
+                },
+              },
+            },
+          ),
+        ],
+      ),
+      group('xd.agent.receipts', 'Receipts', 'Append-only Agent workflow receipt readback.', [
+        method(
+          'xd.agent.receipts.list',
+          'List Agent receipts',
+          'List Agent workflow receipts by turn id or receipt kind.',
+          'read',
+          {
+            type: 'object',
+            properties: {
+              turnId: {
+                type: 'string',
+                title: 'Turn id',
+              },
+              kind: {
+                type: 'string',
+                title: 'Receipt kind',
+              },
+            },
+          },
+        ),
+        method(
+          'xd.agent.receipts.get',
+          'Get Agent receipt',
+          'Read one Agent workflow receipt by id.',
+          'read',
+          {
+            type: 'object',
+            required: ['id'],
+            properties: {
+              id: {
+                type: 'string',
+                title: 'Receipt id',
+                examples: ['receipt-1'],
+              },
+            },
+          },
+        ),
+      ]),
+    ]),
+    group('xd.agent', 'Agent', 'Agent runtime read surfaces for Xenesis Desk.', [
+      group('xd.agent.turns', 'Turns', 'Read-only Agent turn ledger records and evidence events.', [
+        method(
+          'xd.agent.turns.list',
+          'List agent turns',
+          'List recent Agent turn ledger records.',
+          'read',
+        ),
+        method(
+          'xd.agent.turns.current',
+          'Read current agent turn',
+          'Read the current or most recent Agent turn ledger record.',
+          'read',
+        ),
+        method(
+          'xd.agent.turns.get',
+          'Get agent turn',
+          'Read one Agent turn ledger record by id.',
+          'read',
+          {
+            type: 'object',
+            required: ['id'],
+            properties: {
+              id: {
+                type: 'string',
+                title: 'Turn id',
+                description: 'Agent turn ledger id.',
+                examples: ['turn-1'],
+              },
+            },
+          },
+        ),
+        method(
+          'xd.agent.turns.events',
+          'List agent turn events',
+          'List evidence events for one Agent turn ledger record.',
+          'read',
+          {
+            type: 'object',
+            required: ['id'],
+            properties: {
+              id: {
+                type: 'string',
+                title: 'Turn id',
+                description: 'Agent turn ledger id.',
+                examples: ['turn-1'],
+              },
+            },
+          },
+        ),
+      ]),
     ]),
     group('xd.xenesis', 'Xenesis', 'Xenesis agent and gateway control surface for Xenesis Desk orchestration.', [
       method(
@@ -5874,13 +6078,16 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
       method(
         'xd.apps.status',
         'Read external app status',
-        'Find visible windows for a registered external desktop app profile such as Notepad.',
+        'Read external app profile readback with no target, or find visible windows for a registered external desktop app profile such as Notepad.',
         'read',
         {
           type: 'object',
           properties: {
             appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            path: { type: 'string', title: 'Executable path' },
+            processName: { type: 'string', title: 'Process name', examples: ['notepad'] },
             titleContains: { type: 'string', title: 'Window title contains' },
+            windowId: { type: 'string', title: 'Window handle' },
           },
         },
       ),
@@ -5944,14 +6151,121 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           keys: { type: 'array', items: { type: 'string' }, examples: [['CTRL', 'S']] },
         },
       }),
-      method('xd.apps.close', 'Close external app window', 'Close a visible external app window or process.', 'control', {
+      method(
+        'xd.apps.close',
+        'Close external app window',
+        'Close a visible external app window or process.',
+        'control',
+        {
+          type: 'object',
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            windowId: { type: 'string', title: 'Window handle' },
+            mode: { type: 'string', enum: ['window', 'process'], default: 'window' },
+          },
+        },
+        { approval: 'when-external' },
+      ),
+    ]),
+    group('xd.computer', 'Computer use', 'Native computer-use capture and bounded action surface.', [
+      method(
+        'xd.computer.capture',
+        'Capture native UI',
+        'Capture native UI text, element marks, and screenshot metadata.',
+        'read',
+        {
+          type: 'object',
+          properties: {
+            mode: { type: 'string', enum: ['som', 'ax', 'vision'], default: 'som' },
+            app: { type: 'string', title: 'App target' },
+            max_elements: { type: 'number', title: 'Maximum elements', minimum: 1, maximum: 150, default: 100 },
+          },
+        },
+      ),
+      method('xd.computer.list_apps', 'List native apps', 'List visible native app targets.', 'read'),
+      method(
+        'xd.computer.focus_app',
+        'Focus native app',
+        'Focus a native app target.',
+        'control',
+        {
+          type: 'object',
+          required: ['app'],
+          properties: {
+            app: { type: 'string', title: 'App target' },
+            raiseWindow: { type: 'boolean', title: 'Raise window', default: false },
+          },
+        },
+        { approval: 'when-external' },
+      ),
+      method('xd.computer.click', 'Click native element', 'Click a captured native element index.', 'execute', {
         type: 'object',
+        required: ['element'],
         properties: {
-          appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
-          windowId: { type: 'string', title: 'Window handle' },
-          mode: { type: 'string', enum: ['window', 'process'], default: 'window' },
+          element: { type: 'number', title: 'Element index', minimum: 1 },
         },
       }),
+      method('xd.computer.type', 'Type native text', 'Type text into the active verified native target.', 'execute', {
+        type: 'object',
+        required: ['text'],
+        properties: {
+          text: { type: 'string', title: 'Text' },
+        },
+      }),
+      method('xd.computer.key', 'Send native key', 'Send a keyboard shortcut to the active verified native target.', 'execute', {
+        type: 'object',
+        required: ['keys'],
+        properties: {
+          keys: { type: 'string', title: 'Keys', examples: ['Ctrl+S'] },
+        },
+      }),
+      method(
+        'xd.computer.scroll',
+        'Scroll native target',
+        'Scroll the active verified native target.',
+        'control',
+        {
+          type: 'object',
+          required: ['direction'],
+          properties: {
+            direction: { type: 'string', enum: ['up', 'down', 'left', 'right'] },
+            amount: { type: 'number', title: 'Amount', minimum: 1, default: 3 },
+          },
+        },
+        { approval: 'when-external' },
+      ),
+      method('xd.computer.drag', 'Drag native element', 'Drag between captured native element indices.', 'execute', {
+        type: 'object',
+        required: ['from', 'to'],
+        properties: {
+          from: { type: 'number', title: 'From element index', minimum: 1 },
+          to: { type: 'number', title: 'To element index', minimum: 1 },
+        },
+      }),
+      method('xd.computer.set_value', 'Set native value', 'Set a captured native input element value.', 'execute', {
+        type: 'object',
+        required: ['element', 'text'],
+        properties: {
+          element: { type: 'number', title: 'Element index', minimum: 1 },
+          text: { type: 'string', title: 'Text' },
+        },
+      }),
+      method('xd.computer.stop', 'Stop computer use', 'Stop queued native computer-use actions.', 'control'),
+      group('xd.computer.actions', 'Computer-use action records', 'Computer-use action record readback.', [
+        method(
+          'xd.computer.actions.list',
+          'List computer-use action records',
+          'List computer-use action records.',
+          'read',
+        ),
+        method('xd.computer.actions.get', 'Read computer-use action record', 'Read one computer-use action record.', 'read', {
+          type: 'object',
+          required: ['id'],
+          properties: {
+            id: { type: 'string', title: 'Action record id', examples: ['cu-1'] },
+          },
+        }),
+      ]),
     ]),
     group('xd.files', 'Files', 'Local file open, preview, and safe-write control surface.', [
       method('xd.files.open', 'Open file', 'Request that Xenesis Desk opens a local file in a dock pane.', 'control', {
@@ -9157,7 +9471,13 @@ export async function callDeskBridgeCapability(
       request.approvalProof,
       request.args,
     );
-    if (!approvalDecision.allowed) {
+    const computerUseCallOptions = isComputerUseCapabilityPath(path)
+      ? {
+          approved: isComputerUseCallApproved(node, source, request),
+          source,
+        }
+      : undefined;
+    if (!approvalDecision.allowed && !computerUseCallOptions) {
       return {
         ok: false,
         path,
@@ -9236,6 +9556,42 @@ export async function callDeskBridgeCapability(
       if (path.startsWith('xd.apps.')) {
         const action = path.slice('xd.apps.'.length);
         return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action });
+      }
+      if (path === 'xd.computer.capture') {
+        return callComputerUseCapability(path, api?.computerUseCall, normalizeCapabilityArgs(request.args), computerUseCallOptions);
+      }
+      if (path === 'xd.computer.list_apps') {
+        return callComputerUseCapability(path, api?.computerUseCall, normalizeCapabilityArgs(request.args), computerUseCallOptions);
+      }
+      if (path === 'xd.computer.focus_app') {
+        return callComputerUseCapability(path, api?.computerUseCall, normalizeCapabilityArgs(request.args), computerUseCallOptions);
+      }
+      if (path === 'xd.computer.click') {
+        return callComputerUseCapability(path, api?.computerUseCall, normalizeCapabilityArgs(request.args), computerUseCallOptions);
+      }
+      if (path === 'xd.computer.type') {
+        return callComputerUseCapability(path, api?.computerUseCall, normalizeCapabilityArgs(request.args), computerUseCallOptions);
+      }
+      if (path === 'xd.computer.key') {
+        return callComputerUseCapability(path, api?.computerUseCall, normalizeCapabilityArgs(request.args), computerUseCallOptions);
+      }
+      if (path === 'xd.computer.scroll') {
+        return callComputerUseCapability(path, api?.computerUseCall, normalizeCapabilityArgs(request.args), computerUseCallOptions);
+      }
+      if (path === 'xd.computer.drag') {
+        return callComputerUseCapability(path, api?.computerUseCall, normalizeCapabilityArgs(request.args), computerUseCallOptions);
+      }
+      if (path === 'xd.computer.set_value') {
+        return callComputerUseCapability(path, api?.computerUseCall, normalizeCapabilityArgs(request.args), computerUseCallOptions);
+      }
+      if (path === 'xd.computer.stop') {
+        return callComputerUseCapability(path, api?.computerUseCall, normalizeCapabilityArgs(request.args), computerUseCallOptions);
+      }
+      if (path === 'xd.computer.actions.list') {
+        return callComputerUseCapability(path, api?.computerUseCall, normalizeCapabilityArgs(request.args), computerUseCallOptions);
+      }
+      if (path === 'xd.computer.actions.get') {
+        return callComputerUseCapability(path, api?.computerUseCall, normalizeCapabilityArgs(request.args), computerUseCallOptions);
       }
       if (path === 'xd.diagnostics.state') {
         return callAdapter(path, api?.status);
@@ -9829,6 +10185,42 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.agents.events') {
         return callAdapter(path, api?.listXenesisAgentEvents, request.args);
+      }
+      if (path === 'xd.agent.turns.list') {
+        return callAdapter(path, api?.agentTurnsList, request.args);
+      }
+      if (path === 'xd.agent.turns.current') {
+        return callAdapter(path, api?.agentTurnsCurrent, request.args);
+      }
+      if (path === 'xd.agent.turns.get') {
+        return callAdapter(path, api?.agentTurnsGet, request.args);
+      }
+      if (path === 'xd.agent.turns.events') {
+        return callAdapter(path, api?.agentTurnEvents, request.args);
+      }
+      if (path === 'xd.agent.actionNeeded.list') {
+        return redactAgentActionRecordRefsForExternal(
+          source,
+          await callAdapter(path, api?.agentActionNeededList, request.args),
+        );
+      }
+      if (path === 'xd.agent.actionNeeded.get') {
+        return redactAgentActionRecordRefsForExternal(
+          source,
+          await callAdapter(path, api?.agentActionNeededGet, request.args),
+        );
+      }
+      if (path === 'xd.agent.actionNeeded.reply') {
+        return callAdapter(path, api?.agentActionNeededReply, request.args);
+      }
+      if (path === 'xd.agent.actionNeeded.dismiss') {
+        return callAdapter(path, api?.agentActionNeededDismiss, request.args);
+      }
+      if (path === 'xd.agent.receipts.list') {
+        return redactAgentActionRecordRefsForExternal(source, await callAdapter(path, api?.agentReceiptsList, request.args));
+      }
+      if (path === 'xd.agent.receipts.get') {
+        return redactAgentActionRecordRefsForExternal(source, await callAdapter(path, api?.agentReceiptsGet, request.args));
       }
       if (path === 'xd.xenesis.gateway.status') {
         return callAdapter(path, api?.getXenesisStatus);
@@ -10621,6 +11013,25 @@ export function evaluateDeskBridgeCapabilityApproval(
   return { allowed: true, approvalRequired: false };
 }
 
+function isComputerUseCapabilityPath(path: string): boolean {
+  return path.startsWith('xd.computer.');
+}
+
+function isComputerUseCallApproved(
+  node: DeskBridgeCapabilityNode,
+  source: DeskBridgeCapabilitySource,
+  request: DeskBridgeCapabilityCallRequest,
+): boolean {
+  if (source === 'internal') return true;
+  return evaluateDeskBridgeCapabilityApproval(
+    { ...node, approval: 'always' },
+    source,
+    request.approved === true,
+    request.approvalProof,
+    request.args,
+  ).allowed;
+}
+
 async function finalizeDeskBridgeCapabilityAudit(
   api: DeskBridgeCapabilityAdapter | undefined,
   request: DeskBridgeCapabilityCallRequest,
@@ -10677,10 +11088,35 @@ function readAuditString(value: Record<string, unknown>, keys: string[]): string
 }
 
 function redactAuditValueForCapability(path: string, value: unknown): unknown {
-  return redactAuditValue(value, { redactMemoryText: path.startsWith('xd.memory.') });
+  return redactAuditValue(value, {
+    redactMemoryText: path.startsWith('xd.memory.'),
+    redactComputerUseText: path.startsWith('xd.computer.'),
+  });
 }
 
-function redactAuditValue(value: unknown, options: { redactMemoryText?: boolean } = {}): unknown {
+function redactAgentActionRecordRefsForExternal(
+  source: DeskBridgeCapabilitySource,
+  result: DeskBridgeCapabilityCallResult,
+): DeskBridgeCapabilityCallResult {
+  if (source === 'internal') return result;
+  return { ...result, result: redactRefsValue(result.result) };
+}
+
+function redactRefsValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(redactRefsValue);
+  if (!value || typeof value !== 'object') return value;
+  const result: Record<string, unknown> = {};
+  for (const [key, nestedValue] of Object.entries(value as Record<string, unknown>)) {
+    if (key === 'refs') continue;
+    result[key] = redactRefsValue(nestedValue);
+  }
+  return result;
+}
+
+function redactAuditValue(
+  value: unknown,
+  options: { redactMemoryText?: boolean; redactComputerUseText?: boolean } = {},
+): unknown {
   if (Array.isArray(value)) return value.map((item) => redactAuditValue(item, options));
   if (!value || typeof value !== 'object') return value;
   const result: Record<string, unknown> = {};
@@ -10689,6 +11125,8 @@ function redactAuditValue(value: unknown, options: { redactMemoryText?: boolean 
       result[key] = '[redacted]';
     } else if (options.redactMemoryText && /^(text|claim|content|summary|source|uri)$/i.test(key)) {
       result[key] = '[redacted: memory audit]';
+    } else if (options.redactComputerUseText && /^(text|value|keys)$/i.test(key)) {
+      result[key] = '[redacted: computer-use audit]';
     } else {
       result[key] = redactAuditValue(nestedValue, options);
     }
@@ -10709,6 +11147,29 @@ async function callAdapter(
       path,
       result,
       error: typeof result.error === 'string' && result.error.trim() ? result.error : `Capability call failed: ${path}`,
+    };
+  }
+  return { ok: true, path, result };
+}
+
+async function callComputerUseCapability(
+  path: string,
+  adapter:
+    | ((path: string, args?: unknown, options?: DeskBridgeComputerUseCallOptions) => Promise<unknown> | unknown)
+    | undefined,
+  args?: unknown,
+  options?: DeskBridgeComputerUseCallOptions,
+): Promise<DeskBridgeCapabilityCallResult> {
+  if (!adapter) return { ok: false, path, error: 'Desk bridge API is unavailable.' };
+  const result = await adapter(path, args, options);
+  if (isCapabilityCallResultLike(result)) {
+    const resultPath = result.path;
+    return {
+      ok: result.ok !== false,
+      path: typeof resultPath === 'string' && resultPath.trim() ? resultPath : path,
+      result: result.result,
+      error: typeof result.error === 'string' ? result.error : undefined,
+      approvalRequired: result.approvalRequired === true ? true : undefined,
     };
   }
   return { ok: true, path, result };
@@ -10773,6 +11234,17 @@ function readString(value: unknown): string {
 function isFailurePayload(value: unknown): value is { ok: false; error?: unknown } {
   return Boolean(
     value && typeof value === 'object' && !Array.isArray(value) && (value as { ok?: unknown }).ok === false,
+  );
+}
+
+function isCapabilityCallResultLike(
+  value: unknown,
+): value is { ok: boolean; path?: unknown; result?: unknown; error?: unknown; approvalRequired?: unknown } {
+  return Boolean(
+    value &&
+      typeof value === 'object' &&
+      !Array.isArray(value) &&
+      typeof (value as { ok?: unknown }).ok === 'boolean',
   );
 }
 
