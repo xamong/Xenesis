@@ -32,6 +32,7 @@ import {
   XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS,
   XENESIS_NATURAL_DESK_ACTION_ARGS,
   XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS,
+  XENESIS_NATURAL_DESK_ACTION_SPECS,
   XENESIS_NATURAL_DESK_CAPTURE_RULES,
   XENESIS_NATURAL_DESK_FILE_LIST_RULES,
   XENESIS_NATURAL_DESK_FILE_PATH_RULES,
@@ -2487,6 +2488,95 @@ test('natural approval request actions are generated from shared action request 
     capabilityCatalogSource,
     /XENESIS_NATURAL_CHANNEL_TEST_ACTION_DESCRIPTORS = \{\s*channelTest:\s*\{\s*path:/,
   );
+});
+
+test('natural Desk core actions are generated from shared Desk action specs', () => {
+  const deskSpecEntries = Object.entries(XENESIS_NATURAL_DESK_ACTION_SPECS);
+  type DeskRuleSpecLike = {
+    contextWords: readonly string[];
+    requiredContextWordGroups?: readonly (readonly string[])[];
+    blockedContextWords?: readonly string[];
+    visibleText?: string;
+  };
+  type DeskRuleLike = DeskRuleSpecLike & {
+    action: {
+      path: string;
+    };
+  };
+  const summarizeDeskRule = (path: string, rule: DeskRuleSpecLike) => ({
+    path,
+    contextWords: [...rule.contextWords],
+    requiredContextWordGroups: (rule.requiredContextWordGroups ?? []).map((words) => [...words]),
+    blockedContextWords: rule.blockedContextWords ? [...rule.blockedContextWords] : [],
+    visibleText: rule.visibleText ?? '',
+  });
+
+  assert.deepEqual(
+    Object.keys(XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS),
+    deskSpecEntries.map(([key]) => key),
+  );
+  assert.deepEqual(
+    Object.fromEntries(Object.entries(XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS)),
+    Object.fromEntries(
+      deskSpecEntries.map(([key, spec]) => [
+        key,
+        {
+          id: spec.id,
+          path: spec.path,
+          reason: spec.reason,
+        },
+      ]),
+    ),
+  );
+
+  const deskSpecRuleSummaries = (group: string) =>
+    deskSpecEntries.flatMap(([, spec]) =>
+      (spec.rules ?? []).filter((rule) => rule.group === group).map((rule) => summarizeDeskRule(spec.path, rule)),
+    );
+  const deskRuleSummaries = (rules: readonly DeskRuleLike[]) =>
+    rules.map((rule) => summarizeDeskRule(rule.action.path, rule));
+
+  assert.deepEqual(deskRuleSummaries(XENESIS_NATURAL_DESK_PANE_OPEN_RULES), deskSpecRuleSummaries('paneOpen'));
+  assert.deepEqual(deskRuleSummaries(XENESIS_NATURAL_DESK_CAPTURE_RULES), deskSpecRuleSummaries('capture'));
+  assert.deepEqual(deskRuleSummaries(XENESIS_NATURAL_DESK_FILE_LIST_RULES), deskSpecRuleSummaries('fileList'));
+  assert.deepEqual(deskRuleSummaries(XENESIS_NATURAL_DESK_FILE_PATH_RULES), deskSpecRuleSummaries('filePath'));
+  assert.deepEqual(deskRuleSummaries(XENESIS_NATURAL_DESK_MISC_READ_RULES), deskSpecRuleSummaries('miscRead'));
+  assert.deepEqual(deskRuleSummaries(XENESIS_NATURAL_ACTIVE_DOCK_FOCUS_RULES), deskSpecRuleSummaries('dockFocus'));
+  assert.deepEqual(deskRuleSummaries(XENESIS_NATURAL_ACTIVE_DOCK_CLOSE_RULES), deskSpecRuleSummaries('dockClose'));
+  assert.deepEqual(deskRuleSummaries(XENESIS_NATURAL_DOCK_SIZE_RULES), deskSpecRuleSummaries('dockSize'));
+  assert.deepEqual(
+    deskRuleSummaries(XENESIS_NATURAL_WINDOW_SIZE_PRESET_RULES),
+    deskSpecRuleSummaries('windowSizePreset'),
+  );
+  assert.deepEqual(deskRuleSummaries(XENESIS_NATURAL_EXPLORER_SIMPLE_RULES), deskSpecRuleSummaries('explorerSimple'));
+  assert.deepEqual(deskRuleSummaries(XENESIS_NATURAL_EXPLORER_FILTER_RULES), deskSpecRuleSummaries('explorerFilter'));
+  assert.deepEqual(
+    deskRuleSummaries(XENESIS_NATURAL_EXPLORER_NAVIGATE_RULES),
+    deskSpecRuleSummaries('explorerNavigate'),
+  );
+  assert.deepEqual(deskRuleSummaries(XENESIS_NATURAL_TERMINAL_LIST_RULES), deskSpecRuleSummaries('terminalList'));
+  assert.deepEqual(deskRuleSummaries(XENESIS_NATURAL_TERMINAL_MANY_RULES), deskSpecRuleSummaries('terminalMany'));
+  assert.deepEqual(deskRuleSummaries(XENESIS_NATURAL_TERMINAL_RUN_RULES), deskSpecRuleSummaries('terminalRun'));
+  assert.deepEqual(
+    deskRuleSummaries(XENESIS_NATURAL_DOCK_WINDOW_ARRANGE_RULES),
+    deskSpecRuleSummaries('dockWindowArrange'),
+  );
+  assert.deepEqual(
+    deskRuleSummaries(XENESIS_NATURAL_DOCK_PANE_ARRANGE_RULES),
+    deskSpecRuleSummaries('dockPaneArrange'),
+  );
+  assert.deepEqual(
+    deskRuleSummaries(XENESIS_NATURAL_DOCK_GROUP_ARRANGE_RULES),
+    deskSpecRuleSummaries('dockGroupArrange'),
+  );
+  assert.deepEqual(
+    deskRuleSummaries(XENESIS_NATURAL_DOCK_WINDOW_MERGE_RULES),
+    deskSpecRuleSummaries('dockWindowMerge'),
+  );
+  assert.deepEqual(deskRuleSummaries(XENESIS_NATURAL_DOCK_PANE_MERGE_RULES), deskSpecRuleSummaries('dockPaneMerge'));
+  assert.deepEqual(deskRuleSummaries(XENESIS_NATURAL_DOCK_GROUP_MERGE_RULES), deskSpecRuleSummaries('dockGroupMerge'));
+  assert.deepEqual(deskRuleSummaries(XENESIS_NATURAL_DOCK_PANES_LIST_RULES), deskSpecRuleSummaries('dockPanesList'));
+  assert.deepEqual(deskRuleSummaries(XENESIS_NATURAL_ARTIFACT_TARGET_RULES), deskSpecRuleSummaries('artifactTarget'));
 });
 
 test('natural runtime actions are generated from shared runtime action specs', () => {

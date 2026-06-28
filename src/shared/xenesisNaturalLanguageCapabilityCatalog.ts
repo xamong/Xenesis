@@ -197,488 +197,688 @@ export const XENESIS_NATURAL_DESK_ACTION_ARGS = {
 
 export const XENESIS_NATURAL_VIEW_OPEN_PATH = 'xd.views.open';
 
-export const XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS = {
+export type XenesisNaturalDeskActionRuleGroup =
+  | 'paneOpen'
+  | 'capture'
+  | 'fileList'
+  | 'filePath'
+  | 'miscRead'
+  | 'dockFocus'
+  | 'dockClose'
+  | 'dockSize'
+  | 'windowSizePreset'
+  | 'explorerSimple'
+  | 'explorerFilter'
+  | 'explorerNavigate'
+  | 'terminalList'
+  | 'terminalMany'
+  | 'terminalRun'
+  | 'dockWindowArrange'
+  | 'dockPaneArrange'
+  | 'dockGroupArrange'
+  | 'dockWindowMerge'
+  | 'dockPaneMerge'
+  | 'dockGroupMerge'
+  | 'dockPanesList'
+  | 'artifactTarget';
+
+export interface XenesisNaturalDeskActionRuleSpec {
+  group: XenesisNaturalDeskActionRuleGroup;
+  contextWords: readonly string[];
+  requiredContextWordGroups?: readonly (readonly string[])[];
+  blockedContextWords?: readonly string[];
+  visibleText?: string;
+}
+
+export interface XenesisNaturalDeskActionSpec extends XenesisNaturalDeskActionDescriptor {
+  rules?: readonly XenesisNaturalDeskActionRuleSpec[];
+}
+
+export const XENESIS_NATURAL_DESK_ACTION_SPECS = {
   settingsOpen: {
     id: 'natural-settings-open',
     path: 'xd.panes.settings.open',
     reason: 'Open settings from natural language request.',
+    rules: [
+      {
+        group: 'paneOpen',
+        contextWords: XENESIS_NATURAL_DESK_SETTINGS_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_OPEN_OR_SHOW_WORDS],
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.settingsPaneOpen,
+      },
+    ],
   },
   diagnosticsOpen: {
     id: 'natural-diagnostics-open',
     path: 'xd.panes.diagnostics.open',
     reason: 'Open diagnostics from natural language request.',
+    rules: [
+      {
+        group: 'paneOpen',
+        contextWords: XENESIS_NATURAL_DESK_DIAGNOSTICS_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_OPEN_OR_SHOW_MINIMAL_WORDS],
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.diagnosticsPaneOpen,
+      },
+    ],
   },
   capabilityExplorerOpen: {
     id: 'natural-capability-explorer-open',
     path: 'xd.tools.core.capabilityExplorer.open',
     reason: 'Open Capability Explorer from natural language request.',
+    rules: [
+      {
+        group: 'paneOpen',
+        contextWords: XENESIS_NATURAL_CORE_CAPABILITY_CONTEXT_WORDS,
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.capabilityExplorerOpen,
+      },
+    ],
   },
   captureList: {
     id: 'natural-capture-list',
     path: 'xd.capture.list',
     reason: 'List captures from natural language request.',
+    rules: [
+      {
+        group: 'capture',
+        contextWords: XENESIS_NATURAL_CAPTURE_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_GENERIC_LIST_CONTEXT_WORDS],
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.captureListRead,
+      },
+    ],
   },
   captureActivePane: {
     id: 'natural-capture-active-pane',
     path: 'xd.capture.activePane',
     reason: 'Capture the active pane from natural language request.',
+    rules: [
+      {
+        group: 'capture',
+        contextWords: XENESIS_NATURAL_CAPTURE_CONTEXT_WORDS,
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.activePaneCapture,
+      },
+    ],
   },
   dockFocusActive: {
     id: 'natural-dock-focus-active',
     path: 'xd.dock.focus',
     reason: 'Focus the active dock content from natural language request.',
-  },
-  dockCloseActive: {
-    id: 'natural-dock-close-active',
-    path: 'xd.dock.close',
-    reason: 'Close the active dock content from natural language request.',
+    rules: [
+      {
+        group: 'dockFocus',
+        contextWords: XENESIS_NATURAL_GENERIC_FOCUS_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_PANE_TAB_CURRENT_CONTEXT_WORDS],
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.activeDockFocus,
+      },
+    ],
   },
   dockCloseRight: {
     id: 'natural-dock-close-right-active',
     path: 'xd.dock.closeRight',
     reason: 'Close tabs to the right of active dock content from natural language request.',
+    rules: [
+      {
+        group: 'dockClose',
+        contextWords: XENESIS_NATURAL_RIGHT_SCOPE_WORDS,
+        requiredContextWordGroups: [
+          XENESIS_NATURAL_GENERIC_CLOSE_CONTEXT_WORDS,
+          XENESIS_NATURAL_PANE_TAB_CURRENT_CONTEXT_WORDS,
+        ],
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.activeDockClose,
+      },
+    ],
   },
   dockCloseOthers: {
     id: 'natural-dock-close-others-active',
     path: 'xd.dock.closeOthers',
     reason: 'Close other tabs around active dock content from natural language request.',
+    rules: [
+      {
+        group: 'dockClose',
+        contextWords: XENESIS_NATURAL_OTHER_SCOPE_WORDS,
+        requiredContextWordGroups: [
+          XENESIS_NATURAL_GENERIC_CLOSE_CONTEXT_WORDS,
+          XENESIS_NATURAL_PANE_TAB_CURRENT_CONTEXT_WORDS,
+        ],
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.activeDockClose,
+      },
+    ],
   },
   dockCloseAll: {
     id: 'natural-dock-close-all-active',
     path: 'xd.dock.closeAll',
     reason: 'Close all tabs in active dock pane from natural language request.',
+    rules: [
+      {
+        group: 'dockClose',
+        contextWords: XENESIS_NATURAL_ALL_SCOPE_WORDS,
+        requiredContextWordGroups: [
+          XENESIS_NATURAL_GENERIC_CLOSE_CONTEXT_WORDS,
+          XENESIS_NATURAL_PANE_TAB_CURRENT_CONTEXT_WORDS,
+        ],
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.activeDockClose,
+      },
+    ],
+  },
+  dockCloseActive: {
+    id: 'natural-dock-close-active',
+    path: 'xd.dock.close',
+    reason: 'Close the active dock content from natural language request.',
+    rules: [
+      {
+        group: 'dockClose',
+        contextWords: XENESIS_NATURAL_GENERIC_CLOSE_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_PANE_TAB_CURRENT_CONTEXT_WORDS],
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.activeDockClose,
+      },
+    ],
   },
   dockSizeSet: {
     id: 'natural-dock-size-set',
     path: 'xd.dock.sizes.set',
     reason: 'Resize a dock side from natural language request.',
+    rules: [
+      {
+        group: 'dockSize',
+        contextWords: XENESIS_NATURAL_PANE_SIZE_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_RESIZE_COMMAND_WORDS],
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.dockAreaResize,
+      },
+    ],
   },
   windowSizePreset: {
     id: 'natural-window-size-preset',
     path: 'xd.window.sizer.applyPreset',
     reason: 'Apply window size preset from natural language request.',
+    rules: [
+      {
+        group: 'windowSizePreset',
+        contextWords: [],
+      },
+    ],
   },
   filesListOpen: {
     id: 'natural-files-list-open',
     path: 'xd.files.listOpen',
     reason: 'List open files from natural language request.',
+    rules: [
+      {
+        group: 'fileList',
+        contextWords: XENESIS_NATURAL_FILE_LIST_CONTEXT_WORDS,
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.filesListRead,
+      },
+    ],
   },
   fileOpen: {
     id: 'natural-file-open',
     path: 'xd.files.open',
     reason: 'Open file from natural language request.',
+    rules: [
+      {
+        group: 'filePath',
+        contextWords: XENESIS_NATURAL_FILE_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_GENERIC_OPEN_WORDS],
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.fileOpen,
+      },
+    ],
   },
   fileRead: {
     id: 'natural-file-read',
     path: 'xd.files.read',
     reason: 'Read file from natural language request.',
+    rules: [
+      {
+        group: 'filePath',
+        contextWords: XENESIS_NATURAL_FILE_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_FILE_READ_CONTEXT_WORDS],
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.fileContentRead,
+      },
+    ],
   },
   explorerHide: {
     id: 'natural-explorer-hide',
     path: 'xd.explorer.local.hide',
     reason: 'Hide explorer from natural language request.',
+    rules: [
+      {
+        group: 'explorerSimple',
+        contextWords: XENESIS_NATURAL_EXPLORER_HIDE_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_EXPLORER_CONTEXT_WORDS],
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.explorerHide,
+      },
+    ],
   },
   explorerToggle: {
     id: 'natural-explorer-toggle',
     path: 'xd.explorer.local.toggle',
     reason: 'Toggle explorer from natural language request.',
+    rules: [
+      {
+        group: 'explorerSimple',
+        contextWords: XENESIS_NATURAL_TOGGLE_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_EXPLORER_CONTEXT_WORDS],
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.explorerToggle,
+      },
+    ],
   },
   explorerRefresh: {
     id: 'natural-explorer-refresh',
     path: 'xd.explorer.local.refresh',
     reason: 'Refresh explorer from natural language request.',
+    rules: [
+      {
+        group: 'explorerSimple',
+        contextWords: XENESIS_NATURAL_REFRESH_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_EXPLORER_CONTEXT_WORDS],
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.explorerRefresh,
+      },
+    ],
   },
   explorerGoUp: {
     id: 'natural-explorer-go-up',
     path: 'xd.explorer.local.goUp',
     reason: 'Go to parent folder from natural language request.',
+    rules: [
+      {
+        group: 'explorerSimple',
+        contextWords: XENESIS_NATURAL_PARENT_NAVIGATION_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_EXPLORER_CONTEXT_WORDS],
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.explorerGoUp,
+      },
+    ],
   },
   explorerFilter: {
     id: 'natural-explorer-filter',
     path: 'xd.explorer.local.setFilter',
     reason: 'Filter explorer from natural language request.',
+    rules: [
+      {
+        group: 'explorerFilter',
+        contextWords: XENESIS_NATURAL_FILTER_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_EXPLORER_CONTEXT_WORDS],
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.explorerFilterApply,
+      },
+    ],
   },
   explorerNavigate: {
     id: 'natural-explorer-navigate',
     path: 'xd.explorer.local.navigate',
     reason: 'Navigate explorer from natural language request.',
+    rules: [
+      {
+        group: 'explorerNavigate',
+        contextWords: XENESIS_NATURAL_EXPLORER_CONTEXT_WORDS,
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.explorerNavigate,
+      },
+    ],
   },
   explorerShow: {
     id: 'natural-explorer-show',
     path: 'xd.explorer.local.show',
     reason: 'Show explorer from natural language request.',
+    rules: [
+      {
+        group: 'explorerSimple',
+        contextWords: XENESIS_NATURAL_EXPLORER_CONTEXT_WORDS,
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.explorerShow,
+      },
+    ],
   },
   favoritesShow: {
     id: 'natural-favorites-show',
     path: 'xd.favorites.showTab',
     reason: 'Show favorites from natural language request.',
+    rules: [
+      {
+        group: 'miscRead',
+        contextWords: XENESIS_NATURAL_FAVORITES_CONTEXT_WORDS,
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.favoritesShow,
+      },
+    ],
   },
   terminalsList: {
     id: 'natural-terminals-list',
     path: 'xd.terminals.list',
     reason: 'List terminals from natural language request.',
+    rules: [
+      {
+        group: 'terminalList',
+        contextWords: XENESIS_NATURAL_TERMINAL_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_GENERIC_LIST_CONTEXT_WORDS],
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.terminalListRead,
+      },
+    ],
   },
   terminalRunMany: {
     id: 'natural-terminal-run-many',
     path: 'xd.terminals.runMany',
     reason: 'Open multiple terminals from natural language request.',
+    rules: [
+      {
+        group: 'terminalMany',
+        contextWords: XENESIS_NATURAL_TERMINAL_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_TERMINAL_MULTI_CONTEXT_WORDS],
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.multipleTerminalsOpenAndArrange,
+      },
+    ],
   },
   terminalRun: {
     id: 'natural-terminal-run',
     path: 'xd.terminals.run',
     reason: 'Run terminal command from natural language request.',
+    rules: [
+      {
+        group: 'terminalRun',
+        contextWords: XENESIS_NATURAL_TERMINAL_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_TERMINAL_RUN_CONTEXT_WORDS],
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.terminalCommandRun,
+      },
+    ],
   },
   dockWindowArrange: {
     id: 'natural-dock-window-arrange',
     path: 'xd.dock.window.arrange',
     reason: 'Arrange a Desk window area from natural language request.',
+    rules: [
+      {
+        group: 'dockWindowArrange',
+        contextWords: XENESIS_NATURAL_ARRANGE_CONTEXT_WORDS,
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.scopedDeskAreaArrange,
+      },
+    ],
   },
   dockPaneArrange: {
     id: 'natural-dock-pane-arrange',
     path: 'xd.dock.pane.arrange',
     reason: 'Arrange the active dock pane from natural language request.',
+    rules: [
+      {
+        group: 'dockPaneArrange',
+        contextWords: XENESIS_NATURAL_PANE_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_ARRANGE_CONTEXT_WORDS],
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.activeDockPaneArrange,
+      },
+    ],
   },
   dockArrangeGrid: {
     id: 'natural-dock-arrange-grid',
     path: 'xd.dock.arrangeGrid',
     reason: 'Arrange dock group as grid from natural language request.',
+    rules: [
+      {
+        group: 'dockGroupArrange',
+        contextWords: XENESIS_NATURAL_DOCK_GRID_CONTEXT_WORDS,
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.dockGroupTile,
+      },
+    ],
   },
   dockArrangeHorizontal: {
     id: 'natural-dock-arrange-horizontal',
     path: 'xd.dock.arrangeHorizontal',
     reason: 'Arrange dock group horizontally from natural language request.',
+    rules: [
+      {
+        group: 'dockGroupArrange',
+        contextWords: XENESIS_NATURAL_DOCK_HORIZONTAL_CONTEXT_WORDS,
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.dockGroupHorizontal,
+      },
+    ],
   },
   dockArrangeVertical: {
     id: 'natural-dock-arrange-vertical',
     path: 'xd.dock.arrangeVertical',
     reason: 'Arrange dock group vertically from natural language request.',
+    rules: [
+      {
+        group: 'dockGroupArrange',
+        contextWords: XENESIS_NATURAL_DOCK_VERTICAL_CONTEXT_WORDS,
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.dockGroupVertical,
+      },
+    ],
   },
   dockWindowMerge: {
     id: 'natural-dock-window-merge',
     path: 'xd.dock.window.merge',
     reason: 'Merge a Desk window area from natural language request.',
+    rules: [
+      {
+        group: 'dockWindowMerge',
+        contextWords: XENESIS_NATURAL_DOCK_MERGE_CONTEXT_WORDS,
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.scopedDockMerge,
+      },
+    ],
   },
   dockPaneMerge: {
     id: 'natural-dock-pane-merge',
     path: 'xd.dock.pane.merge',
     reason: 'Merge the active dock pane from natural language request.',
-  },
-  dockMergeGroup: {
-    id: 'natural-dock-merge',
-    path: 'xd.dock.mergeGroup',
-    reason: 'Merge dock layout from natural language request.',
+    rules: [
+      {
+        group: 'dockPaneMerge',
+        contextWords: XENESIS_NATURAL_PANE_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_DOCK_MERGE_CONTEXT_WORDS],
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.activeDockPaneMerge,
+      },
+    ],
   },
   dockMergeAll: {
     id: 'natural-dock-merge',
     path: 'xd.dock.mergeAll',
     reason: 'Merge dock layout from natural language request.',
+    rules: [
+      {
+        group: 'dockGroupMerge',
+        contextWords: XENESIS_NATURAL_DOCK_MERGE_ALL_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_DOCK_MERGE_CONTEXT_WORDS],
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.dockMerge,
+      },
+    ],
+  },
+  dockMergeGroup: {
+    id: 'natural-dock-merge',
+    path: 'xd.dock.mergeGroup',
+    reason: 'Merge dock layout from natural language request.',
+    rules: [
+      {
+        group: 'dockGroupMerge',
+        contextWords: XENESIS_NATURAL_DOCK_MERGE_CONTEXT_WORDS,
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.dockMerge,
+      },
+    ],
   },
   dockPanesList: {
     id: 'natural-dock-panes-list',
     path: 'xd.dock.panes.list',
     reason: 'List dock panes from natural language request.',
+    rules: [
+      {
+        group: 'dockPanesList',
+        contextWords: XENESIS_NATURAL_PANE_LIST_CONTEXT_WORDS,
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.dockPanesListRead,
+      },
+    ],
   },
   artifactTargetSet: {
     id: 'natural-artifact-target-set',
     path: 'xd.dock.artifactTarget.set',
     reason: 'Set active pane as artifact target from natural language request.',
+    rules: [
+      {
+        group: 'artifactTarget',
+        contextWords: XENESIS_NATURAL_ARTIFACT_TARGET_CONTEXT_WORDS,
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.artifactTargetSet,
+      },
+    ],
   },
   appStatus: {
     id: 'natural-app-status',
     path: 'xd.app.status',
     reason: 'Read app status from natural language request.',
-  },
-} as const satisfies Record<string, XenesisNaturalDeskActionDescriptor>;
-
-export const XENESIS_NATURAL_DESK_PANE_OPEN_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_DESK_SETTINGS_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_OPEN_OR_SHOW_WORDS],
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.settingsOpen,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.settingsPaneOpen,
-  },
-  {
-    contextWords: XENESIS_NATURAL_DESK_DIAGNOSTICS_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_OPEN_OR_SHOW_MINIMAL_WORDS],
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.diagnosticsOpen,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.diagnosticsPaneOpen,
-  },
-  {
-    contextWords: XENESIS_NATURAL_CORE_CAPABILITY_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.capabilityExplorerOpen,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.capabilityExplorerOpen,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
-
-export const XENESIS_NATURAL_DESK_CAPTURE_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_CAPTURE_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_GENERIC_LIST_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.captureList,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.captureListRead,
-  },
-  {
-    contextWords: XENESIS_NATURAL_CAPTURE_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.captureActivePane,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.activePaneCapture,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
-
-export const XENESIS_NATURAL_DESK_FILE_LIST_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_FILE_LIST_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.filesListOpen,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.filesListRead,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
-
-export const XENESIS_NATURAL_DESK_FILE_PATH_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_FILE_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_GENERIC_OPEN_WORDS],
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.fileOpen,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.fileOpen,
-  },
-  {
-    contextWords: XENESIS_NATURAL_FILE_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_FILE_READ_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.fileRead,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.fileContentRead,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
-
-export const XENESIS_NATURAL_DESK_MISC_READ_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_FAVORITES_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.favoritesShow,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.favoritesShow,
-  },
-  {
-    contextWords: XENESIS_NATURAL_APP_STATUS_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_APP_STATUS_TARGET_WORDS],
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.appStatus,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.appStatusRead,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
-
-export const XENESIS_NATURAL_ACTIVE_DOCK_FOCUS_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_GENERIC_FOCUS_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_PANE_TAB_CURRENT_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.dockFocusActive,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.activeDockFocus,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
-
-export const XENESIS_NATURAL_ACTIVE_DOCK_CLOSE_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_RIGHT_SCOPE_WORDS,
-    requiredContextWordGroups: [
-      XENESIS_NATURAL_GENERIC_CLOSE_CONTEXT_WORDS,
-      XENESIS_NATURAL_PANE_TAB_CURRENT_CONTEXT_WORDS,
+    rules: [
+      {
+        group: 'miscRead',
+        contextWords: XENESIS_NATURAL_APP_STATUS_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_APP_STATUS_TARGET_WORDS],
+        visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.appStatusRead,
+      },
     ],
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.dockCloseRight,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.activeDockClose,
   },
-  {
-    contextWords: XENESIS_NATURAL_OTHER_SCOPE_WORDS,
-    requiredContextWordGroups: [
-      XENESIS_NATURAL_GENERIC_CLOSE_CONTEXT_WORDS,
-      XENESIS_NATURAL_PANE_TAB_CURRENT_CONTEXT_WORDS,
-    ],
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.dockCloseOthers,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.activeDockClose,
-  },
-  {
-    contextWords: XENESIS_NATURAL_ALL_SCOPE_WORDS,
-    requiredContextWordGroups: [
-      XENESIS_NATURAL_GENERIC_CLOSE_CONTEXT_WORDS,
-      XENESIS_NATURAL_PANE_TAB_CURRENT_CONTEXT_WORDS,
-    ],
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.dockCloseAll,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.activeDockClose,
-  },
-  {
-    contextWords: XENESIS_NATURAL_GENERIC_CLOSE_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_PANE_TAB_CURRENT_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.dockCloseActive,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.activeDockClose,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+} as const satisfies Record<string, XenesisNaturalDeskActionSpec>;
 
-export const XENESIS_NATURAL_DOCK_SIZE_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_PANE_SIZE_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_RESIZE_COMMAND_WORDS],
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.dockSizeSet,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.dockAreaResize,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+export const buildXenesisNaturalDeskActionDescriptors = <TSpecs extends Record<string, XenesisNaturalDeskActionSpec>>(
+  specs: TSpecs,
+) =>
+  Object.fromEntries(
+    Object.entries(specs).map(([key, spec]) => [
+      key,
+      {
+        id: spec.id,
+        path: spec.path,
+        reason: spec.reason,
+      },
+    ]),
+  ) as { readonly [K in keyof TSpecs]: XenesisNaturalDeskActionDescriptor };
 
-export const XENESIS_NATURAL_WINDOW_SIZE_PRESET_RULES = [
-  {
-    contextWords: [],
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.windowSizePreset,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+export const buildXenesisNaturalDeskActionRules = <TSpecs extends Record<string, XenesisNaturalDeskActionSpec>>(
+  specs: TSpecs,
+  group: XenesisNaturalDeskActionRuleGroup,
+) =>
+  Object.values(specs).flatMap((spec) =>
+    (spec.rules ?? [])
+      .filter((rule) => rule.group === group)
+      .map(
+        (rule) =>
+          ({
+            contextWords: rule.contextWords,
+            ...(rule.requiredContextWordGroups ? { requiredContextWordGroups: rule.requiredContextWordGroups } : {}),
+            ...(rule.blockedContextWords ? { blockedContextWords: rule.blockedContextWords } : {}),
+            action: {
+              id: spec.id,
+              path: spec.path,
+              reason: spec.reason,
+            },
+            ...(rule.visibleText ? { visibleText: rule.visibleText } : {}),
+          }) satisfies XenesisNaturalCatalogActionRule,
+      ),
+  ) as readonly XenesisNaturalCatalogActionRule[];
 
-export const XENESIS_NATURAL_EXPLORER_SIMPLE_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_EXPLORER_HIDE_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_EXPLORER_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.explorerHide,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.explorerHide,
-  },
-  {
-    contextWords: XENESIS_NATURAL_TOGGLE_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_EXPLORER_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.explorerToggle,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.explorerToggle,
-  },
-  {
-    contextWords: XENESIS_NATURAL_REFRESH_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_EXPLORER_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.explorerRefresh,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.explorerRefresh,
-  },
-  {
-    contextWords: XENESIS_NATURAL_PARENT_NAVIGATION_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_EXPLORER_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.explorerGoUp,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.explorerGoUp,
-  },
-  {
-    contextWords: XENESIS_NATURAL_EXPLORER_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.explorerShow,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.explorerShow,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+export const XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS = buildXenesisNaturalDeskActionDescriptors(
+  XENESIS_NATURAL_DESK_ACTION_SPECS,
+);
 
-export const XENESIS_NATURAL_EXPLORER_FILTER_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_FILTER_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_EXPLORER_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.explorerFilter,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.explorerFilterApply,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+export const XENESIS_NATURAL_DESK_PANE_OPEN_RULES = buildXenesisNaturalDeskActionRules(
+  XENESIS_NATURAL_DESK_ACTION_SPECS,
+  'paneOpen',
+);
 
-export const XENESIS_NATURAL_EXPLORER_NAVIGATE_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_EXPLORER_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.explorerNavigate,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.explorerNavigate,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+export const XENESIS_NATURAL_DESK_CAPTURE_RULES = buildXenesisNaturalDeskActionRules(
+  XENESIS_NATURAL_DESK_ACTION_SPECS,
+  'capture',
+);
 
-export const XENESIS_NATURAL_TERMINAL_LIST_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_TERMINAL_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_GENERIC_LIST_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.terminalsList,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.terminalListRead,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+export const XENESIS_NATURAL_DESK_FILE_LIST_RULES = buildXenesisNaturalDeskActionRules(
+  XENESIS_NATURAL_DESK_ACTION_SPECS,
+  'fileList',
+);
 
-export const XENESIS_NATURAL_TERMINAL_MANY_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_TERMINAL_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_TERMINAL_MULTI_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.terminalRunMany,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.multipleTerminalsOpenAndArrange,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+export const XENESIS_NATURAL_DESK_FILE_PATH_RULES = buildXenesisNaturalDeskActionRules(
+  XENESIS_NATURAL_DESK_ACTION_SPECS,
+  'filePath',
+);
 
-export const XENESIS_NATURAL_TERMINAL_RUN_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_TERMINAL_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_TERMINAL_RUN_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.terminalRun,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.terminalCommandRun,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+export const XENESIS_NATURAL_DESK_MISC_READ_RULES = buildXenesisNaturalDeskActionRules(
+  XENESIS_NATURAL_DESK_ACTION_SPECS,
+  'miscRead',
+);
 
-export const XENESIS_NATURAL_DOCK_WINDOW_ARRANGE_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_ARRANGE_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.dockWindowArrange,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.scopedDeskAreaArrange,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+export const XENESIS_NATURAL_ACTIVE_DOCK_FOCUS_RULES = buildXenesisNaturalDeskActionRules(
+  XENESIS_NATURAL_DESK_ACTION_SPECS,
+  'dockFocus',
+);
 
-export const XENESIS_NATURAL_DOCK_PANE_ARRANGE_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_PANE_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_ARRANGE_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.dockPaneArrange,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.activeDockPaneArrange,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+export const XENESIS_NATURAL_ACTIVE_DOCK_CLOSE_RULES = buildXenesisNaturalDeskActionRules(
+  XENESIS_NATURAL_DESK_ACTION_SPECS,
+  'dockClose',
+);
 
-export const XENESIS_NATURAL_DOCK_GROUP_ARRANGE_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_DOCK_GRID_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.dockArrangeGrid,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.dockGroupTile,
-  },
-  {
-    contextWords: XENESIS_NATURAL_DOCK_HORIZONTAL_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.dockArrangeHorizontal,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.dockGroupHorizontal,
-  },
-  {
-    contextWords: XENESIS_NATURAL_DOCK_VERTICAL_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.dockArrangeVertical,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.dockGroupVertical,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+export const XENESIS_NATURAL_DOCK_SIZE_RULES = buildXenesisNaturalDeskActionRules(
+  XENESIS_NATURAL_DESK_ACTION_SPECS,
+  'dockSize',
+);
 
-export const XENESIS_NATURAL_DOCK_WINDOW_MERGE_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_DOCK_MERGE_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.dockWindowMerge,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.scopedDockMerge,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+export const XENESIS_NATURAL_WINDOW_SIZE_PRESET_RULES = buildXenesisNaturalDeskActionRules(
+  XENESIS_NATURAL_DESK_ACTION_SPECS,
+  'windowSizePreset',
+);
 
-export const XENESIS_NATURAL_DOCK_PANE_MERGE_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_PANE_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_DOCK_MERGE_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.dockPaneMerge,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.activeDockPaneMerge,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+export const XENESIS_NATURAL_EXPLORER_SIMPLE_RULES = buildXenesisNaturalDeskActionRules(
+  XENESIS_NATURAL_DESK_ACTION_SPECS,
+  'explorerSimple',
+);
 
-export const XENESIS_NATURAL_DOCK_GROUP_MERGE_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_DOCK_MERGE_ALL_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_DOCK_MERGE_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.dockMergeAll,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.dockMerge,
-  },
-  {
-    contextWords: XENESIS_NATURAL_DOCK_MERGE_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.dockMergeGroup,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.dockMerge,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+export const XENESIS_NATURAL_EXPLORER_FILTER_RULES = buildXenesisNaturalDeskActionRules(
+  XENESIS_NATURAL_DESK_ACTION_SPECS,
+  'explorerFilter',
+);
 
-export const XENESIS_NATURAL_DOCK_PANES_LIST_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_PANE_LIST_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.dockPanesList,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.dockPanesListRead,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+export const XENESIS_NATURAL_EXPLORER_NAVIGATE_RULES = buildXenesisNaturalDeskActionRules(
+  XENESIS_NATURAL_DESK_ACTION_SPECS,
+  'explorerNavigate',
+);
 
-export const XENESIS_NATURAL_ARTIFACT_TARGET_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_ARTIFACT_TARGET_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS.artifactTargetSet,
-    visibleText: XENESIS_NATURAL_PLAN_VISIBLE_TEXT.artifactTargetSet,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+export const XENESIS_NATURAL_TERMINAL_LIST_RULES = buildXenesisNaturalDeskActionRules(
+  XENESIS_NATURAL_DESK_ACTION_SPECS,
+  'terminalList',
+);
+
+export const XENESIS_NATURAL_TERMINAL_MANY_RULES = buildXenesisNaturalDeskActionRules(
+  XENESIS_NATURAL_DESK_ACTION_SPECS,
+  'terminalMany',
+);
+
+export const XENESIS_NATURAL_TERMINAL_RUN_RULES = buildXenesisNaturalDeskActionRules(
+  XENESIS_NATURAL_DESK_ACTION_SPECS,
+  'terminalRun',
+);
+
+export const XENESIS_NATURAL_DOCK_WINDOW_ARRANGE_RULES = buildXenesisNaturalDeskActionRules(
+  XENESIS_NATURAL_DESK_ACTION_SPECS,
+  'dockWindowArrange',
+);
+
+export const XENESIS_NATURAL_DOCK_PANE_ARRANGE_RULES = buildXenesisNaturalDeskActionRules(
+  XENESIS_NATURAL_DESK_ACTION_SPECS,
+  'dockPaneArrange',
+);
+
+export const XENESIS_NATURAL_DOCK_GROUP_ARRANGE_RULES = buildXenesisNaturalDeskActionRules(
+  XENESIS_NATURAL_DESK_ACTION_SPECS,
+  'dockGroupArrange',
+);
+
+export const XENESIS_NATURAL_DOCK_WINDOW_MERGE_RULES = buildXenesisNaturalDeskActionRules(
+  XENESIS_NATURAL_DESK_ACTION_SPECS,
+  'dockWindowMerge',
+);
+
+export const XENESIS_NATURAL_DOCK_PANE_MERGE_RULES = buildXenesisNaturalDeskActionRules(
+  XENESIS_NATURAL_DESK_ACTION_SPECS,
+  'dockPaneMerge',
+);
+
+export const XENESIS_NATURAL_DOCK_GROUP_MERGE_RULES = buildXenesisNaturalDeskActionRules(
+  XENESIS_NATURAL_DESK_ACTION_SPECS,
+  'dockGroupMerge',
+);
+
+export const XENESIS_NATURAL_DOCK_PANES_LIST_RULES = buildXenesisNaturalDeskActionRules(
+  XENESIS_NATURAL_DESK_ACTION_SPECS,
+  'dockPanesList',
+);
+
+export const XENESIS_NATURAL_ARTIFACT_TARGET_RULES = buildXenesisNaturalDeskActionRules(
+  XENESIS_NATURAL_DESK_ACTION_SPECS,
+  'artifactTarget',
+);
 
 export type XenesisNaturalRuntimeActionRuleGroup =
   | 'agentReadback'

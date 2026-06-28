@@ -14974,3 +14974,69 @@ Verification so far:
     those CR paths are mutable controls in the current development app.
 - Next intended step:
   - Add Obsidian working note, stage, and commit this runtime spec slice.
+
+## Current Desk Core Natural Routing Surface Spec Slice
+
+- Current objective:
+  - Continue the hardcoding-removal cycle by deriving Desk core natural action
+    descriptors and rule groups from a shared Desk action spec.
+- Rationale:
+  - Runtime routing now has one spec source, but Desk core routing still keeps
+    action descriptors separate from pane, capture, file, misc read, dock,
+    explorer, terminal, arrange, merge, and artifact target rule arrays.
+  - These are the remaining non-provider/non-connection natural Desk control
+    surfaces and are a large enough unit to reduce duplicated routing data
+    without mixing in unrelated provider/tool/messenger target specs.
+- Scope:
+  - Add RED tests requiring `XENESIS_NATURAL_DESK_ACTION_SPECS`.
+  - Preserve existing ids, CR paths, reasons, rule order, context words,
+    required context groups, visible text, args behavior, and resolver behavior.
+  - Generate the existing exported rule arrays from spec rule groups so callers
+    do not need to change.
+- Touched files so far:
+  - `handoff.md`
+- Commands run:
+  - `git status --short --branch` -> clean `agent/upcoming-work-20260627`.
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> failed 42/43 because `XENESIS_NATURAL_DESK_ACTION_SPECS` was not
+    implemented.
+  - GREEN:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 43/43.
+  - `npm run typecheck` -> passed.
+  - `npx biome check src\shared\xenesisNaturalLanguageCapabilityCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts handoff.md`
+    -> checked 2 files, no fixes applied.
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` -> passed
+    6/6.
+  - `npm run docs:capabilities:audit` -> passed, wrote
+    `docs/capability-registry-audit.md`.
+  - `npm run smoke:xenesis:natural-desk-routing` -> passed 180/180.
+  - `rg -n "Missing|Undispatched|Dispatcher paths missing" docs\capability-registry-audit.md`
+    -> missing registered paths 0, missing dispatched coverage paths 0,
+    undispatched static callable methods 0, dispatcher paths missing from tree
+    0.
+  - `git diff --check` -> passed; CRLF warnings only.
+  - `npm run lint` -> failed on existing repo-wide Biome diagnostics outside
+    this slice, including `extensions/sample.file-helper/main.js` and
+    repository CRLF formatter diffs in config/package files; changed-file
+    Biome check passed.
+  - `rg -n "XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS = \{|export const XENESIS_NATURAL_DESK_.*RULES = \[|export const XENESIS_NATURAL_(ACTIVE_DOCK|DOCK|EXPLORER|TERMINAL|ARTIFACT).*RULES = \[" src\shared\xenesisNaturalLanguageCapabilityCatalog.ts`
+    -> no matches, confirming the old direct Desk descriptor/rule-array shapes
+    are gone.
+- Implemented:
+  - Added `XENESIS_NATURAL_DESK_ACTION_SPECS` as the shared source for core
+    Desk action ids, CR paths, reasons, rule groups, context words, required
+    context groups, and visible text.
+  - Generated `XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS` from the Desk spec.
+  - Generated pane, capture, file, misc read, dock, explorer, terminal, arrange,
+    merge, and artifact target rule arrays from Desk spec rule groups.
+  - Preserved existing natural routing behavior, including specific rule
+    priority for scoped dock close and dock merge prompts.
+- Known gaps:
+  - Natural-language routing remains deterministic catalog routing, not model
+    reasoning.
+  - Repository-wide `npm run lint` is still blocked by pre-existing Biome
+    diagnostics outside this slice; scoped Biome check for changed files passes.
+- Next intended step:
+  - Add Obsidian working note, stage, and commit this Desk core spec slice.
