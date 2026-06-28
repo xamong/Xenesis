@@ -524,11 +524,6 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     true,
   );
   for (const localNaturalPlannerFunction of [
-    'function naturalCatalogRuleFromNaturalText',
-    'function naturalCatalogRuleActionFromNaturalText',
-    'function naturalCatalogRulePlanFromNaturalText',
-    'function naturalPlan',
-    'function emptyNaturalPlan',
     'function toolOpenActionFromNaturalText',
     'function viewKindFromNaturalText',
     'function xenesisConnectionTargetFromNaturalText',
@@ -541,6 +536,26 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     assert.doesNotMatch(source, new RegExp(localNaturalPlannerFunction));
     assert.match(naturalPlannerSource, new RegExp(localNaturalPlannerFunction));
   }
+  for (const localNaturalPlanBuilder of [
+    'function naturalCatalogRuleFromNaturalText',
+    'function naturalCatalogRuleActionFromNaturalText',
+    'function naturalCatalogRulePlanFromNaturalText',
+    'function naturalPlan',
+    'function emptyNaturalPlan',
+  ]) {
+    assert.doesNotMatch(naturalPlannerSource, new RegExp(localNaturalPlanBuilder));
+  }
+  for (const sharedNaturalPlanBuilder of [
+    'buildXenesisNaturalLanguagePlan',
+    'emptyXenesisNaturalLanguagePlan',
+    'findXenesisNaturalCatalogRule',
+    'findXenesisNaturalCatalogRulePlan',
+  ]) {
+    assert.match(catalogSource, new RegExp(`export function ${sharedNaturalPlanBuilder}`));
+    assert.match(naturalPlannerSource, new RegExp(sharedNaturalPlanBuilder));
+  }
+  assert.match(catalogSource, /export interface XenesisNaturalLanguagePlan/);
+  assert.match(naturalPlannerSource, /type XenesisDeskNaturalLanguagePlan = XenesisNaturalLanguagePlan/);
   for (const localNaturalPredicate of [
     'function hasExplicitOpenIntent',
     'function hasActionIntent',

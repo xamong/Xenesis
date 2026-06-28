@@ -77,6 +77,10 @@ export interface XenesisDeskActionParseResult {
   errors: string[];
 }
 
+export interface XenesisNaturalLanguagePlan extends XenesisDeskActionParseResult {
+  matched: boolean;
+}
+
 export interface XenesisDeskActionRecordNormalizeResult {
   action?: XenesisNaturalDeskActionRequest;
   error?: string;
@@ -4329,6 +4333,23 @@ export function buildXenesisNaturalCatalogAction(
   return buildXenesisNaturalAction(descriptor.id, descriptor.path, args, descriptor.reason);
 }
 
+export function buildXenesisNaturalLanguagePlan(
+  visibleText: string,
+  actions: XenesisNaturalDeskActionRequest[],
+  errors: string[] = [],
+): XenesisNaturalLanguagePlan {
+  return { visibleText, actions, errors, matched: actions.length > 0 || errors.length > 0 };
+}
+
+export function emptyXenesisNaturalLanguagePlan(): XenesisNaturalLanguagePlan {
+  return {
+    visibleText: XENESIS_NATURAL_TEXT_DEFAULTS.empty,
+    actions: [],
+    errors: [],
+    matched: false,
+  };
+}
+
 export function buildXenesisNaturalTemplateAction<TArgs extends unknown[]>(
   descriptor: XenesisNaturalDeskActionTemplateDescriptor<TArgs>,
   templateArgs: TArgs,
@@ -4378,6 +4399,23 @@ export function findXenesisNaturalCatalogRuleAction(
 ): XenesisNaturalDeskActionRequest | null {
   const rule = findXenesisNaturalContextRule(value, rules);
   return rule ? buildXenesisNaturalCatalogAction(rule.action, args) : null;
+}
+
+export function findXenesisNaturalCatalogRule(
+  value: string,
+  rules: readonly XenesisNaturalCatalogActionRule[],
+): XenesisNaturalCatalogActionRule | null {
+  return findXenesisNaturalContextRule(value, rules);
+}
+
+export function findXenesisNaturalCatalogRulePlan(
+  value: string,
+  rules: readonly XenesisNaturalCatalogActionRule[],
+  args: unknown = XENESIS_NATURAL_DESK_ACTION_ARGS.empty(),
+): XenesisNaturalLanguagePlan | null {
+  const rule = findXenesisNaturalCatalogRule(value, rules);
+  if (!rule?.visibleText) return null;
+  return buildXenesisNaturalLanguagePlan(rule.visibleText, [buildXenesisNaturalCatalogAction(rule.action, args)]);
 }
 
 export function xenesisNaturalConnectionTargetMatchesRule(

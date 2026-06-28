@@ -4850,6 +4850,40 @@
 - External documentation handling: no browsing. Used cached Obsidian/source and
   local tests only.
 
+## Natural Plan Builder Ownership Slice
+
+- Continued the larger slice-cycle hardcoding cleanup by moving generic
+  natural-language plan/action wrapper ownership out of
+  `src/shared/xenesisNaturalLanguagePlanner.ts` and into
+  `src/shared/xenesisNaturalLanguageCatalog.ts`.
+- Added catalog-owned plan/build helper exports:
+  - `XenesisNaturalLanguagePlan`.
+  - `buildXenesisNaturalLanguagePlan`.
+  - `emptyXenesisNaturalLanguagePlan`.
+  - `findXenesisNaturalCatalogRule`.
+  - `findXenesisNaturalCatalogRulePlan`.
+- Kept the planner responsible for route ordering, dynamic extraction, and
+  branch selection only. The renderer-facing
+  `XenesisDeskNaturalLanguagePlan` type name remains stable as a planner alias.
+- Strengthened source-ownership guards in
+  `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  so generic plan builders cannot drift back into the planner.
+- Verification:
+  - Focused RED failed 37/38 as expected while
+    `function naturalCatalogRuleFromNaturalText` still lived in the planner.
+  - Focused GREEN passed 38/38 after the builder move.
+  - Scoped Biome format/check passed for the touched shared and renderer test
+    files.
+  - Focused shared/renderer coverage passed 74/74.
+  - `npm run typecheck` passed.
+  - `npm run build` passed, including typecheck.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 144/144.
+  - `git diff --check` passed with LF-to-CRLF working-copy warnings only.
+- CR audit was skipped because this slice does not change CR schemas,
+  dispatchers, generated coverage maps, or capability behavior.
+- External documentation handling: no browsing. Used cached Obsidian/source and
+  local tests only.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
