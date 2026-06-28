@@ -7,6 +7,72 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current Natural Plan Resolver Ownership Slice
+
+- Objective: continue the larger hardcoding cleanup by moving branch-level
+  natural-language plan construction out of
+  `src/shared/xenesisNaturalLanguagePlanner.ts` into a shared plan resolver
+  module.
+- Observed gap:
+  - `src/shared/xenesisNaturalLanguagePlanner.ts` no longer owns
+    Xenesis/runtime action resolver helpers, but it still directly imports
+    generic Desk/dock/explorer/terminal/view rule constants and builds
+    branch plans with `buildXenesisNaturalLanguagePlan`,
+    `buildXenesisNaturalCatalogAction`, and
+    `findXenesisNaturalCatalogRulePlan`.
+  - That keeps CR action construction logic inside the route-order file instead
+    of a branch resolver layer.
+- Scope boundary:
+  - Refactor/source ownership only.
+  - Preserve route order, CR paths, args, visible text, approval state, action
+    reasons, and natural routing smoke behavior.
+  - Do not change CR schemas, dispatchers, provider runtime selection,
+    settings writes, OAuth/MCP execution, messenger delivery, or Action Inbox
+    semantics.
+- External documentation handling: no browsing. Use cached Obsidian/source,
+  local tests, build, and smoke only.
+- Plan:
+  - `docs/superpowers/plans/2026-06-28-xenesis-natural-plan-resolver-ownership.md`.
+- Implementation:
+  - Added `src/shared/xenesisNaturalLanguagePlanResolvers.ts` as the owner of
+    branch-level natural-language plan construction.
+  - Moved Xenesis/runtime visible-text wrappers and generic
+    Desk/dock/explorer/terminal/view branch builders out of
+    `src/shared/xenesisNaturalLanguagePlanner.ts`.
+  - Kept `src/shared/xenesisNaturalLanguagePlanner.ts` focused on raw text
+    normalization, action-intent gating, placement detection, and ordered
+    resolver selection.
+  - Updated
+    `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+    source guards so branch plan builders, plan-visible text, generic Desk
+    rules, open/show rules, and catalog action builders cannot drift back into
+    the planner or facade.
+- RED/GREEN:
+  - RED focused test failed as expected with 37/38 passing while
+    `buildXenesisNaturalLanguagePlan` and generic plan-construction rules still
+    lived in the planner and the plan resolver file did not exist.
+  - GREEN focused test passed with 38/38 after moving branch plan construction
+    into `src/shared/xenesisNaturalLanguagePlanResolvers.ts`.
+- Verification:
+  - `npx biome format --write src\shared\xenesisNaturalLanguagePlanResolvers.ts src\shared\xenesisNaturalLanguagePlanner.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed; fixed formatting/import ordering.
+  - `npx biome check src\shared\xenesisNaturalLanguagePlanResolvers.ts src\shared\xenesisNaturalLanguagePlanner.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --max-diagnostics 80`
+    passed after import organization.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 38/38 after formatting.
+  - `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 74/74.
+  - `npm run typecheck` passed.
+  - `npm run build` passed, including typecheck; existing Vite warnings remain
+    limited to browser-externalized `hwp.js` `fs`, dynamic/static
+    `deskBridge.ts` imports, and large renderer chunks.
+  - `npm run smoke:xenesis:natural-desk-routing` passed with 144/144.
+  - `git diff --check` passed with LF-to-CRLF working-copy warnings only.
+- CR audit was skipped because this slice changes source ownership only, not CR
+  schemas, dispatchers, generated coverage maps, or capability behavior.
+- Next intended step:
+  - Update Obsidian working note, mark the plan complete, and commit this slice.
+
 ## Current Natural Action Resolver Ownership Slice
 
 - Objective: continue the larger hardcoding cleanup by moving Xenesis/runtime

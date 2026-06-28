@@ -4881,6 +4881,42 @@
 - External documentation handling: no browsing. Used cached Obsidian/source and
   local tests only.
 
+## Natural Plan Resolver Ownership Slice
+
+- Continued the larger slice-cycle hardcoding cleanup by moving branch-level
+  natural-language plan construction out of
+  `src/shared/xenesisNaturalLanguagePlanner.ts` and into
+  `src/shared/xenesisNaturalLanguagePlanResolvers.ts`.
+- The planner now owns only raw text normalization, action-intent gating,
+  placement detection, and ordered resolver selection. The new plan resolver
+  module owns visible-text plan wrapping and generic Desk/dock/explorer/
+  terminal/view branch construction.
+- Resolver-owned branches now cover Xenesis/runtime visible-text wrappers,
+  Connection Center open/read/review plan wrappers, local CLI/MCP/gateway/
+  runtime/profile plans, core tool/view opens, pane/capture/file/read plans,
+  dock focus/close/size/arrange/merge/list plans, explorer filter/navigate/
+  simple plans, and terminal list/many/run plans.
+- Strengthened source-ownership guards in
+  `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  so branch plan builders, plan-visible text, generic Desk rules, open/show
+  rules, view-open rules, and catalog action builders cannot drift back into the
+  facade or planner.
+- Verification:
+  - Focused RED failed 37/38 as expected before the plan resolver module
+    existed.
+  - Focused GREEN passed 38/38 after moving branch plan construction.
+  - Scoped Biome format/check passed for the touched shared and renderer test
+    files.
+  - Focused shared/renderer coverage passed 74/74.
+  - `npm run typecheck` passed.
+  - `npm run build` passed, including typecheck.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 144/144.
+  - `git diff --check` passed with LF-to-CRLF working-copy warnings only.
+- CR audit was skipped because this slice does not change CR schemas,
+  dispatchers, generated coverage maps, or capability behavior.
+- External documentation handling: no browsing. Used cached Obsidian/source and
+  local tests only.
+
 ## Natural Plan Builder Ownership Slice
 
 - Continued the larger slice-cycle hardcoding cleanup by moving generic
