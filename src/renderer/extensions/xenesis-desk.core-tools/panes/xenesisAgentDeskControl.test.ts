@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { listDeskBridgeCapabilities } from '../../../../shared/deskBridgeCapabilities';
 import {
+  findXenesisConnectionUserStoryWorkflowPreviewTarget,
   XENESIS_CONNECTION_MESSENGER_IDS,
   XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_DEFINITIONS,
   XENESIS_CONNECTION_PROVIDER_IDS,
@@ -19,6 +20,7 @@ import {
   buildXenesisNaturalMessengerViewSectionOpenAction,
   buildXenesisNaturalProviderViewSectionOpenAction,
   buildXenesisNaturalToolViewSectionOpenAction,
+  buildXenesisNaturalUserStoryWorkflowPreviewAction,
   XENESIS_NATURAL_ACTIVE_DOCK_CLOSE_RULES,
   XENESIS_NATURAL_ACTIVE_DOCK_FOCUS_RULES,
   XENESIS_NATURAL_AGENT_READBACK_RULES,
@@ -428,6 +430,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'buildXenesisNaturalProviderViewSectionOpenAction',
     'buildXenesisNaturalToolViewSectionOpenAction',
     'buildXenesisNaturalMessengerViewSectionOpenAction',
+    'buildXenesisNaturalUserStoryWorkflowPreviewAction',
   ]) {
     assert.match(capabilityCatalogSource, new RegExp(`export function ${sharedActionBuilderFunction}`));
   }
@@ -438,6 +441,8 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   ]) {
     assert.doesNotMatch(naturalResolverSource, new RegExp(localViewSectionPathLiteral.replace(/\./g, '\\.')));
   }
+  assert.doesNotMatch(naturalResolverSource, /path:\s*previewTarget\.workflowPreview\.previewPath/);
+  assert.doesNotMatch(naturalResolverSource, /natural-xenesis-user-story-workflow-preview-\$\{previewTarget\.id\}/);
   for (const localExtractionFunction of [
     'function normalizeNaturalLanguageText',
     'function detectPlacement',
@@ -3502,6 +3507,25 @@ test('natural view-section open actions are built by shared capability catalog h
       reason: 'Open Telegram Routing messenger view section from natural language request.',
     },
   );
+});
+
+test('natural user-story workflow preview action is built by shared capability catalog helper', () => {
+  const notion = findXenesisConnectionUserStoryWorkflowPreviewTarget('notion');
+  assert.ok(notion);
+
+  assert.deepEqual(buildXenesisNaturalUserStoryWorkflowPreviewAction(notion), {
+    id: 'natural-xenesis-user-story-workflow-preview-notion',
+    path: 'xd.automation.workflow.preview',
+    args: {
+      name: 'notion-user-story-preview',
+      description: 'Preview notion user-story readbacks and open the Settings surface.',
+      delayMs: 0,
+      stopOnFail: true,
+      steps: notion.workflowPreview.steps,
+    },
+    approved: false,
+    reason: 'Preview Notion user-story workflow from natural language request.',
+  });
 });
 
 test('planXenesisDeskNaturalLanguageActions maps local CLI and MCP readbacks to CR actions', () => {

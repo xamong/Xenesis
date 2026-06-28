@@ -1,7 +1,4 @@
-import {
-  buildXenesisConnectionUserStoryWorkflowPreviewArgs,
-  findXenesisConnectionUserStoryWorkflowPreviewTarget,
-} from './xenesisConnections';
+import { findXenesisConnectionUserStoryWorkflowPreviewTarget } from './xenesisConnections';
 import {
   buildXenesisNaturalCatalogAction,
   buildXenesisNaturalCoreToolOpenAction,
@@ -10,6 +7,7 @@ import {
   buildXenesisNaturalProviderViewSectionOpenAction,
   buildXenesisNaturalTemplateAction,
   buildXenesisNaturalToolViewSectionOpenAction,
+  buildXenesisNaturalUserStoryWorkflowPreviewAction,
   findXenesisNaturalCatalogRuleAction,
   findXenesisNaturalConnectionAggregateOpenAction,
   findXenesisNaturalConnectionAggregateStatusAction,
@@ -338,13 +336,7 @@ export function xenesisConnectionUserStoryWorkflowPreviewActionFromNaturalText(
   const previewTarget = findXenesisConnectionUserStoryWorkflowPreviewTarget(target.id);
   if (!previewTarget) return null;
 
-  return {
-    id: `natural-xenesis-user-story-workflow-preview-${previewTarget.id}`,
-    path: previewTarget.workflowPreview.previewPath,
-    args: buildXenesisConnectionUserStoryWorkflowPreviewArgs(previewTarget.workflowPreview),
-    approved: false,
-    reason: `Preview ${previewTarget.label} user-story workflow from natural language request.`,
-  };
+  return buildXenesisNaturalUserStoryWorkflowPreviewAction(previewTarget);
 }
 
 export function xenesisConnectionMcpInstallDraftApplyActionFromNaturalText(

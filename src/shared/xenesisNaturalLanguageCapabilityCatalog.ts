@@ -1,4 +1,5 @@
 import {
+  buildXenesisConnectionUserStoryWorkflowPreviewArgs,
   XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_DEFINITIONS,
   XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_IDS,
   XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_DEFINITIONS,
@@ -8,6 +9,7 @@ import {
   type XenesisConnectionMessengerViewSectionId,
   type XenesisConnectionProviderViewSectionId,
   type XenesisConnectionToolViewSectionId,
+  type XenesisConnectionUserStoryWorkflowPreviewTarget,
 } from './xenesisConnections';
 import {
   buildXenesisNaturalLanguagePlan,
@@ -3908,6 +3910,18 @@ export function buildXenesisNaturalMessengerViewSectionOpenAction(
     section,
     XENESIS_NATURAL_DESK_ACTION_ARGS.messengerViewSectionVisible(target.id, section.id),
   );
+}
+
+export function buildXenesisNaturalUserStoryWorkflowPreviewAction(
+  previewTarget: XenesisConnectionUserStoryWorkflowPreviewTarget,
+): XenesisNaturalDeskActionRequest {
+  return {
+    id: `natural-xenesis-user-story-workflow-preview-${previewTarget.id}`,
+    path: previewTarget.workflowPreview.previewPath,
+    args: buildXenesisConnectionUserStoryWorkflowPreviewArgs(previewTarget.workflowPreview),
+    approved: XENESIS_DESK_ACTION_APPROVAL_STATE.pending,
+    reason: `Preview ${previewTarget.label} user-story workflow from natural language request.`,
+  };
 }
 
 export function findXenesisNaturalCatalogRuleAction(

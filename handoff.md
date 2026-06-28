@@ -7,6 +7,84 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Latest Slice: Shared Natural Workflow Preview Action
+
+- Current objective:
+  - Remove the remaining direct natural action object construction for
+    user-story workflow preview from
+    `src/shared/xenesisNaturalLanguageActionResolvers.ts`.
+- Scope:
+  - Add RED tests requiring a shared natural workflow preview action builder.
+  - Add source guards that block direct workflow preview action object shaping
+    in the natural action resolver.
+  - Move action id/path/args/approved/reason shaping into
+    `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`.
+  - Preserve existing Notion/Telegram workflow preview natural prompt payloads.
+- Touched files so far:
+  - `handoff.md`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
+  - `src/shared/xenesisNaturalLanguageActionResolvers.ts`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-shared-natural-workflow-preview-action.md`
+- Intended RED tests:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    should fail because the shared workflow preview action builder does not
+    exist and the resolver still constructs the action object locally.
+- Exact verification result:
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> failed 48/50 as expected because the shared workflow preview action
+    builder was not exported and the natural resolver still constructed the
+    workflow preview action object locally.
+  - GREEN focused:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 50/50.
+- Implemented:
+  - Added `buildXenesisNaturalUserStoryWorkflowPreviewAction` in
+    `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`.
+  - The shared helper reuses
+    `buildXenesisConnectionUserStoryWorkflowPreviewArgs` for the CR workflow
+    preview payload.
+  - Refactored `xenesisConnectionUserStoryWorkflowPreviewActionFromNaturalText`
+    so the resolver only resolves the target and delegates action construction.
+- Verification status:
+  - Focused planner/source-ownership tests, broad smoke/typecheck/build/audit,
+    and live natural Desk routing smoke are green for this slice.
+  - Smoke fixture:
+    `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` ->
+    passed 6/6.
+  - Typecheck:
+    `npm run typecheck` -> passed.
+  - CR audit:
+    `npm run docs:capabilities:audit` -> passed; generated audit summary
+    remained 796 nodes and 689 coverage path references.
+  - CR audit counter readback:
+    `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> all 0.
+  - Build:
+    `npm run build` -> passed. Existing Vite warnings about browser
+    externalization/dynamic import chunking were printed.
+  - Live natural Desk routing smoke:
+    `npm run smoke:xenesis:natural-desk-routing` -> passed 261/261.
+  - Focused Biome write:
+    `npx biome check --write --formatter-enabled=true --linter-enabled=true --assist-enabled=true src/shared/xenesisNaturalLanguageCapabilityCatalog.ts src/shared/xenesisNaturalLanguageActionResolvers.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+    -> passed; fixed one import format.
+  - Focused post-format source/test recheck:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 50/50.
+  - Post-format typecheck:
+    `npm run typecheck` -> passed.
+  - Focused post-format Biome check:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true src/shared/xenesisNaturalLanguageCapabilityCatalog.ts src/shared/xenesisNaturalLanguageActionResolvers.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+    -> passed.
+- Documentation:
+  - Added Obsidian working note
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-shared-natural-workflow-preview-action.md`.
+- Known gaps:
+  - Full repo lint/public-release known gaps remain unchanged.
+- Next intended step:
+  - Run final diff hygiene, stage this slice only, and commit it.
+
 ## Latest Slice: Shared Natural View Section Open Actions
 
 - Current objective:
