@@ -15496,6 +15496,11 @@ Verification so far:
   - `docs/manual/09-onboarding-connections.md`
   - `src/shared/xenesisConnections.ts`
   - `src/shared/xenesisConnections.test.ts`
+  - `src/shared/xenesisConnections.ts`
+  - `src/shared/xenesisNaturalLanguageCatalog.ts`
+  - `src/shared/xenesisNaturalLanguageActionResolvers.ts`
+  - `src/shared/xenesisNaturalLanguagePlanResolvers.ts`
+  - `src/shared/xenesisNaturalLanguagePlanner.ts`
   - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
   - `scripts/xenesisNaturalDeskRoutingLiveSmoke.mjs`
   - `scripts/xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
@@ -17242,6 +17247,122 @@ Verification so far:
 - Next intended step:
   - Run final diff checks, review the diff, commit the slice, then continue the
     next larger CR/Agent cleanup slice.
+
+## Latest Slice: Natural User Story Workflow Preview Routing
+
+- Current objective:
+  - Extend the user-story workflow preview capability from Settings buttons to
+    Agent natural-language Desk control. Requests such as "Notion user story
+    workflow preview" should call `xd.automation.workflow.preview` with the
+    same read/open-only contract metadata used by Settings.
+- Scope:
+  - Expose a shared Connection Center helper that resolves a tool or messenger
+    id to its `storyContract.workflowPreview`.
+  - Add natural action and plan resolver support for workflow preview intent.
+  - Cover Notion tool and Telegram channel preview routing in unit tests and
+    natural routing smoke inventory.
+  - Document the behavior and safety boundary in Obsidian/manual notes.
+- Touched files so far:
+  - `handoff.md`
+  - `docs/manual/12-agent-user-stories.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-natural-user-story-workflow-preview-routing.md`
+  - `src/shared/xenesisConnections.ts`
+  - `src/shared/xenesisConnections.test.ts`
+  - `src/shared/xenesisNaturalLanguageCatalog.ts`
+  - `src/shared/xenesisNaturalLanguageActionResolvers.ts`
+  - `src/shared/xenesisNaturalLanguagePlanResolvers.ts`
+  - `src/shared/xenesisNaturalLanguagePlanner.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `scripts/xenesisNaturalDeskRoutingLiveSmoke.mjs`
+  - `scripts/xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
+- Commands run:
+  - Focused `rg` reads for existing `userStories`, `workflowPreview`, and
+    `xd.automation.workflow.preview` routing.
+  - Focused reads of natural action resolvers, plan resolvers, capability
+    catalog user-story specs, natural routing smoke inventory, Desk action
+    runner, and `xenesisConnections.ts` user-story contract creation.
+  - Added RED tests for the missing shared workflow preview resolver and the
+    missing Agent natural-language workflow preview route.
+  - RED:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> failed as expected because
+    `findXenesisConnectionUserStoryWorkflowPreviewTarget` is not implemented,
+    natural workflow-preview prompts return an empty plan, and the new preview
+    context words do not exist yet.
+  - RED:
+    `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` ->
+    failed because the smoke prompt fixture needs to be realigned with the
+    script inventory, including existing runtime prompts and the new workflow
+    preview prompts.
+  - GREEN focused:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 90/90.
+  - GREEN smoke fixture:
+    `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` ->
+    passed 6/6.
+  - Broad:
+    `npm run typecheck` -> passed.
+  - Live smoke attempt:
+    `npm run smoke:xenesis:natural-desk-routing` -> failed 257/261; only the
+    two new workflow preview prompts failed at path/visible-text checks.
+    Direct `callDeskBridgeCapability` with the generated preview actions
+    returned ok for both Notion and Telegram, so the root cause was stale
+    Electron `out/` output used by the live smoke before rebuilding.
+  - Build:
+    `npm run build` -> passed; refreshed the Electron `out/` bundle used by
+    live smoke.
+  - Live smoke after build:
+    `npm run smoke:xenesis:natural-desk-routing` -> passed 261/261.
+  - CR audit:
+    `npm run docs:capabilities:audit` -> passed; gap counters were all 0
+    (missing registered paths 0, missing dispatched coverage paths 0,
+    undispatched static callable methods 0, dispatcher paths missing from tree
+    0). Generated timestamp/EOF churn in
+    `docs/capability-registry-audit.md` was removed from the diff.
+  - Hygiene:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true ...changed files...`
+    -> initially reported formatting changes in
+    `src/shared/xenesisConnections.ts`,
+    `src/shared/xenesisConnections.test.ts`, and
+    `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`.
+  - Hygiene fix:
+    `npx biome check --write src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts src/shared/xenesisConnections.ts src/shared/xenesisConnections.test.ts`
+    -> fixed 3 files.
+  - GREEN after formatting:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 90/90.
+  - GREEN smoke fixture after formatting:
+    `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` ->
+    passed 6/6.
+  - Hygiene recheck:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true ...changed files...`
+    -> passed.
+  - Hygiene:
+    `git diff --check` -> passed; Git printed LF/CRLF normalization warnings
+    only.
+- Exact verification result:
+  - RED confirmed the missing shared helper and natural route.
+  - GREEN confirmed Notion tool and Telegram channel prompts now route to
+    `xd.automation.workflow.preview` while existing user-story status prompts
+    still route to their status CR paths.
+  - Live Electron smoke confirmed both new prompts through the Agent pane after
+    rebuilding the app bundle.
+- Implemented:
+  - Added a shared workflow-preview target resolver that finds tool or
+    messenger `storyContract.workflowPreview` entries from the existing
+    Connection Center catalogs and returns cloned step args.
+  - Added natural workflow-preview context words, a single-action plan visible
+    text, an action resolver, and a planner candidate before status/open
+    routing.
+  - Realigned the natural routing smoke expected prompt fixture with the script
+    inventory and added Notion/Telegram workflow preview prompts.
+  - Updated the user-story manual and added an Obsidian working note for the
+    natural workflow preview route.
+- Known gaps:
+  - Full repo lint/public-release known gaps remain unchanged.
+- Next intended step:
+  - Review the diff, commit the larger slice, then continue with the next
+    larger CR/Agent cleanup slice.
 
 ## 2026-06-29 - User Story CR Workflow Preview Slice
 

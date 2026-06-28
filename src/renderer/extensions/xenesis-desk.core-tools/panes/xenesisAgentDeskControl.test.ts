@@ -219,6 +219,7 @@ import {
   XENESIS_NATURAL_TERMINAL_CONTEXT_WORDS,
   XENESIS_NATURAL_TEXT_DEFAULTS,
   XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
+  XENESIS_NATURAL_USER_STORY_WORKFLOW_PREVIEW_CONTEXT_WORDS,
   XENESIS_NATURAL_VIEW_OPEN_COMMAND_RULES,
   XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
   XENESIS_NATURAL_WINDOW_SIZE_PRESET_TARGETS,
@@ -482,6 +483,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /XENESIS_NATURAL_SETUP_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_USER_STORY_WORKFLOW_PREVIEW_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_SAFETY_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS/);
@@ -506,6 +508,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.equal(XENESIS_NATURAL_SETUP_CONTEXT_WORDS.includes('configuration'), true);
   assert.equal(XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS.includes('permission'), true);
   assert.equal(XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS.includes('사용자 스토리'), true);
+  assert.equal(XENESIS_NATURAL_USER_STORY_WORKFLOW_PREVIEW_CONTEXT_WORDS.includes('workflow preview'), true);
   assert.equal(XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS.includes('route'), true);
   assert.equal(XENESIS_NATURAL_SAFETY_CONTEXT_WORDS.includes('guardrail'), true);
   assert.equal(XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS.includes('allowlist'), true);
@@ -666,6 +669,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'function xenesisConnectionTargetFromNaturalText',
     'function xenesisConnectionActionFromNaturalText',
     'function xenesisConnectionReadbackActionFromNaturalText',
+    'function xenesisConnectionUserStoryWorkflowPreviewActionFromNaturalText',
     'function xenesisConnectionReviewRequestActionFromNaturalText',
     'function xenesisRuntimeInventoryActionFromNaturalText',
     'function xenesisWorkspaceSetActionFromNaturalText',
@@ -701,6 +705,10 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.match(naturalPlannerSource, /emptyXenesisNaturalLanguagePlan/);
   assert.match(catalogSource, /export interface XenesisNaturalLanguagePlan/);
   assert.match(naturalPlannerSource, /type XenesisDeskNaturalLanguagePlan = XenesisNaturalLanguagePlan/);
+  assert.match(connectionSource, /export function findXenesisConnectionUserStoryWorkflowPreviewTarget/);
+  assert.match(naturalResolverSource, /findXenesisConnectionUserStoryWorkflowPreviewTarget/);
+  assert.match(naturalPlanResolverSource, /xenesisConnectionUserStoryWorkflowPreviewPlanFromNaturalText/);
+  assert.match(naturalPlannerSource, /xenesisConnectionUserStoryWorkflowPreviewPlanFromNaturalText/);
   for (const localNaturalPredicate of [
     'function hasExplicitOpenIntent',
     'function hasActionIntent',
@@ -5753,6 +5761,94 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center read
       reason: 'Read Telegram channel user story status from natural language request.',
     },
   ]);
+});
+
+test('planXenesisDeskNaturalLanguageActions maps user-story workflow preview requests to CR workflow preview', () => {
+  const notionPlan = planXenesisDeskNaturalLanguageActions('노션 user story workflow preview 해줘');
+  assert.equal(notionPlan.visibleText, 'Xenesis user-story workflow preview를 기록합니다.');
+  assert.deepEqual(notionPlan.actions, [
+    {
+      id: 'natural-xenesis-user-story-workflow-preview-notion',
+      path: 'xd.automation.workflow.preview',
+      args: {
+        name: 'notion-user-story-preview',
+        description: 'Preview notion user-story readbacks and open the Settings surface.',
+        delayMs: 0,
+        stopOnFail: true,
+        steps: [
+          {
+            label: 'Read xd.xenesis.connections.status',
+            path: 'xd.xenesis.connections.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Read xd.xenesis.tools.userStories.status',
+            path: 'xd.xenesis.tools.userStories.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Read xd.xenesis.tools.connectors.status',
+            path: 'xd.xenesis.tools.connectors.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Read xd.xenesis.tools.views.status',
+            path: 'xd.xenesis.tools.views.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Read xd.xenesis.guides.status',
+            path: 'xd.xenesis.guides.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Open user-story surface',
+            path: 'xd.xenesis.tools.userStories.open',
+            args: { id: 'notion', ensureVisible: true },
+            approved: false,
+          },
+        ],
+      },
+      approved: false,
+      reason: 'Preview Notion user-story workflow from natural language request.',
+    },
+  ]);
+
+  const telegramPlan = planXenesisDeskNaturalLanguageActions('텔레그램 사용자 스토리 워크플로 미리보기 해줘');
+  assert.equal(telegramPlan.visibleText, 'Xenesis user-story workflow preview를 기록합니다.');
+  const [telegramAction] = telegramPlan.actions;
+  assert.equal(telegramAction?.id, 'natural-xenesis-user-story-workflow-preview-telegram');
+  assert.equal(telegramAction?.path, 'xd.automation.workflow.preview');
+  assert.equal(telegramAction?.approved, false);
+  assert.equal(telegramAction?.reason, 'Preview Telegram user-story workflow from natural language request.');
+
+  const telegramArgs = telegramAction?.args as {
+    name: string;
+    steps: Array<{ path: string; args: Record<string, unknown>; approved: boolean }>;
+  };
+  assert.equal(telegramArgs.name, 'telegram-user-story-preview');
+  assert.deepEqual(telegramArgs.steps.at(-1), {
+    label: 'Open user-story surface',
+    path: 'xd.xenesis.channels.userStories.open',
+    args: { id: 'telegram', ensureVisible: true },
+    approved: false,
+  });
+  assert.equal(
+    telegramArgs.steps.every((step) => step.approved === false),
+    true,
+  );
+  assert.equal(
+    telegramArgs.steps.some(
+      (step) =>
+        step.path.includes('request') || step.path.includes('apply') || step.path === 'xd.xenesis.profiles.testChannel',
+    ),
+    false,
+  );
 });
 
 test('planXenesisDeskNaturalLanguageActions maps Connection Center review requests to CR actions', () => {

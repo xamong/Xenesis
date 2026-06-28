@@ -979,6 +979,13 @@ export interface XenesisConnectionUserStoryContract {
 
 type XenesisConnectionUserStoryContractInput = Omit<XenesisConnectionUserStoryContract, 'workflowPreview'>;
 
+export interface XenesisConnectionUserStoryWorkflowPreviewTarget {
+  id: string;
+  label: string;
+  kind: XenesisConnectionNaturalConnectionTarget['kind'];
+  workflowPreview: XenesisConnectionUserStoryWorkflowPreview;
+}
+
 export type XenesisConnectionToolActionCatalogRuntimeSupport = 'ready-template' | 'planned-oauth' | 'ready-local';
 export type XenesisConnectionToolActionCatalogGroupKind = 'search' | 'read' | 'write';
 export type XenesisConnectionToolActionCatalogApprovalPolicy =
@@ -5006,6 +5013,55 @@ export const XENESIS_CONNECTION_NATURAL_CONNECTION_TARGETS: readonly XenesisConn
     ),
   ),
 ];
+
+function cloneXenesisConnectionUserStoryWorkflowPreview(
+  preview: XenesisConnectionUserStoryWorkflowPreview,
+): XenesisConnectionUserStoryWorkflowPreview {
+  return {
+    ...preview,
+    steps: preview.steps.map((step) => ({
+      label: step.label,
+      path: step.path,
+      args: { ...step.args },
+      approved: step.approved,
+    })),
+  };
+}
+
+export function findXenesisConnectionUserStoryWorkflowPreviewTarget(
+  id: string,
+): XenesisConnectionUserStoryWorkflowPreviewTarget | null {
+  const normalized = String(id || '')
+    .trim()
+    .toLowerCase();
+  if (!normalized) return null;
+
+  const tool = TOOL_CONNECTIONS.find((item) => item.id === normalized && item.toolUserStory?.storyContract);
+  if (tool?.toolUserStory?.storyContract) {
+    return {
+      id: tool.id,
+      label: tool.label,
+      kind: 'tool',
+      workflowPreview: cloneXenesisConnectionUserStoryWorkflowPreview(tool.toolUserStory.storyContract.workflowPreview),
+    };
+  }
+
+  const messenger = [...MESSENGERS, ...PLANNED_MESSENGERS].find(
+    (item) => item.id === normalized && item.channelTemplate?.userStory?.storyContract,
+  );
+  if (messenger?.channelTemplate?.userStory?.storyContract) {
+    return {
+      id: messenger.id,
+      label: messenger.label,
+      kind: 'messenger',
+      workflowPreview: cloneXenesisConnectionUserStoryWorkflowPreview(
+        messenger.channelTemplate.userStory.storyContract.workflowPreview,
+      ),
+    };
+  }
+
+  return null;
+}
 
 export const XENESIS_CONNECTION_NATURAL_PROVIDER_TARGETS: readonly XenesisConnectionNaturalWordsTarget[] =
   XENESIS_CONNECTION_NATURAL_PROVIDER_TARGET_IDS.map((id) => ({

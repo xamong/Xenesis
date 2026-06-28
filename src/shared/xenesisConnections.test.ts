@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   buildXenesisConnectionCenterOpenArgs,
   buildXenesisConnectionsStatus,
+  findXenesisConnectionUserStoryWorkflowPreviewTarget,
   isXenesisConnectionCenterDetailFocus,
   withXenesisConnectionSetupRequestReviews,
   XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES,
@@ -1978,6 +1979,66 @@ test('buildXenesisConnectionsStatus exposes Hermes-style tool user-story workflo
       (step) => !notion.toolUserStory?.storyContract.approvalBoundaries.includes(step.path),
     ),
   );
+});
+
+test('connection user-story workflow preview resolver clones tool and messenger contracts', () => {
+  const notion = findXenesisConnectionUserStoryWorkflowPreviewTarget('notion');
+  assert.ok(notion);
+  assert.equal(notion.id, 'notion');
+  assert.equal(notion.kind, 'tool');
+  assert.equal(notion.label, 'Notion');
+  assert.equal(notion.workflowPreview.previewPath, 'xd.automation.workflow.preview');
+  assert.equal(notion.workflowPreview.runPath, 'xd.automation.workflow.run');
+  assert.equal(notion.workflowPreview.name, 'notion-user-story-preview');
+  assert.equal(notion.workflowPreview.stopOnFail, true);
+  assert.deepEqual(notion.workflowPreview.steps.at(-1), {
+    label: 'Open user-story surface',
+    path: 'xd.xenesis.tools.userStories.open',
+    args: { id: 'notion', ensureVisible: true },
+    approved: false,
+  });
+  assert.equal(
+    notion.workflowPreview.steps.every((step) => step.approved === false),
+    true,
+  );
+  assert.equal(
+    notion.workflowPreview.steps.some(
+      (step) =>
+        step.path.includes('request') || step.path.includes('apply') || step.path === 'xd.xenesis.profiles.testChannel',
+    ),
+    false,
+  );
+
+  notion.workflowPreview.steps.at(-1)!.args.ensureVisible = false;
+  const clonedNotion = findXenesisConnectionUserStoryWorkflowPreviewTarget('notion');
+  assert.ok(clonedNotion);
+  assert.deepEqual(clonedNotion.workflowPreview.steps.at(-1)?.args, { id: 'notion', ensureVisible: true });
+
+  const telegram = findXenesisConnectionUserStoryWorkflowPreviewTarget('telegram');
+  assert.ok(telegram);
+  assert.equal(telegram.id, 'telegram');
+  assert.equal(telegram.kind, 'messenger');
+  assert.equal(telegram.label, 'Telegram');
+  assert.equal(telegram.workflowPreview.name, 'telegram-user-story-preview');
+  assert.deepEqual(telegram.workflowPreview.steps.at(-1), {
+    label: 'Open user-story surface',
+    path: 'xd.xenesis.channels.userStories.open',
+    args: { id: 'telegram', ensureVisible: true },
+    approved: false,
+  });
+  assert.equal(
+    telegram.workflowPreview.steps.every((step) => step.approved === false),
+    true,
+  );
+  assert.equal(
+    telegram.workflowPreview.steps.some(
+      (step) =>
+        step.path.includes('request') || step.path.includes('apply') || step.path === 'xd.xenesis.profiles.testChannel',
+    ),
+    false,
+  );
+
+  assert.equal(findXenesisConnectionUserStoryWorkflowPreviewTarget('missing'), null);
 });
 
 test('buildXenesisConnectionsStatus exposes on-demand tool install plans without executing installs', () => {

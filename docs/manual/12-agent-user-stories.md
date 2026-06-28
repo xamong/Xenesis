@@ -60,6 +60,12 @@ or save any workflow. Settings also records the last Connection Center CR action
 result, so a preview call leaves a visible path/status/step-count summary
 instead of disappearing after the button click.
 
+Agent natural-language Desk control uses the same contract for prompts such as
+`Notion user story workflow preview` or `Telegram 사용자 스토리 워크플로 미리보기`.
+Those prompts route to `xd.automation.workflow.preview` with read/open-only
+steps cloned from the Connection Center catalog, not to provider tools, channel
+tests, sends, request, or apply paths.
+
 ## Provider Stories
 
 ### First chat readiness

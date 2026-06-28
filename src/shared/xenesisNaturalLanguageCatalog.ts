@@ -852,6 +852,7 @@ export const XENESIS_NATURAL_PLAN_VISIBLE_TEXT = {
   captureListRead: '캡처 목록을 조회합니다.',
   connectionReviewRequestRecorded: 'Xenesis 연결 검토 요청을 기록합니다.',
   connectionSetupApplyRecorded: 'Xenesis 연결 설정 적용 요청을 기록합니다.',
+  connectionUserStoryWorkflowPreviewRecorded: 'Xenesis user-story workflow preview를 기록합니다.',
   connectionMcpInstallDraftApplyRecorded: 'Xenesis MCP 설치 초안 적용 요청을 기록합니다.',
   connectionProviderProfileDraftApplyRecorded: 'Xenesis 프로바이더 프로필 초안 적용 요청을 기록합니다.',
   connectionChannelProfileDraftApplyRecorded: 'Xenesis 채널 프로필 초안 적용 요청을 기록합니다.',
@@ -994,6 +995,9 @@ export const XENESIS_NATURAL_ACTION_INTENT_WORDS = [
   'close',
   'width',
   'height',
+  'preview',
+  '미리보기',
+  '프리뷰',
   'status',
   'diagnostic',
   'diagnostics',
@@ -1293,6 +1297,17 @@ export const XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS = [
   'user stories',
   '사용자 스토리',
   '스토리',
+] as const;
+
+export const XENESIS_NATURAL_USER_STORY_WORKFLOW_PREVIEW_CONTEXT_WORDS = [
+  'workflow preview',
+  'workflow-preview',
+  'preview workflow',
+  '워크플로 미리보기',
+  '워크플로우 미리보기',
+  '미리보기',
+  '프리뷰',
+  'preview',
 ] as const;
 
 export const XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS = ['라우팅', 'routing', 'route'] as const;

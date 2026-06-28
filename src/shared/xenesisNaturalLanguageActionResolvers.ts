@@ -1,4 +1,8 @@
 import {
+  findXenesisConnectionUserStoryWorkflowPreviewTarget,
+  type XenesisConnectionUserStoryWorkflowPreview,
+} from './xenesisConnections';
+import {
   buildXenesisNaturalCatalogAction,
   buildXenesisNaturalCoreToolOpenAction,
   buildXenesisNaturalOnboardingArgsForRule,
@@ -72,6 +76,8 @@ import {
   stripXenesisNaturalQuotedText,
   XENESIS_NATURAL_GUIDE_FILE_OPEN_RULES,
   XENESIS_NATURAL_PROVIDER_AUTO_TARGET,
+  XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
+  XENESIS_NATURAL_USER_STORY_WORKFLOW_PREVIEW_CONTEXT_WORDS,
   XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
   type XenesisNaturalConnectionTarget,
   type XenesisNaturalDeskActionRequest,
@@ -307,6 +313,52 @@ export function xenesisConnectionReviewRequestActionFromNaturalText(
   if (!target) return null;
 
   return findXenesisNaturalConnectionTargetRuleAction(value, target, XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES);
+}
+
+function buildXenesisUserStoryWorkflowPreviewActionArgs(
+  preview: XenesisConnectionUserStoryWorkflowPreview,
+): Record<string, unknown> {
+  return {
+    name: preview.name,
+    description: preview.description,
+    delayMs: preview.delayMs,
+    stopOnFail: preview.stopOnFail,
+    steps: preview.steps.map((step) => ({
+      label: step.label,
+      path: step.path,
+      args: { ...step.args },
+      approved: step.approved,
+    })),
+  };
+}
+
+export function xenesisConnectionUserStoryWorkflowPreviewActionFromNaturalText(
+  value: string,
+): XenesisNaturalDeskActionRequest | null {
+  if (
+    !matchesXenesisNaturalContextRules(value, [
+      {
+        contextWords: XENESIS_NATURAL_USER_STORY_WORKFLOW_PREVIEW_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS],
+      },
+    ])
+  ) {
+    return null;
+  }
+
+  const target = xenesisConnectionTargetFromNaturalText(value);
+  if (!target) return null;
+
+  const previewTarget = findXenesisConnectionUserStoryWorkflowPreviewTarget(target.id);
+  if (!previewTarget) return null;
+
+  return {
+    id: `natural-xenesis-user-story-workflow-preview-${previewTarget.id}`,
+    path: previewTarget.workflowPreview.previewPath,
+    args: buildXenesisUserStoryWorkflowPreviewActionArgs(previewTarget.workflowPreview),
+    approved: false,
+    reason: `Preview ${previewTarget.label} user-story workflow from natural language request.`,
+  };
 }
 
 export function xenesisConnectionMcpInstallDraftApplyActionFromNaturalText(

@@ -12,6 +12,7 @@ import {
   xenesisConnectionReadbackActionFromNaturalText,
   xenesisConnectionReviewRequestActionFromNaturalText,
   xenesisConnectionSetupApplyActionFromNaturalText,
+  xenesisConnectionUserStoryWorkflowPreviewActionFromNaturalText,
   xenesisGatewayActionFromNaturalText,
   xenesisProfileInventoryActionFromNaturalText,
   xenesisRunStartActionFromNaturalText,
@@ -101,6 +102,15 @@ export function xenesisConnectionReviewRequestPlanFromNaturalText(value: string)
   return buildXenesisNaturalSingleActionPlan(
     XENESIS_NATURAL_PLAN_VISIBLE_TEXT.connectionReviewRequestRecorded,
     xenesisConnectionReviewRequestActionFromNaturalText(value),
+  );
+}
+
+export function xenesisConnectionUserStoryWorkflowPreviewPlanFromNaturalText(
+  value: string,
+): XenesisNaturalLanguagePlan | null {
+  return buildXenesisNaturalSingleActionPlan(
+    XENESIS_NATURAL_PLAN_VISIBLE_TEXT.connectionUserStoryWorkflowPreviewRecorded,
+    xenesisConnectionUserStoryWorkflowPreviewActionFromNaturalText(value),
   );
 }
 

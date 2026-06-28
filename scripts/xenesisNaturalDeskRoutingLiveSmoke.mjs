@@ -382,6 +382,12 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     expectedVisibleText: 'Desk action completed',
   },
   {
+    id: 'tool-user-story-workflow-preview',
+    prompt: '노션 user story workflow preview 해줘',
+    expectedPath: 'xd.automation.workflow.preview',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
     id: 'hermes-task-scenarios-guide-status',
     prompt: '헤르메스 작업 시나리오 가이드 상태 보여줘',
     expectedPath: 'xd.xenesis.guides.status',
@@ -475,6 +481,12 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     id: 'channel-user-stories-status',
     prompt: '외부 채널 user stories catalog 상태 보여줘',
     expectedPath: 'xd.xenesis.channels.userStories.status',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'channel-user-story-workflow-preview',
+    prompt: '텔레그램 사용자 스토리 워크플로 미리보기 해줘',
+    expectedPath: 'xd.automation.workflow.preview',
     expectedVisibleText: 'Desk action completed',
   },
   {

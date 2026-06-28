@@ -270,6 +270,18 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
       expectedVisibleText: 'Desk action completed',
     },
     {
+      id: 'google-calendar-oauth-runtime-status',
+      prompt: '구글 캘린더 OAuth runtime 상태 보여줘',
+      expectedPath: 'xd.xenesis.tools.oauthRuntime.status',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
+      id: 'notion-tool-runtime-status',
+      prompt: '노션 tool runtime 상태 보여줘',
+      expectedPath: 'xd.xenesis.tools.runtime.status',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
       id: 'google-calendar-oauth-setup-packet',
       prompt: '구글 캘린더 OAuth 설정 패킷 보여줘',
       expectedPath: 'xd.xenesis.tools.oauthDrafts.setupPacket',
@@ -279,6 +291,18 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
       id: 'google-calendar-oauth-setup-packet-open',
       prompt: 'google calendar oauth setup packet 열어줘',
       expectedPath: 'xd.xenesis.tools.oauthDrafts.setupPacket.open',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
+      id: 'google-workspace-oauth-runtime-open',
+      prompt: '구글 워크스페이스 OAuth runtime 열어줘',
+      expectedPath: 'xd.xenesis.tools.oauthRuntime.open',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
+      id: 'github-tool-runtime-open',
+      prompt: '깃허브 tool runtime 열어줘',
+      expectedPath: 'xd.xenesis.tools.runtime.open',
       expectedVisibleText: 'Desk action completed',
     },
     {
@@ -324,6 +348,18 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
       expectedVisibleText: 'Desk action approval required',
     },
     {
+      id: 'google-calendar-oauth-runtime-request-approval',
+      prompt: '구글 캘린더 OAuth runtime 검토 요청해줘',
+      expectedPath: 'xd.xenesis.tools.oauthRuntime.request',
+      expectedVisibleText: 'Desk action approval required',
+    },
+    {
+      id: 'google-calendar-tool-runtime-request-approval',
+      prompt: '구글 캘린더 tool runtime 검토 요청해줘',
+      expectedPath: 'xd.xenesis.tools.runtime.request',
+      expectedVisibleText: 'Desk action approval required',
+    },
+    {
       id: 'tool-action-policy-status',
       prompt: '외부 툴 action policy catalog 상태 보여줘',
       expectedPath: 'xd.xenesis.tools.actions.status',
@@ -345,6 +381,12 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
       id: 'tool-user-stories-status',
       prompt: '외부 툴 user stories 상태 보여줘',
       expectedPath: 'xd.xenesis.tools.userStories.status',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
+      id: 'tool-user-story-workflow-preview',
+      prompt: '노션 user story workflow preview 해줘',
+      expectedPath: 'xd.automation.workflow.preview',
       expectedVisibleText: 'Desk action completed',
     },
     {
@@ -426,9 +468,27 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
       expectedVisibleText: 'Desk action completed',
     },
     {
+      id: 'google-chat-runtime-status',
+      prompt: '구글 챗 runtime 상태 보여줘',
+      expectedPath: 'xd.xenesis.channels.runtime.status',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
+      id: 'telegram-runtime-open',
+      prompt: '텔레그램 channel runtime 열어줘',
+      expectedPath: 'xd.xenesis.channels.runtime.open',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
       id: 'channel-user-stories-status',
       prompt: '외부 채널 user stories catalog 상태 보여줘',
       expectedPath: 'xd.xenesis.channels.userStories.status',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
+      id: 'channel-user-story-workflow-preview',
+      prompt: '텔레그램 사용자 스토리 워크플로 미리보기 해줘',
+      expectedPath: 'xd.automation.workflow.preview',
       expectedVisibleText: 'Desk action completed',
     },
     {
@@ -453,6 +513,12 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
       id: 'channel-test-send-approval',
       prompt: '텔레그램 테스트 메시지 보내줘',
       expectedPath: 'xd.xenesis.profiles.testChannel',
+      expectedVisibleText: 'Desk action approval required',
+    },
+    {
+      id: 'whatsapp-runtime-request-approval',
+      prompt: '왓츠앱 runtime 검토 요청해줘',
+      expectedPath: 'xd.xenesis.channels.runtime.request',
       expectedVisibleText: 'Desk action approval required',
     },
     {
