@@ -4428,6 +4428,47 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Connection Settings Action Source-of-Truth Slice
+
+- Continued the larger hardcoding cleanup by moving repeated
+  `settingsAction` objects in `src/shared/xenesisConnections.ts` into shared
+  constants.
+- Intended change:
+  - `xenesisConnections.ts` now owns provider default, local CLI MCP, gateway,
+    and external-bot settings action constants.
+  - Manual MCP tools, MCP bridge, local CLI items, provider/first-chat surfaces,
+    gateway surfaces, messenger surfaces, and onboarding surfaces reference the
+    constants instead of repeating `{ category, mode, section }` objects.
+- Scope boundary:
+  - Catalog source ownership only.
+  - No status values, CR actions, setup plans, renderer behavior, provider
+    runtime selection, messenger delivery, profile writes, or approval semantics
+    changed.
+- RED verification:
+  - `npx tsx --test src\shared\xenesisConnections.test.ts` failed as expected
+    before implementation because the new provider settings action constant was
+    undefined.
+- Implementation:
+  - Added shared settings action constants for provider defaults, local CLI MCP,
+    gateway, and external bots.
+  - Replaced all direct inline `settingsAction: { category: ... }` catalog
+    objects with the constants.
+  - Updated settingsAction assertions to reference the constants and added a
+    source guard against reintroducing inline settingsAction objects.
+- Verification:
+  - `rg -n -F "settingsAction: { category:" src/shared/xenesisConnections.ts
+    src/shared/xenesisConnections.test.ts` found no matches.
+  - `npx tsx --test src\shared\xenesisConnections.test.ts` passed 35/35 before
+    and after formatting.
+  - Scoped Biome format/check passed.
+  - `npm run typecheck` passed.
+  - `git diff --check` passed with LF-to-CRLF working-copy warnings only.
+  - CR audit/live smoke were skipped because this slice only changes catalog
+    source ownership and tests; it does not change registry, dispatcher, runtime
+    behavior, or built renderer output.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

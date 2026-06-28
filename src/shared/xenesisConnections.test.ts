@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
   buildXenesisConnectionCenterOpenArgs,
@@ -6,7 +7,11 @@ import {
   withXenesisConnectionSetupRequestReviews,
   XENESIS_CONNECTION_CENTER_ROOT_SELECTOR,
   XENESIS_CONNECTION_CENTER_SETTINGS_ACTION,
+  XENESIS_CONNECTION_EXTERNAL_BOTS_SETTINGS_ACTION,
+  XENESIS_CONNECTION_GATEWAY_SETTINGS_ACTION,
   XENESIS_CONNECTION_GUIDES,
+  XENESIS_CONNECTION_LOCAL_CLI_MCP_SETTINGS_ACTION,
+  XENESIS_CONNECTION_PROVIDER_SETTINGS_ACTION,
 } from './xenesisConnections';
 
 const channelGuardrails = {
@@ -59,6 +64,31 @@ test('connection center settings target is owned by the shared connection catalo
     ensureVisible: false,
     focusConnectionId: 'notion',
   });
+});
+
+test('connection catalog settings actions are owned by shared constants', () => {
+  assert.deepEqual(XENESIS_CONNECTION_PROVIDER_SETTINGS_ACTION, {
+    category: 'run-model',
+    section: 'default',
+  });
+  assert.deepEqual(XENESIS_CONNECTION_LOCAL_CLI_MCP_SETTINGS_ACTION, {
+    category: 'run-model',
+    mode: 'local',
+    section: 'local-cli',
+  });
+  assert.deepEqual(XENESIS_CONNECTION_GATEWAY_SETTINGS_ACTION, {
+    category: 'xenesis-agent',
+    mode: 'gateway',
+    section: 'gateway',
+  });
+  assert.deepEqual(XENESIS_CONNECTION_EXTERNAL_BOTS_SETTINGS_ACTION, {
+    category: 'xenesis-agent',
+    mode: 'external-bots',
+    section: 'external-bots',
+  });
+
+  const source = readFileSync(new URL('./xenesisConnections.ts', import.meta.url), 'utf8');
+  assert.equal((source.match(/settingsAction:\s*\{\s*category:/g) ?? []).length, 0);
 });
 
 test('buildXenesisConnectionsStatus reports ready provider, MCP, gateway, and Telegram', () => {
@@ -375,11 +405,10 @@ test('buildXenesisConnectionsStatus includes an ordered onboarding checklist', (
   assert.equal(status.sections.onboarding.items[3].status, 'ready');
   assert.equal(status.sections.onboarding.items[4].status, 'ready');
   assert.equal(status.sections.onboarding.items[5].status, 'ready');
-  assert.deepEqual(status.sections.onboarding.items[4].settingsAction, {
-    category: 'xenesis-agent',
-    mode: 'external-bots',
-    section: 'external-bots',
-  });
+  assert.deepEqual(
+    status.sections.onboarding.items[4].settingsAction,
+    XENESIS_CONNECTION_EXTERNAL_BOTS_SETTINGS_ACTION,
+  );
   assert.ok(status.sections.onboarding.items[4].setupSteps?.some((step) => step.includes('allowlist')));
 });
 
@@ -671,11 +700,7 @@ test('buildXenesisConnectionsStatus includes actionable setup recipes for MCP to
   const notion = status.sections.tools.items.find((item) => item.id === 'notion');
 
   assert.equal(notion?.supportLevel, 'manual');
-  assert.deepEqual(notion?.settingsAction, {
-    category: 'run-model',
-    mode: 'local',
-    section: 'local-cli',
-  });
+  assert.deepEqual(notion?.settingsAction, XENESIS_CONNECTION_LOCAL_CLI_MCP_SETTINGS_ACTION);
   assert.ok(notion?.setupSteps?.some((step) => step.includes('NOTION_TOKEN')));
   assert.ok(
     notion?.sourceDocs?.some((source) => source.url.includes('hermes-agent.nousresearch.com/docs/integrations')),

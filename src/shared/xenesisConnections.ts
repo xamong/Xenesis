@@ -108,6 +108,29 @@ export function buildXenesisConnectionCenterOpenArgs(
   };
 }
 
+export const XENESIS_CONNECTION_PROVIDER_SETTINGS_ACTION = {
+  category: 'run-model',
+  section: 'default',
+} as const satisfies XenesisConnectionSettingsAction;
+
+export const XENESIS_CONNECTION_LOCAL_CLI_MCP_SETTINGS_ACTION = {
+  category: 'run-model',
+  mode: 'local',
+  section: 'local-cli',
+} as const satisfies XenesisConnectionSettingsAction;
+
+export const XENESIS_CONNECTION_GATEWAY_SETTINGS_ACTION = {
+  category: 'xenesis-agent',
+  mode: 'gateway',
+  section: 'gateway',
+} as const satisfies XenesisConnectionSettingsAction;
+
+export const XENESIS_CONNECTION_EXTERNAL_BOTS_SETTINGS_ACTION = {
+  category: 'xenesis-agent',
+  mode: 'external-bots',
+  section: 'external-bots',
+} as const satisfies XenesisConnectionSettingsAction;
+
 export interface XenesisConnectionSourceDoc {
   label: string;
   url: string;
@@ -1591,7 +1614,7 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     summary: 'Recommended MCP tool for reading web pages as model context.',
     settingsTarget: 'mcp',
     supportLevel: 'manual',
-    settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
+    settingsAction: XENESIS_CONNECTION_LOCAL_CLI_MCP_SETTINGS_ACTION,
     mcpTemplate: mcpTemplateFor('fetch'),
     toolView: toolViewTemplate('fetch', 'Settings > AI Provider > Local CLI MCP', { hasMcpTemplate: true }),
     toolInstallPlan: toolInstallPlanTemplate({
@@ -1667,7 +1690,7 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     summary: 'Recommended MCP tool for workspace-scoped file reads.',
     settingsTarget: 'mcp',
     supportLevel: 'manual',
-    settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
+    settingsAction: XENESIS_CONNECTION_LOCAL_CLI_MCP_SETTINGS_ACTION,
     mcpTemplate: mcpTemplateFor('filesystem'),
     toolView: toolViewTemplate('filesystem', 'Settings > AI Provider > Local CLI MCP', { hasMcpTemplate: true }),
     toolInstallPlan: toolInstallPlanTemplate({
@@ -1769,7 +1792,7 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     requiredEnv: ['GITHUB_TOKEN'],
     settingsTarget: 'mcp',
     supportLevel: 'manual',
-    settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
+    settingsAction: XENESIS_CONNECTION_LOCAL_CLI_MCP_SETTINGS_ACTION,
     mcpTemplate: mcpTemplateFor('github'),
     toolView: toolViewTemplate('github', 'Settings > AI Provider > Local CLI MCP', { hasMcpTemplate: true }),
     toolInstallPlan: toolInstallPlanTemplate({
@@ -1867,7 +1890,7 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     requiredEnv: ['NOTION_TOKEN'],
     settingsTarget: 'mcp',
     supportLevel: 'manual',
-    settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
+    settingsAction: XENESIS_CONNECTION_LOCAL_CLI_MCP_SETTINGS_ACTION,
     mcpTemplate: mcpTemplateFor('notion'),
     toolView: toolViewTemplate('notion', 'Settings > AI Provider > Local CLI MCP', { hasMcpTemplate: true }),
     toolInstallPlan: toolInstallPlanTemplate({
@@ -1959,7 +1982,7 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
     summary: 'Recommended OAuth MCP tool for Linear issues and projects.',
     settingsTarget: 'mcp',
     supportLevel: 'manual',
-    settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
+    settingsAction: XENESIS_CONNECTION_LOCAL_CLI_MCP_SETTINGS_ACTION,
     mcpTemplate: mcpTemplateFor('linear'),
     toolView: toolViewTemplate('linear', 'Settings > AI Provider > Local CLI MCP', { hasMcpTemplate: true }),
     toolInstallPlan: toolInstallPlanTemplate({
@@ -5808,7 +5831,7 @@ function providerItem(
         ? 'Provider has enough settings for first chat.'
         : 'Provider needs a model or credential before reliable Agent use.',
     settingsTarget: 'run-model',
-    settingsAction: { category: 'run-model', section: 'default' },
+    settingsAction: XENESIS_CONNECTION_PROVIDER_SETTINGS_ACTION,
     providerSetup,
     providerView: providerViewTemplate(aiProvider.provider),
     providerRouting,
@@ -5832,7 +5855,7 @@ function mcpItem(mcp: McpSettingsStatus): XenesisConnectionItem {
     summary:
       mcp.available && mcp.bridgeUrl ? `Bridge available at ${mcp.bridgeUrl}.` : 'MCP bridge status is not available.',
     settingsTarget: 'mcp',
-    settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
+    settingsAction: XENESIS_CONNECTION_LOCAL_CLI_MCP_SETTINGS_ACTION,
     crActions: ['xd.mcp.settings.status'],
     setupSteps: [
       'Install the Xenesis Desk MCP bridge for the active local CLI provider.',
@@ -5855,7 +5878,7 @@ function localCliItems(providerIntegration: ProviderIntegrationStatus): XenesisC
         ? 'Local CLI integration files are installed.'
         : 'Local CLI integration can be installed from AI Provider settings.',
     settingsTarget: 'run-model',
-    settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
+    settingsAction: XENESIS_CONNECTION_LOCAL_CLI_MCP_SETTINGS_ACTION,
     crActions: ['xd.mcp.settings.status'],
     setupSteps: [
       `Install the ${target.label} MCP or skill integration from AI Provider settings.`,
@@ -5875,7 +5898,7 @@ function gatewayItem(xenesis: XenesisStatus | null): XenesisConnectionItem {
       supportLevel: 'implemented',
       summary: 'Gateway status could not be read.',
       settingsTarget: 'xenesis-agent',
-      settingsAction: { category: 'xenesis-agent', mode: 'gateway', section: 'gateway' },
+      settingsAction: XENESIS_CONNECTION_GATEWAY_SETTINGS_ACTION,
       crActions: ['xd.xenesis.gateway.status'],
       setupSteps: [
         'Open Xenesis Agent gateway settings.',
@@ -5893,7 +5916,7 @@ function gatewayItem(xenesis: XenesisStatus | null): XenesisConnectionItem {
       ? `Gateway is running at ${xenesis.gateway.url || xenesis.url}.`
       : 'Gateway is stopped.',
     settingsTarget: 'xenesis-agent',
-    settingsAction: { category: 'xenesis-agent', mode: 'gateway', section: 'gateway' },
+    settingsAction: XENESIS_CONNECTION_GATEWAY_SETTINGS_ACTION,
     crActions: [
       'xd.xenesis.gateway.status',
       'xd.xenesis.gateway.start',
@@ -5942,7 +5965,7 @@ function messengerItems(
       summary: runtime?.ready ? `${label} is ready to deliver messages.` : `${label} needs gateway and channel setup.`,
       missingEnv: runtime?.missingEnv,
       settingsTarget: 'xenesis-agent',
-      settingsAction: { category: 'xenesis-agent', mode: 'external-bots', section: 'external-bots' },
+      settingsAction: XENESIS_CONNECTION_EXTERNAL_BOTS_SETTINGS_ACTION,
       crActions: ['xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
       setupSteps,
       sourceDocs,
@@ -6039,7 +6062,7 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
       supportLevel: 'implemented',
       summary: 'AI provider and model readiness for the first Xenesis Agent response.',
       settingsTarget: 'run-model',
-      settingsAction: { category: 'run-model', section: 'default' },
+      settingsAction: XENESIS_CONNECTION_PROVIDER_SETTINGS_ACTION,
       setupSteps: [
         'Choose the active AI provider from user settings.',
         'Confirm the selected provider has the required model and credential.',
@@ -6088,7 +6111,7 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
       supportLevel: 'implemented',
       summary: 'Local CLI integration and Xenesis Desk MCP bridge readiness for CR-capable providers.',
       settingsTarget: 'run-model',
-      settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
+      settingsAction: XENESIS_CONNECTION_LOCAL_CLI_MCP_SETTINGS_ACTION,
       setupSteps: [
         'Install the selected local CLI integration when the provider needs it.',
         'Register the Xenesis Desk MCP bridge for that local CLI.',
@@ -6145,7 +6168,7 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
       supportLevel: 'manual',
       summary: 'Manual MCP recipes for Fetch, Filesystem, GitHub, Notion, Linear, and planned Google tools.',
       settingsTarget: 'mcp',
-      settingsAction: { category: 'run-model', mode: 'local', section: 'local-cli' },
+      settingsAction: XENESIS_CONNECTION_LOCAL_CLI_MCP_SETTINGS_ACTION,
       setupSteps: [
         'Install only the MCP tools needed for the current workspace.',
         'Use narrow tokens and scopes for GitHub, Notion, Linear, Google Workspace, and Calendar integrations.',
@@ -6222,7 +6245,7 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
       supportLevel: 'implemented',
       summary: 'Gateway lifecycle readiness before any external messenger can deliver prompts.',
       settingsTarget: 'xenesis-agent',
-      settingsAction: { category: 'xenesis-agent', mode: 'gateway', section: 'gateway' },
+      settingsAction: XENESIS_CONNECTION_GATEWAY_SETTINGS_ACTION,
       setupSteps: [
         'Enable and start the Xenesis Gateway.',
         'Verify the gateway URL and runtime status through CR readback.',
@@ -6294,7 +6317,7 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
       supportLevel: 'implemented',
       summary: 'External messenger channel configuration, allowlists, and route safety.',
       settingsTarget: 'xenesis-agent',
-      settingsAction: { category: 'xenesis-agent', mode: 'external-bots', section: 'external-bots' },
+      settingsAction: XENESIS_CONNECTION_EXTERNAL_BOTS_SETTINGS_ACTION,
       setupSteps: [
         'Configure one supported channel: Telegram, Slack, Discord, or webhook.',
         'Set required token or webhook environment variable names without storing secrets in Desk settings.',
@@ -6377,7 +6400,7 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
       supportLevel: 'implemented',
       summary: 'Sanitized channel test send and CR readback after setup.',
       settingsTarget: 'xenesis-agent',
-      settingsAction: { category: 'xenesis-agent', mode: 'external-bots', section: 'external-bots' },
+      settingsAction: XENESIS_CONNECTION_EXTERNAL_BOTS_SETTINGS_ACTION,
       setupSteps: [
         'Use the per-channel test button or CR test path with a sanitized message.',
         'Confirm the runtime status stays ready after the test send.',
