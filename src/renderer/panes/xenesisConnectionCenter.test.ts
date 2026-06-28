@@ -9,7 +9,9 @@ import type {
   XenesisConnectionProviderSetupPlanTemplate,
   XenesisConnectionsStatus,
   XenesisConnectionToolSetupPlanTemplate,
+  XenesisConnectionToolViewSection,
 } from '../../shared/types';
+import * as xenesisConnectionCenter from './xenesisConnectionCenter';
 import {
   buildXenesisChannelProfileDraftApplyRequest,
   buildXenesisChannelProfileDraftRequest,
@@ -1770,12 +1772,31 @@ test('formatXenesisToolViewSummary describes internal Desk tool view surface and
       openArgs: { id: 'notion' },
       connectionCardId: 'notion',
       internalViews: ['connection-card', 'setup-recipe', 'mcp-template'],
+      viewSections: [],
       readPaths: ['xd.xenesis.connections.status'],
       controlPaths: ['xd.xenesis.tools.views.open'],
       diagnostics: ['mcp-settings-status'],
       safetyBoundaries: ['view opens internal setup/readiness surfaces only'],
     }),
     'Settings > Xenesis Agent > Connections / connection-detail',
+  );
+});
+
+test('formatXenesisToolViewSectionSummary describes tool view section focus and paths', () => {
+  const section: XenesisConnectionToolViewSection = {
+    id: 'mcp-template',
+    label: 'MCP template',
+    focusConnectionDetail: 'mcp-install-draft',
+    openArgs: { id: 'notion', section: 'mcp-template', ensureVisible: true },
+    readPaths: ['xd.xenesis.tools.mcpInstallDrafts.status'],
+    controlPaths: ['xd.xenesis.tools.views.open'],
+    diagnostics: ['template-snippet'],
+    safetyBoundaries: ['MCP template view opens do not write MCP config or run installers.'],
+  };
+  assert.equal(typeof xenesisConnectionCenter.formatXenesisToolViewSectionSummary, 'function');
+  assert.equal(
+    xenesisConnectionCenter.formatXenesisToolViewSectionSummary(section),
+    'mcp-template / mcp-install-draft / 1 read path(s) / 1 control path(s)',
   );
 });
 

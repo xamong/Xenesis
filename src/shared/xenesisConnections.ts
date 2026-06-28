@@ -120,6 +120,43 @@ export function isXenesisConnectionCenterDetailFocus(value: string): value is Xe
   return (XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES as readonly string[]).includes(value);
 }
 
+export const XENESIS_CONNECTION_TOOL_VIEW_SECTION_IDS = [
+  'connection-card',
+  'setup',
+  'connector',
+  'setup-plan',
+  'install-plan',
+  'mcp-template',
+  'oauth-draft',
+  'action-policy',
+  'user-stories',
+] as const;
+
+export type XenesisConnectionToolViewSectionId = (typeof XENESIS_CONNECTION_TOOL_VIEW_SECTION_IDS)[number];
+
+export const XENESIS_CONNECTION_TOOL_VIEW_SECTION_DETAIL_FOCUS = {
+  'connection-card': 'tool-view',
+  setup: 'tool-setup',
+  connector: 'tool-connector',
+  'setup-plan': 'tool-setup-plan',
+  'install-plan': 'tool-install-plan',
+  'mcp-template': 'mcp-install-draft',
+  'oauth-draft': 'tool-oauth-draft',
+  'action-policy': 'tool-action-catalog',
+  'user-stories': 'tool-user-story',
+} as const satisfies Record<XenesisConnectionToolViewSectionId, XenesisConnectionCenterDetailFocus>;
+
+export function isXenesisConnectionToolViewSectionId(value: string): value is XenesisConnectionToolViewSectionId {
+  return (XENESIS_CONNECTION_TOOL_VIEW_SECTION_IDS as readonly string[]).includes(value);
+}
+
+export function xenesisToolViewSectionDetailFocus(
+  section: string | undefined,
+): XenesisConnectionCenterDetailFocus | null {
+  if (!section || !isXenesisConnectionToolViewSectionId(section)) return null;
+  return XENESIS_CONNECTION_TOOL_VIEW_SECTION_DETAIL_FOCUS[section];
+}
+
 export interface XenesisConnectionCenterOpenArgs extends XenesisConnectionSettingsAction {
   kind: 'settings';
   ensureVisible: boolean;
@@ -501,6 +538,18 @@ export interface XenesisConnectionToolViewTemplate {
   openArgs: { id: string };
   connectionCardId: string;
   internalViews: string[];
+  viewSections: XenesisConnectionToolViewSection[];
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  safetyBoundaries: string[];
+}
+
+export interface XenesisConnectionToolViewSection {
+  id: XenesisConnectionToolViewSectionId;
+  label: string;
+  focusConnectionDetail: XenesisConnectionCenterDetailFocus;
+  openArgs: { id: string; section: XenesisConnectionToolViewSectionId; ensureVisible: true };
   readPaths: string[];
   controlPaths: string[];
   diagnostics: string[];
@@ -1550,6 +1599,7 @@ function toolViewTemplate(
   setupSurface: string,
   options: { hasMcpTemplate?: boolean } = {},
 ): XenesisConnectionToolViewTemplate {
+  const viewSections = toolViewSections(id, options);
   return {
     viewType: 'connection-detail',
     primarySurface: 'Settings > Xenesis Agent > Connections',
@@ -1560,6 +1610,7 @@ function toolViewTemplate(
     internalViews: options.hasMcpTemplate
       ? ['connection-card', 'setup-recipe', 'mcp-template']
       : ['connection-card', 'setup-recipe'],
+    viewSections,
     readPaths: [
       'xd.xenesis.connections.status',
       'xd.xenesis.tools.views.status',
@@ -1575,6 +1626,128 @@ function toolViewTemplate(
       'tool execution remains behind provider MCP tools and CR approval paths',
     ],
   };
+}
+
+function toolViewSection(
+  input: Omit<XenesisConnectionToolViewSection, 'openArgs'> & { toolId: string },
+): XenesisConnectionToolViewSection {
+  return {
+    id: input.id,
+    label: input.label,
+    focusConnectionDetail: input.focusConnectionDetail,
+    openArgs: { id: input.toolId, section: input.id, ensureVisible: true },
+    readPaths: input.readPaths,
+    controlPaths: input.controlPaths,
+    diagnostics: input.diagnostics,
+    safetyBoundaries: input.safetyBoundaries,
+  };
+}
+
+function toolViewSections(
+  toolId: string,
+  options: { hasMcpTemplate?: boolean } = {},
+): XenesisConnectionToolViewSection[] {
+  const plannedOauth = (XENESIS_CONNECTION_TOOL_OAUTH_DRAFT_IDS as readonly string[]).includes(toolId);
+  return [
+    toolViewSection({
+      toolId,
+      id: 'connection-card',
+      label: 'Connection card',
+      focusConnectionDetail: 'tool-view',
+      readPaths: ['xd.xenesis.connections.status', 'xd.xenesis.tools.views.status'],
+      controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.connections.open'],
+      diagnostics: ['connection-card', 'cr-readback'],
+      safetyBoundaries: ['Connection card view opens do not execute provider tools or mutate external systems.'],
+    }),
+    toolViewSection({
+      toolId,
+      id: 'setup',
+      label: 'Setup',
+      focusConnectionDetail: 'tool-setup',
+      readPaths: ['xd.xenesis.tools.setup.status', 'xd.xenesis.connections.status'],
+      controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.setup.open'],
+      diagnostics: ['mcp-settings-status', 'missing-env'],
+      safetyBoundaries: ['Setup view opens do not write provider settings or external tool credentials.'],
+    }),
+    toolViewSection({
+      toolId,
+      id: 'connector',
+      label: 'Connector readiness',
+      focusConnectionDetail: 'tool-connector',
+      readPaths: ['xd.xenesis.tools.connectors.status', 'xd.mcp.settings.status'],
+      controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.connectors.open'],
+      diagnostics: ['mcp-settings-status', 'missing-env'],
+      safetyBoundaries: ['Connector view opens never return credential values.'],
+    }),
+    toolViewSection({
+      toolId,
+      id: 'setup-plan',
+      label: 'Setup plan',
+      focusConnectionDetail: 'tool-setup-plan',
+      readPaths: ['xd.xenesis.tools.setupPlans.status', 'xd.xenesis.connections.status'],
+      controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.setupPlans.open'],
+      diagnostics: ['mcp-settings-status', 'missing-env', 'cr-readback'],
+      safetyBoundaries: ['Setup plan view opens do not install MCP servers or complete OAuth.'],
+    }),
+    toolViewSection({
+      toolId,
+      id: 'install-plan',
+      label: 'Install plan',
+      focusConnectionDetail: 'tool-install-plan',
+      readPaths: ['xd.xenesis.tools.installPlans.status', 'xd.mcp.settings.status'],
+      controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.installPlans.open'],
+      diagnostics: ['mcp-settings-status', 'template-snippet'],
+      safetyBoundaries: ['Install plan view opens do not run package managers or write MCP config.'],
+    }),
+    ...(options.hasMcpTemplate
+      ? [
+          toolViewSection({
+            toolId,
+            id: 'mcp-template',
+            label: 'MCP template',
+            focusConnectionDetail: 'mcp-install-draft',
+            readPaths: ['xd.xenesis.tools.mcpInstallDrafts.status', 'xd.mcp.settings.status'],
+            controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.mcpInstallDrafts.open'],
+            diagnostics: ['mcp-settings-status', 'template-snippet'],
+            safetyBoundaries: ['MCP template view opens do not write MCP config or run installers.'],
+          }),
+        ]
+      : []),
+    ...(plannedOauth
+      ? [
+          toolViewSection({
+            toolId,
+            id: 'oauth-draft',
+            label: 'OAuth draft',
+            focusConnectionDetail: 'tool-oauth-draft',
+            readPaths: ['xd.xenesis.tools.oauthDrafts.status', 'xd.xenesis.tools.oauthDrafts.setupPacket'],
+            controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.oauthDrafts.open'],
+            diagnostics: ['planned-oauth-template', 'oauth-app-registration', 'scope-review'],
+            safetyBoundaries: ['OAuth draft view opens do not start OAuth flows, store tokens, or expose secrets.'],
+          }),
+        ]
+      : []),
+    toolViewSection({
+      toolId,
+      id: 'action-policy',
+      label: 'Action policy',
+      focusConnectionDetail: 'tool-action-catalog',
+      readPaths: ['xd.xenesis.tools.actions.status', 'xd.xenesis.tools.connectors.status'],
+      controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.actions.open'],
+      diagnostics: ['mcp-settings-status', 'missing-env', 'cr-readback'],
+      safetyBoundaries: ['Action policy view opens do not execute provider tools or approve writes.'],
+    }),
+    toolViewSection({
+      toolId,
+      id: 'user-stories',
+      label: 'User stories',
+      focusConnectionDetail: 'tool-user-story',
+      readPaths: ['xd.xenesis.tools.userStories.status', 'xd.xenesis.guides.status'],
+      controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.userStories.open'],
+      diagnostics: ['mcp-settings-status', 'missing-env', 'cr-readback'],
+      safetyBoundaries: ['User-story view opens do not execute provider tools or mutate external systems.'],
+    }),
+  ];
 }
 
 function toolUserStoryTemplate(input: {

@@ -280,6 +280,7 @@ import {
   buildXenesisConnectionSetupApprovalSessionKey,
   buildXenesisConnectionsStatus,
   isXenesisConnectionCenterDetailFocus,
+  isXenesisConnectionToolViewSectionId,
   withXenesisConnectionSetupRequestReviews,
   XENESIS_CONNECTION_CENTER_ROOT_SELECTOR,
   XENESIS_CONNECTION_GUIDE_IDS,
@@ -289,10 +290,12 @@ import {
   XENESIS_CONNECTION_PROVIDER_IDS,
   XENESIS_CONNECTION_TOOL_IDS,
   XENESIS_CONNECTION_TOOL_OAUTH_DRAFT_IDS,
+  XENESIS_CONNECTION_TOOL_VIEW_SECTION_IDS,
   type XenesisConnectionCenterDetailFocus,
   type XenesisConnectionItem,
   type XenesisConnectionKind,
   type XenesisConnectionsStatus,
+  xenesisToolViewSectionDetailFocus,
 } from '../shared/xenesisConnections';
 import {
   buildXenesisProviderProfileDraftApplySettings,
@@ -6469,6 +6472,7 @@ function xenesisToolViewStatusItem(item: XenesisConnectionItem): Record<string, 
     openArgs: item.toolView?.openArgs,
     connectionCardId: item.toolView?.connectionCardId,
     internalViews: item.toolView?.internalViews ?? [],
+    viewSections: item.toolView?.viewSections ?? [],
     readPaths: item.toolView?.readPaths ?? [],
     controlPaths: item.toolView?.controlPaths ?? [],
     diagnostics: item.toolView?.diagnostics ?? [],
@@ -6506,15 +6510,35 @@ async function getXenesisToolViewsStatus(args?: unknown): Promise<Record<string,
 }
 
 async function openXenesisToolView(args?: unknown): Promise<Record<string, unknown>> {
-  return openXenesisToolCatalogSurface(args, {
+  const body = normalizeMcpCapabilityArgs(args);
+  const section = readCapabilityString(body, ['section', 'viewSection', 'toolViewSection']);
+  if (section && !isXenesisConnectionToolViewSectionId(section)) {
+    return {
+      ok: false,
+      section,
+      error: `Unsupported Xenesis tool view section: ${section}`,
+      allowedSections: XENESIS_CONNECTION_TOOL_VIEW_SECTION_IDS,
+    };
+  }
+
+  const focusConnectionDetail = xenesisToolViewSectionDetailFocus(section) ?? 'tool-view';
+  const result = await openXenesisToolCatalogSurface(body, {
     allowedTools: XENESIS_TOOL_SETUP_IDS,
     isAllowedId: isXenesisToolSetupId,
     itemPredicate: (item) => Boolean(item.toolView),
     toStatusItem: xenesisToolViewStatusItem,
     unsupportedMessage: (id) => `Unsupported Xenesis tool connection: ${id}`,
     unavailableMessage: (id) => `Xenesis tool view is not available: ${id}`,
-    focusConnectionDetail: 'tool-view',
+    focusConnectionDetail,
   });
+
+  return section
+    ? {
+        ...result,
+        section,
+        focusConnectionDetail,
+      }
+    : result;
 }
 
 function xenesisToolUserStoryStatusItem(item: XenesisConnectionItem): Record<string, unknown> {

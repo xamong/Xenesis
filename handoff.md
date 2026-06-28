@@ -7,6 +7,121 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current Tool View Sections Slice
+
+- Objective: make `xd.xenesis.tools.views.status/open` address external tool
+  views down to internal Desk sections, so Notion, Google Calendar, and other
+  tools can open connector readiness, setup plan, MCP template, OAuth draft,
+  action policy, and user-story sections through CR args instead of only
+  focusing the generic tool-view block.
+- Slice size policy:
+  - Keep this as one larger cycle: plan, handoff, RED tests, implementation,
+    renderer/natural routing, smoke inventory, manual docs, Obsidian working
+    note, broad verification, and commit.
+- Scope boundary:
+  - Do not execute provider tools, complete OAuth, store tokens, write MCP
+    config, run package managers, mutate external systems, or send messages.
+  - Reuse the existing Connection Center detail-focus blocks rather than
+    creating a new UI subsystem.
+  - Keep tool-view sections read/open metadata only; ready apply paths remain
+    on existing approval-gated CR methods.
+- External documentation handling:
+  - No external web browsing for this slice. Use repo-local source, tests,
+    manual docs, Obsidian notes, CR audit, and local smoke.
+- Plan:
+  - `docs/superpowers/plans/2026-06-29-xenesis-tool-view-sections.md`
+- Touched files:
+  - `src/shared/xenesisConnections.ts`
+  - `src/shared/xenesisConnections.test.ts`
+  - `src/shared/types.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/main/index.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.test.ts`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
+  - `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
+  - `src/shared/xenesisNaturalLanguageActionResolvers.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `scripts/xenesisNaturalDeskRoutingLiveSmoke.mjs`
+  - `scripts/xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
+  - `docs/manual/09-onboarding-connections.md`
+  - `docs/capability-registry-audit.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-tool-view-sections.md`
+- RED verification:
+  - `npx tsx --test src\shared\xenesisConnections.test.ts` failed before
+    implementation because `toolView.viewSections` was absent.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` failed
+    before implementation because the tool-view open schema had no `section`.
+  - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` failed
+    before implementation because the section summary formatter was absent.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    failed before implementation because section prompts routed to older open
+    paths or lacked section args.
+- Implemented:
+  - Added `XenesisConnectionToolViewSectionId` and structured
+    `toolView.viewSections` metadata.
+  - Added section focus mapping for `connection-card`, `setup`, `connector`,
+    `setup-plan`, `install-plan`, `mcp-template`, `oauth-draft`,
+    `action-policy`, and `user-stories`.
+  - Extended `xd.xenesis.tools.views.open` to accept `section`,
+    `viewSection`, or `toolViewSection` and map to existing Connection Center
+    detail-focus blocks.
+  - Rendered tool-view section summaries and open args in Settings.
+  - Routed natural-language prompts such as `노션 MCP 템플릿 뷰 열어줘` and
+    `구글 캘린더 OAuth draft view 열어줘` to
+    `xd.xenesis.tools.views.open` with `{ id, section, ensureVisible: true }`.
+  - Documented optional tool-view section args in
+    `docs/manual/09-onboarding-connections.md` and added an Obsidian working
+    note.
+- Verification result:
+  - Focused tests after formatting/docs:
+    `src\shared\xenesisConnections.test.ts` passed 41/41,
+    `src\shared\xenesisConnectionCapabilities.test.ts` passed 40/40,
+    `src\renderer\panes\xenesisConnectionCenter.test.ts` passed 55/55,
+    `src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed 45/45, and
+    `scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` passed 6/6.
+  - `npm run typecheck` initially failed on `openArgs.ensureVisible` widening
+    from literal `true` to `boolean`; adding the explicit
+    `XenesisConnectionToolViewSection` helper return type fixed it.
+  - `npm run typecheck` then passed.
+  - `npm run docs:capabilities:audit` passed and wrote
+    `docs/capability-registry-audit.md`; audit summary is 779 nodes, 689
+    coverage path references, missing registered paths 0, missing dispatched
+    coverage paths 0, undispatched static callable methods 0, dispatcher paths
+    missing from tree 0.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 204/204, including the
+    Notion MCP template and Google Calendar OAuth draft tool-view section open
+    prompts.
+  - Changed-file Biome check passed with warnings/infos only. The remaining
+    warnings are pre-existing style/unused-code items in `src/main/index.ts`
+    and `src/shared/deskBridgeCapabilities.ts`; safe import ordering fixes were
+    applied.
+  - `git diff --check` passed with Git LF/CRLF normalization warnings only.
+  - `npm run lint` failed repo-wide with existing Biome/CRLF and unrelated
+    lint debt: 1151 errors, 419 warnings, 92 infos.
+  - `npm run check:public-release` could not run because
+    `.github/workflows/ci.yml` is absent from this worktree and not tracked by
+    git.
+  - Final verification after handoff/Obsidian updates: focused tests passed
+    41/41, 40/40, 55/55, 45/45, and 6/6; `npm run typecheck` passed;
+    `npm run docs:capabilities:audit` passed; audit gap counters are all 0;
+    `npm run smoke:xenesis:natural-desk-routing` passed 204/204; changed-file
+    Biome check exited 0 with warnings/infos only; `git diff --check` passed
+    with line-ending normalization warnings only.
+- Known gaps:
+  - Natural-language routing remains deterministic catalog routing, not model
+    reasoning.
+  - Tool-view sections are read/open planning surfaces only; they do not
+    execute provider tools, install MCP servers, complete OAuth, store tokens,
+    mutate external systems, send messages, or approve writes.
+  - Repo-wide `npm run lint` and `npm run check:public-release` have existing
+    infra/debt blockers outside this slice.
+- Next intended step:
+  - Stage and commit `feat: add tool view sections`.
+
 ## Current Onboarding Guided Step CR Args Slice
 
 - Objective: expose structured arguments on onboarding guided CR steps so setup

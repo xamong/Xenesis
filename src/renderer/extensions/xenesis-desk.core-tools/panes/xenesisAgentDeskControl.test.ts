@@ -3894,6 +3894,26 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center requests to C
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 MCP 템플릿 뷰 열어줘').actions, [
+    {
+      id: 'natural-xenesis-tool-view-section-open-notion-mcp-template',
+      path: 'xd.xenesis.tools.views.open',
+      args: { id: 'notion', section: 'mcp-template', ensureVisible: true },
+      approved: false,
+      reason: 'Open Notion MCP template tool view section from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('구글 캘린더 OAuth draft view 열어줘').actions, [
+    {
+      id: 'natural-xenesis-tool-view-section-open-google-calendar-oauth-draft',
+      path: 'xd.xenesis.tools.views.open',
+      args: { id: 'google-calendar', section: 'oauth-draft', ensureVisible: true },
+      approved: false,
+      reason: 'Open Google Calendar OAuth draft tool view section from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('온보딩 가이드 열어줘').actions, [
     {
       id: 'natural-xenesis-guide-open-onboarding-connections',

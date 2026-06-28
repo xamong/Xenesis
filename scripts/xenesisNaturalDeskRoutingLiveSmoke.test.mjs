@@ -228,6 +228,18 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
       expectedVisibleText: 'Desk action completed',
     },
     {
+      id: 'notion-mcp-template-tool-view-section-open',
+      prompt: '노션 MCP 템플릿 뷰 열어줘',
+      expectedPath: 'xd.xenesis.tools.views.open',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
+      id: 'google-calendar-oauth-tool-view-section-open',
+      prompt: '구글 캘린더 OAuth draft view 열어줘',
+      expectedPath: 'xd.xenesis.tools.views.open',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
       id: 'google-calendar-oauth-status',
       prompt: '구글 캘린더 OAuth 상태 보여줘',
       expectedPath: 'xd.xenesis.tools.oauthDrafts.status',

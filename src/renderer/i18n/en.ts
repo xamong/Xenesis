@@ -1143,6 +1143,8 @@ export const en = {
     xenesisConnectionsToolViewSetupSurface: 'Setup surface',
     xenesisConnectionsToolViewOpen: 'Open path',
     xenesisConnectionsToolViewInternalViews: 'Internal views',
+    xenesisConnectionsToolViewSections: 'View sections',
+    xenesisConnectionsToolViewSectionOpens: 'Section opens',
     xenesisConnectionsToolViewReadback: 'View readback',
     xenesisConnectionsToolViewControls: 'View controls',
     xenesisConnectionsToolViewDiagnostics: 'Diagnostics',

@@ -1542,6 +1542,88 @@ test('buildXenesisConnectionsStatus exposes internal Desk tool views for MCP and
     openArgs: { id: 'notion' },
     connectionCardId: 'notion',
     internalViews: ['connection-card', 'setup-recipe', 'mcp-template'],
+    viewSections: [
+      {
+        id: 'connection-card',
+        label: 'Connection card',
+        focusConnectionDetail: 'tool-view',
+        openArgs: { id: 'notion', section: 'connection-card', ensureVisible: true },
+        readPaths: ['xd.xenesis.connections.status', 'xd.xenesis.tools.views.status'],
+        controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.connections.open'],
+        diagnostics: ['connection-card', 'cr-readback'],
+        safetyBoundaries: ['Connection card view opens do not execute provider tools or mutate external systems.'],
+      },
+      {
+        id: 'setup',
+        label: 'Setup',
+        focusConnectionDetail: 'tool-setup',
+        openArgs: { id: 'notion', section: 'setup', ensureVisible: true },
+        readPaths: ['xd.xenesis.tools.setup.status', 'xd.xenesis.connections.status'],
+        controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.setup.open'],
+        diagnostics: ['mcp-settings-status', 'missing-env'],
+        safetyBoundaries: ['Setup view opens do not write provider settings or external tool credentials.'],
+      },
+      {
+        id: 'connector',
+        label: 'Connector readiness',
+        focusConnectionDetail: 'tool-connector',
+        openArgs: { id: 'notion', section: 'connector', ensureVisible: true },
+        readPaths: ['xd.xenesis.tools.connectors.status', 'xd.mcp.settings.status'],
+        controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.connectors.open'],
+        diagnostics: ['mcp-settings-status', 'missing-env'],
+        safetyBoundaries: ['Connector view opens never return credential values.'],
+      },
+      {
+        id: 'setup-plan',
+        label: 'Setup plan',
+        focusConnectionDetail: 'tool-setup-plan',
+        openArgs: { id: 'notion', section: 'setup-plan', ensureVisible: true },
+        readPaths: ['xd.xenesis.tools.setupPlans.status', 'xd.xenesis.connections.status'],
+        controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.setupPlans.open'],
+        diagnostics: ['mcp-settings-status', 'missing-env', 'cr-readback'],
+        safetyBoundaries: ['Setup plan view opens do not install MCP servers or complete OAuth.'],
+      },
+      {
+        id: 'install-plan',
+        label: 'Install plan',
+        focusConnectionDetail: 'tool-install-plan',
+        openArgs: { id: 'notion', section: 'install-plan', ensureVisible: true },
+        readPaths: ['xd.xenesis.tools.installPlans.status', 'xd.mcp.settings.status'],
+        controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.installPlans.open'],
+        diagnostics: ['mcp-settings-status', 'template-snippet'],
+        safetyBoundaries: ['Install plan view opens do not run package managers or write MCP config.'],
+      },
+      {
+        id: 'mcp-template',
+        label: 'MCP template',
+        focusConnectionDetail: 'mcp-install-draft',
+        openArgs: { id: 'notion', section: 'mcp-template', ensureVisible: true },
+        readPaths: ['xd.xenesis.tools.mcpInstallDrafts.status', 'xd.mcp.settings.status'],
+        controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.mcpInstallDrafts.open'],
+        diagnostics: ['mcp-settings-status', 'template-snippet'],
+        safetyBoundaries: ['MCP template view opens do not write MCP config or run installers.'],
+      },
+      {
+        id: 'action-policy',
+        label: 'Action policy',
+        focusConnectionDetail: 'tool-action-catalog',
+        openArgs: { id: 'notion', section: 'action-policy', ensureVisible: true },
+        readPaths: ['xd.xenesis.tools.actions.status', 'xd.xenesis.tools.connectors.status'],
+        controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.actions.open'],
+        diagnostics: ['mcp-settings-status', 'missing-env', 'cr-readback'],
+        safetyBoundaries: ['Action policy view opens do not execute provider tools or approve writes.'],
+      },
+      {
+        id: 'user-stories',
+        label: 'User stories',
+        focusConnectionDetail: 'tool-user-story',
+        openArgs: { id: 'notion', section: 'user-stories', ensureVisible: true },
+        readPaths: ['xd.xenesis.tools.userStories.status', 'xd.xenesis.guides.status'],
+        controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.userStories.open'],
+        diagnostics: ['mcp-settings-status', 'missing-env', 'cr-readback'],
+        safetyBoundaries: ['User-story view opens do not execute provider tools or mutate external systems.'],
+      },
+    ],
     readPaths: [
       'xd.xenesis.connections.status',
       'xd.xenesis.tools.views.status',
@@ -1556,7 +1638,25 @@ test('buildXenesisConnectionsStatus exposes internal Desk tool views for MCP and
     ],
   });
   assert.deepEqual(googleCalendar?.toolView?.internalViews, ['connection-card', 'setup-recipe']);
+  assert.deepEqual(
+    googleCalendar?.toolView?.viewSections.map((section) => section.id),
+    [
+      'connection-card',
+      'setup',
+      'connector',
+      'setup-plan',
+      'install-plan',
+      'oauth-draft',
+      'action-policy',
+      'user-stories',
+    ],
+  );
   assert.equal(googleCalendar?.toolView?.openArgs.id, 'google-calendar');
+  assert.deepEqual(googleCalendar?.toolView?.viewSections.find((section) => section.id === 'oauth-draft')?.openArgs, {
+    id: 'google-calendar',
+    section: 'oauth-draft',
+    ensureVisible: true,
+  });
   assert.equal(googleCalendar?.toolView?.diagnostics.includes('template-snippet'), false);
 });
 

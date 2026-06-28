@@ -328,6 +328,18 @@ Xenesis Agent > Connections and focus the tool card. This opens a Desk
 setup/readiness view only; it does not execute the external tool, install MCP
 servers, complete OAuth, or bypass approval paths.
 
+`xd.xenesis.tools.views.open` also accepts an optional `section` value when the
+Agent or operator needs to focus a specific internal tool-view section. Current
+section values are `connection-card`, `setup`, `connector`, `setup-plan`,
+`install-plan`, `mcp-template`, `oauth-draft`, `action-policy`, and
+`user-stories`. For example, `{ "id": "notion", "section": "mcp-template",
+"ensureVisible": true }` focuses the Notion MCP template section, while
+`{ "id": "google-calendar", "section": "oauth-draft", "ensureVisible": true }`
+focuses the Google Calendar OAuth draft section. Section opens are still
+read/open planning surfaces only: they do not write MCP config, run installers,
+complete OAuth, store tokens, execute provider tools, mutate external systems,
+or approve write actions.
+
 Each tool card also exposes a `toolUserStory` read model. Use
 `xd.xenesis.tools.userStories.status` to inspect workflow type, runtime support,
 user-story templates, prerequisite connectors, required scopes, CR read/control
@@ -684,6 +696,9 @@ or open internal Desk setup/readiness views for external tools. The open path
 focuses the matching Connection Center tool card and keeps planned Google
 Workspace/Google Calendar flows visibly planned until a verified OAuth/MCP
 template exists.
+Pass optional `section` values such as `mcp-template`, `oauth-draft`,
+`connector`, `setup-plan`, `install-plan`, `action-policy`, or `user-stories`
+when the caller needs to focus a specific internal tool-view detail.
 
 Use `xd.xenesis.tools.userStories.status` and
 `xd.xenesis.tools.userStories.open` to inspect or open external tool workflow

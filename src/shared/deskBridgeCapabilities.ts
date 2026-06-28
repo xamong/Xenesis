@@ -20,6 +20,7 @@ import {
   XENESIS_CONNECTION_PROVIDER_IDS,
   XENESIS_CONNECTION_TOOL_IDS,
   XENESIS_CONNECTION_TOOL_OAUTH_DRAFT_IDS,
+  XENESIS_CONNECTION_TOOL_VIEW_SECTION_IDS,
 } from './xenesisConnections';
 
 const DESK_BRIDGE_ROOT_PATH = 'xd';
@@ -802,6 +803,13 @@ const XENESIS_TOOL_SETUP_OPEN_SCHEMA = {
       description: 'Scroll the focused external tool setup card into view after opening the Connection Center.',
       default: true,
     },
+    section: {
+      type: 'string',
+      title: 'Tool view section',
+      enum: XENESIS_CONNECTION_TOOL_VIEW_SECTION_IDS,
+      description:
+        'Optional internal Desk tool view section to focus, such as connector readiness, setup plan, MCP template, OAuth draft, action policy, or user stories.',
+    },
     ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
   },
 } as const;
@@ -896,6 +904,13 @@ const XENESIS_TOOL_VIEW_OPEN_SCHEMA = {
       title: 'Ensure visible',
       description: 'Scroll the focused tool connection card into view after opening the Connection Center.',
       default: true,
+    },
+    section: {
+      type: 'string',
+      title: 'Tool view section',
+      enum: XENESIS_CONNECTION_TOOL_VIEW_SECTION_IDS,
+      description:
+        'Optional internal Desk tool view section to focus, such as connector readiness, setup plan, MCP template, OAuth draft, action policy, or user stories.',
     },
     ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
   },

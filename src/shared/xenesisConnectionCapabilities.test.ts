@@ -874,6 +874,8 @@ test('xenesis tool view capabilities are registered and dispatch to the adapter'
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
   assert.equal(schemaRequiredFields(openCapability).includes('id'), false);
+  assert.equal(openSchemaProperties.section?.enum.includes('mcp-template'), true);
+  assert.equal(openSchemaProperties.section?.enum.includes('oauth-draft'), true);
   for (const tool of ['fetch', 'notion', 'google-calendar']) {
     assert.equal(statusSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by status`);
     assert.equal(openSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by open`);
@@ -904,7 +906,7 @@ test('xenesis tool view capabilities are registered and dispatch to the adapter'
   });
   const openResult = await callDeskBridgeCapability(api, {
     path: 'xd.xenesis.tools.views.open',
-    args: { id: 'notion' },
+    args: { id: 'notion', section: 'mcp-template' },
     source: 'xenesis',
   });
 
@@ -912,7 +914,7 @@ test('xenesis tool view capabilities are registered and dispatch to the adapter'
   assert.equal(openResult.ok, true);
   assert.deepEqual(calls, [
     { method: 'status', args: { id: 'notion' } },
-    { method: 'open', args: { id: 'notion' } },
+    { method: 'open', args: { id: 'notion', section: 'mcp-template' } },
   ]);
   assert.deepEqual(statusResult.result, {
     ok: true,

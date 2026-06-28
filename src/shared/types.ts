@@ -93,6 +93,8 @@ export type {
   XenesisConnectionToolUserStoryRuntimeSupport,
   XenesisConnectionToolUserStoryTemplate,
   XenesisConnectionToolUserStoryWorkflowType,
+  XenesisConnectionToolViewSection,
+  XenesisConnectionToolViewSectionId,
   XenesisConnectionToolViewTemplate,
 } from './xenesisConnections';
 

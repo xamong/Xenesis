@@ -36,6 +36,7 @@ import type {
   XenesisConnectionToolSetupPlanTemplate,
   XenesisConnectionToolSetupTemplate,
   XenesisConnectionToolUserStoryTemplate,
+  XenesisConnectionToolViewSection,
   XenesisConnectionToolViewTemplate,
 } from '../../shared/types';
 import {
@@ -206,6 +207,10 @@ export function formatXenesisToolActionCatalogSummary(catalog: XenesisConnection
 
 export function formatXenesisToolViewSummary(view: XenesisConnectionToolViewTemplate): string {
   return `${view.primarySurface} / ${view.viewType}`;
+}
+
+export function formatXenesisToolViewSectionSummary(section: XenesisConnectionToolViewSection): string {
+  return `${section.id} / ${section.focusConnectionDetail} / ${section.readPaths.length} read path(s) / ${section.controlPaths.length} control path(s)`;
 }
 
 export function formatXenesisToolConnectorSummary(connector: XenesisConnectionToolConnectorTemplate): string {

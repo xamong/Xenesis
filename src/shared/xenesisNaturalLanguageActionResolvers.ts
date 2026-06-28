@@ -9,6 +9,7 @@ import {
   findXenesisNaturalConnectionTargetRuleAction,
   findXenesisNaturalCoreToolTarget,
   findXenesisNaturalProviderRuleAction,
+  findXenesisNaturalToolViewSectionTarget,
   findXenesisNaturalViewTarget,
   XENESIS_NATURAL_AGENT_READBACK_RULES,
   XENESIS_NATURAL_AGENT_SUBMIT_RULES,
@@ -61,12 +62,14 @@ import {
   hasXenesisNaturalMessengerProfileDraftCatalogContext,
   hasXenesisNaturalOnboardingContext,
   hasXenesisNaturalProviderProfileContext,
+  isXenesisNaturalConnectionToolTarget,
   matchesXenesisNaturalContextRule,
   matchesXenesisNaturalContextRules,
   normalizeXenesisNaturalLanguageText,
   stripXenesisNaturalQuotedText,
   XENESIS_NATURAL_GUIDE_FILE_OPEN_RULES,
   XENESIS_NATURAL_PROVIDER_AUTO_TARGET,
+  XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
   type XenesisNaturalConnectionTarget,
   type XenesisNaturalDeskActionRequest,
   type XenesisNaturalGuideOpenRule,
@@ -373,6 +376,28 @@ function xenesisProviderOpenActionFromNaturalText(value: string): XenesisNatural
   return findXenesisNaturalProviderRuleAction(value, provider, XENESIS_NATURAL_PROVIDER_OPEN_RULES);
 }
 
+function xenesisToolViewSectionOpenActionFromNaturalText(
+  value: string,
+  target: XenesisNaturalConnectionTarget,
+): XenesisNaturalDeskActionRequest | null {
+  if (!isXenesisNaturalConnectionToolTarget(target)) return null;
+  if (!hasXenesisNaturalExplicitOpenIntent(value)) return null;
+  if (!matchesXenesisNaturalContextRules(value, [{ contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS }])) {
+    return null;
+  }
+
+  const section = findXenesisNaturalToolViewSectionTarget(value);
+  if (!section) return null;
+
+  return {
+    id: `natural-xenesis-tool-view-section-open-${target.id}-${section.id}`,
+    path: 'xd.xenesis.tools.views.open',
+    args: XENESIS_NATURAL_DESK_ACTION_ARGS.toolViewSectionVisible(target.id, section.id),
+    approved: false,
+    reason: `Open ${target.label} ${section.label} tool view section from natural language request.`,
+  };
+}
+
 function xenesisGuideCatalogOpenActionFromNaturalText(value: string): XenesisNaturalDeskActionRequest | null {
   return findXenesisNaturalConnectionAggregateOpenAction(value, 'guide');
 }
@@ -433,6 +458,9 @@ export function xenesisConnectionActionFromNaturalText(value: string): XenesisNa
 
   const target = xenesisConnectionTargetFromNaturalText(value);
   if (!target) return null;
+
+  const targetToolViewSectionOpenAction = xenesisToolViewSectionOpenActionFromNaturalText(value, target);
+  if (targetToolViewSectionOpenAction) return targetToolViewSectionOpenAction;
 
   const targetOpenAction = xenesisConnectionTargetOpenActionFromNaturalText(value, target);
   if (targetOpenAction) return targetOpenAction;

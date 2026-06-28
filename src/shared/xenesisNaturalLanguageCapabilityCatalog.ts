@@ -1,4 +1,8 @@
 import {
+  XENESIS_CONNECTION_TOOL_VIEW_SECTION_IDS,
+  type XenesisConnectionToolViewSectionId,
+} from './xenesisConnections';
+import {
   buildXenesisNaturalLanguagePlan,
   findXenesisNaturalContextRule,
   findXenesisNaturalWordsTarget,
@@ -196,6 +200,7 @@ export const XENESIS_NATURAL_DESK_ACTION_ARGS = {
     placement: placement || XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS.placement,
   }),
   tool: (tool: string) => ({ tool }),
+  toolViewSectionVisible: (id: string, section: string) => ({ id, section, ensureVisible: true }),
   toolVisible: (tool: string) => ({ tool, ensureVisible: true }),
   useActive: () => ({ useActive: true }),
   viewKind: (kind: string) => ({ kind }),
@@ -399,6 +404,73 @@ export function findXenesisNaturalSettingsCategoryTarget(value: string) {
         contextWords: target.words,
         requiredContextWordGroups: [XENESIS_NATURAL_DESK_SETTINGS_CONTEXT_WORDS, XENESIS_NATURAL_OPEN_OR_SHOW_WORDS],
       }),
+    ) ?? null
+  );
+}
+
+export type XenesisNaturalToolViewSectionTarget = {
+  id: XenesisConnectionToolViewSectionId;
+  label: string;
+  words: readonly string[];
+};
+
+export const XENESIS_NATURAL_TOOL_VIEW_SECTION_TARGET_SPECS = [
+  {
+    id: 'connection-card',
+    label: 'connection card',
+    words: ['connection card', '연결 카드', '카드'],
+  },
+  {
+    id: 'setup',
+    label: 'setup',
+    words: ['setup', '설정', '셋업'],
+  },
+  {
+    id: 'connector',
+    label: 'connector',
+    words: ['connector', '커넥터', '연결 상태'],
+  },
+  {
+    id: 'setup-plan',
+    label: 'setup plan',
+    words: ['setup plan', '설정 플랜', '설정 계획'],
+  },
+  {
+    id: 'install-plan',
+    label: 'install plan',
+    words: ['install plan', '설치 플랜', '설치 계획'],
+  },
+  {
+    id: 'mcp-template',
+    label: 'MCP template',
+    words: ['mcp template', 'mcp 템플릿', 'mcp template view', 'mcp 초안'],
+  },
+  {
+    id: 'oauth-draft',
+    label: 'OAuth draft',
+    words: ['oauth draft', 'oauth 초안', 'oauth draft view', 'oauth 템플릿'],
+  },
+  {
+    id: 'action-policy',
+    label: 'action policy',
+    words: ['action policy', '액션 정책', '도구 정책', '권한 정책'],
+  },
+  {
+    id: 'user-stories',
+    label: 'user stories',
+    words: ['user stories', 'user story', '사용자 스토리', '유저 스토리'],
+  },
+] as const satisfies readonly XenesisNaturalToolViewSectionTarget[];
+
+export const XENESIS_NATURAL_TOOL_VIEW_SECTION_TARGETS: readonly XenesisNaturalToolViewSectionTarget[] =
+  XENESIS_NATURAL_TOOL_VIEW_SECTION_TARGET_SPECS;
+
+export function findXenesisNaturalToolViewSectionTarget(value: string): XenesisNaturalToolViewSectionTarget | null {
+  return (
+    XENESIS_NATURAL_TOOL_VIEW_SECTION_TARGETS.find(
+      (target) =>
+        (XENESIS_CONNECTION_TOOL_VIEW_SECTION_IDS as readonly string[]).includes(target.id) &&
+        matchesXenesisNaturalContextRule(value, { contextWords: target.words }),
     ) ?? null
   );
 }

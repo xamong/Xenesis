@@ -133,6 +133,7 @@ import {
   formatXenesisToolSetupPlanSummary,
   formatXenesisToolSetupSummary,
   formatXenesisToolUserStorySummary,
+  formatXenesisToolViewSectionSummary,
   formatXenesisToolViewSummary,
   listXenesisConnectionSections,
   xenesisConnectionDetailFocusSelector,
@@ -5615,6 +5616,14 @@ export default function SettingsPane() {
             <div>
               <span>{t('settings.xenesisConnectionsToolViewInternalViews')}</span>
               <strong>{toolView.internalViews.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolViewSections')}</span>
+              <strong>{toolView.viewSections.map(formatXenesisToolViewSectionSummary).join(' | ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolViewSectionOpens')}</span>
+              <strong>{toolView.viewSections.map((section) => JSON.stringify(section.openArgs)).join(' | ')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolViewReadback')}</span>
