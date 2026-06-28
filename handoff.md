@@ -17364,6 +17364,113 @@ Verification so far:
   - Review the diff, commit the larger slice, then continue with the next
     larger CR/Agent cleanup slice.
 
+## Latest Slice: Shared User Story Workflow Preview Args Builder
+
+- Current objective:
+  - Remove duplicate user-story workflow preview args shaping from Settings and
+    natural-language Agent routing. Both paths should call one shared
+    Connection Center helper so the CR `xd.automation.workflow.preview` payload
+    cannot drift.
+- Scope:
+  - Add RED coverage for a shared workflow preview args builder.
+  - Refactor `src/renderer/panes/xenesisConnectionCenter.ts` and
+    `src/shared/xenesisNaturalLanguageActionResolvers.ts` to use the shared
+    helper instead of local duplicate mapping.
+  - Add source guards that block reintroducing local preview args builders in
+    renderer/natural resolver modules.
+  - Update Obsidian/handoff and run focused verification before committing.
+- Touched files so far:
+  - `handoff.md`
+  - `src/shared/xenesisConnections.ts`
+  - `src/shared/xenesisConnections.test.ts`
+  - `src/shared/xenesisNaturalLanguageActionResolvers.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.test.ts`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-shared-user-story-workflow-preview-args.md`
+- Commands run:
+  - Added RED tests for a shared workflow preview args builder and source
+    guards blocking local duplicate args builders in Settings/natural routing.
+  - RED:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    -> failed 110/112 as expected because the shared args builder was not
+    exported and both Settings/natural routing still owned local workflow
+    preview args builders.
+  - GREEN focused:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    -> passed 112/112.
+  - Source check:
+    `rg -n "buildXenesisUserStoryWorkflowPreviewArgs|buildXenesisUserStoryWorkflowPreviewActionArgs|buildXenesisConnectionUserStoryWorkflowPreviewArgs" ...`
+    -> only the shared builder and its two call sites remain.
+  - Agent planner:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 48/48.
+  - Smoke fixture:
+    `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` ->
+    passed 6/6.
+  - Typecheck:
+    `npm run typecheck` -> passed.
+  - Build:
+    `npm run build` -> passed. Existing Vite warnings about browser
+    externalization/dynamic import chunking were printed.
+  - CR audit:
+    `npm run docs:capabilities:audit` -> passed; generated audit summary
+    remained 796 nodes and 689 coverage path references.
+  - CR audit counter readback:
+    `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> all 0.
+  - Live natural Desk routing smoke:
+    `npm run smoke:xenesis:natural-desk-routing` -> passed 261/261.
+  - Audit doc cleanup:
+    Generated timestamp/EOF-only churn in
+    `docs/capability-registry-audit.md` was reverted.
+  - Obsidian:
+    Added
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-shared-user-story-workflow-preview-args.md`.
+  - Focused Biome:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true ...changed TS files...`
+    -> failed on import ordering in `src/shared/xenesisConnections.test.ts`;
+    fixed with `npx biome check --write ...changed TS files...`.
+  - Focused tests after formatting:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    -> passed 112/112.
+  - Agent planner after formatting:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 48/48.
+  - Focused Biome recheck:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true ...changed TS files...`
+    -> passed.
+  - Hygiene:
+    `git diff --check` -> passed; Git printed LF/CRLF normalization warnings
+    only.
+  - Status/diff review:
+    `git status --short` showed only this slice's code/test/handoff changes and
+    the new Obsidian working note. `git diff -- docs\capability-registry-audit.md`
+    showed no actual diff after timestamp/EOF cleanup.
+- Exact verification result:
+  - RED confirmed the missing shared builder and the remaining duplicate local
+    shaping functions.
+  - GREEN confirmed Settings and natural routing now use the shared builder and
+    preserve the workflow preview request payload.
+  - Agent planner and smoke fixture confirmed the natural-language workflow
+    preview route still maps to the CR workflow preview path.
+  - Typecheck, build, live natural Desk routing smoke, and CR audit all passed;
+    CR audit gap counters remain all 0.
+  - Formatting changed only import order; focused shared/renderer and Agent
+    planner tests stayed green after the formatter pass.
+  - Diff hygiene passed and the regenerated audit doc is not part of the
+    commit.
+- Implemented:
+  - Added `buildXenesisConnectionUserStoryWorkflowPreviewArgs` in
+    `src/shared/xenesisConnections.ts`.
+  - Reused the shared step-clone helper for workflow preview target cloning and
+    CR workflow preview args shaping.
+  - Removed Settings and natural-language local preview args builders; both now
+    call the shared Connection catalog helper.
+- Known gaps:
+  - Full repo lint/public-release known gaps remain unchanged.
+- Next intended step:
+  - Stage this slice's files and commit.
+
 ## 2026-06-29 - User Story CR Workflow Preview Slice
 
 - Objective:

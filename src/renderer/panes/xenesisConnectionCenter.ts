@@ -48,6 +48,7 @@ import type {
   XenesisConnectionUserStoryContract,
 } from '../../shared/types';
 import {
+  buildXenesisConnectionUserStoryWorkflowPreviewArgs,
   isXenesisConnectionCenterDetailFocus,
   type XenesisConnectionCenterDetailFocus,
 } from '../../shared/xenesisConnections';
@@ -332,24 +333,6 @@ export function formatXenesisConnectionActionResultSummary(result: McpBridgeCapa
   return message ? `${result.path} / ${status} / ${message}` : `${result.path} / ${status}`;
 }
 
-function buildXenesisUserStoryWorkflowPreviewArgs(
-  contract: XenesisConnectionUserStoryContract,
-): Record<string, unknown> {
-  const preview = contract.workflowPreview;
-  return {
-    name: preview.name,
-    description: preview.description,
-    delayMs: preview.delayMs,
-    stopOnFail: preview.stopOnFail,
-    steps: preview.steps.map((step) => ({
-      label: step.label,
-      path: step.path,
-      args: { ...step.args },
-      approved: step.approved,
-    })),
-  };
-}
-
 export function buildXenesisUserStoryWorkflowPreviewRequest(
   item: XenesisConnectionItem,
 ): McpBridgeCapabilityCallRequest | null {
@@ -357,7 +340,7 @@ export function buildXenesisUserStoryWorkflowPreviewRequest(
   if (!contract) return null;
   return {
     path: contract.workflowPreview.previewPath,
-    args: buildXenesisUserStoryWorkflowPreviewArgs(contract),
+    args: buildXenesisConnectionUserStoryWorkflowPreviewArgs(contract.workflowPreview),
     source: 'xenesis',
     approved: false,
   };

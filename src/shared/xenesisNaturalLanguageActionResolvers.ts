@@ -1,6 +1,6 @@
 import {
+  buildXenesisConnectionUserStoryWorkflowPreviewArgs,
   findXenesisConnectionUserStoryWorkflowPreviewTarget,
-  type XenesisConnectionUserStoryWorkflowPreview,
 } from './xenesisConnections';
 import {
   buildXenesisNaturalCatalogAction,
@@ -315,23 +315,6 @@ export function xenesisConnectionReviewRequestActionFromNaturalText(
   return findXenesisNaturalConnectionTargetRuleAction(value, target, XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES);
 }
 
-function buildXenesisUserStoryWorkflowPreviewActionArgs(
-  preview: XenesisConnectionUserStoryWorkflowPreview,
-): Record<string, unknown> {
-  return {
-    name: preview.name,
-    description: preview.description,
-    delayMs: preview.delayMs,
-    stopOnFail: preview.stopOnFail,
-    steps: preview.steps.map((step) => ({
-      label: step.label,
-      path: step.path,
-      args: { ...step.args },
-      approved: step.approved,
-    })),
-  };
-}
-
 export function xenesisConnectionUserStoryWorkflowPreviewActionFromNaturalText(
   value: string,
 ): XenesisNaturalDeskActionRequest | null {
@@ -355,7 +338,7 @@ export function xenesisConnectionUserStoryWorkflowPreviewActionFromNaturalText(
   return {
     id: `natural-xenesis-user-story-workflow-preview-${previewTarget.id}`,
     path: previewTarget.workflowPreview.previewPath,
-    args: buildXenesisUserStoryWorkflowPreviewActionArgs(previewTarget.workflowPreview),
+    args: buildXenesisConnectionUserStoryWorkflowPreviewArgs(previewTarget.workflowPreview),
     approved: false,
     reason: `Preview ${previewTarget.label} user-story workflow from natural language request.`,
   };

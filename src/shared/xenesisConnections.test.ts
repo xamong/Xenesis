@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   buildXenesisConnectionCenterOpenArgs,
   buildXenesisConnectionsStatus,
+  buildXenesisConnectionUserStoryWorkflowPreviewArgs,
   findXenesisConnectionUserStoryWorkflowPreviewTarget,
   isXenesisConnectionCenterDetailFocus,
   withXenesisConnectionSetupRequestReviews,
@@ -2039,6 +2040,39 @@ test('connection user-story workflow preview resolver clones tool and messenger 
   );
 
   assert.equal(findXenesisConnectionUserStoryWorkflowPreviewTarget('missing'), null);
+});
+
+test('shared user-story workflow preview args builder clones CR workflow input', () => {
+  const notion = findXenesisConnectionUserStoryWorkflowPreviewTarget('notion');
+  assert.ok(notion);
+
+  const args = buildXenesisConnectionUserStoryWorkflowPreviewArgs(notion.workflowPreview) as {
+    name: string;
+    description: string;
+    delayMs: number;
+    stopOnFail: boolean;
+    steps: Array<{ label: string; path: string; args: Record<string, unknown>; approved: boolean }>;
+    runPath?: string;
+    safetyBoundary?: string;
+  };
+
+  assert.deepEqual(args, {
+    name: 'notion-user-story-preview',
+    description: 'Preview notion user-story readbacks and open the Settings surface.',
+    delayMs: 0,
+    stopOnFail: true,
+    steps: notion.workflowPreview.steps,
+  });
+  assert.equal(args.runPath, undefined);
+  assert.equal(args.safetyBoundary, undefined);
+  assert.notEqual(args.steps, notion.workflowPreview.steps);
+  assert.notEqual(args.steps.at(-1)?.args, notion.workflowPreview.steps.at(-1)?.args);
+
+  args.steps.at(-1)!.args.ensureVisible = false;
+  const clonedArgs = buildXenesisConnectionUserStoryWorkflowPreviewArgs(notion.workflowPreview) as {
+    steps: Array<{ args: Record<string, unknown> }>;
+  };
+  assert.deepEqual(clonedArgs.steps.at(-1)?.args, { id: 'notion', ensureVisible: true });
 });
 
 test('buildXenesisConnectionsStatus exposes on-demand tool install plans without executing installs', () => {

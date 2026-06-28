@@ -5019,12 +5019,30 @@ function cloneXenesisConnectionUserStoryWorkflowPreview(
 ): XenesisConnectionUserStoryWorkflowPreview {
   return {
     ...preview,
-    steps: preview.steps.map((step) => ({
-      label: step.label,
-      path: step.path,
-      args: { ...step.args },
-      approved: step.approved,
-    })),
+    steps: cloneXenesisConnectionUserStoryWorkflowPreviewSteps(preview.steps),
+  };
+}
+
+function cloneXenesisConnectionUserStoryWorkflowPreviewSteps(
+  steps: readonly XenesisConnectionUserStoryWorkflowStep[],
+): XenesisConnectionUserStoryWorkflowStep[] {
+  return steps.map((step) => ({
+    label: step.label,
+    path: step.path,
+    args: { ...step.args },
+    approved: step.approved,
+  }));
+}
+
+export function buildXenesisConnectionUserStoryWorkflowPreviewArgs(
+  preview: XenesisConnectionUserStoryWorkflowPreview,
+): Record<string, unknown> {
+  return {
+    name: preview.name,
+    description: preview.description,
+    delayMs: preview.delayMs,
+    stopOnFail: preview.stopOnFail,
+    steps: cloneXenesisConnectionUserStoryWorkflowPreviewSteps(preview.steps),
   };
 }
 

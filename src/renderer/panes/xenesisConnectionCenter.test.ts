@@ -1277,6 +1277,18 @@ test('buildXenesisUserStoryWorkflowPreviewRequest targets CR workflow preview fo
   assert.equal(buildXenesisUserStoryWorkflowPreviewRequest({ ...toolItem, toolUserStory: undefined }), null);
 });
 
+test('user-story workflow preview args shaping is shared across Settings and natural routing', () => {
+  const rendererSource = readFileSync('src/renderer/panes/xenesisConnectionCenter.ts', 'utf8');
+  const connectionSource = readFileSync('src/shared/xenesisConnections.ts', 'utf8');
+  const naturalResolverSource = readFileSync('src/shared/xenesisNaturalLanguageActionResolvers.ts', 'utf8');
+
+  assert.match(connectionSource, /export function buildXenesisConnectionUserStoryWorkflowPreviewArgs/);
+  assert.match(rendererSource, /buildXenesisConnectionUserStoryWorkflowPreviewArgs/);
+  assert.match(naturalResolverSource, /buildXenesisConnectionUserStoryWorkflowPreviewArgs/);
+  assert.doesNotMatch(rendererSource, /function buildXenesisUserStoryWorkflowPreviewArgs/);
+  assert.doesNotMatch(naturalResolverSource, /function buildXenesisUserStoryWorkflowPreviewActionArgs/);
+});
+
 test('formatXenesisToolInstallPlanSummary describes install mode, runtime support, and step count', () => {
   assert.equal(
     formatXenesisToolInstallPlanSummary({
