@@ -495,10 +495,17 @@ export interface XenesisDeskActionMessageActionInput {
 }
 
 export interface XenesisDeskActionResultMessageInput {
+  id?: string;
   path: string;
+  args?: unknown;
+  approved?: boolean;
   ok: boolean;
   result?: unknown;
   error?: string;
+  approvalRequired?: boolean;
+  permission?: string;
+  approval?: string;
+  source?: string;
 }
 
 export interface XenesisDeskActionApprovalResultInput {

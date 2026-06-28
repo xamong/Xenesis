@@ -215,6 +215,30 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     actionRunnerSource = '';
   }
 
+  for (const localFacadeImplementation of [
+    'FromShared',
+    'FromCatalog',
+    'const DESK_ACTION_PROTOCOL_FORMAT',
+    'export type XenesisDeskActionRequest =',
+    'export type XenesisDeskActionCallOptions =',
+    'export function planXenesisDeskNaturalLanguageActions',
+    'export function parseXenesisDeskActionBlocks',
+    'export async function runXenesisDeskActions',
+    'export function isXenesisDeskActionApprovalRequiredResult',
+    'export function buildXenesisDeskActionPendingMessage',
+    'export function buildXenesisDeskControlPromptHint',
+  ]) {
+    assert.doesNotMatch(source, new RegExp(localFacadeImplementation));
+  }
+  for (const sharedFacadeModule of [
+    'xenesisDeskActionRunner',
+    'xenesisDeskControlPromptHint',
+    'xenesisNaturalLanguageCatalog',
+    'xenesisNaturalLanguagePlanner',
+  ]) {
+    assert.match(source, new RegExp(sharedFacadeModule));
+  }
+
   assert.doesNotMatch(source, /const targets:\s*Array/);
   assert.doesNotMatch(source, /IMPLEMENTED_XENESIS_MESSENGER_IDS/);
   assert.doesNotMatch(source, /Useful direct CR paths include xd\.app\.status/);
@@ -557,7 +581,8 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.match(promptHintSource, /XENESIS_DESK_ACTION_PROTOCOL_TEXT/);
   assert.doesNotMatch(source, /XENESIS_DESK_ACTION_PROTOCOL_RECORD_KEYS/);
   assert.match(catalogSource, /XENESIS_DESK_ACTION_PROTOCOL_RECORD_KEYS/);
-  assert.match(source, /XENESIS_DESK_ACTION_PROTOCOL_FORMAT/);
+  assert.doesNotMatch(source, /XENESIS_DESK_ACTION_PROTOCOL_FORMAT/);
+  assert.match(catalogSource, /XENESIS_DESK_ACTION_PROTOCOL_FORMAT/);
   assert.doesNotMatch(source, /XENESIS_DESK_ACTION_RESULT_SUMMARY_PATHS/);
   assert.doesNotMatch(source, /XENESIS_DESK_ACTION_RESULT_SUMMARY_KEYS/);
   assert.doesNotMatch(source, /XENESIS_DESK_ACTION_RESULT_SUMMARY_TEXT/);

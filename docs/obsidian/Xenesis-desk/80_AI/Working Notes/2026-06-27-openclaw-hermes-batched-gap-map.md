@@ -4247,6 +4247,52 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Renderer Desk Control Facade Collapse Slice
+
+- Continued the hardcoding cleanup by collapsing
+  `xenesisAgentDeskControl.ts` from a wrapper implementation file into a direct
+  shared re-export facade.
+- Intended change:
+  - renderer control re-exports action runner types/functions from
+    `xenesisDeskActionRunner.ts`;
+  - re-exports prompt hint, parser/result/approval helpers, and natural planner
+    functions from their shared modules;
+  - removes facade-local `FromShared`/`FromCatalog` alias imports, type alias
+    assignments, exported wrapper function bodies, and the
+    `DESK_ACTION_PROTOCOL_FORMAT` alias.
+- Scope boundary:
+  - Refactor ownership only.
+  - Preserve existing public import names used by Agent pane, activity blaster,
+    Agent types, and tests.
+  - No CR schema, dispatcher, provider, approval, Action Inbox mutation,
+    natural-language routing, or live CR behavior changes.
+- RED verification:
+  - Focused Agent Desk Control test failed as expected with 36/37 passing. The
+    new source guard failed on facade-local `FromShared` alias imports.
+- Implementation:
+  - Replaced `xenesisAgentDeskControl.ts` with direct re-exports from shared
+    runner, prompt hint, catalog, and planner modules.
+  - Widened shared `XenesisDeskActionResultMessageInput` with optional
+    execution-result metadata fields (`id`, `args`, `approved`,
+    `approvalRequired`, `permission`, `approval`, `source`) so direct
+    re-export keeps the old wrapper's accepted type surface.
+- Verification:
+  - Focused Agent Desk Control test passed with 37/37 tests.
+  - Capability, connection catalog, and Agent Desk Control tests passed with
+    103/103 tests before and after the catalog type adjustment.
+  - Scoped Biome check passed with no diagnostics before and after the catalog
+    type adjustment.
+  - `npm run typecheck` failed once on the too-narrow shared message input type,
+    then passed after widening the type.
+  - `npm run build`, `npm run smoke:xenesis:natural-desk-routing`, and
+    `git diff --check` passed. `build` reported existing Vite warnings only;
+    `diff --check` reported LF-to-CRLF working-copy warnings only.
+  - CR audit was skipped because this slice only refactors facade ownership and
+    widens a shared TypeScript input type; it does not change registry,
+    dispatcher, or capability coverage.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
