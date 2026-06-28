@@ -3212,6 +3212,60 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Messenger Aggregate Rule Catalog Refactor Slice
+
+- Started the next hardcoding cleanup slice for broad external-messenger
+  aggregate status/open selection.
+- Intended change:
+  - add shared `XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_RULES` and
+    `XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_RULES`;
+  - have `xenesisAgentDeskControl.ts` interpret those rule arrays instead of
+    branching directly on `MESSENGER_AGGREGATE_STATUS_ACTIONS.*` and
+    `MESSENGER_AGGREGATE_OPEN_ACTIONS.*`;
+  - keep existing CR paths and matching priority unchanged: profile drafts,
+    routing, safety, access groups, pairing, user stories, views, and open-only
+    catalog fallback.
+- Scope boundary:
+  - Refactor only.
+  - Do not change registry/dispatcher paths, messenger/channel schemas,
+    routing/safety/access/pairing/profile data, setup request writes, approval
+    behavior, credentials, external message execution, or UI rendering.
+- Verification plan:
+  - RED focused planner/source-guard test first;
+  - GREEN focused planner test;
+  - scoped Biome for catalog/planner/test files;
+  - root typecheck, build, natural Desk routing live smoke, and diff check
+    before commit.
+- RED verification:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    failed as expected with 36/37 passing because the planner still references
+    messenger aggregate action descriptors directly.
+- Implementation:
+  - Added messenger aggregate status/open rule catalogs in
+    `xenesisNaturalLanguageCatalog.ts`.
+  - Replaced the broad external-messenger status/open if-chains in
+    `xenesisAgentDeskControl.ts` with shared rule interpretation.
+- GREEN verification:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 37/37 tests.
+  - Removed unused planner imports for messenger aggregate vocabulary and
+    updated source guards to validate those terms through shared rule catalogs.
+  - Focused planner test and scoped Biome both passed after cleanup.
+  - `npm run typecheck` passed.
+  - `npm run build` passed; Vite emitted the existing browser `fs`
+    externalization and dynamic import chunking warnings.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 21/21 through the
+    built Electron app.
+  - CR audit was not run because no registry, dispatcher, or capability code
+    changed.
+  - Static hardcoding check found no remaining messenger aggregate action
+    descriptor or `MESSENGER_AGGREGATE_*_ACTIONS` matches in
+    `xenesisAgentDeskControl.ts`.
+  - `git diff --check` exited 0 with LF-to-CRLF warnings for touched tracked
+    files only.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

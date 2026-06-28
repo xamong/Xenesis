@@ -24,7 +24,6 @@ import {
   XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES,
   XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES,
   XENESIS_DESK_CONTROL_PROMPT_HINT_CONNECTION_CENTER_DISCOVERY_PREFIX,
-  XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS,
   XENESIS_NATURAL_ACTION_INBOX_CONTEXT_WORDS,
   XENESIS_NATURAL_ACTION_INTENT_WORDS,
   XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS,
@@ -96,10 +95,8 @@ import {
   XENESIS_NATURAL_MCP_BRIDGE_CONTEXT_WORDS,
   XENESIS_NATURAL_MCP_INSTALL_REVIEW_CONTEXT_WORDS,
   XENESIS_NATURAL_MCP_SETTINGS_CONTEXT_WORDS,
-  XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_ACTION_DESCRIPTORS,
-  XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
-  XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS,
-  XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS,
+  XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_RULES,
+  XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_RULES,
   XENESIS_NATURAL_NUMERIC_LIMITS,
   XENESIS_NATURAL_OAUTH_CONTEXT_WORDS,
   XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS,
@@ -142,7 +139,6 @@ import {
   XENESIS_NATURAL_RUNTIME_DIAGNOSTIC_CONTEXT_WORDS,
   XENESIS_NATURAL_RUNTIME_READBACK_WORDS,
   XENESIS_NATURAL_RUNTIME_STATUS_TARGET_WORDS,
-  XENESIS_NATURAL_SAFETY_CONTEXT_WORDS,
   XENESIS_NATURAL_SESSION_CONTEXT_WORDS,
   XENESIS_NATURAL_SESSION_RESET_CONTEXT_WORDS,
   XENESIS_NATURAL_SETUP_IMPERATIVE_WORDS,
@@ -154,11 +150,8 @@ import {
   XENESIS_NATURAL_TOGGLE_CONTEXT_WORDS,
   XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_RULES,
   XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_RULES,
-  XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
   XENESIS_NATURAL_VIEW_OPEN_COMMAND_WORDS,
   XENESIS_NATURAL_VIEW_OPEN_PATH,
-  XENESIS_NATURAL_VIEW_OR_SETUP_CONTEXT_WORDS,
-  XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
   XENESIS_NATURAL_VIEW_TARGETS,
   XENESIS_NATURAL_WINDOW_SIZE_CONTEXT_WORDS,
   XENESIS_NATURAL_WINDOW_SIZE_PRESET_TARGETS,
@@ -347,8 +340,6 @@ const CONNECTION_AGGREGATE_STATUS_ACTIONS = XENESIS_NATURAL_CONNECTION_AGGREGATE
 const CORE_TOOL_OPEN_REASON = XENESIS_NATURAL_CORE_TOOL_OPEN_REASON;
 const GUIDE_ACTIONS = XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS;
 const INTENT_PATTERNS = XENESIS_NATURAL_INTENT_PATTERNS;
-const MESSENGER_AGGREGATE_OPEN_ACTIONS = XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_ACTION_DESCRIPTORS;
-const MESSENGER_AGGREGATE_STATUS_ACTIONS = XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS;
 const NATURAL_NUMERIC_LIMITS = XENESIS_NATURAL_NUMERIC_LIMITS;
 const NATURAL_TEXT_DEFAULTS = XENESIS_NATURAL_TEXT_DEFAULTS;
 const ONBOARDING_ACTIONS = XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS;
@@ -679,35 +670,7 @@ function xenesisMessengerAggregateStatusActionFromNaturalText(value: string): Xe
   if (!hasXenesisConnectionReadbackIntent(value)) return null;
   if (!hasXenesisAggregateCatalogContext(value)) return null;
 
-  if (hasXenesisMessengerProfileDraftCatalogContext(value)) {
-    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.profileDrafts);
-  }
-
-  if (hasAny(value, XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS)) {
-    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.routing);
-  }
-
-  if (hasAny(value, XENESIS_NATURAL_SAFETY_CONTEXT_WORDS)) {
-    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.safety);
-  }
-
-  if (hasAny(value, XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS)) {
-    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.accessGroups);
-  }
-
-  if (hasAny(value, XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS)) {
-    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.pairing);
-  }
-
-  if (hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
-    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.userStories);
-  }
-
-  if (hasAny(value, XENESIS_NATURAL_VIEW_OR_SETUP_CONTEXT_WORDS)) {
-    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.views);
-  }
-
-  return null;
+  return naturalCatalogRuleActionFromNaturalText(value, XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_RULES);
 }
 
 function hasXenesisConnectionContext(value: string): boolean {
@@ -746,7 +709,7 @@ function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisD
   if (providerAction) return providerAction;
 
   if (hasXenesisMessengerProfileDraftCatalogContext(value)) {
-    return naturalCatalogAction(MESSENGER_AGGREGATE_STATUS_ACTIONS.profileDrafts);
+    return naturalCatalogRuleActionFromNaturalText(value, XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_RULES);
   }
 
   const target = xenesisConnectionTargetFromNaturalText(value);
@@ -910,36 +873,12 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
     );
   }
 
-  if (hasXenesisMessengerProfileDraftCatalogContext(value)) {
-    return naturalCatalogAction(MESSENGER_AGGREGATE_OPEN_ACTIONS.profileDrafts, DESK_ACTION_ARGS.ensureVisible());
-  }
-
-  if (hasExternalMessengerCatalogContext(value) && hasAny(value, XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS)) {
-    return naturalCatalogAction(MESSENGER_AGGREGATE_OPEN_ACTIONS.routing, DESK_ACTION_ARGS.ensureVisible());
-  }
-
-  if (hasExternalMessengerCatalogContext(value) && hasAny(value, XENESIS_NATURAL_SAFETY_CONTEXT_WORDS)) {
-    return naturalCatalogAction(MESSENGER_AGGREGATE_OPEN_ACTIONS.safety, DESK_ACTION_ARGS.ensureVisible());
-  }
-
-  if (hasExternalMessengerCatalogContext(value) && hasAny(value, XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS)) {
-    return naturalCatalogAction(MESSENGER_AGGREGATE_OPEN_ACTIONS.accessGroups, DESK_ACTION_ARGS.ensureVisible());
-  }
-
-  if (hasExternalMessengerCatalogContext(value) && hasAny(value, XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS)) {
-    return naturalCatalogAction(MESSENGER_AGGREGATE_OPEN_ACTIONS.pairing, DESK_ACTION_ARGS.ensureVisible());
-  }
-
-  if (hasExternalMessengerCatalogContext(value) && hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
-    return naturalCatalogAction(MESSENGER_AGGREGATE_OPEN_ACTIONS.userStories, DESK_ACTION_ARGS.ensureVisible());
-  }
-
-  if (hasExternalMessengerCatalogContext(value) && hasAny(value, XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS)) {
-    return naturalCatalogAction(MESSENGER_AGGREGATE_OPEN_ACTIONS.views, DESK_ACTION_ARGS.ensureVisible());
-  }
-
-  if (hasExternalMessengerCatalogContext(value)) {
-    return naturalCatalogAction(MESSENGER_AGGREGATE_OPEN_ACTIONS.catalog, DESK_ACTION_ARGS.ensureVisible());
+  if (hasExternalMessengerCatalogContext(value) || hasXenesisMessengerProfileDraftCatalogContext(value)) {
+    return naturalCatalogRuleActionFromNaturalText(
+      value,
+      XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_RULES,
+      DESK_ACTION_ARGS.ensureVisible(),
+    );
   }
 
   return null;
