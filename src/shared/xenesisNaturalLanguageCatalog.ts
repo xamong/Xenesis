@@ -86,6 +86,34 @@ export interface XenesisNaturalProviderActionRule {
   fallback?: boolean;
 }
 
+export interface XenesisNaturalGuideOpenRule {
+  contextWords: readonly string[];
+  action: XenesisNaturalDeskActionTemplateDescriptor<[string, string, boolean]>;
+}
+
+export interface XenesisNaturalGuideStatusRule {
+  contextWords: readonly string[];
+  action: XenesisNaturalDeskActionTemplateDescriptor<[string, string]>;
+}
+
+export interface XenesisNaturalOnboardingCenterActionRule {
+  contextWords: readonly string[];
+  action: XenesisNaturalDeskActionDescriptor;
+  argsKind: 'ensureVisible';
+  targetRequired: false;
+}
+
+export interface XenesisNaturalOnboardingStepActionRule {
+  contextWords: readonly string[];
+  action: XenesisNaturalDeskActionTemplateDescriptor<[string, string]>;
+  argsKind: 'targetId' | 'targetIdVisible';
+  targetRequired: true;
+}
+
+export type XenesisNaturalOnboardingActionRule =
+  | XenesisNaturalOnboardingCenterActionRule
+  | XenesisNaturalOnboardingStepActionRule;
+
 export interface XenesisNaturalCatalogActionRule {
   contextWords: readonly string[];
   requiredContextWordGroups?: readonly (readonly string[])[];
@@ -1795,6 +1823,44 @@ export const XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS = {
   stepOpen: XenesisNaturalDeskActionTemplateDescriptor<[string, string]>;
   stepStatus: XenesisNaturalDeskActionTemplateDescriptor<[string, string]>;
 };
+
+export const XENESIS_NATURAL_GUIDE_OPEN_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_GUIDE_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS.open,
+  },
+] as const satisfies readonly XenesisNaturalGuideOpenRule[];
+
+export const XENESIS_NATURAL_GUIDE_STATUS_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_GUIDE_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS.status,
+  },
+] as const satisfies readonly XenesisNaturalGuideStatusRule[];
+
+export const XENESIS_NATURAL_ONBOARDING_OPEN_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS.stepOpen,
+    argsKind: 'targetIdVisible',
+    targetRequired: true,
+  },
+  {
+    contextWords: XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS.centerOpen,
+    argsKind: 'ensureVisible',
+    targetRequired: false,
+  },
+] as const satisfies readonly XenesisNaturalOnboardingActionRule[];
+
+export const XENESIS_NATURAL_ONBOARDING_STATUS_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS.stepStatus,
+    argsKind: 'targetId',
+    targetRequired: true,
+  },
+] as const satisfies readonly XenesisNaturalOnboardingActionRule[];
 
 export const XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_ACTION_DESCRIPTORS = {
   guides: {

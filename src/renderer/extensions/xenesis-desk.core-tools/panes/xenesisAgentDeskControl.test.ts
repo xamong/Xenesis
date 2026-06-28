@@ -70,6 +70,8 @@ import {
   XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_GUIDE_CONTEXT_WORDS,
   XENESIS_NATURAL_GUIDE_FILE_OPEN_WORDS,
+  XENESIS_NATURAL_GUIDE_OPEN_RULES,
+  XENESIS_NATURAL_GUIDE_STATUS_RULES,
   XENESIS_NATURAL_GUIDE_TARGETS,
   XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS,
   XENESIS_NATURAL_LIST_OR_SHOW_WORDS,
@@ -86,6 +88,8 @@ import {
   XENESIS_NATURAL_OAUTH_CONTEXT_WORDS,
   XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS,
+  XENESIS_NATURAL_ONBOARDING_OPEN_RULES,
+  XENESIS_NATURAL_ONBOARDING_STATUS_RULES,
   XENESIS_NATURAL_ONBOARDING_STEP_TARGETS,
   XENESIS_NATURAL_OPEN_OR_SHOW_WORDS,
   XENESIS_NATURAL_PANE_CONTEXT_WORDS,
@@ -158,7 +162,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /Use `xd\.xenesis\.channels\.routing\.status`, `xd\.xenesis\.channels\.routing\.open`/);
   assert.match(source, /XENESIS_NATURAL_GUIDE_CONTEXT_WORDS/);
   assert.match(source, /XENESIS_NATURAL_GUIDE_FILE_OPEN_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS/);
   assert.match(source, /XENESIS_NATURAL_CONNECTION_READBACK_INTENT_WORDS/);
   assert.match(source, /XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_WORDS/);
   assert.match(source, /XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_WORDS/);
@@ -583,8 +587,16 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   );
   assert.equal(XENESIS_NATURAL_RUNTIME_VISIBLE_PLAN_PATHS.actionInboxList, 'xd.mcp.actionInbox.list');
   assert.equal(XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.runsStart.path, 'xd.xenesis.runs.start');
-  assert.match(source, /XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS/);
-  assert.match(source, /XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS/);
+  assert.match(source, /XENESIS_NATURAL_GUIDE_OPEN_RULES/);
+  assert.match(source, /XENESIS_NATURAL_GUIDE_STATUS_RULES/);
+  assert.match(source, /XENESIS_NATURAL_ONBOARDING_OPEN_RULES/);
+  assert.match(source, /XENESIS_NATURAL_ONBOARDING_STATUS_RULES/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS/);
+  assert.doesNotMatch(source, /const GUIDE_ACTIONS =/);
+  assert.doesNotMatch(source, /GUIDE_ACTIONS\./);
+  assert.doesNotMatch(source, /const ONBOARDING_ACTIONS =/);
+  assert.doesNotMatch(source, /ONBOARDING_ACTIONS\./);
   assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-guide-open-\$\{guide\.id\}`/);
   assert.doesNotMatch(source, /naturalAction\(\s*'natural-xenesis-onboarding-center-open'/);
   assert.equal(XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS.open.path, 'xd.xenesis.guides.open');
@@ -594,6 +606,22 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   );
   assert.equal(XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS.centerOpen.id, 'natural-xenesis-onboarding-center-open');
   assert.equal(XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS.stepOpen.path, 'xd.xenesis.onboarding.open');
+  assert.deepEqual(
+    XENESIS_NATURAL_GUIDE_OPEN_RULES.map((rule) => rule.action.path),
+    ['xd.xenesis.guides.open'],
+  );
+  assert.deepEqual(
+    XENESIS_NATURAL_GUIDE_STATUS_RULES.map((rule) => rule.action.path),
+    ['xd.xenesis.guides.status'],
+  );
+  assert.deepEqual(
+    XENESIS_NATURAL_ONBOARDING_OPEN_RULES.map((rule) => rule.action.path),
+    ['xd.xenesis.onboarding.open', 'xd.xenesis.onboarding.open'],
+  );
+  assert.deepEqual(
+    XENESIS_NATURAL_ONBOARDING_STATUS_RULES.map((rule) => rule.action.path),
+    ['xd.xenesis.onboarding.status'],
+  );
   assert.doesNotMatch(source, /XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS/);
   assert.match(source, /XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_RULES/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS/);

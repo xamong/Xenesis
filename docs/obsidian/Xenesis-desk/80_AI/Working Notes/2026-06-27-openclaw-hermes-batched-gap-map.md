@@ -3586,6 +3586,55 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Guide/Onboarding Rule Catalog Refactor Slice
+
+- Started a larger hardcoding cleanup slice for guide and onboarding action
+  selection.
+- Intended change:
+  - add shared rule catalogs for guide open/status and onboarding center/step
+    open/status;
+  - have `xenesisAgentDeskControl.ts` interpret those rules instead of
+    selecting `GUIDE_ACTIONS.*` / `ONBOARDING_ACTIONS.*` directly;
+  - keep guide/step target lookup, open-file detection, and dynamic args in the
+    planner.
+- Scope boundary:
+  - Refactor only.
+  - Do not change CR paths, registry/dispatcher paths, approval behavior,
+    execution, provider/tool/messenger routing, or UI rendering.
+- Verification plan:
+  - RED focused planner/source-guard test first;
+  - GREEN focused planner test;
+  - scoped Biome for catalog/planner/test files;
+  - root typecheck, build, natural Desk routing smoke, and diff check before
+    commit.
+- RED verification:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    failed as expected with 36/37 passing because the planner source still did
+    not reference `XENESIS_NATURAL_GUIDE_OPEN_RULES`.
+- Implementation:
+  - Added shared guide open/status and onboarding open/status rule catalogs.
+  - Added generic planner context-rule matching and moved guide/onboarding
+    descriptor selection behind those rule catalogs.
+  - Preserved target lookup, open-file detection, args, CR paths, reasons,
+    route order, and approval behavior.
+- Focused GREEN verification:
+  - Focused planner test passed with 37/37 tests.
+  - Scoped Biome over the catalog/planner/test files exited 0 with no fixes
+    applied after formatting.
+  - Static hardcoding check found no remaining planner direct guide/onboarding
+    descriptor aliases or direct onboarding context-word imports.
+- Broad verification:
+  - `npm run typecheck` passed.
+  - `npm run build` passed with existing Vite warnings only.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 21/21 through the
+    built Electron app.
+  - `git diff --check` exited 0 with LF-to-CRLF working-copy warnings only.
+  - CR audit was skipped because this slice only refactors planner/catalog rule
+    interpretation and does not change registry, dispatcher, or capability
+    coverage.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

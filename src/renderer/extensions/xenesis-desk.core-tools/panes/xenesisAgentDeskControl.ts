@@ -72,15 +72,16 @@ import {
   XENESIS_NATURAL_GENERIC_FOCUS_CONTEXT_WORDS,
   XENESIS_NATURAL_GENERIC_LIST_CONTEXT_WORDS,
   XENESIS_NATURAL_GENERIC_OPEN_WORDS,
-  XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_GUIDE_CONTEXT_WORDS,
   XENESIS_NATURAL_GUIDE_FILE_OPEN_WORDS,
+  XENESIS_NATURAL_GUIDE_OPEN_RULES,
+  XENESIS_NATURAL_GUIDE_STATUS_RULES,
   XENESIS_NATURAL_INTENT_PATTERNS,
   XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_RULES,
   XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_RULES,
   XENESIS_NATURAL_NUMERIC_LIMITS,
-  XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS,
-  XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS,
+  XENESIS_NATURAL_ONBOARDING_OPEN_RULES,
+  XENESIS_NATURAL_ONBOARDING_STATUS_RULES,
   XENESIS_NATURAL_ONBOARDING_STEP_TARGETS,
   XENESIS_NATURAL_OPEN_COMMAND_WORDS,
   XENESIS_NATURAL_OPEN_OR_SHOW_WORDS,
@@ -142,6 +143,9 @@ import {
   type XenesisNaturalCoreToolTarget,
   type XenesisNaturalDeskActionDescriptor,
   type XenesisNaturalDeskActionTemplateDescriptor,
+  type XenesisNaturalGuideOpenRule,
+  type XenesisNaturalGuideStatusRule,
+  type XenesisNaturalOnboardingActionRule,
   type XenesisNaturalProviderActionRule,
 } from '../../../../shared/xenesisNaturalLanguageCatalog';
 
@@ -276,18 +280,35 @@ function naturalViewOpenAction(
   };
 }
 
-function naturalCatalogRuleFromNaturalText(
+type XenesisNaturalContextRule = Pick<
+  XenesisNaturalCatalogActionRule,
+  'blockedContextWords' | 'contextWords' | 'requiredContextWordGroups'
+>;
+
+function naturalRuleMatches(value: string, rule: XenesisNaturalContextRule): boolean {
+  if (rule.contextWords.length > 0 && !hasAny(value, rule.contextWords)) return false;
+  if ((rule.requiredContextWordGroups ?? []).some((contextWords) => !hasAny(value, contextWords))) return false;
+  if (rule.blockedContextWords && hasAny(value, rule.blockedContextWords)) return false;
+  return true;
+}
+
+function naturalContextRuleFromNaturalText<TRule extends XenesisNaturalContextRule>(
   value: string,
-  rules: readonly XenesisNaturalCatalogActionRule[],
-): XenesisNaturalCatalogActionRule | null {
+  rules: readonly TRule[],
+): TRule | null {
   for (const rule of rules) {
-    if (rule.contextWords.length > 0 && !hasAny(value, rule.contextWords)) continue;
-    if ((rule.requiredContextWordGroups ?? []).some((contextWords) => !hasAny(value, contextWords))) continue;
-    if (rule.blockedContextWords && hasAny(value, rule.blockedContextWords)) continue;
+    if (!naturalRuleMatches(value, rule)) continue;
     return rule;
   }
 
   return null;
+}
+
+function naturalCatalogRuleFromNaturalText(
+  value: string,
+  rules: readonly XenesisNaturalCatalogActionRule[],
+): XenesisNaturalCatalogActionRule | null {
+  return naturalContextRuleFromNaturalText(value, rules);
 }
 
 function naturalCatalogRuleActionFromNaturalText(
@@ -328,11 +349,9 @@ const DESK_ACTION_ARGS = XENESIS_NATURAL_DESK_ACTION_ARGS;
 const DEFAULT_DESK_PLACEMENT = DESK_ACTION_ARG_DEFAULTS.placement;
 const EXTRACTION_PATTERNS = XENESIS_NATURAL_EXTRACTION_PATTERNS;
 const CORE_TOOL_OPEN_REASON = XENESIS_NATURAL_CORE_TOOL_OPEN_REASON;
-const GUIDE_ACTIONS = XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS;
 const INTENT_PATTERNS = XENESIS_NATURAL_INTENT_PATTERNS;
 const NATURAL_NUMERIC_LIMITS = XENESIS_NATURAL_NUMERIC_LIMITS;
 const NATURAL_TEXT_DEFAULTS = XENESIS_NATURAL_TEXT_DEFAULTS;
-const ONBOARDING_ACTIONS = XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS;
 const PLAN_TEXT = XENESIS_NATURAL_PLAN_VISIBLE_TEXT;
 const PROVIDER_AUTO_TARGET = XENESIS_NATURAL_PROVIDER_AUTO_TARGET;
 
@@ -542,34 +561,46 @@ function xenesisProviderRuleActionFromNaturalText(
   return null;
 }
 
-function xenesisGuideFromNaturalText(value: string): { id: string; label: string } | null {
-  if (!hasAny(value, XENESIS_NATURAL_GUIDE_CONTEXT_WORDS)) return null;
+function xenesisGuideFromNaturalText(
+  value: string,
+  rule: XenesisNaturalGuideOpenRule | XenesisNaturalGuideStatusRule,
+): { id: string; label: string } | null {
+  if (!naturalRuleMatches(value, rule)) return null;
 
   return findXenesisNaturalGuideTarget(value);
 }
 
 function xenesisGuideActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
-  const guide = xenesisGuideFromNaturalText(value);
+  const rule = naturalContextRuleFromNaturalText(value, XENESIS_NATURAL_GUIDE_OPEN_RULES);
+  if (!rule) return null;
+
+  const guide = xenesisGuideFromNaturalText(value, rule);
   if (!guide) return null;
 
   const openFile = hasAny(value, XENESIS_NATURAL_GUIDE_FILE_OPEN_WORDS);
 
   return naturalTemplateAction(
-    GUIDE_ACTIONS.open,
+    rule.action,
     [guide.id, guide.label, openFile],
     DESK_ACTION_ARGS.openFileVisible(guide.id, openFile),
   );
 }
 
 function xenesisGuideStatusActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
-  const guide = xenesisGuideFromNaturalText(value);
+  const rule = naturalContextRuleFromNaturalText(value, XENESIS_NATURAL_GUIDE_STATUS_RULES);
+  if (!rule) return null;
+
+  const guide = xenesisGuideFromNaturalText(value, rule);
   if (!guide) return null;
 
-  return naturalTemplateAction(GUIDE_ACTIONS.status, [guide.id, guide.label], DESK_ACTION_ARGS.targetId(guide.id));
+  return naturalTemplateAction(rule.action, [guide.id, guide.label], DESK_ACTION_ARGS.targetId(guide.id));
 }
 
 function hasXenesisOnboardingContext(value: string): boolean {
-  return hasAny(value, XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS);
+  return (
+    naturalContextRuleFromNaturalText(value, XENESIS_NATURAL_ONBOARDING_OPEN_RULES) !== null ||
+    naturalContextRuleFromNaturalText(value, XENESIS_NATURAL_ONBOARDING_STATUS_RULES) !== null
+  );
 }
 
 function xenesisOnboardingStepFromNaturalText(value: string): { id: string; label: string } | null {
@@ -578,30 +609,41 @@ function xenesisOnboardingStepFromNaturalText(value: string): { id: string; labe
   return findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_ONBOARDING_STEP_TARGETS);
 }
 
+function xenesisOnboardingArgsForRule(rule: XenesisNaturalOnboardingActionRule, id?: string): unknown {
+  if (rule.argsKind === 'ensureVisible') return DESK_ACTION_ARGS.ensureVisible();
+  if (rule.argsKind === 'targetIdVisible') return DESK_ACTION_ARGS.targetIdVisible(id || NATURAL_TEXT_DEFAULTS.empty);
+  return DESK_ACTION_ARGS.targetId(id || NATURAL_TEXT_DEFAULTS.empty);
+}
+
 function xenesisOnboardingOpenActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
   const step = xenesisOnboardingStepFromNaturalText(value);
-  if (!step) {
-    if (!hasXenesisOnboardingContext(value)) return null;
+  for (const rule of XENESIS_NATURAL_ONBOARDING_OPEN_RULES) {
+    if (!naturalRuleMatches(value, rule)) continue;
 
-    return naturalCatalogAction(ONBOARDING_ACTIONS.centerOpen, DESK_ACTION_ARGS.ensureVisible());
+    if (rule.targetRequired) {
+      if (!step) continue;
+
+      return naturalTemplateAction(rule.action, [step.id, step.label], xenesisOnboardingArgsForRule(rule, step.id));
+    }
+
+    return naturalCatalogAction(rule.action, xenesisOnboardingArgsForRule(rule));
   }
 
-  return naturalTemplateAction(
-    ONBOARDING_ACTIONS.stepOpen,
-    [step.id, step.label],
-    DESK_ACTION_ARGS.targetIdVisible(step.id),
-  );
+  return null;
 }
 
 function xenesisOnboardingStatusActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
   const step = xenesisOnboardingStepFromNaturalText(value);
   if (!step) return null;
 
-  return naturalTemplateAction(
-    ONBOARDING_ACTIONS.stepStatus,
-    [step.id, step.label],
-    DESK_ACTION_ARGS.targetId(step.id),
-  );
+  for (const rule of XENESIS_NATURAL_ONBOARDING_STATUS_RULES) {
+    if (!naturalRuleMatches(value, rule)) continue;
+    if (!rule.targetRequired) continue;
+
+    return naturalTemplateAction(rule.action, [step.id, step.label], xenesisOnboardingArgsForRule(rule, step.id));
+  }
+
+  return null;
 }
 
 function hasXenesisConnectionReadbackIntent(value: string): boolean {
