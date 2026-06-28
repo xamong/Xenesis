@@ -793,6 +793,17 @@ export interface XenesisConnectionItem {
   warnings?: string[];
 }
 
+export interface XenesisConnectionNaturalWordsTarget {
+  id: string;
+  label: string;
+  words: readonly string[];
+}
+
+export interface XenesisConnectionNaturalConnectionTarget extends XenesisConnectionNaturalWordsTarget {
+  kind: 'tool' | 'messenger';
+  supportLevel?: XenesisConnectionSupportLevel;
+}
+
 export interface XenesisConnectionSection {
   id: string;
   label: string;
@@ -3501,6 +3512,146 @@ export const XENESIS_CONNECTION_MESSENGER_IDS = [
   ...PLANNED_MESSENGERS.map((item) => item.id),
 ];
 
+type XenesisConnectionProviderId = (typeof XENESIS_CONNECTION_PROVIDER_IDS)[number];
+
+const XENESIS_CONNECTION_NATURAL_PROVIDER_TARGET_IDS: readonly XenesisConnectionProviderId[] = [
+  'codex-app-server',
+  'codex-cli',
+  'claude-cli',
+  'claude-interactive',
+  'azure',
+  'openai',
+  'anthropic',
+  'gemini',
+  'groq',
+  'deepseek',
+  'qwen',
+  'ollama',
+  'lmstudio',
+  'together',
+  'fireworks',
+  'auto',
+];
+
+const XENESIS_CONNECTION_NATURAL_PROVIDER_ALIAS_WORDS: Record<XenesisConnectionProviderId, readonly string[]> = {
+  anthropic: ['anthropic', 'anthropic claude', '앤트로픽'],
+  auto: ['auto', '자동'],
+  azure: ['azure openai', 'azure-openai', 'azure', '애저 오픈ai', '애저 오픈 ai'],
+  'claude-cli': ['claude cli', 'claude-cli'],
+  'claude-interactive': ['claude interactive', 'claude-interactive', '클로드 interactive', '클로드 인터랙티브'],
+  'codex-app-server': ['codex app-server', 'codex-app-server', 'codex app server', 'app-server', 'app server'],
+  'codex-cli': ['codex cli', 'codex-cli'],
+  deepseek: ['deepseek', 'deep seek', '딥시크'],
+  fireworks: ['fireworks ai', 'fireworks', '파이어웍스'],
+  gemini: ['gemini', '제미나이'],
+  groq: ['groq', '그록'],
+  lmstudio: ['lm studio', 'lmstudio', 'lm-studio', '엘엠 스튜디오'],
+  ollama: ['ollama', '올라마'],
+  openai: ['openai', '오픈ai', '오픈 ai'],
+  qwen: ['qwen', 'dashscope', 'dash scope', '큐원', '큐웬'],
+  together: ['together ai', 'together', '투게더'],
+};
+
+const XENESIS_CONNECTION_NATURAL_TOOL_ALIAS_WORDS: Record<string, readonly string[]> = {
+  fetch: [
+    'fetch',
+    '웹 fetch',
+    '웹 가져오기',
+    'web page fetch',
+    'webpage fetch',
+    '웹페이지 가져오기',
+    '웹 페이지 가져오기',
+  ],
+  filesystem: ['filesystem', 'file system', '파일시스템', '파일 시스템', 'workspace files', '워크스페이스 파일'],
+  github: ['github', '깃허브'],
+  'google-calendar': ['google calendar', '구글 캘린더', '캘린더'],
+  'google-workspace': [
+    'google workspace',
+    '구글 워크스페이스',
+    'gmail',
+    '지메일',
+    'google docs',
+    'google drive',
+    '구글 문서',
+    '구글 독스',
+    '구글 드라이브',
+    'workspace',
+    '워크스페이스',
+  ],
+  linear: ['linear', '리니어'],
+  notion: ['notion', '노션'],
+};
+
+const XENESIS_CONNECTION_NATURAL_MESSENGER_ALIAS_WORDS: Record<string, readonly string[]> = {
+  dingding: ['dingtalk', 'ding talk', 'dingding', '딩톡', '딩딩'],
+  discord: ['discord', '디스코드'],
+  email: ['email', '이메일', 'mailbox', '메일박스', '메일'],
+  feishu: ['feishu', 'lark', '페이슈', '페이수', '라크'],
+  'google-chat': ['google chat', 'google-chat', '구글 챗', '구글 채팅'],
+  'home-assistant': ['home assistant', 'home-assistant', '홈 어시스턴트', '홈어시스턴트'],
+  imessage: ['imessage', '아이메시지', '아이메세지', 'bluebubbles', '블루버블'],
+  irc: ['irc', '아이알씨'],
+  line: ['line', '라인'],
+  mattermost: ['mattermost', '매터모스트'],
+  matrix: ['matrix', '매트릭스'],
+  'microsoft-teams': ['microsoft teams', 'microsoft-teams', 'ms teams', 'teams', '팀즈', '마이크로소프트 팀즈'],
+  'nextcloud-talk': ['nextcloud talk', 'nextcloud-talk', '넥스트클라우드 톡', '넥스트클라우드 토크'],
+  nostr: ['nostr', '노스트르'],
+  ntfy: ['ntfy', '엔티파이'],
+  qqbot: ['qqbot', 'qq bot', 'qq 봇', '큐큐봇'],
+  raft: ['raft', '래프트'],
+  'rocket-chat': ['rocket chat', 'rocket-chat', 'rocketchat', '로켓챗', '로켓 채팅'],
+  signal: ['signal', '시그널'],
+  slack: ['slack', '슬랙'],
+  sms: ['sms', '문자 메시지', '문자메시지', '문자'],
+  'synology-chat': ['synology chat', 'synology-chat', '시놀로지 챗', '시놀로지 채팅'],
+  telegram: ['telegram', '텔레그램'],
+  tlon: ['tlon', '틀론'],
+  twitch: ['twitch', '트위치'],
+  webhook: ['webhook', '웹훅'],
+  wechat: ['wechat', 'weixin', '위챗', '웨이신'],
+  whatsapp: ['whatsapp', '왓츠앱', '와츠앱'],
+  yuanbao: ['yuanbao', '위안바오'],
+  zalo: ['zalo', '잘로'],
+};
+
+function naturalConnectionTargetFromItem(
+  item: Pick<XenesisConnectionItem, 'id' | 'label' | 'supportLevel'> & { status?: XenesisConnectionStatus },
+  kind: XenesisConnectionNaturalConnectionTarget['kind'],
+  words: readonly string[],
+): XenesisConnectionNaturalConnectionTarget {
+  const supportLevel =
+    item.supportLevel ?? (kind === 'messenger' ? (item.status === 'planned' ? 'planned' : 'implemented') : undefined);
+
+  return {
+    id: item.id,
+    label: item.label,
+    kind,
+    supportLevel,
+    words: uniqueStrings(words),
+  };
+}
+
+export const XENESIS_CONNECTION_NATURAL_CONNECTION_TARGETS: readonly XenesisConnectionNaturalConnectionTarget[] = [
+  ...TOOL_CONNECTIONS.map((item) =>
+    naturalConnectionTargetFromItem(item, 'tool', XENESIS_CONNECTION_NATURAL_TOOL_ALIAS_WORDS[item.id] ?? [item.id]),
+  ),
+  ...[...MESSENGERS, ...PLANNED_MESSENGERS].map((item) =>
+    naturalConnectionTargetFromItem(
+      item,
+      'messenger',
+      XENESIS_CONNECTION_NATURAL_MESSENGER_ALIAS_WORDS[item.id] ?? [item.id],
+    ),
+  ),
+];
+
+export const XENESIS_CONNECTION_NATURAL_PROVIDER_TARGETS: readonly XenesisConnectionNaturalWordsTarget[] =
+  XENESIS_CONNECTION_NATURAL_PROVIDER_TARGET_IDS.map((id) => ({
+    id,
+    label: id,
+    words: uniqueStrings(XENESIS_CONNECTION_NATURAL_PROVIDER_ALIAS_WORDS[id] ?? [id]),
+  }));
+
 function countItems(sections: XenesisConnectionsStatus['sections']): XenesisConnectionsStatus['summary'] {
   const summary = {
     ready: 0,
@@ -3520,7 +3671,7 @@ function countItems(sections: XenesisConnectionsStatus['sections']): XenesisConn
   return summary;
 }
 
-function uniqueStrings(values: Array<string | null | undefined>): string[] {
+function uniqueStrings(values: readonly (string | null | undefined)[]): string[] {
   const seen = new Set<string>();
   const result: string[] = [];
   for (const value of values) {

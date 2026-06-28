@@ -4293,6 +4293,55 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Connection Target Source-of-Truth Slice
+
+- Continued the larger hardcoding cleanup by moving provider, external-tool,
+  and external-messenger natural-language target ownership out of
+  `xenesisNaturalLanguageCatalog.ts` and into the Connection Center source of
+  truth in `src/shared/xenesisConnections.ts`.
+- Intended change:
+  - Connection Center data now exports natural target lists for provider IDs,
+    external tool cards, and external messenger cards.
+  - The natural-language catalog re-exports those targets instead of owning a
+    second literal id/label/support-level list.
+  - A new regression test verifies every Connection Center tool, messenger, and
+    provider ID remains represented as a natural target, and checks setup-status
+    routing across the full messenger ID list.
+- Scope boundary:
+  - Refactor/catalog-source alignment only.
+  - No CR schema changes, dispatcher changes, OAuth/install behavior, provider
+    runtime selection changes, messenger delivery, profile writes, or Action
+    Inbox mutation changes.
+- RED verification:
+  - Focused Agent Desk Control test failed as expected with 37/38 passing. The
+    new source guard failed because `xenesisNaturalLanguageCatalog.ts` still
+    directly declared `XENESIS_NATURAL_CONNECTION_TARGETS`.
+- Implementation:
+  - Added `XENESIS_CONNECTION_NATURAL_CONNECTION_TARGETS` and
+    `XENESIS_CONNECTION_NATURAL_PROVIDER_TARGETS` in
+    `src/shared/xenesisConnections.ts`.
+  - Replaced duplicated literal target arrays in
+    `src/shared/xenesisNaturalLanguageCatalog.ts` with imports from the
+    Connection Center catalog.
+  - Widened the local target helper inputs to accept readonly alias arrays and
+    pre-materialized implemented messenger definitions without a `status`
+    field.
+- Verification:
+  - Focused Agent Desk Control test passed with 38/38 tests.
+  - Capability, connection catalog, and Agent Desk Control tests passed with
+    104/104 tests.
+  - Scoped Biome check passed after a safe organizeImports fix.
+  - `npm run typecheck` failed once on helper input typing, then passed after
+    widening the helper types.
+  - `npm run build`, `npm run smoke:xenesis:natural-desk-routing`, and
+    `git diff --check` passed. `build` reported existing Vite warnings only;
+    `diff --check` reported LF-to-CRLF working-copy warnings only.
+  - CR audit was skipped because this slice only changes catalog source
+    ownership and tests; it does not change registry, dispatcher, or capability
+    coverage.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

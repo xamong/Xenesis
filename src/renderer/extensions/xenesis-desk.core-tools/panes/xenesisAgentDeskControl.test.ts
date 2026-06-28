@@ -2,6 +2,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
+  XENESIS_CONNECTION_MESSENGER_IDS,
+  XENESIS_CONNECTION_PROVIDER_IDS,
+  XENESIS_CONNECTION_TOOL_IDS,
+} from '../../../../shared/xenesisConnections';
+import {
   isXenesisDeskActionRecordValue,
   isXenesisDeskActionValueType,
   isXenesisNaturalConnectionMessengerTarget,
@@ -50,6 +55,7 @@ import {
   XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES,
   XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES,
+  XENESIS_NATURAL_CONNECTION_TARGETS,
   XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS,
   XENESIS_NATURAL_DASHBOARD_CONTEXT_WORDS,
   XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS,
@@ -132,6 +138,7 @@ import {
   XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_WORDS,
   XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_PROVIDER_STATUS_RULES,
+  XENESIS_NATURAL_PROVIDER_TARGETS,
   XENESIS_NATURAL_REPORT_CONTEXT_WORDS,
   XENESIS_NATURAL_REVIEW_REQUEST_PROVIDER_RULES,
   XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES,
@@ -248,6 +255,14 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /Use `xd\.xenesis\.channels\.routing\.status`, `xd\.xenesis\.channels\.routing\.open`/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_CONNECTION_AGGREGATE_MATCH_RULES/);
   assert.match(catalogSource, /XENESIS_NATURAL_CONNECTION_AGGREGATE_MATCH_RULES/);
+  assert.doesNotMatch(
+    catalogSource,
+    /export const XENESIS_NATURAL_CONNECTION_TARGETS:\s*readonly XenesisNaturalConnectionTarget\[\]\s*=\s*\[/,
+  );
+  assert.doesNotMatch(
+    catalogSource,
+    /export const XENESIS_NATURAL_PROVIDER_TARGETS:\s*readonly XenesisNaturalWordsTarget\[\]\s*=\s*\[/,
+  );
   assert.match(naturalPlannerSource, /XENESIS_NATURAL_GUIDE_FILE_OPEN_RULES/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_GUIDE_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_GUIDE_FILE_OPEN_WORDS/);
@@ -1785,6 +1800,32 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     XENESIS_NATURAL_ONBOARDING_STEP_TARGETS.map((target) => target.id),
     ['first-chat', 'local-cli-mcp', 'recommended-tools', 'gateway', 'messenger-routing', 'test-send'],
   );
+});
+
+test('natural connection and provider targets stay aligned with the Connection Center catalog ids', () => {
+  const connectionTargets = new Map(XENESIS_NATURAL_CONNECTION_TARGETS.map((target) => [target.id, target]));
+  const providerTargets = new Map(XENESIS_NATURAL_PROVIDER_TARGETS.map((target) => [target.id, target]));
+
+  for (const toolId of XENESIS_CONNECTION_TOOL_IDS) {
+    const target = connectionTargets.get(toolId);
+    assert.equal(target?.kind, 'tool', `${toolId} should remain a natural tool target`);
+  }
+
+  for (const messengerId of XENESIS_CONNECTION_MESSENGER_IDS) {
+    const target = connectionTargets.get(messengerId);
+    assert.equal(target?.kind, 'messenger', `${messengerId} should remain a natural messenger target`);
+    assert.ok(target?.words.length, `${messengerId} should keep at least one natural-language alias`);
+
+    const setupStatusAction = planXenesisDeskNaturalLanguageActions(`${target.words[0]} setup 상태 보여줘`).actions[0];
+    assert.equal(setupStatusAction?.path, 'xd.xenesis.messengers.views.status', `${messengerId} setup status path`);
+    assert.deepEqual(setupStatusAction?.args, { id: messengerId }, `${messengerId} setup status args`);
+  }
+
+  for (const providerId of XENESIS_CONNECTION_PROVIDER_IDS) {
+    const target = providerTargets.get(providerId);
+    assert.ok(target, `${providerId} should remain a natural provider target`);
+    assert.ok(target.words.length, `${providerId} should keep at least one natural-language alias`);
+  }
 });
 
 test('XenesisAgentPane wires natural-language plans before provider runs', () => {
