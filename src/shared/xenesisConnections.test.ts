@@ -1352,6 +1352,24 @@ test('buildXenesisConnectionsStatus exposes guided external messenger channel se
   assert.equal(telegram?.channelSetupPlan?.controlPaths.includes('xd.xenesis.channels.setupPlans.open'), true);
   assert.equal(telegram?.channelSetupPlan?.controlPaths.includes('xd.xenesis.channels.profileDrafts.apply'), true);
   assert.equal(telegram?.channelSetupPlan?.controlPaths.includes('xd.xenesis.profiles.testChannel'), true);
+  assert.equal(telegram?.channelTemplate?.userStory?.storyContract.openPath, 'xd.xenesis.channels.userStories.open');
+  assert.deepEqual(telegram?.channelTemplate?.userStory?.storyContract.openArgs, { id: 'telegram' });
+  assert.equal(
+    telegram?.channelTemplate?.userStory?.storyContract.readbackPaths.includes(
+      'xd.xenesis.channels.userStories.status',
+    ),
+    true,
+  );
+  assert.equal(
+    telegram?.channelTemplate?.userStory?.storyContract.approvalBoundaries.includes('xd.xenesis.profiles.testChannel'),
+    true,
+  );
+  assert.equal(
+    telegram?.channelTemplate?.userStory?.storyContract.completionEvidence.includes(
+      'Gateway/channel readbacks confirm the selected channel is safe before remote prompts.',
+    ),
+    true,
+  );
   assert.equal(telegram?.setupRequest?.readPaths.includes('xd.xenesis.channels.setupPlans.status'), true);
   assert.equal(telegram?.setupRequest?.controlPaths.includes('xd.xenesis.channels.setupPlans.open'), true);
 
@@ -1714,6 +1732,29 @@ test('buildXenesisConnectionsStatus exposes Hermes-style tool user-story workflo
     ],
     controlPaths: ['xd.xenesis.tools.userStories.open', 'xd.xenesis.tools.views.open', 'xd.xenesis.guides.open'],
     diagnostics: ['missing-env', 'mcp-settings-status', 'template-snippet', 'cr-readback'],
+    storyContract: {
+      readbackPaths: [
+        'xd.xenesis.connections.status',
+        'xd.xenesis.tools.userStories.status',
+        'xd.xenesis.tools.connectors.status',
+        'xd.xenesis.tools.views.status',
+        'xd.xenesis.guides.status',
+      ],
+      openPath: 'xd.xenesis.tools.userStories.open',
+      openArgs: { id: 'notion' },
+      approvalBoundaries: [
+        'xd.xenesis.tools.mcpInstallDrafts.request',
+        'xd.xenesis.tools.mcpInstallDrafts.apply',
+        'xd.xenesis.tools.actions.request',
+        'xd.xenesis.connections.setupRequests.request',
+      ],
+      completionEvidence: [
+        'MCP settings readback lists the Notion server before tool use.',
+        'Tool connector status reports configured credential references without exposing token values.',
+        'Action Inbox records explicit setup approval before MCP config writes.',
+      ],
+      safetyBoundary: 'User-story contracts are read/open planning metadata and do not execute provider tools.',
+    },
     safetyBoundaries: [
       'user-story workflows are read/open planning surfaces',
       'tool execution stays behind provider MCP tools and CR approval paths',
@@ -2685,6 +2726,31 @@ test('buildXenesisConnectionsStatus exposes channel user-story workflows for imp
       'xd.xenesis.profiles.testChannel',
     ],
     diagnostics: ['gateway-status', 'safe-to-deliver', 'allowlist-empty', 'last-error'],
+    storyContract: {
+      readbackPaths: [
+        'xd.xenesis.connections.status',
+        'xd.xenesis.channels.userStories.status',
+        'xd.xenesis.channels.routing.status',
+        'xd.xenesis.channels.safety.status',
+        'xd.xenesis.channels.accessGroups.status',
+        'xd.xenesis.channels.pairing.status',
+        'xd.xenesis.gateway.status',
+      ],
+      openPath: 'xd.xenesis.channels.userStories.open',
+      openArgs: { id: 'telegram' },
+      approvalBoundaries: [
+        'xd.xenesis.channels.profileDrafts.request',
+        'xd.xenesis.channels.profileDrafts.apply',
+        'xd.xenesis.profiles.testChannel',
+        'xd.xenesis.connections.setupRequests.request',
+      ],
+      completionEvidence: [
+        'Gateway/channel readbacks confirm the selected channel is safe before remote prompts.',
+        'Channel profile draft status reports required credentials and allowlists before apply.',
+        'Sanitized channel test result or Action Inbox record proves delivery testing stayed approval-gated.',
+      ],
+      safetyBoundary: 'User-story contracts are read/open planning metadata and do not send messages.',
+    },
     safetyBoundaries: [
       'channel user stories are read/open planning surfaces',
       'message delivery stays on explicit channel test and gateway runtime paths',

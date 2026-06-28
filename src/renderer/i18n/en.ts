@@ -1150,6 +1150,8 @@ export const en = {
     xenesisConnectionsToolViewDiagnostics: 'Diagnostics',
     xenesisConnectionsToolViewSafety: 'Safety boundaries',
     xenesisConnectionsToolUserStory: 'Tool user stories',
+    xenesisConnectionsUserStoryContract: 'Story contract',
+    xenesisConnectionsUserStoryContractDetail: 'Story contract detail',
     xenesisConnectionsToolUserStoryStories: 'User stories',
     xenesisConnectionsToolUserStoryConnectors: 'Prerequisite connectors',
     xenesisConnectionsToolUserStoryScopes: 'Required scopes',

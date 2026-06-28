@@ -39,6 +39,7 @@ import type {
   XenesisConnectionToolUserStoryTemplate,
   XenesisConnectionToolViewSection,
   XenesisConnectionToolViewTemplate,
+  XenesisConnectionUserStoryContract,
 } from '../../shared/types';
 import {
   isXenesisConnectionCenterDetailFocus,
@@ -144,7 +145,10 @@ export function formatXenesisChannelPairingSummary(pairing: XenesisConnectionCha
   return `${pairing.model} / ${pairing.accountScope} / ${pairing.pairingState}`;
 }
 
-export function formatXenesisChannelUserStorySummary(workflow: XenesisConnectionChannelUserStoryTemplate): string {
+export function formatXenesisChannelUserStorySummary(
+  workflow: Pick<XenesisConnectionChannelUserStoryTemplate, 'workflowType' | 'runtimeSupport' | 'userStories'> &
+    Partial<XenesisConnectionChannelUserStoryTemplate>,
+): string {
   return `${workflow.workflowType} / ${workflow.runtimeSupport} / ${workflow.userStories.length} user story/stories`;
 }
 
@@ -242,8 +246,19 @@ export function formatXenesisToolOAuthSetupPacketSummary(packet: XenesisConnecti
   return `${packet.provider} / ${packet.packetStatus} / ${packet.credentialRefs.length} credential ref(s) / ${packet.checklist.length} setup step(s)`;
 }
 
-export function formatXenesisToolUserStorySummary(workflow: XenesisConnectionToolUserStoryTemplate): string {
+export function formatXenesisToolUserStorySummary(
+  workflow: Pick<XenesisConnectionToolUserStoryTemplate, 'workflowType' | 'runtimeSupport' | 'userStories'> &
+    Partial<XenesisConnectionToolUserStoryTemplate>,
+): string {
   return `${workflow.workflowType} / ${workflow.runtimeSupport} / ${workflow.userStories.length} user story/stories`;
+}
+
+export function formatXenesisUserStoryContractSummary(contract: XenesisConnectionUserStoryContract): string {
+  return `${contract.openPath} / ${contract.readbackPaths.length} readback path(s) / ${contract.approvalBoundaries.length} approval boundary/boundaries / ${contract.completionEvidence.length} evidence signal(s)`;
+}
+
+export function formatXenesisUserStoryContractDetail(contract: XenesisConnectionUserStoryContract): string {
+  return `open ${contract.openPath} ${JSON.stringify(contract.openArgs)} / read ${contract.readbackPaths.join(', ') || '-'} / approvals ${contract.approvalBoundaries.join(', ') || '-'} / evidence ${contract.completionEvidence.join('; ') || '-'} / safety ${contract.safetyBoundary}`;
 }
 
 export function formatXenesisMessengerViewSummary(view: XenesisConnectionMessengerViewTemplate): string {

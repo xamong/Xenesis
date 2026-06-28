@@ -7,6 +7,120 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current User Story Contracts Slice
+
+- Objective: add structured Hermes/OpenClaw-style story contracts to existing
+  external tool and messenger user-story read models, so each user story names
+  its CR readback paths, open surface, approval boundary, completion evidence,
+  and safety boundary instead of relying on guide prose alone.
+- Rationale:
+  - `docs/manual/12-agent-user-stories.md` defines the story contract:
+    readback first, open surface, approval boundary, and completion evidence.
+  - Current `toolUserStory` and `channelTemplate.userStory` models expose
+    story text, prerequisite setup, diagnostics, and safety boundaries, but not
+    that full contract as structured CR-readable metadata.
+  - Adding this to existing user-story status/open surfaces moves the product
+    closer to Desk-native setup workflows without executing tools, sending
+    messages, completing OAuth, or starting planned adapters.
+- Scope boundary:
+  - Do not add a new UI subsystem or new runtime adapter.
+  - Do not execute provider tools, install MCP servers, complete OAuth, store
+    tokens, send messages, mutate channel profiles, or bypass approval.
+  - Keep contract metadata on existing `xd.xenesis.tools.userStories.*` and
+    `xd.xenesis.channels.userStories.*` read/open surfaces.
+- External documentation handling:
+  - No external web browsing for this slice. Use repo-local manuals,
+    Obsidian notes, current code, tests, CR audit, and local smoke.
+- Plan:
+  - `docs/superpowers/plans/2026-06-29-xenesis-user-story-contracts.md`
+- Touched files so far:
+  - `docs/superpowers/plans/2026-06-29-xenesis-user-story-contracts.md`
+  - `handoff.md`
+  - `src/shared/xenesisConnections.test.ts`
+  - `src/shared/xenesisConnections.ts`
+  - `src/shared/types.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.test.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
+  - `docs/manual/12-agent-user-stories.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-user-story-contracts.md`
+- Verification plan:
+  - RED: shared model test for tool/channel `storyContract`.
+  - RED: renderer formatter test for story contract summary/detail.
+  - GREEN focused tests, then typecheck, CR audit, natural routing smoke, and
+    diff hygiene.
+- RED verification:
+  - `npx tsx --test src\shared\xenesisConnections.test.ts` failed 39/41
+    because tool and channel user-story templates did not expose
+    `storyContract`.
+  - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`
+    failed 56/57 because `formatXenesisUserStoryContractSummary` and
+    `formatXenesisUserStoryContractDetail` were not exported.
+- Implemented:
+  - Added `XenesisConnectionUserStoryContract` and exported it through shared
+    renderer types.
+  - Added `storyContract` to tool user stories with readbacks, open args,
+    approval boundaries, completion evidence, and safety boundary.
+  - Added `storyContract` to implemented and planned channel user stories,
+    including implemented profile/test approval boundaries and planned setup
+    request boundary.
+  - Added renderer story contract summary/detail formatters.
+  - Rendered story contract summary/detail rows in Settings for tool and
+    channel user-story cards.
+  - Updated `docs/manual/12-agent-user-stories.md` and added an Obsidian working
+    note.
+- Verification result so far:
+  - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` passed
+    57/57 after formatter and Settings wiring.
+  - `npx tsx --test src\shared\xenesisConnections.test.ts` passed 41/41 after
+    shared model implementation and fixture updates.
+- Final verification:
+  - First post-format verification wrapper failed because PowerShell passed the
+    test argument array as one string to `npx`; the wrapper was corrected and
+    the real tests were rerun.
+  - Focused tests passed: `src\shared\xenesisConnections.test.ts` 41/41,
+    `src\renderer\panes\xenesisConnectionCenter.test.ts` 57/57,
+    `src\shared\xenesisConnectionCapabilities.test.ts` 40/40,
+    `src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    45/45, and `scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` 6/6.
+  - `npm run typecheck` passed.
+  - Changed-file `npx biome check ... --max-diagnostics 100` passed on the
+    changed TypeScript/TSX/i18n files.
+  - `git diff --check` passed with Git LF/CRLF normalization warnings only.
+  - `npm run docs:capabilities:audit` passed and wrote
+    `docs/capability-registry-audit.md`; audit summary is 779 nodes and 689
+    coverage path references.
+  - Audit gap counters are all 0: missing registered paths 0, missing
+    dispatched coverage paths 0, undispatched static callable methods 0, and
+    dispatcher paths missing from tree 0.
+  - `npm run build` passed. Vite still reports the existing `hwp.js` browser
+    `fs` externalization warning, the existing dynamic import/static import
+    chunk warning for `deskBridge.ts`, and large renderer chunks.
+  - `npm run smoke:xenesis:natural-desk-routing` passed with exit 0 after the
+    build refresh.
+  - `npm run lint` failed repo-wide on existing Biome formatting/lint debt
+    outside this slice: 969 files checked, 1147 errors, 419 warnings, 92 infos.
+  - `npm run check:public-release` failed on the known infra gap:
+    `.github\workflows\ci.yml` is absent from this worktree.
+  - Final fresh rerun after handoff/Obsidian updates: focused tests passed
+    41/41, 57/57, 40/40, 45/45, and 6/6; `npm run typecheck` passed;
+    `npm run docs:capabilities:audit` passed with all audit gap counters 0;
+    `git diff --check` passed with line-ending normalization warnings only.
+- Known gaps:
+  - User-story contracts are read/open planning metadata only; they do not
+    execute provider tools, install MCP servers, complete OAuth, store tokens,
+    send messages, mutate channel profiles, start planned adapters, or bypass
+    approval.
+  - Natural-language routing remains deterministic catalog routing, not model
+    reasoning.
+  - Repo-wide `npm run lint` and `npm run check:public-release` remain blocked
+    by existing repo/infra issues outside this slice.
+- Next intended step:
+  - Stage and commit this slice as `feat: add user story contracts`, then
+    continue the larger CR-first connection/agent goal in the next slice.
+
 ## Current Messenger View Sections Slice
 
 - Objective: make `xd.xenesis.messengers.views.status/open` address external

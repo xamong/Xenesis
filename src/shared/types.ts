@@ -98,6 +98,7 @@ export type {
   XenesisConnectionToolViewSection,
   XenesisConnectionToolViewSectionId,
   XenesisConnectionToolViewTemplate,
+  XenesisConnectionUserStoryContract,
 } from './xenesisConnections';
 
 export {

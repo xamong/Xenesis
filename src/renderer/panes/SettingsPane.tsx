@@ -136,6 +136,8 @@ import {
   formatXenesisToolUserStorySummary,
   formatXenesisToolViewSectionSummary,
   formatXenesisToolViewSummary,
+  formatXenesisUserStoryContractDetail,
+  formatXenesisUserStoryContractSummary,
   listXenesisConnectionSections,
   xenesisConnectionDetailFocusSelector,
   xenesisConnectionTone,
@@ -5657,6 +5659,14 @@ export default function SettingsPane() {
               <strong>{formatXenesisToolUserStorySummary(toolUserStory)}</strong>
             </div>
             <div>
+              <span>{t('settings.xenesisConnectionsUserStoryContract')}</span>
+              <strong>{formatXenesisUserStoryContractSummary(toolUserStory.storyContract)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsUserStoryContractDetail')}</span>
+              <strong>{formatXenesisUserStoryContractDetail(toolUserStory.storyContract)}</strong>
+            </div>
+            <div>
               <span>{t('settings.xenesisConnectionsToolUserStoryStories')}</span>
               <strong>{toolUserStory.userStories.join(', ')}</strong>
             </div>
@@ -6007,6 +6017,14 @@ export default function SettingsPane() {
                 <div>
                   <span>{t('settings.xenesisConnectionsChannelUserStory')}</span>
                   <strong>{formatXenesisChannelUserStorySummary(channelUserStory)}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsUserStoryContract')}</span>
+                  <strong>{formatXenesisUserStoryContractSummary(channelUserStory.storyContract)}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsUserStoryContractDetail')}</span>
+                  <strong>{formatXenesisUserStoryContractDetail(channelUserStory.storyContract)}</strong>
                 </div>
                 <div>
                   <span>{t('settings.xenesisConnectionsChannelUserStorySetupSurface')}</span>

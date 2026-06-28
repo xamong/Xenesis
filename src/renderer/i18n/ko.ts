@@ -1143,6 +1143,8 @@ export const ko = {
     xenesisConnectionsToolViewDiagnostics: '진단',
     xenesisConnectionsToolViewSafety: '안전 경계',
     xenesisConnectionsToolUserStory: '도구 사용자 시나리오',
+    xenesisConnectionsUserStoryContract: '시나리오 계약',
+    xenesisConnectionsUserStoryContractDetail: '시나리오 계약 상세',
     xenesisConnectionsToolUserStoryStories: '사용자 시나리오',
     xenesisConnectionsToolUserStoryConnectors: '필수 커넥터',
     xenesisConnectionsToolUserStoryScopes: '필수 범위',

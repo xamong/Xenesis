@@ -619,7 +619,17 @@ export interface XenesisConnectionToolUserStoryTemplate {
   readPaths: string[];
   controlPaths: string[];
   diagnostics: string[];
+  storyContract: XenesisConnectionUserStoryContract;
   safetyBoundaries: string[];
+}
+
+export interface XenesisConnectionUserStoryContract {
+  readbackPaths: string[];
+  openPath: string;
+  openArgs: Record<string, string>;
+  approvalBoundaries: string[];
+  completionEvidence: string[];
+  safetyBoundary: string;
 }
 
 export type XenesisConnectionToolActionCatalogRuntimeSupport = 'ready-template' | 'planned-oauth' | 'ready-local';
@@ -675,6 +685,7 @@ export interface XenesisConnectionChannelUserStoryTemplate {
   readPaths: string[];
   controlPaths: string[];
   diagnostics: string[];
+  storyContract: XenesisConnectionUserStoryContract;
   safetyBoundaries: string[];
 }
 
@@ -1803,6 +1814,58 @@ function toolViewSections(
   ];
 }
 
+function userStoryContract(input: XenesisConnectionUserStoryContract): XenesisConnectionUserStoryContract {
+  return {
+    readbackPaths: [...input.readbackPaths],
+    openPath: input.openPath,
+    openArgs: { ...input.openArgs },
+    approvalBoundaries: [...input.approvalBoundaries],
+    completionEvidence: [...input.completionEvidence],
+    safetyBoundary: input.safetyBoundary,
+  };
+}
+
+function toolUserStoryApprovalBoundaries(runtimeSupport: XenesisConnectionToolUserStoryRuntimeSupport): string[] {
+  if (runtimeSupport === 'planned-oauth') {
+    return [
+      'xd.xenesis.tools.oauthDrafts.request',
+      'xd.xenesis.tools.actions.request',
+      'xd.xenesis.connections.setupRequests.request',
+    ];
+  }
+  return [
+    'xd.xenesis.tools.mcpInstallDrafts.request',
+    'xd.xenesis.tools.mcpInstallDrafts.apply',
+    'xd.xenesis.tools.actions.request',
+    'xd.xenesis.connections.setupRequests.request',
+  ];
+}
+
+function toolUserStoryCompletionEvidence(
+  toolId: string,
+  runtimeSupport: XenesisConnectionToolUserStoryRuntimeSupport,
+): string[] {
+  if (runtimeSupport === 'planned-oauth') {
+    return [
+      'OAuth draft status names reviewed scopes and token-store readiness before tool use.',
+      'Tool connector status reports planned OAuth credential references without exposing token values.',
+      'Action Inbox records explicit setup approval before OAuth or MCP config work.',
+    ];
+  }
+  if (toolId === 'notion') {
+    return [
+      'MCP settings readback lists the Notion server before tool use.',
+      'Tool connector status reports configured credential references without exposing token values.',
+      'Action Inbox records explicit setup approval before MCP config writes.',
+    ];
+  }
+  return [
+    `MCP settings readback lists the ${toolId} server before tool use.`,
+    'Tool connector status reports configured credential references without exposing token values.',
+    'Action Inbox records explicit setup approval before MCP config writes.',
+  ];
+}
+
 function toolUserStoryTemplate(input: {
   workflowType: XenesisConnectionToolUserStoryWorkflowType;
   runtimeSupport: XenesisConnectionToolUserStoryRuntimeSupport;
@@ -1813,6 +1876,20 @@ function toolUserStoryTemplate(input: {
   diagnostics: string[];
   safetyBoundaries?: string[];
 }): XenesisConnectionToolUserStoryTemplate {
+  const toolId = input.prerequisiteConnectors[0] ?? input.workflowType;
+  const readPaths = [
+    'xd.xenesis.connections.status',
+    'xd.xenesis.tools.userStories.status',
+    'xd.xenesis.tools.connectors.status',
+    'xd.xenesis.tools.views.status',
+    'xd.xenesis.guides.status',
+  ];
+  const controlPaths = ['xd.xenesis.tools.userStories.open', 'xd.xenesis.tools.views.open', 'xd.xenesis.guides.open'];
+  const safetyBoundaries = input.safetyBoundaries ?? [
+    'user-story workflows are read/open planning surfaces',
+    'tool execution stays behind provider MCP tools and CR approval paths',
+    'writes require separate verified tool actions',
+  ];
   return {
     workflowType: input.workflowType,
     runtimeSupport: input.runtimeSupport,
@@ -1821,20 +1898,18 @@ function toolUserStoryTemplate(input: {
     userStories: input.userStories,
     prerequisiteConnectors: input.prerequisiteConnectors,
     requiredScopes: input.requiredScopes,
-    readPaths: [
-      'xd.xenesis.connections.status',
-      'xd.xenesis.tools.userStories.status',
-      'xd.xenesis.tools.connectors.status',
-      'xd.xenesis.tools.views.status',
-      'xd.xenesis.guides.status',
-    ],
-    controlPaths: ['xd.xenesis.tools.userStories.open', 'xd.xenesis.tools.views.open', 'xd.xenesis.guides.open'],
+    readPaths,
+    controlPaths,
     diagnostics: input.diagnostics,
-    safetyBoundaries: input.safetyBoundaries ?? [
-      'user-story workflows are read/open planning surfaces',
-      'tool execution stays behind provider MCP tools and CR approval paths',
-      'writes require separate verified tool actions',
-    ],
+    storyContract: userStoryContract({
+      readbackPaths: readPaths,
+      openPath: 'xd.xenesis.tools.userStories.open',
+      openArgs: { id: toolId },
+      approvalBoundaries: toolUserStoryApprovalBoundaries(input.runtimeSupport),
+      completionEvidence: toolUserStoryCompletionEvidence(toolId, input.runtimeSupport),
+      safetyBoundary: 'User-story contracts are read/open planning metadata and do not execute provider tools.',
+    }),
+    safetyBoundaries,
   };
 }
 
@@ -1920,12 +1995,45 @@ const IMPLEMENTED_CHANNEL_USER_STORY_READ_PATHS = [
   'xd.xenesis.gateway.status',
 ];
 
+function channelUserStoryApprovalBoundaries(runtimeSupport: XenesisConnectionChannelUserStoryRuntimeSupport): string[] {
+  if (runtimeSupport === 'planned-adapter') {
+    return ['xd.xenesis.connections.setupRequests.request'];
+  }
+  return [
+    'xd.xenesis.channels.profileDrafts.request',
+    'xd.xenesis.channels.profileDrafts.apply',
+    'xd.xenesis.profiles.testChannel',
+    'xd.xenesis.connections.setupRequests.request',
+  ];
+}
+
+function channelUserStoryCompletionEvidence(runtimeSupport: XenesisConnectionChannelUserStoryRuntimeSupport): string[] {
+  if (runtimeSupport === 'planned-adapter') {
+    return [
+      'Messenger view status keeps the channel visibly planned until a verified adapter exists.',
+      'Channel user-story readback names pairing and safety prerequisites before delivery is enabled.',
+      'Setup request review records operator intent without starting planned adapters.',
+    ];
+  }
+  return [
+    'Gateway/channel readbacks confirm the selected channel is safe before remote prompts.',
+    'Channel profile draft status reports required credentials and allowlists before apply.',
+    'Sanitized channel test result or Action Inbox record proves delivery testing stayed approval-gated.',
+  ];
+}
+
 function implementedChannelUserStoryTemplate(input: {
+  channelId: string;
   workflowType: Exclude<XenesisConnectionChannelUserStoryWorkflowType, 'planned-messenger' | 'planned-mailbox'>;
   userStories: string[];
   prerequisiteSetup: string[];
   diagnostics: string[];
 }): XenesisConnectionChannelUserStoryTemplate {
+  const controlPaths = [
+    'xd.xenesis.channels.userStories.open',
+    'xd.xenesis.messengers.views.open',
+    'xd.xenesis.profiles.testChannel',
+  ];
   return {
     workflowType: input.workflowType,
     runtimeSupport: 'implemented',
@@ -1934,12 +2042,16 @@ function implementedChannelUserStoryTemplate(input: {
     userStories: input.userStories,
     prerequisiteSetup: input.prerequisiteSetup,
     readPaths: IMPLEMENTED_CHANNEL_USER_STORY_READ_PATHS,
-    controlPaths: [
-      'xd.xenesis.channels.userStories.open',
-      'xd.xenesis.messengers.views.open',
-      'xd.xenesis.profiles.testChannel',
-    ],
+    controlPaths,
     diagnostics: input.diagnostics,
+    storyContract: userStoryContract({
+      readbackPaths: IMPLEMENTED_CHANNEL_USER_STORY_READ_PATHS,
+      openPath: 'xd.xenesis.channels.userStories.open',
+      openArgs: { id: input.channelId },
+      approvalBoundaries: channelUserStoryApprovalBoundaries('implemented'),
+      completionEvidence: channelUserStoryCompletionEvidence('implemented'),
+      safetyBoundary: 'User-story contracts are read/open planning metadata and do not send messages.',
+    }),
     safetyBoundaries: [
       'channel user stories are read/open planning surfaces',
       'message delivery stays on explicit channel test and gateway runtime paths',
@@ -1975,6 +2087,20 @@ function plannedChannelUserStoryTemplate(id: string, label: string): XenesisConn
       'xd.xenesis.connections.open',
     ],
     diagnostics: ['planned-adapter', 'pairing-required', 'safety-review', 'delivery-disabled'],
+    storyContract: userStoryContract({
+      readbackPaths: [
+        'xd.xenesis.connections.status',
+        'xd.xenesis.channels.userStories.status',
+        'xd.xenesis.channels.pairing.status',
+        'xd.xenesis.messengers.views.status',
+        'xd.xenesis.guides.status',
+      ],
+      openPath: 'xd.xenesis.channels.userStories.open',
+      openArgs: { id },
+      approvalBoundaries: channelUserStoryApprovalBoundaries('planned-adapter'),
+      completionEvidence: channelUserStoryCompletionEvidence('planned-adapter'),
+      safetyBoundary: 'User-story contracts are read/open planning metadata and do not enable planned adapters.',
+    }),
     safetyBoundaries: [
       'planned messenger user stories do not enable delivery',
       'planned adapters remain read/open planning surfaces until runtime support exists',
@@ -3157,6 +3283,7 @@ const MESSENGERS: Array<{
         credentialRefs: [{ ref: 'tokenEnv', source: 'profile-env-field', required: true }],
       }),
       userStory: implementedChannelUserStoryTemplate({
+        channelId: 'telegram',
         workflowType: 'remote-prompt',
         userStories: [
           'receive an allowed Telegram chat prompt and route it to Xenesis Agent',
@@ -3255,6 +3382,7 @@ const MESSENGERS: Array<{
         ],
       }),
       userStory: implementedChannelUserStoryTemplate({
+        channelId: 'slack',
         workflowType: 'team-thread',
         userStories: [
           'receive an allowed Slack channel or thread prompt and route it to Xenesis Agent',
@@ -3359,6 +3487,7 @@ const MESSENGERS: Array<{
         ],
       }),
       userStory: implementedChannelUserStoryTemplate({
+        channelId: 'discord',
         workflowType: 'team-thread',
         userStories: [
           'receive an allowed Discord guild-channel prompt and route it to Xenesis Agent',
@@ -3453,6 +3582,7 @@ const MESSENGERS: Array<{
         credentialRefs: [{ ref: 'urlEnv', source: 'profile-env-field', required: true }],
       }),
       userStory: implementedChannelUserStoryTemplate({
+        channelId: 'webhook',
         workflowType: 'webhook-ingress',
         userStories: [
           'receive a trusted webhook event and route it to Xenesis Agent',

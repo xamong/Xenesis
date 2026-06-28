@@ -239,6 +239,9 @@ test('SettingsPane renders Connection Center guided and review step details', ()
   assert.match(source, /xenesisConnectionsProviderProfileDraftReviewSteps/);
   assert.match(source, /xenesisConnectionsToolOAuthDraftReviewSteps/);
   assert.match(source, /xenesisConnectionsChannelProfileDraftReviewSteps/);
+  assert.match(source, /formatXenesisUserStoryContractSummary/);
+  assert.match(source, /formatXenesisUserStoryContractDetail/);
+  assert.match(source, /xenesisConnectionsUserStoryContract/);
 });
 
 test('SettingsPane renders the Connectors category from CR-backed tool and messenger connection cards', () => {
@@ -919,6 +922,31 @@ test('formatXenesisToolUserStorySummary describes workflow type, runtime support
       safetyBoundaries: ['planned OAuth calendar workflows do not create, update, or delete events'],
     }),
     'calendar-context / planned-oauth / 3 user story/stories',
+  );
+});
+
+test('formatXenesisUserStoryContract helpers describe readbacks, approvals, evidence, and safety boundary', () => {
+  const contract = {
+    readbackPaths: ['xd.xenesis.tools.userStories.status', 'xd.xenesis.tools.connectors.status'],
+    openPath: 'xd.xenesis.tools.userStories.open',
+    openArgs: { id: 'notion' },
+    approvalBoundaries: ['xd.xenesis.tools.mcpInstallDrafts.apply'],
+    completionEvidence: [
+      'MCP settings readback lists the Notion server before tool use.',
+      'Action Inbox records explicit setup approval.',
+    ],
+    safetyBoundary: 'user-story contracts are read/open planning metadata',
+  };
+
+  assert.equal(typeof xenesisConnectionCenter.formatXenesisUserStoryContractSummary, 'function');
+  assert.equal(typeof xenesisConnectionCenter.formatXenesisUserStoryContractDetail, 'function');
+  assert.equal(
+    xenesisConnectionCenter.formatXenesisUserStoryContractSummary(contract),
+    'xd.xenesis.tools.userStories.open / 2 readback path(s) / 1 approval boundary/boundaries / 2 evidence signal(s)',
+  );
+  assert.equal(
+    xenesisConnectionCenter.formatXenesisUserStoryContractDetail(contract),
+    'open xd.xenesis.tools.userStories.open {"id":"notion"} / read xd.xenesis.tools.userStories.status, xd.xenesis.tools.connectors.status / approvals xd.xenesis.tools.mcpInstallDrafts.apply / evidence MCP settings readback lists the Notion server before tool use.; Action Inbox records explicit setup approval. / safety user-story contracts are read/open planning metadata',
   );
 });
 

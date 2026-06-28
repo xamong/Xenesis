@@ -30,6 +30,19 @@ the approval boundary, and the verification signal.
 Do not treat a story as implemented because a guide exists. The executable truth
 is the CR path and its verification result.
 
+`xd.xenesis.tools.userStories.status` and
+`xd.xenesis.channels.userStories.status` now include a `storyContract` object on
+each returned user-story template. The contract repeats the executable fields in
+machine-readable form:
+
+- `readbackPaths`: CR status paths to inspect before acting.
+- `openPath` and `openArgs`: the CR open surface for the story.
+- `approvalBoundaries`: request/apply/send paths that require explicit Desk
+  approval.
+- `completionEvidence`: readbacks, diagnostics, work-log, open-file, or Action
+  Inbox signals that can prove progress.
+- `safetyBoundary`: the non-mutation boundary for the story contract itself.
+
 ## Provider Stories
 
 ### First chat readiness
