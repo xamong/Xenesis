@@ -4850,6 +4850,37 @@
 - External documentation handling: no browsing. Used cached Obsidian/source and
   local tests only.
 
+## Natural Action Resolver Ownership Slice
+
+- Continued the larger slice-cycle hardcoding cleanup by moving Xenesis/runtime
+  natural-language action resolvers out of
+  `src/shared/xenesisNaturalLanguagePlanner.ts` and into
+  `src/shared/xenesisNaturalLanguageActionResolvers.ts`.
+- The planner now stays focused on normalized text, route ordering, branch
+  selection, and generic Desk/dock/layout/file plan construction. Resolver-owned
+  functions now cover tool/view opens, Connection Center status/open/review
+  actions, guide/onboarding status/open actions, provider/tool/messenger
+  aggregate actions, gateway/runtime/profile inventory readbacks, agent submit,
+  run start, runtime control, and workspace set prompts.
+- Strengthened source-ownership guards in
+  `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  so resolver helpers, target finders, and connection/provider/onboarding/
+  runtime rule constants cannot drift back into the facade or planner.
+- Verification:
+  - Focused RED failed 37/38 as expected before the resolver module existed.
+  - Focused GREEN passed 38/38 after moving resolver ownership.
+  - Scoped Biome format/check passed for the touched shared and renderer test
+    files.
+  - Focused shared/renderer coverage passed 74/74.
+  - `npm run typecheck` passed.
+  - `npm run build` passed, including typecheck.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 144/144.
+  - `git diff --check` passed with LF-to-CRLF working-copy warnings only.
+- CR audit was skipped because this slice does not change CR schemas,
+  dispatchers, generated coverage maps, or capability behavior.
+- External documentation handling: no browsing. Used cached Obsidian/source and
+  local tests only.
+
 ## Natural Plan Builder Ownership Slice
 
 - Continued the larger slice-cycle hardcoding cleanup by moving generic

@@ -7,6 +7,66 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current Natural Action Resolver Ownership Slice
+
+- Objective: continue the larger hardcoding cleanup by moving Xenesis/runtime
+  natural-language action resolver helpers out of
+  `src/shared/xenesisNaturalLanguagePlanner.ts` into a shared resolver module.
+- Observed gap:
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.ts`
+    is now only a facade/re-export file.
+  - `src/shared/xenesisNaturalLanguagePlanner.ts` still owns top-level
+    resolver helpers such as `toolOpenActionFromNaturalText`,
+    `xenesisConnectionActionFromNaturalText`,
+    `xenesisConnectionReadbackActionFromNaturalText`, and
+    `xenesisRuntimeInventoryActionFromNaturalText`.
+- Scope boundary:
+  - Refactor/source ownership only.
+  - Preserve route order, CR paths, args, visible text, approval state, action
+    reasons, and smoke behavior.
+  - Do not change provider runtime selection, settings writes, OAuth/MCP
+    execution, messenger delivery, Action Inbox semantics, or CR dispatcher
+    behavior.
+- External documentation handling: no browsing. Use cached Obsidian/source,
+  local tests, build, and smoke only.
+- Plan:
+  - `docs/superpowers/plans/2026-06-28-xenesis-natural-action-resolver-ownership.md`.
+- Implementation:
+  - Added `src/shared/xenesisNaturalLanguageActionResolvers.ts` as the owner of
+    Xenesis/runtime natural-language action resolvers and their helper-internal
+    target/status/open/readback routing functions.
+  - Kept `src/shared/xenesisNaturalLanguagePlanner.ts` focused on normalized
+    text, route ordering, branch selection, and generic Desk/dock/layout/file
+    plan construction.
+  - Updated
+    `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+    source guards so resolver-owned helpers, target finders, and runtime/
+    connection/provider/onboarding rule constants cannot drift back into the
+    planner or facade.
+- RED/GREEN:
+  - RED focused test failed as expected with 37/38 passing while
+    `function toolOpenActionFromNaturalText` still lived in the planner and the
+    resolver file did not exist.
+  - GREEN focused test passed with 38/38 after moving resolvers and correcting
+    ownership guards.
+- Verification:
+  - `npx biome format --write src\shared\xenesisNaturalLanguageActionResolvers.ts src\shared\xenesisNaturalLanguagePlanner.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed; fixed formatting/import ordering.
+  - `npx biome check src\shared\xenesisNaturalLanguageActionResolvers.ts src\shared\xenesisNaturalLanguagePlanner.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --max-diagnostics 80`
+    passed with no fixes needed after import organization.
+  - `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 74/74.
+  - `npm run typecheck` passed.
+  - `npm run build` passed, including typecheck; existing Vite warnings remain
+    limited to browser-externalized `hwp.js` `fs`, dynamic/static
+    `deskBridge.ts` imports, and large renderer chunks.
+  - `npm run smoke:xenesis:natural-desk-routing` passed with 144/144.
+  - `git diff --check` passed with LF-to-CRLF working-copy warnings only.
+- CR audit was skipped because this slice changes source ownership only, not CR
+  schemas, dispatchers, generated coverage maps, or capability behavior.
+- Next intended step:
+  - Update Obsidian working note, mark the plan complete, and commit this slice.
+
 ## Current Connection Center Detail Focus Slice
 
 - Objective: increase the slice size by making Connection Center CR open paths
