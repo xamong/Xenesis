@@ -23,6 +23,8 @@ import {
   XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS,
   XENESIS_NATURAL_ACTION_INTENT_WORDS,
   XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS,
+  XENESIS_NATURAL_ACTIVE_DOCK_CLOSE_RULES,
+  XENESIS_NATURAL_ACTIVE_DOCK_FOCUS_RULES,
   XENESIS_NATURAL_AGENT_CONTEXT_WORDS,
   XENESIS_NATURAL_AGENT_EVENT_CONTEXT_WORDS,
   XENESIS_NATURAL_AGENT_READBACK_RULES,
@@ -30,6 +32,7 @@ import {
   XENESIS_NATURAL_AGENT_SUBMIT_RULES,
   XENESIS_NATURAL_AGGREGATE_CATALOG_CONTEXT_WORDS,
   XENESIS_NATURAL_ARRANGE_MODE_TARGETS,
+  XENESIS_NATURAL_ARTIFACT_TARGET_RULES,
   XENESIS_NATURAL_BROAD_RUNTIME_STATUS_WORDS,
   XENESIS_NATURAL_CANCEL_CONTEXT_WORDS,
   XENESIS_NATURAL_CAPTURE_CONTEXT_WORDS,
@@ -54,11 +57,22 @@ import {
   XENESIS_NATURAL_DESK_MISC_READ_RULES,
   XENESIS_NATURAL_DESK_PANE_OPEN_RULES,
   XENESIS_NATURAL_DESK_SETTINGS_CONTEXT_WORDS,
+  XENESIS_NATURAL_DOCK_GROUP_ARRANGE_RULES,
+  XENESIS_NATURAL_DOCK_GROUP_MERGE_RULES,
+  XENESIS_NATURAL_DOCK_PANE_ARRANGE_RULES,
+  XENESIS_NATURAL_DOCK_PANE_MERGE_RULES,
+  XENESIS_NATURAL_DOCK_PANES_LIST_RULES,
   XENESIS_NATURAL_DOCK_SIDE_TARGETS,
+  XENESIS_NATURAL_DOCK_SIZE_RULES,
+  XENESIS_NATURAL_DOCK_WINDOW_ARRANGE_RULES,
+  XENESIS_NATURAL_DOCK_WINDOW_MERGE_RULES,
   XENESIS_NATURAL_DOCK_WINDOW_STATE_TARGETS,
   XENESIS_NATURAL_DRAFT_CONTEXT_WORDS,
   XENESIS_NATURAL_EXPLICIT_OPEN_WORDS,
   XENESIS_NATURAL_EXPLORER_CONTEXT_WORDS,
+  XENESIS_NATURAL_EXPLORER_FILTER_RULES,
+  XENESIS_NATURAL_EXPLORER_NAVIGATE_RULES,
+  XENESIS_NATURAL_EXPLORER_SIMPLE_RULES,
   XENESIS_NATURAL_EXTERNAL_MESSENGER_CATALOG_CONTEXT_WORDS,
   XENESIS_NATURAL_EXTERNAL_TOOL_CATALOG_CONTEXT_WORDS,
   XENESIS_NATURAL_FILE_CONTEXT_WORDS,
@@ -127,11 +141,15 @@ import {
   XENESIS_NATURAL_SETUP_CONTEXT_WORDS,
   XENESIS_NATURAL_TASK_CONTEXT_WORDS,
   XENESIS_NATURAL_TERMINAL_CONTEXT_WORDS,
+  XENESIS_NATURAL_TERMINAL_LIST_RULES,
+  XENESIS_NATURAL_TERMINAL_MANY_RULES,
+  XENESIS_NATURAL_TERMINAL_RUN_RULES,
   XENESIS_NATURAL_TEXT_DEFAULTS,
   XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_RULES,
   XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_RULES,
   XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
   XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
+  XENESIS_NATURAL_WINDOW_SIZE_PRESET_RULES,
   XENESIS_NATURAL_WINDOW_SIZE_PRESET_TARGETS,
   XENESIS_NATURAL_WORKSPACE_CONTEXT_WORDS,
   XENESIS_NATURAL_WORKSPACE_SET_CONTEXT_WORDS,
@@ -277,7 +295,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /XENESIS_NATURAL_DESK_DIAGNOSTICS_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_CORE_CAPABILITY_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_CAPTURE_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_GENERIC_LIST_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_GENERIC_LIST_CONTEXT_WORDS/);
   assert.match(source, /XENESIS_NATURAL_GENERIC_OPEN_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_FILE_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_FILE_LIST_CONTEXT_WORDS/);
@@ -285,10 +303,10 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /XENESIS_NATURAL_FAVORITES_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_APP_STATUS_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_APP_STATUS_TARGET_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_EXPLORER_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_TERMINAL_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_PANE_CONTEXT_WORDS/);
-  assert.match(source, /XENESIS_NATURAL_GENERIC_CLOSE_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_EXPLORER_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_TERMINAL_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_PANE_CONTEXT_WORDS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_GENERIC_CLOSE_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /hasAny\(value, \[\s*'캡쳐'/);
   assert.doesNotMatch(source, /hasAny\(value, \[\s*'탐색기'/);
   assert.doesNotMatch(source, /hasAny\(value, \[\s*'터미널'/);
@@ -322,7 +340,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     XENESIS_DESK_CONTROL_PROMPT_HINT_AFTER_DISCOVERY_LINES.includes('Open a right-side terminal example:'),
     true,
   );
-  assert.match(source, /XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS/);
   assert.match(source, /XENESIS_NATURAL_PLAN_VISIBLE_TEXT/);
   assert.doesNotMatch(source, /naturalPlan\((?:'|`)/);
   assert.match(source, /XENESIS_NATURAL_EXTRACTION_PATTERNS/);
@@ -523,6 +541,70 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     XENESIS_NATURAL_DESK_MISC_READ_RULES.map((rule) => rule.action.path),
     ['xd.favorites.showTab', 'xd.app.status'],
   );
+  assert.match(source, /XENESIS_NATURAL_ACTIVE_DOCK_FOCUS_RULES/);
+  assert.match(source, /XENESIS_NATURAL_ACTIVE_DOCK_CLOSE_RULES/);
+  assert.match(source, /XENESIS_NATURAL_DOCK_SIZE_RULES/);
+  assert.match(source, /XENESIS_NATURAL_WINDOW_SIZE_PRESET_RULES/);
+  assert.match(source, /XENESIS_NATURAL_EXPLORER_SIMPLE_RULES/);
+  assert.match(source, /XENESIS_NATURAL_EXPLORER_FILTER_RULES/);
+  assert.match(source, /XENESIS_NATURAL_EXPLORER_NAVIGATE_RULES/);
+  assert.match(source, /XENESIS_NATURAL_TERMINAL_LIST_RULES/);
+  assert.match(source, /XENESIS_NATURAL_TERMINAL_MANY_RULES/);
+  assert.match(source, /XENESIS_NATURAL_TERMINAL_RUN_RULES/);
+  assert.match(source, /XENESIS_NATURAL_DOCK_WINDOW_ARRANGE_RULES/);
+  assert.match(source, /XENESIS_NATURAL_DOCK_PANE_ARRANGE_RULES/);
+  assert.match(source, /XENESIS_NATURAL_DOCK_GROUP_ARRANGE_RULES/);
+  assert.match(source, /XENESIS_NATURAL_DOCK_WINDOW_MERGE_RULES/);
+  assert.match(source, /XENESIS_NATURAL_DOCK_PANE_MERGE_RULES/);
+  assert.match(source, /XENESIS_NATURAL_DOCK_GROUP_MERGE_RULES/);
+  assert.match(source, /XENESIS_NATURAL_DOCK_PANES_LIST_RULES/);
+  assert.match(source, /XENESIS_NATURAL_ARTIFACT_TARGET_RULES/);
+  assert.doesNotMatch(source, /const DESK_ACTIONS =/);
+  assert.doesNotMatch(source, /DESK_ACTIONS\./);
+  assert.deepEqual(
+    XENESIS_NATURAL_ACTIVE_DOCK_FOCUS_RULES.map((rule) => rule.action.path),
+    ['xd.dock.focus'],
+  );
+  assert.deepEqual(
+    XENESIS_NATURAL_ACTIVE_DOCK_CLOSE_RULES.map((rule) => rule.action.path),
+    ['xd.dock.closeRight', 'xd.dock.closeOthers', 'xd.dock.closeAll', 'xd.dock.close'],
+  );
+  assert.deepEqual(
+    XENESIS_NATURAL_EXPLORER_SIMPLE_RULES.map((rule) => rule.action.path),
+    [
+      'xd.explorer.local.hide',
+      'xd.explorer.local.toggle',
+      'xd.explorer.local.refresh',
+      'xd.explorer.local.goUp',
+      'xd.explorer.local.show',
+    ],
+  );
+  assert.deepEqual(
+    [
+      ...XENESIS_NATURAL_TERMINAL_LIST_RULES,
+      ...XENESIS_NATURAL_TERMINAL_MANY_RULES,
+      ...XENESIS_NATURAL_TERMINAL_RUN_RULES,
+    ].map((rule) => rule.action.path),
+    ['xd.terminals.list', 'xd.terminals.runMany', 'xd.terminals.run'],
+  );
+  assert.deepEqual(
+    XENESIS_NATURAL_DOCK_GROUP_ARRANGE_RULES.map((rule) => rule.action.path),
+    ['xd.dock.arrangeGrid', 'xd.dock.arrangeHorizontal', 'xd.dock.arrangeVertical'],
+  );
+  assert.deepEqual(
+    XENESIS_NATURAL_DOCK_GROUP_MERGE_RULES.map((rule) => rule.action.path),
+    ['xd.dock.mergeAll', 'xd.dock.mergeGroup'],
+  );
+  assert.equal(XENESIS_NATURAL_DOCK_SIZE_RULES[0]?.action.path, 'xd.dock.sizes.set');
+  assert.equal(XENESIS_NATURAL_WINDOW_SIZE_PRESET_RULES[0]?.action.path, 'xd.window.sizer.applyPreset');
+  assert.equal(XENESIS_NATURAL_EXPLORER_FILTER_RULES[0]?.action.path, 'xd.explorer.local.setFilter');
+  assert.equal(XENESIS_NATURAL_EXPLORER_NAVIGATE_RULES[0]?.action.path, 'xd.explorer.local.navigate');
+  assert.equal(XENESIS_NATURAL_DOCK_WINDOW_ARRANGE_RULES[0]?.action.path, 'xd.dock.window.arrange');
+  assert.equal(XENESIS_NATURAL_DOCK_PANE_ARRANGE_RULES[0]?.action.path, 'xd.dock.pane.arrange');
+  assert.equal(XENESIS_NATURAL_DOCK_WINDOW_MERGE_RULES[0]?.action.path, 'xd.dock.window.merge');
+  assert.equal(XENESIS_NATURAL_DOCK_PANE_MERGE_RULES[0]?.action.path, 'xd.dock.pane.merge');
+  assert.equal(XENESIS_NATURAL_DOCK_PANES_LIST_RULES[0]?.action.path, 'xd.dock.panes.list');
+  assert.equal(XENESIS_NATURAL_ARTIFACT_TARGET_RULES[0]?.action.path, 'xd.dock.artifactTarget.set');
   assert.doesNotMatch(source, /XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS/);
   assert.match(source, /XENESIS_NATURAL_AGENT_READBACK_RULES/);
   assert.match(source, /XENESIS_NATURAL_AGENT_SUBMIT_RULES/);

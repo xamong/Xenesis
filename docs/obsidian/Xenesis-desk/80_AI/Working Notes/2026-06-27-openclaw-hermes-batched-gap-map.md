@@ -3586,6 +3586,56 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Desk Control Rule Catalog Refactor Slice
+
+- Started the next larger hardcoding cleanup slice for remaining direct
+  `DESK_ACTIONS.*` planner action selection.
+- Intended change:
+  - add shared rule catalogs for active dock focus/close, dock resize,
+    window-size preset, explorer actions, terminal actions, dock arrange/merge,
+    dock pane list, and artifact target set;
+  - have `xenesisAgentDeskControl.ts` interpret those rules instead of using a
+    local `DESK_ACTIONS` descriptor alias;
+  - keep numeric/path/query/command extraction and placement/arrange/window-state
+    detection in the planner.
+- Scope boundary:
+  - Refactor only.
+  - Do not change CR paths, registry/dispatcher paths, approval behavior,
+    execution, provider/runtime routing, or UI rendering.
+- Verification plan:
+  - RED focused planner/source-guard test first;
+  - GREEN focused planner test;
+  - scoped Biome for catalog/planner/test files;
+  - root typecheck, build, natural Desk routing smoke, and diff check before
+    commit.
+- RED verification:
+  - Focused planner test failed as expected with 36/37 passing because the
+    planner source still did not reference
+    `XENESIS_NATURAL_ACTIVE_DOCK_FOCUS_RULES`.
+- Implementation:
+  - Added shared rule catalogs for active dock focus/close, dock resize,
+    window-size preset, explorer, terminal, dock arrange/merge, pane list, and
+    artifact-target action selection.
+  - Removed the planner-local `DESK_ACTIONS` descriptor alias and interpreted
+    those shared rules in `xenesisAgentDeskControl.ts`.
+  - Preserved dynamic extraction, placement/arrange/window-state detection, CR
+    paths, reasons, visible text, and approval behavior.
+- Focused GREEN verification:
+  - Focused planner test passed with 37/37 tests.
+  - Scoped Biome exited 0 with no fixes applied after import cleanup.
+  - Static hardcoding check found no remaining planner direct Desk action
+    descriptor alias or moved Desk control context-word imports.
+- Broad verification:
+  - `npm run typecheck` passed.
+  - `npm run build` passed with existing Vite warnings only.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 21/21 through the
+    built Electron app.
+  - CR audit was skipped because this slice only refactors planner/catalog rule
+    interpretation and does not change registry, dispatcher, or capability
+    coverage.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Guide/Onboarding Rule Catalog Refactor Slice
 
 - Started a larger hardcoding cleanup slice for guide and onboarding action
