@@ -2010,6 +2010,22 @@ export const XENESIS_NATURAL_TOOL_AGGREGATE_SURFACE_SPECS = [
     },
   },
   {
+    key: 'runtime',
+    open: {
+      id: 'natural-xenesis-tools-runtime-catalog-open',
+      path: 'xd.xenesis.tools.runtime.open',
+      reason:
+        'Open external tool runtime readiness catalog in Xenesis Connection Center from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_RUNTIME_CONTEXT_WORDS, order: 251 }],
+    },
+    status: {
+      id: 'natural-xenesis-tools-runtime-status',
+      path: 'xd.xenesis.tools.runtime.status',
+      reason: 'Read external tool runtime readiness catalog status from natural language request.',
+      catalogRules: [{ contextWords: XENESIS_NATURAL_RUNTIME_CONTEXT_WORDS, order: 251 }],
+    },
+  },
+  {
     key: 'oauthDrafts',
     open: {
       id: 'natural-xenesis-tools-oauth-drafts-catalog-open',
@@ -2840,6 +2856,35 @@ export const XENESIS_NATURAL_CONNECTION_TARGET_SURFACE_SPECS = [
     },
   },
   {
+    key: 'toolRuntime',
+    open: {
+      path: 'xd.xenesis.tools.runtime.open',
+      idPrefix: 'natural-xenesis-tool-runtime-open',
+      reasonFor: (_id: string, label: string) => `Open ${label} tool runtime readiness from natural language request.`,
+      rules: [
+        {
+          targetScope: 'tool',
+          contextWords: XENESIS_NATURAL_RUNTIME_CONTEXT_WORDS,
+          argsKind: 'targetIdVisible',
+          order: 2,
+        },
+      ],
+    },
+    status: {
+      path: 'xd.xenesis.tools.runtime.status',
+      idPrefix: 'natural-xenesis-tool-runtime-status',
+      reasonFor: (_id: string, label: string) => `Read ${label} tool runtime readiness from natural language request.`,
+      rules: [
+        {
+          targetScope: 'tool',
+          contextWords: XENESIS_NATURAL_RUNTIME_CONTEXT_WORDS,
+          argsKind: 'targetId',
+          order: 2,
+        },
+      ],
+    },
+  },
+  {
     key: 'toolOauthDraft',
     open: {
       path: 'xd.xenesis.tools.oauthDrafts.open',
@@ -3470,6 +3515,21 @@ export const XENESIS_NATURAL_CONNECTION_TARGET_ACTION_REQUEST_SPECS = [
     ],
   },
   {
+    key: 'toolRuntimeRequest',
+    path: 'xd.xenesis.tools.runtime.request',
+    idPrefix: 'natural-xenesis-tool-runtime-request',
+    reasonFor: (_id: string, label: string) =>
+      `Request ${label} tool runtime readiness review from natural language request.`,
+    rules: [
+      {
+        targetScope: 'tool',
+        contextWords: XENESIS_NATURAL_RUNTIME_CONTEXT_WORDS,
+        argsKind: 'targetId',
+        order: 2,
+      },
+    ],
+  },
+  {
     key: 'toolOauthDraftRequest',
     path: 'xd.xenesis.tools.oauthDrafts.request',
     idPrefix: 'natural-xenesis-tool-oauth-draft-request',
@@ -3660,6 +3720,7 @@ export const XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTOR_SPECS = [
   { alias: 'toolInstallPlan', source: 'connectionTarget', key: 'toolInstallPlanRequest' },
   { alias: 'toolMcpInstallDraft', source: 'connectionTarget', key: 'toolMcpInstallDraftRequest' },
   { alias: 'toolOauthRuntime', source: 'connectionTarget', key: 'toolOauthRuntimeRequest' },
+  { alias: 'toolRuntime', source: 'connectionTarget', key: 'toolRuntimeRequest' },
   { alias: 'toolOauthDraft', source: 'connectionTarget', key: 'toolOauthDraftRequest' },
   { alias: 'toolMcpOAuth', source: 'connectionTarget', key: 'toolMcpOAuthRequest' },
   { alias: 'toolActionPolicy', source: 'connectionTarget', key: 'toolActionPolicyRequest' },
@@ -3704,6 +3765,7 @@ export const XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES = buildXenesisNaturalCo
     'toolInstallPlanRequest',
     'toolMcpInstallDraftRequest',
     'toolOauthRuntimeRequest',
+    'toolRuntimeRequest',
     'toolOauthDraftRequest',
     'toolMcpOAuthRequest',
     'toolActionPolicyRequest',

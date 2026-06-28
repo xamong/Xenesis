@@ -16914,3 +16914,158 @@ Verification so far:
     is directly touched by this slice.
 - Next intended step:
   - Review final diff/status and commit the channel runtime readiness slice.
+
+## Current External Tool Runtime Readiness Slice
+
+- Current objective:
+  - Add a CR-first external tool runtime readiness surface for implemented MCP
+    template tools and planned OAuth tools before any provider tool execution.
+- Rationale:
+  - External tools already expose setup metadata, connector readiness, install
+    plans, MCP install drafts, MCP OAuth readiness, Google OAuth runtime
+    readiness, action policies, and user stories.
+  - The missing layer is a generic `toolRuntime` read/open/request surface that
+    lets the Agent inspect runtime support, auth mode, install surface,
+    readback checks, diagnostics, blocked actions, and safety boundaries for
+    every external tool without executing provider tools.
+  - This aligns the external-tool side with the newly added channel runtime
+    readiness surface while keeping OAuth-specific runtime prompts on the
+    OAuth runtime paths.
+- Scope:
+  - Add RED tests for a `toolRuntime` read model and CR paths:
+    `xd.xenesis.tools.runtime.status`, `xd.xenesis.tools.runtime.open`, and
+    `xd.xenesis.tools.runtime.request`.
+  - Expose runtime readiness in Settings > Xenesis Agent > Connections and as a
+    tool view section.
+  - Route natural prompts such as `노션 tool runtime 상태 보여줘`,
+    `깃허브 tool runtime 열어줘`, and
+    `구글 캘린더 tool runtime 검토 요청해줘` through the new CR paths.
+  - Preserve safety: no provider tool execution, no OAuth completion, no MCP
+    install/config write, no token storage, no credential exposure, no email or
+    document/calendar/task/issue mutation, and no approval bypass.
+- Plan:
+  - `docs/superpowers/plans/2026-06-29-xenesis-tool-runtime-readiness.md`
+- Touched files so far:
+  - `handoff.md`
+  - `docs/superpowers/plans/2026-06-29-xenesis-tool-runtime-readiness.md`
+  - `docs/manual/09-onboarding-connections.md`
+  - `docs/manual/11-external-tool-integrations.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-tool-runtime-readiness.md`
+  - `scripts/xenesisNaturalDeskRoutingLiveSmoke.mjs`
+  - `src/main/index.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.test.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/shared/types.ts`
+  - `src/shared/xenesisConnectionCapabilities.test.ts`
+  - `src/shared/xenesisConnections.test.ts`
+  - `src/shared/xenesisConnections.ts`
+  - `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
+- Commands run:
+  - `git status --short --branch` -> branch
+    `agent/upcoming-work-20260627`.
+  - RED:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> failed as expected, 197 tests, 186 passed, 11 failed.
+  - GREEN focused:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed, 197/197.
+  - Broad:
+    `npm run typecheck` -> passed.
+  - Broad:
+    `npm run docs:capabilities:audit` -> passed and wrote
+    `docs/capability-registry-audit.md`; audit summary is 796 nodes and 689
+    coverage path references.
+  - Audit counter readback:
+    `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> all 0.
+  - Broad:
+    `npm run build` -> passed; Vite emitted existing browser externalization,
+    dynamic/static import chunking, and large renderer chunk warnings only.
+  - Transient broad smoke:
+    `npm run smoke:xenesis:natural-desk-routing` run in parallel with
+    `npm run build` -> failed 249/255 while `out/` was being rewritten.
+  - Smoke rerun after build:
+    `node ./scripts/xenesisNaturalDeskRoutingLiveSmoke.mjs --json`
+    -> passed 255/255.
+  - Sequential broad smoke:
+    `npm run smoke:xenesis:natural-desk-routing` -> passed 255/255, including
+    Notion tool runtime status, GitHub tool runtime open, and Google Calendar
+    tool runtime request approval.
+  - Hygiene fix:
+    `npx biome format --write ...14 changed source/script files...`
+    -> formatted 14 files and fixed 1 file.
+  - Hygiene focused formatter:
+    `npx biome check --formatter-enabled=true --linter-enabled=false --assist-enabled=false ...14 changed source/script files...`
+    -> passed.
+  - Post-format broad:
+    `npm run typecheck` -> passed.
+  - Hygiene:
+    `git diff --check` -> passed; Git printed LF/CRLF normalization warnings
+    only.
+  - Full lint:
+    `npm run lint` -> failed on repo-wide existing formatting/lint debt
+    before this slice; Biome checked 970 files and reported 1147 errors, 419
+    warnings, and 92 infos.
+  - Focused changed-file Biome:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true ...14 changed source/script files...`
+    -> exit 0; reported 14 warnings and 8 infos from existing unrelated debt
+    in large touched files.
+  - Known blocked:
+    `npm run check:public-release` -> failed before checks with `ENOENT`
+    because `.github/workflows/ci.yml` is missing in this worktree.
+  - Stage hygiene:
+    `git diff --cached --check` -> passed.
+  - Commit:
+    `git commit -m "Add external tool runtime readiness"` -> created the
+    external tool runtime readiness slice commit.
+- Exact verification result:
+  - RED failures were the intended missing surface: `tool-runtime` detail focus
+    and selector were missing, SettingsPane did not render `toolRuntime`,
+    shared tool views/setup plans lacked the runtime section, `toolRuntime`
+    read models were absent, `xd.xenesis.tools.runtime.status/open/request`
+    were not registered/dispatched, and natural `tool runtime` prompts fell
+    back to diagnostics or setup-request paths.
+  - Focused implementation verification passed after wiring shared model,
+    setup-plan/diagnostic/setup-request aggregation, CR registration and
+    dispatcher coverage, main-process status/open/request handlers, Settings
+    renderer, en/ko labels, natural-language routing, smoke cases, manual docs,
+    and an Obsidian working note.
+  - CR audit gap counters are all 0:
+    missing registered paths 0, missing dispatched coverage paths 0,
+    undispatched static callable methods 0, dispatcher paths missing from tree
+    0.
+  - Typecheck, build, focused tests, focused changed-file Biome, and sequential
+    natural Desk routing smoke all passed.
+  - The first smoke failure was isolated to running smoke while build rewrote
+    `out/`; the same smoke passed with JSON output and via npm after build
+    completed.
+  - Full `npm run lint` and `npm run check:public-release` remain blocked by
+    known repository/infrastructure gaps, not by this slice.
+- Implemented:
+  - Added `toolRuntime` as a first-class external tool read model for Fetch,
+    Filesystem, GitHub, Notion, Linear, Google Workspace, and Google Calendar.
+  - Added `tool-runtime` detail focus, `runtime` tool-view section,
+    renderer selector/data attribute, Settings detail block, review button, and
+    formatter/request helpers.
+  - Added CR paths:
+    `xd.xenesis.tools.runtime.status`,
+    `xd.xenesis.tools.runtime.open`, and
+    `xd.xenesis.tools.runtime.request`.
+  - Added main-process status/open/request handlers and local Action Inbox
+    review records for tool runtime readiness.
+  - Added natural routing so target prompts containing `tool runtime` route to
+    generic runtime status/open/request while OAuth-specific runtime prompts
+    remain on `xd.xenesis.tools.oauthRuntime.*`.
+- Known gaps:
+  - `npm run check:public-release` is still expected to fail because this
+    worktree is missing `.github/workflows/ci.yml`.
+  - Full `npm run lint` still reports repo-wide existing formatting/lint debt.
+    Focused changed-file Biome exits 0, with unrelated warnings/infos in large
+    touched files.
+- Next intended step:
+  - Continue with the next hardcoding/CR gap slice from the clean worktree.

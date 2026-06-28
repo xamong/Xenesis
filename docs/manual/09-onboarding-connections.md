@@ -50,8 +50,8 @@ and the renderer. The card-level `Focus` action routes through
 `data-xenesis-connection="<id>"` card inside Settings.
 
 Cards with onboarding plans, provider setup plans, provider profile drafts,
-OAuth drafts, or channel profile drafts also render detail rows in Settings.
-These rows show the
+OAuth drafts, tool runtime readiness, or channel profile drafts also render
+detail rows in Settings. These rows show the
 expected state, required fields where applicable, CR read/control paths,
 diagnostics, and safety boundary for each guided or review step. Use the rows
 as an operator checklist; they are not executable shortcuts and do not perform
@@ -141,6 +141,18 @@ write MCP config, run shell commands, complete OAuth, store tokens, execute
 provider tools, send messages, mutate settings, or bypass approvals. Google
 Workspace and Google Calendar remain planned until a verified MCP/OAuth
 template exists.
+
+Tool cards also expose a generic `toolRuntime` read model. Use
+`xd.xenesis.tools.runtime.status` to inspect runtime support, auth mode,
+credential state, required/missing env names, readback checks, diagnostics,
+blocked actions, and safety boundaries before any provider tool execution.
+Use `xd.xenesis.tools.runtime.open` with `{ "id": "<tool-id>" }` to focus the
+runtime readiness rows, and `xd.xenesis.tools.runtime.request` with
+`{ "id": "<tool-id>" }` to record a local
+`xenesis-tool-runtime-readiness` Action Inbox review item. This surface is
+review-only: it does not execute provider tools, install MCP servers, write
+MCP config, store credentials, complete OAuth, store tokens, mutate external
+systems, or bypass approvals.
 
 Planned Google tool cards also expose a `toolOAuthDraft` read model. Use
 `xd.xenesis.tools.oauthDrafts.status` to inspect review-only OAuth app,
@@ -348,6 +360,15 @@ ready MCP templates or OAuth endpoints. Google Workspace and Google Calendar
 report `planned-oauth` until a verified OAuth/MCP template and token storage
 path exist.
 
+Each tool card also exposes a generic `toolRuntime` read model. Use
+`xd.xenesis.tools.runtime.status`, `xd.xenesis.tools.runtime.open`, and
+`xd.xenesis.tools.runtime.request` to inspect, open, or request review of
+runtime readiness before any provider tool execution. This model aggregates
+setup, connector, install, MCP/OAuth, action-policy, and user-story metadata so
+an agent can see runtime support, credential state, readback checks, blocked
+actions, and safety boundaries. It is not a tool executor, installer, OAuth
+flow, credential store, or external mutation path.
+
 Each tool card also exposes a `toolView` read model. Use
 `xd.xenesis.tools.views.status` to inspect the internal Desk surface for a tool,
 including the Connection Center card, setup recipe, optional MCP template view,
@@ -359,15 +380,17 @@ servers, complete OAuth, or bypass approval paths.
 
 `xd.xenesis.tools.views.open` also accepts an optional `section` value when the
 Agent or operator needs to focus a specific internal tool-view section. Current
-section values are `connection-card`, `setup`, `connector`, `setup-plan`,
-`install-plan`, `mcp-template`, `oauth-draft`, `oauth-setup-packet`,
-`oauth-runtime`, `action-policy`, and
+section values are `connection-card`, `setup`, `connector`, `runtime`,
+`setup-plan`, `install-plan`, `mcp-template`, `oauth-draft`,
+`oauth-setup-packet`, `oauth-runtime`, `action-policy`, and
 `user-stories`. For example, `{ "id": "notion", "section": "mcp-template",
 "ensureVisible": true }` focuses the Notion MCP template section, while
 `{ "id": "google-calendar", "section": "oauth-draft", "ensureVisible": true }`
 focuses the Google Calendar OAuth draft section and
 `{ "id": "google-calendar", "section": "oauth-setup-packet", "ensureVisible": true }`
 focuses the OAuth setup packet.
+`{ "id": "notion", "section": "runtime", "ensureVisible": true }` focuses
+generic tool runtime readiness.
 `{ "id": "google-calendar", "section": "oauth-runtime", "ensureVisible": true }`
 focuses OAuth runtime readiness. Section opens are still read/open planning
 surfaces only: they do not write MCP config, run installers, complete OAuth,
@@ -774,14 +797,24 @@ states, not token values. Planned Google Workspace/Google Calendar connectors
 remain `planned-oauth` and do not imply that OAuth or MCP installation has been
 completed.
 
+Use `xd.xenesis.tools.runtime.status`, `xd.xenesis.tools.runtime.open`, and
+`xd.xenesis.tools.runtime.request` to inspect, open, or request review of
+generic external tool runtime readiness. This model aggregates setup,
+connector, install, MCP/OAuth, action-policy, and user-story metadata so an
+agent can see runtime support, credential state, readback checks, blocked
+actions, and safety boundaries before calling provider tools. It is not a
+tool executor, installer, OAuth flow, credential store, or external mutation
+path.
+
 Use `xd.xenesis.tools.views.status` and `xd.xenesis.tools.views.open` to inspect
 or open internal Desk setup/readiness views for external tools. The open path
 focuses the matching Connection Center tool card and keeps planned Google
 Workspace/Google Calendar flows visibly planned until a verified OAuth/MCP
 template exists.
 Pass optional `section` values such as `mcp-template`, `oauth-draft`,
-`connector`, `setup-plan`, `install-plan`, `action-policy`, or `user-stories`
-when the caller needs to focus a specific internal tool-view detail.
+`connector`, `runtime`, `setup-plan`, `install-plan`, `action-policy`, or
+`user-stories` when the caller needs to focus a specific internal tool-view
+detail.
 
 Use `xd.xenesis.tools.userStories.status` and
 `xd.xenesis.tools.userStories.open` to inspect or open external tool workflow

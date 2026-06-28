@@ -1361,6 +1361,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /TOOL_AGGREGATE_STATUS_ACTIONS\.connectors/);
   assert.doesNotMatch(source, /TOOL_AGGREGATE_STATUS_ACTIONS\.mcpInstallDrafts/);
   assert.doesNotMatch(source, /TOOL_AGGREGATE_STATUS_ACTIONS\.oauthRuntime/);
+  assert.doesNotMatch(source, /TOOL_AGGREGATE_STATUS_ACTIONS\.runtime/);
   assert.doesNotMatch(source, /TOOL_AGGREGATE_STATUS_ACTIONS\.oauthDrafts/);
   assert.doesNotMatch(source, /TOOL_AGGREGATE_STATUS_ACTIONS\.views/);
   assert.doesNotMatch(source, /TOOL_AGGREGATE_STATUS_ACTIONS\.installPlans/);
@@ -1378,6 +1379,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
       { path: 'xd.xenesis.tools.connectors.status', requiredGroups: 0, fallback: false },
       { path: 'xd.xenesis.tools.mcpInstallDrafts.status', requiredGroups: 1, fallback: false },
       { path: 'xd.xenesis.tools.oauthRuntime.status', requiredGroups: 1, fallback: false },
+      { path: 'xd.xenesis.tools.runtime.status', requiredGroups: 0, fallback: false },
       { path: 'xd.xenesis.tools.oauthDrafts.status', requiredGroups: 0, fallback: false },
       { path: 'xd.xenesis.tools.views.status', requiredGroups: 0, fallback: false },
       { path: 'xd.xenesis.tools.installPlans.status', requiredGroups: 0, fallback: false },
@@ -1470,6 +1472,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /TOOL_AGGREGATE_OPEN_ACTIONS\.connectors/);
   assert.doesNotMatch(source, /TOOL_AGGREGATE_OPEN_ACTIONS\.mcpInstallDrafts/);
   assert.doesNotMatch(source, /TOOL_AGGREGATE_OPEN_ACTIONS\.oauthRuntime/);
+  assert.doesNotMatch(source, /TOOL_AGGREGATE_OPEN_ACTIONS\.runtime/);
   assert.doesNotMatch(source, /TOOL_AGGREGATE_OPEN_ACTIONS\.oauthDrafts/);
   assert.doesNotMatch(source, /TOOL_AGGREGATE_OPEN_ACTIONS\.views/);
   assert.doesNotMatch(source, /TOOL_AGGREGATE_OPEN_ACTIONS\.installPlans/);
@@ -1519,6 +1522,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
       { path: 'xd.xenesis.tools.connectors.open', requiredGroups: 0, fallback: false },
       { path: 'xd.xenesis.tools.mcpInstallDrafts.open', requiredGroups: 1, fallback: false },
       { path: 'xd.xenesis.tools.oauthRuntime.open', requiredGroups: 1, fallback: false },
+      { path: 'xd.xenesis.tools.runtime.open', requiredGroups: 0, fallback: false },
       { path: 'xd.xenesis.tools.oauthDrafts.open', requiredGroups: 0, fallback: false },
       { path: 'xd.xenesis.tools.views.open', requiredGroups: 0, fallback: false },
       { path: 'xd.xenesis.tools.installPlans.open', requiredGroups: 0, fallback: false },
@@ -1578,6 +1582,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-channel-routing-status-\$\{target\.id\}`/);
   assert.doesNotMatch(source, /CONNECTION_TARGET_STATUS_ACTIONS\.toolMcpInstallDraft/);
   assert.doesNotMatch(source, /CONNECTION_TARGET_STATUS_ACTIONS\.toolOauthRuntime/);
+  assert.doesNotMatch(source, /CONNECTION_TARGET_STATUS_ACTIONS\.toolRuntime/);
   assert.doesNotMatch(source, /CONNECTION_TARGET_STATUS_ACTIONS\.toolOauthDraft/);
   assert.doesNotMatch(source, /CONNECTION_TARGET_STATUS_ACTIONS\.toolMcpOAuth/);
   assert.doesNotMatch(source, /CONNECTION_TARGET_STATUS_ACTIONS\.channelRouting/);
@@ -1618,6 +1623,12 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
         targetScope: 'tool',
         argsKind: 'tool',
         path: 'xd.xenesis.tools.mcpInstallDrafts.status',
+        fallback: false,
+      },
+      {
+        targetScope: 'tool',
+        argsKind: 'targetId',
+        path: 'xd.xenesis.tools.runtime.status',
         fallback: false,
       },
       {
@@ -1775,6 +1786,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-channel-routing-open-\$\{target\.id\}`/);
   assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-connection-open-\$\{target\.id\}`/);
   assert.doesNotMatch(source, /CONNECTION_TARGET_OPEN_ACTIONS\.toolOauthRuntime/);
+  assert.doesNotMatch(source, /CONNECTION_TARGET_OPEN_ACTIONS\.toolRuntime/);
   assert.doesNotMatch(source, /CONNECTION_TARGET_OPEN_ACTIONS\.toolOauthDraft/);
   assert.doesNotMatch(source, /CONNECTION_TARGET_OPEN_ACTIONS\.toolMcpInstallDraft/);
   assert.doesNotMatch(source, /CONNECTION_TARGET_OPEN_ACTIONS\.toolMcpOAuth/);
@@ -1816,6 +1828,12 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
         targetScope: 'tool',
         argsKind: 'targetIdVisible',
         path: 'xd.xenesis.tools.mcpOAuth.open',
+        fallback: false,
+      },
+      {
+        targetScope: 'tool',
+        argsKind: 'targetIdVisible',
+        path: 'xd.xenesis.tools.runtime.open',
         fallback: false,
       },
       {
@@ -1960,6 +1978,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /REVIEW_REQUEST_ACTIONS\.toolInstallPlan/);
   assert.doesNotMatch(source, /REVIEW_REQUEST_ACTIONS\.toolMcpInstallDraft/);
   assert.doesNotMatch(source, /REVIEW_REQUEST_ACTIONS\.toolOauthRuntime/);
+  assert.doesNotMatch(source, /REVIEW_REQUEST_ACTIONS\.toolRuntime/);
   assert.doesNotMatch(source, /REVIEW_REQUEST_ACTIONS\.toolOauthDraft/);
   assert.doesNotMatch(source, /REVIEW_REQUEST_ACTIONS\.toolMcpOAuth/);
   assert.doesNotMatch(source, /REVIEW_REQUEST_ACTIONS\.toolActionPolicy/);
@@ -2003,6 +2022,12 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
         targetScope: 'messenger',
         argsKind: 'channel',
         path: 'xd.xenesis.channels.runtime.request',
+        fallback: false,
+      },
+      {
+        targetScope: 'tool',
+        argsKind: 'targetId',
+        path: 'xd.xenesis.tools.runtime.request',
         fallback: false,
       },
       {
@@ -2570,6 +2595,10 @@ test('natural approval request actions are generated from shared action request 
     connectionSpecsByKey.get('toolMcpOAuthRequest')?.path,
   );
   assert.equal(
+    XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS.toolRuntime.path,
+    connectionSpecsByKey.get('toolRuntimeRequest')?.path,
+  );
+  assert.equal(
     XENESIS_NATURAL_MCP_INSTALL_DRAFT_APPLY_ACTION_DESCRIPTORS.toolMcpInstallDraft.path,
     connectionSpecsByKey.get('toolMcpInstallDraftApply')?.path,
   );
@@ -2601,6 +2630,7 @@ test('natural approval request actions are generated from shared action request 
       'toolOauthRuntimeRequest',
       'toolMcpOAuthRequest',
       'channelRuntimeRequest',
+      'toolRuntimeRequest',
       'toolMcpInstallDraftRequest',
       'toolOauthDraftRequest',
       'toolActionPolicyRequest',
@@ -4928,6 +4958,16 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center readback requ
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 tool runtime 상태 보여줘').actions, [
+    {
+      id: 'natural-xenesis-tool-runtime-status-notion',
+      path: 'xd.xenesis.tools.runtime.status',
+      args: { id: 'notion' },
+      approved: false,
+      reason: 'Read Notion tool runtime readiness from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('구글 캘린더 OAuth 설정 패킷 보여줘').actions, [
     {
       id: 'natural-xenesis-tool-oauth-setup-packet-google-calendar',
@@ -4955,6 +4995,16 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center readback requ
       args: { id: 'google-workspace', ensureVisible: true },
       approved: false,
       reason: 'Open Google Workspace OAuth runtime readiness from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('깃허브 tool runtime 열어줘').actions, [
+    {
+      id: 'natural-xenesis-tool-runtime-open-github',
+      path: 'xd.xenesis.tools.runtime.open',
+      args: { id: 'github', ensureVisible: true },
+      approved: false,
+      reason: 'Open GitHub tool runtime readiness from natural language request.',
     },
   ]);
 
@@ -5783,6 +5833,16 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center review reques
       args: { id: 'google-calendar' },
       approved: false,
       reason: 'Request Google Calendar OAuth runtime readiness review from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('구글 캘린더 tool runtime 검토 요청해줘').actions, [
+    {
+      id: 'natural-xenesis-tool-runtime-request-google-calendar',
+      path: 'xd.xenesis.tools.runtime.request',
+      args: { id: 'google-calendar' },
+      approved: false,
+      reason: 'Request Google Calendar tool runtime readiness review from natural language request.',
     },
   ]);
 

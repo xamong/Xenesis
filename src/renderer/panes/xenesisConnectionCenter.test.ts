@@ -36,6 +36,7 @@ import {
   buildXenesisToolOAuthRuntimeRequest,
   buildXenesisToolOAuthSetupPacketOpenRequest,
   buildXenesisToolOAuthSetupPacketRequest,
+  buildXenesisToolRuntimeRequest,
   buildXenesisToolSetupPlanRequest,
   formatXenesisChannelAccessGroupsSummary,
   formatXenesisChannelPairingSummary,
@@ -67,6 +68,7 @@ import {
   formatXenesisToolOAuthDraftSummary,
   formatXenesisToolOAuthRuntimeSummary,
   formatXenesisToolOAuthSetupPacketSummary,
+  formatXenesisToolRuntimeSummary,
   formatXenesisToolSetupPlanSummary,
   formatXenesisToolSetupSummary,
   formatXenesisToolUserStorySummary,
@@ -101,6 +103,7 @@ test('xenesis detail focus selector maps CR detail values to existing data attri
     'data-xenesis-channel-setup-plan',
   );
   assert.equal(XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['tool-setup-plan'], 'data-xenesis-tool-setup-plan');
+  assert.equal(XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['tool-runtime'], 'data-xenesis-tool-runtime');
   assert.equal(XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['tool-mcp-oauth'], 'data-xenesis-tool-mcp-oauth');
   assert.equal(XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['tool-oauth-draft'], 'data-xenesis-tool-oauth-draft');
   assert.equal(
@@ -122,6 +125,7 @@ test('xenesis detail focus selector maps CR detail values to existing data attri
   );
   assert.equal(xenesisConnectionDetailFocusSelector('channel-setup-plan'), '[data-xenesis-channel-setup-plan]');
   assert.equal(xenesisConnectionDetailFocusSelector('tool-setup-plan'), '[data-xenesis-tool-setup-plan]');
+  assert.equal(xenesisConnectionDetailFocusSelector('tool-runtime'), '[data-xenesis-tool-runtime]');
   assert.equal(xenesisConnectionDetailFocusSelector('tool-mcp-oauth'), '[data-xenesis-tool-mcp-oauth]');
   assert.equal(xenesisConnectionDetailFocusSelector('tool-oauth-draft'), '[data-xenesis-tool-oauth-draft]');
   assert.equal(
@@ -270,6 +274,10 @@ test('SettingsPane renders Connection Center guided and review step details', ()
   assert.match(source, /formatXenesisToolOAuthRuntimeSummary/);
   assert.match(source, /buildXenesisToolOAuthRuntimeRequest/);
   assert.match(source, /data-xenesis-tool-oauth-runtime/);
+  assert.match(source, /toolRuntime/);
+  assert.match(source, /formatXenesisToolRuntimeSummary/);
+  assert.match(source, /buildXenesisToolRuntimeRequest/);
+  assert.match(source, /data-xenesis-tool-runtime/);
   assert.match(source, /channelRuntime/);
   assert.match(source, /formatXenesisChannelRuntimeSummary/);
   assert.match(source, /buildXenesisChannelRuntimeRequest/);
@@ -1406,6 +1414,32 @@ test('formatXenesisToolOAuthDraftSummary describes tool, status, and scope count
   );
 });
 
+test('formatXenesisToolRuntimeSummary describes runtime status and readback checks', () => {
+  assert.equal(
+    formatXenesisToolRuntimeSummary({
+      runtimeStatus: 'needs-setup',
+      actionInboxKind: 'xenesis-tool-runtime-readiness',
+      tool: 'notion',
+      displayName: 'Notion',
+      runtimeSupport: 'ready-template',
+      authMode: 'env-token',
+      installSurface: 'Settings > AI Provider > Local CLI MCP',
+      runtimeSurface: 'provider MCP runtime',
+      reviewSurface: 'Desk Action Inbox',
+      credentialState: 'missing',
+      requiredEnv: ['NOTION_TOKEN'],
+      missingEnv: ['NOTION_TOKEN'],
+      readbackChecks: ['notion-search-read', 'cr-readback'],
+      readPaths: ['xd.xenesis.tools.runtime.status'],
+      controlPaths: ['xd.xenesis.tools.runtime.request'],
+      diagnostics: ['tool-runtime-readiness'],
+      blockedActions: ['execute provider tools before runtime readback'],
+      safetyBoundaries: ['tool runtime readiness is review-only'],
+    }),
+    'notion / needs-setup / 2 readback check(s) / 1 blocked action(s)',
+  );
+});
+
 test('formatXenesisToolOAuthRuntimeSummary describes runtime readiness and readback checks', () => {
   assert.equal(
     formatXenesisToolOAuthRuntimeSummary({
@@ -1656,6 +1690,47 @@ test('buildXenesisToolOAuthDraftRequest targets the review request CR path', () 
   });
 
   assert.equal(buildXenesisToolOAuthDraftRequest({ ...item, toolOAuthDraft: undefined }), null);
+});
+
+test('buildXenesisToolRuntimeRequest targets the generic runtime readiness CR path', () => {
+  const item = {
+    id: 'notion',
+    kind: 'tool',
+    label: 'Notion',
+    status: 'needs-setup',
+    summary: 'Notion runtime readiness.',
+    toolRuntime: {
+      runtimeStatus: 'needs-setup',
+      actionInboxKind: 'xenesis-tool-runtime-readiness',
+      tool: 'notion',
+      displayName: 'Notion',
+      runtimeSupport: 'ready-template',
+      authMode: 'env-token',
+      installSurface: 'Settings > AI Provider > Local CLI MCP',
+      runtimeSurface: 'provider MCP runtime',
+      reviewSurface: 'Desk Action Inbox',
+      credentialState: 'missing',
+      requiredEnv: ['NOTION_TOKEN'],
+      missingEnv: ['NOTION_TOKEN'],
+      readbackChecks: ['notion-search-read', 'cr-readback'],
+      readPaths: ['xd.xenesis.tools.runtime.status'],
+      controlPaths: ['xd.xenesis.tools.runtime.request'],
+      diagnostics: ['tool-runtime-readiness'],
+      blockedActions: ['execute provider tools before runtime readback'],
+      safetyBoundaries: ['tool runtime readiness is review-only'],
+    },
+  } satisfies XenesisConnectionItem;
+
+  assert.deepEqual(buildXenesisToolRuntimeRequest(item), {
+    path: 'xd.xenesis.tools.runtime.request',
+    args: {
+      id: 'notion',
+    },
+    source: 'xenesis',
+    approved: true,
+  });
+
+  assert.equal(buildXenesisToolRuntimeRequest({ ...item, toolRuntime: undefined }), null);
 });
 
 test('buildXenesisToolOAuthRuntimeRequest targets the runtime readiness CR path', () => {

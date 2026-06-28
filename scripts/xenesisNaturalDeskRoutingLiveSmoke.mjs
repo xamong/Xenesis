@@ -274,6 +274,12 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     expectedVisibleText: 'Desk action completed',
   },
   {
+    id: 'notion-tool-runtime-status',
+    prompt: '노션 tool runtime 상태 보여줘',
+    expectedPath: 'xd.xenesis.tools.runtime.status',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
     id: 'google-calendar-oauth-setup-packet',
     prompt: '구글 캘린더 OAuth 설정 패킷 보여줘',
     expectedPath: 'xd.xenesis.tools.oauthDrafts.setupPacket',
@@ -289,6 +295,12 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     id: 'google-workspace-oauth-runtime-open',
     prompt: '구글 워크스페이스 OAuth runtime 열어줘',
     expectedPath: 'xd.xenesis.tools.oauthRuntime.open',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'github-tool-runtime-open',
+    prompt: '깃허브 tool runtime 열어줘',
+    expectedPath: 'xd.xenesis.tools.runtime.open',
     expectedVisibleText: 'Desk action completed',
   },
   {
@@ -337,6 +349,12 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     id: 'google-calendar-oauth-runtime-request-approval',
     prompt: '구글 캘린더 OAuth runtime 검토 요청해줘',
     expectedPath: 'xd.xenesis.tools.oauthRuntime.request',
+    expectedVisibleText: 'Desk action approval required',
+  },
+  {
+    id: 'google-calendar-tool-runtime-request-approval',
+    prompt: '구글 캘린더 tool runtime 검토 요청해줘',
+    expectedPath: 'xd.xenesis.tools.runtime.request',
     expectedVisibleText: 'Desk action approval required',
   },
   {

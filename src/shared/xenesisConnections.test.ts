@@ -85,8 +85,10 @@ test('connection center settings target is owned by the shared connection catalo
   assert.equal(XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES.includes('provider-profile-draft'), true);
   assert.equal(XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES.includes('channel-routing'), true);
   assert.equal(XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES.includes('channel-runtime'), true);
+  assert.equal(XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES.includes('tool-runtime'), true);
   assert.equal(XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES.includes('tool-oauth-runtime'), true);
   assert.equal(XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES.includes('tool-setup-plan'), true);
+  assert.equal(isXenesisConnectionCenterDetailFocus('tool-runtime'), true);
   assert.equal(isXenesisConnectionCenterDetailFocus('tool-oauth-draft'), true);
   assert.equal(isXenesisConnectionCenterDetailFocus('tool-oauth-runtime'), true);
   assert.equal(isXenesisConnectionCenterDetailFocus('tool-setup-plan'), true);
@@ -1315,6 +1317,7 @@ test('buildXenesisConnectionsStatus exposes guided external tool setup plans', (
       'tool-setup',
       'tool-connector',
       'tool-install-plan',
+      'tool-runtime',
       'mcp-install-draft',
       'tool-actions',
       'tool-user-stories',
@@ -1323,18 +1326,48 @@ test('buildXenesisConnectionsStatus exposes guided external tool setup plans', (
     ],
   );
   assert.equal(notion?.toolSetupPlan?.readPaths.includes('xd.xenesis.tools.setupPlans.status'), true);
+  assert.equal(notion?.toolSetupPlan?.readPaths.includes('xd.xenesis.tools.runtime.status'), true);
   assert.equal(notion?.toolSetupPlan?.controlPaths.includes('xd.xenesis.tools.setupPlans.open'), true);
+  assert.equal(notion?.toolSetupPlan?.controlPaths.includes('xd.xenesis.tools.runtime.open'), true);
   assert.equal(notion?.toolSetupPlan?.controlPaths.includes('xd.xenesis.tools.mcpInstallDrafts.request'), true);
   assert.equal(notion?.setupRequest?.readPaths.includes('xd.xenesis.tools.setupPlans.status'), true);
+  assert.equal(notion?.setupRequest?.readPaths.includes('xd.xenesis.tools.runtime.status'), true);
   assert.equal(notion?.setupRequest?.controlPaths.includes('xd.xenesis.tools.setupPlans.open'), true);
+  assert.equal(notion?.setupRequest?.controlPaths.includes('xd.xenesis.tools.runtime.request'), true);
+  assert.equal(notion?.toolRuntime?.runtimeStatus, 'needs-setup');
+  assert.equal(notion?.toolRuntime?.runtimeSupport, 'ready-template');
+  assert.equal(notion?.toolRuntime?.authMode, 'env-token');
+  assert.equal(notion?.toolRuntime?.actionInboxKind, 'xenesis-tool-runtime-readiness');
+  assert.equal(notion?.toolRuntime?.readbackChecks.includes('notion-search-read'), true);
+  assert.equal(notion?.toolRuntime?.readPaths.includes('xd.xenesis.tools.runtime.status'), true);
+  assert.equal(notion?.toolRuntime?.controlPaths.includes('xd.xenesis.tools.runtime.request'), true);
+  assert.equal(notion?.toolRuntime?.blockedActions.includes('execute provider tools before runtime readback'), true);
+  assert.equal(
+    notion?.toolRuntime?.safetyBoundaries.some((boundary) =>
+      boundary.includes('does not execute provider tools, install MCP servers, write MCP config, store credentials'),
+    ),
+    true,
+  );
 
   assert.equal(calendar?.toolSetupPlan?.runtimeSupport, 'planned-oauth');
   assert.equal(calendar?.toolSetupPlan?.planStatus, 'planned');
+  assert.equal(
+    calendar?.toolSetupPlan?.steps.some((step) => step.id === 'tool-runtime'),
+    true,
+  );
   assert.equal(
     calendar?.toolSetupPlan?.steps.some((step) => step.id === 'oauth-setup-packet'),
     true,
   );
   assert.equal(calendar?.toolSetupPlan?.readPaths.includes('xd.xenesis.tools.oauthDrafts.setupPacket'), true);
+  assert.equal(calendar?.toolSetupPlan?.readPaths.includes('xd.xenesis.tools.runtime.status'), true);
+  assert.equal(calendar?.toolRuntime?.runtimeStatus, 'planned-oauth');
+  assert.equal(calendar?.toolRuntime?.runtimeSupport, 'planned-oauth');
+  assert.equal(calendar?.toolRuntime?.authMode, 'oauth');
+  assert.equal(calendar?.toolRuntime?.readbackChecks.includes('calendar-list-read'), true);
+  assert.equal(calendar?.toolRuntime?.readbackChecks.includes('calendar.freebusy.readonly'), true);
+  assert.equal(calendar?.toolRuntime?.blockedActions.includes('complete OAuth'), true);
+  assert.equal(calendar?.toolRuntime?.blockedActions.includes('mutate calendar events'), true);
   assert.equal(calendar?.toolSetupPlan?.blockedActions.includes('complete OAuth or store Google OAuth tokens'), true);
   assert.equal(
     calendar?.toolSetupPlan?.safetyBoundaries.some((boundary) =>
@@ -1677,6 +1710,16 @@ test('buildXenesisConnectionsStatus exposes internal Desk tool views for MCP and
         safetyBoundaries: ['Connector view opens never return credential values.'],
       },
       {
+        id: 'runtime',
+        label: 'Runtime readiness',
+        focusConnectionDetail: 'tool-runtime',
+        openArgs: { id: 'notion', section: 'runtime', ensureVisible: true },
+        readPaths: ['xd.xenesis.tools.runtime.status', 'xd.xenesis.tools.connectors.status'],
+        controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.runtime.open'],
+        diagnostics: ['mcp-settings-status', 'missing-env', 'runtime-readback'],
+        safetyBoundaries: ['Runtime readiness view opens do not execute provider tools or mutate external systems.'],
+      },
+      {
         id: 'setup-plan',
         label: 'Setup plan',
         focusConnectionDetail: 'tool-setup-plan',
@@ -1747,6 +1790,7 @@ test('buildXenesisConnectionsStatus exposes internal Desk tool views for MCP and
       'connection-card',
       'setup',
       'connector',
+      'runtime',
       'setup-plan',
       'install-plan',
       'oauth-draft',
@@ -3691,6 +3735,7 @@ test('buildXenesisConnectionsStatus exposes diagnostic runbooks for tools, plann
       'connection-status',
       'tool-setup',
       'tool-connector',
+      'tool-runtime',
       'tool-view',
       'tool-action-catalog',
       'tool-user-story',
