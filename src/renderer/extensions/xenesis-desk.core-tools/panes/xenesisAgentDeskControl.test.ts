@@ -16,6 +16,9 @@ import {
   XENESIS_DESK_CONTROL_PROMPT_HINT_SECTIONS,
 } from '../../../../shared/xenesisDeskControlPromptHintCatalog';
 import {
+  buildXenesisNaturalMessengerViewSectionOpenAction,
+  buildXenesisNaturalProviderViewSectionOpenAction,
+  buildXenesisNaturalToolViewSectionOpenAction,
   XENESIS_NATURAL_ACTIVE_DOCK_CLOSE_RULES,
   XENESIS_NATURAL_ACTIVE_DOCK_FOCUS_RULES,
   XENESIS_NATURAL_AGENT_READBACK_RULES,
@@ -422,8 +425,18 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'findXenesisNaturalProviderRuleAction',
     'findXenesisNaturalConnectionAggregateStatusAction',
     'findXenesisNaturalConnectionAggregateOpenAction',
+    'buildXenesisNaturalProviderViewSectionOpenAction',
+    'buildXenesisNaturalToolViewSectionOpenAction',
+    'buildXenesisNaturalMessengerViewSectionOpenAction',
   ]) {
     assert.match(capabilityCatalogSource, new RegExp(`export function ${sharedActionBuilderFunction}`));
+  }
+  for (const localViewSectionPathLiteral of [
+    'xd.xenesis.providers.views.open',
+    'xd.xenesis.tools.views.open',
+    'xd.xenesis.messengers.views.open',
+  ]) {
+    assert.doesNotMatch(naturalResolverSource, new RegExp(localViewSectionPathLiteral.replace(/\./g, '\\.')));
   }
   for (const localExtractionFunction of [
     'function normalizeNaturalLanguageText',
@@ -3445,6 +3458,50 @@ test('natural view-section targets are generated from Connection Center section 
   assert.doesNotMatch(capabilityCatalogSource, /XENESIS_NATURAL_TOOL_VIEW_SECTION_TARGET_SPECS\s*=\s*\[/);
   assert.doesNotMatch(capabilityCatalogSource, /XENESIS_NATURAL_MESSENGER_VIEW_SECTION_TARGET_SPECS\s*=\s*\[/);
   assert.doesNotMatch(capabilityCatalogSource, /XENESIS_NATURAL_PROVIDER_VIEW_SECTION_TARGET_SPECS\s*=\s*\[/);
+});
+
+test('natural view-section open actions are built by shared capability catalog helpers', () => {
+  assert.deepEqual(
+    buildXenesisNaturalProviderViewSectionOpenAction(
+      { id: 'codex-app-server', label: 'codex-app-server' },
+      { id: 'runtime', label: 'Runtime route' },
+    ),
+    {
+      id: 'natural-xenesis-provider-view-section-open-codex-app-server-runtime',
+      path: 'xd.xenesis.providers.views.open',
+      args: { provider: 'codex-app-server', section: 'runtime', ensureVisible: true },
+      approved: false,
+      reason: 'Open codex-app-server Runtime route provider view section from natural language request.',
+    },
+  );
+
+  assert.deepEqual(
+    buildXenesisNaturalToolViewSectionOpenAction(
+      { id: 'notion', label: 'Notion' },
+      { id: 'mcp-template', label: 'MCP template' },
+    ),
+    {
+      id: 'natural-xenesis-tool-view-section-open-notion-mcp-template',
+      path: 'xd.xenesis.tools.views.open',
+      args: { id: 'notion', section: 'mcp-template', ensureVisible: true },
+      approved: false,
+      reason: 'Open Notion MCP template tool view section from natural language request.',
+    },
+  );
+
+  assert.deepEqual(
+    buildXenesisNaturalMessengerViewSectionOpenAction(
+      { id: 'telegram', label: 'Telegram' },
+      { id: 'routing', label: 'Routing' },
+    ),
+    {
+      id: 'natural-xenesis-messenger-view-section-open-telegram-routing',
+      path: 'xd.xenesis.messengers.views.open',
+      args: { id: 'telegram', section: 'routing', ensureVisible: true },
+      approved: false,
+      reason: 'Open Telegram Routing messenger view section from natural language request.',
+    },
+  );
 });
 
 test('planXenesisDeskNaturalLanguageActions maps local CLI and MCP readbacks to CR actions', () => {

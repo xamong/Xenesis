@@ -222,6 +222,24 @@ export const XENESIS_NATURAL_DESK_ACTION_ARGS = {
 
 export const XENESIS_NATURAL_VIEW_OPEN_PATH = 'xd.views.open';
 
+export const XENESIS_NATURAL_VIEW_SECTION_OPEN_ACTION_DESCRIPTORS = {
+  provider: {
+    idPrefix: 'natural-xenesis-provider-view-section-open',
+    path: 'xd.xenesis.providers.views.open',
+    surfaceName: 'provider',
+  },
+  tool: {
+    idPrefix: 'natural-xenesis-tool-view-section-open',
+    path: 'xd.xenesis.tools.views.open',
+    surfaceName: 'tool',
+  },
+  messenger: {
+    idPrefix: 'natural-xenesis-messenger-view-section-open',
+    path: 'xd.xenesis.messengers.views.open',
+    surfaceName: 'messenger',
+  },
+} as const;
+
 export const XENESIS_NATURAL_CORE_TOOL_TARGET_SPECS = [
   {
     id: 'natural-tool-capability-explorer-open',
@@ -3839,6 +3857,57 @@ export function buildXenesisNaturalViewOpenAction(
     approved: XENESIS_DESK_ACTION_APPROVAL_STATE.pending,
     reason: view.reason,
   };
+}
+
+function buildXenesisNaturalViewSectionOpenAction(
+  descriptor: (typeof XENESIS_NATURAL_VIEW_SECTION_OPEN_ACTION_DESCRIPTORS)[keyof typeof XENESIS_NATURAL_VIEW_SECTION_OPEN_ACTION_DESCRIPTORS],
+  target: Pick<XenesisNaturalWordsTarget, 'id' | 'label'>,
+  section: Pick<XenesisNaturalWordsTarget, 'id' | 'label'>,
+  args: unknown,
+): XenesisNaturalDeskActionRequest {
+  return {
+    id: `${descriptor.idPrefix}-${target.id}-${section.id}`,
+    path: descriptor.path,
+    args,
+    approved: XENESIS_DESK_ACTION_APPROVAL_STATE.pending,
+    reason: `Open ${target.label} ${section.label} ${descriptor.surfaceName} view section from natural language request.`,
+  };
+}
+
+export function buildXenesisNaturalProviderViewSectionOpenAction(
+  provider: Pick<XenesisNaturalWordsTarget, 'id' | 'label'>,
+  section: Pick<XenesisNaturalProviderViewSectionTarget, 'id' | 'label'>,
+): XenesisNaturalDeskActionRequest {
+  return buildXenesisNaturalViewSectionOpenAction(
+    XENESIS_NATURAL_VIEW_SECTION_OPEN_ACTION_DESCRIPTORS.provider,
+    provider,
+    section,
+    XENESIS_NATURAL_DESK_ACTION_ARGS.providerViewSectionVisible(provider.id, section.id),
+  );
+}
+
+export function buildXenesisNaturalToolViewSectionOpenAction(
+  target: Pick<XenesisNaturalConnectionTarget, 'id' | 'label'>,
+  section: Pick<XenesisNaturalToolViewSectionTarget, 'id' | 'label'>,
+): XenesisNaturalDeskActionRequest {
+  return buildXenesisNaturalViewSectionOpenAction(
+    XENESIS_NATURAL_VIEW_SECTION_OPEN_ACTION_DESCRIPTORS.tool,
+    target,
+    section,
+    XENESIS_NATURAL_DESK_ACTION_ARGS.toolViewSectionVisible(target.id, section.id),
+  );
+}
+
+export function buildXenesisNaturalMessengerViewSectionOpenAction(
+  target: Pick<XenesisNaturalConnectionTarget, 'id' | 'label'>,
+  section: Pick<XenesisNaturalMessengerViewSectionTarget, 'id' | 'label'>,
+): XenesisNaturalDeskActionRequest {
+  return buildXenesisNaturalViewSectionOpenAction(
+    XENESIS_NATURAL_VIEW_SECTION_OPEN_ACTION_DESCRIPTORS.messenger,
+    target,
+    section,
+    XENESIS_NATURAL_DESK_ACTION_ARGS.messengerViewSectionVisible(target.id, section.id),
+  );
 }
 
 export function findXenesisNaturalCatalogRuleAction(

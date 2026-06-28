@@ -7,6 +7,104 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Latest Slice: Shared Natural View Section Open Actions
+
+- Current objective:
+  - Remove direct provider/tool/messenger view-section CR path construction from
+    `src/shared/xenesisNaturalLanguageActionResolvers.ts`. Natural routing
+    should resolve targets/sections, then delegate action id/path/args/reason
+    shaping to shared catalog helpers.
+- Scope:
+  - Add RED tests for shared view-section open action builders.
+  - Add source guards that block `xd.xenesis.providers.views.open`,
+    `xd.xenesis.tools.views.open`, and
+    `xd.xenesis.messengers.views.open` literals in the natural action resolver.
+  - Move provider/tool/messenger view-section action descriptors/builders into
+    `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`.
+  - Preserve existing natural prompts and CR payloads.
+- Touched files so far:
+  - `handoff.md`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
+  - `src/shared/xenesisNaturalLanguageActionResolvers.ts`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-shared-natural-view-section-open-actions.md`
+- Intended RED tests:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    should fail because the new shared builders do not exist and the resolver
+    still contains direct view-section CR path literals.
+- Exact verification result:
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> failed 47/49 as expected because the shared provider/tool/messenger
+    view-section open builders were not exported and the natural resolver still
+    contained direct view-section CR path literals.
+  - GREEN focused:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 49/49.
+- Implemented:
+  - Added shared provider/tool/messenger view-section open action descriptors
+    and builders in `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`.
+  - Refactored `src/shared/xenesisNaturalLanguageActionResolvers.ts` so it
+    resolves provider/tool/messenger targets and sections, then delegates
+    id/path/args/reason construction to the shared builders.
+- Verification status:
+  - Focused planner/source-ownership tests are green. Broad smoke/typecheck/
+    build/audit still pending.
+  - Smoke fixture:
+    `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` ->
+    passed 6/6.
+  - Typecheck attempt:
+    `npm run typecheck` -> failed because the new builder test passed unused
+    `kind` properties to helpers typed as `Pick<XenesisNaturalConnectionTarget,
+    'id' | 'label'>`.
+  - Typecheck fix:
+    Removed the unused `kind` properties from the builder test fixtures.
+  - Typecheck rerun:
+    `npm run typecheck` -> passed.
+  - Focused planner rerun after typecheck fix:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 49/49.
+  - CR audit:
+    `npm run docs:capabilities:audit` -> passed; generated audit summary
+    remained 796 nodes and 689 coverage path references.
+  - CR audit counter readback:
+    `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> all 0.
+  - Build:
+    `npm run build` -> passed. Existing Vite warnings about browser
+    externalization/dynamic import chunking were printed.
+  - Live natural Desk routing smoke:
+    `npm run smoke:xenesis:natural-desk-routing` -> passed 261/261.
+  - Focused Biome:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true ...changed files...`
+    -> failed on import ordering in
+    `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`;
+    fixed with `npx biome check --write ...changed TS files...`.
+  - Focused planner after formatting:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 49/49.
+  - Typecheck after formatting:
+    `npm run typecheck` -> passed.
+  - Focused Biome recheck:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true ...changed TS files...`
+    -> passed.
+  - Obsidian:
+    Added
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-shared-natural-view-section-open-actions.md`.
+  - Hygiene:
+    `git diff --check` -> passed; Git printed LF/CRLF normalization warnings
+    only.
+  - Audit doc cleanup check:
+    `git diff -- docs\capability-registry-audit.md` -> no actual diff after
+    timestamp/EOF cleanup.
+  - Status/diff review:
+    `git status --short` showed only this slice's code/test/handoff changes and
+    the new Obsidian working note.
+- Known gaps:
+  - Full repo lint/public-release known gaps remain unchanged.
+- Next intended step:
+  - Stage this slice's files, run staged diff hygiene, and commit.
+
 ## Current MCP OAuth Runtime Readiness Slice
 
 - Objective: increase slice size and add a CR-first, Desk-native MCP OAuth

@@ -5,8 +5,11 @@ import {
 import {
   buildXenesisNaturalCatalogAction,
   buildXenesisNaturalCoreToolOpenAction,
+  buildXenesisNaturalMessengerViewSectionOpenAction,
   buildXenesisNaturalOnboardingArgsForRule,
+  buildXenesisNaturalProviderViewSectionOpenAction,
   buildXenesisNaturalTemplateAction,
+  buildXenesisNaturalToolViewSectionOpenAction,
   findXenesisNaturalCatalogRuleAction,
   findXenesisNaturalConnectionAggregateOpenAction,
   findXenesisNaturalConnectionAggregateStatusAction,
@@ -416,13 +419,7 @@ function xenesisProviderOpenActionFromNaturalText(value: string): XenesisNatural
   if (matchesXenesisNaturalContextRules(value, [{ contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS }])) {
     const section = findXenesisNaturalProviderViewSectionTarget(value);
     if (section) {
-      return {
-        id: `natural-xenesis-provider-view-section-open-${provider.id}-${section.id}`,
-        path: 'xd.xenesis.providers.views.open',
-        args: XENESIS_NATURAL_DESK_ACTION_ARGS.providerViewSectionVisible(provider.id, section.id),
-        approved: false,
-        reason: `Open ${provider.label} ${section.label} provider view section from natural language request.`,
-      };
+      return buildXenesisNaturalProviderViewSectionOpenAction(provider, section);
     }
   }
 
@@ -442,13 +439,7 @@ function xenesisToolViewSectionOpenActionFromNaturalText(
   const section = findXenesisNaturalToolViewSectionTarget(value);
   if (!section) return null;
 
-  return {
-    id: `natural-xenesis-tool-view-section-open-${target.id}-${section.id}`,
-    path: 'xd.xenesis.tools.views.open',
-    args: XENESIS_NATURAL_DESK_ACTION_ARGS.toolViewSectionVisible(target.id, section.id),
-    approved: false,
-    reason: `Open ${target.label} ${section.label} tool view section from natural language request.`,
-  };
+  return buildXenesisNaturalToolViewSectionOpenAction(target, section);
 }
 
 function xenesisMessengerViewSectionOpenActionFromNaturalText(
@@ -464,13 +455,7 @@ function xenesisMessengerViewSectionOpenActionFromNaturalText(
   const section = findXenesisNaturalMessengerViewSectionTarget(value);
   if (!section) return null;
 
-  return {
-    id: `natural-xenesis-messenger-view-section-open-${target.id}-${section.id}`,
-    path: 'xd.xenesis.messengers.views.open',
-    args: XENESIS_NATURAL_DESK_ACTION_ARGS.messengerViewSectionVisible(target.id, section.id),
-    approved: false,
-    reason: `Open ${target.label} ${section.label} messenger view section from natural language request.`,
-  };
+  return buildXenesisNaturalMessengerViewSectionOpenAction(target, section);
 }
 
 function xenesisGuideCatalogOpenActionFromNaturalText(value: string): XenesisNaturalDeskActionRequest | null {
