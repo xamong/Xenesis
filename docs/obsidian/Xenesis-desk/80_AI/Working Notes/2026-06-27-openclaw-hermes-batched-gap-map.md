@@ -4157,6 +4157,54 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Shared Natural Language Planner Refactor Slice
+
+- Continued the larger hardcoding cleanup with a bigger slice by moving the
+  Xenesis Agent natural-language planner helper graph from
+  `xenesisAgentDeskControl.ts` into shared module
+  `xenesisNaturalLanguagePlanner.ts`.
+- Intended change:
+  - shared planner owns intent gating, catalog rule plan construction,
+    Connection Center open/readback routing, runtime readbacks/control,
+    workspace binding routing, generic Desk routing order,
+    terminal/explorer/layout route assembly, and empty-plan construction;
+  - renderer control keeps the existing public
+    `planXenesisDeskNaturalLanguageActions` export for compatibility but
+    delegates to the shared planner;
+  - source guards prevent reintroducing planner-local natural-language helper
+    functions, natural rule imports, matcher/finder use, and route assembly in
+    the renderer control file.
+- Scope boundary:
+  - Refactor ownership only.
+  - Preserve route order, natural-language prompt outputs, CR paths, args,
+    approval flags, visible text, parser/execution wrappers, and UI behavior.
+  - No CR schema, dispatcher, provider, approval, Action Inbox mutation, or
+    live CR behavior changes.
+- RED verification:
+  - Focused Agent Desk Control test failed as expected with 36/37 passing. The
+    new source guard failed on planner-local
+    `function hasExplicitOpenIntent`.
+- Implementation:
+  - Added `src/shared/xenesisNaturalLanguagePlanner.ts`.
+  - Moved the natural-language planner helper graph and full
+    `planXenesisDeskNaturalLanguageActions` implementation into the shared
+    planner.
+  - Replaced the renderer implementation with a compatibility wrapper.
+  - Updated source guards to read and validate the shared planner module.
+- Verification:
+  - Focused Agent Desk Control test passed with 37/37 tests.
+  - Capability, connection catalog, and Agent Desk Control tests passed with
+    103/103 tests.
+  - Scoped Biome check passed after a Biome organizeImports safe fix.
+  - `npm run typecheck`, `npm run build`,
+    `npm run smoke:xenesis:natural-desk-routing`, and `git diff --check`
+    passed. `build` reported existing Vite warnings only; `diff --check`
+    reported LF-to-CRLF working-copy warnings only.
+  - CR audit was skipped because this slice only refactors planner ownership
+    and does not change registry, dispatcher, or capability coverage.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
