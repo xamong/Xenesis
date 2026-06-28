@@ -1189,7 +1189,13 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   );
   assert.deepEqual(
     XENESIS_NATURAL_GATEWAY_ACTION_RULES.map((rule) => rule.action.path),
-    ['xd.xenesis.gateway.openDashboard', 'xd.xenesis.gateway.status'],
+    [
+      'xd.xenesis.gateway.restart',
+      'xd.xenesis.gateway.start',
+      'xd.xenesis.gateway.stop',
+      'xd.xenesis.gateway.openDashboard',
+      'xd.xenesis.gateway.status',
+    ],
   );
   assert.deepEqual(
     XENESIS_NATURAL_RUNTIME_INVENTORY_RULES.map((rule) => ({
@@ -2824,6 +2830,9 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.mcp\.settings\.status/);
   assert.match(hint, /xd\.mcp\.bridge\.status/);
   assert.match(hint, /xd\.xenesis\.gateway\.status/);
+  assert.match(hint, /xd\.xenesis\.gateway\.start/);
+  assert.match(hint, /xd\.xenesis\.gateway\.stop/);
+  assert.match(hint, /xd\.xenesis\.gateway\.restart/);
   assert.match(hint, /xd\.xenesis\.gateway\.openDashboard/);
   assert.match(hint, /xd\.xenesis\.workspace\.set/);
   assert.match(hint, /xd\.xenesis\.diagnostics/);
@@ -2975,6 +2984,40 @@ test('planXenesisDeskNaturalLanguageActions maps gateway read and dashboard prom
       args: {},
       approved: false,
       reason: 'Open Xenesis gateway dashboard from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('게이트웨이 시작해줘').actions, [
+    {
+      id: 'natural-xenesis-gateway-start',
+      path: 'xd.xenesis.gateway.start',
+      args: {},
+      approved: false,
+      reason: 'Start Xenesis gateway from natural language request.',
+    },
+  ]);
+  assert.equal(
+    planXenesisDeskNaturalLanguageActions('게이트웨이 시작해줘').visibleText,
+    'Xenesis gateway 제어 요청을 기록합니다.',
+  );
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('gateway stop 해줘').actions, [
+    {
+      id: 'natural-xenesis-gateway-stop',
+      path: 'xd.xenesis.gateway.stop',
+      args: {},
+      approved: false,
+      reason: 'Stop Xenesis gateway from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('Xenesis gateway 재시작해줘').actions, [
+    {
+      id: 'natural-xenesis-gateway-restart',
+      path: 'xd.xenesis.gateway.restart',
+      args: {},
+      approved: false,
+      reason: 'Restart Xenesis gateway from natural language request.',
     },
   ]);
 

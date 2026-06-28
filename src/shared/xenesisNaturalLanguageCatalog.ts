@@ -876,6 +876,7 @@ export const XENESIS_NATURAL_PLAN_VISIBLE_TEXT = {
   fileContentRead: '파일 내용을 읽습니다.',
   fileOpen: '파일을 엽니다.',
   filesListRead: '열린 파일 목록을 조회합니다.',
+  gatewayLifecycleRecorded: 'Xenesis gateway 제어 요청을 기록합니다.',
   gatewayStatusOrOpen: 'Xenesis gateway 상태를 조회하거나 엽니다.',
   localCliMcpStatusRead: '로컬 CLI/MCP 상태를 조회합니다.',
   actionInboxListRead: 'Action Inbox 목록을 조회합니다.',
@@ -896,6 +897,12 @@ export const XENESIS_NATURAL_PLAN_VISIBLE_TEXT = {
 } as const;
 
 export const XENESIS_NATURAL_EXPLICIT_OPEN_WORDS = ['열어', '켜줘', '띄워', '포커스', '집중'] as const;
+
+export const XENESIS_NATURAL_GATEWAY_RESTART_CONTEXT_WORDS = ['재시작', '다시 시작', 'restart'] as const;
+
+export const XENESIS_NATURAL_GATEWAY_START_CONTEXT_WORDS = ['시작', '켜', 'start', 'run'] as const;
+
+export const XENESIS_NATURAL_GATEWAY_STOP_CONTEXT_WORDS = ['중지', '정지', '꺼', 'stop'] as const;
 
 export const XENESIS_NATURAL_ACTION_INTENT_WORDS = [
   '열어',
@@ -945,6 +952,9 @@ export const XENESIS_NATURAL_ACTION_INTENT_WORDS = [
   '폭',
   '너비',
   '크기',
+  ...XENESIS_NATURAL_GATEWAY_RESTART_CONTEXT_WORDS,
+  ...XENESIS_NATURAL_GATEWAY_START_CONTEXT_WORDS,
+  ...XENESIS_NATURAL_GATEWAY_STOP_CONTEXT_WORDS,
   'open',
   'show',
   'display',
@@ -1930,7 +1940,7 @@ export const XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES = [
   '- Use `xd.xenesis.connections.setupRequests.apply` only for generic connection setup apply requests; it delegates to already-ready approval-gated setup apply paths and keeps planned OAuth, token storage, provider tool execution, messages, and external system mutations blocked.',
   '- Use provider setup, setup-plan, routing, view, and profile-draft CR paths from the Capability Registry before changing provider-related Desk state. Provider setup plans are review-only orchestration metadata available through `xd.xenesis.providers.setupPlans.status` and `xd.xenesis.providers.setupPlans.open`; they do not change provider settings, store raw secrets, edit fallback chains, change local CLI selection, run provider prompts, or bypass approvals.',
   '- Use `xd.localCli.scan`, `xd.mcp.settings.status`, and `xd.mcp.bridge.status` to inspect local CLI discovery and MCP setup or bridge readiness before suggesting installs, config writes, gateway starts, or local CLI switching.',
-  '- Use `xd.xenesis.gateway.status` to inspect runtime gateway readiness and `xd.xenesis.gateway.openDashboard` to open the Desk gateway dashboard; do not start, stop, or restart the gateway unless the user clearly asks and approval policy is satisfied.',
+  '- Use `xd.xenesis.gateway.status` to inspect runtime gateway readiness, `xd.xenesis.gateway.openDashboard` to open the Desk gateway dashboard, and `xd.xenesis.gateway.start`, `xd.xenesis.gateway.stop`, or `xd.xenesis.gateway.restart` only when the user clearly asks and approval policy is satisfied.',
   '- Use `xd.xenesis.workspace.set` only when the user clearly asks to bind the Xenesis workspace to a specific local path; leave approval handling to the Capability Registry, especially for outside-workspace paths.',
   '- Use `xd.xenesis.status` to inspect gateway, workspace, and active-run status before starting runs, changing workspaces, or troubleshooting runtime setup.',
   '- Use `xd.xenesis.diagnostics`, `xd.xenesis.reports.list`, `xd.xenesis.tasks.list`, `xd.xenesis.agents.list`, `xd.xenesis.agents.status`, `xd.xenesis.agents.events`, and `xd.xenesis.agents.submit` to inspect runtime diagnostics, verification reports, task inventory, registered Agent panes, quoted Agent pane status/events, or submit a quoted Agent pane message before mutating broader runtime state. Agent status/events require `args.agentId`; Agent submit requires `args.agentId` and `args.text`.',

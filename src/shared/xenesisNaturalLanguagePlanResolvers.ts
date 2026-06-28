@@ -44,6 +44,7 @@ import {
   XENESIS_NATURAL_EXPLORER_FILTER_RULES,
   XENESIS_NATURAL_EXPLORER_NAVIGATE_RULES,
   XENESIS_NATURAL_EXPLORER_SIMPLE_RULES,
+  XENESIS_NATURAL_GATEWAY_LIFECYCLE_PLAN_PATHS,
   XENESIS_NATURAL_RUNTIME_VISIBLE_PLAN_PATHS,
   XENESIS_NATURAL_TERMINAL_LIST_RULES,
   XENESIS_NATURAL_TERMINAL_MANY_RULES,
@@ -176,7 +177,12 @@ export function localCliMcpReadbackPlanFromNaturalText(value: string): XenesisNa
 export function xenesisGatewayPlanFromNaturalText(value: string): XenesisNaturalLanguagePlan | null {
   const action = xenesisGatewayActionFromNaturalText(value);
   if (!action) return null;
-  return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.gatewayStatusOrOpen, [action]);
+  const visibleText = XENESIS_NATURAL_GATEWAY_LIFECYCLE_PLAN_PATHS.includes(
+    action.path as (typeof XENESIS_NATURAL_GATEWAY_LIFECYCLE_PLAN_PATHS)[number],
+  )
+    ? XENESIS_NATURAL_PLAN_VISIBLE_TEXT.gatewayLifecycleRecorded
+    : XENESIS_NATURAL_PLAN_VISIBLE_TEXT.gatewayStatusOrOpen;
+  return buildXenesisNaturalLanguagePlan(visibleText, [action]);
 }
 
 export function xenesisRuntimeInventoryPlanFromNaturalText(

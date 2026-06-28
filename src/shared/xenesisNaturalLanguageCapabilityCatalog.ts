@@ -48,6 +48,9 @@ import {
   XENESIS_NATURAL_FILE_READ_CONTEXT_WORDS,
   XENESIS_NATURAL_FILTER_CONTEXT_WORDS,
   XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS,
+  XENESIS_NATURAL_GATEWAY_RESTART_CONTEXT_WORDS,
+  XENESIS_NATURAL_GATEWAY_START_CONTEXT_WORDS,
+  XENESIS_NATURAL_GATEWAY_STOP_CONTEXT_WORDS,
   XENESIS_NATURAL_GENERIC_CLOSE_CONTEXT_WORDS,
   XENESIS_NATURAL_GENERIC_FOCUS_CONTEXT_WORDS,
   XENESIS_NATURAL_GENERIC_LIST_CONTEXT_WORDS,
@@ -703,6 +706,21 @@ export const XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS = {
     path: 'xd.xenesis.gateway.openDashboard',
     reason: 'Open Xenesis gateway dashboard from natural language request.',
   },
+  gatewayStart: {
+    id: 'natural-xenesis-gateway-start',
+    path: 'xd.xenesis.gateway.start',
+    reason: 'Start Xenesis gateway from natural language request.',
+  },
+  gatewayStop: {
+    id: 'natural-xenesis-gateway-stop',
+    path: 'xd.xenesis.gateway.stop',
+    reason: 'Stop Xenesis gateway from natural language request.',
+  },
+  gatewayRestart: {
+    id: 'natural-xenesis-gateway-restart',
+    path: 'xd.xenesis.gateway.restart',
+    reason: 'Restart Xenesis gateway from natural language request.',
+  },
   gatewayStatus: {
     id: 'natural-xenesis-gateway-status',
     path: 'xd.xenesis.gateway.status',
@@ -779,6 +797,12 @@ export const XENESIS_NATURAL_RUNTIME_VISIBLE_PLAN_PATHS = {
   actionInboxList: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.actionInboxList.path,
 } as const;
 
+export const XENESIS_NATURAL_GATEWAY_LIFECYCLE_PLAN_PATHS = [
+  XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.gatewayStart.path,
+  XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.gatewayStop.path,
+  XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.gatewayRestart.path,
+] as const;
+
 export const XENESIS_NATURAL_AGENT_READBACK_RULES = [
   {
     contextWords: XENESIS_NATURAL_AGENT_EVENT_CONTEXT_WORDS,
@@ -841,6 +865,22 @@ export const XENESIS_NATURAL_RUNTIME_SUPPORT_RULES = [
 ] as const satisfies readonly XenesisNaturalCatalogActionRule[];
 
 export const XENESIS_NATURAL_GATEWAY_ACTION_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS,
+    requiredContextWordGroups: [XENESIS_NATURAL_GATEWAY_RESTART_CONTEXT_WORDS],
+    action: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.gatewayRestart,
+  },
+  {
+    contextWords: XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS,
+    requiredContextWordGroups: [XENESIS_NATURAL_GATEWAY_START_CONTEXT_WORDS],
+    blockedContextWords: XENESIS_NATURAL_GATEWAY_RESTART_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.gatewayStart,
+  },
+  {
+    contextWords: XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS,
+    requiredContextWordGroups: [XENESIS_NATURAL_GATEWAY_STOP_CONTEXT_WORDS],
+    action: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.gatewayStop,
+  },
   {
     contextWords: XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS,
     requiredContextWordGroups: [XENESIS_NATURAL_DASHBOARD_CONTEXT_WORDS, XENESIS_NATURAL_OPEN_OR_SHOW_WORDS],

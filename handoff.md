@@ -14818,3 +14818,86 @@ Verification so far:
 - Next intended step:
   - Run final whitespace check, add Obsidian working note, stage, and commit
     this action request de-hardcoding slice.
+
+## Current Gateway Lifecycle Natural Routing Slice
+
+- Current objective:
+  - Return from routing de-hardcoding to the original OpenClaw/Hermes parity
+    goal by wiring existing Xenesis gateway lifecycle CR paths into
+    deterministic Agent natural-language routing.
+- Rationale:
+  - `xd.xenesis.gateway.start`, `xd.xenesis.gateway.stop`, and
+    `xd.xenesis.gateway.restart` already exist in the Capability Registry and
+    onboarding guided steps, and the prompt hint says they are allowed only on
+    clear user intent with approval policy satisfied.
+  - The current natural-language planner only routes gateway status and
+    dashboard prompts, so prompts such as `게이트웨이 시작해줘` do not reach the
+    CR lifecycle paths.
+  - This is directly aligned with the external messenger setup goal because
+    gateway readiness is the runtime boundary for channel delivery.
+- Scope:
+  - Add RED tests for gateway start/stop/restart natural routing.
+  - Add prompt hint direct-path coverage for the lifecycle CR paths.
+  - Keep broad live smoke on non-mutating/read/open and existing safe approval
+    prompts. Gateway lifecycle prompts are intentionally excluded from broad
+    smoke because the current CR `control` policy can execute those paths in a
+    development Electron instance instead of stopping at approval.
+- Touched files:
+  - `handoff.md`
+  - `src/shared/xenesisNaturalLanguageCatalog.ts`
+  - `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
+  - `src/shared/xenesisNaturalLanguagePlanResolvers.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `docs/capability-registry-audit.md`
+- Commands run:
+  - `git status --short --branch` -> clean `agent/upcoming-work-20260627`.
+  - Required repo/Obsidian reads: `AGENTS.md`, repo-local Obsidian index, AI
+    rules, graph schema, review policy, source-of-truth map, repo overview,
+    relevant module/architecture notes, cached OpenClaw/Hermes gap map.
+  - Code reads over gateway CR registry, natural action resolver/catalog,
+    Agent Desk Control tests, and natural routing live smoke scripts.
+  - RED: `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> failed 39/41; missing prompt hint paths and planner returned `[]` for
+    `게이트웨이 시작해줘`.
+  - RED: `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
+    -> failed 5/6 while temporary lifecycle smoke cases were present.
+  - First GREEN:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 41/41.
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` -> passed
+    6/6 after removing unsafe lifecycle cases from broad smoke.
+  - Debug reproduction:
+    `npm run smoke:xenesis:natural-desk-routing` with temporary lifecycle cases
+    -> failed 183/189; raw `submitPrompt` evidence showed lifecycle prompts can
+    mutate the development Electron gateway instead of producing a safe approval
+    stop, so those cases are not suitable for broad live smoke.
+  - Final `npm run typecheck` -> passed.
+  - Final scoped Biome:
+    `npx biome check src\shared\xenesisNaturalLanguageCatalog.ts src\shared\xenesisNaturalLanguageCapabilityCatalog.ts src\shared\xenesisNaturalLanguagePlanResolvers.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts scripts\xenesisNaturalDeskRoutingLiveSmoke.mjs scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
+    -> checked 6 files, no fixes applied.
+  - `npm run docs:capabilities:audit` -> passed, wrote
+    `docs/capability-registry-audit.md`.
+  - `rg -n "Missing|Undispatched|Dispatcher paths missing" docs\capability-registry-audit.md`
+    -> missing registered paths 0, missing dispatched coverage paths 0,
+    undispatched static callable methods 0, dispatcher paths missing from tree
+    0.
+  - Final `npm run smoke:xenesis:natural-desk-routing` -> passed 180/180.
+  - `git diff --check` -> passed; CRLF warnings only.
+- Implemented:
+  - Added gateway lifecycle intent words for start/stop/restart and included
+    them in the natural action-intent gate.
+  - Added runtime action descriptors and catalog rules for
+    `xd.xenesis.gateway.start`, `xd.xenesis.gateway.stop`, and
+    `xd.xenesis.gateway.restart`.
+  - Added prompt hint coverage for the lifecycle CR paths.
+  - Added gateway lifecycle visible text so start/stop/restart requests are
+    shown as gateway control requests rather than status/open requests.
+  - Added planner regression tests for Korean/English lifecycle prompts with
+    `approved=false`.
+- Known gaps:
+  - Natural-language routing remains deterministic catalog routing, not model
+    reasoning.
+  - No broad live smoke executes gateway start/stop/restart because those CR
+    paths are mutable lifecycle controls in the current development app.
+- Next intended step:
+  - Add Obsidian working note, stage, and commit this slice.
