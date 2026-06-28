@@ -82,6 +82,18 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     expectedVisibleText: 'Desk action completed',
   },
   {
+    id: 'tool-mcp-install-drafts-status',
+    prompt: '외부 툴 MCP 설치 초안 전체 상태 보여줘',
+    expectedPath: 'xd.xenesis.tools.mcpInstallDrafts.status',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'tool-action-policy-status',
+    prompt: '외부 툴 action policy catalog 상태 보여줘',
+    expectedPath: 'xd.xenesis.tools.actions.status',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
     id: 'tool-user-stories-status',
     prompt: '외부 툴 user stories 상태 보여줘',
     expectedPath: 'xd.xenesis.tools.userStories.status',
@@ -97,6 +109,24 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     id: 'google-chat-routing-status',
     prompt: '구글 챗 라우팅 상태 보여줘',
     expectedPath: 'xd.xenesis.channels.routing.status',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'channel-safety-status',
+    prompt: '외부 채널 safety catalog 상태 보여줘',
+    expectedPath: 'xd.xenesis.channels.safety.status',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'channel-access-groups-status',
+    prompt: '외부 채널 access groups catalog 상태 보여줘',
+    expectedPath: 'xd.xenesis.channels.accessGroups.status',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'channel-pairing-status',
+    prompt: '외부 채널 pairing catalog 상태 보여줘',
+    expectedPath: 'xd.xenesis.channels.pairing.status',
     expectedVisibleText: 'Desk action completed',
   },
   {

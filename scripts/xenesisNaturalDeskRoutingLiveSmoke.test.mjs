@@ -87,6 +87,18 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
       expectedVisibleText: 'Desk action completed',
     },
     {
+      id: 'tool-mcp-install-drafts-status',
+      prompt: '외부 툴 MCP 설치 초안 전체 상태 보여줘',
+      expectedPath: 'xd.xenesis.tools.mcpInstallDrafts.status',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
+      id: 'tool-action-policy-status',
+      prompt: '외부 툴 action policy catalog 상태 보여줘',
+      expectedPath: 'xd.xenesis.tools.actions.status',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
       id: 'tool-user-stories-status',
       prompt: '외부 툴 user stories 상태 보여줘',
       expectedPath: 'xd.xenesis.tools.userStories.status',
@@ -102,6 +114,24 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
       id: 'google-chat-routing-status',
       prompt: '구글 챗 라우팅 상태 보여줘',
       expectedPath: 'xd.xenesis.channels.routing.status',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
+      id: 'channel-safety-status',
+      prompt: '외부 채널 safety catalog 상태 보여줘',
+      expectedPath: 'xd.xenesis.channels.safety.status',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
+      id: 'channel-access-groups-status',
+      prompt: '외부 채널 access groups catalog 상태 보여줘',
+      expectedPath: 'xd.xenesis.channels.accessGroups.status',
+      expectedVisibleText: 'Desk action completed',
+    },
+    {
+      id: 'channel-pairing-status',
+      prompt: '외부 채널 pairing catalog 상태 보여줘',
+      expectedPath: 'xd.xenesis.channels.pairing.status',
       expectedVisibleText: 'Desk action completed',
     },
     {
@@ -152,9 +182,14 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
   assert.match(plan, /AI provider profile draft 상태 보여줘/);
   assert.match(plan, /노션 connector 열어줘/);
   assert.match(plan, /구글 캘린더 OAuth 상태 보여줘/);
+  assert.match(plan, /외부 툴 MCP 설치 초안 전체 상태 보여줘/);
+  assert.match(plan, /외부 툴 action policy catalog 상태 보여줘/);
   assert.match(plan, /외부 툴 user stories 상태 보여줘/);
   assert.match(plan, /외부 툴 install plans catalog 열어줘/);
   assert.match(plan, /구글 챗 라우팅 상태 보여줘/);
+  assert.match(plan, /외부 채널 safety catalog 상태 보여줘/);
+  assert.match(plan, /외부 채널 access groups catalog 상태 보여줘/);
+  assert.match(plan, /외부 채널 pairing catalog 상태 보여줘/);
   assert.match(plan, /외부 채널 user stories catalog 상태 보여줘/);
   assert.match(plan, /channel profile draft 전체 상태 보여줘/);
   assert.match(plan, /텔레그램 setup 열어줘/);
@@ -169,9 +204,14 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
   assert.match(plan, /xd\.xenesis\.providers\.profileDrafts\.status/);
   assert.match(plan, /xd\.xenesis\.tools\.connectors\.open/);
   assert.match(plan, /xd\.xenesis\.tools\.oauthDrafts\.status/);
+  assert.match(plan, /xd\.xenesis\.tools\.mcpInstallDrafts\.status/);
+  assert.match(plan, /xd\.xenesis\.tools\.actions\.status/);
   assert.match(plan, /xd\.xenesis\.tools\.userStories\.status/);
   assert.match(plan, /xd\.xenesis\.tools\.installPlans\.open/);
   assert.match(plan, /xd\.xenesis\.channels\.routing\.status/);
+  assert.match(plan, /xd\.xenesis\.channels\.safety\.status/);
+  assert.match(plan, /xd\.xenesis\.channels\.accessGroups\.status/);
+  assert.match(plan, /xd\.xenesis\.channels\.pairing\.status/);
   assert.match(plan, /xd\.xenesis\.channels\.userStories\.status/);
   assert.match(plan, /xd\.xenesis\.channels\.profileDrafts\.status/);
   assert.match(plan, /xd\.xenesis\.messengers\.views\.open/);

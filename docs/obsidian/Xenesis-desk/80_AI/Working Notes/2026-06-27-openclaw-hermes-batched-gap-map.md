@@ -4584,6 +4584,51 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Channel/Tool Status Natural Live Smoke Expansion Slice
+
+- Continued the larger OpenClaw/Hermes coverage pass by broadening the
+  repeatable Agent-pane natural Desk routing live smoke from 18 prompt cases to
+  23 prompt cases.
+- Added live-smoked read/status surfaces for:
+  - External tool MCP install-draft catalog status:
+    `xd.xenesis.tools.mcpInstallDrafts.status`.
+  - External tool action-policy catalog status:
+    `xd.xenesis.tools.actions.status`.
+  - External channel safety catalog status:
+    `xd.xenesis.channels.safety.status`.
+  - External channel access-group catalog status:
+    `xd.xenesis.channels.accessGroups.status`.
+  - External channel pairing catalog status:
+    `xd.xenesis.channels.pairing.status`.
+- Scope boundary:
+  - Smoke script/test coverage only.
+  - No natural-language planner, CR schema, dispatcher, provider runtime,
+    OAuth/install execution, messenger delivery, profile write, or Action Inbox
+    mutation behavior changed.
+- RED/GREEN:
+  - Initial RED proved the live smoke script still exported the old 18-case
+    prompt catalog while the test expected the expanded 23-case catalog.
+  - First live smoke failed 67/69 because `외부 툴 MCP install draft catalog 상태
+    보여줘` routed to `xd.xenesis.channels.profileDrafts.status`.
+  - Root cause was prompt-wording collision: English `draft catalog` matched
+    profile-draft readback routing before the intended MCP install-draft status
+    route.
+  - The MCP prompt was corrected to the existing deterministic Korean wording
+    `외부 툴 MCP 설치 초안 전체 상태 보여줘`.
+- Verification:
+  - `npx tsx --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
+    passed 4/4 after the prompt catalog update and after the wording
+    correction.
+  - Scoped Biome format/check passed for the two smoke files.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 69/69.
+  - `npm run typecheck` passed.
+  - `git diff --check` passed with LF-to-CRLF working-copy warnings only.
+  - CR audit was skipped because this slice only changes smoke scripts/tests;
+    it does not change registry, dispatcher, runtime implementation, or shared
+    route matching behavior.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
