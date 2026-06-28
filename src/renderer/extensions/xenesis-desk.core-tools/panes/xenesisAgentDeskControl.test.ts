@@ -37,6 +37,7 @@ import {
   XENESIS_NATURAL_CONNECTION_READBACK_INTENT_WORDS,
   XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CONTEXT_WORDS,
   XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS,
+  XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES,
   XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES,
   XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS,
@@ -676,11 +677,134 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.channelRouting.idFor('telegram', 'Telegram'),
     'natural-xenesis-channel-routing-status-telegram',
   );
-  assert.match(source, /XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS/);
+  assert.match(source, /XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES/);
+  assert.doesNotMatch(source, /XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS/);
   assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-connection-diagnostics-open-\$\{target\.id\}`/);
   assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-tool-mcp-install-draft-open-\$\{target\.id\}`/);
   assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-channel-routing-open-\$\{target\.id\}`/);
   assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-connection-open-\$\{target\.id\}`/);
+  assert.doesNotMatch(source, /CONNECTION_TARGET_OPEN_ACTIONS\.toolOauthDraft/);
+  assert.doesNotMatch(source, /CONNECTION_TARGET_OPEN_ACTIONS\.toolMcpInstallDraft/);
+  assert.doesNotMatch(source, /CONNECTION_TARGET_OPEN_ACTIONS\.channelRouting/);
+  assert.doesNotMatch(source, /CONNECTION_TARGET_OPEN_ACTIONS\.connectionCard/);
+  assert.deepEqual(
+    XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES.map((rule) => ({
+      targetScope: rule.targetScope,
+      argsKind: rule.argsKind,
+      path: rule.action.path,
+      fallback: 'fallback' in rule && rule.fallback === true,
+    })),
+    [
+      {
+        targetScope: 'any',
+        argsKind: 'targetIdVisible',
+        path: 'xd.xenesis.connections.diagnostics.open',
+        fallback: false,
+      },
+      {
+        targetScope: 'any',
+        argsKind: 'targetIdVisible',
+        path: 'xd.xenesis.connections.setupRequests.open',
+        fallback: false,
+      },
+      {
+        targetScope: 'planned-google-tool',
+        argsKind: 'targetIdVisible',
+        path: 'xd.xenesis.tools.oauthDrafts.open',
+        fallback: false,
+      },
+      {
+        targetScope: 'tool',
+        argsKind: 'targetIdVisible',
+        path: 'xd.xenesis.tools.mcpInstallDrafts.open',
+        fallback: false,
+      },
+      {
+        targetScope: 'tool',
+        argsKind: 'targetIdVisible',
+        path: 'xd.xenesis.tools.userStories.open',
+        fallback: false,
+      },
+      {
+        targetScope: 'tool',
+        argsKind: 'targetIdVisible',
+        path: 'xd.xenesis.tools.actions.open',
+        fallback: false,
+      },
+      {
+        targetScope: 'tool',
+        argsKind: 'targetIdVisible',
+        path: 'xd.xenesis.tools.installPlans.open',
+        fallback: false,
+      },
+      {
+        targetScope: 'tool',
+        argsKind: 'targetIdVisible',
+        path: 'xd.xenesis.tools.connectors.open',
+        fallback: false,
+      },
+      {
+        targetScope: 'tool',
+        argsKind: 'targetIdVisible',
+        path: 'xd.xenesis.tools.setup.open',
+        fallback: false,
+      },
+      {
+        targetScope: 'tool',
+        argsKind: 'targetIdVisible',
+        path: 'xd.xenesis.tools.views.open',
+        fallback: false,
+      },
+      {
+        targetScope: 'messenger',
+        argsKind: 'targetIdVisible',
+        path: 'xd.xenesis.channels.userStories.open',
+        fallback: false,
+      },
+      {
+        targetScope: 'messenger',
+        argsKind: 'channelVisible',
+        path: 'xd.xenesis.channels.profileDrafts.open',
+        fallback: false,
+      },
+      {
+        targetScope: 'messenger',
+        argsKind: 'channelVisible',
+        path: 'xd.xenesis.channels.routing.open',
+        fallback: false,
+      },
+      {
+        targetScope: 'messenger',
+        argsKind: 'channelVisible',
+        path: 'xd.xenesis.channels.safety.open',
+        fallback: false,
+      },
+      {
+        targetScope: 'messenger',
+        argsKind: 'channelVisible',
+        path: 'xd.xenesis.channels.accessGroups.open',
+        fallback: false,
+      },
+      {
+        targetScope: 'messenger',
+        argsKind: 'channelVisible',
+        path: 'xd.xenesis.channels.pairing.open',
+        fallback: false,
+      },
+      {
+        targetScope: 'messenger',
+        argsKind: 'targetIdVisible',
+        path: 'xd.xenesis.messengers.views.open',
+        fallback: false,
+      },
+      {
+        targetScope: 'any',
+        argsKind: 'targetIdVisible',
+        path: 'xd.xenesis.connections.open',
+        fallback: true,
+      },
+    ],
+  );
   assert.equal(
     XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.diagnostics.idFor('notion', 'Notion'),
     'natural-xenesis-connection-diagnostics-open-notion',

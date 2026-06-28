@@ -3037,6 +3037,42 @@
 - External documentation handling: no browsing. This used cached gap context,
   current repo code, focused tests, and live Electron verification.
 
+## Connection Target Open Rule Catalog Refactor Slice
+
+- Continued the hardcoding cleanup by moving connection target open routing out
+  of `xenesisAgentDeskControl.ts` and into shared catalog data:
+  - added `XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES`;
+  - extended target rule args kinds with `targetIdVisible` and `channelVisible`;
+  - the planner now uses the same target scope + args kind interpreter for
+    status and open rules.
+- Behavior scope:
+  - Existing open prompt semantics and CR paths are preserved. The rule catalog
+    keeps the same priority order for diagnostics, setup requests, planned
+    Google OAuth drafts, tool MCP/user-story/action-policy/install/connector/
+    setup/view opens, messenger user-story/profile/routing/safety/access/
+    pairing/view opens, and connection card fallback.
+- Scope boundary:
+  - Refactor only. No registry/dispatcher changes, provider/tool/messenger data
+    changes, setup request writes, credentials, OAuth/install execution,
+    approval behavior, or UI rendering changes.
+- Verification:
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    failed because the planner did not yet consume
+    `XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES`.
+  - GREEN:
+    the same focused planner test passed with 37/37 tests.
+  - Scoped Biome passed for `xenesisNaturalLanguageCatalog.ts`,
+    `xenesisAgentDeskControl.ts`, and `xenesisAgentDeskControl.test.ts`.
+  - `npm run typecheck` passed.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 21/21 through the live
+    Agent pane.
+  - `git diff --check` exited 0 with LF-to-CRLF warnings only.
+  - CR audit was not run because registry/dispatcher/capability code did not
+    change.
+- External documentation handling: no browsing. This used cached gap context,
+  current repo code, focused tests, and live Electron verification.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

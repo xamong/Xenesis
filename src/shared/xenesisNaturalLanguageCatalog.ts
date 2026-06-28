@@ -62,7 +62,12 @@ export interface XenesisNaturalDeskActionTemplateDescriptor<TArgs extends unknow
 
 export type XenesisNaturalConnectionTargetRuleScope = 'any' | 'tool' | 'messenger' | 'planned-google-tool';
 
-export type XenesisNaturalConnectionTargetArgsKind = 'targetId' | 'tool' | 'channel';
+export type XenesisNaturalConnectionTargetArgsKind =
+  | 'targetId'
+  | 'targetIdVisible'
+  | 'tool'
+  | 'channel'
+  | 'channelVisible';
 
 export interface XenesisNaturalConnectionTargetActionRule {
   targetScope: XenesisNaturalConnectionTargetRuleScope;
@@ -2159,6 +2164,118 @@ export const XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS = {
     reasonFor: (_id: string, label: string) => `Open ${label} connection card from natural language request.`,
   },
 } as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
+
+export const XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES = [
+  {
+    targetScope: 'any',
+    contextWords: XENESIS_NATURAL_CONNECTION_DIAGNOSTIC_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.diagnostics,
+    argsKind: 'targetIdVisible',
+  },
+  {
+    targetScope: 'any',
+    contextWords: XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.setupRequest,
+    argsKind: 'targetIdVisible',
+  },
+  {
+    targetScope: 'planned-google-tool',
+    contextWords: XENESIS_NATURAL_OAUTH_DRAFT_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.toolOauthDraft,
+    argsKind: 'targetIdVisible',
+  },
+  {
+    targetScope: 'tool',
+    contextWords: XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.toolMcpInstallDraft,
+    argsKind: 'targetIdVisible',
+  },
+  {
+    targetScope: 'tool',
+    contextWords: XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.toolUserStory,
+    argsKind: 'targetIdVisible',
+  },
+  {
+    targetScope: 'tool',
+    contextWords: XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.toolActionPolicy,
+    argsKind: 'targetIdVisible',
+  },
+  {
+    targetScope: 'tool',
+    contextWords: XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.toolInstallPlan,
+    argsKind: 'targetIdVisible',
+  },
+  {
+    targetScope: 'tool',
+    contextWords: XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.toolConnector,
+    argsKind: 'targetIdVisible',
+  },
+  {
+    targetScope: 'tool',
+    contextWords: XENESIS_NATURAL_SETUP_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.toolSetup,
+    argsKind: 'targetIdVisible',
+  },
+  {
+    targetScope: 'tool',
+    contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.toolView,
+    argsKind: 'targetIdVisible',
+  },
+  {
+    targetScope: 'messenger',
+    contextWords: XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.channelUserStory,
+    argsKind: 'targetIdVisible',
+  },
+  {
+    targetScope: 'messenger',
+    contextWords: XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.channelProfileDraft,
+    argsKind: 'channelVisible',
+  },
+  {
+    targetScope: 'messenger',
+    contextWords: XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.channelRouting,
+    argsKind: 'channelVisible',
+  },
+  {
+    targetScope: 'messenger',
+    contextWords: XENESIS_NATURAL_SAFETY_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.channelSafety,
+    argsKind: 'channelVisible',
+  },
+  {
+    targetScope: 'messenger',
+    contextWords: XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.channelAccessGroups,
+    argsKind: 'channelVisible',
+  },
+  {
+    targetScope: 'messenger',
+    contextWords: XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.channelPairing,
+    argsKind: 'channelVisible',
+  },
+  {
+    targetScope: 'messenger',
+    contextWords: XENESIS_NATURAL_MESSENGER_VIEW_OPEN_FALLBACK_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.messengerView,
+    argsKind: 'targetIdVisible',
+  },
+  {
+    targetScope: 'any',
+    contextWords: [],
+    action: XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS.connectionCard,
+    argsKind: 'targetIdVisible',
+    fallback: true,
+  },
+] as const satisfies readonly XenesisNaturalConnectionTargetActionRule[];
 
 export const XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS = {
   providerProfileDraft: {

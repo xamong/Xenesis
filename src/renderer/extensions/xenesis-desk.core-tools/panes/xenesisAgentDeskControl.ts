@@ -50,7 +50,7 @@ import {
   XENESIS_NATURAL_CONNECTION_DIAGNOSTIC_CONTEXT_WORDS,
   XENESIS_NATURAL_CONNECTION_READBACK_INTENT_WORDS,
   XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CONTEXT_WORDS,
-  XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS,
+  XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES,
   XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES,
   XENESIS_NATURAL_CONNECTION_TARGETS,
   XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS,
@@ -103,10 +103,8 @@ import {
   XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS,
   XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS,
-  XENESIS_NATURAL_MESSENGER_VIEW_OPEN_FALLBACK_CONTEXT_WORDS,
   XENESIS_NATURAL_NUMERIC_LIMITS,
   XENESIS_NATURAL_OAUTH_CONTEXT_WORDS,
-  XENESIS_NATURAL_OAUTH_DRAFT_CONTEXT_WORDS,
   XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS,
   XENESIS_NATURAL_ONBOARDING_STEP_TARGETS,
@@ -335,7 +333,6 @@ const DEFAULT_DESK_PLACEMENT = DESK_ACTION_ARG_DEFAULTS.placement;
 const EXTRACTION_PATTERNS = XENESIS_NATURAL_EXTRACTION_PATTERNS;
 const CONNECTION_AGGREGATE_OPEN_ACTIONS = XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_ACTION_DESCRIPTORS;
 const CONNECTION_AGGREGATE_STATUS_ACTIONS = XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS;
-const CONNECTION_TARGET_OPEN_ACTIONS = XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS;
 const CORE_TOOL_OPEN_REASON = XENESIS_NATURAL_CORE_TOOL_OPEN_REASON;
 const GUIDE_ACTIONS = XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS;
 const INTENT_PATTERNS = XENESIS_NATURAL_INTENT_PATTERNS;
@@ -494,7 +491,9 @@ function xenesisConnectionTargetArgsForRule(
   target: XenesisNaturalConnectionTarget,
 ): unknown {
   if (rule.argsKind === 'targetId') return DESK_ACTION_ARGS.targetId(target.id);
+  if (rule.argsKind === 'targetIdVisible') return DESK_ACTION_ARGS.targetIdVisible(target.id);
   if (rule.argsKind === 'tool') return DESK_ACTION_ARGS.tool(target.id);
+  if (rule.argsKind === 'channelVisible') return DESK_ACTION_ARGS.channelVisible(target.id);
   return DESK_ACTION_ARGS.channel(target.id);
 }
 
@@ -503,6 +502,23 @@ function xenesisConnectionTargetStatusActionFromNaturalText(
   target: XenesisNaturalConnectionTarget,
 ): XenesisDeskActionRequest | null {
   for (const rule of XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES) {
+    if (!xenesisConnectionTargetMatchesRule(target, rule)) continue;
+    if (rule.contextWords.length > 0 && !hasAny(value, rule.contextWords)) continue;
+    return naturalTemplateAction(
+      rule.action,
+      [target.id, target.label],
+      xenesisConnectionTargetArgsForRule(rule, target),
+    );
+  }
+
+  return null;
+}
+
+function xenesisConnectionTargetOpenActionFromNaturalText(
+  value: string,
+  target: XenesisNaturalConnectionTarget,
+): XenesisDeskActionRequest | null {
+  for (const rule of XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES) {
     if (!xenesisConnectionTargetMatchesRule(target, rule)) continue;
     if (rule.contextWords.length > 0 && !hasAny(value, rule.contextWords)) continue;
     return naturalTemplateAction(
@@ -1070,156 +1086,10 @@ function xenesisConnectionActionFromNaturalText(value: string): XenesisDeskActio
   const target = xenesisConnectionTargetFromNaturalText(value);
   if (!target) return null;
 
-  if (hasAny(value, XENESIS_NATURAL_CONNECTION_DIAGNOSTIC_CONTEXT_WORDS)) {
-    return naturalTemplateAction(
-      CONNECTION_TARGET_OPEN_ACTIONS.diagnostics,
-      [target.id, target.label],
-      DESK_ACTION_ARGS.targetIdVisible(target.id),
-    );
-  }
+  const targetOpenAction = xenesisConnectionTargetOpenActionFromNaturalText(value, target);
+  if (targetOpenAction) return targetOpenAction;
 
-  if (hasAny(value, XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CONTEXT_WORDS)) {
-    return naturalTemplateAction(
-      CONNECTION_TARGET_OPEN_ACTIONS.setupRequest,
-      [target.id, target.label],
-      DESK_ACTION_ARGS.targetIdVisible(target.id),
-    );
-  }
-
-  if (isXenesisNaturalPlannedGoogleToolTarget(target) && hasAny(value, XENESIS_NATURAL_OAUTH_DRAFT_CONTEXT_WORDS)) {
-    return naturalTemplateAction(
-      CONNECTION_TARGET_OPEN_ACTIONS.toolOauthDraft,
-      [target.id, target.label],
-      DESK_ACTION_ARGS.targetIdVisible(target.id),
-    );
-  }
-
-  if (isXenesisNaturalConnectionToolTarget(target) && hasAny(value, XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS)) {
-    return naturalTemplateAction(
-      CONNECTION_TARGET_OPEN_ACTIONS.toolMcpInstallDraft,
-      [target.id, target.label],
-      DESK_ACTION_ARGS.targetIdVisible(target.id),
-    );
-  }
-
-  if (isXenesisNaturalConnectionToolTarget(target) && hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
-    return naturalTemplateAction(
-      CONNECTION_TARGET_OPEN_ACTIONS.toolUserStory,
-      [target.id, target.label],
-      DESK_ACTION_ARGS.targetIdVisible(target.id),
-    );
-  }
-
-  if (isXenesisNaturalConnectionToolTarget(target) && hasAny(value, XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS)) {
-    return naturalTemplateAction(
-      CONNECTION_TARGET_OPEN_ACTIONS.toolActionPolicy,
-      [target.id, target.label],
-      DESK_ACTION_ARGS.targetIdVisible(target.id),
-    );
-  }
-
-  if (isXenesisNaturalConnectionToolTarget(target) && hasAny(value, XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS)) {
-    return naturalTemplateAction(
-      CONNECTION_TARGET_OPEN_ACTIONS.toolInstallPlan,
-      [target.id, target.label],
-      DESK_ACTION_ARGS.targetIdVisible(target.id),
-    );
-  }
-
-  if (isXenesisNaturalConnectionToolTarget(target) && hasAny(value, XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS)) {
-    return naturalTemplateAction(
-      CONNECTION_TARGET_OPEN_ACTIONS.toolConnector,
-      [target.id, target.label],
-      DESK_ACTION_ARGS.targetIdVisible(target.id),
-    );
-  }
-
-  if (isXenesisNaturalConnectionToolTarget(target) && hasAny(value, XENESIS_NATURAL_SETUP_CONTEXT_WORDS)) {
-    return naturalTemplateAction(
-      CONNECTION_TARGET_OPEN_ACTIONS.toolSetup,
-      [target.id, target.label],
-      DESK_ACTION_ARGS.targetIdVisible(target.id),
-    );
-  }
-
-  if (isXenesisNaturalConnectionToolTarget(target) && hasAny(value, XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS)) {
-    return naturalTemplateAction(
-      CONNECTION_TARGET_OPEN_ACTIONS.toolView,
-      [target.id, target.label],
-      DESK_ACTION_ARGS.targetIdVisible(target.id),
-    );
-  }
-
-  if (isXenesisNaturalConnectionMessengerTarget(target) && hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
-    return naturalTemplateAction(
-      CONNECTION_TARGET_OPEN_ACTIONS.channelUserStory,
-      [target.id, target.label],
-      DESK_ACTION_ARGS.targetIdVisible(target.id),
-    );
-  }
-
-  if (isXenesisNaturalConnectionMessengerTarget(target) && hasAny(value, XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS)) {
-    return naturalTemplateAction(
-      CONNECTION_TARGET_OPEN_ACTIONS.channelProfileDraft,
-      [target.id, target.label],
-      DESK_ACTION_ARGS.channelVisible(target.id),
-    );
-  }
-
-  if (
-    isXenesisNaturalConnectionMessengerTarget(target) &&
-    hasAny(value, XENESIS_NATURAL_MESSENGER_ROUTING_CONTEXT_WORDS)
-  ) {
-    return naturalTemplateAction(
-      CONNECTION_TARGET_OPEN_ACTIONS.channelRouting,
-      [target.id, target.label],
-      DESK_ACTION_ARGS.channelVisible(target.id),
-    );
-  }
-
-  if (isXenesisNaturalConnectionMessengerTarget(target) && hasAny(value, XENESIS_NATURAL_SAFETY_CONTEXT_WORDS)) {
-    return naturalTemplateAction(
-      CONNECTION_TARGET_OPEN_ACTIONS.channelSafety,
-      [target.id, target.label],
-      DESK_ACTION_ARGS.channelVisible(target.id),
-    );
-  }
-
-  if (isXenesisNaturalConnectionMessengerTarget(target) && hasAny(value, XENESIS_NATURAL_ACCESS_GROUP_CONTEXT_WORDS)) {
-    return naturalTemplateAction(
-      CONNECTION_TARGET_OPEN_ACTIONS.channelAccessGroups,
-      [target.id, target.label],
-      DESK_ACTION_ARGS.channelVisible(target.id),
-    );
-  }
-
-  if (
-    isXenesisNaturalConnectionMessengerTarget(target) &&
-    hasAny(value, XENESIS_NATURAL_MESSENGER_PAIRING_CONTEXT_WORDS)
-  ) {
-    return naturalTemplateAction(
-      CONNECTION_TARGET_OPEN_ACTIONS.channelPairing,
-      [target.id, target.label],
-      DESK_ACTION_ARGS.channelVisible(target.id),
-    );
-  }
-
-  if (
-    isXenesisNaturalConnectionMessengerTarget(target) &&
-    hasAny(value, XENESIS_NATURAL_MESSENGER_VIEW_OPEN_FALLBACK_CONTEXT_WORDS)
-  ) {
-    return naturalTemplateAction(
-      CONNECTION_TARGET_OPEN_ACTIONS.messengerView,
-      [target.id, target.label],
-      DESK_ACTION_ARGS.targetIdVisible(target.id),
-    );
-  }
-
-  return naturalTemplateAction(
-    CONNECTION_TARGET_OPEN_ACTIONS.connectionCard,
-    [target.id, target.label],
-    DESK_ACTION_ARGS.targetIdVisible(target.id),
-  );
+  return null;
 }
 
 function localCliMcpReadbackActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
