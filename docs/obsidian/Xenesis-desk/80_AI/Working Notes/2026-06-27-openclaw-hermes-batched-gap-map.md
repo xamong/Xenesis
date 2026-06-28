@@ -4205,6 +4205,48 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Shared Desk Action Runner Refactor Slice
+
+- Continued the larger hardcoding cleanup by moving Desk action execution/run
+  helper ownership from `xenesisAgentDeskControl.ts` into shared module
+  `xenesisDeskActionRunner.ts`.
+- Intended change:
+  - shared runner owns action runner types, result collection, observational
+    activity reporting, direct CR executor invocation, call-result key decoding,
+    approval/success/failure phase selection, and thrown-error normalization;
+  - renderer control keeps existing public exports as compatibility type aliases
+    and a wrapper around the shared runner;
+  - source guards prevent reintroducing runner-local execution-loop details and
+    runner status/key constants in the renderer control file.
+- Scope boundary:
+  - Refactor ownership only.
+  - Preserve executor call order, args, approval flags, call-result decoding,
+    error normalization, activity phases, public exports, and UI behavior.
+  - No CR schema, dispatcher, provider, approval, Action Inbox mutation,
+    natural-language routing, or live CR behavior changes.
+- RED verification:
+  - Focused Agent Desk Control test failed as expected with 36/37 passing. The
+    new source guard failed on renderer-local
+    `const results: XenesisDeskActionExecutionResult[] = []`.
+- Implementation:
+  - Added `src/shared/xenesisDeskActionRunner.ts`.
+  - Moved the action execution loop and runner types into the shared runner.
+  - Replaced the renderer implementation with compatibility aliases and a
+    delegating `runXenesisDeskActions` wrapper.
+- Verification:
+  - Focused Agent Desk Control test passed with 37/37 tests.
+  - Capability, connection catalog, and Agent Desk Control tests passed with
+    103/103 tests before and after the Biome import-order fix.
+  - Scoped Biome check passed after a safe organizeImports fix.
+  - `npm run typecheck`, `npm run build`,
+    `npm run smoke:xenesis:natural-desk-routing`, and `git diff --check`
+    passed. `build` reported existing Vite warnings only; `diff --check`
+    reported LF-to-CRLF working-copy warnings only.
+  - CR audit was skipped because this slice only refactors action runner
+    ownership and does not change registry, dispatcher, or capability coverage.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

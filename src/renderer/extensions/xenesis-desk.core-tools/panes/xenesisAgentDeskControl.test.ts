@@ -205,6 +205,15 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   } catch {
     naturalPlannerSource = '';
   }
+  let actionRunnerSource = '';
+  try {
+    actionRunnerSource = readFileSync(
+      new URL('../../../../shared/xenesisDeskActionRunner.ts', import.meta.url),
+      'utf8',
+    );
+  } catch {
+    actionRunnerSource = '';
+  }
 
   assert.doesNotMatch(source, /const targets:\s*Array/);
   assert.doesNotMatch(source, /IMPLEMENTED_XENESIS_MESSENGER_IDS/);
@@ -640,10 +649,35 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.equal(XENESIS_DESK_ACTION_PROTOCOL_FORMAT.defaultActionId(0), 'desk-action-1');
   assert.equal(XENESIS_DESK_ACTION_PROTOCOL_FORMAT.actionBullet('xd.test.path', 'because'), '- xd.test.path - because');
   assert.equal(XENESIS_DESK_ACTION_PROTOCOL_FORMAT.resultBullet('xd.test.path', 'ok'), '- xd.test.path: ok');
-  assert.match(source, /XENESIS_DESK_ACTION_ACTIVITY_PHASES/);
+  for (const localRunnerDetail of [
+    'const results: XenesisDeskActionExecutionResult\\[\\] = \\[\\]',
+    'const reportActivity = \\(activity: XenesisDeskActionActivity\\)',
+    'Activity reporting is observational',
+    'await executor\\(action\\.path, action\\.args, \\{ approved: action\\.approved \\}\\)',
+    'DESK_ACTION_ACTIVITY_PHASES\\.approvalRequired',
+    'DESK_ACTION_EXECUTION_STATUS\\.isOk',
+    'callResult\\[DESK_ACTION_CALL_RESULT_KEYS\\.result\\]',
+    'error instanceof Error \\? error\\.message : String\\(error\\)',
+  ]) {
+    assert.doesNotMatch(source, new RegExp(localRunnerDetail));
+  }
+  for (const sharedRunnerExport of [
+    'export interface XenesisDeskActionCallOptions',
+    'export interface XenesisDeskActionCallResult',
+    'export interface XenesisDeskActionExecutionResult',
+    'export type XenesisDeskActionExecutor',
+    'export interface XenesisDeskActionActivity',
+    'export interface XenesisDeskActionRunOptions',
+    'export async function runXenesisDeskActions',
+  ]) {
+    assert.match(actionRunnerSource, new RegExp(sharedRunnerExport));
+  }
+  assert.doesNotMatch(source, /XENESIS_DESK_ACTION_ACTIVITY_PHASES/);
+  assert.match(actionRunnerSource, /XENESIS_DESK_ACTION_ACTIVITY_PHASES/);
   assert.doesNotMatch(source, /XENESIS_DESK_ACTION_APPROVAL_STATE/);
   assert.match(catalogSource, /XENESIS_DESK_ACTION_APPROVAL_STATE/);
-  assert.match(source, /XENESIS_DESK_ACTION_EXECUTION_STATUS/);
+  assert.doesNotMatch(source, /XENESIS_DESK_ACTION_EXECUTION_STATUS/);
+  assert.match(actionRunnerSource, /XENESIS_DESK_ACTION_EXECUTION_STATUS/);
   assert.doesNotMatch(source, /phase: 'start'/);
   assert.doesNotMatch(source, /phase: 'failure'/);
   assert.doesNotMatch(source, /'approval-required'/);
@@ -657,7 +691,8 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.equal(XENESIS_DESK_ACTION_EXECUTION_STATUS.failed, false);
   assert.equal(XENESIS_DESK_ACTION_EXECUTION_STATUS.isOk(undefined), true);
   assert.equal(XENESIS_DESK_ACTION_EXECUTION_STATUS.isOk(false), false);
-  assert.match(source, /XENESIS_DESK_ACTION_CALL_RESULT_KEYS/);
+  assert.doesNotMatch(source, /XENESIS_DESK_ACTION_CALL_RESULT_KEYS/);
+  assert.match(actionRunnerSource, /XENESIS_DESK_ACTION_CALL_RESULT_KEYS/);
   assert.doesNotMatch(source, /XENESIS_DESK_ACTION_VALUE_TYPE_NAMES/);
   assert.doesNotMatch(source, /isXenesisDeskActionRecordValue/);
   assert.doesNotMatch(source, /isXenesisDeskActionValueType/);
