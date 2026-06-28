@@ -17168,6 +17168,99 @@ Verification so far:
 - Next intended step:
   - Commit the slice from the current worktree.
 
+## 2026-06-29 - Settings User Story Workflow Preview Request Slice
+
+- Objective:
+  - Connect the new `storyContract.workflowPreview` metadata to the Settings
+    connection cards so operators can call `xd.automation.workflow.preview`
+    through the existing CR request flow before any workflow run.
+- Design:
+  - Add one generic renderer helper that finds either `item.toolUserStory` or
+    `item.channelTemplate.userStory`, extracts the
+    `DeskBridgeWorkflowInput`-shaped payload from `workflowPreview`, and builds
+    a `McpBridgeCapabilityCallRequest` for
+    `xd.automation.workflow.preview`.
+  - Keep `approved=false` on the preview call and on all preview steps; the
+    preview path is read-only and workflow run remains a separate
+    approval-gated Desk action.
+  - Add one Settings action button shared by tool and channel user-story cards,
+    using the existing `handleXenesisConnectionRequest` path.
+- Touched files so far:
+  - `handoff.md`
+  - `docs/superpowers/plans/2026-06-29-settings-user-story-workflow-preview-request.md`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.test.ts`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
+  - `docs/manual/12-agent-user-stories.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-settings-user-story-workflow-preview-request.md`
+- Commands run:
+  - `git status --short` -> clean after commit `630a09f`.
+  - Context reads for `SettingsPane.tsx`, renderer request builders/tests,
+    i18n strings, CR workflow preview dispatch, and workflow preview input
+    shape.
+  - RED renderer:
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` ->
+    failed 65/67 as expected because SettingsPane did not reference
+    `buildXenesisUserStoryWorkflowPreviewRequest` yet and the helper was not
+    exported.
+  - GREEN helper / RED Settings source:
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` ->
+    passed 66/67 after adding `buildXenesisUserStoryWorkflowPreviewRequest`;
+    the remaining failure proves SettingsPane still needs to import/use the
+    helper and render the preview button.
+  - GREEN renderer:
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` ->
+    passed 67/67 after adding the Settings action row button and i18n labels.
+  - Focused combined:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    -> passed 108/108.
+  - Typecheck:
+    `npm run typecheck` -> passed.
+  - CR audit:
+    `npm run docs:capabilities:audit` -> passed; generated audit counters
+    remained all 0. Timestamp/EOF-only audit doc churn was reverted.
+  - CR audit counter readback:
+    `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> all 0.
+  - Focused Biome:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true ...changed preview request files...`
+    -> initially failed on import ordering in `SettingsPane.tsx` and
+    `xenesisConnectionCenter.test.ts`, plus formatter wrapping in
+    `xenesisConnectionCenter.ts`; fixed and rerun -> passed.
+  - Focused combined after formatting:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    -> passed 108/108.
+  - Typecheck after formatting:
+    `npm run typecheck` -> passed.
+  - Hygiene:
+    `git diff --check` -> passed; Git printed LF/CRLF normalization warnings
+    only.
+- Implemented:
+  - Added `buildXenesisUserStoryWorkflowPreviewRequest`, which builds
+    `xd.automation.workflow.preview` requests from tool or channel user-story
+    contracts.
+  - The helper clones workflow preview step args and passes only
+    `name/description/delayMs/stopOnFail/steps` as CR workflow preview input.
+  - Settings connection cards now render a shared workflow preview button for
+    tool and channel user stories and route it through
+    `handleXenesisConnectionRequest`.
+  - Added English and Korean labels for the preview action.
+  - Manual and Obsidian working note document that this previews only and does
+    not run workflows or external actions.
+- Planned RED:
+  - Add renderer helper tests proving tool and channel user-story cards produce
+    `xd.automation.workflow.preview` requests with the workflow input payload.
+  - Add source-render tests proving SettingsPane imports the helper, creates
+    the request, includes it in the action row condition, and renders a preview
+    button string.
+- Known gaps:
+  - `npm run check:public-release` remains expected to fail because this
+    worktree is missing `.github/workflows/ci.yml`.
+- Next intended step:
+  - Commit the slice from the current worktree.
+
 ## Current CR Workflow Registry De-hardcoding Slice
 
 - Current objective:

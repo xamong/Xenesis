@@ -959,6 +959,7 @@ export const en = {
     xenesisConnectionsOpenGuide: 'Open guide',
     xenesisConnectionsRequestSetup: 'Request setup',
     xenesisConnectionsApplySetup: 'Apply setup',
+    xenesisConnectionsPreviewUserStoryWorkflow: 'Preview workflow',
     xenesisConnectionsRequestMcpInstallDraft: 'Request MCP draft',
     xenesisConnectionsApplyMcpInstallDraft: 'Apply MCP draft',
     xenesisConnectionsReadToolSetupPlan: 'Read setup plan',

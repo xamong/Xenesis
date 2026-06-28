@@ -315,6 +315,37 @@ export function formatXenesisConnectionSetupReviewSummary(review: XenesisConnect
   }`;
 }
 
+function buildXenesisUserStoryWorkflowPreviewArgs(
+  contract: XenesisConnectionUserStoryContract,
+): Record<string, unknown> {
+  const preview = contract.workflowPreview;
+  return {
+    name: preview.name,
+    description: preview.description,
+    delayMs: preview.delayMs,
+    stopOnFail: preview.stopOnFail,
+    steps: preview.steps.map((step) => ({
+      label: step.label,
+      path: step.path,
+      args: { ...step.args },
+      approved: step.approved,
+    })),
+  };
+}
+
+export function buildXenesisUserStoryWorkflowPreviewRequest(
+  item: XenesisConnectionItem,
+): McpBridgeCapabilityCallRequest | null {
+  const contract = item.toolUserStory?.storyContract ?? item.channelTemplate?.userStory?.storyContract;
+  if (!contract) return null;
+  return {
+    path: contract.workflowPreview.previewPath,
+    args: buildXenesisUserStoryWorkflowPreviewArgs(contract),
+    source: 'xenesis',
+    approved: false,
+  };
+}
+
 export function buildXenesisConnectionSettingsRequest(
   item: XenesisConnectionItem,
 ): McpBridgeCapabilityCallRequest | null {

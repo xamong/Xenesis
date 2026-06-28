@@ -39,6 +39,7 @@ import {
   buildXenesisToolOAuthSetupPacketRequest,
   buildXenesisToolRuntimeRequest,
   buildXenesisToolSetupPlanRequest,
+  buildXenesisUserStoryWorkflowPreviewRequest,
   formatXenesisChannelAccessGroupsSummary,
   formatXenesisChannelPairingSummary,
   formatXenesisChannelProfileDraftSummary,
@@ -287,6 +288,9 @@ test('SettingsPane renders Connection Center guided and review step details', ()
   assert.match(source, /formatXenesisUserStoryContractSummary/);
   assert.match(source, /formatXenesisUserStoryContractDetail/);
   assert.match(source, /xenesisConnectionsUserStoryContract/);
+  assert.match(source, /buildXenesisUserStoryWorkflowPreviewRequest/);
+  assert.match(source, /userStoryWorkflowPreviewRequest/);
+  assert.match(source, /settings\.xenesisConnectionsPreviewUserStoryWorkflow/);
 });
 
 test('SettingsPane renders the Connectors category from CR-backed tool and messenger connection cards', () => {
@@ -1087,6 +1091,162 @@ test('formatXenesisUserStoryContract helpers describe readbacks, approvals, evid
     xenesisConnectionCenter.formatXenesisUserStoryContractDetail(contract),
     'open xd.xenesis.tools.userStories.open {"id":"notion"} / read xd.xenesis.tools.userStories.status, xd.xenesis.tools.connectors.status / approvals xd.xenesis.tools.mcpInstallDrafts.apply / evidence MCP settings readback lists the Notion server before tool use.; Action Inbox records explicit setup approval. / workflow preview xd.automation.workflow.preview -> xd.automation.workflow.run / steps 3 / safety user-story contracts are read/open planning metadata / preview safety Workflow preview metadata is read/open only and does not execute provider tools, send messages, or mutate external systems.',
   );
+});
+
+test('buildXenesisUserStoryWorkflowPreviewRequest targets CR workflow preview for tool and channel stories', () => {
+  const contract: XenesisConnectionUserStoryContract = {
+    readbackPaths: ['xd.xenesis.tools.userStories.status', 'xd.xenesis.tools.connectors.status'],
+    openPath: 'xd.xenesis.tools.userStories.open',
+    openArgs: { id: 'notion' },
+    workflowPreview: {
+      previewPath: 'xd.automation.workflow.preview',
+      runPath: 'xd.automation.workflow.run',
+      name: 'notion-user-story-preview',
+      description: 'Preview notion user-story readbacks and open the Settings surface.',
+      delayMs: 0,
+      stopOnFail: true,
+      steps: [
+        {
+          label: 'Read xd.xenesis.tools.userStories.status',
+          path: 'xd.xenesis.tools.userStories.status',
+          args: {},
+          approved: false,
+        },
+        {
+          label: 'Read xd.xenesis.tools.connectors.status',
+          path: 'xd.xenesis.tools.connectors.status',
+          args: {},
+          approved: false,
+        },
+        {
+          label: 'Open user-story surface',
+          path: 'xd.xenesis.tools.userStories.open',
+          args: { id: 'notion', ensureVisible: true },
+          approved: false,
+        },
+      ],
+      safetyBoundary:
+        'Workflow preview metadata is read/open only and does not execute provider tools, send messages, or mutate external systems.',
+    },
+    approvalBoundaries: ['xd.xenesis.tools.mcpInstallDrafts.apply'],
+    completionEvidence: ['MCP settings readback lists the Notion server before tool use.'],
+    safetyBoundary: 'user-story contracts are read/open planning metadata',
+  };
+  const toolUserStory = {
+    workflowType: 'knowledge-capture',
+    runtimeSupport: 'ready-template',
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    setupSurface: 'Settings > AI Provider > Local CLI MCP',
+    userStories: ['search Notion pages before answering a workspace question'],
+    prerequisiteConnectors: ['notion'],
+    requiredScopes: ['notion:search'],
+    readPaths: ['xd.xenesis.tools.userStories.status'],
+    controlPaths: ['xd.xenesis.tools.userStories.open'],
+    diagnostics: ['cr-readback'],
+    storyContract: contract,
+    safetyBoundaries: ['user-story workflows are read/open planning surfaces'],
+  } satisfies XenesisConnectionItem['toolUserStory'];
+  const toolItem = {
+    id: 'notion',
+    kind: 'tool',
+    label: 'Notion',
+    status: 'ready',
+    summary: 'Notion user story',
+    toolUserStory,
+  } satisfies XenesisConnectionItem;
+
+  const toolRequest = buildXenesisUserStoryWorkflowPreviewRequest(toolItem);
+
+  assert.deepEqual(toolRequest, {
+    path: 'xd.automation.workflow.preview',
+    args: {
+      name: 'notion-user-story-preview',
+      description: 'Preview notion user-story readbacks and open the Settings surface.',
+      delayMs: 0,
+      stopOnFail: true,
+      steps: contract.workflowPreview.steps,
+    },
+    source: 'xenesis',
+    approved: false,
+  });
+  const toolArgs = toolRequest?.args as { steps: Array<{ args: Record<string, unknown> }> };
+  assert.notEqual(toolArgs.steps, contract.workflowPreview.steps);
+  assert.notEqual(toolArgs.steps[2]?.args, contract.workflowPreview.steps[2]?.args);
+
+  const channelContract: XenesisConnectionUserStoryContract = {
+    ...contract,
+    readbackPaths: ['xd.xenesis.channels.userStories.status', 'xd.xenesis.channels.safety.status'],
+    openPath: 'xd.xenesis.channels.userStories.open',
+    openArgs: { id: 'telegram' },
+    workflowPreview: {
+      ...contract.workflowPreview,
+      name: 'telegram-user-story-preview',
+      description: 'Preview telegram user-story readbacks and open the Settings surface.',
+      steps: [
+        {
+          label: 'Read xd.xenesis.channels.userStories.status',
+          path: 'xd.xenesis.channels.userStories.status',
+          args: {},
+          approved: false,
+        },
+        {
+          label: 'Read xd.xenesis.channels.safety.status',
+          path: 'xd.xenesis.channels.safety.status',
+          args: {},
+          approved: false,
+        },
+        {
+          label: 'Open user-story surface',
+          path: 'xd.xenesis.channels.userStories.open',
+          args: { id: 'telegram', ensureVisible: true },
+          approved: false,
+        },
+      ],
+    },
+    approvalBoundaries: ['xd.xenesis.profiles.testChannel'],
+    safetyBoundary: 'user-story contracts are read/open planning metadata and do not send messages',
+  };
+  const channelItem = {
+    id: 'telegram',
+    kind: 'messenger',
+    label: 'Telegram',
+    status: 'ready',
+    summary: 'Telegram user story',
+    channelTemplate: {
+      category: 'consumer',
+      adapter: 'telegram',
+      auth: 'bot-token',
+      capabilities: ['remote-prompt'],
+      safetyControls: ['allowlist'],
+      userStory: {
+        workflowType: 'remote-prompt',
+        runtimeSupport: 'implemented',
+        primarySurface: 'Settings > Xenesis Agent > Connections',
+        setupSurface: 'Settings > Xenesis Agent > External bots',
+        userStories: ['receive an allowed Telegram chat prompt and route it to Xenesis Agent'],
+        prerequisiteSetup: ['telegram-allowlist-configured'],
+        readPaths: ['xd.xenesis.channels.userStories.status'],
+        controlPaths: ['xd.xenesis.channels.userStories.open'],
+        diagnostics: ['safe-to-deliver'],
+        storyContract: channelContract,
+        safetyBoundaries: ['channel user stories are read/open planning surfaces'],
+      },
+    },
+  } satisfies XenesisConnectionItem;
+
+  assert.deepEqual(buildXenesisUserStoryWorkflowPreviewRequest(channelItem), {
+    path: 'xd.automation.workflow.preview',
+    args: {
+      name: 'telegram-user-story-preview',
+      description: 'Preview telegram user-story readbacks and open the Settings surface.',
+      delayMs: 0,
+      stopOnFail: true,
+      steps: channelContract.workflowPreview.steps,
+    },
+    source: 'xenesis',
+    approved: false,
+  });
+  assert.equal(buildXenesisUserStoryWorkflowPreviewRequest({ ...toolItem, toolUserStory: undefined }), null);
 });
 
 test('formatXenesisToolInstallPlanSummary describes install mode, runtime support, and step count', () => {

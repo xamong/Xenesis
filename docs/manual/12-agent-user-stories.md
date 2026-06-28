@@ -53,6 +53,11 @@ send, create, update, or delete paths. Running the preview as a workflow is a
 separate approval-gated Desk action and still obeys the CR workflow runner's
 path restrictions.
 
+Settings user-story cards expose this as a workflow preview action. The button
+calls `xd.automation.workflow.preview` with the contract's workflow input so the
+operator can validate the CR read/open sequence before deciding whether to run
+or save any workflow.
+
 ## Provider Stories
 
 ### First chat readiness

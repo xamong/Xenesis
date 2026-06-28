@@ -952,6 +952,7 @@ export const ko = {
     xenesisConnectionsOpenGuide: '가이드 열기',
     xenesisConnectionsRequestSetup: '설정 요청',
     xenesisConnectionsApplySetup: '설정 적용 요청',
+    xenesisConnectionsPreviewUserStoryWorkflow: '워크플로 미리보기',
     xenesisConnectionsRequestMcpInstallDraft: 'MCP 초안 요청',
     xenesisConnectionsApplyMcpInstallDraft: 'MCP 적용 요청',
     xenesisConnectionsReadToolSetupPlan: '설정 플랜 읽기',
