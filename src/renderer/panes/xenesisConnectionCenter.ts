@@ -274,6 +274,22 @@ export function buildXenesisConnectionSetupRequestRequest(
   };
 }
 
+export function buildXenesisConnectionSetupApplyRequest(
+  item: XenesisConnectionItem,
+): McpBridgeCapabilityCallRequest | null {
+  if (!item.setupRequest) return null;
+  if (!item.setupRequest.controlPaths.includes('xd.xenesis.connections.setupRequests.apply')) return null;
+  return {
+    path: 'xd.xenesis.connections.setupRequests.apply',
+    args: {
+      id: item.id,
+      target: 'codex',
+    },
+    source: 'xenesis',
+    approved: false,
+  };
+}
+
 export function buildXenesisMcpInstallDraftRequest(item: XenesisConnectionItem): McpBridgeCapabilityCallRequest | null {
   if (!item.mcpInstallDraft) return null;
   return {

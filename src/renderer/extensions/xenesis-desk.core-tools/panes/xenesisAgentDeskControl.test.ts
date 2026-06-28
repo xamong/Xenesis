@@ -4408,6 +4408,16 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center review reques
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 연결 설정 적용해줘').actions, [
+    {
+      id: 'natural-xenesis-connection-setup-apply-notion',
+      path: 'xd.xenesis.connections.setupRequests.apply',
+      args: { id: 'notion', target: 'codex' },
+      approved: false,
+      reason: 'Apply Notion connection setup request from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('노션 설치 계획 검토 요청해줘').actions, [
     {
       id: 'natural-xenesis-tool-install-plan-request-notion',

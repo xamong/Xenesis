@@ -2863,7 +2863,7 @@ test('buildXenesisConnectionsStatus exposes setup request templates without exec
     'does not complete OAuth',
     'does not store tokens',
     'does not execute provider tools',
-    'does not mutate provider/tool/channel settings',
+    'does not mutate provider/tool/channel settings without setup apply approval',
     'does not send messages',
   ]);
   assert.equal(notion?.setupRequest?.controlPaths.includes('xd.xenesis.connections.setupRequests.request'), true);
@@ -2874,6 +2874,61 @@ test('buildXenesisConnectionsStatus exposes setup request templates without exec
 
   assert.equal(telegram?.setupRequest?.requestType, 'messenger-setup');
   assert.equal(telegram?.setupRequest?.readPaths.includes('xd.xenesis.channels.pairing.status'), true);
+});
+
+test('buildXenesisConnectionsStatus exposes setup apply only for ready delegated paths', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+    env: {
+      NOTION_TOKEN: 'secret-value-must-not-appear',
+    },
+  });
+
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+  const github = status.sections.tools.items.find((item) => item.id === 'github');
+  const calendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+  const telegram = status.sections.messengers.items.find((item) => item.id === 'telegram');
+
+  assert.equal(notion?.mcpInstallDraft?.draftStatus, 'ready');
+  assert.equal(notion?.setupRequest?.controlPaths.includes('xd.xenesis.connections.setupRequests.apply'), true);
+  assert.ok(
+    notion?.setupRequest?.safetyBoundaries.some((boundary) =>
+      boundary.includes('delegates only to ready approval-gated setup apply paths'),
+    ),
+  );
+
+  assert.equal(github?.mcpInstallDraft?.draftStatus, 'missing-env');
+  assert.equal(github?.setupRequest?.controlPaths.includes('xd.xenesis.connections.setupRequests.apply'), false);
+
+  assert.equal(calendar?.toolOAuthDraft?.draftStatus, 'planned-template');
+  assert.equal(calendar?.setupRequest?.controlPaths.includes('xd.xenesis.connections.setupRequests.apply'), false);
+
+  assert.equal(telegram?.channelProfileDraft?.controlPaths.includes('xd.xenesis.channels.profileDrafts.apply'), true);
+  assert.equal(telegram?.setupRequest?.controlPaths.includes('xd.xenesis.connections.setupRequests.apply'), true);
 });
 
 test('withXenesisConnectionSetupRequestReviews joins Action Inbox review state by approval session key', () => {

@@ -2059,6 +2059,24 @@ export const XENESIS_NATURAL_PROVIDER_PROFILE_DRAFT_APPLY_PROVIDER_RULES = [
   },
 ] as const satisfies readonly XenesisNaturalProviderActionRule[];
 
+export const XENESIS_NATURAL_CONNECTION_SETUP_APPLY_ACTION_DESCRIPTORS = {
+  connectionSetupRequest: {
+    path: 'xd.xenesis.connections.setupRequests.apply',
+    idFor: (id: string, _label: string) => `natural-xenesis-connection-setup-apply-${id}`,
+    reasonFor: (_id: string, label: string) => `Apply ${label} connection setup request from natural language request.`,
+  },
+} as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
+
+export const XENESIS_NATURAL_CONNECTION_SETUP_APPLY_TARGET_RULES = [
+  {
+    targetScope: 'any',
+    contextWords: XENESIS_NATURAL_MCP_INSTALL_APPLY_INTENT_WORDS,
+    requiredContextWordGroups: [XENESIS_NATURAL_SETUP_CONTEXT_WORDS],
+    action: XENESIS_NATURAL_CONNECTION_SETUP_APPLY_ACTION_DESCRIPTORS.connectionSetupRequest,
+    argsKind: 'mcpInstallApply',
+  },
+] as const satisfies readonly XenesisNaturalConnectionTargetActionRule[];
+
 export const XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS = {
   providerProfileDraft: {
     path: 'xd.xenesis.providers.profileDrafts.request',

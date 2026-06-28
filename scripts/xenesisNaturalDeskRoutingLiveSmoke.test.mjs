@@ -226,6 +226,12 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
       expectedVisibleText: 'Desk action approval required',
     },
     {
+      id: 'connection-setup-apply-approval',
+      prompt: '노션 연결 설정 적용해줘',
+      expectedPath: 'xd.xenesis.connections.setupRequests.apply',
+      expectedVisibleText: 'Desk action approval required',
+    },
+    {
       id: 'tool-oauth-draft-request-approval',
       prompt: '구글 캘린더 OAuth 인증해줘',
       expectedPath: 'xd.xenesis.tools.oauthDrafts.request',
@@ -373,6 +379,7 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
   assert.match(plan, /외부 툴 user stories 상태 보여줘/);
   assert.match(plan, /외부 툴 install plans catalog 열어줘/);
   assert.match(plan, /노션 설치 계획 검토 요청해줘/);
+  assert.match(plan, /노션 연결 설정 적용해줘/);
   assert.match(plan, /구글 캘린더 OAuth 인증해줘/);
   assert.match(plan, /구글 챗 라우팅 상태 보여줘/);
   assert.match(plan, /외부 메신저 라우팅 전체 열어줘/);
@@ -420,6 +427,7 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
   assert.match(plan, /xd\.xenesis\.tools\.userStories\.status/);
   assert.match(plan, /xd\.xenesis\.tools\.installPlans\.open/);
   assert.match(plan, /xd\.xenesis\.tools\.installPlans\.request/);
+  assert.match(plan, /xd\.xenesis\.connections\.setupRequests\.apply/);
   assert.match(plan, /xd\.xenesis\.tools\.oauthDrafts\.request/);
   assert.match(plan, /xd\.xenesis\.channels\.routing\.status/);
   assert.match(plan, /xd\.xenesis\.channels\.routing\.open/);

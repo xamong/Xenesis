@@ -221,6 +221,12 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     expectedVisibleText: 'Desk action approval required',
   },
   {
+    id: 'connection-setup-apply-approval',
+    prompt: '노션 연결 설정 적용해줘',
+    expectedPath: 'xd.xenesis.connections.setupRequests.apply',
+    expectedVisibleText: 'Desk action approval required',
+  },
+  {
     id: 'tool-oauth-draft-request-approval',
     prompt: '구글 캘린더 OAuth 인증해줘',
     expectedPath: 'xd.xenesis.tools.oauthDrafts.request',

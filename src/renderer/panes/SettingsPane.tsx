@@ -90,6 +90,7 @@ import {
   buildXenesisConnectionGuideRequest,
   buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
+  buildXenesisConnectionSetupApplyRequest,
   buildXenesisConnectionSetupRequestRequest,
   buildXenesisMcpInstallDraftApplyRequest,
   buildXenesisMcpInstallDraftRequest,
@@ -4305,6 +4306,7 @@ export default function SettingsPane() {
     const settingsRequest = buildXenesisConnectionSettingsRequest(item);
     const guideRequest = buildXenesisConnectionGuideRequest(item);
     const setupRequestCall = buildXenesisConnectionSetupRequestRequest(item);
+    const setupApplyRequest = buildXenesisConnectionSetupApplyRequest(item);
     const mcpInstallDraftRequest = buildXenesisMcpInstallDraftRequest(item);
     const mcpInstallDraftApplyRequest = buildXenesisMcpInstallDraftApplyRequest(item);
     const toolOAuthDraftRequest = buildXenesisToolOAuthDraftRequest(item);
@@ -4352,6 +4354,7 @@ export default function SettingsPane() {
           settingsRequest ||
           guideRequest ||
           setupRequestCall ||
+          setupApplyRequest ||
           mcpInstallDraftRequest ||
           mcpInstallDraftApplyRequest ||
           toolOAuthDraftRequest ||
@@ -4397,6 +4400,16 @@ export default function SettingsPane() {
                 }}
               >
                 {t('settings.xenesisConnectionsRequestSetup')}
+              </button>
+            ) : null}
+            {setupApplyRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(setupApplyRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsApplySetup')}
               </button>
             ) : null}
             {mcpInstallDraftRequest ? (

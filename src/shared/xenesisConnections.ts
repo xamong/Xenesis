@@ -3947,7 +3947,7 @@ const XENESIS_CONNECTION_SETUP_REQUEST_BLOCKED_ACTIONS = [
   'does not complete OAuth',
   'does not store tokens',
   'does not execute provider tools',
-  'does not mutate provider/tool/channel settings',
+  'does not mutate provider/tool/channel settings without setup apply approval',
   'does not send messages',
 ];
 
@@ -5328,9 +5328,25 @@ function setupRequestDescription(item: XenesisConnectionItem): string {
   return `Review the setup request for ${item.label} from the Connection Center before any external work is performed.`;
 }
 
+function setupRequestApplyDelegatePaths(item: XenesisConnectionItem): string[] {
+  return uniqueStrings([
+    ...(item.mcpInstallDraft?.draftStatus === 'ready' &&
+    item.mcpInstallDraft.controlPaths.includes('xd.xenesis.tools.mcpInstallDrafts.apply')
+      ? ['xd.xenesis.tools.mcpInstallDrafts.apply']
+      : []),
+    ...(item.channelProfileDraft?.controlPaths.includes('xd.xenesis.channels.profileDrafts.apply')
+      ? ['xd.xenesis.channels.profileDrafts.apply']
+      : []),
+    ...(item.providerProfileDraft?.controlPaths.includes('xd.xenesis.providers.profileDrafts.apply')
+      ? ['xd.xenesis.providers.profileDrafts.apply']
+      : []),
+  ]);
+}
+
 function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): XenesisConnectionSetupRequestTemplate {
   const diagnostics = setupRequestDiagnosticItems(item);
   const steps = setupRequestStepItems(item);
+  const applyDelegatePaths = setupRequestApplyDelegatePaths(item);
   return {
     requestType: xenesisConnectionSetupRequestType(item),
     actionInboxKind: 'xenesis-connection-setup',
@@ -5371,6 +5387,7 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
     controlPaths: uniqueStrings([
       'xd.xenesis.connections.setupRequests.open',
       'xd.xenesis.connections.setupRequests.request',
+      ...(applyDelegatePaths.length > 0 ? ['xd.xenesis.connections.setupRequests.apply'] : []),
       'xd.xenesis.connections.open',
       ...(item.diagnosticRunbook?.controlPaths ?? []),
       ...(item.onboardingPlan?.controlPaths ?? []),
@@ -5399,8 +5416,15 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
     diagnostics,
     blockedActions: [...XENESIS_CONNECTION_SETUP_REQUEST_BLOCKED_ACTIONS],
     safetyBoundaries: uniqueStrings([
-      'setup requests record local Action Inbox review items only',
-      'setup requests do not install MCP servers, complete OAuth, store tokens, execute provider tools, mutate settings, or send messages',
+      'setup request review records local Action Inbox items only',
+      ...(applyDelegatePaths.length > 0
+        ? [
+            'setup request apply delegates only to ready approval-gated setup apply paths',
+            `setup request apply delegates: ${applyDelegatePaths.join(', ')}`,
+          ]
+        : [
+            'setup requests do not install MCP servers, complete OAuth, store tokens, execute provider tools, mutate settings, or send messages',
+          ]),
       ...(item.diagnosticRunbook?.safetyBoundaries ?? []),
       ...(item.onboardingPlan?.safetyBoundaries ?? []),
       ...(item.onboardingPlan?.guidedSteps.map((step) => step.safetyBoundary) ?? []),

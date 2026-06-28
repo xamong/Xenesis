@@ -939,6 +939,7 @@ export const en = {
     xenesisConnectionsOpenSettings: 'Open setup',
     xenesisConnectionsOpenGuide: 'Open guide',
     xenesisConnectionsRequestSetup: 'Request setup',
+    xenesisConnectionsApplySetup: 'Apply setup',
     xenesisConnectionsRequestMcpInstallDraft: 'Request MCP draft',
     xenesisConnectionsApplyMcpInstallDraft: 'Apply MCP draft',
     xenesisConnectionsRequestToolActionCatalog: 'Request action review',

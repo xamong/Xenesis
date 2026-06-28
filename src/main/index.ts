@@ -5105,6 +5105,81 @@ async function requestXenesisConnectionSetup(args?: unknown): Promise<Record<str
   };
 }
 
+function xenesisConnectionSetupApplyDelegate(
+  item: XenesisConnectionItem,
+): { path: string; apply: (args?: unknown) => Promise<Record<string, unknown>> } | null {
+  if (!item.setupRequest?.controlPaths.includes('xd.xenesis.connections.setupRequests.apply')) return null;
+
+  if (
+    item.mcpInstallDraft?.draftStatus === 'ready' &&
+    item.mcpInstallDraft.controlPaths.includes('xd.xenesis.tools.mcpInstallDrafts.apply')
+  ) {
+    return {
+      path: 'xd.xenesis.tools.mcpInstallDrafts.apply',
+      apply: applyXenesisToolMcpInstallDraft,
+    };
+  }
+
+  if (item.channelProfileDraft?.controlPaths.includes('xd.xenesis.channels.profileDrafts.apply')) {
+    return {
+      path: 'xd.xenesis.channels.profileDrafts.apply',
+      apply: applyXenesisChannelProfileDraft,
+    };
+  }
+
+  if (item.providerProfileDraft?.controlPaths.includes('xd.xenesis.providers.profileDrafts.apply')) {
+    return {
+      path: 'xd.xenesis.providers.profileDrafts.apply',
+      apply: applyXenesisProviderProfileDraft,
+    };
+  }
+
+  return null;
+}
+
+async function applyXenesisConnectionSetupRequest(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'connection', 'connectionId', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Connection id is required.' };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = listXenesisConnectionItems(status).find((candidate) => candidate.id === id && candidate.setupRequest);
+  if (!item?.setupRequest) {
+    return { ok: false, id, error: `Xenesis connection setup request is not available: ${id}` };
+  }
+
+  const delegate = xenesisConnectionSetupApplyDelegate(item);
+  if (!delegate) {
+    return {
+      ok: false,
+      id,
+      readiness: item.setupRequest.readiness,
+      diagnostics: item.setupRequest.diagnostics,
+      error: `Xenesis connection setup request is not ready for apply: ${id}`,
+      item: xenesisConnectionSetupRequestStatusItem(item),
+    };
+  }
+
+  const result = await delegate.apply(body);
+  const ok = !(result && typeof result === 'object' && 'ok' in result && result.ok === false);
+  const nextStatus = await getXenesisConnectionsStatus();
+  const nextItem =
+    listXenesisConnectionItems(nextStatus).find((candidate) => candidate.id === item.id && candidate.setupRequest) ??
+    item;
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+
+  return {
+    ok,
+    id: item.id,
+    delegatedPath: delegate.path,
+    item: xenesisConnectionSetupRequestStatusItem(nextItem),
+    result,
+    ...(note ? { note } : {}),
+  };
+}
+
 const XENESIS_ONBOARDING_STEP_IDS = XENESIS_CONNECTION_ONBOARDING_STEP_IDS;
 
 function isXenesisOnboardingStepId(value: string): value is (typeof XENESIS_ONBOARDING_STEP_IDS)[number] {
@@ -14723,6 +14798,7 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisConnectionSetupRequestsStatus: (args: unknown) => getXenesisConnectionSetupRequestsStatus(args),
     openXenesisConnectionSetupRequest: (args: unknown) => openXenesisConnectionSetupRequest(args),
     requestXenesisConnectionSetup: (args: unknown) => requestXenesisConnectionSetup(args),
+    applyXenesisConnectionSetupRequest: (args: unknown) => applyXenesisConnectionSetupRequest(args),
     getXenesisOnboardingStatus: (args: unknown) => getXenesisOnboardingStatus(args),
     openXenesisOnboardingStep: (args: unknown) => openXenesisOnboardingStep(args),
     getXenesisChannelRoutingStatus: (args: unknown) => getXenesisChannelRoutingStatus(args),

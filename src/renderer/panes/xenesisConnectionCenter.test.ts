@@ -13,6 +13,7 @@ import {
   buildXenesisConnectionGuideRequest,
   buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
+  buildXenesisConnectionSetupApplyRequest,
   buildXenesisConnectionSetupRequestRequest,
   buildXenesisMcpInstallDraftApplyRequest,
   buildXenesisMcpInstallDraftRequest,
@@ -270,6 +271,53 @@ test('buildXenesisConnectionSetupRequestRequest records setup review through CR'
     source: 'xenesis',
     approved: true,
   });
+});
+
+test('buildXenesisConnectionSetupApplyRequest targets the approval-gated setup apply path', () => {
+  const item = {
+    id: 'notion',
+    kind: 'tool',
+    label: 'Notion',
+    status: 'needs-setup',
+    summary: 'Notion setup',
+    setupRequest: {
+      requestType: 'tool-setup',
+      actionInboxKind: 'xenesis-connection-setup',
+      readiness: 'action-required',
+      title: 'Review Notion setup request',
+      description: 'Review setup request for Notion.',
+      setupSurface: 'Settings > Xenesis Agent > Connections',
+      reviewSurface: 'Action Inbox',
+      steps: ['Create token', 'Paste env name'],
+      readPaths: ['xd.xenesis.connections.setupRequests.status'],
+      controlPaths: ['xd.xenesis.connections.setupRequests.request', 'xd.xenesis.connections.setupRequests.apply'],
+      diagnostics: ['notion-search-read'],
+      blockedActions: ['does not store tokens'],
+      safetyBoundaries: ['delegates only to ready approval-gated setup apply paths'],
+    },
+  } satisfies XenesisConnectionItem;
+
+  assert.deepEqual(buildXenesisConnectionSetupApplyRequest(item), {
+    path: 'xd.xenesis.connections.setupRequests.apply',
+    args: {
+      id: 'notion',
+      target: 'codex',
+    },
+    source: 'xenesis',
+    approved: false,
+  });
+
+  assert.equal(
+    buildXenesisConnectionSetupApplyRequest({
+      ...item,
+      setupRequest: {
+        ...item.setupRequest,
+        controlPaths: ['xd.xenesis.connections.setupRequests.request'],
+      },
+    }),
+    null,
+  );
+  assert.equal(buildXenesisConnectionSetupApplyRequest({ ...item, setupRequest: undefined }), null);
 });
 
 test('buildXenesisConnectionGuideRequest opens repo-local guide files through CR', () => {

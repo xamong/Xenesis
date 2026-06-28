@@ -216,6 +216,101 @@ test('xenesis connection center testing snapshot capability is registered and di
   });
 });
 
+test('xenesis connection setup request apply capability is registered and dispatches to the adapter', async () => {
+  const statusCapability = findDeskBridgeCapability('xd.xenesis.connections.setupRequests.status');
+  const openCapability = findDeskBridgeCapability('xd.xenesis.connections.setupRequests.open');
+  const requestCapability = findDeskBridgeCapability('xd.xenesis.connections.setupRequests.request');
+  const applyCapability = findDeskBridgeCapability('xd.xenesis.connections.setupRequests.apply');
+  const applySchemaProperties = (applyCapability?.schema?.properties ?? {}) as Record<string, any>;
+
+  assert.equal(statusCapability?.permission, 'read');
+  assert.equal(statusCapability?.approval, 'never');
+  assert.equal(openCapability?.permission, 'control');
+  assert.equal(openCapability?.approval, 'never');
+  assert.equal(requestCapability?.permission, 'write');
+  assert.equal(requestCapability?.approval, 'when-external');
+  assert.equal(applyCapability?.permission, 'write');
+  assert.equal(applyCapability?.approval, 'when-external');
+  assert.deepEqual(applyCapability?.schema?.required, ['id']);
+  assert.equal(applySchemaProperties.id?.enum.includes('notion'), true);
+  assert.equal(applySchemaProperties.id?.enum.includes('telegram'), true);
+  assert.equal(applySchemaProperties.id?.enum.includes('google-calendar'), true);
+  assert.equal(applySchemaProperties.target?.enum.includes('codex'), true);
+
+  const calls: Array<{ method: string; args: unknown }> = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisConnectionSetupRequestsStatus: (args) => {
+      calls.push({ method: 'status', args });
+      return {
+        ok: true,
+        items: [{ id: 'notion', readiness: 'action-required' }],
+      };
+    },
+    openXenesisConnectionSetupRequest: (args) => {
+      calls.push({ method: 'open', args });
+      return {
+        ok: true,
+        item: { id: 'notion', readiness: 'action-required' },
+      };
+    },
+    requestXenesisConnectionSetup: (args) => {
+      calls.push({ method: 'request', args });
+      return {
+        ok: true,
+        id: 'notion',
+        actionInboxItem: { id: 'setup-notion' },
+      };
+    },
+    applyXenesisConnectionSetupRequest: (args) => {
+      calls.push({ method: 'apply', args });
+      return {
+        ok: true,
+        id: 'notion',
+        delegatedPath: 'xd.xenesis.tools.mcpInstallDrafts.apply',
+      };
+    },
+  };
+
+  const statusResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.connections.setupRequests.status',
+    args: { id: 'notion' },
+    source: 'xenesis',
+  });
+  const openResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.connections.setupRequests.open',
+    args: { id: 'notion' },
+    source: 'xenesis',
+  });
+  const requestResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.connections.setupRequests.request',
+    args: { id: 'notion' },
+    source: 'xenesis',
+    approved: true,
+  });
+  const applyResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.connections.setupRequests.apply',
+    args: { id: 'notion', target: 'codex' },
+    source: 'xenesis',
+    approved: true,
+  });
+
+  assert.equal(statusResult.ok, true);
+  assert.equal(openResult.ok, true);
+  assert.equal(requestResult.ok, true);
+  assert.equal(applyResult.ok, true);
+  assert.deepEqual(calls, [
+    { method: 'status', args: { id: 'notion' } },
+    { method: 'open', args: { id: 'notion' } },
+    { method: 'request', args: { id: 'notion' } },
+    { method: 'apply', args: { id: 'notion', target: 'codex' } },
+  ]);
+  assert.deepEqual(applyResult.result, {
+    ok: true,
+    id: 'notion',
+    delegatedPath: 'xd.xenesis.tools.mcpInstallDrafts.apply',
+  });
+});
+
 test('xenesis onboarding status capabilities are registered and dispatch to the adapter', async () => {
   const statusCapability = findDeskBridgeCapability('xd.xenesis.onboarding.status');
   const openCapability = findDeskBridgeCapability('xd.xenesis.onboarding.open');

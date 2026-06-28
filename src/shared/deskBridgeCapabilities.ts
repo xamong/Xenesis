@@ -23,6 +23,12 @@ import {
 } from './xenesisConnections';
 
 const DESK_BRIDGE_ROOT_PATH = 'xd';
+const XENESIS_MCP_INSTALL_DRAFT_APPLY_TARGET_IDS = ['codex', 'claude', 'cursor', 'all'] as const;
+const XENESIS_CONNECTION_SETUP_APPLY_IDS = [
+  ...XENESIS_CONNECTION_TOOL_IDS,
+  ...XENESIS_CONNECTION_MESSENGER_IDS,
+  ...XENESIS_CONNECTION_PROVIDER_IDS,
+] as const;
 
 const DESK_BRIDGE_WORKFLOW_SCHEMA = {
   type: 'object',
@@ -285,6 +291,52 @@ const XENESIS_CONNECTION_SETUP_REQUEST_SCHEMA = {
       type: 'string',
       title: 'Review note',
       description: 'Optional note to append to the setup request description.',
+    },
+  },
+} as const;
+
+const XENESIS_CONNECTION_SETUP_APPLY_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Connection id',
+      enum: XENESIS_CONNECTION_SETUP_APPLY_IDS,
+      description:
+        'Connection Center item id whose ready setup request should be applied through an existing safe delegate path.',
+    },
+    connection: {
+      type: 'string',
+      title: 'Connection alias',
+      enum: XENESIS_CONNECTION_SETUP_APPLY_IDS,
+      description: 'Alias for id.',
+    },
+    target: {
+      type: 'string',
+      title: 'MCP config target',
+      enum: XENESIS_MCP_INSTALL_DRAFT_APPLY_TARGET_IDS,
+      description:
+        'Optional MCP config target passed through when setup apply delegates to an MCP install draft. Defaults to Codex.',
+    },
+    targets: {
+      type: 'array',
+      title: 'MCP config targets',
+      items: {
+        type: 'string',
+        enum: XENESIS_MCP_INSTALL_DRAFT_APPLY_TARGET_IDS,
+      },
+      description: 'Optional MCP config targets for MCP install draft delegates.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity to include in apply readback.',
+    },
+    note: {
+      type: 'string',
+      title: 'Apply note',
+      description: 'Optional note to include in the redacted apply readback.',
     },
   },
 } as const;
@@ -878,7 +930,6 @@ const XENESIS_TOOL_INSTALL_PLAN_REQUEST_SCHEMA = {
 } as const;
 const XENESIS_TOOL_MCP_INSTALL_DRAFT_STATUS_SCHEMA = XENESIS_TOOL_VIEW_STATUS_SCHEMA;
 const XENESIS_TOOL_MCP_INSTALL_DRAFT_OPEN_SCHEMA = XENESIS_TOOL_VIEW_OPEN_SCHEMA;
-const XENESIS_MCP_INSTALL_DRAFT_APPLY_TARGET_IDS = ['codex', 'claude', 'cursor', 'all'] as const;
 const XENESIS_TOOL_MCP_INSTALL_DRAFT_REQUEST_SCHEMA = {
   type: 'object',
   required: ['id'],
@@ -1537,6 +1588,7 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisConnectionSetupRequestsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisConnectionSetupRequest?: (args?: unknown) => Promise<unknown> | unknown;
   requestXenesisConnectionSetup?: (args?: unknown) => Promise<unknown> | unknown;
+  applyXenesisConnectionSetupRequest?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisOnboardingStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisOnboardingStep?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisChannelRoutingStatus?: (args?: unknown) => Promise<unknown> | unknown;
@@ -4557,7 +4609,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
         group(
           'xd.xenesis.connections.setupRequests',
           'Connection setup requests',
-          'Read/open setup request templates and record reviewed setup requests for Connection Center cards.',
+          'Read/open setup request templates, record reviews, and approval-apply ready delegated setup paths for Connection Center cards.',
           [
             method(
               'xd.xenesis.connections.setupRequests.status',
@@ -4579,6 +4631,13 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               'Record a local Action Inbox item for reviewing a Connection Center setup request without executing installs, OAuth, token storage, provider tools, messages, or settings mutations.',
               'write',
               XENESIS_CONNECTION_SETUP_REQUEST_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.connections.setupRequests.apply',
+              'Apply connection setup request',
+              'After explicit approval, apply a ready Connection Center setup request by delegating to an existing safe setup apply path such as MCP install draft apply, channel profile draft apply, or provider profile draft apply. Planned OAuth, token storage, provider tool execution, messages, and external system mutations remain blocked.',
+              'write',
+              XENESIS_CONNECTION_SETUP_APPLY_SCHEMA,
             ),
           ],
         ),
@@ -11495,6 +11554,9 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.connections.setupRequests.request') {
         return callAdapter(path, api?.requestXenesisConnectionSetup, request.args);
+      }
+      if (path === 'xd.xenesis.connections.setupRequests.apply') {
+        return callAdapter(path, api?.applyXenesisConnectionSetupRequest, request.args);
       }
       if (path === 'xd.xenesis.onboarding.status') {
         return callAdapter(path, api?.getXenesisOnboardingStatus, request.args);

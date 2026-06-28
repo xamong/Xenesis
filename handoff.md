@@ -7,6 +7,128 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current Connection Setup Apply Slice
+
+- Objective: enlarge the slice cycle by adding one CR-first setup request apply
+  orchestrator that can take a natural setup request such as `Notion 연결 설정
+  적용해줘`, require Capability Registry approval, and delegate only to an
+  already-safe ready sub-apply path.
+- Observed gap:
+  - `xd.xenesis.connections.setupRequests.status/open/request` can inspect,
+    focus, and request setup review.
+  - Ready sub-apply paths now exist for MCP install drafts, channel profile
+    drafts, and provider profile drafts, but setup request itself has no single
+    approval-gated apply path.
+  - Planned OAuth tools such as Google Calendar still have OAuth draft review
+    metadata only and must not be presented as ready.
+- Scope boundary:
+  - Add `xd.xenesis.connections.setupRequests.apply` with approval
+    `when-external`.
+  - Expose setup apply only when the owning item already has a ready applicable
+    sub-apply path.
+  - Delegate to existing safe handlers rather than adding a new writer.
+  - Return redacted orchestration readback with the selected delegate path and
+    result.
+  - Keep planned OAuth, token storage, provider tool execution, messages, and
+    external system mutations out of scope.
+- Slice size policy:
+  - Bundle CR registration, dispatcher, read-model exposure, renderer button,
+    main-process handler, natural routing, live smoke coverage, handoff, tests,
+    audit, build, smoke, and commit in one cycle.
+- External documentation handling:
+  - No web browsing. Use repo-local source, Obsidian notes, `handoff.md`, tests,
+    build, CR audit, and local smoke.
+- Plan:
+  - `docs/superpowers/plans/2026-06-28-xenesis-connection-setup-apply.md`
+- Next intended step:
+  - Add RED tests for setup apply CR registration/dispatch, read-model
+    ready-only exposure, renderer helper, and natural-language routing before
+    production code changes.
+- RED progress:
+  - Added CR registration/dispatcher expectation for
+    `xd.xenesis.connections.setupRequests.apply`.
+  - Added read-model expectation that setup apply appears only when a ready
+    delegated path exists; Google Calendar planned OAuth stays without apply.
+  - Added renderer helper expectation for an approval-gated setup apply request.
+  - Added natural-language expectation for `노션 연결 설정 적용해줘` to route to
+    setup apply while specific MCP/channel/provider apply prompts keep their
+    specialized paths.
+  - Added live smoke inventory coverage for `connection-setup-apply-approval`.
+  - RED results:
+    `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` failed
+    as expected because the setup apply capability is not registered;
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    failed as expected because setup apply is not exposed and the renderer
+    helper does not exist; and
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    failed as expected because natural setup apply routing is not implemented.
+    `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` passed
+    5/5 after the smoke inventory update.
+- Implementation progress:
+  - Added setup apply readiness detection in the Connection Center read model:
+    `xd.xenesis.connections.setupRequests.apply` appears only when the same
+    item already exposes a ready delegated apply path.
+  - Registered `xd.xenesis.connections.setupRequests.apply` with write
+    permission, approval `when-external`, setup apply schema, adapter slot, and
+    dispatcher coverage.
+  - Added main-process `applyXenesisConnectionSetupRequest`, which delegates to
+    existing safe apply handlers for MCP install drafts, channel profile drafts,
+    or provider profile drafts.
+  - Added renderer request helper and Settings button for setup apply.
+  - Added natural-language setup apply routing after specialized provider/MCP/
+    channel apply routing and before review-request routing.
+  - Added Obsidian working note:
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-28-connection-setup-apply.md`.
+- GREEN progress:
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` passed
+    36/36.
+  - `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    passed 80/80.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed 38/38.
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` passed
+    5/5.
+- Final verification:
+  - `npx biome format --write ...` on touched TS/JS files formatted 18 files
+    and fixed 6.
+  - `npx biome check --write ... --max-diagnostics 160` on touched files
+    exited 0; it reported existing warnings/infos only and skipped unsafe
+    suggestions. A new `noUselessTernary` warning in `src/main/index.ts` was
+    fixed manually, then `npx biome check src\main\index.ts --max-diagnostics
+    80` exited 0 with existing warnings/infos only.
+  - Fresh combined focused tests:
+    `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed 154/154.
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` passed
+    5/5.
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit` passed and wrote
+    `docs\capability-registry-audit.md`; audit result: 769 nodes and 689
+    coverage path references.
+  - `npm run build` passed with the existing Vite warnings for browser
+    externalized `fs`, mixed dynamic/static `deskBridge.ts` imports, and large
+    renderer chunks.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 156/156, including
+    `connection-setup-apply-approval`.
+  - `npm --prefix packages/xenesis test` passed 367/367.
+  - `npm --prefix packages/xenesis run typecheck` passed.
+  - `npm --prefix packages/xenesis run build` passed.
+  - `git diff --check` exited 0 with line-ending warnings only.
+- Known gaps:
+  - `npm run lint` still fails on existing repo-wide Biome diagnostics: 1150
+    errors, 419 warnings, and 92 infos across 965 checked files. Representative
+    diagnostics are existing CRLF/format differences in config/package files
+    and sample extension warnings. The touched-file Biome check passed.
+  - `npm --prefix packages/xenesis run provider:smoke` rebuilt
+    `packages/xenesis` but stopped before live checks because `OPENAI_API_KEY`
+    is not set and the smoke defaults to `provider=openai`.
+  - `npm run check:public-release` failed with the known public-release infra
+    gap: `.github\workflows\ci.yml` is absent from this worktree and not a
+    tracked repo file.
+- Next intended step:
+  - Inspect final diff/status and commit as
+    `feat: apply xenesis connection setup requests`.
+
 ## Current Provider Profile Draft Apply Slice
 
 - Objective: enlarge the next slice cycle and continue the OpenClaw/Hermes
