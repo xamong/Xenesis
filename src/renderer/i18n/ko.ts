@@ -917,6 +917,22 @@ export const ko = {
     xenesisConnectionsTitle: 'Connection Center',
     xenesisConnectionsDesc: 'Xenesis Agent 설정, MCP 도구, Gateway, 외부 메신저, 가이드 준비 상태를 확인합니다.',
     xenesisConnectionsRefresh: '연결 새로고침',
+    connectorsXenesisTitle: '외부 커넥터',
+    connectorsXenesisDesc:
+      '설치나 외부 실행 없이 CR로 제어되는 도구/메신저 커넥터, 설정 플랜, MCP 설치 초안, OAuth 초안, 액션 정책을 확인합니다.',
+    connectorsXenesisToolConnectors: '도구 커넥터',
+    connectorsXenesisOauthDrafts: 'OAuth 초안',
+    connectorsXenesisSetupPlans: '설정 플랜',
+    connectorsXenesisActionPolicies: '액션 정책',
+    connectorsXenesisMessengerViews: '메신저 뷰',
+    connectorsXenesisMessengerProfileDrafts: '메신저 프로필 초안',
+    connectorsXenesisChannelSetupPlans: '채널 설정 플랜',
+    connectorsXenesisExternalTools: '외부 도구',
+    connectorsXenesisExternalToolsDesc:
+      'Notion, Google Workspace, Google Calendar, GitHub, Linear, Fetch, Filesystem 표면은 Xenesis Connection Center의 CR 제어를 재사용합니다.',
+    connectorsXenesisExternalMessengers: '외부 메신저',
+    connectorsXenesisExternalMessengersDesc:
+      'Telegram, Slack, Discord, webhook, KakaoTalk, LINE, WhatsApp, SMS 표면은 Xenesis Connection Center의 CR 제어를 재사용합니다.',
     xenesisConnectionsReady: '준비됨',
     xenesisConnectionsBlocked: '막힘',
     xenesisConnectionsPlanned: '계획됨',

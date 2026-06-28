@@ -237,6 +237,28 @@ test('SettingsPane renders Connection Center guided and review step details', ()
   assert.match(source, /xenesisConnectionsChannelProfileDraftReviewSteps/);
 });
 
+test('SettingsPane renders the Connectors category from CR-backed tool and messenger connection cards', () => {
+  const source = readFileSync('src/renderer/panes/SettingsPane.tsx', 'utf8');
+
+  assert.match(source, /const renderConnectors = \(\) =>/);
+  assert.match(source, /data-settings-section="connectors"/);
+  assert.match(source, /xenesisConnectionsStatus\?\.sections\.tools\.items/);
+  assert.match(source, /xenesisConnectionsStatus\?\.sections\.messengers\.items/);
+  assert.match(source, /settings\.connectorsXenesisToolConnectors/);
+  assert.match(source, /settings\.connectorsXenesisOauthDrafts/);
+  assert.match(source, /settings\.connectorsXenesisSetupPlans/);
+  assert.match(source, /settings\.connectorsXenesisActionPolicies/);
+  assert.match(source, /settings\.connectorsXenesisMessengerViews/);
+  assert.match(source, /settings\.connectorsXenesisMessengerProfileDrafts/);
+  assert.match(source, /settings\.connectorsXenesisChannelSetupPlans/);
+  assert.match(source, /toolItems\.map\(renderXenesisConnectionItem\)/);
+  assert.match(source, /messengerItems\.map\(renderXenesisConnectionItem\)/);
+  assert.doesNotMatch(
+    source,
+    /case 'connectors':\s*return renderPlaceholder\(t\('settings\.category\.connectors'\), t\('settings\.category\.connectorsDesc'\)\);/,
+  );
+});
+
 test('buildXenesisConnectionSettingsRequest opens the configured settings target through CR', () => {
   const item = {
     id: 'notion',

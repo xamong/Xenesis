@@ -924,6 +924,22 @@ export const en = {
     xenesisConnectionsTitle: 'Connection Center',
     xenesisConnectionsDesc: 'Review Xenesis Agent setup, MCP tools, Gateway, external messengers, and guide readiness.',
     xenesisConnectionsRefresh: 'Refresh connections',
+    connectorsXenesisTitle: 'External Connectors',
+    connectorsXenesisDesc:
+      'Review CR-backed tool and messenger connectors, setup plans, MCP install drafts, OAuth drafts, and action policies without executing installs or external actions.',
+    connectorsXenesisToolConnectors: 'Tool connectors',
+    connectorsXenesisOauthDrafts: 'OAuth drafts',
+    connectorsXenesisSetupPlans: 'Setup plans',
+    connectorsXenesisActionPolicies: 'Action policies',
+    connectorsXenesisMessengerViews: 'Messenger views',
+    connectorsXenesisMessengerProfileDrafts: 'Messenger profile drafts',
+    connectorsXenesisChannelSetupPlans: 'Channel setup plans',
+    connectorsXenesisExternalTools: 'External tools',
+    connectorsXenesisExternalToolsDesc:
+      'Notion, Google Workspace, Google Calendar, GitHub, Linear, Fetch, and Filesystem surfaces reuse the Xenesis Connection Center CR controls.',
+    connectorsXenesisExternalMessengers: 'External messengers',
+    connectorsXenesisExternalMessengersDesc:
+      'Telegram, Slack, Discord, webhook, KakaoTalk, LINE, WhatsApp, and SMS surfaces reuse the Xenesis Connection Center CR controls.',
     xenesisConnectionsReady: 'Ready',
     xenesisConnectionsBlocked: 'Blocked',
     xenesisConnectionsPlanned: 'Planned',

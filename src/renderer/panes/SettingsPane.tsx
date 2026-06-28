@@ -6089,6 +6089,120 @@ export default function SettingsPane() {
     );
   };
 
+  const renderConnectors = () => {
+    const toolItems = xenesisConnectionsStatus?.sections.tools.items ?? [];
+    const messengerItems = xenesisConnectionsStatus?.sections.messengers.items ?? [];
+    const readyToolItems = toolItems.filter((item) => item.status === 'ready');
+    const readyMessengerItems = messengerItems.filter((item) => item.status === 'ready');
+    const plannedToolItems = toolItems.filter((item) => item.status === 'planned');
+    const plannedMessengerItems = messengerItems.filter((item) => item.status === 'planned');
+    const connectorItems = toolItems.filter((item) => item.toolConnector);
+    const oauthDraftItems = toolItems.filter((item) => item.toolOAuthDraft);
+    const setupPlanItems = toolItems.filter((item) => item.toolSetupPlan);
+    const actionPolicyItems = toolItems.filter((item) => item.toolActionCatalog);
+    const messengerViewItems = messengerItems.filter((item) => item.messengerView);
+    const messengerProfileDraftItems = messengerItems.filter((item) => item.channelProfileDraft);
+    const channelSetupPlanItems = messengerItems.filter((item) => item.channelSetupPlan);
+
+    return (
+      <div className="sp-stack" data-settings-section="connectors">
+        <section className="sp-section">
+          <div className="sp-section-heading">
+            <div>
+              <h2>{t('settings.connectorsXenesisTitle')}</h2>
+              <p>{t('settings.connectorsXenesisDesc')}</p>
+            </div>
+            <div className="sp-actions-row sp-actions-row-tight">
+              <button
+                className="sp-btn"
+                disabled={xenesisConnectionsBusy}
+                onClick={() => {
+                  void loadXenesisConnectionsStatus();
+                }}
+              >
+                {xenesisConnectionsBusy ? t('common.checking') : t('settings.xenesisConnectionsRefresh')}
+              </button>
+            </div>
+          </div>
+
+          {xenesisConnectionsStatus ? (
+            <div className="sp-info-list">
+              <div>
+                <span>{t('settings.xenesisConnectionsReady')}</span>
+                <strong>
+                  {readyToolItems.length + readyMessengerItems.length}/{toolItems.length + messengerItems.length}
+                </strong>
+              </div>
+              <div>
+                <span>{t('settings.xenesisConnectionsPlanned')}</span>
+                <strong>{plannedToolItems.length + plannedMessengerItems.length}</strong>
+              </div>
+              <div>
+                <span>{t('settings.connectorsXenesisToolConnectors')}</span>
+                <strong>{connectorItems.length}</strong>
+              </div>
+              <div>
+                <span>{t('settings.connectorsXenesisOauthDrafts')}</span>
+                <strong>{oauthDraftItems.length}</strong>
+              </div>
+              <div>
+                <span>{t('settings.connectorsXenesisSetupPlans')}</span>
+                <strong>{setupPlanItems.length}</strong>
+              </div>
+              <div>
+                <span>{t('settings.connectorsXenesisActionPolicies')}</span>
+                <strong>{actionPolicyItems.length}</strong>
+              </div>
+              <div>
+                <span>{t('settings.connectorsXenesisMessengerViews')}</span>
+                <strong>{messengerViewItems.length}</strong>
+              </div>
+              <div>
+                <span>{t('settings.connectorsXenesisMessengerProfileDrafts')}</span>
+                <strong>{messengerProfileDraftItems.length}</strong>
+              </div>
+              <div>
+                <span>{t('settings.connectorsXenesisChannelSetupPlans')}</span>
+                <strong>{channelSetupPlanItems.length}</strong>
+              </div>
+            </div>
+          ) : (
+            <div className="sp-empty-block">{t('settings.xenesisConnectionsEmpty')}</div>
+          )}
+          {xenesisConnectionsError && (
+            <p className="sp-hint sp-warning-text">
+              {t('settings.xenesisConnectionsFailed', { message: xenesisConnectionsError })}
+            </p>
+          )}
+        </section>
+
+        {toolItems.length ? (
+          <section className="sp-section">
+            <div className="sp-section-heading">
+              <div>
+                <h2>{t('settings.connectorsXenesisExternalTools')}</h2>
+                <p>{t('settings.connectorsXenesisExternalToolsDesc')}</p>
+              </div>
+            </div>
+            <div className="sp-grid two">{toolItems.map(renderXenesisConnectionItem)}</div>
+          </section>
+        ) : null}
+
+        {messengerItems.length ? (
+          <section className="sp-section">
+            <div className="sp-section-heading">
+              <div>
+                <h2>{t('settings.connectorsXenesisExternalMessengers')}</h2>
+                <p>{t('settings.connectorsXenesisExternalMessengersDesc')}</p>
+              </div>
+            </div>
+            <div className="sp-grid two">{messengerItems.map(renderXenesisConnectionItem)}</div>
+          </section>
+        ) : null}
+      </div>
+    );
+  };
+
   const renderXenesisGateway = () => {
     const gatewayStatus = xenesisGatewayStatus?.gateway;
     const gatewayRunning = gatewayStatus?.running === true;
@@ -10277,7 +10391,7 @@ export default function SettingsPane() {
       case 'media':
         return renderPlaceholder(t('settings.category.media'), t('settings.category.mediaDesc'));
       case 'connectors':
-        return renderPlaceholder(t('settings.category.connectors'), t('settings.category.connectorsDesc'));
+        return renderConnectors();
       case 'mcp':
         return renderMcp();
       case 'language':

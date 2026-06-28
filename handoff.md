@@ -15355,3 +15355,91 @@ Verification so far:
 - Next intended step:
   - Add Obsidian working note, review final diff, stage, and commit this target
     ownership slice.
+
+## Current Settings Connectors Surface Batch
+
+- Current objective:
+  - Make the top-level Settings `connectors` category a real Xenesis external
+    tool and external messenger connector surface instead of a placeholder,
+    reusing the CR-controlled Connection Center tool connector/setup/OAuth/
+    messenger/readback cards already present under Xenesis Agent settings.
+- Rationale:
+  - The goal asks for external tool connections and views to be handled inside
+    Xenesis Desk. The Xenesis Agent Connection Center has rich tool connector
+    state, but Settings `connectors` still renders
+    `settings.noSaveOptions`. That leaves a visible "Connectors" entry that
+    does not expose Notion, Google Calendar, Google Workspace, MCP install
+    drafts, OAuth drafts, setup plans, action policies, or CR open/request
+    controls.
+- Scope:
+  - Add RED source/rendering coverage requiring Settings `connectors` to call a
+    real connector renderer, not `renderPlaceholder`.
+  - Implement a focused `renderConnectors` view that shows external tool and
+    external messenger connector summary metrics and the existing cards through
+    `renderXenesisConnectionItem`.
+  - Keep all actions on existing CR request/open/readback paths; do not add
+    OAuth execution, token storage, shell install, provider tool execution, or
+    external mutations.
+- Touched files so far:
+  - `handoff.md`
+  - `src/renderer/panes/xenesisConnectionCenter.test.ts`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
+  - `docs/capability-registry-audit.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-settings-connectors-surface.md`
+- Commands run:
+  - `git status --short --branch` -> clean `agent/upcoming-work-20260627`.
+  - Gap scan found Settings `connectors` still calls
+    `renderPlaceholder(t('settings.category.connectors'), ...)` while Xenesis
+    tool connector/OAuth/setup surfaces already exist in Connection Center.
+  - RED:
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` ->
+    failed 53/54 because Settings `connectors` did not read
+    `xenesisConnectionsStatus?.sections.messengers.items`.
+  - GREEN:
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` ->
+    passed 54/54.
+  - `npx biome format --write src\renderer\panes\SettingsPane.tsx src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\i18n\en.ts src\renderer\i18n\ko.ts handoff.md`
+    -> formatted 4 files, no fixes applied.
+  - `npm run typecheck` -> passed.
+  - `npm run docs:capabilities:audit` -> passed, wrote
+    `docs/capability-registry-audit.md` with 779 nodes and 689 coverage path
+    references.
+  - `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> missing registered paths 0, missing dispatched coverage paths 0,
+    undispatched static callable methods 0, dispatcher paths missing from tree
+    0.
+  - `npm run smoke:xenesis:natural-desk-routing` -> passed 186/186.
+  - `npx biome check src\renderer\panes\SettingsPane.tsx src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\i18n\en.ts src\renderer\i18n\ko.ts --max-diagnostics 80`
+    -> checked 4 files, no fixes applied.
+  - `git diff --check` -> passed with line-ending warnings only.
+  - Added Obsidian working note:
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-settings-connectors-surface.md`.
+  - Final fresh reruns after copy/note updates:
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` ->
+    passed 54/54; `npm run typecheck` -> passed; changed-file Biome check ->
+    passed; `git diff --check` -> passed with line-ending warnings only;
+    `npm run docs:capabilities:audit` -> passed; CR audit gap check -> all 0;
+    `npm run smoke:xenesis:natural-desk-routing` -> passed 186/186.
+- Implemented:
+  - Added a top-level Settings `connectors` renderer that reads
+    `xenesisConnectionsStatus.sections.tools.items` and
+    `xenesisConnectionsStatus.sections.messengers.items`.
+  - Added connector summary metrics for ready/planned counts, tool connector
+    metadata, OAuth drafts, setup plans, action policies, messenger views,
+    messenger profile drafts, and channel setup plans.
+  - Reused existing `renderXenesisConnectionItem` cards so all user actions
+    continue to go through the existing CR request/open/readback builders.
+  - Added English/Korean Settings copy for external tools and external
+    messengers.
+- Known gaps:
+  - This is a Settings surface exposure only. It does not execute OAuth login,
+    install MCP servers, send messenger messages, mutate external tools, or
+    change provider runtime behavior.
+  - Repository-wide `npm run lint` remains blocked by existing repo-wide Biome
+    diagnostics outside this slice; changed files passed the focused Biome
+    check.
+- Next intended step:
+  - Review final diff, stage, and commit this Settings connectors surface
+    slice.
