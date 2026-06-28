@@ -948,6 +948,7 @@ export const en = {
     xenesisConnectionsPlanned: 'Planned',
     xenesisConnectionsEmpty: 'Connection status is not loaded yet.',
     xenesisConnectionsFailed: 'Failed to read connection status: {message}',
+    xenesisConnectionsLastAction: 'Last connection action: {result}',
     xenesisConnectionsMissingEnv: 'Missing environment',
     xenesisConnectionsRequiredEnv: 'Required environment',
     xenesisConnectionsCrActions: 'CR actions',

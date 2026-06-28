@@ -290,6 +290,8 @@ into a Desk-native, CR-first setup and connection experience.
   - `src/renderer/panes/SettingsPane.tsx`
   - `src/renderer/i18n/en.ts`
   - `src/renderer/i18n/ko.ts`
+  - `docs/manual/12-agent-user-stories.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-connection-action-result-feedback.md`
   - `docs/manual/09-onboarding-connections.md`
   - `docs/manual/11-external-tool-integrations.md`
   - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-google-oauth-runtime-readiness.md`
@@ -15474,6 +15476,11 @@ Verification so far:
   - No external web browsing.
 - Touched files so far:
   - `handoff.md`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.test.ts`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
   - `src/shared/xenesisConnections.ts`
   - `src/shared/xenesisConnections.test.ts`
   - `src/shared/types.ts`
@@ -17074,6 +17081,86 @@ Verification so far:
     touched files.
 - Next intended step:
   - Continue with the next hardcoding/CR gap slice from the clean worktree.
+
+## Latest Slice: Connection Center CR Action Result Feedback
+
+- Current objective:
+  - Use a larger slice cycle: keep the newly connected user-story workflow
+    preview button useful by surfacing the last CR action result in Settings,
+    then update docs/Obsidian and run the focused verification set before
+    committing.
+- Scope:
+  - Add a renderer helper that formats `McpBridgeCapabilityCallResult` into a
+    concise human-readable result line.
+  - Store the last Connection Center CR action result in `SettingsPane`.
+  - Render the last action result near the Connection Center status summary.
+  - Cover the helper and Settings wiring with tests/source guards before
+    implementation.
+- Touched files so far:
+  - `handoff.md`
+- Commands run:
+  - `git status --short` -> clean.
+  - `rg -n "xenesisConnections(Busy|Error|Status|Last|Preview)|setXenesisConnections|handleXenesisConnectionRequest|callCapability\(request\)|xenesisConnectionsActionFailed|xenesisConnectionsTitle" src/renderer/panes/SettingsPane.tsx`
+    -> found the shared CR action handler and Connection Center render points.
+  - `rg -n "formatXenesis|buildXenesisUserStoryWorkflowPreviewRequest|DeskBridgeCapability|CapabilityCall|workflow preview|Preview workflow|LastAction" src/renderer/panes/xenesisConnectionCenter.ts src/renderer/panes/xenesisConnectionCenter.test.ts src/shared/types.ts`
+    -> found existing request builders, formatter tests, and
+    `McpBridgeCapabilityCallResult`.
+  - Focused `Get-Content` reads of `SettingsPane.tsx`,
+    `xenesisConnectionCenter.ts`, and `src/shared/types.ts`.
+  - RED:
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` ->
+    failed as expected. `formatXenesisConnectionActionResultSummary` was not
+    implemented, and `SettingsPane.tsx` did not yet contain
+    `xenesisConnectionsLastAction` wiring.
+  - GREEN focused:
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` ->
+    passed 68/68.
+  - Combined focused:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    -> passed 109/109 before and after Biome formatting.
+  - Typecheck:
+    `npm run typecheck` -> passed before and after Biome formatting.
+  - CR audit:
+    `npm run docs:capabilities:audit` -> passed, wrote
+    `docs/capability-registry-audit.md`, and reported 796 nodes / 689 coverage
+    path references.
+  - CR audit counter readback:
+    `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> all 0.
+  - Focused Biome:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true ...changed files...`
+    -> initially failed on import sorting and formatter differences; after
+    `npx biome check --write ...changed files...`, rerun passed.
+  - Hygiene:
+    `git diff --check` -> passed; Git printed LF/CRLF normalization warnings
+    only.
+- Exact verification result:
+  - RED confirmed the new tests cover missing formatter behavior and missing
+    Settings result display wiring.
+  - GREEN passed after adding
+    `formatXenesisConnectionActionResultSummary`, storing
+    `xenesisConnectionsLastAction`, rendering the last action line, and adding
+    en/ko labels.
+  - CR audit gap counters are all 0:
+    missing registered paths 0, missing dispatched coverage paths 0,
+    undispatched static callable methods 0, dispatcher paths missing from tree
+    0.
+  - The generated audit doc had timestamp/EOF-only churn; that churn was
+    reverted, leaving no audit doc diff.
+- Implemented:
+  - Connection Center action results now produce a concise summary. Workflow
+    preview results include step count and rejected-step count; generic
+    failures include the error/message detail.
+  - Settings now records successful and failed Connection Center CR calls and
+    displays the last action result near the connection summary.
+  - Manual and Obsidian working notes now describe the result-feedback behavior
+    and safety boundary.
+- Known gaps:
+  - Full repo lint and public-release checks retain the known unrelated infra
+    gaps documented above.
+- Next intended step:
+  - Review the final diff, commit the slice, then continue with the next larger
+    CR/Connection Center gap slice.
 
 ## 2026-06-29 - User Story CR Workflow Preview Slice
 

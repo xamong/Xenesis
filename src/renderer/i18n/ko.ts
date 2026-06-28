@@ -941,6 +941,7 @@ export const ko = {
     xenesisConnectionsPlanned: '계획됨',
     xenesisConnectionsEmpty: '연결 상태를 아직 불러오지 않았습니다.',
     xenesisConnectionsFailed: '연결 상태를 읽지 못했습니다: {message}',
+    xenesisConnectionsLastAction: '마지막 연결 액션: {result}',
     xenesisConnectionsMissingEnv: '누락된 환경 변수',
     xenesisConnectionsRequiredEnv: '필요한 환경 변수',
     xenesisConnectionsCrActions: 'CR 액션',

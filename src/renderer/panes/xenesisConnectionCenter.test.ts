@@ -48,6 +48,7 @@ import {
   formatXenesisChannelSafetySummary,
   formatXenesisChannelSetupPlanSummary,
   formatXenesisChannelUserStorySummary,
+  formatXenesisConnectionActionResultSummary,
   formatXenesisConnectionDiagnosticRunbookSummary,
   formatXenesisConnectionGuidedStepDetail,
   formatXenesisConnectionReviewStepDetail,
@@ -261,6 +262,29 @@ test('formatXenesisConnectionReviewStepDetail exposes required fields, read/cont
   );
 });
 
+test('formatXenesisConnectionActionResultSummary summarizes CR workflow preview and failure results', () => {
+  assert.equal(
+    formatXenesisConnectionActionResultSummary({
+      ok: true,
+      path: 'xd.automation.workflow.preview',
+      result: {
+        steps: [{ path: 'xd.xenesis.tools.userStories.status' }, { path: 'xd.xenesis.tools.open' }],
+        rejectedSteps: [{ path: 'xd.xenesis.tools.messages.send' }],
+      },
+    }),
+    'xd.automation.workflow.preview / ok / 2 workflow step(s) / 1 rejected step(s)',
+  );
+
+  assert.equal(
+    formatXenesisConnectionActionResultSummary({
+      ok: false,
+      path: 'xd.xenesis.tools.runtime.status',
+      error: 'runtime is blocked',
+    }),
+    'xd.xenesis.tools.runtime.status / failed / runtime is blocked',
+  );
+});
+
 test('SettingsPane renders Connection Center guided and review step details', () => {
   const source = readFileSync('src/renderer/panes/SettingsPane.tsx', 'utf8');
 
@@ -291,6 +315,10 @@ test('SettingsPane renders Connection Center guided and review step details', ()
   assert.match(source, /buildXenesisUserStoryWorkflowPreviewRequest/);
   assert.match(source, /userStoryWorkflowPreviewRequest/);
   assert.match(source, /settings\.xenesisConnectionsPreviewUserStoryWorkflow/);
+  assert.match(source, /xenesisConnectionsLastAction/);
+  assert.match(source, /setXenesisConnectionsLastAction/);
+  assert.match(source, /formatXenesisConnectionActionResultSummary/);
+  assert.match(source, /settings\.xenesisConnectionsLastAction/);
 });
 
 test('SettingsPane renders the Connectors category from CR-backed tool and messenger connection cards', () => {

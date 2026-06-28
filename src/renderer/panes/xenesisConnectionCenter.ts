@@ -1,5 +1,6 @@
 import type {
   McpBridgeCapabilityCallRequest,
+  McpBridgeCapabilityCallResult,
   XenesisConnectionChannelAccessGroupsTemplate,
   XenesisConnectionChannelPairingTemplate,
   XenesisConnectionChannelProfileDraftReviewStep,
@@ -313,6 +314,22 @@ export function formatXenesisConnectionSetupReviewSummary(review: XenesisConnect
   return `${review.status} / ${review.actionInboxItemId ?? review.approvalSessionKey} / ${
     review.requester || 'unknown requester'
   }`;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+export function formatXenesisConnectionActionResultSummary(result: McpBridgeCapabilityCallResult): string {
+  const status = result.ok ? 'ok' : result.approvalRequired ? 'approval-required' : 'failed';
+  const payload = isRecord(result.result) ? result.result : null;
+  const workflowStepCount = Array.isArray(payload?.steps) ? payload.steps.length : null;
+  if (workflowStepCount !== null) {
+    const rejectedStepCount = Array.isArray(payload?.rejectedSteps) ? payload.rejectedSteps.length : 0;
+    return `${result.path} / ${status} / ${workflowStepCount} workflow step(s) / ${rejectedStepCount} rejected step(s)`;
+  }
+  const message = result.error || result.message || result.approval || result.permission || '';
+  return message ? `${result.path} / ${status} / ${message}` : `${result.path} / ${status}`;
 }
 
 function buildXenesisUserStoryWorkflowPreviewArgs(

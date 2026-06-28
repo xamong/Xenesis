@@ -117,6 +117,7 @@ import {
   formatXenesisChannelSafetySummary,
   formatXenesisChannelSetupPlanSummary,
   formatXenesisChannelUserStorySummary,
+  formatXenesisConnectionActionResultSummary,
   formatXenesisConnectionDiagnosticRunbookSummary,
   formatXenesisConnectionGuidedStepDetail,
   formatXenesisConnectionReviewStepDetail,
@@ -1275,6 +1276,7 @@ export default function SettingsPane() {
   const [xenesisConnectionsStatus, setXenesisConnectionsStatus] = useState<XenesisConnectionsStatus | null>(null);
   const [xenesisConnectionsBusy, setXenesisConnectionsBusy] = useState(false);
   const [xenesisConnectionsError, setXenesisConnectionsError] = useState('');
+  const [xenesisConnectionsLastAction, setXenesisConnectionsLastAction] = useState('');
   const [secretVaultMode, setSecretVaultMode] = useState<SecretVaultStorageMode>('plain');
   const [secretVaultStatus, setSecretVaultStatus] = useState<SecretVaultStatus | null>(null);
   const [secretVaultBusy, setSecretVaultBusy] = useState(false);
@@ -4308,16 +4310,34 @@ export default function SettingsPane() {
     async (request: McpBridgeCapabilityCallRequest | null) => {
       if (!request) return;
       if (!window.deskBridgeAPI?.callCapability) {
-        setXenesisConnectionsError('Desk bridge API is unavailable.');
+        const message = 'Desk bridge API is unavailable.';
+        setXenesisConnectionsError(message);
+        setXenesisConnectionsLastAction(
+          formatXenesisConnectionActionResultSummary({
+            ok: false,
+            path: request.path,
+            error: message,
+          }),
+        );
         return;
       }
+      setXenesisConnectionsError('');
       try {
         const result = await window.deskBridgeAPI.callCapability(request);
+        setXenesisConnectionsLastAction(formatXenesisConnectionActionResultSummary(result));
         if (!result.ok) {
           setXenesisConnectionsError(result.error || t('settings.xenesisConnectionsActionFailed'));
         }
       } catch (error) {
-        setXenesisConnectionsError(error instanceof Error ? error.message : String(error));
+        const message = error instanceof Error ? error.message : String(error);
+        setXenesisConnectionsError(message);
+        setXenesisConnectionsLastAction(
+          formatXenesisConnectionActionResultSummary({
+            ok: false,
+            path: request.path,
+            error: message,
+          }),
+        );
       }
     },
     [t],
@@ -6466,6 +6486,11 @@ export default function SettingsPane() {
           {xenesisConnectionsError && (
             <p className="sp-hint sp-warning-text">
               {t('settings.xenesisConnectionsFailed', { message: xenesisConnectionsError })}
+            </p>
+          )}
+          {xenesisConnectionsLastAction && (
+            <p className="sp-hint">
+              {t('settings.xenesisConnectionsLastAction', { result: xenesisConnectionsLastAction })}
             </p>
           )}
         </section>

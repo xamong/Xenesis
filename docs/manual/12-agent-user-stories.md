@@ -56,7 +56,9 @@ path restrictions.
 Settings user-story cards expose this as a workflow preview action. The button
 calls `xd.automation.workflow.preview` with the contract's workflow input so the
 operator can validate the CR read/open sequence before deciding whether to run
-or save any workflow.
+or save any workflow. Settings also records the last Connection Center CR action
+result, so a preview call leaves a visible path/status/step-count summary
+instead of disappearing after the button click.
 
 ## Provider Stories
 
