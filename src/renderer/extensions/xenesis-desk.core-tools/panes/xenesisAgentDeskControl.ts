@@ -53,7 +53,6 @@ import {
   XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES,
   XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES,
   XENESIS_NATURAL_CONNECTION_TARGETS,
-  XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS,
   XENESIS_NATURAL_CORE_CAPABILITY_CONTEXT_WORDS,
   XENESIS_NATURAL_CORE_TOOL_OPEN_REASON,
   XENESIS_NATURAL_CORE_TOOL_TARGETS,
@@ -70,7 +69,6 @@ import {
   XENESIS_NATURAL_DOCK_SIDE_TARGETS,
   XENESIS_NATURAL_DOCK_VERTICAL_CONTEXT_WORDS,
   XENESIS_NATURAL_DOCK_WINDOW_STATE_TARGETS,
-  XENESIS_NATURAL_DRAFT_CONTEXT_WORDS,
   XENESIS_NATURAL_EXPLICIT_OPEN_WORDS,
   XENESIS_NATURAL_EXPLORER_CONTEXT_WORDS,
   XENESIS_NATURAL_EXPLORER_HIDE_CONTEXT_WORDS,
@@ -96,7 +94,6 @@ import {
   XENESIS_NATURAL_LOCAL_CLI_CONTEXT_WORDS,
   XENESIS_NATURAL_LOCAL_CLI_SCAN_CONTEXT_WORDS,
   XENESIS_NATURAL_MCP_BRIDGE_CONTEXT_WORDS,
-  XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS,
   XENESIS_NATURAL_MCP_INSTALL_REVIEW_CONTEXT_WORDS,
   XENESIS_NATURAL_MCP_SETTINGS_CONTEXT_WORDS,
   XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_ACTION_DESCRIPTORS,
@@ -148,7 +145,6 @@ import {
   XENESIS_NATURAL_SAFETY_CONTEXT_WORDS,
   XENESIS_NATURAL_SESSION_CONTEXT_WORDS,
   XENESIS_NATURAL_SESSION_RESET_CONTEXT_WORDS,
-  XENESIS_NATURAL_SETUP_CONTEXT_WORDS,
   XENESIS_NATURAL_SETUP_IMPERATIVE_WORDS,
   XENESIS_NATURAL_TASK_CONTEXT_WORDS,
   XENESIS_NATURAL_TERMINAL_CONTEXT_WORDS,
@@ -156,8 +152,8 @@ import {
   XENESIS_NATURAL_TERMINAL_RUN_CONTEXT_WORDS,
   XENESIS_NATURAL_TEXT_DEFAULTS,
   XENESIS_NATURAL_TOGGLE_CONTEXT_WORDS,
-  XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS,
-  XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
+  XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_RULES,
+  XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_RULES,
   XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
   XENESIS_NATURAL_VIEW_OPEN_COMMAND_WORDS,
   XENESIS_NATURAL_VIEW_OPEN_PATH,
@@ -321,6 +317,7 @@ function naturalCatalogRuleActionFromNaturalText(
 ): XenesisDeskActionRequest | null {
   for (const rule of rules) {
     if (rule.contextWords.length > 0 && !hasAny(value, rule.contextWords)) continue;
+    if ((rule.requiredContextWordGroups ?? []).some((contextWords) => !hasAny(value, contextWords))) continue;
     return naturalCatalogAction(rule.action, args);
   }
 
@@ -359,8 +356,6 @@ const PLAN_TEXT = XENESIS_NATURAL_PLAN_VISIBLE_TEXT;
 const PROVIDER_AUTO_TARGET = XENESIS_NATURAL_PROVIDER_AUTO_TARGET;
 const REVIEW_REQUEST_ACTIONS = XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS;
 const RUNTIME_ACTIONS = XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS;
-const TOOL_AGGREGATE_OPEN_ACTIONS = XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS;
-const TOOL_AGGREGATE_STATUS_ACTIONS = XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS;
 
 function naturalPlan(
   visibleText: string,
@@ -676,39 +671,7 @@ function xenesisToolAggregateStatusActionFromNaturalText(value: string): Xenesis
   if (!hasExternalToolCatalogContext(value)) return null;
   if (!hasXenesisConnectionReadbackIntent(value)) return null;
 
-  if (hasAny(value, XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS)) {
-    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.connectors);
-  }
-
-  if (hasAny(value, XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS) && hasAny(value, XENESIS_NATURAL_DRAFT_CONTEXT_WORDS)) {
-    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.mcpInstallDrafts);
-  }
-
-  if (hasAny(value, XENESIS_NATURAL_OAUTH_CONTEXT_WORDS)) {
-    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.oauthDrafts);
-  }
-
-  if (hasAny(value, XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS)) {
-    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.views);
-  }
-
-  if (hasAny(value, XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS)) {
-    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.installPlans);
-  }
-
-  if (hasAny(value, XENESIS_NATURAL_SETUP_CONTEXT_WORDS)) {
-    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.setup);
-  }
-
-  if (hasAny(value, XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS)) {
-    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.actions);
-  }
-
-  if (hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
-    return naturalCatalogAction(TOOL_AGGREGATE_STATUS_ACTIONS.userStories);
-  }
-
-  return null;
+  return naturalCatalogRuleActionFromNaturalText(value, XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_RULES);
 }
 
 function xenesisMessengerAggregateStatusActionFromNaturalText(value: string): XenesisDeskActionRequest | null {
@@ -939,44 +902,12 @@ function xenesisAggregateConnectionCenterOpenActionFromNaturalText(value: string
     );
   }
 
-  if (hasExternalToolCatalogContext(value) && hasAny(value, XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS)) {
-    return naturalCatalogAction(TOOL_AGGREGATE_OPEN_ACTIONS.connectors, DESK_ACTION_ARGS.ensureVisible());
-  }
-
-  if (
-    hasExternalToolCatalogContext(value) &&
-    hasAny(value, XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS) &&
-    hasAny(value, XENESIS_NATURAL_DRAFT_CONTEXT_WORDS)
-  ) {
-    return naturalCatalogAction(TOOL_AGGREGATE_OPEN_ACTIONS.mcpInstallDrafts, DESK_ACTION_ARGS.ensureVisible());
-  }
-
-  if (hasExternalToolCatalogContext(value) && hasAny(value, XENESIS_NATURAL_OAUTH_CONTEXT_WORDS)) {
-    return naturalCatalogAction(TOOL_AGGREGATE_OPEN_ACTIONS.oauthDrafts, DESK_ACTION_ARGS.ensureVisible());
-  }
-
-  if (hasExternalToolCatalogContext(value) && hasAny(value, XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS)) {
-    return naturalCatalogAction(TOOL_AGGREGATE_OPEN_ACTIONS.views, DESK_ACTION_ARGS.ensureVisible());
-  }
-
-  if (hasExternalToolCatalogContext(value) && hasAny(value, XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS)) {
-    return naturalCatalogAction(TOOL_AGGREGATE_OPEN_ACTIONS.installPlans, DESK_ACTION_ARGS.ensureVisible());
-  }
-
-  if (hasExternalToolCatalogContext(value) && hasAny(value, XENESIS_NATURAL_SETUP_CONTEXT_WORDS)) {
-    return naturalCatalogAction(TOOL_AGGREGATE_OPEN_ACTIONS.setup, DESK_ACTION_ARGS.ensureVisible());
-  }
-
-  if (hasExternalToolCatalogContext(value) && hasAny(value, XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS)) {
-    return naturalCatalogAction(TOOL_AGGREGATE_OPEN_ACTIONS.actions, DESK_ACTION_ARGS.ensureVisible());
-  }
-
-  if (hasExternalToolCatalogContext(value) && hasAny(value, XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS)) {
-    return naturalCatalogAction(TOOL_AGGREGATE_OPEN_ACTIONS.userStories, DESK_ACTION_ARGS.ensureVisible());
-  }
-
   if (hasExternalToolCatalogContext(value)) {
-    return naturalCatalogAction(TOOL_AGGREGATE_OPEN_ACTIONS.catalog, DESK_ACTION_ARGS.ensureVisible());
+    return naturalCatalogRuleActionFromNaturalText(
+      value,
+      XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_RULES,
+      DESK_ACTION_ARGS.ensureVisible(),
+    );
   }
 
   if (hasXenesisMessengerProfileDraftCatalogContext(value)) {

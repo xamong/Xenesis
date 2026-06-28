@@ -88,6 +88,7 @@ export interface XenesisNaturalProviderActionRule {
 
 export interface XenesisNaturalCatalogActionRule {
   contextWords: readonly string[];
+  requiredContextWordGroups?: readonly (readonly string[])[];
   action: XenesisNaturalDeskActionDescriptor;
   fallback?: boolean;
 }
@@ -1634,6 +1635,47 @@ export const XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS = {
   },
 } as const satisfies Record<string, XenesisNaturalDeskActionDescriptor>;
 
+export const XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS.connectors,
+  },
+  {
+    contextWords: XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS,
+    requiredContextWordGroups: [XENESIS_NATURAL_DRAFT_CONTEXT_WORDS],
+    action: XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS.mcpInstallDrafts,
+  },
+  {
+    contextWords: XENESIS_NATURAL_OAUTH_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS.oauthDrafts,
+  },
+  {
+    contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS.views,
+  },
+  {
+    contextWords: XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS.installPlans,
+  },
+  {
+    contextWords: XENESIS_NATURAL_SETUP_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS.setup,
+  },
+  {
+    contextWords: XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS.actions,
+  },
+  {
+    contextWords: XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS.userStories,
+  },
+  {
+    contextWords: [],
+    action: XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS.catalog,
+    fallback: true,
+  },
+] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+
 export const XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_ACTION_DESCRIPTORS = {
   profileDrafts: {
     id: 'natural-xenesis-messengers-profile-drafts-catalog-open',
@@ -1747,6 +1789,42 @@ export const XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS = {
     reason: 'Read external tool user-story catalog status from natural language request.',
   },
 } as const satisfies Record<string, XenesisNaturalDeskActionDescriptor>;
+
+export const XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_CONNECTOR_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS.connectors,
+  },
+  {
+    contextWords: XENESIS_NATURAL_MCP_INSTALL_CONTEXT_WORDS,
+    requiredContextWordGroups: [XENESIS_NATURAL_DRAFT_CONTEXT_WORDS],
+    action: XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS.mcpInstallDrafts,
+  },
+  {
+    contextWords: XENESIS_NATURAL_OAUTH_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS.oauthDrafts,
+  },
+  {
+    contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS.views,
+  },
+  {
+    contextWords: XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS.installPlans,
+  },
+  {
+    contextWords: XENESIS_NATURAL_SETUP_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS.setup,
+  },
+  {
+    contextWords: XENESIS_NATURAL_ACTION_POLICY_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS.actions,
+  },
+  {
+    contextWords: XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS.userStories,
+  },
+] as const satisfies readonly XenesisNaturalCatalogActionRule[];
 
 export const XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS = {
   profileDrafts: {

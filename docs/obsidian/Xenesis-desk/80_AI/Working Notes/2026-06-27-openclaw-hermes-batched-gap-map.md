@@ -3147,6 +3147,71 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Tool Aggregate Rule Catalog Refactor Slice
+
+- Started the next hardcoding cleanup slice for broad external-tool aggregate
+  status/open selection.
+- Intended change:
+  - add shared `XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_RULES` and
+    `XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_RULES`;
+  - have `xenesisAgentDeskControl.ts` interpret those rule arrays instead of
+    branching directly on `TOOL_AGGREGATE_STATUS_ACTIONS.*` and
+    `TOOL_AGGREGATE_OPEN_ACTIONS.*`;
+  - keep existing CR paths and matching priority unchanged, including the MCP
+    install draft rule requiring both MCP/install context and draft context.
+- Scope boundary:
+  - Refactor only.
+  - Do not change registry/dispatcher paths, tool schemas, connector/OAuth/MCP
+    install data, setup request writes, approval behavior, credentials, install
+    execution, or UI rendering.
+- Verification plan:
+  - RED focused planner/source-guard test first;
+  - GREEN focused planner test;
+  - scoped Biome for catalog/planner/test files;
+  - root typecheck, build, natural Desk routing live smoke, and diff check
+    before commit.
+- RED verification:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    failed as expected with 36/37 passing because the planner still references
+    the tool aggregate action descriptors directly.
+- Implementation:
+  - Added tool aggregate status/open rule catalogs in
+    `xenesisNaturalLanguageCatalog.ts`.
+  - Extended catalog rules with optional required context word groups so the MCP
+    install draft aggregate still requires both MCP/install wording and draft
+    wording.
+  - Replaced the broad external-tool status/open if-chains in
+    `xenesisAgentDeskControl.ts` with shared rule interpretation.
+- GREEN verification:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 37/37 tests.
+  - After unused planner import cleanup, the focused planner test temporarily
+    failed on a stale source guard that still expected direct planner imports
+    for connector/MCP/draft/setup vocabulary. The guard was updated to validate
+    those terms through the shared rule catalogs instead.
+  - Scoped Biome passed for `xenesisNaturalLanguageCatalog.ts`,
+    `xenesisAgentDeskControl.ts`, and `xenesisAgentDeskControl.test.ts`.
+  - The focused planner regression passed again with 37/37 tests after the
+    source-guard adjustment.
+  - Initial `npm run typecheck` failed because the test accessed
+    `requiredContextWordGroups` directly on the narrow `satisfies` rule union;
+    the test now uses an `in` guard for that optional property.
+  - Focused planner test and scoped Biome both passed again after the
+    type-guard fix.
+  - `npm run typecheck` passed.
+  - `npm run build` passed; Vite emitted the existing browser `fs`
+    externalization and dynamic import chunking warnings.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 21/21 through the
+    built Electron app.
+  - CR audit was not run because no registry, dispatcher, or capability code
+    changed.
+  - Static hardcoding check found no remaining tool aggregate action descriptor
+    or `TOOL_AGGREGATE_*_ACTIONS` matches in `xenesisAgentDeskControl.ts`.
+  - `git diff --check` exited 0 with LF-to-CRLF warnings for touched tracked
+    files only.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
