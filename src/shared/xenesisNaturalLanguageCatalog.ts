@@ -60,6 +60,14 @@ export interface XenesisNaturalDeskActionTemplateDescriptor<TArgs extends unknow
   reasonFor: (...args: TArgs) => string;
 }
 
+export interface XenesisNaturalDeskActionRequest {
+  id: string;
+  path: string;
+  args: unknown;
+  approved: boolean;
+  reason?: string;
+}
+
 export type XenesisNaturalConnectionTargetRuleScope = 'any' | 'tool' | 'messenger' | 'planned-google-tool';
 
 export type XenesisNaturalConnectionTargetArgsKind =
@@ -4053,4 +4061,179 @@ export function isXenesisNaturalImplementedMessengerTarget(target: {
   supportLevel?: string;
 }): boolean {
   return target.kind === 'messenger' && target.supportLevel === 'implemented';
+}
+
+export function buildXenesisNaturalAction(
+  id: string,
+  path: string,
+  args: unknown,
+  reason: string,
+): XenesisNaturalDeskActionRequest {
+  return { id, path, args, approved: XENESIS_DESK_ACTION_APPROVAL_STATE.pending, reason };
+}
+
+export function buildXenesisNaturalCatalogAction(
+  descriptor: XenesisNaturalDeskActionDescriptor,
+  args: unknown = XENESIS_NATURAL_DESK_ACTION_ARGS.empty(),
+): XenesisNaturalDeskActionRequest {
+  return buildXenesisNaturalAction(descriptor.id, descriptor.path, args, descriptor.reason);
+}
+
+export function buildXenesisNaturalTemplateAction<TArgs extends unknown[]>(
+  descriptor: XenesisNaturalDeskActionTemplateDescriptor<TArgs>,
+  templateArgs: TArgs,
+  args: unknown,
+): XenesisNaturalDeskActionRequest {
+  return buildXenesisNaturalAction(
+    descriptor.idFor(...templateArgs),
+    descriptor.path,
+    args,
+    descriptor.reasonFor(...templateArgs),
+  );
+}
+
+export function buildXenesisNaturalCoreToolOpenAction(
+  definition: XenesisNaturalCoreToolTarget,
+  placement: string | undefined,
+): XenesisNaturalDeskActionRequest {
+  return {
+    id: definition.id,
+    path: definition.path,
+    args: XENESIS_NATURAL_DESK_ACTION_ARGS.placement(placement || XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS.placement),
+    approved: XENESIS_DESK_ACTION_APPROVAL_STATE.pending,
+    reason: XENESIS_NATURAL_CORE_TOOL_OPEN_REASON(definition.reasonName),
+  };
+}
+
+export function buildXenesisNaturalViewOpenAction(
+  view: Pick<XenesisNaturalViewTarget, 'id' | 'kind' | 'reason'>,
+  placement: string | undefined,
+): XenesisNaturalDeskActionRequest {
+  return {
+    id: view.id,
+    path: XENESIS_NATURAL_VIEW_OPEN_PATH,
+    args: XENESIS_NATURAL_DESK_ACTION_ARGS.withPlacement(
+      XENESIS_NATURAL_DESK_ACTION_ARGS.viewKind(view.kind),
+      placement || XENESIS_NATURAL_DESK_ACTION_ARG_DEFAULTS.placement,
+    ),
+    approved: XENESIS_DESK_ACTION_APPROVAL_STATE.pending,
+    reason: view.reason,
+  };
+}
+
+export function findXenesisNaturalCatalogRuleAction(
+  value: string,
+  rules: readonly XenesisNaturalCatalogActionRule[],
+  args: unknown = XENESIS_NATURAL_DESK_ACTION_ARGS.empty(),
+): XenesisNaturalDeskActionRequest | null {
+  const rule = findXenesisNaturalContextRule(value, rules);
+  return rule ? buildXenesisNaturalCatalogAction(rule.action, args) : null;
+}
+
+export function xenesisNaturalConnectionTargetMatchesRule(
+  target: XenesisNaturalConnectionTarget,
+  rule: XenesisNaturalConnectionTargetActionRule,
+): boolean {
+  if (rule.targetScope === 'any') return true;
+  if (rule.targetScope === 'tool') return isXenesisNaturalConnectionToolTarget(target);
+  if (rule.targetScope === 'messenger') return isXenesisNaturalConnectionMessengerTarget(target);
+  return isXenesisNaturalPlannedGoogleToolTarget(target);
+}
+
+export function buildXenesisNaturalConnectionTargetArgsForRule(
+  rule: XenesisNaturalConnectionTargetActionRule,
+  target: XenesisNaturalConnectionTarget,
+): unknown {
+  if (rule.argsKind === 'targetId') return XENESIS_NATURAL_DESK_ACTION_ARGS.targetId(target.id);
+  if (rule.argsKind === 'targetIdVisible') return XENESIS_NATURAL_DESK_ACTION_ARGS.targetIdVisible(target.id);
+  if (rule.argsKind === 'tool') return XENESIS_NATURAL_DESK_ACTION_ARGS.tool(target.id);
+  if (rule.argsKind === 'channelVisible') return XENESIS_NATURAL_DESK_ACTION_ARGS.channelVisible(target.id);
+  return XENESIS_NATURAL_DESK_ACTION_ARGS.channel(target.id);
+}
+
+export function findXenesisNaturalConnectionTargetRuleAction(
+  value: string,
+  target: XenesisNaturalConnectionTarget,
+  rules: readonly XenesisNaturalConnectionTargetActionRule[],
+): XenesisNaturalDeskActionRequest | null {
+  for (const rule of rules) {
+    if (!xenesisNaturalConnectionTargetMatchesRule(target, rule)) continue;
+    if (!matchesXenesisNaturalContextRule(value, rule)) continue;
+    return buildXenesisNaturalTemplateAction(
+      rule.action,
+      [target.id, target.label],
+      buildXenesisNaturalConnectionTargetArgsForRule(rule, target),
+    );
+  }
+
+  return null;
+}
+
+export function buildXenesisNaturalProviderArgsForRule(
+  rule: XenesisNaturalProviderActionRule,
+  provider: Pick<XenesisNaturalWordsTarget, 'id'>,
+): unknown {
+  if (rule.argsKind === 'providerVisible') return XENESIS_NATURAL_DESK_ACTION_ARGS.providerVisible(provider.id);
+  return XENESIS_NATURAL_DESK_ACTION_ARGS.provider(provider.id);
+}
+
+export function findXenesisNaturalProviderRuleAction(
+  value: string,
+  provider: Pick<XenesisNaturalWordsTarget, 'id' | 'label'>,
+  rules: readonly XenesisNaturalProviderActionRule[],
+): XenesisNaturalDeskActionRequest | null {
+  for (const rule of rules) {
+    if (!matchesXenesisNaturalContextRule(value, rule)) continue;
+    return buildXenesisNaturalTemplateAction(
+      rule.action,
+      [provider.id, provider.label],
+      buildXenesisNaturalProviderArgsForRule(rule, provider),
+    );
+  }
+
+  return null;
+}
+
+export function buildXenesisNaturalOnboardingArgsForRule(
+  rule: XenesisNaturalOnboardingActionRule,
+  id?: string,
+): unknown {
+  if (rule.argsKind === 'ensureVisible') return XENESIS_NATURAL_DESK_ACTION_ARGS.ensureVisible();
+  if (rule.argsKind === 'targetIdVisible') {
+    return XENESIS_NATURAL_DESK_ACTION_ARGS.targetIdVisible(id || XENESIS_NATURAL_TEXT_DEFAULTS.empty);
+  }
+  return XENESIS_NATURAL_DESK_ACTION_ARGS.targetId(id || XENESIS_NATURAL_TEXT_DEFAULTS.empty);
+}
+
+export function matchesXenesisNaturalConnectionAggregateRule(
+  value: string,
+  matchKind: XenesisNaturalConnectionAggregateRuleMatchKind,
+): boolean {
+  return matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_CONNECTION_AGGREGATE_MATCH_RULES[matchKind]);
+}
+
+export function findXenesisNaturalConnectionAggregateStatusAction(
+  value: string,
+  stage: XenesisNaturalConnectionAggregateStatusRuleStage,
+): XenesisNaturalDeskActionRequest | null {
+  for (const rule of XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_RULES) {
+    if (rule.stage !== stage) continue;
+    if (!matchesXenesisNaturalConnectionAggregateRule(value, rule.matchKind)) continue;
+    return buildXenesisNaturalCatalogAction(rule.action);
+  }
+
+  return null;
+}
+
+export function findXenesisNaturalConnectionAggregateOpenAction(
+  value: string,
+  stage: XenesisNaturalConnectionAggregateOpenRuleStage,
+): XenesisNaturalDeskActionRequest | null {
+  for (const rule of XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_RULES) {
+    if (rule.stage !== stage) continue;
+    if (!matchesXenesisNaturalConnectionAggregateRule(value, rule.matchKind)) continue;
+    return buildXenesisNaturalCatalogAction(rule.action, XENESIS_NATURAL_DESK_ACTION_ARGS.ensureVisible());
+  }
+
+  return null;
 }

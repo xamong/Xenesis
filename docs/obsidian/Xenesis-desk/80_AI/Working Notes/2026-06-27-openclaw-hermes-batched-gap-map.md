@@ -3855,6 +3855,47 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Natural Action Builder Catalog Refactor Slice
+
+- Continued the larger hardcoding cleanup by moving natural-language action
+  builder semantics from `xenesisAgentDeskControl.ts` into
+  `xenesisNaturalLanguageCatalog.ts`.
+- Intended change:
+  - add a shared natural Desk action request type and shared builder helpers
+    for descriptor/template/core-tool/view actions;
+  - move `targetScope`, `argsKind`, onboarding args, and connection aggregate
+    `stage` interpretation into shared catalog helper functions;
+  - have the planner call shared builder/finder helpers instead of owning the
+    rule interpretation logic directly.
+- Scope boundary:
+  - Refactor ownership only.
+  - Preserve route order, CR paths, args payloads, approval state, action ids,
+    action reasons, visible text, dynamic extraction, provider behavior,
+    approvals, and UI behavior.
+  - Do not change CR schemas, dispatcher coverage, generated docs, provider
+    selection, OAuth/MCP install semantics, or Action Inbox mutation behavior.
+- RED verification:
+  - Focused Agent Desk Control test failed as expected with 36/37 passing. The
+    new source guard caught planner-local `function naturalCatalogAction`.
+- Implementation:
+  - Added shared action request/builders and rule-action helpers in
+    `xenesisNaturalLanguageCatalog.ts`.
+  - Replaced planner-local natural action builders and connection/provider/
+    onboarding/aggregate interpretation helpers with shared catalog helpers.
+  - Updated source guards so planner source cannot re-own these builder
+    semantics.
+- Verification:
+  - Focused Agent Desk Control test passed with 37/37 tests.
+  - Capability, connection catalog, and Agent Desk Control tests passed with
+    103/103 tests before and after formatting.
+  - Scoped Biome exited 0 with no diagnostics.
+  - `npm run typecheck`, `npm run build`,
+    `npm run smoke:xenesis:natural-desk-routing`, and `git diff --check`
+    passed. `build` reported existing Vite warnings only; `diff --check`
+    reported LF-to-CRLF working-copy warnings only.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
