@@ -238,6 +238,7 @@ export interface XenesisConnectionOnboardingGuidedStep {
   label: string;
   kind: XenesisConnectionOnboardingGuidedStepKind;
   crPath: string;
+  args?: Record<string, unknown>;
   expectedState: string;
   verifyWith: string[];
   safetyBoundary: string;
@@ -2880,7 +2881,11 @@ const MESSENGERS: Array<{
           'xd.xenesis.channels.routing.status',
           'xd.xenesis.channels.safety.status',
         ],
-        controlPaths: ['xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
+        controlPaths: [
+          'xd.panes.settings.open',
+          'xd.xenesis.profiles.updateChannels',
+          'xd.xenesis.profiles.testChannel',
+        ],
         safetyBoundaries: [
           'safety status is read-only',
           'access groups are represented by configured allowlist fields, not a separate OpenClaw runtime',
@@ -2908,7 +2913,11 @@ const MESSENGERS: Array<{
           'xd.xenesis.channels.safety.status',
           'xd.xenesis.status',
         ],
-        controlPaths: ['xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
+        controlPaths: [
+          'xd.panes.settings.open',
+          'xd.xenesis.profiles.updateChannels',
+          'xd.xenesis.profiles.testChannel',
+        ],
         safetyBoundaries: [
           'access-group status is read-only',
           'raw chat, channel, guild, and endpoint values are never returned',
@@ -7449,6 +7458,15 @@ function onboardingStatusForReadyOrBlocked(
   return fallback;
 }
 
+function settingsActionArgs(action: XenesisConnectionSettingsAction): Record<string, unknown> {
+  return {
+    category: action.category,
+    ...(action.mode ? { mode: action.mode } : {}),
+    ...(action.section ? { section: action.section } : {}),
+    ensureVisible: true,
+  };
+}
+
 function onboardingGuidedStep(input: XenesisConnectionOnboardingGuidedStep): XenesisConnectionOnboardingGuidedStep {
   return {
     ...input,
@@ -7502,6 +7520,9 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
   const messengerReady = hasReadyItem(implementedMessengers);
   const messengerBlocked = hasBlockedItem(implementedMessengers);
   const gatewayReady = gateway?.status === 'ready';
+  const testSendChannel =
+    (implementedMessengers.find((item) => item.status === 'ready') ?? implementedMessengers[0])?.channelProfileDraft
+      ?.channel ?? 'telegram';
 
   return [
     {
@@ -7545,6 +7566,7 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
             label: 'Open provider settings',
             kind: 'open',
             crPath: 'xd.panes.settings.open',
+            args: settingsActionArgs(XENESIS_CONNECTION_PROVIDER_SETTINGS_ACTION),
             expectedState: 'The AI Provider settings surface is opened for explicit user edits.',
             verifyWith: ['normal-agent-chat', 'cr-readback'],
             safetyBoundary: 'provider settings changes stay on explicit user actions',
@@ -7603,6 +7625,7 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
             label: 'Open local CLI settings',
             kind: 'open',
             crPath: 'xd.panes.settings.open',
+            args: settingsActionArgs(XENESIS_CONNECTION_LOCAL_CLI_MCP_SETTINGS_ACTION),
             expectedState: 'The Local CLI MCP settings surface is opened for explicit registration work.',
             verifyWith: ['local-cli-config'],
             safetyBoundary: 'MCP config mutations stay on explicit settings actions',
@@ -7671,6 +7694,7 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
             label: 'Open tool install plans',
             kind: 'open',
             crPath: 'xd.xenesis.tools.installPlans.open',
+            args: { ensureVisible: true },
             expectedState: 'The install plan surface opens for copy-ready templates or review-only planned OAuth gaps.',
             verifyWith: ['tool-setup-reviewed', 'planned-oauth'],
             safetyBoundary: 'install plan opens do not execute package managers or write provider config',
@@ -7680,6 +7704,7 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
             label: 'Open tool user stories',
             kind: 'open',
             crPath: 'xd.xenesis.tools.userStories.open',
+            args: { ensureVisible: true },
             expectedState: 'Hermes-style tool workflows are visible before enabling provider tool execution.',
             verifyWith: ['mcp-readback', 'connector-readiness-reviewed'],
             safetyBoundary: 'user-story opens do not execute provider tools',
@@ -7738,6 +7763,7 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
             label: 'Open gateway settings',
             kind: 'open',
             crPath: 'xd.panes.settings.open',
+            args: settingsActionArgs(XENESIS_CONNECTION_GATEWAY_SETTINGS_ACTION),
             expectedState: 'Gateway settings open for explicit enable/start configuration.',
             verifyWith: ['gateway-enabled'],
             safetyBoundary: 'gateway configuration changes stay on explicit user actions',
@@ -7785,7 +7811,11 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
           'xd.xenesis.channels.accessGroups.status',
           'xd.xenesis.channels.pairing.status',
         ],
-        controlPaths: ['xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
+        controlPaths: [
+          'xd.panes.settings.open',
+          'xd.xenesis.profiles.updateChannels',
+          'xd.xenesis.profiles.testChannel',
+        ],
         validationChecks: ['gateway-ready', 'channel-pairing-ready', 'allowlist-reviewed', 'loop-protection-reviewed'],
         diagnostics: ['missing-env', 'allowlist-empty', 'safe-to-deliver', 'gateway-status'],
         safetyBoundaries: [
@@ -7829,6 +7859,16 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
             expectedState: 'Channel pairing prerequisites and missing environment bindings are visible.',
             verifyWith: ['channel-pairing-ready', 'missing-env'],
             safetyBoundary: 'pairing reads do not create external messenger subscriptions',
+          },
+          {
+            id: 'open-external-bots-settings',
+            label: 'Open external bot settings',
+            kind: 'open',
+            crPath: 'xd.panes.settings.open',
+            args: settingsActionArgs(XENESIS_CONNECTION_EXTERNAL_BOTS_SETTINGS_ACTION),
+            expectedState: 'External bot settings open for explicit token env, guardrail, and allowlist edits.',
+            verifyWith: ['allowlist-reviewed', 'gateway-ready'],
+            safetyBoundary: 'messenger settings changes stay on explicit user actions',
           },
           {
             id: 'update-channel-profile',
@@ -7892,6 +7932,7 @@ function onboardingItems(sections: Omit<XenesisConnectionsStatus['sections'], 'o
             label: 'Send sanitized test',
             kind: 'control',
             crPath: 'xd.xenesis.profiles.testChannel',
+            args: { channel: testSendChannel },
             expectedState: 'A sanitized test message is sent only through the explicit channel test CR path.',
             verifyWith: ['sanitized-test-send', 'test-channel-result', 'bot-session-records'],
             safetyBoundary: 'sanitized message delivery stays on explicit channel test CR paths',

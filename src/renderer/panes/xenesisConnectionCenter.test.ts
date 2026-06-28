@@ -196,6 +196,7 @@ test('formatXenesisConnectionGuidedStepDetail exposes guided CR path, verificati
     label: 'Open provider settings',
     kind: 'open',
     crPath: 'xd.panes.settings.open',
+    args: { category: 'run-model', section: 'default', ensureVisible: true },
     expectedState: 'Provider settings are visible before the first chat.',
     verifyWith: ['provider-settings-visible', 'provider-footer-visible'],
     safetyBoundary: 'Opening settings does not mutate provider config.',
@@ -203,7 +204,7 @@ test('formatXenesisConnectionGuidedStepDetail exposes guided CR path, verificati
 
   assert.equal(
     formatXenesisConnectionGuidedStepDetail(step),
-    'open-provider-settings (open): Provider settings are visible before the first chat. / path xd.panes.settings.open / verify provider-settings-visible, provider-footer-visible / safety Opening settings does not mutate provider config.',
+    'open-provider-settings (open): Provider settings are visible before the first chat. / path xd.panes.settings.open / args {"category":"run-model","section":"default","ensureVisible":true} / verify provider-settings-visible, provider-footer-visible / safety Opening settings does not mutate provider config.',
   );
 });
 

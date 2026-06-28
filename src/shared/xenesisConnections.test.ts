@@ -656,6 +656,7 @@ test('buildXenesisConnectionsStatus exposes onboarding plan metadata for initial
         label: 'Open provider settings',
         kind: 'open',
         crPath: 'xd.panes.settings.open',
+        args: { category: 'run-model', section: 'default', ensureVisible: true },
         expectedState: 'The AI Provider settings surface is opened for explicit user edits.',
         verifyWith: ['normal-agent-chat', 'cr-readback'],
         safetyBoundary: 'provider settings changes stay on explicit user actions',
@@ -672,6 +673,12 @@ test('buildXenesisConnectionsStatus exposes onboarding plan metadata for initial
     }
   }
 
+  const localCliMcp = status.sections.onboarding.items.find((item) => item.id === 'local-cli-mcp');
+  assert.deepEqual(
+    localCliMcp?.onboardingPlan?.guidedSteps.find((step) => step.id === 'open-local-cli-settings')?.args,
+    { category: 'run-model', mode: 'local', section: 'local-cli', ensureVisible: true },
+  );
+
   const recommendedTools = status.sections.onboarding.items.find((item) => item.id === 'recommended-tools');
   assert.ok(
     recommendedTools?.onboardingPlan?.guidedSteps.some(
@@ -680,7 +687,10 @@ test('buildXenesisConnectionsStatus exposes onboarding plan metadata for initial
   );
   assert.ok(
     recommendedTools?.onboardingPlan?.guidedSteps.some(
-      (step) => step.crPath === 'xd.xenesis.tools.userStories.open' && step.kind === 'open',
+      (step) =>
+        step.crPath === 'xd.xenesis.tools.userStories.open' &&
+        step.kind === 'open' &&
+        step.args?.ensureVisible === true,
     ),
   );
 
@@ -695,6 +705,12 @@ test('buildXenesisConnectionsStatus exposes onboarding plan metadata for initial
       (step) => step.crPath === 'xd.xenesis.gateway.start' && step.kind === 'control',
     ),
   );
+  assert.deepEqual(gateway?.onboardingPlan?.guidedSteps.find((step) => step.id === 'open-gateway-settings')?.args, {
+    category: 'xenesis-agent',
+    mode: 'gateway',
+    section: 'gateway',
+    ensureVisible: true,
+  });
   assert.ok(gateway?.diagnosticRunbook?.controlPaths.includes('xd.xenesis.gateway.start'));
 
   const messengerRouting = status.sections.onboarding.items.find((item) => item.id === 'messenger-routing');
@@ -709,9 +725,14 @@ test('buildXenesisConnectionsStatus exposes onboarding plan metadata for initial
   assert.deepEqual(messengerRouting?.onboardingPlan?.controlPaths, [
     'xd.xenesis.onboarding.open',
     'xd.xenesis.connections.open',
+    'xd.panes.settings.open',
     'xd.xenesis.profiles.updateChannels',
     'xd.xenesis.profiles.testChannel',
   ]);
+  assert.deepEqual(
+    messengerRouting?.onboardingPlan?.guidedSteps.find((step) => step.id === 'open-external-bots-settings')?.args,
+    { category: 'xenesis-agent', mode: 'external-bots', section: 'external-bots', ensureVisible: true },
+  );
   assert.ok(
     messengerRouting?.onboardingPlan?.guidedSteps.some(
       (step) => step.crPath === 'xd.xenesis.channels.accessGroups.status' && step.kind === 'read',
@@ -724,6 +745,7 @@ test('buildXenesisConnectionsStatus exposes onboarding plan metadata for initial
       (step) =>
         step.crPath === 'xd.xenesis.profiles.testChannel' &&
         step.kind === 'control' &&
+        step.args?.channel === 'telegram' &&
         step.safetyBoundary.includes('sanitized'),
     ),
   );
@@ -2295,7 +2317,7 @@ test('buildXenesisConnectionsStatus exposes channel safety access and loop-prote
       'xd.xenesis.channels.routing.status',
       'xd.xenesis.channels.safety.status',
     ],
-    controlPaths: ['xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
+    controlPaths: ['xd.panes.settings.open', 'xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
     safetyBoundaries: [
       'safety status is read-only',
       'access groups are represented by configured allowlist fields, not a separate OpenClaw runtime',
@@ -2358,7 +2380,7 @@ test('buildXenesisConnectionsStatus exposes OpenClaw-style access group metadata
       'xd.xenesis.channels.safety.status',
       'xd.xenesis.status',
     ],
-    controlPaths: ['xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
+    controlPaths: ['xd.panes.settings.open', 'xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
     safetyBoundaries: [
       'access-group status is read-only',
       'raw chat, channel, guild, and endpoint values are never returned',

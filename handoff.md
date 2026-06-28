@@ -7,6 +7,80 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current Onboarding Guided Step CR Args Slice
+
+- Objective: expose structured arguments on onboarding guided CR steps so setup
+  status/readback does not say only "open this path", but also names the exact
+  Settings category, mode, section, visibility requirement, or test channel that
+  a Desk/Agent run should use.
+- Slice size policy:
+  - Keep cycles larger: include RED tests, implementation, focused tests, broad
+    CR/type/smoke verification, handoff update, Obsidian working note, final
+    hygiene check, and commit in one cycle.
+- Scope boundary:
+  - Do not execute OAuth, install MCP servers, send unsanitized messenger
+    messages, mutate external tools, or change provider runtime behavior.
+  - Do not invent partial args for CR paths that require full profile payloads;
+    only add explicit args where the onboarding step can safely describe a
+    deterministic open/read/control target.
+  - Keep `xd.xenesis.profiles.testChannel` represented with the selected
+    channel only; the existing approval-gated CR path still owns external send
+    safety.
+- External documentation handling:
+  - No external web browsing for this slice. Use repo-local source, tests,
+    Obsidian notes, `handoff.md`, CR audit, and local smoke only.
+- Touched files:
+  - `src/shared/xenesisConnections.ts`
+  - `src/shared/xenesisConnections.test.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.test.ts`
+  - `docs/capability-registry-audit.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-onboarding-guided-step-cr-args.md`
+- RED verification:
+  - `npx tsx --test src\shared\xenesisConnections.test.ts` failed as expected
+    because onboarding guided Settings steps did not expose `args`.
+  - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` failed
+    as expected because guided step detail formatting did not show args.
+- Implemented:
+  - Added optional `args` to `XenesisConnectionOnboardingGuidedStep`.
+  - Added shared Settings action arg derivation with `{ category, mode?,
+    section?, ensureVisible: true }`.
+  - Added args for provider settings, local CLI settings, tool install plans,
+    tool user stories, gateway settings, external bot settings, and sanitized
+    test-send channel.
+  - Added a messenger onboarding step that opens external bot Settings before
+    profile edits and test sends.
+  - Included `xd.panes.settings.open` in messenger routing/safety/access-group
+    onboarding control-path metadata where explicit Settings edits are part of
+    the setup workflow.
+  - Rendered guided step args in Connection Center detail text.
+- Verification result:
+  - `npx tsx --test src\shared\xenesisConnections.test.ts` -> passed 41/41.
+  - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` ->
+    passed 54/54.
+  - `npm run typecheck` -> passed.
+  - `npm run docs:capabilities:audit` -> passed and wrote
+    `docs/capability-registry-audit.md`; audit summary is 779 nodes, 689
+    coverage path references, missing registered paths 0, missing dispatched
+    coverage paths 0, undispatched static callable methods 0, dispatcher paths
+    missing from tree 0.
+  - `npm run smoke:xenesis:natural-desk-routing` -> passed 198/198.
+  - `npx biome check src\shared\xenesisConnections.ts src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.ts src\renderer\panes\xenesisConnectionCenter.test.ts --max-diagnostics 80`
+    -> checked 4 files, no fixes applied.
+  - `git diff --check` -> passed with Git LF/CRLF normalization warnings only.
+  - Final focused rerun after handoff/Obsidian updates:
+    `src\shared\xenesisConnections.test.ts` passed 41/41,
+    `src\renderer\panes\xenesisConnectionCenter.test.ts` passed 54/54,
+    changed-file Biome passed, and `git diff --check` passed with line-ending
+    normalization warnings only.
+- Known gaps:
+  - Natural-language routing is still deterministic catalog routing, not model
+    reasoning.
+  - This slice improves onboarding readback/action metadata only; it does not
+    complete provider setup, OAuth, MCP installation, or messenger delivery.
+- Next intended step:
+  - Stage and commit this onboarding guided step args slice.
+
 ## Current External Tool Setup Plan Slice
 
 - Objective: add a larger Desk-native setup-plan layer for external tools so an

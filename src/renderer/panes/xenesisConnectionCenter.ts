@@ -163,7 +163,8 @@ export function formatXenesisOnboardingPlanSummary(plan: XenesisConnectionOnboar
 }
 
 export function formatXenesisConnectionGuidedStepDetail(step: XenesisConnectionOnboardingGuidedStep): string {
-  return `${step.id} (${step.kind}): ${step.expectedState} / path ${step.crPath} / verify ${step.verifyWith.join(', ') || '-'} / safety ${step.safetyBoundary}`;
+  const args = step.args ? ` / args ${JSON.stringify(step.args)}` : '';
+  return `${step.id} (${step.kind}): ${step.expectedState} / path ${step.crPath}${args} / verify ${step.verifyWith.join(', ') || '-'} / safety ${step.safetyBoundary}`;
 }
 
 type XenesisConnectionReviewStep =
