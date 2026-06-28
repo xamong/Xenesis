@@ -5964,8 +5964,9 @@ function providerProfileDraftTemplate(
     providerSetup,
     providerRouting,
   });
+  const draftStatus = !provider ? 'unknown' : missingRequiredFields.length > 0 ? 'missing-required-field' : 'ready';
   return {
-    draftStatus: !provider ? 'unknown' : missingRequiredFields.length > 0 ? 'missing-required-field' : 'ready',
+    draftStatus,
     actionInboxKind: 'xenesis-provider-profile-draft',
     provider,
     displayName: provider,
@@ -5991,21 +5992,23 @@ function providerProfileDraftTemplate(
     controlPaths: [
       'xd.xenesis.providers.profileDrafts.open',
       'xd.xenesis.providers.profileDrafts.request',
+      ...(draftStatus === 'ready' ? ['xd.xenesis.providers.profileDrafts.apply'] : []),
       'xd.xenesis.connections.open',
     ],
     diagnostics: ['provider-profile-draft', 'credential-state', 'provider-footer', 'fallback-policy', 'cr-readback'],
     blockedActions: [
       'change active provider',
-      'change provider model',
       'store provider credentials',
       'mutate fallback chain',
       'switch local CLI selection',
       'run provider prompts',
     ],
     safetyBoundaries: [
-      'provider profile drafts are review-only',
+      'provider profile draft apply is approval-gated',
       'provider secrets are never returned',
-      'provider profile draft does not mutate provider settings, model settings, fallback chains, credentials, or local CLI selection',
+      'provider profile draft apply only updates non-secret AI provider profile settings',
+      'provider profile draft apply does not accept raw provider secrets or update secret stores',
+      'provider profile draft apply does not mutate fallback chains or local CLI selection',
       'provider prompt execution requires a separate verified Agent run path',
     ],
   };

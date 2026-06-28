@@ -939,6 +939,7 @@ export const ko = {
     xenesisConnectionsRequestChannelProfileDraft: '채널 초안 요청',
     xenesisConnectionsApplyChannelProfileDraft: '채널 적용 요청',
     xenesisConnectionsRequestProviderProfileDraft: '프로바이더 초안 요청',
+    xenesisConnectionsApplyProviderProfileDraft: '프로바이더 적용 요청',
     xenesisConnectionsActionFailed: '연결 액션을 실행하지 못했습니다.',
     xenesisConnectionsDiagnosticRunbook: '진단 런북',
     xenesisConnectionsDiagnosticRunbookSetupSurface: '설정 화면',

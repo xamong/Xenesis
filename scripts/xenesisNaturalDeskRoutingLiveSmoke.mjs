@@ -113,6 +113,12 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     expectedVisibleText: 'Desk action approval required',
   },
   {
+    id: 'provider-profile-draft-apply-approval',
+    prompt: 'AI provider profile draft 적용해줘',
+    expectedPath: 'xd.xenesis.providers.profileDrafts.apply',
+    expectedVisibleText: 'Desk action approval required',
+  },
+  {
     id: 'notion-connector-open',
     prompt: '노션 connector 열어줘',
     expectedPath: 'xd.xenesis.tools.connectors.open',

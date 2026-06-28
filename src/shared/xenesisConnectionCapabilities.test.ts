@@ -1867,9 +1867,11 @@ test('xenesis provider profile draft capabilities are registered and dispatch to
   const statusCapability = findDeskBridgeCapability('xd.xenesis.providers.profileDrafts.status');
   const openCapability = findDeskBridgeCapability('xd.xenesis.providers.profileDrafts.open');
   const requestCapability = findDeskBridgeCapability('xd.xenesis.providers.profileDrafts.request');
+  const applyCapability = findDeskBridgeCapability('xd.xenesis.providers.profileDrafts.apply');
   const statusSchemaProperties = (statusCapability?.schema?.properties ?? {}) as Record<string, any>;
   const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
   const requestSchemaProperties = (requestCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const applySchemaProperties = (applyCapability?.schema?.properties ?? {}) as Record<string, any>;
   assert.equal(statusCapability?.permission, 'read');
   assert.equal(statusCapability?.approval, 'never');
   assert.equal(openCapability?.permission, 'control');
@@ -1878,10 +1880,18 @@ test('xenesis provider profile draft capabilities are registered and dispatch to
   assert.equal(requestCapability?.permission, 'write');
   assert.equal(requestCapability?.approval, 'when-external');
   assert.deepEqual(requestCapability?.schema?.required, ['provider']);
+  assert.equal(applyCapability?.permission, 'write');
+  assert.equal(applyCapability?.approval, 'when-external');
+  assert.deepEqual(applyCapability?.schema?.required, ['provider']);
+  assert.equal(applySchemaProperties.model?.type, 'string');
+  assert.equal(applySchemaProperties.baseUrl?.type, 'string');
+  assert.equal(applySchemaProperties.reasoningEffort?.enum.includes('medium'), true);
+  assert.equal(applySchemaProperties.apiKey, undefined);
   for (const provider of XENESIS_CONNECTION_PROVIDER_IDS) {
     assert.equal(statusSchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
     assert.equal(openSchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
     assert.equal(requestSchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
+    assert.equal(applySchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
   }
 
   const calls: Array<{ method: string; args: unknown }> = [];
@@ -1908,6 +1918,14 @@ test('xenesis provider profile draft capabilities are registered and dispatch to
         actionInboxItem: { id: 'provider-profile-draft-codex-app-server' },
       };
     },
+    applyXenesisProviderProfileDraft: (args) => {
+      calls.push({ method: 'apply', args });
+      return {
+        ok: true,
+        provider: 'codex-app-server',
+        activeAiProviderProfileId: 'default',
+      };
+    },
   };
 
   const statusResult = await callDeskBridgeCapability(api, {
@@ -1926,14 +1944,22 @@ test('xenesis provider profile draft capabilities are registered and dispatch to
     source: 'xenesis',
     approved: true,
   });
+  const applyResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.providers.profileDrafts.apply',
+    args: { provider: 'codex-app-server', model: 'gpt-5-codex' },
+    source: 'xenesis',
+    approved: true,
+  });
 
   assert.equal(statusResult.ok, true);
   assert.equal(openResult.ok, true);
   assert.equal(requestResult.ok, true);
+  assert.equal(applyResult.ok, true);
   assert.deepEqual(calls, [
     { method: 'status', args: { provider: 'codex-app-server' } },
     { method: 'open', args: { provider: 'codex-app-server' } },
     { method: 'request', args: { provider: 'codex-app-server' } },
+    { method: 'apply', args: { provider: 'codex-app-server', model: 'gpt-5-codex' } },
   ]);
   assert.deepEqual(statusResult.result, {
     ok: true,
@@ -1947,6 +1973,11 @@ test('xenesis provider profile draft capabilities are registered and dispatch to
     ok: true,
     provider: 'codex-app-server',
     actionInboxItem: { id: 'provider-profile-draft-codex-app-server' },
+  });
+  assert.deepEqual(applyResult.result, {
+    ok: true,
+    provider: 'codex-app-server',
+    activeAiProviderProfileId: 'default',
   });
 });
 

@@ -26,6 +26,7 @@ import {
   XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_RULES,
   XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_RULES,
   XENESIS_NATURAL_PROVIDER_OPEN_RULES,
+  XENESIS_NATURAL_PROVIDER_PROFILE_DRAFT_APPLY_PROVIDER_RULES,
   XENESIS_NATURAL_PROVIDER_STATUS_RULES,
   XENESIS_NATURAL_REVIEW_REQUEST_PROVIDER_RULES,
   XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES,
@@ -311,6 +312,21 @@ export function xenesisConnectionChannelProfileDraftApplyActionFromNaturalText(
     value,
     target,
     XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_APPLY_TARGET_RULES,
+  );
+}
+
+export function xenesisConnectionProviderProfileDraftApplyActionFromNaturalText(
+  value: string,
+): XenesisNaturalDeskActionRequest | null {
+  if (!hasXenesisNaturalProviderProfileContext(value)) return null;
+
+  const provider = xenesisProviderFromNaturalText(value);
+  if (!provider) return null;
+
+  return findXenesisNaturalProviderRuleAction(
+    value,
+    provider,
+    XENESIS_NATURAL_PROVIDER_PROFILE_DRAFT_APPLY_PROVIDER_RULES,
   );
 }
 

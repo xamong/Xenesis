@@ -1559,7 +1559,7 @@ test('buildXenesisConnectionsStatus exposes provider setup identity, credential 
   });
 });
 
-test('buildXenesisConnectionsStatus exposes review-only provider profile drafts', () => {
+test('buildXenesisConnectionsStatus exposes approval-gated provider profile drafts', () => {
   const readyStatus = buildXenesisConnectionsStatus({
     aiProvider: {
       provider: 'codex-app-server',
@@ -1600,10 +1600,11 @@ test('buildXenesisConnectionsStatus exposes review-only provider profile drafts'
   assert.deepEqual(readyDraft?.controlPaths, [
     'xd.xenesis.providers.profileDrafts.open',
     'xd.xenesis.providers.profileDrafts.request',
+    'xd.xenesis.providers.profileDrafts.apply',
     'xd.xenesis.connections.open',
   ]);
   assert.ok(readyDraft?.blockedActions.includes('store provider credentials'));
-  assert.ok(readyDraft?.safetyBoundaries.includes('provider profile drafts are review-only'));
+  assert.ok(readyDraft?.safetyBoundaries.includes('provider profile draft apply is approval-gated'));
   assert.deepEqual(
     readyDraft?.reviewSteps.map((step) => step.id),
     ['provider-identity', 'model-credential-readiness', 'runtime-routing', 'local-cli-boundary'],
@@ -1651,6 +1652,7 @@ test('buildXenesisConnectionsStatus exposes review-only provider profile drafts'
 
   const missingDraft = missingStatus.sections.provider.items[0].providerProfileDraft;
   assert.equal(missingDraft?.draftStatus, 'missing-required-field');
+  assert.equal(missingDraft?.controlPaths.includes('xd.xenesis.providers.profileDrafts.apply'), false);
   assert.deepEqual(missingDraft?.missingRequiredFields, ['model', 'apiKey']);
   assert.equal(missingDraft?.profileFields.find((field) => field.field === 'apiKey')?.secretRef, true);
   assert.equal(missingDraft?.profileFields.find((field) => field.field === 'apiKey')?.valueState, 'missing');

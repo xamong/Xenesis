@@ -16,6 +16,7 @@ import {
   buildXenesisConnectionSetupRequestRequest,
   buildXenesisMcpInstallDraftApplyRequest,
   buildXenesisMcpInstallDraftRequest,
+  buildXenesisProviderProfileDraftApplyRequest,
   buildXenesisProviderProfileDraftRequest,
   buildXenesisToolActionCatalogRequest,
   buildXenesisToolOAuthDraftRequest,
@@ -1141,6 +1142,63 @@ test('buildXenesisProviderProfileDraftRequest targets the review request CR path
   });
 
   assert.equal(buildXenesisProviderProfileDraftRequest({ ...item, providerProfileDraft: undefined }), null);
+});
+
+test('buildXenesisProviderProfileDraftApplyRequest targets the approval-gated apply CR path', () => {
+  const item = {
+    id: 'provider-auto',
+    kind: 'provider',
+    label: 'AI provider: auto',
+    status: 'ready',
+    summary: 'Provider setup',
+    providerProfileDraft: {
+      draftStatus: 'ready',
+      actionInboxKind: 'xenesis-provider-profile-draft',
+      provider: 'auto',
+      displayName: 'auto',
+      setupSurface: 'Settings > AI Provider',
+      reviewSurface: 'Desk Action Inbox',
+      profileFields: [],
+      missingRequiredFields: [],
+      guardrails: {
+        approvalMode: 'safe',
+        providerRetries: 0,
+        fallbackPolicy: 'configured-providerFallbacks',
+        localCliBoundary: 'provider identity is separate from local CLI integration',
+      },
+      readPaths: ['xd.xenesis.providers.profileDrafts.status'],
+      controlPaths: [
+        'xd.xenesis.providers.profileDrafts.open',
+        'xd.xenesis.providers.profileDrafts.request',
+        'xd.xenesis.providers.profileDrafts.apply',
+      ],
+      diagnostics: ['credential-state'],
+      blockedActions: ['store provider credentials'],
+      safetyBoundaries: ['provider profile draft apply is approval-gated'],
+      reviewSteps: [],
+    },
+  } satisfies XenesisConnectionItem;
+
+  assert.deepEqual(buildXenesisProviderProfileDraftApplyRequest(item), {
+    path: 'xd.xenesis.providers.profileDrafts.apply',
+    args: {
+      provider: 'auto',
+    },
+    source: 'xenesis',
+    approved: false,
+  });
+
+  assert.equal(
+    buildXenesisProviderProfileDraftApplyRequest({
+      ...item,
+      providerProfileDraft: {
+        ...item.providerProfileDraft,
+        controlPaths: ['xd.xenesis.providers.profileDrafts.request'],
+      },
+    }),
+    null,
+  );
+  assert.equal(buildXenesisProviderProfileDraftApplyRequest({ ...item, providerProfileDraft: undefined }), null);
 });
 
 test('formatXenesisProviderViewSummary describes internal Desk provider view surface and type', () => {

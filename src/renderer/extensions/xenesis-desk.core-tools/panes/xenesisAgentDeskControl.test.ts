@@ -2333,9 +2333,8 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /send email/i);
   assert.match(hint, /mutate documents/i);
   assert.match(hint, /mutate calendar events/i);
-  assert.match(hint, /provider profile drafts are review-only/i);
-  assert.match(hint, /do not mutate provider settings/i);
-  assert.match(hint, /store credentials/i);
+  assert.match(hint, /provider profile draft apply/i);
+  assert.match(hint, /does not accept raw credentials/i);
   assert.match(hint, /switch local CLI/i);
   assert.match(hint, /run provider prompts/i);
   assert.match(hint, /channel profile draft CR paths/i);
@@ -4506,6 +4505,16 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center review reques
       args: { provider: 'auto' },
       approved: false,
       reason: 'Request AI provider profile draft review from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('AI provider profile draft 적용해줘').actions, [
+    {
+      id: 'natural-xenesis-provider-profile-draft-apply-auto',
+      path: 'xd.xenesis.providers.profileDrafts.apply',
+      args: { provider: 'auto' },
+      approved: false,
+      reason: 'Apply AI provider profile draft from natural language request.',
     },
   ]);
 

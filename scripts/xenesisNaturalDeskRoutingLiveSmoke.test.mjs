@@ -118,6 +118,12 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
       expectedVisibleText: 'Desk action approval required',
     },
     {
+      id: 'provider-profile-draft-apply-approval',
+      prompt: 'AI provider profile draft 적용해줘',
+      expectedPath: 'xd.xenesis.providers.profileDrafts.apply',
+      expectedVisibleText: 'Desk action approval required',
+    },
+    {
       id: 'notion-connector-open',
       prompt: '노션 connector 열어줘',
       expectedPath: 'xd.xenesis.tools.connectors.open',
@@ -350,6 +356,7 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
   assert.match(plan, /AI provider view 전체 상태 보여줘/);
   assert.match(plan, /AI provider profile draft 상태 보여줘/);
   assert.match(plan, /AI provider 설정해줘/);
+  assert.match(plan, /AI provider profile draft 적용해줘/);
   assert.match(plan, /노션 connector 열어줘/);
   assert.match(plan, /외부 툴 connector 전체 상태 보여줘/);
   assert.match(plan, /외부 툴 setup 전체 열어줘/);

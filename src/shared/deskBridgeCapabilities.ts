@@ -1212,6 +1212,65 @@ const XENESIS_PROVIDER_PROFILE_DRAFT_REQUEST_SCHEMA = {
     },
   },
 } as const;
+const XENESIS_PROVIDER_PROFILE_DRAFT_APPLY_SCHEMA = {
+  type: 'object',
+  required: ['provider'],
+  properties: {
+    provider: {
+      type: 'string',
+      title: 'Provider',
+      enum: XENESIS_PROVIDER_IDS,
+      description: 'Active provider id to apply as a provider profile draft.',
+    },
+    id: {
+      type: 'string',
+      title: 'Provider card id',
+      description: 'Alias for provider card id, such as provider-codex-app-server.',
+    },
+    name: {
+      type: 'string',
+      title: 'Provider',
+      enum: XENESIS_PROVIDER_IDS,
+      description: 'Alias for provider.',
+    },
+    model: {
+      type: 'string',
+      title: 'Model',
+      description: 'Optional non-secret model value to write to the active AI provider profile.',
+    },
+    baseUrl: {
+      type: 'string',
+      title: 'Base URL',
+      description: 'Optional non-secret provider endpoint override.',
+    },
+    xcAgentApiUrl: {
+      type: 'string',
+      title: 'Agent API URL',
+      description: 'Optional Xamong Code agent API URL override.',
+    },
+    xcApiUrl: {
+      type: 'string',
+      title: 'Draft API URL',
+      description: 'Optional Xamong Code draft API URL override.',
+    },
+    labApiUrl: {
+      type: 'string',
+      title: 'Lab API URL',
+      description: 'Optional lab API URL override.',
+    },
+    reasoningEffort: {
+      type: 'string',
+      title: 'Reasoning effort',
+      enum: ['default', 'low', 'medium', 'high', 'xhigh'],
+      description: 'Optional non-secret Codex reasoning effort for the embedded Desk agent.',
+    },
+    note: {
+      type: 'string',
+      title: 'Apply note',
+      description: 'Optional note to include in the redacted apply result.',
+    },
+  },
+} as const;
 
 export interface DeskBridgeCapabilityNode {
   path: string;
@@ -1528,6 +1587,7 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisProviderProfileDraftsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisProviderProfileDraft?: (args?: unknown) => Promise<unknown> | unknown;
   requestXenesisProviderProfileDraft?: (args?: unknown) => Promise<unknown> | unknown;
+  applyXenesisProviderProfileDraft?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisDiagnostics?: () => Promise<unknown> | unknown;
   openXenesisTui?: (args: unknown) => Promise<unknown> | unknown;
   listXenesisReports?: (args: unknown) => Promise<unknown> | unknown;
@@ -4977,12 +5037,12 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
         group(
           'xd.xenesis.providers.profileDrafts',
           'Profile drafts',
-          'Read, open, and request review-only AI provider profile drafts.',
+          'Read, open, review, and approval-apply AI provider profile drafts.',
           [
             method(
               'xd.xenesis.providers.profileDrafts.status',
               'Read provider profile drafts',
-              'Read review-only provider profile field state, guardrails, missing required fields, diagnostics, and safety boundaries without mutating provider settings or exposing secrets.',
+              'Read provider profile field state, guardrails, missing required fields, diagnostics, apply readiness, and safety boundaries without exposing secrets.',
               'read',
               XENESIS_PROVIDER_PROFILE_DRAFT_STATUS_SCHEMA,
             ),
@@ -4999,6 +5059,13 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               'Record a local Action Inbox item for reviewing a provider profile draft without changing provider settings, model settings, fallback chains, credentials, local CLI selection, or running provider prompts.',
               'write',
               XENESIS_PROVIDER_PROFILE_DRAFT_REQUEST_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.providers.profileDrafts.apply',
+              'Apply provider profile draft',
+              'Apply a ready provider profile draft to non-secret AI provider profile settings after Capability Registry approval; raw provider secrets, fallback chains, local CLI selection, and provider prompt execution are not changed.',
+              'write',
+              XENESIS_PROVIDER_PROFILE_DRAFT_APPLY_SCHEMA,
             ),
           ],
         ),
@@ -11578,6 +11645,9 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.providers.profileDrafts.request') {
         return callAdapter(path, api?.requestXenesisProviderProfileDraft, request.args);
+      }
+      if (path === 'xd.xenesis.providers.profileDrafts.apply') {
+        return callAdapter(path, api?.applyXenesisProviderProfileDraft, request.args);
       }
       if (path === 'xd.xenesis.gateway.status') {
         return callAdapter(path, api?.getXenesisStatus);

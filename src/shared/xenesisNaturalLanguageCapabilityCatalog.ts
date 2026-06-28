@@ -2040,6 +2040,25 @@ export const XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_APPLY_TARGET_RULES = [
   },
 ] as const satisfies readonly XenesisNaturalConnectionTargetActionRule[];
 
+export const XENESIS_NATURAL_PROVIDER_PROFILE_DRAFT_APPLY_ACTION_DESCRIPTORS = {
+  providerProfileDraft: {
+    path: 'xd.xenesis.providers.profileDrafts.apply',
+    idFor: (id: string, _label: string) => `natural-xenesis-provider-profile-draft-apply-${id}`,
+    reasonFor: (id: string, label: string) =>
+      id === 'auto'
+        ? 'Apply AI provider profile draft from natural language request.'
+        : `Apply ${label} provider profile draft from natural language request.`,
+  },
+} as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
+
+export const XENESIS_NATURAL_PROVIDER_PROFILE_DRAFT_APPLY_PROVIDER_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_MCP_INSTALL_APPLY_INTENT_WORDS,
+    action: XENESIS_NATURAL_PROVIDER_PROFILE_DRAFT_APPLY_ACTION_DESCRIPTORS.providerProfileDraft,
+    argsKind: 'provider',
+  },
+] as const satisfies readonly XenesisNaturalProviderActionRule[];
+
 export const XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS = {
   providerProfileDraft: {
     path: 'xd.xenesis.providers.profileDrafts.request',

@@ -7,6 +7,130 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current Provider Profile Draft Apply Slice
+
+- Objective: enlarge the next slice cycle and continue the OpenClaw/Hermes
+  integration goal by moving ready AI provider profile drafts from review-only
+  metadata toward approval-gated Desk settings apply through the Capability
+  Registry.
+- Observed gap:
+  - Provider profile drafts currently expose
+    `xd.xenesis.providers.profileDrafts.status/open/request`.
+  - The draft read model, CR registry, renderer helper, and natural-language
+    planner still describe provider profile drafts as review-only.
+  - There is no `xd.xenesis.providers.profileDrafts.apply` path, so explicit
+    prompts such as `AI provider profile draft 적용해줘` cannot produce a real
+    approval-gated settings write request.
+- Scope boundary:
+  - Add a CR-first apply path for ready provider profile drafts only.
+  - Apply may update non-secret AI provider profile fields through existing
+    Desk settings normalization and return redacted readback.
+  - Apply must not accept or store raw API keys, expose secrets, mutate local
+    CLI selection, edit fallback chains, start runtimes, or run provider
+    prompts.
+- Slice size policy:
+  - Bundle CR registration, read-model exposure, renderer button, safe apply
+    helper, main-process handler, natural routing, smoke coverage, Obsidian
+    working note, CR audit, build, smoke, and commit in one pass.
+- External documentation handling:
+  - No web browsing. Use repo-local source, Obsidian notes, `handoff.md`, tests,
+    build, CR audit, and local smoke.
+- Plan:
+  - `docs/superpowers/plans/2026-06-28-xenesis-provider-profile-draft-apply.md`
+- Next intended step:
+  - Add RED tests for CR registration/dispatch, read-model/renderer apply
+    exposure, safe non-secret apply-state helper, and natural-language apply
+    routing before production code changes.
+- RED progress:
+  - Added CR registration/dispatcher expectations for
+    `xd.xenesis.providers.profileDrafts.apply`.
+  - Added read-model and renderer expectations for ready-only provider profile
+    draft apply exposure and an approval-gated renderer request helper.
+  - Added `src/shared/xenesisProviderProfileApply.test.ts` for safe
+    non-secret provider profile apply-state behavior.
+  - Added natural planner expectation for
+    `AI provider profile draft 적용해줘` and live smoke inventory coverage.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` failed
+    as expected with 34/35 passing because the apply capability is not
+    registered yet.
+  - `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    failed as expected with 76/78 passing because the provider read model and
+    renderer helper do not expose apply yet.
+  - `npx tsx --test src\shared\xenesisProviderProfileApply.test.ts` failed as
+    expected because `src/shared/xenesisProviderProfileApply.ts` does not
+    exist yet.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    failed as expected with 37/38 passing; it also exposed that `draft`
+    currently matches the `raft` messenger target before provider-profile apply
+    routing can run.
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` passed
+    5/5 after adding the new prompt to the smoke inventory test.
+- Implementation progress:
+  - Added `src/shared/xenesisProviderProfileApply.ts` to normalize
+    non-secret provider profile draft apply args and reject raw `apiKey`,
+    `secret`, and `token` values.
+  - Registered `xd.xenesis.providers.profileDrafts.apply` with write
+    permission, approval `when-external`, provider enum coverage, and non-secret
+    optional setting fields.
+  - Exposed provider profile apply only for ready drafts in the Connection
+    Center read model and added the renderer request helper and Settings button.
+  - Added main-process `applyXenesisProviderProfileDraft`, wired through the CR
+    adapter, using existing settings normalization/persistence and redacted
+    readback.
+  - Added provider-profile apply natural routing before channel-profile apply
+    so `draft` no longer falls through to the `raft` messenger target.
+- GREEN progress:
+  - `npx tsx --test src\shared\xenesisProviderProfileApply.test.ts src\shared\xenesisConnectionCapabilities.test.ts`
+    passed with 37/37.
+  - `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    initially failed because `draftStatus` was referenced before assignment in
+    the provider draft template; fixed by computing `draftStatus` before the
+    return object.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    initially failed because the prompt-hint assertion still expected old
+    `store credentials` wording; updated it to match the new raw-credential
+    boundary.
+  - Re-runs passed:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    passed with 78/78, and
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 38/38.
+- Verification progress:
+  - `npx biome format --write ...` formatted touched files and fixed 1 file.
+  - Post-format focused verification passed:
+    `npx tsx --test src\shared\xenesisProviderProfileApply.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed 153/153, and
+    `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` passed
+    5/5.
+  - First focused `npx biome check ... --max-diagnostics 120` failed on import
+    ordering in `src/main/index.ts` and an existing safe-fixable unnecessary
+    `continue` in the same touched file.
+  - `npx biome check --write ... --max-diagnostics 120` applied safe fixes and
+    exited 0 with 14 existing warnings and 8 infos on touched files.
+  - `npm run typecheck` passed.
+  - `npm --prefix packages/xenesis run provider:smoke` built the package but
+    failed before live checks because `OPENAI_API_KEY` is not set and the smoke
+    script defaults to `provider=openai`.
+  - `npm run docs:capabilities:audit` passed and wrote
+    `docs\capability-registry-audit.md`; audit result: 768 nodes and 689
+    coverage path references.
+  - `npm run build` passed, including typecheck. Existing Vite warnings remain
+    limited to `hwp.js` browser-externalized `fs`, mixed dynamic/static
+    `deskBridge.ts` imports, and large renderer chunks.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 153/153, including
+    `provider-profile-draft-apply-approval`.
+  - Fresh pre-commit verification after the final handoff/Obsidian updates:
+    `npx tsx --test src\shared\xenesisProviderProfileApply.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed 153/153;
+    `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` passed
+    5/5; `git diff --check` exited 0 with line-ending warnings only;
+    `npm run typecheck` passed; `npm run docs:capabilities:audit` passed and
+    wrote `docs\capability-registry-audit.md` with 768 nodes and 689 coverage
+    path references; `npm run build` passed with the existing Vite warnings;
+    `npm run smoke:xenesis:natural-desk-routing` passed 153/153; and
+    `npm --prefix packages/xenesis run provider:smoke` rebuilt
+    `packages/xenesis` but stopped on missing `OPENAI_API_KEY`.
+
 ## Current Channel Profile Draft Apply Slice
 
 - Objective: continue the OpenClaw/Hermes integration goal by moving external
