@@ -4058,6 +4058,55 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Desk Action Approval Catalog Refactor Slice
+
+- Continued the larger hardcoding cleanup by moving Desk action
+  approval-required and pending/approve helper ownership from
+  `xenesisAgentDeskControl.ts` into `xenesisNaturalLanguageCatalog.ts`.
+- Intended change:
+  - catalog owns approval-required detection from direct result flags, nested
+    result flags, and approval-required error text;
+  - catalog owns pending action extraction and approved-copy behavior;
+  - planner keeps its existing public approval helper exports for
+    compatibility but delegates to shared catalog implementations;
+  - source guards prevent reintroducing planner-local approval helper
+    implementation details or planner-owned approval state constants.
+- Scope boundary:
+  - Refactor ownership only.
+  - Preserve approval-required detection, pending action selection,
+    approved-copy behavior, execution behavior, output text, CR paths, and UI
+    behavior.
+  - No natural-language route, CR schema, dispatcher, provider, Action Inbox
+    mutation, or live CR behavior changes.
+- RED verification:
+  - Focused Agent Desk Control test failed as expected with 36/37 passing. The
+    new source guard caught planner-local
+    `XENESIS_DESK_ACTION_APPROVAL_STATE` ownership before the helper move.
+- Implementation:
+  - Added shared `XenesisDeskActionApprovalResultInput` and
+    `xenesisDeskActionResultRecord`.
+  - Added shared `isXenesisDeskActionApprovalRequiredResult`,
+    `pendingXenesisDeskActionsFromResults`, and
+    `approveXenesisDeskActions`.
+  - Removed the matching planner-local helper implementations and made the
+    planner public approval functions delegate to shared implementations.
+  - Updated source guards so approval state constants and approval helper
+    implementation patterns are catalog-owned.
+- Verification:
+  - Focused Agent Desk Control test passed with 37/37 tests.
+  - Capability, connection catalog, and Agent Desk Control tests passed with
+    103/103 tests before and after formatting.
+  - Scoped Biome check passed with no diagnostics.
+  - `npm run typecheck`, `npm run build`,
+    `npm run smoke:xenesis:natural-desk-routing`, and `git diff --check`
+    passed. `build` reported existing Vite warnings only; `diff --check`
+    reported LF-to-CRLF working-copy warnings only.
+  - CR audit was skipped because this slice only refactors planner/catalog
+    approval helpers and does not change registry, dispatcher, or capability
+    coverage.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

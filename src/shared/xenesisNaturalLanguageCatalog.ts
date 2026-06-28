@@ -501,6 +501,14 @@ export interface XenesisDeskActionResultMessageInput {
   error?: string;
 }
 
+export interface XenesisDeskActionApprovalResultInput {
+  id: string;
+  ok: boolean;
+  result?: unknown;
+  error?: string;
+  approvalRequired?: boolean;
+}
+
 export function asXenesisDeskActionRecord(value: unknown): Record<string, unknown> {
   return isXenesisDeskActionRecordValue(value) ? value : {};
 }
@@ -728,6 +736,42 @@ export function summarizeXenesisDeskActionExecution(
   result: Pick<XenesisDeskActionResultMessageInput, 'ok' | 'path'>,
 ): string {
   return XENESIS_DESK_ACTION_PROTOCOL_TEXT.executionSummary(result.ok, result.path);
+}
+
+export function xenesisDeskActionResultRecord(
+  value: Pick<XenesisDeskActionApprovalResultInput, 'result'>,
+): Record<string, unknown> {
+  return asXenesisDeskActionRecord(value[XENESIS_DESK_ACTION_CALL_RESULT_KEYS.result]);
+}
+
+export function isXenesisDeskActionApprovalRequiredResult(result: XenesisDeskActionApprovalResultInput): boolean {
+  const record = xenesisDeskActionResultRecord(result);
+  return (
+    result[XENESIS_DESK_ACTION_CALL_RESULT_KEYS.approvalRequired] === true ||
+    record[XENESIS_DESK_ACTION_CALL_RESULT_KEYS.approvalRequired] === true ||
+    (!result.ok &&
+      XENESIS_DESK_ACTION_PROTOCOL_PATTERNS.approvalRequiredError.test(
+        result[XENESIS_DESK_ACTION_CALL_RESULT_KEYS.error] || XENESIS_DESK_ACTION_PROTOCOL_FORMAT.emptyText,
+      ))
+  );
+}
+
+export function pendingXenesisDeskActionsFromResults(
+  actions: readonly XenesisNaturalDeskActionRequest[],
+  results: readonly XenesisDeskActionApprovalResultInput[],
+): XenesisNaturalDeskActionRequest[] {
+  const actionById = new Map(actions.map((action) => [action.id, action]));
+  return results
+    .filter(isXenesisDeskActionApprovalRequiredResult)
+    .map((result) => actionById.get(result.id))
+    .filter((action): action is XenesisNaturalDeskActionRequest => Boolean(action))
+    .map((action) => ({ ...action, approved: XENESIS_DESK_ACTION_APPROVAL_STATE.pending }));
+}
+
+export function approveXenesisDeskActions(
+  actions: readonly XenesisNaturalDeskActionRequest[],
+): XenesisNaturalDeskActionRequest[] {
+  return actions.map((action) => ({ ...action, approved: XENESIS_DESK_ACTION_APPROVAL_STATE.approved }));
 }
 
 export const XENESIS_NATURAL_CORE_TOOL_OPEN_REASON = (reasonName: string): string =>

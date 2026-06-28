@@ -568,7 +568,8 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.equal(XENESIS_DESK_ACTION_PROTOCOL_FORMAT.actionBullet('xd.test.path', 'because'), '- xd.test.path - because');
   assert.equal(XENESIS_DESK_ACTION_PROTOCOL_FORMAT.resultBullet('xd.test.path', 'ok'), '- xd.test.path: ok');
   assert.match(source, /XENESIS_DESK_ACTION_ACTIVITY_PHASES/);
-  assert.match(source, /XENESIS_DESK_ACTION_APPROVAL_STATE/);
+  assert.doesNotMatch(source, /XENESIS_DESK_ACTION_APPROVAL_STATE/);
+  assert.match(catalogSource, /XENESIS_DESK_ACTION_APPROVAL_STATE/);
   assert.match(source, /XENESIS_DESK_ACTION_EXECUTION_STATUS/);
   assert.doesNotMatch(source, /phase: 'start'/);
   assert.doesNotMatch(source, /phase: 'failure'/);
@@ -597,6 +598,20 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /callResult\.(ok|result|error|approvalRequired|permission|approval|source)/);
   assert.doesNotMatch(source, /value\.result/);
   assert.doesNotMatch(source, /result\.approvalRequired/);
+  for (const localApprovalFunction of ['function resultRecord']) {
+    assert.doesNotMatch(source, new RegExp(localApprovalFunction));
+  }
+  for (const sharedApprovalFunction of [
+    'xenesisDeskActionResultRecord',
+    'isXenesisDeskActionApprovalRequiredResult',
+    'pendingXenesisDeskActionsFromResults',
+    'approveXenesisDeskActions',
+  ]) {
+    assert.match(catalogSource, new RegExp(`export function ${sharedApprovalFunction}`));
+  }
+  assert.doesNotMatch(source, /DESK_ACTION_PROTOCOL_PATTERNS\.approvalRequiredError\.test/);
+  assert.doesNotMatch(source, /approved: DESK_ACTION_APPROVAL_STATE\.pending/);
+  assert.doesNotMatch(source, /approved: DESK_ACTION_APPROVAL_STATE\.approved/);
   assert.equal(XENESIS_DESK_ACTION_VALUE_TYPE_NAMES.object, 'object');
   assert.equal(XENESIS_DESK_ACTION_VALUE_TYPE_NAMES.string, 'string');
   assert.equal(XENESIS_DESK_ACTION_VALUE_TYPE_NAMES.number, 'number');

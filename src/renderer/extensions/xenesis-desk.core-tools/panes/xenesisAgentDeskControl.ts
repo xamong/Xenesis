@@ -1,6 +1,6 @@
 import { listDeskBridgeCapabilities } from '../../../../shared/deskBridgeCapabilities';
 import {
-  asXenesisDeskActionRecord,
+  approveXenesisDeskActions as approveXenesisDeskActionsFromCatalog,
   buildXenesisDeskActionCompletedMessage as buildXenesisDeskActionCompletedMessageFromCatalog,
   buildXenesisDeskActionPendingMessage as buildXenesisDeskActionPendingMessageFromCatalog,
   buildXenesisNaturalCatalogAction,
@@ -32,15 +32,16 @@ import {
   findXenesisNaturalProviderRuleAction,
   findXenesisNaturalProviderTarget,
   findXenesisNaturalViewTarget,
+  isXenesisDeskActionApprovalRequiredResult as isXenesisDeskActionApprovalRequiredResultFromCatalog,
   matchesXenesisNaturalContextRule,
   matchesXenesisNaturalContextRules,
   normalizeXenesisNaturalLanguageText,
   parseXenesisDeskActionBlocks as parseXenesisDeskActionBlocksFromCatalog,
+  pendingXenesisDeskActionsFromResults as pendingXenesisDeskActionsFromResultsFromCatalog,
   shouldRunXenesisDeskActionsDirectly as shouldRunXenesisDeskActionsDirectlyFromCatalog,
   stripXenesisNaturalQuotedText,
   summarizeXenesisDeskActionExecution as summarizeXenesisDeskActionExecutionFromCatalog,
   XENESIS_DESK_ACTION_ACTIVITY_PHASES,
-  XENESIS_DESK_ACTION_APPROVAL_STATE,
   XENESIS_DESK_ACTION_CALL_RESULT_KEYS,
   XENESIS_DESK_ACTION_EXECUTION_STATUS,
   XENESIS_DESK_ACTION_PROTOCOL_FORMAT,
@@ -219,7 +220,6 @@ function naturalCatalogRulePlanFromNaturalText(
 }
 
 const DESK_ACTION_ACTIVITY_PHASES = XENESIS_DESK_ACTION_ACTIVITY_PHASES;
-const DESK_ACTION_APPROVAL_STATE = XENESIS_DESK_ACTION_APPROVAL_STATE;
 const DESK_ACTION_CALL_RESULT_KEYS = XENESIS_DESK_ACTION_CALL_RESULT_KEYS;
 const DESK_ACTION_EXECUTION_STATUS = XENESIS_DESK_ACTION_EXECUTION_STATUS;
 const DESK_ACTION_PROTOCOL_FORMAT = XENESIS_DESK_ACTION_PROTOCOL_FORMAT;
@@ -945,37 +945,19 @@ export async function runXenesisDeskActions(
   return results;
 }
 
-function resultRecord(value: XenesisDeskActionExecutionResult): Record<string, unknown> {
-  const result = value[DESK_ACTION_CALL_RESULT_KEYS.result];
-  return asXenesisDeskActionRecord(result);
-}
-
 export function isXenesisDeskActionApprovalRequiredResult(result: XenesisDeskActionExecutionResult): boolean {
-  const record = resultRecord(result);
-  return (
-    result[DESK_ACTION_CALL_RESULT_KEYS.approvalRequired] === true ||
-    record[DESK_ACTION_CALL_RESULT_KEYS.approvalRequired] === true ||
-    (!result.ok &&
-      DESK_ACTION_PROTOCOL_PATTERNS.approvalRequiredError.test(
-        result[DESK_ACTION_CALL_RESULT_KEYS.error] || DESK_ACTION_PROTOCOL_FORMAT.emptyText,
-      ))
-  );
+  return isXenesisDeskActionApprovalRequiredResultFromCatalog(result);
 }
 
 export function pendingXenesisDeskActionsFromResults(
   actions: XenesisDeskActionRequest[],
   results: XenesisDeskActionExecutionResult[],
 ): XenesisDeskActionRequest[] {
-  const actionById = new Map(actions.map((action) => [action.id, action]));
-  return results
-    .filter(isXenesisDeskActionApprovalRequiredResult)
-    .map((result) => actionById.get(result.id))
-    .filter((action): action is XenesisDeskActionRequest => Boolean(action))
-    .map((action) => ({ ...action, approved: DESK_ACTION_APPROVAL_STATE.pending }));
+  return pendingXenesisDeskActionsFromResultsFromCatalog(actions, results);
 }
 
 export function approveXenesisDeskActions(actions: XenesisDeskActionRequest[]): XenesisDeskActionRequest[] {
-  return actions.map((action) => ({ ...action, approved: DESK_ACTION_APPROVAL_STATE.approved }));
+  return approveXenesisDeskActionsFromCatalog(actions);
 }
 
 export function buildXenesisDeskActionPendingMessage(
