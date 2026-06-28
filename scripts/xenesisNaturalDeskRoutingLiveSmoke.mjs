@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { access } from 'node:fs/promises';
+import { access, mkdtemp, rm } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -329,6 +330,15 @@ export function buildNaturalDeskRoutingSubmitRequest(
   };
 }
 
+export function buildNaturalDeskRoutingLiveSmokeEnv(baseEnv, xenisHome, userDataDir) {
+  return {
+    ...baseEnv,
+    XENIS_HOME: xenisHome,
+    XENESIS_DESK_USER_DATA_DIR: userDataDir,
+    XENESIS_NATURAL_DESK_ROUTING_LIVE_SMOKE: '1',
+  };
+}
+
 export function formatNaturalDeskRoutingLiveSmokePlan() {
   const lines = [
     'Xenesis natural Desk routing live smoke plan',
@@ -463,6 +473,16 @@ export async function runNaturalDeskRoutingLiveSmoke(options = {}) {
   const checkResults = [];
   const openResults = [];
   const promptResults = [];
+  const xenisHome =
+    typeof options.xenisHome === 'string' && options.xenisHome.trim()
+      ? path.resolve(options.xenisHome)
+      : await mkdtemp(path.join(os.tmpdir(), 'xenesis-natural-desk-routing-'));
+  const userDataDir =
+    typeof options.userDataDir === 'string' && options.userDataDir.trim()
+      ? path.resolve(options.userDataDir)
+      : await mkdtemp(path.join(os.tmpdir(), 'xenesis-natural-desk-routing-user-data-'));
+  const shouldRemoveXenisHome = options.keepXenisHome === true ? false : !options.xenisHome;
+  const shouldRemoveUserDataDir = options.keepUserDataDir === true ? false : !options.userDataDir;
   let electronApp;
 
   await assertBuiltElectronOutput(root);
@@ -473,10 +493,7 @@ export async function runNaturalDeskRoutingLiveSmoke(options = {}) {
       args: [appPath, '--disable-gpu'],
       cwd: root,
       timeout,
-      env: {
-        ...process.env,
-        XENESIS_NATURAL_DESK_ROUTING_LIVE_SMOKE: '1',
-      },
+      env: buildNaturalDeskRoutingLiveSmokeEnv(process.env, xenisHome, userDataDir),
     });
 
     const page = await electronApp.firstWindow({ timeout });
@@ -513,9 +530,17 @@ export async function runNaturalDeskRoutingLiveSmoke(options = {}) {
     if (electronApp) {
       await electronApp.close().catch(() => undefined);
     }
+    if (shouldRemoveXenisHome) {
+      await rm(xenisHome, { recursive: true, force: true }).catch(() => undefined);
+    }
+    if (shouldRemoveUserDataDir) {
+      await rm(userDataDir, { recursive: true, force: true }).catch(() => undefined);
+    }
   }
 
   return buildNaturalDeskRoutingLiveSmokeReport(checkResults, startedAt, {
+    xenisHome: shouldRemoveXenisHome ? '<temp-removed>' : xenisHome,
+    userDataDir: shouldRemoveUserDataDir ? '<temp-removed>' : userDataDir,
     open: {
       path: NATURAL_DESK_ROUTING_LIVE_SMOKE_OPEN_REQUEST.path,
       ok: openResults.length > 0 && openResults.every((result) => result.ok),

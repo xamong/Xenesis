@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import {
+  buildNaturalDeskRoutingLiveSmokeEnv,
   buildNaturalDeskRoutingLiveSmokeReport,
   buildNaturalDeskRoutingSubmitRequest,
   formatNaturalDeskRoutingLiveSmokePlan,
@@ -437,6 +438,22 @@ test('natural Desk routing live smoke builds submit requests that wait for appli
       timeoutMs: 42000,
     },
   });
+});
+
+test('natural Desk routing live smoke builds isolated state env', () => {
+  assert.deepEqual(
+    buildNaturalDeskRoutingLiveSmokeEnv(
+      { PATH: 'test-path', XENIS_HOME: 'old-home' },
+      'C:\\tmp\\xd-routing-home',
+      'C:\\tmp\\xd-routing-user-data',
+    ),
+    {
+      PATH: 'test-path',
+      XENIS_HOME: 'C:\\tmp\\xd-routing-home',
+      XENESIS_DESK_USER_DATA_DIR: 'C:\\tmp\\xd-routing-user-data',
+      XENESIS_NATURAL_DESK_ROUTING_LIVE_SMOKE: '1',
+    },
+  );
 });
 
 test('natural Desk routing live smoke package script is exposed explicitly', () => {

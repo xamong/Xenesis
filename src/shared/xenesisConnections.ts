@@ -852,6 +852,12 @@ export interface XenesisConnectionNaturalConnectionTarget extends XenesisConnect
   supportLevel?: XenesisConnectionSupportLevel;
 }
 
+export interface XenesisConnectionNaturalGuideTarget extends XenesisConnectionNaturalWordsTarget {
+  requiredWordGroups?: readonly (readonly string[])[];
+  blockedByMatchedTargetIds?: readonly string[];
+  fallback?: boolean;
+}
+
 export interface XenesisConnectionSection {
   id: string;
   label: string;
@@ -913,6 +919,8 @@ export const XENESIS_CONNECTION_PROVIDER_IDS = [
   'claude-cli',
   'claude-interactive',
 ] as const;
+
+export const XENESIS_CONNECTION_TOOL_OAUTH_DRAFT_IDS = ['google-workspace', 'google-calendar'] as const;
 
 export const XENESIS_CONNECTION_GUIDES: XenesisConnectionItem[] = [
   {
@@ -3694,6 +3702,175 @@ export const XENESIS_CONNECTION_NATURAL_PROVIDER_TARGETS: readonly XenesisConnec
     words: uniqueStrings(XENESIS_CONNECTION_NATURAL_PROVIDER_ALIAS_WORDS[id] ?? [id]),
   }));
 
+export const XENESIS_CONNECTION_NATURAL_PLANNED_GOOGLE_TOOL_IDS = XENESIS_CONNECTION_TOOL_OAUTH_DRAFT_IDS;
+
+export function isXenesisConnectionNaturalPlannedGoogleToolTarget(
+  target: Pick<XenesisConnectionNaturalConnectionTarget, 'id' | 'kind'>,
+): boolean {
+  return (
+    target.kind === 'tool' &&
+    (XENESIS_CONNECTION_NATURAL_PLANNED_GOOGLE_TOOL_IDS as readonly string[]).includes(target.id)
+  );
+}
+
+const XENESIS_CONNECTION_NATURAL_GUIDE_TARGET_CONFIG: readonly Omit<XenesisConnectionNaturalGuideTarget, 'label'>[] = [
+  {
+    id: 'agent-user-stories',
+    words: ['user story', 'user stories', '사용자 스토리', '스토리', 'hermes story', '헤르메스 스토리'],
+    requiredWordGroups: [['hermes', '헤르메스']],
+    blockedByMatchedTargetIds: ['external-tool-integrations', 'openclaw-channel-setup'],
+  },
+  {
+    id: 'external-tool-integrations',
+    words: [
+      'external tool',
+      'external tools',
+      'tool integration',
+      'tool integrations',
+      'mcp tool',
+      'mcp tools',
+      'hermes integration',
+      'hermes integrations',
+      '헤르메스 통합',
+      '외부 도구',
+      '도구 통합',
+      'oauth',
+      'connector',
+      '커넥터',
+      'google workspace',
+      'google drive',
+      'google docs',
+      'google calendar',
+      '구글 워크스페이스',
+      '구글 드라이브',
+      '구글 독스',
+      '구글 캘린더',
+      'notion',
+      '노션',
+      'linear',
+      '리니어',
+      'fetch',
+      'filesystem',
+      '파일 시스템',
+      '파일시스템',
+    ],
+    requiredWordGroups: [
+      ['integration', 'integrations', '통합'],
+      [
+        'tool',
+        'tools',
+        '도구',
+        'mcp',
+        'oauth',
+        'google',
+        '구글',
+        'notion',
+        '노션',
+        'linear',
+        '리니어',
+        'hermes',
+        '헤르메스',
+      ],
+    ],
+  },
+  {
+    id: 'openclaw-channel-setup',
+    words: [
+      'openclaw',
+      '오픈클로',
+      '오픈클로우',
+      'channel',
+      'channels',
+      '채널',
+      'messenger',
+      'messengers',
+      '메신저',
+      'access group',
+      'access groups',
+      '액세스 그룹',
+      '접근 그룹',
+      'routing',
+      '라우팅',
+      'pairing',
+      '페어링',
+      'troubleshooting',
+      'troubleshoot',
+      '문제 해결',
+      'telegram',
+      '텔레그램',
+      'slack',
+      '슬랙',
+      'discord',
+      '디스코드',
+      'whatsapp',
+      '왓츠앱',
+      'google chat',
+      '구글 챗',
+    ],
+    requiredWordGroups: [
+      ['integration', 'integrations', '통합'],
+      ['channel', 'channels', '채널', 'messenger', 'messengers', '메신저'],
+    ],
+  },
+  {
+    id: 'cr-mcp-gateway-bots',
+    words: ['cr', 'mcp', 'gateway', '게이트웨이', 'bot', '봇'],
+  },
+  {
+    id: 'onboarding-connections',
+    words: [],
+    fallback: true,
+  },
+];
+
+function xenesisConnectionGuideLabel(id: string): string {
+  return XENESIS_CONNECTION_GUIDES.find((item) => item.id === id)?.label ?? id;
+}
+
+export const XENESIS_CONNECTION_NATURAL_GUIDE_TARGETS: readonly XenesisConnectionNaturalGuideTarget[] =
+  XENESIS_CONNECTION_NATURAL_GUIDE_TARGET_CONFIG.map((target) => ({
+    ...target,
+    label: xenesisConnectionGuideLabel(target.id),
+    words: uniqueStrings(target.words),
+  }));
+
+const XENESIS_CONNECTION_NATURAL_ONBOARDING_STEP_TARGET_METADATA: Record<
+  (typeof XENESIS_CONNECTION_ONBOARDING_STEP_IDS)[number],
+  Omit<XenesisConnectionNaturalWordsTarget, 'id'>
+> = {
+  'first-chat': {
+    label: 'First chat',
+    words: ['first chat', '첫 채팅', '첫채팅', '첫 응답', 'first response'],
+  },
+  'local-cli-mcp': {
+    label: 'Local CLI and MCP',
+    words: ['local cli', '로컬 cli', 'local-cli', 'mcp', 'mcp bridge', 'mcp 브리지', '로컬 런타임'],
+  },
+  'recommended-tools': {
+    label: 'Recommended tools',
+    words: ['recommended tools', '추천 도구', '외부 도구', 'external tools', 'tool onboarding', '도구 온보딩'],
+  },
+  gateway: {
+    label: 'Gateway',
+    words: ['gateway', '게이트웨이'],
+  },
+  'messenger-routing': {
+    label: 'Messenger routing',
+    words: ['messenger routing', '메신저 라우팅', 'channel routing', '채널 라우팅', 'external bots', '외부 봇'],
+  },
+  'test-send': {
+    label: 'End-to-end test',
+    words: ['end-to-end', 'e2e', '엔드투엔드', 'test send', '테스트 전송', '최종 테스트'],
+  },
+};
+
+export const XENESIS_CONNECTION_NATURAL_ONBOARDING_STEP_TARGETS: readonly XenesisConnectionNaturalWordsTarget[] =
+  XENESIS_CONNECTION_ONBOARDING_STEP_IDS.map((id) => ({
+    id,
+    label: XENESIS_CONNECTION_NATURAL_ONBOARDING_STEP_TARGET_METADATA[id].label,
+    words: uniqueStrings(XENESIS_CONNECTION_NATURAL_ONBOARDING_STEP_TARGET_METADATA[id].words),
+  }));
+
 function countItems(sections: XenesisConnectionsStatus['sections']): XenesisConnectionsStatus['summary'] {
   const summary = {
     ready: 0,
@@ -3743,8 +3920,6 @@ const XENESIS_MCP_INSTALL_DRAFT_BLOCKED_ACTIONS = [
   'execute provider tools',
   'mutate settings',
 ];
-
-export const XENESIS_CONNECTION_TOOL_OAUTH_DRAFT_IDS = ['google-workspace', 'google-calendar'] as const;
 
 const XENESIS_TOOL_OAUTH_DRAFT_BLOCKED_ACTIONS = [
   'complete OAuth',

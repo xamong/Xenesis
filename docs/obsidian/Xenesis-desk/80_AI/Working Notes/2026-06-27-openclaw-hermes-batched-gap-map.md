@@ -4765,6 +4765,52 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Natural Target Metadata Ownership Slice
+
+- Continued the larger slice-cycle pass by moving remaining natural-routing
+  target metadata that belongs to Connection Center source data out of the
+  generic natural-language catalog.
+- Moved ownership into `src/shared/xenesisConnections.ts` for:
+  - planned Google tool membership.
+  - natural guide targets.
+  - natural onboarding step targets.
+- Kept the public natural-catalog names stable in
+  `src/shared/xenesisNaturalLanguageCatalog.ts` by re-exporting the
+  connection-owned targets, preserving existing route order, CR paths, args,
+  approval state, and visible text.
+- Added source-ownership guards in
+  `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  so the generic natural catalog cannot silently reclaim these hardcoded lists.
+- Added connection-catalog behavior assertions in
+  `src/shared/xenesisConnections.test.ts`.
+- Fixed a live-smoke reliability gap in
+  `scripts/xenesisNaturalDeskRoutingLiveSmoke.mjs`: the smoke now creates
+  temporary `XENIS_HOME` and `XENESIS_DESK_USER_DATA_DIR` by default so
+  remembered user approvals do not change approval-stop expectations.
+- Root cause of the broad smoke failure:
+  - `노션 연결해줘` still planned the expected
+    `xd.xenesis.connections.setupRequests.request` call with
+    `approved=false`.
+  - The smoke reused real user state where an earlier diagnostic had clicked
+    `항상 승인`, so the approval card was bypassed.
+- Verification:
+  - Initial focused RED failed 72/74 as expected before connection-owned
+    exports existed.
+  - Focused GREEN passed 74/74 after the ownership move.
+  - Natural-routing smoke unit coverage passed 5/5 after the temp-state helper.
+  - Scoped Biome check passed for touched shared, renderer test, and smoke
+    files.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 144/144 after state
+    isolation.
+  - `npm run typecheck` passed.
+  - `npm run build` passed, including typecheck.
+  - Post-build `npm run smoke:xenesis:natural-desk-routing` passed 144/144.
+  - `git diff --check` passed with LF-to-CRLF working-copy warnings only.
+- CR audit was skipped because this slice does not change CR schemas,
+  dispatchers, generated coverage maps, or capability behavior.
+- External documentation handling: no browsing. Used cached Obsidian/source and
+  local tests only.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

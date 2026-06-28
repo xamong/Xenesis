@@ -91,6 +91,45 @@ test('connection catalog settings actions are owned by shared constants', () => 
   assert.equal((source.match(/settingsAction:\s*\{\s*category:/g) ?? []).length, 0);
 });
 
+test('connection catalog owns natural guide, onboarding, and planned tool target metadata', async () => {
+  const source = readFileSync(new URL('./xenesisConnections.ts', import.meta.url), 'utf8');
+  assert.match(source, /XENESIS_CONNECTION_NATURAL_PLANNED_GOOGLE_TOOL_IDS/);
+  assert.match(source, /XENESIS_CONNECTION_NATURAL_GUIDE_TARGETS/);
+  assert.match(source, /XENESIS_CONNECTION_NATURAL_ONBOARDING_STEP_TARGETS/);
+
+  const connectionsModule = (await import('./xenesisConnections')) as Record<string, unknown>;
+  const isPlannedGoogleToolTarget = connectionsModule.isXenesisConnectionNaturalPlannedGoogleToolTarget as
+    | ((target: { id: string; kind: string }) => boolean)
+    | undefined;
+  const guideTargets = connectionsModule.XENESIS_CONNECTION_NATURAL_GUIDE_TARGETS as
+    | readonly { id: string; label: string; words: readonly string[]; fallback?: boolean }[]
+    | undefined;
+  const onboardingTargets = connectionsModule.XENESIS_CONNECTION_NATURAL_ONBOARDING_STEP_TARGETS as
+    | readonly { id: string; label: string; words: readonly string[] }[]
+    | undefined;
+  const onboardingStepIds = connectionsModule.XENESIS_CONNECTION_ONBOARDING_STEP_IDS as readonly string[] | undefined;
+
+  assert.equal(typeof isPlannedGoogleToolTarget, 'function');
+  assert.equal(isPlannedGoogleToolTarget?.({ id: 'google-calendar', kind: 'tool' }), true);
+  assert.equal(isPlannedGoogleToolTarget?.({ id: 'notion', kind: 'tool' }), false);
+  assert.equal(
+    guideTargets?.some((target) => target.id === 'external-tool-integrations'),
+    true,
+  );
+  assert.equal(
+    guideTargets?.some((target) => target.id === 'onboarding-connections' && target.fallback),
+    true,
+  );
+  assert.deepEqual(
+    onboardingTargets?.map((target) => target.id),
+    onboardingStepIds,
+  );
+  assert.equal(
+    onboardingTargets?.some((target) => target.words.includes('로컬 런타임')),
+    true,
+  );
+});
+
 test('buildXenesisConnectionsStatus reports ready provider, MCP, gateway, and Telegram', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {

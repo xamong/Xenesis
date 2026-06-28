@@ -194,6 +194,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     new URL('../../../../shared/xenesisNaturalLanguageCatalog.ts', import.meta.url),
     'utf8',
   );
+  const connectionSource = readFileSync(new URL('../../../../shared/xenesisConnections.ts', import.meta.url), 'utf8');
   let promptHintSource = '';
   try {
     promptHintSource = readFileSync(
@@ -891,6 +892,12 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.match(catalogSource, /export function isXenesisNaturalConnectionToolTarget/);
   assert.match(catalogSource, /export function isXenesisNaturalConnectionMessengerTarget/);
   assert.match(catalogSource, /export function isXenesisNaturalPlannedGoogleToolTarget/);
+  assert.doesNotMatch(catalogSource, /export const XENESIS_NATURAL_PLANNED_GOOGLE_TOOL_IDS = \[/);
+  assert.doesNotMatch(catalogSource, /export const XENESIS_NATURAL_GUIDE_TARGETS:[^=]+=\s*\[/);
+  assert.doesNotMatch(catalogSource, /export const XENESIS_NATURAL_ONBOARDING_STEP_TARGETS:[^=]+=\s*\[/);
+  assert.match(connectionSource, /XENESIS_CONNECTION_NATURAL_PLANNED_GOOGLE_TOOL_IDS/);
+  assert.match(connectionSource, /XENESIS_CONNECTION_NATURAL_GUIDE_TARGETS/);
+  assert.match(connectionSource, /XENESIS_CONNECTION_NATURAL_ONBOARDING_STEP_TARGETS/);
   assert.doesNotMatch(source, /target\.kind === 'tool'/);
   assert.doesNotMatch(source, /target\.kind === 'messenger'/);
   assert.doesNotMatch(source, /google-calendar/);
