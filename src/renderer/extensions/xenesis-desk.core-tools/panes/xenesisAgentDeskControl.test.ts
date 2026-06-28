@@ -81,6 +81,7 @@ import {
   XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES,
   XENESIS_NATURAL_RUN_START_RULES,
   XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS,
+  XENESIS_NATURAL_RUNTIME_ACTION_SPECS,
   XENESIS_NATURAL_RUNTIME_CONTROL_RULES,
   XENESIS_NATURAL_RUNTIME_INVENTORY_RULES,
   XENESIS_NATURAL_RUNTIME_SUPPORT_RULES,
@@ -1200,7 +1201,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.deepEqual(
     XENESIS_NATURAL_RUNTIME_INVENTORY_RULES.map((rule) => ({
       path: rule.action.path,
-      blockedContextWords: 'blockedContextWords' in rule ? rule.blockedContextWords.length : 0,
+      blockedContextWords: (rule as { blockedContextWords?: readonly string[] }).blockedContextWords?.length ?? 0,
     })),
     [
       { path: 'xd.xenesis.status', blockedContextWords: XENESIS_NATURAL_RUNTIME_STATUS_TARGET_WORDS.length },
@@ -2485,6 +2486,76 @@ test('natural approval request actions are generated from shared action request 
   assert.doesNotMatch(
     capabilityCatalogSource,
     /XENESIS_NATURAL_CHANNEL_TEST_ACTION_DESCRIPTORS = \{\s*channelTest:\s*\{\s*path:/,
+  );
+});
+
+test('natural runtime actions are generated from shared runtime action specs', () => {
+  const runtimeSpecEntries = Object.entries(XENESIS_NATURAL_RUNTIME_ACTION_SPECS);
+  type RuntimeRuleSpecLike = {
+    contextWords: readonly string[];
+    requiredContextWordGroups?: readonly (readonly string[])[];
+    blockedContextWords?: readonly string[];
+  };
+  type RuntimeRuleLike = RuntimeRuleSpecLike & {
+    action: {
+      path: string;
+    };
+  };
+  const summarizeRuntimeRule = (path: string, rule: RuntimeRuleSpecLike) => ({
+    path,
+    contextWords: [...rule.contextWords],
+    requiredContextWordGroups: (rule.requiredContextWordGroups ?? []).map((words) => [...words]),
+    blockedContextWords: rule.blockedContextWords ? [...rule.blockedContextWords] : [],
+  });
+
+  assert.deepEqual(
+    Object.keys(XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS),
+    runtimeSpecEntries.map(([key]) => key),
+  );
+  assert.deepEqual(
+    Object.fromEntries(Object.entries(XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS)),
+    Object.fromEntries(
+      runtimeSpecEntries.map(([key, spec]) => [
+        key,
+        {
+          id: spec.id,
+          path: spec.path,
+          reason: spec.reason,
+        },
+      ]),
+    ),
+  );
+
+  const runtimeSpecRuleSummaries = (group: string) =>
+    runtimeSpecEntries.flatMap(([, spec]) =>
+      (spec.rules ?? []).filter((rule) => rule.group === group).map((rule) => summarizeRuntimeRule(spec.path, rule)),
+    );
+  const runtimeRuleSummaries = (rules: readonly RuntimeRuleLike[]) =>
+    rules.map((rule) => summarizeRuntimeRule(rule.action.path, rule));
+
+  assert.deepEqual(
+    runtimeRuleSummaries(XENESIS_NATURAL_AGENT_READBACK_RULES),
+    runtimeSpecRuleSummaries('agentReadback'),
+  );
+  assert.deepEqual(runtimeRuleSummaries(XENESIS_NATURAL_AGENT_SUBMIT_RULES), runtimeSpecRuleSummaries('agentSubmit'));
+  assert.deepEqual(runtimeRuleSummaries(XENESIS_NATURAL_RUN_START_RULES), runtimeSpecRuleSummaries('runStart'));
+  assert.deepEqual(runtimeRuleSummaries(XENESIS_NATURAL_WORKSPACE_SET_RULES), runtimeSpecRuleSummaries('workspaceSet'));
+  assert.deepEqual(
+    runtimeRuleSummaries(XENESIS_NATURAL_RUNTIME_SUPPORT_RULES),
+    runtimeSpecRuleSummaries('runtimeSupport'),
+  );
+  assert.deepEqual(runtimeRuleSummaries(XENESIS_NATURAL_GATEWAY_ACTION_RULES), runtimeSpecRuleSummaries('gateway'));
+  assert.deepEqual(
+    runtimeRuleSummaries(XENESIS_NATURAL_RUNTIME_INVENTORY_RULES),
+    runtimeSpecRuleSummaries('runtimeInventory'),
+  );
+  assert.deepEqual(
+    runtimeRuleSummaries(XENESIS_NATURAL_PROFILE_INVENTORY_RULES),
+    runtimeSpecRuleSummaries('profileInventory'),
+  );
+  assert.deepEqual(
+    runtimeRuleSummaries(XENESIS_NATURAL_RUNTIME_CONTROL_RULES),
+    runtimeSpecRuleSummaries('runtimeControl'),
   );
 });
 

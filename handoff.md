@@ -14901,3 +14901,76 @@ Verification so far:
     paths are mutable lifecycle controls in the current development app.
 - Next intended step:
   - Add Obsidian working note, stage, and commit this slice.
+
+## Current Runtime Natural Routing Surface Spec Slice
+
+- Current objective:
+  - Continue the hardcoding-removal cycle by deriving runtime natural action
+    descriptors and rule groups from a shared runtime action spec.
+- Rationale:
+  - Aggregate, target, action-request, and gateway lifecycle slices reduced
+    duplicated routing data, but runtime routing still hand-lists descriptor
+    entries separately from support, gateway, Agent, run, workspace, inventory,
+    profile, and control rule arrays.
+  - Runtime routing is a broad foundation for provider setup, external
+    messenger setup, diagnostics, and Agent/CR control because it covers local
+    CLI/MCP readiness, gateway readiness, runtime status, reports, tasks,
+    profiles, run start/cancel, session reset, workspace binding, and quoted
+    Agent pane control.
+- Scope:
+  - Add RED tests requiring a shared runtime action spec and generated
+    descriptor/rule arrays.
+  - Preserve existing ids, CR paths, reasons, rule order, context words,
+    blocked words, args behavior, and visible text behavior.
+  - Do not add live start/stop/restart lifecycle smoke prompts because those
+    paths are mutable controls in the current development app.
+- Touched files so far:
+  - `handoff.md`
+  - `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `docs/capability-registry-audit.md`
+- Commands run:
+  - `git status --short --branch` -> clean `agent/upcoming-work-20260627`.
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> failed 41/42 because `XENESIS_NATURAL_RUNTIME_ACTION_SPECS` was not
+    implemented.
+  - GREEN:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 42/42.
+  - First `npm run typecheck` after implementation failed only on test-file
+    optional property narrowing for generated runtime rules; fixed with local
+    rule summary helper types.
+  - Final `npm run typecheck` -> passed.
+  - Final
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 42/42.
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` -> passed
+    6/6.
+  - `npm run docs:capabilities:audit` -> passed, wrote
+    `docs/capability-registry-audit.md`.
+  - `npm run smoke:xenesis:natural-desk-routing` -> passed 180/180.
+  - `npx biome check src\shared\xenesisNaturalLanguageCapabilityCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts handoff.md`
+    -> checked 2 files, no fixes applied.
+  - `rg -n "Missing|Undispatched|Dispatcher paths missing" docs\capability-registry-audit.md`
+    -> missing registered paths 0, missing dispatched coverage paths 0,
+    undispatched static callable methods 0, dispatcher paths missing from tree
+    0.
+  - `git diff --check` -> passed; CRLF warnings only.
+- Implemented:
+  - Added `XENESIS_NATURAL_RUNTIME_ACTION_SPECS` as the shared source for
+    runtime action ids, CR paths, reasons, and rule group context.
+  - Generated `XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS` from the runtime
+    spec.
+  - Generated Agent readback/submit, run-start, workspace-set, runtime support,
+    gateway, runtime inventory, profile inventory, and runtime control rule
+    arrays from runtime spec rule groups.
+  - Preserved gateway restart-before-start priority and all existing runtime
+    natural-language behavior.
+- Known gaps:
+  - Natural-language routing remains deterministic catalog routing, not model
+    reasoning.
+  - Gateway lifecycle prompts remain excluded from broad live smoke because
+    those CR paths are mutable controls in the current development app.
+- Next intended step:
+  - Add Obsidian working note, stage, and commit this runtime spec slice.

@@ -680,118 +680,342 @@ export const XENESIS_NATURAL_ARTIFACT_TARGET_RULES = [
   },
 ] as const satisfies readonly XenesisNaturalCatalogActionRule[];
 
-export const XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS = {
+export type XenesisNaturalRuntimeActionRuleGroup =
+  | 'agentReadback'
+  | 'agentSubmit'
+  | 'runStart'
+  | 'workspaceSet'
+  | 'runtimeSupport'
+  | 'gateway'
+  | 'runtimeInventory'
+  | 'profileInventory'
+  | 'runtimeControl';
+
+export interface XenesisNaturalRuntimeActionRuleSpec {
+  group: XenesisNaturalRuntimeActionRuleGroup;
+  contextWords: readonly string[];
+  requiredContextWordGroups?: readonly (readonly string[])[];
+  blockedContextWords?: readonly string[];
+}
+
+export interface XenesisNaturalRuntimeActionSpec extends XenesisNaturalDeskActionDescriptor {
+  rules?: readonly XenesisNaturalRuntimeActionRuleSpec[];
+}
+
+export const XENESIS_NATURAL_RUNTIME_ACTION_SPECS = {
   localCliScan: {
     id: 'natural-local-cli-scan',
     path: 'xd.localCli.scan',
     reason: 'Scan local CLI agents from natural language request.',
+    rules: [
+      {
+        group: 'runtimeSupport',
+        contextWords: XENESIS_NATURAL_LOCAL_CLI_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_LOCAL_CLI_SCAN_CONTEXT_WORDS],
+      },
+    ],
   },
   mcpBridgeStatus: {
     id: 'natural-mcp-bridge-status',
     path: 'xd.mcp.bridge.status',
     reason: 'Read MCP bridge status from natural language request.',
+    rules: [
+      {
+        group: 'runtimeSupport',
+        contextWords: XENESIS_NATURAL_MCP_BRIDGE_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_RUNTIME_READBACK_WORDS],
+      },
+    ],
   },
   mcpSettingsStatus: {
     id: 'natural-mcp-settings-status',
     path: 'xd.mcp.settings.status',
     reason: 'Read MCP settings status from natural language request.',
+    rules: [
+      {
+        group: 'runtimeSupport',
+        contextWords: XENESIS_NATURAL_MCP_SETTINGS_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_RUNTIME_READBACK_WORDS],
+      },
+    ],
   },
   actionInboxList: {
     id: 'natural-mcp-action-inbox-list',
     path: 'xd.mcp.actionInbox.list',
     reason: 'List Action Inbox items from natural language request.',
-  },
-  gatewayDashboardOpen: {
-    id: 'natural-xenesis-gateway-dashboard-open',
-    path: 'xd.xenesis.gateway.openDashboard',
-    reason: 'Open Xenesis gateway dashboard from natural language request.',
-  },
-  gatewayStart: {
-    id: 'natural-xenesis-gateway-start',
-    path: 'xd.xenesis.gateway.start',
-    reason: 'Start Xenesis gateway from natural language request.',
-  },
-  gatewayStop: {
-    id: 'natural-xenesis-gateway-stop',
-    path: 'xd.xenesis.gateway.stop',
-    reason: 'Stop Xenesis gateway from natural language request.',
+    rules: [
+      {
+        group: 'runtimeSupport',
+        contextWords: XENESIS_NATURAL_ACTION_INBOX_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_RUNTIME_READBACK_WORDS],
+      },
+    ],
   },
   gatewayRestart: {
     id: 'natural-xenesis-gateway-restart',
     path: 'xd.xenesis.gateway.restart',
     reason: 'Restart Xenesis gateway from natural language request.',
+    rules: [
+      {
+        group: 'gateway',
+        contextWords: XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_GATEWAY_RESTART_CONTEXT_WORDS],
+      },
+    ],
+  },
+  gatewayStart: {
+    id: 'natural-xenesis-gateway-start',
+    path: 'xd.xenesis.gateway.start',
+    reason: 'Start Xenesis gateway from natural language request.',
+    rules: [
+      {
+        group: 'gateway',
+        contextWords: XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_GATEWAY_START_CONTEXT_WORDS],
+        blockedContextWords: XENESIS_NATURAL_GATEWAY_RESTART_CONTEXT_WORDS,
+      },
+    ],
+  },
+  gatewayStop: {
+    id: 'natural-xenesis-gateway-stop',
+    path: 'xd.xenesis.gateway.stop',
+    reason: 'Stop Xenesis gateway from natural language request.',
+    rules: [
+      {
+        group: 'gateway',
+        contextWords: XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_GATEWAY_STOP_CONTEXT_WORDS],
+      },
+    ],
+  },
+  gatewayDashboardOpen: {
+    id: 'natural-xenesis-gateway-dashboard-open',
+    path: 'xd.xenesis.gateway.openDashboard',
+    reason: 'Open Xenesis gateway dashboard from natural language request.',
+    rules: [
+      {
+        group: 'gateway',
+        contextWords: XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_DASHBOARD_CONTEXT_WORDS, XENESIS_NATURAL_OPEN_OR_SHOW_WORDS],
+      },
+    ],
   },
   gatewayStatus: {
     id: 'natural-xenesis-gateway-status',
     path: 'xd.xenesis.gateway.status',
     reason: 'Read Xenesis gateway status from natural language request.',
+    rules: [
+      {
+        group: 'gateway',
+        contextWords: XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_RUNTIME_READBACK_WORDS],
+      },
+    ],
   },
   agentEvents: {
     id: 'natural-xenesis-agent-events',
     path: 'xd.xenesis.agents.events',
     reason: 'List Xenesis Agent pane events from natural language request.',
+    rules: [
+      {
+        group: 'agentReadback',
+        contextWords: XENESIS_NATURAL_AGENT_EVENT_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS, XENESIS_NATURAL_AGENT_CONTEXT_WORDS],
+      },
+    ],
   },
   agentStatus: {
     id: 'natural-xenesis-agent-status',
     path: 'xd.xenesis.agents.status',
     reason: 'Read Xenesis Agent pane status from natural language request.',
+    rules: [
+      {
+        group: 'agentReadback',
+        contextWords: XENESIS_NATURAL_RUNTIME_READBACK_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS, XENESIS_NATURAL_AGENT_CONTEXT_WORDS],
+      },
+    ],
   },
   runtimeStatus: {
     id: 'natural-xenesis-status',
     path: 'xd.xenesis.status',
     reason: 'Read Xenesis runtime status from natural language request.',
+    rules: [
+      {
+        group: 'runtimeInventory',
+        contextWords: XENESIS_NATURAL_BROAD_RUNTIME_STATUS_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS],
+        blockedContextWords: XENESIS_NATURAL_RUNTIME_STATUS_TARGET_WORDS,
+      },
+      {
+        group: 'runtimeInventory',
+        contextWords: XENESIS_NATURAL_RUNTIME_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS, XENESIS_NATURAL_RUNTIME_READBACK_WORDS],
+        blockedContextWords: XENESIS_NATURAL_RUNTIME_STATUS_TARGET_WORDS,
+      },
+    ],
   },
   reportsList: {
     id: 'natural-xenesis-reports-list',
     path: 'xd.xenesis.reports.list',
     reason: 'List Xenesis reports from natural language request.',
+    rules: [
+      {
+        group: 'runtimeInventory',
+        contextWords: XENESIS_NATURAL_REPORT_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS, XENESIS_NATURAL_LIST_OR_SHOW_WORDS],
+      },
+    ],
   },
   tasksList: {
     id: 'natural-xenesis-tasks-list',
     path: 'xd.xenesis.tasks.list',
     reason: 'List Xenesis tasks from natural language request.',
+    rules: [
+      {
+        group: 'runtimeInventory',
+        contextWords: XENESIS_NATURAL_TASK_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS, XENESIS_NATURAL_LIST_OR_SHOW_WORDS],
+      },
+    ],
   },
   agentsList: {
     id: 'natural-xenesis-agents-list',
     path: 'xd.xenesis.agents.list',
     reason: 'List registered Xenesis Agent panes from natural language request.',
+    rules: [
+      {
+        group: 'runtimeInventory',
+        contextWords: XENESIS_NATURAL_AGENT_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS, XENESIS_NATURAL_LIST_OR_SHOW_WORDS],
+      },
+    ],
   },
   diagnostics: {
     id: 'natural-xenesis-diagnostics',
     path: 'xd.xenesis.diagnostics',
     reason: 'Read Xenesis operational diagnostics from natural language request.',
+    rules: [
+      {
+        group: 'runtimeInventory',
+        contextWords: XENESIS_NATURAL_RUNTIME_DIAGNOSTIC_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS],
+      },
+    ],
   },
   profilesList: {
     id: 'natural-xenesis-profiles-list',
     path: 'xd.xenesis.profiles.list',
     reason: 'List Xenesis profiles from natural language request.',
+    rules: [
+      {
+        group: 'profileInventory',
+        contextWords: XENESIS_NATURAL_PROFILE_LIST_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS, XENESIS_NATURAL_PROFILE_CONTEXT_WORDS],
+      },
+    ],
   },
   agentSubmit: {
     id: 'natural-xenesis-agent-submit',
     path: 'xd.xenesis.agents.submit',
     reason: 'Submit Xenesis Agent pane message from natural language request.',
+    rules: [
+      {
+        group: 'agentSubmit',
+        contextWords: XENESIS_NATURAL_AGENT_SUBMIT_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS, XENESIS_NATURAL_AGENT_CONTEXT_WORDS],
+      },
+    ],
   },
   runsStart: {
     id: 'natural-xenesis-runs-start',
     path: 'xd.xenesis.runs.start',
     reason: 'Start Xenesis run from natural language request.',
+    rules: [
+      {
+        group: 'runStart',
+        contextWords: XENESIS_NATURAL_RUN_START_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS, XENESIS_NATURAL_RUN_CONTEXT_WORDS],
+        blockedContextWords: XENESIS_NATURAL_CANCEL_CONTEXT_WORDS,
+      },
+    ],
   },
   runsCancel: {
     id: 'natural-xenesis-runs-cancel',
     path: 'xd.xenesis.runs.cancel',
     reason: 'Cancel active Xenesis run from natural language request.',
+    rules: [
+      {
+        group: 'runtimeControl',
+        contextWords: XENESIS_NATURAL_RUN_CANCEL_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS, XENESIS_NATURAL_CANCEL_CONTEXT_WORDS],
+      },
+    ],
   },
   sessionsReset: {
     id: 'natural-xenesis-sessions-reset',
     path: 'xd.xenesis.sessions.reset',
     reason: 'Reset active Xenesis session from natural language request.',
+    rules: [
+      {
+        group: 'runtimeControl',
+        contextWords: XENESIS_NATURAL_SESSION_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS, XENESIS_NATURAL_SESSION_RESET_CONTEXT_WORDS],
+      },
+    ],
   },
   workspaceSet: {
     id: 'natural-xenesis-workspace-set',
     path: 'xd.xenesis.workspace.set',
     reason: 'Set Xenesis workspace from natural language request.',
+    rules: [
+      {
+        group: 'workspaceSet',
+        contextWords: XENESIS_NATURAL_WORKSPACE_SET_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS, XENESIS_NATURAL_WORKSPACE_CONTEXT_WORDS],
+      },
+    ],
   },
-} as const satisfies Record<string, XenesisNaturalDeskActionDescriptor>;
+} as const satisfies Record<string, XenesisNaturalRuntimeActionSpec>;
+
+function buildXenesisNaturalRuntimeActionDescriptors<TSpecs extends Record<string, XenesisNaturalRuntimeActionSpec>>(
+  specs: TSpecs,
+): { [K in keyof TSpecs]: XenesisNaturalDeskActionDescriptor } {
+  return Object.fromEntries(
+    Object.entries(specs).map(([key, spec]) => [
+      key,
+      {
+        id: spec.id,
+        path: spec.path,
+        reason: spec.reason,
+      },
+    ]),
+  ) as { [K in keyof TSpecs]: XenesisNaturalDeskActionDescriptor };
+}
+
+function buildXenesisNaturalRuntimeRules<TSpecs extends Record<string, XenesisNaturalRuntimeActionSpec>>(
+  specs: TSpecs,
+  group: XenesisNaturalRuntimeActionRuleGroup,
+): XenesisNaturalCatalogActionRule[] {
+  return Object.values(specs).flatMap((spec) =>
+    (spec.rules ?? [])
+      .filter((rule) => rule.group === group)
+      .map((rule) => ({
+        contextWords: rule.contextWords,
+        ...(rule.requiredContextWordGroups ? { requiredContextWordGroups: rule.requiredContextWordGroups } : {}),
+        ...(rule.blockedContextWords ? { blockedContextWords: rule.blockedContextWords } : {}),
+        action: {
+          id: spec.id,
+          path: spec.path,
+          reason: spec.reason,
+        },
+      })),
+  );
+}
+
+export const XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS = buildXenesisNaturalRuntimeActionDescriptors(
+  XENESIS_NATURAL_RUNTIME_ACTION_SPECS,
+);
 
 export const XENESIS_NATURAL_RUNTIME_VISIBLE_PLAN_PATHS = {
   actionInboxList: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.actionInboxList.path,
@@ -803,151 +1027,50 @@ export const XENESIS_NATURAL_GATEWAY_LIFECYCLE_PLAN_PATHS = [
   XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.gatewayRestart.path,
 ] as const;
 
-export const XENESIS_NATURAL_AGENT_READBACK_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_AGENT_EVENT_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS, XENESIS_NATURAL_AGENT_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.agentEvents,
-  },
-  {
-    contextWords: XENESIS_NATURAL_RUNTIME_READBACK_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS, XENESIS_NATURAL_AGENT_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.agentStatus,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+export const XENESIS_NATURAL_AGENT_READBACK_RULES = buildXenesisNaturalRuntimeRules(
+  XENESIS_NATURAL_RUNTIME_ACTION_SPECS,
+  'agentReadback',
+);
 
-export const XENESIS_NATURAL_AGENT_SUBMIT_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_AGENT_SUBMIT_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS, XENESIS_NATURAL_AGENT_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.agentSubmit,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+export const XENESIS_NATURAL_AGENT_SUBMIT_RULES = buildXenesisNaturalRuntimeRules(
+  XENESIS_NATURAL_RUNTIME_ACTION_SPECS,
+  'agentSubmit',
+);
 
-export const XENESIS_NATURAL_RUN_START_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_RUN_START_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS, XENESIS_NATURAL_RUN_CONTEXT_WORDS],
-    blockedContextWords: XENESIS_NATURAL_CANCEL_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.runsStart,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+export const XENESIS_NATURAL_RUN_START_RULES = buildXenesisNaturalRuntimeRules(
+  XENESIS_NATURAL_RUNTIME_ACTION_SPECS,
+  'runStart',
+);
 
-export const XENESIS_NATURAL_WORKSPACE_SET_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_WORKSPACE_SET_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS, XENESIS_NATURAL_WORKSPACE_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.workspaceSet,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+export const XENESIS_NATURAL_WORKSPACE_SET_RULES = buildXenesisNaturalRuntimeRules(
+  XENESIS_NATURAL_RUNTIME_ACTION_SPECS,
+  'workspaceSet',
+);
 
-export const XENESIS_NATURAL_RUNTIME_SUPPORT_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_LOCAL_CLI_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_LOCAL_CLI_SCAN_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.localCliScan,
-  },
-  {
-    contextWords: XENESIS_NATURAL_MCP_BRIDGE_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_RUNTIME_READBACK_WORDS],
-    action: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.mcpBridgeStatus,
-  },
-  {
-    contextWords: XENESIS_NATURAL_MCP_SETTINGS_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_RUNTIME_READBACK_WORDS],
-    action: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.mcpSettingsStatus,
-  },
-  {
-    contextWords: XENESIS_NATURAL_ACTION_INBOX_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_RUNTIME_READBACK_WORDS],
-    action: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.actionInboxList,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+export const XENESIS_NATURAL_RUNTIME_SUPPORT_RULES = buildXenesisNaturalRuntimeRules(
+  XENESIS_NATURAL_RUNTIME_ACTION_SPECS,
+  'runtimeSupport',
+);
 
-export const XENESIS_NATURAL_GATEWAY_ACTION_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_GATEWAY_RESTART_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.gatewayRestart,
-  },
-  {
-    contextWords: XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_GATEWAY_START_CONTEXT_WORDS],
-    blockedContextWords: XENESIS_NATURAL_GATEWAY_RESTART_CONTEXT_WORDS,
-    action: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.gatewayStart,
-  },
-  {
-    contextWords: XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_GATEWAY_STOP_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.gatewayStop,
-  },
-  {
-    contextWords: XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_DASHBOARD_CONTEXT_WORDS, XENESIS_NATURAL_OPEN_OR_SHOW_WORDS],
-    action: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.gatewayDashboardOpen,
-  },
-  {
-    contextWords: XENESIS_NATURAL_GATEWAY_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_RUNTIME_READBACK_WORDS],
-    action: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.gatewayStatus,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+export const XENESIS_NATURAL_GATEWAY_ACTION_RULES = buildXenesisNaturalRuntimeRules(
+  XENESIS_NATURAL_RUNTIME_ACTION_SPECS,
+  'gateway',
+);
 
-export const XENESIS_NATURAL_RUNTIME_INVENTORY_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_BROAD_RUNTIME_STATUS_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS],
-    blockedContextWords: XENESIS_NATURAL_RUNTIME_STATUS_TARGET_WORDS,
-    action: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.runtimeStatus,
-  },
-  {
-    contextWords: XENESIS_NATURAL_RUNTIME_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS, XENESIS_NATURAL_RUNTIME_READBACK_WORDS],
-    blockedContextWords: XENESIS_NATURAL_RUNTIME_STATUS_TARGET_WORDS,
-    action: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.runtimeStatus,
-  },
-  {
-    contextWords: XENESIS_NATURAL_REPORT_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS, XENESIS_NATURAL_LIST_OR_SHOW_WORDS],
-    action: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.reportsList,
-  },
-  {
-    contextWords: XENESIS_NATURAL_TASK_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS, XENESIS_NATURAL_LIST_OR_SHOW_WORDS],
-    action: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.tasksList,
-  },
-  {
-    contextWords: XENESIS_NATURAL_AGENT_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS, XENESIS_NATURAL_LIST_OR_SHOW_WORDS],
-    action: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.agentsList,
-  },
-  {
-    contextWords: XENESIS_NATURAL_RUNTIME_DIAGNOSTIC_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.diagnostics,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+export const XENESIS_NATURAL_RUNTIME_INVENTORY_RULES = buildXenesisNaturalRuntimeRules(
+  XENESIS_NATURAL_RUNTIME_ACTION_SPECS,
+  'runtimeInventory',
+);
 
-export const XENESIS_NATURAL_PROFILE_INVENTORY_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_PROFILE_LIST_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS, XENESIS_NATURAL_PROFILE_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.profilesList,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+export const XENESIS_NATURAL_PROFILE_INVENTORY_RULES = buildXenesisNaturalRuntimeRules(
+  XENESIS_NATURAL_RUNTIME_ACTION_SPECS,
+  'profileInventory',
+);
 
-export const XENESIS_NATURAL_RUNTIME_CONTROL_RULES = [
-  {
-    contextWords: XENESIS_NATURAL_RUN_CANCEL_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS, XENESIS_NATURAL_CANCEL_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.runsCancel,
-  },
-  {
-    contextWords: XENESIS_NATURAL_SESSION_CONTEXT_WORDS,
-    requiredContextWordGroups: [XENESIS_NATURAL_XENESIS_CONTEXT_WORDS, XENESIS_NATURAL_SESSION_RESET_CONTEXT_WORDS],
-    action: XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.sessionsReset,
-  },
-] as const satisfies readonly XenesisNaturalCatalogActionRule[];
+export const XENESIS_NATURAL_RUNTIME_CONTROL_RULES = buildXenesisNaturalRuntimeRules(
+  XENESIS_NATURAL_RUNTIME_ACTION_SPECS,
+  'runtimeControl',
+);
 
 export const XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS = {
   open: {
