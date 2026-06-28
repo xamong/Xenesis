@@ -9,6 +9,15 @@ import {
   runDeskBridgeWorkflow,
 } from './deskBridgeWorkflow';
 import { isXenisPhase5Visible, type XenisPhase5VisibilityOptions } from './phase5';
+import {
+  XENESIS_CONNECTION_GUIDE_IDS,
+  XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS,
+  XENESIS_CONNECTION_MESSENGER_IDS,
+  XENESIS_CONNECTION_ONBOARDING_STEP_IDS,
+  XENESIS_CONNECTION_PROVIDER_IDS,
+  XENESIS_CONNECTION_TOOL_IDS,
+  XENESIS_CONNECTION_TOOL_OAUTH_DRAFT_IDS,
+} from './xenesisConnections';
 
 const DESK_BRIDGE_ROOT_PATH = 'xd';
 
@@ -265,14 +274,7 @@ const XENESIS_CONNECTION_SETUP_REQUEST_SCHEMA = {
   },
 } as const;
 
-const XENESIS_ONBOARDING_STEP_IDS = [
-  'first-chat',
-  'local-cli-mcp',
-  'recommended-tools',
-  'gateway',
-  'messenger-routing',
-  'test-send',
-] as const;
+const XENESIS_ONBOARDING_STEP_IDS = XENESIS_CONNECTION_ONBOARDING_STEP_IDS;
 
 const XENESIS_ONBOARDING_STATUS_SCHEMA = {
   type: 'object',
@@ -304,13 +306,7 @@ const XENESIS_ONBOARDING_OPEN_SCHEMA = {
   },
 } as const;
 
-const XENESIS_GUIDE_IDS = [
-  'onboarding-connections',
-  'cr-mcp-gateway-bots',
-  'openclaw-channel-setup',
-  'external-tool-integrations',
-  'agent-user-stories',
-] as const;
+const XENESIS_GUIDE_IDS = XENESIS_CONNECTION_GUIDE_IDS;
 
 const XENESIS_GUIDE_STATUS_SCHEMA = {
   type: 'object',
@@ -349,38 +345,7 @@ const XENESIS_GUIDE_OPEN_SCHEMA = {
   },
 } as const;
 
-const XENESIS_MESSENGER_VIEW_IDS = [
-  'telegram',
-  'slack',
-  'discord',
-  'webhook',
-  'whatsapp',
-  'signal',
-  'microsoft-teams',
-  'google-chat',
-  'imessage',
-  'matrix',
-  'irc',
-  'mattermost',
-  'nextcloud-talk',
-  'nostr',
-  'raft',
-  'tlon',
-  'synology-chat',
-  'rocket-chat',
-  'twitch',
-  'line',
-  'wechat',
-  'qqbot',
-  'feishu',
-  'dingding',
-  'yuanbao',
-  'zalo',
-  'email',
-  'sms',
-  'home-assistant',
-  'ntfy',
-] as const;
+const XENESIS_MESSENGER_VIEW_IDS = XENESIS_CONNECTION_MESSENGER_IDS;
 
 const XENESIS_CHANNEL_GUARD_IDS = XENESIS_MESSENGER_VIEW_IDS;
 
@@ -671,17 +636,9 @@ const XENESIS_MESSENGER_VIEW_OPEN_SCHEMA = {
 const XENESIS_CHANNEL_USER_STORY_STATUS_SCHEMA = XENESIS_MESSENGER_VIEW_STATUS_SCHEMA;
 const XENESIS_CHANNEL_USER_STORY_OPEN_SCHEMA = XENESIS_MESSENGER_VIEW_OPEN_SCHEMA;
 
-const XENESIS_EXTERNAL_TOOL_IDS = [
-  'fetch',
-  'filesystem',
-  'github',
-  'notion',
-  'linear',
-  'google-workspace',
-  'google-calendar',
-] as const;
+const XENESIS_EXTERNAL_TOOL_IDS = XENESIS_CONNECTION_TOOL_IDS;
 
-const XENESIS_TOOL_OAUTH_DRAFT_IDS = ['google-workspace', 'google-calendar'] as const;
+const XENESIS_TOOL_OAUTH_DRAFT_IDS = XENESIS_CONNECTION_TOOL_OAUTH_DRAFT_IDS;
 
 const XENESIS_TOOL_SETUP_STATUS_SCHEMA = {
   type: 'object',
@@ -976,24 +933,7 @@ const XENESIS_TOOL_ACTION_CATALOG_REQUEST_SCHEMA = {
   },
 } as const;
 
-const XENESIS_PROVIDER_IDS = [
-  'auto',
-  'openai',
-  'anthropic',
-  'gemini',
-  'groq',
-  'deepseek',
-  'qwen',
-  'ollama',
-  'lmstudio',
-  'together',
-  'fireworks',
-  'azure',
-  'codex-cli',
-  'codex-app-server',
-  'claude-cli',
-  'claude-interactive',
-] as const;
+const XENESIS_PROVIDER_IDS = XENESIS_CONNECTION_PROVIDER_IDS;
 
 const XENESIS_PROVIDER_SETUP_STATUS_SCHEMA = {
   type: 'object',
@@ -5051,7 +4991,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                 channel: {
                   type: 'string',
                   title: 'Channel',
-                  enum: ['telegram', 'slack', 'discord', 'webhook'],
+                  enum: XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS,
                   description: 'External bot channel to test.',
                 },
                 channels: {

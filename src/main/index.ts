@@ -271,6 +271,13 @@ import {
   buildXenesisConnectionSetupApprovalSessionKey,
   buildXenesisConnectionsStatus,
   withXenesisConnectionSetupRequestReviews,
+  XENESIS_CONNECTION_GUIDE_IDS,
+  XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS,
+  XENESIS_CONNECTION_MESSENGER_IDS,
+  XENESIS_CONNECTION_ONBOARDING_STEP_IDS,
+  XENESIS_CONNECTION_PROVIDER_IDS,
+  XENESIS_CONNECTION_TOOL_IDS,
+  XENESIS_CONNECTION_TOOL_OAUTH_DRAFT_IDS,
   type XenesisConnectionItem,
   type XenesisConnectionKind,
   type XenesisConnectionsStatus,
@@ -5075,14 +5082,7 @@ async function requestXenesisConnectionSetup(args?: unknown): Promise<Record<str
   };
 }
 
-const XENESIS_ONBOARDING_STEP_IDS = [
-  'first-chat',
-  'local-cli-mcp',
-  'recommended-tools',
-  'gateway',
-  'messenger-routing',
-  'test-send',
-] as const;
+const XENESIS_ONBOARDING_STEP_IDS = XENESIS_CONNECTION_ONBOARDING_STEP_IDS;
 
 function isXenesisOnboardingStepId(value: string): value is (typeof XENESIS_ONBOARDING_STEP_IDS)[number] {
   return (XENESIS_ONBOARDING_STEP_IDS as readonly string[]).includes(value);
@@ -5466,13 +5466,7 @@ async function openXenesisChannelAccessGroups(args?: unknown): Promise<Record<st
   });
 }
 
-const XENESIS_GUIDE_IDS = [
-  'onboarding-connections',
-  'cr-mcp-gateway-bots',
-  'openclaw-channel-setup',
-  'external-tool-integrations',
-  'agent-user-stories',
-] as const;
+const XENESIS_GUIDE_IDS = XENESIS_CONNECTION_GUIDE_IDS;
 
 function isXenesisGuideId(value: string): value is (typeof XENESIS_GUIDE_IDS)[number] {
   return (XENESIS_GUIDE_IDS as readonly string[]).includes(value);
@@ -5584,38 +5578,7 @@ async function openXenesisGuide(args?: unknown): Promise<Record<string, unknown>
   };
 }
 
-const XENESIS_MESSENGER_VIEW_IDS = [
-  'telegram',
-  'slack',
-  'discord',
-  'webhook',
-  'whatsapp',
-  'signal',
-  'microsoft-teams',
-  'google-chat',
-  'imessage',
-  'matrix',
-  'irc',
-  'mattermost',
-  'nextcloud-talk',
-  'nostr',
-  'raft',
-  'tlon',
-  'synology-chat',
-  'rocket-chat',
-  'twitch',
-  'line',
-  'wechat',
-  'qqbot',
-  'feishu',
-  'dingding',
-  'yuanbao',
-  'zalo',
-  'email',
-  'sms',
-  'home-assistant',
-  'ntfy',
-] as const;
+const XENESIS_MESSENGER_VIEW_IDS = XENESIS_CONNECTION_MESSENGER_IDS;
 
 function isXenesisMessengerViewId(value: string): value is (typeof XENESIS_MESSENGER_VIEW_IDS)[number] {
   return (XENESIS_MESSENGER_VIEW_IDS as readonly string[]).includes(value);
@@ -5956,21 +5919,13 @@ async function openXenesisMessengerView(args?: unknown): Promise<Record<string, 
   });
 }
 
-const XENESIS_TOOL_SETUP_IDS = [
-  'fetch',
-  'filesystem',
-  'github',
-  'notion',
-  'linear',
-  'google-workspace',
-  'google-calendar',
-] as const;
+const XENESIS_TOOL_SETUP_IDS = XENESIS_CONNECTION_TOOL_IDS;
 
 function isXenesisToolSetupId(value: string): value is (typeof XENESIS_TOOL_SETUP_IDS)[number] {
   return (XENESIS_TOOL_SETUP_IDS as readonly string[]).includes(value);
 }
 
-const XENESIS_TOOL_OAUTH_DRAFT_IDS = ['google-workspace', 'google-calendar'] as const;
+const XENESIS_TOOL_OAUTH_DRAFT_IDS = XENESIS_CONNECTION_TOOL_OAUTH_DRAFT_IDS;
 
 function isXenesisToolOAuthDraftId(value: string): value is (typeof XENESIS_TOOL_OAUTH_DRAFT_IDS)[number] {
   return (XENESIS_TOOL_OAUTH_DRAFT_IDS as readonly string[]).includes(value);
@@ -6848,24 +6803,7 @@ async function requestXenesisToolActionCatalog(args?: unknown): Promise<Record<s
   };
 }
 
-const XENESIS_PROVIDER_SETUP_IDS = [
-  'auto',
-  'openai',
-  'anthropic',
-  'gemini',
-  'groq',
-  'deepseek',
-  'qwen',
-  'ollama',
-  'lmstudio',
-  'together',
-  'fireworks',
-  'azure',
-  'codex-cli',
-  'codex-app-server',
-  'claude-cli',
-  'claude-interactive',
-] as const;
+const XENESIS_PROVIDER_SETUP_IDS = XENESIS_CONNECTION_PROVIDER_IDS;
 
 function isXenesisProviderSetupId(value: string): value is (typeof XENESIS_PROVIDER_SETUP_IDS)[number] {
   return (XENESIS_PROVIDER_SETUP_IDS as readonly string[]).includes(value);
@@ -16606,7 +16544,7 @@ function redactXenesisChannelTargetList(value: string): string {
 
 function summarizeXenesisProfileChannels(profile: ProfileConfig | undefined): XenesisChannelState[] {
   const channels = isPlainRecord(profile?.channels) ? profile.channels : {};
-  return (['telegram', 'slack', 'discord', 'webhook'] satisfies XenesisChannelState['name'][]).map((name) => {
+  return (XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS satisfies XenesisChannelState['name'][]).map((name) => {
     const channel = isPlainRecord(channels[name]) ? channels[name] : {};
     const env = xenesisChannelEnvNames(name, channel);
     return {
@@ -17014,7 +16952,8 @@ async function updateXenesisProfileChannels(
   return getXenesisProfileState();
 }
 
-const XENESIS_PROFILE_CHANNEL_NAMES = ['telegram', 'slack', 'discord', 'webhook'] satisfies XenesisProfileChannelName[];
+const XENESIS_PROFILE_CHANNEL_NAMES =
+  XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS satisfies XenesisProfileChannelName[];
 const XENESIS_ENV_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 function isXenesisProfileChannelName(value: unknown): value is XenesisProfileChannelName {
@@ -17406,7 +17345,7 @@ async function probeXenesisGatewayReady(url: string): Promise<{ ready: boolean; 
   }
 }
 
-const XENESIS_GATEWAY_CHANNEL_NAMES: XenesisGatewayChannelName[] = ['telegram', 'slack', 'discord', 'webhook'];
+const XENESIS_GATEWAY_CHANNEL_NAMES: XenesisGatewayChannelName[] = [...XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS];
 const XENESIS_GATEWAY_CHANNEL_RUNTIME_STATUSES = new Set<XenesisGatewayChannelRuntimeStatus>([
   'disabled',
   'blocked',

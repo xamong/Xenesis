@@ -3816,6 +3816,45 @@
 - External documentation handling: no browsing. Use this cached note,
   `handoff.md`, source, and tests.
 
+## Shared Connection ID Catalog Slice
+
+- Continued the larger hardcoding cleanup by making
+  `xenesisConnections.ts` own Xenesis connection ID catalogs used by CR schemas,
+  main-process handlers, and capability tests.
+- Intended change:
+  - export provider, tool, OAuth-tool, implemented messenger, all messenger,
+    guide, and onboarding-step IDs from the shared connection catalog;
+  - replace duplicated ID arrays in `deskBridgeCapabilities.ts` and
+    `main/index.ts` with shared aliases;
+  - reuse the shared provider IDs in `xenesisConnectionCapabilities.test.ts`.
+- Scope boundary:
+  - Refactor ownership only.
+  - Preserve CR paths, schemas, dispatch behavior, approval behavior, natural
+    language routing, setup/open/request semantics, and UI rendering.
+  - Do not change provider selection, OAuth, MCP installs, messenger delivery,
+    or Action Inbox mutation behavior.
+- RED verification:
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` failed
+    as expected on the new source guard because `deskBridgeCapabilities.ts`
+    still owned local Xenesis connection ID arrays.
+- Implementation:
+  - Added shared ID exports in `xenesisConnections.ts`.
+  - Replaced duplicated CR schema and main-process allowlists with shared
+    connection catalog exports.
+  - Removed the local test provider ID catalog and added source guards against
+    reintroducing local ownership.
+- Verification:
+  - Focused capability test passed with 33/33 tests.
+  - Capability, connection catalog, and Agent Desk Control tests passed with
+    103/103 tests before and after formatting.
+  - Scoped Biome exited 0 with existing warnings/infos only.
+  - `npm run typecheck`, `npm run docs:capabilities:audit`,
+    `npm run build`, `npm run smoke:xenesis:natural-desk-routing`, and
+    `git diff --check` passed. `diff --check` reported LF-to-CRLF working-copy
+    warnings only.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

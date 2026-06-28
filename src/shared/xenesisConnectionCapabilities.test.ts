@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
   callDeskBridgeCapability,
@@ -6,25 +7,29 @@ import {
   findDeskBridgeCapability,
   listDeskBridgeCapabilities,
 } from './deskBridgeCapabilities';
+import { XENESIS_CONNECTION_PROVIDER_IDS } from './xenesisConnections';
 
-const ALL_AI_PROVIDER_KINDS = [
-  'auto',
-  'openai',
-  'anthropic',
-  'gemini',
-  'groq',
-  'deepseek',
-  'qwen',
-  'ollama',
-  'lmstudio',
-  'together',
-  'fireworks',
-  'azure',
-  'codex-cli',
-  'codex-app-server',
-  'claude-cli',
-  'claude-interactive',
-] as const;
+test('xenesis capability ID allowlists are owned by the shared connection catalog', () => {
+  const capabilitySource = readFileSync(new URL('./deskBridgeCapabilities.ts', import.meta.url), 'utf8');
+  const mainSource = readFileSync(new URL('../main/index.ts', import.meta.url), 'utf8');
+  const testSource = readFileSync(new URL('./xenesisConnectionCapabilities.test.ts', import.meta.url), 'utf8');
+
+  for (const [label, source] of [
+    ['deskBridgeCapabilities.ts', capabilitySource],
+    ['main/index.ts', mainSource],
+  ] as const) {
+    assert.doesNotMatch(source, /const XENESIS_ONBOARDING_STEP_IDS = \[/, `${label} owns onboarding ids`);
+    assert.doesNotMatch(source, /const XENESIS_GUIDE_IDS = \[/, `${label} owns guide ids`);
+    assert.doesNotMatch(source, /const XENESIS_MESSENGER_VIEW_IDS = \[/, `${label} owns messenger ids`);
+    assert.doesNotMatch(source, /const XENESIS_EXTERNAL_TOOL_IDS = \[/, `${label} owns external tool ids`);
+    assert.doesNotMatch(source, /const XENESIS_TOOL_SETUP_IDS = \[/, `${label} owns tool setup ids`);
+    assert.doesNotMatch(source, /const XENESIS_TOOL_OAUTH_DRAFT_IDS = \[/, `${label} owns OAuth draft ids`);
+    assert.doesNotMatch(source, /const XENESIS_PROVIDER_IDS = \[/, `${label} owns provider ids`);
+    assert.doesNotMatch(source, /const XENESIS_PROVIDER_SETUP_IDS = \[/, `${label} owns provider setup ids`);
+  }
+
+  assert.doesNotMatch(testSource, /const ALL_AI_PROVIDER_KINDS = \[/);
+});
 
 function schemaRequiredFields(capability: ReturnType<typeof findDeskBridgeCapability>): string[] {
   const required = capability?.schema?.required;
@@ -1569,7 +1574,7 @@ test('xenesis provider setup capabilities are registered and dispatch to the ada
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
   assert.equal(schemaRequiredFields(openCapability).includes('provider'), false);
-  for (const provider of ALL_AI_PROVIDER_KINDS) {
+  for (const provider of XENESIS_CONNECTION_PROVIDER_IDS) {
     assert.equal(statusSchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
     assert.equal(
       openSchemaProperties.provider?.enum.includes(provider),
@@ -1636,7 +1641,7 @@ test('xenesis provider routing capabilities are registered and dispatch to the a
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
   assert.equal(openRequired.includes('provider'), false);
-  for (const provider of ALL_AI_PROVIDER_KINDS) {
+  for (const provider of XENESIS_CONNECTION_PROVIDER_IDS) {
     assert.equal(statusSchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
     assert.equal(
       openSchemaProperties.provider?.enum.includes(provider),
@@ -1700,7 +1705,7 @@ test('xenesis provider view capabilities are registered and dispatch to the adap
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
   assert.equal(schemaRequiredFields(openCapability).includes('provider'), false);
-  for (const provider of ALL_AI_PROVIDER_KINDS) {
+  for (const provider of XENESIS_CONNECTION_PROVIDER_IDS) {
     assert.equal(statusSchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
     assert.equal(openSchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
   }
@@ -1765,7 +1770,7 @@ test('xenesis provider profile draft capabilities are registered and dispatch to
   assert.equal(requestCapability?.permission, 'write');
   assert.equal(requestCapability?.approval, 'when-external');
   assert.deepEqual(requestCapability?.schema?.required, ['provider']);
-  for (const provider of ALL_AI_PROVIDER_KINDS) {
+  for (const provider of XENESIS_CONNECTION_PROVIDER_IDS) {
     assert.equal(statusSchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
     assert.equal(openSchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);
     assert.equal(requestSchemaProperties.provider?.enum.includes(provider), true, `${provider} should be accepted`);

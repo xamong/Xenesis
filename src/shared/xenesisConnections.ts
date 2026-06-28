@@ -827,6 +827,34 @@ export interface BuildXenesisConnectionsStatusInput {
   repoRoot?: string;
 }
 
+export const XENESIS_CONNECTION_ONBOARDING_STEP_IDS = [
+  'first-chat',
+  'local-cli-mcp',
+  'recommended-tools',
+  'gateway',
+  'messenger-routing',
+  'test-send',
+] as const;
+
+export const XENESIS_CONNECTION_PROVIDER_IDS = [
+  'auto',
+  'openai',
+  'anthropic',
+  'gemini',
+  'groq',
+  'deepseek',
+  'qwen',
+  'ollama',
+  'lmstudio',
+  'together',
+  'fireworks',
+  'azure',
+  'codex-cli',
+  'codex-app-server',
+  'claude-cli',
+  'claude-interactive',
+] as const;
+
 export const XENESIS_CONNECTION_GUIDES: XenesisConnectionItem[] = [
   {
     id: 'onboarding-connections',
@@ -1065,6 +1093,8 @@ export const XENESIS_CONNECTION_GUIDES: XenesisConnectionItem[] = [
     },
   },
 ];
+
+export const XENESIS_CONNECTION_GUIDE_IDS = XENESIS_CONNECTION_GUIDES.map((item) => item.id);
 
 function isAbsoluteLocalPath(value: string): boolean {
   return /^[A-Za-z]:[\\/]/.test(value) || value.startsWith('\\\\') || value.startsWith('/');
@@ -2225,6 +2255,8 @@ const TOOL_CONNECTIONS: XenesisConnectionItem[] = [
   },
 ];
 
+export const XENESIS_CONNECTION_TOOL_IDS = TOOL_CONNECTIONS.map((item) => item.id);
+
 type XenesisConnectionChannelPairingCredentialRefInput = Omit<XenesisConnectionChannelPairingCredentialRef, 'state'>;
 
 function aggregateChannelPairingState(
@@ -2867,6 +2899,8 @@ const MESSENGERS: Array<{
   },
 ];
 
+export const XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS = MESSENGERS.map((item) => item.id);
+
 type PlannedMessengerDefinition = Omit<
   XenesisConnectionItem,
   'kind' | 'status' | 'supportLevel' | 'warnings' | 'channelTemplate'
@@ -3462,6 +3496,11 @@ const PLANNED_MESSENGERS: XenesisConnectionItem[] = [
   }),
 ];
 
+export const XENESIS_CONNECTION_MESSENGER_IDS = [
+  ...XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS,
+  ...PLANNED_MESSENGERS.map((item) => item.id),
+];
+
 function countItems(sections: XenesisConnectionsStatus['sections']): XenesisConnectionsStatus['summary'] {
   const summary = {
     ready: 0,
@@ -3512,7 +3551,7 @@ const XENESIS_MCP_INSTALL_DRAFT_BLOCKED_ACTIONS = [
   'mutate settings',
 ];
 
-const XENESIS_TOOL_OAUTH_DRAFT_IDS = ['google-workspace', 'google-calendar'] as const;
+export const XENESIS_CONNECTION_TOOL_OAUTH_DRAFT_IDS = ['google-workspace', 'google-calendar'] as const;
 
 const XENESIS_TOOL_OAUTH_DRAFT_BLOCKED_ACTIONS = [
   'complete OAuth',
@@ -4207,7 +4246,7 @@ function toolOAuthDraftReviewSteps(
 }
 
 function buildXenesisToolOAuthDraft(item: XenesisConnectionItem): XenesisConnectionToolOAuthDraftTemplate | undefined {
-  if (!(XENESIS_TOOL_OAUTH_DRAFT_IDS as readonly string[]).includes(item.id)) return undefined;
+  if (!(XENESIS_CONNECTION_TOOL_OAUTH_DRAFT_IDS as readonly string[]).includes(item.id)) return undefined;
   if (item.toolConnector?.authMode !== 'oauth') return undefined;
 
   const missingRequiredFields = ['oauthClient', 'redirectUri', 'tokenStore'];
