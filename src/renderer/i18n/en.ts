@@ -1112,6 +1112,7 @@ export const en = {
     xenesisConnectionsToolOAuthDraftBlockedActions: 'Blocked actions',
     xenesisConnectionsToolOAuthDraftSafety: 'Safety boundaries',
     xenesisConnectionsReadToolOAuthSetupPacket: 'Read OAuth setup packet',
+    xenesisConnectionsOpenToolOAuthSetupPacket: 'Open OAuth setup packet',
     xenesisConnectionsToolActionCatalog: 'Tool action catalog',
     xenesisConnectionsToolActionCatalogPrimarySurface: 'Primary surface',
     xenesisConnectionsToolActionCatalogReviewSurface: 'Review surface',

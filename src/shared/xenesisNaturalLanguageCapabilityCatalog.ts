@@ -2890,6 +2890,20 @@ export const XENESIS_NATURAL_CONNECTION_TARGET_SURFACE_SPECS = [
   },
   {
     key: 'toolOauthSetupPacket',
+    open: {
+      path: 'xd.xenesis.tools.oauthDrafts.setupPacket.open',
+      idPrefix: 'natural-xenesis-tool-oauth-setup-packet-open',
+      reasonFor: (_id: string, label: string) => `Open ${label} OAuth setup packet from natural language request.`,
+      rules: [
+        {
+          targetScope: 'planned-google-tool',
+          contextWords: XENESIS_NATURAL_OAUTH_SETUP_PACKET_CONTEXT_WORDS,
+          requiredContextWordGroups: [['패킷', 'packet', 'redirect uri', '리디렉션']],
+          argsKind: 'targetIdVisible',
+          order: 1,
+        },
+      ],
+    },
     status: {
       path: 'xd.xenesis.tools.oauthDrafts.setupPacket',
       idPrefix: 'natural-xenesis-tool-oauth-setup-packet',

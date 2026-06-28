@@ -101,6 +101,7 @@ import {
   buildXenesisProviderSetupPlanRequest,
   buildXenesisToolActionCatalogRequest,
   buildXenesisToolOAuthDraftRequest,
+  buildXenesisToolOAuthSetupPacketOpenRequest,
   buildXenesisToolOAuthSetupPacketRequest,
   buildXenesisToolSetupPlanRequest,
   formatXenesisChannelAccessGroupsSummary,
@@ -4326,6 +4327,7 @@ export default function SettingsPane() {
     const mcpInstallDraftApplyRequest = buildXenesisMcpInstallDraftApplyRequest(item);
     const toolOAuthDraftRequest = buildXenesisToolOAuthDraftRequest(item);
     const toolOAuthSetupPacketRequest = buildXenesisToolOAuthSetupPacketRequest(item);
+    const toolOAuthSetupPacketOpenRequest = buildXenesisToolOAuthSetupPacketOpenRequest(item);
     const toolSetupPlanRequest = buildXenesisToolSetupPlanRequest(item);
     const toolActionCatalogRequest = buildXenesisToolActionCatalogRequest(item);
     const channelSetupPlanRequest = buildXenesisChannelSetupPlanRequest(item);
@@ -4500,6 +4502,16 @@ export default function SettingsPane() {
                 }}
               >
                 {t('settings.xenesisConnectionsReadToolOAuthSetupPacket')}
+              </button>
+            ) : null}
+            {toolOAuthSetupPacketOpenRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(toolOAuthSetupPacketOpenRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsOpenToolOAuthSetupPacket')}
               </button>
             ) : null}
             {toolOAuthDraftRequest ? (
@@ -5333,7 +5345,10 @@ export default function SettingsPane() {
             </div>
             {toolOAuthSetupPacket ? (
               <>
-                <div>
+                <div
+                  className={cls(isXenesisConnectionDetailFocused(item.id, 'tool-oauth-setup-packet') && 'is-focused')}
+                  data-xenesis-tool-oauth-setup-packet={item.id}
+                >
                   <span>{t('settings.xenesisConnectionsToolOAuthSetupPacket')}</span>
                   <strong>{formatXenesisToolOAuthSetupPacketSummary(toolOAuthSetupPacket)}</strong>
                 </div>

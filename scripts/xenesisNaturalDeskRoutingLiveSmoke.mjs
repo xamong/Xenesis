@@ -268,6 +268,12 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     expectedVisibleText: 'Desk action completed',
   },
   {
+    id: 'google-calendar-oauth-setup-packet-open',
+    prompt: 'google calendar oauth setup packet 열어줘',
+    expectedPath: 'xd.xenesis.tools.oauthDrafts.setupPacket.open',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
     id: 'tool-mcp-install-drafts-status',
     prompt: '외부 툴 MCP 설치 초안 전체 상태 보여줘',
     expectedPath: 'xd.xenesis.tools.mcpInstallDrafts.status',

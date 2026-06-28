@@ -1736,6 +1736,12 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
       {
         targetScope: 'planned-google-tool',
         argsKind: 'targetIdVisible',
+        path: 'xd.xenesis.tools.oauthDrafts.setupPacket.open',
+        fallback: false,
+      },
+      {
+        targetScope: 'planned-google-tool',
+        argsKind: 'targetIdVisible',
         path: 'xd.xenesis.tools.oauthDrafts.open',
         fallback: false,
       },
@@ -4826,6 +4832,16 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center readback requ
       args: { id: 'google-calendar' },
       approved: false,
       reason: 'Read Google Calendar OAuth setup packet from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('google calendar oauth setup packet 열어줘').actions, [
+    {
+      id: 'natural-xenesis-tool-oauth-setup-packet-open-google-calendar',
+      path: 'xd.xenesis.tools.oauthDrafts.setupPacket.open',
+      args: { id: 'google-calendar', ensureVisible: true },
+      approved: false,
+      reason: 'Open Google Calendar OAuth setup packet from natural language request.',
     },
   ]);
 

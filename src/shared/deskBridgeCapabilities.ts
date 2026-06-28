@@ -1072,6 +1072,7 @@ const XENESIS_TOOL_OAUTH_DRAFT_OPEN_SCHEMA = {
     ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
   },
 } as const;
+const XENESIS_TOOL_OAUTH_SETUP_PACKET_OPEN_SCHEMA = XENESIS_TOOL_OAUTH_DRAFT_OPEN_SCHEMA;
 const XENESIS_TOOL_OAUTH_DRAFT_REQUEST_SCHEMA = {
   type: 'object',
   required: ['id'],
@@ -1680,6 +1681,7 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisToolOAuthDraftsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolOAuthSetupPacket?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisToolOAuthDraft?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisToolOAuthSetupPacket?: (args?: unknown) => Promise<unknown> | unknown;
   requestXenesisToolOAuthDraft?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolActionCatalogStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisToolActionCatalog?: (args?: unknown) => Promise<unknown> | unknown;
@@ -5095,6 +5097,13 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               'Read the review-only OAuth setup packet for planned Google tool connections, including app registration, redirect URI policy, credential refs, scope review, token-store readiness, diagnostics, and safety boundaries without completing OAuth, storing tokens, writing MCP config, or running provider tools.',
               'read',
               XENESIS_TOOL_OAUTH_SETUP_PACKET_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.oauthDrafts.setupPacket.open',
+              'Open tool OAuth setup packet',
+              'Open Settings > Xenesis Agent > Connections and focus the review-only OAuth setup packet block for a planned Google tool without completing OAuth, storing tokens, writing MCP config, or running provider tools.',
+              'control',
+              XENESIS_TOOL_OAUTH_SETUP_PACKET_OPEN_SCHEMA,
             ),
             method(
               'xd.xenesis.tools.oauthDrafts.open',
@@ -11802,6 +11811,9 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.tools.oauthDrafts.setupPacket') {
         return callAdapter(path, api?.getXenesisToolOAuthSetupPacket, request.args);
+      }
+      if (path === 'xd.xenesis.tools.oauthDrafts.setupPacket.open') {
+        return callAdapter(path, api?.openXenesisToolOAuthSetupPacket, request.args);
       }
       if (path === 'xd.xenesis.tools.oauthDrafts.open') {
         return callAdapter(path, api?.openXenesisToolOAuthDraft, request.args);

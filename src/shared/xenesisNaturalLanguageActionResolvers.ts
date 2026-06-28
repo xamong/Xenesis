@@ -280,6 +280,8 @@ export function xenesisConnectionReadbackActionFromNaturalText(value: string): X
 export function xenesisConnectionOAuthSetupPacketActionFromNaturalText(
   value: string,
 ): XenesisNaturalDeskActionRequest | null {
+  if (hasXenesisNaturalExplicitOpenIntent(value)) return null;
+
   const target = xenesisConnectionTargetFromNaturalText(value);
   if (!target) return null;
 

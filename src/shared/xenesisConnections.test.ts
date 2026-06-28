@@ -1008,6 +1008,9 @@ test('buildXenesisConnectionsStatus exposes review-only tool OAuth drafts for pl
   assert.ok(calendar?.toolOAuthDraft?.scopes.includes('calendar.freebusy.readonly'));
   assert.ok(calendar?.toolOAuthDraft?.setupPacket.scopes.includes('calendar.freebusy.readonly'));
   assert.ok(calendar?.toolOAuthDraft?.setupPacket.readPaths.includes('xd.xenesis.tools.oauthDrafts.setupPacket'));
+  assert.ok(
+    calendar?.toolOAuthDraft?.setupPacket.controlPaths.includes('xd.xenesis.tools.oauthDrafts.setupPacket.open'),
+  );
   assert.ok(calendar?.toolOAuthDraft?.setupPacket.controlPaths.includes('xd.xenesis.tools.oauthDrafts.request'));
   assert.ok(calendar?.toolOAuthDraft?.diagnostics.includes('scope-review'));
   assert.deepEqual(
@@ -1665,6 +1668,7 @@ test('buildXenesisConnectionsStatus exposes internal Desk tool views for MCP and
       'setup-plan',
       'install-plan',
       'oauth-draft',
+      'oauth-setup-packet',
       'action-policy',
       'user-stories',
     ],
@@ -1675,6 +1679,15 @@ test('buildXenesisConnectionsStatus exposes internal Desk tool views for MCP and
     section: 'oauth-draft',
     ensureVisible: true,
   });
+  assert.equal(
+    googleCalendar?.toolView?.viewSections.find((section) => section.id === 'oauth-setup-packet')
+      ?.focusConnectionDetail,
+    'tool-oauth-setup-packet',
+  );
+  assert.deepEqual(
+    googleCalendar?.toolView?.viewSections.find((section) => section.id === 'oauth-setup-packet')?.openArgs,
+    { id: 'google-calendar', section: 'oauth-setup-packet', ensureVisible: true },
+  );
   assert.equal(googleCalendar?.toolView?.diagnostics.includes('template-snippet'), false);
 });
 

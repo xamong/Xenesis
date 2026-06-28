@@ -143,7 +143,11 @@ safety-boundary metadata for Google Workspace and Google Calendar. Use
 `xd.xenesis.tools.oauthDrafts.open` with `{ "id": "<tool-id>" }` to focus the
 owning card, and `xd.xenesis.tools.oauthDrafts.request` with
 `{ "id": "<tool-id>" }` to record a local `xenesis-tool-oauth-draft` Action
-Inbox item for review. These drafts do not complete OAuth, store tokens, write
+Inbox item for review. Use `xd.xenesis.tools.oauthDrafts.setupPacket` to read
+the app-registration setup packet, and
+`xd.xenesis.tools.oauthDrafts.setupPacket.open` with
+`{ "id": "<tool-id>" }` to open/focus that packet in the Connection Center.
+These drafts do not complete OAuth, start callback servers, store tokens, write
 MCP config, execute provider tools, send email, mutate documents, create or
 change calendar events, mutate settings, or bypass approvals.
 
@@ -339,14 +343,17 @@ servers, complete OAuth, or bypass approval paths.
 `xd.xenesis.tools.views.open` also accepts an optional `section` value when the
 Agent or operator needs to focus a specific internal tool-view section. Current
 section values are `connection-card`, `setup`, `connector`, `setup-plan`,
-`install-plan`, `mcp-template`, `oauth-draft`, `action-policy`, and
+`install-plan`, `mcp-template`, `oauth-draft`, `oauth-setup-packet`,
+`action-policy`, and
 `user-stories`. For example, `{ "id": "notion", "section": "mcp-template",
 "ensureVisible": true }` focuses the Notion MCP template section, while
 `{ "id": "google-calendar", "section": "oauth-draft", "ensureVisible": true }`
-focuses the Google Calendar OAuth draft section. Section opens are still
-read/open planning surfaces only: they do not write MCP config, run installers,
-complete OAuth, store tokens, execute provider tools, mutate external systems,
-or approve write actions.
+focuses the Google Calendar OAuth draft section and
+`{ "id": "google-calendar", "section": "oauth-setup-packet", "ensureVisible": true }`
+focuses the OAuth setup packet. Section opens are still read/open planning
+surfaces only: they do not write MCP config, run installers, complete OAuth,
+start OAuth callback servers, store tokens, execute provider tools, mutate
+external systems, or approve write actions.
 
 Each tool card also exposes a `toolUserStory` read model. Use
 `xd.xenesis.tools.userStories.status` to inspect workflow type, runtime support,
@@ -370,6 +377,17 @@ matching card and `xd.xenesis.tools.oauthDrafts.request` with
 review-only setup surface: it does not complete OAuth, store tokens, write MCP
 config, execute provider MCP tools, send email, mutate documents/tasks, or
 create/update/delete calendar events.
+
+Planned Google `toolOAuthDraft` cards also expose a setup packet. Use
+`xd.xenesis.tools.oauthDrafts.setupPacket` to inspect app-registration
+instructions, redirect URI policy, credential refs, checklist, read paths,
+control paths, diagnostics, and safety boundary metadata. Use
+`xd.xenesis.tools.oauthDrafts.setupPacket.open` with `{ "id": "<tool-id>" }` to
+open Settings > Xenesis Agent > Connections and focus the setup packet rows
+inside the matching card. This path is read/open navigation only: it does not
+complete OAuth, start callback servers, create OAuth clients, store tokens,
+write MCP config, execute provider tools, or mutate Google Workspace/Calendar
+data.
 
 Each tool card also exposes a `toolActionCatalog` read model. Use
 `xd.xenesis.tools.actions.status` to inspect search/read/write action groups,

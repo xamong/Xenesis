@@ -83,6 +83,7 @@ test('xenesis connection open capabilities expose detail focus selectors', () =>
   assertOpenCapabilityDetailFocus('xd.xenesis.connections.diagnostics.open', 'diagnostic-runbook');
   assertOpenCapabilityDetailFocus('xd.xenesis.connections.setupRequests.open', 'setup-request');
   assertOpenCapabilityDetailFocus('xd.xenesis.tools.oauthDrafts.open', 'tool-oauth-draft');
+  assertOpenCapabilityDetailFocus('xd.xenesis.tools.oauthDrafts.setupPacket.open', 'tool-oauth-setup-packet');
   assertOpenCapabilityDetailFocus('xd.xenesis.tools.mcpInstallDrafts.open', 'mcp-install-draft');
   assertOpenCapabilityDetailFocus('xd.xenesis.tools.installPlans.open', 'tool-install-plan');
   assertOpenCapabilityDetailFocus('xd.xenesis.tools.actions.open', 'tool-action-catalog');
@@ -1206,10 +1207,12 @@ test('xenesis MCP install draft capabilities are registered and dispatch to the 
 test('xenesis tool OAuth draft capabilities are registered and dispatch to the adapter', async () => {
   const statusCapability = findDeskBridgeCapability('xd.xenesis.tools.oauthDrafts.status');
   const setupPacketCapability = findDeskBridgeCapability('xd.xenesis.tools.oauthDrafts.setupPacket');
+  const setupPacketOpenCapability = findDeskBridgeCapability('xd.xenesis.tools.oauthDrafts.setupPacket.open');
   const openCapability = findDeskBridgeCapability('xd.xenesis.tools.oauthDrafts.open');
   const requestCapability = findDeskBridgeCapability('xd.xenesis.tools.oauthDrafts.request');
   const statusSchemaProperties = (statusCapability?.schema?.properties ?? {}) as Record<string, any>;
   const setupPacketSchemaProperties = (setupPacketCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const setupPacketOpenSchemaProperties = (setupPacketOpenCapability?.schema?.properties ?? {}) as Record<string, any>;
   const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
   const requestSchemaProperties = (requestCapability?.schema?.properties ?? {}) as Record<string, any>;
 
@@ -1217,6 +1220,9 @@ test('xenesis tool OAuth draft capabilities are registered and dispatch to the a
   assert.equal(statusCapability?.approval, 'never');
   assert.equal(setupPacketCapability?.permission, 'read');
   assert.equal(setupPacketCapability?.approval, 'never');
+  assert.equal(setupPacketOpenCapability?.permission, 'control');
+  assert.equal(setupPacketOpenCapability?.approval, 'never');
+  assert.equal(schemaRequiredFields(setupPacketOpenCapability).includes('id'), false);
   assert.equal(openCapability?.permission, 'control');
   assert.equal(openCapability?.approval, 'never');
   assert.equal(schemaRequiredFields(openCapability).includes('id'), false);
@@ -1235,6 +1241,16 @@ test('xenesis tool OAuth draft capabilities are registered and dispatch to the a
       setupPacketSchemaProperties.tool?.enum.includes(tool),
       true,
       `${tool} should be accepted by setup packet alias`,
+    );
+    assert.equal(
+      setupPacketOpenSchemaProperties.id?.enum.includes(tool),
+      true,
+      `${tool} should be accepted by setup packet open`,
+    );
+    assert.equal(
+      setupPacketOpenSchemaProperties.tool?.enum.includes(tool),
+      true,
+      `${tool} should be accepted by setup packet open alias`,
     );
     assert.equal(openSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by open`);
     assert.equal(requestSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by request`);
@@ -1263,6 +1279,13 @@ test('xenesis tool OAuth draft capabilities are registered and dispatch to the a
         item: { id: 'google-calendar', draftStatus: 'planned-template' },
       };
     },
+    openXenesisToolOAuthSetupPacket: (args) => {
+      calls.push({ method: 'setupPacketOpen', args });
+      return {
+        ok: true,
+        item: { id: 'google-calendar', setupPacket: { packetStatus: 'planned-template' } },
+      };
+    },
     requestXenesisToolOAuthDraft: (args) => {
       calls.push({ method: 'request', args });
       return {
@@ -1288,6 +1311,11 @@ test('xenesis tool OAuth draft capabilities are registered and dispatch to the a
     args: { id: 'google-calendar' },
     source: 'xenesis',
   });
+  const setupPacketOpenResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.tools.oauthDrafts.setupPacket.open',
+    args: { id: 'google-calendar', ensureVisible: true },
+    source: 'xenesis',
+  });
   const requestResult = await callDeskBridgeCapability(api, {
     path: 'xd.xenesis.tools.oauthDrafts.request',
     args: { id: 'google-calendar' },
@@ -1298,11 +1326,13 @@ test('xenesis tool OAuth draft capabilities are registered and dispatch to the a
   assert.equal(statusResult.ok, true);
   assert.equal(setupPacketResult.ok, true);
   assert.equal(openResult.ok, true);
+  assert.equal(setupPacketOpenResult.ok, true);
   assert.equal(requestResult.ok, true);
   assert.deepEqual(calls, [
     { method: 'status', args: { tool: 'google-calendar' } },
     { method: 'setupPacket', args: { id: 'google-calendar' } },
     { method: 'open', args: { id: 'google-calendar' } },
+    { method: 'setupPacketOpen', args: { id: 'google-calendar', ensureVisible: true } },
     { method: 'request', args: { id: 'google-calendar' } },
   ]);
   assert.deepEqual(statusResult.result, {
@@ -1316,6 +1346,10 @@ test('xenesis tool OAuth draft capabilities are registered and dispatch to the a
   assert.deepEqual(openResult.result, {
     ok: true,
     item: { id: 'google-calendar', draftStatus: 'planned-template' },
+  });
+  assert.deepEqual(setupPacketOpenResult.result, {
+    ok: true,
+    item: { id: 'google-calendar', setupPacket: { packetStatus: 'planned-template' } },
   });
   assert.deepEqual(requestResult.result, {
     ok: true,

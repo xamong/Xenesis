@@ -31,6 +31,7 @@ import {
   buildXenesisProviderSetupPlanRequest,
   buildXenesisToolActionCatalogRequest,
   buildXenesisToolOAuthDraftRequest,
+  buildXenesisToolOAuthSetupPacketOpenRequest,
   buildXenesisToolOAuthSetupPacketRequest,
   buildXenesisToolSetupPlanRequest,
   formatXenesisChannelAccessGroupsSummary,
@@ -95,6 +96,10 @@ test('xenesis detail focus selector maps CR detail values to existing data attri
   );
   assert.equal(XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['tool-setup-plan'], 'data-xenesis-tool-setup-plan');
   assert.equal(XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['tool-oauth-draft'], 'data-xenesis-tool-oauth-draft');
+  assert.equal(
+    XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['tool-oauth-setup-packet'],
+    'data-xenesis-tool-oauth-setup-packet',
+  );
   assert.equal(XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['channel-routing'], 'data-xenesis-channel-routing');
   assert.equal(
     XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['provider-profile-draft'],
@@ -107,6 +112,10 @@ test('xenesis detail focus selector maps CR detail values to existing data attri
   assert.equal(xenesisConnectionDetailFocusSelector('channel-setup-plan'), '[data-xenesis-channel-setup-plan]');
   assert.equal(xenesisConnectionDetailFocusSelector('tool-setup-plan'), '[data-xenesis-tool-setup-plan]');
   assert.equal(xenesisConnectionDetailFocusSelector('tool-oauth-draft'), '[data-xenesis-tool-oauth-draft]');
+  assert.equal(
+    xenesisConnectionDetailFocusSelector('tool-oauth-setup-packet'),
+    '[data-xenesis-tool-oauth-setup-packet]',
+  );
   assert.equal(xenesisConnectionDetailFocusSelector('channel-routing'), '[data-xenesis-channel-routing]');
   assert.equal(xenesisConnectionDetailFocusSelector('provider-profile-draft'), '[data-xenesis-provider-profile-draft]');
   assert.equal(xenesisConnectionDetailFocusSelector('provider-setup-plan'), '[data-xenesis-provider-setup-plan]');
@@ -1505,6 +1514,24 @@ test('buildXenesisToolOAuthSetupPacketRequest targets the setup packet CR read p
 
   assert.equal(
     buildXenesisToolOAuthSetupPacketRequest({
+      ...item,
+      toolOAuthDraft: undefined,
+    }),
+    null,
+  );
+
+  assert.deepEqual(buildXenesisToolOAuthSetupPacketOpenRequest(item), {
+    path: 'xd.xenesis.tools.oauthDrafts.setupPacket.open',
+    args: {
+      id: 'google-calendar',
+      ensureVisible: true,
+    },
+    source: 'xenesis',
+    approved: false,
+  });
+
+  assert.equal(
+    buildXenesisToolOAuthSetupPacketOpenRequest({
       ...item,
       toolOAuthDraft: undefined,
     }),

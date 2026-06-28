@@ -1105,6 +1105,7 @@ export const ko = {
     xenesisConnectionsToolOAuthDraftBlockedActions: '차단된 동작',
     xenesisConnectionsToolOAuthDraftSafety: '안전 경계',
     xenesisConnectionsReadToolOAuthSetupPacket: 'OAuth 설정 패킷 읽기',
+    xenesisConnectionsOpenToolOAuthSetupPacket: 'OAuth 설정 패킷 열기',
     xenesisConnectionsToolActionCatalog: '도구 액션 카탈로그',
     xenesisConnectionsToolActionCatalogPrimarySurface: '기본 화면',
     xenesisConnectionsToolActionCatalogReviewSurface: '검토 화면',

@@ -73,6 +73,7 @@ export const XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES = {
   'tool-install-plan': 'data-xenesis-tool-install-plan',
   'mcp-install-draft': 'data-xenesis-mcp-install-draft',
   'tool-oauth-draft': 'data-xenesis-tool-oauth-draft',
+  'tool-oauth-setup-packet': 'data-xenesis-tool-oauth-setup-packet',
   'tool-action-catalog': 'data-xenesis-tool-action-catalog',
   'tool-connector': 'data-xenesis-tool-connector',
   'tool-view': 'data-xenesis-tool-view',
@@ -398,6 +399,21 @@ export function buildXenesisToolOAuthSetupPacketRequest(
     path: 'xd.xenesis.tools.oauthDrafts.setupPacket',
     args: {
       id: item.id,
+    },
+    source: 'xenesis',
+    approved: false,
+  };
+}
+
+export function buildXenesisToolOAuthSetupPacketOpenRequest(
+  item: XenesisConnectionItem,
+): McpBridgeCapabilityCallRequest | null {
+  if (!item.toolOAuthDraft?.setupPacket) return null;
+  return {
+    path: 'xd.xenesis.tools.oauthDrafts.setupPacket.open',
+    args: {
+      id: item.id,
+      ensureVisible: true,
     },
     source: 'xenesis',
     approved: false,

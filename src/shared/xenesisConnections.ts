@@ -98,6 +98,7 @@ export const XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES = [
   'tool-install-plan',
   'mcp-install-draft',
   'tool-oauth-draft',
+  'tool-oauth-setup-packet',
   'tool-action-catalog',
   'tool-connector',
   'tool-view',
@@ -128,6 +129,7 @@ export const XENESIS_CONNECTION_TOOL_VIEW_SECTION_IDS = [
   'install-plan',
   'mcp-template',
   'oauth-draft',
+  'oauth-setup-packet',
   'action-policy',
   'user-stories',
 ] as const;
@@ -142,6 +144,7 @@ export const XENESIS_CONNECTION_TOOL_VIEW_SECTION_DETAIL_FOCUS = {
   'install-plan': 'tool-install-plan',
   'mcp-template': 'mcp-install-draft',
   'oauth-draft': 'tool-oauth-draft',
+  'oauth-setup-packet': 'tool-oauth-setup-packet',
   'action-policy': 'tool-action-catalog',
   'user-stories': 'tool-user-story',
 } as const satisfies Record<XenesisConnectionToolViewSectionId, XenesisConnectionCenterDetailFocus>;
@@ -1835,6 +1838,18 @@ function toolViewSections(
             controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.oauthDrafts.open'],
             diagnostics: ['planned-oauth-template', 'oauth-app-registration', 'scope-review'],
             safetyBoundaries: ['OAuth draft view opens do not start OAuth flows, store tokens, or expose secrets.'],
+          }),
+          toolViewSection({
+            toolId,
+            id: 'oauth-setup-packet',
+            label: 'OAuth setup packet',
+            focusConnectionDetail: 'tool-oauth-setup-packet',
+            readPaths: ['xd.xenesis.tools.oauthDrafts.setupPacket', 'xd.xenesis.tools.oauthDrafts.status'],
+            controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.oauthDrafts.setupPacket.open'],
+            diagnostics: ['oauth-setup-packet', 'oauth-app-registration', 'token-store-readiness'],
+            safetyBoundaries: [
+              'OAuth setup packet view opens do not start OAuth flows, store tokens, or expose secrets.',
+            ],
           }),
         ]
       : []),
@@ -5454,6 +5469,7 @@ function buildXenesisToolOAuthSetupPacket(input: {
     'xd.mcp.settings.status',
   ]);
   const controlPaths = uniqueStrings([
+    'xd.xenesis.tools.oauthDrafts.setupPacket.open',
     'xd.xenesis.tools.oauthDrafts.open',
     'xd.xenesis.tools.oauthDrafts.request',
     'xd.xenesis.connections.open',

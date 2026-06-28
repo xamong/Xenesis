@@ -7125,6 +7125,18 @@ async function openXenesisToolOAuthDraft(args?: unknown): Promise<Record<string,
   });
 }
 
+async function openXenesisToolOAuthSetupPacket(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisToolCatalogSurface(args, {
+    allowedTools: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+    isAllowedId: isXenesisToolOAuthDraftId,
+    itemPredicate: (item) => Boolean(item.toolOAuthDraft?.setupPacket),
+    toStatusItem: xenesisToolOAuthSetupPacketStatusItem,
+    unsupportedMessage: (id) => `Unsupported Xenesis tool OAuth setup packet: ${id}`,
+    unavailableMessage: (id) => `Xenesis tool OAuth setup packet is not available: ${id}`,
+    focusConnectionDetail: 'tool-oauth-setup-packet',
+  });
+}
+
 async function requestXenesisToolOAuthDraft(args?: unknown): Promise<Record<string, unknown>> {
   const body = normalizeMcpCapabilityArgs(args);
   const id = readCapabilityString(body, ['id', 'tool', 'name']);
@@ -15175,6 +15187,7 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisToolOAuthDraftsStatus: (args: unknown) => getXenesisToolOAuthDraftsStatus(args),
     getXenesisToolOAuthSetupPacket: (args: unknown) => getXenesisToolOAuthSetupPacket(args),
     openXenesisToolOAuthDraft: (args: unknown) => openXenesisToolOAuthDraft(args),
+    openXenesisToolOAuthSetupPacket: (args: unknown) => openXenesisToolOAuthSetupPacket(args),
     requestXenesisToolOAuthDraft: (args: unknown) => requestXenesisToolOAuthDraft(args),
     getXenesisToolActionCatalogStatus: (args: unknown) => getXenesisToolActionCatalogStatus(args),
     openXenesisToolActionCatalog: (args: unknown) => openXenesisToolActionCatalog(args),
