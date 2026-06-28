@@ -77,6 +77,15 @@ export interface XenesisNaturalConnectionTargetActionRule {
   fallback?: boolean;
 }
 
+export type XenesisNaturalProviderArgsKind = 'provider' | 'providerVisible';
+
+export interface XenesisNaturalProviderActionRule {
+  contextWords: readonly string[];
+  action: XenesisNaturalDeskActionTemplateDescriptor<[string, string]>;
+  argsKind: XenesisNaturalProviderArgsKind;
+  fallback?: boolean;
+}
+
 export const XENESIS_DESK_ACTION_PROTOCOL = {
   pathPrefix: 'xd.',
 } as const;
@@ -1868,6 +1877,53 @@ export const XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS = {
     reasonFor: (_id: string, label: string) => `Read ${label} provider setup status from natural language request.`,
   },
 } as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
+
+export const XENESIS_NATURAL_PROVIDER_STATUS_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS.routing,
+    argsKind: 'provider',
+  },
+  {
+    contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS.views,
+    argsKind: 'provider',
+  },
+  {
+    contextWords: XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS.profileDrafts,
+    argsKind: 'provider',
+  },
+  {
+    contextWords: [],
+    action: XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS.setup,
+    argsKind: 'provider',
+    fallback: true,
+  },
+] as const satisfies readonly XenesisNaturalProviderActionRule[];
+
+export const XENESIS_NATURAL_PROVIDER_OPEN_RULES = [
+  {
+    contextWords: XENESIS_NATURAL_ROUTING_FALLBACK_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS.routing,
+    argsKind: 'providerVisible',
+  },
+  {
+    contextWords: XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS.profileDrafts,
+    argsKind: 'providerVisible',
+  },
+  {
+    contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS.views,
+    argsKind: 'providerVisible',
+  },
+  {
+    contextWords: XENESIS_NATURAL_SETUP_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_PROVIDER_OPEN_ACTION_DESCRIPTORS.setup,
+    argsKind: 'providerVisible',
+  },
+] as const satisfies readonly XenesisNaturalProviderActionRule[];
 
 export const XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS = {
   diagnostics: {

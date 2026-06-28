@@ -3073,6 +3073,43 @@
 - External documentation handling: no browsing. This used cached gap context,
   current repo code, focused tests, and live Electron verification.
 
+## Provider Target Rule Catalog Refactor Slice
+
+- Moved provider-specific status/open routing out of
+  `xenesisAgentDeskControl.ts` into shared natural-language catalog rule data.
+- Added `XENESIS_NATURAL_PROVIDER_STATUS_RULES` and
+  `XENESIS_NATURAL_PROVIDER_OPEN_RULES`; the planner now interprets these
+  rules instead of branching directly on individual provider action
+  descriptors.
+- Behavior scope:
+  - Existing provider prompt semantics and CR paths are preserved. Provider
+    readbacks keep setup as the status fallback; provider opens keep explicit
+    routing/profile-draft/view/setup context matching without a generic
+    provider-open fallback.
+- Scope boundary:
+  - Refactor only.
+  - Do not change registry/dispatcher paths, provider settings, credential
+    handling, profile draft review writes, runtime execution, approval behavior,
+    or UI rendering.
+- Verification:
+  - RED:
+    focused planner test failed because the planner did not yet consume
+    `XENESIS_NATURAL_PROVIDER_STATUS_RULES`.
+  - GREEN:
+    focused planner test passed with 37/37 tests.
+  - Scoped Biome passed for the touched catalog, planner, and planner test
+    files after one manual line wrap.
+  - `npm run typecheck` passed.
+  - `npm run build` passed; Vite emitted existing browser `fs`
+    externalization and dynamic import chunking warnings.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 21/21 through the
+    built Electron app.
+  - `git diff --check` exited 0 with LF-to-CRLF warnings only.
+  - CR audit was not run because registry/dispatcher/capability code did not
+    change.
+- External documentation handling: no browsing. Use this cached note,
+  `handoff.md`, source, and tests.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]
