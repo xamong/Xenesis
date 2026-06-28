@@ -343,6 +343,21 @@ export function buildXenesisChannelProfileDraftRequest(
   };
 }
 
+export function buildXenesisChannelProfileDraftApplyRequest(
+  item: XenesisConnectionItem,
+): McpBridgeCapabilityCallRequest | null {
+  if (!item.channelProfileDraft) return null;
+  if (!item.channelProfileDraft.controlPaths.includes('xd.xenesis.channels.profileDrafts.apply')) return null;
+  return {
+    path: 'xd.xenesis.channels.profileDrafts.apply',
+    args: {
+      channel: item.channelProfileDraft.channel,
+    },
+    source: 'xenesis',
+    approved: false,
+  };
+}
+
 export function buildXenesisProviderProfileDraftRequest(
   item: XenesisConnectionItem,
 ): McpBridgeCapabilityCallRequest | null {

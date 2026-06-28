@@ -272,6 +272,10 @@ import type {
   XenesisTaskSummary,
 } from '../shared/types';
 import {
+  buildXenesisChannelProfileDraftApplyChannels,
+  isXenesisChannelProfileDraftApplyChannel,
+} from '../shared/xenesisChannelProfileApply';
+import {
   buildXenesisConnectionCenterOpenArgs,
   buildXenesisConnectionSetupApprovalSessionKey,
   buildXenesisConnectionsStatus,
@@ -5865,6 +5869,92 @@ async function requestXenesisChannelProfileDraft(args?: unknown): Promise<Record
     channel: item.id,
     item: xenesisChannelProfileDraftStatusItem(item),
     actionInboxItem,
+  };
+}
+
+async function applyXenesisChannelProfileDraft(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const channel = readCapabilityString(body, ['channel', 'id', 'name']);
+  if (!channel) {
+    return { ok: false, error: 'Channel is required.' };
+  }
+  if (!isXenesisChannelProfileDraftApplyChannel(channel)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis channel profile draft apply channel: ${channel}`,
+      allowedChannels: XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.messengers.items.find(
+    (candidate) => candidate.id === channel && candidate.channelProfileDraft,
+  );
+  if (!item?.channelProfileDraft) {
+    return { ok: false, channel, error: `Xenesis channel profile draft is not available: ${channel}` };
+  }
+  if (!item.channelProfileDraft.controlPaths.includes('xd.xenesis.channels.profileDrafts.apply')) {
+    return {
+      ok: false,
+      channel,
+      draftStatus: item.channelProfileDraft.draftStatus,
+      error: `Xenesis channel profile draft cannot be applied: ${channel}`,
+      item: xenesisChannelProfileDraftStatusItem(item),
+    };
+  }
+
+  const profileName = readCapabilityString(body, ['profile', 'profileName']);
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+  const profileState = await getXenesisProfileState();
+  const profiles = await readProfiles(getXenesisStateHome());
+  const targetProfileName = profileName || profileState.active;
+  const targetProfile = profiles.profiles[targetProfileName];
+  if (!targetProfile) {
+    return {
+      ok: false,
+      channel,
+      profile: targetProfileName,
+      error: `Xenesis profile not found: ${targetProfileName}`,
+      item: xenesisChannelProfileDraftStatusItem(item),
+    };
+  }
+  const applyDraft = buildXenesisChannelProfileDraftApplyChannels({
+    channel,
+    currentChannels: summarizeXenesisProfileChannelSettings(targetProfile),
+    args: body,
+  });
+
+  if (applyDraft.missingRequiredFields.length > 0) {
+    return {
+      ok: false,
+      channel,
+      profile: targetProfileName,
+      missingRequiredFields: applyDraft.missingRequiredFields,
+      error: `Channel profile draft is missing required fields: ${applyDraft.missingRequiredFields.join(', ')}`,
+      item: xenesisChannelProfileDraftStatusItem(item),
+    };
+  }
+
+  const nextState = await updateXenesisProfileChannels({
+    profile: targetProfileName,
+    channels: applyDraft.channels,
+  });
+  const nextStatus = await getXenesisConnectionsStatus();
+  const nextItem =
+    nextStatus.sections.messengers.items.find(
+      (candidate) => candidate.id === channel && candidate.channelProfileDraft,
+    ) ?? item;
+
+  return {
+    ok: true,
+    channel,
+    profile: nextState.active,
+    item: xenesisChannelProfileDraftStatusItem(nextItem),
+    state: {
+      active: nextState.active,
+      channelSettings: nextState.channelSettings,
+    },
+    ...(note ? { note } : {}),
   };
 }
 
@@ -14551,6 +14641,7 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisChannelProfileDraftsStatus: (args: unknown) => getXenesisChannelProfileDraftsStatus(args),
     openXenesisChannelProfileDraft: (args: unknown) => openXenesisChannelProfileDraft(args),
     requestXenesisChannelProfileDraft: (args: unknown) => requestXenesisChannelProfileDraft(args),
+    applyXenesisChannelProfileDraft: (args: unknown) => applyXenesisChannelProfileDraft(args),
     getXenesisGuidesStatus: (args: unknown) => getXenesisGuidesStatus(args),
     openXenesisGuide: (args: unknown) => openXenesisGuide(args),
     getXenesisToolSetupStatus: (args: unknown) => getXenesisToolSetupStatus(args),

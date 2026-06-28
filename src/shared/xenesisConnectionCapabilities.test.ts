@@ -1346,9 +1346,11 @@ test('xenesis channel profile draft capabilities are registered and dispatch to 
   const statusCapability = findDeskBridgeCapability('xd.xenesis.channels.profileDrafts.status');
   const openCapability = findDeskBridgeCapability('xd.xenesis.channels.profileDrafts.open');
   const requestCapability = findDeskBridgeCapability('xd.xenesis.channels.profileDrafts.request');
+  const applyCapability = findDeskBridgeCapability('xd.xenesis.channels.profileDrafts.apply');
   const statusSchemaProperties = (statusCapability?.schema?.properties ?? {}) as Record<string, any>;
   const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
   const requestSchemaProperties = (requestCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const applySchemaProperties = (applyCapability?.schema?.properties ?? {}) as Record<string, any>;
 
   assert.equal(statusCapability?.permission, 'read');
   assert.equal(statusCapability?.approval, 'never');
@@ -1358,11 +1360,20 @@ test('xenesis channel profile draft capabilities are registered and dispatch to 
   assert.equal(requestCapability?.permission, 'write');
   assert.equal(requestCapability?.approval, 'when-external');
   assert.deepEqual(requestCapability?.schema?.required, ['channel']);
+  assert.equal(applyCapability?.permission, 'write');
+  assert.equal(applyCapability?.approval, 'when-external');
+  assert.deepEqual(applyCapability?.schema?.required, ['channel']);
   for (const channel of ['telegram', 'slack', 'discord', 'webhook', 'signal', 'google-chat', 'zalo']) {
     assert.equal(statusSchemaProperties.channel?.enum.includes(channel), true, `${channel} status channel enum`);
     assert.equal(statusSchemaProperties.id?.enum.includes(channel), true, `${channel} status id enum`);
     assert.equal(openSchemaProperties.channel?.enum.includes(channel), true, `${channel} open channel enum`);
     assert.equal(requestSchemaProperties.channel?.enum.includes(channel), true, `${channel} request channel enum`);
+  }
+  for (const channel of ['telegram', 'slack', 'discord', 'webhook']) {
+    assert.equal(applySchemaProperties.channel?.enum.includes(channel), true, `${channel} apply channel enum`);
+  }
+  for (const channel of ['signal', 'google-chat', 'zalo']) {
+    assert.equal(applySchemaProperties.channel?.enum.includes(channel), false, `${channel} apply channel enum`);
   }
 
   const calls: Array<{ method: string; args: unknown }> = [];
@@ -1389,6 +1400,14 @@ test('xenesis channel profile draft capabilities are registered and dispatch to 
         actionInboxItem: { id: 'channel-profile-draft-telegram' },
       };
     },
+    applyXenesisChannelProfileDraft: (args) => {
+      calls.push({ method: 'apply', args });
+      return {
+        ok: true,
+        channel: 'telegram',
+        item: { id: 'telegram', draftStatus: 'ready' },
+      };
+    },
   };
 
   const statusResult = await callDeskBridgeCapability(api, {
@@ -1407,14 +1426,22 @@ test('xenesis channel profile draft capabilities are registered and dispatch to 
     source: 'xenesis',
     approved: true,
   });
+  const applyResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.channels.profileDrafts.apply',
+    args: { channel: 'telegram' },
+    source: 'xenesis',
+    approved: true,
+  });
 
   assert.equal(statusResult.ok, true);
   assert.equal(openResult.ok, true);
   assert.equal(requestResult.ok, true);
+  assert.equal(applyResult.ok, true);
   assert.deepEqual(calls, [
     { method: 'status', args: { channel: 'telegram' } },
     { method: 'open', args: { channel: 'telegram' } },
     { method: 'request', args: { channel: 'telegram' } },
+    { method: 'apply', args: { channel: 'telegram' } },
   ]);
   assert.deepEqual(statusResult.result, {
     ok: true,
@@ -1428,6 +1455,11 @@ test('xenesis channel profile draft capabilities are registered and dispatch to 
     ok: true,
     channel: 'telegram',
     actionInboxItem: { id: 'channel-profile-draft-telegram' },
+  });
+  assert.deepEqual(applyResult.result, {
+    ok: true,
+    channel: 'telegram',
+    item: { id: 'telegram', draftStatus: 'ready' },
   });
 });
 

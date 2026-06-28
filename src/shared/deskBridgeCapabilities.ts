@@ -545,6 +545,53 @@ const XENESIS_CHANNEL_PROFILE_DRAFT_REQUEST_SCHEMA = {
   },
 } as const;
 
+const XENESIS_CHANNEL_PROFILE_DRAFT_APPLY_SCHEMA = {
+  type: 'object',
+  required: ['channel'],
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS,
+      description: 'Implemented external messenger channel whose profile draft settings should be applied.',
+    },
+    id: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS,
+      description: 'Alias for channel.',
+    },
+    name: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS,
+      description: 'Alias for channel.',
+    },
+    profile: {
+      type: 'string',
+      title: 'Profile name',
+      description: 'Optional Xenesis profile name. Defaults to the active profile.',
+      examples: ['external', 'xenis'],
+    },
+    settings: {
+      type: 'object',
+      title: 'Channel settings',
+      description:
+        'Channel-specific settings to merge into the active profile. Use environment variable names for secrets, not secret values.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity for audit context.',
+    },
+    note: {
+      type: 'string',
+      title: 'Apply note',
+      description: 'Optional note to include in the apply result.',
+    },
+  },
+} as const;
+
 const XENESIS_CHANNEL_PAIRING_STATUS_SCHEMA = {
   type: 'object',
   properties: {
@@ -1446,6 +1493,7 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisChannelProfileDraftsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisChannelProfileDraft?: (args?: unknown) => Promise<unknown> | unknown;
   requestXenesisChannelProfileDraft?: (args?: unknown) => Promise<unknown> | unknown;
+  applyXenesisChannelProfileDraft?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisGuidesStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisGuide?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolSetupStatus?: (args?: unknown) => Promise<unknown> | unknown;
@@ -4611,7 +4659,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
         group(
           'xd.xenesis.channels.profileDrafts',
           'Profile drafts',
-          'Read, open, and request review-only external messenger channel profile drafts.',
+          'Read, open, request review, and apply approval-gated external messenger channel profile drafts.',
           [
             method(
               'xd.xenesis.channels.profileDrafts.status',
@@ -4633,6 +4681,13 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               'Record a local Action Inbox item for reviewing a channel profile draft without mutating channel settings, updating allowlists, writing profiles, sending test messages, starting the gateway, storing secrets, or bypassing approvals.',
               'write',
               XENESIS_CHANNEL_PROFILE_DRAFT_REQUEST_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.channels.profileDrafts.apply',
+              'Apply channel profile draft',
+              'Apply implemented external messenger channel profile draft settings through the Xenesis profile channel model after approval, without storing raw secret values, starting gateways, or sending test messages.',
+              'write',
+              XENESIS_CHANNEL_PROFILE_DRAFT_APPLY_SCHEMA,
             ),
           ],
         ),
@@ -11418,6 +11473,9 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.channels.profileDrafts.request') {
         return callAdapter(path, api?.requestXenesisChannelProfileDraft, request.args);
+      }
+      if (path === 'xd.xenesis.channels.profileDrafts.apply') {
+        return callAdapter(path, api?.applyXenesisChannelProfileDraft, request.args);
       }
       if (path === 'xd.xenesis.guides.status') {
         return callAdapter(path, api?.getXenesisGuidesStatus, request.args);

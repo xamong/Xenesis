@@ -944,6 +944,7 @@ export const en = {
     xenesisConnectionsRequestToolActionCatalog: 'Request action review',
     xenesisConnectionsRequestToolOAuthDraft: 'Request OAuth review',
     xenesisConnectionsRequestChannelProfileDraft: 'Request channel draft',
+    xenesisConnectionsApplyChannelProfileDraft: 'Apply channel draft',
     xenesisConnectionsRequestProviderProfileDraft: 'Request provider draft',
     xenesisConnectionsActionFailed: 'Connection action failed.',
     xenesisConnectionsDiagnosticRunbook: 'Diagnostic runbook',

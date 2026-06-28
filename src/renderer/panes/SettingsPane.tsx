@@ -85,6 +85,7 @@ import AutomationSettingsSection from '../terminal/AutomationSettingsSection';
 import { mergePendingLocalTerminalProfile } from '../terminal/terminalProfileSnapshot';
 import { SETTINGS_CATEGORIES, type SettingsCategoryId, VISIBLE_SETTINGS_CATEGORIES } from './settingsCatalog.mjs';
 import {
+  buildXenesisChannelProfileDraftApplyRequest,
   buildXenesisChannelProfileDraftRequest,
   buildXenesisConnectionGuideRequest,
   buildXenesisConnectionOpenRequest,
@@ -4308,6 +4309,7 @@ export default function SettingsPane() {
     const toolOAuthDraftRequest = buildXenesisToolOAuthDraftRequest(item);
     const toolActionCatalogRequest = buildXenesisToolActionCatalogRequest(item);
     const channelProfileDraftRequest = buildXenesisChannelProfileDraftRequest(item);
+    const channelProfileDraftApplyRequest = buildXenesisChannelProfileDraftApplyRequest(item);
     const providerProfileDraftRequest = buildXenesisProviderProfileDraftRequest(item);
     const mcpTemplate = item.mcpTemplate;
     const mcpInstallDraft = item.mcpInstallDraft;
@@ -4353,6 +4355,7 @@ export default function SettingsPane() {
           toolOAuthDraftRequest ||
           toolActionCatalogRequest ||
           channelProfileDraftRequest ||
+          channelProfileDraftApplyRequest ||
           providerProfileDraftRequest) && (
           <div className="sp-actions-row sp-actions-row-tight">
             <button
@@ -4441,6 +4444,16 @@ export default function SettingsPane() {
                 }}
               >
                 {t('settings.xenesisConnectionsRequestChannelProfileDraft')}
+              </button>
+            ) : null}
+            {channelProfileDraftApplyRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(channelProfileDraftApplyRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsApplyChannelProfileDraft')}
               </button>
             ) : null}
             {providerProfileDraftRequest ? (

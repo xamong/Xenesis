@@ -2022,6 +2022,24 @@ export const XENESIS_NATURAL_MCP_INSTALL_DRAFT_APPLY_TARGET_RULES = [
   },
 ] as const satisfies readonly XenesisNaturalConnectionTargetActionRule[];
 
+export const XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_APPLY_ACTION_DESCRIPTORS = {
+  channelProfileDraft: {
+    path: 'xd.xenesis.channels.profileDrafts.apply',
+    idFor: (id: string, _label: string) => `natural-xenesis-channel-profile-draft-apply-${id}`,
+    reasonFor: (_id: string, label: string) => `Apply ${label} channel profile draft from natural language request.`,
+  },
+} as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
+
+export const XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_APPLY_TARGET_RULES = [
+  {
+    targetScope: 'messenger',
+    contextWords: XENESIS_NATURAL_MCP_INSTALL_APPLY_INTENT_WORDS,
+    requiredContextWordGroups: [XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_REQUEST_CONTEXT_WORDS],
+    action: XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_APPLY_ACTION_DESCRIPTORS.channelProfileDraft,
+    argsKind: 'channel',
+  },
+] as const satisfies readonly XenesisNaturalConnectionTargetActionRule[];
+
 export const XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS = {
   providerProfileDraft: {
     path: 'xd.xenesis.providers.profileDrafts.request',

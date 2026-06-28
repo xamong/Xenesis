@@ -7,6 +7,72 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current Channel Profile Draft Apply Slice
+
+- Objective: continue the OpenClaw/Hermes integration goal by moving external
+  messenger channel profile drafts from review-only metadata toward a
+  Desk-internal, approval-gated profile-settings apply path.
+- Observed gap:
+  - External messenger channel profile drafts can be inspected, opened, and
+    requested for Action Inbox review through
+    `xd.xenesis.channels.profileDrafts.status/open/request`.
+  - Actual channel settings writes exist through
+    `xd.xenesis.profiles.updateChannels`, but profile-draft surfaces do not
+    expose a draft-specific apply path and natural-language requests such as
+    "텔레그램 채널 설정 적용해줘" cannot land on a profile-draft apply flow.
+- Scope boundary:
+  - Add a CR-first, approval-gated apply path for implemented messenger channel
+    profile drafts only: Telegram, Slack, Discord, and webhook.
+  - The apply path may write profile channel settings through the existing
+    Xenesis profile channel model and must return redacted state only.
+  - It must not store raw secret values, start gateways, send test messages,
+    mutate planned messenger adapters, complete external provider setup, or
+    bypass Capability Registry approval.
+- External documentation handling: no browsing. Use cached Obsidian/source,
+  local tests, build, CR audit, and smoke only.
+- Intended larger-slice contents:
+  - Register `xd.xenesis.channels.profileDrafts.apply` with approval
+    `when-external`.
+  - Add main-process handler that validates channel/profile args, merges one
+    channel's draft settings into existing profile channel settings, calls the
+    same profile persistence path as `xd.xenesis.profiles.updateChannels`, and
+    returns redacted status.
+  - Add Settings Connection Center affordance and natural-language routing for
+    explicit channel profile apply prompts.
+  - Update read-model safety text and smoke coverage.
+- Next intended step:
+  - Add RED tests for CR registration/dispatch, renderer request helper, and
+    natural-language routing before production code changes.
+- RED progress:
+  - Extended `src/shared/xenesisConnectionCapabilities.test.ts` to require
+    `xd.xenesis.channels.profileDrafts.apply` as a write/when-external CR path
+    for implemented messenger channels only, with adapter dispatch to
+    `applyXenesisChannelProfileDraft`.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` failed
+    as expected with 34/35 passing because the apply capability is not
+    registered yet.
+- GREEN progress:
+  - Registered `xd.xenesis.channels.profileDrafts.apply` in
+    `src/shared/deskBridgeCapabilities.ts` with write permission,
+    when-external approval, implemented-channel enum, and dispatcher coverage.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` passed
+    with 35/35 after registry and dispatcher wiring.
+  - Added read-model and renderer RED tests requiring implemented channel
+    profile drafts to expose the apply control path, planned messenger drafts
+    to stay without apply, and a renderer helper to build an approval-gated CR
+    apply request.
+  - `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    failed as expected with 75/77 passing because the apply controlPath and
+    helper export are not implemented yet.
+  - Added `src/shared/xenesisChannelProfileApply.test.ts` for pure
+    channel-profile apply merge/validation behavior.
+  - `npx tsx --test src\shared\xenesisChannelProfileApply.test.ts` failed as
+    expected because `src/shared/xenesisChannelProfileApply.ts` does not exist.
+  - Added natural-language RED coverage for `텔레그램 채널 설정 적용해줘`.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    failed as expected with 37/38 passing because explicit channel-profile
+    apply prompts do not route to `xd.xenesis.channels.profileDrafts.apply`.
+
 ## Current MCP Install Draft Apply Slice
 
 - Objective: continue the OpenClaw/Hermes integration goal by moving external
@@ -13522,3 +13588,86 @@ Verification so far:
   - Skip `npm run docs:capabilities:audit` unless CR registry schemas or
     dispatcher wiring change. This slice is expected to touch Action Inbox
     storage and smoke coverage only.
+
+## Current Channel Profile Draft Apply Slice
+
+- Objective: add an approval-gated CR apply path for implemented external
+  messenger channel profile drafts, so Connection Center and Agent natural
+  language can request profile channel settings writes through the Capability
+  Registry instead of hardcoded or chat-only behavior.
+- Slice size policy: use a larger cycle. Bundle CR registration, read model,
+  renderer action, main-process apply handler, natural routing, live smoke,
+  generated CR audit docs, Obsidian working note, and commit in one pass.
+- External documentation handling: no web browsing. Use cached Obsidian/source
+  context and local verification only.
+- Plan:
+  - `docs/superpowers/plans/2026-06-28-xenesis-channel-profile-draft-apply.md`
+- Implementation:
+  - Added `xd.xenesis.channels.profileDrafts.apply` with `permission: "write"`
+    and approval `when-external`.
+  - Added main adapter/handler `applyXenesisChannelProfileDraft`, restricted to
+    implemented messenger channels (`telegram`, `slack`, `discord`, `webhook`).
+  - Added `src/shared/xenesisChannelProfileApply.ts` to merge one channel's
+    supplied settings into current profile channel settings, validate env var
+    references, require required fields before writes, and return redacted
+    readback only.
+  - Exposed the apply control path in implemented channel profile drafts while
+    keeping planned adapters review-only.
+  - Added Connection Center helper and Settings button that submit
+    `approved=false` CR requests.
+  - Added natural routing so `텔레그램 채널 설정 적용해줘` maps to
+    `xd.xenesis.channels.profileDrafts.apply` with `{ channel: "telegram" }`,
+    while review prompts still use `xd.xenesis.channels.profileDrafts.request`.
+  - Added live smoke coverage for the new approval-required apply prompt.
+  - Post-review fix: when `profile`/`profileName` is supplied, the apply handler
+    now merges against that target profile's current channel settings instead of
+    active-profile settings, avoiding accidental cross-profile channel writes.
+- Touched files:
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/shared/xenesisConnections.ts`
+  - `src/shared/xenesisChannelProfileApply.ts`
+  - `src/main/index.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/renderer/i18n/ko.ts`
+  - `src/renderer/i18n/en.ts`
+  - natural-language resolver/catalog/planner files under `src/shared/`
+  - focused tests under `src/shared/`, `src/renderer/panes/`,
+    `src/renderer/extensions/xenesis-desk.core-tools/panes/`
+  - `scripts/xenesisNaturalDeskRoutingLiveSmoke.mjs`
+  - `scripts/xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
+  - `docs/capability-registry-audit.md`
+- Verification:
+  - `npx tsx --test src\shared\xenesisChannelProfileApply.test.ts src\shared\xenesisConnectionCapabilities.test.ts`
+    passed with 38/38 tests.
+  - `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    passed with 77/77 tests.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed with 38/38 tests.
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` passed
+    with 5/5 tests.
+  - `npx biome format --write ...` formatted 20 touched files and fixed 3.
+  - `npx biome check ... --max-diagnostics 120` on touched files exited 0 with
+    14 existing warnings and 9 infos, no errors.
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit` passed and wrote
+    `docs\capability-registry-audit.md`; audit result: 767 nodes, 689 coverage
+    path references.
+  - `npm run build` passed.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 150/150, including
+    `channel-profile-draft-apply-approval` `agent-open`, `path`, and
+    `visible-text`.
+  - After the target-profile merge fix:
+    `npx tsx --test src\shared\xenesisChannelProfileApply.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed 153/153; focused `npx biome check ... --max-diagnostics 120` exited
+    0 with the same existing warnings/infos; `npm run build` passed; and
+    `npm run smoke:xenesis:natural-desk-routing` passed 150/150.
+- Known gaps:
+  - Full `npx biome check . --max-diagnostics=50` still fails on existing
+    repo-wide diagnostics: 1150 errors, 419 warnings, 93 infos. Representative
+    failures are existing CRLF/format diagnostics in project config/package
+    files and existing lint warnings in sample/package files. Focused changed
+    file check is clean of errors.
+- Next intended step:
+  - Run final `git diff --check`, inspect status, and commit as
+    `feat: apply xenesis channel profile drafts`.

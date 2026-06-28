@@ -287,6 +287,12 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
     expectedVisibleText: 'Desk action approval required',
   },
   {
+    id: 'channel-profile-draft-apply-approval',
+    prompt: '텔레그램 채널 설정 적용해줘',
+    expectedPath: 'xd.xenesis.channels.profileDrafts.apply',
+    expectedVisibleText: 'Desk action approval required',
+  },
+  {
     id: 'messenger-view-catalog-open',
     prompt: '외부 메신저 view 전체 열어줘',
     expectedPath: 'xd.xenesis.messengers.views.open',

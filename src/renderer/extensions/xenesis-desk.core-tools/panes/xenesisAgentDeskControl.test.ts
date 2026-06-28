@@ -2313,6 +2313,7 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.xenesis\.channels\.profileDrafts\.status/);
   assert.match(hint, /xd\.xenesis\.channels\.profileDrafts\.open/);
   assert.match(hint, /xd\.xenesis\.channels\.profileDrafts\.request/);
+  assert.match(hint, /xd\.xenesis\.channels\.profileDrafts\.apply/);
   assert.match(hint, /xd\.xenesis\.channels\.accessGroups\.status/);
   assert.match(hint, /xd\.xenesis\.channels\.pairing\.status/);
   assert.match(hint, /xd\.xenesis\.channels\.pairing\.open/);
@@ -2337,7 +2338,9 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /store credentials/i);
   assert.match(hint, /switch local CLI/i);
   assert.match(hint, /run provider prompts/i);
-  assert.match(hint, /channel profile drafts are review-only/i);
+  assert.match(hint, /channel profile draft CR paths/i);
+  assert.match(hint, /writes profile channel settings only/i);
+  assert.match(hint, /does not store raw secrets/i);
   assert.match(hint, /"id":"notion"/);
   assert.match(hint, /xd\.testing\.xenesisAgent\.submitPrompt/);
   assert.match(hint, /xd\.automation\.workflow\.preview/);
@@ -4463,6 +4466,16 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center review reques
       args: { channel: 'telegram' },
       approved: false,
       reason: 'Request Telegram channel profile draft review from natural language request.',
+    },
+  ]);
+
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('텔레그램 채널 설정 적용해줘').actions, [
+    {
+      id: 'natural-xenesis-channel-profile-draft-apply-telegram',
+      path: 'xd.xenesis.channels.profileDrafts.apply',
+      args: { channel: 'telegram' },
+      approved: false,
+      reason: 'Apply Telegram channel profile draft from natural language request.',
     },
   ]);
 

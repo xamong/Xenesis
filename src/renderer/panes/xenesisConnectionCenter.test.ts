@@ -8,6 +8,7 @@ import type {
   XenesisConnectionsStatus,
 } from '../../shared/types';
 import {
+  buildXenesisChannelProfileDraftApplyRequest,
   buildXenesisChannelProfileDraftRequest,
   buildXenesisConnectionGuideRequest,
   buildXenesisConnectionOpenRequest,
@@ -489,6 +490,54 @@ test('buildXenesisChannelProfileDraftRequest targets the review request CR path'
   });
 
   assert.equal(buildXenesisChannelProfileDraftRequest({ ...item, channelProfileDraft: undefined }), null);
+});
+
+test('buildXenesisChannelProfileDraftApplyRequest targets the approval-gated apply CR path', () => {
+  const item = {
+    id: 'telegram',
+    kind: 'messenger',
+    label: 'Telegram',
+    status: 'needs-setup',
+    summary: 'Telegram setup',
+    channelProfileDraft: {
+      draftStatus: 'missing-required-field',
+      actionInboxKind: 'xenesis-channel-profile-draft',
+      channel: 'telegram',
+      displayName: 'Telegram',
+      setupSurface: 'Settings > Xenesis Agent > External bots',
+      reviewSurface: 'Desk Action Inbox',
+      profileFields: [],
+      missingRequiredFields: [],
+      guardrails: { approvalMode: 'safe', maxTurns: 12, maxTokens: 120000 },
+      readPaths: ['xd.xenesis.channels.profileDrafts.status'],
+      controlPaths: ['xd.xenesis.channels.profileDrafts.request', 'xd.xenesis.channels.profileDrafts.apply'],
+      diagnostics: ['profile-channel-settings'],
+      blockedActions: ['mutate channel settings'],
+      safetyBoundaries: ['profile draft applies write profile config only after approval'],
+      reviewSteps: [],
+    },
+  } satisfies XenesisConnectionItem;
+
+  assert.deepEqual(buildXenesisChannelProfileDraftApplyRequest(item), {
+    path: 'xd.xenesis.channels.profileDrafts.apply',
+    args: {
+      channel: 'telegram',
+    },
+    source: 'xenesis',
+    approved: false,
+  });
+
+  assert.equal(
+    buildXenesisChannelProfileDraftApplyRequest({
+      ...item,
+      channelProfileDraft: {
+        ...item.channelProfileDraft,
+        controlPaths: ['xd.xenesis.channels.profileDrafts.request'],
+      },
+    }),
+    null,
+  );
+  assert.equal(buildXenesisChannelProfileDraftApplyRequest({ ...item, channelProfileDraft: undefined }), null);
 });
 
 test('formatXenesisGuideCatalogSummary describes guide type, audience, and surface count', () => {

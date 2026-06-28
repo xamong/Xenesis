@@ -292,6 +292,12 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
       expectedVisibleText: 'Desk action approval required',
     },
     {
+      id: 'channel-profile-draft-apply-approval',
+      prompt: '텔레그램 채널 설정 적용해줘',
+      expectedPath: 'xd.xenesis.channels.profileDrafts.apply',
+      expectedVisibleText: 'Desk action approval required',
+    },
+    {
       id: 'messenger-view-catalog-open',
       prompt: '외부 메신저 view 전체 열어줘',
       expectedPath: 'xd.xenesis.messengers.views.open',
@@ -419,6 +425,7 @@ test('natural Desk routing live smoke opens Agent and submits natural prompts th
   assert.match(plan, /xd\.xenesis\.channels\.userStories\.status/);
   assert.match(plan, /xd\.xenesis\.channels\.profileDrafts\.status/);
   assert.match(plan, /xd\.xenesis\.channels\.profileDrafts\.request/);
+  assert.match(plan, /xd\.xenesis\.channels\.profileDrafts\.apply/);
   assert.match(plan, /xd\.xenesis\.messengers\.views\.open/);
   assert.match(plan, /xd\.xenesis\.messengers\.views\.status/);
   assert.match(plan, /Desk action approval required/);

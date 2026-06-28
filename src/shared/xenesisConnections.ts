@@ -3063,9 +3063,9 @@ function messengerViewTemplate(
 }
 
 const XENESIS_CHANNEL_PROFILE_DRAFT_BLOCKED_ACTIONS = [
-  'mutate channel settings',
-  'update allowlists',
-  'write profile config',
+  'mutate channel settings outside approved apply path',
+  'update allowlists outside approved apply path',
+  'write profile config outside approved apply path',
   'send test message',
   'start gateway',
   'store secrets',
@@ -4345,6 +4345,7 @@ function buildXenesisChannelProfileDraft(
     controlPaths: uniqueStrings([
       'xd.xenesis.channels.profileDrafts.open',
       'xd.xenesis.channels.profileDrafts.request',
+      'xd.xenesis.channels.profileDrafts.apply',
       'xd.xenesis.connections.open',
       'xd.xenesis.messengers.views.open',
     ]),
@@ -4358,9 +4359,9 @@ function buildXenesisChannelProfileDraft(
     ]),
     blockedActions: [...XENESIS_CHANNEL_PROFILE_DRAFT_BLOCKED_ACTIONS],
     safetyBoundaries: uniqueStrings([
-      'channel profile drafts are review-only',
-      'channel profile draft does not mutate channel settings or update allowlists',
-      'channel profile draft does not write profile config or send test messages',
+      'channel profile draft apply writes profile channel settings only after Capability Registry approval',
+      'channel profile draft apply does not store raw secret values or update secret stores',
+      'channel profile draft apply does not start gateways or send test messages',
       'secret values are never returned',
       ...(input.channelTemplate?.safetyControls ?? []),
       ...(input.channelTemplate?.safety?.safetyBoundaries ?? []),
