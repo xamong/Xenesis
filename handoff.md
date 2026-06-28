@@ -14580,6 +14580,16 @@ Verification so far:
   - `handoff.md`
   - `src/shared/xenesisConnections.ts`
   - `src/shared/xenesisConnections.test.ts`
+  - `src/shared/types.ts`
+  - `src/main/index.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.test.ts`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
+  - `docs/manual/09-onboarding-connections.md`
+  - `src/shared/xenesisConnections.ts`
+  - `src/shared/xenesisConnections.test.ts`
   - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
   - `scripts/xenesisNaturalDeskRoutingLiveSmoke.mjs`
   - `scripts/xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
@@ -15187,3 +15197,79 @@ Verification so far:
     visible and consistent.
 - Next intended step:
   - Review final diff, stage, and commit this larger guide batch slice.
+
+## Current Guide File Readback Batch Slice
+
+- Current objective:
+  - Continue the larger slice cycle by making guide catalog status prove that
+    repo-local guide files resolve and are available, instead of exposing only a
+    `guidePath` string.
+- Rationale:
+  - The OpenClaw/Hermes goal includes guide docs as first-class Desk surfaces.
+    `xd.xenesis.guides.status` currently exposes `guidePath` and
+    `guideOpenPath`, but not an explicit file-readiness readback. Agents can
+    route to a guide card without knowing whether the repo-local manual file is
+    actually present.
+- Scope:
+  - Add RED tests requiring guide items to include `guideFile` status metadata
+    for available, missing, and unresolved guide paths.
+  - Keep shared code pure by injecting an optional guide-file existence probe
+    into `buildXenesisConnectionsStatus`.
+  - Pass the main-process `fs.existsSync` probe into live Desk status builders.
+  - Render guide file readiness in Settings guide cards.
+  - Update docs/handoff/Obsidian and run focused tests, typecheck, CR audit, and
+    natural routing smoke.
+- Touched files so far:
+  - `handoff.md`
+- Commands run:
+  - `git status --short --branch` -> clean `agent/upcoming-work-20260627`.
+  - Gap scan confirmed guide catalog/read/open CR paths exist, but guide file
+    readiness is not modeled beyond `guidePath`/`guideOpenPath`.
+  - RED:
+    `npx tsx --test src\shared\xenesisConnections.test.ts` -> failed 39/41
+    because guide items do not expose `guideFile` status metadata yet.
+  - RED:
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` ->
+    failed 52/53 because `formatXenesisGuideFileSummary` did not exist.
+  - GREEN:
+    `npx tsx --test src\shared\xenesisConnections.test.ts` -> passed 41/41.
+  - GREEN:
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` ->
+    passed 53/53.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` ->
+    passed 40/40.
+  - `npm run typecheck` -> passed.
+  - `npm run docs:capabilities:audit` -> passed, wrote
+    `docs/capability-registry-audit.md` with 779 nodes and 689 coverage path
+    references.
+  - `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> missing registered paths 0, missing dispatched coverage paths 0,
+    undispatched static callable methods 0, dispatcher paths missing from tree
+    0.
+  - `npm run smoke:xenesis:natural-desk-routing` -> passed 186/186.
+  - `npx biome check --linter-enabled=false src\shared\xenesisConnections.ts src\shared\xenesisConnections.test.ts src\shared\types.ts src\main\index.ts src\renderer\panes\xenesisConnectionCenter.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\panes\SettingsPane.tsx src\renderer\i18n\en.ts src\renderer\i18n\ko.ts`
+    -> checked 9 files, no fixes applied.
+  - `git diff --check` -> passed with line-ending warnings only.
+  - `npm run lint` -> failed repo-wide on existing Biome diagnostics: 965 files
+    checked, 1150 errors, 419 warnings, 92 infos; output exceeded the
+    diagnostic limit and included unrelated extension/package formatting
+    diagnostics outside this slice.
+- Implemented:
+  - Added `guideFile` status metadata with `available`, `missing`, and
+    `unresolved` states to guide Connection Center items.
+  - Kept shared code pure by adding optional `guideFileExists` injection to
+    `buildXenesisConnectionsStatus`.
+  - Wired main-process status building to `fs.existsSync` for live Desk guide
+    file availability checks.
+  - Included `guideFile` in `xd.xenesis.guides.status` items and guide
+    diagnostic runbooks.
+  - Added Settings rendering and i18n labels for guide-file readiness.
+  - Documented the readback in `docs/manual/09-onboarding-connections.md`.
+- Known gaps:
+  - Natural-language routing remains deterministic catalog routing, not model
+    reasoning.
+  - Repository-wide `npm run lint` is not clean in this worktree due existing
+    repo-wide Biome diagnostics outside this slice. The changed-file formatting
+    check passed with `--linter-enabled=false`.
+- Next intended step:
+  - Review final diff, stage, and commit this guide file readback batch.

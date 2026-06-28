@@ -2894,11 +2894,100 @@ test('buildXenesisConnectionsStatus resolves repo-local guide open paths from th
     },
     xenesis: null,
     repoRoot: 'E:\\xenesis-desk',
+    guideFileExists: (candidate) => candidate.endsWith('docs\\manual\\09-onboarding-connections.md'),
   });
   const guide = status.sections.guides.items.find((item) => item.id === 'onboarding-connections');
 
   assert.equal(guide?.guidePath, 'docs/manual/09-onboarding-connections.md');
   assert.equal(guide?.guideOpenPath, 'E:\\xenesis-desk\\docs\\manual\\09-onboarding-connections.md');
+  assert.deepEqual((guide as any)?.guideFile, {
+    status: 'available',
+    guidePath: 'docs/manual/09-onboarding-connections.md',
+    guideOpenPath: 'E:\\xenesis-desk\\docs\\manual\\09-onboarding-connections.md',
+    readPaths: ['xd.xenesis.guides.status'],
+    controlPaths: ['xd.xenesis.guides.open', 'xd.files.open'],
+    diagnostics: ['guide-file-available'],
+    safetyBoundaries: [
+      'guide file readback does not read file contents',
+      'guide file opens stay on existing guide/file CR paths',
+    ],
+  });
+});
+
+test('buildXenesisConnectionsStatus marks missing and unresolved guide files explicitly', () => {
+  const missingStatus = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+    repoRoot: 'E:\\xenesis-desk',
+    guideFileExists: () => false,
+  });
+  const missingGuide = missingStatus.sections.guides.items.find((item) => item.id === 'agent-user-stories');
+
+  assert.equal((missingGuide as any)?.guideFile?.status, 'missing');
+  assert.equal((missingGuide as any)?.guideFile?.guidePath, 'docs/manual/12-agent-user-stories.md');
+  assert.equal(
+    (missingGuide as any)?.guideFile?.guideOpenPath,
+    'E:\\xenesis-desk\\docs\\manual\\12-agent-user-stories.md',
+  );
+  assert.deepEqual((missingGuide as any)?.guideFile?.controlPaths, ['xd.xenesis.guides.open']);
+  assert.deepEqual((missingGuide as any)?.guideFile?.diagnostics, ['guide-file-missing']);
+
+  const unresolvedStatus = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+  const unresolvedGuide = unresolvedStatus.sections.guides.items.find((item) => item.id === 'openclaw-channel-setup');
+
+  assert.equal((unresolvedGuide as any)?.guideFile?.status, 'unresolved');
+  assert.equal((unresolvedGuide as any)?.guideFile?.guidePath, 'docs/manual/10-openclaw-channel-setup.md');
+  assert.equal((unresolvedGuide as any)?.guideFile?.guideOpenPath, 'docs/manual/10-openclaw-channel-setup.md');
+  assert.deepEqual((unresolvedGuide as any)?.guideFile?.diagnostics, ['guide-file-unresolved']);
 });
 
 test('buildXenesisConnectionsStatus exposes guide catalog metadata for onboarding playbooks', () => {

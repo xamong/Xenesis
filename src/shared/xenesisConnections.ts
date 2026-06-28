@@ -929,6 +929,18 @@ export interface XenesisConnectionGuideCatalogTemplate {
   safetyBoundaries: string[];
 }
 
+export type XenesisConnectionGuideFileStatus = 'available' | 'missing' | 'unresolved';
+
+export interface XenesisConnectionGuideFileTemplate {
+  status: XenesisConnectionGuideFileStatus;
+  guidePath: string;
+  guideOpenPath?: string;
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  safetyBoundaries: string[];
+}
+
 export interface XenesisConnectionDiagnosticRunbookStep {
   id: string;
   label: string;
@@ -1003,6 +1015,7 @@ export interface XenesisConnectionItem {
   channelSetupPlan?: XenesisConnectionChannelSetupPlanTemplate;
   channelProfileDraft?: XenesisConnectionChannelProfileDraftTemplate;
   guideCatalog?: XenesisConnectionGuideCatalogTemplate;
+  guideFile?: XenesisConnectionGuideFileTemplate;
   channelTemplate?: XenesisConnectionChannelTemplate;
   diagnosticRunbook?: XenesisConnectionDiagnosticRunbookTemplate;
   setupRequest?: XenesisConnectionSetupRequestTemplate;
@@ -1058,6 +1071,7 @@ export interface BuildXenesisConnectionsStatusInput {
   env?: Record<string, string | undefined>;
   now?: Date;
   repoRoot?: string;
+  guideFileExists?: (guideOpenPath: string) => boolean;
 }
 
 export const XENESIS_CONNECTION_ONBOARDING_STEP_IDS = [
@@ -1391,11 +1405,54 @@ function resolveRepoLocalPath(repoRoot: string | undefined, relativePath: string
   return `${cleanRoot}${separator}${cleanTarget}`;
 }
 
-function withGuideOpenPaths(items: XenesisConnectionItem[], repoRoot: string | undefined): XenesisConnectionItem[] {
+function buildXenesisGuideFileReadback(input: {
+  guidePath: string | undefined;
+  guideOpenPath: string | undefined;
+  guideFileExists: ((guideOpenPath: string) => boolean) | undefined;
+}): XenesisConnectionGuideFileTemplate | undefined {
+  const guidePath = input.guidePath?.trim();
+  if (!guidePath) return undefined;
+
+  const guideOpenPath = input.guideOpenPath?.trim() || undefined;
+  const status: XenesisConnectionGuideFileStatus =
+    !guideOpenPath || !input.guideFileExists
+      ? 'unresolved'
+      : input.guideFileExists(guideOpenPath)
+        ? 'available'
+        : 'missing';
+
+  return {
+    status,
+    guidePath,
+    ...(guideOpenPath ? { guideOpenPath } : {}),
+    readPaths: ['xd.xenesis.guides.status'],
+    controlPaths: status === 'available' ? ['xd.xenesis.guides.open', 'xd.files.open'] : ['xd.xenesis.guides.open'],
+    diagnostics: [`guide-file-${status}`],
+    safetyBoundaries: [
+      'guide file readback does not read file contents',
+      'guide file opens stay on existing guide/file CR paths',
+    ],
+  };
+}
+
+function withGuideOpenPaths(
+  items: XenesisConnectionItem[],
+  repoRoot: string | undefined,
+  guideFileExists?: (guideOpenPath: string) => boolean,
+): XenesisConnectionItem[] {
   return items.map((item) => {
     const guideOpenPath = resolveRepoLocalPath(repoRoot, item.guidePath);
-    if (!guideOpenPath || guideOpenPath === item.guideOpenPath) return item;
-    return { ...item, guideOpenPath };
+    const nextGuideOpenPath = guideOpenPath || item.guideOpenPath;
+    const guideFile = buildXenesisGuideFileReadback({
+      guidePath: item.guidePath,
+      guideOpenPath: nextGuideOpenPath,
+      guideFileExists,
+    });
+    return {
+      ...item,
+      ...(nextGuideOpenPath ? { guideOpenPath: nextGuideOpenPath } : {}),
+      ...(guideFile ? { guideFile } : {}),
+    };
   });
 }
 
@@ -6312,9 +6369,13 @@ function buildXenesisConnectionDiagnosticRunbook(
         id: 'guide-catalog',
         label: 'Guide catalog',
         expectedState: 'The guide card exposes audience, covered surfaces, prerequisites, and validation checks.',
-        readPaths: ['xd.xenesis.guides.status', ...item.guideCatalog.readPaths],
-        controlPaths: item.guideCatalog.controlPaths,
-        diagnostics: [...item.guideCatalog.validationChecks, ...item.guideCatalog.userStoryTemplates],
+        readPaths: ['xd.xenesis.guides.status', ...item.guideCatalog.readPaths, ...(item.guideFile?.readPaths ?? [])],
+        controlPaths: [...item.guideCatalog.controlPaths, ...(item.guideFile?.controlPaths ?? [])],
+        diagnostics: [
+          ...item.guideCatalog.validationChecks,
+          ...item.guideCatalog.userStoryTemplates,
+          ...(item.guideFile?.diagnostics ?? []),
+        ],
       }),
     );
   }
@@ -6360,6 +6421,7 @@ function buildXenesisConnectionDiagnosticRunbook(
       ...(item.channelProfileDraft?.reviewSteps.map((step) => step.safetyBoundary) ?? []),
       ...(item.messengerView?.safetyBoundaries ?? []),
       ...(item.guideCatalog?.safetyBoundaries ?? []),
+      ...(item.guideFile?.safetyBoundaries ?? []),
     ]),
   };
 }
@@ -7859,7 +7921,7 @@ export function buildXenesisConnectionsStatus(input: BuildXenesisConnectionsStat
     guides: {
       id: 'guides',
       label: 'Guides',
-      items: withGuideOpenPaths(XENESIS_CONNECTION_GUIDES, input.repoRoot),
+      items: withGuideOpenPaths(XENESIS_CONNECTION_GUIDES, input.repoRoot, input.guideFileExists),
     },
   };
   const rawSections: XenesisConnectionsStatus['sections'] = {

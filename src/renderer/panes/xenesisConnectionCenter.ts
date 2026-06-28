@@ -10,6 +10,7 @@ import type {
   XenesisConnectionChannelUserStoryTemplate,
   XenesisConnectionDiagnosticRunbookTemplate,
   XenesisConnectionGuideCatalogTemplate,
+  XenesisConnectionGuideFileTemplate,
   XenesisConnectionItem,
   XenesisConnectionMcpInstallDraftTemplate,
   XenesisConnectionMessengerViewTemplate,
@@ -151,6 +152,10 @@ export function formatXenesisChannelProfileDraftSummary(draft: XenesisConnection
 
 export function formatXenesisGuideCatalogSummary(guide: XenesisConnectionGuideCatalogTemplate): string {
   return `${guide.guideType} / ${guide.audience} / ${guide.coveredSurfaces.length} surface(s)`;
+}
+
+export function formatXenesisGuideFileSummary(guideFile: XenesisConnectionGuideFileTemplate): string {
+  return `${guideFile.status} / ${guideFile.guidePath}`;
 }
 
 export function formatXenesisOnboardingPlanSummary(plan: XenesisConnectionOnboardingPlanTemplate): string {

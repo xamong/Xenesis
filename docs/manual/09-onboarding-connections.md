@@ -60,6 +60,12 @@ readiness, and CR-controlled Desk workflows. Use `xd.xenesis.guides.open` with
 This surface is read-only except for opening the guide/view; it does not install
 tools, create OAuth flows, send messages, or mutate provider/channel settings.
 
+Guide cards also include a `guideFile` readback. This reports whether the
+repo-local manual file is `available`, `missing`, or `unresolved`, plus the
+resolved open path, diagnostics, and safe open/read control paths. The readback
+checks file availability only; it does not read file contents. Use it before
+claiming that a guide target is backed by an actual repo-local manual page.
+
 Connection cards also expose a `diagnosticRunbook` read model. Use
 `xd.xenesis.connections.diagnostics.status` to inspect the unified runbook for a
 card, or filter by `{ "id": "<connection-id>" }` or `{ "kind": "tool" }`.

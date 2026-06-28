@@ -42,6 +42,7 @@ import {
   formatXenesisConnectionSetupRequestSummary,
   formatXenesisConnectionSetupReviewSummary,
   formatXenesisGuideCatalogSummary,
+  formatXenesisGuideFileSummary,
   formatXenesisMcpInstallDraftSummary,
   formatXenesisMessengerViewSummary,
   formatXenesisOnboardingPlanSummary,
@@ -671,6 +672,21 @@ test('formatXenesisGuideCatalogSummary describes guide type, audience, and surfa
       safetyBoundaries: ['guide catalog does not execute workflows'],
     }),
     'user-story-catalog / agent / 4 surface(s)',
+  );
+});
+
+test('formatXenesisGuideFileSummary describes guide file readiness and path', () => {
+  assert.equal(
+    formatXenesisGuideFileSummary({
+      status: 'available',
+      guidePath: 'docs/manual/12-agent-user-stories.md',
+      guideOpenPath: 'E:\\xenesis-desk\\docs\\manual\\12-agent-user-stories.md',
+      readPaths: ['xd.xenesis.guides.status'],
+      controlPaths: ['xd.xenesis.guides.open', 'xd.files.open'],
+      diagnostics: ['guide-file-available'],
+      safetyBoundaries: ['guide file readback does not read file contents'],
+    }),
+    'available / docs/manual/12-agent-user-stories.md',
   );
 });
 

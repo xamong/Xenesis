@@ -30,6 +30,8 @@ export type {
   XenesisConnectionDiagnosticRunbookStep,
   XenesisConnectionDiagnosticRunbookTemplate,
   XenesisConnectionGuideCatalogTemplate,
+  XenesisConnectionGuideFileStatus,
+  XenesisConnectionGuideFileTemplate,
   XenesisConnectionItem,
   XenesisConnectionMcpInstallDraftStatus,
   XenesisConnectionMcpInstallDraftTemplate,

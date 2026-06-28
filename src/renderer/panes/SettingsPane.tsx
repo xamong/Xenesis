@@ -116,6 +116,7 @@ import {
   formatXenesisConnectionSetupRequestSummary,
   formatXenesisConnectionSetupReviewSummary,
   formatXenesisGuideCatalogSummary,
+  formatXenesisGuideFileSummary,
   formatXenesisMcpInstallDraftSummary,
   formatXenesisMessengerViewSummary,
   formatXenesisOnboardingPlanSummary,
@@ -4353,6 +4354,7 @@ export default function SettingsPane() {
     const channelUserStory = channelTemplate?.userStory;
     const diagnosticRunbook = item.diagnosticRunbook;
     const setupRequest = item.setupRequest;
+    const guideFile = item.guideFile;
     return (
       <div
         className={cls('sp-info-card', focusedXenesisConnectionId === item.id && 'is-focused')}
@@ -4744,6 +4746,32 @@ export default function SettingsPane() {
             <div>
               <span>{t('settings.xenesisConnectionsOnboardingSafety')}</span>
               <strong>{onboardingPlan.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {guideFile ? (
+          <div className="sp-info-list sp-info-list-compact" data-xenesis-guide-file={item.id}>
+            <div>
+              <span>{t('settings.xenesisConnectionsGuideFile')}</span>
+              <strong>{formatXenesisGuideFileSummary(guideFile)}</strong>
+            </div>
+            {guideFile.guideOpenPath ? (
+              <div>
+                <span>{t('settings.xenesisConnectionsGuideFileOpenPath')}</span>
+                <strong>{guideFile.guideOpenPath}</strong>
+              </div>
+            ) : null}
+            <div>
+              <span>{t('settings.xenesisConnectionsGuideFileReadback')}</span>
+              <strong>{guideFile.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsGuideFileControls')}</span>
+              <strong>{guideFile.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsGuideFileDiagnostics')}</span>
+              <strong>{guideFile.diagnostics.join(', ')}</strong>
             </div>
           </div>
         ) : null}

@@ -4832,6 +4832,7 @@ async function getXenesisConnectionsStatus(): Promise<XenesisConnectionsStatus> 
     providerFallbacks: activeProfile?.providerFallbacks ?? [],
     env: process.env,
     repoRoot: app.isPackaged ? app.getAppPath() : process.cwd(),
+    guideFileExists: (guideOpenPath) => fs.existsSync(guideOpenPath),
   });
   return withXenesisConnectionSetupRequestReviews(status, listMcpActionInboxSnapshot());
 }
@@ -5577,6 +5578,7 @@ function xenesisGuideStatusItem(item: XenesisConnectionItem): Record<string, unk
     summary: item.summary,
     guidePath: item.guidePath,
     guideOpenPath: item.guideOpenPath,
+    guideFile: item.guideFile,
     sourceDocs: item.sourceDocs ?? [],
     guideType: item.guideCatalog?.guideType,
     audience: item.guideCatalog?.audience,
