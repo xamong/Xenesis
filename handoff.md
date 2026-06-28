@@ -15476,6 +15476,9 @@ Verification so far:
   - No external web browsing.
 - Touched files so far:
   - `handoff.md`
+  - `src/shared/xenesisNaturalLanguageCatalog.ts`
+  - `src/shared/xenesisNaturalLanguagePlanResolvers.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
   - `src/renderer/panes/xenesisConnectionCenter.ts`
   - `src/renderer/panes/xenesisConnectionCenter.test.ts`
   - `src/renderer/panes/SettingsPane.tsx`
@@ -17161,6 +17164,84 @@ Verification so far:
 - Next intended step:
   - Review the final diff, commit the slice, then continue with the next larger
     CR/Connection Center gap slice.
+
+## Latest Slice: Natural Single-Action Plan Builder De-duplication
+
+- Current objective:
+  - Continue the larger hardcoding cleanup after confirming
+    `xenesisAgentDeskControl.ts` is already a renderer facade. Move repeated
+    natural-language single-action plan boilerplate into a shared catalog helper
+    so the plan resolver file owns less duplicated routing glue.
+- Scope:
+  - Add a shared `buildXenesisNaturalSingleActionPlan` helper.
+  - Refactor simple natural plan resolvers that currently repeat
+    `if (!action) return null; return buildXenesisNaturalLanguagePlan(...,
+    [action])`.
+  - Add source guards and a direct helper behavior test before implementation.
+- Touched files so far:
+  - `handoff.md`
+- Commands run:
+  - `rg --files | rg "xenesisAgentDeskControl|AgentDeskControl|deskControl"`
+    -> found `xenesisAgentDeskControl.ts` and its test.
+  - Focused reads of `xenesisAgentDeskControl.ts`,
+    `xenesisAgentDeskControl.test.ts`,
+    `src/shared/xenesisNaturalLanguagePlanResolvers.ts`, and
+    `src/shared/xenesisNaturalLanguageCatalog.ts`.
+  - `rg -n "if \(!action\) return null;|return buildXenesisNaturalLanguagePlan\(" src/shared/xenesisNaturalLanguagePlanResolvers.ts`
+    -> found repeated simple single-action plan construction concentrated in
+    the plan resolver file.
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> failed as expected because `buildXenesisNaturalSingleActionPlan` was
+    not exported and the plan resolver file still contained the repeated
+    `if (!action) return null;` boilerplate.
+  - GREEN focused:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 47/47.
+  - Combined focused:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 88/88.
+  - Typecheck:
+    `npm run typecheck` -> passed.
+  - Natural routing smoke:
+    `npm run smoke:xenesis:natural-desk-routing` -> passed 255/255.
+  - CR audit:
+    `npm run docs:capabilities:audit` -> passed and reported 796 nodes / 689
+    coverage path references.
+  - CR audit counter readback:
+    `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> all 0.
+  - Focused Biome:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true ...changed files...`
+    -> passed.
+- Exact verification result:
+  - RED confirmed both the missing helper behavior and the remaining repeated
+    resolver boilerplate.
+  - GREEN passed after adding `buildXenesisNaturalSingleActionPlan` and
+    replacing simple single-action natural plan resolver boilerplate with that
+    helper.
+  - Natural routing smoke stayed green at 255/255, so the refactor did not
+    change observed deterministic route outputs.
+  - CR audit gap counters are all 0:
+    missing registered paths 0, missing dispatched coverage paths 0,
+    undispatched static callable methods 0, dispatcher paths missing from tree
+    0.
+  - The generated audit doc had timestamp/EOF-only churn; that churn was
+    reverted, leaving no audit doc diff.
+- Implemented:
+  - Added a shared null-safe single-action plan builder to
+    `xenesisNaturalLanguageCatalog.ts`.
+  - Refactored simple natural plan resolver branches for Agent submit, run
+    start, workspace set, Connection Center read/open/request/apply, runtime
+    inventory/control, profile inventory, tool open, gateway, local CLI/MCP,
+    and view open flows.
+  - Added source guards so the renderer facade does not regain this repeated
+    action-to-plan boilerplate.
+- Known gaps:
+  - Full repo lint/public-release known gaps remain unchanged.
+- Next intended step:
+  - Run final diff checks, review the diff, commit the slice, then continue the
+    next larger CR/Agent cleanup slice.
 
 ## 2026-06-29 - User Story CR Workflow Preview Slice
 

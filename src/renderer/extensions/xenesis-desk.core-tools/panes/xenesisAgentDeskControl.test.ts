@@ -123,6 +123,7 @@ import {
   XENESIS_NATURAL_WORKSPACE_SET_RULES,
 } from '../../../../shared/xenesisNaturalLanguageCapabilityCatalog';
 import {
+  buildXenesisNaturalSingleActionPlan,
   isXenesisDeskActionRecordValue,
   isXenesisDeskActionValueType,
   isXenesisNaturalConnectionMessengerTarget,
@@ -682,11 +683,12 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   ]) {
     assert.doesNotMatch(naturalPlannerSource, new RegExp(localNaturalPlanBuilder));
   }
-  for (const sharedNaturalPlanBuilder of ['buildXenesisNaturalLanguagePlan']) {
+  for (const sharedNaturalPlanBuilder of ['buildXenesisNaturalLanguagePlan', 'buildXenesisNaturalSingleActionPlan']) {
     assert.match(catalogSource, new RegExp(`export function ${sharedNaturalPlanBuilder}`));
     assert.doesNotMatch(naturalPlannerSource, new RegExp(sharedNaturalPlanBuilder));
     assert.match(naturalPlanResolverSource, new RegExp(sharedNaturalPlanBuilder));
   }
+  assert.doesNotMatch(naturalPlanResolverSource, /if \(!action\) return null;/);
   for (const sharedNaturalPlanActionCatalogBuilder of [
     'findXenesisNaturalCatalogRule',
     'findXenesisNaturalCatalogRulePlan',
@@ -2174,6 +2176,24 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     XENESIS_NATURAL_ONBOARDING_STEP_TARGETS.map((target) => target.id),
     ['first-chat', 'local-cli-mcp', 'recommended-tools', 'gateway', 'messenger-routing', 'test-send'],
   );
+});
+
+test('buildXenesisNaturalSingleActionPlan wraps one action and ignores missing actions', () => {
+  const action = {
+    id: 'natural-test-action',
+    path: 'xd.app.status',
+    args: { includeDiagnostics: true },
+    reason: 'Read Desk status from natural language request.',
+    approved: false,
+  };
+
+  assert.deepEqual(buildXenesisNaturalSingleActionPlan('Desk status requested.', action), {
+    visibleText: 'Desk status requested.',
+    actions: [action],
+    errors: [],
+    matched: true,
+  });
+  assert.equal(buildXenesisNaturalSingleActionPlan('Desk status requested.', null), null);
 });
 
 test('natural Connection Center aggregate actions are generated from shared surface specs', () => {

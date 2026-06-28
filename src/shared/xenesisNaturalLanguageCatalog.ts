@@ -2183,6 +2183,14 @@ export function buildXenesisNaturalLanguagePlan(
   return { visibleText, actions, errors, matched: actions.length > 0 || errors.length > 0 };
 }
 
+export function buildXenesisNaturalSingleActionPlan(
+  visibleText: string,
+  action: XenesisNaturalDeskActionRequest | null | undefined,
+): XenesisNaturalLanguagePlan | null {
+  if (!action) return null;
+  return buildXenesisNaturalLanguagePlan(visibleText, [action]);
+}
+
 export function emptyXenesisNaturalLanguagePlan(): XenesisNaturalLanguagePlan {
   return {
     visibleText: XENESIS_NATURAL_TEXT_DEFAULTS.empty,

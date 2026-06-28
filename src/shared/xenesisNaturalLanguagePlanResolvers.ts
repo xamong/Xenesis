@@ -54,6 +54,7 @@ import {
 } from './xenesisNaturalLanguageCapabilityCatalog';
 import {
   buildXenesisNaturalLanguagePlan,
+  buildXenesisNaturalSingleActionPlan,
   detectXenesisNaturalArrangeMode,
   detectXenesisNaturalDockSide,
   detectXenesisNaturalDockWindowState,
@@ -73,138 +74,143 @@ import {
 } from './xenesisNaturalLanguageCatalog';
 
 export function xenesisAgentSubmitPlanFromNaturalText(rawText: string): XenesisNaturalLanguagePlan | null {
-  const action = xenesisAgentSubmitActionFromNaturalText(rawText);
-  if (!action) return null;
-  return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.agentSubmitRecorded, [action]);
+  return buildXenesisNaturalSingleActionPlan(
+    XENESIS_NATURAL_PLAN_VISIBLE_TEXT.agentSubmitRecorded,
+    xenesisAgentSubmitActionFromNaturalText(rawText),
+  );
 }
 
 export function xenesisRunStartPlanFromNaturalText(rawText: string): XenesisNaturalLanguagePlan | null {
-  const action = xenesisRunStartActionFromNaturalText(rawText);
-  if (!action) return null;
-  return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.runStartRecorded, [action]);
+  return buildXenesisNaturalSingleActionPlan(
+    XENESIS_NATURAL_PLAN_VISIBLE_TEXT.runStartRecorded,
+    xenesisRunStartActionFromNaturalText(rawText),
+  );
 }
 
 export function xenesisWorkspaceSetPlanFromNaturalText(
   value: string,
   rawText: string,
 ): XenesisNaturalLanguagePlan | null {
-  const action = xenesisWorkspaceSetActionFromNaturalText(value, rawText);
-  if (!action) return null;
-  return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.workspaceSetRecorded, [action]);
+  return buildXenesisNaturalSingleActionPlan(
+    XENESIS_NATURAL_PLAN_VISIBLE_TEXT.workspaceSetRecorded,
+    xenesisWorkspaceSetActionFromNaturalText(value, rawText),
+  );
 }
 
 export function xenesisConnectionReviewRequestPlanFromNaturalText(value: string): XenesisNaturalLanguagePlan | null {
-  const action = xenesisConnectionReviewRequestActionFromNaturalText(value);
-  if (!action) return null;
-  return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.connectionReviewRequestRecorded, [action]);
+  return buildXenesisNaturalSingleActionPlan(
+    XENESIS_NATURAL_PLAN_VISIBLE_TEXT.connectionReviewRequestRecorded,
+    xenesisConnectionReviewRequestActionFromNaturalText(value),
+  );
 }
 
 export function xenesisConnectionMcpInstallDraftApplyPlanFromNaturalText(
   value: string,
 ): XenesisNaturalLanguagePlan | null {
-  const action = xenesisConnectionMcpInstallDraftApplyActionFromNaturalText(value);
-  if (!action) return null;
-  return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.connectionMcpInstallDraftApplyRecorded, [
-    action,
-  ]);
+  return buildXenesisNaturalSingleActionPlan(
+    XENESIS_NATURAL_PLAN_VISIBLE_TEXT.connectionMcpInstallDraftApplyRecorded,
+    xenesisConnectionMcpInstallDraftApplyActionFromNaturalText(value),
+  );
 }
 
 export function xenesisConnectionChannelProfileDraftApplyPlanFromNaturalText(
   value: string,
 ): XenesisNaturalLanguagePlan | null {
-  const action = xenesisConnectionChannelProfileDraftApplyActionFromNaturalText(value);
-  if (!action) return null;
-  return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.connectionChannelProfileDraftApplyRecorded, [
-    action,
-  ]);
+  return buildXenesisNaturalSingleActionPlan(
+    XENESIS_NATURAL_PLAN_VISIBLE_TEXT.connectionChannelProfileDraftApplyRecorded,
+    xenesisConnectionChannelProfileDraftApplyActionFromNaturalText(value),
+  );
 }
 
 export function xenesisConnectionChannelTestPlanFromNaturalText(value: string): XenesisNaturalLanguagePlan | null {
-  const action = xenesisConnectionChannelTestActionFromNaturalText(value);
-  if (!action) return null;
-  return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.connectionChannelTestRecorded, [action]);
+  return buildXenesisNaturalSingleActionPlan(
+    XENESIS_NATURAL_PLAN_VISIBLE_TEXT.connectionChannelTestRecorded,
+    xenesisConnectionChannelTestActionFromNaturalText(value),
+  );
 }
 
 export function xenesisConnectionProviderProfileDraftApplyPlanFromNaturalText(
   value: string,
 ): XenesisNaturalLanguagePlan | null {
-  const action = xenesisConnectionProviderProfileDraftApplyActionFromNaturalText(value);
-  if (!action) return null;
-  return buildXenesisNaturalLanguagePlan(
+  return buildXenesisNaturalSingleActionPlan(
     XENESIS_NATURAL_PLAN_VISIBLE_TEXT.connectionProviderProfileDraftApplyRecorded,
-    [action],
+    xenesisConnectionProviderProfileDraftApplyActionFromNaturalText(value),
   );
 }
 
 export function xenesisConnectionSetupApplyPlanFromNaturalText(value: string): XenesisNaturalLanguagePlan | null {
-  const action = xenesisConnectionSetupApplyActionFromNaturalText(value);
-  if (!action) return null;
-  return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.connectionSetupApplyRecorded, [action]);
+  return buildXenesisNaturalSingleActionPlan(
+    XENESIS_NATURAL_PLAN_VISIBLE_TEXT.connectionSetupApplyRecorded,
+    xenesisConnectionSetupApplyActionFromNaturalText(value),
+  );
 }
 
 export function xenesisConnectionOAuthSetupPacketPlanFromNaturalText(value: string): XenesisNaturalLanguagePlan | null {
-  const action = xenesisConnectionOAuthSetupPacketActionFromNaturalText(value);
-  if (!action) return null;
-  return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.connectionStatusRead, [action]);
+  return buildXenesisNaturalSingleActionPlan(
+    XENESIS_NATURAL_PLAN_VISIBLE_TEXT.connectionStatusRead,
+    xenesisConnectionOAuthSetupPacketActionFromNaturalText(value),
+  );
 }
 
 export function explicitXenesisConnectionOpenPlanFromNaturalText(value: string): XenesisNaturalLanguagePlan | null {
   const action = xenesisConnectionActionFromNaturalText(value);
-  if (!action || !matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_OPEN_COMMAND_RULES)) return null;
-  return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.connectionSurfaceOpen, [action]);
+  if (!matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_OPEN_COMMAND_RULES)) return null;
+  return buildXenesisNaturalSingleActionPlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.connectionSurfaceOpen, action);
 }
 
 export function xenesisConnectionReadbackPlanFromNaturalText(value: string): XenesisNaturalLanguagePlan | null {
-  const action = xenesisConnectionReadbackActionFromNaturalText(value);
-  if (!action) return null;
-  return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.connectionStatusRead, [action]);
+  return buildXenesisNaturalSingleActionPlan(
+    XENESIS_NATURAL_PLAN_VISIBLE_TEXT.connectionStatusRead,
+    xenesisConnectionReadbackActionFromNaturalText(value),
+  );
 }
 
 export function xenesisConnectionOpenOrShowPlanFromNaturalText(value: string): XenesisNaturalLanguagePlan | null {
   const action = xenesisConnectionActionFromNaturalText(value);
-  if (!action || !matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_OPEN_OR_SHOW_RULES)) return null;
-  return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.connectionSurfaceOpen, [action]);
+  if (!matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_OPEN_OR_SHOW_RULES)) return null;
+  return buildXenesisNaturalSingleActionPlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.connectionSurfaceOpen, action);
 }
 
 export function localCliMcpReadbackPlanFromNaturalText(value: string): XenesisNaturalLanguagePlan | null {
   const action = localCliMcpReadbackActionFromNaturalText(value);
-  if (!action) return null;
-  if (action.path === XENESIS_NATURAL_RUNTIME_VISIBLE_PLAN_PATHS.actionInboxList) {
-    return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.actionInboxListRead, [action]);
+  if (action?.path === XENESIS_NATURAL_RUNTIME_VISIBLE_PLAN_PATHS.actionInboxList) {
+    return buildXenesisNaturalSingleActionPlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.actionInboxListRead, action);
   }
-  return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.localCliMcpStatusRead, [action]);
+  return buildXenesisNaturalSingleActionPlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.localCliMcpStatusRead, action);
 }
 
 export function xenesisGatewayPlanFromNaturalText(value: string): XenesisNaturalLanguagePlan | null {
   const action = xenesisGatewayActionFromNaturalText(value);
-  if (!action) return null;
   const visibleText = XENESIS_NATURAL_GATEWAY_LIFECYCLE_PLAN_PATHS.includes(
-    action.path as (typeof XENESIS_NATURAL_GATEWAY_LIFECYCLE_PLAN_PATHS)[number],
+    action?.path as (typeof XENESIS_NATURAL_GATEWAY_LIFECYCLE_PLAN_PATHS)[number],
   )
     ? XENESIS_NATURAL_PLAN_VISIBLE_TEXT.gatewayLifecycleRecorded
     : XENESIS_NATURAL_PLAN_VISIBLE_TEXT.gatewayStatusOrOpen;
-  return buildXenesisNaturalLanguagePlan(visibleText, [action]);
+  return buildXenesisNaturalSingleActionPlan(visibleText, action);
 }
 
 export function xenesisRuntimeInventoryPlanFromNaturalText(
   value: string,
   rawText: string,
 ): XenesisNaturalLanguagePlan | null {
-  const action = xenesisRuntimeInventoryActionFromNaturalText(value, rawText);
-  if (!action) return null;
-  return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.runtimeInventoryRead, [action]);
+  return buildXenesisNaturalSingleActionPlan(
+    XENESIS_NATURAL_PLAN_VISIBLE_TEXT.runtimeInventoryRead,
+    xenesisRuntimeInventoryActionFromNaturalText(value, rawText),
+  );
 }
 
 export function xenesisProfileInventoryPlanFromNaturalText(value: string): XenesisNaturalLanguagePlan | null {
-  const action = xenesisProfileInventoryActionFromNaturalText(value);
-  if (!action) return null;
-  return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.profileInventoryRead, [action]);
+  return buildXenesisNaturalSingleActionPlan(
+    XENESIS_NATURAL_PLAN_VISIBLE_TEXT.profileInventoryRead,
+    xenesisProfileInventoryActionFromNaturalText(value),
+  );
 }
 
 export function xenesisRuntimeControlPlanFromNaturalText(value: string): XenesisNaturalLanguagePlan | null {
-  const action = xenesisRuntimeControlActionFromNaturalText(value);
-  if (!action) return null;
-  return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.runtimeControlRecorded, [action]);
+  return buildXenesisNaturalSingleActionPlan(
+    XENESIS_NATURAL_PLAN_VISIBLE_TEXT.runtimeControlRecorded,
+    xenesisRuntimeControlActionFromNaturalText(value),
+  );
 }
 
 export function deskSettingsCategoryOpenPlanFromNaturalText(
@@ -238,8 +244,8 @@ export function toolOpenPlanFromNaturalText(
   placement: string | undefined,
 ): XenesisNaturalLanguagePlan | null {
   const action = toolOpenActionFromNaturalText(value, placement);
-  if (!action || !matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_OPEN_OR_SHOW_RULES)) return null;
-  return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.requestedToolPanelOpen, [action]);
+  if (!matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_OPEN_OR_SHOW_RULES)) return null;
+  return buildXenesisNaturalSingleActionPlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.requestedToolPanelOpen, action);
 }
 
 export function deskCapturePlanFromNaturalText(value: string): XenesisNaturalLanguagePlan | null {
@@ -426,7 +432,8 @@ export function viewOpenPlanFromNaturalText(
 ): XenesisNaturalLanguagePlan | null {
   const view = viewKindFromNaturalText(value);
   if (!view || !matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_VIEW_OPEN_COMMAND_RULES)) return null;
-  return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.requestedViewOpen, [
+  return buildXenesisNaturalSingleActionPlan(
+    XENESIS_NATURAL_PLAN_VISIBLE_TEXT.requestedViewOpen,
     buildXenesisNaturalViewOpenAction(view, placement),
-  ]);
+  );
 }
