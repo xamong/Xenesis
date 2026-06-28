@@ -2961,6 +2961,44 @@
 - External documentation handling: no browsing. This used cached gap context,
   current repo code, and live Electron verification.
 
+## Natural Setup Surface Live Smoke Expansion Slice
+
+- Expanded the repeatable natural Desk routing live smoke beyond Action Inbox
+  to cover the broader setup surfaces from the current goal:
+  - `초기 설정 전체 상태 보여줘` -> `xd.xenesis.onboarding.status`;
+  - `AI provider setup 전체 열어줘` ->
+    `xd.xenesis.providers.setup.open`;
+  - `노션 connector 열어줘` -> `xd.xenesis.tools.connectors.open`;
+  - `구글 챗 라우팅 상태 보여줘` ->
+    `xd.xenesis.channels.routing.status`;
+  - `텔레그램 setup 열어줘` -> `xd.xenesis.messengers.views.open`;
+  - Action Inbox list/open prompts remain covered.
+- The smoke now reopens Xenesis Agent before each prompt through
+  `xd.tools.core.xenesisAgent.open`, so prompts that open Settings or another
+  Desk tool do not hide the next submit target.
+- Scope boundary:
+  - Smoke script/test only. No natural-language routing behavior changes,
+    registry/dispatcher changes, setup request writes, provider/tool/messenger
+    state mutation, credentials, OAuth/install execution, approval behavior, or
+    UI rendering changes.
+- Verification:
+  - RED:
+    `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` failed
+    because the smoke still listed only the two Action Inbox prompts.
+  - GREEN:
+    `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` passed
+    with 4/4 tests.
+  - Scoped Biome passed for the updated smoke script/test.
+  - `npm run smoke:xenesis:natural-desk-routing` passed 21/21.
+  - `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
+    passed with 8/8 tests.
+  - `npm run typecheck` passed.
+  - `git diff --check` exited 0 with LF-to-CRLF warnings only.
+  - CR audit was not run because this slice did not change registry,
+    dispatcher, or capability code.
+- External documentation handling: no browsing. This used cached gap context,
+  current planner behavior, and live Electron verification.
+
 ## Graph Links
 
 - Depends on [[Final Goal]]

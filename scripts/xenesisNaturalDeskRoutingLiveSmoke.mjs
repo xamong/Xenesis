@@ -22,6 +22,36 @@ export const NATURAL_DESK_ROUTING_LIVE_SMOKE_OPEN_REQUEST = {
 
 export const NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS = [
   {
+    id: 'onboarding-status',
+    prompt: '초기 설정 전체 상태 보여줘',
+    expectedPath: 'xd.xenesis.onboarding.status',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'provider-setup-catalog-open',
+    prompt: 'AI provider setup 전체 열어줘',
+    expectedPath: 'xd.xenesis.providers.setup.open',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'notion-connector-open',
+    prompt: '노션 connector 열어줘',
+    expectedPath: 'xd.xenesis.tools.connectors.open',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'google-chat-routing-status',
+    prompt: '구글 챗 라우팅 상태 보여줘',
+    expectedPath: 'xd.xenesis.channels.routing.status',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
+    id: 'telegram-setup-open',
+    prompt: '텔레그램 setup 열어줘',
+    expectedPath: 'xd.xenesis.messengers.views.open',
+    expectedVisibleText: 'Desk action completed',
+  },
+  {
     id: 'action-inbox-list',
     prompt: '액션 인박스 목록 보여줘',
     expectedPath: 'xd.mcp.actionInbox.list',
@@ -59,6 +89,7 @@ export function formatNaturalDeskRoutingLiveSmokePlan() {
     `CR open path: ${NATURAL_DESK_ROUTING_LIVE_SMOKE_OPEN_REQUEST.path}`,
     `CR open args: ${JSON.stringify(NATURAL_DESK_ROUTING_LIVE_SMOKE_OPEN_REQUEST.args)}`,
     `CR submit path: ${NATURAL_DESK_ROUTING_LIVE_SMOKE_SUBMIT_PATH}`,
+    'Agent reopen: before each prompt',
     `App shell readiness: ${NATURAL_DESK_ROUTING_LIVE_SMOKE_APP_READY_SELECTOR}`,
     'Natural prompts:',
   ];
@@ -184,9 +215,9 @@ export async function runNaturalDeskRoutingLiveSmoke(options = {}) {
   const appPath = path.resolve(options.appPath ?? process.env.XENESIS_NATURAL_DESK_ROUTING_ELECTRON_APP ?? root);
   const startedAt = new Date();
   const checkResults = [];
+  const openResults = [];
   const promptResults = [];
   let electronApp;
-  let openResult;
 
   await assertBuiltElectronOutput(root);
 
@@ -206,25 +237,20 @@ export async function runNaturalDeskRoutingLiveSmoke(options = {}) {
     await page.waitForLoadState('domcontentloaded', { timeout });
     await waitForAppShellReady(page, timeout);
 
-    openResult = await page.evaluate((request) => globalThis.deskBridgeAPI.callCapability(request), {
-      ...NATURAL_DESK_ROUTING_LIVE_SMOKE_OPEN_REQUEST,
-    });
-    checkResults.push({
-      id: 'agent-open',
-      ok: openResult?.ok === true,
-      expectedPath: NATURAL_DESK_ROUTING_LIVE_SMOKE_OPEN_REQUEST.path,
-      ...(!openResult?.ok ? { error: openResult?.error || JSON.stringify(openResult) } : {}),
-    });
-    if (!openResult?.ok) {
-      return buildNaturalDeskRoutingLiveSmokeReport(checkResults, startedAt, {
-        open: {
-          path: NATURAL_DESK_ROUTING_LIVE_SMOKE_OPEN_REQUEST.path,
-          ok: false,
-        },
-      });
-    }
-
     for (const promptCase of NATURAL_DESK_ROUTING_LIVE_SMOKE_PROMPTS) {
+      const openResult = await page.evaluate((request) => globalThis.deskBridgeAPI.callCapability(request), {
+        ...NATURAL_DESK_ROUTING_LIVE_SMOKE_OPEN_REQUEST,
+      });
+      const openOk = openResult?.ok === true;
+      openResults.push({ id: promptCase.id, ok: openOk });
+      checkResults.push({
+        id: `${promptCase.id}:agent-open`,
+        ok: openOk,
+        expectedPath: NATURAL_DESK_ROUTING_LIVE_SMOKE_OPEN_REQUEST.path,
+        ...(!openOk ? { error: openResult?.error || JSON.stringify(openResult) } : {}),
+      });
+      if (!openOk) continue;
+
       const submitRequest = buildNaturalDeskRoutingSubmitRequest(promptCase, timeout);
       const submitResult = await page.evaluate(
         (request) => globalThis.deskBridgeAPI.callCapability(request),
@@ -246,7 +272,8 @@ export async function runNaturalDeskRoutingLiveSmoke(options = {}) {
   return buildNaturalDeskRoutingLiveSmokeReport(checkResults, startedAt, {
     open: {
       path: NATURAL_DESK_ROUTING_LIVE_SMOKE_OPEN_REQUEST.path,
-      ok: Boolean(openResult?.ok),
+      ok: openResults.length > 0 && openResults.every((result) => result.ok),
+      prompts: openResults,
     },
     prompts: promptResults,
   });
