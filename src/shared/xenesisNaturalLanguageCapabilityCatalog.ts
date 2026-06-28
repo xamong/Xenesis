@@ -1,6 +1,9 @@
 import {
+  XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_DEFINITIONS,
   XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_IDS,
+  XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_DEFINITIONS,
   XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_IDS,
+  XENESIS_CONNECTION_TOOL_VIEW_SECTION_DEFINITIONS,
   XENESIS_CONNECTION_TOOL_VIEW_SECTION_IDS,
   type XenesisConnectionMessengerViewSectionId,
   type XenesisConnectionProviderViewSectionId,
@@ -420,56 +423,20 @@ export type XenesisNaturalToolViewSectionTarget = {
   words: readonly string[];
 };
 
-export const XENESIS_NATURAL_TOOL_VIEW_SECTION_TARGET_SPECS = [
-  {
-    id: 'connection-card',
-    label: 'connection card',
-    words: ['connection card', '연결 카드', '카드'],
-  },
-  {
-    id: 'setup',
-    label: 'setup',
-    words: ['setup', '설정', '셋업'],
-  },
-  {
-    id: 'connector',
-    label: 'connector',
-    words: ['connector', '커넥터', '연결 상태'],
-  },
-  {
-    id: 'setup-plan',
-    label: 'setup plan',
-    words: ['setup plan', '설정 플랜', '설정 계획'],
-  },
-  {
-    id: 'install-plan',
-    label: 'install plan',
-    words: ['install plan', '설치 플랜', '설치 계획'],
-  },
-  {
-    id: 'mcp-template',
-    label: 'MCP template',
-    words: ['mcp template', 'mcp 템플릿', 'mcp template view', 'mcp 초안'],
-  },
-  {
-    id: 'oauth-draft',
-    label: 'OAuth draft',
-    words: ['oauth draft', 'oauth 초안', 'oauth draft view', 'oauth 템플릿'],
-  },
-  {
-    id: 'action-policy',
-    label: 'action policy',
-    words: ['action policy', '액션 정책', '도구 정책', '권한 정책'],
-  },
-  {
-    id: 'user-stories',
-    label: 'user stories',
-    words: ['user stories', 'user story', '사용자 스토리', '유저 스토리'],
-  },
-] as const satisfies readonly XenesisNaturalToolViewSectionTarget[];
+function xenesisNaturalViewSectionTarget<TId extends string>(section: {
+  id: TId;
+  label: string;
+  naturalWords: readonly string[];
+}): { id: TId; label: string; words: readonly string[] } {
+  return {
+    id: section.id,
+    label: section.label,
+    words: section.naturalWords,
+  };
+}
 
 export const XENESIS_NATURAL_TOOL_VIEW_SECTION_TARGETS: readonly XenesisNaturalToolViewSectionTarget[] =
-  XENESIS_NATURAL_TOOL_VIEW_SECTION_TARGET_SPECS;
+  XENESIS_CONNECTION_TOOL_VIEW_SECTION_DEFINITIONS.map(xenesisNaturalViewSectionTarget);
 
 export function findXenesisNaturalToolViewSectionTarget(value: string): XenesisNaturalToolViewSectionTarget | null {
   return (
@@ -487,61 +454,8 @@ export type XenesisNaturalMessengerViewSectionTarget = {
   words: readonly string[];
 };
 
-export const XENESIS_NATURAL_MESSENGER_VIEW_SECTION_TARGET_SPECS = [
-  {
-    id: 'connection-card',
-    label: 'Connection card',
-    words: ['connection card', '연결 카드', '카드'],
-  },
-  {
-    id: 'setup',
-    label: 'Setup',
-    words: ['setup', '설정', '셋업'],
-  },
-  {
-    id: 'channel-template',
-    label: 'Channel template',
-    words: ['channel template', '채널 템플릿', 'template', '템플릿'],
-  },
-  {
-    id: 'routing',
-    label: 'Routing',
-    words: ['routing', 'route', '라우팅', '경로'],
-  },
-  {
-    id: 'safety',
-    label: 'Safety',
-    words: ['safety', '안전', '세이프티', '가드레일'],
-  },
-  {
-    id: 'access-groups',
-    label: 'Access groups',
-    words: ['access group', 'access groups', '접근 그룹', '액세스 그룹', 'allowlist', '허용 목록', '허용 리스트'],
-  },
-  {
-    id: 'pairing',
-    label: 'Pairing',
-    words: ['pairing', '페어링', '연결 페어링'],
-  },
-  {
-    id: 'setup-plan',
-    label: 'Setup plan',
-    words: ['setup plan', '설정 플랜', '설정 계획'],
-  },
-  {
-    id: 'profile-draft',
-    label: 'Profile draft',
-    words: ['profile draft', 'profile', '프로필 초안', '프로필 draft', '프로필'],
-  },
-  {
-    id: 'user-stories',
-    label: 'User stories',
-    words: ['user stories', 'user story', '사용자 스토리', '유저 스토리'],
-  },
-] as const satisfies readonly XenesisNaturalMessengerViewSectionTarget[];
-
 export const XENESIS_NATURAL_MESSENGER_VIEW_SECTION_TARGETS: readonly XenesisNaturalMessengerViewSectionTarget[] =
-  XENESIS_NATURAL_MESSENGER_VIEW_SECTION_TARGET_SPECS;
+  XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_DEFINITIONS.map(xenesisNaturalViewSectionTarget);
 
 export function findXenesisNaturalMessengerViewSectionTarget(
   value: string,
@@ -561,46 +475,8 @@ export type XenesisNaturalProviderViewSectionTarget = {
   words: readonly string[];
 };
 
-export const XENESIS_NATURAL_PROVIDER_VIEW_SECTION_TARGET_SPECS = [
-  {
-    id: 'connection-card',
-    label: 'Connection card',
-    words: ['connection card', '연결 카드', '카드'],
-  },
-  {
-    id: 'setup',
-    label: 'Setup',
-    words: ['provider setup', 'setup', '설정', '셋업'],
-  },
-  {
-    id: 'runtime',
-    label: 'Runtime',
-    words: ['runtime', 'runtime route', 'provider runtime', '런타임', '런타임 라우트'],
-  },
-  {
-    id: 'fallback-policy',
-    label: 'Fallback policy',
-    words: ['fallback policy', 'fallback', 'fallback chain', '폴백', '폴백 정책'],
-  },
-  {
-    id: 'credential-boundary',
-    label: 'Credential boundary',
-    words: ['credential boundary', 'credential', 'credential state', '자격 증명 경계', '자격 증명'],
-  },
-  {
-    id: 'profile-draft',
-    label: 'Profile draft',
-    words: ['profile draft', 'profile', '프로필 초안', '프로필 draft', '프로필'],
-  },
-  {
-    id: 'setup-plan',
-    label: 'Setup plan',
-    words: ['setup plan', '설정 플랜', '설정 계획'],
-  },
-] as const satisfies readonly XenesisNaturalProviderViewSectionTarget[];
-
 export const XENESIS_NATURAL_PROVIDER_VIEW_SECTION_TARGETS: readonly XenesisNaturalProviderViewSectionTarget[] =
-  XENESIS_NATURAL_PROVIDER_VIEW_SECTION_TARGET_SPECS;
+  XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_DEFINITIONS.map(xenesisNaturalViewSectionTarget);
 
 export function findXenesisNaturalProviderViewSectionTarget(
   value: string,

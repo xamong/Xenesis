@@ -16502,3 +16502,128 @@ Verification so far:
 - Next intended step:
   - Review final diff, stage, and commit the larger Settings category routing
     slice.
+
+## Current View Section Natural Catalog De-hardcoding Slice
+
+- Current objective:
+  - Remove the duplicated hardcoded natural-language view-section catalogs for
+    external tools, external messengers, and AI providers by making the
+    Connection Center view-section metadata the source of truth.
+- Rationale:
+  - The previous slices moved large routing catalogs out of
+    `xenesisAgentDeskControl.ts`, but section labels and aliases still lived in
+    `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts` separately from
+    the actual Connection Center section definitions in
+    `src/shared/xenesisConnections.ts`.
+  - This slice keeps deterministic natural routing, but the section IDs,
+    labels, and alias words should be generated from shared section
+    definitions instead of repeated manually.
+- Scope:
+  - Add RED tests that require tool, messenger, and provider natural
+    view-section targets to derive from `xenesisConnections.ts`.
+  - Add natural word metadata to Connection Center section definitions.
+  - Generate natural section targets for tool, messenger, and provider views
+    from those shared definitions.
+  - Preserve existing prompt behavior and CR paths. Do not add execution,
+    OAuth completion, profile mutation, gateway lifecycle, or external message
+    delivery.
+- Touched files so far:
+  - `handoff.md`
+  - `src/shared/xenesisConnections.ts`
+  - `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `docs/capability-registry-audit.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-view-section-natural-catalog-dehardcoding.md`
+- Commands run:
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> failed 45/46 because the new view-section source definitions were
+    absent and the natural section target test could not map them.
+  - Focused GREEN after natural target generation:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 46/46.
+  - Focused GREEN after refactoring view section read models to use the shared
+    definitions:
+    `npx tsx --test src\shared\xenesisConnections.test.ts` -> passed 41/41.
+  - Focused GREEN after refactoring view section read models to use the shared
+    definitions:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 46/46.
+  - Focused:
+    `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` ->
+    passed 41/41.
+  - Focused:
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` ->
+    passed 60/60.
+  - Focused:
+    `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` ->
+    passed 6/6.
+  - Broad:
+    `npm run typecheck` -> passed.
+  - Broad:
+    `npm run docs:capabilities:audit` -> passed and wrote
+    `docs/capability-registry-audit.md`; audit summary is 784 nodes and 689
+    coverage path references.
+  - Audit counter readback:
+    `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> all 0.
+  - Broad:
+    `npm run build` -> passed with existing Vite warnings for `hwp.js` browser
+    `fs` externalization, `deskBridge.ts` dynamic/static import chunking, and
+    large renderer chunks.
+  - Broad smoke:
+    `npm run smoke:xenesis:natural-desk-routing` -> passed 228/228.
+  - Hygiene:
+    `npx biome check src\shared\xenesisConnections.ts src\shared\xenesisNaturalLanguageCapabilityCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --max-diagnostics 100`
+    -> failed on import organization and formatting only.
+  - Hygiene fix:
+    `npx biome check src\shared\xenesisConnections.ts src\shared\xenesisNaturalLanguageCapabilityCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --write --max-diagnostics 100`
+    -> fixed 2 files.
+  - Hygiene recheck:
+    `npx biome check src\shared\xenesisConnections.ts src\shared\xenesisNaturalLanguageCapabilityCatalog.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts --max-diagnostics 100`
+    -> passed.
+  - Hygiene:
+    `git diff --check` -> passed; Git printed LF/CRLF normalization warnings
+    only.
+  - Recheck after formatting:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 46/46.
+  - Known blocked:
+    `npm run check:public-release` -> failed before checks with `ENOENT`
+    because `.github/workflows/ci.yml` is missing in this worktree.
+  - Commit:
+    `git commit -m "refactor: derive view section natural targets"` ->
+    created the local slice commit.
+- Exact verification result:
+  - Focused shared connection model, CR capability, renderer Connection Center,
+    natural planner, and smoke unit tests passed.
+  - Broad typecheck, CR audit, build, and natural Desk routing smoke passed.
+  - CR audit gap counters are all 0.
+  - Changed-file Biome and diff check passed after safe formatter/import fixes.
+  - Public-release check remains blocked by the known missing CI workflow file.
+- Implemented:
+  - Added exported Connection Center section definitions for tool, messenger,
+    and provider view sections. Each definition owns `id`, `label`,
+    `naturalWords`, and `focusConnectionDetail`.
+  - Derived section id arrays and detail-focus maps from those definitions.
+  - Updated tool, messenger, and provider view-section read model builders to
+    fill label/focus from the shared definitions.
+  - Removed the manual
+    `XENESIS_NATURAL_*_VIEW_SECTION_TARGET_SPECS = [...]` arrays from
+    `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`; natural section
+    targets are now generated from the Connection Center definitions.
+  - Added a regression test that compares natural section targets to the
+    Connection Center definitions and blocks reintroducing the old manual arrays.
+  - Updated the provider runtime view prompt reason to use the actual shared
+    section label: `Runtime route`.
+  - Added the Obsidian working note
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-view-section-natural-catalog-dehardcoding.md`.
+- Known gaps:
+  - `npm run check:public-release` is still blocked by the repo/worktree
+    missing `.github/workflows/ci.yml`.
+  - Repo-wide `npm run lint` may still hit unrelated existing Biome debt; use
+    focused changed-file Biome plus the required broader gates after the code
+    change.
+- Next intended step:
+  - Continue the larger goal with the next locally-evidenced gap slice from the
+    Connection Center/OpenClaw/Hermes workstream.

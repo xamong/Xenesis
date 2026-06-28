@@ -4,8 +4,11 @@ import test from 'node:test';
 import { listDeskBridgeCapabilities } from '../../../../shared/deskBridgeCapabilities';
 import {
   XENESIS_CONNECTION_MESSENGER_IDS,
+  XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_DEFINITIONS,
   XENESIS_CONNECTION_PROVIDER_IDS,
+  XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_DEFINITIONS,
   XENESIS_CONNECTION_TOOL_IDS,
+  XENESIS_CONNECTION_TOOL_VIEW_SECTION_DEFINITIONS,
 } from '../../../../shared/xenesisConnections';
 import { isXenesisDeskCapabilityPathUnderPrefix } from '../../../../shared/xenesisDeskControlPromptHint';
 import {
@@ -70,6 +73,7 @@ import {
   XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_RULES,
   XENESIS_NATURAL_MESSENGER_AGGREGATE_SURFACE_SPECS,
+  XENESIS_NATURAL_MESSENGER_VIEW_SECTION_TARGETS,
   XENESIS_NATURAL_OAUTH_SETUP_PACKET_TARGET_RULE_SPECS,
   XENESIS_NATURAL_OAUTH_SETUP_PACKET_TARGET_RULES,
   XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS,
@@ -91,6 +95,7 @@ import {
   XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_PROVIDER_STATUS_RULES,
   XENESIS_NATURAL_PROVIDER_TARGET_SURFACE_SPECS,
+  XENESIS_NATURAL_PROVIDER_VIEW_SECTION_TARGETS,
   XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTOR_SPECS,
   XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_REVIEW_REQUEST_PROVIDER_RULES,
@@ -111,6 +116,7 @@ import {
   XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS,
   XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_RULES,
   XENESIS_NATURAL_TOOL_AGGREGATE_SURFACE_SPECS,
+  XENESIS_NATURAL_TOOL_VIEW_SECTION_TARGETS,
   XENESIS_NATURAL_VIEW_TARGET_SPECS,
   XENESIS_NATURAL_VIEW_TARGETS,
   XENESIS_NATURAL_WINDOW_SIZE_PRESET_RULES,
@@ -3305,6 +3311,37 @@ test('buildXenesisDeskControlPromptHint lists real high-value CR paths and avoid
   assert.match(hint, /xd\.dock\.panes\.list/);
 });
 
+test('natural view-section targets are generated from Connection Center section definitions', () => {
+  const capabilityCatalogSource = readFileSync(
+    new URL('../../../../shared/xenesisNaturalLanguageCapabilityCatalog.ts', import.meta.url),
+    'utf8',
+  );
+  const connectionSource = readFileSync(new URL('../../../../shared/xenesisConnections.ts', import.meta.url), 'utf8');
+  const naturalTargetsFor = (definitions: readonly { id: string; label: string; naturalWords: readonly string[] }[]) =>
+    definitions.map(({ id, label, naturalWords }) => ({ id, label, words: naturalWords }));
+
+  assert.deepEqual(
+    XENESIS_NATURAL_TOOL_VIEW_SECTION_TARGETS,
+    naturalTargetsFor(XENESIS_CONNECTION_TOOL_VIEW_SECTION_DEFINITIONS),
+  );
+  assert.deepEqual(
+    XENESIS_NATURAL_MESSENGER_VIEW_SECTION_TARGETS,
+    naturalTargetsFor(XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_DEFINITIONS),
+  );
+  assert.deepEqual(
+    XENESIS_NATURAL_PROVIDER_VIEW_SECTION_TARGETS,
+    naturalTargetsFor(XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_DEFINITIONS),
+  );
+
+  assert.match(connectionSource, /XENESIS_CONNECTION_TOOL_VIEW_SECTION_DEFINITIONS/);
+  assert.match(connectionSource, /XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_DEFINITIONS/);
+  assert.match(connectionSource, /XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_DEFINITIONS/);
+  assert.match(connectionSource, /naturalWords:/);
+  assert.doesNotMatch(capabilityCatalogSource, /XENESIS_NATURAL_TOOL_VIEW_SECTION_TARGET_SPECS\s*=\s*\[/);
+  assert.doesNotMatch(capabilityCatalogSource, /XENESIS_NATURAL_MESSENGER_VIEW_SECTION_TARGET_SPECS\s*=\s*\[/);
+  assert.doesNotMatch(capabilityCatalogSource, /XENESIS_NATURAL_PROVIDER_VIEW_SECTION_TARGET_SPECS\s*=\s*\[/);
+});
+
 test('planXenesisDeskNaturalLanguageActions maps local CLI and MCP readbacks to CR actions', () => {
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('MCP 설정 상태 보여줘').actions, [
     {
@@ -4383,7 +4420,7 @@ test('planXenesisDeskNaturalLanguageActions maps detailed Connection Center open
       path: 'xd.xenesis.providers.views.open',
       args: { provider: 'codex-app-server', section: 'runtime', ensureVisible: true },
       approved: false,
-      reason: 'Open codex-app-server Runtime provider view section from natural language request.',
+      reason: 'Open codex-app-server Runtime route provider view section from natural language request.',
     },
   ]);
 

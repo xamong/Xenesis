@@ -122,35 +122,109 @@ export function isXenesisConnectionCenterDetailFocus(value: string): value is Xe
   return (XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES as readonly string[]).includes(value);
 }
 
-export const XENESIS_CONNECTION_TOOL_VIEW_SECTION_IDS = [
-  'connection-card',
-  'setup',
-  'connector',
-  'setup-plan',
-  'install-plan',
-  'mcp-template',
-  'mcp-oauth',
-  'oauth-draft',
-  'oauth-setup-packet',
-  'action-policy',
-  'user-stories',
-] as const;
+export interface XenesisConnectionViewSectionDefinition<TId extends string> {
+  id: TId;
+  label: string;
+  naturalWords: readonly string[];
+  focusConnectionDetail: XenesisConnectionCenterDetailFocus;
+}
 
-export type XenesisConnectionToolViewSectionId = (typeof XENESIS_CONNECTION_TOOL_VIEW_SECTION_IDS)[number];
+function xenesisConnectionViewSectionDetailFocusMap<TId extends string>(
+  definitions: readonly XenesisConnectionViewSectionDefinition<TId>[],
+): Record<TId, XenesisConnectionCenterDetailFocus> {
+  return Object.fromEntries(definitions.map((section) => [section.id, section.focusConnectionDetail])) as Record<
+    TId,
+    XenesisConnectionCenterDetailFocus
+  >;
+}
 
-export const XENESIS_CONNECTION_TOOL_VIEW_SECTION_DETAIL_FOCUS = {
-  'connection-card': 'tool-view',
-  setup: 'tool-setup',
-  connector: 'tool-connector',
-  'setup-plan': 'tool-setup-plan',
-  'install-plan': 'tool-install-plan',
-  'mcp-template': 'mcp-install-draft',
-  'mcp-oauth': 'tool-mcp-oauth',
-  'oauth-draft': 'tool-oauth-draft',
-  'oauth-setup-packet': 'tool-oauth-setup-packet',
-  'action-policy': 'tool-action-catalog',
-  'user-stories': 'tool-user-story',
-} as const satisfies Record<XenesisConnectionToolViewSectionId, XenesisConnectionCenterDetailFocus>;
+function xenesisConnectionViewSectionDefinition<TDefinition extends XenesisConnectionViewSectionDefinition<string>>(
+  definitions: readonly TDefinition[],
+  id: TDefinition['id'],
+): TDefinition {
+  const definition = definitions.find((section) => section.id === id);
+  if (!definition) throw new Error(`Unknown Xenesis Connection Center view section: ${id}`);
+  return definition;
+}
+
+export const XENESIS_CONNECTION_TOOL_VIEW_SECTION_DEFINITIONS = [
+  {
+    id: 'connection-card',
+    label: 'Connection card',
+    naturalWords: ['connection card', '연결 카드', '카드'],
+    focusConnectionDetail: 'tool-view',
+  },
+  {
+    id: 'setup',
+    label: 'Setup',
+    naturalWords: ['setup', '설정', '셋업'],
+    focusConnectionDetail: 'tool-setup',
+  },
+  {
+    id: 'connector',
+    label: 'Connector readiness',
+    naturalWords: ['connector', '커넥터', '연결 상태'],
+    focusConnectionDetail: 'tool-connector',
+  },
+  {
+    id: 'setup-plan',
+    label: 'Setup plan',
+    naturalWords: ['setup plan', '설정 플랜', '설정 계획'],
+    focusConnectionDetail: 'tool-setup-plan',
+  },
+  {
+    id: 'install-plan',
+    label: 'Install plan',
+    naturalWords: ['install plan', '설치 플랜', '설치 계획'],
+    focusConnectionDetail: 'tool-install-plan',
+  },
+  {
+    id: 'mcp-template',
+    label: 'MCP template',
+    naturalWords: ['mcp template', 'mcp 템플릿', 'mcp template view', 'mcp 초안'],
+    focusConnectionDetail: 'mcp-install-draft',
+  },
+  {
+    id: 'mcp-oauth',
+    label: 'MCP OAuth readiness',
+    naturalWords: ['mcp oauth', 'mcp oauth readiness', 'mcp oauth view', 'mcp oauth 준비'],
+    focusConnectionDetail: 'tool-mcp-oauth',
+  },
+  {
+    id: 'oauth-draft',
+    label: 'OAuth draft',
+    naturalWords: ['oauth draft', 'oauth 초안', 'oauth draft view', 'oauth 템플릿'],
+    focusConnectionDetail: 'tool-oauth-draft',
+  },
+  {
+    id: 'oauth-setup-packet',
+    label: 'OAuth setup packet',
+    naturalWords: ['oauth setup packet view', 'oauth 설정 패킷 view', 'oauth packet view'],
+    focusConnectionDetail: 'tool-oauth-setup-packet',
+  },
+  {
+    id: 'action-policy',
+    label: 'Action policy',
+    naturalWords: ['action policy', '액션 정책', '도구 정책', '권한 정책'],
+    focusConnectionDetail: 'tool-action-catalog',
+  },
+  {
+    id: 'user-stories',
+    label: 'User stories',
+    naturalWords: ['user stories', 'user story', '사용자 스토리', '유저 스토리'],
+    focusConnectionDetail: 'tool-user-story',
+  },
+] as const satisfies readonly XenesisConnectionViewSectionDefinition<string>[];
+
+export type XenesisConnectionToolViewSectionId =
+  (typeof XENESIS_CONNECTION_TOOL_VIEW_SECTION_DEFINITIONS)[number]['id'];
+
+export const XENESIS_CONNECTION_TOOL_VIEW_SECTION_IDS: readonly XenesisConnectionToolViewSectionId[] =
+  XENESIS_CONNECTION_TOOL_VIEW_SECTION_DEFINITIONS.map((section) => section.id);
+
+export const XENESIS_CONNECTION_TOOL_VIEW_SECTION_DETAIL_FOCUS = xenesisConnectionViewSectionDetailFocusMap(
+  XENESIS_CONNECTION_TOOL_VIEW_SECTION_DEFINITIONS,
+);
 
 export function isXenesisConnectionToolViewSectionId(value: string): value is XenesisConnectionToolViewSectionId {
   return (XENESIS_CONNECTION_TOOL_VIEW_SECTION_IDS as readonly string[]).includes(value);
@@ -163,33 +237,86 @@ export function xenesisToolViewSectionDetailFocus(
   return XENESIS_CONNECTION_TOOL_VIEW_SECTION_DETAIL_FOCUS[section];
 }
 
-export const XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_IDS = [
-  'connection-card',
-  'setup',
-  'channel-template',
-  'routing',
-  'safety',
-  'access-groups',
-  'pairing',
-  'setup-plan',
-  'profile-draft',
-  'user-stories',
-] as const;
+export const XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_DEFINITIONS = [
+  {
+    id: 'connection-card',
+    label: 'Connection card',
+    naturalWords: ['connection card', '연결 카드', '카드'],
+    focusConnectionDetail: 'messenger-view',
+  },
+  {
+    id: 'setup',
+    label: 'Setup',
+    naturalWords: ['setup', '설정', '셋업'],
+    focusConnectionDetail: 'messenger-view',
+  },
+  {
+    id: 'channel-template',
+    label: 'Channel template',
+    naturalWords: ['channel template', '채널 템플릿', 'template', '템플릿'],
+    focusConnectionDetail: 'channel-template',
+  },
+  {
+    id: 'routing',
+    label: 'Routing',
+    naturalWords: ['routing', 'route', '라우팅', '경로'],
+    focusConnectionDetail: 'channel-routing',
+  },
+  {
+    id: 'safety',
+    label: 'Safety',
+    naturalWords: ['safety', '안전', '세이프티', '가드레일'],
+    focusConnectionDetail: 'channel-safety',
+  },
+  {
+    id: 'access-groups',
+    label: 'Access groups',
+    naturalWords: [
+      'access group',
+      'access groups',
+      '접근 그룹',
+      '액세스 그룹',
+      'allowlist',
+      '허용 목록',
+      '허용 리스트',
+    ],
+    focusConnectionDetail: 'channel-access-groups',
+  },
+  {
+    id: 'pairing',
+    label: 'Pairing',
+    naturalWords: ['pairing', '페어링', '연결 페어링'],
+    focusConnectionDetail: 'channel-pairing',
+  },
+  {
+    id: 'setup-plan',
+    label: 'Setup plan',
+    naturalWords: ['setup plan', '설정 플랜', '설정 계획'],
+    focusConnectionDetail: 'channel-setup-plan',
+  },
+  {
+    id: 'profile-draft',
+    label: 'Profile draft',
+    naturalWords: ['profile draft', 'profile', '프로필 초안', '프로필 draft', '프로필'],
+    focusConnectionDetail: 'channel-profile-draft',
+  },
+  {
+    id: 'user-stories',
+    label: 'User stories',
+    naturalWords: ['user stories', 'user story', '사용자 스토리', '유저 스토리'],
+    focusConnectionDetail: 'channel-user-story',
+  },
+] as const satisfies readonly XenesisConnectionViewSectionDefinition<string>[];
 
-export type XenesisConnectionMessengerViewSectionId = (typeof XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_IDS)[number];
+export type XenesisConnectionMessengerViewSectionId =
+  (typeof XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_DEFINITIONS)[number]['id'];
 
-export const XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_DETAIL_FOCUS = {
-  'connection-card': 'messenger-view',
-  setup: 'messenger-view',
-  'channel-template': 'channel-template',
-  routing: 'channel-routing',
-  safety: 'channel-safety',
-  'access-groups': 'channel-access-groups',
-  pairing: 'channel-pairing',
-  'setup-plan': 'channel-setup-plan',
-  'profile-draft': 'channel-profile-draft',
-  'user-stories': 'channel-user-story',
-} as const satisfies Record<XenesisConnectionMessengerViewSectionId, XenesisConnectionCenterDetailFocus>;
+export const XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_IDS: readonly XenesisConnectionMessengerViewSectionId[] =
+  XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_DEFINITIONS.map((section) => section.id);
+
+export const XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_DETAIL_FOCUS = xenesisConnectionViewSectionDetailFocusMap(
+  XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_DEFINITIONS,
+);
 
 export function isXenesisConnectionMessengerViewSectionId(
   value: string,
@@ -204,27 +331,60 @@ export function xenesisMessengerViewSectionDetailFocus(
   return XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_DETAIL_FOCUS[section];
 }
 
-export const XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_IDS = [
-  'connection-card',
-  'setup',
-  'runtime',
-  'fallback-policy',
-  'credential-boundary',
-  'profile-draft',
-  'setup-plan',
-] as const;
+export const XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_DEFINITIONS = [
+  {
+    id: 'connection-card',
+    label: 'Connection card',
+    naturalWords: ['connection card', '연결 카드', '카드'],
+    focusConnectionDetail: 'provider-view',
+  },
+  {
+    id: 'setup',
+    label: 'Provider setup',
+    naturalWords: ['provider setup', 'setup', '설정', '셋업'],
+    focusConnectionDetail: 'provider-setup',
+  },
+  {
+    id: 'runtime',
+    label: 'Runtime route',
+    naturalWords: ['runtime', 'runtime route', 'provider runtime', '런타임', '런타임 라우트'],
+    focusConnectionDetail: 'provider-routing',
+  },
+  {
+    id: 'fallback-policy',
+    label: 'Fallback policy',
+    naturalWords: ['fallback policy', 'fallback', 'fallback chain', '폴백', '폴백 정책'],
+    focusConnectionDetail: 'provider-routing',
+  },
+  {
+    id: 'credential-boundary',
+    label: 'Credential boundary',
+    naturalWords: ['credential boundary', 'credential', 'credential state', '자격 증명 경계', '자격 증명'],
+    focusConnectionDetail: 'provider-profile-draft',
+  },
+  {
+    id: 'profile-draft',
+    label: 'Profile draft',
+    naturalWords: ['profile draft', 'profile', '프로필 초안', '프로필 draft', '프로필'],
+    focusConnectionDetail: 'provider-profile-draft',
+  },
+  {
+    id: 'setup-plan',
+    label: 'Setup plan',
+    naturalWords: ['setup plan', '설정 플랜', '설정 계획'],
+    focusConnectionDetail: 'provider-setup-plan',
+  },
+] as const satisfies readonly XenesisConnectionViewSectionDefinition<string>[];
 
-export type XenesisConnectionProviderViewSectionId = (typeof XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_IDS)[number];
+export type XenesisConnectionProviderViewSectionId =
+  (typeof XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_DEFINITIONS)[number]['id'];
 
-export const XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_DETAIL_FOCUS = {
-  'connection-card': 'provider-view',
-  setup: 'provider-setup',
-  runtime: 'provider-routing',
-  'fallback-policy': 'provider-routing',
-  'credential-boundary': 'provider-profile-draft',
-  'profile-draft': 'provider-profile-draft',
-  'setup-plan': 'provider-setup-plan',
-} as const satisfies Record<XenesisConnectionProviderViewSectionId, XenesisConnectionCenterDetailFocus>;
+export const XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_IDS: readonly XenesisConnectionProviderViewSectionId[] =
+  XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_DEFINITIONS.map((section) => section.id);
+
+export const XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_DETAIL_FOCUS = xenesisConnectionViewSectionDetailFocusMap(
+  XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_DEFINITIONS,
+);
 
 export function isXenesisConnectionProviderViewSectionId(
   value: string,
@@ -1773,12 +1933,13 @@ function toolViewTemplate(
 }
 
 function toolViewSection(
-  input: Omit<XenesisConnectionToolViewSection, 'openArgs'> & { toolId: string },
+  input: Omit<XenesisConnectionToolViewSection, 'openArgs' | 'label' | 'focusConnectionDetail'> & { toolId: string },
 ): XenesisConnectionToolViewSection {
+  const definition = xenesisConnectionViewSectionDefinition(XENESIS_CONNECTION_TOOL_VIEW_SECTION_DEFINITIONS, input.id);
   return {
     id: input.id,
-    label: input.label,
-    focusConnectionDetail: input.focusConnectionDetail,
+    label: definition.label,
+    focusConnectionDetail: definition.focusConnectionDetail,
     openArgs: { id: input.toolId, section: input.id, ensureVisible: true },
     readPaths: input.readPaths,
     controlPaths: input.controlPaths,
@@ -1796,8 +1957,6 @@ function toolViewSections(
     toolViewSection({
       toolId,
       id: 'connection-card',
-      label: 'Connection card',
-      focusConnectionDetail: 'tool-view',
       readPaths: ['xd.xenesis.connections.status', 'xd.xenesis.tools.views.status'],
       controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.connections.open'],
       diagnostics: ['connection-card', 'cr-readback'],
@@ -1806,8 +1965,6 @@ function toolViewSections(
     toolViewSection({
       toolId,
       id: 'setup',
-      label: 'Setup',
-      focusConnectionDetail: 'tool-setup',
       readPaths: ['xd.xenesis.tools.setup.status', 'xd.xenesis.connections.status'],
       controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.setup.open'],
       diagnostics: ['mcp-settings-status', 'missing-env'],
@@ -1816,8 +1973,6 @@ function toolViewSections(
     toolViewSection({
       toolId,
       id: 'connector',
-      label: 'Connector readiness',
-      focusConnectionDetail: 'tool-connector',
       readPaths: ['xd.xenesis.tools.connectors.status', 'xd.mcp.settings.status'],
       controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.connectors.open'],
       diagnostics: ['mcp-settings-status', 'missing-env'],
@@ -1826,8 +1981,6 @@ function toolViewSections(
     toolViewSection({
       toolId,
       id: 'setup-plan',
-      label: 'Setup plan',
-      focusConnectionDetail: 'tool-setup-plan',
       readPaths: ['xd.xenesis.tools.setupPlans.status', 'xd.xenesis.connections.status'],
       controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.setupPlans.open'],
       diagnostics: ['mcp-settings-status', 'missing-env', 'cr-readback'],
@@ -1836,8 +1989,6 @@ function toolViewSections(
     toolViewSection({
       toolId,
       id: 'install-plan',
-      label: 'Install plan',
-      focusConnectionDetail: 'tool-install-plan',
       readPaths: ['xd.xenesis.tools.installPlans.status', 'xd.mcp.settings.status'],
       controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.installPlans.open'],
       diagnostics: ['mcp-settings-status', 'template-snippet'],
@@ -1848,8 +1999,6 @@ function toolViewSections(
           toolViewSection({
             toolId,
             id: 'mcp-template',
-            label: 'MCP template',
-            focusConnectionDetail: 'mcp-install-draft',
             readPaths: ['xd.xenesis.tools.mcpInstallDrafts.status', 'xd.mcp.settings.status'],
             controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.mcpInstallDrafts.open'],
             diagnostics: ['mcp-settings-status', 'template-snippet'],
@@ -1862,8 +2011,6 @@ function toolViewSections(
           toolViewSection({
             toolId,
             id: 'oauth-draft',
-            label: 'OAuth draft',
-            focusConnectionDetail: 'tool-oauth-draft',
             readPaths: ['xd.xenesis.tools.oauthDrafts.status', 'xd.xenesis.tools.oauthDrafts.setupPacket'],
             controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.oauthDrafts.open'],
             diagnostics: ['planned-oauth-template', 'oauth-app-registration', 'scope-review'],
@@ -1872,8 +2019,6 @@ function toolViewSections(
           toolViewSection({
             toolId,
             id: 'oauth-setup-packet',
-            label: 'OAuth setup packet',
-            focusConnectionDetail: 'tool-oauth-setup-packet',
             readPaths: ['xd.xenesis.tools.oauthDrafts.setupPacket', 'xd.xenesis.tools.oauthDrafts.status'],
             controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.oauthDrafts.setupPacket.open'],
             diagnostics: ['oauth-setup-packet', 'oauth-app-registration', 'token-store-readiness'],
@@ -1886,8 +2031,6 @@ function toolViewSections(
     toolViewSection({
       toolId,
       id: 'action-policy',
-      label: 'Action policy',
-      focusConnectionDetail: 'tool-action-catalog',
       readPaths: ['xd.xenesis.tools.actions.status', 'xd.xenesis.tools.connectors.status'],
       controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.actions.open'],
       diagnostics: ['mcp-settings-status', 'missing-env', 'cr-readback'],
@@ -1896,8 +2039,6 @@ function toolViewSections(
     toolViewSection({
       toolId,
       id: 'user-stories',
-      label: 'User stories',
-      focusConnectionDetail: 'tool-user-story',
       readPaths: ['xd.xenesis.tools.userStories.status', 'xd.xenesis.guides.status'],
       controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.userStories.open'],
       diagnostics: ['mcp-settings-status', 'missing-env', 'cr-readback'],
@@ -1916,8 +2057,6 @@ function withXenesisToolMcpOAuthViewSection(
   const oauthSection = toolViewSection({
     toolId,
     id: 'mcp-oauth',
-    label: 'MCP OAuth readiness',
-    focusConnectionDetail: 'tool-mcp-oauth',
     readPaths: ['xd.xenesis.tools.mcpOAuth.status', 'xd.xenesis.tools.connectors.status', 'xd.mcp.settings.status'],
     controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.mcpOAuth.open'],
     diagnostics: ['mcp-oauth-runtime', 'oauth-client', 'cr-readback'],
@@ -3728,11 +3867,21 @@ type PlannedMessengerDefinition = Omit<
 
 function messengerViewSection(
   messengerId: string,
-  input: Omit<XenesisConnectionMessengerViewSection, 'openArgs'>,
+  input: Omit<XenesisConnectionMessengerViewSection, 'openArgs' | 'label' | 'focusConnectionDetail'>,
 ): XenesisConnectionMessengerViewSection {
+  const definition = xenesisConnectionViewSectionDefinition(
+    XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_DEFINITIONS,
+    input.id,
+  );
   return {
-    ...input,
+    id: input.id,
+    label: definition.label,
+    focusConnectionDetail: definition.focusConnectionDetail,
     openArgs: { id: messengerId, section: input.id, ensureVisible: true },
+    readPaths: input.readPaths,
+    controlPaths: input.controlPaths,
+    diagnostics: input.diagnostics,
+    safetyBoundaries: input.safetyBoundaries,
   };
 }
 
@@ -3740,8 +3889,6 @@ function messengerViewSections(messengerId: string): XenesisConnectionMessengerV
   return [
     messengerViewSection(messengerId, {
       id: 'connection-card',
-      label: 'Connection card',
-      focusConnectionDetail: 'messenger-view',
       readPaths: ['xd.xenesis.connections.status', 'xd.xenesis.messengers.views.status'],
       controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.connections.open'],
       diagnostics: ['connection-card', 'cr-readback'],
@@ -3749,8 +3896,6 @@ function messengerViewSections(messengerId: string): XenesisConnectionMessengerV
     }),
     messengerViewSection(messengerId, {
       id: 'setup',
-      label: 'Setup',
-      focusConnectionDetail: 'messenger-view',
       readPaths: ['xd.xenesis.messengers.views.status', 'xd.xenesis.gateway.status'],
       controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.connections.open'],
       diagnostics: ['gateway-status', 'missing-env'],
@@ -3758,8 +3903,6 @@ function messengerViewSections(messengerId: string): XenesisConnectionMessengerV
     }),
     messengerViewSection(messengerId, {
       id: 'channel-template',
-      label: 'Channel template',
-      focusConnectionDetail: 'channel-template',
       readPaths: ['xd.xenesis.connections.status', 'xd.xenesis.messengers.views.status'],
       controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.connections.open'],
       diagnostics: ['channel-template', 'cr-readback'],
@@ -3767,8 +3910,6 @@ function messengerViewSections(messengerId: string): XenesisConnectionMessengerV
     }),
     messengerViewSection(messengerId, {
       id: 'routing',
-      label: 'Routing',
-      focusConnectionDetail: 'channel-routing',
       readPaths: ['xd.xenesis.channels.routing.status', 'xd.xenesis.gateway.status'],
       controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.channels.routing.open'],
       diagnostics: ['gateway-status', 'route-binding'],
@@ -3776,8 +3917,6 @@ function messengerViewSections(messengerId: string): XenesisConnectionMessengerV
     }),
     messengerViewSection(messengerId, {
       id: 'safety',
-      label: 'Safety',
-      focusConnectionDetail: 'channel-safety',
       readPaths: ['xd.xenesis.channels.safety.status', 'xd.xenesis.connections.status'],
       controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.channels.safety.open'],
       diagnostics: ['approval-guardrails', 'loop-protection'],
@@ -3785,8 +3924,6 @@ function messengerViewSections(messengerId: string): XenesisConnectionMessengerV
     }),
     messengerViewSection(messengerId, {
       id: 'access-groups',
-      label: 'Access groups',
-      focusConnectionDetail: 'channel-access-groups',
       readPaths: ['xd.xenesis.channels.accessGroups.status', 'xd.xenesis.connections.status'],
       controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.channels.accessGroups.open'],
       diagnostics: ['allowlist', 'fail-closed'],
@@ -3794,8 +3931,6 @@ function messengerViewSections(messengerId: string): XenesisConnectionMessengerV
     }),
     messengerViewSection(messengerId, {
       id: 'pairing',
-      label: 'Pairing',
-      focusConnectionDetail: 'channel-pairing',
       readPaths: ['xd.xenesis.channels.pairing.status', 'xd.xenesis.gateway.status'],
       controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.channels.pairing.open'],
       diagnostics: ['credential-readiness', 'pairing-state'],
@@ -3803,8 +3938,6 @@ function messengerViewSections(messengerId: string): XenesisConnectionMessengerV
     }),
     messengerViewSection(messengerId, {
       id: 'setup-plan',
-      label: 'Setup plan',
-      focusConnectionDetail: 'channel-setup-plan',
       readPaths: ['xd.xenesis.channels.setupPlans.status', 'xd.xenesis.connections.status'],
       controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.channels.setupPlans.open'],
       diagnostics: ['gateway-status', 'missing-env', 'cr-readback'],
@@ -3812,8 +3945,6 @@ function messengerViewSections(messengerId: string): XenesisConnectionMessengerV
     }),
     messengerViewSection(messengerId, {
       id: 'profile-draft',
-      label: 'Profile draft',
-      focusConnectionDetail: 'channel-profile-draft',
       readPaths: ['xd.xenesis.channels.profileDrafts.status', 'xd.xenesis.connections.status'],
       controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.channels.profileDrafts.open'],
       diagnostics: ['missing-required-fields', 'guardrails', 'cr-readback'],
@@ -3821,8 +3952,6 @@ function messengerViewSections(messengerId: string): XenesisConnectionMessengerV
     }),
     messengerViewSection(messengerId, {
       id: 'user-stories',
-      label: 'User stories',
-      focusConnectionDetail: 'channel-user-story',
       readPaths: ['xd.xenesis.channels.userStories.status', 'xd.xenesis.guides.status'],
       controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.channels.userStories.open'],
       diagnostics: ['gateway-status', 'runtime-support', 'cr-readback'],
@@ -7676,65 +7805,67 @@ function providerRoutingTemplate(
   };
 }
 
+function providerViewSection(
+  provider: string,
+  input: Omit<XenesisConnectionProviderViewSection, 'openArgs' | 'label' | 'focusConnectionDetail'>,
+): XenesisConnectionProviderViewSection {
+  const definition = xenesisConnectionViewSectionDefinition(
+    XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_DEFINITIONS,
+    input.id,
+  );
+  return {
+    id: input.id,
+    label: definition.label,
+    focusConnectionDetail: definition.focusConnectionDetail,
+    openArgs: { provider, section: input.id, ensureVisible: true },
+    readPaths: input.readPaths,
+    controlPaths: input.controlPaths,
+    diagnostics: input.diagnostics,
+    safetyBoundaries: input.safetyBoundaries,
+  };
+}
+
 function providerViewSections(provider: string): XenesisConnectionProviderViewSection[] {
   return [
-    {
+    providerViewSection(provider, {
       id: 'connection-card',
-      label: 'Connection card',
-      focusConnectionDetail: 'provider-view',
-      openArgs: { provider, section: 'connection-card', ensureVisible: true },
       readPaths: ['xd.xenesis.connections.status', 'xd.xenesis.providers.views.status'],
       controlPaths: ['xd.xenesis.providers.views.open', 'xd.xenesis.connections.open'],
       diagnostics: ['connection-card', 'cr-readback'],
       safetyBoundaries: ['Provider connection card opens do not change provider settings or run provider prompts.'],
-    },
-    {
+    }),
+    providerViewSection(provider, {
       id: 'setup',
-      label: 'Provider setup',
-      focusConnectionDetail: 'provider-setup',
-      openArgs: { provider, section: 'setup', ensureVisible: true },
       readPaths: ['xd.xenesis.providers.setup.status', 'xd.xenesis.connections.status'],
       controlPaths: ['xd.xenesis.providers.views.open', 'xd.xenesis.providers.setup.open'],
       diagnostics: ['provider-setup', 'credential-state'],
       safetyBoundaries: ['Provider setup section opens do not change provider settings or credentials.'],
-    },
-    {
+    }),
+    providerViewSection(provider, {
       id: 'runtime',
-      label: 'Runtime route',
-      focusConnectionDetail: 'provider-routing',
-      openArgs: { provider, section: 'runtime', ensureVisible: true },
       readPaths: ['xd.xenesis.providers.routing.status', 'xd.xenesis.providers.setup.status'],
       controlPaths: ['xd.xenesis.providers.views.open', 'xd.xenesis.providers.routing.open'],
       diagnostics: ['provider-runtime', 'work-log-provider'],
       safetyBoundaries: ['Runtime section opens do not run provider prompts or switch runtime providers.'],
-    },
-    {
+    }),
+    providerViewSection(provider, {
       id: 'fallback-policy',
-      label: 'Fallback policy',
-      focusConnectionDetail: 'provider-routing',
-      openArgs: { provider, section: 'fallback-policy', ensureVisible: true },
       readPaths: ['xd.xenesis.providers.routing.status', 'xd.xenesis.providers.setup.status'],
       controlPaths: ['xd.xenesis.providers.views.open', 'xd.xenesis.providers.routing.open'],
       diagnostics: ['fallback-policy', 'credential-pool'],
       safetyBoundaries: ['Fallback policy section opens do not edit fallback chains or retry policy.'],
-    },
-    {
+    }),
+    providerViewSection(provider, {
       id: 'credential-boundary',
-      label: 'Credential boundary',
-      focusConnectionDetail: 'provider-profile-draft',
-      openArgs: { provider, section: 'credential-boundary', ensureVisible: true },
       readPaths: ['xd.xenesis.providers.profileDrafts.status', 'xd.xenesis.providers.setup.status'],
       controlPaths: ['xd.xenesis.providers.views.open', 'xd.xenesis.providers.profileDrafts.open'],
       diagnostics: ['credential-state', 'local-cli-boundary'],
       safetyBoundaries: [
         'Credential boundary section opens never return API keys, bridge tokens, or local login secrets.',
       ],
-    },
-    {
+    }),
+    providerViewSection(provider, {
       id: 'profile-draft',
-      label: 'Profile draft',
-      focusConnectionDetail: 'provider-profile-draft',
-      openArgs: { provider, section: 'profile-draft', ensureVisible: true },
       readPaths: ['xd.xenesis.providers.profileDrafts.status', 'xd.xenesis.connections.status'],
       controlPaths: [
         'xd.xenesis.providers.views.open',
@@ -7743,17 +7874,14 @@ function providerViewSections(provider: string): XenesisConnectionProviderViewSe
       ],
       diagnostics: ['provider-profile-draft', 'missing-required-field'],
       safetyBoundaries: ['Profile draft section opens do not apply provider profile changes.'],
-    },
-    {
+    }),
+    providerViewSection(provider, {
       id: 'setup-plan',
-      label: 'Setup plan',
-      focusConnectionDetail: 'provider-setup-plan',
-      openArgs: { provider, section: 'setup-plan', ensureVisible: true },
       readPaths: ['xd.xenesis.providers.setupPlans.status', 'xd.xenesis.connections.status'],
       controlPaths: ['xd.xenesis.providers.views.open', 'xd.xenesis.providers.setupPlans.open'],
       diagnostics: ['provider-setup-plan', 'guided-steps'],
       safetyBoundaries: ['Setup plan section opens do not run provider setup actions.'],
-    },
+    }),
   ];
 }
 
