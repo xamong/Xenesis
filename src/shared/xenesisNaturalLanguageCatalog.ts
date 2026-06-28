@@ -855,6 +855,7 @@ export const XENESIS_NATURAL_PLAN_VISIBLE_TEXT = {
   connectionMcpInstallDraftApplyRecorded: 'Xenesis MCP 설치 초안 적용 요청을 기록합니다.',
   connectionProviderProfileDraftApplyRecorded: 'Xenesis 프로바이더 프로필 초안 적용 요청을 기록합니다.',
   connectionChannelProfileDraftApplyRecorded: 'Xenesis 채널 프로필 초안 적용 요청을 기록합니다.',
+  connectionChannelTestRecorded: 'Xenesis 채널 테스트 전송 요청을 기록합니다.',
   connectionStatusRead: 'Xenesis 연결 상태를 조회합니다.',
   connectionSurfaceOpen: 'Xenesis 연결 표면을 엽니다.',
   diagnosticsPaneOpen: '진단 패인을 엽니다.',
@@ -937,6 +938,8 @@ export const XENESIS_NATURAL_ACTION_INTENT_WORDS = [
   '검토',
   '리뷰',
   '등록',
+  '보내',
+  '전송',
   '포커스',
   '집중',
   '폭',
@@ -971,6 +974,8 @@ export const XENESIS_NATURAL_ACTION_INTENT_WORDS = [
   'review',
   'approval',
   'apply',
+  'send',
+  'post',
   '확인',
   '상태',
   '진단',
@@ -1165,6 +1170,17 @@ export const XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_REQUEST_CONTEXT_WORDS = [
   'messenger',
   'bot',
   '봇',
+] as const;
+
+export const XENESIS_NATURAL_CHANNEL_TEST_CONTEXT_WORDS = [
+  '테스트 메시지',
+  '테스트 전송',
+  '테스트 보내',
+  '채널 테스트',
+  'test message',
+  'test send',
+  'send test',
+  'post test',
 ] as const;
 
 export const XENESIS_NATURAL_PROVIDER_PROFILE_CONTEXT_WORDS = [
@@ -1904,6 +1920,7 @@ export const XENESIS_DESK_CONTROL_PROMPT_HINT_BEFORE_DISCOVERY_LINES = [
   '- Use provider profile-draft CR paths from the Capability Registry to inspect field drafts, focus provider draft cards, record local Action Inbox review items, or apply ready non-secret provider profile settings with approval. Provider profile draft apply does not accept raw credentials, mutate fallback chains, switch local CLI selection, or run provider prompts.',
   '- Use external messenger routing, safety, access-group, pairing, view, user-story, and profile-draft CR paths from the Capability Registry before testing or changing external messenger setup.',
   '- Use channel profile draft CR paths from the Capability Registry to inspect, focus, request review, or apply implemented messenger channel profile settings through `xd.xenesis.channels.profileDrafts.apply` with approval. The apply path writes profile channel settings only; it does not store raw secrets, start gateways, send test messages, or mutate planned messenger adapters.',
+  '- Use `xd.xenesis.profiles.testChannel` for explicit implemented messenger channel test-send requests. It requires Capability Registry approval, reads the selected profile channel settings when args omit `channels`, sends only a sanitized diagnostic message, and returns redacted target readback.',
   '- Use `xd.testing.connectionCenter.snapshot`, `xd.testing.xenesisAgent.snapshot`, and `xd.testing.xenesisAgent.submitPrompt` only for development smoke verification of live Desk surfaces.',
   '- For dashboard or XCON/SKETCH artifact generation, Xenesis Agent should own generation through `/artifact`; Gowoori is the render target and GowooriChat is fallback only.',
 ] as const;

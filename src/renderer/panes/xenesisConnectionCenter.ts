@@ -374,6 +374,22 @@ export function buildXenesisChannelProfileDraftApplyRequest(
   };
 }
 
+export function buildXenesisChannelTestRequest(item: XenesisConnectionItem): McpBridgeCapabilityCallRequest | null {
+  if (item.kind !== 'messenger') return null;
+  if (item.supportLevel !== 'implemented') return null;
+  if (!item.channelProfileDraft) return null;
+  if (item.channelProfileDraft.draftStatus !== 'ready') return null;
+  if (!item.channelProfileDraft.controlPaths.includes('xd.xenesis.profiles.testChannel')) return null;
+  return {
+    path: 'xd.xenesis.profiles.testChannel',
+    args: {
+      channel: item.channelProfileDraft.channel,
+    },
+    source: 'xenesis',
+    approved: false,
+  };
+}
+
 export function buildXenesisProviderProfileDraftRequest(
   item: XenesisConnectionItem,
 ): McpBridgeCapabilityCallRequest | null {

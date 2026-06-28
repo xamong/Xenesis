@@ -5,6 +5,7 @@ import {
   xenesisAgentSubmitActionFromNaturalText,
   xenesisConnectionActionFromNaturalText,
   xenesisConnectionChannelProfileDraftApplyActionFromNaturalText,
+  xenesisConnectionChannelTestActionFromNaturalText,
   xenesisConnectionMcpInstallDraftApplyActionFromNaturalText,
   xenesisConnectionProviderProfileDraftApplyActionFromNaturalText,
   xenesisConnectionReadbackActionFromNaturalText,
@@ -113,6 +114,12 @@ export function xenesisConnectionChannelProfileDraftApplyPlanFromNaturalText(
   return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.connectionChannelProfileDraftApplyRecorded, [
     action,
   ]);
+}
+
+export function xenesisConnectionChannelTestPlanFromNaturalText(value: string): XenesisNaturalLanguagePlan | null {
+  const action = xenesisConnectionChannelTestActionFromNaturalText(value);
+  if (!action) return null;
+  return buildXenesisNaturalLanguagePlan(XENESIS_NATURAL_PLAN_VISIBLE_TEXT.connectionChannelTestRecorded, [action]);
 }
 
 export function xenesisConnectionProviderProfileDraftApplyPlanFromNaturalText(

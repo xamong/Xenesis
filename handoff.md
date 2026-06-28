@@ -7,6 +7,137 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current Channel Test Approval Slice
+
+- Objective: make implemented external messenger sanitized test sends
+  CR-first, approval-gated, visible from Connection Center, and reachable through
+  natural-language Agent prompts such as `텔레그램 테스트 메시지 보내줘`.
+- Observed gap:
+  - `xd.xenesis.profiles.testChannel` already sends a sanitized channel test
+    message, but it is registered as `control` with `approval: never` even
+    though it can hit Telegram, Slack, Discord, or webhook externally.
+  - The schema requires callers to supply the whole `channels` object, so
+    natural-language and Connection Center actions cannot safely call it using
+    the active profile's settings.
+  - Connection Center onboarding mentions the explicit channel test path, but
+    implemented messenger cards do not expose a first-class approval request
+    button and natural-language routing does not target the path.
+- Scope boundary:
+  - Reuse the existing test-send implementation; do not add new messenger
+    adapters or planned channel runtime support.
+  - Require CR approval for external channel test sends.
+  - Let main infer active profile channel settings when explicit `channels`
+    are omitted, and require the selected channel to be enabled before sending.
+  - Return redacted target readback only; do not expose raw chat IDs, channel
+    IDs, webhook URLs, bot tokens, or signing secrets.
+  - Keep planned messenger adapters excluded.
+- Slice size policy:
+  - Bundle CR schema/approval, main handler safety, Connection Center helper
+    and button, natural-language routing, smoke coverage, handoff, Obsidian
+    working note, tests, audit, build, smoke, and commit in one cycle.
+- External documentation handling:
+  - No web browsing. Use repo-local source, Obsidian notes, `handoff.md`, tests,
+    build, CR audit, and local smoke.
+- Plan:
+  - `docs/superpowers/plans/2026-06-28-xenesis-channel-test-approval.md`
+- Commands run:
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts`
+  - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
+- RED verification result:
+  - Capability tests fail because `xd.xenesis.profiles.testChannel` is still
+    `permission: control`, approval is not required, and callers can dispatch
+    without an approval gate.
+  - Connection Center tests fail because `buildXenesisChannelTestRequest` is
+    not implemented/exported.
+  - Natural-language tests fail because `텔레그램 테스트 메시지 보내줘` has no
+    channel test route.
+  - Smoke inventory tests pass after adding the expected approval-gated prompt
+    case.
+- Next intended step:
+  - Run broader verification: typecheck, CR audit, build, live natural routing
+    smoke, package tests/typecheck/build, known infra-gap checks, and diff
+    hygiene.
+
+### Implementation and Focus Verification
+
+- Touched files:
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/shared/types.ts`
+  - `src/main/index.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
+  - `src/shared/xenesisNaturalLanguageCatalog.ts`
+  - `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
+  - `src/shared/xenesisNaturalLanguageActionResolvers.ts`
+  - `src/shared/xenesisNaturalLanguagePlanResolvers.ts`
+  - `src/shared/xenesisNaturalLanguagePlanner.ts`
+  - related tests and natural routing smoke inventory files.
+- Code changes:
+  - `xd.xenesis.profiles.testChannel` is now a `write` capability with
+    `approval: when-external` and schema `required: ['channel']`.
+  - Channel test requests may omit `channels`; main infers selected profile
+    channel settings, requires the selected channel to be enabled, and returns
+    redacted target readback only.
+  - Connection Center exposes a ready implemented-messenger channel test
+    request button through the CR path with `approved:false`.
+  - Natural language maps `텔레그램 테스트 메시지 보내줘` to
+    `xd.xenesis.profiles.testChannel` with `{ channel: 'telegram' }` and
+    `approved:false`.
+- Commands run:
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts`
+  - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+  - `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
+- Verification result:
+  - Focused tests pass: capability tests 37/37, Connection Center tests
+    44/44, natural planner tests 38/38, natural routing smoke inventory tests
+    5/5.
+
+### Broad Verification
+
+- Commands run:
+  - `npx biome format --write ...`
+  - `npx biome check --write ... --max-diagnostics 160`
+  - `npm run typecheck`
+  - `npm run docs:capabilities:audit`
+  - `npm run build`
+  - `npm run smoke:xenesis:natural-desk-routing`
+  - `npm --prefix packages/xenesis test`
+  - `npm --prefix packages/xenesis run typecheck`
+  - `npm --prefix packages/xenesis run build`
+  - `npm run lint`
+  - `npm --prefix packages/xenesis run provider:smoke`
+  - `npm run check:public-release`
+  - `git diff --check`
+- Passed:
+  - Touched-file Biome check exits 0; it reports unrelated existing warnings
+    in large shared files but no blocking touched-file failure.
+  - Root typecheck passed.
+  - CR audit passed: 769 nodes, 689 coverage path references.
+  - Root build passed.
+  - Live natural routing smoke passed 159/159, including
+    `channel-test-send-approval:path` and `channel-test-send-approval:visible-text`.
+  - `packages/xenesis` tests passed 79 files / 367 tests.
+  - `packages/xenesis` typecheck and build passed.
+  - `git diff --check` passed.
+- Known existing gaps:
+  - `npm run lint` fails repo-wide: 1150 Biome errors, 419 warnings, 92 infos,
+    dominated by existing formatting/CRLF and unrelated diagnostics outside
+    this slice.
+  - `npm --prefix packages/xenesis run provider:smoke` builds first, then fails
+    because `OPENAI_API_KEY` is not set for provider `openai`.
+  - `npm run check:public-release` fails because
+    `.github/workflows/ci.yml` is missing in this public-release repo.
+- Obsidian note:
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-28-channel-test-approval.md`
+- Next intended step:
+  - Review diff, rerun a final focused test if needed after notes, then commit
+    this slice.
+
 ## Current Connection Setup Apply Slice
 
 - Objective: enlarge the slice cycle by adding one CR-first setup request apply

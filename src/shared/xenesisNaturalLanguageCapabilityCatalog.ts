@@ -22,6 +22,7 @@ import {
   XENESIS_NATURAL_CANCEL_CONTEXT_WORDS,
   XENESIS_NATURAL_CAPTURE_CONTEXT_WORDS,
   XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_REQUEST_CONTEXT_WORDS,
+  XENESIS_NATURAL_CHANNEL_TEST_CONTEXT_WORDS,
   XENESIS_NATURAL_CONNECTION_AGGREGATE_MATCH_RULES,
   XENESIS_NATURAL_CONNECTION_DIAGNOSTIC_CONTEXT_WORDS,
   XENESIS_NATURAL_CONNECTION_SETUP_REQUEST_CONTEXT_WORDS,
@@ -2036,6 +2037,24 @@ export const XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_APPLY_TARGET_RULES = [
     contextWords: XENESIS_NATURAL_MCP_INSTALL_APPLY_INTENT_WORDS,
     requiredContextWordGroups: [XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_REQUEST_CONTEXT_WORDS],
     action: XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_APPLY_ACTION_DESCRIPTORS.channelProfileDraft,
+    argsKind: 'channel',
+  },
+] as const satisfies readonly XenesisNaturalConnectionTargetActionRule[];
+
+export const XENESIS_NATURAL_CHANNEL_TEST_ACTION_DESCRIPTORS = {
+  channelTest: {
+    path: 'xd.xenesis.profiles.testChannel',
+    idFor: (id: string, _label: string) => `natural-xenesis-channel-test-${id}`,
+    reasonFor: (_id: string, label: string) =>
+      `Send a sanitized ${label} channel test message from natural language request.`,
+  },
+} as const satisfies Record<string, XenesisNaturalDeskActionTemplateDescriptor<[string, string]>>;
+
+export const XENESIS_NATURAL_CHANNEL_TEST_TARGET_RULES = [
+  {
+    targetScope: 'messenger',
+    contextWords: XENESIS_NATURAL_CHANNEL_TEST_CONTEXT_WORDS,
+    action: XENESIS_NATURAL_CHANNEL_TEST_ACTION_DESCRIPTORS.channelTest,
     argsKind: 'channel',
   },
 ] as const satisfies readonly XenesisNaturalConnectionTargetActionRule[];

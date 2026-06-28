@@ -4488,6 +4488,16 @@ test('planXenesisDeskNaturalLanguageActions maps Connection Center review reques
     },
   ]);
 
+  assert.deepEqual(planXenesisDeskNaturalLanguageActions('텔레그램 테스트 메시지 보내줘').actions, [
+    {
+      id: 'natural-xenesis-channel-test-telegram',
+      path: 'xd.xenesis.profiles.testChannel',
+      args: { channel: 'telegram' },
+      approved: false,
+      reason: 'Send a sanitized Telegram channel test message from natural language request.',
+    },
+  ]);
+
   assert.deepEqual(planXenesisDeskNaturalLanguageActions('왓츠앱 프로필 검토 요청해줘').actions, [
     {
       id: 'natural-xenesis-channel-profile-draft-request-whatsapp',

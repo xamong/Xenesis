@@ -282,7 +282,7 @@ export interface XenesisProfileChannelsUpdateRequest {
 export interface XenesisProfileChannelTestRequest {
   profile?: string;
   channel: XenesisProfileChannelName;
-  channels: XenesisProfileChannelSettings;
+  channels?: XenesisProfileChannelSettings;
   message?: string;
 }
 

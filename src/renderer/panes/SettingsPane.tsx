@@ -87,6 +87,7 @@ import { SETTINGS_CATEGORIES, type SettingsCategoryId, VISIBLE_SETTINGS_CATEGORI
 import {
   buildXenesisChannelProfileDraftApplyRequest,
   buildXenesisChannelProfileDraftRequest,
+  buildXenesisChannelTestRequest,
   buildXenesisConnectionGuideRequest,
   buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
@@ -4313,6 +4314,7 @@ export default function SettingsPane() {
     const toolActionCatalogRequest = buildXenesisToolActionCatalogRequest(item);
     const channelProfileDraftRequest = buildXenesisChannelProfileDraftRequest(item);
     const channelProfileDraftApplyRequest = buildXenesisChannelProfileDraftApplyRequest(item);
+    const channelTestRequest = buildXenesisChannelTestRequest(item);
     const providerProfileDraftRequest = buildXenesisProviderProfileDraftRequest(item);
     const providerProfileDraftApplyRequest = buildXenesisProviderProfileDraftApplyRequest(item);
     const mcpTemplate = item.mcpTemplate;
@@ -4361,6 +4363,7 @@ export default function SettingsPane() {
           toolActionCatalogRequest ||
           channelProfileDraftRequest ||
           channelProfileDraftApplyRequest ||
+          channelTestRequest ||
           providerProfileDraftRequest ||
           providerProfileDraftApplyRequest) && (
           <div className="sp-actions-row sp-actions-row-tight">
@@ -4470,6 +4473,16 @@ export default function SettingsPane() {
                 }}
               >
                 {t('settings.xenesisConnectionsApplyChannelProfileDraft')}
+              </button>
+            ) : null}
+            {channelTestRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(channelTestRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsSendChannelTest')}
               </button>
             ) : null}
             {providerProfileDraftRequest ? (

@@ -10,6 +10,7 @@ import type {
 import {
   buildXenesisChannelProfileDraftApplyRequest,
   buildXenesisChannelProfileDraftRequest,
+  buildXenesisChannelTestRequest,
   buildXenesisConnectionGuideRequest,
   buildXenesisConnectionOpenRequest,
   buildXenesisConnectionSettingsRequest,
@@ -587,6 +588,49 @@ test('buildXenesisChannelProfileDraftApplyRequest targets the approval-gated app
     null,
   );
   assert.equal(buildXenesisChannelProfileDraftApplyRequest({ ...item, channelProfileDraft: undefined }), null);
+});
+
+test('buildXenesisChannelTestRequest targets approval-gated profile channel test path', () => {
+  const item: XenesisConnectionItem = {
+    id: 'telegram',
+    kind: 'messenger',
+    label: 'Telegram',
+    status: 'ready',
+    supportLevel: 'implemented',
+    summary: 'Telegram channel.',
+    channelProfileDraft: {
+      draftStatus: 'ready',
+      actionInboxKind: 'xenesis-channel-profile-draft',
+      channel: 'telegram',
+      displayName: 'Telegram',
+      setupSurface: 'Settings > Xenesis Agent > Connections',
+      reviewSurface: 'Desk Action Inbox',
+      profileFields: [],
+      missingRequiredFields: [],
+      guardrails: { approvalMode: 'safe', maxTurns: 6, maxTokens: 4096 },
+      reviewSteps: [],
+      readPaths: ['xd.xenesis.channels.profileDrafts.status'],
+      controlPaths: ['xd.xenesis.profiles.testChannel'],
+      diagnostics: [],
+      blockedActions: [],
+      safetyBoundaries: ['sanitized test sends require approval'],
+    },
+  };
+
+  assert.deepEqual(buildXenesisChannelTestRequest(item), {
+    path: 'xd.xenesis.profiles.testChannel',
+    args: { channel: 'telegram' },
+    source: 'xenesis',
+    approved: false,
+  });
+  assert.equal(buildXenesisChannelTestRequest({ ...item, supportLevel: 'planned' }), null);
+  assert.equal(
+    buildXenesisChannelTestRequest({
+      ...item,
+      channelProfileDraft: { ...item.channelProfileDraft!, draftStatus: 'missing-required-field' },
+    }),
+    null,
+  );
 });
 
 test('formatXenesisGuideCatalogSummary describes guide type, audience, and surface count', () => {

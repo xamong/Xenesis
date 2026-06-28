@@ -5239,10 +5239,10 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             'xd.xenesis.profiles.testChannel',
             'Test profile channel',
             'Send a sanitized test message through a Xenesis external bot channel.',
-            'control',
+            'write',
             {
               type: 'object',
-              required: ['channel', 'channels'],
+              required: ['channel'],
               properties: {
                 profile: {
                   type: 'string',
@@ -5259,7 +5259,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                 channels: {
                   ...XENESIS_PROFILE_CHANNELS_SCHEMA,
                   description:
-                    'Telegram, Slack, Discord, and webhook channel settings to test. Secrets may be env var names; test delivery uses existing redaction.',
+                    'Optional Telegram, Slack, Discord, and webhook channel settings override. Defaults to the selected profile settings. Secrets may be env var names; test delivery returns redacted readback.',
                 },
                 message: {
                   type: 'string',

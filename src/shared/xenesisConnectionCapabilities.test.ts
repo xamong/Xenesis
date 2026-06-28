@@ -2315,7 +2315,12 @@ test('xenesis guide, diagnostic, and setup-request open capabilities allow catal
 
 test('xenesis profile channel capabilities expose implemented guardrail fields', () => {
   const updateSchema = findDeskBridgeCapability('xd.xenesis.profiles.updateChannels')?.schema;
-  const testSchema = findDeskBridgeCapability('xd.xenesis.profiles.testChannel')?.schema;
+  const testCapability = findDeskBridgeCapability('xd.xenesis.profiles.testChannel');
+  const testSchema = testCapability?.schema;
+
+  assert.equal(testCapability?.permission, 'write');
+  assert.equal(testCapability?.approval, 'when-external');
+  assert.deepEqual(schemaRequiredFields(testCapability), ['channel']);
 
   for (const schema of [updateSchema, testSchema]) {
     const schemaProperties = (schema?.properties ?? {}) as Record<string, any>;
@@ -2330,4 +2335,32 @@ test('xenesis profile channel capabilities expose implemented guardrail fields',
       assert.equal(properties.maxTokens?.minimum, 1);
     }
   }
+});
+
+test('xenesis profile channel test requires approval and dispatches to the adapter', async () => {
+  const calls: unknown[] = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    testXenesisProfileChannel: (args) => {
+      calls.push(args);
+      return { ok: true, channel: 'telegram' };
+    },
+  };
+
+  const pendingResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.profiles.testChannel',
+    args: { channel: 'telegram' },
+    source: 'xenesis',
+  });
+  assert.equal(pendingResult.ok, false);
+  assert.equal(pendingResult.approvalRequired, true);
+  assert.deepEqual(calls, []);
+
+  const approvedResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.profiles.testChannel',
+    args: { channel: 'telegram' },
+    source: 'xenesis',
+    approved: true,
+  });
+  assert.equal(approvedResult.ok, true);
+  assert.deepEqual(calls, [{ channel: 'telegram' }]);
 });

@@ -17585,35 +17585,47 @@ async function testXenesisProfileChannel(
   if (!isXenesisProfileChannelName(channel)) {
     throw new Error('Xenesis profile channel is required.');
   }
-  if (!isPlainRecord(request?.channels) || !isPlainRecord(request.channels[channel])) {
-    throw new Error(`Xenesis ${channel} channel settings are required.`);
-  }
 
+  await ensureDefaultXenesisProfile();
   const profiles = await readProfiles(getXenesisStateHome());
   const profile =
     normalizeXenesisProfileName(request?.profile) ||
     loadSettings().xenesis.profile ||
     profiles.active ||
     DEFAULT_XENESIS_PROFILE_TEMPLATE;
+  const profileConfig = profiles.profiles[profile];
+  const channels =
+    isPlainRecord(request?.channels) && isPlainRecord(request.channels[channel])
+      ? request.channels
+      : summarizeXenesisProfileChannelSettings(profileConfig);
+  const channelSettings = channels[channel];
+  if (!profileConfig && !request?.channels) {
+    throw new Error(`Xenesis profile not found: ${profile}.`);
+  }
+  if (!channelSettings?.enabled) {
+    throw new Error(`Xenesis ${channel} channel is disabled.`);
+  }
+
   const testMessage = buildXenesisProfileChannelTestMessage(profile, channel, request?.message);
 
   let target: string;
   if (channel === 'telegram') {
-    target = await sendTelegramChannelTest(request.channels.telegram, testMessage);
+    target = await sendTelegramChannelTest(channels.telegram, testMessage);
   } else if (channel === 'slack') {
-    target = await sendSlackChannelTest(request.channels.slack, testMessage);
+    target = await sendSlackChannelTest(channels.slack, testMessage);
   } else if (channel === 'discord') {
-    target = await sendDiscordChannelTest(request.channels.discord, testMessage);
+    target = await sendDiscordChannelTest(channels.discord, testMessage);
   } else {
-    target = await sendWebhookChannelTest(request.channels.webhook, testMessage);
+    target = await sendWebhookChannelTest(channels.webhook, testMessage);
   }
 
+  const redactedTarget = redactXenesisChannelTargetList(target);
   return {
     ok: true,
     channel,
     profile,
-    target,
-    message: `Xenesis ${channel} test message sent to ${target}.`,
+    target: redactedTarget,
+    message: `Xenesis ${channel} test message sent to ${redactedTarget}.`,
   };
 }
 
