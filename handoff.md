@@ -5,6 +5,7 @@
 - Current objective:
   - Implement Task 2 from `docs/superpowers/plans/2026-06-29-slice-01-live-cr-baseline.md`.
   - Enforce exact Connection Center `reference-baseline:*` snapshot check ids in the live smoke helper and main-process snapshot.
+  - Address Task 2 code quality review: preserve normalized snapshot diagnostics in structured reports when the reference baseline contract fails.
   - Keep provider behavior, natural-language routing, approval behavior, and unrelated runtime behavior unchanged.
 - Scope boundary:
   - Owned files only: `scripts/xenesisConnectionCenterLiveSmoke.mjs`, `scripts/xenesisConnectionCenterLiveSmoke.test.mjs`, `src/main/index.ts`, `src/shared/xenesisConnectionCapabilities.test.ts`, and `handoff.md`.
@@ -12,6 +13,19 @@
 - Touched files so far:
   - `handoff.md`
 - Commands run:
+  - Code review feedback received: `runConnectionCenterLiveSmoke()` throws on `assertConnectionCenterReferenceBaselineChecks(snapshotChecks)` before pushing normalized checks into the report.
+  - Root cause verified in `scripts/xenesisConnectionCenterLiveSmoke.mjs`: assertion happens before `checkResults.push(...snapshotChecks)`, so failing/missing baseline ids skip structured report creation and `--json` falls through to the catch-path text.
+  - `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs`: FAIL as RED, requested module does not provide export `buildConnectionCenterReferenceBaselineReportChecks`.
+  - `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs`: PASS, 8/8 tests after implementing diagnostic-preserving report checks.
+  - `npm run typecheck`: PASS, `tsc --noEmit -p tsconfig.json`.
+  - `git diff --check`: PASS; Git printed LF/CRLF normalization warnings for `handoff.md`, `scripts/xenesisConnectionCenterLiveSmoke.mjs`, and `scripts/xenesisConnectionCenterLiveSmoke.test.mjs`.
+  - `git status --short`: PASS, showed only owned review-fix files:
+    `handoff.md`, `scripts/xenesisConnectionCenterLiveSmoke.mjs`, and
+    `scripts/xenesisConnectionCenterLiveSmoke.test.mjs`.
+  - Post-handoff `git diff --check`: PASS; Git printed LF/CRLF normalization warnings for the three owned review-fix files.
+  - Post-handoff `git status --short`: PASS, showed only owned review-fix files:
+    `handoff.md`, `scripts/xenesisConnectionCenterLiveSmoke.mjs`, and
+    `scripts/xenesisConnectionCenterLiveSmoke.test.mjs`.
   - `Get-Content -Raw AGENTS.md`: PASS.
   - `Get-Content -Raw docs\obsidian\Xenesis-desk.md`: PASS.
   - `Get-Content -Raw "docs\obsidian\00_System\AI Agent Rules.md"`: FAIL, note lives under `docs\obsidian\Xenesis-desk\00_System`.
@@ -45,6 +59,12 @@
     and `src/shared/xenesisConnectionCapabilities.test.ts`.
   - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts`: PASS, 45/45 tests.
 - Exact verification result:
+  - Review finding is valid: direct assertion behavior is useful as an exported reusable helper, but `runConnectionCenterLiveSmoke()` needs to preserve normalized diagnostics in report checks.
+  - RED test confirms the diagnostic-preserving report helper is missing before implementation.
+  - Implemented `buildConnectionCenterReferenceBaselineReportChecks(checks)` to return original checks when the reference baseline assertion passes.
+  - The helper now catches assertion failures only for report construction and appends `{ id: 'reference-baseline-contract', ok: false, error: <assertion message> }`.
+  - Updated `runConnectionCenterLiveSmoke()` to push the helper output so normalized failing/missing snapshot diagnostics remain in `report.checks` and the final report remains structured.
+  - Review-fix focused test, root typecheck, diff check, and status check passed.
   - Context read completed before product/test edits.
   - Found existing live smoke tests still use bare ids such as `connection-center-root`.
   - Found `src/main/index.ts` snapshot checks still emit bare ids.
@@ -61,7 +81,7 @@
 - Known gaps:
   - Live Electron smoke was not run for Task 2; the user only required the focused script test, root typecheck, diff check, and status before commit.
 - Next intended step:
-  - Rerun `git diff --check` and `git status --short` after this handoff update, then commit Task 2 changes only.
+  - Rerun `git diff --check` and `git status --short` after this final handoff update, then commit the review fix.
 
 ## Current Objective
 

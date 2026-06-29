@@ -115,6 +115,22 @@ export function assertConnectionCenterReferenceBaselineChecks(checks) {
   return checks;
 }
 
+export function buildConnectionCenterReferenceBaselineReportChecks(checks) {
+  try {
+    assertConnectionCenterReferenceBaselineChecks(checks);
+    return checks;
+  } catch (error) {
+    return [
+      ...checks,
+      {
+        id: 'reference-baseline-contract',
+        ok: false,
+        error: error instanceof Error ? error.message : String(error),
+      },
+    ];
+  }
+}
+
 async function assertBuiltElectronOutput(root) {
   const requiredPaths = [path.join(root, 'out', 'main', 'index.js'), path.join(root, 'out', 'renderer', 'index.html')];
   for (const requiredPath of requiredPaths) {
@@ -172,8 +188,7 @@ export async function runConnectionCenterLiveSmoke(options = {}) {
       ...CONNECTION_CENTER_LIVE_SMOKE_SNAPSHOT_REQUEST,
     });
     const snapshotChecks = normalizeConnectionCenterSnapshotChecks(snapshotResult);
-    assertConnectionCenterReferenceBaselineChecks(snapshotChecks);
-    checkResults.push(...snapshotChecks);
+    checkResults.push(...buildConnectionCenterReferenceBaselineReportChecks(snapshotChecks));
   } finally {
     if (electronApp) {
       await electronApp.close().catch(() => undefined);

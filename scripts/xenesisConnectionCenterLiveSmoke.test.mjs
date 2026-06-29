@@ -4,6 +4,7 @@ import test from 'node:test';
 
 import {
   assertConnectionCenterReferenceBaselineChecks,
+  buildConnectionCenterReferenceBaselineReportChecks,
   buildConnectionCenterLiveSmokeReport,
   CONNECTION_CENTER_LIVE_SMOKE_APP_READY_SELECTOR,
   CONNECTION_CENTER_LIVE_SMOKE_OPEN_REQUEST,
@@ -91,6 +92,64 @@ test('connection center live smoke fails when reference baseline checks are miss
       ),
     /Failing reference baseline checks: reference-baseline:tool-oauth-review-steps/,
   );
+});
+
+test('connection center live smoke preserves failing reference baseline diagnostics in report checks', () => {
+  const snapshotChecks = CONNECTION_CENTER_REFERENCE_BASELINE_CHECK_IDS.map((id) => ({
+    id,
+    ok: true,
+  }));
+  snapshotChecks.splice(
+    snapshotChecks.findIndex((check) => check.id === 'reference-baseline:tool-oauth-review-steps'),
+    1,
+    {
+      id: 'reference-baseline:tool-oauth-review-steps',
+      selector: '[data-tool]',
+      text: 'review step',
+      ok: false,
+      error: 'present=true textPresent=false',
+    },
+  );
+
+  const reportChecks = buildConnectionCenterReferenceBaselineReportChecks(snapshotChecks);
+
+  assert.equal(reportChecks.find((check) => check.id === 'reference-baseline:tool-oauth-review-steps')?.selector, '[data-tool]');
+  assert.equal(
+    reportChecks.find((check) => check.id === 'reference-baseline:tool-oauth-review-steps')?.error,
+    'present=true textPresent=false',
+  );
+  assert.deepEqual(reportChecks.at(-1), {
+    id: 'reference-baseline-contract',
+    ok: false,
+    error: 'Failing reference baseline checks: reference-baseline:tool-oauth-review-steps',
+  });
+
+  const report = buildConnectionCenterLiveSmokeReport(reportChecks);
+  assert.equal(report.ok, false);
+  assert.equal(report.checks.find((check) => check.id === 'reference-baseline:tool-oauth-review-steps')?.selector, '[data-tool]');
+  assert.equal(
+    report.checks.find((check) => check.id === 'reference-baseline-contract')?.error,
+    'Failing reference baseline checks: reference-baseline:tool-oauth-review-steps',
+  );
+});
+
+test('connection center live smoke records missing reference baseline checks without dropping snapshot diagnostics', () => {
+  const snapshotChecks = [
+    {
+      id: 'reference-baseline:connection-center-title',
+      selector: '[data-title]',
+      ok: true,
+    },
+  ];
+
+  const reportChecks = buildConnectionCenterReferenceBaselineReportChecks(snapshotChecks);
+
+  assert.equal(reportChecks[0], snapshotChecks[0]);
+  assert.deepEqual(reportChecks[1], {
+    id: 'reference-baseline-contract',
+    ok: false,
+    error: 'Missing reference baseline checks: reference-baseline:connection-center-root, reference-baseline:onboarding-guided-steps, reference-baseline:provider-profile-review-steps, reference-baseline:tool-profile-review-steps, reference-baseline:tool-oauth-review-steps, reference-baseline:tool-oauth-runtime-readback, reference-baseline:channel-runtime-readback, reference-baseline:channel-profile-review-steps',
+  });
 });
 
 test('connection center live smoke report summarizes passed and failed checks', () => {
