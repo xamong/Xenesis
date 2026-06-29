@@ -896,8 +896,8 @@ In `docs/obsidian/Xenesis-desk/_Indexes/Verification Map.md`, add these rows to 
 
 ```markdown
 | CR audit zero assertion | `node scripts\assertCapabilityAuditZero.mjs` |
-| Connection Center live smoke | `npm run smoke:xenesis:connection-center -- --json` |
-| Review request approval live smoke | `npm run smoke:xenesis:review-request-approval -- --json` |
+| Connection Center live smoke JSON evidence | `node .\scripts\xenesisConnectionCenterLiveSmoke.mjs --json` |
+| Review request approval live smoke JSON evidence | `node .\scripts\xenesisReviewRequestApprovalLiveSmoke.mjs --json` |
 ```
 
 - [ ] **Step 3: Add CR proof surfaces**
@@ -1014,8 +1014,8 @@ capability-audit-zero: verified 4 counters in docs\capability-registry-audit.md
 Run:
 
 ```powershell
-npm run smoke:xenesis:connection-center -- --json
-npm run smoke:xenesis:review-request-approval -- --json
+node .\scripts\xenesisConnectionCenterLiveSmoke.mjs --json
+node .\scripts\xenesisReviewRequestApprovalLiveSmoke.mjs --json
 ```
 
 Expected Connection Center JSON includes:
@@ -1062,8 +1062,10 @@ Update `handoff.md` with:
   - `node scripts\assertCapabilityAuditZero.mjs`: PASS, verified 4 counters
   - `npm run typecheck`: PASS
   - `npm run build`: PASS
-  - `npm run smoke:xenesis:connection-center -- --json`: PASS, all nine `reference-baseline:*` checks passed
-  - `npm run smoke:xenesis:review-request-approval -- --json`: PASS, proof type is structured CR approval regression and provider NL tool-selection proof is false
+  - `npm run smoke:xenesis:connection-center -- --json`: PASS live smoke text output; PowerShell/npm 11.5.1 did not forward `--json`
+  - `node .\scripts\xenesisConnectionCenterLiveSmoke.mjs --json`: PASS structured JSON, all nine `reference-baseline:*` checks passed
+  - `npm run smoke:xenesis:review-request-approval -- --json`: PASS live smoke text output; PowerShell/npm 11.5.1 did not forward `--json`
+  - `node .\scripts\xenesisReviewRequestApprovalLiveSmoke.mjs --json`: PASS structured JSON, proof type is structured CR approval regression and provider NL tool-selection proof is false
 - Known gaps:
   - This slice does not prove provider natural-language CR tool selection. That remains part of provider/onboarding live verification in later slices.
 - Next intended step:

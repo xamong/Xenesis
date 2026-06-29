@@ -1,5 +1,40 @@
 # Xenesis Desk Work Handoff
 
+## Current Slice: Slice 01 Live CR Baseline - Final Adversarial Review Remediation
+
+- Current objective:
+  - Address final adversarial subagent findings before reporting Slice 01 complete.
+  - Fix Connection Center live smoke report invariants and failing snapshot diagnostics.
+  - Correct Obsidian Verification Map command rows so JSON evidence uses direct `node ... --json` commands in this PowerShell/npm environment.
+- Scope boundary:
+  - Owned files: `scripts/xenesisConnectionCenterLiveSmoke.mjs`, `scripts/xenesisConnectionCenterLiveSmoke.test.mjs`, `docs/obsidian/Xenesis-desk/_Indexes/Verification Map.md`, `docs/superpowers/plans/2026-06-29-slice-01-live-cr-baseline.md`, and `handoff.md`.
+  - No runtime Agent routing, provider selection, CR dispatcher, approval runtime, or product UI behavior changes.
+  - Preserve the structured-only proof boundary for review-request approval smoke.
+- Review findings accepted after verification:
+  - Connection Center report object spreads `...extra` after computed fields, so a future caller can override `ok`, `summary`, or `checks`.
+  - Connection Center snapshot normalization maps `expectedText` into `text` and drops actual rendered `text`, weakening failed-smoke diagnostics.
+  - Verification Map advertises `npm run ... -- --json`, while Task 6 evidence shows PowerShell/npm 11.5.1 did not forward `--json`; direct `node ... --json` commands produced JSON evidence.
+- Commands run so far:
+  - `Get-Content -Raw scripts\xenesisConnectionCenterLiveSmoke.mjs`: PASS.
+  - `Get-Content -Raw scripts\xenesisConnectionCenterLiveSmoke.test.mjs`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\_Indexes\Verification Map.md"`: PASS.
+  - `git status --short`: PASS, no modified files before remediation edits.
+  - `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs`: FAIL as RED, 7/9 passed; new tests failed because `extra.ok` overrode computed `ok` and snapshot normalization returned `text: expectedText` while dropping actual rendered text.
+  - `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs`: PASS, 9/9 tests after protecting computed report fields and preserving `expectedText`/`actualText`.
+  - `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs scripts\xenesisReviewRequestApprovalLiveSmoke.test.mjs scripts\assertCapabilityAuditZero.test.mjs scripts\capabilityCoverageAudit.test.mjs src\main\capabilityActionApproval.test.mjs src\main\mcpActionInbox.test.mjs`: PASS, 34/34 tests.
+  - `node scripts\assertCapabilityAuditZero.mjs`: PASS, output `capability-audit-zero: verified 4 counters in docs\capability-registry-audit.md`.
+  - `node .\scripts\xenesisConnectionCenterLiveSmoke.mjs --json`: PASS, structured JSON `ok: true`, 9/9 reference-baseline checks passed, `cr.ok: true`, `snapshot.ok: true`.
+  - `node .\scripts\xenesisReviewRequestApprovalLiveSmoke.mjs --json`: PASS, structured JSON `ok: true`, `proofType: structured-cr-approval-regression`, `providerNaturalLanguageToolSelectionProof: false`, 6/6 checks passed.
+  - `npm run typecheck`: PASS.
+  - `npm run build`: PASS; existing Vite warnings about `hwp.js/build/esm.js` browser `fs` externalization and `src/renderer/deskBridge.ts` mixed static/dynamic imports remain.
+  - `git diff --check`: PASS; Git printed LF/CRLF normalization warnings only.
+- Exact remediation result:
+  - Connection Center smoke report computed fields `ok`, `createdAt`, `summary`, and `checks` can no longer be overridden by `extra`.
+  - Connection Center snapshot normalization now preserves expected text as `expectedText` and actual rendered text as `actualText`.
+  - Obsidian Verification Map and the Slice 01 plan now name direct `node ... --json` commands as structured JSON evidence commands.
+- Next intended step:
+  - Commit the adversarial review remediation and rerun final review/verification checks.
+
 ## Current Slice: Slice 01 Live CR Baseline - Task 6 Final Verification
 
 - Current objective:

@@ -61,12 +61,15 @@ export function buildConnectionCenterLiveSmokeReport(checks, startedAt = new Dat
     ...(check.label ? { label: String(check.label) } : {}),
     ...(check.selector ? { selector: String(check.selector) } : {}),
     ...(check.text ? { text: String(check.text) } : {}),
+    ...(check.expectedText ? { expectedText: String(check.expectedText) } : {}),
+    ...(check.actualText ? { actualText: String(check.actualText) } : {}),
     ...(check.error ? { error: String(check.error) } : {}),
   }));
   const passed = normalizedChecks.filter((check) => check.ok).length;
   const failed = normalizedChecks.length - passed;
 
   return {
+    ...extra,
     ok: failed === 0,
     createdAt: startedAt.toISOString(),
     summary: {
@@ -75,7 +78,6 @@ export function buildConnectionCenterLiveSmokeReport(checks, startedAt = new Dat
       failed,
     },
     checks: normalizedChecks,
-    ...extra,
   };
 }
 
@@ -98,7 +100,8 @@ export function normalizeConnectionCenterSnapshotChecks(snapshotResult) {
     return {
       id: String(check?.id || 'unknown-check'),
       ...(check?.selector ? { selector: String(check.selector) } : {}),
-      ...(check?.expectedText ? { text: String(check.expectedText) } : {}),
+      ...(check?.expectedText ? { expectedText: String(check.expectedText) } : {}),
+      ...(check?.text ? { actualText: String(check.text) } : {}),
       ok: present && textPresent,
       ...(!present || !textPresent ? { error: `present=${present} textPresent=${textPresent}` } : {}),
     };

@@ -29,14 +29,18 @@ approval change.
 | Lint | `npm run lint` |
 | CR audit | `npm run docs:capabilities:audit` |
 | CR audit zero assertion | `node scripts\assertCapabilityAuditZero.mjs` |
-| Connection Center live smoke | `npm run smoke:xenesis:connection-center -- --json` |
-| Review request approval live smoke | `npm run smoke:xenesis:review-request-approval -- --json` |
+| Connection Center live smoke JSON evidence | `node .\scripts\xenesisConnectionCenterLiveSmoke.mjs --json` |
+| Review request approval live smoke JSON evidence | `node .\scripts\xenesisReviewRequestApprovalLiveSmoke.mjs --json` |
 | Xenesis tests | `npm --prefix packages/xenesis test` |
 | Xenesis typecheck | `npm --prefix packages/xenesis run typecheck` |
 | Xenesis build | `npm --prefix packages/xenesis run build` |
 | Provider smoke | `npm --prefix packages/xenesis run provider:smoke` |
 | Public release | `npm run check:public-release` |
 | Live Agent pane | Electron app + natural-language Desk-control prompt |
+
+Note: `npm run smoke:xenesis:* -- --json` can drop forwarded args under the
+PowerShell/npm 11.5.1 combination used for Slice 01 verification. Use the direct
+`node ... --json` commands when structured JSON fields are the evidence.
 
 ## Graph Links
 

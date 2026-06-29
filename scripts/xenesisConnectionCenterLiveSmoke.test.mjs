@@ -165,6 +165,31 @@ test('connection center live smoke report summarizes passed and failed checks', 
   assert.equal(report.checks[1].error, 'missing selector');
 });
 
+test('connection center live smoke report protects computed fields from extra overrides', () => {
+  const startedAt = new Date('2026-06-29T08:00:00.000Z');
+  const report = buildConnectionCenterLiveSmokeReport(
+    [
+      { id: 'reference-baseline:connection-center-root', ok: true },
+      { id: 'reference-baseline:tool-oauth-review-steps', ok: false, error: 'missing selector' },
+    ],
+    startedAt,
+    {
+      ok: true,
+      createdAt: '1999-01-01T00:00:00.000Z',
+      summary: { total: 1, passed: 1, failed: 0 },
+      checks: [{ id: 'forged-check', ok: true }],
+      cr: { path: 'xd.xenesis.connections.open', ok: true },
+    },
+  );
+
+  assert.equal(report.ok, false);
+  assert.equal(report.createdAt, startedAt.toISOString());
+  assert.deepEqual(report.summary, { total: 2, passed: 1, failed: 1 });
+  assert.equal(report.checks[0].id, 'reference-baseline:connection-center-root');
+  assert.equal(report.checks[1].id, 'reference-baseline:tool-oauth-review-steps');
+  assert.deepEqual(report.cr, { path: 'xd.xenesis.connections.open', ok: true });
+});
+
 test('connection center live smoke normalizes CR snapshot checks into report checks', () => {
   const checks = normalizeConnectionCenterSnapshotChecks({
     ok: true,
@@ -193,7 +218,8 @@ test('connection center live smoke normalizes CR snapshot checks into report che
     {
       id: 'reference-baseline:tool-oauth-review-steps',
       selector: '[data-tool]',
-      text: 'review step',
+      expectedText: 'review step',
+      actualText: 'missing',
       ok: false,
       error: 'present=true textPresent=false',
     },
