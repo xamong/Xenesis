@@ -29,6 +29,7 @@ import {
   findXenesisNaturalConnectionSetupApplyAction,
   findXenesisNaturalConnectionTargetOpenAction,
   findXenesisNaturalConnectionTargetStatusAction,
+  findXenesisNaturalGatewayAction,
   findXenesisNaturalGuideOpenAction,
   findXenesisNaturalGuideStatusAction,
   findXenesisNaturalMcpInstallDraftApplyAction,
@@ -37,6 +38,7 @@ import {
   findXenesisNaturalOAuthSetupPacketAction,
   findXenesisNaturalOnboardingOpenAction,
   findXenesisNaturalOnboardingStatusAction,
+  findXenesisNaturalProfileInventoryAction,
   findXenesisNaturalProviderAggregateStatusAction,
   findXenesisNaturalProviderOpenAction,
   findXenesisNaturalProviderProfileDraftApplyAction,
@@ -44,6 +46,9 @@ import {
   findXenesisNaturalReviewRequestProviderAction,
   findXenesisNaturalReviewRequestTargetAction,
   findXenesisNaturalRunStartAction,
+  findXenesisNaturalRuntimeControlAction,
+  findXenesisNaturalRuntimeInventoryAction,
+  findXenesisNaturalRuntimeSupportAction,
   findXenesisNaturalToolAggregateStatusAction,
   findXenesisNaturalWorkspaceSetAction,
   XENESIS_NATURAL_ACTIVE_DOCK_CLOSE_RULES,
@@ -478,6 +483,11 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'findXenesisNaturalProviderStatusAction',
     'findXenesisNaturalReviewRequestProviderAction',
     'findXenesisNaturalReviewRequestTargetAction',
+    'findXenesisNaturalGatewayAction',
+    'findXenesisNaturalProfileInventoryAction',
+    'findXenesisNaturalRuntimeControlAction',
+    'findXenesisNaturalRuntimeInventoryAction',
+    'findXenesisNaturalRuntimeSupportAction',
     'findXenesisNaturalRunStartAction',
     'findXenesisNaturalToolAggregateStatusAction',
     'findXenesisNaturalWorkspaceSetAction',
@@ -526,6 +536,12 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'XENESIS_NATURAL_PROVIDER_STATUS_RULES',
     'XENESIS_NATURAL_REVIEW_REQUEST_PROVIDER_RULES',
     'XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES',
+    'findXenesisNaturalCatalogRuleAction',
+    'XENESIS_NATURAL_GATEWAY_ACTION_RULES',
+    'XENESIS_NATURAL_PROFILE_INVENTORY_RULES',
+    'XENESIS_NATURAL_RUNTIME_CONTROL_RULES',
+    'XENESIS_NATURAL_RUNTIME_INVENTORY_RULES',
+    'XENESIS_NATURAL_RUNTIME_SUPPORT_RULES',
   ]) {
     assert.doesNotMatch(naturalResolverSource, new RegExp(sharedActionBuilderLeak));
   }
@@ -860,11 +876,6 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     assert.doesNotMatch(source, new RegExp(sharedPlanResolverOwnedSymbol));
     assert.doesNotMatch(naturalPlannerSource, new RegExp(sharedPlanResolverOwnedSymbol));
     assert.match(naturalPlanResolverSource, new RegExp(sharedPlanResolverOwnedSymbol));
-  }
-  for (const sharedResolverOwnedRule of ['XENESIS_NATURAL_RUNTIME_CONTROL_RULES']) {
-    assert.doesNotMatch(source, new RegExp(sharedResolverOwnedRule));
-    assert.doesNotMatch(naturalPlannerSource, new RegExp(sharedResolverOwnedRule));
-    assert.match(naturalResolverSource, new RegExp(sharedResolverOwnedRule));
   }
   assert.doesNotMatch(source, /XENESIS_NATURAL_DESK_ACTION_DESCRIPTORS/);
   assert.match(naturalPlanResolverSource, /XENESIS_NATURAL_PLAN_VISIBLE_TEXT/);
@@ -1335,11 +1346,11 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS/);
   assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_AGENT_READBACK_RULES/);
   assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_AGENT_SUBMIT_RULES/);
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_RUNTIME_SUPPORT_RULES/);
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_GATEWAY_ACTION_RULES/);
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_RUNTIME_INVENTORY_RULES/);
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_PROFILE_INVENTORY_RULES/);
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_RUNTIME_CONTROL_RULES/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_RUNTIME_SUPPORT_RULES/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_GATEWAY_ACTION_RULES/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_RUNTIME_INVENTORY_RULES/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_PROFILE_INVENTORY_RULES/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_RUNTIME_CONTROL_RULES/);
   assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_RUN_START_RULES/);
   assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_WORKSPACE_SET_RULES/);
   assert.match(naturalPlanResolverSource, /XENESIS_NATURAL_RUNTIME_VISIBLE_PLAN_PATHS/);
@@ -3851,6 +3862,44 @@ test('natural provider and connection target actions are built by shared capabil
     args: { channel: 'telegram' },
     approved: false,
     reason: 'Send a sanitized Telegram channel test message from natural language request.',
+  });
+});
+
+test('natural static runtime actions are built by shared capability catalog helpers', () => {
+  assert.deepEqual(findXenesisNaturalRuntimeSupportAction('mcp 브리지 상태 보여줘'), {
+    id: 'natural-mcp-bridge-status',
+    path: 'xd.mcp.bridge.status',
+    args: {},
+    approved: false,
+    reason: 'Read MCP bridge status from natural language request.',
+  });
+  assert.deepEqual(findXenesisNaturalGatewayAction('게이트웨이 시작해줘'), {
+    id: 'natural-xenesis-gateway-start',
+    path: 'xd.xenesis.gateway.start',
+    args: {},
+    approved: false,
+    reason: 'Start Xenesis gateway from natural language request.',
+  });
+  assert.deepEqual(findXenesisNaturalRuntimeInventoryAction('xenesis 태스크 목록 보여줘'), {
+    id: 'natural-xenesis-tasks-list',
+    path: 'xd.xenesis.tasks.list',
+    args: {},
+    approved: false,
+    reason: 'List Xenesis tasks from natural language request.',
+  });
+  assert.deepEqual(findXenesisNaturalProfileInventoryAction('xenesis profile 목록 보여줘'), {
+    id: 'natural-xenesis-profiles-list',
+    path: 'xd.xenesis.profiles.list',
+    args: {},
+    approved: false,
+    reason: 'List Xenesis profiles from natural language request.',
+  });
+  assert.deepEqual(findXenesisNaturalRuntimeControlAction('xenesis runtime run 취소해줘'), {
+    id: 'natural-xenesis-runs-cancel',
+    path: 'xd.xenesis.runs.cancel',
+    args: {},
+    approved: false,
+    reason: 'Cancel active Xenesis run from natural language request.',
   });
 });
 

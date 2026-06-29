@@ -7,6 +7,87 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Latest Slice: Shared Static Runtime Natural Actions
+
+- Current objective:
+  - Move remaining static runtime catalog rule selection out of
+    `src/shared/xenesisNaturalLanguageActionResolvers.ts` and into named shared
+    capability catalog helpers.
+- Scope:
+  - Add RED tests requiring shared helpers for local CLI/MCP support, gateway,
+    runtime inventory, profile inventory, and runtime control actions.
+  - Add source guards that block direct static runtime rule imports and
+    `findXenesisNaturalCatalogRuleAction` usage in the natural resolver.
+  - Keep resolver responsible for quoted Agent/run/workspace extraction only.
+  - Preserve existing gateway, MCP/local CLI, runtime inventory, profile
+    inventory, and runtime control prompt payloads.
+- Touched files so far:
+  - `handoff.md`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `src/shared/xenesisNaturalLanguageActionResolvers.ts`
+  - `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-shared-static-runtime-natural-actions.md`
+- Intended RED tests:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    should fail because the named static runtime helpers do not exist and the
+    resolver still imports those rule sets directly.
+- Verification status:
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> failed 53/55 as expected because the named static runtime helpers are
+    not exported yet and the natural resolver still imports the static runtime
+    rule sets directly.
+  - GREEN focused:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 55/55 after adding named static runtime helpers and delegating
+    local CLI/MCP support, gateway, runtime inventory, profile inventory, and
+    runtime control action construction from the resolver to the capability
+    catalog.
+  - Focused Biome write:
+    `npx biome check --write --formatter-enabled=true --linter-enabled=true --assist-enabled=true src/shared/xenesisNaturalLanguageCapabilityCatalog.ts src/shared/xenesisNaturalLanguageActionResolvers.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+    -> passed; fixed two files.
+  - Focused post-format source/test recheck:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 55/55.
+  - Smoke fixture:
+    `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` ->
+    passed 6/6.
+  - Typecheck:
+    `npm run typecheck` -> passed.
+  - Focused post-format Biome check:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true src/shared/xenesisNaturalLanguageCapabilityCatalog.ts src/shared/xenesisNaturalLanguageActionResolvers.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+    -> passed.
+  - Source guard:
+    `rg -n "findXenesisNaturalCatalogRuleAction|XENESIS_NATURAL_GATEWAY_ACTION_RULES|XENESIS_NATURAL_PROFILE_INVENTORY_RULES|XENESIS_NATURAL_RUNTIME_CONTROL_RULES|XENESIS_NATURAL_RUNTIME_INVENTORY_RULES|XENESIS_NATURAL_RUNTIME_SUPPORT_RULES" src\shared\xenesisNaturalLanguageActionResolvers.ts`
+    -> no matches.
+  - CR audit:
+    `npm run docs:capabilities:audit` -> passed; generated audit summary
+    remained 796 nodes and 689 coverage path references.
+  - CR audit counter readback:
+    `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> all 0.
+  - Build:
+    `npm run build` -> passed. Existing Vite warnings about browser
+    externalization/dynamic import chunking and large renderer chunks were
+    printed.
+  - Live natural Desk routing smoke:
+    `npm run smoke:xenesis:natural-desk-routing` -> passed 261/261.
+- Implemented:
+  - Added shared static runtime helper functions in
+    `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`.
+  - Removed direct static runtime rule imports and
+    `findXenesisNaturalCatalogRuleAction` usage from
+    `src/shared/xenesisNaturalLanguageActionResolvers.ts`.
+  - Updated source-ownership and direct helper behavior tests in
+    `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`.
+- Known gaps:
+  - Full repo lint/public-release known gaps remain unchanged.
+- Documentation:
+  - Added Obsidian working note
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-shared-static-runtime-natural-actions.md`.
+- Next intended step:
+  - Run final diff hygiene, stage this slice only, and commit it.
+
 ## Latest Slice: Shared Provider And Target Natural Rule Wrappers
 
 - Current objective:

@@ -4141,6 +4141,26 @@ export function findXenesisNaturalWorkspaceSetAction(
   );
 }
 
+export function findXenesisNaturalRuntimeSupportAction(value: string): XenesisNaturalDeskActionRequest | null {
+  return findXenesisNaturalCatalogRuleAction(value, XENESIS_NATURAL_RUNTIME_SUPPORT_RULES);
+}
+
+export function findXenesisNaturalGatewayAction(value: string): XenesisNaturalDeskActionRequest | null {
+  return findXenesisNaturalCatalogRuleAction(value, XENESIS_NATURAL_GATEWAY_ACTION_RULES);
+}
+
+export function findXenesisNaturalRuntimeInventoryAction(value: string): XenesisNaturalDeskActionRequest | null {
+  return findXenesisNaturalCatalogRuleAction(value, XENESIS_NATURAL_RUNTIME_INVENTORY_RULES);
+}
+
+export function findXenesisNaturalProfileInventoryAction(value: string): XenesisNaturalDeskActionRequest | null {
+  return findXenesisNaturalCatalogRuleAction(value, XENESIS_NATURAL_PROFILE_INVENTORY_RULES);
+}
+
+export function findXenesisNaturalRuntimeControlAction(value: string): XenesisNaturalDeskActionRequest | null {
+  return findXenesisNaturalCatalogRuleAction(value, XENESIS_NATURAL_RUNTIME_CONTROL_RULES);
+}
+
 export function xenesisNaturalConnectionTargetMatchesRule(
   target: XenesisNaturalConnectionTarget,
   rule: XenesisNaturalConnectionTargetActionRule,
