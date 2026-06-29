@@ -2200,6 +2200,25 @@ test('buildXenesisToolProfileDraftApplyRequest targets ready profile draft apply
     } as XenesisConnectionItem),
     null,
   );
+  assert.equal(
+    buildXenesisToolProfileDraftApplyRequest({
+      ...item,
+      id: 'google-calendar',
+      label: 'Google Calendar',
+      status: 'planned',
+      toolProfileDraft: {
+        ...item.toolProfileDraft,
+        draftStatus: 'planned-template',
+        tool: 'google-calendar',
+        displayName: 'Google Calendar',
+        runtimeSupport: 'planned-oauth',
+        authMode: 'oauth',
+        missingRequiredFields: ['oauthClient', 'redirectUri', 'tokenStore'],
+        controlPaths: ['xd.xenesis.tools.profileDrafts.request', 'xd.xenesis.tools.profileDrafts.apply'],
+      },
+    } as XenesisConnectionItem),
+    null,
+  );
   assert.equal(buildXenesisToolProfileDraftApplyRequest({ ...item, toolProfileDraft: undefined } as any), null);
 });
 

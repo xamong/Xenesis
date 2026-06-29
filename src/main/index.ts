@@ -14393,6 +14393,15 @@ async function snapshotConnectionCenterForCapability(args: unknown): Promise<Rec
     { id: 'reference-baseline:tool-profile-review-steps', selector: '[data-xenesis-tool-profile-draft]', text: 'review step' },
     { id: 'reference-baseline:tool-oauth-review-steps', selector: '[data-xenesis-tool-oauth-draft]', text: 'review step' },
     { id: 'reference-baseline:tool-oauth-runtime-readback', selector: '[data-xenesis-tool-oauth-runtime]', text: 'oauth-runtime-readiness' },
+    { id: 'reference-baseline:external-tool-notion-mcp-readiness', selector: '[data-xenesis-connection="notion"]', text: 'xd.xenesis.tools.mcpInstallDrafts.status' },
+    {
+      id: 'reference-baseline:external-tool-google-calendar-oauth-setup-packet',
+      selector: '[data-xenesis-tool-oauth-draft="google-calendar"]',
+      text: 'GOOGLE_OAUTH_CLIENT_SECRET',
+    },
+    { id: 'reference-baseline:external-tool-google-calendar-oauth-runtime', selector: '[data-xenesis-tool-oauth-runtime="google-calendar"]', text: 'oauth-runtime-readiness' },
+    { id: 'reference-baseline:external-tool-linear-mcp-oauth-readiness', selector: '[data-xenesis-tool-mcp-oauth="linear"]', text: 'linear:read-issues' },
+    { id: 'reference-baseline:external-tool-no-oauth-side-effect-boundary', selector: '[data-xenesis-tool-oauth-draft="google-calendar"]', text: 'does not complete OAuth' },
     { id: 'reference-baseline:channel-runtime-readback', selector: '[data-xenesis-channel-runtime]', text: 'channel-runtime-readiness' },
     { id: 'reference-baseline:channel-profile-review-steps', selector: '[data-xenesis-channel-profile-draft]', text: 'review step' },
   ];

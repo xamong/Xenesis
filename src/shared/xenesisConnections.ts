@@ -2351,6 +2351,7 @@ function toolUserStoryTemplate(input: {
     'xd.xenesis.connections.status',
     'xd.xenesis.tools.userStories.status',
     'xd.xenesis.tools.connectors.status',
+    'xd.xenesis.tools.runtime.status',
     'xd.xenesis.tools.views.status',
     'xd.xenesis.guides.status',
   ];

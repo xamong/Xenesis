@@ -103,6 +103,35 @@ npm --prefix packages/xenesis test
 npm --prefix packages/xenesis run typecheck
 ```
 
+## Implementation Progress - 2026-06-29
+
+- Added explicit Connection Center live-smoke baseline ids for Notion MCP
+  readiness, Google Calendar OAuth setup packet/runtime readiness, Linear MCP
+  OAuth readiness, and no OAuth side-effect boundary.
+- Added shared read-model acceptance for Notion, Google Calendar, and Linear
+  Slice 03 metadata. Secret literal values are asserted absent from serialized
+  status.
+- Added dispatcher approval/no-side-effect tests and an AST forbidden-call scan
+  for main-process review/readback handlers.
+- Added renderer guard coverage so `xd.xenesis.tools.profileDrafts.apply` is
+  built only for `draftStatus: ready`; planned OAuth drafts remain review-only.
+- Focused verification passed:
+  - `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs` -> 9/9.
+  - `npx tsx --test src\shared\xenesisConnections.test.ts` -> 49/49.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` -> 49/49.
+  - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` -> 74/74.
+- Broad verification passed:
+  - `npm run docs:capabilities:audit; node scripts\assertCapabilityAuditZero.mjs`.
+  - `npm run typecheck`; `npm --prefix packages/xenesis run typecheck`.
+  - `npm run build`.
+  - `node .\scripts\xenesisConnectionCenterLiveSmoke.mjs --json --timeout=120000` -> 14/14.
+  - `node .\scripts\xenesisProviderOnboardingLiveSmoke.mjs --json --timeout=180000` -> 9/9.
+  - `npm --prefix packages/xenesis test`; `npm --prefix packages/xenesis run build`;
+    `npm --prefix packages/xenesis run provider:smoke`.
+- Remaining repo-level gaps are pre-existing: `npm run lint` fails on
+  repo-wide Biome debt, and `npm run check:public-release` fails because this
+  repo is missing `.github\workflows\ci.yml`.
+
 ## Out Of Scope
 
 - Completing real external OAuth consent.

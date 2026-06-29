@@ -36,6 +36,11 @@ export const CONNECTION_CENTER_REFERENCE_BASELINE_CHECK_IDS = Object.freeze([
   'reference-baseline:tool-profile-review-steps',
   'reference-baseline:tool-oauth-review-steps',
   'reference-baseline:tool-oauth-runtime-readback',
+  'reference-baseline:external-tool-notion-mcp-readiness',
+  'reference-baseline:external-tool-google-calendar-oauth-setup-packet',
+  'reference-baseline:external-tool-google-calendar-oauth-runtime',
+  'reference-baseline:external-tool-linear-mcp-oauth-readiness',
+  'reference-baseline:external-tool-no-oauth-side-effect-boundary',
   'reference-baseline:channel-runtime-readback',
   'reference-baseline:channel-profile-review-steps',
 ]);

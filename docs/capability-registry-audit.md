@@ -1,6 +1,6 @@
 # Xenesis Desk Capability Registry Audit
 
-Generated: 2026-06-29, 09:20 p.m. KST
+Generated: 2026-06-29, 10:02 p.m. KST
 
 This audit checks that coverage metadata points to registered capability nodes and that callable method paths are wired in `callDeskBridgeCapability()`. It runs with Phase 5 capability visibility enabled so staged XamongCode wiring is audited without exposing it in the default registry list.
 

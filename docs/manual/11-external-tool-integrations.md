@@ -127,6 +127,34 @@ setup-plan `read` and `open` steps; OAuth draft requests, MCP install apply,
 tool profile draft apply, runtime review requests, and action-policy review
 requests remain explicit separate CR actions.
 
+## Slice 03 Verified Boundaries
+
+Slice 03 adds explicit live-smoke and focused test coverage for external tool
+MCP/OAuth readiness. The Connection Center test snapshot now requires these
+baseline ids:
+
+- `reference-baseline:external-tool-notion-mcp-readiness`
+- `reference-baseline:external-tool-google-calendar-oauth-setup-packet`
+- `reference-baseline:external-tool-google-calendar-oauth-runtime`
+- `reference-baseline:external-tool-linear-mcp-oauth-readiness`
+- `reference-baseline:external-tool-no-oauth-side-effect-boundary`
+
+The shared read model verifies that Notion exposes MCP/template/profile/runtime
+readiness without leaking token values, Google Calendar exposes OAuth setup
+packet and OAuth runtime readiness without completing OAuth, and Linear exposes
+MCP OAuth readiness as review metadata. Workflow previews are allowlisted to
+read/open CR paths only.
+
+Dispatcher tests prove Slice 03 read/open/request CR paths do not call MCP
+install apply or profile draft apply adapters. External write paths require a
+real approval decision before adapter dispatch. Main-process AST tests pin the
+review/readback handlers so they cannot directly call external apply or MCP
+config writer functions.
+
+Renderer helpers also require a tool profile draft to be `ready` before
+building `xd.xenesis.tools.profileDrafts.apply`. Planned OAuth drafts remain
+review/setup metadata even if malformed input includes an apply control path.
+
 ## Safety Boundaries
 
 This guide does not install MCP servers, write MCP config, complete OAuth, store

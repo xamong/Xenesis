@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import * as ts from 'typescript';
 import {
   callDeskBridgeCapability,
   type DeskBridgeCapabilityAdapter,
@@ -61,6 +62,38 @@ function assertOpenCapabilityDetailFocus(path: string, expectedDetail: string): 
     true,
     `${path} exposes ${expectedDetail} detail focus`,
   );
+}
+
+function collectFunctionCallExpressions(sourceText: string, functionName: string): string[] {
+  const sourceFile = ts.createSourceFile('index.ts', sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const calls: string[] = [];
+  let found = false;
+
+  const expressionName = (expression: ts.Expression): string => {
+    if (ts.isIdentifier(expression)) return expression.text;
+    if (ts.isPropertyAccessExpression(expression)) return expression.name.text;
+    return expression.getText(sourceFile);
+  };
+
+  const collectCalls = (node: ts.Node): void => {
+    if (ts.isCallExpression(node)) {
+      calls.push(expressionName(node.expression));
+    }
+    ts.forEachChild(node, collectCalls);
+  };
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isFunctionDeclaration(node) && node.name?.text === functionName) {
+      found = true;
+      if (node.body) collectCalls(node.body);
+      return;
+    }
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+  assert.equal(found, true, `Expected to find function ${functionName}`);
+  return calls;
 }
 
 test('xenesis connection status capability is registered as a read path', () => {
@@ -1932,6 +1965,257 @@ test('xenesis MCP OAuth readiness capabilities are registered and dispatch to th
     id: 'linear',
     actionInboxItem: { id: 'mcp-oauth-linear' },
   });
+});
+
+test('slice 03 external tool dispatcher read/open/request paths never call apply adapters', async () => {
+  const calls: string[] = [];
+  const failApply = (method: string) => (args?: unknown) => {
+    calls.push(method);
+    throw new Error(`${method} must not be called from Slice 03 read/open/request paths: ${JSON.stringify(args)}`);
+  };
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisToolMcpInstallDraftsStatus: (args) => {
+      calls.push('mcpInstallDrafts.status');
+      return { ok: true, args };
+    },
+    openXenesisToolMcpInstallDraft: (args) => {
+      calls.push('mcpInstallDrafts.open');
+      return { ok: true, args };
+    },
+    requestXenesisToolMcpInstallDraft: (args) => {
+      calls.push('mcpInstallDrafts.request');
+      return { ok: true, args, actionInboxItem: { id: 'mcp-install-draft' } };
+    },
+    getXenesisToolOAuthDraftsStatus: (args) => {
+      calls.push('oauthDrafts.status');
+      return { ok: true, args };
+    },
+    getXenesisToolOAuthSetupPacket: (args) => {
+      calls.push('oauthDrafts.setupPacket');
+      return { ok: true, args };
+    },
+    openXenesisToolOAuthDraft: (args) => {
+      calls.push('oauthDrafts.open');
+      return { ok: true, args };
+    },
+    openXenesisToolOAuthSetupPacket: (args) => {
+      calls.push('oauthDrafts.setupPacket.open');
+      return { ok: true, args };
+    },
+    requestXenesisToolOAuthDraft: (args) => {
+      calls.push('oauthDrafts.request');
+      return { ok: true, args, actionInboxItem: { id: 'oauth-draft' } };
+    },
+    getXenesisToolOAuthRuntimeStatus: (args) => {
+      calls.push('oauthRuntime.status');
+      return { ok: true, args };
+    },
+    openXenesisToolOAuthRuntime: (args) => {
+      calls.push('oauthRuntime.open');
+      return { ok: true, args };
+    },
+    requestXenesisToolOAuthRuntime: (args) => {
+      calls.push('oauthRuntime.request');
+      return { ok: true, args, actionInboxItem: { id: 'oauth-runtime' } };
+    },
+    getXenesisToolMcpOAuthStatus: (args) => {
+      calls.push('mcpOAuth.status');
+      return { ok: true, args };
+    },
+    openXenesisToolMcpOAuth: (args) => {
+      calls.push('mcpOAuth.open');
+      return { ok: true, args };
+    },
+    requestXenesisToolMcpOAuth: (args) => {
+      calls.push('mcpOAuth.request');
+      return { ok: true, args, actionInboxItem: { id: 'mcp-oauth' } };
+    },
+    getXenesisToolRuntimeStatus: (args) => {
+      calls.push('runtime.status');
+      return { ok: true, args };
+    },
+    openXenesisToolRuntime: (args) => {
+      calls.push('runtime.open');
+      return { ok: true, args };
+    },
+    requestXenesisToolRuntime: (args) => {
+      calls.push('runtime.request');
+      return { ok: true, args, actionInboxItem: { id: 'runtime' } };
+    },
+    getXenesisToolActionCatalogStatus: (args) => {
+      calls.push('actions.status');
+      return { ok: true, args };
+    },
+    openXenesisToolActionCatalog: (args) => {
+      calls.push('actions.open');
+      return { ok: true, args };
+    },
+    requestXenesisToolActionCatalog: (args) => {
+      calls.push('actions.request');
+      return { ok: true, args, actionInboxItem: { id: 'actions' } };
+    },
+    applyXenesisToolMcpInstallDraft: failApply('mcpInstallDrafts.apply'),
+    applyXenesisToolProfileDraft: failApply('profileDrafts.apply'),
+  };
+
+  const requests = [
+    { path: 'xd.xenesis.tools.mcpInstallDrafts.status', args: { id: 'notion' } },
+    { path: 'xd.xenesis.tools.mcpInstallDrafts.open', args: { id: 'notion' } },
+    { path: 'xd.xenesis.tools.mcpInstallDrafts.request', args: { id: 'notion' }, approved: true },
+    { path: 'xd.xenesis.tools.oauthDrafts.status', args: { id: 'google-calendar' } },
+    { path: 'xd.xenesis.tools.oauthDrafts.setupPacket', args: { id: 'google-calendar' } },
+    { path: 'xd.xenesis.tools.oauthDrafts.open', args: { id: 'google-calendar' } },
+    { path: 'xd.xenesis.tools.oauthDrafts.setupPacket.open', args: { id: 'google-calendar' } },
+    { path: 'xd.xenesis.tools.oauthDrafts.request', args: { id: 'google-calendar' }, approved: true },
+    { path: 'xd.xenesis.tools.oauthRuntime.status', args: { id: 'google-calendar' } },
+    { path: 'xd.xenesis.tools.oauthRuntime.open', args: { id: 'google-calendar' } },
+    { path: 'xd.xenesis.tools.oauthRuntime.request', args: { id: 'google-calendar' }, approved: true },
+    { path: 'xd.xenesis.tools.mcpOAuth.status', args: { id: 'linear' } },
+    { path: 'xd.xenesis.tools.mcpOAuth.open', args: { id: 'linear' } },
+    { path: 'xd.xenesis.tools.mcpOAuth.request', args: { id: 'linear' }, approved: true },
+    { path: 'xd.xenesis.tools.runtime.status', args: { id: 'notion' } },
+    { path: 'xd.xenesis.tools.runtime.open', args: { id: 'notion' } },
+    { path: 'xd.xenesis.tools.runtime.request', args: { id: 'notion' }, approved: true },
+    { path: 'xd.xenesis.tools.actions.status', args: { id: 'linear' } },
+    { path: 'xd.xenesis.tools.actions.open', args: { id: 'linear' } },
+    { path: 'xd.xenesis.tools.actions.request', args: { id: 'linear' }, approved: true },
+  ];
+
+  for (const request of requests) {
+    const result = await callDeskBridgeCapability(api, {
+      ...request,
+      source: 'xenesis',
+    });
+    assert.equal(result.ok, true, `${request.path} should dispatch without apply side effects`);
+  }
+
+  assert.deepEqual(calls, [
+    'mcpInstallDrafts.status',
+    'mcpInstallDrafts.open',
+    'mcpInstallDrafts.request',
+    'oauthDrafts.status',
+    'oauthDrafts.setupPacket',
+    'oauthDrafts.open',
+    'oauthDrafts.setupPacket.open',
+    'oauthDrafts.request',
+    'oauthRuntime.status',
+    'oauthRuntime.open',
+    'oauthRuntime.request',
+    'mcpOAuth.status',
+    'mcpOAuth.open',
+    'mcpOAuth.request',
+    'runtime.status',
+    'runtime.open',
+    'runtime.request',
+    'actions.status',
+    'actions.open',
+    'actions.request',
+  ]);
+});
+
+test('slice 03 external tool write paths are approval-gated before adapter dispatch', async () => {
+  const calls: string[] = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    requestXenesisToolMcpInstallDraft: () => {
+      calls.push('mcpInstallDrafts.request');
+      return { ok: true };
+    },
+    applyXenesisToolMcpInstallDraft: () => {
+      calls.push('mcpInstallDrafts.apply');
+      return { ok: true };
+    },
+    requestXenesisToolOAuthDraft: () => {
+      calls.push('oauthDrafts.request');
+      return { ok: true };
+    },
+    requestXenesisToolOAuthRuntime: () => {
+      calls.push('oauthRuntime.request');
+      return { ok: true };
+    },
+    requestXenesisToolMcpOAuth: () => {
+      calls.push('mcpOAuth.request');
+      return { ok: true };
+    },
+    requestXenesisToolRuntime: () => {
+      calls.push('runtime.request');
+      return { ok: true };
+    },
+    requestXenesisToolActionCatalog: () => {
+      calls.push('actions.request');
+      return { ok: true };
+    },
+    requestXenesisToolProfileDraft: () => {
+      calls.push('profileDrafts.request');
+      return { ok: true };
+    },
+    applyXenesisToolProfileDraft: () => {
+      calls.push('profileDrafts.apply');
+      return { ok: true };
+    },
+  };
+
+  const gated = [
+    { path: 'xd.xenesis.tools.mcpInstallDrafts.request', args: { id: 'notion' } },
+    { path: 'xd.xenesis.tools.mcpInstallDrafts.apply', args: { id: 'notion', target: 'codex' } },
+    { path: 'xd.xenesis.tools.oauthDrafts.request', args: { id: 'google-calendar' } },
+    { path: 'xd.xenesis.tools.oauthRuntime.request', args: { id: 'google-calendar' } },
+    { path: 'xd.xenesis.tools.mcpOAuth.request', args: { id: 'linear' } },
+    { path: 'xd.xenesis.tools.runtime.request', args: { id: 'notion' } },
+    { path: 'xd.xenesis.tools.actions.request', args: { id: 'linear' } },
+    { path: 'xd.xenesis.tools.profileDrafts.request', args: { id: 'notion' } },
+    { path: 'xd.xenesis.tools.profileDrafts.apply', args: { id: 'notion', target: 'codex' } },
+  ];
+
+  for (const request of gated) {
+    const result = await callDeskBridgeCapability(api, {
+      ...request,
+      source: 'xenesis',
+      approved: false,
+    });
+    assert.equal(result.ok, false, `${request.path} should be blocked without approval`);
+    assert.equal(result.approvalRequired, true, `${request.path} should request real approval`);
+    assert.equal(result.error?.includes(`Capability requires approval for xenesis: ${request.path}`), true);
+  }
+
+  assert.deepEqual(calls, []);
+});
+
+test('slice 03 main readback and review handlers do not call external apply side-effect functions', () => {
+  const source = readFileSync(new URL('../main/index.ts', import.meta.url), 'utf8');
+  const inspectedHandlers = [
+    'getXenesisToolMcpInstallDraftsStatus',
+    'openXenesisToolMcpInstallDraft',
+    'requestXenesisToolMcpInstallDraft',
+    'getXenesisToolOAuthDraftsStatus',
+    'getXenesisToolOAuthSetupPacket',
+    'openXenesisToolOAuthDraft',
+    'openXenesisToolOAuthSetupPacket',
+    'requestXenesisToolOAuthDraft',
+    'getXenesisToolOAuthRuntimeStatus',
+    'openXenesisToolOAuthRuntime',
+    'requestXenesisToolOAuthRuntime',
+    'getXenesisToolMcpOAuthStatus',
+    'openXenesisToolMcpOAuth',
+    'requestXenesisToolMcpOAuth',
+    'getXenesisToolRuntimeStatus',
+    'openXenesisToolRuntime',
+    'requestXenesisToolRuntime',
+    'getXenesisToolActionCatalogStatus',
+    'openXenesisToolActionCatalog',
+    'requestXenesisToolActionCatalog',
+  ];
+  const forbiddenCalls = new Set([
+    'applyXenesisToolMcpInstallDraft',
+    'applyXenesisToolProfileDraft',
+    'installExternalMcpServer',
+    'resolveMcpActionInbox',
+  ]);
+
+  for (const handler of inspectedHandlers) {
+    const calls = collectFunctionCallExpressions(source, handler);
+    const forbidden = calls.filter((call) => forbiddenCalls.has(call));
+    assert.deepEqual(forbidden, [], `${handler} must stay review/readback only`);
+  }
 });
 
 test('xenesis tool open capabilities allow catalog opens without focused ids', async () => {

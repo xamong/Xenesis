@@ -1,5 +1,153 @@
 # Xenesis Desk Work Handoff
 
+## Active Slice 03 External Tools MCP/OAuth Planning
+
+- Current objective:
+  - Proceed with Slice 03 from the final-goal plan: finish CR-backed external
+    tool setup/readiness evidence for Notion-style env-token MCP tools,
+    Google Calendar-style OAuth setup packets, and Linear MCP OAuth readiness.
+  - Keep this slice readback/review-first: setup packet, OAuth runtime
+    readiness, MCP OAuth readiness, setup-plan workflow preview, and user-story
+    preview must not start OAuth, store tokens, write MCP config, execute
+    provider tools, or mutate external systems.
+- Context read:
+  - `AGENTS.md`
+  - `docs/obsidian/Xenesis-desk.md`
+  - `docs/obsidian/Xenesis-desk/00_System/AI Agent Rules.md`
+  - `docs/obsidian/Xenesis-desk/00_System/Graph Schema.md`
+  - `docs/obsidian/Xenesis-desk/00_System/Review Policy.md`
+  - `docs/obsidian/Xenesis-desk/10_Repo Map/Source of Truth Map.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Module Index.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/High Risk Areas.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Verification Map.md`
+  - `docs/obsidian/Xenesis-desk/10_Repo Map/Repo Overview.md`
+  - `docs/obsidian/Xenesis-desk/00_System/Final Goal.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-03-external-tools-mcp-oauth.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Capability Registry Architecture.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/MCP Bridge Architecture.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Provider Model.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-capability-registry.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-mcp-bridge.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-provider-runtime.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-xenesis-agent-pane.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-approval-system.md`
+  - `F:\agent-anal\analysis\openclaw-main\06-mcp-integration.md`
+  - `F:\agent-anal\analysis\hermes-agent-main\07-mcp-integration.md`
+  - `F:\agent-anal\analysis\xenesis-gaps-vs-references.ko.md`
+  - Original reference source anchors confirmed under
+    `F:\agent-anal\openclaw-main\src\agents\*mcp*` and
+    `F:\agent-anal\hermes-agent-main\tools\mcp_*.py`.
+- Observed current implementation:
+  - `src/shared/xenesisConnections.ts` already has CR read models for MCP
+    install drafts, tool profile drafts, Google OAuth drafts/setup packets,
+    OAuth runtime readiness, Linear MCP OAuth readiness, generic tool runtime
+    readiness, setup-plan workflow previews, and user-story previews.
+  - `src/main/index.ts` already exposes status/open/request handlers for those
+    surfaces and only performs MCP config writes through ready MCP install draft
+    apply.
+  - `scripts/xenesisConnectionCenterLiveSmoke.mjs` already requires broad
+    reference baseline checks, but the Slice 03 acceptance needs more explicit
+    Notion/Google Calendar/Linear/no-side-effect check ids.
+- Commands run:
+  - `git status --short --branch` -> clean on `agent/upcoming-work-20260627`.
+  - `Get-Content`/`rg` inspections over the files above -> context read only.
+  - Wrote `docs/superpowers/plans/2026-06-29-slice-03-external-tools-mcp-oauth.md`.
+  - Spawned adversarial review subagent `019f1367-8c7f-7c71-b2da-0447291ef50b`.
+  - Spawned final adversarial review subagent `019f1381-daf5-7c80-bb88-849ef79b8c0b`.
+  - Staged Slice 03 changes including the ignored Superpowers plan file.
+  - Created the local Slice 03 commit.
+- Exact verification result:
+  - Focused unit/tsx checks:
+    - `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs` passed
+      9/9.
+    - `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+      passed 172/172.
+    - `npx biome check scripts\xenesisConnectionCenterLiveSmoke.mjs scripts\xenesisConnectionCenterLiveSmoke.test.mjs src\shared\xenesisConnections.ts src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.ts src\renderer\panes\xenesisConnectionCenter.test.ts docs\manual\11-external-tool-integrations.md`
+      passed for changed non-main files.
+  - CR/type/build:
+    - `npm run docs:capabilities:audit; node scripts\assertCapabilityAuditZero.mjs`
+      passed, 801 nodes, 689 coverage path references, 4 zero counters.
+    - `npm run typecheck` passed.
+    - `npm --prefix packages/xenesis run typecheck` passed.
+    - `npm run build` passed with existing Vite warnings for browser
+      externalized `hwp.js` `fs` and mixed static/dynamic `src/renderer/deskBridge.ts`.
+  - Live evidence:
+    - `node .\scripts\xenesisConnectionCenterLiveSmoke.mjs --json --timeout=120000`
+      initially failed because the Google Calendar setup-packet check targeted
+      the setup-packet summary row instead of the OAuth draft card containing
+      credential refs; after selector correction it passed 14/14.
+    - `node .\scripts\xenesisProviderOnboardingLiveSmoke.mjs --json --timeout=180000`
+      passed 9/9 with `provider=codex-app-server`, `processModel=persistent-process`,
+      CR/MCP tool evidence, and CR readback after prompt.
+  - Package/public gates:
+    - `npm --prefix packages/xenesis test` passed, 82 files / 389 tests.
+    - `npm --prefix packages/xenesis run build` passed.
+    - `npm --prefix packages/xenesis run provider:smoke` passed 6/6; report
+      `C:\Users\great\.xenesis\reports\provider-live-20260629T130819661Z.json`.
+    - `git diff --check` passed with LF/CRLF normalization warnings only.
+    - `npm run lint` failed on existing repo-wide Biome debt: 1120 errors, 415
+      warnings, 92 infos. Examples include `extensions\sample.file-helper\main.js`
+      `useTemplate` and many CRLF/format findings.
+    - `npm run check:public-release` failed on known infra gap:
+      missing `.github\workflows\ci.yml`.
+  - Final adversarial review:
+    - Subagent `019f1381-daf5-7c80-bb88-849ef79b8c0b` reported no Critical or
+      Important issues.
+    - Minor documentation stale-state finding was fixed in the Slice 03
+      Obsidian working note and reference adoption map proposal.
+    - `rg` confirmed no remaining "broad gates pending" text in those notes.
+    - Biome did not process markdown/handoff paths because they are ignored by
+      config; `git diff --check` still passes with LF/CRLF normalization
+      warnings only.
+- Progress update:
+  - Added explicit Slice 03 live-smoke baseline ids for Notion MCP readiness,
+    Google Calendar OAuth setup packet/runtime, Linear MCP OAuth readiness, and
+    no OAuth side-effect boundary.
+  - `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs` first
+    failed as RED with 7/9 passing because the new baseline ids were absent,
+    then passed 9/9 after wiring `scripts/xenesisConnectionCenterLiveSmoke.mjs`
+    and `src/main/index.ts` snapshot checks.
+  - Added shared read-model acceptance for Slice 03 external tool MCP/OAuth
+    readiness and read/open-only workflow/setup boundaries.
+  - `npx tsx --test src\shared\xenesisConnections.test.ts` passed 49/49 after
+    updating the Notion user-story expected readback path to include
+    `xd.xenesis.tools.runtime.status`.
+  - Added CR dispatcher approval/no-side-effect guard tests and an AST-based
+    main handler forbidden-call scan for Slice 03 review/readback handlers.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` passed
+    49/49.
+  - Added renderer boundary coverage for planned OAuth profile drafts that
+    maliciously include `xd.xenesis.tools.profileDrafts.apply`; RED failed as
+    expected, then `buildXenesisToolProfileDraftApplyRequest` was guarded with
+    `draftStatus === 'ready'`.
+  - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` passed
+    74/74.
+  - Updated `docs/manual/11-external-tool-integrations.md`,
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-03-external-tools-mcp-oauth.md`,
+    and
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-reference-adoption-map-proposal.md`
+    with Slice 03 boundaries, focused verification, and reference adoption
+    evidence.
+- Adversarial plan review:
+  - Findings accepted into the plan: add handoff-before-code Task 0, add
+    planned OAuth profile draft apply leakage test, replace string source guard
+    with AST call-expression guard, add approval-gate checks with
+    `approved=false`, add provider natural-language live smoke and AGENTS gate
+    commands.
+  - Selector finding was reviewed against `SettingsPane.tsx`; the value-bearing
+    selectors are valid because the renderer emits attributes such as
+    `data-xenesis-tool-oauth-runtime={item.id}`.
+- Known gaps:
+  - Obsidian index links reference `01_Product/Final Goal.md`, but the actual
+    repo-local note is `00_System/Final Goal.md`; repo source remains truth.
+  - Repo-wide lint is not green because of pre-existing Biome formatting/style
+    debt outside this slice.
+  - `npm run check:public-release` is blocked by the known missing
+    `.github\workflows\ci.yml` infra file in this repo.
+- Next intended step:
+  - Continue with the next planned slice from the clean
+    `agent/upcoming-work-20260627` worktree.
+
 ## Active Slice 02 Live Smoke Recovery
 
 - Current objective:

@@ -15,8 +15,8 @@ import {
   XENESIS_CONNECTION_GATEWAY_SETTINGS_ACTION,
   XENESIS_CONNECTION_GUIDES,
   XENESIS_CONNECTION_LOCAL_CLI_MCP_SETTINGS_ACTION,
-  XENESIS_CONNECTION_PROVIDER_SETTINGS_ACTION,
   XENESIS_CONNECTION_PROVIDER_IDS,
+  XENESIS_CONNECTION_PROVIDER_SETTINGS_ACTION,
 } from './xenesisConnections';
 
 const channelGuardrails = {
@@ -1420,6 +1420,185 @@ test('buildXenesisConnectionsStatus exposes guided external tool setup plans', (
   assert.ok(calendar?.toolSetupPlan?.workflowPreview.safetyBoundary.includes('read/open setup plan preview'));
 });
 
+test('slice 03 external tool MCP/OAuth acceptance is explicit and secret-safe', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+    env: {
+      NOTION_TOKEN: 'slice03-secret-notion-token',
+      GOOGLE_OAUTH_CLIENT_SECRET: 'slice03-secret-google-client-secret',
+    },
+  });
+
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+  const googleCalendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+  const linear = status.sections.tools.items.find((item) => item.id === 'linear');
+
+  assert.equal(notion?.mcpTemplate?.serverName, 'notion');
+  assert.equal(notion?.mcpInstallDraft?.draftStatus, 'ready');
+  assert.equal(notion?.mcpInstallDraft?.controlPaths.includes('xd.xenesis.tools.mcpInstallDrafts.apply'), true);
+  assert.equal(notion?.toolProfileDraft?.draftStatus, 'ready');
+  assert.equal(notion?.toolProfileDraft?.controlPaths.includes('xd.xenesis.tools.profileDrafts.apply'), true);
+  assert.equal(notion?.toolRuntime?.runtimeStatus, 'ready');
+  assert.equal(notion?.toolRuntime?.readbackChecks.includes('notion-search-read'), true);
+  assert.equal(Boolean(notion?.toolActionCatalog?.groups.length), true);
+  assert.equal(notion?.toolUserStory?.storyContract.readbackPaths.includes('xd.xenesis.tools.runtime.status'), true);
+
+  assert.equal(googleCalendar?.toolOAuthDraft?.setupPacket.packetStatus, 'planned-template');
+  assert.equal(
+    googleCalendar?.toolOAuthDraft?.setupPacket.credentialRefs.some((ref) => ref.ref === 'GOOGLE_OAUTH_CLIENT_SECRET'),
+    true,
+  );
+  assert.equal(
+    googleCalendar?.toolOAuthDraft?.setupPacket.redirectUriPolicy.includes(
+      'Desk does not start an OAuth callback server',
+    ),
+    true,
+  );
+  assert.equal(googleCalendar?.toolOAuthDraft?.setupPacket.scopes.includes('calendar.freebusy.readonly'), true);
+  assert.equal(googleCalendar?.toolOAuthDraft?.setupPacket.tokenStore, 'selected MCP OAuth token store');
+  assert.equal(googleCalendar?.toolOAuthRuntime?.tokenStoreOwner, 'selected MCP OAuth runtime');
+  assert.equal(googleCalendar?.toolOAuthRuntime?.readPaths.includes('xd.xenesis.tools.oauthRuntime.status'), true);
+  assert.equal(googleCalendar?.toolRuntime?.runtimeStatus, 'planned-oauth');
+  assert.equal(
+    googleCalendar?.toolRuntime?.blockedActions.includes('execute provider tools before runtime readback'),
+    true,
+  );
+  assert.equal(googleCalendar?.toolRuntime?.blockedActions.includes('complete OAuth'), true);
+  assert.equal(googleCalendar?.toolRuntime?.blockedActions.includes('mutate calendar events'), true);
+
+  assert.equal(linear?.toolMcpOAuth?.tool, 'linear');
+  assert.equal(linear?.toolMcpOAuth?.authMode, 'oauth');
+  assert.equal(linear?.toolMcpOAuth?.readPaths.includes('xd.xenesis.tools.mcpOAuth.status'), true);
+  assert.equal(linear?.toolMcpOAuth?.blockedActions.includes('start OAuth flow'), true);
+  assert.equal(linear?.toolMcpOAuth?.blockedActions.includes('write MCP config'), true);
+  assert.equal(linear?.toolRuntime?.readbackChecks.includes('linear-issue-read'), true);
+
+  const serialized = JSON.stringify(status);
+  assert.equal(serialized.includes('slice03-secret-notion-token'), false);
+  assert.equal(serialized.includes('slice03-secret-google-client-secret'), false);
+});
+
+test('slice 03 setup packets and workflow previews stay read/open and side-effect free', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const googleCalendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+  const surfaces = [
+    googleCalendar?.toolOAuthDraft,
+    googleCalendar?.toolOAuthDraft?.setupPacket,
+    googleCalendar?.toolOAuthRuntime,
+    googleCalendar?.toolRuntime,
+    googleCalendar?.toolSetupPlan,
+  ].filter(Boolean);
+
+  for (const surface of surfaces) {
+    const text = JSON.stringify(surface);
+    for (const expected of [
+      'complete OAuth',
+      'store tokens',
+      'write MCP config',
+      'execute provider tools',
+      'mutate external systems',
+    ]) {
+      assert.match(text, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'));
+    }
+    assert.doesNotMatch(text, /client_secret["']?\s*[:=]\s*["'][^"']+/i);
+    assert.doesNotMatch(text, /access_token["']?\s*[:=]\s*["'][^"']+/i);
+    assert.doesNotMatch(text, /refresh_token["']?\s*[:=]\s*["'][^"']+/i);
+  }
+
+  const preview = googleCalendar?.toolSetupPlan?.workflowPreview;
+  assert.ok(preview);
+  assert.equal(preview.previewPath, 'xd.automation.workflow.preview');
+  assert.equal(preview.runPath, 'xd.automation.workflow.run');
+  assert.equal(preview.steps.length > 0, true);
+  const allowedPreviewPaths = new Set([
+    'xd.xenesis.tools.setup.status',
+    'xd.xenesis.tools.connectors.status',
+    'xd.xenesis.tools.installPlans.status',
+    'xd.xenesis.tools.runtime.status',
+    'xd.xenesis.tools.profileDrafts.status',
+    'xd.xenesis.tools.mcpInstallDrafts.status',
+    'xd.xenesis.tools.actions.status',
+    'xd.xenesis.tools.userStories.status',
+    'xd.xenesis.connections.diagnostics.status',
+    'xd.xenesis.connections.setupRequests.status',
+    'xd.xenesis.tools.oauthDrafts.status',
+    'xd.xenesis.tools.oauthDrafts.setupPacket',
+    'xd.xenesis.tools.oauthRuntime.status',
+    'xd.xenesis.tools.views.open',
+    'xd.xenesis.tools.setup.open',
+    'xd.xenesis.tools.connectors.open',
+    'xd.xenesis.tools.installPlans.open',
+    'xd.xenesis.tools.runtime.open',
+    'xd.xenesis.tools.profileDrafts.open',
+    'xd.xenesis.tools.mcpInstallDrafts.open',
+    'xd.xenesis.tools.actions.open',
+    'xd.xenesis.tools.userStories.open',
+    'xd.xenesis.connections.diagnostics.open',
+    'xd.xenesis.connections.setupRequests.open',
+    'xd.xenesis.tools.oauthDrafts.open',
+    'xd.xenesis.tools.oauthDrafts.setupPacket.open',
+    'xd.xenesis.tools.oauthRuntime.open',
+  ]);
+  for (const step of preview.steps) {
+    assert.equal(step.approved, false);
+    assert.equal(allowedPreviewPaths.has(step.path), true, `${step.path} should be a setup preview read/open path`);
+  }
+  assert.match(preview.safetyBoundary, /does not execute provider tools/i);
+  assert.match(preview.safetyBoundary, /complete OAuth/i);
+  assert.match(preview.safetyBoundary, /store tokens/i);
+});
+
 test('buildXenesisConnectionsStatus exposes guided external messenger channel setup plans', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {
@@ -1956,6 +2135,7 @@ test('buildXenesisConnectionsStatus exposes Hermes-style tool user-story workflo
       'xd.xenesis.connections.status',
       'xd.xenesis.tools.userStories.status',
       'xd.xenesis.tools.connectors.status',
+      'xd.xenesis.tools.runtime.status',
       'xd.xenesis.tools.views.status',
       'xd.xenesis.guides.status',
     ],
@@ -1966,6 +2146,7 @@ test('buildXenesisConnectionsStatus exposes Hermes-style tool user-story workflo
         'xd.xenesis.connections.status',
         'xd.xenesis.tools.userStories.status',
         'xd.xenesis.tools.connectors.status',
+        'xd.xenesis.tools.runtime.status',
         'xd.xenesis.tools.views.status',
         'xd.xenesis.guides.status',
       ],
@@ -1994,6 +2175,12 @@ test('buildXenesisConnectionsStatus exposes Hermes-style tool user-story workflo
           {
             label: 'Read xd.xenesis.tools.connectors.status',
             path: 'xd.xenesis.tools.connectors.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Read xd.xenesis.tools.runtime.status',
+            path: 'xd.xenesis.tools.runtime.status',
             args: {},
             approved: false,
           },

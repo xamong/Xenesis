@@ -4,8 +4,8 @@ import test from 'node:test';
 
 import {
   assertConnectionCenterReferenceBaselineChecks,
-  buildConnectionCenterReferenceBaselineReportChecks,
   buildConnectionCenterLiveSmokeReport,
+  buildConnectionCenterReferenceBaselineReportChecks,
   CONNECTION_CENTER_LIVE_SMOKE_APP_READY_SELECTOR,
   CONNECTION_CENTER_LIVE_SMOKE_OPEN_REQUEST,
   CONNECTION_CENTER_LIVE_SMOKE_SNAPSHOT_REQUEST,
@@ -63,6 +63,11 @@ test('connection center live smoke requires exact reference baseline check ids',
     'reference-baseline:tool-profile-review-steps',
     'reference-baseline:tool-oauth-review-steps',
     'reference-baseline:tool-oauth-runtime-readback',
+    'reference-baseline:external-tool-notion-mcp-readiness',
+    'reference-baseline:external-tool-google-calendar-oauth-setup-packet',
+    'reference-baseline:external-tool-google-calendar-oauth-runtime',
+    'reference-baseline:external-tool-linear-mcp-oauth-readiness',
+    'reference-baseline:external-tool-no-oauth-side-effect-boundary',
     'reference-baseline:channel-runtime-readback',
     'reference-baseline:channel-profile-review-steps',
   ]);
@@ -113,7 +118,10 @@ test('connection center live smoke preserves failing reference baseline diagnost
 
   const reportChecks = buildConnectionCenterReferenceBaselineReportChecks(snapshotChecks);
 
-  assert.equal(reportChecks.find((check) => check.id === 'reference-baseline:tool-oauth-review-steps')?.selector, '[data-tool]');
+  assert.equal(
+    reportChecks.find((check) => check.id === 'reference-baseline:tool-oauth-review-steps')?.selector,
+    '[data-tool]',
+  );
   assert.equal(
     reportChecks.find((check) => check.id === 'reference-baseline:tool-oauth-review-steps')?.error,
     'present=true textPresent=false',
@@ -126,7 +134,10 @@ test('connection center live smoke preserves failing reference baseline diagnost
 
   const report = buildConnectionCenterLiveSmokeReport(reportChecks);
   assert.equal(report.ok, false);
-  assert.equal(report.checks.find((check) => check.id === 'reference-baseline:tool-oauth-review-steps')?.selector, '[data-tool]');
+  assert.equal(
+    report.checks.find((check) => check.id === 'reference-baseline:tool-oauth-review-steps')?.selector,
+    '[data-tool]',
+  );
   assert.equal(
     report.checks.find((check) => check.id === 'reference-baseline-contract')?.error,
     'Failing reference baseline checks: reference-baseline:tool-oauth-review-steps',
@@ -148,7 +159,8 @@ test('connection center live smoke records missing reference baseline checks wit
   assert.deepEqual(reportChecks[1], {
     id: 'reference-baseline-contract',
     ok: false,
-    error: 'Missing reference baseline checks: reference-baseline:connection-center-root, reference-baseline:onboarding-guided-steps, reference-baseline:provider-profile-review-steps, reference-baseline:tool-profile-review-steps, reference-baseline:tool-oauth-review-steps, reference-baseline:tool-oauth-runtime-readback, reference-baseline:channel-runtime-readback, reference-baseline:channel-profile-review-steps',
+    error:
+      'Missing reference baseline checks: reference-baseline:connection-center-root, reference-baseline:onboarding-guided-steps, reference-baseline:provider-profile-review-steps, reference-baseline:tool-profile-review-steps, reference-baseline:tool-oauth-review-steps, reference-baseline:tool-oauth-runtime-readback, reference-baseline:external-tool-notion-mcp-readiness, reference-baseline:external-tool-google-calendar-oauth-setup-packet, reference-baseline:external-tool-google-calendar-oauth-runtime, reference-baseline:external-tool-linear-mcp-oauth-readiness, reference-baseline:external-tool-no-oauth-side-effect-boundary, reference-baseline:channel-runtime-readback, reference-baseline:channel-profile-review-steps',
   });
 });
 

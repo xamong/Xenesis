@@ -61,7 +61,17 @@ slice is verified or explicitly approved.
 | Rejected behavior | Deterministic natural-language routing, mock reasoning provider, silent provider fallback, raw secret exposure, and provider-specific CR implementations. |
 | Verification | `node --test src\main\xenesisService.test.mjs`; `npx tsx --test src\shared\xenesisConnections.test.ts`; `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts`; `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`; `npx tsx --test packages\xenesis-agent-core\src\embeddedAgentRuntime.test.ts`; `npm --prefix packages/xenesis exec vitest run src/providers/runtimeProviderResolution.test.ts tests/s3s4/providerFactoryWiring.test.ts tests/s3s4/connectProviderReadiness.test.ts`; `node --test scripts\xenesisProviderOnboardingLiveSmoke.test.mjs`; final gates pending in `handoff.md`. |
 
-- Slice 03: pending implementation evidence.
+### Slice 03: External Tools MCP/OAuth
+
+| Field | Record |
+|---|---|
+| Reference analysis | `F:\agent-anal\analysis\openclaw-main\06-mcp-integration.md`; `F:\agent-anal\analysis\hermes-agent-main\07-mcp-integration.md`; `F:\agent-anal\analysis\xenesis-gaps-vs-references.ko.md` |
+| Original source checked | `F:\agent-anal\hermes-agent-main\tools\mcp_tool.py`; `F:\agent-anal\hermes-agent-main\tools\mcp_oauth.py`; `F:\agent-anal\hermes-agent-main\tools\mcp_oauth_manager.py`; `F:\agent-anal\openclaw-main\src\agents\agent-bundle-mcp-runtime.ts`; `F:\agent-anal\openclaw-main\src\agents\agent-bundle-mcp-materialize.ts`; `F:\agent-anal\openclaw-main\src\agents\mcp-transport.ts`; `F:\agent-anal\openclaw-main\src\agents\mcp-oauth.ts`; `F:\agent-anal\openclaw-main\src\agents\mcp-config-shared.ts`; `F:\agent-anal\openclaw-main\src\agents\codex-mcp-config.ts` |
+| Borrowed pattern | External tool readiness is explicit data: MCP template/materialization metadata, OAuth readiness/setup state, credential references, scopes, token-store ownership, runtime readbacks, and action-policy boundaries. |
+| Xenesis adaptation | Connection Center/CR readbacks expose Notion MCP readiness, Google Calendar OAuth setup packet and runtime readiness, Linear MCP OAuth readiness, setup-plan/user-story workflow previews, and approval-gated apply paths. Tool profile apply delegates only through ready MCP install draft apply. |
+| Rejected behavior | Starting OAuth during setup readback, storing tokens, writing MCP config from setup packet/runtime/status paths, executing provider tools, leaking secret literal values, local natural-language routing, and side-effectful workflow preview steps. |
+| Verification | Focused evidence passed: `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs`; `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`. Broad evidence passed: CR audit/audit-zero, root and package typecheck, root build, Connection Center live smoke 14/14, provider onboarding live smoke 9/9, package tests/build/provider smoke. Residual repo-level gaps: existing Biome lint debt and missing `.github\workflows\ci.yml` for public-release check. |
+
 - Slice 04: pending implementation evidence.
 - Slice 05: pending implementation evidence.
 - Slice 06: pending final graph/release evidence.

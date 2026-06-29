@@ -203,9 +203,10 @@ export function formatXenesisConnectionReviewStepDetail(step: XenesisConnectionR
 }
 
 export function formatXenesisProviderSetupSummary(setup: XenesisConnectionProviderSetupTemplate): string {
-  const resolvedProvider = setup.runtimeProvider && setup.runtimeProvider !== setup.provider
-    ? `${setup.provider} -> ${setup.runtimeProvider}`
-    : setup.provider;
+  const resolvedProvider =
+    setup.runtimeProvider && setup.runtimeProvider !== setup.provider
+      ? `${setup.provider} -> ${setup.runtimeProvider}`
+      : setup.provider;
   const processModel = setup.processModel ? ` / ${setup.processModel}` : '';
   return `${resolvedProvider} / ${setup.model} / ${setup.authMode} / ${setup.credentialState}${processModel}`;
 }
@@ -543,6 +544,7 @@ export function buildXenesisToolProfileDraftApplyRequest(
   item: XenesisConnectionItem,
 ): McpBridgeCapabilityCallRequest | null {
   if (!item.toolProfileDraft) return null;
+  if (item.toolProfileDraft.draftStatus !== 'ready') return null;
   if (!item.toolProfileDraft.controlPaths.includes('xd.xenesis.tools.profileDrafts.apply')) return null;
   return {
     path: 'xd.xenesis.tools.profileDrafts.apply',
