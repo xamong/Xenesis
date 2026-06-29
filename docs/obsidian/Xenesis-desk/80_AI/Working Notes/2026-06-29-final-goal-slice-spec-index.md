@@ -1,12 +1,14 @@
 ---
-type: agent-handoff
+type: index
 repo: xenesis-desk
+aliases:
+  - Final Goal Slice Spec Index
 status: draft
 risk: high
 ai_edit_policy: direct_edit_allowed
 ai_generated: true
 reviewed: false
-confidence: medium
+confidence: low
 last_reviewed: 2026-06-29
 depends_on:
   - "[[Final Goal Overall Spec]]"
@@ -33,7 +35,7 @@ plans must be written under each accepted slice spec before product code edits.
 
 | Slice | Spec | Primary outcome |
 |---|---|---|
-| 01 | [[Slice Spec 01 Live CR Baseline]] | Live CR baseline and reference adoption map. |
+| 01 | [[Slice Spec 01 Live CR Baseline]] | Live CR baseline and reference adoption proposal. |
 | 02 | [[Slice Spec 02 Provider Onboarding]] | Provider setup, first-run onboarding, and provider evidence. |
 | 03 | [[Slice Spec 03 External Tools MCP OAuth]] | External tool connection, MCP templates, OAuth setup packets, runtime readiness. |
 | 04 | [[Slice Spec 04 Messenger Channels]] | External messenger profile, routing, runtime, approval-gated test-send. |
@@ -47,9 +49,12 @@ Do not execute a slice directly from this index. For each slice:
 1. Read the slice spec.
 2. Confirm local reference analysis and original source anchors.
 3. Write a detailed implementation plan for that slice.
-4. Execute with focused tests first.
-5. Broaden to CR audit, typecheck, build, and live smoke according to changed scope.
-6. Record exact evidence in `handoff.md`.
+4. Update `[[Reference Adoption Map Proposal]]` with borrowed, adapted,
+   rejected, and verified reference patterns.
+5. Execute with focused tests first.
+6. Broaden to CR audit-zero assertion, typecheck, build, lint, release gates,
+   and live smoke according to changed scope.
+7. Record exact evidence in `handoff.md`.
 
 ## Shared Boundaries
 
@@ -59,6 +64,8 @@ Do not execute a slice directly from this index. For each slice:
 - No secrets or tokens in docs, logs, smoke output, or Obsidian notes.
 - No external web research by default.
 - No claim of provider natural-language CR behavior without live provider/tool-call evidence.
+- No CR completion claim from `rg` labels or audit command exit code alone; all
+  four CR gap counters must be asserted as `0`.
 
 ## Graph Links
 

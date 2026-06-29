@@ -1,12 +1,14 @@
 ---
-type: agent-handoff
+type: task
 repo: xenesis-desk
+aliases:
+  - Slice Spec 06 Graph Release Hardening
 status: draft
 risk: high
 ai_edit_policy: direct_edit_allowed
 ai_generated: true
 reviewed: false
-confidence: medium
+confidence: low
 last_reviewed: 2026-06-29
 depends_on:
   - "[[Final Goal Overall Spec]]"
@@ -53,39 +55,51 @@ docs, handoff, release checks, and live evidence into one auditable final state.
 - `docs/obsidian/Xenesis-desk/_Indexes/CR Surface Index.md`
 - `docs/obsidian/Xenesis-desk/_Indexes/High Risk Areas.md`
 - `docs/obsidian/Xenesis-desk/_Indexes/Open Tasks.md`
-- `docs/obsidian/Xenesis-desk/20_Architecture/Reference Adoption Map.md`
+- `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-reference-adoption-map-proposal.md`
+- `docs/obsidian/Xenesis-desk/20_Architecture/Reference Adoption Map.md` (promotion target only after approval/verification)
 - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/`
+- `scripts/assertCapabilityAuditZero.mjs`
+- `scripts/obsidianGraphCheck.mjs`
 - `scripts/restore-obsidian-vault.ps1`
 
 ## Acceptance
 
 - Obsidian graph links from index to final goal, slice specs, reference adoption
-  map, module owners, CR surface, and verification map are complete.
-- CR audit counters are all 0 after final implementation slices.
+  proposal or promoted map, module owners, CR surface, and verification map are
+  complete.
+- Graph validation fails on unresolved required wikilinks, missing slice index
+  discoverability, or missing handoff/live-evidence markers.
+- CR audit assertion fails unless all four gap counters are exactly 0 after
+  final implementation slices.
 - Generated CR docs are current if CR surfaces changed.
 - `handoff.md` records all commands, live prompt markers, exact results, known
-  gaps, and final next step.
+  gaps, final next step, footer/work-log provider, generic CR/MCP tool-call
+  evidence, and readback/approval evidence.
 - Any public-release known infra gap is stated concretely rather than hidden.
+- `npm run lint` and `npm run check:public-release` are mandatory final gates;
+  accepted infra gaps must be recorded with exact command output and dates.
 - External Obsidian mirror is restored only after repo-local vault is current.
 
 ## Verification
 
 ```powershell
 npm run docs:capabilities:audit
-rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md
+node scripts\assertCapabilityAuditZero.mjs
 npm run typecheck
+npm run lint
+npm --prefix packages/xenesis test
 npm --prefix packages/xenesis run typecheck
 npm run build
 npm run smoke:xenesis:connection-center -- --json
 npm run smoke:xenesis:review-request-approval -- --json
+npm run check:public-release
 git diff --check
 ```
 
-Run when release packaging is in scope:
-
-```powershell
-npm run check:public-release
-```
+Live Electron Agent-pane natural-language proof is mandatory for final signoff.
+If no repeatable script exists yet, `handoff.md` must record the exact prompt,
+driver/manual marker, footer/work-log provider, generic CR/MCP tool-call
+evidence, and CR readback/approval evidence.
 
 If the known missing `.github/workflows/ci.yml` gap remains, record the exact
 failure rather than treating it as a product failure.

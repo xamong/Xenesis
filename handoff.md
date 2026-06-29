@@ -7,6 +7,80 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current Slice: Adversarial Slice Spec Review
+
+- Current objective:
+  - Run subagent-style adversarial verification over the final-goal slice spec
+    set.
+  - Treat Obsidian as an AI-readable reference/context layer only; executable
+    truth remains code, tests, generated CR docs, CR audit counters, and live
+    Agent-pane evidence.
+  - Patch only spec/graph defects that would mislead future implementation.
+- Scope boundary:
+  - Review/spec/graph corrections only; no product runtime code changes.
+  - No external web browsing.
+  - Do not claim product completion from Obsidian notes.
+- Touched files:
+  - `handoff.md`
+  - `docs/obsidian/Xenesis-desk.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Review/2026-06-29-final-goal-slice-spec-adversarial-review.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-final-goal-overall-spec.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-final-goal-slice-spec-index.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-reference-adoption-map-proposal.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-reference-driven-final-goal-slices.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-1-live-cr-baseline-plan.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-01-live-cr-baseline.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-02-provider-onboarding.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-03-external-tools-mcp-oauth.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-04-messenger-channels.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-05-user-stories-guides.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-06-graph-release-hardening.md`
+- Subagent review axes:
+  - CR/provider/approval policy.
+  - Overall coverage and reference adoption.
+  - Verification gates and test adequacy.
+  - Obsidian graph integrity and placement policy.
+- Commands run:
+  - `tool_search` for multi-agent/subagent tools.
+  - Spawned four `multi_agent_v1` explorer agents for the axes above.
+  - Alias-aware wikilink check over `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29*.md`.
+  - Exact `F:\agent-anal` path existence check for referenced source anchors.
+  - `rg -n "Original source anchors are selected|F:\\agent-anal\\openclaw-main\\src`?$|F:\\agent-anal\\openclaw-main\\extensions`?$|\\[\\[Reference Adoption Map\\]\\]" ...`
+  - `git diff --check`
+  - `git status --short`
+- Exact verification result:
+  - Four subagents returned findings; no subagent edited files.
+  - Added aliases and corrected note types/confidence for the 2026-06-29 spec
+    set.
+  - Added root-vault link to `[[Final Goal Slice Spec Index]]`.
+  - Added `[[Reference Adoption Map Proposal]]` in `80_AI/Working Notes`; the
+    canonical `20_Architecture` map remains promotion-only.
+  - Replaced broad reference anchors with exact OpenClaw/Hermes source files.
+  - Strengthened per-slice acceptance around audit-zero assertion, provider live
+    tool-call proof, `~/.xenis` provider source, no mock/silent fallback,
+    external-tool negative side effects, Linear scope, channel approval records,
+    workflow preview invariants, lint, public-release check, and final live
+    Agent-pane proof.
+  - Alias-aware wikilink check reported no unresolved `2026-06-29` Working Notes
+    links.
+  - `F:\agent-anal` path check reported all referenced paths exist.
+  - Broad-reference scan reported no remaining root-only reference anchors in
+    checked slice specs.
+  - `git diff --check` reported no whitespace errors; Git printed LF/CRLF
+    normalization warnings only.
+- Known gaps:
+  - `scripts/assertCapabilityAuditZero.mjs` is now required by specs as a future
+    slice deliverable, but was not implemented in this review-only turn.
+  - `scripts/obsidianGraphCheck.mjs` is now a Slice 06 candidate deliverable, but
+    was not implemented in this review-only turn.
+  - Repeatable live Electron Agent-pane natural-language proof remains a known
+    implementation gap until a script or exact manual evidence is recorded.
+  - Product code, tests, CR audit, build, and live smokes were not run because
+    this turn only reviewed and corrected specs.
+- Next intended step:
+  - Commit the adversarial review/spec corrections, then use the corrected slice
+    specs as the planning basis for the first implementation slice.
+
 ## Current Slice: Final Goal Slice Specs
 
 - Current objective:

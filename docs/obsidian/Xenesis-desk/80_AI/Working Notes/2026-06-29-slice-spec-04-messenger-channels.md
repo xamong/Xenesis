@@ -1,12 +1,14 @@
 ---
-type: agent-handoff
+type: task
 repo: xenesis-desk
+aliases:
+  - Slice Spec 04 Messenger Channels
 status: draft
 risk: high
 ai_edit_policy: direct_edit_allowed
 ai_generated: true
 reviewed: false
-confidence: medium
+confidence: low
 last_reviewed: 2026-06-29
 depends_on:
   - "[[Final Goal Overall Spec]]"
@@ -60,6 +62,7 @@ Original source anchors:
 - `src/renderer/panes/xenesisConnectionCenter.test.ts`
 - `src/renderer/panes/SettingsPane.tsx`
 - `docs/manual/10-openclaw-channel-setup.md`
+- `scripts/assertCapabilityAuditZero.mjs`
 - `handoff.md`
 
 ## Acceptance
@@ -68,10 +71,18 @@ Original source anchors:
   access groups, pairing, runtime readiness, and user-story metadata.
 - Route/session behavior uses explicit profile/config/readback state rather
   than prompt keyword routing.
-- Profile apply and test-send actions are approval-gated.
+- Initial shipped channel set is declared before implementation; reference-only
+  channels remain documented as not-ready until CR status and live verification
+  exist.
+- Profile apply and test-send actions create real approval records with
+  `approved=false`.
+- Channel approval evidence covers pending, approved, and review-item readback
+  for profile apply and test-send.
 - Test-send output is sanitized and does not leak tokens, webhook URLs, or raw
   channel identifiers beyond user-approved diagnostics.
 - Channel readback can be verified through CR status paths.
+- Reference adoption map proposal is updated with borrowed, adapted, rejected,
+  and verified channel/reference patterns.
 
 ## Verification
 
@@ -80,15 +91,15 @@ npx tsx --test src\shared\xenesisConnections.test.ts
 npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts
 npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts
 npm run docs:capabilities:audit
+node scripts\assertCapabilityAuditZero.mjs
 npm run typecheck
 npm run smoke:xenesis:connection-center -- --json
-```
-
-If test-send or approval behavior changes:
-
-```powershell
 npm run smoke:xenesis:review-request-approval -- --json
 ```
+
+The approval smoke must be extended or paired with a channel-specific smoke
+before this slice is accepted; a Notion-only approval scenario is not enough for
+messenger test-send/profile apply coverage.
 
 ## Out Of Scope
 

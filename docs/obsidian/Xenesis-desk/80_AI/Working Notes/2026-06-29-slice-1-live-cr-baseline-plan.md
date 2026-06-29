@@ -1,12 +1,14 @@
 ---
-type: agent-handoff
+type: task
 repo: xenesis-desk
+aliases:
+  - Slice 1 Live CR Baseline Plan
 status: draft
 risk: high
 ai_edit_policy: direct_edit_allowed
 ai_generated: true
 reviewed: false
-confidence: medium
+confidence: low
 last_reviewed: 2026-06-29
 depends_on:
   - "[[Final Goal]]"
@@ -34,10 +36,10 @@ This Slice 1 plan is downstream of [[Final Goal Overall Spec]]. Do not execute
 it as the next implementation step until [[Slice Spec 01 Live CR Baseline]] has
 been reviewed for scope.
 
-The detailed implementation plan is stored at
+The local detailed implementation plan is stored at
 `docs/superpowers/plans/2026-06-29-slice-1-live-cr-baseline-reference-map.md`.
-That directory is ignored by Git, so this note is the tracked Obsidian graph
-pointer.
+That directory is ignored by Git; [[Slice Spec 01 Live CR Baseline]] and this
+note are the tracked Obsidian graph records.
 
 ## Planned Work
 
@@ -45,9 +47,13 @@ pointer.
 2. Add named `reference-baseline:*` checks to the Connection Center live smoke.
 3. Label the review-request approval live smoke as a structured CR approval
    regression, not provider natural-language CR tool-selection proof.
-4. Create the draft `[[Reference Adoption Map]]` architecture note and update
-   verification/CR surface indexes.
-5. Run focused source tests, CR audit, typecheck, build, and both live smokes.
+4. Create or update `[[Reference Adoption Map Proposal]]` first; promote to
+   `20_Architecture/Reference Adoption Map.md` only after verification or
+   explicit approval.
+5. Verify approval baseline ownership across `capabilityActionApproval`,
+   `mcpActionInbox`, preload APIs, and `XenesisAgentPane` inline cards.
+6. Run focused source tests, CR audit-zero assertion, typecheck, build, and both
+   live smokes.
 
 ## Boundary
 
@@ -62,7 +68,9 @@ reasoning evidence.
 
 - `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs`
 - `node --test scripts\xenesisReviewRequestApprovalLiveSmoke.test.mjs`
+- `node --test src\main\mcpActionInbox.test.mjs`
 - `npm run docs:capabilities:audit`
+- `node scripts\assertCapabilityAuditZero.mjs`
 - `npm run typecheck`
 - `npm run build`
 - `npm run smoke:xenesis:connection-center -- --json`

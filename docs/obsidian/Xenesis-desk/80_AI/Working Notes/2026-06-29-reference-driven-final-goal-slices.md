@@ -1,12 +1,14 @@
 ---
-type: agent-handoff
+type: task
 repo: xenesis-desk
+aliases:
+  - Reference-Driven Final Goal Slices
 status: draft
 risk: high
 ai_edit_policy: direct_edit_allowed
 ai_generated: true
 reviewed: false
-confidence: medium
+confidence: low
 last_reviewed: 2026-06-29
 depends_on:
   - "[[Final Goal]]"
@@ -34,10 +36,10 @@ This slice plan is downstream of [[Final Goal Overall Spec]]. Treat it as a
 draft implementation plan until the overall spec and [[Final Goal Slice Spec Index]]
 are accepted.
 
-The master implementation plan is stored at
-`docs/superpowers/plans/2026-06-29-xenesis-reference-driven-final-goal-slices.md`.
-That directory is ignored by Git, so this Obsidian working note is the tracked
-graph pointer for the plan.
+The tracked scope contracts are [[Final Goal Slice Spec Index]] and the six
+slice spec notes linked from it. The local
+`docs/superpowers/plans/2026-06-29-xenesis-reference-driven-final-goal-slices.md`
+artifact is ignored by Git and is not the canonical tracked breakdown.
 
 ## Reference Intake Rule
 

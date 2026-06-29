@@ -1,12 +1,14 @@
 ---
-type: agent-handoff
+type: task
 repo: xenesis-desk
+aliases:
+  - Final Goal Overall Spec
 status: draft
 risk: high
 ai_edit_policy: direct_edit_allowed
 ai_generated: true
 reviewed: false
-confidence: medium
+confidence: low
 last_reviewed: 2026-06-29
 depends_on:
   - "[[Final Goal]]"
@@ -190,8 +192,8 @@ without executing unsafe actions.
 
 Acceptance:
 
-- Manual docs cover onboarding, OpenClaw channel setup, external tool
-  integrations, and Agent user stories.
+- Manual docs cover troubleshooting/agent routing, onboarding, OpenClaw channel
+  setup, external tool integrations, and Agent user stories.
 - User-story contracts expose open path, readback paths, approval boundaries,
   completion evidence, safety boundary, and workflow preview metadata.
 - Workflow preview steps are read/open only and use `approved=false`.
@@ -206,10 +208,10 @@ handoffs.
 
 Acceptance:
 
-- `docs/obsidian/Xenesis-desk.md` links to final goal, source of truth,
-  architecture, module, CR surface, verification, and task notes.
-- Working notes link this overall spec, slice plans, reference adoption map,
-  and implementation handoffs.
+- `docs/obsidian/Xenesis-desk.md` links to final goal, this spec set, source of
+  truth, architecture, module, CR surface, verification, and task notes.
+- Working notes link this overall spec, slice specs, reference adoption map
+  proposal, and implementation handoffs.
 - Canonical architecture/module notes are updated only when a plan is approved
   or the change has been verified.
 - If Obsidian and code disagree, code wins and the mismatch is recorded in
@@ -228,6 +230,10 @@ Each implementation slice must include a reference adoption record:
 | Rejected behavior | Anything not ported, especially prompt keyword routing or chat-only approval. |
 | Verification | Focused tests, CR audit, live smoke, or manual live prompt evidence. |
 
+The initial record is a proposal in `80_AI/Working Notes` or `80_AI/Review`.
+Promotion to `20_Architecture/Reference Adoption Map.md` is allowed only after
+the implementation slice is verified or explicitly approved.
+
 Initial source anchors:
 
 - OpenClaw channels:
@@ -239,11 +245,22 @@ Initial source anchors:
   `F:\agent-anal\hermes-agent-main\tui_gateway\server.py`,
   `F:\agent-anal\hermes-agent-main\tui_gateway\ws.py`,
   `F:\agent-anal\hermes-agent-main\apps\desktop\electron\main.cjs`.
-- MCP/provider references are selected per slice from:
-  `F:\agent-anal\analysis\openclaw-main\06-mcp-integration.md`,
-  `F:\agent-anal\analysis\openclaw-main\05-provider-extensions.md`,
-  `F:\agent-anal\analysis\hermes-agent-main\07-mcp-integration.md`,
-  `F:\agent-anal\analysis\hermes-agent-main\03-llm-provider-abstraction.md`.
+- Provider references:
+  `F:\agent-anal\openclaw-main\src\llm\providers\register-builtins.ts`,
+  `F:\agent-anal\openclaw-main\src\plugin-sdk\provider-entry.ts`,
+  `F:\agent-anal\openclaw-main\extensions\openai\openai-provider.ts`,
+  `F:\agent-anal\openclaw-main\extensions\google\provider-registration.ts`,
+  `F:\agent-anal\hermes-agent-main\providers\base.py`,
+  `F:\agent-anal\hermes-agent-main\providers\__init__.py`,
+  `F:\agent-anal\hermes-agent-main\agent\chat_completion_helpers.py`.
+- MCP/OAuth references:
+  `F:\agent-anal\openclaw-main\src\agents\agent-bundle-mcp-runtime.ts`,
+  `F:\agent-anal\openclaw-main\src\agents\agent-bundle-mcp-materialize.ts`,
+  `F:\agent-anal\openclaw-main\src\agents\mcp-transport.ts`,
+  `F:\agent-anal\openclaw-main\src\agents\mcp-oauth.ts`,
+  `F:\agent-anal\hermes-agent-main\tools\mcp_tool.py`,
+  `F:\agent-anal\hermes-agent-main\tools\mcp_oauth.py`,
+  `F:\agent-anal\hermes-agent-main\tools\mcp_oauth_manager.py`.
 
 ## Verification Contract
 
@@ -256,13 +273,19 @@ npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts
 npx tsx --test src\shared\xenesisConnections.test.ts
 npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts
 npm run docs:capabilities:audit
+node scripts\assertCapabilityAuditZero.mjs
 ```
+
+If `scripts\assertCapabilityAuditZero.mjs` does not exist when a CR-changing
+slice starts, that slice must add an equivalent failing assertion before
+claiming CR completion. Plain `rg` output is not completion evidence.
 
 Provider/runtime checks:
 
 ```powershell
 npm --prefix packages/xenesis exec vitest run src/providers/cliProvider.deskMcp.test.ts src/core/AgentRuntimeFactory.modeMessages.test.ts src/core/AgentRunPipeline.noHeuristicRouting.test.ts
 npm --prefix packages/xenesis run provider:desk-mcp-prompt-smoke
+npm --prefix packages/xenesis run provider:smoke
 npm --prefix packages/xenesis run typecheck
 ```
 
@@ -270,6 +293,7 @@ Build and broad checks:
 
 ```powershell
 npm run typecheck
+npm run lint
 npm --prefix packages/xenesis test
 npm --prefix packages/xenesis run build
 npm run build
@@ -281,6 +305,7 @@ Live evidence checks:
 ```powershell
 npm run smoke:xenesis:connection-center -- --json
 npm run smoke:xenesis:review-request-approval -- --json
+npm run check:public-release
 ```
 
 Natural-language provider CR proof requires an additional live Agent pane prompt
@@ -291,6 +316,7 @@ that records:
 - evidence that the provider called `desk_call_capability` or
   `xenesis_desk_call_capability`,
 - CR readback result or approval record,
+- live Electron Agent-pane driver or manual marker used to capture the evidence,
 - date and command/smoke marker.
 
 ## Slice Model
@@ -301,7 +327,7 @@ internal spec before product code edits.
 | Slice | Purpose | Exit criteria |
 |---|---|---|
 | 0. Overall spec | Lock this product/technical contract. | This note exists, downstream plans depend on it, handoff records the pivot. |
-| 1. Live CR baseline and reference map | Prove current CR-backed surfaces and create reference adoption map. | Live smokes pass or exact known gap recorded; `[[Reference Adoption Map]]` drafted. |
+| 1. Live CR baseline and reference map | Prove current CR-backed surfaces and create reference adoption proposal. | Live smokes pass or exact known gap recorded; `[[Reference Adoption Map Proposal]]` drafted. |
 | 2. Provider and onboarding | Finish first-run provider setup/readback/workflow preview. | Provider setup status and live provider evidence are verified. |
 | 3. External tools and MCP/OAuth | Finish Notion/env-token and Google Calendar/OAuth review paths. | Tool status/readback/profile/OAuth drafts and preview paths verified. |
 | 4. External messengers and channels | Finish channel setup/profile/routing/runtime/test-send surfaces. | Channel CR readback and approval-gated test-send verified. |
