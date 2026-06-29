@@ -5,6 +5,8 @@ import {
   buildXenesisNaturalProviderViewSectionOpenAction,
   buildXenesisNaturalToolViewSectionOpenAction,
   buildXenesisNaturalUserStoryWorkflowPreviewAction,
+  findXenesisNaturalAgentReadbackAction,
+  findXenesisNaturalAgentSubmitAction,
   findXenesisNaturalCatalogRuleAction,
   findXenesisNaturalConnectionAggregateOpenAction,
   findXenesisNaturalConnectionAggregateStatusAction,
@@ -21,17 +23,16 @@ import {
   findXenesisNaturalProviderAggregateStatusAction,
   findXenesisNaturalProviderRuleAction,
   findXenesisNaturalProviderViewSectionTarget,
+  findXenesisNaturalRunStartAction,
   findXenesisNaturalToolAggregateStatusAction,
   findXenesisNaturalToolViewSectionTarget,
   findXenesisNaturalViewTarget,
-  XENESIS_NATURAL_AGENT_READBACK_RULES,
-  XENESIS_NATURAL_AGENT_SUBMIT_RULES,
+  findXenesisNaturalWorkspaceSetAction,
   XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_APPLY_TARGET_RULES,
   XENESIS_NATURAL_CHANNEL_TEST_TARGET_RULES,
   XENESIS_NATURAL_CONNECTION_SETUP_APPLY_TARGET_RULES,
   XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES,
   XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES,
-  XENESIS_NATURAL_DESK_ACTION_ARGS,
   XENESIS_NATURAL_GATEWAY_ACTION_RULES,
   XENESIS_NATURAL_MCP_INSTALL_DRAFT_APPLY_TARGET_RULES,
   XENESIS_NATURAL_OAUTH_SETUP_PACKET_TARGET_RULES,
@@ -41,11 +42,9 @@ import {
   XENESIS_NATURAL_PROVIDER_STATUS_RULES,
   XENESIS_NATURAL_REVIEW_REQUEST_PROVIDER_RULES,
   XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES,
-  XENESIS_NATURAL_RUN_START_RULES,
   XENESIS_NATURAL_RUNTIME_CONTROL_RULES,
   XENESIS_NATURAL_RUNTIME_INVENTORY_RULES,
   XENESIS_NATURAL_RUNTIME_SUPPORT_RULES,
-  XENESIS_NATURAL_WORKSPACE_SET_RULES,
 } from './xenesisNaturalLanguageCapabilityCatalog';
 import {
   extractXenesisNaturalLocalPath,
@@ -414,11 +413,7 @@ function xenesisAgentReadbackActionFromNaturalText(
   const agentId = extractXenesisNaturalQuotedText(rawText);
   if (!agentId) return null;
 
-  return findXenesisNaturalCatalogRuleAction(
-    value,
-    XENESIS_NATURAL_AGENT_READBACK_RULES,
-    XENESIS_NATURAL_DESK_ACTION_ARGS.agentId(agentId),
-  );
+  return findXenesisNaturalAgentReadbackAction(value, agentId);
 }
 
 export function xenesisRuntimeInventoryActionFromNaturalText(
@@ -440,11 +435,7 @@ export function xenesisAgentSubmitActionFromNaturalText(rawText: string): Xenesi
   const [agentId, text] = extractXenesisNaturalQuotedTexts(rawText);
   if (!agentId || !text) return null;
 
-  return findXenesisNaturalCatalogRuleAction(
-    intentValue,
-    XENESIS_NATURAL_AGENT_SUBMIT_RULES,
-    XENESIS_NATURAL_DESK_ACTION_ARGS.agentSubmit(agentId, text),
-  );
+  return findXenesisNaturalAgentSubmitAction(intentValue, agentId, text);
 }
 
 export function xenesisRunStartActionFromNaturalText(rawText: string): XenesisNaturalDeskActionRequest | null {
@@ -452,11 +443,7 @@ export function xenesisRunStartActionFromNaturalText(rawText: string): XenesisNa
   const prompt = extractXenesisNaturalQuotedText(rawText);
   if (!prompt) return null;
 
-  return findXenesisNaturalCatalogRuleAction(
-    intentValue,
-    XENESIS_NATURAL_RUN_START_RULES,
-    XENESIS_NATURAL_DESK_ACTION_ARGS.prompt(prompt),
-  );
+  return findXenesisNaturalRunStartAction(intentValue, prompt);
 }
 
 export function xenesisRuntimeControlActionFromNaturalText(value: string): XenesisNaturalDeskActionRequest | null {
@@ -470,9 +457,5 @@ export function xenesisWorkspaceSetActionFromNaturalText(
   const path = extractXenesisNaturalLocalPath(rawText);
   if (!path) return null;
 
-  return findXenesisNaturalCatalogRuleAction(
-    value,
-    XENESIS_NATURAL_WORKSPACE_SET_RULES,
-    XENESIS_NATURAL_DESK_ACTION_ARGS.workspacePath(path),
-  );
+  return findXenesisNaturalWorkspaceSetAction(value, path);
 }

@@ -21,6 +21,8 @@ import {
   buildXenesisNaturalProviderViewSectionOpenAction,
   buildXenesisNaturalToolViewSectionOpenAction,
   buildXenesisNaturalUserStoryWorkflowPreviewAction,
+  findXenesisNaturalAgentReadbackAction,
+  findXenesisNaturalAgentSubmitAction,
   findXenesisNaturalConnectionCenterAggregateOpenAction,
   findXenesisNaturalGuideOpenAction,
   findXenesisNaturalGuideStatusAction,
@@ -29,7 +31,9 @@ import {
   findXenesisNaturalOnboardingOpenAction,
   findXenesisNaturalOnboardingStatusAction,
   findXenesisNaturalProviderAggregateStatusAction,
+  findXenesisNaturalRunStartAction,
   findXenesisNaturalToolAggregateStatusAction,
+  findXenesisNaturalWorkspaceSetAction,
   XENESIS_NATURAL_ACTIVE_DOCK_CLOSE_RULES,
   XENESIS_NATURAL_ACTIVE_DOCK_FOCUS_RULES,
   XENESIS_NATURAL_AGENT_READBACK_RULES,
@@ -440,6 +444,8 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'buildXenesisNaturalToolViewSectionOpenAction',
     'buildXenesisNaturalMessengerViewSectionOpenAction',
     'buildXenesisNaturalUserStoryWorkflowPreviewAction',
+    'findXenesisNaturalAgentReadbackAction',
+    'findXenesisNaturalAgentSubmitAction',
     'findXenesisNaturalConnectionCenterAggregateOpenAction',
     'findXenesisNaturalGuideOpenAction',
     'findXenesisNaturalGuideStatusAction',
@@ -448,7 +454,9 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'findXenesisNaturalOnboardingOpenAction',
     'findXenesisNaturalOnboardingStatusAction',
     'findXenesisNaturalProviderAggregateStatusAction',
+    'findXenesisNaturalRunStartAction',
     'findXenesisNaturalToolAggregateStatusAction',
+    'findXenesisNaturalWorkspaceSetAction',
   ]) {
     assert.match(capabilityCatalogSource, new RegExp(`export function ${sharedActionBuilderFunction}`));
   }
@@ -475,7 +483,11 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_RULES',
     'XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_RULES',
     'XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_RULES',
-    'XENESIS_NATURAL_DESK_ACTION_ARGS\\.ensureVisible',
+    'XENESIS_NATURAL_AGENT_READBACK_RULES',
+    'XENESIS_NATURAL_AGENT_SUBMIT_RULES',
+    'XENESIS_NATURAL_RUN_START_RULES',
+    'XENESIS_NATURAL_WORKSPACE_SET_RULES',
+    'XENESIS_NATURAL_DESK_ACTION_ARGS',
   ]) {
     assert.doesNotMatch(naturalResolverSource, new RegExp(sharedActionBuilderLeak));
   }
@@ -815,7 +827,6 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES',
     'XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES',
     'XENESIS_NATURAL_RUNTIME_CONTROL_RULES',
-    'XENESIS_NATURAL_WORKSPACE_SET_RULES',
   ]) {
     assert.doesNotMatch(source, new RegExp(sharedResolverOwnedRule));
     assert.doesNotMatch(naturalPlannerSource, new RegExp(sharedResolverOwnedRule));
@@ -1288,15 +1299,15 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.equal(XENESIS_NATURAL_DOCK_PANES_LIST_RULES[0]?.action.path, 'xd.dock.panes.list');
   assert.equal(XENESIS_NATURAL_ARTIFACT_TARGET_RULES[0]?.action.path, 'xd.dock.artifactTarget.set');
   assert.doesNotMatch(source, /XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS/);
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_AGENT_READBACK_RULES/);
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_AGENT_SUBMIT_RULES/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_AGENT_READBACK_RULES/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_AGENT_SUBMIT_RULES/);
   assert.match(naturalResolverSource, /XENESIS_NATURAL_RUNTIME_SUPPORT_RULES/);
   assert.match(naturalResolverSource, /XENESIS_NATURAL_GATEWAY_ACTION_RULES/);
   assert.match(naturalResolverSource, /XENESIS_NATURAL_RUNTIME_INVENTORY_RULES/);
   assert.match(naturalResolverSource, /XENESIS_NATURAL_PROFILE_INVENTORY_RULES/);
   assert.match(naturalResolverSource, /XENESIS_NATURAL_RUNTIME_CONTROL_RULES/);
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_RUN_START_RULES/);
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_WORKSPACE_SET_RULES/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_RUN_START_RULES/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_WORKSPACE_SET_RULES/);
   assert.match(naturalPlanResolverSource, /XENESIS_NATURAL_RUNTIME_VISIBLE_PLAN_PATHS/);
   assert.doesNotMatch(source, /naturalAction\(\s*'natural-local-cli-scan'/);
   assert.doesNotMatch(source, /naturalAction\(\s*'natural-xenesis-status'/);
@@ -3673,6 +3684,37 @@ test('natural aggregate catalog actions are built by shared capability catalog h
       reason: 'Read external messenger profile draft catalog status from natural language request.',
     },
   );
+});
+
+test('natural dynamic runtime actions are built by shared capability catalog helpers', () => {
+  assert.deepEqual(findXenesisNaturalAgentReadbackAction('xenesis agent 상태 보여줘', 'xenesis-agent'), {
+    id: 'natural-xenesis-agent-status',
+    path: 'xd.xenesis.agents.status',
+    args: { agentId: 'xenesis-agent' },
+    approved: false,
+    reason: 'Read Xenesis Agent pane status from natural language request.',
+  });
+  assert.deepEqual(findXenesisNaturalAgentSubmitAction('xenesis agent 보내줘', 'xenesis-agent', '연결 상태 요약해줘'), {
+    id: 'natural-xenesis-agent-submit',
+    path: 'xd.xenesis.agents.submit',
+    args: { agentId: 'xenesis-agent', text: '연결 상태 요약해줘' },
+    approved: false,
+    reason: 'Submit Xenesis Agent pane message from natural language request.',
+  });
+  assert.deepEqual(findXenesisNaturalRunStartAction('xenesis runtime run 실행해줘', '연결 상태를 요약해줘'), {
+    id: 'natural-xenesis-runs-start',
+    path: 'xd.xenesis.runs.start',
+    args: { prompt: '연결 상태를 요약해줘' },
+    approved: false,
+    reason: 'Start Xenesis run from natural language request.',
+  });
+  assert.deepEqual(findXenesisNaturalWorkspaceSetAction('xenesis workspace 설정해줘', 'E:\\Workspace\\plane'), {
+    id: 'natural-xenesis-workspace-set',
+    path: 'xd.xenesis.workspace.set',
+    args: { path: 'E:\\Workspace\\plane' },
+    approved: false,
+    reason: 'Set Xenesis workspace from natural language request.',
+  });
 });
 
 test('planXenesisDeskNaturalLanguageActions maps local CLI and MCP readbacks to CR actions', () => {

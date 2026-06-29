@@ -4096,6 +4096,51 @@ export function findXenesisNaturalCatalogRulePlan(
   return buildXenesisNaturalLanguagePlan(rule.visibleText, [buildXenesisNaturalCatalogAction(rule.action, args)]);
 }
 
+export function findXenesisNaturalAgentReadbackAction(
+  value: string,
+  agentId: string,
+): XenesisNaturalDeskActionRequest | null {
+  return findXenesisNaturalCatalogRuleAction(
+    value,
+    XENESIS_NATURAL_AGENT_READBACK_RULES,
+    XENESIS_NATURAL_DESK_ACTION_ARGS.agentId(agentId),
+  );
+}
+
+export function findXenesisNaturalAgentSubmitAction(
+  value: string,
+  agentId: string,
+  text: string,
+): XenesisNaturalDeskActionRequest | null {
+  return findXenesisNaturalCatalogRuleAction(
+    value,
+    XENESIS_NATURAL_AGENT_SUBMIT_RULES,
+    XENESIS_NATURAL_DESK_ACTION_ARGS.agentSubmit(agentId, text),
+  );
+}
+
+export function findXenesisNaturalRunStartAction(
+  value: string,
+  prompt: string,
+): XenesisNaturalDeskActionRequest | null {
+  return findXenesisNaturalCatalogRuleAction(
+    value,
+    XENESIS_NATURAL_RUN_START_RULES,
+    XENESIS_NATURAL_DESK_ACTION_ARGS.prompt(prompt),
+  );
+}
+
+export function findXenesisNaturalWorkspaceSetAction(
+  value: string,
+  path: string,
+): XenesisNaturalDeskActionRequest | null {
+  return findXenesisNaturalCatalogRuleAction(
+    value,
+    XENESIS_NATURAL_WORKSPACE_SET_RULES,
+    XENESIS_NATURAL_DESK_ACTION_ARGS.workspacePath(path),
+  );
+}
+
 export function xenesisNaturalConnectionTargetMatchesRule(
   target: XenesisNaturalConnectionTarget,
   rule: XenesisNaturalConnectionTargetActionRule,
