@@ -7,7 +7,120 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
-## Current Slice: Remove Agent Input Heuristics
+## Current Slice: Remove Remaining Runtime Heuristics
+
+- Current objective:
+  - Remove remaining keyword/regex/score-based automatic prompt classification
+    from Xenesis runtime paths. User natural language must not be converted into
+    Desk actions, workflow policies, or run modes by local hardcoded heuristics.
+    Explicit mode/workflow/protocol inputs may still select behavior.
+- Rationale:
+  - After removing the shared natural Desk router and Agent input classifier,
+    source review found three remaining heuristic surfaces:
+    `packages/xenesis/src/core/intentRouter.ts` auto-selects intent/mode by
+    prompt words, `packages/xenesis/src/workflows/xenisPolicy.ts` auto-selects
+    Desk workflow policies by prompt words, and
+    `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentControlScenarios.ts`
+    scores scenario hints from ordinary input.
+  - These are deterministic local routing decisions, not provider reasoning.
+- Plan:
+  - `docs/superpowers/plans/2026-06-29-remove-runtime-heuristics.md`
+- Touched files so far:
+  - `handoff.md`
+  - `docs/superpowers/plans/2026-06-29-remove-runtime-heuristics.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-remove-runtime-heuristics.md`
+- Commands run:
+  - `git status --short --branch` -> clean on `agent/upcoming-work-20260627`.
+  - Source scans:
+    `rg -n "buildXenesisControlScenarioPromptHint|findXenesisControlScenarios|resolveXenisTaskPolicy|classifyPromptIntent|IntentRoute|XenisTaskPolicy|desk-natural-control|xenisPolicy|intentRouter" src packages scripts package.json`
+    -> found runtime usage in `AgentRunPipeline.ts` and `workflows/builtins.ts`,
+    plus scenario tests only.
+  - RED:
+    `npm --prefix packages/xenesis exec vitest run src/core/intentRouter.test.ts src/workflows/xenisPolicy.test.ts`
+    -> failed 4/6 as expected because prompt keywords still select debug/work/
+    readonly/policy routes and source still contains helper keyword/regex
+    classifiers.
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> failed 1/10 as expected because
+    `xenesisAgentControlScenarios.ts` still exists.
+  - GREEN:
+    `npm --prefix packages/xenesis exec vitest run src/core/intentRouter.test.ts src/workflows/xenisPolicy.test.ts`
+    -> passed 6/6 after replacing prompt keyword classification with
+    explicit-mode-only intent routing and a general default Xenis workflow
+    policy.
+  - GREEN:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 10/10 after deleting the unused scenario matcher and test.
+  - Source scan:
+    `rg -n "xenesisAgentControlScenarios|findXenesisControlScenarios|buildXenesisControlScenarioPromptHint|isNaturalDeskControlPrompt|isBrowserExplorerStatusPrompt|isLongRunningHandoffPrompt|isVisibleSubagentPrompt|desk-natural-control|forbidsWorkspaceMutation|fix/debug prompt|workspace mutation forbidden by prompt|implementation prompt|read-only analysis prompt" src packages scripts package.json --glob "!**/*.md"`
+    -> matches only in guard tests.
+  - Source scan:
+    `rg -n "xenesisNaturalLanguage|deskNaturalIntent|DESK_NATURAL|naturalDeskActionRequest|bypassNaturalDeskRouting|planXenesisDeskNaturalLanguageActions|sampleUserRequests|Capability family intent catalog|ordinary wording|isXenesisApprovalIntent|approval-word" src packages scripts package.json --glob "!**/*.md"`
+    -> matches only in guard/smoke tests.
+  - Typecheck failed:
+    `npm run typecheck` and
+    `npm --prefix packages/xenesis run typecheck` both failed because
+    `AgentRunPipeline.ts` still reads optional `IntentRoute.approvalMode` while
+    the interface had been narrowed. Fix is to keep the optional field for API
+    compatibility while no classifier sets it.
+  - Focused recheck:
+    `npm --prefix packages/xenesis exec vitest run src/core/intentRouter.test.ts src/workflows/xenisPolicy.test.ts`
+    -> passed 6/6 after restoring the optional API field without setting it.
+  - Root typecheck:
+    `npm run typecheck` -> passed.
+  - Package typecheck:
+    `npm --prefix packages/xenesis run typecheck` -> passed.
+  - Package tests:
+    `npm --prefix packages/xenesis test` -> passed 367/367 across 79 files.
+  - CR audit:
+    `npm run docs:capabilities:audit` -> passed; wrote
+    `docs/capability-registry-audit.md` with 796 nodes and 689 coverage path
+    references.
+  - CR audit counter readback:
+    `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> all 0.
+  - Package build:
+    `npm --prefix packages/xenesis run build` -> passed.
+  - Provider Desk MCP prompt smoke:
+    `npm --prefix packages/xenesis run provider:desk-mcp-prompt-smoke` -> passed
+    6/6, provider `codex-cli`.
+  - Provider smoke with mock:
+    `$env:XENESIS_PROVIDER='mock'; npm --prefix packages/xenesis run provider:smoke`
+    -> passed 6/6.
+  - Root build:
+    `npm run build` -> passed with existing Vite externalization/dynamic-import
+    warnings.
+  - Live Agent-pane approval smoke:
+    `npm run smoke:xenesis:review-request-approval` -> passed 6/6.
+  - Public-release safety:
+    `npm run check:public-release` -> failed before checks with
+    `ENOENT: no such file or directory, open '.github\workflows\ci.yml'`.
+    `git ls-tree -r HEAD .github` confirms this repo/worktree tracks
+    `.github` issue/PR templates and preview images, but no
+    `.github/workflows/ci.yml`.
+  - Root lint:
+    `npm run lint` -> failed on existing repo-wide Biome formatting/style
+    backlog (1136 errors, 416 warnings, 92 infos; examples include
+    `extensions/sample.file-helper/main.js`, `biome.json`, package JSON
+    formatting). Not caused by the touched files.
+  - Focused lint for touched code/test files:
+    `npx biome check --formatter-enabled=false --linter-enabled=true --assist-enabled=false packages/xenesis/src/core/intentRouter.ts packages/xenesis/src/core/intentRouter.test.ts packages/xenesis/src/workflows/xenisPolicy.ts packages/xenesis/src/workflows/xenisPolicy.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+    -> passed.
+  - Diff whitespace:
+    `git diff --check` -> passed after removing generated audit EOF blank line.
+- Implemented:
+  - `intentRouter.ts` now returns a default route unless the caller supplied an
+    explicit mode.
+  - `xenisPolicy.ts` now uses a single general Desk orchestration policy for
+    ordinary prompts; literal `/xd` or leading `xd.*` commands remain explicit
+    command handling.
+  - Deleted unused scenario prompt matcher and its tests.
+- Next intended step:
+  - Run typecheck, package tests, CR audit, build/smoke as needed, then update
+    Obsidian/handoff and commit.
+
+## Previous Slice: Remove Agent Input Heuristics
 
 - Current objective:
   - Remove remaining hardcoded natural-language/regex handling from the Xenesis

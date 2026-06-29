@@ -54,6 +54,8 @@ test('pre-provider natural Desk heuristic routing code is absent', () => {
 
   for (const removedModule of [
     './xenesisAgentInputRouting.ts',
+    './xenesisAgentControlScenarios.ts',
+    './xenesisAgentControlScenarios.test.ts',
     '../../../../shared/xenesisNaturalLanguageCatalog.ts',
     '../../../../shared/xenesisNaturalLanguageCapabilityCatalog.ts',
     '../../../../shared/xenesisNaturalLanguageActionResolvers.ts',
