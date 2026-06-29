@@ -7,6 +7,80 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current Slice: Provider Smoke Gateway Auth
+
+- Current objective:
+  - Fix the provider smoke verification gate so the gateway `/run` and
+    `/run/stream` checks authenticate against the gateway bearer-token
+    requirement instead of failing with `Unauthorized`.
+- Rationale:
+  - While verifying the provider natural-intent cleanup, default
+    `provider:smoke` was blocked by missing `OPENAI_API_KEY`, and
+    `XENESIS_PROVIDER=mock` reached gateway checks but failed 4/5 with
+    `gateway /run failed: {"error":"Unauthorized"}`.
+  - Root cause investigation found that `startGateway()` auto-generates a
+    bearer token when none is configured, all non-public routes require it, and
+    `provider-smoke.mjs` launches the gateway without `--auth-token-env` and
+    fetches `/run` without an `Authorization` header.
+- Plan:
+  - `docs/superpowers/plans/2026-06-29-provider-smoke-gateway-auth.md`
+- Touched files so far:
+  - `handoff.md`
+  - `docs/superpowers/plans/2026-06-29-provider-smoke-gateway-auth.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-provider-smoke-gateway-auth.md`
+  - `packages/xenesis/scripts/provider-smoke.mjs`
+  - `packages/xenesis/scripts/provider-smoke-gateway-auth.test.mjs`
+- Commands run:
+  - `npm --prefix packages/xenesis run provider:smoke` -> failed before live
+    provider execution because `OPENAI_API_KEY` is missing for default
+    `provider=openai`.
+  - `$env:XENESIS_PROVIDER = 'mock'; npm --prefix packages/xenesis run provider:smoke`
+    -> failed 4/5; connect-probe, prompt, stream, and fallback checks passed,
+    gateway `/run` failed with `{"error":"Unauthorized"}`.
+  - Context reads for `provider-smoke.mjs`, gateway auth helpers,
+    `runGatewayCommand`, and `startGateway`.
+  - RED:
+    `node --test packages/xenesis/scripts/provider-smoke-gateway-auth.test.mjs`
+    -> failed as expected because provider smoke passed connect/prompt/stream/
+    fallback, then gateway `/run` failed and the smoke exited 1.
+  - GREEN:
+    `node --test packages/xenesis/scripts/provider-smoke-gateway-auth.test.mjs`
+    -> passed 1/1 after provider smoke launched gateway with
+    `--auth-token-env XENESIS_PROVIDER_SMOKE_GATEWAY_TOKEN` and sent bearer
+    headers to `/run` and `/run/stream`.
+  - Mock provider smoke:
+    `$env:XENESIS_PROVIDER = 'mock'; npm --prefix packages/xenesis run provider:smoke`
+    -> passed 6/6: connect-probe, prompt, stream, fallback skipped,
+    gateway-run, gateway-stream.
+  - Package typecheck:
+    `npm --prefix packages/xenesis run typecheck` -> passed.
+  - Root typecheck:
+    `npm run typecheck` -> passed.
+  - Package full tests:
+    First `npm --prefix packages/xenesis test` failed 366/367 because
+    `tests/s10/shellTool.session.test.ts` did not record a spawn pid. Targeted
+    rerun `npm --prefix packages/xenesis exec vitest run tests/s10/shellTool.session.test.ts`
+    passed 8/8, and a clean full rerun passed 367/367 across 79 files.
+  - Focused provider prompt guard:
+    `npm --prefix packages/xenesis exec vitest run src/providers/cliProvider.deskMcp.test.ts`
+    -> passed 2/2.
+  - Focused Biome:
+    `npx biome check --formatter-enabled=false --linter-enabled=true --assist-enabled=true packages/xenesis/scripts/provider-smoke.mjs packages/xenesis/scripts/provider-smoke-gateway-auth.test.mjs`
+    -> passed. Formatter was disabled for the existing smoke script because the
+    repo file is not in Biome's preferred quote/line-ending style and formatting
+    it would create unrelated churn.
+- Implemented:
+  - Added `packages/xenesis/scripts/provider-smoke-gateway-auth.test.mjs`, a
+    node regression test that runs provider smoke with the mock provider and
+    requires gateway run/stream checks to pass.
+  - Provider smoke now creates/uses `XENESIS_PROVIDER_SMOKE_GATEWAY_TOKEN`, passes
+    `--auth-token-env` to the gateway process, and sends `Authorization: Bearer`
+    headers on `/run` and `/run/stream`.
+- Known gaps:
+  - Default `npm --prefix packages/xenesis run provider:smoke` still requires
+    `OPENAI_API_KEY` because its default provider is `openai`. The mock-provider
+    verification path now passes and proves the gateway auth issue is fixed.
+
 ## Current Slice: Remove Provider Desk Natural Intent Catalog
 
 - Current objective:

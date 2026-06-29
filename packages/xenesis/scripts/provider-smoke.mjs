@@ -14,6 +14,8 @@ const reportId = `provider-live-${new Date().toISOString().replace(/[-:]/g, "").
 const xenesisHomeInput = process.env.XENESIS_HOME || resolve(homedir(), ".xenesis");
 const xenesisHome = isAbsolute(xenesisHomeInput) ? resolve(xenesisHomeInput) : resolve(repoRoot, xenesisHomeInput);
 const reportPath = resolve(xenesisHome, "reports", `${reportId}.json`);
+const gatewayTokenEnv = "XENESIS_PROVIDER_SMOKE_GATEWAY_TOKEN";
+const gatewayToken = process.env[gatewayTokenEnv] || `provider-smoke-${reportId}`;
 const checks = [];
 
 function appendCheck(name, passed, details = {}) {
@@ -50,6 +52,10 @@ function requireOutput(result, name, expected) {
 
 function hasOpenAiKey() {
   return Boolean(process.env.OPENAI_API_KEY);
+}
+
+function gatewayAuthHeaders() {
+  return { authorization: `Bearer ${gatewayToken}` };
 }
 
 async function waitForGateway(child, timeoutMs = 30000) {
@@ -91,10 +97,15 @@ async function runGatewayChecks() {
     "--host",
     "127.0.0.1",
     "--port",
-    "0"
+    "0",
+    "--auth-token-env",
+    gatewayTokenEnv
   ], {
     cwd: repoRoot,
-    env: process.env,
+    env: {
+      ...process.env,
+      [gatewayTokenEnv]: gatewayToken
+    },
     windowsHide: true,
     stdio: ["ignore", "pipe", "pipe"]
   });
@@ -103,7 +114,7 @@ async function runGatewayChecks() {
     const { url } = await waitForGateway(child);
     const run = await fetch(`${url}/run`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { ...gatewayAuthHeaders(), "content-type": "application/json" },
       body: JSON.stringify({ prompt: "Reply exactly: xenesis-provider-gateway-ok" })
     });
     const runBody = await run.json();
@@ -114,7 +125,7 @@ async function runGatewayChecks() {
 
     const stream = await fetch(`${url}/run/stream`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { ...gatewayAuthHeaders(), "content-type": "application/json" },
       body: JSON.stringify({ prompt: "Reply exactly: xenesis-provider-gateway-stream-ok" })
     });
     const streamText = await stream.text();
