@@ -3,7 +3,6 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { listDeskBridgeCapabilities } from '../../../../shared/deskBridgeCapabilities';
 import {
-  findXenesisConnectionUserStoryWorkflowPreviewTarget,
   XENESIS_CONNECTION_MESSENGER_IDS,
   XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_DEFINITIONS,
   XENESIS_CONNECTION_PROVIDER_IDS,
@@ -17,10 +16,6 @@ import {
   XENESIS_DESK_CONTROL_PROMPT_HINT_SECTIONS,
 } from '../../../../shared/xenesisDeskControlPromptHintCatalog';
 import {
-  buildXenesisNaturalMessengerViewSectionOpenAction,
-  buildXenesisNaturalProviderViewSectionOpenAction,
-  buildXenesisNaturalToolViewSectionOpenAction,
-  buildXenesisNaturalUserStoryWorkflowPreviewAction,
   findXenesisNaturalAgentReadbackAction,
   findXenesisNaturalAgentSubmitAction,
   findXenesisNaturalChannelProfileDraftApplyAction,
@@ -29,12 +24,14 @@ import {
   findXenesisNaturalConnectionSetupApplyAction,
   findXenesisNaturalConnectionTargetOpenAction,
   findXenesisNaturalConnectionTargetStatusAction,
+  findXenesisNaturalCoreToolOpenAction,
   findXenesisNaturalGatewayAction,
   findXenesisNaturalGuideOpenAction,
   findXenesisNaturalGuideStatusAction,
   findXenesisNaturalMcpInstallDraftApplyAction,
   findXenesisNaturalMessengerAggregateStatusAction,
   findXenesisNaturalMessengerProfileDraftAggregateStatusAction,
+  findXenesisNaturalMessengerViewSectionOpenAction,
   findXenesisNaturalOAuthSetupPacketAction,
   findXenesisNaturalOnboardingOpenAction,
   findXenesisNaturalOnboardingStatusAction,
@@ -43,6 +40,7 @@ import {
   findXenesisNaturalProviderOpenAction,
   findXenesisNaturalProviderProfileDraftApplyAction,
   findXenesisNaturalProviderStatusAction,
+  findXenesisNaturalProviderViewSectionOpenAction,
   findXenesisNaturalReviewRequestProviderAction,
   findXenesisNaturalReviewRequestTargetAction,
   findXenesisNaturalRunStartAction,
@@ -50,6 +48,8 @@ import {
   findXenesisNaturalRuntimeInventoryAction,
   findXenesisNaturalRuntimeSupportAction,
   findXenesisNaturalToolAggregateStatusAction,
+  findXenesisNaturalToolViewSectionOpenAction,
+  findXenesisNaturalUserStoryWorkflowPreviewAction,
   findXenesisNaturalWorkspaceSetAction,
   XENESIS_NATURAL_ACTIVE_DOCK_CLOSE_RULES,
   XENESIS_NATURAL_ACTIVE_DOCK_FOCUS_RULES,
@@ -377,6 +377,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'buildXenesisNaturalCatalogAction',
     'findXenesisNaturalConnectionTargetRuleAction',
     'findXenesisNaturalCoreToolTarget',
+    'findXenesisNaturalCoreToolOpenAction',
     'findXenesisNaturalViewTarget',
   ]) {
     assert.match(capabilityCatalogSource, new RegExp(capabilityCatalogOwnedSymbol));
@@ -392,6 +393,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'export function buildXenesisNaturalCatalogAction',
     'export function findXenesisNaturalConnectionTargetRuleAction',
     'export function findXenesisNaturalCoreToolTarget',
+    'export function findXenesisNaturalCoreToolOpenAction',
     'export function findXenesisNaturalViewTarget',
   ]) {
     assert.doesNotMatch(catalogSource, new RegExp(naturalTextCatalogDisownedSymbol));
@@ -414,7 +416,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     catalogSource,
     /export const XENESIS_NATURAL_PROVIDER_TARGETS:\s*readonly XenesisNaturalWordsTarget\[\]\s*=\s*\[/,
   );
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_GUIDE_FILE_OPEN_RULES/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_GUIDE_FILE_OPEN_RULES/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_GUIDE_CONTEXT_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_GUIDE_FILE_OPEN_WORDS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_ONBOARDING_CONTEXT_WORDS/);
@@ -457,10 +459,11 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'findXenesisNaturalProviderRuleAction',
     'findXenesisNaturalConnectionAggregateStatusAction',
     'findXenesisNaturalConnectionAggregateOpenAction',
-    'buildXenesisNaturalProviderViewSectionOpenAction',
-    'buildXenesisNaturalToolViewSectionOpenAction',
-    'buildXenesisNaturalMessengerViewSectionOpenAction',
-    'buildXenesisNaturalUserStoryWorkflowPreviewAction',
+    'findXenesisNaturalCoreToolOpenAction',
+    'findXenesisNaturalProviderViewSectionOpenAction',
+    'findXenesisNaturalToolViewSectionOpenAction',
+    'findXenesisNaturalMessengerViewSectionOpenAction',
+    'findXenesisNaturalUserStoryWorkflowPreviewAction',
     'findXenesisNaturalAgentReadbackAction',
     'findXenesisNaturalAgentSubmitAction',
     'findXenesisNaturalChannelProfileDraftApplyAction',
@@ -537,6 +540,18 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'XENESIS_NATURAL_REVIEW_REQUEST_PROVIDER_RULES',
     'XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES',
     'findXenesisNaturalCatalogRuleAction',
+    'buildXenesisNaturalCoreToolOpenAction',
+    'buildXenesisNaturalProviderViewSectionOpenAction',
+    'buildXenesisNaturalToolViewSectionOpenAction',
+    'buildXenesisNaturalMessengerViewSectionOpenAction',
+    'buildXenesisNaturalUserStoryWorkflowPreviewAction',
+    'findXenesisNaturalCoreToolTarget',
+    'findXenesisNaturalProviderViewSectionTarget',
+    'findXenesisNaturalToolViewSectionTarget',
+    'findXenesisNaturalMessengerViewSectionTarget',
+    'findXenesisConnectionUserStoryWorkflowPreviewTarget',
+    'XENESIS_NATURAL_GUIDE_FILE_OPEN_RULES',
+    'XENESIS_NATURAL_USER_STORY_WORKFLOW_PREVIEW_CONTEXT_WORDS',
     'XENESIS_NATURAL_GATEWAY_ACTION_RULES',
     'XENESIS_NATURAL_PROFILE_INVENTORY_RULES',
     'XENESIS_NATURAL_RUNTIME_CONTROL_RULES',
@@ -826,7 +841,8 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.match(catalogSource, /export interface XenesisNaturalLanguagePlan/);
   assert.match(naturalPlannerSource, /type XenesisDeskNaturalLanguagePlan = XenesisNaturalLanguagePlan/);
   assert.match(connectionSource, /export function findXenesisConnectionUserStoryWorkflowPreviewTarget/);
-  assert.match(naturalResolverSource, /findXenesisConnectionUserStoryWorkflowPreviewTarget/);
+  assert.doesNotMatch(naturalResolverSource, /findXenesisConnectionUserStoryWorkflowPreviewTarget/);
+  assert.match(capabilityCatalogSource, /findXenesisConnectionUserStoryWorkflowPreviewTarget/);
   assert.match(naturalPlanResolverSource, /xenesisConnectionUserStoryWorkflowPreviewPlanFromNaturalText/);
   assert.match(naturalPlannerSource, /xenesisConnectionUserStoryWorkflowPreviewPlanFromNaturalText/);
   for (const localNaturalPredicate of [
@@ -1139,7 +1155,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.match(naturalPlanResolverSource, /XENESIS_NATURAL_OPEN_COMMAND_RULES/);
   assert.match(naturalPlanResolverSource, /XENESIS_NATURAL_OPEN_OR_SHOW_RULES/);
   assert.match(naturalPlanResolverSource, /XENESIS_NATURAL_VIEW_OPEN_COMMAND_RULES/);
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_GUIDE_FILE_OPEN_RULES/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_GUIDE_FILE_OPEN_RULES/);
   for (const catalogOwnedNaturalPredicateRule of [
     'XENESIS_NATURAL_ACTION_INTENT_RULES',
     'XENESIS_NATURAL_EXPLICIT_OPEN_INTENT_RULES',
@@ -1236,7 +1252,8 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.equal(isXenesisNaturalPlannedGoogleToolTarget({ id: 'google-calendar', kind: 'tool' }), true);
   assert.doesNotMatch(source, /function naturalCoreToolOpenAction/);
   assert.doesNotMatch(source, /function naturalViewOpenAction/);
-  assert.match(naturalResolverSource, /buildXenesisNaturalCoreToolOpenAction/);
+  assert.doesNotMatch(naturalResolverSource, /buildXenesisNaturalCoreToolOpenAction/);
+  assert.match(naturalResolverSource, /findXenesisNaturalCoreToolOpenAction/);
   assert.match(naturalPlanResolverSource, /buildXenesisNaturalViewOpenAction/);
   assert.equal([...source.matchAll(/return naturalAction\(/g)].length, 0);
   assert.doesNotMatch(source, /naturalAction\(\s*'natural-settings-open'/);
@@ -2228,7 +2245,9 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     assert.match(naturalResolverSource, new RegExp(catalogFinder));
     assert.match(catalogSource, new RegExp(`export function ${catalogFinder}`));
   }
-  for (const capabilityCatalogFinder of ['findXenesisNaturalCoreToolTarget', 'findXenesisNaturalViewTarget']) {
+  assert.doesNotMatch(naturalResolverSource, /findXenesisNaturalCoreToolTarget/);
+  assert.match(capabilityCatalogSource, /export function findXenesisNaturalCoreToolTarget/);
+  for (const capabilityCatalogFinder of ['findXenesisNaturalViewTarget']) {
     assert.match(naturalResolverSource, new RegExp(capabilityCatalogFinder));
     assert.match(capabilityCatalogSource, new RegExp(`export function ${capabilityCatalogFinder}`));
     assert.doesNotMatch(catalogSource, new RegExp(`export function ${capabilityCatalogFinder}`));
@@ -2283,7 +2302,8 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.deepEqual(XENESIS_NATURAL_EXPLICIT_OPEN_WORDS, ['열어', '켜줘', '띄워', '포커스', '집중']);
   assert.equal(XENESIS_NATURAL_ACTION_INTENT_WORDS.includes('authorize'), true);
   assert.equal(XENESIS_NATURAL_ACTION_INTENT_WORDS.includes('terminal'), true);
-  assert.match(naturalResolverSource, /findXenesisNaturalGuideTarget/);
+  assert.doesNotMatch(naturalResolverSource, /findXenesisNaturalGuideTarget/);
+  assert.match(capabilityCatalogSource, /findXenesisNaturalGuideTarget/);
   assert.doesNotMatch(source, /const toolIntegrationGuide/);
   assert.doesNotMatch(source, /const channelSetupGuide/);
   assert.doesNotMatch(source, /let id = 'onboarding-connections'/);
@@ -3568,11 +3588,19 @@ test('natural view-section targets are generated from Connection Center section 
 });
 
 test('natural view-section open actions are built by shared capability catalog helpers', () => {
+  assert.deepEqual(findXenesisNaturalCoreToolOpenAction('capability explorer 열어줘', 'right'), {
+    id: 'natural-tool-capability-explorer-open',
+    path: 'xd.tools.core.capabilityExplorer.open',
+    args: { placement: 'right' },
+    approved: false,
+    reason: 'Open Capability Explorer from natural language request.',
+  });
+
   assert.deepEqual(
-    buildXenesisNaturalProviderViewSectionOpenAction(
-      { id: 'codex-app-server', label: 'codex-app-server' },
-      { id: 'runtime', label: 'Runtime route' },
-    ),
+    findXenesisNaturalProviderViewSectionOpenAction('codex-app-server runtime view 열어줘', {
+      id: 'codex-app-server',
+      label: 'codex-app-server',
+    }),
     {
       id: 'natural-xenesis-provider-view-section-open-codex-app-server-runtime',
       path: 'xd.xenesis.providers.views.open',
@@ -3583,10 +3611,11 @@ test('natural view-section open actions are built by shared capability catalog h
   );
 
   assert.deepEqual(
-    buildXenesisNaturalToolViewSectionOpenAction(
-      { id: 'notion', label: 'Notion' },
-      { id: 'mcp-template', label: 'MCP template' },
-    ),
+    findXenesisNaturalToolViewSectionOpenAction('노션 mcp template view 열어줘', {
+      id: 'notion',
+      label: 'Notion',
+      kind: 'tool',
+    }),
     {
       id: 'natural-xenesis-tool-view-section-open-notion-mcp-template',
       path: 'xd.xenesis.tools.views.open',
@@ -3597,10 +3626,11 @@ test('natural view-section open actions are built by shared capability catalog h
   );
 
   assert.deepEqual(
-    buildXenesisNaturalMessengerViewSectionOpenAction(
-      { id: 'telegram', label: 'Telegram' },
-      { id: 'routing', label: 'Routing' },
-    ),
+    findXenesisNaturalMessengerViewSectionOpenAction('텔레그램 routing view 열어줘', {
+      id: 'telegram',
+      label: 'Telegram',
+      kind: 'messenger',
+    }),
     {
       id: 'natural-xenesis-messenger-view-section-open-telegram-routing',
       path: 'xd.xenesis.messengers.views.open',
@@ -3612,21 +3642,36 @@ test('natural view-section open actions are built by shared capability catalog h
 });
 
 test('natural user-story workflow preview action is built by shared capability catalog helper', () => {
-  const notion = findXenesisConnectionUserStoryWorkflowPreviewTarget('notion');
-  assert.ok(notion);
+  const action = findXenesisNaturalUserStoryWorkflowPreviewAction('노션 user story workflow preview 해줘', {
+    id: 'notion',
+  });
+  assert.ok(action);
+  assert.equal(action.id, 'natural-xenesis-user-story-workflow-preview-notion');
+  assert.equal(action.path, 'xd.automation.workflow.preview');
+  assert.equal(action.approved, false);
+  assert.equal(action.reason, 'Preview Notion user-story workflow from natural language request.');
 
-  assert.deepEqual(buildXenesisNaturalUserStoryWorkflowPreviewAction(notion), {
-    id: 'natural-xenesis-user-story-workflow-preview-notion',
-    path: 'xd.automation.workflow.preview',
-    args: {
-      name: 'notion-user-story-preview',
-      description: 'Preview notion user-story readbacks and open the Settings surface.',
-      delayMs: 0,
-      stopOnFail: true,
-      steps: notion.workflowPreview.steps,
-    },
+  const args = action.args as {
+    name: string;
+    description: string;
+    delayMs: number;
+    stopOnFail: boolean;
+    steps: Array<{ path: string; args: unknown; approved: boolean }>;
+  };
+  assert.equal(args.name, 'notion-user-story-preview');
+  assert.equal(args.description, 'Preview notion user-story readbacks and open the Settings surface.');
+  assert.equal(args.delayMs, 0);
+  assert.equal(args.stopOnFail, true);
+  assert.equal(args.steps.length > 0, true);
+  assert.equal(
+    args.steps.every((step) => step.approved === false),
+    true,
+  );
+  assert.deepEqual(args.steps.at(-1), {
+    label: 'Open user-story surface',
+    path: 'xd.xenesis.tools.userStories.open',
+    args: { id: 'notion', ensureVisible: true },
     approved: false,
-    reason: 'Preview Notion user-story workflow from natural language request.',
   });
 });
 
@@ -3641,7 +3686,21 @@ test('natural guide and onboarding actions are built by shared capability catalo
     approved: false,
     reason: 'Open Onboarding and connections guide file from natural language request.',
   });
+  assert.deepEqual(findXenesisNaturalGuideOpenAction('온보딩 가이드 repo-local 파일 열어줘'), {
+    id: 'natural-xenesis-guide-open-onboarding-connections',
+    path: 'xd.xenesis.guides.open',
+    args: { id: 'onboarding-connections', ensureVisible: true, openFile: true },
+    approved: false,
+    reason: 'Open Onboarding and connections guide file from natural language request.',
+  });
   assert.deepEqual(findXenesisNaturalGuideStatusAction('온보딩 가이드 상태 보여줘', guide), {
+    id: 'natural-xenesis-guide-status-onboarding-connections',
+    path: 'xd.xenesis.guides.status',
+    args: { id: 'onboarding-connections' },
+    approved: false,
+    reason: 'Read Onboarding and connections guide catalog status from natural language request.',
+  });
+  assert.deepEqual(findXenesisNaturalGuideStatusAction('온보딩 가이드 상태 보여줘'), {
     id: 'natural-xenesis-guide-status-onboarding-connections',
     path: 'xd.xenesis.guides.status',
     args: { id: 'onboarding-connections' },

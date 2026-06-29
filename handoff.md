@@ -7,6 +7,100 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Latest Slice: Shared Remaining Natural Action Builders
+
+- Current objective:
+  - Move the remaining direct action-builder and guide file-open rule usage out
+    of `src/shared/xenesisNaturalLanguageActionResolvers.ts` and into named
+    shared capability catalog helpers.
+- Scope:
+  - Add RED tests requiring shared helpers for core tool open, guide open,
+    user-story workflow preview, and provider/tool/messenger view-section open
+    actions.
+  - Add source guards that block action builder imports,
+    `XENESIS_NATURAL_GUIDE_FILE_OPEN_RULES`, and direct view-section target
+    selection in the natural resolver.
+  - Keep the resolver responsible for high-level ordering and runtime quoted
+    text/path extraction only.
+  - Preserve existing core tool open, guide repo-local open, workflow preview,
+    and provider/tool/messenger view-section prompt payloads.
+- Touched files so far:
+  - `handoff.md`
+- Intended RED tests:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    should fail because the named remaining action helpers do not exist and the
+    resolver still imports builder functions, guide file-open rules, and
+    view-section target selectors directly.
+- Verification status:
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> failed 51/55 as expected because the named remaining action helpers are
+    not exported yet and the natural resolver still imports direct action
+    builders, guide file-open rules, and workflow preview/view-section target
+    selection helpers.
+  - GREEN focused:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 55/55 after adding named remaining action helpers and delegating
+    core tool open, guide open/status target/file-open selection, workflow
+    preview, and provider/tool/messenger view-section action construction from
+    the resolver to the capability catalog.
+  - Source guard:
+    `rg -n "buildXenesisNaturalCoreToolOpenAction|buildXenesisNaturalProviderViewSectionOpenAction|buildXenesisNaturalToolViewSectionOpenAction|buildXenesisNaturalMessengerViewSectionOpenAction|buildXenesisNaturalUserStoryWorkflowPreviewAction|findXenesisNaturalCoreToolTarget|findXenesisNaturalGuideTarget|findXenesisNaturalProviderViewSectionTarget|findXenesisNaturalToolViewSectionTarget|findXenesisNaturalMessengerViewSectionTarget|findXenesisConnectionUserStoryWorkflowPreviewTarget|XENESIS_NATURAL_GUIDE_FILE_OPEN_RULES|XENESIS_NATURAL_USER_STORY_WORKFLOW_PREVIEW_CONTEXT_WORDS" src\shared\xenesisNaturalLanguageActionResolvers.ts`
+    -> no matches.
+  - Focused Biome write:
+    `npx biome check --write --formatter-enabled=true --linter-enabled=true --assist-enabled=true src/shared/xenesisNaturalLanguageCapabilityCatalog.ts src/shared/xenesisNaturalLanguageActionResolvers.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+    -> passed; fixed one file.
+  - Focused post-format source/test recheck:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 55/55.
+  - Smoke fixture:
+    `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` ->
+    passed 6/6.
+  - Focused post-format Biome check:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true src/shared/xenesisNaturalLanguageCapabilityCatalog.ts src/shared/xenesisNaturalLanguageActionResolvers.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+    -> passed.
+  - Typecheck:
+    `npm run typecheck` -> failed because the new tool/messenger view-section
+    helper signatures required full `XenesisNaturalConnectionTarget` objects,
+    including `words`, even though the helpers only need `id`, `label`, and
+    `kind`.
+  - Typecheck recheck after narrowing helper signatures:
+    `npm run typecheck` -> passed.
+  - Focused test recheck after narrowing helper signatures:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 55/55.
+  - Focused Biome recheck after narrowing helper signatures:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true src/shared/xenesisNaturalLanguageCapabilityCatalog.ts src/shared/xenesisNaturalLanguageActionResolvers.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+    -> passed.
+  - CR audit:
+    `npm run docs:capabilities:audit` -> passed; generated audit summary
+    remained 796 nodes and 689 coverage path references.
+  - CR audit counter readback:
+    `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> all 0.
+  - Build:
+    `npm run build` -> passed. Existing Vite warnings about browser
+    externalization/dynamic import chunking and large renderer chunks were
+    printed.
+  - Live natural Desk routing smoke:
+    `npm run smoke:xenesis:natural-desk-routing` -> passed 261/261.
+- Implemented:
+  - Added named capability catalog helpers for core tool open, provider/tool/
+    messenger view-section open, and user-story workflow preview actions.
+  - Extended guide open/status helpers so they can resolve guide target and
+    repo-local file-open intent from natural text without resolver-owned rule
+    imports.
+  - Removed the remaining action builder imports, guide file-open rule import,
+    workflow preview target lookup, and view-section target selectors from
+    `src/shared/xenesisNaturalLanguageActionResolvers.ts`.
+- Known gaps:
+  - Full repo lint/public-release known gaps remain unchanged.
+- Documentation:
+  - Added Obsidian working note
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-shared-remaining-natural-action-builders.md`.
+- Next intended step:
+  - Run final diff hygiene, stage this slice only, and commit it.
+
 ## Latest Slice: Shared Static Runtime Natural Actions
 
 - Current objective:

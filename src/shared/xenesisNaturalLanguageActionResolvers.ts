@@ -1,10 +1,4 @@
-import { findXenesisConnectionUserStoryWorkflowPreviewTarget } from './xenesisConnections';
 import {
-  buildXenesisNaturalCoreToolOpenAction,
-  buildXenesisNaturalMessengerViewSectionOpenAction,
-  buildXenesisNaturalProviderViewSectionOpenAction,
-  buildXenesisNaturalToolViewSectionOpenAction,
-  buildXenesisNaturalUserStoryWorkflowPreviewAction,
   findXenesisNaturalAgentReadbackAction,
   findXenesisNaturalAgentSubmitAction,
   findXenesisNaturalChannelProfileDraftApplyAction,
@@ -15,14 +9,14 @@ import {
   findXenesisNaturalConnectionSetupApplyAction,
   findXenesisNaturalConnectionTargetOpenAction,
   findXenesisNaturalConnectionTargetStatusAction,
-  findXenesisNaturalCoreToolTarget,
+  findXenesisNaturalCoreToolOpenAction,
   findXenesisNaturalGatewayAction,
   findXenesisNaturalGuideOpenAction,
   findXenesisNaturalGuideStatusAction,
   findXenesisNaturalMcpInstallDraftApplyAction,
   findXenesisNaturalMessengerAggregateStatusAction,
   findXenesisNaturalMessengerProfileDraftAggregateStatusAction,
-  findXenesisNaturalMessengerViewSectionTarget,
+  findXenesisNaturalMessengerViewSectionOpenAction,
   findXenesisNaturalOAuthSetupPacketAction,
   findXenesisNaturalOnboardingOpenAction,
   findXenesisNaturalOnboardingStatusAction,
@@ -31,7 +25,7 @@ import {
   findXenesisNaturalProviderOpenAction,
   findXenesisNaturalProviderProfileDraftApplyAction,
   findXenesisNaturalProviderStatusAction,
-  findXenesisNaturalProviderViewSectionTarget,
+  findXenesisNaturalProviderViewSectionOpenAction,
   findXenesisNaturalReviewRequestProviderAction,
   findXenesisNaturalReviewRequestTargetAction,
   findXenesisNaturalRunStartAction,
@@ -39,7 +33,8 @@ import {
   findXenesisNaturalRuntimeInventoryAction,
   findXenesisNaturalRuntimeSupportAction,
   findXenesisNaturalToolAggregateStatusAction,
-  findXenesisNaturalToolViewSectionTarget,
+  findXenesisNaturalToolViewSectionOpenAction,
+  findXenesisNaturalUserStoryWorkflowPreviewAction,
   findXenesisNaturalViewTarget,
   findXenesisNaturalWorkspaceSetAction,
 } from './xenesisNaturalLanguageCapabilityCatalog';
@@ -48,7 +43,6 @@ import {
   extractXenesisNaturalQuotedText,
   extractXenesisNaturalQuotedTexts,
   findXenesisNaturalConnectionTarget,
-  findXenesisNaturalGuideTarget,
   findXenesisNaturalOnboardingStepTarget,
   findXenesisNaturalProviderTarget,
   hasXenesisNaturalConnectionReadbackIntent,
@@ -56,16 +50,9 @@ import {
   hasXenesisNaturalExplicitOpenIntent,
   hasXenesisNaturalOnboardingContext,
   hasXenesisNaturalProviderProfileContext,
-  isXenesisNaturalConnectionMessengerTarget,
-  isXenesisNaturalConnectionToolTarget,
-  matchesXenesisNaturalContextRules,
   normalizeXenesisNaturalLanguageText,
   stripXenesisNaturalQuotedText,
-  XENESIS_NATURAL_GUIDE_FILE_OPEN_RULES,
   XENESIS_NATURAL_PROVIDER_AUTO_TARGET,
-  XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
-  XENESIS_NATURAL_USER_STORY_WORKFLOW_PREVIEW_CONTEXT_WORDS,
-  XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
   type XenesisNaturalConnectionTarget,
   type XenesisNaturalDeskActionRequest,
 } from './xenesisNaturalLanguageCatalog';
@@ -74,9 +61,7 @@ export function toolOpenActionFromNaturalText(
   value: string,
   placement: string | undefined,
 ): XenesisNaturalDeskActionRequest | null {
-  const definition = findXenesisNaturalCoreToolTarget(value);
-  if (!definition) return null;
-  return buildXenesisNaturalCoreToolOpenAction(definition, placement);
+  return findXenesisNaturalCoreToolOpenAction(value, placement);
 }
 
 export function viewKindFromNaturalText(value: string): { id: string; kind: string; reason: string } | null {
@@ -104,18 +89,11 @@ function xenesisConnectionTargetOpenActionFromNaturalText(
 }
 
 function xenesisGuideActionFromNaturalText(value: string): XenesisNaturalDeskActionRequest | null {
-  const guide = findXenesisNaturalGuideTarget(value);
-  if (!guide) return null;
-
-  const openFile = matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_GUIDE_FILE_OPEN_RULES);
-  return findXenesisNaturalGuideOpenAction(value, guide, openFile);
+  return findXenesisNaturalGuideOpenAction(value);
 }
 
 function xenesisGuideStatusActionFromNaturalText(value: string): XenesisNaturalDeskActionRequest | null {
-  const guide = findXenesisNaturalGuideTarget(value);
-  if (!guide) return null;
-
-  return findXenesisNaturalGuideStatusAction(value, guide);
+  return findXenesisNaturalGuideStatusAction(value);
 }
 
 function xenesisOnboardingStepFromNaturalText(value: string): { id: string; label: string } | null {
@@ -222,24 +200,10 @@ export function xenesisConnectionReviewRequestActionFromNaturalText(
 export function xenesisConnectionUserStoryWorkflowPreviewActionFromNaturalText(
   value: string,
 ): XenesisNaturalDeskActionRequest | null {
-  if (
-    !matchesXenesisNaturalContextRules(value, [
-      {
-        contextWords: XENESIS_NATURAL_USER_STORY_WORKFLOW_PREVIEW_CONTEXT_WORDS,
-        requiredContextWordGroups: [XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS],
-      },
-    ])
-  ) {
-    return null;
-  }
-
   const target = xenesisConnectionTargetFromNaturalText(value);
   if (!target) return null;
 
-  const previewTarget = findXenesisConnectionUserStoryWorkflowPreviewTarget(target.id);
-  if (!previewTarget) return null;
-
-  return buildXenesisNaturalUserStoryWorkflowPreviewAction(previewTarget);
+  return findXenesisNaturalUserStoryWorkflowPreviewAction(value, target);
 }
 
 export function xenesisConnectionMcpInstallDraftApplyActionFromNaturalText(
@@ -295,12 +259,8 @@ function xenesisProviderOpenActionFromNaturalText(value: string): XenesisNatural
   const provider = xenesisProviderFromNaturalText(value);
   if (!provider) return null;
 
-  if (matchesXenesisNaturalContextRules(value, [{ contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS }])) {
-    const section = findXenesisNaturalProviderViewSectionTarget(value);
-    if (section) {
-      return buildXenesisNaturalProviderViewSectionOpenAction(provider, section);
-    }
-  }
+  const providerViewSectionAction = findXenesisNaturalProviderViewSectionOpenAction(value, provider);
+  if (providerViewSectionAction) return providerViewSectionAction;
 
   return findXenesisNaturalProviderOpenAction(value, provider);
 }
@@ -309,32 +269,14 @@ function xenesisToolViewSectionOpenActionFromNaturalText(
   value: string,
   target: XenesisNaturalConnectionTarget,
 ): XenesisNaturalDeskActionRequest | null {
-  if (!isXenesisNaturalConnectionToolTarget(target)) return null;
-  if (!hasXenesisNaturalExplicitOpenIntent(value)) return null;
-  if (!matchesXenesisNaturalContextRules(value, [{ contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS }])) {
-    return null;
-  }
-
-  const section = findXenesisNaturalToolViewSectionTarget(value);
-  if (!section) return null;
-
-  return buildXenesisNaturalToolViewSectionOpenAction(target, section);
+  return findXenesisNaturalToolViewSectionOpenAction(value, target);
 }
 
 function xenesisMessengerViewSectionOpenActionFromNaturalText(
   value: string,
   target: XenesisNaturalConnectionTarget,
 ): XenesisNaturalDeskActionRequest | null {
-  if (!isXenesisNaturalConnectionMessengerTarget(target)) return null;
-  if (!hasXenesisNaturalExplicitOpenIntent(value)) return null;
-  if (!matchesXenesisNaturalContextRules(value, [{ contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS }])) {
-    return null;
-  }
-
-  const section = findXenesisNaturalMessengerViewSectionTarget(value);
-  if (!section) return null;
-
-  return buildXenesisNaturalMessengerViewSectionOpenAction(target, section);
+  return findXenesisNaturalMessengerViewSectionOpenAction(value, target);
 }
 
 function xenesisGuideCatalogOpenActionFromNaturalText(value: string): XenesisNaturalDeskActionRequest | null {

@@ -1,5 +1,6 @@
 import {
   buildXenesisConnectionUserStoryWorkflowPreviewArgs,
+  findXenesisConnectionUserStoryWorkflowPreviewTarget,
   XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_DEFINITIONS,
   XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_IDS,
   XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_DEFINITIONS,
@@ -14,9 +15,11 @@ import {
 import {
   buildXenesisNaturalLanguagePlan,
   findXenesisNaturalContextRule,
+  findXenesisNaturalGuideTarget,
   findXenesisNaturalWordsTarget,
   hasXenesisNaturalAggregateCatalogContext,
   hasXenesisNaturalConnectionReadbackIntent,
+  hasXenesisNaturalExplicitOpenIntent,
   hasXenesisNaturalExternalMessengerCatalogContext,
   hasXenesisNaturalExternalToolCatalogContext,
   hasXenesisNaturalMessengerProfileDraftCatalogContext,
@@ -76,6 +79,7 @@ import {
   XENESIS_NATURAL_GENERIC_LIST_CONTEXT_WORDS,
   XENESIS_NATURAL_GENERIC_OPEN_WORDS,
   XENESIS_NATURAL_GUIDE_CONTEXT_WORDS,
+  XENESIS_NATURAL_GUIDE_FILE_OPEN_RULES,
   XENESIS_NATURAL_INSTALL_PLAN_CONTEXT_WORDS,
   XENESIS_NATURAL_LIST_OR_SHOW_WORDS,
   XENESIS_NATURAL_LOCAL_CLI_CONTEXT_WORDS,
@@ -130,6 +134,7 @@ import {
   XENESIS_NATURAL_TEXT_DEFAULTS,
   XENESIS_NATURAL_TOGGLE_CONTEXT_WORDS,
   XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS,
+  XENESIS_NATURAL_USER_STORY_WORKFLOW_PREVIEW_CONTEXT_WORDS,
   XENESIS_NATURAL_VIEW_OR_SETUP_CONTEXT_WORDS,
   XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
   XENESIS_NATURAL_WORKSPACE_CONTEXT_WORDS,
@@ -149,6 +154,7 @@ import {
   type XenesisNaturalDeskActionTemplateDescriptor,
   type XenesisNaturalGuideOpenRule,
   type XenesisNaturalGuideStatusRule,
+  type XenesisNaturalGuideTarget,
   type XenesisNaturalLanguagePlan,
   type XenesisNaturalOnboardingActionRule,
   type XenesisNaturalProviderActionRule,
@@ -3851,6 +3857,14 @@ export function buildXenesisNaturalCoreToolOpenAction(
   };
 }
 
+export function findXenesisNaturalCoreToolOpenAction(
+  value: string,
+  placement: string | undefined,
+): XenesisNaturalDeskActionRequest | null {
+  const definition = findXenesisNaturalCoreToolTarget(value);
+  return definition ? buildXenesisNaturalCoreToolOpenAction(definition, placement) : null;
+}
+
 export function buildXenesisNaturalViewOpenAction(
   view: Pick<XenesisNaturalViewTarget, 'id' | 'kind' | 'reason'>,
   placement: string | undefined,
@@ -3930,31 +3944,98 @@ export function buildXenesisNaturalUserStoryWorkflowPreviewAction(
   };
 }
 
+export function findXenesisNaturalProviderViewSectionOpenAction(
+  value: string,
+  provider: Pick<XenesisNaturalWordsTarget, 'id' | 'label'>,
+): XenesisNaturalDeskActionRequest | null {
+  if (!hasXenesisNaturalExplicitOpenIntent(value)) return null;
+  if (!matchesXenesisNaturalContextRules(value, [{ contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS }])) {
+    return null;
+  }
+
+  const section = findXenesisNaturalProviderViewSectionTarget(value);
+  return section ? buildXenesisNaturalProviderViewSectionOpenAction(provider, section) : null;
+}
+
+export function findXenesisNaturalToolViewSectionOpenAction(
+  value: string,
+  target: Pick<XenesisNaturalConnectionTarget, 'id' | 'label' | 'kind'>,
+): XenesisNaturalDeskActionRequest | null {
+  if (!isXenesisNaturalConnectionToolTarget(target)) return null;
+  if (!hasXenesisNaturalExplicitOpenIntent(value)) return null;
+  if (!matchesXenesisNaturalContextRules(value, [{ contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS }])) {
+    return null;
+  }
+
+  const section = findXenesisNaturalToolViewSectionTarget(value);
+  return section ? buildXenesisNaturalToolViewSectionOpenAction(target, section) : null;
+}
+
+export function findXenesisNaturalMessengerViewSectionOpenAction(
+  value: string,
+  target: Pick<XenesisNaturalConnectionTarget, 'id' | 'label' | 'kind'>,
+): XenesisNaturalDeskActionRequest | null {
+  if (!isXenesisNaturalConnectionMessengerTarget(target)) return null;
+  if (!hasXenesisNaturalExplicitOpenIntent(value)) return null;
+  if (!matchesXenesisNaturalContextRules(value, [{ contextWords: XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS }])) {
+    return null;
+  }
+
+  const section = findXenesisNaturalMessengerViewSectionTarget(value);
+  return section ? buildXenesisNaturalMessengerViewSectionOpenAction(target, section) : null;
+}
+
+export function findXenesisNaturalUserStoryWorkflowPreviewAction(
+  value: string,
+  target: Pick<XenesisNaturalConnectionTarget, 'id'>,
+): XenesisNaturalDeskActionRequest | null {
+  if (
+    !matchesXenesisNaturalContextRules(value, [
+      {
+        contextWords: XENESIS_NATURAL_USER_STORY_WORKFLOW_PREVIEW_CONTEXT_WORDS,
+        requiredContextWordGroups: [XENESIS_NATURAL_USER_STORY_CONTEXT_WORDS],
+      },
+    ])
+  ) {
+    return null;
+  }
+
+  const previewTarget = findXenesisConnectionUserStoryWorkflowPreviewTarget(target.id);
+  return previewTarget ? buildXenesisNaturalUserStoryWorkflowPreviewAction(previewTarget) : null;
+}
+
 export function findXenesisNaturalGuideOpenAction(
   value: string,
-  guide: Pick<XenesisNaturalWordsTarget, 'id' | 'label'>,
-  openFile: boolean,
+  guide?: Pick<XenesisNaturalGuideTarget, 'id' | 'label'> | null,
+  openFile?: boolean,
 ): XenesisNaturalDeskActionRequest | null {
+  const guideTarget = guide ?? findXenesisNaturalGuideTarget(value);
+  if (!guideTarget) return null;
+
+  const shouldOpenFile = openFile ?? matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_GUIDE_FILE_OPEN_RULES);
   const rule = findXenesisNaturalContextRule(value, XENESIS_NATURAL_GUIDE_OPEN_RULES);
   return rule
     ? buildXenesisNaturalTemplateAction(
         rule.action,
-        [guide.id, guide.label, openFile],
-        XENESIS_NATURAL_DESK_ACTION_ARGS.openFileVisible(guide.id, openFile),
+        [guideTarget.id, guideTarget.label, shouldOpenFile],
+        XENESIS_NATURAL_DESK_ACTION_ARGS.openFileVisible(guideTarget.id, shouldOpenFile),
       )
     : null;
 }
 
 export function findXenesisNaturalGuideStatusAction(
   value: string,
-  guide: Pick<XenesisNaturalWordsTarget, 'id' | 'label'>,
+  guide?: Pick<XenesisNaturalGuideTarget, 'id' | 'label'> | null,
 ): XenesisNaturalDeskActionRequest | null {
+  const guideTarget = guide ?? findXenesisNaturalGuideTarget(value);
+  if (!guideTarget) return null;
+
   const rule = findXenesisNaturalContextRule(value, XENESIS_NATURAL_GUIDE_STATUS_RULES);
   return rule
     ? buildXenesisNaturalTemplateAction(
         rule.action,
-        [guide.id, guide.label],
-        XENESIS_NATURAL_DESK_ACTION_ARGS.targetId(guide.id),
+        [guideTarget.id, guideTarget.label],
+        XENESIS_NATURAL_DESK_ACTION_ARGS.targetId(guideTarget.id),
       )
     : null;
 }
