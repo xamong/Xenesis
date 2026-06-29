@@ -21,6 +21,10 @@ import {
   buildXenesisNaturalProviderViewSectionOpenAction,
   buildXenesisNaturalToolViewSectionOpenAction,
   buildXenesisNaturalUserStoryWorkflowPreviewAction,
+  findXenesisNaturalGuideOpenAction,
+  findXenesisNaturalGuideStatusAction,
+  findXenesisNaturalOnboardingOpenAction,
+  findXenesisNaturalOnboardingStatusAction,
   XENESIS_NATURAL_ACTIVE_DOCK_CLOSE_RULES,
   XENESIS_NATURAL_ACTIVE_DOCK_FOCUS_RULES,
   XENESIS_NATURAL_AGENT_READBACK_RULES,
@@ -401,9 +405,9 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     assert.doesNotMatch(source, new RegExp(localMatcherFunction));
   }
   for (const sharedMatcherFunction of ['findXenesisNaturalContextRule', 'matchesXenesisNaturalContextRule']) {
-    assert.match(naturalResolverSource, new RegExp(sharedMatcherFunction));
     assert.match(catalogSource, new RegExp(`export function ${sharedMatcherFunction}`));
   }
+  assert.doesNotMatch(naturalResolverSource, /findXenesisNaturalContextRule/);
   for (const sharedMatcherFunction of ['matchesXenesisNaturalContextRules']) {
     assert.doesNotMatch(naturalPlannerSource, new RegExp(sharedMatcherFunction));
     assert.match(naturalPlanResolverSource, new RegExp(sharedMatcherFunction));
@@ -431,6 +435,10 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'buildXenesisNaturalToolViewSectionOpenAction',
     'buildXenesisNaturalMessengerViewSectionOpenAction',
     'buildXenesisNaturalUserStoryWorkflowPreviewAction',
+    'findXenesisNaturalGuideOpenAction',
+    'findXenesisNaturalGuideStatusAction',
+    'findXenesisNaturalOnboardingOpenAction',
+    'findXenesisNaturalOnboardingStatusAction',
   ]) {
     assert.match(capabilityCatalogSource, new RegExp(`export function ${sharedActionBuilderFunction}`));
   }
@@ -443,6 +451,17 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   }
   assert.doesNotMatch(naturalResolverSource, /path:\s*previewTarget\.workflowPreview\.previewPath/);
   assert.doesNotMatch(naturalResolverSource, /natural-xenesis-user-story-workflow-preview-\$\{previewTarget\.id\}/);
+  for (const sharedActionBuilderLeak of [
+    'buildXenesisNaturalTemplateAction',
+    'buildXenesisNaturalCatalogAction',
+    'buildXenesisNaturalOnboardingArgsForRule',
+    'XENESIS_NATURAL_GUIDE_OPEN_RULES',
+    'XENESIS_NATURAL_GUIDE_STATUS_RULES',
+    'XENESIS_NATURAL_ONBOARDING_OPEN_RULES',
+    'XENESIS_NATURAL_ONBOARDING_STATUS_RULES',
+  ]) {
+    assert.doesNotMatch(naturalResolverSource, new RegExp(sharedActionBuilderLeak));
+  }
   for (const localExtractionFunction of [
     'function normalizeNaturalLanguageText',
     'function detectPlacement',
@@ -1321,10 +1340,14 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   );
   assert.equal(XENESIS_NATURAL_RUNTIME_VISIBLE_PLAN_PATHS.actionInboxList, 'xd.mcp.actionInbox.list');
   assert.equal(XENESIS_NATURAL_RUNTIME_ACTION_DESCRIPTORS.runsStart.path, 'xd.xenesis.runs.start');
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_GUIDE_OPEN_RULES/);
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_GUIDE_STATUS_RULES/);
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_ONBOARDING_OPEN_RULES/);
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_ONBOARDING_STATUS_RULES/);
+  assert.match(capabilityCatalogSource, /XENESIS_NATURAL_GUIDE_OPEN_RULES/);
+  assert.match(capabilityCatalogSource, /XENESIS_NATURAL_GUIDE_STATUS_RULES/);
+  assert.match(capabilityCatalogSource, /XENESIS_NATURAL_ONBOARDING_OPEN_RULES/);
+  assert.match(capabilityCatalogSource, /XENESIS_NATURAL_ONBOARDING_STATUS_RULES/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_GUIDE_OPEN_RULES/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_GUIDE_STATUS_RULES/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_ONBOARDING_OPEN_RULES/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_ONBOARDING_STATUS_RULES/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_GUIDE_ACTION_DESCRIPTORS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_ONBOARDING_ACTION_DESCRIPTORS/);
   assert.doesNotMatch(source, /const GUIDE_ACTIONS =/);
@@ -3525,6 +3548,51 @@ test('natural user-story workflow preview action is built by shared capability c
     },
     approved: false,
     reason: 'Preview Notion user-story workflow from natural language request.',
+  });
+});
+
+test('natural guide and onboarding actions are built by shared capability catalog helpers', () => {
+  const guide = XENESIS_NATURAL_GUIDE_TARGETS.find((target) => target.id === 'onboarding-connections');
+  assert.ok(guide);
+
+  assert.deepEqual(findXenesisNaturalGuideOpenAction('온보딩 가이드 repo-local 파일 열어줘', guide, true), {
+    id: 'natural-xenesis-guide-open-onboarding-connections',
+    path: 'xd.xenesis.guides.open',
+    args: { id: 'onboarding-connections', ensureVisible: true, openFile: true },
+    approved: false,
+    reason: 'Open Onboarding and connections guide file from natural language request.',
+  });
+  assert.deepEqual(findXenesisNaturalGuideStatusAction('온보딩 가이드 상태 보여줘', guide), {
+    id: 'natural-xenesis-guide-status-onboarding-connections',
+    path: 'xd.xenesis.guides.status',
+    args: { id: 'onboarding-connections' },
+    approved: false,
+    reason: 'Read Onboarding and connections guide catalog status from natural language request.',
+  });
+
+  const step = XENESIS_NATURAL_ONBOARDING_STEP_TARGETS.find((target) => target.id === 'first-chat');
+  assert.ok(step);
+
+  assert.deepEqual(findXenesisNaturalOnboardingOpenAction('첫 채팅 온보딩 열어줘', step), {
+    id: 'natural-xenesis-onboarding-open-first-chat',
+    path: 'xd.xenesis.onboarding.open',
+    args: { id: 'first-chat', ensureVisible: true },
+    approved: false,
+    reason: 'Open First chat onboarding checklist step from natural language request.',
+  });
+  assert.deepEqual(findXenesisNaturalOnboardingOpenAction('초기 설정 체크리스트 열어줘', null), {
+    id: 'natural-xenesis-onboarding-center-open',
+    path: 'xd.xenesis.onboarding.open',
+    args: { ensureVisible: true },
+    approved: false,
+    reason: 'Open Xenesis onboarding checklist in Connection Center from natural language request.',
+  });
+  assert.deepEqual(findXenesisNaturalOnboardingStatusAction('첫 채팅 온보딩 상태 보여줘', step), {
+    id: 'natural-xenesis-onboarding-status-first-chat',
+    path: 'xd.xenesis.onboarding.status',
+    args: { id: 'first-chat' },
+    approved: false,
+    reason: 'Read First chat onboarding checklist status from natural language request.',
   });
 });
 

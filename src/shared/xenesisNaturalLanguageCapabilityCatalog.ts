@@ -3924,6 +3924,77 @@ export function buildXenesisNaturalUserStoryWorkflowPreviewAction(
   };
 }
 
+export function findXenesisNaturalGuideOpenAction(
+  value: string,
+  guide: Pick<XenesisNaturalWordsTarget, 'id' | 'label'>,
+  openFile: boolean,
+): XenesisNaturalDeskActionRequest | null {
+  const rule = findXenesisNaturalContextRule(value, XENESIS_NATURAL_GUIDE_OPEN_RULES);
+  return rule
+    ? buildXenesisNaturalTemplateAction(
+        rule.action,
+        [guide.id, guide.label, openFile],
+        XENESIS_NATURAL_DESK_ACTION_ARGS.openFileVisible(guide.id, openFile),
+      )
+    : null;
+}
+
+export function findXenesisNaturalGuideStatusAction(
+  value: string,
+  guide: Pick<XenesisNaturalWordsTarget, 'id' | 'label'>,
+): XenesisNaturalDeskActionRequest | null {
+  const rule = findXenesisNaturalContextRule(value, XENESIS_NATURAL_GUIDE_STATUS_RULES);
+  return rule
+    ? buildXenesisNaturalTemplateAction(
+        rule.action,
+        [guide.id, guide.label],
+        XENESIS_NATURAL_DESK_ACTION_ARGS.targetId(guide.id),
+      )
+    : null;
+}
+
+export function findXenesisNaturalOnboardingOpenAction(
+  value: string,
+  step: Pick<XenesisNaturalWordsTarget, 'id' | 'label'> | null,
+): XenesisNaturalDeskActionRequest | null {
+  for (const rule of XENESIS_NATURAL_ONBOARDING_OPEN_RULES) {
+    if (!matchesXenesisNaturalContextRule(value, rule)) continue;
+
+    if (rule.targetRequired) {
+      if (!step) continue;
+      return buildXenesisNaturalTemplateAction(
+        rule.action,
+        [step.id, step.label],
+        buildXenesisNaturalOnboardingArgsForRule(rule, step.id),
+      );
+    }
+
+    if (rule.argsKind === 'ensureVisible') {
+      return buildXenesisNaturalCatalogAction(rule.action, buildXenesisNaturalOnboardingArgsForRule(rule));
+    }
+  }
+
+  return null;
+}
+
+export function findXenesisNaturalOnboardingStatusAction(
+  value: string,
+  step: Pick<XenesisNaturalWordsTarget, 'id' | 'label'>,
+): XenesisNaturalDeskActionRequest | null {
+  for (const rule of XENESIS_NATURAL_ONBOARDING_STATUS_RULES) {
+    if (!matchesXenesisNaturalContextRule(value, rule)) continue;
+    if (!rule.targetRequired) continue;
+
+    return buildXenesisNaturalTemplateAction(
+      rule.action,
+      [step.id, step.label],
+      buildXenesisNaturalOnboardingArgsForRule(rule, step.id),
+    );
+  }
+
+  return null;
+}
+
 export function findXenesisNaturalCatalogRuleAction(
   value: string,
   rules: readonly XenesisNaturalCatalogActionRule[],

@@ -7,6 +7,82 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Latest Slice: Shared Guide And Onboarding Natural Actions
+
+- Current objective:
+  - Move guide and onboarding natural action assembly out of
+    `src/shared/xenesisNaturalLanguageActionResolvers.ts` and into shared
+    natural capability catalog helpers.
+- Scope:
+  - Add RED tests requiring shared guide/onboarding action helper functions.
+  - Add source guards that block direct guide/onboarding template/catalog action
+    construction and rule loops in the natural action resolver.
+  - Keep the resolver responsible for natural text matching and target
+    extraction only.
+  - Preserve existing guide open/status and onboarding open/status natural
+    prompt payloads.
+- Touched files so far:
+  - `handoff.md`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `src/shared/xenesisNaturalLanguageActionResolvers.ts`
+  - `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-shared-guide-onboarding-natural-actions.md`
+- Intended RED tests:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    should fail because shared guide/onboarding action helpers do not exist yet
+    and the resolver still builds those actions directly.
+- Verification status:
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> failed 49/51 as expected because the guide/onboarding helper functions
+    were not exported and the natural resolver still owned direct action
+    assembly for those flows.
+  - GREEN focused:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 51/51 after adding shared guide/onboarding action helpers,
+    updating stale resolver-owned source expectations, and refactoring the
+    resolver to delegate action assembly.
+  - Focused Biome write:
+    `npx biome check --write --formatter-enabled=true --linter-enabled=true --assist-enabled=true src/shared/xenesisNaturalLanguageCapabilityCatalog.ts src/shared/xenesisNaturalLanguageActionResolvers.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+    -> passed with no fixes.
+  - Focused post-format source/test recheck:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 51/51.
+  - Typecheck:
+    `npm run typecheck` -> passed.
+  - Smoke fixture:
+    `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` ->
+    passed 6/6.
+  - Focused post-format Biome check:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true src/shared/xenesisNaturalLanguageCapabilityCatalog.ts src/shared/xenesisNaturalLanguageActionResolvers.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+    -> passed.
+  - CR audit:
+    `npm run docs:capabilities:audit` -> passed; generated audit summary
+    remained 796 nodes and 689 coverage path references.
+  - CR audit counter readback:
+    `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> all 0.
+  - Build:
+    `npm run build` -> passed. Existing Vite warnings about browser
+    externalization/dynamic import chunking were printed.
+  - Live natural Desk routing smoke:
+    `npm run smoke:xenesis:natural-desk-routing` -> passed 261/261.
+- Implemented:
+  - Added shared guide open/status and onboarding open/status action helper
+    functions in `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`.
+  - Removed direct guide/onboarding template/catalog action assembly and guide/
+    onboarding rule imports from
+    `src/shared/xenesisNaturalLanguageActionResolvers.ts`.
+  - Updated source-ownership tests so guide/onboarding rule ownership now points
+    at the shared capability catalog instead of the natural resolver.
+- Known gaps:
+  - Full repo lint/public-release known gaps remain unchanged.
+- Documentation:
+  - Added Obsidian working note
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-shared-guide-onboarding-natural-actions.md`.
+- Next intended step:
+  - Run final diff hygiene, stage this slice only, and commit it.
+
 ## Latest Slice: Shared Natural Workflow Preview Action
 
 - Current objective:

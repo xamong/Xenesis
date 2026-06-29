@@ -1,11 +1,8 @@
 import { findXenesisConnectionUserStoryWorkflowPreviewTarget } from './xenesisConnections';
 import {
-  buildXenesisNaturalCatalogAction,
   buildXenesisNaturalCoreToolOpenAction,
   buildXenesisNaturalMessengerViewSectionOpenAction,
-  buildXenesisNaturalOnboardingArgsForRule,
   buildXenesisNaturalProviderViewSectionOpenAction,
-  buildXenesisNaturalTemplateAction,
   buildXenesisNaturalToolViewSectionOpenAction,
   buildXenesisNaturalUserStoryWorkflowPreviewAction,
   findXenesisNaturalCatalogRuleAction,
@@ -13,7 +10,11 @@ import {
   findXenesisNaturalConnectionAggregateStatusAction,
   findXenesisNaturalConnectionTargetRuleAction,
   findXenesisNaturalCoreToolTarget,
+  findXenesisNaturalGuideOpenAction,
+  findXenesisNaturalGuideStatusAction,
   findXenesisNaturalMessengerViewSectionTarget,
+  findXenesisNaturalOnboardingOpenAction,
+  findXenesisNaturalOnboardingStatusAction,
   findXenesisNaturalProviderRuleAction,
   findXenesisNaturalProviderViewSectionTarget,
   findXenesisNaturalToolViewSectionTarget,
@@ -27,14 +28,10 @@ import {
   XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES,
   XENESIS_NATURAL_DESK_ACTION_ARGS,
   XENESIS_NATURAL_GATEWAY_ACTION_RULES,
-  XENESIS_NATURAL_GUIDE_OPEN_RULES,
-  XENESIS_NATURAL_GUIDE_STATUS_RULES,
   XENESIS_NATURAL_MCP_INSTALL_DRAFT_APPLY_TARGET_RULES,
   XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_RULES,
   XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_RULES,
   XENESIS_NATURAL_OAUTH_SETUP_PACKET_TARGET_RULES,
-  XENESIS_NATURAL_ONBOARDING_OPEN_RULES,
-  XENESIS_NATURAL_ONBOARDING_STATUS_RULES,
   XENESIS_NATURAL_PROFILE_INVENTORY_RULES,
   XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_RULES,
   XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_RULES,
@@ -56,7 +53,6 @@ import {
   extractXenesisNaturalQuotedText,
   extractXenesisNaturalQuotedTexts,
   findXenesisNaturalConnectionTarget,
-  findXenesisNaturalContextRule,
   findXenesisNaturalGuideTarget,
   findXenesisNaturalOnboardingStepTarget,
   findXenesisNaturalProviderTarget,
@@ -71,7 +67,6 @@ import {
   hasXenesisNaturalProviderProfileContext,
   isXenesisNaturalConnectionMessengerTarget,
   isXenesisNaturalConnectionToolTarget,
-  matchesXenesisNaturalContextRule,
   matchesXenesisNaturalContextRules,
   normalizeXenesisNaturalLanguageText,
   stripXenesisNaturalQuotedText,
@@ -82,8 +77,6 @@ import {
   XENESIS_NATURAL_VIEW_SURFACE_CONTEXT_WORDS,
   type XenesisNaturalConnectionTarget,
   type XenesisNaturalDeskActionRequest,
-  type XenesisNaturalGuideOpenRule,
-  type XenesisNaturalGuideStatusRule,
 } from './xenesisNaturalLanguageCatalog';
 
 export function toolOpenActionFromNaturalText(
@@ -119,43 +112,19 @@ function xenesisConnectionTargetOpenActionFromNaturalText(
   return findXenesisNaturalConnectionTargetRuleAction(value, target, XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES);
 }
 
-function xenesisGuideFromNaturalText(
-  value: string,
-  rule: XenesisNaturalGuideOpenRule | XenesisNaturalGuideStatusRule,
-): { id: string; label: string } | null {
-  if (!matchesXenesisNaturalContextRule(value, rule)) return null;
-
-  return findXenesisNaturalGuideTarget(value);
-}
-
 function xenesisGuideActionFromNaturalText(value: string): XenesisNaturalDeskActionRequest | null {
-  const rule = findXenesisNaturalContextRule(value, XENESIS_NATURAL_GUIDE_OPEN_RULES);
-  if (!rule) return null;
-
-  const guide = xenesisGuideFromNaturalText(value, rule);
+  const guide = findXenesisNaturalGuideTarget(value);
   if (!guide) return null;
 
   const openFile = matchesXenesisNaturalContextRules(value, XENESIS_NATURAL_GUIDE_FILE_OPEN_RULES);
-
-  return buildXenesisNaturalTemplateAction(
-    rule.action,
-    [guide.id, guide.label, openFile],
-    XENESIS_NATURAL_DESK_ACTION_ARGS.openFileVisible(guide.id, openFile),
-  );
+  return findXenesisNaturalGuideOpenAction(value, guide, openFile);
 }
 
 function xenesisGuideStatusActionFromNaturalText(value: string): XenesisNaturalDeskActionRequest | null {
-  const rule = findXenesisNaturalContextRule(value, XENESIS_NATURAL_GUIDE_STATUS_RULES);
-  if (!rule) return null;
-
-  const guide = xenesisGuideFromNaturalText(value, rule);
+  const guide = findXenesisNaturalGuideTarget(value);
   if (!guide) return null;
 
-  return buildXenesisNaturalTemplateAction(
-    rule.action,
-    [guide.id, guide.label],
-    XENESIS_NATURAL_DESK_ACTION_ARGS.targetId(guide.id),
-  );
+  return findXenesisNaturalGuideStatusAction(value, guide);
 }
 
 function xenesisOnboardingStepFromNaturalText(value: string): { id: string; label: string } | null {
@@ -166,43 +135,14 @@ function xenesisOnboardingStepFromNaturalText(value: string): { id: string; labe
 
 function xenesisOnboardingOpenActionFromNaturalText(value: string): XenesisNaturalDeskActionRequest | null {
   const step = xenesisOnboardingStepFromNaturalText(value);
-  for (const rule of XENESIS_NATURAL_ONBOARDING_OPEN_RULES) {
-    if (!matchesXenesisNaturalContextRule(value, rule)) continue;
-
-    if (rule.targetRequired) {
-      if (!step) continue;
-
-      return buildXenesisNaturalTemplateAction(
-        rule.action,
-        [step.id, step.label],
-        buildXenesisNaturalOnboardingArgsForRule(rule, step.id),
-      );
-    }
-
-    if (rule.argsKind === 'ensureVisible') {
-      return buildXenesisNaturalCatalogAction(rule.action, buildXenesisNaturalOnboardingArgsForRule(rule));
-    }
-  }
-
-  return null;
+  return findXenesisNaturalOnboardingOpenAction(value, step);
 }
 
 function xenesisOnboardingStatusActionFromNaturalText(value: string): XenesisNaturalDeskActionRequest | null {
   const step = xenesisOnboardingStepFromNaturalText(value);
   if (!step) return null;
 
-  for (const rule of XENESIS_NATURAL_ONBOARDING_STATUS_RULES) {
-    if (!matchesXenesisNaturalContextRule(value, rule)) continue;
-    if (!rule.targetRequired) continue;
-
-    return buildXenesisNaturalTemplateAction(
-      rule.action,
-      [step.id, step.label],
-      buildXenesisNaturalOnboardingArgsForRule(rule, step.id),
-    );
-  }
-
-  return null;
+  return findXenesisNaturalOnboardingStatusAction(value, step);
 }
 
 function xenesisToolAggregateStatusActionFromNaturalText(value: string): XenesisNaturalDeskActionRequest | null {
