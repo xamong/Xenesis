@@ -1,5 +1,49 @@
 # Xenesis Desk Work Handoff
 
+## Current Slice: Slice 01 Live CR Baseline - Task 6 Final Verification
+
+- Current objective:
+  - Complete Task 6 from `docs/superpowers/plans/2026-06-29-slice-01-live-cr-baseline.md`.
+  - Run focused unit/script tests, CR audit zero assertion, root typecheck/build, and live smoke baselines.
+  - Preserve exact verification evidence without claiming provider natural-language CR tool-selection proof.
+- Scope boundary:
+  - Verification and work-log only unless final adversarial review finds a blocking defect.
+  - Do not add natural-language routing heuristics, provider shortcuts, mock fallbacks, chat-only approvals, or provider-specific CR implementations.
+  - Obsidian remains reference/context only; executable truth is repo code, tests, generated CR docs, and live verification commands.
+- Touched files:
+  - `docs/capability-registry-audit.md`
+  - `handoff.md`
+- Commands run:
+  - `node --test scripts\assertCapabilityAuditZero.test.mjs`: PASS, 7/7 tests.
+  - `node --test scripts\capabilityCoverageAudit.test.mjs`: PASS, 1/1 tests.
+  - `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs`: PASS, 8/8 tests.
+  - `node --test scripts\xenesisReviewRequestApprovalLiveSmoke.test.mjs`: PASS, 10/10 tests.
+  - `node --test src\main\capabilityActionApproval.test.mjs`: PASS, 4/4 tests.
+  - `node --test src\main\mcpActionInbox.test.mjs`: PASS, 3/3 tests.
+  - `npm run docs:capabilities:audit`: PASS, output `Capability audit: 801 nodes, 689 coverage path references.`
+  - `node scripts\assertCapabilityAuditZero.mjs`: PASS, output `capability-audit-zero: verified 4 counters in docs\capability-registry-audit.md`.
+  - `npm run typecheck`: PASS.
+  - `npm run build`: PASS; Vite emitted existing warnings about browser externalization for `hwp.js/build/esm.js` `fs` imports and `src/renderer/deskBridge.ts` mixed static/dynamic imports.
+  - `npm run smoke:xenesis:connection-center -- --json`: PASS live smoke text output, `xenesis-connection-center-live-smoke: passed 9/9`; npm/PowerShell did not forward `--json` to the script in this environment.
+  - `node .\scripts\xenesisConnectionCenterLiveSmoke.mjs --json`: PASS structured JSON; `ok: true`, `summary.total: 9`, `passed: 9`, `failed: 0`, all 9 `reference-baseline:*` checks passed, `cr.path: xd.xenesis.connections.open`, `cr.ok: true`, `snapshot.path: xd.testing.connectionCenter.snapshot`, `snapshot.ok: true`.
+  - `npm run smoke:xenesis:review-request-approval -- --json`: PASS live smoke text output, `xenesis-review-request-approval-live-smoke: passed 6/6`; npm/PowerShell did not forward `--json` to the script in this environment.
+  - `node .\scripts\xenesisReviewRequestApprovalLiveSmoke.mjs --json`: PASS structured JSON; `ok: true`, `proofType: structured-cr-approval-regression`, `providerNaturalLanguageToolSelectionProof: false`, `summary.total: 6`, `passed: 6`, `failed: 0`.
+  - `git diff --check`: PASS after verification; Git printed LF/CRLF normalization warning only.
+  - `git status --short`: PASS, showed only `docs/capability-registry-audit.md` modified by regenerated audit timestamp before this handoff update.
+- Exact verification result:
+  - Focused Slice 01 tests pass across audit-zero, audit generation, Connection Center live smoke contract, review request approval smoke proof metadata, approval command serialization, and Action Inbox resolution.
+  - CR audit generated successfully and the audit-zero assertion verified all four required zero counters.
+  - Root typecheck and build pass.
+  - Connection Center live smoke passed all 9 reference-baseline checks.
+  - Review request approval live smoke passed all 6 structured CR approval regression checks.
+  - Direct JSON smoke commands provide structured evidence because npm did not forward `--json` in this PowerShell/npm 11.5.1 run.
+- Known gaps:
+  - The review request approval smoke intentionally proves a structured fenced action / CR approval regression only; it does not prove provider natural-language CR tool selection.
+  - Full live Agent-pane natural-language provider proof remains outside this Slice 01 baseline scope unless explicitly scheduled in a later slice.
+  - Build warnings are non-fatal and were not introduced or resolved in this slice.
+- Next intended step:
+  - Commit final verification evidence, then run final adversarial subagent review across Slice 01 before reporting completion.
+
 ## Current Slice: Slice 01 Live CR Baseline - Task 5 Obsidian Reference And Verification Indexes
 
 - Current objective:
