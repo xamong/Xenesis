@@ -239,8 +239,8 @@ function buildDocument(audit) {
       `| \`${escapeTable(row.coverageName)}\` | \`${escapeTable(row.entryKey)}\` | \`${escapeTable(row.field)}\` | ${row.kind} | \`${escapeTable(row.path)}\` |`,
     );
   }
-  lines.push('');
 
+  while (lines.at(-1) === '') lines.pop();
   return `${lines.join('\n')}\n`;
 }
 

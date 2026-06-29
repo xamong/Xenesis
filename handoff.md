@@ -12,16 +12,21 @@ into a Desk-native, CR-first setup and connection experience.
 - Current objective:
   - Implement Task 1 from `docs/superpowers/plans/2026-06-29-slice-01-live-cr-baseline.md`.
   - Add automated CR audit-zero assertion.
+  - Fix spec-review finding that CR audit generation is not reproducible with
+    `git diff --check`.
   - Keep product runtime behavior unchanged.
 - Scope boundary:
-  - Owned files only: create `scripts/assertCapabilityAuditZero.mjs`, create
-    `scripts/assertCapabilityAuditZero.test.mjs`, and update `handoff.md`.
+  - Owned files only: Task 1 audit assertion files, `scripts/capabilityCoverageAudit.mjs`,
+    `scripts/capabilityCoverageAudit.test.mjs`, generated
+    `docs/capability-registry-audit.md`, and `handoff.md`.
   - No deterministic natural-language routing, keyword catalogs, prompt routers,
     provider-specific CR shortcuts, mock fallbacks, chat-only approvals, web
     browsing, or secret exposure.
 - Touched files so far:
   - `handoff.md`
   - `docs/capability-registry-audit.md`
+  - `scripts/capabilityCoverageAudit.mjs`
+  - `scripts/capabilityCoverageAudit.test.mjs`
   - `scripts/assertCapabilityAuditZero.mjs`
   - `scripts/assertCapabilityAuditZero.test.mjs`
 - Commands run:
@@ -57,6 +62,27 @@ into a Desk-native, CR-first setup and connection experience.
     `docs/capability-registry-audit.md`, `handoff.md`,
     `scripts/assertCapabilityAuditZero.mjs`, and
     `scripts/assertCapabilityAuditZero.test.mjs`.
+  - Spec review finding intake: reviewer reran
+    `npm run docs:capabilities:audit`; `git status --short` showed
+    `docs/capability-registry-audit.md` dirty as generated related state.
+  - Source check: `scripts/capabilityCoverageAudit.mjs` `buildDocument()` pushes
+    an empty string at the end of `lines` and returns
+    `` `${lines.join('\n')}\n` ``, producing a blank line at EOF.
+  - `node --test scripts\capabilityCoverageAudit.test.mjs`: FAIL as RED,
+    generated `docs/capability-registry-audit.md` matched `/\n\s*\n$/`.
+  - `node --test scripts\capabilityCoverageAudit.test.mjs`: PASS, 1/1 test.
+  - `node --test scripts\assertCapabilityAuditZero.test.mjs`: PASS, 6/6 tests.
+  - `npm run docs:capabilities:audit`: PASS, wrote
+    `docs\capability-registry-audit.md`; `Capability audit: 801 nodes, 689 coverage path references.`
+  - `node scripts\assertCapabilityAuditZero.mjs`: PASS,
+    `capability-audit-zero: verified 4 counters in docs\capability-registry-audit.md`.
+  - `git diff --check`: PASS; Git printed LF/CRLF normalization warnings for
+    `docs/capability-registry-audit.md`, `handoff.md`, and
+    `scripts/capabilityCoverageAudit.mjs`.
+  - `git status --short`: PASS, showed only intended review-fix files:
+    `docs/capability-registry-audit.md`, `handoff.md`,
+    `scripts/capabilityCoverageAudit.mjs`, and
+    `scripts/capabilityCoverageAudit.test.mjs`.
 - Exact verification result:
   - Reference intake commands completed before code edits.
   - Reference source path check returned `True` for every listed OpenClaw/Hermes
@@ -70,12 +96,19 @@ into a Desk-native, CR-first setup and connection experience.
   - Generated CR audit passes the new zero assertion with four verified counters.
   - First `git diff --check` found one trailing blank line at EOF in the
     regenerated audit file; fixed before commit.
+  - Review finding is valid and affects reproducible verification after audit
+    regeneration.
+  - RED regression test reproduced the review finding before generator changes.
+  - Fixed `scripts/capabilityCoverageAudit.mjs` so `buildDocument()` removes
+    trailing blank `lines` entries and returns exactly one terminal newline.
+  - Regression test now proves regenerated audit markdown has no blank line at
+    EOF.
 - Known gaps:
   - Task 1 does not run live Electron smokes and does not prove provider
     natural-language CR tool selection.
   - Product runtime behavior is unchanged in Task 1.
 - Next intended step:
-  - Commit Task 1 changes.
+  - Commit the review fix as `Fix capability audit document trailing blank line`.
 
 ## Current Slice: Slice 01 Live CR Baseline Plan
 
