@@ -7,6 +7,76 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current Slice: Slice 01 Live CR Baseline - Task 1 CR Audit Zero Assertion
+
+- Current objective:
+  - Implement Task 1 from `docs/superpowers/plans/2026-06-29-slice-01-live-cr-baseline.md`.
+  - Add automated CR audit-zero assertion.
+  - Keep product runtime behavior unchanged.
+- Scope boundary:
+  - Owned files only: create `scripts/assertCapabilityAuditZero.mjs`, create
+    `scripts/assertCapabilityAuditZero.test.mjs`, and update `handoff.md`.
+  - No deterministic natural-language routing, keyword catalogs, prompt routers,
+    provider-specific CR shortcuts, mock fallbacks, chat-only approvals, web
+    browsing, or secret exposure.
+- Touched files so far:
+  - `handoff.md`
+  - `docs/capability-registry-audit.md`
+  - `scripts/assertCapabilityAuditZero.mjs`
+  - `scripts/assertCapabilityAuditZero.test.mjs`
+- Commands run:
+  - `git status --short`: PASS, no output.
+  - `Get-Content -LiteralPath 'F:\agent-anal\analysis\_xenesis-gap-shared-context.md' -TotalCount 260`: PASS, output read successfully.
+  - `Get-Content -LiteralPath 'F:\agent-anal\analysis\xenesis-gaps-vs-references.ko.md' -TotalCount 280`: PASS, output read successfully.
+  - `Get-Content -LiteralPath 'F:\agent-anal\analysis\openclaw-main\12-channels-routing.md' -TotalCount 260`: PASS, output read successfully.
+  - `Get-Content -LiteralPath 'F:\agent-anal\analysis\hermes-agent-main\08-channels-ui.md' -TotalCount 260`: PASS, output read successfully.
+  - Reference source anchor check:
+    - `F:\agent-anal\openclaw-main\src\routing\resolve-route.ts`: `True`
+    - `F:\agent-anal\openclaw-main\src\routing\session-key.ts`: `True`
+    - `F:\agent-anal\openclaw-main\src\channels\allowlist-match.ts`: `True`
+    - `F:\agent-anal\hermes-agent-main\tui_gateway\server.py`: `True`
+    - `F:\agent-anal\hermes-agent-main\tui_gateway\ws.py`: `True`
+    - `F:\agent-anal\hermes-agent-main\apps\desktop\electron\main.cjs`: `True`
+  - `node --test scripts\assertCapabilityAuditZero.test.mjs`: FAIL as RED,
+    `ERR_MODULE_NOT_FOUND` for
+    `scripts/assertCapabilityAuditZero.mjs`.
+  - `node --test scripts\assertCapabilityAuditZero.test.mjs`: PASS, 6/6 tests.
+  - `npm run docs:capabilities:audit`: PASS, wrote
+    `docs\capability-registry-audit.md`; `Capability audit: 801 nodes, 689 coverage path references.`
+  - `node scripts\assertCapabilityAuditZero.mjs`: PASS,
+    `capability-audit-zero: verified 4 counters in docs\capability-registry-audit.md`.
+  - `git diff --check`: FAIL, `docs/capability-registry-audit.md:728: new blank line at EOF.`
+  - Removed the generated trailing blank line from
+    `docs/capability-registry-audit.md`.
+  - `node scripts\assertCapabilityAuditZero.mjs`: PASS after trailing blank line
+    fix, `capability-audit-zero: verified 4 counters in docs\capability-registry-audit.md`.
+  - `git diff --check`: PASS after trailing blank line fix; Git printed LF/CRLF
+    normalization warnings for `docs/capability-registry-audit.md` and
+    `handoff.md`.
+  - `git status --short`: PASS, showed only intended Task 1 files:
+    `docs/capability-registry-audit.md`, `handoff.md`,
+    `scripts/assertCapabilityAuditZero.mjs`, and
+    `scripts/assertCapabilityAuditZero.test.mjs`.
+- Exact verification result:
+  - Reference intake commands completed before code edits.
+  - Reference source path check returned `True` for every listed OpenClaw/Hermes
+    source anchor.
+  - RED test confirmed the implementation module is missing:
+    `Cannot find module 'E:\xenesis-original\xenesis-desk\.worktrees\upcoming-work-20260627\scripts\assertCapabilityAuditZero.mjs'`.
+  - Implemented `scripts/assertCapabilityAuditZero.mjs` with required exports,
+    required counter names, generated summary bullet parsing, optional table row
+    parsing, zero assertion failures, and CLI success/failure output.
+  - Focused tests pass after implementation.
+  - Generated CR audit passes the new zero assertion with four verified counters.
+  - First `git diff --check` found one trailing blank line at EOF in the
+    regenerated audit file; fixed before commit.
+- Known gaps:
+  - Task 1 does not run live Electron smokes and does not prove provider
+    natural-language CR tool selection.
+  - Product runtime behavior is unchanged in Task 1.
+- Next intended step:
+  - Commit Task 1 changes.
+
 ## Current Slice: Slice 01 Live CR Baseline Plan
 
 - Current objective:
