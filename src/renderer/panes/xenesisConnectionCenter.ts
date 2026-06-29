@@ -506,6 +506,22 @@ export function buildXenesisToolProfileDraftRequest(
   };
 }
 
+export function buildXenesisToolProfileDraftApplyRequest(
+  item: XenesisConnectionItem,
+): McpBridgeCapabilityCallRequest | null {
+  if (!item.toolProfileDraft) return null;
+  if (!item.toolProfileDraft.controlPaths.includes('xd.xenesis.tools.profileDrafts.apply')) return null;
+  return {
+    path: 'xd.xenesis.tools.profileDrafts.apply',
+    args: {
+      id: item.id,
+      target: 'codex',
+    },
+    source: 'xenesis',
+    approved: false,
+  };
+}
+
 export function buildXenesisToolOAuthSetupPacketRequest(
   item: XenesisConnectionItem,
 ): McpBridgeCapabilityCallRequest | null {

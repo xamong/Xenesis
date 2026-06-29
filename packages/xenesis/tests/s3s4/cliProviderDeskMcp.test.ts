@@ -9,5 +9,6 @@ describe('deskMcpSystemMessage', () => {
     expect(msg.content).not.toContain('xd.xenesis.tools.profileDrafts.status');
     expect(msg.content).not.toContain('xd.xenesis.tools.profileDrafts.open');
     expect(msg.content).not.toContain('xd.xenesis.tools.profileDrafts.request');
+    expect(msg.content).not.toContain('xd.xenesis.tools.profileDrafts.apply');
   });
 });

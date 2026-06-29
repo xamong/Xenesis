@@ -37,6 +37,7 @@ import {
   buildXenesisToolOAuthRuntimeRequest,
   buildXenesisToolOAuthSetupPacketOpenRequest,
   buildXenesisToolOAuthSetupPacketRequest,
+  buildXenesisToolProfileDraftApplyRequest,
   buildXenesisToolProfileDraftRequest,
   buildXenesisToolRuntimeRequest,
   buildXenesisToolSetupPlanRequest,
@@ -119,7 +120,10 @@ test('xenesis detail focus selector maps CR detail values to existing data attri
     XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['tool-oauth-runtime'],
     'data-xenesis-tool-oauth-runtime',
   );
-  assert.equal(XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['tool-profile-draft'], 'data-xenesis-tool-profile-draft');
+  assert.equal(
+    XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['tool-profile-draft'],
+    'data-xenesis-tool-profile-draft',
+  );
   assert.equal(XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['channel-routing'], 'data-xenesis-channel-routing');
   assert.equal(
     XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['provider-profile-draft'],
@@ -2048,6 +2052,57 @@ test('buildXenesisToolProfileDraftRequest targets the profile draft review CR pa
   });
 
   assert.equal(buildXenesisToolProfileDraftRequest({ ...item, toolProfileDraft: undefined } as any), null);
+});
+
+test('buildXenesisToolProfileDraftApplyRequest targets ready profile draft apply CR path', () => {
+  const item = {
+    id: 'notion',
+    kind: 'tool',
+    label: 'Notion',
+    status: 'needs-setup',
+    summary: 'Notion profile draft.',
+    toolProfileDraft: {
+      draftStatus: 'ready',
+      actionInboxKind: 'xenesis-tool-profile-draft',
+      tool: 'notion',
+      displayName: 'Notion',
+      runtimeSupport: 'ready-template',
+      authMode: 'env-token',
+      setupSurface: 'Settings > Xenesis Agent > Connections',
+      reviewSurface: 'Desk Action Inbox',
+      profileFields: [],
+      missingRequiredFields: [],
+      scopes: [],
+      reviewSteps: [],
+      readPaths: ['xd.xenesis.tools.profileDrafts.status'],
+      controlPaths: ['xd.xenesis.tools.profileDrafts.request', 'xd.xenesis.tools.profileDrafts.apply'],
+      diagnostics: ['tool-profile-draft'],
+      blockedActions: ['store credentials'],
+      safetyBoundaries: ['tool profile draft apply delegates only to ready MCP install draft apply'],
+    },
+  } as XenesisConnectionItem;
+
+  assert.deepEqual(buildXenesisToolProfileDraftApplyRequest(item), {
+    path: 'xd.xenesis.tools.profileDrafts.apply',
+    args: {
+      id: 'notion',
+      target: 'codex',
+    },
+    source: 'xenesis',
+    approved: false,
+  });
+
+  assert.equal(
+    buildXenesisToolProfileDraftApplyRequest({
+      ...item,
+      toolProfileDraft: {
+        ...item.toolProfileDraft,
+        controlPaths: ['xd.xenesis.tools.profileDrafts.request'],
+      },
+    } as XenesisConnectionItem),
+    null,
+  );
+  assert.equal(buildXenesisToolProfileDraftApplyRequest({ ...item, toolProfileDraft: undefined } as any), null);
 });
 
 test('buildXenesisToolOAuthRuntimeRequest targets the runtime readiness CR path', () => {

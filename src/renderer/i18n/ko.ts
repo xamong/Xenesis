@@ -963,6 +963,7 @@ export const ko = {
     xenesisConnectionsRequestToolOAuthRuntime: 'OAuth 런타임 검토 요청',
     xenesisConnectionsRequestToolRuntime: '도구 런타임 검토 요청',
     xenesisConnectionsRequestToolProfileDraft: '프로필 초안 검토 요청',
+    xenesisConnectionsApplyToolProfileDraft: '프로필 초안 적용 요청',
     xenesisConnectionsRequestChannelRuntime: '런타임 검토 요청',
     xenesisConnectionsRequestChannelProfileDraft: '채널 초안 요청',
     xenesisConnectionsApplyChannelProfileDraft: '채널 적용 요청',

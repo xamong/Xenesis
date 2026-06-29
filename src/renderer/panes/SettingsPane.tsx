@@ -106,6 +106,7 @@ import {
   buildXenesisToolOAuthRuntimeRequest,
   buildXenesisToolOAuthSetupPacketOpenRequest,
   buildXenesisToolOAuthSetupPacketRequest,
+  buildXenesisToolProfileDraftApplyRequest,
   buildXenesisToolProfileDraftRequest,
   buildXenesisToolRuntimeRequest,
   buildXenesisToolSetupPlanRequest,
@@ -4364,6 +4365,7 @@ export default function SettingsPane() {
     const toolOAuthSetupPacketOpenRequest = buildXenesisToolOAuthSetupPacketOpenRequest(item);
     const toolRuntimeRequest = buildXenesisToolRuntimeRequest(item);
     const toolProfileDraftRequest = buildXenesisToolProfileDraftRequest(item);
+    const toolProfileDraftApplyRequest = buildXenesisToolProfileDraftApplyRequest(item);
     const toolSetupPlanRequest = buildXenesisToolSetupPlanRequest(item);
     const toolActionCatalogRequest = buildXenesisToolActionCatalogRequest(item);
     const channelSetupPlanRequest = buildXenesisChannelSetupPlanRequest(item);
@@ -4630,6 +4632,16 @@ export default function SettingsPane() {
                 }}
               >
                 {t('settings.xenesisConnectionsRequestToolProfileDraft')}
+              </button>
+            ) : null}
+            {toolProfileDraftApplyRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(toolProfileDraftApplyRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsApplyToolProfileDraft')}
               </button>
             ) : null}
             {channelProfileDraftRequest ? (

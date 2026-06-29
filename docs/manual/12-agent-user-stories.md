@@ -147,6 +147,7 @@ Approval boundary:
 
 - `xd.xenesis.tools.mcpInstallDrafts.request`
 - `xd.xenesis.tools.profileDrafts.request`
+- `xd.xenesis.tools.profileDrafts.apply`
 - `xd.xenesis.tools.mcpInstallDrafts.apply`
 - `xd.xenesis.connections.setupRequests.request`
 - `xd.xenesis.connections.setupRequests.apply`
@@ -158,7 +159,9 @@ Completion evidence:
 - Tool profile draft status shows profile fields, credential readiness, MCP
   server/config readiness, runtime readbacks, scopes when applicable, missing
   required fields, review steps, blocked actions, and review-only safety
-  boundaries.
+  boundaries. Ready tool profile draft apply returns
+  `delegatedPath: xd.xenesis.tools.mcpInstallDrafts.apply`; planned Google
+  OAuth drafts and missing-env drafts do not expose the apply path.
 - Action Inbox contains a local review item when setup is requested.
 - No MCP config is written until an explicit approval-gated apply path is used.
 
@@ -353,6 +356,7 @@ deterministic prompt catalog:
 | Show the Notion tool profile draft | `xd.xenesis.tools.profileDrafts.status` |
 | Open the Google Calendar tool profile draft | `xd.xenesis.tools.profileDrafts.open` |
 | Request review for the Notion tool profile draft | `xd.xenesis.tools.profileDrafts.request` |
+| Apply a ready Notion tool profile draft | `xd.xenesis.tools.profileDrafts.apply` |
 
 ## Safety Rules
 

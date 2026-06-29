@@ -7,7 +7,166 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
-## Current Slice: Remove Remaining Local Desk Action Heuristics
+## Current Slice: Tool Profile Draft Apply Delegation
+
+- Current objective:
+  - Add `xd.xenesis.tools.profileDrafts.apply` as an approval-gated Capability
+    Registry path for ready external tool profile drafts.
+  - Keep the path delegation-only: it may call the existing ready
+    `xd.xenesis.tools.mcpInstallDrafts.apply` implementation, and must not add
+    OAuth completion, token/credential storage, provider tool execution, shell
+    execution, natural-language heuristic routing, or external mutations beyond
+    the existing approved MCP config write path.
+- Rationale:
+  - The product goal wants external tool connections solved inside Xenesis Desk
+    through CR. `toolProfileDraft` now gives review/open/request context, while
+    `mcpInstallDrafts.apply` already owns approved local MCP config writes with
+    backups and redacted readback.
+  - A profile-draft apply wrapper lets ready tools move from review to approved
+    local setup without creating provider-specific one-off logic or reintroducing
+    natural-language routing.
+  - Planned OAuth tools such as Google Workspace/Calendar and missing-env tools
+    must remain review-only/no-apply.
+- Plan:
+  - `docs/superpowers/plans/2026-06-29-tool-profile-draft-apply.md`
+- Touched files so far:
+  - `handoff.md`
+  - `docs/superpowers/plans/2026-06-29-tool-profile-draft-apply.md`
+    (local ignored plan artifact)
+  - `docs/capability-registry-audit.md`
+  - `docs/capability-registry-list.md`
+  - `docs/manual/09-onboarding-connections.md`
+  - `docs/manual/11-external-tool-integrations.md`
+  - `docs/manual/12-agent-user-stories.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-tool-profile-draft-apply.md`
+  - `packages/xenesis/scripts/provider-desk-mcp-prompt-smoke.mjs`
+  - `packages/xenesis/tests/s3s4/cliProviderDeskMcp.test.ts`
+  - `src/main/index.ts`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/renderer/panes/xenesisConnectionCenter.test.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/shared/xenesisConnectionCapabilities.test.ts`
+  - `src/shared/xenesisConnections.test.ts`
+  - `src/shared/xenesisConnections.ts`
+- Commands and source review so far:
+  - Read relevant Superpowers skills:
+    `using-superpowers`, `using-git-worktrees`, `test-driven-development`,
+    `writing-plans`, and `executing-plans`.
+  - `git status --short --branch; git log -3 --oneline` -> clean on
+    `agent/upcoming-work-20260627`; latest commit
+    `42898fd Remove remaining local Desk heuristics`.
+  - Read AGENTS, repo-local Obsidian index/system/source/module/architecture
+    notes, current `handoff.md`, `2026-06-29-tool-profile-drafts.md`, and
+    `2026-06-28-mcp-install-draft-apply.md`.
+  - Current source review found:
+    `xd.xenesis.tools.profileDrafts.status/open/request` exist; `toolProfileDraft`
+    is intentionally review-only today; ready `mcpInstallDraft` already exposes
+    `xd.xenesis.tools.mcpInstallDrafts.apply`; Settings and renderer helpers
+    already have apply patterns for MCP install drafts, provider profile drafts,
+    and channel profile drafts.
+  - Initial next intended step:
+    Start Task 1 from the plan: add the shared read-model RED assertions, run
+    `npx tsx --test src\shared\xenesisConnections.test.ts`, then implement the
+    minimal ready-delegation model change.
+  - RED:
+    `npx tsx --test src\shared\xenesisConnections.test.ts` -> failed 1/45 as
+    expected in `buildXenesisConnectionsStatus exposes review-only tool profile
+    drafts`; ready Notion tool profile draft did not include
+    `xd.xenesis.tools.profileDrafts.apply`.
+  - Implemented shared read-model condition:
+    ready tool profile drafts expose `xd.xenesis.tools.profileDrafts.apply`
+    only when their ready MCP install draft already exposes
+    `xd.xenesis.tools.mcpInstallDrafts.apply`.
+  - GREEN:
+    `npx tsx --test src\shared\xenesisConnections.test.ts` -> passed 45/45.
+  - CR RED:
+    `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` -> failed
+    1/45 as expected because `xd.xenesis.tools.profileDrafts.apply` was not
+    registered.
+  - Added CR schema, method metadata, adapter interface method, and dispatcher
+    branch for `xd.xenesis.tools.profileDrafts.apply`; permission is `write`,
+    approval is `when-external`, and target enum matches the existing MCP
+    install draft apply target set.
+  - CR GREEN:
+    `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` -> passed
+    45/45.
+  - Added main adapter delegation function
+    `applyXenesisToolProfileDraft(args)`: validates tool id, profile draft
+    availability/readiness/apply control path, delegates to
+    `applyXenesisToolMcpInstallDraft(body)`, and returns refreshed profile draft
+    readback with `delegatedPath`.
+  - Registered the main adapter method on the Desk bridge adapter object.
+  - Wiring/type verification:
+    - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` ->
+      passed 45/45.
+    - `npm run typecheck` -> passed.
+  - Renderer RED:
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` ->
+    failed 1/72 as expected because
+    `buildXenesisToolProfileDraftApplyRequest` was not exported.
+  - Added renderer helper `buildXenesisToolProfileDraftApplyRequest()`, wired a
+    Settings Connection Center apply button, and added English/Korean labels.
+  - Renderer GREEN:
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` ->
+    passed 72/72.
+  - Updated docs:
+    `docs/manual/09-onboarding-connections.md`,
+    `docs/manual/11-external-tool-integrations.md`, and
+    `docs/manual/12-agent-user-stories.md` now describe ready tool profile
+    draft apply as approval-gated delegation to
+    `xd.xenesis.tools.mcpInstallDrafts.apply`, while planned OAuth and
+    missing-env tools remain review-only.
+  - Added Obsidian working note:
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-tool-profile-draft-apply.md`.
+  - Extended guards so manual docs must mention
+    `xd.xenesis.tools.profileDrafts.apply`, while provider Desk MCP prompt
+    guidance still must not hardcode exact `xd.xenesis.tools.profileDrafts.*`
+    paths including apply.
+  - Focused verification after formatting:
+    - `npx tsx --test src\shared\xenesisConnections.test.ts` -> passed 45/45.
+    - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` ->
+      passed 45/45.
+    - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` ->
+      passed 72/72.
+    - `npm --prefix packages/xenesis test -- tests/s3s4/cliProviderDeskMcp.test.ts`
+      -> passed 1/1.
+  - Broad verification:
+    - `npm run typecheck` -> passed.
+    - `npm --prefix packages/xenesis run typecheck` -> passed.
+    - `npm run docs:capabilities` -> wrote
+      `docs\capability-registry-list.md` with 796 capability nodes.
+    - `npm run docs:capabilities:audit` -> passed and regenerated
+      `docs\capability-registry-audit.md`; result: 801 nodes and 689 coverage
+      path references.
+    - `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+      -> all four counters are 0.
+    - `node --test packages\xenesis\scripts\provider-desk-mcp-prompt-smoke.test.mjs`
+      -> passed 1/1.
+    - `npm --prefix packages/xenesis run provider:desk-mcp-prompt-smoke` ->
+      passed 8/8 with provider `codex-cli`, including the
+      `stdin-no-hardcoded-tool-profile-draft-cr-paths` guard.
+    - `npm --prefix packages/xenesis test` -> passed 81 files / 372 tests.
+    - `npm run build` -> passed.
+    - `npx biome check ...changed files... --max-diagnostics 80` -> exited 0
+      on 12 changed source/test files; reported existing warnings/infos in
+      broad `src/main/index.ts` and `src/shared/deskBridgeCapabilities.ts`.
+    - `git diff --check` -> exited 0 with LF/CRLF normalization warnings only
+      after removing generated EOF blank lines from the capability docs.
+  - Source/guard scan:
+    - Exact `xd.xenesis.tools.profileDrafts.apply` strings are limited to CR
+      registry/dispatcher, UI helper/tests, docs, and provider-smoke guard
+      tests; provider/core source does not hardcode the exact apply path.
+  - Commit:
+    - Slice committed with message `Add tool profile draft apply delegation`.
+  - Next intended step:
+    - Continue the larger final-goal graph/setup parity work in the next slice;
+      keep natural-language routing provider/CR-first with no deterministic
+      local heuristic catalog.
+
+## Previous Slice: Remove Remaining Local Desk Action Heuristics
 
 - Current objective:
   - Enforce that Xenesis Agent does not locally route natural-language Desk

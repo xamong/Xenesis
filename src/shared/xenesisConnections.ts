@@ -6228,11 +6228,12 @@ function toolProfileDraftCredentialFieldState(
   return 'configured';
 }
 
-function toolProfileDraftMcpServerState(
-  item: XenesisConnectionItem,
-): XenesisConnectionToolProfileDraftFieldValueState {
+function toolProfileDraftMcpServerState(item: XenesisConnectionItem): XenesisConnectionToolProfileDraftFieldValueState {
   if (item.mcpTemplate) return 'configured';
-  if (item.toolInstallPlan?.runtimeSupport === 'planned-oauth' || item.toolConnector?.runtimeSupport === 'planned-oauth') {
+  if (
+    item.toolInstallPlan?.runtimeSupport === 'planned-oauth' ||
+    item.toolConnector?.runtimeSupport === 'planned-oauth'
+  ) {
     return 'planned';
   }
   return item.toolConnector ? 'configured' : 'unknown';
@@ -6468,6 +6469,10 @@ function buildXenesisToolProfileDraft(
       : []),
   ];
   const reviewSteps = toolProfileDraftReviewSteps({ item, missingRequiredFields, scopes });
+  const canApplyReadyMcpDraft =
+    draftStatus === 'ready' &&
+    item.mcpInstallDraft?.draftStatus === 'ready' &&
+    item.mcpInstallDraft.controlPaths.includes('xd.xenesis.tools.mcpInstallDrafts.apply');
 
   return {
     draftStatus,
@@ -6498,6 +6503,7 @@ function buildXenesisToolProfileDraft(
     controlPaths: [
       'xd.xenesis.tools.profileDrafts.open',
       'xd.xenesis.tools.profileDrafts.request',
+      ...(canApplyReadyMcpDraft ? ['xd.xenesis.tools.profileDrafts.apply'] : []),
       'xd.xenesis.connections.open',
     ],
     diagnostics: uniqueStrings([
@@ -6513,7 +6519,7 @@ function buildXenesisToolProfileDraft(
       'store credentials',
       'execute provider tools',
       'install MCP servers',
-      'write MCP config',
+      ...(canApplyReadyMcpDraft ? [] : ['write MCP config']),
       'complete OAuth',
       'store tokens',
       'mutate external systems',
@@ -6523,8 +6529,17 @@ function buildXenesisToolProfileDraft(
       ...(item.mcpInstallDraft?.blockedActions ?? []),
     ]),
     safetyBoundaries: uniqueStrings([
-      'tool profile drafts are review-only',
-      'tool profile drafts do not install MCP servers, write MCP config, store credentials, complete OAuth, store tokens, execute provider tools, or mutate external systems',
+      canApplyReadyMcpDraft
+        ? 'tool profile draft review is read-only until apply receives Capability Registry approval'
+        : 'tool profile drafts are review-only',
+      ...(canApplyReadyMcpDraft
+        ? [
+            'tool profile draft apply delegates only to ready MCP install draft apply after Capability Registry approval',
+            'tool profile draft apply does not execute provider tools, complete OAuth, store credentials, store tokens, run shell commands, or mutate external systems',
+          ]
+        : [
+            'tool profile drafts do not install MCP servers, write MCP config, store credentials, complete OAuth, store tokens, execute provider tools, or mutate external systems',
+          ]),
       'credential values, OAuth client secrets, and OAuth tokens are never returned',
       ...(item.toolConnector?.safetyBoundaries ?? []),
       ...(item.toolRuntime?.safetyBoundaries ?? []),

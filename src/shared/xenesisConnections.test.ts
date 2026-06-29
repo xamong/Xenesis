@@ -1730,9 +1730,7 @@ test('buildXenesisConnectionsStatus exposes internal Desk tool views for MCP and
         readPaths: ['xd.xenesis.tools.profileDrafts.status', 'xd.xenesis.connections.status'],
         controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.profileDrafts.open'],
         diagnostics: ['tool-profile-draft', 'missing-required-fields', 'cr-readback'],
-        safetyBoundaries: [
-          'Profile draft view opens do not write tool profile settings or execute provider tools.',
-        ],
+        safetyBoundaries: ['Profile draft view opens do not write tool profile settings or execute provider tools.'],
       },
       {
         id: 'mcp-template',
@@ -2188,6 +2186,7 @@ test('buildXenesisConnectionsStatus exposes review-only tool profile drafts', ()
     'xd.xenesis.tools.profileDrafts.request',
     'xd.xenesis.connections.open',
   ]);
+  assert.equal(notionDraft?.controlPaths.includes('xd.xenesis.tools.profileDrafts.apply'), false);
   assert.deepEqual(
     notionDraft?.reviewSteps.map((step) => step.id),
     ['tool-identity', 'credential-readiness', 'runtime-readback', 'action-boundary'],
@@ -2201,6 +2200,7 @@ test('buildXenesisConnectionsStatus exposes review-only tool profile drafts', ()
   assert.equal(calendarDraft?.tool, 'google-calendar');
   assert.deepEqual(calendarDraft?.missingRequiredFields, ['oauthClient', 'redirectUri', 'tokenStore']);
   assert.equal(calendarDraft?.profileFields.find((field) => field.field === 'oauthClient')?.valueState, 'planned');
+  assert.equal(calendarDraft?.controlPaths.includes('xd.xenesis.tools.profileDrafts.apply'), false);
   assert.ok(calendarDraft?.safetyBoundaries.some((boundary) => boundary.includes('mutate calendar events')));
 
   const readyStatus = buildXenesisConnectionsStatus({
@@ -2234,6 +2234,12 @@ test('buildXenesisConnectionsStatus exposes review-only tool profile drafts', ()
   const readyNotion = readyStatus.sections.tools.items.find((item) => item.id === 'notion');
   assert.equal(readyNotion?.toolProfileDraft?.draftStatus, 'ready');
   assert.deepEqual(readyNotion?.toolProfileDraft?.missingRequiredFields, []);
+  assert.ok(readyNotion?.toolProfileDraft?.controlPaths.includes('xd.xenesis.tools.profileDrafts.apply'));
+  assert.ok(
+    readyNotion?.toolProfileDraft?.safetyBoundaries.some((boundary) =>
+      boundary.includes('tool profile draft apply delegates only to ready MCP install draft apply'),
+    ),
+  );
 });
 
 test('manual external tool guides document tool profile draft CR surfaces', () => {
@@ -2244,6 +2250,7 @@ test('manual external tool guides document tool profile draft CR surfaces', () =
     'xd.xenesis.tools.profileDrafts.status',
     'xd.xenesis.tools.profileDrafts.open',
     'xd.xenesis.tools.profileDrafts.request',
+    'xd.xenesis.tools.profileDrafts.apply',
   ]) {
     const escapedPath = path.replaceAll('.', '\\.');
     assert.match(toolGuide, new RegExp(escapedPath));

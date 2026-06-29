@@ -970,6 +970,7 @@ export const en = {
     xenesisConnectionsRequestToolOAuthRuntime: 'Request OAuth runtime review',
     xenesisConnectionsRequestToolRuntime: 'Request tool runtime review',
     xenesisConnectionsRequestToolProfileDraft: 'Request profile draft review',
+    xenesisConnectionsApplyToolProfileDraft: 'Apply profile draft',
     xenesisConnectionsRequestChannelRuntime: 'Request runtime review',
     xenesisConnectionsRequestChannelProfileDraft: 'Request channel draft',
     xenesisConnectionsApplyChannelProfileDraft: 'Apply channel draft',

@@ -1061,6 +1061,51 @@ const XENESIS_TOOL_PROFILE_DRAFT_REQUEST_SCHEMA = {
     },
   },
 } as const;
+const XENESIS_TOOL_PROFILE_DRAFT_APPLY_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'External tool connection id whose ready tool profile draft should be applied.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Alias for id.',
+    },
+    target: {
+      type: 'string',
+      title: 'MCP config target',
+      enum: XENESIS_MCP_INSTALL_DRAFT_APPLY_TARGET_IDS,
+      description:
+        'Optional local MCP config target. Defaults to Codex. Use all to apply to every supported target through the ready MCP install draft.',
+    },
+    targets: {
+      type: 'array',
+      title: 'MCP config targets',
+      items: {
+        type: 'string',
+        enum: XENESIS_MCP_INSTALL_DRAFT_APPLY_TARGET_IDS,
+      },
+      description:
+        'Optional local MCP config targets. Defaults to Codex when omitted and delegates to the ready MCP install draft.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity to include in apply readback.',
+    },
+    note: {
+      type: 'string',
+      title: 'Apply note',
+      description: 'Optional note to include in the apply readback. It is not written to MCP config.',
+    },
+  },
+} as const;
 const XENESIS_TOOL_MCP_INSTALL_DRAFT_STATUS_SCHEMA = XENESIS_TOOL_VIEW_STATUS_SCHEMA;
 const XENESIS_TOOL_MCP_INSTALL_DRAFT_OPEN_SCHEMA = XENESIS_TOOL_VIEW_OPEN_SCHEMA;
 const XENESIS_TOOL_MCP_INSTALL_DRAFT_REQUEST_SCHEMA = {
@@ -1874,6 +1919,7 @@ export interface DeskBridgeCapabilityAdapter {
   getXenesisToolProfileDraftsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisToolProfileDraft?: (args?: unknown) => Promise<unknown> | unknown;
   requestXenesisToolProfileDraft?: (args?: unknown) => Promise<unknown> | unknown;
+  applyXenesisToolProfileDraft?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisToolMcpInstallDraftsStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisToolMcpInstallDraft?: (args?: unknown) => Promise<unknown> | unknown;
   requestXenesisToolMcpInstallDraft?: (args?: unknown) => Promise<unknown> | unknown;
@@ -5306,6 +5352,13 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               'Record a local Action Inbox item for reviewing an external tool profile draft without storing credentials, completing OAuth, writing MCP config, executing provider tools, or mutating external systems.',
               'write',
               XENESIS_TOOL_PROFILE_DRAFT_REQUEST_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.profileDrafts.apply',
+              'Apply tool profile draft',
+              'After explicit approval, apply a ready external tool profile draft by delegating to its ready MCP install draft apply path. Does not complete OAuth, store credentials or tokens, run shell commands, execute provider tools, or mutate external systems.',
+              'write',
+              XENESIS_TOOL_PROFILE_DRAFT_APPLY_SCHEMA,
             ),
           ],
         ),
@@ -12168,6 +12221,9 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.tools.profileDrafts.request') {
         return callAdapter(path, api?.requestXenesisToolProfileDraft, request.args);
+      }
+      if (path === 'xd.xenesis.tools.profileDrafts.apply') {
+        return callAdapter(path, api?.applyXenesisToolProfileDraft, request.args);
       }
       if (path === 'xd.xenesis.tools.mcpInstallDrafts.status') {
         return callAdapter(path, api?.getXenesisToolMcpInstallDraftsStatus, request.args);

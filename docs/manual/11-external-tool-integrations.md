@@ -45,6 +45,7 @@ Use these paths for external tool setup and review:
 - `xd.xenesis.tools.profileDrafts.status`
 - `xd.xenesis.tools.profileDrafts.open`
 - `xd.xenesis.tools.profileDrafts.request`
+- `xd.xenesis.tools.profileDrafts.apply`
 - `xd.xenesis.tools.connectors.status`
 - `xd.xenesis.tools.runtime.status`
 - `xd.xenesis.tools.runtime.open`
@@ -73,9 +74,14 @@ Use these paths for external tool setup and review:
 Tool profile drafts summarize the selected tool id, setup status, profile
 fields, credential readiness, MCP server/config readiness, runtime readbacks,
 OAuth scopes when applicable, missing required fields, review steps,
-diagnostics, blocked actions, and safety boundaries. They are review-only:
-they do not install MCP servers, write MCP config, complete OAuth, store tokens
-or credentials, execute provider tools, or mutate external systems.
+diagnostics, blocked actions, and safety boundaries. Missing-env and planned
+OAuth drafts are review-only: they do not install MCP servers, write MCP config,
+complete OAuth, store tokens or credentials, execute provider tools, or mutate
+external systems. Ready tool profile drafts may expose
+`xd.xenesis.tools.profileDrafts.apply`; that approval-gated path delegates only
+to the ready `xd.xenesis.tools.mcpInstallDrafts.apply` path, so the actual
+mutation remains the existing local MCP config write with backups and redacted
+readback.
 
 Google Workspace and Google Calendar OAuth draft readbacks include review steps
 for OAuth app registration, scope review, token-store readiness, and readback

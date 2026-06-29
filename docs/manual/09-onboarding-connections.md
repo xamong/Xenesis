@@ -142,6 +142,17 @@ provider tools, send messages, mutate settings, or bypass approvals. Google
 Workspace and Google Calendar remain planned until a verified MCP/OAuth
 template exists.
 
+Tool cards also expose a `toolProfileDraft` read model. Use
+`xd.xenesis.tools.profileDrafts.status` to inspect profile fields, credential
+readiness, MCP server/config readiness, runtime readbacks, scopes, missing
+fields, review steps, diagnostics, blocked actions, and safety boundaries. Use
+`xd.xenesis.tools.profileDrafts.open` to focus the rows and
+`xd.xenesis.tools.profileDrafts.request` to record a local review item. Ready
+profile drafts may expose `xd.xenesis.tools.profileDrafts.apply`; that path is
+approval-gated and delegates only to the ready
+`xd.xenesis.tools.mcpInstallDrafts.apply` path. Planned OAuth tools and
+missing-env tools remain review-only and do not expose profile-draft apply.
+
 Tool cards also expose a generic `toolRuntime` read model. Use
 `xd.xenesis.tools.runtime.status` to inspect runtime support, auth mode,
 credential state, required/missing env names, readback checks, diagnostics,

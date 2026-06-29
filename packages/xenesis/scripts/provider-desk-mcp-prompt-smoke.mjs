@@ -104,6 +104,7 @@ async function main() {
           'xd.xenesis.tools.profileDrafts.status',
           'xd.xenesis.tools.profileDrafts.open',
           'xd.xenesis.tools.profileDrafts.request',
+          'xd.xenesis.tools.profileDrafts.apply',
         ].some((path) => stdin.includes(path)),
       },
       {

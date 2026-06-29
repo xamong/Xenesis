@@ -8006,6 +8006,66 @@ async function requestXenesisToolProfileDraft(args?: unknown): Promise<Record<st
   };
 }
 
+async function applyXenesisToolProfileDraft(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Tool id is required.' };
+  }
+  if (!isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool profile draft: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.tools.items.find((candidate) => candidate.id === id && candidate.toolProfileDraft);
+  if (!item?.toolProfileDraft) {
+    return { ok: false, id, error: `Xenesis tool profile draft is not available: ${id}` };
+  }
+
+  const draft = item.toolProfileDraft;
+  if (draft.draftStatus !== 'ready') {
+    return {
+      ok: false,
+      id,
+      draftStatus: draft.draftStatus,
+      missingRequiredFields: draft.missingRequiredFields,
+      diagnostics: draft.diagnostics,
+      error: `Xenesis tool profile draft is not ready: ${id}`,
+      item: xenesisToolProfileDraftStatusItem(item),
+    };
+  }
+  if (!draft.controlPaths.includes('xd.xenesis.tools.profileDrafts.apply')) {
+    return {
+      ok: false,
+      id,
+      draftStatus: draft.draftStatus,
+      diagnostics: draft.diagnostics,
+      error: `Xenesis tool profile draft cannot be applied: ${id}`,
+      item: xenesisToolProfileDraftStatusItem(item),
+    };
+  }
+
+  const result = await applyXenesisToolMcpInstallDraft(body);
+  const ok = !(result && typeof result === 'object' && 'ok' in result && result.ok === false);
+  const nextStatus = await getXenesisConnectionsStatus();
+  const nextItem =
+    nextStatus.sections.tools.items.find((candidate) => candidate.id === item.id && candidate.toolProfileDraft) ?? item;
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+
+  return {
+    ok,
+    id: item.id,
+    delegatedPath: 'xd.xenesis.tools.mcpInstallDrafts.apply',
+    item: xenesisToolProfileDraftStatusItem(nextItem),
+    result,
+    ...(note ? { note } : {}),
+  };
+}
+
 function xenesisToolActionCatalogStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
   return {
     id: item.id,
@@ -15995,6 +16055,7 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisToolProfileDraftsStatus: (args: unknown) => getXenesisToolProfileDraftsStatus(args),
     openXenesisToolProfileDraft: (args: unknown) => openXenesisToolProfileDraft(args),
     requestXenesisToolProfileDraft: (args: unknown) => requestXenesisToolProfileDraft(args),
+    applyXenesisToolProfileDraft: (args: unknown) => applyXenesisToolProfileDraft(args),
     getXenesisToolActionCatalogStatus: (args: unknown) => getXenesisToolActionCatalogStatus(args),
     openXenesisToolActionCatalog: (args: unknown) => openXenesisToolActionCatalog(args),
     requestXenesisToolActionCatalog: (args: unknown) => requestXenesisToolActionCatalog(args),
