@@ -7847,6 +7847,165 @@ async function requestXenesisToolRuntime(args?: unknown): Promise<Record<string,
   };
 }
 
+function xenesisToolProfileDraftStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    draftStatus: item.toolProfileDraft?.draftStatus,
+    actionInboxKind: item.toolProfileDraft?.actionInboxKind,
+    tool: item.toolProfileDraft?.tool,
+    displayName: item.toolProfileDraft?.displayName,
+    runtimeSupport: item.toolProfileDraft?.runtimeSupport,
+    authMode: item.toolProfileDraft?.authMode,
+    setupSurface: item.toolProfileDraft?.setupSurface,
+    reviewSurface: item.toolProfileDraft?.reviewSurface,
+    profileFields: item.toolProfileDraft?.profileFields ?? [],
+    missingRequiredFields: item.toolProfileDraft?.missingRequiredFields ?? [],
+    scopes: item.toolProfileDraft?.scopes ?? [],
+    reviewSteps: item.toolProfileDraft?.reviewSteps ?? [],
+    readPaths: item.toolProfileDraft?.readPaths ?? [],
+    controlPaths: item.toolProfileDraft?.controlPaths ?? [],
+    diagnostics: item.toolProfileDraft?.diagnostics ?? [],
+    blockedActions: item.toolProfileDraft?.blockedActions ?? [],
+    safetyBoundaries: item.toolProfileDraft?.safetyBoundaries ?? [],
+    toolProfileDraft: item.toolProfileDraft,
+    toolConnector: item.toolConnector,
+    toolRuntime: item.toolRuntime,
+    toolOAuthDraft: item.toolOAuthDraft,
+    mcpInstallDraft: item.mcpInstallDraft,
+    toolActionCatalog: item.toolActionCatalog,
+    settingsAction: item.settingsAction,
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisToolProfileDraftsStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (id && !isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool profile draft: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.tools.items
+    .filter((item) => item.toolProfileDraft)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisToolProfileDraftStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisToolProfileDraft(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisToolCatalogSurface(args, {
+    allowedTools: XENESIS_TOOL_SETUP_IDS,
+    isAllowedId: isXenesisToolSetupId,
+    itemPredicate: (item) => Boolean(item.toolProfileDraft),
+    toStatusItem: xenesisToolProfileDraftStatusItem,
+    unsupportedMessage: (id) => `Unsupported Xenesis tool profile draft: ${id}`,
+    unavailableMessage: (id) => `Xenesis tool profile draft is not available: ${id}`,
+    focusConnectionDetail: 'tool-profile-draft',
+  });
+}
+
+async function requestXenesisToolProfileDraft(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Tool id is required.' };
+  }
+  if (!isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool profile draft: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.tools.items.find((candidate) => candidate.id === id && candidate.toolProfileDraft);
+  if (!item?.toolProfileDraft) {
+    return { ok: false, id, error: `Xenesis tool profile draft is not available: ${id}` };
+  }
+
+  const draft = item.toolProfileDraft;
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+  const requester = readCapabilityString(body, ['requester', 'user', 'userName']) || 'Xenesis Desk';
+  const description = [
+    `Review the ${draft.draftStatus} tool profile draft for ${item.label}.`,
+    `Tool: ${draft.tool}`,
+    `Runtime support: ${draft.runtimeSupport}`,
+    `Auth mode: ${draft.authMode}`,
+    `Setup surface: ${draft.setupSurface}`,
+    `Review surface: ${draft.reviewSurface}`,
+    `Missing required fields: ${draft.missingRequiredFields.join(', ') || 'none'}`,
+    `Scopes: ${draft.scopes.join(', ') || 'none'}`,
+    '',
+    'Profile fields:',
+    ...draft.profileFields.map(
+      (field) =>
+        `- ${field.field}: ${field.valueState}${field.required ? ' required' : ''}${
+          field.secretRef ? ' secret-ref' : ''
+        } - ${field.description}`,
+    ),
+    '',
+    'Review steps:',
+    ...draft.reviewSteps.map((step) => `- ${step.id}: ${step.expectedState}`),
+    '',
+    'Read paths:',
+    ...draft.readPaths.map((path) => `- ${path}`),
+    '',
+    'Control paths:',
+    ...draft.controlPaths.map((path) => `- ${path}`),
+    '',
+    'Diagnostics:',
+    ...draft.diagnostics.map((diagnostic) => `- ${diagnostic}`),
+    '',
+    'Blocked actions:',
+    ...draft.blockedActions.map((action) => `- ${action}`),
+    '',
+    'Safety boundaries:',
+    ...draft.safetyBoundaries.map((boundary) => `- ${boundary}`),
+    note ? '' : undefined,
+    note ? `Note: ${note}` : undefined,
+  ]
+    .filter((line): line is string => typeof line === 'string')
+    .join('\n');
+
+  const actionInboxItem = recordMcpActionInboxRequest({
+    kind: draft.actionInboxKind,
+    title: `Review ${item.label} tool profile draft`,
+    command: `Review tool profile draft for ${item.id}`,
+    description,
+    source: 'Xenesis Connection Center',
+    sessionId: 'xenesis-tool-profile-draft',
+    approvalSessionKey: `xenesis-tool-profile-draft:${item.id}`,
+    requester,
+    risk: draft.draftStatus,
+    approveText: `Approve tool profile draft for ${item.label}`,
+    rejectText: `Reject tool profile draft for ${item.label}`,
+  });
+
+  return {
+    ok: true,
+    id: item.id,
+    item: xenesisToolProfileDraftStatusItem(item),
+    actionInboxItem,
+  };
+}
+
 function xenesisToolActionCatalogStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
   return {
     id: item.id,
@@ -14170,6 +14329,7 @@ async function snapshotConnectionCenterForCapability(args: unknown): Promise<Rec
     { id: 'connection-center-title', selector: rootSelector + ' h2', text: 'Connection Center' },
     { id: 'onboarding-guided-steps', selector: '[data-xenesis-onboarding-plan]', text: 'guided step' },
     { id: 'provider-profile-review-steps', selector: '[data-xenesis-provider-profile-draft]', text: 'review step' },
+    { id: 'tool-profile-review-steps', selector: '[data-xenesis-tool-profile-draft]', text: 'review step' },
     { id: 'tool-oauth-review-steps', selector: '[data-xenesis-tool-oauth-draft]', text: 'review step' },
     { id: 'tool-oauth-runtime-readback', selector: '[data-xenesis-tool-oauth-runtime]', text: 'oauth-runtime-readiness' },
     { id: 'channel-runtime-readback', selector: '[data-xenesis-channel-runtime]', text: 'channel-runtime-readiness' },
@@ -15832,6 +15992,9 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     getXenesisToolRuntimeStatus: (args: unknown) => getXenesisToolRuntimeStatus(args),
     openXenesisToolRuntime: (args: unknown) => openXenesisToolRuntime(args),
     requestXenesisToolRuntime: (args: unknown) => requestXenesisToolRuntime(args),
+    getXenesisToolProfileDraftsStatus: (args: unknown) => getXenesisToolProfileDraftsStatus(args),
+    openXenesisToolProfileDraft: (args: unknown) => openXenesisToolProfileDraft(args),
+    requestXenesisToolProfileDraft: (args: unknown) => requestXenesisToolProfileDraft(args),
     getXenesisToolActionCatalogStatus: (args: unknown) => getXenesisToolActionCatalogStatus(args),
     openXenesisToolActionCatalog: (args: unknown) => openXenesisToolActionCatalog(args),
     requestXenesisToolActionCatalog: (args: unknown) => requestXenesisToolActionCatalog(args),

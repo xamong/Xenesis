@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import { SETTINGS_CATEGORIES, VISIBLE_SETTINGS_CATEGORIES } from './settingsCatalog.mjs';
@@ -20,13 +21,16 @@ test('Connectors is a visible Settings category near external app controls', () 
   assert.equal(extensionsIndex, connectorsIndex + 1);
 });
 
-test('visible Settings categories expose natural-language aliases for Agent routing', () => {
+test('Settings categories do not expose natural-language aliases for Agent routing', () => {
+  const source = readFileSync(new URL('../../shared/xenesisSettingsCatalog.mjs', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /\bnaturalWords\b/);
+
   for (const category of VISIBLE_SETTINGS_CATEGORIES) {
-    assert.ok(category.naturalWords.length > 0, `${category.id} should have natural words`);
+    assert.equal(Object.hasOwn(category, 'naturalWords'), false, `${category.id} should not have natural words`);
   }
 
   const runModel = SETTINGS_CATEGORIES.find((category) => category.id === 'run-model');
   const externalApps = SETTINGS_CATEGORIES.find((category) => category.id === 'external-apps');
-  assert.ok(runModel?.naturalWords.includes('ai model'));
-  assert.ok(externalApps?.naturalWords.includes('외부 앱'));
+  assert.equal(Object.hasOwn(runModel ?? {}, 'naturalWords'), false);
+  assert.equal(Object.hasOwn(externalApps ?? {}, 'naturalWords'), false);
 });

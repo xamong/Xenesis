@@ -122,43 +122,23 @@ test('connection catalog settings actions are owned by shared constants', () => 
   assert.equal((source.match(/settingsAction:\s*\{\s*category:/g) ?? []).length, 0);
 });
 
-test('connection catalog owns natural guide, onboarding, and planned tool target metadata', async () => {
+test('connection catalog does not expose hardcoded natural-language target metadata', async () => {
   const source = readFileSync(new URL('./xenesisConnections.ts', import.meta.url), 'utf8');
-  assert.match(source, /XENESIS_CONNECTION_NATURAL_PLANNED_GOOGLE_TOOL_IDS/);
-  assert.match(source, /XENESIS_CONNECTION_NATURAL_GUIDE_TARGETS/);
-  assert.match(source, /XENESIS_CONNECTION_NATURAL_ONBOARDING_STEP_TARGETS/);
+  assert.doesNotMatch(source, /\bnaturalWords\b/);
+  assert.doesNotMatch(source, /XENESIS_CONNECTION_NATURAL_/);
+  assert.doesNotMatch(source, /XenesisConnectionNatural(?:Words|Connection|Guide)Target/);
 
   const connectionsModule = (await import('./xenesisConnections')) as Record<string, unknown>;
-  const isPlannedGoogleToolTarget = connectionsModule.isXenesisConnectionNaturalPlannedGoogleToolTarget as
-    | ((target: { id: string; kind: string }) => boolean)
-    | undefined;
-  const guideTargets = connectionsModule.XENESIS_CONNECTION_NATURAL_GUIDE_TARGETS as
-    | readonly { id: string; label: string; words: readonly string[]; fallback?: boolean }[]
-    | undefined;
-  const onboardingTargets = connectionsModule.XENESIS_CONNECTION_NATURAL_ONBOARDING_STEP_TARGETS as
-    | readonly { id: string; label: string; words: readonly string[] }[]
-    | undefined;
-  const onboardingStepIds = connectionsModule.XENESIS_CONNECTION_ONBOARDING_STEP_IDS as readonly string[] | undefined;
-
-  assert.equal(typeof isPlannedGoogleToolTarget, 'function');
-  assert.equal(isPlannedGoogleToolTarget?.({ id: 'google-calendar', kind: 'tool' }), true);
-  assert.equal(isPlannedGoogleToolTarget?.({ id: 'notion', kind: 'tool' }), false);
-  assert.equal(
-    guideTargets?.some((target) => target.id === 'external-tool-integrations'),
-    true,
-  );
-  assert.equal(
-    guideTargets?.some((target) => target.id === 'onboarding-connections' && target.fallback),
-    true,
-  );
-  assert.deepEqual(
-    onboardingTargets?.map((target) => target.id),
-    onboardingStepIds,
-  );
-  assert.equal(
-    onboardingTargets?.some((target) => target.words.includes('로컬 런타임')),
-    true,
-  );
+  for (const exportName of [
+    'XENESIS_CONNECTION_NATURAL_CONNECTION_TARGETS',
+    'XENESIS_CONNECTION_NATURAL_PROVIDER_TARGETS',
+    'XENESIS_CONNECTION_NATURAL_PLANNED_GOOGLE_TOOL_IDS',
+    'XENESIS_CONNECTION_NATURAL_GUIDE_TARGETS',
+    'XENESIS_CONNECTION_NATURAL_ONBOARDING_STEP_TARGETS',
+    'isXenesisConnectionNaturalPlannedGoogleToolTarget',
+  ]) {
+    assert.equal(exportName in connectionsModule, false, `${exportName} should not be exported`);
+  }
 });
 
 test('buildXenesisConnectionsStatus reports ready provider, MCP, gateway, and Telegram', () => {
@@ -1320,6 +1300,7 @@ test('buildXenesisConnectionsStatus exposes guided external tool setup plans', (
       'tool-connector',
       'tool-install-plan',
       'tool-runtime',
+      'tool-profile-draft',
       'mcp-install-draft',
       'tool-actions',
       'tool-user-stories',
@@ -1679,7 +1660,7 @@ test('buildXenesisConnectionsStatus exposes internal Desk tool views for MCP and
     openPath: 'xd.xenesis.tools.views.open',
     openArgs: { id: 'notion' },
     connectionCardId: 'notion',
-    internalViews: ['connection-card', 'setup-recipe', 'mcp-template'],
+    internalViews: ['connection-card', 'setup-recipe', 'profile-draft', 'mcp-template'],
     viewSections: [
       {
         id: 'connection-card',
@@ -1742,6 +1723,18 @@ test('buildXenesisConnectionsStatus exposes internal Desk tool views for MCP and
         safetyBoundaries: ['Install plan view opens do not run package managers or write MCP config.'],
       },
       {
+        id: 'profile-draft',
+        label: 'Profile draft',
+        focusConnectionDetail: 'tool-profile-draft',
+        openArgs: { id: 'notion', section: 'profile-draft', ensureVisible: true },
+        readPaths: ['xd.xenesis.tools.profileDrafts.status', 'xd.xenesis.connections.status'],
+        controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.profileDrafts.open'],
+        diagnostics: ['tool-profile-draft', 'missing-required-fields', 'cr-readback'],
+        safetyBoundaries: [
+          'Profile draft view opens do not write tool profile settings or execute provider tools.',
+        ],
+      },
+      {
         id: 'mcp-template',
         label: 'MCP template',
         focusConnectionDetail: 'mcp-install-draft',
@@ -1785,7 +1778,7 @@ test('buildXenesisConnectionsStatus exposes internal Desk tool views for MCP and
       'tool execution remains behind provider MCP tools and CR approval paths',
     ],
   });
-  assert.deepEqual(googleCalendar?.toolView?.internalViews, ['connection-card', 'setup-recipe']);
+  assert.deepEqual(googleCalendar?.toolView?.internalViews, ['connection-card', 'setup-recipe', 'profile-draft']);
   assert.deepEqual(
     googleCalendar?.toolView?.viewSections.map((section) => section.id),
     [
@@ -1795,6 +1788,7 @@ test('buildXenesisConnectionsStatus exposes internal Desk tool views for MCP and
       'runtime',
       'setup-plan',
       'install-plan',
+      'profile-draft',
       'oauth-draft',
       'oauth-setup-packet',
       'oauth-runtime',
@@ -2146,6 +2140,100 @@ test('buildXenesisConnectionsStatus exposes on-demand tool install plans without
       'planned OAuth install plans do not complete OAuth or create calendar events',
     ),
   );
+});
+
+test('buildXenesisConnectionsStatus exposes review-only tool profile drafts', () => {
+  const missingStatus = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+    env: {},
+  });
+
+  const notion = missingStatus.sections.tools.items.find((item) => item.id === 'notion');
+  const calendar = missingStatus.sections.tools.items.find((item) => item.id === 'google-calendar');
+  const notionDraft = notion?.toolProfileDraft;
+  const calendarDraft = calendar?.toolProfileDraft;
+
+  assert.equal(notionDraft?.draftStatus, 'missing-required-field');
+  assert.equal(notionDraft?.actionInboxKind, 'xenesis-tool-profile-draft');
+  assert.equal(notionDraft?.tool, 'notion');
+  assert.deepEqual(notionDraft?.missingRequiredFields, ['NOTION_TOKEN']);
+  assert.equal(notionDraft?.profileFields.find((field) => field.field === 'credentialRef')?.valueState, 'missing');
+  assert.equal(notionDraft?.profileFields.find((field) => field.field === 'mcpServer')?.valueState, 'configured');
+  assert.deepEqual(notionDraft?.controlPaths, [
+    'xd.xenesis.tools.profileDrafts.open',
+    'xd.xenesis.tools.profileDrafts.request',
+    'xd.xenesis.connections.open',
+  ]);
+  assert.deepEqual(
+    notionDraft?.reviewSteps.map((step) => step.id),
+    ['tool-identity', 'credential-readiness', 'runtime-readback', 'action-boundary'],
+  );
+  assert.ok(notionDraft?.readPaths.includes('xd.xenesis.tools.profileDrafts.status'));
+  assert.ok(notionDraft?.blockedActions.includes('store credentials'));
+  assert.ok(notionDraft?.safetyBoundaries.includes('tool profile drafts are review-only'));
+  assert.ok(notion?.diagnosticRunbook?.readPaths.includes('xd.xenesis.tools.profileDrafts.status'));
+
+  assert.equal(calendarDraft?.draftStatus, 'planned-template');
+  assert.equal(calendarDraft?.tool, 'google-calendar');
+  assert.deepEqual(calendarDraft?.missingRequiredFields, ['oauthClient', 'redirectUri', 'tokenStore']);
+  assert.equal(calendarDraft?.profileFields.find((field) => field.field === 'oauthClient')?.valueState, 'planned');
+  assert.ok(calendarDraft?.safetyBoundaries.some((boundary) => boundary.includes('mutate calendar events')));
+
+  const readyStatus = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+    env: { NOTION_TOKEN: 'configured' },
+  });
+  const readyNotion = readyStatus.sections.tools.items.find((item) => item.id === 'notion');
+  assert.equal(readyNotion?.toolProfileDraft?.draftStatus, 'ready');
+  assert.deepEqual(readyNotion?.toolProfileDraft?.missingRequiredFields, []);
 });
 
 test('buildXenesisConnectionsStatus exposes provider setup identity, credential state, and fallback policy', () => {
@@ -3953,6 +4041,7 @@ test('buildXenesisConnectionsStatus exposes diagnostic runbooks for tools, plann
       'tool-setup',
       'tool-connector',
       'tool-runtime',
+      'tool-profile-draft',
       'tool-view',
       'tool-action-catalog',
       'tool-user-story',

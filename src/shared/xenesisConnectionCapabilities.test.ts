@@ -86,6 +86,7 @@ test('xenesis connection open capabilities expose detail focus selectors', () =>
   assertOpenCapabilityDetailFocus('xd.xenesis.tools.oauthDrafts.setupPacket.open', 'tool-oauth-setup-packet');
   assertOpenCapabilityDetailFocus('xd.xenesis.tools.oauthRuntime.open', 'tool-oauth-runtime');
   assertOpenCapabilityDetailFocus('xd.xenesis.tools.runtime.open', 'tool-runtime');
+  assertOpenCapabilityDetailFocus('xd.xenesis.tools.profileDrafts.open', 'tool-profile-draft');
   assertOpenCapabilityDetailFocus('xd.xenesis.tools.mcpInstallDrafts.open', 'mcp-install-draft');
   assertOpenCapabilityDetailFocus('xd.xenesis.tools.installPlans.open', 'tool-install-plan');
   assertOpenCapabilityDetailFocus('xd.xenesis.tools.actions.open', 'tool-action-catalog');
@@ -193,6 +194,7 @@ test('xenesis connection open capability opens the Connection Center catalog or 
 });
 
 test('xenesis connection center testing snapshot capability is registered and dispatches to the adapter', async () => {
+  const mainSource = readFileSync(new URL('../main/index.ts', import.meta.url), 'utf8');
   const capability = findDeskBridgeCapability('xd.testing.connectionCenter.snapshot');
   const schemaProperties = (capability?.schema?.properties ?? {}) as Record<string, any>;
   assert.equal(capability?.permission, 'read');
@@ -200,6 +202,8 @@ test('xenesis connection center testing snapshot capability is registered and di
   assert.equal(schemaProperties.includeBodyText?.type, 'boolean');
   assert.equal(schemaProperties.maxTextLength?.type, 'number');
   assert.equal(schemaProperties.timeoutMs?.type, 'number');
+  assert.match(mainSource, /tool-profile-review-steps/);
+  assert.match(mainSource, /data-xenesis-tool-profile-draft/);
 
   const calls: unknown[] = [];
   const api: DeskBridgeCapabilityAdapter = {
@@ -1625,6 +1629,95 @@ test('xenesis tool runtime readiness capabilities are registered and dispatch to
     ok: true,
     id: 'notion',
     actionInboxItem: { id: 'tool-runtime-notion' },
+  });
+});
+
+test('xenesis tool profile draft capabilities are registered and dispatch to the adapter', async () => {
+  const statusCapability = findDeskBridgeCapability('xd.xenesis.tools.profileDrafts.status');
+  const openCapability = findDeskBridgeCapability('xd.xenesis.tools.profileDrafts.open');
+  const requestCapability = findDeskBridgeCapability('xd.xenesis.tools.profileDrafts.request');
+  const statusSchemaProperties = (statusCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const openSchemaProperties = (openCapability?.schema?.properties ?? {}) as Record<string, any>;
+  const requestSchemaProperties = (requestCapability?.schema?.properties ?? {}) as Record<string, any>;
+
+  assert.equal(statusCapability?.permission, 'read');
+  assert.equal(statusCapability?.approval, 'never');
+  assert.equal(openCapability?.permission, 'control');
+  assert.equal(openCapability?.approval, 'never');
+  assertOpenCapabilityDetailFocus('xd.xenesis.tools.profileDrafts.open', 'tool-profile-draft');
+  assert.equal(requestCapability?.permission, 'write');
+  assert.equal(requestCapability?.approval, 'when-external');
+  assert.deepEqual(requestCapability?.schema?.required, ['id']);
+  for (const tool of XENESIS_CONNECTION_TOOL_IDS) {
+    assert.equal(statusSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by status`);
+    assert.equal(statusSchemaProperties.tool?.enum.includes(tool), true, `${tool} should be accepted by status alias`);
+    assert.equal(openSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by open`);
+    assert.equal(requestSchemaProperties.id?.enum.includes(tool), true, `${tool} should be accepted by request`);
+  }
+
+  const calls: Array<{ method: string; args: unknown }> = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisToolProfileDraftsStatus: (args) => {
+      calls.push({ method: 'status', args });
+      return {
+        ok: true,
+        items: [{ id: 'notion', draftStatus: 'missing-required-field' }],
+      };
+    },
+    openXenesisToolProfileDraft: (args) => {
+      calls.push({ method: 'open', args });
+      return {
+        ok: true,
+        item: { id: 'notion', draftStatus: 'missing-required-field' },
+      };
+    },
+    requestXenesisToolProfileDraft: (args) => {
+      calls.push({ method: 'request', args });
+      return {
+        ok: true,
+        id: 'notion',
+        actionInboxItem: { id: 'tool-profile-draft-notion' },
+      };
+    },
+  };
+
+  const statusResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.tools.profileDrafts.status',
+    args: { tool: 'notion' },
+    source: 'xenesis',
+  });
+  const openResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.tools.profileDrafts.open',
+    args: { id: 'notion' },
+    source: 'xenesis',
+  });
+  const requestResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.tools.profileDrafts.request',
+    args: { id: 'notion' },
+    source: 'xenesis',
+    approved: true,
+  });
+
+  assert.equal(statusResult.ok, true);
+  assert.equal(openResult.ok, true);
+  assert.equal(requestResult.ok, true);
+  assert.deepEqual(calls, [
+    { method: 'status', args: { tool: 'notion' } },
+    { method: 'open', args: { id: 'notion' } },
+    { method: 'request', args: { id: 'notion' } },
+  ]);
+  assert.deepEqual(statusResult.result, {
+    ok: true,
+    items: [{ id: 'notion', draftStatus: 'missing-required-field' }],
+  });
+  assert.deepEqual(openResult.result, {
+    ok: true,
+    item: { id: 'notion', draftStatus: 'missing-required-field' },
+  });
+  assert.deepEqual(requestResult.result, {
+    ok: true,
+    id: 'notion',
+    actionInboxItem: { id: 'tool-profile-draft-notion' },
   });
 });
 

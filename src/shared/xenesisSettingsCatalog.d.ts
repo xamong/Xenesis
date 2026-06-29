@@ -30,7 +30,6 @@ export interface SettingsCategory {
   titleKey: string;
   descriptionKey: string;
   hiddenInSettingsPane?: boolean;
-  naturalWords: readonly string[];
 }
 
 export const SETTINGS_CATEGORIES: readonly SettingsCategory[];

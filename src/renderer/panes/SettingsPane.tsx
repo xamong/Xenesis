@@ -106,6 +106,7 @@ import {
   buildXenesisToolOAuthRuntimeRequest,
   buildXenesisToolOAuthSetupPacketOpenRequest,
   buildXenesisToolOAuthSetupPacketRequest,
+  buildXenesisToolProfileDraftRequest,
   buildXenesisToolRuntimeRequest,
   buildXenesisToolSetupPlanRequest,
   buildXenesisUserStoryWorkflowPreviewRequest,
@@ -142,6 +143,7 @@ import {
   formatXenesisToolOAuthDraftSummary,
   formatXenesisToolOAuthRuntimeSummary,
   formatXenesisToolOAuthSetupPacketSummary,
+  formatXenesisToolProfileDraftSummary,
   formatXenesisToolRuntimeSummary,
   formatXenesisToolSetupPlanSummary,
   formatXenesisToolSetupSummary,
@@ -4361,6 +4363,7 @@ export default function SettingsPane() {
     const toolOAuthSetupPacketRequest = buildXenesisToolOAuthSetupPacketRequest(item);
     const toolOAuthSetupPacketOpenRequest = buildXenesisToolOAuthSetupPacketOpenRequest(item);
     const toolRuntimeRequest = buildXenesisToolRuntimeRequest(item);
+    const toolProfileDraftRequest = buildXenesisToolProfileDraftRequest(item);
     const toolSetupPlanRequest = buildXenesisToolSetupPlanRequest(item);
     const toolActionCatalogRequest = buildXenesisToolActionCatalogRequest(item);
     const channelSetupPlanRequest = buildXenesisChannelSetupPlanRequest(item);
@@ -4378,6 +4381,7 @@ export default function SettingsPane() {
     const toolOAuthRuntime = item.toolOAuthRuntime;
     const toolOAuthSetupPacket = toolOAuthDraft?.setupPacket;
     const toolRuntime = item.toolRuntime;
+    const toolProfileDraft = item.toolProfileDraft;
     const toolActionCatalog = item.toolActionCatalog;
     const onboardingPlan = item.onboardingPlan;
     const providerSetup = item.providerSetup;
@@ -4428,6 +4432,7 @@ export default function SettingsPane() {
           toolOAuthRuntimeRequest ||
           toolOAuthSetupPacketRequest ||
           toolRuntimeRequest ||
+          toolProfileDraftRequest ||
           toolSetupPlanRequest ||
           toolActionCatalogRequest ||
           channelSetupPlanRequest ||
@@ -4615,6 +4620,16 @@ export default function SettingsPane() {
                 }}
               >
                 {t('settings.xenesisConnectionsRequestToolRuntime')}
+              </button>
+            ) : null}
+            {toolProfileDraftRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(toolProfileDraftRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsRequestToolProfileDraft')}
               </button>
             ) : null}
             {channelProfileDraftRequest ? (
@@ -5399,6 +5414,64 @@ export default function SettingsPane() {
             <div>
               <span>{t('settings.xenesisConnectionsToolRuntimeSafety')}</span>
               <strong>{toolRuntime.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {toolProfileDraft ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'tool-profile-draft') && 'is-focused',
+            )}
+            data-xenesis-tool-profile-draft={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsToolProfileDraft')}</span>
+              <strong>{formatXenesisToolProfileDraftSummary(toolProfileDraft)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolProfileDraftSurfaces')}</span>
+              <strong>{[toolProfileDraft.setupSurface, toolProfileDraft.reviewSurface].join(' | ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolProfileDraftFields')}</span>
+              <strong>
+                {toolProfileDraft.profileFields
+                  .map((field) => `${field.field}:${field.valueState}${field.required ? ':required' : ''}`)
+                  .join(', ') || '-'}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolProfileDraftMissingFields')}</span>
+              <strong>{toolProfileDraft.missingRequiredFields.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolProfileDraftScopes')}</span>
+              <strong>{toolProfileDraft.scopes.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolProfileDraftReviewSteps')}</span>
+              <strong>{toolProfileDraft.reviewSteps.map(formatXenesisConnectionReviewStepDetail).join(' | ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolProfileDraftReadback')}</span>
+              <strong>{toolProfileDraft.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolProfileDraftControls')}</span>
+              <strong>{toolProfileDraft.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolProfileDraftDiagnostics')}</span>
+              <strong>{toolProfileDraft.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolProfileDraftBlockedActions')}</span>
+              <strong>{toolProfileDraft.blockedActions.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolProfileDraftSafety')}</span>
+              <strong>{toolProfileDraft.safetyBoundaries.join(', ')}</strong>
             </div>
           </div>
         ) : null}

@@ -4,87 +4,66 @@ export const SETTINGS_CATEGORIES = [
     icon: 'XG',
     titleKey: 'settings.category.xenesisAgent',
     descriptionKey: 'settings.category.xenesisAgentDesc',
-    naturalWords: ['xenesis agent', 'xenesis-agent', 'agent', '제네시스 에이전트', '제니스 에이전트', '에이전트'],
   },
   {
     id: 'run-model',
     icon: 'AI',
     titleKey: 'settings.category.runModel',
     descriptionKey: 'settings.category.runModelDesc',
-    naturalWords: [
-      'run model',
-      'run-model',
-      'ai model',
-      'provider',
-      'providers',
-      '실행 모델',
-      '모델',
-      '프로바이더',
-      '제공자',
-    ],
   },
   {
     id: 'remote-terminals',
     icon: '⇄',
     titleKey: 'settings.category.remoteTerminals',
     descriptionKey: 'settings.category.remoteTerminalsDesc',
-    naturalWords: ['remote terminals', 'remote terminal', '원격 터미널', '리모트 터미널'],
   },
   {
     id: 'remote-files',
     icon: '⇅',
     titleKey: 'settings.category.remoteFiles',
     descriptionKey: 'settings.category.remoteFilesDesc',
-    naturalWords: ['remote files', 'remote file', '원격 파일', '리모트 파일'],
   },
   {
     id: 'automation',
     icon: '🤖',
     titleKey: 'settings.category.automation',
     descriptionKey: 'settings.category.automationDesc',
-    naturalWords: ['automation', '자동화'],
   },
   {
     id: 'external-apps',
     icon: 'APP',
     titleKey: 'settings.category.externalApps',
     descriptionKey: 'settings.category.externalAppsDesc',
-    naturalWords: ['external apps', 'external app', '외부 앱', '외부앱', '외부 애플리케이션'],
   },
   {
     id: 'connectors',
     icon: '☷',
     titleKey: 'settings.category.connectors',
     descriptionKey: 'settings.category.connectorsDesc',
-    naturalWords: ['connectors', 'connector', '커넥터', '외부 커넥터'],
   },
   {
     id: 'extensions',
     icon: '▦',
     titleKey: 'settings.category.extensions',
     descriptionKey: 'settings.category.extensionsDesc',
-    naturalWords: ['extensions', 'extension', '확장', '확장기능', '확장 기능'],
   },
   {
     id: 'workspace',
     icon: '▤',
     titleKey: 'settings.category.workspace',
     descriptionKey: 'settings.category.workspaceDesc',
-    naturalWords: ['작업공간', '작업 공간'],
   },
   {
     id: 'interface',
     icon: 'UI',
     titleKey: 'settings.category.interface',
     descriptionKey: 'settings.category.interfaceDesc',
-    naturalWords: ['interface', 'ui', 'ux', '인터페이스', '화면', '유아이'],
   },
   {
     id: 'info',
     icon: 'ⓘ',
     titleKey: 'settings.category.info',
     descriptionKey: 'settings.category.infoDesc',
-    naturalWords: ['info', 'information', '정보'],
   },
   {
     id: 'general',
@@ -92,7 +71,6 @@ export const SETTINGS_CATEGORIES = [
     titleKey: 'settings.category.general',
     descriptionKey: 'settings.category.generalDesc',
     hiddenInSettingsPane: true,
-    naturalWords: ['general', '일반'],
   },
   {
     id: 'language',
@@ -100,7 +78,6 @@ export const SETTINGS_CATEGORIES = [
     titleKey: 'settings.category.language',
     descriptionKey: 'settings.category.languageDesc',
     hiddenInSettingsPane: true,
-    naturalWords: ['language', '언어'],
   },
   {
     id: 'appearance',
@@ -108,7 +85,6 @@ export const SETTINGS_CATEGORIES = [
     titleKey: 'settings.category.appearance',
     descriptionKey: 'settings.category.appearanceDesc',
     hiddenInSettingsPane: true,
-    naturalWords: ['appearance', 'theme', '테마', '외형', '모양'],
   },
   {
     id: 'keyboard-shortcuts',
@@ -116,7 +92,6 @@ export const SETTINGS_CATEGORIES = [
     titleKey: 'settings.category.keyboardShortcuts',
     descriptionKey: 'settings.category.keyboardShortcutsDesc',
     hiddenInSettingsPane: true,
-    naturalWords: ['keyboard shortcuts', 'keyboard shortcut', 'shortcuts', 'shortcut', '키보드 단축키', '단축키'],
   },
   {
     id: 'window-sizer',
@@ -124,7 +99,6 @@ export const SETTINGS_CATEGORIES = [
     titleKey: 'settings.category.windowSizer',
     descriptionKey: 'settings.category.windowSizerDesc',
     hiddenInSettingsPane: true,
-    naturalWords: ['window sizer', 'window size', '창 크기', '윈도우 크기'],
   },
   {
     id: 'secret-vault',
@@ -132,7 +106,6 @@ export const SETTINGS_CATEGORIES = [
     titleKey: 'settings.category.secretVault',
     descriptionKey: 'settings.category.secretVaultDesc',
     hiddenInSettingsPane: true,
-    naturalWords: ['secret vault', 'secrets', '비밀 저장소', '시크릿 볼트', '시크릿'],
   },
   {
     id: 'settings-backup',
@@ -140,7 +113,6 @@ export const SETTINGS_CATEGORIES = [
     titleKey: 'settings.category.settingsBackup',
     descriptionKey: 'settings.category.settingsBackupDesc',
     hiddenInSettingsPane: true,
-    naturalWords: ['settings backup', 'backup', '설정 백업', '백업'],
   },
   {
     id: 'about',
@@ -148,7 +120,6 @@ export const SETTINGS_CATEGORIES = [
     titleKey: 'settings.category.about',
     descriptionKey: 'settings.category.aboutDesc',
     hiddenInSettingsPane: true,
-    naturalWords: ['about', '정보'],
   },
   {
     id: 'media',
@@ -156,7 +127,6 @@ export const SETTINGS_CATEGORIES = [
     titleKey: 'settings.category.media',
     descriptionKey: 'settings.category.mediaDesc',
     hiddenInSettingsPane: true,
-    naturalWords: ['media', '미디어'],
   },
   {
     id: 'mcp',
@@ -164,7 +134,6 @@ export const SETTINGS_CATEGORIES = [
     titleKey: 'settings.category.mcp',
     descriptionKey: 'settings.category.mcpDesc',
     hiddenInSettingsPane: true,
-    naturalWords: ['mcp settings', 'mcp setting', 'mcp 설정', 'mcp'],
   },
   {
     id: 'notifications',
@@ -172,7 +141,6 @@ export const SETTINGS_CATEGORIES = [
     titleKey: 'settings.category.notifications',
     descriptionKey: 'settings.category.notificationsDesc',
     hiddenInSettingsPane: true,
-    naturalWords: ['notifications', 'notification', '알림'],
   },
   {
     id: 'pets',
@@ -180,7 +148,6 @@ export const SETTINGS_CATEGORIES = [
     titleKey: 'settings.category.pets',
     descriptionKey: 'settings.category.petsDesc',
     hiddenInSettingsPane: true,
-    naturalWords: ['pets', 'pet', '펫'],
   },
   {
     id: 'skills-design',
@@ -188,7 +155,6 @@ export const SETTINGS_CATEGORIES = [
     titleKey: 'settings.category.skillsDesign',
     descriptionKey: 'settings.category.skillsDesignDesc',
     hiddenInSettingsPane: true,
-    naturalWords: ['skills design', 'skill design', '스킬 디자인', '스킬'],
   },
 ];
 

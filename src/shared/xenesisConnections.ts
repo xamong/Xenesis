@@ -96,6 +96,7 @@ export const XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES = [
   'tool-setup',
   'tool-setup-plan',
   'tool-install-plan',
+  'tool-profile-draft',
   'tool-runtime',
   'mcp-install-draft',
   'tool-mcp-oauth',
@@ -128,7 +129,6 @@ export function isXenesisConnectionCenterDetailFocus(value: string): value is Xe
 export interface XenesisConnectionViewSectionDefinition<TId extends string> {
   id: TId;
   label: string;
-  naturalWords: readonly string[];
   focusConnectionDetail: XenesisConnectionCenterDetailFocus;
 }
 
@@ -154,85 +154,71 @@ export const XENESIS_CONNECTION_TOOL_VIEW_SECTION_DEFINITIONS = [
   {
     id: 'connection-card',
     label: 'Connection card',
-    naturalWords: ['connection card', '연결 카드', '카드'],
     focusConnectionDetail: 'tool-view',
   },
   {
     id: 'setup',
     label: 'Setup',
-    naturalWords: ['setup', '설정', '셋업'],
     focusConnectionDetail: 'tool-setup',
   },
   {
     id: 'connector',
     label: 'Connector readiness',
-    naturalWords: ['connector', '커넥터', '연결 상태'],
     focusConnectionDetail: 'tool-connector',
   },
   {
     id: 'runtime',
     label: 'Runtime readiness',
-    naturalWords: ['tool runtime', 'runtime', 'runtime readiness', '툴 런타임', '도구 런타임', '런타임 준비'],
     focusConnectionDetail: 'tool-runtime',
   },
   {
     id: 'setup-plan',
     label: 'Setup plan',
-    naturalWords: ['setup plan', '설정 플랜', '설정 계획'],
     focusConnectionDetail: 'tool-setup-plan',
   },
   {
     id: 'install-plan',
     label: 'Install plan',
-    naturalWords: ['install plan', '설치 플랜', '설치 계획'],
     focusConnectionDetail: 'tool-install-plan',
+  },
+  {
+    id: 'profile-draft',
+    label: 'Profile draft',
+    focusConnectionDetail: 'tool-profile-draft',
   },
   {
     id: 'mcp-template',
     label: 'MCP template',
-    naturalWords: ['mcp template', 'mcp 템플릿', 'mcp template view', 'mcp 초안'],
     focusConnectionDetail: 'mcp-install-draft',
   },
   {
     id: 'mcp-oauth',
     label: 'MCP OAuth readiness',
-    naturalWords: ['mcp oauth', 'mcp oauth readiness', 'mcp oauth view', 'mcp oauth 준비'],
     focusConnectionDetail: 'tool-mcp-oauth',
   },
   {
     id: 'oauth-draft',
     label: 'OAuth draft',
-    naturalWords: ['oauth draft', 'oauth 초안', 'oauth draft view', 'oauth 템플릿'],
     focusConnectionDetail: 'tool-oauth-draft',
   },
   {
     id: 'oauth-setup-packet',
     label: 'OAuth setup packet',
-    naturalWords: ['oauth setup packet view', 'oauth 설정 패킷 view', 'oauth packet view'],
     focusConnectionDetail: 'tool-oauth-setup-packet',
   },
   {
     id: 'oauth-runtime',
     label: 'OAuth runtime readiness',
-    naturalWords: [
-      'oauth runtime',
-      'oauth runtime readiness',
-      'oauth runtime view',
-      'oauth 런타임',
-      'oauth 런타임 준비',
-    ],
     focusConnectionDetail: 'tool-oauth-runtime',
   },
   {
     id: 'action-policy',
     label: 'Action policy',
-    naturalWords: ['action policy', '액션 정책', '도구 정책', '권한 정책'],
     focusConnectionDetail: 'tool-action-catalog',
   },
   {
     id: 'user-stories',
     label: 'User stories',
-    naturalWords: ['user stories', 'user story', '사용자 스토리', '유저 스토리'],
     focusConnectionDetail: 'tool-user-story',
   },
 ] as const satisfies readonly XenesisConnectionViewSectionDefinition<string>[];
@@ -262,75 +248,56 @@ export const XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_DEFINITIONS = [
   {
     id: 'connection-card',
     label: 'Connection card',
-    naturalWords: ['connection card', '연결 카드', '카드'],
     focusConnectionDetail: 'messenger-view',
   },
   {
     id: 'setup',
     label: 'Setup',
-    naturalWords: ['setup', '설정', '셋업'],
     focusConnectionDetail: 'messenger-view',
   },
   {
     id: 'channel-template',
     label: 'Channel template',
-    naturalWords: ['channel template', '채널 템플릿', 'template', '템플릿'],
     focusConnectionDetail: 'channel-template',
   },
   {
     id: 'routing',
     label: 'Routing',
-    naturalWords: ['routing', 'route', '라우팅', '경로'],
     focusConnectionDetail: 'channel-routing',
   },
   {
     id: 'safety',
     label: 'Safety',
-    naturalWords: ['safety', '안전', '세이프티', '가드레일'],
     focusConnectionDetail: 'channel-safety',
   },
   {
     id: 'access-groups',
     label: 'Access groups',
-    naturalWords: [
-      'access group',
-      'access groups',
-      '접근 그룹',
-      '액세스 그룹',
-      'allowlist',
-      '허용 목록',
-      '허용 리스트',
-    ],
     focusConnectionDetail: 'channel-access-groups',
   },
   {
     id: 'pairing',
     label: 'Pairing',
-    naturalWords: ['pairing', '페어링', '연결 페어링'],
     focusConnectionDetail: 'channel-pairing',
   },
   {
     id: 'runtime',
     label: 'Runtime readiness',
-    naturalWords: ['runtime', 'runtime readiness', 'channel runtime', '런타임', '채널 런타임', '런타임 준비'],
     focusConnectionDetail: 'channel-runtime',
   },
   {
     id: 'setup-plan',
     label: 'Setup plan',
-    naturalWords: ['setup plan', '설정 플랜', '설정 계획'],
     focusConnectionDetail: 'channel-setup-plan',
   },
   {
     id: 'profile-draft',
     label: 'Profile draft',
-    naturalWords: ['profile draft', 'profile', '프로필 초안', '프로필 draft', '프로필'],
     focusConnectionDetail: 'channel-profile-draft',
   },
   {
     id: 'user-stories',
     label: 'User stories',
-    naturalWords: ['user stories', 'user story', '사용자 스토리', '유저 스토리'],
     focusConnectionDetail: 'channel-user-story',
   },
 ] as const satisfies readonly XenesisConnectionViewSectionDefinition<string>[];
@@ -362,43 +329,36 @@ export const XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_DEFINITIONS = [
   {
     id: 'connection-card',
     label: 'Connection card',
-    naturalWords: ['connection card', '연결 카드', '카드'],
     focusConnectionDetail: 'provider-view',
   },
   {
     id: 'setup',
     label: 'Provider setup',
-    naturalWords: ['provider setup', 'setup', '설정', '셋업'],
     focusConnectionDetail: 'provider-setup',
   },
   {
     id: 'runtime',
     label: 'Runtime route',
-    naturalWords: ['runtime', 'runtime route', 'provider runtime', '런타임', '런타임 라우트'],
     focusConnectionDetail: 'provider-routing',
   },
   {
     id: 'fallback-policy',
     label: 'Fallback policy',
-    naturalWords: ['fallback policy', 'fallback', 'fallback chain', '폴백', '폴백 정책'],
     focusConnectionDetail: 'provider-routing',
   },
   {
     id: 'credential-boundary',
     label: 'Credential boundary',
-    naturalWords: ['credential boundary', 'credential', 'credential state', '자격 증명 경계', '자격 증명'],
     focusConnectionDetail: 'provider-profile-draft',
   },
   {
     id: 'profile-draft',
     label: 'Profile draft',
-    naturalWords: ['profile draft', 'profile', '프로필 초안', '프로필 draft', '프로필'],
     focusConnectionDetail: 'provider-profile-draft',
   },
   {
     id: 'setup-plan',
     label: 'Setup plan',
-    naturalWords: ['setup plan', '설정 플랜', '설정 계획'],
     focusConnectionDetail: 'provider-setup-plan',
   },
 ] as const satisfies readonly XenesisConnectionViewSectionDefinition<string>[];
@@ -755,6 +715,67 @@ export interface XenesisConnectionToolRuntimeTemplate {
   safetyBoundaries: string[];
 }
 
+export type XenesisConnectionToolProfileDraftStatus =
+  | 'ready'
+  | 'missing-required-field'
+  | 'planned-template'
+  | 'unknown';
+export type XenesisConnectionToolProfileDraftFieldValueState =
+  | 'configured'
+  | 'missing'
+  | 'not-required'
+  | 'planned'
+  | 'unknown';
+
+export interface XenesisConnectionToolProfileDraftField {
+  field: string;
+  label: string;
+  required: boolean;
+  secretRef: boolean;
+  valueState: XenesisConnectionToolProfileDraftFieldValueState;
+  source: string;
+  description: string;
+}
+
+export type XenesisConnectionToolProfileDraftReviewStepId =
+  | 'tool-identity'
+  | 'credential-readiness'
+  | 'runtime-readback'
+  | 'action-boundary';
+
+export interface XenesisConnectionToolProfileDraftReviewStep {
+  id: XenesisConnectionToolProfileDraftReviewStepId;
+  label: string;
+  phase: XenesisConnectionToolProfileDraftReviewStepId;
+  expectedState: string;
+  requiredFields: string[];
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  safetyBoundary: string;
+}
+
+export interface XenesisConnectionToolProfileDraftTemplate {
+  draftStatus: XenesisConnectionToolProfileDraftStatus;
+  actionInboxKind: 'xenesis-tool-profile-draft';
+  tool: string;
+  displayName: string;
+  description?: string;
+  setupSurface: string;
+  reviewSurface: string;
+  runtimeSupport: XenesisConnectionToolRuntimeSupport;
+  authMode: XenesisConnectionToolConnectorTemplate['authMode'];
+  profileFields: XenesisConnectionToolProfileDraftField[];
+  missingRequiredFields: string[];
+  scopes: string[];
+  reviewSteps: XenesisConnectionToolProfileDraftReviewStep[];
+  readPaths: string[];
+  controlPaths: string[];
+  diagnostics: string[];
+  blockedActions: string[];
+  safetyBoundaries: string[];
+}
+
 export type XenesisConnectionToolMcpOAuthStatus = 'ready-template' | 'missing-required-field' | 'unknown';
 export type XenesisConnectionToolMcpOAuthRuntimeSupport = 'ready-template' | 'planned-oauth' | 'unknown';
 
@@ -982,7 +1003,7 @@ type XenesisConnectionUserStoryContractInput = Omit<XenesisConnectionUserStoryCo
 export interface XenesisConnectionUserStoryWorkflowPreviewTarget {
   id: string;
   label: string;
-  kind: XenesisConnectionNaturalConnectionTarget['kind'];
+  kind: 'tool' | 'messenger';
   workflowPreview: XenesisConnectionUserStoryWorkflowPreview;
 }
 
@@ -1486,6 +1507,7 @@ export interface XenesisConnectionItem {
   toolInstallPlan?: XenesisConnectionToolInstallPlanTemplate;
   toolConnector?: XenesisConnectionToolConnectorTemplate;
   toolRuntime?: XenesisConnectionToolRuntimeTemplate;
+  toolProfileDraft?: XenesisConnectionToolProfileDraftTemplate;
   toolMcpOAuth?: XenesisConnectionToolMcpOAuthTemplate;
   toolOAuthDraft?: XenesisConnectionToolOAuthDraftTemplate;
   toolOAuthRuntime?: XenesisConnectionToolOAuthRuntimeTemplate;
@@ -1504,23 +1526,6 @@ export interface XenesisConnectionItem {
   diagnosticRunbook?: XenesisConnectionDiagnosticRunbookTemplate;
   setupRequest?: XenesisConnectionSetupRequestTemplate;
   warnings?: string[];
-}
-
-export interface XenesisConnectionNaturalWordsTarget {
-  id: string;
-  label: string;
-  words: readonly string[];
-}
-
-export interface XenesisConnectionNaturalConnectionTarget extends XenesisConnectionNaturalWordsTarget {
-  kind: 'tool' | 'messenger';
-  supportLevel?: XenesisConnectionSupportLevel;
-}
-
-export interface XenesisConnectionNaturalGuideTarget extends XenesisConnectionNaturalWordsTarget {
-  requiredWordGroups?: readonly (readonly string[])[];
-  blockedByMatchedTargetIds?: readonly string[];
-  fallback?: boolean;
 }
 
 export interface XenesisConnectionSection {
@@ -2042,8 +2047,8 @@ function toolViewTemplate(
     openArgs: { id },
     connectionCardId: id,
     internalViews: options.hasMcpTemplate
-      ? ['connection-card', 'setup-recipe', 'mcp-template']
-      : ['connection-card', 'setup-recipe'],
+      ? ['connection-card', 'setup-recipe', 'profile-draft', 'mcp-template']
+      : ['connection-card', 'setup-recipe', 'profile-draft'],
     viewSections,
     readPaths: [
       'xd.xenesis.connections.status',
@@ -2131,6 +2136,14 @@ function toolViewSections(
       controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.installPlans.open'],
       diagnostics: ['mcp-settings-status', 'template-snippet'],
       safetyBoundaries: ['Install plan view opens do not run package managers or write MCP config.'],
+    }),
+    toolViewSection({
+      toolId,
+      id: 'profile-draft',
+      readPaths: ['xd.xenesis.tools.profileDrafts.status', 'xd.xenesis.connections.status'],
+      controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.profileDrafts.open'],
+      diagnostics: ['tool-profile-draft', 'missing-required-fields', 'cr-readback'],
+      safetyBoundaries: ['Profile draft view opens do not write tool profile settings or execute provider tools.'],
     }),
     ...(options.hasMcpTemplate
       ? [
@@ -4881,139 +4894,6 @@ export const XENESIS_CONNECTION_MESSENGER_IDS = [
   ...PLANNED_MESSENGERS.map((item) => item.id),
 ];
 
-type XenesisConnectionProviderId = (typeof XENESIS_CONNECTION_PROVIDER_IDS)[number];
-
-const XENESIS_CONNECTION_NATURAL_PROVIDER_TARGET_IDS: readonly XenesisConnectionProviderId[] = [
-  'codex-app-server',
-  'codex-cli',
-  'claude-cli',
-  'claude-interactive',
-  'azure',
-  'openai',
-  'anthropic',
-  'gemini',
-  'groq',
-  'deepseek',
-  'qwen',
-  'ollama',
-  'lmstudio',
-  'together',
-  'fireworks',
-  'auto',
-];
-
-const XENESIS_CONNECTION_NATURAL_PROVIDER_ALIAS_WORDS: Record<XenesisConnectionProviderId, readonly string[]> = {
-  anthropic: ['anthropic', 'anthropic claude', '앤트로픽'],
-  auto: ['auto', '자동'],
-  azure: ['azure openai', 'azure-openai', 'azure', '애저 오픈ai', '애저 오픈 ai'],
-  'claude-cli': ['claude cli', 'claude-cli'],
-  'claude-interactive': ['claude interactive', 'claude-interactive', '클로드 interactive', '클로드 인터랙티브'],
-  'codex-app-server': ['codex app-server', 'codex-app-server', 'codex app server', 'app-server', 'app server'],
-  'codex-cli': ['codex cli', 'codex-cli'],
-  deepseek: ['deepseek', 'deep seek', '딥시크'],
-  fireworks: ['fireworks ai', 'fireworks', '파이어웍스'],
-  gemini: ['gemini', '제미나이'],
-  groq: ['groq', '그록'],
-  lmstudio: ['lm studio', 'lmstudio', 'lm-studio', '엘엠 스튜디오'],
-  ollama: ['ollama', '올라마'],
-  openai: ['openai', '오픈ai', '오픈 ai'],
-  qwen: ['qwen', 'dashscope', 'dash scope', '큐원', '큐웬'],
-  together: ['together ai', 'together', '투게더'],
-};
-
-const XENESIS_CONNECTION_NATURAL_TOOL_ALIAS_WORDS: Record<string, readonly string[]> = {
-  fetch: [
-    'fetch',
-    '웹 fetch',
-    '웹 가져오기',
-    'web page fetch',
-    'webpage fetch',
-    '웹페이지 가져오기',
-    '웹 페이지 가져오기',
-  ],
-  filesystem: ['filesystem', 'file system', '파일시스템', '파일 시스템', 'workspace files', '워크스페이스 파일'],
-  github: ['github', '깃허브'],
-  'google-calendar': ['google calendar', '구글 캘린더', '캘린더'],
-  'google-workspace': [
-    'google workspace',
-    '구글 워크스페이스',
-    'gmail',
-    '지메일',
-    'google docs',
-    'google drive',
-    '구글 문서',
-    '구글 독스',
-    '구글 드라이브',
-    'workspace',
-    '워크스페이스',
-  ],
-  linear: ['linear', '리니어'],
-  notion: ['notion', '노션'],
-};
-
-const XENESIS_CONNECTION_NATURAL_MESSENGER_ALIAS_WORDS: Record<string, readonly string[]> = {
-  dingding: ['dingtalk', 'ding talk', 'dingding', '딩톡', '딩딩'],
-  discord: ['discord', '디스코드'],
-  email: ['email', '이메일', 'mailbox', '메일박스', '메일'],
-  feishu: ['feishu', 'lark', '페이슈', '페이수', '라크'],
-  'google-chat': ['google chat', 'google-chat', '구글 챗', '구글 채팅'],
-  'home-assistant': ['home assistant', 'home-assistant', '홈 어시스턴트', '홈어시스턴트'],
-  imessage: ['imessage', '아이메시지', '아이메세지', 'bluebubbles', '블루버블'],
-  irc: ['irc', '아이알씨'],
-  line: ['line', '라인'],
-  mattermost: ['mattermost', '매터모스트'],
-  matrix: ['matrix', '매트릭스'],
-  'microsoft-teams': ['microsoft teams', 'microsoft-teams', 'ms teams', 'teams', '팀즈', '마이크로소프트 팀즈'],
-  'nextcloud-talk': ['nextcloud talk', 'nextcloud-talk', '넥스트클라우드 톡', '넥스트클라우드 토크'],
-  nostr: ['nostr', '노스트르'],
-  ntfy: ['ntfy', '엔티파이'],
-  qqbot: ['qqbot', 'qq bot', 'qq 봇', '큐큐봇'],
-  raft: ['raft', '래프트'],
-  'rocket-chat': ['rocket chat', 'rocket-chat', 'rocketchat', '로켓챗', '로켓 채팅'],
-  signal: ['signal', '시그널'],
-  slack: ['slack', '슬랙'],
-  sms: ['sms', '문자 메시지', '문자메시지', '문자'],
-  'synology-chat': ['synology chat', 'synology-chat', '시놀로지 챗', '시놀로지 채팅'],
-  telegram: ['telegram', '텔레그램'],
-  tlon: ['tlon', '틀론'],
-  twitch: ['twitch', '트위치'],
-  webhook: ['webhook', '웹훅'],
-  wechat: ['wechat', 'weixin', '위챗', '웨이신'],
-  whatsapp: ['whatsapp', '왓츠앱', '와츠앱'],
-  yuanbao: ['yuanbao', '위안바오'],
-  zalo: ['zalo', '잘로'],
-};
-
-function naturalConnectionTargetFromItem(
-  item: Pick<XenesisConnectionItem, 'id' | 'label' | 'supportLevel'> & { status?: XenesisConnectionStatus },
-  kind: XenesisConnectionNaturalConnectionTarget['kind'],
-  words: readonly string[],
-): XenesisConnectionNaturalConnectionTarget {
-  const supportLevel =
-    item.supportLevel ?? (kind === 'messenger' ? (item.status === 'planned' ? 'planned' : 'implemented') : undefined);
-
-  return {
-    id: item.id,
-    label: item.label,
-    kind,
-    supportLevel,
-    words: uniqueStrings(words),
-  };
-}
-
-export const XENESIS_CONNECTION_NATURAL_CONNECTION_TARGETS: readonly XenesisConnectionNaturalConnectionTarget[] = [
-  ...TOOL_CONNECTIONS.map((item) =>
-    naturalConnectionTargetFromItem(item, 'tool', XENESIS_CONNECTION_NATURAL_TOOL_ALIAS_WORDS[item.id] ?? [item.id]),
-  ),
-  ...[...MESSENGERS, ...PLANNED_MESSENGERS].map((item) =>
-    naturalConnectionTargetFromItem(
-      item,
-      'messenger',
-      XENESIS_CONNECTION_NATURAL_MESSENGER_ALIAS_WORDS[item.id] ?? [item.id],
-    ),
-  ),
-];
-
 function cloneXenesisConnectionUserStoryWorkflowPreview(
   preview: XenesisConnectionUserStoryWorkflowPreview,
 ): XenesisConnectionUserStoryWorkflowPreview {
@@ -5080,198 +4960,6 @@ export function findXenesisConnectionUserStoryWorkflowPreviewTarget(
 
   return null;
 }
-
-export const XENESIS_CONNECTION_NATURAL_PROVIDER_TARGETS: readonly XenesisConnectionNaturalWordsTarget[] =
-  XENESIS_CONNECTION_NATURAL_PROVIDER_TARGET_IDS.map((id) => ({
-    id,
-    label: id,
-    words: uniqueStrings(XENESIS_CONNECTION_NATURAL_PROVIDER_ALIAS_WORDS[id] ?? [id]),
-  }));
-
-export const XENESIS_CONNECTION_NATURAL_PLANNED_GOOGLE_TOOL_IDS = XENESIS_CONNECTION_TOOL_OAUTH_DRAFT_IDS;
-
-export function isXenesisConnectionNaturalPlannedGoogleToolTarget(
-  target: Pick<XenesisConnectionNaturalConnectionTarget, 'id' | 'kind'>,
-): boolean {
-  return (
-    target.kind === 'tool' &&
-    (XENESIS_CONNECTION_NATURAL_PLANNED_GOOGLE_TOOL_IDS as readonly string[]).includes(target.id)
-  );
-}
-
-const XENESIS_CONNECTION_NATURAL_GUIDE_TARGET_CONFIG: readonly Omit<XenesisConnectionNaturalGuideTarget, 'label'>[] = [
-  {
-    id: 'agent-user-stories',
-    words: [
-      'user story',
-      'user stories',
-      'task story',
-      'task stories',
-      'task scenario',
-      'task scenarios',
-      '사용자 스토리',
-      '작업 스토리',
-      '작업 시나리오',
-      '시나리오',
-      '스토리',
-      'hermes story',
-      'hermes scenario',
-      '헤르메스 스토리',
-      '헤르메스 시나리오',
-    ],
-    requiredWordGroups: [['hermes', '헤르메스']],
-    blockedByMatchedTargetIds: ['external-tool-integrations', 'openclaw-channel-setup'],
-  },
-  {
-    id: 'external-tool-integrations',
-    words: [
-      'external tool',
-      'external tools',
-      'tool integration',
-      'tool integrations',
-      'mcp tool',
-      'mcp tools',
-      'hermes integration',
-      'hermes integrations',
-      '헤르메스 통합',
-      '외부 도구',
-      '도구 통합',
-      'oauth',
-      'connector',
-      '커넥터',
-      'google workspace',
-      'google drive',
-      'google docs',
-      'google calendar',
-      '구글 워크스페이스',
-      '구글 드라이브',
-      '구글 독스',
-      '구글 캘린더',
-      'notion',
-      '노션',
-      'linear',
-      '리니어',
-      'fetch',
-      'filesystem',
-      '파일 시스템',
-      '파일시스템',
-    ],
-    requiredWordGroups: [
-      ['integration', 'integrations', '통합'],
-      [
-        'tool',
-        'tools',
-        '도구',
-        'mcp',
-        'oauth',
-        'google',
-        '구글',
-        'notion',
-        '노션',
-        'linear',
-        '리니어',
-        'hermes',
-        '헤르메스',
-      ],
-    ],
-  },
-  {
-    id: 'openclaw-channel-setup',
-    words: [
-      'openclaw',
-      '오픈클로',
-      '오픈클로우',
-      'channel',
-      'channels',
-      '채널',
-      'messenger',
-      'messengers',
-      '메신저',
-      'access group',
-      'access groups',
-      '액세스 그룹',
-      '접근 그룹',
-      'routing',
-      '라우팅',
-      'pairing',
-      '페어링',
-      'troubleshooting',
-      'troubleshoot',
-      '문제 해결',
-      'telegram',
-      '텔레그램',
-      'slack',
-      '슬랙',
-      'discord',
-      '디스코드',
-      'whatsapp',
-      '왓츠앱',
-      'google chat',
-      '구글 챗',
-    ],
-    requiredWordGroups: [
-      ['integration', 'integrations', '통합'],
-      ['channel', 'channels', '채널', 'messenger', 'messengers', '메신저'],
-    ],
-  },
-  {
-    id: 'cr-mcp-gateway-bots',
-    words: ['cr', 'mcp', 'gateway', '게이트웨이', 'bot', '봇'],
-  },
-  {
-    id: 'onboarding-connections',
-    words: [],
-    fallback: true,
-  },
-];
-
-function xenesisConnectionGuideLabel(id: string): string {
-  return XENESIS_CONNECTION_GUIDES.find((item) => item.id === id)?.label ?? id;
-}
-
-export const XENESIS_CONNECTION_NATURAL_GUIDE_TARGETS: readonly XenesisConnectionNaturalGuideTarget[] =
-  XENESIS_CONNECTION_NATURAL_GUIDE_TARGET_CONFIG.map((target) => ({
-    ...target,
-    label: xenesisConnectionGuideLabel(target.id),
-    words: uniqueStrings(target.words),
-  }));
-
-const XENESIS_CONNECTION_NATURAL_ONBOARDING_STEP_TARGET_METADATA: Record<
-  (typeof XENESIS_CONNECTION_ONBOARDING_STEP_IDS)[number],
-  Omit<XenesisConnectionNaturalWordsTarget, 'id'>
-> = {
-  'first-chat': {
-    label: 'First chat',
-    words: ['first chat', '첫 채팅', '첫채팅', '첫 응답', 'first response'],
-  },
-  'local-cli-mcp': {
-    label: 'Local CLI and MCP',
-    words: ['local cli', '로컬 cli', 'local-cli', 'mcp', 'mcp bridge', 'mcp 브리지', '로컬 런타임'],
-  },
-  'recommended-tools': {
-    label: 'Recommended tools',
-    words: ['recommended tools', '추천 도구', '외부 도구', 'external tools', 'tool onboarding', '도구 온보딩'],
-  },
-  gateway: {
-    label: 'Gateway',
-    words: ['gateway', '게이트웨이'],
-  },
-  'messenger-routing': {
-    label: 'Messenger routing',
-    words: ['messenger routing', '메신저 라우팅', 'channel routing', '채널 라우팅', 'external bots', '외부 봇'],
-  },
-  'test-send': {
-    label: 'End-to-end test',
-    words: ['end-to-end', 'e2e', '엔드투엔드', 'test send', '테스트 전송', '최종 테스트'],
-  },
-};
-
-export const XENESIS_CONNECTION_NATURAL_ONBOARDING_STEP_TARGETS: readonly XenesisConnectionNaturalWordsTarget[] =
-  XENESIS_CONNECTION_ONBOARDING_STEP_IDS.map((id) => ({
-    id,
-    label: XENESIS_CONNECTION_NATURAL_ONBOARDING_STEP_TARGET_METADATA[id].label,
-    words: uniqueStrings(XENESIS_CONNECTION_NATURAL_ONBOARDING_STEP_TARGET_METADATA[id].words),
-  }));
 
 function countItems(sections: XenesisConnectionsStatus['sections']): XenesisConnectionsStatus['summary'] {
   const summary = {
@@ -6511,6 +6199,343 @@ function buildXenesisToolRuntime(item: XenesisConnectionItem): XenesisConnection
   };
 }
 
+function toolProfileDraftField(
+  field: string,
+  label: string,
+  required: boolean,
+  secretRef: boolean,
+  valueState: XenesisConnectionToolProfileDraftFieldValueState,
+  source: string,
+  description: string,
+): XenesisConnectionToolProfileDraftField {
+  return {
+    field,
+    label,
+    required,
+    secretRef,
+    valueState,
+    source,
+    description,
+  };
+}
+
+function toolProfileDraftCredentialFieldState(
+  refs: readonly XenesisConnectionToolConnectorCredentialRef[],
+): XenesisConnectionToolProfileDraftFieldValueState {
+  if (refs.length === 0) return 'not-required';
+  if (refs.some((ref) => ref.required && ref.state === 'missing')) return 'missing';
+  if (refs.some((ref) => ref.state === 'planned')) return 'planned';
+  return 'configured';
+}
+
+function toolProfileDraftMcpServerState(
+  item: XenesisConnectionItem,
+): XenesisConnectionToolProfileDraftFieldValueState {
+  if (item.mcpTemplate) return 'configured';
+  if (item.toolInstallPlan?.runtimeSupport === 'planned-oauth' || item.toolConnector?.runtimeSupport === 'planned-oauth') {
+    return 'planned';
+  }
+  return item.toolConnector ? 'configured' : 'unknown';
+}
+
+function toolProfileDraftRuntimeFieldState(
+  item: XenesisConnectionItem,
+): XenesisConnectionToolProfileDraftFieldValueState {
+  if (item.toolRuntime?.runtimeStatus === 'ready') return 'configured';
+  if (item.toolRuntime?.runtimeStatus === 'planned-oauth') return 'planned';
+  if (item.toolRuntime?.runtimeStatus === 'needs-setup') return 'missing';
+  return 'unknown';
+}
+
+function toolProfileDraftReviewStep(
+  input: XenesisConnectionToolProfileDraftReviewStep,
+): XenesisConnectionToolProfileDraftReviewStep {
+  return {
+    ...input,
+    requiredFields: uniqueStrings(input.requiredFields),
+    readPaths: uniqueStrings(input.readPaths),
+    controlPaths: uniqueStrings(input.controlPaths),
+    diagnostics: uniqueStrings(input.diagnostics),
+  };
+}
+
+function toolProfileDraftReviewSteps(input: {
+  item: XenesisConnectionItem;
+  missingRequiredFields: string[];
+  scopes: string[];
+}): XenesisConnectionToolProfileDraftReviewStep[] {
+  return [
+    toolProfileDraftReviewStep({
+      id: 'tool-identity',
+      label: 'Review tool identity',
+      phase: 'tool-identity',
+      expectedState: `${input.item.label} tool id, connector type, auth mode, and MCP server plan are visible before setup work.`,
+      requiredFields: ['tool', 'connectorType', 'authMode', 'mcpServer'],
+      readPaths: [
+        'xd.xenesis.tools.profileDrafts.status',
+        'xd.xenesis.tools.connectors.status',
+        'xd.xenesis.tools.installPlans.status',
+      ],
+      controlPaths: ['xd.xenesis.tools.profileDrafts.open', 'xd.xenesis.tools.profileDrafts.request'],
+      diagnostics: ['tool-profile-draft', input.item.id, input.item.toolConnector?.connectorType ?? 'unknown'],
+      safetyBoundary: 'Tool identity review does not install MCP servers or change tool configuration.',
+    }),
+    toolProfileDraftReviewStep({
+      id: 'credential-readiness',
+      label: 'Review credential readiness',
+      phase: 'credential-readiness',
+      expectedState: `${input.item.label} credential references are visible as readiness states only; secret values are never returned.`,
+      requiredFields:
+        input.missingRequiredFields.length > 0 ? input.missingRequiredFields : ['credentialRef', 'oauthClient'],
+      readPaths: [
+        'xd.xenesis.tools.profileDrafts.status',
+        'xd.xenesis.tools.connectors.status',
+        'xd.xenesis.tools.mcpInstallDrafts.status',
+        'xd.xenesis.tools.oauthDrafts.status',
+      ],
+      controlPaths: ['xd.xenesis.tools.profileDrafts.open', 'xd.xenesis.tools.profileDrafts.request'],
+      diagnostics: ['credential-readiness', ...input.missingRequiredFields, 'credential-state-redacted'],
+      safetyBoundary: 'Credential readiness review does not store credentials, return secrets, or start OAuth.',
+    }),
+    toolProfileDraftReviewStep({
+      id: 'runtime-readback',
+      label: 'Review runtime readback',
+      phase: 'runtime-readback',
+      expectedState: `${input.item.label} runtime support and readback checks are visible before provider tool execution.`,
+      requiredFields: ['runtimeReadback'],
+      readPaths: [
+        'xd.xenesis.tools.profileDrafts.status',
+        'xd.xenesis.tools.runtime.status',
+        'xd.xenesis.connections.diagnostics.status',
+      ],
+      controlPaths: ['xd.xenesis.tools.profileDrafts.open', 'xd.xenesis.tools.profileDrafts.request'],
+      diagnostics: ['runtime-readback', ...(input.item.toolRuntime?.readbackChecks ?? []), 'cr-readback'],
+      safetyBoundary: 'Runtime readback review does not execute provider tools or mutate external systems.',
+    }),
+    toolProfileDraftReviewStep({
+      id: 'action-boundary',
+      label: 'Review action boundary',
+      phase: 'action-boundary',
+      expectedState: `${input.item.label} read/write action policies and scopes are visible before any external mutation path exists.`,
+      requiredFields: input.scopes.length > 0 ? ['scopes'] : [],
+      readPaths: [
+        'xd.xenesis.tools.profileDrafts.status',
+        'xd.xenesis.tools.actions.status',
+        'xd.xenesis.tools.userStories.status',
+      ],
+      controlPaths: ['xd.xenesis.tools.profileDrafts.open', 'xd.xenesis.tools.profileDrafts.request'],
+      diagnostics: ['action-boundary', ...input.scopes, ...(input.item.toolActionCatalog?.diagnostics ?? [])],
+      safetyBoundary: 'Action-boundary review does not approve writes or execute provider tools.',
+    }),
+  ];
+}
+
+function buildXenesisToolProfileDraft(
+  item: XenesisConnectionItem,
+): XenesisConnectionToolProfileDraftTemplate | undefined {
+  if (item.kind !== 'tool') return undefined;
+
+  const credentialRefs = item.toolConnector?.credentialRefs ?? [];
+  const missingCredentialRefs = credentialRefs
+    .filter((credential) => credential.required && credential.state === 'missing')
+    .map((credential) => credential.ref);
+  const missingRequiredFields = item.toolOAuthDraft
+    ? [...item.toolOAuthDraft.missingRequiredFields]
+    : uniqueStrings([...missingCredentialRefs, ...(item.mcpInstallDraft?.missingEnv ?? [])]);
+  const draftStatus: XenesisConnectionToolProfileDraftStatus = item.toolOAuthDraft
+    ? 'planned-template'
+    : missingRequiredFields.length > 0
+      ? 'missing-required-field'
+      : item.toolConnector || item.toolSetup || item.toolRuntime
+        ? 'ready'
+        : 'unknown';
+  const scopes = uniqueStrings([
+    ...(item.toolConnector?.dataScopes ?? []),
+    ...(item.toolSetup?.dataScopes ?? []),
+    ...(item.toolOAuthDraft?.scopes ?? []),
+  ]);
+  const runtimeSupport = item.toolRuntime?.runtimeSupport ?? toolRuntimeSupport(item);
+  const authMode = item.toolConnector?.authMode ?? item.toolSetup?.authMode ?? 'none';
+  const setupSurface =
+    item.toolSetup?.setupSurface ??
+    item.toolConnector?.setupSurface ??
+    item.toolRuntime?.installSurface ??
+    item.toolInstallPlan?.setupSurface ??
+    item.toolView?.setupSurface ??
+    'Settings > AI Provider > Local CLI MCP';
+  const credentialSource =
+    credentialRefs.length > 0
+      ? uniqueStrings(credentialRefs.map((credential) => credential.source)).join(', ')
+      : 'none';
+  const profileFields: XenesisConnectionToolProfileDraftField[] = [
+    toolProfileDraftField(
+      'tool',
+      'Tool',
+      true,
+      false,
+      item.id ? 'configured' : 'missing',
+      'Connection Center tool catalog',
+      'External tool identity shown in the Connection Center.',
+    ),
+    toolProfileDraftField(
+      'connectorType',
+      'Connector type',
+      true,
+      false,
+      item.toolConnector?.connectorType ? 'configured' : 'unknown',
+      'tool connector metadata',
+      'Connector transport or local integration type used by this tool.',
+    ),
+    toolProfileDraftField(
+      'authMode',
+      'Auth mode',
+      true,
+      false,
+      authMode === 'none' ? 'not-required' : 'configured',
+      'tool connector auth mode',
+      'Authentication mode required before this tool can be used by the provider runtime.',
+    ),
+    toolProfileDraftField(
+      'credentialRef',
+      'Credential reference',
+      credentialRefs.some((credential) => credential.required),
+      credentialRefs.some((credential) => credential.source !== 'none'),
+      toolProfileDraftCredentialFieldState(credentialRefs),
+      credentialSource,
+      credentialRefs.length > 0
+        ? `Credential refs: ${credentialRefs.map((credential) => credential.ref).join(', ')}.`
+        : 'No credential reference is required for this tool.',
+    ),
+    toolProfileDraftField(
+      'mcpServer',
+      'MCP server',
+      item.toolConnector?.connectorType !== 'local',
+      false,
+      toolProfileDraftMcpServerState(item),
+      item.mcpTemplate?.serverName ?? item.toolInstallPlan?.installMode ?? 'tool connector metadata',
+      item.mcpTemplate
+        ? `MCP server template: ${item.mcpTemplate.serverName}.`
+        : 'MCP server selection is represented by setup/install metadata.',
+    ),
+    toolProfileDraftField(
+      'scopes',
+      'Scopes',
+      scopes.length > 0,
+      false,
+      scopes.length > 0 ? 'configured' : 'not-required',
+      'tool setup and connector scopes',
+      scopes.length > 0 ? `Scopes: ${scopes.join(', ')}.` : 'No data scopes are declared for this tool.',
+    ),
+    toolProfileDraftField(
+      'runtimeReadback',
+      'Runtime readback',
+      true,
+      false,
+      toolProfileDraftRuntimeFieldState(item),
+      'tool runtime readiness',
+      'Runtime readback state used before provider tool execution is enabled.',
+    ),
+    ...(item.toolOAuthDraft
+      ? [
+          toolProfileDraftField(
+            'oauthClient',
+            'OAuth client',
+            true,
+            true,
+            'planned',
+            'tool OAuth draft',
+            'OAuth client readiness is planned until a verified MCP OAuth template is selected.',
+          ),
+          toolProfileDraftField(
+            'redirectUri',
+            'Redirect URI',
+            true,
+            false,
+            'planned',
+            'tool OAuth draft',
+            'Redirect URI readiness is planned until a verified MCP OAuth template is selected.',
+          ),
+          toolProfileDraftField(
+            'tokenStore',
+            'Token store',
+            true,
+            true,
+            'planned',
+            'tool OAuth draft',
+            'Token storage readiness is planned; tokens are never stored or returned by Desk profile drafts.',
+          ),
+        ]
+      : []),
+  ];
+  const reviewSteps = toolProfileDraftReviewSteps({ item, missingRequiredFields, scopes });
+
+  return {
+    draftStatus,
+    actionInboxKind: 'xenesis-tool-profile-draft',
+    tool: item.id,
+    displayName: item.label,
+    description: `Review ${item.label} tool profile fields, credential readiness, runtime readback, and action boundaries before setup or provider tool use.`,
+    setupSurface,
+    reviewSurface: 'Desk Action Inbox',
+    runtimeSupport,
+    authMode,
+    profileFields,
+    missingRequiredFields,
+    scopes,
+    reviewSteps,
+    readPaths: uniqueStrings([
+      'xd.xenesis.tools.profileDrafts.status',
+      'xd.xenesis.connections.status',
+      'xd.xenesis.tools.setup.status',
+      'xd.xenesis.tools.connectors.status',
+      'xd.xenesis.tools.runtime.status',
+      'xd.xenesis.tools.actions.status',
+      'xd.xenesis.tools.installPlans.status',
+      ...(item.toolOAuthDraft ? ['xd.xenesis.tools.oauthDrafts.status'] : []),
+      ...(item.toolMcpOAuth ? ['xd.xenesis.tools.mcpOAuth.status'] : []),
+      ...(item.mcpInstallDraft ? ['xd.xenesis.tools.mcpInstallDrafts.status'] : []),
+    ]),
+    controlPaths: [
+      'xd.xenesis.tools.profileDrafts.open',
+      'xd.xenesis.tools.profileDrafts.request',
+      'xd.xenesis.connections.open',
+    ],
+    diagnostics: uniqueStrings([
+      'tool-profile-draft',
+      draftStatus,
+      ...missingRequiredFields,
+      ...profileFields.map((field) => `${field.field}:${field.valueState}`),
+      ...(item.toolRuntime?.diagnostics ?? []),
+      ...(item.toolOAuthDraft?.diagnostics ?? []),
+      ...(item.toolActionCatalog?.diagnostics ?? []),
+    ]),
+    blockedActions: uniqueStrings([
+      'store credentials',
+      'execute provider tools',
+      'install MCP servers',
+      'write MCP config',
+      'complete OAuth',
+      'store tokens',
+      'mutate external systems',
+      ...(item.toolRuntime?.blockedActions ?? []),
+      ...(item.toolOAuthDraft?.blockedActions ?? []),
+      ...(item.toolActionCatalog?.blockedActions ?? []),
+      ...(item.mcpInstallDraft?.blockedActions ?? []),
+    ]),
+    safetyBoundaries: uniqueStrings([
+      'tool profile drafts are review-only',
+      'tool profile drafts do not install MCP servers, write MCP config, store credentials, complete OAuth, store tokens, execute provider tools, or mutate external systems',
+      'credential values, OAuth client secrets, and OAuth tokens are never returned',
+      ...(item.toolConnector?.safetyBoundaries ?? []),
+      ...(item.toolRuntime?.safetyBoundaries ?? []),
+      ...(item.toolOAuthDraft?.safetyBoundaries ?? []),
+      ...(item.toolActionCatalog?.safetyBoundaries ?? []),
+      ...(item.mcpInstallDraft?.safetyBoundaries ?? []),
+      ...(item.warnings ?? []),
+    ]),
+  };
+}
+
 function providerSetupPlanRuntimeSupport(
   item: XenesisConnectionItem,
 ): XenesisConnectionProviderSetupPlanRuntimeSupport {
@@ -6840,6 +6865,20 @@ function toolSetupPlanSteps(item: XenesisConnectionItem): XenesisConnectionToolS
           }),
         ]
       : []),
+    ...(item.toolProfileDraft
+      ? [
+          toolSetupPlanStep({
+            id: 'tool-profile-draft',
+            label: 'Review tool profile draft',
+            kind: 'request',
+            crPath: 'xd.xenesis.tools.profileDrafts.request',
+            itemId: item.id,
+            expectedState: `${item.label} tool profile fields, credential readiness, runtime readback, and action boundaries can be reviewed before setup work.`,
+            verifyWith: item.toolProfileDraft.diagnostics,
+            safetyBoundary: 'tool profile draft review records local Action Inbox items only',
+          }),
+        ]
+      : []),
     ...(item.mcpInstallDraft
       ? [
           toolSetupPlanStep({
@@ -6983,6 +7022,8 @@ function buildXenesisToolSetupPlan(item: XenesisConnectionItem): XenesisConnecti
       ...(item.toolConnector?.readPaths ?? []),
       ...(item.toolInstallPlan?.readPaths ?? []),
       ...(item.toolRuntime?.readPaths ?? []),
+      ...(item.toolProfileDraft?.readPaths ?? []),
+      ...(item.toolProfileDraft?.reviewSteps.flatMap((step) => step.readPaths) ?? []),
       ...(item.mcpInstallDraft?.readPaths ?? []),
       ...(item.toolMcpOAuth?.readPaths ?? []),
       ...(item.toolOAuthDraft?.readPaths ?? []),
@@ -7001,6 +7042,8 @@ function buildXenesisToolSetupPlan(item: XenesisConnectionItem): XenesisConnecti
       ...(item.toolConnector?.controlPaths ?? []),
       ...(item.toolInstallPlan?.controlPaths ?? []),
       ...(item.toolRuntime?.controlPaths ?? []),
+      ...(item.toolProfileDraft?.controlPaths ?? []),
+      ...(item.toolProfileDraft?.reviewSteps.flatMap((step) => step.controlPaths) ?? []),
       ...(item.mcpInstallDraft?.controlPaths ?? []),
       ...(item.toolMcpOAuth?.controlPaths ?? []),
       ...(item.toolOAuthDraft?.controlPaths ?? []),
@@ -7016,6 +7059,8 @@ function buildXenesisToolSetupPlan(item: XenesisConnectionItem): XenesisConnecti
       ...(item.toolConnector?.diagnostics ?? []),
       ...(item.toolInstallPlan?.diagnostics ?? []),
       ...(item.toolRuntime?.diagnostics ?? []),
+      ...(item.toolProfileDraft?.diagnostics ?? []),
+      ...(item.toolProfileDraft?.reviewSteps.flatMap((step) => step.diagnostics) ?? []),
       ...(item.mcpInstallDraft?.diagnostics ?? []),
       ...(item.toolMcpOAuth?.diagnostics ?? []),
       ...(item.toolOAuthDraft?.diagnostics ?? []),
@@ -7027,6 +7072,7 @@ function buildXenesisToolSetupPlan(item: XenesisConnectionItem): XenesisConnecti
     blockedActions: uniqueStrings([
       ...XENESIS_CONNECTION_SETUP_REQUEST_BLOCKED_ACTIONS,
       ...(item.toolRuntime?.blockedActions ?? []),
+      ...(item.toolProfileDraft?.blockedActions ?? []),
       ...(item.mcpInstallDraft?.blockedActions ?? []),
       ...(item.toolMcpOAuth?.blockedActions ?? []),
       ...(item.toolOAuthDraft?.blockedActions ?? []),
@@ -7044,6 +7090,8 @@ function buildXenesisToolSetupPlan(item: XenesisConnectionItem): XenesisConnecti
       ...(item.toolConnector?.safetyBoundaries ?? []),
       ...(item.toolInstallPlan?.safetyBoundaries ?? []),
       ...(item.toolRuntime?.safetyBoundaries ?? []),
+      ...(item.toolProfileDraft?.safetyBoundaries ?? []),
+      ...(item.toolProfileDraft?.reviewSteps.map((step) => step.safetyBoundary) ?? []),
       ...(item.mcpInstallDraft?.safetyBoundaries ?? []),
       ...(item.toolMcpOAuth?.safetyBoundaries ?? []),
       ...(item.toolOAuthDraft?.safetyBoundaries ?? []),
@@ -7430,6 +7478,7 @@ function diagnosticRunbookSetupSurface(item: XenesisConnectionItem): string {
     (item.providerSetup ? 'Settings > AI Provider' : undefined) ??
     item.toolSetup?.setupSurface ??
     item.toolConnector?.setupSurface ??
+    item.toolProfileDraft?.setupSurface ??
     item.toolMcpOAuth?.authSurface ??
     item.toolOAuthDraft?.authSurface ??
     item.toolOAuthRuntime?.authSurface ??
@@ -7455,6 +7504,7 @@ function diagnosticRunbookPrimarySurface(item: XenesisConnectionItem): string {
     item.providerView?.primarySurface ??
     (item.providerProfileDraft ? 'Settings > Xenesis Agent > Connections' : undefined) ??
     item.toolView?.primarySurface ??
+    (item.toolProfileDraft ? 'Settings > Xenesis Agent > Connections' : undefined) ??
     (item.toolMcpOAuth ? 'Settings > Xenesis Agent > Connections' : undefined) ??
     (item.toolOAuthDraft ? 'Settings > Xenesis Agent > Connections' : undefined) ??
     (item.toolOAuthRuntime ? 'Settings > Xenesis Agent > Connections' : undefined) ??
@@ -7633,6 +7683,31 @@ function buildXenesisConnectionDiagnosticRunbook(
           ...item.toolRuntime.readbackChecks,
           ...item.toolRuntime.diagnostics,
           ...item.toolRuntime.blockedActions,
+        ],
+      }),
+    );
+  }
+
+  if (item.toolProfileDraft) {
+    steps.push(
+      diagnosticRunbookStep({
+        id: 'tool-profile-draft',
+        label: 'Tool profile draft',
+        expectedState:
+          'Review-only tool profile fields, credential readiness, runtime readback, and action boundaries are visible before setup or provider tool execution.',
+        readPaths: [
+          'xd.xenesis.tools.profileDrafts.status',
+          ...item.toolProfileDraft.readPaths,
+          ...item.toolProfileDraft.reviewSteps.flatMap((step) => step.readPaths),
+        ],
+        controlPaths: [
+          ...item.toolProfileDraft.controlPaths,
+          ...item.toolProfileDraft.reviewSteps.flatMap((step) => step.controlPaths),
+        ],
+        diagnostics: [
+          ...item.toolProfileDraft.missingRequiredFields,
+          ...item.toolProfileDraft.diagnostics,
+          ...item.toolProfileDraft.reviewSteps.flatMap((step) => step.diagnostics),
         ],
       }),
     );
@@ -7957,6 +8032,8 @@ function buildXenesisConnectionDiagnosticRunbook(
       ...(item.toolSetup?.riskControls ?? []),
       ...(item.toolConnector?.safetyBoundaries ?? []),
       ...(item.toolRuntime?.safetyBoundaries ?? []),
+      ...(item.toolProfileDraft?.safetyBoundaries ?? []),
+      ...(item.toolProfileDraft?.reviewSteps.map((step) => step.safetyBoundary) ?? []),
       ...(item.toolMcpOAuth?.safetyBoundaries ?? []),
       ...(item.toolOAuthDraft?.safetyBoundaries ?? []),
       ...(item.toolOAuthDraft?.reviewSteps.map((step) => step.safetyBoundary) ?? []),
@@ -8027,6 +8104,8 @@ function setupRequestDiagnosticItems(item: XenesisConnectionItem): string[] {
     ...(item.toolConnector?.validationChecks ?? []),
     ...(item.toolRuntime?.diagnostics ?? []),
     ...(item.toolRuntime?.readbackChecks ?? []),
+    ...(item.toolProfileDraft?.diagnostics ?? []),
+    ...(item.toolProfileDraft?.reviewSteps.flatMap((step) => step.diagnostics) ?? []),
     ...(item.toolMcpOAuth?.diagnostics ?? []),
     ...(item.toolOAuthDraft?.diagnostics ?? []),
     ...(item.toolOAuthDraft?.reviewSteps.flatMap((step) => step.diagnostics) ?? []),
@@ -8066,6 +8145,8 @@ function setupRequestStepItems(item: XenesisConnectionItem): string[] {
     ...(item.toolOAuthDraft?.reviewSteps.map((step) => `${step.id}: ${step.expectedState}`) ?? []),
     ...(item.toolRuntime?.readbackChecks.map((check) => `verify tool runtime readback: ${check}`) ?? []),
     ...(item.toolRuntime?.blockedActions.map((action) => `confirm tool runtime blocks: ${action}`) ?? []),
+    ...(item.toolProfileDraft?.missingRequiredFields.map((field) => `review tool profile field: ${field}`) ?? []),
+    ...(item.toolProfileDraft?.reviewSteps.map((step) => `${step.id}: ${step.expectedState}`) ?? []),
     ...(item.toolOAuthRuntime?.missingRequiredFields.map((field) => `review OAuth runtime field: ${field}`) ?? []),
     ...(item.toolOAuthRuntime?.readbackChecks.map((check) => `verify OAuth runtime readback: ${check}`) ?? []),
     ...(item.toolSetupPlan?.steps.map((step) => `${step.id}: ${step.expectedState}`) ?? []),
@@ -8144,6 +8225,8 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.providerSetupPlan?.readPaths ?? []),
       ...(item.toolSetup?.crReadPaths ?? []),
       ...(item.toolConnector?.readPaths ?? []),
+      ...(item.toolProfileDraft?.readPaths ?? []),
+      ...(item.toolProfileDraft?.reviewSteps.flatMap((step) => step.readPaths) ?? []),
       ...(item.toolMcpOAuth?.readPaths ?? []),
       ...(item.toolOAuthDraft?.readPaths ?? []),
       ...(item.toolOAuthDraft?.reviewSteps.flatMap((step) => step.readPaths) ?? []),
@@ -8178,6 +8261,8 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.providerSetupPlan?.controlPaths ?? []),
       ...(item.crActions ?? []),
       ...(item.toolConnector?.controlPaths ?? []),
+      ...(item.toolProfileDraft?.controlPaths ?? []),
+      ...(item.toolProfileDraft?.reviewSteps.flatMap((step) => step.controlPaths) ?? []),
       ...(item.toolMcpOAuth?.controlPaths ?? []),
       ...(item.toolOAuthDraft?.controlPaths ?? []),
       ...(item.toolOAuthDraft?.reviewSteps.flatMap((step) => step.controlPaths) ?? []),
@@ -8228,6 +8313,8 @@ function buildXenesisConnectionSetupRequest(item: XenesisConnectionItem): Xenesi
       ...(item.providerSetupPlan?.safetyBoundaries ?? []),
       ...(item.toolSetup?.riskControls ?? []),
       ...(item.toolConnector?.safetyBoundaries ?? []),
+      ...(item.toolProfileDraft?.safetyBoundaries ?? []),
+      ...(item.toolProfileDraft?.reviewSteps.map((step) => step.safetyBoundary) ?? []),
       ...(item.toolMcpOAuth?.safetyBoundaries ?? []),
       ...(item.toolOAuthDraft?.safetyBoundaries ?? []),
       ...(item.toolOAuthDraft?.reviewSteps.map((step) => step.safetyBoundary) ?? []),
@@ -8386,9 +8473,17 @@ function toolConnectionItems(env: Record<string, string | undefined> = {}): Xene
       toolOAuthDraft,
       toolOAuthRuntime,
     });
+    const toolProfileDraft = buildXenesisToolProfileDraft({
+      ...withMcpInstallDraft,
+      toolMcpOAuth,
+      toolOAuthDraft,
+      toolOAuthRuntime,
+      toolRuntime,
+    });
     return {
       ...withMcpInstallDraft,
       toolRuntime,
+      toolProfileDraft,
       toolMcpOAuth,
       toolView: withXenesisToolMcpOAuthViewSection(withCredentialState.toolView, withCredentialState.id, toolMcpOAuth),
       toolOAuthDraft,

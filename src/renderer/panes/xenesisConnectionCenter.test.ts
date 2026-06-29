@@ -37,6 +37,7 @@ import {
   buildXenesisToolOAuthRuntimeRequest,
   buildXenesisToolOAuthSetupPacketOpenRequest,
   buildXenesisToolOAuthSetupPacketRequest,
+  buildXenesisToolProfileDraftRequest,
   buildXenesisToolRuntimeRequest,
   buildXenesisToolSetupPlanRequest,
   buildXenesisUserStoryWorkflowPreviewRequest,
@@ -71,6 +72,7 @@ import {
   formatXenesisToolOAuthDraftSummary,
   formatXenesisToolOAuthRuntimeSummary,
   formatXenesisToolOAuthSetupPacketSummary,
+  formatXenesisToolProfileDraftSummary,
   formatXenesisToolRuntimeSummary,
   formatXenesisToolSetupPlanSummary,
   formatXenesisToolSetupSummary,
@@ -117,6 +119,7 @@ test('xenesis detail focus selector maps CR detail values to existing data attri
     XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['tool-oauth-runtime'],
     'data-xenesis-tool-oauth-runtime',
   );
+  assert.equal(XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['tool-profile-draft'], 'data-xenesis-tool-profile-draft');
   assert.equal(XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['channel-routing'], 'data-xenesis-channel-routing');
   assert.equal(
     XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['provider-profile-draft'],
@@ -136,6 +139,7 @@ test('xenesis detail focus selector maps CR detail values to existing data attri
     '[data-xenesis-tool-oauth-setup-packet]',
   );
   assert.equal(xenesisConnectionDetailFocusSelector('tool-oauth-runtime'), '[data-xenesis-tool-oauth-runtime]');
+  assert.equal(xenesisConnectionDetailFocusSelector('tool-profile-draft'), '[data-xenesis-tool-profile-draft]');
   assert.equal(xenesisConnectionDetailFocusSelector('channel-routing'), '[data-xenesis-channel-routing]');
   assert.equal(XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES['channel-runtime'], 'data-xenesis-channel-runtime');
   assert.equal(xenesisConnectionDetailFocusSelector('channel-runtime'), '[data-xenesis-channel-runtime]');
@@ -1668,6 +1672,51 @@ test('formatXenesisToolRuntimeSummary describes runtime status and readback chec
   );
 });
 
+test('formatXenesisToolProfileDraftSummary describes draft status and review steps', () => {
+  assert.equal(
+    formatXenesisToolProfileDraftSummary({
+      draftStatus: 'missing-required-field',
+      actionInboxKind: 'xenesis-tool-profile-draft',
+      tool: 'notion',
+      displayName: 'Notion',
+      description: 'Review Notion tool profile readiness.',
+      setupSurface: 'Settings > Xenesis Agent > Connections',
+      reviewSurface: 'Desk Action Inbox',
+      profileFields: [
+        {
+          field: 'credentialRef',
+          label: 'Credential reference',
+          required: true,
+          secretRef: true,
+          valueState: 'missing',
+          source: 'env',
+          description: 'NOTION_TOKEN readiness.',
+        },
+      ],
+      missingRequiredFields: ['NOTION_TOKEN'],
+      reviewSteps: [
+        {
+          id: 'credential-readiness',
+          label: 'Review credential readiness',
+          phase: 'credential-readiness',
+          expectedState: 'Credential reference is visible without returning a secret value.',
+          requiredFields: ['credentialRef'],
+          readPaths: ['xd.xenesis.tools.profileDrafts.status'],
+          controlPaths: ['xd.xenesis.tools.profileDrafts.request'],
+          diagnostics: ['missing-env'],
+          safetyBoundary: 'Credential review never returns secret values.',
+        },
+      ],
+      readPaths: ['xd.xenesis.tools.profileDrafts.status'],
+      controlPaths: ['xd.xenesis.tools.profileDrafts.request'],
+      diagnostics: ['tool-profile-draft'],
+      blockedActions: ['store credentials'],
+      safetyBoundaries: ['tool profile drafts are review-only'],
+    } as any),
+    'notion / missing-required-field / 1 field(s) / 1 review step(s)',
+  );
+});
+
 test('formatXenesisToolOAuthRuntimeSummary describes runtime readiness and readback checks', () => {
   assert.equal(
     formatXenesisToolOAuthRuntimeSummary({
@@ -1959,6 +2008,46 @@ test('buildXenesisToolRuntimeRequest targets the generic runtime readiness CR pa
   });
 
   assert.equal(buildXenesisToolRuntimeRequest({ ...item, toolRuntime: undefined }), null);
+});
+
+test('buildXenesisToolProfileDraftRequest targets the profile draft review CR path', () => {
+  const item = {
+    id: 'notion',
+    kind: 'tool',
+    label: 'Notion',
+    status: 'needs-setup',
+    summary: 'Notion profile draft.',
+    toolProfileDraft: {
+      draftStatus: 'missing-required-field',
+      actionInboxKind: 'xenesis-tool-profile-draft',
+      tool: 'notion',
+      displayName: 'Notion',
+      runtimeSupport: 'ready-template',
+      authMode: 'env-token',
+      setupSurface: 'Settings > Xenesis Agent > Connections',
+      reviewSurface: 'Desk Action Inbox',
+      profileFields: [],
+      missingRequiredFields: ['NOTION_TOKEN'],
+      scopes: [],
+      reviewSteps: [],
+      readPaths: ['xd.xenesis.tools.profileDrafts.status'],
+      controlPaths: ['xd.xenesis.tools.profileDrafts.request'],
+      diagnostics: ['tool-profile-draft'],
+      blockedActions: ['store credentials'],
+      safetyBoundaries: ['tool profile drafts are review-only'],
+    },
+  } as XenesisConnectionItem;
+
+  assert.deepEqual(buildXenesisToolProfileDraftRequest(item), {
+    path: 'xd.xenesis.tools.profileDrafts.request',
+    args: {
+      id: 'notion',
+    },
+    source: 'xenesis',
+    approved: true,
+  });
+
+  assert.equal(buildXenesisToolProfileDraftRequest({ ...item, toolProfileDraft: undefined } as any), null);
 });
 
 test('buildXenesisToolOAuthRuntimeRequest targets the runtime readiness CR path', () => {

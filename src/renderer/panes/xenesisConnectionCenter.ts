@@ -39,6 +39,8 @@ import type {
   XenesisConnectionToolOAuthDraftTemplate,
   XenesisConnectionToolOAuthRuntimeTemplate,
   XenesisConnectionToolOAuthSetupPacket,
+  XenesisConnectionToolProfileDraftReviewStep,
+  XenesisConnectionToolProfileDraftTemplate,
   XenesisConnectionToolRuntimeTemplate,
   XenesisConnectionToolSetupPlanTemplate,
   XenesisConnectionToolSetupTemplate,
@@ -83,6 +85,7 @@ export const XENESIS_CONNECTION_DETAIL_FOCUS_DATA_ATTRIBUTES = {
   'tool-oauth-setup-packet': 'data-xenesis-tool-oauth-setup-packet',
   'tool-oauth-runtime': 'data-xenesis-tool-oauth-runtime',
   'tool-runtime': 'data-xenesis-tool-runtime',
+  'tool-profile-draft': 'data-xenesis-tool-profile-draft',
   'tool-action-catalog': 'data-xenesis-tool-action-catalog',
   'tool-connector': 'data-xenesis-tool-connector',
   'tool-view': 'data-xenesis-tool-view',
@@ -192,6 +195,7 @@ export function formatXenesisConnectionGuidedStepDetail(step: XenesisConnectionO
 type XenesisConnectionReviewStep =
   | XenesisConnectionProviderProfileDraftReviewStep
   | XenesisConnectionToolOAuthDraftReviewStep
+  | XenesisConnectionToolProfileDraftReviewStep
   | XenesisConnectionChannelProfileDraftReviewStep;
 
 export function formatXenesisConnectionReviewStepDetail(step: XenesisConnectionReviewStep): string {
@@ -272,6 +276,10 @@ export function formatXenesisToolOAuthRuntimeSummary(runtime: XenesisConnectionT
 
 export function formatXenesisToolRuntimeSummary(runtime: XenesisConnectionToolRuntimeTemplate): string {
   return `${runtime.tool} / ${runtime.runtimeStatus} / ${runtime.readbackChecks.length} readback check(s) / ${runtime.blockedActions.length} blocked action(s)`;
+}
+
+export function formatXenesisToolProfileDraftSummary(draft: XenesisConnectionToolProfileDraftTemplate): string {
+  return `${draft.tool} / ${draft.draftStatus} / ${draft.profileFields.length} field(s) / ${draft.reviewSteps.length} review step(s)`;
 }
 
 export function formatXenesisToolOAuthSetupPacketSummary(packet: XenesisConnectionToolOAuthSetupPacket): string {
@@ -476,6 +484,20 @@ export function buildXenesisToolRuntimeRequest(item: XenesisConnectionItem): Mcp
   if (!item.toolRuntime) return null;
   return {
     path: 'xd.xenesis.tools.runtime.request',
+    args: {
+      id: item.id,
+    },
+    source: 'xenesis',
+    approved: true,
+  };
+}
+
+export function buildXenesisToolProfileDraftRequest(
+  item: XenesisConnectionItem,
+): McpBridgeCapabilityCallRequest | null {
+  if (!item.toolProfileDraft) return null;
+  return {
+    path: 'xd.xenesis.tools.profileDrafts.request',
     args: {
       id: item.id,
     },

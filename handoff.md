@@ -7,7 +7,135 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
-## Current Slice: Remove Remaining Runtime Heuristics
+## Current Slice: Tool Profile Drafts
+
+- Current objective:
+  - Add a CR-first, Desk-internal external tool profile draft surface so
+    Notion, Google Workspace, Google Calendar, GitHub, Linear, Filesystem, and
+    Fetch can expose setup/profile fields, missing field readbacks, review
+    steps, diagnostics, blocked actions, and safety boundaries inside the
+    Connection Center.
+  - Do not add natural-language heuristic routing. Provider reasoning should
+    discover and call the new CR paths when needed.
+- Rationale:
+  - Provider and channel connections already expose profile draft surfaces, but
+    external tools currently expose setup/install/OAuth/runtime/action surfaces
+    without one structured "profile draft" summary tying env/config/scopes/
+    review steps together for the Desk setup experience requested by the user.
+  - This moves the Hermes/OpenClaw-style connection setup goal forward without
+    installing MCP servers, completing OAuth, storing tokens, writing settings,
+    or executing provider tools.
+- Plan:
+  - `docs/superpowers/plans/2026-06-29-tool-profile-drafts.md`
+- Touched files so far:
+  - `handoff.md`
+  - `docs/superpowers/plans/2026-06-29-tool-profile-drafts.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-tool-profile-drafts.md`
+  - `src/shared/xenesisConnections.ts`
+  - `src/shared/xenesisConnections.test.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/shared/xenesisConnectionCapabilities.test.ts`
+  - `src/shared/xenesisSettingsCatalog.mjs`
+  - `src/shared/xenesisSettingsCatalog.d.ts`
+  - `src/shared/xenesisSettingsCatalog.d.mts`
+  - `src/renderer/panes/settingsCatalog.test.mjs`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.test.ts`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
+  - `src/main/index.ts`
+- Commands run:
+  - `git status --short --branch` -> clean on `agent/upcoming-work-20260627`.
+  - Read AGENTS, Obsidian index/system/source/module/architecture notes,
+    cached OpenClaw/Hermes gap map, tool runtime readiness note, user-story
+    contracts note, and handoff.
+  - Source scans confirmed existing tool CR paths for setup/setupPlans/
+    connectors/views/userStories/installPlans/mcpInstallDrafts/oauthDrafts/
+    runtime/mcpOAuth/oauthRuntime/actions, but no
+    `xd.xenesis.tools.profileDrafts.*` surface.
+  - RED:
+    `npx tsx --test src\shared\xenesisConnections.test.ts` -> failed 1/44
+    as expected because `toolProfileDraft` is undefined.
+  - RED:
+    `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` ->
+    failed 1/45 as expected because
+    `xd.xenesis.tools.profileDrafts.status/open/request` are not registered.
+  - RED:
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` ->
+    failed 3/71 as expected because `tool-profile-draft` focus, formatter,
+    and request builder are absent.
+  - User override:
+    `npx tsx --test src\shared\xenesisConnections.test.ts` -> failed on the
+    new no-hardcoded-natural-target guard because `naturalWords` and
+    `XENESIS_CONNECTION_NATURAL_*` metadata are still present. The pre-existing
+    tool profile draft RED failure also remains.
+  - User override:
+    `npx tsx --test src\renderer\panes\settingsCatalog.test.mjs` -> failed on
+    the new no-natural-alias guard because settings categories still expose
+    `naturalWords`.
+  - GREEN:
+    `npx tsx --test src\renderer\panes\settingsCatalog.test.mjs` -> passed
+    2/2 after removing settings `naturalWords` and type declarations.
+  - GREEN for heuristic cleanup, original RED remains:
+    `npx tsx --test src\shared\xenesisConnections.test.ts` -> natural target
+    guard passed; suite still fails 1/44 because the planned
+    `toolProfileDraft` model is not implemented yet.
+  - GREEN:
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` ->
+    passed 71/71 after adding the renderer focus mapping, formatter, request
+    builder, SettingsPane read-only panel, and i18n labels.
+  - GREEN:
+    `npx tsx --test src\shared\xenesisConnections.test.ts` -> passed 44/44
+    after adding review-only tool profile draft templates and removing
+    connection natural-language metadata.
+  - GREEN:
+    `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` ->
+    passed 45/45 after registering and dispatching
+    `xd.xenesis.tools.profileDrafts.status/open/request`.
+  - GREEN:
+    `npx tsx --test src\renderer\panes\settingsCatalog.test.mjs` -> passed
+    2/2 after removing settings category natural aliases.
+  - Source scan:
+    `rg -n "naturalWords|XENESIS_CONNECTION_NATURAL_|XenesisConnectionNatural|naturalConnectionTargetFromItem|isXenesisConnectionNaturalPlannedGoogleToolTarget" src\shared src\renderer packages\xenesis\src --glob "!**/*.md"`
+    -> matches only the guard tests, no production matches.
+  - Root typecheck:
+    `npm run typecheck` -> passed after exporting the new tool profile draft
+    types and tightening the credential-state helper.
+  - Package typecheck:
+    `npm --prefix packages/xenesis run typecheck` -> passed.
+  - CR audit:
+    `npm run docs:capabilities:audit` -> passed, wrote
+    `docs/capability-registry-audit.md` with 800 nodes and 689 coverage path
+    references.
+  - CR audit counter readback:
+    `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> all 0.
+  - Focused rerun:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\panes\settingsCatalog.test.mjs`
+    -> passed 162/162.
+  - Build:
+    `npm run build` -> passed with existing Vite externalization/dynamic-import
+    warnings.
+  - Live Connection Center smoke:
+    `npm run smoke:xenesis:connection-center` -> passed 9/9, including
+    `tool-profile-review-steps`.
+  - Live Agent approval smoke:
+    `npm run smoke:xenesis:review-request-approval` -> passed 6/6.
+  - Diff whitespace:
+    `git diff --check` -> passed with line-ending warnings only.
+- Touched files added by user override:
+  - `src/shared/xenesisSettingsCatalog.mjs`
+  - `src/shared/xenesisSettingsCatalog.d.ts`
+  - `src/shared/xenesisSettingsCatalog.d.mts`
+  - `src/renderer/panes/settingsCatalog.test.mjs`
+  - `src/shared/xenesisConnections.ts`
+  - `src/shared/xenesisConnections.test.ts`
+- Next intended step:
+  - Final git review and commit the tool profile draft plus heuristic-metadata
+    removal slice.
+
+## Previous Slice: Remove Remaining Runtime Heuristics
 
 - Current objective:
   - Remove remaining keyword/regex/score-based automatic prompt classification
