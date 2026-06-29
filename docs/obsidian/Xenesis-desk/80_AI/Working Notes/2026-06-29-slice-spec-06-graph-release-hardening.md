@@ -90,8 +90,8 @@ npm run lint
 npm --prefix packages/xenesis test
 npm --prefix packages/xenesis run typecheck
 npm run build
-npm run smoke:xenesis:connection-center -- --json
-npm run smoke:xenesis:review-request-approval -- --json
+node .\scripts\xenesisConnectionCenterLiveSmoke.mjs --json
+node .\scripts\xenesisReviewRequestApprovalLiveSmoke.mjs --json
 npm run check:public-release
 git diff --check
 ```

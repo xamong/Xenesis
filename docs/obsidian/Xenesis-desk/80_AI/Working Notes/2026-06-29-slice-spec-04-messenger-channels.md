@@ -93,8 +93,8 @@ npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts
 npm run docs:capabilities:audit
 node scripts\assertCapabilityAuditZero.mjs
 npm run typecheck
-npm run smoke:xenesis:connection-center -- --json
-npm run smoke:xenesis:review-request-approval -- --json
+node .\scripts\xenesisConnectionCenterLiveSmoke.mjs --json
+node .\scripts\xenesisReviewRequestApprovalLiveSmoke.mjs --json
 ```
 
 The approval smoke must be extended or paired with a channel-specific smoke

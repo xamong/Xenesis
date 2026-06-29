@@ -1062,9 +1062,9 @@ Update `handoff.md` with:
   - `node scripts\assertCapabilityAuditZero.mjs`: PASS, verified 4 counters
   - `npm run typecheck`: PASS
   - `npm run build`: PASS
-  - `npm run smoke:xenesis:connection-center -- --json`: PASS live smoke text output; PowerShell/npm 11.5.1 did not forward `--json`
+  - `npm run smoke:xenesis:connection-center`: PASS live smoke text output; PowerShell/npm 11.5.1 did not forward the attempted `--json` arg in this environment
   - `node .\scripts\xenesisConnectionCenterLiveSmoke.mjs --json`: PASS structured JSON, all nine `reference-baseline:*` checks passed
-  - `npm run smoke:xenesis:review-request-approval -- --json`: PASS live smoke text output; PowerShell/npm 11.5.1 did not forward `--json`
+  - `npm run smoke:xenesis:review-request-approval`: PASS live smoke text output; PowerShell/npm 11.5.1 did not forward the attempted `--json` arg in this environment
   - `node .\scripts\xenesisReviewRequestApprovalLiveSmoke.mjs --json`: PASS structured JSON, proof type is structured CR approval regression and provider NL tool-selection proof is false
 - Known gaps:
   - This slice does not prove provider natural-language CR tool selection. That remains part of provider/onboarding live verification in later slices.

@@ -28,12 +28,17 @@
   - `npm run typecheck`: PASS.
   - `npm run build`: PASS; existing Vite warnings about `hwp.js/build/esm.js` browser `fs` externalization and `src/renderer/deskBridge.ts` mixed static/dynamic imports remain.
   - `git diff --check`: PASS; Git printed LF/CRLF normalization warnings only.
+  - Targeted adversarial re-review after `b0755ce`: PASS for code fixes; one low stale-doc risk remained outside canonical Verification Map/current Slice 01 plan.
+  - `rg -n -- "npm run smoke:xenesis:(connection-center|review-request-approval).*-- --json" docs\superpowers docs\obsidian`: FOUND stale command examples in older working/spec notes and one superseded/ignored plan.
+  - Mechanical replacement in tracked `docs\obsidian` and `docs\superpowers` notes: updated stale JSON evidence commands to direct `node .\scripts\... --json`.
+  - `rg -n -- "npm run smoke:xenesis:(connection-center|review-request-approval).*-- --json" docs\superpowers docs\obsidian`: PASS, no matches after cleanup.
 - Exact remediation result:
   - Connection Center smoke report computed fields `ok`, `createdAt`, `summary`, and `checks` can no longer be overridden by `extra`.
   - Connection Center snapshot normalization now preserves expected text as `expectedText` and actual rendered text as `actualText`.
   - Obsidian Verification Map and the Slice 01 plan now name direct `node ... --json` commands as structured JSON evidence commands.
+  - Follow-up stale-doc scan found older working/spec notes with the same npm JSON command pattern; tracked notes were mechanically updated to direct `node ... --json` commands.
 - Next intended step:
-  - Commit the adversarial review remediation and rerun final review/verification checks.
+  - Commit the adversarial review documentation cleanup and rerun final review/verification checks.
 
 ## Current Slice: Slice 01 Live CR Baseline - Task 6 Final Verification
 
@@ -120,7 +125,7 @@
     and `handoff.md`.
 - Exact verification result:
   - Added the Slice 01 Live CR Baseline adoption table to the reference adoption map proposal.
-  - Added verification command rows for `node scripts\assertCapabilityAuditZero.mjs`, `npm run smoke:xenesis:connection-center -- --json`, and `npm run smoke:xenesis:review-request-approval -- --json`.
+  - Added verification command rows for `node scripts\assertCapabilityAuditZero.mjs`, `node .\scripts\xenesisConnectionCenterLiveSmoke.mjs --json`, and `node .\scripts\xenesisReviewRequestApprovalLiveSmoke.mjs --json`.
   - Added the CR Surface Index development live proof surfaces section.
   - Confirmed `2026-06-29-slice-1-live-cr-baseline-plan.md` already points to the stricter Slice 01 plan and records the older plan as superseded, so no edit was required there.
   - Required Task 5 marker scan, diff check, and status check passed.

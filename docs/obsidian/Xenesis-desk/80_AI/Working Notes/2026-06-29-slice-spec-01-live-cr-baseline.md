@@ -95,8 +95,8 @@ npm run docs:capabilities:audit
 node scripts\assertCapabilityAuditZero.mjs
 npm run typecheck
 npm run build
-npm run smoke:xenesis:connection-center -- --json
-npm run smoke:xenesis:review-request-approval -- --json
+node .\scripts\xenesisConnectionCenterLiveSmoke.mjs --json
+node .\scripts\xenesisReviewRequestApprovalLiveSmoke.mjs --json
 ```
 
 ## Out Of Scope

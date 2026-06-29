@@ -90,7 +90,7 @@ Run:
 - [x] **Step 3: Run the live smoke**
 
 Run:
-`npm run smoke:xenesis:review-request-approval -- --json --timeout=45000`
+`node .\scripts\xenesisReviewRequestApprovalLiveSmoke.mjs --json --timeout=45000`
 
 Expected: all checks pass. This creates or refreshes local Action Inbox review records only.
 

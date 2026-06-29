@@ -98,7 +98,7 @@ npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts
 npm run docs:capabilities:audit
 node scripts\assertCapabilityAuditZero.mjs
 npm run typecheck
-npm run smoke:xenesis:connection-center -- --json
+node .\scripts\xenesisConnectionCenterLiveSmoke.mjs --json
 npm --prefix packages/xenesis test
 npm --prefix packages/xenesis run typecheck
 ```
