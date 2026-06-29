@@ -688,6 +688,10 @@ It can reference the ready approval-gated provider profile apply path, but the
 setup-plan path itself is read/open only and does not mutate provider settings,
 store raw secrets, edit fallback chains, change local CLI selection, run
 provider prompts, or bypass approvals.
+Settings can also preview the provider setup plan through the existing
+`xd.automation.workflow.preview` runner. That preview contains only setup-plan
+`read` and `open` steps; profile-draft request/apply steps remain separate
+explicit CR actions.
 
 Use `xd.xenesis.providers.profileDrafts.status`,
 `xd.xenesis.providers.profileDrafts.open`, and
@@ -765,6 +769,9 @@ orchestration metadata only; they do not start gateways, pair accounts or
 devices, send messages, store credentials, mutate channel profiles, or bypass
 approval. Implemented channels may reference existing approval-gated profile
 draft apply and sanitized test-send paths; planned channels stay review-only.
+Settings can preview these setup plans through `xd.automation.workflow.preview`
+with only `read` and `open` steps. Channel profile draft request/apply and
+test-send paths are not folded into that preview.
 
 Use `xd.xenesis.channels.profileDrafts.status`,
 `xd.xenesis.channels.profileDrafts.open`, and
@@ -801,6 +808,16 @@ setup plans through CR. The open path focuses the matching Connection Center
 tool card. These plans expose copy/template/OAuth readiness only; they do not
 execute shell commands, install MCP servers, complete OAuth, write settings,
 store secrets, or execute tools.
+
+Use `xd.xenesis.tools.setupPlans.status` and
+`xd.xenesis.tools.setupPlans.open` to inspect or open unified external tool
+setup plans through CR. These plans collect setup view, profile draft,
+connector, install, MCP/OAuth, runtime, action-policy, user-story, diagnostic,
+and setup-request readbacks into one ordered checklist. Settings can preview
+that checklist through `xd.automation.workflow.preview`, but the preview keeps
+only `read` and `open` steps. OAuth draft requests, MCP install apply,
+profile-draft apply, and runtime/action review requests remain separate
+explicit CR actions.
 
 Use `xd.xenesis.tools.connectors.status` to inspect external tool connector
 readiness through CR. The read model is redacted: it exposes credential names and

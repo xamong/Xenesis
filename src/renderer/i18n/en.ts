@@ -961,6 +961,7 @@ export const en = {
     xenesisConnectionsRequestSetup: 'Request setup',
     xenesisConnectionsApplySetup: 'Apply setup',
     xenesisConnectionsPreviewUserStoryWorkflow: 'Preview workflow',
+    xenesisConnectionsPreviewSetupPlanWorkflow: 'Preview setup workflow',
     xenesisConnectionsRequestMcpInstallDraft: 'Request MCP draft',
     xenesisConnectionsApplyMcpInstallDraft: 'Apply MCP draft',
     xenesisConnectionsReadToolSetupPlan: 'Read setup plan',

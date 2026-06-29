@@ -545,6 +545,7 @@ export interface XenesisConnectionToolSetupPlanTemplate {
   setupSurface: string;
   reviewSurface: string;
   steps: XenesisConnectionToolSetupPlanStep[];
+  workflowPreview: XenesisConnectionWorkflowPreview;
   readPaths: string[];
   controlPaths: string[];
   diagnostics: string[];
@@ -575,6 +576,7 @@ export interface XenesisConnectionProviderSetupPlanTemplate {
   setupSurface: string;
   reviewSurface: string;
   steps: XenesisConnectionProviderSetupPlanStep[];
+  workflowPreview: XenesisConnectionWorkflowPreview;
   readPaths: string[];
   controlPaths: string[];
   diagnostics: string[];
@@ -605,6 +607,7 @@ export interface XenesisConnectionChannelSetupPlanTemplate {
   setupSurface: string;
   reviewSurface: string;
   steps: XenesisConnectionChannelSetupPlanStep[];
+  workflowPreview: XenesisConnectionWorkflowPreview;
   readPaths: string[];
   controlPaths: string[];
   diagnostics: string[];
@@ -970,23 +973,26 @@ export interface XenesisConnectionToolUserStoryTemplate {
   safetyBoundaries: string[];
 }
 
-export interface XenesisConnectionUserStoryWorkflowStep {
+export interface XenesisConnectionWorkflowStep {
   label: string;
   path: string;
   args: Record<string, unknown>;
   approved: boolean;
 }
 
-export interface XenesisConnectionUserStoryWorkflowPreview {
+export interface XenesisConnectionWorkflowPreview {
   previewPath: 'xd.automation.workflow.preview';
   runPath: 'xd.automation.workflow.run';
   name: string;
   description: string;
   delayMs: 0;
   stopOnFail: true;
-  steps: XenesisConnectionUserStoryWorkflowStep[];
+  steps: XenesisConnectionWorkflowStep[];
   safetyBoundary: string;
 }
+
+export type XenesisConnectionUserStoryWorkflowStep = XenesisConnectionWorkflowStep;
+export type XenesisConnectionUserStoryWorkflowPreview = XenesisConnectionWorkflowPreview;
 
 export interface XenesisConnectionUserStoryContract {
   readbackPaths: string[];
@@ -6557,6 +6563,40 @@ function providerSetupPlanRuntimeSupport(
   return item.providerProfileDraft?.draftStatus === 'ready' ? 'configured-provider' : 'missing-required-field';
 }
 
+const setupPlanWorkflowPreviewSafetyBoundary =
+  'CR workflow preview for setup plans is a read/open setup plan preview only; it excludes request/apply steps and does not execute provider tools, complete OAuth, store tokens, write MCP config, send messages, start gateways, mutate profiles, or mutate external systems.';
+
+function setupPlanWorkflowPreview(input: {
+  id: string;
+  label: string;
+  planKind: 'provider' | 'tool' | 'channel';
+  steps: readonly {
+    label: string;
+    kind: string;
+    crPath: string;
+    args?: Record<string, unknown>;
+  }[];
+}): XenesisConnectionWorkflowPreview {
+  const previewSteps = input.steps
+    .filter((step) => step.kind === 'read' || step.kind === 'open')
+    .map((step) => ({
+      label: step.label,
+      path: step.crPath,
+      args: { ...(step.args ?? {}) },
+      approved: false,
+    }));
+  return {
+    previewPath: 'xd.automation.workflow.preview',
+    runPath: 'xd.automation.workflow.run',
+    name: `${input.id}-${input.planKind}-setup-plan-preview`,
+    description: `Preview ${input.label} ${input.planKind} setup-plan read/open steps.`,
+    delayMs: 0,
+    stopOnFail: true,
+    steps: previewSteps,
+    safetyBoundary: setupPlanWorkflowPreviewSafetyBoundary,
+  };
+}
+
 function providerSetupPlanStep(input: {
   id: string;
   label: string;
@@ -6694,6 +6734,12 @@ function buildXenesisProviderSetupPlan(
       item.providerView?.setupSurface ?? item.providerProfileDraft?.setupSurface ?? 'Settings > AI Provider',
     reviewSurface: 'Desk Action Inbox',
     steps,
+    workflowPreview: setupPlanWorkflowPreview({
+      id: item.id,
+      label: item.label,
+      planKind: 'provider',
+      steps,
+    }),
     readPaths: uniqueStrings([
       'xd.xenesis.providers.setupPlans.status',
       'xd.xenesis.connections.status',
@@ -7026,6 +7072,12 @@ function buildXenesisToolSetupPlan(item: XenesisConnectionItem): XenesisConnecti
     setupSurface,
     reviewSurface: 'Desk Action Inbox',
     steps,
+    workflowPreview: setupPlanWorkflowPreview({
+      id: item.id,
+      label: item.label,
+      planKind: 'tool',
+      steps,
+    }),
     readPaths: uniqueStrings([
       'xd.xenesis.tools.setupPlans.status',
       'xd.xenesis.connections.status',
@@ -7354,6 +7406,12 @@ function buildXenesisChannelSetupPlan(
       'Settings > Xenesis Agent > External bots',
     reviewSurface: 'Desk Action Inbox',
     steps,
+    workflowPreview: setupPlanWorkflowPreview({
+      id: item.id,
+      label: item.label,
+      planKind: 'channel',
+      steps,
+    }),
     readPaths: uniqueStrings([
       'xd.xenesis.channels.setupPlans.status',
       'xd.xenesis.connections.status',

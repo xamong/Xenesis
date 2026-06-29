@@ -121,6 +121,11 @@ setup metadata, tool profile draft, connector readiness, install plan, MCP
 install draft, MCP OAuth readiness, generic tool runtime readiness, OAuth setup
 packet, OAuth runtime readiness, action policy, user stories, diagnostics, and
 setup request without executing any of those downstream mutations.
+Settings can preview that setup plan through the existing
+`xd.automation.workflow.preview` runner. The preview payload includes only
+setup-plan `read` and `open` steps; OAuth draft requests, MCP install apply,
+tool profile draft apply, runtime review requests, and action-policy review
+requests remain explicit separate CR actions.
 
 ## Safety Boundaries
 

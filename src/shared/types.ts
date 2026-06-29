@@ -119,6 +119,8 @@ export type {
   XenesisConnectionUserStoryContract,
   XenesisConnectionUserStoryWorkflowPreview,
   XenesisConnectionUserStoryWorkflowStep,
+  XenesisConnectionWorkflowPreview,
+  XenesisConnectionWorkflowStep,
 } from './xenesisConnections';
 
 export {

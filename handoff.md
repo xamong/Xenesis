@@ -7,6 +7,109 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current Slice: Setup Plan Workflow Preview
+
+- Current objective:
+  - Add read/open-only workflow preview metadata and UI actions for AI provider,
+    external tool, and external messenger setup plans.
+  - Reuse existing `xd.automation.workflow.preview` rather than adding new CR
+    nodes.
+  - Keep request/apply setup steps out of the preview payload so review/apply
+    actions remain explicit separate approval-gated paths.
+- Scope boundary:
+  - No natural-language routing, keyword/heuristic handling, OAuth completion,
+    token storage, MCP config writes, provider tool execution, message sending,
+    gateway lifecycle actions, profile mutation, external system mutation, or
+    approval bypass.
+- Plan:
+  - `docs/superpowers/plans/2026-06-29-setup-plan-workflow-preview.md`
+    (local ignored plan artifact).
+- Commit:
+  - `Add setup plan workflow previews`.
+- Source review so far:
+  - Existing CR workflow runner already exposes
+    `xd.automation.workflow.preview` and `xd.automation.workflow.run`.
+  - Tool/channel/provider setup plans already have ordered steps, read paths,
+    control paths, diagnostics, blocked actions, and safety boundaries, but no
+    workflow preview payload.
+  - User-story contracts already use workflow previews, providing an existing
+    local pattern for request building and Settings result summaries.
+- Touched files so far:
+  - `src/shared/xenesisConnections.ts`
+  - `src/shared/xenesisConnections.test.ts`
+  - `src/shared/types.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.test.ts`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
+  - `docs/manual/09-onboarding-connections.md`
+  - `docs/manual/10-openclaw-channel-setup.md`
+  - `docs/manual/11-external-tool-integrations.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-setup-plan-workflow-preview.md`
+- Implementation notes:
+  - Added a generic setup/user-story-compatible workflow preview shape in the
+    shared connection model.
+  - Setup-plan previews are built only from explicit setup-plan step metadata
+    where `kind` is `read` or `open`.
+  - Settings now exposes a setup workflow preview button that calls
+    `xd.automation.workflow.preview` with the existing CR workflow input shape.
+  - Confirmed `xenesisAgentDeskControl.ts` remains a re-export shim and
+    `packages/xenesis/src/core/intentRouter.ts` ignores prompt text unless an
+    explicit mode is passed. No natural-language or keyword heuristic routing
+    was added in this slice.
+- Verification so far:
+  - RED:
+    `npx tsx --test src\shared\xenesisConnections.test.ts` failed as expected
+    because setup plans lacked `workflowPreview`.
+  - GREEN:
+    `npx tsx --test src\shared\xenesisConnections.test.ts` passed 45/45.
+  - RED:
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` failed
+    as expected because `buildXenesisSetupPlanWorkflowPreviewRequest` was not
+    exported.
+  - GREEN:
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` passed
+    73/73.
+  - GREEN:
+    `npm run typecheck` passed.
+  - GREEN:
+    `npm --prefix packages/xenesis run typecheck` passed.
+  - GREEN:
+    `npm --prefix packages/xenesis test` passed 81 files / 372 tests.
+  - GREEN:
+    `npm --prefix packages/xenesis run build` passed.
+  - GREEN:
+    `npm run build` passed, with existing Vite warnings about browser
+    externalization and dynamic/static import chunking.
+  - GREEN:
+    `git diff --check` exited 0 with LF/CRLF normalization warnings only.
+  - GREEN:
+    Scoped Biome check passed for the 8 changed TS/TSX/i18n files:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true ...`.
+  - GREEN:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed 11/11, including the no pre-provider natural Desk heuristic routing
+    guard.
+  - GREEN:
+    `npm --prefix packages/xenesis exec vitest run src/core/intentRouter.test.ts src/workflows/xenisPolicy.test.ts`
+    passed 2 files / 6 tests.
+  - GREEN:
+    `npm --prefix packages/xenesis exec vitest run src/providers/cliProvider.deskMcp.test.ts src/core/AgentRuntimeFactory.modeMessages.test.ts`
+    passed 2 files / 4 tests.
+  - Known existing verification gaps:
+    - `npm run lint` fails repo-wide with existing Biome diagnostics
+      (1134 errors / 416 warnings / 92 infos), including formatting complaints
+      in unrelated root/package/config/sample files. The scoped Biome check for
+      this slice's changed TS/TSX/i18n files passes.
+    - `npm run check:public-release` fails because
+      `.github/workflows/ci.yml` is missing in this public-release worktree.
+- Next intended step:
+  - Continue the next large goal slice from a clean worktree. Keep external web
+    browsing out unless explicitly requested, and keep Agent/Desk natural
+    routing provider/CR-first with no deterministic keyword or heuristic
+    routing.
+
 ## Current Slice: Tool Profile Draft Apply Delegation
 
 - Current objective:

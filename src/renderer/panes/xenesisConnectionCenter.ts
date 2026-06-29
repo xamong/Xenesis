@@ -354,6 +354,22 @@ export function buildXenesisUserStoryWorkflowPreviewRequest(
   };
 }
 
+export function buildXenesisSetupPlanWorkflowPreviewRequest(
+  item: XenesisConnectionItem,
+): McpBridgeCapabilityCallRequest | null {
+  const preview =
+    item.providerSetupPlan?.workflowPreview ??
+    item.toolSetupPlan?.workflowPreview ??
+    item.channelSetupPlan?.workflowPreview;
+  if (!preview) return null;
+  return {
+    path: preview.previewPath,
+    args: buildXenesisConnectionUserStoryWorkflowPreviewArgs(preview),
+    source: 'xenesis',
+    approved: false,
+  };
+}
+
 export function buildXenesisConnectionSettingsRequest(
   item: XenesisConnectionItem,
 ): McpBridgeCapabilityCallRequest | null {

@@ -13,6 +13,7 @@ import type {
   XenesisConnectionToolSetupPlanTemplate,
   XenesisConnectionToolViewSection,
   XenesisConnectionUserStoryContract,
+  XenesisConnectionWorkflowPreview,
 } from '../../shared/types';
 import * as xenesisConnectionCenter from './xenesisConnectionCenter';
 import {
@@ -31,6 +32,7 @@ import {
   buildXenesisProviderProfileDraftApplyRequest,
   buildXenesisProviderProfileDraftRequest,
   buildXenesisProviderSetupPlanRequest,
+  buildXenesisSetupPlanWorkflowPreviewRequest,
   buildXenesisToolActionCatalogRequest,
   buildXenesisToolMcpOAuthRequest,
   buildXenesisToolOAuthDraftRequest,
@@ -85,6 +87,23 @@ import {
   xenesisConnectionDetailFocusSelector,
   xenesisConnectionTone,
 } from './xenesisConnectionCenter';
+
+function setupPlanWorkflowPreview(
+  name: string,
+  steps: XenesisConnectionWorkflowPreview['steps'] = [],
+): XenesisConnectionWorkflowPreview {
+  return {
+    previewPath: 'xd.automation.workflow.preview',
+    runPath: 'xd.automation.workflow.run',
+    name,
+    description: `Preview ${name}`,
+    delayMs: 0,
+    stopOnFail: true,
+    steps,
+    safetyBoundary:
+      'CR workflow preview for setup plans is a read/open setup plan preview only; it excludes request/apply steps.',
+  };
+}
 
 test('xenesisConnectionTone maps every status to a stable UI tone', () => {
   assert.deepEqual(XENESIS_CONNECTION_STATUS_ORDER, [
@@ -1340,6 +1359,7 @@ test('formatXenesisToolSetupPlanSummary describes runtime support, guided steps,
         safetyBoundary: 'OAuth setup packet reads do not complete OAuth.',
       },
     ],
+    workflowPreview: setupPlanWorkflowPreview('google-calendar-tool-setup-plan-preview'),
     readPaths: ['xd.xenesis.tools.setupPlans.status', 'xd.xenesis.tools.oauthDrafts.setupPacket'],
     controlPaths: ['xd.xenesis.tools.setupPlans.open', 'xd.xenesis.tools.oauthDrafts.request'],
     diagnostics: ['planned-oauth-template'],
@@ -1366,6 +1386,7 @@ test('buildXenesisToolSetupPlanRequest targets the setup-plan CR read path', () 
       setupSurface: 'Settings > AI Provider > Local CLI MCP',
       reviewSurface: 'Desk Action Inbox',
       steps: [],
+      workflowPreview: setupPlanWorkflowPreview('google-calendar-tool-setup-plan-preview'),
       readPaths: ['xd.xenesis.tools.setupPlans.status'],
       controlPaths: ['xd.xenesis.tools.setupPlans.open'],
       diagnostics: ['planned-oauth-template'],
@@ -1407,6 +1428,7 @@ test('formatXenesisChannelSetupPlanSummary describes runtime support, guided ste
         safetyBoundary: 'Profile draft review does not write settings or pair devices.',
       },
     ],
+    workflowPreview: setupPlanWorkflowPreview('signal-channel-setup-plan-preview'),
     readPaths: ['xd.xenesis.channels.setupPlans.status', 'xd.xenesis.channels.profileDrafts.status'],
     controlPaths: ['xd.xenesis.channels.setupPlans.open', 'xd.xenesis.channels.profileDrafts.request'],
     diagnostics: ['planned-channel-template'],
@@ -1433,6 +1455,7 @@ test('buildXenesisChannelSetupPlanRequest targets the channel setup-plan CR read
       setupSurface: 'Settings > Xenesis Agent > External bots',
       reviewSurface: 'Desk Action Inbox',
       steps: [],
+      workflowPreview: setupPlanWorkflowPreview('telegram-channel-setup-plan-preview'),
       readPaths: ['xd.xenesis.channels.setupPlans.status'],
       controlPaths: ['xd.xenesis.channels.setupPlans.open'],
       diagnostics: ['gateway-status'],
@@ -2355,6 +2378,7 @@ test('formatXenesisProviderSetupPlanSummary describes runtime support, guided st
         safetyBoundary: 'Profile draft review does not write provider settings.',
       },
     ],
+    workflowPreview: setupPlanWorkflowPreview('provider-codex-app-server-provider-setup-plan-preview'),
     readPaths: ['xd.xenesis.providers.setupPlans.status', 'xd.xenesis.providers.profileDrafts.status'],
     controlPaths: ['xd.xenesis.providers.setupPlans.open', 'xd.xenesis.providers.profileDrafts.request'],
     diagnostics: ['provider-footer'],
@@ -2384,6 +2408,7 @@ test('buildXenesisProviderSetupPlanRequest targets the provider setup-plan CR re
       setupSurface: 'Settings > AI Provider',
       reviewSurface: 'Desk Action Inbox',
       steps: [],
+      workflowPreview: setupPlanWorkflowPreview('provider-codex-app-server-provider-setup-plan-preview'),
       readPaths: ['xd.xenesis.providers.setupPlans.status'],
       controlPaths: ['xd.xenesis.providers.setupPlans.open'],
       diagnostics: ['provider-footer'],
@@ -2402,6 +2427,110 @@ test('buildXenesisProviderSetupPlanRequest targets the provider setup-plan CR re
   });
 
   assert.equal(buildXenesisProviderSetupPlanRequest({ ...item, providerSetupPlan: undefined }), null);
+});
+
+test('buildXenesisSetupPlanWorkflowPreviewRequest targets CR workflow preview for setup plans', () => {
+  const toolPreview = setupPlanWorkflowPreview('google-calendar-tool-setup-plan-preview', [
+    {
+      label: 'Read tool setup plan',
+      path: 'xd.xenesis.tools.setupPlans.status',
+      args: { id: 'google-calendar' },
+      approved: false,
+    },
+  ]);
+  const toolItem = {
+    id: 'google-calendar',
+    kind: 'tool',
+    label: 'Google Calendar',
+    status: 'planned',
+    summary: 'Planned calendar OAuth setup.',
+    toolSetupPlan: {
+      planStatus: 'planned',
+      runtimeSupport: 'planned-oauth',
+      guideId: 'external-tool-integrations',
+      guidePath: 'docs/manual/11-external-tool-integrations.md',
+      primarySurface: 'Settings > Xenesis Agent > Connections',
+      setupSurface: 'Settings > AI Provider > Local CLI MCP',
+      reviewSurface: 'Desk Action Inbox',
+      steps: [],
+      workflowPreview: toolPreview,
+      readPaths: ['xd.xenesis.tools.setupPlans.status'],
+      controlPaths: ['xd.xenesis.tools.setupPlans.open'],
+      diagnostics: ['planned-oauth-template'],
+      blockedActions: ['complete OAuth or store Google OAuth tokens'],
+      safetyBoundaries: ['setup plans are review-only'],
+    },
+  } satisfies XenesisConnectionItem;
+  assert.deepEqual(buildXenesisSetupPlanWorkflowPreviewRequest(toolItem), {
+    path: 'xd.automation.workflow.preview',
+    args: {
+      name: 'google-calendar-tool-setup-plan-preview',
+      description: 'Preview google-calendar-tool-setup-plan-preview',
+      delayMs: 0,
+      stopOnFail: true,
+      steps: toolPreview.steps,
+    },
+    source: 'xenesis',
+    approved: false,
+  });
+
+  const providerPreview = setupPlanWorkflowPreview('provider-codex-provider-setup-plan-preview');
+  assert.deepEqual(
+    buildXenesisSetupPlanWorkflowPreviewRequest({
+      id: 'provider-codex',
+      kind: 'provider',
+      label: 'AI provider: codex',
+      status: 'ready',
+      summary: 'Provider setup.',
+      providerSetupPlan: {
+        planStatus: 'ready',
+        runtimeSupport: 'configured-provider',
+        guideId: 'onboarding-connections',
+        guidePath: 'docs/manual/09-onboarding-connections.md',
+        primarySurface: 'Settings > Xenesis Agent > Connections',
+        setupSurface: 'Settings > AI Provider',
+        reviewSurface: 'Desk Action Inbox',
+        steps: [],
+        workflowPreview: providerPreview,
+        readPaths: ['xd.xenesis.providers.setupPlans.status'],
+        controlPaths: ['xd.xenesis.providers.setupPlans.open'],
+        diagnostics: ['provider-footer'],
+        blockedActions: ['store raw provider secrets'],
+        safetyBoundaries: ['provider setup plans are review-only'],
+      },
+    } satisfies XenesisConnectionItem)?.path,
+    'xd.automation.workflow.preview',
+  );
+
+  const channelPreview = setupPlanWorkflowPreview('telegram-channel-setup-plan-preview');
+  assert.deepEqual(
+    buildXenesisSetupPlanWorkflowPreviewRequest({
+      id: 'telegram',
+      kind: 'messenger',
+      label: 'Telegram',
+      status: 'needs-setup',
+      summary: 'Telegram setup.',
+      channelSetupPlan: {
+        planStatus: 'action-required',
+        runtimeSupport: 'implemented',
+        guideId: 'openclaw-channel-setup',
+        guidePath: 'docs/manual/10-openclaw-channel-setup.md',
+        primarySurface: 'Settings > Xenesis Agent > Connections',
+        setupSurface: 'Settings > Xenesis Agent > External bots',
+        reviewSurface: 'Desk Action Inbox',
+        steps: [],
+        workflowPreview: channelPreview,
+        readPaths: ['xd.xenesis.channels.setupPlans.status'],
+        controlPaths: ['xd.xenesis.channels.setupPlans.open'],
+        diagnostics: ['gateway-status'],
+        blockedActions: ['send messages outside approved profile test path'],
+        safetyBoundaries: ['channel setup plans are review-only'],
+      },
+    } satisfies XenesisConnectionItem)?.path,
+    'xd.automation.workflow.preview',
+  );
+
+  assert.equal(buildXenesisSetupPlanWorkflowPreviewRequest({ ...toolItem, toolSetupPlan: undefined }), null);
 });
 
 test('buildXenesisProviderProfileDraftRequest targets the review request CR path', () => {

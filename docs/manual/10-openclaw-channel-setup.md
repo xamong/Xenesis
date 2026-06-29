@@ -80,6 +80,10 @@ send messages, store credentials, mutate channel profiles, or bypass approval.
 Implemented channels may reference the existing approval-gated profile
 apply/test paths; planned channels remain review-only and do not expose
 apply/test steps.
+Settings can preview the same ordered plan through
+`xd.automation.workflow.preview`. That preview contains only setup-plan
+`read` and `open` steps; runtime requests, profile draft requests/applies, and
+test-send paths stay as explicit separate CR actions.
 
 Channel runtime readiness records adapter support, runtime status, gateway
 requirement, readiness checks, read/control paths, diagnostics, blocked actions,

@@ -1358,6 +1358,16 @@ test('buildXenesisConnectionsStatus exposes guided external tool setup plans', (
     ),
     true,
   );
+  assert.equal(calendar?.toolSetupPlan?.workflowPreview.previewPath, 'xd.automation.workflow.preview');
+  assert.equal(calendar?.toolSetupPlan?.workflowPreview.runPath, 'xd.automation.workflow.run');
+  assert.equal(calendar?.toolSetupPlan?.workflowPreview.steps.length > 0, true);
+  assert.equal(
+    calendar?.toolSetupPlan?.workflowPreview.steps.some((step) =>
+      ['xd.xenesis.tools.oauthDrafts.request', 'xd.xenesis.tools.mcpInstallDrafts.apply'].includes(step.path),
+    ),
+    false,
+  );
+  assert.ok(calendar?.toolSetupPlan?.workflowPreview.safetyBoundary.includes('read/open setup plan preview'));
 });
 
 test('buildXenesisConnectionsStatus exposes guided external messenger channel setup plans', () => {
@@ -1461,6 +1471,16 @@ test('buildXenesisConnectionsStatus exposes guided external messenger channel se
   );
   assert.equal(telegram?.setupRequest?.readPaths.includes('xd.xenesis.channels.setupPlans.status'), true);
   assert.equal(telegram?.setupRequest?.controlPaths.includes('xd.xenesis.channels.setupPlans.open'), true);
+  assert.equal(telegram?.channelSetupPlan?.workflowPreview.previewPath, 'xd.automation.workflow.preview');
+  assert.equal(telegram?.channelSetupPlan?.workflowPreview.runPath, 'xd.automation.workflow.run');
+  assert.equal(telegram?.channelSetupPlan?.workflowPreview.steps.length > 0, true);
+  assert.equal(
+    telegram?.channelSetupPlan?.workflowPreview.steps.some((step) =>
+      ['xd.xenesis.channels.profileDrafts.request', 'xd.xenesis.channels.profileDrafts.apply'].includes(step.path),
+    ),
+    false,
+  );
+  assert.ok(telegram?.channelSetupPlan?.workflowPreview.safetyBoundary.includes('read/open setup plan preview'));
 
   assert.equal(signal?.channelSetupPlan?.runtimeSupport, 'planned-adapter');
   assert.equal(signal?.channelSetupPlan?.planStatus, 'planned');
@@ -1545,6 +1565,16 @@ test('buildXenesisConnectionsStatus exposes guided AI provider setup plans', () 
   assert.equal(provider?.providerSetupPlan?.controlPaths.includes('xd.xenesis.providers.profileDrafts.apply'), true);
   assert.equal(provider?.setupRequest?.readPaths.includes('xd.xenesis.providers.setupPlans.status'), true);
   assert.equal(provider?.setupRequest?.controlPaths.includes('xd.xenesis.providers.setupPlans.open'), true);
+  assert.equal(provider?.providerSetupPlan?.workflowPreview.previewPath, 'xd.automation.workflow.preview');
+  assert.equal(provider?.providerSetupPlan?.workflowPreview.runPath, 'xd.automation.workflow.run');
+  assert.equal(provider?.providerSetupPlan?.workflowPreview.steps.length > 0, true);
+  assert.equal(
+    provider?.providerSetupPlan?.workflowPreview.steps.some((step) =>
+      ['xd.xenesis.providers.profileDrafts.request', 'xd.xenesis.providers.profileDrafts.apply'].includes(step.path),
+    ),
+    false,
+  );
+  assert.ok(provider?.providerSetupPlan?.workflowPreview.safetyBoundary.includes('read/open setup plan preview'));
   assert.equal(
     provider?.providerSetupPlan?.safetyBoundaries.some((boundary) =>
       boundary.includes('setup plans do not change provider settings'),
