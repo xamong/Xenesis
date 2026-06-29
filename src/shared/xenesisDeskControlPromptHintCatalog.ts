@@ -69,8 +69,8 @@ const XENESIS_DESK_CONTROL_PROMPT_HINT_NATIVE_CONTROL_LINES = [
 ] as const;
 
 const XENESIS_DESK_CONTROL_PROMPT_HINT_EXAMPLE_LINES = [
-  '- Common natural Desk requests map to Capability Registry paths before the LLM run when they are clear commands: settings `xd.panes.settings.open`, files `xd.files.listOpen`, `xd.files.open`, `xd.files.read`, explorer `xd.explorer.local.show`, `xd.explorer.local.navigate`, `xd.explorer.local.setFilter`, capture `xd.capture.activePane`, terminals `xd.terminals.list`, `xd.terminals.run`, `xd.terminals.runMany`, layout `xd.dock.window.arrange`, `xd.dock.pane.arrange`, `xd.dock.arrangeHorizontal`, `xd.dock.arrangeVertical`, `xd.dock.arrangeGrid`, `xd.dock.mergeGroup`, `xd.dock.mergeAll`, pane focus/close `xd.dock.focus`, `xd.dock.close`, sizing `xd.dock.sizes.current`, `xd.dock.sizes.set`, panes `xd.dock.panes.list`, tools `xd.tools.core.capabilityExplorer.open`, `xd.tools.core.networkMonitor.open`, and other `xd.tools.core.*.open` surfaces.',
-  '- If the user asks in natural language for a supported local Desk operation, prefer the exact CR path rather than explaining how to do it manually.',
+  '- For Desk-control requests, discover or inspect the relevant Capability Registry path, then return an explicit fenced `xenesis-desk-action` block when an action is needed.',
+  '- Do not rely on a local keyword list, deterministic prompt catalog, or provider-specific shortcut. Use CR discovery, exact `xd.*` paths, and the approval policy exposed by the Capability Registry.',
   '',
   'Open a right-side terminal example:',
   '```xenesis-desk-action',
@@ -112,7 +112,7 @@ export const XENESIS_DESK_CONTROL_PROMPT_HINT_SECTIONS = [
     prefixes: XENESIS_DESK_CONTROL_PROMPT_HINT_DISCOVERY_PREFIXES.connectionCenter,
   },
   {
-    id: 'examples-and-natural-routing',
+    id: 'explicit-desk-action-examples',
     kind: 'static',
     lines: XENESIS_DESK_CONTROL_PROMPT_HINT_EXAMPLE_LINES,
   },

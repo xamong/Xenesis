@@ -19261,6 +19261,61 @@ Verification so far:
 - Next intended step:
   - Commit this slice.
 
+## Current Prompt Hint Natural Routing Wording Slice
+
+- Current objective:
+  - Remove remaining Xenesis Agent prompt-hint wording that still implies local
+    deterministic natural-language routing before the provider run.
+- Scope:
+  - Keep explicit fenced `xenesis-desk-action` CR DSL examples.
+  - Keep Capability Registry discovery guidance and concrete `xd.*` examples.
+  - Remove stale text such as `Common natural Desk requests map ... before the
+    LLM run` and the `examples-and-natural-routing` section id.
+- Plan:
+  - `docs/superpowers/plans/2026-06-29-prompt-hint-no-natural-routing.md`
+- Touched files so far:
+  - `handoff.md`
+  - `docs/superpowers/plans/2026-06-29-prompt-hint-no-natural-routing.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-prompt-hint-no-natural-routing.md`
+  - `src/shared/xenesisDeskControlPromptHintCatalog.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+- Commands run:
+  - Context reads for AGENTS, Obsidian rules/indexes, capability/Agent/runtime
+    module notes, cached OpenClaw/Hermes gap map, current prompt hint catalog,
+    and Agent Desk-control tests.
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> failed as expected because the built hint still contained
+    `Common natural Desk requests`.
+  - GREEN:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 11/11.
+  - Typecheck:
+    `npm run typecheck` -> passed.
+  - Focused Biome:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true src/shared/xenesisDeskControlPromptHintCatalog.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts --max-diagnostics 80`
+    -> passed.
+  - Source search:
+    `rg -n "Common natural Desk requests|before the LLM run|examples-and-natural-routing|natural-language routing|natural Desk routing" src packages`
+    -> no stale prompt-hint matches; remaining production match is the
+    provider system-context prohibition against a built-in routing table.
+  - Hygiene:
+    `git diff --check` -> passed; Git printed LF/CRLF normalization warnings
+    only.
+- Exact verification result:
+  - Worktree is clean at branch `agent/upcoming-work-20260627`.
+  - `src/shared/xenesisNaturalLanguage*.ts` modules are absent.
+  - The stale prompt hint in
+    `src/shared/xenesisDeskControlPromptHintCatalog.ts` no longer mentions
+    local Desk request mapping before the LLM run.
+  - The prompt hint now instructs providers to discover/inspect CR paths and
+    return explicit fenced `xenesis-desk-action` blocks when actions are needed.
+- Known gaps:
+  - No CR registry or dispatcher paths changed, so CR audit was not required.
+  - No live Electron Agent-pane smoke was run for this prompt text cleanup.
+- Next intended step:
+  - Run diff hygiene, then commit this slice.
+
 ## Latest Slice: Connection Center CR Action Result Feedback
 
 - Current objective:

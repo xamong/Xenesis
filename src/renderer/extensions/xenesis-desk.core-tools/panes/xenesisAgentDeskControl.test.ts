@@ -272,15 +272,23 @@ test('Desk action protocol helpers expose stable result semantics', () => {
 
 test('buildXenesisDeskControlPromptHint describes real CR paths without natural routing instructions', () => {
   const hint = buildXenesisDeskControlPromptHint();
+  const hintCatalogSource = readFileSync(
+    new URL('../../../../shared/xenesisDeskControlPromptHintCatalog.ts', import.meta.url),
+    'utf8',
+  );
 
   assert.match(hint, /xd\.panes\.settings\.open/);
-  assert.match(hint, /xd\.files\.listOpen/);
-  assert.match(hint, /xd\.capture\.activePane/);
-  assert.match(hint, /xd\.dock\.arrangeGrid/);
-  assert.match(hint, /xd\.tools\.core\.capabilityExplorer\.open/);
-  assert.match(hint, /xd\.terminals\.runMany/);
+  assert.match(hint, /xd\.views\.open/);
+  assert.match(hint, /xd\.automation\.workflow\.preview/);
+  assert.match(hint, /xd\.automation\.workflow\.run/);
+  assert.match(hint, /xd\.xenesis\.connections\.open/);
+  assert.match(hint, /xd\.dock\.panes\.list/);
   assert.match(hint, /xenesis-desk-action/);
   assert.doesNotMatch(hint, /natural-language|natural Desk routing/i);
+  assert.doesNotMatch(hint, /Common natural Desk requests/i);
+  assert.doesNotMatch(hint, /before the LLM run/i);
+  assert.doesNotMatch(hint, /pre-provider/i);
+  assert.doesNotMatch(hintCatalogSource, /examples-and-natural-routing/);
 });
 
 test('prompt hint dynamic path summaries stay tied to callable CR inventory', () => {
