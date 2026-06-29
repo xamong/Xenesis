@@ -1614,7 +1614,6 @@ function summarizeTraceRunReport(report: RunReport) {
     messageCount: report.messageCount,
     toolCallCount: report.toolCallCount,
     toolResultCount: report.toolResultCount,
-    ...(report.intent ? { intent: report.intent } : {}),
     ...(report.stages ? { stages: report.stages } : {}),
     ...(report.contextSources ? { contextSources: report.contextSources } : {}),
     ...(report.metrics ? { metrics: report.metrics } : {}),

@@ -1501,7 +1501,6 @@ function recommendationTargetFiles(area: CapabilityImprovementArea) {
       return [
         "src/core/agentCapabilityPolicy.ts",
         "src/core/adaptiveExecutionPolicy.ts",
-        "src/core/intentRouter.ts",
         "src/tools/index.ts",
         "src/evaluation/capabilityEval.ts"
       ];

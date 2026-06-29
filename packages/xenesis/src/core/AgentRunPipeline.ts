@@ -20,7 +20,6 @@ import { buildAgentRunner } from "./AgentRunnerBuilder.js";
 import { saveLatestPlan, type AgentRunMode } from "./AgentRuntimeFactory.js";
 import { mergeToolExecutionPolicies } from "./agentCapabilityPolicy.js";
 import type { AgentRunEvent, ApprovalDecision, ApprovalRequest, RunStageEvent, WorkflowRunSummary, WorkflowStepSummary } from "./events.js";
-import { classifyPromptIntent } from "./intentRouter.js";
 import { repairToolResultPairing, type AgentMessage, type AgentMessageAttachment } from "./messages.js";
 import type { ResumableRunState } from "./resume/ResumableRunState.js";
 import {
@@ -159,7 +158,6 @@ function shouldWriteSessionEvent(event: AgentRunEvent) {
 
 function isPublicPipelineEvent(event: AgentRunEvent) {
   return (
-    event.type !== "intent_route" &&
     event.type !== "context_source" &&
     event.type !== "run_stage" &&
     event.type !== "repair_decision" &&
@@ -168,17 +166,6 @@ function isPublicPipelineEvent(event: AgentRunEvent) {
     // but this guards any path that could route it to onEvent / result.events.
     event.type !== "run_snapshot"
   );
-}
-
-function withIntentCliOverride(
-  cli: CliConfigOverrides | undefined,
-  approvalMode: CliConfigOverrides["approvalMode"] | undefined
-): CliConfigOverrides | undefined {
-  if (!approvalMode || cli?.approvalMode !== undefined) return cli;
-  return {
-    ...(cli ?? {}),
-    approvalMode
-  };
 }
 
 function mergeOptionalGuard(
@@ -296,13 +283,11 @@ async function releaseInjectedAgentMessageClaims(
 
 export async function runAgentPipeline(options: AgentRunPipelineOptions): Promise<AgentRunPipelineResult> {
   const env = options.env ?? process.env;
-  const intentRoute = classifyPromptIntent(options.prompt, options.mode);
-  const effectiveCli = withIntentCliOverride(options.cli, options.mode ? undefined : intentRoute.approvalMode);
   const loadedConfig = await loadConfig({
     cwd: options.cwd,
     configPath: options.configPath,
     env,
-    cli: effectiveCli
+    cli: options.cli
   });
   const config = options.workspaceRoot
     ? { ...loadedConfig, workspace: options.workspaceRoot }
@@ -318,7 +303,7 @@ export async function runAgentPipeline(options: AgentRunPipelineOptions): Promis
       env
     }, configuredWorkflowHandlers(config.workflows));
   const prompt = configuredWorkflow?.prompt ?? options.prompt;
-  const effectiveMode = options.mode ?? configuredWorkflow?.pipeline.mode ?? intentRoute.mode;
+  const effectiveMode = options.mode ?? configuredWorkflow?.pipeline.mode;
   const systemMessages = [
     ...workflowSystemMessages(configuredWorkflow),
     ...(options.systemMessages ?? [])
@@ -359,13 +344,6 @@ export async function runAgentPipeline(options: AgentRunPipelineOptions): Promis
     onNotice: options.onNotice
   });
   options.onSessionWriter?.(built.sessionWriter, built.sessionId);
-  await emitPipelineEvent(built.sessionWriter, {
-    type: "intent_route",
-    intent: intentRoute.intent,
-    ...(intentRoute.mode ? { mode: intentRoute.mode } : {}),
-    ...(intentRoute.approvalMode ? { approvalMode: intentRoute.approvalMode } : {}),
-    reason: intentRoute.reason
-  }, options.onEvent);
   const workflowStepStartedAt = options.workflowStep?.startedAt ?? new Date().toISOString();
 
   if (options.workflowStep) {

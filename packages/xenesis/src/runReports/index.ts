@@ -6,7 +6,6 @@ import type { SessionLogRecord } from "../sessions/index.js";
 import type { VerificationReport, VerificationStatus } from "../verification/index.js";
 import type {
   ContextSourceEvent,
-  IntentRouteEvent,
   RunStageEvent,
   RunSelfReviewEvent,
   ToolChoiceAuditEvent,
@@ -59,7 +58,6 @@ export interface RunReportRepairRecord {
 export type RunReportWorkflowStep = Omit<WorkflowStepEvent, "type">;
 export type RunReportStage = Omit<RunStageEvent, "type">;
 export type RunReportContextSource = Omit<ContextSourceEvent, "type">;
-export type RunReportIntent = Omit<IntentRouteEvent, "type">;
 export type RunReportSelfReview = Omit<RunSelfReviewEvent, "type">;
 export type RunReportToolChoiceAudit = Omit<ToolChoiceAuditEvent, "type">;
 export type RunReportToolPolicyAudit = Omit<ToolPolicyAuditEvent, "type">;
@@ -119,7 +117,6 @@ export interface RunReportToolRecoverySummary {
 }
 
 export type RunReportDecisionKind =
-  | "intent"
   | "context"
   | "tool_choice"
   | "tool_policy"
@@ -190,7 +187,6 @@ export interface RunReport {
   workflowSteps?: RunReportWorkflowStep[];
   stages?: RunReportStage[];
   contextSources?: RunReportContextSource[];
-  intent?: RunReportIntent;
   toolChoice?: RunReportToolChoiceSummary;
   toolPolicyAudits?: RunReportToolPolicyAudit[];
   toolPolicy?: RunReportToolPolicySummary;
@@ -398,13 +394,6 @@ function summarizeContextSources(records: SessionLogRecord[]): RunReportContextS
   return Array.from(sources.values()).sort((left, right) => (
     `${left.source}:${left.name}`.localeCompare(`${right.source}:${right.name}`)
   ));
-}
-
-function latestIntent(records: SessionLogRecord[]): RunReportIntent | undefined {
-  const record = [...records].reverse().find((item) => item.type === "intent_route");
-  if (!record || record.type !== "intent_route") return undefined;
-  const { type: _type, sessionId: _sessionId, traceId: _traceId, timestamp: _timestamp, ...intent } = record;
-  return intent;
 }
 
 function summarizeToolChoiceAudits(records: SessionLogRecord[]): RunReportToolChoiceAudit[] {
@@ -719,7 +708,6 @@ function summarizeRepairDecisionTraces(records: SessionLogRecord[]): RunReportDe
 }
 
 function summarizeDecisionTrace(
-  intent: RunReportIntent | undefined,
   contextSources: RunReportContextSource[],
   toolChoice: RunReportToolChoiceSummary | undefined,
   toolPolicyAudits: RunReportToolPolicyAudit[],
@@ -728,16 +716,6 @@ function summarizeDecisionTrace(
   records: SessionLogRecord[]
 ): RunReportDecisionTraceEntry[] {
   const decisions: RunReportDecisionTraceEntry[] = [];
-
-  if (intent) {
-    decisions.push({
-      kind: "intent",
-      title: `Intent routed to ${intent.mode ?? intent.intent}`,
-      reason: intent.reason,
-      ...(intent.approvalMode ? { status: intent.approvalMode } : {}),
-      related: [intent.intent]
-    });
-  }
 
   for (const source of contextSources.filter((item) => item.injected)) {
     decisions.push({
@@ -1100,7 +1078,6 @@ export function buildRunReport(input: BuildRunReportInput): RunReport {
   const workflowSteps = summarizeWorkflowSteps(input.records);
   const stages = summarizeStages(input.records);
   const contextSources = summarizeContextSources(input.records);
-  const intent = latestIntent(input.records);
   const toolChoiceAudits = summarizeToolChoiceAudits(input.records);
   const toolChoice = summarizeToolChoice(toolChoiceAudits);
   const toolPolicyAudits = summarizeToolPolicyAudits(input.records);
@@ -1108,7 +1085,7 @@ export function buildRunReport(input: BuildRunReportInput): RunReport {
   const toolPolicy = summarizeToolPolicy(toolPolicySnapshots, toolPolicyAudits);
   const toolRecovery = summarizeToolRecovery(input.records);
   const handoffs = summarizeHandoffs(input.records);
-  const decisionTrace = summarizeDecisionTrace(intent, contextSources, toolChoice, toolPolicyAudits, toolRecovery, handoffs, input.records);
+  const decisionTrace = summarizeDecisionTrace(contextSources, toolChoice, toolPolicyAudits, toolRecovery, handoffs, input.records);
   const providerQuality = buildProviderQualityMetrics(input.records);
   const verification = input.verification ?? inferVerificationReportFromToolResults(input.records);
   const metrics = buildMetrics(
@@ -1148,7 +1125,6 @@ export function buildRunReport(input: BuildRunReportInput): RunReport {
     ...(workflowSteps.length > 0 ? { workflowSteps } : {}),
     ...(stages.length > 0 ? { stages } : {}),
     ...(contextSources.length > 0 ? { contextSources } : {}),
-    ...(intent ? { intent } : {}),
     ...(toolChoice ? { toolChoice } : {}),
     ...(toolPolicyAudits.length > 0 ? { toolPolicyAudits } : {}),
     ...(toolPolicy ? { toolPolicy } : {}),

@@ -46,8 +46,6 @@ export function renderEvent(event: AgentRunEvent): string {
       return "";
     case "context_source":
       return "";
-    case "intent_route":
-      return "";
     case "tool_call":
       return `tool: ${event.toolCall.name}`;
     case "tool_result_stored":

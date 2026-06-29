@@ -81,6 +81,91 @@ into a Desk-native, CR-first setup and connection experience.
   - Run broader focused Agent-pane tests, typechecks, focused Biome, and diff
     checks.
 
+## Current Slice: Remove Runtime Intent Router
+
+- Current objective:
+  - Remove the remaining package runtime prompt-intent router surface.
+  - Do not keep a prompt-taking `classifyPromptIntent` helper, `intent_route`
+    event, run-report intent summary, or public runtime contract entry.
+  - Preserve only explicit `mode` selection and workflow-configured mode.
+- Scope boundary:
+  - No natural-language routing, keyword matching, prompt classifiers, provider
+    shortcuts, or approval-mode overrides inferred from prompt text.
+  - Explicit slash/options and explicit `xenesis-desk-action` fenced CR payloads
+    remain separate structured protocols.
+- Source review so far:
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.ts`
+    is now only a re-export shim.
+  - `packages/xenesis/src/core/intentRouter.ts` no longer infers from keywords,
+    but it still accepts prompt text and feeds an `intent_route` session event.
+  - `runReports`, CLI event rendering, workflow client filtering, and
+    `PublicRuntimeContract` still carry `intent_route`.
+- Touched files so far:
+  - `handoff.md`
+  - `packages/xenesis/src/core/AgentRunPipeline.noHeuristicRouting.test.ts`
+  - `packages/xenesis/src/core/AgentRunPipeline.ts`
+  - `packages/xenesis/src/core/events.ts`
+  - `packages/xenesis/src/cli/renderEvents.ts`
+  - `packages/xenesis/src/workflows/runner.ts`
+  - `packages/xenesis/src/core/compat/PublicRuntimeContract.ts`
+  - `packages/xenesis/src/runReports/index.ts`
+  - `packages/xenesis/src/evaluation/capabilityFeedbackLoop.ts`
+  - `packages/xenesis/src/core/intentRouter.ts` (deleted)
+  - `packages/xenesis/src/core/intentRouter.test.ts` (deleted)
+  - `packages/xenesis/src/gateway/server.ts`
+- Verification so far:
+  - RED:
+    `npm --prefix packages/xenesis exec vitest run src/core/AgentRunPipeline.noHeuristicRouting.test.ts`
+    failed as expected because `src/core/intentRouter.ts` still existed.
+  - GREEN:
+    `npm --prefix packages/xenesis exec vitest run src/core/AgentRunPipeline.noHeuristicRouting.test.ts`
+    passed after removing the runtime prompt-intent router, `intent_route`
+    event/type, run-report intent summary, public contract entry, and stale
+    improvement target file reference.
+  - Source scan:
+    `rg -n "intent_route|intentRouter|classifyPromptIntent|IntentRouteEvent|AgentIntent|RunReportIntent" packages/xenesis/src packages/xenesis/tests -g "*.ts"`
+    now finds only the new guard test, not production code.
+  - RED:
+    Extended guard failed as expected after adding `report.intent`; it caught the
+    remaining `packages/xenesis/src/gateway/server.ts` trace-summary field.
+  - GREEN:
+    `npm --prefix packages/xenesis exec vitest run src/core/AgentRunPipeline.noHeuristicRouting.test.ts`
+    passed after removing the gateway `report.intent` summary field.
+  - GREEN:
+    `npm --prefix packages/xenesis exec vitest run src/core/AgentRunPipeline.noHeuristicRouting.test.ts src/core/AgentRunnerBuilder.test.ts src/core/AgentRuntimeFactory.modeMessages.test.ts src/providers/cliProvider.deskMcp.test.ts`
+    passed 4 files / 7 tests.
+  - GREEN:
+    `npm --prefix packages/xenesis run typecheck` passed.
+  - GREEN:
+    `npm run typecheck` passed.
+  - GREEN:
+    `npm --prefix packages/xenesis test` passed 81 files / 372 tests.
+  - GREEN:
+    `npm --prefix packages/xenesis run build` passed.
+  - GREEN:
+    `npm run build` passed, with existing Vite warnings about browser
+    externalization and dynamic/static import chunking.
+  - GREEN:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true packages/xenesis/src/core/AgentRunPipeline.noHeuristicRouting.test.ts`
+    passed for the new guard test.
+  - Known verification gap:
+    Scoped Biome over all touched package files failed because existing package
+    files still have formatter churn and unrelated diagnostics such as
+    `useConst`, unused helpers/imports, and optional-chain suggestions. This
+    slice did not reformat those existing files to avoid unrelated churn.
+  - Source scan:
+    `rg -n "intent_route|intentRouter|classifyPromptIntent|IntentRouteEvent|AgentIntent|RunReportIntent|report\\.intent" packages/xenesis/src -g "*.ts" -g "!*.test.ts"`
+    returned no production matches.
+  - GREEN:
+    Final `npm --prefix packages/xenesis exec vitest run src/core/AgentRunPipeline.noHeuristicRouting.test.ts`
+    passed.
+  - GREEN:
+    Final `npm --prefix packages/xenesis run typecheck` passed.
+  - GREEN:
+    Final `git diff --check` exited 0 with LF/CRLF normalization warnings only.
+- Next intended step:
+  - Commit this runtime intent-router removal slice.
+
 ## Current Slice: Onboarding Workflow Preview
 
 - Current objective:

@@ -91,7 +91,6 @@ export function workflowSteps(workflow: WorkflowSelection) {
 
 export function isWorkflowClientEvent(event: AgentRunEvent) {
   return (
-    event.type !== "intent_route" &&
     event.type !== "context_source" &&
     event.type !== "run_stage" &&
     event.type !== "repair_decision"

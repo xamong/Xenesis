@@ -172,26 +172,6 @@ export type ContextSourceEvent = {
   droppedReason?: "expired" | "conflict_replaced" | "token_budget";
 };
 
-export type AgentIntent =
-  | "default"
-  | "analyze"
-  | "explain"
-  | "propose"
-  | "plan"
-  | "work"
-  | "debug"
-  | "refactor"
-  | "long_task"
-  | "research";
-
-export type IntentRouteEvent = {
-  type: "intent_route";
-  intent: AgentIntent;
-  mode?: "plan" | "work";
-  approvalMode?: "safe" | "auto" | "readonly";
-  reason: string;
-};
-
 export type ToolCallEvent = {
   type: "tool_call";
   toolCall: ToolCall;
@@ -405,7 +385,6 @@ export type SessionEvent =
   | WorkflowStepEvent
   | RunStageEvent
   | ContextSourceEvent
-  | IntentRouteEvent
   | ToolCallEvent
   | ToolPolicySnapshotEvent
   | ToolChoiceAuditEvent

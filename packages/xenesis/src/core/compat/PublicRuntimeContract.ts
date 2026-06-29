@@ -74,7 +74,6 @@ const publicRuntimeContractSnapshot = {
     "workflow_step",
     "run_stage",
     "context_source",
-    "intent_route",
     "tool_call",
     "tool_policy_snapshot",
     "tool_choice_audit",
