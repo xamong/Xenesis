@@ -42,6 +42,7 @@ into a Desk-native, CR-first setup and connection experience.
 - Commands run:
   - `Test-Path docs\superpowers\plans`
   - `git status --short`
+  - `git rev-parse --show-toplevel; git branch --show-current; git status --short`
   - `rg -n "docs/superpowers|superpowers/plans|plans/" .gitignore .git/info/exclude`
   - `Get-Content -Path "docs\obsidian\Xenesis-desk\80_AI\Working Notes\2026-06-29-slice-spec-01-live-cr-baseline.md" -TotalCount 260`
   - `Get-Content -Path scripts\xenesisConnectionCenterLiveSmoke.mjs -TotalCount 260`
@@ -54,16 +55,26 @@ into a Desk-native, CR-first setup and connection experience.
   - Marker scan over
     `docs\superpowers\plans\2026-06-29-slice-01-live-cr-baseline.md` for open
     planning phrases.
+  - `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs`
+  - `node --test scripts\xenesisReviewRequestApprovalLiveSmoke.test.mjs`
+  - `node --test src\main\mcpActionInbox.test.mjs`
 - Exact verification result:
   - Wrote `docs/superpowers/plans/2026-06-29-slice-01-live-cr-baseline.md`
     with the required `superpowers:writing-plans` header, exact file list,
     task-by-task tests, implementation snippets, commands, expected output,
     and final live smoke gates.
+  - Confirmed execution workspace is
+    `E:/xenesis-original/xenesis-desk/.worktrees/upcoming-work-20260627` on
+    branch `agent/upcoming-work-20260627`.
   - Confirmed `.gitignore` ignores `docs/superpowers/`; the plan remains a
     local plan artifact unless force-added during execution.
   - Updated the tracked Obsidian Slice 1 plan note to point at the new Slice 01
     implementation plan and its stricter verification set.
   - Open-planning marker scan over the new plan produced no matches.
+  - Baseline focused tests passed:
+    `scripts\xenesisConnectionCenterLiveSmoke.test.mjs` 4/4,
+    `scripts\xenesisReviewRequestApprovalLiveSmoke.test.mjs` 7/7, and
+    `src\main\mcpActionInbox.test.mjs` 1/1.
 - Known gaps:
   - This turn wrote the implementation plan only. Product code, focused tests,
     CR audit, audit-zero assertion, typecheck, build, and live Electron smokes
