@@ -1,5 +1,44 @@
 # Xenesis Desk Work Handoff
 
+## Current Slice: Slice 01 Live CR Baseline - Task 3 Review Fix
+
+- Current objective:
+  - Address code quality review finding for Task 3 from `docs/superpowers/plans/2026-06-29-slice-01-live-cr-baseline.md`.
+  - Prevent `buildReviewRequestApprovalLiveSmokeReport()` callers from overriding invariant proof metadata through `extra`.
+  - Keep runtime approval behavior, prompt submission flow, Action Inbox matching, provider behavior, and natural-language routing unchanged.
+- Scope boundary:
+  - Owned files only: `scripts/xenesisReviewRequestApprovalLiveSmoke.mjs`, `scripts/xenesisReviewRequestApprovalLiveSmoke.test.mjs`, and `handoff.md`.
+  - No deterministic natural-language routing, keyword catalogs, prompt routers, provider-specific CR shortcuts, mock fallbacks, chat-only approvals, or web browsing.
+- Review finding:
+  - `buildReviewRequestApprovalLiveSmokeReport()` currently sets `proofType` and `providerNaturalLanguageToolSelectionProof`, then spreads `...extra` afterward.
+  - A caller can override invariant proof metadata by passing `extra` such as `{ proofType: 'wrong', providerNaturalLanguageToolSelectionProof: true }`.
+- Touched files so far:
+  - `handoff.md`
+- Commands run:
+  - `git status --short`: PASS, no output before review-fix edits.
+  - `Get-Content -Raw scripts\xenesisReviewRequestApprovalLiveSmoke.test.mjs`: PASS.
+  - `Get-Content -Raw scripts\xenesisReviewRequestApprovalLiveSmoke.mjs`: PASS.
+  - `node --test scripts\xenesisReviewRequestApprovalLiveSmoke.test.mjs`: FAIL as RED, 8/9 passed; new regression failed because actual `report.proofType` was `provider-natural-language-tool-selection` instead of `structured-cr-approval-regression`.
+  - `node --test scripts\xenesisReviewRequestApprovalLiveSmoke.test.mjs`: PASS, 9/9 tests after moving `...extra` before invariant proof metadata.
+  - Final `node --test scripts\xenesisReviewRequestApprovalLiveSmoke.test.mjs`: PASS, 9/9 tests.
+  - `git diff --check`: PASS; Git printed LF/CRLF normalization warnings for `handoff.md`, `scripts/xenesisReviewRequestApprovalLiveSmoke.mjs`, and `scripts/xenesisReviewRequestApprovalLiveSmoke.test.mjs`.
+  - `git status --short`: PASS, showed only owned Task 3 review-fix files:
+    `handoff.md`, `scripts/xenesisReviewRequestApprovalLiveSmoke.mjs`, and `scripts/xenesisReviewRequestApprovalLiveSmoke.test.mjs`.
+  - Post-handoff `node --test scripts\xenesisReviewRequestApprovalLiveSmoke.test.mjs`: PASS, 9/9 tests.
+  - Post-handoff `git diff --check`: PASS; Git printed LF/CRLF normalization warnings for the three owned Task 3 review-fix files.
+  - Post-handoff `git status --short`: PASS, showed only owned Task 3 review-fix files:
+    `handoff.md`, `scripts/xenesisReviewRequestApprovalLiveSmoke.mjs`, and `scripts/xenesisReviewRequestApprovalLiveSmoke.test.mjs`.
+- Exact verification result:
+  - Confirmed current implementation spreads `...extra` after proof metadata, so invariant report fields are overrideable.
+  - RED regression proves attempted `extra` override can change proof metadata before the implementation fix.
+  - Implemented report construction with `...extra` before `proofType` and `providerNaturalLanguageToolSelectionProof`.
+  - The regression confirms attempted `extra` override leaves `proofType` as `structured-cr-approval-regression` and `providerNaturalLanguageToolSelectionProof` as `false`, while unrelated extra fields remain present.
+  - Required focused test, diff check, and status check passed after implementation.
+- Known gaps:
+  - This smoke remains fenced action / structured CR approval regression only and does not prove provider natural-language CR tool selection.
+- Next intended step:
+  - Commit the review fix as `Protect review approval proof metadata`.
+
 ## Current Slice: Slice 01 Live CR Baseline - Task 3 Review-Request Approval Scope Label
 
 - Current objective:

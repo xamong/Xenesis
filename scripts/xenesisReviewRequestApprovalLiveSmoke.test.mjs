@@ -320,3 +320,19 @@ test('review request approval live smoke report summarizes all checks', () => {
   assert.equal(report.providerNaturalLanguageToolSelectionProof, false);
   assert.equal(report.checks[1].error, 'missing review item');
 });
+
+test('review request approval live smoke report proof metadata cannot be overridden by extra fields', () => {
+  const report = buildReviewRequestApprovalLiveSmokeReport(
+    [{ id: 'agent-open', ok: true }],
+    new Date('2026-06-29T00:00:00.000Z'),
+    {
+      proofType: 'provider-natural-language-tool-selection',
+      providerNaturalLanguageToolSelectionProof: true,
+      extraField: 'kept',
+    },
+  );
+
+  assert.equal(report.proofType, 'structured-cr-approval-regression');
+  assert.equal(report.providerNaturalLanguageToolSelectionProof, false);
+  assert.equal(report.extraField, 'kept');
+});

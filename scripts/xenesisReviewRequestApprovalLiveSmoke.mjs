@@ -134,6 +134,7 @@ export function buildReviewRequestApprovalLiveSmokeReport(checks, startedAt = ne
 
   return {
     ok: failed === 0,
+    ...extra,
     proofType: REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_PROOF_TYPE,
     providerNaturalLanguageToolSelectionProof: REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_NATURAL_LANGUAGE_TOOL_SELECTION_PROOF,
     createdAt: startedAt.toISOString(),
@@ -143,7 +144,6 @@ export function buildReviewRequestApprovalLiveSmokeReport(checks, startedAt = ne
       failed,
     },
     checks: normalizedChecks,
-    ...extra,
   };
 }
 
