@@ -7,6 +7,77 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current Slice: Provider Desk MCP Prompt Smoke
+
+- Current objective:
+  - Add repeatable provider-package evidence that a natural Desk-control prompt
+    reaches the configured provider with Desk CR MCP discovery/call guidance,
+    without reintroducing deterministic natural-language routing.
+- Rationale:
+  - The renderer/shared natural Desk router and provider natural intent catalog
+    have been removed. The remaining verification gap is proving natural prompts
+    proceed into the provider path with CR/MCP tooling available.
+  - A package-level provider prompt smoke can prove the provider input contract
+    without real Codex/Claude credentials by using `CodexCliProvider` with a
+    fake runner and real Desk MCP auto-config environment.
+- Plan:
+  - `docs/superpowers/plans/2026-06-29-provider-desk-mcp-prompt-smoke.md`
+- Touched files so far:
+  - `handoff.md`
+  - `docs/superpowers/plans/2026-06-29-provider-desk-mcp-prompt-smoke.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-provider-desk-mcp-prompt-smoke.md`
+  - `packages/xenesis/package.json`
+  - `packages/xenesis/scripts/provider-desk-mcp-prompt-smoke.mjs`
+  - `packages/xenesis/scripts/provider-desk-mcp-prompt-smoke.test.mjs`
+- Commands run:
+  - `git status --short --branch` -> clean on `agent/upcoming-work-20260627`.
+  - Context reads for provider prompt tests, `CodexCliProvider`, Desk MCP
+    auto-config, provider metadata, and existing live smoke scripts.
+  - RED:
+    `node --test packages/xenesis/scripts/provider-desk-mcp-prompt-smoke.test.mjs`
+    -> failed as expected because `provider:desk-mcp-prompt-smoke` does not
+    exist yet.
+  - GREEN:
+    `node --test packages/xenesis/scripts/provider-desk-mcp-prompt-smoke.test.mjs`
+    -> passed 1/1 after adding the package script and smoke implementation.
+  - Direct smoke:
+    `npm --prefix packages/xenesis run provider:desk-mcp-prompt-smoke` ->
+    passed with JSON `ok=true`, 6/6 checks:
+    `stdin-natural-prompt`, `stdin-cr-mcp-tools`,
+    `stdin-no-deterministic-natural-catalog`, `args-mcp-configured`,
+    `metadata-mcp-configured`, and `response-provider-metadata`.
+  - Package typecheck:
+    `npm --prefix packages/xenesis run typecheck` -> passed.
+  - Package tests:
+    `npm --prefix packages/xenesis test` -> passed 367/367 across 79 files.
+  - Root typecheck:
+    `npm run typecheck` -> passed.
+  - Focused Biome:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true packages/xenesis/scripts/provider-desk-mcp-prompt-smoke.mjs packages/xenesis/scripts/provider-desk-mcp-prompt-smoke.test.mjs`
+    -> passed.
+  - Focused Biome with package JSON formatter disabled:
+    `npx biome check --formatter-enabled=false --linter-enabled=true --assist-enabled=true packages/xenesis/package.json packages/xenesis/scripts/provider-desk-mcp-prompt-smoke.mjs packages/xenesis/scripts/provider-desk-mcp-prompt-smoke.test.mjs`
+    -> passed. Formatter was disabled for `packages/xenesis/package.json` to
+    avoid whole-file line-ending churn.
+  - Provider smoke default:
+    `npm --prefix packages/xenesis run provider:smoke` -> failed before live
+    provider execution because default `provider=openai` requires
+    `OPENAI_API_KEY`.
+  - Provider smoke mock:
+    `$env:XENESIS_PROVIDER = 'mock'; npm --prefix packages/xenesis run provider:smoke`
+    -> passed 6/6.
+- Implemented:
+  - Added `provider:desk-mcp-prompt-smoke` package script.
+  - Added `provider-desk-mcp-prompt-smoke.mjs`, which builds the package,
+    instantiates `CodexCliProvider` with Desk MCP auto-config and a fake runner,
+    submits `노션 연결 상태를 확인해줘`, and checks provider stdin/args/metadata.
+  - Added a node regression test for the smoke script.
+- Known gaps:
+  - This is provider-boundary evidence, not full Electron Agent-pane live
+    evidence. It proves the natural prompt and CR MCP tool instructions reach
+    the provider input with deterministic catalogs absent; it does not prove a
+    real provider actually chose to call the MCP tool in a live Agent-pane turn.
+
 ## Current Slice: Provider Smoke Gateway Auth
 
 - Current objective:
