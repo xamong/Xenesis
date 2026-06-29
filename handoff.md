@@ -7,6 +7,70 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current Slice: Reference-Driven Final Goal Slice Spec
+
+- Current objective:
+  - Write a master slice/spec plan for the remaining final-goal work.
+  - Treat `F:\agent-anal` as the local reference source for OpenClaw/Hermes
+    patterns; each implementation slice must read the relevant analysis docs and
+    then confirm the needed original source modules before coding.
+  - Keep slices large enough to reduce cycle overhead, but concrete enough to
+    define files, CR paths, live evidence, tests, and rejection rules.
+- Scope boundary:
+  - This is a planning/spec slice only; no product code changes.
+  - No external web browsing.
+  - No deterministic natural-language routing, keyword catalogs, provider
+    shortcuts, or chat-only approval flows may be reintroduced by the spec.
+- Touched files:
+  - `handoff.md`
+  - `docs/superpowers/plans/2026-06-29-xenesis-reference-driven-final-goal-slices.md`
+    (local planning artifact; ignored by `.gitignore`)
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-reference-driven-final-goal-slices.md`
+- Source review:
+  - `F:\agent-anal\analysis\_xenesis-gap-shared-context.md`
+  - `F:\agent-anal\analysis\xenesis-gaps-vs-references.ko.md`
+  - `F:\agent-anal\analysis\openclaw-main\12-channels-routing.md`
+  - `F:\agent-anal\analysis\hermes-agent-main\08-channels-ui.md`
+  - Verified original reference paths exist:
+    `F:\agent-anal\openclaw-main\src\routing\resolve-route.ts`,
+    `F:\agent-anal\openclaw-main\src\routing\session-key.ts`,
+    `F:\agent-anal\openclaw-main\src\channels\allowlist-match.ts`,
+    `F:\agent-anal\openclaw-main\extensions\telegram\src\conversation-route.ts`,
+    `F:\agent-anal\hermes-agent-main\tui_gateway\server.py`,
+    `F:\agent-anal\hermes-agent-main\tui_gateway\ws.py`,
+    `F:\agent-anal\hermes-agent-main\apps\desktop\electron\main.cjs`.
+- Commands run:
+  - `rg --files F:\agent-anal\openclaw-main | rg "src[\\/](routing|channels)[\\/]|extensions[\\/](telegram|discord)[\\/]src[\\/]" | Select-Object -First 80`
+  - `rg --files F:\agent-anal\hermes-agent-main | rg "tui_gateway[\\/]|apps[\\/]desktop[\\/]electron[\\/]|apps[\\/]desktop[\\/]src[\\/]app[\\/]gateway[\\/]|gateway[\\/]" | Select-Object -First 80`
+  - `rg -n "F:\\agent-anal\\(openclaw-main|hermes-agent-main)\\\.\.\.|placeholder|TBD|TODO|fill in|implement later|Similar to Task" docs\superpowers\plans\2026-06-29-xenesis-reference-driven-final-goal-slices.md`
+  - `Test-Path` readback for the plan file and the concrete OpenClaw/Hermes
+    reference source files listed above.
+  - `git check-ignore -v docs\superpowers\plans\2026-06-29-xenesis-reference-driven-final-goal-slices.md`
+- Exact verification result:
+  - Master slice/spec plan was written at
+    `docs/superpowers/plans/2026-06-29-xenesis-reference-driven-final-goal-slices.md`.
+  - Obsidian graph pointer note was written at
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-reference-driven-final-goal-slices.md`.
+  - The plan defines six large slices: live CR baseline/reference adoption map,
+    provider/first-run onboarding, external tool MCP/OAuth connection,
+    external messenger/channel end-to-end, user-story guide workflows, and
+    Obsidian/release hardening.
+  - Open-ended text scan produced no matches after replacing loose reference
+    root entries with concrete source files.
+  - `Test-Path` returned `True` for the plan and all listed OpenClaw/Hermes
+    source reference paths.
+  - `git check-ignore` confirmed `docs/superpowers/` is ignored by
+    `.gitignore`, so the plan is a local planning artifact unless intentionally
+    force-added later.
+- Known gaps:
+  - This slice changed planning docs only; no product code, tests, CR audit, or
+    live Agent smoke were run.
+  - The local plan is not tracked by Git by default because
+    `docs/superpowers/` is ignored.
+- Next intended step:
+  - Start Slice 1 from the plan: live CR baseline and reference adoption map,
+    then create the per-slice implementation plan before product code edits.
+
 ## Current Slice: Remove Remaining Agent Prompt Heuristics
 
 - Current objective:
