@@ -1,5 +1,63 @@
 # Xenesis Desk Work Handoff
 
+## Current Slice: Slice 01 Live CR Baseline - Task 3 Review-Request Approval Scope Label
+
+- Current objective:
+  - Implement Task 3 from `docs/superpowers/plans/2026-06-29-slice-01-live-cr-baseline.md`.
+  - Label the review-request approval smoke as a structured CR approval regression only.
+  - Add tests proving the smoke does not claim provider natural-language CR tool-selection proof.
+  - Keep approval runtime behavior, prompt submission flow, Action Inbox matching, and provider behavior unchanged.
+- Scope boundary:
+  - Owned files only: `scripts/xenesisReviewRequestApprovalLiveSmoke.mjs`, `scripts/xenesisReviewRequestApprovalLiveSmoke.test.mjs`, and `handoff.md`.
+  - No deterministic natural-language routing, keyword catalogs, prompt routers, provider-specific CR shortcuts, mock fallbacks, chat-only approvals, or web browsing.
+- Touched files so far:
+  - `handoff.md`
+- Commands run:
+  - `Get-Content -Raw AGENTS.md`: PASS.
+  - `Get-Content -Raw docs\superpowers\plans\2026-06-29-slice-01-live-cr-baseline.md`: PASS.
+  - `Get-Content -Raw docs\obsidian\Xenesis-desk.md`: PASS.
+  - `Get-Content -Raw "docs\obsidian\00_System\AI Agent Rules.md"`: FAIL, note lives under `docs\obsidian\Xenesis-desk\00_System`.
+  - `Get-Content -Raw "docs\obsidian\00_System\Graph Schema.md"`: FAIL, note lives under `docs\obsidian\Xenesis-desk\00_System`.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\00_System\AI Agent Rules.md"`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\00_System\Graph Schema.md"`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\00_System\Review Policy.md"`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\10_Repo Map\Source of Truth Map.md"`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\10_Repo Map\Repo Overview.md"`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\_Indexes\Module Index.md"`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\_Indexes\Verification Map.md"`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\30_Modules\module-approval-system.md"`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\30_Modules\module-xenesis-agent-pane.md"`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\20_Architecture\Approval Flow.md"`: PASS.
+  - `Get-Content -Raw scripts\xenesisReviewRequestApprovalLiveSmoke.mjs`: PASS.
+  - `Get-Content -Raw scripts\xenesisReviewRequestApprovalLiveSmoke.test.mjs`: PASS.
+  - `Get-Content -Raw handoff.md`: PASS.
+  - `git status --short`: PASS, no output.
+  - `node --test scripts\xenesisReviewRequestApprovalLiveSmoke.test.mjs`: FAIL as RED, requested module does not provide export `REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_NATURAL_LANGUAGE_TOOL_SELECTION_PROOF`.
+  - `node --test scripts\xenesisReviewRequestApprovalLiveSmoke.test.mjs`: PASS, 8/8 tests.
+  - Final `node --test scripts\xenesisReviewRequestApprovalLiveSmoke.test.mjs`: PASS, 8/8 tests.
+  - `git diff --check`: PASS; Git printed LF/CRLF normalization warnings for `handoff.md`, `scripts/xenesisReviewRequestApprovalLiveSmoke.mjs`, and `scripts/xenesisReviewRequestApprovalLiveSmoke.test.mjs`.
+  - `git status --short`: PASS, showed only owned Task 3 files:
+    `handoff.md`, `scripts/xenesisReviewRequestApprovalLiveSmoke.mjs`, and `scripts/xenesisReviewRequestApprovalLiveSmoke.test.mjs`.
+  - Post-handoff `node --test scripts\xenesisReviewRequestApprovalLiveSmoke.test.mjs`: PASS, 8/8 tests.
+  - Post-handoff `git diff --check`: PASS; Git printed LF/CRLF normalization warnings for the three owned Task 3 files.
+  - Post-handoff `git status --short`: PASS, showed only owned Task 3 files:
+    `handoff.md`, `scripts/xenesisReviewRequestApprovalLiveSmoke.mjs`, and `scripts/xenesisReviewRequestApprovalLiveSmoke.test.mjs`.
+- Exact verification result:
+  - Context read completed before test or implementation edits.
+  - Found current review-request approval smoke already uses fenced `xenesis-desk-action` prompts, `approved=false`, `approvalAction: once`, and real Action Inbox readback checks.
+  - Found proof-scope constants and report metadata are not yet present.
+  - RED test confirms the proof-scope constants are missing before implementation.
+  - Implemented `REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_PROOF_TYPE` as `structured-cr-approval-regression`.
+  - Implemented `REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_NATURAL_LANGUAGE_TOOL_SELECTION_PROOF` as `false`.
+  - Updated `formatReviewRequestApprovalLiveSmokePlan()` with proof type, provider natural-language CR tool-selection proof `false`, and structured action scope text.
+  - Updated `buildReviewRequestApprovalLiveSmokeReport()` to include `proofType` and `providerNaturalLanguageToolSelectionProof` before spreading `extra`.
+  - Focused review-request approval smoke tests pass after implementation.
+  - Required final test, diff check, and status check passed; only owned Task 3 files are modified.
+- Known gaps:
+  - This Task 3 smoke remains fenced action / structured CR approval regression only and does not prove provider natural-language CR tool selection.
+- Next intended step:
+  - Commit Task 3 changes as `Label review approval smoke proof scope`.
+
 ## Current Slice: Slice 01 Live CR Baseline - Task 2 Connection Center Reference Baseline Contract
 
 - Current objective:

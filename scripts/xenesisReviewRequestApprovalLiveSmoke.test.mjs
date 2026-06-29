@@ -11,10 +11,18 @@ import {
   REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_ACTION_INBOX_LIST_REQUEST,
   REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_APP_READY_SELECTOR,
   REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_CASES,
+  REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_NATURAL_LANGUAGE_TOOL_SELECTION_PROOF,
   REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_OPEN_REQUEST,
+  REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_PROOF_TYPE,
   REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_SOURCE,
   REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_SUBMIT_PATH,
 } from './xenesisReviewRequestApprovalLiveSmoke.mjs';
+
+function extractDeskActionPayload(prompt) {
+  const match = String(prompt).match(/```xenesis-desk-action\r?\n([\s\S]*?)\r?\n```/);
+  assert.ok(match, 'expected fenced xenesis-desk-action block');
+  return JSON.parse(match[1]);
+}
 
 test('review request approval live smoke describes one safe mutating case', () => {
   assert.equal(REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_SOURCE, 'xenesis-review-request-approval-live-smoke');
@@ -72,6 +80,29 @@ test('review request approval live smoke describes one safe mutating case', () =
       },
     },
   ]);
+});
+
+test('review request approval live smoke labels structured CR approval proof scope', () => {
+  assert.equal(REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_PROOF_TYPE, 'structured-cr-approval-regression');
+  assert.equal(REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_NATURAL_LANGUAGE_TOOL_SELECTION_PROOF, false);
+
+  const plan = formatReviewRequestApprovalLiveSmokePlan();
+  assert.match(plan, /Proof type: structured-cr-approval-regression/);
+  assert.match(plan, /Provider natural-language CR tool-selection proof: false/);
+  assert.match(
+    plan,
+    /Structured action scope: fenced xenesis-desk-action blocks plus real Action Inbox readback/,
+  );
+  assert.doesNotMatch(plan, /provider reasoning proof: true/i);
+
+  for (const smokeCase of REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_CASES) {
+    const payload = extractDeskActionPayload(smokeCase.requestPrompt);
+    assert.equal(payload.path, smokeCase.expectedRequestPath);
+    assert.equal(payload.approved, false);
+    assert.equal(smokeCase.approvalAction, 'once');
+    assert.equal(smokeCase.expectedCapabilityApprovalItem.kind, 'capability-approval');
+    assert.equal(smokeCase.expectedCapabilityApprovalItem.status, 'pending');
+  }
 });
 
 test('review request approval live smoke builds request and approval submit calls', () => {
@@ -285,5 +316,7 @@ test('review request approval live smoke report summarizes all checks', () => {
   assert.equal(report.summary.total, 2);
   assert.equal(report.summary.passed, 1);
   assert.equal(report.summary.failed, 1);
+  assert.equal(report.proofType, 'structured-cr-approval-regression');
+  assert.equal(report.providerNaturalLanguageToolSelectionProof, false);
   assert.equal(report.checks[1].error, 'missing review item');
 });

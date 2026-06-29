@@ -11,6 +11,8 @@ export const REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_TIMEOUT_MS = 30000;
 export const REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_APP_READY_SELECTOR = '.btn-settings';
 export const REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_SOURCE = 'xenesis-review-request-approval-live-smoke';
 export const REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_SUBMIT_PATH = 'xd.testing.xenesisAgent.submitPrompt';
+export const REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_PROOF_TYPE = 'structured-cr-approval-regression';
+export const REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_NATURAL_LANGUAGE_TOOL_SELECTION_PROOF = false;
 
 export const REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_OPEN_REQUEST = {
   path: 'xd.tools.core.xenesisAgent.open',
@@ -97,6 +99,9 @@ export function buildReviewRequestApprovalLiveSmokeEnv(baseEnv, xenisHome, userD
 export function formatReviewRequestApprovalLiveSmokePlan() {
   const lines = [
     'Xenesis review-request approval live smoke plan',
+    `Proof type: ${REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_PROOF_TYPE}`,
+    `Provider natural-language CR tool-selection proof: ${REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_NATURAL_LANGUAGE_TOOL_SELECTION_PROOF}`,
+    'Structured action scope: fenced xenesis-desk-action blocks plus real Action Inbox readback',
     `CR open path: ${REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_OPEN_REQUEST.path}`,
     `CR submit path: ${REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_SUBMIT_PATH}`,
     `CR Action Inbox list path: ${REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_ACTION_INBOX_LIST_REQUEST.path}`,
@@ -129,6 +134,8 @@ export function buildReviewRequestApprovalLiveSmokeReport(checks, startedAt = ne
 
   return {
     ok: failed === 0,
+    proofType: REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_PROOF_TYPE,
+    providerNaturalLanguageToolSelectionProof: REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_NATURAL_LANGUAGE_TOOL_SELECTION_PROOF,
     createdAt: startedAt.toISOString(),
     summary: {
       total: normalizedChecks.length,
