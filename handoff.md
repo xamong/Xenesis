@@ -7,6 +7,88 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Latest Slice: Shared Provider And Target Natural Rule Wrappers
+
+- Current objective:
+  - Move remaining provider/connection-target natural action rule selection out
+    of `src/shared/xenesisNaturalLanguageActionResolvers.ts` and into named
+    shared capability catalog wrapper helpers.
+- Scope:
+  - Add RED tests requiring shared helpers for provider status/open/review/apply
+    and connection-target status/open/review/apply/test/setup-packet actions.
+  - Add source guards that block direct provider/target rule imports and generic
+    provider/target rule-action helper imports in the natural resolver.
+  - Keep resolver responsible for intent gates, target discovery, and view
+    section selection only.
+  - Preserve existing provider setup, connection target open/status, approval
+    request, apply, and channel test natural prompt payloads.
+- Touched files so far:
+  - `handoff.md`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `src/shared/xenesisNaturalLanguageActionResolvers.ts`
+  - `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-shared-provider-target-natural-rule-wrappers.md`
+- Intended RED tests:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    should fail because the named provider/target wrapper helpers do not exist
+    and the resolver still imports those rule sets directly.
+- Verification status:
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> failed 52/54 as expected because the named provider/target wrapper
+    helpers are not exported yet and the natural resolver still imports the
+    provider/target rule sets directly.
+  - GREEN focused:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 54/54 after adding named provider/target wrapper helpers and
+    delegating provider status/open/review/apply plus connection target
+    status/open/review/apply/test/setup-packet action construction from the
+    resolver to the capability catalog.
+  - Focused Biome write:
+    `npx biome check --write --formatter-enabled=true --linter-enabled=true --assist-enabled=true src/shared/xenesisNaturalLanguageCapabilityCatalog.ts src/shared/xenesisNaturalLanguageActionResolvers.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+    -> passed; fixed two files.
+  - Focused post-format source/test recheck:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 54/54.
+  - Typecheck:
+    `npm run typecheck` -> passed.
+  - Smoke fixture:
+    `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` ->
+    passed 6/6.
+  - Focused post-format Biome check:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true src/shared/xenesisNaturalLanguageCapabilityCatalog.ts src/shared/xenesisNaturalLanguageActionResolvers.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+    -> passed.
+  - CR audit:
+    `npm run docs:capabilities:audit` -> passed; generated audit summary
+    remained 796 nodes and 689 coverage path references.
+  - CR audit counter readback:
+    `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> all 0.
+  - Build:
+    `npm run build` -> passed. Existing Vite warnings about browser
+    externalization/dynamic import chunking were printed.
+  - Live natural Desk routing smoke:
+    `npm run smoke:xenesis:natural-desk-routing` -> passed 261/261.
+- Implemented:
+  - Added shared provider action helpers for status, open, review request, and
+    profile draft apply in
+    `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`.
+  - Added shared connection-target action helpers for status, open, OAuth setup
+    packet, MCP install draft apply, channel profile draft apply, channel test,
+    connection setup apply, and review request.
+  - Removed direct provider/target rule imports and generic provider/target
+    rule-action helper imports from
+    `src/shared/xenesisNaturalLanguageActionResolvers.ts`.
+  - Updated source-ownership and direct helper behavior tests in
+    `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`.
+- Known gaps:
+  - Full repo lint/public-release known gaps remain unchanged.
+- Documentation:
+  - Added Obsidian working note
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-shared-provider-target-natural-rule-wrappers.md`.
+- Next intended step:
+  - Run final diff hygiene, stage this slice only, and commit it.
+
 ## Latest Slice: Shared Runtime Dynamic Natural Actions
 
 - Current objective:

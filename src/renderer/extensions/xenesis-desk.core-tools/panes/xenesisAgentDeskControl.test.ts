@@ -23,14 +23,26 @@ import {
   buildXenesisNaturalUserStoryWorkflowPreviewAction,
   findXenesisNaturalAgentReadbackAction,
   findXenesisNaturalAgentSubmitAction,
+  findXenesisNaturalChannelProfileDraftApplyAction,
+  findXenesisNaturalChannelTestAction,
   findXenesisNaturalConnectionCenterAggregateOpenAction,
+  findXenesisNaturalConnectionSetupApplyAction,
+  findXenesisNaturalConnectionTargetOpenAction,
+  findXenesisNaturalConnectionTargetStatusAction,
   findXenesisNaturalGuideOpenAction,
   findXenesisNaturalGuideStatusAction,
+  findXenesisNaturalMcpInstallDraftApplyAction,
   findXenesisNaturalMessengerAggregateStatusAction,
   findXenesisNaturalMessengerProfileDraftAggregateStatusAction,
+  findXenesisNaturalOAuthSetupPacketAction,
   findXenesisNaturalOnboardingOpenAction,
   findXenesisNaturalOnboardingStatusAction,
   findXenesisNaturalProviderAggregateStatusAction,
+  findXenesisNaturalProviderOpenAction,
+  findXenesisNaturalProviderProfileDraftApplyAction,
+  findXenesisNaturalProviderStatusAction,
+  findXenesisNaturalReviewRequestProviderAction,
+  findXenesisNaturalReviewRequestTargetAction,
   findXenesisNaturalRunStartAction,
   findXenesisNaturalToolAggregateStatusAction,
   findXenesisNaturalWorkspaceSetAction,
@@ -446,14 +458,26 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'buildXenesisNaturalUserStoryWorkflowPreviewAction',
     'findXenesisNaturalAgentReadbackAction',
     'findXenesisNaturalAgentSubmitAction',
+    'findXenesisNaturalChannelProfileDraftApplyAction',
+    'findXenesisNaturalChannelTestAction',
     'findXenesisNaturalConnectionCenterAggregateOpenAction',
+    'findXenesisNaturalConnectionSetupApplyAction',
+    'findXenesisNaturalConnectionTargetOpenAction',
+    'findXenesisNaturalConnectionTargetStatusAction',
     'findXenesisNaturalGuideOpenAction',
     'findXenesisNaturalGuideStatusAction',
+    'findXenesisNaturalMcpInstallDraftApplyAction',
     'findXenesisNaturalMessengerAggregateStatusAction',
     'findXenesisNaturalMessengerProfileDraftAggregateStatusAction',
     'findXenesisNaturalOnboardingOpenAction',
     'findXenesisNaturalOnboardingStatusAction',
+    'findXenesisNaturalOAuthSetupPacketAction',
     'findXenesisNaturalProviderAggregateStatusAction',
+    'findXenesisNaturalProviderOpenAction',
+    'findXenesisNaturalProviderProfileDraftApplyAction',
+    'findXenesisNaturalProviderStatusAction',
+    'findXenesisNaturalReviewRequestProviderAction',
+    'findXenesisNaturalReviewRequestTargetAction',
     'findXenesisNaturalRunStartAction',
     'findXenesisNaturalToolAggregateStatusAction',
     'findXenesisNaturalWorkspaceSetAction',
@@ -488,6 +512,20 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'XENESIS_NATURAL_RUN_START_RULES',
     'XENESIS_NATURAL_WORKSPACE_SET_RULES',
     'XENESIS_NATURAL_DESK_ACTION_ARGS',
+    'findXenesisNaturalConnectionTargetRuleAction',
+    'findXenesisNaturalProviderRuleAction',
+    'XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_APPLY_TARGET_RULES',
+    'XENESIS_NATURAL_CHANNEL_TEST_TARGET_RULES',
+    'XENESIS_NATURAL_CONNECTION_SETUP_APPLY_TARGET_RULES',
+    'XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES',
+    'XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES',
+    'XENESIS_NATURAL_MCP_INSTALL_DRAFT_APPLY_TARGET_RULES',
+    'XENESIS_NATURAL_OAUTH_SETUP_PACKET_TARGET_RULES',
+    'XENESIS_NATURAL_PROVIDER_OPEN_RULES',
+    'XENESIS_NATURAL_PROVIDER_PROFILE_DRAFT_APPLY_PROVIDER_RULES',
+    'XENESIS_NATURAL_PROVIDER_STATUS_RULES',
+    'XENESIS_NATURAL_REVIEW_REQUEST_PROVIDER_RULES',
+    'XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES',
   ]) {
     assert.doesNotMatch(naturalResolverSource, new RegExp(sharedActionBuilderLeak));
   }
@@ -823,11 +861,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     assert.doesNotMatch(naturalPlannerSource, new RegExp(sharedPlanResolverOwnedSymbol));
     assert.match(naturalPlanResolverSource, new RegExp(sharedPlanResolverOwnedSymbol));
   }
-  for (const sharedResolverOwnedRule of [
-    'XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES',
-    'XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES',
-    'XENESIS_NATURAL_RUNTIME_CONTROL_RULES',
-  ]) {
+  for (const sharedResolverOwnedRule of ['XENESIS_NATURAL_RUNTIME_CONTROL_RULES']) {
     assert.doesNotMatch(source, new RegExp(sharedResolverOwnedRule));
     assert.doesNotMatch(naturalPlannerSource, new RegExp(sharedResolverOwnedRule));
     assert.match(naturalResolverSource, new RegExp(sharedResolverOwnedRule));
@@ -1650,9 +1684,9 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'Open Claude provider setup from natural language request.',
   );
   assert.doesNotMatch(source, /XENESIS_NATURAL_PROVIDER_STATUS_ACTION_DESCRIPTORS/);
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_PROVIDER_STATUS_RULES/);
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_PROVIDER_OPEN_RULES/);
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_PROVIDER_STATUS_RULES/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_PROVIDER_OPEN_RULES/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS/);
   assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-provider-routing-status-\$\{provider\.id\}`/);
   assert.doesNotMatch(source, /PROVIDER_STATUS_ACTIONS\.routing/);
@@ -1864,7 +1898,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     XENESIS_NATURAL_CONNECTION_TARGET_STATUS_ACTION_DESCRIPTORS.channelRouting.idFor('telegram', 'Telegram'),
     'natural-xenesis-channel-routing-status-telegram',
   );
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_CONNECTION_TARGET_OPEN_ACTION_DESCRIPTORS/);
   assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-connection-diagnostics-open-\$\{target\.id\}`/);
   assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-tool-mcp-install-draft-open-\$\{target\.id\}`/);
@@ -2054,8 +2088,8 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'Open Telegram channel setup plan from natural language request.',
   );
   assert.doesNotMatch(source, /XENESIS_NATURAL_REVIEW_REQUEST_ACTION_DESCRIPTORS/);
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_REVIEW_REQUEST_PROVIDER_RULES/);
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_REVIEW_REQUEST_PROVIDER_RULES/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES/);
   assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-provider-profile-draft-request-\$\{provider\.id\}`/);
   assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-tool-mcp-install-draft-request-\$\{target\.id\}`/);
   assert.doesNotMatch(source, /naturalAction\(\s*`natural-xenesis-connection-setup-request-\$\{target\.id\}`/);
@@ -3714,6 +3748,109 @@ test('natural dynamic runtime actions are built by shared capability catalog hel
     args: { path: 'E:\\Workspace\\plane' },
     approved: false,
     reason: 'Set Xenesis workspace from natural language request.',
+  });
+});
+
+test('natural provider and connection target actions are built by shared capability catalog helpers', () => {
+  const targetById = (id: string) => {
+    const target = XENESIS_NATURAL_CONNECTION_TARGETS.find((candidate) => candidate.id === id);
+    assert.ok(target);
+    return target;
+  };
+
+  const notion = targetById('notion');
+  const googleCalendar = targetById('google-calendar');
+  const telegram = targetById('telegram');
+  const autoProvider = { id: 'auto', label: 'auto' };
+  const codexProvider = { id: 'codex-app-server', label: 'codex-app-server' };
+
+  assert.deepEqual(findXenesisNaturalProviderStatusAction('ai provider setup 상태 보여줘', autoProvider), {
+    id: 'natural-xenesis-provider-setup-status-auto',
+    path: 'xd.xenesis.providers.setup.status',
+    args: { provider: 'auto' },
+    approved: false,
+    reason: 'Read auto provider setup status from natural language request.',
+  });
+  assert.deepEqual(findXenesisNaturalProviderOpenAction('codex app-server provider routing 열어줘', codexProvider), {
+    id: 'natural-xenesis-provider-routing-open-codex-app-server',
+    path: 'xd.xenesis.providers.routing.open',
+    args: { provider: 'codex-app-server', ensureVisible: true },
+    approved: false,
+    reason: 'Open codex-app-server provider routing from natural language request.',
+  });
+  assert.deepEqual(findXenesisNaturalReviewRequestProviderAction('ai provider profile 검토 요청해줘', autoProvider), {
+    id: 'natural-xenesis-provider-profile-draft-request-auto',
+    path: 'xd.xenesis.providers.profileDrafts.request',
+    args: { provider: 'auto' },
+    approved: false,
+    reason: 'Request AI provider profile draft review from natural language request.',
+  });
+  assert.deepEqual(
+    findXenesisNaturalProviderProfileDraftApplyAction('ai provider profile draft 적용해줘', autoProvider),
+    {
+      id: 'natural-xenesis-provider-profile-draft-apply-auto',
+      path: 'xd.xenesis.providers.profileDrafts.apply',
+      args: { provider: 'auto' },
+      approved: false,
+      reason: 'Apply AI provider profile draft from natural language request.',
+    },
+  );
+
+  assert.deepEqual(findXenesisNaturalConnectionTargetStatusAction('노션 connector 상태 보여줘', notion), {
+    id: 'natural-xenesis-tool-connector-status-notion',
+    path: 'xd.xenesis.tools.connectors.status',
+    args: { tool: 'notion' },
+    approved: false,
+    reason: 'Read Notion tool connector status from natural language request.',
+  });
+  assert.deepEqual(findXenesisNaturalConnectionTargetOpenAction('노션 mcp 설치 초안 열어줘', notion), {
+    id: 'natural-xenesis-tool-mcp-install-draft-open-notion',
+    path: 'xd.xenesis.tools.mcpInstallDrafts.open',
+    args: { id: 'notion', ensureVisible: true },
+    approved: false,
+    reason: 'Open Notion MCP install draft from natural language request.',
+  });
+  assert.deepEqual(findXenesisNaturalOAuthSetupPacketAction('구글 캘린더 oauth 설정 패킷 보여줘', googleCalendar), {
+    id: 'natural-xenesis-tool-oauth-setup-packet-google-calendar',
+    path: 'xd.xenesis.tools.oauthDrafts.setupPacket',
+    args: { id: 'google-calendar' },
+    approved: false,
+    reason: 'Read Google Calendar OAuth setup packet from natural language request.',
+  });
+  assert.deepEqual(findXenesisNaturalReviewRequestTargetAction('노션 mcp 설치 검토 요청해줘', notion), {
+    id: 'natural-xenesis-tool-mcp-install-draft-request-notion',
+    path: 'xd.xenesis.tools.mcpInstallDrafts.request',
+    args: { id: 'notion' },
+    approved: false,
+    reason: 'Request Notion MCP install draft review from natural language request.',
+  });
+  assert.deepEqual(findXenesisNaturalMcpInstallDraftApplyAction('노션 mcp 설치 적용해줘', notion), {
+    id: 'natural-xenesis-tool-mcp-install-draft-apply-notion',
+    path: 'xd.xenesis.tools.mcpInstallDrafts.apply',
+    args: { id: 'notion', target: 'codex' },
+    approved: false,
+    reason: 'Apply Notion MCP install draft from natural language request.',
+  });
+  assert.deepEqual(findXenesisNaturalConnectionSetupApplyAction('노션 연결 설정 적용해줘', notion), {
+    id: 'natural-xenesis-connection-setup-apply-notion',
+    path: 'xd.xenesis.connections.setupRequests.apply',
+    args: { id: 'notion', target: 'codex' },
+    approved: false,
+    reason: 'Apply Notion connection setup request from natural language request.',
+  });
+  assert.deepEqual(findXenesisNaturalChannelProfileDraftApplyAction('텔레그램 채널 설정 적용해줘', telegram), {
+    id: 'natural-xenesis-channel-profile-draft-apply-telegram',
+    path: 'xd.xenesis.channels.profileDrafts.apply',
+    args: { channel: 'telegram' },
+    approved: false,
+    reason: 'Apply Telegram channel profile draft from natural language request.',
+  });
+  assert.deepEqual(findXenesisNaturalChannelTestAction('텔레그램 테스트 메시지 보내줘', telegram), {
+    id: 'natural-xenesis-channel-test-telegram',
+    path: 'xd.xenesis.profiles.testChannel',
+    args: { channel: 'telegram' },
+    approved: false,
+    reason: 'Send a sanitized Telegram channel test message from natural language request.',
   });
 });
 

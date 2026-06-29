@@ -8,40 +8,38 @@ import {
   findXenesisNaturalAgentReadbackAction,
   findXenesisNaturalAgentSubmitAction,
   findXenesisNaturalCatalogRuleAction,
+  findXenesisNaturalChannelProfileDraftApplyAction,
+  findXenesisNaturalChannelTestAction,
   findXenesisNaturalConnectionAggregateOpenAction,
   findXenesisNaturalConnectionAggregateStatusAction,
   findXenesisNaturalConnectionCenterAggregateOpenAction,
-  findXenesisNaturalConnectionTargetRuleAction,
+  findXenesisNaturalConnectionSetupApplyAction,
+  findXenesisNaturalConnectionTargetOpenAction,
+  findXenesisNaturalConnectionTargetStatusAction,
   findXenesisNaturalCoreToolTarget,
   findXenesisNaturalGuideOpenAction,
   findXenesisNaturalGuideStatusAction,
+  findXenesisNaturalMcpInstallDraftApplyAction,
   findXenesisNaturalMessengerAggregateStatusAction,
   findXenesisNaturalMessengerProfileDraftAggregateStatusAction,
   findXenesisNaturalMessengerViewSectionTarget,
+  findXenesisNaturalOAuthSetupPacketAction,
   findXenesisNaturalOnboardingOpenAction,
   findXenesisNaturalOnboardingStatusAction,
   findXenesisNaturalProviderAggregateStatusAction,
-  findXenesisNaturalProviderRuleAction,
+  findXenesisNaturalProviderOpenAction,
+  findXenesisNaturalProviderProfileDraftApplyAction,
+  findXenesisNaturalProviderStatusAction,
   findXenesisNaturalProviderViewSectionTarget,
+  findXenesisNaturalReviewRequestProviderAction,
+  findXenesisNaturalReviewRequestTargetAction,
   findXenesisNaturalRunStartAction,
   findXenesisNaturalToolAggregateStatusAction,
   findXenesisNaturalToolViewSectionTarget,
   findXenesisNaturalViewTarget,
   findXenesisNaturalWorkspaceSetAction,
-  XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_APPLY_TARGET_RULES,
-  XENESIS_NATURAL_CHANNEL_TEST_TARGET_RULES,
-  XENESIS_NATURAL_CONNECTION_SETUP_APPLY_TARGET_RULES,
-  XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES,
-  XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES,
   XENESIS_NATURAL_GATEWAY_ACTION_RULES,
-  XENESIS_NATURAL_MCP_INSTALL_DRAFT_APPLY_TARGET_RULES,
-  XENESIS_NATURAL_OAUTH_SETUP_PACKET_TARGET_RULES,
   XENESIS_NATURAL_PROFILE_INVENTORY_RULES,
-  XENESIS_NATURAL_PROVIDER_OPEN_RULES,
-  XENESIS_NATURAL_PROVIDER_PROFILE_DRAFT_APPLY_PROVIDER_RULES,
-  XENESIS_NATURAL_PROVIDER_STATUS_RULES,
-  XENESIS_NATURAL_REVIEW_REQUEST_PROVIDER_RULES,
-  XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES,
   XENESIS_NATURAL_RUNTIME_CONTROL_RULES,
   XENESIS_NATURAL_RUNTIME_INVENTORY_RULES,
   XENESIS_NATURAL_RUNTIME_SUPPORT_RULES,
@@ -96,14 +94,14 @@ function xenesisConnectionTargetStatusActionFromNaturalText(
   value: string,
   target: XenesisNaturalConnectionTarget,
 ): XenesisNaturalDeskActionRequest | null {
-  return findXenesisNaturalConnectionTargetRuleAction(value, target, XENESIS_NATURAL_CONNECTION_TARGET_STATUS_RULES);
+  return findXenesisNaturalConnectionTargetStatusAction(value, target);
 }
 
 function xenesisConnectionTargetOpenActionFromNaturalText(
   value: string,
   target: XenesisNaturalConnectionTarget,
 ): XenesisNaturalDeskActionRequest | null {
-  return findXenesisNaturalConnectionTargetRuleAction(value, target, XENESIS_NATURAL_CONNECTION_TARGET_OPEN_RULES);
+  return findXenesisNaturalConnectionTargetOpenAction(value, target);
 }
 
 function xenesisGuideActionFromNaturalText(value: string): XenesisNaturalDeskActionRequest | null {
@@ -153,7 +151,7 @@ function xenesisProviderReadbackActionFromNaturalText(value: string): XenesisNat
   const provider = xenesisProviderFromNaturalText(value);
   if (!provider) return null;
 
-  return findXenesisNaturalProviderRuleAction(value, provider, XENESIS_NATURAL_PROVIDER_STATUS_RULES);
+  return findXenesisNaturalProviderStatusAction(value, provider);
 }
 
 export function xenesisConnectionReadbackActionFromNaturalText(value: string): XenesisNaturalDeskActionRequest | null {
@@ -202,7 +200,7 @@ export function xenesisConnectionOAuthSetupPacketActionFromNaturalText(
   const target = xenesisConnectionTargetFromNaturalText(value);
   if (!target) return null;
 
-  return findXenesisNaturalConnectionTargetRuleAction(value, target, XENESIS_NATURAL_OAUTH_SETUP_PACKET_TARGET_RULES);
+  return findXenesisNaturalOAuthSetupPacketAction(value, target);
 }
 
 export function xenesisConnectionReviewRequestActionFromNaturalText(
@@ -212,18 +210,14 @@ export function xenesisConnectionReviewRequestActionFromNaturalText(
 
   const provider = xenesisProviderFromNaturalText(value);
   if (provider) {
-    const providerReviewRequestAction = findXenesisNaturalProviderRuleAction(
-      value,
-      provider,
-      XENESIS_NATURAL_REVIEW_REQUEST_PROVIDER_RULES,
-    );
+    const providerReviewRequestAction = findXenesisNaturalReviewRequestProviderAction(value, provider);
     if (providerReviewRequestAction) return providerReviewRequestAction;
   }
 
   const target = xenesisConnectionTargetFromNaturalText(value);
   if (!target) return null;
 
-  return findXenesisNaturalConnectionTargetRuleAction(value, target, XENESIS_NATURAL_REVIEW_REQUEST_TARGET_RULES);
+  return findXenesisNaturalReviewRequestTargetAction(value, target);
 }
 
 export function xenesisConnectionUserStoryWorkflowPreviewActionFromNaturalText(
@@ -255,11 +249,7 @@ export function xenesisConnectionMcpInstallDraftApplyActionFromNaturalText(
   const target = xenesisConnectionTargetFromNaturalText(value);
   if (!target) return null;
 
-  return findXenesisNaturalConnectionTargetRuleAction(
-    value,
-    target,
-    XENESIS_NATURAL_MCP_INSTALL_DRAFT_APPLY_TARGET_RULES,
-  );
+  return findXenesisNaturalMcpInstallDraftApplyAction(value, target);
 }
 
 export function xenesisConnectionChannelProfileDraftApplyActionFromNaturalText(
@@ -268,11 +258,7 @@ export function xenesisConnectionChannelProfileDraftApplyActionFromNaturalText(
   const target = xenesisConnectionTargetFromNaturalText(value);
   if (!target) return null;
 
-  return findXenesisNaturalConnectionTargetRuleAction(
-    value,
-    target,
-    XENESIS_NATURAL_CHANNEL_PROFILE_DRAFT_APPLY_TARGET_RULES,
-  );
+  return findXenesisNaturalChannelProfileDraftApplyAction(value, target);
 }
 
 export function xenesisConnectionChannelTestActionFromNaturalText(
@@ -281,7 +267,7 @@ export function xenesisConnectionChannelTestActionFromNaturalText(
   const target = xenesisConnectionTargetFromNaturalText(value);
   if (!target) return null;
 
-  return findXenesisNaturalConnectionTargetRuleAction(value, target, XENESIS_NATURAL_CHANNEL_TEST_TARGET_RULES);
+  return findXenesisNaturalChannelTestAction(value, target);
 }
 
 export function xenesisConnectionSetupApplyActionFromNaturalText(
@@ -290,11 +276,7 @@ export function xenesisConnectionSetupApplyActionFromNaturalText(
   const target = xenesisConnectionTargetFromNaturalText(value);
   if (!target) return null;
 
-  return findXenesisNaturalConnectionTargetRuleAction(
-    value,
-    target,
-    XENESIS_NATURAL_CONNECTION_SETUP_APPLY_TARGET_RULES,
-  );
+  return findXenesisNaturalConnectionSetupApplyAction(value, target);
 }
 
 export function xenesisConnectionProviderProfileDraftApplyActionFromNaturalText(
@@ -305,11 +287,7 @@ export function xenesisConnectionProviderProfileDraftApplyActionFromNaturalText(
   const provider = xenesisProviderFromNaturalText(value);
   if (!provider) return null;
 
-  return findXenesisNaturalProviderRuleAction(
-    value,
-    provider,
-    XENESIS_NATURAL_PROVIDER_PROFILE_DRAFT_APPLY_PROVIDER_RULES,
-  );
+  return findXenesisNaturalProviderProfileDraftApplyAction(value, provider);
 }
 
 function xenesisProviderOpenActionFromNaturalText(value: string): XenesisNaturalDeskActionRequest | null {
@@ -325,7 +303,7 @@ function xenesisProviderOpenActionFromNaturalText(value: string): XenesisNatural
     }
   }
 
-  return findXenesisNaturalProviderRuleAction(value, provider, XENESIS_NATURAL_PROVIDER_OPEN_RULES);
+  return findXenesisNaturalProviderOpenAction(value, provider);
 }
 
 function xenesisToolViewSectionOpenActionFromNaturalText(
