@@ -1,5 +1,55 @@
 # Xenesis Desk Work Handoff
 
+## Current Slice: Slice 01 Live CR Baseline - Task 5 Obsidian Reference And Verification Indexes
+
+- Current objective:
+  - Implement Task 5 from `docs/superpowers/plans/2026-06-29-slice-01-live-cr-baseline.md`.
+  - Record Slice 01 OpenClaw/Hermes reference adoption evidence in the Obsidian working note.
+  - Add verification index rows for audit-zero and live smoke commands.
+  - Add CR development live proof surfaces to the CR Surface Index.
+  - Keep this task documentation/graph only.
+- Scope boundary:
+  - Owned files only:
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-reference-adoption-map-proposal.md`,
+    `docs/obsidian/Xenesis-desk/_Indexes/Verification Map.md`,
+    `docs/obsidian/Xenesis-desk/_Indexes/CR Surface Index.md`,
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-1-live-cr-baseline-plan.md`,
+    and `handoff.md`.
+  - Documentation/graph only; no product code or tests changed.
+  - Obsidian remains reference/context only, not executable source of truth.
+  - Do not claim Slice 01 live smokes passed during Task 5.
+  - No web browsing and no secrets.
+- Touched files so far:
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-reference-adoption-map-proposal.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Verification Map.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/CR Surface Index.md`
+  - `handoff.md`
+- Commands run:
+  - `Get-Content -LiteralPath docs\superpowers\plans\2026-06-29-slice-01-live-cr-baseline.md`: PASS.
+  - `Get-Content -LiteralPath "docs\obsidian\Xenesis-desk\80_AI\Working Notes\2026-06-29-reference-adoption-map-proposal.md"`: PASS.
+  - `Get-Content -LiteralPath "docs\obsidian\Xenesis-desk\_Indexes\Verification Map.md"`: PASS.
+  - `Get-Content -LiteralPath "docs\obsidian\Xenesis-desk\_Indexes\CR Surface Index.md"`: PASS.
+  - `Get-Content -LiteralPath "docs\obsidian\Xenesis-desk\80_AI\Working Notes\2026-06-29-slice-1-live-cr-baseline-plan.md"`: PASS; note already points to `docs/superpowers/plans/2026-06-29-slice-01-live-cr-baseline.md` and says the older local plan is superseded.
+  - `Get-Content -LiteralPath handoff.md`: PASS.
+  - `git status --short --branch`: PASS, branch `agent/upcoming-work-20260627` with no modified files before Task 5 edits.
+  - Required marker scan with `rg -n $markers ...`: PASS, no matches; `rg` exited 1 as expected and wrapper printed `rg-no-matches-exit-1`.
+  - `git diff --check`: PASS; Git printed LF/CRLF normalization warnings for the four modified documentation files only.
+  - `git status --short`: PASS, showed only owned Task 5 documentation files:
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-reference-adoption-map-proposal.md`,
+    `docs/obsidian/Xenesis-desk/_Indexes/CR Surface Index.md`,
+    `docs/obsidian/Xenesis-desk/_Indexes/Verification Map.md`,
+    and `handoff.md`.
+- Exact verification result:
+  - Added the Slice 01 Live CR Baseline adoption table to the reference adoption map proposal.
+  - Added verification command rows for `node scripts\assertCapabilityAuditZero.mjs`, `npm run smoke:xenesis:connection-center -- --json`, and `npm run smoke:xenesis:review-request-approval -- --json`.
+  - Added the CR Surface Index development live proof surfaces section.
+  - Confirmed `2026-06-29-slice-1-live-cr-baseline-plan.md` already points to the stricter Slice 01 plan and records the older plan as superseded, so no edit was required there.
+  - Required Task 5 marker scan, diff check, and status check passed.
+- Known gaps:
+  - Task 5 does not run or claim the Slice 01 live smoke commands; those belong to Task 6.
+- Next intended step:
+  - Commit Task 5 changes only as `Document slice 01 live CR baseline proof surfaces`.
+
 ## Current Slice: Slice 01 Live CR Baseline - Task 4 Approval Record Unit Coverage
 
 - Current objective:

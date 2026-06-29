@@ -28,6 +28,9 @@ approval change.
 | Root typecheck | `npm run typecheck` |
 | Lint | `npm run lint` |
 | CR audit | `npm run docs:capabilities:audit` |
+| CR audit zero assertion | `node scripts\assertCapabilityAuditZero.mjs` |
+| Connection Center live smoke | `npm run smoke:xenesis:connection-center -- --json` |
+| Review request approval live smoke | `npm run smoke:xenesis:review-request-approval -- --json` |
 | Xenesis tests | `npm --prefix packages/xenesis test` |
 | Xenesis typecheck | `npm --prefix packages/xenesis run typecheck` |
 | Xenesis build | `npm --prefix packages/xenesis run build` |
