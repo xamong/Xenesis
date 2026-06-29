@@ -17,8 +17,16 @@ export const REQUIRED_CAPABILITY_AUDIT_ZERO_COUNTERS = Object.freeze([
 
 export function parseCapabilityAuditCounters(markdown) {
   const counters = new Map();
+  let inSummary = false;
 
   for (const line of String(markdown || '').split(/\r?\n/)) {
+    if (/^##\s+Summary\s*$/.test(line)) {
+      inSummary = true;
+      continue;
+    }
+    if (inSummary && /^##\s+/.test(line)) break;
+    if (!inSummary) continue;
+
     const bullet = line.match(/^\s*-\s+([^:]+):\s+([0-9]+)\s*$/);
     if (bullet) {
       counters.set(bullet[1].trim(), Number(bullet[2]));

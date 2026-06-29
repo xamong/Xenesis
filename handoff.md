@@ -103,12 +103,51 @@ into a Desk-native, CR-first setup and connection experience.
     trailing blank `lines` entries and returns exactly one terminal newline.
   - Regression test now proves regenerated audit markdown has no blank line at
     EOF.
+- Code quality review follow-up:
+  - Finding 1: `scripts/capabilityCoverageAudit.test.mjs` runs the generator
+    against committed `docs/capability-registry-audit.md`, so normal tests dirty
+    the worktree by advancing the generated timestamp.
+  - Finding 2: `scripts/assertCapabilityAuditZero.mjs` scans all markdown; later
+    table rows can overwrite required `## Summary` counters.
+  - Current generated audit markdown was already dirty from reviewer/test
+    generator runs and is treated as related generated state.
+  - RED `node --test scripts\capabilityCoverageAudit.test.mjs`: FAIL, injected
+    temp output path was not created because the generator ignored
+    `XENESIS_CAPABILITY_AUDIT_OUTPUT`.
+  - RED `node --test scripts\assertCapabilityAuditZero.test.mjs`: FAIL,
+    `Missing expected exception` for a nonzero Summary counter followed by a
+    later zero table row.
+  - Implemented `XENESIS_CAPABILITY_AUDIT_OUTPUT` in
+    `scripts/capabilityCoverageAudit.mjs`, defaulting to
+    `docs/capability-registry-audit.md`.
+  - Updated `scripts/capabilityCoverageAudit.test.mjs` to write generated audit
+    output to a temp file and assert the committed audit doc is unchanged during
+    the test.
+  - Scoped `parseCapabilityAuditCounters()` in
+    `scripts/assertCapabilityAuditZero.mjs` to `## Summary` until the next
+    second-level heading.
+  - Added a regression in `scripts/assertCapabilityAuditZero.test.mjs` proving a
+    later zero table row cannot override a nonzero Summary counter.
+  - GREEN `node --test scripts\capabilityCoverageAudit.test.mjs`: PASS, 1/1.
+  - GREEN `node --test scripts\assertCapabilityAuditZero.test.mjs`: PASS, 7/7.
+  - `npm run docs:capabilities:audit`: PASS, wrote
+    `docs\capability-registry-audit.md`; `Capability audit: 801 nodes, 689 coverage path references.`
+  - `node scripts\assertCapabilityAuditZero.mjs`: PASS,
+    `capability-audit-zero: verified 4 counters in docs\capability-registry-audit.md`.
+  - `git diff --check`: PASS; Git printed LF/CRLF normalization warnings for
+    the owned Task 1 files.
+  - `git status --short`: PASS, showed only owned Task 1 files:
+    `docs/capability-registry-audit.md`, `handoff.md`,
+    `scripts/assertCapabilityAuditZero.mjs`,
+    `scripts/assertCapabilityAuditZero.test.mjs`,
+    `scripts/capabilityCoverageAudit.mjs`, and
+    `scripts/capabilityCoverageAudit.test.mjs`.
 - Known gaps:
   - Task 1 does not run live Electron smokes and does not prove provider
     natural-language CR tool selection.
   - Product runtime behavior is unchanged in Task 1.
 - Next intended step:
-  - Commit the review fix as `Fix capability audit document trailing blank line`.
+  - Commit the quality review fix as `Harden capability audit zero tests`.
 
 ## Current Slice: Slice 01 Live CR Baseline Plan
 

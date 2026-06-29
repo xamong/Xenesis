@@ -67,6 +67,24 @@ test('capability audit zero assertion fails on nonzero counters', () => {
   );
 });
 
+test('capability audit zero assertion uses summary counters before later table rows', () => {
+  const auditWithConflictingLaterTable = `${ZERO_AUDIT.replace(
+    '- Missing registered paths: 0',
+    '- Missing registered paths: 1',
+  )}
+## Later Details
+
+| Counter | Value |
+| --- | --- |
+| Missing registered paths | 0 |
+`;
+
+  assert.throws(
+    () => assertCapabilityAuditZero(auditWithConflictingLaterTable),
+    /Missing registered paths must be 0, got 1/,
+  );
+});
+
 test('capability audit zero assertion fails when a required counter is absent', () => {
   assert.throws(
     () => assertCapabilityAuditZero(ZERO_AUDIT.replace('- Dispatcher paths missing from tree: 0', '')),
