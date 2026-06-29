@@ -7,6 +7,87 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current Slice: Remove Provider Desk Natural Intent Catalog
+
+- Current objective:
+  - Continue the no-heuristics cleanup by removing the remaining provider-package
+    deterministic Desk natural intent catalog. The provider prompt should keep a
+    short CR/MCP contract and force providers to discover/inspect/call CR paths
+    on demand, not rely on a bundled natural-language intent table.
+- Rationale:
+  - The renderer/shared `xenesisNaturalLanguage*` router was removed in the
+    previous slice, but `packages/xenesis/src/providers/deskNaturalIntentCatalog.ts`
+    still ships a path-bearing natural intent catalog and `providers/index.ts`
+    exports it.
+  - Current `deskMcpSystemMessage` already uses a lean capability-family pointer
+    and does not import the full catalog, so the file/export are dead surface
+    area and violate the no-hardcoded-natural-routing direction.
+- Plan:
+  - `docs/superpowers/plans/2026-06-29-provider-desk-natural-intent-catalog-removal.md`
+- Touched files so far:
+  - `handoff.md`
+  - `docs/superpowers/plans/2026-06-29-provider-desk-natural-intent-catalog-removal.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-provider-desk-natural-intent-catalog-removal.md`
+  - `packages/xenesis/src/providers/cliProvider.deskMcp.test.ts`
+  - `packages/xenesis/src/providers/index.ts`
+  - Deleted: `packages/xenesis/src/providers/deskNaturalIntentCatalog.ts`
+- Commands run:
+  - `git status --short` -> clean after commit `8d8b632`.
+  - Context reads for AGENTS.md, Obsidian rules/index/module/provider notes,
+    handoff tail, provider prompt source, provider barrel export, and source
+    scan for `deskNaturalIntentCatalog`.
+  - RED:
+    `npm --prefix packages/xenesis exec vitest run src/providers/cliProvider.deskMcp.test.ts`
+    -> failed 1/2 as expected because
+    `packages/xenesis/src/providers/deskNaturalIntentCatalog.ts` still exists.
+  - GREEN:
+    `npm --prefix packages/xenesis exec vitest run src/providers/cliProvider.deskMcp.test.ts`
+    -> passed 2/2 after deleting the catalog file and removing the barrel export.
+  - Source scan:
+    `rg -n "deskNaturalIntentCatalog|DESK_NATURAL_INTENT|formatDeskNaturalIntentCatalog|Capability family intent catalog|sampleUserRequests" packages\xenesis\src src scripts package.json --glob "!packages/xenesis/src/providers/cliProvider.deskMcp.test.ts"`
+    -> no matches.
+  - Package typecheck:
+    `npm --prefix packages/xenesis run typecheck` -> passed.
+  - Package full tests:
+    `npm --prefix packages/xenesis test` -> passed 367/367 across 79 files.
+  - Package build:
+    `npm --prefix packages/xenesis run build` -> passed.
+  - Root typecheck:
+    `npm run typecheck` -> passed.
+  - CR audit:
+    `npm run docs:capabilities:audit` -> passed; wrote
+    `docs/capability-registry-audit.md` with 796 nodes and 689 coverage path
+    references.
+  - CR audit counter readback:
+    `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> all 0.
+  - Focused Biome:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true packages/xenesis/src/providers/cliProvider.deskMcp.test.ts packages/xenesis/src/providers/index.ts`
+    -> passed after `--write` formatting fixed import/export ordering.
+  - Provider smoke default:
+    `npm --prefix packages/xenesis run provider:smoke` -> failed before live
+    provider execution because `OPENAI_API_KEY` is missing for default
+    `provider=openai`.
+  - Provider smoke with mock:
+    `$env:XENESIS_PROVIDER = 'mock'; npm --prefix packages/xenesis run provider:smoke`
+    -> failed 4/5; connect-probe, prompt, stream, and fallback checks passed,
+    gateway `/run` failed with `{"error":"Unauthorized"}`. Report:
+    `C:\Users\great\.xenesis\reports\provider-live-20260629T015934156Z.json`.
+- Implemented:
+  - Added a provider-package source guard proving
+    `deskNaturalIntentCatalog.ts` is absent and not exported from
+    `packages/xenesis/src/providers/index.ts`.
+  - Deleted `packages/xenesis/src/providers/deskNaturalIntentCatalog.ts`.
+  - Removed the public barrel export from `packages/xenesis/src/providers/index.ts`.
+- Known gaps:
+  - This slice removes another deterministic natural intent surface. It does
+    not yet provide the separate live Agent-pane proof that a selected provider
+    calls CR/MCP tools for a natural Desk-control prompt.
+  - `provider:smoke` remains environment/infrastructure-blocked in this
+    worktree: default `openai` requires `OPENAI_API_KEY`; `mock` reaches the
+    gateway check but the smoke client does not authenticate against the
+    gateway's bearer-token requirement.
+
 ## Latest Slice: Remove Natural Desk Heuristics
 
 - Current objective:
