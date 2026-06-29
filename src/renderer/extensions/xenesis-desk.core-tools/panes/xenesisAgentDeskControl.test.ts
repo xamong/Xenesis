@@ -21,10 +21,15 @@ import {
   buildXenesisNaturalProviderViewSectionOpenAction,
   buildXenesisNaturalToolViewSectionOpenAction,
   buildXenesisNaturalUserStoryWorkflowPreviewAction,
+  findXenesisNaturalConnectionCenterAggregateOpenAction,
   findXenesisNaturalGuideOpenAction,
   findXenesisNaturalGuideStatusAction,
+  findXenesisNaturalMessengerAggregateStatusAction,
+  findXenesisNaturalMessengerProfileDraftAggregateStatusAction,
   findXenesisNaturalOnboardingOpenAction,
   findXenesisNaturalOnboardingStatusAction,
+  findXenesisNaturalProviderAggregateStatusAction,
+  findXenesisNaturalToolAggregateStatusAction,
   XENESIS_NATURAL_ACTIVE_DOCK_CLOSE_RULES,
   XENESIS_NATURAL_ACTIVE_DOCK_FOCUS_RULES,
   XENESIS_NATURAL_AGENT_READBACK_RULES,
@@ -435,10 +440,15 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'buildXenesisNaturalToolViewSectionOpenAction',
     'buildXenesisNaturalMessengerViewSectionOpenAction',
     'buildXenesisNaturalUserStoryWorkflowPreviewAction',
+    'findXenesisNaturalConnectionCenterAggregateOpenAction',
     'findXenesisNaturalGuideOpenAction',
     'findXenesisNaturalGuideStatusAction',
+    'findXenesisNaturalMessengerAggregateStatusAction',
+    'findXenesisNaturalMessengerProfileDraftAggregateStatusAction',
     'findXenesisNaturalOnboardingOpenAction',
     'findXenesisNaturalOnboardingStatusAction',
+    'findXenesisNaturalProviderAggregateStatusAction',
+    'findXenesisNaturalToolAggregateStatusAction',
   ]) {
     assert.match(capabilityCatalogSource, new RegExp(`export function ${sharedActionBuilderFunction}`));
   }
@@ -459,6 +469,13 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'XENESIS_NATURAL_GUIDE_STATUS_RULES',
     'XENESIS_NATURAL_ONBOARDING_OPEN_RULES',
     'XENESIS_NATURAL_ONBOARDING_STATUS_RULES',
+    'XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_RULES',
+    'XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_RULES',
+    'XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_RULES',
+    'XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_RULES',
+    'XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_RULES',
+    'XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_RULES',
+    'XENESIS_NATURAL_DESK_ACTION_ARGS\\.ensureVisible',
   ]) {
     assert.doesNotMatch(naturalResolverSource, new RegExp(sharedActionBuilderLeak));
   }
@@ -1380,11 +1397,14 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     ['xd.xenesis.onboarding.status'],
   );
   assert.doesNotMatch(source, /XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_ACTION_DESCRIPTORS/);
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_RULES/);
+  assert.match(capabilityCatalogSource, /XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_RULES/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_RULES/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_ACTION_DESCRIPTORS/);
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_RULES/);
+  assert.match(capabilityCatalogSource, /XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_RULES/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_RULES/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_ACTION_DESCRIPTORS/);
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_RULES/);
+  assert.match(capabilityCatalogSource, /XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_RULES/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_RULES/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_ACTION_DESCRIPTORS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_CONNECTION_AGGREGATE_STATUS_RULES/);
   assert.doesNotMatch(source, /naturalAction\(\s*'natural-xenesis-tools-connectors-status'/);
@@ -1492,11 +1512,14 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   assert.doesNotMatch(source, /XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_ACTION_DESCRIPTORS/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_CONNECTION_AGGREGATE_OPEN_RULES/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_ACTION_DESCRIPTORS/);
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_RULES/);
+  assert.match(capabilityCatalogSource, /XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_RULES/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_RULES/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_ACTION_DESCRIPTORS/);
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_RULES/);
+  assert.match(capabilityCatalogSource, /XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_RULES/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_RULES/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_ACTION_DESCRIPTORS/);
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_RULES/);
+  assert.match(capabilityCatalogSource, /XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_RULES/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_RULES/);
   assert.doesNotMatch(source, /naturalAction\(\s*'natural-xenesis-guides-catalog-open'/);
   assert.doesNotMatch(source, /naturalAction\(\s*'natural-xenesis-tools-actions-catalog-open'/);
   assert.doesNotMatch(source, /naturalAction\(\s*'natural-xenesis-messengers-routing-catalog-open'/);
@@ -3594,6 +3617,62 @@ test('natural guide and onboarding actions are built by shared capability catalo
     approved: false,
     reason: 'Read First chat onboarding checklist status from natural language request.',
   });
+});
+
+test('natural aggregate catalog actions are built by shared capability catalog helpers', () => {
+  assert.deepEqual(findXenesisNaturalConnectionCenterAggregateOpenAction('AI provider setup 전체 열어줘'), {
+    id: 'natural-xenesis-providers-setup-catalog-open',
+    path: 'xd.xenesis.providers.setup.open',
+    args: { ensureVisible: true },
+    approved: false,
+    reason: 'Open AI provider setup catalog in Xenesis Connection Center from natural language request.',
+  });
+  assert.deepEqual(findXenesisNaturalConnectionCenterAggregateOpenAction('외부 툴 connector 전체 열어줘'), {
+    id: 'natural-xenesis-tools-connectors-catalog-open',
+    path: 'xd.xenesis.tools.connectors.open',
+    args: { ensureVisible: true },
+    approved: false,
+    reason: 'Open external tool connector catalog in Xenesis Connection Center from natural language request.',
+  });
+  assert.deepEqual(findXenesisNaturalConnectionCenterAggregateOpenAction('외부 메신저 라우팅 전체 열어줘'), {
+    id: 'natural-xenesis-messengers-routing-catalog-open',
+    path: 'xd.xenesis.channels.routing.open',
+    args: { ensureVisible: true },
+    approved: false,
+    reason: 'Open external messenger routing catalog in Xenesis Connection Center from natural language request.',
+  });
+
+  assert.deepEqual(findXenesisNaturalProviderAggregateStatusAction('AI provider setup 전체 상태 보여줘'), {
+    id: 'natural-xenesis-providers-setup-status',
+    path: 'xd.xenesis.providers.setup.status',
+    args: {},
+    approved: false,
+    reason: 'Read AI provider setup catalog status from natural language request.',
+  });
+  assert.deepEqual(findXenesisNaturalToolAggregateStatusAction('외부 툴 connector 전체 상태 보여줘'), {
+    id: 'natural-xenesis-tools-connectors-status',
+    path: 'xd.xenesis.tools.connectors.status',
+    args: {},
+    approved: false,
+    reason: 'Read external tool connector catalog status from natural language request.',
+  });
+  assert.deepEqual(findXenesisNaturalMessengerAggregateStatusAction('외부 메신저 라우팅 전체 상태 보여줘'), {
+    id: 'natural-xenesis-messengers-routing-status',
+    path: 'xd.xenesis.channels.routing.status',
+    args: {},
+    approved: false,
+    reason: 'Read external messenger routing catalog status from natural language request.',
+  });
+  assert.deepEqual(
+    findXenesisNaturalMessengerProfileDraftAggregateStatusAction('외부 메신저 프로필 초안 전체 상태 보여줘'),
+    {
+      id: 'natural-xenesis-messengers-profile-drafts-status',
+      path: 'xd.xenesis.channels.profileDrafts.status',
+      args: {},
+      approved: false,
+      reason: 'Read external messenger profile draft catalog status from natural language request.',
+    },
+  );
 });
 
 test('planXenesisDeskNaturalLanguageActions maps local CLI and MCP readbacks to CR actions', () => {

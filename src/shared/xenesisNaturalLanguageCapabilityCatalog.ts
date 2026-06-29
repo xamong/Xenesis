@@ -15,6 +15,12 @@ import {
   buildXenesisNaturalLanguagePlan,
   findXenesisNaturalContextRule,
   findXenesisNaturalWordsTarget,
+  hasXenesisNaturalAggregateCatalogContext,
+  hasXenesisNaturalConnectionReadbackIntent,
+  hasXenesisNaturalExternalMessengerCatalogContext,
+  hasXenesisNaturalExternalToolCatalogContext,
+  hasXenesisNaturalMessengerProfileDraftCatalogContext,
+  hasXenesisNaturalProviderProfileContext,
   isXenesisNaturalConnectionMessengerTarget,
   isXenesisNaturalConnectionToolTarget,
   isXenesisNaturalPlannedGoogleToolTarget,
@@ -3989,6 +3995,75 @@ export function findXenesisNaturalOnboardingStatusAction(
       rule.action,
       [step.id, step.label],
       buildXenesisNaturalOnboardingArgsForRule(rule, step.id),
+    );
+  }
+
+  return null;
+}
+
+export function findXenesisNaturalProviderAggregateStatusAction(value: string): XenesisNaturalDeskActionRequest | null {
+  if (!hasXenesisNaturalProviderProfileContext(value)) return null;
+  if (!hasXenesisNaturalConnectionReadbackIntent(value)) return null;
+  if (!hasXenesisNaturalAggregateCatalogContext(value)) return null;
+
+  return findXenesisNaturalCatalogRuleAction(value, XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_RULES);
+}
+
+export function findXenesisNaturalToolAggregateStatusAction(value: string): XenesisNaturalDeskActionRequest | null {
+  if (!hasXenesisNaturalExternalToolCatalogContext(value)) return null;
+  if (!hasXenesisNaturalConnectionReadbackIntent(value)) return null;
+
+  return findXenesisNaturalCatalogRuleAction(value, XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_RULES);
+}
+
+export function findXenesisNaturalMessengerAggregateStatusAction(
+  value: string,
+): XenesisNaturalDeskActionRequest | null {
+  if (!hasXenesisNaturalExternalMessengerCatalogContext(value)) return null;
+  if (!hasXenesisNaturalConnectionReadbackIntent(value)) return null;
+  if (!hasXenesisNaturalAggregateCatalogContext(value)) return null;
+
+  return findXenesisNaturalCatalogRuleAction(value, XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_RULES);
+}
+
+export function findXenesisNaturalMessengerProfileDraftAggregateStatusAction(
+  value: string,
+): XenesisNaturalDeskActionRequest | null {
+  if (!hasXenesisNaturalMessengerProfileDraftCatalogContext(value)) return null;
+  if (!hasXenesisNaturalConnectionReadbackIntent(value)) return null;
+
+  return findXenesisNaturalCatalogRuleAction(value, XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_RULES);
+}
+
+export function findXenesisNaturalConnectionCenterAggregateOpenAction(
+  value: string,
+): XenesisNaturalDeskActionRequest | null {
+  if (!hasXenesisNaturalAggregateCatalogContext(value)) return null;
+
+  if (hasXenesisNaturalProviderProfileContext(value)) {
+    return findXenesisNaturalCatalogRuleAction(
+      value,
+      XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_RULES,
+      XENESIS_NATURAL_DESK_ACTION_ARGS.ensureVisible(),
+    );
+  }
+
+  if (hasXenesisNaturalExternalToolCatalogContext(value)) {
+    return findXenesisNaturalCatalogRuleAction(
+      value,
+      XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_RULES,
+      XENESIS_NATURAL_DESK_ACTION_ARGS.ensureVisible(),
+    );
+  }
+
+  if (
+    hasXenesisNaturalExternalMessengerCatalogContext(value) ||
+    hasXenesisNaturalMessengerProfileDraftCatalogContext(value)
+  ) {
+    return findXenesisNaturalCatalogRuleAction(
+      value,
+      XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_RULES,
+      XENESIS_NATURAL_DESK_ACTION_ARGS.ensureVisible(),
     );
   }
 

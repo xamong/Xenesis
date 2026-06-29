@@ -8,15 +8,20 @@ import {
   findXenesisNaturalCatalogRuleAction,
   findXenesisNaturalConnectionAggregateOpenAction,
   findXenesisNaturalConnectionAggregateStatusAction,
+  findXenesisNaturalConnectionCenterAggregateOpenAction,
   findXenesisNaturalConnectionTargetRuleAction,
   findXenesisNaturalCoreToolTarget,
   findXenesisNaturalGuideOpenAction,
   findXenesisNaturalGuideStatusAction,
+  findXenesisNaturalMessengerAggregateStatusAction,
+  findXenesisNaturalMessengerProfileDraftAggregateStatusAction,
   findXenesisNaturalMessengerViewSectionTarget,
   findXenesisNaturalOnboardingOpenAction,
   findXenesisNaturalOnboardingStatusAction,
+  findXenesisNaturalProviderAggregateStatusAction,
   findXenesisNaturalProviderRuleAction,
   findXenesisNaturalProviderViewSectionTarget,
+  findXenesisNaturalToolAggregateStatusAction,
   findXenesisNaturalToolViewSectionTarget,
   findXenesisNaturalViewTarget,
   XENESIS_NATURAL_AGENT_READBACK_RULES,
@@ -29,12 +34,8 @@ import {
   XENESIS_NATURAL_DESK_ACTION_ARGS,
   XENESIS_NATURAL_GATEWAY_ACTION_RULES,
   XENESIS_NATURAL_MCP_INSTALL_DRAFT_APPLY_TARGET_RULES,
-  XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_RULES,
-  XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_RULES,
   XENESIS_NATURAL_OAUTH_SETUP_PACKET_TARGET_RULES,
   XENESIS_NATURAL_PROFILE_INVENTORY_RULES,
-  XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_RULES,
-  XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_RULES,
   XENESIS_NATURAL_PROVIDER_OPEN_RULES,
   XENESIS_NATURAL_PROVIDER_PROFILE_DRAFT_APPLY_PROVIDER_RULES,
   XENESIS_NATURAL_PROVIDER_STATUS_RULES,
@@ -44,8 +45,6 @@ import {
   XENESIS_NATURAL_RUNTIME_CONTROL_RULES,
   XENESIS_NATURAL_RUNTIME_INVENTORY_RULES,
   XENESIS_NATURAL_RUNTIME_SUPPORT_RULES,
-  XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_RULES,
-  XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_RULES,
   XENESIS_NATURAL_WORKSPACE_SET_RULES,
 } from './xenesisNaturalLanguageCapabilityCatalog';
 import {
@@ -56,13 +55,9 @@ import {
   findXenesisNaturalGuideTarget,
   findXenesisNaturalOnboardingStepTarget,
   findXenesisNaturalProviderTarget,
-  hasXenesisNaturalAggregateCatalogContext,
   hasXenesisNaturalConnectionReadbackIntent,
   hasXenesisNaturalConnectionReviewRequestIntent,
   hasXenesisNaturalExplicitOpenIntent,
-  hasXenesisNaturalExternalMessengerCatalogContext,
-  hasXenesisNaturalExternalToolCatalogContext,
-  hasXenesisNaturalMessengerProfileDraftCatalogContext,
   hasXenesisNaturalOnboardingContext,
   hasXenesisNaturalProviderProfileContext,
   isXenesisNaturalConnectionMessengerTarget,
@@ -145,21 +140,6 @@ function xenesisOnboardingStatusActionFromNaturalText(value: string): XenesisNat
   return findXenesisNaturalOnboardingStatusAction(value, step);
 }
 
-function xenesisToolAggregateStatusActionFromNaturalText(value: string): XenesisNaturalDeskActionRequest | null {
-  if (!hasXenesisNaturalExternalToolCatalogContext(value)) return null;
-  if (!hasXenesisNaturalConnectionReadbackIntent(value)) return null;
-
-  return findXenesisNaturalCatalogRuleAction(value, XENESIS_NATURAL_TOOL_AGGREGATE_STATUS_RULES);
-}
-
-function xenesisMessengerAggregateStatusActionFromNaturalText(value: string): XenesisNaturalDeskActionRequest | null {
-  if (!hasXenesisNaturalExternalMessengerCatalogContext(value)) return null;
-  if (!hasXenesisNaturalConnectionReadbackIntent(value)) return null;
-  if (!hasXenesisNaturalAggregateCatalogContext(value)) return null;
-
-  return findXenesisNaturalCatalogRuleAction(value, XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_RULES);
-}
-
 function xenesisProviderFromNaturalText(value: string): { id: string; label: string } | null {
   const provider = findXenesisNaturalProviderTarget(value);
   if (provider) return provider;
@@ -167,16 +147,8 @@ function xenesisProviderFromNaturalText(value: string): { id: string; label: str
   return null;
 }
 
-function xenesisProviderAggregateStatusActionFromNaturalText(value: string): XenesisNaturalDeskActionRequest | null {
-  if (!hasXenesisNaturalProviderProfileContext(value)) return null;
-  if (!hasXenesisNaturalConnectionReadbackIntent(value)) return null;
-  if (!hasXenesisNaturalAggregateCatalogContext(value)) return null;
-
-  return findXenesisNaturalCatalogRuleAction(value, XENESIS_NATURAL_PROVIDER_AGGREGATE_STATUS_RULES);
-}
-
 function xenesisProviderReadbackActionFromNaturalText(value: string): XenesisNaturalDeskActionRequest | null {
-  const providerAggregateAction = xenesisProviderAggregateStatusActionFromNaturalText(value);
+  const providerAggregateAction = findXenesisNaturalProviderAggregateStatusAction(value);
   if (providerAggregateAction) return providerAggregateAction;
 
   const provider = xenesisProviderFromNaturalText(value);
@@ -191,9 +163,8 @@ export function xenesisConnectionReadbackActionFromNaturalText(value: string): X
   const providerAction = xenesisProviderReadbackActionFromNaturalText(value);
   if (providerAction) return providerAction;
 
-  if (hasXenesisNaturalMessengerProfileDraftCatalogContext(value)) {
-    return findXenesisNaturalCatalogRuleAction(value, XENESIS_NATURAL_MESSENGER_AGGREGATE_STATUS_RULES);
-  }
+  const messengerProfileDraftStatusAction = findXenesisNaturalMessengerProfileDraftAggregateStatusAction(value);
+  if (messengerProfileDraftStatusAction) return messengerProfileDraftStatusAction;
 
   const target = xenesisConnectionTargetFromNaturalText(value);
   if (target) {
@@ -207,10 +178,10 @@ export function xenesisConnectionReadbackActionFromNaturalText(value: string): X
   const guideStatusAction = xenesisGuideStatusActionFromNaturalText(value);
   if (guideStatusAction) return guideStatusAction;
 
-  const toolAggregateStatusAction = xenesisToolAggregateStatusActionFromNaturalText(value);
+  const toolAggregateStatusAction = findXenesisNaturalToolAggregateStatusAction(value);
   if (toolAggregateStatusAction) return toolAggregateStatusAction;
 
-  const messengerAggregateStatusAction = xenesisMessengerAggregateStatusActionFromNaturalText(value);
+  const messengerAggregateStatusAction = findXenesisNaturalMessengerAggregateStatusAction(value);
   if (messengerAggregateStatusAction) return messengerAggregateStatusAction;
 
   if (hasXenesisNaturalOnboardingContext(value)) {
@@ -394,41 +365,6 @@ function xenesisGuideCatalogOpenActionFromNaturalText(value: string): XenesisNat
   return findXenesisNaturalConnectionAggregateOpenAction(value, 'guide');
 }
 
-function xenesisAggregateConnectionCenterOpenActionFromNaturalText(
-  value: string,
-): XenesisNaturalDeskActionRequest | null {
-  if (!hasXenesisNaturalAggregateCatalogContext(value)) return null;
-
-  if (hasXenesisNaturalProviderProfileContext(value)) {
-    return findXenesisNaturalCatalogRuleAction(
-      value,
-      XENESIS_NATURAL_PROVIDER_AGGREGATE_OPEN_RULES,
-      XENESIS_NATURAL_DESK_ACTION_ARGS.ensureVisible(),
-    );
-  }
-
-  if (hasXenesisNaturalExternalToolCatalogContext(value)) {
-    return findXenesisNaturalCatalogRuleAction(
-      value,
-      XENESIS_NATURAL_TOOL_AGGREGATE_OPEN_RULES,
-      XENESIS_NATURAL_DESK_ACTION_ARGS.ensureVisible(),
-    );
-  }
-
-  if (
-    hasXenesisNaturalExternalMessengerCatalogContext(value) ||
-    hasXenesisNaturalMessengerProfileDraftCatalogContext(value)
-  ) {
-    return findXenesisNaturalCatalogRuleAction(
-      value,
-      XENESIS_NATURAL_MESSENGER_AGGREGATE_OPEN_RULES,
-      XENESIS_NATURAL_DESK_ACTION_ARGS.ensureVisible(),
-    );
-  }
-
-  return null;
-}
-
 export function xenesisConnectionActionFromNaturalText(value: string): XenesisNaturalDeskActionRequest | null {
   const guideCatalogOpenAction = xenesisGuideCatalogOpenActionFromNaturalText(value);
   if (guideCatalogOpenAction) return guideCatalogOpenAction;
@@ -436,7 +372,7 @@ export function xenesisConnectionActionFromNaturalText(value: string): XenesisNa
   const guideAction = xenesisGuideActionFromNaturalText(value);
   if (guideAction) return guideAction;
 
-  const aggregateOpenAction = xenesisAggregateConnectionCenterOpenActionFromNaturalText(value);
+  const aggregateOpenAction = findXenesisNaturalConnectionCenterAggregateOpenAction(value);
   if (aggregateOpenAction) return aggregateOpenAction;
 
   const providerAction = xenesisProviderOpenActionFromNaturalText(value);

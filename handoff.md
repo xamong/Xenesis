@@ -7,6 +7,83 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Latest Slice: Shared Aggregate Natural Catalog Actions
+
+- Current objective:
+  - Move provider/tool/messenger aggregate catalog open/status action assembly
+    out of `src/shared/xenesisNaturalLanguageActionResolvers.ts` and into
+    shared natural capability catalog helpers.
+- Scope:
+  - Add RED tests requiring shared aggregate open/status action helpers.
+  - Add source guards that block direct provider/tool/messenger aggregate rule
+    imports and `ensureVisible()` aggregate action construction in the natural
+    resolver.
+  - Preserve existing detailed Connection Center open/status natural prompt
+    payloads.
+- Touched files so far:
+  - `handoff.md`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `src/shared/xenesisNaturalLanguageActionResolvers.ts`
+  - `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-shared-aggregate-natural-catalog-actions.md`
+- Intended RED tests:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    should fail because the aggregate helper functions do not exist yet and the
+    resolver still constructs provider/tool/messenger aggregate actions.
+- Verification status:
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> failed 50/52 as expected because the aggregate helper functions were not
+    exported and the natural resolver still owned provider/tool/messenger
+    aggregate action assembly.
+  - GREEN focused:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 52/52 after adding shared aggregate helpers, updating stale
+    resolver-owned source expectations, and refactoring the resolver to
+    delegate provider/tool/messenger aggregate open/status action assembly.
+  - Focused Biome write:
+    `npx biome check --write --formatter-enabled=true --linter-enabled=true --assist-enabled=true src/shared/xenesisNaturalLanguageCapabilityCatalog.ts src/shared/xenesisNaturalLanguageActionResolvers.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+    -> passed; fixed two files.
+  - Focused post-format source/test recheck:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 52/52.
+  - Typecheck:
+    `npm run typecheck` -> passed.
+  - Smoke fixture:
+    `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` ->
+    passed 6/6.
+  - Focused post-format Biome check:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true src/shared/xenesisNaturalLanguageCapabilityCatalog.ts src/shared/xenesisNaturalLanguageActionResolvers.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+    -> passed.
+  - CR audit:
+    `npm run docs:capabilities:audit` -> passed; generated audit summary
+    remained 796 nodes and 689 coverage path references.
+  - CR audit counter readback:
+    `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> all 0.
+  - Build:
+    `npm run build` -> passed. Existing Vite warnings about browser
+    externalization/dynamic import chunking were printed.
+  - Live natural Desk routing smoke:
+    `npm run smoke:xenesis:natural-desk-routing` -> passed 261/261.
+- Implemented:
+  - Added provider/tool/messenger aggregate status helper functions in
+    `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`.
+  - Added shared Connection Center aggregate open helper for provider/tool/
+    messenger catalog surfaces.
+  - Removed provider/tool/messenger aggregate open/status rule imports and
+    direct `ensureVisible()` aggregate action construction from
+    `src/shared/xenesisNaturalLanguageActionResolvers.ts`.
+  - Updated source-ownership tests so aggregate rule ownership now points at the
+    shared capability catalog instead of the natural resolver.
+- Known gaps:
+  - Full repo lint/public-release known gaps remain unchanged.
+- Documentation:
+  - Added Obsidian working note
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-shared-aggregate-natural-catalog-actions.md`.
+- Next intended step:
+  - Run final diff hygiene, stage this slice only, and commit it.
+
 ## Latest Slice: Shared Guide And Onboarding Natural Actions
 
 - Current objective:
