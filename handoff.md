@@ -7,6 +7,66 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current Slice: Final Goal Overall Spec
+
+- Current objective:
+  - Pause slice execution planning and write the overall product/technical spec
+    first.
+  - Define the final goal contract across CR coverage, provider setup,
+    onboarding, external tools, MCP/OAuth, external messengers, approvals,
+    user-story guides, live verification, and Obsidian graph updates.
+  - Make downstream slice plans depend on this overall spec before execution.
+- Scope boundary:
+  - Planning/spec only; no product code changes in this turn.
+  - No external web browsing.
+  - No deterministic natural-language routing, keyword catalogs, prompt routers,
+    provider-specific CR shortcuts, chat-only approvals, or secret-bearing docs.
+- Touched files:
+  - `handoff.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-final-goal-overall-spec.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-reference-driven-final-goal-slices.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-1-live-cr-baseline-plan.md`
+- Source review:
+  - `docs/obsidian/Xenesis-desk/00_System/Final Goal.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-reference-driven-final-goal-slices.md`
+  - `docs/superpowers/plans/2026-06-29-xenesis-reference-driven-final-goal-slices.md`
+  - `F:\agent-anal\analysis\xenesis-gaps-vs-references.ko.md`
+  - Prior Slice 1 plan context:
+    `docs/superpowers/plans/2026-06-29-slice-1-live-cr-baseline-reference-map.md`
+- Commands run:
+  - `rg -n "Final Goal Overall Spec|Overall Spec|전체 spec|전체 스펙" docs\obsidian handoff.md`
+  - `Get-Content -LiteralPath 'docs\obsidian\Xenesis-desk\00_System\Final Goal.md' -TotalCount 260`
+  - `Get-Content -LiteralPath 'docs\obsidian\Xenesis-desk\80_AI\Working Notes\2026-06-29-reference-driven-final-goal-slices.md' -TotalCount 220`
+  - `Get-Content -LiteralPath 'docs\superpowers\plans\2026-06-29-xenesis-reference-driven-final-goal-slices.md' -TotalCount 180`
+  - `Get-Content -LiteralPath 'F:\agent-anal\analysis\xenesis-gaps-vs-references.ko.md' -TotalCount 260`
+  - `rg -n "TBD|TODO|fill in|implement later|Similar to Task|placeholder|F:\\agent-anal\\.*\\.\\.\\.|appropriate error|edge cases" 'docs\obsidian\Xenesis-desk\80_AI\Working Notes\2026-06-29-final-goal-overall-spec.md' 'docs\obsidian\Xenesis-desk\80_AI\Working Notes\2026-06-29-reference-driven-final-goal-slices.md' 'docs\obsidian\Xenesis-desk\80_AI\Working Notes\2026-06-29-slice-1-live-cr-baseline-plan.md'`
+  - `rg -n "Final Goal Overall Spec|Guides \[\[Reference-Driven Final Goal Slices\]\]|Guides \[\[Slice 1 Live CR Baseline Plan\]\]|downstream of \[\[Final Goal Overall Spec\]\]" 'docs\obsidian\Xenesis-desk\80_AI\Working Notes' handoff.md`
+  - `Test-Path -LiteralPath 'docs\obsidian\Xenesis-desk\80_AI\Working Notes\2026-06-29-final-goal-overall-spec.md'`
+  - `git diff --check`
+- Exact verification result:
+  - Overall spec was written at
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-final-goal-overall-spec.md`.
+  - Existing downstream notes now depend on `[[Final Goal Overall Spec]]`:
+    `[[Reference-Driven Final Goal Slices]]` and
+    `[[Slice 1 Live CR Baseline Plan]]`.
+  - The Slice 1 plan remains available but is explicitly downstream and should
+    not be treated as the immediate next implementation step until the overall
+    spec scope is accepted.
+  - Open-ended marker scan produced no matches after replacing the loose
+    reference-root example with a concrete analysis note example.
+  - Graph-link search found the overall spec and downstream guide/dependency
+    links.
+  - `Test-Path` returned `True` for the overall spec.
+  - `git diff --check` reported no whitespace errors; Git printed LF/CRLF
+    normalization warnings only.
+- Known gaps:
+  - This turn wrote the overall spec only. Product code, tests, CR audit,
+    typecheck, build, and live smokes are intentionally deferred.
+- Next intended step:
+  - Review or refine
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-final-goal-overall-spec.md`
+    before executing any implementation slice.
+
 ## Current Slice: Slice 1 Live CR Baseline Detailed Plan
 
 - Current objective:

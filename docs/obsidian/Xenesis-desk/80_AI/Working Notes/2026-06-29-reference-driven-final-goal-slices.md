@@ -10,6 +10,7 @@ confidence: medium
 last_reviewed: 2026-06-29
 depends_on:
   - "[[Final Goal]]"
+  - "[[Final Goal Overall Spec]]"
   - "[[Capability Registry Architecture]]"
   - "[[Xenesis Agent Runtime]]"
   - "[[Provider Model]]"
@@ -27,6 +28,9 @@ The remaining Xenesis Desk final-goal work should be executed in larger slices,
 but each slice needs concrete internal spec details. The plan uses local
 reference material from `F:\agent-anal` only; it should not spend slice cycles
 on repeated web research.
+
+This slice plan is downstream of [[Final Goal Overall Spec]]. Treat it as a
+draft implementation plan until the overall spec is accepted.
 
 The master implementation plan is stored at
 `docs/superpowers/plans/2026-06-29-xenesis-reference-driven-final-goal-slices.md`.
@@ -78,6 +82,7 @@ Concrete reference paths verified during this spec slice:
 ## Graph Links
 
 - Depends on [[Final Goal]]
+- Depends on [[Final Goal Overall Spec]]
 - Depends on [[Capability Registry Architecture]]
 - Depends on [[Xenesis Agent Runtime]]
 - Depends on [[Provider Model]]
