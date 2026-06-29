@@ -20,6 +20,7 @@ depends_on:
   - "[[Xenesis Agent Runtime]]"
   - "[[Approval Flow]]"
 touches:
+  - "docs/superpowers/plans/2026-06-29-slice-01-live-cr-baseline.md"
   - "docs/superpowers/plans/2026-06-29-slice-1-live-cr-baseline-reference-map.md"
   - "handoff.md"
 ---
@@ -36,10 +37,15 @@ This Slice 1 plan is downstream of [[Final Goal Overall Spec]]. Do not execute
 it as the next implementation step until [[Slice Spec 01 Live CR Baseline]] has
 been reviewed for scope.
 
-The local detailed implementation plan is stored at
-`docs/superpowers/plans/2026-06-29-slice-1-live-cr-baseline-reference-map.md`.
-That directory is ignored by Git; [[Slice Spec 01 Live CR Baseline]] and this
-note are the tracked Obsidian graph records.
+The current detailed implementation plan is stored at
+`docs/superpowers/plans/2026-06-29-slice-01-live-cr-baseline.md`.
+The older local plan
+`docs/superpowers/plans/2026-06-29-slice-1-live-cr-baseline-reference-map.md`
+is superseded by the stricter Slice 01 plan because it predates the adversarial
+spec review.
+
+`docs/superpowers/` is ignored by Git unless force-added. This note is the
+tracked Obsidian graph pointer to the current plan.
 
 ## Planned Work
 
@@ -66,8 +72,10 @@ reasoning evidence.
 
 ## Verification Planned
 
+- `node --test scripts\assertCapabilityAuditZero.test.mjs`
 - `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs`
 - `node --test scripts\xenesisReviewRequestApprovalLiveSmoke.test.mjs`
+- `node --test src\main\capabilityActionApproval.test.mjs`
 - `node --test src\main\mcpActionInbox.test.mjs`
 - `npm run docs:capabilities:audit`
 - `node scripts\assertCapabilityAuditZero.mjs`

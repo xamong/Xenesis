@@ -7,6 +7,73 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current Slice: Slice 01 Live CR Baseline Plan
+
+- Current objective:
+  - Convert [[Slice Spec 01 Live CR Baseline]] into a concrete
+    `superpowers:writing-plans` implementation plan.
+  - Keep Obsidian as reference/context only; executable truth remains repo code,
+    tests, generated CR docs, audit-zero counters, build, and live Electron
+    smoke output.
+  - Prepare the next implementation slice without claiming product runtime
+    completion.
+- Scope boundary:
+  - Planning only in this turn; no product code changes.
+  - No deterministic natural-language routing, keyword catalogs, prompt routers,
+    provider-specific CR shortcuts, chat-only approvals, or secret-bearing docs.
+  - No external web browsing.
+- Touched files:
+  - `handoff.md`
+  - `docs/superpowers/plans/2026-06-29-slice-01-live-cr-baseline.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-1-live-cr-baseline-plan.md`
+- Source review:
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-01-live-cr-baseline.md`
+  - `scripts/xenesisConnectionCenterLiveSmoke.mjs`
+  - `scripts/xenesisConnectionCenterLiveSmoke.test.mjs`
+  - `scripts/xenesisReviewRequestApprovalLiveSmoke.mjs`
+  - `scripts/xenesisReviewRequestApprovalLiveSmoke.test.mjs`
+  - `src/main/capabilityActionApproval.mjs`
+  - `src/main/mcpActionInbox.mjs`
+  - `src/main/mcpActionInbox.test.mjs`
+  - `src/main/index.ts`
+  - `src/shared/xenesisConnectionCapabilities.test.ts`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Verification Map.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/CR Surface Index.md`
+- Commands run:
+  - `Test-Path docs\superpowers\plans`
+  - `git status --short`
+  - `rg -n "docs/superpowers|superpowers/plans|plans/" .gitignore .git/info/exclude`
+  - `Get-Content -Path "docs\obsidian\Xenesis-desk\80_AI\Working Notes\2026-06-29-slice-spec-01-live-cr-baseline.md" -TotalCount 260`
+  - `Get-Content -Path scripts\xenesisConnectionCenterLiveSmoke.mjs -TotalCount 260`
+  - `Get-Content -Path scripts\xenesisConnectionCenterLiveSmoke.test.mjs -TotalCount 220`
+  - `Get-Content -Path scripts\xenesisReviewRequestApprovalLiveSmoke.mjs -TotalCount 260`
+  - `Get-Content -Path scripts\xenesisReviewRequestApprovalLiveSmoke.test.mjs -TotalCount 220`
+  - `Get-Content -Path src\main\mcpActionInbox.mjs -TotalCount 320`
+  - `Get-Content -Path src\main\capabilityActionApproval.mjs -TotalCount 240`
+  - `Get-Content -Path src\main\mcpActionInbox.test.mjs -TotalCount 260`
+  - Marker scan over
+    `docs\superpowers\plans\2026-06-29-slice-01-live-cr-baseline.md` for open
+    planning phrases.
+- Exact verification result:
+  - Wrote `docs/superpowers/plans/2026-06-29-slice-01-live-cr-baseline.md`
+    with the required `superpowers:writing-plans` header, exact file list,
+    task-by-task tests, implementation snippets, commands, expected output,
+    and final live smoke gates.
+  - Confirmed `.gitignore` ignores `docs/superpowers/`; the plan remains a
+    local plan artifact unless force-added during execution.
+  - Updated the tracked Obsidian Slice 1 plan note to point at the new Slice 01
+    implementation plan and its stricter verification set.
+  - Open-planning marker scan over the new plan produced no matches.
+- Known gaps:
+  - This turn wrote the implementation plan only. Product code, focused tests,
+    CR audit, audit-zero assertion, typecheck, build, and live Electron smokes
+    have not been run for the implementation.
+  - `scripts/assertCapabilityAuditZero.mjs` and its tests are planned but not
+    implemented yet.
+- Next intended step:
+  - Choose execution mode: subagent-driven implementation task by task, or
+    inline execution with checkpoints.
+
 ## Current Slice: Adversarial Slice Spec Review
 
 - Current objective:
