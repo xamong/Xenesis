@@ -140,47 +140,6 @@ export interface XconArtifactDiagnosticDetail {
   message: string;
 }
 
-const STRONG_ARTIFACT_TERMS = [
-  'xcon',
-  'sketch',
-  'artifact',
-  '아티팩트',
-  '거울',
-  'gowoori',
-  '화면',
-  'ui',
-  '대시보드',
-  'dashboard',
-  '보고서',
-  'report',
-  '문서',
-  'document',
-  '차트',
-  'chart',
-  '그래프',
-  'graph',
-  '그리드',
-  'grid',
-  '표',
-  '테이블',
-  'table',
-  '지도',
-  'map',
-  '배너',
-  'banner',
-  'qr',
-  '큐알',
-  '네트워크',
-  'network',
-  '워크플로우',
-  'workflow',
-  '모니터',
-  'monitor',
-  '순위',
-  '랭킹',
-  'ranking',
-];
-
 export function createXconArtifactProviderPlan(input: XconArtifactProviderPlanInput): XconArtifactProviderPlan {
   const routePrompt = input.semanticPrompt?.trim() || input.prompt;
   const route = routeGowooriUserPrompt(routePrompt, input.mode);
@@ -373,17 +332,6 @@ export async function runXconArtifactAutomaticRepair(
     repairBeforeDiagnosticsCount,
     repairAfterDiagnosticsCount,
   };
-}
-
-export function shouldRouteXenesisInputToArtifact(input: string): boolean {
-  const normalized = String(input || '')
-    .trim()
-    .toLowerCase();
-  if (!normalized || normalized.startsWith('/')) return false;
-  if (STRONG_ARTIFACT_TERMS.some((term) => normalized.includes(term))) return true;
-
-  const route = routeGowooriUserPrompt(input, 'generate');
-  return ['ranking-table', 'workflow', 'dashboard', 'document'].includes(route.intent);
 }
 
 export function createXconArtifactTranscriptSummary(result: XconArtifactResult): string {

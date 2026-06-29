@@ -7,6 +7,80 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current Slice: Remove Remaining Agent Prompt Heuristics
+
+- Current objective:
+  - Remove remaining deterministic natural-language or keyword heuristic
+    processing from Xenesis Agent-adjacent code paths.
+  - Keep explicit slash commands, explicit `xenesis-desk-action` fenced CR
+    payloads, and structured command option parsing.
+  - Do not infer routing, artifact mode, visible subagent mode, or provider
+    runtime limits from Korean/English prompt keywords.
+- Scope boundary:
+  - No external web browsing.
+  - No new natural-language routing, keyword catalogs, prompt classifiers, or
+    provider-specific shortcuts.
+  - No CR registry/dispatcher changes expected in this slice.
+- Plan:
+  - `docs/superpowers/plans/2026-06-29-remove-agent-heuristics.md`
+    (local ignored plan artifact).
+- Source review so far:
+  - `xenesisAgentDeskControl.ts` is a re-export shim.
+  - `packages/xenesis/src/core/intentRouter.ts` honors explicit mode only.
+  - Remaining heuristic candidates found:
+    `xenesisAgentVisibleSubagentsDemo.ts` natural visible-subagent routing and
+    args-from-input helpers, `xconArtifactEngine.ts` artifact auto-route helper,
+    `AgentRunnerBuilder.ts` prompt-keyword `maxTurns` extension,
+    `xenesisAgentArtifactContext.ts` artifact follow-up inference, and
+    `xenesisAgentChatHistory.ts` chat follow-up prompt rewriting.
+- Touched files so far:
+  - `handoff.md`
+  - `docs/superpowers/plans/2026-06-29-remove-agent-heuristics.md`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentsDemo.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentsDemo.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/XenesisAgentPane.tsx`
+  - `src/renderer/artifacts/xconArtifactEngine.test.ts`
+  - `src/renderer/artifacts/xconArtifactEngine.ts`
+  - `packages/xenesis/src/core/AgentRunnerBuilder.test.ts`
+  - `packages/xenesis/src/core/AgentRunnerBuilder.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentArtifactContext.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentArtifactContext.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentChatHistory.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentChatHistory.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentRunRequest.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentRunRequest.ts`
+- Verification so far:
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentVisibleSubagentsDemo.test.ts src\renderer\artifacts\xconArtifactEngine.test.ts`
+    failed as expected because visible-subagent natural routing helpers and the
+    artifact auto-route helper still existed.
+  - RED:
+    `npm --prefix packages/xenesis exec vitest run src/core/AgentRunnerBuilder.test.ts`
+    failed as expected because `promptRequiresExtendedWorkLoop` still existed
+    in `AgentRunnerBuilder.ts`.
+  - GREEN:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentVisibleSubagentsDemo.test.ts src\renderer\artifacts\xconArtifactEngine.test.ts`
+    passed 28/28 after removing visible-subagent natural routing helpers,
+    args-from-input builders, and artifact auto-route helper.
+  - GREEN:
+    `npm --prefix packages/xenesis exec vitest run src/core/AgentRunnerBuilder.test.ts src/core/intentRouter.test.ts src/workflows/xenisPolicy.test.ts`
+    passed 3 files / 8 tests after simplifying `effectiveAgentMaxTurns`.
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentArtifactContext.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentChatHistory.test.ts`
+    failed as expected while artifact/chat follow-up classifiers remained.
+  - GREEN:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentArtifactContext.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentChatHistory.test.ts`
+    passed 6/6 after removing follow-up classifiers.
+  - GREEN:
+    `npx vitest run src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentRunRequest.test.ts`
+    passed 1 file / 2 tests after keeping run request prompts unchanged.
+  - Source scan:
+    targeted `rg` found removed heuristic names only in guard tests, not in
+    production source.
+- Next intended step:
+  - Run broader focused Agent-pane tests, typechecks, focused Biome, and diff
+    checks.
+
 ## Current Slice: Onboarding Workflow Preview
 
 - Current objective:
@@ -19054,6 +19128,138 @@ Verification so far:
     touched files.
 - Next intended step:
   - Continue with the next hardcoding/CR gap slice from the clean worktree.
+
+## Current Agent Heuristic Removal Slice
+
+- Current objective:
+  - Remove deterministic natural-language and keyword heuristic processing from
+    Xenesis Agent-adjacent paths. Ordinary user text should reach the selected
+    provider/runtime instead of being locally routed, rewritten, or used to
+    change runtime limits.
+- Scope:
+  - Keep explicit slash commands, explicit fenced `xenesis-desk-action` CR
+    payloads, and explicit `--flag` slash-option parsing.
+  - Remove local natural prompt routing for visible subagents, control demos,
+    artifact auto-routing, follow-up context inference, and prompt keyword
+    max-turn extension.
+- Plan:
+  - `docs/superpowers/plans/2026-06-29-remove-agent-heuristics.md`
+- Touched files:
+  - `handoff.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-remove-agent-heuristics.md`
+  - `packages/xenesis/src/core/AgentRunnerBuilder.ts`
+  - `packages/xenesis/src/core/AgentRunnerBuilder.test.ts`
+  - `src/renderer/artifacts/xconArtifactEngine.ts`
+  - `src/renderer/artifacts/xconArtifactEngine.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/XenesisAgentPane.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentArtifactContext.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentArtifactContext.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentChatHistory.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentChatHistory.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentRunRequest.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentRunRequest.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentsDemo.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentsDemo.test.ts`
+- Commands run:
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentVisibleSubagentsDemo.test.ts src\renderer\artifacts\xconArtifactEngine.test.ts`
+    -> failed as expected while visible-subagent natural routing helpers and
+    artifact auto-route helper still existed.
+  - RED:
+    `npm --prefix packages/xenesis exec vitest run src/core/AgentRunnerBuilder.test.ts`
+    -> failed as expected while `promptRequiresExtendedWorkLoop` still existed.
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentArtifactContext.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentChatHistory.test.ts`
+    -> failed as expected while artifact/chat follow-up classifiers remained.
+  - GREEN focused:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentVisibleSubagentsDemo.test.ts src\renderer\artifacts\xconArtifactEngine.test.ts`
+    -> passed 28/28.
+  - GREEN package guard:
+    `npm --prefix packages/xenesis exec vitest run src/core/AgentRunnerBuilder.test.ts src/core/intentRouter.test.ts src/workflows/xenisPolicy.test.ts`
+    -> passed 3 files / 8 tests.
+  - GREEN follow-up guards:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentArtifactContext.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentChatHistory.test.ts`
+    -> passed 6/6.
+  - GREEN run request:
+    `npx vitest run src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentRunRequest.test.ts`
+    -> passed 1 file / 2 tests.
+  - Source guard search:
+    `rg -n "shouldRouteXenesisInputToArtifact|shouldRouteXenesisInputToVisibleSubagentsDemo|shouldRouteXenesisInputToVisibleSubagentWork|shouldRouteXenesisInputToControlDemoSuite|buildXenesisVisibleSubagentsDemoArgsFromInput|buildXenesisVisibleSubagentWorkArgsFromInput|buildXenesisControlDemoWorkArgsFromInput|promptRequiresExtendedWorkLoop|STRONG_ARTIFACT_TERMS|isXenesisArtifactFollowUpPrompt|buildXenesisContextualPrompt|isLikelyFollowUpPrompt|isLikelyStandalonePrompt|exactFollowUpPrompts|followUpPromptPatterns|Artifact follow-up context applied|Recent conversation context attached to follow-up prompt" packages src`
+    -> matches remain only inside guard tests.
+  - Post-format focused Agent guards:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentVisibleSubagentsDemo.test.ts src\renderer\artifacts\xconArtifactEngine.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentArtifactContext.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentChatHistory.test.ts`
+    -> passed 45/45.
+  - Post-format run request:
+    `npx vitest run src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentRunRequest.test.ts`
+    -> passed 1 file / 2 tests.
+  - Post-format package guards:
+    `npm --prefix packages/xenesis exec vitest run src/core/AgentRunnerBuilder.test.ts src/core/intentRouter.test.ts src/workflows/xenisPolicy.test.ts src/core/AgentRuntimeFactory.modeMessages.test.ts`
+    -> passed 4 files / 10 tests.
+  - Root typecheck:
+    `npm run typecheck` -> passed.
+  - Xenesis package typecheck:
+    `npm --prefix packages/xenesis run typecheck` -> passed.
+  - Xenesis package tests:
+    `npm --prefix packages/xenesis test` -> passed 81 files / 372 tests.
+  - Xenesis package build:
+    `npm --prefix packages/xenesis run build` -> passed.
+  - Root build:
+    `npm run build` -> passed. Vite printed existing warnings for `hwp.js`
+    browser `fs` externalization and mixed dynamic/static import of
+    `src/renderer/deskBridge.ts`.
+  - Focused changed-file Biome:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true ...changed files...`
+    -> exit 0 with two existing optional-chain warnings in
+    `XenesisAgentPane.tsx`.
+  - Hygiene:
+    `git diff --check` -> passed; Git printed LF/CRLF normalization warnings
+    only.
+  - Additional option-parser tightening:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentVisibleSubagentsDemo.test.ts`
+    -> passed 20/20 after removing unprefixed option aliases such as
+    `keep-open`, `show-ms`, and `sleep`.
+  - Additional focused Biome:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentsDemo.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentsDemo.test.ts --max-diagnostics 60`
+    -> passed.
+  - Additional root typecheck:
+    `npm run typecheck` -> passed.
+  - Final root build after option-parser tightening:
+    `npm run build` -> passed. Vite printed the same existing warnings for
+    `hwp.js` browser `fs` externalization and mixed dynamic/static import of
+    `src/renderer/deskBridge.ts`.
+- Exact verification result:
+  - Natural prompt routing helper names, natural artifact auto-route helper
+    names, prompt keyword max-turn helper, and local follow-up classifier names
+    no longer appear in production source.
+  - Agent run request keeps the current prompt unchanged and passes chat history
+    as separate `historyMessages`.
+  - Artifact prompt context always builds a fresh current-request prompt and no
+    longer injects prior conversation by local follow-up inference.
+  - Explicit slash commands, explicit fenced CR action DSL, and explicit
+    `--flag` slash-option parsing remain available.
+- Implemented:
+  - Deleted visible-subagent/control-demo natural route classifiers and
+    args-from-input builders; `/control-demo` now uses explicit slash options
+    only.
+  - Removed unprefixed visible-subagent option aliases so `keep-open`,
+    `show-ms`, and `sleep` are ordinary task text unless written as explicit
+    `--` flags.
+  - Deleted `shouldRouteXenesisInputToArtifact` and `STRONG_ARTIFACT_TERMS`.
+  - Simplified `effectiveAgentMaxTurns` to return configured `maxTurns`.
+  - Deleted artifact/chat follow-up classifiers and local contextual prompt
+    rewriting.
+  - Removed Agent pane raw-stream branches that announced locally applied
+    follow-up context.
+- Known gaps:
+  - No CR registry or dispatcher paths changed, so CR audit was not rerun for
+    this slice.
+  - No live Electron Agent-pane smoke was run in this slice; coverage is source
+    guards, focused Agent tests, package tests, typechecks, and builds.
+  - Explicit Gowoori artifact generation internals still perform semantic
+    artifact planning behind explicit `/artifact` and `/render`, not as Agent
+    natural Desk routing.
+- Next intended step:
+  - Commit this slice.
 
 ## Latest Slice: Connection Center CR Action Result Feedback
 

@@ -1,35 +1,35 @@
-import type { ToolGuardConfig, XenesisConfig } from "../config/index.js";
-import type { IdeContextInput } from "../ide/index.js";
-import { JsonlSessionWriter } from "../sessions/index.js";
-import { SqliteAgentMessageStore } from "../orchestration/index.js";
-import { AgentRunner, type ApprovalHandler, type ToolExecutionPolicy } from "./AgentRunner.js";
-import type { ExecutionBackend } from "./isolation/executionBackend.js";
-import type { ApprovalDecision } from "./events.js";
-import type { ResumableRunState } from "./resume/ResumableRunState.js";
-import { mergeAdaptiveToolExecutionPolicy } from "./adaptiveExecutionPolicy.js";
+import type { ToolGuardConfig, XenesisConfig } from '../config/index.js';
+import type { BlockingHookRegistration } from '../hooks/blocking.js';
+import { createCommandHookHandler } from '../hooks/CommandHookHandler.js';
+import { HookRegistry } from '../hooks/HookRegistry.js';
+import type { IdeContextInput } from '../ide/index.js';
+import { SqliteAgentMessageStore } from '../orchestration/index.js';
+import { buildProviderQueryConfig } from '../providers/queryConfig.js';
+import { JsonlSessionWriter } from '../sessions/index.js';
+import type { ToolRegistry } from '../tools/index.js';
+import { AgentRunner, type ApprovalHandler, type ToolExecutionPolicy } from './AgentRunner.js';
 import {
-  createConfiguredCapabilityGuardToolExecutionPolicy,
-  hasCustomToolGuardConfig,
-  mergeToolGuardConfigs,
-  mergeToolExecutionPolicies
-} from "./agentCapabilityPolicy.js";
-import {
+  type AgentRunMode,
   createProvider,
   createRunSystemContext,
   createRuntimeTools,
+  type RuntimeNoticeHandler,
   resolveFallbackChainWithDiagnostics,
   selectTools,
-  type AgentRunMode,
-  type RuntimeNoticeHandler
-} from "./AgentRuntimeFactory.js";
-import type { AgentMessage } from "./messages.js";
-import type { ToolRegistry } from "../tools/index.js";
-import { modelContextWindow } from "./context/modelMetadata.js";
-import { createLlmSummarizer, SUMMARIZER_MIN_CONTEXT } from "./context/compaction/llmSummarizer.js";
-import { buildProviderQueryConfig } from "../providers/queryConfig.js";
-import { HookRegistry } from "../hooks/HookRegistry.js";
-import { createCommandHookHandler } from "../hooks/CommandHookHandler.js";
-import type { BlockingHookRegistration } from "../hooks/blocking.js";
+} from './AgentRuntimeFactory.js';
+import { mergeAdaptiveToolExecutionPolicy } from './adaptiveExecutionPolicy.js';
+import {
+  createConfiguredCapabilityGuardToolExecutionPolicy,
+  hasCustomToolGuardConfig,
+  mergeToolExecutionPolicies,
+  mergeToolGuardConfigs,
+} from './agentCapabilityPolicy.js';
+import { createLlmSummarizer, SUMMARIZER_MIN_CONTEXT } from './context/compaction/llmSummarizer.js';
+import { modelContextWindow } from './context/modelMetadata.js';
+import type { ApprovalDecision } from './events.js';
+import type { ExecutionBackend } from './isolation/executionBackend.js';
+import type { AgentMessage } from './messages.js';
+import type { ResumableRunState } from './resume/ResumableRunState.js';
 
 export interface BuildAgentRunnerOptions {
   config: XenesisConfig;
@@ -40,7 +40,7 @@ export interface BuildAgentRunnerOptions {
   traceId?: string;
   mode?: AgentRunMode;
   fromPlan?: boolean;
-  systemMessages?: Extract<AgentMessage, { role: "system" }>[];
+  systemMessages?: Extract<AgentMessage, { role: 'system' }>[];
   workflowContext?: {
     name: string;
     description?: string;
@@ -109,27 +109,37 @@ interface SimpleLogger {
 export function buildHookRegistry(
   config: XenesisConfig,
   programmatic: BlockingHookRegistration[] = [],
-  logger?: SimpleLogger
+  logger?: SimpleLogger,
 ): HookRegistry {
   const registry = new HookRegistry(logger);
   const hooks = config.hooks;
   if (hooks?.enabled) {
     for (const spec of hooks.preToolUse ?? []) {
       registry.register({
-        event: "pre_tool_use",
+        event: 'pre_tool_use',
         toolNamePattern: spec.toolPattern,
         // createCommandHookHandler returns a typed handler; the cast is localized
         // here because the registry's register() accepts per-event registrations
         // and TypeScript cannot narrow the event-string discriminant through the
         // generic overloads in a loop. The runtime dispatch is correct by construction.
-        handler: createCommandHookHandler(spec, "pre_tool_use", { commandTimeoutMs: hooks.commandTimeoutMs }, logger) as BlockingHookRegistration["handler"]
-      } as Extract<BlockingHookRegistration, { event: "pre_tool_use" }>);
+        handler: createCommandHookHandler(
+          spec,
+          'pre_tool_use',
+          { commandTimeoutMs: hooks.commandTimeoutMs },
+          logger,
+        ) as BlockingHookRegistration['handler'],
+      } as Extract<BlockingHookRegistration, { event: 'pre_tool_use' }>);
     }
     for (const spec of hooks.stop ?? []) {
       registry.register({
-        event: "stop",
-        handler: createCommandHookHandler(spec, "stop", { commandTimeoutMs: hooks.commandTimeoutMs }, logger) as BlockingHookRegistration["handler"]
-      } as Extract<BlockingHookRegistration, { event: "stop" }>);
+        event: 'stop',
+        handler: createCommandHookHandler(
+          spec,
+          'stop',
+          { commandTimeoutMs: hooks.commandTimeoutMs },
+          logger,
+        ) as BlockingHookRegistration['handler'],
+      } as Extract<BlockingHookRegistration, { event: 'stop' }>);
     }
   }
   for (const reg of programmatic) {
@@ -152,31 +162,21 @@ export interface EffectiveAgentMaxTurnsInput {
   mode?: AgentRunMode;
 }
 
-function promptRequiresExtendedWorkLoop(prompt: string) {
-  const asksForWork = /구현|수정|추가|갱신|실행|시작|띄워|구동|올려|완료|끝까지|implement|fix|update|add|build|create|run|start|launch/i.test(prompt);
-  const asksForServer = /\bserver\b/i.test(prompt) || /서버/i.test(prompt);
-  const asksForVisualVerification =
-    /\b(?:browser|app_e2e_check)\b/i.test(prompt) ||
-    /브라우저|화면\s*(?:확인|검증)|렌더링\s*(?:확인|검증)/i.test(prompt);
-  const asksForVerification = /검증|확인|test|verify|check/i.test(prompt);
-  return asksForWork && asksForServer && asksForVerification && asksForVisualVerification;
-}
-
 export function effectiveAgentMaxTurns(input: EffectiveAgentMaxTurnsInput) {
-  if (input.mode !== "work") return input.maxTurns;
-  if (!promptRequiresExtendedWorkLoop(input.prompt)) return input.maxTurns;
-  return Math.max(input.maxTurns, 32);
+  return input.maxTurns;
 }
 
 async function releaseBuilderAgentMessageClaims(options: BuildAgentRunnerOptions, messageIds: readonly string[]) {
   if (!options.taskId || messageIds.length === 0) return;
-  await new SqliteAgentMessageStore({ xenesisHome: options.config.xenesisHome })
-    .releaseClaims([...messageIds], options.sessionId);
+  await new SqliteAgentMessageStore({ xenesisHome: options.config.xenesisHome }).releaseClaims(
+    [...messageIds],
+    options.sessionId,
+  );
 }
 
 const mockNoopToolExecutionPolicy: ToolExecutionPolicy = {
-  name: "xenesis:mock-noop",
-  snapshotOnly: true
+  name: 'xenesis:mock-noop',
+  snapshotOnly: true,
 };
 
 function filterAllowedTools(tools: ToolRegistry, allowedTools: string[] | undefined): ToolRegistry {
@@ -192,7 +192,7 @@ function filterAllowedTools(tools: ToolRegistry, allowedTools: string[] | undefi
  * The glue performs a one-shot non-streaming completion against the aux provider and returns its text.
  */
 function buildLlmSummarize(
-  options: BuildAgentRunnerOptions
+  options: BuildAgentRunnerOptions,
 ): ((older: AgentMessage[], previousSummary?: string) => Promise<string>) | undefined {
   const context = options.config.context;
   if (!context.llmSummary) return undefined;
@@ -209,11 +209,11 @@ function buildLlmSummarize(
     return undefined;
   }
 
-  const summarizationProvider = (context.summarizationProvider ?? options.config.provider) as XenesisConfig["provider"];
+  const summarizationProvider = (context.summarizationProvider ?? options.config.provider) as XenesisConfig['provider'];
   const auxConfig: XenesisConfig = {
     ...options.config,
     provider: summarizationProvider,
-    model: summarizationModel
+    model: summarizationModel,
   };
   const auxProvider = createProvider(auxConfig, options.env);
 
@@ -229,10 +229,10 @@ function buildLlmSummarize(
         providers: [{ name: summarizationProvider, model: summarizationModel }],
         maxTokensBudget: maxTokens,
         stream: false,
-        env: options.env
-      })
+        env: options.env,
+      }),
     });
-    return response.message.content ?? "";
+    return response.message.content ?? '';
   };
 
   return createLlmSummarizer({ complete, maxTokens: 4096 });
@@ -252,28 +252,29 @@ export async function buildAgentRunner(options: BuildAgentRunnerOptions): Promis
     claimAgentMessages: Boolean(options.taskId),
     ideContext: options.ideContext,
     systemMessages: options.systemMessages,
-    workflowContext: options.workflowContext
+    workflowContext: options.workflowContext,
   });
   try {
     const guardConfig = mergeToolGuardConfigs(options.config.guard, options.guard);
-    const capabilityGuardPolicy = options.config.provider === "mock" && !hasCustomToolGuardConfig(guardConfig)
-      ? mockNoopToolExecutionPolicy
-      : createConfiguredCapabilityGuardToolExecutionPolicy(guardConfig);
+    const capabilityGuardPolicy =
+      options.config.provider === 'mock' && !hasCustomToolGuardConfig(guardConfig)
+        ? mockNoopToolExecutionPolicy
+        : createConfiguredCapabilityGuardToolExecutionPolicy(guardConfig);
     const toolExecutionPolicy = mergeAdaptiveToolExecutionPolicy(
       mergeToolExecutionPolicies(capabilityGuardPolicy, options.toolExecutionPolicy),
-      systemContext.adaptivePolicy
+      systemContext.adaptivePolicy,
     );
     const sessionWriter = new JsonlSessionWriter({
       workspaceRoot: options.config.workspace,
       xenesisHome: options.config.xenesisHome,
       sessionId: options.sessionId,
       traceId: options.traceId,
-      ...(options.initialSeq !== undefined ? { initialSeq: options.initialSeq } : {})
+      ...(options.initialSeq !== undefined ? { initialSeq: options.initialSeq } : {}),
     });
     for (const source of systemContext.sources) {
       await sessionWriter.write({
-        type: "context_source",
-        ...source
+        type: 'context_source',
+        ...source,
       });
     }
 
@@ -314,7 +315,7 @@ export async function buildAgentRunner(options: BuildAgentRunnerOptions): Promis
         maxTurns: effectiveAgentMaxTurns({
           maxTurns: options.config.maxTurns,
           prompt: options.prompt,
-          mode: options.mode
+          mode: options.mode,
         }),
         maxTokensBudget: options.maxTokensBudget,
         tools,
@@ -350,8 +351,8 @@ export async function buildAgentRunner(options: BuildAgentRunnerOptions): Promis
         recordLifecycle: true,
         hookRegistry,
         maxStopHookContinuations: options.config.hooks?.maxStopHookContinuations ?? 3,
-        ...(options.executionBackend !== undefined ? { executionBackend: options.executionBackend } : {})
-      })
+        ...(options.executionBackend !== undefined ? { executionBackend: options.executionBackend } : {}),
+      }),
     };
   } catch (error) {
     await releaseBuilderAgentMessageClaims(options, systemContext.agentMessageIds ?? []);

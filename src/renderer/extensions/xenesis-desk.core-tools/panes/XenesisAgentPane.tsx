@@ -91,7 +91,7 @@ import {
   taskLifecycleAuditEntries,
   terminalMessageFromRunEventSummary,
 } from './xenesisAgentRunEvents';
-import { buildXenesisAgentRunContextDetail, buildXenesisAgentRunRequest } from './xenesisAgentRunRequest';
+import { buildXenesisAgentRunRequest } from './xenesisAgentRunRequest';
 import {
   appendAssistantStreamDeltaWithRawMerge,
   appendChatMessage,
@@ -101,10 +101,10 @@ import {
   clearChat,
   clearRawStream,
   focusRawStreamEntry,
+  isXenesisAgentBusy,
   mergeRawStreamEntry,
   replaceChatMessage,
   setPolicySnapshot,
-  isXenesisAgentBusy,
   setRawStreamOpen,
   useXenesisAgentState,
   xenesisAgentStateStore,
@@ -146,14 +146,7 @@ import {
   type XenesisTerminalLineKind,
 } from './xenesisAgentTypes';
 import {
-  decideDrain,
-  dequeueQueuedPrompt,
-  enqueueQueuedPrompt,
-  makeQueuedPrompt,
-  removeQueuedPrompt,
-} from './xenesisPromptQueue';
-import {
-  buildXenesisControlDemoWorkArgsFromInput,
+  buildXenesisControlDemoWorkArgs,
   buildXenesisVisibleSubagentsDemoWorkers,
   buildXenesisVisibleSubagentTerminalArgs,
   buildXenesisVisibleSubagentWorkWorkers,
@@ -168,6 +161,13 @@ import {
   xenesisPolicyNoticeFromRecord,
   xenesisPolicySnapshotFromRecord,
 } from './xenesisPolicyNotices';
+import {
+  decideDrain,
+  dequeueQueuedPrompt,
+  enqueueQueuedPrompt,
+  makeQueuedPrompt,
+  removeQueuedPrompt,
+} from './xenesisPromptQueue';
 
 const XENESIS_API_UNAVAILABLE = 'Xenesis API is unavailable. Restart Xenesis Desk or check preload initialization.';
 const XENESIS_OPERATING_ROLE = 'LLM orchestration steward';
@@ -1864,17 +1864,6 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
       summary: trimmedPrompt.split(/\r?\n/)[0]?.slice(0, 120) || 'Xenesis run started',
       detail: trimmedPrompt,
     });
-    const runContextDetail = buildXenesisAgentRunContextDetail({
-      prompt: trimmedPrompt,
-      contextMessages,
-    });
-    if (runContextDetail) {
-      appendRawStreamEntry({
-        kind: 'chat_context',
-        summary: 'Recent conversation context attached to follow-up prompt',
-        detail: runContextDetail,
-      });
-    }
     const runSessionId = xenesisAgentStateStore.getSnapshot().activeSessionId.trim();
     const providerAttachments = toXenesisProviderAttachments(runAttachments);
 
@@ -2025,18 +2014,6 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
       summary: trimmedPrompt.split(/\r?\n/)[0]?.slice(0, 120) || 'XCON artifact generation started',
       detail: providerPrompt,
     });
-    if (artifactPromptContext.contextApplied) {
-      appendRawStreamEntry({
-        kind: 'artifact_context',
-        summary: 'Artifact follow-up context applied',
-        detail: [
-          `displayPrompt: ${trimmedPrompt}`,
-          `previousUserPrompt: ${artifactPromptContext.previousUserPrompt || '-'}`,
-          'previousAssistantText:',
-          artifactPromptContext.previousAssistantText,
-        ].join('\n'),
-      });
-    }
 
     try {
       let lastStatusAt = 0;
@@ -2723,7 +2700,7 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
   }
 
   async function runXenesisControlDemo(input: string, displayInput = '/control-demo'): Promise<void> {
-    await runVisibleSubagentsWork(buildXenesisControlDemoWorkArgsFromInput(input), displayInput);
+    await runVisibleSubagentsWork(buildXenesisControlDemoWorkArgs(input), displayInput);
   }
 
   async function runVisibleSubagentsCleanup(displayInput = '/subagents-cleanup'): Promise<void> {
@@ -3402,7 +3379,14 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
       return;
     }
     if (hasAttachments) clearAttachments();
-    await runPrompt(providerInput, effectiveMode, attachmentDisplayText, submittedAttachments, contextMessages, routingOptions);
+    await runPrompt(
+      providerInput,
+      effectiveMode,
+      attachmentDisplayText,
+      submittedAttachments,
+      contextMessages,
+      routingOptions,
+    );
   }
   runTerminalInputRef.current = runTerminalInput;
 
@@ -3755,13 +3739,9 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
         </section>
       ) : (
         <>
-          {(policySnapshot ||
-            policyNotices.length > 0 ||
-            deskAuditEntries.length > 0 ||
-            taskAuditEntries.length > 0) &&
+          {(policySnapshot || policyNotices.length > 0 || deskAuditEntries.length > 0 || taskAuditEntries.length > 0) &&
             (() => {
-              const diagnosticsActivity =
-                policyNotices.length + deskAuditEntries.length + taskAuditEntries.length;
+              const diagnosticsActivity = policyNotices.length + deskAuditEntries.length + taskAuditEntries.length;
               return (
                 <details className="xd-xenesis-terminal-diagnostics" aria-label="Xenesis diagnostics">
                   <summary>
@@ -3781,108 +3761,110 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
                     </small>
                   </summary>
 
-              {policySnapshot && (
-                <section className="xd-xenesis-policy-active" aria-label="Xenesis active tool policy">
-                  <div>
-                    <strong>Active guard policy</strong>
-                    <span>{policySnapshot.policyName}</span>
-                  </div>
-                  <p>
-                    Priority:{' '}
-                    {policySnapshot.priorityTools.length > 0 ? policySnapshot.priorityTools.join(' -> ') : 'none'}
-                  </p>
-                  {(policySnapshot.allowCount !== undefined ||
-                    policySnapshot.denyCount !== undefined ||
-                    policySnapshot.nextActions?.length) && (
-                    <small>
-                      {policySnapshot.allowCount !== undefined ? `allowed ${policySnapshot.allowCount}` : ''}
-                      {policySnapshot.allowCount !== undefined && policySnapshot.denyCount !== undefined ? ' · ' : ''}
-                      {policySnapshot.denyCount !== undefined ? `blocked ${policySnapshot.denyCount}` : ''}
-                      {policySnapshot.nextActions?.length ? ` · next: ${policySnapshot.nextActions[0]}` : ''}
-                    </small>
+                  {policySnapshot && (
+                    <section className="xd-xenesis-policy-active" aria-label="Xenesis active tool policy">
+                      <div>
+                        <strong>Active guard policy</strong>
+                        <span>{policySnapshot.policyName}</span>
+                      </div>
+                      <p>
+                        Priority:{' '}
+                        {policySnapshot.priorityTools.length > 0 ? policySnapshot.priorityTools.join(' -> ') : 'none'}
+                      </p>
+                      {(policySnapshot.allowCount !== undefined ||
+                        policySnapshot.denyCount !== undefined ||
+                        policySnapshot.nextActions?.length) && (
+                        <small>
+                          {policySnapshot.allowCount !== undefined ? `allowed ${policySnapshot.allowCount}` : ''}
+                          {policySnapshot.allowCount !== undefined && policySnapshot.denyCount !== undefined
+                            ? ' · '
+                            : ''}
+                          {policySnapshot.denyCount !== undefined ? `blocked ${policySnapshot.denyCount}` : ''}
+                          {policySnapshot.nextActions?.length ? ` · next: ${policySnapshot.nextActions[0]}` : ''}
+                        </small>
+                      )}
+                    </section>
                   )}
-                </section>
-              )}
 
-              {policyNotices.length > 0 && (
-                <section className="xd-xenesis-policy-strip" aria-label="Xenesis policy checks">
-                  <div>
-                    <strong>Policy checks</strong>
-                    <span>{policyNotices.length} recent checks</span>
-                  </div>
-                  <div>
-                    {policyNotices.slice(0, 4).map((notice) => (
-                      <article key={notice.id} className={`xd-xenesis-policy-notice is-${notice.status}`}>
-                        <div>
-                          <strong>{notice.status === 'deny' ? 'Blocked' : 'Allowed'}</strong>
-                          <span>{notice.policyName}</span>
-                        </div>
-                        <p>
-                          {notice.toolName}: {notice.reason}
-                        </p>
-                        {(notice.missingBefore.length > 0 || notice.priorityTools.length > 0) && (
-                          <small>
-                            {notice.missingBefore.length > 0
-                              ? `Missing: ${notice.missingBefore.join(', ')}`
-                              : `Priority: ${notice.priorityTools.join(' -> ')}`}
-                          </small>
-                        )}
-                        {notice.nextAction && (
-                          <small className="xd-xenesis-policy-next">Next action: {notice.nextAction}</small>
-                        )}
-                      </article>
-                    ))}
-                  </div>
-                </section>
-              )}
+                  {policyNotices.length > 0 && (
+                    <section className="xd-xenesis-policy-strip" aria-label="Xenesis policy checks">
+                      <div>
+                        <strong>Policy checks</strong>
+                        <span>{policyNotices.length} recent checks</span>
+                      </div>
+                      <div>
+                        {policyNotices.slice(0, 4).map((notice) => (
+                          <article key={notice.id} className={`xd-xenesis-policy-notice is-${notice.status}`}>
+                            <div>
+                              <strong>{notice.status === 'deny' ? 'Blocked' : 'Allowed'}</strong>
+                              <span>{notice.policyName}</span>
+                            </div>
+                            <p>
+                              {notice.toolName}: {notice.reason}
+                            </p>
+                            {(notice.missingBefore.length > 0 || notice.priorityTools.length > 0) && (
+                              <small>
+                                {notice.missingBefore.length > 0
+                                  ? `Missing: ${notice.missingBefore.join(', ')}`
+                                  : `Priority: ${notice.priorityTools.join(' -> ')}`}
+                              </small>
+                            )}
+                            {notice.nextAction && (
+                              <small className="xd-xenesis-policy-next">Next action: {notice.nextAction}</small>
+                            )}
+                          </article>
+                        ))}
+                      </div>
+                    </section>
+                  )}
 
-              {deskAuditEntries.length > 0 && (
-                <section className="xd-xenesis-action-audit" aria-label="Xenesis Desk action audit">
-                  <div>
-                    <strong>Desk actions</strong>
-                    <span>{deskAuditEntries.length} recent Desk tool events</span>
-                  </div>
-                  <div>
-                    {deskAuditEntries.map((entry) => (
-                      <article
-                        key={entry.id}
-                        className={`xd-xenesis-action-audit-entry${entry.error ? ' is-error' : ''}`}
-                      >
-                        <strong>{entry.kind === 'desk_tool_call' ? 'Call' : 'Result'}</strong>
-                        <span title={entry.summary}>{entry.summary}</span>
-                        <small title={entry.at}>{formatXenesisMessageTime(entry.at)}</small>
-                        <button type="button" onClick={() => focusRawStreamEntry(entry.id)}>
-                          Detail
-                        </button>
-                      </article>
-                    ))}
-                  </div>
-                </section>
-              )}
+                  {deskAuditEntries.length > 0 && (
+                    <section className="xd-xenesis-action-audit" aria-label="Xenesis Desk action audit">
+                      <div>
+                        <strong>Desk actions</strong>
+                        <span>{deskAuditEntries.length} recent Desk tool events</span>
+                      </div>
+                      <div>
+                        {deskAuditEntries.map((entry) => (
+                          <article
+                            key={entry.id}
+                            className={`xd-xenesis-action-audit-entry${entry.error ? ' is-error' : ''}`}
+                          >
+                            <strong>{entry.kind === 'desk_tool_call' ? 'Call' : 'Result'}</strong>
+                            <span title={entry.summary}>{entry.summary}</span>
+                            <small title={entry.at}>{formatXenesisMessageTime(entry.at)}</small>
+                            <button type="button" onClick={() => focusRawStreamEntry(entry.id)}>
+                              Detail
+                            </button>
+                          </article>
+                        ))}
+                      </div>
+                    </section>
+                  )}
 
-              {taskAuditEntries.length > 0 && (
-                <section className="xd-xenesis-task-audit" aria-label="Xenesis task lifecycle audit">
-                  <div>
-                    <strong>Task lifecycle</strong>
-                    <span>{taskAuditEntries.length} recent task events</span>
-                  </div>
-                  <div>
-                    {taskAuditEntries.map((entry) => (
-                      <article
-                        key={entry.id}
-                        className={`xd-xenesis-task-audit-entry${entry.error ? ' is-error' : ''}`}
-                      >
-                        <strong>{entry.error ? 'Issue' : 'Task'}</strong>
-                        <span title={entry.summary}>{entry.summary}</span>
-                        <small title={entry.at}>{formatXenesisMessageTime(entry.at)}</small>
-                        <button type="button" onClick={() => focusRawStreamEntry(entry.id)}>
-                          Detail
-                        </button>
-                      </article>
-                    ))}
-                  </div>
-                </section>
-              )}
+                  {taskAuditEntries.length > 0 && (
+                    <section className="xd-xenesis-task-audit" aria-label="Xenesis task lifecycle audit">
+                      <div>
+                        <strong>Task lifecycle</strong>
+                        <span>{taskAuditEntries.length} recent task events</span>
+                      </div>
+                      <div>
+                        {taskAuditEntries.map((entry) => (
+                          <article
+                            key={entry.id}
+                            className={`xd-xenesis-task-audit-entry${entry.error ? ' is-error' : ''}`}
+                          >
+                            <strong>{entry.error ? 'Issue' : 'Task'}</strong>
+                            <span title={entry.summary}>{entry.summary}</span>
+                            <small title={entry.at}>{formatXenesisMessageTime(entry.at)}</small>
+                            <button type="button" onClick={() => focusRawStreamEntry(entry.id)}>
+                              Detail
+                            </button>
+                          </article>
+                        ))}
+                      </div>
+                    </section>
+                  )}
                 </details>
               );
             })()}

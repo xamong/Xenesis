@@ -1,21 +1,33 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import {
-  buildXenesisControlDemoWorkArgsFromInput,
-  buildXenesisVisibleSubagentsDemoArgsFromInput,
+  buildXenesisControlDemoWorkArgs,
   buildXenesisVisibleSubagentsDemoWorkers,
   buildXenesisVisibleSubagentTerminalArgs,
-  buildXenesisVisibleSubagentWorkArgsFromInput,
   buildXenesisVisibleSubagentWorkWorkers,
   parseXenesisVisibleSubagentRunOptions,
   resolveXenesisVisibleSubagentWorkCwd,
   selectXenesisVisibleSubagentSessionIds,
-  shouldRouteXenesisInputToControlDemoSuite,
-  shouldRouteXenesisInputToVisibleSubagentsDemo,
-  shouldRouteXenesisInputToVisibleSubagentWork,
   summarizeXenesisVisibleSubagentTail,
 } from './xenesisAgentVisibleSubagentsDemo';
+
+test('visible subagent helpers do not classify natural prompt text', () => {
+  const source = readFileSync(new URL('./xenesisAgentVisibleSubagentsDemo.ts', import.meta.url), 'utf8');
+  const paneSource = readFileSync(new URL('./XenesisAgentPane.tsx', import.meta.url), 'utf8');
+
+  assert.doesNotMatch(source, /shouldRouteXenesisInputToVisibleSubagentsDemo/);
+  assert.doesNotMatch(source, /shouldRouteXenesisInputToVisibleSubagentWork/);
+  assert.doesNotMatch(source, /shouldRouteXenesisInputToControlDemoSuite/);
+  assert.doesNotMatch(source, /buildXenesisVisibleSubagentsDemoArgsFromInput/);
+  assert.doesNotMatch(source, /buildXenesisVisibleSubagentWorkArgsFromInput/);
+  assert.doesNotMatch(source, /buildXenesisControlDemoWorkArgsFromInput/);
+  assert.doesNotMatch(source, /hasAnyTerm|hasKeepOpenIntent|hasControlDemoExecutionIntent/);
+  assert.doesNotMatch(source, /hasControlDemoExplanationIntent|stripKoreanVisibleSubagentPrefix/);
+  assert.doesNotMatch(paneSource, /shouldRouteXenesisInputToVisibleSubagents/);
+  assert.doesNotMatch(paneSource, /buildXenesisControlDemoWorkArgsFromInput/);
+});
 
 test('builds four visible subagent demo workers with stable markers', () => {
   const workers = buildXenesisVisibleSubagentsDemoWorkers({
@@ -67,29 +79,6 @@ test('builds CR terminal arguments that identify Xenesis-owned visible subagents
     task: 'Repository Scanner',
     demo: 'visible-subagents',
   });
-});
-
-test('routes natural visible subagent orchestration requests but not explanation requests', () => {
-  assert.equal(
-    shouldRouteXenesisInputToVisibleSubagentsDemo('서브에이전트 4개를 서로 다른 터미널에 띄우고 바둑판으로 보여줘'),
-    true,
-  );
-  assert.equal(
-    shouldRouteXenesisInputToVisibleSubagentsDemo('Show four visible Xenesis subagents in a terminal grid.'),
-    true,
-  );
-  assert.equal(shouldRouteXenesisInputToVisibleSubagentsDemo('subagent bridge 문서가 무슨 기능인지 설명해줘'), false);
-});
-
-test('converts natural visible subagent requests into stable demo command arguments', () => {
-  assert.equal(
-    buildXenesisVisibleSubagentsDemoArgsFromInput('서브에이전트 4개를 3초 동안 보여주고 계속 열어둬'),
-    '--show-ms 3000 --keep-open',
-  );
-  assert.equal(
-    buildXenesisVisibleSubagentsDemoArgsFromInput('show visible subagents and close after cleanup'),
-    '--show-ms 6000 --close-after',
-  );
 });
 
 test('summarizes visible subagent tail output without ansi noise or command echo', () => {
@@ -180,15 +169,6 @@ test('compacts very long work task text before embedding it into terminal comman
   assert.match(worker.command, /\.\.\./);
 });
 
-test('uses a compact control demo task suitable for visible terminal echo', () => {
-  const args = buildXenesisControlDemoWorkArgsFromInput('');
-  const taskText = args.split(' --show-ms ')[0] || '';
-
-  assert.ok(taskText.length <= 220);
-  assert.match(taskText, /Xenesis Desk control demo/);
-  assert.match(taskText, /Capability Registry/);
-});
-
 test('uses a bounded git status scan for the change-audit work subagent', () => {
   const workers = buildXenesisVisibleSubagentWorkWorkers('현재 프로젝트 상태 확인', {
     runId: 'work-run',
@@ -200,64 +180,27 @@ test('uses a bounded git status scan for the change-audit work subagent', () => 
   assert.equal(changeAudit.command.includes('git diff --stat'), false);
 });
 
-test('routes task-oriented visible subagent requests to work mode', () => {
+test('builds control demo work args from explicit slash options only', () => {
   assert.equal(
-    shouldRouteXenesisInputToVisibleSubagentWork('서브에이전트 4개로 현재 프로젝트 상태를 분석하고 결과를 요약해줘'),
-    true,
+    buildXenesisControlDemoWorkArgs('--show-ms 500 --keep-open'),
+    [
+      'Xenesis Desk control demo:',
+      'use Capability Registry to open four visible work subagents, inspect project status, typecheck, docs, and summarize.',
+      'No Gowoori primary control.',
+      '--show-ms 500',
+      '--keep-open',
+    ].join(' '),
   );
   assert.equal(
-    shouldRouteXenesisInputToVisibleSubagentWork('Use four visible subagents to check the release readiness.'),
-    true,
+    buildXenesisControlDemoWorkArgs('제니스가 Desk를 제어하는 데모를 보여줘'),
+    [
+      'Xenesis Desk control demo:',
+      'use Capability Registry to open four visible work subagents, inspect project status, typecheck, docs, and summarize.',
+      'No Gowoori primary control.',
+      '--show-ms 6000',
+      '--close-after',
+    ].join(' '),
   );
-  assert.equal(shouldRouteXenesisInputToVisibleSubagentWork('서브에이전트 4개를 터미널에 띄우는 데모를 보여줘'), false);
-});
-
-test('converts work requests into stable work command arguments', () => {
-  assert.equal(
-    buildXenesisVisibleSubagentWorkArgsFromInput(
-      '서브에이전트 4개로 현재 프로젝트 상태를 분석하고 5초 보여준 뒤 정리해',
-    ),
-    '현재 프로젝트 상태를 분석하고 5초 보여준 뒤 정리해 --show-ms 5000 --close-after',
-  );
-  assert.equal(
-    buildXenesisVisibleSubagentWorkArgsFromInput('Use visible subagents to check release readiness and keep open'),
-    'Use visible subagents to check release readiness and keep open --show-ms 6000 --keep-open',
-  );
-  assert.equal(
-    buildXenesisVisibleSubagentWorkArgsFromInput(
-      'Use visible subagents to check release readiness. Keep the worker terminals open after completion.',
-    ),
-    'Use visible subagents to check release readiness. Keep the worker terminals open after completion. --show-ms 6000 --keep-open',
-  );
-});
-
-test('routes Xenesis Desk control demo requests to visible work subagents', () => {
-  assert.equal(shouldRouteXenesisInputToControlDemoSuite('제니스가 Desk를 제어하는 데모를 보여줘'), true);
-  assert.equal(shouldRouteXenesisInputToControlDemoSuite('Run the Xenesis Desk control demo and keep it open.'), true);
-  assert.equal(shouldRouteXenesisInputToControlDemoSuite('제니스 Desk 제어 기능이 뭔지 설명해줘'), false);
-});
-
-test('converts control demo requests into a stable work-subagents command', () => {
-  const args = buildXenesisControlDemoWorkArgsFromInput('제니스가 Desk를 제어하는 데모를 4초 보여주고 정리해');
-
-  assert.match(args, /Xenesis Desk control demo/);
-  assert.match(args, /Capability Registry/);
-  assert.match(args, /--show-ms 4000/);
-  assert.match(args, /--close-after/);
-  assert.equal(args.includes('--keep-open'), false);
-});
-
-test('control demo defaults to cleanup unless the user asks to keep workers open', () => {
-  assert.match(buildXenesisControlDemoWorkArgsFromInput(''), /--close-after/);
-  assert.match(buildXenesisControlDemoWorkArgsFromInput('keep open'), /--keep-open/);
-  assert.equal(buildXenesisControlDemoWorkArgsFromInput('keep open').includes('--close-after'), false);
-});
-
-test('control demo preserves explicit slash-style timing and cleanup options', () => {
-  const args = buildXenesisControlDemoWorkArgsFromInput('--show-ms 500 --close-after');
-
-  assert.match(args, /--show-ms 500/);
-  assert.match(args, /--close-after/);
 });
 
 test('parses shared visible subagent runner options and strips them from work task text', () => {
@@ -285,6 +228,13 @@ test('parses shared visible subagent runner options and strips them from work ta
       taskInput: 'fallback task',
     },
   );
+  assert.deepEqual(parseXenesisVisibleSubagentRunOptions('keep-open show-ms 500 sleep 9 작업 유지'), {
+    keepOpen: false,
+    closeAfter: false,
+    showMs: 6000,
+    sleepSeconds: 45,
+    taskInput: 'keep-open show-ms 500 sleep 9 작업 유지',
+  });
 });
 
 test('summarizes actual work tail output using real result lines', () => {
