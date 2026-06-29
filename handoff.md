@@ -7,7 +7,93 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
-## Current Slice: Tool Profile Draft Docs And Provider Smoke
+## Current Slice: Remove Remaining Local Desk Action Heuristics
+
+- Current objective:
+  - Enforce that Xenesis Agent does not locally route natural-language Desk
+    prompts through deterministic keyword, intent, or raw-JSON heuristics.
+  - Keep Desk control CR-first through provider/MCP reasoning, with local direct
+    execution limited to explicit fenced `xenesis-desk-action(s)` protocol
+    blocks emitted by the provider path.
+- Rationale:
+  - The earlier deterministic natural-language routing catalog has already been
+    removed. A remaining raw JSON action-payload fallback still lets local code
+    treat plain message text as a direct CR action. That is not model reasoning
+    and should not be part of the Agent-pane natural prompt path.
+  - Fenced `xenesis-desk-action(s)` blocks remain an explicit provider output
+    protocol, not a natural-language heuristic.
+- Touched files so far:
+  - `handoff.md`
+- Commands run:
+  - User redirected from the prior tool-profile apply slice to removing all
+    heuristic processing.
+  - Removed the uncommitted tool-profile apply test/model edits and deleted the
+    uncommitted plan file so this slice is not mixed with unrelated behavior.
+  - Read `xenesisAgentDeskControl.ts`, `xenesisAgentDeskControl.test.ts`,
+    `xenesisDeskActionProtocol.ts`, `xenesisDeskActionRunner.ts`, and the prior
+    Obsidian note `2026-06-29-remove-natural-desk-heuristics.md`.
+  - Source review found `xenesisAgentDeskControl.ts` is now a re-export shim;
+    the removed `xenesisNaturalLanguage*` modules are absent; the remaining
+    direct local execution path is explicit Desk action protocol parsing in
+    `src/shared/xenesisDeskActionProtocol.ts`, including a raw JSON fallback.
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> failed 1/11 as expected because raw JSON text
+    `{"path":"xd.window.sizer.applyPreset",...}` was still parsed as a direct
+    Desk action.
+  - Removed the raw JSON fallback from
+    `src/shared/xenesisDeskActionProtocol.ts`; only explicit fenced
+    `xenesis-desk-action(s)` blocks are parsed into direct actions.
+  - GREEN:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 11/11.
+  - Additional scan:
+    `rg -n "heuristic|natural-language|natural language|keyword|intentRouter|..."`
+    across `src`, `packages`, `scripts`, and package manifests found no
+    remaining Agent-pane natural router modules, and
+    `packages/xenesis/src/core/intentRouter.ts` only honors explicit mode.
+  - Source review found `packages/xenesis/src/orchestration/handoffPriority.ts`
+    still uses hardcoded prompt/label keyword arrays and `includes()` matching
+    to derive queued task priority. This is not Desk-control path selection, but
+    it is deterministic natural-text heuristic processing and is now in scope.
+  - Initial RED command:
+    `npm --prefix packages/xenesis test -- src/orchestration/handoffPriority.test.ts`
+    -> no files found because package Vitest includes only `tests/**/*.test.ts`;
+    moved coverage to `packages/xenesis/tests/orchestration/`.
+  - RED:
+    `npm --prefix packages/xenesis test -- tests/orchestration/handoffPriority.test.ts`
+    -> failed 2/4 as expected because legacy heuristic priority policy fields
+    were accepted and hardcoded keyword classifiers remained in source.
+  - Removed hardcoded handoff priority keyword arrays, `includes()` matching,
+    and heuristic policy fields. Handoff priority now honors explicit task
+    priority first, otherwise only a uniform policy `defaultPriority`.
+  - GREEN:
+    `npm --prefix packages/xenesis test -- tests/orchestration/handoffPriority.test.ts src/workflows/xenisPolicy.test.ts`
+    -> passed 4/4 for `tests/orchestration/handoffPriority.test.ts`; note the
+    `src/workflows/xenisPolicy.test.ts` filter is not included by package Vitest
+    config and was not run by this command.
+  - Formatted changed TS files with:
+    `npx biome format --write src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts src\shared\xenesisDeskActionProtocol.ts packages\xenesis\src\orchestration\handoffPriority.ts packages\xenesis\src\workflows\xenisPolicy.ts packages\xenesis\tests\orchestration\handoffPriority.test.ts`.
+  - Targeted verification after formatting:
+    - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+      -> passed 11/11.
+    - `npm --prefix packages/xenesis test -- tests/orchestration/handoffPriority.test.ts`
+      -> passed 4/4.
+  - Broader verification:
+    - `npx biome check ...changed TS files... --max-diagnostics 40`
+      -> passed after one import-order autofix.
+    - `npm --prefix packages/xenesis run typecheck` -> passed.
+    - `npm --prefix packages/xenesis test` -> passed 81 files / 372 tests.
+    - `npm run typecheck` -> passed.
+    - `git diff --check` -> passed with line-ending warnings only.
+  - Source scan:
+    `rg -n "planXenesisDeskNaturalLanguageActions|bypassNaturalDeskRouting|naturalDeskActionRequest|xenesisAgentInputRouting|xenesisNaturalLanguage|taskTypeKeywords|urgentKeywords|urgentPriority|taskTypePriorities|\.includes\(keyword\)|raw Desk action JSON|raw JSON payload" ...`
+    -> matches only guard tests; no runtime source matches.
+- Next intended step:
+  - Update Obsidian working notes, inspect final diff/status, and commit the
+    heuristic-removal slice.
+
+## Previous Slice: Tool Profile Draft Docs And Provider Smoke
 
 - Current objective:
   - Make the new `xd.xenesis.tools.profileDrafts.status/open/request` CR

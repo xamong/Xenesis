@@ -110,9 +110,26 @@ test('parseXenesisDeskActionBlocks extracts Desk CR actions and hides them from 
   assert.equal(shouldRunXenesisDeskActionsDirectly(parsed), true);
 });
 
-test('parseXenesisDeskActionBlocks accepts raw action JSON arrays and rejects non-CR paths', () => {
+test('parseXenesisDeskActionBlocks does not treat raw JSON text as direct Desk actions', () => {
+  for (const prompt of [
+    '{"path":"xd.window.sizer.applyPreset","args":{"presetId":"qhd"},"approved":true}',
+    '[{"path":"xd.files.listOpen"},{"path":"terminal.run"}]',
+  ]) {
+    const parsed = parseXenesisDeskActionBlocks(prompt);
+    assert.deepEqual(parsed, {
+      visibleText: prompt,
+      actions: [],
+      errors: [],
+    });
+    assert.equal(shouldRunXenesisDeskActionsDirectly(parsed), false);
+  }
+});
+
+test('parseXenesisDeskActionBlocks accepts fenced action JSON arrays and rejects non-CR paths', () => {
   assert.deepEqual(
-    parseXenesisDeskActionBlocks('{"path":"xd.window.sizer.applyPreset","args":{"presetId":"qhd"},"approved":true}'),
+    parseXenesisDeskActionBlocks(
+      '```xenesis-desk-action {"path":"xd.window.sizer.applyPreset","args":{"presetId":"qhd"},"approved":true}',
+    ),
     {
       visibleText: '',
       actions: [
@@ -127,18 +144,21 @@ test('parseXenesisDeskActionBlocks accepts raw action JSON arrays and rejects no
     },
   );
 
-  assert.deepEqual(parseXenesisDeskActionBlocks('[{"path":"xd.files.listOpen"},{"path":"terminal.run"}]'), {
-    visibleText: '',
-    actions: [
-      {
-        id: 'desk-action-1',
-        path: 'xd.files.listOpen',
-        args: {},
-        approved: false,
-      },
-    ],
-    errors: ['Desk action 2 path must start with xd.: terminal.run'],
-  });
+  assert.deepEqual(
+    parseXenesisDeskActionBlocks('```xenesis-desk-actions [{"path":"xd.files.listOpen"},{"path":"terminal.run"}]'),
+    {
+      visibleText: '',
+      actions: [
+        {
+          id: 'desk-action-1',
+          path: 'xd.files.listOpen',
+          args: {},
+          approved: false,
+        },
+      ],
+      errors: ['Desk action 2 path must start with xd.: terminal.run'],
+    },
+  );
 });
 
 test('runXenesisDeskActions calls the direct CR executor and reports activity', async () => {

@@ -234,23 +234,6 @@ export function parseXenesisDeskActionBlocks(text: string): XenesisDeskActionPar
     ),
   );
 
-  if (actions.length === 0 && errors.length === 0 && visibleText) {
-    try {
-      const parsed = JSON.parse(visibleText);
-      const rawRecords = xenesisDeskActionRecordsFromJson(parsed);
-      const normalizedRecords = rawRecords.map((record, index) => normalizeXenesisDeskActionRecord(record, index));
-      if (normalizedRecords.some((record) => record.action)) {
-        return {
-          visibleText: XENESIS_DESK_ACTION_PROTOCOL_FORMAT.emptyText,
-          actions: normalizedRecords.flatMap((record) => (record.action ? [record.action] : [])),
-          errors: normalizedRecords.flatMap((record) => (record.error ? [record.error] : [])),
-        };
-      }
-    } catch {
-      // Not a raw Desk action JSON payload. Keep it as ordinary chat text.
-    }
-  }
-
   return { visibleText, actions, errors };
 }
 
