@@ -38,7 +38,8 @@ export const REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_CASES = [
       '{"path":"xd.xenesis.connections.setupRequests.request","args":{"id":"notion"},"approved":false,"reason":"Review Notion setup request"}',
       '```',
     ].join('\n'),
-    approvalPrompt: '승인',
+    approvalPrompt: '[approve pending Desk action]',
+    approvalAction: 'once',
     expectedRequestPath: 'xd.xenesis.connections.setupRequests.request',
     expectedRequestText: 'Desk action approval required',
     expectedApprovalText: 'Desk action completed',
@@ -74,6 +75,12 @@ export function buildReviewRequestApprovalSubmitRequest(promptCase, phase, timeo
       expectedText: isApproval ? promptCase.expectedApprovalText : promptCase.expectedRequestText,
       expectedTextScope: 'anywhere',
       timeoutMs,
+      ...(isApproval
+        ? {
+            approvePendingAction: true,
+            approvalAction: promptCase.approvalAction || 'once',
+          }
+        : {}),
     },
   };
 }
@@ -99,7 +106,9 @@ export function formatReviewRequestApprovalLiveSmokePlan() {
 
   for (const promptCase of REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_CASES) {
     lines.push(`- ${promptCase.id} -> ${promptCase.expectedRequestPath} (${promptCase.expectedRequestText})`);
-    lines.push(`  approve with: ${promptCase.approvalPrompt} (${promptCase.expectedApprovalText})`);
+    lines.push(
+      `  approve via explicit testing flag: approvePendingAction=true approvalAction=${promptCase.approvalAction || 'once'} (${promptCase.expectedApprovalText})`,
+    );
     lines.push(`  expected review item: ${promptCase.expectedReviewItem.title}`);
   }
 

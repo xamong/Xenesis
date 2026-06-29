@@ -82,14 +82,6 @@ import {
   type XenesisDeskActionExecutionResult,
   type XenesisDeskActionRequest,
 } from './xenesisAgentDeskControl';
-import {
-  isXenesisApprovalIntent,
-} from './xenesisAgentInputRouting';
-import {
-  buildXenesisMarkdownSaveDraft,
-  resolveXenesisMarkdownSavePath,
-  type XenesisMarkdownSaveDraft,
-} from './xenesisAgentMarkdownSave';
 import { buildDeskRunContext } from './xenesisAgentRunContext';
 import {
   deskActionAuditEntries,
@@ -147,7 +139,6 @@ import {
   type XenesisAssistantStreamFilterState,
   type XenesisChatMessage,
   type XenesisMode,
-  type XenesisRawStreamEntry,
   type XenesisSlashCommand,
   type XenesisSlashCommandDescriptor,
   type XenesisSlashMenuPlacement,
@@ -1101,12 +1092,6 @@ function normalizeXenesisAgentEventAttachments(raw: unknown): XenesisAgentAttach
   return normalized;
 }
 
-interface XenesisPendingMarkdownSave {
-  requestText: string;
-  filePath: string;
-  draft: XenesisMarkdownSaveDraft;
-}
-
 export interface XenesisAgentPaneProps {
   contentId?: string;
 }
@@ -1136,7 +1121,6 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
   const settingsSnapshotRef = useRef<Partial<AppSettings> | null>(null);
   const promptHistoryRef = useRef<string[]>([]);
   const promptHistoryIndexRef = useRef<number | null>(null);
-  const pendingMarkdownSaveRef = useRef<XenesisPendingMarkdownSave | null>(null);
   // Prompt-queue (Claude-Code-style type-ahead) drain bookkeeping.
   const suppressNextDrainRef = useRef(false);
   const drainPrevBusyRef = useRef(false);
@@ -1158,7 +1142,6 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
     status,
     prompt,
     mode,
-    loading,
     running,
     error,
     messages,
@@ -1598,115 +1581,6 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
       return null;
     } finally {
       xenesisAgentStateStore.update({ loading: false });
-    }
-  }
-
-  async function requestMarkdownSave(input: string): Promise<void> {
-    const trimmedInput = input.trim();
-    if (running) {
-      appendChatMessage({ role: 'user', content: trimmedInput });
-      appendChatMessage({
-        role: 'system',
-        kind: 'error',
-        content: 'Xenesis is already running. Use /cancel before preparing a file save.',
-        error: true,
-      });
-      return;
-    }
-
-    xenesisAgentStateStore.update({ prompt: '' });
-    const currentStatus = status?.ok ? status : await refresh();
-    const workspace = currentStatus?.workspace || status?.workspace || '';
-    const requestMessage: XenesisChatMessage = {
-      id: `pending-save-request-${Date.now()}`,
-      role: 'user',
-      content: trimmedInput,
-      at: new Date().toISOString(),
-    };
-    const draft = buildXenesisMarkdownSaveDraft({
-      messages: [requestMessage, ...messages],
-      requestText: trimmedInput,
-    });
-    const filePath = resolveXenesisMarkdownSavePath(workspace, draft.fileName);
-    pendingMarkdownSaveRef.current = {
-      requestText: trimmedInput,
-      filePath,
-      draft,
-    };
-
-    appendChatMessage({ role: 'user', content: trimmedInput });
-    appendChatMessage({
-      role: 'assistant',
-      kind: 'status',
-      content: [
-        'Markdown 파일 저장 준비가 되었습니다.',
-        '',
-        `대상: ${filePath}`,
-        `크기: ${draft.content.length.toLocaleString()} chars`,
-        '',
-        '저장하려면 "승인"이라고 입력하세요. 취소하려면 /cancel 또는 다른 요청을 입력하세요.',
-      ].join('\n'),
-    });
-    appendRawStreamEntry({
-      kind: 'file_save_pending',
-      summary: `Markdown save pending: ${draft.fileName}`,
-      detail: filePath,
-    });
-  }
-
-  async function applyPendingMarkdownSave(input: string): Promise<void> {
-    const pending = pendingMarkdownSaveRef.current;
-    const trimmedInput = input.trim();
-    if (!pending) {
-      appendChatMessage({ role: 'user', content: trimmedInput });
-      appendChatMessage({
-        role: 'system',
-        kind: 'status',
-        content: '승인할 대기 작업이 없습니다. 저장할 내용을 먼저 요청해 주세요.',
-      });
-      return;
-    }
-
-    pendingMarkdownSaveRef.current = null;
-    appendChatMessage({ role: 'user', content: trimmedInput });
-    try {
-      const writtenPath = await writeXenesisArtifactPromptFile({
-        filePath: pending.filePath,
-        fileName: pending.draft.fileName,
-        content: pending.draft.content,
-        maxBytes: 220_000,
-      });
-      appendChatMessage({
-        role: 'assistant',
-        kind: 'status',
-        content: [
-          'Markdown 파일을 저장했습니다.',
-          '',
-          `대상: ${writtenPath}`,
-          `요청: ${pending.requestText}`,
-          `크기: ${pending.draft.content.length.toLocaleString()} chars`,
-        ].join('\n'),
-      });
-      appendRawStreamEntry({
-        kind: 'file_save_result',
-        summary: `Markdown saved: ${pending.draft.fileName}`,
-        detail: writtenPath,
-      });
-    } catch (saveError) {
-      const message = saveError instanceof Error ? saveError.message : String(saveError);
-      xenesisAgentStateStore.update({ error: message });
-      appendChatMessage({
-        role: 'system',
-        kind: 'error',
-        content: `Markdown 파일 저장에 실패했습니다.\n\n${message}`,
-        error: true,
-      });
-      appendRawStreamEntry({
-        kind: 'file_save_error',
-        summary: message,
-        detail: pending.filePath,
-        error: true,
-      });
     }
   }
 
@@ -3489,16 +3363,6 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
 
     pushPromptHistory(baseInput);
     xenesisAgentStateStore.update({ prompt: '' });
-    if (isXenesisApprovalIntent(baseInput) && pendingMarkdownSaveRef.current) {
-      await applyPendingMarkdownSave(baseInput);
-      return;
-    }
-    if (isXenesisApprovalIntent(baseInput) && (await approvePendingDeskActionMessage(undefined, baseInput))) {
-      return;
-    }
-    if (!isXenesisApprovalIntent(baseInput)) {
-      pendingMarkdownSaveRef.current = null;
-    }
     // Claude-Code-style type-ahead: while a run/stream is active, QUEUE this prompt
     // (FIFO) instead of rejecting it; the drain watcher runs it on completion.
     if (isXenesisAgentBusy(xenesisAgentStateStore.getSnapshot())) {

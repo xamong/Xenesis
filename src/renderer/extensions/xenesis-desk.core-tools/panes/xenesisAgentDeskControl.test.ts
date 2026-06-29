@@ -36,15 +36,24 @@ test('pre-provider natural Desk heuristic routing code is absent', () => {
     new URL('../../../../shared/xenesisDeskActionProtocol.ts', import.meta.url),
     'utf8',
   );
+  const mainSource = readFileSync(new URL('../../../../main/index.ts', import.meta.url), 'utf8');
 
   assert.doesNotMatch(agentPaneSource, /planXenesisDeskNaturalLanguageActions/);
   assert.doesNotMatch(agentPaneSource, /bypassNaturalDeskRouting/);
   assert.doesNotMatch(agentPaneSource, /naturalDeskActionRequest/);
   assert.doesNotMatch(agentPaneSource, /Direct natural Desk action prompt/);
+  assert.doesNotMatch(agentPaneSource, /xenesisAgentInputRouting/);
+  assert.doesNotMatch(agentPaneSource, /isXenesisApprovalIntent/);
+  assert.doesNotMatch(agentPaneSource, /pendingMarkdownSaveRef|applyPendingMarkdownSave|requestMarkdownSave/);
   assert.doesNotMatch(controlSource, /xenesisNaturalLanguage/);
   assert.doesNotMatch(protocolSource, /natural language|XENESIS_NATURAL_|findXenesisNatural|hasXenesisNatural/i);
+  assert.doesNotMatch(mainSource, /isApprovalPrompt/);
+  assert.doesNotMatch(mainSource, /clickApprovalButton/);
+  assert.doesNotMatch(mainSource, /\?:승인\|허용\|진행\|좋아/);
+  assert.doesNotMatch(mainSource, /approve\|approved\)\(\?:/);
 
   for (const removedModule of [
+    './xenesisAgentInputRouting.ts',
     '../../../../shared/xenesisNaturalLanguageCatalog.ts',
     '../../../../shared/xenesisNaturalLanguageCapabilityCatalog.ts',
     '../../../../shared/xenesisNaturalLanguageActionResolvers.ts',

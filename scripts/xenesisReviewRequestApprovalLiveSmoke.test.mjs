@@ -47,7 +47,8 @@ test('review request approval live smoke describes one safe mutating case', () =
         '{"path":"xd.xenesis.connections.setupRequests.request","args":{"id":"notion"},"approved":false,"reason":"Review Notion setup request"}',
         '```',
       ].join('\n'),
-      approvalPrompt: '승인',
+      approvalPrompt: '[approve pending Desk action]',
+      approvalAction: 'once',
       expectedRequestPath: 'xd.xenesis.connections.setupRequests.request',
       expectedRequestText: 'Desk action approval required',
       expectedApprovalText: 'Desk action completed',
@@ -99,10 +100,12 @@ test('review request approval live smoke builds request and approval submit call
     source: 'xenesis-review-request-approval-live-smoke',
     approved: true,
     args: {
-      prompt: '승인',
+      prompt: '[approve pending Desk action]',
       expectedText: 'Desk action completed',
       expectedTextScope: 'anywhere',
       timeoutMs: 42000,
+      approvePendingAction: true,
+      approvalAction: 'once',
     },
   });
 });
@@ -261,7 +264,7 @@ test('review request approval live smoke plan and package script are explicit', 
   const plan = formatReviewRequestApprovalLiveSmokePlan();
   assert.match(plan, /Mutating explicit CR review requests/);
   assert.match(plan, /connection-setup-notion/);
-  assert.match(plan, /승인/);
+  assert.match(plan, /approvePendingAction=true/);
   assert.match(plan, /xd\.xenesis\.connections\.setupRequests\.request/);
   assert.match(plan, /Review Notion setup request/);
 

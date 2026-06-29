@@ -14268,7 +14268,9 @@ async function submitXenesisAgentPromptForCapability(args: unknown): Promise<Rec
   const expectedText = readCapabilityRawString(body, ['expectedText', 'waitForText', 'contains']);
   const expectedTextScope = readCapabilityString(body, ['expectedTextScope', 'textScope'], 'newResponse').toLowerCase();
   const matchBodyText = body.matchBodyText === true || expectedTextScope === 'body' || expectedTextScope === 'anywhere';
-  const clickApprovalButton = body.clickApprovalButton !== false;
+  const approvePendingAction = body.approvePendingAction === true || body.approvePendingDeskAction === true;
+  const approvalActionInput = readCapabilityString(body, ['approvalAction', 'approvalChoice'], 'once').toLowerCase();
+  const approvalAction = approvalActionInput === 'always' ? 'always' : 'once';
   const timeoutMs = clamp(Number(body.timeoutMs), 250, 600000, 30000);
   const typeDelayMs = clamp(Number(body.typeDelayMs), 0, 1000, 0);
   const progressIntervalMs = clamp(Number(body.progressIntervalMs), 0, 60000, 0);
@@ -14298,7 +14300,7 @@ async function submitXenesisAgentPromptForCapability(args: unknown): Promise<Rec
   showMcpTargetWindow(targetWindow);
   const script = `
 (() => {
-  const config = ${JSON.stringify({ prompt, submitMode, expectedText, matchBodyText, clickApprovalButton, timeoutMs, attachments, typeDelayMs, progressIntervalMs, progressSampleLimit, bypassDirectDeskRouting })};
+  const config = ${JSON.stringify({ prompt, submitMode, expectedText, matchBodyText, approvePendingAction, approvalAction, timeoutMs, attachments, typeDelayMs, progressIntervalMs, progressSampleLimit, bypassDirectDeskRouting })};
 ${XENESIS_AGENT_PROGRESS_SANITIZER_SCRIPT}
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const nextFrame = () => new Promise((resolve) => {
@@ -14400,19 +14402,21 @@ ${XENESIS_AGENT_PROGRESS_SANITIZER_SCRIPT}
     const diagnostics = getXenesisAgentRootDiagnostics();
     return diagnostics.visibleRoots[0]?.root || null;
   };
-  const isApprovalPrompt = () => /^(?:승인|허용|진행|좋아|네|예|응|오케이|ok|okay|yes|approve|approved)(?:\\s*(?:승인)?(?:합니다|해|할게|진행해|저장|apply|please|it)?)?[.!。！]*$/i.test(String(config.prompt || '').trim());
   const findLatestDeskActionApproveButton = (agentRoot) => {
-    if (!agentRoot || !config.clickApprovalButton || !isApprovalPrompt()) return null;
+    if (!agentRoot || !config.approvePendingAction) return null;
+    const approveSelector = config.approvalAction === 'always'
+      ? '[data-xenesis-agent-desk-action-approve-always="true"]'
+      : '[data-xenesis-agent-desk-action-approve="true"]';
     const findEligible = (buttons) => buttons.reverse().find((button) => (
       button instanceof HTMLButtonElement
       && !button.disabled
       && elementVisibleArea(button) > 0
-      && !button.matches('[data-xenesis-agent-desk-action-approve-always="true"], [data-xenesis-agent-desk-action-cancel="true"]')
-      && /승인|approve|실행|run/i.test(button.innerText || button.textContent || '')
+      && button.matches(approveSelector)
     )) || null;
-    const oneTimeButtons = Array.from(agentRoot.querySelectorAll('[data-xenesis-agent-desk-action-approve="true"]'));
-    const fallbackButtons = Array.from(agentRoot.querySelectorAll('.xd-xenesis-desk-action-card.is-pending button'));
-    return findEligible(oneTimeButtons) || findEligible(fallbackButtons);
+    const approvalButtons = Array.from(agentRoot.querySelectorAll(approveSelector));
+    const fallbackButtons = Array.from(agentRoot.querySelectorAll('.xd-xenesis-desk-action-card.is-pending button'))
+      .filter((button) => button instanceof HTMLButtonElement && button.matches(approveSelector));
+    return findEligible(approvalButtons) || findEligible(fallbackButtons);
   };
   const readTranscriptLines = (agentRoot) => {
     if (!agentRoot) return [];
@@ -14633,6 +14637,7 @@ ${XENESIS_AGENT_PROGRESS_SANITIZER_SCRIPT}
         afterValue: input.value,
         approvalButtonClicked: true,
         approvalButtonText,
+        approvalAction: config.approvalAction,
         customEventSubmitted: false,
         shouldFallbackSubmit: false,
         enterPrevented: false,

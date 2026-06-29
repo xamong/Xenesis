@@ -923,7 +923,7 @@ function createAutonomousExecutionSystemMessages(): SystemMessage[] {
     role: "system",
     content: [
       "Xenesis autonomous execution loop:",
-      "Classify each request as analyze, plan, work, operate-desk, or current-info before choosing tools.",
+      "Reason about whether each request needs analysis, planning, workspace work, a Desk operation, or current-info before choosing tools.",
       "For non-trivial work, follow inspect -> plan -> execute -> verify -> repair-if-needed -> report.",
       "When the user asks to fix, modify, run, verify, complete, 진행, 수정, 검증, 완료, or 끝까지, do not stop at a proposed plan. Continue executing the next concrete tool step until the task is done or a blocker/approval stop condition is reached.",
       "Treat do-not-modify constraints as scoped to the named files or paths unless the user explicitly forbids all workspace changes. If the user says not to modify one file but asks you to fix another target file, modify only the allowed target and verify.",
@@ -953,7 +953,7 @@ function createAutonomousExecutionSystemMessages(): SystemMessage[] {
       "",
       "Xenesis Desk CR/MCP policy:",
       "For Xenesis Desk operations, prefer desk_state, desk_active_context, desk_capabilities, desk_context_actions, desk_call_capability, and typed desk_* tools before shell.",
-      "Treat natural-language Desk control requests as operate-desk even when the user does not mention CR, MCP, Capability Registry, tool names, or xd.* paths. Infer the intended Desk surface from ordinary wording such as file tree, terminal, browser, web page, document, preview, edit mode, split mode, tab arrangement, left, right, center, open, move, run, click, type, or arrange.",
+      "For Desk-control requests, use CR/MCP discovery rather than a built-in natural-language routing table, word list, or provider-specific shortcut. Discover or inspect capabilities before selecting a CR path.",
       "For operate-desk requests, discover or choose the matching CR capability, execute through the generic Desk capability caller, and verify with a matching readback path, active context, pane/content inventory, terminal output, browser snapshot, document inspection, capture, or approval record before reporting.",
       "If a Desk capability reports approvalRequired, actionInboxItem, an external workspace boundary, or a permission boundary, stop with only user-facing product language. Let the Agent pane render the inline approval card; do not print actionInboxItem ids, raw args, CR paths, MCP tool names, or approvalRequired in normal chat.",
       "After an inline approval is executed, read the target state again before reporting the result. For file-tree actions read explorer/workspace state; for browser actions read tab/pane/browser state; for terminal actions read terminal session output/status; for document actions inspect/verify/open-content state.",
@@ -1004,83 +1004,16 @@ export function createModeSystemMessages(mode: AgentRunMode | undefined): System
   }];
 }
 
-function promptRequestsDeskBrowserControl(prompt: string) {
-  return (
-    /(?:https?:\/\/|file:\/\/)/i.test(prompt) &&
-    /\b(?:browser|web)\b|브라우저|웹/i.test(prompt) &&
-    /(?:form|field|input|button|click|fill|type|select|press|submit|save|양식|입력|입력칸|버튼|클릭|눌러|누르|선택|저장|제출)/i.test(prompt)
-  );
-}
-
-function promptRequestsVisualVerification(prompt: string) {
-  if (promptRequestsDeskBrowserControl(prompt)) return false;
-  return (
-    /\b(?:browser|app_e2e_check)\b/i.test(prompt) ||
-    /브라우저|화면\s*(?:확인|검증)|렌더링\s*(?:확인|검증)/i.test(prompt)
-  );
-}
-
-function promptRequestsServerLaunch(prompt: string) {
-  return (
-    /\b(?:start|launch|run|serve)\s+(?:the\s+)?(?:local\s+)?(?:app\s+)?server\b/i.test(prompt) ||
-    /\bserver\b/i.test(prompt) && /\b(?:start|launch|run|serve|verify|check)\b/i.test(prompt) ||
-    /서버(?:를|가|도)?\s*(?:띄워|실행|시작|구동|올려)|서버.*(?:띄워|실행|시작|구동|올려|확인|검증)/i.test(prompt)
-  );
-}
-
 function createPromptRequirementSystemContext(prompt: string): RunSystemContext {
-  const requiresVisualVerification = promptRequestsVisualVerification(prompt);
-  const requiresServerLaunch = promptRequestsServerLaunch(prompt);
-
-  if (!requiresVisualVerification && !requiresServerLaunch) {
-    return {
-      messages: [],
-      sources: [{
-        source: "tool_policy",
-        name: "prompt-specific requirements",
-        injected: false,
-        itemCount: 0,
-        detail: "no explicit browser/app_e2e_check verification request"
-      }]
-    };
-  }
-
-  const content: string[] = [];
-  if (requiresVisualVerification) {
-    content.push(
-      "Xenesis user-requested visual verification gate:",
-      "The latest user request explicitly asks for browser/app_e2e_check or screen verification.",
-      "Treat browser/app_e2e_check verification as a required completion gate, not an optional recommendation.",
-      "After code changes and diagnostics/app_readiness pass, start or reuse the local app server and run browser or app_e2e_check against the HTTP app URL.",
-      "Do not provide the final report until browser or app_e2e_check has been called, unless the tool is unavailable or a concrete blocker prevents it.",
-      "If the visual verification tool is unavailable or blocked, report that limitation explicitly with the completed diagnostics evidence."
-    );
-  }
-  if (requiresServerLaunch) {
-    if (content.length > 0) content.push("");
-    content.push(
-      "Xenesis user-requested server execution gate:",
-      "The latest user request explicitly asks to start or launch a server.",
-      "Call the server tool for that explicit server-start request when it is available.",
-      "Do not substitute shell, diagnostics, or app_readiness for the explicit server-start gate; those tools may support verification, but they do not satisfy the server tool call.",
-      "Do not provide the final report until server has been called, unless the tool is unavailable or a concrete blocker prevents it."
-    );
-  }
-
+  void prompt;
   return {
-    messages: [{
-      role: "system",
-      content: content.join("\n")
-    }],
+    messages: [],
     sources: [{
       source: "tool_policy",
-      name: "prompt-specific completion gates",
-      injected: true,
-      itemCount: Number(requiresVisualVerification) + Number(requiresServerLaunch),
-      detail: [
-        requiresVisualVerification ? "browser/app_e2e_check requested by prompt" : "",
-        requiresServerLaunch ? "server requested by prompt" : ""
-      ].filter(Boolean).join(", ")
+      name: "prompt-specific requirements",
+      injected: false,
+      itemCount: 0,
+      detail: "disabled: provider handles request interpretation"
     }]
   };
 }

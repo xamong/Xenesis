@@ -7,6 +7,100 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current Slice: Remove Agent Input Heuristics
+
+- Current objective:
+  - Remove remaining hardcoded natural-language/regex handling from the Xenesis
+    Agent pane and provider prompt guidance. Ordinary prompts must reach the
+    configured provider; only explicit `xenesis-desk-action` protocol blocks and
+    explicit UI/test approval controls may execute before provider reasoning.
+- Rationale:
+  - The shared natural Desk router and provider intent catalog were removed, but
+    a renderer input classifier, an approval-word testing helper, and a provider
+    prompt ordinary-word list still acted as hardcoded heuristic routing.
+- Plan:
+  - `docs/superpowers/plans/2026-06-29-remove-agent-input-heuristics.md`
+- Touched files so far:
+  - `handoff.md`
+  - `docs/superpowers/plans/2026-06-29-remove-agent-input-heuristics.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-remove-agent-input-heuristics.md`
+- Commands run:
+  - `git status --short --branch` -> clean on `agent/upcoming-work-20260627`.
+  - Source scans found remaining heuristic surfaces:
+    `xenesisAgentInputRouting.ts`, `isXenesisApprovalIntent` usage in
+    `XenesisAgentPane.tsx`, approval-word matching in `src/main/index.ts`, and
+    `Infer the intended Desk surface from ordinary wording...` in
+    `packages/xenesis/src/core/AgentRuntimeFactory.ts`.
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> failed as expected because `XenesisAgentPane.tsx` still imports
+    `xenesisAgentInputRouting`.
+  - RED:
+    `npm --prefix packages/xenesis exec vitest run src/core/AgentRuntimeFactory.modeMessages.test.ts`
+    -> failed as expected because `AgentRuntimeFactory.ts` still contains
+    `Infer the intended Desk surface`.
+  - GREEN:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 10/10 after removing `xenesisAgentInputRouting` usage and files.
+  - GREEN:
+    `node --test scripts\xenesisReviewRequestApprovalLiveSmoke.test.mjs` ->
+    passed 7/7 after switching approval smoke requests to
+    `approvePendingAction: true`.
+  - GREEN:
+    `npm --prefix packages/xenesis exec vitest run src/core/AgentRuntimeFactory.modeMessages.test.ts`
+    -> passed 2/2 after removing the ordinary-word prompt guidance and
+    prompt-specific visual/server regex gates.
+  - Root typecheck:
+    `npm run typecheck` -> passed.
+  - Package typecheck:
+    `npm --prefix packages/xenesis run typecheck` -> passed.
+  - Production/source scan:
+    `rg -n "xenesisAgentInputRouting|isXenesisApprovalIntent|Infer the intended Desk surface|ordinary wording|APPROVAL_WORD_PATTERN|APPROVAL_WITH_SAVE_PATTERN|promptRequestsDeskBrowserControl|promptRequestsVisualVerification|promptRequestsServerLaunch|user-requested visual verification gate|user-requested server execution gate|clickApprovalButton|isApprovalPrompt" src packages scripts --glob "!**/*.md" --glob "!**/*.test.ts" --glob "!**/*.test.mjs"`
+    -> no matches.
+  - Package full tests:
+    `npm --prefix packages/xenesis test` -> passed 367/367 across 79 files.
+  - CR audit:
+    `npm run docs:capabilities:audit` -> passed; wrote
+    `docs/capability-registry-audit.md` with 796 nodes and 689 coverage path
+    references.
+  - CR audit counter readback:
+    `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> all 0.
+  - Focused Biome:
+    `npx biome check --formatter-enabled=false --linter-enabled=true --assist-enabled=false src/renderer/extensions/xenesis-desk.core-tools/panes/XenesisAgentPane.tsx src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts packages/xenesis/src/core/AgentRuntimeFactory.modeMessages.test.ts scripts/xenesisReviewRequestApprovalLiveSmoke.mjs scripts/xenesisReviewRequestApprovalLiveSmoke.test.mjs`
+    -> exited 0 with two existing optional-chain warnings in
+    `XenesisAgentPane.tsx`.
+  - Package build:
+    `npm --prefix packages/xenesis run build` -> passed.
+  - Root build:
+    `npm run build` -> passed with existing Vite externalization/dynamic-import
+    warnings.
+  - Live Agent-pane approval smoke:
+    `npm run smoke:xenesis:review-request-approval` -> passed 6/6 using
+    explicit `approvePendingAction=true` instead of approval-word prompt
+    matching.
+  - Provider Desk MCP prompt smoke:
+    `npm --prefix packages/xenesis run provider:desk-mcp-prompt-smoke` ->
+    passed 6/6; provider `codex-cli`, Desk MCP args/metadata configured.
+  - Provider smoke with mock:
+    `$env:XENESIS_PROVIDER='mock'; npm --prefix packages/xenesis run provider:smoke`
+    -> passed 6/6.
+- Implemented:
+  - Deleted renderer `xenesisAgentInputRouting.ts` and its tests.
+  - Removed Agent pane approval-word and pending Markdown-save natural handling;
+    ordinary prompts now go to slash handling, explicit `xenesis-desk-action`
+    block handling, or provider execution.
+  - Replaced testing-helper approval-word matching with explicit
+    `approvePendingAction` / `approvalAction` args.
+  - Removed provider runtime prompt wording that listed ordinary Desk surface
+    words, and disabled prompt regex gates for visual/server requirements.
+- Known gaps:
+  - The live approval smoke proves the Electron Agent-pane explicit approval
+    path after removing approval-word matching. Full real-provider natural
+    prompt MCP tool-call proof remains a separate follow-up from the prior
+    provider smoke slice; current package-level provider smoke proves the
+    natural prompt and CR MCP tool contract reach `codex-cli` provider input.
+
 ## Current Slice: Provider Desk MCP Prompt Smoke
 
 - Current objective:

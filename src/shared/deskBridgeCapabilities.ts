@@ -5898,6 +5898,21 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                     'Testing-only: send the prompt to the provider instead of executing fenced xenesis-desk-action blocks before model execution.',
                   default: false,
                 },
+                approvePendingAction: {
+                  type: 'boolean',
+                  title: 'Approve pending Desk action',
+                  description:
+                    'Testing-only: click an inline pending Desk-action approval button explicitly, without interpreting the prompt text as approval intent.',
+                  default: false,
+                },
+                approvalAction: {
+                  type: 'string',
+                  title: 'Approval action',
+                  enum: ['once', 'always'],
+                  description:
+                    'Testing-only: choose which inline approval button to click when approvePendingAction is true.',
+                  default: 'once',
+                },
                 typeDelayMs: {
                   type: 'number',
                   title: 'Typing delay',
