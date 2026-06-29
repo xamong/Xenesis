@@ -14274,7 +14274,6 @@ async function submitXenesisAgentPromptForCapability(args: unknown): Promise<Rec
   const progressIntervalMs = clamp(Number(body.progressIntervalMs), 0, 60000, 0);
   const progressSampleLimit = clamp(Number(body.progressSampleLimit), 1, 100, 20);
   const bypassDirectDeskRouting = body.bypassDirectDeskRouting === true;
-  const bypassNaturalDeskRouting = body.bypassNaturalDeskRouting === true;
   const attachments = normalizeXenesisRunAttachments(body.attachments) || [];
   const rawExpectedComponents = Array.isArray(body.expectedComponents)
     ? body.expectedComponents
@@ -14299,7 +14298,7 @@ async function submitXenesisAgentPromptForCapability(args: unknown): Promise<Rec
   showMcpTargetWindow(targetWindow);
   const script = `
 (() => {
-  const config = ${JSON.stringify({ prompt, submitMode, expectedText, matchBodyText, clickApprovalButton, timeoutMs, attachments, typeDelayMs, progressIntervalMs, progressSampleLimit, bypassDirectDeskRouting, bypassNaturalDeskRouting })};
+  const config = ${JSON.stringify({ prompt, submitMode, expectedText, matchBodyText, clickApprovalButton, timeoutMs, attachments, typeDelayMs, progressIntervalMs, progressSampleLimit, bypassDirectDeskRouting })};
 ${XENESIS_AGENT_PROGRESS_SANITIZER_SCRIPT}
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const nextFrame = () => new Promise((resolve) => {
@@ -14673,7 +14672,6 @@ ${XENESIS_AGENT_PROGRESS_SANITIZER_SCRIPT}
       prompt: config.prompt,
       source: 'xd.testing.xenesisAgent.submitPrompt',
       bypassDirectDeskRouting: config.bypassDirectDeskRouting === true,
-      bypassNaturalDeskRouting: config.bypassNaturalDeskRouting === true,
     };
     if (Array.isArray(config.attachments) && config.attachments.length > 0) {
       submitDetail.attachments = config.attachments;

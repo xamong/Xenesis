@@ -31,7 +31,13 @@ export const REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_ACTION_INBOX_LIST_REQUEST = {
 export const REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_CASES = [
   {
     id: 'connection-setup-notion',
-    requestPrompt: '노션 연결해줘',
+    requestPrompt: [
+      'Review the Notion connection setup request.',
+      '',
+      '```xenesis-desk-action',
+      '{"path":"xd.xenesis.connections.setupRequests.request","args":{"id":"notion"},"approved":false,"reason":"Review Notion setup request"}',
+      '```',
+    ].join('\n'),
     approvalPrompt: '승인',
     expectedRequestPath: 'xd.xenesis.connections.setupRequests.request',
     expectedRequestText: 'Desk action approval required',
@@ -67,7 +73,6 @@ export function buildReviewRequestApprovalSubmitRequest(promptCase, phase, timeo
       prompt: isApproval ? promptCase.approvalPrompt : promptCase.requestPrompt,
       expectedText: isApproval ? promptCase.expectedApprovalText : promptCase.expectedRequestText,
       expectedTextScope: 'anywhere',
-      bypassNaturalDeskRouting: false,
       timeoutMs,
     },
   };
@@ -89,13 +94,11 @@ export function formatReviewRequestApprovalLiveSmokePlan() {
     `CR submit path: ${REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_SUBMIT_PATH}`,
     `CR Action Inbox list path: ${REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_ACTION_INBOX_LIST_REQUEST.path}`,
     `App shell readiness: ${REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_APP_READY_SELECTOR}`,
-    'Mutating natural review requests:',
+    'Mutating explicit CR review requests:',
   ];
 
   for (const promptCase of REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_CASES) {
-    lines.push(
-      `- ${promptCase.requestPrompt} -> ${promptCase.expectedRequestPath} (${promptCase.expectedRequestText})`,
-    );
+    lines.push(`- ${promptCase.id} -> ${promptCase.expectedRequestPath} (${promptCase.expectedRequestText})`);
     lines.push(`  approve with: ${promptCase.approvalPrompt} (${promptCase.expectedApprovalText})`);
     lines.push(`  expected review item: ${promptCase.expectedReviewItem.title}`);
   }

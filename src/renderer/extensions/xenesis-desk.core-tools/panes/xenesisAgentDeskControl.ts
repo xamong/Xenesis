@@ -1,4 +1,15 @@
 export {
+  approveXenesisDeskActions,
+  buildXenesisDeskActionCompletedMessage,
+  buildXenesisDeskActionPendingMessage,
+  isXenesisDeskActionApprovalRequiredResult,
+  parseXenesisDeskActionBlocks,
+  pendingXenesisDeskActionsFromResults,
+  shouldRunXenesisDeskActionsDirectly,
+  summarizeXenesisDeskActionExecution,
+  type XenesisDeskActionParseResult,
+} from '../../../../shared/xenesisDeskActionProtocol';
+export {
   runXenesisDeskActions,
   type XenesisDeskActionActivity,
   type XenesisDeskActionActivityPhase,
@@ -10,18 +21,3 @@ export {
   type XenesisDeskActionRunOptions,
 } from '../../../../shared/xenesisDeskActionRunner';
 export { buildXenesisDeskControlPromptHint } from '../../../../shared/xenesisDeskControlPromptHint';
-export {
-  approveXenesisDeskActions,
-  buildXenesisDeskActionCompletedMessage,
-  buildXenesisDeskActionPendingMessage,
-  isXenesisDeskActionApprovalRequiredResult,
-  parseXenesisDeskActionBlocks,
-  pendingXenesisDeskActionsFromResults,
-  shouldRunXenesisDeskActionsDirectly,
-  summarizeXenesisDeskActionExecution,
-  type XenesisDeskActionParseResult,
-} from '../../../../shared/xenesisNaturalLanguageCatalog';
-export {
-  planXenesisDeskNaturalLanguageActions,
-  type XenesisDeskNaturalLanguagePlan,
-} from '../../../../shared/xenesisNaturalLanguagePlanner';

@@ -16,7 +16,6 @@ export type XenesisMode = 'chat' | 'plan' | 'work';
 /** Routing overrides carried through a prompt submission (also used by queued prompts). */
 export interface XenesisAgentPromptRoutingOptions {
   bypassDirectDeskRouting?: boolean;
-  bypassNaturalDeskRouting?: boolean;
 }
 
 /**

@@ -75,7 +75,6 @@ import {
   buildXenesisDeskActionPendingMessage,
   parseXenesisDeskActionBlocks,
   pendingXenesisDeskActionsFromResults,
-  planXenesisDeskNaturalLanguageActions,
   runXenesisDeskActions,
   shouldRunXenesisDeskActionsDirectly,
   summarizeXenesisDeskActionExecution,
@@ -1976,53 +1975,6 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
       return;
     }
 
-    const naturalDeskActionRequest = routingOptions.bypassNaturalDeskRouting
-      ? null
-      : planXenesisDeskNaturalLanguageActions(trimmedPrompt);
-    if (naturalDeskActionRequest && shouldRunXenesisDeskActionsDirectly(naturalDeskActionRequest)) {
-      xenesisAgentStateStore.update({ running: true, error: '', prompt: '' });
-      appendChatMessage({
-        role: 'user',
-        content: naturalDeskActionRequest.visibleText || displayInput.trim() || trimmedPrompt,
-        kind: 'command',
-      });
-      const assistantMessageId = appendChatMessage({
-        role: 'assistant',
-        content: 'Applying Desk action...',
-        streaming: true,
-      });
-      setActiveXenesisAssistantMessage(assistantMessageId);
-      appendRawStreamEntry({
-        kind: 'desk_tool_call',
-        summary: 'Direct natural Desk action prompt',
-        detail: trimmedPrompt,
-      });
-      try {
-        const deskActionResults = await executeXenesisDeskActionRequests(naturalDeskActionRequest.actions);
-        settleXenesisDeskActionMessage(
-          assistantMessageId,
-          naturalDeskActionRequest.actions,
-          deskActionResults,
-          naturalDeskActionRequest.visibleText,
-        );
-        void refresh();
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        xenesisAgentStateStore.update({ error: message });
-        appendRawStreamEntry({ kind: 'desk_tool_error', summary: message, error: true });
-        replaceChatMessage(assistantMessageId, {
-          role: 'system',
-          content: message,
-          error: true,
-          streaming: false,
-        });
-      } finally {
-        clearActiveXenesisAssistantMessage(assistantMessageId);
-        xenesisAgentStateStore.update({ running: false });
-      }
-      return;
-    }
-
     if (!xenesisApi) {
       xenesisAgentStateStore.update({ error: XENESIS_API_UNAVAILABLE });
       appendRawStreamEntry({ kind: 'api_unavailable', summary: XENESIS_API_UNAVAILABLE, error: true });
@@ -3568,8 +3520,8 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
       await runSlashCommand(baseInput, attachmentDisplayText, contextMessages);
       return;
     }
-    // Structured Desk-action blocks are executed before provider runs; clear
-    // natural Desk commands are planned in runPrompt unless explicitly bypassed.
+    // Structured Desk-action blocks are explicit CR payloads and may run before
+    // provider execution. Ordinary natural language goes through the provider.
     const directDeskActionRequest = routingOptions.bypassDirectDeskRouting
       ? null
       : parseXenesisDeskActionBlocks(baseInput);
@@ -3627,7 +3579,6 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
           prompt?: unknown;
           attachments?: unknown;
           bypassDirectDeskRouting?: unknown;
-          bypassNaturalDeskRouting?: unknown;
         }>
       ).detail;
       const eventPrompt = typeof detail?.prompt === 'string' ? detail.prompt : '';
@@ -3636,7 +3587,6 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
         : undefined;
       const routingOptions: XenesisAgentPromptRoutingOptions = {
         bypassDirectDeskRouting: detail?.bypassDirectDeskRouting === true,
-        bypassNaturalDeskRouting: detail?.bypassNaturalDeskRouting === true,
       };
       if (!eventPrompt.trim()) return;
       event.preventDefault();

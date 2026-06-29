@@ -1,10 +1,10 @@
 import { listDeskBridgeCapabilities } from './deskBridgeCapabilities';
-import { XENESIS_DESK_CONTROL_PROMPT_HINT_SECTIONS } from './xenesisDeskControlPromptHintCatalog';
 import {
   XENESIS_DESK_ACTION_PROTOCOL_FORMAT,
   XENESIS_DESK_ACTION_PROTOCOL_PATTERNS,
   XENESIS_DESK_ACTION_PROTOCOL_TEXT,
-} from './xenesisNaturalLanguageCatalog';
+} from './xenesisDeskActionProtocol';
+import { XENESIS_DESK_CONTROL_PROMPT_HINT_SECTIONS } from './xenesisDeskControlPromptHintCatalog';
 
 export function isXenesisDeskCapabilityPathUnderPrefix(path: string, prefix: string): boolean {
   return path === prefix || path.startsWith(`${prefix}${XENESIS_DESK_ACTION_PROTOCOL_FORMAT.capabilityPathSeparator}`);

@@ -4,10 +4,10 @@ import {
   XENESIS_DESK_ACTION_CALL_RESULT_KEYS,
   XENESIS_DESK_ACTION_EXECUTION_STATUS,
   type XenesisDeskActionActivityPhase,
-  type XenesisNaturalDeskActionRequest,
-} from './xenesisNaturalLanguageCatalog';
+  type XenesisDeskActionRequest,
+} from './xenesisDeskActionProtocol';
 
-export type XenesisDeskActionRequest = XenesisNaturalDeskActionRequest;
+export type { XenesisDeskActionRequest };
 
 export interface XenesisDeskActionCallOptions {
   approved?: boolean;

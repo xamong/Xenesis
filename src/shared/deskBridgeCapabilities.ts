@@ -5898,13 +5898,6 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                     'Testing-only: send the prompt to the provider instead of executing fenced xenesis-desk-action blocks before model execution.',
                   default: false,
                 },
-                bypassNaturalDeskRouting: {
-                  type: 'boolean',
-                  title: 'Bypass natural Desk routing',
-                  description:
-                    'Testing-only: send the prompt to the provider instead of satisfying natural-language Desk control requests locally before model execution.',
-                  default: false,
-                },
                 typeDelayMs: {
                   type: 'number',
                   title: 'Typing delay',

@@ -40,7 +40,13 @@ test('review request approval live smoke describes one safe mutating case', () =
   assert.deepEqual(REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_CASES, [
     {
       id: 'connection-setup-notion',
-      requestPrompt: '노션 연결해줘',
+      requestPrompt: [
+        'Review the Notion connection setup request.',
+        '',
+        '```xenesis-desk-action',
+        '{"path":"xd.xenesis.connections.setupRequests.request","args":{"id":"notion"},"approved":false,"reason":"Review Notion setup request"}',
+        '```',
+      ].join('\n'),
       approvalPrompt: '승인',
       expectedRequestPath: 'xd.xenesis.connections.setupRequests.request',
       expectedRequestText: 'Desk action approval required',
@@ -75,10 +81,15 @@ test('review request approval live smoke builds request and approval submit call
     source: 'xenesis-review-request-approval-live-smoke',
     approved: true,
     args: {
-      prompt: '노션 연결해줘',
+      prompt: [
+        'Review the Notion connection setup request.',
+        '',
+        '```xenesis-desk-action',
+        '{"path":"xd.xenesis.connections.setupRequests.request","args":{"id":"notion"},"approved":false,"reason":"Review Notion setup request"}',
+        '```',
+      ].join('\n'),
       expectedText: 'Desk action approval required',
       expectedTextScope: 'anywhere',
-      bypassNaturalDeskRouting: false,
       timeoutMs: 42000,
     },
   });
@@ -91,7 +102,6 @@ test('review request approval live smoke builds request and approval submit call
       prompt: '승인',
       expectedText: 'Desk action completed',
       expectedTextScope: 'anywhere',
-      bypassNaturalDeskRouting: false,
       timeoutMs: 42000,
     },
   });
@@ -249,7 +259,8 @@ test('review request approval live smoke rejects always-approval button clicks',
 
 test('review request approval live smoke plan and package script are explicit', () => {
   const plan = formatReviewRequestApprovalLiveSmokePlan();
-  assert.match(plan, /노션 연결해줘/);
+  assert.match(plan, /Mutating explicit CR review requests/);
+  assert.match(plan, /connection-setup-notion/);
   assert.match(plan, /승인/);
   assert.match(plan, /xd\.xenesis\.connections\.setupRequests\.request/);
   assert.match(plan, /Review Notion setup request/);

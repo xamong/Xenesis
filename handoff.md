@@ -7,6 +7,99 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Latest Slice: Remove Natural Desk Heuristics
+
+- Current objective:
+  - Remove deterministic/hardcoded natural-language Desk routing from the Agent
+    pane and shared code. Ordinary natural Desk-control prompts must not be
+    converted to CR actions before provider execution. Explicit structured
+    `xenesis-desk-action(s)` blocks remain supported as direct CR payloads.
+- Implemented:
+  - Removed the Agent-pane pre-provider natural Desk routing branch, import, and
+    `bypassNaturalDeskRouting` event option.
+  - Removed the `bypassNaturalDeskRouting` testing capability schema field and
+    main-process submitPrompt bridge plumbing.
+  - Deleted the natural-language heuristic modules:
+    `src/shared/xenesisNaturalLanguageCatalog.ts`,
+    `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`,
+    `src/shared/xenesisNaturalLanguageActionResolvers.ts`,
+    `src/shared/xenesisNaturalLanguagePlanResolvers.ts`, and
+    `src/shared/xenesisNaturalLanguagePlanner.ts`.
+  - Split explicit Desk action parsing/summary/approval helpers into
+    `src/shared/xenesisDeskActionProtocol.ts` and updated runtime imports.
+  - Deleted the obsolete `smoke:xenesis:natural-desk-routing` package script and
+    its script/test files.
+  - Reworked `smoke:xenesis:review-request-approval` to submit an explicit
+    fenced CR action block instead of relying on natural prompt routing.
+  - Replaced the Agent Desk control test surface with explicit CR action
+    protocol tests and guards proving natural heuristic code/files stay absent.
+- Touched files:
+  - `handoff.md`
+  - `package.json`
+  - `docs/capability-registry-audit.md`
+  - `scripts/xenesisReviewRequestApprovalLiveSmoke.mjs`
+  - `scripts/xenesisReviewRequestApprovalLiveSmoke.test.mjs`
+  - `src/main/index.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/XenesisAgentPane.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentTypes.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.test.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/shared/xenesisDeskActionProtocol.ts`
+  - `src/shared/xenesisDeskActionRunner.ts`
+  - `src/shared/xenesisDeskControlPromptHint.ts`
+  - Deleted: `scripts/xenesisNaturalDeskRoutingLiveSmoke.mjs`
+  - Deleted: `scripts/xenesisNaturalDeskRoutingLiveSmoke.test.mjs`
+  - Deleted: `src/shared/xenesisNaturalLanguageCatalog.ts`
+  - Deleted: `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
+  - Deleted: `src/shared/xenesisNaturalLanguageActionResolvers.ts`
+  - Deleted: `src/shared/xenesisNaturalLanguagePlanResolvers.ts`
+  - Deleted: `src/shared/xenesisNaturalLanguagePlanner.ts`
+- Verification:
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    failed as expected while `XenesisAgentPane.tsx` still imported/called
+    `planXenesisDeskNaturalLanguageActions`.
+  - GREEN:
+    `npm run typecheck` -> passed.
+  - GREEN:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 10/10.
+  - GREEN:
+    `node --test scripts\xenesisReviewRequestApprovalLiveSmoke.test.mjs` ->
+    passed 7/7.
+  - GREEN:
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` ->
+    passed 69/69.
+  - CR audit:
+    `npm run docs:capabilities:audit` -> passed; wrote
+    `docs/capability-registry-audit.md` with 796 nodes and 689 coverage path
+    references.
+  - Scoped Biome:
+    `npx biome check package.json scripts\xenesisReviewRequestApprovalLiveSmoke.mjs scripts\xenesisReviewRequestApprovalLiveSmoke.test.mjs src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.ts src\shared\xenesisDeskActionProtocol.ts src\shared\xenesisDeskControlPromptHint.ts`
+    -> passed.
+  - Source scan:
+    `rg -n "xenesisNaturalLanguage|planXenesisDeskNaturalLanguageActions|XENESIS_NATURAL_|findXenesisNatural|hasXenesisNatural|bypassNaturalDeskRouting|naturalDeskActionRequest|Direct natural Desk action prompt|smoke:xenesis:natural-desk-routing|xenesisNaturalDeskRoutingLiveSmoke" src scripts package.json --glob '!src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts'`
+    -> no matches.
+  - Live Agent-pane explicit CR approval smoke:
+    `npm run smoke:xenesis:review-request-approval` -> passed 6/6.
+  - `git diff --check` -> passed with line-ending warnings only.
+- Known gaps:
+  - I did not prove natural-language provider reasoning in a live Agent pane.
+    The removed behavior was the deterministic pre-provider router; natural
+    prompts now proceed to the provider path, but a separate provider-live smoke
+    is still needed to prove the selected provider calls CR/MCP tools for those
+    prompts.
+  - Full `npm run lint` is still not a clean repo-wide signal in this worktree:
+    it failed on existing repo-wide Biome diagnostics outside this slice
+    (1,151 errors, 419 warnings, 92 infos; output exceeded diagnostic limit).
+  - `npm run check:public-release` failed before checking this slice because
+    `.github/workflows/ci.yml` is missing in this repo/worktree.
+- Next intended step:
+  - Review final diff, stage, and commit this removal slice. Then add a separate
+    provider-live Agent-pane smoke for natural Desk-control prompts if provider
+    credentials/runtime are available.
 ## Latest Slice: Shared Natural Target Resolution Helpers
 
 - Current objective:
