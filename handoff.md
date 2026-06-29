@@ -7,6 +7,88 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Latest Slice: Shared Natural Target Resolution Helpers
+
+- Current objective:
+  - Move remaining direct natural target finder usage out of
+    `src/shared/xenesisNaturalLanguageActionResolvers.ts` and into named shared
+    capability catalog helpers.
+- Scope:
+  - Add RED tests requiring shared helpers for view kind, connection target,
+    onboarding step, and provider action target resolution.
+  - Add source guards that block direct target finder calls and provider auto
+    target usage in the natural resolver.
+  - Keep the resolver responsible for high-level ordering and runtime quoted
+    text/path extraction only.
+  - Preserve existing view kind, provider, onboarding, connection target, and
+    provider profile draft prompt behavior.
+- Touched files so far:
+  - `handoff.md`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `src/shared/xenesisNaturalLanguageActionResolvers.ts`
+  - `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-shared-natural-target-resolution-helpers.md`
+- Intended RED tests:
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    should fail because the named target-resolution helpers do not exist yet
+    and the resolver still calls direct target finder functions.
+- Verification status:
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> failed 54/56 as expected because the named target-resolution helpers
+    are not exported yet and the natural resolver still calls direct target
+    finder functions.
+  - GREEN focused:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 56/56 after adding named target-resolution helpers and
+    delegating view kind, connection target, onboarding step, and provider
+    action target resolution from the resolver to the capability catalog.
+  - Focused Biome write:
+    `npx biome check --write --formatter-enabled=true --linter-enabled=true --assist-enabled=true src/shared/xenesisNaturalLanguageCapabilityCatalog.ts src/shared/xenesisNaturalLanguageActionResolvers.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+    -> passed; fixed two files.
+  - Focused post-format source/test recheck:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    -> passed 56/56.
+  - Source guard:
+    `rg -n "\bfindXenesisNaturalConnectionTarget\(|\bfindXenesisNaturalOnboardingStepTarget\(|\bfindXenesisNaturalProviderTarget\(|\bfindXenesisNaturalViewTarget\(|XENESIS_NATURAL_PROVIDER_AUTO_TARGET" src\shared\xenesisNaturalLanguageActionResolvers.ts`
+    -> no matches.
+  - Typecheck:
+    `npm run typecheck` -> passed.
+  - Smoke fixture:
+    `node --test scripts\xenesisNaturalDeskRoutingLiveSmoke.test.mjs` ->
+    passed 6/6.
+  - Focused post-format Biome check:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true src/shared/xenesisNaturalLanguageCapabilityCatalog.ts src/shared/xenesisNaturalLanguageActionResolvers.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+    -> passed.
+  - CR audit:
+    `npm run docs:capabilities:audit` -> passed; generated audit summary
+    remained 796 nodes and 689 coverage path references.
+  - CR audit counter readback:
+    `rg -n "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods|Dispatcher paths missing from tree" docs\capability-registry-audit.md`
+    -> all 0.
+  - Build:
+    `npm run build` -> passed. Existing Vite warnings about browser
+    externalization/dynamic import chunking and large renderer chunks were
+    printed.
+  - Live natural Desk routing smoke:
+    `npm run smoke:xenesis:natural-desk-routing` -> passed 261/261.
+- Implemented:
+  - Added shared target-resolution helpers for view kind, connection action
+    target, onboarding action step, and provider action target in
+    `src/shared/xenesisNaturalLanguageCapabilityCatalog.ts`.
+  - Moved provider auto target handling out of
+    `src/shared/xenesisNaturalLanguageActionResolvers.ts`.
+  - Kept onboarding/provider helper outputs limited to the fields needed by
+    action builders so natural word catalogs do not leak back to the resolver.
+- Known gaps:
+  - Full repo lint/public-release known gaps remain unchanged.
+- Documentation:
+  - Added Obsidian working note
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-shared-natural-target-resolution-helpers.md`.
+- Next intended step:
+  - Run final diff hygiene, stage this slice only, commit it, then scan for
+    resolver hardcoding leftovers to size the next large cycle.
+
 ## Latest Slice: Shared Remaining Natural Action Builders
 
 - Current objective:

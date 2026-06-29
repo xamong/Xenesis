@@ -20,6 +20,7 @@ import {
   findXenesisNaturalAgentSubmitAction,
   findXenesisNaturalChannelProfileDraftApplyAction,
   findXenesisNaturalChannelTestAction,
+  findXenesisNaturalConnectionActionTarget,
   findXenesisNaturalConnectionCenterAggregateOpenAction,
   findXenesisNaturalConnectionSetupApplyAction,
   findXenesisNaturalConnectionTargetOpenAction,
@@ -33,9 +34,11 @@ import {
   findXenesisNaturalMessengerProfileDraftAggregateStatusAction,
   findXenesisNaturalMessengerViewSectionOpenAction,
   findXenesisNaturalOAuthSetupPacketAction,
+  findXenesisNaturalOnboardingActionStep,
   findXenesisNaturalOnboardingOpenAction,
   findXenesisNaturalOnboardingStatusAction,
   findXenesisNaturalProfileInventoryAction,
+  findXenesisNaturalProviderActionTarget,
   findXenesisNaturalProviderAggregateStatusAction,
   findXenesisNaturalProviderOpenAction,
   findXenesisNaturalProviderProfileDraftApplyAction,
@@ -50,6 +53,7 @@ import {
   findXenesisNaturalToolAggregateStatusAction,
   findXenesisNaturalToolViewSectionOpenAction,
   findXenesisNaturalUserStoryWorkflowPreviewAction,
+  findXenesisNaturalViewKind,
   findXenesisNaturalWorkspaceSetAction,
   XENESIS_NATURAL_ACTIVE_DOCK_CLOSE_RULES,
   XENESIS_NATURAL_ACTIVE_DOCK_FOCUS_RULES,
@@ -376,8 +380,12 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'XENESIS_NATURAL_VIEW_TARGETS',
     'buildXenesisNaturalCatalogAction',
     'findXenesisNaturalConnectionTargetRuleAction',
+    'findXenesisNaturalConnectionActionTarget',
     'findXenesisNaturalCoreToolTarget',
     'findXenesisNaturalCoreToolOpenAction',
+    'findXenesisNaturalOnboardingActionStep',
+    'findXenesisNaturalProviderActionTarget',
+    'findXenesisNaturalViewKind',
     'findXenesisNaturalViewTarget',
   ]) {
     assert.match(capabilityCatalogSource, new RegExp(capabilityCatalogOwnedSymbol));
@@ -392,8 +400,12 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'export const XENESIS_NATURAL_VIEW_TARGETS',
     'export function buildXenesisNaturalCatalogAction',
     'export function findXenesisNaturalConnectionTargetRuleAction',
+    'export function findXenesisNaturalConnectionActionTarget',
     'export function findXenesisNaturalCoreToolTarget',
     'export function findXenesisNaturalCoreToolOpenAction',
+    'export function findXenesisNaturalOnboardingActionStep',
+    'export function findXenesisNaturalProviderActionTarget',
+    'export function findXenesisNaturalViewKind',
     'export function findXenesisNaturalViewTarget',
   ]) {
     assert.doesNotMatch(catalogSource, new RegExp(naturalTextCatalogDisownedSymbol));
@@ -455,6 +467,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   for (const sharedActionBuilderFunction of [
     'buildXenesisNaturalCatalogAction',
     'buildXenesisNaturalTemplateAction',
+    'findXenesisNaturalConnectionActionTarget',
     'findXenesisNaturalConnectionTargetRuleAction',
     'findXenesisNaturalProviderRuleAction',
     'findXenesisNaturalConnectionAggregateStatusAction',
@@ -477,10 +490,12 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'findXenesisNaturalMcpInstallDraftApplyAction',
     'findXenesisNaturalMessengerAggregateStatusAction',
     'findXenesisNaturalMessengerProfileDraftAggregateStatusAction',
+    'findXenesisNaturalOnboardingActionStep',
     'findXenesisNaturalOnboardingOpenAction',
     'findXenesisNaturalOnboardingStatusAction',
     'findXenesisNaturalOAuthSetupPacketAction',
     'findXenesisNaturalProviderAggregateStatusAction',
+    'findXenesisNaturalProviderActionTarget',
     'findXenesisNaturalProviderOpenAction',
     'findXenesisNaturalProviderProfileDraftApplyAction',
     'findXenesisNaturalProviderStatusAction',
@@ -493,6 +508,7 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'findXenesisNaturalRuntimeSupportAction',
     'findXenesisNaturalRunStartAction',
     'findXenesisNaturalToolAggregateStatusAction',
+    'findXenesisNaturalViewKind',
     'findXenesisNaturalWorkspaceSetAction',
   ]) {
     assert.match(capabilityCatalogSource, new RegExp(`export function ${sharedActionBuilderFunction}`));
@@ -1195,7 +1211,8 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
   ]) {
     assert.doesNotMatch(source, new RegExp(movedContextWordImport));
   }
-  assert.match(naturalResolverSource, /XENESIS_NATURAL_PROVIDER_AUTO_TARGET/);
+  assert.doesNotMatch(naturalResolverSource, /XENESIS_NATURAL_PROVIDER_AUTO_TARGET/);
+  assert.match(capabilityCatalogSource, /XENESIS_NATURAL_PROVIDER_AUTO_TARGET/);
   assert.doesNotMatch(source, /XENESIS_NATURAL_CORE_TOOL_OPEN_REASON/);
   assert.doesNotMatch(source, /\/\\b\(open\|focus\)\\b\//);
   assert.doesNotMatch(source, /id: 'auto'/);
@@ -2242,16 +2259,24 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
     'findXenesisNaturalOnboardingStepTarget',
     'findXenesisNaturalProviderTarget',
   ]) {
-    assert.match(naturalResolverSource, new RegExp(catalogFinder));
+    assert.doesNotMatch(naturalResolverSource, new RegExp(`\\b${catalogFinder}\\(`));
     assert.match(catalogSource, new RegExp(`export function ${catalogFinder}`));
+  }
+  for (const capabilityCatalogTargetResolver of [
+    'findXenesisNaturalConnectionActionTarget',
+    'findXenesisNaturalOnboardingActionStep',
+    'findXenesisNaturalProviderActionTarget',
+  ]) {
+    assert.match(naturalResolverSource, new RegExp(capabilityCatalogTargetResolver));
+    assert.match(capabilityCatalogSource, new RegExp(`export function ${capabilityCatalogTargetResolver}`));
   }
   assert.doesNotMatch(naturalResolverSource, /findXenesisNaturalCoreToolTarget/);
   assert.match(capabilityCatalogSource, /export function findXenesisNaturalCoreToolTarget/);
-  for (const capabilityCatalogFinder of ['findXenesisNaturalViewTarget']) {
-    assert.match(naturalResolverSource, new RegExp(capabilityCatalogFinder));
-    assert.match(capabilityCatalogSource, new RegExp(`export function ${capabilityCatalogFinder}`));
-    assert.doesNotMatch(catalogSource, new RegExp(`export function ${capabilityCatalogFinder}`));
-  }
+  assert.doesNotMatch(naturalResolverSource, /\bfindXenesisNaturalViewTarget\(/);
+  assert.match(naturalResolverSource, /findXenesisNaturalViewKind/);
+  assert.match(capabilityCatalogSource, /export function findXenesisNaturalViewTarget/);
+  assert.match(capabilityCatalogSource, /export function findXenesisNaturalViewKind/);
+  assert.doesNotMatch(catalogSource, /export function findXenesisNaturalViewTarget/);
   for (const catalogFinder of [
     'findXenesisNaturalArrangeModeTarget',
     'findXenesisNaturalDockSideTarget',
@@ -2317,7 +2342,8 @@ test('xenesisAgentDeskControl keeps connection catalogs and CR path inventory ou
       'onboarding-connections',
     ],
   );
-  assert.match(naturalResolverSource, /findXenesisNaturalOnboardingStepTarget/);
+  assert.doesNotMatch(naturalResolverSource, /\bfindXenesisNaturalOnboardingStepTarget\(/);
+  assert.match(naturalResolverSource, /findXenesisNaturalOnboardingActionStep/);
   assert.doesNotMatch(source, /const steps:\s*Array<\{ id: string; label: string; words: readonly string\[\] \}>/);
   assert.doesNotMatch(source, /words:\s*\['first chat'/);
   assert.deepEqual(
@@ -3585,6 +3611,29 @@ test('natural view-section targets are generated from Connection Center section 
   assert.doesNotMatch(capabilityCatalogSource, /XENESIS_NATURAL_TOOL_VIEW_SECTION_TARGET_SPECS\s*=\s*\[/);
   assert.doesNotMatch(capabilityCatalogSource, /XENESIS_NATURAL_MESSENGER_VIEW_SECTION_TARGET_SPECS\s*=\s*\[/);
   assert.doesNotMatch(capabilityCatalogSource, /XENESIS_NATURAL_PROVIDER_VIEW_SECTION_TARGET_SPECS\s*=\s*\[/);
+});
+
+test('natural target resolution is built by shared capability catalog helpers', () => {
+  assert.deepEqual(findXenesisNaturalViewKind('xenesis agent 열어줘'), {
+    id: 'natural-xenesis-agent-open',
+    kind: 'xenesisAgent',
+    reason: 'Open Xenesis Agent from natural language request.',
+  });
+
+  const notion = findXenesisNaturalConnectionActionTarget('노션 connector 상태 보여줘');
+  assert.ok(notion);
+  assert.equal(notion.id, 'notion');
+  assert.equal(notion.label, 'Notion');
+  assert.equal(notion.kind, 'tool');
+
+  assert.deepEqual(findXenesisNaturalOnboardingActionStep('첫 채팅 온보딩 열어줘'), {
+    id: 'first-chat',
+    label: 'First chat',
+  });
+  assert.deepEqual(findXenesisNaturalProviderActionTarget('provider profile draft 상태 보여줘'), {
+    id: 'auto',
+    label: 'auto',
+  });
 });
 
 test('natural view-section open actions are built by shared capability catalog helpers', () => {

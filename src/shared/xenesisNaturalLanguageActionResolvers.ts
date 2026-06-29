@@ -3,6 +3,7 @@ import {
   findXenesisNaturalAgentSubmitAction,
   findXenesisNaturalChannelProfileDraftApplyAction,
   findXenesisNaturalChannelTestAction,
+  findXenesisNaturalConnectionActionTarget,
   findXenesisNaturalConnectionAggregateOpenAction,
   findXenesisNaturalConnectionAggregateStatusAction,
   findXenesisNaturalConnectionCenterAggregateOpenAction,
@@ -18,9 +19,11 @@ import {
   findXenesisNaturalMessengerProfileDraftAggregateStatusAction,
   findXenesisNaturalMessengerViewSectionOpenAction,
   findXenesisNaturalOAuthSetupPacketAction,
+  findXenesisNaturalOnboardingActionStep,
   findXenesisNaturalOnboardingOpenAction,
   findXenesisNaturalOnboardingStatusAction,
   findXenesisNaturalProfileInventoryAction,
+  findXenesisNaturalProviderActionTarget,
   findXenesisNaturalProviderAggregateStatusAction,
   findXenesisNaturalProviderOpenAction,
   findXenesisNaturalProviderProfileDraftApplyAction,
@@ -35,16 +38,13 @@ import {
   findXenesisNaturalToolAggregateStatusAction,
   findXenesisNaturalToolViewSectionOpenAction,
   findXenesisNaturalUserStoryWorkflowPreviewAction,
-  findXenesisNaturalViewTarget,
+  findXenesisNaturalViewKind,
   findXenesisNaturalWorkspaceSetAction,
 } from './xenesisNaturalLanguageCapabilityCatalog';
 import {
   extractXenesisNaturalLocalPath,
   extractXenesisNaturalQuotedText,
   extractXenesisNaturalQuotedTexts,
-  findXenesisNaturalConnectionTarget,
-  findXenesisNaturalOnboardingStepTarget,
-  findXenesisNaturalProviderTarget,
   hasXenesisNaturalConnectionReadbackIntent,
   hasXenesisNaturalConnectionReviewRequestIntent,
   hasXenesisNaturalExplicitOpenIntent,
@@ -52,7 +52,6 @@ import {
   hasXenesisNaturalProviderProfileContext,
   normalizeXenesisNaturalLanguageText,
   stripXenesisNaturalQuotedText,
-  XENESIS_NATURAL_PROVIDER_AUTO_TARGET,
   type XenesisNaturalConnectionTarget,
   type XenesisNaturalDeskActionRequest,
 } from './xenesisNaturalLanguageCatalog';
@@ -65,13 +64,11 @@ export function toolOpenActionFromNaturalText(
 }
 
 export function viewKindFromNaturalText(value: string): { id: string; kind: string; reason: string } | null {
-  const target = findXenesisNaturalViewTarget(value);
-  if (!target) return null;
-  return { id: target.id, kind: target.kind, reason: target.reason };
+  return findXenesisNaturalViewKind(value);
 }
 
 function xenesisConnectionTargetFromNaturalText(value: string): XenesisNaturalConnectionTarget | null {
-  return findXenesisNaturalConnectionTarget(value);
+  return findXenesisNaturalConnectionActionTarget(value);
 }
 
 function xenesisConnectionTargetStatusActionFromNaturalText(
@@ -97,9 +94,7 @@ function xenesisGuideStatusActionFromNaturalText(value: string): XenesisNaturalD
 }
 
 function xenesisOnboardingStepFromNaturalText(value: string): { id: string; label: string } | null {
-  if (!hasXenesisNaturalOnboardingContext(value)) return null;
-
-  return findXenesisNaturalOnboardingStepTarget(value);
+  return findXenesisNaturalOnboardingActionStep(value);
 }
 
 function xenesisOnboardingOpenActionFromNaturalText(value: string): XenesisNaturalDeskActionRequest | null {
@@ -115,10 +110,7 @@ function xenesisOnboardingStatusActionFromNaturalText(value: string): XenesisNat
 }
 
 function xenesisProviderFromNaturalText(value: string): { id: string; label: string } | null {
-  const provider = findXenesisNaturalProviderTarget(value);
-  if (provider) return provider;
-  if (hasXenesisNaturalProviderProfileContext(value)) return XENESIS_NATURAL_PROVIDER_AUTO_TARGET;
-  return null;
+  return findXenesisNaturalProviderActionTarget(value);
 }
 
 function xenesisProviderReadbackActionFromNaturalText(value: string): XenesisNaturalDeskActionRequest | null {

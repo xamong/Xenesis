@@ -14,8 +14,11 @@ import {
 } from './xenesisConnections';
 import {
   buildXenesisNaturalLanguagePlan,
+  findXenesisNaturalConnectionTarget,
   findXenesisNaturalContextRule,
   findXenesisNaturalGuideTarget,
+  findXenesisNaturalOnboardingStepTarget,
+  findXenesisNaturalProviderTarget,
   findXenesisNaturalWordsTarget,
   hasXenesisNaturalAggregateCatalogContext,
   hasXenesisNaturalConnectionReadbackIntent,
@@ -23,6 +26,7 @@ import {
   hasXenesisNaturalExternalMessengerCatalogContext,
   hasXenesisNaturalExternalToolCatalogContext,
   hasXenesisNaturalMessengerProfileDraftCatalogContext,
+  hasXenesisNaturalOnboardingContext,
   hasXenesisNaturalProviderProfileContext,
   isXenesisNaturalConnectionMessengerTarget,
   isXenesisNaturalConnectionToolTarget,
@@ -109,6 +113,7 @@ import {
   XENESIS_NATURAL_PROFILE_CONTEXT_WORDS,
   XENESIS_NATURAL_PROFILE_DRAFT_CONTEXT_WORDS,
   XENESIS_NATURAL_PROFILE_LIST_CONTEXT_WORDS,
+  XENESIS_NATURAL_PROVIDER_AUTO_TARGET,
   XENESIS_NATURAL_REFRESH_CONTEXT_WORDS,
   XENESIS_NATURAL_REPORT_CONTEXT_WORDS,
   XENESIS_NATURAL_RESIZE_COMMAND_WORDS,
@@ -3842,6 +3847,33 @@ export function findXenesisNaturalCoreToolTarget(value: string): XenesisNaturalC
 
 export function findXenesisNaturalViewTarget(value: string): XenesisNaturalViewTarget | null {
   return findXenesisNaturalWordsTarget(value, XENESIS_NATURAL_VIEW_TARGETS);
+}
+
+export function findXenesisNaturalViewKind(value: string): { id: string; kind: string; reason: string } | null {
+  const target = findXenesisNaturalViewTarget(value);
+  if (!target) return null;
+  return { id: target.id, kind: target.kind, reason: target.reason };
+}
+
+export function findXenesisNaturalConnectionActionTarget(value: string): XenesisNaturalConnectionTarget | null {
+  return findXenesisNaturalConnectionTarget(value);
+}
+
+export function findXenesisNaturalOnboardingActionStep(
+  value: string,
+): Pick<XenesisNaturalWordsTarget, 'id' | 'label'> | null {
+  if (!hasXenesisNaturalOnboardingContext(value)) return null;
+  const step = findXenesisNaturalOnboardingStepTarget(value);
+  return step ? { id: step.id, label: step.label } : null;
+}
+
+export function findXenesisNaturalProviderActionTarget(
+  value: string,
+): Pick<XenesisNaturalWordsTarget, 'id' | 'label'> | null {
+  const provider = findXenesisNaturalProviderTarget(value);
+  if (provider) return { id: provider.id, label: provider.label };
+  if (hasXenesisNaturalProviderProfileContext(value)) return XENESIS_NATURAL_PROVIDER_AUTO_TARGET;
+  return null;
 }
 
 export function buildXenesisNaturalCoreToolOpenAction(
