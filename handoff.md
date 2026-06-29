@@ -32,13 +32,16 @@
   - `rg -n -- "npm run smoke:xenesis:(connection-center|review-request-approval).*-- --json" docs\superpowers docs\obsidian`: FOUND stale command examples in older working/spec notes and one superseded/ignored plan.
   - Mechanical replacement in tracked `docs\obsidian` and `docs\superpowers` notes: updated stale JSON evidence commands to direct `node .\scripts\... --json`.
   - `rg -n -- "npm run smoke:xenesis:(connection-center|review-request-approval).*-- --json" docs\superpowers docs\obsidian`: PASS, no matches after cleanup.
+  - Final targeted adversarial re-review after cleanup: PASS, no blockers; verification reviewer confirmed direct `node ... --json` evidence commands, audit-zero consistency, and no provider natural-language proof overclaim.
+  - `git status --short`: PASS, no output after `25ca5a3`.
+  - `git diff --check HEAD`: PASS, no output after `25ca5a3`.
 - Exact remediation result:
   - Connection Center smoke report computed fields `ok`, `createdAt`, `summary`, and `checks` can no longer be overridden by `extra`.
   - Connection Center snapshot normalization now preserves expected text as `expectedText` and actual rendered text as `actualText`.
   - Obsidian Verification Map and the Slice 01 plan now name direct `node ... --json` commands as structured JSON evidence commands.
   - Follow-up stale-doc scan found older working/spec notes with the same npm JSON command pattern; tracked notes were mechanically updated to direct `node ... --json` commands.
 - Next intended step:
-  - Commit the adversarial review documentation cleanup and rerun final review/verification checks.
+  - Report Slice 01 completion scope and residual known gaps to the user.
 
 ## Current Slice: Slice 01 Live CR Baseline - Task 6 Final Verification
 
