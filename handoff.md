@@ -1,5 +1,61 @@
 # Xenesis Desk Work Handoff
 
+## Current Slice: Slice 01 Live CR Baseline - Task 4 Approval Record Unit Coverage
+
+- Current objective:
+  - Implement Task 4 from `docs/superpowers/plans/2026-06-29-slice-01-live-cr-baseline.md`.
+  - Add approval record unit coverage for capability approval command serialization, stable allow keys, request shape, parser rejection, and Action Inbox approve/reject readback.
+  - Keep approval runtime behavior, provider behavior, natural-language routing, provider shortcuts, mock fallbacks, and chat-only approval behavior unchanged.
+- Scope boundary:
+  - Owned files only: `src/main/capabilityActionApproval.test.mjs`, `src/main/mcpActionInbox.test.mjs`, and `handoff.md`.
+  - No implementation/runtime changes unless focused tests reveal a real bug.
+  - No web browsing.
+- Touched files so far:
+  - `src/main/capabilityActionApproval.test.mjs`
+  - `src/main/mcpActionInbox.test.mjs`
+  - `handoff.md`
+- Commands run:
+  - `Get-Content -Raw AGENTS.md`: PASS.
+  - `Get-Content -Raw docs\obsidian\Xenesis-desk.md`: PASS.
+  - `Get-Content -Raw "docs\obsidian\00_System\AI Agent Rules.md"`: FAIL, note lives under `docs\obsidian\Xenesis-desk\00_System`.
+  - `Get-Content -Raw "docs\obsidian\00_System\Graph Schema.md"`: FAIL, note lives under `docs\obsidian\Xenesis-desk\00_System`.
+  - `Get-Content -Raw "docs\obsidian\00_System\Review Policy.md"`: FAIL, note lives under `docs\obsidian\Xenesis-desk\00_System`.
+  - `Get-Content -Raw "docs\obsidian\10_Repo Map\Source of Truth Map.md"`: FAIL, note lives under `docs\obsidian\Xenesis-desk\10_Repo Map`.
+  - `rg --files docs\obsidian`: PASS, found actual Obsidian mirror paths under `docs\obsidian\Xenesis-desk`.
+  - `Get-Content -Raw docs\superpowers\plans\2026-06-29-slice-01-live-cr-baseline.md`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\00_System\AI Agent Rules.md"`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\00_System\Graph Schema.md"`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\00_System\Review Policy.md"`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\10_Repo Map\Source of Truth Map.md"`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\_Indexes\Module Index.md"`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\_Indexes\Verification Map.md"`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\10_Repo Map\Repo Overview.md"`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\30_Modules\module-approval-system.md"`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\20_Architecture\Approval Flow.md"`: PASS.
+  - `node --test src\main\capabilityActionApproval.test.mjs`: FAIL as RED, test file missing.
+  - `Get-Content -Raw src\main\capabilityActionApproval.mjs`: PASS.
+  - `Get-Content -Raw src\main\mcpActionInbox.mjs`: PASS.
+  - `Get-Content -Raw src\main\mcpActionInbox.test.mjs`: PASS.
+  - `git status --short --branch`: PASS, on `agent/upcoming-work-20260627` with no modified files before Task 4 edits.
+  - `node --test src\main\capabilityActionApproval.test.mjs`: PASS, 4/4 tests.
+  - `node --test src\main\mcpActionInbox.test.mjs`: PASS, 3/3 tests.
+  - Final `node --test src\main\capabilityActionApproval.test.mjs`: PASS, 4/4 tests.
+  - Final `node --test src\main\mcpActionInbox.test.mjs`: PASS, 3/3 tests.
+  - `git diff --check`: PASS; Git printed LF/CRLF normalization warnings for `handoff.md` and `src/main/mcpActionInbox.test.mjs`.
+  - `git status --short`: PASS, showed only owned Task 4 files:
+    `handoff.md`, `src/main/mcpActionInbox.test.mjs`, and untracked `src/main/capabilityActionApproval.test.mjs`.
+- Exact verification result:
+  - Initial RED check failed with `Could not find 'src\main\capabilityActionApproval.test.mjs'`, matching the expected missing test file state before adding coverage.
+  - Current implementation already exports `createCapabilityApprovalCommand`, `parseCapabilityApprovalCommand`, `createCapabilityApprovalAllowKey`, `createCapabilityApprovalRequest`, `isCapabilityApprovalItem`, and `resolveMcpActionInboxItem`.
+  - Added `src/main/capabilityActionApproval.test.mjs` with coverage for stable command roundtrip, stable allow key ordering, Action Inbox record shape, `isCapabilityApprovalItem`, and parser rejection.
+  - Added `resolveMcpActionInboxItem` import and approve/reject readback tests in `src/main/mcpActionInbox.test.mjs`.
+  - Focused approval tests pass without implementation/runtime changes.
+  - Required final approval tests, diff check, and status check passed.
+- Known gaps:
+  - This task did not run CR audit, typecheck, lint, build, or live Electron smokes because Task 4 only adds focused unit coverage and required commands were the two node tests plus diff/status checks.
+- Next intended step:
+  - Commit Task 4 changes as `Add approval record unit coverage`.
+
 ## Current Slice: Slice 01 Live CR Baseline - Task 3 Report Status Review Fix
 
 - Current objective:
