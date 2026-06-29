@@ -2236,6 +2236,25 @@ test('buildXenesisConnectionsStatus exposes review-only tool profile drafts', ()
   assert.deepEqual(readyNotion?.toolProfileDraft?.missingRequiredFields, []);
 });
 
+test('manual external tool guides document tool profile draft CR surfaces', () => {
+  const toolGuide = readFileSync('docs/manual/11-external-tool-integrations.md', 'utf8');
+  const userStories = readFileSync('docs/manual/12-agent-user-stories.md', 'utf8');
+
+  for (const path of [
+    'xd.xenesis.tools.profileDrafts.status',
+    'xd.xenesis.tools.profileDrafts.open',
+    'xd.xenesis.tools.profileDrafts.request',
+  ]) {
+    const escapedPath = path.replaceAll('.', '\\.');
+    assert.match(toolGuide, new RegExp(escapedPath));
+    assert.match(userStories, new RegExp(escapedPath));
+  }
+
+  assert.match(toolGuide, /tool profile draft/i);
+  assert.match(toolGuide, /review-only/i);
+  assert.match(userStories, /tool profile draft/i);
+});
+
 test('buildXenesisConnectionsStatus exposes provider setup identity, credential state, and fallback policy', () => {
   const status = buildXenesisConnectionsStatus({
     aiProvider: {

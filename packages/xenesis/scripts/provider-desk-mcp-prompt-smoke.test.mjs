@@ -21,5 +21,7 @@ test('provider Desk MCP prompt smoke proves natural prompt reaches provider with
   assert.equal(report.summary.failed, 0);
   assert(report.checks.some((check) => check.id === 'stdin-natural-prompt' && check.ok));
   assert(report.checks.some((check) => check.id === 'stdin-cr-mcp-tools' && check.ok));
+  assert(report.checks.some((check) => check.id === 'stdin-tool-profile-draft-discovery-guidance' && check.ok));
+  assert(report.checks.some((check) => check.id === 'stdin-no-hardcoded-tool-profile-draft-cr-paths' && check.ok));
   assert(report.checks.some((check) => check.id === 'metadata-mcp-configured' && check.ok));
 });

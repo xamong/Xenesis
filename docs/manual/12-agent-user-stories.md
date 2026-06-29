@@ -60,11 +60,12 @@ or save any workflow. Settings also records the last Connection Center CR action
 result, so a preview call leaves a visible path/status/step-count summary
 instead of disappearing after the button click.
 
-Agent natural-language Desk control uses the same contract for prompts such as
-`Notion user story workflow preview` or `Telegram 사용자 스토리 워크플로 미리보기`.
-Those prompts route to `xd.automation.workflow.preview` with read/open-only
-steps cloned from the Connection Center catalog, not to provider tools, channel
-tests, sends, request, or apply paths.
+Provider-driven Desk control uses the same contract when a user asks for a
+workflow preview, for example `Notion user story workflow preview`. The provider
+must discover and call `xd.automation.workflow.preview` with read/open-only
+steps cloned from the Connection Center catalog, not call provider tools,
+channel tests, sends, request, or apply paths. Do not implement this with a
+local deterministic natural-language or keyword catalog.
 
 ## Provider Stories
 
@@ -129,6 +130,7 @@ Read first:
 
 - `xd.xenesis.tools.views.status`
 - `xd.xenesis.tools.setupPlans.status`
+- `xd.xenesis.tools.profileDrafts.status`
 - `xd.xenesis.tools.mcpInstallDrafts.status`
 - `xd.xenesis.tools.connectors.status`
 - `xd.xenesis.tools.userStories.status`
@@ -137,12 +139,14 @@ Open or focus:
 
 - `xd.xenesis.tools.views.open`
 - `xd.xenesis.tools.setupPlans.open`
+- `xd.xenesis.tools.profileDrafts.open`
 - `xd.xenesis.tools.mcpInstallDrafts.open`
 - `xd.xenesis.tools.userStories.open`
 
 Approval boundary:
 
 - `xd.xenesis.tools.mcpInstallDrafts.request`
+- `xd.xenesis.tools.profileDrafts.request`
 - `xd.xenesis.tools.mcpInstallDrafts.apply`
 - `xd.xenesis.connections.setupRequests.request`
 - `xd.xenesis.connections.setupRequests.apply`
@@ -151,6 +155,10 @@ Completion evidence:
 
 - Draft status shows the selected tool id, transport, missing environment names,
   config target, diagnostics, and safety boundaries.
+- Tool profile draft status shows profile fields, credential readiness, MCP
+  server/config readiness, runtime readbacks, scopes when applicable, missing
+  required fields, review steps, blocked actions, and review-only safety
+  boundaries.
 - Action Inbox contains a local review item when setup is requested.
 - No MCP config is written until an explicit approval-gated apply path is used.
 
@@ -328,18 +336,23 @@ Completion evidence:
 - The setup request status joins the latest matching Action Inbox item by
   approval session key.
 
-## Natural Prompts
+## CR Usage Examples
 
-These prompts are expected to route through CR, not provider-only text:
+When the provider receives requests like these, it must discover, inspect, and
+call the named CR path instead of answering provider-only text or using a local
+deterministic prompt catalog:
 
 | Prompt | Expected CR path |
 |---|---|
-| `Hermes user stories guide 열어줘` | `xd.xenesis.guides.open` |
-| `Hermes task scenarios guide file 열어줘` | `xd.xenesis.guides.open` |
-| `헤르메스 작업 시나리오 가이드 상태 보여줘` | `xd.xenesis.guides.status` |
-| `외부 툴 user stories 상태 보여줘` | `xd.xenesis.tools.userStories.status` |
-| `채널 user stories 상태 보여줘` | `xd.xenesis.channels.userStories.status` |
-| `Connection diagnostics catalog 열어줘` | `xd.xenesis.connections.diagnostics.open` |
+| Open the Hermes user stories guide | `xd.xenesis.guides.open` |
+| Open the Hermes task scenarios guide file | `xd.xenesis.guides.open` |
+| Show the Hermes task scenarios guide status | `xd.xenesis.guides.status` |
+| Show external tool user stories | `xd.xenesis.tools.userStories.status` |
+| Show channel user stories | `xd.xenesis.channels.userStories.status` |
+| Open the Connection diagnostics catalog | `xd.xenesis.connections.diagnostics.open` |
+| Show the Notion tool profile draft | `xd.xenesis.tools.profileDrafts.status` |
+| Open the Google Calendar tool profile draft | `xd.xenesis.tools.profileDrafts.open` |
+| Request review for the Notion tool profile draft | `xd.xenesis.tools.profileDrafts.request` |
 
 ## Safety Rules
 
@@ -351,5 +364,6 @@ These prompts are expected to route through CR, not provider-only text:
   adapter and approval path exist.
 - Provider secrets, bridge tokens, OAuth tokens, and channel credentials must
   never be printed in docs, logs, summaries, or Agent responses.
-- Natural-language routing is deterministic catalog routing. Do not describe it
-  as model reasoning.
+- Do not implement user-story requests with deterministic local
+  natural-language or keyword catalogs. Provider reasoning should discover,
+  inspect, and call CR paths.

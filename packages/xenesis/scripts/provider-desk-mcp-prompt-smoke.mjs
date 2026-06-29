@@ -95,6 +95,18 @@ async function main() {
         ok: !stdin.includes('Capability family intent catalog:') && !stdin.includes('xenesis-desk-action'),
       },
       {
+        id: 'stdin-tool-profile-draft-discovery-guidance',
+        ok: includesAll(stdin, ['external tool setup/profile draft', 'discover paths', 'generic caller']),
+      },
+      {
+        id: 'stdin-no-hardcoded-tool-profile-draft-cr-paths',
+        ok: ![
+          'xd.xenesis.tools.profileDrafts.status',
+          'xd.xenesis.tools.profileDrafts.open',
+          'xd.xenesis.tools.profileDrafts.request',
+        ].some((path) => stdin.includes(path)),
+      },
+      {
         id: 'args-mcp-configured',
         ok: includesAll(argsText, [
           'mcp_servers.xenesis_dev.enabled=true',

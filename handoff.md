@@ -7,7 +7,131 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
-## Current Slice: Tool Profile Drafts
+## Current Slice: Tool Profile Draft Docs And Provider Smoke
+
+- Current objective:
+  - Make the new `xd.xenesis.tools.profileDrafts.status/open/request` CR
+    surface visible in repo-local external tool guides, user-story docs, and
+    provider Desk MCP prompt smoke.
+  - Keep the slice documentation/provider-context only: no natural-language
+    heuristic routing, no new apply path, no OAuth completion, no MCP install,
+    no credential/token storage, and no provider tool execution.
+- Rationale:
+  - The previous slice added the executable CR/UI surface and verified live
+    Connection Center rendering, but the repo-local guide docs and provider
+    prompt smoke still describe external tool setup without the new profile
+    draft review path.
+  - This aligns the codebase knowledge layer and provider-facing CR discovery
+    evidence with the new executable surface.
+- Plan:
+  - `docs/superpowers/plans/2026-06-29-tool-profile-draft-docs-provider-smoke.md`
+- Touched files so far:
+  - `handoff.md`
+  - `docs/superpowers/plans/2026-06-29-tool-profile-draft-docs-provider-smoke.md`
+  - `docs/manual/11-external-tool-integrations.md`
+  - `docs/manual/12-agent-user-stories.md`
+  - `src/shared/xenesisConnections.test.ts`
+  - `packages/xenesis/src/providers/cliProvider.ts`
+  - `packages/xenesis/tests/s3s4/cliProviderDeskMcp.test.ts`
+  - `packages/xenesis/scripts/provider-desk-mcp-prompt-smoke.mjs`
+  - `packages/xenesis/scripts/provider-desk-mcp-prompt-smoke.test.mjs`
+- Commands run:
+  - `git status --short --branch` -> clean on `agent/upcoming-work-20260627`.
+  - Read AGENTS, repo-local Obsidian index/system/source/module/architecture
+    notes, cached OpenClaw/Hermes gap map, manual guide docs, provider Desk MCP
+    prompt smoke, and previous handoff.
+  - Source scan confirmed `src/shared/xenesisNaturalLanguage*` files are absent;
+    remaining `natural language`/`keyword` strings are provider guidance,
+    tests, automation/semantic-search domains, or guard text, not the removed
+    pre-provider natural routing catalog.
+  - RED:
+    `npx tsx --test src\shared\xenesisConnections.test.ts` -> failed 1/45
+    as expected because manual docs did not mention
+    `xd.xenesis.tools.profileDrafts.status/open/request`.
+  - Updated manual external tool and user-story docs to include the tool
+    profile draft read/open/request surfaces, review-only safety boundaries,
+    and CR usage examples. Reworded natural prompt sections so they no longer
+    describe local prompt routing; they now say provider reasoning should
+    discover/inspect/call CR paths and must not use deterministic local
+    natural-language or keyword catalogs.
+  - GREEN:
+    `npx tsx --test src\shared\xenesisConnections.test.ts` -> passed 45/45.
+  - RED:
+    `node --test packages\xenesis\scripts\provider-desk-mcp-prompt-smoke.test.mjs`
+    -> failed as expected when requiring a new provider-smoke check for tool
+    profile draft visibility.
+  - Design decision:
+    Do not embed exact `xd.xenesis.tools.profileDrafts.*` paths in provider
+    stdin. That would weaken the existing "discover exact path and arg schema
+    on demand" contract. Instead, provider stdin now includes only Xenesis
+    provider/tool/channel profile-draft family discovery guidance, and smoke
+    asserts the exact tool profile draft CR paths are not hardcoded in stdin.
+  - RED:
+    `npm --prefix packages/xenesis test -- tests/s3s4/cliProviderDeskMcp.test.ts`
+    -> failed 1/1 as expected because `deskMcpSystemMessage()` did not yet
+    mention external tool setup/profile draft capability families.
+  - GREEN:
+    `npm --prefix packages/xenesis test -- tests/s3s4/cliProviderDeskMcp.test.ts`
+    -> passed 1/1 after adding discovery-only profile draft family guidance.
+  - GREEN:
+    `node --test packages\xenesis\scripts\provider-desk-mcp-prompt-smoke.test.mjs`
+    -> passed 1/1.
+  - GREEN:
+    `npm --prefix packages/xenesis run provider:desk-mcp-prompt-smoke` ->
+    passed 8/8 with provider `codex-cli`, including
+    `stdin-tool-profile-draft-discovery-guidance`,
+    `stdin-no-hardcoded-tool-profile-draft-cr-paths`,
+    `stdin-no-deterministic-natural-catalog`, and MCP configuration checks.
+  - Root typecheck:
+    `npm run typecheck` -> passed.
+  - Package typecheck:
+    `npm --prefix packages/xenesis run typecheck` -> failed on
+    `tests/s3s4/cliProviderDeskMcp.test.ts` because the relative NodeNext
+    import omitted `.js`.
+  - Fix:
+    changed the test import to `../../src/providers/cliProvider.js`.
+  - GREEN:
+    `npm --prefix packages/xenesis test -- tests/s3s4/cliProviderDeskMcp.test.ts`
+    -> passed 1/1 after the import fix.
+  - GREEN:
+    `npm --prefix packages/xenesis run typecheck` -> passed.
+  - Source scan:
+    `rg -n "Natural Agent Prompts|Natural Prompts|expected to route|should route|route through CR|route through guide|deterministic catalog routing" docs\manual\11-external-tool-integrations.md docs\manual\12-agent-user-stories.md`
+    -> no matches.
+  - Source scan:
+    `rg -n "xd\.xenesis\.tools\.profileDrafts|external tool setup/profile draft|hardcode natural-language" packages\xenesis\src\providers\cliProvider.ts packages\xenesis\tests\s3s4\cliProviderDeskMcp.test.ts packages\xenesis\scripts\provider-desk-mcp-prompt-smoke.mjs`
+    -> exact `xd.xenesis.tools.profileDrafts.*` strings appear only in the
+    package unit test and smoke script guard checks, not in provider source.
+  - Diff whitespace:
+    `git diff --check` -> passed with line-ending warnings only.
+  - Final root typecheck:
+    `npm run typecheck` -> passed.
+  - Package full tests:
+    `npm --prefix packages/xenesis test` -> passed 80 files / 368 tests.
+  - Root lint:
+    `npm run lint` -> failed on existing repo-wide Biome findings
+    (1141 errors, 416 warnings, 92 infos; examples include pre-existing
+    formatting/style issues in `extensions/sample.file-helper/main.js`,
+    `biome.json`, `electron.vite.config.ts`, `packages/xenesis/package.json`,
+    `packages/xenesis/tsconfig.json`, `server/package.json`, and
+    `src/types/external-modules.d.ts`). Did not auto-fix unrelated files.
+  - Scoped Biome over changed smoke/test files:
+    `npx biome check packages/xenesis/scripts/provider-desk-mcp-prompt-smoke.mjs packages/xenesis/tests/s3s4/cliProviderDeskMcp.test.ts`
+    -> passed after formatting the new additions.
+  - Final focused reruns after formatting:
+    `npm --prefix packages/xenesis test -- tests/s3s4/cliProviderDeskMcp.test.ts`
+    -> passed 1/1;
+    `node --test packages\xenesis\scripts\provider-desk-mcp-prompt-smoke.test.mjs`
+    -> passed 1/1.
+  - Final package typecheck:
+    `npm --prefix packages/xenesis run typecheck` -> passed.
+  - Final diff whitespace:
+    `git diff --check` -> passed with line-ending warnings only.
+- Next intended step:
+  - Review the final diff, update the Obsidian working note, then commit the
+    docs/provider-smoke slice.
+
+## Previous Slice: Tool Profile Drafts
 
 - Current objective:
   - Add a CR-first, Desk-internal external tool profile draft surface so
