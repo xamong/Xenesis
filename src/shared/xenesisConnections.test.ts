@@ -649,7 +649,39 @@ test('buildXenesisConnectionsStatus exposes onboarding plan metadata for initial
         safetyBoundary: 'provider settings changes stay on explicit user actions',
       },
     ],
+    workflowPreview: {
+      previewPath: 'xd.automation.workflow.preview',
+      runPath: 'xd.automation.workflow.run',
+      name: 'first-chat-onboarding-preview',
+      description: 'Preview first-chat onboarding read/open steps.',
+      delayMs: 0,
+      stopOnFail: true,
+      steps: [
+        {
+          label: 'Read provider setup',
+          path: 'xd.xenesis.providers.setup.status',
+          args: {},
+          approved: false,
+        },
+        {
+          label: 'Open provider settings',
+          path: 'xd.panes.settings.open',
+          args: { category: 'run-model', section: 'default', ensureVisible: true },
+          approved: false,
+        },
+      ],
+      safetyBoundary:
+        'CR workflow preview for onboarding plans is a read/open onboarding preview only; it excludes control steps and does not mutate provider settings, install MCP tools, write MCP config, complete OAuth, store tokens, start gateways, mutate profiles, send messages, execute provider tools, mutate external systems, or bypass approvals.',
+    },
   });
+  assert.equal(firstChat?.onboardingPlan?.workflowPreview.previewPath, 'xd.automation.workflow.preview');
+  assert.equal(firstChat?.onboardingPlan?.workflowPreview.runPath, 'xd.automation.workflow.run');
+  assert.equal(firstChat?.onboardingPlan?.workflowPreview.steps.length, 2);
+  assert.equal(
+    firstChat?.onboardingPlan?.workflowPreview.steps.every((step) => step.approved === false),
+    true,
+  );
+  assert.ok(firstChat?.onboardingPlan?.workflowPreview.safetyBoundary.includes('read/open onboarding preview'));
 
   for (const item of status.sections.onboarding.items) {
     assert.ok(item.onboardingPlan?.guidedSteps.length, `${item.id} exposes guided steps`);
@@ -698,6 +730,16 @@ test('buildXenesisConnectionsStatus exposes onboarding plan metadata for initial
     section: 'gateway',
     ensureVisible: true,
   });
+  assert.equal(gateway?.onboardingPlan?.workflowPreview.previewPath, 'xd.automation.workflow.preview');
+  assert.equal(gateway?.onboardingPlan?.workflowPreview.runPath, 'xd.automation.workflow.run');
+  assert.equal(gateway?.onboardingPlan?.workflowPreview.steps.length > 0, true);
+  assert.equal(
+    gateway?.onboardingPlan?.workflowPreview.steps.some((step) =>
+      ['xd.xenesis.gateway.start', 'xd.xenesis.gateway.restart'].includes(step.path),
+    ),
+    false,
+  );
+  assert.ok(gateway?.onboardingPlan?.workflowPreview.safetyBoundary.includes('read/open onboarding preview'));
   assert.ok(gateway?.diagnosticRunbook?.controlPaths.includes('xd.xenesis.gateway.start'));
 
   const messengerRouting = status.sections.onboarding.items.find((item) => item.id === 'messenger-routing');
@@ -736,6 +778,13 @@ test('buildXenesisConnectionsStatus exposes onboarding plan metadata for initial
         step.safetyBoundary.includes('sanitized'),
     ),
   );
+  assert.equal(testSend?.onboardingPlan?.workflowPreview.previewPath, 'xd.automation.workflow.preview');
+  assert.equal(testSend?.onboardingPlan?.workflowPreview.runPath, 'xd.automation.workflow.run');
+  assert.equal(
+    testSend?.onboardingPlan?.workflowPreview.steps.some((step) => step.path === 'xd.xenesis.profiles.testChannel'),
+    false,
+  );
+  assert.ok(testSend?.onboardingPlan?.workflowPreview.safetyBoundary.includes('read/open onboarding preview'));
   assert.ok(testSend?.setupRequest?.steps.some((step) => step.includes('xd.xenesis.profiles.testChannel')));
   assert.ok(testSend?.setupRequest?.diagnostics.includes('sanitized-test-send'));
 });

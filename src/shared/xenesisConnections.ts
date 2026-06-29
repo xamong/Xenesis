@@ -520,6 +520,7 @@ export interface XenesisConnectionOnboardingPlanTemplate {
   diagnostics: string[];
   safetyBoundaries: string[];
   guidedSteps: XenesisConnectionOnboardingGuidedStep[];
+  workflowPreview: XenesisConnectionWorkflowPreview;
 }
 
 export type XenesisConnectionToolSetupPlanRuntimeSupport = 'ready-template' | 'planned-oauth' | 'ready-local';
@@ -9313,6 +9314,33 @@ function onboardingGuidedStep(input: XenesisConnectionOnboardingGuidedStep): Xen
   };
 }
 
+const onboardingWorkflowPreviewSafetyBoundary =
+  'CR workflow preview for onboarding plans is a read/open onboarding preview only; it excludes control steps and does not mutate provider settings, install MCP tools, write MCP config, complete OAuth, store tokens, start gateways, mutate profiles, send messages, execute provider tools, mutate external systems, or bypass approvals.';
+
+function onboardingWorkflowPreview(input: {
+  phase: XenesisConnectionOnboardingPlanPhase;
+  guidedSteps: readonly XenesisConnectionOnboardingGuidedStep[];
+}): XenesisConnectionWorkflowPreview {
+  const previewSteps = input.guidedSteps
+    .filter((step) => step.kind === 'read' || step.kind === 'open')
+    .map((step) => ({
+      label: step.label,
+      path: step.crPath,
+      args: { ...(step.args ?? {}) },
+      approved: false,
+    }));
+  return {
+    previewPath: 'xd.automation.workflow.preview',
+    runPath: 'xd.automation.workflow.run',
+    name: `${input.phase}-onboarding-preview`,
+    description: `Preview ${input.phase} onboarding read/open steps.`,
+    delayMs: 0,
+    stopOnFail: true,
+    steps: previewSteps,
+    safetyBoundary: onboardingWorkflowPreviewSafetyBoundary,
+  };
+}
+
 function onboardingGuidedStepPaths(
   plan: XenesisConnectionOnboardingPlanTemplate | undefined,
   kinds: XenesisConnectionOnboardingGuidedStepKind[],
@@ -9345,6 +9373,10 @@ function onboardingPlanTemplate(input: {
       ]),
     ],
     guidedSteps: input.guidedSteps.map(onboardingGuidedStep),
+    workflowPreview: onboardingWorkflowPreview({
+      phase: input.phase,
+      guidedSteps: input.guidedSteps,
+    }),
   };
 }
 

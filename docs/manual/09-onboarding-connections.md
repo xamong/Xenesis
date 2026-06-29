@@ -258,6 +258,15 @@ boundary. Use those rows to move through first chat, local CLI/MCP, tool setup,
 gateway readiness, messenger routing, and end-to-end test preparation without
 guessing which CR surface should be read or opened next.
 
+Settings can also preview each onboarding plan through the existing
+`xd.automation.workflow.preview` runner. The onboarding preview contains only
+guided steps whose kind is `read` or `open`; `control` steps such as gateway
+start/restart, profile channel updates, and sanitized test sends remain
+separate explicit CR actions. The preview does not mutate provider settings,
+install MCP tools, write MCP config, complete OAuth, store credentials, start
+gateways, send messages, execute provider tools, mutate external systems, or
+bypass approvals.
+
 ## AI Provider
 
 The active provider comes from the user's settings and profile. Xenesis Desk does

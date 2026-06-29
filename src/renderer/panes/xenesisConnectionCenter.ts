@@ -354,6 +354,19 @@ export function buildXenesisUserStoryWorkflowPreviewRequest(
   };
 }
 
+export function buildXenesisOnboardingWorkflowPreviewRequest(
+  item: XenesisConnectionItem,
+): McpBridgeCapabilityCallRequest | null {
+  const preview = item.onboardingPlan?.workflowPreview;
+  if (!preview) return null;
+  return {
+    path: preview.previewPath,
+    args: buildXenesisConnectionUserStoryWorkflowPreviewArgs(preview),
+    source: 'xenesis',
+    approved: false,
+  };
+}
+
 export function buildXenesisSetupPlanWorkflowPreviewRequest(
   item: XenesisConnectionItem,
 ): McpBridgeCapabilityCallRequest | null {

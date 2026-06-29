@@ -29,6 +29,7 @@ import {
   buildXenesisConnectionSetupRequestRequest,
   buildXenesisMcpInstallDraftApplyRequest,
   buildXenesisMcpInstallDraftRequest,
+  buildXenesisOnboardingWorkflowPreviewRequest,
   buildXenesisProviderProfileDraftApplyRequest,
   buildXenesisProviderProfileDraftRequest,
   buildXenesisProviderSetupPlanRequest,
@@ -102,6 +103,23 @@ function setupPlanWorkflowPreview(
     steps,
     safetyBoundary:
       'CR workflow preview for setup plans is a read/open setup plan preview only; it excludes request/apply steps.',
+  };
+}
+
+function onboardingWorkflowPreview(
+  name: string,
+  steps: XenesisConnectionWorkflowPreview['steps'] = [],
+): XenesisConnectionWorkflowPreview {
+  return {
+    previewPath: 'xd.automation.workflow.preview',
+    runPath: 'xd.automation.workflow.run',
+    name,
+    description: `Preview ${name}`,
+    delayMs: 0,
+    stopOnFail: true,
+    steps,
+    safetyBoundary:
+      'CR workflow preview for onboarding plans is a read/open onboarding preview only; it excludes control steps.',
   };
 }
 
@@ -247,6 +265,7 @@ test('formatXenesisOnboardingPlanSummary describes phase and validation check co
           safetyBoundary: 'credential values are never returned',
         },
       ],
+      workflowPreview: onboardingWorkflowPreview('first-chat-onboarding-preview'),
     }),
     'first-chat / 3 validation check(s) / 1 guided step(s)',
   );
@@ -1302,6 +1321,62 @@ test('buildXenesisUserStoryWorkflowPreviewRequest targets CR workflow preview fo
     approved: false,
   });
   assert.equal(buildXenesisUserStoryWorkflowPreviewRequest({ ...toolItem, toolUserStory: undefined }), null);
+});
+
+test('buildXenesisOnboardingWorkflowPreviewRequest targets CR workflow preview for onboarding plans', () => {
+  const preview = onboardingWorkflowPreview('gateway-onboarding-preview', [
+    {
+      label: 'Read gateway status',
+      path: 'xd.xenesis.gateway.status',
+      args: {},
+      approved: false,
+    },
+    {
+      label: 'Open gateway settings',
+      path: 'xd.panes.settings.open',
+      args: { category: 'xenesis-agent', mode: 'gateway', section: 'gateway', ensureVisible: true },
+      approved: false,
+    },
+  ]);
+  const item = {
+    id: 'gateway',
+    kind: 'onboarding',
+    label: '4. Gateway',
+    status: 'needs-setup',
+    summary: 'Gateway lifecycle readiness.',
+    onboardingPlan: {
+      phase: 'gateway',
+      primarySurface: 'Settings > Xenesis Agent > Connections',
+      setupSurface: 'Settings > Xenesis Agent > Gateway',
+      statusReadPaths: ['xd.xenesis.onboarding.status', 'xd.xenesis.gateway.status'],
+      controlPaths: ['xd.xenesis.onboarding.open', 'xd.xenesis.gateway.start'],
+      validationChecks: ['gateway-enabled', 'gateway-running'],
+      diagnostics: ['gateway-status'],
+      safetyBoundaries: ['gateway onboarding status does not start the gateway'],
+      guidedSteps: [],
+      workflowPreview: preview,
+    },
+  } satisfies XenesisConnectionItem;
+
+  assert.deepEqual(buildXenesisOnboardingWorkflowPreviewRequest(item), {
+    path: 'xd.automation.workflow.preview',
+    args: {
+      name: 'gateway-onboarding-preview',
+      description: 'Preview gateway-onboarding-preview',
+      delayMs: 0,
+      stopOnFail: true,
+      steps: preview.steps,
+    },
+    source: 'xenesis',
+    approved: false,
+  });
+
+  const requestArgs = buildXenesisOnboardingWorkflowPreviewRequest(item)?.args as {
+    steps: Array<{ args: Record<string, unknown> }>;
+  };
+  assert.notEqual(requestArgs.steps, preview.steps);
+  assert.notEqual(requestArgs.steps[1]?.args, preview.steps[1]?.args);
+  assert.equal(buildXenesisOnboardingWorkflowPreviewRequest({ ...item, onboardingPlan: undefined }), null);
 });
 
 test('user-story workflow preview args shaping is shared across Settings and connection contracts', () => {

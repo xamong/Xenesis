@@ -97,6 +97,7 @@ import {
   buildXenesisConnectionSetupRequestRequest,
   buildXenesisMcpInstallDraftApplyRequest,
   buildXenesisMcpInstallDraftRequest,
+  buildXenesisOnboardingWorkflowPreviewRequest,
   buildXenesisProviderProfileDraftApplyRequest,
   buildXenesisProviderProfileDraftRequest,
   buildXenesisProviderSetupPlanRequest,
@@ -4357,6 +4358,7 @@ export default function SettingsPane() {
     const setupRequestCall = buildXenesisConnectionSetupRequestRequest(item);
     const setupApplyRequest = buildXenesisConnectionSetupApplyRequest(item);
     const userStoryWorkflowPreviewRequest = buildXenesisUserStoryWorkflowPreviewRequest(item);
+    const onboardingWorkflowPreviewRequest = buildXenesisOnboardingWorkflowPreviewRequest(item);
     const setupPlanWorkflowPreviewRequest = buildXenesisSetupPlanWorkflowPreviewRequest(item);
     const mcpInstallDraftRequest = buildXenesisMcpInstallDraftRequest(item);
     const mcpInstallDraftApplyRequest = buildXenesisMcpInstallDraftApplyRequest(item);
@@ -4429,6 +4431,7 @@ export default function SettingsPane() {
           setupRequestCall ||
           setupApplyRequest ||
           userStoryWorkflowPreviewRequest ||
+          onboardingWorkflowPreviewRequest ||
           setupPlanWorkflowPreviewRequest ||
           mcpInstallDraftRequest ||
           mcpInstallDraftApplyRequest ||
@@ -4505,6 +4508,16 @@ export default function SettingsPane() {
                 }}
               >
                 {t('settings.xenesisConnectionsPreviewUserStoryWorkflow')}
+              </button>
+            ) : null}
+            {onboardingWorkflowPreviewRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(onboardingWorkflowPreviewRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsPreviewOnboardingWorkflow')}
               </button>
             ) : null}
             {setupPlanWorkflowPreviewRequest ? (

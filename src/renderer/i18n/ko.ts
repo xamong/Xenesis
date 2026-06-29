@@ -954,6 +954,7 @@ export const ko = {
     xenesisConnectionsRequestSetup: '설정 요청',
     xenesisConnectionsApplySetup: '설정 적용 요청',
     xenesisConnectionsPreviewUserStoryWorkflow: '워크플로 미리보기',
+    xenesisConnectionsPreviewOnboardingWorkflow: '온보딩 미리보기',
     xenesisConnectionsPreviewSetupPlanWorkflow: '설정 워크플로 미리보기',
     xenesisConnectionsRequestMcpInstallDraft: 'MCP 초안 요청',
     xenesisConnectionsApplyMcpInstallDraft: 'MCP 적용 요청',

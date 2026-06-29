@@ -7,6 +7,96 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current Slice: Onboarding Workflow Preview
+
+- Current objective:
+  - Add read/open-only workflow preview metadata and UI actions for first-run
+    onboarding plans.
+  - Reuse existing `xd.automation.workflow.preview` rather than adding new CR
+    nodes.
+  - Keep onboarding `control` guided steps out of the preview payload so gateway
+    start/restart, profile updates, and test sends remain explicit separate
+    user actions.
+- Scope boundary:
+  - No natural-language routing, keyword/heuristic handling, provider settings
+    mutation, MCP install/config writes, OAuth completion, token storage,
+    gateway lifecycle execution, profile mutation, message sending, provider
+    tool execution, external system mutation, or approval bypass.
+- Plan:
+  - `docs/superpowers/plans/2026-06-29-onboarding-workflow-preview.md`
+    (local ignored plan artifact).
+- Commit:
+  - `Add onboarding workflow previews`.
+- Source review so far:
+  - Provider/tool/channel setup plans now expose `workflowPreview`.
+  - Onboarding plans expose `guidedSteps`, `statusReadPaths`, `controlPaths`,
+    diagnostics, and safety boundaries, but do not yet expose a workflow preview
+    payload or Settings button.
+- Touched files so far:
+  - `src/shared/xenesisConnections.ts`
+  - `src/shared/xenesisConnections.test.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.test.ts`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
+  - `docs/manual/09-onboarding-connections.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-onboarding-workflow-preview.md`
+- Implementation notes:
+  - Added `workflowPreview` to onboarding plan read models.
+  - Onboarding previews are built from explicit `guidedSteps` metadata only.
+  - Only `read` and `open` guided steps are included; `control` steps such as
+    gateway start, profile channel update, and channel test send are excluded.
+  - Settings now exposes an onboarding workflow preview button that calls
+    `xd.automation.workflow.preview` with the existing CR workflow input shape.
+  - No natural-language or keyword heuristic routing was added in this slice.
+- Verification so far:
+  - RED:
+    `npx tsx --test src\shared\xenesisConnections.test.ts` failed as expected
+    because onboarding plans lacked `workflowPreview`.
+  - GREEN:
+    `npx tsx --test src\shared\xenesisConnections.test.ts` passed 45/45.
+  - RED:
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` failed
+    as expected because `buildXenesisOnboardingWorkflowPreviewRequest` was not
+    exported.
+  - GREEN:
+    `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts` passed
+    74/74.
+  - GREEN:
+    Scoped Biome check passed for the 7 changed TS/TSX/i18n files:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true ...`.
+  - GREEN:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentDeskControl.test.ts`
+    passed 11/11, including the no pre-provider natural Desk heuristic routing
+    guard.
+  - GREEN:
+    `npm --prefix packages/xenesis exec vitest run src/core/intentRouter.test.ts src/workflows/xenisPolicy.test.ts`
+    passed 2 files / 6 tests.
+  - GREEN:
+    `npm run typecheck` passed.
+  - GREEN:
+    `npm --prefix packages/xenesis run typecheck` passed.
+  - GREEN:
+    `npm --prefix packages/xenesis test` passed 81 files / 372 tests.
+  - GREEN:
+    `npm --prefix packages/xenesis run build` passed.
+  - GREEN:
+    `npm run build` passed, with existing Vite warnings about browser
+    externalization and dynamic/static import chunking.
+  - GREEN:
+    `git diff --check` exited 0 with LF/CRLF normalization warnings only.
+  - Known existing verification gaps:
+    - Repo-wide `npm run lint` has existing Biome diagnostics outside this
+      slice; scoped Biome check for changed TS/TSX/i18n files passes.
+    - `npm run check:public-release` is still expected to fail because
+      `.github/workflows/ci.yml` is missing in this public-release worktree.
+- Next intended step:
+  - Continue the next large goal slice from a clean worktree. Keep external web
+    browsing out unless explicitly requested, and keep Agent/Desk natural
+    routing provider/CR-first with no deterministic keyword or heuristic
+    routing.
+
 ## Current Slice: Setup Plan Workflow Preview
 
 - Current objective:
