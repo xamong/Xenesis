@@ -7,6 +7,73 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current Slice: Slice 1 Live CR Baseline Detailed Plan
+
+- Current objective:
+  - Write the detailed implementation plan for Slice 1 from the reference-driven
+    final-goal slice plan.
+  - Keep the slice large enough to cover live CR baseline, approval regression
+    scope labeling, Obsidian reference adoption map, and verification gates.
+  - Make the plan explicit that fenced `xenesis-desk-action` smoke coverage is
+    not provider natural-language CR tool-selection proof.
+- Scope boundary:
+  - Planning/spec only; no product code changes in this turn.
+  - No external web browsing.
+  - No deterministic natural-language routing, keyword catalogs, prompt routers,
+    provider-specific CR shortcuts, chat-only approvals, or secret-bearing docs.
+- Touched files:
+  - `handoff.md`
+  - `docs/superpowers/plans/2026-06-29-slice-1-live-cr-baseline-reference-map.md`
+    (local planning artifact; ignored by `.gitignore`)
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-1-live-cr-baseline-plan.md`
+- Source review:
+  - `AGENTS.md`
+  - `docs/obsidian/Xenesis-desk.md`
+  - `docs/obsidian/Xenesis-desk/00_System/AI Agent Rules.md`
+  - `docs/obsidian/Xenesis-desk/00_System/Graph Schema.md`
+  - `docs/obsidian/Xenesis-desk/00_System/Review Policy.md`
+  - `docs/obsidian/Xenesis-desk/10_Repo Map/Source of Truth Map.md`
+  - `docs/obsidian/Xenesis-desk/10_Repo Map/Repo Overview.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Verification Map.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/CR Surface Index.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Module Index.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Capability Registry Architecture.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Xenesis Agent Runtime.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Approval Flow.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-capability-registry.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-xenesis-agent-pane.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-provider-runtime.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-approval-system.md`
+  - `scripts/xenesisConnectionCenterLiveSmoke.test.mjs`
+  - `scripts/xenesisConnectionCenterLiveSmoke.mjs`
+  - `scripts/xenesisReviewRequestApprovalLiveSmoke.test.mjs`
+  - `scripts/xenesisReviewRequestApprovalLiveSmoke.mjs`
+  - `src/main/index.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/shared/xenesisConnections.ts`
+- Commands run:
+  - `rg -n "TBD|TODO|fill in|implement later|Similar to Task|placeholder|F:\\agent-anal\\.*\\.\\.\\.|appropriate error|edge cases" docs\superpowers\plans\2026-06-29-slice-1-live-cr-baseline-reference-map.md`
+  - `Test-Path -LiteralPath 'docs\superpowers\plans\2026-06-29-slice-1-live-cr-baseline-reference-map.md'`
+  - `git status --short --ignored docs\superpowers\plans\2026-06-29-slice-1-live-cr-baseline-reference-map.md`
+- Exact verification result:
+  - Detailed Slice 1 plan was written at
+    `docs/superpowers/plans/2026-06-29-slice-1-live-cr-baseline-reference-map.md`.
+  - Obsidian graph pointer note was written at
+    `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-1-live-cr-baseline-plan.md`.
+  - Open-ended marker scan produced no matches in the Slice 1 plan.
+  - `Test-Path` returned `True` for the plan file.
+  - `git status --short --ignored` reported the plan as ignored under
+    `docs/superpowers/`, so the tracked graph pointer note is the Git-visible
+    reference.
+- Known gaps:
+  - This turn wrote the plan only. Product code, source tests, CR audit,
+    typecheck, build, and live smokes are intentionally deferred to execution of
+    the plan.
+- Next intended step:
+  - Execute Task 1 of
+    `docs/superpowers/plans/2026-06-29-slice-1-live-cr-baseline-reference-map.md`.
+
 ## Current Slice: Reference-Driven Final Goal Slice Spec
 
 - Current objective:
