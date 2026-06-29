@@ -3,10 +3,12 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import {
+  assertConnectionCenterReferenceBaselineChecks,
   buildConnectionCenterLiveSmokeReport,
   CONNECTION_CENTER_LIVE_SMOKE_APP_READY_SELECTOR,
   CONNECTION_CENTER_LIVE_SMOKE_OPEN_REQUEST,
   CONNECTION_CENTER_LIVE_SMOKE_SNAPSHOT_REQUEST,
+  CONNECTION_CENTER_REFERENCE_BASELINE_CHECK_IDS,
   formatConnectionCenterLiveSmokePlan,
   normalizeConnectionCenterSnapshotChecks,
 } from './xenesisConnectionCenterLiveSmoke.mjs';
@@ -51,10 +53,50 @@ test('connection center live smoke package script is exposed explicitly', () => 
   );
 });
 
+test('connection center live smoke requires exact reference baseline check ids', () => {
+  assert.deepEqual(CONNECTION_CENTER_REFERENCE_BASELINE_CHECK_IDS, [
+    'reference-baseline:connection-center-root',
+    'reference-baseline:connection-center-title',
+    'reference-baseline:onboarding-guided-steps',
+    'reference-baseline:provider-profile-review-steps',
+    'reference-baseline:tool-profile-review-steps',
+    'reference-baseline:tool-oauth-review-steps',
+    'reference-baseline:tool-oauth-runtime-readback',
+    'reference-baseline:channel-runtime-readback',
+    'reference-baseline:channel-profile-review-steps',
+  ]);
+
+  const plan = formatConnectionCenterLiveSmokePlan();
+  for (const id of CONNECTION_CENTER_REFERENCE_BASELINE_CHECK_IDS) assert.match(plan, new RegExp(id));
+
+  const mainSource = readFileSync('src/main/index.ts', 'utf8');
+  for (const id of CONNECTION_CENTER_REFERENCE_BASELINE_CHECK_IDS) assert.match(mainSource, new RegExp(id));
+});
+
+test('connection center live smoke fails when reference baseline checks are missing or failing', () => {
+  const passingChecks = CONNECTION_CENTER_REFERENCE_BASELINE_CHECK_IDS.map((id) => ({ id, ok: true }));
+  assert.equal(assertConnectionCenterReferenceBaselineChecks(passingChecks), passingChecks);
+
+  assert.throws(
+    () => assertConnectionCenterReferenceBaselineChecks(passingChecks.slice(1)),
+    /Missing reference baseline checks: reference-baseline:connection-center-root/,
+  );
+
+  assert.throws(
+    () =>
+      assertConnectionCenterReferenceBaselineChecks(
+        passingChecks.map((check) =>
+          check.id === 'reference-baseline:tool-oauth-review-steps' ? { ...check, ok: false } : check,
+        ),
+      ),
+    /Failing reference baseline checks: reference-baseline:tool-oauth-review-steps/,
+  );
+});
+
 test('connection center live smoke report summarizes passed and failed checks', () => {
   const report = buildConnectionCenterLiveSmokeReport([
-    { id: 'connection-center-root', ok: true },
-    { id: 'tool-oauth-review-steps', ok: false, error: 'missing selector' },
+    { id: 'reference-baseline:connection-center-root', ok: true },
+    { id: 'reference-baseline:tool-oauth-review-steps', ok: false, error: 'missing selector' },
   ]);
 
   assert.equal(report.ok, false);
@@ -69,9 +111,14 @@ test('connection center live smoke normalizes CR snapshot checks into report che
     ok: true,
     result: {
       checks: [
-        { id: 'connection-center-root', selector: '[data-root]', present: true, textPresent: true },
         {
-          id: 'tool-oauth-review-steps',
+          id: 'reference-baseline:connection-center-root',
+          selector: '[data-root]',
+          present: true,
+          textPresent: true,
+        },
+        {
+          id: 'reference-baseline:tool-oauth-review-steps',
           selector: '[data-tool]',
           expectedText: 'review step',
           present: true,
@@ -83,9 +130,9 @@ test('connection center live smoke normalizes CR snapshot checks into report che
   });
 
   assert.deepEqual(checks, [
-    { id: 'connection-center-root', selector: '[data-root]', ok: true },
+    { id: 'reference-baseline:connection-center-root', selector: '[data-root]', ok: true },
     {
-      id: 'tool-oauth-review-steps',
+      id: 'reference-baseline:tool-oauth-review-steps',
       selector: '[data-tool]',
       text: 'review step',
       ok: false,

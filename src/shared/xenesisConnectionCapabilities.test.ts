@@ -202,7 +202,7 @@ test('xenesis connection center testing snapshot capability is registered and di
   assert.equal(schemaProperties.includeBodyText?.type, 'boolean');
   assert.equal(schemaProperties.maxTextLength?.type, 'number');
   assert.equal(schemaProperties.timeoutMs?.type, 'number');
-  assert.match(mainSource, /tool-profile-review-steps/);
+  assert.match(mainSource, /reference-baseline:tool-profile-review-steps/);
   assert.match(mainSource, /data-xenesis-tool-profile-draft/);
 
   const calls: unknown[] = [];
@@ -212,7 +212,7 @@ test('xenesis connection center testing snapshot capability is registered and di
       return {
         ok: true,
         present: true,
-        checks: [{ id: 'connection-center-root', present: true }],
+        checks: [{ id: 'reference-baseline:connection-center-root', present: true }],
       };
     },
   };
@@ -228,7 +228,7 @@ test('xenesis connection center testing snapshot capability is registered and di
   assert.deepEqual(result.result, {
     ok: true,
     present: true,
-    checks: [{ id: 'connection-center-root', present: true }],
+    checks: [{ id: 'reference-baseline:connection-center-root', present: true }],
   });
 });
 

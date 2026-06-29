@@ -28,6 +28,18 @@ export const CONNECTION_CENTER_LIVE_SMOKE_SNAPSHOT_REQUEST = {
   },
 };
 
+export const CONNECTION_CENTER_REFERENCE_BASELINE_CHECK_IDS = Object.freeze([
+  'reference-baseline:connection-center-root',
+  'reference-baseline:connection-center-title',
+  'reference-baseline:onboarding-guided-steps',
+  'reference-baseline:provider-profile-review-steps',
+  'reference-baseline:tool-profile-review-steps',
+  'reference-baseline:tool-oauth-review-steps',
+  'reference-baseline:tool-oauth-runtime-readback',
+  'reference-baseline:channel-runtime-readback',
+  'reference-baseline:channel-profile-review-steps',
+]);
+
 export function formatConnectionCenterLiveSmokePlan() {
   return [
     'Xenesis Connection Center live smoke plan',
@@ -37,6 +49,8 @@ export function formatConnectionCenterLiveSmokePlan() {
     `CR snapshot args: ${JSON.stringify(CONNECTION_CENTER_LIVE_SMOKE_SNAPSHOT_REQUEST.args)}`,
     `App shell readiness: ${CONNECTION_CENTER_LIVE_SMOKE_APP_READY_SELECTOR}`,
     'Renderer checks: returned by the CR snapshot result',
+    'Required reference baseline checks:',
+    ...CONNECTION_CENTER_REFERENCE_BASELINE_CHECK_IDS.map((id) => `- ${id}`),
   ].join('\n');
 }
 
@@ -89,6 +103,16 @@ export function normalizeConnectionCenterSnapshotChecks(snapshotResult) {
       ...(!present || !textPresent ? { error: `present=${present} textPresent=${textPresent}` } : {}),
     };
   });
+}
+
+export function assertConnectionCenterReferenceBaselineChecks(checks) {
+  const checksById = new Map(checks.map((check) => [String(check.id), check]));
+  const missing = CONNECTION_CENTER_REFERENCE_BASELINE_CHECK_IDS.filter((id) => !checksById.has(id));
+  const failing = CONNECTION_CENTER_REFERENCE_BASELINE_CHECK_IDS.filter((id) => checksById.get(id)?.ok !== true);
+
+  if (missing.length > 0) throw new Error(`Missing reference baseline checks: ${missing.join(', ')}`);
+  if (failing.length > 0) throw new Error(`Failing reference baseline checks: ${failing.join(', ')}`);
+  return checks;
 }
 
 async function assertBuiltElectronOutput(root) {
@@ -147,7 +171,9 @@ export async function runConnectionCenterLiveSmoke(options = {}) {
     snapshotResult = await page.evaluate((request) => globalThis.deskBridgeAPI.callCapability(request), {
       ...CONNECTION_CENTER_LIVE_SMOKE_SNAPSHOT_REQUEST,
     });
-    checkResults.push(...normalizeConnectionCenterSnapshotChecks(snapshotResult));
+    const snapshotChecks = normalizeConnectionCenterSnapshotChecks(snapshotResult);
+    assertConnectionCenterReferenceBaselineChecks(snapshotChecks);
+    checkResults.push(...snapshotChecks);
   } finally {
     if (electronApp) {
       await electronApp.close().catch(() => undefined);

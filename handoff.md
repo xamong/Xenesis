@@ -1,5 +1,68 @@
 # Xenesis Desk Work Handoff
 
+## Current Slice: Slice 01 Live CR Baseline - Task 2 Connection Center Reference Baseline Contract
+
+- Current objective:
+  - Implement Task 2 from `docs/superpowers/plans/2026-06-29-slice-01-live-cr-baseline.md`.
+  - Enforce exact Connection Center `reference-baseline:*` snapshot check ids in the live smoke helper and main-process snapshot.
+  - Keep provider behavior, natural-language routing, approval behavior, and unrelated runtime behavior unchanged.
+- Scope boundary:
+  - Owned files only: `scripts/xenesisConnectionCenterLiveSmoke.mjs`, `scripts/xenesisConnectionCenterLiveSmoke.test.mjs`, `src/main/index.ts`, `src/shared/xenesisConnectionCapabilities.test.ts`, and `handoff.md`.
+  - No deterministic natural-language routing, keyword catalogs, prompt routers, provider-specific CR shortcuts, mock fallbacks, chat-only approvals, or web browsing.
+- Touched files so far:
+  - `handoff.md`
+- Commands run:
+  - `Get-Content -Raw AGENTS.md`: PASS.
+  - `Get-Content -Raw docs\obsidian\Xenesis-desk.md`: PASS.
+  - `Get-Content -Raw "docs\obsidian\00_System\AI Agent Rules.md"`: FAIL, note lives under `docs\obsidian\Xenesis-desk\00_System`.
+  - `Get-Content -Raw "docs\obsidian\00_System\Graph Schema.md"`: FAIL, note lives under `docs\obsidian\Xenesis-desk\00_System`.
+  - `Get-Content -Raw "docs\obsidian\00_System\Review Policy.md"`: FAIL, note lives under `docs\obsidian\Xenesis-desk\00_System`.
+  - `rg --files docs\obsidian | rg "(AI Agent Rules|Graph Schema|Review Policy|Source of Truth Map|Repo Overview|_Indexes|30_Modules|20_Architecture|Module Index|Connection|Capability|Provider|Agent)"`: PASS, found actual Obsidian mirror paths.
+  - `Get-Content -Raw docs\superpowers\plans\2026-06-29-slice-01-live-cr-baseline.md`: PASS.
+  - `git status --short --branch`: PASS, branch is `agent/upcoming-work-20260627`.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\00_System\AI Agent Rules.md"`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\00_System\Graph Schema.md"`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\00_System\Review Policy.md"`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\10_Repo Map\Source of Truth Map.md"`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\_Indexes\Module Index.md"`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\_Indexes\Verification Map.md"`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\_Indexes\CR Surface Index.md"`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\10_Repo Map\Repo Overview.md"`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\30_Modules\module-capability-registry.md"`: PASS.
+  - `Get-Content -Raw "docs\obsidian\Xenesis-desk\20_Architecture\Capability Registry Architecture.md"`: PASS.
+  - `Get-Content -Raw scripts\xenesisConnectionCenterLiveSmoke.mjs`: PASS.
+  - `Get-Content -Raw scripts\xenesisConnectionCenterLiveSmoke.test.mjs`: PASS.
+  - `rg -n "connection-center-root|connection-center-title|onboarding-guided-steps|provider-profile-review-steps|tool-profile-review-steps|tool-oauth-review-steps|tool-oauth-runtime-readback|channel-runtime-readback|channel-profile-review-steps|snapshotConnectionCenter" src\main\index.ts src\shared\xenesisConnectionCapabilities.test.ts`: PASS.
+  - `Get-Content -Raw handoff.md`: PASS.
+  - `git status --short`: PASS, no output.
+  - `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs`: FAIL as RED, requested module does not provide export `CONNECTION_CENTER_REFERENCE_BASELINE_CHECK_IDS`.
+  - `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs`: PASS, 6/6 tests after implementing the reference baseline contract.
+  - `npm run typecheck`: PASS, `tsc --noEmit -p tsconfig.json`.
+  - `git diff --check`: PASS; Git printed LF/CRLF normalization warnings for the five owned Task 2 files.
+  - `git status --short`: PASS, showed only owned Task 2 files:
+    `handoff.md`, `scripts/xenesisConnectionCenterLiveSmoke.mjs`,
+    `scripts/xenesisConnectionCenterLiveSmoke.test.mjs`, `src/main/index.ts`,
+    and `src/shared/xenesisConnectionCapabilities.test.ts`.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts`: PASS, 45/45 tests.
+- Exact verification result:
+  - Context read completed before product/test edits.
+  - Found existing live smoke tests still use bare ids such as `connection-center-root`.
+  - Found `src/main/index.ts` snapshot checks still emit bare ids.
+  - Found shared capability tests still expect bare `connection-center-root`.
+  - RED test confirmed the Connection Center reference baseline contract exports are missing before implementation.
+  - Implemented `CONNECTION_CENTER_REFERENCE_BASELINE_CHECK_IDS` with the exact nine `reference-baseline:*` ids.
+  - Implemented `assertConnectionCenterReferenceBaselineChecks(checks)` with missing/failing id errors and original-array return.
+  - Updated `formatConnectionCenterLiveSmokePlan()` to list every required baseline id.
+  - Updated `runConnectionCenterLiveSmoke()` to assert normalized snapshot checks before building the report.
+  - Renamed `snapshotConnectionCenterForCapability()` check ids in `src/main/index.ts` to the exact `reference-baseline:*` contract.
+  - Updated shared CR capability test fixture and source assertion to expect prefixed ids.
+  - Required focused smoke test, root typecheck, diff check, and status check passed after implementation.
+  - Additional touched shared capability test passed.
+- Known gaps:
+  - Live Electron smoke was not run for Task 2; the user only required the focused script test, root typecheck, diff check, and status before commit.
+- Next intended step:
+  - Rerun `git diff --check` and `git status --short` after this handoff update, then commit Task 2 changes only.
+
 ## Current Objective
 
 Build the next Xenesis Desk work in the isolated git worktree, using the repo-local

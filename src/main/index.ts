@@ -14385,15 +14385,15 @@ async function snapshotConnectionCenterForCapability(args: unknown): Promise<Rec
   const startedAt = Date.now();
   const rootSelector = String(config.rootSelector || '');
   const checks = [
-    { id: 'connection-center-root', selector: rootSelector },
-    { id: 'connection-center-title', selector: rootSelector + ' h2', text: 'Connection Center' },
-    { id: 'onboarding-guided-steps', selector: '[data-xenesis-onboarding-plan]', text: 'guided step' },
-    { id: 'provider-profile-review-steps', selector: '[data-xenesis-provider-profile-draft]', text: 'review step' },
-    { id: 'tool-profile-review-steps', selector: '[data-xenesis-tool-profile-draft]', text: 'review step' },
-    { id: 'tool-oauth-review-steps', selector: '[data-xenesis-tool-oauth-draft]', text: 'review step' },
-    { id: 'tool-oauth-runtime-readback', selector: '[data-xenesis-tool-oauth-runtime]', text: 'oauth-runtime-readiness' },
-    { id: 'channel-runtime-readback', selector: '[data-xenesis-channel-runtime]', text: 'channel-runtime-readiness' },
-    { id: 'channel-profile-review-steps', selector: '[data-xenesis-channel-profile-draft]', text: 'review step' },
+    { id: 'reference-baseline:connection-center-root', selector: rootSelector },
+    { id: 'reference-baseline:connection-center-title', selector: rootSelector + ' h2', text: 'Connection Center' },
+    { id: 'reference-baseline:onboarding-guided-steps', selector: '[data-xenesis-onboarding-plan]', text: 'guided step' },
+    { id: 'reference-baseline:provider-profile-review-steps', selector: '[data-xenesis-provider-profile-draft]', text: 'review step' },
+    { id: 'reference-baseline:tool-profile-review-steps', selector: '[data-xenesis-tool-profile-draft]', text: 'review step' },
+    { id: 'reference-baseline:tool-oauth-review-steps', selector: '[data-xenesis-tool-oauth-draft]', text: 'review step' },
+    { id: 'reference-baseline:tool-oauth-runtime-readback', selector: '[data-xenesis-tool-oauth-runtime]', text: 'oauth-runtime-readiness' },
+    { id: 'reference-baseline:channel-runtime-readback', selector: '[data-xenesis-channel-runtime]', text: 'channel-runtime-readiness' },
+    { id: 'reference-baseline:channel-profile-review-steps', selector: '[data-xenesis-channel-profile-draft]', text: 'review step' },
   ];
   const truncate = (value, fallback = '') => String(value || fallback || '').trim().slice(0, Number(config.maxTextLength || 2400));
   const delay = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
