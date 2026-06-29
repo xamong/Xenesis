@@ -133,8 +133,8 @@ export function buildReviewRequestApprovalLiveSmokeReport(checks, startedAt = ne
   const failed = normalizedChecks.length - passed;
 
   return {
-    ok: failed === 0,
     ...extra,
+    ok: failed === 0,
     proofType: REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_PROOF_TYPE,
     providerNaturalLanguageToolSelectionProof: REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_NATURAL_LANGUAGE_TOOL_SELECTION_PROOF,
     createdAt: startedAt.toISOString(),

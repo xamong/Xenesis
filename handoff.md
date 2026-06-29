@@ -1,5 +1,42 @@
 # Xenesis Desk Work Handoff
 
+## Current Slice: Slice 01 Live CR Baseline - Task 3 Report Status Review Fix
+
+- Current objective:
+  - Address code quality re-review finding for Task 3 from `docs/superpowers/plans/2026-06-29-slice-01-live-cr-baseline.md`.
+  - Prevent `buildReviewRequestApprovalLiveSmokeReport()` callers from overriding computed stable report fields such as `ok` through `extra`.
+  - Keep runtime approval behavior, provider behavior, natural-language routing, prompt submission flow, and Action Inbox matching unchanged.
+- Scope boundary:
+  - Owned files only: `scripts/xenesisReviewRequestApprovalLiveSmoke.mjs`, `scripts/xenesisReviewRequestApprovalLiveSmoke.test.mjs`, and `handoff.md`.
+  - No deterministic natural-language routing, keyword catalogs, prompt routers, provider-specific CR shortcuts, mock fallbacks, chat-only approvals, or web browsing.
+- Review finding:
+  - `buildReviewRequestApprovalLiveSmokeReport()` now protects proof metadata from `extra` overrides.
+  - The report still computes `ok: failed === 0` before spreading `...extra`, so `extra: { ok: true }` can report success despite failed checks.
+- Touched files so far:
+  - `handoff.md`
+- Commands run:
+  - `git status --short`: PASS, no output before review-fix edits.
+  - `node --test scripts\xenesisReviewRequestApprovalLiveSmoke.test.mjs`: FAIL as RED, 9/10 passed; new regression failed because actual `report.ok` was `true` instead of `false` when `extra.ok` was `true`.
+  - `node --test scripts\xenesisReviewRequestApprovalLiveSmoke.test.mjs`: PASS, 10/10 tests after moving `...extra` before all stable report fields.
+  - Final `node --test scripts\xenesisReviewRequestApprovalLiveSmoke.test.mjs`: PASS, 10/10 tests.
+  - `git diff --check`: PASS; Git printed LF/CRLF normalization warnings for `handoff.md`, `scripts/xenesisReviewRequestApprovalLiveSmoke.mjs`, and `scripts/xenesisReviewRequestApprovalLiveSmoke.test.mjs`.
+  - `git status --short`: PASS, showed only owned Task 3 status-fix files:
+    `handoff.md`, `scripts/xenesisReviewRequestApprovalLiveSmoke.mjs`, and `scripts/xenesisReviewRequestApprovalLiveSmoke.test.mjs`.
+  - Post-handoff `node --test scripts\xenesisReviewRequestApprovalLiveSmoke.test.mjs`: PASS, 10/10 tests.
+  - Post-handoff `git diff --check`: PASS; Git printed LF/CRLF normalization warnings for the three owned Task 3 status-fix files.
+  - Post-handoff `git status --short`: PASS, showed only owned Task 3 status-fix files:
+    `handoff.md`, `scripts/xenesisReviewRequestApprovalLiveSmoke.mjs`, and `scripts/xenesisReviewRequestApprovalLiveSmoke.test.mjs`.
+- Exact verification result:
+  - Confirmed the current report object spreads `...extra` after computed `ok`, so `ok` is overrideable.
+  - RED regression proves attempted `extra.ok` override can change computed report status before the implementation fix.
+  - Implemented report construction as `return { ...extra, ok: failed === 0, proofType: ..., providerNaturalLanguageToolSelectionProof: ..., createdAt: ..., summary: ..., checks: ... }`.
+  - The regression confirms failed checks keep `report.ok === false` even when `extra.ok === true`.
+  - Required focused test, diff check, and status check passed after implementation.
+- Known gaps:
+  - This smoke remains fenced action / structured CR approval regression only and does not prove provider natural-language CR tool selection.
+- Next intended step:
+  - Commit the status override fix as `Protect review approval report status`.
+
 ## Current Slice: Slice 01 Live CR Baseline - Task 3 Review Fix
 
 - Current objective:

@@ -336,3 +336,14 @@ test('review request approval live smoke report proof metadata cannot be overrid
   assert.equal(report.providerNaturalLanguageToolSelectionProof, false);
   assert.equal(report.extraField, 'kept');
 });
+
+test('review request approval live smoke report status cannot be overridden by extra fields', () => {
+  const report = buildReviewRequestApprovalLiveSmokeReport(
+    [{ id: 'failed-check', ok: false }],
+    new Date('2026-06-29T00:00:00.000Z'),
+    { ok: true },
+  );
+
+  assert.equal(report.ok, false);
+  assert.equal(report.summary.failed, 1);
+});
