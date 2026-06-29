@@ -149,6 +149,40 @@ describe("buildHookRegistry helper", () => {
 // Integration: config command hook fires end-to-end via AgentRunner
 // ---------------------------------------------------------------------------
 describe("AgentRunnerBuilder hook wiring (end-to-end)", () => {
+  it("AgentRunner.dispose releases primary and fallback provider resources once", async () => {
+    let primaryDisposed = 0;
+    let fallbackDisposed = 0;
+    const primary: AgentProvider = {
+      ...singleToolCallProvider(shellCall),
+      dispose: () => {
+        primaryDisposed += 1;
+      }
+    };
+    const fallback: AgentProvider = {
+      ...singleToolCallProvider(shellCall),
+      name: "fallback",
+      dispose: () => {
+        fallbackDisposed += 1;
+      }
+    };
+    const config = fakeConfig();
+    const runner = new AgentRunner({
+      provider: primary,
+      fallbackProviders: [primary, fallback],
+      model: "mock-model",
+      workspaceRoot: config.workspace,
+      xenesisHome: config.xenesisHome,
+      approvalMode: "auto",
+      maxTurns: 1,
+      tools: []
+    } as AgentRunnerOptions);
+
+    await runner.dispose();
+
+    expect(primaryDisposed).toBe(1);
+    expect(fallbackDisposed).toBe(1);
+  });
+
   it("a config command hook blocks a matching tool end-to-end", async () => {
     // Config: preToolUse contains hook-block.mjs scoped to ^shell_stub$
     const config = fakeConfig({
@@ -235,6 +269,7 @@ describe("AgentRunnerBuilder hook wiring (end-to-end)", () => {
 describe("buildAgentRunner passes the config-built HookRegistry to the runner", () => {
   it("a config command hook blocks a matching tool when run through buildAgentRunner", async () => {
     const workspace = await createTempWorkspace("s5-builder-e2e-");
+    let built: Awaited<ReturnType<typeof buildAgentRunner>> | undefined;
     try {
       const xenesisHome = join(workspace.root, ".xenesis");
       const configPath = join(workspace.root, "xenesis.config.json");
@@ -255,13 +290,13 @@ describe("buildAgentRunner passes the config-built HookRegistry to the runner", 
       const config = await loadConfig({
         cwd: workspace.root,
         configPath,
-        env: { XENESIS_HOME: xenesisHome }
+        env: { XENESIS_HOME: xenesisHome, XENESIS_ENABLE_TEST_MOCK_PROVIDER: "true" }
       });
 
       const prompt = "mock:tool:shell:{\"command\":\"echo hi\"}";
-      const built = await buildAgentRunner({
+      built = await buildAgentRunner({
         config,
-        env: {},
+        env: { XENESIS_ENABLE_TEST_MOCK_PROVIDER: "true" },
         prompt,
         sessionId: "builder-hook-wiring-session"
       });
@@ -276,6 +311,7 @@ describe("buildAgentRunner passes the config-built HookRegistry to the runner", 
       // Release the cached SQLite WAL handle before unlinking the temp workspace,
       // otherwise the .xenesis/xenesis.db file is still open and cleanup throws
       // EBUSY on Windows (the unrelated flakiness noted in the Task 7 review).
+      await built?.runner.dispose();
       closeAllDatabases();
       await workspace.cleanup();
     }

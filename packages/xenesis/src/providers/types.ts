@@ -48,4 +48,5 @@ export interface AgentProvider {
   capabilities?: ProviderRuntimeCapabilities;
   complete(request: ProviderRequest): Promise<ProviderResponse>;
   stream?(request: ProviderRequest): AsyncIterable<ProviderStreamEvent>;
+  dispose?(): void | Promise<void>;
 }

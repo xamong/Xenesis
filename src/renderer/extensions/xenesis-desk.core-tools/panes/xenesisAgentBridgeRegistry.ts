@@ -1,4 +1,4 @@
-import type { XenesisAgentState, XenesisChatMessage } from './xenesisAgentTypes';
+import type { XenesisAgentState, XenesisChatMessage, XenesisRawStreamEntry } from './xenesisAgentTypes';
 
 export interface XenesisAgentBridgeSummary {
   agentId: string;
@@ -17,6 +17,17 @@ export interface XenesisAgentBridgeEvent {
   kind: 'assistant_final' | 'error' | 'status';
   text: string;
   externalSafe: boolean;
+  at: string;
+}
+
+export interface XenesisAgentBridgeRawEvent {
+  id: string;
+  agentId: string;
+  kind: string;
+  summary: string;
+  detail?: string;
+  error?: boolean;
+  externalSafe: false;
   at: string;
 }
 
@@ -53,6 +64,14 @@ export interface XenesisDeskAgentBridge {
     agentId: string,
     options?: { sinceEventId?: string; limit?: number },
   ): Promise<{ ok: boolean; events: XenesisAgentBridgeEvent[]; error?: string }>;
+  listAgentRawEvents(
+    agentId: string,
+    options?: { sinceEventId?: string; limit?: number },
+  ): { ok: boolean; events: XenesisAgentBridgeRawEvent[]; error?: string };
+  listRawEvents(
+    agentId: string,
+    options?: { sinceEventId?: string; limit?: number },
+  ): { ok: boolean; events: XenesisAgentBridgeRawEvent[]; error?: string };
 }
 
 declare global {
@@ -102,6 +121,10 @@ function createXenesisDeskAgentBridge(): XenesisDeskAgentBridge {
       listAgentEvents(agentId, options),
     listEvents: (agentId: string, options?: { sinceEventId?: string; limit?: number }) =>
       listAgentEvents(agentId, options),
+    listAgentRawEvents: (agentId: string, options?: { sinceEventId?: string; limit?: number }) =>
+      listAgentRawEvents(agentId, options),
+    listRawEvents: (agentId: string, options?: { sinceEventId?: string; limit?: number }) =>
+      listAgentRawEvents(agentId, options),
   };
 }
 
@@ -205,8 +228,36 @@ function defaultAgentEvents(
   return assistantMessages.slice(start).slice(-limit);
 }
 
+function listAgentRawEvents(
+  agentId: string,
+  options: { sinceEventId?: string; limit?: number } = {},
+): { ok: boolean; events: XenesisAgentBridgeRawEvent[]; error?: string } {
+  const registration = registrations.get(agentId);
+  if (!registration) return { ok: false, events: [], error: `Xenesis Agent not found: ${agentId}` };
+  const snapshot = registration.getSnapshot();
+  const rawEvents = snapshot.rawStream.map((entry) => rawStreamEntryToBridgeEvent(agentId, entry)).reverse();
+  const sinceIndex = options.sinceEventId ? rawEvents.findIndex((event) => event.id === options.sinceEventId) : -1;
+  const start = sinceIndex >= 0 ? sinceIndex + 1 : 0;
+  const limit =
+    Number.isInteger(options.limit) && options.limit && options.limit > 0 ? Math.min(options.limit, 100) : 50;
+  return { ok: true, events: rawEvents.slice(start).slice(-limit) };
+}
+
 function isFinalAssistantMessage(message: XenesisChatMessage): boolean {
   return message.role === 'assistant' && !message.streaming && !message.error && Boolean(message.content.trim());
+}
+
+function rawStreamEntryToBridgeEvent(agentId: string, entry: XenesisRawStreamEntry): XenesisAgentBridgeRawEvent {
+  return {
+    id: entry.id,
+    agentId,
+    kind: entry.kind,
+    summary: entry.summary,
+    ...(entry.detail ? { detail: entry.detail } : {}),
+    ...(entry.error !== undefined ? { error: entry.error } : {}),
+    externalSafe: false,
+    at: entry.at,
+  };
 }
 
 function messageToAgentEvent(agentId: string, message: XenesisChatMessage): XenesisAgentBridgeEvent {

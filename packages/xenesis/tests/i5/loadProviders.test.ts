@@ -86,6 +86,28 @@ describe("loadPluginProviders", () => {
       loadPluginProviders({ workspaceRoot: root, paths: [d1, d2] })
     ).rejects.toThrow(/already registered/);
   });
+  it("throws when a plugin provider tries to shadow a built-in provider name", async () => {
+    const reservedManifest = {
+      name: "reserved-provider",
+      providers: [
+        {
+          name: "mock",
+          entry: "./prov.mjs",
+          exportName: "factory",
+          capabilities: {
+            supportsTools: true,
+            requiresApiKey: false,
+            transport: "http-streaming",
+            streaming: true,
+            persistentSession: false
+          }
+        }
+      ]
+    };
+    const d = await pluginWith(FACTORY_SRC, reservedManifest);
+    await expect(loadPluginProviders({ workspaceRoot: d, paths: [d] })).rejects.toThrow(/reserved provider name/i);
+    expect(getProviderFactory("mock")).toBeUndefined();
+  });
   it("throws when a provider entry escapes the plugin directory (path containment)", async () => {
     // The plugin lives inside `root`; its provider entry "../escape.mjs" resolves to
     // `root/escape.mjs` (which EXISTS, so this is not a not-found error) but is OUTSIDE the

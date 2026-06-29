@@ -129,6 +129,15 @@ export interface AgentRunPipelineResult {
   pendingApproval?: ApprovalRequest;
 }
 
+async function disposePipelineRunner(runner: { dispose?: () => Promise<void> | void }) {
+  try {
+    await runner.dispose?.();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    process.emitWarning(`provider cleanup failed: ${message}`);
+  }
+}
+
 /**
  * S7 — options for {@link resumeAgentPipeline}. Parallel to
  * {@link AgentRunPipelineOptions} but the `prompt`, `historyMessages`,
@@ -442,16 +451,21 @@ export async function runAgentPipeline(options: AgentRunPipelineOptions): Promis
             onNotice: options.onNotice
           });
           let fixMessages: AgentMessage[] = [];
-          const fixExecution = await executeAgentRun({
-            runner: fixBuilt.runner,
-            prompt,
-            sessionWriter: fixBuilt.sessionWriter,
-            onEvent: options.onEvent,
-            onMessages: async (messages) => {
-              fixMessages = messages;
-              await options.onMessages?.(messages);
-            }
-          });
+          let fixExecution: Awaited<ReturnType<typeof executeAgentRun>>;
+          try {
+            fixExecution = await executeAgentRun({
+              runner: fixBuilt.runner,
+              prompt,
+              sessionWriter: fixBuilt.sessionWriter,
+              onEvent: options.onEvent,
+              onMessages: async (messages) => {
+                fixMessages = messages;
+                await options.onMessages?.(messages);
+              }
+            });
+          } finally {
+            await disposePipelineRunner(fixBuilt.runner);
+          }
           return {
             events: fixExecution.events,
             ...(fixExecution.doneContent !== undefined ? { doneContent: fixExecution.doneContent } : {}),
@@ -534,6 +548,8 @@ export async function runAgentPipeline(options: AgentRunPipelineOptions): Promis
       await releaseInjectedAgentMessageClaims(config, built.agentMessageContextIds, built.sessionId);
     }
     throw error;
+  } finally {
+    await disposePipelineRunner(built.runner);
   }
 }
 

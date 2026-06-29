@@ -2353,19 +2353,20 @@ test('buildXenesisToolOAuthSetupPacketRequest targets the setup packet CR read p
   );
 });
 
-test('formatXenesisProviderSetupSummary describes provider, model, and auth mode', () => {
+test('formatXenesisProviderSetupSummary describes provider, resolved runtime, credential state, and process model', () => {
   assert.equal(
     formatXenesisProviderSetupSummary({
-      source: 'user-settings',
-      provider: 'codex-app-server',
+      source: 'auto-detect',
+      provider: 'auto',
       model: 'gpt-5-codex',
-      authMode: 'local-login',
+      authMode: 'auto-detect',
       credentialState: 'not-required',
       credentialStorage: 'local CLI login or app-server session',
       endpoint: 'default',
       runtimeProfile: 'desk',
       runtimeProvider: 'codex-app-server',
       runtimeModel: 'gpt-5-codex',
+      processModel: 'persistent-process',
       providerRetries: 0,
       fallbackPolicy: 'configured-providerFallbacks',
       localCliBoundary: 'provider identity is separate from local CLI integration',
@@ -2377,7 +2378,7 @@ test('formatXenesisProviderSetupSummary describes provider, model, and auth mode
         'verify live Agent pane provider before Desk-control claims',
       ],
     }),
-    'codex-app-server / gpt-5-codex / local-login',
+    'auto -> codex-app-server / gpt-5-codex / auto-detect / not-required / persistent-process',
   );
 });
 

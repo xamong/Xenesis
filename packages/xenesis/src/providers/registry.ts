@@ -20,7 +20,10 @@ export interface ProviderRuntimeSettings {
 }
 
 const providerPresets: Record<ProviderName, ProviderPreset> = {
+  auto: {},
   openai: { apiKeyEnv: "OPENAI_API_KEY" },
+  // Test/dev provider only. Normal reasoning provider resolution blocks this
+  // unless XENESIS_ENABLE_TEST_MOCK_PROVIDER=true is present.
   mock: {},
   anthropic: {
     apiKeyEnv: "ANTHROPIC_API_KEY",
@@ -70,6 +73,9 @@ const providerPresets: Record<ProviderName, ProviderPreset> = {
 };
 
 export const PROVIDER_CAPABILITIES: Record<ProviderName, ProviderCapabilities> = {
+  // Resolver-only sentinel. Direct legacy provider construction should fail
+  // closed instead of treating auto as a runnable local provider.
+  auto: { supportsTools: true, requiresApiKey: true, transport: "http-streaming", streaming: true, persistentSession: false },
   openai: { supportsTools: true, requiresApiKey: true, transport: "http-streaming", streaming: true, persistentSession: false },
   mock: { supportsTools: true, requiresApiKey: false, transport: "local-server", streaming: false, persistentSession: true },
   anthropic: { supportsTools: true, requiresApiKey: true, transport: "http-streaming", streaming: true, persistentSession: false },

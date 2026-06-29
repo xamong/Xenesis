@@ -17,6 +17,13 @@ describe("registerProviderFactory", () => {
     expect(getProviderFactory("anthropic")).toBeUndefined();
     expect(getRegisteredCapabilities("anthropic")).toBeUndefined();
   });
+  it("rejects factories that shadow built-in provider names", () => {
+    for (const provider of ["auto", "mock", "openai", "codex-app-server"]) {
+      expect(() => registerProviderFactory(provider, (() => ({})) as any, caps as any)).toThrow(/reserved provider name/i);
+      expect(getProviderFactory(provider)).toBeUndefined();
+      expect(getRegisteredCapabilities(provider)).toBeUndefined();
+    }
+  });
   it("resetProviderFactories clears the registry", () => {
     registerProviderFactory("tmp", (() => ({})) as any, caps as any);
     resetProviderFactories();

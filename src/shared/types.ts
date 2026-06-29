@@ -137,9 +137,12 @@ export type AiProviderKind =
   | 'openai' // OpenAI (Responses / Chat Completions)
   | 'anthropic' // Anthropic Claude
   | 'gemini' // Google Gemini (OpenAI 호환)
+  | 'openrouter' // OpenRouter (OpenAI 호환)
   | 'groq' // Groq (OpenAI 호환)
   | 'deepseek' // DeepSeek (OpenAI 호환)
   | 'qwen' // Qwen / DashScope (OpenAI 호환)
+  | 'mistral' // Mistral (OpenAI 호환)
+  | 'xai' // xAI (OpenAI 호환)
   | 'ollama' // Ollama (로컬, 인증 불필요)
   | 'lmstudio' // LM Studio (로컬)
   | 'together' // Together AI
@@ -358,6 +361,16 @@ export interface XenesisProviderRuntimeStatus {
   profile: string;
   baseURL: string;
   apiKeyEnv: string;
+  requestedProvider?: string;
+  source?: string;
+  authMode?: string;
+  credentialState?: string;
+  credentialSource?: string;
+  processModel?: string;
+  fallbackProvider?: string;
+  safeForReasoning?: boolean;
+  diagnostics?: string[];
+  localCliBoundary?: string;
 }
 
 export type LocalCliAgentId =

@@ -1210,6 +1210,11 @@ export interface XenesisConnectionProviderSetupTemplate {
   runtimeProfile: string;
   runtimeProvider: string;
   runtimeModel: string;
+  requestedProvider?: string;
+  credentialSource?: string;
+  processModel?: string;
+  safeForReasoning?: boolean;
+  runtimeDiagnostics?: string[];
   providerRetries: number;
   fallbackPolicy: string;
   localCliBoundary: string;
@@ -1266,11 +1271,12 @@ export interface XenesisConnectionProviderCredentialPoolItem {
   provider: string;
   apiKeyEnv: string;
   credentialState: XenesisConnectionProviderCredentialState;
+  credentialSource?: string;
   source: 'runtime' | 'fallback';
 }
 
 export interface XenesisConnectionProviderRoutingTemplate {
-  routeSource: 'user-settings-profile';
+  routeSource: 'user-settings-profile' | 'auto-detect';
   activeProvider: string;
   activeModel: string;
   runtimeProfile: string;
@@ -1584,9 +1590,12 @@ export const XENESIS_CONNECTION_PROVIDER_IDS = [
   'openai',
   'anthropic',
   'gemini',
+  'openrouter',
   'groq',
   'deepseek',
   'qwen',
+  'mistral',
+  'xai',
   'ollama',
   'lmstudio',
   'together',
@@ -8620,26 +8629,84 @@ function providerCredentialStorage(authMode: XenesisConnectionProviderSetupTempl
   return 'AI Provider settings secret field';
 }
 
+function providerRuntimeHasResolutionMetadata(runtime: XenesisStatus['providerRuntime'] | undefined): boolean {
+  return Boolean(
+    runtime?.requestedProvider ||
+      runtime?.source ||
+      runtime?.authMode ||
+      runtime?.credentialState ||
+      runtime?.credentialSource ||
+      runtime?.processModel ||
+      runtime?.fallbackProvider ||
+      typeof runtime?.safeForReasoning === 'boolean' ||
+      runtime?.diagnostics?.length ||
+      runtime?.localCliBoundary,
+  );
+}
+
+function providerRuntimeAuthMode(
+  runtime: XenesisStatus['providerRuntime'] | undefined,
+  fallback: XenesisConnectionProviderSetupTemplate['authMode'],
+): XenesisConnectionProviderSetupTemplate['authMode'] {
+  return runtime?.authMode === 'auto-detect' ||
+    runtime?.authMode === 'local-login' ||
+    runtime?.authMode === 'api-key' ||
+    runtime?.authMode === 'none'
+    ? runtime.authMode
+    : fallback;
+}
+
+function providerRuntimeCredentialState(
+  runtime: XenesisStatus['providerRuntime'] | undefined,
+  fallback: XenesisConnectionProviderCredentialState,
+): XenesisConnectionProviderCredentialState {
+  if (
+    runtime?.credentialState === 'configured' ||
+    runtime?.credentialState === 'missing' ||
+    runtime?.credentialState === 'not-required'
+  ) {
+    return runtime.credentialState;
+  }
+  return fallback;
+}
+
 function providerSetupTemplate(
   aiProvider: BuildXenesisConnectionsStatusInput['aiProvider'],
   xenesis: XenesisStatus | null,
 ): XenesisConnectionProviderSetupTemplate {
-  const authMode = providerAuthMode(aiProvider.provider);
+  const runtime = xenesis?.providerRuntime;
+  const hasRuntimeMetadata = providerRuntimeHasResolutionMetadata(runtime);
+  const requestedProvider = runtime?.requestedProvider || aiProvider.provider;
+  const authMode = providerRuntimeAuthMode(runtime, providerAuthMode(aiProvider.provider));
   const needsCredential = authMode === 'api-key';
+  const credentialState = providerRuntimeCredentialState(
+    runtime,
+    needsCredential ? (aiProvider.apiKey ? 'configured' : 'missing') : 'not-required',
+  );
+  const runtimeDiagnostics = Array.isArray(runtime?.diagnostics) ? runtime.diagnostics : [];
   return {
-    source: aiProvider.provider === 'auto' ? 'auto-detect' : 'user-settings',
+    source: runtime?.source === 'auto-detect' || requestedProvider === 'auto' ? 'auto-detect' : 'user-settings',
     provider: aiProvider.provider,
     model: aiProvider.model || 'default',
     authMode,
-    credentialState: needsCredential ? (aiProvider.apiKey ? 'configured' : 'missing') : 'not-required',
+    credentialState,
     credentialStorage: providerCredentialStorage(authMode),
     endpoint: aiProvider.baseUrl || xenesis?.providerRuntime.baseURL || 'default',
     runtimeProfile: xenesis?.providerRuntime.profile || xenesis?.profile.active || '',
     runtimeProvider: xenesis?.providerRuntime.provider || aiProvider.provider,
     runtimeModel: xenesis?.providerRuntime.model || aiProvider.model || 'default',
+    ...(hasRuntimeMetadata
+      ? {
+          requestedProvider,
+          credentialSource: runtime?.credentialSource || '',
+          processModel: runtime?.processModel || '',
+          safeForReasoning: runtime?.safeForReasoning === true,
+          runtimeDiagnostics,
+        }
+      : {}),
     providerRetries: xenesis?.profile.policy.providerRetries ?? 0,
     fallbackPolicy: 'configured-providerFallbacks',
-    localCliBoundary: 'provider identity is separate from local CLI integration',
+    localCliBoundary: runtime?.localCliBoundary || 'provider identity is separate from local CLI integration',
     verification: ['normal-chat', 'provider-footer', 'cr-readback'],
     crReadPaths: ['xd.xenesis.connections.status', 'xd.xenesis.providers.setup.status', 'xd.xenesis.status'],
     riskControls: [
@@ -8668,12 +8735,17 @@ function providerRoutingTemplate(
   providerFallbacks: XenesisConnectionProviderFallbackInput[] = [],
   env: Record<string, string | undefined> = {},
 ): XenesisConnectionProviderRoutingTemplate {
+  const runtime = xenesis?.providerRuntime;
   const activeProvider = aiProvider.provider;
   const activeModel = aiProvider.model || 'default';
-  const runtimeProvider = xenesis?.providerRuntime.provider || activeProvider;
-  const runtimeModel = xenesis?.providerRuntime.model || activeModel;
-  const runtimeProfile = xenesis?.providerRuntime.profile || xenesis?.profile.active || '';
-  const runtimeApiKeyEnv = xenesis?.providerRuntime.apiKeyEnv || '';
+  const runtimeProvider = runtime?.provider || activeProvider;
+  const runtimeModel = runtime?.model || activeModel;
+  const runtimeProfile = runtime?.profile || xenesis?.profile.active || '';
+  const runtimeApiKeyEnv = runtime?.apiKeyEnv || '';
+  const runtimeCredentialState = providerRuntimeCredentialState(
+    runtime,
+    providerCredentialState(runtimeProvider, runtimeApiKeyEnv, env, Boolean(aiProvider.apiKey)),
+  );
   const fallbackChain = providerFallbacks.map((fallback, index) => ({
     index: index + 1,
     provider: fallback.provider,
@@ -8684,7 +8756,7 @@ function providerRoutingTemplate(
   }));
 
   return {
-    routeSource: 'user-settings-profile',
+    routeSource: runtime?.source === 'auto-detect' ? 'auto-detect' : 'user-settings-profile',
     activeProvider,
     activeModel,
     runtimeProfile,
@@ -8702,7 +8774,8 @@ function providerRoutingTemplate(
       {
         provider: runtimeProvider,
         apiKeyEnv: runtimeApiKeyEnv,
-        credentialState: providerCredentialState(runtimeProvider, runtimeApiKeyEnv, env, Boolean(aiProvider.apiKey)),
+        credentialState: runtimeCredentialState,
+        ...(runtime?.credentialSource ? { credentialSource: runtime.credentialSource } : {}),
         source: 'runtime',
       },
       ...fallbackChain.map((fallback) => ({

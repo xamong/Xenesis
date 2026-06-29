@@ -354,6 +354,7 @@ describe("resumeAgentPipeline with approvalDecision (S6)", () => {
       sessionId: "sess",
       xenesisHome: h,
       cwd: h,
+      env: { XENESIS_ENABLE_TEST_MOCK_PROVIDER: "true" },
       cli: { provider: "mock", model: "mock-model", workspace: h, approvalMode: "auto" },
       approvalDecision: {
         toolCallId: "tc1",
@@ -419,6 +420,7 @@ describe("resumeAgentPipeline with approvalDecision (S6)", () => {
       sessionId: "sess",
       xenesisHome: h,
       cwd: h,
+      env: { XENESIS_ENABLE_TEST_MOCK_PROVIDER: "true" },
       cli: { provider: "mock", model: "mock-model", workspace: h, approvalMode: "auto" },
       approvalDecision: {
         toolCallId: "tc1",

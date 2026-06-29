@@ -50,6 +50,25 @@ test('buildXenesisProviderProfileDraftApplySettings merges non-secret provider p
   });
 });
 
+test('buildXenesisProviderProfileDraftApplySettings accepts extended keyed Desk providers', () => {
+  for (const provider of ['openrouter', 'mistral', 'xai'] as const) {
+    const result = buildXenesisProviderProfileDraftApplySettings({
+      current: currentSettings,
+      args: {
+        provider,
+        model: `${provider}-model`,
+      },
+    });
+
+    assert.equal(result.ok, true, provider);
+    if (!result.ok) continue;
+    assert.equal(result.provider, provider);
+    assert.equal(result.settings.provider, provider);
+    assert.equal(result.settings.model, `${provider}-model`);
+    assert.equal(result.settings.apiKey, 'existing-secret');
+  }
+});
+
 test('buildXenesisProviderProfileDraftApplySettings rejects unsupported providers and raw secrets', () => {
   assert.deepEqual(buildXenesisProviderProfileDraftApplySettings({ current: currentSettings, args: {} }), {
     ok: false,

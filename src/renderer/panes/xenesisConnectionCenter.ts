@@ -203,7 +203,11 @@ export function formatXenesisConnectionReviewStepDetail(step: XenesisConnectionR
 }
 
 export function formatXenesisProviderSetupSummary(setup: XenesisConnectionProviderSetupTemplate): string {
-  return `${setup.provider} / ${setup.model} / ${setup.authMode}`;
+  const resolvedProvider = setup.runtimeProvider && setup.runtimeProvider !== setup.provider
+    ? `${setup.provider} -> ${setup.runtimeProvider}`
+    : setup.provider;
+  const processModel = setup.processModel ? ` / ${setup.processModel}` : '';
+  return `${resolvedProvider} / ${setup.model} / ${setup.authMode} / ${setup.credentialState}${processModel}`;
 }
 
 export function formatXenesisProviderProfileDraftSummary(draft: XenesisConnectionProviderProfileDraftTemplate): string {

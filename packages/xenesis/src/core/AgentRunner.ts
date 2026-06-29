@@ -766,6 +766,116 @@ function fileMutationRequiredRecoveryMessage(
   };
 }
 
+function plainRecord(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
+}
+
+function stringValue(record: Record<string, unknown> | undefined, key: string) {
+  const value = record?.[key];
+  return typeof value === "string" ? value : "";
+}
+
+function providerRawRecordsFromCliRaw(raw: unknown): Record<string, unknown>[] {
+  if (Array.isArray(raw)) return raw.filter((item): item is Record<string, unknown> => Boolean(plainRecord(item)));
+  const record = plainRecord(raw);
+  const records = record?.records;
+  return Array.isArray(records) ? records.filter((item): item is Record<string, unknown> => Boolean(plainRecord(item))) : [];
+}
+
+function firstCrPathInProviderRawRecord(value: unknown, depth = 0): string {
+  if (depth > 4 || value === null || value === undefined) return "";
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const pathValue = firstCrPathInProviderRawRecord(item, depth + 1);
+      if (pathValue) return pathValue;
+    }
+    return "";
+  }
+  const record = plainRecord(value);
+  if (!record) return "";
+  for (const [key, entryValue] of Object.entries(record)) {
+    if (key === "path" && typeof entryValue === "string" && /^(?:xd\.|desk_|xenesis_desk_)/.test(entryValue)) {
+      return entryValue;
+    }
+    if (typeof entryValue === "string" && entryValue.trim().startsWith("{")) {
+      try {
+        const pathValue = firstCrPathInProviderRawRecord(JSON.parse(entryValue), depth + 1);
+        if (pathValue) return pathValue;
+      } catch {
+        // Ignore non-JSON strings; evidence detection only needs a best-effort redacted path.
+      }
+    }
+    const pathValue = firstCrPathInProviderRawRecord(entryValue, depth + 1);
+    if (pathValue) return pathValue;
+  }
+  return "";
+}
+
+function providerRawRecordIsCompleted(record: Record<string, unknown>) {
+  const params = plainRecord(record.params);
+  const item = plainRecord(params?.item);
+  const method = stringValue(record, "method");
+  const statusText = [
+    stringValue(record, "status"),
+    stringValue(params, "status"),
+    stringValue(item, "status")
+  ].join(" ");
+  return (
+    /(?:item\/completed|tool.*(?:result|completed)|mcp.*(?:result|completed))/i.test(method) ||
+    /(?:completed|result|success)/i.test(statusText)
+  );
+}
+
+function providerRawRecordLooksLikeDeskMcpToolCall(record: Record<string, unknown>) {
+  const params = plainRecord(record.params);
+  const item = plainRecord(params?.item);
+  const method = stringValue(record, "method");
+  const itemType = stringValue(item, "type");
+  const searchable = JSON.stringify({
+    method,
+    itemType,
+    itemName: stringValue(item, "name"),
+    name: stringValue(params, "name"),
+    toolName: stringValue(params, "toolName"),
+    path: firstCrPathInProviderRawRecord(record)
+  });
+  return (
+    providerRawRecordIsCompleted(record) &&
+    /tool|mcp|item/i.test(`${method} ${itemType}`) &&
+    /xenesis_desk_(?:call_capability|capabilities|capability)|desk_call_capability|xd\./i.test(searchable)
+  );
+}
+
+function assistantMessageHasProviderDeskMcpEvidence(message: AssistantMessage) {
+  const raw = message.providerMetadata?.cli?.raw;
+  return providerRawRecordsFromCliRaw(raw).some(providerRawRecordLooksLikeDeskMcpToolCall);
+}
+
+function userExplicitlyRequestedDeskCrMcp(content: string) {
+  return /\b(?:CR|MCP)\b|Capability Registry|xenesis_desk_|xd\./i.test(content);
+}
+
+function providerDeskMcpEvidenceRecoveryMessage(
+  userMessage: UserMessage,
+  assistantMessage: AssistantMessage,
+  recoveryCount: number
+): SystemMessage | undefined {
+  if (recoveryCount > 0) return undefined;
+  if (!assistantMessage.providerMetadata?.cli?.xenesisDeskMcpConfigured) return undefined;
+  if (!userExplicitlyRequestedDeskCrMcp(userMessage.content)) return undefined;
+  if (assistantMessageHasProviderDeskMcpEvidence(assistantMessage)) return undefined;
+  return {
+    role: "system",
+    content: [
+      "Xenesis Desk CR/MCP readback evidence required before final answer.",
+      "The user explicitly asked for CR/MCP/Capability Registry verification, and this provider run has Desk CR MCP tools configured.",
+      "The previous answer did not include provider raw evidence of a Desk CR MCP tool call. Do not answer from existing context or visible prompt context.",
+      "Call the configured Desk CR MCP capability caller now. If the exact path is uncertain, discover or inspect the provider routing/status capability first, then call the generic capability caller.",
+      "After the private tool call returns, answer in concise user-facing product language and include the requested marker only after the readback."
+    ].join("\n")
+  };
+}
+
 function userRequestedRepositoryTopic(content: string) {
   return /git|github|repo\b|repository|version control|hosting|deployment|버전\s*관리|저장소|배포/.test(
     content.toLowerCase()
@@ -2198,6 +2308,7 @@ export class AgentRunner {
     let falseUnavailableToolRecoveryUsed = resume ? resume.recovery.falseUnavailableToolRecoveryUsed : false;
     let explicitToolCompletionRecoveryCount = resume ? resume.recovery.explicitToolCompletionRecoveryCount : 0;
     let fileMutationRequiredRecoveryCount = resume ? resume.recovery.fileMutationRequiredRecoveryCount : 0;
+    let providerDeskMcpEvidenceRecoveryCount = 0;
     let maxOutputTokensRecoveryCount = resume ? resume.recovery.maxOutputTokensRecoveryCount : 0;
     let mutationSinceLastRead = resume ? resume.mutationSinceLastRead : false;
     let successfulMutationCount = resume ? resume.successfulMutationCount : 0;
@@ -2616,6 +2727,24 @@ export class AgentRunner {
             phase: "executing",
             turns,
             summary: "requesting required file mutation before final answer"
+          });
+          continue;
+        }
+
+        const providerDeskMcpEvidenceRecovery = providerDeskMcpEvidenceRecoveryMessage(
+          userMessage,
+          assistantMessage,
+          providerDeskMcpEvidenceRecoveryCount
+        );
+        if (providerDeskMcpEvidenceRecovery) {
+          providerDeskMcpEvidenceRecoveryCount += 1;
+          messages.push(providerDeskMcpEvidenceRecovery);
+          yield await this.record({
+            type: "run_state",
+            status: "provider_request",
+            phase: "executing",
+            turns,
+            summary: "requesting Desk CR MCP tool-call evidence before final answer"
           });
           continue;
         }
@@ -3054,6 +3183,19 @@ export class AgentRunner {
         await tool.cleanupSession(this.sessionId);
       } catch (error) {
         this.logger.warn(`Tool "${tool.name}" cleanup failed: ${errorMessage(error)}`);
+      }
+    }));
+  }
+
+  async dispose() {
+    await this.cleanupToolSessions();
+    const providers = Array.from(new Set(this.providers));
+    await Promise.all(providers.map(async (provider) => {
+      if (!provider.dispose) return;
+      try {
+        await provider.dispose();
+      } catch (error) {
+        this.logger.warn(`Provider "${provider.name}" cleanup failed: ${errorMessage(error)}`);
       }
     }));
   }

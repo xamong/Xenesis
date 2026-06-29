@@ -1,5 +1,180 @@
 # Xenesis Desk Work Handoff
 
+## Active Slice 02 Live Smoke Recovery
+
+- Current objective:
+  - Close the remaining Slice 02 provider onboarding blocker before starting the next slice.
+  - Preserve the no-overclaim live evidence gate: a provider turn only proves natural-language Desk routing when completed CR/MCP tool-call evidence and CR readback are both present.
+- Active blocker:
+  - `node .\scripts\xenesisProviderOnboardingLiveSmoke.mjs --json --timeout=180000` previously failed after adversarial remediation because the Codex app-server provider answered that it could not check Desk routing, while raw provider records lacked completed CR/MCP tool calls.
+- Root-cause hypothesis:
+  - `CodexAppServerProvider` starts `codex app-server` threads without `developerInstructions`.
+  - The Desk CR/MCP contract is currently sent through `turn/start.input` as formatted user text, so the persistent app-server thread may not treat it as a durable developer instruction.
+  - Local app-server schema inspection showed `thread/start` supports `developerInstructions`, while `turn/start` only accepts user `input`.
+- RED verification:
+  - `npm --prefix packages/xenesis exec vitest run src/providers/cliProvider.deskMcp.test.ts` failed as expected, 2/3 passed.
+  - Failing assertion: `threadStartRequest.developerInstructions` was empty and did not contain the Desk CR MCP contract.
+- Implementation:
+  - Added `CodexAppServerThreadRequest.developerInstructions`.
+  - Added provider instruction helpers so the fixed Desk MCP/output contract can be sent through app-server `thread/start.developerInstructions`.
+  - App-server `turn/start.input` now excludes those fixed provider instructions while preserving the actual user and dynamic per-turn messages.
+- Focused GREEN verification:
+  - `npm --prefix packages/xenesis exec vitest run src/providers/cliProvider.deskMcp.test.ts` passed, 3/3.
+- Broadened verification:
+  - `node --test scripts\xenesisProviderOnboardingLiveSmoke.test.mjs` passed, 17/17.
+  - `npm --prefix packages/xenesis exec vitest run src/providers/runtimeProviderResolution.test.ts tests/s3s4/providerFactoryWiring.test.ts tests/s3s4/connectProviderReadiness.test.ts tests/i5/loadProviders.test.ts tests/i5/integration.test.ts tests/s3s4/providerFactory.test.ts src/providers/cliProvider.deskMcp.test.ts` passed, 7 files / 53 tests.
+  - `npm --prefix packages/xenesis run typecheck` passed.
+- Live GREEN verification:
+  - `node .\scripts\xenesisProviderOnboardingLiveSmoke.mjs --json --timeout=180000` passed, JSON `ok: true`, 9/9 checks.
+  - Runtime readback: `provider=codex-app-server`, `requestedProvider=auto`, `source=auto-detect`, `credentialSource=codex-auth-json`, `processModel=persistent-process`, `fallbackProvider=codex-cli`, `safeForReasoning=true`.
+  - Proof boundary: `providerNaturalLanguageToolSelectionProof=true`, `hasCrMcpToolEvidence=true`, `hasCrReadbackAfterPrompt=true`, `usedProviderDeskMcpRecovery=false`.
+  - Provider raw record summaries included completed `mcpToolCall` evidence with CR paths including `xd.xenesis.connections.status`.
+- Final package/root gates after app-server instruction remediation:
+  - `node --test src\main\xenesisService.test.mjs` passed, 11/11.
+  - `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts packages\xenesis-agent-core\src\embeddedAgentRuntime.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentStatusBar.test.ts` passed, 181/181.
+  - `npm --prefix packages/xenesis exec vitest run src/providers/runtimeProviderResolution.test.ts tests/s3s4/providerFactoryWiring.test.ts tests/s3s4/connectProviderReadiness.test.ts tests/i5/loadProviders.test.ts tests/i5/integration.test.ts` passed, 5 files / 46 tests.
+  - `node --test scripts\xenesisProviderOnboardingLiveSmoke.test.mjs` passed, 17/17.
+  - `npm --prefix packages/xenesis test` passed, 82 files / 389 tests.
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit; node scripts\assertCapabilityAuditZero.mjs` passed, 801 nodes, 689 coverage path references, audit-zero verified 4 counters.
+  - `npm --prefix packages/xenesis run provider:desk-mcp-prompt-smoke` passed, JSON `ok: true`, 8/8.
+  - `npm --prefix packages/xenesis run provider:smoke` passed, 6/6, report `C:\Users\great\.xenesis\reports\provider-live-20260629T122031899Z.json`.
+  - `npm run build` passed with existing Vite warnings for browser-externalized `hwp.js` `fs` and mixed static/dynamic `src/renderer/deskBridge.ts` import chunking.
+  - `git diff --check` passed with LF/CRLF working-copy normalization warnings only.
+- Adversarial review:
+  - Spawned subagent `019f1355-a749-7233-92ff-b2fa3db6b719` for a final blocker review of app-server developer instructions, CLI/Claude instruction preservation, evidence overclaim risk, heuristic recovery, and provider readiness constraints.
+  - Result: no blockers.
+  - Follow-up test gaps from review were closed in `packages/xenesis/src/providers/cliProvider.deskMcp.test.ts`: developer instructions now directly assert the output contract, and app-server turn input now directly asserts dynamic system/recovery message preservation without duplicating fixed provider instructions.
+  - `npm --prefix packages/xenesis exec vitest run src/providers/cliProvider.deskMcp.test.ts` passed, 3/3.
+  - `node --test scripts\xenesisProviderOnboardingLiveSmoke.test.mjs` passed, 17/17.
+  - `npm --prefix packages/xenesis run typecheck` passed.
+  - `npm --prefix packages/xenesis test` passed, 82 files / 389 tests.
+  - `git diff --check` passed with LF/CRLF working-copy normalization warnings only.
+- Next intended step:
+  - Create the local Slice 02 commit, then start the next slice from that commit boundary.
+
+## Current Slice: Slice 02 Provider Onboarding - Final Verification
+
+- Current objective:
+  - Finish Slice 02 from the final-goal slice spec.
+  - Align Desk provider onboarding/readback with the provider policy: active provider comes from user settings/profile, `auto` resolves by credential scan, mock is not reachable from the agent reasoning path, keyed providers fail with honest credential errors, and local CLI selection stays separate from reasoning provider identity.
+  - Preserve live evidence that a real provider turn can call Desk CR/MCP tools, without deterministic natural-language routing or heuristic recovery being counted as proof.
+- Scope boundary:
+  - Provider setup/status readback, provider runtime resolution, package provider factory/CLI consistency, Connection Center provider metadata, and repeatable provider evidence.
+  - Do not add deterministic natural-language routing, provider-specific CR shortcuts, chat-only approvals, or hidden fallbacks.
+  - Obsidian remains reference/context only; code/tests/generated CR docs/live evidence remain executable truth.
+- Context read:
+  - `AGENTS.md`
+  - Required Obsidian repo-local notes including `docs/obsidian/Xenesis-desk.md`, `00_System/AI Agent Rules.md`, `00_System/Graph Schema.md`, `00_System/Review Policy.md`, `10_Repo Map/Source of Truth Map.md`, `_Indexes/Module Index.md`, `_Indexes/Verification Map.md`, `10_Repo Map/Repo Overview.md`
+  - Slice specs under `docs/obsidian/Xenesis-desk/80_AI/Working Notes/`
+  - Provider/runtime notes under `30_Modules/` and `20_Architecture/`
+  - Reference analysis under `F:\agent-anal\analysis\hermes-agent-main\03-llm-provider-abstraction.md`, `F:\agent-anal\analysis\openclaw-main\05-provider-extensions.md`, and `F:\agent-anal\analysis\xenesis-gaps-vs-references.ko.md`
+- Observed gaps before implementation:
+  - Desk settings default to `auto`, but `packages/xenesis` config still defaults to `openai` and does not accept/resolve `auto`.
+  - `MockProvider` is still directly creatable from package core/CLI provider factories and is present in provider config/capability lists.
+  - `src/main/xenesisService.mjs` resolves `auto` for Desk, but unknown provider strings fall back to `codex-cli`, which conflicts with the no-silent-fallback policy.
+  - CR/readback status currently exposes provider/model/profile/baseURL/apiKeyEnv only; it does not expose source, credential scan result, credential state, process model, or local CLI boundary as first-class fields.
+  - Existing provider prompt smoke proves natural text and CR/MCP instructions reach Codex CLI stdin, but it does not prove a live provider selected and called CR/MCP tools from natural language.
+- Commands run so far:
+  - `Get-Content` and `rg` inspections over provider tests, provider factories, config loading, Connection Center provider metadata, runtime launch plumbing, and reference analysis notes: PASS.
+  - Created `docs/superpowers/plans/2026-06-29-slice-02-provider-onboarding.md` with task-level TDD plan, reference adoption work, live provider evidence gate, and adversarial review gate.
+  - `node --test src\main\xenesisService.test.mjs`: FAIL as RED, 1/7 passed; failures showed missing provider metadata, Claude auto resolving to `claude-cli`, auto-without-credentials falling back to `codex-cli`, keyed missing credentials lacking honest readback, and unknown providers falling back to `codex-cli`.
+  - `node --test src\main\xenesisService.test.mjs`: PASS, 7/7 tests after adding Desk runtime provider metadata, Codex app-server auto preference, Claude interactive auto resolution, honest missing-credential readback, and unknown-provider blocking.
+  - Task 1 package resolver worker result: `npm --prefix packages/xenesis exec vitest run src/providers/runtimeProviderResolution.test.ts`: PASS, 14/14; `npm --prefix packages/xenesis run typecheck`: PASS; `git diff --check`: PASS with CRLF warnings only.
+  - Task 1 spec review found `auto` missed registry keyed env providers (`OPENROUTER_API_KEY`, `MISTRAL_API_KEY`, `XAI_API_KEY`) and lacked explicit unknown-provider regression coverage.
+  - `npm --prefix packages/xenesis exec vitest run src/providers/runtimeProviderResolution.test.ts`: FAIL as RED after adding those tests, 15/18 passed; failures were the three missing env-provider cases.
+  - `npm --prefix packages/xenesis exec vitest run src/providers/runtimeProviderResolution.test.ts`: PASS, 18/18 after adding the missing env-provider candidates and unknown-provider blocked test.
+  - `npm --prefix packages/xenesis run typecheck`: PASS after Task 1 spec-review remediation.
+  - `node --test src\main\xenesisService.test.mjs`: FAIL as RED after adding `buildXenesisProviderRuntimeStatus` readback test; module did not export the new status builder.
+  - `node --test src\main\xenesisService.test.mjs`: PASS, 8/8 after adding redacted provider runtime status builder preserving requested provider, source, auth mode, credential state/source, process model, fallback, diagnostics, and local CLI boundary.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentStatusBar.test.ts`: PASS, 7/7 after keeping the status bar visible provider/model concise and relaxing the fixed-font CSS assertion for standard `font` shorthand spacing.
+  - `npm run typecheck`: PASS after extending `XenesisProviderRuntimeStatus`, `xenesisService.d.mts`, and wiring `src/main/index.ts` to return the full redacted provider runtime status.
+  - Task 2 package factory worker result: RED `npx vitest run tests/s3s4/providerFactoryWiring.test.ts tests/s3s4/connectProviderReadiness.test.ts` failed with 5 expected failures for ungated mock creation, OpenAI missing credential behavior, auto CODEX_HOME resolution, and connect mock/auto readiness.
+  - `npm --prefix packages/xenesis exec vitest run src/providers/runtimeProviderResolution.test.ts tests/s3s4/providerFactoryWiring.test.ts tests/s3s4/connectProviderReadiness.test.ts tests/i5/loadProviders.test.ts tests/i5/integration.test.ts`: PASS, 5 files / 36 tests after core factory, CLI private factory, and connect report/probe use provider resolver readiness.
+  - `npm --prefix packages/xenesis run typecheck`: PASS after Task 2 provider factory integration.
+  - Task 2 spec review found CLI-private provider construction still bypassed registered provider factories and fallback readiness lacked direct regression coverage.
+  - `npm --prefix packages/xenesis exec vitest run tests/s3s4/providerFactoryWiring.test.ts`: FAIL as RED after adding CLI delegation source guard; the CLI still built providers locally instead of delegating to core provider factory.
+  - `npm --prefix packages/xenesis exec vitest run tests/s3s4/providerFactoryWiring.test.ts`: PASS, 10/10 after CLI private factory delegates to core `createProvider`; added fallback-readiness regression coverage.
+  - `npm --prefix packages/xenesis run typecheck`: PASS after CLI provider factory remediation.
+  - `npm --prefix packages/xenesis exec vitest run src/providers/runtimeProviderResolution.test.ts tests/s3s4/providerFactoryWiring.test.ts tests/s3s4/connectProviderReadiness.test.ts tests/i5/loadProviders.test.ts tests/i5/integration.test.ts`: PASS, 5 files / 39 tests after Task 2 review remediation.
+  - `npx tsx --test src\shared\xenesisConnections.test.ts`: FAIL as RED after adding provider runtime metadata readback coverage; `providerSetup.credentialSource` was `undefined` instead of `codex-auth-json`.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts`: FAIL as RED after adding no-mock provider schema guard; `xd.services.xenesis.run` still exposed `mock` in the runtime provider enum.
+  - `npx tsx --test src\shared\xenesisConnections.test.ts`: PASS, 46/46 after Connection Center provider setup/routing consumes `xenesis.providerRuntime` source, credential source/state, process model, safe-for-reasoning, diagnostics, and local CLI boundary metadata.
+  - `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts`: PASS, 46/46 after removing `mock` from `xd.services.xenesis.run` runtime provider override schemas.
+  - `npm run typecheck`: PASS after Task 4 shared provider metadata/schema changes.
+  - `node --test packages\xenesis\scripts\provider-smoke-gateway-auth.test.mjs`: FAIL as RED after adding provider-smoke default guard; `provider-smoke.mjs` still defaulted to `openai`.
+  - `node --test packages\xenesis\scripts\provider-smoke-gateway-auth.test.mjs`: PASS, 2/2 after defaulting provider smoke to `auto` and making the mock gateway-auth smoke set `XENESIS_ENABLE_TEST_MOCK_PROVIDER=true` explicitly.
+  - `node --test scripts\xenesisProviderOnboardingLiveSmoke.test.mjs`: FAIL as RED because `scripts/xenesisProviderOnboardingLiveSmoke.mjs` did not exist.
+  - `node --test scripts\xenesisProviderOnboardingLiveSmoke.test.mjs`: PASS, 5/5 after adding provider onboarding live smoke report contract, package script, natural prompt, provider runtime readback, CR/MCP evidence guard, and no-overclaim proof flag.
+  - `npm --prefix packages/xenesis run provider:desk-mcp-prompt-smoke`: PASS, JSON `ok: true`, 8/8 checks; still fake-runner prompt boundary only, not live provider natural-language tool-selection proof.
+  - Code-quality review found four follow-up gaps: embedded status dropped provider metadata, Desk explicit provider catalog missed `openrouter`/`mistral`/`xai`, `openai-compatible` readiness passed without `baseURL`, and `xenesis init` still defaulted to `openai`.
+  - `npx tsx --test packages\xenesis-agent-core\src\embeddedAgentRuntime.test.ts`: PASS, 7/7 after preserving redacted provider resolution metadata through embedded runtime status.
+  - `node --test src\main\xenesisService.test.mjs`: FAIL as RED after adding explicit `openrouter`/`mistral`/`xai` Desk provider coverage; Desk resolver returned empty `apiKeyEnv`.
+  - `npm --prefix packages/xenesis exec vitest run src/providers/runtimeProviderResolution.test.ts tests/s3s4/connectProviderReadiness.test.ts tests/s3s4/providerFactoryWiring.test.ts`: FAIL as RED after adding `openai-compatible` no-baseURL readiness and `xenesis init` default guards.
+  - `node --test src\main\xenesisService.test.mjs`: PASS, 11/11 after moving Desk keyed providers through the shared env map and adding `OPENROUTER_API_KEY`, `MISTRAL_API_KEY`, and `XAI_API_KEY`.
+  - `npm --prefix packages/xenesis exec vitest run src/providers/runtimeProviderResolution.test.ts tests/s3s4/connectProviderReadiness.test.ts tests/s3s4/providerFactoryWiring.test.ts`: PASS, 3 files / 33 tests after blocking `openai-compatible` without `baseURL` and defaulting `xenesis init` to `defaultConfig.provider`.
+  - `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`: PASS, 74/74 after provider setup summaries include requested -> resolved provider, credential state, and process model.
+  - `node --test scripts\xenesisProviderOnboardingLiveSmoke.test.mjs`: PASS, 14/14 after adding raw provider-record evidence tests, including Codex app-server `mcpToolCall` records with CR `path`.
+  - `npm --prefix packages/xenesis run typecheck`: PASS after adding provider raw record retention and AgentRunner CR/MCP evidence recovery helpers.
+  - `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentBridgeRegistry.test.ts`: PASS, 4/4 after exposing Agent pane raw stream diagnostics through `listAgentRawEvents`.
+  - `npm --prefix packages/xenesis run build`: PASS.
+  - `npm run build`: PASS; existing Vite warnings remained `hwp.js` browser `fs` externalization, mixed static/dynamic `src/renderer/deskBridge.ts` import chunk warning, and large asset/chunk warnings.
+  - Live root-cause run:
+    `node .\scripts\xenesisProviderOnboardingLiveSmoke.mjs --json --timeout=180000` -> initially failed 7/8 because the provider raw stream contained real `mcpToolCall` records for `xd.xenesis.providers.routing.status` and `xd.xenesis.status`, but the smoke evidence matcher only searched method/name/toolName fields and ignored CR `path`.
+  - Live evidence fix:
+    provider raw record diagnostics now summarize method/item/path without raw args, and both smoke evidence and AgentRunner recovery count path-only `mcpToolCall` records as actual Desk CR/MCP evidence.
+  - Live GREEN:
+    `node .\scripts\xenesisProviderOnboardingLiveSmoke.mjs --json --timeout=180000` -> PASS, JSON `ok: true`, 8/8 checks, `providerRuntime.provider=codex-app-server`, `source=auto-detect`, `processModel=persistent-process`, footer provider matched, provider raw evidence included real `mcpToolCall` records with CR paths, CR readback after prompt matched, and no chat-only approval internals were exposed.
+  - Adversarial review remediation RED:
+    `npx tsx --test src\shared\xenesisProviderProfileApply.test.ts src\shared\xenesisConnections.test.ts src\renderer\panes\SettingsPane.remoteAutosave.test.mjs` -> FAIL as RED; extended provider profile apply rejected `openrouter`, and an existing `SettingsPane` source guard did not tolerate current chain formatting. `npm --prefix packages/xenesis exec vitest run tests/s3s4/providerFactory.test.ts tests/i5/loadProviders.test.ts` -> FAIL as RED; built-in provider factory names were still registerable. Existing live-smoke report tests allowed progress/visible text or started-only records to count as provider CR/MCP evidence.
+  - Remediation implementation:
+    added `openrouter`, `mistral`, and `xai` to Desk `AiProviderKind`, Connection Center provider IDs, Settings provider metadata, provider profile draft apply coverage; rejected registered provider factories that shadow built-in provider names; changed provider raw CR/MCP evidence to require completed/result provider raw records; added a smoke check that fails if deterministic Desk MCP evidence recovery fired; updated `AgentRunner` recovery detection to ignore started-only raw records.
+  - Remediation GREEN:
+    `npx tsx --test src\shared\xenesisProviderProfileApply.test.ts src\shared\xenesisConnections.test.ts src\renderer\panes\SettingsPane.remoteAutosave.test.mjs` -> PASS, 55/55. `npm --prefix packages/xenesis exec vitest run tests/s3s4/providerFactory.test.ts tests/i5/loadProviders.test.ts` -> PASS, 2 files / 12 tests. `node --test scripts\xenesisProviderOnboardingLiveSmoke.test.mjs` -> PASS, 16/16.
+  - Focused verification after remediation:
+    `node --test src\main\xenesisService.test.mjs` -> PASS, 11/11. `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts packages\xenesis-agent-core\src\embeddedAgentRuntime.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentStatusBar.test.ts` -> PASS, 134/134. `npm --prefix packages/xenesis exec vitest run src/providers/runtimeProviderResolution.test.ts tests/s3s4/providerFactoryWiring.test.ts tests/s3s4/connectProviderReadiness.test.ts tests/i5/loadProviders.test.ts tests/i5/integration.test.ts tests/s3s4/providerFactory.test.ts` -> PASS, 6 files / 48 tests. `npm --prefix packages/xenesis run typecheck` -> PASS.
+  - Final package/root verification:
+    `npm --prefix packages/xenesis run provider:smoke` -> PASS, 6/6 with `provider=auto`, `model=gpt-5.4-mini`, report `C:\Users\great\.xenesis\reports\provider-live-20260629T115348913Z.json`.
+    `npm --prefix packages/xenesis test` -> PASS, 82 files / 387 tests.
+    `npm --prefix packages/xenesis run provider:desk-mcp-prompt-smoke` -> PASS, JSON `ok: true`, 8/8 checks.
+    `node --test scripts\xenesisProviderOnboardingLiveSmoke.test.mjs` -> PASS, 16/16.
+    `npm --prefix packages/xenesis run typecheck` -> PASS.
+    `npm run typecheck` -> PASS.
+    `npm run docs:capabilities:audit; node scripts\assertCapabilityAuditZero.mjs` -> PASS, 801 nodes, 689 coverage path references, audit-zero verified 4 counters.
+    `npm run build` -> PASS. Existing warnings remained: `hwp.js/build/esm.js` imports browser-externalized `fs`; `src/renderer/deskBridge.ts` is both dynamically and statically imported so it will not move into another chunk.
+    `git diff --check` -> PASS with LF/CRLF working-copy normalization warnings only.
+  - Final live Agent-pane provider evidence:
+    `node .\scripts\xenesisProviderOnboardingLiveSmoke.mjs --json --timeout=180000` -> PASS, JSON `ok: true`, 9/9 checks, exact prompt `프로바이더 라우팅 상태를 추측하지 말고 CR로 확인한 뒤 마지막 줄에 provider-routing-readback-ok라고 써줘`.
+    Runtime readback: `provider=codex-app-server`, `requestedProvider=auto`, `source=auto-detect`, `credentialSource=codex-auth-json`, `processModel=persistent-process`, `fallbackProvider=codex-cli`, `safeForReasoning=true`.
+    Proof boundary: `providerNaturalLanguageToolSelectionProof=true`, `hasCrMcpToolEvidence=true`, `hasCrReadbackAfterPrompt=true`, `usedProviderDeskMcpRecovery=false`; raw provider summaries included completed `mcpToolCall` records for `xd.xenesis.connections.status` and `xd.xenesis.providers.routing.status`.
+  - Known non-Slice blockers:
+    `npm run check:public-release` -> FAIL before checks with `ENOENT` for missing `.github\workflows\ci.yml` in this worktree.
+    `npm run lint -- --max-diagnostics=80` -> FAIL repo-wide on existing Biome/CRLF/style debt: 975 files checked, 1119 errors, 415 warnings, 92 infos; npm also warned `--max-diagnostics` was treated as an unknown CLI config.
+  - Final adversarial subagent review blockers:
+    Registered provider factories still ran before provider resolver/readiness, so external keyed providers could be constructed with missing credentials.
+    `selectTools()` still used `config.provider === "mock"` as a readonly-tool-selection exception, and the CLI duplicate had the same provider-name side effect.
+    `scripts\xenesisProviderOnboardingLiveSmoke.mjs --json` still printed plain stderr on pre-report missing/unsafe provider runtime failures instead of structured JSON.
+  - Adversarial blocker remediation:
+    Added RED regressions for registered keyed provider readiness, provider-name-independent readonly tool filtering in core/CLI, and structured JSON failure output for provider onboarding smoke.
+    Moved registered provider construction behind `resolveRuntimeProviderSelection()` and `assertRuntimeProviderReady()`; removed the `config.provider === "mock"` readonly tool-selection exception from both core and CLI; added structured failure report helpers for `--json` smoke errors.
+    `npm --prefix packages/xenesis exec vitest run tests/s3s4/providerFactoryWiring.test.ts` -> PASS, 14/14.
+    `node --test scripts\xenesisProviderOnboardingLiveSmoke.test.mjs` -> PASS, 17/17.
+    `npm --prefix packages/xenesis exec vitest run src/providers/runtimeProviderResolution.test.ts tests/s3s4/providerFactoryWiring.test.ts tests/s3s4/connectProviderReadiness.test.ts tests/i5/loadProviders.test.ts tests/i5/integration.test.ts tests/s3s4/providerFactory.test.ts` -> PASS, 6 files / 50 tests.
+    `npm --prefix packages/xenesis exec vitest run tests/s5/builderWiring.test.ts tests/s6/resumeApproval.test.ts tests/s7/resumePipeline.test.ts` -> PASS, 3 files / 20 tests.
+    `npm --prefix packages/xenesis exec vitest run src/providers/cliProvider.deskMcp.test.ts` -> PASS, 2/2.
+    `npm --prefix packages/xenesis run typecheck` -> PASS.
+    `npm --prefix packages/xenesis test` -> PASS, 82 files / 389 tests.
+  - Post-remediation root/package/live gates:
+    `npm run typecheck` -> PASS.
+    `npm run docs:capabilities:audit; node scripts\assertCapabilityAuditZero.mjs` -> PASS, 801 nodes, 689 coverage path references, audit-zero verified 4 counters.
+    `npm --prefix packages/xenesis run provider:desk-mcp-prompt-smoke` -> PASS, JSON `ok: true`, 8/8 checks.
+    `npm --prefix packages/xenesis run provider:smoke` -> PASS, 6/6, report `C:\Users\great\.xenesis\reports\provider-live-20260629T120526617Z.json`.
+    `npm run build` -> PASS with the existing Vite warnings for browser-externalized `hwp.js` `fs` and mixed static/dynamic `src/renderer/deskBridge.ts` import chunking.
+    `git diff --check` -> PASS with LF/CRLF working-copy normalization warnings only.
+    `node .\scripts\xenesisProviderOnboardingLiveSmoke.mjs --json --timeout=180000` -> FAIL, JSON `ok: false`, 7/9 checks. Runtime still resolved to `codex-app-server`, but provider raw records had no completed CR/MCP call; deterministic recovery fired, so `providerNaturalLanguageToolSelectionProof=false`. This is a valid no-overclaim failure and remains the active blocker.
+- Next intended step:
+  - Root-cause the live provider failure without adding deterministic natural-language routing; make the provider tool-use contract reliable enough that raw provider CR/MCP evidence is produced, then rerun live evidence and gates.
+
 ## Current Slice: Slice 01 Live CR Baseline - Final Adversarial Review Remediation
 
 - Current objective:

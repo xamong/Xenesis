@@ -106,9 +106,16 @@ export interface CodexAppServerTurnResult {
   raw?: unknown;
 }
 
+export interface CodexAppServerThreadRequest {
+  model?: string;
+  cwd?: string;
+  signal?: AbortSignal;
+  developerInstructions?: string;
+}
+
 export interface CodexAppServerClient {
   initialize(signal?: AbortSignal): Promise<void>;
-  startThread(request: { model?: string; cwd?: string; signal?: AbortSignal }): Promise<{ threadId: string; raw?: unknown }>;
+  startThread(request: CodexAppServerThreadRequest): Promise<{ threadId: string; raw?: unknown }>;
   startTurn(request: CodexAppServerTurnRequest): Promise<CodexAppServerTurnResult>;
   dispose(): void;
 }
@@ -794,6 +801,7 @@ export function deskMcpSystemMessage(providerName: string): AgentMessage {
       `For a known path such as \`xd.app.status\`, call \`${tools.callTool}\` with input \`{ "path": "xd.app.status", "args": {} }\`.`,
       `Desk capability families: status, explorer, terminal, browser, document, layout, office, ui.automation, agent.artifact, multi_step. Do not assume xd.* paths — discover the exact path and arg schema on demand with ${tools.capabilitiesTool} and ${tools.capabilityTool} before calling ${tools.callTool}.`,
       `For Xenesis Agent setup work, discover provider setup/profile draft, external tool setup/profile draft, and messenger channel setup/profile draft capability families with ${tools.capabilitiesTool} and ${tools.capabilityTool}; do not hardcode natural-language keywords or exact profileDrafts paths.`,
+      `When the user explicitly asks for CR, MCP, Capability Registry, or xd.* readback, privately call ${tools.capabilitiesTool}, ${tools.capabilityTool}, or ${tools.callTool} before answering. Saying you cannot directly check is invalid while these tools are configured.`,
       "Do not use shell or `tool_search` for CR calls when these fully qualified MCP tool names are configured.",
       "When this provider run has Desk CR MCP tools configured, do not use native provider file-editing tools such as apply_patch, shell redirection, filesystem writes, or local JSON/write/edit helpers to satisfy Desk file, document, terminal, browser, workspace, or UI mutations. Mutating Desk state must go through the CR MCP caller so approval, readback, and audit state stay aligned.",
       `When the user asks for an approval-required Desk action, call \`${tools.callTool}\` with approved=false so Desk creates the real approval record, then report that Desk approval is needed (omit diagnostic ids unless asked).`,
@@ -828,7 +836,26 @@ const providerVisibleOutputContractMessage: AgentMessage = {
   ].join("\n")
 };
 
-function providerTurnMessages(messages: AgentMessage[], options: { deskMcpConfigured?: boolean; providerName?: string } = {}) {
+function providerInstructionMessages(options: { deskMcpConfigured?: boolean; providerName?: string } = {}) {
+  return [
+    ...(options.deskMcpConfigured ? [deskMcpSystemMessage(options.providerName ?? "codex-cli")] : []),
+    providerVisibleOutputContractMessage
+  ];
+}
+
+function providerDeveloperInstructions(options: { deskMcpConfigured?: boolean; providerName?: string } = {}) {
+  return providerInstructionMessages(options).map((message) => message.content).join("\n\n");
+}
+
+function providerTurnMessages(
+  messages: AgentMessage[],
+  options: {
+    deskMcpConfigured?: boolean;
+    providerName?: string;
+    includeProviderInstructions?: boolean;
+  } = {}
+) {
+  if (options.includeProviderInstructions === false) return messages;
   return [
     ...(options.deskMcpConfigured ? [deskMcpSystemMessage(options.providerName ?? "codex-cli")] : []),
     ...messages,
@@ -918,6 +945,7 @@ interface PendingCodexTurn {
   turnId: string;
   content: string;
   raw?: unknown;
+  records: Record<string, unknown>[];
   onDelta?: (delta: string) => void;
   resolve: (result: CodexAppServerTurnResult) => void;
   reject: (error: Error) => void;
@@ -942,6 +970,29 @@ function agentTextFromTurn(turn: unknown) {
     .filter(Boolean)
     .join("\n")
     .trim();
+}
+
+function codexAppServerTurnIdFromMessage(message: Record<string, unknown>) {
+  const params = isJsonRecord(message.params) ? message.params : undefined;
+  const direct = jsonStringField(params, "turnId");
+  if (direct) return direct;
+  const turn = isJsonRecord(params?.turn) ? params.turn : undefined;
+  const turnId = jsonStringField(turn, "id");
+  if (turnId) return turnId;
+  const item = isJsonRecord(params?.item) ? params.item : undefined;
+  return jsonStringField(item, "turnId");
+}
+
+function shouldStoreCodexAppServerRecord(message: Record<string, unknown>) {
+  return message.method !== "item/agentMessage/delta";
+}
+
+function codexAppServerRawPayload(input: { initial?: unknown; records: Record<string, unknown>[]; completed?: unknown }) {
+  return {
+    ...(input.initial !== undefined ? { initial: input.initial } : {}),
+    records: input.records,
+    ...(input.completed !== undefined ? { completed: input.completed } : {})
+  };
 }
 
 function messageError(message: Record<string, unknown>) {
@@ -988,10 +1039,11 @@ class CodexAppServerProcessClient implements CodexAppServerClient {
     return this.initialized;
   }
 
-  async startThread(request: { model?: string; cwd?: string; signal?: AbortSignal }): Promise<{ threadId: string; raw?: unknown }> {
+  async startThread(request: CodexAppServerThreadRequest): Promise<{ threadId: string; raw?: unknown }> {
     await this.initialize(request.signal);
     const result = await this.request("thread/start", {
       ...(request.model ? { model: request.model } : {}),
+      ...(request.developerInstructions ? { developerInstructions: request.developerInstructions } : {}),
       cwd: request.cwd ?? this.options.cwd ?? null,
       approvalPolicy: "never",
       sandbox: "read-only",
@@ -1028,6 +1080,7 @@ class CodexAppServerProcessClient implements CodexAppServerClient {
         turnId,
         content: "",
         raw: result,
+        records: [],
         onDelta: request.onDelta,
         resolve,
         reject
@@ -1153,6 +1206,8 @@ class CodexAppServerProcessClient implements CodexAppServerClient {
       return;
     }
 
+    this.recordTurnMessage(message);
+
     if (isCodexServerRequest(message)) {
       this.child?.stdin.write(`${JSON.stringify({
         id: message.id,
@@ -1179,8 +1234,25 @@ class CodexAppServerProcessClient implements CodexAppServerClient {
       if (!turn) return;
       this.turns.delete(turnId);
       const content = agentTextFromTurn(turnRecord) || turn.content;
-      turn.resolve({ content, turnId, raw: message.params });
+      turn.resolve({
+        content,
+        turnId,
+        raw: codexAppServerRawPayload({
+          initial: turn.raw,
+          records: turn.records,
+          completed: message.params
+        })
+      });
     }
+  }
+
+  private recordTurnMessage(message: Record<string, unknown>) {
+    if (!shouldStoreCodexAppServerRecord(message)) return;
+    const turnId = codexAppServerTurnIdFromMessage(message);
+    const turn = turnId ? this.turns.get(turnId) : this.turns.size === 1 ? [...this.turns.values()][0] : undefined;
+    if (!turn) return;
+    turn.records.push(message);
+    while (turn.records.length > 200) turn.records.shift();
   }
 
   private failAll(error: Error) {
@@ -1741,6 +1813,10 @@ export class CodexAppServerProvider implements AgentProvider {
       if (!this.session.threadId) {
         const thread = await client.startThread({
           ...(model ? { model } : {}),
+          developerInstructions: providerDeveloperInstructions({
+            deskMcpConfigured: this.codexDeskMcpConfigured,
+            providerName: "codex-cli"
+          }),
           cwd: this.cwd,
           signal: operation.signal
         });
@@ -1750,7 +1826,8 @@ export class CodexAppServerProvider implements AgentProvider {
       const requestMessages = resumed ? continuationMessages(request.messages) : request.messages;
       const inputMessages = providerTurnMessages(requestMessages, {
         deskMcpConfigured: this.codexDeskMcpConfigured,
-        providerName: "codex-cli"
+        providerName: "codex-cli",
+        includeProviderInstructions: false
       });
       const result = await client.startTurn({
         threadId: this.session.threadId,

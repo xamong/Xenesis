@@ -62,6 +62,7 @@ function resumeOpts(h: string, capture?: { messages?: AgentMessage[] }) {
     sessionId: "sess",
     xenesisHome: h,
     cwd: h,
+    env: { XENESIS_ENABLE_TEST_MOCK_PROVIDER: "true" },
     cli: { provider: "mock", model: "mock-model", workspace: h, approvalMode: "auto" },
     onMessages: (messages: AgentMessage[]) => {
       if (capture) capture.messages = messages;

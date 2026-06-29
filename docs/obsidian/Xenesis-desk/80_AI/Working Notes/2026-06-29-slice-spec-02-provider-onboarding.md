@@ -3,7 +3,7 @@ type: task
 repo: xenesis-desk
 aliases:
   - Slice Spec 02 Provider Onboarding
-status: draft
+status: active
 risk: high
 ai_edit_policy: direct_edit_allowed
 ai_generated: true
@@ -98,7 +98,12 @@ Original source anchors:
 npx tsx --test src\shared\xenesisConnections.test.ts
 npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts
 npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts
-npm --prefix packages/xenesis exec vitest run src/providers/cliProvider.deskMcp.test.ts src/core/AgentRuntimeFactory.modeMessages.test.ts src/core/AgentRunPipeline.noHeuristicRouting.test.ts
+node --test src\main\xenesisService.test.mjs
+npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xenesisAgentStatusBar.test.ts
+npx tsx --test packages\xenesis-agent-core\src\embeddedAgentRuntime.test.ts
+npm --prefix packages/xenesis exec vitest run src/providers/runtimeProviderResolution.test.ts tests/s3s4/providerFactoryWiring.test.ts tests/s3s4/connectProviderReadiness.test.ts tests/i5/loadProviders.test.ts tests/i5/integration.test.ts
+node --test scripts\xenesisProviderOnboardingLiveSmoke.test.mjs
+node .\scripts\xenesisProviderOnboardingLiveSmoke.mjs --json
 npm --prefix packages/xenesis run provider:desk-mcp-prompt-smoke
 npm --prefix packages/xenesis run provider:smoke
 npm run docs:capabilities:audit

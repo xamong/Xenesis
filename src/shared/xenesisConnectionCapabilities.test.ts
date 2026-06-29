@@ -107,6 +107,13 @@ test('xenesis connection open capabilities expose detail focus selectors', () =>
   assertOpenCapabilityDetailFocus('xd.xenesis.providers.views.open', 'provider-view');
 });
 
+test('xenesis runtime provider schemas do not expose mock as a reasoning provider', () => {
+  assert.equal((XENESIS_CONNECTION_PROVIDER_IDS as readonly string[]).includes('mock'), false);
+
+  const runProviderEnum = schemaProperties(findDeskBridgeCapability('xd.services.xenesis.run')).provider?.enum ?? [];
+  assert.equal(runProviderEnum.includes('mock'), false);
+});
+
 test('xenesis connection detail focus propagates through main and renderer bridge source', () => {
   const mainSource = readFileSync(new URL('../main/index.ts', import.meta.url), 'utf8');
   const appSource = readFileSync(new URL('../renderer/App.tsx', import.meta.url), 'utf8');

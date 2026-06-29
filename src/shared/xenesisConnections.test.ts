@@ -16,6 +16,7 @@ import {
   XENESIS_CONNECTION_GUIDES,
   XENESIS_CONNECTION_LOCAL_CLI_MCP_SETTINGS_ACTION,
   XENESIS_CONNECTION_PROVIDER_SETTINGS_ACTION,
+  XENESIS_CONNECTION_PROVIDER_IDS,
 } from './xenesisConnections';
 
 const channelGuardrails = {
@@ -2466,6 +2467,118 @@ test('buildXenesisConnectionsStatus exposes provider setup identity, credential 
   });
 });
 
+test('buildXenesisConnectionsStatus reflects resolved runtime provider metadata for auto provider readback', () => {
+  assert.equal((XENESIS_CONNECTION_PROVIDER_IDS as readonly string[]).includes('mock'), false);
+
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'auto',
+      model: 'gpt-5.4-mini',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: {
+      ok: true,
+      running: true,
+      managed: true,
+      enabled: true,
+      runtimeMode: 'embedded',
+      url: 'http://127.0.0.1:3846',
+      runtimePath: 'embedded',
+      xenesisHome: 'C:/Users/example/.xenis',
+      workspace: 'E:/workspace/project',
+      providerRuntime: {
+        provider: 'codex-app-server',
+        model: 'gpt-5.4-mini',
+        profile: 'desk',
+        baseURL: '',
+        apiKeyEnv: '',
+        requestedProvider: 'auto',
+        source: 'auto-detect',
+        authMode: 'auto-detect',
+        credentialState: 'not-required',
+        credentialSource: 'codex-auth-json',
+        processModel: 'persistent-process',
+        fallbackProvider: 'codex-cli',
+        safeForReasoning: true,
+        diagnostics: ['codex auth found'],
+        localCliBoundary: 'provider identity is separate from local CLI integration',
+      },
+      error: '',
+      updatedAt: '2026-06-27T00:00:00.000Z',
+      gateway: {
+        enabled: true,
+        running: false,
+        managed: true,
+        url: 'http://127.0.0.1:3846',
+        host: '127.0.0.1',
+        port: 3846,
+        workspace: 'E:/workspace/project',
+        error: '',
+        updatedAt: '2026-06-27T00:00:00.000Z',
+        channels: { total: 0, enabled: 0, ready: 0, blocked: 0, disabled: 0, items: [] },
+      },
+      profile: {
+        active: 'desk',
+        configured: 'desk',
+        installed: ['desk'],
+        templates: [],
+        channels: [],
+        channelSettings: emptyChannelSettings,
+        policy: {
+          workflow: 'default',
+          approvalMode: 'safe',
+          maxTurns: 4,
+          providerRetries: 0,
+          contextAutoCompact: true,
+          memoryEnabled: true,
+          subagentsEnabled: true,
+          browserEnabled: true,
+          verificationAutoRun: false,
+          verificationAutoFix: false,
+        },
+      },
+    },
+  });
+
+  const provider = status.sections.provider.items[0];
+
+  assert.equal(provider.providerSetup?.source, 'auto-detect');
+  assert.equal(provider.providerSetup?.provider, 'auto');
+  assert.equal(provider.providerSetup?.runtimeProvider, 'codex-app-server');
+  assert.equal(provider.providerSetup?.credentialState, 'not-required');
+  assert.equal(provider.providerSetup?.credentialSource, 'codex-auth-json');
+  assert.equal(provider.providerSetup?.processModel, 'persistent-process');
+  assert.equal(provider.providerSetup?.safeForReasoning, true);
+  assert.deepEqual(provider.providerSetup?.runtimeDiagnostics, ['codex auth found']);
+  assert.equal(provider.providerRouting?.routeSource, 'auto-detect');
+  assert.deepEqual(provider.providerRouting?.credentialPools[0], {
+    provider: 'codex-app-server',
+    apiKeyEnv: '',
+    credentialState: 'not-required',
+    credentialSource: 'codex-auth-json',
+    source: 'runtime',
+  });
+});
+
 test('buildXenesisConnectionsStatus exposes approval-gated provider profile drafts', () => {
   const readyStatus = buildXenesisConnectionsStatus({
     aiProvider: {
@@ -2573,6 +2686,45 @@ test('buildXenesisConnectionsStatus exposes approval-gated provider profile draf
         step.requiredFields.includes('apiKey'),
     ),
   );
+});
+
+test('buildXenesisConnectionsStatus exposes extended keyed provider profile drafts', () => {
+  for (const provider of ['openrouter', 'mistral', 'xai'] as const) {
+    const status = buildXenesisConnectionsStatus({
+      aiProvider: {
+        provider,
+        model: `${provider}-model`,
+        apiKey: 'configured-secret',
+        baseUrl: '',
+      },
+      mcp: {
+        available: true,
+        serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+        bridgeUrl: 'http://127.0.0.1:3845',
+        bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+        configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+      },
+      providerIntegration: {
+        cliTargets: [],
+        hermes: {
+          assetRoot: '',
+          hermesRoot: '',
+          assetAvailable: false,
+          rootConfigured: false,
+          pluginsInstalled: false,
+          items: [],
+        },
+      },
+      xenesis: null,
+    });
+
+    const providerItem = status.sections.provider.items[0];
+    assert.equal(providerItem.providerSetup?.provider, provider);
+    assert.equal(providerItem.providerProfileDraft?.provider, provider);
+    assert.equal(providerItem.providerProfileDraft?.draftStatus, 'ready');
+    assert.deepEqual(providerItem.providerProfileDraft?.missingRequiredFields, []);
+    assert.equal(providerItem.providerRouting?.activeProvider, provider);
+  }
 });
 
 test('buildXenesisConnectionsStatus exposes an internal Desk provider view', () => {

@@ -584,6 +584,13 @@ const AI_PROVIDERS: Record<AiProviderKind, ProviderMeta> = {
     needsKey: true,
     defaultBaseUrl: '',
   },
+  openrouter: {
+    label: 'OpenRouter',
+    defaultModel: 'openai/gpt-4o-mini',
+    models: ['openai/gpt-4o-mini', 'openai/gpt-4o', 'anthropic/claude-3.5-sonnet'],
+    needsKey: true,
+    defaultBaseUrl: 'https://openrouter.ai/api/v1',
+  },
   groq: {
     label: 'Groq',
     defaultModel: 'llama-3.1-8b-instant',
@@ -604,6 +611,20 @@ const AI_PROVIDERS: Record<AiProviderKind, ProviderMeta> = {
     models: ['qwen-plus', 'qwen-turbo', 'qwen-max'],
     needsKey: true,
     defaultBaseUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+  },
+  mistral: {
+    label: 'Mistral',
+    defaultModel: 'mistral-large-latest',
+    models: ['mistral-large-latest', 'mistral-small-latest', 'codestral-latest'],
+    needsKey: true,
+    defaultBaseUrl: 'https://api.mistral.ai/v1',
+  },
+  xai: {
+    label: 'xAI',
+    defaultModel: 'grok-2-latest',
+    models: ['grok-2-latest'],
+    needsKey: true,
+    defaultBaseUrl: 'https://api.x.ai/v1',
   },
   ollama: {
     label: 'Ollama (Local)',

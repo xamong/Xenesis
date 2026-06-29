@@ -9,13 +9,12 @@ import {
   type XenesisConfig,
   xenesisStatePath
 } from "../config/index.js";
+import { createProvider } from "../core/AgentRuntimeFactory.js";
 import { createMcpClient, type McpToolClient } from "../extensions/index.js";
 import {
-  AnthropicProvider,
-  MockProvider,
-  OpenAIProvider,
-  resolveProviderSettings,
-  type AgentProvider
+  assertRuntimeProviderReady,
+  resolveRuntimeProviderSelection,
+  type RuntimeProviderResolutionOptions
 } from "../providers/index.js";
 
 export type ConnectionCheckStatus = "passed" | "failed";
@@ -68,6 +67,7 @@ export interface RunConnectionCheckOptions {
   probe?: boolean;
   now?: () => Date;
   mcpClientFactory?: ConnectionCheckMcpClientFactory;
+  providerResolution?: RuntimeProviderResolutionOptions;
 }
 
 export interface RunConnectionCheckResult {
@@ -123,31 +123,17 @@ function summarize(checks: ConnectionCheckResult[]) {
   };
 }
 
-function providerForConfig(config: XenesisConfig, env: NodeJS.ProcessEnv): AgentProvider {
-  if (config.provider === "mock") return new MockProvider();
-  const settings = resolveProviderSettings(config, env);
-  if (settings.provider === "anthropic" || settings.provider === "claude") {
-    return new AnthropicProvider({
-      name: settings.provider,
-      model: config.model,
-      apiKey: settings.apiKey,
-      baseURL: settings.baseURL
-    });
-  }
-  return new OpenAIProvider({
-    name: settings.provider,
-    model: config.model,
-    apiKey: settings.apiKey,
-    baseURL: settings.baseURL
-  });
-}
-
-async function runProviderProbe(config: XenesisConfig, env: NodeJS.ProcessEnv) {
+async function runProviderProbe(
+  config: XenesisConfig,
+  env: NodeJS.ProcessEnv,
+  providerResolution: RuntimeProviderResolutionOptions | undefined
+) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 30_000);
   try {
-    const response = await providerForConfig(config, env).complete({
-      model: config.model,
+    const provider = createProvider(config, env, providerResolution);
+    const response = await provider.complete({
+      model: provider.model ?? config.model,
       messages: [{ role: "user", content: "connection probe" }],
       tools: [],
       signal: controller.signal
@@ -158,32 +144,36 @@ async function runProviderProbe(config: XenesisConfig, env: NodeJS.ProcessEnv) {
   }
 }
 
-async function checkProvider(config: XenesisConfig, env: NodeJS.ProcessEnv, probe: boolean): Promise<ConnectionCheckResult> {
+function readinessMessage(authMode: string | undefined) {
+  return authMode === "test-mock"
+    ? "test mock provider configured; probe skipped"
+    : "provider ready; probe skipped";
+}
+
+async function checkProvider(
+  config: XenesisConfig,
+  env: NodeJS.ProcessEnv,
+  probe: boolean,
+  providerResolution: RuntimeProviderResolutionOptions | undefined
+): Promise<ConnectionCheckResult> {
   const startedAt = Date.now();
-  const settings = resolveProviderSettings(config, env);
+  const selection = resolveRuntimeProviderSelection(config, env, providerResolution);
   const base: Omit<ConnectionCheckResult, "status" | "durationMs" | "message"> = {
     name: `provider:${config.provider}`,
     kind: "provider",
     provider: config.provider,
-    model: config.model,
-    apiKeyEnv: settings.apiKeyEnv,
-    baseURL: settings.baseURL,
+    model: selection.model ?? config.model,
+    apiKeyEnv: selection.apiKeyEnv,
+    baseURL: selection.baseURL,
     probed: probe
   };
 
   try {
-    if (config.provider !== "mock" && settings.apiKeyEnv && !settings.apiKey) {
-      throw new Error(`${settings.apiKeyEnv} missing`);
-    }
-    if (config.provider === "openai-compatible" && !settings.baseURL) {
-      throw new Error("baseURL missing for openai-compatible provider");
-    }
+    assertRuntimeProviderReady(selection);
 
     const message = probe
-      ? `probe ok: ${await runProviderProbe(config, env)}`
-      : config.provider === "mock"
-        ? "mock provider configured"
-        : "credentials present; probe skipped";
+      ? `probe ok: ${await runProviderProbe(config, env, providerResolution)}`
+      : readinessMessage(selection.authMode);
 
     return {
       ...base,
@@ -292,7 +282,7 @@ export async function runConnectionCheck(options: RunConnectionCheckOptions): Pr
   const probe = options.probe === true;
 
   const checks = [
-    await checkProvider(config, env, probe),
+    await checkProvider(config, env, probe, options.providerResolution),
     ...await Promise.all(Object.entries(config.extensions.mcpServers).map(([serverName, server]) => (
       checkMcpServer(workspaceRoot, serverName, server, options.mcpClientFactory)
     )))

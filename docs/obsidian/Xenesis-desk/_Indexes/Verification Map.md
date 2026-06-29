@@ -31,10 +31,12 @@ approval change.
 | CR audit zero assertion | `node scripts\assertCapabilityAuditZero.mjs` |
 | Connection Center live smoke JSON evidence | `node .\scripts\xenesisConnectionCenterLiveSmoke.mjs --json` |
 | Review request approval live smoke JSON evidence | `node .\scripts\xenesisReviewRequestApprovalLiveSmoke.mjs --json` |
+| Provider onboarding live smoke JSON evidence | `node .\scripts\xenesisProviderOnboardingLiveSmoke.mjs --json` |
 | Xenesis tests | `npm --prefix packages/xenesis test` |
 | Xenesis typecheck | `npm --prefix packages/xenesis run typecheck` |
 | Xenesis build | `npm --prefix packages/xenesis run build` |
 | Provider smoke | `npm --prefix packages/xenesis run provider:smoke` |
+| Provider prompt-boundary smoke | `npm --prefix packages/xenesis run provider:desk-mcp-prompt-smoke` |
 | Public release | `npm run check:public-release` |
 | Live Agent pane | Electron app + natural-language Desk-control prompt |
 

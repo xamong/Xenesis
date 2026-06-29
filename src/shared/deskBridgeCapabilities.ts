@@ -4646,7 +4646,6 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                 title: 'Runtime provider',
                 enum: [
                   'openai',
-                  'mock',
                   'anthropic',
                   'claude',
                   'openai-compatible',
@@ -4666,7 +4665,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                 type: 'string',
                 title: 'Runtime model',
                 description: 'Optional per-run model override for the selected Xenesis provider.',
-                examples: ['gpt-4.1', 'claude-3-5-sonnet-latest', 'desk-mock'],
+                examples: ['gpt-4.1', 'claude-3-5-sonnet-latest', 'gpt-5-codex'],
               },
               providerProfile: {
                 type: 'string',
@@ -5832,7 +5831,6 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               title: 'Runtime provider',
               enum: [
                 'openai',
-                'mock',
                 'anthropic',
                 'claude',
                 'openai-compatible',
@@ -5852,7 +5850,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               type: 'string',
               title: 'Runtime model',
               description: 'Optional per-run model override for the selected Xenesis provider.',
-              examples: ['gpt-4.1', 'claude-3-5-sonnet-latest', 'desk-mock'],
+              examples: ['gpt-4.1', 'claude-3-5-sonnet-latest', 'gpt-5-codex'],
             },
             providerProfile: {
               type: 'string',

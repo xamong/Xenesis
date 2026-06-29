@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(scriptDir, "..");
 const entry = resolve(repoRoot, "dist", "cli", "main.js");
-const provider = process.env.XENESIS_PROVIDER || "openai";
+const provider = process.env.XENESIS_PROVIDER || "auto";
 const model = process.env.XENESIS_MODEL || process.env.OPENAI_MODEL || "gpt-5.4-mini";
 const reportId = `provider-live-${new Date().toISOString().replace(/[-:]/g, "").replace(".", "")}`;
 const xenesisHomeInput = process.env.XENESIS_HOME || resolve(homedir(), ".xenesis");
@@ -147,8 +147,8 @@ async function main() {
   console.log(`provider-smoke: model=${model}`);
 
   try {
-    requireOutput(runCli(["--provider", provider, "--model", model, "connect", "check", "--probe"]), "connect check", "connect: passed");
-    appendCheck("connect-probe", true, { provider, model });
+    requireOutput(runCli(["--provider", provider, "--model", model, "connect", "check"]), "connect check", "connect: passed");
+    appendCheck("connect-readiness", true, { provider, model });
 
     requireOutput(runCli(["--provider", provider, "--model", model, "--print", "Reply exactly: xenesis-provider-live-ok"]), "prompt", "xenesis-provider-live-ok");
     appendCheck("prompt", true);

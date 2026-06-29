@@ -6,4 +6,5 @@ export * from './providerFactory.js';
 export * from './providerHttpError.js';
 export * from './queryConfig.js';
 export * from './registry.js';
+export * from './runtimeProviderResolution.js';
 export * from './types.js';

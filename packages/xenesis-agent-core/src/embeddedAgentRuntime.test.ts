@@ -126,22 +126,74 @@ test('DeskEmbeddedAgentRuntime status exposes sanitized effective provider runti
   assert.equal(JSON.stringify(status).includes('dashscope-secret'), false);
 });
 
+test('DeskEmbeddedAgentRuntime status preserves redacted provider resolution metadata', () => {
+  const runtime = new DeskEmbeddedAgentRuntime({
+    enabled: true,
+    xenesisHome: 'C:/Users/example/.xenesis-dev',
+    runtimePath: 'embedded',
+    workspace: 'D:/workspace',
+    env: { OPENROUTER_API_KEY: 'openrouter-secret' },
+    providerRuntime: {
+      provider: 'openrouter',
+      model: 'openrouter/model',
+      profile: 'desk',
+      baseURL: 'https://openrouter.ai/api/v1',
+      apiKeyEnv: 'OPENROUTER_API_KEY',
+      env: { OPENROUTER_API_KEY: 'openrouter-secret' },
+      requestedProvider: 'openrouter',
+      source: 'user-settings-profile',
+      authMode: 'api-key',
+      credentialState: 'configured',
+      credentialSource: 'env:OPENROUTER_API_KEY',
+      processModel: 'http-streaming',
+      fallbackProvider: '',
+      safeForReasoning: true,
+      diagnostics: [],
+      localCliBoundary: 'provider identity is separate from local CLI integration',
+    },
+    approvalMode: 'safe',
+    maxTurns: 4,
+  });
+
+  const status = runtime.start();
+
+  assert.deepEqual(status.providerRuntime, {
+    provider: 'openrouter',
+    model: 'openrouter/model',
+    profile: 'desk',
+    baseURL: 'https://openrouter.ai/api/v1',
+    apiKeyEnv: 'OPENROUTER_API_KEY',
+    requestedProvider: 'openrouter',
+    source: 'user-settings-profile',
+    authMode: 'api-key',
+    credentialState: 'configured',
+    credentialSource: 'env:OPENROUTER_API_KEY',
+    processModel: 'http-streaming',
+    fallbackProvider: '',
+    safeForReasoning: true,
+    diagnostics: [],
+    localCliBoundary: 'provider identity is separate from local CLI integration',
+  });
+  assert.equal(JSON.stringify(status).includes('openrouter-secret'), false);
+});
+
 test('DeskEmbeddedAgentRuntime reuses session and history across embedded mock provider turns', async () => {
   const workspace = await mkdtemp(join(tmpdir(), 'xenesis-desk-agent-runtime-'));
+  let runtime: DeskEmbeddedAgentRuntime | undefined;
   try {
-    const runtime = new DeskEmbeddedAgentRuntime({
+    runtime = new DeskEmbeddedAgentRuntime({
       enabled: true,
       xenesisHome: join(workspace, '.xenesis'),
       runtimePath: 'embedded',
       workspace,
-      env: {},
+      env: { XENESIS_ENABLE_TEST_MOCK_PROVIDER: 'true' },
       providerRuntime: {
         provider: 'mock',
         model: 'mock-model',
         profile: '',
         baseURL: '',
         apiKeyEnv: '',
-        env: {},
+        env: { XENESIS_ENABLE_TEST_MOCK_PROVIDER: 'true' },
       },
       approvalMode: 'safe',
       maxTurns: 4,
@@ -165,6 +217,7 @@ test('DeskEmbeddedAgentRuntime reuses session and history across embedded mock p
     assert.match(second.doneContent || '', /assistant: mock response: 첫 질문/);
     assert.match(second.doneContent || '', /user: mock:messages/);
   } finally {
-    await rm(workspace, { recursive: true, force: true });
+    runtime?.stop();
+    await rm(workspace, { recursive: true, force: true }).catch(() => undefined);
   }
 });

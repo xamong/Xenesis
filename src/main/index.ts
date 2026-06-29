@@ -395,6 +395,7 @@ import {
   buildXenesisGatewayLaunch,
   buildXenesisGatewayRunPayload,
   buildXenesisProviderRuntimeOptions,
+  buildXenesisProviderRuntimeStatus as buildResolvedXenesisProviderRuntimeStatus,
   createXenesisService,
   findOpenPort,
   postGatewayJson,
@@ -18947,18 +18948,11 @@ function embeddedXenesisOptions(): XenesisEmbeddedAgentServiceOptions {
 
 function buildXenesisProviderRuntimeStatus(): XenesisProviderRuntimeStatus {
   const appSettings = loadSettings();
-  const providerRuntime = buildXenesisProviderRuntimeOptions({
+  return buildResolvedXenesisProviderRuntimeStatus({
     xenesisSettings: appSettings.xenesis,
     aiProvider: appSettings.aiProvider,
     env: process.env,
   });
-  return {
-    provider: providerRuntime.provider,
-    model: providerRuntime.model,
-    profile: providerRuntime.profile,
-    baseURL: providerRuntime.baseURL,
-    apiKeyEnv: providerRuntime.apiKeyEnv,
-  };
 }
 
 function getEmbeddedXenesisService(): XenesisEmbeddedAgentService {

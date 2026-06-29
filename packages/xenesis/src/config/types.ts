@@ -5,6 +5,7 @@ export type SecretRef =
   | { source: "env" | "file" | "exec"; provider?: string; id: string };
 
 export const providerNames = [
+  "auto",
   "openai",
   "mock",
   "anthropic",
@@ -456,7 +457,7 @@ export interface LoadConfigOptions {
 }
 
 export const defaultConfig = {
-  provider: "openai",
+  provider: "auto",
   model: "gpt-5.4-mini",
   providerRetries: 1,
   providerFallbacks: [],
