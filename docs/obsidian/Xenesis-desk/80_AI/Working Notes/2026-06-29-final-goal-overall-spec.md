@@ -17,6 +17,7 @@ depends_on:
   - "[[Approval Flow]]"
 touches:
   - "handoff.md"
+  - "docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-final-goal-slice-spec-index.md"
   - "docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-reference-driven-final-goal-slices.md"
   - "docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-1-live-cr-baseline-plan.md"
 ---
@@ -307,6 +308,9 @@ internal spec before product code edits.
 | 5. User stories and guides | Connect practical user workflows to guides and preview-only CR workflows. | Manual docs, user-story contracts, and preview tests pass. |
 | 6. Graph and release hardening | Update Obsidian graph, audit docs, release checks, and handoff. | CR audit counters 0, graph links complete, live evidence recorded. |
 
+The concrete per-slice scope contracts are indexed in
+[[Final Goal Slice Spec Index]].
+
 ## Definition Of Done
 
 A slice is done only when all relevant conditions are true:
@@ -330,6 +334,13 @@ implementation plans until this overall spec is accepted:
 
 - `docs/superpowers/plans/2026-06-29-xenesis-reference-driven-final-goal-slices.md`
 - `docs/superpowers/plans/2026-06-29-slice-1-live-cr-baseline-reference-map.md`
+- `[[Final Goal Slice Spec Index]]`
+- `[[Slice Spec 01 Live CR Baseline]]`
+- `[[Slice Spec 02 Provider Onboarding]]`
+- `[[Slice Spec 03 External Tools MCP OAuth]]`
+- `[[Slice Spec 04 Messenger Channels]]`
+- `[[Slice Spec 05 User Stories Guides]]`
+- `[[Slice Spec 06 Graph Release Hardening]]`
 - `[[Reference-Driven Final Goal Slices]]`
 - `[[Slice 1 Live CR Baseline Plan]]`
 
@@ -341,5 +352,6 @@ implementation plans until this overall spec is accepted:
 - Depends on [[Xenesis Agent Runtime]]
 - Depends on [[Provider Model]]
 - Depends on [[Approval Flow]]
+- Guides [[Final Goal Slice Spec Index]]
 - Guides [[Reference-Driven Final Goal Slices]]
 - Guides [[Slice 1 Live CR Baseline Plan]]

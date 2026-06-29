@@ -11,6 +11,8 @@ last_reviewed: 2026-06-29
 depends_on:
   - "[[Final Goal]]"
   - "[[Final Goal Overall Spec]]"
+  - "[[Final Goal Slice Spec Index]]"
+  - "[[Slice Spec 01 Live CR Baseline]]"
   - "[[Reference-Driven Final Goal Slices]]"
   - "[[Capability Registry Architecture]]"
   - "[[Xenesis Agent Runtime]]"
@@ -29,8 +31,8 @@ implementation plan for live CR baseline evidence and the OpenClaw/Hermes
 reference adoption map.
 
 This Slice 1 plan is downstream of [[Final Goal Overall Spec]]. Do not execute
-it as the next implementation step until the overall spec has been reviewed for
-scope.
+it as the next implementation step until [[Slice Spec 01 Live CR Baseline]] has
+been reviewed for scope.
 
 The detailed implementation plan is stored at
 `docs/superpowers/plans/2026-06-29-slice-1-live-cr-baseline-reference-map.md`.
@@ -70,6 +72,8 @@ reasoning evidence.
 
 - Depends on [[Final Goal]]
 - Depends on [[Final Goal Overall Spec]]
+- Depends on [[Final Goal Slice Spec Index]]
+- Depends on [[Slice Spec 01 Live CR Baseline]]
 - Depends on [[Reference-Driven Final Goal Slices]]
 - Depends on [[Capability Registry Architecture]]
 - Depends on [[Xenesis Agent Runtime]]

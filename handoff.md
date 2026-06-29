@@ -7,6 +7,70 @@ Obsidian graph as context. The immediate product goal is to turn the codebase,
 final goal, provider setup, MCP/tool connections, and external messaging channels
 into a Desk-native, CR-first setup and connection experience.
 
+## Current Slice: Final Goal Slice Specs
+
+- Current objective:
+  - Split the final-goal work into per-slice specs before executing any slice.
+  - Keep each slice spec as a scope contract with goal, scope, reference intake,
+    candidate files, acceptance, verification, and out-of-scope boundaries.
+  - Link the existing overall spec and implementation plans under the new slice
+    spec index.
+- Scope boundary:
+  - Planning/spec only; no product code changes in this turn.
+  - No external web browsing.
+  - No deterministic natural-language routing, keyword catalogs, prompt routers,
+    provider-specific CR shortcuts, chat-only approvals, or secret-bearing docs.
+- Touched files:
+  - `handoff.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-final-goal-overall-spec.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-final-goal-slice-spec-index.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-01-live-cr-baseline.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-02-provider-onboarding.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-03-external-tools-mcp-oauth.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-04-messenger-channels.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-05-user-stories-guides.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-06-graph-release-hardening.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-reference-driven-final-goal-slices.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-1-live-cr-baseline-plan.md`
+- Source review:
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-final-goal-overall-spec.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-reference-driven-final-goal-slices.md`
+  - `docs/superpowers/plans/2026-06-29-xenesis-reference-driven-final-goal-slices.md`
+  - Existing Slice 1 implementation plan:
+    `docs/superpowers/plans/2026-06-29-slice-1-live-cr-baseline-reference-map.md`
+- Commands run:
+  - `git status --short`
+  - `Get-Content -LiteralPath 'docs\obsidian\Xenesis-desk\80_AI\Working Notes\2026-06-29-final-goal-overall-spec.md' -TotalCount 380`
+  - `Get-Content -LiteralPath 'docs\obsidian\Xenesis-desk\80_AI\Working Notes\2026-06-29-reference-driven-final-goal-slices.md' -TotalCount 140`
+  - `rg -n "TBD|TODO|fill in|implement later|Similar to Task|placeholder|F:\\agent-anal\\.*\\.\\.\\.|appropriate error|edge cases" 'docs\obsidian\Xenesis-desk\80_AI\Working Notes\2026-06-29-final-goal-slice-spec-index.md' 'docs\obsidian\Xenesis-desk\80_AI\Working Notes\2026-06-29-slice-spec-01-live-cr-baseline.md' 'docs\obsidian\Xenesis-desk\80_AI\Working Notes\2026-06-29-slice-spec-02-provider-onboarding.md' 'docs\obsidian\Xenesis-desk\80_AI\Working Notes\2026-06-29-slice-spec-03-external-tools-mcp-oauth.md' 'docs\obsidian\Xenesis-desk\80_AI\Working Notes\2026-06-29-slice-spec-04-messenger-channels.md' 'docs\obsidian\Xenesis-desk\80_AI\Working Notes\2026-06-29-slice-spec-05-user-stories-guides.md' 'docs\obsidian\Xenesis-desk\80_AI\Working Notes\2026-06-29-slice-spec-06-graph-release-hardening.md'`
+  - `rg -n "Slice Spec 01 Live CR Baseline|Slice Spec 02 Provider Onboarding|Slice Spec 03 External Tools MCP OAuth|Slice Spec 04 Messenger Channels|Slice Spec 05 User Stories Guides|Slice Spec 06 Graph Release Hardening|Final Goal Slice Spec Index" 'docs\obsidian\Xenesis-desk\80_AI\Working Notes'`
+  - `git diff --check`
+- Exact verification result:
+  - Added `[[Final Goal Slice Spec Index]]`.
+  - Added six per-slice specs:
+    `[[Slice Spec 01 Live CR Baseline]]`,
+    `[[Slice Spec 02 Provider Onboarding]]`,
+    `[[Slice Spec 03 External Tools MCP OAuth]]`,
+    `[[Slice Spec 04 Messenger Channels]]`,
+    `[[Slice Spec 05 User Stories Guides]]`,
+    `[[Slice Spec 06 Graph Release Hardening]]`.
+  - Updated `[[Final Goal Overall Spec]]`, `[[Reference-Driven Final Goal Slices]]`,
+    and `[[Slice 1 Live CR Baseline Plan]]` to point at the slice spec index and
+    relevant slice spec.
+  - Open-ended marker scan produced no matches across the seven new slice spec
+    files.
+  - Graph-link search found the slice spec index, all six slice spec titles,
+    and downstream links from the existing overall/slice planning notes.
+  - `git diff --check` reported no whitespace errors; Git printed LF/CRLF
+    normalization warnings only.
+- Known gaps:
+  - This turn wrote slice specs only. Product code, tests, CR audit, typecheck,
+    build, and live smokes are intentionally deferred until a slice is accepted
+    and converted into a detailed implementation plan.
+- Next intended step:
+  - Review the six slice specs as the complete scope split, then write or adjust
+    implementation plans under the accepted slice specs.
+
 ## Current Slice: Final Goal Overall Spec
 
 - Current objective:
