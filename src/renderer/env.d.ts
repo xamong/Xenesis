@@ -21,6 +21,7 @@ import type {
   TerminalApi,
   TransferQueueApi,
   UpdaterApi,
+  VaultApi,
   WorkflowPlaywrightApi,
   WorkflowRunsApi,
   WorkflowTemplatesApi,
@@ -35,6 +36,7 @@ declare global {
     appMenuAPI?: AppMenuApi;
     fileAPI: FileApi;
     fsAPI: FsApi;
+    vaultAPI: VaultApi;
     onboardingAPI: OnboardingApi;
     processViewerAPI: ProcessViewerApi;
     safeFileAPI: SafeFileApi;
