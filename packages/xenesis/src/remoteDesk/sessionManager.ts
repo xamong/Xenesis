@@ -22,6 +22,7 @@ export class RemoteDeskSessionManager implements RemoteDeskCommandRouter {
 
   canHandle(text: string, request?: RemoteDeskCommandRequest): boolean {
     const trimmed = text.trim();
+    if (REMOTE_DESK_AGENT_COMMAND_RE.test(trimmed)) return false;
     if (REMOTE_DESK_COMMAND_RE.test(trimmed)) return true;
     if (trimmed.startsWith('/')) return false;
     if (!request?.conversationId) return false;
@@ -353,6 +354,7 @@ export class RemoteDeskSessionManager implements RemoteDeskCommandRouter {
 }
 
 const REMOTE_DESK_COMMAND_RE = /^\/desk(?:@[A-Za-z0-9_]+)?(?:\s|$)/i;
+const REMOTE_DESK_AGENT_COMMAND_RE = /^\/desk(?:@[A-Za-z0-9_]+)?\s+(?:agents|agent)(?:\s|$)/i;
 
 function remoteDeskCommandBody(value: string) {
   const match = /^\/desk(?:@[A-Za-z0-9_]+)?(?:\s+([\s\S]*))?$/i.exec(value.trim());

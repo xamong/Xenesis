@@ -57,7 +57,7 @@ import {
   type TaskWorkerEvent,
   type UpdateScheduleInput,
 } from '../orchestration/index.js';
-import { createRemoteDeskBridgeFromEnv, RemoteDeskSessionManager } from '../remoteDesk/index.js';
+import { createRemoteDeskBridgeFromEnv, RemoteDeskAgentSessionManager, RemoteDeskSessionManager } from '../remoteDesk/index.js';
 import type { RunReport } from '../runReports/index.js';
 import { compactSessionEvents, latestRunState, readSessionLog, type SessionLogRecord } from '../sessions/index.js';
 import {
@@ -2897,6 +2897,9 @@ function createManagedChannel(
     }),
     commandRouters: [
       new RemoteDeskSessionManager({
+        bridge: createRemoteDeskBridgeFromEnv(options.env ?? process.env),
+      }),
+      new RemoteDeskAgentSessionManager({
         bridge: createRemoteDeskBridgeFromEnv(options.env ?? process.env),
       }),
     ],
