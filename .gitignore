@@ -22,6 +22,14 @@ __pycache__/
 /dev
 /index.js
 /server/database.db
+/tools/windows-control-host/bin/
+/tools/windows-control-host/obj/
+/tools/windows-control-host/publish/
+/tools/office-control-host/bin/
+/tools/office-control-host/obj/
+/tools/office-control-host/publish/
+/tools/macos-control-host/.build/
+/tools/macos-control-host/publish/
 
 # Local-only development work log (and its rotated backups). Kept on disk, never tracked.
 handoff.md
