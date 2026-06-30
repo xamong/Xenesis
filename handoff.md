@@ -1,5 +1,50 @@
 # Xenesis Desk Work Handoff
 
+## 2026-06-30 Input Control Layer Mini Implementation
+
+- Current objective:
+  - Implement the approved mini slice from
+    `docs/superpowers/specs/2026-06-30-input-control-layer-mini-design.md`:
+    register `xd.input.*`, add shared input DSL validation, and execute
+    registered external app `type`, `hotkey`, and `wait` actions first.
+- Worktree:
+  - Isolated worktree:
+    `D:\CodeTruck\CodeBox\Xamong\06 XCON\Xenesis\.worktrees\input-control-mini`
+  - Branch: `input-control-mini`
+- Current implementation checkpoint:
+  - Starting Task 1 shared input-control DSL model with TDD.
+- Touched files:
+  - `handoff.md`
+  - Planned: `src/shared/inputControl.ts`
+  - Planned: `src/shared/inputControl.test.ts`
+- Commands run:
+  - Read `superpowers:executing-plans`,
+    `superpowers:test-driven-development`,
+    `superpowers:using-git-worktrees`, and
+    `superpowers:verification-before-completion`.
+  - `git worktree add .worktrees/input-control-mini -b input-control-mini HEAD`
+    from the original checkout -> created isolated worktree at commit
+    `3ec187d`.
+  - `npm install` in the worktree -> exit 0; npm reported existing audit and
+    deprecation warnings.
+  - `npm test` in the worktree -> PASS, 528 tests.
+  - `node --import tsx --test src/shared/inputControl.test.ts` after adding
+    only the test file -> RED failed with `Cannot find module './inputControl'`.
+  - `node --import tsx --test src/shared/inputControl.test.ts` after shared
+    implementation -> PASS, 8 tests.
+- Exact verification result:
+  - Baseline test suite in the isolated worktree passed before input-control
+    implementation started.
+  - Task 1 shared input-control DSL test passed after a verified RED failure.
+- Known gaps:
+  - Browser coordinate execution remains deferred by design.
+  - Full desktop automation remains disabled by design.
+  - `xd.input.screenshot` will return unsupported until a real screenshot
+    adapter exists.
+- Next intended step:
+  - Commit Task 1, then start Task 2 main `InputControlService` with failing
+    service tests.
+
 ## 2026-06-30 Dock Drag Ghost Native Overlay
 
 - Current objective:
