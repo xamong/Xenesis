@@ -3,6 +3,7 @@
 
 import { useRef } from 'react';
 import type { SiblingWindowBounds } from '../../shared/types';
+import type { DetachScreenPoint } from './detachBounds';
 import { Bounds, DockEngine, DockPane, DropPayload, PaneDropTarget, SideState } from './engine';
 
 interface DragState {
@@ -12,6 +13,11 @@ interface DragState {
 
 export type DetachMode = 'detach' | 'reattach' | 'merge-to-detached';
 
+export interface DetachIntentMetadata {
+  targetWindowId?: number;
+  dropPoint?: DetachScreenPoint;
+}
+
 export function useDragManager(
   engine: DockEngine,
   rootRef: React.RefObject<HTMLDivElement | null>,
@@ -20,7 +26,7 @@ export function useDragManager(
   ghostRef: React.RefObject<HTMLDivElement | null>,
   floatBoundsRef: React.MutableRefObject<Map<string, Bounds>>,
   onStatus: (msg: string) => void,
-  onDetach: (payload: DropPayload, mode: DetachMode, targetWindowId?: number) => void,
+  onDetach: (payload: DropPayload, mode: DetachMode, metadata?: DetachIntentMetadata) => void,
   isDetachedWindow: boolean,
 ): { beginResize: (edge: SideState, event: PointerEvent) => void } {
   const stateRef = useRef<DragState>({ currentDropZone: null, currentDropTarget: null });
@@ -141,6 +147,7 @@ export function useDragManager(
     const start = { x: event.clientX, y: event.clientY };
     let active = false;
     let reattachStarted = false;
+    let lastScreenPoint: DetachScreenPoint = { screenX: event.screenX, screenY: event.screenY };
 
     // 분리 창 드래그: 시작 시 이웃 창(메인+다른 분리 창) bounds를 한 번 조회
     let siblingBounds: SiblingWindowBounds = { mainWindow: null, detachedWindows: [] };
@@ -156,6 +163,7 @@ export function useDragManager(
     }
 
     const move = (mv: PointerEvent) => {
+      lastScreenPoint = { screenX: mv.screenX, screenY: mv.screenY };
       const distance = Math.abs(mv.clientX - start.x) + Math.abs(mv.clientY - start.y);
       if (!active && distance < 6) return;
       if (!active) {
@@ -343,14 +351,18 @@ export function useDragManager(
         const targetWindowId = Number(zone.replace('__merge_to_detached__:', ''));
         ds.currentDropZone = null;
         ds.currentDropTarget = null;
-        onDetach(payload, 'merge-to-detached', targetWindowId);
+        onDetach(payload, 'merge-to-detached', { targetWindowId });
         return;
       }
 
       if (active && (zone === '__detach__' || isReattach)) {
         ds.currentDropZone = null;
         ds.currentDropTarget = null;
-        onDetach(payload, isReattach ? 'reattach' : 'detach');
+        onDetach(
+          payload,
+          isReattach ? 'reattach' : 'detach',
+          zone === '__detach__' ? { dropPoint: lastScreenPoint } : undefined,
+        );
         return;
       }
 
