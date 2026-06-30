@@ -73,3 +73,31 @@ test('Windows adapter status can target a specific window id', async () => {
 
   assert.match(commands[0] || '', /-WindowId '1001'/);
 });
+
+test('Windows adapter status reads actual bounds and foreground state', async () => {
+  const commands: string[] = [];
+  const adapter = createWindowsAppControlAdapter({
+    runPowerShell: async (script) => {
+      commands.push(script);
+      return JSON.stringify({
+        ok: true,
+        action: 'status',
+        windows: [
+          {
+            windowId: '1001',
+            title: 'Untitled - Notepad',
+            bounds: { x: 10, y: 20, width: 800, height: 600 },
+            isForeground: true,
+          },
+        ],
+      });
+    },
+  });
+
+  const result = await adapter.status({ executable: 'notepad.exe' });
+
+  assert.match(commands[0] || '', /GetWindowRect/);
+  assert.match(commands[0] || '', /GetForegroundWindow/);
+  assert.deepEqual(result.windows[0]?.bounds, { x: 10, y: 20, width: 800, height: 600 });
+  assert.equal(result.windows[0]?.isForeground, true);
+});

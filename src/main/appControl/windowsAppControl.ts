@@ -4,7 +4,6 @@ import { promisify } from 'node:util';
 import type {
   ExternalAppActionName,
   ExternalAppActionResult,
-  ExternalAppApprovalLevel,
   ExternalAppWindowInfo,
 } from '../../shared/externalAppControl';
 
@@ -160,16 +159,16 @@ function defaultActionMessage(action: ExternalAppActionName, ok: boolean): strin
 }
 
 function buildLaunchScript(input: WindowsLaunchInput): string {
-  const args = input.args && input.args.length ? ` -ArgumentList @(${input.args.map(psString).join(', ')})` : '';
+  const args = input.args?.length ? ` -ArgumentList @(${input.args.map(psString).join(', ')})` : '';
   const cwd = input.cwd ? ` -WorkingDirectory ${psString(input.cwd)}` : '';
-  return `${jsonHelpers()}
+  return `${user32Helpers()}
 $process = Start-Process -FilePath ${psString(input.executable)}${args}${cwd} -PassThru
 Start-Sleep -Milliseconds 250
 Write-OutputJson @{ ok = $true; action = 'launch'; processId = $process.Id; windows = @(Get-AppWindows -ProcessId $process.Id); message = 'External app launched.' }`;
 }
 
 function buildFindScript(input: WindowsFindInput, action: 'find' | 'status'): string {
-  return `${jsonHelpers()}
+  return `${user32Helpers()}
 $windows = Get-AppWindows -WindowId ${psString(input.windowId ?? '')} -ProcessName ${psString(resolveProcessName(input))} -TitleContains ${psString(input.titleContains ?? '')}
 Write-OutputJson @{ ok = $true; action = ${psString(action)}; windows = @($windows); message = 'External app status completed.' }`;
 }
@@ -179,7 +178,10 @@ function buildWindowScript(action: 'focus', input: WindowsWindowInput): string {
 $window = Resolve-AppWindow -WindowId ${psString(input.windowId ?? '')} -ProcessName ${psString(resolveProcessName(input))} -TitleContains ${psString(input.titleContains ?? '')}
 if (-not $window) { Write-OutputJson @{ ok = $false; action = ${psString(action)}; windows = @(); error = 'Window not found.'; message = 'External app focus failed.' }; exit 0 }
 [User32]::SetForegroundWindow([IntPtr]$window.windowId) | Out-Null
-Write-OutputJson @{ ok = $true; action = ${psString(action)}; windows = @($window); message = 'External app focused.' }`;
+Start-Sleep -Milliseconds 80
+$updated = Resolve-AppWindow -WindowId $window.windowId
+if (-not $updated) { $updated = $window }
+Write-OutputJson @{ ok = $true; action = ${psString(action)}; windows = @($updated); message = 'External app focused.' }`;
 }
 
 function buildResizeScript(input: WindowsResizeInput): string {
@@ -191,8 +193,13 @@ function buildResizeScript(input: WindowsResizeInput): string {
 $window = Resolve-AppWindow -WindowId ${psString(input.windowId ?? '')} -ProcessName ${psString(resolveProcessName(input))} -TitleContains ${psString(input.titleContains ?? '')}
 if (-not $window) { Write-OutputJson @{ ok = $false; action = 'resize'; windows = @(); error = 'Window not found.'; message = 'External app resize failed.' }; exit 0 }
 [User32]::MoveWindow([IntPtr]$window.windowId, ${x}, ${y}, ${width}, ${height}, $true) | Out-Null
-$window.bounds = @{ x = ${x}; y = ${y}; width = ${width}; height = ${height} }
-Write-OutputJson @{ ok = $true; action = 'resize'; windows = @($window); message = 'External app resized.' }`;
+Start-Sleep -Milliseconds 80
+$updated = Resolve-AppWindow -WindowId $window.windowId
+if (-not $updated) {
+  $window.bounds = @{ x = ${x}; y = ${y}; width = ${width}; height = ${height} }
+  $updated = $window
+}
+Write-OutputJson @{ ok = $true; action = 'resize'; windows = @($updated); message = 'External app resized.' }`;
 }
 
 function buildSendKeysScript(action: 'typeText' | 'hotkey', input: WindowsWindowInput, sendKeys: string): string {
@@ -203,7 +210,9 @@ if (-not $window) { Write-OutputJson @{ ok = $false; action = ${psString(action)
 [User32]::SetForegroundWindow([IntPtr]$window.windowId) | Out-Null
 Start-Sleep -Milliseconds 120
 [System.Windows.Forms.SendKeys]::SendWait(${psString(sendKeys)})
-Write-OutputJson @{ ok = $true; action = ${psString(action)}; windows = @($window); message = 'External app keyboard input completed.' }`;
+$updated = Resolve-AppWindow -WindowId $window.windowId
+if (-not $updated) { $updated = $window }
+Write-OutputJson @{ ok = $true; action = ${psString(action)}; windows = @($updated); message = 'External app keyboard input completed.' }`;
 }
 
 function buildCloseScript(input: WindowsCloseInput): string {
@@ -232,8 +241,18 @@ function Get-AppWindows {
   if ($ProcessId -gt 0) { $items = $items | Where-Object { $_.Id -eq $ProcessId } }
   if ($ProcessName) { $items = $items | Where-Object { $_.ProcessName -eq $ProcessName } }
   if ($TitleContains) { $items = $items | Where-Object { $_.MainWindowTitle -like "*$TitleContains*" } }
+  $foreground = [User32]::GetForegroundWindow()
   @($items | ForEach-Object {
-    @{ windowId = "$($_.MainWindowHandle)"; processId = $_.Id; title = $_.MainWindowTitle }
+    $handle = [IntPtr]$_.MainWindowHandle
+    $entry = @{
+      windowId = "$($_.MainWindowHandle)";
+      processId = $_.Id;
+      title = $_.MainWindowTitle;
+      isForeground = $foreground.ToInt64() -eq $handle.ToInt64()
+    }
+    $bounds = Get-WindowBounds -Handle $handle
+    if ($bounds) { $entry.bounds = $bounds }
+    $entry
   })
 }
 `.trim();
@@ -248,15 +267,33 @@ public static class User32 {
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
   [DllImport("user32.dll")] public static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
   [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr hWnd, UInt32 Msg, IntPtr wParam, IntPtr lParam);
+  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+  [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+}
+[StructLayout(LayoutKind.Sequential)]
+public struct RECT {
+  public int Left;
+  public int Top;
+  public int Right;
+  public int Bottom;
 }
 "@
+function Get-WindowBounds {
+  param([IntPtr]$Handle)
+  $rect = New-Object RECT
+  if ([User32]::GetWindowRect($Handle, [ref]$rect)) {
+    return @{
+      x = $rect.Left;
+      y = $rect.Top;
+      width = [Math]::Max(0, $rect.Right - $rect.Left);
+      height = [Math]::Max(0, $rect.Bottom - $rect.Top)
+    }
+  }
+  return $null
+}
 function Resolve-AppWindow {
   param([string]$WindowId = '', [string]$ProcessName = '', [string]$TitleContains = '')
-  if ($WindowId) {
-    $match = Get-Process | Where-Object { "$($_.MainWindowHandle)" -eq $WindowId } | Select-Object -First 1
-    if ($match) { return @{ windowId = "$($match.MainWindowHandle)"; processId = $match.Id; title = $match.MainWindowTitle } }
-  }
-  return @(Get-AppWindows -ProcessName $ProcessName -TitleContains $TitleContains) | Select-Object -First 1
+  return @(Get-AppWindows -WindowId $WindowId -ProcessName $ProcessName -TitleContains $TitleContains) | Select-Object -First 1
 }`;
 }
 

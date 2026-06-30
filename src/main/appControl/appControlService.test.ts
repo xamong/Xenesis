@@ -204,6 +204,63 @@ test('app control service marks arbitrary path keyboard actions as high-risk alw
   ]);
 });
 
+test('app control service applies launch placement after the app opens', async () => {
+  const resizeInputs: unknown[] = [];
+  const service = createAppControlService({
+    getSettings: () => ({ enabled: true, profiles: [] }),
+    adapter: {
+      ...adapter,
+      launch: async () => ({
+        ok: true,
+        action: 'launch',
+        approvalLevel: 'medium',
+        processId: 123,
+        windows: [{ windowId: '1001', processId: 123, title: 'Untitled - Notepad' }],
+        message: 'launch ok',
+      }),
+      resize: async (input) => {
+        resizeInputs.push(input);
+        return {
+          ok: true,
+          action: 'resize',
+          approvalLevel: 'low',
+          windows: [
+            {
+              windowId: '1001',
+              processId: 123,
+              title: 'Untitled - Notepad',
+              bounds: { x: 20, y: 30, width: 800, height: 600 },
+            },
+          ],
+          message: 'resize ok',
+        };
+      },
+    },
+  });
+
+  const result = await service.run({
+    action: 'launch',
+    appId: 'notepad',
+    placement: { x: 20, y: 30, width: 800, height: 600 },
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.message, 'External app launched and placed.');
+  assert.deepEqual(resizeInputs, [
+    {
+      executable: 'notepad.exe',
+      processName: undefined,
+      titleContains: undefined,
+      windowId: '1001',
+      x: 20,
+      y: 30,
+      width: 800,
+      height: 600,
+    },
+  ]);
+  assert.deepEqual(result.windows[0]?.bounds, { x: 20, y: 30, width: 800, height: 600 });
+});
+
 test('app control service returns profile status readback without a target or adapter execution', async () => {
   let called = false;
   const service = createAppControlService({

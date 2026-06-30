@@ -8623,6 +8623,17 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             path: { type: 'string', title: 'Executable path' },
             args: { type: 'array', items: { type: 'string' } },
             cwd: { type: 'string', title: 'Working directory' },
+            placement: {
+              type: 'object',
+              title: 'Initial window placement',
+              description: 'Optional visible window placement applied after launch.',
+              properties: {
+                x: { type: 'number', title: 'X' },
+                y: { type: 'number', title: 'Y' },
+                width: { type: 'number', title: 'Width' },
+                height: { type: 'number', title: 'Height' },
+              },
+            },
           },
         },
       ),
