@@ -75,14 +75,22 @@ export const BASIC_DESK_ONBOARDING_STEPS: OnboardingStepDefinition[] = [
         id: 'open-external-tool-setup',
         labelKey: 'app.onboardingOpenExternalToolSetup',
         descriptionKey: 'app.onboardingOpenExternalToolSetupDesc',
-        capabilityPaths: ['xd.xenesis.tools.setupPlans.open', 'xd.xenesis.tools.setupPlans.status'],
+        capabilityPaths: [
+          'xd.xenesis.tools.setupPlans.open',
+          'xd.xenesis.tools.setupPlans.status',
+          'xd.xenesis.integrations.status',
+        ],
         primary: true,
       },
       {
         id: 'open-tool-connectors',
         labelKey: 'app.onboardingOpenToolConnectors',
         descriptionKey: 'app.onboardingOpenToolConnectorsDesc',
-        capabilityPaths: ['xd.xenesis.tools.connectors.open', 'xd.xenesis.tools.connectors.status'],
+        capabilityPaths: [
+          'xd.xenesis.tools.connectors.open',
+          'xd.xenesis.tools.connectors.status',
+          'xd.xenesis.integrations.doctor.status',
+        ],
       },
     ],
     verification: {
@@ -91,6 +99,8 @@ export const BASIC_DESK_ONBOARDING_STEPS: OnboardingStepDefinition[] = [
         'xd.xenesis.tools.setupPlans.status',
         'xd.xenesis.tools.connectors.status',
         'xd.xenesis.tools.runtime.status',
+        'xd.xenesis.integrations.status',
+        'xd.xenesis.integrations.doctor.status',
       ],
     },
     demo: {

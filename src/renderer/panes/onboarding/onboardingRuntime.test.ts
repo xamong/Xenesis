@@ -78,10 +78,14 @@ test('Basic Desk onboarding includes CR-backed initial setup steps', () => {
   assert.equal(toolsStep?.titleKey, 'app.onboardingStepExternalToolsTitle');
   assert.equal(toolsStep?.actions[0]?.id, 'open-external-tool-setup');
   assert.equal(toolsStep?.actions[0]?.capabilityPaths.includes('xd.xenesis.tools.setupPlans.open'), true);
+  assert.equal(toolsStep?.actions[0]?.capabilityPaths.includes('xd.xenesis.integrations.status'), true);
   assert.equal(toolsStep?.actions[1]?.id, 'open-tool-connectors');
   assert.equal(toolsStep?.actions[1]?.capabilityPaths.includes('xd.xenesis.tools.connectors.open'), true);
+  assert.equal(toolsStep?.actions[1]?.capabilityPaths.includes('xd.xenesis.integrations.doctor.status'), true);
   assert.equal(toolsStep?.verification.capabilityPaths.includes('xd.xenesis.tools.setupPlans.status'), true);
   assert.equal(toolsStep?.verification.capabilityPaths.includes('xd.xenesis.tools.runtime.status'), true);
+  assert.equal(toolsStep?.verification.capabilityPaths.includes('xd.xenesis.integrations.status'), true);
+  assert.equal(toolsStep?.verification.capabilityPaths.includes('xd.xenesis.integrations.doctor.status'), true);
   assert.equal(mcpStep?.titleKey, 'app.onboardingStepMcpTitle');
   assert.equal(mcpStep?.actions[0]?.id, 'open-mcp-setup');
   assert.equal(mcpStep?.actions[0]?.capabilityPaths.includes('xd.xenesis.tools.mcpInstallDrafts.open'), true);
@@ -90,6 +94,16 @@ test('Basic Desk onboarding includes CR-backed initial setup steps', () => {
   assert.equal(mcpStep?.verification.capabilityPaths.includes('xd.xenesis.tools.mcpInstallDrafts.status'), true);
   assert.equal(mcpStep?.verification.capabilityPaths.includes('xd.xenesis.tools.mcpOAuth.status'), true);
   assert.equal(mcpStep?.verification.capabilityPaths.includes('xd.mcp.settings.status'), true);
+});
+
+test('external integration onboarding step requires native integration doctor readiness', () => {
+  const step = BASIC_DESK_ONBOARDING_STEPS.find((item) => item.id === 'connect-external-tools');
+  assert.ok(step, 'connect-external-tools step exists');
+  assert.equal(
+    step.verification.capabilityPaths.includes('xd.xenesis.integrations.doctor.status'),
+    true,
+    'external tool onboarding checks native integration doctor readiness through CR',
+  );
 });
 
 test('Basic Desk verifier checks initial setup settings targets', () => {
