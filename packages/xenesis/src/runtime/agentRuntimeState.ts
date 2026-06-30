@@ -266,6 +266,14 @@ export function formatAgentRuntimeSessions(state: AgentRuntimeState): string {
   ].join(' ');
 }
 
+export function formatAgentRuntimeMemory(state: AgentRuntimeState, enabled: boolean): string {
+  return [
+    `memory: ${enabled ? 'enabled' : 'disabled'}`,
+    `storage=${state.storageBackend}`,
+    `latest=${state.session.latestSessionId ?? 'none'}`,
+  ].join(' ');
+}
+
 export function formatAgentRuntimeCommitments(state: AgentRuntimeState): string {
   if (state.commitments === 'disabled') {
     return 'commitments: disabled - enable config.commitments.enabled to list, inspect, complete, or dismiss commitments.';
