@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
@@ -11,6 +12,18 @@ function read(relativePath: string): string {
 
 function exists(relativePath: string): boolean {
   return existsSync(path.join(root, ...relativePath.split('/')));
+}
+
+function trackedFilesUnder(relativePath: string): string[] {
+  const output = execFileSync('git', ['ls-files', '--', relativePath], {
+    cwd: root,
+    encoding: 'utf8',
+    windowsHide: true,
+  });
+  return output
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
 }
 
 function readPackageJson(): {
@@ -51,13 +64,17 @@ const generatedOutputDirs = [
   'tools/macos-control-host/publish',
 ];
 
-test('native tools source tree is checked in without generated outputs', () => {
+test('native tools source tree is checked in without tracked generated outputs', () => {
   for (const file of helperSourceFiles) {
     assert.equal(exists(file), true, `missing native helper source file: ${file}`);
   }
 
   for (const directory of generatedOutputDirs) {
-    assert.equal(exists(directory), false, `generated native helper output must not be checked in: ${directory}`);
+    assert.deepEqual(
+      trackedFilesUnder(directory),
+      [],
+      `generated native helper output must not be tracked: ${directory}`,
+    );
   }
 
   const gitignore = read('.gitignore');
