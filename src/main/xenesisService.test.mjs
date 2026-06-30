@@ -60,6 +60,29 @@ test("'auto' without credentials reports missing credentials without falling bac
   assert.match(result.diagnostics.join('\n'), /No provider credentials/i);
 });
 
+test("'auto' ignores API key env vars and only resolves local login credentials", () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'xenesis-home-env-only-'));
+  const result = buildXenesisProviderRuntimeOptions({
+    aiProvider: { provider: 'auto', model: '', apiKey: '', baseUrl: '' },
+    env: {
+      USERPROFILE: home,
+      OPENAI_API_KEY: 'openai-secret',
+      ANTHROPIC_API_KEY: 'anthropic-secret',
+      GEMINI_API_KEY: 'gemini-secret',
+    },
+  });
+
+  assert.equal(result.provider, 'auto');
+  assert.equal(result.credentialState, 'missing');
+  assert.equal(result.credentialSource, 'none');
+  assert.equal(result.apiKeyEnv, '');
+  assert.equal(result.safeForReasoning, false);
+  assert.equal(JSON.stringify(result).includes('openai-secret'), false);
+  assert.equal(JSON.stringify(result).includes('anthropic-secret'), false);
+  assert.equal(JSON.stringify(result).includes('gemini-secret'), false);
+  assert.doesNotMatch(result.diagnostics.join('\n'), /OPENAI_API_KEY|ANTHROPIC_API_KEY|GEMINI_API_KEY/);
+});
+
 test("explicit 'codex-cli' is respected and NOT upgraded to app-server", () => {
   const result = buildXenesisProviderRuntimeOptions({
     aiProvider: { provider: 'codex-cli' },

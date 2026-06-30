@@ -11,6 +11,7 @@ export const providerNames = [
   'openai-compatible',
   'gemini',
   'ollama',
+  'lmstudio',
   'openrouter',
   'groq',
   'deepseek',

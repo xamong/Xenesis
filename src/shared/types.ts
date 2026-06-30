@@ -133,7 +133,7 @@ export type ShellKind = 'powershell' | 'cmd' | 'pwsh' | 'wsl' | 'zsh' | 'bash' |
 // ─── AI 프로바이더 설정 ────────────────────────────────────────────────────────
 
 export type AiProviderKind =
-  | 'auto' // 자동 감지 (자격증명 스캔: codex 로그인 > claude 로그인 > BYOK 키...)
+  | 'auto' // 자동 감지 (로컬 로그인 파일만: codex 로그인 > claude 로그인)
   | 'openai' // OpenAI (Responses / Chat Completions)
   | 'anthropic' // Anthropic Claude
   | 'gemini' // Google Gemini (OpenAI 호환)
@@ -379,7 +379,6 @@ export type LocalCliAgentId =
   | 'devin'
   | 'gemini'
   | 'opencode'
-  | 'hermes'
   | 'kimi'
   | 'cursor'
   | 'qwen'

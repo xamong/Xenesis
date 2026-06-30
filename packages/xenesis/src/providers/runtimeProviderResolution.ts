@@ -2,7 +2,7 @@ import { existsSync as nodeExistsSync } from 'node:fs';
 import { homedir as nodeHomeDir } from 'node:os';
 import { join } from 'node:path';
 import type { ProviderName, ProviderSetupEntry, XenesisConfig } from '../config/types.js';
-import { capabilitiesFor, presetApiKeyEnv } from './registry.js';
+import { capabilitiesFor, presetApiKeyEnv, presetBaseURL } from './registry.js';
 
 export type RuntimeProviderName = Exclude<ProviderName, 'auto' | 'mock'>;
 export type ResolvedProviderName = RuntimeProviderName | 'mock';
@@ -35,18 +35,6 @@ export interface RuntimeProviderResolutionOptions {
 
 type RuntimeEnv = Record<string, string | undefined>;
 
-const AUTO_API_KEY_PROVIDERS = [
-  { apiKeyEnv: 'ANTHROPIC_API_KEY', provider: 'anthropic' },
-  { apiKeyEnv: 'OPENAI_API_KEY', provider: 'openai' },
-  { apiKeyEnv: 'GEMINI_API_KEY', provider: 'gemini' },
-  { apiKeyEnv: 'OPENROUTER_API_KEY', provider: 'openrouter' },
-  { apiKeyEnv: 'GROQ_API_KEY', provider: 'groq' },
-  { apiKeyEnv: 'DEEPSEEK_API_KEY', provider: 'deepseek' },
-  { apiKeyEnv: 'DASHSCOPE_API_KEY', provider: 'qwen' },
-  { apiKeyEnv: 'MISTRAL_API_KEY', provider: 'mistral' },
-  { apiKeyEnv: 'XAI_API_KEY', provider: 'xai' },
-] as const satisfies ReadonlyArray<{ apiKeyEnv: string; provider: RuntimeProviderName }>;
-
 function processModelForProvider(provider: ResolvedProviderName): ProviderProcessModel {
   const transport = capabilitiesFor(provider)?.transport;
   if (transport === 'cli-interactive') return 'persistent-process';
@@ -64,7 +52,7 @@ function configuredApiKeyEnv(config: XenesisConfig, provider: ProviderName): str
 }
 
 function configuredBaseURL(config: XenesisConfig, env: RuntimeEnv, provider: ProviderName): string | undefined {
-  return config.baseURL ?? env.XENESIS_BASE_URL ?? providerSetup(config, provider)?.baseURL;
+  return config.baseURL ?? env.XENESIS_BASE_URL ?? providerSetup(config, provider)?.baseURL ?? presetBaseURL(provider);
 }
 
 function resultForReadyProvider(
@@ -149,21 +137,6 @@ function resolveAuto(
     );
   }
 
-  for (const candidate of AUTO_API_KEY_PROVIDERS) {
-    if (!hasNonEmptyEnv(env, candidate.apiKeyEnv)) continue;
-    diagnostics.push(`${candidate.apiKeyEnv} found`);
-    return resultForReadyProvider(
-      config,
-      env,
-      candidate.provider,
-      'auto-detect',
-      'api-key',
-      candidate.apiKeyEnv,
-      candidate.apiKeyEnv,
-      diagnostics,
-    );
-  }
-
   return {
     requestedProvider: config.provider,
     provider: undefined,
@@ -176,9 +149,7 @@ function resolveAuto(
     baseURL: config.baseURL ?? env.XENESIS_BASE_URL,
     model: config.model,
     fallbackProvider: undefined,
-    diagnostics: [
-      'missing credentials: checked CODEX_HOME/auth.json, ~/.codex/auth.json, ~/.claude/.credentials.json, ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, OPENROUTER_API_KEY, GROQ_API_KEY, DEEPSEEK_API_KEY, DASHSCOPE_API_KEY, MISTRAL_API_KEY, XAI_API_KEY',
-    ],
+    diagnostics: ['missing credentials: checked CODEX_HOME/auth.json, ~/.codex/auth.json, ~/.claude/.credentials.json'],
     safeForReasoning: false,
   };
 }

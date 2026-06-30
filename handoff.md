@@ -1,5 +1,111 @@
 # Xenesis Desk Work Handoff
 
+## 2026-06-30 Provider Auto Resolution Cleanup
+
+- Current objective:
+  - Clarify and align provider auto-resolution behavior across Desk main and
+    the Xenesis runtime package.
+  - Remove Hermes from provider/local CLI selection surfaces so it is not
+    presented as an agent reasoning provider or selectable local CLI agent.
+  - Restore provider catalog consistency for local providers by making LM
+    Studio available wherever Ollama-style local HTTP providers are accepted.
+- Touched files:
+  - `handoff.md`
+  - `src/main/localCliAgents.mjs`
+  - `src/main/index.ts`
+  - `src/main/xenesisService.mjs`
+  - `src/shared/types.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/shared/xenesisConnectionCapabilities.test.ts`
+  - `src/shared/deskBridgeWorkflow.test.ts`
+  - `src/shared/xenesisDeskControlPromptHintCatalog.ts`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/renderer/panes/onboarding/onboardingRuntime.ts`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
+  - `packages/xenesis/src/config/types.ts`
+  - `packages/xenesis/src/providers/registry.ts`
+  - `packages/xenesis/src/providers/runtimeProviderResolution.ts`
+  - `packages/xenesis/tests/s3s4/runtimeProviderResolution.test.ts`
+  - `packages/xenesis/src/cli/help.ts`
+- Material design decision:
+  - `auto` should scan login credentials first (`~/.codex/auth.json`, then
+    `~/.claude/.credentials.json`) and only then API key environment variables.
+  - Ollama and LM Studio should remain explicit local provider choices, not
+    implicit `auto` choices, because readiness depends on local HTTP server
+    probes rather than credentials.
+  - Hermes should remain only as historical/import/plugin terminology where
+    unavoidable; it must not appear in agent reasoning provider or local CLI
+    selection surfaces.
+  - The Settings AI Provider page no longer exposes Hermes as a mode. Legacy
+    `mode=hermes` or `section=hermes-provider` deep links are normalized to the
+    BYOK provider pane rather than reopening a Hermes provider tab.
+- Material code change:
+  - Removed Hermes from local CLI agent scan/selection lists and shared
+    `LocalCliAgentId`.
+  - Removed the hidden/unreachable Hermes provider section renderer and its
+    install/root picker state from `SettingsPane`; Hermes remains only in
+    external integration import/tool terminology outside provider selection.
+  - Added LM Studio to Xenesis package provider names, provider capabilities,
+    preset base URL resolution, CLI help, main run-provider allowlist, and CR
+    run override schemas.
+  - Aligned package `auto` API-key scan order to OpenAI before Anthropic after
+    Codex/Claude login-file scans.
+  - Moved the runtime provider resolution regression test into
+    `packages/xenesis/tests/s3s4/` so it is run by the package's existing
+    Vitest include pattern.
+- Commands run:
+  - Context inspection of `src/main/xenesisService.mjs`,
+    `packages/xenesis/src/providers/runtimeProviderResolution.ts`,
+    `packages/xenesis/src/providers/registry.ts`,
+    `src/main/localCliAgents.mjs`, `src/renderer/App.tsx`,
+    `src/renderer/panes/SettingsPane.tsx`, and provider-related tests.
+  - `npx -y -p node@22.12.0 -p npm@10.9.0 node --import tsx --test src/shared/xenesisConnectionCapabilities.test.ts`
+    (RED as expected before implementation: Hermes local CLI still exposed,
+    LM Studio missing from CR run provider enum).
+  - `npm --prefix packages/xenesis test -- src/providers/runtimeProviderResolution.test.ts`
+    (pre-config-change: did not execute the src colocated test because package
+    Vitest config included `tests/**/*.test.ts` only).
+  - `npm --prefix packages/xenesis exec -- vitest run --include 'src/**/*.test.ts' src/providers/runtimeProviderResolution.test.ts`
+    (failed: Vitest v4 does not support `--include` CLI option).
+  - `npm --prefix packages/xenesis test`
+    (pre-test-move config experiment: failed because broadening to
+    `src/**/*.test.ts` also ran existing colocated tests with known failures;
+    reverted that config experiment and moved only the provider regression test
+    into `tests/s3s4/`).
+  - `npx -y -p node@22.12.0 -p npm@10.9.0 node --import tsx --test src/shared/xenesisConnectionCapabilities.test.ts src/shared/deskBridgeWorkflow.test.ts src/main/xenesisService.test.mjs`
+    (passed: 77/77).
+  - `npm --prefix packages/xenesis run typecheck` (passed).
+  - `npm --prefix packages/xenesis test` (passed after moving the provider
+    regression test: 113 files, 596 tests).
+  - `npm run typecheck` (passed).
+  - `npm run lint` (exit 0; repo has pre-existing Biome warnings unrelated to
+    this change).
+  - `npm --prefix packages/xenesis run build` (passed).
+  - `npm run docs:capabilities:audit` (passed; regenerated
+    `docs/capability-registry-audit.md`, timestamp-only diff).
+  - `npm run check:public-release` (passed).
+  - `npm --prefix packages/xenesis run provider:smoke` (passed 7/7 with
+    provider `auto`; report
+    `/Users/ethan/.xenesis/reports/provider-live-20260630T095313994Z.json`).
+  - `npm run build` (passed; `electron-vite build` completed for main, preload,
+    and renderer).
+  - `npm test` (passed: 525/525).
+  - After removing the hidden Hermes SettingsPane section:
+    `npm run typecheck` passed, `npm test` passed 525/525,
+    `npm --prefix packages/xenesis test` passed 113 files / 596 tests, and
+    `npm run build` passed.
+- Exact verification result:
+  - Focused shared/provider tests, package typecheck/tests/build, root
+    typecheck/lint/build/test, CR audit, public release check, and provider smoke
+    all passed.
+- Known gaps:
+  - Live Agent-pane UI prompt was not run in this pass. Provider smoke did prove
+    the runtime provider path and gateway flow, but not a manual Electron Agent
+    pane interaction.
+- Next intended step:
+  - Review final diff and decide whether to commit/push the `uno` branch.
+
 ## 2026-06-30 Final Review Hardening for Native Integrations
 
 - Current objective:
@@ -24598,3 +24704,106 @@ Verification so far:
   - Re-run PR creation after GitHub token/app permissions allow
     `createPullRequest`, or open the compare URL above from an authorized
     GitHub session.
+
+## 2026-06-30 Settings provider/connectors cleanup
+
+- Current objective:
+  - Remove env-key auto scanning from provider auto-detect.
+  - Remove Hermes-facing entries from the Tools tab and Settings/provider UI.
+  - Keep BYOK AI Provider focused on real model providers, while treating local
+    CLI setup as a separate local runtime readiness path informed by OpenClaw
+    and Hermes Agent.
+  - Refresh provider model defaults/lists, including Ollama and LM Studio.
+  - Clean up Connectors and External Apps layouts so Settings does not surface
+    raw `xd.xenesis.*` CR paths.
+- Touched files:
+  - `packages/xenesis/src/providers/runtimeProviderResolution.ts`
+  - `packages/xenesis/tests/s3s4/runtimeProviderResolution.test.ts`
+  - `src/main/xenesisService.mjs`
+  - `src/main/xenesisService.test.mjs`
+  - `src/shared/appMenuModel.ts`
+  - `src/shared/appMenuModel.test.ts`
+  - `src/shared/types.ts`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.test.ts`
+  - `src/renderer/styles.css`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
+  - `docs/capability-registry-audit.md`
+  - `handoff.md`
+- Commands run and exact results:
+  - Read `AGENTS.md` and repo-local Obsidian context listed in the previous
+    working notes before continuing provider/settings work.
+  - Focused OpenClaw/Hermes Agent inspection covered:
+    `/Users/ethan/Workspace/openclaw/extensions/anthropic/cli-auth-seam.ts`,
+    `/Users/ethan/Workspace/openclaw/extensions/anthropic/register.runtime.ts`,
+    `/Users/ethan/Workspace/openclaw/extensions/anthropic/cli-migration.ts`,
+    `/Users/ethan/Workspace/openclaw/extensions/anthropic/cli-constants.ts`,
+    `/Users/ethan/Workspace/openclaw/extensions/lmstudio/src/setup.ts`,
+    `/Users/ethan/Workspace/openclaw/extensions/lmstudio/src/provider-auth.ts`,
+    `/Users/ethan/Workspace/hermes-agent/hermes_cli/runtime_provider.py`,
+    `/Users/ethan/Workspace/hermes-agent/tui_gateway/server.py`, and
+    `/Users/ethan/Workspace/hermes-agent/hermes_cli/cli_agent_setup_mixin.py`.
+  - `npm --prefix packages/xenesis exec vitest run tests/s3s4/runtimeProviderResolution.test.ts`:
+    passed 22/22 after proving `auto` ignores API-key env vars while explicit
+    provider choices still use their env keys.
+  - `node --test src/main/xenesisService.test.mjs`: passed 13/13 after main
+    process auto resolution was changed to local login files only.
+  - `node --import tsx --test src/shared/appMenuModel.test.ts`: passed 6/6
+    after removing the visible Hermes Tools menu group.
+  - `node --import tsx --test src/renderer/panes/xenesisConnectionCenter.test.ts`:
+    passed 76/76 after hiding raw `xd.*` details from visible Settings/Connection
+    Center copy and adding layout markers for Connectors/External Apps.
+  - `npm exec -- biome format --write ...`: passed; formatted touched files.
+  - `npm run lint -- --max-diagnostics=80`: passed with warnings only; latest
+    report shows 390 warnings and 86 infos.
+  - `npm run typecheck`: passed.
+  - `npm --prefix packages/xenesis run typecheck`: passed.
+  - `npm --prefix packages/xenesis test`: passed 113 files and 596 tests.
+  - `npm test`: passed 527/527.
+  - `npm --prefix packages/xenesis run build`: passed.
+  - `npm run docs:capabilities:audit`: passed; wrote
+    `docs/capability-registry-audit.md`; 857 nodes and 692 coverage path
+    references.
+  - `npm run build`: passed; Vite emitted the known `hwp.js` browser
+    externalization warning and the known static/dynamic `deskBridge.ts`
+    chunking warning.
+  - `npm run pack:mac`: passed. Built ad-hoc signed app directory at
+    `release/mac-arm64/Xenesis Desk.app`; notarization skipped because notarize
+    options are not configured; electron-builder used the default Electron icon
+    because no app icon is set.
+  - `git diff --check`: passed.
+  - `rg -n "xd\\." src/renderer/panes/SettingsPane.tsx`: passed with 0
+    matches; internal request-builder CR paths remain in
+    `src/renderer/panes/xenesisConnectionCenter.ts`.
+- Exact verification result:
+  - Auto provider detection no longer scans env API keys; it only detects
+    Codex/Claude local login credential files. Explicit BYOK providers still
+    use their expected env keys.
+  - Settings AI Provider BYOK selector excludes local CLI runtimes
+    (`codex-cli`, `codex-app-server`, `claude-cli`, `claude-interactive`) and
+    keeps local HTTP providers (`ollama`, `lmstudio`) in the model-provider set.
+  - The visible Tools taxonomy no longer exposes a Hermes group. The internal
+    Action Inbox command id still contains `openHermesActionInbox` for
+    compatibility, but its visible label is product-neutral.
+  - Connectors and External Apps layouts now use cleaner overview/profile
+    sections and show counts/readiness summaries instead of raw CR paths.
+  - Electron production build and macOS app directory packaging both passed.
+- Known gaps:
+  - No PR or push was performed for this slice, per the user's earlier
+    instruction not to PR yet.
+  - Live Agent-pane natural-language smoke was not rerun for this UI/provider
+    cleanup slice. Existing CR/Agent live evidence from the previous slice
+    remains recorded above, but this slice's verification is automated tests,
+    CR audit, and Electron build/package.
+  - i18n strings and deep-link compatibility code still contain unused or
+    legacy Hermes wording outside the visible Tools menu; remove them in a
+    separate cleanup only if product wants full code-string removal.
+  - Model IDs are seeded from current official provider documentation reviewed
+    during the slice, but provider catalogs change frequently and should remain
+    refreshable data rather than a permanent hardcoded truth.
+- Next intended step:
+  - If continuing, run a visual Settings smoke in the packaged app or dev app,
+    then decide whether to remove the remaining legacy Hermes copy/deep-link
+    compatibility strings.

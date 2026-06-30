@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'vitest';
-import { defaultConfig, providerNames, type XenesisConfig } from '../config/types.js';
+import { defaultConfig, providerNames, type XenesisConfig } from '../../src/config/types.js';
 import {
   assertRuntimeProviderReady,
   type ProviderSelectionResult,
   resolveRuntimeProviderSelection,
-} from './runtimeProviderResolution.js';
+} from '../../src/providers/runtimeProviderResolution.js';
 
 function config(overrides: Partial<XenesisConfig> = {}): XenesisConfig {
   return {
@@ -34,6 +34,11 @@ function expectReady(selection: ProviderSelectionResult) {
 describe('runtime provider resolution', () => {
   test('providerNames accepts auto', () => {
     expect(providerNames).toContain('auto');
+  });
+
+  test('providerNames exposes explicit local HTTP providers', () => {
+    expect(providerNames).toContain('ollama');
+    expect(providerNames).toContain('lmstudio');
   });
 
   test('auto resolves CODEX_HOME auth before home Codex auth', () => {
@@ -100,12 +105,17 @@ describe('runtime provider resolution', () => {
     ['DASHSCOPE_API_KEY', 'qwen'],
     ['MISTRAL_API_KEY', 'mistral'],
     ['XAI_API_KEY', 'xai'],
-  ] as const)('auto resolves %s to %s after CLI credentials', (apiKeyEnv, provider) => {
-    const selection = resolveRuntimeProviderSelection(config(), { [apiKeyEnv]: 'secret-value' }, resolverOptions());
+  ] as const)('explicit %s provider uses %s without leaking the secret', (apiKeyEnv, provider) => {
+    const selection = resolveRuntimeProviderSelection(
+      config({ provider }),
+      { [apiKeyEnv]: 'secret-value' },
+      resolverOptions(),
+    );
 
     expect(selection).toMatchObject({
+      requestedProvider: provider,
       provider,
-      authMode: 'api-key',
+      source: 'user-settings-profile',
       credentialState: 'present',
       credentialSource: apiKeyEnv,
       processModel: 'http-streaming',
@@ -114,6 +124,49 @@ describe('runtime provider resolution', () => {
     });
     expect(selection).not.toHaveProperty('apiKey');
     expect(JSON.stringify(selection)).not.toContain('secret-value');
+    expectReady(selection);
+  });
+
+  test('auto ignores API-key environment variables when no local login is present', () => {
+    const selection = resolveRuntimeProviderSelection(
+      config(),
+      {
+        OPENAI_API_KEY: 'openai-secret',
+        ANTHROPIC_API_KEY: 'anthropic-secret',
+        GEMINI_API_KEY: 'gemini-secret',
+      },
+      resolverOptions(),
+    );
+
+    expect(selection).toMatchObject({
+      requestedProvider: 'auto',
+      provider: undefined,
+      source: 'auto-detect',
+      credentialState: 'missing',
+      credentialSource: undefined,
+      apiKeyEnv: undefined,
+      safeForReasoning: false,
+    });
+    expect(JSON.stringify(selection)).not.toContain('openai-secret');
+    expect(JSON.stringify(selection)).not.toContain('anthropic-secret');
+    expect(JSON.stringify(selection)).not.toContain('gemini-secret');
+    expect(selection.diagnostics.join('\n')).not.toContain('OPENAI_API_KEY');
+    expect(() => assertRuntimeProviderReady(selection)).toThrow(/missing provider credentials/i);
+  });
+
+  test('explicit LM Studio provider is local HTTP and does not require credentials', () => {
+    const selection = resolveRuntimeProviderSelection(config({ provider: 'lmstudio' }), {}, resolverOptions());
+
+    expect(selection).toMatchObject({
+      requestedProvider: 'lmstudio',
+      provider: 'lmstudio',
+      source: 'user-settings-profile',
+      authMode: 'none',
+      credentialState: 'present',
+      baseURL: 'http://127.0.0.1:1234/v1',
+      processModel: 'http-streaming',
+      safeForReasoning: true,
+    });
     expectReady(selection);
   });
 

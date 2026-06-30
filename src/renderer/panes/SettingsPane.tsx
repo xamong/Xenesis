@@ -305,24 +305,24 @@ const AI_PROVIDERS: Record<AiProviderKind, ProviderMeta> = {
   openai: {
     label: 'OpenAI',
     shortLabel: 'OpenAI',
-    defaultModel: 'gpt-4o',
-    models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo', 'o1', 'o3-mini'],
+    defaultModel: 'gpt-5.5',
+    models: ['gpt-5.5', 'gpt-5.5-pro', 'gpt-5.4', 'gpt-5.4-mini', 'gpt-5.4-nano'],
     needsKey: true,
     defaultBaseUrl: 'https://api.openai.com/v1',
   },
   anthropic: {
     label: 'Anthropic',
     shortLabel: 'Anthropic',
-    defaultModel: 'claude-opus-4-5',
-    models: ['claude-opus-4-5', 'claude-sonnet-4-5', 'claude-3-5-haiku-20241022'],
+    defaultModel: 'claude-opus-4-8',
+    models: ['claude-opus-4-8', 'claude-sonnet-4-6', 'claude-opus-4-5', 'claude-sonnet-4-5', 'claude-haiku-4-5'],
     needsKey: true,
     defaultBaseUrl: '',
   },
   azure: {
     label: 'Azure OpenAI',
     shortLabel: 'Azure OpenAI',
-    defaultModel: 'gpt-4o',
-    models: ['gpt-4o', 'gpt-4-turbo'],
+    defaultModel: 'gpt-5.5',
+    models: ['gpt-5.5', 'gpt-5.4', 'gpt-5.4-mini'],
     needsKey: true,
     defaultBaseUrl: '',
   },
@@ -361,40 +361,44 @@ const AI_PROVIDERS: Record<AiProviderKind, ProviderMeta> = {
   gemini: {
     label: 'Google Gemini',
     shortLabel: 'Google Gemini',
-    defaultModel: 'gemini-2.0-flash',
-    models: ['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'],
+    defaultModel: 'gemini-2.5-pro',
+    models: ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'],
     needsKey: true,
     defaultBaseUrl: '',
   },
   openrouter: {
     label: 'OpenRouter',
     shortLabel: 'OpenRouter',
-    defaultModel: 'openai/gpt-4o-mini',
-    models: ['openai/gpt-4o-mini', 'openai/gpt-4o', 'anthropic/claude-3.5-sonnet'],
+    defaultModel: 'openai/gpt-5.5',
+    models: ['openai/gpt-5.5', 'anthropic/claude-opus-4.8', 'anthropic/claude-sonnet-4.6', 'google/gemini-2.5-pro'],
     needsKey: true,
     defaultBaseUrl: 'https://openrouter.ai/api/v1',
   },
   groq: {
     label: 'Groq',
     shortLabel: 'Groq',
-    defaultModel: 'llama-3.1-8b-instant',
-    models: ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile', 'mixtral-8x7b-32768'],
+    defaultModel: 'meta-llama/llama-4-scout-17b-16e-instruct',
+    models: [
+      'meta-llama/llama-4-scout-17b-16e-instruct',
+      'meta-llama/llama-4-maverick-17b-128e-instruct',
+      'llama-3.3-70b-versatile',
+    ],
     needsKey: true,
     defaultBaseUrl: '',
   },
   deepseek: {
     label: 'DeepSeek',
     shortLabel: 'DeepSeek',
-    defaultModel: 'deepseek-chat',
-    models: ['deepseek-chat', 'deepseek-reasoner'],
+    defaultModel: 'deepseek-v4-flash',
+    models: ['deepseek-v4-flash', 'deepseek-v4-pro', 'deepseek-reasoner', 'deepseek-chat'],
     needsKey: true,
     defaultBaseUrl: 'https://api.deepseek.com',
   },
   qwen: {
     label: 'Qwen',
     shortLabel: 'Qwen',
-    defaultModel: 'qwen-plus',
-    models: ['qwen-plus', 'qwen-turbo', 'qwen-max'],
+    defaultModel: 'qwen-plus-latest',
+    models: ['qwen-plus-latest', 'qwen-max-latest', 'qwen-turbo-latest', 'qwen3-max'],
     needsKey: true,
     defaultBaseUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
   },
@@ -409,16 +413,16 @@ const AI_PROVIDERS: Record<AiProviderKind, ProviderMeta> = {
   xai: {
     label: 'xAI',
     shortLabel: 'xAI',
-    defaultModel: 'grok-2-latest',
-    models: ['grok-2-latest'],
+    defaultModel: 'grok-4-latest',
+    models: ['grok-4-latest', 'grok-4-fast-reasoning', 'grok-4-fast-non-reasoning'],
     needsKey: true,
     defaultBaseUrl: 'https://api.x.ai/v1',
   },
   ollama: {
     label: 'Ollama',
     shortLabel: 'Ollama',
-    defaultModel: 'llama3.2',
-    models: ['llama3.2', 'llama3.1', 'mistral', 'gemma2', 'phi3', 'qwen2.5'],
+    defaultModel: 'qwen3.6',
+    models: ['qwen3.6', 'llama4', 'gpt-oss', 'gemma3', 'mistral-small3.2', 'qwen3'],
     needsKey: false,
     defaultBaseUrl: 'http://localhost:11434',
   },
@@ -433,27 +437,26 @@ const AI_PROVIDERS: Record<AiProviderKind, ProviderMeta> = {
   together: {
     label: 'Together AI',
     shortLabel: 'Together',
-    defaultModel: 'meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo',
-    models: ['meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo', 'mistralai/Mixtral-8x7B-Instruct-v0.1'],
+    defaultModel: 'meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8',
+    models: ['meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8', 'meta-llama/Llama-4-Scout-17B-16E-Instruct'],
     needsKey: true,
     defaultBaseUrl: '',
   },
   fireworks: {
     label: 'Fireworks AI',
     shortLabel: 'Fireworks',
-    defaultModel: 'accounts/fireworks/models/llama-v3p1-8b-instruct',
-    models: ['accounts/fireworks/models/llama-v3p1-8b-instruct'],
+    defaultModel: 'accounts/fireworks/models/llama4-maverick-instruct-basic',
+    models: [
+      'accounts/fireworks/models/llama4-maverick-instruct-basic',
+      'accounts/fireworks/models/llama4-scout-instruct-basic',
+    ],
     needsKey: true,
     defaultBaseUrl: '',
   },
 };
 
-const PROVIDER_ORDER: AiProviderKind[] = [
+const BYOK_PROVIDER_ORDER: AiProviderKind[] = [
   'auto',
-  'codex-cli',
-  'codex-app-server',
-  'claude-cli',
-  'claude-interactive',
   'openai',
   'anthropic',
   'gemini',
@@ -469,6 +472,11 @@ const PROVIDER_ORDER: AiProviderKind[] = [
   'together',
   'fireworks',
 ];
+const BYOK_PROVIDER_SET = new Set<AiProviderKind>(BYOK_PROVIDER_ORDER);
+
+function isByokProvider(provider: AiProviderKind): boolean {
+  return BYOK_PROVIDER_SET.has(provider);
+}
 
 function getAiProviderModelLabelKey(provider: AiProviderKind): string {
   return provider === 'azure' ? 'settings.aiDeploymentLabel' : 'settings.aiModelLabel';
@@ -501,7 +509,7 @@ function getAiProviderEndpointHintKey(provider: AiProviderKind): string {
 
 const DEFAULT_AI_PROVIDER: AiProviderSettings = {
   provider: 'openai',
-  model: 'gpt-4o',
+  model: 'gpt-5.5',
   apiKey: '',
   baseUrl: '',
   xcAgentApiUrl: '',
@@ -1009,12 +1017,7 @@ function getSettingsErrorMessage(error: unknown): string {
   return String(error || 'Unknown error');
 }
 
-const HERMES_PROVIDER_ROOT = 'providers/hermes';
-const HERMES_GATEWAY_PLUGIN_PATH = 'providers/hermes/plugins/xenesis_desk_gateway';
-const HERMES_BOT_PLATFORM_PLUGIN_PATH = 'providers/hermes/plugins/platforms/xenesis_desk_bot';
-const HERMES_E2E_BOT_PATH = 'providers/hermes/plugins/xenesis_desk_gateway/e2e_bot';
-
-type SettingsRunModelMode = 'xamong' | 'hermes' | 'local' | 'byok';
+type SettingsRunModelMode = 'xamong' | 'local' | 'byok';
 type SettingsXenesisTab = 'connections' | 'agent' | 'gateway' | 'external-bots' | 'gowoori';
 type SettingsInterfaceTab = 'language' | 'appearance' | 'keyboard-shortcuts' | 'window-sizer';
 type SettingsInfoTab = 'general' | 'secret-vault' | 'settings-backup';
@@ -1089,7 +1092,7 @@ function normalizeInfoTab(value: unknown): SettingsInfoTab | null {
 function normalizeRunModelMode(value: unknown): SettingsRunModelMode | null {
   const mode = typeof value === 'string' ? value.trim().toLowerCase() : '';
   if (mode === 'xamong' || mode === 'xamongcode' || mode === 'xamong-code') return 'xamong';
-  if (mode === 'hermes' || mode === 'hermes-plugin' || mode === 'plugin-hermes') return 'hermes';
+  if (mode === 'hermes' || mode === 'hermes-plugin' || mode === 'plugin-hermes') return 'byok';
   if (mode === 'local' || mode === 'local-cli' || mode === 'cli') return 'local';
   if (mode === 'byok') return 'byok';
   return null;
@@ -1116,7 +1119,7 @@ function normalizeSettingsTargetSection(value: unknown): string {
   if (section === 'external-bots' || section === 'external-bot') return 'external-bot-channels';
   if (section === 'gowoori' || section === 'gowoori-agent-settings') return 'gowoori-agent';
   if (section === 'xamong' || section === 'xamongcode') return 'xamong-runtime';
-  if (section === 'hermes' || section === 'hermes-plugin' || section === 'hermes-provider') return 'hermes-provider';
+  if (section === 'hermes' || section === 'hermes-plugin' || section === 'hermes-provider') return 'byok-provider';
   if (section === 'local') return 'local-cli';
   if (section === 'byok') return 'byok-provider';
   if (section === 'language' || section === 'settings-language') return 'settings-language';
@@ -1148,7 +1151,6 @@ function findXenesisConnectionDetailElement(connectionId: string, focusConnectio
 
 function getRunModelModeForSection(section: string): SettingsRunModelMode | null {
   if (section === 'xamong-runtime') return 'xamong';
-  if (section === 'hermes-provider') return 'hermes';
   if (section === 'local-cli') return 'local';
   if (section === 'byok-provider') return 'byok';
   return null;
@@ -1339,8 +1341,6 @@ export default function SettingsPane() {
   const [providerIntegrationStatus, setProviderIntegrationStatus] = useState<ProviderIntegrationStatus | null>(null);
   const [providerIntegrationBusy, setProviderIntegrationBusy] = useState(false);
   const [providerIntegrationMessage, setProviderIntegrationMessage] = useState('');
-  const [hermesInstallRoot, setHermesInstallRoot] = useState('');
-  const [hermesInstalling, setHermesInstalling] = useState(false);
   const [cliIntegrationBusyTarget, setCliIntegrationBusyTarget] = useState<ProviderIntegrationCliTargetId | ''>('');
 
   const [automationSettings, setAutomationSettings] = useState<AutomationSettings>({
@@ -1411,7 +1411,6 @@ export default function SettingsPane() {
   const [xenesisExternalBotSaving, setXenesisExternalBotSaving] = useState(false);
   const [xenesisExternalBotTesting, setXenesisExternalBotTesting] = useState<XenesisProfileChannelName | null>(null);
   const [xenesisExternalBotMessage, setXenesisExternalBotMessage] = useState('');
-  const [hermesProviderMessage, setHermesProviderMessage] = useState('');
   const [xenesisGatewayStatus, setXenesisGatewayStatus] = useState<XenesisStatus | null>(null);
   const [xenesisGatewayBusy, setXenesisGatewayBusy] = useState(false);
   const [xenesisGatewayMessage, setXenesisGatewayMessage] = useState('');
@@ -1639,21 +1638,18 @@ export default function SettingsPane() {
     }
   }, []);
 
-  const loadProviderIntegrationStatus = useCallback(
-    async (hermesRoot = hermesInstallRoot) => {
-      setProviderIntegrationBusy(true);
-      try {
-        const status = await window.providerIntegrationAPI.status({ hermesRoot });
-        setProviderIntegrationStatus(status);
-      } catch (error) {
-        setProviderIntegrationStatus(null);
-        setProviderIntegrationMessage(error instanceof Error ? error.message : String(error));
-      } finally {
-        setProviderIntegrationBusy(false);
-      }
-    },
-    [hermesInstallRoot],
-  );
+  const loadProviderIntegrationStatus = useCallback(async (hermesRoot = '') => {
+    setProviderIntegrationBusy(true);
+    try {
+      const status = await window.providerIntegrationAPI.status({ hermesRoot });
+      setProviderIntegrationStatus(status);
+    } catch (error) {
+      setProviderIntegrationStatus(null);
+      setProviderIntegrationMessage(error instanceof Error ? error.message : String(error));
+    } finally {
+      setProviderIntegrationBusy(false);
+    }
+  }, []);
 
   const loadXenesisProfiles = useCallback(async () => {
     setXenesisProfileBusy(true);
@@ -3713,7 +3709,11 @@ export default function SettingsPane() {
 
   const activeMeta =
     VISIBLE_SETTINGS_CATEGORIES.find((category) => category.id === activeCategory) ?? VISIBLE_SETTINGS_CATEGORIES[0];
-  const activeProviderMeta = AI_PROVIDERS[aiProvider.provider];
+  const activeByokProvider = isByokProvider(aiProvider.provider) ? aiProvider.provider : DEFAULT_AI_PROVIDER.provider;
+  const activeProviderMeta = AI_PROVIDERS[activeByokProvider];
+  const activeByokModel = activeProviderMeta.models.includes(aiProvider.model)
+    ? aiProvider.model
+    : activeProviderMeta.defaultModel;
   const visibleSecretVaultItems = useMemo(
     () => filterXenisPhase5SecretVaultItems(secretVaultStatus?.items ?? [], { xenisPhase5: xenisPhase5Enabled }),
     [secretVaultStatus?.items, xenisPhase5Enabled],
@@ -3724,6 +3724,9 @@ export default function SettingsPane() {
       ↺
     </button>
   );
+
+  const formatXenesisPathCount = (paths: readonly unknown[] | undefined, label: string) =>
+    `${paths?.length ?? 0} ${label}(s)`;
 
   const renderGeneral = () => (
     <div className="sp-stack">
@@ -4776,7 +4779,7 @@ export default function SettingsPane() {
             {item.crActions?.length ? (
               <div>
                 <span>{t('settings.xenesisConnectionsCrActions')}</span>
-                <strong>{item.crActions.join(', ')}</strong>
+                <strong>{formatXenesisPathCount(item.crActions, 'registered action')}</strong>
               </div>
             ) : null}
             {item.guidePath ? (
@@ -4829,11 +4832,11 @@ export default function SettingsPane() {
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsDiagnosticRunbookReadback')}</span>
-              <strong>{diagnosticRunbook.readPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(diagnosticRunbook.readPaths, 'readback check')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsDiagnosticRunbookControls')}</span>
-              <strong>{diagnosticRunbook.controlPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(diagnosticRunbook.controlPaths, 'setup action')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsDiagnosticRunbookDiagnostics')}</span>
@@ -4877,11 +4880,11 @@ export default function SettingsPane() {
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsSetupRequestReadback')}</span>
-              <strong>{setupRequest.readPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(setupRequest.readPaths, 'readback check')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsSetupRequestControls')}</span>
-              <strong>{setupRequest.controlPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(setupRequest.controlPaths, 'setup action')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsSetupRequestDiagnostics')}</span>
@@ -4919,7 +4922,7 @@ export default function SettingsPane() {
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsOnboardingControls')}</span>
-              <strong>{onboardingPlan.controlPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(onboardingPlan.controlPaths, 'setup action')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsOnboardingValidation')}</span>
@@ -4953,11 +4956,11 @@ export default function SettingsPane() {
             ) : null}
             <div>
               <span>{t('settings.xenesisConnectionsGuideFileReadback')}</span>
-              <strong>{guideFile.readPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(guideFile.readPaths, 'readback check')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsGuideFileControls')}</span>
-              <strong>{guideFile.controlPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(guideFile.controlPaths, 'setup action')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsGuideFileDiagnostics')}</span>
@@ -4995,11 +4998,11 @@ export default function SettingsPane() {
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsGuideReadback')}</span>
-              <strong>{item.guideCatalog.readPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(item.guideCatalog.readPaths, 'readback check')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsGuideControls')}</span>
-              <strong>{item.guideCatalog.controlPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(item.guideCatalog.controlPaths, 'setup action')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsGuideBoundaries')}</span>
@@ -5055,11 +5058,11 @@ export default function SettingsPane() {
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsProviderProfileDraftReadback')}</span>
-              <strong>{providerProfileDraft.readPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(providerProfileDraft.readPaths, 'readback check')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsProviderProfileDraftControls')}</span>
-              <strong>{providerProfileDraft.controlPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(providerProfileDraft.controlPaths, 'setup action')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsProviderProfileDraftDiagnostics')}</span>
@@ -5101,11 +5104,11 @@ export default function SettingsPane() {
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsProviderSetupPlanReadback')}</span>
-              <strong>{providerSetupPlan.readPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(providerSetupPlan.readPaths, 'readback check')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsProviderSetupPlanControls')}</span>
-              <strong>{providerSetupPlan.controlPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(providerSetupPlan.controlPaths, 'setup action')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsProviderSetupPlanDiagnostics')}</span>
@@ -5218,7 +5221,7 @@ export default function SettingsPane() {
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsProviderRoutingReadback')}</span>
-              <strong>{providerRouting.readPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(providerRouting.readPaths, 'readback check')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsProviderRoutingDiagnostics')}</span>
@@ -5248,9 +5251,7 @@ export default function SettingsPane() {
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsProviderViewOpen')}</span>
-              <strong>
-                {providerView.openPath} {JSON.stringify(providerView.openArgs)}
-              </strong>
+              <strong>{JSON.stringify(providerView.openArgs)}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsProviderViewInternalViews')}</span>
@@ -5268,11 +5269,11 @@ export default function SettingsPane() {
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsProviderViewReadback')}</span>
-              <strong>{providerView.readPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(providerView.readPaths, 'readback check')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsProviderViewControls')}</span>
-              <strong>{providerView.controlPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(providerView.controlPaths, 'setup action')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsProviderViewDiagnostics')}</span>
@@ -5348,11 +5349,11 @@ export default function SettingsPane() {
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolSetupPlanReadback')}</span>
-              <strong>{toolSetupPlan.readPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(toolSetupPlan.readPaths, 'readback check')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolSetupPlanControls')}</span>
-              <strong>{toolSetupPlan.controlPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(toolSetupPlan.controlPaths, 'setup action')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolSetupPlanDiagnostics')}</span>
@@ -5402,11 +5403,11 @@ export default function SettingsPane() {
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolInstallPlanReadback')}</span>
-              <strong>{toolInstallPlan.readPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(toolInstallPlan.readPaths, 'readback check')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolInstallPlanControls')}</span>
-              <strong>{toolInstallPlan.controlPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(toolInstallPlan.controlPaths, 'setup action')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolInstallPlanDiagnostics')}</span>
@@ -5462,11 +5463,11 @@ export default function SettingsPane() {
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolRuntimeReadback')}</span>
-              <strong>{toolRuntime.readPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(toolRuntime.readPaths, 'readback check')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolRuntimeControls')}</span>
-              <strong>{toolRuntime.controlPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(toolRuntime.controlPaths, 'setup action')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolRuntimeDiagnostics')}</span>
@@ -5520,11 +5521,11 @@ export default function SettingsPane() {
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolProfileDraftReadback')}</span>
-              <strong>{toolProfileDraft.readPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(toolProfileDraft.readPaths, 'readback check')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolProfileDraftControls')}</span>
-              <strong>{toolProfileDraft.controlPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(toolProfileDraft.controlPaths, 'setup action')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolProfileDraftDiagnostics')}</span>
@@ -5574,11 +5575,11 @@ export default function SettingsPane() {
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsMcpInstallDraftReadback')}</span>
-              <strong>{mcpInstallDraft.readPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(mcpInstallDraft.readPaths, 'readback check')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsMcpInstallDraftControls')}</span>
-              <strong>{mcpInstallDraft.controlPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(mcpInstallDraft.controlPaths, 'setup action')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsMcpInstallDraftDiagnostics')}</span>
@@ -5640,11 +5641,11 @@ export default function SettingsPane() {
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolMcpOAuthReadback')}</span>
-              <strong>{toolMcpOAuth.readPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(toolMcpOAuth.readPaths, 'readback check')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolMcpOAuthControls')}</span>
-              <strong>{toolMcpOAuth.controlPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(toolMcpOAuth.controlPaths, 'setup action')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolMcpOAuthDiagnostics')}</span>
@@ -5735,7 +5736,7 @@ export default function SettingsPane() {
                 </div>
                 <div>
                   <span>{t('settings.xenesisConnectionsToolOAuthSetupPacketReadback')}</span>
-                  <strong>{toolOAuthSetupPacket.readPaths.join(', ') || '-'}</strong>
+                  <strong>{formatXenesisPathCount(toolOAuthSetupPacket.readPaths, 'readback check')}</strong>
                 </div>
               </>
             ) : null}
@@ -5745,11 +5746,11 @@ export default function SettingsPane() {
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolOAuthDraftReadback')}</span>
-              <strong>{toolOAuthDraft.readPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(toolOAuthDraft.readPaths, 'readback check')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolOAuthDraftControls')}</span>
-              <strong>{toolOAuthDraft.controlPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(toolOAuthDraft.controlPaths, 'setup action')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolOAuthDraftDiagnostics')}</span>
@@ -5823,11 +5824,11 @@ export default function SettingsPane() {
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolOAuthRuntimeReadback')}</span>
-              <strong>{toolOAuthRuntime.readPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(toolOAuthRuntime.readPaths, 'readback check')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolOAuthRuntimeControls')}</span>
-              <strong>{toolOAuthRuntime.controlPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(toolOAuthRuntime.controlPaths, 'setup action')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolOAuthRuntimeDiagnostics')}</span>
@@ -5878,11 +5879,11 @@ export default function SettingsPane() {
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolActionCatalogReadback')}</span>
-              <strong>{toolActionCatalog.readPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(toolActionCatalog.readPaths, 'readback check')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolActionCatalogControls')}</span>
-              <strong>{toolActionCatalog.controlPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(toolActionCatalog.controlPaths, 'setup action')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolActionCatalogDiagnostics')}</span>
@@ -5928,11 +5929,11 @@ export default function SettingsPane() {
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsChannelRuntimeReadback')}</span>
-              <strong>{channelRuntime.readPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(channelRuntime.readPaths, 'readback check')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsChannelRuntimeControls')}</span>
-              <strong>{channelRuntime.controlPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(channelRuntime.controlPaths, 'setup action')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsChannelRuntimeDiagnostics')}</span>
@@ -5974,11 +5975,11 @@ export default function SettingsPane() {
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsChannelSetupPlanReadback')}</span>
-              <strong>{channelSetupPlan.readPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(channelSetupPlan.readPaths, 'readback check')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsChannelSetupPlanControls')}</span>
-              <strong>{channelSetupPlan.controlPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(channelSetupPlan.controlPaths, 'setup action')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsChannelSetupPlanDiagnostics')}</span>
@@ -6041,11 +6042,11 @@ export default function SettingsPane() {
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsChannelProfileDraftReadback')}</span>
-              <strong>{channelProfileDraft.readPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(channelProfileDraft.readPaths, 'readback check')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsChannelProfileDraftControls')}</span>
-              <strong>{channelProfileDraft.controlPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(channelProfileDraft.controlPaths, 'setup action')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsChannelProfileDraftDiagnostics')}</span>
@@ -6093,11 +6094,11 @@ export default function SettingsPane() {
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolConnectorReadback')}</span>
-              <strong>{toolConnector.readPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(toolConnector.readPaths, 'readback check')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolConnectorControls')}</span>
-              <strong>{toolConnector.controlPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(toolConnector.controlPaths, 'setup action')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolConnectorDiagnostics')}</span>
@@ -6127,9 +6128,7 @@ export default function SettingsPane() {
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolViewOpen')}</span>
-              <strong>
-                {toolView.openPath} {JSON.stringify(toolView.openArgs)}
-              </strong>
+              <strong>{JSON.stringify(toolView.openArgs)}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolViewInternalViews')}</span>
@@ -6145,11 +6144,11 @@ export default function SettingsPane() {
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolViewReadback')}</span>
-              <strong>{toolView.readPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(toolView.readPaths, 'readback check')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolViewControls')}</span>
-              <strong>{toolView.controlPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(toolView.controlPaths, 'setup action')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolViewDiagnostics')}</span>
@@ -6195,11 +6194,11 @@ export default function SettingsPane() {
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolUserStoryReadback')}</span>
-              <strong>{toolUserStory.readPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(toolUserStory.readPaths, 'readback check')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolUserStoryControls')}</span>
-              <strong>{toolUserStory.controlPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(toolUserStory.controlPaths, 'setup action')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsToolUserStoryDiagnostics')}</span>
@@ -6233,9 +6232,7 @@ export default function SettingsPane() {
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsMessengerViewOpen')}</span>
-              <strong>
-                {messengerView.openPath} {JSON.stringify(messengerView.openArgs)}
-              </strong>
+              <strong>{JSON.stringify(messengerView.openArgs)}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsMessengerViewInternalViews')}</span>
@@ -6253,11 +6250,11 @@ export default function SettingsPane() {
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsMessengerViewReadback')}</span>
-              <strong>{messengerView.readPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(messengerView.readPaths, 'readback check')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsMessengerViewControls')}</span>
-              <strong>{messengerView.controlPaths.join(', ')}</strong>
+              <strong>{formatXenesisPathCount(messengerView.controlPaths, 'setup action')}</strong>
             </div>
             <div>
               <span>{t('settings.xenesisConnectionsMessengerViewDiagnostics')}</span>
@@ -6425,11 +6422,11 @@ export default function SettingsPane() {
                 </div>
                 <div>
                   <span>{t('settings.xenesisConnectionsChannelSafetyReadback')}</span>
-                  <strong>{channelTemplate.safety.readPaths.join(', ')}</strong>
+                  <strong>{formatXenesisPathCount(channelTemplate.safety.readPaths, 'readback check')}</strong>
                 </div>
                 <div>
                   <span>{t('settings.xenesisConnectionsChannelSafetyControls')}</span>
-                  <strong>{channelTemplate.safety.controlPaths.join(', ')}</strong>
+                  <strong>{formatXenesisPathCount(channelTemplate.safety.controlPaths, 'setup action')}</strong>
                 </div>
                 <div>
                   <span>{t('settings.xenesisConnectionsChannelSafetyBoundaries')}</span>
@@ -6463,11 +6460,11 @@ export default function SettingsPane() {
                 </div>
                 <div>
                   <span>{t('settings.xenesisConnectionsChannelAccessGroupReadback')}</span>
-                  <strong>{channelTemplate.accessGroups.readPaths.join(', ')}</strong>
+                  <strong>{formatXenesisPathCount(channelTemplate.accessGroups.readPaths, 'readback check')}</strong>
                 </div>
                 <div>
                   <span>{t('settings.xenesisConnectionsChannelAccessGroupControls')}</span>
-                  <strong>{channelTemplate.accessGroups.controlPaths.join(', ')}</strong>
+                  <strong>{formatXenesisPathCount(channelTemplate.accessGroups.controlPaths, 'setup action')}</strong>
                 </div>
                 <div>
                   <span>{t('settings.xenesisConnectionsChannelAccessGroupBoundaries')}</span>
@@ -6505,11 +6502,11 @@ export default function SettingsPane() {
                 </div>
                 <div>
                   <span>{t('settings.xenesisConnectionsChannelPairingReadback')}</span>
-                  <strong>{channelTemplate.pairing.readPaths.join(', ')}</strong>
+                  <strong>{formatXenesisPathCount(channelTemplate.pairing.readPaths, 'readback check')}</strong>
                 </div>
                 <div>
                   <span>{t('settings.xenesisConnectionsChannelPairingControls')}</span>
-                  <strong>{channelTemplate.pairing.controlPaths.join(', ')}</strong>
+                  <strong>{formatXenesisPathCount(channelTemplate.pairing.controlPaths, 'setup action')}</strong>
                 </div>
                 <div>
                   <span>{t('settings.xenesisConnectionsChannelPairingDiagnostics')}</span>
@@ -6555,11 +6552,11 @@ export default function SettingsPane() {
                 </div>
                 <div>
                   <span>{t('settings.xenesisConnectionsChannelUserStoryReadback')}</span>
-                  <strong>{channelUserStory.readPaths.join(', ')}</strong>
+                  <strong>{formatXenesisPathCount(channelUserStory.readPaths, 'readback check')}</strong>
                 </div>
                 <div>
                   <span>{t('settings.xenesisConnectionsChannelUserStoryControls')}</span>
-                  <strong>{channelUserStory.controlPaths.join(', ')}</strong>
+                  <strong>{formatXenesisPathCount(channelUserStory.controlPaths, 'setup action')}</strong>
                 </div>
                 <div>
                   <span>{t('settings.xenesisConnectionsChannelUserStoryDiagnostics')}</span>
@@ -6652,18 +6649,9 @@ export default function SettingsPane() {
     const messengerItems = xenesisConnectionsStatus?.sections.messengers.items ?? [];
     const readyToolItems = toolItems.filter((item) => item.status === 'ready');
     const readyMessengerItems = messengerItems.filter((item) => item.status === 'ready');
-    const plannedToolItems = toolItems.filter((item) => item.status === 'planned');
-    const plannedMessengerItems = messengerItems.filter((item) => item.status === 'planned');
-    const connectorItems = toolItems.filter((item) => item.toolConnector);
-    const toolRuntimeItems = toolItems.filter((item) => item.toolRuntime);
-    const oauthDraftItems = toolItems.filter((item) => item.toolOAuthDraft);
-    const oauthRuntimeItems = toolItems.filter((item) => item.toolOAuthRuntime);
-    const setupPlanItems = toolItems.filter((item) => item.toolSetupPlan);
-    const actionPolicyItems = toolItems.filter((item) => item.toolActionCatalog);
-    const messengerViewItems = messengerItems.filter((item) => item.messengerView);
-    const messengerProfileDraftItems = messengerItems.filter((item) => item.channelProfileDraft);
-    const channelRuntimeItems = messengerItems.filter((item) => item.channelRuntime);
-    const channelSetupPlanItems = messengerItems.filter((item) => item.channelSetupPlan);
+    const connectorTotal = toolItems.length + messengerItems.length;
+    const readyTotal = readyToolItems.length + readyMessengerItems.length;
+    const setupNeededTotal = Math.max(0, connectorTotal - readyTotal);
 
     return (
       <div className="sp-stack" data-settings-section="connectors">
@@ -6687,56 +6675,24 @@ export default function SettingsPane() {
           </div>
 
           {xenesisConnectionsStatus ? (
-            <div className="sp-info-list">
+            <div className="sp-info-list sp-connectors-overview">
               <div>
                 <span>{t('settings.xenesisConnectionsReady')}</span>
                 <strong>
-                  {readyToolItems.length + readyMessengerItems.length}/{toolItems.length + messengerItems.length}
+                  {readyTotal}/{connectorTotal}
                 </strong>
               </div>
               <div>
-                <span>{t('settings.xenesisConnectionsPlanned')}</span>
-                <strong>{plannedToolItems.length + plannedMessengerItems.length}</strong>
+                <span>{t('settings.connectorsXenesisNeedsSetup')}</span>
+                <strong>{setupNeededTotal}</strong>
               </div>
               <div>
-                <span>{t('settings.connectorsXenesisToolConnectors')}</span>
-                <strong>{connectorItems.length}</strong>
+                <span>{t('settings.connectorsXenesisExternalTools')}</span>
+                <strong>{toolItems.length}</strong>
               </div>
               <div>
-                <span>{t('settings.connectorsXenesisToolRuntime')}</span>
-                <strong>{toolRuntimeItems.length}</strong>
-              </div>
-              <div>
-                <span>{t('settings.connectorsXenesisOauthDrafts')}</span>
-                <strong>{oauthDraftItems.length}</strong>
-              </div>
-              <div>
-                <span>{t('settings.connectorsXenesisOauthRuntime')}</span>
-                <strong>{oauthRuntimeItems.length}</strong>
-              </div>
-              <div>
-                <span>{t('settings.connectorsXenesisSetupPlans')}</span>
-                <strong>{setupPlanItems.length}</strong>
-              </div>
-              <div>
-                <span>{t('settings.connectorsXenesisActionPolicies')}</span>
-                <strong>{actionPolicyItems.length}</strong>
-              </div>
-              <div>
-                <span>{t('settings.connectorsXenesisMessengerViews')}</span>
-                <strong>{messengerViewItems.length}</strong>
-              </div>
-              <div>
-                <span>{t('settings.connectorsXenesisMessengerProfileDrafts')}</span>
-                <strong>{messengerProfileDraftItems.length}</strong>
-              </div>
-              <div>
-                <span>{t('settings.connectorsXenesisChannelRuntime')}</span>
-                <strong>{channelRuntimeItems.length}</strong>
-              </div>
-              <div>
-                <span>{t('settings.connectorsXenesisChannelSetupPlans')}</span>
-                <strong>{channelSetupPlanItems.length}</strong>
+                <span>{t('settings.connectorsXenesisExternalMessengers')}</span>
+                <strong>{messengerItems.length}</strong>
               </div>
             </div>
           ) : (
@@ -6750,7 +6706,7 @@ export default function SettingsPane() {
         </section>
 
         {toolItems.length ? (
-          <section className="sp-section">
+          <section className="sp-section sp-connectors-section">
             <div className="sp-section-heading">
               <div>
                 <h2>{t('settings.connectorsXenesisExternalTools')}</h2>
@@ -6762,7 +6718,7 @@ export default function SettingsPane() {
         ) : null}
 
         {messengerItems.length ? (
-          <section className="sp-section">
+          <section className="sp-section sp-connectors-section">
             <div className="sp-section-heading">
               <div>
                 <h2>{t('settings.connectorsXenesisExternalMessengers')}</h2>
@@ -7398,49 +7354,6 @@ export default function SettingsPane() {
     </section>
   );
 
-  const handleHermesToolOpen = useCallback(
-    (commandId: string, label: string) => {
-      window.dispatchEvent(new CustomEvent('app-run-extension-command', { detail: { commandId } }));
-      setHermesProviderMessage(t('settings.hermesOpenRequested', { label }));
-    },
-    [t],
-  );
-
-  const handleHermesRootSelect = useCallback(async () => {
-    const selected = await window.terminalAPI.selectCwd();
-    if (!selected) return;
-    setHermesInstallRoot(selected);
-    setProviderIntegrationMessage('');
-    await loadProviderIntegrationStatus(selected);
-  }, [loadProviderIntegrationStatus]);
-
-  const handleHermesPluginInstall = useCallback(async () => {
-    const hermesRoot = hermesInstallRoot.trim();
-    if (!hermesRoot) {
-      setProviderIntegrationMessage(t('settings.hermesPluginInstallRootRequired'));
-      return;
-    }
-    setHermesInstalling(true);
-    setProviderIntegrationMessage('');
-    try {
-      const result = await window.providerIntegrationAPI.installHermesPlugins({ hermesRoot });
-      setProviderIntegrationMessage(
-        result.ok
-          ? t('settings.hermesPluginInstallSuccess')
-          : t('settings.hermesPluginInstallFailed', { message: result.error || t('common.unknownError') }),
-      );
-      await loadProviderIntegrationStatus(hermesRoot);
-    } catch (error) {
-      setProviderIntegrationMessage(
-        t('settings.hermesPluginInstallFailed', {
-          message: error instanceof Error ? error.message : String(error),
-        }),
-      );
-    } finally {
-      setHermesInstalling(false);
-    }
-  }, [hermesInstallRoot, loadProviderIntegrationStatus, t]);
-
   const handleCliIntegrationInstall = useCallback(
     async (targetId: ProviderIntegrationCliTargetId, mode: 'mcp' | 'skill' | 'all') => {
       setCliIntegrationBusyTarget(targetId);
@@ -7546,209 +7459,6 @@ export default function SettingsPane() {
     </div>
   );
 
-  const renderHermesProvider = () => {
-    const toolCards = [
-      {
-        commandId: 'xenesis-desk.core-tools.openHermesStatus',
-        title: t('settings.hermesToolStatus'),
-        description: t('settings.hermesToolStatusDesc'),
-      },
-      {
-        commandId: 'xenesis-desk.core-tools.openHermesActionInbox',
-        title: t('settings.hermesToolActionInbox'),
-        description: t('settings.hermesToolActionInboxDesc'),
-      },
-      {
-        commandId: 'xenesis-desk.core-tools.openHermesTimeline',
-        title: t('settings.hermesToolTimeline'),
-        description: t('settings.hermesToolTimelineDesc'),
-      },
-      {
-        commandId: 'xenesis-desk.core-tools.openHermesStashOps',
-        title: t('settings.hermesToolStashOps'),
-        description: t('settings.hermesToolStashOpsDesc'),
-      },
-      {
-        commandId: 'xenesis-desk.core-tools.openXenisBot',
-        title: t('settings.hermesToolBot'),
-        description: t('settings.hermesToolBotDesc'),
-      },
-    ];
-    const pluginCards = [
-      {
-        title: t('settings.hermesProviderRootLabel'),
-        path: HERMES_PROVIDER_ROOT,
-        description: t('settings.hermesProviderRootDesc'),
-      },
-      {
-        title: t('settings.hermesGatewayPluginLabel'),
-        path: HERMES_GATEWAY_PLUGIN_PATH,
-        description: t('settings.hermesGatewayPluginDesc'),
-      },
-      {
-        title: t('settings.hermesBotPlatformPluginLabel'),
-        path: HERMES_BOT_PLATFORM_PLUGIN_PATH,
-        description: t('settings.hermesBotPlatformPluginDesc'),
-      },
-      {
-        title: t('settings.hermesE2eBotLabel'),
-        path: HERMES_E2E_BOT_PATH,
-        description: t('settings.hermesE2eBotDesc'),
-      },
-    ];
-    const envRows = [
-      ['XENIS_BOT_ENABLED', t('settings.hermesEnvEnabled')],
-      ['XENIS_MCP_BRIDGE_URL', t('settings.hermesEnvBridgeUrl')],
-      ['XENIS_MCP_BRIDGE_TOKEN', t('settings.hermesEnvBridgeToken')],
-      ['XENIS_BOT_LISTEN_HOST', t('settings.hermesEnvListenHost')],
-      ['XENIS_BOT_LISTEN_PORT', t('settings.hermesEnvListenPort')],
-      ['XENIS_BOT_ALLOWED_USERS', t('settings.hermesEnvAllowedUsers')],
-      ['XENIS_BOT_ALLOW_ALL_USERS', t('settings.hermesEnvAllowAllUsers')],
-    ];
-    const hermesIntegration = providerIntegrationStatus?.hermes;
-
-    return (
-      <div className="sp-stack" data-settings-section="hermes-provider">
-        <section className="sp-section">
-          <div className="sp-section-heading">
-            <div>
-              <h2>{t('settings.hermesTitle')}</h2>
-              <p>{t('settings.hermesDesc')}</p>
-            </div>
-          </div>
-
-          <div className="sp-section-heading sp-section-heading-compact">
-            <div>
-              <h2>{t('settings.hermesToolsTitle')}</h2>
-              <p>{t('settings.hermesToolsDesc')}</p>
-            </div>
-          </div>
-          <div className="sp-grid two">
-            {toolCards.map((card) => (
-              <div className="sp-info-card" key={card.commandId}>
-                <strong>{card.title}</strong>
-                <span>{card.description}</span>
-                <button
-                  className="sp-btn-ghost sp-btn-sm"
-                  type="button"
-                  onClick={() => handleHermesToolOpen(card.commandId, card.title)}
-                >
-                  {t('settings.hermesOpenTool')}
-                </button>
-              </div>
-            ))}
-          </div>
-          {hermesProviderMessage && <p className="sp-hint">{hermesProviderMessage}</p>}
-        </section>
-
-        <section className="sp-section" data-settings-section="hermes-plugins">
-          <div className="sp-section-heading">
-            <div>
-              <h2>{t('settings.hermesPluginTitle')}</h2>
-              <p>{t('settings.hermesPluginDesc')}</p>
-            </div>
-          </div>
-          <div className="sp-grid two">
-            {pluginCards.map((card) => (
-              <div className="sp-info-card" key={card.path}>
-                <strong>{card.title}</strong>
-                <span>
-                  <code>{card.path}</code>
-                </span>
-                <span>{card.description}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="sp-section" data-settings-section="hermes-plugin-installer">
-          <div className="sp-section-heading">
-            <div>
-              <h2>{t('settings.hermesPluginInstallTitle')}</h2>
-              <p>{t('settings.hermesPluginInstallDesc')}</p>
-            </div>
-            <button
-              className="sp-btn"
-              type="button"
-              disabled={providerIntegrationBusy || hermesInstalling || !hermesInstallRoot.trim()}
-              onClick={handleHermesPluginInstall}
-            >
-              {hermesInstalling ? t('settings.hermesPluginInstalling') : t('settings.hermesPluginInstall')}
-            </button>
-          </div>
-          <div className="sp-field">
-            <label className="sp-label" htmlFor="sp-hermes-install-root">
-              {t('settings.hermesPluginInstallRootLabel')}
-            </label>
-            <div className="sp-input-row">
-              <input
-                id="sp-hermes-install-root"
-                className="sp-input"
-                type="text"
-                value={hermesInstallRoot}
-                placeholder={t('settings.hermesPluginInstallRootPlaceholder')}
-                onChange={(event) => {
-                  setHermesInstallRoot(event.target.value);
-                  setProviderIntegrationMessage('');
-                }}
-                spellCheck={false}
-              />
-              <button
-                className="sp-btn-ghost sp-icon-btn"
-                type="button"
-                title={t('settings.hermesPluginInstallRootSelect')}
-                onClick={handleHermesRootSelect}
-              >
-                …
-              </button>
-            </div>
-            <p className="sp-hint">{t('settings.hermesPluginInstallRootHint')}</p>
-          </div>
-          <div className="sp-grid two">
-            <div className="sp-info-card">
-              <strong>{t('settings.hermesPluginInstallAssetRoot')}</strong>
-              <span>
-                <code>{hermesIntegration?.assetRoot || '-'}</code>
-              </span>
-              <span>
-                {hermesIntegration?.assetAvailable ? t('settings.integrationReady') : t('settings.integrationMissing')}
-              </span>
-            </div>
-            {(hermesIntegration?.items ?? []).map((item) => (
-              <div className="sp-info-card" key={item.id}>
-                <strong>{item.label}</strong>
-                <span>
-                  <code>{item.destinationPath || '-'}</code>
-                </span>
-                <span className={cls('sp-pill', item.installed && 'sp-pill-on')}>
-                  {item.installed ? t('settings.integrationInstalled') : t('settings.integrationPending')}
-                </span>
-              </div>
-            ))}
-          </div>
-          {providerIntegrationMessage && <p className="sp-hint">{providerIntegrationMessage}</p>}
-        </section>
-
-        <section className="sp-section" data-settings-section="hermes-bot-platform">
-          <div className="sp-section-heading">
-            <div>
-              <h2>{t('settings.hermesEnvTitle')}</h2>
-              <p>{t('settings.hermesEnvDesc')}</p>
-            </div>
-          </div>
-          <div className="sp-info-list">
-            {envRows.map(([envName, description]) => (
-              <div key={envName}>
-                <strong>{envName}</strong>
-                <span>{description}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
-    );
-  };
-
   const renderRunModel = () => (
     <div className="sp-stack" data-settings-section="default">
       <section className="sp-section" data-settings-section="provider-connection">
@@ -7759,14 +7469,6 @@ export default function SettingsPane() {
           </div>
         </div>
         <div className="sp-mode-switch" role="tablist" aria-label={t('settings.runModeAriaLabel')}>
-          <button
-            className={cls('sp-mode-option', runMode === 'hermes' && 'is-active')}
-            data-settings-mode="hermes"
-            onClick={() => setRunMode('hermes')}
-          >
-            <strong>{t('settings.runModeHermes')}</strong>
-            <span>{t('settings.hermesRunModeDesc')}</span>
-          </button>
           <button
             className={cls('sp-mode-option', runMode === 'local' && 'is-active')}
             data-settings-mode="local"
@@ -7801,7 +7503,6 @@ export default function SettingsPane() {
       </section>
 
       {runMode === 'xamong' && xenisPhase5Enabled && renderLocalRuntime()}
-      {runMode === 'hermes' && renderHermesProvider()}
       {runMode === 'local' && renderLocalCli()}
       {runMode === 'byok' && renderByokProvider()}
     </div>
@@ -8460,10 +8161,10 @@ export default function SettingsPane() {
       </div>
 
       <div className="sp-provider-tabs" role="tablist" aria-label="LLM provider">
-        {PROVIDER_ORDER.map((provider) => (
+        {BYOK_PROVIDER_ORDER.map((provider) => (
           <button
             key={provider}
-            className={cls('sp-provider-tab', aiProvider.provider === provider && 'is-active')}
+            className={cls('sp-provider-tab', activeByokProvider === provider && 'is-active')}
             onClick={() => handleProviderChange(provider)}
           >
             {AI_PROVIDERS[provider].shortLabel}
@@ -8473,7 +8174,7 @@ export default function SettingsPane() {
 
       <div className="sp-section-heading">
         <div>
-          <h2>{getProviderLabel(aiProvider.provider)} API</h2>
+          <h2>{getProviderLabel(activeByokProvider)} API</h2>
           <p>{t('settings.aiProviderHint')}</p>
         </div>
         <button
@@ -8494,10 +8195,10 @@ export default function SettingsPane() {
         <select
           id="sp-provider-quick"
           className="sp-input"
-          value={aiProvider.provider}
+          value={activeByokProvider}
           onChange={(e) => handleProviderChange(e.target.value as AiProviderKind)}
         >
-          {PROVIDER_ORDER.map((provider) => (
+          {BYOK_PROVIDER_ORDER.map((provider) => (
             <option key={provider} value={provider}>
               {getProviderLabel(provider)}
             </option>
@@ -8517,7 +8218,7 @@ export default function SettingsPane() {
               type={showApiKey ? 'text' : 'password'}
               value={aiProvider.apiKey}
               onChange={(e) => patchAiProvider({ apiKey: e.target.value })}
-              placeholder={`${getProviderLabel(aiProvider.provider)} API Key`}
+              placeholder={`${getProviderLabel(activeByokProvider)} API Key`}
               spellCheck={false}
               autoComplete="off"
             />
@@ -8545,12 +8246,12 @@ export default function SettingsPane() {
       <div className="sp-grid two">
         <div className="sp-field">
           <label className="sp-label" htmlFor="sp-provider-model">
-            {t(getAiProviderModelLabelKey(aiProvider.provider))}
+            {t(getAiProviderModelLabelKey(activeByokProvider))}
           </label>
           <select
             id="sp-provider-model"
             className="sp-input"
-            value={aiProvider.model}
+            value={activeByokModel}
             onChange={(e) => patchAiProvider({ model: e.target.value })}
           >
             {activeProviderMeta.models.map((model) => (
@@ -8563,14 +8264,18 @@ export default function SettingsPane() {
 
         <div className="sp-field">
           <label className="sp-label" htmlFor="sp-provider-model-custom">
-            {t(getAiProviderModelCustomLabelKey(aiProvider.provider))}
+            {t(getAiProviderModelCustomLabelKey(activeByokProvider))}
           </label>
           <input
             id="sp-provider-model-custom"
             className="sp-input"
             type="text"
-            value={activeProviderMeta.models.includes(aiProvider.model) ? '' : aiProvider.model}
-            placeholder={t(getAiProviderModelCustomPlaceholderKey(aiProvider.provider))}
+            value={
+              aiProvider.provider === activeByokProvider && !activeProviderMeta.models.includes(aiProvider.model)
+                ? aiProvider.model
+                : ''
+            }
+            placeholder={t(getAiProviderModelCustomPlaceholderKey(activeByokProvider))}
             onChange={(e) => patchAiProvider({ model: e.target.value || activeProviderMeta.defaultModel })}
             spellCheck={false}
           />
@@ -8579,7 +8284,7 @@ export default function SettingsPane() {
 
       <div className="sp-field">
         <label className="sp-label" htmlFor="sp-provider-base">
-          {t(getAiProviderBaseUrlLabelKey(aiProvider.provider))}
+          {t(getAiProviderBaseUrlLabelKey(activeByokProvider))}
         </label>
         <div className="sp-input-row">
           <input
@@ -8588,7 +8293,7 @@ export default function SettingsPane() {
             type="text"
             value={aiProvider.baseUrl}
             onChange={(e) => patchAiProvider({ baseUrl: e.target.value })}
-            placeholder={getAiProviderBaseUrlPlaceholder(aiProvider.provider, activeProviderMeta, t)}
+            placeholder={getAiProviderBaseUrlPlaceholder(activeByokProvider, activeProviderMeta, t)}
             spellCheck={false}
           />
           {aiProvider.baseUrl &&
@@ -8596,7 +8301,7 @@ export default function SettingsPane() {
               patchAiProvider({ baseUrl: activeProviderMeta.defaultBaseUrl }),
             )}
         </div>
-        <p className="sp-hint">{t(getAiProviderEndpointHintKey(aiProvider.provider))}</p>
+        <p className="sp-hint">{t(getAiProviderEndpointHintKey(activeByokProvider))}</p>
       </div>
 
       {xenisPhase5Enabled && (
@@ -10804,11 +10509,26 @@ export default function SettingsPane() {
             <span>Enable external desktop app control</span>
           </label>
           <p className="sp-hint">
-            Registered profiles are used by Xenesis Agent and the Capability Registry before arbitrary executable paths.
+            Registered profiles give Xenesis Agent a reviewed app target before arbitrary executable paths.
           </p>
         </div>
 
-        <div className="sp-field">
+        <div className="sp-info-list sp-external-apps-summary">
+          <div>
+            <span>Status</span>
+            <strong>{externalAppsEnabled ? 'Enabled' : 'Disabled'}</strong>
+          </div>
+          <div>
+            <span>Profiles</span>
+            <strong>{externalAppProfiles.length}</strong>
+          </div>
+          <div>
+            <span>Custom</span>
+            <strong>{externalAppProfiles.filter((profile) => !BUILTIN_EXTERNAL_APP_IDS.has(profile.id)).length}</strong>
+          </div>
+        </div>
+
+        <div className="sp-field sp-external-apps-templates">
           <span className="sp-label">Quick add templates</span>
           <div className="sp-actions-row">
             {EXTERNAL_APP_PROFILE_TEMPLATES.map((template) => {
@@ -10838,10 +10558,10 @@ export default function SettingsPane() {
             const executableHint = executable
               ? /^[a-z]:\\/i.test(executable) || executable.startsWith('\\\\')
                 ? 'absolute executable path'
-                : 'resolved from PATH or Windows app alias'
+                : 'resolved from PATH or app alias'
               : 'executable path required';
             return (
-              <div key={profile.id} className="sp-select-card">
+              <div key={profile.id} className="sp-select-card sp-external-app-profile-card">
                 <div className="sp-select-card-main">
                   <strong>
                     {profile.label || profile.id}

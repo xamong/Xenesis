@@ -443,7 +443,7 @@ test('formatXenesisOnboardingPlanSummary describes phase and validation check co
   );
 });
 
-test('formatXenesisConnectionGuidedStepDetail exposes guided CR path, verification, and safety detail', () => {
+test('formatXenesisConnectionGuidedStepDetail describes guided setup without exposing raw CR paths', () => {
   const step = {
     id: 'open-provider-settings',
     label: 'Open provider settings',
@@ -457,11 +457,12 @@ test('formatXenesisConnectionGuidedStepDetail exposes guided CR path, verificati
 
   assert.equal(
     formatXenesisConnectionGuidedStepDetail(step),
-    'open-provider-settings (open): Provider settings are visible before the first chat. / path xd.panes.settings.open / args {"category":"run-model","section":"default","ensureVisible":true} / verify provider-settings-visible, provider-footer-visible / safety Opening settings does not mutate provider config.',
+    'open-provider-settings (open): Provider settings are visible before the first chat. / 3 prepared input(s) / verify provider-settings-visible, provider-footer-visible / safety Opening settings does not mutate provider config.',
   );
+  assert.doesNotMatch(formatXenesisConnectionGuidedStepDetail(step), /xd\./);
 });
 
-test('formatXenesisConnectionReviewStepDetail exposes required fields, read/control paths, diagnostics, and safety detail', () => {
+test('formatXenesisConnectionReviewStepDetail describes review checks without exposing raw CR paths', () => {
   const step = {
     id: 'runtime-routing',
     label: 'Review runtime routing',
@@ -476,8 +477,9 @@ test('formatXenesisConnectionReviewStepDetail exposes required fields, read/cont
 
   assert.equal(
     formatXenesisConnectionReviewStepDetail(step),
-    'runtime-routing (Review runtime routing): Runtime provider routing is visible without editing fallback chains. / required runtimeProvider, fallbackPolicy / read xd.xenesis.providers.routing.status / controls xd.xenesis.providers.profileDrafts.request / diagnostics runtime-routing, credential-pools-reviewed / safety Provider routing review does not change fallback chains.',
+    'runtime-routing (Review runtime routing): Runtime provider routing is visible without editing fallback chains. / required runtimeProvider, fallbackPolicy / 1 readback check(s) / 1 setup action(s) / diagnostics runtime-routing, credential-pools-reviewed / safety Provider routing review does not change fallback chains.',
   );
+  assert.doesNotMatch(formatXenesisConnectionReviewStepDetail(step), /xd\./);
 });
 
 test('formatXenesisConnectionActionResultSummary summarizes CR workflow preview and failure results', () => {
@@ -490,7 +492,18 @@ test('formatXenesisConnectionActionResultSummary summarizes CR workflow preview 
         rejectedSteps: [{ path: 'xd.xenesis.tools.messages.send' }],
       },
     }),
-    'xd.automation.workflow.preview / ok / 2 workflow step(s) / 1 rejected step(s)',
+    'workflow preview / ok / 2 workflow step(s) / 1 rejected step(s)',
+  );
+  assert.doesNotMatch(
+    formatXenesisConnectionActionResultSummary({
+      ok: true,
+      path: 'xd.automation.workflow.preview',
+      result: {
+        steps: [{ path: 'xd.xenesis.tools.userStories.status' }, { path: 'xd.xenesis.tools.open' }],
+        rejectedSteps: [{ path: 'xd.xenesis.tools.messages.send' }],
+      },
+    }),
+    /xd\./,
   );
 
   assert.equal(
@@ -499,8 +512,36 @@ test('formatXenesisConnectionActionResultSummary summarizes CR workflow preview 
       path: 'xd.xenesis.tools.runtime.status',
       error: 'runtime is blocked',
     }),
-    'xd.xenesis.tools.runtime.status / failed / runtime is blocked',
+    'connection action / failed / runtime is blocked',
   );
+  assert.doesNotMatch(
+    formatXenesisConnectionActionResultSummary({
+      ok: false,
+      path: 'xd.xenesis.tools.runtime.status',
+      error: 'runtime is blocked',
+    }),
+    /xd\./,
+  );
+});
+
+test('SettingsPane BYOK provider selector excludes local CLI runtimes', () => {
+  const source = readFileSync('src/renderer/panes/SettingsPane.tsx', 'utf8');
+  const match = source.match(/const BYOK_PROVIDER_ORDER: AiProviderKind\[\] = \[([\s\S]*?)\];/);
+
+  assert.ok(match, 'SettingsPane should keep a dedicated BYOK provider order separate from local CLI runtimes');
+  assert.doesNotMatch(match[1], /codex-cli|codex-app-server|claude-cli|claude-interactive/);
+  assert.match(match[1], /openai/);
+  assert.match(match[1], /ollama/);
+  assert.match(match[1], /lmstudio/);
+});
+
+test('SettingsPane uses cleaned connector and external app layout markers', () => {
+  const source = readFileSync('src/renderer/panes/SettingsPane.tsx', 'utf8');
+
+  assert.match(source, /sp-connectors-overview/);
+  assert.match(source, /sp-connectors-section/);
+  assert.match(source, /sp-external-apps-summary/);
+  assert.match(source, /sp-external-app-profile-card/);
 });
 
 test('SettingsPane renders Connection Center guided and review step details', () => {
@@ -539,24 +580,20 @@ test('SettingsPane renders Connection Center guided and review step details', ()
   assert.match(source, /settings\.xenesisConnectionsLastAction/);
 });
 
-test('SettingsPane renders the Connectors category from CR-backed tool and messenger connection cards', () => {
+test('SettingsPane renders the Connectors category from cleaned tool and messenger connection cards', () => {
   const source = readFileSync('src/renderer/panes/SettingsPane.tsx', 'utf8');
 
   assert.match(source, /const renderConnectors = \(\) =>/);
   assert.match(source, /data-settings-section="connectors"/);
   assert.match(source, /xenesisConnectionsStatus\?\.sections\.tools\.items/);
   assert.match(source, /xenesisConnectionsStatus\?\.sections\.messengers\.items/);
-  assert.match(source, /settings\.connectorsXenesisToolConnectors/);
-  assert.match(source, /settings\.connectorsXenesisOauthDrafts/);
-  assert.match(source, /settings\.connectorsXenesisOauthRuntime/);
-  assert.match(source, /settings\.connectorsXenesisSetupPlans/);
-  assert.match(source, /settings\.connectorsXenesisActionPolicies/);
-  assert.match(source, /settings\.connectorsXenesisMessengerViews/);
-  assert.match(source, /settings\.connectorsXenesisChannelRuntime/);
-  assert.match(source, /settings\.connectorsXenesisMessengerProfileDrafts/);
-  assert.match(source, /settings\.connectorsXenesisChannelSetupPlans/);
+  assert.match(source, /sp-connectors-overview/);
+  assert.match(source, /settings\.connectorsXenesisNeedsSetup/);
+  assert.match(source, /settings\.connectorsXenesisExternalTools/);
+  assert.match(source, /settings\.connectorsXenesisExternalMessengers/);
   assert.match(source, /toolItems\.map\(renderXenesisConnectionItem\)/);
   assert.match(source, /messengerItems\.map\(renderXenesisConnectionItem\)/);
+  assert.doesNotMatch(source, /settings\.connectorsXenesisToolConnectors/);
   assert.doesNotMatch(
     source,
     /case 'connectors':\s*return renderPlaceholder\(t\('settings\.category\.connectors'\), t\('settings\.category\.connectorsDesc'\)\);/,
@@ -1371,12 +1408,14 @@ test('formatXenesisUserStoryContract helpers describe readbacks, approvals, evid
   assert.equal(typeof xenesisConnectionCenter.formatXenesisUserStoryContractDetail, 'function');
   assert.equal(
     xenesisConnectionCenter.formatXenesisUserStoryContractSummary(contract),
-    'xd.xenesis.tools.userStories.open / 2 readback path(s) / 1 approval boundary/boundaries / 2 evidence signal(s) / xd.automation.workflow.preview / 3 workflow step(s)',
+    '2 readback check(s) / 1 approval boundary/boundaries / 2 evidence signal(s) / 3 workflow step(s)',
   );
   assert.equal(
     xenesisConnectionCenter.formatXenesisUserStoryContractDetail(contract),
-    'open xd.xenesis.tools.userStories.open {"id":"notion"} / read xd.xenesis.tools.userStories.status, xd.xenesis.tools.connectors.status / approvals xd.xenesis.tools.mcpInstallDrafts.apply / evidence MCP settings readback lists the Notion server before tool use.; Action Inbox records explicit setup approval. / workflow preview xd.automation.workflow.preview -> xd.automation.workflow.run / steps 3 / safety user-story contracts are read/open planning metadata / preview safety Workflow preview metadata is read/open only and does not execute provider tools, send messages, or mutate external systems.',
+    'open setup view {"id":"notion"} / 2 readback check(s) / 1 approval boundary/boundaries / evidence MCP settings readback lists the Notion server before tool use.; Action Inbox records explicit setup approval. / workflow preview 3 step(s) / safety user-story contracts are read/open planning metadata / preview safety Workflow preview metadata is read/open only and does not execute provider tools, send messages, or mutate external systems.',
   );
+  assert.doesNotMatch(xenesisConnectionCenter.formatXenesisUserStoryContractSummary(contract), /xd\./);
+  assert.doesNotMatch(xenesisConnectionCenter.formatXenesisUserStoryContractDetail(contract), /xd\./);
 });
 
 test('buildXenesisUserStoryWorkflowPreviewRequest targets CR workflow preview for tool and channel stories', () => {

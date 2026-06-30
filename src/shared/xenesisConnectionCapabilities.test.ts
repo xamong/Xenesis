@@ -285,11 +285,13 @@ test('Hermes is not exposed as a Xenesis agent provider surface', () => {
     new URL('../renderer/extensions/xenesis-desk.workflow-runner/gowoori/agent/gowooriProviders.ts', import.meta.url),
     'utf8',
   );
+  const localCliAgentsSource = readFileSync(new URL('../main/localCliAgents.mjs', import.meta.url), 'utf8');
   const mainSource = readFileSync(new URL('../main/index.ts', import.meta.url), 'utf8');
   const sharedTypesSource = readFileSync(new URL('./types.ts', import.meta.url), 'utf8');
 
   assert.doesNotMatch(agentPaneSource, /\/provider \[mock\|byok\|codex\|claude\|hermes\]/);
   assert.doesNotMatch(gowooriProvidersSource, /id:\s*'hermes'/);
+  assert.doesNotMatch(localCliAgentsSource, /id:\s*'hermes'/);
   assert.doesNotMatch(mainSource, /MCP_GOWOORI_CHAT_SLOW_LOCAL_CLI_PROVIDERS\s*=\s*new Set\([^;]*'hermes'/s);
   assert.doesNotMatch(mainSource, /validProviders\s*=\s*new Set\([^;]*'hermes'/s);
   assert.doesNotMatch(mainSource, /XENESIS_RUN_PROVIDER_RUNTIME_PROVIDER_IDS\s*=\s*new Set\([^;]*'hermes'/s);
@@ -325,6 +327,19 @@ test('Hermes is not exposed as a Xenesis agent provider surface', () => {
     ?.enum;
   assert.equal(Array.isArray(importSourceEnum), true);
   assert.equal((importSourceEnum as string[]).includes('hermes'), true, 'Hermes remains an import source');
+});
+
+test('local HTTP providers are exposed consistently for Xenesis run overrides', () => {
+  for (const path of ['xd.services.xenesis.run', 'xd.xenesis.runs.start']) {
+    const providerEnum = schemaProperties(findDeskBridgeCapability(path)).provider?.enum;
+    assert.equal(Array.isArray(providerEnum), true, `${path} exposes a provider enum`);
+    assert.equal((providerEnum as string[]).includes('ollama'), true, `${path} exposes Ollama`);
+    assert.equal((providerEnum as string[]).includes('lmstudio'), true, `${path} exposes LM Studio`);
+  }
+
+  const mainSource = readFileSync(new URL('../main/index.ts', import.meta.url), 'utf8');
+  assert.match(mainSource, /XENESIS_RUN_PROVIDER_RUNTIME_PROVIDER_IDS\s*=\s*new Set\([^;]*'ollama'/s);
+  assert.match(mainSource, /XENESIS_RUN_PROVIDER_RUNTIME_PROVIDER_IDS\s*=\s*new Set\([^;]*'lmstudio'/s);
 });
 
 test('xenesis connection detail focus propagates through main and renderer bridge source', () => {

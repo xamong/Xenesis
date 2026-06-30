@@ -7973,6 +7973,22 @@ button:disabled {
 .sp-info-list strong {
   color: var(--text);
 }
+.sp-connectors-overview,
+.sp-external-apps-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+.sp-connectors-overview > div,
+.sp-external-apps-summary > div {
+  align-items: flex-start;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  min-height: 64px;
+}
+.sp-connectors-section .sp-section-heading {
+  margin-bottom: 12px;
+}
 .sp-worker-list {
   margin-top: 14px;
 }
@@ -8061,6 +8077,18 @@ button:disabled {
 .sp-select-card-actions {
   grid-column: 3;
   justify-self: end;
+}
+.sp-external-apps-templates .sp-actions-row {
+  flex-wrap: wrap;
+}
+.sp-external-app-profile-card {
+  grid-template-columns: 1fr;
+  align-items: stretch;
+}
+.sp-external-app-profile-card .sp-select-card-main,
+.sp-external-app-profile-card > .sp-grid,
+.sp-external-app-profile-card > .sp-actions-row {
+  grid-column: 1 / -1;
 }
 .sp-info-list-compact {
   grid-column: 1 / -1;

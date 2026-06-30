@@ -132,7 +132,7 @@ const globalHelp = [
   '  --cwd <path>          Run against a different working directory.',
   '  --home <path>         Use a Xenesis runtime home instead of the default user .xenesis directory.',
   '  --profile <name>      Use a named profile from $XENESIS_HOME/profiles.json.',
-  '  --provider <name>     Override provider: openai, anthropic, claude, openai-compatible, gemini, ollama, openrouter, groq, deepseek, mistral, xai, mock.',
+  '  --provider <name>     Override provider: openai, anthropic, claude, openai-compatible, gemini, ollama, lmstudio, openrouter, groq, deepseek, mistral, xai, mock.',
   '  --model <name>        Override the configured model.',
   '  --base-url <url>      Override OpenAI-compatible provider base URL.',
   '  --api-key-env <name>  Read provider API key from this environment variable.',

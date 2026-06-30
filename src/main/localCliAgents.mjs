@@ -44,14 +44,6 @@ export const LOCAL_CLI_AGENTS = [
     accent: 'teal',
   },
   {
-    id: 'hermes',
-    label: 'Hermes',
-    subtitle: 'Terminal coding agent',
-    commands: ['hermes'],
-    provider: 'custom',
-    accent: 'gray',
-  },
-  {
     id: 'kimi',
     label: 'Kimi CLI',
     subtitle: 'Moonshot coding agent',

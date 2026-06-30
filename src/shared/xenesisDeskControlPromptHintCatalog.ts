@@ -94,7 +94,7 @@ const XENESIS_DESK_CONTROL_PROMPT_HINT_EXAMPLE_LINES = [
   '',
   'Approved multi-step workflow example:',
   '```xenesis-desk-action',
-  '{"path":"xd.automation.workflow.run","approved":true,"args":{"name":"settings-tour","steps":[{"path":"xd.dock.panes.list"},{"path":"xd.panes.settings.open","args":{"category":"run-model","mode":"hermes","section":"hermes-provider"}}]}}',
+  '{"path":"xd.automation.workflow.run","approved":true,"args":{"name":"settings-tour","steps":[{"path":"xd.dock.panes.list"},{"path":"xd.panes.settings.open","args":{"category":"run-model","mode":"byok","section":"byok-provider"}}]}}',
   '```',
   '',
 ] as const;

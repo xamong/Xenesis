@@ -42,6 +42,10 @@ const providerPresets: Record<ProviderName, ProviderPreset> = {
     apiKeyEnv: 'OLLAMA_API_KEY',
     baseURL: 'http://localhost:11434/v1',
   },
+  lmstudio: {
+    apiKeyEnv: 'LMSTUDIO_API_KEY',
+    baseURL: 'http://127.0.0.1:1234/v1',
+  },
   openrouter: {
     apiKeyEnv: 'OPENROUTER_API_KEY',
     baseURL: 'https://openrouter.ai/api/v1',
@@ -126,6 +130,13 @@ export const PROVIDER_CAPABILITIES: Record<ProviderName, ProviderCapabilities> =
     persistentSession: false,
   },
   ollama: {
+    supportsTools: true,
+    requiresApiKey: false,
+    transport: 'http-streaming',
+    streaming: true,
+    persistentSession: false,
+  },
+  lmstudio: {
     supportsTools: true,
     requiresApiKey: false,
     transport: 'http-streaming',
@@ -218,6 +229,11 @@ export function capabilitiesFor(name: string): ProviderCapabilities | undefined 
 export function presetApiKeyEnv(kind: ProviderName) {
   // Tolerate external/registered provider names absent from the preset table.
   return (providerPresets as Record<string, ProviderPreset | undefined>)[kind]?.apiKeyEnv;
+}
+
+export function presetBaseURL(kind: ProviderName) {
+  // Tolerate external/registered provider names absent from the preset table.
+  return (providerPresets as Record<string, ProviderPreset | undefined>)[kind]?.baseURL;
 }
 
 export function resolveProviderSettings(

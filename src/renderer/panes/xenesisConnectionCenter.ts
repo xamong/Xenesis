@@ -188,8 +188,9 @@ export function formatXenesisOnboardingPlanSummary(plan: XenesisConnectionOnboar
 }
 
 export function formatXenesisConnectionGuidedStepDetail(step: XenesisConnectionOnboardingGuidedStep): string {
-  const args = step.args ? ` / args ${JSON.stringify(step.args)}` : '';
-  return `${step.id} (${step.kind}): ${step.expectedState} / path ${step.crPath}${args} / verify ${step.verifyWith.join(', ') || '-'} / safety ${step.safetyBoundary}`;
+  const inputCount = step.args && typeof step.args === 'object' ? Object.keys(step.args).length : 0;
+  const inputs = inputCount > 0 ? ` / ${inputCount} prepared input(s)` : '';
+  return `${step.id} (${step.kind}): ${step.expectedState}${inputs} / verify ${step.verifyWith.join(', ') || '-'} / safety ${step.safetyBoundary}`;
 }
 
 type XenesisConnectionReviewStep =
@@ -199,7 +200,7 @@ type XenesisConnectionReviewStep =
   | XenesisConnectionChannelProfileDraftReviewStep;
 
 export function formatXenesisConnectionReviewStepDetail(step: XenesisConnectionReviewStep): string {
-  return `${step.id} (${step.label}): ${step.expectedState} / required ${step.requiredFields.join(', ') || '-'} / read ${step.readPaths.join(', ') || '-'} / controls ${step.controlPaths.join(', ') || '-'} / diagnostics ${step.diagnostics.join(', ') || '-'} / safety ${step.safetyBoundary}`;
+  return `${step.id} (${step.label}): ${step.expectedState} / required ${step.requiredFields.join(', ') || '-'} / ${step.readPaths.length} readback check(s) / ${step.controlPaths.length} setup action(s) / diagnostics ${step.diagnostics.join(', ') || '-'} / safety ${step.safetyBoundary}`;
 }
 
 export function formatXenesisProviderSetupSummary(setup: XenesisConnectionProviderSetupTemplate): string {
@@ -299,11 +300,11 @@ export function formatXenesisToolUserStorySummary(
 }
 
 export function formatXenesisUserStoryContractSummary(contract: XenesisConnectionUserStoryContract): string {
-  return `${contract.openPath} / ${contract.readbackPaths.length} readback path(s) / ${contract.approvalBoundaries.length} approval boundary/boundaries / ${contract.completionEvidence.length} evidence signal(s) / ${contract.workflowPreview.previewPath} / ${contract.workflowPreview.steps.length} workflow step(s)`;
+  return `${contract.readbackPaths.length} readback check(s) / ${contract.approvalBoundaries.length} approval boundary/boundaries / ${contract.completionEvidence.length} evidence signal(s) / ${contract.workflowPreview.steps.length} workflow step(s)`;
 }
 
 export function formatXenesisUserStoryContractDetail(contract: XenesisConnectionUserStoryContract): string {
-  return `open ${contract.openPath} ${JSON.stringify(contract.openArgs)} / read ${contract.readbackPaths.join(', ') || '-'} / approvals ${contract.approvalBoundaries.join(', ') || '-'} / evidence ${contract.completionEvidence.join('; ') || '-'} / workflow preview ${contract.workflowPreview.previewPath} -> ${contract.workflowPreview.runPath} / steps ${contract.workflowPreview.steps.length} / safety ${contract.safetyBoundary} / preview safety ${contract.workflowPreview.safetyBoundary}`;
+  return `open setup view ${JSON.stringify(contract.openArgs)} / ${contract.readbackPaths.length} readback check(s) / ${contract.approvalBoundaries.length} approval boundary/boundaries / evidence ${contract.completionEvidence.join('; ') || '-'} / workflow preview ${contract.workflowPreview.steps.length} step(s) / safety ${contract.safetyBoundary} / preview safety ${contract.workflowPreview.safetyBoundary}`;
 }
 
 export function formatXenesisMessengerViewSummary(view: XenesisConnectionMessengerViewTemplate): string {
@@ -338,12 +339,13 @@ export function formatXenesisConnectionActionResultSummary(result: McpBridgeCapa
   const status = result.ok ? 'ok' : result.approvalRequired ? 'approval-required' : 'failed';
   const payload = isRecord(result.result) ? result.result : null;
   const workflowStepCount = Array.isArray(payload?.steps) ? payload.steps.length : null;
+  const actionLabel = result.path.includes('workflow') ? 'workflow preview' : 'connection action';
   if (workflowStepCount !== null) {
     const rejectedStepCount = Array.isArray(payload?.rejectedSteps) ? payload.rejectedSteps.length : 0;
-    return `${result.path} / ${status} / ${workflowStepCount} workflow step(s) / ${rejectedStepCount} rejected step(s)`;
+    return `${actionLabel} / ${status} / ${workflowStepCount} workflow step(s) / ${rejectedStepCount} rejected step(s)`;
   }
   const message = result.error || result.message || result.approval || result.permission || '';
-  return message ? `${result.path} / ${status} / ${message}` : `${result.path} / ${status}`;
+  return message ? `${actionLabel} / ${status} / ${message}` : `${actionLabel} / ${status}`;
 }
 
 export function buildXenesisUserStoryWorkflowPreviewRequest(

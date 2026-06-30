@@ -21,7 +21,7 @@ test('CR workflow preview normalizes safe steps without executing them', () => {
         { path: 'xd.dock.panes.list' },
         {
           path: 'xd.panes.settings.open',
-          args: { category: 'run-model', mode: 'hermes', section: 'hermes-provider' },
+          args: { category: 'run-model', mode: 'byok', section: 'byok-provider' },
         },
       ],
     },
@@ -39,7 +39,7 @@ test('CR workflow preview normalizes safe steps without executing them', () => {
       {
         index: 1,
         path: 'xd.panes.settings.open',
-        args: { category: 'run-model', mode: 'hermes', section: 'hermes-provider' },
+        args: { category: 'run-model', mode: 'byok', section: 'byok-provider' },
         approved: true,
       },
     ],

@@ -262,24 +262,6 @@ export const APP_MENU_MODEL: AppMenuGroupNode[] = [
   },
   {
     kind: 'group',
-    id: 'hermes',
-    label: 'Hermes',
-    labelKey: 'app.toolsMenuGroupHermes',
-    icon: 'H',
-    children: [
-      command('hermes-status', 'Hermes Status', 'xenesis-desk.core-tools.openHermesStatus', undefined, 'H'),
-      command('hermes-timeline', 'Hermes Timeline', 'xenesis-desk.core-tools.openHermesTimeline', undefined, 'T'),
-      command(
-        'hermes-stash-ops',
-        'Hermes Stash Operations',
-        'xenesis-desk.core-tools.openHermesStashOps',
-        undefined,
-        'S',
-      ),
-    ],
-  },
-  {
-    kind: 'group',
     id: 'tools',
     label: 'Tools',
     labelKey: 'app.toolsMenuGroupTools',

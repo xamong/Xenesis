@@ -121,7 +121,6 @@ function hasProviderSettingsTarget(snapshot: OnboardingRuntimeSnapshot): boolean
     'default',
     'provider-connection',
     'xamong-runtime',
-    'hermes-provider',
     'local-cli',
     'byok-provider',
   ]);

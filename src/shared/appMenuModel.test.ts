@@ -28,7 +28,11 @@ function commandIds(items: ResolvedRendererMenuItem[] | undefined): string[] {
 test('app menu model exposes the Xenesis Desk feature taxonomy in order', () => {
   assert.deepEqual(
     APP_MENU_MODEL.map((item) => item.id),
-    ['primary', 'desk', 'xenesis', 'automation', 'gowoori', 'hermes', 'tools', 'developer', 'extensions', 'help'],
+    ['primary', 'desk', 'xenesis', 'automation', 'gowoori', 'tools', 'developer', 'extensions', 'help'],
+  );
+  assert.equal(
+    APP_MENU_MODEL.some((item) => item.id === 'hermes'),
+    false,
   );
 });
 

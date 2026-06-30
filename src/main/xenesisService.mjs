@@ -386,11 +386,12 @@ function configuredKeyedProvider({
   });
 }
 
-// 'auto' credential scan (hermes-style): when the user has NOT pinned a provider,
-// pick the first AVAILABLE backend by scanning credentials — local CLI logins first
-// (no API key needed), then keyed BYOK env vars. This NEVER silently overrides an
-// explicit provider choice; it only runs for provider === 'auto' | ''. The mock
-// provider has been removed — the agent always reasons against a real backend.
+// 'auto' credential scan: when the user has NOT pinned a provider, pick the
+// first available login-backed local runtime. It intentionally does not scan
+// API-key env vars; BYOK keys are used only after an explicit provider choice.
+// This NEVER silently overrides an explicit provider choice; it only runs for
+// provider === 'auto' | ''. The mock provider has been removed — the agent
+// always reasons against a real backend.
 function resolveAutoProvider(env = {}) {
   const home = trimmed(env.USERPROFILE) || trimmed(env.HOME) || '';
   const codexHome = trimmed(env.CODEX_HOME) || (home ? path.join(home, '.codex') : '');
@@ -412,17 +413,12 @@ function resolveAutoProvider(env = {}) {
       credentialState: 'configured',
     };
   }
-  for (const [provider, apiKeyEnv] of Object.entries(KEYED_PROVIDER_ENV)) {
-    if (trimmed(env[apiKeyEnv])) {
-      return { provider, credentialSource: `env:${apiKeyEnv}`, credentialState: 'configured', apiKeyEnv };
-    }
-  }
   return {
     provider: 'auto',
     credentialSource: 'none',
     credentialState: 'missing',
     diagnostics: [
-      'No provider credentials found for auto provider resolution. Configure Codex login, Claude credentials, or a provider API key.',
+      'No provider credentials found for auto provider resolution. Configure Codex login, Claude credentials, or choose a BYOK provider explicitly.',
     ],
   };
 }
