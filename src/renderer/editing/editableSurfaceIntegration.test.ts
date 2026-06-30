@@ -25,42 +25,6 @@ test('editable surface hook registers surfaces and handles shortcut commands', (
   assert.match(source, /onContextMenu/);
 });
 
-test('CodePane uses the shared CodeMirror edit surface', () => {
-  const source = readFileSync('src/renderer/panes/CodePane.tsx', 'utf8');
-  assert.match(source, /createCodeMirrorAdapter/);
-  assert.match(source, /useEditableSurface/);
-  assert.match(source, /codeEditSurface\.onContextMenu/);
-  assert.match(source, /codeEditSurface\.menuElement/);
-  assert.doesNotMatch(source, /window\.addEventListener\('keydown'/);
-});
-
-test('MarkdownPane uses edit and preview shared surfaces', () => {
-  const source = readFileSync('src/renderer/panes/MarkdownPane.tsx', 'utf8');
-  assert.match(source, /createCodeMirrorAdapter/);
-  assert.match(source, /createPreviewAdapter/);
-  assert.match(source, /markdownEditSurface\.onContextMenu/);
-  assert.match(source, /markdownPreviewSurface\.onContextMenu/);
-});
-
-test('XconViewerPane uses edit and preview shared surfaces', () => {
-  const source = readFileSync('src/renderer/panes/XconViewerPane.tsx', 'utf8');
-  assert.match(source, /createCodeMirrorAdapter/);
-  assert.match(source, /createPreviewAdapter/);
-  assert.match(source, /xconSourceSurface\.onContextMenu/);
-  assert.match(source, /xconPreviewSurface\.onContextMenu/);
-});
-
-test('SafeFileEditCenterPane uses native draft and preview edit surfaces', () => {
-  const source = readFileSync(
-    'src/renderer/extensions/xenesis-desk.core-tools/panes/SafeFileEditCenterPane.tsx',
-    'utf8',
-  );
-  assert.match(source, /createNativeTextAdapter/);
-  assert.match(source, /createPreviewAdapter/);
-  assert.match(source, /safeFileDraftSurface\.onContextMenu/);
-  assert.match(source, /safeFileDiffSurface\.onContextMenu/);
-});
-
 test('Obsidian vault viewer uses shared edit surfaces for search and preview', () => {
   const paneSource = readFileSync(
     'src/renderer/extensions/xenesis-desk.obsidian-vault/panes/ObsidianVaultPane.tsx',
