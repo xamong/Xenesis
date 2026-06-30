@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { XenesisConfig } from '../../src/config/types.js';
 import { createProvider, resolveFallbackChain, selectTools } from '../../src/core/AgentRuntimeFactory.js';
+import { OpenAIChatProvider } from '../../src/providers/openaiChatProvider.js';
 import { registerProviderFactory, resetProviderFactories } from '../../src/providers/providerFactory.js';
 import type { AgentProvider } from '../../src/providers/types.js';
 
@@ -120,6 +121,16 @@ describe('createProvider <-> registerProviderFactory wiring (Spec section 5)', (
     expect(() => createProvider(configFor('openai'), {} as NodeJS.ProcessEnv)).toThrow(
       /missing provider credentials.*openai.*OPENAI_API_KEY/i,
     );
+  });
+
+  it('constructs deepseek with the chat-completions provider', () => {
+    const provider = createProvider(configFor('deepseek', 'deepseek-v4-pro'), {
+      DEEPSEEK_API_KEY: 'secret-value',
+    } as NodeJS.ProcessEnv);
+
+    expect(provider).toBeInstanceOf(OpenAIChatProvider);
+    expect(provider.name).toBe('deepseek');
+    expect(provider.model).toBe('deepseek-v4-pro');
   });
 
   it('does not use configured fallbacks when the primary provider is missing credentials', async () => {
