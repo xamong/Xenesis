@@ -285,10 +285,19 @@ test('Hermes is not exposed as a Xenesis agent provider surface', () => {
     new URL('../renderer/extensions/xenesis-desk.workflow-runner/gowoori/agent/gowooriProviders.ts', import.meta.url),
     'utf8',
   );
+  const mainSource = readFileSync(new URL('../main/index.ts', import.meta.url), 'utf8');
   const sharedTypesSource = readFileSync(new URL('./types.ts', import.meta.url), 'utf8');
 
   assert.doesNotMatch(agentPaneSource, /\/provider \[mock\|byok\|codex\|claude\|hermes\]/);
   assert.doesNotMatch(gowooriProvidersSource, /id:\s*'hermes'/);
+  assert.doesNotMatch(mainSource, /MCP_GOWOORI_CHAT_SLOW_LOCAL_CLI_PROVIDERS\s*=\s*new Set\([^;]*'hermes'/s);
+  assert.doesNotMatch(mainSource, /validProviders\s*=\s*new Set\([^;]*'hermes'/s);
+  assert.doesNotMatch(
+    mainSource,
+    /provider:\s*provider as McpBridgeGowooriChatRunPayload\['provider'\]/,
+    'main process validates GowooriChat providers before dispatch',
+  );
+  assert.match(mainSource, /function resolveMcpGowooriChatProviderId/);
   assert.doesNotMatch(
     sharedTypesSource,
     /type GowooriChatProviderId\s*=\s*[^;]*'hermes'/,

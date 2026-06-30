@@ -136,6 +136,7 @@ import type {
   FileTransferPayload,
   FileTransferResult,
   FsEntry,
+  GowooriChatProviderId,
   KeyboardShortcutSettings,
   LocalCliAgentId,
   LocalCliAgentStatus,
@@ -768,7 +769,8 @@ const MCP_GOWOORI_CHAT_BOOTSTRAP_TIMEOUT_MS = 8_000;
 const MCP_GOWOORI_CHAT_RUN_TIMEOUT_MS = 120_000;
 const MCP_GOWOORI_CHAT_SLOW_LOCAL_CLI_RUN_TIMEOUT_MS = 420_000;
 const MCP_GOWOORI_CHAT_RUN_MAX_TIMEOUT_MS = 600_000;
-const MCP_GOWOORI_CHAT_SLOW_LOCAL_CLI_PROVIDERS = new Set(['codex', 'claude', 'hermes']);
+const MCP_GOWOORI_CHAT_PROVIDER_IDS = new Set<GowooriChatProviderId>(['mock', 'codex', 'claude', 'byok']);
+const MCP_GOWOORI_CHAT_SLOW_LOCAL_CLI_PROVIDERS = new Set<GowooriChatProviderId>(['codex', 'claude']);
 const MCP_GOWOORI_CHAT_PROMPT_MAX_CHARS = 20_000;
 const MCP_GOWOORI_CHAT_SOURCE_MAX_CHARS = 200_000;
 const MCP_GOWOORI_CHAT_PROGRESS_MAX_ITEMS = 120;
@@ -793,14 +795,21 @@ interface PendingMcpGowooriChatRunEntry {
 const pendingMcpGowooriChatRuns = new Map<string, PendingMcpGowooriChatRunEntry>();
 const completedMcpGowooriChatRuns = new Map<string, McpBridgeGowooriChatAsyncRunSnapshot>();
 
+function resolveMcpGowooriChatProviderId(value: unknown): GowooriChatProviderId | '' {
+  const normalizedProvider = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return MCP_GOWOORI_CHAT_PROVIDER_IDS.has(normalizedProvider as GowooriChatProviderId)
+    ? (normalizedProvider as GowooriChatProviderId)
+    : '';
+}
+
 function resolveMcpGowooriChatRunTimeoutMs(provider: unknown, timeoutMs: unknown): number {
   const numericTimeoutMs = Number(timeoutMs);
   const normalizedTimeoutMs =
     Number.isFinite(numericTimeoutMs) && numericTimeoutMs > 0
       ? Math.min(MCP_GOWOORI_CHAT_RUN_MAX_TIMEOUT_MS, Math.max(5_000, Math.trunc(numericTimeoutMs)))
       : MCP_GOWOORI_CHAT_RUN_TIMEOUT_MS;
-  const normalizedProvider = typeof provider === 'string' ? provider.trim().toLowerCase() : '';
-  if (MCP_GOWOORI_CHAT_SLOW_LOCAL_CLI_PROVIDERS.has(normalizedProvider)) {
+  const normalizedProvider = resolveMcpGowooriChatProviderId(provider);
+  if (normalizedProvider && MCP_GOWOORI_CHAT_SLOW_LOCAL_CLI_PROVIDERS.has(normalizedProvider)) {
     return Math.min(
       MCP_GOWOORI_CHAT_RUN_MAX_TIMEOUT_MS,
       Math.max(normalizedTimeoutMs, MCP_GOWOORI_CHAT_SLOW_LOCAL_CLI_RUN_TIMEOUT_MS),
@@ -11529,10 +11538,14 @@ function sanitizeMcpGowooriChatRunRequest(value: unknown): Omit<McpBridgeGowoori
   const targetContentId = sanitizeMcpDockActionText(raw.targetContentId, 200);
   const sportsStandingsEndpoint = sanitizeMcpDockActionText(raw.sportsStandingsEndpoint, 2000);
   const timeoutMs = Number(raw.timeoutMs);
-  const resolvedTimeoutMs = resolveMcpGowooriChatRunTimeoutMs(provider, timeoutMs);
+  const resolvedProvider = resolveMcpGowooriChatProviderId(provider);
+  if (provider && !resolvedProvider) {
+    throw new Error(`Unsupported GowooriChat provider: ${provider}`);
+  }
+  const resolvedTimeoutMs = resolveMcpGowooriChatRunTimeoutMs(resolvedProvider, timeoutMs);
   return {
     prompt,
-    ...(provider ? { provider: provider as McpBridgeGowooriChatRunPayload['provider'] } : {}),
+    ...(resolvedProvider ? { provider: resolvedProvider } : {}),
     ...(requestMode ? { requestMode: requestMode as McpBridgeGowooriChatRunPayload['requestMode'] } : {}),
     ...(targetMode ? { targetMode } : {}),
     ...(targetContentId ? { targetContentId } : {}),
@@ -15672,9 +15685,15 @@ async function submitGowooriChatPromptForCapability(args: unknown): Promise<Reco
     };
   }
 
-  const validProviders = new Set(['mock', 'codex', 'claude', 'hermes', 'byok']);
   const providerInput = readCapabilityString(body, ['provider'], '').toLowerCase();
-  const provider = validProviders.has(providerInput) ? providerInput : '';
+  const provider = resolveMcpGowooriChatProviderId(providerInput);
+  if (providerInput && !provider) {
+    return {
+      ok: false,
+      submitted: false,
+      error: `Unsupported GowooriChat provider: ${providerInput}`,
+    };
+  }
   const uiModeInput = readCapabilityString(body, ['uiMode', 'mode'], 'user').toLowerCase();
   if (uiModeInput && uiModeInput !== 'user') {
     return {
