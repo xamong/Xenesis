@@ -11,7 +11,7 @@
 // it depends on is ported here (the rejection rules from
 // parseRegistryNpmSpecInternal — URLs/git/file/protocol/range specs rejected).
 
-import type { SkillInstallSpec } from "./types.js";
+import type { SkillInstallSpec } from './types.js';
 
 const EXACT_SEMVER_VERSION_RE =
   /^v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z.-]+))?(?:\+([0-9A-Za-z.-]+))?$/;
@@ -26,49 +26,49 @@ const DIST_TAG_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 export function validateRegistryNpmSpec(rawSpec: string): string | null {
   const spec = rawSpec.trim();
   if (!spec) {
-    return "missing npm spec";
+    return 'missing npm spec';
   }
   if (/\s/.test(spec)) {
-    return "unsupported npm spec: whitespace is not allowed";
+    return 'unsupported npm spec: whitespace is not allowed';
   }
   // Registry-only: no URLs, git, file, or alias protocols.
-  if (spec.includes("://")) {
-    return "unsupported npm spec: URLs are not allowed";
+  if (spec.includes('://')) {
+    return 'unsupported npm spec: URLs are not allowed';
   }
-  if (spec.includes("#")) {
-    return "unsupported npm spec: git refs are not allowed";
+  if (spec.includes('#')) {
+    return 'unsupported npm spec: git refs are not allowed';
   }
-  if (spec.includes(":")) {
-    return "unsupported npm spec: protocol specs are not allowed";
+  if (spec.includes(':')) {
+    return 'unsupported npm spec: protocol specs are not allowed';
   }
 
-  const at = spec.lastIndexOf("@");
+  const at = spec.lastIndexOf('@');
   const hasSelector = at > 0;
   const name = hasSelector ? spec.slice(0, at) : spec;
-  const selector = hasSelector ? spec.slice(at + 1) : "";
+  const selector = hasSelector ? spec.slice(at + 1) : '';
 
   // Accept only registry package names; file paths, aliases, and URL/git specs
   // are intentionally rejected because installs run on the host.
   const unscopedName = /^[a-z0-9][a-z0-9-._~]*$/;
   const scopedName = /^@[a-z0-9][a-z0-9-._~]*\/[a-z0-9][a-z0-9-._~]*$/;
-  const isValidName = name.startsWith("@") ? scopedName.test(name) : unscopedName.test(name);
+  const isValidName = name.startsWith('@') ? scopedName.test(name) : unscopedName.test(name);
   if (!isValidName) {
-    return "unsupported npm spec: expected <name> or <name>@<version> from the npm registry";
+    return 'unsupported npm spec: expected <name> or <name>@<version> from the npm registry';
   }
   if (!hasSelector) {
     return null;
   }
   if (!selector) {
-    return "unsupported npm spec: missing version/tag after @";
+    return 'unsupported npm spec: missing version/tag after @';
   }
   if (/[\\/]/.test(selector)) {
-    return "unsupported npm spec: invalid version/tag";
+    return 'unsupported npm spec: invalid version/tag';
   }
   if (EXACT_SEMVER_VERSION_RE.test(selector)) {
     return null;
   }
   if (!DIST_TAG_RE.test(selector)) {
-    return "unsupported npm spec: use an exact version or dist-tag (ranges are not allowed)";
+    return 'unsupported npm spec: use an exact version or dist-tag (ranges are not allowed)';
   }
   return null;
 }
@@ -78,11 +78,11 @@ const GO_MODULE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._~+\-/]*(?:@[A-Za-z0-9][A-Za-z
 const UV_PACKAGE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._\-[\]=<>!~+,]*$/;
 
 export function normalizeSafeBrewFormula(raw: unknown): string | undefined {
-  if (typeof raw !== "string") {
+  if (typeof raw !== 'string') {
     return undefined;
   }
   const formula = raw.trim();
-  if (!formula || formula.startsWith("-") || formula.includes("\\") || formula.includes("..")) {
+  if (!formula || formula.startsWith('-') || formula.includes('\\') || formula.includes('..')) {
     return undefined;
   }
   if (!BREW_FORMULA_PATTERN.test(formula)) {
@@ -92,11 +92,11 @@ export function normalizeSafeBrewFormula(raw: unknown): string | undefined {
 }
 
 export function normalizeSafeNpmSpec(raw: unknown): string | undefined {
-  if (typeof raw !== "string") {
+  if (typeof raw !== 'string') {
     return undefined;
   }
   const spec = raw.trim();
-  if (!spec || spec.startsWith("-")) {
+  if (!spec || spec.startsWith('-')) {
     return undefined;
   }
   if (validateRegistryNpmSpec(spec) !== null) {
@@ -106,16 +106,11 @@ export function normalizeSafeNpmSpec(raw: unknown): string | undefined {
 }
 
 export function normalizeSafeGoModule(raw: unknown): string | undefined {
-  if (typeof raw !== "string") {
+  if (typeof raw !== 'string') {
     return undefined;
   }
   const moduleSpec = raw.trim();
-  if (
-    !moduleSpec ||
-    moduleSpec.startsWith("-") ||
-    moduleSpec.includes("\\") ||
-    moduleSpec.includes("://")
-  ) {
+  if (!moduleSpec || moduleSpec.startsWith('-') || moduleSpec.includes('\\') || moduleSpec.includes('://')) {
     return undefined;
   }
   if (!GO_MODULE_PATTERN.test(moduleSpec)) {
@@ -125,11 +120,11 @@ export function normalizeSafeGoModule(raw: unknown): string | undefined {
 }
 
 export function normalizeSafeUvPackage(raw: unknown): string | undefined {
-  if (typeof raw !== "string") {
+  if (typeof raw !== 'string') {
     return undefined;
   }
   const pkg = raw.trim();
-  if (!pkg || pkg.startsWith("-") || pkg.includes("\\") || pkg.includes("://")) {
+  if (!pkg || pkg.startsWith('-') || pkg.includes('\\') || pkg.includes('://')) {
     return undefined;
   }
   if (!UV_PACKAGE_PATTERN.test(pkg)) {
@@ -139,7 +134,7 @@ export function normalizeSafeUvPackage(raw: unknown): string | undefined {
 }
 
 export function normalizeSafeDownloadUrl(raw: unknown): string | undefined {
-  if (typeof raw !== "string") {
+  if (typeof raw !== 'string') {
     return undefined;
   }
   const value = raw.trim();
@@ -148,7 +143,7 @@ export function normalizeSafeDownloadUrl(raw: unknown): string | undefined {
   }
   try {
     const parsed = new URL(value);
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
       return undefined;
     }
     return parsed.toString();
@@ -178,12 +173,12 @@ export function sanitizeSkillInstallSpec(spec: SkillInstallSpec): SkillInstallSp
   if (!sanitized.formula && cask) {
     sanitized.formula = cask;
   }
-  if (sanitized.kind === "node") {
+  if (sanitized.kind === 'node') {
     const pkg = normalizeSafeNpmSpec(spec.package);
     if (pkg) {
       sanitized.package = pkg;
     }
-  } else if (sanitized.kind === "uv") {
+  } else if (sanitized.kind === 'uv') {
     const pkg = normalizeSafeUvPackage(spec.package);
     if (pkg) {
       sanitized.package = pkg;
@@ -197,32 +192,32 @@ export function sanitizeSkillInstallSpec(spec: SkillInstallSpec): SkillInstallSp
   if (downloadUrl) {
     sanitized.url = downloadUrl;
   }
-  if (typeof spec.archive === "string") {
+  if (typeof spec.archive === 'string') {
     sanitized.archive = spec.archive;
   }
-  if (typeof spec.extract === "boolean") {
+  if (typeof spec.extract === 'boolean') {
     sanitized.extract = spec.extract;
   }
-  if (typeof spec.stripComponents === "number") {
+  if (typeof spec.stripComponents === 'number') {
     sanitized.stripComponents = spec.stripComponents;
   }
-  if (typeof spec.targetDir === "string") {
+  if (typeof spec.targetDir === 'string') {
     sanitized.targetDir = spec.targetDir;
   }
 
-  if (sanitized.kind === "brew" && !sanitized.formula) {
+  if (sanitized.kind === 'brew' && !sanitized.formula) {
     return undefined;
   }
-  if (sanitized.kind === "node" && !sanitized.package) {
+  if (sanitized.kind === 'node' && !sanitized.package) {
     return undefined;
   }
-  if (sanitized.kind === "go" && !sanitized.module) {
+  if (sanitized.kind === 'go' && !sanitized.module) {
     return undefined;
   }
-  if (sanitized.kind === "uv" && !sanitized.package) {
+  if (sanitized.kind === 'uv' && !sanitized.package) {
     return undefined;
   }
-  if (sanitized.kind === "download" && !sanitized.url) {
+  if (sanitized.kind === 'download' && !sanitized.url) {
     return undefined;
   }
 

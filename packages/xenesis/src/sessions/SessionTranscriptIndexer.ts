@@ -6,12 +6,12 @@
 // Best-effort by contract: indexSessionEvent NEVER throws into its caller. A run must
 // not break because transcript indexing failed (a missing/older DB, a SQLite error, an
 // unresolved xenesisHome). On failure we silently drop the index write.
-import { readdir } from "node:fs/promises";
-import { resolve } from "node:path";
-import { openDatabase } from "../db/database.js";
-import { readSessionLog } from "./history.js";
+import { readdir } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { openDatabase } from '../db/database.js';
+import { readSessionLog } from './history.js';
 
-export type IndexableRole = "user" | "assistant" | "tool";
+export type IndexableRole = 'user' | 'assistant' | 'tool';
 
 export interface IndexSessionEventInput {
   sessionId: string;
@@ -34,15 +34,8 @@ export function indexSessionEvent(xenesisHome: string, input: IndexSessionEventI
     const db = openDatabase(xenesisHome);
     db.prepare(
       `INSERT OR IGNORE INTO session_messages(session_id, seq, role, text, tool_name, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)`
-    ).run(
-      input.sessionId,
-      input.seq,
-      input.role,
-      text,
-      input.toolName ?? null,
-      input.createdAt
-    );
+       VALUES (?, ?, ?, ?, ?, ?)`,
+    ).run(input.sessionId, input.seq, input.role, text, input.toolName ?? null, input.createdAt);
   } catch {
     // Best-effort: indexing failures must never propagate into the agent run.
   }
@@ -51,9 +44,9 @@ export function indexSessionEvent(xenesisHome: string, input: IndexSessionEventI
 const SESSION_FILE_RE = /^([A-Za-z0-9][A-Za-z0-9_.-]*)\.jsonl$/;
 
 function roleForRecord(record: { type: string }): IndexableRole | undefined {
-  if (record.type === "user_message") return "user";
-  if (record.type === "assistant_message") return "assistant";
-  if (record.type === "tool_result") return "tool";
+  if (record.type === 'user_message') return 'user';
+  if (record.type === 'assistant_message') return 'assistant';
+  if (record.type === 'tool_result') return 'tool';
   return undefined;
 }
 
@@ -69,7 +62,7 @@ export async function reindexSessions(xenesisHome: string): Promise<number> {
   let indexed = 0;
   let files: string[];
   try {
-    files = await readdir(resolve(xenesisHome, "sessions"));
+    files = await readdir(resolve(xenesisHome, 'sessions'));
   } catch {
     return 0; // no sessions directory yet
   }
@@ -89,21 +82,22 @@ export async function reindexSessions(xenesisHome: string): Promise<number> {
       const role = roleForRecord(record);
       if (!role) return;
       const message = (record as { message?: unknown }).message;
-      if (!message || typeof message !== "object") return;
+      if (!message || typeof message !== 'object') return;
       const content = (message as { content?: unknown }).content;
-      if (typeof content !== "string") return;
-      const toolName = role === "tool" ? (message as { name?: unknown }).name : undefined;
-      const createdAt = typeof (record as { timestamp?: unknown }).timestamp === "string"
-        ? (record as { timestamp: string }).timestamp
-        : new Date().toISOString();
+      if (typeof content !== 'string') return;
+      const toolName = role === 'tool' ? (message as { name?: unknown }).name : undefined;
+      const createdAt =
+        typeof (record as { timestamp?: unknown }).timestamp === 'string'
+          ? (record as { timestamp: string }).timestamp
+          : new Date().toISOString();
       const before = indexed;
       indexSessionEvent(xenesisHome, {
         sessionId,
         seq,
         role,
         text: content,
-        toolName: typeof toolName === "string" ? toolName : undefined,
-        createdAt
+        toolName: typeof toolName === 'string' ? toolName : undefined,
+        createdAt,
       });
       // We can't know from indexSessionEvent whether the row was new, but counting
       // attempted non-empty inserts is enough for the "table was empty" backfill signal.

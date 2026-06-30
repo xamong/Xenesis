@@ -1,27 +1,27 @@
-import type { AgentMessage, ToolCall } from "./messages.js";
-import type { ToolEvent } from "../tools/types.js";
-import type { PermissionRiskLevel } from "../config/index.js";
-import type { PermissionStatus } from "../permissions/policy.js";
-import type { ProviderFailureKind } from "./providerFailurePolicy.js";
-import type { ResumableRunState } from "./resume/ResumableRunState.js";
+import type { PermissionRiskLevel } from '../config/index.js';
+import type { PermissionStatus } from '../permissions/policy.js';
+import type { ToolEvent } from '../tools/types.js';
+import type { AgentMessage, ToolCall } from './messages.js';
+import type { ProviderFailureKind } from './providerFailurePolicy.js';
+import type { ResumableRunState } from './resume/ResumableRunState.js';
 
 export type UserMessageEvent = {
-  type: "user_message";
-  message: Extract<AgentMessage, { role: "user" }>;
+  type: 'user_message';
+  message: Extract<AgentMessage, { role: 'user' }>;
 };
 
 export type AssistantMessageEvent = {
-  type: "assistant_message";
-  message: Extract<AgentMessage, { role: "assistant" }>;
+  type: 'assistant_message';
+  message: Extract<AgentMessage, { role: 'assistant' }>;
 };
 
 export type AssistantDeltaEvent = {
-  type: "assistant_delta";
+  type: 'assistant_delta';
   delta: string;
 };
 
 export type ProviderRetryEvent = {
-  type: "provider_retry";
+  type: 'provider_retry';
   provider: string;
   attempt: number;
   maxRetries: number;
@@ -32,7 +32,7 @@ export type ProviderRetryEvent = {
 };
 
 export type ProviderFallbackEvent = {
-  type: "provider_fallback";
+  type: 'provider_fallback';
   from: string;
   to: string;
   message: string;
@@ -43,7 +43,7 @@ export type ProviderFallbackEvent = {
 };
 
 export type ContextCompactEvent = {
-  type: "context_compact";
+  type: 'context_compact';
   originalMessages: number;
   compactedMessages: number;
   keptMessages: number;
@@ -53,22 +53,22 @@ export type ContextCompactEvent = {
 };
 
 export type ContextRecoveryEvent = {
-  type: "context_recovery";
-  reason: "provider_context_limit";
+  type: 'context_recovery';
+  reason: 'provider_context_limit';
   message: string;
   originalMessages: number;
   compactedMessages: number;
 };
 
 export type ArtifactEvent = {
-  type: "artifact";
+  type: 'artifact';
   artifactId: string;
   title: string;
   kind: string;
 };
 
 export type WorkspaceChangeEvent = {
-  type: "workspace_change";
+  type: 'workspace_change';
   changeId: string;
   action: string;
   path: string;
@@ -76,24 +76,20 @@ export type WorkspaceChangeEvent = {
 };
 
 export type RunLifecycleStatus =
-  | "started"
-  | "provider_request"
-  | "tool_call"
-  | "awaiting_approval"
-  | "tool_result"
-  | "completed"
-  | "stopped"
-  | "failed"
-  | "cancelled";
+  | 'started'
+  | 'provider_request'
+  | 'tool_call'
+  | 'awaiting_approval'
+  | 'tool_result'
+  | 'completed'
+  | 'stopped'
+  | 'failed'
+  | 'cancelled';
 
-export type RunLifecyclePhase =
-  | "planning"
-  | "executing"
-  | "approving"
-  | "terminal";
+export type RunLifecyclePhase = 'planning' | 'executing' | 'approving' | 'terminal';
 
 export type RunStateEvent = {
-  type: "run_state";
+  type: 'run_state';
   status: RunLifecycleStatus;
   phase: RunLifecyclePhase;
   turns: number;
@@ -104,7 +100,7 @@ export type RunStateEvent = {
   error?: string;
 };
 
-export type WorkflowStepStatus = "running" | "completed" | "failed";
+export type WorkflowStepStatus = 'running' | 'completed' | 'failed';
 
 export interface WorkflowStepSummary {
   name: string;
@@ -119,7 +115,7 @@ export interface WorkflowRunSummary {
 }
 
 export type WorkflowStepEvent = {
-  type: "workflow_step";
+  type: 'workflow_step';
   workflow: WorkflowRunSummary;
   step: WorkflowStepSummary;
   index: number;
@@ -132,11 +128,11 @@ export type WorkflowStepEvent = {
   error?: string;
 };
 
-export type RunStageName = "run" | "verify" | "repair" | "report";
-export type RunStageStatus = "started" | "completed" | "skipped" | "failed" | "blocked";
+export type RunStageName = 'run' | 'verify' | 'repair' | 'report';
+export type RunStageStatus = 'started' | 'completed' | 'skipped' | 'failed' | 'blocked';
 
 export type RunStageEvent = {
-  type: "run_stage";
+  type: 'run_stage';
   stage: RunStageName;
   status: RunStageStatus;
   startedAt?: string;
@@ -146,22 +142,22 @@ export type RunStageEvent = {
 };
 
 export type ContextSourceKind =
-  | "base"
-  | "capability_policy"
-  | "tool_policy"
-  | "mode"
-  | "ide"
-  | "saved_plan"
-  | "workspace_context"
-  | "background_task"
-  | "agent_message"
-  | "operational_failure"
-  | "workflow"
-  | "skill"
-  | "memory";
+  | 'base'
+  | 'capability_policy'
+  | 'tool_policy'
+  | 'mode'
+  | 'ide'
+  | 'saved_plan'
+  | 'workspace_context'
+  | 'background_task'
+  | 'agent_message'
+  | 'operational_failure'
+  | 'workflow'
+  | 'skill'
+  | 'memory';
 
 export type ContextSourceEvent = {
-  type: "context_source";
+  type: 'context_source';
   source: ContextSourceKind;
   name: string;
   injected: boolean;
@@ -169,42 +165,22 @@ export type ContextSourceEvent = {
   detail?: string;
   usedTokens?: number;
   tokenBudget?: number;
-  droppedReason?: "expired" | "conflict_replaced" | "token_budget";
-};
-
-export type AgentIntent =
-  | "default"
-  | "analyze"
-  | "explain"
-  | "propose"
-  | "plan"
-  | "work"
-  | "debug"
-  | "refactor"
-  | "long_task"
-  | "research";
-
-export type IntentRouteEvent = {
-  type: "intent_route";
-  intent: AgentIntent;
-  mode?: "plan" | "work";
-  approvalMode?: "safe" | "auto" | "readonly";
-  reason: string;
+  droppedReason?: 'expired' | 'conflict_replaced' | 'token_budget';
 };
 
 export type ToolCallEvent = {
-  type: "tool_call";
+  type: 'tool_call';
   toolCall: ToolCall;
 };
 
 export type ToolResultEvent = {
-  type: "tool_result";
+  type: 'tool_result';
   ok: boolean;
-  message: Extract<AgentMessage, { role: "tool" }>;
+  message: Extract<AgentMessage, { role: 'tool' }>;
 };
 
 export type ToolResultStoredEvent = {
-  type: "tool_result_stored";
+  type: 'tool_result_stored';
   toolCallId: string;
   name: string;
   path: string;
@@ -212,10 +188,10 @@ export type ToolResultStoredEvent = {
   previewChars: number;
 };
 
-export type ToolPolicyAuditStatus = "allow" | "deny";
+export type ToolPolicyAuditStatus = 'allow' | 'deny';
 
 export type ToolPolicyAuditEvent = {
-  type: "tool_policy_audit";
+  type: 'tool_policy_audit';
   toolCallId: string;
   name: string;
   policyName: string;
@@ -230,17 +206,17 @@ export type ToolPolicyAuditEvent = {
 };
 
 export type ToolPolicySnapshotEvent = {
-  type: "tool_policy_snapshot";
+  type: 'tool_policy_snapshot';
   policyName: string;
   priorityTools: string[];
   requiredBefore: Record<string, string[]>;
   requiredBeforeAny: Record<string, string[]>;
 };
 
-export type ToolChoiceAuditStatus = "followed_priority" | "missed_priority";
+export type ToolChoiceAuditStatus = 'followed_priority' | 'missed_priority';
 
 export type ToolChoiceAuditEvent = {
-  type: "tool_choice_audit";
+  type: 'tool_choice_audit';
   toolCallId: string;
   name: string;
   status: ToolChoiceAuditStatus;
@@ -251,7 +227,7 @@ export type ToolChoiceAuditEvent = {
 };
 
 export type ToolRuntimeEvent = {
-  type: "tool_event";
+  type: 'tool_event';
   event: ToolEvent;
 };
 
@@ -264,31 +240,31 @@ export interface ApprovalRequest {
   riskLevel: PermissionRiskLevel;
   summary: string;
   preview?: string;
-  severity?: "info" | "warning" | "critical";
-  allowedDecisions?: Array<"approve" | "deny" | "always-allow">;
+  severity?: 'info' | 'warning' | 'critical';
+  allowedDecisions?: Array<'approve' | 'deny' | 'always-allow'>;
   timeoutMs?: number;
-  timeoutBehavior?: "allow" | "deny";
+  timeoutBehavior?: 'allow' | 'deny';
 }
 
 export interface ApprovalDecision {
   toolCallId: string;
   approvalId: string;
   approved: boolean;
-  decision: "approve" | "deny" | "always-allow" | "timeout";
+  decision: 'approve' | 'deny' | 'always-allow' | 'timeout';
   resolvedAt: string;
 }
 
 export type ApprovalResolvedEvent = {
-  type: "approval_resolved";
+  type: 'approval_resolved';
   toolCallId: string;
   approvalId: string;
   approved: boolean;
-  decision: ApprovalDecision["decision"];
+  decision: ApprovalDecision['decision'];
   resolvedAt: string;
 };
 
 export type PermissionAuditEvent = {
-  type: "permission_audit";
+  type: 'permission_audit';
   toolCallId: string;
   name: string;
   status: PermissionStatus;
@@ -300,7 +276,7 @@ export type PermissionAuditEvent = {
 };
 
 export type PermissionRequestEvent = {
-  type: "permission_request";
+  type: 'permission_request';
   request: ApprovalRequest;
 };
 
@@ -311,55 +287,55 @@ export interface AgentRunUsageSnapshot {
 }
 
 export type DoneEvent = {
-  type: "done";
+  type: 'done';
   content: string;
   turns: number;
   usage?: AgentRunUsageSnapshot;
 };
 
 export type StoppedEvent = {
-  type: "stopped";
-  reason: "max_turns" | "user_input_required" | "cancelled" | "budget";
+  type: 'stopped';
+  reason: 'max_turns' | 'user_input_required' | 'cancelled' | 'budget';
   turns: number;
   usage?: AgentRunUsageSnapshot;
 };
 
 export type IncompleteRunEvent = {
-  type: "incomplete_run";
-  reason: StoppedEvent["reason"] | "provider_error";
+  type: 'incomplete_run';
+  reason: StoppedEvent['reason'] | 'provider_error';
   turns: number;
   summary: string;
   usage?: AgentRunUsageSnapshot;
 };
 
 export type VerificationResultEvent = {
-  type: "verification_result";
-  status: "passed" | "failed" | "skipped" | "error";
+  type: 'verification_result';
+  status: 'passed' | 'failed' | 'skipped' | 'error';
   attempt: number;
   maxAttempts: number;
   failedCommands: string[];
 };
 
 export type RepairDecisionEvent = {
-  type: "repair_decision";
-  status: "continue" | "completed" | "skipped" | "blocked" | "auto_executed" | "failed";
+  type: 'repair_decision';
+  status: 'continue' | 'completed' | 'skipped' | 'blocked' | 'auto_executed' | 'failed';
   reason: string;
   attempt: number;
   maxAttempts: number;
   failedCommands: string[];
 };
 
-export type RunSelfReviewStatus = "pass" | "warn" | "fail";
+export type RunSelfReviewStatus = 'pass' | 'warn' | 'fail';
 export type RunSelfReviewArea =
-  | "completion"
-  | "verification"
-  | "tool_choice"
-  | "tool_recovery"
-  | "permission"
-  | "provider"
-  | "context"
-  | "handoff";
-export type RunSelfReviewSeverity = "low" | "medium" | "high";
+  | 'completion'
+  | 'verification'
+  | 'tool_choice'
+  | 'tool_recovery'
+  | 'permission'
+  | 'provider'
+  | 'context'
+  | 'handoff';
+export type RunSelfReviewSeverity = 'low' | 'medium' | 'high';
 
 export interface RunSelfReviewFinding {
   area: RunSelfReviewArea;
@@ -369,7 +345,7 @@ export interface RunSelfReviewFinding {
 }
 
 export type RunSelfReviewEvent = {
-  type: "run_self_review";
+  type: 'run_self_review';
   status: RunSelfReviewStatus;
   score: number;
   findings: RunSelfReviewFinding[];
@@ -377,7 +353,7 @@ export type RunSelfReviewEvent = {
 };
 
 export type ErrorEvent = {
-  type: "error";
+  type: 'error';
   message: string;
 };
 
@@ -387,7 +363,7 @@ export type ErrorEvent = {
  * `assistant_delta`): callers should never observe it.
  */
 export type RunSnapshotEvent = {
-  type: "run_snapshot";
+  type: 'run_snapshot';
   state: ResumableRunState;
 };
 
@@ -405,7 +381,6 @@ export type SessionEvent =
   | WorkflowStepEvent
   | RunStageEvent
   | ContextSourceEvent
-  | IntentRouteEvent
   | ToolCallEvent
   | ToolPolicySnapshotEvent
   | ToolChoiceAuditEvent

@@ -1,4 +1,4 @@
-export type IsolationMode = "shared" | "worktree";
+export type IsolationMode = 'shared' | 'worktree';
 
 export interface IsolationOutcome {
   mode: IsolationMode;
@@ -44,7 +44,7 @@ export interface WorktreeSessionState {
   enteredAt?: string;
   exitedAt?: string;
   updatedAt: string;
-  action?: "keep" | "remove";
+  action?: 'keep' | 'remove';
   discardedFiles?: number;
   discardedCommits?: number;
   cleanupError?: string;

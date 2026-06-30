@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BUILTIN_EXTERNAL_APP_PROFILES,
-  EXTERNAL_APP_PROFILE_TEMPLATES,
   createExternalAppProfileFromTemplate,
-  normalizeExternalAppSettings,
+  EXTERNAL_APP_PROFILE_TEMPLATES,
   type ExternalAppProfile,
+  normalizeExternalAppSettings,
 } from '../../shared/externalAppControl';
 import { filterXenisPhase5SecretVaultItems, isXenisPhase5EnabledFromSettings } from '../../shared/phase5';
 import type {
@@ -22,6 +22,7 @@ import type {
   LocalCliApi,
   LocalTerminalCliSelection,
   LocalTerminalProfile,
+  McpBridgeCapabilityCallRequest,
   McpSettingsStatus,
   ProviderIntegrationApi,
   ProviderIntegrationCliTargetId,
@@ -52,6 +53,9 @@ import type {
   XamongCodeApi,
   XamongCodeServerStatus,
   XenesisApprovalMode,
+  XenesisConnectionItem,
+  XenesisConnectionStatus,
+  XenesisConnectionsStatus,
   XenesisGatewayChannelName,
   XenesisGatewayChannelRuntimeStatus,
   XenesisProfileChannelName,
@@ -80,6 +84,81 @@ import {
 import AutomationSettingsSection from '../terminal/AutomationSettingsSection';
 import { mergePendingLocalTerminalProfile } from '../terminal/terminalProfileSnapshot';
 import { SETTINGS_CATEGORIES, type SettingsCategoryId, VISIBLE_SETTINGS_CATEGORIES } from './settingsCatalog.mjs';
+import {
+  buildXenesisChannelProfileDraftApplyRequest,
+  buildXenesisChannelProfileDraftRequest,
+  buildXenesisChannelRuntimeRequest,
+  buildXenesisChannelSetupPlanRequest,
+  buildXenesisChannelTestRequest,
+  buildXenesisConnectionGuideRequest,
+  buildXenesisConnectionOpenRequest,
+  buildXenesisConnectionSettingsRequest,
+  buildXenesisConnectionSetupApplyRequest,
+  buildXenesisConnectionSetupRequestRequest,
+  buildXenesisMcpInstallDraftApplyRequest,
+  buildXenesisMcpInstallDraftRequest,
+  buildXenesisOnboardingWorkflowPreviewRequest,
+  buildXenesisProviderProfileDraftApplyRequest,
+  buildXenesisProviderProfileDraftRequest,
+  buildXenesisProviderSetupPlanRequest,
+  buildXenesisSetupPlanWorkflowPreviewRequest,
+  buildXenesisToolActionCatalogRequest,
+  buildXenesisToolMcpOAuthRequest,
+  buildXenesisToolOAuthDraftRequest,
+  buildXenesisToolOAuthRuntimeRequest,
+  buildXenesisToolOAuthSetupPacketOpenRequest,
+  buildXenesisToolOAuthSetupPacketRequest,
+  buildXenesisToolProfileDraftApplyRequest,
+  buildXenesisToolProfileDraftRequest,
+  buildXenesisToolRuntimeRequest,
+  buildXenesisToolSetupPlanRequest,
+  buildXenesisUserStoryWorkflowPreviewRequest,
+  formatXenesisChannelAccessGroupsSummary,
+  formatXenesisChannelPairingSummary,
+  formatXenesisChannelProfileDraftSummary,
+  formatXenesisChannelRoutingSummary,
+  formatXenesisChannelRuntimeSummary,
+  formatXenesisChannelSafetySummary,
+  formatXenesisChannelSetupPlanSummary,
+  formatXenesisChannelUserStorySummary,
+  formatXenesisConnectionActionResultSummary,
+  formatXenesisConnectionDiagnosticRunbookSummary,
+  formatXenesisConnectionGuidedStepDetail,
+  formatXenesisConnectionReviewStepDetail,
+  formatXenesisConnectionSetupRequestSummary,
+  formatXenesisConnectionSetupReviewSummary,
+  formatXenesisGuideCatalogSummary,
+  formatXenesisGuideFileSummary,
+  formatXenesisMcpInstallDraftSummary,
+  formatXenesisMessengerViewSectionSummary,
+  formatXenesisMessengerViewSummary,
+  formatXenesisOnboardingPlanSummary,
+  formatXenesisProviderProfileDraftSummary,
+  formatXenesisProviderRoutingSummary,
+  formatXenesisProviderSetupPlanSummary,
+  formatXenesisProviderSetupSummary,
+  formatXenesisProviderViewSectionSummary,
+  formatXenesisProviderViewSummary,
+  formatXenesisToolActionCatalogSummary,
+  formatXenesisToolConnectorSummary,
+  formatXenesisToolInstallPlanSummary,
+  formatXenesisToolMcpOAuthSummary,
+  formatXenesisToolOAuthDraftSummary,
+  formatXenesisToolOAuthRuntimeSummary,
+  formatXenesisToolOAuthSetupPacketSummary,
+  formatXenesisToolProfileDraftSummary,
+  formatXenesisToolRuntimeSummary,
+  formatXenesisToolSetupPlanSummary,
+  formatXenesisToolSetupSummary,
+  formatXenesisToolUserStorySummary,
+  formatXenesisToolViewSectionSummary,
+  formatXenesisToolViewSummary,
+  formatXenesisUserStoryContractDetail,
+  formatXenesisUserStoryContractSummary,
+  listXenesisConnectionSections,
+  xenesisConnectionDetailFocusSelector,
+  xenesisConnectionTone,
+} from './xenesisConnectionCenter';
 
 const BUILTIN_EXTERNAL_APP_IDS = new Set(BUILTIN_EXTERNAL_APP_PROFILES.map((profile) => profile.id));
 
@@ -95,11 +174,17 @@ declare global {
 const DEFAULT_XENESIS_PROFILE_CHANNEL_SETTINGS: XenesisProfileChannelSettings = {
   telegram: {
     enabled: false,
+    approvalMode: 'safe',
+    maxTurns: 12,
+    maxTokens: 120000,
     tokenEnv: 'TELEGRAM_BOT_TOKEN',
     allowedChatIds: '',
   },
   slack: {
     enabled: false,
+    approvalMode: 'safe',
+    maxTurns: 12,
+    maxTokens: 120000,
     botTokenEnv: 'SLACK_BOT_TOKEN',
     signingSecretEnv: 'SLACK_SIGNING_SECRET',
     webhookUrlEnv: 'SLACK_WEBHOOK_URL',
@@ -107,6 +192,9 @@ const DEFAULT_XENESIS_PROFILE_CHANNEL_SETTINGS: XenesisProfileChannelSettings = 
   },
   discord: {
     enabled: false,
+    approvalMode: 'safe',
+    maxTurns: 12,
+    maxTokens: 120000,
     botTokenEnv: 'DISCORD_BOT_TOKEN',
     webhookUrlEnv: 'DISCORD_WEBHOOK_URL',
     allowedChannelIds: '',
@@ -114,13 +202,20 @@ const DEFAULT_XENESIS_PROFILE_CHANNEL_SETTINGS: XenesisProfileChannelSettings = 
   },
   webhook: {
     enabled: false,
+    approvalMode: 'safe',
+    maxTurns: 12,
+    maxTokens: 120000,
     urlEnv: 'XENESIS_WEBHOOK_URL',
   },
 };
 
 function cloneXenesisProfileChannelSettings(settings?: XenesisProfileChannelSettings): XenesisProfileChannelSettings {
-  const source = settings ?? DEFAULT_XENESIS_PROFILE_CHANNEL_SETTINGS;
-  return JSON.parse(JSON.stringify(source)) as XenesisProfileChannelSettings;
+  return {
+    telegram: { ...DEFAULT_XENESIS_PROFILE_CHANNEL_SETTINGS.telegram, ...settings?.telegram },
+    slack: { ...DEFAULT_XENESIS_PROFILE_CHANNEL_SETTINGS.slack, ...settings?.slack },
+    discord: { ...DEFAULT_XENESIS_PROFILE_CHANNEL_SETTINGS.discord, ...settings?.discord },
+    webhook: { ...DEFAULT_XENESIS_PROFILE_CHANNEL_SETTINGS.webhook, ...settings?.webhook },
+  };
 }
 
 const XENESIS_ENV_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
@@ -271,6 +366,14 @@ const AI_PROVIDERS: Record<AiProviderKind, ProviderMeta> = {
     needsKey: true,
     defaultBaseUrl: '',
   },
+  openrouter: {
+    label: 'OpenRouter',
+    shortLabel: 'OpenRouter',
+    defaultModel: 'openai/gpt-4o-mini',
+    models: ['openai/gpt-4o-mini', 'openai/gpt-4o', 'anthropic/claude-3.5-sonnet'],
+    needsKey: true,
+    defaultBaseUrl: 'https://openrouter.ai/api/v1',
+  },
   groq: {
     label: 'Groq',
     shortLabel: 'Groq',
@@ -294,6 +397,22 @@ const AI_PROVIDERS: Record<AiProviderKind, ProviderMeta> = {
     models: ['qwen-plus', 'qwen-turbo', 'qwen-max'],
     needsKey: true,
     defaultBaseUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+  },
+  mistral: {
+    label: 'Mistral',
+    shortLabel: 'Mistral',
+    defaultModel: 'mistral-large-latest',
+    models: ['mistral-large-latest', 'mistral-small-latest', 'codestral-latest'],
+    needsKey: true,
+    defaultBaseUrl: 'https://api.mistral.ai/v1',
+  },
+  xai: {
+    label: 'xAI',
+    shortLabel: 'xAI',
+    defaultModel: 'grok-2-latest',
+    models: ['grok-2-latest'],
+    needsKey: true,
+    defaultBaseUrl: 'https://api.x.ai/v1',
   },
   ollama: {
     label: 'Ollama',
@@ -338,10 +457,13 @@ const PROVIDER_ORDER: AiProviderKind[] = [
   'openai',
   'anthropic',
   'gemini',
+  'openrouter',
   'azure',
   'groq',
   'deepseek',
   'qwen',
+  'mistral',
+  'xai',
   'ollama',
   'lmstudio',
   'together',
@@ -893,7 +1015,7 @@ const HERMES_BOT_PLATFORM_PLUGIN_PATH = 'providers/hermes/plugins/platforms/xene
 const HERMES_E2E_BOT_PATH = 'providers/hermes/plugins/xenesis_desk_gateway/e2e_bot';
 
 type SettingsRunModelMode = 'xamong' | 'hermes' | 'local' | 'byok';
-type SettingsXenesisTab = 'agent' | 'gateway' | 'external-bots' | 'gowoori';
+type SettingsXenesisTab = 'connections' | 'agent' | 'gateway' | 'external-bots' | 'gowoori';
 type SettingsInterfaceTab = 'language' | 'appearance' | 'keyboard-shortcuts' | 'window-sizer';
 type SettingsInfoTab = 'general' | 'secret-vault' | 'settings-backup';
 
@@ -901,6 +1023,8 @@ type SettingsOpenTargetDetail = {
   category?: unknown;
   mode?: unknown;
   section?: unknown;
+  focusConnectionId?: unknown;
+  focusConnectionDetail?: unknown;
   ensureVisible?: unknown;
   selectedTerminalProfileId?: unknown;
   pendingLocalTerminalProfile?: unknown;
@@ -973,6 +1097,7 @@ function normalizeRunModelMode(value: unknown): SettingsRunModelMode | null {
 
 function normalizeXenesisTab(value: unknown): SettingsXenesisTab | null {
   const mode = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (mode === 'connections' || mode === 'connection-center' || mode === 'onboarding') return 'connections';
   if (mode === 'xenesis' || mode === 'xenis' || mode === 'agent' || mode === 'xenesis-agent') return 'agent';
   if (mode === 'gateway' || mode === 'gateway-control' || mode === 'xenesis-gateway') return 'gateway';
   if (mode === 'external-bots' || mode === 'external-bot' || mode === 'external-bot-channels' || mode === 'bots')
@@ -984,6 +1109,8 @@ function normalizeXenesisTab(value: unknown): SettingsXenesisTab | null {
 function normalizeSettingsTargetSection(value: unknown): string {
   const section = typeof value === 'string' ? value.trim().toLowerCase() : '';
   if (section === 'overview' || section === 'top') return 'default';
+  if (section === 'connections' || section === 'connection-center' || section === 'onboarding')
+    return 'xenesis-connections';
   if (section === 'runtime' || section === 'xenesis') return 'xenesis-runtime';
   if (section === 'gateway' || section === 'gateway-control' || section === 'xenesis-gateway') return 'xenesis-gateway';
   if (section === 'external-bots' || section === 'external-bot') return 'external-bot-channels';
@@ -1002,6 +1129,23 @@ function normalizeSettingsTargetSection(value: unknown): string {
   return section;
 }
 
+function findXenesisConnectionElement(connectionId: string): HTMLElement | null {
+  const normalizedId = connectionId.trim();
+  if (!normalizedId) return null;
+  for (const element of document.querySelectorAll<HTMLElement>('[data-xenesis-connection]')) {
+    if (element.dataset.xenesisConnection === normalizedId) return element;
+  }
+  return null;
+}
+
+function findXenesisConnectionDetailElement(connectionId: string, focusConnectionDetail: unknown): HTMLElement | null {
+  const selector = xenesisConnectionDetailFocusSelector(focusConnectionDetail);
+  if (!selector) return null;
+  const connectionElement = findXenesisConnectionElement(connectionId);
+  if (connectionElement) return connectionElement.querySelector<HTMLElement>(selector);
+  return connectionId.trim() ? null : document.querySelector<HTMLElement>(selector);
+}
+
 function getRunModelModeForSection(section: string): SettingsRunModelMode | null {
   if (section === 'xamong-runtime') return 'xamong';
   if (section === 'hermes-provider') return 'hermes';
@@ -1011,6 +1155,7 @@ function getRunModelModeForSection(section: string): SettingsRunModelMode | null
 }
 
 function getXenesisTabForSection(section: string): SettingsXenesisTab | null {
+  if (section === 'xenesis-connections') return 'connections';
   if (section === 'xenesis-runtime') return 'agent';
   if (section === 'xenesis-gateway') return 'gateway';
   if (section === 'external-bot-channels') return 'external-bots';
@@ -1121,6 +1266,8 @@ export default function SettingsPane() {
   const [activeCategory, setActiveCategory] = useState<SettingsCategoryId>('info');
   const [runMode, setRunMode] = useState<SettingsRunModelMode>('byok');
   const [xenesisTab, setXenesisTab] = useState<SettingsXenesisTab>('agent');
+  const [focusedXenesisConnectionId, setFocusedXenesisConnectionId] = useState('');
+  const [focusedXenesisConnectionDetail, setFocusedXenesisConnectionDetail] = useState('');
   const [interfaceTab, setInterfaceTab] = useState<SettingsInterfaceTab>('language');
   const [infoTab, setInfoTab] = useState<SettingsInfoTab>('general');
   const [xenisPhase5Enabled, setXenisPhase5Enabled] = useState(false);
@@ -1158,6 +1305,10 @@ export default function SettingsPane() {
   const [mcpStatus, setMcpStatus] = useState<McpSettingsStatus | null>(null);
   const [mcpStatusBusy, setMcpStatusBusy] = useState(false);
   const [mcpStatusError, setMcpStatusError] = useState('');
+  const [xenesisConnectionsStatus, setXenesisConnectionsStatus] = useState<XenesisConnectionsStatus | null>(null);
+  const [xenesisConnectionsBusy, setXenesisConnectionsBusy] = useState(false);
+  const [xenesisConnectionsError, setXenesisConnectionsError] = useState('');
+  const [xenesisConnectionsLastAction, setXenesisConnectionsLastAction] = useState('');
   const [secretVaultMode, setSecretVaultMode] = useState<SecretVaultStorageMode>('plain');
   const [secretVaultStatus, setSecretVaultStatus] = useState<SecretVaultStatus | null>(null);
   const [secretVaultBusy, setSecretVaultBusy] = useState(false);
@@ -1289,6 +1440,7 @@ export default function SettingsPane() {
   const remoteProfileSettingsLoadedRef = useRef(false);
   const remoteProfileSettingsSnapshotRef = useRef('');
   const remoteProfileSettingsDirtyRef = useRef(false);
+  const xenesisConnectionFocusTimeoutRef = useRef<number | null>(null);
 
   const markRemoteProfileSettingsDirty = useCallback(() => {
     remoteProfileSettingsDirtyRef.current = true;
@@ -1297,6 +1449,15 @@ export default function SettingsPane() {
   useEffect(() => {
     setDraftLocale(locale);
   }, [locale]);
+
+  useEffect(
+    () => () => {
+      if (xenesisConnectionFocusTimeoutRef.current !== null) {
+        window.clearTimeout(xenesisConnectionFocusTimeoutRef.current);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     window.terminalAPI
@@ -1465,6 +1626,19 @@ export default function SettingsPane() {
     }
   }, []);
 
+  const loadXenesisConnectionsStatus = useCallback(async () => {
+    setXenesisConnectionsBusy(true);
+    setXenesisConnectionsError('');
+    try {
+      setXenesisConnectionsStatus(await window.xenesisAPI.connectionsStatus());
+    } catch (error) {
+      setXenesisConnectionsStatus(null);
+      setXenesisConnectionsError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setXenesisConnectionsBusy(false);
+    }
+  }, []);
+
   const loadProviderIntegrationStatus = useCallback(
     async (hermesRoot = hermesInstallRoot) => {
       setProviderIntegrationBusy(true);
@@ -1529,6 +1703,10 @@ export default function SettingsPane() {
   }, [loadMcpStatus]);
 
   useEffect(() => {
+    void loadXenesisConnectionsStatus();
+  }, [loadXenesisConnectionsStatus]);
+
+  useEffect(() => {
     void loadXenesisProfiles();
   }, [loadXenesisProfiles]);
 
@@ -1587,6 +1765,9 @@ export default function SettingsPane() {
 
       const rawSection = normalizeSettingsTargetSection(detail.section);
       const section = !xenisPhase5Enabled && rawSection === 'xamong-runtime' ? 'default' : rawSection;
+      const requestedConnectionId = typeof detail.focusConnectionId === 'string' ? detail.focusConnectionId.trim() : '';
+      const requestedConnectionDetail =
+        typeof detail.focusConnectionDetail === 'string' ? detail.focusConnectionDetail.trim() : '';
       const normalizedXenesisTab = normalizeXenesisTab(detail.mode) ?? getXenesisTabForSection(section);
       const normalizedCategory = normalizeSettingsTargetCategory(detail.category);
       const requestedCategory =
@@ -1621,6 +1802,18 @@ export default function SettingsPane() {
       if (targetCategory === 'xenesis-agent' && normalizedXenesisTab) {
         setXenesisTab(normalizedXenesisTab);
       }
+      if (requestedConnectionId || requestedConnectionDetail) {
+        setFocusedXenesisConnectionId(requestedConnectionId);
+        setFocusedXenesisConnectionDetail(requestedConnectionDetail);
+        if (xenesisConnectionFocusTimeoutRef.current !== null) {
+          window.clearTimeout(xenesisConnectionFocusTimeoutRef.current);
+        }
+        xenesisConnectionFocusTimeoutRef.current = window.setTimeout(() => {
+          setFocusedXenesisConnectionId((current) => (current === requestedConnectionId ? '' : current));
+          setFocusedXenesisConnectionDetail((current) => (current === requestedConnectionDetail ? '' : current));
+          xenesisConnectionFocusTimeoutRef.current = null;
+        }, 60000);
+      }
       if (targetCategory === 'run-model' && normalizedMode) {
         setRunMode(normalizedMode);
       }
@@ -1634,9 +1827,15 @@ export default function SettingsPane() {
       }
       if (section && detail.ensureVisible !== false) {
         const scrollToSection = (attempt = 0) => {
-          const element = document.querySelector<HTMLElement>(`[data-settings-section="${section}"]`);
+          const element =
+            findXenesisConnectionDetailElement(requestedConnectionId, requestedConnectionDetail) ??
+            (requestedConnectionId ? findXenesisConnectionElement(requestedConnectionId) : null) ??
+            document.querySelector<HTMLElement>(`[data-settings-section="${section}"]`);
           if (element) {
-            element.scrollIntoView({ block: 'start', behavior: 'auto' });
+            element.scrollIntoView({
+              block: requestedConnectionId || requestedConnectionDetail ? 'center' : 'start',
+              behavior: 'auto',
+            });
             return;
           }
           if (attempt < 12) {
@@ -3259,7 +3458,7 @@ export default function SettingsPane() {
   );
 
   const handleRemoteConnect = useCallback((profile: RemoteTerminalProfile | null) => {
-    if (!profile || !profile.host.trim()) return;
+    if (!profile?.host.trim()) return;
     window.dispatchEvent(new CustomEvent<RemoteTerminalProfile>('app-open-remote-terminal', { detail: profile }));
   }, []);
 
@@ -3350,7 +3549,7 @@ export default function SettingsPane() {
 
   const handleRemoteFileTest = useCallback(
     async (profile: RemoteFileProfile | null) => {
-      if (!profile || !profile.host.trim()) return;
+      if (!profile?.host.trim()) return;
       setRemoteFileTesting(true);
       setRemoteFileTestMessage('');
       try {
@@ -4114,6 +4313,2469 @@ export default function SettingsPane() {
     );
   };
 
+  const xenesisConnectionStatusLabel = (status: XenesisConnectionStatus) => {
+    switch (status) {
+      case 'ready':
+        return t('settings.xenesisConnectionsStatusReady');
+      case 'needs-setup':
+        return t('settings.xenesisConnectionsStatusNeedsSetup');
+      case 'disabled':
+        return t('settings.xenesisConnectionsStatusDisabled');
+      case 'blocked':
+        return t('settings.xenesisConnectionsStatusBlocked');
+      case 'planned':
+        return t('settings.xenesisConnectionsStatusPlanned');
+      default:
+        return t('settings.xenesisConnectionsStatusUnknown');
+    }
+  };
+
+  const xenesisConnectionPillClass = (status: XenesisConnectionStatus) => {
+    const tone = xenesisConnectionTone(status);
+    if (tone === 'success') return 'sp-pill-on';
+    if (tone === 'warning' || tone === 'info') return 'sp-pill-warning';
+    if (tone === 'danger') return 'sp-pill-danger';
+    return '';
+  };
+
+  const handleXenesisConnectionRequest = useCallback(
+    async (request: McpBridgeCapabilityCallRequest | null) => {
+      if (!request) return;
+      if (!window.deskBridgeAPI?.callCapability) {
+        const message = 'Desk bridge API is unavailable.';
+        setXenesisConnectionsError(message);
+        setXenesisConnectionsLastAction(
+          formatXenesisConnectionActionResultSummary({
+            ok: false,
+            path: request.path,
+            error: message,
+          }),
+        );
+        return;
+      }
+      setXenesisConnectionsError('');
+      try {
+        const result = await window.deskBridgeAPI.callCapability(request);
+        setXenesisConnectionsLastAction(formatXenesisConnectionActionResultSummary(result));
+        if (!result.ok) {
+          setXenesisConnectionsError(result.error || t('settings.xenesisConnectionsActionFailed'));
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        setXenesisConnectionsError(message);
+        setXenesisConnectionsLastAction(
+          formatXenesisConnectionActionResultSummary({
+            ok: false,
+            path: request.path,
+            error: message,
+          }),
+        );
+      }
+    },
+    [t],
+  );
+
+  const isXenesisConnectionDetailFocused = (itemId: string, detail: string) =>
+    focusedXenesisConnectionDetail === detail && (!focusedXenesisConnectionId || focusedXenesisConnectionId === itemId);
+
+  const renderXenesisConnectionItem = (item: XenesisConnectionItem) => {
+    const openRequest = buildXenesisConnectionOpenRequest(item);
+    const settingsRequest = buildXenesisConnectionSettingsRequest(item);
+    const guideRequest = buildXenesisConnectionGuideRequest(item);
+    const setupRequestCall = buildXenesisConnectionSetupRequestRequest(item);
+    const setupApplyRequest = buildXenesisConnectionSetupApplyRequest(item);
+    const userStoryWorkflowPreviewRequest = buildXenesisUserStoryWorkflowPreviewRequest(item);
+    const onboardingWorkflowPreviewRequest = buildXenesisOnboardingWorkflowPreviewRequest(item);
+    const setupPlanWorkflowPreviewRequest = buildXenesisSetupPlanWorkflowPreviewRequest(item);
+    const mcpInstallDraftRequest = buildXenesisMcpInstallDraftRequest(item);
+    const mcpInstallDraftApplyRequest = buildXenesisMcpInstallDraftApplyRequest(item);
+    const toolMcpOAuthRequest = buildXenesisToolMcpOAuthRequest(item);
+    const toolOAuthDraftRequest = buildXenesisToolOAuthDraftRequest(item);
+    const toolOAuthRuntimeRequest = buildXenesisToolOAuthRuntimeRequest(item);
+    const toolOAuthSetupPacketRequest = buildXenesisToolOAuthSetupPacketRequest(item);
+    const toolOAuthSetupPacketOpenRequest = buildXenesisToolOAuthSetupPacketOpenRequest(item);
+    const toolRuntimeRequest = buildXenesisToolRuntimeRequest(item);
+    const toolProfileDraftRequest = buildXenesisToolProfileDraftRequest(item);
+    const toolProfileDraftApplyRequest = buildXenesisToolProfileDraftApplyRequest(item);
+    const toolSetupPlanRequest = buildXenesisToolSetupPlanRequest(item);
+    const toolActionCatalogRequest = buildXenesisToolActionCatalogRequest(item);
+    const channelSetupPlanRequest = buildXenesisChannelSetupPlanRequest(item);
+    const channelRuntimeRequest = buildXenesisChannelRuntimeRequest(item);
+    const channelProfileDraftRequest = buildXenesisChannelProfileDraftRequest(item);
+    const channelProfileDraftApplyRequest = buildXenesisChannelProfileDraftApplyRequest(item);
+    const channelTestRequest = buildXenesisChannelTestRequest(item);
+    const providerSetupPlanRequest = buildXenesisProviderSetupPlanRequest(item);
+    const providerProfileDraftRequest = buildXenesisProviderProfileDraftRequest(item);
+    const providerProfileDraftApplyRequest = buildXenesisProviderProfileDraftApplyRequest(item);
+    const mcpTemplate = item.mcpTemplate;
+    const mcpInstallDraft = item.mcpInstallDraft;
+    const toolMcpOAuth = item.toolMcpOAuth;
+    const toolOAuthDraft = item.toolOAuthDraft;
+    const toolOAuthRuntime = item.toolOAuthRuntime;
+    const toolOAuthSetupPacket = toolOAuthDraft?.setupPacket;
+    const toolRuntime = item.toolRuntime;
+    const toolProfileDraft = item.toolProfileDraft;
+    const toolActionCatalog = item.toolActionCatalog;
+    const onboardingPlan = item.onboardingPlan;
+    const providerSetup = item.providerSetup;
+    const providerView = item.providerView;
+    const providerRouting = item.providerRouting;
+    const providerSetupPlan = item.providerSetupPlan;
+    const providerProfileDraft = item.providerProfileDraft;
+    const toolSetup = item.toolSetup;
+    const toolSetupPlan = item.toolSetupPlan;
+    const toolInstallPlan = item.toolInstallPlan;
+    const toolConnector = item.toolConnector;
+    const toolView = item.toolView;
+    const toolUserStory = item.toolUserStory;
+    const messengerView = item.messengerView;
+    const channelRuntime = item.channelRuntime;
+    const channelSetupPlan = item.channelSetupPlan;
+    const channelProfileDraft = item.channelProfileDraft;
+    const channelTemplate = item.channelTemplate;
+    const channelUserStory = channelTemplate?.userStory;
+    const diagnosticRunbook = item.diagnosticRunbook;
+    const setupRequest = item.setupRequest;
+    const guideFile = item.guideFile;
+    return (
+      <div
+        className={cls('sp-info-card', focusedXenesisConnectionId === item.id && 'is-focused')}
+        key={item.id}
+        data-xenesis-connection={item.id}
+      >
+        <div className="sp-section-heading">
+          <div>
+            <strong>{item.label}</strong>
+            <span>{item.summary}</span>
+          </div>
+          <span className={cls('sp-pill', xenesisConnectionPillClass(item.status))}>
+            {xenesisConnectionStatusLabel(item.status)}
+          </span>
+        </div>
+        {(openRequest ||
+          settingsRequest ||
+          guideRequest ||
+          setupRequestCall ||
+          setupApplyRequest ||
+          userStoryWorkflowPreviewRequest ||
+          onboardingWorkflowPreviewRequest ||
+          setupPlanWorkflowPreviewRequest ||
+          mcpInstallDraftRequest ||
+          mcpInstallDraftApplyRequest ||
+          toolMcpOAuthRequest ||
+          toolOAuthDraftRequest ||
+          toolOAuthRuntimeRequest ||
+          toolOAuthSetupPacketRequest ||
+          toolRuntimeRequest ||
+          toolProfileDraftRequest ||
+          toolSetupPlanRequest ||
+          toolActionCatalogRequest ||
+          channelSetupPlanRequest ||
+          channelRuntimeRequest ||
+          channelProfileDraftRequest ||
+          channelProfileDraftApplyRequest ||
+          channelTestRequest ||
+          providerSetupPlanRequest ||
+          providerProfileDraftRequest ||
+          providerProfileDraftApplyRequest) && (
+          <div className="sp-actions-row sp-actions-row-tight">
+            <button
+              className="sp-btn-ghost sp-btn-sm"
+              onClick={() => {
+                void handleXenesisConnectionRequest(openRequest);
+              }}
+            >
+              {t('settings.xenesisConnectionsFocusCard')}
+            </button>
+            {settingsRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(settingsRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsOpenSettings')}
+              </button>
+            ) : null}
+            {guideRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(guideRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsOpenGuide')}
+              </button>
+            ) : null}
+            {setupRequestCall ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(setupRequestCall);
+                }}
+              >
+                {t('settings.xenesisConnectionsRequestSetup')}
+              </button>
+            ) : null}
+            {setupApplyRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(setupApplyRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsApplySetup')}
+              </button>
+            ) : null}
+            {userStoryWorkflowPreviewRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(userStoryWorkflowPreviewRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsPreviewUserStoryWorkflow')}
+              </button>
+            ) : null}
+            {onboardingWorkflowPreviewRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(onboardingWorkflowPreviewRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsPreviewOnboardingWorkflow')}
+              </button>
+            ) : null}
+            {setupPlanWorkflowPreviewRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(setupPlanWorkflowPreviewRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsPreviewSetupPlanWorkflow')}
+              </button>
+            ) : null}
+            {mcpInstallDraftRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(mcpInstallDraftRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsRequestMcpInstallDraft')}
+              </button>
+            ) : null}
+            {mcpInstallDraftApplyRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(mcpInstallDraftApplyRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsApplyMcpInstallDraft')}
+              </button>
+            ) : null}
+            {toolMcpOAuthRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(toolMcpOAuthRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsRequestToolMcpOAuth')}
+              </button>
+            ) : null}
+            {toolSetupPlanRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(toolSetupPlanRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsReadToolSetupPlan')}
+              </button>
+            ) : null}
+            {toolActionCatalogRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(toolActionCatalogRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsRequestToolActionCatalog')}
+              </button>
+            ) : null}
+            {channelSetupPlanRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(channelSetupPlanRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsReadChannelSetupPlan')}
+              </button>
+            ) : null}
+            {channelRuntimeRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(channelRuntimeRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsRequestChannelRuntime')}
+              </button>
+            ) : null}
+            {toolOAuthSetupPacketRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(toolOAuthSetupPacketRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsReadToolOAuthSetupPacket')}
+              </button>
+            ) : null}
+            {toolOAuthSetupPacketOpenRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(toolOAuthSetupPacketOpenRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsOpenToolOAuthSetupPacket')}
+              </button>
+            ) : null}
+            {toolOAuthDraftRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(toolOAuthDraftRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsRequestToolOAuthDraft')}
+              </button>
+            ) : null}
+            {toolOAuthRuntimeRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(toolOAuthRuntimeRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsRequestToolOAuthRuntime')}
+              </button>
+            ) : null}
+            {toolRuntimeRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(toolRuntimeRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsRequestToolRuntime')}
+              </button>
+            ) : null}
+            {toolProfileDraftRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(toolProfileDraftRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsRequestToolProfileDraft')}
+              </button>
+            ) : null}
+            {toolProfileDraftApplyRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(toolProfileDraftApplyRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsApplyToolProfileDraft')}
+              </button>
+            ) : null}
+            {channelProfileDraftRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(channelProfileDraftRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsRequestChannelProfileDraft')}
+              </button>
+            ) : null}
+            {channelProfileDraftApplyRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(channelProfileDraftApplyRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsApplyChannelProfileDraft')}
+              </button>
+            ) : null}
+            {channelTestRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(channelTestRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsSendChannelTest')}
+              </button>
+            ) : null}
+            {providerProfileDraftRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(providerProfileDraftRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsRequestProviderProfileDraft')}
+              </button>
+            ) : null}
+            {providerSetupPlanRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(providerSetupPlanRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsReadProviderSetupPlan')}
+              </button>
+            ) : null}
+            {providerProfileDraftApplyRequest ? (
+              <button
+                className="sp-btn-ghost sp-btn-sm"
+                onClick={() => {
+                  void handleXenesisConnectionRequest(providerProfileDraftApplyRequest);
+                }}
+              >
+                {t('settings.xenesisConnectionsApplyProviderProfileDraft')}
+              </button>
+            ) : null}
+          </div>
+        )}
+        {(item.missingEnv?.length || item.requiredEnv?.length || item.crActions?.length || item.guidePath) && (
+          <div className="sp-info-list sp-info-list-compact">
+            {item.missingEnv?.length ? (
+              <div>
+                <span>{t('settings.xenesisConnectionsMissingEnv')}</span>
+                <strong>{item.missingEnv.join(', ')}</strong>
+              </div>
+            ) : null}
+            {!item.missingEnv?.length && item.requiredEnv?.length ? (
+              <div>
+                <span>{t('settings.xenesisConnectionsRequiredEnv')}</span>
+                <strong>{item.requiredEnv.join(', ')}</strong>
+              </div>
+            ) : null}
+            {item.crActions?.length ? (
+              <div>
+                <span>{t('settings.xenesisConnectionsCrActions')}</span>
+                <strong>{item.crActions.join(', ')}</strong>
+              </div>
+            ) : null}
+            {item.guidePath ? (
+              <div>
+                <span>{t('settings.xenesisConnectionsGuide')}</span>
+                <strong>{item.guidePath}</strong>
+              </div>
+            ) : null}
+          </div>
+        )}
+        {item.setupSteps?.length ? (
+          <div className="sp-info-list sp-info-list-compact">
+            {item.setupSteps.map((step, index) => (
+              <div key={`${item.id}-step-${index}`}>
+                <span>
+                  {t('settings.xenesisConnectionsSetupStep')} {index + 1}
+                </span>
+                <strong>{step}</strong>
+              </div>
+            ))}
+          </div>
+        ) : null}
+        {item.sourceDocs?.length ? (
+          <div className="sp-info-list sp-info-list-compact">
+            <div>
+              <span>{t('settings.xenesisConnectionsSources')}</span>
+              <strong>{item.sourceDocs.map((source) => source.label).join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {diagnosticRunbook ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'diagnostic-runbook') && 'is-focused',
+            )}
+            data-xenesis-connection-diagnostic-runbook={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsDiagnosticRunbook')}</span>
+              <strong>{formatXenesisConnectionDiagnosticRunbookSummary(diagnosticRunbook)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsDiagnosticRunbookSetupSurface')}</span>
+              <strong>{diagnosticRunbook.setupSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsDiagnosticRunbookSteps')}</span>
+              <strong>{diagnosticRunbook.steps.map((step) => `${step.id}: ${step.expectedState}`).join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsDiagnosticRunbookReadback')}</span>
+              <strong>{diagnosticRunbook.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsDiagnosticRunbookControls')}</span>
+              <strong>{diagnosticRunbook.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsDiagnosticRunbookDiagnostics')}</span>
+              <strong>{diagnosticRunbook.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsDiagnosticRunbookSafety')}</span>
+              <strong>{diagnosticRunbook.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {setupRequest ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'setup-request') && 'is-focused',
+            )}
+            data-xenesis-connection-setup-request={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsSetupRequest')}</span>
+              <strong>{formatXenesisConnectionSetupRequestSummary(setupRequest)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsSetupRequestSurface')}</span>
+              <strong>{setupRequest.setupSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsSetupRequestReviewSurface')}</span>
+              <strong>{setupRequest.reviewSurface}</strong>
+            </div>
+            {setupRequest.review ? (
+              <div data-xenesis-connection-setup-review={item.id}>
+                <span>{t('settings.xenesisConnectionsSetupRequestReviewStatus')}</span>
+                <strong>{formatXenesisConnectionSetupReviewSummary(setupRequest.review)}</strong>
+              </div>
+            ) : null}
+            <div>
+              <span>{t('settings.xenesisConnectionsSetupRequestSteps')}</span>
+              <strong>{setupRequest.steps.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsSetupRequestReadback')}</span>
+              <strong>{setupRequest.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsSetupRequestControls')}</span>
+              <strong>{setupRequest.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsSetupRequestDiagnostics')}</span>
+              <strong>{setupRequest.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsSetupRequestBlockedActions')}</span>
+              <strong>{setupRequest.blockedActions.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsSetupRequestSafety')}</span>
+              <strong>{setupRequest.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {onboardingPlan ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'onboarding-plan') && 'is-focused',
+            )}
+            data-xenesis-onboarding-plan={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsOnboardingPlan')}</span>
+              <strong>{formatXenesisOnboardingPlanSummary(onboardingPlan)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsOnboardingSetupSurface')}</span>
+              <strong>{onboardingPlan.setupSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsOnboardingReadback')}</span>
+              <strong>{onboardingPlan.statusReadPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsOnboardingControls')}</span>
+              <strong>{onboardingPlan.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsOnboardingValidation')}</span>
+              <strong>{onboardingPlan.validationChecks.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsOnboardingGuidedSteps')}</span>
+              <strong>{onboardingPlan.guidedSteps.map(formatXenesisConnectionGuidedStepDetail).join(' | ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsOnboardingDiagnostics')}</span>
+              <strong>{onboardingPlan.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsOnboardingSafety')}</span>
+              <strong>{onboardingPlan.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {guideFile ? (
+          <div className="sp-info-list sp-info-list-compact" data-xenesis-guide-file={item.id}>
+            <div>
+              <span>{t('settings.xenesisConnectionsGuideFile')}</span>
+              <strong>{formatXenesisGuideFileSummary(guideFile)}</strong>
+            </div>
+            {guideFile.guideOpenPath ? (
+              <div>
+                <span>{t('settings.xenesisConnectionsGuideFileOpenPath')}</span>
+                <strong>{guideFile.guideOpenPath}</strong>
+              </div>
+            ) : null}
+            <div>
+              <span>{t('settings.xenesisConnectionsGuideFileReadback')}</span>
+              <strong>{guideFile.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsGuideFileControls')}</span>
+              <strong>{guideFile.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsGuideFileDiagnostics')}</span>
+              <strong>{guideFile.diagnostics.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {item.guideCatalog ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'guide-catalog') && 'is-focused',
+            )}
+            data-xenesis-guide-catalog={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsGuideCatalog')}</span>
+              <strong>{formatXenesisGuideCatalogSummary(item.guideCatalog)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsGuideSurfaces')}</span>
+              <strong>{item.guideCatalog.coveredSurfaces.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsGuidePrerequisites')}</span>
+              <strong>{item.guideCatalog.prerequisites.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsGuideValidation')}</span>
+              <strong>{item.guideCatalog.validationChecks.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsGuideUserStories')}</span>
+              <strong>{item.guideCatalog.userStoryTemplates.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsGuideReadback')}</span>
+              <strong>{item.guideCatalog.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsGuideControls')}</span>
+              <strong>{item.guideCatalog.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsGuideBoundaries')}</span>
+              <strong>{item.guideCatalog.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {providerProfileDraft ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'provider-profile-draft') && 'is-focused',
+            )}
+            data-xenesis-provider-profile-draft={providerProfileDraft.provider}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderProfileDraft')}</span>
+              <strong>{formatXenesisProviderProfileDraftSummary(providerProfileDraft)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderProfileDraftSetupSurface')}</span>
+              <strong>{providerProfileDraft.setupSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderProfileDraftReviewSurface')}</span>
+              <strong>{providerProfileDraft.reviewSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderProfileDraftFields')}</span>
+              <strong>
+                {providerProfileDraft.profileFields
+                  .map((field) => `${field.field}:${field.valueState}${field.required ? ':required' : ''}`)
+                  .join(', ') || '-'}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderProfileDraftMissingFields')}</span>
+              <strong>{providerProfileDraft.missingRequiredFields.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderProfileDraftGuardrails')}</span>
+              <strong>
+                {providerProfileDraft.guardrails.approvalMode} / {providerProfileDraft.guardrails.providerRetries}{' '}
+                retries / {providerProfileDraft.guardrails.fallbackPolicy} /{' '}
+                {providerProfileDraft.guardrails.localCliBoundary}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderProfileDraftReviewSteps')}</span>
+              <strong>
+                {providerProfileDraft.reviewSteps.map(formatXenesisConnectionReviewStepDetail).join(' | ')}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderProfileDraftReadback')}</span>
+              <strong>{providerProfileDraft.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderProfileDraftControls')}</span>
+              <strong>{providerProfileDraft.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderProfileDraftDiagnostics')}</span>
+              <strong>{providerProfileDraft.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderProfileDraftBlockedActions')}</span>
+              <strong>{providerProfileDraft.blockedActions.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderProfileDraftSafety')}</span>
+              <strong>{providerProfileDraft.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {providerSetupPlan ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'provider-setup-plan') && 'is-focused',
+            )}
+            data-xenesis-provider-setup-plan={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderSetupPlan')}</span>
+              <strong>{formatXenesisProviderSetupPlanSummary(providerSetupPlan)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderSetupPlanGuide')}</span>
+              <strong>{providerSetupPlan.guidePath}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderSetupPlanSteps')}</span>
+              <strong>
+                {providerSetupPlan.steps
+                  .map((step) => `${step.id}: ${step.kind} ${step.crPath} -> ${step.expectedState}`)
+                  .join(', ')}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderSetupPlanReadback')}</span>
+              <strong>{providerSetupPlan.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderSetupPlanControls')}</span>
+              <strong>{providerSetupPlan.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderSetupPlanDiagnostics')}</span>
+              <strong>{providerSetupPlan.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderSetupPlanBlocked')}</span>
+              <strong>{providerSetupPlan.blockedActions.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderSetupPlanSafety')}</span>
+              <strong>{providerSetupPlan.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {providerSetup ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'provider-setup') && 'is-focused',
+            )}
+            data-xenesis-provider-setup={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderSetup')}</span>
+              <strong>{formatXenesisProviderSetupSummary(providerSetup)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderCredential')}</span>
+              <strong>
+                {providerSetup.credentialState} / {providerSetup.credentialStorage}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderEndpoint')}</span>
+              <strong>{providerSetup.endpoint}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderRuntime')}</span>
+              <strong>
+                {providerSetup.runtimeProfile} / {providerSetup.runtimeProvider} / {providerSetup.runtimeModel}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderPolicy')}</span>
+              <strong>
+                {providerSetup.providerRetries} / {providerSetup.fallbackPolicy}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderLocalCli')}</span>
+              <strong>{providerSetup.localCliBoundary}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderVerification')}</span>
+              <strong>{providerSetup.verification.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderCrReadback')}</span>
+              <strong>{providerSetup.crReadPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderRiskControls')}</span>
+              <strong>{providerSetup.riskControls.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {providerRouting ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'provider-routing') && 'is-focused',
+            )}
+            data-xenesis-provider-routing={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderRouting')}</span>
+              <strong>{formatXenesisProviderRoutingSummary(providerRouting)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderRoutingRuntime')}</span>
+              <strong>
+                {providerRouting.runtimeProfile} / {providerRouting.runtimeProvider} / {providerRouting.runtimeModel}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderRoutingFallbacks')}</span>
+              <strong>
+                {providerRouting.fallbackChain.length
+                  ? providerRouting.fallbackChain
+                      .map(
+                        (fallback) =>
+                          `${fallback.index}. ${fallback.provider}/${fallback.model}/${fallback.credentialState}/${fallback.baseURLState}`,
+                      )
+                      .join(', ')
+                  : '-'}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderRoutingCredentialPools')}</span>
+              <strong>
+                {providerRouting.credentialPools
+                  .map((pool) =>
+                    pool.apiKeyEnv
+                      ? `${pool.source}:${pool.provider}:${pool.credentialState} (${pool.apiKeyEnv})`
+                      : `${pool.source}:${pool.provider}:${pool.credentialState}`,
+                  )
+                  .join(', ')}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderRoutingReadback')}</span>
+              <strong>{providerRouting.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderRoutingDiagnostics')}</span>
+              <strong>{providerRouting.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderRoutingSafety')}</span>
+              <strong>{providerRouting.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {providerView ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'provider-view') && 'is-focused',
+            )}
+            data-xenesis-provider-view={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderView')}</span>
+              <strong>{formatXenesisProviderViewSummary(providerView)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderViewSetupSurface')}</span>
+              <strong>{providerView.setupSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderViewOpen')}</span>
+              <strong>
+                {providerView.openPath} {JSON.stringify(providerView.openArgs)}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderViewInternalViews')}</span>
+              <strong>{providerView.internalViews.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderViewSections')}</span>
+              <strong>{providerView.viewSections.map(formatXenesisProviderViewSectionSummary).join(' | ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderViewSectionOpenArgs')}</span>
+              <strong>
+                {providerView.viewSections.map((section) => JSON.stringify(section.openArgs)).join(' | ')}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderViewReadback')}</span>
+              <strong>{providerView.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderViewControls')}</span>
+              <strong>{providerView.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderViewDiagnostics')}</span>
+              <strong>{providerView.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsProviderViewSafety')}</span>
+              <strong>{providerView.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {toolSetup ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'tool-setup') && 'is-focused',
+            )}
+            data-xenesis-tool-setup={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsToolSetup')}</span>
+              <strong>{formatXenesisToolSetupSummary(toolSetup)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolDataScopes')}</span>
+              <strong>{toolSetup.dataScopes.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolWriteScopes')}</span>
+              <strong>{toolSetup.writeScopes.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolCredentials')}</span>
+              <strong>{toolSetup.credentialStorage}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolVerification')}</span>
+              <strong>{toolSetup.verification.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolCrReadback')}</span>
+              <strong>{toolSetup.crReadPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolRiskControls')}</span>
+              <strong>{toolSetup.riskControls.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {toolSetupPlan ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'tool-setup-plan') && 'is-focused',
+            )}
+            data-xenesis-tool-setup-plan={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsToolSetupPlan')}</span>
+              <strong>{formatXenesisToolSetupPlanSummary(toolSetupPlan)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolSetupPlanGuide')}</span>
+              <strong>{toolSetupPlan.guidePath}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolSetupPlanSteps')}</span>
+              <strong>
+                {toolSetupPlan.steps
+                  .map((step) => `${step.id}: ${step.kind} ${step.crPath} -> ${step.expectedState}`)
+                  .join(', ')}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolSetupPlanReadback')}</span>
+              <strong>{toolSetupPlan.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolSetupPlanControls')}</span>
+              <strong>{toolSetupPlan.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolSetupPlanDiagnostics')}</span>
+              <strong>{toolSetupPlan.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolSetupPlanBlocked')}</span>
+              <strong>{toolSetupPlan.blockedActions.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolSetupPlanSafety')}</span>
+              <strong>{toolSetupPlan.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {toolInstallPlan ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'tool-install-plan') && 'is-focused',
+            )}
+            data-xenesis-tool-install-plan={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsToolInstallPlan')}</span>
+              <strong>{formatXenesisToolInstallPlanSummary(toolInstallPlan)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolInstallPlanSurface')}</span>
+              <strong>{toolInstallPlan.installSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolInstallPlanActions')}</span>
+              <strong>{toolInstallPlan.installActions.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolInstallPlanSteps')}</span>
+              <strong>{toolInstallPlan.installSteps.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolInstallPlanTargets')}</span>
+              <strong>{toolInstallPlan.configTargets.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolInstallPlanRequiredEnv')}</span>
+              <strong>{toolInstallPlan.requiredEnv.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolInstallPlanReadback')}</span>
+              <strong>{toolInstallPlan.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolInstallPlanControls')}</span>
+              <strong>{toolInstallPlan.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolInstallPlanDiagnostics')}</span>
+              <strong>{toolInstallPlan.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolInstallPlanSafety')}</span>
+              <strong>{toolInstallPlan.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {toolRuntime ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'tool-runtime') && 'is-focused',
+            )}
+            data-xenesis-tool-runtime={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsToolRuntime')}</span>
+              <strong>{formatXenesisToolRuntimeSummary(toolRuntime)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolRuntimeAuthMode')}</span>
+              <strong>{toolRuntime.authMode}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolRuntimeSupport')}</span>
+              <strong>{toolRuntime.runtimeSupport}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolRuntimeSurfaces')}</span>
+              <strong>
+                {[toolRuntime.installSurface, toolRuntime.runtimeSurface, toolRuntime.reviewSurface].join(' | ')}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolRuntimeCredentialState')}</span>
+              <strong>{toolRuntime.credentialState}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolRuntimeRequiredEnv')}</span>
+              <strong>{toolRuntime.requiredEnv.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolRuntimeMissingEnv')}</span>
+              <strong>{toolRuntime.missingEnv.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolRuntimeReadbackChecks')}</span>
+              <strong>{toolRuntime.readbackChecks.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolRuntimeReadback')}</span>
+              <strong>{toolRuntime.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolRuntimeControls')}</span>
+              <strong>{toolRuntime.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolRuntimeDiagnostics')}</span>
+              <strong>{toolRuntime.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolRuntimeBlockedActions')}</span>
+              <strong>{toolRuntime.blockedActions.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolRuntimeSafety')}</span>
+              <strong>{toolRuntime.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {toolProfileDraft ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'tool-profile-draft') && 'is-focused',
+            )}
+            data-xenesis-tool-profile-draft={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsToolProfileDraft')}</span>
+              <strong>{formatXenesisToolProfileDraftSummary(toolProfileDraft)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolProfileDraftSurfaces')}</span>
+              <strong>{[toolProfileDraft.setupSurface, toolProfileDraft.reviewSurface].join(' | ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolProfileDraftFields')}</span>
+              <strong>
+                {toolProfileDraft.profileFields
+                  .map((field) => `${field.field}:${field.valueState}${field.required ? ':required' : ''}`)
+                  .join(', ') || '-'}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolProfileDraftMissingFields')}</span>
+              <strong>{toolProfileDraft.missingRequiredFields.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolProfileDraftScopes')}</span>
+              <strong>{toolProfileDraft.scopes.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolProfileDraftReviewSteps')}</span>
+              <strong>{toolProfileDraft.reviewSteps.map(formatXenesisConnectionReviewStepDetail).join(' | ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolProfileDraftReadback')}</span>
+              <strong>{toolProfileDraft.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolProfileDraftControls')}</span>
+              <strong>{toolProfileDraft.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolProfileDraftDiagnostics')}</span>
+              <strong>{toolProfileDraft.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolProfileDraftBlockedActions')}</span>
+              <strong>{toolProfileDraft.blockedActions.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolProfileDraftSafety')}</span>
+              <strong>{toolProfileDraft.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {mcpInstallDraft ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'mcp-install-draft') && 'is-focused',
+            )}
+            data-xenesis-mcp-install-draft={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsMcpInstallDraft')}</span>
+              <strong>{formatXenesisMcpInstallDraftSummary(mcpInstallDraft)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMcpInstallDraftSurface')}</span>
+              <strong>{mcpInstallDraft.installSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMcpInstallDraftReviewSurface')}</span>
+              <strong>{mcpInstallDraft.reviewSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMcpInstallDraftTargets')}</span>
+              <strong>{mcpInstallDraft.configTargets.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMcpInstallDraftMissingEnv')}</span>
+              <strong>{mcpInstallDraft.missingEnv.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMcpInstallDraftSteps')}</span>
+              <strong>{mcpInstallDraft.installSteps.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMcpInstallDraftReadback')}</span>
+              <strong>{mcpInstallDraft.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMcpInstallDraftControls')}</span>
+              <strong>{mcpInstallDraft.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMcpInstallDraftDiagnostics')}</span>
+              <strong>{mcpInstallDraft.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMcpInstallDraftBlockedActions')}</span>
+              <strong>{mcpInstallDraft.blockedActions.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMcpInstallDraftSafety')}</span>
+              <strong>{mcpInstallDraft.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {toolMcpOAuth ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'tool-mcp-oauth') && 'is-focused',
+            )}
+            data-xenesis-tool-mcp-oauth={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsToolMcpOAuth')}</span>
+              <strong>{formatXenesisToolMcpOAuthSummary(toolMcpOAuth)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolMcpOAuthAuthSurface')}</span>
+              <strong>{toolMcpOAuth.authSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolMcpOAuthReviewSurface')}</span>
+              <strong>{toolMcpOAuth.reviewSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolMcpOAuthCredentials')}</span>
+              <strong>
+                {toolMcpOAuth.credentialRefs
+                  .map((credential) => `${credential.ref}:${credential.state}${credential.required ? ':required' : ''}`)
+                  .join(', ') || '-'}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolMcpOAuthMissingFields')}</span>
+              <strong>{toolMcpOAuth.missingRequiredFields.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolMcpOAuthScopes')}</span>
+              <strong>{toolMcpOAuth.scopes.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolMcpOAuthTokenStore')}</span>
+              <strong>{toolMcpOAuth.tokenStore}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolMcpOAuthConsentMode')}</span>
+              <strong>{toolMcpOAuth.consentMode}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolMcpOAuthReadback')}</span>
+              <strong>{toolMcpOAuth.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolMcpOAuthControls')}</span>
+              <strong>{toolMcpOAuth.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolMcpOAuthDiagnostics')}</span>
+              <strong>{toolMcpOAuth.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolMcpOAuthBlockedActions')}</span>
+              <strong>{toolMcpOAuth.blockedActions.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolMcpOAuthSafety')}</span>
+              <strong>{toolMcpOAuth.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {toolOAuthDraft ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'tool-oauth-draft') && 'is-focused',
+            )}
+            data-xenesis-tool-oauth-draft={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthDraft')}</span>
+              <strong>{formatXenesisToolOAuthDraftSummary(toolOAuthDraft)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthDraftAuthSurface')}</span>
+              <strong>{toolOAuthDraft.authSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthDraftReviewSurface')}</span>
+              <strong>{toolOAuthDraft.reviewSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthDraftFields')}</span>
+              <strong>
+                {toolOAuthDraft.profileFields
+                  .map((field) => `${field.field}:${field.valueState}${field.required ? ':required' : ''}`)
+                  .join(', ') || '-'}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthDraftMissingFields')}</span>
+              <strong>{toolOAuthDraft.missingRequiredFields.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthDraftScopes')}</span>
+              <strong>{toolOAuthDraft.scopes.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthDraftTokenStore')}</span>
+              <strong>{toolOAuthDraft.tokenStore}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthDraftConsentMode')}</span>
+              <strong>{toolOAuthDraft.consentMode}</strong>
+            </div>
+            {toolOAuthSetupPacket ? (
+              <>
+                <div
+                  className={cls(isXenesisConnectionDetailFocused(item.id, 'tool-oauth-setup-packet') && 'is-focused')}
+                  data-xenesis-tool-oauth-setup-packet={item.id}
+                >
+                  <span>{t('settings.xenesisConnectionsToolOAuthSetupPacket')}</span>
+                  <strong>{formatXenesisToolOAuthSetupPacketSummary(toolOAuthSetupPacket)}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsToolOAuthSetupPacketRedirectUri')}</span>
+                  <strong>
+                    {[toolOAuthSetupPacket.redirectUriPolicy, ...toolOAuthSetupPacket.redirectUriCandidates].join(
+                      ' | ',
+                    )}
+                  </strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsToolOAuthSetupPacketCredentials')}</span>
+                  <strong>
+                    {toolOAuthSetupPacket.credentialRefs
+                      .map((credential) => `${credential.ref}:${credential.valueState}`)
+                      .join(', ') || '-'}
+                  </strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsToolOAuthSetupPacketChecklist')}</span>
+                  <strong>{toolOAuthSetupPacket.checklist.join(' | ') || '-'}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsToolOAuthSetupPacketReadback')}</span>
+                  <strong>{toolOAuthSetupPacket.readPaths.join(', ') || '-'}</strong>
+                </div>
+              </>
+            ) : null}
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthDraftReviewSteps')}</span>
+              <strong>{toolOAuthDraft.reviewSteps.map(formatXenesisConnectionReviewStepDetail).join(' | ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthDraftReadback')}</span>
+              <strong>{toolOAuthDraft.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthDraftControls')}</span>
+              <strong>{toolOAuthDraft.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthDraftDiagnostics')}</span>
+              <strong>{toolOAuthDraft.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthDraftBlockedActions')}</span>
+              <strong>{toolOAuthDraft.blockedActions.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthDraftSafety')}</span>
+              <strong>{toolOAuthDraft.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {toolOAuthRuntime ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'tool-oauth-runtime') && 'is-focused',
+            )}
+            data-xenesis-tool-oauth-runtime={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntime')}</span>
+              <strong>{formatXenesisToolOAuthRuntimeSummary(toolOAuthRuntime)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeAuthSurface')}</span>
+              <strong>{toolOAuthRuntime.authSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeReviewSurface')}</span>
+              <strong>{toolOAuthRuntime.reviewSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeCallbackPolicy')}</span>
+              <strong>
+                {[toolOAuthRuntime.callbackPolicy, ...toolOAuthRuntime.callbackUriCandidates].join(' | ')}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeCredentials')}</span>
+              <strong>
+                {toolOAuthRuntime.credentialRefs
+                  .map((credential) => `${credential.ref}:${credential.valueState}`)
+                  .join(', ') || '-'}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeMissingFields')}</span>
+              <strong>{toolOAuthRuntime.missingRequiredFields.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeScopes')}</span>
+              <strong>{toolOAuthRuntime.scopes.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeTokenStore')}</span>
+              <strong>
+                {[toolOAuthRuntime.tokenStore, toolOAuthRuntime.tokenStoreOwner].filter(Boolean).join(' | ')}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeConsentMode')}</span>
+              <strong>{toolOAuthRuntime.consentMode}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeReadbackChecks')}</span>
+              <strong>{toolOAuthRuntime.readbackChecks.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeReadback')}</span>
+              <strong>{toolOAuthRuntime.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeControls')}</span>
+              <strong>{toolOAuthRuntime.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeDiagnostics')}</span>
+              <strong>{toolOAuthRuntime.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeBlockedActions')}</span>
+              <strong>{toolOAuthRuntime.blockedActions.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolOAuthRuntimeSafety')}</span>
+              <strong>{toolOAuthRuntime.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {toolActionCatalog ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'tool-action-catalog') && 'is-focused',
+            )}
+            data-xenesis-tool-action-catalog={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsToolActionCatalog')}</span>
+              <strong>{formatXenesisToolActionCatalogSummary(toolActionCatalog)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolActionCatalogPrimarySurface')}</span>
+              <strong>{toolActionCatalog.primarySurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolActionCatalogReviewSurface')}</span>
+              <strong>{toolActionCatalog.reviewSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolActionCatalogGroups')}</span>
+              <strong>
+                {toolActionCatalog.groups
+                  .map((group) => {
+                    const actions = group.actions
+                      .map((action) => `${action.label}:${action.risk}:${action.toolNames.join('+') || '-'}`)
+                      .join('; ');
+                    return `${group.kind}:${group.approvalPolicy}:${actions || '-'}`;
+                  })
+                  .join(', ')}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolActionCatalogReadback')}</span>
+              <strong>{toolActionCatalog.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolActionCatalogControls')}</span>
+              <strong>{toolActionCatalog.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolActionCatalogDiagnostics')}</span>
+              <strong>{toolActionCatalog.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolActionCatalogBlockedActions')}</span>
+              <strong>{toolActionCatalog.blockedActions.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolActionCatalogSafety')}</span>
+              <strong>{toolActionCatalog.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {channelRuntime ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'channel-runtime') && 'is-focused',
+            )}
+            data-xenesis-channel-runtime={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelRuntime')}</span>
+              <strong>{formatXenesisChannelRuntimeSummary(channelRuntime)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelRuntimeAdapter')}</span>
+              <strong>{channelRuntime.adapter}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelRuntimeSupport')}</span>
+              <strong>{channelRuntime.runtimeSupport}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelRuntimeGateway')}</span>
+              <strong>{channelRuntime.gatewayRequirement}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelRuntimeReadinessChecks')}</span>
+              <strong>{channelRuntime.readinessChecks.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelRuntimeReadback')}</span>
+              <strong>{channelRuntime.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelRuntimeControls')}</span>
+              <strong>{channelRuntime.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelRuntimeDiagnostics')}</span>
+              <strong>{channelRuntime.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelRuntimeBlockedActions')}</span>
+              <strong>{channelRuntime.blockedActions.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelRuntimeSafety')}</span>
+              <strong>{channelRuntime.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {channelSetupPlan ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'channel-setup-plan') && 'is-focused',
+            )}
+            data-xenesis-channel-setup-plan={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelSetupPlan')}</span>
+              <strong>{formatXenesisChannelSetupPlanSummary(channelSetupPlan)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelSetupPlanGuide')}</span>
+              <strong>{channelSetupPlan.guidePath}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelSetupPlanSteps')}</span>
+              <strong>
+                {channelSetupPlan.steps
+                  .map((step) => `${step.id}: ${step.kind} ${step.crPath} -> ${step.expectedState}`)
+                  .join(', ')}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelSetupPlanReadback')}</span>
+              <strong>{channelSetupPlan.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelSetupPlanControls')}</span>
+              <strong>{channelSetupPlan.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelSetupPlanDiagnostics')}</span>
+              <strong>{channelSetupPlan.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelSetupPlanBlocked')}</span>
+              <strong>{channelSetupPlan.blockedActions.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelSetupPlanSafety')}</span>
+              <strong>{channelSetupPlan.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {channelProfileDraft ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'channel-profile-draft') && 'is-focused',
+            )}
+            data-xenesis-channel-profile-draft={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelProfileDraft')}</span>
+              <strong>{formatXenesisChannelProfileDraftSummary(channelProfileDraft)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelProfileDraftSetupSurface')}</span>
+              <strong>{channelProfileDraft.setupSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelProfileDraftReviewSurface')}</span>
+              <strong>{channelProfileDraft.reviewSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelProfileDraftFields')}</span>
+              <strong>
+                {channelProfileDraft.profileFields
+                  .map((field) => `${field.field}:${field.valueState}${field.required ? ':required' : ''}`)
+                  .join(', ') || '-'}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelProfileDraftMissingFields')}</span>
+              <strong>{channelProfileDraft.missingRequiredFields.join(', ') || '-'}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelProfileDraftGuardrails')}</span>
+              <strong>
+                {channelProfileDraft.guardrails.approvalMode} / {channelProfileDraft.guardrails.maxTurns} turns /{' '}
+                {channelProfileDraft.guardrails.maxTokens} tokens
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelProfileDraftReviewSteps')}</span>
+              <strong>
+                {channelProfileDraft.reviewSteps.map(formatXenesisConnectionReviewStepDetail).join(' | ')}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelProfileDraftReadback')}</span>
+              <strong>{channelProfileDraft.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelProfileDraftControls')}</span>
+              <strong>{channelProfileDraft.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelProfileDraftDiagnostics')}</span>
+              <strong>{channelProfileDraft.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelProfileDraftBlockedActions')}</span>
+              <strong>{channelProfileDraft.blockedActions.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsChannelProfileDraftSafety')}</span>
+              <strong>{channelProfileDraft.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {toolConnector ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'tool-connector') && 'is-focused',
+            )}
+            data-xenesis-tool-connector={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsToolConnector')}</span>
+              <strong>{formatXenesisToolConnectorSummary(toolConnector)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolConnectorCredentialState')}</span>
+              <strong>{toolConnector.credentialState}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolConnectorCredentials')}</span>
+              <strong>
+                {toolConnector.credentialRefs.length
+                  ? toolConnector.credentialRefs
+                      .map((ref) => `${ref.source}:${ref.ref}:${ref.state}${ref.required ? ':required' : ''}`)
+                      .join(', ')
+                  : '-'}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolConnectorValidation')}</span>
+              <strong>{toolConnector.validationChecks.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolConnectorReadback')}</span>
+              <strong>{toolConnector.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolConnectorControls')}</span>
+              <strong>{toolConnector.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolConnectorDiagnostics')}</span>
+              <strong>{toolConnector.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolConnectorSafety')}</span>
+              <strong>{toolConnector.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {toolView ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'tool-view') && 'is-focused',
+            )}
+            data-xenesis-tool-view={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsToolView')}</span>
+              <strong>{formatXenesisToolViewSummary(toolView)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolViewSetupSurface')}</span>
+              <strong>{toolView.setupSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolViewOpen')}</span>
+              <strong>
+                {toolView.openPath} {JSON.stringify(toolView.openArgs)}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolViewInternalViews')}</span>
+              <strong>{toolView.internalViews.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolViewSections')}</span>
+              <strong>{toolView.viewSections.map(formatXenesisToolViewSectionSummary).join(' | ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolViewSectionOpens')}</span>
+              <strong>{toolView.viewSections.map((section) => JSON.stringify(section.openArgs)).join(' | ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolViewReadback')}</span>
+              <strong>{toolView.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolViewControls')}</span>
+              <strong>{toolView.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolViewDiagnostics')}</span>
+              <strong>{toolView.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolViewSafety')}</span>
+              <strong>{toolView.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {toolUserStory ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'tool-user-story') && 'is-focused',
+            )}
+            data-xenesis-tool-user-story={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsToolUserStory')}</span>
+              <strong>{formatXenesisToolUserStorySummary(toolUserStory)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsUserStoryContract')}</span>
+              <strong>{formatXenesisUserStoryContractSummary(toolUserStory.storyContract)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsUserStoryContractDetail')}</span>
+              <strong>{formatXenesisUserStoryContractDetail(toolUserStory.storyContract)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolUserStoryStories')}</span>
+              <strong>{toolUserStory.userStories.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolUserStoryConnectors')}</span>
+              <strong>{toolUserStory.prerequisiteConnectors.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolUserStoryScopes')}</span>
+              <strong>{toolUserStory.requiredScopes.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolUserStoryReadback')}</span>
+              <strong>{toolUserStory.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolUserStoryControls')}</span>
+              <strong>{toolUserStory.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolUserStoryDiagnostics')}</span>
+              <strong>{toolUserStory.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsToolUserStorySafety')}</span>
+              <strong>{toolUserStory.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {messengerView ? (
+          <div
+            className={cls(
+              'sp-info-list sp-info-list-compact',
+              isXenesisConnectionDetailFocused(item.id, 'messenger-view') && 'is-focused',
+            )}
+            data-xenesis-messenger-view={item.id}
+          >
+            <div>
+              <span>{t('settings.xenesisConnectionsMessengerView')}</span>
+              <strong>{formatXenesisMessengerViewSummary(messengerView)}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMessengerViewRuntime')}</span>
+              <strong>{messengerView.runtimeSupport}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMessengerViewSetupSurface')}</span>
+              <strong>{messengerView.setupSurface}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMessengerViewOpen')}</span>
+              <strong>
+                {messengerView.openPath} {JSON.stringify(messengerView.openArgs)}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMessengerViewInternalViews')}</span>
+              <strong>{messengerView.internalViews.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMessengerViewSections')}</span>
+              <strong>{messengerView.viewSections.map(formatXenesisMessengerViewSectionSummary).join(' | ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMessengerViewSectionOpens')}</span>
+              <strong>
+                {messengerView.viewSections.map((section) => JSON.stringify(section.openArgs)).join(' | ')}
+              </strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMessengerViewReadback')}</span>
+              <strong>{messengerView.readPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMessengerViewControls')}</span>
+              <strong>{messengerView.controlPaths.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMessengerViewDiagnostics')}</span>
+              <strong>{messengerView.diagnostics.join(', ')}</strong>
+            </div>
+            <div>
+              <span>{t('settings.xenesisConnectionsMessengerViewSafety')}</span>
+              <strong>{messengerView.safetyBoundaries.join(', ')}</strong>
+            </div>
+          </div>
+        ) : null}
+        {mcpTemplate ? (
+          <div className="sp-mcp-template" data-xenesis-mcp-template={mcpTemplate.serverName}>
+            <div className="sp-info-list sp-info-list-compact">
+              <div>
+                <span>{t('settings.xenesisConnectionsMcpServer')}</span>
+                <strong>{mcpTemplate.serverName}</strong>
+              </div>
+              <div>
+                <span>{t('settings.xenesisConnectionsMcpTransport')}</span>
+                <strong>{mcpTemplate.transport}</strong>
+              </div>
+              <div>
+                <span>
+                  {mcpTemplate.command
+                    ? t('settings.xenesisConnectionsMcpCommand')
+                    : t('settings.xenesisConnectionsMcpUrl')}
+                </span>
+                <strong>
+                  {mcpTemplate.command ? [mcpTemplate.command, ...(mcpTemplate.args ?? [])].join(' ') : mcpTemplate.url}
+                </strong>
+              </div>
+              <div>
+                <span>{t('settings.xenesisConnectionsMcpTools')}</span>
+                <strong>
+                  {mcpTemplate.defaultEnabledTools?.length
+                    ? mcpTemplate.defaultEnabledTools.join(', ')
+                    : t('settings.xenesisConnectionsMcpToolsAll')}
+                </strong>
+              </div>
+            </div>
+            <div className="sp-mcp-snippets">
+              {[
+                {
+                  id: 'json',
+                  label: t('settings.xenesisConnectionsMcpJsonSnippet'),
+                  content: mcpTemplate.configSnippets.json,
+                },
+                {
+                  id: 'codex',
+                  label: t('settings.xenesisConnectionsMcpCodexSnippet'),
+                  content: mcpTemplate.configSnippets.codexToml,
+                },
+              ].map((snippet) => (
+                <div className="sp-mcp-snippet" key={`${item.id}-${snippet.id}`}>
+                  <div className="sp-mcp-snippet-head">
+                    <strong>{snippet.label}</strong>
+                    <button
+                      className="sp-btn-ghost sp-btn-sm"
+                      type="button"
+                      onClick={() => {
+                        void navigator.clipboard?.writeText(snippet.content).catch(() => undefined);
+                      }}
+                    >
+                      {t('common.copy')}
+                    </button>
+                  </div>
+                  <pre>
+                    <code>{snippet.content}</code>
+                  </pre>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+        {channelTemplate ? (
+          <div className="sp-channel-template" data-xenesis-channel-template={item.id}>
+            <div className="sp-info-list sp-info-list-compact">
+              <div>
+                <span>{t('settings.xenesisConnectionsChannelCategory')}</span>
+                <strong>{channelTemplate.category}</strong>
+              </div>
+              <div>
+                <span>{t('settings.xenesisConnectionsChannelAdapter')}</span>
+                <strong>{channelTemplate.adapter}</strong>
+              </div>
+              <div>
+                <span>{t('settings.xenesisConnectionsChannelAuth')}</span>
+                <strong>{channelTemplate.auth}</strong>
+              </div>
+            </div>
+            <div className="sp-channel-chips">
+              <div>
+                <span>{t('settings.xenesisConnectionsChannelCapabilities')}</span>
+                <strong>{channelTemplate.capabilities.join(', ')}</strong>
+              </div>
+              <div>
+                <span>{t('settings.xenesisConnectionsChannelSafety')}</span>
+                <strong>{channelTemplate.safetyControls.join(', ')}</strong>
+              </div>
+            </div>
+            {channelTemplate.routing ? (
+              <div
+                className={cls(
+                  'sp-info-list sp-info-list-compact',
+                  isXenesisConnectionDetailFocused(item.id, 'channel-routing') && 'is-focused',
+                )}
+                data-xenesis-channel-routing={item.id}
+              >
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelRoute')}</span>
+                  <strong>{formatXenesisChannelRoutingSummary(channelTemplate.routing)}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelDefaultAgent')}</span>
+                  <strong>{channelTemplate.routing.defaultAgent}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelSessionScope')}</span>
+                  <strong>{channelTemplate.routing.sessionScope}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelAllowlist')}</span>
+                  <strong>{channelTemplate.routing.allowlistFields.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelDiagnostics')}</span>
+                  <strong>{channelTemplate.routing.diagnostics.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelDelivery')}</span>
+                  <strong>{channelTemplate.routing.deliveryFeatures.join(', ')}</strong>
+                </div>
+              </div>
+            ) : null}
+            {channelTemplate.safety ? (
+              <div
+                className={cls(
+                  'sp-info-list sp-info-list-compact',
+                  isXenesisConnectionDetailFocused(item.id, 'channel-safety') && 'is-focused',
+                )}
+                data-xenesis-channel-safety={item.id}
+              >
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelSafetyModel')}</span>
+                  <strong>{formatXenesisChannelSafetySummary(channelTemplate.safety)}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelAccessGroups')}</span>
+                  <strong>{channelTemplate.safety.accessGroupFields.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelBoundaries')}</span>
+                  <strong>
+                    {channelTemplate.safety.inboundBoundary} / {channelTemplate.safety.outboundBoundary}
+                  </strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelLoopProtection')}</span>
+                  <strong>{channelTemplate.safety.loopProtection.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelTroubleshooting')}</span>
+                  <strong>{channelTemplate.safety.troubleshooting.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelSafetyReadback')}</span>
+                  <strong>{channelTemplate.safety.readPaths.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelSafetyControls')}</span>
+                  <strong>{channelTemplate.safety.controlPaths.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelSafetyBoundaries')}</span>
+                  <strong>{channelTemplate.safety.safetyBoundaries.join(', ')}</strong>
+                </div>
+              </div>
+            ) : null}
+            {channelTemplate.accessGroups ? (
+              <div
+                className={cls(
+                  'sp-info-list sp-info-list-compact',
+                  isXenesisConnectionDetailFocused(item.id, 'channel-access-groups') && 'is-focused',
+                )}
+                data-xenesis-channel-access-groups={item.id}
+              >
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelAccessGroupModel')}</span>
+                  <strong>{formatXenesisChannelAccessGroupsSummary(channelTemplate.accessGroups)}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelAccessGroupBindings')}</span>
+                  <strong>
+                    {channelTemplate.accessGroups.bindings
+                      .map((binding) => `${binding.groupId}:${binding.field}`)
+                      .join(', ')}
+                  </strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelAccessGroupDiagnostics')}</span>
+                  <strong>{channelTemplate.accessGroups.diagnostics.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelAccessGroupReadback')}</span>
+                  <strong>{channelTemplate.accessGroups.readPaths.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelAccessGroupControls')}</span>
+                  <strong>{channelTemplate.accessGroups.controlPaths.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelAccessGroupBoundaries')}</span>
+                  <strong>{channelTemplate.accessGroups.safetyBoundaries.join(', ')}</strong>
+                </div>
+              </div>
+            ) : null}
+            {channelTemplate.pairing ? (
+              <div
+                className={cls(
+                  'sp-info-list sp-info-list-compact',
+                  isXenesisConnectionDetailFocused(item.id, 'channel-pairing') && 'is-focused',
+                )}
+                data-xenesis-channel-pairing={item.id}
+              >
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelPairing')}</span>
+                  <strong>{formatXenesisChannelPairingSummary(channelTemplate.pairing)}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelPairingRuntime')}</span>
+                  <strong>{channelTemplate.pairing.runtimeSupport}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelPairingCredentials')}</span>
+                  <strong>
+                    {channelTemplate.pairing.credentialRefs
+                      .map((ref) => `${ref.source}:${ref.ref}:${ref.state}${ref.required ? ':required' : ''}`)
+                      .join(', ') || '-'}
+                  </strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelPairingValidation')}</span>
+                  <strong>{channelTemplate.pairing.validationChecks.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelPairingReadback')}</span>
+                  <strong>{channelTemplate.pairing.readPaths.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelPairingControls')}</span>
+                  <strong>{channelTemplate.pairing.controlPaths.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelPairingDiagnostics')}</span>
+                  <strong>{channelTemplate.pairing.diagnostics.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelPairingSafety')}</span>
+                  <strong>{channelTemplate.pairing.safetyBoundaries.join(', ')}</strong>
+                </div>
+              </div>
+            ) : null}
+            {channelUserStory ? (
+              <div
+                className={cls(
+                  'sp-info-list sp-info-list-compact',
+                  isXenesisConnectionDetailFocused(item.id, 'channel-user-story') && 'is-focused',
+                )}
+                data-xenesis-channel-user-story={item.id}
+              >
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelUserStory')}</span>
+                  <strong>{formatXenesisChannelUserStorySummary(channelUserStory)}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsUserStoryContract')}</span>
+                  <strong>{formatXenesisUserStoryContractSummary(channelUserStory.storyContract)}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsUserStoryContractDetail')}</span>
+                  <strong>{formatXenesisUserStoryContractDetail(channelUserStory.storyContract)}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelUserStorySetupSurface')}</span>
+                  <strong>{channelUserStory.setupSurface}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelUserStoryStories')}</span>
+                  <strong>{channelUserStory.userStories.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelUserStoryPrerequisites')}</span>
+                  <strong>{channelUserStory.prerequisiteSetup.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelUserStoryReadback')}</span>
+                  <strong>{channelUserStory.readPaths.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelUserStoryControls')}</span>
+                  <strong>{channelUserStory.controlPaths.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelUserStoryDiagnostics')}</span>
+                  <strong>{channelUserStory.diagnostics.join(', ')}</strong>
+                </div>
+                <div>
+                  <span>{t('settings.xenesisConnectionsChannelUserStorySafety')}</span>
+                  <strong>{channelUserStory.safetyBoundaries.join(', ')}</strong>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+        {item.warnings?.length ? <p className="sp-hint sp-warning-text">{item.warnings.join(' ')}</p> : null}
+      </div>
+    );
+  };
+
+  const renderXenesisConnections = () => {
+    const sections = listXenesisConnectionSections(xenesisConnectionsStatus);
+    return (
+      <div className="sp-stack" data-settings-section="xenesis-connections">
+        <section className="sp-section">
+          <div className="sp-section-heading">
+            <div>
+              <h2>{t('settings.xenesisConnectionsTitle')}</h2>
+              <p>{t('settings.xenesisConnectionsDesc')}</p>
+            </div>
+            <div className="sp-actions-row sp-actions-row-tight">
+              <button
+                className="sp-btn"
+                disabled={xenesisConnectionsBusy}
+                onClick={() => {
+                  void loadXenesisConnectionsStatus();
+                }}
+              >
+                {xenesisConnectionsBusy ? t('common.checking') : t('settings.xenesisConnectionsRefresh')}
+              </button>
+            </div>
+          </div>
+
+          {xenesisConnectionsStatus ? (
+            <div className="sp-info-list">
+              <div>
+                <span>{t('settings.xenesisConnectionsReady')}</span>
+                <strong>
+                  {xenesisConnectionsStatus.summary.ready}/{xenesisConnectionsStatus.summary.total}
+                </strong>
+              </div>
+              <div>
+                <span>{t('settings.xenesisConnectionsBlocked')}</span>
+                <strong>{xenesisConnectionsStatus.summary.blocked}</strong>
+              </div>
+              <div>
+                <span>{t('settings.xenesisConnectionsPlanned')}</span>
+                <strong>{xenesisConnectionsStatus.summary.planned}</strong>
+              </div>
+            </div>
+          ) : (
+            <div className="sp-empty-block">{t('settings.xenesisConnectionsEmpty')}</div>
+          )}
+          {xenesisConnectionsError && (
+            <p className="sp-hint sp-warning-text">
+              {t('settings.xenesisConnectionsFailed', { message: xenesisConnectionsError })}
+            </p>
+          )}
+          {xenesisConnectionsLastAction && (
+            <p className="sp-hint">
+              {t('settings.xenesisConnectionsLastAction', { result: xenesisConnectionsLastAction })}
+            </p>
+          )}
+        </section>
+
+        {sections.map((section) => (
+          <section className="sp-section" key={section.id}>
+            <div className="sp-section-heading">
+              <div>
+                <h2>{section.label}</h2>
+              </div>
+            </div>
+            <div className="sp-grid two">{section.items.map(renderXenesisConnectionItem)}</div>
+          </section>
+        ))}
+      </div>
+    );
+  };
+
+  const renderConnectors = () => {
+    const toolItems = xenesisConnectionsStatus?.sections.tools.items ?? [];
+    const messengerItems = xenesisConnectionsStatus?.sections.messengers.items ?? [];
+    const readyToolItems = toolItems.filter((item) => item.status === 'ready');
+    const readyMessengerItems = messengerItems.filter((item) => item.status === 'ready');
+    const plannedToolItems = toolItems.filter((item) => item.status === 'planned');
+    const plannedMessengerItems = messengerItems.filter((item) => item.status === 'planned');
+    const connectorItems = toolItems.filter((item) => item.toolConnector);
+    const toolRuntimeItems = toolItems.filter((item) => item.toolRuntime);
+    const oauthDraftItems = toolItems.filter((item) => item.toolOAuthDraft);
+    const oauthRuntimeItems = toolItems.filter((item) => item.toolOAuthRuntime);
+    const setupPlanItems = toolItems.filter((item) => item.toolSetupPlan);
+    const actionPolicyItems = toolItems.filter((item) => item.toolActionCatalog);
+    const messengerViewItems = messengerItems.filter((item) => item.messengerView);
+    const messengerProfileDraftItems = messengerItems.filter((item) => item.channelProfileDraft);
+    const channelRuntimeItems = messengerItems.filter((item) => item.channelRuntime);
+    const channelSetupPlanItems = messengerItems.filter((item) => item.channelSetupPlan);
+
+    return (
+      <div className="sp-stack" data-settings-section="connectors">
+        <section className="sp-section">
+          <div className="sp-section-heading">
+            <div>
+              <h2>{t('settings.connectorsXenesisTitle')}</h2>
+              <p>{t('settings.connectorsXenesisDesc')}</p>
+            </div>
+            <div className="sp-actions-row sp-actions-row-tight">
+              <button
+                className="sp-btn"
+                disabled={xenesisConnectionsBusy}
+                onClick={() => {
+                  void loadXenesisConnectionsStatus();
+                }}
+              >
+                {xenesisConnectionsBusy ? t('common.checking') : t('settings.xenesisConnectionsRefresh')}
+              </button>
+            </div>
+          </div>
+
+          {xenesisConnectionsStatus ? (
+            <div className="sp-info-list">
+              <div>
+                <span>{t('settings.xenesisConnectionsReady')}</span>
+                <strong>
+                  {readyToolItems.length + readyMessengerItems.length}/{toolItems.length + messengerItems.length}
+                </strong>
+              </div>
+              <div>
+                <span>{t('settings.xenesisConnectionsPlanned')}</span>
+                <strong>{plannedToolItems.length + plannedMessengerItems.length}</strong>
+              </div>
+              <div>
+                <span>{t('settings.connectorsXenesisToolConnectors')}</span>
+                <strong>{connectorItems.length}</strong>
+              </div>
+              <div>
+                <span>{t('settings.connectorsXenesisToolRuntime')}</span>
+                <strong>{toolRuntimeItems.length}</strong>
+              </div>
+              <div>
+                <span>{t('settings.connectorsXenesisOauthDrafts')}</span>
+                <strong>{oauthDraftItems.length}</strong>
+              </div>
+              <div>
+                <span>{t('settings.connectorsXenesisOauthRuntime')}</span>
+                <strong>{oauthRuntimeItems.length}</strong>
+              </div>
+              <div>
+                <span>{t('settings.connectorsXenesisSetupPlans')}</span>
+                <strong>{setupPlanItems.length}</strong>
+              </div>
+              <div>
+                <span>{t('settings.connectorsXenesisActionPolicies')}</span>
+                <strong>{actionPolicyItems.length}</strong>
+              </div>
+              <div>
+                <span>{t('settings.connectorsXenesisMessengerViews')}</span>
+                <strong>{messengerViewItems.length}</strong>
+              </div>
+              <div>
+                <span>{t('settings.connectorsXenesisMessengerProfileDrafts')}</span>
+                <strong>{messengerProfileDraftItems.length}</strong>
+              </div>
+              <div>
+                <span>{t('settings.connectorsXenesisChannelRuntime')}</span>
+                <strong>{channelRuntimeItems.length}</strong>
+              </div>
+              <div>
+                <span>{t('settings.connectorsXenesisChannelSetupPlans')}</span>
+                <strong>{channelSetupPlanItems.length}</strong>
+              </div>
+            </div>
+          ) : (
+            <div className="sp-empty-block">{t('settings.xenesisConnectionsEmpty')}</div>
+          )}
+          {xenesisConnectionsError && (
+            <p className="sp-hint sp-warning-text">
+              {t('settings.xenesisConnectionsFailed', { message: xenesisConnectionsError })}
+            </p>
+          )}
+        </section>
+
+        {toolItems.length ? (
+          <section className="sp-section">
+            <div className="sp-section-heading">
+              <div>
+                <h2>{t('settings.connectorsXenesisExternalTools')}</h2>
+                <p>{t('settings.connectorsXenesisExternalToolsDesc')}</p>
+              </div>
+            </div>
+            <div className="sp-grid two">{toolItems.map(renderXenesisConnectionItem)}</div>
+          </section>
+        ) : null}
+
+        {messengerItems.length ? (
+          <section className="sp-section">
+            <div className="sp-section-heading">
+              <div>
+                <h2>{t('settings.connectorsXenesisExternalMessengers')}</h2>
+                <p>{t('settings.connectorsXenesisExternalMessengersDesc')}</p>
+              </div>
+            </div>
+            <div className="sp-grid two">{messengerItems.map(renderXenesisConnectionItem)}</div>
+          </section>
+        ) : null}
+      </div>
+    );
+  };
+
   const renderXenesisGateway = () => {
     const gatewayStatus = xenesisGatewayStatus?.gateway;
     const gatewayRunning = gatewayStatus?.running === true;
@@ -4376,6 +7038,72 @@ export default function SettingsPane() {
     </button>
   );
 
+  const parseXenesisGuardrailNumber = (value: string, fallback: number) => {
+    const numeric = Number(value);
+    return Number.isSafeInteger(numeric) && numeric > 0 ? numeric : fallback;
+  };
+
+  const renderXenesisExternalBotGuardrails = (channel: XenesisProfileChannelName) => {
+    const settings = xenesisExternalBotChannels[channel];
+    return (
+      <div className="sp-grid three">
+        <div className="sp-field">
+          <label className="sp-label" htmlFor={`sp-xenesis-${channel}-approval-mode`}>
+            {t('settings.xenesisExternalBotApprovalMode')}
+          </label>
+          <select
+            id={`sp-xenesis-${channel}-approval-mode`}
+            className="sp-input"
+            value={settings.approvalMode}
+            onChange={(event) =>
+              patchXenesisExternalBotChannel(channel, { approvalMode: event.target.value as XenesisApprovalMode })
+            }
+          >
+            <option value="readonly">{t('settings.xenesisExternalBotApprovalReadonly')}</option>
+            <option value="safe">{t('settings.xenesisExternalBotApprovalSafe')}</option>
+            <option value="auto">{t('settings.xenesisExternalBotApprovalAuto')}</option>
+          </select>
+        </div>
+        <div className="sp-field">
+          <label className="sp-label" htmlFor={`sp-xenesis-${channel}-max-turns`}>
+            {t('settings.xenesisExternalBotMaxTurns')}
+          </label>
+          <input
+            id={`sp-xenesis-${channel}-max-turns`}
+            type="number"
+            min={1}
+            step={1}
+            className="sp-input"
+            value={settings.maxTurns}
+            onChange={(event) =>
+              patchXenesisExternalBotChannel(channel, {
+                maxTurns: parseXenesisGuardrailNumber(event.target.value, settings.maxTurns),
+              })
+            }
+          />
+        </div>
+        <div className="sp-field">
+          <label className="sp-label" htmlFor={`sp-xenesis-${channel}-max-tokens`}>
+            {t('settings.xenesisExternalBotMaxTokens')}
+          </label>
+          <input
+            id={`sp-xenesis-${channel}-max-tokens`}
+            type="number"
+            min={1}
+            step={1000}
+            className="sp-input"
+            value={settings.maxTokens}
+            onChange={(event) =>
+              patchXenesisExternalBotChannel(channel, {
+                maxTokens: parseXenesisGuardrailNumber(event.target.value, settings.maxTokens),
+              })
+            }
+          />
+        </div>
+      </div>
+    );
+  };
+
   const renderXenesisExternalBotChannels = () => (
     <section className="sp-section" data-settings-section="external-bot-channels">
       <div className="sp-section-heading">
@@ -4467,6 +7195,7 @@ export default function SettingsPane() {
               />
             </div>
           </div>
+          {renderXenesisExternalBotGuardrails('telegram')}
         </div>
 
         <div className="sp-xenesis-bot-channel-card">
@@ -4544,6 +7273,7 @@ export default function SettingsPane() {
               />
             </div>
           </div>
+          {renderXenesisExternalBotGuardrails('slack')}
         </div>
 
         <div className="sp-xenesis-bot-channel-card">
@@ -4622,6 +7352,7 @@ export default function SettingsPane() {
               />
             </div>
           </div>
+          {renderXenesisExternalBotGuardrails('discord')}
         </div>
 
         <div className="sp-xenesis-bot-channel-card">
@@ -4659,6 +7390,7 @@ export default function SettingsPane() {
               spellCheck={false}
             />
           </div>
+          {renderXenesisExternalBotGuardrails('webhook')}
         </div>
       </div>
 
@@ -4751,6 +7483,21 @@ export default function SettingsPane() {
         </div>
         <div className="sp-mode-switch" role="tablist" aria-label={t('settings.xenesisDeskTabsAriaLabel')}>
           <button
+            className={cls('sp-mode-option', xenesisTab === 'connections' && 'is-active')}
+            data-settings-xenesis-tab="connections"
+            onClick={() => setXenesisTab('connections')}
+          >
+            <strong>{t('settings.xenesisDeskTabConnections')}</strong>
+            <span>
+              {xenesisConnectionsStatus
+                ? t('settings.xenesisDeskTabConnectionsDescReady', {
+                    ready: String(xenesisConnectionsStatus.summary.ready),
+                    total: String(xenesisConnectionsStatus.summary.total),
+                  })
+                : t('settings.xenesisDeskTabConnectionsDesc')}
+            </span>
+          </button>
+          <button
             className={cls('sp-mode-option', xenesisTab === 'agent' && 'is-active')}
             data-settings-xenesis-tab="agent"
             onClick={() => setXenesisTab('agent')}
@@ -4791,6 +7538,7 @@ export default function SettingsPane() {
         </div>
       </section>
 
+      {xenesisTab === 'connections' && renderXenesisConnections()}
       {xenesisTab === 'agent' && renderXenesisRuntime()}
       {xenesisTab === 'gateway' && renderXenesisGateway()}
       {xenesisTab === 'external-bots' && renderXenesisExternalBotChannels()}
@@ -8056,8 +10804,7 @@ export default function SettingsPane() {
             <span>Enable external desktop app control</span>
           </label>
           <p className="sp-hint">
-            Registered profiles are used by Xenesis Agent and the Capability Registry before arbitrary executable
-            paths.
+            Registered profiles are used by Xenesis Agent and the Capability Registry before arbitrary executable paths.
           </p>
         </div>
 
@@ -8217,7 +10964,7 @@ export default function SettingsPane() {
       case 'media':
         return renderPlaceholder(t('settings.category.media'), t('settings.category.mediaDesc'));
       case 'connectors':
-        return renderPlaceholder(t('settings.category.connectors'), t('settings.category.connectorsDesc'));
+        return renderConnectors();
       case 'mcp':
         return renderMcp();
       case 'language':

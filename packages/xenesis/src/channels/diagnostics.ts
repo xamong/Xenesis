@@ -1,9 +1,9 @@
-import type { ChannelsConfig } from "../config/index.js";
-import type { ApprovalMode } from "../config/types.js";
-import { buildChannelOperationPolicy } from "../core/agentCapabilityPolicy.js";
+import type { ChannelsConfig } from '../config/index.js';
+import type { ApprovalMode } from '../config/types.js';
+import { buildChannelOperationPolicy } from '../core/agentCapabilityPolicy.js';
 
 export interface ChannelDiagnostic {
-  name: "telegram" | "slack" | "discord" | "webhook";
+  name: 'telegram' | 'slack' | 'discord' | 'webhook';
   enabled: boolean;
   ready: boolean;
   missingEnv: string[];
@@ -26,7 +26,7 @@ export interface ChannelDiagnosticsSummary {
 }
 
 function hasEnv(env: NodeJS.ProcessEnv, name: string | undefined) {
-  return Boolean(name && String(env[name] ?? "").trim());
+  return Boolean(name && String(env[name] ?? '').trim());
 }
 
 const ENV_REFERENCE_PATTERN = /^[A-Z_][A-Z0-9_]*$/;
@@ -40,7 +40,7 @@ function missingEnv(env: NodeJS.ProcessEnv, names: string[]) {
 }
 
 function credentialReferenceWarnings(reference: string | undefined) {
-  return reference && reference.trim() ? [] : ["credential is empty"];
+  return reference && reference.trim() ? [] : ['credential is empty'];
 }
 
 function channelReady(enabled: boolean, missing: string[], warnings: string[]) {
@@ -52,26 +52,23 @@ function channelOperationFields(ready: boolean) {
   return {
     requiredTraceFields: policy.requiredTraceFields,
     secretPolicy: policy.secretPolicy,
-    safeToDeliver: ready
+    safeToDeliver: ready,
   };
 }
 
-function telegramDiagnostics(
-  channels: ChannelsConfig,
-  env: NodeJS.ProcessEnv
-): ChannelDiagnostic | undefined {
+function telegramDiagnostics(channels: ChannelsConfig, env: NodeJS.ProcessEnv): ChannelDiagnostic | undefined {
   const config = channels.telegram;
   if (!config) return undefined;
   const missing = config.enabled ? missingEnv(env, [config.tokenEnv]) : [];
   const warnings = config.enabled
     ? [
-      ...(config.allowedChatIds.length === 0 ? ["allowedChatIds is empty"] : []),
-      ...credentialReferenceWarnings(config.tokenEnv)
-    ]
+        ...(config.allowedChatIds.length === 0 ? ['allowedChatIds is empty'] : []),
+        ...credentialReferenceWarnings(config.tokenEnv),
+      ]
     : [];
   const ready = channelReady(config.enabled, missing, warnings);
   return {
-    name: "telegram",
+    name: 'telegram',
     enabled: config.enabled,
     ready,
     missingEnv: missing,
@@ -79,27 +76,24 @@ function telegramDiagnostics(
     ...channelOperationFields(ready),
     approvalMode: config.approvalMode,
     maxTurns: config.maxTurns,
-    maxTokens: config.maxTokens
+    maxTokens: config.maxTokens,
   };
 }
 
-function slackDiagnostics(
-  channels: ChannelsConfig,
-  env: NodeJS.ProcessEnv
-): ChannelDiagnostic | undefined {
+function slackDiagnostics(channels: ChannelsConfig, env: NodeJS.ProcessEnv): ChannelDiagnostic | undefined {
   const config = channels.slack;
   if (!config) return undefined;
   const required = [config.botTokenEnv, config.signingSecretEnv];
   const missing = config.enabled ? missingEnv(env, required) : [];
   const warnings = config.enabled
     ? [
-      ...(config.allowedChannelIds.length === 0 ? ["allowedChannelIds is empty"] : []),
-      ...required.flatMap(credentialReferenceWarnings)
-    ]
+        ...(config.allowedChannelIds.length === 0 ? ['allowedChannelIds is empty'] : []),
+        ...required.flatMap(credentialReferenceWarnings),
+      ]
     : [];
   const ready = channelReady(config.enabled, missing, warnings);
   return {
-    name: "slack",
+    name: 'slack',
     enabled: config.enabled,
     ready,
     missingEnv: missing,
@@ -107,28 +101,25 @@ function slackDiagnostics(
     ...channelOperationFields(ready),
     approvalMode: config.approvalMode,
     maxTurns: config.maxTurns,
-    maxTokens: config.maxTokens
+    maxTokens: config.maxTokens,
   };
 }
 
-function discordDiagnostics(
-  channels: ChannelsConfig,
-  env: NodeJS.ProcessEnv
-): ChannelDiagnostic | undefined {
+function discordDiagnostics(channels: ChannelsConfig, env: NodeJS.ProcessEnv): ChannelDiagnostic | undefined {
   const config = channels.discord;
   if (!config) return undefined;
   const missing = config.enabled ? missingEnv(env, [config.botTokenEnv]) : [];
   const warnings = config.enabled
     ? [
-      ...(config.allowedChannelIds.length === 0 && config.allowedGuildIds.length === 0
-        ? ["allowedChannelIds and allowedGuildIds are empty"]
-        : []),
-      ...credentialReferenceWarnings(config.botTokenEnv)
-    ]
+        ...(config.allowedChannelIds.length === 0 && config.allowedGuildIds.length === 0
+          ? ['allowedChannelIds and allowedGuildIds are empty']
+          : []),
+        ...credentialReferenceWarnings(config.botTokenEnv),
+      ]
     : [];
   const ready = channelReady(config.enabled, missing, warnings);
   return {
-    name: "discord",
+    name: 'discord',
     enabled: config.enabled,
     ready,
     missingEnv: missing,
@@ -136,21 +127,18 @@ function discordDiagnostics(
     ...channelOperationFields(ready),
     approvalMode: config.approvalMode,
     maxTurns: config.maxTurns,
-    maxTokens: config.maxTokens
+    maxTokens: config.maxTokens,
   };
 }
 
-function webhookDiagnostics(
-  channels: ChannelsConfig,
-  env: NodeJS.ProcessEnv
-): ChannelDiagnostic | undefined {
+function webhookDiagnostics(channels: ChannelsConfig, env: NodeJS.ProcessEnv): ChannelDiagnostic | undefined {
   const config = channels.webhook;
   if (!config) return undefined;
   const missing = config.enabled ? missingEnv(env, [config.urlEnv]) : [];
   const warnings = config.enabled ? credentialReferenceWarnings(config.urlEnv) : [];
   const ready = channelReady(config.enabled, missing, warnings);
   return {
-    name: "webhook",
+    name: 'webhook',
     enabled: config.enabled,
     ready,
     missingEnv: missing,
@@ -158,19 +146,19 @@ function webhookDiagnostics(
     ...channelOperationFields(ready),
     approvalMode: config.approvalMode,
     maxTurns: config.maxTurns,
-    maxTokens: config.maxTokens
+    maxTokens: config.maxTokens,
   };
 }
 
 export function summarizeChannelDiagnostics(
   channels: ChannelsConfig,
-  env: NodeJS.ProcessEnv = process.env
+  env: NodeJS.ProcessEnv = process.env,
 ): ChannelDiagnosticsSummary {
   const diagnostics = [
     telegramDiagnostics(channels, env),
     slackDiagnostics(channels, env),
     discordDiagnostics(channels, env),
-    webhookDiagnostics(channels, env)
+    webhookDiagnostics(channels, env),
   ].filter((item): item is ChannelDiagnostic => item !== undefined);
   const enabled = diagnostics.filter((channel) => channel.enabled).length;
   const ready = diagnostics.filter((channel) => channel.ready).length;
@@ -180,6 +168,6 @@ export function summarizeChannelDiagnostics(
     ready,
     blocked: diagnostics.filter((channel) => channel.enabled && !channel.ready).length,
     disabled: diagnostics.filter((channel) => !channel.enabled).length,
-    channels: diagnostics
+    channels: diagnostics,
   };
 }

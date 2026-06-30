@@ -1,9 +1,12 @@
 #!/usr/bin/env node
-import { homedir } from "node:os";
-import { basename, dirname, resolve } from "node:path";
-import { xenesisStatePath, type ApprovalMode, type ProviderName } from "../src/config/index.js";
-import { runAgentPrompt } from "../src/core/AgentRunService.js";
+import { homedir } from 'node:os';
+import { basename, dirname, resolve } from 'node:path';
+import { type ApprovalMode, type ProviderName, xenesisStatePath } from '../src/config/index.js';
+import { runAgentPrompt } from '../src/core/AgentRunService.js';
 import {
+  type CapabilityImprovementTaskBacklog,
+  type CapabilityImprovementTaskCandidate,
+  type CapabilityImprovementTaskRecoveryMode,
   promoteCapabilityImprovementTask,
   readCapabilityImprovementTaskBacklog,
   readCapabilityImprovementTaskResults,
@@ -11,13 +14,10 @@ import {
   runCapabilityImprovementAgentTask,
   writeCapabilityImprovementTaskBacklog,
   writeCapabilityImprovementTaskResults,
-  type CapabilityImprovementTaskRecoveryMode,
-  type CapabilityImprovementTaskBacklog,
-  type CapabilityImprovementTaskCandidate
-} from "../src/evaluation/index.js";
-import { SqliteAgentTaskStore } from "../src/orchestration/index.js";
+} from '../src/evaluation/index.js';
+import { SqliteAgentTaskStore } from '../src/orchestration/index.js';
 
-type CapabilityTasksCommand = "list" | "show" | "promote" | "run" | "results" | "recover-failed";
+type CapabilityTasksCommand = 'list' | 'show' | 'promote' | 'run' | 'results' | 'recover-failed';
 
 interface ParsedArgs {
   command?: CapabilityTasksCommand;
@@ -42,37 +42,35 @@ function parseArgs(argv: string[]): ParsedArgs {
     const arg = argv[index];
     const next = () => {
       const value = argv[index + 1];
-      if (!value || value.startsWith("--")) throw new Error(`Option ${arg} requires a value.`);
+      if (!value || value.startsWith('--')) throw new Error(`Option ${arg} requires a value.`);
       index += 1;
       return value;
     };
 
-    if (arg === "--tasks") parsed.tasks = next();
-    else if (arg === "--agent-tasks") parsed.agentTasks = next();
-    else if (arg === "--results") parsed.results = next();
-    else if (arg === "--cwd") parsed.cwd = next();
-    else if (arg === "--config") parsed.config = next();
-    else if (arg === "--provider") parsed.provider = next() as ProviderName;
-    else if (arg === "--model") parsed.model = next();
-    else if (arg === "--approval") {
+    if (arg === '--tasks') parsed.tasks = next();
+    else if (arg === '--agent-tasks') parsed.agentTasks = next();
+    else if (arg === '--results') parsed.results = next();
+    else if (arg === '--cwd') parsed.cwd = next();
+    else if (arg === '--config') parsed.config = next();
+    else if (arg === '--provider') parsed.provider = next() as ProviderName;
+    else if (arg === '--model') parsed.model = next();
+    else if (arg === '--approval') {
       const value = next();
-      if (value !== "safe" && value !== "auto" && value !== "readonly") {
-        throw new Error("--approval must be safe, auto, or readonly.");
+      if (value !== 'safe' && value !== 'auto' && value !== 'readonly') {
+        throw new Error('--approval must be safe, auto, or readonly.');
       }
       parsed.approval = value;
-    }
-    else if (arg === "--mode") {
+    } else if (arg === '--mode') {
       const value = next();
-      if (value !== "retry" && value !== "follow-up") {
-        throw new Error("--mode must be retry or follow-up.");
+      if (value !== 'retry' && value !== 'follow-up') {
+        throw new Error('--mode must be retry or follow-up.');
       }
       parsed.mode = value;
-    }
-    else if (arg === "--json") parsed.json = true;
-    else if (arg === "--help" || arg === "-h") {
+    } else if (arg === '--json') parsed.json = true;
+    else if (arg === '--help' || arg === '-h') {
       printHelp();
       process.exit(0);
-    } else if (arg.startsWith("--")) {
+    } else if (arg.startsWith('--')) {
       throw new Error(`Unknown option ${arg}. Run "npm run capability:tasks -- --help".`);
     } else {
       positionals.push(arg);
@@ -81,16 +79,16 @@ function parseArgs(argv: string[]): ParsedArgs {
 
   const command = positionals[0];
   if (
-    command === "list" ||
-    command === "show" ||
-    command === "promote" ||
-    command === "run" ||
-    command === "results" ||
-    command === "recover-failed" ||
-    command === "retry-failed"
+    command === 'list' ||
+    command === 'show' ||
+    command === 'promote' ||
+    command === 'run' ||
+    command === 'results' ||
+    command === 'recover-failed' ||
+    command === 'retry-failed'
   ) {
-    parsed.command = command === "retry-failed" ? "recover-failed" : command;
-    if (command === "retry-failed") parsed.mode = "retry";
+    parsed.command = command === 'retry-failed' ? 'recover-failed' : command;
+    if (command === 'retry-failed') parsed.mode = 'retry';
     parsed.id = positionals[1];
   } else if (command) {
     throw new Error(`Unknown command ${command}. Run "npm run capability:tasks -- --help".`);
@@ -100,55 +98,53 @@ function parseArgs(argv: string[]): ParsedArgs {
 }
 
 function printHelp() {
-  console.log([
-    "Usage: npm run capability:tasks -- <command> [id] [options]",
-    "",
-    "Commands:",
-    "  list                 List capability improvement task candidates.",
-    "  show <id>            Show one task candidate as JSON.",
-    "  promote <id>         Queue one task candidate as a durable agent task.",
-    "  run <id>             Execute a queued durable agent task and record the result.",
-    "  results [id]         Show recorded capability improvement task results.",
-    "  recover-failed [id]  Requeue failed work from the latest result log.",
-    "  retry-failed [id]    Alias for recover-failed --mode retry.",
-    "",
-    "Options:",
-    "  --tasks <path>       Candidate path. Default: $XENESIS_HOME/reports/capability-improvement-tasks.json",
-    "  --agent-tasks <path> Agent task queue path. Default: $XENESIS_HOME/agent_tasks.json",
-    "  --results <path>     Result log path. Default: $XENESIS_HOME/reports/capability-task-results.json",
-    "  --cwd <path>         Workspace cwd for run. Default: current directory.",
-    "  --config <path>      Config path for run.",
-    "  --provider <name>    Provider override for run.",
-    "  --model <name>       Model override for run.",
-    "  --approval <mode>    Approval override for run: safe, auto, or readonly.",
-    "  --mode <mode>        Recovery mode for recover-failed: retry or follow-up. Default: retry.",
-    "  --json               Print JSON output."
-  ].join("\n"));
+  console.log(
+    [
+      'Usage: npm run capability:tasks -- <command> [id] [options]',
+      '',
+      'Commands:',
+      '  list                 List capability improvement task candidates.',
+      '  show <id>            Show one task candidate as JSON.',
+      '  promote <id>         Queue one task candidate as a durable agent task.',
+      '  run <id>             Execute a queued durable agent task and record the result.',
+      '  results [id]         Show recorded capability improvement task results.',
+      '  recover-failed [id]  Requeue failed work from the latest result log.',
+      '  retry-failed [id]    Alias for recover-failed --mode retry.',
+      '',
+      'Options:',
+      '  --tasks <path>       Candidate path. Default: $XENESIS_HOME/reports/capability-improvement-tasks.json',
+      '  --agent-tasks <path> Agent task queue path. Default: $XENESIS_HOME/agent_tasks.json',
+      '  --results <path>     Result log path. Default: $XENESIS_HOME/reports/capability-task-results.json',
+      '  --cwd <path>         Workspace cwd for run. Default: current directory.',
+      '  --config <path>      Config path for run.',
+      '  --provider <name>    Provider override for run.',
+      '  --model <name>       Model override for run.',
+      '  --approval <mode>    Approval override for run: safe, auto, or readonly.',
+      '  --mode <mode>        Recovery mode for recover-failed: retry or follow-up. Default: retry.',
+      '  --json               Print JSON output.',
+    ].join('\n'),
+  );
 }
 
 function resolveXenesisHome() {
-  return process.env.XENESIS_HOME?.trim()
-    ? resolve(process.env.XENESIS_HOME)
-    : resolve(homedir(), ".xenesis");
+  return process.env.XENESIS_HOME?.trim() ? resolve(process.env.XENESIS_HOME) : resolve(homedir(), '.xenesis');
 }
 
 function defaultTasksPath() {
-  return resolve(resolveXenesisHome(), "reports", "capability-improvement-tasks.json");
+  return resolve(resolveXenesisHome(), 'reports', 'capability-improvement-tasks.json');
 }
 
 function defaultAgentTasksPath() {
-  return xenesisStatePath(resolveXenesisHome(), "agent_tasks.json");
+  return xenesisStatePath(resolveXenesisHome(), 'agent_tasks.json');
 }
 
 function createAgentTaskStore(agentTasksPath: string) {
-  const xenesisHome = basename(agentTasksPath) === "agent_tasks.json"
-    ? dirname(agentTasksPath)
-    : agentTasksPath;
+  const xenesisHome = basename(agentTasksPath) === 'agent_tasks.json' ? dirname(agentTasksPath) : agentTasksPath;
   return new SqliteAgentTaskStore({ xenesisHome });
 }
 
 function defaultResultsPath() {
-  return resolve(resolveXenesisHome(), "reports", "capability-task-results.json");
+  return resolve(resolveXenesisHome(), 'reports', 'capability-task-results.json');
 }
 
 async function requireBacklog(path: string): Promise<CapabilityImprovementTaskBacklog> {
@@ -169,8 +165,10 @@ function renderTaskLine(task: CapabilityImprovementTaskCandidate) {
     `priority=${task.priority}`,
     `area=${task.area}`,
     task.promotedAgentTaskId ? `agentTask=${task.promotedAgentTaskId}` : undefined,
-    `scenarios=${task.sourceScenarioIds.join(",") || "none"}`
-  ].filter((part): part is string => part !== undefined).join(" ");
+    `scenarios=${task.sourceScenarioIds.join(',') || 'none'}`,
+  ]
+    .filter((part): part is string => part !== undefined)
+    .join(' ');
 }
 
 function findTask(backlog: CapabilityImprovementTaskBacklog, id: string) {
@@ -183,23 +181,22 @@ function findTaskForAgentTask(backlog: CapabilityImprovementTaskBacklog, id: str
 
 async function main() {
   const parsed = parseArgs(process.argv.slice(2));
-  const command = parsed.command ?? "list";
+  const command = parsed.command ?? 'list';
   const tasksPath = resolve(parsed.tasks ?? defaultTasksPath());
   const agentTasksPath = resolve(parsed.agentTasks ?? defaultAgentTasksPath());
   const resultsPath = resolve(parsed.results ?? defaultResultsPath());
-  const backlog = command === "results"
-    ? await readCapabilityImprovementTaskBacklog(tasksPath)
-    : await requireBacklog(tasksPath);
+  const backlog =
+    command === 'results' ? await readCapabilityImprovementTaskBacklog(tasksPath) : await requireBacklog(tasksPath);
 
-  if (command === "list") {
+  if (command === 'list') {
     if (!backlog) throw new Error(`Capability improvement task backlog not found: ${tasksPath}`);
     if (parsed.json) console.log(JSON.stringify(backlog.tasks, null, 2));
-    else if (backlog.tasks.length === 0) console.log("capability-tasks: no candidates");
+    else if (backlog.tasks.length === 0) console.log('capability-tasks: no candidates');
     else for (const task of backlog.tasks) console.log(renderTaskLine(task));
     return;
   }
 
-  if (command === "show") {
+  if (command === 'show') {
     const id = requireId(parsed);
     if (!backlog) throw new Error(`Capability improvement task backlog not found: ${tasksPath}`);
     const task = findTask(backlog, id);
@@ -208,21 +205,26 @@ async function main() {
     return;
   }
 
-  if (command === "results") {
+  if (command === 'results') {
     const results = await readCapabilityImprovementTaskResults(resultsPath);
-    const payload = parsed.id && results
-      ? { ...results, results: results.results.filter((result) => result.taskId === parsed.id) }
-      : results;
-    if (parsed.json) console.log(JSON.stringify(payload ?? { kind: "capability-improvement-task-results", updatedAt: "", results: [] }, null, 2));
-    else if (!payload || payload.results.length === 0) console.log("capability-tasks: no results");
-    else for (const result of payload.results) {
-      console.log(`${result.taskId} ${result.status} session=${result.sessionId} at=${result.resultAt}`);
-      if (result.error) console.log(`  error: ${result.error}`);
-    }
+    const payload =
+      parsed.id && results
+        ? { ...results, results: results.results.filter((result) => result.taskId === parsed.id) }
+        : results;
+    if (parsed.json)
+      console.log(
+        JSON.stringify(payload ?? { kind: 'capability-improvement-task-results', updatedAt: '', results: [] }, null, 2),
+      );
+    else if (!payload || payload.results.length === 0) console.log('capability-tasks: no results');
+    else
+      for (const result of payload.results) {
+        console.log(`${result.taskId} ${result.status} session=${result.sessionId} at=${result.resultAt}`);
+        if (result.error) console.log(`  error: ${result.error}`);
+      }
     return;
   }
 
-  if (command === "recover-failed") {
+  if (command === 'recover-failed') {
     if (!backlog) throw new Error(`Capability improvement task backlog not found: ${tasksPath}`);
     const existingResults = await readCapabilityImprovementTaskResults(resultsPath);
     const recovered = await recoverFailedCapabilityImprovementTasks({
@@ -230,20 +232,28 @@ async function main() {
       results: existingResults,
       store: createAgentTaskStore(agentTasksPath),
       ids: parsed.id ? [parsed.id] : undefined,
-      mode: parsed.mode ?? "retry"
+      mode: parsed.mode ?? 'retry',
     });
     await writeCapabilityImprovementTaskBacklog(tasksPath, recovered.backlog);
     if (parsed.json) {
-      console.log(JSON.stringify({
-        tasks: tasksPath,
-        agentTasks: agentTasksPath,
-        results: resultsPath,
-        ...recovered
-      }, null, 2));
+      console.log(
+        JSON.stringify(
+          {
+            tasks: tasksPath,
+            agentTasks: agentTasksPath,
+            results: resultsPath,
+            ...recovered,
+          },
+          null,
+          2,
+        ),
+      );
     } else {
-      if (recovered.recovered.length === 0) console.log("capability-tasks: no failed tasks recovered");
+      if (recovered.recovered.length === 0) console.log('capability-tasks: no failed tasks recovered');
       for (const item of recovered.recovered) {
-        console.log(`capability-tasks: recovered ${item.taskId} via ${item.mode} -> ${item.agentTaskId} ${item.status}`);
+        console.log(
+          `capability-tasks: recovered ${item.taskId} via ${item.mode} -> ${item.agentTaskId} ${item.status}`,
+        );
       }
       for (const item of recovered.skipped) {
         console.log(`capability-tasks: skipped ${item.taskId}: ${item.reason}`);
@@ -257,7 +267,7 @@ async function main() {
   const id = requireId(parsed);
   if (!backlog) throw new Error(`Capability improvement task backlog not found: ${tasksPath}`);
 
-  if (command === "run") {
+  if (command === 'run') {
     const store = createAgentTaskStore(agentTasksPath);
     const existingResults = await readCapabilityImprovementTaskResults(resultsPath);
     const taskCandidate = findTaskForAgentTask(backlog, id);
@@ -272,54 +282,66 @@ async function main() {
           configPath: parsed.config,
           env: process.env,
           prompt: task.prompt,
-          mode: "work",
+          mode: 'work',
           sessionId: task.sessionId,
           cli: {
             ...(parsed.provider ? { provider: parsed.provider } : {}),
             ...(parsed.model ? { model: parsed.model } : {}),
-            ...(parsed.approval ? { approvalMode: parsed.approval } : {})
-          }
+            ...(parsed.approval ? { approvalMode: parsed.approval } : {}),
+          },
         });
         return {
-          output: result.doneContent ?? "",
+          output: result.doneContent ?? '',
           sessionId: result.sessionId,
-          usage: result.usage
+          usage: result.usage,
         };
-      }
+      },
     });
     await writeCapabilityImprovementTaskResults(resultsPath, run.results);
     if (parsed.json) {
-      console.log(JSON.stringify({
-        results: resultsPath,
-        agentTasks: agentTasksPath,
-        id,
-        status: run.agentTask.status,
-        sessionId: run.agentTask.sessionId
-      }, null, 2));
+      console.log(
+        JSON.stringify(
+          {
+            results: resultsPath,
+            agentTasks: agentTasksPath,
+            id,
+            status: run.agentTask.status,
+            sessionId: run.agentTask.sessionId,
+          },
+          null,
+          2,
+        ),
+      );
     } else {
       console.log(`capability-tasks: ran ${id}`);
       console.log(`capability-tasks: status ${run.agentTask.status}`);
       console.log(`capability-tasks: results ${resultsPath}`);
     }
-    if (run.agentTask.status !== "completed") process.exitCode = 1;
+    if (run.agentTask.status !== 'completed') process.exitCode = 1;
     return;
   }
 
   const result = await promoteCapabilityImprovementTask({
     backlog,
     id,
-    store: createAgentTaskStore(agentTasksPath)
+    store: createAgentTaskStore(agentTasksPath),
   });
   await writeCapabilityImprovementTaskBacklog(tasksPath, result.backlog);
 
   if (parsed.json) {
-    console.log(JSON.stringify({
-      tasks: tasksPath,
-      agentTasks: agentTasksPath,
-      id,
-      agentTaskId: result.agentTask.id,
-      status: result.agentTask.status
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          tasks: tasksPath,
+          agentTasks: agentTasksPath,
+          id,
+          agentTaskId: result.agentTask.id,
+          status: result.agentTask.status,
+        },
+        null,
+        2,
+      ),
+    );
   } else {
     console.log(`capability-tasks: promoted ${id}`);
     console.log(`capability-tasks: agent task ${result.agentTask.id} ${result.agentTask.status}`);

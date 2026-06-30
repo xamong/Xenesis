@@ -3,7 +3,6 @@ import path from 'node:path';
 
 const ACTION_INBOX_STATUSES = new Set(['pending', 'approved', 'rejected', 'failed', 'expired']);
 const ACTION_INBOX_RESOLUTIONS = new Set(['approve', 'reject']);
-const ACTION_INBOX_RESOLVED_STATUSES = new Set(['approved', 'rejected', 'failed', 'expired']);
 const DEFAULT_ACTION_INBOX_TTL_MS = 5 * 60 * 1000;
 const MAX_PERSISTED_ACTION_INBOX_ITEMS = 100;
 const EXPIRED_MESSAGE = 'Approval request expired before it was resolved.';
@@ -120,7 +119,9 @@ export function applyMcpActionInboxRequest(state, raw, options = {}) {
   const explicitId = firstClean(input, ['id', 'requestId', 'messageId'], 160);
   const existing = state.items.get(item.id) || findExistingByApprovalSessionKey(state, item.approvalSessionKey);
   const statusWasProvided = hasAny(input, ['status']);
-  const nextStatus = statusWasProvided ? item.status : existing?.status || item.status;
+  const startsNewRequest = Boolean(existing && !statusWasProvided && existing.status !== 'pending');
+  const existingForCarry = startsNewRequest ? undefined : existing;
+  const nextStatus = statusWasProvided ? item.status : startsNewRequest ? item.status : existing?.status || item.status;
   const resolvedAt = nextStatus === 'pending' ? '' : item.resolvedAt || existing?.resolvedAt || item.updatedAt;
   const incomingExpiresAt = firstClean(input, ['expiresAt', 'expires_at'], 80) || cleanText(options.expiresAt, 80);
   const stored = {
@@ -148,18 +149,18 @@ export function applyMcpActionInboxRequest(state, raw, options = {}) {
       firstClean(input, ['rejectText', 'rejectCommand', 'reject_text'], 1000) ||
       existing?.rejectText ||
       item.rejectText,
-    createdAt: existing?.createdAt || item.createdAt,
+    createdAt: existingForCarry?.createdAt || item.createdAt,
     updatedAt: item.updatedAt,
-    expiresAt: incomingExpiresAt || existing?.expiresAt || item.expiresAt,
+    expiresAt: incomingExpiresAt || existingForCarry?.expiresAt || item.expiresAt,
     resolvedAt,
     lastCallbackAt:
       firstClean(input, ['lastCallbackAt', 'callbackAt', 'callback_at'], 80) ||
-      existing?.lastCallbackAt ||
+      existingForCarry?.lastCallbackAt ||
       item.lastCallbackAt,
-    result: firstClean(input, ['result'], 4000) || existing?.result || item.result,
+    result: firstClean(input, ['result'], 4000) || existingForCarry?.result || item.result,
     error:
       firstClean(input, ['error'], 4000) ||
-      (nextStatus === 'expired' ? existing?.error || EXPIRED_MESSAGE : existing?.error || item.error),
+      (nextStatus === 'expired' ? existingForCarry?.error || EXPIRED_MESSAGE : existingForCarry?.error || item.error),
   };
   state.items.set(stored.id, stored);
   return cloneItem(stored);

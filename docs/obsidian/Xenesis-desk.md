@@ -10,6 +10,7 @@ confidence: high
 last_reviewed: 2026-06-26
 depends_on:
   - "[[Final Goal]]"
+  - "[[Final Goal Slice Spec Index]]"
   - "[[AI Agent Rules]]"
   - "[[Graph Schema]]"
   - "[[Source of Truth Map]]"
@@ -23,13 +24,15 @@ It is a context and navigation layer, not the executable source of truth.
 ## Read First
 
 1. [[Final Goal]]
-2. [[AI Agent Rules]]
-3. [[Graph Schema]]
-4. [[Review Policy]]
-5. [[Source of Truth Map]]
-6. [[Module Index]]
-7. [[High Risk Areas]]
-8. [[Verification Map]]
+2. [[Final Goal Slice Spec Index]]
+3. [[AI Agent Rules]]
+4. [[Graph Schema]]
+5. [[Review Policy]]
+6. [[Source of Truth Map]]
+7. [[Module Index]]
+8. [[High Risk Areas]]
+9. [[Verification Map]]
+10. [[CR Surface Index]]
 
 ## Core Graph Areas
 
@@ -39,6 +42,7 @@ It is a context and navigation layer, not the executable source of truth.
 - [[Xenesis Agent Runtime]]
 - [[Approval Flow]]
 - [[Provider Model]]
+- [[CR Surface Index]]
 
 ## High-Value Modules
 
@@ -64,6 +68,8 @@ It is a context and navigation layer, not the executable source of truth.
 ## Graph Links
 
 - Depends on [[Final Goal]]
+- Depends on [[Final Goal Slice Spec Index]]
 - Depends on [[AI Agent Rules]]
 - Depends on [[Graph Schema]]
 - Depends on [[Source of Truth Map]]
+- Includes [[CR Surface Index]]

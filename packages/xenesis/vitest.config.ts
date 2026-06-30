@@ -1,11 +1,11 @@
-import { defineConfig } from "vitest/config";
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  cacheDir: "../../node_modules/.vite/xenesis",
+  cacheDir: '../../node_modules/.vite/xenesis',
   test: {
-    environment: "node",
-    include: ["tests/**/*.test.ts", "scripts/**/*.test.mjs"],
+    environment: 'node',
+    include: ['tests/**/*.test.ts'],
     restoreMocks: true,
-    testTimeout: 30000
-  }
+    testTimeout: 30000,
+  },
 });

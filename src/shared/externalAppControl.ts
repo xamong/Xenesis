@@ -1,13 +1,5 @@
 export type ExternalAppPlatform = 'windows';
-export type ExternalAppActionName =
-  | 'launch'
-  | 'find'
-  | 'focus'
-  | 'resize'
-  | 'typeText'
-  | 'hotkey'
-  | 'close'
-  | 'status';
+export type ExternalAppActionName = 'launch' | 'find' | 'focus' | 'resize' | 'typeText' | 'hotkey' | 'close' | 'status';
 export type ExternalAppApprovalLevel = 'low' | 'medium' | 'high';
 export type ExternalAppActionApproval = 'never' | 'once' | 'always';
 
@@ -209,7 +201,8 @@ export function normalizeExternalAppProfile(profile: Partial<ExternalAppProfile>
     defaultArgs: Array.isArray(profile.defaultArgs) ? profile.defaultArgs.map(String) : undefined,
     defaultCwd: typeof profile.defaultCwd === 'string' ? profile.defaultCwd.trim() : undefined,
     allowedActions: allowedActions.length ? allowedActions : ['launch', 'focus', 'status', 'find'],
-    approvalLevel: profile.approvalLevel === 'low' || profile.approvalLevel === 'high' ? profile.approvalLevel : 'medium',
+    approvalLevel:
+      profile.approvalLevel === 'low' || profile.approvalLevel === 'high' ? profile.approvalLevel : 'medium',
     enabled: profile.enabled !== false,
   };
 }
@@ -295,7 +288,11 @@ export function normalizeExternalAppAction(raw: unknown): ExternalAppAction {
     ...(Number.isFinite(Number(input.height)) ? { height: Number(input.height) } : {}),
     ...(text !== undefined ? { text } : {}),
     ...(keys ? { keys } : {}),
-    ...(input.mode === 'process' ? { mode: 'process' as const } : input.mode === 'window' ? { mode: 'window' as const } : {}),
+    ...(input.mode === 'process'
+      ? { mode: 'process' as const }
+      : input.mode === 'window'
+        ? { mode: 'window' as const }
+        : {}),
   };
 }
 

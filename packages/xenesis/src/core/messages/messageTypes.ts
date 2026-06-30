@@ -1,11 +1,18 @@
-import type { AgentMessageAttachment, ToolCall } from "../messages.js";
+import type { AgentMessageAttachment, ToolCall } from '../messages.js';
 
 export type LedgerEntry =
-  | { kind: "user_message"; id: string; content: string }
-  | { kind: "assistant_message"; id: string; content: string; toolCalls?: ToolCall[] }
-  | { kind: "tool_result"; id: string; toolCallId: string; name: string; content: string; attachments?: AgentMessageAttachment[] }
+  | { kind: 'user_message'; id: string; content: string }
+  | { kind: 'assistant_message'; id: string; content: string; toolCalls?: ToolCall[] }
   | {
-      kind: "recovery_overlay";
+      kind: 'tool_result';
+      id: string;
+      toolCallId: string;
+      name: string;
+      content: string;
+      attachments?: AgentMessageAttachment[];
+    }
+  | {
+      kind: 'recovery_overlay';
       id: string;
       reason: string;
       content: string;
@@ -13,12 +20,12 @@ export type LedgerEntry =
       toolName?: string;
     }
   | {
-      kind: "tool_policy_audit";
+      kind: 'tool_policy_audit';
       id: string;
       toolCallId: string;
       name: string;
       policyName: string;
-      status: "allow" | "deny";
+      status: 'allow' | 'deny';
       reason: string;
       nextAction?: string;
       requiredBefore: string[];
@@ -28,34 +35,34 @@ export type LedgerEntry =
       priorityTools: string[];
     }
   | {
-      kind: "tool_choice_audit";
+      kind: 'tool_choice_audit';
       id: string;
       toolCallId: string;
       name: string;
-      status: "followed_priority" | "missed_priority";
+      status: 'followed_priority' | 'missed_priority';
       reason: string;
       priorityReasons: string[];
       priorityTools: string[];
       unmetPriorityTools: string[];
     }
   | {
-      kind: "permission_audit";
+      kind: 'permission_audit';
       id: string;
       toolCallId: string;
       name: string;
-      status: "allow" | "ask" | "deny";
+      status: 'allow' | 'ask' | 'deny';
       reason: string;
       source: string;
-      riskLevel: "low" | "medium" | "high";
+      riskLevel: 'low' | 'medium' | 'high';
       normalizedMode: string;
       approved?: boolean;
     }
-  | { kind: "run_state"; id: string; state: string; summary?: string };
+  | { kind: 'run_state'; id: string; state: string; summary?: string };
 
-export type LedgerUserMessage = Extract<LedgerEntry, { kind: "user_message" }>;
-export type LedgerAssistantMessage = Extract<LedgerEntry, { kind: "assistant_message" }>;
-export type LedgerToolResult = Extract<LedgerEntry, { kind: "tool_result" }>;
-export type LedgerRecoveryOverlay = Extract<LedgerEntry, { kind: "recovery_overlay" }>;
-export type LedgerToolPolicyAudit = Extract<LedgerEntry, { kind: "tool_policy_audit" }>;
-export type LedgerToolChoiceAudit = Extract<LedgerEntry, { kind: "tool_choice_audit" }>;
-export type LedgerPermissionAudit = Extract<LedgerEntry, { kind: "permission_audit" }>;
+export type LedgerUserMessage = Extract<LedgerEntry, { kind: 'user_message' }>;
+export type LedgerAssistantMessage = Extract<LedgerEntry, { kind: 'assistant_message' }>;
+export type LedgerToolResult = Extract<LedgerEntry, { kind: 'tool_result' }>;
+export type LedgerRecoveryOverlay = Extract<LedgerEntry, { kind: 'recovery_overlay' }>;
+export type LedgerToolPolicyAudit = Extract<LedgerEntry, { kind: 'tool_policy_audit' }>;
+export type LedgerToolChoiceAudit = Extract<LedgerEntry, { kind: 'tool_choice_audit' }>;
+export type LedgerPermissionAudit = Extract<LedgerEntry, { kind: 'permission_audit' }>;

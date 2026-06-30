@@ -3,12 +3,13 @@
 // (session_messages + FTS5 from migration v4) so the agent can recall what was said
 // in earlier sessions. Korean-safe: trigram FTS handles >=3-char CJK queries; a 2-char
 // query (which trigram CANNOT match) falls back to FTS prefix then LIKE '%q%'.
-import { z } from "zod";
-import type { DatabaseSync } from "node:sqlite";
-import { openDatabase } from "../db/database.js";
-import { isSessionSearchFtsAvailable } from "../db/migrations.js";
-import { reindexSessions } from "../sessions/SessionTranscriptIndexer.js";
-import type { Tool, ToolContext } from "./types.js";
+
+import type { DatabaseSync } from 'node:sqlite';
+import { z } from 'zod';
+import { openDatabase } from '../db/database.js';
+import { isSessionSearchFtsAvailable } from '../db/migrations.js';
+import { reindexSessions } from '../sessions/SessionTranscriptIndexer.js';
+import type { Tool, ToolContext } from './types.js';
 
 const DEFAULT_LIMIT = 5;
 const MAX_LIMIT = 20;
@@ -18,14 +19,14 @@ const sessionSearchInput = z.object({
   query: z.string().min(1),
   limit: z.number().int().positive().max(MAX_LIMIT).nullable().optional(),
   sessionId: z.string().min(1).nullable().optional(),
-  role: z.enum(["user", "assistant", "tool"]).nullable().optional()
+  role: z.enum(['user', 'assistant', 'tool']).nullable().optional(),
 });
 
 const sessionSearchOpenAIInput = z.object({
   query: z.string().min(1),
   limit: z.number().int().positive().max(MAX_LIMIT).nullable(),
   sessionId: z.string().nullable(),
-  role: z.enum(["user", "assistant", "tool"]).nullable()
+  role: z.enum(['user', 'assistant', 'tool']).nullable(),
 });
 
 export type SessionSearchToolInput = z.infer<typeof sessionSearchInput>;
@@ -62,9 +63,9 @@ function buildSnippet(text: string, query: string, radius = SNIPPET_RADIUS): str
   }
   const start = Math.max(0, matchIndex - radius);
   const end = Math.min(text.length, matchIndex + radius);
-  const prefix = start > 0 ? "..." : "";
-  const suffix = end < text.length ? "..." : "";
-  return `${prefix}${text.slice(start, end)}${suffix}`.replace(/\s+/g, " ").trim();
+  const prefix = start > 0 ? '...' : '';
+  const suffix = end < text.length ? '...' : '';
+  return `${prefix}${text.slice(start, end)}${suffix}`.replace(/\s+/g, ' ').trim();
 }
 
 type SqlParam = string | number | null;
@@ -72,16 +73,16 @@ type SqlParam = string | number | null;
 function applyFilters(
   baseSql: string,
   params: SqlParam[],
-  input: SessionSearchToolInput
+  input: SessionSearchToolInput,
 ): { sql: string; params: SqlParam[] } {
   let sql = baseSql;
   const next: SqlParam[] = [...params];
   if (input.sessionId) {
-    sql += " AND session_messages.session_id = ?";
+    sql += ' AND session_messages.session_id = ?';
     next.push(input.sessionId);
   }
   if (input.role) {
-    sql += " AND session_messages.role = ?";
+    sql += ' AND session_messages.role = ?';
     next.push(input.role);
   }
   return { sql, params: next };
@@ -101,7 +102,7 @@ function searchWithFts(db: DatabaseSync, query: string, limit: number, input: Se
      JOIN session_messages ON session_messages.id = m.rowid
      WHERE 1=1`,
     [query, query],
-    input
+    input,
   );
   const sql = `${ranked.sql} GROUP BY session_messages.id ORDER BY best_rank ASC LIMIT ?`;
   return db.prepare(sql).all(...ranked.params, limit) as unknown as MessageRow[];
@@ -117,7 +118,7 @@ function searchShortQuery(db: DatabaseSync, query: string, limit: number, input:
          JOIN session_messages ON session_messages.id = session_messages_fts.rowid
          WHERE session_messages_fts MATCH ?`,
         [`${query}*`],
-        input
+        input,
       );
       const prefixSql = `${prefix.sql} ORDER BY best_rank ASC LIMIT ?`;
       const prefixRows = db.prepare(prefixSql).all(...prefix.params, limit) as unknown as MessageRow[];
@@ -134,14 +135,14 @@ function searchShortQuery(db: DatabaseSync, query: string, limit: number, input:
      FROM session_messages
      WHERE session_messages.text LIKE ? ESCAPE '\\'`,
     [`%${escaped}%`],
-    input
+    input,
   );
   const likeSql = `${like.sql} ORDER BY session_messages.id DESC LIMIT ?`;
   return db.prepare(likeSql).all(...like.params, limit) as unknown as MessageRow[];
 }
 
 function tableIsEmpty(db: DatabaseSync): boolean {
-  const row = db.prepare("SELECT 1 FROM session_messages LIMIT 1").get();
+  const row = db.prepare('SELECT 1 FROM session_messages LIMIT 1').get();
   return !row;
 }
 
@@ -151,20 +152,20 @@ function renderHitLine(hit: SessionSearchHit): string {
 
 export function createSessionSearchTool(): Tool<SessionSearchToolInput, SessionSearchHit[]> {
   return {
-    name: "session_search",
+    name: 'session_search',
     description:
-      "Search transcripts of past Xenesis sessions (cross-session recall). Returns matching user, assistant, and tool messages with snippets. Supports Korean and other CJK queries, including short 2-character terms.",
+      'Search transcripts of past Xenesis sessions (cross-session recall). Returns matching user, assistant, and tool messages with snippets. Supports Korean and other CJK queries, including short 2-character terms.',
     inputSchema: sessionSearchInput,
     openaiInputSchema: sessionSearchOpenAIInput,
     isReadOnly: () => true,
     async run(input: SessionSearchToolInput, context: ToolContext) {
       const xenesisHome = context.xenesisHome;
       if (!xenesisHome) {
-        return { ok: false, content: "session_search: no Xenesis home is configured for this run." };
+        return { ok: false, content: 'session_search: no Xenesis home is configured for this run.' };
       }
       try {
         const query = input.query.trim();
-        if (!query) return { ok: false, content: "session_search: query is empty." };
+        if (!query) return { ok: false, content: 'session_search: query is empty.' };
         const limit = Math.min(input.limit ?? DEFAULT_LIMIT, MAX_LIMIT);
         const db = openDatabase(xenesisHome);
 
@@ -175,27 +176,25 @@ export function createSessionSearchTool(): Tool<SessionSearchToolInput, SessionS
         }
 
         const useFts = query.length >= 3 && isSessionSearchFtsAvailable();
-        const rows = useFts
-          ? searchWithFts(db, query, limit, input)
-          : searchShortQuery(db, query, limit, input);
+        const rows = useFts ? searchWithFts(db, query, limit, input) : searchShortQuery(db, query, limit, input);
 
         const hits: SessionSearchHit[] = rows.map((row) => ({
           sessionId: row.session_id,
           seq: row.seq,
           role: row.role,
           snippet: buildSnippet(row.text, query),
-          createdAt: row.created_at
+          createdAt: row.created_at,
         }));
 
         return {
           ok: true,
-          content: hits.length > 0 ? hits.map(renderHitLine).join("\n") : "session_search: no matches",
-          data: hits
+          content: hits.length > 0 ? hits.map(renderHitLine).join('\n') : 'session_search: no matches',
+          data: hits,
         };
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         return { ok: false, content: `session_search failed: ${message}` };
       }
-    }
+    },
   };
 }

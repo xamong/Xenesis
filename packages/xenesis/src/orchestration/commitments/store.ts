@@ -6,24 +6,20 @@
  *
  * Adapted from OpenClaw `src/commitments/store.ts` (JSON file store → SQLite table store).
  */
-import { randomBytes } from "node:crypto";
-import { openDatabase } from "../../db/database.js";
-import { TableStore } from "../../db/tableStore.js";
-import type {
-  CommitmentRecord,
-  CommitmentScope,
-  CommitmentStatus,
-} from "./types.js";
+import { randomBytes } from 'node:crypto';
+import { openDatabase } from '../../db/database.js';
+import { TableStore } from '../../db/tableStore.js';
+import type { CommitmentRecord, CommitmentScope, CommitmentStatus } from './types.js';
 
 const ROLLING_DAY_MS = 24 * 60 * 60 * 1000;
-const SCOPE_SEP = "";
+const SCOPE_SEP = '';
 
 export function generateCommitmentId(nowMs: number = Date.now()): string {
-  return `cm_${nowMs.toString(36)}_${randomBytes(5).toString("hex")}`;
+  return `cm_${nowMs.toString(36)}_${randomBytes(5).toString('hex')}`;
 }
 
 function scopeValue(value: string | undefined): string {
-  return value?.trim() ?? "";
+  return value?.trim() ?? '';
 }
 
 /** Stable routing/identity key — two records collide for dedupe only within the same scope. */
@@ -40,21 +36,19 @@ export function buildCommitmentScopeKey(scope: CommitmentScope): string {
 }
 
 export function isActiveStatus(status: CommitmentStatus): boolean {
-  return status === "pending" || status === "snoozed";
+  return status === 'pending' || status === 'snoozed';
 }
 
 /** Non-mutating sort by due-window earliest, then createdAt (ES2022-safe; no toSorted). */
 function sortByDue(records: CommitmentRecord[]): CommitmentRecord[] {
-  return [...records].sort(
-    (a, b) => a.dueWindow.earliestMs - b.dueWindow.earliestMs || a.createdAtMs - b.createdAtMs,
-  );
+  return [...records].sort((a, b) => a.dueWindow.earliestMs - b.dueWindow.earliestMs || a.createdAtMs - b.createdAtMs);
 }
 
 export interface CreateCommitmentInput {
   scope: CommitmentScope;
-  kind: CommitmentRecord["kind"];
-  sensitivity: CommitmentRecord["sensitivity"];
-  source: CommitmentRecord["source"];
+  kind: CommitmentRecord['kind'];
+  sensitivity: CommitmentRecord['sensitivity'];
+  source: CommitmentRecord['source'];
   reason: string;
   suggestedText: string;
   dedupeKey: string;
@@ -96,7 +90,7 @@ export interface CommitmentStore {
   listDue(options: ListDueOptions): Promise<CommitmentRecord[]>;
   markStatus(
     ids: string[],
-    status: Extract<CommitmentStatus, "sent" | "dismissed" | "expired">,
+    status: Extract<CommitmentStatus, 'sent' | 'dismissed' | 'expired'>,
     nowMs?: number,
   ): Promise<void>;
   setTaskId(id: string, taskId: string, nowMs?: number): Promise<void>;
@@ -110,17 +104,11 @@ abstract class BaseCommitmentStore implements CommitmentStore {
   protected abstract deleteById(id: string): boolean;
   protected abstract readById(id: string): CommitmentRecord | undefined;
 
-  async upsert(
-    input: CreateCommitmentInput,
-    nowMs = Date.now(),
-  ): Promise<CommitmentRecord | undefined> {
+  async upsert(input: CreateCommitmentInput, nowMs = Date.now()): Promise<CommitmentRecord | undefined> {
     const scopeKey = buildCommitmentScopeKey(input.scope);
     const dedupeKey = input.dedupeKey.trim();
     const existing = this.all().find(
-      (c) =>
-        buildCommitmentScopeKey(c) === scopeKey &&
-        c.dedupeKey === dedupeKey &&
-        isActiveStatus(c.status),
+      (c) => buildCommitmentScopeKey(c) === scopeKey && c.dedupeKey === dedupeKey && isActiveStatus(c.status),
     );
     if (existing) {
       this.replace({
@@ -149,7 +137,7 @@ abstract class BaseCommitmentStore implements CommitmentStore {
       kind: input.kind,
       sensitivity: input.sensitivity,
       source: input.source,
-      status: "pending",
+      status: 'pending',
       reason: input.reason.trim(),
       suggestedText: input.suggestedText.trim(),
       dedupeKey,
@@ -186,7 +174,7 @@ abstract class BaseCommitmentStore implements CommitmentStore {
         (c) =>
           buildCommitmentScopeKey(c) === scopeKey &&
           isActiveStatus(c.status) &&
-          (c.status !== "snoozed" || (c.snoozedUntilMs ?? 0) <= nowMs),
+          (c.status !== 'snoozed' || (c.snoozedUntilMs ?? 0) <= nowMs),
       ),
     ).slice(0, limit);
   }
@@ -195,10 +183,7 @@ abstract class BaseCommitmentStore implements CommitmentStore {
     const sinceMs = nowMs - ROLLING_DAY_MS;
     return this.all().filter(
       (c) =>
-        c.agentId === agentId &&
-        c.sessionKey === sessionKey &&
-        c.status === "sent" &&
-        (c.sentAtMs ?? 0) >= sinceMs,
+        c.agentId === agentId && c.sessionKey === sessionKey && c.status === 'sent' && (c.sentAtMs ?? 0) >= sinceMs,
     ).length;
   }
 
@@ -206,8 +191,7 @@ abstract class BaseCommitmentStore implements CommitmentStore {
     const nowMs = options.nowMs ?? Date.now();
     const staleAfterMs = (options.expireAfterHours ?? 72) * 60 * 60 * 1000;
     const maxPerDay = options.maxPerDay ?? Number.POSITIVE_INFINITY;
-    const remainingToday =
-      maxPerDay - this.countSentForSession(options.agentId, options.sessionKey, nowMs);
+    const remainingToday = maxPerDay - this.countSentForSession(options.agentId, options.sessionKey, nowMs);
     if (remainingToday <= 0) return [];
     const limit = Math.min(options.limit ?? remainingToday, remainingToday);
     return sortByDue(
@@ -218,14 +202,14 @@ abstract class BaseCommitmentStore implements CommitmentStore {
           isActiveStatus(c.status) &&
           c.dueWindow.earliestMs <= nowMs &&
           c.dueWindow.latestMs + staleAfterMs >= nowMs &&
-          (c.status !== "snoozed" || (c.snoozedUntilMs ?? 0) <= nowMs),
+          (c.status !== 'snoozed' || (c.snoozedUntilMs ?? 0) <= nowMs),
       ),
     ).slice(0, limit);
   }
 
   async markStatus(
     ids: string[],
-    status: Extract<CommitmentStatus, "sent" | "dismissed" | "expired">,
+    status: Extract<CommitmentStatus, 'sent' | 'dismissed' | 'expired'>,
     nowMs = Date.now(),
   ): Promise<void> {
     for (const id of ids) {
@@ -235,9 +219,9 @@ abstract class BaseCommitmentStore implements CommitmentStore {
         ...existing,
         status,
         updatedAtMs: nowMs,
-        ...(status === "sent" ? { sentAtMs: nowMs } : {}),
-        ...(status === "dismissed" ? { dismissedAtMs: nowMs } : {}),
-        ...(status === "expired" ? { expiredAtMs: nowMs } : {}),
+        ...(status === 'sent' ? { sentAtMs: nowMs } : {}),
+        ...(status === 'dismissed' ? { dismissedAtMs: nowMs } : {}),
+        ...(status === 'expired' ? { expiredAtMs: nowMs } : {}),
       });
     }
   }
@@ -260,18 +244,18 @@ export class SqliteCommitmentStore extends BaseCommitmentStore {
   constructor(options: { xenesisHome: string }) {
     super();
     this.table = new TableStore<CommitmentRecord>(openDatabase(options.xenesisHome), {
-      table: "commitments",
+      table: 'commitments',
       id: (c) => c.id,
       indexColumns: [
-        "agent_id",
-        "session_key",
-        "status",
-        "dedupe_key",
-        "earliest_ms",
-        "latest_ms",
-        "sent_at_ms",
-        "created_at_ms",
-        "updated_at_ms",
+        'agent_id',
+        'session_key',
+        'status',
+        'dedupe_key',
+        'earliest_ms',
+        'latest_ms',
+        'sent_at_ms',
+        'created_at_ms',
+        'updated_at_ms',
       ],
       derive: (c) => ({
         agent_id: c.agentId,

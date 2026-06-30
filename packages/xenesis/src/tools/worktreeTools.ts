@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 import {
   addWorktree,
   countDirtyFiles,
@@ -11,19 +11,19 @@ import {
   removeWorktree,
   validateWorktreeSlug,
   worktreeBranchName,
-  worktreePathFor
-} from "../core/isolation/gitWorktree.js";
-import type { WorktreeSessionState } from "../core/isolation/types.js";
-import { readWorktreeSession, writeWorktreeSession } from "./worktreeSessionStore.js";
-import type { Tool, ToolContext } from "./types.js";
+  worktreePathFor,
+} from '../core/isolation/gitWorktree.js';
+import type { WorktreeSessionState } from '../core/isolation/types.js';
+import type { Tool, ToolContext } from './types.js';
+import { readWorktreeSession, writeWorktreeSession } from './worktreeSessionStore.js';
 
 const enterWorktreeInputSchema = z.object({
-  name: z.string().nullable().optional()
+  name: z.string().nullable().optional(),
 });
 
 const exitWorktreeInputSchema = z.object({
-  action: z.enum(["keep", "remove"]),
-  discard_changes: z.boolean().nullable().optional()
+  action: z.enum(['keep', 'remove']),
+  discard_changes: z.boolean().nullable().optional(),
 });
 
 type EnterWorktreeInput = z.infer<typeof enterWorktreeInputSchema>;
@@ -36,7 +36,7 @@ interface EnterWorktreeOutput {
 }
 
 interface ExitWorktreeOutput {
-  action: ExitWorktreeInput["action"] | "noop";
+  action: ExitWorktreeInput['action'] | 'noop';
   originalCwd?: string;
   worktreePath?: string;
   worktreeBranch?: string;
@@ -47,7 +47,7 @@ interface ExitWorktreeOutput {
 
 function requireXenesisHome(context: ToolContext) {
   if (!context.xenesisHome) {
-    throw new Error("Xenesis home is required for durable worktree state.");
+    throw new Error('Xenesis home is required for durable worktree state.');
   }
   return context.xenesisHome;
 }
@@ -57,13 +57,12 @@ function now() {
 }
 
 async function enterWorktree(input: EnterWorktreeInput, context: ToolContext) {
-  const requestedName = typeof input.name === "string"
-    ? input.name
-    : generateWorktreeName();
+  const requestedName = typeof input.name === 'string' ? input.name : generateWorktreeName();
   if (!validateWorktreeSlug(requestedName)) {
     return {
       ok: false,
-      content: "Invalid worktree name. Use letters, numbers, dot, underscore, dash, and slash-separated path segments only."
+      content:
+        'Invalid worktree name. Use letters, numbers, dot, underscore, dash, and slash-separated path segments only.',
     };
   }
 
@@ -72,7 +71,7 @@ async function enterWorktree(input: EnterWorktreeInput, context: ToolContext) {
   if (active?.active) {
     return {
       ok: false,
-      content: `Already in a worktree session at ${active.worktreePath}. Exit the current worktree before entering another.`
+      content: `Already in a worktree session at ${active.worktreePath}. Exit the current worktree before entering another.`,
     };
   }
 
@@ -96,7 +95,7 @@ async function enterWorktree(input: EnterWorktreeInput, context: ToolContext) {
     ...(originalBranch ? { originalBranch } : {}),
     originalHeadCommit,
     enteredAt: timestamp,
-    updatedAt: timestamp
+    updatedAt: timestamp,
   };
   await writeWorktreeSession(home, context.sessionId, session);
   context.setWorkspaceRoot?.(path);
@@ -105,12 +104,12 @@ async function enterWorktree(input: EnterWorktreeInput, context: ToolContext) {
   const data: EnterWorktreeOutput = {
     worktreePath: path,
     worktreeBranch: branch,
-    message: `Created worktree "${requestedName}" at ${path}.`
+    message: `Created worktree "${requestedName}" at ${path}.`,
   };
   return {
     ok: true,
     content: `${data.message}\nSession is now isolated in branch ${branch}.`,
-    data
+    data,
   };
 }
 
@@ -119,30 +118,30 @@ async function exitWorktree(input: ExitWorktreeInput, context: ToolContext) {
   const current = await readWorktreeSession(home, context.sessionId);
   if (!current?.active) {
     const data: ExitWorktreeOutput = {
-      action: "noop",
-      message: "No-op: there is no active EnterWorktree session."
+      action: 'noop',
+      message: 'No-op: there is no active EnterWorktree session.',
     };
     return {
       ok: true,
       content: data.message,
-      data
+      data,
     };
   }
 
   const dirtyFiles = await countDirtyFiles(current.worktreePath);
   const newCommits = await countNewCommits(current.worktreePath, current.originalHeadCommit);
-  if (input.action === "remove" && !input.discard_changes && (dirtyFiles > 0 || newCommits > 0)) {
+  if (input.action === 'remove' && !input.discard_changes && (dirtyFiles > 0 || newCommits > 0)) {
     return {
       ok: false,
       content: [
         `Worktree has ${dirtyFiles} changed file(s) and ${newCommits} new commit(s).`,
-        "Removing it would discard this work permanently.",
-        "Run exit_worktree with discard_changes: true to confirm removal."
-      ].join(" ")
+        'Removing it would discard this work permanently.',
+        'Run exit_worktree with discard_changes: true to confirm removal.',
+      ].join(' '),
     };
   }
 
-  if (input.action === "remove") {
+  if (input.action === 'remove') {
     await removeWorktree(current.gitRoot, current.worktreePath);
     await deleteBranchIfExists(current.gitRoot, current.worktreeBranch);
   }
@@ -152,37 +151,38 @@ async function exitWorktree(input: ExitWorktreeInput, context: ToolContext) {
     ...current,
     active: false,
     action: input.action,
-    discardedFiles: input.action === "remove" ? dirtyFiles : 0,
-    discardedCommits: input.action === "remove" ? newCommits : 0,
+    discardedFiles: input.action === 'remove' ? dirtyFiles : 0,
+    discardedCommits: input.action === 'remove' ? newCommits : 0,
     exitedAt: timestamp,
-    updatedAt: timestamp
+    updatedAt: timestamp,
   };
   await writeWorktreeSession(home, context.sessionId, nextSession);
   context.setWorkspaceRoot?.(current.originalWorkspaceRoot ?? current.gitRoot);
   context.setCwd?.(current.originalCwd);
 
-  const message = input.action === "remove"
-    ? `Exited and removed worktree ${current.worktreePath}.`
-    : `Exited worktree ${current.worktreePath}; directory and branch were kept.`;
+  const message =
+    input.action === 'remove'
+      ? `Exited and removed worktree ${current.worktreePath}.`
+      : `Exited worktree ${current.worktreePath}; directory and branch were kept.`;
   const data: ExitWorktreeOutput = {
     action: input.action,
     originalCwd: current.originalCwd,
     worktreePath: current.worktreePath,
     worktreeBranch: current.worktreeBranch,
-    discardedFiles: input.action === "remove" ? dirtyFiles : 0,
-    discardedCommits: input.action === "remove" ? newCommits : 0,
-    message
+    discardedFiles: input.action === 'remove' ? dirtyFiles : 0,
+    discardedCommits: input.action === 'remove' ? newCommits : 0,
+    message,
   };
   return {
     ok: true,
     content: message,
-    data
+    data,
   };
 }
 
 export const enterWorktreeTool: Tool<EnterWorktreeInput, EnterWorktreeOutput> = {
-  name: "enter_worktree",
-  description: "Create a durable isolated git worktree for the current Xenesis session.",
+  name: 'enter_worktree',
+  description: 'Create a durable isolated git worktree for the current Xenesis session.',
   inputSchema: enterWorktreeInputSchema,
   openaiInputSchema: enterWorktreeInputSchema,
   isReadOnly: () => false,
@@ -193,15 +193,15 @@ export const enterWorktreeTool: Tool<EnterWorktreeInput, EnterWorktreeOutput> = 
     } catch (error) {
       return {
         ok: false,
-        content: `EnterWorktree tool failed: ${error instanceof Error ? error.message : String(error)}`
+        content: `EnterWorktree tool failed: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
-  }
+  },
 };
 
 export const exitWorktreeTool: Tool<ExitWorktreeInput, ExitWorktreeOutput> = {
-  name: "exit_worktree",
-  description: "Exit the active Xenesis git worktree session, keeping or removing the worktree.",
+  name: 'exit_worktree',
+  description: 'Exit the active Xenesis git worktree session, keeping or removing the worktree.',
   inputSchema: exitWorktreeInputSchema,
   openaiInputSchema: exitWorktreeInputSchema,
   isReadOnly: () => false,
@@ -212,8 +212,8 @@ export const exitWorktreeTool: Tool<ExitWorktreeInput, ExitWorktreeOutput> = {
     } catch (error) {
       return {
         ok: false,
-        content: `ExitWorktree tool failed: ${error instanceof Error ? error.message : String(error)}`
+        content: `ExitWorktree tool failed: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
-  }
+  },
 };

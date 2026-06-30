@@ -1,10 +1,11 @@
 // src/extensions/SqlitePluginStateStore.ts
-import { openDatabase } from "../db/database.js";
-import { runStartupImports } from "../db/startupImports.js";
-import { resolve, relative, isAbsolute } from "node:path";
-import type { DatabaseSync } from "node:sqlite";
-import type { PluginStateRecord } from "./types.js";
-import { readPluginManifest } from "./plugins.js";
+
+import { isAbsolute, relative, resolve } from 'node:path';
+import type { DatabaseSync } from 'node:sqlite';
+import { openDatabase } from '../db/database.js';
+import { runStartupImports } from '../db/startupImports.js';
+import { readPluginManifest } from './plugins.js';
+import type { PluginStateRecord } from './types.js';
 
 /**
  * Mirror of plugins.ts:119 — store relative when inside the workspace.
@@ -16,8 +17,8 @@ function toWorkspaceRelativePath(workspaceRoot: string, path: string): string {
   // Mirrors resolveWorkspacePath: if the path is relative, resolve it against
   // workspaceRoot first (not cwd) so "plugins/reverse" → "<workspaceRoot>/plugins/reverse".
   const absPath = isAbsolute(path) ? resolve(path) : resolve(workspaceRoot, path);
-  const relativePath = relative(resolve(workspaceRoot), absPath).replace(/\\/g, "/");
-  return relativePath || ".";
+  const relativePath = relative(resolve(workspaceRoot), absPath).replace(/\\/g, '/');
+  return relativePath || '.';
 }
 
 type PluginRow = {
@@ -51,7 +52,7 @@ export class SqlitePluginStateStore {
 
   private getRow(rel: string): PluginRow | undefined {
     return this.db
-      .prepare("SELECT path, name, enabled, installed_at, updated_at FROM plugins WHERE path = ?")
+      .prepare('SELECT path, name, enabled, installed_at, updated_at FROM plugins WHERE path = ?')
       .get(rel) as PluginRow | undefined;
   }
 
@@ -82,7 +83,7 @@ export class SqlitePluginStateStore {
            enabled = 1,
            installed_at = excluded.installed_at,
            updated_at = excluded.updated_at,
-           rev = plugins.rev + 1`
+           rev = plugins.rev + 1`,
       )
       .run(rel, manifest.name ?? null, installedAt, ts);
 
@@ -103,7 +104,7 @@ export class SqlitePluginStateStore {
     if (!existing) throw new Error(`Plugin is not installed: ${rel}`);
 
     this.db
-      .prepare("UPDATE plugins SET name = ?, updated_at = ?, rev = rev + 1 WHERE path = ?")
+      .prepare('UPDATE plugins SET name = ?, updated_at = ?, rev = rev + 1 WHERE path = ?')
       .run(manifest.name ?? null, ts, rel);
 
     return this.rowToRecord(this.getRow(rel)!);
@@ -119,7 +120,7 @@ export class SqlitePluginStateStore {
     const existing = this.getRow(rel);
     if (!existing) throw new Error(`Plugin is not installed: ${rel}`);
 
-    this.db.prepare("DELETE FROM plugins WHERE path = ?").run(rel);
+    this.db.prepare('DELETE FROM plugins WHERE path = ?').run(rel);
     return this.rowToRecord(existing);
   }
 
@@ -142,7 +143,7 @@ export class SqlitePluginStateStore {
     if (!existing) throw new Error(`Plugin is not installed: ${rel}`);
 
     this.db
-      .prepare("UPDATE plugins SET enabled = ?, updated_at = ?, rev = rev + 1 WHERE path = ?")
+      .prepare('UPDATE plugins SET enabled = ?, updated_at = ?, rev = rev + 1 WHERE path = ?')
       .run(enabled ? 1 : 0, ts, rel);
 
     return this.rowToRecord(this.getRow(rel)!);
@@ -152,7 +153,7 @@ export class SqlitePluginStateStore {
   async list(): Promise<PluginStateRecord[]> {
     await this.ready;
     const rows = this.db
-      .prepare("SELECT path, name, enabled, installed_at, updated_at FROM plugins ORDER BY path")
+      .prepare('SELECT path, name, enabled, installed_at, updated_at FROM plugins ORDER BY path')
       .all() as PluginRow[];
     return rows.map((r) => this.rowToRecord(r));
   }
@@ -160,9 +161,9 @@ export class SqlitePluginStateStore {
   /** Returns workspace-relative paths of enabled plugins. */
   async enabledPaths(): Promise<string[]> {
     await this.ready;
-    const rows = this.db
-      .prepare("SELECT path FROM plugins WHERE enabled = 1 ORDER BY path")
-      .all() as { path: string }[];
+    const rows = this.db.prepare('SELECT path FROM plugins WHERE enabled = 1 ORDER BY path').all() as {
+      path: string;
+    }[];
     return rows.map((r) => r.path);
   }
 }

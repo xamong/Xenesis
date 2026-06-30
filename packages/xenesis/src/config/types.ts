@@ -5,6 +5,7 @@ export type SecretRef =
   | { source: "env" | "file" | "exec"; provider?: string; id: string };
 
 export const providerNames = [
+  "auto",
   "openai",
   "mock",
   "anthropic",

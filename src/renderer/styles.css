@@ -7932,6 +7932,11 @@ button:disabled {
   border-radius: 8px;
   background: var(--bg-doc);
 }
+.sp-info-card.is-focused {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, var(--bg-doc));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 26%, transparent);
+}
 .sp-info-card strong {
   color: var(--text);
   font-size: 13px;
@@ -7956,6 +7961,11 @@ button:disabled {
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg-doc);
+}
+.sp-info-list.is-focused > div {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, var(--bg-doc));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 .sp-info-list span {
   color: var(--text-dim);
@@ -8085,6 +8095,77 @@ button:disabled {
   line-height: 1.35;
   text-align: right;
   text-overflow: initial;
+  white-space: normal;
+}
+.sp-mcp-template {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sp-mcp-template .sp-info-list-compact strong {
+  white-space: normal;
+  text-align: right;
+}
+.sp-mcp-snippets {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+.sp-mcp-snippet {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--panel) 86%, var(--bg-doc) 14%);
+}
+.sp-mcp-snippet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.sp-mcp-snippet pre {
+  max-height: 180px;
+  margin: 0;
+  padding: 10px;
+  overflow: auto;
+  color: var(--text);
+  font-family: "Cascadia Code", "Cascadia Mono", Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre;
+}
+.sp-mcp-snippet code {
+  font-family: inherit;
+}
+.sp-channel-template {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sp-channel-template .sp-info-list-compact strong {
+  white-space: normal;
+  text-align: right;
+}
+.sp-channel-chips {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+.sp-channel-chips > div {
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--panel) 86%, var(--bg-doc) 14%);
+}
+.sp-channel-chips span,
+.sp-channel-chips strong {
+  display: block;
+}
+.sp-channel-chips strong {
+  margin-top: 4px;
   white-space: normal;
 }
 .sp-select-card-active .sp-chevron {

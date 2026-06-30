@@ -1,13 +1,13 @@
-import type { AgentProvider, ProviderRequest, ProviderStreamEvent } from "../../providers/types.js";
+import type { AgentProvider, ProviderRequest, ProviderStreamEvent } from '../../providers/types.js';
 
 export interface CollectProviderStreamReplayEventsOptions {
-  requiredEventTypes?: ProviderStreamEvent["type"][];
+  requiredEventTypes?: ProviderStreamEvent['type'][];
 }
 
 export async function collectProviderStreamReplayEvents(
   provider: AgentProvider,
   request: ProviderRequest,
-  options: CollectProviderStreamReplayEventsOptions = {}
+  options: CollectProviderStreamReplayEventsOptions = {},
 ): Promise<ProviderStreamEvent[]> {
   if (!provider.stream) {
     throw new Error(`Provider "${provider.name}" does not support stream replay.`);

@@ -1,7 +1,7 @@
-import type { AgentMessage } from "../../messages.js";
+import type { AgentMessage } from '../../messages.js';
 
-type ToolMessage = Extract<AgentMessage, { role: "tool" }>;
-type AssistantMessage = Extract<AgentMessage, { role: "assistant" }>;
+type ToolMessage = Extract<AgentMessage, { role: 'tool' }>;
+type AssistantMessage = Extract<AgentMessage, { role: 'assistant' }>;
 
 function hashString(value: string): string {
   // FNV-1a 32-bit — deterministic, no crypto dependency.
@@ -14,7 +14,7 @@ function hashString(value: string): string {
 }
 
 function firstLineHead(content: string, max = 120): string {
-  const firstLine = content.split("\n", 1)[0] ?? "";
+  const firstLine = content.split('\n', 1)[0] ?? '';
   return firstLine.length > max ? firstLine.slice(0, max) : firstLine;
 }
 
@@ -38,7 +38,7 @@ function descriptorFor(message: ToolMessage): string {
  */
 export function pruneOlderMessages(
   older: AgentMessage[],
-  opts: { threshold: number }
+  opts: { threshold: number },
 ): { messages: AgentMessage[]; prunedCount: number } {
   const threshold = Math.max(1, opts.threshold);
   let prunedCount = 0;
@@ -49,7 +49,7 @@ export function pruneOlderMessages(
   const clearedDuplicate = new Set<number>();
   for (let i = older.length - 1; i >= 0; i -= 1) {
     const m = older[i]!;
-    if (m.role !== "tool") continue;
+    if (m.role !== 'tool') continue;
     const key = `${m.name} ${hashString(m.content)}`;
     if (seenToolHashes.has(key)) {
       clearedDuplicate.add(i);
@@ -59,23 +59,28 @@ export function pruneOlderMessages(
   }
 
   const messages = older.map((m, i): AgentMessage => {
-    if (m.role === "tool") {
+    if (m.role === 'tool') {
       if (clearedDuplicate.has(i)) {
         prunedCount += 1;
-        return { role: "tool", toolCallId: m.toolCallId, name: m.name, content: "[duplicate tool output cleared — identical to a more recent call]" };
+        return {
+          role: 'tool',
+          toolCallId: m.toolCallId,
+          name: m.name,
+          content: '[duplicate tool output cleared — identical to a more recent call]',
+        };
       }
       if (m.content.length > threshold) {
         prunedCount += 1;
         // descriptor only: drop attachments
-        return { role: "tool", toolCallId: m.toolCallId, name: m.name, content: descriptorFor(m) };
+        return { role: 'tool', toolCallId: m.toolCallId, name: m.name, content: descriptorFor(m) };
       }
       return { ...m };
     }
-    if (m.role === "assistant" && m.toolCalls && m.toolCalls.length > 0) {
+    if (m.role === 'assistant' && m.toolCalls && m.toolCalls.length > 0) {
       let changed = false;
       const toolCalls = m.toolCalls.map((tc) => {
         // ToolCall.input is `unknown` (object) — measure JSON.stringify length
-        const serialized = JSON.stringify(tc.input) ?? "";
+        const serialized = JSON.stringify(tc.input) ?? '';
         if (serialized.length > threshold) {
           changed = true;
           return { ...tc, input: { __elided: serialized.length } };

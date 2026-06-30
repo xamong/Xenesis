@@ -15,18 +15,15 @@
 //   6. first-run deferral                          (run() reads/seeds tierB.lastRunAt).
 //
 // The pure exports (cluster / buildPrompt / parse) have NO I/O and are unit-tested directly.
-import type { MemoryRecord } from "../types.js";
-import {
-  resolveCuratorTierBConfig,
-  type ResolvedCuratorTierBConfig,
-} from "./tierBConfig.js";
+import type { MemoryRecord } from '../types.js';
+import { type ResolvedCuratorTierBConfig, resolveCuratorTierBConfig } from './tierBConfig.js';
 
 // ── Plan shape ───────────────────────────────────────────────────────────────
 
-export type TierBOp = "merge" | "create_umbrella" | "demote";
+export type TierBOp = 'merge' | 'create_umbrella' | 'demote';
 
 export interface TierBMergeAction {
-  op: "merge";
+  op: 'merge';
   /** Existing umbrella id that absorbs the `from` rows. */
   into: string;
   from: string[];
@@ -34,14 +31,14 @@ export interface TierBMergeAction {
   reason?: string;
 }
 export interface TierBCreateUmbrellaAction {
-  op: "create_umbrella";
+  op: 'create_umbrella';
   id: string;
   text: string;
   from: string[];
   reason?: string;
 }
 export interface TierBDemoteAction {
-  op: "demote";
+  op: 'demote';
   id: string;
   into: string;
   reason?: string;
@@ -66,7 +63,7 @@ export interface ClusterOptions {
 
 /** Normalize `-`↔`_` and lowercase (mirrors Hermes _needle_in_path_component). */
 function normalizeKey(value: string): string {
-  return value.trim().toLowerCase().replace(/[-_]+/g, "-");
+  return value.trim().toLowerCase().replace(/[-_]+/g, '-');
 }
 
 /** Derive a domain key: first tag, else id-prefix before :/-/_, else first significant word. */
@@ -75,7 +72,7 @@ function domainKey(record: MemoryRecord): string | undefined {
   if (firstTag) return normalizeKey(firstTag);
   const idPrefix = record.id.split(/[:/_-]/, 1)[0]?.trim();
   if (idPrefix && idPrefix !== record.id) return normalizeKey(idPrefix);
-  const firstWord = (record.text ?? "").trim().split(/\s+/)[0];
+  const firstWord = (record.text ?? '').trim().split(/\s+/)[0];
   if (firstWord) return normalizeKey(firstWord);
   return undefined;
 }
@@ -87,16 +84,13 @@ function domainKey(record: MemoryRecord): string | undefined {
  *  - drops singleton/under-`minClusterSize` groups,
  *  - sorts clusters by size desc, takes at most `maxClusters` (cost bound).
  */
-export function clusterByDomain(
-  records: MemoryRecord[],
-  opts: ClusterOptions = {},
-): MemoryCluster[] {
+export function clusterByDomain(records: MemoryRecord[], opts: ClusterOptions = {}): MemoryCluster[] {
   const minClusterSize = opts.minClusterSize ?? 2;
   const maxClusters = opts.maxClusters ?? 25;
   const groups = new Map<string, MemoryRecord[]>();
   for (const record of records) {
     if (record.pinned) continue; // pin-protect
-    if ((record.status ?? "active") === "archived") continue;
+    if ((record.status ?? 'active') === 'archived') continue;
     const key = domainKey(record);
     if (!key) continue;
     const bucket = groups.get(key);
@@ -115,12 +109,12 @@ export function clusterByDomain(
 // ── 2. Prompt build (pure) ───────────────────────────────────────────────────
 
 const DRY_RUN_BANNER = [
-  "=== DRY-RUN PREVIEW ===",
-  "This is a PREVIEW. Describe what you WOULD do; the PLAN is the deliverable.",
-  "You have NO tools and CANNOT mutate anything. A human reviewer approves any live run.",
-  "=======================",
-  "",
-].join("\n");
+  '=== DRY-RUN PREVIEW ===',
+  'This is a PREVIEW. Describe what you WOULD do; the PLAN is the deliverable.',
+  'You have NO tools and CANNOT mutate anything. A human reviewer approves any live run.',
+  '=======================',
+  '',
+].join('\n');
 
 /**
  * Builds the Tier-B consolidation prompt. Re-authored from Hermes CURATOR_REVIEW_PROMPT for memory
@@ -129,10 +123,7 @@ const DRY_RUN_BANNER = [
  * Hard rules embedded: never delete (archive is the max destructive action), never touch pinned
  * (already excluded — restated), judge on CONTENT not counters, prefer no action over weak merges.
  */
-export function buildTierBConsolidationPrompt(params: {
-  clusters: MemoryCluster[];
-  dryRun: boolean;
-}): string {
+export function buildTierBConsolidationPrompt(params: { clusters: MemoryCluster[]; dryRun: boolean }): string {
   const clusters = params.clusters.map((cluster) => ({
     domain: cluster.domain,
     members: cluster.members.map((m) => ({
@@ -142,7 +133,7 @@ export function buildTierBConsolidationPrompt(params: {
       ...(m.priority !== undefined ? { priority: m.priority } : {}),
     })),
   }));
-  const banner = params.dryRun ? DRY_RUN_BANNER : "";
+  const banner = params.dryRun ? DRY_RUN_BANNER : '';
   return `${banner}You are Xenesis's internal memory curator (Tier-B). This is a hidden background consolidation run. Do not address the user.
 
 Each cluster below is a group of memory rows sharing a domain. For EACH cluster ask: would a careful maintainer keep N separate narrow rows, or write ONE umbrella row with N labeled subsections that says the same thing more clearly? Consolidate ONLY when the umbrella is genuinely clearer; prefer NO action over a weak merge.
@@ -167,11 +158,11 @@ ${JSON.stringify(clusters, null, 2)}`;
 // ── 3. Plan parse (pure, tolerant) ───────────────────────────────────────────
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function asString(value: unknown): string | undefined {
-  if (typeof value !== "string") return undefined;
+  if (typeof value !== 'string') return undefined;
   const trimmed = value.trim();
   return trimmed ? trimmed : undefined;
 }
@@ -194,12 +185,12 @@ function extractJsonObjectCandidates(raw: string): string[] {
   let inString = false;
   let escaped = false;
   for (let idx = 0; idx < raw.length; idx += 1) {
-    const char = raw[idx] ?? "";
+    const char = raw[idx] ?? '';
     if (escaped) {
       escaped = false;
       continue;
     }
-    if (char === "\\") {
+    if (char === '\\') {
       if (inString) escaped = true;
       continue;
     }
@@ -208,12 +199,12 @@ function extractJsonObjectCandidates(raw: string): string[] {
       continue;
     }
     if (inString) continue;
-    if (char === "{") {
+    if (char === '{') {
       if (depth === 0) start = idx;
       depth += 1;
       continue;
     }
-    if (char === "}" && depth > 0) {
+    if (char === '}' && depth > 0) {
       depth -= 1;
       if (depth === 0 && start >= 0) {
         out.push(raw.slice(start, idx + 1));
@@ -227,37 +218,37 @@ function extractJsonObjectCandidates(raw: string): string[] {
 function parseAction(raw: unknown): TierBAction | undefined {
   if (!isRecord(raw)) return undefined;
   const op = asString(raw.op);
-  if (op === "merge") {
+  if (op === 'merge') {
     const into = asString(raw.into);
     const from = asIdArray(raw.from);
     if (!into || from.length === 0) return undefined;
     return {
-      op: "merge",
+      op: 'merge',
       into,
       from,
       ...(asString(raw.umbrellaText) ? { umbrellaText: asString(raw.umbrellaText)! } : {}),
       ...(asString(raw.reason) ? { reason: asString(raw.reason)! } : {}),
     };
   }
-  if (op === "create_umbrella") {
+  if (op === 'create_umbrella') {
     const id = asString(raw.id);
     const text = asString(raw.text);
     const from = asIdArray(raw.from);
     if (!id || !text || from.length === 0) return undefined;
     return {
-      op: "create_umbrella",
+      op: 'create_umbrella',
       id,
       text,
       from,
       ...(asString(raw.reason) ? { reason: asString(raw.reason)! } : {}),
     };
   }
-  if (op === "demote") {
+  if (op === 'demote') {
     const id = asString(raw.id);
     const into = asString(raw.into);
     if (!id || !into) return undefined;
     return {
-      op: "demote",
+      op: 'demote',
       id,
       into,
       ...(asString(raw.reason) ? { reason: asString(raw.reason)! } : {}),
@@ -272,7 +263,7 @@ function parseAction(raw: unknown): TierBAction | undefined {
  */
 export function parseTierBPlan(raw: string): TierBPlan {
   const actions: TierBAction[] = [];
-  const trimmed = (raw ?? "").trim();
+  const trimmed = (raw ?? '').trim();
   if (!trimmed) return { actions };
   const records: Record<string, unknown>[] = [];
   try {
@@ -300,7 +291,7 @@ export function parseTierBPlan(raw: string): TierBPlan {
 
 // ── 4. Runtime (seam holder + safety gates) ──────────────────────────────────
 
-const CURATOR_TIERB_LAST_RUN_KEY = "tierB.lastRunAt";
+const CURATOR_TIERB_LAST_RUN_KEY = 'tierB.lastRunAt';
 
 /** Runs the Tier-B consolidation prompt on an aux/cheap model with TOOLS DISABLED → raw text. */
 export type CuratorModelRunner = (params: {
@@ -327,14 +318,14 @@ export interface TierBAppliedAction {
 }
 
 export type TierBRunStatus =
-  | "disabled"
-  | "deferred-first-run"
-  | "not-due"
-  | "no-clusters"
-  | "dry-run"
-  | "awaiting-approval"
-  | "applied"
-  | "error";
+  | 'disabled'
+  | 'deferred-first-run'
+  | 'not-due'
+  | 'no-clusters'
+  | 'dry-run'
+  | 'awaiting-approval'
+  | 'applied'
+  | 'error';
 
 export interface TierBRunResult {
   status: TierBRunStatus;
@@ -345,7 +336,7 @@ export interface TierBRunResult {
 }
 
 export interface CuratorTierBRuntimeConfig {
-  curator?: { tierB?: Partial<import("../../config/types.js").CuratorTierBConfig> };
+  curator?: { tierB?: Partial<import('../../config/types.js').CuratorTierBConfig> };
 }
 
 export interface CuratorTierBRuntimeOptions {
@@ -389,17 +380,17 @@ export class CuratorTierBRuntime {
     const cfg = resolveCuratorTierBConfig(this.options.config);
 
     // (1) default-OFF early return — zero aux calls, zero mutation.
-    if (!cfg.enabled) return { status: "disabled", actions: [] };
+    if (!cfg.enabled) return { status: 'disabled', actions: [] };
 
     // (6) first-run deferral: seed the anchor and no-op on the FIRST observed tick.
     const lastRunRaw = this.options.store.getCuratorState(CURATOR_TIERB_LAST_RUN_KEY);
     if (!lastRunRaw) {
       this.options.store.setCuratorState(CURATOR_TIERB_LAST_RUN_KEY, at.toISOString());
-      return { status: "deferred-first-run", actions: [] };
+      return { status: 'deferred-first-run', actions: [] };
     }
     const lastRunMs = Date.parse(lastRunRaw);
     if (Number.isFinite(lastRunMs) && at.getTime() - lastRunMs < cfg.intervalHours * MS_PER_HOUR) {
-      return { status: "not-due", actions: [] };
+      return { status: 'not-due', actions: [] };
     }
 
     try {
@@ -411,7 +402,7 @@ export class CuratorTierBRuntime {
       if (clusters.length === 0) {
         // A real (non-dry, no-work) pass advances the interval so we don't re-cluster every tick.
         if (!cfg.dryRun) this.bumpLastRun(at);
-        return { status: "no-clusters", actions: [] };
+        return { status: 'no-clusters', actions: [] };
       }
 
       // (5) AUX model, tools disabled by the runModel contract. FIX #2: pass the resolved aux
@@ -419,7 +410,7 @@ export class CuratorTierBRuntime {
       // main agent model. The resolver always yields a concrete auxModel, so this guards a future
       // regression / a hand-built config object that bypassed the resolver.
       if (!cfg.auxModel || !cfg.auxModel.trim()) {
-        return { status: "error", actions: [], error: "curator tier-B: aux model not resolved" };
+        return { status: 'error', actions: [], error: 'curator tier-B: aux model not resolved' };
       }
       const raw = await this.options.runModel({
         prompt: buildTierBConsolidationPrompt({ clusters, dryRun: cfg.dryRun }),
@@ -430,21 +421,21 @@ export class CuratorTierBRuntime {
       const plan = parseTierBPlan(raw);
 
       // (2a) DRY-RUN lock: mutate NOTHING, do NOT bump lastRunAt. The plan IS the deliverable.
-      if (cfg.dryRun) return { status: "dry-run", plan, actions: plan.actions };
+      if (cfg.dryRun) return { status: 'dry-run', plan, actions: plan.actions };
 
       // (2b) APPROVAL lock: even with dryRun:false, refuse autonomous apply without explicit OK.
       if (args.approved !== true) {
-        return { status: "awaiting-approval", plan, actions: plan.actions };
+        return { status: 'awaiting-approval', plan, actions: plan.actions };
       }
 
       // (3)+(4) apply: archive-never-delete + pin-protect re-check live in the store. Caveat #1:
       // pass the explicit { live: true } token — only reached after the dry-run + approval gates.
       const applied = this.options.store.applyTierBConsolidation(plan, at, { live: true });
       this.bumpLastRun(at);
-      return { status: "applied", plan, actions: plan.actions, applied };
+      return { status: 'applied', plan, actions: plan.actions, applied };
     } catch (error) {
       this.options.logger?.(`curator tier-B run failed: ${String(error)}`);
-      return { status: "error", actions: [], error: String(error) };
+      return { status: 'error', actions: [], error: String(error) };
     }
   }
 

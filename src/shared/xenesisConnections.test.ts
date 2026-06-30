@@ -1,0 +1,5304 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import test from 'node:test';
+import {
+  buildXenesisConnectionCenterOpenArgs,
+  buildXenesisConnectionsStatus,
+  buildXenesisConnectionUserStoryWorkflowPreviewArgs,
+  findXenesisConnectionUserStoryWorkflowPreviewTarget,
+  isXenesisConnectionCenterDetailFocus,
+  withXenesisConnectionSetupRequestReviews,
+  XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES,
+  XENESIS_CONNECTION_CENTER_ROOT_SELECTOR,
+  XENESIS_CONNECTION_CENTER_SETTINGS_ACTION,
+  XENESIS_CONNECTION_EXTERNAL_BOTS_SETTINGS_ACTION,
+  XENESIS_CONNECTION_GATEWAY_SETTINGS_ACTION,
+  XENESIS_CONNECTION_GUIDES,
+  XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS,
+  XENESIS_CONNECTION_LOCAL_CLI_MCP_SETTINGS_ACTION,
+  XENESIS_CONNECTION_PROVIDER_IDS,
+  XENESIS_CONNECTION_PROVIDER_SETTINGS_ACTION,
+} from './xenesisConnections';
+
+const channelGuardrails = {
+  approvalMode: 'safe' as const,
+  maxTurns: 12,
+  maxTokens: 120000,
+};
+
+const emptyChannelSettings = {
+  telegram: { enabled: false, ...channelGuardrails, tokenEnv: 'TELEGRAM_BOT_TOKEN', allowedChatIds: '' },
+  slack: {
+    enabled: false,
+    ...channelGuardrails,
+    botTokenEnv: 'SLACK_BOT_TOKEN',
+    signingSecretEnv: 'SLACK_SIGNING_SECRET',
+    webhookUrlEnv: 'SLACK_WEBHOOK_URL',
+    allowedChannelIds: '',
+  },
+  discord: {
+    enabled: false,
+    ...channelGuardrails,
+    botTokenEnv: 'DISCORD_BOT_TOKEN',
+    webhookUrlEnv: 'DISCORD_WEBHOOK_URL',
+    allowedChannelIds: '',
+    allowedGuildIds: '',
+  },
+  webhook: { enabled: false, ...channelGuardrails, urlEnv: 'XENESIS_WEBHOOK_URL' },
+};
+
+const slice04RawChannelTargets = [
+  'slice04-telegram-raw-chat',
+  'slice04-slack-raw-channel',
+  'slice04-discord-raw-channel',
+  'slice04-discord-raw-guild',
+];
+
+const slice04SecretLiterals = [
+  'xoxb-slice04-secret',
+  'telegram-secret-token',
+  'discord-secret-token',
+  'https://slice04.invalid/webhook',
+];
+
+function buildSlice04ChannelContractStatus() {
+  return buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: {
+      ok: true,
+      running: true,
+      managed: true,
+      enabled: true,
+      runtimeMode: 'embedded',
+      url: 'http://127.0.0.1:3846',
+      runtimePath: 'embedded',
+      xenesisHome: 'C:/Users/example/.xenis',
+      workspace: 'E:/workspace/project',
+      providerRuntime: {
+        provider: 'codex-app-server',
+        model: 'gpt-5-codex',
+        profile: 'slice04',
+        baseURL: '',
+        apiKeyEnv: '',
+      },
+      error: '',
+      updatedAt: '2026-06-29T00:00:00.000Z',
+      gateway: {
+        enabled: true,
+        running: true,
+        managed: true,
+        url: 'http://127.0.0.1:3846',
+        host: '127.0.0.1',
+        port: 3846,
+        workspace: 'E:/workspace/project',
+        error: '',
+        updatedAt: '2026-06-29T00:00:00.000Z',
+        channels: {
+          total: 4,
+          enabled: 4,
+          ready: 4,
+          blocked: 0,
+          disabled: 0,
+          items: [
+            {
+              name: 'telegram',
+              enabled: true,
+              ready: true,
+              runtimeStatus: 'ready',
+              missingEnv: [],
+              warnings: [],
+              safeToDeliver: true,
+              approvalMode: 'safe',
+              maxTurns: 12,
+              maxTokens: 120000,
+            },
+            {
+              name: 'slack',
+              enabled: true,
+              ready: true,
+              runtimeStatus: 'ready',
+              missingEnv: [],
+              warnings: [],
+              safeToDeliver: true,
+              approvalMode: 'safe',
+              maxTurns: 12,
+              maxTokens: 120000,
+            },
+            {
+              name: 'discord',
+              enabled: true,
+              ready: true,
+              runtimeStatus: 'ready',
+              missingEnv: [],
+              warnings: [],
+              safeToDeliver: true,
+              approvalMode: 'safe',
+              maxTurns: 12,
+              maxTokens: 120000,
+            },
+            {
+              name: 'webhook',
+              enabled: true,
+              ready: true,
+              runtimeStatus: 'ready',
+              missingEnv: [],
+              warnings: [],
+              safeToDeliver: true,
+              approvalMode: 'safe',
+              maxTurns: 12,
+              maxTokens: 120000,
+            },
+          ],
+          telegram: {
+            name: 'telegram',
+            enabled: true,
+            ready: true,
+            runtimeStatus: 'ready',
+            missingEnv: [],
+            warnings: [],
+            safeToDeliver: true,
+            approvalMode: 'safe',
+            maxTurns: 12,
+            maxTokens: 120000,
+          },
+          slack: {
+            name: 'slack',
+            enabled: true,
+            ready: true,
+            runtimeStatus: 'ready',
+            missingEnv: [],
+            warnings: [],
+            safeToDeliver: true,
+            approvalMode: 'safe',
+            maxTurns: 12,
+            maxTokens: 120000,
+          },
+          discord: {
+            name: 'discord',
+            enabled: true,
+            ready: true,
+            runtimeStatus: 'ready',
+            missingEnv: [],
+            warnings: [],
+            safeToDeliver: true,
+            approvalMode: 'safe',
+            maxTurns: 12,
+            maxTokens: 120000,
+          },
+          webhook: {
+            name: 'webhook',
+            enabled: true,
+            ready: true,
+            runtimeStatus: 'ready',
+            missingEnv: [],
+            warnings: [],
+            safeToDeliver: true,
+            approvalMode: 'safe',
+            maxTurns: 12,
+            maxTokens: 120000,
+          },
+        },
+      },
+      profile: {
+        active: 'slice04',
+        configured: 'slice04',
+        installed: ['slice04'],
+        templates: [],
+        channels: [
+          { name: 'telegram', enabled: true, configured: true, env: ['TELEGRAM_BOT_TOKEN'] },
+          { name: 'slack', enabled: true, configured: true, env: ['SLACK_BOT_TOKEN', 'SLACK_SIGNING_SECRET'] },
+          { name: 'discord', enabled: true, configured: true, env: ['DISCORD_BOT_TOKEN'] },
+          { name: 'webhook', enabled: true, configured: true, env: ['XENESIS_WEBHOOK_URL'] },
+        ],
+        channelSettings: {
+          telegram: {
+            enabled: true,
+            ...channelGuardrails,
+            tokenEnv: 'TELEGRAM_BOT_TOKEN',
+            allowedChatIds: 'slice04-telegram-raw-chat',
+          },
+          slack: {
+            enabled: true,
+            ...channelGuardrails,
+            botTokenEnv: 'SLACK_BOT_TOKEN',
+            signingSecretEnv: 'SLACK_SIGNING_SECRET',
+            webhookUrlEnv: 'SLACK_WEBHOOK_URL',
+            allowedChannelIds: 'slice04-slack-raw-channel',
+          },
+          discord: {
+            enabled: true,
+            ...channelGuardrails,
+            botTokenEnv: 'DISCORD_BOT_TOKEN',
+            webhookUrlEnv: 'DISCORD_WEBHOOK_URL',
+            allowedChannelIds: 'slice04-discord-raw-channel',
+            allowedGuildIds: 'slice04-discord-raw-guild',
+          },
+          webhook: {
+            enabled: true,
+            ...channelGuardrails,
+            urlEnv: 'XENESIS_WEBHOOK_URL',
+          },
+        },
+        policy: {
+          workflow: '',
+          approvalMode: 'safe',
+          maxTurns: 12,
+          providerRetries: 0,
+          contextAutoCompact: true,
+          memoryEnabled: true,
+          subagentsEnabled: true,
+          browserEnabled: true,
+          verificationAutoRun: false,
+          verificationAutoFix: false,
+        },
+      },
+    },
+    env: {
+      TELEGRAM_BOT_TOKEN: 'telegram-secret-token',
+      SLACK_BOT_TOKEN: 'xoxb-slice04-secret',
+      SLACK_SIGNING_SECRET: 'slack-signing-secret',
+      SLACK_WEBHOOK_URL: 'https://slice04.invalid/slack',
+      DISCORD_BOT_TOKEN: 'discord-secret-token',
+      DISCORD_WEBHOOK_URL: 'https://slice04.invalid/discord',
+      XENESIS_WEBHOOK_URL: 'https://slice04.invalid/webhook',
+    },
+  });
+}
+
+test('connection center settings target is owned by the shared connection catalog', () => {
+  assert.deepEqual(XENESIS_CONNECTION_CENTER_SETTINGS_ACTION, {
+    category: 'xenesis-agent',
+    mode: 'connections',
+    section: 'xenesis-connections',
+  });
+  assert.equal(XENESIS_CONNECTION_CENTER_ROOT_SELECTOR, '[data-settings-section="xenesis-connections"]');
+
+  assert.deepEqual(buildXenesisConnectionCenterOpenArgs(), {
+    kind: 'settings',
+    category: 'xenesis-agent',
+    mode: 'connections',
+    section: 'xenesis-connections',
+    ensureVisible: true,
+  });
+  assert.deepEqual(buildXenesisConnectionCenterOpenArgs({ ensureVisible: false, focusConnectionId: 'notion' }), {
+    kind: 'settings',
+    category: 'xenesis-agent',
+    mode: 'connections',
+    section: 'xenesis-connections',
+    ensureVisible: false,
+    focusConnectionId: 'notion',
+  });
+  assert.deepEqual(
+    buildXenesisConnectionCenterOpenArgs({
+      ensureVisible: true,
+      focusConnectionId: 'notion',
+      focusConnectionDetail: 'tool-oauth-draft',
+    }),
+    {
+      kind: 'settings',
+      category: 'xenesis-agent',
+      mode: 'connections',
+      section: 'xenesis-connections',
+      ensureVisible: true,
+      focusConnectionId: 'notion',
+      focusConnectionDetail: 'tool-oauth-draft',
+    },
+  );
+  assert.equal(XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES.includes('provider-profile-draft'), true);
+  assert.equal(XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES.includes('channel-routing'), true);
+  assert.equal(XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES.includes('channel-runtime'), true);
+  assert.equal(XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES.includes('tool-runtime'), true);
+  assert.equal(XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES.includes('tool-oauth-runtime'), true);
+  assert.equal(XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES.includes('tool-setup-plan'), true);
+  assert.equal(isXenesisConnectionCenterDetailFocus('tool-runtime'), true);
+  assert.equal(isXenesisConnectionCenterDetailFocus('tool-oauth-draft'), true);
+  assert.equal(isXenesisConnectionCenterDetailFocus('tool-oauth-runtime'), true);
+  assert.equal(isXenesisConnectionCenterDetailFocus('tool-setup-plan'), true);
+  assert.equal(isXenesisConnectionCenterDetailFocus('unknown-detail'), false);
+});
+
+test('connection catalog settings actions are owned by shared constants', () => {
+  assert.deepEqual(XENESIS_CONNECTION_PROVIDER_SETTINGS_ACTION, {
+    category: 'run-model',
+    section: 'default',
+  });
+  assert.deepEqual(XENESIS_CONNECTION_LOCAL_CLI_MCP_SETTINGS_ACTION, {
+    category: 'run-model',
+    mode: 'local',
+    section: 'local-cli',
+  });
+  assert.deepEqual(XENESIS_CONNECTION_GATEWAY_SETTINGS_ACTION, {
+    category: 'xenesis-agent',
+    mode: 'gateway',
+    section: 'gateway',
+  });
+  assert.deepEqual(XENESIS_CONNECTION_EXTERNAL_BOTS_SETTINGS_ACTION, {
+    category: 'xenesis-agent',
+    mode: 'external-bots',
+    section: 'external-bots',
+  });
+
+  const source = readFileSync(new URL('./xenesisConnections.ts', import.meta.url), 'utf8');
+  assert.equal((source.match(/settingsAction:\s*\{\s*category:/g) ?? []).length, 0);
+});
+
+test('connection catalog does not expose hardcoded natural-language target metadata', async () => {
+  const source = readFileSync(new URL('./xenesisConnections.ts', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /\bnaturalWords\b/);
+  assert.doesNotMatch(source, /XENESIS_CONNECTION_NATURAL_/);
+  assert.doesNotMatch(source, /XenesisConnectionNatural(?:Words|Connection|Guide)Target/);
+
+  const connectionsModule = (await import('./xenesisConnections')) as Record<string, unknown>;
+  for (const exportName of [
+    'XENESIS_CONNECTION_NATURAL_CONNECTION_TARGETS',
+    'XENESIS_CONNECTION_NATURAL_PROVIDER_TARGETS',
+    'XENESIS_CONNECTION_NATURAL_PLANNED_GOOGLE_TOOL_IDS',
+    'XENESIS_CONNECTION_NATURAL_GUIDE_TARGETS',
+    'XENESIS_CONNECTION_NATURAL_ONBOARDING_STEP_TARGETS',
+    'isXenesisConnectionNaturalPlannedGoogleToolTarget',
+  ]) {
+    assert.equal(exportName in connectionsModule, false, `${exportName} should not be exported`);
+  }
+});
+
+test('buildXenesisConnectionsStatus reports ready provider, MCP, gateway, and Telegram', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [
+        {
+          id: 'codex',
+          label: 'Codex',
+          configType: 'codex-toml',
+          supportsMcp: true,
+          supportsSkill: true,
+          mcpConfigPath: 'C:/Users/example/.codex/config.toml',
+          skillPath: 'C:/Users/example/.codex/skills/xd',
+          mcpInstalled: true,
+          skillInstalled: true,
+        },
+      ],
+      hermes: {
+        assetRoot: 'E:/xenesis/providers',
+        hermesRoot: '',
+        assetAvailable: true,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: {
+      ok: true,
+      running: true,
+      managed: true,
+      enabled: true,
+      runtimeMode: 'embedded',
+      url: 'http://127.0.0.1:3846',
+      runtimePath: 'embedded',
+      xenesisHome: 'C:/Users/example/.xenis',
+      workspace: 'E:/workspace/project',
+      providerRuntime: {
+        provider: 'codex-app-server',
+        model: 'gpt-5-codex',
+        profile: 'desk',
+        baseURL: '',
+        apiKeyEnv: '',
+      },
+      error: '',
+      updatedAt: '2026-06-27T00:00:00.000Z',
+      gateway: {
+        enabled: true,
+        running: true,
+        managed: true,
+        url: 'http://127.0.0.1:3846',
+        host: '127.0.0.1',
+        port: 3846,
+        workspace: 'E:/workspace/project',
+        error: '',
+        updatedAt: '2026-06-27T00:00:00.000Z',
+        channels: {
+          total: 4,
+          enabled: 1,
+          ready: 1,
+          blocked: 0,
+          disabled: 3,
+          items: [
+            {
+              name: 'telegram',
+              enabled: true,
+              ready: true,
+              runtimeStatus: 'ready',
+              missingEnv: [],
+              warnings: [],
+              safeToDeliver: true,
+              approvalMode: 'safe',
+              maxTurns: 4,
+              maxTokens: 4000,
+            },
+          ],
+          telegram: {
+            name: 'telegram',
+            enabled: true,
+            ready: true,
+            runtimeStatus: 'ready',
+            missingEnv: [],
+            warnings: [],
+            safeToDeliver: true,
+            approvalMode: 'safe',
+            maxTurns: 4,
+            maxTokens: 4000,
+          },
+        },
+      },
+      profile: {
+        active: 'desk',
+        configured: 'desk',
+        installed: ['desk'],
+        templates: [],
+        channels: [
+          { name: 'telegram', enabled: true, configured: true, env: ['TELEGRAM_BOT_TOKEN'] },
+          { name: 'slack', enabled: false, configured: false, env: ['SLACK_BOT_TOKEN'] },
+          { name: 'discord', enabled: false, configured: false, env: ['DISCORD_BOT_TOKEN'] },
+          { name: 'webhook', enabled: false, configured: false, env: ['XENESIS_WEBHOOK_URL'] },
+        ],
+        channelSettings: {
+          telegram: { enabled: true, ...channelGuardrails, tokenEnv: 'TELEGRAM_BOT_TOKEN', allowedChatIds: '123' },
+          slack: {
+            enabled: false,
+            ...channelGuardrails,
+            botTokenEnv: 'SLACK_BOT_TOKEN',
+            signingSecretEnv: 'SLACK_SIGNING_SECRET',
+            webhookUrlEnv: 'SLACK_WEBHOOK_URL',
+            allowedChannelIds: '',
+          },
+          discord: {
+            enabled: false,
+            ...channelGuardrails,
+            botTokenEnv: 'DISCORD_BOT_TOKEN',
+            webhookUrlEnv: 'DISCORD_WEBHOOK_URL',
+            allowedChannelIds: '',
+            allowedGuildIds: '',
+          },
+          webhook: { enabled: false, ...channelGuardrails, urlEnv: 'XENESIS_WEBHOOK_URL' },
+        },
+        policy: {
+          workflow: '',
+          approvalMode: 'safe',
+          maxTurns: 4,
+          providerRetries: 0,
+          contextAutoCompact: true,
+          memoryEnabled: true,
+          subagentsEnabled: true,
+          browserEnabled: true,
+          verificationAutoRun: false,
+          verificationAutoFix: false,
+        },
+      },
+    },
+  });
+
+  const readyItemCount = Object.values(status.sections)
+    .flatMap((section) => section.items)
+    .filter((item) => item.status === 'ready').length;
+  assert.equal(status.summary.ready, readyItemCount);
+  assert.equal(status.sections.guides.items.length, XENESIS_CONNECTION_GUIDES.length);
+  assert.equal(status.sections.provider.items[0].status, 'ready');
+  assert.equal(status.sections.mcp.items[0].status, 'ready');
+  assert.equal(status.sections.gateway.items[0].status, 'ready');
+  assert.equal(status.sections.messengers.items.find((item) => item.id === 'telegram')?.status, 'ready');
+  assert.equal(status.sections.tools.items.find((item) => item.id === 'google-calendar')?.status, 'planned');
+});
+
+test('buildXenesisConnectionsStatus includes an ordered onboarding checklist', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [
+        {
+          id: 'codex',
+          label: 'Codex',
+          configType: 'codex-toml',
+          supportsMcp: true,
+          supportsSkill: true,
+          mcpConfigPath: 'C:/Users/example/.codex/config.toml',
+          skillPath: 'C:/Users/example/.codex/skills/xd',
+          mcpInstalled: true,
+          skillInstalled: true,
+        },
+      ],
+      hermes: {
+        assetRoot: 'E:/xenesis/providers',
+        hermesRoot: '',
+        assetAvailable: true,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: {
+      ok: true,
+      running: true,
+      managed: true,
+      enabled: true,
+      runtimeMode: 'embedded',
+      url: 'http://127.0.0.1:3846',
+      runtimePath: 'embedded',
+      xenesisHome: 'C:/Users/example/.xenis',
+      workspace: 'E:/workspace/project',
+      providerRuntime: {
+        provider: 'codex-app-server',
+        model: 'gpt-5-codex',
+        profile: 'desk',
+        baseURL: '',
+        apiKeyEnv: '',
+      },
+      error: '',
+      updatedAt: '2026-06-27T00:00:00.000Z',
+      gateway: {
+        enabled: true,
+        running: true,
+        managed: true,
+        url: 'http://127.0.0.1:3846',
+        host: '127.0.0.1',
+        port: 3846,
+        workspace: 'E:/workspace/project',
+        error: '',
+        updatedAt: '2026-06-27T00:00:00.000Z',
+        channels: {
+          total: 4,
+          enabled: 1,
+          ready: 1,
+          blocked: 0,
+          disabled: 3,
+          items: [
+            {
+              name: 'telegram',
+              enabled: true,
+              ready: true,
+              runtimeStatus: 'ready',
+              missingEnv: [],
+              warnings: [],
+              safeToDeliver: true,
+              approvalMode: 'safe',
+              maxTurns: 4,
+              maxTokens: 4000,
+            },
+          ],
+          telegram: {
+            name: 'telegram',
+            enabled: true,
+            ready: true,
+            runtimeStatus: 'ready',
+            missingEnv: [],
+            warnings: [],
+            safeToDeliver: true,
+            approvalMode: 'safe',
+            maxTurns: 4,
+            maxTokens: 4000,
+          },
+        },
+      },
+      profile: {
+        active: 'desk',
+        configured: 'desk',
+        installed: ['desk'],
+        templates: [],
+        channels: [
+          { name: 'telegram', enabled: true, configured: true, env: ['TELEGRAM_BOT_TOKEN'] },
+          { name: 'slack', enabled: false, configured: false, env: ['SLACK_BOT_TOKEN'] },
+          { name: 'discord', enabled: false, configured: false, env: ['DISCORD_BOT_TOKEN'] },
+          { name: 'webhook', enabled: false, configured: false, env: ['XENESIS_WEBHOOK_URL'] },
+        ],
+        channelSettings: {
+          telegram: { enabled: true, ...channelGuardrails, tokenEnv: 'TELEGRAM_BOT_TOKEN', allowedChatIds: '123' },
+          slack: {
+            enabled: false,
+            ...channelGuardrails,
+            botTokenEnv: 'SLACK_BOT_TOKEN',
+            signingSecretEnv: 'SLACK_SIGNING_SECRET',
+            webhookUrlEnv: 'SLACK_WEBHOOK_URL',
+            allowedChannelIds: '',
+          },
+          discord: {
+            enabled: false,
+            ...channelGuardrails,
+            botTokenEnv: 'DISCORD_BOT_TOKEN',
+            webhookUrlEnv: 'DISCORD_WEBHOOK_URL',
+            allowedChannelIds: '',
+            allowedGuildIds: '',
+          },
+          webhook: { enabled: false, ...channelGuardrails, urlEnv: 'XENESIS_WEBHOOK_URL' },
+        },
+        policy: {
+          workflow: '',
+          approvalMode: 'safe',
+          maxTurns: 4,
+          providerRetries: 0,
+          contextAutoCompact: true,
+          memoryEnabled: true,
+          subagentsEnabled: true,
+          browserEnabled: true,
+          verificationAutoRun: false,
+          verificationAutoFix: false,
+        },
+      },
+    },
+  });
+
+  assert.deepEqual(
+    status.sections.onboarding.items.map((item) => item.id),
+    ['first-chat', 'local-cli-mcp', 'recommended-tools', 'gateway', 'messenger-routing', 'test-send'],
+  );
+  assert.equal(status.sections.onboarding.items[0].status, 'ready');
+  assert.equal(status.sections.onboarding.items[1].status, 'ready');
+  assert.equal(status.sections.onboarding.items[2].status, 'needs-setup');
+  assert.equal(status.sections.onboarding.items[3].status, 'ready');
+  assert.equal(status.sections.onboarding.items[4].status, 'ready');
+  assert.equal(status.sections.onboarding.items[5].status, 'ready');
+  assert.deepEqual(
+    status.sections.onboarding.items[4].settingsAction,
+    XENESIS_CONNECTION_EXTERNAL_BOTS_SETTINGS_ACTION,
+  );
+  assert.ok(status.sections.onboarding.items[4].setupSteps?.some((step) => step.includes('allowlist')));
+});
+
+test('buildXenesisConnectionsStatus exposes onboarding plan metadata for initial setup steps', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [
+        {
+          id: 'codex',
+          label: 'Codex',
+          configType: 'codex-toml',
+          supportsMcp: true,
+          supportsSkill: true,
+          mcpConfigPath: 'C:/Users/example/.codex/config.toml',
+          skillPath: 'C:/Users/example/.codex/skills/xd',
+          mcpInstalled: true,
+          skillInstalled: true,
+        },
+      ],
+      hermes: {
+        assetRoot: 'E:/xenesis/providers',
+        hermesRoot: '',
+        assetAvailable: true,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: {
+      ok: true,
+      running: true,
+      managed: true,
+      enabled: true,
+      runtimeMode: 'embedded',
+      url: 'http://127.0.0.1:3846',
+      runtimePath: 'embedded',
+      xenesisHome: 'C:/Users/example/.xenis',
+      workspace: 'E:/workspace/project',
+      providerRuntime: {
+        provider: 'codex-app-server',
+        model: 'gpt-5-codex',
+        profile: 'desk',
+        baseURL: '',
+        apiKeyEnv: '',
+      },
+      error: '',
+      updatedAt: '2026-06-27T00:00:00.000Z',
+      gateway: {
+        enabled: true,
+        running: true,
+        managed: true,
+        url: 'http://127.0.0.1:3846',
+        host: '127.0.0.1',
+        port: 3846,
+        workspace: 'E:/workspace/project',
+        error: '',
+        updatedAt: '2026-06-27T00:00:00.000Z',
+        channels: {
+          total: 4,
+          enabled: 1,
+          ready: 1,
+          blocked: 0,
+          disabled: 3,
+          items: [
+            {
+              name: 'telegram',
+              enabled: true,
+              ready: true,
+              runtimeStatus: 'ready',
+              missingEnv: [],
+              warnings: [],
+              safeToDeliver: true,
+              approvalMode: 'safe',
+              maxTurns: 4,
+              maxTokens: 4000,
+            },
+          ],
+          telegram: {
+            name: 'telegram',
+            enabled: true,
+            ready: true,
+            runtimeStatus: 'ready',
+            missingEnv: [],
+            warnings: [],
+            safeToDeliver: true,
+            approvalMode: 'safe',
+            maxTurns: 4,
+            maxTokens: 4000,
+          },
+        },
+      },
+      profile: {
+        active: 'desk',
+        configured: 'desk',
+        installed: ['desk'],
+        templates: [],
+        channels: [
+          { name: 'telegram', enabled: true, configured: true, env: ['TELEGRAM_BOT_TOKEN'] },
+          { name: 'slack', enabled: false, configured: false, env: ['SLACK_BOT_TOKEN'] },
+          { name: 'discord', enabled: false, configured: false, env: ['DISCORD_BOT_TOKEN'] },
+          { name: 'webhook', enabled: false, configured: false, env: ['XENESIS_WEBHOOK_URL'] },
+        ],
+        channelSettings: {
+          telegram: { enabled: true, ...channelGuardrails, tokenEnv: 'TELEGRAM_BOT_TOKEN', allowedChatIds: '123' },
+          slack: {
+            enabled: false,
+            ...channelGuardrails,
+            botTokenEnv: 'SLACK_BOT_TOKEN',
+            signingSecretEnv: 'SLACK_SIGNING_SECRET',
+            webhookUrlEnv: 'SLACK_WEBHOOK_URL',
+            allowedChannelIds: '',
+          },
+          discord: {
+            enabled: false,
+            ...channelGuardrails,
+            botTokenEnv: 'DISCORD_BOT_TOKEN',
+            webhookUrlEnv: 'DISCORD_WEBHOOK_URL',
+            allowedChannelIds: '',
+            allowedGuildIds: '',
+          },
+          webhook: { enabled: false, ...channelGuardrails, urlEnv: 'XENESIS_WEBHOOK_URL' },
+        },
+        policy: {
+          workflow: '',
+          approvalMode: 'safe',
+          maxTurns: 4,
+          providerRetries: 0,
+          contextAutoCompact: true,
+          memoryEnabled: true,
+          subagentsEnabled: true,
+          browserEnabled: true,
+          verificationAutoRun: false,
+          verificationAutoFix: false,
+        },
+      },
+    },
+  });
+
+  const firstChat = status.sections.onboarding.items.find((item) => item.id === 'first-chat');
+  assert.deepEqual(firstChat?.onboardingPlan, {
+    phase: 'first-chat',
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    setupSurface: 'Settings > AI Provider',
+    statusReadPaths: [
+      'xd.xenesis.onboarding.status',
+      'xd.xenesis.connections.status',
+      'xd.xenesis.providers.setup.status',
+    ],
+    controlPaths: ['xd.xenesis.onboarding.open', 'xd.xenesis.connections.open', 'xd.panes.settings.open'],
+    validationChecks: ['provider-ready', 'normal-agent-chat', 'cr-readback'],
+    diagnostics: ['provider-footer', 'runtime-provider', 'missing-credential'],
+    safetyBoundaries: [
+      'onboarding status is read-only',
+      'provider settings are not mutated by onboarding reads',
+      'credential values are never returned',
+    ],
+    guidedSteps: [
+      {
+        id: 'read-provider-setup',
+        label: 'Read provider setup',
+        kind: 'read',
+        crPath: 'xd.xenesis.providers.setup.status',
+        expectedState: 'Active provider, runtime profile, credential state, and fallback behavior are visible.',
+        verifyWith: ['provider-ready', 'runtime-provider', 'provider-footer'],
+        safetyBoundary: 'credential values are never returned',
+      },
+      {
+        id: 'open-provider-settings',
+        label: 'Open provider settings',
+        kind: 'open',
+        crPath: 'xd.panes.settings.open',
+        args: { category: 'run-model', section: 'default', ensureVisible: true },
+        expectedState: 'The AI Provider settings surface is opened for explicit user edits.',
+        verifyWith: ['normal-agent-chat', 'cr-readback'],
+        safetyBoundary: 'provider settings changes stay on explicit user actions',
+      },
+    ],
+    workflowPreview: {
+      previewPath: 'xd.automation.workflow.preview',
+      runPath: 'xd.automation.workflow.run',
+      name: 'first-chat-onboarding-preview',
+      description: 'Preview first-chat onboarding read/open steps.',
+      delayMs: 0,
+      stopOnFail: true,
+      steps: [
+        {
+          label: 'Read provider setup',
+          path: 'xd.xenesis.providers.setup.status',
+          args: {},
+          approved: false,
+        },
+        {
+          label: 'Open provider settings',
+          path: 'xd.panes.settings.open',
+          args: { category: 'run-model', section: 'default', ensureVisible: true },
+          approved: false,
+        },
+      ],
+      safetyBoundary:
+        'CR workflow preview for onboarding plans is a read/open onboarding preview only; it excludes control steps and does not mutate provider settings, install MCP tools, write MCP config, complete OAuth, store tokens, start gateways, mutate profiles, send messages, execute provider tools, mutate external systems, or bypass approvals.',
+    },
+  });
+  assert.equal(firstChat?.onboardingPlan?.workflowPreview.previewPath, 'xd.automation.workflow.preview');
+  assert.equal(firstChat?.onboardingPlan?.workflowPreview.runPath, 'xd.automation.workflow.run');
+  assert.equal(firstChat?.onboardingPlan?.workflowPreview.steps.length, 2);
+  assert.equal(
+    firstChat?.onboardingPlan?.workflowPreview.steps.every((step) => step.approved === false),
+    true,
+  );
+  assert.ok(firstChat?.onboardingPlan?.workflowPreview.safetyBoundary.includes('read/open onboarding preview'));
+
+  for (const item of status.sections.onboarding.items) {
+    assert.ok(item.onboardingPlan?.guidedSteps.length, `${item.id} exposes guided steps`);
+    for (const step of item.onboardingPlan?.guidedSteps ?? []) {
+      assert.match(step.crPath, /^xd\./, `${item.id}/${step.id} uses a Desk CR path`);
+      assert.ok(step.verifyWith.length > 0, `${item.id}/${step.id} exposes verification signals`);
+      assert.ok(step.safetyBoundary.length > 0, `${item.id}/${step.id} exposes a safety boundary`);
+    }
+  }
+
+  const localCliMcp = status.sections.onboarding.items.find((item) => item.id === 'local-cli-mcp');
+  assert.deepEqual(
+    localCliMcp?.onboardingPlan?.guidedSteps.find((step) => step.id === 'open-local-cli-settings')?.args,
+    { category: 'run-model', mode: 'local', section: 'local-cli', ensureVisible: true },
+  );
+
+  const recommendedTools = status.sections.onboarding.items.find((item) => item.id === 'recommended-tools');
+  assert.ok(
+    recommendedTools?.onboardingPlan?.guidedSteps.some(
+      (step) => step.crPath === 'xd.xenesis.tools.setup.status' && step.kind === 'read',
+    ),
+  );
+  assert.ok(
+    recommendedTools?.onboardingPlan?.guidedSteps.some(
+      (step) =>
+        step.crPath === 'xd.xenesis.tools.userStories.open' &&
+        step.kind === 'open' &&
+        step.args?.ensureVisible === true,
+    ),
+  );
+
+  const gateway = status.sections.onboarding.items.find((item) => item.id === 'gateway');
+  assert.ok(
+    gateway?.onboardingPlan?.guidedSteps.some(
+      (step) => step.crPath === 'xd.xenesis.gateway.status' && step.kind === 'read',
+    ),
+  );
+  assert.ok(
+    gateway?.onboardingPlan?.guidedSteps.some(
+      (step) => step.crPath === 'xd.xenesis.gateway.start' && step.kind === 'control',
+    ),
+  );
+  assert.deepEqual(gateway?.onboardingPlan?.guidedSteps.find((step) => step.id === 'open-gateway-settings')?.args, {
+    category: 'xenesis-agent',
+    mode: 'gateway',
+    section: 'gateway',
+    ensureVisible: true,
+  });
+  assert.equal(gateway?.onboardingPlan?.workflowPreview.previewPath, 'xd.automation.workflow.preview');
+  assert.equal(gateway?.onboardingPlan?.workflowPreview.runPath, 'xd.automation.workflow.run');
+  assert.equal(gateway?.onboardingPlan?.workflowPreview.steps.length > 0, true);
+  assert.equal(
+    gateway?.onboardingPlan?.workflowPreview.steps.some((step) =>
+      ['xd.xenesis.gateway.start', 'xd.xenesis.gateway.restart'].includes(step.path),
+    ),
+    false,
+  );
+  assert.ok(gateway?.onboardingPlan?.workflowPreview.safetyBoundary.includes('read/open onboarding preview'));
+  assert.ok(gateway?.diagnosticRunbook?.controlPaths.includes('xd.xenesis.gateway.start'));
+
+  const messengerRouting = status.sections.onboarding.items.find((item) => item.id === 'messenger-routing');
+  assert.deepEqual(messengerRouting?.onboardingPlan?.statusReadPaths, [
+    'xd.xenesis.onboarding.status',
+    'xd.xenesis.connections.status',
+    'xd.xenesis.channels.routing.status',
+    'xd.xenesis.channels.safety.status',
+    'xd.xenesis.channels.accessGroups.status',
+    'xd.xenesis.channels.pairing.status',
+  ]);
+  assert.deepEqual(messengerRouting?.onboardingPlan?.controlPaths, [
+    'xd.xenesis.onboarding.open',
+    'xd.xenesis.connections.open',
+    'xd.panes.settings.open',
+    'xd.xenesis.profiles.updateChannels',
+    'xd.xenesis.profiles.testChannel',
+  ]);
+  assert.deepEqual(
+    messengerRouting?.onboardingPlan?.guidedSteps.find((step) => step.id === 'open-external-bots-settings')?.args,
+    { category: 'xenesis-agent', mode: 'external-bots', section: 'external-bots', ensureVisible: true },
+  );
+  assert.ok(
+    messengerRouting?.onboardingPlan?.guidedSteps.some(
+      (step) => step.crPath === 'xd.xenesis.channels.accessGroups.status' && step.kind === 'read',
+    ),
+  );
+
+  const testSend = status.sections.onboarding.items.find((item) => item.id === 'test-send');
+  assert.ok(
+    testSend?.onboardingPlan?.guidedSteps.some(
+      (step) =>
+        step.crPath === 'xd.xenesis.profiles.testChannel' &&
+        step.kind === 'control' &&
+        step.args?.channel === 'telegram' &&
+        step.safetyBoundary.includes('sanitized'),
+    ),
+  );
+  assert.equal(testSend?.onboardingPlan?.workflowPreview.previewPath, 'xd.automation.workflow.preview');
+  assert.equal(testSend?.onboardingPlan?.workflowPreview.runPath, 'xd.automation.workflow.run');
+  assert.equal(
+    testSend?.onboardingPlan?.workflowPreview.steps.some((step) => step.path === 'xd.xenesis.profiles.testChannel'),
+    false,
+  );
+  assert.ok(testSend?.onboardingPlan?.workflowPreview.safetyBoundary.includes('read/open onboarding preview'));
+  assert.ok(testSend?.setupRequest?.steps.some((step) => step.includes('xd.xenesis.profiles.testChannel')));
+  assert.ok(testSend?.setupRequest?.diagnostics.includes('sanitized-test-send'));
+});
+
+test('buildXenesisConnectionsStatus includes actionable setup recipes for MCP tools', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+
+  assert.equal(notion?.supportLevel, 'manual');
+  assert.deepEqual(notion?.settingsAction, XENESIS_CONNECTION_LOCAL_CLI_MCP_SETTINGS_ACTION);
+  assert.ok(notion?.setupSteps?.some((step) => step.includes('NOTION_TOKEN')));
+  assert.ok(
+    notion?.sourceDocs?.some((source) => source.url.includes('hermes-agent.nousresearch.com/docs/integrations')),
+  );
+});
+
+test('buildXenesisConnectionsStatus exposes copy-ready recommended MCP templates', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+    repoRoot: 'E:/workspace/project',
+  });
+
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+  const calendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+
+  assert.equal(notion?.mcpTemplate?.serverName, 'notion');
+  assert.equal(notion?.mcpTemplate?.transport, 'stdio');
+  assert.equal(notion?.mcpTemplate?.command, 'npx');
+  assert.ok(notion?.mcpTemplate?.args?.includes('@notionhq/notion-mcp-server'));
+  assert.deepEqual(notion?.mcpTemplate?.requiredEnv, ['NOTION_TOKEN']);
+  assert.ok(notion?.mcpTemplate?.configSnippets.json.includes('"notion"'));
+  assert.ok(notion?.mcpTemplate?.configSnippets.codexToml.includes('[mcp_servers.notion]'));
+  assert.equal(calendar?.mcpTemplate, undefined);
+});
+
+test('buildXenesisConnectionsStatus exposes review-only MCP install drafts', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+    repoRoot: 'E:/workspace/project',
+    env: {
+      GITHUB_TOKEN: '',
+      NOTION_TOKEN: 'secret-value-must-not-appear',
+      LINEAR_OAUTH_TOKEN_STORE: 'secret-value-must-not-appear',
+    },
+  });
+
+  const fetch = status.sections.tools.items.find((item) => item.id === 'fetch');
+  const github = status.sections.tools.items.find((item) => item.id === 'github');
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+  const linear = status.sections.tools.items.find((item) => item.id === 'linear');
+  const calendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+
+  assert.equal(fetch?.mcpInstallDraft?.draftStatus, 'ready');
+  assert.equal(fetch?.mcpInstallDraft?.serverName, 'fetch');
+  assert.equal(fetch?.mcpInstallDraft?.actionInboxKind, 'xenesis-mcp-install-draft');
+  assert.ok(fetch?.mcpInstallDraft?.configSnippets?.json.includes('"fetch"'));
+  assert.ok(fetch?.mcpInstallDraft?.controlPaths.includes('xd.xenesis.tools.mcpInstallDrafts.request'));
+  assert.ok(fetch?.mcpInstallDraft?.controlPaths.includes('xd.xenesis.tools.mcpInstallDrafts.apply'));
+  assert.ok(
+    fetch?.mcpInstallDraft?.safetyBoundaries.some((boundary) => boundary.includes('approval-gated MCP config writes')),
+  );
+
+  assert.equal(github?.mcpInstallDraft?.draftStatus, 'missing-env');
+  assert.deepEqual(github?.mcpInstallDraft?.requiredEnv, ['GITHUB_TOKEN']);
+  assert.deepEqual(github?.mcpInstallDraft?.missingEnv, ['GITHUB_TOKEN']);
+  assert.equal(github?.mcpInstallDraft?.controlPaths.includes('xd.xenesis.tools.mcpInstallDrafts.apply'), false);
+
+  assert.equal(notion?.mcpInstallDraft?.draftStatus, 'ready');
+  assert.deepEqual(notion?.mcpInstallDraft?.missingEnv, []);
+  assert.equal(JSON.stringify(notion?.mcpInstallDraft).includes('secret-value-must-not-appear'), false);
+  assert.ok(notion?.mcpInstallDraft?.controlPaths.includes('xd.xenesis.tools.mcpInstallDrafts.apply'));
+
+  assert.equal(linear?.mcpInstallDraft?.transport, 'http');
+  assert.equal(linear?.mcpInstallDraft?.auth, 'oauth');
+  assert.equal(linear?.mcpInstallDraft?.draftStatus, 'ready');
+  assert.ok(linear?.mcpInstallDraft?.controlPaths.includes('xd.xenesis.tools.mcpInstallDrafts.apply'));
+  assert.equal(linear?.toolMcpOAuth?.status, 'ready-template');
+  assert.equal(linear?.toolMcpOAuth?.actionInboxKind, 'xenesis-tool-mcp-oauth');
+  assert.equal(linear?.toolMcpOAuth?.tool, 'linear');
+  assert.equal(linear?.toolMcpOAuth?.serverName, 'linear');
+  assert.equal(linear?.toolMcpOAuth?.authMode, 'oauth');
+  assert.equal(linear?.toolMcpOAuth?.transport, 'http');
+  assert.deepEqual(linear?.toolMcpOAuth?.missingRequiredFields, []);
+  assert.ok(linear?.toolMcpOAuth?.scopes.includes('linear:read-issues'));
+  assert.ok(linear?.toolMcpOAuth?.credentialRefs.some((credential) => credential.ref === 'LINEAR_OAUTH_TOKEN_STORE'));
+  assert.ok(linear?.toolMcpOAuth?.readPaths.includes('xd.xenesis.tools.mcpOAuth.status'));
+  assert.ok(linear?.toolMcpOAuth?.controlPaths.includes('xd.xenesis.tools.mcpOAuth.request'));
+  assert.ok(linear?.toolMcpOAuth?.blockedActions.includes('start OAuth flow'));
+  assert.equal(JSON.stringify(linear?.toolMcpOAuth).includes('secret-value-must-not-appear'), false);
+  assert.equal(notion?.toolMcpOAuth, undefined);
+  assert.equal(calendar?.toolMcpOAuth, undefined);
+
+  assert.equal(calendar?.mcpInstallDraft?.draftStatus, 'planned');
+  assert.equal(calendar?.mcpInstallDraft?.serverName, undefined);
+  assert.equal(calendar?.mcpInstallDraft?.configSnippets, undefined);
+  assert.equal(calendar?.mcpInstallDraft?.blockedActions.includes('install MCP server'), true);
+  assert.equal(calendar?.mcpInstallDraft?.controlPaths.includes('xd.xenesis.tools.mcpInstallDrafts.apply'), false);
+});
+
+test('buildXenesisConnectionsStatus exposes review-only tool OAuth drafts for planned Google tools', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+    env: {
+      GOOGLE_OAUTH_TOKEN_STORE: 'secret-value-must-not-appear',
+    },
+  });
+
+  const workspace = status.sections.tools.items.find((item) => item.id === 'google-workspace');
+  const calendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+
+  assert.equal(notion?.toolOAuthDraft, undefined);
+  assert.equal(workspace?.toolOAuthDraft?.draftStatus, 'planned-template');
+  assert.equal(workspace?.toolOAuthDraft?.actionInboxKind, 'xenesis-tool-oauth-draft');
+  assert.equal(workspace?.toolOAuthDraft?.tool, 'google-workspace');
+  assert.deepEqual(workspace?.toolOAuthDraft?.missingRequiredFields, ['oauthClient', 'redirectUri', 'tokenStore']);
+  assert.ok(workspace?.toolOAuthDraft?.scopes.includes('gmail.readonly'));
+  assert.ok(workspace?.toolOAuthDraft?.scopes.includes('documents.readonly'));
+  assert.ok(workspace?.toolOAuthDraft?.profileFields.some((field) => field.field === 'oauthClient'));
+  assert.ok(workspace?.toolOAuthDraft?.readPaths.includes('xd.xenesis.tools.oauthDrafts.status'));
+  assert.ok(workspace?.toolOAuthDraft?.readPaths.includes('xd.xenesis.tools.oauthDrafts.setupPacket'));
+  assert.equal(workspace?.toolOAuthDraft?.setupPacket.packetStatus, 'planned-template');
+  assert.equal(workspace?.toolOAuthDraft?.setupPacket.provider, 'google');
+  assert.deepEqual(workspace?.toolOAuthDraft?.setupPacket.redirectUriCandidates, ['selected MCP OAuth redirect URI']);
+  assert.ok(
+    workspace?.toolOAuthDraft?.setupPacket.credentialRefs.some(
+      (credential) => credential.ref === 'GOOGLE_OAUTH_CLIENT_ID' && credential.secretRef,
+    ),
+  );
+  assert.ok(
+    workspace?.toolOAuthDraft?.setupPacket.credentialRefs.some(
+      (credential) => credential.ref === 'GOOGLE_OAUTH_CLIENT_SECRET' && credential.secretRef,
+    ),
+  );
+  assert.ok(
+    workspace?.toolOAuthDraft?.setupPacket.credentialRefs.some(
+      (credential) => credential.ref === 'GOOGLE_OAUTH_TOKEN_STORE' && credential.secretRef,
+    ),
+  );
+  assert.ok(
+    workspace?.toolOAuthDraft?.setupPacket.checklist.some((step) =>
+      step.includes('Create or select a Google OAuth app'),
+    ),
+  );
+  assert.ok(
+    workspace?.toolOAuthDraft?.setupPacket.checklist.some((step) =>
+      step.includes('Do not paste OAuth client secrets into chat'),
+    ),
+  );
+  assert.deepEqual(workspace?.toolOAuthDraft?.controlPaths, [
+    'xd.xenesis.tools.oauthDrafts.open',
+    'xd.xenesis.tools.oauthDrafts.request',
+    'xd.xenesis.connections.open',
+  ]);
+  assert.ok(workspace?.toolOAuthDraft?.blockedActions.includes('complete OAuth'));
+  assert.ok(workspace?.toolOAuthDraft?.blockedActions.includes('store tokens'));
+  assert.ok(
+    workspace?.toolOAuthDraft?.reviewSteps.some(
+      (step) =>
+        step.id === 'oauth-app-registration' &&
+        step.requiredFields.includes('oauthClient') &&
+        step.controlPaths.includes('xd.xenesis.tools.oauthDrafts.request'),
+    ),
+  );
+  assert.ok(
+    workspace?.toolOAuthDraft?.reviewSteps.some(
+      (step) => step.id === 'scope-review' && step.diagnostics.includes('scope-review'),
+    ),
+  );
+
+  assert.equal(calendar?.toolOAuthDraft?.draftStatus, 'planned-template');
+  assert.equal(calendar?.toolOAuthDraft?.runtimeSupport, 'planned-oauth');
+  assert.ok(calendar?.toolOAuthDraft?.scopes.includes('calendar.events.readonly'));
+  assert.ok(calendar?.toolOAuthDraft?.scopes.includes('calendar.freebusy.readonly'));
+  assert.ok(calendar?.toolOAuthDraft?.setupPacket.scopes.includes('calendar.freebusy.readonly'));
+  assert.ok(calendar?.toolOAuthDraft?.setupPacket.readPaths.includes('xd.xenesis.tools.oauthDrafts.setupPacket'));
+  assert.ok(
+    calendar?.toolOAuthDraft?.setupPacket.controlPaths.includes('xd.xenesis.tools.oauthDrafts.setupPacket.open'),
+  );
+  assert.ok(calendar?.toolOAuthDraft?.setupPacket.controlPaths.includes('xd.xenesis.tools.oauthDrafts.request'));
+  assert.ok(calendar?.toolOAuthDraft?.diagnostics.includes('scope-review'));
+  assert.deepEqual(
+    calendar?.toolOAuthDraft?.reviewSteps.map((step) => step.id),
+    ['oauth-app-registration', 'scope-review', 'token-store-readiness', 'readback-verification'],
+  );
+  for (const step of calendar?.toolOAuthDraft?.reviewSteps ?? []) {
+    assert.ok(step.expectedState.length > 0, `${step.id} exposes expected state`);
+    assert.ok(step.readPaths.length > 0, `${step.id} exposes read paths`);
+    assert.ok(step.diagnostics.length > 0, `${step.id} exposes diagnostics`);
+    assert.ok(step.safetyBoundary.length > 0, `${step.id} exposes a safety boundary`);
+  }
+  assert.ok(
+    calendar?.toolOAuthDraft?.safetyBoundaries.some((boundary) =>
+      boundary.includes('tool OAuth drafts are review-only'),
+    ),
+  );
+  assert.equal(JSON.stringify(calendar?.toolOAuthDraft).includes('secret-value-must-not-appear'), false);
+  assert.ok(calendar?.diagnosticRunbook?.diagnostics.includes('readback-verification'));
+  assert.ok(calendar?.setupRequest?.steps.some((step) => step.includes('token-store-readiness')));
+  assert.ok(calendar?.setupRequest?.diagnostics.includes('oauth-app-registration'));
+
+  assert.equal(workspace?.toolOAuthRuntime?.runtimeStatus, 'planned-template');
+  assert.equal(workspace?.toolOAuthRuntime?.actionInboxKind, 'xenesis-tool-oauth-runtime');
+  assert.equal(workspace?.toolOAuthRuntime?.tool, 'google-workspace');
+  assert.deepEqual(workspace?.toolOAuthRuntime?.missingRequiredFields, ['oauthClient', 'redirectUri', 'tokenStore']);
+  assert.deepEqual(workspace?.toolOAuthRuntime?.callbackUriCandidates, ['selected MCP OAuth redirect URI']);
+  assert.equal(workspace?.toolOAuthRuntime?.tokenStoreOwner, 'selected MCP OAuth runtime');
+  assert.ok(workspace?.toolOAuthRuntime?.readPaths.includes('xd.xenesis.tools.oauthRuntime.status'));
+  assert.ok(workspace?.toolOAuthRuntime?.controlPaths.includes('xd.xenesis.tools.oauthRuntime.open'));
+  assert.ok(workspace?.toolOAuthRuntime?.controlPaths.includes('xd.xenesis.tools.oauthRuntime.request'));
+  assert.ok(workspace?.toolOAuthRuntime?.diagnostics.includes('oauth-runtime-readiness'));
+  assert.ok(workspace?.toolOAuthRuntime?.readbackChecks.includes('cr-readback'));
+  assert.ok(workspace?.toolOAuthRuntime?.blockedActions.includes('start OAuth callback server'));
+  assert.ok(workspace?.toolOAuthRuntime?.blockedActions.includes('store OAuth tokens'));
+  assert.equal(JSON.stringify(workspace?.toolOAuthRuntime).includes('secret-value-must-not-appear'), false);
+
+  assert.equal(calendar?.toolOAuthRuntime?.runtimeStatus, 'planned-template');
+  assert.equal(calendar?.toolOAuthRuntime?.runtimeSupport, 'planned-oauth');
+  assert.ok(calendar?.toolOAuthRuntime?.scopes.includes('calendar.events.readonly'));
+  assert.ok(calendar?.toolOAuthRuntime?.readbackChecks.includes('calendar.freebusy.readonly'));
+  assert.ok(
+    calendar?.toolOAuthRuntime?.safetyBoundaries.some((boundary) =>
+      boundary.includes('OAuth runtime readiness is review-only'),
+    ),
+  );
+  assert.ok(calendar?.setupRequest?.diagnostics.includes('oauth-runtime-readiness'));
+});
+
+test('buildXenesisConnectionsStatus exposes review-only tool action catalogs', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+    env: {
+      NOTION_TOKEN: 'secret-value-must-not-appear',
+    },
+  });
+
+  const fetch = status.sections.tools.items.find((item) => item.id === 'fetch');
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+  const linear = status.sections.tools.items.find((item) => item.id === 'linear');
+  const calendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+
+  assert.equal(fetch?.toolActionCatalog?.runtimeSupport, 'ready-template');
+  assert.equal(fetch?.toolActionCatalog?.actionInboxKind, 'xenesis-tool-action-policy');
+  assert.deepEqual(
+    fetch?.toolActionCatalog?.groups.map((group) => group.kind),
+    ['search', 'read'],
+  );
+  assert.equal(
+    fetch?.toolActionCatalog?.groups.some((group) => group.kind === 'write'),
+    false,
+  );
+  assert.ok(fetch?.toolActionCatalog?.readPaths.includes('xd.xenesis.tools.actions.status'));
+  assert.ok(fetch?.toolActionCatalog?.controlPaths.includes('xd.xenesis.tools.actions.request'));
+
+  assert.equal(notion?.toolActionCatalog?.runtimeSupport, 'ready-template');
+  assert.ok(
+    notion?.toolActionCatalog?.groups.some(
+      (group) =>
+        group.kind === 'search' &&
+        group.actions.some((action) => action.toolNames.includes('search')) &&
+        group.approvalPolicy === 'read-only',
+    ),
+  );
+  assert.ok(
+    notion?.toolActionCatalog?.groups.some(
+      (group) =>
+        group.kind === 'write' &&
+        group.approvalPolicy === 'approval-gated' &&
+        group.actions.some((action) => action.label.includes('Draft Notion updates')),
+    ),
+  );
+  assert.equal(JSON.stringify(notion?.toolActionCatalog).includes('secret-value-must-not-appear'), false);
+
+  assert.ok(
+    linear?.toolActionCatalog?.groups.some(
+      (group) =>
+        group.kind === 'write' &&
+        group.actions.some((action) => action.label.includes('issue updates and comments after approval')),
+    ),
+  );
+
+  assert.equal(calendar?.toolActionCatalog?.runtimeSupport, 'planned-oauth');
+  assert.ok(
+    calendar?.toolActionCatalog?.groups.some(
+      (group) =>
+        group.kind === 'search' && group.actions.some((action) => action.toolNames.includes('gcal_find_meeting_times')),
+    ),
+  );
+  assert.ok(
+    calendar?.toolActionCatalog?.blockedActions.includes('create/update/delete calendar events without approval'),
+  );
+  assert.ok(
+    calendar?.toolActionCatalog?.safetyBoundaries.some((boundary) =>
+      boundary.includes('does not execute provider tools or mutate external systems'),
+    ),
+  );
+});
+
+test('buildXenesisConnectionsStatus keeps Google Calendar planned without fake install actions', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const calendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+
+  assert.equal(calendar?.status, 'planned');
+  assert.equal(calendar?.supportLevel, 'planned');
+  assert.equal(calendar?.settingsAction, undefined);
+  assert.equal(
+    calendar?.crActions?.some((action) => action.includes('install')),
+    false,
+  );
+  assert.ok(calendar?.setupSteps?.some((step) => step.includes('Google Calendar')));
+});
+
+test('buildXenesisConnectionsStatus exposes tool setup auth, scope, verification, and CR readback metadata', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+  const googleWorkspace = status.sections.tools.items.find((item) => item.id === 'google-workspace');
+  const googleCalendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+
+  assert.deepEqual(notion?.toolSetup, {
+    connection: 'mcp',
+    authMode: 'env-token',
+    dataScopes: ['notion:search', 'notion:read-pages', 'notion:read-databases'],
+    writeScopes: ['notion:writes-disabled-until-approved'],
+    credentialStorage: 'NOTION_TOKEN environment variable',
+    setupSurface: 'Settings > AI Provider > Local CLI MCP',
+    verification: ['mcp-server-listed', 'notion-search-read', 'cr-readback'],
+    crReadPaths: ['xd.xenesis.connections.status', 'xd.mcp.settings.status'],
+    riskControls: ['share only required pages/databases', 'verify read tools before writes'],
+  });
+  assert.equal(googleWorkspace?.toolSetup?.authMode, 'oauth');
+  assert.ok(googleWorkspace?.toolSetup?.dataScopes.includes('google-drive.readonly'));
+  assert.ok(googleWorkspace?.toolSetup?.writeScopes.includes('google-writes-disabled-until-template-verified'));
+  assert.equal(googleCalendar?.toolSetup?.authMode, 'oauth');
+  assert.ok(googleCalendar?.toolSetup?.dataScopes.includes('calendar.events.readonly'));
+  assert.ok(googleCalendar?.toolSetup?.verification.includes('calendar-list-read'));
+  assert.equal(googleCalendar?.mcpTemplate, undefined);
+  assert.equal(googleCalendar?.settingsAction, undefined);
+});
+
+test('buildXenesisConnectionsStatus exposes guided external tool setup plans', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+    repoRoot: 'E:\\xenesis-desk',
+    env: {
+      NOTION_TOKEN: '',
+    },
+  });
+
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+  const calendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+
+  assert.equal(notion?.toolSetupPlan?.runtimeSupport, 'ready-template');
+  assert.equal(notion?.toolSetupPlan?.planStatus, 'action-required');
+  assert.equal(notion?.toolSetupPlan?.guideId, 'external-tool-integrations');
+  assert.equal(notion?.toolSetupPlan?.guidePath, 'docs/manual/11-external-tool-integrations.md');
+  assert.deepEqual(
+    notion?.toolSetupPlan?.steps.map((step) => step.id),
+    [
+      'tool-view',
+      'tool-setup',
+      'tool-connector',
+      'tool-install-plan',
+      'tool-runtime',
+      'tool-profile-draft',
+      'mcp-install-draft',
+      'tool-actions',
+      'tool-user-stories',
+      'diagnostic-runbook',
+      'setup-request',
+    ],
+  );
+  assert.equal(notion?.toolSetupPlan?.readPaths.includes('xd.xenesis.tools.setupPlans.status'), true);
+  assert.equal(notion?.toolSetupPlan?.readPaths.includes('xd.xenesis.tools.runtime.status'), true);
+  assert.equal(notion?.toolSetupPlan?.controlPaths.includes('xd.xenesis.tools.setupPlans.open'), true);
+  assert.equal(notion?.toolSetupPlan?.controlPaths.includes('xd.xenesis.tools.runtime.open'), true);
+  assert.equal(notion?.toolSetupPlan?.controlPaths.includes('xd.xenesis.tools.mcpInstallDrafts.request'), true);
+  assert.equal(notion?.setupRequest?.readPaths.includes('xd.xenesis.tools.setupPlans.status'), true);
+  assert.equal(notion?.setupRequest?.readPaths.includes('xd.xenesis.tools.runtime.status'), true);
+  assert.equal(notion?.setupRequest?.controlPaths.includes('xd.xenesis.tools.setupPlans.open'), true);
+  assert.equal(notion?.setupRequest?.controlPaths.includes('xd.xenesis.tools.runtime.request'), true);
+  assert.equal(notion?.toolRuntime?.runtimeStatus, 'needs-setup');
+  assert.equal(notion?.toolRuntime?.runtimeSupport, 'ready-template');
+  assert.equal(notion?.toolRuntime?.authMode, 'env-token');
+  assert.equal(notion?.toolRuntime?.actionInboxKind, 'xenesis-tool-runtime-readiness');
+  assert.equal(notion?.toolRuntime?.readbackChecks.includes('notion-search-read'), true);
+  assert.equal(notion?.toolRuntime?.readPaths.includes('xd.xenesis.tools.runtime.status'), true);
+  assert.equal(notion?.toolRuntime?.controlPaths.includes('xd.xenesis.tools.runtime.request'), true);
+  assert.equal(notion?.toolRuntime?.blockedActions.includes('execute provider tools before runtime readback'), true);
+  assert.equal(
+    notion?.toolRuntime?.safetyBoundaries.some((boundary) =>
+      boundary.includes('does not execute provider tools, install MCP servers, write MCP config, store credentials'),
+    ),
+    true,
+  );
+
+  assert.equal(calendar?.toolSetupPlan?.runtimeSupport, 'planned-oauth');
+  assert.equal(calendar?.toolSetupPlan?.planStatus, 'planned');
+  assert.equal(
+    calendar?.toolSetupPlan?.steps.some((step) => step.id === 'tool-runtime'),
+    true,
+  );
+  assert.equal(
+    calendar?.toolSetupPlan?.steps.some((step) => step.id === 'oauth-setup-packet'),
+    true,
+  );
+  assert.equal(calendar?.toolSetupPlan?.readPaths.includes('xd.xenesis.tools.oauthDrafts.setupPacket'), true);
+  assert.equal(calendar?.toolSetupPlan?.readPaths.includes('xd.xenesis.tools.runtime.status'), true);
+  assert.equal(calendar?.toolRuntime?.runtimeStatus, 'planned-oauth');
+  assert.equal(calendar?.toolRuntime?.runtimeSupport, 'planned-oauth');
+  assert.equal(calendar?.toolRuntime?.authMode, 'oauth');
+  assert.equal(calendar?.toolRuntime?.readbackChecks.includes('calendar-list-read'), true);
+  assert.equal(calendar?.toolRuntime?.readbackChecks.includes('calendar.freebusy.readonly'), true);
+  assert.equal(calendar?.toolRuntime?.blockedActions.includes('complete OAuth'), true);
+  assert.equal(calendar?.toolRuntime?.blockedActions.includes('mutate calendar events'), true);
+  assert.equal(calendar?.toolSetupPlan?.blockedActions.includes('complete OAuth or store Google OAuth tokens'), true);
+  assert.equal(
+    calendar?.toolSetupPlan?.safetyBoundaries.some((boundary) =>
+      boundary.includes('setup plans do not execute provider tools or mutate external systems'),
+    ),
+    true,
+  );
+  assert.equal(calendar?.toolSetupPlan?.workflowPreview.previewPath, 'xd.automation.workflow.preview');
+  assert.equal(calendar?.toolSetupPlan?.workflowPreview.runPath, 'xd.automation.workflow.run');
+  assert.equal(calendar?.toolSetupPlan?.workflowPreview.steps.length > 0, true);
+  assert.equal(
+    calendar?.toolSetupPlan?.workflowPreview.steps.some((step) =>
+      ['xd.xenesis.tools.oauthDrafts.request', 'xd.xenesis.tools.mcpInstallDrafts.apply'].includes(step.path),
+    ),
+    false,
+  );
+  assert.ok(calendar?.toolSetupPlan?.workflowPreview.safetyBoundary.includes('read/open setup plan preview'));
+});
+
+test('slice 03 external tool MCP/OAuth acceptance is explicit and secret-safe', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+    env: {
+      NOTION_TOKEN: 'slice03-secret-notion-token',
+      GOOGLE_OAUTH_CLIENT_SECRET: 'slice03-secret-google-client-secret',
+    },
+  });
+
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+  const googleCalendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+  const linear = status.sections.tools.items.find((item) => item.id === 'linear');
+
+  assert.equal(notion?.mcpTemplate?.serverName, 'notion');
+  assert.equal(notion?.mcpInstallDraft?.draftStatus, 'ready');
+  assert.equal(notion?.mcpInstallDraft?.controlPaths.includes('xd.xenesis.tools.mcpInstallDrafts.apply'), true);
+  assert.equal(notion?.toolProfileDraft?.draftStatus, 'ready');
+  assert.equal(notion?.toolProfileDraft?.controlPaths.includes('xd.xenesis.tools.profileDrafts.apply'), true);
+  assert.equal(notion?.toolRuntime?.runtimeStatus, 'ready');
+  assert.equal(notion?.toolRuntime?.readbackChecks.includes('notion-search-read'), true);
+  assert.equal(Boolean(notion?.toolActionCatalog?.groups.length), true);
+  assert.equal(notion?.toolUserStory?.storyContract.readbackPaths.includes('xd.xenesis.tools.runtime.status'), true);
+
+  assert.equal(googleCalendar?.toolOAuthDraft?.setupPacket.packetStatus, 'planned-template');
+  assert.equal(
+    googleCalendar?.toolOAuthDraft?.setupPacket.credentialRefs.some((ref) => ref.ref === 'GOOGLE_OAUTH_CLIENT_SECRET'),
+    true,
+  );
+  assert.equal(
+    googleCalendar?.toolOAuthDraft?.setupPacket.redirectUriPolicy.includes(
+      'Desk does not start an OAuth callback server',
+    ),
+    true,
+  );
+  assert.equal(googleCalendar?.toolOAuthDraft?.setupPacket.scopes.includes('calendar.freebusy.readonly'), true);
+  assert.equal(googleCalendar?.toolOAuthDraft?.setupPacket.tokenStore, 'selected MCP OAuth token store');
+  assert.equal(googleCalendar?.toolOAuthRuntime?.tokenStoreOwner, 'selected MCP OAuth runtime');
+  assert.equal(googleCalendar?.toolOAuthRuntime?.readPaths.includes('xd.xenesis.tools.oauthRuntime.status'), true);
+  assert.equal(googleCalendar?.toolRuntime?.runtimeStatus, 'planned-oauth');
+  assert.equal(
+    googleCalendar?.toolRuntime?.blockedActions.includes('execute provider tools before runtime readback'),
+    true,
+  );
+  assert.equal(googleCalendar?.toolRuntime?.blockedActions.includes('complete OAuth'), true);
+  assert.equal(googleCalendar?.toolRuntime?.blockedActions.includes('mutate calendar events'), true);
+
+  assert.equal(linear?.toolMcpOAuth?.tool, 'linear');
+  assert.equal(linear?.toolMcpOAuth?.authMode, 'oauth');
+  assert.equal(linear?.toolMcpOAuth?.readPaths.includes('xd.xenesis.tools.mcpOAuth.status'), true);
+  assert.equal(linear?.toolMcpOAuth?.blockedActions.includes('start OAuth flow'), true);
+  assert.equal(linear?.toolMcpOAuth?.blockedActions.includes('write MCP config'), true);
+  assert.equal(linear?.toolRuntime?.readbackChecks.includes('linear-issue-read'), true);
+
+  const serialized = JSON.stringify(status);
+  assert.equal(serialized.includes('slice03-secret-notion-token'), false);
+  assert.equal(serialized.includes('slice03-secret-google-client-secret'), false);
+});
+
+test('slice 03 setup packets and workflow previews stay read/open and side-effect free', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const googleCalendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+  const surfaces = [
+    googleCalendar?.toolOAuthDraft,
+    googleCalendar?.toolOAuthDraft?.setupPacket,
+    googleCalendar?.toolOAuthRuntime,
+    googleCalendar?.toolRuntime,
+    googleCalendar?.toolSetupPlan,
+  ].filter(Boolean);
+
+  for (const surface of surfaces) {
+    const text = JSON.stringify(surface);
+    for (const expected of [
+      'complete OAuth',
+      'store tokens',
+      'write MCP config',
+      'execute provider tools',
+      'mutate external systems',
+    ]) {
+      assert.match(text, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'));
+    }
+    assert.doesNotMatch(text, /client_secret["']?\s*[:=]\s*["'][^"']+/i);
+    assert.doesNotMatch(text, /access_token["']?\s*[:=]\s*["'][^"']+/i);
+    assert.doesNotMatch(text, /refresh_token["']?\s*[:=]\s*["'][^"']+/i);
+  }
+
+  const preview = googleCalendar?.toolSetupPlan?.workflowPreview;
+  assert.ok(preview);
+  assert.equal(preview.previewPath, 'xd.automation.workflow.preview');
+  assert.equal(preview.runPath, 'xd.automation.workflow.run');
+  assert.equal(preview.steps.length > 0, true);
+  const allowedPreviewPaths = new Set([
+    'xd.xenesis.tools.setup.status',
+    'xd.xenesis.tools.connectors.status',
+    'xd.xenesis.tools.installPlans.status',
+    'xd.xenesis.tools.runtime.status',
+    'xd.xenesis.tools.profileDrafts.status',
+    'xd.xenesis.tools.mcpInstallDrafts.status',
+    'xd.xenesis.tools.actions.status',
+    'xd.xenesis.tools.userStories.status',
+    'xd.xenesis.connections.diagnostics.status',
+    'xd.xenesis.connections.setupRequests.status',
+    'xd.xenesis.tools.oauthDrafts.status',
+    'xd.xenesis.tools.oauthDrafts.setupPacket',
+    'xd.xenesis.tools.oauthRuntime.status',
+    'xd.xenesis.tools.views.open',
+    'xd.xenesis.tools.setup.open',
+    'xd.xenesis.tools.connectors.open',
+    'xd.xenesis.tools.installPlans.open',
+    'xd.xenesis.tools.runtime.open',
+    'xd.xenesis.tools.profileDrafts.open',
+    'xd.xenesis.tools.mcpInstallDrafts.open',
+    'xd.xenesis.tools.actions.open',
+    'xd.xenesis.tools.userStories.open',
+    'xd.xenesis.connections.diagnostics.open',
+    'xd.xenesis.connections.setupRequests.open',
+    'xd.xenesis.tools.oauthDrafts.open',
+    'xd.xenesis.tools.oauthDrafts.setupPacket.open',
+    'xd.xenesis.tools.oauthRuntime.open',
+  ]);
+  for (const step of preview.steps) {
+    assert.equal(step.approved, false);
+    assert.equal(allowedPreviewPaths.has(step.path), true, `${step.path} should be a setup preview read/open path`);
+  }
+  assert.match(preview.safetyBoundary, /does not execute provider tools/i);
+  assert.match(preview.safetyBoundary, /complete OAuth/i);
+  assert.match(preview.safetyBoundary, /store tokens/i);
+});
+
+test('buildXenesisConnectionsStatus exposes guided external messenger channel setup plans', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const telegram = status.sections.messengers.items.find((item) => item.id === 'telegram');
+  const signal = status.sections.messengers.items.find((item) => item.id === 'signal');
+
+  assert.equal(telegram?.channelSetupPlan?.runtimeSupport, 'implemented');
+  assert.equal(telegram?.channelSetupPlan?.planStatus, 'unknown');
+  assert.equal(telegram?.channelSetupPlan?.guideId, 'openclaw-channel-setup');
+  assert.equal(telegram?.channelSetupPlan?.guidePath, 'docs/manual/10-openclaw-channel-setup.md');
+  assert.deepEqual(
+    telegram?.channelSetupPlan?.steps.map((step) => step.id),
+    [
+      'messenger-view',
+      'channel-routing',
+      'channel-safety',
+      'channel-access-groups',
+      'channel-pairing',
+      'channel-runtime',
+      'channel-user-stories',
+      'channel-profile-draft',
+      'channel-profile-apply',
+      'channel-test',
+      'diagnostic-runbook',
+      'setup-request',
+    ],
+  );
+  assert.equal(telegram?.channelSetupPlan?.readPaths.includes('xd.xenesis.channels.setupPlans.status'), true);
+  assert.equal(telegram?.channelSetupPlan?.controlPaths.includes('xd.xenesis.channels.setupPlans.open'), true);
+  assert.equal(telegram?.channelSetupPlan?.readPaths.includes('xd.xenesis.channels.runtime.status'), true);
+  assert.equal(telegram?.channelSetupPlan?.controlPaths.includes('xd.xenesis.channels.runtime.open'), true);
+  assert.equal(telegram?.channelSetupPlan?.controlPaths.includes('xd.xenesis.channels.profileDrafts.apply'), true);
+  assert.equal(telegram?.channelSetupPlan?.controlPaths.includes('xd.xenesis.profiles.testChannel'), true);
+  assert.equal(telegram?.channelRuntime?.runtimeSupport, 'implemented');
+  assert.equal(telegram?.channelRuntime?.runtimeStatus, 'unknown');
+  assert.equal(telegram?.channelRuntime?.adapter, 'telegram');
+  assert.equal(telegram?.channelRuntime?.actionInboxKind, 'xenesis-channel-runtime-readiness');
+  assert.equal(
+    telegram?.channelRuntime?.readinessChecks.includes('gateway-running') &&
+      telegram.channelRuntime.readinessChecks.includes('allowlist-configured') &&
+      telegram.channelRuntime.readinessChecks.includes('pairing-state-readback'),
+    true,
+  );
+  assert.equal(telegram?.channelRuntime?.readPaths.includes('xd.xenesis.channels.runtime.status'), true);
+  assert.equal(telegram?.channelRuntime?.controlPaths.includes('xd.xenesis.channels.runtime.request'), true);
+  assert.equal(
+    telegram?.channelRuntime?.blockedActions.includes('send messages outside approved profile test path'),
+    true,
+  );
+  assert.equal(
+    telegram?.channelRuntime?.safetyBoundaries.some((boundary) =>
+      boundary.includes('does not start gateways, send messages, mutate channel profiles, or store credentials'),
+    ),
+    true,
+  );
+  assert.equal(telegram?.channelTemplate?.userStory?.storyContract.openPath, 'xd.xenesis.channels.userStories.open');
+  assert.deepEqual(telegram?.channelTemplate?.userStory?.storyContract.openArgs, { id: 'telegram' });
+  assert.equal(
+    telegram?.channelTemplate?.userStory?.storyContract.readbackPaths.includes(
+      'xd.xenesis.channels.userStories.status',
+    ),
+    true,
+  );
+  assert.equal(
+    telegram?.channelTemplate?.userStory?.storyContract.approvalBoundaries.includes('xd.xenesis.profiles.testChannel'),
+    true,
+  );
+  assert.equal(
+    telegram?.channelTemplate?.userStory?.storyContract.completionEvidence.includes(
+      'Gateway/channel readbacks confirm the selected channel is safe before remote prompts.',
+    ),
+    true,
+  );
+  assert.equal(telegram?.setupRequest?.readPaths.includes('xd.xenesis.channels.setupPlans.status'), true);
+  assert.equal(telegram?.setupRequest?.controlPaths.includes('xd.xenesis.channels.setupPlans.open'), true);
+  assert.equal(telegram?.channelSetupPlan?.workflowPreview.previewPath, 'xd.automation.workflow.preview');
+  assert.equal(telegram?.channelSetupPlan?.workflowPreview.runPath, 'xd.automation.workflow.run');
+  assert.equal(telegram?.channelSetupPlan?.workflowPreview.steps.length > 0, true);
+  assert.equal(
+    telegram?.channelSetupPlan?.workflowPreview.steps.some((step) =>
+      ['xd.xenesis.channels.profileDrafts.request', 'xd.xenesis.channels.profileDrafts.apply'].includes(step.path),
+    ),
+    false,
+  );
+  assert.ok(telegram?.channelSetupPlan?.workflowPreview.safetyBoundary.includes('read/open setup plan preview'));
+
+  assert.equal(signal?.channelSetupPlan?.runtimeSupport, 'planned-adapter');
+  assert.equal(signal?.channelSetupPlan?.planStatus, 'planned');
+  assert.equal(signal?.channelRuntime?.runtimeSupport, 'planned-adapter');
+  assert.equal(signal?.channelRuntime?.runtimeStatus, 'planned-adapter');
+  assert.equal(signal?.channelRuntime?.adapter, 'signal');
+  assert.equal(signal?.channelRuntime?.readinessChecks.includes('adapter-verified'), true);
+  assert.equal(signal?.channelRuntime?.blockedActions.includes('start planned channel gateway adapters'), true);
+  assert.equal(signal?.channelRuntime?.blockedActions.includes('send messages through planned channel adapters'), true);
+  assert.equal(
+    signal?.channelRuntime?.safetyBoundaries.some((boundary) =>
+      boundary.includes('planned channel runtime readiness is review-only'),
+    ),
+    true,
+  );
+  assert.equal(
+    signal?.channelSetupPlan?.steps.some((step) => step.id === 'channel-profile-apply'),
+    false,
+  );
+  assert.equal(
+    signal?.channelSetupPlan?.steps.some((step) => step.id === 'channel-test'),
+    false,
+  );
+  assert.equal(signal?.channelSetupPlan?.blockedActions.includes('start planned channel gateway adapters'), true);
+  assert.equal(
+    signal?.channelSetupPlan?.safetyBoundaries.some((boundary) =>
+      boundary.includes('setup plans do not start gateway adapters'),
+    ),
+    true,
+  );
+});
+
+test('buildXenesisConnectionsStatus exposes the Slice 04 shared channel read-model contract', () => {
+  const status = buildSlice04ChannelContractStatus();
+  const messengerById = new Map(status.sections.messengers.items.map((item) => [item.id, item]));
+
+  assert.deepEqual(XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS, ['telegram', 'slack', 'discord', 'webhook']);
+
+  for (const id of XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS) {
+    const item = messengerById.get(id);
+    assert.ok(item, `${id} messenger is present`);
+    for (const [key, value] of [
+      ['channelTemplate', item.channelTemplate],
+      ['channelSetupPlan', item.channelSetupPlan],
+      ['channelProfileDraft', item.channelProfileDraft],
+      ['channelRouting', item.channelRouting],
+      ['channelSafety', item.channelSafety],
+      ['channelAccessGroups', item.channelAccessGroups],
+      ['channelPairing', item.channelPairing],
+      ['channelRuntime', item.channelRuntime],
+      ['channelUserStory', item.channelUserStory],
+      ['messengerView', item.messengerView],
+    ] as const) {
+      assert.ok(value, `${id} exposes ${key}`);
+    }
+
+    assert.equal(item.supportLevel, 'implemented');
+    assert.deepEqual(item.channelRouting, item.channelTemplate?.routing);
+    assert.deepEqual(item.channelSafety, item.channelTemplate?.safety);
+    assert.deepEqual(item.channelAccessGroups, item.channelTemplate?.accessGroups);
+    assert.deepEqual(item.channelPairing, item.channelTemplate?.pairing);
+    assert.deepEqual(item.channelUserStory, item.channelTemplate?.userStory);
+
+    const channelRouting = item.channelRouting;
+    const channelAccessGroups = item.channelAccessGroups;
+    const channelPairing = item.channelPairing;
+    const channelUserStory = item.channelUserStory;
+
+    for (const [key, value] of [
+      ['channelRouting', channelRouting],
+      ['channelAccessGroups', channelAccessGroups],
+      ['channelPairing', channelPairing],
+      ['channelUserStory', channelUserStory],
+    ] as const) {
+      assert.ok(value, `${id} exposes ${key}`);
+    }
+    if (!channelRouting || !channelAccessGroups || !channelPairing || !channelUserStory) {
+      continue;
+    }
+
+    assert.ok(channelRouting.routeBinding.length, `${id} has explicit route binding`);
+    assert.ok(channelRouting.sessionScope.length, `${id} has explicit session scope`);
+    assert.equal(item.channelSetupPlan?.readPaths.includes('xd.xenesis.channels.routing.status'), true);
+    assert.equal(item.channelSetupPlan?.readPaths.includes('xd.xenesis.channels.runtime.status'), true);
+    assert.equal(item.channelSetupPlan?.controlPaths.includes('xd.xenesis.channels.profileDrafts.apply'), true);
+    assert.equal(item.channelSetupPlan?.controlPaths.includes('xd.xenesis.profiles.testChannel'), true);
+    assert.equal(channelAccessGroups.failClosed, true, `${id} access groups fail closed`);
+    assert.ok(channelAccessGroups.bindings.length > 0, `${id} has access group bindings`);
+    assert.equal(channelAccessGroups.readPaths.includes('xd.xenesis.channels.accessGroups.status'), true);
+    assert.equal(channelAccessGroups.controlPaths.includes('xd.xenesis.profiles.testChannel'), true);
+    assert.equal(channelPairing.pairingState, 'configured', `${id} pairing state is explicit`);
+    assert.equal(channelPairing.readPaths.includes('xd.xenesis.channels.pairing.status'), true);
+    assert.equal(item.channelRuntime?.runtimeSupport, 'implemented');
+    assert.equal(item.channelRuntime?.runtimeStatus, 'ready');
+    assert.equal(item.channelRuntime?.readPaths.includes('xd.xenesis.channels.runtime.status'), true);
+    assert.equal(item.channelRuntime?.controlPaths.includes('xd.xenesis.channels.runtime.request'), true);
+    assert.equal(item.channelRuntime?.controlPaths.includes('xd.xenesis.profiles.testChannel'), true);
+    assert.equal(channelUserStory.storyContract.readbackPaths.includes('xd.xenesis.channels.userStories.status'), true);
+    assert.equal(
+      channelUserStory.storyContract.approvalBoundaries.includes('xd.xenesis.channels.profileDrafts.apply'),
+      true,
+    );
+    assert.equal(channelUserStory.storyContract.approvalBoundaries.includes('xd.xenesis.profiles.testChannel'), true);
+  }
+
+  const controlPathsFrom = (value: { controlPaths?: string[] } | undefined): string[] => value?.controlPaths ?? [];
+
+  for (const id of ['signal', 'google-chat', 'zalo']) {
+    const item = messengerById.get(id);
+    assert.ok(item, `${id} messenger is present`);
+    assert.equal(item.supportLevel, 'planned');
+    assert.equal(item.status, 'planned');
+
+    assert.ok(item.channelRouting, `${id} exposes planned routing read model`);
+    assert.ok(item.channelSafety, `${id} exposes planned safety read model`);
+    assert.ok(item.channelAccessGroups, `${id} exposes planned access group read model`);
+    assert.ok(item.channelPairing, `${id} exposes planned pairing read model`);
+    assert.ok(item.channelRuntime, `${id} exposes planned runtime read model`);
+    assert.ok(item.channelProfileDraft, `${id} exposes planned profile draft review model`);
+    assert.ok(item.channelSetupPlan, `${id} exposes planned setup plan model`);
+    assert.ok(item.messengerView, `${id} exposes planned messenger view`);
+
+    const plannedControlPaths = [
+      ...(item.crActions ?? []),
+      ...(item.channelSetupPlan?.controlPaths ?? []),
+      ...(item.channelProfileDraft?.controlPaths ?? []),
+      ...(item.channelRuntime?.controlPaths ?? []),
+      ...(item.messengerView?.controlPaths ?? []),
+      ...controlPathsFrom(item.channelSafety),
+      ...controlPathsFrom(item.channelAccessGroups),
+      ...controlPathsFrom(item.channelPairing),
+      ...controlPathsFrom(item.channelUserStory),
+    ];
+    for (const forbiddenPath of [
+      'xd.xenesis.profiles.testChannel',
+      'xd.xenesis.channels.profileDrafts.apply',
+      'xd.xenesis.profiles.updateChannels',
+      'xd.xenesis.gateway.start',
+      'xd.xenesis.gateway.restart',
+    ]) {
+      assert.equal(plannedControlPaths.includes(forbiddenPath), false, `${id} does not expose ${forbiddenPath}`);
+    }
+    assert.equal(item.channelSetupPlan?.runtimeSupport, 'planned-adapter');
+    assert.equal(item.channelRuntime?.runtimeSupport, 'planned-adapter');
+    assert.equal(item.channelRuntime?.blockedActions.includes('send messages through planned channel adapters'), true);
+    assert.equal(item.channelProfileDraft?.controlPaths.includes('xd.xenesis.channels.profileDrafts.request'), true);
+    assert.equal(item.messengerView?.controlPaths.includes('xd.xenesis.messengers.views.open'), true);
+  }
+
+  const serializedStatus = JSON.stringify(status);
+  for (const forbiddenLiteral of [...slice04SecretLiterals, ...slice04RawChannelTargets]) {
+    assert.equal(serializedStatus.includes(forbiddenLiteral), false, `${forbiddenLiteral} is not serialized`);
+  }
+});
+
+test('buildXenesisConnectionsStatus keeps Telegram setup workflow preview read/open only', () => {
+  const status = buildSlice04ChannelContractStatus();
+  const telegram = status.sections.messengers.items.find((item) => item.id === 'telegram');
+  const preview = telegram?.channelSetupPlan?.workflowPreview;
+  assert.ok(preview, 'Telegram exposes a channel setup workflow preview');
+
+  const previewPaths = preview.steps.map((step) => step.path);
+  assert.equal(preview.steps.length > 0, true);
+  for (const step of preview.steps) {
+    assert.equal(step.approved, false);
+    assert.match(step.path, /\.(status|open)$/);
+  }
+  for (const forbiddenPath of [
+    'xd.xenesis.channels.profileDrafts.request',
+    'xd.xenesis.channels.profileDrafts.apply',
+    'xd.xenesis.profiles.testChannel',
+    'xd.xenesis.profiles.updateChannels',
+    'xd.xenesis.gateway.start',
+    'xd.xenesis.gateway.restart',
+  ]) {
+    assert.equal(previewPaths.includes(forbiddenPath), false, `${forbiddenPath} stays out of setup preview`);
+  }
+  assert.match(preview.safetyBoundary, /setup preview/i);
+  assert.match(preview.safetyBoundary, /does not store secrets/i);
+  assert.match(preview.safetyBoundary, /mutate profile settings/i);
+  assert.match(preview.safetyBoundary, /start gateways/i);
+  assert.match(preview.safetyBoundary, /pair accounts/i);
+  assert.match(preview.safetyBoundary, /send messages/i);
+});
+
+test('buildXenesisConnectionsStatus exposes guided AI provider setup plans', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const provider = status.sections.provider.items.find((item) => item.id === 'provider-codex-app-server');
+
+  assert.equal(provider?.providerSetupPlan?.runtimeSupport, 'configured-provider');
+  assert.equal(provider?.providerSetupPlan?.planStatus, 'ready');
+  assert.equal(provider?.providerSetupPlan?.guideId, 'onboarding-connections');
+  assert.equal(provider?.providerSetupPlan?.guidePath, 'docs/manual/09-onboarding-connections.md');
+  assert.deepEqual(
+    provider?.providerSetupPlan?.steps.map((step) => step.id),
+    [
+      'provider-setup',
+      'provider-routing',
+      'provider-view',
+      'provider-profile-draft',
+      'provider-profile-apply',
+      'diagnostic-runbook',
+      'setup-request',
+    ],
+  );
+  assert.equal(provider?.providerSetupPlan?.readPaths.includes('xd.xenesis.providers.setupPlans.status'), true);
+  assert.equal(provider?.providerSetupPlan?.controlPaths.includes('xd.xenesis.providers.setupPlans.open'), true);
+  assert.equal(provider?.providerSetupPlan?.controlPaths.includes('xd.xenesis.providers.profileDrafts.apply'), true);
+  assert.equal(provider?.setupRequest?.readPaths.includes('xd.xenesis.providers.setupPlans.status'), true);
+  assert.equal(provider?.setupRequest?.controlPaths.includes('xd.xenesis.providers.setupPlans.open'), true);
+  assert.equal(provider?.providerSetupPlan?.workflowPreview.previewPath, 'xd.automation.workflow.preview');
+  assert.equal(provider?.providerSetupPlan?.workflowPreview.runPath, 'xd.automation.workflow.run');
+  assert.equal(provider?.providerSetupPlan?.workflowPreview.steps.length > 0, true);
+  assert.equal(
+    provider?.providerSetupPlan?.workflowPreview.steps.some((step) =>
+      ['xd.xenesis.providers.profileDrafts.request', 'xd.xenesis.providers.profileDrafts.apply'].includes(step.path),
+    ),
+    false,
+  );
+  assert.ok(provider?.providerSetupPlan?.workflowPreview.safetyBoundary.includes('read/open setup plan preview'));
+  assert.equal(
+    provider?.providerSetupPlan?.safetyBoundaries.some((boundary) =>
+      boundary.includes('setup plans do not change provider settings'),
+    ),
+    true,
+  );
+});
+
+test('buildXenesisConnectionsStatus exposes redacted external tool connector readiness', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+    env: {
+      GITHUB_TOKEN: 'ghp_redacted',
+      NOTION_TOKEN: '',
+    },
+  });
+
+  const github = status.sections.tools.items.find((item) => item.id === 'github');
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+  const googleCalendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+
+  assert.equal(github?.toolConnector?.credentialState, 'configured');
+  assert.deepEqual(notion?.toolConnector, {
+    connectorType: 'mcp-stdio',
+    authMode: 'env-token',
+    runtimeSupport: 'ready-template',
+    credentialRefs: [{ ref: 'NOTION_TOKEN', source: 'env', required: true, state: 'missing' }],
+    credentialState: 'missing',
+    dataScopes: ['notion:search', 'notion:read-pages', 'notion:read-databases'],
+    writeScopes: ['notion:writes-disabled-until-approved'],
+    setupSurface: 'Settings > AI Provider > Local CLI MCP',
+    validationChecks: ['mcp-server-listed', 'credential-state-redacted', 'notion-search-read', 'cr-readback'],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.tools.connectors.status',
+      'xd.xenesis.tools.setup.status',
+      'xd.mcp.settings.status',
+    ],
+    controlPaths: ['xd.xenesis.tools.connectors.open', 'xd.xenesis.tools.views.open', 'xd.xenesis.connections.open'],
+    diagnostics: ['missing-env', 'mcp-settings-status', 'template-snippet'],
+    safetyBoundaries: [
+      'credential values are never returned',
+      'tool execution remains behind provider MCP tools and CR approval paths',
+    ],
+  });
+  assert.equal(googleCalendar?.toolConnector?.runtimeSupport, 'planned-oauth');
+  assert.equal(googleCalendar?.toolConnector?.credentialState, 'planned');
+  assert.deepEqual(googleCalendar?.toolConnector?.credentialRefs, [
+    { ref: 'GOOGLE_OAUTH_TOKEN_STORE', source: 'oauth-client', required: false, state: 'planned' },
+  ]);
+});
+
+test('buildXenesisConnectionsStatus exposes internal Desk tool views for MCP and planned tools', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+  const googleCalendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+
+  assert.deepEqual(notion?.toolView, {
+    viewType: 'connection-detail',
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    setupSurface: 'Settings > AI Provider > Local CLI MCP',
+    openPath: 'xd.xenesis.tools.views.open',
+    openArgs: { id: 'notion' },
+    connectionCardId: 'notion',
+    internalViews: ['connection-card', 'setup-recipe', 'profile-draft', 'mcp-template'],
+    viewSections: [
+      {
+        id: 'connection-card',
+        label: 'Connection card',
+        focusConnectionDetail: 'tool-view',
+        openArgs: { id: 'notion', section: 'connection-card', ensureVisible: true },
+        readPaths: ['xd.xenesis.connections.status', 'xd.xenesis.tools.views.status'],
+        controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.connections.open'],
+        diagnostics: ['connection-card', 'cr-readback'],
+        safetyBoundaries: ['Connection card view opens do not execute provider tools or mutate external systems.'],
+      },
+      {
+        id: 'setup',
+        label: 'Setup',
+        focusConnectionDetail: 'tool-setup',
+        openArgs: { id: 'notion', section: 'setup', ensureVisible: true },
+        readPaths: ['xd.xenesis.tools.setup.status', 'xd.xenesis.connections.status'],
+        controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.setup.open'],
+        diagnostics: ['mcp-settings-status', 'missing-env'],
+        safetyBoundaries: ['Setup view opens do not write provider settings or external tool credentials.'],
+      },
+      {
+        id: 'connector',
+        label: 'Connector readiness',
+        focusConnectionDetail: 'tool-connector',
+        openArgs: { id: 'notion', section: 'connector', ensureVisible: true },
+        readPaths: ['xd.xenesis.tools.connectors.status', 'xd.mcp.settings.status'],
+        controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.connectors.open'],
+        diagnostics: ['mcp-settings-status', 'missing-env'],
+        safetyBoundaries: ['Connector view opens never return credential values.'],
+      },
+      {
+        id: 'runtime',
+        label: 'Runtime readiness',
+        focusConnectionDetail: 'tool-runtime',
+        openArgs: { id: 'notion', section: 'runtime', ensureVisible: true },
+        readPaths: ['xd.xenesis.tools.runtime.status', 'xd.xenesis.tools.connectors.status'],
+        controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.runtime.open'],
+        diagnostics: ['mcp-settings-status', 'missing-env', 'runtime-readback'],
+        safetyBoundaries: ['Runtime readiness view opens do not execute provider tools or mutate external systems.'],
+      },
+      {
+        id: 'setup-plan',
+        label: 'Setup plan',
+        focusConnectionDetail: 'tool-setup-plan',
+        openArgs: { id: 'notion', section: 'setup-plan', ensureVisible: true },
+        readPaths: ['xd.xenesis.tools.setupPlans.status', 'xd.xenesis.connections.status'],
+        controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.setupPlans.open'],
+        diagnostics: ['mcp-settings-status', 'missing-env', 'cr-readback'],
+        safetyBoundaries: ['Setup plan view opens do not install MCP servers or complete OAuth.'],
+      },
+      {
+        id: 'install-plan',
+        label: 'Install plan',
+        focusConnectionDetail: 'tool-install-plan',
+        openArgs: { id: 'notion', section: 'install-plan', ensureVisible: true },
+        readPaths: ['xd.xenesis.tools.installPlans.status', 'xd.mcp.settings.status'],
+        controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.installPlans.open'],
+        diagnostics: ['mcp-settings-status', 'template-snippet'],
+        safetyBoundaries: ['Install plan view opens do not run package managers or write MCP config.'],
+      },
+      {
+        id: 'profile-draft',
+        label: 'Profile draft',
+        focusConnectionDetail: 'tool-profile-draft',
+        openArgs: { id: 'notion', section: 'profile-draft', ensureVisible: true },
+        readPaths: ['xd.xenesis.tools.profileDrafts.status', 'xd.xenesis.connections.status'],
+        controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.profileDrafts.open'],
+        diagnostics: ['tool-profile-draft', 'missing-required-fields', 'cr-readback'],
+        safetyBoundaries: ['Profile draft view opens do not write tool profile settings or execute provider tools.'],
+      },
+      {
+        id: 'mcp-template',
+        label: 'MCP template',
+        focusConnectionDetail: 'mcp-install-draft',
+        openArgs: { id: 'notion', section: 'mcp-template', ensureVisible: true },
+        readPaths: ['xd.xenesis.tools.mcpInstallDrafts.status', 'xd.mcp.settings.status'],
+        controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.mcpInstallDrafts.open'],
+        diagnostics: ['mcp-settings-status', 'template-snippet'],
+        safetyBoundaries: ['MCP template view opens do not write MCP config or run installers.'],
+      },
+      {
+        id: 'action-policy',
+        label: 'Action policy',
+        focusConnectionDetail: 'tool-action-catalog',
+        openArgs: { id: 'notion', section: 'action-policy', ensureVisible: true },
+        readPaths: ['xd.xenesis.tools.actions.status', 'xd.xenesis.tools.connectors.status'],
+        controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.actions.open'],
+        diagnostics: ['mcp-settings-status', 'missing-env', 'cr-readback'],
+        safetyBoundaries: ['Action policy view opens do not execute provider tools or approve writes.'],
+      },
+      {
+        id: 'user-stories',
+        label: 'User stories',
+        focusConnectionDetail: 'tool-user-story',
+        openArgs: { id: 'notion', section: 'user-stories', ensureVisible: true },
+        readPaths: ['xd.xenesis.tools.userStories.status', 'xd.xenesis.guides.status'],
+        controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.tools.userStories.open'],
+        diagnostics: ['mcp-settings-status', 'missing-env', 'cr-readback'],
+        safetyBoundaries: ['User-story view opens do not execute provider tools or mutate external systems.'],
+      },
+    ],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.tools.views.status',
+      'xd.xenesis.tools.setup.status',
+      'xd.mcp.settings.status',
+    ],
+    controlPaths: ['xd.xenesis.tools.views.open', 'xd.xenesis.connections.open'],
+    diagnostics: ['mcp-settings-status', 'missing-env', 'template-snippet'],
+    safetyBoundaries: [
+      'view opens internal setup/readiness surfaces only',
+      'tool execution remains behind provider MCP tools and CR approval paths',
+    ],
+  });
+  assert.deepEqual(googleCalendar?.toolView?.internalViews, ['connection-card', 'setup-recipe', 'profile-draft']);
+  assert.deepEqual(
+    googleCalendar?.toolView?.viewSections.map((section) => section.id),
+    [
+      'connection-card',
+      'setup',
+      'connector',
+      'runtime',
+      'setup-plan',
+      'install-plan',
+      'profile-draft',
+      'oauth-draft',
+      'oauth-setup-packet',
+      'oauth-runtime',
+      'action-policy',
+      'user-stories',
+    ],
+  );
+  assert.equal(googleCalendar?.toolView?.openArgs.id, 'google-calendar');
+  assert.deepEqual(googleCalendar?.toolView?.viewSections.find((section) => section.id === 'oauth-draft')?.openArgs, {
+    id: 'google-calendar',
+    section: 'oauth-draft',
+    ensureVisible: true,
+  });
+  assert.equal(
+    googleCalendar?.toolView?.viewSections.find((section) => section.id === 'oauth-setup-packet')
+      ?.focusConnectionDetail,
+    'tool-oauth-setup-packet',
+  );
+  assert.deepEqual(
+    googleCalendar?.toolView?.viewSections.find((section) => section.id === 'oauth-setup-packet')?.openArgs,
+    { id: 'google-calendar', section: 'oauth-setup-packet', ensureVisible: true },
+  );
+  assert.equal(
+    googleCalendar?.toolView?.viewSections.find((section) => section.id === 'oauth-runtime')?.focusConnectionDetail,
+    'tool-oauth-runtime',
+  );
+  assert.deepEqual(googleCalendar?.toolView?.viewSections.find((section) => section.id === 'oauth-runtime')?.openArgs, {
+    id: 'google-calendar',
+    section: 'oauth-runtime',
+    ensureVisible: true,
+  });
+  assert.equal(
+    googleCalendar?.toolView?.viewSections
+      .find((section) => section.id === 'oauth-runtime')
+      ?.readPaths.includes('xd.xenesis.tools.oauthRuntime.status'),
+    true,
+  );
+  assert.equal(googleCalendar?.toolView?.diagnostics.includes('template-snippet'), false);
+});
+
+test('buildXenesisConnectionsStatus exposes Hermes-style tool user-story workflows', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+  const googleCalendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+  const googleWorkspace = status.sections.tools.items.find((item) => item.id === 'google-workspace');
+
+  assert.deepEqual(notion?.toolUserStory, {
+    workflowType: 'knowledge-capture',
+    runtimeSupport: 'ready-template',
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    setupSurface: 'Settings > AI Provider > Local CLI MCP',
+    userStories: [
+      'search Notion pages before answering a workspace question',
+      'summarize a selected Notion database as task context',
+      'draft Notion updates only after approval-gated write tooling exists',
+    ],
+    prerequisiteConnectors: ['notion'],
+    requiredScopes: ['notion:search', 'notion:read-pages', 'notion:read-databases'],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.tools.userStories.status',
+      'xd.xenesis.tools.connectors.status',
+      'xd.xenesis.tools.runtime.status',
+      'xd.xenesis.tools.views.status',
+      'xd.xenesis.guides.status',
+    ],
+    controlPaths: ['xd.xenesis.tools.userStories.open', 'xd.xenesis.tools.views.open', 'xd.xenesis.guides.open'],
+    diagnostics: ['missing-env', 'mcp-settings-status', 'template-snippet', 'cr-readback'],
+    storyContract: {
+      readbackPaths: [
+        'xd.xenesis.connections.status',
+        'xd.xenesis.tools.userStories.status',
+        'xd.xenesis.tools.connectors.status',
+        'xd.xenesis.tools.runtime.status',
+        'xd.xenesis.tools.views.status',
+        'xd.xenesis.guides.status',
+      ],
+      openPath: 'xd.xenesis.tools.userStories.open',
+      openArgs: { id: 'notion' },
+      workflowPreview: {
+        previewPath: 'xd.automation.workflow.preview',
+        runPath: 'xd.automation.workflow.run',
+        name: 'notion-user-story-preview',
+        description: 'Preview notion user-story readbacks and open the Settings surface.',
+        delayMs: 0,
+        stopOnFail: true,
+        steps: [
+          {
+            label: 'Read xd.xenesis.connections.status',
+            path: 'xd.xenesis.connections.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Read xd.xenesis.tools.userStories.status',
+            path: 'xd.xenesis.tools.userStories.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Read xd.xenesis.tools.connectors.status',
+            path: 'xd.xenesis.tools.connectors.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Read xd.xenesis.tools.runtime.status',
+            path: 'xd.xenesis.tools.runtime.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Read xd.xenesis.tools.views.status',
+            path: 'xd.xenesis.tools.views.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Read xd.xenesis.guides.status',
+            path: 'xd.xenesis.guides.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Open user-story surface',
+            path: 'xd.xenesis.tools.userStories.open',
+            args: { id: 'notion', ensureVisible: true },
+            approved: false,
+          },
+        ],
+        safetyBoundary:
+          'Workflow preview metadata is read/open only and does not execute provider tools, send messages, or mutate external systems.',
+      },
+      approvalBoundaries: [
+        'xd.xenesis.tools.mcpInstallDrafts.request',
+        'xd.xenesis.tools.mcpInstallDrafts.apply',
+        'xd.xenesis.tools.actions.request',
+        'xd.xenesis.connections.setupRequests.request',
+      ],
+      completionEvidence: [
+        'MCP settings readback lists the Notion server before tool use.',
+        'Tool connector status reports configured credential references without exposing token values.',
+        'Action Inbox records explicit setup approval before MCP config writes.',
+      ],
+      safetyBoundary: 'User-story contracts are read/open planning metadata and do not execute provider tools.',
+    },
+    safetyBoundaries: [
+      'user-story workflows are read/open planning surfaces',
+      'tool execution stays behind provider MCP tools and CR approval paths',
+      'writes require separate verified tool actions',
+    ],
+  });
+  assert.equal(googleWorkspace?.toolUserStory?.workflowType, 'inbox-triage');
+  assert.equal(googleCalendar?.toolUserStory?.workflowType, 'calendar-context');
+  assert.equal(googleCalendar?.toolUserStory?.runtimeSupport, 'planned-oauth');
+  assert.ok(googleCalendar?.toolUserStory?.requiredScopes.includes('calendar.events.readonly'));
+  assert.ok(
+    googleCalendar?.toolUserStory?.safetyBoundaries.includes(
+      'planned OAuth calendar workflows do not create, update, or delete events',
+    ),
+  );
+  assert.ok(
+    notion?.toolUserStory?.storyContract.workflowPreview.steps.every(
+      (step) => !notion.toolUserStory?.storyContract.approvalBoundaries.includes(step.path),
+    ),
+  );
+});
+
+test('connection user-story workflow preview resolver clones tool and messenger contracts', () => {
+  const notion = findXenesisConnectionUserStoryWorkflowPreviewTarget('notion');
+  assert.ok(notion);
+  assert.equal(notion.id, 'notion');
+  assert.equal(notion.kind, 'tool');
+  assert.equal(notion.label, 'Notion');
+  assert.equal(notion.workflowPreview.previewPath, 'xd.automation.workflow.preview');
+  assert.equal(notion.workflowPreview.runPath, 'xd.automation.workflow.run');
+  assert.equal(notion.workflowPreview.name, 'notion-user-story-preview');
+  assert.equal(notion.workflowPreview.stopOnFail, true);
+  assert.deepEqual(notion.workflowPreview.steps.at(-1), {
+    label: 'Open user-story surface',
+    path: 'xd.xenesis.tools.userStories.open',
+    args: { id: 'notion', ensureVisible: true },
+    approved: false,
+  });
+  assert.equal(
+    notion.workflowPreview.steps.every((step) => step.approved === false),
+    true,
+  );
+  assert.equal(
+    notion.workflowPreview.steps.some(
+      (step) =>
+        step.path.includes('request') || step.path.includes('apply') || step.path === 'xd.xenesis.profiles.testChannel',
+    ),
+    false,
+  );
+
+  notion.workflowPreview.steps.at(-1)!.args.ensureVisible = false;
+  const clonedNotion = findXenesisConnectionUserStoryWorkflowPreviewTarget('notion');
+  assert.ok(clonedNotion);
+  assert.deepEqual(clonedNotion.workflowPreview.steps.at(-1)?.args, { id: 'notion', ensureVisible: true });
+
+  const telegram = findXenesisConnectionUserStoryWorkflowPreviewTarget('telegram');
+  assert.ok(telegram);
+  assert.equal(telegram.id, 'telegram');
+  assert.equal(telegram.kind, 'messenger');
+  assert.equal(telegram.label, 'Telegram');
+  assert.equal(telegram.workflowPreview.name, 'telegram-user-story-preview');
+  assert.deepEqual(telegram.workflowPreview.steps.at(-1), {
+    label: 'Open user-story surface',
+    path: 'xd.xenesis.channels.userStories.open',
+    args: { id: 'telegram', ensureVisible: true },
+    approved: false,
+  });
+  assert.equal(
+    telegram.workflowPreview.steps.every((step) => step.approved === false),
+    true,
+  );
+  assert.equal(
+    telegram.workflowPreview.steps.some(
+      (step) =>
+        step.path.includes('request') || step.path.includes('apply') || step.path === 'xd.xenesis.profiles.testChannel',
+    ),
+    false,
+  );
+
+  assert.equal(findXenesisConnectionUserStoryWorkflowPreviewTarget('missing'), null);
+});
+
+test('shared user-story workflow preview args builder clones CR workflow input', () => {
+  const notion = findXenesisConnectionUserStoryWorkflowPreviewTarget('notion');
+  assert.ok(notion);
+
+  const args = buildXenesisConnectionUserStoryWorkflowPreviewArgs(notion.workflowPreview) as {
+    name: string;
+    description: string;
+    delayMs: number;
+    stopOnFail: boolean;
+    steps: Array<{ label: string; path: string; args: Record<string, unknown>; approved: boolean }>;
+    runPath?: string;
+    safetyBoundary?: string;
+  };
+
+  assert.deepEqual(args, {
+    name: 'notion-user-story-preview',
+    description: 'Preview notion user-story readbacks and open the Settings surface.',
+    delayMs: 0,
+    stopOnFail: true,
+    steps: notion.workflowPreview.steps,
+  });
+  assert.equal(args.runPath, undefined);
+  assert.equal(args.safetyBoundary, undefined);
+  assert.notEqual(args.steps, notion.workflowPreview.steps);
+  assert.notEqual(args.steps.at(-1)?.args, notion.workflowPreview.steps.at(-1)?.args);
+
+  args.steps.at(-1)!.args.ensureVisible = false;
+  const clonedArgs = buildXenesisConnectionUserStoryWorkflowPreviewArgs(notion.workflowPreview) as {
+    steps: Array<{ args: Record<string, unknown> }>;
+  };
+  assert.deepEqual(clonedArgs.steps.at(-1)?.args, { id: 'notion', ensureVisible: true });
+});
+
+test('all user-story contracts expose read-open-only workflow preview invariants', () => {
+  const status = buildSlice04ChannelContractStatus();
+  const contracts = [
+    ...status.sections.tools.items.flatMap((item) =>
+      item.toolUserStory?.storyContract
+        ? [{ id: item.id, kind: 'tool', label: item.label, contract: item.toolUserStory.storyContract }]
+        : [],
+    ),
+    ...status.sections.messengers.items.flatMap((item) =>
+      item.channelTemplate?.userStory?.storyContract
+        ? [
+            {
+              id: item.id,
+              kind: 'messenger',
+              label: item.label,
+              contract: item.channelTemplate.userStory.storyContract,
+            },
+          ]
+        : [],
+    ),
+  ];
+
+  assert.ok(contracts.length > 0);
+  assert.equal(new Set(contracts.map((entry) => `${entry.kind}:${entry.id}`)).size, contracts.length);
+
+  for (const { contract, id, kind, label } of contracts) {
+    const key = `${kind}:${id}:${label}`;
+    assert.equal(contract.openPath.startsWith('xd.'), true, `${key} openPath must be CR path`);
+    assert.equal(
+      contract.openArgs !== null && typeof contract.openArgs === 'object' && !Array.isArray(contract.openArgs),
+      true,
+      `${key} openArgs must be an object`,
+    );
+    assert.equal(typeof contract.openArgs.id, 'string', `${key} openArgs.id is required`);
+    assert.equal(contract.readbackPaths.length > 0, true, `${key} readbackPaths required`);
+    assert.equal(contract.approvalBoundaries.length > 0, true, `${key} approvalBoundaries required`);
+    assert.equal(contract.completionEvidence.length > 0, true, `${key} completionEvidence required`);
+    assert.equal(contract.safetyBoundary.trim().length > 0, true, `${key} safetyBoundary required`);
+
+    const preview = contract.workflowPreview;
+    assert.equal(preview.previewPath, 'xd.automation.workflow.preview', `${key} preview path`);
+    assert.equal(preview.runPath, 'xd.automation.workflow.run', `${key} run path metadata`);
+    assert.equal(preview.stopOnFail, true, `${key} stopOnFail`);
+    assert.equal(preview.delayMs, 0, `${key} delayMs`);
+    assert.equal(preview.name.trim().length > 0, true, `${key} preview name`);
+    assert.equal(preview.description.trim().length > 0, true, `${key} preview description`);
+    assert.equal(preview.safetyBoundary.trim().length > 0, true, `${key} preview safety`);
+    assert.equal(preview.steps.length > 0, true, `${key} preview steps`);
+    assert.equal(
+      preview.steps.some((step) => step.path === preview.runPath),
+      false,
+      `${key} must not run workflow`,
+    );
+
+    for (const step of preview.steps) {
+      const finalSegment = step.path.split('.').at(-1)?.toLowerCase();
+      assert.equal(step.approved, false, `${key} ${step.path} must be preview-approved false`);
+      assert.equal(step.path.startsWith('xd.'), true, `${key} ${step.path} must be CR path`);
+      assert.equal(
+        step.args !== null && typeof step.args === 'object' && !Array.isArray(step.args),
+        true,
+        `${key} ${step.path} args must be object`,
+      );
+      assert.equal(
+        ['request', 'apply', 'run', 'send', 'testchannel'].includes(finalSegment ?? ''),
+        false,
+        `${key} ${step.path} must not mutate state`,
+      );
+      assert.equal(
+        contract.approvalBoundaries.includes(step.path),
+        false,
+        `${key} ${step.path} must not be an approval boundary`,
+      );
+    }
+
+    const finalStep = preview.steps.at(-1);
+    assert.deepEqual(
+      finalStep,
+      {
+        label: 'Open user-story surface',
+        path: contract.openPath,
+        args: { id: contract.openArgs.id, ensureVisible: true },
+        approved: false,
+      },
+      `${key} final step must open the user-story surface`,
+    );
+
+    const previewArgs = buildXenesisConnectionUserStoryWorkflowPreviewArgs(preview) as {
+      runPath?: string;
+      safetyBoundary?: string;
+      steps: Array<{ args: Record<string, unknown> }>;
+    };
+    assert.equal(previewArgs.runPath, undefined, `${key} preview args must not expose runPath`);
+    assert.equal(previewArgs.safetyBoundary, undefined, `${key} preview args must not expose safetyBoundary`);
+    assert.notEqual(previewArgs.steps, preview.steps, `${key} preview args must clone steps`);
+    assert.notEqual(previewArgs.steps.at(-1)?.args, finalStep?.args, `${key} preview args must clone step args`);
+  }
+});
+
+test('buildXenesisConnectionsStatus exposes on-demand tool install plans without executing installs', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+  const googleCalendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+
+  assert.deepEqual(notion?.toolInstallPlan, {
+    installMode: 'copy-template',
+    runtimeSupport: 'ready-template',
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    setupSurface: 'Settings > AI Provider > Local CLI MCP',
+    installSurface: 'Settings > AI Provider > Local CLI MCP',
+    installActions: ['open-local-cli-mcp-settings', 'copy-json-mcp-config', 'copy-codex-toml-config'],
+    installSteps: [
+      'copy the Notion MCP template into the selected local CLI MCP config',
+      'set NOTION_TOKEN in the provider runtime environment',
+      'verify xd.mcp.settings.status lists the server before tool use',
+    ],
+    configTargets: ['json-mcp-config', 'codex-toml'],
+    requiredEnv: ['NOTION_TOKEN'],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.tools.installPlans.status',
+      'xd.xenesis.tools.setup.status',
+      'xd.xenesis.tools.connectors.status',
+      'xd.mcp.settings.status',
+    ],
+    controlPaths: ['xd.xenesis.tools.installPlans.open', 'xd.xenesis.tools.views.open', 'xd.xenesis.connections.open'],
+    diagnostics: ['missing-env', 'mcp-settings-status', 'template-snippet', 'cr-readback'],
+    safetyBoundaries: [
+      'install plans are read/open planning surfaces',
+      'install plans do not execute shell commands or mutate MCP settings',
+      'secret values are never stored or returned',
+      'tool writes require separate verified approval-gated actions',
+    ],
+  });
+  assert.equal(googleCalendar?.toolInstallPlan?.installMode, 'planned-oauth');
+  assert.equal(googleCalendar?.toolInstallPlan?.runtimeSupport, 'planned-oauth');
+  assert.deepEqual(googleCalendar?.toolInstallPlan?.installActions, []);
+  assert.deepEqual(googleCalendar?.toolInstallPlan?.requiredEnv, []);
+  assert.ok(
+    googleCalendar?.toolInstallPlan?.safetyBoundaries.includes(
+      'planned OAuth install plans do not complete OAuth or create calendar events',
+    ),
+  );
+});
+
+test('buildXenesisConnectionsStatus exposes review-only tool profile drafts', () => {
+  const missingStatus = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+    env: {},
+  });
+
+  const notion = missingStatus.sections.tools.items.find((item) => item.id === 'notion');
+  const calendar = missingStatus.sections.tools.items.find((item) => item.id === 'google-calendar');
+  const notionDraft = notion?.toolProfileDraft;
+  const calendarDraft = calendar?.toolProfileDraft;
+
+  assert.equal(notionDraft?.draftStatus, 'missing-required-field');
+  assert.equal(notionDraft?.actionInboxKind, 'xenesis-tool-profile-draft');
+  assert.equal(notionDraft?.tool, 'notion');
+  assert.deepEqual(notionDraft?.missingRequiredFields, ['NOTION_TOKEN']);
+  assert.equal(notionDraft?.profileFields.find((field) => field.field === 'credentialRef')?.valueState, 'missing');
+  assert.equal(notionDraft?.profileFields.find((field) => field.field === 'mcpServer')?.valueState, 'configured');
+  assert.deepEqual(notionDraft?.controlPaths, [
+    'xd.xenesis.tools.profileDrafts.open',
+    'xd.xenesis.tools.profileDrafts.request',
+    'xd.xenesis.connections.open',
+  ]);
+  assert.equal(notionDraft?.controlPaths.includes('xd.xenesis.tools.profileDrafts.apply'), false);
+  assert.deepEqual(
+    notionDraft?.reviewSteps.map((step) => step.id),
+    ['tool-identity', 'credential-readiness', 'runtime-readback', 'action-boundary'],
+  );
+  assert.ok(notionDraft?.readPaths.includes('xd.xenesis.tools.profileDrafts.status'));
+  assert.ok(notionDraft?.blockedActions.includes('store credentials'));
+  assert.ok(notionDraft?.safetyBoundaries.includes('tool profile drafts are review-only'));
+  assert.ok(notion?.diagnosticRunbook?.readPaths.includes('xd.xenesis.tools.profileDrafts.status'));
+
+  assert.equal(calendarDraft?.draftStatus, 'planned-template');
+  assert.equal(calendarDraft?.tool, 'google-calendar');
+  assert.deepEqual(calendarDraft?.missingRequiredFields, ['oauthClient', 'redirectUri', 'tokenStore']);
+  assert.equal(calendarDraft?.profileFields.find((field) => field.field === 'oauthClient')?.valueState, 'planned');
+  assert.equal(calendarDraft?.controlPaths.includes('xd.xenesis.tools.profileDrafts.apply'), false);
+  assert.ok(calendarDraft?.safetyBoundaries.some((boundary) => boundary.includes('mutate calendar events')));
+
+  const readyStatus = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+    env: { NOTION_TOKEN: 'configured' },
+  });
+  const readyNotion = readyStatus.sections.tools.items.find((item) => item.id === 'notion');
+  assert.equal(readyNotion?.toolProfileDraft?.draftStatus, 'ready');
+  assert.deepEqual(readyNotion?.toolProfileDraft?.missingRequiredFields, []);
+  assert.ok(readyNotion?.toolProfileDraft?.controlPaths.includes('xd.xenesis.tools.profileDrafts.apply'));
+  assert.ok(
+    readyNotion?.toolProfileDraft?.safetyBoundaries.some((boundary) =>
+      boundary.includes('tool profile draft apply delegates only to ready MCP install draft apply'),
+    ),
+  );
+});
+
+test('manual external tool guides document tool profile draft CR surfaces', () => {
+  const toolGuide = readFileSync('docs/manual/11-external-tool-integrations.md', 'utf8');
+  const userStories = readFileSync('docs/manual/12-agent-user-stories.md', 'utf8');
+
+  for (const path of [
+    'xd.xenesis.tools.profileDrafts.status',
+    'xd.xenesis.tools.profileDrafts.open',
+    'xd.xenesis.tools.profileDrafts.request',
+    'xd.xenesis.tools.profileDrafts.apply',
+  ]) {
+    const escapedPath = path.replaceAll('.', '\\.');
+    assert.match(toolGuide, new RegExp(escapedPath));
+    assert.match(userStories, new RegExp(escapedPath));
+  }
+
+  assert.match(toolGuide, /tool profile draft/i);
+  assert.match(toolGuide, /review-only/i);
+  assert.match(userStories, /tool profile draft/i);
+});
+
+test('buildXenesisConnectionsStatus exposes provider setup identity, credential state, and fallback policy', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: {
+      ok: true,
+      running: true,
+      managed: true,
+      enabled: true,
+      runtimeMode: 'embedded',
+      url: 'http://127.0.0.1:3846',
+      runtimePath: 'embedded',
+      xenesisHome: 'C:/Users/example/.xenis',
+      workspace: 'E:/workspace/project',
+      providerRuntime: {
+        provider: 'codex-app-server',
+        model: 'gpt-5-codex',
+        profile: 'desk',
+        baseURL: '',
+        apiKeyEnv: '',
+      },
+      error: '',
+      updatedAt: '2026-06-27T00:00:00.000Z',
+      gateway: {
+        enabled: true,
+        running: false,
+        managed: true,
+        url: 'http://127.0.0.1:3846',
+        host: '127.0.0.1',
+        port: 3846,
+        workspace: 'E:/workspace/project',
+        error: '',
+        updatedAt: '2026-06-27T00:00:00.000Z',
+        channels: { total: 0, enabled: 0, ready: 0, blocked: 0, disabled: 0, items: [] },
+      },
+      profile: {
+        active: 'desk',
+        configured: 'desk',
+        installed: ['desk'],
+        templates: [],
+        channels: [],
+        channelSettings: {
+          telegram: { enabled: false, ...channelGuardrails, tokenEnv: 'TELEGRAM_BOT_TOKEN', allowedChatIds: '' },
+          slack: {
+            enabled: false,
+            ...channelGuardrails,
+            botTokenEnv: 'SLACK_BOT_TOKEN',
+            signingSecretEnv: 'SLACK_SIGNING_SECRET',
+            webhookUrlEnv: 'SLACK_WEBHOOK_URL',
+            allowedChannelIds: '',
+          },
+          discord: {
+            enabled: false,
+            ...channelGuardrails,
+            botTokenEnv: 'DISCORD_BOT_TOKEN',
+            webhookUrlEnv: 'DISCORD_WEBHOOK_URL',
+            allowedChannelIds: '',
+            allowedGuildIds: '',
+          },
+          webhook: { enabled: false, ...channelGuardrails, urlEnv: 'XENESIS_WEBHOOK_URL' },
+        },
+        policy: {
+          workflow: 'default',
+          approvalMode: 'safe',
+          maxTurns: 4,
+          providerRetries: 0,
+          contextAutoCompact: true,
+          memoryEnabled: true,
+          subagentsEnabled: true,
+          browserEnabled: true,
+          verificationAutoRun: false,
+          verificationAutoFix: false,
+        },
+      },
+    },
+  });
+
+  const provider = status.sections.provider.items[0];
+
+  assert.deepEqual(provider.providerSetup, {
+    source: 'user-settings',
+    provider: 'codex-app-server',
+    model: 'gpt-5-codex',
+    authMode: 'local-login',
+    credentialState: 'not-required',
+    credentialStorage: 'local CLI login or app-server session',
+    endpoint: 'default',
+    runtimeProfile: 'desk',
+    runtimeProvider: 'codex-app-server',
+    runtimeModel: 'gpt-5-codex',
+    providerRetries: 0,
+    fallbackPolicy: 'configured-providerFallbacks',
+    localCliBoundary: 'provider identity is separate from local CLI integration',
+    verification: ['normal-chat', 'provider-footer', 'cr-readback'],
+    crReadPaths: ['xd.xenesis.connections.status', 'xd.xenesis.providers.setup.status', 'xd.xenesis.status'],
+    riskControls: [
+      'do not silently switch keyed providers when credentials are missing',
+      'keep local CLI selection separate from provider identity',
+      'verify live Agent pane provider before Desk-control claims',
+    ],
+  });
+});
+
+test('buildXenesisConnectionsStatus reflects resolved runtime provider metadata for auto provider readback', () => {
+  assert.equal((XENESIS_CONNECTION_PROVIDER_IDS as readonly string[]).includes('mock'), false);
+
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'auto',
+      model: 'gpt-5.4-mini',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: {
+      ok: true,
+      running: true,
+      managed: true,
+      enabled: true,
+      runtimeMode: 'embedded',
+      url: 'http://127.0.0.1:3846',
+      runtimePath: 'embedded',
+      xenesisHome: 'C:/Users/example/.xenis',
+      workspace: 'E:/workspace/project',
+      providerRuntime: {
+        provider: 'codex-app-server',
+        model: 'gpt-5.4-mini',
+        profile: 'desk',
+        baseURL: '',
+        apiKeyEnv: '',
+        requestedProvider: 'auto',
+        source: 'auto-detect',
+        authMode: 'auto-detect',
+        credentialState: 'not-required',
+        credentialSource: 'codex-auth-json',
+        processModel: 'persistent-process',
+        fallbackProvider: 'codex-cli',
+        safeForReasoning: true,
+        diagnostics: ['codex auth found'],
+        localCliBoundary: 'provider identity is separate from local CLI integration',
+      },
+      error: '',
+      updatedAt: '2026-06-27T00:00:00.000Z',
+      gateway: {
+        enabled: true,
+        running: false,
+        managed: true,
+        url: 'http://127.0.0.1:3846',
+        host: '127.0.0.1',
+        port: 3846,
+        workspace: 'E:/workspace/project',
+        error: '',
+        updatedAt: '2026-06-27T00:00:00.000Z',
+        channels: { total: 0, enabled: 0, ready: 0, blocked: 0, disabled: 0, items: [] },
+      },
+      profile: {
+        active: 'desk',
+        configured: 'desk',
+        installed: ['desk'],
+        templates: [],
+        channels: [],
+        channelSettings: emptyChannelSettings,
+        policy: {
+          workflow: 'default',
+          approvalMode: 'safe',
+          maxTurns: 4,
+          providerRetries: 0,
+          contextAutoCompact: true,
+          memoryEnabled: true,
+          subagentsEnabled: true,
+          browserEnabled: true,
+          verificationAutoRun: false,
+          verificationAutoFix: false,
+        },
+      },
+    },
+  });
+
+  const provider = status.sections.provider.items[0];
+
+  assert.equal(provider.providerSetup?.source, 'auto-detect');
+  assert.equal(provider.providerSetup?.provider, 'auto');
+  assert.equal(provider.providerSetup?.runtimeProvider, 'codex-app-server');
+  assert.equal(provider.providerSetup?.credentialState, 'not-required');
+  assert.equal(provider.providerSetup?.credentialSource, 'codex-auth-json');
+  assert.equal(provider.providerSetup?.processModel, 'persistent-process');
+  assert.equal(provider.providerSetup?.safeForReasoning, true);
+  assert.deepEqual(provider.providerSetup?.runtimeDiagnostics, ['codex auth found']);
+  assert.equal(provider.providerRouting?.routeSource, 'auto-detect');
+  assert.deepEqual(provider.providerRouting?.credentialPools[0], {
+    provider: 'codex-app-server',
+    apiKeyEnv: '',
+    credentialState: 'not-required',
+    credentialSource: 'codex-auth-json',
+    source: 'runtime',
+  });
+});
+
+test('buildXenesisConnectionsStatus exposes approval-gated provider profile drafts', () => {
+  const readyStatus = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const readyProvider = readyStatus.sections.provider.items[0];
+  const readyDraft = readyProvider.providerProfileDraft;
+  assert.equal(readyDraft?.draftStatus, 'ready');
+  assert.equal(readyDraft?.actionInboxKind, 'xenesis-provider-profile-draft');
+  assert.equal(readyDraft?.provider, 'codex-app-server');
+  assert.deepEqual(readyDraft?.missingRequiredFields, []);
+  assert.equal(readyDraft?.profileFields.find((field) => field.field === 'credential')?.valueState, 'not-required');
+  assert.equal(readyDraft?.guardrails.localCliBoundary, 'provider identity is separate from local CLI integration');
+  assert.ok(readyDraft?.readPaths.includes('xd.xenesis.providers.profileDrafts.status'));
+  assert.deepEqual(readyDraft?.controlPaths, [
+    'xd.xenesis.providers.profileDrafts.open',
+    'xd.xenesis.providers.profileDrafts.request',
+    'xd.xenesis.providers.profileDrafts.apply',
+    'xd.xenesis.connections.open',
+  ]);
+  assert.ok(readyDraft?.blockedActions.includes('store provider credentials'));
+  assert.ok(readyDraft?.safetyBoundaries.includes('provider profile draft apply is approval-gated'));
+  assert.deepEqual(
+    readyDraft?.reviewSteps.map((step) => step.id),
+    ['provider-identity', 'model-credential-readiness', 'runtime-routing', 'local-cli-boundary'],
+  );
+  for (const step of readyDraft?.reviewSteps ?? []) {
+    assert.ok(step.expectedState.length > 0, `${step.id} exposes expected state`);
+    assert.ok(step.readPaths.length > 0, `${step.id} exposes read paths`);
+    assert.ok(step.diagnostics.length > 0, `${step.id} exposes diagnostics`);
+    assert.ok(step.safetyBoundary.length > 0, `${step.id} exposes a safety boundary`);
+  }
+  assert.deepEqual(readyDraft?.reviewSteps.find((step) => step.id === 'local-cli-boundary')?.controlPaths, [
+    'xd.xenesis.providers.profileDrafts.open',
+    'xd.xenesis.providers.profileDrafts.request',
+  ]);
+  assert.ok(readyProvider.diagnosticRunbook?.diagnostics.includes('provider-identity'));
+  assert.ok(readyProvider.setupRequest?.steps.some((step) => step.includes('runtime-routing')));
+
+  const missingStatus = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'openai',
+      model: '',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const missingDraft = missingStatus.sections.provider.items[0].providerProfileDraft;
+  assert.equal(missingDraft?.draftStatus, 'missing-required-field');
+  assert.equal(missingDraft?.controlPaths.includes('xd.xenesis.providers.profileDrafts.apply'), false);
+  assert.deepEqual(missingDraft?.missingRequiredFields, ['model', 'apiKey']);
+  assert.equal(missingDraft?.profileFields.find((field) => field.field === 'apiKey')?.secretRef, true);
+  assert.equal(missingDraft?.profileFields.find((field) => field.field === 'apiKey')?.valueState, 'missing');
+  assert.ok(missingDraft?.blockedActions.includes('change active provider'));
+  assert.ok(missingDraft?.safetyBoundaries.includes('provider secrets are never returned'));
+  assert.ok(
+    missingDraft?.reviewSteps.some(
+      (step) =>
+        step.id === 'model-credential-readiness' &&
+        step.requiredFields.includes('model') &&
+        step.requiredFields.includes('apiKey'),
+    ),
+  );
+});
+
+test('buildXenesisConnectionsStatus exposes extended keyed provider profile drafts', () => {
+  for (const provider of ['openrouter', 'mistral', 'xai'] as const) {
+    const status = buildXenesisConnectionsStatus({
+      aiProvider: {
+        provider,
+        model: `${provider}-model`,
+        apiKey: 'configured-secret',
+        baseUrl: '',
+      },
+      mcp: {
+        available: true,
+        serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+        bridgeUrl: 'http://127.0.0.1:3845',
+        bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+        configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+      },
+      providerIntegration: {
+        cliTargets: [],
+        hermes: {
+          assetRoot: '',
+          hermesRoot: '',
+          assetAvailable: false,
+          rootConfigured: false,
+          pluginsInstalled: false,
+          items: [],
+        },
+      },
+      xenesis: null,
+    });
+
+    const providerItem = status.sections.provider.items[0];
+    assert.equal(providerItem.providerSetup?.provider, provider);
+    assert.equal(providerItem.providerProfileDraft?.provider, provider);
+    assert.equal(providerItem.providerProfileDraft?.draftStatus, 'ready');
+    assert.deepEqual(providerItem.providerProfileDraft?.missingRequiredFields, []);
+    assert.equal(providerItem.providerRouting?.activeProvider, provider);
+  }
+});
+
+test('buildXenesisConnectionsStatus exposes an internal Desk provider view', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  assert.deepEqual(status.sections.provider.items[0].providerView, {
+    viewType: 'provider-detail',
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    setupSurface: 'Settings > AI Provider',
+    openPath: 'xd.xenesis.providers.views.open',
+    openArgs: { provider: 'codex-app-server' },
+    connectionCardId: 'provider-codex-app-server',
+    internalViews: ['connection-card', 'provider-setup', 'provider-runtime', 'fallback-policy', 'credential-boundary'],
+    viewSections: [
+      {
+        id: 'connection-card',
+        label: 'Connection card',
+        focusConnectionDetail: 'provider-view',
+        openArgs: { provider: 'codex-app-server', section: 'connection-card', ensureVisible: true },
+        readPaths: ['xd.xenesis.connections.status', 'xd.xenesis.providers.views.status'],
+        controlPaths: ['xd.xenesis.providers.views.open', 'xd.xenesis.connections.open'],
+        diagnostics: ['connection-card', 'cr-readback'],
+        safetyBoundaries: ['Provider connection card opens do not change provider settings or run provider prompts.'],
+      },
+      {
+        id: 'setup',
+        label: 'Provider setup',
+        focusConnectionDetail: 'provider-setup',
+        openArgs: { provider: 'codex-app-server', section: 'setup', ensureVisible: true },
+        readPaths: ['xd.xenesis.providers.setup.status', 'xd.xenesis.connections.status'],
+        controlPaths: ['xd.xenesis.providers.views.open', 'xd.xenesis.providers.setup.open'],
+        diagnostics: ['provider-setup', 'credential-state'],
+        safetyBoundaries: ['Provider setup section opens do not change provider settings or credentials.'],
+      },
+      {
+        id: 'runtime',
+        label: 'Runtime route',
+        focusConnectionDetail: 'provider-routing',
+        openArgs: { provider: 'codex-app-server', section: 'runtime', ensureVisible: true },
+        readPaths: ['xd.xenesis.providers.routing.status', 'xd.xenesis.providers.setup.status'],
+        controlPaths: ['xd.xenesis.providers.views.open', 'xd.xenesis.providers.routing.open'],
+        diagnostics: ['provider-runtime', 'work-log-provider'],
+        safetyBoundaries: ['Runtime section opens do not run provider prompts or switch runtime providers.'],
+      },
+      {
+        id: 'fallback-policy',
+        label: 'Fallback policy',
+        focusConnectionDetail: 'provider-routing',
+        openArgs: { provider: 'codex-app-server', section: 'fallback-policy', ensureVisible: true },
+        readPaths: ['xd.xenesis.providers.routing.status', 'xd.xenesis.providers.setup.status'],
+        controlPaths: ['xd.xenesis.providers.views.open', 'xd.xenesis.providers.routing.open'],
+        diagnostics: ['fallback-policy', 'credential-pool'],
+        safetyBoundaries: ['Fallback policy section opens do not edit fallback chains or retry policy.'],
+      },
+      {
+        id: 'credential-boundary',
+        label: 'Credential boundary',
+        focusConnectionDetail: 'provider-profile-draft',
+        openArgs: { provider: 'codex-app-server', section: 'credential-boundary', ensureVisible: true },
+        readPaths: ['xd.xenesis.providers.profileDrafts.status', 'xd.xenesis.providers.setup.status'],
+        controlPaths: ['xd.xenesis.providers.views.open', 'xd.xenesis.providers.profileDrafts.open'],
+        diagnostics: ['credential-state', 'local-cli-boundary'],
+        safetyBoundaries: [
+          'Credential boundary section opens never return API keys, bridge tokens, or local login secrets.',
+        ],
+      },
+      {
+        id: 'profile-draft',
+        label: 'Profile draft',
+        focusConnectionDetail: 'provider-profile-draft',
+        openArgs: { provider: 'codex-app-server', section: 'profile-draft', ensureVisible: true },
+        readPaths: ['xd.xenesis.providers.profileDrafts.status', 'xd.xenesis.connections.status'],
+        controlPaths: [
+          'xd.xenesis.providers.views.open',
+          'xd.xenesis.providers.profileDrafts.open',
+          'xd.xenesis.providers.profileDrafts.request',
+        ],
+        diagnostics: ['provider-profile-draft', 'missing-required-field'],
+        safetyBoundaries: ['Profile draft section opens do not apply provider profile changes.'],
+      },
+      {
+        id: 'setup-plan',
+        label: 'Setup plan',
+        focusConnectionDetail: 'provider-setup-plan',
+        openArgs: { provider: 'codex-app-server', section: 'setup-plan', ensureVisible: true },
+        readPaths: ['xd.xenesis.providers.setupPlans.status', 'xd.xenesis.connections.status'],
+        controlPaths: ['xd.xenesis.providers.views.open', 'xd.xenesis.providers.setupPlans.open'],
+        diagnostics: ['provider-setup-plan', 'guided-steps'],
+        safetyBoundaries: ['Setup plan section opens do not run provider setup actions.'],
+      },
+    ],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.providers.setup.status',
+      'xd.xenesis.providers.views.status',
+      'xd.xenesis.status',
+    ],
+    controlPaths: ['xd.xenesis.providers.views.open', 'xd.xenesis.connections.open'],
+    diagnostics: ['provider-footer', 'work-log-provider', 'credential-state', 'runtime-profile', 'fallback-policy'],
+    safetyBoundaries: [
+      'provider view opens internal setup/readiness surfaces only',
+      'provider identity comes from user settings and profile',
+      'local CLI selection remains separate from provider identity',
+      'missing keyed-provider credentials must not silently fall back',
+    ],
+  });
+});
+
+test('buildXenesisConnectionsStatus exposes provider routing fallback and credential-pool metadata', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'openai',
+      model: 'gpt-5.4-mini',
+      apiKey: 'desk-secret',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    providerFallbacks: [
+      { provider: 'anthropic', model: 'claude-sonnet-4-5', apiKeyEnv: 'ANTHROPIC_API_KEY' },
+      { provider: 'ollama', model: 'llama3.1', baseURL: 'http://127.0.0.1:11434/v1' },
+    ],
+    env: { ANTHROPIC_API_KEY: 'configured-secret', OPENAI_API_KEY: 'runtime-secret' },
+    xenesis: {
+      ok: true,
+      running: true,
+      managed: true,
+      enabled: true,
+      runtimeMode: 'embedded',
+      url: 'http://127.0.0.1:3846',
+      runtimePath: 'embedded',
+      xenesisHome: 'C:/Users/example/.xenis',
+      workspace: 'E:/workspace/project',
+      providerRuntime: {
+        provider: 'openai',
+        model: 'gpt-5.4-mini',
+        profile: 'desk',
+        baseURL: '',
+        apiKeyEnv: 'OPENAI_API_KEY',
+      },
+      error: '',
+      updatedAt: '2026-06-27T00:00:00.000Z',
+      gateway: {
+        enabled: true,
+        running: false,
+        managed: true,
+        url: 'http://127.0.0.1:3846',
+        host: '127.0.0.1',
+        port: 3846,
+        workspace: 'E:/workspace/project',
+        error: '',
+        updatedAt: '2026-06-27T00:00:00.000Z',
+        channels: { total: 0, enabled: 0, ready: 0, blocked: 0, disabled: 0, items: [] },
+      },
+      profile: {
+        active: 'desk',
+        configured: 'desk',
+        installed: ['desk'],
+        templates: [],
+        channels: [],
+        channelSettings: emptyChannelSettings,
+        policy: {
+          workflow: 'default',
+          approvalMode: 'safe',
+          maxTurns: 4,
+          providerRetries: 2,
+          contextAutoCompact: true,
+          memoryEnabled: true,
+          subagentsEnabled: true,
+          browserEnabled: true,
+          verificationAutoRun: false,
+          verificationAutoFix: false,
+        },
+      },
+    },
+  });
+
+  assert.deepEqual(status.sections.provider.items[0].providerRouting, {
+    routeSource: 'user-settings-profile',
+    activeProvider: 'openai',
+    activeModel: 'gpt-5.4-mini',
+    runtimeProfile: 'desk',
+    runtimeProvider: 'openai',
+    runtimeModel: 'gpt-5.4-mini',
+    retryPolicy: { maxRetries: 2, source: 'profile.policy.providerRetries' },
+    fallbackPolicy: 'configured-providerFallbacks',
+    fallbackChainSource: 'xenesis-runtime-config',
+    fallbackChainVisible: true,
+    fallbackChain: [
+      {
+        index: 1,
+        provider: 'anthropic',
+        model: 'claude-sonnet-4-5',
+        baseURLState: 'default',
+        apiKeyEnv: 'ANTHROPIC_API_KEY',
+        credentialState: 'configured',
+      },
+      {
+        index: 2,
+        provider: 'ollama',
+        model: 'llama3.1',
+        baseURLState: 'custom',
+        apiKeyEnv: '',
+        credentialState: 'not-required',
+      },
+    ],
+    credentialPools: [
+      { provider: 'openai', apiKeyEnv: 'OPENAI_API_KEY', credentialState: 'configured', source: 'runtime' },
+      { provider: 'anthropic', apiKeyEnv: 'ANTHROPIC_API_KEY', credentialState: 'configured', source: 'fallback' },
+      { provider: 'ollama', apiKeyEnv: '', credentialState: 'not-required', source: 'fallback' },
+    ],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.providers.setup.status',
+      'xd.xenesis.providers.routing.status',
+      'xd.xenesis.status',
+    ],
+    diagnostics: ['provider-footer', 'work-log-provider', 'provider_retry', 'provider_fallback', 'cr-readback'],
+    safetyBoundaries: [
+      'routing status is read-only',
+      'provider identity comes from user settings and profile',
+      'fallback entries expose env names and credential state only, never secret values',
+      'local CLI selection remains separate from provider identity',
+      'missing keyed-provider credentials must not silently fall back',
+    ],
+  });
+});
+
+test('buildXenesisConnectionsStatus exposes an OpenClaw-style messenger channel catalog', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const messengerIds = new Set(status.sections.messengers.items.map((item) => item.id));
+  for (const id of [
+    'telegram',
+    'slack',
+    'discord',
+    'webhook',
+    'whatsapp',
+    'signal',
+    'microsoft-teams',
+    'google-chat',
+    'matrix',
+    'line',
+    'wechat',
+    'qqbot',
+    'feishu',
+    'rocket-chat',
+    'dingding',
+    'email',
+    'sms',
+  ]) {
+    assert.equal(messengerIds.has(id), true, `${id} should be present`);
+  }
+
+  const telegram = status.sections.messengers.items.find((item) => item.id === 'telegram');
+  const signal = status.sections.messengers.items.find((item) => item.id === 'signal');
+  const googleChat = status.sections.messengers.items.find((item) => item.id === 'google-chat');
+  const rocketChat = status.sections.messengers.items.find((item) => item.id === 'rocket-chat');
+  const dingding = status.sections.messengers.items.find((item) => item.id === 'dingding');
+
+  assert.equal(telegram?.supportLevel, 'implemented');
+  assert.equal(telegram?.channelTemplate?.category, 'consumer');
+  assert.equal(telegram?.channelTemplate?.adapter, 'bot-api');
+  assert.ok(telegram?.channelTemplate?.safetyControls.includes('allowlist'));
+  assert.ok(telegram?.channelTemplate?.capabilities.includes('direct-messages'));
+  assert.deepEqual(telegram?.crActions, ['xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel']);
+
+  assert.equal(signal?.status, 'planned');
+  assert.equal(signal?.supportLevel, 'planned');
+  assert.equal(signal?.settingsAction, undefined);
+  assert.equal(signal?.channelTemplate?.adapter, 'bridge');
+  assert.ok(signal?.sourceDocs?.some((source) => source.url.endsWith('/channels/signal')));
+
+  assert.equal(googleChat?.status, 'planned');
+  assert.equal(googleChat?.channelTemplate?.category, 'enterprise');
+  assert.ok(googleChat?.channelTemplate?.auth.includes('workspace'));
+  assert.equal(googleChat?.crActions?.length ?? 0, 0);
+
+  assert.equal(rocketChat?.status, 'planned');
+  assert.equal(rocketChat?.supportLevel, 'planned');
+  assert.equal(rocketChat?.channelTemplate?.category, 'enterprise');
+  assert.equal(rocketChat?.channelTemplate?.adapter, 'bot-api');
+  assert.ok(rocketChat?.sourceDocs?.some((source) => source.url.endsWith('/channels/rocket-chat')));
+  assert.equal(rocketChat?.messengerView?.openArgs.id, 'rocket-chat');
+
+  assert.equal(dingding?.status, 'planned');
+  assert.equal(dingding?.supportLevel, 'planned');
+  assert.equal(dingding?.channelTemplate?.category, 'enterprise');
+  assert.equal(dingding?.channelTemplate?.adapter, 'tenant-app');
+  assert.ok(dingding?.sourceDocs?.some((source) => source.url.endsWith('/channels/dingding')));
+  assert.equal(dingding?.messengerView?.openArgs.id, 'dingding');
+});
+
+test('buildXenesisConnectionsStatus exposes OpenClaw-style routing metadata for implemented channels', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const implemented = status.sections.messengers.items.filter((item) => item.supportLevel === 'implemented');
+  const telegram = implemented.find((item) => item.id === 'telegram');
+
+  assert.deepEqual(telegram?.channelTemplate?.routing, {
+    routeBinding: 'telegram.allowedChatIds',
+    allowlistFields: ['allowedChatIds'],
+    pairing: 'bot token',
+    defaultAgent: 'xenesis-agent',
+    sessionScope: 'chat',
+    diagnostics: ['missing-env', 'safe-to-deliver', 'last-error'],
+    deliveryFeatures: ['direct-messages', 'groups', 'files'],
+  });
+
+  for (const item of implemented) {
+    assert.equal(typeof item.channelTemplate?.routing?.routeBinding, 'string', `${item.id} route binding`);
+    assert.ok(item.channelTemplate?.routing?.allowlistFields.length, `${item.id} allowlist fields`);
+    assert.ok(item.channelTemplate?.routing?.diagnostics.length, `${item.id} diagnostics`);
+    assert.ok(item.channelTemplate?.routing?.deliveryFeatures.length, `${item.id} delivery features`);
+  }
+});
+
+test('buildXenesisConnectionsStatus exposes channel safety access and loop-protection metadata', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const telegram = status.sections.messengers.items.find((item) => item.id === 'telegram');
+
+  assert.deepEqual(telegram?.channelTemplate?.safety, {
+    accessModel: 'allowlist',
+    accessGroupFields: ['allowedChatIds'],
+    inboundBoundary: 'telegram chat allowlist',
+    outboundBoundary: 'same chat scope as inbound route',
+    loopProtection: [
+      'ignore messages authored by the bot account',
+      'avoid channels where Xenesis can receive its own outbound messages',
+      'verify delivery with sanitized test messages before enabling action workflows',
+    ],
+    approvalGuardrails: ['readonly', 'safe', 'auto'],
+    troubleshooting: ['missing-env', 'allowlist-empty', 'safe-to-deliver', 'last-error', 'gateway-status'],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.channels.routing.status',
+      'xd.xenesis.channels.safety.status',
+    ],
+    controlPaths: ['xd.panes.settings.open', 'xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
+    safetyBoundaries: [
+      'safety status is read-only',
+      'access groups are represented by configured allowlist fields, not a separate OpenClaw runtime',
+      'channel writes stay on profile update CR paths',
+      'delivery tests stay on profile test CR paths',
+    ],
+  });
+});
+
+test('buildXenesisConnectionsStatus exposes OpenClaw-style access group metadata for implemented channels', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const implemented = status.sections.messengers.items.filter((item) => item.supportLevel === 'implemented');
+  const telegram = implemented.find((item) => item.id === 'telegram');
+  const discord = implemented.find((item) => item.id === 'discord');
+
+  assert.deepEqual(telegram?.channelTemplate?.accessGroups, {
+    model: 'profile-allowlist-fields',
+    groupScope: 'chat',
+    failClosed: true,
+    bindings: [
+      {
+        groupId: 'telegram-allowed-chats',
+        field: 'allowedChatIds',
+        required: true,
+        emptyDiagnostic: 'allowedChatIds is empty',
+        description: 'Telegram chat ids allowed to deliver prompts.',
+      },
+    ],
+    diagnostics: ['profile-channel-settings', 'allowlist-empty', 'gateway-status', 'safe-to-deliver', 'last-error'],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.channels.accessGroups.status',
+      'xd.xenesis.channels.safety.status',
+      'xd.xenesis.status',
+    ],
+    controlPaths: ['xd.panes.settings.open', 'xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
+    safetyBoundaries: [
+      'access-group status is read-only',
+      'raw chat, channel, guild, and endpoint values are never returned',
+      'empty required allowlists fail closed before delivery',
+      'channel writes stay on profile update CR paths',
+    ],
+  });
+
+  assert.deepEqual(
+    discord?.channelTemplate?.accessGroups?.bindings.map((binding) => binding.field),
+    ['allowedChannelIds', 'allowedGuildIds'],
+  );
+  assert.equal(discord?.channelTemplate?.accessGroups?.failClosed, true);
+
+  for (const item of implemented) {
+    assert.equal(item.channelTemplate?.accessGroups?.model, 'profile-allowlist-fields', `${item.id} model`);
+    assert.ok(item.channelTemplate?.accessGroups?.bindings.length, `${item.id} bindings`);
+    assert.equal(
+      item.channelTemplate?.accessGroups?.readPaths.includes('xd.xenesis.channels.accessGroups.status'),
+      true,
+    );
+  }
+});
+
+test('buildXenesisConnectionsStatus exposes planned messenger routing safety and access guards', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const googleChat = status.sections.messengers.items.find((item) => item.id === 'google-chat');
+  const whatsapp = status.sections.messengers.items.find((item) => item.id === 'whatsapp');
+  const teams = status.sections.messengers.items.find((item) => item.id === 'microsoft-teams');
+
+  assert.equal(googleChat?.supportLevel, 'planned');
+  assert.equal(googleChat?.channelTemplate?.routing?.routeBinding, 'google-chat.plannedRoute');
+  assert.deepEqual(googleChat?.channelTemplate?.routing?.allowlistFields, ['plannedAllowedRoutes']);
+  assert.equal(googleChat?.channelTemplate?.routing?.defaultAgent, 'xenesis-agent');
+  assert.equal(googleChat?.channelTemplate?.routing?.sessionScope, 'planned-channel');
+  assert.ok(googleChat?.channelTemplate?.routing?.diagnostics.includes('planned-adapter'));
+  assert.ok(googleChat?.channelTemplate?.routing?.deliveryFeatures.includes('delivery-disabled'));
+
+  assert.equal(whatsapp?.channelTemplate?.safety?.accessModel, 'allowlist');
+  assert.ok(whatsapp?.channelTemplate?.safety?.loopProtection.includes('planned delivery remains disabled'));
+  assert.ok(whatsapp?.channelTemplate?.safety?.safetyBoundaries.includes('planned channel delivery remains disabled'));
+  assert.deepEqual(teams?.channelTemplate?.accessGroups?.bindings, [
+    {
+      groupId: 'microsoft-teams-planned-routes',
+      field: 'plannedAllowedRoutes',
+      required: true,
+      emptyDiagnostic: 'planned route allowlist is not configured',
+      description: 'Planned Microsoft Teams route, sender, room, or tenant allowlist for future delivery.',
+    },
+  ]);
+  assert.ok(teams?.channelTemplate?.accessGroups?.safetyBoundaries.includes('access-group status is read-only'));
+  assert.ok(
+    teams?.channelTemplate?.accessGroups?.safetyBoundaries.includes('planned channel delivery remains disabled'),
+  );
+});
+
+test('buildXenesisConnectionsStatus exposes OpenClaw-style pairing metadata for implemented and planned channels', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const telegram = status.sections.messengers.items.find((item) => item.id === 'telegram');
+  const signal = status.sections.messengers.items.find((item) => item.id === 'signal');
+
+  assert.deepEqual(telegram?.channelTemplate?.pairing, {
+    model: 'env-token',
+    runtimeSupport: 'implemented',
+    accountScope: 'bot-account',
+    credentialRefs: [{ ref: 'tokenEnv', source: 'profile-env-field', required: true, state: 'unknown' }],
+    pairingState: 'unknown',
+    setupSurface: 'Settings > Xenesis Agent > External bots',
+    validationChecks: ['profile-env-field-set', 'env-secret-configured', 'gateway-channel-ready', 'cr-readback'],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.channels.pairing.status',
+      'xd.xenesis.channels.routing.status',
+      'xd.xenesis.status',
+    ],
+    controlPaths: ['xd.xenesis.profiles.updateChannels', 'xd.xenesis.profiles.testChannel'],
+    diagnostics: ['missing-env', 'pairing-secret-state', 'gateway-status', 'last-error'],
+    safetyBoundaries: [
+      'pairing status is read-only',
+      'credential values are never returned',
+      'channel writes stay on profile update CR paths',
+      'delivery tests stay on profile test CR paths',
+    ],
+  });
+  assert.equal(signal?.channelTemplate?.pairing?.model, 'device-link');
+  assert.equal(signal?.channelTemplate?.pairing?.runtimeSupport, 'planned-adapter');
+  assert.equal(signal?.channelTemplate?.pairing?.pairingState, 'planned');
+  assert.deepEqual(signal?.channelTemplate?.pairing?.credentialRefs, [
+    { ref: 'SIGNAL_DEVICE_LINK', source: 'device-pairing', required: true, state: 'planned' },
+  ]);
+});
+
+test('buildXenesisConnectionsStatus exposes channel user-story workflows for implemented and planned channels', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const telegram = status.sections.messengers.items.find((item) => item.id === 'telegram');
+  const signal = status.sections.messengers.items.find((item) => item.id === 'signal');
+
+  assert.deepEqual(telegram?.channelTemplate?.userStory, {
+    workflowType: 'remote-prompt',
+    runtimeSupport: 'implemented',
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    setupSurface: 'Settings > Xenesis Agent > External bots',
+    userStories: [
+      'receive an allowed Telegram chat prompt and route it to Xenesis Agent',
+      'reply in the same chat scope after approval policy checks',
+      'run a sanitized channel test before relying on remote prompts',
+    ],
+    prerequisiteSetup: ['gateway-running', 'telegram-pairing-ready', 'telegram-allowlist-configured'],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.channels.userStories.status',
+      'xd.xenesis.channels.routing.status',
+      'xd.xenesis.channels.safety.status',
+      'xd.xenesis.channels.accessGroups.status',
+      'xd.xenesis.channels.pairing.status',
+      'xd.xenesis.gateway.status',
+    ],
+    controlPaths: [
+      'xd.xenesis.channels.userStories.open',
+      'xd.xenesis.messengers.views.open',
+      'xd.xenesis.profiles.testChannel',
+    ],
+    diagnostics: ['gateway-status', 'safe-to-deliver', 'allowlist-empty', 'last-error'],
+    storyContract: {
+      readbackPaths: [
+        'xd.xenesis.connections.status',
+        'xd.xenesis.channels.userStories.status',
+        'xd.xenesis.channels.routing.status',
+        'xd.xenesis.channels.safety.status',
+        'xd.xenesis.channels.accessGroups.status',
+        'xd.xenesis.channels.pairing.status',
+        'xd.xenesis.gateway.status',
+      ],
+      openPath: 'xd.xenesis.channels.userStories.open',
+      openArgs: { id: 'telegram' },
+      workflowPreview: {
+        previewPath: 'xd.automation.workflow.preview',
+        runPath: 'xd.automation.workflow.run',
+        name: 'telegram-user-story-preview',
+        description: 'Preview telegram user-story readbacks and open the Settings surface.',
+        delayMs: 0,
+        stopOnFail: true,
+        steps: [
+          {
+            label: 'Read xd.xenesis.connections.status',
+            path: 'xd.xenesis.connections.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Read xd.xenesis.channels.userStories.status',
+            path: 'xd.xenesis.channels.userStories.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Read xd.xenesis.channels.routing.status',
+            path: 'xd.xenesis.channels.routing.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Read xd.xenesis.channels.safety.status',
+            path: 'xd.xenesis.channels.safety.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Read xd.xenesis.channels.accessGroups.status',
+            path: 'xd.xenesis.channels.accessGroups.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Read xd.xenesis.channels.pairing.status',
+            path: 'xd.xenesis.channels.pairing.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Read xd.xenesis.gateway.status',
+            path: 'xd.xenesis.gateway.status',
+            args: {},
+            approved: false,
+          },
+          {
+            label: 'Open user-story surface',
+            path: 'xd.xenesis.channels.userStories.open',
+            args: { id: 'telegram', ensureVisible: true },
+            approved: false,
+          },
+        ],
+        safetyBoundary:
+          'Workflow preview metadata is read/open only and does not execute provider tools, send messages, or mutate external systems.',
+      },
+      approvalBoundaries: [
+        'xd.xenesis.channels.profileDrafts.request',
+        'xd.xenesis.channels.profileDrafts.apply',
+        'xd.xenesis.profiles.testChannel',
+        'xd.xenesis.connections.setupRequests.request',
+      ],
+      completionEvidence: [
+        'Gateway/channel readbacks confirm the selected channel is safe before remote prompts.',
+        'Channel profile draft status reports required credentials and allowlists before apply.',
+        'Sanitized channel test result or Action Inbox record proves delivery testing stayed approval-gated.',
+      ],
+      safetyBoundary: 'User-story contracts are read/open planning metadata and do not send messages.',
+    },
+    safetyBoundaries: [
+      'channel user stories are read/open planning surfaces',
+      'message delivery stays on explicit channel test and gateway runtime paths',
+      'remote prompts stay constrained by channel allowlists and approval guardrails',
+    ],
+  });
+
+  assert.equal(signal?.channelTemplate?.userStory?.workflowType, 'planned-messenger');
+  assert.equal(signal?.channelTemplate?.userStory?.runtimeSupport, 'planned-adapter');
+  assert.deepEqual(signal?.channelTemplate?.userStory?.controlPaths, [
+    'xd.xenesis.channels.userStories.open',
+    'xd.xenesis.messengers.views.open',
+    'xd.xenesis.connections.open',
+  ]);
+  assert.ok(
+    signal?.channelTemplate?.userStory?.safetyBoundaries.some((boundary) =>
+      boundary.includes('planned messenger user stories do not enable delivery'),
+    ),
+  );
+  assert.equal(
+    signal?.channelTemplate?.userStory?.storyContract.workflowPreview.previewPath,
+    'xd.automation.workflow.preview',
+  );
+  assert.ok(
+    signal?.channelTemplate?.userStory?.storyContract.workflowPreview.steps.every(
+      (step) => step.path !== 'xd.xenesis.profiles.testChannel',
+    ),
+  );
+});
+
+test('buildXenesisConnectionsStatus exposes review-only channel profile drafts for implemented messengers', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: false,
+      serverPath: '',
+      bridgeUrl: '',
+      bridgeStatePath: '',
+      configFilePath: '',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: {
+      ok: true,
+      running: true,
+      managed: true,
+      enabled: true,
+      runtimeMode: 'embedded',
+      url: 'http://127.0.0.1:3846',
+      runtimePath: 'embedded',
+      xenesisHome: 'C:/Users/example/.xenis',
+      workspace: 'E:/workspace/project',
+      providerRuntime: {
+        provider: 'codex-app-server',
+        model: 'gpt-5-codex',
+        profile: 'desk',
+        baseURL: '',
+        apiKeyEnv: '',
+      },
+      error: '',
+      updatedAt: '2026-06-27T00:00:00.000Z',
+      gateway: {
+        enabled: true,
+        running: true,
+        managed: true,
+        url: 'http://127.0.0.1:3846',
+        host: '127.0.0.1',
+        port: 3846,
+        workspace: 'E:/workspace/project',
+        error: '',
+        updatedAt: '2026-06-27T00:00:00.000Z',
+        channels: {
+          total: 4,
+          enabled: 1,
+          ready: 0,
+          blocked: 1,
+          disabled: 3,
+          items: [],
+        },
+      },
+      profile: {
+        active: 'desk',
+        configured: 'desk',
+        installed: ['desk'],
+        templates: [],
+        channels: [
+          { name: 'telegram', enabled: true, configured: false, env: ['TELEGRAM_BOT_TOKEN'] },
+          { name: 'slack', enabled: false, configured: false, env: ['SLACK_BOT_TOKEN', 'SLACK_SIGNING_SECRET'] },
+          { name: 'discord', enabled: false, configured: false, env: ['DISCORD_BOT_TOKEN'] },
+          { name: 'webhook', enabled: false, configured: false, env: ['XENESIS_WEBHOOK_URL'] },
+        ],
+        channelSettings: {
+          telegram: { enabled: true, ...channelGuardrails, tokenEnv: 'TELEGRAM_BOT_TOKEN', allowedChatIds: '' },
+          slack: {
+            enabled: false,
+            ...channelGuardrails,
+            botTokenEnv: 'SLACK_BOT_TOKEN',
+            signingSecretEnv: 'SLACK_SIGNING_SECRET',
+            webhookUrlEnv: 'SLACK_WEBHOOK_URL',
+            allowedChannelIds: '',
+          },
+          discord: {
+            enabled: false,
+            ...channelGuardrails,
+            botTokenEnv: 'DISCORD_BOT_TOKEN',
+            webhookUrlEnv: 'DISCORD_WEBHOOK_URL',
+            allowedChannelIds: '',
+            allowedGuildIds: '',
+          },
+          webhook: { enabled: false, ...channelGuardrails, urlEnv: 'XENESIS_WEBHOOK_URL' },
+        },
+        policy: {
+          workflow: '',
+          approvalMode: 'safe',
+          maxTurns: 12,
+          providerRetries: 0,
+          contextAutoCompact: true,
+          memoryEnabled: true,
+          subagentsEnabled: true,
+          browserEnabled: true,
+          verificationAutoRun: false,
+          verificationAutoFix: false,
+        },
+      },
+    },
+    env: {
+      TELEGRAM_BOT_TOKEN: '',
+      SLACK_BOT_TOKEN: 'secret-value-must-not-appear',
+      SLACK_SIGNING_SECRET: '',
+    },
+  });
+
+  const telegram = status.sections.messengers.items.find((item) => item.id === 'telegram');
+  const slack = status.sections.messengers.items.find((item) => item.id === 'slack');
+  const signal = status.sections.messengers.items.find((item) => item.id === 'signal');
+
+  assert.equal(telegram?.channelProfileDraft?.draftStatus, 'missing-required-field');
+  assert.equal(telegram?.channelProfileDraft?.actionInboxKind, 'xenesis-channel-profile-draft');
+  assert.equal(telegram?.channelProfileDraft?.channel, 'telegram');
+  assert.equal(telegram?.channelProfileDraft?.guardrails.approvalMode, 'safe');
+  assert.equal(telegram?.channelProfileDraft?.guardrails.maxTurns, 12);
+  assert.equal(telegram?.channelProfileDraft?.guardrails.maxTokens, 120000);
+  assert.deepEqual(telegram?.channelProfileDraft?.missingRequiredFields, ['tokenEnv:env-secret', 'allowedChatIds']);
+  assert.deepEqual(
+    telegram?.channelProfileDraft?.profileFields.map((field) => `${field.field}:${field.valueState}`),
+    ['enabled:configured', 'tokenEnv:missing-env', 'allowedChatIds:empty'],
+  );
+  assert.ok(telegram?.channelProfileDraft?.readPaths.includes('xd.xenesis.channels.profileDrafts.status'));
+  assert.ok(telegram?.channelProfileDraft?.controlPaths.includes('xd.xenesis.channels.profileDrafts.request'));
+  assert.ok(telegram?.channelProfileDraft?.controlPaths.includes('xd.xenesis.channels.profileDrafts.apply'));
+  assert.deepEqual(
+    telegram?.channelProfileDraft?.reviewSteps.map((step) => step.id),
+    ['channel-credential-readiness', 'access-allowlist-review', 'delivery-guardrails', 'pairing-readback'],
+  );
+  assert.ok(
+    telegram?.channelProfileDraft?.reviewSteps.some(
+      (step) =>
+        step.id === 'channel-credential-readiness' &&
+        step.requiredFields.includes('tokenEnv') &&
+        step.diagnostics.includes('tokenEnv:missing-env'),
+    ),
+  );
+  assert.ok(
+    telegram?.channelProfileDraft?.reviewSteps.some(
+      (step) =>
+        step.id === 'access-allowlist-review' &&
+        step.requiredFields.includes('allowedChatIds') &&
+        step.readPaths.includes('xd.xenesis.channels.accessGroups.status'),
+    ),
+  );
+  for (const step of telegram?.channelProfileDraft?.reviewSteps ?? []) {
+    assert.ok(step.expectedState.length > 0, `${step.id} exposes expected state`);
+    assert.ok(step.readPaths.length > 0, `${step.id} exposes read paths`);
+    assert.ok(step.diagnostics.length > 0, `${step.id} exposes diagnostics`);
+    assert.ok(step.safetyBoundary.length > 0, `${step.id} exposes a safety boundary`);
+  }
+  assert.ok(telegram?.diagnosticRunbook?.diagnostics.includes('channel-credential-readiness'));
+  assert.ok(telegram?.setupRequest?.steps.some((step) => step.includes('pairing-readback')));
+  assert.ok(
+    telegram?.channelProfileDraft?.safetyBoundaries.some((boundary) =>
+      boundary.includes('apply writes profile channel settings only after Capability Registry approval'),
+    ),
+  );
+
+  assert.equal(slack?.channelProfileDraft?.draftStatus, 'missing-required-field');
+  assert.ok(JSON.stringify(slack?.channelProfileDraft).includes('secret-value-must-not-appear') === false);
+  assert.deepEqual(slack?.channelProfileDraft?.missingRequiredFields, [
+    'signingSecretEnv:env-secret',
+    'allowedChannelIds',
+  ]);
+
+  assert.equal(signal?.channelProfileDraft?.draftStatus, 'planned');
+  assert.equal(signal?.channelProfileDraft?.channel, 'signal');
+  assert.deepEqual(signal?.channelProfileDraft?.missingRequiredFields, []);
+  assert.deepEqual(
+    signal?.channelProfileDraft?.profileFields.map((field) => `${field.field}:${field.valueState}`),
+    ['enabled:planned', 'adapter:planned', 'auth:planned', 'routeScope:planned'],
+  );
+  assert.ok(signal?.channelProfileDraft?.readPaths.includes('xd.xenesis.channels.profileDrafts.status'));
+  assert.ok(signal?.channelProfileDraft?.controlPaths.includes('xd.xenesis.channels.profileDrafts.request'));
+  assert.ok(signal?.channelProfileDraft?.controlPaths.includes('xd.xenesis.messengers.views.open'));
+  assert.equal(signal?.channelProfileDraft?.controlPaths.includes('xd.xenesis.channels.profileDrafts.apply'), false);
+  assert.equal(signal?.channelProfileDraft?.controlPaths.includes('xd.xenesis.profiles.testChannel'), false);
+  assert.deepEqual(
+    signal?.channelProfileDraft?.reviewSteps.map((step) => step.id),
+    ['channel-credential-readiness', 'access-allowlist-review', 'delivery-guardrails', 'pairing-readback'],
+  );
+  assert.ok(
+    signal?.channelProfileDraft?.reviewSteps.some(
+      (step) =>
+        step.id === 'channel-credential-readiness' &&
+        step.requiredFields.includes('adapter') &&
+        step.requiredFields.includes('auth'),
+    ),
+  );
+  assert.ok(
+    signal?.channelProfileDraft?.reviewSteps.some(
+      (step) =>
+        step.id === 'access-allowlist-review' &&
+        step.requiredFields.includes('routeScope') &&
+        !step.controlPaths.includes('xd.xenesis.profiles.testChannel'),
+    ),
+  );
+  assert.ok(
+    signal?.channelProfileDraft?.safetyBoundaries.some((boundary) =>
+      boundary.includes('planned channel profile drafts are review-only'),
+    ),
+  );
+});
+
+test('buildXenesisConnectionsStatus exposes internal Desk messenger views for implemented and planned channels', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const telegram = status.sections.messengers.items.find((item) => item.id === 'telegram');
+  const signal = status.sections.messengers.items.find((item) => item.id === 'signal');
+
+  assert.deepEqual(telegram?.messengerView, {
+    viewType: 'messenger-detail',
+    runtimeSupport: 'implemented',
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    setupSurface: 'Settings > Xenesis Agent > External bots',
+    openPath: 'xd.xenesis.messengers.views.open',
+    openArgs: { id: 'telegram' },
+    connectionCardId: 'telegram',
+    internalViews: ['connection-card', 'channel-template', 'routing', 'external-bot-settings'],
+    viewSections: [
+      {
+        id: 'connection-card',
+        label: 'Connection card',
+        focusConnectionDetail: 'messenger-view',
+        openArgs: { id: 'telegram', section: 'connection-card', ensureVisible: true },
+        readPaths: ['xd.xenesis.connections.status', 'xd.xenesis.messengers.views.status'],
+        controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.connections.open'],
+        diagnostics: ['connection-card', 'cr-readback'],
+        safetyBoundaries: ['Connection card view opens do not start gateways or send messages.'],
+      },
+      {
+        id: 'setup',
+        label: 'Setup',
+        focusConnectionDetail: 'messenger-view',
+        openArgs: { id: 'telegram', section: 'setup', ensureVisible: true },
+        readPaths: ['xd.xenesis.messengers.views.status', 'xd.xenesis.gateway.status'],
+        controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.connections.open'],
+        diagnostics: ['gateway-status', 'missing-env'],
+        safetyBoundaries: ['Setup view opens do not mutate channel settings or send messages.'],
+      },
+      {
+        id: 'channel-template',
+        label: 'Channel template',
+        focusConnectionDetail: 'channel-template',
+        openArgs: { id: 'telegram', section: 'channel-template', ensureVisible: true },
+        readPaths: ['xd.xenesis.connections.status', 'xd.xenesis.messengers.views.status'],
+        controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.connections.open'],
+        diagnostics: ['channel-template', 'cr-readback'],
+        safetyBoundaries: ['Channel template view opens do not enable planned adapters.'],
+      },
+      {
+        id: 'routing',
+        label: 'Routing',
+        focusConnectionDetail: 'channel-routing',
+        openArgs: { id: 'telegram', section: 'routing', ensureVisible: true },
+        readPaths: ['xd.xenesis.channels.routing.status', 'xd.xenesis.gateway.status'],
+        controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.channels.routing.open'],
+        diagnostics: ['gateway-status', 'route-binding'],
+        safetyBoundaries: ['Routing view opens do not mutate channel profiles or send messages.'],
+      },
+      {
+        id: 'safety',
+        label: 'Safety',
+        focusConnectionDetail: 'channel-safety',
+        openArgs: { id: 'telegram', section: 'safety', ensureVisible: true },
+        readPaths: ['xd.xenesis.channels.safety.status', 'xd.xenesis.connections.status'],
+        controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.channels.safety.open'],
+        diagnostics: ['approval-guardrails', 'loop-protection'],
+        safetyBoundaries: ['Safety view opens do not change delivery or approval guardrails.'],
+      },
+      {
+        id: 'access-groups',
+        label: 'Access groups',
+        focusConnectionDetail: 'channel-access-groups',
+        openArgs: { id: 'telegram', section: 'access-groups', ensureVisible: true },
+        readPaths: ['xd.xenesis.channels.accessGroups.status', 'xd.xenesis.connections.status'],
+        controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.channels.accessGroups.open'],
+        diagnostics: ['allowlist', 'fail-closed'],
+        safetyBoundaries: ['Access-group view opens do not mutate allowlists or expose raw identifiers.'],
+      },
+      {
+        id: 'pairing',
+        label: 'Pairing',
+        focusConnectionDetail: 'channel-pairing',
+        openArgs: { id: 'telegram', section: 'pairing', ensureVisible: true },
+        readPaths: ['xd.xenesis.channels.pairing.status', 'xd.xenesis.gateway.status'],
+        controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.channels.pairing.open'],
+        diagnostics: ['credential-readiness', 'pairing-state'],
+        safetyBoundaries: ['Pairing view opens do not create OAuth, QR, or device-link sessions.'],
+      },
+      {
+        id: 'runtime',
+        label: 'Runtime readiness',
+        focusConnectionDetail: 'channel-runtime',
+        openArgs: { id: 'telegram', section: 'runtime', ensureVisible: true },
+        readPaths: ['xd.xenesis.channels.runtime.status', 'xd.xenesis.gateway.status'],
+        controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.channels.runtime.open'],
+        diagnostics: ['channel-runtime-readiness', 'gateway-status', 'readback-verification'],
+        safetyBoundaries: ['Runtime readiness view opens do not start gateways, pair accounts, or send messages.'],
+      },
+      {
+        id: 'setup-plan',
+        label: 'Setup plan',
+        focusConnectionDetail: 'channel-setup-plan',
+        openArgs: { id: 'telegram', section: 'setup-plan', ensureVisible: true },
+        readPaths: ['xd.xenesis.channels.setupPlans.status', 'xd.xenesis.connections.status'],
+        controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.channels.setupPlans.open'],
+        diagnostics: ['gateway-status', 'missing-env', 'cr-readback'],
+        safetyBoundaries: ['Setup plan view opens do not start gateways, apply profiles, or send tests.'],
+      },
+      {
+        id: 'profile-draft',
+        label: 'Profile draft',
+        focusConnectionDetail: 'channel-profile-draft',
+        openArgs: { id: 'telegram', section: 'profile-draft', ensureVisible: true },
+        readPaths: ['xd.xenesis.channels.profileDrafts.status', 'xd.xenesis.connections.status'],
+        controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.channels.profileDrafts.open'],
+        diagnostics: ['missing-required-fields', 'guardrails', 'cr-readback'],
+        safetyBoundaries: ['Profile draft view opens do not write profiles, store secrets, or update allowlists.'],
+      },
+      {
+        id: 'user-stories',
+        label: 'User stories',
+        focusConnectionDetail: 'channel-user-story',
+        openArgs: { id: 'telegram', section: 'user-stories', ensureVisible: true },
+        readPaths: ['xd.xenesis.channels.userStories.status', 'xd.xenesis.guides.status'],
+        controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.channels.userStories.open'],
+        diagnostics: ['gateway-status', 'runtime-support', 'cr-readback'],
+        safetyBoundaries: ['User-story view opens do not enable adapters or send messages.'],
+      },
+    ],
+    readPaths: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.messengers.views.status',
+      'xd.xenesis.channels.routing.status',
+      'xd.xenesis.gateway.status',
+    ],
+    controlPaths: [
+      'xd.xenesis.messengers.views.open',
+      'xd.xenesis.connections.open',
+      'xd.xenesis.profiles.updateChannels',
+      'xd.xenesis.profiles.testChannel',
+    ],
+    diagnostics: ['gateway-status', 'missing-env', 'allowlist', 'last-error'],
+    safetyBoundaries: [
+      'implemented channels still require gateway readiness before delivery',
+      'channel writes and test sends stay on existing profile CR paths',
+    ],
+  });
+  assert.deepEqual(
+    telegram?.messengerView?.viewSections.map((section) => section.id),
+    [
+      'connection-card',
+      'setup',
+      'channel-template',
+      'routing',
+      'safety',
+      'access-groups',
+      'pairing',
+      'runtime',
+      'setup-plan',
+      'profile-draft',
+      'user-stories',
+    ],
+  );
+  assert.deepEqual(
+    telegram?.messengerView?.viewSections.find((section) => section.id === 'routing'),
+    {
+      id: 'routing',
+      label: 'Routing',
+      focusConnectionDetail: 'channel-routing',
+      openArgs: { id: 'telegram', section: 'routing', ensureVisible: true },
+      readPaths: ['xd.xenesis.channels.routing.status', 'xd.xenesis.gateway.status'],
+      controlPaths: ['xd.xenesis.messengers.views.open', 'xd.xenesis.channels.routing.open'],
+      diagnostics: ['gateway-status', 'route-binding'],
+      safetyBoundaries: ['Routing view opens do not mutate channel profiles or send messages.'],
+    },
+  );
+  assert.equal(signal?.messengerView?.runtimeSupport, 'planned');
+  assert.deepEqual(signal?.messengerView?.internalViews, ['connection-card', 'channel-template', 'planning-card']);
+  assert.deepEqual(
+    signal?.messengerView?.viewSections.map((section) => section.id),
+    [
+      'connection-card',
+      'setup',
+      'channel-template',
+      'routing',
+      'safety',
+      'access-groups',
+      'pairing',
+      'runtime',
+      'setup-plan',
+      'profile-draft',
+      'user-stories',
+    ],
+  );
+  assert.deepEqual(signal?.messengerView?.viewSections.find((section) => section.id === 'profile-draft')?.openArgs, {
+    id: 'signal',
+    section: 'profile-draft',
+    ensureVisible: true,
+  });
+  assert.deepEqual(signal?.messengerView?.viewSections.find((section) => section.id === 'runtime')?.openArgs, {
+    id: 'signal',
+    section: 'runtime',
+    ensureVisible: true,
+  });
+  assert.equal(
+    signal?.messengerView?.viewSections
+      .find((section) => section.id === 'runtime')
+      ?.readPaths.includes('xd.xenesis.channels.runtime.status'),
+    true,
+  );
+  assert.deepEqual(signal?.messengerView?.controlPaths, [
+    'xd.xenesis.messengers.views.open',
+    'xd.xenesis.connections.open',
+  ]);
+  assert.equal(signal?.messengerView?.controlPaths.includes('xd.xenesis.profiles.testChannel'), false);
+});
+
+test('buildXenesisConnectionsStatus resolves repo-local guide open paths from the repo root', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+    repoRoot: 'E:\\xenesis-desk',
+    guideFileExists: (candidate) => candidate.endsWith('docs\\manual\\09-onboarding-connections.md'),
+  });
+  const guide = status.sections.guides.items.find((item) => item.id === 'onboarding-connections');
+
+  assert.equal(guide?.guidePath, 'docs/manual/09-onboarding-connections.md');
+  assert.equal(guide?.guideOpenPath, 'E:\\xenesis-desk\\docs\\manual\\09-onboarding-connections.md');
+  assert.deepEqual((guide as any)?.guideFile, {
+    status: 'available',
+    guidePath: 'docs/manual/09-onboarding-connections.md',
+    guideOpenPath: 'E:\\xenesis-desk\\docs\\manual\\09-onboarding-connections.md',
+    readPaths: ['xd.xenesis.guides.status'],
+    controlPaths: ['xd.xenesis.guides.open', 'xd.files.open'],
+    diagnostics: ['guide-file-available'],
+    safetyBoundaries: [
+      'guide file readback does not read file contents',
+      'guide file opens stay on existing guide/file CR paths',
+    ],
+  });
+});
+
+test('buildXenesisConnectionsStatus marks missing and unresolved guide files explicitly', () => {
+  const missingStatus = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+    repoRoot: 'E:\\xenesis-desk',
+    guideFileExists: () => false,
+  });
+  const missingGuide = missingStatus.sections.guides.items.find((item) => item.id === 'agent-user-stories');
+
+  assert.equal((missingGuide as any)?.guideFile?.status, 'missing');
+  assert.equal((missingGuide as any)?.guideFile?.guidePath, 'docs/manual/12-agent-user-stories.md');
+  assert.equal(
+    (missingGuide as any)?.guideFile?.guideOpenPath,
+    'E:\\xenesis-desk\\docs\\manual\\12-agent-user-stories.md',
+  );
+  assert.deepEqual((missingGuide as any)?.guideFile?.controlPaths, ['xd.xenesis.guides.open']);
+  assert.deepEqual((missingGuide as any)?.guideFile?.diagnostics, ['guide-file-missing']);
+
+  const unresolvedStatus = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+  const unresolvedGuide = unresolvedStatus.sections.guides.items.find((item) => item.id === 'openclaw-channel-setup');
+
+  assert.equal((unresolvedGuide as any)?.guideFile?.status, 'unresolved');
+  assert.equal((unresolvedGuide as any)?.guideFile?.guidePath, 'docs/manual/10-openclaw-channel-setup.md');
+  assert.equal((unresolvedGuide as any)?.guideFile?.guideOpenPath, 'docs/manual/10-openclaw-channel-setup.md');
+  assert.deepEqual((unresolvedGuide as any)?.guideFile?.diagnostics, ['guide-file-unresolved']);
+});
+
+test('buildXenesisConnectionsStatus exposes guide catalog metadata for onboarding playbooks', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+    repoRoot: 'E:\\xenesis-desk',
+  });
+
+  const onboarding = status.sections.guides.items.find((item) => item.id === 'onboarding-connections');
+  const userStories = status.sections.guides.items.find((item) => item.id === 'agent-user-stories');
+  const channelSetup = status.sections.guides.items.find((item) => item.id === 'openclaw-channel-setup');
+  const toolIntegrations = status.sections.guides.items.find((item) => item.id === 'external-tool-integrations');
+
+  assert.deepEqual(onboarding?.guideCatalog, {
+    guideType: 'setup-playbook',
+    audience: 'operator',
+    primarySurface: 'Settings > Xenesis Agent > Connections',
+    coveredSurfaces: ['providers', 'mcp-tools', 'gateway', 'messengers', 'guides'],
+    prerequisites: ['choose AI provider', 'configure MCP bridge', 'review external bot gateway'],
+    validationChecks: [
+      'xd.xenesis.connections.status',
+      'xd.xenesis.providers.setup.status',
+      'xd.xenesis.tools.setup.status',
+      'xd.xenesis.messengers.views.status',
+    ],
+    readPaths: ['xd.xenesis.connections.status', 'xd.xenesis.guides.status'],
+    controlPaths: ['xd.xenesis.guides.open', 'xd.xenesis.connections.open', 'xd.files.open'],
+    userStoryTemplates: [
+      'first-run provider and MCP setup',
+      'connect a planned external tool without pretending it is installed',
+      'verify messenger routing before remote prompts',
+    ],
+    safetyBoundaries: [
+      'guide catalog is read-only',
+      'guide open may open a repo-local file or focus a Settings card',
+      'actual provider, tool, and channel mutations stay on their existing CR paths',
+    ],
+  });
+  assert.equal(onboarding?.guideOpenPath, 'E:\\xenesis-desk\\docs\\manual\\09-onboarding-connections.md');
+  assert.equal(userStories?.guideCatalog?.guideType, 'user-story-catalog');
+  assert.equal(userStories?.guidePath, 'docs/manual/12-agent-user-stories.md');
+  assert.equal(userStories?.guideOpenPath, 'E:\\xenesis-desk\\docs\\manual\\12-agent-user-stories.md');
+  assert.deepEqual(userStories?.guideCatalog?.coveredSurfaces, [
+    'ai-provider-user-stories',
+    'external-tool-user-stories',
+    'messenger-user-stories',
+    'capability-registry-readbacks',
+  ]);
+  assert.equal(userStories?.guideCatalog?.readPaths.includes('xd.xenesis.guides.status'), true);
+  assert.equal(userStories?.guideCatalog?.readPaths.includes('xd.xenesis.providers.routing.status'), true);
+  assert.equal(userStories?.guideCatalog?.readPaths.includes('xd.xenesis.tools.userStories.status'), true);
+  assert.equal(userStories?.guideCatalog?.readPaths.includes('xd.xenesis.channels.userStories.status'), true);
+  assert.equal(userStories?.guideCatalog?.readPaths.includes('xd.xenesis.connections.diagnostics.status'), true);
+  assert.equal(userStories?.guideCatalog?.controlPaths.includes('xd.xenesis.tools.userStories.open'), true);
+  assert.equal(userStories?.guideCatalog?.controlPaths.includes('xd.xenesis.channels.userStories.open'), true);
+  assert.equal(userStories?.guideCatalog?.controlPaths.includes('xd.xenesis.connections.diagnostics.open'), true);
+  assert.equal(channelSetup?.guidePath, 'docs/manual/10-openclaw-channel-setup.md');
+  assert.equal(channelSetup?.guideOpenPath, 'E:\\xenesis-desk\\docs\\manual\\10-openclaw-channel-setup.md');
+  assert.equal(channelSetup?.guideCatalog?.guideType, 'integration-guide');
+  assert.deepEqual(channelSetup?.guideCatalog?.coveredSurfaces, [
+    'messenger-catalog',
+    'channel-setup-plans',
+    'channel-routing',
+    'access-groups',
+    'pairing',
+    'diagnostics',
+  ]);
+  assert.equal(channelSetup?.guideCatalog?.readPaths.includes('xd.xenesis.messengers.views.status'), true);
+  assert.equal(channelSetup?.guideCatalog?.readPaths.includes('xd.xenesis.channels.setupPlans.status'), true);
+  assert.equal(channelSetup?.guideCatalog?.controlPaths.includes('xd.xenesis.channels.setupPlans.open'), true);
+  assert.equal(channelSetup?.guideCatalog?.readPaths.includes('xd.xenesis.channels.safety.status'), true);
+  assert.equal(toolIntegrations?.guidePath, 'docs/manual/11-external-tool-integrations.md');
+  assert.equal(toolIntegrations?.guideOpenPath, 'E:\\xenesis-desk\\docs\\manual\\11-external-tool-integrations.md');
+  assert.equal(toolIntegrations?.guideCatalog?.guideType, 'integration-guide');
+  assert.deepEqual(toolIntegrations?.guideCatalog?.coveredSurfaces, [
+    'external-tools',
+    'setup-plans',
+    'mcp-connectors',
+    'oauth-drafts',
+    'tool-actions',
+    'user-stories',
+  ]);
+  assert.equal(toolIntegrations?.guideCatalog?.readPaths.includes('xd.xenesis.tools.views.status'), true);
+  assert.equal(toolIntegrations?.guideCatalog?.readPaths.includes('xd.xenesis.tools.setupPlans.status'), true);
+  assert.equal(toolIntegrations?.guideCatalog?.controlPaths.includes('xd.xenesis.tools.setupPlans.open'), true);
+  assert.equal(toolIntegrations?.guideCatalog?.controlPaths.includes('xd.xenesis.tools.views.open'), true);
+});
+
+test('buildXenesisConnectionsStatus exposes concrete Slice 05 guide workflow cards', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+    repoRoot: 'E:\\xenesis-desk',
+  });
+
+  const expectedGuides = new Map([
+    ['first-provider-setup', 'docs/manual/09-onboarding-connections.md'],
+    ['connect-notion', 'docs/manual/11-external-tool-integrations.md'],
+    ['prepare-google-calendar', 'docs/manual/11-external-tool-integrations.md'],
+    ['connect-telegram', 'docs/manual/10-openclaw-channel-setup.md'],
+    ['first-external-message-test', 'docs/manual/12-agent-user-stories.md'],
+  ]);
+
+  for (const [id, guidePath] of expectedGuides) {
+    const guide = status.sections.guides.items.find((item) => item.id === id);
+    const catalog = guide?.guideCatalog;
+    assert.ok(guide, `${id} guide workflow missing`);
+    assert.equal(guide?.kind, 'guide', `${id} kind`);
+    assert.equal(guide?.guidePath, guidePath, `${id} guide path`);
+    assert.equal(catalog?.guideType, 'user-story-workflow', `${id} guide type`);
+    assert.equal(catalog?.audience, 'operator', `${id} audience`);
+    assert.equal(catalog?.primarySurface, 'Settings > Xenesis Agent > Connections', `${id} primary surface`);
+    assert.equal((catalog?.coveredSurfaces ?? []).length > 0, true, `${id} covered surfaces`);
+    assert.equal((catalog?.prerequisites ?? []).length > 0, true, `${id} prerequisites`);
+    assert.equal((catalog?.validationChecks ?? []).length > 0, true, `${id} validation checks`);
+    assert.equal((catalog?.readPaths ?? []).length > 0, true, `${id} read paths`);
+    assert.equal((catalog?.controlPaths ?? []).length > 0, true, `${id} control paths`);
+    assert.equal((catalog?.userStoryTemplates ?? []).length > 0, true, `${id} user stories`);
+    assert.equal((catalog?.safetyBoundaries ?? []).length > 0, true, `${id} safety boundaries`);
+
+    for (const path of catalog?.readPaths ?? []) {
+      assert.equal(path.startsWith('xd.'), true, `${id} ${path} read path must be CR path`);
+      assert.equal(path.split('.').at(-1), 'status', `${id} ${path} must be a read path`);
+    }
+    for (const path of catalog?.controlPaths ?? []) {
+      const finalSegment = path.split('.').at(-1)?.toLowerCase();
+      assert.equal(path.startsWith('xd.'), true, `${id} ${path} control path must be CR path`);
+      assert.equal(finalSegment, 'open', `${id} ${path} must be an open path`);
+      assert.equal(
+        ['request', 'apply', 'run', 'send', 'testchannel'].includes(finalSegment ?? ''),
+        false,
+        `${id} ${path} must stay preview-safe`,
+      );
+    }
+  }
+});
+
+test('buildXenesisConnectionsStatus exposes diagnostic runbooks for tools, planned tools, and channels', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+  const calendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+  const telegram = status.sections.messengers.items.find((item) => item.id === 'telegram');
+
+  assert.equal(notion?.diagnosticRunbook?.scope, 'tool');
+  assert.equal(notion?.diagnosticRunbook?.readiness, 'action-required');
+  assert.deepEqual(
+    notion?.diagnosticRunbook?.steps.map((step) => step.id),
+    [
+      'connection-status',
+      'tool-setup',
+      'tool-connector',
+      'tool-runtime',
+      'tool-profile-draft',
+      'tool-view',
+      'tool-action-catalog',
+      'tool-user-story',
+      'tool-install-plan',
+      'mcp-install-draft',
+    ],
+  );
+  assert.equal(notion?.diagnosticRunbook?.readPaths.includes('xd.xenesis.tools.connectors.status'), true);
+  assert.equal(notion?.diagnosticRunbook?.diagnostics.includes('notion-search-read'), true);
+
+  assert.equal(calendar?.diagnosticRunbook?.scope, 'tool');
+  assert.equal(calendar?.diagnosticRunbook?.readiness, 'planned');
+  assert.equal(
+    calendar?.diagnosticRunbook?.steps.some((step) => step.id === 'tool-install-plan'),
+    true,
+  );
+  assert.equal(calendar?.diagnosticRunbook?.diagnostics.includes('planned-oauth-template'), true);
+  assert.equal(
+    calendar?.diagnosticRunbook?.safetyBoundaries.includes('diagnostic runbooks are read/open planning surfaces'),
+    true,
+  );
+
+  assert.equal(telegram?.diagnosticRunbook?.scope, 'messenger');
+  assert.deepEqual(
+    telegram?.diagnosticRunbook?.steps.map((step) => step.id),
+    [
+      'connection-status',
+      'channel-routing',
+      'channel-safety',
+      'channel-access-groups',
+      'channel-pairing',
+      'channel-runtime',
+      'channel-user-story',
+      'channel-profile-draft',
+      'channel-setup-plan',
+      'messenger-view',
+    ],
+  );
+  assert.equal(telegram?.diagnosticRunbook?.readPaths.includes('xd.xenesis.channels.userStories.status'), true);
+  assert.equal(telegram?.diagnosticRunbook?.readPaths.includes('xd.xenesis.channels.setupPlans.status'), true);
+  assert.equal(telegram?.diagnosticRunbook?.controlPaths.includes('xd.xenesis.connections.diagnostics.open'), true);
+});
+
+test('buildXenesisConnectionsStatus exposes setup request templates without executing external work', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+  const calendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+  const telegram = status.sections.messengers.items.find((item) => item.id === 'telegram');
+
+  assert.equal(notion?.setupRequest?.actionInboxKind, 'xenesis-connection-setup');
+  assert.equal(notion?.setupRequest?.readiness, 'action-required');
+  assert.deepEqual(notion?.setupRequest?.blockedActions, [
+    'does not install MCP servers',
+    'does not complete OAuth',
+    'does not store tokens',
+    'does not execute provider tools',
+    'does not mutate provider/tool/channel settings without setup apply approval',
+    'does not send messages',
+  ]);
+  assert.equal(notion?.setupRequest?.controlPaths.includes('xd.xenesis.connections.setupRequests.request'), true);
+  assert.equal(notion?.setupRequest?.readPaths.includes('xd.xenesis.connections.diagnostics.status'), true);
+
+  assert.equal(calendar?.setupRequest?.readiness, 'planned');
+  assert.match(calendar?.setupRequest?.description ?? '', /planned OAuth/i);
+
+  assert.equal(telegram?.setupRequest?.requestType, 'messenger-setup');
+  assert.equal(telegram?.setupRequest?.readPaths.includes('xd.xenesis.channels.pairing.status'), true);
+});
+
+test('buildXenesisConnectionsStatus exposes setup apply only for ready delegated paths', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+    env: {
+      NOTION_TOKEN: 'secret-value-must-not-appear',
+    },
+  });
+
+  const notion = status.sections.tools.items.find((item) => item.id === 'notion');
+  const github = status.sections.tools.items.find((item) => item.id === 'github');
+  const calendar = status.sections.tools.items.find((item) => item.id === 'google-calendar');
+  const telegram = status.sections.messengers.items.find((item) => item.id === 'telegram');
+
+  assert.equal(notion?.mcpInstallDraft?.draftStatus, 'ready');
+  assert.equal(notion?.setupRequest?.controlPaths.includes('xd.xenesis.connections.setupRequests.apply'), true);
+  assert.ok(
+    notion?.setupRequest?.safetyBoundaries.some((boundary) =>
+      boundary.includes('delegates only to ready approval-gated setup apply paths'),
+    ),
+  );
+
+  assert.equal(github?.mcpInstallDraft?.draftStatus, 'missing-env');
+  assert.equal(github?.setupRequest?.controlPaths.includes('xd.xenesis.connections.setupRequests.apply'), false);
+
+  assert.equal(calendar?.toolOAuthDraft?.draftStatus, 'planned-template');
+  assert.equal(calendar?.setupRequest?.controlPaths.includes('xd.xenesis.connections.setupRequests.apply'), false);
+
+  assert.equal(telegram?.channelProfileDraft?.controlPaths.includes('xd.xenesis.channels.profileDrafts.apply'), true);
+  assert.equal(telegram?.setupRequest?.controlPaths.includes('xd.xenesis.connections.setupRequests.apply'), true);
+});
+
+test('withXenesisConnectionSetupRequestReviews joins Action Inbox review state by approval session key', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const enriched = withXenesisConnectionSetupRequestReviews(status, [
+    {
+      id: 'setup-notion',
+      kind: 'xenesis-connection-setup',
+      title: 'Review setup request for Notion',
+      approvalSessionKey: 'xenesis-connection-setup:notion',
+      requester: 'tester',
+      source: 'Xenesis Connection Center',
+      status: 'pending',
+      createdAt: '2026-06-27T01:00:00.000Z',
+      updatedAt: '2026-06-27T01:00:00.000Z',
+      expiresAt: '2026-06-27T01:05:00.000Z',
+      resolvedAt: '',
+      result: '',
+      error: '',
+    },
+  ]);
+
+  const notion = enriched.sections.tools.items.find((item) => item.id === 'notion');
+  const linear = enriched.sections.tools.items.find((item) => item.id === 'linear');
+
+  assert.equal(notion?.setupRequest?.review?.status, 'pending');
+  assert.equal(notion?.setupRequest?.review?.actionInboxItemId, 'setup-notion');
+  assert.equal(notion?.setupRequest?.review?.requester, 'tester');
+  assert.equal(notion?.setupRequest?.review?.approvalSessionKey, 'xenesis-connection-setup:notion');
+  assert.equal(linear?.setupRequest?.review?.status, 'not-requested');
+  assert.equal(linear?.setupRequest?.review?.approvalSessionKey, 'xenesis-connection-setup:linear');
+});
+
+test('buildXenesisConnectionsStatus reports missing setup without leaking secrets', () => {
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'openai',
+      model: '',
+      apiKey: 'sk-secret-value',
+      baseUrl: '',
+    },
+    mcp: {
+      available: false,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: '',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: null,
+  });
+
+  const serialized = JSON.stringify(status);
+  assert.equal(serialized.includes('sk-secret-value'), false);
+  assert.equal(status.sections.provider.items[0].status, 'blocked');
+  assert.equal(status.sections.provider.items[0].providerSetup?.credentialState, 'configured');
+  assert.equal(status.sections.mcp.items[0].status, 'blocked');
+  assert.equal(status.sections.gateway.items[0].status, 'unknown');
+  assert.ok(XENESIS_CONNECTION_GUIDES.some((guide) => guide.id === 'onboarding-connections'));
+});

@@ -1,4 +1,4 @@
-import type { PromptBlock } from "./PromptComposer.js";
+import type { PromptBlock } from './PromptComposer.js';
 
 export interface PromptSectionDefinition extends PromptBlock {
   title?: string;
@@ -16,7 +16,7 @@ function toPromptBlock(definition: PromptSectionDefinition): PromptBlock {
     source: definition.source,
     cacheScope: definition.cacheScope,
     content: definition.content,
-    priority: definition.priority
+    priority: definition.priority,
   });
 }
 
@@ -37,14 +37,10 @@ export class PromptSectionRegistry {
   }
 
   resolve(): PromptBlock[] {
-    return this.definitions
-      .filter((definition) => !isDisabled(definition))
-      .map(toPromptBlock);
+    return this.definitions.filter((definition) => !isDisabled(definition)).map(toPromptBlock);
   }
 
   disabledSectionIds(): string[] {
-    return this.definitions
-      .filter(isDisabled)
-      .map((definition) => definition.id);
+    return this.definitions.filter(isDisabled).map((definition) => definition.id);
   }
 }

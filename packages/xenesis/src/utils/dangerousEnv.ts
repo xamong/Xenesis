@@ -9,21 +9,21 @@
 
 // Environment variables that can hijack process execution (code injection via the loader/runtime).
 export const DANGEROUS_ENV: readonly string[] = [
-  "LD_PRELOAD",
-  "LD_AUDIT",
-  "LD_LIBRARY_PATH",
-  "NODE_OPTIONS",
-  "NODE_REPL_EXTERNAL_MODULE",
-  "BROWSER",
-  "GIT_EXTERNAL_DIFF",
-  "GIT_SSH_COMMAND",
-  "PYTHONSTARTUP"
+  'LD_PRELOAD',
+  'LD_AUDIT',
+  'LD_LIBRARY_PATH',
+  'NODE_OPTIONS',
+  'NODE_REPL_EXTERNAL_MODULE',
+  'BROWSER',
+  'GIT_EXTERNAL_DIFF',
+  'GIT_SSH_COMMAND',
+  'PYTHONSTARTUP',
 ];
 
 const DANGEROUS_ENV_SET = new Set(DANGEROUS_ENV);
 
 export function isDangerousEnvName(key: string): boolean {
-  return DANGEROUS_ENV_SET.has(key) || key.startsWith("DYLD_") || key.startsWith("LD_");
+  return DANGEROUS_ENV_SET.has(key) || key.startsWith('DYLD_') || key.startsWith('LD_');
 }
 
 export function stripDangerousEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {

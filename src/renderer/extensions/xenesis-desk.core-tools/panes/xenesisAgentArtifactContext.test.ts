@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-import { buildXenesisArtifactPromptWithContext, isXenesisArtifactFollowUpPrompt } from './xenesisAgentArtifactContext';
+import { buildXenesisArtifactPromptWithContext } from './xenesisAgentArtifactContext';
 import type { XenesisChatMessage } from './xenesisAgentTypes';
 
 function message(id: string, role: XenesisChatMessage['role'], content: string): XenesisChatMessage {
@@ -13,15 +14,18 @@ function message(id: string, role: XenesisChatMessage['role'], content: string):
   };
 }
 
-test('detects short artifact conversion follow-ups without treating new concrete requests as follow-ups', () => {
-  assert.equal(isXenesisArtifactFollowUpPrompt('xcon으로 보여줘'), true);
-  assert.equal(isXenesisArtifactFollowUpPrompt('그걸 XCON/SKETCH로 다시 보여줘'), true);
-  assert.equal(isXenesisArtifactFollowUpPrompt('위 내용을 표와 차트로 보여줘'), true);
-  assert.equal(isXenesisArtifactFollowUpPrompt('이번주 제주도 날씨를 xcon으로 보여줘'), false);
-  assert.equal(isXenesisArtifactFollowUpPrompt('차트와 그리드가 있는 영업 대시보드 만들어줘'), false);
+test('artifact prompt context has no natural follow-up classifier', () => {
+  const source = readFileSync(new URL('./xenesisAgentArtifactContext.ts', import.meta.url), 'utf8');
+  const paneSource = readFileSync(new URL('./XenesisAgentPane.tsx', import.meta.url), 'utf8');
+
+  assert.doesNotMatch(source, /isXenesisArtifactFollowUpPrompt/);
+  assert.doesNotMatch(source, /FORMAT_OR_ARTIFACT_PATTERN|ARTIFACT_ACTION_PATTERN|REFERENTIAL_PATTERN/);
+  assert.doesNotMatch(source, /RESIDUE_PATTERNS|substantiveResidue|findPriorAssistantContext/);
+  assert.doesNotMatch(source, /follow-up artifact conversion request|Current follow-up request/);
+  assert.doesNotMatch(paneSource, /Artifact follow-up context applied/);
 });
 
-test('builds contextual artifact prompts from the previous user and assistant turn', () => {
+test('wraps artifact prompts as fresh current-request prompts without prior-context inference', () => {
   const messages: XenesisChatMessage[] = [
     message(
       'a2',
@@ -42,57 +46,12 @@ test('builds contextual artifact prompts from the previous user and assistant tu
     messages,
   });
 
-  assert.equal(result.contextApplied, true);
-  assert.match(result.prompt, /Current follow-up request:\nxcon으로 보여줘\./);
-  assert.match(result.prompt, /Previous user request:\n오늘 월드컵 경기 결과를 정리해줘\./);
-  assert.match(result.prompt, /체코 1 vs 남아프리카 1/);
-  assert.match(result.prompt, /멕시코 1 vs 대한민국 0/);
-  assert.match(result.prompt, /Do not generate a generic XCON or Gowoori feature demo/i);
-  assert.equal(result.applyLabel, '오늘 월드컵 경기 결과를 정리해줘.');
-});
-
-test('treats generic sample-screen requests as contextual artifact follow-ups', () => {
-  const messages: XenesisChatMessage[] = [
-    message(
-      'a2',
-      'assistant',
-      [
-        '성경읽기 앱 요구사항은 다음과 같습니다.',
-        '1. 읽기 계획 및 알림',
-        '2. 주제별 구절 검색',
-        '3. 노트 및 하이라이트',
-        '4. 번역본 비교',
-      ].join('\n'),
-    ),
-    message('u1', 'user', '성경읽기 앱 요구사항 정의서를 만들어줘.'),
-  ];
-
-  const result = buildXenesisArtifactPromptWithContext({
-    prompt: '각 기능에 대한 샘플 화면이 필요해.',
-    messages,
-  });
-
-  assert.equal(isXenesisArtifactFollowUpPrompt('각 기능에 대한 샘플 화면이 필요해.'), true);
-  assert.equal(result.contextApplied, true);
-  assert.match(result.prompt, /Previous user request:\n성경읽기 앱 요구사항 정의서를 만들어줘\./);
-  assert.match(result.prompt, /읽기 계획 및 알림/);
-  assert.match(result.prompt, /주제별 구절 검색/);
-  assert.match(result.prompt, /Do not generate a generic XCON or Gowoori feature demo/i);
-  assert.match(result.prompt, /create those screens for the features described in the previous answer/i);
-  assert.equal(result.applyLabel, '성경읽기 앱 요구사항 정의서를 만들어줘.');
-});
-
-test('wraps standalone artifact prompts with a fresh-request guard when no usable prior answer exists', () => {
-  const result = buildXenesisArtifactPromptWithContext({
-    prompt: 'xcon으로 보여줘',
-    messages: [message('u1', 'user', '안녕')],
-  });
-
   assert.equal(result.contextApplied, false);
   assert.match(result.prompt, /fresh artifact request inside Xenesis Agent/i);
   assert.match(result.prompt, /Use only the current user request as the source of truth/i);
-  assert.match(result.prompt, /No previous assistant answer is available/i);
-  assert.match(result.prompt, /Current user request:\nxcon으로 보여줘/);
+  assert.match(result.prompt, /Current user request:\nxcon으로 보여줘\./);
+  assert.doesNotMatch(result.prompt, /Previous Xenesis assistant answer|Previous user request/);
+  assert.doesNotMatch(result.prompt, /체코 1 vs 남아프리카 1|멕시코 1 vs 대한민국 0/);
   assert.equal(result.applyLabel, '');
 });
 

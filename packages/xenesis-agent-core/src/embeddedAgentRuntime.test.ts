@@ -160,8 +160,9 @@ test('DeskEmbeddedAgentRuntime status exposes sanitized effective provider runti
 
 test('DeskEmbeddedAgentRuntime reuses session and history across embedded mock provider turns', async () => {
   const workspace = await mkdtemp(join(tmpdir(), 'xenesis-desk-agent-runtime-'));
+  let runtime: DeskEmbeddedAgentRuntime | undefined;
   try {
-    const runtime = new DeskEmbeddedAgentRuntime({
+    runtime = new DeskEmbeddedAgentRuntime({
       enabled: true,
       xenesisHome: join(workspace, '.xenesis'),
       runtimePath: 'embedded',
@@ -197,8 +198,9 @@ test('DeskEmbeddedAgentRuntime reuses session and history across embedded mock p
     assert.match(second.doneContent || '', /assistant: mock response: 첫 질문/);
     assert.match(second.doneContent || '', /user: mock:messages/);
   } finally {
+    runtime?.stop();
     closeAllDatabases();
-    await rm(workspace, { recursive: true, force: true });
+    await rm(workspace, { recursive: true, force: true }).catch(() => undefined);
   }
 });
 
@@ -208,9 +210,10 @@ test('DeskEmbeddedAgentRuntime writes embedded mock provider turns to the inject
     now: () => '2026-06-28T00:00:00.000Z',
     idFactory: () => 'turn-runtime-ledger-1',
   });
+  let runtime: DeskEmbeddedAgentRuntime | undefined;
 
   try {
-    const runtime = new DeskEmbeddedAgentRuntime({
+    runtime = new DeskEmbeddedAgentRuntime({
       enabled: true,
       xenesisHome: join(workspace, '.xenesis'),
       runtimePath: 'embedded',
@@ -240,7 +243,8 @@ test('DeskEmbeddedAgentRuntime writes embedded mock provider turns to the inject
     assert.equal(turnLedger.current()?.sessionId, result.sessionId);
     assert.equal(turnLedger.current()?.status, 'completed');
   } finally {
+    runtime?.stop();
     closeAllDatabases();
-    await rm(workspace, { recursive: true, force: true });
+    await rm(workspace, { recursive: true, force: true }).catch(() => undefined);
   }
 });

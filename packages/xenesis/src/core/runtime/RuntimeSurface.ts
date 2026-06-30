@@ -1,15 +1,8 @@
-import type { AgentRunEvent } from "../events.js";
+import type { AgentRunEvent } from '../events.js';
 
-export type RuntimeSurfaceName =
-  | "cli"
-  | "gateway"
-  | "headless"
-  | "embedded"
-  | "worker"
-  | "channel"
-  | "sdk";
+export type RuntimeSurfaceName = 'cli' | 'gateway' | 'headless' | 'embedded' | 'worker' | 'channel' | 'sdk';
 
-export type RuntimeOutputMode = "text" | "json" | "stream-json";
+export type RuntimeOutputMode = 'text' | 'json' | 'stream-json';
 
 export interface RuntimeSurfaceDescriptor {
   name: RuntimeSurfaceName;
@@ -33,16 +26,16 @@ export class RuntimeSurfaceObjectModel {
 
   recordEvent(event: AgentRunEvent) {
     this.events.push(event);
-    if (this.surface.outputMode === "stream-json" || this.surface.outputMode === "json") {
+    if (this.surface.outputMode === 'stream-json' || this.surface.outputMode === 'json') {
       this.lines.push(JSON.stringify(event));
     }
   }
 
   recordNotice(line: string) {
     this.notices.push(line);
-    if (this.surface.outputMode === "stream-json") {
-      this.lines.push(JSON.stringify({ type: "notice", message: line }));
-    } else if (this.surface.outputMode === "text") {
+    if (this.surface.outputMode === 'stream-json') {
+      this.lines.push(JSON.stringify({ type: 'notice', message: line }));
+    } else if (this.surface.outputMode === 'text') {
       this.lines.push(line);
     }
   }
@@ -56,7 +49,7 @@ export class RuntimeSurfaceObjectModel {
       surface: this.surface,
       events: [...this.events],
       notices: [...this.notices],
-      output: this.lines.join("\n")
+      output: this.lines.join('\n'),
     };
   }
 }

@@ -1,8 +1,8 @@
-import { appendFile, mkdir } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { isPathInside } from "../utils/workspace.js";
-import type { JsonlSessionWriterOptions, SessionWriter } from "./types.js";
-import type { RecordedSessionEvent, SessionEvent } from "../core/events.js";
+import { appendFile, mkdir } from 'node:fs/promises';
+import { dirname, resolve } from 'node:path';
+import type { RecordedSessionEvent, SessionEvent } from '../core/events.js';
+import { isPathInside } from '../utils/workspace.js';
+import type { JsonlSessionWriterOptions, SessionWriter } from './types.js';
 
 export class JsonlSessionWriter implements SessionWriter {
   private readonly logPath: string;
@@ -12,8 +12,8 @@ export class JsonlSessionWriter implements SessionWriter {
   private seq: number;
 
   constructor(options: JsonlSessionWriterOptions) {
-    const home = options.xenesisHome ?? resolve(options.workspaceRoot, ".xenesis");
-    const sessionsDir = resolve(home, "sessions");
+    const home = options.xenesisHome ?? resolve(options.workspaceRoot, '.xenesis');
+    const sessionsDir = resolve(home, 'sessions');
     const logPath = resolve(sessionsDir, `${options.sessionId}.jsonl`);
 
     if (!isPathInside(sessionsDir, logPath)) {
@@ -33,10 +33,10 @@ export class JsonlSessionWriter implements SessionWriter {
       sessionId: this.sessionId,
       ...(this.traceId ? { traceId: this.traceId } : {}),
       seq: this.seq++,
-      timestamp: this.now().toISOString()
+      timestamp: this.now().toISOString(),
     };
 
     await mkdir(dirname(this.logPath), { recursive: true });
-    await appendFile(this.logPath, `${JSON.stringify(record)}\n`, "utf8");
+    await appendFile(this.logPath, `${JSON.stringify(record)}\n`, 'utf8');
   }
 }

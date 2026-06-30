@@ -39,6 +39,10 @@ function tomlString(value) {
     .replace(/"/g, '\\"')}"`;
 }
 
+function tomlStringArray(values = []) {
+  return `[${values.map((value) => tomlString(value)).join(', ')}]`;
+}
+
 function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -114,6 +118,172 @@ export function mergeJsonMcpConfig(
   };
 
   return `${JSON.stringify(next, null, 2)}\n`;
+}
+
+function removeCodexMcpServerBlock(existingText, serverName) {
+  const normalizedServerName = normalizeText(serverName);
+  const headerPattern = new RegExp(`^\\s*\\[mcp_servers\\.${escapeRegExp(normalizedServerName)}(?:\\.|\\])`);
+  const anyHeaderPattern = /^\s*\[[^\]]+\]\s*$/;
+  const kept = [];
+  let skipping = false;
+
+  for (const line of String(existingText || '')
+    .replace(/\r\n/g, '\n')
+    .split('\n')) {
+    if (anyHeaderPattern.test(line)) {
+      skipping = headerPattern.test(line);
+      if (skipping) continue;
+    }
+    if (!skipping) kept.push(line);
+  }
+
+  return kept.join('\n').replace(/\s+$/g, '');
+}
+
+function isRemoteMcpConfig(config = {}) {
+  return config.type === 'http' || config.type === 'sse' || typeof config.url === 'string';
+}
+
+function externalMcpServerJsonEntry(config = {}) {
+  if (isRemoteMcpConfig(config)) {
+    return {
+      url: normalizeText(config.url),
+      ...(config.transport ? { transport: config.transport } : {}),
+      ...(config.auth ? { auth: config.auth } : {}),
+      ...(config.headers ? { headers: config.headers } : {}),
+      ...(config.oauth ? { oauth: config.oauth } : {}),
+      ...(config.toolFilter ? { toolFilter: config.toolFilter } : {}),
+    };
+  }
+
+  return {
+    command: normalizeText(config.command),
+    args: Array.isArray(config.args) ? config.args.map((arg) => String(arg)) : [],
+    env: config.env && typeof config.env === 'object' ? { ...config.env } : {},
+    ...(config.cwd ? { cwd: config.cwd } : {}),
+    ...(config.toolFilter ? { toolFilter: config.toolFilter } : {}),
+  };
+}
+
+function renderCodexExternalMcpServerBlock(serverName, config = {}) {
+  const normalizedServerName = normalizeText(serverName);
+  const lines = [`[mcp_servers.${normalizedServerName}]`, 'enabled = true'];
+
+  if (isRemoteMcpConfig(config)) {
+    lines.push(`url = ${tomlString(config.url)}`);
+    if (config.transport) lines.push(`transport = ${tomlString(config.transport)}`);
+    if (config.auth) lines.push(`auth = ${tomlString(config.auth)}`);
+  } else {
+    lines.push(`command = ${tomlString(config.command)}`);
+    if (Array.isArray(config.args) && config.args.length > 0) {
+      lines.push(`args = ${tomlStringArray(config.args)}`);
+    }
+    if (config.cwd) lines.push(`cwd = ${tomlString(config.cwd)}`);
+  }
+
+  const include = config.toolFilter?.include;
+  const exclude = config.toolFilter?.exclude;
+  if ((Array.isArray(include) && include.length > 0) || (Array.isArray(exclude) && exclude.length > 0)) {
+    lines.push('');
+    lines.push(`[mcp_servers.${normalizedServerName}.tool_filter]`);
+    if (Array.isArray(include) && include.length > 0) lines.push(`include = ${tomlStringArray(include)}`);
+    if (Array.isArray(exclude) && exclude.length > 0) lines.push(`exclude = ${tomlStringArray(exclude)}`);
+  }
+
+  const env = config.env && typeof config.env === 'object' ? config.env : {};
+  const envEntries = Object.entries(env);
+  if (!isRemoteMcpConfig(config) && envEntries.length > 0) {
+    lines.push('');
+    lines.push(`[mcp_servers.${normalizedServerName}.env]`);
+    for (const [key, value] of envEntries) {
+      lines.push(`${key} = ${tomlString(value)}`);
+    }
+  }
+
+  return `${lines.join('\n')}\n`;
+}
+
+export function mergeCodexExternalMcpConfig(existingText = '', { serverName, config } = {}) {
+  const normalizedServerName = normalizeText(serverName);
+  if (!normalizedServerName) throw new Error('MCP server name is required.');
+  const trimmed = removeCodexMcpServerBlock(existingText, normalizedServerName);
+  const block = renderCodexExternalMcpServerBlock(normalizedServerName, config);
+  return `${trimmed ? `${trimmed}\n\n` : ''}${block}`;
+}
+
+export function mergeJsonExternalMcpConfig(existingText = '', { serverName, config } = {}) {
+  const normalizedServerName = normalizeText(serverName);
+  if (!normalizedServerName) throw new Error('MCP server name is required.');
+  let parsed = {};
+  const source = normalizeText(existingText);
+  if (source) {
+    parsed = JSON.parse(source);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      parsed = {};
+    }
+  }
+
+  const next = {
+    ...parsed,
+    mcpServers: {
+      ...(parsed.mcpServers && typeof parsed.mcpServers === 'object' && !Array.isArray(parsed.mcpServers)
+        ? parsed.mcpServers
+        : {}),
+      [normalizedServerName]: externalMcpServerJsonEntry(config),
+    },
+  };
+
+  return `${JSON.stringify(next, null, 2)}\n`;
+}
+
+function normalizeExternalMcpTargetIds(targetIds) {
+  const values = Array.isArray(targetIds) && targetIds.length > 0 ? targetIds : ['codex'];
+  const normalized = values.map((value) => normalizeText(value)).filter(Boolean);
+  if (normalized.includes('all')) return ['codex', 'claude', 'cursor'];
+  return [...new Set(normalized)];
+}
+
+export function installExternalMcpServer({
+  serverName,
+  config,
+  targetIds,
+  homeDir = os.homedir(),
+  appDataDir = process.env.APPDATA || joinForRoot(homeDir, 'AppData', 'Roaming'),
+  backupRoot,
+  fsImpl = fs,
+} = {}) {
+  const normalizedServerName = normalizeText(serverName);
+  if (!normalizedServerName) throw new Error('MCP server name is required.');
+
+  const selectedTargetIds = normalizeExternalMcpTargetIds(targetIds);
+  const allTargets = buildCliIntegrationTargets({ homeDir, appDataDir });
+  const changes = [];
+
+  for (const targetId of selectedTargetIds) {
+    const target = allTargets.find((item) => item.id === targetId);
+    if (!target?.supportsMcp) throw new Error(`Unsupported MCP config target: ${targetId}`);
+
+    const existing = readTextIfExists(target.mcpConfigPath, fsImpl);
+    const next =
+      target.configType === 'codex-toml'
+        ? mergeCodexExternalMcpConfig(existing, { serverName: normalizedServerName, config })
+        : mergeJsonExternalMcpConfig(existing, { serverName: normalizedServerName, config });
+    const backupPath = next === existing ? '' : writeTextWithBackup(target.mcpConfigPath, next, { backupRoot, fsImpl });
+    changes.push({
+      id: target.id,
+      label: target.label,
+      configType: target.configType,
+      path: target.mcpConfigPath,
+      changed: next !== existing,
+      backupPath,
+    });
+  }
+
+  return {
+    ok: true,
+    serverName: normalizedServerName,
+    targets: changes,
+  };
 }
 
 export function renderXenesisDeskSkill({ serverName = DEFAULT_SERVER_NAME } = {}) {

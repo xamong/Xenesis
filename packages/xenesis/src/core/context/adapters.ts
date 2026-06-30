@@ -1,10 +1,10 @@
-import type { ContextSourceAdapter } from "./ContextOrchestrator.js";
+import type { ContextSourceAdapter } from './ContextOrchestrator.js';
 import {
-  createContextRecord,
   type ContextAuthority,
   type ContextCacheScope,
   type ContextRecordKind,
-} from "./ContextRecord.js";
+  createContextRecord,
+} from './ContextRecord.js';
 
 export function staticRecordAdapter(input: {
   id: string;
@@ -20,7 +20,7 @@ export function staticRecordAdapter(input: {
       const content = input.messages
         .map((message) => message.content.trim())
         .filter((contentPart) => contentPart.length > 0)
-        .join("\n\n");
+        .join('\n\n');
       if (content.length === 0) return [];
 
       return [

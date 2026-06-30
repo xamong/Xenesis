@@ -1,26 +1,26 @@
-import type { AgentMessage, AgentMessageAttachment } from "../core/messages.js";
+import type { AgentMessage, AgentMessageAttachment } from '../core/messages.js';
 
-type UserAgentMessage = Extract<AgentMessage, { role: "user" }>;
+type UserAgentMessage = Extract<AgentMessage, { role: 'user' }>;
 
 function formatAttachmentSize(size: number | undefined) {
-  if (typeof size !== "number" || !Number.isFinite(size) || size < 0) return undefined;
+  if (typeof size !== 'number' || !Number.isFinite(size) || size < 0) return undefined;
   if (size < 1024) return `${Math.round(size)} B`;
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function previewText(text: string, maxLength = 2000) {
-  const normalized = text.replace(/\r\n/g, "\n").trim();
+  const normalized = text.replace(/\r\n/g, '\n').trim();
   if (normalized.length <= maxLength) return normalized;
   return `${normalized.slice(0, maxLength - 3)}...`;
 }
 
 export function parseDataUrl(dataUrl?: string) {
-  const match = /^data:([^;,]+)?(;base64)?,(.*)$/i.exec(String(dataUrl ?? ""));
+  const match = /^data:([^;,]+)?(;base64)?,(.*)$/i.exec(String(dataUrl ?? ''));
   if (!match || !match[2]) return undefined;
   return {
-    mediaType: match[1] || "application/octet-stream",
-    base64: match[3]
+    mediaType: match[1] || 'application/octet-stream',
+    base64: match[3],
   };
 }
 
@@ -42,31 +42,34 @@ function isProviderSupportedImageDataUrl(dataUrl: string) {
 }
 
 export function imageDataUrlAttachments(attachments?: readonly AgentMessageAttachment[]) {
-  return (attachments ?? []).filter((attachment) => (
-    attachment.kind === "image" &&
-    typeof attachment.dataUrl === "string" &&
-    isProviderSupportedImageDataUrl(attachment.dataUrl)
-  ));
+  return (attachments ?? []).filter(
+    (attachment) =>
+      attachment.kind === 'image' &&
+      typeof attachment.dataUrl === 'string' &&
+      isProviderSupportedImageDataUrl(attachment.dataUrl),
+  );
 }
 
 export function attachmentsTextSummary(attachments?: readonly AgentMessageAttachment[]) {
-  if (!attachments || attachments.length === 0) return "";
-  const lines = ["Attached files:"];
+  if (!attachments || attachments.length === 0) return '';
+  const lines = ['Attached files:'];
   for (const [index, attachment] of attachments.entries()) {
     const details = [
       attachment.kind,
       attachment.mimeType,
       formatAttachmentSize(attachment.size),
-      attachment.path ? `path=${attachment.path}` : undefined
-    ].filter(Boolean).join(", ");
-    lines.push(`${index + 1}. ${attachment.name}${details ? ` (${details})` : ""}`);
+      attachment.path ? `path=${attachment.path}` : undefined,
+    ]
+      .filter(Boolean)
+      .join(', ');
+    lines.push(`${index + 1}. ${attachment.name}${details ? ` (${details})` : ''}`);
     if (attachment.text) {
-      lines.push("```text");
+      lines.push('```text');
       lines.push(previewText(attachment.text));
-      lines.push("```");
+      lines.push('```');
     }
   }
-  return lines.join("\n");
+  return lines.join('\n');
 }
 
 export function userContentWithAttachmentSummary(message: UserAgentMessage) {
@@ -86,7 +89,7 @@ export interface ImageBlock {
 
 export function imageBlocksFor(
   attachments?: readonly AgentMessageAttachment[],
-  opts?: { max?: number; maxBytes?: number }
+  opts?: { max?: number; maxBytes?: number },
 ): ImageBlock[] {
   const max = opts?.max ?? MAX_IMAGES_PER_REQUEST;
   const maxBytes = opts?.maxBytes ?? MAX_IMAGE_BYTES;

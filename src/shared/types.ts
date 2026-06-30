@@ -1,4 +1,132 @@
 import type { ExternalAppSettings } from './externalAppControl';
+import type { XenesisConnectionsStatus } from './xenesisConnections';
+
+export type {
+  XenesisConnectionChannelAccessGroupBinding,
+  XenesisConnectionChannelAccessGroupsTemplate,
+  XenesisConnectionChannelPairingCredentialRef,
+  XenesisConnectionChannelPairingCredentialSource,
+  XenesisConnectionChannelPairingModel,
+  XenesisConnectionChannelPairingRuntimeSupport,
+  XenesisConnectionChannelPairingState,
+  XenesisConnectionChannelPairingTemplate,
+  XenesisConnectionChannelProfileDraftField,
+  XenesisConnectionChannelProfileDraftFieldValueState,
+  XenesisConnectionChannelProfileDraftGuardrails,
+  XenesisConnectionChannelProfileDraftReviewStep,
+  XenesisConnectionChannelProfileDraftStatus,
+  XenesisConnectionChannelProfileDraftTemplate,
+  XenesisConnectionChannelRoutingTemplate,
+  XenesisConnectionChannelRuntimeStatus,
+  XenesisConnectionChannelRuntimeSupport,
+  XenesisConnectionChannelRuntimeTemplate,
+  XenesisConnectionChannelSafetyTemplate,
+  XenesisConnectionChannelSetupPlanRuntimeSupport,
+  XenesisConnectionChannelSetupPlanStep,
+  XenesisConnectionChannelSetupPlanStepKind,
+  XenesisConnectionChannelSetupPlanTemplate,
+  XenesisConnectionChannelTemplate,
+  XenesisConnectionChannelUserStoryRuntimeSupport,
+  XenesisConnectionChannelUserStoryTemplate,
+  XenesisConnectionChannelUserStoryWorkflowType,
+  XenesisConnectionDiagnosticRunbookReadiness,
+  XenesisConnectionDiagnosticRunbookStep,
+  XenesisConnectionDiagnosticRunbookTemplate,
+  XenesisConnectionGuideCatalogTemplate,
+  XenesisConnectionGuideFileStatus,
+  XenesisConnectionGuideFileTemplate,
+  XenesisConnectionItem,
+  XenesisConnectionMcpInstallDraftStatus,
+  XenesisConnectionMcpInstallDraftTemplate,
+  XenesisConnectionMcpTemplate,
+  XenesisConnectionMessengerViewSection,
+  XenesisConnectionMessengerViewSectionId,
+  XenesisConnectionMessengerViewTemplate,
+  XenesisConnectionOnboardingGuidedStep,
+  XenesisConnectionOnboardingPlanPhase,
+  XenesisConnectionOnboardingPlanTemplate,
+  XenesisConnectionProviderCredentialPoolItem,
+  XenesisConnectionProviderCredentialState,
+  XenesisConnectionProviderFallbackChainItem,
+  XenesisConnectionProviderFallbackInput,
+  XenesisConnectionProviderProfileDraftField,
+  XenesisConnectionProviderProfileDraftFieldValueState,
+  XenesisConnectionProviderProfileDraftGuardrails,
+  XenesisConnectionProviderProfileDraftReviewStep,
+  XenesisConnectionProviderProfileDraftStatus,
+  XenesisConnectionProviderProfileDraftTemplate,
+  XenesisConnectionProviderRoutingTemplate,
+  XenesisConnectionProviderSetupPlanRuntimeSupport,
+  XenesisConnectionProviderSetupPlanStep,
+  XenesisConnectionProviderSetupPlanStepKind,
+  XenesisConnectionProviderSetupPlanTemplate,
+  XenesisConnectionProviderSetupTemplate,
+  XenesisConnectionProviderViewSection,
+  XenesisConnectionProviderViewSectionId,
+  XenesisConnectionProviderViewTemplate,
+  XenesisConnectionSection,
+  XenesisConnectionSetupRequestReview,
+  XenesisConnectionSetupRequestReviewInput,
+  XenesisConnectionSetupRequestReviewStatus,
+  XenesisConnectionSetupRequestTemplate,
+  XenesisConnectionSetupRequestType,
+  XenesisConnectionStatus,
+  XenesisConnectionsStatus,
+  XenesisConnectionToolActionCatalogAction,
+  XenesisConnectionToolActionCatalogApprovalPolicy,
+  XenesisConnectionToolActionCatalogGroup,
+  XenesisConnectionToolActionCatalogGroupKind,
+  XenesisConnectionToolActionCatalogRuntimeSupport,
+  XenesisConnectionToolActionCatalogTemplate,
+  XenesisConnectionToolConnectorCredentialRef,
+  XenesisConnectionToolConnectorCredentialSource,
+  XenesisConnectionToolConnectorCredentialState,
+  XenesisConnectionToolConnectorTemplate,
+  XenesisConnectionToolInstallPlanMode,
+  XenesisConnectionToolInstallPlanRuntimeSupport,
+  XenesisConnectionToolInstallPlanTemplate,
+  XenesisConnectionToolMcpOAuthRuntimeSupport,
+  XenesisConnectionToolMcpOAuthStatus,
+  XenesisConnectionToolMcpOAuthTemplate,
+  XenesisConnectionToolOAuthDraftField,
+  XenesisConnectionToolOAuthDraftFieldValueState,
+  XenesisConnectionToolOAuthDraftReviewStep,
+  XenesisConnectionToolOAuthDraftStatus,
+  XenesisConnectionToolOAuthDraftTemplate,
+  XenesisConnectionToolOAuthRuntimeStatus,
+  XenesisConnectionToolOAuthRuntimeTemplate,
+  XenesisConnectionToolOAuthSetupPacket,
+  XenesisConnectionToolOAuthSetupPacketCredentialRef,
+  XenesisConnectionToolProfileDraftField,
+  XenesisConnectionToolProfileDraftFieldValueState,
+  XenesisConnectionToolProfileDraftReviewStep,
+  XenesisConnectionToolProfileDraftStatus,
+  XenesisConnectionToolProfileDraftTemplate,
+  XenesisConnectionToolRuntimeStatus,
+  XenesisConnectionToolRuntimeSupport,
+  XenesisConnectionToolRuntimeTemplate,
+  XenesisConnectionToolSetupPlanRuntimeSupport,
+  XenesisConnectionToolSetupPlanStep,
+  XenesisConnectionToolSetupPlanStepKind,
+  XenesisConnectionToolSetupPlanTemplate,
+  XenesisConnectionToolSetupTemplate,
+  XenesisConnectionToolUserStoryRuntimeSupport,
+  XenesisConnectionToolUserStoryTemplate,
+  XenesisConnectionToolUserStoryWorkflowType,
+  XenesisConnectionToolViewSection,
+  XenesisConnectionToolViewSectionId,
+  XenesisConnectionToolViewTemplate,
+  XenesisConnectionUserStoryContract,
+  XenesisConnectionUserStoryWorkflowPreview,
+  XenesisConnectionUserStoryWorkflowStep,
+  XenesisConnectionWorkflowPreview,
+  XenesisConnectionWorkflowStep,
+} from './xenesisConnections';
+
+export {
+  buildXenesisConnectionSetupApprovalSessionKey,
+  withXenesisConnectionSetupRequestReviews,
+} from './xenesisConnections';
 
 export type ShellKind = 'powershell' | 'cmd' | 'pwsh' | 'wsl' | 'zsh' | 'bash' | 'sh';
 
@@ -9,9 +137,12 @@ export type AiProviderKind =
   | 'openai' // OpenAI (Responses / Chat Completions)
   | 'anthropic' // Anthropic Claude
   | 'gemini' // Google Gemini (OpenAI 호환)
+  | 'openrouter' // OpenRouter (OpenAI 호환)
   | 'groq' // Groq (OpenAI 호환)
   | 'deepseek' // DeepSeek (OpenAI 호환)
   | 'qwen' // Qwen / DashScope (OpenAI 호환)
+  | 'mistral' // Mistral (OpenAI 호환)
+  | 'xai' // xAI (OpenAI 호환)
   | 'ollama' // Ollama (로컬, 인증 불필요)
   | 'lmstudio' // LM Studio (로컬)
   | 'together' // Together AI
@@ -120,13 +251,19 @@ export interface XenesisChannelState {
   env: string[];
 }
 
-export interface XenesisTelegramChannelSettings {
+export interface XenesisChannelGuardrailSettings {
+  approvalMode: XenesisApprovalMode;
+  maxTurns: number;
+  maxTokens: number;
+}
+
+export interface XenesisTelegramChannelSettings extends XenesisChannelGuardrailSettings {
   enabled: boolean;
   tokenEnv: string;
   allowedChatIds: string;
 }
 
-export interface XenesisSlackChannelSettings {
+export interface XenesisSlackChannelSettings extends XenesisChannelGuardrailSettings {
   enabled: boolean;
   botTokenEnv: string;
   signingSecretEnv: string;
@@ -134,7 +271,7 @@ export interface XenesisSlackChannelSettings {
   allowedChannelIds: string;
 }
 
-export interface XenesisDiscordChannelSettings {
+export interface XenesisDiscordChannelSettings extends XenesisChannelGuardrailSettings {
   enabled: boolean;
   botTokenEnv: string;
   webhookUrlEnv: string;
@@ -142,7 +279,7 @@ export interface XenesisDiscordChannelSettings {
   allowedGuildIds: string;
 }
 
-export interface XenesisWebhookChannelSettings {
+export interface XenesisWebhookChannelSettings extends XenesisChannelGuardrailSettings {
   enabled: boolean;
   urlEnv: string;
 }
@@ -191,7 +328,7 @@ export interface XenesisProfileChannelsUpdateRequest {
 export interface XenesisProfileChannelTestRequest {
   profile?: string;
   channel: XenesisProfileChannelName;
-  channels: XenesisProfileChannelSettings;
+  channels?: XenesisProfileChannelSettings;
   message?: string;
 }
 
@@ -224,6 +361,16 @@ export interface XenesisProviderRuntimeStatus {
   profile: string;
   baseURL: string;
   apiKeyEnv: string;
+  requestedProvider?: string;
+  source?: string;
+  authMode?: string;
+  credentialState?: string;
+  credentialSource?: string;
+  processModel?: string;
+  fallbackProvider?: string;
+  safeForReasoning?: boolean;
+  diagnostics?: string[];
+  localCliBoundary?: string;
 }
 
 export type LocalCliAgentId =
@@ -2011,6 +2158,7 @@ export interface XenesisApi {
   gatewayStop(): Promise<XenesisStatus>;
   gatewayRestart(): Promise<XenesisStatus>;
   gatewayOpenDashboard(): Promise<XenesisStatus>;
+  connectionsStatus(): Promise<XenesisConnectionsStatus>;
   start(): Promise<XenesisStatus>;
   stop(): Promise<XenesisStatus>;
   restart(): Promise<XenesisStatus>;
@@ -2132,6 +2280,8 @@ export interface McpBridgeOpenBuiltinPanePayload {
   category?: string;
   mode?: string;
   section?: string;
+  focusConnectionId?: string;
+  focusConnectionDetail?: string;
   ensureVisible?: boolean;
 }
 
@@ -2144,6 +2294,8 @@ export interface McpBridgeOpenBuiltinPaneResult {
   category?: string;
   mode?: string;
   section?: string;
+  focusConnectionId?: string;
+  focusConnectionDetail?: string;
   ensureVisible?: boolean;
   message?: string;
   error?: string;
@@ -2352,7 +2504,16 @@ export interface McpBridgeDockActionResult {
 
 export interface McpBridgeBrowserActionPayload {
   requestId: string;
-  action: 'navigate' | 'back' | 'forward' | 'reload' | 'stop' | 'state' | 'textSnapshot' | 'domSnapshot' | 'elementAction';
+  action:
+    | 'navigate'
+    | 'back'
+    | 'forward'
+    | 'reload'
+    | 'stop'
+    | 'state'
+    | 'textSnapshot'
+    | 'domSnapshot'
+    | 'elementAction';
   contentId?: string;
   paneId?: string;
   url?: string;

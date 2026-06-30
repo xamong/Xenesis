@@ -1,20 +1,20 @@
-import { createServer } from "node:net";
-import { access, readFile } from "node:fs/promises";
-import { basename, relative, sep } from "node:path";
-import { z } from "zod";
-import { assertExistingPathInsideWorkspace, assertInsideWorkspace } from "../utils/workspace.js";
-import type { Tool } from "./types.js";
+import { access, readFile } from 'node:fs/promises';
+import { createServer } from 'node:net';
+import { basename, relative, sep } from 'node:path';
+import { z } from 'zod';
+import { assertExistingPathInsideWorkspace, assertInsideWorkspace } from '../utils/workspace.js';
+import type { Tool } from './types.js';
 
 const appLaunchPlanInput = z.object({
-  cwd: z.string().default("."),
+  cwd: z.string().default('.'),
   entry: z.string().nullable().optional(),
-  target: z.enum(["auto", "browser", "server"]).default("auto")
+  target: z.enum(['auto', 'browser', 'server']).default('auto'),
 });
 
 const appLaunchPlanOpenAIInput = z.object({
   cwd: z.string(),
   entry: z.string().nullable(),
-  target: z.enum(["auto", "browser", "server"])
+  target: z.enum(['auto', 'browser', 'server']),
 });
 
 type AppLaunchPlanInput = z.infer<typeof appLaunchPlanInput>;
@@ -29,8 +29,8 @@ interface PackageJson {
 interface LaunchPlan {
   ok: boolean;
   status: string;
-  strategy?: "npm_script" | "python" | "static";
-  confidence?: "high" | "medium" | "low";
+  strategy?: 'npm_script' | 'python' | 'static';
+  confidence?: 'high' | 'medium' | 'low';
   framework?: string;
   cwd: string;
   script?: string;
@@ -48,7 +48,7 @@ interface LaunchPlan {
 
 function toWorkspaceRelative(workspaceRoot: string, absolutePath: string) {
   const result = relative(workspaceRoot, absolutePath);
-  return result ? result.split(sep).join("/") : ".";
+  return result ? result.split(sep).join('/') : '.';
 }
 
 async function fileExists(path: string) {
@@ -62,7 +62,7 @@ async function fileExists(path: string) {
 
 async function readTextIfExists(path: string) {
   try {
-    return await readFile(path, "utf8");
+    return await readFile(path, 'utf8');
   } catch {
     return undefined;
   }
@@ -71,11 +71,11 @@ async function readTextIfExists(path: string) {
 async function allocateLocalHttpPort() {
   return await new Promise<number>((resolvePort, rejectPort) => {
     const server = createServer();
-    server.once("error", rejectPort);
-    server.listen(0, "127.0.0.1", () => {
+    server.once('error', rejectPort);
+    server.listen(0, '127.0.0.1', () => {
       const address = server.address();
-      if (!address || typeof address === "string") {
-        server.close(() => rejectPort(new Error("Failed to allocate a local HTTP port.")));
+      if (!address || typeof address === 'string') {
+        server.close(() => rejectPort(new Error('Failed to allocate a local HTTP port.')));
         return;
       }
       const port = address.port;
@@ -95,12 +95,12 @@ function allDependencies(packageJson: PackageJson) {
   return {
     ...(packageJson.dependencies ?? {}),
     ...(packageJson.devDependencies ?? {}),
-    ...(packageJson.optionalDependencies ?? {})
+    ...(packageJson.optionalDependencies ?? {}),
   };
 }
 
 function hasDependency(packageJson: PackageJson, name: string) {
-  return Object.prototype.hasOwnProperty.call(allDependencies(packageJson), name);
+  return Object.hasOwn(allDependencies(packageJson), name);
 }
 
 function extractPort(script: string, fallback: number) {
@@ -124,114 +124,112 @@ function pickScript(scripts: Record<string, string>, names: string[]) {
 
 function detectPackageLaunch(cwd: string, packageJson: PackageJson): LaunchPlan | undefined {
   const scripts = packageJson.scripts ?? {};
-  const scriptText = Object.values(scripts).join("\n");
+  const scriptText = Object.values(scripts).join('\n');
   const dependencies = allDependencies(packageJson);
   const dependencyNames = new Set(Object.keys(dependencies));
 
-  const viteLike = hasDependency(packageJson, "vite") || /\bvite\b/i.test(scriptText);
+  const viteLike = hasDependency(packageJson, 'vite') || /\bvite\b/i.test(scriptText);
   if (viteLike) {
-    const script = pickScript(scripts, ["dev", "start", "serve"]);
+    const script = pickScript(scripts, ['dev', 'start', 'serve']);
     if (!script) return undefined;
     const port = extractPort(script.command, 5173);
     return {
       ok: true,
-      status: "pass",
-      strategy: "npm_script",
-      confidence: "high",
-      framework: dependencyNames.has("@sveltejs/kit") ? "sveltekit" : "vite",
+      status: 'pass',
+      strategy: 'npm_script',
+      confidence: 'high',
+      framework: dependencyNames.has('@sveltejs/kit') ? 'sveltekit' : 'vite',
       cwd,
       script: script.name,
       command: `npm run ${script.name}`,
       port,
       readinessUrl: `http://127.0.0.1:${port}/`,
-      preferredTool: "server",
-      nextTools: "server -> app_e2e_check"
+      preferredTool: 'server',
+      nextTools: 'server -> app_e2e_check',
     };
   }
 
-  const nextLike = hasDependency(packageJson, "next") || /\bnext\s+(dev|start)\b/i.test(scriptText);
+  const nextLike = hasDependency(packageJson, 'next') || /\bnext\s+(dev|start)\b/i.test(scriptText);
   if (nextLike) {
-    const script = pickScript(scripts, ["dev", "start"]);
+    const script = pickScript(scripts, ['dev', 'start']);
     if (!script) return undefined;
     const port = extractPort(script.command, 3000);
     return {
       ok: true,
-      status: "pass",
-      strategy: "npm_script",
-      confidence: "high",
-      framework: "next",
+      status: 'pass',
+      strategy: 'npm_script',
+      confidence: 'high',
+      framework: 'next',
       cwd,
       script: script.name,
       command: `npm run ${script.name}`,
       port,
       readinessUrl: `http://127.0.0.1:${port}/`,
-      preferredTool: "server",
-      nextTools: "server -> app_e2e_check"
+      preferredTool: 'server',
+      nextTools: 'server -> app_e2e_check',
     };
   }
 
-  const astroLike = hasDependency(packageJson, "astro") || /\bastro\s+dev\b/i.test(scriptText);
+  const astroLike = hasDependency(packageJson, 'astro') || /\bastro\s+dev\b/i.test(scriptText);
   if (astroLike) {
-    const script = pickScript(scripts, ["dev", "start"]);
+    const script = pickScript(scripts, ['dev', 'start']);
     if (!script) return undefined;
     const port = extractPort(script.command, 4321);
     return {
       ok: true,
-      status: "pass",
-      strategy: "npm_script",
-      confidence: "high",
-      framework: "astro",
+      status: 'pass',
+      strategy: 'npm_script',
+      confidence: 'high',
+      framework: 'astro',
       cwd,
       script: script.name,
       command: `npm run ${script.name}`,
       port,
       readinessUrl: `http://127.0.0.1:${port}/`,
-      preferredTool: "server",
-      nextTools: "server -> app_e2e_check"
+      preferredTool: 'server',
+      nextTools: 'server -> app_e2e_check',
     };
   }
 
-  const reactScriptsLike = hasDependency(packageJson, "react-scripts") || /\breact-scripts\s+start\b/i.test(scriptText);
+  const reactScriptsLike = hasDependency(packageJson, 'react-scripts') || /\breact-scripts\s+start\b/i.test(scriptText);
   if (reactScriptsLike) {
-    const script = pickScript(scripts, ["start", "dev"]);
+    const script = pickScript(scripts, ['start', 'dev']);
     if (!script) return undefined;
     const port = extractPort(script.command, 3000);
     return {
       ok: true,
-      status: "pass",
-      strategy: "npm_script",
-      confidence: "high",
-      framework: "react-scripts",
+      status: 'pass',
+      strategy: 'npm_script',
+      confidence: 'high',
+      framework: 'react-scripts',
       cwd,
       script: script.name,
       command: `npm run ${script.name}`,
       port,
       readinessUrl: `http://127.0.0.1:${port}/`,
-      preferredTool: "server",
-      nextTools: "server -> app_e2e_check"
+      preferredTool: 'server',
+      nextTools: 'server -> app_e2e_check',
     };
   }
 
-  const genericScript = pickScript(scripts, ["dev", "start", "serve"]);
+  const genericScript = pickScript(scripts, ['dev', 'start', 'serve']);
   if (genericScript) {
-    const framework = /\bnode\b/i.test(genericScript.command) || hasDependency(packageJson, "express")
-      ? "node"
-      : "npm";
+    const framework = /\bnode\b/i.test(genericScript.command) || hasDependency(packageJson, 'express') ? 'node' : 'npm';
     const port = extractPort(genericScript.command, 3000);
     return {
       ok: true,
-      status: "pass",
-      strategy: "npm_script",
-      confidence: framework === "node" ? "medium" : "low",
+      status: 'pass',
+      strategy: 'npm_script',
+      confidence: framework === 'node' ? 'medium' : 'low',
       framework,
       cwd,
       script: genericScript.name,
       command: `npm run ${genericScript.name}`,
       port,
       readinessUrl: `http://127.0.0.1:${port}/`,
-      preferredTool: "server",
-      nextTools: "server -> app_readiness -> app_e2e_check",
-      notes: ["Port is inferred. Inspect package.json before relying on this readiness URL."]
+      preferredTool: 'server',
+      nextTools: 'server -> app_readiness -> app_e2e_check',
+      notes: ['Port is inferred. Inspect package.json before relying on this readiness URL.'],
     };
   }
 
@@ -242,51 +240,51 @@ async function detectPythonLaunch(cwdPath: string, cwd: string): Promise<LaunchP
   if (await fileExists(`${cwdPath}/manage.py`)) {
     return {
       ok: true,
-      status: "pass",
-      strategy: "python",
-      confidence: "high",
-      framework: "django",
+      status: 'pass',
+      strategy: 'python',
+      confidence: 'high',
+      framework: 'django',
       cwd,
-      command: "python manage.py runserver 127.0.0.1:8000",
+      command: 'python manage.py runserver 127.0.0.1:8000',
       port: 8000,
-      readinessUrl: "http://127.0.0.1:8000/",
-      preferredTool: "server",
-      nextTools: "server -> app_e2e_check"
+      readinessUrl: 'http://127.0.0.1:8000/',
+      preferredTool: 'server',
+      nextTools: 'server -> app_e2e_check',
     };
   }
 
-  const candidates = ["app.py", "main.py"];
+  const candidates = ['app.py', 'main.py'];
   for (const candidate of candidates) {
     const text = await readTextIfExists(`${cwdPath}/${candidate}`);
     if (!text) continue;
     if (/\bfrom\s+flask\s+import\b|\bFlask\s*\(/.test(text)) {
       return {
         ok: true,
-        status: "pass",
-        strategy: "python",
-        confidence: "high",
-        framework: "flask",
+        status: 'pass',
+        strategy: 'python',
+        confidence: 'high',
+        framework: 'flask',
         cwd,
-        command: `python -m flask --app ${candidate.replace(/\.py$/i, "")} run --host 127.0.0.1 --port 5000`,
+        command: `python -m flask --app ${candidate.replace(/\.py$/i, '')} run --host 127.0.0.1 --port 5000`,
         port: 5000,
-        readinessUrl: "http://127.0.0.1:5000/",
-        preferredTool: "server",
-        nextTools: "server -> app_e2e_check"
+        readinessUrl: 'http://127.0.0.1:5000/',
+        preferredTool: 'server',
+        nextTools: 'server -> app_e2e_check',
       };
     }
     if (/\bFastAPI\s*\(/.test(text)) {
       return {
         ok: true,
-        status: "pass",
-        strategy: "python",
-        confidence: "medium",
-        framework: "fastapi",
+        status: 'pass',
+        strategy: 'python',
+        confidence: 'medium',
+        framework: 'fastapi',
         cwd,
-        command: `python -m uvicorn ${candidate.replace(/\.py$/i, "")}:app --host 127.0.0.1 --port 8000`,
+        command: `python -m uvicorn ${candidate.replace(/\.py$/i, '')}:app --host 127.0.0.1 --port 8000`,
         port: 8000,
-        readinessUrl: "http://127.0.0.1:8000/",
-        preferredTool: "server",
-        nextTools: "server -> app_e2e_check"
+        readinessUrl: 'http://127.0.0.1:8000/',
+        preferredTool: 'server',
+        nextTools: 'server -> app_e2e_check',
       };
     }
   }
@@ -298,42 +296,42 @@ async function detectStaticLaunch(
   workspaceRoot: string,
   cwdPath: string,
   cwd: string,
-  entry: string | null | undefined
+  entry: string | null | undefined,
 ): Promise<LaunchPlan | undefined> {
   const requestedEntry = normalizeEntryCandidate(entry);
   const candidates = [
     requestedEntry,
-    "index.html",
-    "client.html",
-    "public/index.html",
-    "dist/index.html",
-    "build/index.html"
+    'index.html',
+    'client.html',
+    'public/index.html',
+    'dist/index.html',
+    'build/index.html',
   ].filter(Boolean) as string[];
 
   for (const candidate of candidates) {
-    const absolute = assertInsideWorkspace(workspaceRoot, `${cwd}/${candidate}`.replace(/^\.\//, ""));
+    const absolute = assertInsideWorkspace(workspaceRoot, `${cwd}/${candidate}`.replace(/^\.\//, ''));
     if (!(await fileExists(absolute))) continue;
     const port = await allocateLocalHttpPort();
     const entryPath = toWorkspaceRelative(cwdPath, absolute);
     return {
       ok: true,
-      status: "pass",
-      strategy: "static",
-      confidence: "high",
+      status: 'pass',
+      strategy: 'static',
+      confidence: 'high',
       cwd,
-      command: "xenesis:static .",
+      command: 'xenesis:static .',
       entry: entryPath,
-      commandKind: "managed_static_server",
+      commandKind: 'managed_static_server',
       port,
       readinessUrl: `http://127.0.0.1:${port}/${entryPath}`,
-      portPolicy: "allocate_free_local_port",
+      portPolicy: 'allocate_free_local_port',
       readinessPath: `/${entryPath}`,
-      preferredTool: "server",
-      nextTools: "server -> app_e2e_check",
+      preferredTool: 'server',
+      nextTools: 'server -> app_e2e_check',
       notes: [
-        "Use Xenesis managed static serving or the app_e2e_check local-file auto-repair path.",
-        "Do not invent placeholder server commands."
-      ]
+        'Use Xenesis managed static serving or the app_e2e_check local-file auto-repair path.',
+        'Do not invent placeholder server commands.',
+      ],
     };
   }
 
@@ -344,7 +342,7 @@ function normalizeEntryCandidate(entry: string | null | undefined) {
   const trimmed = entry?.trim();
   if (!trimmed) return undefined;
   if (/^[A-Za-z]:[\\/]/.test(trimmed) || /^file:/i.test(trimmed)) return trimmed;
-  return trimmed.replace(/^[\\/]+/, "") || undefined;
+  return trimmed.replace(/^[\\/]+/, '') || undefined;
 }
 
 function renderLaunchPlan(plan: LaunchPlan) {
@@ -363,18 +361,19 @@ function renderLaunchPlan(plan: LaunchPlan) {
     ...(plan.readinessPath ? [`readinessPath: ${plan.readinessPath}`] : []),
     ...(plan.portPolicy ? [`portPolicy: ${plan.portPolicy}`] : []),
     ...(plan.preferredTool ? [`preferredTool: ${plan.preferredTool}`] : []),
-    `nextTools: ${plan.nextTools}`
+    `nextTools: ${plan.nextTools}`,
   ];
   if (plan.notes?.length) {
-    lines.push("notes:");
+    lines.push('notes:');
     for (const note of plan.notes) lines.push(`- ${note}`);
   }
-  return lines.join("\n");
+  return lines.join('\n');
 }
 
 export const appLaunchPlanTool: Tool<AppLaunchPlanInput> = {
-  name: "app_launch_plan",
-  description: "Inspect workspace files and choose a concrete app launch strategy before starting a server or browser check.",
+  name: 'app_launch_plan',
+  description:
+    'Inspect workspace files and choose a concrete app launch strategy before starting a server or browser check.',
   inputSchema: appLaunchPlanInput,
   openaiInputSchema: appLaunchPlanOpenAIInput,
   isReadOnly: () => true,
@@ -396,20 +395,20 @@ export const appLaunchPlanTool: Tool<AppLaunchPlanInput> = {
 
     const unsupported: LaunchPlan = {
       ok: false,
-      status: "no_app_launch_strategy",
+      status: 'no_app_launch_strategy',
       cwd,
-      nextTools: "list -> read -> ask",
+      nextTools: 'list -> read -> ask',
       notes: [
         `No package script, Python app entry, or static HTML entry was detected in ${basename(cwdPath)}.`,
-        "Ask for the intended app entrypoint before starting server or shell commands."
-      ]
+        'Ask for the intended app entrypoint before starting server or shell commands.',
+      ],
     };
     return { ok: false, content: renderLaunchPlan(unsupported), data: unsupported };
-  }
+  },
 };
 
 function normalizeRequestedCwd(cwd: string | undefined) {
-  const requestedCwd = cwd?.trim() || ".";
-  if (requestedCwd === "/" || requestedCwd === "\\") return ".";
+  const requestedCwd = cwd?.trim() || '.';
+  if (requestedCwd === '/' || requestedCwd === '\\') return '.';
   return requestedCwd;
 }

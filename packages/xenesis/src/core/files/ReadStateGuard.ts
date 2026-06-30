@@ -1,9 +1,9 @@
-import { createHash } from "node:crypto";
-import type { Stats } from "node:fs";
-import { open, stat } from "node:fs/promises";
-import { assertExistingPathInsideWorkspace } from "../../utils/workspace.js";
+import { createHash } from 'node:crypto';
+import type { Stats } from 'node:fs';
+import { open, stat } from 'node:fs/promises';
+import { assertExistingPathInsideWorkspace } from '../../utils/workspace.js';
 
-export type ReadSnapshotLineEndings = "lf" | "crlf" | "mixed" | "none";
+export type ReadSnapshotLineEndings = 'lf' | 'crlf' | 'mixed' | 'none';
 
 export interface ReadSnapshot {
   path: string;
@@ -11,7 +11,7 @@ export interface ReadSnapshot {
   contentHash: string;
   mtimeMs: number;
   size: number;
-  encoding: "utf8";
+  encoding: 'utf8';
   lineEndings: ReadSnapshotLineEndings;
   offset?: number;
   limit?: number;
@@ -49,40 +49,40 @@ export interface WriteTextIfReadStateFreshOptions extends AssertReadStateFreshOp
 }
 
 function contentHash(content: string) {
-  return createHash("sha256").update(content).digest("hex");
+  return createHash('sha256').update(content).digest('hex');
 }
 
 function detectLineEndings(content: string): ReadSnapshotLineEndings {
-  const hasCrLf = content.includes("\r\n");
-  const withoutCrLf = content.replace(/\r\n/g, "");
-  const hasLf = withoutCrLf.includes("\n");
-  if (hasCrLf && hasLf) return "mixed";
-  if (hasCrLf) return "crlf";
-  if (hasLf) return "lf";
-  return "none";
+  const hasCrLf = content.includes('\r\n');
+  const withoutCrLf = content.replace(/\r\n/g, '');
+  const hasLf = withoutCrLf.includes('\n');
+  if (hasCrLf && hasLf) return 'mixed';
+  if (hasCrLf) return 'crlf';
+  if (hasLf) return 'lf';
+  return 'none';
 }
 
 function createReadSnapshotForAbsolutePath(
   options: CreateReadSnapshotFromContentOptions,
   absolutePath: string,
-  stats: Stats
+  stats: Stats,
 ): ReadSnapshot {
   return {
     path: options.path,
     absolutePath,
     contentHash: contentHash(options.content),
     mtimeMs: stats.mtimeMs,
-    size: Buffer.byteLength(options.content, "utf8"),
-    encoding: "utf8",
+    size: Buffer.byteLength(options.content, 'utf8'),
+    encoding: 'utf8',
     lineEndings: detectLineEndings(options.content),
     ...(options.offset !== undefined ? { offset: options.offset } : {}),
     ...(options.limit !== undefined ? { limit: options.limit } : {}),
-    isPartialView: options.isPartialView
+    isPartialView: options.isPartialView,
   };
 }
 
 export async function createReadSnapshotFromContent(
-  options: CreateReadSnapshotFromContentOptions
+  options: CreateReadSnapshotFromContentOptions,
 ): Promise<ReadSnapshot> {
   const absolutePath = await assertExistingPathInsideWorkspace(options.workspaceRoot, options.path);
   const stats = await stat(absolutePath);
@@ -91,14 +91,18 @@ export async function createReadSnapshotFromContent(
 
 export async function readTextWithSnapshot(options: CreateReadSnapshotOptions): Promise<ReadTextWithSnapshot> {
   const absolutePath = await assertExistingPathInsideWorkspace(options.workspaceRoot, options.path);
-  const handle = await open(absolutePath, "r");
+  const handle = await open(absolutePath, 'r');
   try {
-    const content = await handle.readFile({ encoding: "utf8" });
+    const content = await handle.readFile({ encoding: 'utf8' });
     const stats = await handle.stat();
-    const snapshot = createReadSnapshotForAbsolutePath({
-      ...options,
-      content
-    }, absolutePath, stats);
+    const snapshot = createReadSnapshotForAbsolutePath(
+      {
+        ...options,
+        content,
+      },
+      absolutePath,
+      stats,
+    );
     return { absolutePath, content, snapshot };
   } finally {
     await handle.close();
@@ -126,7 +130,7 @@ function assertSnapshotMatches(path: string, expected: ReadSnapshot, current: Re
 
 function assertReadStateCanAuthorizePath(options: AssertReadStateFreshOptions): void {
   if (options.readState.isPartialView) {
-    throw new Error("Partial read state cannot authorize mutation.");
+    throw new Error('Partial read state cannot authorize mutation.');
   }
   if (options.readState.path !== options.path) {
     throw new Error(`Read state mismatch for ${options.path}: snapshot path is ${options.readState.path}.`);
@@ -139,7 +143,7 @@ export async function readFreshTextForMutation(options: AssertReadStateFreshOpti
   const fresh = await readTextWithSnapshot({
     workspaceRoot: options.workspaceRoot,
     path: options.path,
-    isPartialView: false
+    isPartialView: false,
   });
 
   assertSnapshotMatches(options.path, options.readState, fresh.snapshot);
@@ -154,19 +158,23 @@ export async function writeTextIfReadStateFresh(options: WriteTextIfReadStateFre
   assertReadStateCanAuthorizePath(options);
 
   const absolutePath = await assertExistingPathInsideWorkspace(options.workspaceRoot, options.path);
-  const handle = await open(absolutePath, "r+");
+  const handle = await open(absolutePath, 'r+');
   try {
-    const currentContent = await handle.readFile({ encoding: "utf8" });
+    const currentContent = await handle.readFile({ encoding: 'utf8' });
     const currentStats = await handle.stat();
-    const currentSnapshot = createReadSnapshotForAbsolutePath({
-      workspaceRoot: options.workspaceRoot,
-      path: options.path,
-      content: currentContent,
-      isPartialView: false
-    }, absolutePath, currentStats);
+    const currentSnapshot = createReadSnapshotForAbsolutePath(
+      {
+        workspaceRoot: options.workspaceRoot,
+        path: options.path,
+        content: currentContent,
+        isPartialView: false,
+      },
+      absolutePath,
+      currentStats,
+    );
     assertSnapshotMatches(options.path, options.readState, currentSnapshot);
 
-    const output = Buffer.from(options.content, "utf8");
+    const output = Buffer.from(options.content, 'utf8');
     await handle.write(output, 0, output.length, 0);
     await handle.truncate(output.length);
   } finally {

@@ -2139,7 +2139,7 @@ function createFallbackProviders(config: XenesisConfig, env: NodeJS.ProcessEnv):
 }
 
 function selectTools(config: XenesisConfig, allTools: ToolRegistry): ToolRegistry {
-  if (config.approvalMode !== "readonly" || config.provider === "mock") {
+  if (config.approvalMode !== "readonly") {
     return allTools;
   }
 
@@ -2347,7 +2347,7 @@ async function initConfig(parsed: ParsedArgs, cwd: string, env: NodeJS.ProcessEn
     if (!isNodeError(error) || error.code !== "ENOENT") throw error;
   }
 
-  const provider = env.XENESIS_PROVIDER ? parseProviderName(env.XENESIS_PROVIDER) : "openai";
+  const provider = env.XENESIS_PROVIDER ? parseProviderName(env.XENESIS_PROVIDER) : defaultConfig.provider;
   const config = {
     provider,
     model: env.XENESIS_MODEL ?? env.OPENAI_MODEL ?? defaultConfig.model,

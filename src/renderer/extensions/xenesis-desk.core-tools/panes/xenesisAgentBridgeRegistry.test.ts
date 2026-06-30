@@ -79,6 +79,49 @@ test('registry lists agents and exposes final assistant events only', async () =
   }
 });
 
+test('registry exposes raw stream events as non-external-safe diagnostics', () => {
+  const target: { __xenesisDeskAgentBridge?: ReturnType<typeof installXenesisDeskAgentBridge> } = {};
+  installXenesisDeskAgentBridge(target as never);
+  const unregister = registerXenesisAgentBridgeAgent({
+    agentId: 'xenis-agent-raw',
+    title: 'Xenesis Agent',
+    getSnapshot: () =>
+      state({
+        rawStream: [
+          {
+            id: 'raw-2',
+            at: '2026-06-21T01:00:04.000Z',
+            kind: 'desk_tool_result',
+            summary: 'Desk tool result: desk_call_capability ok',
+          },
+          {
+            id: 'raw-1',
+            at: '2026-06-21T01:00:03.000Z',
+            kind: 'desk_tool_call',
+            summary: 'Desk tool call: xd.xenesis.status',
+            detail: '{"toolCall":{"name":"desk_call_capability"}}',
+          },
+        ],
+      }),
+    submitMessage: async () => undefined,
+  });
+
+  try {
+    const events = target.__xenesisDeskAgentBridge!.listAgentRawEvents('xenis-agent-raw');
+    assert.equal(events.ok, true);
+    assert.deepEqual(
+      events.events.map((event) => [event.id, event.kind, event.externalSafe]),
+      [
+        ['raw-1', 'desk_tool_call', false],
+        ['raw-2', 'desk_tool_result', false],
+      ],
+    );
+    assert.equal(target.__xenesisDeskAgentBridge!.listRawEvents('missing').ok, false);
+  } finally {
+    unregister();
+  }
+});
+
 test('registry submitMessage routes text to the registered pane', async () => {
   const target: { __xenesisDeskAgentBridge?: ReturnType<typeof installXenesisDeskAgentBridge> } = {};
   installXenesisDeskAgentBridge(target as never);

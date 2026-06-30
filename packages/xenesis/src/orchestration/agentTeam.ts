@@ -58,9 +58,7 @@ export function createAgentTeamOrchestrator(config: AgentTeamConfig): AgentTeamO
     config,
 
     acquireFileLock(agentName, filePath): FileLock | null {
-      const normalizedPath = config.conflict.scope === 'directory'
-        ? filePath.replace(/[/\\][^/\\]+$/, '')
-        : filePath;
+      const normalizedPath = config.conflict.scope === 'directory' ? filePath.replace(/[/\\][^/\\]+$/, '') : filePath;
 
       const existing = fileLocks.get(normalizedPath);
       if (existing && existing.holder !== agentName) return null;
@@ -98,7 +96,7 @@ export function createAgentTeamOrchestrator(config: AgentTeamConfig): AgentTeamO
     },
 
     getExecutionOrder(): string[][] {
-      const agentMap = new Map(config.agents.map(a => [a.name, a]));
+      const agentMap = new Map(config.agents.map((a) => [a.name, a]));
       const visited = new Set<string>();
       const phases: string[][] = [];
 
@@ -107,7 +105,7 @@ export function createAgentTeamOrchestrator(config: AgentTeamConfig): AgentTeamO
         for (const agent of config.agents) {
           if (visited.has(agent.name)) continue;
           const deps = agent.dependsOn || [];
-          if (deps.every(d => visited.has(d))) {
+          if (deps.every((d) => visited.has(d))) {
             if (agent.parallel !== false) {
               phase.push(agent.name);
             } else if (phase.length === 0) {
@@ -124,10 +122,10 @@ export function createAgentTeamOrchestrator(config: AgentTeamConfig): AgentTeamO
     },
 
     canStart(agentName, completedAgents): boolean {
-      const agent = config.agents.find(a => a.name === agentName);
+      const agent = config.agents.find((a) => a.name === agentName);
       if (!agent) return false;
       const deps = agent.dependsOn || [];
-      return deps.every(d => completedAgents.has(d));
+      return deps.every((d) => completedAgents.has(d));
     },
 
     sendMessage(from, to, payload): void {

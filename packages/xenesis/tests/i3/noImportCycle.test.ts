@@ -1,13 +1,13 @@
-import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { dirname, resolve } from "node:path";
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const srcDir = resolve(here, "../../src");
+const srcDir = resolve(here, '../../src');
 
 function read(rel: string): string {
-  return readFileSync(resolve(srcDir, rel), "utf8");
+  return readFileSync(resolve(srcDir, rel), 'utf8');
 }
 
 /**
@@ -17,23 +17,21 @@ function read(rel: string): string {
  * instead — so no `command -> isolation -> ... -> command/executionBackend`
  * cycle can form.
  */
-describe("execution backend import boundary", () => {
-  it("command.ts does not import core/isolation", () => {
-    const command = read("utils/command.ts");
+describe('execution backend import boundary', () => {
+  it('command.ts does not import core/isolation', () => {
+    const command = read('utils/command.ts');
     expect(command).not.toMatch(/from\s+["'][^"']*core\/isolation/);
   });
 
-  it("the loader-injection guard leaf imports nothing from the project", () => {
-    const guard = read("utils/dangerousEnv.ts");
+  it('the loader-injection guard leaf imports nothing from the project', () => {
+    const guard = read('utils/dangerousEnv.ts');
     // Only Node built-ins / type-level globals are allowed; no project imports.
-    const importLines = guard
-      .split("\n")
-      .filter((line) => /^\s*import\b/.test(line));
+    const importLines = guard.split('\n').filter((line) => /^\s*import\b/.test(line));
     expect(importLines).toHaveLength(0);
   });
 
-  it("executionBackend.ts imports the leaf utils/command, not isolation siblings for spawning", () => {
-    const backend = read("core/isolation/executionBackend.ts");
+  it('executionBackend.ts imports the leaf utils/command, not isolation siblings for spawning', () => {
+    const backend = read('core/isolation/executionBackend.ts');
     expect(backend).toMatch(/from\s+["']\.\.\/\.\.\/utils\/command\.js["']/);
   });
 });

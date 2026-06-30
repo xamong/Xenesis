@@ -99,12 +99,6 @@ import {
   type XenesisDeskActionExecutionResult,
   type XenesisDeskActionRequest,
 } from './xenesisAgentDeskControl';
-import { isXenesisApprovalIntent } from './xenesisAgentInputRouting';
-import {
-  buildXenesisMarkdownSaveDraft,
-  resolveXenesisMarkdownSavePath,
-  type XenesisMarkdownSaveDraft,
-} from './xenesisAgentMarkdownSave';
 import { buildDeskRunContext } from './xenesisAgentRunContext';
 import {
   deskActionAuditEntries,
@@ -114,7 +108,7 @@ import {
   taskLifecycleAuditEntries,
   terminalMessageFromRunEventSummary,
 } from './xenesisAgentRunEvents';
-import { buildXenesisAgentRunContextDetail, buildXenesisAgentRunRequest } from './xenesisAgentRunRequest';
+import { buildXenesisAgentRunRequest } from './xenesisAgentRunRequest';
 import {
   appendAssistantStreamDeltaWithRawMerge,
   appendChatMessage,
@@ -169,7 +163,7 @@ import {
   type XenesisTerminalLineKind,
 } from './xenesisAgentTypes';
 import {
-  buildXenesisControlDemoWorkArgsFromInput,
+  buildXenesisControlDemoWorkArgs,
   buildXenesisVisibleSubagentsDemoWorkers,
   buildXenesisVisibleSubagentTerminalArgs,
   buildXenesisVisibleSubagentWorkWorkers,
@@ -1222,12 +1216,6 @@ function normalizeXenesisAgentEventAttachments(raw: unknown): XenesisAgentAttach
   return normalized;
 }
 
-interface XenesisPendingMarkdownSave {
-  requestText: string;
-  filePath: string;
-  draft: XenesisMarkdownSaveDraft;
-}
-
 export interface XenesisAgentPaneProps {
   contentId?: string;
 }
@@ -1257,7 +1245,6 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
   const settingsSnapshotRef = useRef<Partial<AppSettings> | null>(null);
   const promptHistoryRef = useRef<string[]>([]);
   const promptHistoryIndexRef = useRef<number | null>(null);
-  const pendingMarkdownSaveRef = useRef<XenesisPendingMarkdownSave | null>(null);
   // Prompt-queue (Claude-Code-style type-ahead) drain bookkeeping.
   const suppressNextDrainRef = useRef(false);
   const drainPrevBusyRef = useRef(false);
@@ -1279,7 +1266,6 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
     status,
     prompt,
     mode,
-    loading,
     running,
     error,
     messages,
@@ -1722,115 +1708,6 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
     }
   }
 
-  async function requestMarkdownSave(input: string): Promise<void> {
-    const trimmedInput = input.trim();
-    if (running) {
-      appendChatMessage({ role: 'user', content: trimmedInput });
-      appendChatMessage({
-        role: 'system',
-        kind: 'error',
-        content: 'Xenesis is already running. Use /cancel before preparing a file save.',
-        error: true,
-      });
-      return;
-    }
-
-    xenesisAgentStateStore.update({ prompt: '' });
-    const currentStatus = status?.ok ? status : await refresh();
-    const workspace = currentStatus?.workspace || status?.workspace || '';
-    const requestMessage: XenesisChatMessage = {
-      id: `pending-save-request-${Date.now()}`,
-      role: 'user',
-      content: trimmedInput,
-      at: new Date().toISOString(),
-    };
-    const draft = buildXenesisMarkdownSaveDraft({
-      messages: [requestMessage, ...messages],
-      requestText: trimmedInput,
-    });
-    const filePath = resolveXenesisMarkdownSavePath(workspace, draft.fileName);
-    pendingMarkdownSaveRef.current = {
-      requestText: trimmedInput,
-      filePath,
-      draft,
-    };
-
-    appendChatMessage({ role: 'user', content: trimmedInput });
-    appendChatMessage({
-      role: 'assistant',
-      kind: 'status',
-      content: [
-        'Markdown 파일 저장 준비가 되었습니다.',
-        '',
-        `대상: ${filePath}`,
-        `크기: ${draft.content.length.toLocaleString()} chars`,
-        '',
-        '저장하려면 "승인"이라고 입력하세요. 취소하려면 /cancel 또는 다른 요청을 입력하세요.',
-      ].join('\n'),
-    });
-    appendRawStreamEntry({
-      kind: 'file_save_pending',
-      summary: `Markdown save pending: ${draft.fileName}`,
-      detail: filePath,
-    });
-  }
-
-  async function applyPendingMarkdownSave(input: string): Promise<void> {
-    const pending = pendingMarkdownSaveRef.current;
-    const trimmedInput = input.trim();
-    if (!pending) {
-      appendChatMessage({ role: 'user', content: trimmedInput });
-      appendChatMessage({
-        role: 'system',
-        kind: 'status',
-        content: '승인할 대기 작업이 없습니다. 저장할 내용을 먼저 요청해 주세요.',
-      });
-      return;
-    }
-
-    pendingMarkdownSaveRef.current = null;
-    appendChatMessage({ role: 'user', content: trimmedInput });
-    try {
-      const writtenPath = await writeXenesisArtifactPromptFile({
-        filePath: pending.filePath,
-        fileName: pending.draft.fileName,
-        content: pending.draft.content,
-        maxBytes: 220_000,
-      });
-      appendChatMessage({
-        role: 'assistant',
-        kind: 'status',
-        content: [
-          'Markdown 파일을 저장했습니다.',
-          '',
-          `대상: ${writtenPath}`,
-          `요청: ${pending.requestText}`,
-          `크기: ${pending.draft.content.length.toLocaleString()} chars`,
-        ].join('\n'),
-      });
-      appendRawStreamEntry({
-        kind: 'file_save_result',
-        summary: `Markdown saved: ${pending.draft.fileName}`,
-        detail: writtenPath,
-      });
-    } catch (saveError) {
-      const message = saveError instanceof Error ? saveError.message : String(saveError);
-      xenesisAgentStateStore.update({ error: message });
-      appendChatMessage({
-        role: 'system',
-        kind: 'error',
-        content: `Markdown 파일 저장에 실패했습니다.\n\n${message}`,
-        error: true,
-      });
-      appendRawStreamEntry({
-        kind: 'file_save_error',
-        summary: message,
-        detail: pending.filePath,
-        error: true,
-      });
-    }
-  }
-
   async function executeXenesisDeskActionRequests(
     actions: XenesisDeskActionRequest[],
   ): Promise<XenesisDeskActionExecutionResult[]> {
@@ -2178,17 +2055,6 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
       summary: trimmedPrompt.split(/\r?\n/)[0]?.slice(0, 120) || 'Xenesis run started',
       detail: trimmedPrompt,
     });
-    const runContextDetail = buildXenesisAgentRunContextDetail({
-      prompt: trimmedPrompt,
-      contextMessages,
-    });
-    if (runContextDetail) {
-      appendRawStreamEntry({
-        kind: 'chat_context',
-        summary: 'Recent conversation context attached to follow-up prompt',
-        detail: runContextDetail,
-      });
-    }
     const runSessionId = xenesisAgentStateStore.getSnapshot().activeSessionId.trim();
     const providerAttachments = toXenesisProviderAttachments(runAttachments);
 
@@ -2343,18 +2209,6 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
       summary: trimmedPrompt.split(/\r?\n/)[0]?.slice(0, 120) || 'XCON artifact generation started',
       detail: providerPrompt,
     });
-    if (artifactPromptContext.contextApplied) {
-      appendRawStreamEntry({
-        kind: 'artifact_context',
-        summary: 'Artifact follow-up context applied',
-        detail: [
-          `displayPrompt: ${trimmedPrompt}`,
-          `previousUserPrompt: ${artifactPromptContext.previousUserPrompt || '-'}`,
-          'previousAssistantText:',
-          artifactPromptContext.previousAssistantText,
-        ].join('\n'),
-      });
-    }
 
     try {
       let lastStatusAt = 0;
@@ -3041,7 +2895,7 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
   }
 
   async function runXenesisControlDemo(input: string, displayInput = '/control-demo'): Promise<void> {
-    await runVisibleSubagentsWork(buildXenesisControlDemoWorkArgsFromInput(input), displayInput);
+    await runVisibleSubagentsWork(buildXenesisControlDemoWorkArgs(input), displayInput);
   }
 
   async function runVisibleSubagentsCleanup(displayInput = '/subagents-cleanup'): Promise<void> {
@@ -3681,25 +3535,6 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
 
     pushPromptHistory(baseInput);
     xenesisAgentStateStore.update({ prompt: '' });
-    if (isXenesisApprovalIntent(baseInput) && pendingMarkdownSaveRef.current) {
-      await applyPendingMarkdownSave(baseInput);
-      return;
-    }
-    if (isXenesisApprovalIntent(baseInput)) {
-      const pendingMcpActionInboxMessage = latestPendingMcpActionInboxMessage();
-      if (
-        pendingMcpActionInboxMessage &&
-        (await resolveMcpActionInboxMessage(pendingMcpActionInboxMessage.id, 'approve', 'once'))
-      ) {
-        return;
-      }
-    }
-    if (isXenesisApprovalIntent(baseInput) && (await approvePendingDeskActionMessage(undefined, baseInput))) {
-      return;
-    }
-    if (!isXenesisApprovalIntent(baseInput)) {
-      pendingMarkdownSaveRef.current = null;
-    }
     // Claude-Code-style type-ahead: while a run/stream is active, QUEUE this prompt
     // (FIFO) instead of rejecting it; the drain watcher runs it on completion.
     if (isXenesisAgentBusy(xenesisAgentStateStore.getSnapshot())) {
@@ -3721,10 +3556,8 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
       await runSlashCommand(baseInput, attachmentDisplayText, contextMessages);
       return;
     }
-    // Structured Desk-action block emitted by the agent (or pasted) — execute it
-    // directly. All natural-language keyword routing has been removed: every other
-    // prompt goes to the LLM/codex, which reasons over the Desk capability catalog
-    // and emits its own xenesis-desk-action block when Desk control is needed.
+    // Structured Desk-action blocks are explicit CR payloads and may run before
+    // provider execution. Ordinary natural language goes through the provider.
     const directDeskActionRequest = routingOptions.bypassDirectDeskRouting
       ? null
       : parseXenesisDeskActionBlocks(baseInput);
@@ -3741,7 +3574,14 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
       return;
     }
     if (hasAttachments) clearAttachments();
-    await runPrompt(providerInput, effectiveMode, attachmentDisplayText, submittedAttachments, contextMessages, routingOptions);
+    await runPrompt(
+      providerInput,
+      effectiveMode,
+      attachmentDisplayText,
+      submittedAttachments,
+      contextMessages,
+      routingOptions,
+    );
   }
   runTerminalInputRef.current = runTerminalInput;
 
@@ -3782,7 +3622,6 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
           prompt?: unknown;
           attachments?: unknown;
           bypassDirectDeskRouting?: unknown;
-          bypassNaturalDeskRouting?: unknown;
         }>
       ).detail;
       const eventPrompt = typeof detail?.prompt === 'string' ? detail.prompt : '';
@@ -3791,7 +3630,6 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
         : undefined;
       const routingOptions: XenesisAgentPromptRoutingOptions = {
         bypassDirectDeskRouting: detail?.bypassDirectDeskRouting === true,
-        bypassNaturalDeskRouting: detail?.bypassNaturalDeskRouting === true,
       };
       if (!eventPrompt.trim()) return;
       event.preventDefault();
@@ -4096,13 +3934,9 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
         </section>
       ) : (
         <>
-          {(policySnapshot ||
-            policyNotices.length > 0 ||
-            deskAuditEntries.length > 0 ||
-            taskAuditEntries.length > 0) &&
+          {(policySnapshot || policyNotices.length > 0 || deskAuditEntries.length > 0 || taskAuditEntries.length > 0) &&
             (() => {
-              const diagnosticsActivity =
-                policyNotices.length + deskAuditEntries.length + taskAuditEntries.length;
+              const diagnosticsActivity = policyNotices.length + deskAuditEntries.length + taskAuditEntries.length;
               return (
                 <details className="xd-xenesis-terminal-diagnostics" aria-label="Xenesis diagnostics">
                   <summary>
@@ -4137,7 +3971,9 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
                     policySnapshot.nextActions?.length) && (
                     <small>
                       {policySnapshot.allowCount !== undefined ? `allowed ${policySnapshot.allowCount}` : ''}
-                      {policySnapshot.allowCount !== undefined && policySnapshot.denyCount !== undefined ? ' · ' : ''}
+                          {policySnapshot.allowCount !== undefined && policySnapshot.denyCount !== undefined
+                            ? ' · '
+                            : ''}
                       {policySnapshot.denyCount !== undefined ? `blocked ${policySnapshot.denyCount}` : ''}
                       {policySnapshot.nextActions?.length ? ` · next: ${policySnapshot.nextActions[0]}` : ''}
                     </small>

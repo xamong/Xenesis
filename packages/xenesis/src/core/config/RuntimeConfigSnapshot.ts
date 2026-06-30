@@ -1,10 +1,10 @@
 import {
-  loadConfig,
   type ApprovalMode,
   type CliConfigOverrides,
   type LoadConfigOptions,
-  type XenesisConfig
-} from "../../config/index.js";
+  loadConfig,
+  type XenesisConfig,
+} from '../../config/index.js';
 
 export const runtimeConfigSnapshotVersion = 1 as const;
 
@@ -25,15 +25,15 @@ export interface RuntimeConfigSnapshot {
     readonly cliOverrides: readonly (keyof CliConfigOverrides)[];
   };
   readonly migration: {
-    readonly compatibilityMode: "legacy-v1-safe" | "legacy-v1-auto" | "legacy-v1-readonly";
+    readonly compatibilityMode: 'legacy-v1-safe' | 'legacy-v1-auto' | 'legacy-v1-readonly';
     readonly rewritesConfigFiles: false;
   };
 }
 
-function compatibilityMode(approvalMode: ApprovalMode): RuntimeConfigSnapshot["migration"]["compatibilityMode"] {
-  if (approvalMode === "auto") return "legacy-v1-auto";
-  if (approvalMode === "readonly") return "legacy-v1-readonly";
-  return "legacy-v1-safe";
+function compatibilityMode(approvalMode: ApprovalMode): RuntimeConfigSnapshot['migration']['compatibilityMode'] {
+  if (approvalMode === 'auto') return 'legacy-v1-auto';
+  if (approvalMode === 'readonly') return 'legacy-v1-readonly';
+  return 'legacy-v1-safe';
 }
 
 function readonlyArray<T>(items: readonly T[]): readonly T[] {
@@ -41,7 +41,7 @@ function readonlyArray<T>(items: readonly T[]): readonly T[] {
 }
 
 function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
-  if (typeof value !== "object" && typeof value !== "function" || value === null) {
+  if ((typeof value !== 'object' && typeof value !== 'function') || value === null) {
     return value;
   }
 
@@ -59,7 +59,7 @@ function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
 }
 
 export async function resolveRuntimeConfigSnapshot(
-  options: ResolveRuntimeConfigSnapshotOptions
+  options: ResolveRuntimeConfigSnapshotOptions,
 ): Promise<RuntimeConfigSnapshot> {
   const effective = await loadConfig(options);
   const resolvedAt = (options.now ?? (() => new Date()))().toISOString();
@@ -69,17 +69,17 @@ export async function resolveRuntimeConfigSnapshot(
     resolvedAt,
     cwd: options.cwd,
     ...(options.configPath ? { configPath: options.configPath } : {}),
-    sourceOrder: readonlyArray(["defaults", "configFile", "profile", "environment", "cli", "runtime"]),
+    sourceOrder: readonlyArray(['defaults', 'configFile', 'profile', 'environment', 'cli', 'runtime']),
     effective: deepFreeze(effective),
     legacy: Object.freeze({
       approvalMode: effective.approvalMode,
       workspace: effective.workspace,
-      cliOverrides: readonlyArray(cliOverrides)
+      cliOverrides: readonlyArray(cliOverrides),
     }),
     migration: Object.freeze({
       compatibilityMode: compatibilityMode(effective.approvalMode),
-      rewritesConfigFiles: false
-    })
+      rewritesConfigFiles: false,
+    }),
   };
 
   return Object.freeze(snapshot);

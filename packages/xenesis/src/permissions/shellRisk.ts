@@ -1,8 +1,8 @@
 import {
   findClassifiedShellCommandOutsideWorkspacePath,
   isDestructiveClassifiedShellCommand,
-  isLowRiskClassifiedShellCommand
-} from "../core/permissions/index.js";
+  isLowRiskClassifiedShellCommand,
+} from '../core/permissions/index.js';
 
 export function isDestructiveShellCommand(command: string) {
   return isDestructiveClassifiedShellCommand(command);

@@ -41,7 +41,7 @@ export function createCrossChannelSessionManager(): CrossChannelSessionManager {
     linkIdentity(unifiedId, identity): void {
       const user = users.get(unifiedId);
       if (!user) return;
-      if (!user.identities.some(i => i.channel === identity.channel && i.userId === identity.userId)) {
+      if (!user.identities.some((i) => i.channel === identity.channel && i.userId === identity.userId)) {
         user.identities.push(identity);
       }
       channelIndex.set(channelKey(identity.channel, identity.userId), unifiedId);

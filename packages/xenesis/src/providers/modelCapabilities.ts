@@ -16,7 +16,7 @@ const VISION_PATTERNS: RegExp[] = [
 ];
 
 export function supportsVision(model: string, _provider?: string): boolean {
-  if (process.env.XENESIS_FORCE_VISION === "1") return true;
+  if (process.env.XENESIS_FORCE_VISION === '1') return true;
   if (!model) return false;
   return VISION_PATTERNS.some((re) => re.test(model));
 }

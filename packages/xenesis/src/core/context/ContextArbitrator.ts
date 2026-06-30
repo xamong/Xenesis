@@ -1,12 +1,5 @@
-import {
-  compareContextRecords,
-  isContextRecordExpired,
-  type ContextRecord
-} from "./ContextRecord.js";
-import {
-  selectContextWithinBudget,
-  type ContextDropAudit
-} from "./ContextBudget.js";
+import { type ContextDropAudit, selectContextWithinBudget } from './ContextBudget.js';
+import { type ContextRecord, compareContextRecords, isContextRecordExpired } from './ContextRecord.js';
 
 export interface ContextArbitratorInput {
   records: readonly ContextRecord[];
@@ -32,8 +25,8 @@ function pruneExpired(records: readonly ContextRecord[], now: Date) {
   const dropped: ContextDropAudit[] = [];
 
   for (const record of records) {
-    if (isContextRecordExpired(record, now) || record.freshness === "expired") {
-      dropped.push({ id: record.id, reason: "expired" });
+    if (isContextRecordExpired(record, now) || record.freshness === 'expired') {
+      dropped.push({ id: record.id, reason: 'expired' });
       continue;
     }
     selected.push(record);
@@ -55,7 +48,7 @@ function pruneConflicts(records: readonly ContextRecord[]) {
 
     const winner = winnerByConflictKey.get(record.conflictKey);
     if (winner) {
-      dropped.push({ id: record.id, reason: "conflict_replaced", replacedBy: winner.id });
+      dropped.push({ id: record.id, reason: 'conflict_replaced', replacedBy: winner.id });
       continue;
     }
 
@@ -70,15 +63,8 @@ export function arbitrateContextRecords(input: ContextArbitratorInput): ContextA
   const now = input.now ?? new Date();
   const expired = pruneExpired(input.records, now);
   const conflicts = pruneConflicts(expired.selected);
-  const budget = selectContextWithinBudget(
-    [...conflicts.selected].sort(compareContextRecords),
-    input.tokenBudget
-  );
-  const dropped = [
-    ...expired.dropped,
-    ...conflicts.dropped,
-    ...budget.dropped
-  ];
+  const budget = selectContextWithinBudget([...conflicts.selected].sort(compareContextRecords), input.tokenBudget);
+  const dropped = [...expired.dropped, ...conflicts.dropped, ...budget.dropped];
 
   return {
     selected: budget.selected,
@@ -87,7 +73,7 @@ export function arbitrateContextRecords(input: ContextArbitratorInput): ContextA
       selectedCount: budget.selected.length,
       usedTokens: budget.usedTokens,
       tokenBudget: input.tokenBudget,
-      dropped
-    }
+      dropped,
+    },
   };
 }

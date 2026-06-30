@@ -82,24 +82,6 @@ export interface DeskBridgeWorkflowRunner {
 
 const defaultMaxSteps = 100;
 
-const defaultRegistry: DeskBridgeWorkflowRegistryEntry[] = [
-  { path: 'xd.app.status', permission: 'read' },
-  { path: 'xd.dock.panes.list', permission: 'read' },
-  { path: 'xd.dock.focus', permission: 'control' },
-  { path: 'xd.dock.close', permission: 'control' },
-  { path: 'xd.dock.closeAll', permission: 'control' },
-  { path: 'xd.dock.move', permission: 'control' },
-  { path: 'xd.dock.pane.arrange', permission: 'control' },
-  { path: 'xd.dock.pane.merge', permission: 'control' },
-  { path: 'xd.dock.pane.size.set', permission: 'control' },
-  { path: 'xd.dock.sizes.set', permission: 'control' },
-  { path: 'xd.views.open', permission: 'control' },
-  { path: 'xd.panes.settings.open', permission: 'control' },
-  { path: 'xd.panes.browser.open', permission: 'control' },
-  { path: 'xd.capture.deleteAll', permission: 'danger' },
-  { path: 'xd.meta.snapshot.import', permission: 'write' },
-];
-
 const blockedWorkflowPaths = new Set([
   'xd.automation.workflow.run',
   'xd.automation.workflow.preview',
@@ -133,7 +115,7 @@ function normalizeBoolean(value: unknown, fallback: boolean): boolean {
 function buildRegistryMap(
   registry: DeskBridgeWorkflowRegistryEntry[] | undefined,
 ): Map<string, DeskBridgeWorkflowRegistryEntry> {
-  const entries = registry && registry.length > 0 ? registry : defaultRegistry;
+  const entries = registry ?? [];
   return new Map(entries.map((entry) => [entry.path, entry]));
 }
 

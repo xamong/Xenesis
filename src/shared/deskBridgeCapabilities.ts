@@ -9,8 +9,29 @@ import {
   runDeskBridgeWorkflow,
 } from './deskBridgeWorkflow';
 import { isXenisPhase5Visible, type XenisPhase5VisibilityOptions } from './phase5';
+import {
+  buildXenesisConnectionCenterOpenArgs,
+  isXenesisConnectionCenterDetailFocus,
+  XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES,
+  XENESIS_CONNECTION_GUIDE_IDS,
+  XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS,
+  XENESIS_CONNECTION_MESSENGER_IDS,
+  XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_IDS,
+  XENESIS_CONNECTION_ONBOARDING_STEP_IDS,
+  XENESIS_CONNECTION_PROVIDER_IDS,
+  XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_IDS,
+  XENESIS_CONNECTION_TOOL_IDS,
+  XENESIS_CONNECTION_TOOL_OAUTH_DRAFT_IDS,
+  XENESIS_CONNECTION_TOOL_VIEW_SECTION_IDS,
+} from './xenesisConnections';
 
 const DESK_BRIDGE_ROOT_PATH = 'xd';
+const XENESIS_MCP_INSTALL_DRAFT_APPLY_TARGET_IDS = ['codex', 'claude', 'cursor', 'all'] as const;
+const XENESIS_CONNECTION_SETUP_APPLY_IDS = [
+  ...XENESIS_CONNECTION_TOOL_IDS,
+  ...XENESIS_CONNECTION_MESSENGER_IDS,
+  ...XENESIS_CONNECTION_PROVIDER_IDS,
+] as const;
 
 const DESK_BRIDGE_WORKFLOW_SCHEMA = {
   type: 'object',
@@ -80,6 +101,1515 @@ const DESK_BRIDGE_WORKFLOW_SCHEMA = {
           },
         },
       },
+    },
+  },
+} as const;
+
+const XENESIS_CHANNEL_GUARDRAIL_SCHEMA = {
+  approvalMode: {
+    type: 'string',
+    title: 'Approval mode',
+    enum: ['readonly', 'safe', 'auto'],
+    description: 'Per-channel approval policy for prompts delivered through this external bot channel.',
+    default: 'safe',
+  },
+  maxTurns: {
+    type: 'number',
+    title: 'Max turns',
+    description: 'Maximum agent turns allowed for one channel-delivered prompt.',
+    minimum: 1,
+    default: 12,
+  },
+  maxTokens: {
+    type: 'number',
+    title: 'Max tokens',
+    description: 'Maximum token budget allowed for one channel-delivered prompt.',
+    minimum: 1,
+    default: 120000,
+  },
+} as const;
+
+const XENESIS_PROFILE_CHANNELS_SCHEMA = {
+  type: 'object',
+  title: 'Channel settings',
+  description:
+    'Telegram, Slack, Discord, and webhook channel settings. Secrets may be env var names; delivery is scoped by allowlists and guardrails.',
+  properties: {
+    telegram: {
+      type: 'object',
+      title: 'Telegram',
+      properties: {
+        enabled: { type: 'boolean', title: 'Enabled', default: false },
+        tokenEnv: { type: 'string', title: 'Token env', default: 'TELEGRAM_BOT_TOKEN' },
+        allowedChatIds: {
+          type: 'string',
+          title: 'Allowed chat ids',
+          description: 'Comma- or newline-separated Telegram chat ids allowed to deliver prompts.',
+        },
+        ...XENESIS_CHANNEL_GUARDRAIL_SCHEMA,
+      },
+    },
+    slack: {
+      type: 'object',
+      title: 'Slack',
+      properties: {
+        enabled: { type: 'boolean', title: 'Enabled', default: false },
+        botTokenEnv: { type: 'string', title: 'Bot token env', default: 'SLACK_BOT_TOKEN' },
+        signingSecretEnv: { type: 'string', title: 'Signing secret env', default: 'SLACK_SIGNING_SECRET' },
+        webhookUrlEnv: { type: 'string', title: 'Webhook URL env', default: 'SLACK_WEBHOOK_URL' },
+        allowedChannelIds: {
+          type: 'string',
+          title: 'Allowed channel ids',
+          description: 'Comma- or newline-separated Slack channel ids allowed to deliver prompts.',
+        },
+        ...XENESIS_CHANNEL_GUARDRAIL_SCHEMA,
+      },
+    },
+    discord: {
+      type: 'object',
+      title: 'Discord',
+      properties: {
+        enabled: { type: 'boolean', title: 'Enabled', default: false },
+        botTokenEnv: { type: 'string', title: 'Bot token env', default: 'DISCORD_BOT_TOKEN' },
+        webhookUrlEnv: { type: 'string', title: 'Webhook URL env', default: 'DISCORD_WEBHOOK_URL' },
+        allowedChannelIds: {
+          type: 'string',
+          title: 'Allowed channel ids',
+          description: 'Comma- or newline-separated Discord channel ids allowed to deliver prompts.',
+        },
+        allowedGuildIds: {
+          type: 'string',
+          title: 'Allowed guild ids',
+          description: 'Comma- or newline-separated Discord guild ids allowed to deliver prompts.',
+        },
+        ...XENESIS_CHANNEL_GUARDRAIL_SCHEMA,
+      },
+    },
+    webhook: {
+      type: 'object',
+      title: 'Webhook',
+      properties: {
+        enabled: { type: 'boolean', title: 'Enabled', default: false },
+        urlEnv: { type: 'string', title: 'URL env', default: 'XENESIS_WEBHOOK_URL' },
+        ...XENESIS_CHANNEL_GUARDRAIL_SCHEMA,
+      },
+    },
+  },
+} as const;
+
+const XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA = {
+  focusConnectionDetail: {
+    type: 'string',
+    title: 'Detail focus',
+    enum: XENESIS_CONNECTION_CENTER_DETAIL_FOCUS_VALUES,
+    description:
+      'Optional Connection Center detail block to focus inside the selected connection card, such as a tool OAuth draft, provider routing, or messenger safety surface.',
+  },
+} as const;
+
+const XENESIS_CONNECTION_OPEN_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Connection id',
+      description: 'Optional Connection Center item id to focus, such as a provider, tool, guide, or messenger card.',
+      examples: ['notion', 'google-calendar', 'signal'],
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused connection card into view after opening the Connection Center.',
+      default: true,
+    },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
+  },
+} as const;
+
+const XENESIS_CONNECTION_CATALOG_OPEN_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Connection id',
+      description: 'Optional Connection Center item id to focus, such as a provider, tool, guide, or messenger card.',
+      examples: ['notion', 'google-calendar', 'signal'],
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused connection card into view after opening the Connection Center.',
+      default: true,
+    },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
+  },
+} as const;
+
+const XENESIS_CONNECTION_DIAGNOSTIC_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Connection id',
+      description: 'Optional Connection Center item id to filter.',
+      examples: ['notion', 'google-calendar', 'telegram'],
+    },
+    connection: {
+      type: 'string',
+      title: 'Connection alias',
+      description: 'Alias for id.',
+      examples: ['notion', 'google-calendar', 'telegram'],
+    },
+    kind: {
+      type: 'string',
+      title: 'Connection kind',
+      enum: ['onboarding', 'provider', 'local-cli', 'mcp', 'gateway', 'tool', 'messenger', 'guide'],
+      description: 'Optional Connection Center kind to filter.',
+    },
+  },
+} as const;
+
+const XENESIS_CONNECTION_SETUP_REQUEST_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Connection id',
+      description: 'Connection Center item id to record as a reviewed setup request.',
+      examples: ['notion', 'google-calendar', 'telegram'],
+    },
+    connection: {
+      type: 'string',
+      title: 'Connection alias',
+      description: 'Alias for id.',
+      examples: ['notion', 'google-calendar', 'telegram'],
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity to include on the Action Inbox item.',
+    },
+    note: {
+      type: 'string',
+      title: 'Review note',
+      description: 'Optional note to append to the setup request description.',
+    },
+  },
+} as const;
+
+const XENESIS_CONNECTION_SETUP_APPLY_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Connection id',
+      enum: XENESIS_CONNECTION_SETUP_APPLY_IDS,
+      description:
+        'Connection Center item id whose ready setup request should be applied through an existing safe delegate path.',
+    },
+    connection: {
+      type: 'string',
+      title: 'Connection alias',
+      enum: XENESIS_CONNECTION_SETUP_APPLY_IDS,
+      description: 'Alias for id.',
+    },
+    target: {
+      type: 'string',
+      title: 'MCP config target',
+      enum: XENESIS_MCP_INSTALL_DRAFT_APPLY_TARGET_IDS,
+      description:
+        'Optional MCP config target passed through when setup apply delegates to an MCP install draft. Defaults to Codex.',
+    },
+    targets: {
+      type: 'array',
+      title: 'MCP config targets',
+      items: {
+        type: 'string',
+        enum: XENESIS_MCP_INSTALL_DRAFT_APPLY_TARGET_IDS,
+      },
+      description: 'Optional MCP config targets for MCP install draft delegates.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity to include in apply readback.',
+    },
+    note: {
+      type: 'string',
+      title: 'Apply note',
+      description: 'Optional note to include in the redacted apply readback.',
+    },
+  },
+} as const;
+
+const XENESIS_ONBOARDING_STEP_IDS = XENESIS_CONNECTION_ONBOARDING_STEP_IDS;
+
+const XENESIS_ONBOARDING_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Onboarding step id',
+      enum: XENESIS_ONBOARDING_STEP_IDS,
+      description: 'Optional Xenesis onboarding checklist step id to filter.',
+    },
+  },
+} as const;
+
+const XENESIS_ONBOARDING_OPEN_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Onboarding step id',
+      enum: XENESIS_ONBOARDING_STEP_IDS,
+      description: 'Xenesis onboarding checklist step id to focus in Settings > Xenesis Agent > Connections.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused onboarding checklist step into view after opening the Connection Center.',
+      default: true,
+    },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
+  },
+} as const;
+
+const XENESIS_GUIDE_IDS = XENESIS_CONNECTION_GUIDE_IDS;
+
+const XENESIS_GUIDE_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Guide id',
+      enum: XENESIS_GUIDE_IDS,
+      description: 'Optional Xenesis guide card id to filter.',
+    },
+  },
+} as const;
+
+const XENESIS_GUIDE_OPEN_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Guide id',
+      enum: XENESIS_GUIDE_IDS,
+      description: 'Optional Xenesis guide card id to open in the internal Desk Connection Center view.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused guide card into view after opening the Connection Center.',
+      default: true,
+    },
+    openFile: {
+      type: 'boolean',
+      title: 'Open guide file',
+      description:
+        'When true, also open the repo-local guide file. Defaults false so the Settings guide card remains focused.',
+      default: false,
+    },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
+  },
+} as const;
+
+const XENESIS_MESSENGER_VIEW_IDS = XENESIS_CONNECTION_MESSENGER_IDS;
+
+const XENESIS_CHANNEL_GUARD_IDS = XENESIS_MESSENGER_VIEW_IDS;
+
+const XENESIS_CHANNEL_ROUTING_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_GUARD_IDS,
+      description: 'Optional implemented or planned external messenger channel to filter.',
+    },
+  },
+} as const;
+
+const XENESIS_CHANNEL_ROUTING_OPEN_SCHEMA = {
+  type: 'object',
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_GUARD_IDS,
+      description: 'Optional implemented or planned external messenger channel to focus.',
+    },
+    id: {
+      type: 'string',
+      title: 'Connection id',
+      enum: XENESIS_CHANNEL_GUARD_IDS,
+      description: 'Alias for channel.',
+    },
+    name: {
+      type: 'string',
+      title: 'Connection name',
+      enum: XENESIS_CHANNEL_GUARD_IDS,
+      description: 'Alias for channel.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused messenger routing card into view after opening the Connection Center.',
+      default: true,
+    },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
+  },
+} as const;
+
+const XENESIS_CHANNEL_ACCESS_GROUP_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_GUARD_IDS,
+      description: 'Optional implemented or planned external messenger channel to filter.',
+    },
+  },
+} as const;
+
+const XENESIS_CHANNEL_GUARD_OPEN_SCHEMA = {
+  type: 'object',
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_GUARD_IDS,
+      description: 'Optional implemented or planned external messenger channel to focus.',
+    },
+    id: {
+      type: 'string',
+      title: 'Connection id',
+      enum: XENESIS_CHANNEL_GUARD_IDS,
+      description: 'Alias for channel.',
+    },
+    name: {
+      type: 'string',
+      title: 'Connection name',
+      enum: XENESIS_CHANNEL_GUARD_IDS,
+      description: 'Alias for channel.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused messenger connection card into view after opening the Connection Center.',
+      default: true,
+    },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
+  },
+} as const;
+
+const XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS = XENESIS_MESSENGER_VIEW_IDS;
+
+const XENESIS_CHANNEL_PROFILE_DRAFT_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
+      description: 'Optional implemented or planned external messenger channel to filter.',
+    },
+    id: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
+      description: 'Alias for channel.',
+    },
+    name: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
+      description: 'Alias for channel.',
+    },
+  },
+} as const;
+
+const XENESIS_CHANNEL_PROFILE_DRAFT_OPEN_SCHEMA = {
+  type: 'object',
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
+      description:
+        'Optional implemented or planned external messenger channel to open in the internal Desk Connection Center view.',
+    },
+    id: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
+      description: 'Alias for channel.',
+    },
+    name: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
+      description: 'Alias for channel.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused messenger connection card into view after opening the Connection Center.',
+      default: true,
+    },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
+  },
+} as const;
+
+const XENESIS_CHANNEL_PROFILE_DRAFT_REQUEST_SCHEMA = {
+  type: 'object',
+  required: ['channel'],
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
+      description: 'Implemented or planned external messenger channel to record as a profile draft review request.',
+    },
+    id: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
+      description: 'Alias for channel.',
+    },
+    name: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CHANNEL_PROFILE_DRAFT_CHANNELS,
+      description: 'Alias for channel.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity to include on the Action Inbox item.',
+    },
+    note: {
+      type: 'string',
+      title: 'Review note',
+      description: 'Optional note to append to the channel profile draft description.',
+    },
+  },
+} as const;
+
+const XENESIS_CHANNEL_PROFILE_DRAFT_APPLY_SCHEMA = {
+  type: 'object',
+  required: ['channel'],
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS,
+      description: 'Implemented external messenger channel whose profile draft settings should be applied.',
+    },
+    id: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS,
+      description: 'Alias for channel.',
+    },
+    name: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS,
+      description: 'Alias for channel.',
+    },
+    profile: {
+      type: 'string',
+      title: 'Profile name',
+      description: 'Optional Xenesis profile name. Defaults to the active profile.',
+      examples: ['external', 'xenis'],
+    },
+    settings: {
+      type: 'object',
+      title: 'Channel settings',
+      description:
+        'Channel-specific settings to merge into the active profile. Use environment variable names for secrets, not secret values.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity for audit context.',
+    },
+    note: {
+      type: 'string',
+      title: 'Apply note',
+      description: 'Optional note to include in the apply result.',
+    },
+  },
+} as const;
+
+const XENESIS_CHANNEL_PAIRING_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Optional implemented or planned external messenger channel to filter.',
+    },
+    id: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Alias for channel.',
+    },
+    name: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Alias for channel.',
+    },
+  },
+} as const;
+
+const XENESIS_CHANNEL_PAIRING_OPEN_SCHEMA = {
+  type: 'object',
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Optional implemented or planned external messenger channel to focus.',
+    },
+    id: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Alias for channel.',
+    },
+    name: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Alias for channel.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused messenger pairing card into view after opening the Connection Center.',
+      default: true,
+    },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
+  },
+} as const;
+
+const XENESIS_CHANNEL_RUNTIME_STATUS_SCHEMA = XENESIS_CHANNEL_PAIRING_STATUS_SCHEMA;
+
+const XENESIS_CHANNEL_RUNTIME_OPEN_SCHEMA = {
+  type: 'object',
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Optional implemented or planned external messenger channel runtime readiness card to focus.',
+    },
+    id: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Alias for channel.',
+    },
+    messenger: {
+      type: 'string',
+      title: 'Messenger',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Alias for channel.',
+    },
+    name: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Alias for channel.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused messenger runtime readiness card into view after opening the Connection Center.',
+      default: true,
+    },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
+  },
+} as const;
+
+const XENESIS_CHANNEL_RUNTIME_REQUEST_SCHEMA = {
+  type: 'object',
+  required: ['channel'],
+  properties: {
+    channel: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Implemented or planned external messenger channel whose runtime readiness should be reviewed.',
+    },
+    id: {
+      type: 'string',
+      title: 'Channel',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Alias for channel.',
+    },
+    messenger: {
+      type: 'string',
+      title: 'Messenger',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Alias for channel.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity for audit context.',
+    },
+    note: {
+      type: 'string',
+      title: 'Review note',
+      description: 'Optional note to include in the Action Inbox runtime readiness review item.',
+    },
+  },
+} as const;
+
+const XENESIS_MESSENGER_VIEW_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Messenger id',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Optional messenger connection id to filter.',
+    },
+    messenger: {
+      type: 'string',
+      title: 'Messenger id',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Alias for id.',
+    },
+    channel: {
+      type: 'string',
+      title: 'Messenger channel',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Alias for id.',
+    },
+  },
+} as const;
+
+const XENESIS_MESSENGER_VIEW_OPEN_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Messenger id',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Optional messenger connection id to open in the internal Desk Connection Center view.',
+    },
+    messenger: {
+      type: 'string',
+      title: 'Messenger id',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Alias for id.',
+    },
+    channel: {
+      type: 'string',
+      title: 'Messenger channel',
+      enum: XENESIS_MESSENGER_VIEW_IDS,
+      description: 'Alias for id.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused messenger connection card into view after opening the Connection Center.',
+      default: true,
+    },
+    section: {
+      type: 'string',
+      title: 'Messenger view section',
+      enum: XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_IDS,
+      description:
+        'Optional internal Desk messenger view section to focus inside the Connection Center messenger detail.',
+    },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
+  },
+} as const;
+
+const XENESIS_CHANNEL_USER_STORY_STATUS_SCHEMA = XENESIS_MESSENGER_VIEW_STATUS_SCHEMA;
+const XENESIS_CHANNEL_USER_STORY_OPEN_SCHEMA = XENESIS_MESSENGER_VIEW_OPEN_SCHEMA;
+const XENESIS_CHANNEL_SETUP_PLAN_STATUS_SCHEMA = XENESIS_MESSENGER_VIEW_STATUS_SCHEMA;
+const XENESIS_CHANNEL_SETUP_PLAN_OPEN_SCHEMA = XENESIS_MESSENGER_VIEW_OPEN_SCHEMA;
+
+const XENESIS_EXTERNAL_TOOL_IDS = XENESIS_CONNECTION_TOOL_IDS;
+
+const XENESIS_TOOL_OAUTH_DRAFT_IDS = XENESIS_CONNECTION_TOOL_OAUTH_DRAFT_IDS;
+
+const XENESIS_TOOL_SETUP_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Optional external tool connection id to filter.',
+    },
+  },
+} as const;
+
+const XENESIS_TOOL_SETUP_OPEN_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Optional external tool setup card to focus in the internal Desk Connection Center view.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Alias for id.',
+    },
+    name: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Alias for id.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused external tool setup card into view after opening the Connection Center.',
+      default: true,
+    },
+    section: {
+      type: 'string',
+      title: 'Tool view section',
+      enum: XENESIS_CONNECTION_TOOL_VIEW_SECTION_IDS,
+      description:
+        'Optional internal Desk tool view section to focus, such as connector readiness, setup plan, MCP template, OAuth draft, action policy, or user stories.',
+    },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
+  },
+} as const;
+
+const XENESIS_TOOL_SETUP_PLAN_STATUS_SCHEMA = XENESIS_TOOL_SETUP_STATUS_SCHEMA;
+const XENESIS_TOOL_SETUP_PLAN_OPEN_SCHEMA = XENESIS_TOOL_SETUP_OPEN_SCHEMA;
+
+const XENESIS_TOOL_CONNECTOR_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Optional external tool connection id to filter.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Alias for id.',
+    },
+  },
+} as const;
+
+const XENESIS_TOOL_CONNECTOR_OPEN_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Optional external tool connector card to focus in the internal Desk Connection Center view.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Alias for id.',
+    },
+    name: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Alias for id.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused external tool connector card into view after opening the Connection Center.',
+      default: true,
+    },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
+  },
+} as const;
+
+const XENESIS_TOOL_VIEW_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Optional external tool connection id to filter.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Alias for id.',
+    },
+  },
+} as const;
+
+const XENESIS_TOOL_VIEW_OPEN_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Optional external tool connection id to focus in the internal Desk Connection Center view.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Alias for id.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused tool connection card into view after opening the Connection Center.',
+      default: true,
+    },
+    section: {
+      type: 'string',
+      title: 'Tool view section',
+      enum: XENESIS_CONNECTION_TOOL_VIEW_SECTION_IDS,
+      description:
+        'Optional internal Desk tool view section to focus, such as connector readiness, setup plan, MCP template, OAuth draft, action policy, or user stories.',
+    },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
+  },
+} as const;
+
+const XENESIS_TOOL_USER_STORY_STATUS_SCHEMA = XENESIS_TOOL_VIEW_STATUS_SCHEMA;
+const XENESIS_TOOL_USER_STORY_OPEN_SCHEMA = XENESIS_TOOL_VIEW_OPEN_SCHEMA;
+const XENESIS_TOOL_INSTALL_PLAN_STATUS_SCHEMA = XENESIS_TOOL_VIEW_STATUS_SCHEMA;
+const XENESIS_TOOL_INSTALL_PLAN_OPEN_SCHEMA = XENESIS_TOOL_VIEW_OPEN_SCHEMA;
+const XENESIS_TOOL_INSTALL_PLAN_REQUEST_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'External tool connection id to record as a tool install plan review request.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Alias for id.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity to include on the Action Inbox item.',
+    },
+    note: {
+      type: 'string',
+      title: 'Review note',
+      description: 'Optional note to append to the tool install plan description.',
+    },
+  },
+} as const;
+const XENESIS_TOOL_PROFILE_DRAFT_STATUS_SCHEMA = XENESIS_TOOL_VIEW_STATUS_SCHEMA;
+const XENESIS_TOOL_PROFILE_DRAFT_OPEN_SCHEMA = XENESIS_TOOL_VIEW_OPEN_SCHEMA;
+const XENESIS_TOOL_PROFILE_DRAFT_REQUEST_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'External tool connection id to record as a tool profile draft review request.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Alias for id.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity to include on the Action Inbox item.',
+    },
+    note: {
+      type: 'string',
+      title: 'Review note',
+      description: 'Optional note to append to the tool profile draft description.',
+    },
+  },
+} as const;
+const XENESIS_TOOL_PROFILE_DRAFT_APPLY_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'External tool connection id whose ready tool profile draft should be applied.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Alias for id.',
+    },
+    target: {
+      type: 'string',
+      title: 'MCP config target',
+      enum: XENESIS_MCP_INSTALL_DRAFT_APPLY_TARGET_IDS,
+      description:
+        'Optional local MCP config target. Defaults to Codex. Use all to apply to every supported target through the ready MCP install draft.',
+    },
+    targets: {
+      type: 'array',
+      title: 'MCP config targets',
+      items: {
+        type: 'string',
+        enum: XENESIS_MCP_INSTALL_DRAFT_APPLY_TARGET_IDS,
+      },
+      description:
+        'Optional local MCP config targets. Defaults to Codex when omitted and delegates to the ready MCP install draft.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity to include in apply readback.',
+    },
+    note: {
+      type: 'string',
+      title: 'Apply note',
+      description: 'Optional note to include in the apply readback. It is not written to MCP config.',
+    },
+  },
+} as const;
+const XENESIS_TOOL_MCP_INSTALL_DRAFT_STATUS_SCHEMA = XENESIS_TOOL_VIEW_STATUS_SCHEMA;
+const XENESIS_TOOL_MCP_INSTALL_DRAFT_OPEN_SCHEMA = XENESIS_TOOL_VIEW_OPEN_SCHEMA;
+const XENESIS_TOOL_MCP_INSTALL_DRAFT_REQUEST_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'External tool connection id to record as an MCP install draft review request.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Alias for id.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity to include on the Action Inbox item.',
+    },
+    note: {
+      type: 'string',
+      title: 'Review note',
+      description: 'Optional note to append to the MCP install draft description.',
+    },
+  },
+} as const;
+const XENESIS_TOOL_MCP_INSTALL_DRAFT_APPLY_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'External tool connection id whose ready MCP install draft should be applied.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Alias for id.',
+    },
+    target: {
+      type: 'string',
+      title: 'MCP config target',
+      enum: XENESIS_MCP_INSTALL_DRAFT_APPLY_TARGET_IDS,
+      description: 'Optional local MCP config target. Defaults to Codex. Use all to apply to every supported target.',
+    },
+    targets: {
+      type: 'array',
+      title: 'MCP config targets',
+      items: {
+        type: 'string',
+        enum: XENESIS_MCP_INSTALL_DRAFT_APPLY_TARGET_IDS,
+      },
+      description: 'Optional local MCP config targets. Defaults to Codex when omitted.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity to include in apply readback.',
+    },
+    note: {
+      type: 'string',
+      title: 'Apply note',
+      description: 'Optional note to include in the apply readback. It is not written to MCP config.',
+    },
+  },
+} as const;
+const XENESIS_TOOL_MCP_OAUTH_STATUS_SCHEMA = XENESIS_TOOL_VIEW_STATUS_SCHEMA;
+const XENESIS_TOOL_MCP_OAUTH_OPEN_SCHEMA = XENESIS_TOOL_VIEW_OPEN_SCHEMA;
+const XENESIS_TOOL_MCP_OAUTH_REQUEST_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'External tool connection id to record as an MCP OAuth readiness review request.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Alias for id.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity to include on the Action Inbox item.',
+    },
+    note: {
+      type: 'string',
+      title: 'Review note',
+      description: 'Optional note to append to the MCP OAuth readiness description.',
+    },
+  },
+} as const;
+const XENESIS_TOOL_OAUTH_DRAFT_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+      description: 'Optional external tool OAuth draft id to filter.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+      description: 'Alias for id.',
+    },
+  },
+} as const;
+const XENESIS_TOOL_OAUTH_SETUP_PACKET_SCHEMA = XENESIS_TOOL_OAUTH_DRAFT_STATUS_SCHEMA;
+const XENESIS_TOOL_OAUTH_DRAFT_OPEN_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+      description: 'Optional external tool OAuth draft id to focus in the Connection Center.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+      description: 'Alias for id.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused tool connection card into view after opening the Connection Center.',
+      default: true,
+    },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
+  },
+} as const;
+const XENESIS_TOOL_OAUTH_SETUP_PACKET_OPEN_SCHEMA = XENESIS_TOOL_OAUTH_DRAFT_OPEN_SCHEMA;
+const XENESIS_TOOL_OAUTH_DRAFT_REQUEST_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+      description: 'External tool OAuth draft id to record as an OAuth setup review request.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+      description: 'Alias for id.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity to include on the Action Inbox item.',
+    },
+    note: {
+      type: 'string',
+      title: 'Review note',
+      description: 'Optional note to append to the OAuth draft description.',
+    },
+  },
+} as const;
+const XENESIS_TOOL_OAUTH_RUNTIME_STATUS_SCHEMA = XENESIS_TOOL_OAUTH_DRAFT_STATUS_SCHEMA;
+const XENESIS_TOOL_OAUTH_RUNTIME_OPEN_SCHEMA = XENESIS_TOOL_OAUTH_DRAFT_OPEN_SCHEMA;
+const XENESIS_TOOL_OAUTH_RUNTIME_REQUEST_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+      description: 'External tool OAuth runtime readiness id to record as a review request.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+      description: 'Alias for id.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity to include on the Action Inbox item.',
+    },
+    note: {
+      type: 'string',
+      title: 'Review note',
+      description: 'Optional note to append to the OAuth runtime readiness description.',
+    },
+  },
+} as const;
+const XENESIS_TOOL_RUNTIME_STATUS_SCHEMA = XENESIS_TOOL_VIEW_STATUS_SCHEMA;
+const XENESIS_TOOL_RUNTIME_OPEN_SCHEMA = XENESIS_TOOL_VIEW_OPEN_SCHEMA;
+const XENESIS_TOOL_RUNTIME_REQUEST_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'External tool connection id to record as a runtime readiness review request.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Alias for id.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity to include on the Action Inbox item.',
+    },
+    note: {
+      type: 'string',
+      title: 'Review note',
+      description: 'Optional note to append to the tool runtime readiness description.',
+    },
+  },
+} as const;
+const XENESIS_TOOL_ACTION_CATALOG_STATUS_SCHEMA = XENESIS_TOOL_VIEW_STATUS_SCHEMA;
+const XENESIS_TOOL_ACTION_CATALOG_OPEN_SCHEMA = XENESIS_TOOL_VIEW_OPEN_SCHEMA;
+const XENESIS_TOOL_ACTION_CATALOG_REQUEST_SCHEMA = {
+  type: 'object',
+  required: ['id'],
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'External tool connection id to record as a tool action policy review request.',
+    },
+    tool: {
+      type: 'string',
+      title: 'Tool id',
+      enum: XENESIS_EXTERNAL_TOOL_IDS,
+      description: 'Alias for id.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity to include on the Action Inbox item.',
+    },
+    note: {
+      type: 'string',
+      title: 'Review note',
+      description: 'Optional note to append to the tool action policy description.',
+    },
+  },
+} as const;
+
+const XENESIS_PROVIDER_IDS = XENESIS_CONNECTION_PROVIDER_IDS;
+
+const XENESIS_PROVIDER_SETUP_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    provider: {
+      type: 'string',
+      title: 'Provider',
+      enum: XENESIS_PROVIDER_IDS,
+      description: 'Optional active provider id to filter.',
+    },
+  },
+} as const;
+
+const XENESIS_PROVIDER_SETUP_OPEN_SCHEMA = {
+  type: 'object',
+  properties: {
+    provider: {
+      type: 'string',
+      title: 'Provider',
+      enum: XENESIS_PROVIDER_IDS,
+      description: 'Optional active provider id to focus in the internal Desk Connection Center setup surface.',
+    },
+    id: {
+      type: 'string',
+      title: 'Provider card id',
+      description: 'Alias for provider card id, such as provider-codex-app-server.',
+    },
+    name: {
+      type: 'string',
+      title: 'Provider',
+      enum: XENESIS_PROVIDER_IDS,
+      description: 'Alias for provider.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused provider setup card into view after opening the Connection Center.',
+      default: true,
+    },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
+  },
+} as const;
+
+const XENESIS_PROVIDER_ROUTING_OPEN_SCHEMA = {
+  type: 'object',
+  properties: {
+    provider: {
+      type: 'string',
+      title: 'Provider',
+      enum: XENESIS_PROVIDER_IDS,
+      description: 'Optional active provider id to focus in the internal Desk Connection Center routing surface.',
+    },
+    id: {
+      type: 'string',
+      title: 'Provider card id',
+      description: 'Alias for provider card id, such as provider-codex-app-server.',
+    },
+    name: {
+      type: 'string',
+      title: 'Provider',
+      enum: XENESIS_PROVIDER_IDS,
+      description: 'Alias for provider.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused provider routing card into view after opening the Connection Center.',
+      default: true,
+    },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
+  },
+} as const;
+
+const XENESIS_PROVIDER_VIEW_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    provider: {
+      type: 'string',
+      title: 'Provider',
+      enum: XENESIS_PROVIDER_IDS,
+      description: 'Optional active provider id to filter.',
+    },
+    id: {
+      type: 'string',
+      title: 'Provider card id',
+      description: 'Alias for provider card id, such as provider-codex-app-server.',
+    },
+    name: {
+      type: 'string',
+      title: 'Provider',
+      enum: XENESIS_PROVIDER_IDS,
+      description: 'Alias for provider.',
+    },
+  },
+} as const;
+
+const XENESIS_PROVIDER_VIEW_OPEN_SCHEMA = {
+  type: 'object',
+  properties: {
+    provider: {
+      type: 'string',
+      title: 'Provider',
+      enum: XENESIS_PROVIDER_IDS,
+      description: 'Optional active provider id to focus in the internal Desk Connection Center view.',
+    },
+    id: {
+      type: 'string',
+      title: 'Provider card id',
+      description: 'Alias for provider card id, such as provider-codex-app-server.',
+    },
+    name: {
+      type: 'string',
+      title: 'Provider',
+      enum: XENESIS_PROVIDER_IDS,
+      description: 'Alias for provider.',
+    },
+    ensureVisible: {
+      type: 'boolean',
+      title: 'Ensure visible',
+      description: 'Scroll the focused provider connection card into view after opening the Connection Center.',
+      default: true,
+    },
+    section: {
+      type: 'string',
+      title: 'Provider view section',
+      enum: XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_IDS,
+      description:
+        'Optional internal Desk provider view section to focus inside the Connection Center provider detail.',
+    },
+    viewSection: {
+      type: 'string',
+      title: 'Provider view section',
+      enum: XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_IDS,
+      description: 'Alias for section.',
+    },
+    providerViewSection: {
+      type: 'string',
+      title: 'Provider view section',
+      enum: XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_IDS,
+      description: 'Alias for section.',
+    },
+    ...XENESIS_CONNECTION_DETAIL_FOCUS_OPEN_SCHEMA,
+  },
+} as const;
+
+const XENESIS_PROVIDER_PROFILE_DRAFT_STATUS_SCHEMA = XENESIS_PROVIDER_VIEW_STATUS_SCHEMA;
+const XENESIS_PROVIDER_PROFILE_DRAFT_OPEN_SCHEMA = XENESIS_PROVIDER_VIEW_OPEN_SCHEMA;
+const XENESIS_PROVIDER_SETUP_PLAN_STATUS_SCHEMA = XENESIS_PROVIDER_VIEW_STATUS_SCHEMA;
+const XENESIS_PROVIDER_SETUP_PLAN_OPEN_SCHEMA = XENESIS_PROVIDER_VIEW_OPEN_SCHEMA;
+const XENESIS_PROVIDER_PROFILE_DRAFT_REQUEST_SCHEMA = {
+  type: 'object',
+  required: ['provider'],
+  properties: {
+    provider: {
+      type: 'string',
+      title: 'Provider',
+      enum: XENESIS_PROVIDER_IDS,
+      description: 'Active provider id to record as a provider profile draft review request.',
+    },
+    id: {
+      type: 'string',
+      title: 'Provider card id',
+      description: 'Alias for provider card id, such as provider-codex-app-server.',
+    },
+    name: {
+      type: 'string',
+      title: 'Provider',
+      enum: XENESIS_PROVIDER_IDS,
+      description: 'Alias for provider.',
+    },
+    requester: {
+      type: 'string',
+      title: 'Requester',
+      description: 'Optional user or agent identity to include on the Action Inbox item.',
+    },
+    note: {
+      type: 'string',
+      title: 'Review note',
+      description: 'Optional note to append to the provider profile draft description.',
+    },
+  },
+} as const;
+const XENESIS_PROVIDER_PROFILE_DRAFT_APPLY_SCHEMA = {
+  type: 'object',
+  required: ['provider'],
+  properties: {
+    provider: {
+      type: 'string',
+      title: 'Provider',
+      enum: XENESIS_PROVIDER_IDS,
+      description: 'Active provider id to apply as a provider profile draft.',
+    },
+    id: {
+      type: 'string',
+      title: 'Provider card id',
+      description: 'Alias for provider card id, such as provider-codex-app-server.',
+    },
+    name: {
+      type: 'string',
+      title: 'Provider',
+      enum: XENESIS_PROVIDER_IDS,
+      description: 'Alias for provider.',
+    },
+    model: {
+      type: 'string',
+      title: 'Model',
+      description: 'Optional non-secret model value to write to the active AI provider profile.',
+    },
+    baseUrl: {
+      type: 'string',
+      title: 'Base URL',
+      description: 'Optional non-secret provider endpoint override.',
+    },
+    xcAgentApiUrl: {
+      type: 'string',
+      title: 'Agent API URL',
+      description: 'Optional Xamong Code agent API URL override.',
+    },
+    xcApiUrl: {
+      type: 'string',
+      title: 'Draft API URL',
+      description: 'Optional Xamong Code draft API URL override.',
+    },
+    labApiUrl: {
+      type: 'string',
+      title: 'Lab API URL',
+      description: 'Optional lab API URL override.',
+    },
+    reasoningEffort: {
+      type: 'string',
+      title: 'Reasoning effort',
+      enum: ['default', 'low', 'medium', 'high', 'xhigh'],
+      description: 'Optional non-secret Codex reasoning effort for the embedded Desk agent.',
+    },
+    note: {
+      type: 'string',
+      title: 'Apply note',
+      description: 'Optional note to include in the redacted apply result.',
     },
   },
 } as const;
@@ -461,6 +1991,88 @@ export interface DeskBridgeCapabilityAdapter {
   stopXamongCode?: () => Promise<unknown> | unknown;
   isXenisPhase5Enabled?: () => boolean;
   getXenesisStatus?: () => Promise<unknown> | unknown;
+  getXenesisConnectionsStatus?: () => Promise<unknown> | unknown;
+  getXenesisConnectionDiagnosticRunbooksStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisConnectionDiagnosticRunbook?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisConnectionSetupRequestsStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisConnectionSetupRequest?: (args?: unknown) => Promise<unknown> | unknown;
+  requestXenesisConnectionSetup?: (args?: unknown) => Promise<unknown> | unknown;
+  applyXenesisConnectionSetupRequest?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisOnboardingStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisOnboardingStep?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisChannelRoutingStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisChannelRouting?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisChannelSafetyStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisChannelSafety?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisChannelAccessGroupsStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisChannelAccessGroups?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisChannelPairingStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisChannelPairing?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisChannelRuntimeStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisChannelRuntime?: (args?: unknown) => Promise<unknown> | unknown;
+  requestXenesisChannelRuntime?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisChannelUserStoriesStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisChannelUserStory?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisChannelSetupPlansStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisChannelSetupPlan?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisChannelProfileDraftsStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisChannelProfileDraft?: (args?: unknown) => Promise<unknown> | unknown;
+  requestXenesisChannelProfileDraft?: (args?: unknown) => Promise<unknown> | unknown;
+  applyXenesisChannelProfileDraft?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisGuidesStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisGuide?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisToolSetupStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisToolSetup?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisToolSetupPlansStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisToolSetupPlan?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisToolConnectorsStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisToolConnector?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisToolViewsStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisToolView?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisToolUserStoriesStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisToolUserStory?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisToolInstallPlansStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisToolInstallPlan?: (args?: unknown) => Promise<unknown> | unknown;
+  requestXenesisToolInstallPlan?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisToolProfileDraftsStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisToolProfileDraft?: (args?: unknown) => Promise<unknown> | unknown;
+  requestXenesisToolProfileDraft?: (args?: unknown) => Promise<unknown> | unknown;
+  applyXenesisToolProfileDraft?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisToolMcpInstallDraftsStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisToolMcpInstallDraft?: (args?: unknown) => Promise<unknown> | unknown;
+  requestXenesisToolMcpInstallDraft?: (args?: unknown) => Promise<unknown> | unknown;
+  applyXenesisToolMcpInstallDraft?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisToolMcpOAuthStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisToolMcpOAuth?: (args?: unknown) => Promise<unknown> | unknown;
+  requestXenesisToolMcpOAuth?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisToolOAuthDraftsStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisToolOAuthSetupPacket?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisToolOAuthDraft?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisToolOAuthSetupPacket?: (args?: unknown) => Promise<unknown> | unknown;
+  requestXenesisToolOAuthDraft?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisToolOAuthRuntimeStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisToolOAuthRuntime?: (args?: unknown) => Promise<unknown> | unknown;
+  requestXenesisToolOAuthRuntime?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisToolRuntimeStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisToolRuntime?: (args?: unknown) => Promise<unknown> | unknown;
+  requestXenesisToolRuntime?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisToolActionCatalogStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisToolActionCatalog?: (args?: unknown) => Promise<unknown> | unknown;
+  requestXenesisToolActionCatalog?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisMessengerViewsStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisMessengerView?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisProviderSetupStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisProviderSetup?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisProviderRoutingStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisProviderRouting?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisProviderViewsStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisProviderView?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisProviderSetupPlansStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisProviderSetupPlan?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisProviderProfileDraftsStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  openXenesisProviderProfileDraft?: (args?: unknown) => Promise<unknown> | unknown;
+  requestXenesisProviderProfileDraft?: (args?: unknown) => Promise<unknown> | unknown;
+  applyXenesisProviderProfileDraft?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisDiagnostics?: () => Promise<unknown> | unknown;
   openXenesisTui?: (args: unknown) => Promise<unknown> | unknown;
   listXenesisReports?: (args: unknown) => Promise<unknown> | unknown;
@@ -496,6 +2108,7 @@ export interface DeskBridgeCapabilityAdapter {
   resetXenesisSession?: () => Promise<unknown> | unknown;
   runXenesis?: (args: unknown) => Promise<unknown> | unknown;
   snapshotXenesisAgent?: (args: unknown) => Promise<unknown> | unknown;
+  snapshotConnectionCenter?: (args: unknown) => Promise<unknown> | unknown;
   submitXenesisAgentPrompt?: (args: unknown) => Promise<unknown> | unknown;
   dropXenesisAgentAttachments?: (args: unknown) => Promise<unknown> | unknown;
   scanLocalCli?: () => Promise<unknown> | unknown;
@@ -717,6 +2330,7 @@ export const DESK_BRIDGE_IPC_CAPABILITY_COVERAGE = {
   'xamong-code:status': { capabilityPath: 'xd.services.xamongCode.status' },
   'xamong-code:stop': { capabilityPath: 'xd.services.xamongCode.stop' },
   'xenesis:cancel': { capabilityPath: 'xd.services.xenesis.cancel' },
+  'xenesis:connections-status': { capabilityPath: 'xd.xenesis.connections.status' },
   'xenesis:diagnostics': { capabilityPath: 'xd.xenesis.diagnostics' },
   'xenesis:gateway-restart': { capabilityPath: 'xd.xenesis.gateway.restart' },
   'xenesis:gateway-start': { capabilityPath: 'xd.xenesis.gateway.start' },
@@ -3172,7 +4786,6 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                 title: 'Runtime provider',
                 enum: [
                   'openai',
-                  'mock',
                   'anthropic',
                   'claude',
                   'openai-compatible',
@@ -3192,7 +4805,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                 type: 'string',
                 title: 'Runtime model',
                 description: 'Optional per-run model override for the selected Xenesis provider.',
-                examples: ['gpt-4.1', 'claude-3-5-sonnet-latest', 'desk-mock'],
+                examples: ['gpt-4.1', 'claude-3-5-sonnet-latest', 'gpt-5-codex'],
               },
               providerProfile: {
                 type: 'string',
@@ -3726,6 +5339,788 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           },
         ),
       ]),
+      group('xd.xenesis.connections', 'Connections', 'Xenesis onboarding and connection readiness.', [
+        method(
+          'xd.xenesis.connections.status',
+          'Read connection status',
+          'Read provider, MCP, tool, gateway, messenger, and guide readiness for Xenesis onboarding.',
+          'read',
+        ),
+        method(
+          'xd.xenesis.connections.open',
+          'Open connection catalog or card',
+          'Open Settings > Xenesis Agent > Connections and optionally focus one provider, tool, guide, or messenger card.',
+          'control',
+          XENESIS_CONNECTION_OPEN_SCHEMA,
+        ),
+        group(
+          'xd.xenesis.connections.diagnostics',
+          'Connection diagnostics',
+          'Read/open diagnostic runbooks for Connection Center cards.',
+          [
+            method(
+              'xd.xenesis.connections.diagnostics.status',
+              'Read connection diagnostic runbooks',
+              'Read Desk-native diagnostic runbooks that combine status, setup, connector, view, user-story, and safety metadata for Connection Center cards.',
+              'read',
+              XENESIS_CONNECTION_DIAGNOSTIC_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.connections.diagnostics.open',
+              'Open connection diagnostic runbook',
+              'Open Settings > Xenesis Agent > Connections and focus the card that owns one diagnostic runbook.',
+              'control',
+              XENESIS_CONNECTION_CATALOG_OPEN_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.connections.setupRequests',
+          'Connection setup requests',
+          'Read/open setup request templates, record reviews, and approval-apply ready delegated setup paths for Connection Center cards.',
+          [
+            method(
+              'xd.xenesis.connections.setupRequests.status',
+              'Read connection setup requests',
+              'Read Desk-native setup request templates that can be reviewed before any install, OAuth, token, tool, message, or settings mutation work is performed.',
+              'read',
+              XENESIS_CONNECTION_DIAGNOSTIC_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.connections.setupRequests.open',
+              'Open connection setup request',
+              'Open Settings > Xenesis Agent > Connections and focus the card that owns one setup request template.',
+              'control',
+              XENESIS_CONNECTION_CATALOG_OPEN_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.connections.setupRequests.request',
+              'Request connection setup review',
+              'Record a local Action Inbox item for reviewing a Connection Center setup request without executing installs, OAuth, token storage, provider tools, messages, or settings mutations.',
+              'write',
+              XENESIS_CONNECTION_SETUP_REQUEST_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.connections.setupRequests.apply',
+              'Apply connection setup request',
+              'After explicit approval, apply a ready Connection Center setup request by delegating to an existing safe setup apply path such as MCP install draft apply, channel profile draft apply, or provider profile draft apply. Planned OAuth, token storage, provider tool execution, messages, and external system mutations remain blocked.',
+              'write',
+              XENESIS_CONNECTION_SETUP_APPLY_SCHEMA,
+            ),
+          ],
+        ),
+      ]),
+      group('xd.xenesis.onboarding', 'Onboarding', 'Xenesis initial setup checklist and readiness.', [
+        method(
+          'xd.xenesis.onboarding.status',
+          'Read onboarding status',
+          'Read the Xenesis initial setup checklist, setup surfaces, validation checks, diagnostics, and safety boundaries.',
+          'read',
+          XENESIS_ONBOARDING_STATUS_SCHEMA,
+        ),
+        method(
+          'xd.xenesis.onboarding.open',
+          'Open onboarding step',
+          'Open Settings > Xenesis Agent > Connections and focus one onboarding checklist step.',
+          'control',
+          XENESIS_ONBOARDING_OPEN_SCHEMA,
+        ),
+      ]),
+      group('xd.xenesis.guides', 'Guides', 'Xenesis setup playbooks, integration guides, and user-story templates.', [
+        method(
+          'xd.xenesis.guides.status',
+          'Read guide catalog status',
+          'Read structured guide catalog metadata for onboarding, provider/tool setup, external messenger setup, and CR-controlled Desk workflows.',
+          'read',
+          XENESIS_GUIDE_STATUS_SCHEMA,
+        ),
+        method(
+          'xd.xenesis.guides.open',
+          'Open guide',
+          'Open a Xenesis guide card in Settings and optionally open the repo-local guide file.',
+          'control',
+          XENESIS_GUIDE_OPEN_SCHEMA,
+        ),
+      ]),
+      group('xd.xenesis.channels', 'Channels', 'External bot channel routing and setup state.', [
+        group('xd.xenesis.channels.routing', 'Routing', 'External bot channel route bindings and safety metadata.', [
+          method(
+            'xd.xenesis.channels.routing.status',
+            'Read channel routing status',
+            'Read route binding, allowlist, pairing, default-agent, diagnostics, and delivery metadata for implemented and planned Xenesis external messenger channels.',
+            'read',
+            XENESIS_CHANNEL_ROUTING_STATUS_SCHEMA,
+          ),
+          method(
+            'xd.xenesis.channels.routing.open',
+            'Open channel routing',
+            'Open Settings > Xenesis Agent > Connections and focus an implemented or planned external messenger routing card inside Desk.',
+            'control',
+            XENESIS_CHANNEL_ROUTING_OPEN_SCHEMA,
+          ),
+        ]),
+        group(
+          'xd.xenesis.channels.safety',
+          'Safety',
+          'External bot channel access, loop-protection, and troubleshooting metadata.',
+          [
+            method(
+              'xd.xenesis.channels.safety.status',
+              'Read channel safety status',
+              'Read access-group fields, inbound/outbound boundaries, bot-loop protection, approval guardrails, troubleshooting, and safety boundaries for implemented and planned Xenesis external messenger channels.',
+              'read',
+              XENESIS_CHANNEL_ROUTING_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.channels.safety.open',
+              'Open channel safety',
+              'Open Settings > Xenesis Agent > Connections and focus an implemented or planned external messenger safety card inside Desk.',
+              'control',
+              XENESIS_CHANNEL_GUARD_OPEN_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.channels.accessGroups',
+          'Access groups',
+          'External bot channel access-group bindings and fail-closed readiness metadata.',
+          [
+            method(
+              'xd.xenesis.channels.accessGroups.status',
+              'Read channel access-group status',
+              'Read profile allowlist bindings, redacted value states, fail-closed diagnostics, readback paths, and control boundaries for implemented and planned Xenesis external messenger channels.',
+              'read',
+              XENESIS_CHANNEL_ACCESS_GROUP_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.channels.accessGroups.open',
+              'Open channel access groups',
+              'Open Settings > Xenesis Agent > Connections and focus an implemented or planned external messenger access-group card inside Desk.',
+              'control',
+              XENESIS_CHANNEL_GUARD_OPEN_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.channels.pairing',
+          'Pairing',
+          'External bot channel pairing mode, credential readiness, validation checks, diagnostics, and safety boundaries.',
+          [
+            method(
+              'xd.xenesis.channels.pairing.status',
+              'Read channel pairing status',
+              'Read pairing model, runtime support, account scope, redacted credential state, validation checks, diagnostics, and safety boundaries for implemented and planned Xenesis external messenger channels.',
+              'read',
+              XENESIS_CHANNEL_PAIRING_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.channels.pairing.open',
+              'Open channel pairing',
+              'Open Settings > Xenesis Agent > Connections and focus an external messenger pairing card inside Desk.',
+              'control',
+              XENESIS_CHANNEL_PAIRING_OPEN_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.channels.runtime',
+          'Runtime readiness',
+          'External bot channel runtime support, gateway readiness, readback checks, blocked actions, and review requests.',
+          [
+            method(
+              'xd.xenesis.channels.runtime.status',
+              'Read channel runtime readiness',
+              'Read runtime support, runtime status, gateway requirement, readiness checks, diagnostics, blocked actions, and safety boundaries for implemented and planned external messenger channels without starting gateways, pairing accounts, mutating profiles, or sending messages.',
+              'read',
+              XENESIS_CHANNEL_RUNTIME_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.channels.runtime.open',
+              'Open channel runtime readiness',
+              'Open Settings > Xenesis Agent > Connections and focus an external messenger channel runtime-readiness card inside Desk.',
+              'control',
+              XENESIS_CHANNEL_RUNTIME_OPEN_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.channels.runtime.request',
+              'Request channel runtime readiness review',
+              'Record a local Action Inbox item for reviewing channel runtime readiness without starting gateways, pairing accounts, mutating channel profiles, storing credentials, sending messages, or bypassing approvals.',
+              'write',
+              XENESIS_CHANNEL_RUNTIME_REQUEST_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.channels.userStories',
+          'User stories',
+          'Read and open Desk planning surfaces for external messenger channel user-story workflows.',
+          [
+            method(
+              'xd.xenesis.channels.userStories.status',
+              'Read channel user-story workflows',
+              'Read workflow type, runtime support, user stories, prerequisite setup, CR paths, diagnostics, and safety boundaries for implemented and planned Xenesis external messenger channels.',
+              'read',
+              XENESIS_CHANNEL_USER_STORY_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.channels.userStories.open',
+              'Open channel user-story workflow',
+              'Open Settings > Xenesis Agent > Connections and focus an external messenger channel user-story workflow card inside Desk.',
+              'control',
+              XENESIS_CHANNEL_USER_STORY_OPEN_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.channels.setupPlans',
+          'Setup plans',
+          'Read and open ordered review plans for external messenger channel setup.',
+          [
+            method(
+              'xd.xenesis.channels.setupPlans.status',
+              'Read channel setup plans',
+              'Read ordered messenger/channel setup plans that collect view, routing, safety, access-group, pairing, user-story, profile-draft, diagnostic, and setup-request CR paths without starting gateways, pairing accounts, storing credentials, or sending messages.',
+              'read',
+              XENESIS_CHANNEL_SETUP_PLAN_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.channels.setupPlans.open',
+              'Open channel setup plan',
+              'Open Settings > Xenesis Agent > Connections and focus an external messenger channel setup-plan card inside Desk.',
+              'control',
+              XENESIS_CHANNEL_SETUP_PLAN_OPEN_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.channels.profileDrafts',
+          'Profile drafts',
+          'Read, open, request review, and apply approval-gated external messenger channel profile drafts.',
+          [
+            method(
+              'xd.xenesis.channels.profileDrafts.status',
+              'Read channel profile drafts',
+              'Read review-only channel profile draft field state, guardrails, missing required fields, diagnostics, and safety boundaries without mutating channel settings or exposing secrets.',
+              'read',
+              XENESIS_CHANNEL_PROFILE_DRAFT_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.channels.profileDrafts.open',
+              'Open channel profile draft',
+              'Open Settings > Xenesis Agent > Connections and focus an implemented external messenger channel profile-draft card inside Desk.',
+              'control',
+              XENESIS_CHANNEL_PROFILE_DRAFT_OPEN_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.channels.profileDrafts.request',
+              'Request channel profile draft review',
+              'Record a local Action Inbox item for reviewing a channel profile draft without mutating channel settings, updating allowlists, writing profiles, sending test messages, starting the gateway, storing secrets, or bypassing approvals.',
+              'write',
+              XENESIS_CHANNEL_PROFILE_DRAFT_REQUEST_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.channels.profileDrafts.apply',
+              'Apply channel profile draft',
+              'Apply implemented external messenger channel profile draft settings through the Xenesis profile channel model after approval, without storing raw secret values, starting gateways, or sending test messages.',
+              'write',
+              XENESIS_CHANNEL_PROFILE_DRAFT_APPLY_SCHEMA,
+            ),
+          ],
+        ),
+      ]),
+      group('xd.xenesis.messengers', 'Messengers', 'External messenger connection views and readiness state.', [
+        group(
+          'xd.xenesis.messengers.views',
+          'Views',
+          'Internal Desk views for external messenger setup and readiness.',
+          [
+            method(
+              'xd.xenesis.messengers.views.status',
+              'Read messenger view status',
+              'Read internal Desk view surfaces, CR open/read paths, diagnostics, runtime support, and safety boundaries for Xenesis messenger connections.',
+              'read',
+              XENESIS_MESSENGER_VIEW_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.messengers.views.open',
+              'Open messenger view',
+              'Open Settings > Xenesis Agent > Connections and focus an external messenger connection card inside Desk.',
+              'control',
+              XENESIS_MESSENGER_VIEW_OPEN_SCHEMA,
+            ),
+          ],
+        ),
+      ]),
+      group('xd.xenesis.tools', 'Tools', 'External tool connection setup state.', [
+        group('xd.xenesis.tools.setup', 'Setup', 'External tool auth, scope, verification, and CR readback metadata.', [
+          method(
+            'xd.xenesis.tools.setup.status',
+            'Read tool setup status',
+            'Read auth mode, data scopes, write scopes, credential storage, verification, setup surface, and CR readback metadata for Xenesis external tool connections.',
+            'read',
+            XENESIS_TOOL_SETUP_STATUS_SCHEMA,
+          ),
+          method(
+            'xd.xenesis.tools.setup.open',
+            'Open tool setup',
+            'Open Settings > Xenesis Agent > Connections and focus an external tool setup card inside Desk.',
+            'control',
+            XENESIS_TOOL_SETUP_OPEN_SCHEMA,
+          ),
+        ]),
+        group(
+          'xd.xenesis.tools.setupPlans',
+          'Setup plans',
+          'Ordered CR-first setup plans that connect external tool views, setup metadata, connector readiness, install plans, OAuth packets, action policies, diagnostics, and review requests.',
+          [
+            method(
+              'xd.xenesis.tools.setupPlans.status',
+              'Read tool setup plans',
+              'Read ordered setup-plan steps, CR read/open/review paths, diagnostics, blocked actions, and safety boundaries for Xenesis external tool setup without executing provider tools, completing OAuth, storing tokens, or writing MCP config.',
+              'read',
+              XENESIS_TOOL_SETUP_PLAN_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.setupPlans.open',
+              'Open tool setup plan',
+              'Open Settings > Xenesis Agent > Connections and focus an external tool setup-plan card inside Desk.',
+              'control',
+              XENESIS_TOOL_SETUP_PLAN_OPEN_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.tools.connectors',
+          'Connectors',
+          'External tool connector type, auth, redacted credential state, scopes, diagnostics, and safety boundaries.',
+          [
+            method(
+              'xd.xenesis.tools.connectors.status',
+              'Read tool connector status',
+              'Read connector type, auth mode, runtime support, redacted credential state, validation checks, CR paths, diagnostics, and safety boundaries for Xenesis external tool connections.',
+              'read',
+              XENESIS_TOOL_CONNECTOR_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.connectors.open',
+              'Open tool connector',
+              'Open Settings > Xenesis Agent > Connections and focus an external tool connector card inside Desk.',
+              'control',
+              XENESIS_TOOL_CONNECTOR_OPEN_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.tools.views',
+          'Views',
+          'Internal Desk views for external tool connection setup and readiness.',
+          [
+            method(
+              'xd.xenesis.tools.views.status',
+              'Read tool view status',
+              'Read internal Desk view surfaces, CR open/read paths, diagnostics, and safety boundaries for Xenesis external tool connections.',
+              'read',
+              XENESIS_TOOL_VIEW_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.views.open',
+              'Open tool view',
+              'Open Settings > Xenesis Agent > Connections and focus an external tool connection card inside Desk.',
+              'control',
+              XENESIS_TOOL_VIEW_OPEN_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.tools.userStories',
+          'User stories',
+          'Read and open Desk planning surfaces for external tool user-story workflows.',
+          [
+            method(
+              'xd.xenesis.tools.userStories.status',
+              'Read tool user-story workflows',
+              'Read workflow type, runtime support, user stories, prerequisite connectors, scopes, CR paths, diagnostics, and safety boundaries for Xenesis external tool workflows.',
+              'read',
+              XENESIS_TOOL_USER_STORY_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.userStories.open',
+              'Open tool user-story workflow',
+              'Open Settings > Xenesis Agent > Connections and focus an external tool user-story workflow card inside Desk.',
+              'control',
+              XENESIS_TOOL_USER_STORY_OPEN_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.tools.installPlans',
+          'Install plans',
+          'Read, open, and request review-only Desk setup surfaces for external tool install planning.',
+          [
+            method(
+              'xd.xenesis.tools.installPlans.status',
+              'Read tool install plans',
+              'Read install mode, runtime support, setup surfaces, copy/OAuth actions, config targets, required env, diagnostics, and safety boundaries for Xenesis external tool setup.',
+              'read',
+              XENESIS_TOOL_INSTALL_PLAN_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.installPlans.open',
+              'Open tool install plan',
+              'Open Settings > Xenesis Agent > Connections and focus an external tool install-plan card inside Desk.',
+              'control',
+              XENESIS_TOOL_INSTALL_PLAN_OPEN_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.installPlans.request',
+              'Request tool install plan review',
+              'Record a local Action Inbox item for reviewing an external tool install plan without executing installs, writing MCP config, completing OAuth, storing tokens, executing provider tools, mutating settings, or mutating external systems.',
+              'write',
+              XENESIS_TOOL_INSTALL_PLAN_REQUEST_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.tools.profileDrafts',
+          'Tool profile drafts',
+          'Read, open, and request review-only external tool profile drafts before setup, credential storage, OAuth, or provider tool execution.',
+          [
+            method(
+              'xd.xenesis.tools.profileDrafts.status',
+              'Read tool profile drafts',
+              'Read review-only external tool profile drafts, profile fields, missing required fields, review steps, diagnostics, blocked actions, and safety boundaries without storing credentials, completing OAuth, writing MCP config, executing provider tools, or mutating external systems.',
+              'read',
+              XENESIS_TOOL_PROFILE_DRAFT_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.profileDrafts.open',
+              'Open tool profile draft',
+              'Open Settings > Xenesis Agent > Connections and focus an external tool profile draft inside Desk.',
+              'control',
+              XENESIS_TOOL_PROFILE_DRAFT_OPEN_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.profileDrafts.request',
+              'Request tool profile draft review',
+              'Record a local Action Inbox item for reviewing an external tool profile draft without storing credentials, completing OAuth, writing MCP config, executing provider tools, or mutating external systems.',
+              'write',
+              XENESIS_TOOL_PROFILE_DRAFT_REQUEST_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.profileDrafts.apply',
+              'Apply tool profile draft',
+              'After explicit approval, apply a ready external tool profile draft by delegating to its ready MCP install draft apply path. Does not complete OAuth, store credentials or tokens, run shell commands, execute provider tools, or mutate external systems.',
+              'write',
+              XENESIS_TOOL_PROFILE_DRAFT_APPLY_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.tools.mcpInstallDrafts',
+          'MCP install drafts',
+          'Read, open, request review, and apply approval-gated MCP install drafts for recommended external tool connections.',
+          [
+            method(
+              'xd.xenesis.tools.mcpInstallDrafts.status',
+              'Read MCP install drafts',
+              'Read review-only MCP install drafts, template snippets, missing env, config targets, diagnostics, and safety boundaries without writing MCP config or running tools.',
+              'read',
+              XENESIS_TOOL_MCP_INSTALL_DRAFT_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.mcpInstallDrafts.open',
+              'Open MCP install draft',
+              'Open Settings > Xenesis Agent > Connections and focus an external tool MCP install-draft card inside Desk.',
+              'control',
+              XENESIS_TOOL_MCP_INSTALL_DRAFT_OPEN_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.mcpInstallDrafts.request',
+              'Request MCP install draft review',
+              'Record a local Action Inbox item for reviewing an MCP install draft without writing config, running shell commands, completing OAuth, storing tokens, executing provider tools, or mutating settings.',
+              'write',
+              XENESIS_TOOL_MCP_INSTALL_DRAFT_REQUEST_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.mcpInstallDrafts.apply',
+              'Apply MCP install draft',
+              'After explicit approval, merge a ready recommended MCP install draft into selected local MCP config files with backups and redacted readback. Does not run shell commands, complete OAuth, store new tokens, execute provider tools, or mutate external systems.',
+              'write',
+              XENESIS_TOOL_MCP_INSTALL_DRAFT_APPLY_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.tools.oauthDrafts',
+          'OAuth drafts',
+          'Read, open, and request review-only OAuth app and token-store drafts for planned Google tool connections.',
+          [
+            method(
+              'xd.xenesis.tools.oauthDrafts.status',
+              'Read tool OAuth drafts',
+              'Read review-only OAuth app, scope, consent, token-store, diagnostics, and safety-boundary metadata without completing OAuth, storing tokens, writing MCP config, or running provider tools.',
+              'read',
+              XENESIS_TOOL_OAUTH_DRAFT_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.oauthDrafts.setupPacket',
+              'Read tool OAuth setup packet',
+              'Read the review-only OAuth setup packet for planned Google tool connections, including app registration, redirect URI policy, credential refs, scope review, token-store readiness, diagnostics, and safety boundaries without completing OAuth, storing tokens, writing MCP config, or running provider tools.',
+              'read',
+              XENESIS_TOOL_OAUTH_SETUP_PACKET_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.oauthDrafts.setupPacket.open',
+              'Open tool OAuth setup packet',
+              'Open Settings > Xenesis Agent > Connections and focus the review-only OAuth setup packet block for a planned Google tool without completing OAuth, storing tokens, writing MCP config, or running provider tools.',
+              'control',
+              XENESIS_TOOL_OAUTH_SETUP_PACKET_OPEN_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.oauthDrafts.open',
+              'Open tool OAuth draft',
+              'Open Settings > Xenesis Agent > Connections and focus an external tool OAuth draft card inside Desk.',
+              'control',
+              XENESIS_TOOL_OAUTH_DRAFT_OPEN_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.oauthDrafts.request',
+              'Request tool OAuth draft review',
+              'Record a local Action Inbox item for reviewing a tool OAuth draft without completing OAuth, storing tokens, writing MCP config, executing provider tools, sending email, mutating documents, or mutating calendar events.',
+              'write',
+              XENESIS_TOOL_OAUTH_DRAFT_REQUEST_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.tools.runtime',
+          'Tool runtime readiness',
+          'Read, open, and request generic review-only external tool runtime readiness before provider tool execution.',
+          [
+            method(
+              'xd.xenesis.tools.runtime.status',
+              'Read tool runtime readiness',
+              'Read generic external tool runtime readiness, credential state, readback checks, diagnostics, blocked actions, and safety boundaries without executing provider tools, installing MCP servers, writing MCP config, storing credentials, completing OAuth, or mutating external systems.',
+              'read',
+              XENESIS_TOOL_RUNTIME_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.runtime.open',
+              'Open tool runtime readiness',
+              'Open Settings > Xenesis Agent > Connections and focus the generic external tool runtime readiness block.',
+              'control',
+              XENESIS_TOOL_RUNTIME_OPEN_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.runtime.request',
+              'Request tool runtime readiness review',
+              'Record a local Action Inbox item for reviewing external tool runtime readiness without executing provider tools, installing MCP servers, writing MCP config, storing credentials, completing OAuth, or mutating external systems.',
+              'write',
+              XENESIS_TOOL_RUNTIME_REQUEST_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.tools.mcpOAuth',
+          'MCP OAuth readiness',
+          'Read, open, and request review-only MCP OAuth runtime readiness for OAuth-capable recommended external tool connections.',
+          [
+            method(
+              'xd.xenesis.tools.mcpOAuth.status',
+              'Read MCP OAuth readiness',
+              'Read review-only MCP OAuth runtime readiness, credential references, scopes, diagnostics, and safety boundaries without starting OAuth, storing tokens, writing MCP config, or running provider tools.',
+              'read',
+              XENESIS_TOOL_MCP_OAUTH_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.mcpOAuth.open',
+              'Open MCP OAuth readiness',
+              'Open Settings > Xenesis Agent > Connections and focus an external tool MCP OAuth readiness card inside Desk.',
+              'control',
+              XENESIS_TOOL_MCP_OAUTH_OPEN_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.mcpOAuth.request',
+              'Request MCP OAuth readiness review',
+              'Record a local Action Inbox item for reviewing MCP OAuth runtime readiness without starting OAuth, storing tokens, writing MCP config, executing provider tools, or mutating external systems.',
+              'write',
+              XENESIS_TOOL_MCP_OAUTH_REQUEST_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.tools.oauthRuntime',
+          'OAuth runtime readiness',
+          'Read, open, and request review-only OAuth runtime readiness for planned Google tool connections.',
+          [
+            method(
+              'xd.xenesis.tools.oauthRuntime.status',
+              'Read tool OAuth runtime readiness',
+              'Read review-only OAuth runtime callback policy, token-store ownership, readback checks, diagnostics, and safety boundaries without starting OAuth, hosting callback servers, storing tokens, writing MCP config, or running provider tools.',
+              'read',
+              XENESIS_TOOL_OAUTH_RUNTIME_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.oauthRuntime.open',
+              'Open tool OAuth runtime readiness',
+              'Open Settings > Xenesis Agent > Connections and focus the review-only OAuth runtime readiness block for a planned Google tool.',
+              'control',
+              XENESIS_TOOL_OAUTH_RUNTIME_OPEN_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.oauthRuntime.request',
+              'Request tool OAuth runtime readiness review',
+              'Record a local Action Inbox item for reviewing OAuth runtime readiness without starting OAuth, hosting callback servers, storing tokens, writing MCP config, executing provider tools, or mutating Google data.',
+              'write',
+              XENESIS_TOOL_OAUTH_RUNTIME_REQUEST_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.tools.actions',
+          'Tool actions',
+          'Read, open, and request review-only external tool action policy catalogs before provider tool execution exists.',
+          [
+            method(
+              'xd.xenesis.tools.actions.status',
+              'Read tool action catalogs',
+              'Read review-only external tool action groups, approval policies, CR readback paths, diagnostics, blocked actions, and safety boundaries without executing provider tools or mutating external systems.',
+              'read',
+              XENESIS_TOOL_ACTION_CATALOG_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.actions.open',
+              'Open tool action catalog',
+              'Open Settings > Xenesis Agent > Connections and focus an external tool action policy catalog inside Desk.',
+              'control',
+              XENESIS_TOOL_ACTION_CATALOG_OPEN_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.tools.actions.request',
+              'Request tool action policy review',
+              'Record a local Action Inbox item for reviewing an external tool action policy catalog without running provider tools, storing credentials, completing OAuth, writing MCP config, or mutating external systems.',
+              'write',
+              XENESIS_TOOL_ACTION_CATALOG_REQUEST_SCHEMA,
+            ),
+          ],
+        ),
+      ]),
+      group('xd.xenesis.providers', 'Providers', 'AI provider setup and routing state.', [
+        group(
+          'xd.xenesis.providers.setup',
+          'Setup',
+          'AI provider auth, runtime, retry, fallback, and verification metadata.',
+          [
+            method(
+              'xd.xenesis.providers.setup.status',
+              'Read provider setup status',
+              'Read provider identity, model, auth mode, credential state, endpoint, runtime profile, retry/fallback policy, verification, CR readback, and risk controls for the active Xenesis AI provider.',
+              'read',
+              XENESIS_PROVIDER_SETUP_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.providers.setup.open',
+              'Open provider setup',
+              'Open Settings > Xenesis Agent > Connections and focus the active AI provider setup card inside Desk.',
+              'control',
+              XENESIS_PROVIDER_SETUP_OPEN_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.providers.routing',
+          'Routing',
+          'AI provider route, retry, fallback, and credential-pool read model.',
+          [
+            method(
+              'xd.xenesis.providers.routing.status',
+              'Read provider routing status',
+              'Read provider route source, runtime provider/model, retry policy, configured fallback chain, credential-pool state, diagnostics, and safety boundaries for the active Xenesis AI provider.',
+              'read',
+              XENESIS_PROVIDER_SETUP_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.providers.routing.open',
+              'Open provider routing',
+              'Open Settings > Xenesis Agent > Connections and focus the AI provider routing card inside Desk.',
+              'control',
+              XENESIS_PROVIDER_ROUTING_OPEN_SCHEMA,
+            ),
+          ],
+        ),
+        group('xd.xenesis.providers.views', 'Views', 'Internal Desk views for AI provider setup and readiness.', [
+          method(
+            'xd.xenesis.providers.views.status',
+            'Read provider view status',
+            'Read internal Desk view surfaces, CR open/read paths, diagnostics, and safety boundaries for the active Xenesis AI provider.',
+            'read',
+            XENESIS_PROVIDER_VIEW_STATUS_SCHEMA,
+          ),
+          method(
+            'xd.xenesis.providers.views.open',
+            'Open provider view',
+            'Open Settings > Xenesis Agent > Connections and focus the active AI provider connection card inside Desk.',
+            'control',
+            XENESIS_PROVIDER_VIEW_OPEN_SCHEMA,
+          ),
+        ]),
+        group(
+          'xd.xenesis.providers.setupPlans',
+          'Setup plans',
+          'Ordered CR-first setup plans that connect provider setup, routing, views, profile drafts, diagnostics, and setup review requests.',
+          [
+            method(
+              'xd.xenesis.providers.setupPlans.status',
+              'Read provider setup plans',
+              'Read ordered setup-plan steps, CR read/open/review paths, diagnostics, blocked actions, and safety boundaries for Xenesis AI provider setup without changing provider settings, storing raw secrets, editing fallback chains, changing local CLI selection, or running provider prompts.',
+              'read',
+              XENESIS_PROVIDER_SETUP_PLAN_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.providers.setupPlans.open',
+              'Open provider setup plan',
+              'Open Settings > Xenesis Agent > Connections and focus the AI provider setup-plan card inside Desk.',
+              'control',
+              XENESIS_PROVIDER_SETUP_PLAN_OPEN_SCHEMA,
+            ),
+          ],
+        ),
+        group(
+          'xd.xenesis.providers.profileDrafts',
+          'Profile drafts',
+          'Read, open, review, and approval-apply AI provider profile drafts.',
+          [
+            method(
+              'xd.xenesis.providers.profileDrafts.status',
+              'Read provider profile drafts',
+              'Read provider profile field state, guardrails, missing required fields, diagnostics, apply readiness, and safety boundaries without exposing secrets.',
+              'read',
+              XENESIS_PROVIDER_PROFILE_DRAFT_STATUS_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.providers.profileDrafts.open',
+              'Open provider profile draft',
+              'Open Settings > Xenesis Agent > Connections and focus the active provider profile-draft card inside Desk.',
+              'control',
+              XENESIS_PROVIDER_PROFILE_DRAFT_OPEN_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.providers.profileDrafts.request',
+              'Request provider profile draft review',
+              'Record a local Action Inbox item for reviewing a provider profile draft without changing provider settings, model settings, fallback chains, credentials, local CLI selection, or running provider prompts.',
+              'write',
+              XENESIS_PROVIDER_PROFILE_DRAFT_REQUEST_SCHEMA,
+            ),
+            method(
+              'xd.xenesis.providers.profileDrafts.apply',
+              'Apply provider profile draft',
+              'Apply a ready provider profile draft to non-secret AI provider profile settings after Capability Registry approval; raw provider secrets, fallback chains, local CLI selection, and provider prompt execution are not changed.',
+              'write',
+              XENESIS_PROVIDER_PROFILE_DRAFT_APPLY_SCHEMA,
+            ),
+          ],
+        ),
+      ]),
       group('xd.xenesis.gateway', 'Gateway', 'Xenesis gateway lifecycle operations.', [
         method('xd.xenesis.gateway.status', 'Read gateway status', 'Read the Xenesis gateway runtime status.', 'read'),
         method('xd.xenesis.gateway.start', 'Start gateway', 'Start the Xenesis runtime gateway.', 'control'),
@@ -3777,24 +6172,25 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             'write',
             {
               type: 'object',
-              required: ['name'],
+              required: ['template'],
               properties: {
+                template: {
+                  type: 'string',
+                  title: 'Profile template',
+                  description: 'Xenesis operating profile template to install.',
+                  examples: ['desk'],
+                },
                 name: {
                   type: 'string',
                   title: 'Profile name',
-                  description: 'Unique Xenesis profile name.',
-                  examples: ['xenis', 'gowoori'],
+                  description: 'Optional installed profile name. Defaults to the selected template name.',
+                  examples: ['slice04-channel-smoke'],
                 },
-                config: {
-                  type: 'object',
-                  title: 'Profile config',
-                  description: 'Profile configuration payload passed to Xenesis profile storage.',
-                },
-                makeActive: {
+                activate: {
                   type: 'boolean',
-                  title: 'Make active',
-                  description: 'When true, select the profile after installing it.',
-                  default: false,
+                  title: 'Activate profile',
+                  description: 'When true or omitted, select the profile after installing it.',
+                  default: true,
                 },
               },
             },
@@ -3827,9 +6223,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                   examples: ['external', 'xenis'],
                 },
                 channels: {
-                  type: 'object',
-                  title: 'Channel settings',
-                  description: 'Telegram, Slack, Discord, and webhook channel settings.',
+                  ...XENESIS_PROFILE_CHANNELS_SCHEMA,
                 },
               },
             },
@@ -3838,10 +6232,10 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             'xd.xenesis.profiles.testChannel',
             'Test profile channel',
             'Send a sanitized test message through a Xenesis external bot channel.',
-            'control',
+            'write',
             {
               type: 'object',
-              required: ['channel', 'channels'],
+              required: ['channel'],
               properties: {
                 profile: {
                   type: 'string',
@@ -3852,14 +6246,13 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                 channel: {
                   type: 'string',
                   title: 'Channel',
-                  enum: ['telegram', 'slack', 'discord', 'webhook'],
+                  enum: XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS,
                   description: 'External bot channel to test.',
                 },
                 channels: {
-                  type: 'object',
-                  title: 'Channel settings',
+                  ...XENESIS_PROFILE_CHANNELS_SCHEMA,
                   description:
-                    'Telegram, Slack, Discord, and webhook channel settings to test. Secrets are read from environment variables only.',
+                    'Optional Telegram, Slack, Discord, and webhook channel settings override. Defaults to the selected profile settings. Secrets may be env var names; test delivery returns redacted readback.',
                 },
                 message: {
                   type: 'string',
@@ -3893,7 +6286,6 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               title: 'Runtime provider',
               enum: [
                 'openai',
-                'mock',
                 'anthropic',
                 'claude',
                 'openai-compatible',
@@ -3913,7 +6305,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               type: 'string',
               title: 'Runtime model',
               description: 'Optional per-run model override for the selected Xenesis provider.',
-              examples: ['gpt-4.1', 'claude-3-5-sonnet-latest', 'desk-mock'],
+              examples: ['gpt-4.1', 'claude-3-5-sonnet-latest', 'gpt-5-codex'],
             },
             providerProfile: {
               type: 'string',
@@ -4073,12 +6465,20 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                     'Testing-only: send the prompt to the provider instead of executing fenced xenesis-desk-action blocks before model execution.',
                   default: false,
                 },
-                bypassNaturalDeskRouting: {
+                approvePendingAction: {
                   type: 'boolean',
-                  title: 'Bypass natural Desk routing',
+                  title: 'Approve pending Desk action',
                   description:
-                    'Testing-only: send the prompt to the provider instead of satisfying natural-language Desk control requests locally before model execution.',
+                    'Testing-only: click an inline pending Desk-action approval button explicitly, without interpreting the prompt text as approval intent.',
                   default: false,
+                },
+                approvalAction: {
+                  type: 'string',
+                  title: 'Approval action',
+                  enum: ['once', 'always'],
+                  description:
+                    'Testing-only: choose which inline approval button to click when approvePendingAction is true.',
+                  default: 'once',
                 },
                 typeDelayMs: {
                   type: 'number',
@@ -4185,6 +6585,44 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                   title: 'Timeout',
                   description: 'Maximum time to wait for the attachment chips.',
                   default: 5000,
+                },
+              },
+            },
+            { approval: 'never' },
+          ),
+        ],
+      ),
+      group(
+        'xd.testing.connectionCenter',
+        'Connection Center testing',
+        'Development-only helpers for reading the live Connection Center renderer state in CR smoke workflows.',
+        [
+          method(
+            'xd.testing.connectionCenter.snapshot',
+            'Snapshot Connection Center',
+            'Read the current live Settings > Xenesis Agent > Connections renderer state for smoke verification.',
+            'read',
+            {
+              type: 'object',
+              properties: {
+                maxTextLength: {
+                  type: 'number',
+                  title: 'Maximum text length',
+                  description: 'Maximum Connection Center text characters to include.',
+                  default: 2400,
+                },
+                includeBodyText: {
+                  type: 'boolean',
+                  title: 'Include body text',
+                  description: 'Include document body preview and tail for diagnostics.',
+                  default: false,
+                },
+                timeoutMs: {
+                  type: 'number',
+                  title: 'Timeout',
+                  description: 'Maximum time to wait for Connection Center detail checks to render.',
+                  default: 3000,
+                  minimum: 0,
                 },
               },
             },
@@ -4600,42 +7038,121 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
     group('xd.panes', 'Built-in panes', 'Built-in non-extension panes opened by renderer commands.', [
       group('xd.panes.browser', 'Browser pane', 'Browser pane operations.', [
         method('xd.panes.browser.open', 'Open browser pane', 'Open a new Xenesis Desk browser pane.', 'control'),
-        method('xd.panes.browser.navigate', 'Navigate browser pane', 'Navigate an existing Xenesis Desk browser pane.', 'control', {
+        method(
+          'xd.panes.browser.navigate',
+          'Navigate browser pane',
+          'Navigate an existing Xenesis Desk browser pane.',
+          'control',
+          {
           type: 'object',
           properties: {
-            contentId: { type: 'string', description: 'Optional browser content id. Defaults to the active browser pane.' },
+              contentId: {
+                type: 'string',
+                description: 'Optional browser content id. Defaults to the active browser pane.',
+              },
             paneId: { type: 'string', description: 'Optional pane id containing a browser content.' },
             url: { type: 'string', description: 'URL or search text to load in the Desk browser pane.' },
           },
           required: ['url'],
-        }, { approval: 'never' }),
-        method('xd.panes.browser.back', 'Go back in browser pane', 'Navigate an existing Desk browser pane backward.', 'control', undefined, { approval: 'never' }),
-        method('xd.panes.browser.forward', 'Go forward in browser pane', 'Navigate an existing Desk browser pane forward.', 'control', undefined, { approval: 'never' }),
-        method('xd.panes.browser.reload', 'Reload browser pane', 'Reload an existing Desk browser pane.', 'control', undefined, { approval: 'never' }),
-        method('xd.panes.browser.stop', 'Stop browser pane load', 'Stop loading an existing Desk browser pane.', 'control', undefined, { approval: 'never' }),
-        method('xd.panes.browser.state', 'Read browser pane state', 'Read navigation state from an existing Desk browser pane.', 'read'),
-        method('xd.panes.browser.textSnapshot', 'Read browser text snapshot', 'Read visible text, links, and form controls from an existing Desk browser pane.', 'read', {
+          },
+          { approval: 'never' },
+        ),
+        method(
+          'xd.panes.browser.back',
+          'Go back in browser pane',
+          'Navigate an existing Desk browser pane backward.',
+          'control',
+          undefined,
+          { approval: 'never' },
+        ),
+        method(
+          'xd.panes.browser.forward',
+          'Go forward in browser pane',
+          'Navigate an existing Desk browser pane forward.',
+          'control',
+          undefined,
+          { approval: 'never' },
+        ),
+        method(
+          'xd.panes.browser.reload',
+          'Reload browser pane',
+          'Reload an existing Desk browser pane.',
+          'control',
+          undefined,
+          { approval: 'never' },
+        ),
+        method(
+          'xd.panes.browser.stop',
+          'Stop browser pane load',
+          'Stop loading an existing Desk browser pane.',
+          'control',
+          undefined,
+          { approval: 'never' },
+        ),
+        method(
+          'xd.panes.browser.state',
+          'Read browser pane state',
+          'Read navigation state from an existing Desk browser pane.',
+          'read',
+        ),
+        method(
+          'xd.panes.browser.textSnapshot',
+          'Read browser text snapshot',
+          'Read visible text, links, and form controls from an existing Desk browser pane.',
+          'read',
+          {
           type: 'object',
           properties: {
-            contentId: { type: 'string', description: 'Optional browser content id. Defaults to the active browser pane.' },
+              contentId: {
+                type: 'string',
+                description: 'Optional browser content id. Defaults to the active browser pane.',
+              },
             paneId: { type: 'string', description: 'Optional pane id containing a browser content.' },
-            maxChars: { type: 'number', default: 20000, minimum: 1, description: 'Maximum body text characters to return.' },
+              maxChars: {
+                type: 'number',
+                default: 20000,
+                minimum: 1,
+                description: 'Maximum body text characters to return.',
+              },
             maxLinks: { type: 'number', default: 100, minimum: 0, description: 'Maximum links to return.' },
           },
-        }),
-        method('xd.panes.browser.domSnapshot', 'Read browser DOM snapshot', 'Read a bounded DOM structure summary from an existing Desk browser pane.', 'read', {
+          },
+        ),
+        method(
+          'xd.panes.browser.domSnapshot',
+          'Read browser DOM snapshot',
+          'Read a bounded DOM structure summary from an existing Desk browser pane.',
+          'read',
+          {
           type: 'object',
           properties: {
-            contentId: { type: 'string', description: 'Optional browser content id. Defaults to the active browser pane.' },
+              contentId: {
+                type: 'string',
+                description: 'Optional browser content id. Defaults to the active browser pane.',
+              },
             paneId: { type: 'string', description: 'Optional pane id containing a browser content.' },
             maxNodes: { type: 'number', default: 250, minimum: 1, description: 'Maximum DOM nodes to return.' },
-            maxTextChars: { type: 'number', default: 5000, minimum: 1, description: 'Maximum cumulative text characters to return.' },
+              maxTextChars: {
+                type: 'number',
+                default: 5000,
+                minimum: 1,
+                description: 'Maximum cumulative text characters to return.',
           },
-        }),
-        method('xd.panes.browser.elementAction', 'Run browser element action', 'Run a bounded click, fill, select, or key press against a visible Desk browser pane. Prefer this over xd.automation.ui.run for simple visible Desk browser form fill, click, select, and press actions.', 'control', {
+            },
+          },
+        ),
+        method(
+          'xd.panes.browser.elementAction',
+          'Run browser element action',
+          'Run a bounded click, fill, select, or key press against a visible Desk browser pane. Prefer this over xd.automation.ui.run for simple visible Desk browser form fill, click, select, and press actions.',
+          'control',
+          {
           type: 'object',
           properties: {
-            contentId: { type: 'string', description: 'Optional browser content id. Defaults to the active browser pane.' },
+              contentId: {
+                type: 'string',
+                description: 'Optional browser content id. Defaults to the active browser pane.',
+              },
             paneId: { type: 'string', description: 'Optional pane id containing a browser content.' },
             elementAction: {
               type: 'string',
@@ -4647,7 +7164,9 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             value: { type: 'string', description: 'Value used by fill or select actions.' },
             key: { type: 'string', description: 'Keyboard key used by press actions.' },
           },
-        }, { approval: 'never' }),
+          },
+          { approval: 'never' },
+        ),
       ]),
       group('xd.panes.commandCenter', 'Command Center pane', 'Command Center creation and restore.', [
         method(
@@ -6142,15 +8661,21 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           text: { type: 'string', title: 'Text' },
         },
       }),
-      method('xd.apps.hotkey', 'Send external app hotkey', 'Send a hotkey to a focused external app window.', 'execute', {
-        type: 'object',
-        required: ['keys'],
-        properties: {
-          appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
-          windowId: { type: 'string', title: 'Window handle' },
-          keys: { type: 'array', items: { type: 'string' }, examples: [['CTRL', 'S']] },
+      method(
+        'xd.apps.hotkey',
+        'Send external app hotkey',
+        'Send a hotkey to a focused external app window.',
+        'execute',
+        {
+          type: 'object',
+          required: ['keys'],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            windowId: { type: 'string', title: 'Window handle' },
+            keys: { type: 'array', items: { type: 'string' }, examples: [['CTRL', 'S']] },
+          },
         },
-      }),
+      ),
       method(
         'xd.apps.close',
         'Close external app window',
@@ -8877,7 +11402,7 @@ export function findDeskBridgeCapability(
   );
 }
 
-function buildDeskBridgeWorkflowRegistry(
+export function buildDeskBridgeWorkflowRegistry(
   options: XenisPhase5VisibilityOptions = {},
 ): DeskBridgeWorkflowRegistryEntry[] {
   return listDeskBridgeCapabilities(createDeskBridgeCapabilityTree(options), options)
@@ -9530,32 +12055,59 @@ export async function callDeskBridgeCapability(
         return callAdapter(path, api?.status);
       }
       if (path === 'xd.apps.status') {
-        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'status' });
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'status',
+        });
       }
       if (path === 'xd.apps.find') {
-        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'find' });
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'find',
+        });
       }
       if (path === 'xd.apps.launch') {
-        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'launch' });
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'launch',
+        });
       }
       if (path === 'xd.apps.focus') {
-        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'focus' });
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'focus',
+        });
       }
       if (path === 'xd.apps.resize') {
-        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'resize' });
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'resize',
+        });
       }
       if (path === 'xd.apps.typeText') {
-        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'typeText' });
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'typeText',
+        });
       }
       if (path === 'xd.apps.hotkey') {
-        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'hotkey' });
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'hotkey',
+        });
       }
       if (path === 'xd.apps.close') {
-        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action: 'close' });
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'close',
+        });
       }
       if (path.startsWith('xd.apps.')) {
         const action = path.slice('xd.apps.'.length);
-        return callAdapter(path, api?.runExternalAppAction, { ...normalizeCapabilityArgs(request.args), action });
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action,
+        });
       }
       if (path === 'xd.computer.capture') {
         return callComputerUseCapability(path, api?.computerUseCall, normalizeCapabilityArgs(request.args), computerUseCallOptions);
@@ -10222,6 +12774,263 @@ export async function callDeskBridgeCapability(
       if (path === 'xd.agent.receipts.get') {
         return redactAgentActionRecordRefsForExternal(source, await callAdapter(path, api?.agentReceiptsGet, request.args));
       }
+      if (path === 'xd.xenesis.connections.status') {
+        return callAdapter(path, api?.getXenesisConnectionsStatus);
+      }
+      if (path === 'xd.xenesis.connections.open') {
+        const args = normalizeCapabilityArgs(request.args);
+        const focusConnectionId = readString(args.id) || readString(args.connectionId);
+        const focusConnectionDetail = readString(args.focusConnectionDetail);
+        const paneArgs = buildXenesisConnectionCenterOpenArgs({
+          ...(focusConnectionId ? { focusConnectionId } : {}),
+          ...(isXenesisConnectionCenterDetailFocus(focusConnectionDetail) ? { focusConnectionDetail } : {}),
+          ensureVisible: args.ensureVisible !== false,
+        });
+        return callAdapter(path, api?.openBuiltinPane, paneArgs);
+      }
+      if (path === 'xd.xenesis.connections.diagnostics.status') {
+        return callAdapter(path, api?.getXenesisConnectionDiagnosticRunbooksStatus, request.args);
+      }
+      if (path === 'xd.xenesis.connections.diagnostics.open') {
+        return callAdapter(path, api?.openXenesisConnectionDiagnosticRunbook, request.args);
+      }
+      if (path === 'xd.xenesis.connections.setupRequests.status') {
+        return callAdapter(path, api?.getXenesisConnectionSetupRequestsStatus, request.args);
+      }
+      if (path === 'xd.xenesis.connections.setupRequests.open') {
+        return callAdapter(path, api?.openXenesisConnectionSetupRequest, request.args);
+      }
+      if (path === 'xd.xenesis.connections.setupRequests.request') {
+        return callAdapter(path, api?.requestXenesisConnectionSetup, request.args);
+      }
+      if (path === 'xd.xenesis.connections.setupRequests.apply') {
+        return callAdapter(path, api?.applyXenesisConnectionSetupRequest, request.args);
+      }
+      if (path === 'xd.xenesis.onboarding.status') {
+        return callAdapter(path, api?.getXenesisOnboardingStatus, request.args);
+      }
+      if (path === 'xd.xenesis.onboarding.open') {
+        return callAdapter(path, api?.openXenesisOnboardingStep, request.args);
+      }
+      if (path === 'xd.xenesis.channels.routing.status') {
+        return callAdapter(path, api?.getXenesisChannelRoutingStatus, request.args);
+      }
+      if (path === 'xd.xenesis.channels.routing.open') {
+        return callAdapter(path, api?.openXenesisChannelRouting, request.args);
+      }
+      if (path === 'xd.xenesis.channels.safety.status') {
+        return callAdapter(path, api?.getXenesisChannelSafetyStatus, request.args);
+      }
+      if (path === 'xd.xenesis.channels.safety.open') {
+        return callAdapter(path, api?.openXenesisChannelSafety, request.args);
+      }
+      if (path === 'xd.xenesis.channels.accessGroups.status') {
+        return callAdapter(path, api?.getXenesisChannelAccessGroupsStatus, request.args);
+      }
+      if (path === 'xd.xenesis.channels.accessGroups.open') {
+        return callAdapter(path, api?.openXenesisChannelAccessGroups, request.args);
+      }
+      if (path === 'xd.xenesis.channels.pairing.status') {
+        return callAdapter(path, api?.getXenesisChannelPairingStatus, request.args);
+      }
+      if (path === 'xd.xenesis.channels.pairing.open') {
+        return callAdapter(path, api?.openXenesisChannelPairing, request.args);
+      }
+      if (path === 'xd.xenesis.channels.runtime.status') {
+        return callAdapter(path, api?.getXenesisChannelRuntimeStatus, request.args);
+      }
+      if (path === 'xd.xenesis.channels.runtime.open') {
+        return callAdapter(path, api?.openXenesisChannelRuntime, request.args);
+      }
+      if (path === 'xd.xenesis.channels.runtime.request') {
+        return callAdapter(path, api?.requestXenesisChannelRuntime, request.args);
+      }
+      if (path === 'xd.xenesis.channels.userStories.status') {
+        return callAdapter(path, api?.getXenesisChannelUserStoriesStatus, request.args);
+      }
+      if (path === 'xd.xenesis.channels.userStories.open') {
+        return callAdapter(path, api?.openXenesisChannelUserStory, request.args);
+      }
+      if (path === 'xd.xenesis.channels.setupPlans.status') {
+        return callAdapter(path, api?.getXenesisChannelSetupPlansStatus, request.args);
+      }
+      if (path === 'xd.xenesis.channels.setupPlans.open') {
+        return callAdapter(path, api?.openXenesisChannelSetupPlan, request.args);
+      }
+      if (path === 'xd.xenesis.channels.profileDrafts.status') {
+        return callAdapter(path, api?.getXenesisChannelProfileDraftsStatus, request.args);
+      }
+      if (path === 'xd.xenesis.channels.profileDrafts.open') {
+        return callAdapter(path, api?.openXenesisChannelProfileDraft, request.args);
+      }
+      if (path === 'xd.xenesis.channels.profileDrafts.request') {
+        return callAdapter(path, api?.requestXenesisChannelProfileDraft, request.args);
+      }
+      if (path === 'xd.xenesis.channels.profileDrafts.apply') {
+        return callAdapter(path, api?.applyXenesisChannelProfileDraft, request.args);
+      }
+      if (path === 'xd.xenesis.guides.status') {
+        return callAdapter(path, api?.getXenesisGuidesStatus, request.args);
+      }
+      if (path === 'xd.xenesis.guides.open') {
+        return callAdapter(path, api?.openXenesisGuide, request.args);
+      }
+      if (path === 'xd.xenesis.tools.setup.status') {
+        return callAdapter(path, api?.getXenesisToolSetupStatus, request.args);
+      }
+      if (path === 'xd.xenesis.tools.setup.open') {
+        return callAdapter(path, api?.openXenesisToolSetup, request.args);
+      }
+      if (path === 'xd.xenesis.tools.setupPlans.status') {
+        return callAdapter(path, api?.getXenesisToolSetupPlansStatus, request.args);
+      }
+      if (path === 'xd.xenesis.tools.setupPlans.open') {
+        return callAdapter(path, api?.openXenesisToolSetupPlan, request.args);
+      }
+      if (path === 'xd.xenesis.tools.connectors.status') {
+        return callAdapter(path, api?.getXenesisToolConnectorsStatus, request.args);
+      }
+      if (path === 'xd.xenesis.tools.connectors.open') {
+        return callAdapter(path, api?.openXenesisToolConnector, request.args);
+      }
+      if (path === 'xd.xenesis.tools.views.status') {
+        return callAdapter(path, api?.getXenesisToolViewsStatus, request.args);
+      }
+      if (path === 'xd.xenesis.tools.views.open') {
+        return callAdapter(path, api?.openXenesisToolView, request.args);
+      }
+      if (path === 'xd.xenesis.tools.userStories.status') {
+        return callAdapter(path, api?.getXenesisToolUserStoriesStatus, request.args);
+      }
+      if (path === 'xd.xenesis.tools.userStories.open') {
+        return callAdapter(path, api?.openXenesisToolUserStory, request.args);
+      }
+      if (path === 'xd.xenesis.tools.installPlans.status') {
+        return callAdapter(path, api?.getXenesisToolInstallPlansStatus, request.args);
+      }
+      if (path === 'xd.xenesis.tools.installPlans.open') {
+        return callAdapter(path, api?.openXenesisToolInstallPlan, request.args);
+      }
+      if (path === 'xd.xenesis.tools.installPlans.request') {
+        return callAdapter(path, api?.requestXenesisToolInstallPlan, request.args);
+      }
+      if (path === 'xd.xenesis.tools.profileDrafts.status') {
+        return callAdapter(path, api?.getXenesisToolProfileDraftsStatus, request.args);
+      }
+      if (path === 'xd.xenesis.tools.profileDrafts.open') {
+        return callAdapter(path, api?.openXenesisToolProfileDraft, request.args);
+      }
+      if (path === 'xd.xenesis.tools.profileDrafts.request') {
+        return callAdapter(path, api?.requestXenesisToolProfileDraft, request.args);
+      }
+      if (path === 'xd.xenesis.tools.profileDrafts.apply') {
+        return callAdapter(path, api?.applyXenesisToolProfileDraft, request.args);
+      }
+      if (path === 'xd.xenesis.tools.mcpInstallDrafts.status') {
+        return callAdapter(path, api?.getXenesisToolMcpInstallDraftsStatus, request.args);
+      }
+      if (path === 'xd.xenesis.tools.mcpInstallDrafts.open') {
+        return callAdapter(path, api?.openXenesisToolMcpInstallDraft, request.args);
+      }
+      if (path === 'xd.xenesis.tools.mcpInstallDrafts.request') {
+        return callAdapter(path, api?.requestXenesisToolMcpInstallDraft, request.args);
+      }
+      if (path === 'xd.xenesis.tools.mcpInstallDrafts.apply') {
+        return callAdapter(path, api?.applyXenesisToolMcpInstallDraft, request.args);
+      }
+      if (path === 'xd.xenesis.tools.oauthDrafts.status') {
+        return callAdapter(path, api?.getXenesisToolOAuthDraftsStatus, request.args);
+      }
+      if (path === 'xd.xenesis.tools.oauthDrafts.setupPacket') {
+        return callAdapter(path, api?.getXenesisToolOAuthSetupPacket, request.args);
+      }
+      if (path === 'xd.xenesis.tools.oauthDrafts.setupPacket.open') {
+        return callAdapter(path, api?.openXenesisToolOAuthSetupPacket, request.args);
+      }
+      if (path === 'xd.xenesis.tools.oauthDrafts.open') {
+        return callAdapter(path, api?.openXenesisToolOAuthDraft, request.args);
+      }
+      if (path === 'xd.xenesis.tools.oauthDrafts.request') {
+        return callAdapter(path, api?.requestXenesisToolOAuthDraft, request.args);
+      }
+      if (path === 'xd.xenesis.tools.oauthRuntime.status') {
+        return callAdapter(path, api?.getXenesisToolOAuthRuntimeStatus, request.args);
+      }
+      if (path === 'xd.xenesis.tools.oauthRuntime.open') {
+        return callAdapter(path, api?.openXenesisToolOAuthRuntime, request.args);
+      }
+      if (path === 'xd.xenesis.tools.oauthRuntime.request') {
+        return callAdapter(path, api?.requestXenesisToolOAuthRuntime, request.args);
+      }
+      if (path === 'xd.xenesis.tools.runtime.status') {
+        return callAdapter(path, api?.getXenesisToolRuntimeStatus, request.args);
+      }
+      if (path === 'xd.xenesis.tools.runtime.open') {
+        return callAdapter(path, api?.openXenesisToolRuntime, request.args);
+      }
+      if (path === 'xd.xenesis.tools.runtime.request') {
+        return callAdapter(path, api?.requestXenesisToolRuntime, request.args);
+      }
+      if (path === 'xd.xenesis.tools.mcpOAuth.status') {
+        return callAdapter(path, api?.getXenesisToolMcpOAuthStatus, request.args);
+      }
+      if (path === 'xd.xenesis.tools.mcpOAuth.open') {
+        return callAdapter(path, api?.openXenesisToolMcpOAuth, request.args);
+      }
+      if (path === 'xd.xenesis.tools.mcpOAuth.request') {
+        return callAdapter(path, api?.requestXenesisToolMcpOAuth, request.args);
+      }
+      if (path === 'xd.xenesis.tools.actions.status') {
+        return callAdapter(path, api?.getXenesisToolActionCatalogStatus, request.args);
+      }
+      if (path === 'xd.xenesis.tools.actions.open') {
+        return callAdapter(path, api?.openXenesisToolActionCatalog, request.args);
+      }
+      if (path === 'xd.xenesis.tools.actions.request') {
+        return callAdapter(path, api?.requestXenesisToolActionCatalog, request.args);
+      }
+      if (path === 'xd.xenesis.messengers.views.status') {
+        return callAdapter(path, api?.getXenesisMessengerViewsStatus, request.args);
+      }
+      if (path === 'xd.xenesis.messengers.views.open') {
+        return callAdapter(path, api?.openXenesisMessengerView, request.args);
+      }
+      if (path === 'xd.xenesis.providers.setup.status') {
+        return callAdapter(path, api?.getXenesisProviderSetupStatus, request.args);
+      }
+      if (path === 'xd.xenesis.providers.setup.open') {
+        return callAdapter(path, api?.openXenesisProviderSetup, request.args);
+      }
+      if (path === 'xd.xenesis.providers.routing.status') {
+        return callAdapter(path, api?.getXenesisProviderRoutingStatus, request.args);
+      }
+      if (path === 'xd.xenesis.providers.routing.open') {
+        return callAdapter(path, api?.openXenesisProviderRouting, request.args);
+      }
+      if (path === 'xd.xenesis.providers.views.status') {
+        return callAdapter(path, api?.getXenesisProviderViewsStatus, request.args);
+      }
+      if (path === 'xd.xenesis.providers.views.open') {
+        return callAdapter(path, api?.openXenesisProviderView, request.args);
+      }
+      if (path === 'xd.xenesis.providers.setupPlans.status') {
+        return callAdapter(path, api?.getXenesisProviderSetupPlansStatus, request.args);
+      }
+      if (path === 'xd.xenesis.providers.setupPlans.open') {
+        return callAdapter(path, api?.openXenesisProviderSetupPlan, request.args);
+      }
+      if (path === 'xd.xenesis.providers.profileDrafts.status') {
+        return callAdapter(path, api?.getXenesisProviderProfileDraftsStatus, request.args);
+      }
+      if (path === 'xd.xenesis.providers.profileDrafts.open') {
+        return callAdapter(path, api?.openXenesisProviderProfileDraft, request.args);
+      }
+      if (path === 'xd.xenesis.providers.profileDrafts.request') {
+        return callAdapter(path, api?.requestXenesisProviderProfileDraft, request.args);
+      }
+      if (path === 'xd.xenesis.providers.profileDrafts.apply') {
+        return callAdapter(path, api?.applyXenesisProviderProfileDraft, request.args);
+      }
       if (path === 'xd.xenesis.gateway.status') {
         return callAdapter(path, api?.getXenesisStatus);
       }
@@ -10266,6 +13075,9 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.testing.xenesisAgent.snapshot') {
         return callAdapter(path, api?.snapshotXenesisAgent, request.args);
+      }
+      if (path === 'xd.testing.connectionCenter.snapshot') {
+        return callAdapter(path, api?.snapshotConnectionCenter, request.args);
       }
       if (path === 'xd.testing.xenesisAgent.submitPrompt') {
         return callAdapter(path, api?.submitXenesisAgentPrompt, request.args);

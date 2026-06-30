@@ -533,7 +533,9 @@ function projectAnalysisEvidenceRecoveryMessage(
 const verificationToolRecoveryNames = ['app_readiness', 'diagnostics', 'app_e2e_check'];
 
 // Streaming idle watchdog: abort a provider stream that produces no events for this long.
-const STREAM_IDLE_MS = Number(process.env.XENESIS_STREAM_IDLE_MS ?? '60000') || 60000;
+function resolveStreamIdleMs(env: NodeJS.ProcessEnv = process.env) {
+  return Number(env.XENESIS_STREAM_IDLE_MS ?? process.env.XENESIS_STREAM_IDLE_MS ?? '60000') || 60000;
+}
 
 function userRequestedVerificationToolUse(content: string) {
   return /app_readiness|app_e2e_check|diagnostics|verify|verification|test|diagnostic|검증|테스트|진단|수정|고쳐|복구/i.test(
@@ -2123,6 +2125,7 @@ export class AgentRunner {
   private readonly abortSignal?: AbortSignal;
   private readonly providerMaxRetries: number;
   private readonly providerRetryDelayMs: number;
+  private readonly streamIdleMs: number;
   private readonly providerQueryConfig: ProviderQueryConfig;
   private readonly hooks?: HookEmitter;
   private readonly hookRegistry?: HookRegistry;
@@ -2214,6 +2217,7 @@ export class AgentRunner {
     this.abortSignal = options.abortSignal;
     this.providerMaxRetries = options.providerMaxRetries ?? 0;
     this.providerRetryDelayMs = options.providerRetryDelayMs ?? 0;
+    this.streamIdleMs = resolveStreamIdleMs(this.env);
     this.providerQueryConfig = buildProviderQueryConfig({
       sessionId: this.sessionId,
       model: this.model,
@@ -5402,8 +5406,8 @@ export class AgentRunner {
         iterator.next(),
         new Promise<never>((_, reject) => {
           idleTimer = setTimeout(
-            () => reject(new Error(`Provider "${provider.name}" stream idle for ${STREAM_IDLE_MS}ms`)),
-            STREAM_IDLE_MS,
+            () => reject(new Error(`Provider "${provider.name}" stream idle for ${this.streamIdleMs}ms`)),
+            this.streamIdleMs,
           );
         }),
       ]).finally(() => {

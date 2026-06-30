@@ -14,7 +14,9 @@ Implement Slice 1 Ledger Foundation for Evidence-Governed Memory OS in
 - Reworked the `memory` tool and runtime/CLI registration to use ledger-backed
   writes, proposal/history/evidence reads, and archive-backed delete.
 - Added direct Agent pipeline route for explicit durable-memory save/search
-  prompts before provider execution.
+  prompts before provider execution. This direct natural-language route was
+  later removed during the provider/CR de-hardcoding merge because it was
+  keyword heuristic routing.
 - Fixed live-smoke-discovered Korean intent bugs:
   - `장기기억에 저장해` must save, not search.
   - `방금 저장하라고 한 ... 찾아줘` must search and must not be blocked by
@@ -50,12 +52,15 @@ Implement Slice 1 Ledger Foundation for Evidence-Governed Memory OS in
 - Provider smoke remains environment/auth blocked.
 - Slice 2 still needs CR/MCP governance paths, approval-proof validation,
   sensitive read redaction, CR docs, and live Agent-pane verification.
+- Superseded by the provider/CR de-hardcoding merge: `memoryDirectRoute.ts` and
+  `memoryDirectRoute.test.ts` were removed so memory use is model/tool-driven
+  instead of keyword-routed by the runtime.
 
 ## Source Links
 
-- [[../../../../packages/xenesis/src/extensions/MemoryLedger.ts]]
-- [[../../../../packages/xenesis/src/extensions/SqliteMemoryLedgerStore.ts]]
-- [[../../../../packages/xenesis/src/core/memoryDirectRoute.ts]]
-- [[../../../../packages/xenesis/src/core/AgentRunPipeline.ts]]
-- [[../../../../packages/xenesis/tests/i1/memoryDirectRoute.test.ts]]
-- [[../../../../handoff.md]]
+- [packages/xenesis/src/extensions/MemoryLedger.ts](../../../../packages/xenesis/src/extensions/MemoryLedger.ts)
+- [packages/xenesis/src/extensions/SqliteMemoryLedgerStore.ts](../../../../packages/xenesis/src/extensions/SqliteMemoryLedgerStore.ts)
+- `packages/xenesis/src/core/memoryDirectRoute.ts` removed in the de-hardcoding merge.
+- [packages/xenesis/src/core/AgentRunPipeline.ts](../../../../packages/xenesis/src/core/AgentRunPipeline.ts)
+- `packages/xenesis/tests/i1/memoryDirectRoute.test.ts` removed with the direct route.
+- [handoff.md](../../../../handoff.md)

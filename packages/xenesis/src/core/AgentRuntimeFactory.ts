@@ -51,6 +51,7 @@ import {
   ClaudeInteractiveProvider,
   CodexAppServerProvider,
   CodexCliProvider,
+  assertRuntimeProviderReady,
   capabilitiesFor,
   getProviderFactory,
   MockProvider,
@@ -58,7 +59,9 @@ import {
   PROVIDER_CAPABILITIES,
   presetApiKeyEnv,
   registerCodexResponsesProvider,
-  resolveProviderSettings
+  resolveProviderSettings,
+  type RuntimeProviderResolutionOptions,
+  resolveRuntimeProviderSelection
 } from "../providers/index.js";
 import {
   createAppE2ECheckTool,
@@ -164,33 +167,48 @@ function withProviderModel<T extends AgentProvider>(provider: T, model: string):
   return provider;
 }
 
-export function createProvider(config: XenesisConfig, env: NodeJS.ProcessEnv): AgentProvider {
+export function createProvider(
+  config: XenesisConfig,
+  env: NodeJS.ProcessEnv,
+  resolverOptions: RuntimeProviderResolutionOptions = {}
+): AgentProvider {
+  const selection = resolveRuntimeProviderSelection(config, env, resolverOptions);
+  assertRuntimeProviderReady(selection);
+  const selectedProvider = selection.provider!;
+  const selectedModel = selection.model ?? config.model;
   // Option B: the codex-responses provider talks to the ChatGPT Codex backend
   // directly (OAuth from ~/.codex/auth.json). Register lazily on first request so
   // the factory map picks it up below; reasoning effort comes from the launch env.
-  if (config.provider === "codex-responses" && !getProviderFactory("codex-responses")) {
+  if (selectedProvider === "codex-responses" && !getProviderFactory("codex-responses")) {
     registerCodexResponsesProvider();
   }
-  const reg = getProviderFactory(config.provider);
+  const selectedConfig = {
+    ...config,
+    provider: selectedProvider as ProviderName,
+    model: selectedModel,
+    baseURL: selection.baseURL ?? config.baseURL,
+    apiKeyEnv: selection.apiKeyEnv ?? config.apiKeyEnv
+  };
+  const reg = getProviderFactory(selectedProvider);
   if (reg) {
-    const regSettings = resolveProviderSettings(config, env);
+    const regSettings = resolveProviderSettings(selectedConfig, env);
     return withProviderModel(
       reg({
-        name: config.provider,
-        model: config.model,
-        apiKey: regSettings.apiKey,
-        baseURL: regSettings.baseURL,
+        name: selectedProvider,
+        model: selectedModel,
+        apiKey: selection.apiKeyEnv ? env[selection.apiKeyEnv] : regSettings.apiKey,
+        baseURL: selection.baseURL ?? regSettings.baseURL,
         env
       }),
-      config.model
+      selectedModel
     );
   }
-  if (config.provider === "mock") return withProviderModel(new MockProvider(), config.model);
-  if (config.provider === "codex-app-server") return withProviderModel(new CodexAppServerProvider({ env }), config.model);
-  if (config.provider === "codex-cli") return withProviderModel(new CodexCliProvider({ env }), config.model);
-  if (config.provider === "claude-interactive") return withProviderModel(new ClaudeInteractiveProvider({ env }), config.model);
-  if (config.provider === "claude-cli") return withProviderModel(new ClaudeCliProvider({ env }), config.model);
-  const settings = resolveProviderSettings(config, env);
+  if (selectedProvider === "mock") return withProviderModel(new MockProvider(), selectedModel);
+  if (selectedProvider === "codex-app-server") return withProviderModel(new CodexAppServerProvider({ env }), selectedModel);
+  if (selectedProvider === "codex-cli") return withProviderModel(new CodexCliProvider({ env }), selectedModel);
+  if (selectedProvider === "claude-interactive") return withProviderModel(new ClaudeInteractiveProvider({ env }), selectedModel);
+  if (selectedProvider === "claude-cli") return withProviderModel(new ClaudeCliProvider({ env }), selectedModel);
+  const settings = resolveProviderSettings(selectedConfig, env);
   const apiKey = settings.apiKey
     ?? ((capabilitiesFor(settings.provider) ?? PROVIDER_CAPABILITIES[settings.provider]).requiresApiKey ? undefined : "xenesis-local");
   if (apiKey === undefined) {
@@ -215,14 +233,14 @@ export function createProvider(config: XenesisConfig, env: NodeJS.ProcessEnv): A
   if (settings.provider === "anthropic" || settings.provider === "claude") {
     return new AnthropicProvider({
       name: settings.provider,
-      model: config.model,
+      model: selectedModel,
       apiKey,
       baseURL: settings.baseURL
     });
   }
   return new OpenAIProvider({
     name: settings.provider,
-    model: config.model,
+    model: selectedModel,
     apiKey,
     baseURL: settings.baseURL
   });
@@ -344,6 +362,10 @@ export function resolveFallbackChain(config: XenesisConfig, env: NodeJS.ProcessE
     seen.add(key);
 
     const apiKeyEnv = fallbackCredentialEnv(candidate);
+    if (candidate.kind === "mock" && env.XENESIS_ENABLE_TEST_MOCK_PROVIDER !== "true") {
+      skip("no-credential");
+      continue;
+    }
     if (fallbackRequiresCredential(candidate) && (!apiKeyEnv || !env[apiKeyEnv])) {
       skip("no-credential");
       continue;
@@ -361,7 +383,7 @@ export function resolveFallbackChain(config: XenesisConfig, env: NodeJS.ProcessE
 }
 
 export function selectTools(config: XenesisConfig, allTools: ToolRegistry): ToolRegistry {
-  if (config.approvalMode !== "readonly" || config.provider === "mock") {
+  if (config.approvalMode !== "readonly") {
     return allTools;
   }
 

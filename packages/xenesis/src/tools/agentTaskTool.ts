@@ -1,22 +1,22 @@
-import { setTimeout as delay } from "node:timers/promises";
-import { z } from "zod";
-import { SqliteAgentTaskStore, type AgentTask, type AgentTaskStatus } from "../orchestration/index.js";
-import type { Tool, ToolContext } from "./types.js";
+import { setTimeout as delay } from 'node:timers/promises';
+import { z } from 'zod';
+import { type AgentTask, type AgentTaskStatus, SqliteAgentTaskStore } from '../orchestration/index.js';
+import type { Tool, ToolContext } from './types.js';
 
 const taskStatusInputSchema = z.enum([
-  "queued",
-  "running",
-  "pending",
-  "in_progress",
-  "completed",
-  "failed",
-  "cancelled",
-  "blocked",
-  "deleted"
+  'queued',
+  'running',
+  'pending',
+  'in_progress',
+  'completed',
+  'failed',
+  'cancelled',
+  'blocked',
+  'deleted',
 ]);
 
 const agentTaskInput = z.object({
-  action: z.enum(["create", "list", "show", "get", "update", "cancel", "stop", "retry", "output"]),
+  action: z.enum(['create', 'list', 'show', 'get', 'update', 'cancel', 'stop', 'retry', 'output']),
   id: z.string().min(1).nullable().optional(),
   taskId: z.string().min(1).nullable().optional(),
   task_id: z.string().min(1).nullable().optional(),
@@ -37,11 +37,11 @@ const agentTaskInput = z.object({
   output: z.string().nullable().optional(),
   error: z.string().nullable().optional(),
   block: z.boolean().nullable().optional(),
-  timeout: z.number().int().min(0).max(600000).nullable().optional()
+  timeout: z.number().int().min(0).max(600000).nullable().optional(),
 });
 
 const agentTaskOpenAIInput = z.object({
-  action: z.enum(["create", "list", "show", "get", "update", "cancel", "stop", "retry", "output"]),
+  action: z.enum(['create', 'list', 'show', 'get', 'update', 'cancel', 'stop', 'retry', 'output']),
   id: z.string().nullable(),
   taskId: z.string().nullable(),
   task_id: z.string().nullable(),
@@ -62,14 +62,14 @@ const agentTaskOpenAIInput = z.object({
   output: z.string().nullable(),
   error: z.string().nullable(),
   block: z.boolean().nullable(),
-  timeout: z.number().int().min(0).max(600000).nullable()
+  timeout: z.number().int().min(0).max(600000).nullable(),
 });
 
 type AgentTaskInput = z.infer<typeof agentTaskInput>;
 
 function requireXenesisHome(context: ToolContext) {
   if (!context.xenesisHome) {
-    throw new Error("Xenesis home is required for durable agent task state.");
+    throw new Error('Xenesis home is required for durable agent task state.');
   }
   return context.xenesisHome;
 }
@@ -101,10 +101,8 @@ function taskDescription(task: AgentTask) {
 function formatTaskLine(task: AgentTask) {
   const legacyLine = `${task.id} ${task.status} ${task.prompt}`;
   const subject = taskSubject(task);
-  const owner = task.owner ? ` (${task.owner})` : "";
-  const blocked = task.blockedBy?.length
-    ? ` [blocked by ${task.blockedBy.map((id) => `#${id}`).join(", ")}]`
-    : "";
+  const owner = task.owner ? ` (${task.owner})` : '';
+  const blocked = task.blockedBy?.length ? ` [blocked by ${task.blockedBy.map((id) => `#${id}`).join(', ')}]` : '';
   const referenceLine = `#${task.id} [${task.status}] ${subject}${owner}${blocked}`;
   return referenceLine === `#${task.id} [${task.status}] ${task.prompt}`
     ? legacyLine
@@ -116,8 +114,8 @@ function formatTaskDetails(task: AgentTask) {
     `Task #${task.id}: ${taskSubject(task)}`,
     `Status: ${task.status}`,
     `Description: ${taskDescription(task)}`,
-    task.blockedBy?.length ? `Blocked by: ${task.blockedBy.map((id) => `#${id}`).join(", ")}` : undefined,
-    task.blocks?.length ? `Blocks: ${task.blocks.map((id) => `#${id}`).join(", ")}` : undefined,
+    task.blockedBy?.length ? `Blocked by: ${task.blockedBy.map((id) => `#${id}`).join(', ')}` : undefined,
+    task.blocks?.length ? `Blocks: ${task.blocks.map((id) => `#${id}`).join(', ')}` : undefined,
     `id: ${task.id}`,
     `status: ${task.status}`,
     `prompt: ${task.prompt}`,
@@ -135,14 +133,14 @@ function formatTaskDetails(task: AgentTask) {
     task.handoffTitle ? `handoffTitle: ${task.handoffTitle}` : undefined,
     task.handoffOrder && task.handoffTotal ? `handoffStep: ${task.handoffOrder}/${task.handoffTotal}` : undefined,
     task.priority !== undefined ? `priority: ${task.priority}` : undefined,
-    task.blocks?.length ? `blocks: ${task.blocks.join(", ")}` : undefined,
-    task.dependsOn?.length ? `dependsOn: ${task.dependsOn.join(", ")}` : undefined,
-    task.blockedBy?.length ? `blockedBy: ${task.blockedBy.join(", ")}` : undefined,
+    task.blocks?.length ? `blocks: ${task.blocks.join(', ')}` : undefined,
+    task.dependsOn?.length ? `dependsOn: ${task.dependsOn.join(', ')}` : undefined,
+    task.blockedBy?.length ? `blockedBy: ${task.blockedBy.join(', ')}` : undefined,
     task.blockedReason ? `blockedReason: ${task.blockedReason}` : undefined,
     task.artifactId ? `artifactId: ${task.artifactId}` : undefined,
     `attempts: ${task.attempts ?? 0}`,
     task.contextInjectedSessionIds?.length
-      ? `contextInjectedSessionIds: ${task.contextInjectedSessionIds.join(", ")}`
+      ? `contextInjectedSessionIds: ${task.contextInjectedSessionIds.join(', ')}`
       : undefined,
     task.contextInjectedAt ? `contextInjectedAt: ${task.contextInjectedAt}` : undefined,
     `createdAt: ${task.createdAt}`,
@@ -150,14 +148,16 @@ function formatTaskDetails(task: AgentTask) {
     task.startedAt ? `startedAt: ${task.startedAt}` : undefined,
     task.finishedAt ? `finishedAt: ${task.finishedAt}` : undefined,
     task.output ? `output: ${task.output}` : undefined,
-    task.error ? `error: ${task.error}` : undefined
-  ].filter((line): line is string => line !== undefined).join("\n");
+    task.error ? `error: ${task.error}` : undefined,
+  ]
+    .filter((line): line is string => line !== undefined)
+    .join('\n');
 }
 
-function toAgentTaskStatus(status: AgentTaskInput["status"]): AgentTaskStatus | "deleted" | undefined {
+function toAgentTaskStatus(status: AgentTaskInput['status']): AgentTaskStatus | 'deleted' | undefined {
   if (!status) return undefined;
-  if (status === "pending") return "queued";
-  if (status === "in_progress") return "running";
+  if (status === 'pending') return 'queued';
+  if (status === 'in_progress') return 'running';
   return status;
 }
 
@@ -198,7 +198,7 @@ function updatePayload(input: AgentTaskInput, existing: AgentTask) {
   } = {};
 
   const status = toAgentTaskStatus(input.status);
-  if (status && status !== "deleted") payload.status = status;
+  if (status && status !== 'deleted') payload.status = status;
   if (input.subject) {
     payload.subject = input.subject;
     payload.label = input.subject;
@@ -233,12 +233,12 @@ function updatePayload(input: AgentTaskInput, existing: AgentTask) {
   return payload;
 }
 
-function formatTaskOutput(task: AgentTask, retrievalStatus: "success" | "timeout" | "not_ready") {
+function formatTaskOutput(task: AgentTask, retrievalStatus: 'success' | 'timeout' | 'not_ready') {
   const parts = [
     `<retrieval_status>${retrievalStatus}</retrieval_status>`,
     `<task_id>${task.id}</task_id>`,
-    "<task_type>agent_task</task_type>",
-    `<status>${task.status}</status>`
+    '<task_type>agent_task</task_type>',
+    `<status>${task.status}</status>`,
   ];
   if (task.output?.trim()) {
     parts.push(`<output>\n${task.output.trimEnd()}\n</output>`);
@@ -246,20 +246,26 @@ function formatTaskOutput(task: AgentTask, retrievalStatus: "success" | "timeout
   if (task.error) {
     parts.push(`<error>${task.error}</error>`);
   }
-  return parts.join("\n\n");
+  return parts.join('\n\n');
 }
 
 function outputStatus(task: AgentTask, block: boolean) {
-  if (task.output?.trim() || task.status === "completed" || task.status === "failed" || task.status === "cancelled" || task.status === "blocked") {
-    return "success" as const;
+  if (
+    task.output?.trim() ||
+    task.status === 'completed' ||
+    task.status === 'failed' ||
+    task.status === 'cancelled' ||
+    task.status === 'blocked'
+  ) {
+    return 'success' as const;
   }
-  return block ? "timeout" as const : "not_ready" as const;
+  return block ? ('timeout' as const) : ('not_ready' as const);
 }
 
 async function waitForTaskOutput(store: SqliteAgentTaskStore, id: string, timeoutMs: number) {
   const deadline = Date.now() + timeoutMs;
   let latest = await store.get(id);
-  while (latest && outputStatus(latest, false) === "not_ready" && Date.now() < deadline) {
+  while (latest && outputStatus(latest, false) === 'not_ready' && Date.now() < deadline) {
     await delay(Math.min(100, Math.max(1, deadline - Date.now())));
     latest = await store.get(id);
   }
@@ -267,17 +273,18 @@ async function waitForTaskOutput(store: SqliteAgentTaskStore, id: string, timeou
 }
 
 export const agentTaskTool: Tool<AgentTaskInput, AgentTask | AgentTask[]> = {
-  name: "agent_task",
-  description: "Create, inspect, update, cancel, and retry durable Xenesis agent tasks.",
+  name: 'agent_task',
+  description: 'Create, inspect, update, cancel, and retry durable Xenesis agent tasks.',
   inputSchema: agentTaskInput,
   openaiInputSchema: agentTaskOpenAIInput,
-  isReadOnly: (input) => input.action === "list" || input.action === "show" || input.action === "get" || input.action === "output",
+  isReadOnly: (input) =>
+    input.action === 'list' || input.action === 'show' || input.action === 'get' || input.action === 'output',
   async run(input, context) {
     try {
       const store = taskStore(context);
 
-      if (input.action === "create") {
-        const subject = input.subject ?? input.prompt ?? input.description ?? "Untitled task";
+      if (input.action === 'create') {
+        const subject = input.subject ?? input.prompt ?? input.description ?? 'Untitled task';
         const description = input.description ?? input.prompt ?? subject;
         const task = await store.create({
           prompt: requirePrompt(input),
@@ -287,48 +294,49 @@ export const agentTaskTool: Tool<AgentTaskInput, AgentTask | AgentTask[]> = {
           label: subject,
           owner: input.owner ?? undefined,
           metadata: input.metadata ?? undefined,
-          dependsOn: input.dependsOn ?? undefined
+          dependsOn: input.dependsOn ?? undefined,
         });
         return {
           ok: true,
-          content: [
-            `agent task created: ${task.id}`,
-            `Task #${task.id} created successfully: ${subject}`
-          ].join("\n"),
-          data: task
+          content: [`agent task created: ${task.id}`, `Task #${task.id} created successfully: ${subject}`].join('\n'),
+          data: task,
         };
       }
 
-      if (input.action === "list") {
+      if (input.action === 'list') {
         const tasks = await store.list();
         return {
           ok: true,
-          content: tasks.length > 0
-            ? tasks.sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)).map(formatTaskLine).join("\n")
-            : "agent tasks: none",
-          data: tasks
+          content:
+            tasks.length > 0
+              ? tasks
+                  .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+                  .map(formatTaskLine)
+                  .join('\n')
+              : 'agent tasks: none',
+          data: tasks,
         };
       }
 
       const id = requireId(input);
 
-      if (input.action === "show" || input.action === "get") {
+      if (input.action === 'show' || input.action === 'get') {
         const task = await store.get(id);
         if (!task) {
-          return { ok: false, content: input.action === "get" ? "Task not found" : `agent task not found: ${id}` };
+          return { ok: false, content: input.action === 'get' ? 'Task not found' : `agent task not found: ${id}` };
         }
         return { ok: true, content: formatTaskDetails(task), data: task };
       }
 
-      if (input.action === "update") {
+      if (input.action === 'update') {
         const existing = await store.get(id);
-        if (!existing) return { ok: false, content: "Task not found" };
+        if (!existing) return { ok: false, content: 'Task not found' };
         const status = toAgentTaskStatus(input.status);
-        if (status === "deleted") {
+        if (status === 'deleted') {
           const deleted = await store.delete(id);
           return {
             ok: deleted,
-            content: deleted ? `Updated task #${id} deleted` : "Task not found"
+            content: deleted ? `Updated task #${id} deleted` : 'Task not found',
           };
         }
         const task = await store.update(id, updatePayload(input, existing));
@@ -336,43 +344,43 @@ export const agentTaskTool: Tool<AgentTaskInput, AgentTask | AgentTask[]> = {
           ok: true,
           content: [
             `agent task updated: ${task.id} ${task.status}`,
-            `Updated task #${task.id} ${input.status ? "status" : "fields"}`
-          ].join("\n"),
-          data: task
+            `Updated task #${task.id} ${input.status ? 'status' : 'fields'}`,
+          ].join('\n'),
+          data: task,
         };
       }
 
-      if (input.action === "cancel") {
+      if (input.action === 'cancel') {
         const task = await store.cancel(id);
         return { ok: true, content: `agent task updated: ${task.id} ${task.status}`, data: task };
       }
 
-      if (input.action === "stop") {
+      if (input.action === 'stop') {
         const task = await store.get(id);
         if (!task) return { ok: false, content: `Task not found: ${id}` };
-        if (task.status !== "running") {
+        if (task.status !== 'running') {
           return { ok: false, content: `Task ${id} is not running (status: ${task.status})` };
         }
         const stopped = await store.cancel(id);
         return {
           ok: true,
           content: `Successfully stopped task: ${stopped.id} (${taskSubject(stopped)})`,
-          data: stopped
+          data: stopped,
         };
       }
 
-      if (input.action === "output") {
+      if (input.action === 'output') {
         let task = await store.get(id);
         if (!task) return { ok: false, content: `No task found with ID: ${id}` };
         const block = input.block ?? true;
-        if (block && outputStatus(task, false) === "not_ready") {
+        if (block && outputStatus(task, false) === 'not_ready') {
           task = await waitForTaskOutput(store, id, input.timeout ?? 30000);
           if (!task) return { ok: false, content: `No task found with ID: ${id}` };
         }
         return {
           ok: true,
           content: formatTaskOutput(task, outputStatus(task, block)),
-          data: task
+          data: task,
         };
       }
 
@@ -382,5 +390,5 @@ export const agentTaskTool: Tool<AgentTaskInput, AgentTask | AgentTask[]> = {
       const message = error instanceof Error ? error.message : String(error);
       return { ok: false, content: `Agent task tool failed: ${message}` };
     }
-  }
+  },
 };

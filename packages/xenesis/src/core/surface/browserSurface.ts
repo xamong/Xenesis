@@ -1,22 +1,27 @@
-import type { BrowserDriver, BrowserSnapshot } from "../../tools/browserDriver.js";
-import type { MarkInput } from "./som.js";
-import type { SnapshotOptions, SurfaceAction, SurfaceElement, SurfaceHandler, SurfaceSnapshot } from "./types.js";
+import type { BrowserDriver, BrowserSnapshot } from '../../tools/browserDriver.js';
+import type { MarkInput } from './som.js';
+import type { SnapshotOptions, SurfaceAction, SurfaceElement, SurfaceHandler, SurfaceSnapshot } from './types.js';
 
 export class BrowserSurfaceHandler implements SurfaceHandler {
-  readonly name = "browser";
+  readonly name = 'browser';
 
   constructor(private readonly driver: BrowserDriver) {}
 
-  private base(raw: BrowserSnapshot, elements: SurfaceElement[], screenshot: string | undefined, som: boolean): SurfaceSnapshot {
+  private base(
+    raw: BrowserSnapshot,
+    elements: SurfaceElement[],
+    screenshot: string | undefined,
+    som: boolean,
+  ): SurfaceSnapshot {
     return {
-      surface: "browser",
+      surface: 'browser',
       ...(raw.url ? { url: raw.url } : {}),
       ...(raw.title ? { title: raw.title } : {}),
       text: raw.text,
       elements,
       ...(raw.canvases ? { canvases: raw.canvases } : {}),
       ...(screenshot ? { screenshot } : {}),
-      som
+      som,
     };
   }
 
@@ -24,7 +29,7 @@ export class BrowserSurfaceHandler implements SurfaceHandler {
     return raw.elements.map((element, index) => ({
       index: index + 1,
       role: element.role,
-      label: element.label
+      label: element.label,
     }));
   }
 
@@ -39,11 +44,13 @@ export class BrowserSurfaceHandler implements SurfaceHandler {
         index: index + 1,
         role: element.role,
         label: element.label,
-        ...(bbox ? { bbox } : {})
+        ...(bbox ? { bbox } : {}),
       };
     });
     const marks: MarkInput[] = elements
-      .filter((element): element is SurfaceElement & { bbox: NonNullable<SurfaceElement["bbox"]> } => Boolean(element.bbox))
+      .filter((element): element is SurfaceElement & { bbox: NonNullable<SurfaceElement['bbox']> } =>
+        Boolean(element.bbox),
+      )
       .map((element) => ({ index: element.index, bbox: element.bbox }));
     const screenshot = await this.driver.screenshotWithMarks(marks);
     return this.base(raw, elements, screenshot, true);
@@ -52,16 +59,16 @@ export class BrowserSurfaceHandler implements SurfaceHandler {
   async act(action: SurfaceAction): Promise<SurfaceSnapshot> {
     let raw: BrowserSnapshot;
     switch (action.type) {
-      case "navigate":
+      case 'navigate':
         raw = await this.driver.goto(action.url);
         break;
-      case "click":
+      case 'click':
         raw = await this.driver.click(`e${action.index}`);
         break;
-      case "fill":
+      case 'fill':
         raw = await this.driver.fill(`e${action.index}`, action.text, action.submit ?? false);
         break;
-      case "back":
+      case 'back':
         raw = await this.driver.back();
         break;
     }

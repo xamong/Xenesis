@@ -12,9 +12,9 @@
 //
 // The runner shape ({prompt, provider?, model?, timeoutMs}) is shared by CuratorModelRunner and
 // CommitmentModelRunner, so one factory feeds both subsystems with the SAME dedicated client.
-import type { ProviderName, XenesisConfig } from "../../config/types.js";
-import { createProvider } from "../../core/AgentRuntimeFactory.js";
-import type { AgentProvider } from "../../providers/index.js";
+import type { ProviderName, XenesisConfig } from '../../config/types.js';
+import { createProvider } from '../../core/AgentRuntimeFactory.js';
+import type { AgentProvider } from '../../providers/index.js';
 
 /** A text-in/text-out aux runner (matches CuratorModelRunner / CommitmentModelRunner). */
 export type AuxModelRunner = (params: {
@@ -57,17 +57,17 @@ export function createAuxModelRunner(options: {
     }
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), Math.max(1, params.timeoutMs));
-    if (typeof timer === "object" && timer && "unref" in timer && typeof timer.unref === "function") {
+    if (typeof timer === 'object' && timer && 'unref' in timer && typeof timer.unref === 'function') {
       timer.unref();
     }
     try {
       const response = await client.complete({
         model,
-        messages: [{ role: "user", content: params.prompt }],
+        messages: [{ role: 'user', content: params.prompt }],
         tools: [], // TOOLS DISABLED — background aux pass can never call a tool.
         signal: controller.signal,
       });
-      return String(response.message.content ?? "");
+      return String(response.message.content ?? '');
     } finally {
       clearTimeout(timer);
     }

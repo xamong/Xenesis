@@ -64,28 +64,35 @@ export function createAgentPerformanceTracker(): AgentPerformanceTracker {
 
   function computeMetrics(agentId: string, taskType: string): AgentMetrics {
     const key = cacheKey(agentId, taskType);
-    const matching = records.filter(r => r.agentId === agentId && r.taskType === taskType);
+    const matching = records.filter((r) => r.agentId === agentId && r.taskType === taskType);
 
     if (matching.length === 0) {
       return {
-        agentId, taskType, totalTasks: 0, completedTasks: 0, failedTasks: 0,
-        completionRate: 0, avgResponseMs: 0, avgTokens: 0,
-        correctionCount: 0, approvalRate: 0, lastUpdated: 0,
+        agentId,
+        taskType,
+        totalTasks: 0,
+        completedTasks: 0,
+        failedTasks: 0,
+        completionRate: 0,
+        avgResponseMs: 0,
+        avgTokens: 0,
+        correctionCount: 0,
+        approvalRate: 0,
+        lastUpdated: 0,
       };
     }
 
-    const completed = matching.filter(r => r.success);
-    const failed = matching.filter(r => !r.success);
-    const withApproval = matching.filter(r => r.approved !== undefined);
-    const approved = withApproval.filter(r => r.approved);
+    const completed = matching.filter((r) => r.success);
+    const failed = matching.filter((r) => !r.success);
+    const withApproval = matching.filter((r) => r.approved !== undefined);
+    const approved = withApproval.filter((r) => r.approved);
 
-    const avgResponseMs = completed.length > 0
-      ? completed.reduce((sum, r) => sum + ((r.completedAt || r.startedAt) - r.startedAt), 0) / completed.length
-      : 0;
+    const avgResponseMs =
+      completed.length > 0
+        ? completed.reduce((sum, r) => sum + ((r.completedAt || r.startedAt) - r.startedAt), 0) / completed.length
+        : 0;
 
-    const avgTokens = completed.length > 0
-      ? completed.reduce((sum, r) => sum + r.tokensUsed, 0) / completed.length
-      : 0;
+    const avgTokens = completed.length > 0 ? completed.reduce((sum, r) => sum + r.tokensUsed, 0) / completed.length : 0;
 
     const metrics: AgentMetrics = {
       agentId,
@@ -96,7 +103,7 @@ export function createAgentPerformanceTracker(): AgentPerformanceTracker {
       completionRate: matching.length > 0 ? completed.length / matching.length : 0,
       avgResponseMs: Math.round(avgResponseMs),
       avgTokens: Math.round(avgTokens),
-      correctionCount: matching.filter(r => r.corrected).length,
+      correctionCount: matching.filter((r) => r.corrected).length,
       approvalRate: withApproval.length > 0 ? approved.length / withApproval.length : 1,
       lastUpdated: Date.now(),
     };
@@ -110,7 +117,7 @@ export function createAgentPerformanceTracker(): AgentPerformanceTracker {
     const completionScore = metrics.completionRate * 40;
     const speedScore = Math.max(0, 20 - (metrics.avgResponseMs / 10000) * 20);
     const efficiencyScore = Math.max(0, 20 - (metrics.avgTokens / 50000) * 20);
-    const correctionPenalty = Math.min(20, metrics.correctionCount / metrics.totalTasks * 40);
+    const correctionPenalty = Math.min(20, (metrics.correctionCount / metrics.totalTasks) * 40);
     return Math.round(completionScore + speedScore + efficiencyScore - correctionPenalty);
   }
 
@@ -122,9 +129,9 @@ export function createAgentPerformanceTracker(): AgentPerformanceTracker {
 
     getMetrics(agentId: string, taskType?: string): AgentMetrics | null {
       if (!taskType) {
-        const types = new Set(records.filter(r => r.agentId === agentId).map(r => r.taskType));
+        const types = new Set(records.filter((r) => r.agentId === agentId).map((r) => r.taskType));
         if (types.size === 0) return null;
-        const allMetrics = Array.from(types).map(t => computeMetrics(agentId, t));
+        const allMetrics = Array.from(types).map((t) => computeMetrics(agentId, t));
         return {
           agentId,
           taskType: 'all',
@@ -143,13 +150,13 @@ export function createAgentPerformanceTracker(): AgentPerformanceTracker {
     },
 
     listMetrics(taskType?: string): AgentMetrics[] {
-      const agents = new Set(records.map(r => r.agentId));
+      const agents = new Set(records.map((r) => r.agentId));
       const result: AgentMetrics[] = [];
       for (const agentId of agents) {
         if (taskType) {
           result.push(computeMetrics(agentId, taskType));
         } else {
-          const types = new Set(records.filter(r => r.agentId === agentId).map(r => r.taskType));
+          const types = new Set(records.filter((r) => r.agentId === agentId).map((r) => r.taskType));
           for (const t of types) result.push(computeMetrics(agentId, t));
         }
       }
@@ -157,7 +164,7 @@ export function createAgentPerformanceTracker(): AgentPerformanceTracker {
     },
 
     recommend(taskType: string): SmartRouterRecommendation[] {
-      const agents = new Set(records.filter(r => r.taskType === taskType).map(r => r.agentId));
+      const agents = new Set(records.filter((r) => r.taskType === taskType).map((r) => r.agentId));
       const recommendations: SmartRouterRecommendation[] = [];
 
       for (const agentId of agents) {

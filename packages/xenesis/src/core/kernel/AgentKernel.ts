@@ -1,44 +1,35 @@
-import type { AgentRunUsage } from "../AgentRunner.js";
-import type { ToolExecutionPolicy } from "../AgentRunner.js";
+import type { ToolResult } from '../../tools/types.js';
+import type { AgentRunUsage, ToolExecutionPolicy } from '../AgentRunner.js';
 import {
-  evaluateCompletionGate,
-  EvidenceLedger,
   type AppendEvidenceRecord,
   type CompletionClaim,
   type CompletionGateReport,
-  type CompletionStatus
-} from "../completion/index.js";
-import type { AgentRunEvent } from "../events.js";
-import type { AgentMessage, ToolCall } from "../messages.js";
-import {
-  assertProviderRequestReady,
-  MessageLedger,
-  providerMessagesFromLedger
-} from "../messages/index.js";
+  type CompletionStatus,
+  EvidenceLedger,
+  evaluateCompletionGate,
+} from '../completion/index.js';
+import type { AgentRunEvent } from '../events.js';
+import { assertProviderRequestReady, MessageLedger, providerMessagesFromLedger } from '../messages/index.js';
+import type { AgentMessage, ToolCall } from '../messages.js';
 import {
   evaluatePermissionEngine,
   type PermissionEngineDecision,
   type PermissionModeInput,
-  type PermissionOperation
-} from "../permissions/index.js";
-import type { ToolResult } from "../../tools/types.js";
-import type { KernelFailureReason } from "./RecoveryController.js";
-import { recoveryOverlayForKernelFailure } from "./RecoveryController.js";
-import type { AgentKernelRunState } from "./RunState.js";
-import { evaluateToolChoicePriority } from "./ToolChoiceEvaluator.js";
-import { evaluateToolExecutionPolicy } from "./ToolPolicyEvaluator.js";
-import {
-  scheduleToolCallBlocks,
-  type ScheduledToolCall,
-  type ToolConcurrencyClassifier
-} from "./ToolScheduler.js";
+  type PermissionOperation,
+} from '../permissions/index.js';
+import type { KernelFailureReason } from './RecoveryController.js';
+import { recoveryOverlayForKernelFailure } from './RecoveryController.js';
+import type { AgentKernelRunState } from './RunState.js';
+import { evaluateToolChoicePriority } from './ToolChoiceEvaluator.js';
+import { evaluateToolExecutionPolicy } from './ToolPolicyEvaluator.js';
+import { type ScheduledToolCall, scheduleToolCallBlocks, type ToolConcurrencyClassifier } from './ToolScheduler.js';
 
 export interface AgentKernelAdapterRunOptions {
   providerMessages: AgentMessage[];
   turn: number;
 }
 
-export type AgentKernelAssistantMessage = Extract<AgentMessage, { role: "assistant" }>;
+export type AgentKernelAssistantMessage = Extract<AgentMessage, { role: 'assistant' }>;
 
 export interface AgentKernelAdapterRunResult {
   content: string;
@@ -71,9 +62,7 @@ export interface AgentKernelToolEvidenceMapperOptions {
   sequence: number;
 }
 
-export type AgentKernelToolEvidenceMapper = (
-  options: AgentKernelToolEvidenceMapperOptions
-) => AppendEvidenceRecord[];
+export type AgentKernelToolEvidenceMapper = (options: AgentKernelToolEvidenceMapperOptions) => AppendEvidenceRecord[];
 
 export interface AgentKernelCompletionGateOptions {
   enabled: true;
@@ -130,30 +119,30 @@ export class AgentKernel {
     runId: string,
     sequence: number,
     state: AgentKernelRunState,
-    summary?: string
+    summary?: string,
   ) {
     ledger.append({
-      kind: "run_state",
+      kind: 'run_state',
       id: `${runId}:state:${sequence}:${state}`,
       state,
-      ...(summary ? { summary } : {})
+      ...(summary ? { summary } : {}),
     });
   }
 
   private assistantMessageFromResult(result: AgentKernelAdapterRunResult): AgentKernelAssistantMessage {
-    return result.assistantMessage ?? { role: "assistant", content: result.content };
+    return result.assistantMessage ?? { role: 'assistant', content: result.content };
   }
 
   private toolFailureReason(error: unknown): KernelFailureReason {
     if (
-      typeof error === "object" &&
+      typeof error === 'object' &&
       error !== null &&
-      "code" in error &&
-      (error.code === "tool_unavailable" || error.code === "invalid_tool_input")
+      'code' in error &&
+      (error.code === 'tool_unavailable' || error.code === 'invalid_tool_input')
     ) {
       return error.code;
     }
-    return "tool_execution_failed";
+    return 'tool_execution_failed';
   }
 
   private toolErrorMessage(error: unknown): string {
@@ -162,23 +151,23 @@ export class AgentKernel {
   }
 
   private stateForCompletionStatus(status: CompletionStatus): AgentKernelRunState {
-    if (status.startsWith("completed_")) return "completed";
-    if (status.startsWith("blocked_")) return "blocked";
-    if (status.startsWith("failed_")) return "failed";
-    return "stopped";
+    if (status.startsWith('completed_')) return 'completed';
+    if (status.startsWith('blocked_')) return 'blocked';
+    if (status.startsWith('failed_')) return 'failed';
+    return 'stopped';
   }
 
   private permissionDeniedResult(toolCall: ToolCall, decision: PermissionEngineDecision): ToolResult {
     return {
       ok: false,
-      content: `Permission denied for tool "${toolCall.name}": ${decision.reason}.`
+      content: `Permission denied for tool "${toolCall.name}": ${decision.reason}.`,
     };
   }
 
   private permissionApprovalUnavailableResult(toolCall: ToolCall, decision: PermissionEngineDecision): ToolResult {
     return {
       ok: false,
-      content: `Permission approval unavailable for tool "${toolCall.name}": ${decision.reason}.`
+      content: `Permission approval unavailable for tool "${toolCall.name}": ${decision.reason}.`,
     };
   }
 
@@ -198,16 +187,16 @@ export class AgentKernel {
 
     const finalizeResult = (
       result: AgentKernelAdapterRunResult,
-      assistantMessage: AgentKernelAssistantMessage
+      assistantMessage: AgentKernelAssistantMessage,
     ): AgentKernelRunResult => {
       const content = result.content || assistantMessage.content;
       if (!this.options.completionGate || !evidenceLedger) {
-        appendState("completed");
+        appendState('completed');
         return {
           ...result,
           content,
           events,
-          ledger
+          ledger,
         };
       }
 
@@ -215,7 +204,7 @@ export class AgentKernel {
         claims: result.completionClaims ?? this.options.completionGate.claims ?? [],
         evidence: evidenceLedger.snapshot(),
         pendingApprovalCount: this.options.completionGate.pendingApprovalCount,
-        unresolvedRequiredTaskCount: this.options.completionGate.unresolvedRequiredTaskCount
+        unresolvedRequiredTaskCount: this.options.completionGate.unresolvedRequiredTaskCount,
       });
       appendState(this.stateForCompletionStatus(completionReport.status), completionReport.status);
       return {
@@ -224,18 +213,18 @@ export class AgentKernel {
         events,
         ledger,
         completionReport,
-        evidenceLedger
+        evidenceLedger,
       };
     };
 
-    appendState("created");
+    appendState('created');
     ledger.appendUserMessage({ id: `${options.runId}:user:1`, content: options.prompt });
-    appendState("composing_prompt");
+    appendState('composing_prompt');
 
     for (let turn = 1; turn <= maxTurns; turn += 1) {
       assertProviderRequestReady(ledger.snapshot());
       const providerMessages = providerMessagesFromLedger(ledger.snapshot());
-      appendState("provider_request");
+      appendState('provider_request');
 
       const result = await this.options.adapter.run({ providerMessages, turn });
       lastResult = result;
@@ -247,48 +236,50 @@ export class AgentKernel {
         content: assistantMessage.content,
         ...(assistantMessage.toolCalls && assistantMessage.toolCalls.length > 0
           ? { toolCalls: assistantMessage.toolCalls }
-          : {})
+          : {}),
       });
-      appendState("assistant_received");
+      appendState('assistant_received');
 
       const toolCalls = assistantMessage.toolCalls ?? [];
       if (toolCalls.length === 0) {
         return finalizeResult(result, assistantMessage);
       }
 
-      appendState("tool_scheduling");
+      appendState('tool_scheduling');
       const scheduledToolCallBlocks = scheduleToolCallBlocks(toolCalls, {
-        classify: this.options.toolConcurrencyClassifier
+        classify: this.options.toolConcurrencyClassifier,
       });
       if (!this.options.toolExecutor) {
         const toolCall = scheduledToolCallBlocks[0]!.toolCalls[0]!.toolCall;
-        ledger.appendRecoveryOverlay(recoveryOverlayForKernelFailure({
-          id: `${options.runId}:recovery:${toolCall.id}`,
-          reason: "missing_tool_executor",
-          toolCall
-        }));
-        appendState("recovery_decision", `missing executor for tool ${toolCall.name}`);
-        appendState("blocked", `tool ${toolCall.name} cannot run without an executor`);
+        ledger.appendRecoveryOverlay(
+          recoveryOverlayForKernelFailure({
+            id: `${options.runId}:recovery:${toolCall.id}`,
+            reason: 'missing_tool_executor',
+            toolCall,
+          }),
+        );
+        appendState('recovery_decision', `missing executor for tool ${toolCall.name}`);
+        appendState('blocked', `tool ${toolCall.name} cannot run without an executor`);
         return {
           ...result,
           events: [
             ...events,
             {
-              type: "error",
-              message: `AgentKernel cannot execute tool "${toolCall.name}" without a toolExecutor`
-            }
+              type: 'error',
+              message: `AgentKernel cannot execute tool "${toolCall.name}" without a toolExecutor`,
+            },
           ],
-          ledger
+          ledger,
         };
       }
 
       type PreparedToolResult = {
-        kind: "tool_result";
+        kind: 'tool_result';
         scheduled: ScheduledToolCall;
         toolResult: ToolResult;
       };
       type FailedToolResult = {
-        kind: "failed";
+        kind: 'failed';
         scheduled: ScheduledToolCall;
         reason: KernelFailureReason;
         errorMessage: string;
@@ -296,11 +287,11 @@ export class AgentKernel {
       type ToolRunResult = PreparedToolResult | FailedToolResult;
 
       const prepareToolRun = async (scheduled: ScheduledToolCall): Promise<ToolRunResult> => {
-        appendState("tool_running", `running tool ${scheduled.toolCall.name}`);
+        appendState('tool_running', `running tool ${scheduled.toolCall.name}`);
         const choiceAudit = evaluateToolChoicePriority({
           policy: this.options.toolExecutionPolicy,
           toolCall: scheduled.toolCall,
-          successfulToolNames
+          successfulToolNames,
         });
         if (choiceAudit) {
           ledger.appendToolChoiceAudit({
@@ -311,13 +302,13 @@ export class AgentKernel {
             reason: choiceAudit.reason,
             priorityReasons: choiceAudit.priorityReasons,
             priorityTools: choiceAudit.priorityTools,
-            unmetPriorityTools: choiceAudit.unmetPriorityTools
+            unmetPriorityTools: choiceAudit.unmetPriorityTools,
           });
         }
         const policyDecision = evaluateToolExecutionPolicy({
           policy: this.options.toolExecutionPolicy,
           toolCall: scheduled.toolCall,
-          successfulToolNames
+          successfulToolNames,
         });
         if (this.options.toolExecutionPolicy) {
           ledger.appendToolPolicyAudit({
@@ -332,20 +323,20 @@ export class AgentKernel {
             missingBefore: policyDecision.missingBefore,
             requiredBeforeAny: policyDecision.requiredBeforeAny,
             missingBeforeAny: policyDecision.missingBeforeAny,
-            priorityTools: policyDecision.priorityTools
+            priorityTools: policyDecision.priorityTools,
           });
         }
-        if (policyDecision.status === "deny") {
+        if (policyDecision.status === 'deny') {
           return {
-            kind: "tool_result",
+            kind: 'tool_result',
             scheduled,
             toolResult: {
               ok: false,
               content: [
-              `Tool policy "${policyDecision.policyName}" denied tool "${scheduled.toolCall.name}":`,
-              `${policyDecision.reason}.`
-              ].join(" ")
-            }
+                `Tool policy "${policyDecision.policyName}" denied tool "${scheduled.toolCall.name}":`,
+                `${policyDecision.reason}.`,
+              ].join(' '),
+            },
           };
         }
 
@@ -355,15 +346,15 @@ export class AgentKernel {
             toolCall: scheduled.toolCall,
             runId: options.runId,
             turn,
-            sequence: scheduled.sequence
+            sequence: scheduled.sequence,
           });
           const permissionDecision = evaluatePermissionEngine({
             mode: permissionEngine.mode,
-            operation
+            operation,
           });
           let approved: boolean | undefined;
 
-          if (permissionDecision.status === "ask") {
+          if (permissionDecision.status === 'ask') {
             approved = permissionEngine.approve
               ? await permissionEngine.approve({
                   toolCall: scheduled.toolCall,
@@ -371,10 +362,10 @@ export class AgentKernel {
                   turn,
                   sequence: scheduled.sequence,
                   decision: permissionDecision,
-                  operation
+                  operation,
                 })
               : false;
-          } else if (permissionDecision.status === "deny") {
+          } else if (permissionDecision.status === 'deny') {
             approved = false;
           }
 
@@ -387,22 +378,22 @@ export class AgentKernel {
             source: permissionDecision.source,
             riskLevel: permissionDecision.riskLevel,
             normalizedMode: permissionDecision.normalizedMode,
-            ...(approved !== undefined ? { approved } : {})
+            ...(approved !== undefined ? { approved } : {}),
           });
 
-          if (permissionDecision.status === "deny") {
+          if (permissionDecision.status === 'deny') {
             return {
-              kind: "tool_result",
+              kind: 'tool_result',
               scheduled,
-              toolResult: this.permissionDeniedResult(scheduled.toolCall, permissionDecision)
+              toolResult: this.permissionDeniedResult(scheduled.toolCall, permissionDecision),
             };
           }
 
-          if (permissionDecision.status === "ask" && !approved) {
+          if (permissionDecision.status === 'ask' && !approved) {
             return {
-              kind: "tool_result",
+              kind: 'tool_result',
               scheduled,
-              toolResult: this.permissionApprovalUnavailableResult(scheduled.toolCall, permissionDecision)
+              toolResult: this.permissionApprovalUnavailableResult(scheduled.toolCall, permissionDecision),
             };
           }
         }
@@ -412,21 +403,21 @@ export class AgentKernel {
             toolCall: scheduled.toolCall,
             runId: options.runId,
             turn,
-            sequence: scheduled.sequence
+            sequence: scheduled.sequence,
           });
           return {
-            kind: "tool_result",
+            kind: 'tool_result',
             scheduled,
-            toolResult
+            toolResult,
           };
         } catch (error) {
           const errorMessage = this.toolErrorMessage(error);
           const reason = this.toolFailureReason(error);
           return {
-            kind: "failed",
+            kind: 'failed',
             scheduled,
             reason,
-            errorMessage
+            errorMessage,
           };
         }
       };
@@ -439,40 +430,43 @@ export class AgentKernel {
           content: prepared.toolResult.content,
           ...(prepared.toolResult.attachments && prepared.toolResult.attachments.length > 0
             ? { attachments: prepared.toolResult.attachments }
-            : {})
+            : {}),
         });
         if (prepared.toolResult.ok) successfulToolNames.add(prepared.scheduled.toolCall.name);
-        const evidenceRecords = this.options.completionGate?.mapToolResultToEvidence?.({
-          toolCall: prepared.scheduled.toolCall,
-          toolResult: prepared.toolResult,
-          runId: options.runId,
-          turn,
-          sequence: prepared.scheduled.sequence
-        }) ?? [];
+        const evidenceRecords =
+          this.options.completionGate?.mapToolResultToEvidence?.({
+            toolCall: prepared.scheduled.toolCall,
+            toolResult: prepared.toolResult,
+            runId: options.runId,
+            turn,
+            sequence: prepared.scheduled.sequence,
+          }) ?? [];
         for (const evidence of evidenceRecords) {
           evidenceLedger?.append(evidence);
         }
       };
 
       const failedToolResult = (failed: FailedToolResult): AgentKernelRunResult => {
-        ledger.appendRecoveryOverlay(recoveryOverlayForKernelFailure({
-          id: `${options.runId}:recovery:${failed.scheduled.toolCall.id}`,
-          reason: failed.reason,
-          toolCall: failed.scheduled.toolCall,
-          errorMessage: failed.errorMessage
-        }));
-        appendState("recovery_decision", `tool ${failed.scheduled.toolCall.name} failed before commit`);
-        appendState("failed", failed.errorMessage);
+        ledger.appendRecoveryOverlay(
+          recoveryOverlayForKernelFailure({
+            id: `${options.runId}:recovery:${failed.scheduled.toolCall.id}`,
+            reason: failed.reason,
+            toolCall: failed.scheduled.toolCall,
+            errorMessage: failed.errorMessage,
+          }),
+        );
+        appendState('recovery_decision', `tool ${failed.scheduled.toolCall.name} failed before commit`);
+        appendState('failed', failed.errorMessage);
         return {
           ...result,
           events: [
             ...events,
             {
-              type: "error",
-              message: failed.errorMessage
-            }
+              type: 'error',
+              message: failed.errorMessage,
+            },
           ],
-          ledger
+          ledger,
         };
       };
 
@@ -482,9 +476,9 @@ export class AgentKernel {
           : [];
 
         if (block.concurrent) {
-          const failed = blockResults.find((blockResult): blockResult is FailedToolResult => (
-            blockResult.kind === "failed"
-          ));
+          const failed = blockResults.find(
+            (blockResult): blockResult is FailedToolResult => blockResult.kind === 'failed',
+          );
           if (failed) return failedToolResult(failed);
 
           for (const prepared of blockResults) {
@@ -495,23 +489,20 @@ export class AgentKernel {
 
         for (const scheduled of block.toolCalls) {
           const prepared = await prepareToolRun(scheduled);
-          if (prepared.kind === "failed") return failedToolResult(prepared);
+          if (prepared.kind === 'failed') return failedToolResult(prepared);
           commitToolResult(prepared);
         }
       }
-      appendState("tool_results_committed");
+      appendState('tool_results_committed');
     }
 
-    appendState("stopped", "max turns reached");
+    appendState('stopped', 'max turns reached');
     return {
-      content: lastResult?.content ?? "",
+      content: lastResult?.content ?? '',
       ...(lastResult?.assistantMessage ? { assistantMessage: lastResult.assistantMessage } : {}),
-      events: [
-        ...events,
-        { type: "stopped", reason: "max_turns", turns: maxTurns, usage: lastResult?.usage }
-      ],
+      events: [...events, { type: 'stopped', reason: 'max_turns', turns: maxTurns, usage: lastResult?.usage }],
       ...(lastResult?.usage ? { usage: lastResult.usage } : {}),
-      ledger
+      ledger,
     };
   }
 }

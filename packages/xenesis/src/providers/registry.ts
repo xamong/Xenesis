@@ -1,6 +1,6 @@
-import type { ProviderName, XenesisConfig } from "../config/types.js";
-import type { ProviderRuntimeCapabilities } from "./types.js";
-import { getRegisteredCapabilities } from "./providerFactory.js";
+import type { ProviderName, XenesisConfig } from '../config/types.js';
+import { getRegisteredCapabilities } from './providerFactory.js';
+import type { ProviderRuntimeCapabilities } from './types.js';
 
 interface ProviderPreset {
   apiKeyEnv?: string;
@@ -20,75 +20,195 @@ export interface ProviderRuntimeSettings {
 }
 
 const providerPresets: Record<ProviderName, ProviderPreset> = {
-  openai: { apiKeyEnv: "OPENAI_API_KEY" },
+  auto: {},
+  openai: { apiKeyEnv: 'OPENAI_API_KEY' },
+  // Test/dev provider only. Normal reasoning provider resolution blocks this
+  // unless XENESIS_ENABLE_TEST_MOCK_PROVIDER=true is present.
   mock: {},
   anthropic: {
-    apiKeyEnv: "ANTHROPIC_API_KEY",
-    baseURL: "https://api.anthropic.com"
+    apiKeyEnv: 'ANTHROPIC_API_KEY',
+    baseURL: 'https://api.anthropic.com',
   },
   claude: {
-    apiKeyEnv: "ANTHROPIC_API_KEY",
-    baseURL: "https://api.anthropic.com"
+    apiKeyEnv: 'ANTHROPIC_API_KEY',
+    baseURL: 'https://api.anthropic.com',
   },
-  "openai-compatible": { apiKeyEnv: "XENESIS_API_KEY" },
+  'openai-compatible': { apiKeyEnv: 'XENESIS_API_KEY' },
   gemini: {
-    apiKeyEnv: "GEMINI_API_KEY",
-    baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/"
+    apiKeyEnv: 'GEMINI_API_KEY',
+    baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
   },
   ollama: {
-    apiKeyEnv: "OLLAMA_API_KEY",
-    baseURL: "http://localhost:11434/v1"
+    apiKeyEnv: 'OLLAMA_API_KEY',
+    baseURL: 'http://localhost:11434/v1',
   },
   openrouter: {
-    apiKeyEnv: "OPENROUTER_API_KEY",
-    baseURL: "https://openrouter.ai/api/v1"
+    apiKeyEnv: 'OPENROUTER_API_KEY',
+    baseURL: 'https://openrouter.ai/api/v1',
   },
   groq: {
-    apiKeyEnv: "GROQ_API_KEY",
-    baseURL: "https://api.groq.com/openai/v1"
+    apiKeyEnv: 'GROQ_API_KEY',
+    baseURL: 'https://api.groq.com/openai/v1',
   },
   deepseek: {
-    apiKeyEnv: "DEEPSEEK_API_KEY",
-    baseURL: "https://api.deepseek.com"
+    apiKeyEnv: 'DEEPSEEK_API_KEY',
+    baseURL: 'https://api.deepseek.com',
   },
   qwen: {
-    apiKeyEnv: "DASHSCOPE_API_KEY",
-    baseURL: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+    apiKeyEnv: 'DASHSCOPE_API_KEY',
+    baseURL: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
   },
   mistral: {
-    apiKeyEnv: "MISTRAL_API_KEY",
-    baseURL: "https://api.mistral.ai/v1"
+    apiKeyEnv: 'MISTRAL_API_KEY',
+    baseURL: 'https://api.mistral.ai/v1',
   },
   xai: {
-    apiKeyEnv: "XAI_API_KEY",
-    baseURL: "https://api.x.ai/v1"
+    apiKeyEnv: 'XAI_API_KEY',
+    baseURL: 'https://api.x.ai/v1',
   },
-  "codex-app-server": {},
-  "codex-cli": {},
-  "codex-responses": { baseURL: "https://chatgpt.com/backend-api/codex" },
-  "claude-interactive": {},
-  "claude-cli": {}
+  'codex-app-server': {},
+  'codex-cli': {},
+  'codex-responses': { baseURL: 'https://chatgpt.com/backend-api/codex' },
+  'claude-interactive': {},
+  'claude-cli': {},
 };
 
 export const PROVIDER_CAPABILITIES: Record<ProviderName, ProviderCapabilities> = {
-  openai: { supportsTools: true, requiresApiKey: true, transport: "http-streaming", streaming: true, persistentSession: false },
-  mock: { supportsTools: true, requiresApiKey: false, transport: "local-server", streaming: false, persistentSession: true },
-  anthropic: { supportsTools: true, requiresApiKey: true, transport: "http-streaming", streaming: true, persistentSession: false },
-  claude: { supportsTools: true, requiresApiKey: true, transport: "http-streaming", streaming: true, persistentSession: false },
-  "openai-compatible": { supportsTools: true, requiresApiKey: false, transport: "http-streaming", streaming: true, persistentSession: false },
-  gemini: { supportsTools: true, requiresApiKey: true, transport: "http-streaming", streaming: true, persistentSession: false },
-  ollama: { supportsTools: true, requiresApiKey: false, transport: "http-streaming", streaming: true, persistentSession: false },
-  openrouter: { supportsTools: true, requiresApiKey: true, transport: "http-streaming", streaming: true, persistentSession: false },
-  groq: { supportsTools: true, requiresApiKey: true, transport: "http-streaming", streaming: true, persistentSession: false },
-  deepseek: { supportsTools: true, requiresApiKey: true, transport: "http-streaming", streaming: true, persistentSession: false },
-  qwen: { supportsTools: true, requiresApiKey: true, transport: "http-streaming", streaming: true, persistentSession: false },
-  mistral: { supportsTools: true, requiresApiKey: true, transport: "http-streaming", streaming: true, persistentSession: false },
-  xai: { supportsTools: true, requiresApiKey: true, transport: "http-streaming", streaming: true, persistentSession: false },
-  "codex-app-server": { supportsTools: true, requiresApiKey: false, transport: "cli-interactive", streaming: true, persistentSession: true },
-  "codex-cli": { supportsTools: true, requiresApiKey: false, transport: "cli-oneshot", streaming: true, persistentSession: false },
-  "codex-responses": { supportsTools: true, requiresApiKey: false, transport: "http-streaming", streaming: true, persistentSession: false },
-  "claude-interactive": { supportsTools: true, requiresApiKey: false, transport: "cli-interactive", streaming: true, persistentSession: true },
-  "claude-cli": { supportsTools: true, requiresApiKey: false, transport: "cli-oneshot", streaming: true, persistentSession: false }
+  // Resolver-only sentinel. Direct legacy provider construction should fail
+  // closed instead of treating auto as a runnable local provider.
+  auto: {
+    supportsTools: true,
+    requiresApiKey: true,
+    transport: 'http-streaming',
+    streaming: true,
+    persistentSession: false,
+  },
+  openai: {
+    supportsTools: true,
+    requiresApiKey: true,
+    transport: 'http-streaming',
+    streaming: true,
+    persistentSession: false,
+  },
+  mock: {
+    supportsTools: true,
+    requiresApiKey: false,
+    transport: 'local-server',
+    streaming: false,
+    persistentSession: true,
+  },
+  anthropic: {
+    supportsTools: true,
+    requiresApiKey: true,
+    transport: 'http-streaming',
+    streaming: true,
+    persistentSession: false,
+  },
+  claude: {
+    supportsTools: true,
+    requiresApiKey: true,
+    transport: 'http-streaming',
+    streaming: true,
+    persistentSession: false,
+  },
+  'openai-compatible': {
+    supportsTools: true,
+    requiresApiKey: false,
+    transport: 'http-streaming',
+    streaming: true,
+    persistentSession: false,
+  },
+  gemini: {
+    supportsTools: true,
+    requiresApiKey: true,
+    transport: 'http-streaming',
+    streaming: true,
+    persistentSession: false,
+  },
+  ollama: {
+    supportsTools: true,
+    requiresApiKey: false,
+    transport: 'http-streaming',
+    streaming: true,
+    persistentSession: false,
+  },
+  openrouter: {
+    supportsTools: true,
+    requiresApiKey: true,
+    transport: 'http-streaming',
+    streaming: true,
+    persistentSession: false,
+  },
+  groq: {
+    supportsTools: true,
+    requiresApiKey: true,
+    transport: 'http-streaming',
+    streaming: true,
+    persistentSession: false,
+  },
+  deepseek: {
+    supportsTools: true,
+    requiresApiKey: true,
+    transport: 'http-streaming',
+    streaming: true,
+    persistentSession: false,
+  },
+  qwen: {
+    supportsTools: true,
+    requiresApiKey: true,
+    transport: 'http-streaming',
+    streaming: true,
+    persistentSession: false,
+  },
+  mistral: {
+    supportsTools: true,
+    requiresApiKey: true,
+    transport: 'http-streaming',
+    streaming: true,
+    persistentSession: false,
+  },
+  xai: {
+    supportsTools: true,
+    requiresApiKey: true,
+    transport: 'http-streaming',
+    streaming: true,
+    persistentSession: false,
+  },
+  'codex-app-server': {
+    supportsTools: true,
+    requiresApiKey: false,
+    transport: 'cli-interactive',
+    streaming: true,
+    persistentSession: true,
+  },
+  'codex-cli': {
+    supportsTools: true,
+    requiresApiKey: false,
+    transport: 'cli-oneshot',
+    streaming: true,
+    persistentSession: false,
+  },
+  'codex-responses': {
+    supportsTools: true,
+    requiresApiKey: false,
+    transport: 'http-streaming',
+    streaming: true,
+    persistentSession: false,
+  },
+  'claude-interactive': {
+    supportsTools: true,
+    requiresApiKey: false,
+    transport: 'cli-interactive',
+    streaming: true,
+    persistentSession: true,
+  },
+  'claude-cli': {
+    supportsTools: true,
+    requiresApiKey: false,
+    transport: 'cli-oneshot',
+    streaming: true,
+    persistentSession: false,
+  },
 };
 
 export function capabilitiesFor(name: string): ProviderCapabilities | undefined {
@@ -102,7 +222,7 @@ export function presetApiKeyEnv(kind: ProviderName) {
 
 export function resolveProviderSettings(
   config: XenesisConfig,
-  env: NodeJS.ProcessEnv = process.env
+  env: NodeJS.ProcessEnv = process.env,
 ): ProviderRuntimeSettings {
   // External/registered providers are not in the ProviderName tuple, so they have
   // no preset entry. Tolerate a missing preset instead of dereferencing undefined.
@@ -112,6 +232,6 @@ export function resolveProviderSettings(
     provider: config.provider,
     apiKey: apiKeyEnv ? env[apiKeyEnv] : undefined,
     apiKeyEnv,
-    baseURL: config.baseURL ?? env.XENESIS_BASE_URL ?? preset.baseURL
+    baseURL: config.baseURL ?? env.XENESIS_BASE_URL ?? preset.baseURL,
   };
 }

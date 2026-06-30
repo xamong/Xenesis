@@ -1,16 +1,8 @@
-import { measureTerminalCellWidth } from "./inputBuffer.js";
-import type { TuiCommandOutputView } from "./viewModel.js";
-import type { TuiState } from "./state.js";
+import { measureTerminalCellWidth } from './inputBuffer.js';
+import type { TuiState } from './state.js';
+import type { TuiCommandOutputView } from './viewModel.js';
 
-export type TuiScrollbackTone =
-  | "normal"
-  | "user"
-  | "assistant"
-  | "tool"
-  | "notice"
-  | "warning"
-  | "error"
-  | "muted";
+export type TuiScrollbackTone = 'normal' | 'user' | 'assistant' | 'tool' | 'notice' | 'warning' | 'error' | 'muted';
 
 export interface TuiScrollbackRow {
   text: string;
@@ -33,7 +25,7 @@ export interface TuiScrollbackWindow {
 export function wrapTerminalLine(value: string, width: number): string[] {
   const limit = Math.max(1, width);
   const lines: string[] = [];
-  let current = "";
+  let current = '';
   let currentWidth = 0;
   for (const char of value) {
     const charWidth = measureTerminalCellWidth(char);
@@ -55,7 +47,7 @@ function appendWrappedRows(
   value: string,
   width: number,
   tone: TuiScrollbackTone,
-  bold = false
+  bold = false,
 ) {
   for (const line of value.split(/\r?\n/)) {
     for (const wrapped of wrapTerminalLine(line, width)) {
@@ -73,34 +65,34 @@ function appendWrappedRows(
 export function createScrollbackRows(
   state: TuiState,
   commandOutput: TuiCommandOutputView | undefined,
-  width: number
+  width: number,
 ): TuiScrollbackRow[] {
   const rows: TuiScrollbackRow[] = [];
   for (const message of state.messages) {
     appendWrappedRows(rows, `${message.role}> ${message.content}`, width, message.role);
   }
   if (state.assistantDraft) {
-    appendWrappedRows(rows, `assistant> ${state.assistantDraft}`, width, "assistant");
+    appendWrappedRows(rows, `assistant> ${state.assistantDraft}`, width, 'assistant');
   }
   for (const tool of state.tools) {
     appendWrappedRows(
       rows,
-      `tool> ${tool.name} ${tool.status}${tool.summary ? ` - ${tool.summary}` : ""}`,
+      `tool> ${tool.name} ${tool.status}${tool.summary ? ` - ${tool.summary}` : ''}`,
       width,
-      tool.status === "failed" ? "error" : "tool"
+      tool.status === 'failed' ? 'error' : 'tool',
     );
   }
   if (commandOutput) {
-    appendWrappedRows(rows, `output> ${commandOutput.command} (${commandOutput.range})`, width, "tool", true);
+    appendWrappedRows(rows, `output> ${commandOutput.command} (${commandOutput.range})`, width, 'tool', true);
     if (commandOutput.lines.length === 0) {
-      appendWrappedRows(rows, "output> No output.", width, "muted");
+      appendWrappedRows(rows, 'output> No output.', width, 'muted');
     } else {
       for (const line of commandOutput.lines) {
-        appendWrappedRows(rows, `output> ${line}`, width, commandOutput.kind === "error" ? "error" : "normal");
+        appendWrappedRows(rows, `output> ${line}`, width, commandOutput.kind === 'error' ? 'error' : 'normal');
       }
     }
     if (commandOutput.savedPath) {
-      appendWrappedRows(rows, `output> saved ${commandOutput.savedPath}`, width, "muted");
+      appendWrappedRows(rows, `output> saved ${commandOutput.savedPath}`, width, 'muted');
     }
   }
   for (const notice of state.notices) {
@@ -108,7 +100,7 @@ export function createScrollbackRows(
       rows,
       `notice> ${notice.message}`,
       width,
-      notice.kind === "error" ? "error" : notice.kind === "warning" ? "warning" : "notice"
+      notice.kind === 'error' ? 'error' : notice.kind === 'warning' ? 'warning' : 'notice',
     );
   }
   if (state.pendingApproval) {
@@ -116,17 +108,17 @@ export function createScrollbackRows(
       rows,
       `approval> ${state.pendingApproval.name} (${state.pendingApproval.riskLevel})`,
       width,
-      "warning",
-      true
+      'warning',
+      true,
     );
-    appendWrappedRows(rows, `approval> ${state.pendingApproval.summary}`, width, "warning");
-    appendWrappedRows(rows, `approval> ${state.pendingApproval.reason}`, width, "muted");
+    appendWrappedRows(rows, `approval> ${state.pendingApproval.summary}`, width, 'warning');
+    appendWrappedRows(rows, `approval> ${state.pendingApproval.reason}`, width, 'muted');
     if (state.pendingApproval.preview) {
-      appendWrappedRows(rows, `approval> ${state.pendingApproval.preview}`, width, "muted");
+      appendWrappedRows(rows, `approval> ${state.pendingApproval.preview}`, width, 'muted');
     }
-    appendWrappedRows(rows, "approval> Press y to approve, n to deny.", width, "tool");
+    appendWrappedRows(rows, 'approval> Press y to approve, n to deny.', width, 'tool');
   }
-  return rows.length > 0 ? rows : [{ text: "Type a prompt below.", tone: "muted" }];
+  return rows.length > 0 ? rows : [{ text: 'Type a prompt below.', tone: 'muted' }];
 }
 
 /**
@@ -137,12 +129,12 @@ export function createScrollbackRows(
 export function createScrollbackWindow(
   rows: TuiScrollbackRow[],
   visibleLimit: number,
-  requestedOffset: number
+  requestedOffset: number,
 ): TuiScrollbackWindow {
   const totalRows = rows.length;
   const limit = Math.max(1, visibleLimit);
   if (totalRows === 0) {
-    return { rows: [], offset: 0, range: "0/0" };
+    return { rows: [], offset: 0, range: '0/0' };
   }
   const maxOffset = Math.max(0, totalRows - limit);
   const offset = clampNumber(requestedOffset, 0, maxOffset);
@@ -151,7 +143,7 @@ export function createScrollbackWindow(
   return {
     rows: rows.slice(start, end),
     offset,
-    range: `${start + 1}-${end}/${totalRows}`
+    range: `${start + 1}-${end}/${totalRows}`,
   };
 }
 

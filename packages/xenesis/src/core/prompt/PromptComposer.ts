@@ -1,8 +1,8 @@
-import { createHash } from "node:crypto";
+import { createHash } from 'node:crypto';
 
-export const systemPromptDynamicBoundary = "__SYSTEM_PROMPT_DYNAMIC_BOUNDARY__";
+export const systemPromptDynamicBoundary = '__SYSTEM_PROMPT_DYNAMIC_BOUNDARY__';
 
-export type PromptCacheScope = "global" | "session" | "turn" | "none";
+export type PromptCacheScope = 'global' | 'session' | 'turn' | 'none';
 
 export interface PromptBlock {
   id: string;
@@ -38,7 +38,7 @@ export interface SystemPromptSnapshot {
 }
 
 export interface SystemPromptSnapshotDiff {
-  path: keyof Omit<SystemPromptSnapshot, "version">;
+  path: keyof Omit<SystemPromptSnapshot, 'version'>;
   expected: unknown;
   actual: unknown;
 }
@@ -57,9 +57,7 @@ function comparePromptBlocks(left: PromptBlock, right: PromptBlock) {
 }
 
 function normalizePromptBlocks(blocks: PromptBlock[] | undefined) {
-  return [...(blocks ?? [])]
-    .filter((block) => block.content.trim().length > 0)
-    .sort(comparePromptBlocks);
+  return [...(blocks ?? [])].filter((block) => block.content.trim().length > 0).sort(comparePromptBlocks);
 }
 
 function withProactiveAgentInstructionHeading(blocks: PromptBlock[]) {
@@ -68,9 +66,9 @@ function withProactiveAgentInstructionHeading(blocks: PromptBlock[]) {
   return [
     {
       ...first,
-      content: `\n# Custom Agent Instructions\n${first.content}`
+      content: `\n# Custom Agent Instructions\n${first.content}`,
     },
-    ...rest
+    ...rest,
   ];
 }
 
@@ -85,21 +83,21 @@ function assertUniqueBlockIds(blocks: PromptBlock[]) {
 }
 
 function isStaticCacheable(block: PromptBlock) {
-  return block.cacheScope === "global";
+  return block.cacheScope === 'global';
 }
 
 function boundaryBlock(): PromptBlock {
   return {
-    id: "prompt.dynamic_boundary",
-    source: "prompt_composer",
-    cacheScope: "none",
+    id: 'prompt.dynamic_boundary',
+    source: 'prompt_composer',
+    cacheScope: 'none',
     content: systemPromptDynamicBoundary,
-    priority: Number.MAX_SAFE_INTEGER
+    priority: Number.MAX_SAFE_INTEGER,
   };
 }
 
 function trimBoundaryPart(text: string) {
-  return text.replace(/^\s+|\s+$/g, "");
+  return text.replace(/^\s+|\s+$/g, '');
 }
 
 export function splitSystemPromptAtDynamicBoundary(content: string): SystemPromptBoundaryParts {
@@ -107,38 +105,38 @@ export function splitSystemPromptAtDynamicBoundary(content: string): SystemPromp
     return {
       hasBoundary: false,
       stablePrefix: content,
-      dynamicTail: ""
+      dynamicTail: '',
     };
   }
 
-  const [stablePrefix = "", ...dynamicParts] = content.split(systemPromptDynamicBoundary);
+  const [stablePrefix = '', ...dynamicParts] = content.split(systemPromptDynamicBoundary);
   return {
     hasBoundary: true,
     stablePrefix: trimBoundaryPart(stablePrefix),
-    dynamicTail: trimBoundaryPart(dynamicParts.join(systemPromptDynamicBoundary))
+    dynamicTail: trimBoundaryPart(dynamicParts.join(systemPromptDynamicBoundary)),
   };
 }
 
 export function stripSystemPromptDynamicBoundary(content: string) {
   const parts = splitSystemPromptAtDynamicBoundary(content);
   if (!parts.hasBoundary) return content;
-  return [parts.stablePrefix, parts.dynamicTail]
-    .filter((part) => part.length > 0)
-    .join("\n\n");
+  return [parts.stablePrefix, parts.dynamicTail].filter((part) => part.length > 0).join('\n\n');
 }
 
 export function fingerprintPromptBlocks(blocks: readonly PromptBlock[]) {
-  const hash = createHash("sha256");
+  const hash = createHash('sha256');
   for (const block of blocks) {
-    hash.update(JSON.stringify({
-      id: block.id,
-      source: block.source,
-      cacheScope: block.cacheScope,
-      content: block.content
-    }));
-    hash.update("\n");
+    hash.update(
+      JSON.stringify({
+        id: block.id,
+        source: block.source,
+        cacheScope: block.cacheScope,
+        content: block.content,
+      }),
+    );
+    hash.update('\n');
   }
-  return hash.digest("hex");
+  return hash.digest('hex');
 }
 
 export function resolveEffectiveSystemPromptBlocks(options: ComposeSystemPromptOptions): PromptBlock[] {
@@ -180,9 +178,9 @@ export function composeSystemPrompt(options: ComposeSystemPromptOptions): Compos
 
   return {
     blocks,
-    text: blocks.map((block) => block.content).join("\n\n"),
+    text: blocks.map((block) => block.content).join('\n\n'),
     staticPrefixFingerprint: fingerprintPromptBlocks(staticBlocks),
-    dynamicTailFingerprint: fingerprintPromptBlocks(dynamicBlocks)
+    dynamicTailFingerprint: fingerprintPromptBlocks(dynamicBlocks),
   };
 }
 
@@ -194,35 +192,35 @@ export function toSystemPromptSnapshot(prompt: ComposedSystemPrompt): SystemProm
   return {
     version: 1,
     blockIds: prompt.blocks.map((block) => block.id),
-    boundaryIndex: prompt.blocks.findIndex((block) => block.id === "prompt.dynamic_boundary"),
+    boundaryIndex: prompt.blocks.findIndex((block) => block.id === 'prompt.dynamic_boundary'),
     staticPrefixFingerprint: prompt.staticPrefixFingerprint,
-    dynamicTailFingerprint: prompt.dynamicTailFingerprint
+    dynamicTailFingerprint: prompt.dynamicTailFingerprint,
   };
 }
 
 export function compareSystemPromptSnapshots(
   expected: SystemPromptSnapshot,
-  actual: SystemPromptSnapshot
+  actual: SystemPromptSnapshot,
 ): SystemPromptSnapshotDiff[] {
   const diffs: SystemPromptSnapshotDiff[] = [];
   if (!sameArray(expected.blockIds, actual.blockIds)) {
-    diffs.push({ path: "blockIds", expected: expected.blockIds, actual: actual.blockIds });
+    diffs.push({ path: 'blockIds', expected: expected.blockIds, actual: actual.blockIds });
   }
   if (expected.boundaryIndex !== actual.boundaryIndex) {
-    diffs.push({ path: "boundaryIndex", expected: expected.boundaryIndex, actual: actual.boundaryIndex });
+    diffs.push({ path: 'boundaryIndex', expected: expected.boundaryIndex, actual: actual.boundaryIndex });
   }
   if (expected.staticPrefixFingerprint !== actual.staticPrefixFingerprint) {
     diffs.push({
-      path: "staticPrefixFingerprint",
+      path: 'staticPrefixFingerprint',
       expected: expected.staticPrefixFingerprint,
-      actual: actual.staticPrefixFingerprint
+      actual: actual.staticPrefixFingerprint,
     });
   }
   if (expected.dynamicTailFingerprint !== actual.dynamicTailFingerprint) {
     diffs.push({
-      path: "dynamicTailFingerprint",
+      path: 'dynamicTailFingerprint',
       expected: expected.dynamicTailFingerprint,
-      actual: actual.dynamicTailFingerprint
+      actual: actual.dynamicTailFingerprint,
     });
   }
   return diffs;

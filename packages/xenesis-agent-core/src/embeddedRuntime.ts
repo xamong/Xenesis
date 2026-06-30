@@ -31,6 +31,16 @@ export interface DeskProviderRuntimeOptions {
   baseURL: string;
   apiKeyEnv: string;
   env: NodeJS.ProcessEnv;
+  requestedProvider?: string;
+  source?: string;
+  authMode?: string;
+  credentialState?: string;
+  credentialSource?: string;
+  processModel?: string;
+  fallbackProvider?: string;
+  safeForReasoning?: boolean;
+  diagnostics?: string[];
+  localCliBoundary?: string;
 }
 
 export interface DeskProviderRuntimeOverride {

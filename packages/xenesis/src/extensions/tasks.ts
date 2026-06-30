@@ -1,12 +1,12 @@
-import { z } from "zod";
-import type { ApprovalMode } from "../config/index.js";
-import { AgentRunner, type AgentRunUsage, type ApprovalHandler } from "../core/AgentRunner.js";
-import type { AgentMessage } from "../core/messages.js";
-import { SqliteAgentTaskStore } from "../orchestration/index.js";
-import type { AgentProvider } from "../providers/index.js";
-import type { Tool, ToolContext, ToolRegistry } from "../tools/index.js";
+import { z } from 'zod';
+import type { ApprovalMode } from '../config/index.js';
+import { AgentRunner, type AgentRunUsage, type ApprovalHandler } from '../core/AgentRunner.js';
+import type { AgentMessage } from '../core/messages.js';
+import { SqliteAgentTaskStore } from '../orchestration/index.js';
+import type { AgentProvider } from '../providers/index.js';
+import type { Tool, ToolContext, ToolRegistry } from '../tools/index.js';
 
-export type TaskStatus = "queued" | "running" | "completed" | "failed";
+export type TaskStatus = 'queued' | 'running' | 'completed' | 'failed';
 
 export interface SubagentTask {
   id: string;
@@ -50,29 +50,31 @@ export interface AgentRunnerSubagentExecutorOptions {
   tools?: Tool[] | ToolRegistry;
   approvalMode?: ApprovalMode;
   maxTurns?: number;
-  systemMessages?: Extract<AgentMessage, { role: "system" }>[];
+  systemMessages?: Extract<AgentMessage, { role: 'system' }>[];
   blockedTools?: string[];
   approvalHandler?: ApprovalHandler;
 }
 
 const subagentTaskItem = z.object({
   prompt: z.string().min(1),
-  label: z.string().min(1).nullable().optional()
+  label: z.string().min(1).nullable().optional(),
 });
 
 const taskInputSchema = z.object({
-  agent: z.string().min(1).default("researcher"),
-  mode: z.enum(["wait", "background"]).default("wait"),
-  tasks: z.array(subagentTaskItem).min(1).max(4)
+  agent: z.string().min(1).default('researcher'),
+  mode: z.enum(['wait', 'background']).default('wait'),
+  tasks: z.array(subagentTaskItem).min(1).max(4),
 });
 
 const taskOpenAIInputSchema = z.object({
   agent: z.string(),
-  mode: z.enum(["wait", "background"]),
-  tasks: z.array(z.object({
-    prompt: z.string(),
-    label: z.string().nullable()
-  }))
+  mode: z.enum(['wait', 'background']),
+  tasks: z.array(
+    z.object({
+      prompt: z.string(),
+      label: z.string().nullable(),
+    }),
+  ),
 });
 
 const approvalModeRank: Record<ApprovalMode, number> = { readonly: 0, safe: 1, auto: 2 };
@@ -87,35 +89,32 @@ function toolArray(tools: Tool[] | ToolRegistry | undefined) {
 }
 
 function resolveOption<T>(value: T | ((task: SubagentTask) => T), task: SubagentTask) {
-  return typeof value === "function"
-    ? (value as (task: SubagentTask) => T)(task)
-    : value;
+  return typeof value === 'function' ? (value as (task: SubagentTask) => T)(task) : value;
 }
 
 export function createAgentRunnerSubagentExecutor(options: AgentRunnerSubagentExecutorOptions): SubagentTaskExecutor {
   return async (task, context) => {
-    const subagentTools = toolArray(options.tools).filter((tool) => tool.name !== "subagent");
+    const subagentTools = toolArray(options.tools).filter((tool) => tool.name !== 'subagent');
     const runner = new AgentRunner({
       provider: resolveOption(options.provider, task),
       model: resolveOption(options.model, task),
       workspaceRoot: options.workspaceRoot,
       cwd: options.cwd ?? context.cwd,
       sessionId: `${context.sessionId}-${task.id}`,
-      approvalMode: options.approvalMode ?? "readonly",
+      approvalMode: options.approvalMode ?? 'readonly',
       maxTurns: options.maxTurns ?? 4,
       tools: subagentTools,
       approvalHandler: options.approvalHandler,
       systemMessages: [
         {
-          role: "system",
-          content: [
-            `Xenesis subagent: ${task.subagent}`,
-            "Run the delegated task and return a concise result."
-          ].join("\n")
+          role: 'system',
+          content: [`Xenesis subagent: ${task.subagent}`, 'Run the delegated task and return a concise result.'].join(
+            '\n',
+          ),
         },
-        ...(options.systemMessages ?? [])
+        ...(options.systemMessages ?? []),
       ],
-      blockedTools: options.blockedTools
+      blockedTools: options.blockedTools,
     });
     const result = await runner.runToCompletion(task.prompt);
     return { output: result.content, usage: result.usage };
@@ -134,7 +133,7 @@ export interface SubagentToolOptions {
 async function runWithConcurrency<T, R>(
   items: T[],
   limit: number,
-  run: (item: T, index: number) => Promise<R>
+  run: (item: T, index: number) => Promise<R>,
 ): Promise<R[]> {
   const results: R[] = new Array(items.length);
   let next = 0;
@@ -152,14 +151,14 @@ async function runWithConcurrency<T, R>(
 export function createSubagentTaskTool(
   store: TaskStore,
   executors: Record<string, SubagentTaskExecutor>,
-  options: SubagentToolOptions
+  options: SubagentToolOptions,
 ): Tool<z.infer<typeof taskInputSchema>, SubagentTask[]> {
   return {
-    name: "subagent",
+    name: 'subagent',
     description: [
-      "Delegate work to named subagents. mode=wait runs up to 4 tasks in parallel and returns merged results;",
-      `mode=background queues each task for the gateway worker. Available agents: ${Object.keys(executors).join(", ") || "none"}.`
-    ].join(" "),
+      'Delegate work to named subagents. mode=wait runs up to 4 tasks in parallel and returns merged results;',
+      `mode=background queues each task for the gateway worker. Available agents: ${Object.keys(executors).join(', ') || 'none'}.`,
+    ].join(' '),
     inputSchema: taskInputSchema,
     openaiInputSchema: taskOpenAIInputSchema,
     isReadOnly: () => false,
@@ -168,13 +167,13 @@ export function createSubagentTaskTool(
       if (!executor) {
         return {
           ok: false,
-          content: `Unknown subagent: ${input.agent}. Available: ${Object.keys(executors).join(", ") || "none"}.`
+          content: `Unknown subagent: ${input.agent}. Available: ${Object.keys(executors).join(', ') || 'none'}.`,
         };
       }
 
-      if (input.mode === "background") {
+      if (input.mode === 'background') {
         if (!context.xenesisHome) {
-          return { ok: false, content: "Background subagent tasks require xenesisHome for durable state." };
+          return { ok: false, content: 'Background subagent tasks require xenesisHome for durable state.' };
         }
         const agentTaskStore = new SqliteAgentTaskStore({ xenesisHome: context.xenesisHome });
         const queued: string[] = [];
@@ -182,10 +181,10 @@ export function createSubagentTaskTool(
           const task = await agentTaskStore.create({
             prompt: `[subagent:${input.agent}] ${item.prompt}`,
             parentSessionId: context.sessionId,
-            source: "subagent",
+            source: 'subagent',
             subagent: input.agent,
             label: item.label ?? undefined,
-            ...(options.backgroundDefaults ?? {})
+            ...(options.backgroundDefaults ?? {}),
           });
           queued.push(item.label ? `${task.id} label=${item.label}` : task.id);
         }
@@ -193,8 +192,8 @@ export function createSubagentTaskTool(
           ok: true,
           content: [
             `subagent: queued ${queued.length} background task(s) for "${input.agent}" - requires a running gateway worker.`,
-            ...queued.map((id) => `queued: ${id}`)
-          ].join("\n")
+            ...queued.map((id) => `queued: ${id}`),
+          ].join('\n'),
         };
       }
 
@@ -202,38 +201,38 @@ export function createSubagentTaskTool(
       const lines = await runWithConcurrency(input.tasks, options.maxConcurrent, async (item, index) => {
         const task = await store.create({ subagent: input.agent, prompt: item.prompt });
         records[index] = task;
-        await store.update(task.id, { status: "running" });
+        await store.update(task.id, { status: 'running' });
         const label = item.label ?? task.id;
         try {
           const result = await executor(task, context);
-          const completed = await store.update(task.id, { status: "completed", output: result.output });
+          const completed = await store.update(task.id, { status: 'completed', output: result.output });
           records[index] = completed;
           if (result.usage) {
             context.recordUsage?.({
               inputTokens: result.usage.inputTokens,
-              outputTokens: result.usage.outputTokens
+              outputTokens: result.usage.outputTokens,
             });
           }
           return [
             `${label}: ${result.output}`,
             `taskId: ${completed.id}`,
             `agent: ${completed.subagent}`,
-            `status: ${completed.status}`
-          ].join("\n");
+            `status: ${completed.status}`,
+          ].join('\n');
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
-          const failed = await store.update(task.id, { status: "failed", output: message });
+          const failed = await store.update(task.id, { status: 'failed', output: message });
           records[index] = failed;
           return [
             `${label}: FAILED ${message}`,
             `taskId: ${failed.id}`,
             `agent: ${failed.subagent}`,
-            `status: ${failed.status}`
-          ].join("\n");
+            `status: ${failed.status}`,
+          ].join('\n');
         }
       });
-      const anyFailed = lines.some((line) => line.includes(": FAILED "));
-      return { ok: !anyFailed, content: lines.join("\n\n"), data: records };
-    }
+      const anyFailed = lines.some((line) => line.includes(': FAILED '));
+      return { ok: !anyFailed, content: lines.join('\n\n'), data: records };
+    },
   };
 }

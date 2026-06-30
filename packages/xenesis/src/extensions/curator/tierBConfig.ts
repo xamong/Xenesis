@@ -7,7 +7,7 @@
 //     dry-run. This guarantees a misconfiguration can never silently mutate the memory library.
 //
 // Mirrors src/orchestration/commitments/config.ts (positiveInt helper, partial-tolerant resolver).
-import type { CuratorTierBConfig, ProviderName, XenesisConfig } from "../../config/types.js";
+import type { CuratorTierBConfig, ProviderName, XenesisConfig } from '../../config/types.js';
 
 export const DEFAULT_CURATOR_TIERB_INTERVAL_HOURS = 168; // 7 days, mirrors Hermes curator cadence
 export const DEFAULT_CURATOR_TIERB_TIMEOUT_SECONDS = 60;
@@ -19,8 +19,8 @@ export const DEFAULT_CURATOR_TIERB_MAX_CLUSTERS = 25; // Hermes "expect 10-25 cl
 // default; it is intentionally DISTINCT from the typical main agent model (e.g. an Opus/GPT class).
 // The resolver always yields a non-empty auxProvider/auxModel so the runtime can assert it before
 // calling the model — a misconfiguration can never silently route Tier-B through the main loop.
-export const DEFAULT_CURATOR_TIERB_AUX_PROVIDER: ProviderName = "anthropic";
-export const DEFAULT_CURATOR_TIERB_AUX_MODEL = "claude-haiku-4-5";
+export const DEFAULT_CURATOR_TIERB_AUX_PROVIDER: ProviderName = 'anthropic';
+export const DEFAULT_CURATOR_TIERB_AUX_MODEL = 'claude-haiku-4-5';
 
 /** Conservative, OPT-IN defaults: enabled OFF + dryRun ON. */
 export const DEFAULT_CURATOR_TIERB_CONFIG: CuratorTierBConfig = {
@@ -33,9 +33,7 @@ export const DEFAULT_CURATOR_TIERB_CONFIG: CuratorTierBConfig = {
 };
 
 function positiveInt(value: unknown, fallback: number): number {
-  return typeof value === "number" && Number.isFinite(value) && value > 0
-    ? Math.floor(value)
-    : fallback;
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
 }
 
 export interface ResolvedCuratorTierBConfig {
@@ -62,7 +60,7 @@ export interface ResolvedCuratorTierBConfig {
  *  - `dryRun` false ONLY when explicitly false (so absence/garbage ⇒ dry-run, the safe state).
  */
 export function resolveCuratorTierBConfig(
-  cfg?: { curator?: { tierB?: Partial<CuratorTierBConfig> } } | Pick<XenesisConfig, "curator">,
+  cfg?: { curator?: { tierB?: Partial<CuratorTierBConfig> } } | Pick<XenesisConfig, 'curator'>,
 ): ResolvedCuratorTierBConfig {
   const raw = cfg?.curator?.tierB;
   return {

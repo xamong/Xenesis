@@ -1,7 +1,7 @@
-import type { ToolExecutionPolicy } from "../AgentRunner.js";
-import type { ToolCall } from "../messages.js";
+import type { ToolExecutionPolicy } from '../AgentRunner.js';
+import type { ToolCall } from '../messages.js';
 
-export type KernelToolChoiceAuditStatus = "followed_priority" | "missed_priority";
+export type KernelToolChoiceAuditStatus = 'followed_priority' | 'missed_priority';
 
 export interface EvaluateToolChoicePriorityOptions {
   policy?: ToolExecutionPolicy;
@@ -24,7 +24,7 @@ function unique(values: readonly string[]) {
 }
 
 export function evaluateToolChoicePriority(
-  options: EvaluateToolChoicePriorityOptions
+  options: EvaluateToolChoicePriorityOptions,
 ): KernelToolChoiceAudit | undefined {
   const priorityTools = unique(options.policy?.priorityTools ?? []);
   const unmetPriorityTools = priorityTools.filter((name) => !options.successfulToolNames.has(name));
@@ -34,12 +34,12 @@ export function evaluateToolChoicePriority(
   return {
     toolCallId: options.toolCall.id,
     name: options.toolCall.name,
-    status: followed ? "followed_priority" : "missed_priority",
+    status: followed ? 'followed_priority' : 'missed_priority',
     reason: followed
       ? `called priority tool ${options.toolCall.name}`
       : `called ${options.toolCall.name} while higher-priority tools were available`,
-    priorityReasons: [`execution_policy:${options.policy?.name ?? "unnamed"}`],
+    priorityReasons: [`execution_policy:${options.policy?.name ?? 'unnamed'}`],
     priorityTools,
-    unmetPriorityTools
+    unmetPriorityTools,
   };
 }

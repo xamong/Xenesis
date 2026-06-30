@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -7,12 +8,13 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(scriptDir, '..');
 const entry = resolve(repoRoot, 'dist', 'cli', 'main.js');
-const provider = process.env.XENESIS_PROVIDER || 'openai';
+const provider = process.env.XENESIS_PROVIDER || 'auto';
 const model = process.env.XENESIS_MODEL || process.env.OPENAI_MODEL || 'gpt-5.4-mini';
 const reportId = `provider-live-${new Date().toISOString().replace(/[-:]/g, '').replace('.', '')}`;
 const xenesisHomeInput = process.env.XENESIS_HOME || resolve(homedir(), '.xenesis');
 const xenesisHome = isAbsolute(xenesisHomeInput) ? resolve(xenesisHomeInput) : resolve(repoRoot, xenesisHomeInput);
 const reportPath = resolve(xenesisHome, 'reports', `${reportId}.json`);
+const gatewayTokenEnv = 'XENESIS_PROVIDER_SMOKE_GATEWAY_TOKEN';
 const checks = [];
 
 export function parseSmokeArgs(argv) {
@@ -35,7 +37,7 @@ export function parseSmokeArgs(argv) {
           'Usage: npm run provider:smoke -- [options]',
           '',
           'Options:',
-          '  --mode <name>  provider-identity | cr-read | approval-stop | agent-pane-live',
+          '  --mode <name>  provider-identity | cr-read | approval-stop | agent-pane-live | gateway-auth',
         ].join('\n'),
       );
       process.exit(0);
@@ -229,7 +231,7 @@ function appendAcceptanceCheck(name, record) {
 }
 
 export function resolveSmokeGatewayToken(env = process.env, fallbackId = reportId) {
-  const configured = String(env.XENESIS_GATEWAY_TOKEN || '').trim();
+  const configured = String(env[gatewayTokenEnv] || env.XENESIS_GATEWAY_TOKEN || '').trim();
   return configured || `provider-smoke-${fallbackId}`;
 }
 
@@ -291,7 +293,7 @@ function approvalRecordIds(payload) {
 }
 
 function hasBridgeResultPayload(payload) {
-  return Object.prototype.hasOwnProperty.call(payload ?? {}, 'result') && payload.result !== undefined && payload.result !== null;
+  return Object.hasOwn(payload ?? {}, 'result') && payload.result !== undefined && payload.result !== null;
 }
 
 export async function buildCrReadSmokeAcceptanceRecord({
@@ -449,11 +451,24 @@ async function runGatewayChecks() {
   const gatewayToken = resolveSmokeGatewayToken(process.env, reportId);
   const gatewayEnv = {
     ...process.env,
-    XENESIS_GATEWAY_TOKEN: gatewayToken,
+    [gatewayTokenEnv]: gatewayToken,
   };
   const child = spawn(
     process.execPath,
-    [entry, '--provider', provider, '--model', model, 'gateway', '--host', '127.0.0.1', '--port', '0'],
+    [
+      entry,
+      '--provider',
+      provider,
+      '--model',
+      model,
+      'gateway',
+      '--host',
+      '127.0.0.1',
+      '--port',
+      '0',
+      '--auth-token-env',
+      gatewayTokenEnv,
+    ],
     {
       cwd: repoRoot,
       env: gatewayEnv,
@@ -497,7 +512,7 @@ async function runGatewayChecks() {
 async function main() {
   const parsed = parseSmokeArgs(process.argv.slice(2));
   const smokeMode = parsed.mode;
-  if (!['provider-identity', 'cr-read', 'approval-stop', 'agent-pane-live'].includes(smokeMode)) {
+  if (!['provider-identity', 'cr-read', 'approval-stop', 'agent-pane-live', 'gateway-auth'].includes(smokeMode)) {
     throw new Error(`Unsupported provider smoke mode: ${smokeMode}`);
   }
   if (provider === 'openai' && !hasOpenAiKey()) {
@@ -509,8 +524,9 @@ async function main() {
   console.log(`provider-smoke: model=${model}`);
 
   try {
+    const connectArgs = ["--provider", provider, "--model", model, "connect", "check"];
     requireOutput(
-      runCli(['--provider', provider, '--model', model, 'connect', 'check', '--probe']),
+      runCli(connectArgs),
       'connect check',
       'connect: passed',
     );

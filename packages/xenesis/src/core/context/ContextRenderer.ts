@@ -1,6 +1,6 @@
-import { wrapExternalContent } from "../prompt/ExternalContentPolicy.js";
-import type { PromptBlock } from "../prompt/PromptComposer.js";
-import type { ContextCacheScope, ContextRecord } from "./ContextRecord.js";
+import { wrapExternalContent } from '../prompt/ExternalContentPolicy.js';
+import type { PromptBlock } from '../prompt/PromptComposer.js';
+import type { ContextCacheScope, ContextRecord } from './ContextRecord.js';
 
 export interface ContextRenderAudit {
   id: string;
@@ -21,19 +21,16 @@ function contextSource(record: ContextRecord) {
 }
 
 function renderableContent(record: ContextRecord) {
-  return record.sensitive ? "[sensitive context redacted]" : record.content;
+  return record.sensitive ? '[sensitive context redacted]' : record.content;
 }
 
 function renderableCacheScope(record: ContextRecord): ContextCacheScope {
-  return record.sensitive ? "none" : record.cacheScope;
+  return record.sensitive ? 'none' : record.cacheScope;
 }
 
 function renderWarnings(record: ContextRecord, warnings: string[]) {
   if (!record.sensitive) return warnings;
-  return [
-    ...warnings,
-    "Sensitive context content was redacted before prompt injection."
-  ];
+  return [...warnings, 'Sensitive context content was redacted before prompt injection.'];
 }
 
 export function renderContextRecordsForPrompt(records: readonly ContextRecord[]): ContextPromptRenderResult {
@@ -46,7 +43,7 @@ export function renderContextRecordsForPrompt(records: readonly ContextRecord[])
       source: contextSource(record),
       authority: record.authority,
       content: renderableContent(record),
-      maxChars: Math.max(1, record.tokenEstimate * 4)
+      maxChars: Math.max(1, record.tokenEstimate * 4),
     });
     const cacheScope = renderableCacheScope(record);
 
@@ -55,7 +52,7 @@ export function renderContextRecordsForPrompt(records: readonly ContextRecord[])
       source: `context:${record.kind}:${record.authority}`,
       cacheScope,
       content: wrapped.content,
-      priority: record.priority
+      priority: record.priority,
     });
     audit.push({
       id: record.id,
@@ -63,7 +60,7 @@ export function renderContextRecordsForPrompt(records: readonly ContextRecord[])
       truncated: wrapped.truncated,
       sensitive: record.sensitive,
       warnings: renderWarnings(record, wrapped.warnings),
-      cacheScope
+      cacheScope,
     });
   }
 

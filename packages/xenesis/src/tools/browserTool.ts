@@ -1,26 +1,26 @@
-import { z } from "zod";
-import { BrowserSurfaceHandler } from "../core/surface/browserSurface.js";
-import { renderSurfaceSnapshot, type SurfaceSnapshot } from "../core/surface/index.js";
-import { PlaywrightBrowserDriver, type BrowserDriver } from "./browserDriver.js";
-import { isAllowedHost } from "./ssrfGuard.js";
-import type { Tool, ToolContext } from "./types.js";
+import { z } from 'zod';
+import { BrowserSurfaceHandler } from '../core/surface/browserSurface.js';
+import { renderSurfaceSnapshot, type SurfaceSnapshot } from '../core/surface/index.js';
+import { type BrowserDriver, PlaywrightBrowserDriver } from './browserDriver.js';
+import { isAllowedHost } from './ssrfGuard.js';
+import type { Tool, ToolContext } from './types.js';
 
 const browserInput = z.object({
-  action: z.enum(["goto", "read", "click", "fill", "back", "screenshot", "close"]),
+  action: z.enum(['goto', 'read', 'click', 'fill', 'back', 'screenshot', 'close']),
   url: z.string().nullable().optional(),
   index: z.number().int().positive().nullable().optional(),
   text: z.string().nullable().optional(),
   submit: z.boolean().nullable().optional(),
-  som: z.boolean().nullable().optional()
+  som: z.boolean().nullable().optional(),
 });
 
 const browserOpenAIInput = z.object({
-  action: z.enum(["goto", "read", "click", "fill", "back", "screenshot", "close"]),
+  action: z.enum(['goto', 'read', 'click', 'fill', 'back', 'screenshot', 'close']),
   url: z.string().nullable(),
   index: z.number().int().positive().nullable(),
   text: z.string().nullable(),
   submit: z.boolean().nullable(),
-  som: z.boolean().nullable()
+  som: z.boolean().nullable(),
 });
 
 type BrowserToolInput = z.infer<typeof browserInput>;
@@ -30,7 +30,7 @@ type BrowserToolInput = z.infer<typeof browserInput>;
  * data URL) to a `data:image/png;base64,...` data URL for use as an image attachment.
  */
 function screenshotDataUrl(screenshot: string): string {
-  return screenshot.startsWith("data:") ? screenshot : `data:image/png;base64,${screenshot}`;
+  return screenshot.startsWith('data:') ? screenshot : `data:image/png;base64,${screenshot}`;
 }
 
 export interface BrowserToolOptions {
@@ -50,7 +50,7 @@ export function createBrowserTool(options: BrowserToolOptions): Tool<BrowserTool
 
   function assertAllowedUrl(url: string) {
     const parsed = new URL(url);
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
       throw new Error(`Only HTTP(S) URLs are allowed: ${url}`);
     }
     if (options.allowedHosts.length > 0 && !isAllowedHost(parsed.hostname, options.allowedHosts)) {
@@ -71,14 +71,14 @@ export function createBrowserTool(options: BrowserToolOptions): Tool<BrowserTool
           ? {
               attachments: [
                 {
-                  kind: "image" as const,
-                  name: "screenshot",
-                  mimeType: "image/png",
-                  dataUrl: screenshotDataUrl(snapshot.screenshot)
-                }
-              ]
+                  kind: 'image' as const,
+                  name: 'screenshot',
+                  mimeType: 'image/png',
+                  dataUrl: screenshotDataUrl(snapshot.screenshot),
+                },
+              ],
             }
-          : {})
+          : {}),
       };
     } catch (error) {
       await closeSession(context.sessionId).catch(() => undefined);
@@ -98,7 +98,7 @@ export function createBrowserTool(options: BrowserToolOptions): Tool<BrowserTool
     let entry = drivers.get(context.sessionId);
     if (!entry) {
       entry = {
-        driver: options.createDriver?.() ?? new PlaywrightBrowserDriver({ headless: options.headless })
+        driver: options.createDriver?.() ?? new PlaywrightBrowserDriver({ headless: options.headless }),
       };
       drivers.set(context.sessionId, entry);
     }
@@ -111,61 +111,61 @@ export function createBrowserTool(options: BrowserToolOptions): Tool<BrowserTool
   }
 
   return {
-    name: "browser",
+    name: 'browser',
     description: [
-      "Control a headless browser. goto/read return a text snapshot with numbered element indices ([1], [2], ...);",
-      "click/fill act on those indices. read accepts som=true for a marked screenshot; screenshot always captures SOM. Never type passwords or secrets into pages."
-    ].join(" "),
+      'Control a headless browser. goto/read return a text snapshot with numbered element indices ([1], [2], ...);',
+      'click/fill act on those indices. read accepts som=true for a marked screenshot; screenshot always captures SOM. Never type passwords or secrets into pages.',
+    ].join(' '),
     inputSchema: browserInput,
     openaiInputSchema: browserOpenAIInput,
-    isReadOnly: (input) => input.action !== "click" && input.action !== "fill",
+    isReadOnly: (input) => input.action !== 'click' && input.action !== 'fill',
     cleanupSession: closeSession,
     async run(input, context) {
       try {
-        if (input.action === "close") {
+        if (input.action === 'close') {
           await closeSession(context.sessionId);
-          return { ok: true, content: "browser: closed" };
+          return { ok: true, content: 'browser: closed' };
         }
 
-        if (input.action === "goto") {
+        if (input.action === 'goto') {
           if (!input.url) return { ok: false, content: 'browser goto requires "url".' };
           assertAllowedUrl(input.url);
           const entry = entryFor(context);
           const handler = new BrowserSurfaceHandler(entry.driver);
-          const snapshot = await handler.act({ type: "navigate", url: input.url });
+          const snapshot = await handler.act({ type: 'navigate', url: input.url });
           return await checkedSurfaceSnapshot(context, snapshot);
         }
 
         const entry = entryFor(context);
         const handler = new BrowserSurfaceHandler(entry.driver);
 
-        if (input.action === "read") {
+        if (input.action === 'read') {
           const snapshot = await handler.snapshot({ som: input.som ?? false });
           return await checkedSurfaceSnapshot(context, snapshot);
         }
 
-        if (input.action === "click") {
+        if (input.action === 'click') {
           if (!input.index) return { ok: false, content: 'browser click requires "index".' };
-          const snapshot = await handler.act({ type: "click", index: input.index });
+          const snapshot = await handler.act({ type: 'click', index: input.index });
           return await checkedSurfaceSnapshot(context, snapshot);
         }
 
-        if (input.action === "fill") {
+        if (input.action === 'fill') {
           if (!input.index) return { ok: false, content: 'browser fill requires "index".' };
           if (input.text === undefined || input.text === null) {
             return { ok: false, content: 'browser fill requires "text".' };
           }
           const snapshot = await handler.act({
-            type: "fill",
+            type: 'fill',
             index: input.index,
             text: input.text,
-            submit: input.submit ?? false
+            submit: input.submit ?? false,
           });
           return await checkedSurfaceSnapshot(context, snapshot);
         }
 
-        if (input.action === "back") {
-          const snapshot = await handler.act({ type: "back" });
+        if (input.action === 'back') {
+          const snapshot = await handler.act({ type: 'back' });
           return await checkedSurfaceSnapshot(context, snapshot);
         }
 
@@ -174,9 +174,9 @@ export function createBrowserTool(options: BrowserToolOptions): Tool<BrowserTool
       } catch (error) {
         return {
           ok: false,
-          content: `browser ${input.action} failed: ${error instanceof Error ? error.message : String(error)}`
+          content: `browser ${input.action} failed: ${error instanceof Error ? error.message : String(error)}`,
         };
       }
-    }
+    },
   };
 }
