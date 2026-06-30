@@ -206,6 +206,39 @@ test('MCP client import preview reports ready and missing server candidates with
   assert.equal(JSON.stringify(preview).includes('https://mcp.linear.app/mcp'), false);
 });
 
+test('MCP client import preview ignores env-only credential hints', () => {
+  const preview = buildExternalIntegrationImportPreview({
+    source: 'mcp-client',
+    env: {
+      LINEAR_API_KEY: 'linear-secret',
+      TAVILY_API_KEY: 'tavily-secret',
+    },
+  });
+
+  assert.equal(preview.ok, true);
+  assert.deepEqual(preview.candidates, []);
+  assert.deepEqual(preview.summary.scanned.envKeys, ['LINEAR_API_KEY', 'TAVILY_API_KEY']);
+  assert.equal(JSON.stringify(preview).includes('linear-secret'), false);
+  assert.equal(JSON.stringify(preview).includes('tavily-secret'), false);
+});
+
+test('MCP client import preview normalizes server names and plugin ids for matching', () => {
+  const preview = buildExternalIntegrationImportPreview({
+    source: 'mcp-client',
+    mcpServers: {
+      Linear: { url: 'https://mcp.linear.app/mcp' },
+    },
+    pluginIds: [' N8N-MCP '],
+  });
+
+  const linear = preview.candidates.find((item) => item.integrationId === 'linear');
+  const n8n = preview.candidates.find((item) => item.integrationId === 'n8n-mcp');
+  assert.equal(linear?.ready, true);
+  assert.equal(n8n?.ready, false);
+  assert.deepEqual(preview.summary.scanned.mcpServers, ['linear']);
+  assert.deepEqual(preview.summary.scanned.pluginIds, ['n8n-mcp']);
+});
+
 test('import preview returns an empty summary when no source hints are present', () => {
   const preview = buildExternalIntegrationImportPreview({
     source: 'mcp-client',

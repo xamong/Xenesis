@@ -701,9 +701,15 @@ export function buildExternalIntegrationImportPreview(
   const shouldScanMcpClientHints = request.source === 'mcp-client';
   const scan: ExternalIntegrationImportScan = {
     envKeys: new Set(Object.keys(env).filter((key) => isNonEmptyImportEnvValue(env[key]))),
-    mcpServerNames: new Set(shouldScanMcpClientHints ? Object.keys(request.mcpServers ?? {}) : []),
+    mcpServerNames: new Set(
+      shouldScanMcpClientHints
+        ? Object.keys(request.mcpServers ?? {})
+            .map(normalizeImportHint)
+            .filter(Boolean)
+        : [],
+    ),
     pluginIds: new Set(
-      shouldScanMcpClientHints ? (request.pluginIds ?? []).map((item) => item.trim()).filter(Boolean) : [],
+      shouldScanMcpClientHints ? (request.pluginIds ?? []).map(normalizeImportHint).filter(Boolean) : [],
     ),
   };
 
@@ -767,7 +773,7 @@ function buildDefaultImportMappings(
 ): readonly ExternalIntegrationImportMapping[] {
   return [...buildDefaultImportSources(definition)].map((source) => ({
     source,
-    keys: buildDefaultImportKeys(definition),
+    keys: buildDefaultImportKeys(definition, source),
     requiredRefs: buildDefaultRequiredImportRefs(definition, source),
   }));
 }
@@ -788,7 +794,19 @@ function buildDefaultImportSources(
   return sources;
 }
 
-function buildDefaultImportKeys(definition: ExternalIntegrationDefinitionSeed): readonly string[] {
+function buildDefaultImportKeys(
+  definition: ExternalIntegrationDefinitionSeed,
+  source: ExternalIntegrationImportSource,
+): readonly string[] {
+  if (source === 'mcp-client') {
+    const keys = new Set<string>();
+    if (definition.runtimeRoutes.includes('mcp')) {
+      keys.add(`mcp_servers.${definition.id}`);
+    }
+    keys.add(definition.id);
+    return [...keys];
+  }
+
   const keys = new Set<string>();
   for (const credential of definition.credentialRequirements) {
     for (const ref of credential.refs) {
@@ -822,9 +840,12 @@ function buildDefaultRequiredImportRefs(
 
 function hasImportKeyMatch(key: string, integrationId: string, scan: ExternalIntegrationImportScan): boolean {
   if (scan.envKeys.has(key)) return true;
-  if (key.startsWith('mcp_servers.')) return scan.mcpServerNames.has(key.slice('mcp_servers.'.length));
-  if (scan.pluginIds.has(key)) return true;
-  if (key === integrationId && scan.pluginIds.has(integrationId)) return true;
+  const normalizedKey = normalizeImportHint(key);
+  if (normalizedKey.startsWith('mcp_servers.')) {
+    return scan.mcpServerNames.has(normalizedKey.slice('mcp_servers.'.length));
+  }
+  if (scan.pluginIds.has(normalizedKey)) return true;
+  if (normalizedKey === normalizeImportHint(integrationId) && scan.pluginIds.has(normalizedKey)) return true;
   return false;
 }
 
@@ -840,6 +861,10 @@ function buildExternalIntegrationImportScannedSummary(
 
 function isNonEmptyImportEnvValue(value: string | undefined): boolean {
   return typeof value === 'string' && value.trim().length > 0;
+}
+
+function normalizeImportHint(value: string): string {
+  return value.trim().toLowerCase();
 }
 
 function buildCategoryStatus(
