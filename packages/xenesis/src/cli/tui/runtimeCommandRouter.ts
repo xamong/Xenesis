@@ -8,8 +8,8 @@ import {
   formatAgentRuntimeStatus,
   resolveAgentRuntimeState,
 } from '../../runtime/agentRuntimeState.js';
-import { createToolManifest, renderToolManifestLine } from '../../tools/manifest.js';
 import type { ToolRegistry } from '../../tools/index.js';
+import { createToolManifest, renderToolManifestLine } from '../../tools/manifest.js';
 import { getTuiCommandPaletteHelp } from './commandCatalog.js';
 import type { TuiRuntimeParsedArgs } from './runtimeTypes.js';
 import type { TuiState } from './state.js';
@@ -96,7 +96,9 @@ export function createTuiRuntimeCommandRouter<Parsed extends TuiRuntimeCommandPa
       }
       if (input === '/sessions' || input === '/sessions list') {
         const runtimeConfig = await options.loadRuntimeConfig();
-        options.notify(formatAgentRuntimeSessions(await resolveAgentRuntimeState({ config: runtimeConfig, env: options.env })));
+        options.notify(
+          formatAgentRuntimeSessions(await resolveAgentRuntimeState({ config: runtimeConfig, env: options.env })),
+        );
         return true;
       }
       if (input === '/memory' || input.startsWith('/memory ')) {
@@ -107,7 +109,9 @@ export function createTuiRuntimeCommandRouter<Parsed extends TuiRuntimeCommandPa
       }
       if (input === '/parity') {
         const runtimeConfig = await options.loadRuntimeConfig();
-        options.notify(formatAgentRuntimeParity(await resolveAgentRuntimeState({ config: runtimeConfig, env: options.env })));
+        options.notify(
+          formatAgentRuntimeParity(await resolveAgentRuntimeState({ config: runtimeConfig, env: options.env })),
+        );
         return true;
       }
       if (input === '/commitments') {

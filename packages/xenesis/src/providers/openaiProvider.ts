@@ -120,8 +120,7 @@ function normalizeOpenAISchema(value: unknown, key?: string): unknown {
   );
 
   const properties = normalized.properties;
-  const isObjectSchema =
-    normalized.type === 'object' || (isRecord(properties) && !Array.isArray(properties));
+  const isObjectSchema = normalized.type === 'object' || (isRecord(properties) && !Array.isArray(properties));
   if (isObjectSchema) {
     return {
       ...normalized,

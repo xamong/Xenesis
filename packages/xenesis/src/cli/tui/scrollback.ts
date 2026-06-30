@@ -90,7 +90,14 @@ export function createScrollbackRows(
     appendWrappedRows(rows, 'notice> ', notice.message, noticeTone(notice), width);
   }
   if (state.pendingApproval) {
-    appendWrappedRows(rows, 'approval> ', `${state.pendingApproval.name}: ${state.pendingApproval.summary}`, 'warning', width, true);
+    appendWrappedRows(
+      rows,
+      'approval> ',
+      `${state.pendingApproval.name}: ${state.pendingApproval.summary}`,
+      'warning',
+      width,
+      true,
+    );
     appendWrappedRows(rows, 'approval> ', 'Press y to approve, n to deny.', 'warning', width);
   }
   if (rows.length === 0) rows.push({ text: 'Type a prompt below.', tone: 'muted' });

@@ -148,7 +148,8 @@ async function bridgeStatus(env: NodeJS.ProcessEnv): Promise<string> {
   if (String(env.XENIS_MCP_BRIDGE_URL ?? '').trim()) return 'configured';
   const explicitStatePath = String(env.XENIS_MCP_STATE_FILE ?? '').trim();
   const statePath =
-    explicitStatePath || (String(env.XENIS_HOME ?? '').trim() ? join(String(env.XENIS_HOME), 'mcp', 'bridge.json') : '');
+    explicitStatePath ||
+    (String(env.XENIS_HOME ?? '').trim() ? join(String(env.XENIS_HOME), 'mcp', 'bridge.json') : '');
   if (!statePath) return 'not configured';
   try {
     const raw = JSON.parse(await readFile(statePath, 'utf8')) as { bridgeUrl?: unknown };

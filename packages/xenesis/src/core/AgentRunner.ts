@@ -25,6 +25,7 @@ import type {
   ToolRegistry,
 } from '../tools/types.js';
 import { assertInsideWorkspace } from '../utils/workspace.js';
+import { durableApprovalPendingEvent, durableApprovalResolvedEvent } from './agentSafety/index.js';
 import { estimateContextTokens } from './context/ContextRecord.js';
 import { compactConversation, shouldThrash } from './context/compaction/compactConversation.js';
 import { pruneOlderMessages } from './context/compaction/pruneToolResults.js';
@@ -45,7 +46,6 @@ import {
   type VerificationToolName,
 } from './failureClassification.js';
 import { ApprovalPauseSignal } from './hitl/ApprovalPauseSignal.js';
-import { durableApprovalPendingEvent, durableApprovalResolvedEvent } from './agentSafety/index.js';
 import { type ExecutionBackend, LOCAL_BACKEND } from './isolation/executionBackend.js';
 import { type AgentMessage, repairToolResultPairing, type ToolCall } from './messages.js';
 import { type WrappedExternalContent, wrapExternalContent } from './prompt/index.js';

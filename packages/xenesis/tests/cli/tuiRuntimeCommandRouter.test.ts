@@ -2,8 +2,8 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { describe, expect, test, vi } from 'vitest';
 import { z } from 'zod';
-import { loadConfig, type ApprovalMode, type ProviderName } from '../../src/config/index.js';
 import { createTuiRuntimeCommandRouter } from '../../src/cli/tui/runtimeCommandRouter.js';
+import { type ApprovalMode, loadConfig, type ProviderName } from '../../src/config/index.js';
 import type { Tool, ToolRegistry } from '../../src/tools/index.js';
 import { createTempWorkspace } from '../helpers/tempWorkspace.js';
 

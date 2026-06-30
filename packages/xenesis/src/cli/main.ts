@@ -4464,7 +4464,7 @@ async function resolveTuiImageSource(source: string, cwd: string) {
   }
   const extension = extname(resolved).toLowerCase();
   if (extension && !TUI_SUPPORTED_IMAGE_EXTENSIONS.has(extension)) {
-    throw new Error('Unsupported image file type: ' + `${extension}. Supported types: png, jpg, jpeg, gif, webp.`);
+    throw new Error(`Unsupported image file type: ${extension}. Supported types: png, jpg, jpeg, gif, webp.`);
   }
   return resolved;
 }
