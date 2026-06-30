@@ -392,12 +392,9 @@ const EXTERNAL_INTEGRATION_DEFINITIONS = [
     platform: 'cloud',
     runtimeRoutes: ['webhook', 'oauth'],
     credentialRequirements: [
-      envCredential(
-        'microsoft-teams-webhook-url',
-        'Microsoft Teams webhook URL',
-        ['MICROSOFT_TEAMS_WEBHOOK_URL'],
-        { kind: 'webhook-url' },
-      ),
+      envCredential('microsoft-teams-webhook-url', 'Microsoft Teams webhook URL', ['MICROSOFT_TEAMS_WEBHOOK_URL'], {
+        kind: 'webhook-url',
+      }),
     ],
     actionPolicy: READ_ONLY_ACTION_POLICY,
     sourceRuntimeDependency: false,
@@ -634,7 +631,9 @@ export function buildExternalIntegrationDoctorStatus(
   };
 }
 
-function buildCategoryStatus(definitions: readonly ExternalIntegrationDefinition[]): ExternalIntegrationCatalogStatus['categories'] {
+function buildCategoryStatus(
+  definitions: readonly ExternalIntegrationDefinition[],
+): ExternalIntegrationCatalogStatus['categories'] {
   const counts = new Map<ExternalIntegrationCategory, number>();
   for (const definition of definitions) {
     counts.set(definition.category, (counts.get(definition.category) ?? 0) + 1);

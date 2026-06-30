@@ -46,11 +46,26 @@ test('catalog status groups integrations by native category and excludes model p
 
   assert.equal(catalog.ok, true);
   assert.equal(catalog.total, EXTERNAL_INTEGRATION_IDS.length);
-  assert.equal(catalog.categories.some((item) => item.id === 'productivity'), true);
-  assert.equal(catalog.categories.some((item) => item.id === 'channel'), true);
-  assert.equal(catalog.categories.some((item) => item.id === 'web-search'), true);
-  assert.equal(catalog.items.some((item) => item.id === 'hermes-agent'), false);
-  assert.equal(catalog.items.some((item) => item.category === 'model-provider'), false);
+  assert.equal(
+    catalog.categories.some((item) => item.id === 'productivity'),
+    true,
+  );
+  assert.equal(
+    catalog.categories.some((item) => item.id === 'channel'),
+    true,
+  );
+  assert.equal(
+    catalog.categories.some((item) => item.id === 'web-search'),
+    true,
+  );
+  assert.equal(
+    catalog.items.some((item) => item.id === 'hermes-agent'),
+    false,
+  );
+  assert.equal(
+    catalog.items.some((item) => item.category === 'model-provider'),
+    false,
+  );
 });
 
 test('integration status filters by id and never returns raw secret values', () => {
@@ -76,6 +91,12 @@ test('doctor status reports missing credentials without executing provider tools
   });
 
   assert.equal(doctor.ok, true);
-  assert.equal(doctor.findings.some((item) => item.checkId === 'notion.credentials.NOTION_API_KEY'), true);
-  assert.equal(doctor.findings.some((item) => item.severity === 'error'), true);
+  assert.equal(
+    doctor.findings.some((item) => item.checkId === 'notion.credentials.NOTION_API_KEY'),
+    true,
+  );
+  assert.equal(
+    doctor.findings.some((item) => item.severity === 'error'),
+    true,
+  );
 });
