@@ -1,5 +1,76 @@
 # Xenesis Desk Work Handoff
 
+## 2026-06-30 Native External Integrations Design
+
+- Current objective:
+  - Design a Xenesis-native external integration system that directly supports
+    the external tools and services covered by OpenClaw and Hermes Agent, while
+    keeping OpenClaw/Hermes only as reference/import sources rather than runtime
+    dependencies.
+  - Fold external service setup, MCP/OAuth readiness, provider setup, doctor
+    checks, and import flows into first-run onboarding so onboarding can finish
+    the initial setup.
+  - Remove Hermes Agent from the agent provider surface. Hermes may remain only
+    as a legacy/import source or optional bridge compatibility surface.
+- Context read:
+  - `AGENTS.md`
+  - Xenesis Obsidian index/system/review/source-of-truth notes previously read
+    for Agent/CR/provider/onboarding work.
+  - `docs/manual/11-external-tool-integrations.md`
+  - `src/shared/xenesisConnections.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/renderer/panes/onboarding/basicDeskSteps.ts`
+  - `src/renderer/panes/onboarding/onboardingRuntime.ts`
+  - `package.json`
+  - `providers/README.md`
+  - `src/main/providerIntegrationInstaller.mjs`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - OpenClaw setup/doctor/MCP/plugin registry files and representative
+    external plugin manifests under `/Users/ethan/Workspace/openclaw`.
+  - Hermes Agent setup/doctor/MCP config, optional MCP manifests, plugins, and
+    representative external-service skills under
+    `/Users/ethan/Workspace/hermes-agent`.
+- Touched files:
+  - `handoff.md`
+  - `docs/superpowers/specs/2026-06-30-xenesis-native-external-integrations-design.md`
+- Commands run:
+  - `git status --short --branch` -> `## uno...origin/uno`.
+  - `rg`/`sed`/`find` inspections for Xenesis provider assets, Hermes bridge
+    packaging, Settings provider surfaces, OpenClaw plugin manifests, Hermes
+    plugin/skill/MCP manifests, and current onboarding/Connection Center CR
+    paths.
+  - `rg -n "TBD|TODO|FIXME|PLACEHOLDER|\?\?" docs/superpowers/specs/2026-06-30-xenesis-native-external-integrations-design.md`
+    -> no matches.
+  - `sed -n '260,520p' docs/superpowers/specs/2026-06-30-xenesis-native-external-integrations-design.md`
+    -> reviewed the importer, Hermes provider removal, error handling, testing,
+    rollout, and self-review sections.
+  - `wc -l docs/superpowers/specs/2026-06-30-xenesis-native-external-integrations-design.md handoff.md`
+    -> spec has 355 lines after self-review.
+- Exact verification result:
+  - Design/context analysis only so far. No implementation tests or build runs
+    have been executed for this new design scope.
+  - Spec self-review passed placeholder scan, consistency check, scope check,
+    and ambiguity check. The spec explicitly phases implementation and excludes
+    model providers from the external integration scope.
+- Material design decision:
+  - External tools mean external services/integrations such as Google, Notion,
+    Linear, Slack, browser/search providers, media providers, channel adapters,
+    MCP servers, and local platform integrations.
+  - OpenClaw/Hermes support scope should be adopted, but not by wrapping their
+    plugin/skill registries at runtime. Xenesis should implement the integration
+    layer directly.
+  - `package.json` `extraResources` Hermes plugin entries are provider bridge
+    deployment assets. They are not evidence that Hermes is an AI reasoning
+    provider, and should be removed or demoted once Hermes is no longer a
+    provider surface.
+- Known gaps:
+  - Need a written spec and implementation plan before code changes.
+  - Need to decide exact migration compatibility for existing Hermes bridge UI
+    panes after Hermes provider removal.
+- Next intended step:
+  - Commit the design spec and handoff update, then wait for user review before
+    implementation planning.
+
 ## 2026-06-30 Onboarding Provider Setup Entry
 
 - Current objective:
