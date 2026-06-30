@@ -12,13 +12,15 @@
     `D:\CodeTruck\CodeBox\Xamong\06 XCON\Xenesis\.worktrees\input-control-mini`
   - Branch: `input-control-mini`
 - Current implementation checkpoint:
-  - Starting Task 2 main input-control service with fake app adapters.
+  - Starting Task 3 CR registration, dispatch, approval, and audit redaction.
 - Touched files:
   - `handoff.md`
   - `src/shared/inputControl.ts`
   - `src/shared/inputControl.test.ts`
-  - Planned: `src/main/inputControl/inputControlService.ts`
-  - Planned: `src/main/inputControl/inputControlService.test.ts`
+  - `src/main/inputControl/inputControlService.ts`
+  - `src/main/inputControl/inputControlService.test.ts`
+  - Planned: `src/shared/deskBridgeCapabilities.ts`
+  - Planned: `src/shared/inputControlCapabilities.test.ts`
 - Commands run:
   - Read `superpowers:executing-plans`,
     `superpowers:test-driven-development`,
@@ -41,19 +43,27 @@
     after service implementation -> PASS, 7 tests.
   - `node --import tsx --test src/shared/inputControl.test.ts src/main/inputControl/inputControlService.test.ts`
     -> PASS, 15 tests.
+  - `node --import tsx --test src/shared/inputControlCapabilities.test.ts`
+    after adding only the capability test file -> RED failed because
+    `xd.input.*` was not registered and dispatch/audit were not wired.
+  - `node --import tsx --test src/shared/inputControlCapabilities.test.ts`
+    after CR registration/dispatch/audit redaction -> PASS, 4 tests.
+  - `node --import tsx --test src/shared/inputControl.test.ts src/main/inputControl/inputControlService.test.ts src/shared/inputControlCapabilities.test.ts`
+    -> PASS, 19 tests.
 - Exact verification result:
   - Baseline test suite in the isolated worktree passed before input-control
     implementation started.
   - Task 1 shared input-control DSL test passed after a verified RED failure.
   - Task 2 input-control service tests passed after a verified RED failure.
+  - Task 3 `xd.input.*` capability registration, approval gating, dispatch, and
+    audit redaction tests passed after a verified RED failure.
 - Known gaps:
   - Browser coordinate execution remains deferred by design.
   - Full desktop automation remains disabled by design.
   - `xd.input.screenshot` will return unsupported until a real screenshot
     adapter exists.
 - Next intended step:
-  - Commit Task 2, then start Task 3 CR registration and dispatch with failing
-    capability tests.
+  - Commit Task 3, then start Task 4 main bridge wiring.
 
 ## 2026-06-30 Dock Drag Ghost Native Overlay
 
