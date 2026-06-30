@@ -32,8 +32,20 @@
     `/Users/ethan/Workspace/hermes-agent`.
 - Touched files:
   - `handoff.md`
+  - `docs/capability-registry-audit.md`
   - `docs/superpowers/specs/2026-06-30-xenesis-native-external-integrations-design.md`
   - `docs/superpowers/plans/2026-06-30-native-external-integrations-slice-1.md`
+  - `src/main/index.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/shared/externalIntegrations.ts`
+  - `src/shared/externalIntegrations.test.ts`
+  - `src/shared/types.ts`
+  - `src/shared/xenesisConnectionCapabilities.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/XenesisAgentPane.tsx`
+  - `src/renderer/extensions/xenesis-desk.workflow-runner/gowoori/agent/gowooriProviders.ts`
+  - `src/renderer/extensions/xenesis-desk.workflow-runner/gowoori/chat/gowooriChatConstants.ts`
+  - `src/renderer/panes/onboarding/basicDeskSteps.ts`
+  - `src/renderer/panes/onboarding/onboardingRuntime.test.ts`
 - Commands run:
   - `git status --short --branch` -> `## uno...origin/uno`.
   - `rg`/`sed`/`find` inspections for Xenesis provider assets, Hermes bridge
@@ -49,15 +61,190 @@
     -> spec has 355 lines after self-review.
   - `rg -n "TBD|TODO|FIXME|PLACEHOLDER|placeholder|implement later|fill in|Similar to|similar to|appropriate error|edge cases|if needed|If .*required|If .*finds" docs/superpowers/plans/2026-06-30-native-external-integrations-slice-1.md`
     -> no matches after plan self-review cleanup.
+  - Task 1 RED/GREEN:
+    `npx -y -p node@22.12.0 -p npm@10.9.0 node --import tsx --test src/shared/externalIntegrations.test.ts`
+    -> initially failed on missing `./externalIntegrations`, then passed 4/4
+    after adding the native registry.
+  - Task 1 formatting:
+    `npx biome format --write src/shared/externalIntegrations.ts src/shared/externalIntegrations.test.ts`
+    and `npx biome check src/shared/externalIntegrations.ts src/shared/externalIntegrations.test.ts`
+    -> passed after formatting commit.
+  - Task 2 RED/GREEN:
+    `npx -y -p node@22.12.0 -p npm@10.9.0 node --import tsx --test src/shared/externalIntegrations.test.ts`
+    -> initially failed on missing import-preview export, then passed 6/6
+    after adding import preview scaffolding.
+  - Task 2 formatting:
+    `npx biome check src/shared/externalIntegrations.ts src/shared/externalIntegrations.test.ts`
+    -> passed according to implementer report; independent review is in
+    progress.
+  - Task 2 spec review:
+    read-only review of `87a0f78..b711982` -> failed. Issues: import preview
+    return shape did not expose `candidates`/`summary`/`warnings`, candidates
+    did not report readiness or missing refs, and the required `mcp-client`
+    preview test was missing.
+  - Task 2 spec-fix verification:
+    `npx -y -p node@22.12.0 -p npm@10.9.0 node --import tsx --test src/shared/externalIntegrations.test.ts`
+    -> passed 8/8 after `005b76d`.
+  - Task 2 spec-fix formatting:
+    `npx biome check src/shared/externalIntegrations.ts src/shared/externalIntegrations.test.ts`
+    -> passed after `005b76d`.
+  - Task 2 spec re-review:
+    read-only review of `87a0f78..005b76d` -> failed. Issue: Hermes/OpenClaw
+    preview matching still considered MCP server/plugin hints; only the
+    `mcp-client` source should inspect `mcpServers`/`pluginIds`.
+  - Task 2 source-match fix verification:
+    `npx -y -p node@22.12.0 -p npm@10.9.0 node --import tsx --test src/shared/externalIntegrations.test.ts`
+    -> passed 8/8 after `257ae9a`.
+  - Task 2 source-match fix formatting:
+    `npx biome check src/shared/externalIntegrations.ts src/shared/externalIntegrations.test.ts`
+    -> passed after `257ae9a`.
+  - Task 2 quality review:
+    read-only review of `87a0f78..257ae9a` -> failed with fixes requested.
+    Important issue: `mcp-client` preview could still be seeded by env-only
+    credential hints. Minor issue: MCP server/plugin hints were exact-case.
+  - Task 2 quality-fix RED/GREEN:
+    `npx -y -p node@22.12.0 -p npm@10.9.0 node --import tsx --test src/shared/externalIntegrations.test.ts`
+    -> failed after adding env-only/mixed-case MCP tests, then passed 10/10
+    after `a92bc06`.
+  - Task 2 quality-fix formatting:
+    `npx biome check src/shared/externalIntegrations.ts src/shared/externalIntegrations.test.ts`
+    -> passed after `a92bc06`.
+  - Task 2 quality re-review:
+    read-only review of `257ae9a..a92bc06` -> failed. Remaining important
+    issue: `mcp-client` matching still checked env keys such as `linear` or
+    `mcp_servers.linear`.
+  - Task 2 env-isolation fix verification:
+    `npx -y -p node@22.12.0 -p npm@10.9.0 node --import tsx --test src/shared/externalIntegrations.test.ts`
+    -> passed 10/10 after `3489774`.
+  - Task 2 env-isolation fix formatting:
+    `npx biome check src/shared/externalIntegrations.ts src/shared/externalIntegrations.test.ts`
+    -> passed after `3489774`.
+  - Task 2 final quality re-review:
+    read-only review of `a92bc06..3489774` -> approved. Verified env-only
+    `linear`/`mcp_servers.linear` produce no `mcp-client` candidates while
+    scanned env keys remain visible and redacted.
+  - Task 3 CR surface verification:
+    `node --import tsx --test src/shared/xenesisConnectionCapabilities.test.ts`
+    -> passed 54/54 after `df5fad7`.
+  - Task 3 formatting:
+    `npx biome check src/shared/deskBridgeCapabilities.ts src/shared/xenesisConnectionCapabilities.test.ts`
+    -> passed after `df5fad7`.
+  - Task 3 CR audit:
+    `npm run docs:capabilities:audit` -> passed after `df5fad7`; missing
+    registry paths, missing dispatched coverage paths, and undispatched static
+    callable methods were all 0 according to implementer report.
+  - Task 3 quality review:
+    read-only review of `3489774..df5fad7` -> approved. Minor note: Task 4
+    should keep catalog/status arg aliases aligned with the registered schema.
+  - Task 4 main handler verification:
+    `npx -y -p node@22.12.0 -p npm@10.9.0 node --import tsx --test src/shared/xenesisConnectionCapabilities.test.ts src/shared/externalIntegrations.test.ts`
+    -> passed 64/64 after `b9136b0`.
+  - Task 4 typecheck:
+    `npx -y -p node@22.12.0 -p npm@10.9.0 npm run typecheck` -> passed
+    after an initial return-type mismatch was fixed by the implementer.
+  - Task 4 formatting:
+    `npx biome check src/main/index.ts` -> exit 0 after `b9136b0`; reported
+    existing warnings/infos in unrelated sections according to implementer.
+  - Task 4 quality review:
+    read-only review of `df5fad7..b9136b0` -> approved. Focused tests passed
+    64/64, root typecheck passed, scoped Biome exited 0 with unrelated existing
+    warnings, CR audit/assertion passed according to reviewer.
+  - Task 5 RED/GREEN so far:
+    focused Hermes provider-surface test initially failed, then passed 55/55
+    after removing Hermes from the first provider surfaces.
+  - Task 5 typecheck blocker:
+    `npm run typecheck` failed because `src/shared/types.ts` still exposed
+    `GowooriChatProviderId` with `'hermes'`, and a renderer consumer still
+    received that wider provider type. The Task 5 implementer was authorized to
+    include `src/shared/types.ts` and any minimal direct consumer fix.
+  - Task 5 verification:
+    `node --import tsx --test src/shared/xenesisConnectionCapabilities.test.ts`
+    -> passed 55/55 after `ee7b0e0`.
+  - Task 5 typecheck:
+    `npm run typecheck` -> passed after `ee7b0e0`.
+  - Task 5 formatting/search:
+    scoped `npx biome check ...` -> passed with 4 unrelated warnings according
+    to implementer. Focused `rg` found no Hermes in `XenesisAgentPane.tsx`,
+    `gowooriProviders.ts`, or `gowooriChatConstants.ts`; remaining Hermes
+    references are expected legacy/import/tool-panel/bridge/local-CLI/bot-channel
+    references.
+  - Task 5 quality review:
+    read-only review of `b9136b0..ee7b0e0` -> failed with fixes requested.
+    Important issue: `src/main/index.ts` still accepted Hermes through
+    GowooriChat testing/bridge provider allowlists and timeout logic.
+  - Task 5 main-process provider fix verification:
+    `node --import tsx --test src/shared/xenesisConnectionCapabilities.test.ts`
+    -> passed 55/55 after `7f5ec60`.
+  - Task 5 main-process provider fix typecheck:
+    `npm run typecheck` -> passed after `7f5ec60`.
+  - Task 5 main-process provider fix formatting/search:
+    scoped `npx biome check ...` -> passed with existing warnings/infos and no
+    errors according to implementer. Focused `rg` confirmed no Hermes matches in
+    Agent pane, Gowoori provider definitions, or Gowoori timeout constants.
+  - Task 5 quality re-review:
+    read-only re-review of `ee7b0e0..7f5ec60` -> approved. Verified main
+    GowooriChat paths use `mock/codex/claude/byok`, reject Hermes provider
+    dispatch, and keep Hermes only in allowed legacy/import buckets.
+  - Task 6 onboarding bridge verification:
+    `npx -y -p node@22.12.0 -p npm@10.9.0 node --import tsx --test src/renderer/panes/onboarding/onboardingRuntime.test.ts`
+    -> passed 6/6 after `3f8325b`.
+  - Task 6 formatting:
+    `npx biome check src/renderer/panes/onboarding/basicDeskSteps.ts src/renderer/panes/onboarding/onboardingRuntime.test.ts`
+    -> passed after `3f8325b`.
+  - Task 6 quality review:
+    read-only review of `7f5ec60..3f8325b` -> approved. Verified native
+    integration status/doctor paths are in external-tools actions and
+    verification, and removed terminal/file/Command Center steps remain absent.
+  - Whole-slice focused tests:
+    `npx -y -p node@22.12.0 -p npm@10.9.0 node --import tsx --test src/shared/externalIntegrations.test.ts src/shared/xenesisConnectionCapabilities.test.ts src/renderer/panes/onboarding/onboardingRuntime.test.ts`
+    -> passed 71/71.
+  - Whole-slice root typecheck:
+    `npx -y -p node@22.12.0 -p npm@10.9.0 npm run typecheck` -> passed.
+  - Whole-slice CR audit:
+    `npx -y -p node@22.12.0 -p npm@10.9.0 npm run docs:capabilities:audit`
+    -> passed; wrote `docs/capability-registry-audit.md` with 857 registered
+    nodes, 537 callable methods, 517 dispatcher paths, and 0 missing registered
+    paths / 0 missing dispatched coverage paths / 0 undispatched static callable
+    methods.
+  - Whole-slice build:
+    `npx -y -p node@22.12.0 -p npm@10.9.0 npm run build` -> passed. Build
+    printed existing Vite warnings about browser-externalized `fs` from
+    `hwp.js` and a dynamic/static import chunking warning for
+    `src/renderer/deskBridge.ts`.
 - Exact verification result:
-  - Design/context analysis only so far. No implementation tests or build runs
-    have been executed for this new design scope.
   - Spec self-review passed placeholder scan, consistency check, scope check,
     and ambiguity check. The spec explicitly phases implementation and excludes
     model providers from the external integration scope.
   - Implementation plan self-review passed. The plan is intentionally scoped to
     Slice 1: native registry, read-only CR status/doctor/import preview,
     onboarding readiness bridge, and Hermes provider-surface cleanup.
+  - Task 1 shared native registry is implemented and committed in
+    `92b1329`/`87a0f78`; spec compliance and code quality reviews approved it.
+  - Task 2 import preview scaffolding is implemented and committed in
+    `b711982`, but independent spec review found required fixes. The same
+    implementer committed `005b76d` to add the required preview shape,
+    readiness/missing refs, and `mcp-client` test. Spec re-review found one
+    remaining source-matching issue; the implementer committed `257ae9a` so
+    only `mcp-client` inspects MCP server/plugin hints. Spec re-review approved
+    Task 2. Code quality review found MCP-client matching hardening issues;
+    `a92bc06` fixes env-only seeding and normalizes MCP server/plugin hints.
+    Quality re-review found one remaining env-key leakage path; `3489774`
+    makes `hasImportKeyMatch` source-aware so `mcp-client` ignores env matching.
+    Final quality re-review approved Task 2.
+  - Task 3 native integration CR surface is implemented and committed in
+    `df5fad7`; independent spec and quality reviews approved it.
+  - Task 4 main-process handlers are implemented and committed in `b9136b0`;
+    independent spec and quality reviews approved it.
+  - Task 5 Hermes provider-surface cleanup is implemented. Hermes remains
+    allowed as an import source/legacy bridge/tool-panel label, but is no longer
+    selectable as a Gowoori/Xenesis agent provider. Implementation is committed
+    in `ee7b0e0`, with main-process provider allowlist fix `7f5ec60`;
+    independent spec and quality reviews approved it.
+  - Task 6 onboarding readiness bridge is implemented and committed in
+    `3f8325b`; independent spec and quality reviews approved it.
+  - Whole-slice verification passed for focused tests, root typecheck, CR audit,
+    and root build. The regenerated CR audit records the new native integration
+    CR surface and keeps all audit miss counts at 0.
 - Material design decision:
   - External tools mean external services/integrations such as Google, Notion,
     Linear, Slack, browser/search providers, media providers, channel adapters,
@@ -70,12 +257,12 @@
     provider, and should be removed or demoted once Hermes is no longer a
     provider surface.
 - Known gaps:
-  - Need a written spec and implementation plan before code changes.
   - Need to decide exact migration compatibility for existing Hermes bridge UI
     panes after Hermes provider removal.
+  - Need final whole-implementation review before considering the slice done.
 - Next intended step:
-  - Commit the Slice 1 implementation plan and handoff update, then ask the
-    user to choose subagent-driven or inline execution.
+  - Commit the verification handoff/audit update, then request final
+    implementation review.
 
 ## 2026-06-30 Onboarding Provider Setup Entry
 
