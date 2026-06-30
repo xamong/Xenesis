@@ -26045,3 +26045,39 @@ Verification so far:
 - Next intended step:
   - Add and commit the master roadmap plus slice design specs, then ask the user
     to review before creating implementation plans.
+
+## 2026-07-01 Agent Sessions Implementation Plan
+
+- Current objective:
+  - Create a concrete implementation plan for priority 1, Agent Sessions,
+    based on sibling `D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk`
+    while explicitly excluding `packages/xenesis`.
+- Touched files:
+  - Planned: `docs/superpowers/plans/2026-07-01-agent-sessions.md`
+  - This log: `handoff.md`
+- Commands run:
+  - Read `docs/superpowers/specs/2026-07-01-agent-sessions-slice-design.md`.
+  - Inspected sibling Agent Sessions shared model, service, adapters, store,
+    renderer panel model, terminal linker, Agent-pane routing helper, CR
+    registration tests, preload API, and main IPC/CR bridge wiring.
+  - Inspected current repo extension registration, app menu, types, preload,
+    main bridge, and CR dispatcher wiring points.
+  - Wrote `docs/superpowers/plans/2026-07-01-agent-sessions.md`.
+  - Placeholder scan over the plan found no `TBD`, `TODO`, `FIXME`,
+    `PLACEHOLDER`, `???`, `implement later`, `fill in`, or similar markers.
+  - Scope scan found `packages/xenesis` only in intentional out-of-scope
+    statements.
+  - `git diff --check`: passed with the existing LF-to-CRLF warning for
+    `handoff.md`.
+- Exact verification result:
+  - Plan covers shared model, main scanner/service, CR registry/dispatch,
+    preload IPC, renderer pane, app menu/tool registration, Agent-pane routing,
+    verification gates, and final review criteria.
+  - No implementation has been changed.
+- Known gaps:
+  - No runtime tests are required until implementation begins.
+  - Plan file is under ignored `docs/superpowers/`, so it must be staged with
+    `git add -f`.
+- Next intended step:
+  - Commit the Agent Sessions implementation plan and ask the user to choose the
+    execution approach.
