@@ -102,7 +102,7 @@ test('doctor status reports missing credentials without executing provider tools
   );
 });
 
-test('Hermes import preview maps known env and MCP keys without leaking secret values', () => {
+test('Hermes import preview returns candidates, readiness, and summary without leaking secret values', () => {
   const preview = buildExternalIntegrationImportPreview({
     source: 'hermes',
     env: {
@@ -116,18 +116,32 @@ test('Hermes import preview maps known env and MCP keys without leaking secret v
 
   assert.equal(preview.ok, true);
   assert.equal(preview.source, 'hermes');
-  assert.equal(
-    preview.mappings.some((item) => item.integrationId === 'notion'),
-    true,
-  );
-  assert.equal(
-    preview.mappings.some((item) => item.integrationId === 'slack'),
-    true,
-  );
-  assert.equal(
-    preview.mappings.some((item) => item.integrationId === 'linear'),
-    true,
-  );
+  assert.equal(Object.hasOwn(preview, 'candidates'), true);
+  assert.equal(Object.hasOwn(preview, 'summary'), true);
+  assert.equal(Array.isArray(preview.warnings), true);
+  assert.equal(Object.hasOwn(preview, 'mappings'), false);
+  assert.equal(Object.hasOwn(preview, 'scanned'), false);
+  assert.equal(Object.hasOwn(preview, 'total'), false);
+
+  const notion = preview.candidates.find((item) => item.integrationId === 'notion');
+  const slack = preview.candidates.find((item) => item.integrationId === 'slack');
+  const linear = preview.candidates.find((item) => item.integrationId === 'linear');
+  assert.equal(notion?.ready, true);
+  assert.equal(notion?.readiness, 'ready');
+  assert.deepEqual(notion?.requiredRefs, ['NOTION_API_KEY']);
+  assert.deepEqual(notion?.matchedRefs, ['NOTION_API_KEY']);
+  assert.deepEqual(notion?.missingRefs, []);
+  assert.equal(slack?.ready, false);
+  assert.equal(slack?.readiness, 'missing-required-refs');
+  assert.equal(slack?.missingRefs.includes('SLACK_SIGNING_SECRET'), true);
+  assert.equal(linear?.ready, false);
+  assert.equal(linear?.matchedKeys.includes('mcp_servers.linear'), true);
+  assert.equal(linear?.missingRefs.includes('LINEAR_API_KEY'), true);
+  assert.equal(preview.summary.candidateCount, 3);
+  assert.equal(preview.summary.readyCount, 1);
+  assert.equal(preview.summary.missingCount, 2);
+  assert.deepEqual(preview.summary.scanned.envKeys, ['NOTION_API_KEY', 'SLACK_BOT_TOKEN']);
+  assert.deepEqual(preview.summary.scanned.mcpServers, ['linear']);
   assert.equal(JSON.stringify(preview).includes('secret_notion_value'), false);
   assert.equal(JSON.stringify(preview).includes('xoxb-secret'), false);
 });
@@ -143,14 +157,69 @@ test('OpenClaw import preview maps channel and web provider env keys', () => {
   });
 
   assert.equal(preview.ok, true);
-  assert.equal(
-    preview.mappings.some((item) => item.integrationId === 'tavily'),
-    true,
-  );
-  assert.equal(
-    preview.mappings.some((item) => item.integrationId === 'discord'),
-    true,
-  );
+  const tavily = preview.candidates.find((item) => item.integrationId === 'tavily');
+  const discord = preview.candidates.find((item) => item.integrationId === 'discord');
+  assert.equal(tavily?.ready, true);
+  assert.equal(tavily?.matchedKeys.includes('TAVILY_API_KEY'), true);
+  assert.equal(tavily?.matchedKeys.includes('tavily'), true);
+  assert.deepEqual(tavily?.missingRefs, []);
+  assert.equal(discord?.ready, true);
+  assert.equal(discord?.matchedKeys.includes('DISCORD_BOT_TOKEN'), true);
+  assert.equal(discord?.matchedKeys.includes('discord'), true);
+  assert.deepEqual(discord?.missingRefs, []);
+  assert.equal(preview.summary.candidateCount, 2);
+  assert.equal(preview.summary.readyCount, 2);
+  assert.equal(preview.summary.missingCount, 0);
   assert.equal(JSON.stringify(preview).includes('tvly-secret'), false);
   assert.equal(JSON.stringify(preview).includes('discord-secret'), false);
+});
+
+test('MCP client import preview reports ready and missing server candidates without copying config values', () => {
+  const preview = buildExternalIntegrationImportPreview({
+    source: 'mcp-client',
+    mcpServers: {
+      linear: { url: 'https://mcp.linear.app/mcp' },
+    },
+    pluginIds: ['n8n-mcp'],
+  });
+
+  assert.equal(preview.ok, true);
+  assert.equal(preview.source, 'mcp-client');
+  const linear = preview.candidates.find((item) => item.integrationId === 'linear');
+  const n8n = preview.candidates.find((item) => item.integrationId === 'n8n-mcp');
+  assert.equal(linear?.ready, true);
+  assert.deepEqual(linear?.requiredRefs, ['mcp_servers.linear']);
+  assert.deepEqual(linear?.matchedRefs, ['mcp_servers.linear']);
+  assert.deepEqual(linear?.missingRefs, []);
+  assert.equal(n8n?.ready, false);
+  assert.deepEqual(n8n?.requiredRefs, ['mcp_servers.n8n-mcp']);
+  assert.deepEqual(n8n?.matchedRefs, []);
+  assert.deepEqual(n8n?.missingRefs, ['mcp_servers.n8n-mcp']);
+  assert.equal(preview.summary.candidateCount, 2);
+  assert.equal(preview.summary.readyCount, 1);
+  assert.equal(preview.summary.missingCount, 1);
+  assert.deepEqual(preview.summary.scanned.mcpServers, ['linear']);
+  assert.deepEqual(preview.summary.scanned.pluginIds, ['n8n-mcp']);
+  assert.equal(JSON.stringify(preview).includes('https://mcp.linear.app/mcp'), false);
+});
+
+test('import preview returns an empty summary when no source hints are present', () => {
+  const preview = buildExternalIntegrationImportPreview({
+    source: 'mcp-client',
+  });
+
+  assert.equal(preview.ok, true);
+  assert.equal(preview.source, 'mcp-client');
+  assert.deepEqual(preview.candidates, []);
+  assert.deepEqual(preview.warnings, []);
+  assert.deepEqual(preview.summary, {
+    candidateCount: 0,
+    readyCount: 0,
+    missingCount: 0,
+    scanned: {
+      envKeys: [],
+      mcpServers: [],
+      pluginIds: [],
+    },
+  });
 });

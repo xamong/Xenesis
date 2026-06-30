@@ -23,6 +23,7 @@ export type ExternalIntegrationImportSource = 'hermes' | 'openclaw' | 'mcp-clien
 export interface ExternalIntegrationImportMapping {
   source: ExternalIntegrationImportSource;
   keys: readonly string[];
+  requiredRefs: readonly string[];
 }
 
 export interface ExternalCredentialRequirement {
@@ -112,21 +113,43 @@ export interface ExternalIntegrationImportPreviewRequest {
 export interface ExternalIntegrationImportPreview {
   ok: true;
   source: ExternalIntegrationImportSource;
-  scanned: {
-    envKeys: string[];
-    mcpServers: string[];
-    pluginIds: string[];
-  };
-  total: number;
-  mappings: {
+  candidates: {
     integrationId: string;
     label: string;
     category: ExternalIntegrationCategory;
     source: ExternalIntegrationImportSource;
     matchedKeys: string[];
+    requiredRefs: string[];
+    matchedRefs: string[];
+    missingRefs: string[];
+    ready: boolean;
+    readiness: 'ready' | 'missing-required-refs';
     secretValuesIncluded: false;
     applyRequiresApproval: true;
   }[];
+  summary: {
+    candidateCount: number;
+    readyCount: number;
+    missingCount: number;
+    scanned: {
+      envKeys: string[];
+      mcpServers: string[];
+      pluginIds: string[];
+    };
+  };
+  warnings: string[];
+}
+
+interface ExternalIntegrationImportScan {
+  envKeys: ReadonlySet<string>;
+  mcpServerNames: ReadonlySet<string>;
+  pluginIds: ReadonlySet<string>;
+}
+
+interface ExternalIntegrationImportScannedSummary {
+  envKeys: string[];
+  mcpServers: string[];
+  pluginIds: string[];
 }
 
 export interface ExternalIntegrationCatalogStatus {
@@ -675,18 +698,23 @@ export function buildExternalIntegrationImportPreview(
   request: ExternalIntegrationImportPreviewRequest,
 ): ExternalIntegrationImportPreview {
   const env = request.env ?? {};
-  const envKeys = new Set(Object.keys(env).filter((key) => isNonEmptyImportEnvValue(env[key])));
-  const mcpServerNames = new Set(Object.keys(request.mcpServers ?? {}));
-  const pluginIds = new Set((request.pluginIds ?? []).map((item) => item.trim()).filter(Boolean));
+  const scan: ExternalIntegrationImportScan = {
+    envKeys: new Set(Object.keys(env).filter((key) => isNonEmptyImportEnvValue(env[key]))),
+    mcpServerNames: new Set(Object.keys(request.mcpServers ?? {})),
+    pluginIds: new Set((request.pluginIds ?? []).map((item) => item.trim()).filter(Boolean)),
+  };
 
-  const mappings = EXTERNAL_INTEGRATIONS.flatMap((definition) => {
+  const candidates = EXTERNAL_INTEGRATIONS.flatMap((definition) => {
     const importMapping = definition.importMappings.find((mapping) => mapping.source === request.source);
     if (!importMapping) return [];
 
-    const matchedKeys = importMapping.keys.filter((key) =>
-      hasImportKeyMatch(key, definition.id, envKeys, mcpServerNames, pluginIds),
-    );
+    const matchedKeys = importMapping.keys.filter((key) => hasImportKeyMatch(key, definition.id, scan));
     if (matchedKeys.length === 0) return [];
+
+    const requiredRefs = [...importMapping.requiredRefs].sort();
+    const matchedRefs = requiredRefs.filter((ref) => hasImportKeyMatch(ref, definition.id, scan));
+    const missingRefs = requiredRefs.filter((ref) => !hasImportKeyMatch(ref, definition.id, scan));
+    const ready = missingRefs.length === 0;
 
     return [
       {
@@ -694,23 +722,31 @@ export function buildExternalIntegrationImportPreview(
         label: definition.label,
         category: definition.category,
         source: request.source,
-        matchedKeys,
+        matchedKeys: [...matchedKeys].sort(),
+        requiredRefs,
+        matchedRefs,
+        missingRefs,
+        ready,
+        readiness: ready ? ('ready' as const) : ('missing-required-refs' as const),
         secretValuesIncluded: false as const,
         applyRequiresApproval: true as const,
       },
     ];
   });
+  const readyCount = candidates.filter((candidate) => candidate.ready).length;
+  const missingCount = candidates.length - readyCount;
 
   return {
     ok: true,
     source: request.source,
-    scanned: {
-      envKeys: [...envKeys].sort(),
-      mcpServers: [...mcpServerNames].sort(),
-      pluginIds: [...pluginIds].sort(),
+    candidates,
+    summary: {
+      candidateCount: candidates.length,
+      readyCount,
+      missingCount,
+      scanned: buildExternalIntegrationImportScannedSummary(scan),
     },
-    total: mappings.length,
-    mappings,
+    warnings: [],
   };
 }
 
@@ -726,8 +762,11 @@ function withExternalIntegrationImportMappings(
 function buildDefaultImportMappings(
   definition: ExternalIntegrationDefinitionSeed,
 ): readonly ExternalIntegrationImportMapping[] {
-  const keys = buildDefaultImportKeys(definition);
-  return [...buildDefaultImportSources(definition)].map((source) => ({ source, keys }));
+  return [...buildDefaultImportSources(definition)].map((source) => ({
+    source,
+    keys: buildDefaultImportKeys(definition),
+    requiredRefs: buildDefaultRequiredImportRefs(definition, source),
+  }));
 }
 
 function buildDefaultImportSources(
@@ -760,18 +799,40 @@ function buildDefaultImportKeys(definition: ExternalIntegrationDefinitionSeed): 
   return [...keys];
 }
 
-function hasImportKeyMatch(
-  key: string,
-  integrationId: string,
-  envKeys: ReadonlySet<string>,
-  mcpServerNames: ReadonlySet<string>,
-  pluginIds: ReadonlySet<string>,
-): boolean {
-  if (envKeys.has(key)) return true;
-  if (key.startsWith('mcp_servers.')) return mcpServerNames.has(key.slice('mcp_servers.'.length));
-  if (pluginIds.has(key)) return true;
-  if (key === integrationId && pluginIds.has(integrationId)) return true;
+function buildDefaultRequiredImportRefs(
+  definition: ExternalIntegrationDefinitionSeed,
+  source: ExternalIntegrationImportSource,
+): readonly string[] {
+  if (source === 'mcp-client' && definition.runtimeRoutes.includes('mcp')) {
+    return [`mcp_servers.${definition.id}`];
+  }
+
+  const refs = new Set<string>();
+  for (const credential of definition.credentialRequirements) {
+    if (!credential.required) continue;
+    for (const ref of credential.refs) {
+      refs.add(ref);
+    }
+  }
+  return [...refs];
+}
+
+function hasImportKeyMatch(key: string, integrationId: string, scan: ExternalIntegrationImportScan): boolean {
+  if (scan.envKeys.has(key)) return true;
+  if (key.startsWith('mcp_servers.')) return scan.mcpServerNames.has(key.slice('mcp_servers.'.length));
+  if (scan.pluginIds.has(key)) return true;
+  if (key === integrationId && scan.pluginIds.has(integrationId)) return true;
   return false;
+}
+
+function buildExternalIntegrationImportScannedSummary(
+  scan: ExternalIntegrationImportScan,
+): ExternalIntegrationImportScannedSummary {
+  return {
+    envKeys: [...scan.envKeys].sort(),
+    mcpServers: [...scan.mcpServerNames].sort(),
+    pluginIds: [...scan.pluginIds].sort(),
+  };
 }
 
 function isNonEmptyImportEnvValue(value: string | undefined): boolean {
