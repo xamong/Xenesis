@@ -8,6 +8,7 @@ import {
   type DeskBridgeWorkflowRegistryEntry,
   runDeskBridgeWorkflow,
 } from './deskBridgeWorkflow';
+import { redactInputAuditValue } from './inputControl';
 import { isXenisPhase5Visible, type XenisPhase5VisibilityOptions } from './phase5';
 import {
   buildXenesisConnectionCenterOpenArgs,
@@ -1815,6 +1816,7 @@ export interface DeskBridgeCapabilityAdapter {
   browserAction?: (args: unknown) => Promise<unknown> | unknown;
   openBuiltinPane?: (args: unknown) => Promise<unknown> | unknown;
   runExternalAppAction?: (args: unknown) => Promise<unknown> | unknown;
+  inputControlCall?: (path: string, args?: unknown) => Promise<unknown> | unknown;
   computerUseCall?: (
     path: string,
     args?: unknown,
@@ -8696,6 +8698,145 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
         { approval: 'when-external' },
       ),
     ]),
+    group('xd.input', 'Input control', 'Unified browser and desktop input DSL control surface.', [
+      method(
+        'xd.input.targets',
+        'List input targets',
+        'List targets available to the unified input-control DSL.',
+        'read',
+        {
+          type: 'object',
+          properties: {
+            environment: { type: 'string', enum: ['browser', 'desktop'] },
+          },
+        },
+      ),
+      method(
+        'xd.input.describe',
+        'Describe input target',
+        'Describe an input-control target, support level, viewport or bounds, and safety limits.',
+        'read',
+        {
+          type: 'object',
+          required: ['target'],
+          properties: {
+            environment: { type: 'string', enum: ['browser', 'desktop'], default: 'desktop' },
+            target: {
+              type: 'object',
+              required: ['kind'],
+              properties: {
+                kind: { type: 'string', enum: ['active', 'browser', 'desktop', 'app', 'pane', 'content'] },
+                contentId: { type: 'string' },
+                paneId: { type: 'string' },
+                appId: { type: 'string', examples: ['notepad'] },
+                windowId: { type: 'string' },
+                url: { type: 'string' },
+                title: { type: 'string' },
+              },
+            },
+          },
+        },
+      ),
+      method(
+        'xd.input.screenshot',
+        'Capture input target screenshot',
+        'Capture a real screenshot artifact for an input-control target when an adapter supports it.',
+        'read',
+        {
+          type: 'object',
+          required: ['target'],
+          properties: {
+            environment: { type: 'string', enum: ['browser', 'desktop'], default: 'desktop' },
+            target: {
+              type: 'object',
+              required: ['kind'],
+              properties: {
+                kind: { type: 'string', enum: ['active', 'browser', 'desktop', 'app', 'pane', 'content'] },
+                appId: { type: 'string', examples: ['notepad'] },
+                windowId: { type: 'string' },
+                contentId: { type: 'string' },
+                paneId: { type: 'string' },
+              },
+            },
+          },
+        },
+      ),
+      method(
+        'xd.input.run',
+        'Run input actions',
+        'Run an ordered unified input DSL action batch against a supported target.',
+        'execute',
+        {
+          type: 'object',
+          required: ['environment', 'target', 'actions'],
+          properties: {
+            environment: { type: 'string', enum: ['browser', 'desktop'] },
+            target: {
+              type: 'object',
+              required: ['kind'],
+              properties: {
+                kind: { type: 'string', enum: ['active', 'browser', 'desktop', 'app', 'pane', 'content'] },
+                appId: { type: 'string', examples: ['notepad'] },
+                windowId: { type: 'string' },
+                contentId: { type: 'string' },
+                paneId: { type: 'string' },
+                url: { type: 'string' },
+                title: { type: 'string' },
+              },
+            },
+            actions: {
+              type: 'array',
+              items: {
+                type: 'object',
+                required: ['type'],
+                properties: {
+                  type: {
+                    type: 'string',
+                    enum: [
+                      'click',
+                      'double_click',
+                      'right_click',
+                      'move',
+                      'mouse_down',
+                      'mouse_up',
+                      'drag_and_drop',
+                      'type',
+                      'press_key',
+                      'key_down',
+                      'key_up',
+                      'hotkey',
+                      'scroll',
+                      'wait',
+                      'take_screenshot',
+                      'navigate',
+                      'go_back',
+                      'go_forward',
+                    ],
+                  },
+                  intent: { type: 'string' },
+                  x: { type: 'number', minimum: 0, maximum: 999 },
+                  y: { type: 'number', minimum: 0, maximum: 999 },
+                  start_x: { type: 'number', minimum: 0, maximum: 999 },
+                  start_y: { type: 'number', minimum: 0, maximum: 999 },
+                  end_x: { type: 'number', minimum: 0, maximum: 999 },
+                  end_y: { type: 'number', minimum: 0, maximum: 999 },
+                  text: { type: 'string' },
+                  pressEnter: { type: 'boolean' },
+                  key: { type: 'string' },
+                  keys: { type: 'array', items: { type: 'string' } },
+                  seconds: { type: 'number', minimum: 0, maximum: 5 },
+                  direction: { type: 'string', enum: ['up', 'down', 'left', 'right'] },
+                  magnitudeInPixels: { type: 'number', minimum: 1, maximum: 3000 },
+                  url: { type: 'string' },
+                },
+              },
+            },
+            continueOnError: { type: 'boolean', default: false },
+          },
+        },
+        { approval: 'when-external' },
+      ),
+    ]),
     group('xd.computer', 'Computer use', 'Native computer-use capture and bounded action surface.', [
       method(
         'xd.computer.capture',
@@ -12125,6 +12266,18 @@ export async function callDeskBridgeCapability(
           action,
         });
       }
+      if (path === 'xd.input.targets') {
+        return callInputControlCapability(path, api?.inputControlCall, normalizeCapabilityArgs(request.args));
+      }
+      if (path === 'xd.input.describe') {
+        return callInputControlCapability(path, api?.inputControlCall, normalizeCapabilityArgs(request.args));
+      }
+      if (path === 'xd.input.screenshot') {
+        return callInputControlCapability(path, api?.inputControlCall, normalizeCapabilityArgs(request.args));
+      }
+      if (path === 'xd.input.run') {
+        return callInputControlCapability(path, api?.inputControlCall, normalizeCapabilityArgs(request.args));
+      }
       if (path === 'xd.computer.capture') {
         return callComputerUseCapability(
           path,
@@ -13980,6 +14133,7 @@ function readAuditString(value: Record<string, unknown>, keys: string[]): string
 }
 
 function redactAuditValueForCapability(path: string, value: unknown): unknown {
+  if (path.startsWith('xd.input.')) return redactInputAuditValue(value);
   return redactAuditValue(value, {
     redactMemoryText: path.startsWith('xd.memory.'),
     redactComputerUseText: path.startsWith('xd.computer.'),
@@ -14039,6 +14193,34 @@ async function callAdapter(
       path,
       result,
       error: typeof result.error === 'string' && result.error.trim() ? result.error : `Capability call failed: ${path}`,
+    };
+  }
+  return { ok: true, path, result };
+}
+
+async function callInputControlCapability(
+  path: string,
+  adapter: ((path: string, args?: unknown) => Promise<unknown> | unknown) | undefined,
+  args?: unknown,
+): Promise<DeskBridgeCapabilityCallResult> {
+  if (!adapter) return { ok: false, path, error: 'Desk bridge API is unavailable.' };
+  const result = await adapter(path, args);
+  if (isCapabilityCallResultLike(result)) {
+    const resultPath = result.path;
+    return {
+      ok: result.ok !== false,
+      path: typeof resultPath === 'string' && resultPath.trim() ? resultPath : path,
+      result: result.result,
+      error: typeof result.error === 'string' ? result.error : undefined,
+      approvalRequired: result.approvalRequired === true ? true : undefined,
+    };
+  }
+  if (isFailurePayload(result)) {
+    return {
+      ok: false,
+      path,
+      result,
+      error: String(result.error || 'Input-control capability failed.'),
     };
   }
   return { ok: true, path, result };

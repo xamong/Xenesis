@@ -2,6 +2,7 @@ export interface ChannelMessage {
   conversationId: string;
   senderId: string;
   text: string;
+  botUsername?: string;
 }
 
 export type ChannelMessageHandler = (message: ChannelMessage) => Promise<void>;

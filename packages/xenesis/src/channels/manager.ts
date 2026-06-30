@@ -1,3 +1,4 @@
+import { buildChannelHelpMessage, buildDeskMenuMessage, normalizeChannelCommandText } from './commandSurface.js';
 import type { ChannelAdapter, ChannelMessage, ChannelOutgoingMessage } from './types.js';
 
 export interface ChannelRunRequest {
@@ -93,13 +94,23 @@ export class ChannelManager {
   }
 
   private async onMessage(message: ChannelMessage): Promise<void> {
-    const text = message.text.trim();
+    const text = normalizeChannelCommandText(message.text.trim(), {
+      telegramBotUsername: (message as ChannelMessage & { botUsername?: string }).botUsername,
+    });
     const commandMessage: ChannelCommandMessage = {
       ...message,
       text,
       send: (outgoing: Exclude<ChannelCommandResponse, undefined>) =>
         this.sendResponse(message.conversationId, outgoing),
     };
+    if (text === '/help') {
+      await this.sendResponse(message.conversationId, buildChannelHelpMessage());
+      return;
+    }
+    if (text === '/desk menu') {
+      await this.sendResponse(message.conversationId, buildDeskMenuMessage());
+      return;
+    }
     for (const router of this.options.commandRouters ?? []) {
       if (!router.canHandle(text, commandMessage)) continue;
       const response = await router.handle(commandMessage);

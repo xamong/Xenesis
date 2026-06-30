@@ -353,6 +353,7 @@ import { prepareCodexIsolatedHome, readCodexModel } from './codexIsolatedHome.mj
 import { createComputerUseService } from './computerUse/computerUseService';
 import { setConnectorObservabilitySink } from './connectors/connectorObservability';
 import { ExtensionHost } from './extensions/extensionHost';
+import { createInputControlService } from './inputControl/inputControlService';
 import {
   buildLocalCliTerminalEnv,
   buildMcpConfigSnippet,
@@ -15966,6 +15967,9 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
   const appControlService = createAppControlService({
     getSettings: () => loadSettings().externalApps,
   });
+  const inputControlService = createInputControlService({
+    runExternalAppAction: (args: unknown) => appControlService.run(args),
+  });
 
   return {
     status: () => buildMcpBridgeStateSnapshot(),
@@ -16048,6 +16052,7 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     browserAction: (args: unknown) => sendMcpBrowserActionToRenderer(sanitizeMcpBrowserActionRequest(args)),
     openBuiltinPane: openMcpBuiltinPaneCapability,
     runExternalAppAction: (args: unknown) => appControlService.run(args),
+    inputControlCall: (path: string, args?: unknown) => inputControlService.call(path, args),
     computerUseCall: (path: string, args?: unknown, options?: { approved?: boolean }) =>
       computerUseService.call(path, args, options),
     getOnboardingSampleWorkspaceStatus: () => getOnboardingSampleWorkspaceStatus(),

@@ -1,3 +1,4 @@
+export * from './commandSurface.js';
 export * from './diagnostics.js';
 export * from './discord.js';
 export * from './manager.js';
