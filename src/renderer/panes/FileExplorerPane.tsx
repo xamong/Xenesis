@@ -69,6 +69,8 @@ export interface FileExplorerPaneProps {
   rootDir: string;
   /** 파일 더블클릭 시 호출 */
   onOpenFile: (filePath: string) => void;
+  /** 폴더를 Obsidian Vault Viewer로 열기 */
+  onOpenVault?: (folderPath: string) => void;
   /** 루트 디렉터리 변경 시 부모에게 알림 */
   onChangeRoot?: (dir: string) => void;
   /** 항목 선택 시 부모에게 알림 (단순 클릭) */
@@ -378,6 +380,7 @@ interface NodeRowProps {
   onOpen: (node: ExplorerNode) => void;
   onAddToFavorites?: (path: string, isDirectory: boolean) => void;
   onOpenInTerminal?: (path: string, isDirectory: boolean, kind: ShellKind) => void;
+  onOpenVault?: (folderPath: string) => void;
   onRemoteFileDrop?: (payload: RemoteDragPayload, targetNode: ExplorerNode | null) => void;
   onSendToBot?: (node: ExplorerNode) => void;
   onAddToContextBundle?: (node: ExplorerNode) => void;
@@ -394,6 +397,7 @@ function NodeRow({
   onOpen,
   onAddToFavorites,
   onOpenInTerminal,
+  onOpenVault,
   onRemoteFileDrop,
   onSendToBot,
   onAddToContextBundle,
@@ -456,6 +460,15 @@ function NodeRow({
         label: t('fileExplorer.setAsRoot'),
         icon: '📁',
         action: () => onOpen(node),
+      });
+    }
+
+    if (node.isDirectory && onOpenVault) {
+      items.push({
+        kind: 'action',
+        label: t('fileExplorer.openAsVault'),
+        icon: '▤',
+        action: () => onOpenVault(node.path),
       });
     }
 
@@ -592,6 +605,7 @@ function NodeRow({
                 onOpen={onOpen}
                 onAddToFavorites={onAddToFavorites}
                 onOpenInTerminal={onOpenInTerminal}
+                onOpenVault={onOpenVault}
                 onRemoteFileDrop={onRemoteFileDrop}
                 onSendToBot={onSendToBot}
                 onAddToContextBundle={onAddToContextBundle}
@@ -613,6 +627,7 @@ function NodeRow({
 export function FileExplorerPane({
   rootDir,
   onOpenFile,
+  onOpenVault,
   onChangeRoot,
   onSelectPath,
   onAddToFavorites,
@@ -1516,6 +1531,13 @@ export function FileExplorerPane({
       },
       {
         kind: 'action',
+        label: t('fileExplorer.openAsVault'),
+        icon: '▤',
+        disabled: !selectedNode || !selectedNode.isDirectory || !onOpenVault,
+        action: () => selectedNode && onOpenVault?.(selectedNode.path),
+      },
+      {
+        kind: 'action',
         label: t('explorerCompare.button'),
         icon: '⇄',
         disabled: !selectedNode || selectedNode.isDirectory || compareLoading,
@@ -1699,6 +1721,7 @@ export function FileExplorerPane({
             onOpen={handleOpen}
             onAddToFavorites={onAddToFavorites}
             onOpenInTerminal={onOpenInTerminal}
+            onOpenVault={onOpenVault}
             onRemoteFileDrop={handleRemoteFileDrop}
             onSendToBot={sendNodeToBot}
             onAddToContextBundle={addNodeToContextBundle}

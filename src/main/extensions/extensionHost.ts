@@ -114,6 +114,7 @@ const EXTENSION_TOOLS: ExtensionTool[] = [
   'xenesis-desk.workflow-runner.alert-rules',
   'xenesis-desk.workflow-runner.template-catalog',
   'xenesis-desk.workflow-runner.artifact-versions',
+  'xenesis-desk.obsidian-vault.viewer',
 ];
 
 const EXTENSION_PANEL_PLACEMENTS = new Set<ExtensionPanelPlacement>(['tab', 'left', 'right', 'top', 'bottom']);

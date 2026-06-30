@@ -47,6 +47,7 @@ import {
 } from './failureClassification.js';
 import { ApprovalPauseSignal } from './hitl/ApprovalPauseSignal.js';
 import { type ExecutionBackend, LOCAL_BACKEND } from './isolation/executionBackend.js';
+import { assertProviderMessagesReady as assertProviderMessagesReadyForProvider } from './messageIntegrity.js';
 import { type AgentMessage, repairToolResultPairing, type ToolCall } from './messages.js';
 import { type WrappedExternalContent, wrapExternalContent } from './prompt/index.js';
 import {
@@ -4954,6 +4955,11 @@ export class AgentRunner {
     };
   }
 
+  private providerMessagesReady(messages: AgentMessage[]): AgentMessage[] {
+    assertProviderMessagesReadyForProvider(messages);
+    return messages;
+  }
+
   private messagesForProvider(messages: AgentMessage[], activeEffort?: string): AgentMessage[] {
     const base = this.stripOldImagesEnabled
       ? stripStaleImageAttachments(messages, { keepRecentTurns: this.compactHistoryKeepMessages })
@@ -4972,15 +4978,17 @@ export class AgentRunner {
       this.toolResultGuidanceSystemMessage(),
       this.toolRecoverySystemMessage(),
     ].filter((message): message is SystemMessage => message !== undefined);
-    if (recoveryMessages.length === 0) return repairToolResultPairing(base);
+    if (recoveryMessages.length === 0) return this.providerMessagesReady(repairToolResultPairing(base));
 
     let firstNonSystem = base.findIndex((message) => message.role !== 'system');
     if (firstNonSystem === -1) firstNonSystem = base.length;
-    return repairToolResultPairing([
-      ...base.slice(0, firstNonSystem),
-      ...recoveryMessages,
-      ...base.slice(firstNonSystem),
-    ]);
+    return this.providerMessagesReady(
+      repairToolResultPairing([
+        ...base.slice(0, firstNonSystem),
+        ...recoveryMessages,
+        ...base.slice(firstNonSystem),
+      ]),
+    );
   }
 
   private providerQueryConfigForModel(model: string) {
@@ -5279,12 +5287,14 @@ export class AgentRunner {
 
   private async *completeProvider(request: ProviderRequest): AsyncGenerator<AgentRunEvent, ProviderResponse, void> {
     let lastError: unknown;
+    const readyMessages = this.providerMessagesReady(request.messages);
 
     for (let providerIndex = 0; providerIndex < this.providers.length; providerIndex += 1) {
       const provider = this.providers[providerIndex];
       const providerModel = providerIndex === 0 ? request.model : (this.providerModels[providerIndex] ?? request.model);
       const providerRequest: ProviderRequest = {
         ...request,
+        messages: readyMessages,
         model: providerModel,
         queryConfig: this.providerQueryConfigForModel(providerModel),
       };

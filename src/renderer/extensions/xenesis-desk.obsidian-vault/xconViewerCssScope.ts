@@ -1,0 +1,1 @@
+export { scopeXconViewerCssForShadow } from '../xconViewerCssScope';

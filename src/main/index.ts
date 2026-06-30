@@ -93,6 +93,7 @@ import {
   verifyDeskBridgeCapabilityApprovalProof,
 } from '../shared/deskBridgeCapabilities';
 import { normalizeExternalAppSettings } from '../shared/externalAppControl';
+import { scanLocalVault } from './vault/vaultLocalScanner';
 import {
   canUseXenisPhase5XamongCodeCommand,
   isXenisPhase5Visible,
@@ -250,6 +251,8 @@ import type {
   UpdateChannel,
   UpdaterSettings,
   UpdaterStatus,
+  VaultScanRequest,
+  VaultScanResult,
   WindowBounds,
   WindowSizerPreset,
   WorkflowPlaywrightResult,
@@ -23335,6 +23338,10 @@ function setupIpc(): void {
       }
     },
   );
+
+  ipcMain.handle('vault:scan-local', async (_event, request: VaultScanRequest): Promise<VaultScanResult> => {
+    return scanLocalVault(request);
+  });
 
   ipcMain.handle('fs:select-dir', async (): Promise<string | null> => {
     if (fsSelectDirDialogPromise) return fsSelectDirDialogPromise;

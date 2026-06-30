@@ -117,6 +117,9 @@ import type {
   TransferQueueItem,
   UpdaterApi,
   UpdaterStatus,
+  VaultApi,
+  VaultScanRequest,
+  VaultScanResult,
   WindowBounds,
   WindowSizerPreset,
   WorkflowPlaywrightApi,
@@ -576,6 +579,14 @@ const fsApi: FsApi = {
 };
 
 contextBridge.exposeInMainWorld('fsAPI', fsApi);
+
+const vaultApi: VaultApi = {
+  scanLocal(request: VaultScanRequest): Promise<VaultScanResult> {
+    return ipcRenderer.invoke('vault:scan-local', request);
+  },
+};
+
+contextBridge.exposeInMainWorld('vaultAPI', vaultApi);
 
 const onboardingApi: OnboardingApi = {
   sampleStatus() {

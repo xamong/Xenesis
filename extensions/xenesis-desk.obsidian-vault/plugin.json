@@ -1,0 +1,25 @@
+{
+  "id": "xenesis-desk.obsidian-vault",
+  "name": "Xenesis Desk Obsidian Vault Viewer",
+  "version": "1.0.0",
+  "publisher": "Xamong9",
+  "description": "Open and inspect local Obsidian-style Markdown vaults in Xenesis Desk.",
+  "source": "internal",
+  "permissions": ["commands", "tools.open", "files.read"],
+  "main": "main.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "xenesis-desk.obsidian-vault.openViewer",
+        "title": "Obsidian Vault Viewer",
+        "titleKey": "app.toolsObsidianVault",
+        "category": "Tools",
+        "icon": "vault"
+      }
+    ],
+    "menus": {
+      "tools": ["xenesis-desk.obsidian-vault.openViewer"],
+      "commandPalette": ["xenesis-desk.obsidian-vault.openViewer"]
+    }
+  }
+}

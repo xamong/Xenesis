@@ -1,0 +1,266 @@
+.obsidian-vault-pane {
+  height: 100%;
+  min-height: 0;
+  background: #0f1117;
+  color: #e5e7eb;
+}
+
+.obsidian-vault-empty {
+  display: grid;
+  place-content: center;
+  gap: 8px;
+  height: 100%;
+  text-align: center;
+  color: #9ca3af;
+}
+
+.obsidian-vault-empty h2 {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 22px;
+  letter-spacing: 0;
+}
+
+.ov-shell {
+  display: grid;
+  grid-template-columns:
+    minmax(220px, var(--ov-sidebar-width, 300px))
+    8px
+    minmax(420px, 1fr)
+    8px
+    minmax(260px, var(--ov-inspector-width, 390px));
+  min-height: 0;
+  background: #263141;
+}
+
+.ov-sidebar,
+.ov-main,
+.ov-inspector {
+  min-height: 0;
+  overflow: auto;
+  background: #0f172a;
+  padding: 14px;
+}
+
+.ov-main {
+  display: grid;
+  grid-template-rows: minmax(260px, 1fr) 8px minmax(220px, var(--ov-graph-height, 420px));
+  gap: 0;
+}
+
+.ov-panel-splitter {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+  background: #263141;
+  touch-action: none;
+  user-select: none;
+}
+
+.ov-panel-splitter::after {
+  content: '';
+  position: absolute;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.28);
+  transition:
+    background 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.ov-panel-splitter--vertical {
+  cursor: col-resize;
+}
+
+.ov-panel-splitter--vertical::after {
+  top: 14px;
+  bottom: 14px;
+  left: 3px;
+  width: 2px;
+}
+
+.ov-panel-splitter--horizontal {
+  cursor: row-resize;
+  margin: 0;
+}
+
+.ov-panel-splitter--horizontal::after {
+  left: 14px;
+  right: 14px;
+  top: 3px;
+  height: 2px;
+}
+
+.ov-panel-splitter:hover::after,
+.ov-panel-splitter.is-active::after,
+.ov-shell.is-resizing .ov-panel-splitter.is-active::after {
+  background: #38bdf8;
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.35);
+}
+
+.ov-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ov-search {
+  width: 100%;
+  margin: 12px 0;
+  border: 1px solid #334155;
+  border-radius: 7px;
+  background: #111827;
+  color: #e5e7eb;
+  padding: 8px 10px;
+}
+
+.ov-chip-row,
+.ov-note-list,
+.ov-attachments {
+  display: grid;
+  gap: 7px;
+}
+
+.ov-chip-row {
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  margin-bottom: 12px;
+}
+
+.ov-note-list button,
+.ov-chip-row button,
+.ov-inspector button,
+.ov-preview header button,
+.ov-primary,
+.ov-title-row button {
+  border: 1px solid #334155;
+  border-radius: 7px;
+  background: #111827;
+  color: #e5e7eb;
+  padding: 8px 10px;
+}
+
+.ov-note-list button,
+.ov-inspector button {
+  text-align: left;
+}
+
+.ov-note-list button small,
+.ov-attachment small {
+  display: block;
+  margin-top: 3px;
+  color: #94a3b8;
+  overflow-wrap: anywhere;
+}
+
+.ov-note-list .is-active,
+.ov-chip-row .is-active,
+.ov-title-row .is-active {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.16);
+}
+
+.ov-preview,
+.ov-graph {
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  background: #0b1220;
+  padding: 14px;
+}
+
+.ov-graph {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  overflow: hidden;
+}
+
+.ov-preview header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #253047;
+  margin-bottom: 12px;
+}
+
+.ov-preview h2 {
+  margin: 0 0 10px;
+  font-size: 24px;
+  letter-spacing: 0;
+}
+
+.ov-markdown-preview {
+  overflow-wrap: anywhere;
+}
+
+.ov-link-button {
+  border: 0;
+  background: transparent;
+  color: #93c5fd;
+  padding: 0;
+  cursor: pointer;
+}
+
+.ov-link-button:disabled {
+  color: #fb7185;
+  cursor: not-allowed;
+}
+
+.ov-attachment {
+  border: 1px dashed #475569;
+  border-radius: 7px;
+  background: #111827;
+  color: #cbd5e1;
+  padding: 10px;
+  text-align: left;
+}
+
+.ov-graph-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  min-height: 0;
+}
+
+.ov-graph-host {
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+}
+
+.ov-warning,
+.ov-error,
+.ov-status,
+.ov-diagnostic,
+.ov-muted {
+  color: #fbbf24;
+  font-size: 12px;
+}
+
+.ov-error {
+  color: #fda4af;
+}
+
+.ov-muted {
+  color: #94a3b8;
+}
+
+@media (max-width: 980px) {
+  .ov-shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(360px, 1fr) auto;
+  }
+
+  .ov-panel-splitter {
+    display: none;
+  }
+
+  .ov-main {
+    grid-template-rows: minmax(260px, 1fr) minmax(220px, 300px);
+    gap: 10px;
+  }
+}

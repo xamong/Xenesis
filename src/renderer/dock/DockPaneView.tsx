@@ -630,7 +630,7 @@ function ContentView({
     return <ExtensionPanelPane title={content.title} html={content.html} />;
   }
 
-  const extensionContent = renderExtensionContent(content);
+  const extensionContent = renderExtensionContent(content, { engine, openFileByPath: onOpenFile });
   if (extensionContent) {
     return extensionContent;
   }

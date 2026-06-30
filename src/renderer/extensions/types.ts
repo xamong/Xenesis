@@ -31,11 +31,16 @@ export interface RendererExtensionEventContext {
   onStatus(message: string): void;
 }
 
+export interface RendererExtensionRenderContext {
+  engine: DockEngine;
+  openFileByPath(filePath: string): void;
+}
+
 export interface RendererExtensionContribution {
   id: string;
   openTool?(tool: ExtensionTool, context: ExtensionToolOpenContext): boolean | void | Promise<boolean | void>;
   useEvents?(context: RendererExtensionEventContext): void;
-  renderContent?(content: DockContent): React.ReactNode | null;
+  renderContent?(content: DockContent, context: RendererExtensionRenderContext): React.ReactNode | null;
   getContentIcon?(contentType: string): string | undefined;
   isViewerContentType?(contentType: string): boolean;
   renderSettingsSections?(extension: ExtensionInfo): React.ReactNode | null;

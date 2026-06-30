@@ -6,6 +6,7 @@ import type {
   RendererExtensionContribution,
   RendererExtensionEventContext,
   RendererExtensionModule,
+  RendererExtensionRenderContext,
 } from './types';
 
 const rendererModules = import.meta.glob<RendererExtensionModule>('./*/renderer.tsx', { eager: true });
@@ -32,9 +33,12 @@ export function useRendererExtensionEvents(context: RendererExtensionEventContex
   }
 }
 
-export function renderExtensionContent(content: DockContent): React.ReactNode | null {
+export function renderExtensionContent(
+  content: DockContent,
+  context: RendererExtensionRenderContext,
+): React.ReactNode | null {
   for (const contribution of rendererContributions) {
-    const rendered = contribution.renderContent?.(content);
+    const rendered = contribution.renderContent?.(content, context);
     if (rendered) return rendered;
   }
   return null;

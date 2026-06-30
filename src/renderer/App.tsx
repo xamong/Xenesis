@@ -2962,6 +2962,30 @@ export default function App() {
     [engine, handleStatus],
   );
 
+  const openVaultByPath = useCallback(
+    (folderPath: string) => {
+      const displayName = folderPath.split(/[\\/]/).filter(Boolean).pop() || folderPath;
+      engine.addContent({
+        id: `obsidian-vault-${crypto.randomUUID()}`,
+        title: `Vault: ${displayName}`,
+        state: 'document',
+        html: '',
+        contentType: 'obsidian-vault',
+        obsidianVault: {
+          vaultRootPath: folderPath,
+          selectedNoteId: '',
+          query: '',
+          tag: '',
+          issue: '',
+          graphScope: 'local',
+          panelSizes: { sidebar: 300, inspector: 390, graph: 420 },
+        },
+      });
+      handleStatus(t('app.obsidianVaultOpened'));
+    },
+    [engine, handleStatus, t],
+  );
+
   useEffect(() => {
     return getDeskBridgeApi()?.onOpenFile?.((payload) => {
       if (payload?.filePath) {
@@ -7057,6 +7081,7 @@ export default function App() {
                 <FileExplorerPane
                   rootDir={defaultCwd}
                   onOpenFile={openFileByPath}
+                  onOpenVault={openVaultByPath}
                   onChangeRoot={(dir) => {
                     setDefaultCwd(dir);
                     syncXenesisExplorerWorkspace(dir);
