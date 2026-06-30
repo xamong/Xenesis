@@ -12,7 +12,7 @@
     `D:\CodeTruck\CodeBox\Xamong\06 XCON\Xenesis\.worktrees\input-control-mini`
   - Branch: `input-control-mini`
 - Current implementation checkpoint:
-  - Completed Task 4 Electron main bridge wiring and typecheck.
+  - Starting Task 5 focused verification and CR audit for `xd.input.*`.
 - Touched files:
   - `handoff.md`
   - `src/shared/inputControl.ts`
@@ -67,6 +67,17 @@
   - `node --import tsx --test src/shared/inputControl.test.ts src/main/inputControl/inputControlService.test.ts src/shared/inputControlCapabilities.test.ts`
     after the type fix -> PASS, 19 tests.
   - `npm run typecheck` after the type fix -> PASS.
+  - `node --import tsx --test src/shared/inputControl.test.ts src/main/inputControl/inputControlService.test.ts src/shared/inputControlCapabilities.test.ts`
+    during Task 5 -> PASS, 19 tests.
+  - `node --import tsx --test src/shared/externalAppControl.test.ts src/shared/externalAppCapabilities.test.ts src/main/appControl/appControlService.test.ts src/main/appControl/windowsAppControl.test.ts src/shared/mcpApprovalHardening.test.ts`
+    -> PASS, 38 tests.
+  - `npm run typecheck` during Task 5 -> PASS.
+  - `npm run docs:capabilities:audit` -> PASS; wrote
+    `docs\capability-registry-audit.md`, 854 registered nodes, 692 coverage
+    path references.
+  - `node scripts/assertCapabilityAuditZero.mjs` -> PASS; verified 4 counters
+    in `docs\capability-registry-audit.md`.
+  - `npm test` -> PASS, 547 tests.
 - Exact verification result:
   - Baseline test suite in the isolated worktree passed before input-control
     implementation started.
@@ -76,13 +87,16 @@
     audit redaction tests passed after a verified RED failure.
   - Task 4 main bridge wiring typechecked successfully after fixing the shared
     helper typing root cause.
+  - Task 5 focused verification, related external app regression tests,
+    typecheck, CR audit zero assertion, and the full root test suite all passed.
 - Known gaps:
   - Browser coordinate execution remains deferred by design.
   - Full desktop automation remains disabled by design.
   - `xd.input.screenshot` will return unsupported until a real screenshot
     adapter exists.
 - Next intended step:
-  - Commit Task 4, then start Task 5 focused verification and CR audit.
+  - Commit Task 5 verification artifacts, then perform final review and
+    integration decision.
 
 ## 2026-06-30 Dock Drag Ghost Native Overlay
 
