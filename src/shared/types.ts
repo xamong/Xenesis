@@ -459,6 +459,54 @@ export interface FsApi {
   writeFileBase64(filePath: string, contentBase64: string): Promise<FileTransferResult>;
 }
 
+export interface VaultScanWarning {
+  path?: string;
+  message: string;
+}
+
+export interface VaultScanFile {
+  vaultId: string;
+  path: string;
+  absolutePath: string;
+  content: string;
+  modifiedAt?: number;
+  sizeBytes?: number;
+}
+
+export interface VaultScanRequest {
+  rootPath: string;
+  maxFiles?: number;
+  maxFileBytes?: number;
+}
+
+export interface VaultScanResult {
+  ok: boolean;
+  vaultId: string;
+  rootPath: string;
+  displayName: string;
+  files: VaultScanFile[];
+  warnings: VaultScanWarning[];
+  error?: string;
+}
+
+export interface VaultApi {
+  scanLocal(request: VaultScanRequest): Promise<VaultScanResult>;
+}
+
+export interface ObsidianVaultContentState {
+  vaultRootPath: string;
+  selectedNoteId: string;
+  query: string;
+  tag: string;
+  issue: '' | 'unresolved' | 'orphan';
+  graphScope: 'local' | 'global';
+  panelSizes: {
+    sidebar: number;
+    inspector: number;
+    graph: number;
+  };
+}
+
 export interface ProcessInfo {
   pid: number;
   ppid?: number;
@@ -561,6 +609,7 @@ export type DockContentType =
   | 'hex'
   | 'document-preview'
   | 'meta-management'
+  | 'obsidian-vault'
   | 'query-analyzer'
   | 'sqlite-server-settings'
   | 'workflow-runner'
@@ -683,7 +732,8 @@ export type ExtensionTool =
   | 'xenesis-desk.core-tools.memory-dashboard'
   | 'xenesis-desk.workflow-runner.alert-rules'
   | 'xenesis-desk.workflow-runner.template-catalog'
-  | 'xenesis-desk.workflow-runner.artifact-versions';
+  | 'xenesis-desk.workflow-runner.artifact-versions'
+  | 'xenesis-desk.obsidian-vault.viewer';
 
 export type ExtensionHostAction =
   | {
