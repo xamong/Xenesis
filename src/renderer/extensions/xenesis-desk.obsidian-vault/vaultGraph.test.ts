@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createVaultIndex } from './vaultIndex';
 import { graphFromVaultIndex, localGraphForNote } from './vaultGraph';
+import { createVaultIndex } from './vaultIndex';
 import type { VaultFileRecord, VaultRef } from './vaultTypes';
 
 const vault: VaultRef = { id: 'local:D:/Vault', source: 'local', rootPath: 'D:/Vault', displayName: 'Vault' };
@@ -24,10 +24,7 @@ test('localGraphForNote includes selected note and direct neighbors', () => {
 
   const graph = localGraphForNote(index, 'A.md');
 
-  assert.deepEqual(
-    graph.nodes.map((node) => node.id).sort(),
-    ['A.md', 'B.md', 'Home.md'],
-  );
+  assert.deepEqual(graph.nodes.map((node) => node.id).sort(), ['A.md', 'B.md', 'Home.md']);
   assert.equal(graph.nodes.find((node) => node.id === 'A.md')?.isRoot, true);
 });
 
@@ -44,5 +41,8 @@ test('graphFromVaultIndex respects tag and unresolved filters', () => {
   );
 
   const unresolvedGraph = graphFromVaultIndex(index, { issue: 'unresolved' });
-  assert.equal(unresolvedGraph.nodes.some((node) => node.type === 'unresolved'), true);
+  assert.equal(
+    unresolvedGraph.nodes.some((node) => node.type === 'unresolved'),
+    true,
+  );
 });

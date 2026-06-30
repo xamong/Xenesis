@@ -1533,7 +1533,7 @@ export function FileExplorerPane({
         kind: 'action',
         label: t('fileExplorer.openAsVault'),
         icon: '▤',
-        disabled: !selectedNode || !selectedNode.isDirectory || !onOpenVault,
+        disabled: !selectedNode?.isDirectory || !onOpenVault,
         action: () => selectedNode && onOpenVault?.(selectedNode.path),
       },
       {

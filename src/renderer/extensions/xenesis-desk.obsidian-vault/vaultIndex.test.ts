@@ -78,5 +78,8 @@ test('vault index diagnoses duplicate aliases', () => {
   ]);
 
   assert.equal(index.unresolvedLinks.length, 1);
-  assert.equal(index.diagnostics.some((item) => item.code === 'duplicate-alias'), true);
+  assert.equal(
+    index.diagnostics.some((item) => item.code === 'duplicate-alias'),
+    true,
+  );
 });

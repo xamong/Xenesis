@@ -1,9 +1,9 @@
 import { parseBySyntax } from '@xcon-viewer/core';
 import { render, viewerCss } from '@xcon-viewer/viewer';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { graphFromVaultIndex, localGraphForNote } from '../vaultGraph';
-import type { VaultGraphScope, VaultIndex, VaultIssueFilter } from '../vaultTypes';
 import { graphRenderSizeFromHost } from '../vaultPanelLayout';
+import type { VaultGraphScope, VaultIndex, VaultIssueFilter } from '../vaultTypes';
 import { scopeXconViewerCssForShadow } from '../xconViewerCssScope';
 
 interface ObsidianVaultGraphViewProps {
@@ -89,7 +89,10 @@ export function ObsidianVaultGraphView(props: ObsidianVaultGraphViewProps) {
       renderRoot.querySelectorAll('[data-network-node-id], [data-node-id], [data-id]').forEach((node) => {
         node.addEventListener('click', () => {
           const id =
-            node.getAttribute('data-network-node-id') || node.getAttribute('data-node-id') || node.getAttribute('data-id') || '';
+            node.getAttribute('data-network-node-id') ||
+            node.getAttribute('data-node-id') ||
+            node.getAttribute('data-id') ||
+            '';
           if (props.index.notes.has(id)) props.onSelectNote(id);
         });
       });

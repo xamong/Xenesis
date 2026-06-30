@@ -21,10 +21,7 @@ test('scanLocalVault reads Markdown files and skips Obsidian internals', async (
   const result = await scanLocalVault({ rootPath: root });
 
   assert.equal(result.ok, true);
-  assert.deepEqual(
-    result.files.map((file) => file.path).sort(),
-    ['Home.md', 'Notes/A.markdown'],
-  );
+  assert.deepEqual(result.files.map((file) => file.path).sort(), ['Home.md', 'Notes/A.markdown']);
 });
 
 test('scanLocalVault reports oversized Markdown files without reading them', async () => {
@@ -35,7 +32,10 @@ test('scanLocalVault reports oversized Markdown files without reading them', asy
 
   assert.equal(result.ok, true);
   assert.equal(result.files.length, 0);
-  assert.equal(result.warnings.some((warning) => warning.path === 'large.md'), true);
+  assert.equal(
+    result.warnings.some((warning) => warning.path === 'large.md'),
+    true,
+  );
 });
 
 test('scanLocalVault returns a structured failure for missing roots', async () => {
