@@ -59,20 +59,29 @@
     -> passed 7/7; report written under `~/.xenesis/reports/`.
   - `npm run check:public-release`
     -> passed.
+  - Final whole-implementation reviewer re-check of `0bbea51`
+    -> approved. The prior three Important findings were all fixed; reviewer
+    noted only that live Agent-pane proof was still needed for a fully
+    merge-ready claim under the repo contract.
+  - `node scripts/xenesisProviderOnboardingLiveSmoke.mjs --json --timeout=180000`
+    -> passed 9/9. Runtime readback showed `provider=codex-app-server`,
+    `source=auto-detect`, `processModel=persistent-process`; footer provider
+    matched `codex-app-server`; `provider-cr-mcp-evidence` and
+    `cr-readback-after-prompt` were true; `providerNaturalLanguageToolSelectionProof=true`.
 - Exact verification result:
   - Final review fixes pass the focused regression tests, root typecheck,
     scoped Biome, repo lint, CR audit, root build, package tests/typecheck/build,
-    provider smoke, and public-release check.
+    provider smoke, public-release check, final reviewer re-check, and live
+    Agent-pane natural-language CR/MCP proof.
   - Node 22.12.0 package-test failure is an environment flag issue for
     `node:sqlite`; the same package test suite passes under the machine's
     Node v26.0.0 runtime.
 - Known gaps:
-  - Need final whole-implementation re-review after this hardening commit.
-  - Live Agent-pane natural-language verification was not rerun in this final
-    hardening pass; previous known infra gap still applies.
+  - No remaining blocker from the final reviewer. Node 22.12.0 still needs
+    `--experimental-sqlite` for sqlite-backed package tests; use system
+    Node v26.0.0 or a Node runtime with `node:sqlite` enabled for that suite.
 - Next intended step:
-  - Commit this hardening patch, request final reviewer re-check, close the
-    final review subagent, then push `uno`.
+  - Commit this verification handoff update, then push `uno`.
 
 ## 2026-06-30 Native External Integrations Design
 
