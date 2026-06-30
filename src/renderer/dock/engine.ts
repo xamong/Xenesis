@@ -3,6 +3,7 @@
 import type {
   DockContentType,
   McpBridgeBotChannelName,
+  ObsidianVaultContentState,
   RemoteFileProfile,
   RenderOptions,
   TerminalSessionSnapshot,
@@ -96,6 +97,7 @@ export interface DockContentOptions {
   botInputUrl?: string;
   botSource?: string;
   botChannel?: McpBridgeBotChannelName;
+  obsidianVault?: ObsidianVaultContentState;
   /** hex 뷰어 전용 — 원본 파일 전체 크기 (bytes) */
   totalBytes?: number;
 }
@@ -129,6 +131,7 @@ export class DockContent {
   botInputUrl?: string;
   botSource?: string;
   botChannel?: McpBridgeBotChannelName;
+  obsidianVault?: ObsidianVaultContentState;
 
   constructor(options: DockContentOptions) {
     if (!options || !options.id) throw new Error('DockContent requires an id');
@@ -162,6 +165,7 @@ export class DockContent {
     this.botInputUrl = options.botInputUrl;
     this.botSource = options.botSource;
     this.botChannel = options.botChannel;
+    this.obsidianVault = options.obsidianVault;
   }
 }
 
@@ -352,6 +356,7 @@ interface SavedContent {
   botInputUrl?: string;
   botSource?: string;
   botChannel?: McpBridgeBotChannelName;
+  obsidianVault?: ObsidianVaultContentState;
 }
 
 interface SavedPane {
@@ -1398,6 +1403,7 @@ export class DockEngine {
         botInputUrl: content.botInputUrl,
         botSource: content.botSource,
         botChannel: content.botChannel,
+        obsidianVault: content.obsidianVault,
       })),
       panes: [...this.panes.values()].map((pane) => ({
         id: pane.id,
@@ -1586,10 +1592,19 @@ export class DockEngine {
   }
 
   // ─── Content data update (no React re-render) ────────────────────────────────
-  updateContentPayload(contentId: string, fields: { fileContent?: string; url?: string; totalBytes?: number }): void {
+  updateContentPayload(
+    contentId: string,
+    fields: {
+      fileContent?: string;
+      obsidianVault?: ObsidianVaultContentState;
+      url?: string;
+      totalBytes?: number;
+    },
+  ): void {
     const content = this.contents.get(contentId);
     if (!content) return;
     if (fields.fileContent !== undefined) content.fileContent = fields.fileContent;
+    if (fields.obsidianVault !== undefined) content.obsidianVault = fields.obsidianVault;
     if (fields.url !== undefined) content.url = fields.url;
     if (fields.totalBytes !== undefined) content.totalBytes = fields.totalBytes;
   }
