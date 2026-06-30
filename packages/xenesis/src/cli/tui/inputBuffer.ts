@@ -50,11 +50,6 @@ export function getTuiInputCursorCellOffset(buffer: TuiInputBuffer) {
   return measureTerminalCellWidth(buffer.chars.slice(0, buffer.cursor).join(''));
 }
 
-/**
- * Measure the terminal cell width of a string, counting full-width (CJK and
- * related) characters as width 2 and zero-width / combining marks as width 0.
- * Used for CJK-aware line wrapping in the unified scrollback view.
- */
 export function measureTerminalCellWidth(value: string) {
   let width = 0;
   for (const char of value) {
@@ -64,6 +59,18 @@ export function measureTerminalCellWidth(value: string) {
     width += isFullWidthCodePoint(codePoint) ? 2 : 1;
   }
   return width;
+}
+
+export function commitTuiInputHistory(buffer: TuiInputBuffer, submitted: string): TuiInputBuffer {
+  const value = submitted.trim();
+  if (!value) return buffer;
+  const history = buffer.history.at(-1) === value ? buffer.history : [...buffer.history, value].slice(-100);
+  return {
+    ...buffer,
+    history,
+    historyIndex: undefined,
+    draftBeforeHistory: '',
+  };
 }
 
 function isZeroWidthCodePoint(codePoint: number) {
@@ -93,18 +100,6 @@ function isFullWidthCodePoint(codePoint: number) {
       (codePoint >= 0xff00 && codePoint <= 0xff60) ||
       (codePoint >= 0xffe0 && codePoint <= 0xffe6))
   );
-}
-
-export function commitTuiInputHistory(buffer: TuiInputBuffer, submitted: string): TuiInputBuffer {
-  const value = submitted.trim();
-  if (!value) return buffer;
-  const history = buffer.history.at(-1) === value ? buffer.history : [...buffer.history, value].slice(-100);
-  return {
-    ...buffer,
-    history,
-    historyIndex: undefined,
-    draftBeforeHistory: '',
-  };
 }
 
 export function reduceTuiInputBuffer(
