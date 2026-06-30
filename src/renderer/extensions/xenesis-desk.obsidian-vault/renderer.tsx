@@ -1,4 +1,3 @@
-import React from 'react';
 import type { ExtensionTool, ObsidianVaultContentState } from '../../../shared/types';
 import type { DockContent, DockContentOptions } from '../../dock/engine';
 import type { RendererExtensionContribution, TFunc } from '../types';

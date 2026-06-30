@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { DockEngine } from './engine';
 import type { ObsidianVaultContentState } from '../../shared/types';
+import { DockEngine } from './engine';
 
 const vaultState: ObsidianVaultContentState = {
   vaultRootPath: 'D:/Vault',

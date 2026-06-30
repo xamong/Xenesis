@@ -266,7 +266,11 @@ function resolveWikiTarget(
   aliasIndex: Map<string, string[]>,
 ): LookupResult {
   const key = normalizeLookupKey(target.split('#')[0]);
-  const matches = uniqueStrings([...(pathIndex.get(key) || []), ...(titleIndex.get(key) || []), ...(aliasIndex.get(key) || [])]);
+  const matches = uniqueStrings([
+    ...(pathIndex.get(key) || []),
+    ...(titleIndex.get(key) || []),
+    ...(aliasIndex.get(key) || []),
+  ]);
   if (matches.length === 1) return { status: 'ok', noteId: matches[0] };
   if (matches.length > 1) return { status: 'ambiguous' };
   return { status: 'missing' };

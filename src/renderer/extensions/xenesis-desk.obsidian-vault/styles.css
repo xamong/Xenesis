@@ -59,7 +59,7 @@
 }
 
 .ov-panel-splitter::after {
-  content: '';
+  content: "";
   position: absolute;
   border-radius: 999px;
   background: rgba(148, 163, 184, 0.28);
@@ -145,8 +145,8 @@
   text-align: left;
 }
 
-.ov-note-list button small,
-.ov-attachment small {
+.ov-attachment small,
+.ov-note-list button small {
   display: block;
   margin-top: 3px;
   color: #94a3b8;

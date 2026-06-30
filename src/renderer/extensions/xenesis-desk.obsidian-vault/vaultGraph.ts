@@ -1,6 +1,6 @@
 import type {
-  VaultGraphModel,
   VaultGraphLink,
+  VaultGraphModel,
   VaultGraphNode,
   VaultIndex,
   VaultIssueFilter,
@@ -21,7 +21,8 @@ export function graphFromVaultIndex(index: VaultIndex, state: VaultGraphState = 
   const visibleNotes = filterGraphNotes(index, state).slice(0, MAX_GRAPH_NODES);
   const truncated = filterGraphNotes(index, state).length > visibleNotes.length;
   const visibleIds = new Set(visibleNotes.map((note) => note.id));
-  const rootNodeId = state.selectedNoteId && visibleIds.has(state.selectedNoteId) ? state.selectedNoteId : visibleNotes[0]?.id;
+  const rootNodeId =
+    state.selectedNoteId && visibleIds.has(state.selectedNoteId) ? state.selectedNoteId : visibleNotes[0]?.id;
   const nodes = visibleNotes.map((note) => noteToGraphNode(note, index, rootNodeId));
   const links: VaultGraphLink[] = index.links
     .filter((link) => visibleIds.has(link.source) && visibleIds.has(link.target))
@@ -58,7 +59,11 @@ export function graphFromVaultIndex(index: VaultIndex, state: VaultGraphState = 
   return { nodes, links, groups: graphGroups(nodes), rootNodeId, truncated };
 }
 
-export function localGraphForNote(index: VaultIndex, noteId: string, state: Omit<VaultGraphState, 'noteIds'> = {}): VaultGraphModel {
+export function localGraphForNote(
+  index: VaultIndex,
+  noteId: string,
+  state: Omit<VaultGraphState, 'noteIds'> = {},
+): VaultGraphModel {
   const ids = new Set<string>();
   if (index.notes.has(noteId)) ids.add(noteId);
   for (const link of index.links) {
@@ -69,7 +74,9 @@ export function localGraphForNote(index: VaultIndex, noteId: string, state: Omit
 }
 
 function filterGraphNotes(index: VaultIndex, state: VaultGraphState): VaultNote[] {
-  const needle = String(state.query || '').trim().toLowerCase();
+  const needle = String(state.query || '')
+    .trim()
+    .toLowerCase();
   return Array.from(index.notes.values()).filter((note) => {
     if (state.noteIds && !state.noteIds.has(note.id)) return false;
     if (needle && !`${note.title} ${note.path} ${note.body}`.toLowerCase().includes(needle)) return false;

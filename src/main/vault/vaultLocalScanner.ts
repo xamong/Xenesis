@@ -1,5 +1,5 @@
-import fs from 'node:fs/promises';
 import type { Dirent } from 'node:fs';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { VaultScanFile, VaultScanRequest, VaultScanResult, VaultScanWarning } from '../../shared/types';
 
@@ -118,7 +118,10 @@ async function scanDirectory({
       if (shouldSkipDirectory(entry.name)) continue;
       const realPath = await safeRealPath(entryPath);
       if (!realPath || !isInsideRoot(rootRealPath, realPath)) {
-        warnings.push({ path: relativeVaultPath(rootPath, entryPath), message: 'Skipped directory outside vault root.' });
+        warnings.push({
+          path: relativeVaultPath(rootPath, entryPath),
+          message: 'Skipped directory outside vault root.',
+        });
         continue;
       }
       await scanDirectory({ rootPath, rootRealPath, dirPath: entryPath, maxFiles, maxFileBytes, files, warnings });
