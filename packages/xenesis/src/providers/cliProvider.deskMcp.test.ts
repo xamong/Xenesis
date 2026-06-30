@@ -15,6 +15,7 @@ describe('deskMcpSystemMessage lean', () => {
     expect(msg.content.toLowerCase()).toContain('explorer');
     expect(msg.content.toLowerCase()).toContain('terminal');
     expect(msg.content).toContain('When the user explicitly asks for CR, MCP, Capability Registry, or xd.* readback');
+    expect(msg.content).toContain('Do not use shell, commandExecution, webSearch, web_search, web_fetch');
   });
 
   it('does not ship or export a deterministic Desk natural intent catalog', () => {
@@ -48,7 +49,7 @@ describe('deskMcpSystemMessage lean', () => {
       },
     });
 
-    await provider.complete({
+    const response = await provider.complete({
       model: 'gpt-5.4-mini',
       messages: [
         { role: 'system', content: 'runtime recovery: call Desk CR before the final answer' },
@@ -62,6 +63,48 @@ describe('deskMcpSystemMessage lean', () => {
     );
     expect(String(threadStartRequest?.developerInstructions ?? '')).toContain(
       'Saying you cannot directly check is invalid while these tools are configured.',
+    );
+    expect(String(threadStartRequest?.developerInstructions ?? '')).toContain(
+      'Do not use shell, commandExecution, webSearch, web_search, web_fetch',
+    );
+    expect(threadStartRequest).not.toHaveProperty('config');
+    expect(response.message.providerMetadata?.cli?.args).toEqual(
+      expect.arrayContaining([
+        '-c',
+        'tools.web_search=false',
+        '-c',
+        'tools.web_search.enabled=false',
+        '--disable',
+        'apps',
+        '--disable',
+        'plugins',
+        '--disable',
+        'tool_suggest',
+        '--disable',
+        'multi_agent',
+        '--disable',
+        'standalone_web_search',
+        '--disable',
+        'web_search_request',
+        '--disable',
+        'web_search_cached',
+        '--disable',
+        'search_tool',
+        '--disable',
+        'browser_use',
+        '--disable',
+        'browser_use_external',
+        '--disable',
+        'browser_use_full_cdp_access',
+        '--disable',
+        'in_app_browser',
+        '--disable',
+        'shell_tool',
+        '--disable',
+        'shell_snapshot',
+        '--disable',
+        'unified_exec',
+      ]),
     );
     expect(String(threadStartRequest?.developerInstructions ?? '')).toContain(
       'Assistant output contract for this turn:',

@@ -1,8 +1,8 @@
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { dirname, relative, resolve } from "node:path";
-import { assertInsideWorkspace } from "../utils/workspace.js";
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { dirname, relative, resolve } from 'node:path';
+import { assertInsideWorkspace } from '../utils/workspace.js';
 
-export type WorkspaceChangeAction = "create" | "modify" | "delete";
+export type WorkspaceChangeAction = 'create' | 'modify' | 'delete';
 
 export interface WorkspaceChangeRecord {
   id: string;
@@ -48,29 +48,29 @@ export interface FileWorkspaceChangeStoreOptions {
 }
 
 function normalizePath(value: string) {
-  return value.replace(/\\/g, "/");
+  return value.replace(/\\/g, '/');
 }
 
 function timestampId(date: Date) {
-  return date.toISOString().replace(/[-:.]/g, "");
+  return date.toISOString().replace(/[-:.]/g, '');
 }
 
 function slugify(value: string) {
   const slug = value
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return slug || "change";
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return slug || 'change';
 }
 
 function byteLength(value: string | undefined) {
-  return value === undefined ? 0 : Buffer.byteLength(value, "utf8");
+  return value === undefined ? 0 : Buffer.byteLength(value, 'utf8');
 }
 
 function actionFor(input: RecordWorkspaceChangeInput): WorkspaceChangeAction {
-  if (input.beforeContent === undefined && input.afterContent !== undefined) return "create";
-  if (input.beforeContent !== undefined && input.afterContent === undefined) return "delete";
-  return "modify";
+  if (input.beforeContent === undefined && input.afterContent !== undefined) return 'create';
+  if (input.beforeContent !== undefined && input.afterContent === undefined) return 'delete';
+  return 'modify';
 }
 
 function compareCreatedDesc(left: WorkspaceChangeRecord, right: WorkspaceChangeRecord) {
@@ -82,11 +82,11 @@ function compareCreatedAsc(left: WorkspaceChangeRecord, right: WorkspaceChangeRe
 }
 
 function splitLines(content: string) {
-  return content.replace(/\r\n/g, "\n").split("\n");
+  return content.replace(/\r\n/g, '\n').split('\n');
 }
 
 function simpleDiff(path: string, before: string, after: string) {
-  if (before === after) return "No changes.";
+  if (before === after) return 'No changes.';
   const beforeLines = splitLines(before);
   const afterLines = splitLines(after);
   const lines = [`--- ${path}`, `+++ ${path}`];
@@ -95,13 +95,13 @@ function simpleDiff(path: string, before: string, after: string) {
     const beforeLine = beforeLines[index];
     const afterLine = afterLines[index];
     if (beforeLine === afterLine) {
-      if (beforeLine !== undefined && beforeLine !== "") lines.push(` ${beforeLine}`);
+      if (beforeLine !== undefined && beforeLine !== '') lines.push(` ${beforeLine}`);
       continue;
     }
-    if (beforeLine !== undefined && beforeLine !== "") lines.push(`-${beforeLine}`);
-    if (afterLine !== undefined && afterLine !== "") lines.push(`+${afterLine}`);
+    if (beforeLine !== undefined && beforeLine !== '') lines.push(`-${beforeLine}`);
+    if (afterLine !== undefined && afterLine !== '') lines.push(`+${afterLine}`);
   }
-  return lines.join("\n");
+  return lines.join('\n');
 }
 
 function checkpointFromRecords(sessionId: string, records: WorkspaceChangeRecord[]): WorkspaceCheckpoint {
@@ -112,8 +112,8 @@ function checkpointFromRecords(sessionId: string, records: WorkspaceChangeRecord
     pendingChangeCount: records.filter((record) => !record.revertedAt && !record.acceptedAt).length,
     acceptedChangeCount: records.filter((record) => record.acceptedAt).length,
     paths: Array.from(new Set(sortedAsc.map((record) => record.path))).sort((left, right) => left.localeCompare(right)),
-    firstChangeAt: sortedAsc[0]?.createdAt ?? "",
-    lastChangeAt: sortedAsc.at(-1)?.createdAt ?? ""
+    firstChangeAt: sortedAsc[0]?.createdAt ?? '',
+    lastChangeAt: sortedAsc.at(-1)?.createdAt ?? '',
   };
 }
 
@@ -125,16 +125,16 @@ export class FileWorkspaceChangeStore {
 
   constructor(options: FileWorkspaceChangeStoreOptions) {
     this.workspaceRoot = resolve(options.workspaceRoot);
-    this.root = resolve(options.xenesisHome, "changes");
-    this.indexPath = resolve(this.root, "index.json");
+    this.root = resolve(options.xenesisHome, 'changes');
+    this.indexPath = resolve(this.root, 'index.json');
     this.now = options.now ?? (() => new Date());
   }
 
   async list(): Promise<WorkspaceChangeRecord[]> {
     try {
-      return JSON.parse(await readFile(this.indexPath, "utf8")) as WorkspaceChangeRecord[];
+      return JSON.parse(await readFile(this.indexPath, 'utf8')) as WorkspaceChangeRecord[];
     } catch (error) {
-      if (error instanceof Error && "code" in error && error.code === "ENOENT") return [];
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return [];
       throw error;
     }
   }
@@ -160,16 +160,14 @@ export class FileWorkspaceChangeStore {
   }
 
   async checkpointChanges(id: string): Promise<WorkspaceChangeRecord[]> {
-    return (await this.list())
-      .filter((record) => record.sessionId === id)
-      .sort(compareCreatedDesc);
+    return (await this.list()).filter((record) => record.sessionId === id).sort(compareCreatedDesc);
   }
 
   async record(input: RecordWorkspaceChangeInput): Promise<WorkspaceChangeRecord> {
     const records = await this.list();
     const createdAt = this.now().toISOString();
     const absolutePath = assertInsideWorkspace(this.workspaceRoot, input.path);
-    const normalizedPath = normalizePath(relative(this.workspaceRoot, absolutePath) || ".");
+    const normalizedPath = normalizePath(relative(this.workspaceRoot, absolutePath) || '.');
     const baseId = `${timestampId(new Date(createdAt))}-${slugify(input.toolName)}-${slugify(normalizedPath)}`;
     let id = baseId;
     let suffix = 2;
@@ -193,11 +191,11 @@ export class FileWorkspaceChangeStore {
       beforeBytes: byteLength(input.beforeContent),
       afterBytes: byteLength(input.afterContent),
       ...(beforeSnapshotPath ? { beforeSnapshotPath } : {}),
-      ...(afterSnapshotPath ? { afterSnapshotPath } : {})
+      ...(afterSnapshotPath ? { afterSnapshotPath } : {}),
     };
 
-    if (beforeSnapshotPath) await this.writeSnapshot(beforeSnapshotPath, input.beforeContent ?? "");
-    if (afterSnapshotPath) await this.writeSnapshot(afterSnapshotPath, input.afterContent ?? "");
+    if (beforeSnapshotPath) await this.writeSnapshot(beforeSnapshotPath, input.beforeContent ?? '');
+    if (afterSnapshotPath) await this.writeSnapshot(afterSnapshotPath, input.afterContent ?? '');
     await this.writeIndex([record, ...records]);
     return record;
   }
@@ -215,9 +213,9 @@ export class FileWorkspaceChangeStore {
       const expectedAfter = await this.readSnapshot(record.afterSnapshotPath);
       let current: string;
       try {
-        current = await readFile(absolutePath, "utf8");
+        current = await readFile(absolutePath, 'utf8');
       } catch (error) {
-        if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+        if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
           throw new Error(`Cannot revert ${id}: current file is missing: ${record.path}`);
         }
         throw error;
@@ -229,14 +227,14 @@ export class FileWorkspaceChangeStore {
 
     if (record.beforeExists) {
       await mkdir(dirname(absolutePath), { recursive: true });
-      await writeFile(absolutePath, await this.readSnapshot(record.beforeSnapshotPath), "utf8");
+      await writeFile(absolutePath, await this.readSnapshot(record.beforeSnapshotPath), 'utf8');
     } else {
       await rm(absolutePath, { force: true });
     }
 
     const updated: WorkspaceChangeRecord = {
       ...record,
-      revertedAt: this.now().toISOString()
+      revertedAt: this.now().toISOString(),
     };
     records[index] = updated;
     await this.writeIndex(records);
@@ -267,7 +265,7 @@ export class FileWorkspaceChangeStore {
 
     const updated: WorkspaceChangeRecord = {
       ...record,
-      acceptedAt: this.now().toISOString()
+      acceptedAt: this.now().toISOString(),
     };
     records[index] = updated;
     await this.writeIndex(records);
@@ -291,35 +289,38 @@ export class FileWorkspaceChangeStore {
   async diff(id: string): Promise<string> {
     const record = await this.get(id);
     if (!record) throw new Error(`Workspace change not found: ${id}`);
-    const before = record.beforeExists ? await this.readSnapshot(record.beforeSnapshotPath) : "";
-    const after = record.afterExists ? await this.readSnapshot(record.afterSnapshotPath) : "";
+    const before = record.beforeExists ? await this.readSnapshot(record.beforeSnapshotPath) : '';
+    const after = record.afterExists ? await this.readSnapshot(record.afterSnapshotPath) : '';
     return simpleDiff(record.path, before, after);
   }
 
   async diffCheckpoint(id: string): Promise<string> {
     const records = await this.checkpointChanges(id);
     if (records.length === 0) throw new Error(`Workspace checkpoint not found: ${id}`);
-    return (await Promise.all(
-      [...records].sort(compareCreatedAsc).map(async (record) => [
-        `# ${record.id} ${record.action} ${record.path}`,
-        await this.diff(record.id)
-      ].join("\n"))
-    )).join("\n\n");
+    return (
+      await Promise.all(
+        [...records]
+          .sort(compareCreatedAsc)
+          .map(async (record) =>
+            [`# ${record.id} ${record.action} ${record.path}`, await this.diff(record.id)].join('\n'),
+          ),
+      )
+    ).join('\n\n');
   }
 
   private async writeSnapshot(path: string, content: string) {
     const absolutePath = resolve(this.root, path);
     await mkdir(dirname(absolutePath), { recursive: true });
-    await writeFile(absolutePath, content, "utf8");
+    await writeFile(absolutePath, content, 'utf8');
   }
 
   private async readSnapshot(path: string | undefined) {
-    if (!path) return "";
-    return await readFile(resolve(this.root, path), "utf8");
+    if (!path) return '';
+    return await readFile(resolve(this.root, path), 'utf8');
   }
 
   private async writeIndex(records: WorkspaceChangeRecord[]) {
     await mkdir(dirname(this.indexPath), { recursive: true });
-    await writeFile(this.indexPath, `${JSON.stringify(records, null, 2)}\n`, "utf8");
+    await writeFile(this.indexPath, `${JSON.stringify(records, null, 2)}\n`, 'utf8');
   }
 }

@@ -89,10 +89,7 @@ test('review request approval live smoke labels structured CR approval proof sco
   const plan = formatReviewRequestApprovalLiveSmokePlan();
   assert.match(plan, /Proof type: structured-cr-approval-regression/);
   assert.match(plan, /Provider natural-language CR tool-selection proof: false/);
-  assert.match(
-    plan,
-    /Structured action scope: fenced xenesis-desk-action blocks plus real Action Inbox readback/,
-  );
+  assert.match(plan, /Structured action scope: fenced xenesis-desk-action blocks plus real Action Inbox readback/);
   assert.doesNotMatch(plan, /provider reasoning proof: true/i);
 
   for (const smokeCase of REVIEW_REQUEST_APPROVAL_LIVE_SMOKE_CASES) {

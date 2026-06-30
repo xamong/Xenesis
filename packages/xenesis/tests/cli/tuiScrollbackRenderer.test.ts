@@ -1,9 +1,9 @@
-import { PassThrough } from "node:stream";
-import { describe, expect, test } from "vitest";
-import { type InkTuiController, runInkTui } from "../../src/cli/tui/inkRenderer.js";
-import { createTuiState, reduceTuiEvent, type TuiRuntimeSummary, type TuiState } from "../../src/cli/tui/state.js";
+import { PassThrough } from 'node:stream';
+import { describe, expect, test } from 'vitest';
+import { type InkTuiController, runInkTui } from '../../src/cli/tui/inkRenderer.js';
+import { createTuiState, reduceTuiEvent, type TuiRuntimeSummary, type TuiState } from '../../src/cli/tui/state.js';
 
-const ESC = "\u001B";
+const ESC = '\u001B';
 
 type TestReadStream = PassThrough &
   NodeJS.ReadStream & {
@@ -23,10 +23,10 @@ type TestWriteStream = PassThrough &
   };
 
 const runtime: TuiRuntimeSummary = {
-  provider: "mock",
-  model: "mock-model",
-  approvalMode: "safe",
-  workspace: "/repo"
+  provider: 'mock',
+  model: 'mock-model',
+  approvalMode: 'safe',
+  workspace: '/repo',
 };
 
 function createTestReadStream(): TestReadStream {
@@ -60,7 +60,7 @@ function createReadOnlyController(state: TuiState): InkTuiController {
     },
     submit: async () => undefined,
     cancel: () => undefined,
-    resolveApproval: () => undefined
+    resolveApproval: () => undefined,
   };
 }
 
@@ -70,7 +70,7 @@ async function waitFor(predicate: () => boolean, timeoutMs = 2000) {
     if (predicate()) return;
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
-  throw new Error("Timed out waiting for test condition.");
+  throw new Error('Timed out waiting for test condition.');
 }
 
 // Repeatedly send a key until the predicate holds, so the assertion is robust
@@ -78,7 +78,7 @@ async function waitFor(predicate: () => boolean, timeoutMs = 2000) {
 async function pressUntil(
   send: () => void,
   predicate: () => boolean,
-  { maxPresses = 20, settleMs = 60 }: { maxPresses?: number; settleMs?: number } = {}
+  { maxPresses = 20, settleMs = 60 }: { maxPresses?: number; settleMs?: number } = {},
 ) {
   for (let attempt = 0; attempt < maxPresses; attempt += 1) {
     if (predicate()) return;
@@ -89,34 +89,34 @@ async function pressUntil(
       await new Promise((resolve) => setTimeout(resolve, 10));
     }
   }
-  if (!predicate()) throw new Error("Timed out waiting after repeated key presses.");
+  if (!predicate()) throw new Error('Timed out waiting after repeated key presses.');
 }
 
 function stateWithMessages(count: number): TuiState {
   let state = createTuiState(runtime);
   for (let index = 0; index < count; index += 1) {
-    state = reduceTuiEvent(state, { type: "user_message", message: { role: "user", content: `message-${index}` } });
+    state = reduceTuiEvent(state, { type: 'user_message', message: { role: 'user', content: `message-${index}` } });
   }
   return state;
 }
 
-describe("Ink TUI scrollback rendering", () => {
-  test("renders a unified scrollback panel for state history", async () => {
+describe('Ink TUI scrollback rendering', () => {
+  test('renders a unified scrollback panel for state history', async () => {
     const stdin = createTestReadStream();
     const stdout = createTestWriteStream();
     const stderr = createTestWriteStream();
     const controller = createReadOnlyController(stateWithMessages(3));
-    let output = "";
-    stdout.on("data", (chunk) => {
+    let output = '';
+    stdout.on('data', (chunk) => {
       output += String(chunk);
     });
 
     const run = runInkTui({ controller }, { stdin, stdout, stderr, patchConsole: false });
     try {
       await waitFor(() => stdin.rawMode);
-      await waitFor(() => output.includes("Scrollback"));
-      await waitFor(() => output.includes("user> message-2"));
-      stdin.write("\u0003");
+      await waitFor(() => output.includes('Scrollback'));
+      await waitFor(() => output.includes('user> message-2'));
+      stdin.write('\u0003');
       await run;
     } finally {
       stdin.destroy();
@@ -125,13 +125,13 @@ describe("Ink TUI scrollback rendering", () => {
     }
   });
 
-  test("scrolls back through history with PageUp and returns to live with End", async () => {
+  test('scrolls back through history with PageUp and returns to live with End', async () => {
     const stdin = createTestReadStream();
     const stdout = createTestWriteStream();
     const stderr = createTestWriteStream();
     const controller = createReadOnlyController(stateWithMessages(40));
-    let output = "";
-    stdout.on("data", (chunk) => {
+    let output = '';
+    stdout.on('data', (chunk) => {
       output += String(chunk);
     });
 
@@ -139,20 +139,20 @@ describe("Ink TUI scrollback rendering", () => {
     try {
       await waitFor(() => stdin.rawMode);
       // Live tail shows the latest message.
-      await waitFor(() => output.includes("user> message-39"));
+      await waitFor(() => output.includes('user> message-39'));
       // PageUp scrolls back through history (one page at a time) up to the top.
-      output = "";
+      output = '';
       await pressUntil(
         () => stdin.write(`${ESC}[5~`),
-        () => output.includes("user> message-0")
+        () => output.includes('user> message-0'),
       );
       // While scrolled near the top, the live tail message is out of view.
-      expect(output.includes("user> message-39")).toBe(false);
+      expect(output.includes('user> message-39')).toBe(false);
       // End returns to the live tail.
-      output = "";
+      output = '';
       stdin.write(`${ESC}[F`);
-      await waitFor(() => output.includes("user> message-39"));
-      stdin.write("\u0003");
+      await waitFor(() => output.includes('user> message-39'));
+      stdin.write('\u0003');
       await run;
     } finally {
       stdin.destroy();
@@ -161,31 +161,31 @@ describe("Ink TUI scrollback rendering", () => {
     }
   });
 
-  test("Home scrolls to the oldest history and PageDown walks back toward live", async () => {
+  test('Home scrolls to the oldest history and PageDown walks back toward live', async () => {
     const stdin = createTestReadStream();
     const stdout = createTestWriteStream();
     const stderr = createTestWriteStream();
     const controller = createReadOnlyController(stateWithMessages(40));
-    let output = "";
-    stdout.on("data", (chunk) => {
+    let output = '';
+    stdout.on('data', (chunk) => {
       output += String(chunk);
     });
 
     const run = runInkTui({ controller }, { stdin, stdout, stderr, patchConsole: false });
     try {
       await waitFor(() => stdin.rawMode);
-      await waitFor(() => output.includes("user> message-39"));
+      await waitFor(() => output.includes('user> message-39'));
       // Home jumps straight to the oldest history.
-      output = "";
+      output = '';
       stdin.write(`${ESC}[H`);
-      await waitFor(() => output.includes("user> message-0"));
+      await waitFor(() => output.includes('user> message-0'));
       // PageDown walks forward one page at a time back toward the live tail.
-      output = "";
+      output = '';
       await pressUntil(
         () => stdin.write(`${ESC}[6~`),
-        () => output.includes("user> message-39")
+        () => output.includes('user> message-39'),
       );
-      stdin.write("\u0003");
+      stdin.write('\u0003');
       await run;
     } finally {
       stdin.destroy();
@@ -194,33 +194,33 @@ describe("Ink TUI scrollback rendering", () => {
     }
   });
 
-  test("scrolls with xterm SGR mouse-wheel escape sequences", async () => {
+  test('scrolls with xterm SGR mouse-wheel escape sequences', async () => {
     const stdin = createTestReadStream();
     const stdout = createTestWriteStream();
     const stderr = createTestWriteStream();
     const controller = createReadOnlyController(stateWithMessages(40));
-    let output = "";
-    stdout.on("data", (chunk) => {
+    let output = '';
+    stdout.on('data', (chunk) => {
       output += String(chunk);
     });
 
     const run = runInkTui({ controller }, { stdin, stdout, stderr, patchConsole: false });
     try {
       await waitFor(() => stdin.rawMode);
-      await waitFor(() => output.includes("user> message-39"));
+      await waitFor(() => output.includes('user> message-39'));
       // Wheel up (SGR button 64) scrolls back one page per notch up to the top.
-      output = "";
+      output = '';
       await pressUntil(
         () => stdin.write(`${ESC}[<64;10;10M`),
-        () => output.includes("user> message-0")
+        () => output.includes('user> message-0'),
       );
       // Wheel down (SGR button 65) scrolls forward back to the live tail.
-      output = "";
+      output = '';
       await pressUntil(
         () => stdin.write(`${ESC}[<65;10;10M`),
-        () => output.includes("user> message-39")
+        () => output.includes('user> message-39'),
       );
-      stdin.write("\u0003");
+      stdin.write('\u0003');
       await run;
     } finally {
       stdin.destroy();
@@ -229,13 +229,13 @@ describe("Ink TUI scrollback rendering", () => {
     }
   });
 
-  test("enables and disables xterm SGR mouse mode around the session", async () => {
+  test('enables and disables xterm SGR mouse mode around the session', async () => {
     const stdin = createTestReadStream();
     const stdout = createTestWriteStream();
     const stderr = createTestWriteStream();
     const controller = createReadOnlyController(stateWithMessages(2));
-    let output = "";
-    stdout.on("data", (chunk) => {
+    let output = '';
+    stdout.on('data', (chunk) => {
       output += String(chunk);
     });
 
@@ -243,7 +243,7 @@ describe("Ink TUI scrollback rendering", () => {
     try {
       await waitFor(() => stdin.rawMode);
       await waitFor(() => output.includes(`${ESC}[?1006h`));
-      stdin.write("\u0003");
+      stdin.write('\u0003');
       await run;
     } finally {
       stdin.destroy();

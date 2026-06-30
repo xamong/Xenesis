@@ -36,17 +36,29 @@ test('makeQueuedPrompt snapshots input/routing/mode, copies attachments, and sta
 test('enqueueQueuedPrompt appends FIFO and returns a new array (input unmutated)', () => {
   const a = [item('a')];
   const out = enqueueQueuedPrompt(a, item('b'));
-  assert.deepEqual(out.map((q) => q.id), ['a', 'b']);
+  assert.deepEqual(
+    out.map((q) => q.id),
+    ['a', 'b'],
+  );
   assert.notEqual(out, a);
-  assert.deepEqual(a.map((q) => q.id), ['a']); // original untouched
+  assert.deepEqual(
+    a.map((q) => q.id),
+    ['a'],
+  ); // original untouched
 });
 
 test('dequeueQueuedPrompt returns {head, rest} FIFO without mutating input', () => {
   const a = [item('a'), item('b'), item('c')];
   const { head, rest } = dequeueQueuedPrompt(a);
   assert.equal(head?.id, 'a');
-  assert.deepEqual(rest.map((q) => q.id), ['b', 'c']);
-  assert.deepEqual(a.map((q) => q.id), ['a', 'b', 'c']); // unmutated
+  assert.deepEqual(
+    rest.map((q) => q.id),
+    ['b', 'c'],
+  );
+  assert.deepEqual(
+    a.map((q) => q.id),
+    ['a', 'b', 'c'],
+  ); // unmutated
 });
 
 test('dequeueQueuedPrompt on empty returns {head:null, rest:[]}', () => {
@@ -62,9 +74,15 @@ test('peekQueuedPrompt returns the head without removing; null on empty', () => 
 
 test('removeQueuedPrompt splices by id, preserves order; unknown id is a no-op copy', () => {
   const a = [item('a'), item('b'), item('c')];
-  assert.deepEqual(removeQueuedPrompt(a, 'b').map((q) => q.id), ['a', 'c']);
+  assert.deepEqual(
+    removeQueuedPrompt(a, 'b').map((q) => q.id),
+    ['a', 'c'],
+  );
   const noop = removeQueuedPrompt(a, 'zzz');
-  assert.deepEqual(noop.map((q) => q.id), ['a', 'b', 'c']);
+  assert.deepEqual(
+    noop.map((q) => q.id),
+    ['a', 'b', 'c'],
+  );
   assert.notEqual(noop, a); // still a new array
 });
 

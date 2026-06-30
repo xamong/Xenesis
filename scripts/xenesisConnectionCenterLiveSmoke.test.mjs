@@ -14,6 +14,14 @@ import {
   normalizeConnectionCenterSnapshotChecks,
 } from './xenesisConnectionCenterLiveSmoke.mjs';
 
+const SLICE04_CONNECTION_CENTER_SNAPSHOT_BASELINE_IDS = [
+  'slice04:messenger-implemented-set',
+  'slice04:telegram-route-session-readback',
+  'slice04:telegram-access-pairing-readback',
+  'slice04:messenger-planned-channel-no-runtime',
+  'slice04:messenger-test-send-approval-boundary',
+];
+
 test('connection center live smoke opens Connection Center and snapshots it through CR', () => {
   assert.deepEqual(CONNECTION_CENTER_LIVE_SMOKE_OPEN_REQUEST, {
     path: 'xd.xenesis.connections.open',
@@ -70,6 +78,7 @@ test('connection center live smoke requires exact reference baseline check ids',
     'reference-baseline:external-tool-no-oauth-side-effect-boundary',
     'reference-baseline:channel-runtime-readback',
     'reference-baseline:channel-profile-review-steps',
+    ...SLICE04_CONNECTION_CENTER_SNAPSHOT_BASELINE_IDS,
   ]);
 
   const plan = formatConnectionCenterLiveSmokePlan();
@@ -77,6 +86,66 @@ test('connection center live smoke requires exact reference baseline check ids',
 
   const mainSource = readFileSync('src/main/index.ts', 'utf8');
   for (const id of CONNECTION_CENTER_REFERENCE_BASELINE_CHECK_IDS) assert.match(mainSource, new RegExp(id));
+});
+
+test('connection center live smoke has Slice 04 channel-specific snapshot baselines with read-only selectors', () => {
+  for (const id of SLICE04_CONNECTION_CENTER_SNAPSHOT_BASELINE_IDS) {
+    assert.equal(CONNECTION_CENTER_REFERENCE_BASELINE_CHECK_IDS.includes(id), true, `${id} is required`);
+  }
+
+  const plan = formatConnectionCenterLiveSmokePlan();
+  for (const id of SLICE04_CONNECTION_CENTER_SNAPSHOT_BASELINE_IDS) assert.match(plan, new RegExp(id));
+
+  const source = readFileSync('src/main/index.ts', 'utf8');
+  const slice04Start = source.indexOf("id: 'slice04:messenger-implemented-set'");
+  assert.notEqual(slice04Start, -1, 'Slice 04 snapshot checks are present in src/main/index.ts');
+  const slice04End = source.indexOf('];', slice04Start);
+  assert.notEqual(slice04End, -1, 'Slice 04 snapshot checks stay inside the snapshot checks block');
+  const slice04Source = source.slice(slice04Start, slice04End);
+  assert.match(slice04Source, /data-xenesis-connection="telegram"/);
+  assert.match(slice04Source, /data-xenesis-connection="slack"/);
+  assert.match(slice04Source, /data-xenesis-connection="discord"/);
+  assert.match(slice04Source, /data-xenesis-connection="webhook"/);
+  assert.match(slice04Source, /data-xenesis-channel-routing="telegram"/);
+  assert.match(slice04Source, /data-xenesis-channel-access-groups="telegram"/);
+  assert.match(slice04Source, /data-xenesis-channel-pairing="telegram"/);
+  assert.match(slice04Source, /data-xenesis-connection="signal"/);
+  assert.match(slice04Source, /telegram\.allowedChatIds/);
+  assert.match(slice04Source, /sessionScope/);
+  assert.match(slice04Source, /textSequences: \[\['세션 범위', 'chat'\]\]/);
+  assert.doesNotMatch(slice04Source, /texts: \['라우트 바인딩', 'telegram\.allowedChatIds', '세션 범위', 'chat'\]/);
+  assert.match(slice04Source, /fail-closed/);
+  assert.match(slice04Source, /credential values are never returned/);
+  assert.match(slice04Source, /approval-gated profile channel test path/);
+  assert.match(slice04Source, /test-send onboarding status does not send messages/);
+  assert.match(slice04Source, /absentTexts: \['prompt keyword routing', 'keyword routing'\]/);
+  assert.match(slice04Source, /'sendTelegramChannelTest'/);
+  assert.match(slice04Source, /'sendSlackChannelTest'/);
+  assert.match(slice04Source, /'sendDiscordChannelTest'/);
+  assert.match(slice04Source, /'sendWebhookChannelTest'/);
+});
+
+test('connection center live smoke planned messenger baseline permits runtime review request but forbids delivery and mutation', () => {
+  const source = readFileSync('src/main/index.ts', 'utf8');
+  const blockStart = source.indexOf("id: 'slice04:messenger-planned-channel-no-runtime'");
+  assert.notEqual(blockStart, -1, 'planned messenger baseline is present');
+  const blockEnd = source.indexOf('    },', blockStart);
+  assert.notEqual(blockEnd, -1, 'planned messenger baseline block is bounded');
+  const block = source.slice(blockStart, blockEnd);
+
+  assert.match(block, /texts: \[[\s\S]*'planned-adapter'[\s\S]*'planned channel delivery remains disabled'/);
+  assert.match(block, /'xd\.xenesis\.channels\.runtime\.request'/);
+  assert.doesNotMatch(block, /absentTexts:[\s\S]*'xd\.xenesis\.channels\.runtime\.request'/);
+
+  for (const forbiddenPath of [
+    'xd.xenesis.profiles.testChannel',
+    'xd.xenesis.channels.profileDrafts.apply',
+    'xd.xenesis.profiles.updateChannels',
+    'xd.xenesis.gateway.start',
+    'xd.xenesis.gateway.restart',
+  ]) {
+    assert.equal(block.includes(`'${forbiddenPath}'`), true, `${forbiddenPath} remains forbidden`);
+  }
 });
 
 test('connection center live smoke fails when reference baseline checks are missing or failing', () => {
@@ -160,7 +229,7 @@ test('connection center live smoke records missing reference baseline checks wit
     id: 'reference-baseline-contract',
     ok: false,
     error:
-      'Missing reference baseline checks: reference-baseline:connection-center-root, reference-baseline:onboarding-guided-steps, reference-baseline:provider-profile-review-steps, reference-baseline:tool-profile-review-steps, reference-baseline:tool-oauth-review-steps, reference-baseline:tool-oauth-runtime-readback, reference-baseline:external-tool-notion-mcp-readiness, reference-baseline:external-tool-google-calendar-oauth-setup-packet, reference-baseline:external-tool-google-calendar-oauth-runtime, reference-baseline:external-tool-linear-mcp-oauth-readiness, reference-baseline:external-tool-no-oauth-side-effect-boundary, reference-baseline:channel-runtime-readback, reference-baseline:channel-profile-review-steps',
+      'Missing reference baseline checks: reference-baseline:connection-center-root, reference-baseline:onboarding-guided-steps, reference-baseline:provider-profile-review-steps, reference-baseline:tool-profile-review-steps, reference-baseline:tool-oauth-review-steps, reference-baseline:tool-oauth-runtime-readback, reference-baseline:external-tool-notion-mcp-readiness, reference-baseline:external-tool-google-calendar-oauth-setup-packet, reference-baseline:external-tool-google-calendar-oauth-runtime, reference-baseline:external-tool-linear-mcp-oauth-readiness, reference-baseline:external-tool-no-oauth-side-effect-boundary, reference-baseline:channel-runtime-readback, reference-baseline:channel-profile-review-steps, slice04:messenger-implemented-set, slice04:telegram-route-session-readback, slice04:telegram-access-pairing-readback, slice04:messenger-planned-channel-no-runtime, slice04:messenger-test-send-approval-boundary',
   });
 });
 

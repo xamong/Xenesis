@@ -6,9 +6,9 @@ import path from 'node:path';
 import test from 'node:test';
 
 import {
-  REQUIRED_CAPABILITY_AUDIT_ZERO_COUNTERS,
   assertCapabilityAuditZero,
   parseCapabilityAuditCounters,
+  REQUIRED_CAPABILITY_AUDIT_ZERO_COUNTERS,
 } from './assertCapabilityAuditZero.mjs';
 
 const ZERO_AUDIT = `

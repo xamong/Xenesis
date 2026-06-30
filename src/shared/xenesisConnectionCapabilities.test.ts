@@ -10,6 +10,7 @@ import {
 } from './deskBridgeCapabilities';
 import {
   buildXenesisConnectionCenterOpenArgs,
+  XENESIS_CONNECTION_GUIDE_IDS,
   XENESIS_CONNECTION_MESSENGER_IDS,
   XENESIS_CONNECTION_PROVIDER_IDS,
   XENESIS_CONNECTION_TOOL_IDS,
@@ -2218,6 +2219,229 @@ test('slice 03 main readback and review handlers do not call external apply side
   }
 });
 
+test('slice 04 channel read/open/request dispatcher paths never call channel mutation adapters', async () => {
+  const calls: string[] = [];
+  const failMutation = (method: string) => (args?: unknown) => {
+    calls.push(method);
+    throw new Error(`${method} must not be called from Slice 04 read/open/request paths: ${JSON.stringify(args)}`);
+  };
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisChannelRoutingStatus: (args) => {
+      calls.push('routing.status');
+      return { ok: true, args };
+    },
+    openXenesisChannelRouting: (args) => {
+      calls.push('routing.open');
+      return { ok: true, args };
+    },
+    getXenesisChannelSafetyStatus: (args) => {
+      calls.push('safety.status');
+      return { ok: true, args };
+    },
+    openXenesisChannelSafety: (args) => {
+      calls.push('safety.open');
+      return { ok: true, args };
+    },
+    getXenesisChannelAccessGroupsStatus: (args) => {
+      calls.push('accessGroups.status');
+      return { ok: true, args };
+    },
+    openXenesisChannelAccessGroups: (args) => {
+      calls.push('accessGroups.open');
+      return { ok: true, args };
+    },
+    getXenesisChannelPairingStatus: (args) => {
+      calls.push('pairing.status');
+      return { ok: true, args };
+    },
+    openXenesisChannelPairing: (args) => {
+      calls.push('pairing.open');
+      return { ok: true, args };
+    },
+    getXenesisChannelRuntimeStatus: (args) => {
+      calls.push('runtime.status');
+      return { ok: true, args };
+    },
+    openXenesisChannelRuntime: (args) => {
+      calls.push('runtime.open');
+      return { ok: true, args };
+    },
+    requestXenesisChannelRuntime: (args) => {
+      calls.push('runtime.request');
+      return { ok: true, args };
+    },
+    getXenesisChannelUserStoriesStatus: (args) => {
+      calls.push('userStories.status');
+      return { ok: true, args };
+    },
+    openXenesisChannelUserStory: (args) => {
+      calls.push('userStories.open');
+      return { ok: true, args };
+    },
+    getXenesisChannelSetupPlansStatus: (args) => {
+      calls.push('setupPlans.status');
+      return { ok: true, args };
+    },
+    openXenesisChannelSetupPlan: (args) => {
+      calls.push('setupPlans.open');
+      return { ok: true, args };
+    },
+    getXenesisChannelProfileDraftsStatus: (args) => {
+      calls.push('profileDrafts.status');
+      return { ok: true, args };
+    },
+    openXenesisChannelProfileDraft: (args) => {
+      calls.push('profileDrafts.open');
+      return { ok: true, args };
+    },
+    requestXenesisChannelProfileDraft: (args) => {
+      calls.push('profileDrafts.request');
+      return { ok: true, args };
+    },
+    getXenesisMessengerViewsStatus: (args) => {
+      calls.push('messengers.views.status');
+      return { ok: true, args };
+    },
+    openXenesisMessengerView: (args) => {
+      calls.push('messengers.views.open');
+      return { ok: true, args };
+    },
+    applyXenesisChannelProfileDraft: failMutation('profileDrafts.apply'),
+    updateXenesisProfileChannels: failMutation('profiles.updateChannels'),
+    testXenesisProfileChannel: failMutation('profiles.testChannel'),
+    startXenesisGateway: failMutation('gateway.start'),
+    restartXenesisGateway: failMutation('gateway.restart'),
+  };
+
+  const requests = [
+    { path: 'xd.xenesis.channels.routing.status', args: { channel: 'telegram' } },
+    { path: 'xd.xenesis.channels.routing.open', args: { channel: 'telegram' } },
+    { path: 'xd.xenesis.channels.safety.status', args: { channel: 'telegram' } },
+    { path: 'xd.xenesis.channels.safety.open', args: { channel: 'telegram' } },
+    { path: 'xd.xenesis.channels.accessGroups.status', args: { channel: 'telegram' } },
+    { path: 'xd.xenesis.channels.accessGroups.open', args: { channel: 'telegram' } },
+    { path: 'xd.xenesis.channels.pairing.status', args: { channel: 'signal' } },
+    { path: 'xd.xenesis.channels.pairing.open', args: { channel: 'signal' } },
+    { path: 'xd.xenesis.channels.runtime.status', args: { channel: 'whatsapp' } },
+    { path: 'xd.xenesis.channels.runtime.open', args: { channel: 'whatsapp' } },
+    { path: 'xd.xenesis.channels.runtime.request', args: { channel: 'whatsapp' }, approved: true },
+    { path: 'xd.xenesis.channels.userStories.status', args: { id: 'telegram' } },
+    { path: 'xd.xenesis.channels.userStories.open', args: { id: 'telegram' } },
+    { path: 'xd.xenesis.channels.setupPlans.status', args: { channel: 'telegram' } },
+    { path: 'xd.xenesis.channels.setupPlans.open', args: { id: 'telegram' } },
+    { path: 'xd.xenesis.channels.profileDrafts.status', args: { channel: 'telegram' } },
+    { path: 'xd.xenesis.channels.profileDrafts.open', args: { channel: 'telegram' } },
+    { path: 'xd.xenesis.channels.profileDrafts.request', args: { channel: 'telegram' }, approved: true },
+    { path: 'xd.xenesis.messengers.views.status', args: { id: 'telegram' } },
+    { path: 'xd.xenesis.messengers.views.open', args: { id: 'telegram', section: 'routing' } },
+  ];
+
+  for (const request of requests) {
+    const result = await callDeskBridgeCapability(api, {
+      ...request,
+      source: 'xenesis',
+    });
+    assert.equal(result.ok, true, `${request.path} should dispatch without channel mutation side effects`);
+  }
+
+  assert.deepEqual(calls, [
+    'routing.status',
+    'routing.open',
+    'safety.status',
+    'safety.open',
+    'accessGroups.status',
+    'accessGroups.open',
+    'pairing.status',
+    'pairing.open',
+    'runtime.status',
+    'runtime.open',
+    'runtime.request',
+    'userStories.status',
+    'userStories.open',
+    'setupPlans.status',
+    'setupPlans.open',
+    'profileDrafts.status',
+    'profileDrafts.open',
+    'profileDrafts.request',
+    'messengers.views.status',
+    'messengers.views.open',
+  ]);
+});
+
+test('slice 04 channel write paths are approval-gated before adapter dispatch', async () => {
+  const calls: string[] = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    applyXenesisChannelProfileDraft: () => {
+      calls.push('profileDrafts.apply');
+      return { ok: true };
+    },
+    testXenesisProfileChannel: () => {
+      calls.push('profiles.testChannel');
+      return { ok: true };
+    },
+  };
+
+  const gated = [
+    { path: 'xd.xenesis.channels.profileDrafts.apply', args: { channel: 'telegram' } },
+    { path: 'xd.xenesis.profiles.testChannel', args: { channel: 'telegram' } },
+  ];
+
+  for (const request of gated) {
+    const result = await callDeskBridgeCapability(api, {
+      ...request,
+      source: 'xenesis',
+      approved: false,
+    });
+    assert.equal(result.ok, false, `${request.path} should be blocked without approval`);
+    assert.equal(result.approvalRequired, true, `${request.path} should request real approval`);
+    assert.equal(result.error?.includes(`Capability requires approval for xenesis: ${request.path}`), true);
+  }
+
+  assert.deepEqual(calls, []);
+});
+
+test('slice 04 main channel read/open/request handlers do not call channel send or profile mutation helpers', () => {
+  const source = readFileSync(new URL('../main/index.ts', import.meta.url), 'utf8');
+  const inspectedHandlers = [
+    'getXenesisChannelRoutingStatus',
+    'openXenesisChannelRouting',
+    'getXenesisChannelSafetyStatus',
+    'openXenesisChannelSafety',
+    'getXenesisChannelAccessGroupsStatus',
+    'openXenesisChannelAccessGroups',
+    'getXenesisChannelPairingStatus',
+    'openXenesisChannelPairing',
+    'getXenesisChannelRuntimeStatus',
+    'openXenesisChannelRuntime',
+    'requestXenesisChannelRuntime',
+    'getXenesisChannelUserStoriesStatus',
+    'openXenesisChannelUserStory',
+    'getXenesisChannelSetupPlansStatus',
+    'openXenesisChannelSetupPlan',
+    'getXenesisChannelProfileDraftsStatus',
+    'openXenesisChannelProfileDraft',
+    'requestXenesisChannelProfileDraft',
+    'getXenesisMessengerViewsStatus',
+    'openXenesisMessengerView',
+  ];
+  const forbiddenCalls = new Set([
+    'applyXenesisChannelProfileDraft',
+    'testXenesisProfileChannel',
+    'sendTelegramChannelTest',
+    'sendSlackChannelTest',
+    'sendDiscordChannelTest',
+    'sendWebhookChannelTest',
+    'runXenesisChannelSend',
+    'updateXenesisProfileChannels',
+  ]);
+
+  for (const handler of inspectedHandlers) {
+    const calls = collectFunctionCallExpressions(source, handler);
+    const forbidden = calls.filter((call) => forbiddenCalls.has(call));
+    assert.deepEqual(forbidden, [], `${handler} must stay read/open/request only`);
+  }
+});
+
 test('xenesis tool open capabilities allow catalog opens without focused ids', async () => {
   const openPaths = [
     'xd.xenesis.tools.setup.open',
@@ -2579,13 +2803,7 @@ test('xenesis guide catalog capabilities are registered and dispatch to the adap
   assert.equal(schemaRequiredFields(openCapability).includes('id'), false);
   assert.equal(openSchemaProperties.openFile?.type, 'boolean');
   assert.equal(openSchemaProperties.openFile?.default, false);
-  for (const guide of [
-    'onboarding-connections',
-    'cr-mcp-gateway-bots',
-    'openclaw-channel-setup',
-    'external-tool-integrations',
-    'agent-user-stories',
-  ]) {
+  for (const guide of XENESIS_CONNECTION_GUIDE_IDS) {
     assert.equal(statusSchemaProperties.id?.enum.includes(guide), true, `${guide} should be accepted by status`);
     assert.equal(openSchemaProperties.id?.enum.includes(guide), true, `${guide} should be accepted by open`);
   }
@@ -3380,6 +3598,51 @@ test('xenesis guide, diagnostic, and setup-request open capabilities allow catal
     calls,
     openPaths.map((path) => ({ path, args: { ensureVisible: true } })),
   );
+});
+
+test('xenesis profile install schema matches template contract and dispatches exact args', async () => {
+  const capability = findDeskBridgeCapability('xd.xenesis.profiles.install');
+  const properties = schemaProperties(capability);
+  const installArgs = {
+    template: 'desk',
+    name: 'slice04-channel-smoke',
+    activate: true,
+  };
+
+  assert.equal(capability?.permission, 'write');
+  assert.equal(capability?.approval, 'when-external');
+  assert.deepEqual(schemaRequiredFields(capability), ['template']);
+  assert.deepEqual(Object.keys(properties).sort(), ['activate', 'name', 'template']);
+  assert.equal(properties.template?.type, 'string');
+  assert.equal(properties.name?.type, 'string');
+  assert.equal(properties.activate?.type, 'boolean');
+  assert.equal(properties.config, undefined);
+  assert.equal(properties.makeActive, undefined);
+
+  const calls: unknown[] = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    installXenesisProfile: (args) => {
+      calls.push(args);
+      return {
+        ok: true,
+        active: 'slice04-channel-smoke',
+      };
+    },
+  };
+
+  const result = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.profiles.install',
+    args: installArgs,
+    source: 'xenesis',
+    approved: true,
+  });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(calls, [installArgs]);
+  assert.deepEqual(result.result, {
+    ok: true,
+    active: 'slice04-channel-smoke',
+  });
 });
 
 test('xenesis profile channel capabilities expose implemented guardrail fields', () => {

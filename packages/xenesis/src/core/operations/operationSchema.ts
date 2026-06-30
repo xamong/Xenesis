@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 /**
  * CR Operation-DSL (AGENT-SIDE schema + validation).
@@ -21,35 +21,35 @@ import { z } from "zod";
 // ---------------------------------------------------------------------------
 export const OPERATION_STEP_KINDS = [
   // Office: spreadsheets
-  "readWorkbook",
-  "buildWorkbook",
-  "insertChart",
+  'readWorkbook',
+  'buildWorkbook',
+  'insertChart',
   // Office: documents
-  "fillDocumentTemplate",
-  "generateDocument",
-  "editDocument",
-  "inspectDocument",
+  'fillDocumentTemplate',
+  'generateDocument',
+  'editDocument',
+  'inspectDocument',
   // Office: slides
-  "generateSlides",
+  'generateSlides',
   // Generic export (docx/xlsx/pptx → pdf, etc.)
-  "export",
+  'export',
   // PDF
-  "pdfMerge",
-  "pdfSplit",
-  "pdfExtractText",
-  "pdfFillForm",
+  'pdfMerge',
+  'pdfSplit',
+  'pdfExtractText',
+  'pdfFillForm',
   // Media (ffmpeg-class)
-  "mediaProbe",
-  "mediaTranscode",
-  "mediaTrim",
-  "mediaSubtitle",
+  'mediaProbe',
+  'mediaTranscode',
+  'mediaTrim',
+  'mediaSubtitle',
   // SaaS connectors
-  "saas.get",
-  "saas.list",
-  "saas.create",
-  "saas.send",
+  'saas.get',
+  'saas.list',
+  'saas.create',
+  'saas.send',
   // Destructive
-  "delete"
+  'delete',
 ] as const;
 
 export type OperationStepKind = (typeof OPERATION_STEP_KINDS)[number];
@@ -62,28 +62,28 @@ const STEP_KIND_SET: ReadonlySet<string> = new Set(OPERATION_STEP_KINDS);
  * Keep conservative: only assert args that are truly mandatory to even submit.
  */
 const STEP_REQUIRED_ARGS: Partial<Record<OperationStepKind, readonly string[]>> = {
-  readWorkbook: ["path"],
-  buildWorkbook: ["outPath"],
-  insertChart: ["path"],
-  fillDocumentTemplate: ["templatePath", "outPath"],
-  generateDocument: ["outPath"],
-  editDocument: ["path"],
-  inspectDocument: ["path"],
-  generateSlides: ["outPath"],
-  export: ["path", "outPath"],
-  pdfMerge: ["inputs", "outPath"],
-  pdfSplit: ["path"],
-  pdfExtractText: ["path"],
-  pdfFillForm: ["path", "outPath"],
-  mediaProbe: ["path"],
-  mediaTranscode: ["path", "outPath"],
-  mediaTrim: ["path", "outPath"],
-  mediaSubtitle: ["path", "outPath"],
-  "saas.get": ["connector"],
-  "saas.list": ["connector"],
-  "saas.create": ["connector"],
-  "saas.send": ["connector"],
-  delete: ["path"]
+  readWorkbook: ['path'],
+  buildWorkbook: ['outPath'],
+  insertChart: ['path'],
+  fillDocumentTemplate: ['templatePath', 'outPath'],
+  generateDocument: ['outPath'],
+  editDocument: ['path'],
+  inspectDocument: ['path'],
+  generateSlides: ['outPath'],
+  export: ['path', 'outPath'],
+  pdfMerge: ['inputs', 'outPath'],
+  pdfSplit: ['path'],
+  pdfExtractText: ['path'],
+  pdfFillForm: ['path', 'outPath'],
+  mediaProbe: ['path'],
+  mediaTranscode: ['path', 'outPath'],
+  mediaTrim: ['path', 'outPath'],
+  mediaSubtitle: ['path', 'outPath'],
+  'saas.get': ['connector'],
+  'saas.list': ['connector'],
+  'saas.create': ['connector'],
+  'saas.send': ['connector'],
+  delete: ['path'],
 };
 
 // ---------------------------------------------------------------------------
@@ -107,12 +107,7 @@ export interface Operation {
   workspaceRoot?: string;
 }
 
-export type OperationStatus =
-  | "succeeded"
-  | "failed"
-  | "partial"
-  | "awaiting_approval"
-  | "running";
+export type OperationStatus = 'succeeded' | 'failed' | 'partial' | 'awaiting_approval' | 'running';
 
 export interface OperationStepResult {
   type: string;
@@ -158,7 +153,7 @@ export interface OperationResult {
 // ---------------------------------------------------------------------------
 export const operationStepSchema = z.object({
   type: z.string().min(1),
-  args: z.record(z.unknown()).optional()
+  args: z.record(z.unknown()).optional(),
 });
 
 export const operationSchema = z.object({
@@ -169,7 +164,7 @@ export const operationSchema = z.object({
   verify: z.array(z.string().min(1)).optional(),
   requiresApproval: z.boolean().optional(),
   dryRun: z.boolean().optional(),
-  workspaceRoot: z.string().min(1).optional()
+  workspaceRoot: z.string().min(1).optional(),
 });
 
 export type ValidatedOperation = z.infer<typeof operationSchema>;
@@ -182,7 +177,7 @@ export type ValidatedOperation = z.infer<typeof operationSchema>;
  */
 export const operationStepOpenAISchema = z.object({
   type: z.string().min(1),
-  args: z.record(z.unknown()).nullable()
+  args: z.record(z.unknown()).nullable(),
 });
 
 export const operationOpenAISchema = z.object({
@@ -193,7 +188,7 @@ export const operationOpenAISchema = z.object({
   verify: z.array(z.string().min(1)).nullable(),
   requiresApproval: z.boolean().nullable(),
   dryRun: z.boolean().nullable(),
-  workspaceRoot: z.string().min(1).nullable()
+  workspaceRoot: z.string().min(1).nullable(),
 });
 
 export interface OperationValidationResult {
@@ -216,7 +211,7 @@ export function validateOperation(input: unknown): OperationValidationResult {
   const parsed = operationSchema.safeParse(input);
   if (!parsed.success) {
     const errors = parsed.error.issues.map((issue) => {
-      const path = issue.path.length ? issue.path.join(".") : "(root)";
+      const path = issue.path.length ? issue.path.join('.') : '(root)';
       return `${path}: ${issue.message}`;
     });
     return { ok: false, errors };
@@ -228,27 +223,23 @@ export function validateOperation(input: unknown): OperationValidationResult {
   // zod already enforces steps.length >= 1, but assert defensively in case the
   // schema is relaxed later.
   if (op.steps.length === 0) {
-    errors.push("steps: an Operation must contain at least one step.");
+    errors.push('steps: an Operation must contain at least one step.');
   }
 
   op.steps.forEach((step, index) => {
     if (!STEP_KIND_SET.has(step.type)) {
       errors.push(
         `steps[${index}].type: unknown step kind "${step.type}". ` +
-          `Allowed kinds: ${OPERATION_STEP_KINDS.join(", ")}.`
+          `Allowed kinds: ${OPERATION_STEP_KINDS.join(', ')}.`,
       );
       return;
     }
     const required = STEP_REQUIRED_ARGS[step.type as OperationStepKind];
     if (required && required.length > 0) {
       const args = step.args ?? {};
-      const missing = required.filter(
-        (key) => args[key] === undefined || args[key] === null
-      );
+      const missing = required.filter((key) => args[key] === undefined || args[key] === null);
       if (missing.length > 0) {
-        errors.push(
-          `steps[${index}] (${step.type}): missing required arg(s): ${missing.join(", ")}.`
-        );
+        errors.push(`steps[${index}] (${step.type}): missing required arg(s): ${missing.join(', ')}.`);
       }
     }
   });

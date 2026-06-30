@@ -1,16 +1,16 @@
-import { readdir, readFile, stat, writeFile } from "node:fs/promises";
-import { basename, join } from "node:path";
-import { z } from "zod";
+import { readdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { basename, join } from 'node:path';
+import { z } from 'zod';
+import type { ReadSnapshot } from '../core/files/index.js';
 import {
   normalizeReadSnapshotInput,
   readFreshTextForMutation,
   readSnapshotInputSchema,
   readTextWithSnapshot,
-  writeTextIfReadStateFresh
-} from "../core/files/index.js";
-import type { ReadSnapshot } from "../core/files/index.js";
-import { assertExistingPathInsideWorkspace, prepareWorkspaceWritePath } from "../utils/workspace.js";
-import type { Tool } from "./types.js";
+  writeTextIfReadStateFresh,
+} from '../core/files/index.js';
+import { assertExistingPathInsideWorkspace, prepareWorkspaceWritePath } from '../utils/workspace.js';
+import type { Tool } from './types.js';
 
 const pathInput = z.object({ path: z.string().min(1) });
 const DEFAULT_READ_MAX_CHARS = 12_000;
@@ -22,18 +22,18 @@ const readInput = z.object({
   path: z.string().min(1),
   startLine: z.number().int().positive().nullable().optional(),
   maxLines: z.number().int().positive().max(2000).nullable().optional(),
-  maxChars: z.number().int().positive().max(50_000).nullable().optional()
+  maxChars: z.number().int().positive().max(50_000).nullable().optional(),
 });
 
 const readOpenAIInput = z.object({
   path: z.string().min(1),
   startLine: z.number().int().positive().nullable(),
   maxLines: z.number().int().positive().max(MAX_AGENT_READ_LINES).nullable(),
-  maxChars: z.number().int().positive().max(MAX_AGENT_READ_CHARS).nullable()
+  maxChars: z.number().int().positive().max(MAX_AGENT_READ_CHARS).nullable(),
 });
 
 function normalizedLines(content: string) {
-  return content.replace(/\r\n/g, "\n").split("\n");
+  return content.replace(/\r\n/g, '\n').split('\n');
 }
 
 function readRangeContent(input: z.infer<typeof readInput>, content: string) {
@@ -43,7 +43,7 @@ function readRangeContent(input: z.infer<typeof readInput>, content: string) {
   const startLine = input.startLine ?? 1;
   const maxLines = Math.min(input.maxLines ?? DEFAULT_READ_RANGE_LINES, MAX_AGENT_READ_LINES);
   const startIndex = startLine - 1;
-  const selected = lines.slice(startIndex, startIndex + maxLines).join("\n");
+  const selected = lines.slice(startIndex, startIndex + maxLines).join('\n');
   const endLine = Math.min(lines.length, startLine + maxLines - 1);
   const header = `[read range: lines ${startLine}-${endLine} of ${lines.length} from ${input.path}]`;
   const maxChars = Math.min(input.maxChars ?? DEFAULT_READ_MAX_CHARS, MAX_AGENT_READ_CHARS);
@@ -53,9 +53,9 @@ function readRangeContent(input: z.infer<typeof readInput>, content: string) {
     `${header}`,
     `[read truncated: showing first ${maxChars} of ${selected.length} selected characters]`,
     selected.slice(0, maxChars),
-    "",
-    `Use read with a narrower startLine/maxLines range for more detail.`
-  ].join("\n");
+    '',
+    `Use read with a narrower startLine/maxLines range for more detail.`,
+  ].join('\n');
 }
 
 function boundedReadContent(input: z.infer<typeof readInput>, content: string) {
@@ -67,9 +67,9 @@ function boundedReadContent(input: z.infer<typeof readInput>, content: string) {
   return [
     `[read truncated: showing first ${maxChars} of ${content.length} characters from ${input.path}]`,
     content.slice(0, maxChars),
-    "",
-    `Use read with startLine/maxLines or a smaller maxChars value to inspect a narrower section.`
-  ].join("\n");
+    '',
+    `Use read with startLine/maxLines or a smaller maxChars value to inspect a narrower section.`,
+  ].join('\n');
 }
 
 function readSnapshotBounds(input: z.infer<typeof readInput>, content: string) {
@@ -87,14 +87,15 @@ function readSnapshotBounds(input: z.infer<typeof readInput>, content: string) {
   return { isPartialView: false };
 }
 
-function readStateFailure(toolName: "Edit", path: string, error: unknown) {
+function readStateFailure(toolName: 'Edit', path: string, error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
   return `${toolName} not applied: ${message} No changes were applied to ${path}.`;
 }
 
 export const readTool: Tool<z.infer<typeof readInput>> = {
-  name: "read",
-  description: "Read a UTF-8 text file inside the workspace. Large files are previewed by default; use startLine/maxLines for focused ranges.",
+  name: 'read',
+  description:
+    'Read a UTF-8 text file inside the workspace. Large files are previewed by default; use startLine/maxLines for focused ranges.',
   inputSchema: readInput,
   openaiInputSchema: readOpenAIInput,
   isReadOnly: () => true,
@@ -104,34 +105,34 @@ export const readTool: Tool<z.infer<typeof readInput>> = {
     if ((await stat(filePath)).isDirectory()) {
       return {
         ok: false,
-        content: `${input.path} is a directory. Use list to inspect directory entries or code_symbols to summarize code files.`
+        content: `${input.path} is a directory. Use list to inspect directory entries or code_symbols to summarize code files.`,
       };
     }
     const read = await readTextWithSnapshot({
       workspaceRoot: context.workspaceRoot,
       path: input.path,
-      isPartialView: false
+      isPartialView: false,
     });
     const readState = { ...read.snapshot, ...readSnapshotBounds(input, read.content) };
     return { ok: true, content: boundedReadContent(input, read.content), data: { readState } };
-  }
+  },
 };
 
 const writeInput = z.object({
   path: z.string().min(1),
-  content: z.string()
+  content: z.string(),
 });
 
 export const writeTool: Tool<z.infer<typeof writeInput>> = {
-  name: "write",
-  description: "Create or replace a UTF-8 text file inside the workspace.",
+  name: 'write',
+  description: 'Create or replace a UTF-8 text file inside the workspace.',
   inputSchema: writeInput,
   isReadOnly: () => false,
   async run(input, context) {
     const filePath = await prepareWorkspaceWritePath(context.workspaceRoot, input.path);
-    await writeFile(filePath, input.content, "utf8");
+    await writeFile(filePath, input.content, 'utf8');
     return { ok: true, content: `Wrote ${input.content.length} characters to ${input.path}.` };
-  }
+  },
 };
 
 const editInput = z.object({
@@ -140,7 +141,7 @@ const editInput = z.object({
   newText: z.string(),
   replaceAll: z.boolean().default(false),
   expectedReplacements: z.number().int().positive().nullable().optional(),
-  readState: readSnapshotInputSchema.nullable().optional()
+  readState: readSnapshotInputSchema.nullable().optional(),
 });
 
 const editOpenAIInput = z.object({
@@ -149,12 +150,12 @@ const editOpenAIInput = z.object({
   newText: z.string(),
   replaceAll: z.boolean(),
   expectedReplacements: z.number().int().positive().nullable(),
-  readState: readSnapshotInputSchema.nullable().optional()
+  readState: readSnapshotInputSchema.nullable().optional(),
 });
 
 export const editTool: Tool<z.infer<typeof editInput>> = {
-  name: "edit",
-  description: "Replace exact text in one UTF-8 file inside the workspace.",
+  name: 'edit',
+  description: 'Replace exact text in one UTF-8 file inside the workspace.',
   inputSchema: editInput,
   openaiInputSchema: editOpenAIInput,
   isReadOnly: () => false,
@@ -168,16 +169,16 @@ export const editTool: Tool<z.infer<typeof editInput>> = {
         const fresh = await readFreshTextForMutation({
           workspaceRoot: context.workspaceRoot,
           path: input.path,
-          readState: guardedReadState
+          readState: guardedReadState,
         });
         filePath = fresh.absolutePath;
         content = fresh.content;
       } catch (error) {
-        return { ok: false, content: readStateFailure("Edit", input.path, error) };
+        return { ok: false, content: readStateFailure('Edit', input.path, error) };
       }
     } else {
       filePath = await assertExistingPathInsideWorkspace(context.workspaceRoot, input.path);
-      content = await readFile(filePath, "utf8");
+      content = await readFile(filePath, 'utf8');
     }
     if (!content.includes(input.oldText)) {
       return { ok: false, content: `Edit not applied: text not found in ${input.path}. No changes were applied.` };
@@ -188,7 +189,7 @@ export const editTool: Tool<z.infer<typeof editInput>> = {
     if (input.expectedReplacements != null && input.expectedReplacements !== actualReplacements) {
       return {
         ok: false,
-        content: `Edit not applied: expected ${input.expectedReplacements} replacement(s) in ${input.path}, found ${actualReplacements}. No changes were applied.`
+        content: `Edit not applied: expected ${input.expectedReplacements} replacement(s) in ${input.path}, found ${actualReplacements}. No changes were applied.`,
       };
     }
 
@@ -201,26 +202,27 @@ export const editTool: Tool<z.infer<typeof editInput>> = {
           workspaceRoot: context.workspaceRoot,
           path: input.path,
           readState: guardedReadState,
-          content: updated
+          content: updated,
         });
       } catch (error) {
-        return { ok: false, content: readStateFailure("Edit", input.path, error) };
+        return { ok: false, content: readStateFailure('Edit', input.path, error) };
       }
     } else {
-      await writeFile(filePath, updated, "utf8");
+      await writeFile(filePath, updated, 'utf8');
     }
     return {
       ok: true,
-      content: input.replaceAll || input.expectedReplacements != null
-        ? `Edited ${input.path} with ${actualReplacements} replacements.`
-        : `Edited ${input.path}.`
+      content:
+        input.replaceAll || input.expectedReplacements != null
+          ? `Edited ${input.path} with ${actualReplacements} replacements.`
+          : `Edited ${input.path}.`,
     };
-  }
+  },
 };
 
 export const listTool: Tool<z.infer<typeof pathInput>> = {
-  name: "list",
-  description: "List files and directories inside the workspace.",
+  name: 'list',
+  description: 'List files and directories inside the workspace.',
   inputSchema: pathInput,
   isReadOnly: () => true,
   isConcurrencySafe: () => true,
@@ -229,7 +231,7 @@ export const listTool: Tool<z.infer<typeof pathInput>> = {
     const entries = await readdir(directory, { withFileTypes: true });
     const lines = entries
       .sort((a, b) => a.name.localeCompare(b.name))
-      .map((entry) => `${entry.isDirectory() ? "dir " : "file"} ${basename(join(directory, entry.name))}`);
-    return { ok: true, content: lines.join("\n") };
-  }
+      .map((entry) => `${entry.isDirectory() ? 'dir ' : 'file'} ${basename(join(directory, entry.name))}`);
+    return { ok: true, content: lines.join('\n') };
+  },
 };

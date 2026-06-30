@@ -1,5 +1,5 @@
-import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
-import { basename, extname, join, relative, resolve } from "node:path";
+import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { basename, extname, join, relative, resolve } from 'node:path';
 
 export interface WorkspaceContextFile {
   path: string;
@@ -32,13 +32,13 @@ export interface FileWorkspaceContextIndexStoreOptions {
   now?: () => Date;
 }
 
-const defaultIgnoredDirectories = [".git", ".xenesis", "dist", "node_modules"];
+const defaultIgnoredDirectories = ['.git', '.xenesis', 'dist', 'node_modules'];
 const defaultMaxFiles = 1000;
 const defaultPreviewBytes = 600;
 const maxPreviewSourceBytes = 1024 * 1024;
 
 function normalizePath(path: string) {
-  return path.replace(/\\/g, "/");
+  return path.replace(/\\/g, '/');
 }
 
 function uniqueSorted(values: string[]) {
@@ -48,9 +48,9 @@ function uniqueSorted(values: string[]) {
 async function readPreview(path: string, size: number, previewBytes: number) {
   if (size > maxPreviewSourceBytes || previewBytes <= 0) return undefined;
   try {
-    const content = await readFile(path, "utf8");
-    if (content.includes("\0")) return undefined;
-    return content.replace(/\r\n/g, "\n").slice(0, previewBytes);
+    const content = await readFile(path, 'utf8');
+    if (content.includes('\0')) return undefined;
+    return content.replace(/\r\n/g, '\n').slice(0, previewBytes);
   } catch {
     return undefined;
   }
@@ -62,7 +62,7 @@ async function collectFiles(
   ignored: Set<string>,
   maxFiles: number,
   previewBytes: number,
-  files: WorkspaceContextFile[]
+  files: WorkspaceContextFile[],
 ) {
   if (files.length >= maxFiles) return;
   const entries = await readdir(current, { withFileTypes: true });
@@ -85,7 +85,7 @@ async function collectFiles(
       size: stats.size,
       modifiedAt: stats.mtime.toISOString(),
       text: preview !== undefined,
-      ...(preview !== undefined ? { preview } : {})
+      ...(preview !== undefined ? { preview } : {}),
     });
   }
 }
@@ -95,15 +95,18 @@ function scoreFile(file: WorkspaceContextFile, query: string) {
     { value: file.path.toLowerCase(), weight: 5 },
     { value: file.name.toLowerCase(), weight: 4 },
     { value: file.extension.toLowerCase(), weight: 2 },
-    { value: file.preview?.toLowerCase() ?? "", weight: 1 }
+    { value: file.preview?.toLowerCase() ?? '', weight: 1 },
   ];
   return query
     .toLowerCase()
     .split(/\s+/)
     .filter(Boolean)
-    .reduce((score, token) => score + haystacks.reduce((part, haystack) => (
-      haystack.value.includes(token) ? part + haystack.weight : part
-    ), 0), 0);
+    .reduce(
+      (score, token) =>
+        score +
+        haystacks.reduce((part, haystack) => (haystack.value.includes(token) ? part + haystack.weight : part), 0),
+      0,
+    );
 }
 
 export class FileWorkspaceContextIndexStore {
@@ -113,15 +116,12 @@ export class FileWorkspaceContextIndexStore {
 
   constructor(options: FileWorkspaceContextIndexStoreOptions) {
     this.workspaceRoot = resolve(options.workspaceRoot);
-    this.indexPath = resolve(options.xenesisHome, "context", "index.json");
+    this.indexPath = resolve(options.xenesisHome, 'context', 'index.json');
     this.now = options.now ?? (() => new Date());
   }
 
   async rebuild(options: WorkspaceContextIndexOptions = {}): Promise<WorkspaceContextIndex> {
-    const ignoredDirectories = uniqueSorted([
-      ...defaultIgnoredDirectories,
-      ...(options.ignoreDirectories ?? [])
-    ]);
+    const ignoredDirectories = uniqueSorted([...defaultIgnoredDirectories, ...(options.ignoreDirectories ?? [])]);
     const files: WorkspaceContextFile[] = [];
     await collectFiles(
       this.workspaceRoot,
@@ -129,7 +129,7 @@ export class FileWorkspaceContextIndexStore {
       new Set(ignoredDirectories),
       options.maxFiles ?? defaultMaxFiles,
       options.previewBytes ?? defaultPreviewBytes,
-      files
+      files,
     );
 
     const index: WorkspaceContextIndex = {
@@ -138,18 +138,18 @@ export class FileWorkspaceContextIndexStore {
       fileCount: files.length,
       totalSize: files.reduce((sum, file) => sum + file.size, 0),
       ignoredDirectories,
-      files
+      files,
     };
-    await mkdir(resolve(this.indexPath, ".."), { recursive: true });
-    await writeFile(this.indexPath, `${JSON.stringify(index, null, 2)}\n`, "utf8");
+    await mkdir(resolve(this.indexPath, '..'), { recursive: true });
+    await writeFile(this.indexPath, `${JSON.stringify(index, null, 2)}\n`, 'utf8');
     return index;
   }
 
   async read(): Promise<WorkspaceContextIndex | undefined> {
     try {
-      return JSON.parse(await readFile(this.indexPath, "utf8")) as WorkspaceContextIndex;
+      return JSON.parse(await readFile(this.indexPath, 'utf8')) as WorkspaceContextIndex;
     } catch (error) {
-      if (error instanceof Error && "code" in error && error.code === "ENOENT") return undefined;
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return undefined;
       throw error;
     }
   }

@@ -29,6 +29,7 @@ approval change.
 | Lint | `npm run lint` |
 | CR audit | `npm run docs:capabilities:audit` |
 | CR audit zero assertion | `node scripts\assertCapabilityAuditZero.mjs` |
+| Obsidian graph check | `npm run docs:obsidian:check` |
 | Connection Center live smoke JSON evidence | `node .\scripts\xenesisConnectionCenterLiveSmoke.mjs --json` |
 | Review request approval live smoke JSON evidence | `node .\scripts\xenesisReviewRequestApprovalLiveSmoke.mjs --json` |
 | Provider onboarding live smoke JSON evidence | `node .\scripts\xenesisProviderOnboardingLiveSmoke.mjs --json` |

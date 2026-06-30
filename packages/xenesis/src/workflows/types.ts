@@ -1,7 +1,7 @@
-import type { AgentRunPipelineOptions, AgentRunPipelineResult } from "../core/AgentRunPipeline.js";
-import type { WorkflowStepEvent } from "../core/events.js";
-import type { AgentMessage, AgentMessageAttachment } from "../core/messages.js";
-import type { IdeContextInput } from "../ide/index.js";
+import type { AgentRunPipelineOptions, AgentRunPipelineResult } from '../core/AgentRunPipeline.js';
+import type { WorkflowStepEvent } from '../core/events.js';
+import type { AgentMessage, AgentMessageAttachment } from '../core/messages.js';
+import type { IdeContextInput } from '../ide/index.js';
 
 export interface WorkflowRequestBody {
   prompt: string;
@@ -10,14 +10,14 @@ export interface WorkflowRequestBody {
   workflow?: string;
 }
 
-export type WorkflowPipelineOverrides = Partial<Pick<
-  AgentRunPipelineOptions,
-  "mode" | "savePlan" | "fromPlan" | "systemMessages" | "historyMessages"
-  | "guard"
-  | "toolExecutionPolicy"
->>;
+export type WorkflowPipelineOverrides = Partial<
+  Pick<
+    AgentRunPipelineOptions,
+    'mode' | 'savePlan' | 'fromPlan' | 'systemMessages' | 'historyMessages' | 'guard' | 'toolExecutionPolicy'
+  >
+>;
 
-export type WorkflowStepInput = "original" | "previous";
+export type WorkflowStepInput = 'original' | 'previous';
 
 export interface WorkflowStep {
   name: string;
@@ -70,7 +70,7 @@ export interface WorkflowSummary {
   metadata?: Record<string, unknown>;
 }
 
-export type WorkflowStepRun = Omit<WorkflowStepEvent, "type"> & {
+export type WorkflowStepRun = Omit<WorkflowStepEvent, 'type'> & {
   sessionId?: string;
 };
 
@@ -80,7 +80,7 @@ export interface WorkflowRunResult {
   exitCode: number;
   sessionId?: string;
   traceId?: string;
-  events: AgentRunPipelineResult["events"];
+  events: AgentRunPipelineResult['events'];
   doneContent?: string;
   turns: number;
   workflowSteps: WorkflowStepRun[];
@@ -92,7 +92,7 @@ export interface RunResolvedWorkflowOptions {
   cwd: string;
   configPath?: string;
   env?: NodeJS.ProcessEnv;
-  cli?: AgentRunPipelineOptions["cli"];
+  cli?: AgentRunPipelineOptions['cli'];
   traceId?: string;
   sessionId?: string;
   historyMessages?: AgentMessage[];
@@ -100,10 +100,10 @@ export interface RunResolvedWorkflowOptions {
   abortSignal?: AbortSignal;
   stream?: boolean;
   runPipeline: WorkflowRunPipeline;
-  onEvent?: (event: AgentRunPipelineResult["events"][number]) => void | Promise<void>;
+  onEvent?: (event: AgentRunPipelineResult['events'][number]) => void | Promise<void>;
   onNotice?: (line: string) => void | Promise<void>;
   onSession?: (sessionId: string) => void | Promise<void>;
-  onMessages?: AgentRunPipelineOptions["onMessages"];
+  onMessages?: AgentRunPipelineOptions['onMessages'];
   includeStepOutput?: boolean;
 }
 
@@ -113,4 +113,4 @@ export interface ResolveWorkflowOptions {
   env?: NodeJS.ProcessEnv;
 }
 
-export type WorkflowSystemMessage = Extract<AgentMessage, { role: "system" }>;
+export type WorkflowSystemMessage = Extract<AgentMessage, { role: 'system' }>;

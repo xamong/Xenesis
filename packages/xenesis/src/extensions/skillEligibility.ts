@@ -6,22 +6,22 @@
 // reported missing. evaluateSkillEligibility returns {eligible, missing} and
 // filterEligibleSkills auto-hides skills whose requirements are unmet.
 
-import fs from "node:fs";
-import path from "node:path";
-import type { SkillDefinition, SkillRequiresSpec } from "./types.js";
+import fs from 'node:fs';
+import path from 'node:path';
+import type { SkillDefinition, SkillRequiresSpec } from './types.js';
 
 /** Normalizes primitive config values into the truthiness rules used by requirements checks. */
 export function isTruthy(value: unknown): boolean {
   if (value === undefined || value === null) {
     return false;
   }
-  if (typeof value === "boolean") {
+  if (typeof value === 'boolean') {
     return value;
   }
-  if (typeof value === "number") {
+  if (typeof value === 'number') {
     return value !== 0;
   }
-  if (typeof value === "string") {
+  if (typeof value === 'string') {
     return value.trim().length > 0;
   }
   return true;
@@ -29,9 +29,8 @@ export function isTruthy(value: unknown): boolean {
 
 function windowsPathExtensions(): string[] {
   const raw = process.env.PATHEXT;
-  const list =
-    raw !== undefined ? raw.split(";").map((v) => v.trim()) : [".EXE", ".CMD", ".BAT", ".COM"];
-  return ["", ...list.filter(Boolean)];
+  const list = raw !== undefined ? raw.split(';').map((v) => v.trim()) : ['.EXE', '.CMD', '.BAT', '.COM'];
+  return ['', ...list.filter(Boolean)];
 }
 
 let cachedHasBinaryPath: string | undefined;
@@ -40,8 +39,8 @@ const hasBinaryCache = new Map<string, boolean>();
 
 /** Checks PATH for an executable binary, including PATHEXT candidates on Windows. */
 export function hasBinary(bin: string): boolean {
-  const pathEnv = process.env.PATH ?? "";
-  const pathExt = process.platform === "win32" ? (process.env.PATHEXT ?? "") : "";
+  const pathEnv = process.env.PATH ?? '';
+  const pathExt = process.platform === 'win32' ? (process.env.PATHEXT ?? '') : '';
   if (cachedHasBinaryPath !== pathEnv || cachedHasBinaryPathExt !== pathExt) {
     // PATH/PATHEXT changes invalidate all cached binary probes; keeping stale misses
     // would make newly installed tools invisible until process restart.
@@ -54,7 +53,7 @@ export function hasBinary(bin: string): boolean {
   }
 
   const parts = pathEnv.split(path.delimiter).filter(Boolean);
-  const extensions = process.platform === "win32" ? windowsPathExtensions() : [""];
+  const extensions = process.platform === 'win32' ? windowsPathExtensions() : [''];
   for (const part of parts) {
     for (const ext of extensions) {
       const candidate = path.join(part, bin + ext);
@@ -83,15 +82,15 @@ export function resolveRuntimePlatform(): string {
 export function normalizeOsToken(token: string): string {
   const normalized = token.trim().toLowerCase();
   switch (normalized) {
-    case "windows":
-    case "win":
-    case "win32":
-      return "win32";
-    case "macos":
-    case "osx":
-    case "mac":
-    case "darwin":
-      return "darwin";
+    case 'windows':
+    case 'win':
+    case 'win32':
+      return 'win32';
+    case 'macos':
+    case 'osx':
+    case 'mac':
+    case 'darwin':
+      return 'darwin';
     default:
       return normalized;
   }
@@ -119,7 +118,7 @@ function evaluateRequires(
   hasBin: (bin: string) => boolean,
   hasEnv: (envName: string) => boolean,
   isConfigTruthy: (pathStr: string) => boolean,
-  missing: string[]
+  missing: string[],
 ): void {
   if (!requires) {
     return;
@@ -133,7 +132,7 @@ function evaluateRequires(
 
   const anyBins = requires.anyBins ?? [];
   if (anyBins.length > 0 && !anyBins.some((bin) => hasBin(bin))) {
-    missing.push(`anyBins:${anyBins.join("|")}`);
+    missing.push(`anyBins:${anyBins.join('|')}`);
   }
 
   for (const envName of requires.env ?? []) {
@@ -155,20 +154,19 @@ function evaluateRequires(
  * a skill declared for darwin is not surfaced on win32 even if always).
  */
 export function evaluateSkillEligibility(
-  skill: Pick<SkillDefinition, "os" | "requires" | "always">,
-  context: SkillEligibilityContext = {}
+  skill: Pick<SkillDefinition, 'os' | 'requires' | 'always'>,
+  context: SkillEligibilityContext = {},
 ): SkillEligibilityResult {
   const platform = context.platform ?? resolveRuntimePlatform();
   const hasBin = context.hasBin ?? hasBinary;
-  const hasEnv =
-    context.hasEnv ?? ((envName: string) => isTruthy(process.env[envName]));
+  const hasEnv = context.hasEnv ?? ((envName: string) => isTruthy(process.env[envName]));
   const isConfigTruthy = context.isConfigTruthy ?? (() => false);
 
   const missing: string[] = [];
 
   const osList = (skill.os ?? []).map(normalizeOsToken);
   if (osList.length > 0 && !osList.includes(platform)) {
-    missing.push(`os:${osList.join("|")}!=${platform}`);
+    missing.push(`os:${osList.join('|')}!=${platform}`);
   }
 
   if (skill.always === true) {
@@ -184,7 +182,7 @@ export function evaluateSkillEligibility(
 /** Filters a skill list down to those eligible under the given context. */
 export function filterEligibleSkills(
   skills: SkillDefinition[],
-  context: SkillEligibilityContext = {}
+  context: SkillEligibilityContext = {},
 ): SkillDefinition[] {
   return skills.filter((skill) => evaluateSkillEligibility(skill, context).eligible);
 }

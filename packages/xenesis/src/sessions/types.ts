@@ -1,4 +1,4 @@
-import type { SessionEvent } from "../core/events.js";
+import type { SessionEvent } from '../core/events.js';
 
 export interface SessionWriter {
   write(event: SessionEvent): Promise<void>;
@@ -13,4 +13,4 @@ export interface JsonlSessionWriterOptions {
   initialSeq?: number;
 }
 
-export type { RecordedSessionEvent, SessionEvent } from "../core/events.js";
+export type { RecordedSessionEvent, SessionEvent } from '../core/events.js';

@@ -9,8 +9,13 @@
         "env": { "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}" },
         "toolFilter": {
           "include": [
-            "search_repositories", "search_code", "get_file_contents",
-            "list_issues", "get_issue", "list_pull_requests", "get_pull_request"
+            "search_repositories",
+            "search_code",
+            "get_file_contents",
+            "list_issues",
+            "get_issue",
+            "list_pull_requests",
+            "get_pull_request"
           ]
         }
       },

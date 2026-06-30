@@ -52,7 +52,11 @@ export function createAppControlService(options: AppControlServiceOptions): AppC
         return failedResult(action.action, approvalLevel, `External app profile is disabled: ${profile.id}`);
       }
       if (profile && !profile.allowedActions.includes(action.action)) {
-        return failedResult(action.action, approvalLevel, `External app action is not allowed for ${profile.id}: ${action.action}`);
+        return failedResult(
+          action.action,
+          approvalLevel,
+          `External app action is not allowed for ${profile.id}: ${action.action}`,
+        );
       }
 
       const executable = action.path || profile?.executable || '';
@@ -77,7 +81,13 @@ export function createAppControlService(options: AppControlServiceOptions): AppC
               : action.action === 'focus'
                 ? await adapter.focus(common)
                 : action.action === 'resize'
-                  ? await adapter.resize({ ...common, x: action.x, y: action.y, width: action.width, height: action.height })
+                  ? await adapter.resize({
+                      ...common,
+                      x: action.x,
+                      y: action.y,
+                      width: action.width,
+                      height: action.height,
+                    })
                   : action.action === 'typeText'
                     ? await adapter.typeText({ ...common, text: action.text ?? '' })
                     : action.action === 'hotkey'

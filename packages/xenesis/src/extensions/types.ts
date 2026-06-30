@@ -1,42 +1,33 @@
-import type { ExtensionsConfig } from "../config/index.js";
-import type { ToolRegistry } from "../tools/index.js";
-import type { ProviderCapabilities } from "../providers/registry.js";
+import type { ExtensionsConfig } from '../config/index.js';
+import type { ProviderCapabilities } from '../providers/registry.js';
+import type { ToolRegistry } from '../tools/index.js';
 
-export type ExtensionKind = "mcp" | "subagent" | "memory" | "plugin" | "skill";
-export type ExtensionCapabilitySourceKind =
-  | "memory"
-  | "subagent"
-  | "mcp"
-  | "plugin"
-  | "skill";
+export type ExtensionKind = 'mcp' | 'subagent' | 'memory' | 'plugin' | 'skill';
+export type ExtensionCapabilitySourceKind = 'memory' | 'subagent' | 'mcp' | 'plugin' | 'skill';
 export type ExtensionCapabilityIntent =
-  | "read"
-  | "search"
-  | "create"
-  | "edit"
-  | "delete"
-  | "open"
-  | "arrange"
-  | "run"
-  | "schedule"
-  | "export"
-  | "verify"
-  | "approve"
-  | "context"
-  | "tool"
-  | "workflow";
+  | 'read'
+  | 'search'
+  | 'create'
+  | 'edit'
+  | 'delete'
+  | 'open'
+  | 'arrange'
+  | 'run'
+  | 'schedule'
+  | 'export'
+  | 'verify'
+  | 'approve'
+  | 'context'
+  | 'tool'
+  | 'workflow';
 export type ExtensionRuntimeSurface =
-  | "system_context"
-  | "tool_registry"
-  | "mcp_client"
-  | "plugin_loader"
-  | "subagent_runner"
-  | "memory_store";
-export type ExtensionApprovalPolicy =
-  | "not_applicable"
-  | "tool_policy"
-  | "capability_policy"
-  | "configuration";
+  | 'system_context'
+  | 'tool_registry'
+  | 'mcp_client'
+  | 'plugin_loader'
+  | 'subagent_runner'
+  | 'memory_store';
+export type ExtensionApprovalPolicy = 'not_applicable' | 'tool_policy' | 'capability_policy' | 'configuration';
 
 export interface ExtensionCapabilityDescriptor {
   sourceKind: ExtensionCapabilitySourceKind;
@@ -64,19 +55,15 @@ export interface ExtensionCatalog {
 }
 
 export type ExtensionActivationRequirementKind =
-  | "extension_capability"
-  | "required_capability"
-  | "required_mcp_server"
-  | "target_surface"
-  | "verification_command"
-  | "setup_prerequisite"
-  | "execution_mode";
+  | 'extension_capability'
+  | 'required_capability'
+  | 'required_mcp_server'
+  | 'target_surface'
+  | 'verification_command'
+  | 'setup_prerequisite'
+  | 'execution_mode';
 
-export type ExtensionActivationRequirementStatus =
-  | "configured"
-  | "declared"
-  | "disabled"
-  | "missing";
+export type ExtensionActivationRequirementStatus = 'configured' | 'declared' | 'disabled' | 'missing';
 
 export interface ExtensionActivationRequirement {
   id: string;
@@ -94,7 +81,7 @@ export interface ExtensionActivationPlan {
   missing: ExtensionActivationRequirement[];
 }
 
-export type MemoryStatus = "active" | "stale" | "archived";
+export type MemoryStatus = 'active' | 'stale' | 'archived';
 
 export interface MemoryRecord {
   id: string;
@@ -144,12 +131,12 @@ export interface PluginToolDescriptor {
   description?: string;
 }
 
-export type PluginWorkflowStepInput = "original" | "previous";
+export type PluginWorkflowStepInput = 'original' | 'previous';
 
 export interface PluginWorkflowStepDescriptor {
   name: string;
   description?: string;
-  mode?: "plan" | "work";
+  mode?: 'plan' | 'work';
   input?: PluginWorkflowStepInput;
   prompt?: string;
   promptPrefix?: string;
@@ -173,11 +160,11 @@ export interface PluginManifest {
   version?: string;
   tools: PluginToolDescriptor[];
   workflows: PluginWorkflowDescriptor[];
-  mcpServers: ExtensionsConfig["mcpServers"];
+  mcpServers: ExtensionsConfig['mcpServers'];
   providers: PluginProviderDescriptor[];
 }
 
-export type SkillPromptBlock = { type: "text"; text: string };
+export type SkillPromptBlock = { type: 'text'; text: string };
 
 export interface SkillPromptContext {
   workspaceRoot?: string;
@@ -196,7 +183,7 @@ export interface BundledSkillDefinition {
   effort?: string;
   disableModelInvocation?: boolean;
   userInvocable?: boolean;
-  context?: "inline" | "fork";
+  context?: 'inline' | 'fork';
   agent?: string;
   skillRoot?: string;
   files?: Record<string, string>;
@@ -206,7 +193,7 @@ export interface BundledSkillDefinition {
 }
 
 export interface SkillCommand {
-  type: "prompt";
+  type: 'prompt';
   name: string;
   description: string;
   aliases?: string[];
@@ -219,15 +206,15 @@ export interface SkillCommand {
   disableModelInvocation: boolean;
   userInvocable: boolean;
   contentLength: number;
-  source: "bundled";
-  loadedFrom: "bundled";
-  context?: "inline" | "fork";
+  source: 'bundled';
+  loadedFrom: 'bundled';
+  context?: 'inline' | 'fork';
   agent?: string;
   skillRoot?: string;
   hooks?: Record<string, unknown>;
   isEnabled?: () => boolean;
   isHidden: boolean;
-  progressMessage: "running";
+  progressMessage: 'running';
   getPromptForCommand: (args: string, context: SkillPromptContext) => Promise<SkillPromptBlock[]>;
 }
 
@@ -239,7 +226,7 @@ export interface BuiltinPluginDefinition {
   isAvailable?: () => boolean;
   skills?: BundledSkillDefinition[];
   hooks?: Record<string, unknown>;
-  mcpServers?: ExtensionsConfig["mcpServers"];
+  mcpServers?: ExtensionsConfig['mcpServers'];
 }
 
 export interface BuiltinPluginSettings {
@@ -253,13 +240,13 @@ export interface LoadedBuiltinPlugin {
     description: string;
     version?: string;
   };
-  path: "builtin";
+  path: 'builtin';
   source: string;
   repository: string;
   enabled: boolean;
   isBuiltin: true;
   hooksConfig?: Record<string, unknown>;
-  mcpServers?: ExtensionsConfig["mcpServers"];
+  mcpServers?: ExtensionsConfig['mcpServers'];
 }
 
 export interface PluginStateRecord {
@@ -273,14 +260,14 @@ export interface PluginStateRecord {
 export interface LoadPluginToolsOptions {
   workspaceRoot: string;
   paths: string[];
-  pluginLoadPolicy?: "strict" | "tolerant";
+  pluginLoadPolicy?: 'strict' | 'tolerant';
 }
 
 export interface CreateRuntimeToolRegistryOptions {
   baseTools: ToolRegistry;
   workspaceRoot: string;
   pluginPaths: string[];
-  pluginLoadPolicy?: "strict" | "tolerant";
+  pluginLoadPolicy?: 'strict' | 'tolerant';
 }
 
 export interface PluginRuntimeDiagnostic {
@@ -305,7 +292,7 @@ export interface SkillRequiresSpec {
 
 export interface SkillInstallSpec {
   id?: string;
-  kind: "brew" | "node" | "go" | "uv" | "download";
+  kind: 'brew' | 'node' | 'go' | 'uv' | 'download';
   label?: string;
   bins?: string[];
   os?: string[];
@@ -324,8 +311,8 @@ export interface SkillDefinition {
   description: string;
   path: string;
   body: string;
-  type?: "prompt" | "command";
-  context?: "inline" | "fork";
+  type?: 'prompt' | 'command';
+  context?: 'inline' | 'fork';
   disableModelInvocation?: boolean;
   model?: string;
   effort?: string;
@@ -338,7 +325,7 @@ export interface SkillDefinition {
   always?: boolean;
 }
 
-export type SkillExecutionMode = "prompt_only" | "tool_assisted" | "executable";
+export type SkillExecutionMode = 'prompt_only' | 'tool_assisted' | 'executable';
 
 export interface SkillOperationalMetadata {
   requiredCapabilities?: string[];

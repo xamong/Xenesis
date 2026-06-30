@@ -1,8 +1,8 @@
-import type { AgentMessage, AgentMessageAttachment } from "../../messages.js";
+import type { AgentMessage, AgentMessageAttachment } from '../../messages.js';
 
 function hasImage(message: AgentMessage): boolean {
   const attachments = (message as { attachments?: AgentMessageAttachment[] }).attachments;
-  return Array.isArray(attachments) && attachments.some((a) => a.kind === "image");
+  return Array.isArray(attachments) && attachments.some((a) => a.kind === 'image');
 }
 
 /**
@@ -13,11 +13,14 @@ function hasImage(message: AgentMessage): boolean {
  */
 export function stripStaleImageAttachments(
   messages: AgentMessage[],
-  opts: { keepRecentTurns: number }
+  opts: { keepRecentTurns: number },
 ): AgentMessage[] {
   let lastImageIndex = -1;
   for (let i = messages.length - 1; i >= 0; i -= 1) {
-    if (hasImage(messages[i]!)) { lastImageIndex = i; break; }
+    if (hasImage(messages[i]!)) {
+      lastImageIndex = i;
+      break;
+    }
   }
   if (lastImageIndex === -1) return messages; // no images, fast path
 
@@ -27,10 +30,10 @@ export function stripStaleImageAttachments(
     if (!hasImage(message)) return message;
     if (index >= windowStart || index === lastImageIndex) return message; // keep
     const attachments = (message as { attachments?: AgentMessageAttachment[] }).attachments ?? [];
-    const keptAttachments = attachments.filter((a) => a.kind !== "image");
-    const removed = attachments.filter((a) => a.kind === "image");
-    const notes = removed.map((a) => `[image omitted: ${a.name ?? "image"}]`).join(" ");
-    const baseContent = (message as { content?: string }).content ?? "";
+    const keptAttachments = attachments.filter((a) => a.kind !== 'image');
+    const removed = attachments.filter((a) => a.kind === 'image');
+    const notes = removed.map((a) => `[image omitted: ${a.name ?? 'image'}]`).join(' ');
+    const baseContent = (message as { content?: string }).content ?? '';
     const content = baseContent ? `${baseContent}\n${notes}` : notes;
     const next: AgentMessage = { ...(message as AgentMessage), content } as AgentMessage;
     if (keptAttachments.length > 0) {

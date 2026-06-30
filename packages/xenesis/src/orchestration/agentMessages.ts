@@ -1,9 +1,9 @@
-import { createHash, randomUUID } from "node:crypto";
-import type { DatabaseSync } from "node:sqlite";
-import { openDatabase } from "../db/database.js";
-import { type AgentTask, type AgentTaskStore, now } from "./agentTasks.js";
+import { createHash, randomUUID } from 'node:crypto';
+import type { DatabaseSync } from 'node:sqlite';
+import { openDatabase } from '../db/database.js';
+import { type AgentTask, type AgentTaskStore, now } from './agentTasks.js';
 
-export type AgentMessageType = "message" | "structured";
+export type AgentMessageType = 'message' | 'structured';
 
 export interface AgentInboxMessage {
   id: string;
@@ -52,7 +52,11 @@ export interface AgentMessageContextSummary {
 export interface AgentMessageStore {
   enqueue(input: CreateAgentMessageInput): Promise<AgentInboxMessage>;
   listUnread(toTaskId: string, options?: AgentMessageListOptions): Promise<AgentInboxMessage[]>;
-  claimUnread(toTaskId: string, receiverSessionId: string, options?: AgentMessageListOptions): Promise<AgentInboxMessage[]>;
+  claimUnread(
+    toTaskId: string,
+    receiverSessionId: string,
+    options?: AgentMessageListOptions,
+  ): Promise<AgentInboxMessage[]>;
   markRead(ids: string[], readBySessionId: string): Promise<void>;
   releaseClaims(ids: string[], claimedBySessionId: string): Promise<void>;
   pruneReadBefore?(beforeIso: string): Promise<number>;
@@ -78,19 +82,19 @@ interface TableInfoRow {
 }
 
 const MESSAGE_SELECT_COLUMNS = [
-  "id",
-  "from_session_id",
-  "to_task_id",
-  "to_agent_name",
-  "summary",
-  "message",
-  "message_type",
-  "created_at",
-  "claimed_at",
-  "claimed_by_session_id",
-  "read_at",
-  "read_by_session_id"
-].join(", ");
+  'id',
+  'from_session_id',
+  'to_task_id',
+  'to_agent_name',
+  'summary',
+  'message',
+  'message_type',
+  'created_at',
+  'claimed_at',
+  'claimed_by_session_id',
+  'read_at',
+  'read_by_session_id',
+].join(', ');
 
 const CLAIM_TTL_MS = 30 * 60 * 1000;
 
@@ -98,12 +102,9 @@ let messageSequence = 0;
 
 function createAgentMessageId() {
   messageSequence = (messageSequence + 1) % Number.MAX_SAFE_INTEGER;
-  return [
-    "agent-message",
-    Date.now().toString(36),
-    messageSequence.toString(36).padStart(4, "0"),
-    randomUUID()
-  ].join("-");
+  return ['agent-message', Date.now().toString(36), messageSequence.toString(36).padStart(4, '0'), randomUUID()].join(
+    '-',
+  );
 }
 
 function mapRow(row: AgentMessageRow): AgentInboxMessage {
@@ -114,12 +115,12 @@ function mapRow(row: AgentMessageRow): AgentInboxMessage {
     ...(row.to_agent_name ? { toAgentName: row.to_agent_name } : {}),
     ...(row.summary ? { summary: row.summary } : {}),
     message: row.message,
-    messageType: row.message_type === "structured" ? "structured" : "message",
+    messageType: row.message_type === 'structured' ? 'structured' : 'message',
     createdAt: row.created_at,
     claimedAt: row.claimed_at ?? undefined,
     claimedBySessionId: row.claimed_by_session_id ?? undefined,
     readAt: row.read_at ?? undefined,
-    readBySessionId: row.read_by_session_id ?? undefined
+    readBySessionId: row.read_by_session_id ?? undefined,
   };
 }
 
@@ -145,29 +146,33 @@ export class SqliteAgentMessageStore implements AgentMessageStore {
       ...(input.toAgentName ? { toAgentName: input.toAgentName } : {}),
       ...(input.summary ? { summary: input.summary } : {}),
       message: input.message,
-      messageType: input.messageType ?? "message",
-      createdAt: timestamp
+      messageType: input.messageType ?? 'message',
+      createdAt: timestamp,
     };
-    const result = this.db.prepare(`
+    const result = this.db
+      .prepare(`
       INSERT OR IGNORE INTO agent_messages (
         id, from_session_id, to_task_id, to_agent_name, summary, message, message_type, created_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      message.id,
-      message.fromSessionId,
-      message.toTaskId,
-      message.toAgentName ?? null,
-      message.summary ?? null,
-      message.message,
-      message.messageType,
-      message.createdAt
-    );
+    `)
+      .run(
+        message.id,
+        message.fromSessionId,
+        message.toTaskId,
+        message.toAgentName ?? null,
+        message.summary ?? null,
+        message.message,
+        message.messageType,
+        message.createdAt,
+      );
     if (Number(result.changes ?? 0) === 0) {
-      const existing = this.db.prepare(`
+      const existing = this.db
+        .prepare(`
         SELECT ${MESSAGE_SELECT_COLUMNS}
         FROM agent_messages
         WHERE id = ?
-      `).get(message.id) as unknown as AgentMessageRow | undefined;
+      `)
+        .get(message.id) as unknown as AgentMessageRow | undefined;
       if (existing) return mapRow(existing);
       throw new Error(`Agent message insert was ignored but no existing row was found: ${message.id}`);
     }
@@ -176,28 +181,31 @@ export class SqliteAgentMessageStore implements AgentMessageStore {
 
   async listUnread(toTaskId: string, options: AgentMessageListOptions = {}): Promise<AgentInboxMessage[]> {
     const limit = Math.max(1, options.limit ?? 50);
-    const claimedFilter = options.includeClaimed ? "" : "AND claimed_at IS NULL";
-    const rows = this.db.prepare(`
+    const claimedFilter = options.includeClaimed ? '' : 'AND claimed_at IS NULL';
+    const rows = this.db
+      .prepare(`
       SELECT ${MESSAGE_SELECT_COLUMNS}
       FROM agent_messages
       WHERE to_task_id = ? AND read_at IS NULL ${claimedFilter}
       ORDER BY created_at ASC, id ASC
       LIMIT ?
-    `).all(toTaskId, limit) as unknown as AgentMessageRow[];
+    `)
+      .all(toTaskId, limit) as unknown as AgentMessageRow[];
     return rows.map(mapRow);
   }
 
   async claimUnread(
     toTaskId: string,
     receiverSessionId: string,
-    options: AgentMessageListOptions = {}
+    options: AgentMessageListOptions = {},
   ): Promise<AgentInboxMessage[]> {
     const limit = Math.max(1, options.limit ?? 50);
     const timestamp = now();
     const staleBefore = new Date(Date.now() - CLAIM_TTL_MS).toISOString();
-    this.db.exec("BEGIN IMMEDIATE");
+    this.db.exec('BEGIN IMMEDIATE');
     try {
-      const candidates = this.db.prepare(`
+      const candidates = this.db
+        .prepare(`
         SELECT ${MESSAGE_SELECT_COLUMNS}
         FROM agent_messages
         WHERE to_task_id = ?
@@ -205,21 +213,25 @@ export class SqliteAgentMessageStore implements AgentMessageStore {
           AND (claimed_at IS NULL OR claimed_at < ?)
         ORDER BY created_at ASC, id ASC
         LIMIT ?
-      `).all(toTaskId, staleBefore, limit) as unknown as AgentMessageRow[];
+      `)
+        .all(toTaskId, staleBefore, limit) as unknown as AgentMessageRow[];
       const ids = candidates.map((row) => row.id);
       if (ids.length === 0) {
-        this.db.exec("COMMIT");
+        this.db.exec('COMMIT');
         return [];
       }
-      const placeholders = ids.map(() => "?").join(", ");
-      this.db.prepare(`
+      const placeholders = ids.map(() => '?').join(', ');
+      this.db
+        .prepare(`
         UPDATE agent_messages
         SET claimed_at = ?, claimed_by_session_id = ?
         WHERE id IN (${placeholders})
           AND read_at IS NULL
           AND (claimed_at IS NULL OR claimed_at < ?)
-      `).run(timestamp, receiverSessionId, ...ids, staleBefore);
-      const rows = this.db.prepare(`
+      `)
+        .run(timestamp, receiverSessionId, ...ids, staleBefore);
+      const rows = this.db
+        .prepare(`
         SELECT ${MESSAGE_SELECT_COLUMNS}
         FROM agent_messages
         WHERE id IN (${placeholders})
@@ -227,11 +239,12 @@ export class SqliteAgentMessageStore implements AgentMessageStore {
           AND claimed_at = ?
           AND claimed_by_session_id = ?
         ORDER BY created_at ASC, id ASC
-      `).all(...ids, timestamp, receiverSessionId) as unknown as AgentMessageRow[];
-      this.db.exec("COMMIT");
+      `)
+        .all(...ids, timestamp, receiverSessionId) as unknown as AgentMessageRow[];
+      this.db.exec('COMMIT');
       return rows.map(mapRow);
     } catch (error) {
-      this.db.exec("ROLLBACK");
+      this.db.exec('ROLLBACK');
       throw error;
     }
   }
@@ -246,12 +259,12 @@ export class SqliteAgentMessageStore implements AgentMessageStore {
         AND read_at IS NULL
         AND (claimed_by_session_id IS NULL OR claimed_by_session_id = ?)
     `);
-    this.db.exec("BEGIN IMMEDIATE");
+    this.db.exec('BEGIN IMMEDIATE');
     try {
       for (const id of ids) update.run(timestamp, readBySessionId, id, readBySessionId);
-      this.db.exec("COMMIT");
+      this.db.exec('COMMIT');
     } catch (error) {
-      this.db.exec("ROLLBACK");
+      this.db.exec('ROLLBACK');
       throw error;
     }
   }
@@ -265,42 +278,43 @@ export class SqliteAgentMessageStore implements AgentMessageStore {
         AND read_at IS NULL
         AND claimed_by_session_id = ?
     `);
-    this.db.exec("BEGIN IMMEDIATE");
+    this.db.exec('BEGIN IMMEDIATE');
     try {
       for (const id of ids) update.run(id, claimedBySessionId);
-      this.db.exec("COMMIT");
+      this.db.exec('COMMIT');
     } catch (error) {
-      this.db.exec("ROLLBACK");
+      this.db.exec('ROLLBACK');
       throw error;
     }
   }
 
   async pruneReadBefore(beforeIso: string): Promise<number> {
-    const result = this.db.prepare(`
+    const result = this.db
+      .prepare(`
       DELETE FROM agent_messages
       WHERE read_at IS NOT NULL AND read_at < ?
-    `).run(beforeIso);
+    `)
+      .run(beforeIso);
     return Number(result.changes ?? 0);
   }
 }
 
 function ensureClaimColumns(db: DatabaseSync) {
   const columns = new Set(
-    (db.prepare("PRAGMA table_info(agent_messages)").all() as unknown as TableInfoRow[])
-      .map((row) => row.name)
+    (db.prepare('PRAGMA table_info(agent_messages)').all() as unknown as TableInfoRow[]).map((row) => row.name),
   );
-  if (!columns.has("claimed_at")) {
-    db.exec("ALTER TABLE agent_messages ADD COLUMN claimed_at TEXT");
+  if (!columns.has('claimed_at')) {
+    db.exec('ALTER TABLE agent_messages ADD COLUMN claimed_at TEXT');
   }
-  if (!columns.has("claimed_by_session_id")) {
-    db.exec("ALTER TABLE agent_messages ADD COLUMN claimed_by_session_id TEXT");
+  if (!columns.has('claimed_by_session_id')) {
+    db.exec('ALTER TABLE agent_messages ADD COLUMN claimed_by_session_id TEXT');
   }
 }
 
 export async function collectAgentMessages(
   store: AgentMessageStore,
   toTaskId: string,
-  options: AgentMessageContextOptions
+  options: AgentMessageContextOptions,
 ): Promise<AgentMessageContextSummary> {
   const maxMessages = Math.max(1, options.maxMessages ?? 8);
   const maxMessageChars = Math.max(120, options.maxMessageChars ?? 1200);
@@ -311,16 +325,18 @@ export async function collectAgentMessages(
   if (messages.length === 0) return { messageIds: [] };
 
   const lines: string[] = [
-    "Xenesis agent messages:",
-    "Use these messages from other durable agents before continuing this task."
+    'Xenesis agent messages:',
+    'Use these messages from other durable agents before continuing this task.',
   ];
   for (const [index, message] of messages.entries()) {
     const header = [
       `${index + 1}. from: ${message.fromSessionId}`,
       message.toAgentName ? `to: ${message.toAgentName}` : `toTaskId: ${message.toTaskId}`,
       `receivedAt: ${message.createdAt}`,
-      message.messageType === "structured" ? "type: structured" : undefined
-    ].filter((part): part is string => Boolean(part)).join(" | ");
+      message.messageType === 'structured' ? 'type: structured' : undefined,
+    ]
+      .filter((part): part is string => Boolean(part))
+      .join(' | ');
     lines.push(header);
     if (message.summary) lines.push(`summary: ${truncateText(message.summary, 260)}`);
     lines.push(`message:\n${truncateText(message.message, maxMessageChars)}`);
@@ -329,38 +345,35 @@ export async function collectAgentMessages(
   const messageIds = messages.map((message) => message.id);
   return {
     messageIds,
-    content: truncateText(lines.join("\n"), maxTotalChars)
+    content: truncateText(lines.join('\n'), maxTotalChars),
   };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
+  return typeof value === 'object' && value !== null;
 }
 
 function stringField(value: unknown): string | undefined {
-  return typeof value === "string" && value.trim().length > 0 ? value : undefined;
+  return typeof value === 'string' && value.trim().length > 0 ? value : undefined;
 }
 
 function legacyMessageBody(value: unknown) {
-  if (typeof value === "string") return value;
-  if (value === undefined || value === null) return "";
+  if (typeof value === 'string') return value;
+  if (value === undefined || value === null) return '';
   return JSON.stringify(value);
 }
 
 function legacyMessageCreatedAt(value: unknown) {
-  if (typeof value !== "string") return undefined;
+  if (typeof value !== 'string') return undefined;
   return Number.isNaN(Date.parse(value)) ? undefined : value;
 }
 
 function legacyMessageType(value: unknown): AgentMessageType {
-  return value === "structured" ? "structured" : "message";
+  return value === 'structured' ? 'structured' : 'message';
 }
 
 function stableLegacyMessageId(taskId: string, index: number, item: unknown) {
-  const digest = createHash("sha256")
-    .update(JSON.stringify({ taskId, index, item }))
-    .digest("hex")
-    .slice(0, 32);
+  const digest = createHash('sha256').update(JSON.stringify({ taskId, index, item })).digest('hex').slice(0, 32);
   return `legacy-agent-message-${digest}`;
 }
 
@@ -372,7 +385,7 @@ function taskAgentName(task: AgentTask) {
 export async function drainLegacyAgentInbox(
   taskStore: AgentTaskStore,
   messageStore: AgentMessageStore,
-  taskId: string
+  taskId: string,
 ): Promise<number> {
   const task = await taskStore.get(taskId);
   const inbox = task?.metadata && Array.isArray(task.metadata.inbox) ? task.metadata.inbox : [];
@@ -392,24 +405,22 @@ export async function drainLegacyAgentInbox(
     }
     await messageStore.enqueue({
       id: stableLegacyMessageId(task.id, index, item),
-      fromSessionId: stringField(item.from) ?? task.parentSessionId ?? "legacy-agent-message",
+      fromSessionId: stringField(item.from) ?? task.parentSessionId ?? 'legacy-agent-message',
       toTaskId: task.id,
       toAgentName: stringField(item.to) ?? taskAgentName(task),
       summary: stringField(item.summary),
       message: body,
       messageType: legacyMessageType(item.type),
-      createdAt: legacyMessageCreatedAt(item.timestamp)
+      createdAt: legacyMessageCreatedAt(item.timestamp),
     });
     migrated++;
   }
   if (migrated === 0) return 0;
 
   const { inbox: _inbox, ...metadata } = task.metadata ?? {};
-  const nextMetadata = remainingInbox.length > 0
-    ? { ...metadata, inbox: remainingInbox }
-    : metadata;
+  const nextMetadata = remainingInbox.length > 0 ? { ...metadata, inbox: remainingInbox } : metadata;
   await taskStore.update(task.id, {
-    metadata: nextMetadata
+    metadata: nextMetadata,
   });
   return migrated;
 }

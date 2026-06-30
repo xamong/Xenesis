@@ -358,6 +358,25 @@ deterministic prompt catalog:
 | Request review for the Notion tool profile draft | `xd.xenesis.tools.profileDrafts.request` |
 | Apply a ready Notion tool profile draft | `xd.xenesis.tools.profileDrafts.apply` |
 
+## Concrete Guide Workflows
+
+`xd.xenesis.guides.status` includes concrete `user-story-workflow` guide cards
+for the first operator flows:
+
+| Guide id | Purpose |
+|---|---|
+| `first-provider-setup` | Read provider setup/routing/view/setup-plan state and open the matching Settings surfaces before a first Agent turn. |
+| `connect-notion` | Read Notion MCP setup, connector, install draft, runtime, action-policy, and user-story state before provider tool use. |
+| `prepare-google-calendar` | Read Google Calendar OAuth draft, OAuth runtime, MCP OAuth, setup plan, runtime, and user-story state before OAuth completion. |
+| `connect-telegram` | Read gateway, messenger view, setup plan, routing, safety, access group, pairing, runtime, profile-draft, and user-story state before Telegram delivery. |
+| `first-external-message-test` | Read gateway, routing, safety, runtime, user-story, and diagnostics evidence before any separate approval-gated channel test. |
+
+These guide cards are not a natural-language intent catalog and not a workflow
+runner. Their `controlPaths` are open paths only. The table-driven shared tests
+now require every tool and messenger `storyContract.workflowPreview` step to
+use `approved=false`, exclude request/apply/run/send/test paths, and strip
+`runPath` from preview args.
+
 ## Safety Rules
 
 - User stories are planning and routing artifacts until the owning CR path

@@ -732,6 +732,23 @@ opens the repo-local guide file when `openFile` is true. Actual setup and
 runtime actions stay on the provider, tool, channel, file, and settings CR paths
 listed by the selected guide.
 
+Slice 05 adds concrete user-story workflow guide cards to the same guide
+catalog. These cards are still read/open planning metadata; they do not run
+workflows or mutate provider, tool, or channel state.
+
+| Guide id | Manual | Primary CR surfaces |
+|---|---|---|
+| `first-provider-setup` | `docs/manual/09-onboarding-connections.md` | `xd.xenesis.providers.setup.status`, `xd.xenesis.providers.routing.status`, `xd.xenesis.providers.views.status`, `xd.xenesis.providers.setupPlans.status` |
+| `connect-notion` | `docs/manual/11-external-tool-integrations.md` | `xd.xenesis.tools.setupPlans.status`, `xd.xenesis.tools.connectors.status`, `xd.xenesis.tools.mcpInstallDrafts.status`, `xd.xenesis.tools.runtime.status`, `xd.xenesis.tools.userStories.status` |
+| `prepare-google-calendar` | `docs/manual/11-external-tool-integrations.md` | `xd.xenesis.tools.oauthDrafts.status`, `xd.xenesis.tools.oauthRuntime.status`, `xd.xenesis.tools.mcpOAuth.status`, `xd.xenesis.tools.setupPlans.status`, `xd.xenesis.tools.userStories.status` |
+| `connect-telegram` | `docs/manual/10-openclaw-channel-setup.md` | `xd.xenesis.gateway.status`, `xd.xenesis.messengers.views.status`, `xd.xenesis.channels.setupPlans.status`, `xd.xenesis.channels.routing.status`, `xd.xenesis.channels.safety.status` |
+| `first-external-message-test` | `docs/manual/12-agent-user-stories.md` | `xd.xenesis.gateway.status`, `xd.xenesis.channels.routing.status`, `xd.xenesis.channels.safety.status`, `xd.xenesis.channels.runtime.status`, `xd.xenesis.connections.diagnostics.status` |
+
+Each workflow guide uses only `*.status` read paths and `*.open` control paths.
+Approval-gated paths such as provider/tool profile apply, OAuth requests, MCP
+install apply, channel profile apply, and `xd.xenesis.profiles.testChannel`
+remain separate explicit CR actions.
+
 Use `xd.xenesis.channels.routing.status` to inspect implemented external bot
 channel routing metadata through CR. The read model covers Telegram, Slack,
 Discord, and Webhook route bindings, allowlist fields, auth or pairing mode,

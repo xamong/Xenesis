@@ -1,50 +1,53 @@
-import { z } from "zod";
-import type { WebToolsConfig } from "../config/types.js";
-import { safeFetch } from "./ssrfGuard.js";
-import type { Tool } from "./types.js";
+import { z } from 'zod';
+import type { WebToolsConfig } from '../config/types.js';
+import { safeFetch } from './ssrfGuard.js';
+import type { Tool } from './types.js';
 
 const fetchInput = z.object({
   url: z.string().url(),
-  maxBytes: z.number().int().positive().max(200000).default(100000)
+  maxBytes: z.number().int().positive().max(200000).default(100000),
 });
 
 const fetchOpenAIInput = z.object({
   url: z.string(),
-  maxBytes: z.number().int().positive().max(200000)
+  maxBytes: z.number().int().positive().max(200000),
 });
 
 const searchInput = z.object({
   query: z.string().min(1),
-  maxResults: z.number().int().positive().max(10).default(5)
+  maxResults: z.number().int().positive().max(10).default(5),
 });
 
 export const DEFAULT_WEB_TOOLS_CONFIG: WebToolsConfig = {
   allowedHosts: [],
   fetchTimeoutMs: 15000,
-  maxRedirects: 5
+  maxRedirects: 5,
 };
 
 function decodeHtml(value: string) {
   return value
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, "\"")
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">");
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
 }
 
 function stripTags(value: string) {
-  return decodeHtml(value.replace(/<[^>]+>/g, "").trim());
+  return decodeHtml(value.replace(/<[^>]+>/g, '').trim());
 }
 
-export function createWebFetchTool(config: WebToolsConfig = DEFAULT_WEB_TOOLS_CONFIG): Tool<z.infer<typeof fetchInput>, {
-  status: number;
-  contentType: string;
-  truncated: boolean;
-}> {
+export function createWebFetchTool(config: WebToolsConfig = DEFAULT_WEB_TOOLS_CONFIG): Tool<
+  z.infer<typeof fetchInput>,
+  {
+    status: number;
+    contentType: string;
+    truncated: boolean;
+  }
+> {
   return {
-    name: "web_fetch",
-    description: "Fetch bounded text content from an HTTP(S) URL.",
+    name: 'web_fetch',
+    description: 'Fetch bounded text content from an HTTP(S) URL.',
     inputSchema: fetchInput,
     openaiInputSchema: fetchOpenAIInput,
     isReadOnly: () => true,
@@ -55,7 +58,7 @@ export function createWebFetchTool(config: WebToolsConfig = DEFAULT_WEB_TOOLS_CO
           maxBytes: input.maxBytes,
           timeoutMs: config.fetchTimeoutMs,
           allowedHosts: config.allowedHosts,
-          maxRedirects: config.maxRedirects
+          maxRedirects: config.maxRedirects,
         });
         return {
           ok: result.status >= 200 && result.status < 400,
@@ -63,16 +66,16 @@ export function createWebFetchTool(config: WebToolsConfig = DEFAULT_WEB_TOOLS_CO
           data: {
             status: result.status,
             contentType: result.contentType,
-            truncated: result.truncated
-          }
+            truncated: result.truncated,
+          },
         };
       } catch (error) {
         return {
           ok: false,
-          content: `web_fetch blocked: ${error instanceof Error ? error.message : String(error)}`
+          content: `web_fetch blocked: ${error instanceof Error ? error.message : String(error)}`,
         };
       }
-    }
+    },
   };
 }
 
@@ -80,7 +83,7 @@ function resultUrl(raw: string) {
   const decoded = decodeHtml(raw);
   try {
     const parsed = new URL(decoded);
-    return parsed.searchParams.get("uddg") ?? decoded;
+    return parsed.searchParams.get('uddg') ?? decoded;
   } catch {
     return decoded;
   }
@@ -100,10 +103,12 @@ function parseDuckDuckGoResults(html: string, maxResults: number) {
   return results;
 }
 
-export function createWebSearchTool(config: WebToolsConfig = DEFAULT_WEB_TOOLS_CONFIG): Tool<z.infer<typeof searchInput>, { count: number }> {
+export function createWebSearchTool(
+  config: WebToolsConfig = DEFAULT_WEB_TOOLS_CONFIG,
+): Tool<z.infer<typeof searchInput>, { count: number }> {
   return {
-    name: "web_search",
-    description: "Search the web and return result titles with links.",
+    name: 'web_search',
+    description: 'Search the web and return result titles with links.',
     inputSchema: searchInput,
     isReadOnly: () => true,
     isConcurrencySafe: () => true,
@@ -114,7 +119,7 @@ export function createWebSearchTool(config: WebToolsConfig = DEFAULT_WEB_TOOLS_C
           maxBytes: 100000,
           timeoutMs: config.fetchTimeoutMs,
           allowedHosts: config.allowedHosts,
-          maxRedirects: config.maxRedirects
+          maxRedirects: config.maxRedirects,
         });
         if (result.status < 200 || result.status >= 400) {
           return { ok: false, content: `Search failed with status ${result.status}.`, data: { count: 0 } };
@@ -123,17 +128,17 @@ export function createWebSearchTool(config: WebToolsConfig = DEFAULT_WEB_TOOLS_C
         const results = parseDuckDuckGoResults(result.text, input.maxResults);
         return {
           ok: true,
-          content: results.length > 0 ? results.join("\n") : "No results.",
-          data: { count: results.length }
+          content: results.length > 0 ? results.join('\n') : 'No results.',
+          data: { count: results.length },
         };
       } catch (error) {
         return {
           ok: false,
           content: `web_search blocked: ${error instanceof Error ? error.message : String(error)}`,
-          data: { count: 0 }
+          data: { count: 0 },
         };
       }
-    }
+    },
   };
 }
 

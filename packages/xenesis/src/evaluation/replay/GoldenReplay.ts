@@ -1,4 +1,4 @@
-import { stableValuesDiffer } from "../../utils/stableValue.js";
+import { stableValuesDiffer } from '../../utils/stableValue.js';
 
 export interface OracleObservation {
   providerEvents?: unknown[];
@@ -29,17 +29,17 @@ export interface OracleComparisonResult {
 export function compareReferenceOracle(
   fixture: ReferenceOracleFixture,
   actual: OracleObservation,
-  approvedDiffPaths: string[] = []
+  approvedDiffPaths: string[] = [],
 ): OracleComparisonResult {
   const approved = new Set(approvedDiffPaths);
   const diffs: OracleDiff[] = [];
   const fields: Array<keyof OracleObservation> = [
-    "providerEvents",
-    "ledgerEntries",
-    "permissionDecisions",
-    "promptFingerprint",
-    "finalStatus",
-    "visibleResult"
+    'providerEvents',
+    'ledgerEntries',
+    'permissionDecisions',
+    'promptFingerprint',
+    'finalStatus',
+    'visibleResult',
   ];
 
   for (const field of fields) {
@@ -48,7 +48,7 @@ export function compareReferenceOracle(
       diffs.push({
         path: field,
         expected: fixture.reference[field],
-        actual: actual[field]
+        actual: actual[field],
       });
     }
   }
@@ -56,6 +56,6 @@ export function compareReferenceOracle(
   return {
     ok: diffs.length === 0,
     fixtureId: fixture.id,
-    diffs
+    diffs,
   };
 }

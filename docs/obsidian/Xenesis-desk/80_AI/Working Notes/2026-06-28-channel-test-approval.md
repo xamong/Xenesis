@@ -9,9 +9,9 @@ reviewed: false
 confidence: medium
 last_reviewed: 2026-06-28
 touches:
-  - "[[Capability Registry]]"
-  - "[[Xenesis Agent Pane]]"
-  - "[[Approval System]]"
+  - "[[module-capability-registry|Capability Registry]]"
+  - "[[module-xenesis-agent-pane|Xenesis Agent Pane]]"
+  - "[[module-approval-system|Approval System]]"
 verified_by:
   - "[[Verification Map]]"
 ---
@@ -66,7 +66,7 @@ Known existing gaps:
 
 ## Graph Links
 
-- Touches [[Capability Registry]]
-- Touches [[Xenesis Agent Pane]]
-- Touches [[Approval System]]
+- Touches [[module-capability-registry|Capability Registry]]
+- Touches [[module-xenesis-agent-pane|Xenesis Agent Pane]]
+- Touches [[module-approval-system|Approval System]]
 - Verified by [[Verification Map]]

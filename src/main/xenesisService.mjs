@@ -397,7 +397,11 @@ function resolveAutoProvider(env = {}) {
     return { provider: 'codex-app-server', credentialSource: 'codex-auth-json', credentialState: 'configured' };
   }
   if (home && fs.existsSync(path.join(home, '.claude', '.credentials.json'))) {
-    return { provider: 'claude-interactive', credentialSource: 'claude-credentials-json', credentialState: 'configured' };
+    return {
+      provider: 'claude-interactive',
+      credentialSource: 'claude-credentials-json',
+      credentialState: 'configured',
+    };
   }
   for (const [provider, apiKeyEnv] of Object.entries(KEYED_PROVIDER_ENV)) {
     if (trimmed(env[apiKeyEnv])) {
@@ -408,7 +412,9 @@ function resolveAutoProvider(env = {}) {
     provider: 'auto',
     credentialSource: 'none',
     credentialState: 'missing',
-    diagnostics: ['No provider credentials found for auto provider resolution. Configure Codex login, Claude credentials, or a provider API key.'],
+    diagnostics: [
+      'No provider credentials found for auto provider resolution. Configure Codex login, Claude credentials, or a provider API key.',
+    ],
   };
 }
 
@@ -493,7 +499,11 @@ export function buildXenesisProviderRuntimeOptions({ xenesisSettings = {}, aiPro
       source,
       authMode: providerAuthMode('ollama', requestedProvider),
       credentialState: 'not-required',
-      credentialSource: apiKey ? 'settings-secret:OLLAMA_API_KEY' : env?.OLLAMA_API_KEY ? 'env:OLLAMA_API_KEY' : 'local-default',
+      credentialSource: apiKey
+        ? 'settings-secret:OLLAMA_API_KEY'
+        : env?.OLLAMA_API_KEY
+          ? 'env:OLLAMA_API_KEY'
+          : 'local-default',
       processModel: providerProcessModel('ollama'),
       fallbackProvider: '',
       safeForReasoning: true,
@@ -539,7 +549,11 @@ export function buildXenesisProviderRuntimeOptions({ xenesisSettings = {}, aiPro
       source,
       authMode: providerAuthMode('openai-compatible', requestedProvider),
       credentialState: apiKey || env?.XENESIS_API_KEY ? 'configured' : 'not-required',
-      credentialSource: apiKey ? 'settings-secret:XENESIS_API_KEY' : env?.XENESIS_API_KEY ? 'env:XENESIS_API_KEY' : 'local-default',
+      credentialSource: apiKey
+        ? 'settings-secret:XENESIS_API_KEY'
+        : env?.XENESIS_API_KEY
+          ? 'env:XENESIS_API_KEY'
+          : 'local-default',
       safeForReasoning: true,
     });
   }

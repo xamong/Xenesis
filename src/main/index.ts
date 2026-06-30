@@ -389,13 +389,18 @@ import {
   DEFAULT_XAMONG_CODE_CONFIG_DIR,
   resolveXamongCodeRuntimePath,
 } from './xamongCodeSidecar.mjs';
+import {
+  redactXenesisChannelTargetList,
+  sanitizeXenesisChannelSendError,
+  type XenesisChannelSendSensitiveValues,
+} from './xenesisChannelSafety';
 import { XenesisEmbeddedAgentService, type XenesisEmbeddedAgentServiceOptions } from './xenesisEmbeddedService';
 import { createXenesisRunEventObservation } from './xenesisRunObservability';
 import {
+  buildXenesisProviderRuntimeStatus as buildResolvedXenesisProviderRuntimeStatus,
   buildXenesisGatewayLaunch,
   buildXenesisGatewayRunPayload,
   buildXenesisProviderRuntimeOptions,
-  buildXenesisProviderRuntimeStatus as buildResolvedXenesisProviderRuntimeStatus,
   createXenesisService,
   findOpenPort,
   postGatewayJson,
@@ -14404,9 +14409,83 @@ async function snapshotConnectionCenterForCapability(args: unknown): Promise<Rec
     { id: 'reference-baseline:external-tool-no-oauth-side-effect-boundary', selector: '[data-xenesis-tool-oauth-draft="google-calendar"]', text: 'does not complete OAuth' },
     { id: 'reference-baseline:channel-runtime-readback', selector: '[data-xenesis-channel-runtime]', text: 'channel-runtime-readiness' },
     { id: 'reference-baseline:channel-profile-review-steps', selector: '[data-xenesis-channel-profile-draft]', text: 'review step' },
+    {
+      id: 'slice04:messenger-implemented-set',
+      selectors: [
+        '[data-xenesis-connection="telegram"]',
+        '[data-xenesis-connection="slack"]',
+        '[data-xenesis-connection="discord"]',
+        '[data-xenesis-connection="webhook"]',
+      ],
+      texts: ['Telegram', 'Slack', 'Discord', 'Webhook'],
+    },
+    {
+      id: 'slice04:telegram-route-session-readback',
+      selector: '[data-xenesis-channel-routing="telegram"]',
+      label: 'routeBinding/sessionScope metadata',
+      texts: ['라우트 바인딩', 'telegram.allowedChatIds'],
+      textSequences: [['세션 범위', 'chat']],
+      absentTexts: ['prompt keyword routing', 'keyword routing'],
+    },
+    {
+      id: 'slice04:telegram-access-pairing-readback',
+      selectors: [
+        '[data-xenesis-channel-access-groups="telegram"]',
+        '[data-xenesis-channel-pairing="telegram"]',
+      ],
+      texts: ['fail-closed', 'allowedChatIds', 'tokenEnv', 'profile-env-field', 'credential values are never returned'],
+    },
+    {
+      id: 'slice04:messenger-planned-channel-no-runtime',
+      selector: '[data-xenesis-connection="signal"]',
+      texts: [
+        'planned-adapter',
+        'planned channel delivery remains disabled',
+        'xd.xenesis.channels.runtime.request',
+      ],
+      absentTexts: [
+        'xd.xenesis.profiles.testChannel',
+        'xd.xenesis.channels.profileDrafts.apply',
+        'xd.xenesis.profiles.updateChannels',
+        'xd.xenesis.gateway.start',
+        'xd.xenesis.gateway.restart',
+      ],
+    },
+    {
+      id: 'slice04:messenger-test-send-approval-boundary',
+      selectors: ['[data-xenesis-connection="test-send"]', '[data-xenesis-channel-setup-plan="telegram"]'],
+      texts: [
+        'xd.xenesis.profiles.testChannel',
+        'approval-gated profile channel test path',
+        'test-send onboarding status does not send messages',
+      ],
+      absentTexts: [
+        'sendTelegramChannelTest',
+        'sendSlackChannelTest',
+        'sendDiscordChannelTest',
+        'sendWebhookChannelTest',
+      ],
+    },
   ];
   const truncate = (value, fallback = '') => String(value || fallback || '').trim().slice(0, Number(config.maxTextLength || 2400));
   const delay = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+  const normalizeList = (value) => Array.isArray(value) ? value.map((item) => String(item || '')).filter(Boolean) : [];
+  const normalizeTextSequences = (value) => Array.isArray(value)
+    ? value
+        .map((sequence) =>
+          Array.isArray(sequence) ? sequence.map((item) => String(item || '')).filter(Boolean) : []
+        )
+        .filter((sequence) => sequence.length > 0)
+    : [];
+  const hasTextSequence = (text, sequence) => {
+    let offset = 0;
+    for (const token of sequence) {
+      const index = text.indexOf(token.toLowerCase(), offset);
+      if (index < 0) return false;
+      offset = index + token.length;
+    }
+    return true;
+  };
   const readSnapshot = () => {
     const root = document.querySelector(rootSelector);
     const rootText = root ? String(root.textContent || '') : '';
@@ -14417,16 +14496,34 @@ async function snapshotConnectionCenterForCapability(args: unknown): Promise<Rec
       text: truncate(element.textContent, ''),
     }));
     const checkResults = checks.map((check) => {
-      const element = document.querySelector(check.selector);
-      const text = String(element?.textContent || '');
-      const textPresent = check.text ? text.toLowerCase().includes(String(check.text).toLowerCase()) : true;
+      const selectors = normalizeList(check.selectors).length ? normalizeList(check.selectors) : normalizeList([check.selector]);
+      const elements = selectors.map((selector) => document.querySelector(selector));
+      const text = elements.map((element) => String(element?.textContent || '')).join('\\n');
+      const expectedTexts = [...normalizeList(check.texts), ...(check.text ? [String(check.text)] : [])];
+      const absentTexts = normalizeList(check.absentTexts);
+      const textSequences = normalizeTextSequences(check.textSequences);
+      const lowerText = text.toLowerCase();
+      const missingTexts = expectedTexts.filter((expectedText) => !lowerText.includes(expectedText.toLowerCase()));
+      const missingSequences = textSequences
+        .filter((sequence) => !hasTextSequence(lowerText, sequence))
+        .map((sequence) => sequence.join(' -> '));
+      const forbiddenTexts = absentTexts.filter((absentText) => lowerText.includes(absentText.toLowerCase()));
+      const textPresent = missingTexts.length === 0 && missingSequences.length === 0 && forbiddenTexts.length === 0;
+      const expectedText = [
+        ...expectedTexts,
+        ...textSequences.map((sequence) => 'sequence:' + sequence.join(' -> ')),
+        ...absentTexts.map((absentText) => 'not:' + absentText),
+      ].join(' | ');
       return {
         id: check.id,
-        selector: check.selector,
-        present: Boolean(element),
+        selector: check.selector || selectors.join(', '),
+        present: selectors.length > 0 && elements.every(Boolean),
         textPresent,
-        expectedText: check.text || '',
+        expectedText,
         text: truncate(text, ''),
+        missingTexts,
+        missingSequences,
+        forbiddenTexts,
       };
     });
     const failedChecks = checkResults.filter((check) => !check.present || !check.textPresent);
@@ -18252,10 +18349,6 @@ function redactXenesisChannelCredentialReference(value: string): string {
   return isXenesisEnvName(value) ? value : '<secret>';
 }
 
-function redactXenesisChannelTargetList(value: string): string {
-  return value.trim() ? '<configured>' : '';
-}
-
 function summarizeXenesisProfileChannels(profile: ProfileConfig | undefined): XenesisChannelState[] {
   const channels = isPlainRecord(profile?.channels) ? profile.channels : {};
   return (XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS satisfies XenesisChannelState['name'][]).map((name) => {
@@ -18705,19 +18798,15 @@ function readOptionalXenesisChannelSecret(value: unknown, fallback: string): { s
   };
 }
 
-function sanitizeXenesisChannelSendError(error: unknown, secrets: string[], label: string): Error {
-  let message = error instanceof Error ? error.message : String(error);
-  for (const secret of secrets) {
-    if (secret) message = message.split(secret).join('[secret]');
-  }
-  return new Error(`${label}: ${message}`);
-}
-
-async function runXenesisChannelSend(label: string, secrets: string[], send: () => Promise<void>): Promise<void> {
+async function runXenesisChannelSend(
+  label: string,
+  sensitiveValues: XenesisChannelSendSensitiveValues,
+  send: () => Promise<void>,
+): Promise<void> {
   try {
     await send();
   } catch (error) {
-    throw sanitizeXenesisChannelSendError(error, secrets, label);
+    throw sanitizeXenesisChannelSendError(label, error, sensitiveValues);
   }
 }
 
@@ -18760,7 +18849,9 @@ async function sendTelegramChannelTest(
   const token = readXenesisChannelSecret(channel.tokenEnv, 'TELEGRAM_BOT_TOKEN', 'Telegram token');
   const target = firstXenesisIntegerCsvValue(channel.allowedChatIds, 'Telegram chat id');
   const adapter = new TelegramAdapter({ token: token.value, allowedChatIds: [Number(target)] });
-  await runXenesisChannelSend('Telegram test send failed', [token.value], () => adapter.send(target, message));
+  await runXenesisChannelSend('Telegram test send failed', { secrets: [token.value], targets: [target] }, () =>
+    adapter.send(target, message),
+  );
   return target;
 }
 
@@ -18768,14 +18859,18 @@ async function sendSlackChannelTest(channel: XenesisProfileChannelSettings['slac
   const webhook = readOptionalXenesisChannelSecret(channel.webhookUrlEnv, 'SLACK_WEBHOOK_URL');
   if (webhook.value) {
     const adapter = new SlackAdapter({ webhookUrl: webhook.value });
-    await runXenesisChannelSend('Slack test send failed', [webhook.value], () => adapter.send('webhook', message));
+    await runXenesisChannelSend('Slack test send failed', { secrets: [webhook.value], targets: ['webhook'] }, () =>
+      adapter.send('webhook', message),
+    );
     return `webhook:${webhook.source}`;
   }
 
   const botToken = readXenesisChannelSecret(channel.botTokenEnv, 'SLACK_BOT_TOKEN', 'Slack bot token');
   const target = firstXenesisCsvValue(channel.allowedChannelIds, 'Slack channel id');
   const adapter = new SlackAdapter({ botToken: botToken.value, allowedChannelIds: [target] });
-  await runXenesisChannelSend('Slack test send failed', [botToken.value], () => adapter.send(target, message));
+  await runXenesisChannelSend('Slack test send failed', { secrets: [botToken.value], targets: [target] }, () =>
+    adapter.send(target, message),
+  );
   return target;
 }
 
@@ -18786,18 +18881,27 @@ async function sendDiscordChannelTest(
   const webhook = readOptionalXenesisChannelSecret(channel.webhookUrlEnv, 'DISCORD_WEBHOOK_URL');
   if (webhook.value) {
     const adapter = new DiscordAdapter({ webhookUrl: webhook.value });
-    await runXenesisChannelSend('Discord test send failed', [webhook.value], () => adapter.send('webhook', message));
+    await runXenesisChannelSend(
+      'Discord test send failed',
+      { secrets: [webhook.value], targets: ['webhook', ...csvToStrings(channel.allowedGuildIds)] },
+      () => adapter.send('webhook', message),
+    );
     return `webhook:${webhook.source}`;
   }
 
   const botToken = readXenesisChannelSecret(channel.botTokenEnv, 'DISCORD_BOT_TOKEN', 'Discord bot token');
   const target = firstXenesisCsvValue(channel.allowedChannelIds, 'Discord channel id');
+  const guildIds = csvToStrings(channel.allowedGuildIds);
   const adapter = new DiscordAdapter({
     botToken: botToken.value,
     allowedChannelIds: [target],
-    allowedGuildIds: csvToStrings(channel.allowedGuildIds),
+    allowedGuildIds: guildIds,
   });
-  await runXenesisChannelSend('Discord test send failed', [botToken.value], () => adapter.send(target, message));
+  await runXenesisChannelSend(
+    'Discord test send failed',
+    { secrets: [botToken.value], targets: [target, ...guildIds] },
+    () => adapter.send(target, message),
+  );
   return target;
 }
 
@@ -18807,7 +18911,9 @@ async function sendWebhookChannelTest(
 ): Promise<string> {
   const url = readXenesisChannelSecret(channel.urlEnv, 'XENESIS_WEBHOOK_URL', 'Webhook URL');
   const adapter = new WebhookAdapter({ url: url.value });
-  await runXenesisChannelSend('Webhook test send failed', [url.value], () => adapter.send('test', message));
+  await runXenesisChannelSend('Webhook test send failed', { secrets: [url.value], targets: ['test'] }, () =>
+    adapter.send('test', message),
+  );
   return `webhook:${url.source}`;
 }
 

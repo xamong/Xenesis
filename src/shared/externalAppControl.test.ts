@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   BUILTIN_EXTERNAL_APP_PROFILES,
+  classifyExternalAppApproval,
   createExternalAppProfileFromTemplate,
   EXTERNAL_APP_PROFILE_TEMPLATES,
-  classifyExternalAppApproval,
   normalizeExternalAppAction,
   normalizeExternalAppSettings,
 } from './externalAppControl';
@@ -61,7 +61,10 @@ test('external app profile templates create editable profiles without changing d
   const settings = normalizeExternalAppSettings(undefined);
   const templateIds = EXTERNAL_APP_PROFILE_TEMPLATES.map((profile) => profile.id);
 
-  assert.deepEqual(settings.profiles.map((profile) => profile.id), ['notepad']);
+  assert.deepEqual(
+    settings.profiles.map((profile) => profile.id),
+    ['notepad'],
+  );
   assert.ok(templateIds.includes('paint'));
   assert.ok(templateIds.includes('powershell'));
 

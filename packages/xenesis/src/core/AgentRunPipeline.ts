@@ -1,44 +1,42 @@
+import { type CliConfigOverrides, loadConfig, type ToolGuardConfig, type XenesisConfig } from '../config/index.js';
+import type { IdeContextInput } from '../ide/index.js';
 import {
-  loadConfig,
-  type CliConfigOverrides,
-  type ToolGuardConfig,
-  type XenesisConfig
-} from "../config/index.js";
-import type { IdeContextInput } from "../ide/index.js";
-import { JsonlSessionWriter } from "../sessions/index.js";
+  markAgentTasksContextInjected,
+  SqliteAgentMessageStore,
+  SqliteAgentTaskStore,
+} from '../orchestration/index.js';
+import type { RunReport, RunReportSelfReview } from '../runReports/index.js';
 import {
   eventsToMessages,
   hasApprovalResolved,
   lastUserMessage,
   latestRunSnapshot,
-  readSessionLog
-} from "../sessions/history.js";
-import { executeAgentRun } from "./AgentRunExecutor.js";
-import { finalizeAgentRun, type AgentRunNoticeHandler } from "./AgentRunReporter.js";
-import { type AgentRunUsage, type ApprovalHandler, type ToolExecutionPolicy } from "./AgentRunner.js";
-import { buildAgentRunner } from "./AgentRunnerBuilder.js";
-import { saveLatestPlan, type AgentRunMode } from "./AgentRuntimeFactory.js";
-import { mergeToolExecutionPolicies } from "./agentCapabilityPolicy.js";
-import type { AgentRunEvent, ApprovalDecision, ApprovalRequest, RunStageEvent, WorkflowRunSummary, WorkflowStepSummary } from "./events.js";
-import { repairToolResultPairing, type AgentMessage, type AgentMessageAttachment } from "./messages.js";
-import type { ResumableRunState } from "./resume/ResumableRunState.js";
+  readSessionLog,
+} from '../sessions/history.js';
+import { JsonlSessionWriter } from '../sessions/index.js';
+import { runVerificationCommands } from '../verification/index.js';
+import { configuredWorkflowHandlers, resolveWorkflow, type WorkflowSelection } from '../workflows/index.js';
+import { executeAgentRun } from './AgentRunExecutor.js';
+import { type AgentRunUsage, type ApprovalHandler, type ToolExecutionPolicy } from './AgentRunner.js';
+import { buildAgentRunner } from './AgentRunnerBuilder.js';
+import { type AgentRunNoticeHandler, finalizeAgentRun } from './AgentRunReporter.js';
+import { type AgentRunMode, saveLatestPlan } from './AgentRuntimeFactory.js';
+import { mergeToolExecutionPolicies } from './agentCapabilityPolicy.js';
+import type {
+  AgentRunEvent,
+  ApprovalDecision,
+  ApprovalRequest,
+  RunStageEvent,
+  WorkflowRunSummary,
+  WorkflowStepSummary,
+} from './events.js';
+import { type AgentMessage, type AgentMessageAttachment, repairToolResultPairing } from './messages.js';
 import {
   buildOperationalRepairPreflightDecision,
-  collectOperationalFailureContext
-} from "./operationalFailureContext.js";
-import { runVerifyFixLoop } from "./verifyFix.js";
-import { runVerificationCommands } from "../verification/index.js";
-import {
-  SqliteAgentMessageStore,
-  SqliteAgentTaskStore,
-  markAgentTasksContextInjected
-} from "../orchestration/index.js";
-import type { RunReport, RunReportSelfReview } from "../runReports/index.js";
-import {
-  configuredWorkflowHandlers,
-  resolveWorkflow,
-  type WorkflowSelection
-} from "../workflows/index.js";
+  collectOperationalFailureContext,
+} from './operationalFailureContext.js';
+import type { ResumableRunState } from './resume/ResumableRunState.js';
+import { runVerifyFixLoop } from './verifyFix.js';
 
 export interface AgentRunPipelineWorkflowStep {
   workflow: WorkflowRunSummary;
@@ -59,7 +57,7 @@ export interface AgentRunPipelineOptions {
   mode?: AgentRunMode;
   savePlan?: boolean;
   fromPlan?: boolean;
-  systemMessages?: Extract<AgentMessage, { role: "system" }>[];
+  systemMessages?: Extract<AgentMessage, { role: 'system' }>[];
   historyMessages?: AgentMessage[];
   /**
    * S7 — event-sourced resume. A restored per-run snapshot; when present the
@@ -125,7 +123,7 @@ export interface AgentRunPipelineResult {
    * `pendingApproval` carries the durable request so the task store can record
    * what is awaiting a human decision.
    */
-  status?: "done" | "paused";
+  status?: 'done' | 'paused';
   pendingApproval?: ApprovalRequest;
 }
 
@@ -145,59 +143,63 @@ async function disposePipelineRunner(runner: { dispose?: () => Promise<void> | v
  * log rather than supplied by the caller. `sessionId` is REQUIRED (the run
  * appends to the same log).
  */
-export type ResumeAgentPipelineOptions =
-  & Omit<AgentRunPipelineOptions, "prompt" | "historyMessages" | "resumeState" | "resuming" | "initialSeq" | "sessionId" | "cwd" | "injectedApprovalDecision">
-  & {
-    sessionId: string;
-    cwd?: string;
-    xenesisHome?: string;
-    /**
-     * S6 — durable HITL resume. The human decision for the run's pending approval
-     * (recovered from the latest `run_snapshot.pendingApproval`). Applied exactly
-     * once: if the log already has an `approval_resolved` for that toolCallId, the
-     * decision is ignored (idempotent). When absent and a pending approval exists,
-     * the run stays paused (nothing to apply).
-     */
-    approvalDecision?: ApprovalDecision;
-  };
+export type ResumeAgentPipelineOptions = Omit<
+  AgentRunPipelineOptions,
+  | 'prompt'
+  | 'historyMessages'
+  | 'resumeState'
+  | 'resuming'
+  | 'initialSeq'
+  | 'sessionId'
+  | 'cwd'
+  | 'injectedApprovalDecision'
+> & {
+  sessionId: string;
+  cwd?: string;
+  xenesisHome?: string;
+  /**
+   * S6 — durable HITL resume. The human decision for the run's pending approval
+   * (recovered from the latest `run_snapshot.pendingApproval`). Applied exactly
+   * once: if the log already has an `approval_resolved` for that toolCallId, the
+   * decision is ignored (idempotent). When absent and a pending approval exists,
+   * the run stays paused (nothing to apply).
+   */
+  approvalDecision?: ApprovalDecision;
+};
 
 function shouldWriteSessionEvent(event: AgentRunEvent) {
-  return event.type !== "assistant_delta";
+  return event.type !== 'assistant_delta';
 }
 
 function isPublicPipelineEvent(event: AgentRunEvent) {
   return (
-    event.type !== "context_source" &&
-    event.type !== "run_stage" &&
-    event.type !== "repair_decision" &&
+    event.type !== 'context_source' &&
+    event.type !== 'run_stage' &&
+    event.type !== 'repair_decision' &&
     // S7 — run_snapshot is JSONL-only (persisted but excluded from the public
     // pipeline event stream, like assistant_delta). The runner never yields it,
     // but this guards any path that could route it to onEvent / result.events.
-    event.type !== "run_snapshot"
+    event.type !== 'run_snapshot'
   );
 }
 
-function mergeOptionalGuard(
-  workflowGuard: ToolGuardConfig | undefined,
-  overrideGuard: ToolGuardConfig | undefined
-) {
+function mergeOptionalGuard(workflowGuard: ToolGuardConfig | undefined, overrideGuard: ToolGuardConfig | undefined) {
   if (!workflowGuard) return overrideGuard;
   if (!overrideGuard) return workflowGuard;
   return {
     enabled: overrideGuard.enabled ?? workflowGuard.enabled,
     useDefault: overrideGuard.useDefault ?? workflowGuard.useDefault,
-    priorityTools: Array.from(new Set([
-      ...(workflowGuard.priorityTools ?? []),
-      ...(overrideGuard.priorityTools ?? [])
-    ])),
+    priorityTools: Array.from(
+      new Set([...(workflowGuard.priorityTools ?? []), ...(overrideGuard.priorityTools ?? [])]),
+    ),
     requiredBefore: {
       ...(workflowGuard.requiredBefore ?? {}),
-      ...(overrideGuard.requiredBefore ?? {})
+      ...(overrideGuard.requiredBefore ?? {}),
     },
     requiredBeforeAny: {
       ...(workflowGuard.requiredBeforeAny ?? {}),
-      ...(overrideGuard.requiredBeforeAny ?? {})
-    }
+      ...(overrideGuard.requiredBeforeAny ?? {}),
+    },
   };
 }
 
@@ -209,14 +211,14 @@ function workflowContext(workflow: WorkflowSelection | undefined) {
   if (!workflow || workflowSystemMessages(workflow).length === 0) return undefined;
   return {
     name: workflow.name,
-    ...(workflow.description ? { description: workflow.description } : {})
+    ...(workflow.description ? { description: workflow.description } : {}),
   };
 }
 
 async function emitPipelineEvent(
   writer: JsonlSessionWriter,
   event: AgentRunEvent,
-  onEvent?: (event: AgentRunEvent) => void | Promise<void>
+  onEvent?: (event: AgentRunEvent) => void | Promise<void>,
 ) {
   if (shouldWriteSessionEvent(event)) await writer.write(event);
   if (isPublicPipelineEvent(event)) await onEvent?.(event);
@@ -224,70 +226,64 @@ async function emitPipelineEvent(
 
 async function runPipelineStage<T>(
   writer: JsonlSessionWriter,
-  stage: RunStageEvent["stage"],
+  stage: RunStageEvent['stage'],
   onEvent: ((event: AgentRunEvent) => void | Promise<void>) | undefined,
-  run: () => Promise<T>
+  run: () => Promise<T>,
 ) {
   const startedAt = new Date().toISOString();
-  await emitPipelineEvent(writer, { type: "run_stage", stage, status: "started", startedAt }, onEvent);
+  await emitPipelineEvent(writer, { type: 'run_stage', stage, status: 'started', startedAt }, onEvent);
   try {
     const result = await run();
     const endedAt = new Date().toISOString();
-    await emitPipelineEvent(writer, {
-      type: "run_stage",
-      stage,
-      status: "completed",
-      startedAt,
-      endedAt,
-      durationMs: Math.max(0, Date.parse(endedAt) - Date.parse(startedAt))
-    }, onEvent);
+    await emitPipelineEvent(
+      writer,
+      {
+        type: 'run_stage',
+        stage,
+        status: 'completed',
+        startedAt,
+        endedAt,
+        durationMs: Math.max(0, Date.parse(endedAt) - Date.parse(startedAt)),
+      },
+      onEvent,
+    );
     return result;
   } catch (error) {
     const endedAt = new Date().toISOString();
-    await emitPipelineEvent(writer, {
-      type: "run_stage",
-      stage,
-      status: "failed",
-      startedAt,
-      endedAt,
-      durationMs: Math.max(0, Date.parse(endedAt) - Date.parse(startedAt)),
-      reason: error instanceof Error ? error.message : String(error)
-    }, onEvent);
+    await emitPipelineEvent(
+      writer,
+      {
+        type: 'run_stage',
+        stage,
+        status: 'failed',
+        startedAt,
+        endedAt,
+        durationMs: Math.max(0, Date.parse(endedAt) - Date.parse(startedAt)),
+        reason: error instanceof Error ? error.message : String(error),
+      },
+      onEvent,
+    );
     throw error;
   }
 }
 
-async function markInjectedBackgroundTaskContext(
-  config: XenesisConfig,
-  taskIds: string[],
-  sessionId: string
-) {
+async function markInjectedBackgroundTaskContext(config: XenesisConfig, taskIds: string[], sessionId: string) {
   if (taskIds.length === 0) return;
   await markAgentTasksContextInjected(
     new SqliteAgentTaskStore({ xenesisHome: config.xenesisHome }),
     taskIds,
-    sessionId
+    sessionId,
   );
 }
 
-async function markInjectedAgentMessagesRead(
-  config: XenesisConfig,
-  messageIds: string[],
-  sessionId: string
-) {
+async function markInjectedAgentMessagesRead(config: XenesisConfig, messageIds: string[], sessionId: string) {
   if (messageIds.length === 0) return;
-  await new SqliteAgentMessageStore({ xenesisHome: config.xenesisHome })
-    .markRead(messageIds, sessionId);
+  await new SqliteAgentMessageStore({ xenesisHome: config.xenesisHome }).markRead(messageIds, sessionId);
 }
 
-async function releaseInjectedAgentMessageClaims(
-  config: XenesisConfig,
-  messageIds: string[],
-  sessionId: string
-) {
+async function releaseInjectedAgentMessageClaims(config: XenesisConfig, messageIds: string[], sessionId: string) {
   if (messageIds.length === 0) return;
-  await new SqliteAgentMessageStore({ xenesisHome: config.xenesisHome })
-    .releaseClaims(messageIds, sessionId);
+  await new SqliteAgentMessageStore({ xenesisHome: config.xenesisHome }).releaseClaims(messageIds, sessionId);
 }
 
 export async function runAgentPipeline(options: AgentRunPipelineOptions): Promise<AgentRunPipelineResult> {
@@ -296,31 +292,30 @@ export async function runAgentPipeline(options: AgentRunPipelineOptions): Promis
     cwd: options.cwd,
     configPath: options.configPath,
     env,
-    cli: options.cli
+    cli: options.cli,
   });
-  const config = options.workspaceRoot
-    ? { ...loadedConfig, workspace: options.workspaceRoot }
-    : loadedConfig;
-  const configuredWorkflow = options.applyConfiguredWorkflow === false
-    ? undefined
-    : await resolveWorkflow({
-      body: {
-        prompt: options.prompt,
-        workflow: config.workflow
-      },
-      stream: Boolean(options.stream),
-      env
-    }, configuredWorkflowHandlers(config.workflows));
+  const config = options.workspaceRoot ? { ...loadedConfig, workspace: options.workspaceRoot } : loadedConfig;
+  const configuredWorkflow =
+    options.applyConfiguredWorkflow === false
+      ? undefined
+      : await resolveWorkflow(
+          {
+            body: {
+              prompt: options.prompt,
+              workflow: config.workflow,
+            },
+            stream: Boolean(options.stream),
+            env,
+          },
+          configuredWorkflowHandlers(config.workflows),
+        );
   const prompt = configuredWorkflow?.prompt ?? options.prompt;
   const effectiveMode = options.mode ?? configuredWorkflow?.pipeline.mode;
-  const systemMessages = [
-    ...workflowSystemMessages(configuredWorkflow),
-    ...(options.systemMessages ?? [])
-  ];
+  const systemMessages = [...workflowSystemMessages(configuredWorkflow), ...(options.systemMessages ?? [])];
   const guard = mergeOptionalGuard(configuredWorkflow?.pipeline.guard, options.guard);
   const toolExecutionPolicy = mergeToolExecutionPolicies(
     configuredWorkflow?.pipeline.toolExecutionPolicy,
-    options.toolExecutionPolicy
+    options.toolExecutionPolicy,
   );
   const sessionId = options.sessionId ?? `session-${globalThis.crypto.randomUUID()}`;
   const built = await buildAgentRunner({
@@ -350,20 +345,20 @@ export async function runAgentPipeline(options: AgentRunPipelineOptions): Promis
     guard,
     toolExecutionPolicy,
     allowedTools: options.allowedTools,
-    onNotice: options.onNotice
+    onNotice: options.onNotice,
   });
   options.onSessionWriter?.(built.sessionWriter, built.sessionId);
   const workflowStepStartedAt = options.workflowStep?.startedAt ?? new Date().toISOString();
 
   if (options.workflowStep) {
     await built.sessionWriter.write({
-      type: "workflow_step",
+      type: 'workflow_step',
       workflow: options.workflowStep.workflow,
       step: options.workflowStep.step,
       index: options.workflowStep.index,
       total: options.workflowStep.total,
-      status: "running",
-      startedAt: workflowStepStartedAt
+      status: 'running',
+      startedAt: workflowStepStartedAt,
     });
   }
 
@@ -372,17 +367,19 @@ export async function runAgentPipeline(options: AgentRunPipelineOptions): Promis
     let capturedMessages: AgentMessage[] = [];
     let execution: Awaited<ReturnType<typeof executeAgentRun>>;
     try {
-      execution = await runPipelineStage(built.sessionWriter, "run", options.onEvent, () => executeAgentRun({
-        runner: built.runner,
-        prompt,
-        attachments: options.attachments,
-        sessionWriter: built.sessionWriter,
-        onEvent: options.onEvent,
-        onMessages: async (messages) => {
-          capturedMessages = messages;
-          await options.onMessages?.(messages);
-        }
-      }));
+      execution = await runPipelineStage(built.sessionWriter, 'run', options.onEvent, () =>
+        executeAgentRun({
+          runner: built.runner,
+          prompt,
+          attachments: options.attachments,
+          sessionWriter: built.sessionWriter,
+          onEvent: options.onEvent,
+          onMessages: async (messages) => {
+            capturedMessages = messages;
+            await options.onMessages?.(messages);
+          },
+        }),
+      );
     } catch (error) {
       await releaseInjectedAgentMessageClaims(config, built.agentMessageContextIds, built.sessionId);
       agentMessagesAcknowledged = true;
@@ -394,38 +391,37 @@ export async function runAgentPipeline(options: AgentRunPipelineOptions): Promis
     let finalEvents = execution.events;
     let finalDoneContent = execution.doneContent;
     let finalTurns = execution.turns;
-    let finalUsage = execution.usage;
+    const finalUsage = execution.usage;
     // S6 — a durably paused run (background/headless ask with no resolver) did not
     // complete; skip verify/fix and surface the paused status + pendingApproval so
     // the task store records a resumable paused state instead of a false success.
-    const runPaused = execution.status === "paused";
+    const runPaused = execution.status === 'paused';
 
     if (
       !runPaused &&
       config.verification.autoFix &&
       config.verification.commands.length > 0 &&
-      effectiveMode !== "plan"
+      effectiveMode !== 'plan'
     ) {
       const outcome = await runVerifyFixLoop({
         initial: {
           events: execution.events,
           ...(execution.doneContent !== undefined ? { doneContent: execution.doneContent } : {}),
           turns: execution.turns,
-          messages: capturedMessages
+          messages: capturedMessages,
         },
         maxAttempts: config.verification.maxRepairAttempts,
         maxOutputChars: config.verification.maxOutputChars,
-        runVerification: () => runVerificationCommands({
-          commands: config.verification.commands,
-          cwd: config.workspace,
-          env,
-          timeoutMs: config.verification.timeoutMs,
-          maxOutputChars: config.verification.maxOutputChars
-        }),
-        repairPreflight: async ({ verification }) => buildOperationalRepairPreflightDecision(
-          await collectOperationalFailureContext(config),
-          verification
-        ),
+        runVerification: () =>
+          runVerificationCommands({
+            commands: config.verification.commands,
+            cwd: config.workspace,
+            env,
+            timeoutMs: config.verification.timeoutMs,
+            maxOutputChars: config.verification.maxOutputChars,
+          }),
+        repairPreflight: async ({ verification }) =>
+          buildOperationalRepairPreflightDecision(await collectOperationalFailureContext(config), verification),
         onEvent: async (event) => {
           await emitPipelineEvent(built.sessionWriter, event, options.onEvent);
         },
@@ -448,7 +444,7 @@ export async function runAgentPipeline(options: AgentRunPipelineOptions): Promis
             guard,
             toolExecutionPolicy,
             allowedTools: options.allowedTools,
-            onNotice: options.onNotice
+            onNotice: options.onNotice,
           });
           let fixMessages: AgentMessage[] = [];
           let fixExecution: Awaited<ReturnType<typeof executeAgentRun>>;
@@ -461,7 +457,7 @@ export async function runAgentPipeline(options: AgentRunPipelineOptions): Promis
               onMessages: async (messages) => {
                 fixMessages = messages;
                 await options.onMessages?.(messages);
-              }
+              },
             });
           } finally {
             await disposePipelineRunner(fixBuilt.runner);
@@ -470,50 +466,56 @@ export async function runAgentPipeline(options: AgentRunPipelineOptions): Promis
             events: fixExecution.events,
             ...(fixExecution.doneContent !== undefined ? { doneContent: fixExecution.doneContent } : {}),
             turns: fixExecution.turns,
-            messages: fixMessages
+            messages: fixMessages,
           };
-        }
+        },
       });
       finalEvents = outcome.allEvents;
       finalDoneContent = outcome.final.doneContent;
       finalTurns = outcome.totalTurns;
     } else if (config.verification.autoFix && config.verification.commands.length > 0) {
-      await emitPipelineEvent(built.sessionWriter, {
-        type: "run_stage",
-        stage: "repair",
-        status: "skipped",
-        reason: effectiveMode === "plan" ? "plan_mode" : "verification_disabled"
-      }, options.onEvent);
+      await emitPipelineEvent(
+        built.sessionWriter,
+        {
+          type: 'run_stage',
+          stage: 'repair',
+          status: 'skipped',
+          reason: effectiveMode === 'plan' ? 'plan_mode' : 'verification_disabled',
+        },
+        options.onEvent,
+      );
     }
 
-    if (effectiveMode === "plan" && options.savePlan && finalDoneContent !== undefined) {
+    if (effectiveMode === 'plan' && options.savePlan && finalDoneContent !== undefined) {
       await saveLatestPlan(config, finalDoneContent, options.onNotice);
     }
 
     if (options.workflowStep) {
       const endedAt = new Date().toISOString();
       await built.sessionWriter.write({
-        type: "workflow_step",
+        type: 'workflow_step',
         workflow: options.workflowStep.workflow,
         step: options.workflowStep.step,
         index: options.workflowStep.index,
         total: options.workflowStep.total,
-        status: "completed",
+        status: 'completed',
         startedAt: workflowStepStartedAt,
         endedAt,
         durationMs: Math.max(0, Date.parse(endedAt) - Date.parse(workflowStepStartedAt)),
-        exitCode: 0
+        exitCode: 0,
       });
     }
 
-    const runReport = await runPipelineStage(built.sessionWriter, "report", options.onEvent, () => finalizeAgentRun({
-      config,
-      sessionWriter: built.sessionWriter,
-      sessionId: built.sessionId,
-      doneContent: finalDoneContent,
-      env,
-      onNotice: options.onNotice
-    }));
+    const runReport = await runPipelineStage(built.sessionWriter, 'report', options.onEvent, () =>
+      finalizeAgentRun({
+        config,
+        sessionWriter: built.sessionWriter,
+        sessionId: built.sessionId,
+        doneContent: finalDoneContent,
+        env,
+        onNotice: options.onNotice,
+      }),
+    );
 
     return {
       exitCode: 0,
@@ -525,23 +527,23 @@ export async function runAgentPipeline(options: AgentRunPipelineOptions): Promis
       ...(finalUsage ? { usage: finalUsage } : {}),
       runReport,
       selfReview: runReport.selfReview,
-      status: runPaused ? "paused" : "done",
-      ...(execution.pendingApproval ? { pendingApproval: execution.pendingApproval } : {})
+      status: runPaused ? 'paused' : 'done',
+      ...(execution.pendingApproval ? { pendingApproval: execution.pendingApproval } : {}),
     };
   } catch (error) {
     if (options.workflowStep) {
       const endedAt = new Date().toISOString();
       await built.sessionWriter.write({
-        type: "workflow_step",
+        type: 'workflow_step',
         workflow: options.workflowStep.workflow,
         step: options.workflowStep.step,
         index: options.workflowStep.index,
         total: options.workflowStep.total,
-        status: "failed",
+        status: 'failed',
         startedAt: workflowStepStartedAt,
         endedAt,
         durationMs: Math.max(0, Date.parse(endedAt) - Date.parse(workflowStepStartedAt)),
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
     }
     if (!agentMessagesAcknowledged) {
@@ -571,21 +573,17 @@ export async function runAgentPipeline(options: AgentRunPipelineOptions): Promis
  *      to the same log), `initialSeq` continuing the monotonic envelope `seq`,
  *      the rehydrated `historyMessages`, and the restored `resumeState`.
  */
-export async function resumeAgentPipeline(
-  options: ResumeAgentPipelineOptions
-): Promise<AgentRunPipelineResult> {
+export async function resumeAgentPipeline(options: ResumeAgentPipelineOptions): Promise<AgentRunPipelineResult> {
   const env = options.env ?? process.env;
   const cwd = options.cwd ?? options.cli?.workspace ?? options.workspaceRoot ?? process.cwd();
   // Resolve the effective xenesisHome the same way the run will, so the log we
   // read and the log the writer appends to are the same file.
-  const cli = options.xenesisHome
-    ? { ...(options.cli ?? {}), xenesisHome: options.xenesisHome }
-    : options.cli;
+  const cli = options.xenesisHome ? { ...(options.cli ?? {}), xenesisHome: options.xenesisHome } : options.cli;
   const resolvedConfig = await loadConfig({
     cwd,
     configPath: options.configPath,
     env,
-    cli
+    cli,
   });
   const xenesisHome = resolvedConfig.xenesisHome;
 
@@ -605,15 +603,12 @@ export async function resumeAgentPipeline(
   //    pending toolCallId from synthetic-result repair so its `tool_call` stays
   //    un-paired for the runner to resolve by executing/denying (Constraint #2).
   const pendingApproval = resumeState?.pendingApproval;
-  const pendingUnresolved = pendingApproval !== undefined &&
-    !hasApprovalResolved(records, pendingApproval.toolCallId);
+  const pendingUnresolved = pendingApproval !== undefined && !hasApprovalResolved(records, pendingApproval.toolCallId);
   const injectedApprovalDecision = pendingUnresolved ? options.approvalDecision : undefined;
-  const excludeToolCallIds = pendingUnresolved
-    ? new Set<string>([pendingApproval.toolCallId])
-    : undefined;
+  const excludeToolCallIds = pendingUnresolved ? new Set<string>([pendingApproval.toolCallId]) : undefined;
   const historyMessages = repairToolResultPairing(
     eventsToMessages(records),
-    excludeToolCallIds ? { excludeToolCallIds } : {}
+    excludeToolCallIds ? { excludeToolCallIds } : {},
   );
 
   // `approvalDecision` is a resume-only option; strip it before delegating to
@@ -638,6 +633,6 @@ export async function resumeAgentPipeline(
     // workflow against the recovered prompt (avoids re-running workflow setup).
     applyConfiguredWorkflow: false,
     ...(resumeState ? { resumeState } : {}),
-    ...(injectedApprovalDecision ? { injectedApprovalDecision } : {})
+    ...(injectedApprovalDecision ? { injectedApprovalDecision } : {}),
   });
 }

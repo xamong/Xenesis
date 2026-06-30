@@ -8,13 +8,13 @@
  * scheduled run. The extractor itself NEVER schedules cron — it only writes commitment records.
  */
 
-export type CommitmentKind = "event_check_in" | "deadline_check" | "care_check_in" | "open_loop";
+export type CommitmentKind = 'event_check_in' | 'deadline_check' | 'care_check_in' | 'open_loop';
 
-export type CommitmentSensitivity = "routine" | "personal" | "care";
+export type CommitmentSensitivity = 'routine' | 'personal' | 'care';
 
-export type CommitmentStatus = "pending" | "sent" | "dismissed" | "snoozed" | "expired";
+export type CommitmentStatus = 'pending' | 'sent' | 'dismissed' | 'snoozed' | 'expired';
 
-export type CommitmentSource = "inferred_user_context" | "agent_promise";
+export type CommitmentSource = 'inferred_user_context' | 'agent_promise';
 
 /** Routing/identity scope. Kept off the extractor prompt (it sees only itemId + text). */
 export interface CommitmentScope {

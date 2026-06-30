@@ -1,5 +1,5 @@
 // src/db/migrations.ts
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseSync } from 'node:sqlite';
 
 const MIGRATIONS: string[] = [
   // v1: initial Tier-1 schema
@@ -77,11 +77,11 @@ const MIGRATIONS: string[] = [
   // v4: semantic memory embedding vector (Float32 BLOB; NULL = not yet embedded -> keyword fallback)
   `
   ALTER TABLE memory ADD COLUMN embedding BLOB;
-  `
+  `,
 ];
 
 /** True once runMigrations has confirmed fts5 virtual tables exist (or were created). */
-let ftsAvailable = false;
+const ftsAvailable = false;
 
 /** Whether the session-transcript FTS5 virtual tables are usable on this connection. */
 export function isSessionSearchFtsAvailable(): boolean {
@@ -89,16 +89,16 @@ export function isSessionSearchFtsAvailable(): boolean {
 }
 
 export function runMigrations(db: DatabaseSync): void {
-  const row = db.prepare("PRAGMA user_version").get() as { user_version: number };
-  let version = row.user_version ?? 0;
+  const row = db.prepare('PRAGMA user_version').get() as { user_version: number };
+  const version = row.user_version ?? 0;
   for (let i = version; i < MIGRATIONS.length; i++) {
-    db.exec("BEGIN IMMEDIATE");
+    db.exec('BEGIN IMMEDIATE');
     try {
       db.exec(MIGRATIONS[i]!);
       db.exec(`PRAGMA user_version = ${i + 1}`);
-      db.exec("COMMIT");
+      db.exec('COMMIT');
     } catch (error) {
-      db.exec("ROLLBACK");
+      db.exec('ROLLBACK');
       throw error;
     }
   }

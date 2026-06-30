@@ -1,7 +1,7 @@
 import type { XenesisRunResult, XenesisStatus } from '../../../../shared/types';
+import type { XenesisAgentAttachment } from './xenesisAgentAttachments';
 import type { XenesisDeskActionExecutionResult, XenesisDeskActionRequest } from './xenesisAgentDeskControl';
 import type { XenesisPolicyNotice, XenesisPolicySnapshot } from './xenesisPolicyNotices';
-import type { XenesisAgentAttachment } from './xenesisAgentAttachments';
 
 export const XENESIS_AGENT_STATE_STORAGE_KEY = 'xenesis:xenesis-agent-state:v1';
 export const XENESIS_AGENT_STATUS_BAR_KEYS_STORAGE_KEY = 'xenesis:xenesis-agent-status-bar-keys:v1';

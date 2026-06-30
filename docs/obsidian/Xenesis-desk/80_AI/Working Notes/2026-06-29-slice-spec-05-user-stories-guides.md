@@ -3,13 +3,13 @@ type: task
 repo: xenesis-desk
 aliases:
   - Slice Spec 05 User Stories Guides
-status: draft
+status: verified
 risk: medium
 ai_edit_policy: direct_edit_allowed
 ai_generated: true
 reviewed: false
 confidence: low
-last_reviewed: 2026-06-29
+last_reviewed: 2026-06-30
 depends_on:
   - "[[Final Goal Overall Spec]]"
   - "[[Final Goal Slice Spec Index]]"
@@ -93,6 +93,45 @@ Original source anchors:
   no-heuristic-routing constraints.
 - Reference adoption map proposal is updated with borrowed, adapted, rejected,
   and verified guide/workflow/reference patterns.
+
+## Implementation Evidence
+
+- Added all-contract invariant tests over every tool and messenger
+  `storyContract.workflowPreview`.
+- Added concrete `user-story-workflow` guide cards:
+  - `first-provider-setup`
+  - `connect-notion`
+  - `prepare-google-calendar`
+  - `connect-telegram`
+  - `first-external-message-test`
+- Guide workflow cards expose only `*.status` read paths and `*.open` control
+  paths. Request/apply/run/send/test paths remain explicit approval boundaries
+  outside the guide cards.
+- `xd.xenesis.guides.status/open` schema coverage now iterates
+  `XENESIS_CONNECTION_GUIDE_IDS` from the shared catalog.
+- Focused verification passed:
+  `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+  -> 180/180.
+- Broad verification passed:
+  - `npm run typecheck`
+  - `npm run docs:capabilities:audit` -> 801 nodes, 689 coverage path
+    references.
+  - `node scripts\assertCapabilityAuditZero.mjs` -> verified 4 counters.
+  - `git diff --check` -> passed; Git printed LF/CRLF normalization warnings
+    only.
+
+## Reference Adoption
+
+- Borrowed from OpenClaw setup wizard and channel setup surfaces: explicit
+  setup ordering, credential/pairing/access prerequisites, and setup surfaces
+  before runtime actions.
+- Borrowed from Hermes gateway platforms: gateway/channel readiness must be
+  represented as state and readback evidence before external message delivery.
+- Adapted in Xenesis as CR guide workflow cards, not provider-specific
+  executors or natural-language heuristic routes.
+- Rejected: running workflows from guide cards, silent OAuth/MCP install
+  mutation, gateway lifecycle actions, channel test sends, and chat-only
+  approval.
 
 ## Verification
 

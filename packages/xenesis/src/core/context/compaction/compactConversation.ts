@@ -1,8 +1,8 @@
-import type { AgentMessage } from "../../messages.js";
+import type { AgentMessage } from '../../messages.js';
 
-type SystemMessage = Extract<AgentMessage, { role: "system" }>;
-type AssistantMessage = Extract<AgentMessage, { role: "assistant" }>;
-type ToolMessage = Extract<AgentMessage, { role: "tool" }>;
+type SystemMessage = Extract<AgentMessage, { role: 'system' }>;
+type AssistantMessage = Extract<AgentMessage, { role: 'assistant' }>;
+type ToolMessage = Extract<AgentMessage, { role: 'tool' }>;
 
 export interface CompactionInput {
   messages: AgentMessage[];
@@ -30,15 +30,15 @@ function cloneMessage(message: AgentMessage): AgentMessage {
 }
 
 function toolResultCallIds(messages: readonly AgentMessage[]) {
-  return new Set(messages
-    .filter((message): message is ToolMessage => message.role === "tool")
-    .map((message) => message.toolCallId));
+  return new Set(
+    messages.filter((message): message is ToolMessage => message.role === 'tool').map((message) => message.toolCallId),
+  );
 }
 
 function assistantToolCallIds(messages: readonly AgentMessage[]) {
   const ids = new Set<string>();
   for (const message of messages) {
-    if (message.role !== "assistant") continue;
+    if (message.role !== 'assistant') continue;
     for (const toolCall of message.toolCalls ?? []) ids.add(toolCall.id);
   }
   return ids;
@@ -53,12 +53,12 @@ function missingToolCallIds(messages: readonly AgentMessage[]) {
 function findAssistantIndexForToolCalls(
   messages: readonly AgentMessage[],
   beforeIndex: number,
-  toolCallIds: readonly string[]
+  toolCallIds: readonly string[],
 ) {
   const missing = new Set(toolCallIds);
   for (let index = beforeIndex - 1; index >= 0; index -= 1) {
     const message = messages[index];
-    if (message?.role !== "assistant") continue;
+    if (message?.role !== 'assistant') continue;
     if ((message.toolCalls ?? []).some((toolCall) => missing.has(toolCall.id))) return index;
   }
   return -1;
@@ -66,13 +66,13 @@ function findAssistantIndexForToolCalls(
 
 function dropOrphanToolResults(messages: readonly AgentMessage[]) {
   const callIds = assistantToolCallIds(messages);
-  return messages.filter((message) => message.role !== "tool" || callIds.has(message.toolCallId));
+  return messages.filter((message) => message.role !== 'tool' || callIds.has(message.toolCallId));
 }
 
 function compactMessagePartsByTokens(
   historyMessages: readonly AgentMessage[],
   keepRecentTokens: number,
-  estimateTokens: (messages: AgentMessage[]) => number
+  estimateTokens: (messages: AgentMessage[]) => number,
 ) {
   let splitIndex = historyMessages.length;
   let tokens = 0;
@@ -94,42 +94,37 @@ function compactMessagePartsByTokens(
 
   return {
     olderMessages: historyMessages.slice(0, splitIndex).map(cloneMessage),
-    recentMessages: dropOrphanToolResults(historyMessages.slice(splitIndex)).map(cloneMessage)
+    recentMessages: dropOrphanToolResults(historyMessages.slice(splitIndex)).map(cloneMessage),
   };
 }
 
 function summarizeLine(message: AgentMessage, index: number) {
-  if (message.role === "tool") return `${index + 1}. tool ${message.name}: ${message.content}`;
+  if (message.role === 'tool') return `${index + 1}. tool ${message.name}: ${message.content}`;
   return `${index + 1}. ${message.role}: ${message.content}`;
 }
 
 function fallbackSummary(messages: readonly AgentMessage[]) {
-  return messages
-    .map((message, index) => summarizeLine(message, index))
-    .join("\n");
+  return messages.map((message, index) => summarizeLine(message, index)).join('\n');
 }
 
 function summaryMessage(summary: string): SystemMessage {
   return {
-    role: "system",
+    role: 'system',
     content: [
-      "Xenesis compacted session context:",
-      "[REFERENCE ONLY — respond only to the latest user message after this summary. Topic overlap with this summary does NOT mean resume its task.]",
-      "",
+      'Xenesis compacted session context:',
+      '[REFERENCE ONLY — respond only to the latest user message after this summary. Topic overlap with this summary does NOT mean resume its task.]',
+      '',
       summary.trim(),
-      "",
-      "--- END OF CONTEXT SUMMARY ---",
-      "Recent messages are preserved after this summary."
-    ].join("\n")
+      '',
+      '--- END OF CONTEXT SUMMARY ---',
+      'Recent messages are preserved after this summary.',
+    ].join('\n'),
   };
 }
 
 function isThinkingBlock(value: unknown) {
   return (
-    typeof value === "object" &&
-    value !== null &&
-    "type" in value &&
-    (value as { type?: unknown }).type === "thinking"
+    typeof value === 'object' && value !== null && 'type' in value && (value as { type?: unknown }).type === 'thinking'
   );
 }
 
@@ -145,26 +140,20 @@ function stripAssistantThinkingSignature(message: AssistantMessage): AssistantMe
       ...message.providerMetadata,
       anthropic: {
         ...message.providerMetadata?.anthropic,
-        content: nextContent
-      }
-    }
+        content: nextContent,
+      },
+    },
   };
 }
 
 export function stripAnthropicThinkingSignatures(messages: AgentMessage[]): AgentMessage[] {
-  return messages.map((message) => (
-    message.role === "assistant"
-      ? stripAssistantThinkingSignature(message)
-      : cloneMessage(message)
-  ));
+  return messages.map((message) =>
+    message.role === 'assistant' ? stripAssistantThinkingSignature(message) : cloneMessage(message),
+  );
 }
 
-async function withTimeout<T>(
-  task: () => Promise<T>,
-  timeoutMs: number,
-  abortSignal?: AbortSignal
-): Promise<T> {
-  if (abortSignal?.aborted) throw new Error("Compaction aborted.");
+async function withTimeout<T>(task: () => Promise<T>, timeoutMs: number, abortSignal?: AbortSignal): Promise<T> {
+  if (abortSignal?.aborted) throw new Error('Compaction aborted.');
 
   let timeout: ReturnType<typeof setTimeout> | undefined;
   let abortHandler: (() => void) | undefined;
@@ -172,20 +161,20 @@ async function withTimeout<T>(
     return await Promise.race([
       task(),
       new Promise<T>((_, reject) => {
-        timeout = setTimeout(() => reject(new Error("Compaction timed out.")), timeoutMs);
-        abortHandler = () => reject(new Error("Compaction aborted."));
-        abortSignal?.addEventListener("abort", abortHandler, { once: true });
-      })
+        timeout = setTimeout(() => reject(new Error('Compaction timed out.')), timeoutMs);
+        abortHandler = () => reject(new Error('Compaction aborted.'));
+        abortSignal?.addEventListener('abort', abortHandler, { once: true });
+      }),
     ]);
   } finally {
     if (timeout) clearTimeout(timeout);
-    if (abortHandler) abortSignal?.removeEventListener("abort", abortHandler);
+    if (abortHandler) abortSignal?.removeEventListener('abort', abortHandler);
   }
 }
 
 function savedRatio(beforeTokens: number, afterTokens: number) {
   if (beforeTokens <= 0) return 0;
-  return Math.max(0, Math.min(1, 1 - (afterTokens / beforeTokens)));
+  return Math.max(0, Math.min(1, 1 - afterTokens / beforeTokens));
 }
 
 export async function compactConversation(input: CompactionInput): Promise<CompactionResult> {
@@ -193,7 +182,7 @@ export async function compactConversation(input: CompactionInput): Promise<Compa
   const { olderMessages, recentMessages } = compactMessagePartsByTokens(
     input.messages,
     Math.max(0, input.keepRecentTokens),
-    input.estimateTokens
+    input.estimateTokens,
   );
   const retained = stripAnthropicThinkingSignatures(recentMessages);
 
@@ -201,7 +190,7 @@ export async function compactConversation(input: CompactionInput): Promise<Compa
     return {
       messages: retained,
       savedRatio: 0,
-      summarized: false
+      summarized: false,
     };
   }
 
@@ -212,7 +201,7 @@ export async function compactConversation(input: CompactionInput): Promise<Compa
     summary = await withTimeout(
       () => input.summarize(olderForSummary),
       input.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-      input.abortSignal
+      input.abortSignal,
     );
   } catch {
     summary = fallbackSummary(olderForSummary);
@@ -223,12 +212,12 @@ export async function compactConversation(input: CompactionInput): Promise<Compa
     messages,
     savedRatio: savedRatio(beforeTokens, input.estimateTokens(messages)),
     summarized: true,
-    summary
+    summary,
   };
 }
 
 export function shouldThrash(recentSavedRatios: number[]) {
   if (recentSavedRatios.length < 2) return false;
   const recent = recentSavedRatios.slice(-2);
-  return recent.every((ratio) => ratio < 0.10);
+  return recent.every((ratio) => ratio < 0.1);
 }

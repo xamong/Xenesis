@@ -72,9 +72,37 @@ slice is verified or explicitly approved.
 | Rejected behavior | Starting OAuth during setup readback, storing tokens, writing MCP config from setup packet/runtime/status paths, executing provider tools, leaking secret literal values, local natural-language routing, and side-effectful workflow preview steps. |
 | Verification | Focused evidence passed: `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs`; `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`. Broad evidence passed: CR audit/audit-zero, root and package typecheck, root build, Connection Center live smoke 14/14, provider onboarding live smoke 9/9, package tests/build/provider smoke. Residual repo-level gaps: existing Biome lint debt and missing `.github\workflows\ci.yml` for public-release check. |
 
-- Slice 04: pending implementation evidence.
-- Slice 05: pending implementation evidence.
-- Slice 06: pending final graph/release evidence.
+### Slice 04: Messenger Channels
+
+| Field | Record |
+|---|---|
+| Reference analysis | `F:\agent-anal\analysis\openclaw-main\12-channels-routing.md`; `F:\agent-anal\analysis\openclaw-main\11-gateway-ui.md`; `F:\agent-anal\analysis\hermes-agent-main\08-channels-ui.md` |
+| Original source checked | `F:\agent-anal\openclaw-main\src\routing\resolve-route.ts`; `F:\agent-anal\openclaw-main\src\routing\session-key.ts`; `F:\agent-anal\openclaw-main\src\channels\allowlist-match.ts`; `F:\agent-anal\openclaw-main\extensions\telegram\src\conversation-route.ts`; `F:\agent-anal\openclaw-main\extensions\discord\src\target-parsing.ts`; `F:\agent-anal\hermes-agent-main\gateway\platforms\telegram.py`; `F:\agent-anal\hermes-agent-main\gateway\platforms\slack.py` |
+| Borrowed pattern | Explicit route binding, stable session/readback metadata, allowlist/access-group boundaries, pairing/readiness state, and gateway/test-send approval boundaries. |
+| Xenesis adaptation | Implemented messenger cards expose CR-backed routing, safety, access groups, pairing, runtime, user-story, profile-draft, and messenger-view read models. Renderer controls emit only approval-gated CR requests for ready implemented drafts. Approval live smoke uses a loopback webhook profile and Action Inbox readback. Natural-language smoke proves only Telegram-scoped readback paths through provider raw CR/MCP evidence. |
+| Rejected behavior | Prompt keyword routing for target selection, real third-party delivery in smoke tests, chat-only approval, provider-specific CR one-offs, unapproved profile writes, hidden target literals, and treating planned messenger cards as delivery-ready adapters. |
+| Verification | Focused evidence passed for Tasks 1-7: shared read-model tests, renderer tests, dispatcher/no-side-effect tests, channel sanitization tests, channel approval smoke unit tests, Connection Center live-smoke descriptor tests, natural-language live-smoke descriptor tests, CR audit/audit-zero, package typecheck/build, and root build. Final natural-language Electron live gate passed: `node .\scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs --json` -> 17/17 with `codex-app-server`, `persistent-process`, raw CR/MCP channel readback evidence present, deterministic recovery absent, provider web search absent, shell/command fallback absent, no profile mutation, and no test-send/delivery. Residual repo-level gaps: existing Biome lint debt and missing `.github\workflows\ci.yml` for public-release check. |
+
+- Slice 05:
+
+| Field | Notes |
+|---|---|
+| Reference scope | OpenClaw setup wizard, plugin/gateway config helpers, Telegram/Discord setup surfaces, and Hermes Telegram/Slack gateway platform readiness. |
+| Borrowed pattern | Explicit setup order, credential/access/pairing prerequisites, gateway/channel readiness state, and user-facing task stories that are grounded in readback evidence. |
+| Xenesis adaptation | Added concrete `user-story-workflow` guide cards for first provider setup, Notion, Google Calendar, Telegram, and first external message test readiness. Added all-contract invariant tests for every tool and messenger user-story workflow preview. Guide cards remain CR read/open planning metadata and do not run workflows. |
+| Rejected behavior | Deterministic natural-language routing catalogs, provider-specific one-off executors, guide-triggered workflow runs, MCP/OAuth mutation, gateway lifecycle actions, profile writes, and unapproved external message test sends. |
+| Verification | Focused evidence passed: `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts` -> 180/180. Broad evidence passed: `npm run typecheck`; `npm run docs:capabilities:audit` -> 801 nodes, 689 coverage path references; `node scripts\assertCapabilityAuditZero.mjs` -> verified 4 counters; `git diff --check` -> passed with LF/CRLF warnings only. |
+
+### Slice 06: Graph Release Hardening
+
+| Field | Record |
+|---|---|
+| Reference analysis | `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-06-graph-release-hardening.md`; `docs/obsidian/Xenesis-desk/80_AI/Review/2026-06-29-final-goal-slice-spec-adversarial-review.md` |
+| Original source checked | Repo-local graph contract notes: `docs/obsidian/Xenesis-desk.md`, `docs/obsidian/Xenesis-desk/00_System/Graph Schema.md`, `docs/obsidian/Xenesis-desk/00_System/Review Policy.md`, `docs/obsidian/Xenesis-desk/_Indexes/Verification Map.md`, and `scripts/publicReleaseCheck.mjs`. |
+| Borrowed pattern | Treat the knowledge graph and release gates as executable evidence surfaces rather than manual-only documentation. |
+| Xenesis adaptation | Added a repo-local Obsidian graph checker, public docs boundary tests, a CI workflow required by the release guard, and final handoff markers for CR audit, audit-zero, lint, public-release, and live provider CR/MCP evidence. |
+| Rejected behavior | Counting Obsidian as public manual content, hiding public-release gaps, treating handoff text as completion evidence without checks, and claiming universal natural-language behavior. |
+| Verification | `node --test scripts\obsidianGraphCheck.test.mjs` -> 4/4; `npm run docs:obsidian:check` -> 147 notes / 733 wikilinks; `node --test scripts\checkDocsPublicSafety.test.mjs scripts\publicReleaseCheck.test.mjs` -> 2/2; `npm run check:public-release` -> passed. Final broad gates remain recorded in `handoff.md`. |
 
 ## Graph Links
 

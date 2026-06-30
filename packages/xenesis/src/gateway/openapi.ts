@@ -1,2092 +1,2096 @@
 export const gatewayOpenApiSpec = {
-  openapi: "3.1.0",
+  openapi: '3.1.0',
   info: {
-    title: "Xenesis Gateway API",
-    version: "0.1.0",
-    description: "Local HTTP and SSE API for Xenesis prompt runs, dashboard data, checks, reports, profiles, tasks, and context."
+    title: 'Xenesis Gateway API',
+    version: '0.1.0',
+    description:
+      'Local HTTP and SSE API for Xenesis prompt runs, dashboard data, checks, reports, profiles, tasks, and context.',
   },
-  servers: [
-    { url: "/" }
-  ],
+  servers: [{ url: '/' }],
   security: [],
   tags: [
-    { name: "Gateway" },
-    { name: "Runs" },
-    { name: "Reports" },
-    { name: "Profiles" },
-    { name: "Sessions" },
-    { name: "Context" },
-    { name: "Tasks" },
-    { name: "Schedules" },
-    { name: "Observability" },
-    { name: "Checks" }
+    { name: 'Gateway' },
+    { name: 'Runs' },
+    { name: 'Reports' },
+    { name: 'Profiles' },
+    { name: 'Sessions' },
+    { name: 'Context' },
+    { name: 'Tasks' },
+    { name: 'Schedules' },
+    { name: 'Observability' },
+    { name: 'Checks' },
   ],
   components: {
     securitySchemes: {
       bearerAuth: {
-        type: "http",
-        scheme: "bearer",
-        description: "Required for all non-public gateway routes. Use XENESIS_GATEWAY_TOKEN, --auth-token-env, or the generated GatewayHandle.authToken."
-      }
+        type: 'http',
+        scheme: 'bearer',
+        description:
+          'Required for all non-public gateway routes. Use XENESIS_GATEWAY_TOKEN, --auth-token-env, or the generated GatewayHandle.authToken.',
+      },
     },
     schemas: {
       GatewayError: {
-        type: "object",
-        required: ["error"],
+        type: 'object',
+        required: ['error'],
         properties: {
-          error: { type: "string" }
+          error: { type: 'string' },
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayRunRequest: {
-        type: "object",
-        required: ["prompt"],
+        type: 'object',
+        required: ['prompt'],
         properties: {
-          prompt: { type: "string", minLength: 1 },
-          workflow: { type: "string" },
-          configPath: { type: "string" },
+          prompt: { type: 'string', minLength: 1 },
+          workflow: { type: 'string' },
+          configPath: { type: 'string' },
           ideContext: {
-            type: "object",
-            additionalProperties: true
-          }
+            type: 'object',
+            additionalProperties: true,
+          },
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayWorkflow: {
-        type: "object",
-        required: ["name"],
+        type: 'object',
+        required: ['name'],
         properties: {
-          name: { type: "string" },
-          description: { type: "string" },
+          name: { type: 'string' },
+          description: { type: 'string' },
           metadata: {
-            type: "object",
-            additionalProperties: true
-          }
+            type: 'object',
+            additionalProperties: true,
+          },
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayWorkflowStepRun: {
-        type: "object",
-        required: ["workflow", "step", "index", "total", "status", "startedAt"],
+        type: 'object',
+        required: ['workflow', 'step', 'index', 'total', 'status', 'startedAt'],
         properties: {
-          workflow: { $ref: "#/components/schemas/GatewayWorkflow" },
-          step: { $ref: "#/components/schemas/GatewayWorkflow" },
-          index: { type: "integer" },
-          total: { type: "integer" },
-          status: { type: "string", enum: ["running", "completed", "failed"] },
-          startedAt: { type: "string", format: "date-time" },
-          endedAt: { type: "string", format: "date-time" },
-          durationMs: { type: "number" },
-          sessionId: { type: "string" },
-          exitCode: { type: "integer" },
-          error: { type: "string" }
+          workflow: { $ref: '#/components/schemas/GatewayWorkflow' },
+          step: { $ref: '#/components/schemas/GatewayWorkflow' },
+          index: { type: 'integer' },
+          total: { type: 'integer' },
+          status: { type: 'string', enum: ['running', 'completed', 'failed'] },
+          startedAt: { type: 'string', format: 'date-time' },
+          endedAt: { type: 'string', format: 'date-time' },
+          durationMs: { type: 'number' },
+          sessionId: { type: 'string' },
+          exitCode: { type: 'integer' },
+          error: { type: 'string' },
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayRunResponse: {
-        type: "object",
-        required: ["id", "traceId", "workflow", "exitCode", "events", "output", "errors"],
+        type: 'object',
+        required: ['id', 'traceId', 'workflow', 'exitCode', 'events', 'output', 'errors'],
         properties: {
-          id: { type: "string" },
-          traceId: { type: "string" },
-          workflow: { $ref: "#/components/schemas/GatewayWorkflow" },
-          sessionId: { type: "string" },
-          exitCode: { type: "integer" },
+          id: { type: 'string' },
+          traceId: { type: 'string' },
+          workflow: { $ref: '#/components/schemas/GatewayWorkflow' },
+          sessionId: { type: 'string' },
+          exitCode: { type: 'integer' },
           events: {
-            type: "array",
-            items: { $ref: "#/components/schemas/GatewayRunEvent" }
+            type: 'array',
+            items: { $ref: '#/components/schemas/GatewayRunEvent' },
           },
           workflowSteps: {
-            type: "array",
-            items: { $ref: "#/components/schemas/GatewayWorkflowStepRun" }
+            type: 'array',
+            items: { $ref: '#/components/schemas/GatewayWorkflowStepRun' },
           },
-          output: { type: "string" },
-          errors: { type: "string" }
+          output: { type: 'string' },
+          errors: { type: 'string' },
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayRunEvent: {
-        type: "object",
-        description: "A JSON event emitted by the Xenesis agent runtime.",
-        additionalProperties: true
+        type: 'object',
+        description: 'A JSON event emitted by the Xenesis agent runtime.',
+        additionalProperties: true,
       },
       GatewayActiveRun: {
-        type: "object",
-        required: ["id", "traceId", "workflow", "status", "prompt", "startedAt"],
+        type: 'object',
+        required: ['id', 'traceId', 'workflow', 'status', 'prompt', 'startedAt'],
         properties: {
-          id: { type: "string" },
-          traceId: { type: "string" },
-          workflow: { $ref: "#/components/schemas/GatewayWorkflow" },
-          sessionId: { type: "string" },
-          status: { type: "string", enum: ["running"] },
-          prompt: { type: "string" },
-          startedAt: { type: "string", format: "date-time" },
+          id: { type: 'string' },
+          traceId: { type: 'string' },
+          workflow: { $ref: '#/components/schemas/GatewayWorkflow' },
+          sessionId: { type: 'string' },
+          status: { type: 'string', enum: ['running'] },
+          prompt: { type: 'string' },
+          startedAt: { type: 'string', format: 'date-time' },
           workflowSteps: {
-            type: "array",
-            items: { $ref: "#/components/schemas/GatewayWorkflowStepRun" }
-          }
+            type: 'array',
+            items: { $ref: '#/components/schemas/GatewayWorkflowStepRun' },
+          },
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayFailurePatterns: {
-        type: "object",
-        required: ["topFailedTools", "repairStopReasons", "handoffBottlenecks"],
+        type: 'object',
+        required: ['topFailedTools', 'repairStopReasons', 'handoffBottlenecks'],
         properties: {
           topFailedTools: {
-            type: "array",
+            type: 'array',
             items: {
-              type: "object",
-              required: ["name", "failures", "calls", "runCount", "latestSessionId"],
+              type: 'object',
+              required: ['name', 'failures', 'calls', 'runCount', 'latestSessionId'],
               properties: {
-                name: { type: "string" },
-                failures: { type: "integer" },
-                calls: { type: "integer" },
-                runCount: { type: "integer" },
-                latestSessionId: { type: "string" },
-                latestTraceId: { type: "string" }
+                name: { type: 'string' },
+                failures: { type: 'integer' },
+                calls: { type: 'integer' },
+                runCount: { type: 'integer' },
+                latestSessionId: { type: 'string' },
+                latestTraceId: { type: 'string' },
               },
-              additionalProperties: false
-            }
+              additionalProperties: false,
+            },
           },
           repairStopReasons: {
-            type: "array",
+            type: 'array',
             items: {
-              type: "object",
-              required: ["reason", "count", "failedCommands", "latestSessionId"],
+              type: 'object',
+              required: ['reason', 'count', 'failedCommands', 'latestSessionId'],
               properties: {
-                reason: { type: "string" },
-                count: { type: "integer" },
+                reason: { type: 'string' },
+                count: { type: 'integer' },
                 failedCommands: {
-                  type: "array",
-                  items: { type: "string" }
+                  type: 'array',
+                  items: { type: 'string' },
                 },
-                latestSessionId: { type: "string" },
-                latestTraceId: { type: "string" }
+                latestSessionId: { type: 'string' },
+                latestTraceId: { type: 'string' },
               },
-              additionalProperties: false
-            }
+              additionalProperties: false,
+            },
           },
           handoffBottlenecks: {
-            type: "array",
+            type: 'array',
             items: {
-              type: "object",
-              required: ["handoffId", "title", "total", "queued", "running", "blocked", "active", "labels"],
+              type: 'object',
+              required: ['handoffId', 'title', 'total', 'queued', 'running', 'blocked', 'active', 'labels'],
               properties: {
-                handoffId: { type: "string" },
-                title: { type: "string" },
-                total: { type: "integer" },
-                queued: { type: "integer" },
-                running: { type: "integer" },
-                blocked: { type: "integer" },
-                failed: { type: "integer" },
-                completed: { type: "integer" },
-                cancelled: { type: "integer" },
-                active: { type: "integer" },
+                handoffId: { type: 'string' },
+                title: { type: 'string' },
+                total: { type: 'integer' },
+                queued: { type: 'integer' },
+                running: { type: 'integer' },
+                blocked: { type: 'integer' },
+                failed: { type: 'integer' },
+                completed: { type: 'integer' },
+                cancelled: { type: 'integer' },
+                active: { type: 'integer' },
                 labels: {
-                  type: "array",
-                  items: { type: "string" }
+                  type: 'array',
+                  items: { type: 'string' },
                 },
                 blockedReasons: {
-                  type: "array",
-                  items: { type: "string" }
-                }
+                  type: 'array',
+                  items: { type: 'string' },
+                },
               },
-              additionalProperties: false
-            }
-          }
+              additionalProperties: false,
+            },
+          },
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayAdaptivePolicy: {
-        type: "object",
+        type: 'object',
         required: [
-          "active",
-          "rules",
-          "priorityTools",
-          "cautionTools",
-          "repairCommands",
-          "handoffIds",
-          "requiredBefore",
-          "recoveryActions",
-          "longRunningStrategy",
-          "toolStrategy",
-          "contextStrategy",
-          "subagentStrategy",
-          "providerStrategy",
-          "externalStrategy",
-          "detail"
+          'active',
+          'rules',
+          'priorityTools',
+          'cautionTools',
+          'repairCommands',
+          'handoffIds',
+          'requiredBefore',
+          'recoveryActions',
+          'longRunningStrategy',
+          'toolStrategy',
+          'contextStrategy',
+          'subagentStrategy',
+          'providerStrategy',
+          'externalStrategy',
+          'detail',
         ],
         properties: {
-          active: { type: "boolean" },
+          active: { type: 'boolean' },
           rules: {
-            type: "array",
-            items: { type: "string" }
+            type: 'array',
+            items: { type: 'string' },
           },
           priorityTools: {
-            type: "array",
-            items: { type: "string" }
+            type: 'array',
+            items: { type: 'string' },
           },
           cautionTools: {
-            type: "array",
-            items: { type: "string" }
+            type: 'array',
+            items: { type: 'string' },
           },
           repairCommands: {
-            type: "array",
-            items: { type: "string" }
+            type: 'array',
+            items: { type: 'string' },
           },
           handoffIds: {
-            type: "array",
-            items: { type: "string" }
+            type: 'array',
+            items: { type: 'string' },
           },
           requiredBefore: {
-            type: "object",
+            type: 'object',
             additionalProperties: {
-              type: "array",
-              items: { type: "string" }
-            }
+              type: 'array',
+              items: { type: 'string' },
+            },
           },
           recoveryActions: {
-            type: "array",
-            items: { type: "string" }
+            type: 'array',
+            items: { type: 'string' },
           },
           longRunningStrategy: {
-            type: "object",
-            required: ["mode", "priorityTools", "stopConditions"],
+            type: 'object',
+            required: ['mode', 'priorityTools', 'stopConditions'],
             properties: {
-              mode: { type: "string", enum: ["handoff-first", "recover-existing-handoff"] },
+              mode: { type: 'string', enum: ['handoff-first', 'recover-existing-handoff'] },
               priorityTools: {
-                type: "array",
-                items: { type: "string" }
+                type: 'array',
+                items: { type: 'string' },
               },
               stopConditions: {
-                type: "array",
-                items: { type: "string" }
-              }
+                type: 'array',
+                items: { type: 'string' },
+              },
             },
-            additionalProperties: false
+            additionalProperties: false,
           },
           toolStrategy: {
-            type: "object",
-            required: ["preferredTools", "cautionTools", "avoidDuplicateTools"],
+            type: 'object',
+            required: ['preferredTools', 'cautionTools', 'avoidDuplicateTools'],
             properties: {
               preferredTools: {
-                type: "array",
-                items: { type: "string" }
+                type: 'array',
+                items: { type: 'string' },
               },
               cautionTools: {
-                type: "array",
-                items: { type: "string" }
+                type: 'array',
+                items: { type: 'string' },
               },
               avoidDuplicateTools: {
-                type: "array",
-                items: { type: "string" }
-              }
+                type: 'array',
+                items: { type: 'string' },
+              },
             },
-            additionalProperties: false
+            additionalProperties: false,
           },
           contextStrategy: {
-            type: "object",
-            required: ["injectionOrder", "memoryUse", "staleContextPolicy"],
+            type: 'object',
+            required: ['injectionOrder', 'memoryUse', 'staleContextPolicy'],
             properties: {
               injectionOrder: {
-                type: "array",
-                items: { type: "string" }
+                type: 'array',
+                items: { type: 'string' },
               },
-              memoryUse: { type: "string" },
-              staleContextPolicy: { type: "string" }
+              memoryUse: { type: 'string' },
+              staleContextPolicy: { type: 'string' },
             },
-            additionalProperties: false
+            additionalProperties: false,
           },
           subagentStrategy: {
-            type: "object",
-            required: ["recommendedAgents", "routeWhen"],
+            type: 'object',
+            required: ['recommendedAgents', 'routeWhen'],
             properties: {
               recommendedAgents: {
-                type: "array",
-                items: { type: "string" }
+                type: 'array',
+                items: { type: 'string' },
               },
               routeWhen: {
-                type: "array",
-                items: { type: "string" }
-              }
+                type: 'array',
+                items: { type: 'string' },
+              },
             },
-            additionalProperties: false
+            additionalProperties: false,
           },
           providerStrategy: {
-            type: "object",
-            required: ["retry", "fallback", "escalationSignals"],
+            type: 'object',
+            required: ['retry', 'fallback', 'escalationSignals'],
             properties: {
-              retry: { type: "string" },
-              fallback: { type: "string" },
+              retry: { type: 'string' },
+              fallback: { type: 'string' },
               escalationSignals: {
-                type: "array",
-                items: { type: "string" }
-              }
+                type: 'array',
+                items: { type: 'string' },
+              },
             },
-            additionalProperties: false
+            additionalProperties: false,
           },
           externalStrategy: {
-            type: "object",
-            required: ["statusFields", "channelGuidance"],
+            type: 'object',
+            required: ['statusFields', 'channelGuidance'],
             properties: {
               statusFields: {
-                type: "array",
-                items: { type: "string" }
+                type: 'array',
+                items: { type: 'string' },
               },
-              channelGuidance: { type: "string" }
+              channelGuidance: { type: 'string' },
             },
-            additionalProperties: false
+            additionalProperties: false,
           },
-          detail: { type: "string" }
+          detail: { type: 'string' },
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayStatus: {
-        type: "object",
-        description: "Operational gateway status. Additional properties are intentionally preserved for dashboard compatibility.",
+        type: 'object',
+        description:
+          'Operational gateway status. Additional properties are intentionally preserved for dashboard compatibility.',
         properties: {
           diagnostics: {
-            type: "object",
+            type: 'object',
             properties: {
-              failurePatterns: { $ref: "#/components/schemas/GatewayFailurePatterns" },
-              adaptivePolicy: { $ref: "#/components/schemas/GatewayAdaptivePolicy" }
+              failurePatterns: { $ref: '#/components/schemas/GatewayFailurePatterns' },
+              adaptivePolicy: { $ref: '#/components/schemas/GatewayAdaptivePolicy' },
             },
-            additionalProperties: true
-          }
+            additionalProperties: true,
+          },
         },
-        additionalProperties: true
+        additionalProperties: true,
       },
       GatewaySessionStatus: {
-        type: "object",
-        required: ["id", "status", "phase", "summary", "updatedAt"],
+        type: 'object',
+        required: ['id', 'status', 'phase', 'summary', 'updatedAt'],
         properties: {
-          id: { type: "string" },
-          traceId: { type: "string" },
-          status: { type: "string" },
-          phase: { type: "string" },
-          summary: { type: "string" },
-          updatedAt: { type: "string", format: "date-time" }
+          id: { type: 'string' },
+          traceId: { type: 'string' },
+          status: { type: 'string' },
+          phase: { type: 'string' },
+          summary: { type: 'string' },
+          updatedAt: { type: 'string', format: 'date-time' },
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayTraceRunReport: {
-        type: "object",
-        required: ["id", "sessionId", "traceId", "createdAt", "status", "turns", "eventCount", "messageCount", "toolCallCount", "toolResultCount"],
+        type: 'object',
+        required: [
+          'id',
+          'sessionId',
+          'traceId',
+          'createdAt',
+          'status',
+          'turns',
+          'eventCount',
+          'messageCount',
+          'toolCallCount',
+          'toolResultCount',
+        ],
         properties: {
-          id: { type: "string" },
-          sessionId: { type: "string" },
-          traceId: { type: "string" },
-          createdAt: { type: "string", format: "date-time" },
-          status: { type: "string" },
-          phase: { type: "string" },
-          turns: { type: "integer" },
-          eventCount: { type: "integer" },
-          messageCount: { type: "integer" },
-          toolCallCount: { type: "integer" },
-          toolResultCount: { type: "integer" },
+          id: { type: 'string' },
+          sessionId: { type: 'string' },
+          traceId: { type: 'string' },
+          createdAt: { type: 'string', format: 'date-time' },
+          status: { type: 'string' },
+          phase: { type: 'string' },
+          turns: { type: 'integer' },
+          eventCount: { type: 'integer' },
+          messageCount: { type: 'integer' },
+          toolCallCount: { type: 'integer' },
+          toolResultCount: { type: 'integer' },
           metrics: {
-            type: "object",
-            additionalProperties: true
+            type: 'object',
+            additionalProperties: true,
           },
           toolPolicy: {
-            type: "object",
+            type: 'object',
             required: [
-              "policyName",
-              "priorityTools",
-              "requiredBefore",
-              "requiredBeforeAny",
-              "allowCount",
-              "denyCount",
-              "nextActions"
+              'policyName',
+              'priorityTools',
+              'requiredBefore',
+              'requiredBeforeAny',
+              'allowCount',
+              'denyCount',
+              'nextActions',
             ],
             properties: {
-              policyName: { type: "string" },
+              policyName: { type: 'string' },
               priorityTools: {
-                type: "array",
-                items: { type: "string" }
+                type: 'array',
+                items: { type: 'string' },
               },
               requiredBefore: {
-                type: "object",
+                type: 'object',
                 additionalProperties: {
-                  type: "array",
-                  items: { type: "string" }
-                }
+                  type: 'array',
+                  items: { type: 'string' },
+                },
               },
               requiredBeforeAny: {
-                type: "object",
+                type: 'object',
                 additionalProperties: {
-                  type: "array",
-                  items: { type: "string" }
-                }
+                  type: 'array',
+                  items: { type: 'string' },
+                },
               },
-              allowCount: { type: "integer" },
-              denyCount: { type: "integer" },
+              allowCount: { type: 'integer' },
+              denyCount: { type: 'integer' },
               nextActions: {
-                type: "array",
-                items: { type: "string" }
-              }
+                type: 'array',
+                items: { type: 'string' },
+              },
             },
-            additionalProperties: false
+            additionalProperties: false,
           },
           handoffs: {
-            type: "array",
+            type: 'array',
             items: {
-              type: "object",
-              required: [
-                "toolCallId",
-                "taskCount",
-                "dependencyCount",
-                "dependencyLabelCount",
-                "labels",
-                "queued"
-              ],
+              type: 'object',
+              required: ['toolCallId', 'taskCount', 'dependencyCount', 'dependencyLabelCount', 'labels', 'queued'],
               properties: {
-                toolCallId: { type: "string" },
-                handoffId: { type: "string" },
-                title: { type: "string" },
-                taskCount: { type: "integer" },
-                dependencyCount: { type: "integer" },
-                dependencyLabelCount: { type: "integer" },
+                toolCallId: { type: 'string' },
+                handoffId: { type: 'string' },
+                title: { type: 'string' },
+                taskCount: { type: 'integer' },
+                dependencyCount: { type: 'integer' },
+                dependencyLabelCount: { type: 'integer' },
                 labels: {
-                  type: "array",
-                  items: { type: "string" }
+                  type: 'array',
+                  items: { type: 'string' },
                 },
-                queued: { type: "boolean" }
+                queued: { type: 'boolean' },
               },
-              additionalProperties: false
-            }
+              additionalProperties: false,
+            },
           },
           workflowSteps: {
-            type: "array",
-            items: { $ref: "#/components/schemas/GatewayWorkflowStepRun" }
+            type: 'array',
+            items: { $ref: '#/components/schemas/GatewayWorkflowStepRun' },
           },
-          verification: { $ref: "#/components/schemas/GatewayTraceVerificationSummary" }
+          verification: { $ref: '#/components/schemas/GatewayTraceVerificationSummary' },
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayTraceVerificationSummary: {
-        type: "object",
-        required: ["status", "commandCount", "passed", "failed", "failedCommands"],
+        type: 'object',
+        required: ['status', 'commandCount', 'passed', 'failed', 'failedCommands'],
         properties: {
-          status: { type: "string" },
-          commandCount: { type: "integer" },
-          passed: { type: "integer" },
-          failed: { type: "integer" },
+          status: { type: 'string' },
+          commandCount: { type: 'integer' },
+          passed: { type: 'integer' },
+          failed: { type: 'integer' },
           failedCommands: {
-            type: "array",
-            items: { type: "string" }
-          }
+            type: 'array',
+            items: { type: 'string' },
+          },
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayTraceTaskExecution: {
-        type: "object",
+        type: 'object',
         required: [
-          "taskCount",
-          "handoffTaskCount",
-          "queuedCount",
-          "runningCount",
-          "completedCount",
-          "failedCount",
-          "cancelledCount",
-          "blockedCount",
-          "retriedCount",
-          "handoffIds"
+          'taskCount',
+          'handoffTaskCount',
+          'queuedCount',
+          'runningCount',
+          'completedCount',
+          'failedCount',
+          'cancelledCount',
+          'blockedCount',
+          'retriedCount',
+          'handoffIds',
         ],
         properties: {
-          taskCount: { type: "integer" },
-          handoffTaskCount: { type: "integer" },
-          queuedCount: { type: "integer" },
-          runningCount: { type: "integer" },
-          completedCount: { type: "integer" },
-          failedCount: { type: "integer" },
-          cancelledCount: { type: "integer" },
-          blockedCount: { type: "integer" },
-          retriedCount: { type: "integer" },
+          taskCount: { type: 'integer' },
+          handoffTaskCount: { type: 'integer' },
+          queuedCount: { type: 'integer' },
+          runningCount: { type: 'integer' },
+          completedCount: { type: 'integer' },
+          failedCount: { type: 'integer' },
+          cancelledCount: { type: 'integer' },
+          blockedCount: { type: 'integer' },
+          retriedCount: { type: 'integer' },
           handoffIds: {
-            type: "array",
-            items: { type: "string" }
-          }
+            type: 'array',
+            items: { type: 'string' },
+          },
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayTraceDiagnostics: {
-        type: "object",
+        type: 'object',
         required: [
-          "status",
-          "retryCount",
-          "fallbackCount",
-          "failedToolCallCount",
-          "permissionIssueCount",
-          "toolPolicyIssueCount",
-          "failedVerificationCount",
-          "errorCount",
-          "handoffCount",
-          "handoffTaskCount",
-          "handoffDependencyCount",
-          "taskExecution",
-          "providerRetries",
-          "providerFallbacks",
-          "failedToolCalls",
-          "permissionIssues",
-          "toolPolicyIssues",
-          "errors"
+          'status',
+          'retryCount',
+          'fallbackCount',
+          'failedToolCallCount',
+          'permissionIssueCount',
+          'toolPolicyIssueCount',
+          'failedVerificationCount',
+          'errorCount',
+          'handoffCount',
+          'handoffTaskCount',
+          'handoffDependencyCount',
+          'taskExecution',
+          'providerRetries',
+          'providerFallbacks',
+          'failedToolCalls',
+          'permissionIssues',
+          'toolPolicyIssues',
+          'errors',
         ],
         properties: {
-          status: { type: "string", enum: ["ok", "warning", "failed"] },
-          retryCount: { type: "integer" },
-          fallbackCount: { type: "integer" },
-          failedToolCallCount: { type: "integer" },
-          permissionIssueCount: { type: "integer" },
-          toolPolicyIssueCount: { type: "integer" },
-          failedVerificationCount: { type: "integer" },
-          errorCount: { type: "integer" },
-          handoffCount: { type: "integer" },
-          handoffTaskCount: { type: "integer" },
-          handoffDependencyCount: { type: "integer" },
-          taskExecution: { $ref: "#/components/schemas/GatewayTraceTaskExecution" },
+          status: { type: 'string', enum: ['ok', 'warning', 'failed'] },
+          retryCount: { type: 'integer' },
+          fallbackCount: { type: 'integer' },
+          failedToolCallCount: { type: 'integer' },
+          permissionIssueCount: { type: 'integer' },
+          toolPolicyIssueCount: { type: 'integer' },
+          failedVerificationCount: { type: 'integer' },
+          errorCount: { type: 'integer' },
+          handoffCount: { type: 'integer' },
+          handoffTaskCount: { type: 'integer' },
+          handoffDependencyCount: { type: 'integer' },
+          taskExecution: { $ref: '#/components/schemas/GatewayTraceTaskExecution' },
           providerRetries: {
-            type: "array",
+            type: 'array',
             items: {
-              type: "object",
-              required: ["provider", "attempt", "maxRetries", "message"],
+              type: 'object',
+              required: ['provider', 'attempt', 'maxRetries', 'message'],
               properties: {
-                provider: { type: "string" },
-                attempt: { type: "integer" },
-                maxRetries: { type: "integer" },
-                message: { type: "string" }
+                provider: { type: 'string' },
+                attempt: { type: 'integer' },
+                maxRetries: { type: 'integer' },
+                message: { type: 'string' },
               },
-              additionalProperties: false
-            }
+              additionalProperties: false,
+            },
           },
           providerFallbacks: {
-            type: "array",
+            type: 'array',
             items: {
-              type: "object",
-              required: ["from", "to", "message"],
+              type: 'object',
+              required: ['from', 'to', 'message'],
               properties: {
-                from: { type: "string" },
-                to: { type: "string" },
-                message: { type: "string" }
+                from: { type: 'string' },
+                to: { type: 'string' },
+                message: { type: 'string' },
               },
-              additionalProperties: false
-            }
+              additionalProperties: false,
+            },
           },
           failedToolCalls: {
-            type: "array",
+            type: 'array',
             items: {
-              type: "object",
-              required: ["toolCallId", "name", "content"],
+              type: 'object',
+              required: ['toolCallId', 'name', 'content'],
               properties: {
-                toolCallId: { type: "string" },
-                name: { type: "string" },
-                content: { type: "string" }
+                toolCallId: { type: 'string' },
+                name: { type: 'string' },
+                content: { type: 'string' },
               },
-              additionalProperties: false
-            }
+              additionalProperties: false,
+            },
           },
           permissionIssues: {
-            type: "array",
+            type: 'array',
             items: {
-              type: "object",
-              required: ["toolCallId", "name", "status", "reason", "riskLevel", "summary", "hardDeny"],
+              type: 'object',
+              required: ['toolCallId', 'name', 'status', 'reason', 'riskLevel', 'summary', 'hardDeny'],
               properties: {
-                toolCallId: { type: "string" },
-                name: { type: "string" },
-                status: { type: "string" },
-                reason: { type: "string" },
-                riskLevel: { type: "string" },
-                summary: { type: "string" },
-                hardDeny: { type: "boolean" }
+                toolCallId: { type: 'string' },
+                name: { type: 'string' },
+                status: { type: 'string' },
+                reason: { type: 'string' },
+                riskLevel: { type: 'string' },
+                summary: { type: 'string' },
+                hardDeny: { type: 'boolean' },
               },
-              additionalProperties: false
-            }
+              additionalProperties: false,
+            },
           },
           toolPolicyIssues: {
-            type: "array",
+            type: 'array',
             items: {
-              type: "object",
+              type: 'object',
               required: [
-                "toolCallId",
-                "name",
-                "policyName",
-                "reason",
-                "requiredBefore",
-                "missingBefore",
-                "requiredBeforeAny",
-                "missingBeforeAny",
-                "priorityTools"
+                'toolCallId',
+                'name',
+                'policyName',
+                'reason',
+                'requiredBefore',
+                'missingBefore',
+                'requiredBeforeAny',
+                'missingBeforeAny',
+                'priorityTools',
               ],
               properties: {
-                toolCallId: { type: "string" },
-                name: { type: "string" },
-                policyName: { type: "string" },
-                reason: { type: "string" },
+                toolCallId: { type: 'string' },
+                name: { type: 'string' },
+                policyName: { type: 'string' },
+                reason: { type: 'string' },
                 requiredBefore: {
-                  type: "array",
-                  items: { type: "string" }
+                  type: 'array',
+                  items: { type: 'string' },
                 },
                 missingBefore: {
-                  type: "array",
-                  items: { type: "string" }
+                  type: 'array',
+                  items: { type: 'string' },
                 },
                 requiredBeforeAny: {
-                  type: "array",
-                  items: { type: "string" }
+                  type: 'array',
+                  items: { type: 'string' },
                 },
                 missingBeforeAny: {
-                  type: "array",
-                  items: { type: "string" }
+                  type: 'array',
+                  items: { type: 'string' },
                 },
                 priorityTools: {
-                  type: "array",
-                  items: { type: "string" }
+                  type: 'array',
+                  items: { type: 'string' },
                 },
-                nextAction: { type: "string" }
+                nextAction: { type: 'string' },
               },
-              additionalProperties: false
-            }
+              additionalProperties: false,
+            },
           },
           errors: {
-            type: "array",
-            items: { type: "string" }
+            type: 'array',
+            items: { type: 'string' },
           },
-          verification: { $ref: "#/components/schemas/GatewayTraceVerificationSummary" }
+          verification: { $ref: '#/components/schemas/GatewayTraceVerificationSummary' },
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayTraceDetail: {
-        type: "object",
-        required: ["traceId", "activeRuns", "sessions", "runReports", "diagnostics", "tasks", "observability"],
+        type: 'object',
+        required: ['traceId', 'activeRuns', 'sessions', 'runReports', 'diagnostics', 'tasks', 'observability'],
         properties: {
-          traceId: { type: "string" },
+          traceId: { type: 'string' },
           activeRuns: {
-            type: "array",
-            items: { $ref: "#/components/schemas/GatewayActiveRun" }
+            type: 'array',
+            items: { $ref: '#/components/schemas/GatewayActiveRun' },
           },
           sessions: {
-            type: "array",
-            items: { $ref: "#/components/schemas/GatewaySessionStatus" }
+            type: 'array',
+            items: { $ref: '#/components/schemas/GatewaySessionStatus' },
           },
           runReports: {
-            type: "array",
-            items: { $ref: "#/components/schemas/GatewayTraceRunReport" }
+            type: 'array',
+            items: { $ref: '#/components/schemas/GatewayTraceRunReport' },
           },
           workflowSteps: {
-            type: "array",
-            items: { $ref: "#/components/schemas/GatewayWorkflowStepRun" }
+            type: 'array',
+            items: { $ref: '#/components/schemas/GatewayWorkflowStepRun' },
           },
-          diagnostics: { $ref: "#/components/schemas/GatewayTraceDiagnostics" },
+          diagnostics: { $ref: '#/components/schemas/GatewayTraceDiagnostics' },
           tasks: {
-            type: "array",
-            items: { $ref: "#/components/schemas/GatewayTask" }
+            type: 'array',
+            items: { $ref: '#/components/schemas/GatewayTask' },
           },
           observability: {
-            type: "object",
-            required: ["summary", "events"],
+            type: 'object',
+            required: ['summary', 'events'],
             properties: {
-              summary: { $ref: "#/components/schemas/GatewayObservabilitySummary" },
+              summary: { $ref: '#/components/schemas/GatewayObservabilitySummary' },
               events: {
-                type: "array",
-                items: { $ref: "#/components/schemas/GatewayObservabilityEvent" }
-              }
+                type: 'array',
+                items: { $ref: '#/components/schemas/GatewayObservabilityEvent' },
+              },
             },
-            additionalProperties: false
-          }
+            additionalProperties: false,
+          },
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayTraceSummary: {
-        type: "object",
+        type: 'object',
         required: [
-          "traceId",
-          "status",
-          "updatedAt",
-          "activeRunCount",
-          "sessionCount",
-          "runReportCount",
-          "observabilityEventCount",
-          "diagnostics"
+          'traceId',
+          'status',
+          'updatedAt',
+          'activeRunCount',
+          'sessionCount',
+          'runReportCount',
+          'observabilityEventCount',
+          'diagnostics',
         ],
         properties: {
-          traceId: { type: "string" },
-          status: { type: "string", enum: ["ok", "warning", "failed"] },
-          updatedAt: { type: "string" },
-          activeRunCount: { type: "integer" },
-          sessionCount: { type: "integer" },
-          runReportCount: { type: "integer" },
-          observabilityEventCount: { type: "integer" },
-          diagnostics: { $ref: "#/components/schemas/GatewayTraceDiagnostics" }
+          traceId: { type: 'string' },
+          status: { type: 'string', enum: ['ok', 'warning', 'failed'] },
+          updatedAt: { type: 'string' },
+          activeRunCount: { type: 'integer' },
+          sessionCount: { type: 'integer' },
+          runReportCount: { type: 'integer' },
+          observabilityEventCount: { type: 'integer' },
+          diagnostics: { $ref: '#/components/schemas/GatewayTraceDiagnostics' },
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayTraceList: {
-        type: "object",
-        required: ["traces", "summary"],
+        type: 'object',
+        required: ['traces', 'summary'],
         properties: {
           traces: {
-            type: "array",
-            items: { $ref: "#/components/schemas/GatewayTraceSummary" }
+            type: 'array',
+            items: { $ref: '#/components/schemas/GatewayTraceSummary' },
           },
           summary: {
-            type: "object",
-            required: ["total", "failed", "warning", "ok"],
+            type: 'object',
+            required: ['total', 'failed', 'warning', 'ok'],
             properties: {
-              total: { type: "integer" },
-              failed: { type: "integer" },
-              warning: { type: "integer" },
-              ok: { type: "integer" }
+              total: { type: 'integer' },
+              failed: { type: 'integer' },
+              warning: { type: 'integer' },
+              ok: { type: 'integer' },
             },
-            additionalProperties: false
-          }
+            additionalProperties: false,
+          },
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayTraceCompact: {
-        type: "object",
-        required: ["traceId", "sessions"],
+        type: 'object',
+        required: ['traceId', 'sessions'],
         properties: {
-          traceId: { type: "string" },
+          traceId: { type: 'string' },
           sessions: {
-            type: "array",
+            type: 'array',
             items: {
-              type: "object",
-              required: ["id", "status", "phase", "updatedAt", "compact"],
+              type: 'object',
+              required: ['id', 'status', 'phase', 'updatedAt', 'compact'],
               properties: {
-                id: { type: "string" },
-                status: { type: "string" },
-                phase: { type: "string" },
-                updatedAt: { type: "string" },
-                compact: { type: "string" }
+                id: { type: 'string' },
+                status: { type: 'string' },
+                phase: { type: 'string' },
+                updatedAt: { type: 'string' },
+                compact: { type: 'string' },
               },
-              additionalProperties: false
-            }
-          }
+              additionalProperties: false,
+            },
+          },
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayTraceBundle: {
-        type: "object",
-        required: ["traceId", "exportedAt", "detail", "compact"],
+        type: 'object',
+        required: ['traceId', 'exportedAt', 'detail', 'compact'],
         properties: {
-          traceId: { type: "string" },
-          exportedAt: { type: "string", format: "date-time" },
-          detail: { $ref: "#/components/schemas/GatewayTraceDetail" },
-          compact: { $ref: "#/components/schemas/GatewayTraceCompact" }
+          traceId: { type: 'string' },
+          exportedAt: { type: 'string', format: 'date-time' },
+          detail: { $ref: '#/components/schemas/GatewayTraceDetail' },
+          compact: { $ref: '#/components/schemas/GatewayTraceCompact' },
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayReportSummary: {
-        type: "object",
-        required: ["kind", "id", "createdAt", "exitCode", "passed", "failed", "total"],
+        type: 'object',
+        required: ['kind', 'id', 'createdAt', 'exitCode', 'passed', 'failed', 'total'],
         properties: {
-          kind: { type: "string", enum: ["smoke", "scenario", "connect", "provider-live"] },
-          id: { type: "string" },
-          createdAt: { type: "string" },
-          exitCode: { type: "integer" },
-          passed: { type: "integer" },
-          failed: { type: "integer" },
-          total: { type: "integer" }
+          kind: { type: 'string', enum: ['smoke', 'scenario', 'connect', 'provider-live'] },
+          id: { type: 'string' },
+          createdAt: { type: 'string' },
+          exitCode: { type: 'integer' },
+          passed: { type: 'integer' },
+          failed: { type: 'integer' },
+          total: { type: 'integer' },
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayReportDetail: {
-        type: "object",
-        required: ["kind", "id", "path", "report"],
+        type: 'object',
+        required: ['kind', 'id', 'path', 'report'],
         properties: {
-          kind: { type: "string", enum: ["smoke", "scenario", "connect", "provider-live"] },
-          id: { type: "string" },
-          path: { type: "string" },
+          kind: { type: 'string', enum: ['smoke', 'scenario', 'connect', 'provider-live'] },
+          id: { type: 'string' },
+          path: { type: 'string' },
           report: {
-            type: "object",
-            additionalProperties: true
-          }
+            type: 'object',
+            additionalProperties: true,
+          },
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayActionResult: {
-        type: "object",
-        required: ["exitCode", "output", "errors"],
+        type: 'object',
+        required: ['exitCode', 'output', 'errors'],
         properties: {
-          exitCode: { type: "integer" },
-          output: { type: "string" },
-          errors: { type: "string" }
+          exitCode: { type: 'integer' },
+          output: { type: 'string' },
+          errors: { type: 'string' },
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayObservabilityEvent: {
-        type: "object",
-        required: ["id", "timestamp", "kind"],
+        type: 'object',
+        required: ['id', 'timestamp', 'kind'],
         properties: {
-          id: { type: "string" },
-          timestamp: { type: "string", format: "date-time" },
-          kind: { type: "string", enum: ["request", "response", "retry", "error", "task"] },
-          method: { type: "string" },
-          path: { type: "string" },
-          url: { type: "string" },
-          attempt: { type: "number" },
-          status: { type: "number" },
-          ok: { type: "boolean" },
-          durationMs: { type: "number" },
-          nextAttempt: { type: "number" },
-          delayMs: { type: "number" },
-          traceId: { type: "string" },
-          runId: { type: "string" },
-          taskId: { type: "string" },
-          phase: { type: "string" },
-          taskStatus: { type: "string" },
-          maxAttempts: { type: "number" },
-          label: { type: "string" },
-          handoffId: { type: "string" },
-          handoffTitle: { type: "string" },
-          source: { type: "string" },
-          subagent: { type: "string" },
-          parentSessionId: { type: "string" },
+          id: { type: 'string' },
+          timestamp: { type: 'string', format: 'date-time' },
+          kind: { type: 'string', enum: ['request', 'response', 'retry', 'error', 'task'] },
+          method: { type: 'string' },
+          path: { type: 'string' },
+          url: { type: 'string' },
+          attempt: { type: 'number' },
+          status: { type: 'number' },
+          ok: { type: 'boolean' },
+          durationMs: { type: 'number' },
+          nextAttempt: { type: 'number' },
+          delayMs: { type: 'number' },
+          traceId: { type: 'string' },
+          runId: { type: 'string' },
+          taskId: { type: 'string' },
+          phase: { type: 'string' },
+          taskStatus: { type: 'string' },
+          maxAttempts: { type: 'number' },
+          label: { type: 'string' },
+          handoffId: { type: 'string' },
+          handoffTitle: { type: 'string' },
+          source: { type: 'string' },
+          subagent: { type: 'string' },
+          parentSessionId: { type: 'string' },
           blockedBy: {
-            type: "array",
-            items: { type: "string" }
+            type: 'array',
+            items: { type: 'string' },
           },
-          blockedReason: { type: "string" },
-          error: {}
+          blockedReason: { type: 'string' },
+          error: {},
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayObservabilityEventInput: {
-        type: "object",
-        required: ["kind"],
+        type: 'object',
+        required: ['kind'],
         properties: {
-          kind: { type: "string", enum: ["request", "response", "retry", "error", "task"] },
-          method: { type: "string" },
-          path: { type: "string" },
-          url: { type: "string" },
-          attempt: { type: "number" },
-          status: { type: "number" },
-          ok: { type: "boolean" },
-          durationMs: { type: "number" },
-          nextAttempt: { type: "number" },
-          delayMs: { type: "number" },
-          traceId: { type: "string" },
-          runId: { type: "string" },
-          taskId: { type: "string" },
-          phase: { type: "string" },
-          taskStatus: { type: "string" },
-          maxAttempts: { type: "number" },
-          label: { type: "string" },
-          handoffId: { type: "string" },
-          handoffTitle: { type: "string" },
-          source: { type: "string" },
-          subagent: { type: "string" },
-          parentSessionId: { type: "string" },
+          kind: { type: 'string', enum: ['request', 'response', 'retry', 'error', 'task'] },
+          method: { type: 'string' },
+          path: { type: 'string' },
+          url: { type: 'string' },
+          attempt: { type: 'number' },
+          status: { type: 'number' },
+          ok: { type: 'boolean' },
+          durationMs: { type: 'number' },
+          nextAttempt: { type: 'number' },
+          delayMs: { type: 'number' },
+          traceId: { type: 'string' },
+          runId: { type: 'string' },
+          taskId: { type: 'string' },
+          phase: { type: 'string' },
+          taskStatus: { type: 'string' },
+          maxAttempts: { type: 'number' },
+          label: { type: 'string' },
+          handoffId: { type: 'string' },
+          handoffTitle: { type: 'string' },
+          source: { type: 'string' },
+          subagent: { type: 'string' },
+          parentSessionId: { type: 'string' },
           blockedBy: {
-            type: "array",
-            items: { type: "string" }
+            type: 'array',
+            items: { type: 'string' },
           },
-          blockedReason: { type: "string" },
-          error: {}
+          blockedReason: { type: 'string' },
+          error: {},
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayObservabilitySummary: {
-        type: "object",
-        required: ["total", "request", "response", "retry", "error", "task"],
+        type: 'object',
+        required: ['total', 'request', 'response', 'retry', 'error', 'task'],
         properties: {
-          total: { type: "integer" },
-          request: { type: "integer" },
-          response: { type: "integer" },
-          retry: { type: "integer" },
-          error: { type: "integer" },
-          task: { type: "integer" }
+          total: { type: 'integer' },
+          request: { type: 'integer' },
+          response: { type: 'integer' },
+          retry: { type: 'integer' },
+          error: { type: 'integer' },
+          task: { type: 'integer' },
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayObservabilityRetention: {
-        type: "object",
-        required: ["maxEvents"],
+        type: 'object',
+        required: ['maxEvents'],
         properties: {
-          maxEvents: { type: "integer", minimum: 1 },
-          maxAgeDays: { type: "integer", minimum: 1 }
+          maxEvents: { type: 'integer', minimum: 1 },
+          maxAgeDays: { type: 'integer', minimum: 1 },
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayObservabilityExport: {
-        type: "object",
-        required: ["version", "exportedAt", "retention", "events"],
+        type: 'object',
+        required: ['version', 'exportedAt', 'retention', 'events'],
         properties: {
-          version: { type: "integer", enum: [1] },
-          exportedAt: { type: "string", format: "date-time" },
-          retention: { $ref: "#/components/schemas/GatewayObservabilityRetention" },
+          version: { type: 'integer', enum: [1] },
+          exportedAt: { type: 'string', format: 'date-time' },
+          retention: { $ref: '#/components/schemas/GatewayObservabilityRetention' },
           events: {
-            type: "array",
-            items: { $ref: "#/components/schemas/GatewayObservabilityEvent" }
-          }
+            type: 'array',
+            items: { $ref: '#/components/schemas/GatewayObservabilityEvent' },
+          },
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayObservabilityClearResult: {
-        type: "object",
-        required: ["cleared", "summary"],
+        type: 'object',
+        required: ['cleared', 'summary'],
         properties: {
-          cleared: { type: "integer" },
-          summary: { $ref: "#/components/schemas/GatewayObservabilitySummary" }
+          cleared: { type: 'integer' },
+          summary: { $ref: '#/components/schemas/GatewayObservabilitySummary' },
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayProfile: {
-        type: "object",
-        required: ["name"],
+        type: 'object',
+        required: ['name'],
         properties: {
-          name: { type: "string" },
-          provider: { type: "string" },
-          model: { type: "string" },
-          approvalMode: { type: "string" }
+          name: { type: 'string' },
+          provider: { type: 'string' },
+          model: { type: 'string' },
+          approvalMode: { type: 'string' },
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewayTask: {
-        type: "object",
-        required: ["id", "status", "prompt", "updatedAt"],
+        type: 'object',
+        required: ['id', 'status', 'prompt', 'updatedAt'],
         properties: {
-          id: { type: "string" },
-          status: { type: "string" },
-          prompt: { type: "string" },
-          sessionId: { type: "string" },
-          parentSessionId: { type: "string" },
-          source: { type: "string" },
-          subagent: { type: "string" },
-          label: { type: "string" },
-          handoffId: { type: "string" },
-          handoffTitle: { type: "string" },
-          handoffOrder: { type: "integer" },
-          handoffTotal: { type: "integer" },
-          priority: { type: "integer" },
+          id: { type: 'string' },
+          status: { type: 'string' },
+          prompt: { type: 'string' },
+          sessionId: { type: 'string' },
+          parentSessionId: { type: 'string' },
+          source: { type: 'string' },
+          subagent: { type: 'string' },
+          label: { type: 'string' },
+          handoffId: { type: 'string' },
+          handoffTitle: { type: 'string' },
+          handoffOrder: { type: 'integer' },
+          handoffTotal: { type: 'integer' },
+          priority: { type: 'integer' },
           dependsOn: {
-            type: "array",
-            items: { type: "string" }
+            type: 'array',
+            items: { type: 'string' },
           },
           blockedBy: {
-            type: "array",
-            items: { type: "string" }
+            type: 'array',
+            items: { type: 'string' },
           },
-          blockedReason: { type: "string" },
-          scheduleId: { type: "string" },
-          approvalMode: { type: "string", enum: ["safe", "auto", "readonly"] },
-          maxTurns: { type: "integer" },
-          maxTokens: { type: "integer" },
+          blockedReason: { type: 'string' },
+          scheduleId: { type: 'string' },
+          approvalMode: { type: 'string', enum: ['safe', 'auto', 'readonly'] },
+          maxTurns: { type: 'integer' },
+          maxTokens: { type: 'integer' },
           usage: {
-            type: "object",
+            type: 'object',
             properties: {
-              inputTokens: { type: "integer" },
-              outputTokens: { type: "integer" },
-              totalTokens: { type: "integer" }
+              inputTokens: { type: 'integer' },
+              outputTokens: { type: 'integer' },
+              totalTokens: { type: 'integer' },
             },
-            additionalProperties: false
+            additionalProperties: false,
           },
-          artifactId: { type: "string" },
-          attempts: { type: "integer" },
+          artifactId: { type: 'string' },
+          attempts: { type: 'integer' },
           attemptHistory: {
-            type: "array",
+            type: 'array',
             items: {
-              type: "object",
-              required: ["attempt", "status", "startedAt"],
+              type: 'object',
+              required: ['attempt', 'status', 'startedAt'],
               properties: {
-                attempt: { type: "integer" },
-                status: { type: "string" },
-                startedAt: { type: "string", format: "date-time" },
-                finishedAt: { type: "string", format: "date-time" },
-                sessionId: { type: "string" },
-                outputChars: { type: "integer" },
-                error: { type: "string" }
+                attempt: { type: 'integer' },
+                status: { type: 'string' },
+                startedAt: { type: 'string', format: 'date-time' },
+                finishedAt: { type: 'string', format: 'date-time' },
+                sessionId: { type: 'string' },
+                outputChars: { type: 'integer' },
+                error: { type: 'string' },
               },
-              additionalProperties: false
-            }
+              additionalProperties: false,
+            },
           },
-          output: { type: "string" },
-          error: { type: "string" },
-          createdAt: { type: "string", format: "date-time" },
-          startedAt: { type: "string", format: "date-time" },
-          finishedAt: { type: "string", format: "date-time" },
-          updatedAt: { type: "string", format: "date-time" }
+          output: { type: 'string' },
+          error: { type: 'string' },
+          createdAt: { type: 'string', format: 'date-time' },
+          startedAt: { type: 'string', format: 'date-time' },
+          finishedAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
         },
-        additionalProperties: false
+        additionalProperties: false,
       },
       GatewaySchedule: {
-        type: "object",
-        required: ["id", "prompt", "enabled", "trigger", "createdAt", "updatedAt"],
+        type: 'object',
+        required: ['id', 'prompt', 'enabled', 'trigger', 'createdAt', 'updatedAt'],
         properties: {
-          id: { type: "string" },
-          prompt: { type: "string" },
-          enabled: { type: "boolean" },
+          id: { type: 'string' },
+          prompt: { type: 'string' },
+          enabled: { type: 'boolean' },
           trigger: {
             oneOf: [
               {
-                type: "object",
-                required: ["type", "every"],
+                type: 'object',
+                required: ['type', 'every'],
                 properties: {
-                  type: { const: "interval" },
-                  every: { type: "string" }
+                  type: { const: 'interval' },
+                  every: { type: 'string' },
                 },
-                additionalProperties: false
+                additionalProperties: false,
               },
               {
-                type: "object",
-                required: ["type", "at"],
+                type: 'object',
+                required: ['type', 'at'],
                 properties: {
-                  type: { const: "daily" },
-                  at: { type: "string" }
+                  type: { const: 'daily' },
+                  at: { type: 'string' },
                 },
-                additionalProperties: false
-              }
-            ]
+                additionalProperties: false,
+              },
+            ],
           },
           defaults: {
-            type: "object",
+            type: 'object',
             properties: {
-              approvalMode: { type: "string", enum: ["safe", "auto", "readonly"] },
-              maxTurns: { type: "integer" },
-              maxTokens: { type: "integer" }
+              approvalMode: { type: 'string', enum: ['safe', 'auto', 'readonly'] },
+              maxTurns: { type: 'integer' },
+              maxTokens: { type: 'integer' },
             },
-            additionalProperties: false
+            additionalProperties: false,
           },
-          lastFiredAt: { type: "string", format: "date-time" },
-          createdAt: { type: "string", format: "date-time" },
-          updatedAt: { type: "string", format: "date-time" }
+          lastFiredAt: { type: 'string', format: 'date-time' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
         },
-        additionalProperties: false
-      }
+        additionalProperties: false,
+      },
     },
     responses: {
       GatewayError: {
-        description: "Gateway request failed.",
+        description: 'Gateway request failed.',
         content: {
-          "application/json": {
-            schema: { $ref: "#/components/schemas/GatewayError" }
-          }
-        }
+          'application/json': {
+            schema: { $ref: '#/components/schemas/GatewayError' },
+          },
+        },
       },
       GatewayNotFound: {
-        description: "Requested gateway resource was not found.",
+        description: 'Requested gateway resource was not found.',
         content: {
-          "application/json": {
-            schema: { $ref: "#/components/schemas/GatewayError" }
-          }
-        }
-      }
-    }
+          'application/json': {
+            schema: { $ref: '#/components/schemas/GatewayError' },
+          },
+        },
+      },
+    },
   },
   paths: {
-    "/health": {
+    '/health': {
       get: {
-        tags: ["Gateway"],
-        summary: "Return gateway health metadata.",
+        tags: ['Gateway'],
+        summary: 'Return gateway health metadata.',
         responses: {
-          "200": {
-            description: "Gateway is reachable."
-          }
-        }
-      }
+          '200': {
+            description: 'Gateway is reachable.',
+          },
+        },
+      },
     },
-    "/status": {
+    '/status': {
       get: {
-        tags: ["Gateway"],
-        summary: "Return operational dashboard status.",
+        tags: ['Gateway'],
+        summary: 'Return operational dashboard status.',
         responses: {
-          "200": {
-            description: "Gateway status summary.",
+          '200': {
+            description: 'Gateway status summary.',
             content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/GatewayStatus" }
-              }
-            }
-          }
-        }
-      }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/GatewayStatus' },
+              },
+            },
+          },
+        },
+      },
     },
-    "/dashboard": {
+    '/dashboard': {
       get: {
-        tags: ["Gateway"],
-        summary: "Return the Xenesis dashboard HTML.",
+        tags: ['Gateway'],
+        summary: 'Return the Xenesis dashboard HTML.',
         responses: {
-          "200": {
-            description: "Dashboard HTML.",
+          '200': {
+            description: 'Dashboard HTML.',
             content: {
-              "text/html": {
-                schema: { type: "string" }
-              }
-            }
-          }
-        }
-      }
+              'text/html': {
+                schema: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
     },
-    "/openapi.json": {
+    '/openapi.json': {
       get: {
-        tags: ["Gateway"],
-        summary: "Return this OpenAPI contract.",
+        tags: ['Gateway'],
+        summary: 'Return this OpenAPI contract.',
         responses: {
-          "200": {
-            description: "OpenAPI document.",
+          '200': {
+            description: 'OpenAPI document.',
             content: {
-              "application/json": {
+              'application/json': {
                 schema: {
-                  type: "object",
-                  additionalProperties: true
-                }
-              }
-            }
-          }
-        }
-      }
+                  type: 'object',
+                  additionalProperties: true,
+                },
+              },
+            },
+          },
+        },
+      },
     },
-    "/channels/slack/events": {
+    '/channels/slack/events': {
       post: {
-        tags: ["Channels"],
-        summary: "Receive signed Slack Events API callbacks.",
-        description: "This route is authenticated by Slack request signing headers and does not require gateway bearer auth.",
+        tags: ['Channels'],
+        summary: 'Receive signed Slack Events API callbacks.',
+        description:
+          'This route is authenticated by Slack request signing headers and does not require gateway bearer auth.',
         requestBody: {
           required: true,
           content: {
-            "application/json": {
+            'application/json': {
               schema: {
-                type: "object",
-                additionalProperties: true
-              }
-            }
-          }
+                type: 'object',
+                additionalProperties: true,
+              },
+            },
+          },
         },
         responses: {
-          "200": {
-            description: "Slack event acknowledged.",
+          '200': {
+            description: 'Slack event acknowledged.',
             content: {
-              "application/json": {
+              'application/json': {
                 schema: {
-                  type: "object",
-                  additionalProperties: true
-                }
+                  type: 'object',
+                  additionalProperties: true,
+                },
               },
-              "text/plain": {
-                schema: { type: "string" }
-              }
-            }
+              'text/plain': {
+                schema: { type: 'string' },
+              },
+            },
           },
-          "400": { $ref: "#/components/responses/GatewayError" },
-          "404": { $ref: "#/components/responses/GatewayNotFound" },
-          "405": { $ref: "#/components/responses/GatewayError" }
-        }
-      }
+          '400': { $ref: '#/components/responses/GatewayError' },
+          '404': { $ref: '#/components/responses/GatewayNotFound' },
+          '405': { $ref: '#/components/responses/GatewayError' },
+        },
+      },
     },
-    "/channels/slack/interactions": {
+    '/channels/slack/interactions': {
       post: {
-        tags: ["Channels"],
-        summary: "Receive signed Slack interactive component callbacks.",
-        description: "This route is authenticated by Slack request signing headers and does not require gateway bearer auth.",
+        tags: ['Channels'],
+        summary: 'Receive signed Slack interactive component callbacks.',
+        description:
+          'This route is authenticated by Slack request signing headers and does not require gateway bearer auth.',
         requestBody: {
           required: true,
           content: {
-            "application/x-www-form-urlencoded": {
+            'application/x-www-form-urlencoded': {
               schema: {
-                type: "object",
+                type: 'object',
                 properties: {
                   payload: {
-                    type: "string",
-                    description: "URL-encoded Slack interaction payload JSON."
-                  }
+                    type: 'string',
+                    description: 'URL-encoded Slack interaction payload JSON.',
+                  },
                 },
-                required: ["payload"],
-                additionalProperties: true
-              }
-            }
-          }
+                required: ['payload'],
+                additionalProperties: true,
+              },
+            },
+          },
         },
         responses: {
-          "200": {
-            description: "Slack interaction acknowledged.",
+          '200': {
+            description: 'Slack interaction acknowledged.',
             content: {
-              "application/json": {
+              'application/json': {
                 schema: {
-                  type: "object",
-                  additionalProperties: true
-                }
-              }
-            }
+                  type: 'object',
+                  additionalProperties: true,
+                },
+              },
+            },
           },
-          "400": { $ref: "#/components/responses/GatewayError" },
-          "404": { $ref: "#/components/responses/GatewayNotFound" },
-          "405": { $ref: "#/components/responses/GatewayError" }
-        }
-      }
+          '400': { $ref: '#/components/responses/GatewayError' },
+          '404': { $ref: '#/components/responses/GatewayNotFound' },
+          '405': { $ref: '#/components/responses/GatewayError' },
+        },
+      },
     },
-    "/runs": {
+    '/runs': {
       get: {
-        tags: ["Runs"],
-        summary: "List active gateway prompt runs.",
+        tags: ['Runs'],
+        summary: 'List active gateway prompt runs.',
         responses: {
-          "200": {
-            description: "Active runs.",
+          '200': {
+            description: 'Active runs.',
             content: {
-              "application/json": {
+              'application/json': {
                 schema: {
-                  type: "object",
-                  required: ["runs"],
+                  type: 'object',
+                  required: ['runs'],
                   properties: {
                     runs: {
-                      type: "array",
-                      items: { $ref: "#/components/schemas/GatewayActiveRun" }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+                      type: 'array',
+                      items: { $ref: '#/components/schemas/GatewayActiveRun' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     },
-    "/workflows": {
+    '/workflows': {
       get: {
-        tags: ["Runs"],
-        summary: "List registered gateway prompt workflows.",
+        tags: ['Runs'],
+        summary: 'List registered gateway prompt workflows.',
         responses: {
-          "200": {
-            description: "Registered gateway workflows.",
+          '200': {
+            description: 'Registered gateway workflows.',
             content: {
-              "application/json": {
+              'application/json': {
                 schema: {
-                  type: "object",
-                  required: ["workflows"],
+                  type: 'object',
+                  required: ['workflows'],
                   properties: {
                     workflows: {
-                      type: "array",
-                      items: { $ref: "#/components/schemas/GatewayWorkflow" }
-                    }
+                      type: 'array',
+                      items: { $ref: '#/components/schemas/GatewayWorkflow' },
+                    },
                   },
-                  additionalProperties: false
-                }
-              }
-            }
-          }
-        }
-      }
+                  additionalProperties: false,
+                },
+              },
+            },
+          },
+        },
+      },
     },
-    "/observability/events/export": {
+    '/observability/events/export': {
       get: {
-        tags: ["Observability"],
-        summary: "Export retained SDK observability events.",
+        tags: ['Observability'],
+        summary: 'Export retained SDK observability events.',
         responses: {
-          "200": {
-            description: "Retained observability event export.",
+          '200': {
+            description: 'Retained observability event export.',
             content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/GatewayObservabilityExport" }
-              }
-            }
-          }
-        }
-      }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/GatewayObservabilityExport' },
+              },
+            },
+          },
+        },
+      },
     },
-    "/observability/events/clear": {
+    '/observability/events/clear': {
       post: {
-        tags: ["Observability"],
-        summary: "Clear retained SDK observability events.",
+        tags: ['Observability'],
+        summary: 'Clear retained SDK observability events.',
         responses: {
-          "200": {
-            description: "Clear result and empty summary.",
+          '200': {
+            description: 'Clear result and empty summary.',
             content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/GatewayObservabilityClearResult" }
-              }
-            }
-          }
-        }
-      }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/GatewayObservabilityClearResult' },
+              },
+            },
+          },
+        },
+      },
     },
-    "/reports": {
+    '/reports': {
       get: {
-        tags: ["Reports"],
-        summary: "List saved smoke, scenario, connect, and provider-live reports.",
+        tags: ['Reports'],
+        summary: 'List saved smoke, scenario, connect, and provider-live reports.',
         parameters: [
           {
-            name: "kind",
-            in: "query",
+            name: 'kind',
+            in: 'query',
             required: false,
-            schema: { type: "string", enum: ["smoke", "scenario", "connect", "provider-live"] }
+            schema: { type: 'string', enum: ['smoke', 'scenario', 'connect', 'provider-live'] },
           },
           {
-            name: "status",
-            in: "query",
+            name: 'status',
+            in: 'query',
             required: false,
-            schema: { type: "string", enum: ["passed", "failed"] }
+            schema: { type: 'string', enum: ['passed', 'failed'] },
           },
           {
-            name: "limit",
-            in: "query",
+            name: 'limit',
+            in: 'query',
             required: false,
-            schema: { type: "integer", minimum: 1, maximum: 500 }
-          }
+            schema: { type: 'integer', minimum: 1, maximum: 500 },
+          },
         ],
         responses: {
-          "200": {
-            description: "Saved report summaries.",
+          '200': {
+            description: 'Saved report summaries.',
             content: {
-              "application/json": {
+              'application/json': {
                 schema: {
-                  type: "object",
-                  required: ["reports"],
+                  type: 'object',
+                  required: ['reports'],
                   properties: {
                     reports: {
-                      type: "array",
-                      items: { $ref: "#/components/schemas/GatewayReportSummary" }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+                      type: 'array',
+                      items: { $ref: '#/components/schemas/GatewayReportSummary' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     },
-    "/reports/{kind}/{id}": {
+    '/reports/{kind}/{id}': {
       get: {
-        tags: ["Reports"],
-        summary: "Return one saved report detail.",
+        tags: ['Reports'],
+        summary: 'Return one saved report detail.',
         parameters: [
           {
-            name: "kind",
-            in: "path",
+            name: 'kind',
+            in: 'path',
             required: true,
-            schema: { type: "string", enum: ["smoke", "scenario", "connect", "provider-live"] }
+            schema: { type: 'string', enum: ['smoke', 'scenario', 'connect', 'provider-live'] },
           },
           {
-            name: "id",
-            in: "path",
+            name: 'id',
+            in: 'path',
             required: true,
-            schema: { type: "string" }
-          }
+            schema: { type: 'string' },
+          },
         ],
         responses: {
-          "200": {
-            description: "Saved report detail.",
+          '200': {
+            description: 'Saved report detail.',
             content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/GatewayReportDetail" }
-              }
-            }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/GatewayReportDetail' },
+              },
+            },
           },
-          "404": { $ref: "#/components/responses/GatewayNotFound" }
-        }
-      }
+          '404': { $ref: '#/components/responses/GatewayNotFound' },
+        },
+      },
     },
-    "/run": {
+    '/run': {
       post: {
-        tags: ["Runs"],
-        summary: "Run a prompt and return captured events.",
+        tags: ['Runs'],
+        summary: 'Run a prompt and return captured events.',
         requestBody: {
           required: true,
           content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/GatewayRunRequest" }
-            }
-          }
+            'application/json': {
+              schema: { $ref: '#/components/schemas/GatewayRunRequest' },
+            },
+          },
         },
         responses: {
-          "200": {
-            description: "Completed run with captured output.",
+          '200': {
+            description: 'Completed run with captured output.',
             content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/GatewayRunResponse" }
-              }
-            }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/GatewayRunResponse' },
+              },
+            },
           },
-          "400": { $ref: "#/components/responses/GatewayError" },
-          "413": { $ref: "#/components/responses/GatewayError" },
-          "429": { $ref: "#/components/responses/GatewayError" }
-        }
-      }
+          '400': { $ref: '#/components/responses/GatewayError' },
+          '413': { $ref: '#/components/responses/GatewayError' },
+          '429': { $ref: '#/components/responses/GatewayError' },
+        },
+      },
     },
-    "/run/stream": {
+    '/run/stream': {
       post: {
-        tags: ["Runs"],
-        summary: "Run a prompt and stream events as Server-Sent Events.",
+        tags: ['Runs'],
+        summary: 'Run a prompt and stream events as Server-Sent Events.',
         requestBody: {
           required: true,
           content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/GatewayRunRequest" }
-            }
-          }
+            'application/json': {
+              schema: { $ref: '#/components/schemas/GatewayRunRequest' },
+            },
+          },
         },
         responses: {
-          "200": {
-            description: "SSE stream of gateway_run, agent events, and gateway_done.",
+          '200': {
+            description: 'SSE stream of gateway_run, agent events, and gateway_done.',
             content: {
-              "text/event-stream": {
-                schema: { type: "string" }
-              }
-            }
+              'text/event-stream': {
+                schema: { type: 'string' },
+              },
+            },
           },
-          "400": { $ref: "#/components/responses/GatewayError" },
-          "413": { $ref: "#/components/responses/GatewayError" },
-          "429": { $ref: "#/components/responses/GatewayError" }
-        }
-      }
+          '400': { $ref: '#/components/responses/GatewayError' },
+          '413': { $ref: '#/components/responses/GatewayError' },
+          '429': { $ref: '#/components/responses/GatewayError' },
+        },
+      },
     },
-    "/runs/{id}/cancel": {
+    '/runs/{id}/cancel': {
       post: {
-        tags: ["Runs"],
-        summary: "Cancel an active gateway prompt run.",
+        tags: ['Runs'],
+        summary: 'Cancel an active gateway prompt run.',
         parameters: [
           {
-            name: "id",
-            in: "path",
+            name: 'id',
+            in: 'path',
             required: true,
-            schema: { type: "string" }
-          }
+            schema: { type: 'string' },
+          },
         ],
         responses: {
-          "200": { description: "Run cancellation was requested." },
-          "404": { $ref: "#/components/responses/GatewayNotFound" }
-        }
-      }
+          '200': { description: 'Run cancellation was requested.' },
+          '404': { $ref: '#/components/responses/GatewayNotFound' },
+        },
+      },
     },
-    "/checks/smoke": {
+    '/checks/smoke': {
       post: {
-        tags: ["Checks"],
-        summary: "Run the CLI smoke check.",
+        tags: ['Checks'],
+        summary: 'Run the CLI smoke check.',
         responses: {
-          "200": {
-            description: "CLI action result.",
+          '200': {
+            description: 'CLI action result.',
             content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/GatewayActionResult" }
-              }
-            }
-          }
-        }
-      }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/GatewayActionResult' },
+              },
+            },
+          },
+        },
+      },
     },
-    "/checks/scenario": {
+    '/checks/scenario': {
       post: {
-        tags: ["Checks"],
-        summary: "Run the CLI scenario check.",
+        tags: ['Checks'],
+        summary: 'Run the CLI scenario check.',
         responses: {
-          "200": {
-            description: "CLI action result.",
+          '200': {
+            description: 'CLI action result.',
             content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/GatewayActionResult" }
-              }
-            }
-          }
-        }
-      }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/GatewayActionResult' },
+              },
+            },
+          },
+        },
+      },
     },
-    "/checks/connect": {
+    '/checks/connect': {
       post: {
-        tags: ["Checks"],
-        summary: "Run the CLI connectivity check.",
+        tags: ['Checks'],
+        summary: 'Run the CLI connectivity check.',
         requestBody: {
           required: false,
           content: {
-            "application/json": {
+            'application/json': {
               schema: {
-                type: "object",
+                type: 'object',
                 properties: {
-                  probe: { type: "boolean" }
+                  probe: { type: 'boolean' },
                 },
-                additionalProperties: false
-              }
-            }
-          }
+                additionalProperties: false,
+              },
+            },
+          },
         },
         responses: {
-          "200": {
-            description: "CLI action result.",
+          '200': {
+            description: 'CLI action result.',
             content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/GatewayActionResult" }
-              }
-            }
-          }
-        }
-      }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/GatewayActionResult' },
+              },
+            },
+          },
+        },
+      },
     },
-    "/profiles": {
+    '/profiles': {
       get: {
-        tags: ["Profiles"],
-        summary: "List saved profiles and the active profile.",
+        tags: ['Profiles'],
+        summary: 'List saved profiles and the active profile.',
         responses: {
-          "200": {
-            description: "Profile state.",
+          '200': {
+            description: 'Profile state.',
             content: {
-              "application/json": {
+              'application/json': {
                 schema: {
-                  type: "object",
-                  required: ["active", "profiles"],
+                  type: 'object',
+                  required: ['active', 'profiles'],
                   properties: {
-                    active: { type: ["string", "null"] },
+                    active: { type: ['string', 'null'] },
                     profiles: {
-                      type: "array",
-                      items: { $ref: "#/components/schemas/GatewayProfile" }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+                      type: 'array',
+                      items: { $ref: '#/components/schemas/GatewayProfile' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     },
-    "/profiles/use": {
+    '/profiles/use': {
       post: {
-        tags: ["Profiles"],
-        summary: "Set the active runtime profile.",
+        tags: ['Profiles'],
+        summary: 'Set the active runtime profile.',
         requestBody: {
           required: true,
           content: {
-            "application/json": {
+            'application/json': {
               schema: {
-                type: "object",
-                required: ["name"],
+                type: 'object',
+                required: ['name'],
                 properties: {
-                  name: { type: "string", minLength: 1 }
+                  name: { type: 'string', minLength: 1 },
                 },
-                additionalProperties: false
-              }
-            }
-          }
+                additionalProperties: false,
+              },
+            },
+          },
         },
         responses: {
-          "200": { description: "Updated profile state." },
-          "400": { $ref: "#/components/responses/GatewayError" }
-        }
-      }
+          '200': { description: 'Updated profile state.' },
+          '400': { $ref: '#/components/responses/GatewayError' },
+        },
+      },
     },
-    "/profiles/clear": {
+    '/profiles/clear': {
       post: {
-        tags: ["Profiles"],
-        summary: "Clear the active runtime profile.",
+        tags: ['Profiles'],
+        summary: 'Clear the active runtime profile.',
         responses: {
-          "200": { description: "Updated profile state." }
-        }
-      }
+          '200': { description: 'Updated profile state.' },
+        },
+      },
     },
-    "/sessions": {
+    '/sessions': {
       get: {
-        tags: ["Sessions"],
-        summary: "List session ids.",
+        tags: ['Sessions'],
+        summary: 'List session ids.',
         responses: {
-          "200": { description: "Session id list." }
-        }
-      }
+          '200': { description: 'Session id list.' },
+        },
+      },
     },
-    "/sessions/status": {
+    '/sessions/status': {
       get: {
-        tags: ["Sessions"],
-        summary: "List session lifecycle statuses.",
+        tags: ['Sessions'],
+        summary: 'List session lifecycle statuses.',
         responses: {
-          "200": {
-            description: "Session status list.",
+          '200': {
+            description: 'Session status list.',
             content: {
-              "application/json": {
+              'application/json': {
                 schema: {
-                  type: "object",
-                  required: ["sessions"],
+                  type: 'object',
+                  required: ['sessions'],
                   properties: {
                     sessions: {
-                      type: "array",
-                      items: { $ref: "#/components/schemas/GatewaySessionStatus" }
-                    }
+                      type: 'array',
+                      items: { $ref: '#/components/schemas/GatewaySessionStatus' },
+                    },
                   },
-                  additionalProperties: false
-                }
-              }
-            }
-          }
-        }
-      }
+                  additionalProperties: false,
+                },
+              },
+            },
+          },
+        },
+      },
     },
-    "/traces": {
+    '/traces': {
       get: {
-        tags: ["Observability"],
-        summary: "List trace summaries with diagnostics for dashboard filtering.",
+        tags: ['Observability'],
+        summary: 'List trace summaries with diagnostics for dashboard filtering.',
         responses: {
-          "200": {
-            description: "Trace summary list.",
+          '200': {
+            description: 'Trace summary list.',
             content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/GatewayTraceList" }
-              }
-            }
-          }
-        }
-      }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/GatewayTraceList' },
+              },
+            },
+          },
+        },
+      },
     },
-    "/traces/{traceId}": {
+    '/traces/{traceId}': {
       get: {
-        tags: ["Observability"],
-        summary: "Return a trace drill-down across active runs, sessions, run reports, diagnostics, and observability events.",
+        tags: ['Observability'],
+        summary:
+          'Return a trace drill-down across active runs, sessions, run reports, diagnostics, and observability events.',
         parameters: [
           {
-            name: "traceId",
-            in: "path",
+            name: 'traceId',
+            in: 'path',
             required: true,
-            schema: { type: "string" }
-          }
+            schema: { type: 'string' },
+          },
         ],
         responses: {
-          "200": {
-            description: "Trace detail.",
+          '200': {
+            description: 'Trace detail.',
             content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/GatewayTraceDetail" }
-              }
-            }
-          }
-        }
-      }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/GatewayTraceDetail' },
+              },
+            },
+          },
+        },
+      },
     },
-    "/traces/{traceId}/compact": {
+    '/traces/{traceId}/compact': {
       get: {
-        tags: ["Observability"],
-        summary: "Return compact session context for a trace.",
+        tags: ['Observability'],
+        summary: 'Return compact session context for a trace.',
         parameters: [
           {
-            name: "traceId",
-            in: "path",
+            name: 'traceId',
+            in: 'path',
             required: true,
-            schema: { type: "string" }
-          }
+            schema: { type: 'string' },
+          },
         ],
         responses: {
-          "200": {
-            description: "Trace compact context.",
+          '200': {
+            description: 'Trace compact context.',
             content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/GatewayTraceCompact" }
-              }
-            }
-          }
-        }
-      }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/GatewayTraceCompact' },
+              },
+            },
+          },
+        },
+      },
     },
-    "/traces/{traceId}/bundle": {
+    '/traces/{traceId}/bundle': {
       get: {
-        tags: ["Observability"],
-        summary: "Export a diagnostic bundle for a trace.",
+        tags: ['Observability'],
+        summary: 'Export a diagnostic bundle for a trace.',
         parameters: [
           {
-            name: "traceId",
-            in: "path",
+            name: 'traceId',
+            in: 'path',
             required: true,
-            schema: { type: "string" }
-          }
+            schema: { type: 'string' },
+          },
         ],
         responses: {
-          "200": {
-            description: "Trace diagnostic bundle.",
+          '200': {
+            description: 'Trace diagnostic bundle.',
             content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/GatewayTraceBundle" }
-              }
-            }
-          }
-        }
-      }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/GatewayTraceBundle' },
+              },
+            },
+          },
+        },
+      },
     },
-    "/context": {
+    '/context': {
       get: {
-        tags: ["Context"],
-        summary: "Return the latest workspace context index.",
+        tags: ['Context'],
+        summary: 'Return the latest workspace context index.',
         responses: {
-          "200": { description: "Workspace context index." }
-        }
-      }
+          '200': { description: 'Workspace context index.' },
+        },
+      },
     },
-    "/artifacts": {
+    '/artifacts': {
       get: {
-        tags: ["Context"],
-        summary: "List saved artifacts.",
+        tags: ['Context'],
+        summary: 'List saved artifacts.',
         responses: {
-          "200": { description: "Artifact summaries." }
-        }
-      }
+          '200': { description: 'Artifact summaries.' },
+        },
+      },
     },
-    "/artifacts/{id}": {
+    '/artifacts/{id}': {
       get: {
-        tags: ["Context"],
-        summary: "Return one saved artifact.",
+        tags: ['Context'],
+        summary: 'Return one saved artifact.',
         parameters: [
           {
-            name: "id",
-            in: "path",
+            name: 'id',
+            in: 'path',
             required: true,
-            schema: { type: "string" }
-          }
+            schema: { type: 'string' },
+          },
         ],
         responses: {
-          "200": { description: "Artifact metadata and content." },
-          "404": { $ref: "#/components/responses/GatewayNotFound" }
-        }
-      }
+          '200': { description: 'Artifact metadata and content.' },
+          '404': { $ref: '#/components/responses/GatewayNotFound' },
+        },
+      },
     },
-    "/tasks": {
+    '/tasks': {
       get: {
-        tags: ["Tasks"],
-        summary: "List durable agent tasks.",
+        tags: ['Tasks'],
+        summary: 'List durable agent tasks.',
         parameters: [
           {
-            name: "status",
-            in: "query",
+            name: 'status',
+            in: 'query',
             required: false,
-            schema: { type: "string", enum: ["queued", "running", "completed", "failed", "cancelled", "blocked"] }
+            schema: { type: 'string', enum: ['queued', 'running', 'completed', 'failed', 'cancelled', 'blocked'] },
           },
           {
-            name: "taskId",
-            in: "query",
+            name: 'taskId',
+            in: 'query',
             required: false,
-            schema: { type: "string" }
+            schema: { type: 'string' },
           },
           {
-            name: "label",
-            in: "query",
+            name: 'label',
+            in: 'query',
             required: false,
-            schema: { type: "string" }
+            schema: { type: 'string' },
           },
           {
-            name: "handoffId",
-            in: "query",
+            name: 'handoffId',
+            in: 'query',
             required: false,
-            schema: { type: "string" }
+            schema: { type: 'string' },
           },
           {
-            name: "handoffTitle",
-            in: "query",
+            name: 'handoffTitle',
+            in: 'query',
             required: false,
-            schema: { type: "string" }
+            schema: { type: 'string' },
           },
           {
-            name: "limit",
-            in: "query",
+            name: 'limit',
+            in: 'query',
             required: false,
-            schema: { type: "integer", minimum: 1, maximum: 500 }
-          }
+            schema: { type: 'integer', minimum: 1, maximum: 500 },
+          },
         ],
         responses: {
-          "200": {
-            description: "Durable task list.",
+          '200': {
+            description: 'Durable task list.',
             content: {
-              "application/json": {
+              'application/json': {
                 schema: {
-                  type: "object",
-                  required: ["tasks"],
+                  type: 'object',
+                  required: ['tasks'],
                   properties: {
                     tasks: {
-                      type: "array",
-                      items: { $ref: "#/components/schemas/GatewayTask" }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+                      type: 'array',
+                      items: { $ref: '#/components/schemas/GatewayTask' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       post: {
-        tags: ["Tasks"],
-        summary: "Create a queued durable agent task.",
+        tags: ['Tasks'],
+        summary: 'Create a queued durable agent task.',
         requestBody: {
           required: true,
           content: {
-            "application/json": {
+            'application/json': {
               schema: {
-                type: "object",
-                required: ["prompt"],
+                type: 'object',
+                required: ['prompt'],
                 properties: {
-                  prompt: { type: "string", minLength: 1 },
-                  approvalMode: { type: "string", enum: ["safe", "auto", "readonly"] },
-                  maxTurns: { type: "integer" },
-                  maxTokens: { type: "integer" },
-                  scheduleId: { type: "string" }
+                  prompt: { type: 'string', minLength: 1 },
+                  approvalMode: { type: 'string', enum: ['safe', 'auto', 'readonly'] },
+                  maxTurns: { type: 'integer' },
+                  maxTokens: { type: 'integer' },
+                  scheduleId: { type: 'string' },
                 },
-                additionalProperties: false
-              }
-            }
-          }
+                additionalProperties: false,
+              },
+            },
+          },
         },
         responses: {
-          "201": {
-            description: "Queued task.",
+          '201': {
+            description: 'Queued task.',
             content: {
-              "application/json": {
+              'application/json': {
                 schema: {
-                  type: "object",
-                  required: ["task"],
+                  type: 'object',
+                  required: ['task'],
                   properties: {
-                    task: { $ref: "#/components/schemas/GatewayTask" }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+                    task: { $ref: '#/components/schemas/GatewayTask' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     },
-    "/tasks/{id}/run": {
+    '/tasks/{id}/run': {
       post: {
-        tags: ["Tasks"],
-        summary: "Run one durable agent task through the CLI.",
+        tags: ['Tasks'],
+        summary: 'Run one durable agent task through the CLI.',
         parameters: [
           {
-            name: "id",
-            in: "path",
+            name: 'id',
+            in: 'path',
             required: true,
-            schema: { type: "string" }
-          }
+            schema: { type: 'string' },
+          },
         ],
         responses: {
-          "200": {
-            description: "CLI action result.",
+          '200': {
+            description: 'CLI action result.',
             content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/GatewayActionResult" }
-              }
-            }
-          }
-        }
-      }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/GatewayActionResult' },
+              },
+            },
+          },
+        },
+      },
     },
-    "/tasks/{id}/cancel": {
+    '/tasks/{id}/cancel': {
       post: {
-        tags: ["Tasks"],
-        summary: "Cancel one durable agent task through the CLI.",
+        tags: ['Tasks'],
+        summary: 'Cancel one durable agent task through the CLI.',
         parameters: [
           {
-            name: "id",
-            in: "path",
+            name: 'id',
+            in: 'path',
             required: true,
-            schema: { type: "string" }
-          }
+            schema: { type: 'string' },
+          },
         ],
         responses: {
-          "200": {
-            description: "CLI action result.",
+          '200': {
+            description: 'CLI action result.',
             content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/GatewayActionResult" }
-              }
-            }
-          }
-        }
-      }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/GatewayActionResult' },
+              },
+            },
+          },
+        },
+      },
     },
-    "/schedules": {
+    '/schedules': {
       get: {
-        tags: ["Schedules"],
-        summary: "List task schedules.",
+        tags: ['Schedules'],
+        summary: 'List task schedules.',
         responses: {
-          "200": {
-            description: "Schedule list.",
+          '200': {
+            description: 'Schedule list.',
             content: {
-              "application/json": {
+              'application/json': {
                 schema: {
-                  type: "object",
-                  required: ["schedules"],
+                  type: 'object',
+                  required: ['schedules'],
                   properties: {
                     schedules: {
-                      type: "array",
-                      items: { $ref: "#/components/schemas/GatewaySchedule" }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+                      type: 'array',
+                      items: { $ref: '#/components/schemas/GatewaySchedule' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       post: {
-        tags: ["Schedules"],
-        summary: "Create a task schedule.",
+        tags: ['Schedules'],
+        summary: 'Create a task schedule.',
         responses: {
-          "201": {
-            description: "Created schedule.",
+          '201': {
+            description: 'Created schedule.',
             content: {
-              "application/json": {
+              'application/json': {
                 schema: {
-                  type: "object",
-                  required: ["schedule"],
+                  type: 'object',
+                  required: ['schedule'],
                   properties: {
-                    schedule: { $ref: "#/components/schemas/GatewaySchedule" }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+                    schedule: { $ref: '#/components/schemas/GatewaySchedule' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     },
-    "/schedules/{id}": {
+    '/schedules/{id}': {
       patch: {
-        tags: ["Schedules"],
-        summary: "Update a task schedule.",
-        parameters: [
-          { name: "id", in: "path", required: true, schema: { type: "string" } }
-        ],
+        tags: ['Schedules'],
+        summary: 'Update a task schedule.',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
         responses: {
-          "200": {
-            description: "Updated schedule.",
+          '200': {
+            description: 'Updated schedule.',
             content: {
-              "application/json": {
+              'application/json': {
                 schema: {
-                  type: "object",
-                  required: ["schedule"],
+                  type: 'object',
+                  required: ['schedule'],
                   properties: {
-                    schedule: { $ref: "#/components/schemas/GatewaySchedule" }
-                  }
-                }
-              }
-            }
-          }
-        }
+                    schedule: { $ref: '#/components/schemas/GatewaySchedule' },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       delete: {
-        tags: ["Schedules"],
-        summary: "Remove a task schedule.",
-        parameters: [
-          { name: "id", in: "path", required: true, schema: { type: "string" } }
-        ],
+        tags: ['Schedules'],
+        summary: 'Remove a task schedule.',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
         responses: {
-          "200": {
-            description: "Removed schedule."
-          }
-        }
-      }
+          '200': {
+            description: 'Removed schedule.',
+          },
+        },
+      },
     },
-    "/observability/events": {
+    '/observability/events': {
       get: {
-        tags: ["Observability"],
-        summary: "List recent SDK observability events for dashboard consumers.",
+        tags: ['Observability'],
+        summary: 'List recent SDK observability events for dashboard consumers.',
         parameters: [
           {
-            name: "kind",
-            in: "query",
+            name: 'kind',
+            in: 'query',
             required: false,
-            schema: { type: "string", enum: ["request", "response", "retry", "error", "task"] }
+            schema: { type: 'string', enum: ['request', 'response', 'retry', 'error', 'task'] },
           },
           {
-            name: "traceId",
-            in: "query",
+            name: 'traceId',
+            in: 'query',
             required: false,
-            schema: { type: "string" }
+            schema: { type: 'string' },
           },
           {
-            name: "taskId",
-            in: "query",
+            name: 'taskId',
+            in: 'query',
             required: false,
-            schema: { type: "string" }
+            schema: { type: 'string' },
           },
           {
-            name: "phase",
-            in: "query",
+            name: 'phase',
+            in: 'query',
             required: false,
-            schema: { type: "string" }
+            schema: { type: 'string' },
           },
           {
-            name: "taskStatus",
-            in: "query",
+            name: 'taskStatus',
+            in: 'query',
             required: false,
-            schema: { type: "string" }
+            schema: { type: 'string' },
           },
           {
-            name: "label",
-            in: "query",
+            name: 'label',
+            in: 'query',
             required: false,
-            schema: { type: "string" }
+            schema: { type: 'string' },
           },
           {
-            name: "handoffId",
-            in: "query",
+            name: 'handoffId',
+            in: 'query',
             required: false,
-            schema: { type: "string" }
+            schema: { type: 'string' },
           },
           {
-            name: "handoffTitle",
-            in: "query",
+            name: 'handoffTitle',
+            in: 'query',
             required: false,
-            schema: { type: "string" }
+            schema: { type: 'string' },
           },
           {
-            name: "limit",
-            in: "query",
+            name: 'limit',
+            in: 'query',
             required: false,
-            schema: { type: "integer", minimum: 1, maximum: 500 }
-          }
+            schema: { type: 'integer', minimum: 1, maximum: 500 },
+          },
         ],
         responses: {
-          "200": {
-            description: "Recent observability events and summary metrics.",
+          '200': {
+            description: 'Recent observability events and summary metrics.',
             content: {
-              "application/json": {
+              'application/json': {
                 schema: {
-                  type: "object",
-                  required: ["summary", "events"],
+                  type: 'object',
+                  required: ['summary', 'events'],
                   properties: {
-                    summary: { $ref: "#/components/schemas/GatewayObservabilitySummary" },
+                    summary: { $ref: '#/components/schemas/GatewayObservabilitySummary' },
                     events: {
-                      type: "array",
-                      items: { $ref: "#/components/schemas/GatewayObservabilityEvent" }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+                      type: 'array',
+                      items: { $ref: '#/components/schemas/GatewayObservabilityEvent' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       post: {
-        tags: ["Observability"],
-        summary: "Record SDK observability events.",
+        tags: ['Observability'],
+        summary: 'Record SDK observability events.',
         requestBody: {
           required: true,
           content: {
-            "application/json": {
+            'application/json': {
               schema: {
-                type: "object",
-                required: ["events"],
+                type: 'object',
+                required: ['events'],
                 properties: {
                   events: {
-                    type: "array",
-                    items: { $ref: "#/components/schemas/GatewayObservabilityEventInput" }
-                  }
-                }
-              }
-            }
-          }
+                    type: 'array',
+                    items: { $ref: '#/components/schemas/GatewayObservabilityEventInput' },
+                  },
+                },
+              },
+            },
+          },
         },
         responses: {
-          "200": {
-            description: "Accepted event count and updated summary.",
+          '200': {
+            description: 'Accepted event count and updated summary.',
             content: {
-              "application/json": {
+              'application/json': {
                 schema: {
-                  type: "object",
-                  required: ["accepted", "summary", "events"],
+                  type: 'object',
+                  required: ['accepted', 'summary', 'events'],
                   properties: {
-                    accepted: { type: "integer" },
-                    summary: { $ref: "#/components/schemas/GatewayObservabilitySummary" },
+                    accepted: { type: 'integer' },
+                    summary: { $ref: '#/components/schemas/GatewayObservabilitySummary' },
                     events: {
-                      type: "array",
-                      items: { $ref: "#/components/schemas/GatewayObservabilityEvent" }
-                    }
-                  }
-                }
-              }
-            }
+                      type: 'array',
+                      items: { $ref: '#/components/schemas/GatewayObservabilityEvent' },
+                    },
+                  },
+                },
+              },
+            },
           },
-          "400": { $ref: "#/components/responses/GatewayError" }
-        }
-      }
-    }
+          '400': { $ref: '#/components/responses/GatewayError' },
+        },
+      },
+    },
   },
   webhooks: {},
   externalDocs: {
-    description: "Xenesis usage guide",
-    url: "docs/usage.md"
-  }
+    description: 'Xenesis usage guide',
+    url: 'docs/usage.md',
+  },
 } as const;

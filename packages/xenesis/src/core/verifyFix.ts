@@ -1,6 +1,6 @@
-import type { VerificationReport, VerificationStatus } from "../verification/index.js";
-import type { AgentRunEvent, VerificationResultEvent, WorkspaceChangeEvent } from "./events.js";
-import type { AgentMessage } from "./messages.js";
+import type { VerificationReport, VerificationStatus } from '../verification/index.js';
+import type { AgentRunEvent, VerificationResultEvent, WorkspaceChangeEvent } from './events.js';
+import type { AgentMessage } from './messages.js';
 
 export interface VerifyFixRunResult {
   events: AgentRunEvent[];
@@ -43,7 +43,7 @@ export interface VerifyFixLoopOutcome {
 }
 
 function hasWorkspaceChange(result: VerifyFixRunResult) {
-  return result.events.some((event) => event.type === "workspace_change");
+  return result.events.some((event) => event.type === 'workspace_change');
 }
 
 function truncate(value: string, maxChars: number) {
@@ -60,7 +60,7 @@ function failedCommands(verification: VerificationReport) {
 }
 
 function workspaceChanges(events: AgentRunEvent[]): WorkspaceChangeEvent[] {
-  const changes = events.filter((event): event is WorkspaceChangeEvent => event.type === "workspace_change");
+  const changes = events.filter((event): event is WorkspaceChangeEvent => event.type === 'workspace_change');
   const seen = new Set<string>();
   const result: WorkspaceChangeEvent[] = [];
   for (const change of changes) {
@@ -75,30 +75,32 @@ function workspaceChanges(events: AgentRunEvent[]): WorkspaceChangeEvent[] {
 function verificationFailureSignature(verification: VerificationReport) {
   return verification.results
     .filter((result) => !result.ok)
-    .map((result) => [
-      result.command,
-      result.exitCode ?? "null",
-      truncate([result.stdout.trim(), result.stderr.trim()].filter(Boolean).join("\n"), 1200)
-    ].join("\n"))
-    .join("\n---\n");
+    .map((result) =>
+      [
+        result.command,
+        result.exitCode ?? 'null',
+        truncate([result.stdout.trim(), result.stderr.trim()].filter(Boolean).join('\n'), 1200),
+      ].join('\n'),
+    )
+    .join('\n---\n');
 }
 
 function normalizeRepairPreflight(result: RepairPreflightResult): RepairPreflightDecision {
-  if (typeof result === "string") return { context: result };
+  if (typeof result === 'string') return { context: result };
   return result ?? {};
 }
 
 function verificationEvent(
   verification: VerificationReport,
   attempt: number,
-  maxAttempts: number
+  maxAttempts: number,
 ): VerificationResultEvent {
   return {
-    type: "verification_result",
+    type: 'verification_result',
     status: verificationEventStatus(verification.status),
     attempt,
     maxAttempts,
-    failedCommands: failedCommands(verification)
+    failedCommands: failedCommands(verification),
   };
 }
 
@@ -107,7 +109,7 @@ async function emitVerificationEvent(
   attempt: number,
   maxAttempts: number,
   allEvents: AgentRunEvent[],
-  onEvent: (event: AgentRunEvent) => Promise<void>
+  onEvent: (event: AgentRunEvent) => Promise<void>,
 ) {
   const event = verificationEvent(verification, attempt, maxAttempts);
   allEvents.push(event);
@@ -115,46 +117,46 @@ async function emitVerificationEvent(
 }
 
 async function emitRepairDecision(
-  status: "continue" | "completed" | "skipped" | "blocked",
+  status: 'continue' | 'completed' | 'skipped' | 'blocked',
   reason: string,
   attempt: number,
   maxAttempts: number,
   verification: VerificationReport | undefined,
   allEvents: AgentRunEvent[],
-  onEvent: (event: AgentRunEvent) => Promise<void>
+  onEvent: (event: AgentRunEvent) => Promise<void>,
 ) {
   const event: AgentRunEvent = {
-    type: "repair_decision",
+    type: 'repair_decision',
     status,
     reason,
     attempt,
     maxAttempts,
-    failedCommands: verification ? failedCommands(verification) : []
+    failedCommands: verification ? failedCommands(verification) : [],
   };
   allEvents.push(event);
   await onEvent(event);
 }
 
 async function runStage<T>(
-  stage: "verify" | "repair",
+  stage: 'verify' | 'repair',
   allEvents: AgentRunEvent[],
   onEvent: (event: AgentRunEvent) => Promise<void>,
-  run: () => Promise<T>
+  run: () => Promise<T>,
 ) {
   const startedAt = new Date().toISOString();
-  const started: AgentRunEvent = { type: "run_stage", stage, status: "started", startedAt };
+  const started: AgentRunEvent = { type: 'run_stage', stage, status: 'started', startedAt };
   allEvents.push(started);
   await onEvent(started);
   try {
     const result = await run();
     const endedAt = new Date().toISOString();
     const completed: AgentRunEvent = {
-      type: "run_stage",
+      type: 'run_stage',
       stage,
-      status: "completed",
+      status: 'completed',
       startedAt,
       endedAt,
-      durationMs: Math.max(0, Date.parse(endedAt) - Date.parse(startedAt))
+      durationMs: Math.max(0, Date.parse(endedAt) - Date.parse(startedAt)),
     };
     allEvents.push(completed);
     await onEvent(completed);
@@ -162,13 +164,13 @@ async function runStage<T>(
   } catch (error) {
     const endedAt = new Date().toISOString();
     const failed: AgentRunEvent = {
-      type: "run_stage",
+      type: 'run_stage',
       stage,
-      status: "failed",
+      status: 'failed',
       startedAt,
       endedAt,
       durationMs: Math.max(0, Date.parse(endedAt) - Date.parse(startedAt)),
-      reason: error instanceof Error ? error.message : String(error)
+      reason: error instanceof Error ? error.message : String(error),
     };
     allEvents.push(failed);
     await onEvent(failed);
@@ -182,52 +184,46 @@ export function buildVerificationFixPrompt(
   maxAttempts: number,
   maxOutputChars = 8000,
   repairPreflightContext?: string,
-  recentWorkspaceChanges: Pick<WorkspaceChangeEvent, "action" | "path" | "toolName">[] = [],
-  repeatedFailure = false
+  recentWorkspaceChanges: Pick<WorkspaceChangeEvent, 'action' | 'path' | 'toolName'>[] = [],
+  repeatedFailure = false,
 ): string {
   const failedBlocks = verification.results
     .filter((result) => !result.ok)
     .map((result) => {
-      const output = [result.stdout.trim(), result.stderr.trim()].filter(Boolean).join("\n");
+      const output = [result.stdout.trim(), result.stderr.trim()].filter(Boolean).join('\n');
       return [
-        `$ ${result.command} (exit ${result.exitCode ?? "null"})`,
-        truncate(output || "<no output>", maxOutputChars)
-      ].join("\n");
+        `$ ${result.command} (exit ${result.exitCode ?? 'null'})`,
+        truncate(output || '<no output>', maxOutputChars),
+      ].join('\n');
     });
 
   return [
     `Xenesis verification failed (attempt ${attempt}/${maxAttempts}).`,
     ...(repeatedFailure
       ? [
-          "Previous repair attempt did not clear this same verification failure.",
-          "Try a different, smaller fix based on the failing output and changed files.",
-          ""
+          'Previous repair attempt did not clear this same verification failure.',
+          'Try a different, smaller fix based on the failing output and changed files.',
+          '',
         ]
       : []),
-    ...(repairPreflightContext?.trim()
-      ? [
-          "Xenesis repair preflight context:",
-          repairPreflightContext.trim(),
-          ""
-        ]
-      : []),
+    ...(repairPreflightContext?.trim() ? ['Xenesis repair preflight context:', repairPreflightContext.trim(), ''] : []),
     ...(recentWorkspaceChanges.length > 0
       ? [
-          "Recent workspace changes:",
+          'Recent workspace changes:',
           ...recentWorkspaceChanges.map((change) => `- ${change.action} ${change.path} via ${change.toolName}`),
-          ""
+          '',
         ]
       : []),
-    "Failed commands:",
-    "",
-    failedBlocks.join("\n\n"),
-    "",
-    "Repair protocol:",
-    "- Inspect the failing files or recently changed files before editing.",
-    "- Run only the minimal fix needed for the failed commands.",
-    "- Prefer focused read/search/diagnostics plus edit/patch/json over broad rewrites.",
-    "- Keep verification commands and tests unchanged unless they are themselves wrong."
-  ].join("\n");
+    'Failed commands:',
+    '',
+    failedBlocks.join('\n\n'),
+    '',
+    'Repair protocol:',
+    '- Inspect the failing files or recently changed files before editing.',
+    '- Run only the minimal fix needed for the failed commands.',
+    '- Prefer focused read/search/diagnostics plus edit/patch/json over broad rewrites.',
+    '- Keep verification commands and tests unchanged unless they are themselves wrong.',
+  ].join('\n');
 }
 
 export async function runVerifyFixLoop(options: VerifyFixLoopOptions): Promise<VerifyFixLoopOutcome> {
@@ -243,32 +239,32 @@ export async function runVerifyFixLoop(options: VerifyFixLoopOptions): Promise<V
 
   if (!hasWorkspaceChange(current)) {
     await emitRepairDecision(
-      "skipped",
-      "no_workspace_changes",
+      'skipped',
+      'no_workspace_changes',
       attempts,
       maxAttempts,
       verification,
       allEvents,
-      options.onEvent
+      options.onEvent,
     );
-    return { final: current, allEvents, totalTurns, attempts, verification, stopReason: "no_workspace_changes" };
+    return { final: current, allEvents, totalTurns, attempts, verification, stopReason: 'no_workspace_changes' };
   }
 
   while (true) {
-    verification = await runStage("verify", allEvents, options.onEvent, options.runVerification);
+    verification = await runStage('verify', allEvents, options.onEvent, options.runVerification);
     await emitVerificationEvent(verification, attempts, maxAttempts, allEvents, options.onEvent);
 
-    if (verification.status !== "failed") {
+    if (verification.status !== 'failed') {
       await emitRepairDecision(
-        "completed",
-        "verification_passed",
+        'completed',
+        'verification_passed',
         attempts,
         maxAttempts,
         verification,
         allEvents,
-        options.onEvent
+        options.onEvent,
       );
-      return { final: current, allEvents, totalTurns, attempts, verification, stopReason: "verification_passed" };
+      return { final: current, allEvents, totalTurns, attempts, verification, stopReason: 'verification_passed' };
     }
     const signature = verificationFailureSignature(verification);
     const repeatedFailure = lastFailureSignature !== undefined && signature === lastFailureSignature;
@@ -276,45 +272,39 @@ export async function runVerifyFixLoop(options: VerifyFixLoopOptions): Promise<V
 
     if (attempts >= maxAttempts) {
       await emitRepairDecision(
-        "blocked",
-        "max_attempts",
+        'blocked',
+        'max_attempts',
         attempts,
         maxAttempts,
         verification,
         allEvents,
-        options.onEvent
+        options.onEvent,
       );
-      return { final: current, allEvents, totalTurns, attempts, verification, stopReason: "max_attempts" };
+      return { final: current, allEvents, totalTurns, attempts, verification, stopReason: 'max_attempts' };
     }
 
-    repairPreflightDecision ??= normalizeRepairPreflight(await options.repairPreflight?.({
-      verification,
-      attempt: attempts,
-      maxAttempts
-    }));
-    if (repairPreflightDecision.shouldRepair === false) {
-      const reason = `repair_preflight_blocked:${repairPreflightDecision.blockReason ?? "blocked"}`;
-      await emitRepairDecision(
-        "blocked",
-        reason,
-        attempts,
-        maxAttempts,
+    repairPreflightDecision ??= normalizeRepairPreflight(
+      await options.repairPreflight?.({
         verification,
-        allEvents,
-        options.onEvent
-      );
+        attempt: attempts,
+        maxAttempts,
+      }),
+    );
+    if (repairPreflightDecision.shouldRepair === false) {
+      const reason = `repair_preflight_blocked:${repairPreflightDecision.blockReason ?? 'blocked'}`;
+      await emitRepairDecision('blocked', reason, attempts, maxAttempts, verification, allEvents, options.onEvent);
       return { final: current, allEvents, totalTurns, attempts, verification, stopReason: reason };
     }
 
     attempts += 1;
     await emitRepairDecision(
-      "continue",
-      "verification_failed",
+      'continue',
+      'verification_failed',
       attempts,
       maxAttempts,
       verification,
       allEvents,
-      options.onEvent
+      options.onEvent,
     );
     const prompt = buildVerificationFixPrompt(
       verification,
@@ -323,36 +313,36 @@ export async function runVerifyFixLoop(options: VerifyFixLoopOptions): Promise<V
       options.maxOutputChars,
       repairPreflightDecision.context,
       workspaceChanges(current.events),
-      repeatedFailure
+      repeatedFailure,
     );
-    current = await runStage("repair", allEvents, options.onEvent, () => options.runFix(prompt, [...conversation]));
+    current = await runStage('repair', allEvents, options.onEvent, () => options.runFix(prompt, [...conversation]));
     allEvents.push(...current.events);
     totalTurns += current.turns;
     conversation.splice(0, conversation.length, ...current.messages);
 
     if (!hasWorkspaceChange(current)) {
-      verification = await runStage("verify", allEvents, options.onEvent, options.runVerification);
+      verification = await runStage('verify', allEvents, options.onEvent, options.runVerification);
       await emitVerificationEvent(verification, attempts, maxAttempts, allEvents, options.onEvent);
-      if (verification.status !== "failed") {
+      if (verification.status !== 'failed') {
         await emitRepairDecision(
-          "completed",
-          "verification_passed",
+          'completed',
+          'verification_passed',
           attempts,
           maxAttempts,
           verification,
           allEvents,
-          options.onEvent
+          options.onEvent,
         );
-        return { final: current, allEvents, totalTurns, attempts, verification, stopReason: "verification_passed" };
+        return { final: current, allEvents, totalTurns, attempts, verification, stopReason: 'verification_passed' };
       }
       await emitRepairDecision(
-        "blocked",
-        "no_workspace_change_after_repair",
+        'blocked',
+        'no_workspace_change_after_repair',
         attempts,
         maxAttempts,
         verification,
         allEvents,
-        options.onEvent
+        options.onEvent,
       );
       return {
         final: current,
@@ -360,7 +350,7 @@ export async function runVerifyFixLoop(options: VerifyFixLoopOptions): Promise<V
         totalTurns,
         attempts,
         verification,
-        stopReason: "no_workspace_change_after_repair"
+        stopReason: 'no_workspace_change_after_repair',
       };
     }
   }

@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { isResumableRunState } from "../../src/core/resume/ResumableRunState.js";
-import type { ResumableRunState } from "../../src/core/resume/ResumableRunState.js";
+import { describe, expect, it } from 'vitest';
+import type { ResumableRunState } from '../../src/core/resume/ResumableRunState.js';
+import { isResumableRunState } from '../../src/core/resume/ResumableRunState.js';
 
 const valid: ResumableRunState = {
   turns: 3,
@@ -12,34 +12,34 @@ const valid: ResumableRunState = {
     maxOutputTokensRecoveryCount: 0,
     toolRecoveryFinalizationRecoveryCount: 0,
     repositoryRecommendationRecoveryUsed: false,
-    falseUnavailableToolRecoveryUsed: false
+    falseUnavailableToolRecoveryUsed: false,
   },
-  successfulToolNames: ["read"],
-  attemptedToolNames: ["read", "shell"],
-  successfulEvidencePaths: ["a.ts"],
+  successfulToolNames: ['read'],
+  attemptedToolNames: ['read', 'shell'],
+  successfulEvidencePaths: ['a.ts'],
   successfulEvidenceToolCount: 1,
   successfulMutationCount: 0,
   mutationSinceLastRead: false,
-  verificationRecoveryCounts: [["verify", 1]],
+  verificationRecoveryCounts: [['verify', 1]],
   autoVerificationRepairSignatures: [],
   verificationRepairExtensionActive: false,
   recentCompactionSavedRatios: [0.3],
-  previousCompactSummary: "S",
+  previousCompactSummary: 'S',
   stopHookContinuationCount: 0,
-  messageSeq: 7
+  messageSeq: 7,
 };
 
-describe("isResumableRunState", () => {
-  it("accepts a well-formed snapshot", () => {
+describe('isResumableRunState', () => {
+  it('accepts a well-formed snapshot', () => {
     expect(isResumableRunState(valid)).toBe(true);
   });
-  it("accepts a snapshot without the optional previousCompactSummary", () => {
+  it('accepts a snapshot without the optional previousCompactSummary', () => {
     const { previousCompactSummary: _omit, ...rest } = valid;
     expect(isResumableRunState(rest)).toBe(true);
   });
-  it("rejects malformed input", () => {
+  it('rejects malformed input', () => {
     expect(isResumableRunState(null)).toBe(false);
-    expect(isResumableRunState({ turns: "x" })).toBe(false);
+    expect(isResumableRunState({ turns: 'x' })).toBe(false);
     expect(isResumableRunState({ ...valid, recovery: undefined })).toBe(false);
   });
 });

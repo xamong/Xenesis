@@ -1,4 +1,4 @@
-import type { ProviderName } from "../config/index.js";
+import type { ProviderName } from '../config/index.js';
 
 export interface ProviderMatrixTarget {
   provider: ProviderName;
@@ -16,7 +16,7 @@ export interface ProviderMatrixUsage {
 export interface ProviderMatrixResult {
   provider: ProviderName;
   model: string;
-  status: "passed" | "failed" | "skipped";
+  status: 'passed' | 'failed' | 'skipped';
   durationMs: number;
   usage?: ProviderMatrixUsage;
   skippedReason?: string;
@@ -26,7 +26,7 @@ export interface ProviderMatrixResult {
 
 export interface ProviderMatrixReport {
   id: string;
-  kind: "provider-matrix";
+  kind: 'provider-matrix';
   createdAt: string;
   workspace: string;
   summary: {
@@ -52,34 +52,34 @@ export interface BuildProviderMatrixReportInput {
 export function defaultProviderMatrixTargets(env: NodeJS.ProcessEnv): ProviderMatrixTarget[] {
   return [
     {
-      provider: "openai",
-      model: env.OPENAI_MODEL?.trim() || "gpt-4o",
-      credentialEnv: "OPENAI_API_KEY",
-      available: Boolean(env.OPENAI_API_KEY?.trim())
+      provider: 'openai',
+      model: env.OPENAI_MODEL?.trim() || 'gpt-4o',
+      credentialEnv: 'OPENAI_API_KEY',
+      available: Boolean(env.OPENAI_API_KEY?.trim()),
     },
     {
-      provider: "claude",
-      model: env.ANTHROPIC_MODEL?.trim() || "claude-sonnet-4-5",
-      credentialEnv: "ANTHROPIC_API_KEY",
-      available: Boolean(env.ANTHROPIC_API_KEY?.trim())
-    }
+      provider: 'claude',
+      model: env.ANTHROPIC_MODEL?.trim() || 'claude-sonnet-4-5',
+      credentialEnv: 'ANTHROPIC_API_KEY',
+      available: Boolean(env.ANTHROPIC_API_KEY?.trim()),
+    },
   ];
 }
 
 export function buildProviderMatrixReport(input: BuildProviderMatrixReportInput): ProviderMatrixReport {
-  const withUsage = input.results.filter((result): result is ProviderMatrixResult & { usage: ProviderMatrixUsage } => (
-    result.usage !== undefined
-  ));
+  const withUsage = input.results.filter(
+    (result): result is ProviderMatrixResult & { usage: ProviderMatrixUsage } => result.usage !== undefined,
+  );
   return {
     id: input.id,
-    kind: "provider-matrix",
+    kind: 'provider-matrix',
     createdAt: input.createdAt,
     workspace: input.workspace,
     summary: {
       total: input.results.length,
-      passed: input.results.filter((result) => result.status === "passed").length,
-      failed: input.results.filter((result) => result.status === "failed").length,
-      skipped: input.results.filter((result) => result.status === "skipped").length
+      passed: input.results.filter((result) => result.status === 'passed').length,
+      failed: input.results.filter((result) => result.status === 'failed').length,
+      skipped: input.results.filter((result) => result.status === 'skipped').length,
     },
     usage: {
       inputTokens: withUsage.reduce((sum, result) => sum + result.usage.inputTokens, 0),
@@ -88,8 +88,8 @@ export function buildProviderMatrixReport(input: BuildProviderMatrixReportInput)
       measuredProviders: withUsage.map((result) => result.provider),
       unavailableProviders: input.results
         .filter((result) => result.usage === undefined)
-        .map((result) => result.provider)
+        .map((result) => result.provider),
     },
-    results: input.results
+    results: input.results,
   };
 }

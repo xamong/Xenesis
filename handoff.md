@@ -1,5 +1,2002 @@
 # Xenesis Desk Work Handoff
 
+## Current Slice 07 Lint Debt Cleanup
+
+- Current objective:
+  - Clean up the repo-wide Biome lint/format debt left after the initial Slice
+    01-06 product work, without changing Agent/CR/provider behavior.
+- Context read:
+  - `AGENTS.md`
+  - Repo-local Obsidian index and required graph/source-of-truth/review notes.
+  - `docs/obsidian/Xenesis-desk/10_Repo Map/Repo Overview.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Verification Map.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/High Risk Areas.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Module Index.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-provider-runtime.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-xenesis-agent-pane.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-capability-registry.md`
+  - `package.json`
+  - `biome.json`
+- Touched files:
+  - `biome.json`
+  - `handoff.md`
+  - `docs/superpowers/plans/2026-06-30-slice-07-lint-debt.md` (ignored local plan)
+  - Broad Biome formatting/import normalization across repo source, test, CSS,
+    script, and JSON files. `git diff --stat` currently reports 466 changed
+    tracked files and 41003 insertions / 34165 deletions including pre-existing
+    Slice 04-06 worktree changes.
+  - Manual lint fix: `packages/xenesis/src/evaluation/parity/BehaviorContract.ts`
+    and `packages/xenesis/src/evaluation/parity/FeatureParityMatrix.ts` rename
+    behavior-contract field `then` to `expected` to avoid thenable objects.
+- Commands run:
+  - `npx biome check --reporter=json . *> .tmp-biome-slice07.json`
+    -> exited 1; JSON summary reported 1120 errors, 415 warnings, 93 infos.
+  - Baseline category classification from `.tmp-biome-slice07.json`:
+    `format` 901, `assist/source/organizeImports` 217,
+    `lint/complexity/noImportantStyles` 153,
+    `lint/complexity/useOptionalChain` 60,
+    `lint/correctness/noUnusedImports` 57,
+    `lint/correctness/noUnusedVariables` 43,
+    `lint/style/noDescendingSpecificity` 39.
+  - Touched-file scoped check before cleanup:
+    `npx biome check --formatter-enabled=true --linter-enabled=true --assist-enabled=true ...touched files...`
+    -> exited 1; checked 11 files, no fixes applied, 12 errors, 27 warnings,
+    12 infos.
+  - Touched-file safe write:
+    `npx biome check --write ...non-giant touched files...`
+    -> exited 0; checked 10 files, fixed 9 files, skipped 30 unsafe suggested
+    fixes, left 7 warnings and 1 info.
+  - Touched-file scoped check after cleanup including `src/main/index.ts`
+    -> exited 0; checked 11 files, no errors, 19 warnings, 9 infos.
+  - `git diff --check` -> exited 0; Git printed LF/CRLF normalization warnings
+    only.
+  - `git config --get core.autocrlf` -> `true`.
+  - `git config --get core.eol` -> unset.
+  - `npx biome check --formatter-enabled=true --linter-enabled=false --assist-enabled=false biome.json package.json tsconfig.json`
+    -> initially failed with format errors in `biome.json` and `tsconfig.json`.
+  - Added and tested `.editorconfig`/`.gitattributes` LF policy, then rejected
+    that approach because it would force a larger Windows worktree rewrite.
+  - `biome.json` now sets `formatter.lineEnding` to `auto`; `npx biome check --write biome.json package.json tsconfig.json`
+    -> exited 0; fixed 3 files under the auto policy.
+  - `npx biome check --reporter=json . *> .tmp-biome-slice07-auto.json`
+    -> exited 1 before repo-wide safe write; summary reported 749 errors, 407
+    warnings, 90 infos. Blocking errors were `format` 533,
+    `assist/source/organizeImports` 214, and `lint/suspicious/noThenProperty` 2.
+  - `npx biome check --write .`
+    -> exited 1; checked 986 files, fixed 534 files, skipped 481 unsafe
+    suggested fixes, left 2 errors, 393 warnings, 86 infos.
+  - `npm run lint` after renaming `then` to `expected` and formatting the parity
+    files -> exited 0; checked 986 files, no blocking errors, 393 warnings,
+    86 infos.
+  - `npm run typecheck` -> passed.
+  - `npm --prefix packages/xenesis run typecheck` -> passed.
+  - First `npm --prefix packages/xenesis test` -> failed 1/391 in
+    `tests/s10/shellTool.session.test.ts` because the idle-timeout test did not
+    observe a spawn pid.
+  - Focused rerun `npm --prefix packages/xenesis exec vitest run tests/s10/shellTool.session.test.ts`
+    -> passed 8/8, indicating the prior failure was timing-sensitive.
+  - Final `npm --prefix packages/xenesis test` -> passed; 83 files and 391 tests.
+  - `npm --prefix packages/xenesis run build` -> passed.
+  - `npm run docs:capabilities:audit` -> passed and wrote
+    `docs\capability-registry-audit.md`; 801 nodes and 689 coverage path references.
+  - `node scripts\assertCapabilityAuditZero.mjs` -> passed; verified 4 counters.
+  - `npm run docs:obsidian:check` -> passed; 147 notes and 733 wikilinks.
+  - `npm run build` -> passed; Vite printed existing bundle/externalization
+    warnings only.
+  - `npm run check:public-release` -> passed.
+  - Final `git diff --check` -> exited 0; Git printed LF/CRLF normalization
+    warnings only for documentation/handoff files.
+  - Removed `.tmp-biome-slice07.json` and `.tmp-biome-slice07-auto.json`.
+- Material findings and decisions:
+  - The initial Slice 01-06 product slices are implemented; Slice 07 is a
+    follow-up quality slice, not part of the original product slice index.
+  - `formatter.lineEnding: "auto"` is the lower-churn policy for this Windows
+    worktree with `core.autocrlf=true`; it lets Windows expect CRLF while Linux
+    CI expects LF, instead of forcing a one-time LF rewrite of the whole repo.
+  - Repo-wide safe Biome write was acceptable after classification because the
+    remaining blocking errors were mechanical format/import diagnostics.
+  - Unsafe Biome suggestions were not applied. Remaining warning/info debt is
+    visible but no longer blocks `npm run lint`.
+  - Behavior-contract field `then` was renamed to `expected` because objects
+    with a `then` property can be treated as thenables. Typecheck confirmed no
+    downstream breakage.
+- Exact verification result:
+  - `npm run lint` now passes with no errors. It still reports 393 warnings and
+    86 infos.
+  - Typecheck, package typecheck, package tests, package build, root build, CR
+    audit, audit-zero, Obsidian graph check, public-release check, and diff
+    check all passed as listed above.
+- Known gaps:
+  - Biome still reports warning/info diagnostics, including CSS style policy
+    warnings (`noImportantStyles`, `noDescendingSpecificity`) and unsafe cleanup
+    suggestions. These do not fail `npm run lint`.
+  - No new live Agent-pane behavior is claimed for Slice 07; this was a lint
+    and formatting cleanup slice.
+- Next intended step:
+  - User requested merging the current worktree result into `uno`; create a
+    feature-branch commit first, then merge into the existing `uno` worktree
+    without touching its unrelated `docs/obsidian/Xenesis-desk.zip` deletion.
+
+## Slice 04 Task 8 Docs And Obsidian Update
+
+- Current objective:
+  - Record the implemented Slice 04 messenger-channel scope in the repo manual,
+    Obsidian working notes, and handoff before final verification.
+- Touched files:
+  - `docs/manual/10-openclaw-channel-setup.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-04-messenger-channels.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-reference-adoption-map-proposal.md`
+  - `handoff.md`
+- Commands run:
+  - `rg -n "^#|^##|Slice 04|Task|Verification|Natural|Approval|Smoke" docs\manual\10-openclaw-channel-setup.md`
+  - `rg -n "^#|^##|Task|Slice 04|Evidence|검증|구현|Known|Progress|Reference" docs\obsidian\Xenesis-desk\80_AI\Working Notes\2026-06-29-slice-spec-04-messenger-channels.md`
+  - `rg -n "^#|^##|Slice 04|messenger|Hermes|OpenClaw|Adopt|Not adopted|차용|비채택" docs\obsidian\Xenesis-desk\80_AI\Working Notes\2026-06-29-reference-adoption-map-proposal.md`
+  - `Get-Content ... -Raw` for the three edited documentation files.
+- Exact verification result:
+  - Documentation edits were verified with targeted section search.
+  - `git diff --check -- docs\manual\10-openclaw-channel-setup.md ... handoff.md`
+    passed; Git printed LF/CRLF normalization warnings only.
+- Implemented:
+  - Added manual implementation evidence covering renderer guards, dispatcher
+    no-side-effect scope, sanitization, channel approval smoke, Connection
+    Center snapshot baselines, and natural-language readback evidence.
+  - Updated the Slice 04 Obsidian working spec with current implementation
+    evidence and the remaining live-smoke gate.
+  - Added a Slice 04 messenger-channel entry to the reference adoption proposal
+    with borrowed, adapted, rejected, and verification evidence.
+- Known gaps:
+  - Live Electron smoke execution is still pending until a fresh
+    `npm run build` runs in the final Slice 04 verification gate.
+- Next intended step:
+  - Run documentation hygiene checks, then move to the final Slice 04
+    verification gate.
+
+## Slice 04 Task 9 Live Connection Center Baseline Fix
+
+- Current objective:
+  - Fix the final live Connection Center smoke failure without changing channel
+    behavior.
+- Touched files:
+  - `src/main/index.ts`
+  - `scripts/xenesisConnectionCenterLiveSmoke.test.mjs`
+  - `handoff.md`
+- Commands run:
+  - `node .\scripts\xenesisConnectionCenterLiveSmoke.mjs --json`
+- Exact verification result:
+  - Live Connection Center smoke failed after build with 18/20 checks passing.
+  - Failing check:
+    `slice04:telegram-route-session-readback`.
+  - The failed baseline expected English `Session scope -> chat`, while the
+    rendered Connection Center card uses Korean labels:
+    `라우트 바인딩` and `세션 범위chat`.
+- Implemented:
+  - Updated the dev-only Slice 04 snapshot baseline to check the actual rendered
+    localized route/session labels while still requiring ordered session-scope
+    evidence before `chat`.
+  - Updated the source guard test to enforce the localized ordered sequence and
+    continue blocking a flat `... 'chat'` text-only assertion.
+- Known gaps:
+  - Re-run the focused Connection Center smoke test, rebuild, and re-run the
+    live smoke.
+- Next intended step:
+  - Verify the baseline fix, rebuild Electron output, and resume final live
+    smoke sequence.
+
+## Slice 04 Task 9 Natural-Language Smoke Timeout And Prompt Narrowing
+
+- Current objective:
+  - Fix the final natural-language channel live smoke without weakening the
+    provider raw CR/MCP evidence allowlist.
+- Touched files:
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs`
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+  - `handoff.md`
+- Commands run:
+  - `node .\scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs --json`
+  - `node .\scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs --json --timeout=180000`
+- Exact verification result:
+  - Default 30s live smoke failed with no provider raw CR/MCP channel-readback
+    evidence while the Agent was still running.
+  - Re-run with `--timeout=180000` reached provider raw CR/MCP evidence and the
+    final marker, but failed strict read-only allowlist because the model first
+    called `xd.xenesis.connections.diagnostics.status`.
+- Implemented:
+  - Raised the default natural-language live-smoke timeout to 180000ms to match
+    observed codex-app-server completion time.
+  - Narrowed the Korean natural prompt to ask for Telegram routing/runtime cards
+    only and explicitly avoid diagnostics, guide opens, review requests,
+    settings changes, and test messages.
+  - Kept the provider raw CR/MCP allowlist strict: only
+    `xd.xenesis.connections.status`,
+    `xd.xenesis.channels.routing.status`, and
+    `xd.xenesis.channels.runtime.status` are allowed.
+- Known gaps:
+  - Re-run the natural-language smoke unit test and the live smoke with the new
+    default timeout.
+- Next intended step:
+  - Verify the narrowed prompt produces only allowed provider readback paths.
+
+## Slice 04 Task 9 Natural-Language Smoke State Isolation
+
+- Current objective:
+  - Prevent previous Agent-pane raw history from contaminating the Slice 04
+    natural-language live smoke.
+- Touched files:
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs`
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+  - `handoff.md`
+- Commands run:
+  - `node .\scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs --json`
+- Exact verification result:
+  - Re-run with the narrowed prompt still failed on the strict provider
+    read-only allowlist with `xd.xenesis.connections.diagnostics.status`.
+  - The natural-language smoke was using the default app user data instead of
+    an isolated `XENESIS_DESK_USER_DATA_DIR`, unlike the approval live smokes.
+- Implemented:
+  - Added isolated temp `XENIS_HOME` and `XENESIS_DESK_USER_DATA_DIR` handling
+    for the natural-language smoke.
+  - Added an env contract test for the isolated state dirs.
+  - Removed the word `진단` from the Korean natural prompt so the prompt does not
+    mention the unwanted diagnostics surface.
+- Known gaps:
+  - Re-run the natural-language smoke unit test and live smoke from isolated
+    state.
+- Next intended step:
+  - Confirm provider raw CR/MCP evidence comes only from allowed readback paths.
+
+## Slice 04 Task 9 Provider Raw Path Detection Fix
+
+- Current objective:
+  - Stop the natural-language smoke from treating CR paths returned inside an
+    allowed capability result as provider-used tool paths.
+- Touched files:
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs`
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+  - `handoff.md`
+- Commands run:
+  - `node .\scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs --json`
+- Exact verification result:
+  - Isolated live smoke still reported `xd.xenesis.connections.diagnostics.status`
+    as an allowlist violation even when the visible provider raw summary showed
+    an allowed `xd.xenesis.connections.status` tool call.
+  - Root cause: raw path detection recursively scanned tool result payloads, not
+    only provider tool-call arguments.
+- Implemented:
+  - Provider raw CR path detection now prefers tool-call argument fields
+    (`params.item.arguments`, `input`, `args`, etc.) before recursively scanning
+    generic record content.
+  - Added a regression test proving an allowed `xd.xenesis.connections.status`
+    call does not fail merely because its returned payload contains
+    `xd.xenesis.connections.diagnostics.status`.
+- Known gaps:
+  - Re-run the natural-language smoke unit test and live smoke.
+- Next intended step:
+  - Verify the live smoke passes without weakening the allowed provider-call
+    path set.
+
+## Slice 04 Task 9 Natural-Language Prompt Direct Readback
+
+- Current objective:
+  - Make the natural-language smoke prompt request the two exact channel
+    readback capabilities without embedding raw `xd.*` paths.
+- Touched files:
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs`
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+  - `handoff.md`
+- Commands run:
+  - `node .\scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs --json`
+- Exact verification result:
+  - Isolated live smoke still failed after the detector fix because the provider
+    used `xd.xenesis.connections.status` and `xd.xenesis.status`, then answered
+    from summary data rather than direct channel routing/runtime status
+    readbacks.
+- Implemented:
+  - Reworded the Korean natural prompt to ask for `channel routing status
+    readback` and `channel runtime status readback` capabilities directly while
+    still avoiding raw `xd.*` path syntax.
+  - The prompt now explicitly rejects connection-summary or whole-runtime-summary
+    substitution.
+- Known gaps:
+  - Re-run the natural-language smoke unit test and live smoke.
+- Next intended step:
+  - Confirm provider raw evidence includes direct routing/runtime status
+    capability calls.
+
+## Slice 04 Task 9 Natural-Language Prompt Unit Contract Fix
+
+- Current objective:
+  - Align the prompt contract test with the updated natural-language wording.
+- Touched files:
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+  - `handoff.md`
+- Commands run:
+  - `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+- Exact verification result:
+  - The focused natural-language smoke unit test failed 19/20 because the prompt
+    assertion allowed `CR` but not the expanded phrase `Capability Registry`.
+- Implemented:
+  - Updated the assertion to accept `Capability Registry` as the CR reference.
+- Known gaps:
+  - Re-run the focused natural-language smoke unit test.
+- Next intended step:
+  - Continue live smoke verification after the unit contract passes.
+
+## Slice 04 Task 9 Free-Text CR Path Fragment Guard
+
+- Current objective:
+  - Ensure natural-language smoke path allowlisting only considers provider
+    tool-call argument paths, not assistant free text or returned metadata.
+- Touched files:
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs`
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+  - `handoff.md`
+- Commands run:
+  - `node .\scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs --json`
+- Exact verification result:
+  - Direct-readback live smoke produced channel evidence but failed the
+    read-only allowlist on `xd.xenesis.connections.`, an incomplete CR path
+    fragment from non-argument raw content.
+- Implemented:
+  - `firstCrCallInProviderRawRecord` now returns only CR calls parsed from
+    provider tool-call argument fields.
+  - Added a regression test proving free-text CR path fragments without tool
+    arguments do not count as used provider paths.
+- Known gaps:
+  - Re-run the focused natural-language smoke unit test and live smoke.
+- Next intended step:
+  - Verify only actual provider tool-call argument paths affect evidence and
+    allowlist checks.
+
+## Task 7 Final Natural Prompt Fix
+
+- Current objective:
+  - Fix the final Task 7 issue only.
+  - Rewrite the channel natural-language live smoke prompt so it is Korean
+    natural language only: no raw `xd.*` CR paths, no fenced action syntax, no
+    `xenesis-desk-action`, and no JSON/path argument syntax.
+  - Keep strict provider raw evidence unchanged: completed provider CR/MCP calls
+    must include Telegram-scoped `xd.xenesis.channels.routing.status` and
+    `xd.xenesis.channels.runtime.status`, and provider raw CR/MCP calls must
+    stay within the status-only read allowlist.
+- Touched files planned:
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs`
+  - `handoff.md`
+- Touched files actual so far:
+  - `handoff.md`
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs`
+- Context read:
+  - `AGENTS.md`
+  - `docs/obsidian/Xenesis-desk.md`
+  - The literal contract paths under `docs/obsidian/00_System/...` were missing;
+    the actual nested vault paths under `docs/obsidian/Xenesis-desk/...` were
+    used.
+  - `docs/obsidian/Xenesis-desk/00_System/AI Agent Rules.md`
+  - `docs/obsidian/Xenesis-desk/00_System/Graph Schema.md`
+  - `docs/obsidian/Xenesis-desk/00_System/Review Policy.md`
+  - `docs/obsidian/Xenesis-desk/10_Repo Map/Source of Truth Map.md`
+  - `docs/obsidian/Xenesis-desk/10_Repo Map/Repo Overview.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Module Index.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Verification Map.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/CR Surface Index.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/High Risk Areas.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-capability-registry.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-mcp-bridge.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-xenesis-agent-pane.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-provider-runtime.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Capability Registry Architecture.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/MCP Bridge Architecture.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Provider Model.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Xenesis Agent Runtime.md`
+  - `docs/obsidian/Xenesis-desk/60_Tests/test-provider-smoke.md`
+  - `docs/obsidian/Xenesis-desk/60_Tests/test-live-agent-pane.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-channel-runtime-readiness.md`
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs`
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+- Commands run:
+  - `rg --files docs\obsidian` -> confirmed the Obsidian notes are nested under
+    `docs/obsidian/Xenesis-desk/...`.
+  - `git status --short` -> existing unrelated modified/untracked files are
+    present; do not revert.
+  - Added RED prompt-contract assertions requiring no `xd.`, no
+    `xenesis-desk-action`, no fenced code, and no raw JSON/path/arg syntax in
+    the submitted natural-language prompt.
+  - RED `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+    -> failed as expected, 17 passed / 1 failed. Failure showed the current
+    prompt still hardcodes `xd.xenesis.channels.routing.status`,
+    `xd.xenesis.channels.runtime.status`, and `channel:'telegram'` /
+    `id:'telegram'` arg syntax.
+  - Patched `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs` so the
+    submitted prompt asks in Korean for Telegram routing/session and runtime
+    readiness readback through Desk CR without raw path or arg syntax, settings
+    changes, or test messages, and with final marker
+    `channel-routing-readback-ok`.
+  - Tightened the `natural-prompt-submitted` report check to reject raw prompt
+    syntax (`xd.`, fenced actions, `xenesis-desk-action`, braces, and
+    path/args/channel/id colon syntax).
+  - GREEN `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+    -> passed, 18 passed / 0 failed.
+  - Targeted Biome
+    `npx biome check scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs --max-diagnostics 80`
+    -> passed, checked 2 files, no fixes applied.
+  - `git diff --check` -> exited 0 with LF-to-CRLF normalization warnings only
+    from existing dirty files.
+  - Final post-handoff `git diff --check` -> exited 0 with LF-to-CRLF
+    normalization warnings only from existing dirty files.
+  - Fresh completion verification:
+    `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs` ->
+    passed, 18 passed / 0 failed.
+  - Fresh completion verification:
+    `npx biome check scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs --max-diagnostics 80`
+    -> passed, checked 2 files, no fixes applied.
+  - Fresh completion verification: `git diff --check` -> exited 0 with
+    LF-to-CRLF normalization warnings only from existing dirty files.
+  - Fresh `git status --short` -> existing unrelated modified/untracked files
+    remain present; requested files are `handoff.md`,
+    `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs`, and
+    `scripts/xenesisChannelNaturalLanguageLiveSmoke.test.mjs`.
+- Exact verification result:
+  - RED `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+    -> failed as expected, 17 passed / 1 failed.
+  - GREEN `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+    -> passed, 18 passed / 0 failed.
+  - Targeted Biome -> passed, checked 2 files, no fixes applied.
+  - `git diff --check` -> passed with LF-to-CRLF normalization warnings only.
+  - Final post-handoff `git diff --check` -> passed with LF-to-CRLF
+    normalization warnings only.
+  - Fresh completion `node --test ...` -> passed, 18 passed / 0 failed.
+  - Fresh completion targeted Biome -> passed, checked 2 files, no fixes
+    applied.
+  - Fresh completion `git diff --check` -> passed with LF-to-CRLF
+    normalization warnings only.
+- Known gaps:
+  - The literal contract path `docs/obsidian/00_System/AI Agent Rules.md` is
+    nested under `docs/obsidian/Xenesis-desk/00_System/AI Agent Rules.md` in
+    this worktree.
+- Next intended step:
+  - Hand back without committing.
+
+## Task 7 Remaining Blocking Issues
+
+- Current objective:
+  - Fix remaining Task 7 blocking issues only.
+  - Restrict the channel natural-language provider raw CR/MCP evidence and
+    allowlist to actual read-status paths for this smoke:
+    `xd.xenesis.channels.routing.status` and
+    `xd.xenesis.channels.runtime.status`, scoped with `channel` or `id`
+    `telegram`.
+  - Ensure `routing.open`, `runtime.open`, and `userStories.open` do not satisfy
+    evidence or read-only allowlist checks for this smoke.
+  - Extend chat-only approval leakage detection to catch JSON colon syntax such
+    as `{"approvalRequired":true}` and raw `actionInboxItem` JSON forms.
+- Touched files planned:
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs`
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+  - `handoff.md`
+- Touched files actual so far:
+  - `handoff.md`
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs`
+- Context read:
+  - `AGENTS.md`
+  - `docs/obsidian/Xenesis-desk.md`
+  - The literal AGENTS paths under `docs/obsidian/00_System/...` were missing;
+    the actual nested vault paths under `docs/obsidian/Xenesis-desk/...` were
+    used.
+  - `docs/obsidian/Xenesis-desk/00_System/AI Agent Rules.md`
+  - `docs/obsidian/Xenesis-desk/00_System/Graph Schema.md`
+  - `docs/obsidian/Xenesis-desk/00_System/Review Policy.md`
+  - `docs/obsidian/Xenesis-desk/10_Repo Map/Source of Truth Map.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Module Index.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/High Risk Areas.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Verification Map.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/CR Surface Index.md`
+  - `docs/obsidian/Xenesis-desk/10_Repo Map/Repo Overview.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-capability-registry.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-mcp-bridge.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-provider-runtime.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-xenesis-agent-pane.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-approval-system.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Capability Registry Architecture.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/MCP Bridge Architecture.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Provider Model.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Xenesis Agent Runtime.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Approval Flow.md`
+  - `docs/obsidian/Xenesis-desk/60_Tests/test-live-agent-pane.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-04-messenger-channels.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-channel-runtime-readiness.md`
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs`
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+- Commands run:
+  - `rg --files docs/obsidian` -> confirmed the Obsidian notes are nested
+    under `docs/obsidian/Xenesis-desk/...`.
+  - `git status --short` -> existing unrelated worktree changes are present;
+    do not revert.
+  - Added RED unit coverage for status-only readback/evidence paths, rejected
+    `xd.xenesis.channels.routing.open` and
+    `xd.xenesis.channels.runtime.open` evidence/allowlist acceptance, rejected
+    `xd.xenesis.channels.userStories.open` allowlist acceptance, and
+    JSON-style `{"approvalRequired":true}` chat-only approval leakage.
+  - RED
+    `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs` ->
+    failed as expected, 14 passed / 4 failed. Failures showed `.open` paths in
+    declared readback paths, `.open` records satisfying evidence and allowlist,
+    `userStories.open` satisfying the allowlist, and JSON colon
+    `approvalRequired` text missing no-chat-only-approval detection.
+  - Patched `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs` so provider
+    evidence paths are only `xd.xenesis.channels.routing.status` and
+    `xd.xenesis.channels.runtime.status`; provider raw read-only allowlist is
+    only `xd.xenesis.connections.status` plus those two status paths; and
+    chat-only approval leakage detection catches quoted JSON colon syntax.
+  - GREEN
+    `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs` ->
+    passed, 18 passed / 0 failed.
+  - Requested Biome
+    `npx biome check scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs package.json --max-diagnostics 80`
+    -> passed, checked 3 files, no fixes applied.
+  - `git diff --check` -> exited 0 with LF-to-CRLF normalization warnings only.
+  - Final post-handoff `git diff --check` -> exited 0 with LF-to-CRLF
+    normalization warnings only.
+  - Targeted `git diff -- scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs
+    scripts/xenesisChannelNaturalLanguageLiveSmoke.test.mjs handoff.md` ->
+    reviewed the tracked handoff diff; the smoke script/test files are
+    untracked in this worktree, so their current edited locations were reviewed
+    with `rg -n`.
+  - `rg -n "ROUTING_READBACK_PATHS|PROVIDER_READ_ONLY_ALLOWED_PATHS|hasChatOnlyApprovalText|approvalRequired|rejects control open paths|rejects user story open|JSON-style" scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs scripts/xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+    -> confirmed the status-only constants, widened approval detection, and
+    RED/GREEN regression tests are present.
+  - Final `git status --short` -> existing unrelated modified/untracked files
+    remain present and were not reverted.
+- Exact verification result:
+  - RED
+    `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs` ->
+    failed as expected, 14 passed / 4 failed.
+  - GREEN
+    `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs` ->
+    passed, 18 passed / 0 failed.
+  - Requested Biome -> passed, checked 3 files, no fixes applied.
+  - `git diff --check` -> passed with LF-to-CRLF normalization warnings only.
+  - Final post-handoff `git diff --check` -> passed with LF-to-CRLF
+    normalization warnings only.
+- Known gaps:
+  - The literal contract path `docs/obsidian/00_System/AI Agent Rules.md` is
+    nested under `docs/obsidian/Xenesis-desk/00_System/AI Agent Rules.md` in
+    this worktree.
+- Next intended step:
+  - Hand back without committing.
+
+## Task 7 Quality Review Fix
+
+- Current objective:
+  - Fix Task 7 quality-review issues only.
+  - Tighten the channel natural-language live smoke so provider evidence
+    requires Telegram-scoped provider raw CR/MCP readbacks for both channel
+    routing and runtime.
+  - Replace denylist-only mutation checks with a provider raw CR/MCP read-only
+    path allowlist for this smoke.
+- Touched files planned:
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs`
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+  - `handoff.md`
+- Touched files actual so far:
+  - `handoff.md`
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs`
+- Context read:
+  - `AGENTS.md`
+  - `docs/obsidian/Xenesis-desk.md`
+  - `docs/obsidian/Xenesis-desk/00_System/AI Agent Rules.md`
+  - `docs/obsidian/Xenesis-desk/00_System/Graph Schema.md`
+  - `docs/obsidian/Xenesis-desk/00_System/Review Policy.md`
+  - `docs/obsidian/Xenesis-desk/10_Repo Map/Source of Truth Map.md`
+  - `docs/obsidian/Xenesis-desk/10_Repo Map/Repo Overview.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Module Index.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/High Risk Areas.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Verification Map.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/CR Surface Index.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-capability-registry.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-mcp-bridge.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-provider-runtime.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-xenesis-agent-pane.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-approval-system.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Capability Registry Architecture.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/MCP Bridge Architecture.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Provider Model.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Xenesis Agent Runtime.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Approval Flow.md`
+  - `docs/obsidian/Xenesis-desk/60_Tests/test-live-agent-pane.md`
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs`
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+  - `package.json`
+- Commands run:
+  - `git rev-parse --git-dir` ->
+    `E:/xenesis-original/xenesis-desk/.git/worktrees/upcoming-work-20260627`.
+  - `git rev-parse --git-common-dir` -> `E:/xenesis-original/xenesis-desk/.git`.
+  - `git branch --show-current` -> `agent/upcoming-work-20260627`.
+  - `git rev-parse --show-superproject-working-tree` -> empty output; this is
+    a linked worktree, not a submodule.
+  - Initial `git status --short` showed existing Task 1-7 changes and untracked
+    files; do not revert unrelated changes.
+  - Added RED unit coverage in
+    `scripts/xenesisChannelNaturalLanguageLiveSmoke.test.mjs` for empty-args
+    `xd.xenesis.connections.status` not satisfying provider evidence,
+    Telegram-scoped routing/runtime evidence satisfying provider evidence, and
+    `xd.xenesis.connections.setupRequests.apply` failing the read-only
+    allowlist even when readback evidence is present.
+  - RED
+    `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs` ->
+    failed as expected, 11 passed / 3 failed. Failures showed missing
+    `provider-raw-cr-mcp-read-only-allowlist` check and current provider
+    evidence accepting empty-args `xd.xenesis.connections.status`.
+  - Patched `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs` so provider
+    CR/MCP evidence now requires both Telegram-scoped
+    `xd.xenesis.channels.routing.status/open` and
+    `xd.xenesis.channels.runtime.status/open` readbacks with `channel:
+    'telegram'` or `id: 'telegram'` args.
+  - Added provider raw CR/MCP read-only allowlist enforcement for the smoke.
+    Allowed paths are `xd.xenesis.connections.status`,
+    `xd.xenesis.channels.routing.status/open`,
+    `xd.xenesis.channels.runtime.status/open`, and
+    `xd.xenesis.channels.userStories.status/open`.
+  - GREEN
+    `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs` ->
+    passed, 14 passed / 0 failed.
+  - Targeted Biome
+    `npx biome check scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs package.json --max-diagnostics 80`
+    -> failed with one formatting-only error in
+    `scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs`.
+  - Targeted format
+    `npx biome format --write scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs package.json`
+    -> formatted 3 files, fixed 1 file.
+  - Final
+    `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs` ->
+    passed, 14 passed / 0 failed.
+  - Final targeted Biome
+    `npx biome check scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs package.json --max-diagnostics 80`
+    -> exited 0, checked 3 files, no fixes applied.
+  - `git diff --check` -> exited 0 with LF-to-CRLF normalization warnings only.
+  - Final post-handoff `git diff --check` -> exited 0 with LF-to-CRLF
+    normalization warnings only.
+  - Added stricter RED unit coverage for an unallowed provider raw CR/MCP
+    `item/created` call record before completion.
+  - RED pre-completion allowlist
+    `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs` ->
+    failed as expected, 14 passed / 1 failed. Failure showed the allowlist
+    detector only considered completed provider tool records.
+  - Patched provider raw CR/MCP detection so completed records still gate
+    positive readback evidence, while read-only allowlist enforcement sees any
+    provider raw CR/MCP record with a CR path.
+  - Final expanded
+    `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs` ->
+    passed, 15 passed / 0 failed.
+  - Final expanded targeted Biome
+    `npx biome check scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs package.json --max-diagnostics 80`
+    -> exited 0, checked 3 files, no fixes applied.
+  - Final expanded `git diff --check` -> exited 0 with LF-to-CRLF
+    normalization warnings only.
+- Exact verification result:
+  - RED
+    `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs` ->
+    failed as expected, 11 passed / 3 failed.
+  - GREEN
+    `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs` ->
+    passed, 14 passed / 0 failed.
+  - Targeted Biome -> failed with one formatting-only error in
+    `scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs`.
+  - Final
+    `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs` ->
+    passed, 14 passed / 0 failed.
+  - Final targeted Biome -> passed, checked 3 files, no fixes applied.
+  - `git diff --check` -> passed with LF-to-CRLF normalization warnings only.
+  - Final post-handoff `git diff --check` -> passed with LF-to-CRLF
+    normalization warnings only.
+  - RED pre-completion allowlist
+    `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs` ->
+    failed as expected, 14 passed / 1 failed.
+  - Final expanded
+    `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs` ->
+    passed, 15 passed / 0 failed.
+  - Final expanded targeted Biome -> passed, checked 3 files, no fixes applied.
+  - Final expanded `git diff --check` -> passed with LF-to-CRLF normalization
+    warnings only.
+- Known gaps:
+  - The literal contract path `docs/obsidian/00_System/AI Agent Rules.md` is
+    nested under `docs/obsidian/Xenesis-desk/00_System/AI Agent Rules.md` in
+    this worktree.
+- Next intended step:
+  - Hand back without committing.
+
+## Task 7 Natural-Language Agent Pane Provider Evidence
+
+- Current objective:
+  - Implement Slice 04 Task 7 only: add a natural-language Agent pane live
+    smoke that proves the configured provider performs CR/MCP readback for
+    Telegram channel routing/runtime/readiness from a Korean prompt.
+  - This is natural-language provider evidence, not structured fenced
+    `xenesis-desk-action` proof.
+  - Do not run the live Electron smoke until after a fresh final
+    `npm run build`; record the deferral during this task.
+- Touched files planned:
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs`
+  - `package.json` because comparable live smoke runners already expose package
+    scripts.
+  - `handoff.md`
+- Touched files actual so far:
+  - `handoff.md`
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs`
+  - `package.json`
+- Context read:
+  - `AGENTS.md`
+  - `docs/obsidian/Xenesis-desk.md`
+  - `docs/obsidian/Xenesis-desk/00_System/AI Agent Rules.md`
+  - `docs/obsidian/Xenesis-desk/00_System/Graph Schema.md`
+  - `docs/obsidian/Xenesis-desk/00_System/Review Policy.md`
+  - `docs/obsidian/Xenesis-desk/10_Repo Map/Source of Truth Map.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Module Index.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Verification Map.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/High Risk Areas.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/CR Surface Index.md`
+  - `docs/obsidian/Xenesis-desk/10_Repo Map/Repo Overview.md`
+  - `docs/obsidian/Xenesis-desk/10_Repo Map/Verification Gates.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-provider-runtime.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-xenesis-agent-pane.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-capability-registry.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-mcp-bridge.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-approval-system.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Provider Model.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Xenesis Agent Runtime.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/MCP Bridge Architecture.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Capability Registry Architecture.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Approval Flow.md`
+  - `docs/obsidian/Xenesis-desk/60_Tests/test-live-agent-pane.md`
+  - `docs/obsidian/Xenesis-desk/60_Tests/test-provider-smoke.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-04-messenger-channels.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-channel-runtime-readiness.md`
+  - `docs/superpowers/plans/2026-06-29-slice-04-messenger-channels.md`
+  - `scripts/xenesisProviderOnboardingLiveSmoke.mjs`
+  - `scripts/xenesisProviderOnboardingLiveSmoke.test.mjs`
+  - `scripts/xenesisChannelApprovalLiveSmoke.mjs`
+  - `scripts/xenesisChannelApprovalLiveSmoke.test.mjs`
+  - `scripts/xenesisConnectionCenterLiveSmoke.mjs`
+  - `scripts/xenesisReviewRequestApprovalLiveSmoke.mjs`
+  - `package.json`
+- Commands run:
+  - `git rev-parse --git-dir` ->
+    `E:/xenesis-original/xenesis-desk/.git/worktrees/upcoming-work-20260627`.
+  - `git rev-parse --git-common-dir` -> `E:/xenesis-original/xenesis-desk/.git`.
+  - `git branch --show-current` -> `agent/upcoming-work-20260627`.
+  - `git rev-parse --show-superproject-working-tree` -> empty output; this is
+    a linked worktree, not a submodule.
+  - Added RED unit tests in
+    `scripts/xenesisChannelNaturalLanguageLiveSmoke.test.mjs` for the Slice 04
+    natural-language prompt contract, read-only channel paths, footer/runtime
+    readback, provider raw CR/MCP evidence, deterministic-recovery rejection,
+    chat-only approval leakage rejection, approval-card rejection, mutation-path
+    rejection, and package script exposure.
+  - RED `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+    -> failed as expected with `ERR_MODULE_NOT_FOUND` because
+    `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs` does not exist yet.
+  - Implemented `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs` with the
+    provider onboarding smoke pattern: build-output guard, Electron launch,
+    Agent pane open, provider runtime/footer readback, raw provider stream
+    snapshot, natural Korean prompt submit with `bypassDirectDeskRouting:true`,
+    provider raw CR/MCP channel-readback evidence checks, deterministic recovery
+    rejection, chat-only approval/approval-card rejection, forbidden write-path
+    rejection, and post-prompt `xd.xenesis.connections.status` readback.
+  - Added `smoke:xenesis:channel-natural-language` to `package.json` because
+    comparable live smoke runners are exposed as package scripts.
+  - First GREEN
+    `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs` ->
+    failed, 10 passed / 1 failed. Root cause: provider raw diagnostics summary
+    filtered out false boolean fields, while the new test intentionally expects
+    `looksLikeForbiddenMutation: false`.
+  - Patched `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs` summary
+    normalization to preserve false booleans while still dropping empty strings.
+  - GREEN `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+    -> passed, 11 passed / 0 failed.
+  - Targeted Biome
+    `npx biome check scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs package.json --max-diagnostics 80`
+    -> failed with one formatting-only error in
+    `scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs`.
+  - Targeted format
+    `npx biome format --write scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs package.json`
+    -> formatted 3 files, fixed 1 file.
+  - Post-format GREEN
+    `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs` ->
+    passed, 11 passed / 0 failed.
+  - Final targeted Biome
+    `npx biome check scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs package.json --max-diagnostics 80`
+    -> exited 0, checked 3 files, no fixes applied.
+  - `git diff --check` -> exited 0 with LF-to-CRLF normalization warnings only.
+  - `npm run typecheck` was not run for Task 7 because this task touched no
+    TypeScript files.
+  - Live `node .\scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs --json`
+    was not run; per task rule it is deferred until after a fresh final
+    `npm run build`.
+  - `git status --short` -> existing Task 1-6 changes remain present and were
+    not reverted. Task 7 files are `handoff.md`, `package.json`,
+    `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs`, and
+    `scripts/xenesisChannelNaturalLanguageLiveSmoke.test.mjs`.
+  - Final post-handoff `git diff --check` -> exited 0 with LF-to-CRLF
+    normalization warnings only.
+  - Final `git status --short` -> existing Task 1-6 changes remain present and
+    were not reverted. Task 7 additions are the two
+    `scripts/xenesisChannelNaturalLanguageLiveSmoke*` files; Task 7 modified
+    `package.json` and `handoff.md`.
+- Exact verification result:
+  - RED `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+    -> failed as expected with `ERR_MODULE_NOT_FOUND`.
+  - GREEN `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+    -> passed, 11 passed / 0 failed.
+  - Post-format GREEN
+    `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs` ->
+    passed, 11 passed / 0 failed.
+  - Final targeted Biome -> passed, checked 3 files, no fixes applied.
+  - `git diff --check` -> passed with LF-to-CRLF normalization warnings only.
+  - Final post-handoff `git diff --check` -> passed with LF-to-CRLF
+    normalization warnings only.
+- Known gaps:
+  - The literal contract path `docs/obsidian/00_System/AI Agent Rules.md` is
+    nested under `docs/obsidian/Xenesis-desk/00_System/AI Agent Rules.md` in
+    this worktree.
+  - Live `node .\scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs --json` is
+    deferred until after a fresh final `npm run build`.
+- Next intended step:
+  - Hand back without committing. Final gate should run a fresh
+    `npm run build` before live
+    `node .\scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs --json`.
+
+## Task 6 Connection Center Live Snapshot Coverage
+
+- Current objective:
+  - Review fix: remove the false-negative live-smoke risk where the planned
+    Signal messenger card forbids `xd.xenesis.channels.runtime.request` even
+    though planned runtime-readiness review/request controls are legitimate
+    read/review surfaces.
+  - Tighten the Telegram session-scope snapshot check so it does not pass on a
+    bare `chat` substring inside `allowedChatIds`.
+  - Implement Slice 04 Task 6 only: add channel-specific Connection Center live
+    snapshot descriptor coverage for implemented/planned messenger cards,
+    Telegram route/session, access/pairing readiness, and approval-gated
+    test-send boundaries.
+  - Follow TDD: add RED descriptor tests first, run the scoped Node test, then
+    patch the live snapshot checks. Do not run the live Electron smoke until a
+    fresh final `npm run build` has been run.
+- Touched files planned:
+  - `scripts/xenesisConnectionCenterLiveSmoke.test.mjs`
+  - `scripts/xenesisConnectionCenterLiveSmoke.mjs`
+  - `src/main/index.ts` only if the testing snapshot helper needs additional
+    selector checks.
+  - `handoff.md`
+- Touched files actual so far:
+  - `handoff.md`
+  - `scripts/xenesisConnectionCenterLiveSmoke.test.mjs`
+  - `scripts/xenesisConnectionCenterLiveSmoke.mjs`
+  - `src/main/index.ts` development-only Connection Center snapshot helper
+    block.
+- Context read:
+  - `AGENTS.md`
+  - `docs/obsidian/Xenesis-desk.md`
+  - `docs/obsidian/Xenesis-desk/00_System/AI Agent Rules.md`
+  - `docs/obsidian/Xenesis-desk/00_System/Graph Schema.md`
+  - `docs/obsidian/Xenesis-desk/00_System/Review Policy.md`
+  - `docs/obsidian/Xenesis-desk/10_Repo Map/Source of Truth Map.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Module Index.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/High Risk Areas.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Verification Map.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/CR Surface Index.md`
+  - `docs/obsidian/Xenesis-desk/10_Repo Map/Repo Overview.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-capability-registry.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-xenesis-agent-pane.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-approval-system.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-mcp-bridge.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-provider-runtime.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Capability Registry Architecture.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Approval Flow.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/MCP Bridge Architecture.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Xenesis Agent Runtime.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Provider Model.md`
+  - `docs/obsidian/Xenesis-desk/40_APIs/capability-high-risk-paths.md`
+  - `docs/obsidian/Xenesis-desk/50_Data/data-action-inbox.md`
+  - `docs/obsidian/Xenesis-desk/50_Data/data-capability-approvals.md`
+  - `docs/obsidian/Xenesis-desk/60_Tests/test-live-agent-pane.md`
+  - `docs/obsidian/Xenesis-desk/60_Tests/test-capability-audit.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-04-messenger-channels.md`
+  - `docs/superpowers/plans/2026-06-29-slice-04-messenger-channels.md`
+  - `scripts/xenesisConnectionCenterLiveSmoke.mjs`
+  - `scripts/xenesisConnectionCenterLiveSmoke.test.mjs`
+  - `src/main/index.ts` snapshot helper snippet
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `src/renderer/panes/SettingsPane.tsx` Connection Center rendering snippets
+- Commands run:
+  - `git status --short` -> existing Task 1-5 changes are present; do not
+    revert unrelated files.
+  - `git rev-parse --git-dir` ->
+    `E:/xenesis-original/xenesis-desk/.git/worktrees/upcoming-work-20260627`.
+  - `git rev-parse --git-common-dir` -> `E:/xenesis-original/xenesis-desk/.git`.
+  - `git branch --show-current` -> `agent/upcoming-work-20260627`.
+  - `git rev-parse --show-superproject-working-tree` -> empty output; this is
+    a linked worktree, not a submodule.
+  - Added RED descriptor tests in
+    `scripts/xenesisConnectionCenterLiveSmoke.test.mjs` for the five
+    channel-specific Slice 04 baseline IDs and read-only Connection Center data
+    attributes.
+  - RED `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs` ->
+    failed as expected, 7 passed / 3 failed. Failures showed the live smoke
+    baseline ID list and `src/main/index.ts` snapshot helper do not yet include
+    the new Slice 04 channel-specific checks.
+  - Patched `scripts/xenesisConnectionCenterLiveSmoke.mjs` to require the five
+    new Slice 04 snapshot baseline IDs.
+  - Patched `src/main/index.ts` development-only
+    `xd.testing.connectionCenter.snapshot` checks so grouped selectors can
+    assert implemented messenger cards, Telegram route/session metadata,
+    Telegram access/pairing readiness, planned-channel no-runtime/test-send
+    boundaries, and approval-gated test-send representation without executing
+    any delivery path.
+  - Corrected descriptor-test source scanning so forbidden UI text/function
+    names are asserted as snapshot `absentTexts` guards rather than mistaken
+    source bans.
+  - GREEN `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs` ->
+    passed, 10 passed / 0 failed.
+  - Targeted Biome
+    `npx biome check scripts/xenesisConnectionCenterLiveSmoke.mjs scripts/xenesisConnectionCenterLiveSmoke.test.mjs src/main/index.ts --max-diagnostics 80`
+    -> exited 0, checked 3 files, no fixes applied. Reported existing
+    warnings/infos in `src/main/index.ts`.
+  - `npm run typecheck` -> exited 0.
+  - `git diff --check` -> exited 0 with LF-to-CRLF normalization warnings only
+    for existing modified files and Task 6 touched files.
+  - Final post-handoff `git diff --check` -> exited 0 with LF-to-CRLF
+    normalization warnings only.
+  - Added RED review-fix descriptor assertions in
+    `scripts/xenesisConnectionCenterLiveSmoke.test.mjs`: planned Signal
+    messenger baselines must allow runtime-readiness review/request text while
+    forbidding delivery/mutation paths, and Telegram session-scope coverage must
+    not rely on a bare `chat` substring.
+  - RED review-fix
+    `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs` -> failed
+    as expected, 9 passed / 2 failed. Failures showed the current snapshot
+    check still used bare `chat` and still listed
+    `xd.xenesis.channels.runtime.request` under planned-card `absentTexts`.
+  - Patched `src/main/index.ts` so
+    `slice04:messenger-planned-channel-no-runtime` now requires the planned
+    Signal card to show `xd.xenesis.channels.runtime.request` as allowed
+    runtime-readiness review/request text, while forbidding delivery and
+    mutation paths: `xd.xenesis.profiles.testChannel`,
+    `xd.xenesis.channels.profileDrafts.apply`,
+    `xd.xenesis.profiles.updateChannels`, `xd.xenesis.gateway.start`, and
+    `xd.xenesis.gateway.restart`.
+  - Patched the Telegram route/session check to use ordered `textSequences`
+    (`Session scope` before `chat`) instead of a bare `chat` expected text that
+    could be satisfied by `allowedChatIds`.
+  - GREEN review-fix
+    `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs` -> passed,
+    11 passed / 0 failed.
+  - Targeted Biome
+    `npx biome check scripts/xenesisConnectionCenterLiveSmoke.mjs scripts/xenesisConnectionCenterLiveSmoke.test.mjs src/main/index.ts --max-diagnostics 80`
+    -> exited 0, checked 3 files, no fixes applied. Reported existing
+    warnings/infos in `src/main/index.ts`.
+  - `npm run typecheck` -> exited 0.
+  - `git diff --check` -> exited 0 with LF-to-CRLF normalization warnings only.
+  - Final post-handoff review-fix `git diff --check` -> exited 0 with
+    LF-to-CRLF normalization warnings only.
+  - Final `git status --short` -> Task 6 files are
+    `scripts/xenesisConnectionCenterLiveSmoke.mjs`,
+    `scripts/xenesisConnectionCenterLiveSmoke.test.mjs`, `src/main/index.ts`,
+    and `handoff.md`; existing Task 1-5 files remain modified/untracked and
+    were not reverted.
+- Exact verification result:
+  - RED `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs` ->
+    failed as expected, 7 passed / 3 failed.
+  - GREEN `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs` ->
+    passed, 10 passed / 0 failed.
+  - Targeted Biome -> passed with existing warnings/infos, no fixes applied.
+  - `npm run typecheck` -> passed.
+  - Final `git diff --check` -> passed with LF-to-CRLF normalization warnings
+    only.
+  - RED review-fix
+    `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs` -> failed
+    as expected, 9 passed / 2 failed.
+  - GREEN review-fix
+    `node --test scripts\xenesisConnectionCenterLiveSmoke.test.mjs` -> passed,
+    11 passed / 0 failed.
+  - Review-fix targeted Biome -> passed with existing warnings/infos, no fixes
+    applied.
+  - Review-fix `npm run typecheck` -> passed.
+  - Final review-fix `git diff --check` -> passed with LF-to-CRLF
+    normalization warnings only.
+- Known gaps:
+  - The literal contract path `docs/obsidian/00_System/AI Agent Rules.md` is
+    nested under `docs/obsidian/Xenesis-desk/00_System/AI Agent Rules.md` in
+    this worktree.
+  - Live `node .\scripts\xenesisConnectionCenterLiveSmoke.mjs --json` is
+    deferred until after a fresh final `npm run build`.
+- Next intended step:
+  - Hand back without committing. Final Slice 04 gate should run a fresh
+    `npm run build` before
+    `node .\scripts\xenesisConnectionCenterLiveSmoke.mjs --json`.
+
+## Task 5 Exact Unsafe-Field Coverage Fix
+
+- Current objective:
+  - Fix tests only after final spec re-review: the validator behavior is
+    correct, but unit coverage must prove exact unsafe-field rejection across
+    independent apply and test-send cases.
+  - Do not change production code unless the new tests expose a real validator
+    issue.
+- Touched files planned:
+  - `scripts/xenesisChannelApprovalLiveSmoke.test.mjs`
+  - `handoff.md`
+- Touched files actual so far:
+  - `handoff.md`
+  - `scripts/xenesisChannelApprovalLiveSmoke.test.mjs`
+- Commands run:
+  - Added checked-in unit coverage for independent unsafe pending-command
+    fields: apply `settings.url`, apply top-level `channels.webhook`, and
+    test-send `channels`, `message`, `settings`, `id`, `name`, `url`, and
+    `target`.
+  - `node --test scripts\xenesisChannelApprovalLiveSmoke.test.mjs` ->
+    passed, 29 passed / 0 failed. The run includes 22 top-level tests plus 7
+    subtests for the test-send unsafe-field matrix.
+  - `npx biome check scripts\xenesisChannelApprovalLiveSmoke.mjs scripts\xenesisChannelApprovalLiveSmoke.test.mjs package.json`
+    -> exited 0, checked 3 files, no fixes applied.
+  - `git diff --check` -> exited 0 with LF-to-CRLF normalization warnings only
+    for existing modified files plus Task 5 touched files.
+  - Final post-handoff `git diff --check` -> exited 0 with LF-to-CRLF
+    normalization warnings only for existing modified files plus Task 5 touched
+    files.
+- Exact verification result:
+  - `node --test scripts\xenesisChannelApprovalLiveSmoke.test.mjs` -> passed,
+    29 passed / 0 failed.
+  - Required Biome -> passed, checked 3 files, no fixes applied.
+  - Final `git diff --check` -> passed with LF-to-CRLF normalization warnings
+    only.
+- Known gaps:
+  - Live smoke remains deferred until a fresh final `npm run build` gate.
+- Next intended step:
+  - Hand back without committing. Live smoke remains deferred until the final
+    fresh build gate.
+
+## Task 5 Exact Pending Args Review Fix
+
+- Current objective:
+  - Fix only Task 5 files after spec re-review: pending Action Inbox command
+    validators must reject unexpected raw fields before any approval is built or
+    executed.
+  - Apply approvals must allow only `channel`, `profile`, and `settings` at the
+    top level, with `settings` limited to `enabled`, `urlEnv`, and
+    `approvalMode`.
+  - Test-send approvals must allow only `channel` and `profile`.
+- Touched files planned:
+  - `scripts/xenesisChannelApprovalLiveSmoke.test.mjs`
+  - `scripts/xenesisChannelApprovalLiveSmoke.mjs`
+  - `handoff.md`
+- Touched files actual so far:
+  - `handoff.md`
+  - `scripts/xenesisChannelApprovalLiveSmoke.test.mjs`
+  - `scripts/xenesisChannelApprovalLiveSmoke.mjs`
+- Context read:
+  - `scripts/xenesisChannelApprovalLiveSmoke.mjs`
+  - `scripts/xenesisChannelApprovalLiveSmoke.test.mjs`
+  - `handoff.md`
+  - `git status --short`
+- Commands run:
+  - `git status --short` -> existing Task 1-5 changes are present; do not
+    revert unrelated files.
+  - Added RED exact-args tests in
+    `scripts/xenesisChannelApprovalLiveSmoke.test.mjs`.
+  - RED `node --test scripts\xenesisChannelApprovalLiveSmoke.test.mjs` ->
+    failed as expected, 17 passed / 2 failed. The failures show unsafe apply
+    extra fields (`settings.url`, `channels.webhook`) and test-send extra
+    fields (`url`, `target`) were still accepted.
+  - Implemented exact pending-command allowlists in
+    `scripts/xenesisChannelApprovalLiveSmoke.mjs`: apply args now allow only
+    `channel`, `profile`, and `settings`; apply settings now allow only
+    `enabled`, `urlEnv`, and `approvalMode`; test-send args now allow only
+    `channel` and `profile`.
+  - GREEN `node --test scripts\xenesisChannelApprovalLiveSmoke.test.mjs` ->
+    passed, 19 passed / 0 failed.
+  - Required Biome
+    `npx biome check scripts\xenesisChannelApprovalLiveSmoke.mjs scripts\xenesisChannelApprovalLiveSmoke.test.mjs package.json`
+    -> exited 0, checked 3 files, no fixes applied.
+  - `git diff --check` -> exited 0 with LF-to-CRLF normalization warnings only
+    for existing modified files plus Task 5 touched files.
+  - Final post-handoff `git diff --check` -> exited 0 with LF-to-CRLF
+    normalization warnings only for existing modified files plus Task 5 touched
+    files.
+- Exact verification result:
+  - RED `node --test scripts\xenesisChannelApprovalLiveSmoke.test.mjs` ->
+    failed as expected, 17 passed / 2 failed.
+  - GREEN `node --test scripts\xenesisChannelApprovalLiveSmoke.test.mjs` ->
+    passed, 19 passed / 0 failed.
+  - Required Biome -> passed, checked 3 files, no fixes applied.
+  - Final `git diff --check` -> passed with LF-to-CRLF normalization warnings
+    only.
+- Known gaps:
+  - Live smoke remains deferred until a fresh final `npm run build` gate.
+- Next intended step:
+  - Hand back without committing. Live smoke remains deferred until the final
+    fresh build gate.
+
+## Task 5 Code Review Safety Fix
+
+- Current objective:
+  - Fix only Task 5 files after blocking review: require pending Action Inbox
+    command validation before any `approvePendingAction` execution, scrub
+    channel credential env names more completely and case-insensitively, avoid
+    leaking unsafe literals in checker error messages, require approved-item
+    freshness, and avoid temp-dir leaks if the second temp allocation fails.
+- Touched files planned:
+  - `scripts/xenesisChannelApprovalLiveSmoke.test.mjs`
+  - `scripts/xenesisChannelApprovalLiveSmoke.mjs`
+  - `handoff.md`
+  - `package.json` only if verification formatting touches it.
+- Touched files actual so far:
+  - `scripts/xenesisChannelApprovalLiveSmoke.test.mjs`
+  - `scripts/xenesisChannelApprovalLiveSmoke.mjs`
+  - `package.json` (targeted format touched/checked; no script-key change for this review fix)
+  - `handoff.md`
+- Context read:
+  - `scripts/xenesisChannelApprovalLiveSmoke.mjs`
+  - `scripts/xenesisChannelApprovalLiveSmoke.test.mjs`
+  - `handoff.md`
+  - `git status --short`
+- Commands run:
+  - `git status --short` -> existing Task 1-5 changes are present; do not
+    revert unrelated Task 1-4 files.
+  - Added RED review-fix tests in
+    `scripts/xenesisChannelApprovalLiveSmoke.test.mjs`.
+  - RED `node --test scripts\xenesisChannelApprovalLiveSmoke.test.mjs` ->
+    failed as expected, 10 passed / 6 failed. Failures covered missing
+    `SLACK_SIGNING_SECRET` scrub, unsafe literal in checker error, unsafe apply
+    pending command accepted, missing run-flow validation before approval,
+    stale approved Action Inbox item accepted, and missing temp-dir cleanup
+    helper.
+  - Patched `scripts/xenesisChannelApprovalLiveSmoke.mjs` so:
+    pending `capability-approval` commands are parsed and validated before
+    `approvePendingAction` can run; apply commands must use path
+    `xd.xenesis.channels.profileDrafts.apply`, channel `webhook`, profile
+    `slice04-channel-smoke`, and `settings.urlEnv=XENESIS_SLICE04_WEBHOOK_URL`;
+    test-send commands must use path `xd.xenesis.profiles.testChannel`, channel
+    `webhook`, profile `slice04-channel-smoke`, and no `channels` override.
+  - Extended env scrub to include `SLACK_SIGNING_SECRET` and remove blocked
+    channel credential env names case-insensitively, including stale loopback
+    env case variants before setting the exact
+    `XENESIS_SLICE04_WEBHOOK_URL` key.
+  - Changed unsafe-evidence checker errors to category-only messages so the
+    thrown error does not contain the unsafe literal.
+  - Approved Action Inbox readback now requires `updatedAfter(startedAt)`.
+  - Added `createChannelApprovalTempStateDirs` so if the second temp dir
+    allocation fails, the first allocated temp dir is removed.
+  - First GREEN attempt
+    `node --test scripts\xenesisChannelApprovalLiveSmoke.test.mjs` -> failed,
+    15 passed / 1 failed because the source-order unit test was scanning the
+    earlier plan-format loop instead of `runChannelApprovalLiveSmoke`.
+  - Fixed the source-order test to scope its source scan to
+    `export async function runChannelApprovalLiveSmoke`.
+  - GREEN `node --test scripts\xenesisChannelApprovalLiveSmoke.test.mjs` ->
+    passed, 16 passed / 0 failed.
+  - Required Biome
+    `npx biome check scripts\xenesisChannelApprovalLiveSmoke.mjs scripts\xenesisChannelApprovalLiveSmoke.test.mjs package.json`
+    -> failed with formatting-only errors in the Task 5 script/test.
+  - Targeted format
+    `npx biome format --write scripts\xenesisChannelApprovalLiveSmoke.mjs scripts\xenesisChannelApprovalLiveSmoke.test.mjs package.json`
+    -> formatted 3 files, fixed 2 files.
+  - Final GREEN `node --test scripts\xenesisChannelApprovalLiveSmoke.test.mjs`
+    -> passed, 16 passed / 0 failed.
+  - Final required Biome
+    `npx biome check scripts\xenesisChannelApprovalLiveSmoke.mjs scripts\xenesisChannelApprovalLiveSmoke.test.mjs package.json`
+    -> exited 0, checked 3 files, no fixes applied.
+  - `git diff --check` -> exited 0 with LF-to-CRLF normalization warnings only
+    for existing modified files plus Task 5 touched files.
+- Exact verification result:
+  - RED `node --test scripts\xenesisChannelApprovalLiveSmoke.test.mjs` ->
+    failed as expected, 10 passed / 6 failed for the requested review issues.
+  - Final GREEN `node --test scripts\xenesisChannelApprovalLiveSmoke.test.mjs`
+    -> passed, 16 passed / 0 failed.
+  - Final required Biome -> passed, checked 3 files, no fixes applied.
+  - `git diff --check` -> passed with LF-to-CRLF normalization warnings only.
+- Known gaps:
+  - Live smoke remains deferred until a fresh final `npm run build` gate.
+- Next intended step:
+  - Run one final `git diff --check` after this handoff update, then hand back
+    without committing.
+
+## Task 5 Channel-Specific Approval Live Smoke
+
+- Current objective:
+  - Implement Slice 04 Task 5 only: add a channel-specific live approval smoke
+    that proves real Action Inbox approval records for webhook profile apply
+    and webhook test-send, using only a loopback webhook URL referenced through
+    `XENESIS_SLICE04_WEBHOOK_URL`.
+  - Follow TDD: add RED script unit tests first, run the scoped Node test to
+    observe the expected missing-script failure, then implement the smoke.
+- Touched files planned:
+  - `scripts/xenesisChannelApprovalLiveSmoke.test.mjs`
+  - `scripts/xenesisChannelApprovalLiveSmoke.mjs`
+  - `package.json` because comparable live smoke runners already have package
+    scripts.
+  - `handoff.md`
+- Touched files actual so far:
+  - `scripts/xenesisChannelApprovalLiveSmoke.test.mjs`
+  - `scripts/xenesisChannelApprovalLiveSmoke.mjs`
+  - `package.json`
+  - `handoff.md`
+- Context read:
+  - `AGENTS.md`
+  - `docs/obsidian/Xenesis-desk.md`
+  - `docs/obsidian/Xenesis-desk/00_System/AI Agent Rules.md`
+  - `docs/obsidian/Xenesis-desk/00_System/Graph Schema.md`
+  - `docs/obsidian/Xenesis-desk/00_System/Review Policy.md`
+  - `docs/obsidian/Xenesis-desk/10_Repo Map/Source of Truth Map.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Module Index.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/CR Surface Index.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/High Risk Areas.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Verification Map.md`
+  - `docs/obsidian/Xenesis-desk/10_Repo Map/Repo Overview.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-capability-registry.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-approval-system.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-xenesis-agent-pane.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-mcp-bridge.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-provider-runtime.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Capability Registry Architecture.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Approval Flow.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/MCP Bridge Architecture.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Provider Model.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Xenesis Agent Runtime.md`
+  - `docs/obsidian/Xenesis-desk/40_APIs/capability-high-risk-paths.md`
+  - `docs/obsidian/Xenesis-desk/50_Data/data-action-inbox.md`
+  - `docs/obsidian/Xenesis-desk/50_Data/data-capability-approvals.md`
+  - `docs/obsidian/Xenesis-desk/60_Tests/test-live-agent-pane.md`
+  - `docs/obsidian/Xenesis-desk/60_Tests/test-capability-audit.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-04-messenger-channels.md`
+  - `docs/superpowers/plans/2026-06-29-slice-04-messenger-channels.md`
+  - `scripts/xenesisReviewRequestApprovalLiveSmoke.mjs`
+  - `scripts/xenesisReviewRequestApprovalLiveSmoke.test.mjs`
+  - `scripts/xenesisConnectionCenterLiveSmoke.mjs`
+  - `scripts/xenesisConnectionCenterLiveSmoke.test.mjs`
+  - `package.json`
+  - `src/main/index.ts` approval/profile/channel snippets
+  - `src/main/mcpActionInbox.mjs`
+  - `src/main/capabilityActionApproval.mjs`
+  - `src/main/xenesisChannelSafety.ts`
+- Commands run:
+  - `git rev-parse --git-dir` -> `E:/xenesis-original/xenesis-desk/.git/worktrees/upcoming-work-20260627`.
+  - `git rev-parse --git-common-dir` -> `E:/xenesis-original/xenesis-desk/.git`.
+  - `git branch --show-current` -> `agent/upcoming-work-20260627`.
+  - `git rev-parse --show-superproject-working-tree` -> empty output; this is
+    a linked worktree, not a submodule.
+  - `git status --short` -> existing uncommitted Task 1-4 changes are present;
+    do not revert them.
+  - Added RED unit tests in `scripts/xenesisChannelApprovalLiveSmoke.test.mjs`.
+  - RED `node --test scripts\xenesisChannelApprovalLiveSmoke.test.mjs` ->
+    failed as expected with `Error [ERR_MODULE_NOT_FOUND]: Cannot find module
+    '...\scripts\xenesisChannelApprovalLiveSmoke.mjs'`.
+  - Added `scripts/xenesisChannelApprovalLiveSmoke.mjs` with a loopback-only
+    webhook receiver, scrubbed Electron env, isolated profile install, fenced
+    `approved:false` Agent prompts, Action Inbox pending/approved checks, and
+    loopback delivery verification.
+  - Added `smoke:xenesis:channel-approval` to `package.json` because comparable
+    smoke runners already have package scripts.
+  - GREEN `node --test scripts\xenesisChannelApprovalLiveSmoke.test.mjs` ->
+    passed, 11 passed / 0 failed.
+  - Targeted Biome
+    `npx biome check scripts\xenesisChannelApprovalLiveSmoke.mjs scripts\xenesisChannelApprovalLiveSmoke.test.mjs package.json`
+    -> failed with 1 formatting error in
+    `scripts/xenesisChannelApprovalLiveSmoke.mjs`.
+  - Built output check -> `built-output-present`.
+  - Ran targeted format
+    `npx biome format --write scripts\xenesisChannelApprovalLiveSmoke.mjs scripts\xenesisChannelApprovalLiveSmoke.test.mjs package.json`
+    -> formatted 3 files, fixed 1 file.
+  - Final GREEN
+    `node --test scripts\xenesisChannelApprovalLiveSmoke.test.mjs` -> passed,
+    11 passed / 0 failed.
+  - Final targeted Biome
+    `npx biome check scripts\xenesisChannelApprovalLiveSmoke.mjs scripts\xenesisChannelApprovalLiveSmoke.test.mjs package.json`
+    -> exited 0, checked 3 files, no fixes applied.
+  - `git diff --check` -> exited 0 with LF-to-CRLF normalization warnings only
+    for existing modified files plus Task 5 touched files.
+  - Live smoke decision: built output files are present, but no fresh
+    `npm run build` was run after the current uncommitted Task 1-4 source
+    changes. Deferred
+    `node .\scripts\xenesisChannelApprovalLiveSmoke.mjs --json` until the
+    final build gate so live evidence is not taken from stale Electron output.
+  - Refined the live runner cleanup path so loopback startup happens inside
+    the cleanup `try/finally` and built-output assertion runs before temp
+    profile directories are allocated.
+  - Post-refactor GREEN
+    `node --test scripts\xenesisChannelApprovalLiveSmoke.test.mjs` -> passed,
+    11 passed / 0 failed.
+  - Post-refactor targeted Biome
+    `npx biome check scripts\xenesisChannelApprovalLiveSmoke.mjs scripts\xenesisChannelApprovalLiveSmoke.test.mjs package.json`
+    -> exited 0, checked 3 files, no fixes applied.
+  - Final `git diff --check` -> exited 0 with LF-to-CRLF normalization
+    warnings only for existing modified files plus Task 5 touched files.
+  - Final `git status --short` -> Task 5 files are
+    `scripts/xenesisChannelApprovalLiveSmoke.mjs`,
+    `scripts/xenesisChannelApprovalLiveSmoke.test.mjs`, `package.json`, and
+    `handoff.md`; existing Task 1-4 files remain modified/untracked and were
+    not reverted.
+- Exact verification result:
+  - RED `node --test scripts\xenesisChannelApprovalLiveSmoke.test.mjs` ->
+    failed as expected, 0 passed / 1 failed, because the smoke script does not
+    exist yet.
+  - First GREEN `node --test scripts\xenesisChannelApprovalLiveSmoke.test.mjs`
+    -> passed, 11 passed / 0 failed.
+  - First targeted Biome -> failed only for formatting in the new script; format
+    applied.
+  - Final GREEN `node --test scripts\xenesisChannelApprovalLiveSmoke.test.mjs`
+    -> passed, 11 passed / 0 failed. Post-refactor rerun also passed, 11
+    passed / 0 failed.
+  - Final targeted Biome on touched script/package files -> passed.
+  - `git diff --check` -> passed with LF-to-CRLF normalization warnings only.
+  - Live channel approval smoke -> deferred until a fresh `npm run build` final
+    gate.
+- Known gaps:
+  - Live smoke was not run in this Task 5 turn because current built Electron
+    output may be stale relative to uncommitted Task 1-4 source changes. Run
+    `npm run build` before
+    `node .\scripts\xenesisChannelApprovalLiveSmoke.mjs --json` in the final
+    gate.
+  - The smoke must not send Telegram, Slack, Discord, or default webhook env
+    delivery. Only the loopback URL stored in
+    `XENESIS_SLICE04_WEBHOOK_URL` may be used by the Electron process.
+- Next intended step:
+  - Hand back Task 5 without committing. Final Slice 04 gate should run
+    `npm run build` and then
+    `node .\scripts\xenesisChannelApprovalLiveSmoke.mjs --json` for live
+    Action Inbox proof.
+
+## Task 4 Channel Test-Send Sanitization
+
+- Current objective:
+  - Implement Slice 04 Task 4 only: extract main-process channel test-send
+    sanitization helpers and ensure failures redact provider secrets, webhook
+    URLs, target identifiers, and webhook target strings while preserving the
+    operation label.
+  - Follow TDD: add RED helper tests first, run the scoped test to observe the
+    expected missing-module failure, then patch the minimal helper extraction
+    and main adapter wiring.
+- Touched files planned:
+  - `src/main/xenesisChannelSafety.ts`
+  - `src/main/xenesisChannelSafety.test.ts`
+  - `src/main/index.ts`
+  - `handoff.md`
+- Touched files actual so far:
+  - `src/main/xenesisChannelSafety.ts`
+  - `src/main/xenesisChannelSafety.test.ts`
+  - `src/main/index.ts`
+  - `handoff.md`
+- Context read:
+  - `AGENTS.md`
+  - `docs/obsidian/Xenesis-desk.md`
+  - `docs/obsidian/Xenesis-desk/00_System/AI Agent Rules.md`
+  - `docs/obsidian/Xenesis-desk/00_System/Graph Schema.md`
+  - `docs/obsidian/Xenesis-desk/00_System/Review Policy.md`
+  - `docs/obsidian/Xenesis-desk/10_Repo Map/Source of Truth Map.md`
+  - `docs/obsidian/Xenesis-desk/10_Repo Map/Repo Overview.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Module Index.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/High Risk Areas.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Verification Map.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/CR Surface Index.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-capability-registry.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-approval-system.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-mcp-bridge.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-xenesis-agent-pane.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-provider-runtime.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Capability Registry Architecture.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Approval Flow.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/MCP Bridge Architecture.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Provider Model.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Xenesis Agent Runtime.md`
+  - `docs/obsidian/Xenesis-desk/40_APIs/capability-high-risk-paths.md`
+  - `docs/obsidian/Xenesis-desk/60_Tests/test-capability-audit.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-final-goal-slice-spec-index.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-04-messenger-channels.md`
+  - `docs/superpowers/plans/2026-06-29-slice-04-messenger-channels.md`
+  - `handoff.md`
+- Commands run:
+  - `git rev-parse --git-dir` -> `E:/xenesis-original/xenesis-desk/.git/worktrees/upcoming-work-20260627`.
+  - `git rev-parse --git-common-dir` -> `E:/xenesis-original/xenesis-desk/.git`.
+  - `git branch --show-current` -> `agent/upcoming-work-20260627`.
+  - `git rev-parse --show-superproject-working-tree` -> empty output; this is
+    a linked worktree, not a submodule.
+  - `git status --short` -> existing uncommitted Task 1-3 changes in shared,
+    renderer, docs, and `handoff.md`; do not revert unrelated changes.
+  - `rg --files docs\superpowers` and
+    `rg -n "Channel Test-Send Sanitization|Task 4|xenesisChannelSafety|test-send sanitization|sanitization" docs\superpowers docs\obsidian handoff.md`
+    -> located Task 4 in
+    `docs/superpowers/plans/2026-06-29-slice-04-messenger-channels.md`.
+  - Added RED helper tests in `src/main/xenesisChannelSafety.test.ts`.
+  - RED `npx tsx --test src\main\xenesisChannelSafety.test.ts` -> failed as
+    expected with `Error: Cannot find module './xenesisChannelSafety'`.
+  - Added `src/main/xenesisChannelSafety.ts`, moved
+    `redactXenesisChannelTargetList` and `sanitizeXenesisChannelSendError`
+    out of `src/main/index.ts`, and updated `runXenesisChannelSend` to accept
+    `{ secrets, targets }`.
+  - Updated channel send calls to sanitize Telegram token/chat id; Slack
+    webhook URL, bot token, and channel/webhook target; Discord webhook URL,
+    bot token, channel id, guild ids, and webhook target; Webhook URL and
+    `test` target.
+  - First GREEN attempt
+    `npx tsx --test src\main\xenesisChannelSafety.test.ts` -> failed, 2 passed
+    / 2 failed. Root cause: the test asserted `\btest\b` was absent from the
+    full sanitized message, but the required preserved operation labels
+    `Telegram test send failed` and `Webhook test send failed` contain `test`.
+    Tightened assertions to inspect only the sanitized detail after the label.
+  - GREEN `npx tsx --test src\main\xenesisChannelSafety.test.ts` -> passed, 4
+    passed / 0 failed.
+  - GREEN `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts` ->
+    passed, 53 passed / 0 failed.
+  - Initial targeted Biome
+    `npx biome check src\main\xenesisChannelSafety.ts src\main\xenesisChannelSafety.test.ts src\main\index.ts`
+    -> failed with 3 errors: new helper formatting/import-order plus existing
+    `src/main/index.ts` diagnostics. Fixed only the new formatting/import-order
+    issues.
+  - Targeted Biome
+    `npx biome check src\main\xenesisChannelSafety.ts src\main\xenesisChannelSafety.test.ts src\main\index.ts --max-diagnostics 80`
+    -> exited 0, checked 3 files, no fixes applied; reported 12 warnings and 8
+    infos in `src/main/index.ts` that predate this scoped sanitization work.
+  - `npm run typecheck` -> passed; `tsc --noEmit -p tsconfig.json` exited 0.
+  - `git diff --check` -> exited 0 with LF-to-CRLF normalization warnings for
+    existing modified files plus Task 4 touched files.
+  - Final GREEN `npx tsx --test src\main\xenesisChannelSafety.test.ts` ->
+    passed, 4 passed / 0 failed.
+  - Final GREEN `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts`
+    -> passed, 53 passed / 0 failed.
+- Exact verification result:
+  - RED `npx tsx --test src\main\xenesisChannelSafety.test.ts` -> failed as
+    expected, 0 passed / 1 failed, because the helper module does not exist.
+  - Final GREEN `npx tsx --test src\main\xenesisChannelSafety.test.ts` ->
+    passed, 4 passed / 0 failed.
+  - Final GREEN `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts`
+    -> passed, 53 passed / 0 failed.
+  - Targeted Biome on touched TS files -> exited 0 after scoped formatting and
+    import-order fixes; remaining 12 warnings / 8 infos are in
+    `src/main/index.ts` and are unrelated pre-existing diagnostics.
+  - `npm run typecheck` -> passed.
+  - `git diff --check` -> exited 0 with LF-to-CRLF normalization warnings only.
+- Known gaps:
+  - Existing Task 1-3 uncommitted changes are present and must not be reverted.
+  - `AGENTS.md` names some Obsidian paths without the nested `Xenesis-desk`
+    directory; this worktree stores the repo-local vault under
+    `docs/obsidian/Xenesis-desk/...`.
+  - Did not run CR audit or live Electron channel smoke for Task 4; this task
+    only extracts and verifies pure sanitization plus existing shared CR
+    capability coverage. Slice 04 Task 5 owns channel-specific live approval
+    smoke.
+- Next intended step:
+  - Review final diff and hand back Task 4 without committing.
+
+## Task 3 CR Dispatcher And No-Side-Effect Coverage
+
+- Current objective:
+  - Implement Slice 04 Task 3 only: add shared CR dispatcher/schema coverage
+    for profile install schema parity, approval-required channel writes, and
+    read/open/request no-side-effect routing; add a static source guard for
+    main read/open/request handlers.
+  - Follow TDD: write RED tests first, run the scoped shared test to observe
+    the expected failure, then apply the minimal production fix only if a real
+    schema/dispatch/guard gap is exposed.
+- Touched files planned:
+  - `src/shared/xenesisConnectionCapabilities.test.ts`
+  - `src/shared/deskBridgeCapabilities.ts` only if RED exposes the expected
+    profile install schema mismatch.
+  - `src/main/index.ts` only if RED exposes a real dispatch/guard gap.
+  - `handoff.md`
+- Touched files actual so far:
+  - `src/shared/xenesisConnectionCapabilities.test.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `handoff.md`
+- Context read:
+  - `AGENTS.md`
+  - `docs/obsidian/Xenesis-desk.md`
+  - `docs/obsidian/Xenesis-desk/00_System/AI Agent Rules.md`
+  - `docs/obsidian/Xenesis-desk/00_System/Graph Schema.md`
+  - `docs/obsidian/Xenesis-desk/00_System/Review Policy.md`
+  - `docs/obsidian/Xenesis-desk/10_Repo Map/Source of Truth Map.md`
+  - `docs/obsidian/Xenesis-desk/10_Repo Map/Repo Overview.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Module Index.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/High Risk Areas.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Verification Map.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/CR Surface Index.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-capability-registry.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-approval-system.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-mcp-bridge.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Capability Registry Architecture.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Approval Flow.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/MCP Bridge Architecture.md`
+  - `docs/obsidian/Xenesis-desk/40_APIs/capability-high-risk-paths.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-04-messenger-channels.md`
+  - `handoff.md`
+- Commands run:
+  - `git status --short` -> existing uncommitted Task 1/2 changes in
+    `docs/manual/10-openclaw-channel-setup.md`, `handoff.md`,
+    `src/renderer/panes/xenesisConnectionCenter.test.ts`,
+    `src/renderer/panes/xenesisConnectionCenter.ts`,
+    `src/shared/xenesisConnections.test.ts`, and
+    `src/shared/xenesisConnections.ts`; do not revert them.
+  - Initial AGENTS-required reads at `docs/obsidian/00_System/...` and
+    `docs/obsidian/10_Repo Map/...` failed because this worktree stores the
+    repo-local vault under `docs/obsidian/Xenesis-desk/...`; continued with
+    the actual nested vault paths.
+  - Added RED shared tests for `xd.xenesis.profiles.install` schema parity,
+    channel write approval gating, read/open/request dispatcher side-effect
+    isolation, and static main handler forbidden-call guards.
+  - RED `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts`
+    -> failed as expected, 52 passed / 1 failed / 53 total.
+  - Updated `xd.xenesis.profiles.install` CR schema in
+    `src/shared/deskBridgeCapabilities.ts` from stale
+    `name/config/makeActive` metadata to the implemented
+    `template/name/activate` contract.
+  - GREEN `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts`
+    -> passed, 53 passed / 0 failed / 53 total.
+  - `npx biome check src\shared\xenesisConnectionCapabilities.test.ts src\shared\deskBridgeCapabilities.ts`
+    -> exited 0, checked 2 files, no fixes applied; reported two existing
+    warnings in `src/shared/deskBridgeCapabilities.ts` for
+    `TERMINAL_DYNAMIC_ROOT` unused and an optional-chain suggestion.
+  - `npm run typecheck` -> passed; `tsc --noEmit -p tsconfig.json` exited 0.
+  - `git diff --check` -> exited 0 with LF-to-CRLF normalization warnings only
+    for existing modified files and Task 3 touched files.
+  - `npm run docs:capabilities:audit` -> passed; output:
+    `Wrote docs\capability-registry-audit.md.` and
+    `Capability audit: 801 nodes, 689 coverage path references.`
+  - Restored the audit report's generated timestamp churn because the audit
+    file content change was only a verification side effect outside Task 3
+    file scope.
+  - Final `git diff --check` -> exited 0 with LF-to-CRLF normalization
+    warnings only for existing modified files and Task 3 touched files.
+- Exact verification result:
+  - RED `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts`
+    -> failed as expected, 52 passed / 1 failed / 53 total.
+  - Expected RED failure:
+    `xenesis profile install schema matches template contract and dispatches
+    exact args` saw schema required fields `['name']` instead of `['template']`;
+    this confirms the registry still advertises the stale
+    `name/config/makeActive` profile install contract.
+  - GREEN `npx tsx --test src\shared\xenesisConnectionCapabilities.test.ts`
+    -> passed, 53 passed / 0 failed / 53 total.
+  - Targeted Biome check on touched TypeScript files -> exited 0, checked 2
+    files, no fixes applied; warnings only:
+    `lint/correctness/noUnusedVariables` for `TERMINAL_DYNAMIC_ROOT` and
+    `lint/complexity/useOptionalChain` for `!parsed || !parsed.ref`.
+  - Typecheck `npm run typecheck` -> passed.
+  - Whitespace check `git diff --check` -> exited 0 with LF-to-CRLF
+    normalization warnings only.
+  - CR audit `npm run docs:capabilities:audit` -> passed; reported
+    `Capability audit: 801 nodes, 689 coverage path references.`
+  - Final whitespace check `git diff --check` -> exited 0 with LF-to-CRLF
+    normalization warnings only.
+- Known gaps:
+  - `AGENTS.md` names Obsidian paths without the nested `Xenesis-desk`
+    directory, but this worktree stores the repo-local vault under
+    `docs/obsidian/Xenesis-desk/...`; source and tests remain the executable
+    truth.
+  - Real Action Inbox records are intentionally out of scope for the shared
+    dispatcher tests; those are created by the main bridge wrapper/live smoke.
+- Next intended step:
+  - Inspect final status/diff and hand back Task 3 without committing.
+
+## Task 2 Review Fix - Real Test-Send Control Path
+
+- Current objective:
+  - Fix the code-review issue in Task 2 only: the positive
+    `buildXenesisChannelTestRequest` renderer test used a synthetic
+    `channelProfileDraft.controlPaths` value that real ready Telegram cards do
+    not expose.
+  - Add a real generated ready Telegram card test from
+    `buildXenesisConnectionsStatus` and patch the helper to check the real
+    test-send control surface while preserving implemented messenger + ready
+    draft + `approved:false` guards.
+- Touched files planned:
+  - `src/renderer/panes/xenesisConnectionCenter.test.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `handoff.md`
+- Context read:
+  - `AGENTS.md`
+  - `docs/obsidian/Xenesis-desk.md`
+  - `docs/obsidian/Xenesis-desk/00_System/AI Agent Rules.md`
+  - `docs/obsidian/Xenesis-desk/10_Repo Map/Source of Truth Map.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-04-messenger-channels.md`
+  - `src/shared/xenesisConnections.ts`
+  - `src/shared/types.ts`
+  - `src/shared/xenesisConnections.test.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.test.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+- Commands run:
+  - `git status --short` -> existing modified files include Task 1 shared/docs
+    changes and Task 2 renderer/handoff changes; do not revert unrelated
+    changes.
+  - `rg -n "testChannel|profiles\.testChannel|messengerView|controlPaths" ...`
+    -> found real generated implemented messenger test-send path on
+    `messengerView.controlPaths`, not `channelProfileDraft.controlPaths`.
+  - RED `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`
+    -> failed as expected, 73 passed / 1 failed / 74 total.
+  - GREEN `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`
+    -> passed, 74 passed / 0 failed / 74 total.
+  - `npx biome check src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\panes\xenesisConnectionCenter.ts handoff.md`
+    -> exited 0, checked 2 files, no fixes applied. Markdown handoff is
+    ignored by Biome config.
+  - `npm run typecheck` -> passed; `tsc --noEmit -p tsconfig.json` exited 0.
+  - `git diff --check` -> exited 0 with LF-to-CRLF normalization warnings only
+    for modified files.
+  - Final `git status --short` -> modified files:
+    `docs/manual/10-openclaw-channel-setup.md`, `handoff.md`,
+    `src/renderer/panes/xenesisConnectionCenter.test.ts`,
+    `src/renderer/panes/xenesisConnectionCenter.ts`,
+    `src/shared/xenesisConnections.test.ts`, and
+    `src/shared/xenesisConnections.ts`. The shared/docs files are existing
+    Task 1 changes and were not reverted.
+- Exact verification result:
+  - RED `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`
+    -> failed as expected, 73 passed / 1 failed / 74 total.
+  - Expected RED failure:
+    `buildXenesisChannelTestRequest targets approval-gated profile channel test
+    path` returned `null` for a real generated ready Telegram messenger card
+    whose `messengerView.controlPaths` contains
+    `xd.xenesis.profiles.testChannel`.
+  - GREEN `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`
+    -> passed, 74 passed / 0 failed / 74 total.
+  - Targeted Biome -> passed, checked 2 files, no fixes applied.
+  - Typecheck -> passed.
+  - `git diff --check` -> exited 0 with LF-to-CRLF normalization warnings only.
+- Implementation notes:
+  - Added `buildReadyTelegramMessengerItem()` in the renderer test to generate
+    a real ready Telegram card through `buildXenesisConnectionsStatus`.
+  - The test now asserts the real generated card has no
+    `xd.xenesis.profiles.testChannel` entry in
+    `channelProfileDraft.controlPaths`, but does expose it in
+    `messengerView.controlPaths`.
+  - `buildXenesisChannelTestRequest` now checks
+    `item.messengerView?.controlPaths` for
+    `xd.xenesis.profiles.testChannel` while preserving the existing
+    `messenger` kind, `implemented` support, ready draft, exact path, and
+    `approved:false` behavior.
+  - Null guard coverage remains for non-messenger, planned support,
+    missing draft, not-ready draft, and missing/malformed test-send control
+    path.
+- Known gaps:
+  - CR audit/live Electron smoke are not planned for this renderer-only fix
+    unless the scoped checks reveal CR registry or dispatcher changes are
+    needed.
+- Next intended step:
+  - Review fix is ready; do not commit in this worker.
+
+## Task 2 Renderer Request Guards
+
+- Current objective:
+  - Implement Slice 04 Task 2 only: tighten renderer request helpers so channel
+    profile draft apply and channel test-send one-click requests are only built
+    for implemented messenger cards with ready channel profile drafts and the
+    exact required CR control path.
+  - Keep this renderer-only guard scoped to
+    `buildXenesisChannelProfileDraftApplyRequest` and existing
+    `buildXenesisChannelTestRequest` coverage. Do not add registry paths,
+    provider shortcuts, natural-language routing, or live delivery behavior.
+- Touched files planned:
+  - `src/renderer/panes/xenesisConnectionCenter.test.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `handoff.md`
+- Touched files actual:
+  - `src/renderer/panes/xenesisConnectionCenter.test.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+  - `handoff.md`
+- Context read:
+  - `AGENTS.md`
+  - `docs/obsidian/Xenesis-desk.md`
+  - `docs/obsidian/Xenesis-desk/00_System/AI Agent Rules.md`
+  - `docs/obsidian/Xenesis-desk/00_System/Graph Schema.md`
+  - `docs/obsidian/Xenesis-desk/00_System/Review Policy.md`
+  - `docs/obsidian/Xenesis-desk/10_Repo Map/Source of Truth Map.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Module Index.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/CR Surface Index.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Verification Map.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/High Risk Areas.md`
+  - `docs/obsidian/Xenesis-desk/10_Repo Map/Repo Overview.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-xenesis-agent-pane.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-capability-registry.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Capability Registry Architecture.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Approval Flow.md`
+  - `docs/obsidian/Xenesis-desk/60_Tests/test-capability-audit.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-04-messenger-channels.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-channel-runtime-readiness.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-28-channel-profile-draft-apply.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-27-xenesis-connection-center.md`
+  - `src/renderer/panes/xenesisConnectionCenter.test.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.ts`
+- Commands run:
+  - `git status --short` -> existing uncommitted Task 1 changes in
+    `docs/manual/10-openclaw-channel-setup.md`, `handoff.md`,
+    `src/shared/xenesisConnections.test.ts`, and
+    `src/shared/xenesisConnections.ts`.
+  - `rg --files docs\obsidian` -> confirmed the repo-local Obsidian mirror is
+    nested under `docs/obsidian/Xenesis-desk`.
+  - `rg -n "buildXenesisChannel(ProfileDraftApply|ProfileDraftRequest|TestRequest)|missing-required-field|planned.*malformed|non-messenger" src\renderer\panes\xenesisConnectionCenter.test.ts`
+    -> located existing renderer helper tests around the channel profile/test
+    helpers.
+  - RED `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`
+    -> failed as expected, 73 passed / 1 failed / 74 total.
+  - GREEN `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`
+    -> passed, 74 passed / 0 failed / 74 total.
+  - `npx biome check src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\panes\xenesisConnectionCenter.ts handoff.md`
+    -> failed with one formatter error in
+    `src\renderer\panes\xenesisConnectionCenter.test.ts`; Biome checked 2
+    files because markdown is ignored.
+  - `npx biome check --write src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\panes\xenesisConnectionCenter.ts handoff.md`
+    -> exited 0, checked 2 files, fixed 1 file.
+  - Post-format `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`
+    -> passed, 74 passed / 0 failed / 74 total.
+  - Post-format `npx biome check src\renderer\panes\xenesisConnectionCenter.test.ts src\renderer\panes\xenesisConnectionCenter.ts handoff.md`
+    -> exited 0, checked 2 files, no fixes applied.
+  - `npm run typecheck` -> passed; `tsc --noEmit -p tsconfig.json` exited 0.
+  - `git status --short` -> modified files are the existing Task 1 files
+    (`docs/manual/10-openclaw-channel-setup.md`,
+    `src/shared/xenesisConnections.test.ts`, `src/shared/xenesisConnections.ts`),
+    plus Task 2 changes in `handoff.md`,
+    `src/renderer/panes/xenesisConnectionCenter.test.ts`, and
+    `src/renderer/panes/xenesisConnectionCenter.ts`.
+  - `git diff --check` -> exited 0 with LF-to-CRLF normalization warnings only
+    for the modified files.
+- Exact verification result:
+  - RED `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`
+    -> failed as expected, 73 passed / 1 failed / 74 total.
+  - Expected RED failure:
+    `buildXenesisChannelProfileDraftApplyRequest only targets ready implemented
+    messenger drafts` returned
+    `xd.xenesis.channels.profileDrafts.apply` with
+    `{ channel: 'telegram' }` and `approved: false` for a
+    `missing-required-field` Telegram draft instead of `null`.
+  - GREEN `npx tsx --test src\renderer\panes\xenesisConnectionCenter.test.ts`
+    -> passed, 74 passed / 0 failed / 74 total.
+  - Final post-format renderer test -> passed, 74 passed / 0 failed / 74
+    total.
+  - Targeted Biome check on touched renderer files and `handoff.md` -> passed
+    after formatter write; final check exited 0.
+  - Typecheck `npm run typecheck` -> passed.
+  - Whitespace check `git diff --check` -> exited 0 with LF-to-CRLF
+    normalization warnings only.
+- Implementation notes:
+  - Added RED renderer assertions that channel profile draft apply returns
+    `null` for a missing-required-field Telegram draft, planned messenger
+    fixtures, non-messenger fixtures, missing channel draft, and missing exact
+    apply control path.
+  - Added a ready Telegram fixture asserting the exact apply request:
+    `{ path: 'xd.xenesis.channels.profileDrafts.apply', args: { channel:
+    'telegram' }, source: 'xenesis', approved: false }`.
+  - Preserved and expanded channel test-send renderer guard coverage:
+    non-messenger, planned support, non-ready draft, malformed-only test path,
+    and missing draft all return `null`; the positive request keeps
+    `approved: false`.
+  - Updated `buildXenesisChannelProfileDraftApplyRequest` to require
+    `item.kind === 'messenger'`, `item.supportLevel === 'implemented'`, a
+    ready channel profile draft, and the exact
+    `xd.xenesis.channels.profileDrafts.apply` control path before building the
+    approval-gated request.
+- Known gaps:
+  - `AGENTS.md` names Obsidian paths without the nested `Xenesis-desk`
+    directory, but this worktree stores the repo-local vault under
+    `docs/obsidian/Xenesis-desk/...`; source and tests remain the executable
+    truth.
+  - Existing Task 1 uncommitted changes must not be reverted.
+  - CR audit and live Electron/Agent smoke were not run for Task 2 because this
+    task changed only renderer request helper guards and did not add or alter
+    CR registry, dispatcher, provider, natural-language routing, or live
+    approval surfaces.
+- Next intended step:
+  - Task 2 is ready for review. Do not commit in this worker.
+
+## Active Slice 04 Messenger Channels Planning
+
+- Current objective:
+  - Proceed with Slice 04 from the final-goal plan: finish CR-backed external
+    messenger setup evidence for implemented Telegram/Slack/Discord/Webhook
+    channels and planned messenger surfaces.
+  - Keep channel routing explicit and state-backed: no deterministic
+    natural-language channel target routing, no provider-specific shortcut, no
+    chat-only approval, and no unapproved external message delivery.
+  - Build the implementation plan first, then run adversarial subagent review
+    before product code edits.
+- Context read:
+  - `AGENTS.md`
+  - `docs/obsidian/Xenesis-desk.md`
+  - `docs/obsidian/Xenesis-desk/00_System/AI Agent Rules.md`
+  - `docs/obsidian/Xenesis-desk/00_System/Graph Schema.md`
+  - `docs/obsidian/Xenesis-desk/00_System/Review Policy.md`
+  - `docs/obsidian/Xenesis-desk/10_Repo Map/Source of Truth Map.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Module Index.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/High Risk Areas.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Verification Map.md`
+  - `docs/obsidian/Xenesis-desk/10_Repo Map/Repo Overview.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Capability Registry Architecture.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/MCP Bridge Architecture.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Approval Flow.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Provider Model.md`
+  - `docs/obsidian/Xenesis-desk/20_Architecture/Xenesis Agent Runtime.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-capability-registry.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-mcp-bridge.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-xenesis-agent-pane.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-provider-runtime.md`
+  - `docs/obsidian/Xenesis-desk/30_Modules/module-approval-system.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-final-goal-slice-spec-index.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-04-messenger-channels.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-reference-driven-final-goal-slices.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-reference-adoption-map-proposal.md`
+  - `docs/manual/10-openclaw-channel-setup.md`
+  - `F:\agent-anal\analysis\openclaw-main\12-channels-routing.md`
+  - `F:\agent-anal\analysis\openclaw-main\11-gateway-ui.md`
+  - `F:\agent-anal\analysis\hermes-agent-main\08-channels-ui.md`
+  - Original reference source anchors confirmed under
+    `F:\agent-anal\openclaw-main\src\routing`,
+    `F:\agent-anal\openclaw-main\src\channels`,
+    `F:\agent-anal\openclaw-main\extensions\telegram`,
+    `F:\agent-anal\openclaw-main\extensions\discord`, and
+    `F:\agent-anal\hermes-agent-main\gateway\platforms`.
+- Observed current implementation:
+  - `src/shared/xenesisConnections.ts` already exposes implemented messenger
+    templates, channel setup plans, routing/safety/access/pairing/runtime/user
+    story read models, profile drafts, and planned messenger surfaces.
+  - `src/main/index.ts` already has CR handlers for channel readbacks,
+    profile-draft review/apply, and `xd.xenesis.profiles.testChannel`.
+  - `xd.xenesis.profiles.testChannel` is a real external send path; Slice 04
+    must prove it is approval-gated and sanitized instead of exercising it from
+    read/open surfaces.
+  - Current live approval smoke is Notion setup-request focused; Slice 04 needs
+    channel-specific approval evidence for profile apply and test-send.
+- Commands run:
+  - `git status --short --branch` -> clean on `agent/upcoming-work-20260627`.
+  - Worktree detection confirmed linked worktree at
+    `E:\xenesis-original\xenesis-desk\.worktrees\upcoming-work-20260627`.
+  - `Get-Content`/`rg` inspections over the files above -> context read only.
+  - Wrote ignored-by-default plan file
+    `docs/superpowers/plans/2026-06-29-slice-04-messenger-channels.md`;
+    `git status --short --untracked-files=all --ignored=matching ...` reports
+    `!!`, so commit staging must use `git add -f` for this plan.
+  - Inspected `XenesisProfileInstallRequest` and `installXenesisProfile`;
+    corrected the Slice 04 plan so the live smoke seeds profiles with
+    `{ template: 'desk', name: 'slice04-channel-smoke', activate: true }`.
+  - Ran adversarial plan review with subagent `Bacon`; findings were accepted
+    and the plan was revised before product code edits.
+- Adversarial review findings and plan revisions:
+  - Shared `callDeskBridgeCapability` tests cannot expect `actionInboxItem`;
+    the plan now asserts only `approvalRequired` in shared tests and moves real
+    Action Inbox evidence to live Agent-pane smoke.
+  - The loopback webhook URL and raw targets must not be embedded in fenced
+    prompts or Action Inbox commands; the plan now uses
+    `XENESIS_SLICE04_WEBHOOK_URL` and webhook profile apply/test-send only.
+  - Live smoke must scrub real Telegram/Slack/Discord/default webhook env vars;
+    the plan now requires an env builder that deletes those defaults.
+  - `xd.xenesis.profiles.install` schema/type mismatch must be reconciled; the
+    plan now adds a RED schema parity test and a narrow CR schema fix.
+  - AGENTS-required natural-language provider evidence was missing; the plan now
+    adds a separate non-mutating channel readback natural-language smoke.
+  - Live Electron smokes could use stale `out/`; the plan now requires
+    `npm run build` before live evidence.
+- Exact verification result:
+  - Slice 04 implementation plan created; no RED/GREEN or live verification has
+    run yet.
+- Known gaps:
+  - Repo-wide lint and public-release gaps from Slice 03 still apply unless
+    separately remediated: existing Biome debt and missing
+    `.github\workflows\ci.yml`.
+  - `xd.xenesis.profiles.install` schema currently describes `name/config/makeActive`,
+    while the shared type and main implementation use `template/name/activate`;
+    this is now in the Slice 04 plan as a narrow schema parity fix.
+- Next intended step:
+  - Task 1 implementation worker `Euler` dispatched for shared read-model
+    contract tests, minimal implementation fixes if needed, manual doc update,
+    and handoff result update.
+
+### Task 1 Shared Read-Model Contract Update
+
+- Current objective:
+  - Implement only Task 1 from the Slice 04 plan: add shared
+    read-model contract tests for implemented Telegram/Slack/Discord/Webhook
+    channels, planned messenger boundaries, setup-plan side-effect boundaries,
+    docs/manual update, and this handoff update.
+- Touched files planned:
+  - `src/shared/xenesisConnections.test.ts`
+  - `src/shared/xenesisConnections.ts` only if RED exposes a real read-model gap
+  - `docs/manual/10-openclaw-channel-setup.md`
+  - `handoff.md`
+- Commands run:
+  - `git rev-parse --git-dir`, `git rev-parse --git-common-dir`,
+    `git branch --show-current` -> confirmed linked worktree at
+    `E:\xenesis-original\xenesis-desk\.worktrees\upcoming-work-20260627` on
+    `agent/upcoming-work-20260627`.
+  - `git status --short` -> existing `M handoff.md` from Slice 04 planning
+    before this Task 1 edit.
+  - `Get-Content`/`rg` context reads over `AGENTS.md`, repo-local Obsidian
+    notes under `docs/obsidian/Xenesis-desk`, the Slice 04 plan, manual guide,
+    `src/shared/xenesisConnections.test.ts`, and
+    `src/shared/xenesisConnections.ts`.
+  - `git status --short` after implementation -> modified
+    `docs/manual/10-openclaw-channel-setup.md`, `handoff.md`,
+    `src/shared/xenesisConnections.test.ts`, and
+    `src/shared/xenesisConnections.ts`.
+  - `git diff --check` -> exited 0; only printed LF-to-CRLF normalization
+    warnings for the four touched files.
+  - Review fix inspection: `rg -n "Record<string|const itemRecord"
+    src/shared/xenesisConnections.test.ts` and targeted `Get-Content` around
+    the Slice 04 test showed two unsafe direct casts from
+    `XenesisConnectionItem` to `Record<string, ...>` in the new Task 1 test.
+  - Review fix RED proof: `npm run typecheck` -> failed with TS2352 at
+    `src/shared/xenesisConnections.test.ts(1996,24)` and
+    `(2074,24)`.
+  - Review fix final `git diff --check` -> exited 0 with LF-to-CRLF
+    normalization warnings only.
+  - Formatting review RED `npx biome check src/shared/xenesisConnections.test.ts
+    src/shared/xenesisConnections.ts docs/manual/10-openclaw-channel-setup.md
+    handoff.md` -> failed, checked 2 files, found 2 errors in
+    `src/shared/xenesisConnections.test.ts`: import names needed sorting and
+    formatter wanted to collapse two new assertions.
+  - Formatting review fix `npx biome check --write
+    src/shared/xenesisConnections.test.ts src/shared/xenesisConnections.ts
+    docs/manual/10-openclaw-channel-setup.md handoff.md` -> exited 0, checked
+    2 files, fixed 1 file.
+  - Formatting review GREEN `npx biome check
+    src/shared/xenesisConnections.test.ts src/shared/xenesisConnections.ts
+    docs/manual/10-openclaw-channel-setup.md handoff.md` -> exited 0, checked
+    2 files, no fixes applied.
+  - Formatting review post-handoff rerun `npx biome check
+    src/shared/xenesisConnections.test.ts src/shared/xenesisConnections.ts
+    docs/manual/10-openclaw-channel-setup.md handoff.md` -> exited 0, checked
+    2 files, no fixes applied.
+- Exact verification result:
+  - RED `npx tsx --test src\shared\xenesisConnections.test.ts` -> failed as
+    expected, 49 passed / 2 failed / 51 total.
+  - Expected RED failures:
+    - `buildXenesisConnectionsStatus exposes the Slice 04 shared channel read-model contract`
+      failed with `telegram exposes channelRouting`, proving the shared item
+      did not yet expose the top-level Slice 04 channel read-model aliases.
+    - `buildXenesisConnectionsStatus keeps Telegram setup workflow preview read/open only`
+      failed because the setup-preview safety boundary did not yet say setup
+      preview does not store secrets, mutate profile settings, pair accounts,
+      start gateways, or send messages.
+  - GREEN `npx tsx --test src\shared\xenesisConnections.test.ts` -> passed,
+    51 passed / 0 failed / 51 total.
+  - Final post-docs rerun `npx tsx --test src\shared\xenesisConnections.test.ts`
+    -> passed, 51 passed / 0 failed / 51 total.
+  - Review fix GREEN `npx tsx --test src\shared\xenesisConnections.test.ts`
+    -> passed, 51 passed / 0 failed / 51 total.
+  - Review fix typecheck `npm run typecheck` -> passed; `tsc --noEmit -p
+    tsconfig.json` exited 0.
+  - Formatting review test `npx tsx --test
+    src\shared\xenesisConnections.test.ts` -> passed, 51 passed / 0 failed /
+    51 total.
+  - Formatting review typecheck `npm run typecheck` -> passed; `tsc --noEmit
+    -p tsconfig.json` exited 0.
+- Implementation notes:
+  - Added top-level shared messenger read-model aliases:
+    `channelRouting`, `channelSafety`, `channelAccessGroups`, `channelPairing`,
+    and `channelUserStory`, populated from `channelTemplate` for implemented
+    and planned messengers.
+  - Kept the implemented messenger set fixed to Telegram, Slack, Discord, and
+    webhook.
+  - Tightened setup-plan workflow preview boundary text; preview steps remain
+    read/open only and exclude profile-draft request/apply, channel test-send,
+    profile channel updates, and gateway start/restart paths.
+  - Review fix: removed the two direct `XenesisConnectionItem` to
+    `Record<string, ...>` casts in the Slice 04 test and used the typed
+    `channelRouting`, `channelSafety`, `channelAccessGroups`,
+    `channelPairing`, and `channelUserStory` aliases directly.
+  - Formatting review: Biome sorted the new import and formatted the new Slice
+    04 assertions; no behavior changes were made.
+- Documentation update:
+  - `docs/manual/10-openclaw-channel-setup.md` now records the exact
+    implemented messenger ids (`telegram`, `slack`, `discord`, `webhook`),
+    planned-channel no-write boundary, setup-preview side-effect boundary, and
+    Task 1 RED/GREEN command evidence.
+- Known gaps:
+  - `AGENTS.md` names Obsidian paths without the nested `Xenesis-desk`
+    directory, but the actual repo-local mirror in this worktree stores notes
+    under `docs/obsidian/Xenesis-desk/...`; source files and tests remain the
+    executable truth.
+- Next intended step:
+  - Task 1 review fix is ready for final diff/status review by this worker; no
+    commit will be made.
+
 ## Active Slice 03 External Tools MCP/OAuth Planning
 
 - Current objective:
@@ -530,6 +2527,13 @@
   - The report still computes `ok: failed === 0` before spreading `...extra`, so `extra: { ok: true }` can report success despite failed checks.
 - Touched files so far:
   - `handoff.md`
+  - `.github/workflows/ci.yml`
+  - `scripts/checkDocsPublicSafety.mjs`
+  - `scripts/checkDocsPublicSafety.test.mjs`
+  - `scripts/publicReleaseCheck.mjs`
+  - `scripts/publicReleaseCheck.test.mjs`
+  - `README.md`
+  - `docs/bible-mission-test-log.md`
 - Commands run:
   - `git status --short`: PASS, no output before review-fix edits.
   - `node --test scripts\xenesisReviewRequestApprovalLiveSmoke.test.mjs`: FAIL as RED, 9/10 passed; new regression failed because actual `report.ok` was `true` instead of `false` when `extra.ok` was `true`.
@@ -21350,3 +23354,419 @@ Verification so far:
     `src/shared/deskBridgeCapabilities.ts`.
 - Next intended step:
   - Continue with the next hardcoding/CR gap slice from the clean worktree.
+
+## Current Slice 04 Messenger Channels Final Provider Live Gate
+
+- Current objective:
+  - Finish Slice 04 Messenger Channels final verification by proving a Korean
+    natural-language Agent-pane prompt uses the real `codex-app-server`
+    provider and Desk CR MCP readback tools for Telegram channel routing/runtime
+    state, without deterministic recovery, web search, shell/command execution,
+    profile mutation, approval-card creation, or test-send delivery.
+- Touched files in this continuation:
+  - `handoff.md`
+  - `docs/manual/10-openclaw-channel-setup.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-04-messenger-channels.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-reference-adoption-map-proposal.md`
+  - `packages/xenesis/src/core/AgentRunner.ts`
+  - `packages/xenesis/src/providers/cliProvider.ts`
+  - `packages/xenesis/src/providers/cliProvider.deskMcp.test.ts`
+  - `packages/xenesis/tests/slice04/deskMcpEvidence.test.ts`
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs`
+  - `scripts/xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+- Material findings and decisions:
+  - The first final live retries proved CR MCP evidence only through the
+    deterministic recovery path, so they were rejected.
+  - A broad `thread/start.config` override suppressed app-server MCP evidence;
+    it was removed. MCP configuration now stays in app-server process args.
+  - Codex app-server raw evidence can arrive as `completed.turn.items`, so both
+    the smoke script and `AgentRunner` now inspect those records.
+  - `AgentRunner` previously read `XENESIS_STREAM_IDLE_MS` at module load, so
+    the embedded live-smoke env override was ignored and the app-server stream
+    idled at 60s. It now resolves stream idle timeout per runner instance.
+  - `--disable shell_tool`, `--disable shell_snapshot`, and
+    `--disable unified_exec` removed command execution fallback from the live
+    raw stream.
+  - `--disable standalone_web_search` and `--disable web_search_request` were
+    not enough to remove native app-server web search. Strict local Codex config
+    probing showed `tools.web_search=false` is a valid config key; app-server
+    Desk MCP args now append `-c tools.web_search=false`.
+- Commands run and exact verification:
+  - `codex app-server --help` -> confirmed `--disable` feature flags and `-c`
+    config overrides.
+  - `codex features list` -> `standalone_web_search=false`,
+    `web_search_request=false`, `shell_tool=true`, `shell_snapshot=true`,
+    `unified_exec=false`.
+  - `codex app-server --strict-config -c 'tools.web_search=false' --stdio`
+    -> accepted and exited 0.
+  - `codex app-server --strict-config -c 'tools.web_fetch=false' --stdio`,
+    `tools.browser=false`, `tools.shell=false`, and
+    `tools.command_execution=false` -> rejected as unknown fields.
+  - `npm --prefix packages/xenesis exec -- vitest run tests/slice04/deskMcpEvidence.test.ts src/providers/cliProvider.deskMcp.test.ts`
+    -> passed 2 files / 5 tests.
+  - `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+    -> passed 27/27.
+  - `npm --prefix packages/xenesis run typecheck` -> passed.
+  - `npm --prefix packages/xenesis run build` -> passed.
+  - `npm run build` -> passed; known Vite warnings only:
+    `hwp.js` browser `fs` externalization and `deskBridge.ts` mixed
+    dynamic/static import chunk warning.
+  - Failed live before final app-server config:
+    `node .\scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs --json`
+    -> 16/17; provider raw CR/MCP evidence true, recovery false, shell false,
+    but `no-provider-web-search` failed because raw `webSearch` items existed.
+  - Final live:
+    `node .\scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs --json`
+    -> passed 17/17. Provider `codex-app-server`, source `auto-detect`,
+    process model `persistent-process`, footer showed `codex-app-server`,
+    final marker `channel-routing-readback-ok`, provider raw CR/MCP channel
+    evidence true, recovery false, read-only allowlist true, no provider web
+    search true, no shell command fallback true, no profile mutation true, no
+    test-send/delivery true. Telegram readback remained
+    `routeBinding=telegram.allowedChatIds`, `sessionScope=chat`,
+    `runtimeStatus=needs-setup`.
+  - Final CR audit:
+    `npm run docs:capabilities:audit` -> passed and wrote
+    `docs\capability-registry-audit.md`; audit summary is 801 nodes and 689
+    coverage path references.
+  - Final audit-zero:
+    `node scripts\assertCapabilityAuditZero.mjs` -> passed; verified 4
+    counters in `docs\capability-registry-audit.md`.
+  - Final provider smoke:
+    `npm --prefix packages/xenesis run provider:smoke` -> passed 6/6 after
+    package build.
+  - Final hygiene:
+    `git diff --check` -> passed; Git printed LF/CRLF normalization warnings
+    only.
+- Implemented:
+  - Added provider raw extraction for app-server completed turn items in the
+    smoke and AgentRunner evidence logic.
+  - Added strict smoke checks for no provider webSearch and no shell/command
+    fallback.
+  - Added app-server Desk MCP native tool restrictions, including
+    `-c tools.web_search=false`.
+  - Added focused tests for app-server raw evidence and per-run stream idle
+    timeout.
+- Known gaps:
+  - `npm run lint` still has pre-existing repo-wide Biome debt.
+  - `npm run check:public-release` remains expected to fail because this
+    worktree is missing `.github/workflows/ci.yml`.
+- Cleanup:
+  - Removed `.codex-app-server-schema-tmp/` after verifying the resolved target
+    path was inside the current worktree.
+- Next intended step:
+  - Report Slice 04 verification scope without claiming universal
+    natural-language behavior.
+
+## Current Slice 05 User Stories And Guide Workflows
+
+- Current objective:
+  - Finish Slice 05 by making user-story contracts and user-facing guide
+    workflow cards CR-readable, preview-only, and invariant-tested across the
+    full tool and messenger catalog.
+- Plan:
+  - `docs/superpowers/plans/2026-06-30-slice-05-user-stories-guides.md`
+- Context read:
+  - `AGENTS.md`
+  - Repo-local Obsidian entrypoint and system/repo/module/architecture notes
+    listed in the operating contract.
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-05-user-stories-guides.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-reference-driven-final-goal-slices.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-reference-adoption-map-proposal.md`
+  - Local reference anchors under `F:\agent-anal`, including OpenClaw setup
+    wizard/plugin/gateway/channel setup source files and Hermes Telegram
+    gateway platform source.
+- Touched files so far:
+  - `handoff.md`
+  - `docs/superpowers/plans/2026-06-30-slice-05-user-stories-guides.md`
+  - `src/shared/xenesisConnections.ts`
+  - `src/shared/xenesisConnections.test.ts`
+  - `src/shared/xenesisConnectionCapabilities.test.ts`
+  - `src/renderer/panes/xenesisConnectionCenter.test.ts`
+  - `docs/manual/09-onboarding-connections.md`
+  - `docs/manual/10-openclaw-channel-setup.md`
+  - `docs/manual/11-external-tool-integrations.md`
+  - `docs/manual/12-agent-user-stories.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-05-user-stories-guides.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-reference-adoption-map-proposal.md`
+  - `docs/capability-registry-audit.md`
+- Commands run:
+  - `git status --short` -> worktree has existing Slice 04 and earlier
+    changes; no unrelated root checkout edits were touched.
+  - `rg -n "XENESIS_CONNECTION_GUIDES|guideType|storyContract|workflowPreview|buildXenesisConnectionsStatus" ...`
+    -> confirmed user-story contracts and broad guide catalog already exist,
+    but all-contract invariant coverage and concrete guide workflow cards are
+    the Slice 05 gap.
+  - `npx tsx --test src\shared\xenesisConnections.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    -> passed 125/125 before new Slice 05 tests.
+  - RED:
+    `npx tsx --test src\shared\xenesisConnections.test.ts` -> failed
+    intentionally at `buildXenesisConnectionsStatus exposes concrete Slice 05
+    guide workflow cards` because `first-provider-setup` was missing. The new
+    all-contract user-story preview invariant test passed, which confirms the
+    remaining shared gap is concrete guide workflow cards rather than existing
+    tool/channel contract preview safety.
+  - GREEN focused:
+    `npx tsx --test src\shared\xenesisConnections.test.ts` -> passed 53/53
+    after adding the concrete guide workflow cards and updating the ready
+    summary expectation to derive guide count from `XENESIS_CONNECTION_GUIDES`.
+  - Focused Slice 05 set:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    -> passed 180/180.
+  - Focused Slice 05 set after manual/Obsidian docs:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    -> passed 180/180.
+  - Broad:
+    `npm run typecheck` -> passed.
+  - Broad CR audit:
+    `npm run docs:capabilities:audit` -> passed and wrote
+    `docs\capability-registry-audit.md`; audit summary remained 801 nodes and
+    689 coverage path references.
+  - Audit-zero:
+    `node scripts\assertCapabilityAuditZero.mjs` -> passed; verified 4
+    counters in `docs\capability-registry-audit.md`.
+  - Hygiene:
+    `git diff --check` -> passed; Git printed LF/CRLF normalization warnings
+    only.
+  - Adversarial subagent review:
+    `Lovelace` reviewed the Slice 05 diff and reported no findings. One
+    residual brittleness was noted in `src/shared/xenesisConnections.test.ts`:
+    `XENESIS_CONNECTION_GUIDES.length + 10` still hardcoded the non-guide ready
+    count.
+  - Review fix:
+    Replaced the `+ 10` ready summary assertion with a computed ready item
+    count from `status.sections`.
+  - Post-review focused:
+    `npx tsx --test src\shared\xenesisConnections.test.ts src\shared\xenesisConnectionCapabilities.test.ts src\renderer\panes\xenesisConnectionCenter.test.ts`
+    -> passed 180/180.
+  - Post-review broad:
+    `npm run typecheck` -> passed.
+  - Post-review audit-zero:
+    `node scripts\assertCapabilityAuditZero.mjs` -> passed; verified 4
+    counters in `docs\capability-registry-audit.md`.
+  - Post-review hygiene:
+    `git diff --check` -> passed; Git printed LF/CRLF normalization warnings
+    only.
+- Material findings and decisions:
+  - Existing code already has `storyContract.workflowPreview`,
+    `buildXenesisConnectionUserStoryWorkflowPreviewArgs`, Settings preview
+    buttons, and natural provider workflow-preview routing notes.
+  - The remaining acceptance gap is to make coverage table-driven for every
+    user-story contract and to add concrete user-facing guide workflow cards
+    for first provider setup, Notion, Google Calendar, Telegram, and the first
+    external message readiness path.
+  - Guide workflow cards must stay read/open only. Any send/test/request/apply
+    path is an approval boundary or prose/doc caveat, not a guide control path.
+  - Added `user-story-workflow` guide catalog type and five concrete guide
+    cards: `first-provider-setup`, `connect-notion`,
+    `prepare-google-calendar`, `connect-telegram`, and
+    `first-external-message-test`.
+  - Capability schema coverage now iterates `XENESIS_CONNECTION_GUIDE_IDS`, so
+    the new guide ids are accepted by `xd.xenesis.guides.status/open` through
+    the shared catalog rather than a test-local hardcoded list.
+  - Manual docs now list the concrete workflow guide ids, the primary CR
+    status/open surfaces, and the explicit boundary that guide cards do not
+    run workflows or call request/apply/test/send paths.
+  - Obsidian Slice 05 and reference-adoption working notes now record local
+    OpenClaw/Hermes reference adoption and exact verification evidence.
+  - No external web research is used for this slice; only repo code,
+    repo-local Obsidian context, and `F:\agent-anal` references are used.
+- Exact verification result:
+  - Baseline focused tests passed before RED work: 125 tests passed, 0 failed.
+  - RED shared run failed 1/53 as expected on missing concrete Slice 05 guide
+    workflow cards.
+  - GREEN shared run passed 53/53.
+  - Focused shared/capability/renderer run passed 180/180.
+  - Final focused shared/capability/renderer run passed 180/180 after docs.
+  - Final broad gates passed: typecheck, CR audit, audit-zero, and diff check.
+  - Adversarial subagent review found no safety/schema/renderer/doc findings;
+    its single brittleness note was fixed and reverified.
+- Known gaps:
+  - `npm run lint` still has pre-existing repo-wide Biome debt from earlier
+    slices.
+  - `npm run check:public-release` remains expected to fail because this
+    worktree is missing `.github/workflows/ci.yml`.
+  - No universal natural-language behavior is claimed for this slice. Verified
+    scope is shared catalog, CR schema coverage, renderer summary, docs, CR
+    audit counters, and existing preview request surfaces.
+- Next intended step:
+  - Proceed to the next final-goal slice after a quick status/diff sanity
+    check.
+
+## Current Slice 06 Graph Release Hardening
+
+- Current objective:
+  - Finish the final hardening slice by making the repo-local Obsidian graph
+    mechanically checkable, closing the public-release CI workflow gap when it
+    fits this repo, and recording final verification evidence without claiming
+    universal natural-language behavior.
+- Context read:
+  - `AGENTS.md`
+  - Repo-local Obsidian index and graph/review/source-of-truth notes required
+    by the operating contract.
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-final-goal-overall-spec.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-final-goal-slice-spec-index.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Working Notes/2026-06-29-slice-spec-06-graph-release-hardening.md`
+  - `docs/obsidian/Xenesis-desk/80_AI/Review/2026-06-29-final-goal-slice-spec-adversarial-review.md`
+  - `docs/obsidian/Xenesis-desk/_Indexes/Verification Map.md`
+  - `scripts/publicReleaseCheck.mjs`
+- Touched files so far:
+  - `handoff.md`
+- Commands run:
+  - `npm run lint` -> failed with repo-wide Biome debt: 1119 errors, 415
+    warnings, 93 infos. Tail examples include formatting diagnostics in
+    `src/types/external-modules.d.ts` and `tsconfig.json`.
+  - `npm run check:public-release` -> failed before assertions could run
+    because `.github/workflows/ci.yml` is missing (`ENOENT`).
+  - RED public docs boundary:
+    `node --test scripts\checkDocsPublicSafety.test.mjs scripts\publicReleaseCheck.test.mjs`
+    -> failed because `docs/obsidian` was scanned as public docs and
+    `listPublicMarkdownFiles` was not exported.
+  - After adding the CI workflow:
+    `npm run check:public-release` -> failed on Obsidian working-note local
+    path/smoke-command findings plus README/public test-log findings.
+  - After separating Obsidian from public docs safety and updating public
+    README/test-log surfaces:
+    `node --test scripts\checkDocsPublicSafety.test.mjs scripts\publicReleaseCheck.test.mjs`
+    -> passed 2/2.
+  - After the same changes:
+    `npm run check:public-release` -> passed.
+  - RED graph checker:
+    `node --test scripts\obsidianGraphCheck.test.mjs` -> failed with
+    `ERR_MODULE_NOT_FOUND` because `scripts/obsidianGraphCheck.mjs` did not
+    exist.
+  - GREEN graph checker tests:
+    `node --test scripts\obsidianGraphCheck.test.mjs` -> passed 4/4.
+  - Real vault graph check:
+    `npm run docs:obsidian:check` -> passed; 147 notes and 733 wikilinks
+    checked.
+  - Focused Codex app-server Desk MCP tests:
+    `npm --prefix packages/xenesis exec vitest run src/providers/cliProvider.deskMcp.test.ts`
+    -> passed 3/3 after adding Desk-only native feature disables for
+    `apps`, `plugins`, `tool_suggest`, and `multi_agent`.
+  - Channel natural-language unit tests:
+    `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+    -> passed 28/28 after narrowing the CR-only prompt and keeping the
+    no-`webSearch` raw-stream regression.
+  - Channel natural-language live RED:
+    `node .\scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs --json`
+    -> failed 16/17 because provider raw stream contained a real Codex
+    app-server `webSearch` item before the Desk CR MCP readback.
+  - Root-cause check:
+    running the same live smoke with
+    `XENESIS_CODEX_APP_SERVER_ARGS='app-server --stdio --disable apps --disable plugins --disable tool_suggest --disable multi_agent'`
+    -> passed 17/17; this showed the native app/plugin tool layer, not the CR
+    caller, was allowing `webSearch`.
+  - Product fix:
+    `packages/xenesis/src/providers/cliProvider.ts` now disables
+    `apps`, `plugins`, `tool_suggest`, and `multi_agent` for Codex
+    app-server Desk MCP runs, in addition to the existing web/browser/shell
+    feature disables. `npm --prefix packages/xenesis run build` -> passed.
+  - Channel natural-language live final:
+    `node .\scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs --json`
+    -> passed 17/17 with `providerNaturalLanguageToolSelectionProof=true`;
+    footer provider was `codex-app-server`, process model was
+    `persistent-process`, final marker was `channel-routing-readback-ok`,
+    `provider raw CR/MCP channel evidence true`, no provider `webSearch`, no
+    shell fallback, no chat-only approval, no profile mutation, and no test
+    send/delivery.
+  - `rg -n "Slice 06|final graph|release|obsidianGraph|graph check|public-release|lint|handoff|final hardening" ...`
+    -> confirmed Slice 06 spec, public release checker, and missing
+    `scripts/obsidianGraphCheck.mjs`.
+- Material findings and decisions:
+  - Slice 06 should add a repeatable Obsidian graph/handoff validation instead
+    of relying only on manual link review.
+  - The public-release failure is an actionable repository file gap, not a
+    product behavior change.
+  - Public docs safety now treats `docs/obsidian` as the repo-local AI
+    knowledge graph rather than public manual content; Slice 06 graph checker
+    owns its validation separately.
+  - `docs/obsidian/Xenesis-desk.md` now links `CR Surface Index` directly, and
+    an older direct-write working note now links module owner notes by their
+    canonical note ids.
+  - Codex app-server Desk MCP runs must not inherit user/global Codex
+    apps/plugins/tool suggestion surfaces for CR-only Desk control. With those
+    features enabled, the provider can emit native `webSearch` even when the
+    model eventually performs the required Desk CR MCP readback.
+  - The lint failure is broad existing formatting/lint debt; do not claim it
+    passes unless the repo-wide command is actually clean.
+- Exact verification result:
+  - Baseline `npm run lint`: failed, 1119 errors / 415 warnings / 93 infos.
+  - Baseline `npm run check:public-release`: failed on missing
+    `.github/workflows/ci.yml`.
+  - Current `npm run check:public-release`: passed after CI/public docs boundary
+    fixes.
+  - Current `npm run docs:obsidian:check`: passed, 147 notes / 733 wikilinks.
+  - Current `node .\scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs --json`:
+    passed 17/17; provider raw CR/MCP channel evidence true; footer provider
+    `codex-app-server`; process model `persistent-process`; no provider
+    `webSearch`.
+  - Final `npm run docs:capabilities:audit`: passed and wrote
+    `docs\capability-registry-audit.md`; audit summary 801 nodes and 689
+    coverage path references.
+  - Final `node scripts\assertCapabilityAuditZero.mjs`: passed; verified 4
+    counters in `docs\capability-registry-audit.md`.
+  - Final `npm run docs:obsidian:check`: passed; 147 notes and 733 wikilinks.
+  - Final `npm run check:public-release`: passed.
+  - Final `npm run typecheck`: passed.
+  - Final `npm --prefix packages/xenesis test`: passed; 83 files and 391
+    tests.
+  - Final `npm --prefix packages/xenesis run typecheck`: passed.
+  - Final `npm --prefix packages/xenesis run build`: passed.
+  - Final `npm run build`: passed; Vite printed existing bundle/externalization
+    warnings only.
+  - Final `npm run lint`: failed with known repo-wide Biome debt: 1119 errors,
+    415 warnings, 93 infos. Tail examples remained formatting diagnostics in
+    `src/types/external-modules.d.ts` and `tsconfig.json`.
+  - Final `node .\scripts\xenesisConnectionCenterLiveSmoke.mjs --json`: passed
+    19/19.
+  - Final `node .\scripts\xenesisReviewRequestApprovalLiveSmoke.mjs --json`:
+    passed 6/6 with `proofType=structured-cr-approval-regression` and
+    `providerNaturalLanguageToolSelectionProof=false` as expected for the
+    structured approval regression.
+  - Final `git diff --check`: passed; Git printed LF/CRLF normalization
+    warnings only.
+  - Adversarial subagent review:
+    `Confucius` found two valid issues before close:
+    1. `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs` did not detect
+       top-level Codex app-server completed turn items with `type=webSearch`,
+       so `no-provider-web-search` could false-pass.
+    2. `scripts/obsidianGraphCheck.mjs` handoff markers were global substring
+       checks and could pass from baseline/failure mentions outside the Slice
+       06 final evidence section.
+  - Review fix for provider raw `webSearch` evidence:
+    `scripts/xenesisChannelNaturalLanguageLiveSmoke.test.mjs` now has a
+    regression for top-level Codex app-server completed turn items with
+    `type=webSearch`; `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs`
+    now checks both `params.item.type` and top-level `record.type`.
+    `node --test scripts\xenesisChannelNaturalLanguageLiveSmoke.test.mjs`
+    -> passed 29/29.
+  - Review fix for handoff evidence:
+    `scripts/obsidianGraphCheck.mjs` now scopes handoff validation to
+    `## Current Slice 06 Graph Release Hardening` and requires semantic final
+    evidence patterns: CR audit passed with 801/689 summary, audit-zero passed
+    with 4 counters, public-release passed, lint failed with 1119/415/93 known
+    debt counts, and channel live smoke passed 17/17 with provider CR/MCP proof
+    and no provider `webSearch`.
+    `node --test scripts\obsidianGraphCheck.test.mjs` -> passed 5/5.
+    `npm run docs:obsidian:check` -> passed; 147 notes and 733 wikilinks.
+    Post-review `git diff --check` -> passed; Git printed LF/CRLF
+    normalization warnings only.
+  - Channel prompt stability fix:
+    the scripted natural prompt now asks for actual readback call results and
+    explicitly rejects list/description/summary substitution.
+    Latest final `node .\scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs --json`
+    -> passed 17/17 with `providerNaturalLanguageToolSelectionProof=true`,
+    `provider-channel-cr-mcp-evidence-not-recovered=true`, no provider
+    `webSearch`, no shell fallback, no chat-only approval, no profile mutation,
+    and no test send/delivery.
+- Known gaps:
+  - `scripts/obsidianGraphCheck.mjs` is implemented and verified.
+  - Public-release CI workflow gap is fixed and verified.
+  - Repo-wide lint debt remains unresolved and is not presented as clean.
+  - No universal natural-language behavior is claimed. The verified
+    natural-language scope is the scripted Telegram channel readback prompt
+    above, with provider raw CR/MCP channel evidence and no provider
+    `webSearch`.
+- Next intended step:
+  - Run adversarial review before closing Slice 06.

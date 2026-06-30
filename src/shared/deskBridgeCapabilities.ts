@@ -5718,24 +5718,25 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             'write',
             {
               type: 'object',
-              required: ['name'],
+              required: ['template'],
               properties: {
+                template: {
+                  type: 'string',
+                  title: 'Profile template',
+                  description: 'Xenesis operating profile template to install.',
+                  examples: ['desk'],
+                },
                 name: {
                   type: 'string',
                   title: 'Profile name',
-                  description: 'Unique Xenesis profile name.',
-                  examples: ['xenis', 'gowoori'],
+                  description: 'Optional installed profile name. Defaults to the selected template name.',
+                  examples: ['slice04-channel-smoke'],
                 },
-                config: {
-                  type: 'object',
-                  title: 'Profile config',
-                  description: 'Profile configuration payload passed to Xenesis profile storage.',
-                },
-                makeActive: {
+                activate: {
                   type: 'boolean',
-                  title: 'Make active',
-                  description: 'When true, select the profile after installing it.',
-                  default: false,
+                  title: 'Activate profile',
+                  description: 'When true or omitted, select the profile after installing it.',
+                  default: true,
                 },
               },
             },

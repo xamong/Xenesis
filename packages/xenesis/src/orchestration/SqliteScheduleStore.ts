@@ -1,16 +1,16 @@
 // src/orchestration/SqliteScheduleStore.ts
-import { openDatabase } from "../db/database.js";
-import { runStartupImports } from "../db/startupImports.js";
-import { TableStore } from "../db/tableStore.js";
+import { openDatabase } from '../db/database.js';
+import { runStartupImports } from '../db/startupImports.js';
+import { TableStore } from '../db/tableStore.js';
+import { now } from './agentTasks.js';
 import {
+  type CreateScheduleInput,
+  createScheduleId,
   type ScheduleStore,
   type TaskSchedule,
-  type CreateScheduleInput,
   type UpdateScheduleInput,
-  createScheduleId,
   validateTrigger,
-} from "./schedules.js";
-import { now } from "./agentTasks.js";
+} from './schedules.js';
 
 export class SqliteScheduleStore implements ScheduleStore {
   private readonly table: TableStore<TaskSchedule>;
@@ -18,9 +18,9 @@ export class SqliteScheduleStore implements ScheduleStore {
 
   constructor(options: { xenesisHome: string }) {
     this.table = new TableStore<TaskSchedule>(openDatabase(options.xenesisHome), {
-      table: "schedules",
+      table: 'schedules',
       id: (s) => s.id,
-      indexColumns: ["enabled", "kind", "created_at", "updated_at"],
+      indexColumns: ['enabled', 'kind', 'created_at', 'updated_at'],
       derive: (s) => ({
         enabled: s.enabled ? 1 : 0,
         kind: s.trigger.type,

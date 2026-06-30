@@ -1,13 +1,7 @@
-import {
-  arbitrateContextRecords,
-  type ContextArbitrationAudit
-} from "./ContextArbitrator.js";
-import {
-  renderContextRecordsForPrompt,
-  type ContextRenderAudit
-} from "./ContextRenderer.js";
-import type { ContextRecord } from "./ContextRecord.js";
-import type { PromptBlock } from "../prompt/PromptComposer.js";
+import type { PromptBlock } from '../prompt/PromptComposer.js';
+import { arbitrateContextRecords, type ContextArbitrationAudit } from './ContextArbitrator.js';
+import type { ContextRecord } from './ContextRecord.js';
+import { type ContextRenderAudit, renderContextRecordsForPrompt } from './ContextRenderer.js';
 
 export interface ContextSourceAdapter {
   id: string;
@@ -31,20 +25,20 @@ export interface ContextPromptBlockBuildResult {
 }
 
 export async function buildContextPromptBlocks(
-  options: BuildContextPromptBlocksOptions
+  options: BuildContextPromptBlocksOptions,
 ): Promise<ContextPromptBlockBuildResult> {
   const records: ContextRecord[] = [];
   const sourceAdapters: string[] = [];
 
   for (const adapter of options.adapters) {
     sourceAdapters.push(adapter.id);
-    records.push(...await adapter.load());
+    records.push(...(await adapter.load()));
   }
 
   const arbitration = arbitrateContextRecords({
     records,
     tokenBudget: options.tokenBudget,
-    now: options.now
+    now: options.now,
   });
   const rendered = renderContextRecordsForPrompt(arbitration.selected);
 
@@ -55,7 +49,7 @@ export async function buildContextPromptBlocks(
       ...arbitration.audit,
       sourceAdapters,
       sourceRecordCount: records.length,
-      rendered: rendered.audit
-    }
+      rendered: rendered.audit,
+    },
   };
 }

@@ -1,12 +1,12 @@
-import type { AgentMessage } from "../core/messages.js";
-import type { MemoryInput, MemoryRecord, MemoryStore } from "./types.js";
-import type { Embedder } from "./embedding.js";
-import { semanticSearch } from "./embedding.js";
-import { wrapExternalContent } from "../core/prompt/ExternalContentPolicy.js";
+import type { AgentMessage } from '../core/messages.js';
+import { wrapExternalContent } from '../core/prompt/ExternalContentPolicy.js';
+import type { Embedder } from './embedding.js';
+import { semanticSearch } from './embedding.js';
+import type { MemoryInput, MemoryRecord, MemoryStore } from './types.js';
 
 const DEFAULT_MIN_SCORE = 0.25;
 
-type SystemMessage = Extract<AgentMessage, { role: "system" }>;
+type SystemMessage = Extract<AgentMessage, { role: 'system' }>;
 
 function normalizeText(value: string) {
   return value.trim().toLowerCase();
@@ -32,8 +32,8 @@ export function scoreRecord(record: MemoryRecord, query: string) {
   const id = normalizeText(record.id);
   const text = normalizeText(record.text);
   const tags = record.tags.map(normalizeText);
-  const source = normalizeText(record.source ?? "");
-  const haystack = [id, text, source, ...tags].join(" ");
+  const source = normalizeText(record.source ?? '');
+  const haystack = [id, text, source, ...tags].join(' ');
   let score = 0;
 
   score += record.priority ?? 0;
@@ -102,7 +102,7 @@ export class InMemoryMemoryStore implements MemoryStore {
       tags: input.tags ?? [],
       ...(input.source ? { source: input.source } : {}),
       ...(input.priority !== undefined ? { priority: input.priority } : {}),
-      updatedAt: this.now().toISOString()
+      updatedAt: this.now().toISOString(),
     };
     if (this.embedder) record.embedding = await this.embedder.embed(record.text);
     this.records.set(record.id, record);
@@ -129,20 +129,20 @@ export function buildMemorySystemMessage(records: MemoryRecord[]): SystemMessage
 
   const sections = records.map((record) => {
     const wrapped = wrapExternalContent({
-      kind: "memory",
-      source: record.source ?? "memory",
-      authority: "untrusted",
-      content: record.text
+      kind: 'memory',
+      source: record.source ?? 'memory',
+      authority: 'untrusted',
+      content: record.text,
     });
     return [
-      `<memory id="${record.id}" tags="${record.tags.join(",")}"${record.source ? ` source="${record.source}"` : ""}${record.priority !== undefined ? ` priority="${record.priority}"` : ""} updatedAt="${record.updatedAt}">`,
+      `<memory id="${record.id}" tags="${record.tags.join(',')}"${record.source ? ` source="${record.source}"` : ''}${record.priority !== undefined ? ` priority="${record.priority}"` : ''} updatedAt="${record.updatedAt}">`,
       wrapped.content,
-      "</memory>"
-    ].join("\n");
+      '</memory>',
+    ].join('\n');
   });
 
   return {
-    role: "system",
-    content: ["Xenesis relevant memory:", "", sections.join("\n\n")].join("\n")
+    role: 'system',
+    content: ['Xenesis relevant memory:', '', sections.join('\n\n')].join('\n'),
   };
 }

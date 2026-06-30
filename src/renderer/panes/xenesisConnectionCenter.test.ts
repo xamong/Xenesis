@@ -15,6 +15,7 @@ import type {
   XenesisConnectionUserStoryContract,
   XenesisConnectionWorkflowPreview,
 } from '../../shared/types';
+import { buildXenesisConnectionsStatus } from '../../shared/xenesisConnections';
 import * as xenesisConnectionCenter from './xenesisConnectionCenter';
 import {
   buildXenesisChannelProfileDraftApplyRequest,
@@ -121,6 +122,177 @@ function onboardingWorkflowPreview(
     safetyBoundary:
       'CR workflow preview for onboarding plans is a read/open onboarding preview only; it excludes control steps.',
   };
+}
+
+const readyTelegramGuardrails = {
+  approvalMode: 'safe' as const,
+  maxTurns: 12,
+  maxTokens: 120000,
+};
+
+function buildReadyTelegramMessengerItem(): XenesisConnectionItem {
+  const readyTelegramChannel = {
+    name: 'telegram' as const,
+    enabled: true,
+    ready: true,
+    runtimeStatus: 'ready' as const,
+    missingEnv: [],
+    warnings: [],
+    safeToDeliver: true,
+    ...readyTelegramGuardrails,
+  };
+  const disabledSlackChannel = {
+    name: 'slack' as const,
+    enabled: false,
+    ready: false,
+    runtimeStatus: 'disabled' as const,
+    missingEnv: [],
+    warnings: [],
+    safeToDeliver: false,
+    ...readyTelegramGuardrails,
+  };
+  const disabledDiscordChannel = {
+    ...disabledSlackChannel,
+    name: 'discord' as const,
+  };
+  const disabledWebhookChannel = {
+    ...disabledSlackChannel,
+    name: 'webhook' as const,
+  };
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: {
+      provider: 'codex-app-server',
+      model: 'gpt-5-codex',
+      apiKey: '',
+      baseUrl: '',
+    },
+    mcp: {
+      available: true,
+      serverPath: 'E:/xenesis/mcp/xenesis-desk-mcp-server.mjs',
+      bridgeUrl: 'http://127.0.0.1:3845',
+      bridgeStatePath: 'C:/Users/example/.xenis/mcp/bridge.json',
+      configFilePath: 'C:/Users/example/.xenis/mcp/xenesis-mcp-config.json',
+    },
+    providerIntegration: {
+      cliTargets: [],
+      hermes: {
+        assetRoot: '',
+        hermesRoot: '',
+        assetAvailable: false,
+        rootConfigured: false,
+        pluginsInstalled: false,
+        items: [],
+      },
+    },
+    xenesis: {
+      ok: true,
+      running: true,
+      managed: true,
+      enabled: true,
+      runtimeMode: 'embedded',
+      url: 'http://127.0.0.1:3846',
+      runtimePath: 'embedded',
+      xenesisHome: 'C:/Users/example/.xenis',
+      workspace: 'E:/workspace/project',
+      providerRuntime: {
+        provider: 'codex-app-server',
+        model: 'gpt-5-codex',
+        profile: 'desk',
+        baseURL: '',
+        apiKeyEnv: '',
+      },
+      error: '',
+      updatedAt: '2026-06-29T00:00:00.000Z',
+      gateway: {
+        enabled: true,
+        running: true,
+        managed: true,
+        url: 'http://127.0.0.1:3846',
+        host: '127.0.0.1',
+        port: 3846,
+        workspace: 'E:/workspace/project',
+        error: '',
+        updatedAt: '2026-06-29T00:00:00.000Z',
+        channels: {
+          total: 4,
+          enabled: 1,
+          ready: 1,
+          blocked: 0,
+          disabled: 3,
+          items: [readyTelegramChannel, disabledSlackChannel, disabledDiscordChannel, disabledWebhookChannel],
+          telegram: readyTelegramChannel,
+          slack: disabledSlackChannel,
+          discord: disabledDiscordChannel,
+          webhook: disabledWebhookChannel,
+        },
+      },
+      profile: {
+        active: 'desk',
+        configured: 'desk',
+        installed: ['desk'],
+        templates: [],
+        channels: [
+          { name: 'telegram', enabled: true, configured: true, env: ['TELEGRAM_BOT_TOKEN'] },
+          { name: 'slack', enabled: false, configured: false, env: ['SLACK_BOT_TOKEN'] },
+          { name: 'discord', enabled: false, configured: false, env: ['DISCORD_BOT_TOKEN'] },
+          { name: 'webhook', enabled: false, configured: false, env: ['XENESIS_WEBHOOK_URL'] },
+        ],
+        channelSettings: {
+          telegram: {
+            enabled: true,
+            ...readyTelegramGuardrails,
+            tokenEnv: 'TELEGRAM_BOT_TOKEN',
+            allowedChatIds: '123',
+          },
+          slack: {
+            enabled: false,
+            ...readyTelegramGuardrails,
+            botTokenEnv: 'SLACK_BOT_TOKEN',
+            signingSecretEnv: 'SLACK_SIGNING_SECRET',
+            webhookUrlEnv: 'SLACK_WEBHOOK_URL',
+            allowedChannelIds: '',
+          },
+          discord: {
+            enabled: false,
+            ...readyTelegramGuardrails,
+            botTokenEnv: 'DISCORD_BOT_TOKEN',
+            webhookUrlEnv: 'DISCORD_WEBHOOK_URL',
+            allowedChannelIds: '',
+            allowedGuildIds: '',
+          },
+          webhook: {
+            enabled: false,
+            ...readyTelegramGuardrails,
+            urlEnv: 'XENESIS_WEBHOOK_URL',
+          },
+        },
+        policy: {
+          workflow: '',
+          approvalMode: 'safe',
+          maxTurns: 12,
+          providerRetries: 0,
+          contextAutoCompact: true,
+          memoryEnabled: true,
+          subagentsEnabled: true,
+          browserEnabled: true,
+          verificationAutoRun: false,
+          verificationAutoFix: false,
+        },
+      },
+    },
+    env: {
+      TELEGRAM_BOT_TOKEN: 'configured',
+    },
+    now: new Date('2026-06-29T00:00:00.000Z'),
+  });
+
+  const telegram = status.sections.messengers.items.find((item) => item.id === 'telegram');
+  assert.ok(telegram);
+  assert.equal(telegram.kind, 'messenger');
+  assert.equal(telegram.status, 'ready');
+  assert.equal(telegram.supportLevel, 'implemented');
+  assert.equal(telegram.channelProfileDraft?.draftStatus, 'ready');
+  return telegram;
 }
 
 test('xenesisConnectionTone maps every status to a stable UI tone', () => {
@@ -782,12 +954,13 @@ test('buildXenesisChannelRuntimeRequest targets the review request CR path', () 
   assert.equal(buildXenesisChannelRuntimeRequest({ ...item, channelRuntime: undefined }), null);
 });
 
-test('buildXenesisChannelProfileDraftApplyRequest targets the approval-gated apply CR path', () => {
-  const item = {
+test('buildXenesisChannelProfileDraftApplyRequest only targets ready implemented messenger drafts', () => {
+  const missingRequiredTelegram = {
     id: 'telegram',
     kind: 'messenger',
     label: 'Telegram',
     status: 'needs-setup',
+    supportLevel: 'implemented',
     summary: 'Telegram setup',
     channelProfileDraft: {
       draftStatus: 'missing-required-field',
@@ -797,7 +970,7 @@ test('buildXenesisChannelProfileDraftApplyRequest targets the approval-gated app
       setupSurface: 'Settings > Xenesis Agent > External bots',
       reviewSurface: 'Desk Action Inbox',
       profileFields: [],
-      missingRequiredFields: [],
+      missingRequiredFields: ['allowedChatIds'],
       guardrails: { approvalMode: 'safe', maxTurns: 12, maxTokens: 120000 },
       readPaths: ['xd.xenesis.channels.profileDrafts.status'],
       controlPaths: ['xd.xenesis.channels.profileDrafts.request', 'xd.xenesis.channels.profileDrafts.apply'],
@@ -808,7 +981,19 @@ test('buildXenesisChannelProfileDraftApplyRequest targets the approval-gated app
     },
   } satisfies XenesisConnectionItem;
 
-  assert.deepEqual(buildXenesisChannelProfileDraftApplyRequest(item), {
+  assert.equal(buildXenesisChannelProfileDraftApplyRequest(missingRequiredTelegram), null);
+
+  const readyTelegram = {
+    ...missingRequiredTelegram,
+    status: 'ready',
+    channelProfileDraft: {
+      ...missingRequiredTelegram.channelProfileDraft,
+      draftStatus: 'ready',
+      missingRequiredFields: [],
+    },
+  } satisfies XenesisConnectionItem;
+
+  assert.deepEqual(buildXenesisChannelProfileDraftApplyRequest(readyTelegram), {
     path: 'xd.xenesis.channels.profileDrafts.apply',
     args: {
       channel: 'telegram',
@@ -819,43 +1004,45 @@ test('buildXenesisChannelProfileDraftApplyRequest targets the approval-gated app
 
   assert.equal(
     buildXenesisChannelProfileDraftApplyRequest({
-      ...item,
+      ...readyTelegram,
       channelProfileDraft: {
-        ...item.channelProfileDraft,
+        ...readyTelegram.channelProfileDraft,
         controlPaths: ['xd.xenesis.channels.profileDrafts.request'],
       },
     }),
     null,
   );
-  assert.equal(buildXenesisChannelProfileDraftApplyRequest({ ...item, channelProfileDraft: undefined }), null);
+  assert.equal(
+    buildXenesisChannelProfileDraftApplyRequest({
+      ...readyTelegram,
+      status: 'planned',
+      supportLevel: 'planned',
+      channelProfileDraft: {
+        ...readyTelegram.channelProfileDraft,
+        controlPaths: ['xd.xenesis.channels.profileDrafts.apply', 'xd.xenesis.channels.profileDrafts.apply.malformed'],
+      },
+    }),
+    null,
+  );
+  assert.equal(
+    buildXenesisChannelProfileDraftApplyRequest({
+      ...readyTelegram,
+      id: 'telegram-tool',
+      kind: 'tool',
+      channelProfileDraft: {
+        ...readyTelegram.channelProfileDraft,
+        controlPaths: ['xd.xenesis.channels.profileDrafts.apply', 'xd.xenesis.channels.profileDrafts.apply.malformed'],
+      },
+    }),
+    null,
+  );
+  assert.equal(buildXenesisChannelProfileDraftApplyRequest({ ...readyTelegram, channelProfileDraft: undefined }), null);
 });
 
 test('buildXenesisChannelTestRequest targets approval-gated profile channel test path', () => {
-  const item: XenesisConnectionItem = {
-    id: 'telegram',
-    kind: 'messenger',
-    label: 'Telegram',
-    status: 'ready',
-    supportLevel: 'implemented',
-    summary: 'Telegram channel.',
-    channelProfileDraft: {
-      draftStatus: 'ready',
-      actionInboxKind: 'xenesis-channel-profile-draft',
-      channel: 'telegram',
-      displayName: 'Telegram',
-      setupSurface: 'Settings > Xenesis Agent > Connections',
-      reviewSurface: 'Desk Action Inbox',
-      profileFields: [],
-      missingRequiredFields: [],
-      guardrails: { approvalMode: 'safe', maxTurns: 6, maxTokens: 4096 },
-      reviewSteps: [],
-      readPaths: ['xd.xenesis.channels.profileDrafts.status'],
-      controlPaths: ['xd.xenesis.profiles.testChannel'],
-      diagnostics: [],
-      blockedActions: [],
-      safetyBoundaries: ['sanitized test sends require approval'],
-    },
-  };
+  const item = buildReadyTelegramMessengerItem();
+  assert.equal(item.channelProfileDraft?.controlPaths.includes('xd.xenesis.profiles.testChannel'), false);
+  assert.equal(item.messengerView?.controlPaths.includes('xd.xenesis.profiles.testChannel'), true);
 
   assert.deepEqual(buildXenesisChannelTestRequest(item), {
     path: 'xd.xenesis.profiles.testChannel',
@@ -863,6 +1050,8 @@ test('buildXenesisChannelTestRequest targets approval-gated profile channel test
     source: 'xenesis',
     approved: false,
   });
+  assert.equal(buildXenesisChannelTestRequest(item)?.approved, false);
+  assert.equal(buildXenesisChannelTestRequest({ ...item, kind: 'tool' }), null);
   assert.equal(buildXenesisChannelTestRequest({ ...item, supportLevel: 'planned' }), null);
   assert.equal(
     buildXenesisChannelTestRequest({
@@ -871,6 +1060,14 @@ test('buildXenesisChannelTestRequest targets approval-gated profile channel test
     }),
     null,
   );
+  assert.equal(
+    buildXenesisChannelTestRequest({
+      ...item,
+      messengerView: { ...item.messengerView!, controlPaths: ['xd.xenesis.profiles.testChannel.malformed'] },
+    }),
+    null,
+  );
+  assert.equal(buildXenesisChannelTestRequest({ ...item, channelProfileDraft: undefined }), null);
 });
 
 test('formatXenesisGuideCatalogSummary describes guide type, audience, and surface count', () => {
@@ -888,6 +1085,21 @@ test('formatXenesisGuideCatalogSummary describes guide type, audience, and surfa
       safetyBoundaries: ['guide catalog does not execute workflows'],
     }),
     'user-story-catalog / agent / 4 surface(s)',
+  );
+  assert.equal(
+    formatXenesisGuideCatalogSummary({
+      guideType: 'user-story-workflow',
+      audience: 'operator',
+      primarySurface: 'Settings > Xenesis Agent > Connections',
+      coveredSurfaces: ['provider-setup', 'provider-routing'],
+      prerequisites: ['connection catalog readback'],
+      validationChecks: ['xd.xenesis.providers.setup.status'],
+      readPaths: ['xd.xenesis.providers.setup.status'],
+      controlPaths: ['xd.xenesis.providers.setup.open'],
+      userStoryTemplates: ['inspect provider setup before first chat'],
+      safetyBoundaries: ['workflow guide does not mutate settings'],
+    }),
+    'user-story-workflow / operator / 2 surface(s)',
   );
 });
 

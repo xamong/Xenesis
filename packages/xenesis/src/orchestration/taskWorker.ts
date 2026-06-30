@@ -1,10 +1,10 @@
 import {
-  runAgentTask,
   type AgentTask,
   type AgentTaskExecutor,
   type AgentTaskStatus,
-  type AgentTaskStore
-} from "./agentTasks.js";
+  type AgentTaskStore,
+  runAgentTask,
+} from './agentTasks.js';
 
 export interface WorkerTaskExecutionContext {
   signal: AbortSignal;
@@ -12,10 +12,10 @@ export interface WorkerTaskExecutionContext {
 
 export type WorkerTaskExecutor = (
   task: AgentTask,
-  context: WorkerTaskExecutionContext
+  context: WorkerTaskExecutionContext,
 ) => ReturnType<AgentTaskExecutor>;
 
-export type TaskWorkerEventPhase = "started" | "retry" | "completed" | "failed" | "blocked" | "cancelled";
+export type TaskWorkerEventPhase = 'started' | 'retry' | 'completed' | 'failed' | 'blocked' | 'cancelled';
 
 export interface TaskWorkerEvent {
   phase: TaskWorkerEventPhase;
@@ -61,9 +61,9 @@ function dependenciesOf(task: AgentTask) {
 
 function dependencyFailureReason(task: AgentTask | undefined, id: string) {
   if (!task) return `dependency missing: ${id}`;
-  if (task.status === "failed") return `dependency failed: ${id}`;
-  if (task.status === "cancelled") return `dependency cancelled: ${id}`;
-  if (task.status === "blocked") return `dependency blocked: ${id}`;
+  if (task.status === 'failed') return `dependency failed: ${id}`;
+  if (task.status === 'cancelled') return `dependency cancelled: ${id}`;
+  if (task.status === 'blocked') return `dependency blocked: ${id}`;
   return undefined;
 }
 
@@ -81,14 +81,14 @@ function dependencyState(task: AgentTask, tasksById: Map<string, AgentTask>) {
       reasons.push(reason);
       continue;
     }
-    if (dependency?.status !== "completed") waiting.push(dependencyId);
+    if (dependency?.status !== 'completed') waiting.push(dependencyId);
   }
 
   return {
     ready: blocked.length === 0 && waiting.length === 0,
     blocked,
     waiting,
-    blockedReason: reasons.join("; ")
+    blockedReason: reasons.join('; '),
   };
 }
 
@@ -144,7 +144,7 @@ export class TaskWorker {
       const tasks = await this.options.taskStore.list();
       const tasksById = new Map(tasks.map((task) => [task.id, task]));
       const queued = tasks
-        .filter((task) => task.status === "queued" && !this.running.has(task.id))
+        .filter((task) => task.status === 'queued' && !this.running.has(task.id))
         .filter((task) => dependencyState(task, tasksById).ready)
         .sort(compareTaskAge);
       const started: AgentTask[] = [];
@@ -164,26 +164,26 @@ export class TaskWorker {
   private async recoverInterruptedTasks() {
     const tasks = await this.options.taskStore.list();
     for (const task of tasks) {
-      if (task.status === "running") {
+      if (task.status === 'running') {
         if ((task.attempts ?? 0) >= this.maxAttempts) {
           const failed = await this.options.taskStore.update(task.id, {
-            status: "failed",
+            status: 'failed',
             error: `Task interrupted after ${task.attempts ?? 0} attempts during worker recovery.`,
-            finishedAt: new Date().toISOString()
+            finishedAt: new Date().toISOString(),
           });
-          await this.emitTaskEvent("failed", failed, {
+          await this.emitTaskEvent('failed', failed, {
             attempt: failed.attempts,
-            error: failed.error
+            error: failed.error,
           });
           continue;
         }
         const queued = await this.options.taskStore.update(task.id, {
-          status: "queued",
+          status: 'queued',
           error: undefined,
-          finishedAt: undefined
+          finishedAt: undefined,
         });
-        await this.emitTaskEvent("retry", queued, {
-          attempt: (task.attempts ?? 0) + 1
+        await this.emitTaskEvent('retry', queued, {
+          attempt: (task.attempts ?? 0) + 1,
         });
       }
     }
@@ -192,16 +192,16 @@ export class TaskWorker {
   private async requeueRetryableFailedTasks() {
     const tasks = await this.options.taskStore.list();
     for (const task of tasks) {
-      if (task.status !== "failed") continue;
+      if (task.status !== 'failed') continue;
       if ((task.attempts ?? 0) >= this.maxAttempts) continue;
       const queued = await this.options.taskStore.update(task.id, {
-        status: "queued",
+        status: 'queued',
         error: undefined,
-        finishedAt: undefined
+        finishedAt: undefined,
       });
-      await this.emitTaskEvent("retry", queued, {
+      await this.emitTaskEvent('retry', queued, {
         attempt: (task.attempts ?? 0) + 1,
-        error: task.error
+        error: task.error,
       });
     }
   }
@@ -210,16 +210,16 @@ export class TaskWorker {
     const tasks = await this.options.taskStore.list();
     const tasksById = new Map(tasks.map((task) => [task.id, task]));
     for (const task of tasks) {
-      if (task.status !== "blocked") continue;
+      if (task.status !== 'blocked') continue;
       if (!dependenciesOf(task).length) continue;
       const state = dependencyState(task, tasksById);
       if (!state.ready) continue;
       await this.options.taskStore.update(task.id, {
-        status: "queued",
+        status: 'queued',
         blockedBy: undefined,
         blockedReason: undefined,
         error: undefined,
-        finishedAt: undefined
+        finishedAt: undefined,
       });
     }
   }
@@ -228,20 +228,20 @@ export class TaskWorker {
     const tasks = await this.options.taskStore.list();
     const tasksById = new Map(tasks.map((task) => [task.id, task]));
     for (const task of tasks) {
-      if (task.status !== "queued") continue;
+      if (task.status !== 'queued') continue;
       const state = dependencyState(task, tasksById);
       if (state.blocked.length === 0) continue;
       const blocked = await this.options.taskStore.update(task.id, {
-        status: "blocked",
+        status: 'blocked',
         blockedBy: state.blocked,
         blockedReason: state.blockedReason,
         error: state.blockedReason,
-        finishedAt: new Date().toISOString()
+        finishedAt: new Date().toISOString(),
       });
-      await this.emitTaskEvent("blocked", blocked, {
+      await this.emitTaskEvent('blocked', blocked, {
         blockedBy: state.blocked,
         blockedReason: state.blockedReason,
-        error: state.blockedReason
+        error: state.blockedReason,
       });
     }
   }
@@ -249,7 +249,7 @@ export class TaskWorker {
   private async abortCancelledTasks() {
     for (const [taskId, controller] of this.running) {
       const task = await this.options.taskStore.get(taskId);
-      if (!task || task.status === "cancelled") controller.abort();
+      if (!task || task.status === 'cancelled') controller.abort();
     }
   }
 
@@ -265,36 +265,37 @@ export class TaskWorker {
   }
 
   private async executeTask(task: AgentTask, controller: AbortController) {
-    await this.emitTaskEvent("started", task, {
-      status: "running",
-      attempt: (task.attempts ?? 0) + 1
+    await this.emitTaskEvent('started', task, {
+      status: 'running',
+      attempt: (task.attempts ?? 0) + 1,
     });
     try {
       const result = await runAgentTask(this.options.taskStore, task.id, (current) =>
-        this.options.executor(current, { signal: controller.signal }));
-      if (result.status === "completed") {
-        await this.emitTaskEvent("completed", result, {
-          attempt: result.attempts
-        });
-      } else if (result.status === "cancelled") {
-        await this.emitTaskEvent("cancelled", result, {
+        this.options.executor(current, { signal: controller.signal }),
+      );
+      if (result.status === 'completed') {
+        await this.emitTaskEvent('completed', result, {
           attempt: result.attempts,
-          error: result.error
         });
-      } else if (result.status === "failed" || result.status === "blocked") {
+      } else if (result.status === 'cancelled') {
+        await this.emitTaskEvent('cancelled', result, {
+          attempt: result.attempts,
+          error: result.error,
+        });
+      } else if (result.status === 'failed' || result.status === 'blocked') {
         await this.emitTaskEvent(result.status, result, {
           attempt: result.attempts,
           blockedBy: result.blockedBy,
           blockedReason: result.blockedReason,
-          error: result.error
+          error: result.error,
         });
       }
     } catch (error) {
       // runAgentTask persists the failure. The worker loop should keep polling.
-      const latest = await this.options.taskStore.get(task.id) ?? task;
-      await this.emitTaskEvent(latest.status === "cancelled" ? "cancelled" : "failed", latest, {
+      const latest = (await this.options.taskStore.get(task.id)) ?? task;
+      await this.emitTaskEvent(latest.status === 'cancelled' ? 'cancelled' : 'failed', latest, {
         attempt: latest.attempts,
-        error: latest.error ?? errorMessage(error)
+        error: latest.error ?? errorMessage(error),
       });
     }
   }
@@ -302,7 +303,7 @@ export class TaskWorker {
   private async emitTaskEvent(
     phase: TaskWorkerEventPhase,
     task: AgentTask,
-    details: Partial<Omit<TaskWorkerEvent, "phase" | "task" | "maxAttempts" | "timestamp">> = {}
+    details: Partial<Omit<TaskWorkerEvent, 'phase' | 'task' | 'maxAttempts' | 'timestamp'>> = {},
   ) {
     try {
       await this.options.onTaskEvent?.({
@@ -314,7 +315,7 @@ export class TaskWorker {
         blockedBy: details.blockedBy,
         blockedReason: details.blockedReason,
         error: details.error,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     } catch {
       // Worker lifecycle observers are best-effort and should not affect task execution.

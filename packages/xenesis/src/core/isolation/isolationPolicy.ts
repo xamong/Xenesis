@@ -1,4 +1,4 @@
-import type { IsolationMode } from "./types.js";
+import type { IsolationMode } from './types.js';
 
 export interface WorkerIsolationDecision {
   effectiveConcurrency: number;
@@ -29,10 +29,10 @@ export function decideTaskMode(input: {
   autoIsolate: boolean;
   defaultMode?: IsolationMode;
 }): IsolationMode {
-  if (input.explicit === "shared" || input.explicit === "worktree") return input.explicit;
-  if (input.explicit === "remote") {
-    throw new Error("remote isolation is not implemented in this local backend");
+  if (input.explicit === 'shared' || input.explicit === 'worktree') return input.explicit;
+  if (input.explicit === 'remote') {
+    throw new Error('remote isolation is not implemented in this local backend');
   }
-  if (input.autoIsolate) return "worktree";
-  return input.defaultMode ?? "shared";
+  if (input.autoIsolate) return 'worktree';
+  return input.defaultMode ?? 'shared';
 }

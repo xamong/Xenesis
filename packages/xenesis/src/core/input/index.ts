@@ -1,1 +1,1 @@
-export * from "./InputNormalizer.js";
+export * from './InputNormalizer.js';

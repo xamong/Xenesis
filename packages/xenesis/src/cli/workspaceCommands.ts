@@ -1,11 +1,11 @@
-import { execFile } from "node:child_process";
-import { readdir, realpath, stat } from "node:fs/promises";
-import { basename, isAbsolute, relative, resolve } from "node:path";
-import { promisify } from "node:util";
-import { assertExistingPathInsideWorkspace, isPathInside } from "../utils/workspace.js";
+import { execFile } from 'node:child_process';
+import { readdir, realpath, stat } from 'node:fs/promises';
+import { basename, isAbsolute, relative, resolve } from 'node:path';
+import { promisify } from 'node:util';
+import { assertExistingPathInsideWorkspace, isPathInside } from '../utils/workspace.js';
 
 const execFileAsync = promisify(execFile);
-const skippedWorkspaceDirectories = new Set([".git", ".xenesis", "node_modules"]);
+const skippedWorkspaceDirectories = new Set(['.git', '.xenesis', 'node_modules']);
 const maxListedFiles = 2000;
 
 interface GitResult {
@@ -21,41 +21,46 @@ interface ExecFileFailure extends Error {
 
 function normalizeRelativePath(root: string, target: string) {
   const relativePath = relative(root, target);
-  if (relativePath === "") return ".";
-  if (relativePath.startsWith("..") || isAbsolute(relativePath)) {
+  if (relativePath === '') return '.';
+  if (relativePath.startsWith('..') || isAbsolute(relativePath)) {
     throw new Error(`Path is outside the workspace: ${target}`);
   }
-  return relativePath.replace(/\\/g, "/");
+  return relativePath.replace(/\\/g, '/');
 }
 
 async function git(workspace: string, args: string[]): Promise<GitResult> {
   try {
-    const { stdout, stderr } = await execFileAsync("git", ["-C", workspace, ...args], {
+    const { stdout, stderr } = await execFileAsync('git', ['-C', workspace, ...args], {
       windowsHide: true,
       timeout: 10000,
-      maxBuffer: 1024 * 1024
+      maxBuffer: 1024 * 1024,
     });
     return {
       ok: true,
       stdout,
-      stderr
+      stderr,
     };
   } catch (error) {
     const failure = error as ExecFileFailure;
     return {
       ok: false,
-      stdout: failure.stdout ?? "",
-      stderr: failure.stderr ?? failure.message
+      stdout: failure.stdout ?? '',
+      stderr: failure.stderr ?? failure.message,
     };
   }
 }
 
 async function isGitRepository(workspace: string) {
-  const result = await git(workspace, ["rev-parse", "--is-inside-work-tree"]);
-  return result.ok && result.stdout.trim() === "true";
+  const result = await git(workspace, ['rev-parse', '--is-inside-work-tree']);
+  return result.ok && result.stdout.trim() === 'true';
 }
 
-async function collectWorkspaceFiles(rootRealPath: string, currentPath: string, output: string[], visitedDirectories: Set<string>) {
+async function collectWorkspaceFiles(
+  rootRealPath: string,
+  currentPath: string,
+  output: string[],
+  visitedDirectories: Set<string>,
+) {
   if (output.length >= maxListedFiles) return;
   const currentStats = await stat(currentPath);
 
@@ -87,19 +92,16 @@ async function collectWorkspaceFiles(rootRealPath: string, currentPath: string, 
   }
 }
 
-export async function renderFilesCommand(workspace: string, requestedPath = ".") {
+export async function renderFilesCommand(workspace: string, requestedPath = '.') {
   const rootRealPath = await realpath(workspace);
   const targetPath = await assertExistingPathInsideWorkspace(workspace, requestedPath);
   const files: string[] = [];
 
   await collectWorkspaceFiles(rootRealPath, targetPath, files, new Set<string>());
   const uniqueFiles = [...new Set(files)].sort();
-  if (uniqueFiles.length === 0) return ["files: none"];
+  if (uniqueFiles.length === 0) return ['files: none'];
 
-  const lines = [
-    `files: ${uniqueFiles.length} local file(s)`,
-    ...uniqueFiles.map((file) => `file: ${file}`)
-  ];
+  const lines = [`files: ${uniqueFiles.length} local file(s)`, ...uniqueFiles.map((file) => `file: ${file}`)];
   if (uniqueFiles.length >= maxListedFiles) {
     lines.push(`files: truncated at ${maxListedFiles} entries`);
   }
@@ -107,34 +109,31 @@ export async function renderFilesCommand(workspace: string, requestedPath = ".")
 }
 
 export async function renderDiffCommand(workspace: string) {
-  if (!(await isGitRepository(workspace))) return ["diff: no git repository"];
+  if (!(await isGitRepository(workspace))) return ['diff: no git repository'];
 
-  const result = await git(workspace, ["diff", "--stat", "--", "."]);
+  const result = await git(workspace, ['diff', '--stat', '--', '.']);
   const summaryLines = result.stdout
     .trim()
     .split(/\r?\n/u)
     .map((line) => line.trim())
     .filter(Boolean);
 
-  if (summaryLines.length === 0) return ["diff: no local changes"];
-  return [
-    "diff: local git diff summary",
-    ...summaryLines.map((line) => `diff: ${line}`)
-  ];
+  if (summaryLines.length === 0) return ['diff: no local changes'];
+  return ['diff: local git diff summary', ...summaryLines.map((line) => `diff: ${line}`)];
 }
 
 export async function renderBranchCommand(workspace: string) {
-  if (!(await isGitRepository(workspace))) return ["branch: no git repository"];
+  if (!(await isGitRepository(workspace))) return ['branch: no git repository'];
 
-  const branch = await git(workspace, ["symbolic-ref", "--quiet", "--short", "HEAD"]);
+  const branch = await git(workspace, ['symbolic-ref', '--quiet', '--short', 'HEAD']);
   const branchName = branch.stdout.trim();
   if (branch.ok && branchName.length > 0) return [`branch: ${branchName}`];
 
-  const revision = await git(workspace, ["rev-parse", "--short", "HEAD"]);
+  const revision = await git(workspace, ['rev-parse', '--short', 'HEAD']);
   const shortRevision = revision.stdout.trim();
   if (revision.ok && shortRevision.length > 0) return [`branch: detached ${shortRevision}`];
 
-  return ["branch: detached or unborn HEAD"];
+  return ['branch: detached or unborn HEAD'];
 }
 
 function assertLocalDirectoryPath(path: string) {
@@ -158,19 +157,19 @@ export async function renderAddDirCommand(workspace: string, requestedPath: stri
 
   return [
     `add-dir: validated ${await realpath(resolvedPath)}`,
-    "add-dir: scope=local-only",
-    "add-dir: persistence=not-supported"
+    'add-dir: scope=local-only',
+    'add-dir: persistence=not-supported',
   ];
 }
 
 function textBlock(value: string) {
-  return `\`\`\`text\n${value.trim() || "(none)"}\n\`\`\``;
+  return `\`\`\`text\n${value.trim() || '(none)'}\n\`\`\``;
 }
 
 function gitOutput(result: GitResult, unavailableMessage: string) {
-  if (result.ok) return result.stdout.trim() || "(none)";
+  if (result.ok) return result.stdout.trim() || '(none)';
 
-  const output = [result.stdout.trim(), result.stderr.trim()].filter(Boolean).join("\n").trim();
+  const output = [result.stdout.trim(), result.stderr.trim()].filter(Boolean).join('\n').trim();
   return output ? `${unavailableMessage}\n${output}` : unavailableMessage;
 }
 
@@ -178,32 +177,28 @@ export async function buildCommitPrompt(workspace: string, extraInstruction?: st
   if (!(await isGitRepository(workspace))) return undefined;
 
   const [status, diffHead, branch, recentCommits] = await Promise.all([
-    git(workspace, ["status", "--short"]),
-    git(workspace, ["diff", "HEAD", "--", "."]),
-    git(workspace, ["branch", "--show-current"]),
-    git(workspace, ["log", "--oneline", "-10"])
+    git(workspace, ['status', '--short']),
+    git(workspace, ['diff', 'HEAD', '--', '.']),
+    git(workspace, ['branch', '--show-current']),
+    git(workspace, ['log', '--oneline', '-10']),
   ]);
-  const branchName = branch.ok && branch.stdout.trim().length > 0
-    ? branch.stdout.trim()
-    : "(detached or unborn HEAD)";
+  const branchName = branch.ok && branch.stdout.trim().length > 0 ? branch.stdout.trim() : '(detached or unborn HEAD)';
   const instruction = extraInstruction?.trim();
-  const extraInstructionSection = instruction
-    ? `\n\nAdditional instruction from user:\n${instruction}`
-    : "";
+  const extraInstructionSection = instruction ? `\n\nAdditional instruction from user:\n${instruction}` : '';
 
   return `## Context
 
 - Current git status:
-${textBlock(gitOutput(status, "(git status unavailable)"))}
+${textBlock(gitOutput(status, '(git status unavailable)'))}
 
 - Current git diff (staged and unstaged changes):
-${textBlock(gitOutput(diffHead, "(git diff HEAD unavailable)"))}
+${textBlock(gitOutput(diffHead, '(git diff HEAD unavailable)'))}
 
 - Current branch:
 ${textBlock(branchName)}
 
 - Recent commits:
-${textBlock(gitOutput(recentCommits, "(none)"))}
+${textBlock(gitOutput(recentCommits, '(none)'))}
 
 ## Git Safety Protocol
 

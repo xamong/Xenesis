@@ -14,10 +14,18 @@ available.
 
 The implemented runtime channel set is:
 
-- Telegram
-- Slack
-- Discord
-- Webhook
+- `telegram`
+- `slack`
+- `discord`
+- `webhook`
+
+The shared read model must keep that implemented set exact. These implemented
+messengers expose channel template, setup plan, profile draft, routing, safety,
+access-group, pairing, runtime readiness, user-story, and messenger-view
+surfaces. Routing/session metadata is explicit state, including route binding,
+session scope, fail-closed access groups, pairing state, runtime readiness,
+read paths, control paths, and approval boundaries. It is not prompt keyword
+routing.
 
 Planned messenger cards, including WhatsApp, Signal, Microsoft Teams, Google
 Chat, iMessage, Matrix, IRC, Mattermost, Nextcloud Talk, Nostr, Raft, Tlon,
@@ -25,6 +33,12 @@ Synology Chat, Twitch, LINE, WeChat, QQ Bot, Feishu/Lark, Yuanbao, Zalo, Email,
 SMS, Home Assistant, ntfy, Rocket.Chat, and DingTalk/Dingding are planning
 surfaces only until their adapters, credentials, allowlists, diagnostics, and
 live verification exist.
+
+Planned messengers such as `signal`, `google-chat`, and `zalo` remain
+review/read surfaces only. They must not expose
+`xd.xenesis.channels.profileDrafts.apply`,
+`xd.xenesis.profiles.testChannel`, `xd.xenesis.profiles.updateChannels`,
+`xd.xenesis.gateway.start`, or `xd.xenesis.gateway.restart`.
 
 ## Setup Order
 
@@ -83,7 +97,28 @@ apply/test steps.
 Settings can preview the same ordered plan through
 `xd.automation.workflow.preview`. That preview contains only setup-plan
 `read` and `open` steps; runtime requests, profile draft requests/applies, and
-test-send paths stay as explicit separate CR actions.
+test-send paths stay as explicit separate CR actions. Setup preview does not
+store secrets, mutate profile settings, start gateways, pair accounts or
+devices, or send messages.
+
+The guide catalog also exposes the concrete `connect-telegram` user-story
+workflow guide. It opens this manual and focuses only read/open channel setup
+surfaces:
+
+- `xd.xenesis.gateway.status`
+- `xd.xenesis.messengers.views.status`
+- `xd.xenesis.channels.setupPlans.status`
+- `xd.xenesis.channels.routing.status`
+- `xd.xenesis.channels.safety.status`
+- `xd.xenesis.channels.accessGroups.status`
+- `xd.xenesis.channels.pairing.status`
+- `xd.xenesis.channels.runtime.status`
+- `xd.xenesis.channels.userStories.status`
+- `xd.xenesis.channels.profileDrafts.status`
+
+`connect-telegram` does not call channel profile apply, gateway lifecycle,
+pairing creation, or `xd.xenesis.profiles.testChannel`. Those remain separate
+approval-gated CR actions after readback evidence is ready.
 
 Channel runtime readiness records adapter support, runtime status, gateway
 requirement, readiness checks, read/control paths, diagnostics, blocked actions,
@@ -109,6 +144,60 @@ This guide does not enable delivery, create channel adapters, start the gateway,
 send messages, mutate allowlists, write profile settings, store secrets, or
 bypass approvals. Planned messengers remain internal Desk setup/readiness views
 until runtime support is implemented and verified.
+
+## Slice 04 Task 1 Verification
+
+- RED: `npx tsx --test src\shared\xenesisConnections.test.ts` failed as
+  expected with 49 passed / 2 failed / 51 total before the shared aliases and
+  setup-preview boundary text existed.
+- GREEN: `npx tsx --test src\shared\xenesisConnections.test.ts` passed with
+  51 passed / 0 failed / 51 total after the minimal shared read-model update.
+
+## Slice 04 Implementation Evidence
+
+Slice 04 extends the setup/readiness model into guarded channel controls and
+verification harnesses. The shipped implementation remains CR-first and
+approval-gated:
+
+- Connection Center apply/test requests are available only for implemented
+  messenger channels with ready drafts. They use the existing CR paths
+  `xd.xenesis.channels.profileDrafts.apply` and
+  `xd.xenesis.profiles.testChannel` with `approved=false`.
+- Planned messenger channels stay review-only. They may expose runtime
+  readiness review via `xd.xenesis.channels.runtime.request`, but must not
+  expose delivery, profile mutation, gateway start/restart, or test-send paths.
+- `xd.xenesis.profiles.install` uses the profile install schema
+  `template/name/activate`; stale `config/makeActive` profile-install shapes
+  are not part of the channel setup contract.
+- Shared dispatcher tests prove read/open/request paths do not call profile
+  apply, profile update, test-send, or gateway mutation helpers.
+- Channel test-send errors are sanitized through
+  `src/main/xenesisChannelSafety.ts`; tokens, webhook URLs, and raw target
+  identifiers are redacted before user-facing output.
+- `scripts/xenesisChannelApprovalLiveSmoke.mjs` covers pending and approved
+  approval flows for webhook profile apply and test-send against a local
+  loopback endpoint. It scrubs Telegram, Slack, Discord, webhook, and default
+  channel delivery environment variables and uses only
+  `XENESIS_SLICE04_WEBHOOK_URL` for the loopback target.
+- `scripts/xenesisConnectionCenterLiveSmoke.mjs` includes Slice 04 snapshot
+  baselines for implemented messenger cards, Telegram route/session metadata,
+  Telegram access/pairing readiness, planned-channel boundaries, and
+  test-send approval surfaces.
+- `scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs` uses a Korean natural
+  prompt and requires provider raw CR/MCP evidence for Telegram-scoped
+  `xd.xenesis.channels.routing.status` and
+  `xd.xenesis.channels.runtime.status`. This proves the exact readback scope
+  only; it is not a claim that all natural-language channel behavior is model
+  reasoning.
+- Final Slice 04 natural-language live evidence passed after a fresh build:
+  `node .\scripts\xenesisChannelNaturalLanguageLiveSmoke.mjs --json` passed
+  17/17 with provider `codex-app-server`, process model `persistent-process`,
+  raw CR/MCP channel readback evidence present, deterministic recovery absent,
+  provider web search absent, shell/command fallback absent, no profile
+  mutation, and no test-send/delivery.
+
+Live smoke scripts must be run only after a fresh `npm run build`, because the
+Electron smoke harness uses built app artifacts.
 
 ## Natural Agent Prompts
 

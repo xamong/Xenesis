@@ -673,7 +673,10 @@ export function buildXenesisChannelProfileDraftRequest(
 export function buildXenesisChannelProfileDraftApplyRequest(
   item: XenesisConnectionItem,
 ): McpBridgeCapabilityCallRequest | null {
+  if (item.kind !== 'messenger') return null;
+  if (item.supportLevel !== 'implemented') return null;
   if (!item.channelProfileDraft) return null;
+  if (item.channelProfileDraft.draftStatus !== 'ready') return null;
   if (!item.channelProfileDraft.controlPaths.includes('xd.xenesis.channels.profileDrafts.apply')) return null;
   return {
     path: 'xd.xenesis.channels.profileDrafts.apply',
@@ -690,7 +693,7 @@ export function buildXenesisChannelTestRequest(item: XenesisConnectionItem): Mcp
   if (item.supportLevel !== 'implemented') return null;
   if (!item.channelProfileDraft) return null;
   if (item.channelProfileDraft.draftStatus !== 'ready') return null;
-  if (!item.channelProfileDraft.controlPaths.includes('xd.xenesis.profiles.testChannel')) return null;
+  if (!item.messengerView?.controlPaths.includes('xd.xenesis.profiles.testChannel')) return null;
   return {
     path: 'xd.xenesis.profiles.testChannel',
     args: {

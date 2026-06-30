@@ -1,10 +1,8 @@
-import { lstat, mkdir, realpath } from "node:fs/promises";
-import { dirname, isAbsolute, relative, resolve } from "node:path";
+import { lstat, mkdir, realpath } from 'node:fs/promises';
+import { dirname, isAbsolute, relative, resolve } from 'node:path';
 
 export function resolveWorkspacePath(workspaceRoot: string, requestedPath: string) {
-  return isAbsolute(requestedPath)
-    ? resolve(requestedPath)
-    : resolve(workspaceRoot, requestedPath);
+  return isAbsolute(requestedPath) ? resolve(requestedPath) : resolve(workspaceRoot, requestedPath);
 }
 
 export function isPathInside(parent: string, child: string) {
@@ -12,8 +10,8 @@ export function isPathInside(parent: string, child: string) {
   const resolvedChild = resolve(child);
   const relativePath = relative(resolvedParent, resolvedChild);
 
-  if (relativePath === "") return true;
-  return !relativePath.startsWith("..") && !isAbsolute(relativePath);
+  if (relativePath === '') return true;
+  return !relativePath.startsWith('..') && !isAbsolute(relativePath);
 }
 
 export function assertInsideWorkspace(workspaceRoot: string, requestedPath: string) {
@@ -29,7 +27,7 @@ async function realWorkspaceRoot(workspaceRoot: string) {
 }
 
 function isNotFoundError(error: unknown) {
-  return typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT";
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT';
 }
 
 export async function assertExistingPathInsideWorkspace(workspaceRoot: string, requestedPath: string) {

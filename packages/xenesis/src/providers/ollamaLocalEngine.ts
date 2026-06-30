@@ -48,8 +48,8 @@ export interface OllamaLocalEngine {
 const DEFAULT_BASE_URL = 'http://127.0.0.1:11434';
 
 const TASK_MODEL_MAP: Record<string, string> = {
-  'code': 'codellama:7b',
-  'text': 'llama3.2:3b',
+  code: 'codellama:7b',
+  text: 'llama3.2:3b',
   'xcon-repair': 'llama3.2:3b',
   'fixture-transform': 'llama3.2:3b',
 };
@@ -104,7 +104,9 @@ export function createOllamaLocalEngine(baseUrl = DEFAULT_BASE_URL): OllamaLocal
           try {
             const json = objectValue(JSON.parse(line));
             onProgress?.(stringValue(json.status));
-          } catch { /* skip */ }
+          } catch {
+            /* skip */
+          }
         }
       }
       return true;
@@ -158,7 +160,9 @@ export function createOllamaLocalEngine(baseUrl = DEFAULT_BASE_URL): OllamaLocal
               tokenCount += 1;
               options.onToken?.(responseText);
             }
-          } catch { /* skip */ }
+          } catch {
+            /* skip */
+          }
         }
       }
 
@@ -185,7 +189,7 @@ function formatBytes(bytes: number): string {
 }
 
 function objectValue(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 }
 
 function stringValue(value: unknown): string {

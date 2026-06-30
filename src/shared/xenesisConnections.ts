@@ -1431,7 +1431,7 @@ export interface XenesisConnectionMessengerViewSection {
 }
 
 export interface XenesisConnectionGuideCatalogTemplate {
-  guideType: 'setup-playbook' | 'integration-guide' | 'user-story-catalog';
+  guideType: 'setup-playbook' | 'integration-guide' | 'user-story-catalog' | 'user-story-workflow';
   audience: 'operator' | 'agent' | 'developer';
   primarySurface: string;
   coveredSurfaces: string[];
@@ -1536,6 +1536,11 @@ export interface XenesisConnectionItem {
   guideCatalog?: XenesisConnectionGuideCatalogTemplate;
   guideFile?: XenesisConnectionGuideFileTemplate;
   channelTemplate?: XenesisConnectionChannelTemplate;
+  channelRouting?: XenesisConnectionChannelRoutingTemplate;
+  channelSafety?: XenesisConnectionChannelSafetyTemplate;
+  channelAccessGroups?: XenesisConnectionChannelAccessGroupsTemplate;
+  channelPairing?: XenesisConnectionChannelPairingTemplate;
+  channelUserStory?: XenesisConnectionChannelUserStoryTemplate;
   diagnosticRunbook?: XenesisConnectionDiagnosticRunbookTemplate;
   setupRequest?: XenesisConnectionSetupRequestTemplate;
   warnings?: string[];
@@ -1888,6 +1893,335 @@ export const XENESIS_CONNECTION_GUIDES: XenesisConnectionItem[] = [
         'guide catalog does not execute workflows',
         'planned integrations remain setup/readiness views until runtime support exists',
         'CR readback must verify any guide-driven action',
+      ],
+    },
+  },
+  {
+    id: 'first-provider-setup',
+    kind: 'guide',
+    label: 'First provider setup workflow',
+    status: 'ready',
+    summary: 'Preview the provider setup readbacks and Settings opens needed before the first Agent turn.',
+    guidePath: 'docs/manual/09-onboarding-connections.md',
+    guideCatalog: {
+      guideType: 'user-story-workflow',
+      audience: 'operator',
+      primarySurface: 'Settings > Xenesis Agent > Connections',
+      coveredSurfaces: ['provider-setup', 'provider-routing', 'provider-views', 'connection-center'],
+      prerequisites: [
+        'active ~/.xenis profile selected',
+        'provider credentials configured or an honest missing-credential state accepted',
+        'local CLI selection kept separate from provider selection',
+      ],
+      validationChecks: [
+        'xd.xenesis.connections.status',
+        'xd.xenesis.providers.setup.status',
+        'xd.xenesis.providers.routing.status',
+        'xd.xenesis.providers.views.status',
+        'xd.xenesis.providers.setupPlans.status',
+      ],
+      readPaths: [
+        'xd.xenesis.connections.status',
+        'xd.xenesis.guides.status',
+        'xd.xenesis.providers.setup.status',
+        'xd.xenesis.providers.routing.status',
+        'xd.xenesis.providers.views.status',
+        'xd.xenesis.providers.setupPlans.status',
+      ],
+      controlPaths: [
+        'xd.xenesis.guides.open',
+        'xd.xenesis.connections.open',
+        'xd.xenesis.providers.setup.open',
+        'xd.xenesis.providers.routing.open',
+        'xd.xenesis.providers.views.open',
+        'xd.xenesis.providers.setupPlans.open',
+      ],
+      userStoryTemplates: [
+        'read the active provider setup state before first chat',
+        'open provider routing and view surfaces without changing settings',
+        'confirm provider and local CLI are not collapsed into one choice',
+      ],
+      safetyBoundaries: [
+        'workflow guide is read/open planning metadata',
+        'provider profile writes remain on approval-gated profile draft paths',
+        'guide preview does not override provider selection or credential source',
+      ],
+    },
+  },
+  {
+    id: 'connect-notion',
+    kind: 'guide',
+    label: 'Connect Notion workflow',
+    status: 'ready',
+    summary: 'Preview the CR readbacks and Settings opens for Notion MCP setup before tool use.',
+    guidePath: 'docs/manual/11-external-tool-integrations.md',
+    guideCatalog: {
+      guideType: 'user-story-workflow',
+      audience: 'operator',
+      primarySurface: 'Settings > Xenesis Agent > Connections',
+      coveredSurfaces: [
+        'external-tools',
+        'tool-setup-plans',
+        'mcp-install-drafts',
+        'tool-connectors',
+        'tool-runtime',
+        'tool-user-stories',
+      ],
+      prerequisites: [
+        'provider setup readback available',
+        'MCP settings status readable',
+        'Notion token reference prepared outside guide preview',
+      ],
+      validationChecks: [
+        'xd.xenesis.tools.setupPlans.status',
+        'xd.xenesis.tools.setup.status',
+        'xd.xenesis.tools.connectors.status',
+        'xd.xenesis.tools.mcpInstallDrafts.status',
+        'xd.xenesis.tools.runtime.status',
+        'xd.xenesis.tools.userStories.status',
+      ],
+      readPaths: [
+        'xd.xenesis.connections.status',
+        'xd.xenesis.guides.status',
+        'xd.xenesis.tools.setupPlans.status',
+        'xd.xenesis.tools.setup.status',
+        'xd.xenesis.tools.connectors.status',
+        'xd.xenesis.tools.mcpInstallDrafts.status',
+        'xd.xenesis.tools.runtime.status',
+        'xd.xenesis.tools.actions.status',
+        'xd.xenesis.tools.userStories.status',
+        'xd.xenesis.tools.views.status',
+      ],
+      controlPaths: [
+        'xd.xenesis.guides.open',
+        'xd.xenesis.connections.open',
+        'xd.xenesis.tools.setupPlans.open',
+        'xd.xenesis.tools.setup.open',
+        'xd.xenesis.tools.connectors.open',
+        'xd.xenesis.tools.mcpInstallDrafts.open',
+        'xd.xenesis.tools.runtime.open',
+        'xd.xenesis.tools.actions.open',
+        'xd.xenesis.tools.userStories.open',
+        'xd.xenesis.tools.views.open',
+      ],
+      userStoryTemplates: [
+        'inspect Notion setup and connector readiness before MCP use',
+        'open Notion install draft review without applying it',
+        'preview Notion user-story readbacks before provider tool execution',
+      ],
+      safetyBoundaries: [
+        'workflow guide does not install MCP servers',
+        'workflow guide does not write MCP config or store tokens',
+        'provider tool execution remains outside guide preview',
+      ],
+    },
+  },
+  {
+    id: 'prepare-google-calendar',
+    kind: 'guide',
+    label: 'Prepare Google Calendar workflow',
+    status: 'ready',
+    summary: 'Preview Google Calendar OAuth, runtime, and user-story readiness without completing OAuth.',
+    guidePath: 'docs/manual/11-external-tool-integrations.md',
+    guideCatalog: {
+      guideType: 'user-story-workflow',
+      audience: 'operator',
+      primarySurface: 'Settings > Xenesis Agent > Connections',
+      coveredSurfaces: [
+        'external-tools',
+        'oauth-drafts',
+        'oauth-runtime',
+        'mcp-oauth',
+        'tool-setup-plans',
+        'tool-user-stories',
+      ],
+      prerequisites: [
+        'Google OAuth client information prepared outside guide preview',
+        'calendar scopes reviewed before runtime enablement',
+        'tool profile draft review kept approval-gated',
+      ],
+      validationChecks: [
+        'xd.xenesis.tools.oauthDrafts.status',
+        'xd.xenesis.tools.oauthRuntime.status',
+        'xd.xenesis.tools.mcpOAuth.status',
+        'xd.xenesis.tools.setupPlans.status',
+        'xd.xenesis.tools.userStories.status',
+      ],
+      readPaths: [
+        'xd.xenesis.connections.status',
+        'xd.xenesis.guides.status',
+        'xd.xenesis.tools.oauthDrafts.status',
+        'xd.xenesis.tools.oauthRuntime.status',
+        'xd.xenesis.tools.mcpOAuth.status',
+        'xd.xenesis.tools.setupPlans.status',
+        'xd.xenesis.tools.connectors.status',
+        'xd.xenesis.tools.runtime.status',
+        'xd.xenesis.tools.userStories.status',
+        'xd.xenesis.tools.views.status',
+      ],
+      controlPaths: [
+        'xd.xenesis.guides.open',
+        'xd.xenesis.connections.open',
+        'xd.xenesis.tools.oauthDrafts.open',
+        'xd.xenesis.tools.oauthRuntime.open',
+        'xd.xenesis.tools.mcpOAuth.open',
+        'xd.xenesis.tools.setupPlans.open',
+        'xd.xenesis.tools.connectors.open',
+        'xd.xenesis.tools.runtime.open',
+        'xd.xenesis.tools.userStories.open',
+        'xd.xenesis.tools.views.open',
+      ],
+      userStoryTemplates: [
+        'inspect Google Calendar OAuth setup packet before user authorization',
+        'open Calendar runtime readiness without completing OAuth',
+        'preview calendar-context user stories before event reads are available',
+      ],
+      safetyBoundaries: [
+        'workflow guide does not complete OAuth or store refresh tokens',
+        'workflow guide does not create, update, or delete calendar events',
+        'profile and credential writes remain approval-gated',
+      ],
+    },
+  },
+  {
+    id: 'connect-telegram',
+    kind: 'guide',
+    label: 'Connect Telegram workflow',
+    status: 'ready',
+    summary: 'Preview Telegram gateway, routing, safety, pairing, runtime, and user-story setup before delivery.',
+    guidePath: 'docs/manual/10-openclaw-channel-setup.md',
+    guideCatalog: {
+      guideType: 'user-story-workflow',
+      audience: 'operator',
+      primarySurface: 'Settings > Xenesis Agent > Connections',
+      coveredSurfaces: [
+        'messenger-views',
+        'channel-setup-plans',
+        'channel-routing',
+        'channel-safety',
+        'access-groups',
+        'pairing',
+        'channel-runtime',
+        'channel-user-stories',
+      ],
+      prerequisites: [
+        'gateway status readback available',
+        'Telegram token reference prepared outside guide preview',
+        'allowlist and pairing policy reviewed before enabling delivery',
+      ],
+      validationChecks: [
+        'xd.xenesis.gateway.status',
+        'xd.xenesis.messengers.views.status',
+        'xd.xenesis.channels.setupPlans.status',
+        'xd.xenesis.channels.routing.status',
+        'xd.xenesis.channels.safety.status',
+        'xd.xenesis.channels.accessGroups.status',
+        'xd.xenesis.channels.pairing.status',
+        'xd.xenesis.channels.runtime.status',
+        'xd.xenesis.channels.userStories.status',
+      ],
+      readPaths: [
+        'xd.xenesis.connections.status',
+        'xd.xenesis.gateway.status',
+        'xd.xenesis.guides.status',
+        'xd.xenesis.messengers.views.status',
+        'xd.xenesis.channels.setupPlans.status',
+        'xd.xenesis.channels.routing.status',
+        'xd.xenesis.channels.safety.status',
+        'xd.xenesis.channels.accessGroups.status',
+        'xd.xenesis.channels.pairing.status',
+        'xd.xenesis.channels.runtime.status',
+        'xd.xenesis.channels.userStories.status',
+        'xd.xenesis.channels.profileDrafts.status',
+      ],
+      controlPaths: [
+        'xd.xenesis.guides.open',
+        'xd.xenesis.connections.open',
+        'xd.xenesis.messengers.views.open',
+        'xd.xenesis.channels.setupPlans.open',
+        'xd.xenesis.channels.routing.open',
+        'xd.xenesis.channels.safety.open',
+        'xd.xenesis.channels.accessGroups.open',
+        'xd.xenesis.channels.pairing.open',
+        'xd.xenesis.channels.runtime.open',
+        'xd.xenesis.channels.userStories.open',
+        'xd.xenesis.channels.profileDrafts.open',
+      ],
+      userStoryTemplates: [
+        'inspect Telegram setup plan before storing bot credentials',
+        'open routing, safety, access group, and pairing surfaces before remote prompts',
+        'preview Telegram user-story readbacks before test delivery',
+      ],
+      safetyBoundaries: [
+        'workflow guide does not start gateways or pair accounts',
+        'workflow guide does not write channel profiles or allowlists',
+        'workflow guide does not send Telegram messages',
+      ],
+    },
+  },
+  {
+    id: 'first-external-message-test',
+    kind: 'guide',
+    label: 'First external message test workflow',
+    status: 'ready',
+    summary: 'Preview the readiness checks before any approval-gated external channel test send.',
+    guidePath: 'docs/manual/12-agent-user-stories.md',
+    guideCatalog: {
+      guideType: 'user-story-workflow',
+      audience: 'operator',
+      primarySurface: 'Settings > Xenesis Agent > Connections',
+      coveredSurfaces: [
+        'gateway',
+        'messenger-views',
+        'channel-routing',
+        'channel-safety',
+        'channel-runtime',
+        'channel-user-stories',
+        'diagnostics',
+      ],
+      prerequisites: [
+        'implemented messenger profile has explicit approval before testing',
+        'routing readback names the target allowlist binding',
+        'safety readback confirms loop protection and inbound boundary',
+      ],
+      validationChecks: [
+        'xd.xenesis.gateway.status',
+        'xd.xenesis.channels.routing.status',
+        'xd.xenesis.channels.safety.status',
+        'xd.xenesis.channels.runtime.status',
+        'xd.xenesis.channels.userStories.status',
+        'xd.xenesis.connections.diagnostics.status',
+      ],
+      readPaths: [
+        'xd.xenesis.connections.status',
+        'xd.xenesis.gateway.status',
+        'xd.xenesis.guides.status',
+        'xd.xenesis.messengers.views.status',
+        'xd.xenesis.channels.routing.status',
+        'xd.xenesis.channels.safety.status',
+        'xd.xenesis.channels.runtime.status',
+        'xd.xenesis.channels.userStories.status',
+        'xd.xenesis.connections.diagnostics.status',
+      ],
+      controlPaths: [
+        'xd.xenesis.guides.open',
+        'xd.xenesis.connections.open',
+        'xd.xenesis.messengers.views.open',
+        'xd.xenesis.channels.routing.open',
+        'xd.xenesis.channels.safety.open',
+        'xd.xenesis.channels.runtime.open',
+        'xd.xenesis.channels.userStories.open',
+        'xd.xenesis.connections.diagnostics.open',
+      ],
+      userStoryTemplates: [
+        'preview readiness before requesting an external channel test',
+        'open diagnostics for missing routing, safety, or runtime evidence',
+        'treat xd.xenesis.profiles.testChannel as approval-gated execution outside this guide',
+      ],
+      safetyBoundaries: [
+        'workflow guide does not call xd.xenesis.profiles.testChannel',
+        'workflow guide does not send external messages',
+        'test send remains a separate explicit approval-gated CR action',
       ],
     },
   },
@@ -4371,6 +4705,29 @@ function withXenesisConnectionChannelRuntimes(
   ) as XenesisConnectionsStatus['sections'];
 }
 
+function withXenesisConnectionChannelReadModel(item: XenesisConnectionItem): XenesisConnectionItem {
+  if (item.kind !== 'messenger' || !item.channelTemplate) return item;
+  return {
+    ...item,
+    channelRouting: item.channelTemplate.routing,
+    channelSafety: item.channelTemplate.safety,
+    channelAccessGroups: item.channelTemplate.accessGroups,
+    channelPairing: item.channelTemplate.pairing,
+    channelUserStory: item.channelTemplate.userStory,
+  };
+}
+
+function withXenesisConnectionChannelReadModels(
+  sections: XenesisConnectionsStatus['sections'],
+): XenesisConnectionsStatus['sections'] {
+  return Object.fromEntries(
+    Object.entries(sections).map(([id, section]) => [
+      id,
+      { ...section, items: section.items.map((item) => withXenesisConnectionChannelReadModel(item)) },
+    ]),
+  ) as XenesisConnectionsStatus['sections'];
+}
+
 const XENESIS_CHANNEL_PROFILE_DRAFT_BLOCKED_ACTIONS = [
   'mutate channel settings outside approved apply path',
   'update allowlists outside approved apply path',
@@ -6575,7 +6932,7 @@ function providerSetupPlanRuntimeSupport(
 }
 
 const setupPlanWorkflowPreviewSafetyBoundary =
-  'CR workflow preview for setup plans is a read/open setup plan preview only; it excludes request/apply steps and does not execute provider tools, complete OAuth, store tokens, write MCP config, send messages, start gateways, mutate profiles, or mutate external systems.';
+  'CR workflow preview for setup plans is a read/open setup plan preview and setup preview only; it excludes request/apply steps and does not execute provider tools, complete OAuth, store tokens, write MCP config, or mutate external systems, and does not store secrets, does not mutate profile settings, does not start gateways, does not pair accounts or devices, and does not send messages.';
 
 function setupPlanWorkflowPreview(input: {
   id: string;
@@ -9918,7 +10275,9 @@ export function buildXenesisConnectionsStatus(input: BuildXenesisConnectionsStat
     withXenesisConnectionDiagnosticRunbooks(
       withXenesisConnectionChannelSetupPlans(
         withXenesisConnectionChannelRuntimes(
-          withXenesisConnectionToolSetupPlans(withXenesisConnectionProviderSetupPlans(rawSections)),
+          withXenesisConnectionToolSetupPlans(
+            withXenesisConnectionProviderSetupPlans(withXenesisConnectionChannelReadModels(rawSections)),
+          ),
         ),
       ),
     ),

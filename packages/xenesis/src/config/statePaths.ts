@@ -1,7 +1,7 @@
-import { isAbsolute, relative, resolve } from "node:path";
+import { isAbsolute, relative, resolve } from 'node:path';
 
 export function stripLegacyStatePrefix(path: string) {
-  return path.replace(/\\/g, "/").replace(/^\.xenesis\//, "");
+  return path.replace(/\\/g, '/').replace(/^\.xenesis\//, '');
 }
 
 export function resolveXenesisStatePath(xenesisHome: string, path: string) {
@@ -14,7 +14,7 @@ export function xenesisStatePath(xenesisHome: string, ...parts: string[]) {
 }
 
 export function displayXenesisStatePath(xenesisHome: string, path: string) {
-  const rel = relative(xenesisHome, path).replace(/\\/g, "/");
-  if (!rel.startsWith("..") && rel !== "") return `$XENESIS_HOME/${rel}`;
+  const rel = relative(xenesisHome, path).replace(/\\/g, '/');
+  if (!rel.startsWith('..') && rel !== '') return `$XENESIS_HOME/${rel}`;
   return path;
 }

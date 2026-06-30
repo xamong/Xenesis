@@ -1,6 +1,6 @@
-import { spawn } from "node:child_process";
+import { spawn } from 'node:child_process';
 
-export type VerificationStatus = "passed" | "failed" | "skipped";
+export type VerificationStatus = 'passed' | 'failed' | 'skipped';
 
 export interface VerificationCommandResult {
   command: string;
@@ -30,7 +30,7 @@ export interface RunVerificationCommandsOptions {
 }
 
 class LimitedTextBuffer {
-  private text = "";
+  private text = '';
   private truncated = false;
   private readonly maxChars: number;
 
@@ -64,7 +64,7 @@ async function runOneCommand(
   cwd: string,
   env: NodeJS.ProcessEnv,
   timeoutMs: number,
-  maxOutputChars: number
+  maxOutputChars: number,
 ): Promise<VerificationCommandResult> {
   const startedAt = Date.now();
   const stdout = new LimitedTextBuffer(maxOutputChars);
@@ -77,7 +77,7 @@ async function runOneCommand(
       cwd,
       env,
       shell: true,
-      windowsHide: true
+      windowsHide: true,
     });
     const finish = (exitCode: number | null, error?: Error) => {
       if (settled) return;
@@ -94,7 +94,7 @@ async function runOneCommand(
         exitCode,
         stdout: stdout.value(),
         stderr: stderr.value(),
-        durationMs: Date.now() - startedAt
+        durationMs: Date.now() - startedAt,
       });
     };
     const timer = setTimeout(() => {
@@ -102,10 +102,10 @@ async function runOneCommand(
       child.kill();
     }, timeoutMs);
 
-    child.stdout?.on("data", (chunk) => stdout.append(chunk));
-    child.stderr?.on("data", (chunk) => stderr.append(chunk));
-    child.on("error", (error) => finish(null, error));
-    child.on("close", (code) => finish(code));
+    child.stdout?.on('data', (chunk) => stdout.append(chunk));
+    child.stderr?.on('data', (chunk) => stderr.append(chunk));
+    child.on('error', (error) => finish(null, error));
+    child.on('close', (code) => finish(code));
   });
 }
 
@@ -113,34 +113,28 @@ export async function runVerificationCommands(options: RunVerificationCommandsOp
   const createdAt = (options.now ?? (() => new Date()))().toISOString();
   if (options.commands.length === 0) {
     return {
-      status: "skipped",
+      status: 'skipped',
       createdAt,
       commandCount: 0,
       passed: 0,
       failed: 0,
-      results: []
+      results: [],
     };
   }
 
   const results: VerificationCommandResult[] = [];
   for (const command of options.commands) {
-    results.push(await runOneCommand(
-      command,
-      options.cwd,
-      options.env,
-      options.timeoutMs,
-      options.maxOutputChars
-    ));
+    results.push(await runOneCommand(command, options.cwd, options.env, options.timeoutMs, options.maxOutputChars));
   }
 
   const passed = results.filter((result) => result.ok).length;
   const failed = results.length - passed;
   return {
-    status: failed === 0 ? "passed" : "failed",
+    status: failed === 0 ? 'passed' : 'failed',
     createdAt,
     commandCount: results.length,
     passed,
     failed,
-    results
+    results,
   };
 }

@@ -1,7 +1,7 @@
 export interface SystemPromptMetadata {
   section13?: {
-    type: "prompt_section_trace";
-    source: "reference.section_13";
+    type: 'prompt_section_trace';
+    source: 'reference.section_13';
     boundarySentinel: string;
     boundaryIndex: number;
     staticReferenceNames: readonly string[];
@@ -16,7 +16,7 @@ export interface SystemPromptMetadata {
   };
 }
 
-export type AgentMessageAttachmentKind = "image" | "file";
+export type AgentMessageAttachmentKind = 'image' | 'file';
 
 export interface AgentMessageAttachment {
   kind: AgentMessageAttachmentKind;
@@ -29,10 +29,17 @@ export interface AgentMessageAttachment {
 }
 
 export type AgentMessage =
-  | { role: "system"; content: string; id?: string; promptMetadata?: SystemPromptMetadata }
-  | { role: "user"; content: string; id?: string; attachments?: AgentMessageAttachment[] }
-  | { role: "assistant"; content: string; id?: string; toolCalls?: ToolCall[]; providerMetadata?: ProviderMetadata }
-  | { role: "tool"; toolCallId: string; name: string; content: string; id?: string; attachments?: AgentMessageAttachment[] };
+  | { role: 'system'; content: string; id?: string; promptMetadata?: SystemPromptMetadata }
+  | { role: 'user'; content: string; id?: string; attachments?: AgentMessageAttachment[] }
+  | { role: 'assistant'; content: string; id?: string; toolCalls?: ToolCall[]; providerMetadata?: ProviderMetadata }
+  | {
+      role: 'tool';
+      toolCallId: string;
+      name: string;
+      content: string;
+      id?: string;
+      attachments?: AgentMessageAttachment[];
+    };
 
 export interface ToolCall {
   id: string;
@@ -40,7 +47,7 @@ export interface ToolCall {
   input: unknown;
 }
 
-export const SYNTHETIC_TOOL_RESULT_PLACEHOLDER = "[Tool result missing due to internal error]";
+export const SYNTHETIC_TOOL_RESULT_PLACEHOLDER = '[Tool result missing due to internal error]';
 
 export interface ToolResultPairingRepairOptions {
   strict?: boolean;
@@ -73,14 +80,14 @@ export interface ProviderMetadata {
     stderr?: string;
     transport?: string;
     runtimeTransport?: string;
-    processModel?: "persistent-process" | "process-per-turn";
+    processModel?: 'persistent-process' | 'process-per-turn';
     streaming?: boolean;
     threadId?: string;
     turnId?: string;
     sessionId?: string;
     persistentSession?: boolean;
     sessionReuse?: boolean;
-    sessionReuseMode?: "provider-resume-args";
+    sessionReuseMode?: 'provider-resume-args';
     preflight?: {
       provider: string;
       command: string;
@@ -88,7 +95,7 @@ export interface ProviderMetadata {
       resolvedArgs?: string[];
       installed: boolean;
       version?: string;
-      authStatus: "env-configured" | "unknown" | "unavailable";
+      authStatus: 'env-configured' | 'unknown' | 'unavailable';
       authSource?: string;
       checkedAt: string;
       cacheKey?: string;
@@ -100,8 +107,8 @@ export interface ProviderMetadata {
   };
 }
 
-type AssistantMessage = Extract<AgentMessage, { role: "assistant" }>;
-type ToolMessage = Extract<AgentMessage, { role: "tool" }>;
+type AssistantMessage = Extract<AgentMessage, { role: 'assistant' }>;
+type ToolMessage = Extract<AgentMessage, { role: 'tool' }>;
 type PairedToolCall = {
   originalId: string;
   toolCall: ToolCall;
@@ -109,10 +116,10 @@ type PairedToolCall = {
 
 function syntheticToolResult(toolCall: ToolCall): ToolMessage {
   return {
-    role: "tool",
+    role: 'tool',
     toolCallId: toolCall.id,
     name: toolCall.name,
-    content: SYNTHETIC_TOOL_RESULT_PLACEHOLDER
+    content: SYNTHETIC_TOOL_RESULT_PLACEHOLDER,
   };
 }
 
@@ -121,19 +128,21 @@ function toolCallOriginalIds(toolCalls: readonly PairedToolCall[]) {
 }
 
 function repairSummary(messages: readonly AgentMessage[]) {
-  return messages.map((message, index) => {
-    if (message.role === "assistant") {
-      return `[${index}] assistant(tool_calls=[${(message.toolCalls ?? []).map((toolCall) => toolCall.id).join(",")}])`;
-    }
-    if (message.role === "tool") {
-      return `[${index}] tool(toolCallId=${message.toolCallId})`;
-    }
-    return `[${index}] ${message.role}`;
-  }).join("; ");
+  return messages
+    .map((message, index) => {
+      if (message.role === 'assistant') {
+        return `[${index}] assistant(tool_calls=[${(message.toolCalls ?? []).map((toolCall) => toolCall.id).join(',')}])`;
+      }
+      if (message.role === 'tool') {
+        return `[${index}] tool(toolCallId=${message.toolCallId})`;
+      }
+      return `[${index}] ${message.role}`;
+    })
+    .join('; ');
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function nextUniqueToolCallId(id: string, seenToolCallIds: ReadonlySet<string>) {
@@ -165,8 +174,8 @@ function rewriteOpenAIOutputIds(output: unknown[], toolCalls: readonly PairedToo
   const queues = idRewriteQueues(toolCalls);
   let changed = false;
   const rewritten = output.map((item) => {
-    if (!isRecord(item) || item.type !== "function_call") return item;
-    const originalId = String(item.call_id ?? item.id ?? "");
+    if (!isRecord(item) || item.type !== 'function_call') return item;
+    const originalId = String(item.call_id ?? item.id ?? '');
     if (!originalId) return item;
     const nextId = shiftRewrittenId(queues, originalId);
     if (nextId === originalId) return item;
@@ -174,7 +183,7 @@ function rewriteOpenAIOutputIds(output: unknown[], toolCalls: readonly PairedToo
     return {
       ...item,
       call_id: nextId,
-      ...(item.id === originalId ? { id: nextId } : {})
+      ...(item.id === originalId ? { id: nextId } : {}),
     };
   });
   return changed ? rewritten : output;
@@ -184,7 +193,7 @@ function rewriteAnthropicContentIds(content: unknown[], toolCalls: readonly Pair
   const queues = idRewriteQueues(toolCalls);
   let changed = false;
   const rewritten = content.map((block) => {
-    if (!isRecord(block) || block.type !== "tool_use" || typeof block.id !== "string") return block;
+    if (!isRecord(block) || block.type !== 'tool_use' || typeof block.id !== 'string') return block;
     const nextId = shiftRewrittenId(queues, block.id);
     if (nextId === block.id) return block;
     changed = true;
@@ -195,7 +204,7 @@ function rewriteAnthropicContentIds(content: unknown[], toolCalls: readonly Pair
 
 function rewriteProviderMetadata(
   metadata: ProviderMetadata | undefined,
-  toolCalls: readonly PairedToolCall[]
+  toolCalls: readonly PairedToolCall[],
 ): ProviderMetadata | undefined {
   if (!metadata) return undefined;
   let changed = false;
@@ -225,7 +234,7 @@ function assistantWithToolCalls(message: AssistantMessage, pairedToolCalls: Pair
   const providerMetadata = rewriteProviderMetadata(message.providerMetadata, pairedToolCalls);
   const next: AssistantMessage = {
     ...message,
-    content: message.content || (toolCalls.length === 0 ? "[Tool use interrupted]" : message.content)
+    content: message.content || (toolCalls.length === 0 ? '[Tool use interrupted]' : message.content),
   };
   if (providerMetadata !== undefined) next.providerMetadata = providerMetadata;
   if (toolCalls.length > 0) {
@@ -246,7 +255,7 @@ function assistantWithToolCalls(message: AssistantMessage, pairedToolCalls: Pair
  */
 export function repairToolResultPairing(
   messages: readonly AgentMessage[],
-  options: ToolResultPairingRepairOptions = {}
+  options: ToolResultPairingRepairOptions = {},
 ): AgentMessage[] {
   const repairedMessages: AgentMessage[] = [];
   const seenToolCallIds = new Set<string>();
@@ -255,8 +264,8 @@ export function repairToolResultPairing(
   for (let index = 0; index < messages.length; index += 1) {
     const message = messages[index]!;
 
-    if (message.role !== "assistant") {
-      if (message.role === "tool") {
+    if (message.role !== 'assistant') {
+      if (message.role === 'tool') {
         repaired = true;
         continue;
       }
@@ -273,7 +282,7 @@ export function repairToolResultPairing(
         seenToolCallIds.add(repairedId);
         keptToolCalls.push({
           originalId: toolCall.id,
-          toolCall: { ...toolCall, id: repairedId }
+          toolCall: { ...toolCall, id: repairedId },
         });
         continue;
       }
@@ -285,7 +294,7 @@ export function repairToolResultPairing(
 
     const followingToolResults: ToolMessage[] = [];
     let cursor = index + 1;
-    while (cursor < messages.length && messages[cursor]!.role === "tool") {
+    while (cursor < messages.length && messages[cursor]!.role === 'tool') {
       followingToolResults.push(messages[cursor]! as ToolMessage);
       cursor += 1;
     }
@@ -297,10 +306,10 @@ export function repairToolResultPairing(
     const expectedOriginalIds = toolCallOriginalIds(keptToolCalls);
     const assignedResultByIndex = new Map<number, ToolMessage>();
     for (const toolResult of followingToolResults) {
-      const targetIndex = Array.from(expectedOriginalIds.entries())
-        .find(([candidateIndex, originalId]) => (
-          originalId === toolResult.toolCallId && !assignedResultByIndex.has(candidateIndex)
-        ))?.[0];
+      const targetIndex = Array.from(expectedOriginalIds.entries()).find(
+        ([candidateIndex, originalId]) =>
+          originalId === toolResult.toolCallId && !assignedResultByIndex.has(candidateIndex),
+      )?.[0];
       if (targetIndex === undefined) {
         repaired = true;
         continue;
@@ -318,12 +327,9 @@ export function repairToolResultPairing(
         repairedMessages.push({
           ...toolResult,
           toolCallId: toolCall.id,
-          name: toolCall.name
+          name: toolCall.name,
         });
       } else if (options.excludeToolCallIds?.has(originalId) || options.excludeToolCallIds?.has(toolCall.id)) {
-        // S6 — durably paused approval: leave this tool_call un-paired ON PURPOSE
-        // so resume pairs it by applying the human decision. No synthetic result.
-        continue;
       } else {
         repaired = true;
         repairedMessages.push(syntheticToolResult(toolCall));
@@ -336,7 +342,7 @@ export function repairToolResultPairing(
   if (repaired && options.strict) {
     throw new Error(
       `repairToolResultPairing: tool_use/tool_result pairing mismatch detected. ` +
-      `Message structure: ${repairSummary(messages)}`
+        `Message structure: ${repairSummary(messages)}`,
     );
   }
 

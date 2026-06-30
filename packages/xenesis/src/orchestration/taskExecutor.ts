@@ -1,8 +1,8 @@
-import type { ApprovalMode, CliConfigOverrides, IsolationConfig } from "../config/index.js";
-import { runAgentPipeline } from "../core/AgentRunPipeline.js";
-import { decideTaskMode, resolveProvisioner } from "../core/isolation/index.js";
-import type { IsolationOutcome } from "../core/isolation/index.js";
-import type { WorkerTaskExecutor } from "./taskWorker.js";
+import type { ApprovalMode, CliConfigOverrides, IsolationConfig } from '../config/index.js';
+import { runAgentPipeline } from '../core/AgentRunPipeline.js';
+import type { IsolationOutcome } from '../core/isolation/index.js';
+import { decideTaskMode, resolveProvisioner } from '../core/isolation/index.js';
+import type { WorkerTaskExecutor } from './taskWorker.js';
 
 export interface PipelineTaskExecutorDefaults {
   approvalMode?: ApprovalMode;
@@ -31,20 +31,18 @@ function errorMessage(error: unknown) {
 export function pipelineEnv(
   env: NodeJS.ProcessEnv | undefined,
   isolation: IsolationConfig | undefined,
-  secretEnvNames: Iterable<string> = []
+  secretEnvNames: Iterable<string> = [],
 ): NodeJS.ProcessEnv | undefined {
   if (!isolation?.scrubShellSecrets) return env;
   const baseEnv = env ?? process.env;
   const secretNames = Array.from(new Set(secretEnvNames)).filter(Boolean);
   return {
     ...baseEnv,
-    XENESIS_ISOLATION_SCRUB: "1",
-    ...(secretNames.length > 0
-      ? { XENESIS_ISOLATION_SCRUB_NAMES: secretNames.join(",") }
-      : {}),
+    XENESIS_ISOLATION_SCRUB: '1',
+    ...(secretNames.length > 0 ? { XENESIS_ISOLATION_SCRUB_NAMES: secretNames.join(',') } : {}),
     ...(isolation.shellSecretAllowlist.length > 0
-      ? { XENESIS_ISOLATION_SCRUB_ALLOW: isolation.shellSecretAllowlist.join(",") }
-      : {})
+      ? { XENESIS_ISOLATION_SCRUB_ALLOW: isolation.shellSecretAllowlist.join(',') }
+      : {}),
   };
 }
 
@@ -56,17 +54,17 @@ export function createPipelineTaskExecutor(options: PipelineTaskExecutorOptions)
     const cli: CliConfigOverrides = {
       ...(options.cli ?? {}),
       ...(approvalMode ? { approvalMode } : {}),
-      ...(maxTurns !== undefined ? { maxTurns } : {})
+      ...(maxTurns !== undefined ? { maxTurns } : {}),
     };
 
     const mode = decideTaskMode({
       explicit: task.metadata?.isolation,
       autoIsolate: options.autoIsolate ?? false,
-      defaultMode: options.isolation?.defaultMode
+      defaultMode: options.isolation?.defaultMode,
     });
     const provisioner = resolveProvisioner(mode, {
       xenesisHome: options.xenesisHome,
-      keepWorktree: options.isolation?.keepWorktree ?? "if-changed"
+      keepWorktree: options.isolation?.keepWorktree ?? 'if-changed',
     });
     const workspace = await provisioner.provision({
       taskId: task.id,
@@ -74,7 +72,7 @@ export function createPipelineTaskExecutor(options: PipelineTaskExecutorOptions)
       baseWorkspace: options.cwd,
       baseCwd: options.cwd,
       xenesisHome: options.xenesisHome,
-      mode
+      mode,
     });
 
     let result: PipelineResult | undefined;
@@ -97,7 +95,7 @@ export function createPipelineTaskExecutor(options: PipelineTaskExecutorOptions)
         // auto-denying every approval (the prior `() => false` bug).
         abortSignal: context.signal,
         maxTokensBudget: maxTokens,
-        stream: false
+        stream: false,
       });
     } catch (error) {
       runError = error;
@@ -111,15 +109,14 @@ export function createPipelineTaskExecutor(options: PipelineTaskExecutorOptions)
 
     if (runError) {
       if (cleanupError) {
-        throw new Error(
-          `${errorMessage(runError)} (workspace cleanup also failed: ${errorMessage(cleanupError)})`,
-          { cause: runError }
-        );
+        throw new Error(`${errorMessage(runError)} (workspace cleanup also failed: ${errorMessage(cleanupError)})`, {
+          cause: runError,
+        });
       }
       throw runError;
     }
     if (cleanupError) throw cleanupError;
-    if (!result) throw new Error("Agent task did not produce a result");
+    if (!result) throw new Error('Agent task did not produce a result');
 
     if (result.exitCode !== 0) {
       throw new Error(`Agent task failed with exit code ${result.exitCode}`);
@@ -129,26 +126,26 @@ export function createPipelineTaskExecutor(options: PipelineTaskExecutorOptions)
     // failure: record it as `blocked` with the pending approval so the task is
     // resumable once a human decision arrives (Desk inbox consumes this). The
     // session log holds the durable permission_request + run_snapshot.pendingApproval.
-    if (result.status === "paused") {
+    if (result.status === 'paused') {
       const pending = result.pendingApproval;
       const blockedReason = pending
         ? `awaiting approval for tool "${pending.name}": ${pending.reason}`
-        : "awaiting approval";
+        : 'awaiting approval';
       return {
-        status: "blocked",
-        output: result.doneContent ?? "",
+        status: 'blocked',
+        output: result.doneContent ?? '',
         sessionId: result.sessionId,
         usage: result.usage,
         error: blockedReason,
-        isolation
+        isolation,
       };
     }
 
     return {
-      output: result.doneContent ?? "",
+      output: result.doneContent ?? '',
       sessionId: result.sessionId,
       usage: result.usage,
-      isolation
+      isolation,
     };
   };
 }

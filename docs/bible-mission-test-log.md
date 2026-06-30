@@ -2,7 +2,7 @@
 
 Real, interactive end-to-end test of the Xenesis Desk agent (codex-app-server +
 CR control + mode-based reasoning + thinking-block UI). Mission given by the
-user: via the agent, create an `E:\bible` folder and produce Bible-study quiz
+user: via the agent, create an external `bible` folder and produce Bible-study quiz
 materials for church (HTML, PPT, etc.), step by step, with the controller (me)
 answering the agent's questions.
 
@@ -23,28 +23,28 @@ work=high).
 agent's response/question, CR tool calls, approvals, files produced, timing,
 screenshot ref, and whether the thinking-process block appeared.)
 
-### Turn 1 — create E:\bible (mode: chat)
+### Turn 1 — create an external bible folder (mode: chat)
 - My prompt: "E 드라이브에 bible 이라는 폴더를 새로 만들어줘."
 - Provider: codex-app-server · 50s · work log: 3 events · 1 tools · approvals: 0.
 - THINKING BLOCK: **appeared** ✓ (240 chars) — preserved the agent's intermediate
   narration ("현재 환경이 읽기 전용이라 ... 상태를 확인 중입니다 ...") in a collapsible
   "사고 과정" panel. Phase 1 thinking-block UI confirmed working.
-- Agent answer: "이 환경에서는 E:\bible 폴더를 새로 만들 수 없습니다. 현재는 읽기 전용이라
+- Agent answer: "이 환경에서는 외부 bible 폴더를 새로 만들 수 없습니다. 현재는 읽기 전용이라
   생성 작업이 막혀 있습니다."
 - Result: folder NOT created. The agent treated codex's `--sandbox read-only` as
-  "cannot write", instead of using a Desk CR terminal (xd.terminals.run mkdir,
+  "cannot write", instead of using a Desk CR terminal (`xd.terminals.run` mkdir,
   which executes with approval). Finding: agent does not map "create folder" to a
   CR terminal command on its own.
 - Controller action: guide it to use a Desk terminal (next turn).
 
 ### Turn 2 — guide to Desk terminal (mode: chat)
-- My prompt: "Desk 안에서 터미널을 하나 열고, 그 터미널에서 명령으로 E:\bible 폴더를 만들어줘.
+- My prompt: "Desk 안에서 터미널을 하나 열고, 그 터미널에서 명령으로 외부 bible 폴더를 만들어줘.
   터미널 명령 실행은 읽기 전용 샌드박스가 아니라 실제로 실행되니까 가능해."
 - 11s · work log 7 events · 5 tools · approvals: 1 (clicked 승인 후 실행) · thinking block ✓ (14 chars).
 - Agent: USED the CR terminal — `xd.terminals.run` Desk action completed (opened a
   powershell terminal, pid 70212). Good: it switched from "read-only, can't" to a
   real CR terminal command after guidance.
-- BUT E:\bible still not created — the captured command was truncated; the run
+- BUT the external bible folder was still not created — the captured command was truncated; the run
   likely opened the shell without the mkdir, or the command did not create the dir.
 - Controller action: give the exact New-Item command explicitly (next turn).
 
@@ -52,7 +52,7 @@ screenshot ref, and whether the thinking-process block appeared.)
 - t3 was SKIPPED by the driver (my JSON had an invalid `\ ` escape from echo).
   Fixed command writing to use node JSON.stringify + forward-slash paths.
 - t4 (chat/low): "Desk 터미널에서 아래 PowerShell 명령을 그대로 한 줄로 실행해줘 ...
-  New-Item -ItemType Directory -Path E:/bible -Force ; Test-Path E:/bible".
+  New-Item -ItemType Directory -Path <external-bible-folder> -Force ; Test-Path <external-bible-folder>".
 - Screenshot (t4-done.png) shows the SMOKING GUN: the terminal received
   "아래 PowerShell 명령을 그대로 한 줄로" and errored with
   "'아래' ... CommandNotFoundException". The agent passed a FRAGMENT OF MY KOREAN
@@ -63,7 +63,7 @@ screenshot ref, and whether the thinking-process block appeared.)
 - (thinking block kept appearing each turn ✓.)
 
 ### Turn 5 — work mode attempt (FAILED — effort did not switch + still echoed)
-- t5 (mode: work): "E 드라이브에 bible 폴더를 만들어야 해. Desk 터미널에서 다음 명령을 실행해줘: New-Item ...".
+- t5 (mode: work): "외부 드라이브에 bible 폴더를 만들어야 해. Desk 터미널에서 다음 명령을 실행해줘: New-Item ...".
 - Footer flipped to mode=work, but the turn took only 10s (high would be ~180s) →
   the persistent codex app-server process kept the turn-1 (chat=low) effort; a
   mid-session mode change did NOT re-spawn at high. (Implementation limitation.)
@@ -71,8 +71,8 @@ screenshot ref, and whether the thinking-process block appeared.)
   The agent again echoed my instruction fragment as the shell command. Folder NOT created.
 
 ### Pivot — regression analysis (user: it worked in the OTHER repos, esp. backup)
-User clarified that real file/terminal agent work succeeded in E:\test_git,
-E:\xenesis-desk, E:\xenesis-desk-backup (best), E:\xenesis-final — NOT (only) about
+User clarified that real file/terminal agent work succeeded in other local
+checkouts, including backup and final workspaces — NOT (only) about
 my effort change. So this is a regression vs those repos. Quick diff findings:
 - deskNaturalIntentCatalog.ts: IDENTICAL (434L) target vs backup.
 - CR caps (xd.terminals.*, xd.files.*): essentially identical.
@@ -104,7 +104,8 @@ my effort change. So this is a regression vs those repos. Quick diff findings:
 
 ### BREAKTHROUGH — agent does real file/coding work via CR (2026-06-26)
 - At reasoning effort = medium (Desk setting), the agent (codex-app-server) wrote
-  E:/bible/quiz.html (valid HTML, folder auto-created) via xd.files.applyTextWrite.
+  `<external-bible-folder>/quiz.html` (valid HTML, folder auto-created) via
+  `xd.files.applyTextWrite`.
   No echo, correct content. Real file/coding work CONFIRMED working.
 - Reframes the "permission problem": file writes + terminal (with approval, the
   card DID appear in earlier turns, approvals:1) work. The Desk approval mechanism

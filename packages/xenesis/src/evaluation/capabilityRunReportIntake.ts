@@ -1,13 +1,10 @@
-import type {
-  CapabilityScenario,
-  CapabilityScenarioCategory
-} from "./capabilityEval.js";
+import type { CapabilityScenario, CapabilityScenarioCategory } from './capabilityEval.js';
 import type {
   CapabilityFailureSignals,
   CapabilityScenarioBacklog,
   CapabilityScenarioCandidate,
-  CapabilityScenarioCandidateStatus
-} from "./capabilityFeedbackLoop.js";
+  CapabilityScenarioCandidateStatus,
+} from './capabilityFeedbackLoop.js';
 
 export interface FailedRunReportLearningEntry {
   report: Record<string, unknown>;
@@ -32,19 +29,19 @@ export interface PromoteFailedRunReportsToCapabilityScenariosResult {
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function optionalText(value: unknown) {
-  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
 function optionalNumber(value: unknown) {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
 function optionalBoolean(value: unknown) {
-  return typeof value === "boolean" ? value : undefined;
+  return typeof value === 'boolean' ? value : undefined;
 }
 
 function objectArray(value: unknown): Record<string, unknown>[] {
@@ -52,9 +49,7 @@ function objectArray(value: unknown): Record<string, unknown>[] {
 }
 
 function stringArray(value: unknown): string[] {
-  return Array.isArray(value)
-    ? value.map(optionalText).filter((item): item is string => Boolean(item))
-    : [];
+  return Array.isArray(value) ? value.map(optionalText).filter((item): item is string => Boolean(item)) : [];
 }
 
 function unique(values: string[]) {
@@ -62,11 +57,13 @@ function unique(values: string[]) {
 }
 
 function slug(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80) || "run";
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 80) || 'run'
+  );
 }
 
 function stableHash(value: string) {
@@ -75,7 +72,7 @@ function stableHash(value: string) {
     hash ^= value.charCodeAt(index);
     hash = Math.imul(hash, 16777619);
   }
-  return (hash >>> 0).toString(16).padStart(8, "0");
+  return (hash >>> 0).toString(16).padStart(8, '0');
 }
 
 function reportMetrics(report: Record<string, unknown>) {
@@ -87,11 +84,13 @@ function reportSelfReview(report: Record<string, unknown>) {
 }
 
 function reportTools(report: Record<string, unknown>) {
-  return objectArray(report.tools).map((tool) => ({
-    name: optionalText(tool.name),
-    calls: optionalNumber(tool.calls) ?? 0,
-    failures: optionalNumber(tool.failures) ?? 0
-  })).filter((tool): tool is { name: string; calls: number; failures: number } => Boolean(tool.name));
+  return objectArray(report.tools)
+    .map((tool) => ({
+      name: optionalText(tool.name),
+      calls: optionalNumber(tool.calls) ?? 0,
+      failures: optionalNumber(tool.failures) ?? 0,
+    }))
+    .filter((tool): tool is { name: string; calls: number; failures: number } => Boolean(tool.name));
 }
 
 function reportChanges(report: Record<string, unknown>) {
@@ -113,9 +112,9 @@ function isFailedRunReport(report: Record<string, unknown>) {
   const selfReviewStatus = optionalText(reportSelfReview(report).status);
   return (
     success === false ||
-    status === "failed" ||
-    status === "error" ||
-    selfReviewStatus === "fail" ||
+    status === 'failed' ||
+    status === 'error' ||
+    selfReviewStatus === 'fail' ||
     reportTools(report).some((tool) => tool.failures > 0)
   );
 }
@@ -127,22 +126,21 @@ function failedToolEvidence(report: Record<string, unknown>) {
 }
 
 function degradationEvidence(report: Record<string, unknown>) {
-  return stringArray(reportMetrics(report).degradationReasons)
-    .map((reason) => `run degradation: ${reason}`);
+  return stringArray(reportMetrics(report).degradationReasons).map((reason) => `run degradation: ${reason}`);
 }
 
 function verificationEvidence(report: Record<string, unknown>) {
   const verification = reportVerification(report);
   if (!verification) return [];
   const status = optionalText(verification.status);
-  return status && status !== "passed" ? [`verification status: ${status}`] : [];
+  return status && status !== 'passed' ? [`verification status: ${status}`] : [];
 }
 
 function selfReviewEvidence(report: Record<string, unknown>) {
   return selfReviewFindings(report)
     .map((finding) => {
-      const area = optionalText(finding.area) ?? "unknown";
-      const severity = optionalText(finding.severity) ?? "unknown";
+      const area = optionalText(finding.area) ?? 'unknown';
+      const severity = optionalText(finding.severity) ?? 'unknown';
       const message = optionalText(finding.message);
       return message ? `self-review(${area}/${severity}): ${message}` : undefined;
     })
@@ -153,12 +151,12 @@ function runFailureEvidence(report: Record<string, unknown>) {
   const status = optionalText(report.status);
   const metrics = reportMetrics(report);
   return unique([
-    ...(status && status !== "completed" ? [`run status: ${status}`] : []),
+    ...(status && status !== 'completed' ? [`run status: ${status}`] : []),
     ...degradationEvidence(report),
     ...failedToolEvidence(report),
     ...verificationEvidence(report),
     ...selfReviewEvidence(report),
-    metrics.blocked === true ? "run blocked" : ""
+    metrics.blocked === true ? 'run blocked' : '',
   ]);
 }
 
@@ -167,30 +165,41 @@ function hasVerificationFailureSignal(report: Record<string, unknown>) {
   const verification = reportVerification(report);
   return (
     metrics.verificationAfterChangeMissing === true ||
-    stringArray(metrics.degradationReasons).some((reason) => (
-      reason === "missing_verification_after_change" ||
-      reason === "verification_failed"
-    )) ||
-    optionalText(verification?.status) === "failed" ||
-    selfReviewFindings(report).some((finding) => optionalText(finding.area) === "verification")
+    stringArray(metrics.degradationReasons).some(
+      (reason) => reason === 'missing_verification_after_change' || reason === 'verification_failed',
+    ) ||
+    optionalText(verification?.status) === 'failed' ||
+    selfReviewFindings(report).some((finding) => optionalText(finding.area) === 'verification')
   );
 }
 
 function inferCategory(report: Record<string, unknown>): CapabilityScenarioCategory {
   const tools = reportTools(report).map((tool) => tool.name);
   const metrics = reportMetrics(report);
-  if (hasVerificationFailureSignal(report)) return "verification";
-  if (tools.some((tool) => tool.startsWith("desk_"))) return "desk";
-  if (tools.some((tool) => tool === "weather_current" || tool === "news_latest" || tool === "sports_scores" || tool === "market_quote" || tool === "web_search")) {
-    return "current-info";
+  if (hasVerificationFailureSignal(report)) return 'verification';
+  if (tools.some((tool) => tool.startsWith('desk_'))) return 'desk';
+  if (
+    tools.some(
+      (tool) =>
+        tool === 'weather_current' ||
+        tool === 'news_latest' ||
+        tool === 'sports_scores' ||
+        tool === 'market_quote' ||
+        tool === 'web_search',
+    )
+  ) {
+    return 'current-info';
   }
-  if (tools.some((tool) => tool.startsWith("memory"))) return "memory-session";
-  if ((optionalNumber(metrics.providerRetryCount) ?? 0) > 0 || (optionalNumber(metrics.providerFallbackCount) ?? 0) > 0) {
-    return "provider-recovery";
+  if (tools.some((tool) => tool.startsWith('memory'))) return 'memory-session';
+  if (
+    (optionalNumber(metrics.providerRetryCount) ?? 0) > 0 ||
+    (optionalNumber(metrics.providerFallbackCount) ?? 0) > 0
+  ) {
+    return 'provider-recovery';
   }
-  if (reportTools(report).some((tool) => tool.failures > 0)) return "tool-recovery";
-  if (reportChanges(report).length > 0) return "practical-work";
-  return "practical-work";
+  if (reportTools(report).some((tool) => tool.failures > 0)) return 'tool-recovery';
+  if (reportChanges(report).length > 0) return 'practical-work';
+  return 'practical-work';
 }
 
 function inferredRequiredTools(report: Record<string, unknown>) {
@@ -198,26 +207,30 @@ function inferredRequiredTools(report: Record<string, unknown>) {
     .filter((tool) => tool.calls > 0)
     .map((tool) => tool.name);
   const additions = [
-    hasVerificationFailureSignal(report) ? "diagnostics" : "",
-    reportChanges(report).length > 0 && !tools.includes("read") ? "read" : ""
+    hasVerificationFailureSignal(report) ? 'diagnostics' : '',
+    reportChanges(report).length > 0 && !tools.includes('read') ? 'read' : '',
   ];
   return unique([...tools, ...additions]);
 }
 
 function inferredRequiredTextAny(report: Record<string, unknown>) {
   if (hasVerificationFailureSignal(report) || reportChanges(report).length > 0) {
-    return [["검증", "diagnostics", "verification"]];
+    return [['검증', 'diagnostics', 'verification']];
   }
-  if (inferCategory(report) === "tool-recovery") {
-    return [["복구", "recovery", "retry"]];
+  if (inferCategory(report) === 'tool-recovery') {
+    return [['복구', 'recovery', 'retry']];
   }
-  if (inferCategory(report) === "provider-recovery") {
-    return [["provider", "fallback", "retry"]];
+  if (inferCategory(report) === 'provider-recovery') {
+    return [['provider', 'fallback', 'retry']];
   }
   return [];
 }
 
-function failureSignals(report: Record<string, unknown>, requiredTools: string[], requiredTextAny: string[][]): CapabilityFailureSignals {
+function failureSignals(
+  report: Record<string, unknown>,
+  requiredTools: string[],
+  requiredTextAny: string[][],
+): CapabilityFailureSignals {
   return {
     requiredFirstTool: requiredTools[0],
     missingTools: requiredTools,
@@ -228,36 +241,33 @@ function failureSignals(report: Record<string, unknown>, requiredTools: string[]
     requiredTextAny,
     minimumToolCalls: Object.fromEntries(requiredTools.map((tool) => [tool, 1])),
     orderedToolFailures: [],
-    rawFailures: runFailureEvidence(report)
+    rawFailures: runFailureEvidence(report),
   };
 }
 
 function scenarioPrompt(prompt: string, report: Record<string, unknown>, failures: string[]) {
-  const reportId = optionalText(report.id) ?? optionalText(report.sessionId) ?? "unknown";
+  const reportId = optionalText(report.id) ?? optionalText(report.sessionId) ?? 'unknown';
   return [
     prompt,
-    "",
-    "이 시나리오는 실제 실패 run report에서 승격되었습니다.",
+    '',
+    '이 시나리오는 실제 실패 run report에서 승격되었습니다.',
     `sourceReportId: ${reportId}`,
-    "동일한 실패 징후를 피하고, 필요한 도구 사용과 검증 증거를 최종 응답에 포함하세요.",
-    ...(failures.length > 0 ? ["failureSignals:", ...failures.slice(0, 6).map((failure) => `- ${failure}`)] : [])
-  ].join("\n");
+    '동일한 실패 징후를 피하고, 필요한 도구 사용과 검증 증거를 최종 응답에 포함하세요.',
+    ...(failures.length > 0 ? ['failureSignals:', ...failures.slice(0, 6).map((failure) => `- ${failure}`)] : []),
+  ].join('\n');
 }
 
 function candidateIdFor(report: Record<string, unknown>, prompt: string, failures: string[]) {
-  const sessionId = optionalText(report.sessionId) ?? optionalText(report.id) ?? "unknown";
-  return `failed-run-${slug(sessionId)}-${stableHash([
-    optionalText(report.id) ?? "",
-    sessionId,
-    prompt,
-    ...failures
-  ].join("\n"))}`;
+  const sessionId = optionalText(report.sessionId) ?? optionalText(report.id) ?? 'unknown';
+  return `failed-run-${slug(sessionId)}-${stableHash(
+    [optionalText(report.id) ?? '', sessionId, prompt, ...failures].join('\n'),
+  )}`;
 }
 
 function candidateFromEntry(
   entry: FailedRunReportLearningEntry,
   timestamp: string,
-  status: CapabilityScenarioCandidateStatus
+  status: CapabilityScenarioCandidateStatus,
 ): CapabilityScenarioCandidate | undefined {
   const prompt = optionalText(entry.prompt);
   if (!prompt || !isFailedRunReport(entry.report)) return undefined;
@@ -275,8 +285,8 @@ function candidateFromEntry(
     prompt: scenarioPrompt(prompt, entry.report, failures),
     ...(requiredTools.length > 0 ? { requiredTools } : {}),
     ...(requiredTextAny.length > 0 ? { requiredTextAny } : {}),
-    weight: category === "verification" || category === "practical-work" ? 3 : 2,
-    maxDurationMs: 180000
+    weight: category === 'verification' || category === 'practical-work' ? 3 : 2,
+    maxDurationMs: 180000,
   };
 
   return {
@@ -292,7 +302,7 @@ function candidateFromEntry(
     failures,
     toolCalls: reportTools(entry.report).map((tool) => tool.name),
     signals: failureSignals(entry.report, requiredTools, requiredTextAny),
-    suggestedScenario
+    suggestedScenario,
   };
 }
 
@@ -303,16 +313,16 @@ function mergeCandidate(previous: CapabilityScenarioCandidate | undefined, next:
     status: previous.status,
     notes: previous.notes,
     firstSeenAt: previous.firstSeenAt,
-    occurrences: previous.occurrences + 1
+    occurrences: previous.occurrences + 1,
   };
 }
 
 export function promoteFailedRunReportsToCapabilityScenarios(
-  options: PromoteFailedRunReportsToCapabilityScenariosOptions
+  options: PromoteFailedRunReportsToCapabilityScenariosOptions,
 ): PromoteFailedRunReportsToCapabilityScenariosResult {
   const timestamp = (options.now ?? (() => new Date()))().toISOString();
   const maxCandidates = Math.max(1, options.maxCandidates ?? 200);
-  const status = options.status ?? "accepted";
+  const status = options.status ?? 'accepted';
   const candidates = new Map<string, CapabilityScenarioCandidate>();
   let imported = 0;
   let skipped = 0;
@@ -335,9 +345,9 @@ export function promoteFailedRunReportsToCapabilityScenarios(
     .sort((left, right) => right.lastSeenAt.localeCompare(left.lastSeenAt) || left.id.localeCompare(right.id))
     .slice(0, maxCandidates);
   const backlog: CapabilityScenarioBacklog = {
-    kind: "capability-scenario-backlog",
+    kind: 'capability-scenario-backlog',
     updatedAt: timestamp,
-    candidates: nextCandidates
+    candidates: nextCandidates,
   };
 
   return {
@@ -345,6 +355,6 @@ export function promoteFailedRunReportsToCapabilityScenarios(
     candidates: nextCandidates,
     imported,
     skipped,
-    accepted: nextCandidates.filter((candidate) => candidate.status === "accepted").length
+    accepted: nextCandidates.filter((candidate) => candidate.status === 'accepted').length,
   };
 }

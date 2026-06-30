@@ -1,14 +1,28 @@
-import { askTool } from "./askTool.js";
-import { agentTool } from "./agentTool.js";
-import { appLaunchPlanTool } from "./appLaunchPlanTool.js";
-import { agentTaskTool } from "./agentTaskTool.js";
-import { appReadinessTool } from "./appReadinessTool.js";
-import { briefTool } from "./briefTool.js";
-import { codeSymbolsTool } from "./codeTools.js";
-import { codexTaskTool } from "./codexTaskTool.js";
-import { configTool } from "./configTool.js";
-import { artifactListTool, artifactReadTool, artifactSaveTool, contextIndexTool, contextSearchTool } from "./contextArtifactTools.js";
-import { marketQuoteTool, newsLatestTool, sportsScoresTool, weatherCurrentTool, weatherForecastTool } from "./currentInfoTools.js";
+import type { ShellConfig, WebToolsConfig } from '../config/types.js';
+import { defaultConfig } from '../config/types.js';
+import { agentTaskTool } from './agentTaskTool.js';
+import { agentTool } from './agentTool.js';
+import { appLaunchPlanTool } from './appLaunchPlanTool.js';
+import { appReadinessTool } from './appReadinessTool.js';
+import { askTool } from './askTool.js';
+import { briefTool } from './briefTool.js';
+import { codeSymbolsTool } from './codeTools.js';
+import { codexTaskTool } from './codexTaskTool.js';
+import { configTool } from './configTool.js';
+import {
+  artifactListTool,
+  artifactReadTool,
+  artifactSaveTool,
+  contextIndexTool,
+  contextSearchTool,
+} from './contextArtifactTools.js';
+import {
+  marketQuoteTool,
+  newsLatestTool,
+  sportsScoresTool,
+  weatherCurrentTool,
+  weatherForecastTool,
+} from './currentInfoTools.js';
 import {
   deskActiveContextTool,
   deskBrowserListTool,
@@ -17,8 +31,8 @@ import {
   deskCommandPaletteTool,
   deskContextActionsTool,
   deskCreateXconMarkdownTool,
-  deskExportXconPdfTool,
   deskExplorerStateTool,
+  deskExportXconPdfTool,
   deskOpenFileTool,
   deskPlaywrightRunTool,
   deskPlaywrightSnapshotTool,
@@ -32,35 +46,33 @@ import {
   deskSubagentStopTool,
   deskSubagentTailTool,
   deskTerminalRunAndWaitTool,
+  deskTerminalRunTool,
   deskTerminalStopTool,
   deskTerminalTailTool,
-  deskTerminalRunTool,
-  deskXvCommandTool
-} from "./deskBridgeTools.js";
-import { createDeskOperationTool } from "./deskOperationTool.js";
-import { editTool, listTool, readTool, writeTool } from "./fileTools.js";
-import { lspTool } from "./lspTool.js";
-import { notebookEditTool } from "./notebookEditTool.js";
-import { enterPlanModeTool, exitPlanModeTool } from "./planModeTools.js";
-import { cronCreateTool, cronDeleteTool, cronListTool } from "./scheduleCronTool.js";
-import { searchTool } from "./searchTool.js";
-import { sendMessageTool } from "./sendMessageTool.js";
-import { createShellTool } from "./shellTool.js";
-import { processTool } from "./processTool.js";
-import { sleepTool } from "./sleepTool.js";
-import { createRemoteTriggerTool, type RemoteTriggerDependencies } from "./remoteTriggerTool.js";
-import { skillTool } from "./skillTool.js";
-import { teamCreateTool, teamDeleteTool } from "./teamTools.js";
-import { taskHandoffTool } from "./taskHandoffTool.js";
-import { todoTool } from "./todoTool.js";
-import { createToolSearchTool } from "./toolSearchTool.js";
-import type { Tool, ToolRegistry } from "./types.js";
-import type { ShellConfig, WebToolsConfig } from "../config/types.js";
-import { defaultConfig } from "../config/types.js";
-import { createWebFetchTool, createWebSearchTool } from "./webTools.js";
-import { enterWorktreeTool, exitWorktreeTool } from "./worktreeTools.js";
-import { diffTool, fileInfoTool, globTool, patchTool, treeTool } from "./workspaceTools.js";
-import { diagnosticsTool, jsonTool, serverTool } from "./runtimeTools.js";
+  deskXvCommandTool,
+} from './deskBridgeTools.js';
+import { createDeskOperationTool } from './deskOperationTool.js';
+import { editTool, listTool, readTool, writeTool } from './fileTools.js';
+import { lspTool } from './lspTool.js';
+import { notebookEditTool } from './notebookEditTool.js';
+import { enterPlanModeTool, exitPlanModeTool } from './planModeTools.js';
+import { processTool } from './processTool.js';
+import { createRemoteTriggerTool, type RemoteTriggerDependencies } from './remoteTriggerTool.js';
+import { diagnosticsTool, jsonTool, serverTool } from './runtimeTools.js';
+import { cronCreateTool, cronDeleteTool, cronListTool } from './scheduleCronTool.js';
+import { searchTool } from './searchTool.js';
+import { sendMessageTool } from './sendMessageTool.js';
+import { createShellTool } from './shellTool.js';
+import { skillTool } from './skillTool.js';
+import { sleepTool } from './sleepTool.js';
+import { taskHandoffTool } from './taskHandoffTool.js';
+import { teamCreateTool, teamDeleteTool } from './teamTools.js';
+import { todoTool } from './todoTool.js';
+import { createToolSearchTool } from './toolSearchTool.js';
+import type { Tool, ToolRegistry } from './types.js';
+import { createWebFetchTool, createWebSearchTool } from './webTools.js';
+import { diffTool, fileInfoTool, globTool, patchTool, treeTool } from './workspaceTools.js';
+import { enterWorktreeTool, exitWorktreeTool } from './worktreeTools.js';
 
 export interface BuiltInToolsOptions {
   env?: NodeJS.ProcessEnv;
@@ -78,8 +90,7 @@ export interface BuiltInToolsOptions {
 
 function remoteTriggerEnabled(options: BuiltInToolsOptions) {
   const env = options.env ?? process.env;
-  return options.enableRemoteTrigger === true ||
-    /^(1|true|yes)$/iu.test(env.XENESIS_REMOTE_TRIGGER ?? "");
+  return options.enableRemoteTrigger === true || /^(1|true|yes)$/iu.test(env.XENESIS_REMOTE_TRIGGER ?? '');
 }
 
 export function createBuiltInTools(options: BuiltInToolsOptions = {}): ToolRegistry {
@@ -170,7 +181,7 @@ export function createBuiltInTools(options: BuiltInToolsOptions = {}): ToolRegis
     // CR Operation-DSL: verifiable, approval-gated app control (Office/PDF/media/SaaS).
     // NOT gated default-off — it degrades cleanly when the Desk runner is absent and is
     // the product path; shouldDefer keeps the footprint low (behind tool_search).
-    createDeskOperationTool()
+    createDeskOperationTool(),
   ];
   if (remoteTriggerEnabled(options)) {
     tools.push(createRemoteTriggerTool(options.remoteTriggerDependencies));
@@ -181,6 +192,6 @@ export function createBuiltInTools(options: BuiltInToolsOptions = {}): ToolRegis
       registry.set(alias, tool);
     }
   }
-  registry.set("tool_search", createToolSearchTool(registry));
+  registry.set('tool_search', createToolSearchTool(registry));
   return registry;
 }

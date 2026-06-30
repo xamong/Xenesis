@@ -1,13 +1,13 @@
-import { z } from "zod";
-import { xenesisStatePath, type ApprovalMode } from "../config/index.js";
-import { SqliteAgentTaskStore, type AgentTask } from "../orchestration/index.js";
-import { formatTeamAgentId, registerTeamMember } from "./teamTools.js";
-import type { Tool, ToolContext } from "./types.js";
+import { z } from 'zod';
+import { type ApprovalMode, xenesisStatePath } from '../config/index.js';
+import { type AgentTask, SqliteAgentTaskStore } from '../orchestration/index.js';
+import { formatTeamAgentId, registerTeamMember } from './teamTools.js';
+import type { Tool, ToolContext } from './types.js';
 
-const agentModelSchema = z.enum(["sonnet", "opus", "haiku"]);
+const agentModelSchema = z.enum(['sonnet', 'opus', 'haiku']);
 
 const agentInputSchema = z.object({
-  action: z.enum(["launch", "status"]).nullable().optional(),
+  action: z.enum(['launch', 'status']).nullable().optional(),
   description: z.string().min(1).nullable().optional(),
   prompt: z.string().min(1).nullable().optional(),
   subagent_type: z.string().min(1).nullable().optional(),
@@ -16,16 +16,16 @@ const agentInputSchema = z.object({
   name: z.string().min(1).nullable().optional(),
   team_name: z.string().min(1).nullable().optional(),
   mode: z.string().min(1).nullable().optional(),
-  isolation: z.enum(["worktree", "remote"]).nullable().optional(),
+  isolation: z.enum(['worktree', 'remote']).nullable().optional(),
   cwd: z.string().min(1).nullable().optional(),
   agentId: z.string().min(1).nullable().optional(),
   taskId: z.string().min(1).nullable().optional(),
   task_id: z.string().min(1).nullable().optional(),
-  id: z.string().min(1).nullable().optional()
+  id: z.string().min(1).nullable().optional(),
 });
 
 const agentOpenAIInputSchema = z.object({
-  action: z.enum(["launch", "status"]).nullable(),
+  action: z.enum(['launch', 'status']).nullable(),
   description: z.string().nullable(),
   prompt: z.string().nullable(),
   subagent_type: z.string().nullable(),
@@ -34,19 +34,19 @@ const agentOpenAIInputSchema = z.object({
   name: z.string().nullable(),
   team_name: z.string().nullable(),
   mode: z.string().nullable(),
-  isolation: z.enum(["worktree", "remote"]).nullable(),
+  isolation: z.enum(['worktree', 'remote']).nullable(),
   cwd: z.string().nullable(),
   agentId: z.string().nullable(),
   taskId: z.string().nullable(),
   task_id: z.string().nullable(),
-  id: z.string().nullable()
+  id: z.string().nullable(),
 });
 
 type AgentToolInput = z.infer<typeof agentInputSchema>;
 
 interface AsyncAgentLaunchOutput {
   isAsync: true;
-  status: "async_launched";
+  status: 'async_launched';
   agentId: string;
   description: string;
   prompt: string;
@@ -55,7 +55,7 @@ interface AsyncAgentLaunchOutput {
 }
 
 interface TeammateSpawnOutput {
-  status: "teammate_spawned";
+  status: 'teammate_spawned';
   prompt: string;
   teammate_id: string;
   agent_id: string;
@@ -71,13 +71,13 @@ interface TeammateSpawnOutput {
 
 function requireXenesisHome(context: ToolContext) {
   if (!context.xenesisHome) {
-    throw new Error("Xenesis home is required for durable agent state.");
+    throw new Error('Xenesis home is required for durable agent state.');
   }
   return context.xenesisHome;
 }
 
 function agentTasksPath(context: ToolContext) {
-  return xenesisStatePath(requireXenesisHome(context), "agent_tasks.json");
+  return xenesisStatePath(requireXenesisHome(context), 'agent_tasks.json');
 }
 
 function agentTaskStore(context: ToolContext) {
@@ -89,7 +89,7 @@ function requireLaunchText(input: AgentToolInput) {
   if (!input.prompt) throw new Error('Agent launch requires "prompt".');
   return {
     description: input.description,
-    prompt: input.prompt
+    prompt: input.prompt,
   };
 }
 
@@ -104,9 +104,9 @@ function requireAgentId(input: AgentToolInput) {
 }
 
 function approvalModeForAgent(input: AgentToolInput): ApprovalMode {
-  if (input.mode === "auto") return "auto";
-  if (input.mode === "plan" || input.mode === "readonly") return "readonly";
-  return "safe";
+  if (input.mode === 'auto') return 'auto';
+  if (input.mode === 'plan' || input.mode === 'readonly') return 'readonly';
+  return 'safe';
 }
 
 function agentOutputFile(context: ToolContext, agentId: string) {
@@ -114,9 +114,7 @@ function agentOutputFile(context: ToolContext, agentId: string) {
 }
 
 function metadataForAgent(input: AgentToolInput) {
-  const teamAgentId = input.team_name && input.name
-    ? formatTeamAgentId(input.name, input.team_name)
-    : undefined;
+  const teamAgentId = input.team_name && input.name ? formatTeamAgentId(input.name, input.team_name) : undefined;
   return {
     agentTool: true,
     ...(teamAgentId ? { agentId: teamAgentId, isActive: true } : {}),
@@ -126,7 +124,7 @@ function metadataForAgent(input: AgentToolInput) {
     ...(input.team_name ? { teamName: input.team_name } : {}),
     ...(input.mode ? { mode: input.mode } : {}),
     ...(input.isolation ? { isolation: input.isolation } : {}),
-    ...(input.cwd ? { cwd: input.cwd } : {})
+    ...(input.cwd ? { cwd: input.cwd } : {}),
   };
 }
 
@@ -140,26 +138,26 @@ function renderStatus(task: AgentTask) {
     task.startedAt ? `startedAt: ${task.startedAt}` : undefined,
     task.finishedAt ? `finishedAt: ${task.finishedAt}` : undefined,
     task.output ? `output: ${task.output}` : undefined,
-    task.error ? `error: ${task.error}` : undefined
-  ].filter((line): line is string => line !== undefined).join("\n");
+    task.error ? `error: ${task.error}` : undefined,
+  ]
+    .filter((line): line is string => line !== undefined)
+    .join('\n');
 }
 
 async function launchAgent(input: AgentToolInput, context: ToolContext) {
   const { description, prompt } = requireLaunchText(input);
-  const subagentType = input.subagent_type ?? "general-purpose";
-  const teamAgentId = input.team_name && input.name
-    ? formatTeamAgentId(input.name, input.team_name)
-    : undefined;
+  const subagentType = input.subagent_type ?? 'general-purpose';
+  const teamAgentId = input.team_name && input.name ? formatTeamAgentId(input.name, input.team_name) : undefined;
   const task = await agentTaskStore(context).create({
     prompt,
     subject: description,
     description,
     parentSessionId: context.sessionId,
-    source: "agent",
+    source: 'agent',
     subagent: subagentType,
     label: description,
     approvalMode: approvalModeForAgent(input),
-    metadata: metadataForAgent(input)
+    metadata: metadataForAgent(input),
   });
   if (teamAgentId && input.team_name && input.name) {
     await registerTeamMember(context, input.team_name, {
@@ -169,51 +167,51 @@ async function launchAgent(input: AgentToolInput, context: ToolContext) {
       model: input.model ?? undefined,
       cwd: input.cwd ?? context.cwd,
       isActive: true,
-      mode: input.mode ?? undefined
+      mode: input.mode ?? undefined,
     });
     const data: TeammateSpawnOutput = {
-      status: "teammate_spawned",
+      status: 'teammate_spawned',
       prompt,
       teammate_id: teamAgentId,
       agent_id: teamAgentId,
       agent_type: subagentType,
       name: input.name,
       team_name: input.team_name,
-      tmux_session_name: "",
+      tmux_session_name: '',
       tmux_window_name: input.name,
-      tmux_pane_id: "",
-      plan_mode_required: input.mode === "plan",
-      task_id: task.id
+      tmux_pane_id: '',
+      plan_mode_required: input.mode === 'plan',
+      task_id: task.id,
     };
     return {
       ok: true,
       content: [
         `Teammate "${input.name}" spawned for team "${input.team_name}".`,
         `agent_id: ${teamAgentId}`,
-        `task_id: ${task.id}`
-      ].join("\n"),
-      data
+        `task_id: ${task.id}`,
+      ].join('\n'),
+      data,
     };
   }
   const data: AsyncAgentLaunchOutput = {
     isAsync: true,
-    status: "async_launched",
+    status: 'async_launched',
     agentId: task.id,
     description,
     prompt,
     outputFile: agentOutputFile(context, task.id),
-    canReadOutputFile: true
+    canReadOutputFile: true,
   };
 
   return {
     ok: true,
     content: [
-      "Async agent launched successfully.",
+      'Async agent launched successfully.',
       `agentId: ${data.agentId}`,
-      "The agent is working in the background.",
-      `output_file: ${data.outputFile}`
-    ].join("\n"),
-    data
+      'The agent is working in the background.',
+      `output_file: ${data.outputFile}`,
+    ].join('\n'),
+    data,
   };
 }
 
@@ -223,33 +221,32 @@ async function agentStatus(input: AgentToolInput, context: ToolContext) {
   if (!task) {
     return {
       ok: false,
-      content: `Agent not found: ${id}`
+      content: `Agent not found: ${id}`,
     };
   }
   return {
     ok: true,
     content: renderStatus(task),
-    data: task
+    data: task,
   };
 }
 
 export const agentTool: Tool<AgentToolInput, AsyncAgentLaunchOutput | TeammateSpawnOutput | AgentTask> = {
-  name: "agent",
-  description: "Launch and inspect durable Xenesis agents using the reference AgentTool input and async output contract.",
+  name: 'agent',
+  description:
+    'Launch and inspect durable Xenesis agents using the reference AgentTool input and async output contract.',
   inputSchema: agentInputSchema,
   openaiInputSchema: agentOpenAIInputSchema,
-  isReadOnly: (input) => input.action === "status",
+  isReadOnly: (input) => input.action === 'status',
   isConcurrencySafe: () => true,
   async run(input, context) {
     try {
-      return input.action === "status"
-        ? await agentStatus(input, context)
-        : await launchAgent(input, context);
+      return input.action === 'status' ? await agentStatus(input, context) : await launchAgent(input, context);
     } catch (error) {
       return {
         ok: false,
-        content: `Agent tool failed: ${error instanceof Error ? error.message : String(error)}`
+        content: `Agent tool failed: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
-  }
+  },
 };

@@ -1,33 +1,30 @@
-import { z } from "zod";
-import type { Tool } from "./types.js";
+import { z } from 'zod';
+import type { Tool } from './types.js';
 
-export const WAIT_TOOL_NAME = "wait";
-export const SLEEP_TOOL_LEGACY_ALIAS = "sleep";
+export const WAIT_TOOL_NAME = 'wait';
+export const SLEEP_TOOL_LEGACY_ALIAS = 'sleep';
 
-const waitInput = z.object({
-  waitMs: z.number().int().min(1).max(300_000).optional(),
-  durationMs: z.number().int().min(1).max(300_000).optional(),
-  note: z.preprocess(
-    (value) => value === null ? undefined : value,
-    z.string().trim().min(1).max(500).optional()
-  ),
-  reason: z.preprocess(
-    (value) => value === null ? undefined : value,
-    z.string().trim().min(1).max(500).optional()
-  )
-}).strict().superRefine((input, context) => {
-  if (input.waitMs === undefined && input.durationMs === undefined) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["waitMs"],
-      message: "waitMs is required."
-    });
-  }
-});
+const waitInput = z
+  .object({
+    waitMs: z.number().int().min(1).max(300_000).optional(),
+    durationMs: z.number().int().min(1).max(300_000).optional(),
+    note: z.preprocess((value) => (value === null ? undefined : value), z.string().trim().min(1).max(500).optional()),
+    reason: z.preprocess((value) => (value === null ? undefined : value), z.string().trim().min(1).max(500).optional()),
+  })
+  .strict()
+  .superRefine((input, context) => {
+    if (input.waitMs === undefined && input.durationMs === undefined) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['waitMs'],
+        message: 'waitMs is required.',
+      });
+    }
+  });
 
 const waitOpenAIInput = z.object({
   waitMs: z.number().int().min(1).max(300_000),
-  note: z.string().trim().min(1).max(500).nullable()
+  note: z.string().trim().min(1).max(500).nullable(),
 });
 
 export interface WaitToolResult {
@@ -44,7 +41,7 @@ function waitForDuration(durationMs: number, signal?: AbortSignal): Promise<Wait
     return Promise.resolve({
       requestedMs: durationMs,
       elapsedMs: 0,
-      interrupted: true
+      interrupted: true,
     });
   }
 
@@ -55,17 +52,17 @@ function waitForDuration(durationMs: number, signal?: AbortSignal): Promise<Wait
       if (settled) return;
       settled = true;
       if (timer) clearTimeout(timer);
-      signal?.removeEventListener("abort", onAbort);
+      signal?.removeEventListener('abort', onAbort);
       resolveWait({
         requestedMs: durationMs,
         elapsedMs: Math.max(0, Date.now() - startedAt),
-        interrupted
+        interrupted,
       });
     };
     const onAbort = () => finish(true);
 
     timer = setTimeout(() => finish(false), durationMs);
-    signal?.addEventListener("abort", onAbort, { once: true });
+    signal?.addEventListener('abort', onAbort, { once: true });
   });
 }
 
@@ -81,10 +78,10 @@ export const sleepTool: Tool<z.infer<typeof waitInput>, WaitToolResult> = {
   name: WAIT_TOOL_NAME,
   aliases: [SLEEP_TOOL_LEGACY_ALIAS],
   description: [
-    "Pause the agent loop for a bounded amount of time without starting an operating-system command.",
-    "Use this for short backoff windows, polling gaps, or user-requested waiting when no Desk or workspace action is ready yet.",
-    "The runtime may cancel the wait through the active abort signal. This tool is read-only and safe to run beside other read-only work."
-  ].join("\n\n"),
+    'Pause the agent loop for a bounded amount of time without starting an operating-system command.',
+    'Use this for short backoff windows, polling gaps, or user-requested waiting when no Desk or workspace action is ready yet.',
+    'The runtime may cancel the wait through the active abort signal. This tool is read-only and safe to run beside other read-only work.',
+  ].join('\n\n'),
   inputSchema: waitInput,
   openaiInputSchema: waitOpenAIInput,
   isReadOnly: () => true,
@@ -96,15 +93,15 @@ export const sleepTool: Tool<z.infer<typeof waitInput>, WaitToolResult> = {
       return {
         ok: false,
         content: `Wait interrupted after ${Math.min(result.elapsedMs, requestedMs)}ms.`,
-        data: result
+        data: result,
       };
     }
 
     const note = noteFromInput(input);
     return {
       ok: true,
-      content: `Wait completed after ${requestedMs}ms.${note ? ` note: ${note}` : ""}`,
-      data: result
+      content: `Wait completed after ${requestedMs}ms.${note ? ` note: ${note}` : ''}`,
+      data: result,
     };
-  }
+  },
 };

@@ -32,6 +32,7 @@ It is a context and navigation layer, not the executable source of truth.
 7. [[Module Index]]
 8. [[High Risk Areas]]
 9. [[Verification Map]]
+10. [[CR Surface Index]]
 
 ## Core Graph Areas
 
@@ -41,6 +42,7 @@ It is a context and navigation layer, not the executable source of truth.
 - [[Xenesis Agent Runtime]]
 - [[Approval Flow]]
 - [[Provider Model]]
+- [[CR Surface Index]]
 
 ## High-Value Modules
 
@@ -70,3 +72,4 @@ It is a context and navigation layer, not the executable source of truth.
 - Depends on [[AI Agent Rules]]
 - Depends on [[Graph Schema]]
 - Depends on [[Source of Truth Map]]
+- Includes [[CR Surface Index]]

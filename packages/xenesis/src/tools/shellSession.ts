@@ -1,13 +1,9 @@
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
-import { randomUUID } from "node:crypto";
-import { computeShellEnv } from "../core/isolation/secretScrub.js";
-import {
-  buildPersistentShellSpawn,
-  killProcessTree,
-  DEFAULT_MAX_OUTPUT_CHARS
-} from "../utils/command.js";
+import { type ChildProcessWithoutNullStreams, spawn } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
+import { computeShellEnv } from '../core/isolation/secretScrub.js';
+import { buildPersistentShellSpawn, DEFAULT_MAX_OUTPUT_CHARS, killProcessTree } from '../utils/command.js';
 
-const isWin = process.platform === "win32";
+const isWin = process.platform === 'win32';
 
 export interface ShellSessionOptions {
   workspaceRoot: string;
@@ -31,7 +27,7 @@ export interface ShellExecResult {
  */
 export class ShellSession {
   private child?: ChildProcessWithoutNullStreams;
-  private readonly marker = `__XENESIS_SH_${randomUUID().replace(/-/g, "")}__`;
+  private readonly marker = `__XENESIS_SH_${randomUUID().replace(/-/g, '')}__`;
   private readonly env?: NodeJS.ProcessEnv;
   private _cwd: string;
   private queue: Promise<unknown> = Promise.resolve();
@@ -70,16 +66,16 @@ export class ShellSession {
       windowsHide: true,
       // detached:false on win32 (cannot kill(-pid)); track child.pid for killProcessTree.
       detached: false,
-      stdio: ["pipe", "pipe", "pipe"],
-      ...(this.env ? { env: this.env } : {})
+      stdio: ['pipe', 'pipe', 'pipe'],
+      ...(this.env ? { env: this.env } : {}),
     }) as ChildProcessWithoutNullStreams;
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
+    child.stdout.setEncoding('utf8');
+    child.stderr.setEncoding('utf8');
     // Keep stderr drained: on win32 we redirect with 2>&1 so this stays empty, but
     // an interpreter-level write must not back-pressure the pipe.
-    child.stderr.on("data", () => undefined);
+    child.stderr.on('data', () => undefined);
     // A live error (e.g. failed spawn) must not crash the host process.
-    child.on("error", () => undefined);
+    child.on('error', () => undefined);
     this.child = child;
     return child;
   }
@@ -101,7 +97,7 @@ export class ShellSession {
       // the catch streams the error text (merged like 2>&1) and records failure,
       // then a finally GUARANTEES the marker line is the last token emitted.
       return (
-        "$xenesisCaught = $false; " +
+        '$xenesisCaught = $false; ' +
         // BUG 1 fix: capture $? and $LASTEXITCODE INSIDE the scriptblock, immediately
         // after the command, BEFORE the `Out-String -Stream` pipe runs. The pipeline
         // itself SUCCEEDS and would otherwise overwrite $? — so a NON-terminating error
@@ -109,11 +105,11 @@ export class ShellSession {
         // success (gxc=0), diverging from the stateless buildShellInvocation which
         // reports exit 1. Script-scoped vars survive the pipe and outlive the block.
         `try { & { ${command}; $script:xenSucc = $?; $script:xenCode = $LASTEXITCODE } 2>&1 | Out-String -Stream } ` +
-        "catch { $xenesisCaught = $true; $_ | Out-String -Stream }; " +
-        "$xenesisSuccess = if ($xenesisCaught) { $false } else { $script:xenSucc }; " +
-        "$xenesisExitCode = if ($xenesisCaught) { $null } else { $script:xenCode }; " +
-        "$gxc = if ($xenesisSuccess) { if (($xenesisExitCode -is [int]) -and ($xenesisExitCode -ne 0)) { $xenesisExitCode } else { 0 } } " +
-        "else { if (($xenesisExitCode -is [int]) -and ($xenesisExitCode -ne 0)) { $xenesisExitCode } else { 1 } }; " +
+        'catch { $xenesisCaught = $true; $_ | Out-String -Stream }; ' +
+        '$xenesisSuccess = if ($xenesisCaught) { $false } else { $script:xenSucc }; ' +
+        '$xenesisExitCode = if ($xenesisCaught) { $null } else { $script:xenCode }; ' +
+        '$gxc = if ($xenesisSuccess) { if (($xenesisExitCode -is [int]) -and ($xenesisExitCode -ne 0)) { $xenesisExitCode } else { 0 } } ' +
+        'else { if (($xenesisExitCode -is [int]) -and ($xenesisExitCode -ne 0)) { $xenesisExitCode } else { 1 } }; ' +
         // BUG 2 fix: guarantee the marker starts on its own line. A command that writes
         // to the console host without a trailing newline (e.g. [Console]::Out.Write)
         // would otherwise glue the marker onto that line; the `^`-anchored (m-flag) read
@@ -126,8 +122,7 @@ export class ShellSession {
     }
     // POSIX: capture $? immediately, merge stderr, emit the marker last.
     return (
-      `{ ${command} ; } 2>&1; __gxc=$?; ` +
-      `printf '\\n${this.marker}%s|%s${this.marker}\\n' "$__gxc" "$(pwd -P)"\n`
+      `{ ${command} ; } 2>&1; __gxc=$?; ` + `printf '\\n${this.marker}%s|%s${this.marker}\\n' "$__gxc" "$(pwd -P)"\n`
     );
   }
 
@@ -136,7 +131,7 @@ export class ShellSession {
     const run = this.queue.then(() => this.execNow(command, timeoutMs));
     this.queue = run.then(
       () => undefined,
-      () => undefined
+      () => undefined,
     );
     return run;
   }
@@ -144,7 +139,7 @@ export class ShellSession {
   private execNow(command: string, timeoutMs: number): Promise<ShellExecResult> {
     const child = this.ensureChild();
     return new Promise<ShellExecResult>((resolve) => {
-      let buffer = "";
+      let buffer = '';
       let settled = false;
       // Match the marker pair on a line: <MARKER><exitcode>|<cwd><MARKER>. The cwd
       // can contain anything (including a literal '|'), so it is captured lazily up to
@@ -153,11 +148,11 @@ export class ShellSession {
       // The exit code may be NEGATIVE on win32 (a native exe's $LASTEXITCODE can be
       // negative, e.g. node -e "process.exit(-1)"); accept a leading minus so such a
       // marker is matched instead of leaking into output and hanging until timeout.
-      const re = new RegExp(`^${this.marker}(-?\\d+)\\|([\\s\\S]*?)${this.marker}\\r?$`, "m");
+      const re = new RegExp(`^${this.marker}(-?\\d+)\\|([\\s\\S]*?)${this.marker}\\r?$`, 'm');
 
       const cleanup = () => {
         clearTimeout(timer);
-        child.stdout.off("data", onData);
+        child.stdout.off('data', onData);
       };
 
       const finish = (exitCode: number, cwd: string, before: string) => {
@@ -165,7 +160,7 @@ export class ShellSession {
         settled = true;
         cleanup();
         this._cwd = cwd.trim() || this._cwd;
-        let output = before.replace(/[\r\n]+$/, "");
+        let output = before.replace(/[\r\n]+$/, '');
         if (output.length > DEFAULT_MAX_OUTPUT_CHARS) {
           output =
             output.slice(0, DEFAULT_MAX_OUTPUT_CHARS) +
@@ -189,22 +184,22 @@ export class ShellSession {
         // Kill+restart so a hung command never blocks the pipe indefinitely.
         this.restart();
         resolve({
-          output: buffer.replace(/[\r\n]+$/, ""),
+          output: buffer.replace(/[\r\n]+$/, ''),
           exitCode: -1,
           cwd: this._cwd,
-          timedOut: true
+          timedOut: true,
         });
       }, timeoutMs);
       timer.unref?.();
 
-      child.stdout.on("data", onData);
+      child.stdout.on('data', onData);
       child.stdin.write(this.wrap(command));
     });
   }
 
   private restart(): void {
     if (this.child?.pid !== undefined) {
-      void killProcessTree(this.child.pid, "force").catch(() => undefined);
+      void killProcessTree(this.child.pid, 'force').catch(() => undefined);
     }
     // Drop the reference; the next ensureChild() re-spawns at this._cwd.
     this.child = undefined;
@@ -212,7 +207,7 @@ export class ShellSession {
 
   dispose(): void {
     if (this.child?.pid !== undefined) {
-      void killProcessTree(this.child.pid, "force").catch(() => undefined);
+      void killProcessTree(this.child.pid, 'force').catch(() => undefined);
     }
     this.child = undefined;
   }

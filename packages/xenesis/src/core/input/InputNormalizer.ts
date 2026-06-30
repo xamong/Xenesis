@@ -1,23 +1,30 @@
-export type InputMode = "prompt" | "bash";
+export type InputMode = 'prompt' | 'bash';
 
 export type InputContentBlock =
-  | { type: "text"; text: string }
+  | { type: 'text'; text: string }
   | {
-    type: "image";
-    source: {
-      type: "base64";
-      mediaType: string;
-      data: string;
+      type: 'image';
+      source: {
+        type: 'base64';
+        mediaType: string;
+        data: string;
+      };
+      dimensions?: {
+        width: number;
+        height: number;
+      };
+      sourcePath?: string;
     };
-    dimensions?: {
-      width: number;
-      height: number;
-    };
-    sourcePath?: string;
-  };
 
 export interface InputAttachment {
-  type: "file" | "ide_selection" | "hook_additional_context" | "hook_success" | "hook_warning" | "hook_error" | "agent_mention";
+  type:
+    | 'file'
+    | 'ide_selection'
+    | 'hook_additional_context'
+    | 'hook_success'
+    | 'hook_warning'
+    | 'hook_error'
+    | 'agent_mention';
   content: string | string[];
   sourcePath?: string;
   authority?: string;
@@ -36,7 +43,7 @@ export interface PastedImageInput {
 }
 
 export interface InputHookMessage {
-  type: "hook_success" | "hook_warning" | "hook_error";
+  type: 'hook_success' | 'hook_warning' | 'hook_error';
   content?: string;
 }
 
@@ -55,26 +62,26 @@ export interface BashInputResult {
 
 export type NormalizedInputMessage =
   | {
-    role: "user";
-    content: string | InputContentBlock[];
-    uuid?: string;
-    permissionMode?: string;
-    isMeta?: true;
-    imagePasteIds?: number[];
-  }
+      role: 'user';
+      content: string | InputContentBlock[];
+      uuid?: string;
+      permissionMode?: string;
+      isMeta?: true;
+      imagePasteIds?: number[];
+    }
   | {
-    role: "attachment";
-    attachment: InputAttachment;
-  }
+      role: 'attachment';
+      attachment: InputAttachment;
+    }
   | {
-    role: "system";
-    severity: "warning";
-    content: string;
-  }
+      role: 'system';
+      severity: 'warning';
+      content: string;
+    }
   | {
-    role: "command";
-    content: string;
-  };
+      role: 'command';
+      content: string;
+    };
 
 export interface NormalizedSlashCommand {
   name: string;
@@ -86,12 +93,12 @@ export interface NormalizedSlashCommand {
 }
 
 export type NormalizedInputRoute =
-  | "prompt"
-  | "slash"
-  | "bash"
-  | "bridge_blocked_command"
-  | "hook_blocked"
-  | "hook_prevented";
+  | 'prompt'
+  | 'slash'
+  | 'bash'
+  | 'bridge_blocked_command'
+  | 'hook_blocked'
+  | 'hook_prevented';
 
 export interface NormalizeUserInputOptions {
   input: string | InputContentBlock[];
@@ -120,9 +127,9 @@ export interface NormalizedUserInput {
 }
 
 export type NormalizedChatInput =
-  | { type: "none" }
-  | { type: "prompt"; prompt: string }
-  | { type: "notice"; message: string };
+  | { type: 'none' }
+  | { type: 'prompt'; prompt: string }
+  | { type: 'notice'; message: string };
 
 const maxHookOutputLength = 10_000;
 
@@ -133,32 +140,32 @@ function truncateHookContent(content: string) {
 
 function parseSlashCommand(input: string): NormalizedSlashCommand | undefined {
   const trimmed = input.trim();
-  if (!trimmed.startsWith("/")) return undefined;
-  if (trimmed === "/") {
+  if (!trimmed.startsWith('/')) return undefined;
+  if (trimmed === '/') {
     return {
-      name: "help",
-      rawName: "help",
-      displayName: "help",
-      rawArgs: "",
+      name: 'help',
+      rawName: 'help',
+      displayName: 'help',
+      rawArgs: '',
       args: [],
-      isMcp: false
+      isMcp: false,
     };
   }
 
   const withoutSlash = trimmed.slice(1);
-  const words = withoutSlash.split(" ");
+  const words = withoutSlash.split(' ');
   if (!words[0]) return undefined;
 
-  let rawName = words[0];
+  const rawName = words[0];
   let displayName = rawName;
   let isMcp = false;
   let argsStartIndex = 1;
-  if (words.length > 1 && words[1] === "(MCP)") {
+  if (words.length > 1 && words[1] === '(MCP)') {
     displayName = `${rawName} (MCP)`;
     isMcp = true;
     argsStartIndex = 2;
   }
-  const rawArgs = words.slice(argsStartIndex).join(" ");
+  const rawArgs = words.slice(argsStartIndex).join(' ');
   const args = rawArgs.trim() ? rawArgs.trim().split(/\s+/) : [];
   return {
     name: rawName.toLowerCase(),
@@ -166,7 +173,7 @@ function parseSlashCommand(input: string): NormalizedSlashCommand | undefined {
     displayName,
     rawArgs,
     args,
-    isMcp
+    isMcp,
   };
 }
 
@@ -181,11 +188,11 @@ function commandKnown(command: NormalizedSlashCommand, knownSlashCommands: strin
 
 function escapeXml(value: string) {
   return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
 }
 
 function isBridgeSafe(command: NormalizedSlashCommand, bridgeSafeCommands: string[] | undefined) {
@@ -193,36 +200,36 @@ function isBridgeSafe(command: NormalizedSlashCommand, bridgeSafeCommands: strin
 }
 
 function textFromInput(input: string | InputContentBlock[]) {
-  if (typeof input === "string") return input;
+  if (typeof input === 'string') return input;
   for (let index = input.length - 1; index >= 0; index -= 1) {
     const block = input[index];
-    if (block?.type === "text") return block.text;
+    if (block?.type === 'text') return block.text;
   }
-  return "";
+  return '';
 }
 
 function attachmentMessage(attachment: InputAttachment): NormalizedInputMessage {
   return {
-    role: "attachment",
-    attachment
+    role: 'attachment',
+    attachment,
   };
 }
 
 function imageBlock(image: PastedImageInput): InputContentBlock {
   return {
-    type: "image",
+    type: 'image',
     source: {
-      type: "base64",
-      mediaType: image.mediaType ?? "image/png",
-      data: image.data
+      type: 'base64',
+      mediaType: image.mediaType ?? 'image/png',
+      data: image.data,
     },
     ...(image.dimensions ? { dimensions: image.dimensions } : {}),
-    ...(image.sourcePath ? { sourcePath: image.sourcePath } : {})
+    ...(image.sourcePath ? { sourcePath: image.sourcePath } : {}),
   };
 }
 
 function imageMetadata(image: PastedImageInput) {
-  const source = image.sourcePath ? ` source: ${image.sourcePath}` : "";
+  const source = image.sourcePath ? ` source: ${image.sourcePath}` : '';
   if (image.dimensions) {
     return `[Image ${image.dimensions.width}x${image.dimensions.height}${source}]`;
   }
@@ -238,42 +245,40 @@ function promptMessages(options: NormalizeUserInputOptions): {
   const pastedImages = options.pastedImages ?? [];
   const imageBlocks = pastedImages.map(imageBlock);
   const imagePasteIds = pastedImages.map((image) => image.id);
-  const baseContent: string | InputContentBlock[] = imageBlocks.length > 0
-    ? [
-      ...(typeof options.input === "string" && options.input.trim()
-        ? [{ type: "text" as const, text: options.input }]
-        : typeof options.input === "string"
-          ? []
-          : options.input),
-      ...imageBlocks
-    ]
-    : options.input;
+  const baseContent: string | InputContentBlock[] =
+    imageBlocks.length > 0
+      ? [
+          ...(typeof options.input === 'string' && options.input.trim()
+            ? [{ type: 'text' as const, text: options.input }]
+            : typeof options.input === 'string'
+              ? []
+              : options.input),
+          ...imageBlocks,
+        ]
+      : options.input;
 
   const userMessage: NormalizedInputMessage = {
-    role: "user",
+    role: 'user',
     content: baseContent,
     ...(options.uuid ? { uuid: options.uuid } : {}),
     ...(options.permissionMode ? { permissionMode: options.permissionMode } : {}),
     ...(options.isMeta ? { isMeta: true } : {}),
-    ...(imagePasteIds.length > 0 ? { imagePasteIds } : {})
+    ...(imagePasteIds.length > 0 ? { imagePasteIds } : {}),
   };
-  const messages: NormalizedInputMessage[] = [
-    userMessage,
-    ...(options.attachments ?? []).map(attachmentMessage)
-  ];
+  const messages: NormalizedInputMessage[] = [userMessage, ...(options.attachments ?? []).map(attachmentMessage)];
 
   const metadata = pastedImages.map(imageMetadata).filter((value): value is string => Boolean(value));
   if (metadata.length > 0) {
     messages.push({
-      role: "user",
-      content: metadata.join("\n"),
-      isMeta: true
+      role: 'user',
+      content: metadata.join('\n'),
+      isMeta: true,
     });
   }
 
   return {
     messages,
-    ...(imagePasteIds.length > 0 ? { imagePasteIds } : {})
+    ...(imagePasteIds.length > 0 ? { imagePasteIds } : {}),
   };
 }
 
@@ -283,51 +288,56 @@ function applyHooks(result: NormalizedUserInput, hooks: InputHookResult[] | unde
   for (const hook of hooks) {
     if (hook.blockingError) {
       return {
-        route: "hook_blocked",
+        route: 'hook_blocked',
         shouldQuery: false,
         text: result.text,
-        messages: [{
-          role: "system",
-          severity: "warning",
-          content: `${hook.blockingError}\n\nOriginal prompt: ${originalInput}`
-        }]
+        messages: [
+          {
+            role: 'system',
+            severity: 'warning',
+            content: `${hook.blockingError}\n\nOriginal prompt: ${originalInput}`,
+          },
+        ],
       } satisfies NormalizedUserInput;
     }
 
     if (hook.preventContinuation) {
       const stopMessage = hook.stopReason
         ? `Operation stopped by hook: ${hook.stopReason}`
-        : "Operation stopped by hook";
+        : 'Operation stopped by hook';
       return {
         ...result,
-        route: "hook_prevented",
+        route: 'hook_prevented',
         shouldQuery: false,
         messages: [
           ...result.messages,
           {
-            role: "user",
-            content: stopMessage
-          }
-        ]
+            role: 'user',
+            content: stopMessage,
+          },
+        ],
       } satisfies NormalizedUserInput;
     }
 
     if (hook.additionalContexts && hook.additionalContexts.length > 0) {
-      result.messages.push(attachmentMessage({
-        type: "hook_additional_context",
-        content: hook.additionalContexts.map(truncateHookContent),
-        hookName: "UserPromptSubmit"
-      }));
+      result.messages.push(
+        attachmentMessage({
+          type: 'hook_additional_context',
+          content: hook.additionalContexts.map(truncateHookContent),
+          hookName: 'UserPromptSubmit',
+        }),
+      );
     }
 
     if (hook.message?.content) {
-      result.messages.push(attachmentMessage({
-        type: hook.message.type,
-        content: hook.message.type === "hook_success"
-          ? truncateHookContent(hook.message.content)
-          : hook.message.content,
-        hookName: "UserPromptSubmit"
-      }));
+      result.messages.push(
+        attachmentMessage({
+          type: hook.message.type,
+          content:
+            hook.message.type === 'hook_success' ? truncateHookContent(hook.message.content) : hook.message.content,
+          hookName: 'UserPromptSubmit',
+        }),
+      );
     }
   }
 
@@ -335,45 +345,45 @@ function applyHooks(result: NormalizedUserInput, hooks: InputHookResult[] | unde
 }
 
 export function normalizeUserInput(options: NormalizeUserInputOptions): NormalizedUserInput {
-  const mode = options.mode ?? "prompt";
-  const inputString = typeof options.input === "string" ? options.input : undefined;
-  if (mode !== "prompt" && inputString === undefined) {
+  const mode = options.mode ?? 'prompt';
+  const inputString = typeof options.input === 'string' ? options.input : undefined;
+  if (mode !== 'prompt' && inputString === undefined) {
     throw new Error(`Mode: ${mode} requires a string input.`);
   }
 
-  if (inputString !== undefined && mode === "bash") {
+  if (inputString !== undefined && mode === 'bash') {
     const content = `<bash-input>${inputString}</bash-input>`;
     const messages: NormalizedInputMessage[] = [
       {
-        role: "user",
-        content
+        role: 'user',
+        content,
       },
-      ...(options.attachments ?? []).map(attachmentMessage)
+      ...(options.attachments ?? []).map(attachmentMessage),
     ];
     if (options.bashResult) {
       messages.push({
-        role: "user",
-        content: `<bash-stdout>${escapeXml(options.bashResult.stdout ?? "")}</bash-stdout><bash-stderr>${escapeXml(options.bashResult.stderr ?? "")}</bash-stderr>`
+        role: 'user',
+        content: `<bash-stdout>${escapeXml(options.bashResult.stdout ?? '')}</bash-stdout><bash-stderr>${escapeXml(options.bashResult.stderr ?? '')}</bash-stderr>`,
       });
     }
     return {
-      route: "bash",
+      route: 'bash',
       shouldQuery: false,
       text: inputString,
       command: {
-        name: "bash",
-        rawName: "bash",
-        displayName: "bash",
+        name: 'bash',
+        rawName: 'bash',
+        displayName: 'bash',
         rawArgs: inputString,
         args: [inputString],
-        isMcp: false
+        isMcp: false,
       },
       ...(options.bashResult?.stdout !== undefined ? { resultText: options.bashResult.stdout } : {}),
-      messages
+      messages,
     };
   }
 
-  if (inputString !== undefined && inputString.trim().startsWith("/")) {
+  if (inputString !== undefined && inputString.trim().startsWith('/')) {
     const command = parseSlashCommand(inputString);
     const bridgeOrigin = Boolean(options.bridgeOrigin);
     const skipSlash = Boolean(options.skipSlashCommands);
@@ -381,51 +391,56 @@ export function normalizeUserInput(options: NormalizeUserInputOptions): Normaliz
     if (command && bridgeOrigin && skipSlash && commandKnown(command, options.knownSlashCommands)) {
       if (isBridgeSafe(command, options.bridgeSafeCommands)) {
         return {
-          route: "slash",
+          route: 'slash',
           shouldQuery: false,
           text: inputString,
           command,
-          messages: []
+          messages: [],
         };
       }
       const resultText = `/${command.rawName} isn't available over Remote Control.`;
       return {
-        route: "bridge_blocked_command",
+        route: 'bridge_blocked_command',
         shouldQuery: false,
         text: inputString,
         command,
         resultText,
         messages: [
           {
-            role: "user",
-            content: inputString
+            role: 'user',
+            content: inputString,
           },
           {
-            role: "command",
-            content: `<local-command-stdout>${resultText}</local-command-stdout>`
-          }
-        ]
+            role: 'command',
+            content: `<local-command-stdout>${resultText}</local-command-stdout>`,
+          },
+        ],
       };
     }
 
-    if (command && !skipSlash && looksLikeCommandName(command.name) && commandKnown(command, options.knownSlashCommands)) {
+    if (
+      command &&
+      !skipSlash &&
+      looksLikeCommandName(command.name) &&
+      commandKnown(command, options.knownSlashCommands)
+    ) {
       return {
-        route: "slash",
+        route: 'slash',
         shouldQuery: false,
         text: inputString,
         command,
-        messages: []
+        messages: [],
       };
     }
   }
 
   const built = promptMessages(options);
   const result: NormalizedUserInput = {
-    route: "prompt",
+    route: 'prompt',
     shouldQuery: true,
     text: textFromInput(options.input),
     messages: built.messages,
-    ...(built.imagePasteIds ? { imagePasteIds: built.imagePasteIds } : {})
+    ...(built.imagePasteIds ? { imagePasteIds: built.imagePasteIds } : {}),
   };
   return applyHooks(result, options.hooks, textFromInput(options.input));
 }
@@ -437,36 +452,36 @@ class ChatInputState {
   accept(line: string): NormalizedChatInput {
     const trimmed = line.trim();
     if (this.pasteLines) {
-      if (trimmed === "/send") {
-        const prompt = this.pasteLines.join("\n").trim();
+      if (trimmed === '/send') {
+        const prompt = this.pasteLines.join('\n').trim();
         this.pasteLines = undefined;
-        return prompt ? { type: "prompt", prompt } : { type: "none" };
+        return prompt ? { type: 'prompt', prompt } : { type: 'none' };
       }
-      if (trimmed === "/cancel") {
+      if (trimmed === '/cancel') {
         this.pasteLines = undefined;
-        return { type: "notice", message: "chat: multiline canceled" };
+        return { type: 'notice', message: 'chat: multiline canceled' };
       }
       this.pasteLines.push(line);
-      return { type: "none" };
+      return { type: 'none' };
     }
 
-    if (trimmed === "/paste") {
+    if (trimmed === '/paste') {
       this.pasteLines = [];
-      return { type: "notice", message: "chat: paste mode; end with /send or /cancel" };
+      return { type: 'notice', message: 'chat: paste mode; end with /send or /cancel' };
     }
 
     const continued = /\\\s*$/.test(line);
-    const text = continued ? line.replace(/\\\s*$/, "") : line;
+    const text = continued ? line.replace(/\\\s*$/, '') : line;
     if (continued || this.continuationLines.length > 0) {
       this.continuationLines.push(text);
-      if (continued) return { type: "none" };
-      const prompt = this.continuationLines.join("\n").trim();
+      if (continued) return { type: 'none' };
+      const prompt = this.continuationLines.join('\n').trim();
       this.continuationLines = [];
-      return prompt ? { type: "prompt", prompt } : { type: "none" };
+      return prompt ? { type: 'prompt', prompt } : { type: 'none' };
     }
 
     const prompt = line.trim();
-    return prompt ? { type: "prompt", prompt } : { type: "none" };
+    return prompt ? { type: 'prompt', prompt } : { type: 'none' };
   }
 }
 
@@ -475,7 +490,7 @@ export function normalizeChatInputLines(lines: readonly string[]) {
   const results: NormalizedChatInput[] = [];
   for (const line of lines) {
     const result = state.accept(line);
-    if (result.type !== "none") results.push(result);
+    if (result.type !== 'none') results.push(result);
   }
   return results;
 }

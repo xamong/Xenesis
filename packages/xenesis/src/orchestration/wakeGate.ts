@@ -11,10 +11,10 @@
  *  - The spawned command is secret-scrubbed exactly like the shell tool (same env names),
  *    timeout-bound, and run in the workspace.
  */
-import { stat } from "node:fs/promises";
-import { KNOWN_SECRET_ENV, buildScrubbedEnv } from "../core/isolation/secretScrub.js";
-import { runCommand } from "../utils/command.js";
-import type { ScheduleWakeCheck, TaskSchedule } from "./schedules.js";
+import { stat } from 'node:fs/promises';
+import { buildScrubbedEnv, KNOWN_SECRET_ENV } from '../core/isolation/secretScrub.js';
+import { runCommand } from '../utils/command.js';
+import type { ScheduleWakeCheck, TaskSchedule } from './schedules.js';
 
 /** Default ceiling for a wake-check command. Kept short — this is a pre-filter, not work. */
 const DEFAULT_WAKE_COMMAND_TIMEOUT_MS = 10_000;
@@ -50,10 +50,16 @@ export interface EvaluateWakeGateOptions {
 /** Builds the secret-scrubbed env used for a wake-check command (mirrors shellTool). */
 function scrubbedWakeEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   const secretNames = new Set<string>(KNOWN_SECRET_ENV);
-  for (const name of (env.XENESIS_ISOLATION_SCRUB_NAMES ?? "").split(",").map((s) => s.trim()).filter(Boolean)) {
+  for (const name of (env.XENESIS_ISOLATION_SCRUB_NAMES ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)) {
     secretNames.add(name);
   }
-  const allowlist = (env.XENESIS_ISOLATION_SCRUB_ALLOW ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const allowlist = (env.XENESIS_ISOLATION_SCRUB_ALLOW ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
   return buildScrubbedEnv(env, { secretNames, allowlist });
 }
 
@@ -73,15 +79,15 @@ export function parseWakeAgentSentinel(output: string): boolean {
   let end = -1;
   let lastStart = -1;
   let lastObject: string | undefined;
-  let inString = false;
-  let escaped = false;
+  const inString = false;
+  const escaped = false;
   for (let i = trimmed.length - 1; i >= 0; i -= 1) {
     const ch = trimmed[i]!;
     // Scanning backwards: track string state loosely; the JSON.parse below is authoritative.
-    if (!inString && ch === "}") {
+    if (!inString && ch === '}') {
       if (depth === 0) end = i;
       depth += 1;
-    } else if (!inString && ch === "{") {
+    } else if (!inString && ch === '{') {
       depth -= 1;
       if (depth === 0 && end >= 0) {
         lastStart = i;
@@ -102,8 +108,8 @@ export function parseWakeAgentSentinel(output: string): boolean {
 }
 
 async function evaluateCommandGate(
-  check: Extract<ScheduleWakeCheck, { type: "command" }>,
-  options: EvaluateWakeGateOptions
+  check: Extract<ScheduleWakeCheck, { type: 'command' }>,
+  options: EvaluateWakeGateOptions,
 ): Promise<boolean> {
   const env = options.env ?? process.env;
   const run: WakeCommandRunner = options.commandRunner ?? runCommand;
@@ -112,7 +118,7 @@ async function evaluateCommandGate(
       command: check.run,
       cwd: options.cwd ?? process.cwd(),
       timeoutMs: options.commandTimeoutMs ?? DEFAULT_WAKE_COMMAND_TIMEOUT_MS,
-      env: scrubbedWakeEnv(env)
+      env: scrubbedWakeEnv(env),
     });
     // Timeout → fail open (wake). A pre-filter that hangs must not drop the scheduled run.
     if (result.timedOut) return true;
@@ -124,9 +130,9 @@ async function evaluateCommandGate(
 }
 
 async function evaluateFileChangedGate(
-  check: Extract<ScheduleWakeCheck, { type: "file-changed" }>,
+  check: Extract<ScheduleWakeCheck, { type: 'file-changed' }>,
   schedule: TaskSchedule,
-  options: EvaluateWakeGateOptions
+  options: EvaluateWakeGateOptions,
 ): Promise<boolean> {
   try {
     const stats = await stat(check.path);
@@ -147,13 +153,13 @@ async function evaluateFileChangedGate(
  */
 export async function evaluateWakeGate(
   schedule: TaskSchedule,
-  options: EvaluateWakeGateOptions = {}
+  options: EvaluateWakeGateOptions = {},
 ): Promise<boolean> {
   const check = schedule.wakeCheck;
   if (!check) return true;
   try {
-    if (check.type === "command") return await evaluateCommandGate(check, options);
-    if (check.type === "file-changed") return await evaluateFileChangedGate(check, schedule, options);
+    if (check.type === 'command') return await evaluateCommandGate(check, options);
+    if (check.type === 'file-changed') return await evaluateFileChangedGate(check, schedule, options);
     return true; // unknown check kind → fail open.
   } catch {
     return true; // any unexpected error → fail open.

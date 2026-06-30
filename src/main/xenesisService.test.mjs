@@ -78,7 +78,7 @@ test("explicit 'codex-app-server' passes straight through", () => {
   assert.equal(result.apiKeyEnv, '');
 });
 
-test("explicit keyed provider with no key is not silently switched (honest auth error downstream)", () => {
+test('explicit keyed provider with no key is not silently switched (honest auth error downstream)', () => {
   const result = buildXenesisProviderRuntimeOptions({
     aiProvider: { provider: 'openai' },
     env: {},

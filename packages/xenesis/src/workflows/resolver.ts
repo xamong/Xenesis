@@ -1,13 +1,13 @@
-import { defaultWorkflowHandlers } from "./builtins.js";
-import type { WorkflowConfig, WorkflowStepConfig } from "../config/index.js";
+import type { WorkflowConfig, WorkflowStepConfig } from '../config/index.js';
+import { defaultWorkflowHandlers } from './builtins.js';
 import type {
   ResolveWorkflowOptions,
   WorkflowHandler,
   WorkflowPipelineOverrides,
   WorkflowSelection,
   WorkflowStep,
-  WorkflowSummary
-} from "./types.js";
+  WorkflowSummary,
+} from './types.js';
 
 export function normalizeWorkflowName(name: string) {
   return name.trim();
@@ -25,14 +25,14 @@ function assertWorkflowName(name: string, source: string) {
 function normalizeHandler(handler: WorkflowHandler, source: string): WorkflowHandler {
   return {
     ...handler,
-    name: assertWorkflowName(handler.name, source)
+    name: assertWorkflowName(handler.name, source),
   };
 }
 
 function normalizeStep(step: WorkflowStep, source: string, index: number): WorkflowStep {
   return {
     ...step,
-    name: assertWorkflowName(step.name, `${source} step ${index + 1}`)
+    name: assertWorkflowName(step.name, `${source} step ${index + 1}`),
   };
 }
 
@@ -42,27 +42,31 @@ function normalizeSteps(steps: WorkflowStep[] | undefined, source: string) {
   return steps.map((step, index) => normalizeStep(step, source, index));
 }
 
-function pipelineMode(mode: WorkflowConfig["mode"]): WorkflowPipelineOverrides["mode"] | undefined {
-  if (mode === "plan" || mode === "work") return mode;
+function pipelineMode(mode: WorkflowConfig['mode']): WorkflowPipelineOverrides['mode'] | undefined {
+  if (mode === 'plan' || mode === 'work') return mode;
   return undefined;
 }
 
 function configuredPrompt(workflow: WorkflowConfig, prompt: string) {
   if (workflow.prompt !== undefined) return workflow.prompt;
   if (workflow.promptPrefix !== undefined || workflow.promptSuffix !== undefined) {
-    return `${workflow.promptPrefix ?? ""}${prompt}${workflow.promptSuffix ?? ""}`;
+    return `${workflow.promptPrefix ?? ''}${prompt}${workflow.promptSuffix ?? ''}`;
   }
   return prompt;
 }
 
-function configuredPipeline(workflow: Pick<WorkflowConfig, "mode" | "guard" | "systemMessage">): WorkflowPipelineOverrides {
+function configuredPipeline(
+  workflow: Pick<WorkflowConfig, 'mode' | 'guard' | 'systemMessage'>,
+): WorkflowPipelineOverrides {
   const mode = pipelineMode(workflow.mode);
   return {
     ...(mode ? { mode } : {}),
     ...(workflow.guard ? { guard: workflow.guard } : {}),
-    ...(workflow.systemMessage ? {
-      systemMessages: [{ role: "system", content: workflow.systemMessage }]
-    } : {})
+    ...(workflow.systemMessage
+      ? {
+          systemMessages: [{ role: 'system', content: workflow.systemMessage }],
+        }
+      : {}),
   };
 }
 
@@ -76,11 +80,13 @@ function configuredStep(step: WorkflowStepConfig): WorkflowStep {
     ...(step.promptPrefix !== undefined ? { promptPrefix: step.promptPrefix } : {}),
     ...(step.promptSuffix !== undefined ? { promptSuffix: step.promptSuffix } : {}),
     ...(mode ? { pipeline: { mode } } : {}),
-    ...(step.metadata ? { metadata: step.metadata } : {})
+    ...(step.metadata ? { metadata: step.metadata } : {}),
   };
 }
 
-export function configuredWorkflowHandlers(configuredWorkflows: Record<string, WorkflowConfig> = {}): WorkflowHandler[] {
+export function configuredWorkflowHandlers(
+  configuredWorkflows: Record<string, WorkflowConfig> = {},
+): WorkflowHandler[] {
   return Object.entries(configuredWorkflows).map(([name, workflow]) => ({
     name,
     ...(workflow.description ? { description: workflow.description } : {}),
@@ -90,8 +96,8 @@ export function configuredWorkflowHandlers(configuredWorkflows: Record<string, W
       prompt: configuredPrompt(workflow, body.prompt),
       pipeline: configuredPipeline(workflow),
       ...(workflow.steps ? { steps: workflow.steps.map(configuredStep) } : {}),
-      ...(workflow.metadata ? { metadata: workflow.metadata } : {})
-    })
+      ...(workflow.metadata ? { metadata: workflow.metadata } : {}),
+    }),
   }));
 }
 
@@ -99,7 +105,7 @@ export function workflowHandlers(customWorkflows: WorkflowHandler[] = []) {
   const custom = customWorkflows.map((handler, index) => normalizeHandler(handler, `custom workflow ${index + 1}`));
   const customNames = new Set(custom.map((handler) => handler.name));
   const defaults = defaultWorkflowHandlers()
-    .map((handler) => normalizeHandler(handler, "default workflow"))
+    .map((handler) => normalizeHandler(handler, 'default workflow'))
     .filter((handler) => !customNames.has(handler.name));
   return [...custom, ...defaults];
 }
@@ -108,7 +114,7 @@ function publicWorkflow(handler: WorkflowHandler, metadata?: Record<string, unkn
   return {
     name: handler.name,
     ...(handler.description ? { description: handler.description } : {}),
-    ...(metadata ?? handler.metadata ? { metadata: metadata ?? handler.metadata } : {})
+    ...((metadata ?? handler.metadata) ? { metadata: metadata ?? handler.metadata } : {}),
   };
 }
 
@@ -119,7 +125,7 @@ export function listWorkflows(customWorkflows: WorkflowHandler[] = []): Workflow
 export function summarizeWorkflow(selection: WorkflowSelection): WorkflowSummary {
   return {
     name: selection.name,
-    ...(selection.metadata ? { metadata: selection.metadata } : {})
+    ...(selection.metadata ? { metadata: selection.metadata } : {}),
   };
 }
 
@@ -132,12 +138,11 @@ async function firstMatchingWorkflow(context: ResolveWorkflowOptions, handlers: 
 
 export async function resolveWorkflow(
   context: ResolveWorkflowOptions,
-  customWorkflows: WorkflowHandler[] = []
+  customWorkflows: WorkflowHandler[] = [],
 ): Promise<WorkflowSelection> {
   const handlers = workflowHandlers(customWorkflows);
-  const explicitWorkflow = typeof context.body.workflow === "string"
-    ? normalizeWorkflowName(context.body.workflow)
-    : "";
+  const explicitWorkflow =
+    typeof context.body.workflow === 'string' ? normalizeWorkflowName(context.body.workflow) : '';
   const handler = explicitWorkflow
     ? handlers.find((candidate) => candidate.name === explicitWorkflow)
     : await firstMatchingWorkflow(context, handlers);
@@ -146,7 +151,7 @@ export async function resolveWorkflow(
     throw new Error(`Unknown workflow: ${explicitWorkflow}`);
   }
 
-  const prepared = await handler.prepare?.(context) ?? {};
+  const prepared = (await handler.prepare?.(context)) ?? {};
   const steps = normalizeSteps(prepared.steps, handler.name);
   return {
     name: handler.name,
@@ -156,6 +161,6 @@ export async function resolveWorkflow(
     ideContext: prepared.ideContext ?? context.body.ideContext,
     pipeline: prepared.pipeline ?? {},
     ...(steps ? { steps } : {}),
-    ...(prepared.metadata ?? handler.metadata ? { metadata: prepared.metadata ?? handler.metadata } : {})
+    ...((prepared.metadata ?? handler.metadata) ? { metadata: prepared.metadata ?? handler.metadata } : {}),
   };
 }

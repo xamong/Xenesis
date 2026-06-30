@@ -1,19 +1,19 @@
-import { spawn } from "node:child_process";
-import { computeShellEnv } from "../core/isolation/secretScrub.js";
-import type { HookSpec } from "../config/types.js";
+import { spawn } from 'node:child_process';
+import type { HookSpec } from '../config/types.js';
+import { computeShellEnv } from '../core/isolation/secretScrub.js';
 import type {
   BlockingHookHandler,
   PreToolUseDecision,
   PreToolUsePayload,
   StopDecision,
   StopPayload,
-} from "./blocking.js";
+} from './blocking.js';
 
 interface Logger {
   warn(message: string): void;
 }
 
-type HookEvent = "pre_tool_use" | "stop";
+type HookEvent = 'pre_tool_use' | 'stop';
 type CommandDecision = PreToolUseDecision | StopDecision;
 
 // Map each event to the payload it receives and the decision it can emit, so
@@ -25,31 +25,22 @@ interface EventContract {
   stop: { payload: StopPayload; decision: StopDecision };
 }
 
-function allowFor<E extends HookEvent>(event: E): EventContract[E]["decision"] {
-  const d: CommandDecision =
-    event === "pre_tool_use"
-      ? { decision: "allow" }
-      : { decision: "allow-stop" };
-  return d as EventContract[E]["decision"];
+function allowFor<E extends HookEvent>(event: E): EventContract[E]['decision'] {
+  const d: CommandDecision = event === 'pre_tool_use' ? { decision: 'allow' } : { decision: 'allow-stop' };
+  return d as EventContract[E]['decision'];
 }
 
-function blockFor<E extends HookEvent>(
-  event: E,
-  reason: string,
-): EventContract[E]["decision"] {
+function blockFor<E extends HookEvent>(event: E, reason: string): EventContract[E]['decision'] {
   const d: CommandDecision =
-    event === "pre_tool_use"
-      ? { decision: "block", reason }
-      : { decision: "block-stop", continuePrompt: reason, reason };
-  return d as EventContract[E]["decision"];
+    event === 'pre_tool_use'
+      ? { decision: 'block', reason }
+      : { decision: 'block-stop', continuePrompt: reason, reason };
+  return d as EventContract[E]['decision'];
 }
 
 // Normalize Claude-Code {decision} and hermes {action} stdout shapes onto the
 // blocking decision union. Unknown/empty/unparseable stdout fails open (allow).
-function parseDecision<E extends HookEvent>(
-  stdout: string,
-  event: E,
-): EventContract[E]["decision"] {
+function parseDecision<E extends HookEvent>(stdout: string, event: E): EventContract[E]['decision'] {
   const trimmed = stdout.trim();
   if (!trimmed) return allowFor(event);
   let obj: Record<string, unknown>;
@@ -59,24 +50,17 @@ function parseDecision<E extends HookEvent>(
     return allowFor(event);
   }
   const verb = (obj.decision ?? obj.action) as string | undefined;
-  const reason = (obj.reason ?? obj.message ?? obj.content) as
-    | string
-    | undefined;
-  if (verb === "block") {
-    return blockFor(event, reason ?? "Blocked by hook command.");
+  const reason = (obj.reason ?? obj.message ?? obj.content) as string | undefined;
+  if (verb === 'block') {
+    return blockFor(event, reason ?? 'Blocked by hook command.');
   }
-  if (
-    event === "pre_tool_use" &&
-    verb === "modify" &&
-    obj.tool_input &&
-    typeof obj.tool_input === "object"
-  ) {
+  if (event === 'pre_tool_use' && verb === 'modify' && obj.tool_input && typeof obj.tool_input === 'object') {
     const modify: PreToolUseDecision = {
-      decision: "modify",
+      decision: 'modify',
       modifiedArgs: obj.tool_input as Record<string, unknown>,
       reason,
     };
-    return modify as EventContract[E]["decision"];
+    return modify as EventContract[E]['decision'];
   }
   return allowFor(event);
 }
@@ -92,13 +76,13 @@ function parseDecision<E extends HookEvent>(
 // Promise<D> result.
 export function createCommandHookHandler(
   spec: HookSpec,
-  event: "pre_tool_use",
+  event: 'pre_tool_use',
   defaults: { commandTimeoutMs: number },
   logger?: Logger,
 ): (payload: PreToolUsePayload) => Promise<PreToolUseDecision>;
 export function createCommandHookHandler(
   spec: HookSpec,
-  event: "stop",
+  event: 'stop',
   defaults: { commandTimeoutMs: number },
   logger?: Logger,
 ): (payload: StopPayload) => Promise<StopDecision>;
@@ -107,16 +91,16 @@ export function createCommandHookHandler<E extends HookEvent>(
   event: E,
   defaults: { commandTimeoutMs: number },
   logger?: Logger,
-): (payload: EventContract[E]["payload"]) => Promise<EventContract[E]["decision"]> {
+): (payload: EventContract[E]['payload']) => Promise<EventContract[E]['decision']> {
   // Per-event typing is locked in at compile time by the module-level
   // `_lockInContract` block at the bottom of this file (src-resident, so it
   // binds the per-task gate `tsc -p tsconfig.json --noEmit`). See the comment
   // there for the full rationale.
-  type Decision = EventContract[E]["decision"];
+  type Decision = EventContract[E]['decision'];
   const timeoutMs = spec.timeoutMs ?? defaults.commandTimeoutMs;
-  return (payload: EventContract[E]["payload"]) =>
+  return (payload: EventContract[E]['payload']) =>
     new Promise<Decision>((resolveDecision) => {
-      let stdout = "";
+      let stdout = '';
       let settled = false;
       const settle = (d: Decision) => {
         if (!settled) {
@@ -129,7 +113,7 @@ export function createCommandHookHandler<E extends HookEvent>(
       try {
         child = spawn(spec.command, {
           shell: true,
-          stdio: ["pipe", "pipe", "pipe"],
+          stdio: ['pipe', 'pipe', 'pipe'],
           // User-configured hook commands run arbitrary shell; scrub secrets/exec-hijack
           // vars so a careless or hostile hook can't read API keys/webhook tokens from
           // the env. computeShellEnv returns undefined only on XENESIS_ISOLATION_SCRUB="0"
@@ -137,30 +121,26 @@ export function createCommandHookHandler<E extends HookEvent>(
           env: computeShellEnv(process.env),
         });
       } catch (error) {
-        logger?.warn(
-          `Hook command failed to spawn; failing open: ${String(error)}`,
-        );
+        logger?.warn(`Hook command failed to spawn; failing open: ${String(error)}`);
         settle(allowFor(event));
         return;
       }
 
       const timer = setTimeout(() => {
-        logger?.warn(
-          `Hook command timed out after ${timeoutMs}ms; failing open.`,
-        );
+        logger?.warn(`Hook command timed out after ${timeoutMs}ms; failing open.`);
         child.kill();
         settle(allowFor(event));
       }, timeoutMs);
 
-      child.stdout?.on("data", (chunk) => {
+      child.stdout?.on('data', (chunk) => {
         stdout += String(chunk);
       });
-      child.on("error", (error) => {
+      child.on('error', (error) => {
         clearTimeout(timer);
         logger?.warn(`Hook command errored; failing open: ${String(error)}`);
         settle(allowFor(event));
       });
-      child.on("close", (code) => {
+      child.on('close', (code) => {
         clearTimeout(timer);
         if (settled) return;
         if (code !== 0) {
@@ -192,18 +172,16 @@ export function createCommandHookHandler<E extends HookEvent>(
 // via `void` only to satisfy no-unused-vars).
 function _lockInContract(): void {
   if (false as boolean) {
-    const _preReg: BlockingHookHandler<PreToolUsePayload, PreToolUseDecision> =
-      createCommandHookHandler(
-        { command: "true" },
-        "pre_tool_use",
-        { commandTimeoutMs: 1000 },
-      );
-    const _stopReg: BlockingHookHandler<StopPayload, StopDecision> =
-      createCommandHookHandler(
-        { command: "true" },
-        "stop",
-        { commandTimeoutMs: 1000 },
-      );
+    const _preReg: BlockingHookHandler<PreToolUsePayload, PreToolUseDecision> = createCommandHookHandler(
+      { command: 'true' },
+      'pre_tool_use',
+      { commandTimeoutMs: 1000 },
+    );
+    const _stopReg: BlockingHookHandler<StopPayload, StopDecision> = createCommandHookHandler(
+      { command: 'true' },
+      'stop',
+      { commandTimeoutMs: 1000 },
+    );
     void _preReg;
     void _stopReg;
   }

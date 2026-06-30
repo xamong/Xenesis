@@ -43,6 +43,11 @@ export const CONNECTION_CENTER_REFERENCE_BASELINE_CHECK_IDS = Object.freeze([
   'reference-baseline:external-tool-no-oauth-side-effect-boundary',
   'reference-baseline:channel-runtime-readback',
   'reference-baseline:channel-profile-review-steps',
+  'slice04:messenger-implemented-set',
+  'slice04:telegram-route-session-readback',
+  'slice04:telegram-access-pairing-readback',
+  'slice04:messenger-planned-channel-no-runtime',
+  'slice04:messenger-test-send-approval-boundary',
 ]);
 
 export function formatConnectionCenterLiveSmokePlan() {

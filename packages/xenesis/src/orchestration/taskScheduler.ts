@@ -1,5 +1,5 @@
-import type { AgentTask, AgentTaskStore } from "./agentTasks.js";
-import { shouldFireSchedule, type ScheduleStore, type TaskSchedule } from "./schedules.js";
+import type { AgentTask, AgentTaskStore } from './agentTasks.js';
+import { type ScheduleStore, shouldFireSchedule, type TaskSchedule } from './schedules.js';
 
 export interface TaskSchedulerOptions {
   scheduleStore: ScheduleStore;
@@ -16,9 +16,8 @@ export interface TaskSchedulerTickResult {
 export const recurringCronMaxAgeMs = 7 * 24 * 60 * 60 * 1000;
 
 function hasActiveScheduleTask(tasks: AgentTask[], scheduleId: string) {
-  return tasks.some((task) =>
-    task.scheduleId === scheduleId &&
-    (task.status === "queued" || task.status === "running")
+  return tasks.some(
+    (task) => task.scheduleId === scheduleId && (task.status === 'queued' || task.status === 'running'),
   );
 }
 
@@ -28,7 +27,7 @@ function scheduleDate(value: string) {
 }
 
 function shouldRemoveCronAfterFire(schedule: TaskSchedule, at: Date) {
-  if (schedule.trigger.type !== "cron") return false;
+  if (schedule.trigger.type !== 'cron') return false;
   if (schedule.trigger.recurring === false) return true;
   const createdAt = scheduleDate(schedule.createdAt);
   return createdAt ? at.getTime() - createdAt.getTime() >= recurringCronMaxAgeMs : false;
@@ -58,7 +57,7 @@ export class TaskScheduler {
         scheduleId: schedule.id,
         approvalMode: schedule.defaults?.approvalMode,
         maxTurns: schedule.defaults?.maxTurns,
-        maxTokens: schedule.defaults?.maxTokens
+        maxTokens: schedule.defaults?.maxTokens,
       });
       tasks.push(task);
       created.push(task);
@@ -66,9 +65,11 @@ export class TaskScheduler {
         await this.options.scheduleStore.remove(schedule.id);
         fired.push(schedule);
       } else {
-        fired.push(await this.options.scheduleStore.update(schedule.id, {
-          lastFiredAt: at.toISOString()
-        }));
+        fired.push(
+          await this.options.scheduleStore.update(schedule.id, {
+            lastFiredAt: at.toISOString(),
+          }),
+        );
       }
     }
 

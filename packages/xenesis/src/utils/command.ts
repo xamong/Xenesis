@@ -1,7 +1,7 @@
-import { spawn } from "node:child_process";
-import { stripDangerousEnv } from "./dangerousEnv.js";
+import { spawn } from 'node:child_process';
+import { stripDangerousEnv } from './dangerousEnv.js';
 
-export type ShellPlatform = NodeJS.Platform | "posix";
+export type ShellPlatform = NodeJS.Platform | 'posix';
 
 export interface ShellInvocation {
   shell: string;
@@ -34,7 +34,7 @@ export interface RunCommandResult {
 }
 
 export const DEFAULT_MAX_OUTPUT_CHARS = 100_000;
-const KILL_GRACE_MS = process.platform === "win32" ? 5000 : 1500;
+const KILL_GRACE_MS = process.platform === 'win32' ? 5000 : 1500;
 
 /**
  * Launch parameters for a long-lived ("persistent") shell that reads commands
@@ -47,27 +47,27 @@ export function buildPersistentShellSpawn(platform: ShellPlatform = process.plat
   command: string;
   args: string[];
 } {
-  if (platform === "win32") {
-    return { command: "powershell.exe", args: ["-NoProfile", "-NoLogo", "-NoExit", "-Command", "-"] };
+  if (platform === 'win32') {
+    return { command: 'powershell.exe', args: ['-NoProfile', '-NoLogo', '-NoExit', '-Command', '-'] };
   }
   const shellPath = process.env.SHELL;
-  const command = shellPath && /bash$/.test(shellPath) ? "bash" : "sh";
+  const command = shellPath && /bash$/.test(shellPath) ? 'bash' : 'sh';
   return { command, args: [] };
 }
 
 export function buildShellInvocation(command: string, platform: ShellPlatform = process.platform): ShellInvocation {
-  if (platform === "win32") {
+  if (platform === 'win32') {
     return {
-      shell: "powershell.exe",
+      shell: 'powershell.exe',
       args: [
-        "-NoProfile",
-        "-Command",
-        `& { ${command}; $xenesisSuccess = $?; $xenesisExitCode = $LASTEXITCODE; if ($xenesisSuccess) { exit 0 }; if (($xenesisExitCode -is [int]) -and ($xenesisExitCode -ne 0)) { exit $xenesisExitCode }; exit 1 }`
-      ]
+        '-NoProfile',
+        '-Command',
+        `& { ${command}; $xenesisSuccess = $?; $xenesisExitCode = $LASTEXITCODE; if ($xenesisSuccess) { exit 0 }; if (($xenesisExitCode -is [int]) -and ($xenesisExitCode -ne 0)) { exit $xenesisExitCode }; exit 1 }`,
+      ],
     };
   }
 
-  return { shell: "sh", args: ["-c", command] };
+  return { shell: 'sh', args: ['-c', command] };
 }
 
 export async function runCommand(options: RunCommandOptions): Promise<RunCommandResult> {
@@ -79,7 +79,7 @@ export async function runCommand(options: RunCommandOptions): Promise<RunCommand
     timeoutMs: options.timeoutMs,
     maxOutputChars: options.maxOutputChars,
     env: options.env,
-    detached: process.platform !== "win32"
+    detached: process.platform !== 'win32',
   });
 }
 
@@ -91,7 +91,7 @@ export async function runCommandArgs(options: RunCommandArgsOptions): Promise<Ru
     timeoutMs: options.timeoutMs,
     maxOutputChars: options.maxOutputChars,
     env: options.env,
-    detached: process.platform !== "win32"
+    detached: process.platform !== 'win32',
   });
 }
 
@@ -104,10 +104,10 @@ async function runSpawnedCommand(options: RunCommandArgsOptions & { detached: bo
       cwd: options.cwd,
       windowsHide: true,
       detached: options.detached,
-      env: spawnEnv
+      env: spawnEnv,
     });
-    let stdout = "";
-    let stderr = "";
+    let stdout = '';
+    let stderr = '';
     let settled = false;
     let handlingTimeout = false;
     let truncated = false;
@@ -117,7 +117,7 @@ async function runSpawnedCommand(options: RunCommandArgsOptions & { detached: bo
       resolveClosed = resolveClose;
     });
 
-    function appendOutput(target: "stdout" | "stderr", chunk: string) {
+    function appendOutput(target: 'stdout' | 'stderr', chunk: string) {
       const remaining = maxOutputChars - stdout.length - stderr.length;
       if (remaining <= 0) {
         truncated = true;
@@ -129,7 +129,7 @@ async function runSpawnedCommand(options: RunCommandArgsOptions & { detached: bo
         chunk = chunk.slice(0, remaining);
       }
 
-      if (target === "stdout") stdout += chunk;
+      if (target === 'stdout') stdout += chunk;
       else stderr += chunk;
     }
 
@@ -142,10 +142,7 @@ async function runSpawnedCommand(options: RunCommandArgsOptions & { detached: bo
 
     async function handleTimeout() {
       handlingTimeout = true;
-      await Promise.all([
-        killProcessTree(child.pid, "force"),
-        killWindowsProcessesReferencingPath(options.cwd)
-      ]);
+      await Promise.all([killProcessTree(child.pid, 'force'), killWindowsProcessesReferencingPath(options.cwd)]);
       await waitForClose(closed, KILL_GRACE_MS);
       finish({ exitCode: null, stdout, stderr, timedOut: true, truncated });
     }
@@ -154,19 +151,19 @@ async function runSpawnedCommand(options: RunCommandArgsOptions & { detached: bo
       void handleTimeout();
     }, options.timeoutMs);
 
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk) => {
-      appendOutput("stdout", chunk);
+    child.stdout.setEncoding('utf8');
+    child.stderr.setEncoding('utf8');
+    child.stdout.on('data', (chunk) => {
+      appendOutput('stdout', chunk);
     });
-    child.stderr.on("data", (chunk) => {
-      appendOutput("stderr", chunk);
+    child.stderr.on('data', (chunk) => {
+      appendOutput('stderr', chunk);
     });
-    child.on("error", (error) => {
+    child.on('error', (error) => {
       if (settled) return;
       finish({ exitCode: 1, stdout, stderr: error.message, timedOut: false, truncated });
     });
-    child.on("close", (exitCode) => {
+    child.on('close', (exitCode) => {
       closeExitCode = exitCode;
       resolveClosed();
       if (handlingTimeout) return;
@@ -175,90 +172,93 @@ async function runSpawnedCommand(options: RunCommandArgsOptions & { detached: bo
   });
 }
 
-export async function killProcessTree(pid: number | undefined, mode: "soft" | "force"): Promise<void> {
+export async function killProcessTree(pid: number | undefined, mode: 'soft' | 'force'): Promise<void> {
   if (pid === undefined) return;
 
-  if (process.platform === "win32") {
+  if (process.platform === 'win32') {
     // taskkill /t already walks the process tree. Calling it immediately avoids
     // a race where descendant discovery is slower than the timed-out child.
-    await Promise.all([
-      taskkill(pid, mode),
-      killWindowsProcessTreeSnapshot(pid, mode)
-    ]);
+    await Promise.all([taskkill(pid, mode), killWindowsProcessTreeSnapshot(pid, mode)]);
     return;
   }
 
   try {
-    process.kill(-pid, mode === "force" ? "SIGKILL" : "SIGTERM");
+    process.kill(-pid, mode === 'force' ? 'SIGKILL' : 'SIGTERM');
   } catch {
     try {
-      process.kill(pid, mode === "force" ? "SIGKILL" : "SIGTERM");
+      process.kill(pid, mode === 'force' ? 'SIGKILL' : 'SIGTERM');
     } catch {
       // The process may have already exited.
     }
   }
 }
 
-async function taskkill(pid: number, mode: "soft" | "force") {
+async function taskkill(pid: number, mode: 'soft' | 'force') {
   await new Promise<void>((resolve) => {
-    const args = mode === "force" ? ["/pid", String(pid), "/t", "/f"] : ["/pid", String(pid), "/t"];
-    const killer = spawn("taskkill.exe", args, { windowsHide: true });
+    const args = mode === 'force' ? ['/pid', String(pid), '/t', '/f'] : ['/pid', String(pid), '/t'];
+    const killer = spawn('taskkill.exe', args, { windowsHide: true });
     const timer = setTimeout(() => {
       killer.kill();
       resolve();
     }, KILL_GRACE_MS);
-    killer.on("error", () => {
+    killer.on('error', () => {
       clearTimeout(timer);
       resolve();
     });
-    killer.on("close", () => {
+    killer.on('close', () => {
       clearTimeout(timer);
       resolve();
     });
   });
 }
 
-async function killWindowsProcessTreeSnapshot(pid: number, mode: "soft" | "force") {
+async function killWindowsProcessTreeSnapshot(pid: number, mode: 'soft' | 'force') {
   await new Promise<void>((resolve) => {
-    const forceFlag = mode === "force" ? "-Force" : "";
-    const killer = spawn("powershell.exe", [
-      "-NoProfile",
-      "-Command",
+    const forceFlag = mode === 'force' ? '-Force' : '';
+    const killer = spawn(
+      'powershell.exe',
       [
-        "$root = [int]$env:XENESIS_TIMEOUT_PID;",
-        "$all = @(Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId);",
-        "$pending = New-Object System.Collections.Generic.Queue[int];",
-        "$pending.Enqueue($root);",
-        "$seen = New-Object 'System.Collections.Generic.HashSet[int]';",
-        "$targets = New-Object System.Collections.Generic.List[int];",
-        "while ($pending.Count -gt 0) {",
-        "$parent = $pending.Dequeue();",
-        "foreach ($process in $all) {",
-        "if ($process.ParentProcessId -eq $parent -and $seen.Add([int]$process.ProcessId)) {",
-        "$targets.Add([int]$process.ProcessId);",
-        "$pending.Enqueue([int]$process.ProcessId);",
-        "}",
-        "}",
-        "}",
-        "$targets | Sort-Object -Descending | ForEach-Object { Stop-Process -Id $_ " + forceFlag + " -ErrorAction SilentlyContinue };",
-        "Stop-Process -Id $root " + forceFlag + " -ErrorAction SilentlyContinue"
-      ].join(" ")
-    ], {
-      windowsHide: true,
-      env: {
-        ...process.env,
-        XENESIS_TIMEOUT_PID: String(pid)
-      }
-    });
+        '-NoProfile',
+        '-Command',
+        [
+          '$root = [int]$env:XENESIS_TIMEOUT_PID;',
+          '$all = @(Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId);',
+          '$pending = New-Object System.Collections.Generic.Queue[int];',
+          '$pending.Enqueue($root);',
+          "$seen = New-Object 'System.Collections.Generic.HashSet[int]';",
+          '$targets = New-Object System.Collections.Generic.List[int];',
+          'while ($pending.Count -gt 0) {',
+          '$parent = $pending.Dequeue();',
+          'foreach ($process in $all) {',
+          'if ($process.ParentProcessId -eq $parent -and $seen.Add([int]$process.ProcessId)) {',
+          '$targets.Add([int]$process.ProcessId);',
+          '$pending.Enqueue([int]$process.ProcessId);',
+          '}',
+          '}',
+          '}',
+          '$targets | Sort-Object -Descending | ForEach-Object { Stop-Process -Id $_ ' +
+            forceFlag +
+            ' -ErrorAction SilentlyContinue };',
+          'Stop-Process -Id $root ' + forceFlag + ' -ErrorAction SilentlyContinue',
+        ].join(' '),
+      ],
+      {
+        windowsHide: true,
+        env: {
+          ...process.env,
+          XENESIS_TIMEOUT_PID: String(pid),
+        },
+      },
+    );
     const timer = setTimeout(() => {
       killer.kill();
       resolve();
     }, KILL_GRACE_MS);
-    killer.on("error", () => {
+    killer.on('error', () => {
       clearTimeout(timer);
       resolve();
     });
-    killer.on("close", () => {
+    killer.on('close', () => {
       clearTimeout(timer);
       resolve();
     });
@@ -266,7 +266,7 @@ async function killWindowsProcessTreeSnapshot(pid: number, mode: "soft" | "force
 }
 
 async function killWindowsProcessesReferencingPath(path: string) {
-  if (process.platform !== "win32") return;
+  if (process.platform !== 'win32') return;
 
   const deadline = Date.now() + KILL_GRACE_MS;
   let stableEmptyScans = 0;
@@ -285,39 +285,43 @@ async function killWindowsProcessesReferencingPath(path: string) {
 
 async function killWindowsProcessesReferencingPathOnce(path: string) {
   return await new Promise<number>((resolve) => {
-    let stdout = "";
-    const killer = spawn("powershell.exe", [
-      "-NoProfile",
-      "-Command",
+    let stdout = '';
+    const killer = spawn(
+      'powershell.exe',
       [
-        "$target = $env:XENESIS_TIMEOUT_CWD;",
-        "if (-not $target) { exit 0 }",
-        "$escapedTarget = $target.Replace('\\', '\\\\');",
-        "$matches = @(Get-CimInstance Win32_Process |",
-        "Where-Object { $_.ProcessId -ne $PID -and $_.CommandLine -and ($_.CommandLine.Contains($target) -or $_.CommandLine.Contains($escapedTarget)) });",
-        "$matches | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue };",
-        "Write-Output $matches.Count"
-      ].join(" ")
-    ], {
-      windowsHide: true,
-      env: {
-        ...process.env,
-        XENESIS_TIMEOUT_CWD: path
-      }
-    });
+        '-NoProfile',
+        '-Command',
+        [
+          '$target = $env:XENESIS_TIMEOUT_CWD;',
+          'if (-not $target) { exit 0 }',
+          "$escapedTarget = $target.Replace('\\', '\\\\');",
+          '$matches = @(Get-CimInstance Win32_Process |',
+          'Where-Object { $_.ProcessId -ne $PID -and $_.CommandLine -and ($_.CommandLine.Contains($target) -or $_.CommandLine.Contains($escapedTarget)) });',
+          '$matches | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue };',
+          'Write-Output $matches.Count',
+        ].join(' '),
+      ],
+      {
+        windowsHide: true,
+        env: {
+          ...process.env,
+          XENESIS_TIMEOUT_CWD: path,
+        },
+      },
+    );
     const timer = setTimeout(() => {
       killer.kill();
       resolve(0);
     }, KILL_GRACE_MS);
-    killer.stdout.setEncoding("utf8");
-    killer.stdout.on("data", (chunk) => {
+    killer.stdout.setEncoding('utf8');
+    killer.stdout.on('data', (chunk) => {
       stdout += chunk;
     });
-    killer.on("error", () => {
+    killer.on('error', () => {
       clearTimeout(timer);
       resolve(0);
     });
-    killer.on("close", () => {
+    killer.on('close', () => {
       clearTimeout(timer);
       resolve(Number.parseInt(stdout.trim(), 10) || 0);
     });

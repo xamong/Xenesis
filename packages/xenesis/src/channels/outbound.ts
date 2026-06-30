@@ -1,4 +1,4 @@
-import type { ChannelAdapter, ChannelMessageHandler } from "./types.js";
+import type { ChannelAdapter, ChannelMessageHandler } from './types.js';
 
 export interface WebhookAdapterOptions {
   url: string;
@@ -11,21 +11,21 @@ async function postJson(
   url: string,
   payload: unknown,
   headers: Record<string, string>,
-  label: string
+  label: string,
 ) {
   const response = await fetchImpl(url, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "content-type": "application/json",
-      ...headers
+      'content-type': 'application/json',
+      ...headers,
     },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
   });
   if (!response.ok) throw new Error(`${label} HTTP ${response.status}`);
 }
 
 export class WebhookAdapter implements ChannelAdapter {
-  readonly name = "webhook";
+  readonly name = 'webhook';
   private readonly fetchImpl: typeof fetch;
 
   constructor(private readonly options: WebhookAdapterOptions) {
@@ -42,7 +42,7 @@ export class WebhookAdapter implements ChannelAdapter {
       this.options.url,
       { channel: this.name, conversationId, text },
       this.options.headers ?? {},
-      "webhook"
+      'webhook',
     );
   }
 }

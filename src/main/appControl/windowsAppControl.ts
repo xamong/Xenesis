@@ -72,8 +72,10 @@ export function createWindowsAppControlAdapter(runner?: WindowsAppControlRunner)
     status: (input) => runAction(runPowerShell, 'status', buildFindScript(input, 'status')),
     focus: (input) => runAction(runPowerShell, 'focus', buildWindowScript('focus', input)),
     resize: (input) => runAction(runPowerShell, 'resize', buildResizeScript(input)),
-    typeText: (input) => runAction(runPowerShell, 'typeText', buildSendKeysScript('typeText', input, sendKeysText(input.text))),
-    hotkey: (input) => runAction(runPowerShell, 'hotkey', buildSendKeysScript('hotkey', input, sendKeysHotkey(input.keys))),
+    typeText: (input) =>
+      runAction(runPowerShell, 'typeText', buildSendKeysScript('typeText', input, sendKeysText(input.text))),
+    hotkey: (input) =>
+      runAction(runPowerShell, 'hotkey', buildSendKeysScript('hotkey', input, sendKeysHotkey(input.keys))),
     close: (input) => runAction(runPowerShell, 'close', buildCloseScript(input)),
   };
 }
@@ -110,7 +112,8 @@ function normalizeActionResult(output: string, fallbackAction: ExternalAppAction
       approvalLevel: parsed.approvalLevel ?? 'medium',
       processId: typeof parsed.processId === 'number' ? parsed.processId : undefined,
       windows: normalizeWindows(parsed.windows),
-      message: typeof parsed.message === 'string' ? parsed.message : defaultActionMessage(fallbackAction, parsed.ok === true),
+      message:
+        typeof parsed.message === 'string' ? parsed.message : defaultActionMessage(fallbackAction, parsed.ok === true),
       error: typeof parsed.error === 'string' ? parsed.error : undefined,
     };
   } catch {

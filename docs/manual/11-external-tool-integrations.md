@@ -127,6 +127,19 @@ setup-plan `read` and `open` steps; OAuth draft requests, MCP install apply,
 tool profile draft apply, runtime review requests, and action-policy review
 requests remain explicit separate CR actions.
 
+Slice 05 adds two concrete tool guide workflow cards:
+
+- `connect-notion` covers Notion MCP setup plan, connector, install draft,
+  runtime, action-policy, and user-story readbacks before provider tool use.
+- `prepare-google-calendar` covers Google Calendar OAuth draft, OAuth runtime,
+  MCP OAuth, setup plan, connector, runtime, and user-story readbacks before
+  any OAuth completion or calendar access.
+
+Both guide workflows expose only `*.status` read paths and `*.open` control
+paths in `xd.xenesis.guides.status`. They do not install MCP servers, apply MCP
+drafts, complete OAuth, store tokens, execute provider tools, or mutate external
+systems. Requests and applies remain on their existing approval-gated CR paths.
+
 ## Slice 03 Verified Boundaries
 
 Slice 03 adds explicit live-smoke and focused test coverage for external tool

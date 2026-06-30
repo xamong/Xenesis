@@ -6,10 +6,7 @@ export interface RemoteDeskStreamFilterState {
 const remoteDeskToolOutputContinuationBudget = 12;
 const remoteDeskEditBlockContinuationBudget = 160;
 
-export function relayStreamText(
-  event: Record<string, unknown>,
-  state?: RemoteDeskStreamFilterState,
-) {
+export function relayStreamText(event: Record<string, unknown>, state?: RemoteDeskStreamFilterState) {
   const canonical = canonicalRelayStreamText(event);
   if (canonical !== undefined) return canonical;
   return legacyStreamText(event, state);
@@ -27,22 +24,23 @@ export function compactStreamOutput(lines: string[]) {
 }
 
 function canonicalRelayStreamText(event: Record<string, unknown>) {
-  if (!Object.prototype.hasOwnProperty.call(event, "relay")) return undefined;
-  if (stringValue(event.relay).trim().toLowerCase() !== "allow") return "";
-  const text = stringValue(event.relayText)
-    || stringValue(event.streamText)
-    || stringValue(event.text)
-    || stringValue(event.content)
-    || stringValue(event.data);
+  if (!Object.hasOwn(event, 'relay')) return undefined;
+  if (stringValue(event.relay).trim().toLowerCase() !== 'allow') return '';
+  const text =
+    stringValue(event.relayText) ||
+    stringValue(event.streamText) ||
+    stringValue(event.text) ||
+    stringValue(event.content) ||
+    stringValue(event.data);
   return safeCanonicalRelayText(text);
 }
 
 function safeCanonicalRelayText(text: string) {
   return text
-    .split("\n")
+    .split('\n')
     .map((line) => line.trim())
     .filter((line) => line && !isCanonicalRelayControlLine(line))
-    .join("\n")
+    .join('\n')
     .trim();
 }
 
@@ -68,7 +66,7 @@ function legacyStreamText(
 ) {
   const lines: string[] = [];
   for (const line of stringValue(event.streamText)
-    .split("\n")
+    .split('\n')
     .map((line) => line.trim())
     .filter(Boolean)) {
     if (startsRemoteDeskEditBlockContext(line)) {
@@ -99,11 +97,11 @@ function legacyStreamText(
     const visible = normalizeRemoteDeskVisibleLine(line);
     if (visible) lines.push(visible);
   }
-  return lines.join("\n");
+  return lines.join('\n');
 }
 
 function stringValue(value: unknown) {
-  if (value === undefined || value === null) return "";
+  if (value === undefined || value === null) return '';
   return String(value);
 }
 
@@ -120,9 +118,24 @@ function isNoisyStreamText(text: string) {
   if (/^…\s+\+\d+\s+lines\b/i.test(normalized)) return true;
   if (isRemoteDeskEditedBlockLine(trimmed)) return true;
   if (isRemoteDeskToolOutputLine(trimmed)) return true;
-  if (/^(?:Running|Ran|You ran|Edited|Exploring|Explored|Read|List|Search|Run|Interacted with|Waited for|Proposed Command|Updated Plan)(?:\s|:|$)/i.test(normalized)) return true;
-  if (/^(?:Using\s+superpowers:|Instructions\s+say\b|execution error:|Write tests for @filename$|Searching the web$|Searched the web\b|Worked for\b|Output$|Implement\s+\{feature\}$)/i.test(normalized)) return true;
-  if (/^(?:ing|ning|nning)\s+(?:Get-|Set-|Select-|Where-|ForEach-|rg\b|node\b|python\b|npm\b|npx\b|tsx\b|git\b)/i.test(normalized)) return true;
+  if (
+    /^(?:Running|Ran|You ran|Edited|Exploring|Explored|Read|List|Search|Run|Interacted with|Waited for|Proposed Command|Updated Plan)(?:\s|:|$)/i.test(
+      normalized,
+    )
+  )
+    return true;
+  if (
+    /^(?:Using\s+superpowers:|Instructions\s+say\b|execution error:|Write tests for @filename$|Searching the web$|Searched the web\b|Worked for\b|Output$|Implement\s+\{feature\}$)/i.test(
+      normalized,
+    )
+  )
+    return true;
+  if (
+    /^(?:ing|ning|nning)\s+(?:Get-|Set-|Select-|Where-|ForEach-|rg\b|node\b|python\b|npm\b|npx\b|tsx\b|git\b)/i.test(
+      normalized,
+    )
+  )
+    return true;
   if (/^(?:ent|tent|ontent)\s+-Raw\b/i.test(normalized)) return true;
   if (/^Working(?:\s*\(\d+s[\s\S]*\))?$/i.test(normalized)) return true;
   if (/^(?:\d+m\s*)?\d+s\s*•\s*esc\s*to\s*interr?upt\)?$/i.test(normalized)) return true;
@@ -137,7 +150,11 @@ function isRemoteDeskInternalCommandLine(text: string) {
   const normalized = normalizeRemoteDeskLineForClassification(text);
   const attached = /^(Running|Ran)(\S[\s\S]*)$/i.exec(normalized);
   if (attached && looksLikeRemoteDeskCommandText(attached[2])) return true;
-  if (/^(?:Running|Ran)(?:\s|:)/i.test(normalized) && looksLikeRemoteDeskCommandText(normalized.replace(/^(?:Running|Ran)(?:\s|:)+/i, ""))) return true;
+  if (
+    /^(?:Running|Ran)(?:\s|:)/i.test(normalized) &&
+    looksLikeRemoteDeskCommandText(normalized.replace(/^(?:Running|Ran)(?:\s|:)+/i, ''))
+  )
+    return true;
   return false;
 }
 
@@ -156,16 +173,28 @@ function startsRemoteDeskEditBlockContext(text: string) {
 }
 
 function looksLikeRemoteDeskCommandText(text: string) {
-  return /^(?:if\b|\$|\(|\[|'|"|\.?\\|\/|[A-Z]:\\|Get-|Set-|Select-|Where-|ForEach-|Measure-|New-|Remove-|Copy-|Move-|rg\b|node\b|python\b|py\b|npm\b|npx\b|tsx\b|git\b|cat\b|ls\b|dir\b|type\b|curl\b|pwsh\b|powershell\b|cmd\b)/i.test(text.trim());
+  return /^(?:if\b|\$|\(|\[|'|"|\.?\\|\/|[A-Z]:\\|Get-|Set-|Select-|Where-|ForEach-|Measure-|New-|Remove-|Copy-|Move-|rg\b|node\b|python\b|py\b|npm\b|npx\b|tsx\b|git\b|cat\b|ls\b|dir\b|type\b|curl\b|pwsh\b|powershell\b|cmd\b)/i.test(
+    text.trim(),
+  );
 }
 
 function isRemoteDeskToolOutputLine(text: string) {
   const normalized = normalizeRemoteDeskLineForClassification(text);
   if (!normalized) return true;
-  if (/^(?:[A-Za-z0-9_.\\/-]+\.(?:html|js|ts|tsx|css|md|json|xconj):\d+:|\d{1,6}:)(?:\s|$|<|\{|\}|\(|\)|["'])/.test(normalized)) return true;
+  if (
+    /^(?:[A-Za-z0-9_.\\/-]+\.(?:html|js|ts|tsx|css|md|json|xconj):\d+:|\d{1,6}:)(?:\s|$|<|\{|\}|\(|\)|["'])/.test(
+      normalized,
+    )
+  )
+    return true;
   if (/^(?:\.\\|\.\/|[A-Za-z]:\\|[A-Za-z0-9_.-]+\\)[^\s]+/.test(normalized)) return true;
   if (/^(?:design|guitar|assets|xcon|src|packages|providers|docs|examples)[\\/][^\s]+/i.test(normalized)) return true;
-  if (/^(?:-a---|d----|Count\s+Name\b|FullName\b|Lines\s+Words\s+Characters\b|Line\s*\||Name\s+Source\b|Path\s+Exists\b)/i.test(normalized)) return true;
+  if (
+    /^(?:-a---|d----|Count\s+Name\b|FullName\b|Lines\s+Words\s+Characters\b|Line\s*\||Name\s+Source\b|Path\s+Exists\b)/i.test(
+      normalized,
+    )
+  )
+    return true;
   if (/^\|[~\s]/.test(normalized)) return true;
   if (/^"[\w.-]+":\s*/.test(normalized)) return true;
   if (/^name:\s*[\w.-]+/i.test(normalized)) return true;
@@ -181,14 +210,23 @@ function isRemoteDeskEditedBlockLine(text: string) {
   if (/^⋮+$/.test(normalized)) return true;
   if (/^@@\s/.test(normalized)) return true;
   if (/^\d+\s+[+-]\s?/.test(normalized)) return true;
-  if (/^[+-]\s+(?:import|export|const|let|var|function|class|interface|type|enum|if|else|for|while|switch|case|return|await|async|try|catch|finally|throw|describe\(|test\(|it\(|expect\(|beforeEach\(|afterEach\(|[}\])];,]|<\/?|\/\/|\/\*)/i.test(normalized)) return true;
-  return /^\d+\s{2,}(?:import|export|from\b|const|let|var|function|class|interface|type|enum|if|else|for|while|switch|case|return|await|async|try|catch|finally|throw|new\s+|describe\(|test\(|it\(|expect\(|beforeEach\(|afterEach\(|[}\])];,]|<\/?|\/\/|\/\*|[\w.]+\(|[\w$]+:\s*)/i.test(normalized);
+  if (
+    /^[+-]\s+(?:import|export|const|let|var|function|class|interface|type|enum|if|else|for|while|switch|case|return|await|async|try|catch|finally|throw|describe\(|test\(|it\(|expect\(|beforeEach\(|afterEach\(|[}\])];,]|<\/?|\/\/|\/\*)/i.test(
+      normalized,
+    )
+  )
+    return true;
+  return /^\d+\s{2,}(?:import|export|from\b|const|let|var|function|class|interface|type|enum|if|else|for|while|switch|case|return|await|async|try|catch|finally|throw|new\s+|describe\(|test\(|it\(|expect\(|beforeEach\(|afterEach\(|[}\])];,]|<\/?|\/\/|\/\*|[\w.]+\(|[\w$]+:\s*)/i.test(
+    normalized,
+  );
 }
 
 function isRemoteDeskClippedNumericArtifactLine(normalized: string) {
   if (/^\d{1,6}[+-](?!\d)(?:\s|$|[A-Za-z_$()[\]{}"'`])/.test(normalized)) return true;
   if (!/^\d{1,4}[a-z][A-Za-z0-9_.-]*/.test(normalized) || /[가-힣]/.test(normalized)) return false;
-  return /(?:connection-refused|signature|elapsedms|tool:|server|app_|guards|worki|readiness|failed|error|timeout|result|content|context|workspace)/i.test(normalized);
+  return /(?:connection-refused|signature|elapsedms|tool:|server|app_|guards|worki|readiness|failed|error|timeout|result|content|context|workspace)/i.test(
+    normalized,
+  );
 }
 
 function isRemoteDeskNarrativeBoundary(text: string) {
@@ -197,24 +235,23 @@ function isRemoteDeskNarrativeBoundary(text: string) {
   if (/^[-*•□✔\d]+(?:\s|[.:])/.test(normalized)) return false;
   if (isNoisyStreamText(normalized)) return false;
   if (/[가-힣]/.test(normalized)) {
-    return /(?:습니다|겠습니다|입니다|합니다|됩니다|보겠습니다|확인|정리|결과|현재|오늘|내일|서울|대전|제주|좋겠습니다|필요합니다|가능성이|중심으로)/.test(normalized);
+    return /(?:습니다|겠습니다|입니다|합니다|됩니다|보겠습니다|확인|정리|결과|현재|오늘|내일|서울|대전|제주|좋겠습니다|필요합니다|가능성이|중심으로)/.test(
+      normalized,
+    );
   }
   return /^[A-Z][A-Za-z0-9 ,'"()[\].:;/-]{12,}[.!?]$/.test(normalized);
 }
 
 function normalizeRemoteDeskLineForClassification(line: string) {
   return line
-    .replace(/^[›>\s]+/, "")
-    .replace(/^[─\-\s]+/, "")
-    .replace(/^•\s*/, "")
+    .replace(/^[›>\s]+/, '')
+    .replace(/^[─\-\s]+/, '')
+    .replace(/^•\s*/, '')
     .trim();
 }
 
 function normalizeRemoteDeskVisibleLine(line: string) {
-  return stripAttachedRemoteDeskNarrativePrefix(line)
-    .replace(/^\s+/, "")
-    .replace(/^•\s*/, "")
-    .trim();
+  return stripAttachedRemoteDeskNarrativePrefix(line).replace(/^\s+/, '').replace(/^•\s*/, '').trim();
 }
 
 function stripAttachedRemoteDeskNarrativePrefix(line: string) {

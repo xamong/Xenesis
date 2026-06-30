@@ -1,29 +1,29 @@
 export type ContextRecordKind =
-  | "prompt_base"
-  | "conversation"
-  | "tool_result"
-  | "tool_result_summary"
-  | "compact_summary"
-  | "microcompact"
-  | "session_memory"
-  | "workspace_context"
-  | "ide_context"
-  | "desk_context"
-  | "recovery_overlay";
+  | 'prompt_base'
+  | 'conversation'
+  | 'tool_result'
+  | 'tool_result_summary'
+  | 'compact_summary'
+  | 'microcompact'
+  | 'session_memory'
+  | 'workspace_context'
+  | 'ide_context'
+  | 'desk_context'
+  | 'recovery_overlay';
 
 export type ContextAuthority =
-  | "explicit_user"
-  | "live_evidence"
-  | "active_surface"
-  | "project_instruction"
-  | "session_state"
-  | "workspace_index"
-  | "durable_memory"
-  | "session_memory"
-  | "historical_hint";
+  | 'explicit_user'
+  | 'live_evidence'
+  | 'active_surface'
+  | 'project_instruction'
+  | 'session_state'
+  | 'workspace_index'
+  | 'durable_memory'
+  | 'session_memory'
+  | 'historical_hint';
 
-export type ContextFreshness = "live" | "fresh" | "stale" | "expired";
-export type ContextCacheScope = "global" | "session" | "turn" | "none";
+export type ContextFreshness = 'live' | 'fresh' | 'stale' | 'expired';
+export type ContextCacheScope = 'global' | 'session' | 'turn' | 'none';
 
 export interface ContextRecord {
   id: string;
@@ -75,14 +75,14 @@ export const contextAuthorityRank: Record<ContextAuthority, number> = {
   workspace_index: 40,
   durable_memory: 30,
   session_memory: 20,
-  historical_hint: 10
+  historical_hint: 10,
 };
 
 const freshnessRank: Record<ContextFreshness, number> = {
   live: 40,
   fresh: 30,
   stale: 20,
-  expired: 10
+  expired: 10,
 };
 
 export function estimateContextTokens(content: string) {
@@ -91,14 +91,14 @@ export function estimateContextTokens(content: string) {
   return Math.max(1, Math.ceil(trimmed.length / 4));
 }
 
-export function isContextRecordExpired(record: Pick<ContextRecord, "expiresAt">, now = new Date()) {
+export function isContextRecordExpired(record: Pick<ContextRecord, 'expiresAt'>, now = new Date()) {
   return record.expiresAt !== undefined && new Date(record.expiresAt).getTime() <= now.getTime();
 }
 
 function defaultFreshness(input: CreateContextRecordInput, now: Date): ContextFreshness {
   if (input.freshness) return input.freshness;
-  if (input.expiresAt && new Date(input.expiresAt).getTime() <= now.getTime()) return "expired";
-  return "fresh";
+  if (input.expiresAt && new Date(input.expiresAt).getTime() <= now.getTime()) return 'expired';
+  return 'fresh';
 }
 
 export function createContextRecord(input: CreateContextRecordInput): ContextRecord {
@@ -121,9 +121,9 @@ export function createContextRecord(input: CreateContextRecordInput): ContextRec
     priority: input.priority ?? 0,
     tokenEstimate: input.tokenEstimate ?? estimateContextTokens(input.content),
     sensitive: input.sensitive ?? false,
-    cacheScope: input.cacheScope ?? "turn",
+    cacheScope: input.cacheScope ?? 'turn',
     ...(input.conflictKey !== undefined ? { conflictKey: input.conflictKey } : {}),
-    evidenceRefs: [...(input.evidenceRefs ?? [])]
+    evidenceRefs: [...(input.evidenceRefs ?? [])],
   };
 }
 

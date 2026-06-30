@@ -53,11 +53,7 @@ export function removeQueuedPrompt(queue: QueuedPrompt[], id: string): QueuedPro
 }
 
 /** Patch a queued item in place (id is preserved). Returns a new array. */
-export function replaceQueuedPrompt(
-  queue: QueuedPrompt[],
-  id: string,
-  patch: Partial<QueuedPrompt>,
-): QueuedPrompt[] {
+export function replaceQueuedPrompt(queue: QueuedPrompt[], id: string, patch: Partial<QueuedPrompt>): QueuedPrompt[] {
   return queue.map((entry) => (entry.id === id ? { ...entry, ...patch, id: entry.id } : entry));
 }
 

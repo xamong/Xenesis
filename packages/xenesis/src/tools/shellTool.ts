@@ -1,16 +1,16 @@
-import { realpath } from "node:fs/promises";
-import { z } from "zod";
-import { computeShellEnv } from "../core/isolation/secretScrub.js";
-import { LOCAL_BACKEND } from "../core/isolation/executionBackend.js";
+import { realpath } from 'node:fs/promises';
+import { z } from 'zod';
+import { LOCAL_BACKEND } from '../core/isolation/executionBackend.js';
+import { computeShellEnv } from '../core/isolation/secretScrub.js';
 import {
   findShellCommandOutsideWorkspacePath,
   isDestructiveShellCommand,
-  isLowRiskShellCommand
-} from "../permissions/shellRisk.js";
-import { assertExistingPathInsideWorkspace, isPathInside } from "../utils/workspace.js";
-import { ShellSession } from "./shellSession.js";
-import { shellProcessRegistry } from "./shellProcessRegistry.js";
-import type { Tool, ToolContext } from "./types.js";
+  isLowRiskShellCommand,
+} from '../permissions/shellRisk.js';
+import { assertExistingPathInsideWorkspace, isPathInside } from '../utils/workspace.js';
+import { shellProcessRegistry } from './shellProcessRegistry.js';
+import { ShellSession } from './shellSession.js';
+import type { Tool, ToolContext } from './types.js';
 
 // Re-export so existing importers (and the persistent ShellSession) can keep
 // `import { computeShellEnv } from ".../tools/shellTool.js"`; the implementation now
@@ -26,7 +26,7 @@ const shellInput = z.object({
    * handle; use the `process` tool (poll/log/wait/kill) to manage it. The per-command
    * guards still run first, and the process inherits the session's current cwd.
    */
-  background: z.boolean().default(false)
+  background: z.boolean().default(false),
 });
 
 type ShellInput = z.infer<typeof shellInput>;
@@ -43,11 +43,7 @@ export interface ShellToolOptions {
    * idle-disposal invariants against the EXACT pid the tool tracks for killProcessTree,
    * rather than inferring it by enumerating OS processes. Never affects behavior.
    */
-  onSessionLifecycle?: (event: {
-    sessionId: string;
-    pid: number | undefined;
-    phase: "spawn" | "dispose";
-  }) => void;
+  onSessionLifecycle?: (event: { sessionId: string; pid: number | undefined; phase: 'spawn' | 'dispose' }) => void;
 }
 
 interface SessionEntry {
@@ -69,7 +65,7 @@ function shellEnv(context: ToolContext): NodeJS.ProcessEnv | undefined {
  */
 async function runGuards(
   input: ShellInput,
-  context: ToolContext
+  context: ToolContext,
 ): Promise<{ ok: true; cwd: string } | { ok: false; content: string }> {
   let cwd: string;
   try {
@@ -80,7 +76,7 @@ async function runGuards(
   }
 
   if (isDestructiveShellCommand(input.command)) {
-    return { ok: false, content: "Blocked shell command: destructive command detected." };
+    return { ok: false, content: 'Blocked shell command: destructive command detected.' };
   }
 
   const outsidePath = findShellCommandOutsideWorkspacePath(input.command, context.workspaceRoot);
@@ -103,7 +99,7 @@ async function runStateless(input: ShellInput, context: ToolContext, cwd: string
     command: input.command,
     cwd,
     timeoutMs: input.timeoutMs,
-    ...(env ? { env } : {})
+    ...(env ? { env } : {}),
   });
 
   if (result.timedOut) {
@@ -111,16 +107,16 @@ async function runStateless(input: ShellInput, context: ToolContext, cwd: string
   }
 
   const outputParts = [result.stdout.trimEnd(), result.stderr.trimEnd()].filter(Boolean);
-  if (result.truncated) outputParts.push("[output truncated after 100000 characters]");
-  const output = outputParts.join("\n");
+  if (result.truncated) outputParts.push('[output truncated after 100000 characters]');
+  const output = outputParts.join('\n');
   if (result.exitCode !== 0) {
     return {
       ok: false,
-      content: `Command failed with exit code ${result.exitCode}.\n${output}`.trim()
+      content: `Command failed with exit code ${result.exitCode}.\n${output}`.trim(),
     };
   }
 
-  return { ok: true, content: output || "Command completed with no output." };
+  return { ok: true, content: output || 'Command completed with no output.' };
 }
 
 /**
@@ -141,7 +137,7 @@ export function createShellTool(options: ShellToolOptions): Tool<ShellInput> {
     sessions.delete(sessionId);
     const pid = entry.session.childPid;
     entry.session.dispose();
-    options.onSessionLifecycle?.({ sessionId, pid, phase: "dispose" });
+    options.onSessionLifecycle?.({ sessionId, pid, phase: 'dispose' });
   }
 
   // Report a (re)spawn the first time a session's tracked child pid appears or changes
@@ -151,7 +147,7 @@ export function createShellTool(options: ShellToolOptions): Tool<ShellInput> {
     const pid = entry.session.childPid;
     if (pid !== undefined && pid !== entry.lastReportedPid) {
       entry.lastReportedPid = pid;
-      options.onSessionLifecycle({ sessionId, pid, phase: "spawn" });
+      options.onSessionLifecycle({ sessionId, pid, phase: 'spawn' });
     }
   }
 
@@ -163,8 +159,8 @@ export function createShellTool(options: ShellToolOptions): Tool<ShellInput> {
         session: new ShellSession({
           workspaceRoot: context.workspaceRoot,
           cwd,
-          ...(env ? { env } : {})
-        })
+          ...(env ? { env } : {}),
+        }),
       };
       sessions.set(context.sessionId, entry);
     }
@@ -177,7 +173,7 @@ export function createShellTool(options: ShellToolOptions): Tool<ShellInput> {
   }
 
   return {
-    name: "shell",
+    name: 'shell',
     description:
       "Run a shell command in the workspace with timeout and captured output. On Windows this runs in PowerShell; avoid POSIX heredocs such as python - <<'PY' and prefer PowerShell-native commands.",
     inputSchema: shellInput,
@@ -209,7 +205,7 @@ export function createShellTool(options: ShellToolOptions): Tool<ShellInput> {
           sessionId: context.sessionId,
           command: input.command,
           cwd: bgCwd,
-          ...(env ? { env } : {})
+          ...(env ? { env } : {}),
         });
         // Expose only a serializable handle to the model (the raw ShellSession holds
         // a ChildProcess + unbounded output buffer). `sessionId` is the registry id,
@@ -219,20 +215,20 @@ export function createShellTool(options: ShellToolOptions): Tool<ShellInput> {
           command: bg.command,
           cwd: bg.cwd,
           pid: bg.pid,
-          status: bg.exited ? ("exited" as const) : ("running" as const),
-          reason: bg.reason
+          status: bg.exited ? ('exited' as const) : ('running' as const),
+          reason: bg.reason,
         };
-        if (bg.exited && bg.reason === "failed_start") {
+        if (bg.exited && bg.reason === 'failed_start') {
           return {
             ok: false,
             content: `Background process failed to start: ${bg.outputBuffer}`.trim(),
-            data: ack
+            data: ack,
           };
         }
         return {
           ok: true,
-          content: `Started background process ${bg.id} (pid ${bg.pid ?? "?"}). Use the process tool (poll/log/wait/kill) with session_id="${bg.id}" to manage it.`,
-          data: ack
+          content: `Started background process ${bg.id} (pid ${bg.pid ?? '?'}). Use the process tool (poll/log/wait/kill) with session_id="${bg.id}" to manage it.`,
+          data: ack,
         };
       }
 
@@ -284,7 +280,7 @@ export function createShellTool(options: ShellToolOptions): Tool<ShellInput> {
         disposeSession(context.sessionId);
         return {
           ok: false,
-          content: "Blocked: command changed directory outside the workspace."
+          content: 'Blocked: command changed directory outside the workspace.',
         };
       }
       // Reflect the persisted cwd on the per-run channel (display, background spawns).
@@ -293,12 +289,12 @@ export function createShellTool(options: ShellToolOptions): Tool<ShellInput> {
       if (r.exitCode !== 0) {
         return {
           ok: false,
-          content: `Command failed with exit code ${r.exitCode}.\n${r.output}`.trim()
+          content: `Command failed with exit code ${r.exitCode}.\n${r.output}`.trim(),
         };
       }
 
-      return { ok: true, content: r.output || "Command completed with no output." };
-    }
+      return { ok: true, content: r.output || 'Command completed with no output.' };
+    },
   };
 }
 
@@ -310,5 +306,5 @@ export function createShellTool(options: ShellToolOptions): Tool<ShellInput> {
  */
 export const shellTool: Tool<ShellInput> = createShellTool({
   persistent: true,
-  idleTimeoutMs: 300000
+  idleTimeoutMs: 300000,
 });
