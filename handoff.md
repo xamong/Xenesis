@@ -1,5 +1,322 @@
 # Xenesis Desk Work Handoff
 
+## 2026-06-30 Dock Drag Ghost Native Overlay
+
+- Current objective:
+  - Replace the app-edge-clamped drag ghost fallback with a native transparent
+    overlay window so the dock tear-off ghost follows the mouse outside the
+    Electron app bounds.
+- User evidence:
+  - Screenshot shows the ghost remains visible but is stuck at the right app
+    boundary. This confirms renderer DOM clamping avoids disappearance but does
+    not satisfy the desired app-outside following behavior.
+- Root cause:
+  - A renderer DOM element cannot render outside its BrowserWindow. A global
+    drag affordance must be owned by the main process as a separate transparent
+    BrowserWindow positioned in screen coordinates.
+- Intended fix:
+  - Add shared overlay bounds helper and tests.
+  - Add a main-process native overlay controller using a frameless transparent
+    always-on-top BrowserWindow with ignored mouse events.
+  - Expose typed preload FileApi calls for show/hide.
+  - In `useDragManager`, use the native overlay only while the pointer is
+    outside the renderer window, and hide it on re-entry, drop, or cancel.
+- Touched files:
+  - `handoff.md`
+  - `docs/superpowers/plans/2026-06-30-dock-drag-ghost-native-overlay.md`
+  - `src/shared/dockDragGhost.ts`
+  - `src/shared/dockDragGhost.test.ts`
+  - `src/main/dockDragGhostOverlay.ts`
+  - `src/main/index.ts`
+  - `src/shared/types.ts`
+  - `src/preload/index.ts`
+  - `src/renderer/dock/useDragManager.ts`
+  - `src/renderer/dock/dragGhostPosition.ts`
+  - `src/renderer/dock/dragGhostPosition.test.ts`
+- Commands run:
+  - Read relevant `systematic-debugging`, `brainstorming`, `test-driven-development`,
+    `writing-plans`, and `verification-before-completion` skills.
+  - `rg -n "new BrowserWindow|transparent|alwaysOnTop|setIgnoreMouseEvents|showInactive|setBounds|overlay|capture|highlightDetachedWindow|reattachStart|ipcMain.handle\\('window" src/main src/preload src/renderer -S`
+  - `rg -n "export interface FileApi|interface FileApi|type FileApi|reattachStart|highlightDetachedWindow|detachTab|getSiblingWindowBounds" src/shared/types.ts src/preload/index.ts src/main/index.ts`
+  - `node --import tsx --test src/shared/dockDragGhost.test.ts`
+    -> RED failed because `./dockDragGhost` did not exist.
+  - `node --import tsx --test src/shared/dockDragGhost.test.ts`
+    after helper implementation -> PASS.
+  - `node --import tsx --test src/shared/dockDragGhost.test.ts src/renderer/dock/dragGhostPosition.test.ts src/renderer/dock/detachBounds.test.ts src/renderer/dock/detachTransfer.test.ts`
+    -> PASS, 10 tests passed.
+  - `npm run typecheck` -> PASS.
+  - `npx biome check --write src/shared/dockDragGhost.ts src/shared/dockDragGhost.test.ts src/main/dockDragGhostOverlay.ts src/shared/types.ts src/preload/index.ts src/renderer/dock/useDragManager.ts src/renderer/dock/dragGhostPosition.ts src/renderer/dock/dragGhostPosition.test.ts`
+    -> formatted changed small files.
+  - `npx biome check src/shared/dockDragGhost.ts src/shared/dockDragGhost.test.ts src/main/dockDragGhostOverlay.ts src/shared/types.ts src/preload/index.ts src/renderer/dock/useDragManager.ts src/renderer/dock/dragGhostPosition.ts src/renderer/dock/dragGhostPosition.test.ts`
+    -> PASS.
+  - `npx biome check ... src/main/index.ts ...` was attempted and failed on
+    existing unrelated `src/main/index.ts` lint debt; changed small files pass
+    focused Biome check.
+  - `npm test` -> PASS, 525 tests passed.
+  - `npm run build` -> PASS; existing d3/Vite warnings remain.
+- Exact verification result:
+  - Native overlay bounds helper regression tests pass.
+  - Existing dock detach bounds/transfer and drag ghost tests pass.
+  - Root typecheck passes.
+  - Focused Biome check passes for changed small files.
+  - Root test suite passes with 525 tests.
+  - Production build passes.
+- Known gaps:
+  - Native overlay must be smoke-tested visually in the running Electron app.
+- Next intended step:
+  - User should try app-outside tear-off in Electron and confirm the ghost
+    follows the pointer outside the app window instead of sticking to the app
+    boundary.
+
+## 2026-06-30 Dock Tear-Off Ghost Visibility
+
+- Current objective:
+  - Fix the dock tear-off drag ghost disappearing when the pointer leaves the
+    Electron window during app-outside tear-off. Tear-off itself already
+    succeeds; the visible drag affordance disappears.
+- Investigation:
+  - Dock drag uses imperative `pointermove` handling in
+    `src/renderer/dock/useDragManager.ts`, not native HTML drag image rendering.
+  - The ghost is positioned with raw `clientX/clientY`. When the pointer moves
+    outside the renderer viewport, those coordinates can place the fixed
+    `.drag-ghost` outside the visible window even though `screenX/screenY`
+    still drives the detach decision.
+  - No existing pointer capture is used for dock tab/pane drags.
+- Intended fix:
+  - Add a tested helper that clamps drag ghost position inside the renderer
+    viewport while preserving existing detach/reattach/merge decisions.
+  - Use pointer capture opportunistically during dock drag to reduce event loss
+    at the window boundary.
+- Touched files:
+  - `handoff.md`
+  - `src/renderer/dock/dragGhostPosition.ts`
+  - `src/renderer/dock/dragGhostPosition.test.ts`
+  - `src/renderer/dock/useDragManager.ts`
+- Commands run:
+  - `rg -n "drag|Drag|setDragImage|__detach__|dropPoint|detach" src/renderer/dock src/renderer/App.tsx src/main/index.ts`
+  - `rg -n "drag-ghost|is-dragging|drop-overlay|pointermove|setPointerCapture|releasePointerCapture" src/renderer -S`
+  - Read `src/renderer/dock/useDragManager.ts`,
+    `src/renderer/dock/DockHost.tsx`, focused `DockPaneView.tsx`, and focused
+    `src/renderer/styles.css`.
+  - `node --import tsx --test src/renderer/dock/dragGhostPosition.test.ts`
+    -> RED failed because `./dragGhostPosition` did not exist.
+  - `node --import tsx --test src/renderer/dock/dragGhostPosition.test.ts`
+    after adding the helper -> PASS.
+  - `node --import tsx --test src/renderer/dock/dragGhostPosition.test.ts src/renderer/dock/detachBounds.test.ts src/renderer/dock/detachTransfer.test.ts`
+    -> PASS, 8 tests passed.
+  - `npm run typecheck` -> PASS.
+  - `npx biome check src/renderer/dock/dragGhostPosition.ts src/renderer/dock/dragGhostPosition.test.ts src/renderer/dock/useDragManager.ts`
+    -> initially failed due formatting; fixed with focused
+    `npx biome check --write ...`.
+  - `npx biome check src/renderer/dock/dragGhostPosition.ts src/renderer/dock/dragGhostPosition.test.ts src/renderer/dock/useDragManager.ts`
+    after formatting -> PASS.
+  - `npm test` -> PASS, 523 tests passed.
+  - `npm run build` -> PASS; existing d3/Vite warnings remain.
+- Exact verification result:
+  - Regression test covers outside-viewport ghost clamping and passes.
+  - Focused dock tests pass.
+  - Root typecheck passes.
+  - Focused Biome check passes for changed dock files.
+  - Root test suite passes with 523 tests.
+  - Production build passes.
+- Known gaps:
+  - A manual/live Electron drag smoke is still recommended to visually confirm
+    the drag ghost remains visible while dragging outside the window.
+- Next intended step:
+  - User should try app-outside tear-off in the running app. If the OS stops
+    delivering pointer events entirely after leaving the window on a specific
+    setup, add a main-process native overlay follow-up.
+
+## 2026-06-30 Dock Tear-Off Hardening
+
+- Current objective:
+  - Implement the full dock tear-off hardening pass from
+    `D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk\docs\superpowers\specs\2026-06-27-dock-tearoff-hardening-design.md`.
+- Context read:
+  - `AGENTS.md`
+  - Required Obsidian index/system notes:
+    `docs/obsidian/Xenesis-desk.md`,
+    `00_System/AI Agent Rules.md`,
+    `00_System/Graph Schema.md`,
+    `00_System/Review Policy.md`,
+    `10_Repo Map/Source of Truth Map.md`,
+    `_Indexes/Module Index.md`,
+    `_Indexes/Verification Map.md`,
+    `_Indexes/High Risk Areas.md`,
+    `10_Repo Map/Repo Overview.md`.
+  - Existing implementation files around dock drag, detach payloads, and main
+    detached-window creation.
+- Touched files:
+  - `handoff.md`
+  - `docs/superpowers/specs/2026-06-30-dock-tearoff-hardening-design.md`
+  - `docs/superpowers/plans/2026-06-30-dock-tearoff-hardening.md`
+  - `src/shared/types.ts`
+  - `src/renderer/dock/detachBounds.ts`
+  - `src/renderer/dock/detachBounds.test.ts`
+  - `src/renderer/dock/detachTransfer.ts`
+  - `src/renderer/dock/detachTransfer.test.ts`
+  - `src/renderer/dock/useDragManager.ts`
+  - `src/renderer/dock/DockHost.tsx`
+  - `src/renderer/App.tsx`
+  - `src/main/detachedWindowPlacement.ts`
+  - `src/main/detachedWindowPlacement.test.ts`
+  - `src/main/index.ts`
+- Commands run:
+  - `git status --short --branch` -> `## mini...origin/mini`, with existing
+    local `handoff.md` and `server/.node-version-built` modifications.
+  - Read the 2026-06-27 sibling-workspace design document.
+  - Searched existing dock, detach, bounds, and window IPC implementation with
+    `rg`.
+  - `rg -n "TBD|TODO|implement later|fill in details|<[^>]+>|Similar to Task|appropriate error handling|Write tests for the above" docs\superpowers\specs\2026-06-30-dock-tearoff-hardening-design.md`
+    -> no matches.
+  - `git add -f docs/superpowers/specs/2026-06-30-dock-tearoff-hardening-design.md; git commit -m "Add dock tear-off hardening design" -- docs/superpowers/specs/2026-06-30-dock-tearoff-hardening-design.md`
+    -> commit `126a112`.
+  - Read `src/renderer/dock/useDragManager.ts`, focused `src/renderer/App.tsx`
+    detach handler, focused `src/main/index.ts` detached-window and IPC blocks,
+    `src/shared/types.ts`, `src/preload/index.ts`, terminal host release/adopt
+    code, and existing `node:test` dock tests.
+  - Attempted to read `tsconfig.node.json` and `tsconfig.web.json`; both are
+    absent in this repo. Root `tsconfig.json` is the relevant typecheck target.
+  - `rg -n "TBD|TODO|implement later|fill in details|Similar to Task|appropriate error handling|Write tests for the above" docs\superpowers\plans\2026-06-30-dock-tearoff-hardening.md docs\superpowers\specs\2026-06-30-dock-tearoff-hardening-design.md`
+    -> no matches.
+  - `npm run typecheck` baseline -> PASS.
+  - `node --import tsx --test src/renderer/dock/detachBounds.test.ts`
+    -> RED failed with missing `./detachBounds`; after implementation PASS.
+  - `node --import tsx --test src/main/detachedWindowPlacement.test.ts`
+    -> RED failed with missing `./detachedWindowPlacement`; after
+    implementation PASS.
+  - `node --import tsx --test src/renderer/dock/detachTransfer.test.ts`
+    -> RED failed with missing `./detachTransfer`; after implementation PASS.
+  - `npm run typecheck` after renderer wiring -> PASS.
+  - `npm run typecheck` after main wiring -> PASS.
+  - `npm run lint` -> FAIL from existing repo lint debt outside this change
+    area, including existing items in `extensions/`, `packages/xenesis/`,
+    `mcp/`, `src/renderer/App.tsx`, `src/main/index.ts`, and
+    `src/renderer/dock/DockHost.tsx`.
+  - `npx biome check src/shared/types.ts src/renderer/dock/useDragManager.ts src/renderer/dock/detachBounds.ts src/renderer/dock/detachBounds.test.ts src/renderer/dock/detachTransfer.ts src/renderer/dock/detachTransfer.test.ts src/main/detachedWindowPlacement.ts src/main/detachedWindowPlacement.test.ts`
+    -> PASS.
+  - `npm run build` -> PASS; existing d3/Vite warnings remain.
+  - `npm run docs:capabilities:audit` -> PASS; generated audit summary shows
+    849 registered nodes, 692 coverage path references, and all missing or
+    undispatched counts at 0.
+  - `npm test` -> PASS; 522 tests passed, 0 failed.
+  - `git stash push -m "pre-local-main-merge handoff audit marker"` ->
+    stashed tracked local handoff/audit/server marker changes before checkout.
+  - `git checkout main; git pull --ff-only origin main; git merge mini` ->
+    main fast-forwarded to `origin/main` first, then merged `mini` with merge
+    commit `61424aa`.
+  - `npm test` on merged `main` -> PASS; 522 tests passed, 0 failed.
+  - `git branch -D mini` -> local `mini` branch deleted after merge.
+  - `git stash pop` -> restored local `handoff.md`,
+    `docs/capability-registry-audit.md`, and `server/.node-version-built`
+    changes.
+- Commits created:
+  - `126a112 Add dock tear-off hardening design`
+  - `fa4070d Add dock detach bounds helper`
+  - `087b2aa Add detached window placement helper`
+  - `2f8ce62 Add dock detach transfer sequencing`
+  - `8cc9f4b Wire dock tear-off transfer safety`
+  - `459ac6d Wire detached window placement`
+  - `33cfb8f Format dock detach bounds test`
+- Exact verification result:
+  - Focused renderer bounds test: PASS.
+  - Focused main placement test: PASS.
+  - Focused transfer sequencing test: PASS.
+  - Root test suite: PASS, 522 tests passed.
+  - Root typecheck: PASS.
+  - Root build: PASS.
+  - CR audit: PASS with Missing registered paths 0, Missing dispatched
+    coverage paths 0, Undispatched static callable methods 0, Dispatcher paths
+    missing from tree 0.
+  - Root lint: FAIL due pre-existing unrelated lint debt; changed helper files
+    and directly relevant small files pass focused Biome check.
+- Known gaps:
+  - Full Electron drag E2E is outside this pass; manual smoke should verify
+    visual pointer-drop placement in the running app.
+  - Plan file is under ignored `docs/superpowers/`; it is saved locally but not
+    committed.
+  - `docs/capability-registry-audit.md` was regenerated by audit with a
+    timestamp-only diff.
+- Next intended step:
+  - `main` is merged locally and ahead of `origin/main` by 8 commits. Push
+    `main` if this local merge should publish to GitHub, or run a live Electron
+    drag smoke first if desired.
+
+## 2026-06-30 XCON Viewer 0.2.0 dependency update
+
+- Current objective:
+  - Update linked `@xcon-viewer/core` and `@xcon-viewer/viewer` dependencies to
+    `0.2.0`.
+- Touched files:
+  - `handoff.md`
+  - `package.json`
+  - `package-lock.json`
+- Commands run:
+  - `npm view @xcon-viewer/core@0.2.0 version; npm view @xcon-viewer/viewer@0.2.0 version`
+    -> both returned `0.2.0`.
+  - `npm install @xcon-viewer/core@^0.2.0 @xcon-viewer/viewer@^0.2.0`
+    -> changed 3 packages; npm reported existing audit findings
+    (12 vulnerabilities: 2 low, 5 moderate, 5 high).
+  - `npm ls @xcon-viewer/core @xcon-viewer/viewer`
+    -> both resolved to `0.2.0`.
+  - `npm run build`
+    -> passed; runs `build:xenesis`, root typecheck, and `electron-vite build`.
+  - `node --input-type=module` XCON render smoke using
+    `fromSketchLenient`, `renderToHtml`, and `viewerCss`
+    -> passed with `xcon render ok`.
+  - `npm ls d3 d3-force d3-chord d3-hierarchy d3-sankey @observablehq/plot`
+    -> all required viewer `0.2.0` rendering dependencies are installed.
+- Exact verification result:
+  - Dependency declarations and lockfile now resolve XCON Viewer packages to
+    `0.2.0`.
+  - Full production build passes after the update.
+- Known gaps:
+  - Build emits Rollup warnings around `d3` umbrella re-exports and existing
+    Vite warnings, but exits 0. No live Electron UI smoke was run.
+- Next intended step:
+  - If visual dataViz behavior is critical for this update, run a live renderer
+    smoke against an XCON artifact that uses `dataViz`/force/sankey components.
+
+## 2026-06-30 mini branch Electron load failure
+
+- Current objective:
+  - Diagnose and fix Electron startup failure:
+    `Cannot find module ...\node_modules\xenesis\dist\index.js`.
+- Touched files:
+  - `handoff.md`
+  - `package.json`
+- Commands run:
+  - `git status --short --branch` -> `## mini...origin/mini`; only
+    `server/.node-version-built` was already modified.
+  - `node -e "import('xenesis')..."` -> failed before fix because
+    `node_modules/xenesis/dist/index.js` did not exist.
+  - `npm --prefix packages/xenesis run build` -> passed and created ignored
+    `packages/xenesis/dist`.
+  - `node -e "import('xenesis')..."` -> passed after package build.
+  - RED script check for root npm scripts -> failed because Electron
+    dev/build scripts did not guarantee the linked `packages/xenesis` build.
+  - GREEN script check for root npm scripts -> passed after adding
+    `build:xenesis`, `predev:electron`, and `prepreview`, and wiring
+    `build` through `build:xenesis`.
+  - `npm run build` -> passed; it now runs `npm run build:xenesis`,
+    `npm run typecheck`, and `electron-vite build`.
+  - `node -e "import('xenesis')..."` -> passed after the scripted build path.
+  - `git status --short --branch` -> `## mini...origin/mini` with
+    `handoff.md`, `package.json`, and pre-existing `server/.node-version-built`
+    modified.
+- Exact verification result:
+  - Root cause found: `node_modules/xenesis` is a Junction to
+    `packages/xenesis`; the package's `main` points to ignored build output
+    `dist/index.js`, but root dev/build scripts did not build it.
+  - Fix verified: the root build now creates the `xenesis` package dist before
+    Electron build, and the package import succeeds.
+- Known gaps:
+  - No live Electron UI smoke was run; verification covered the failing module
+    resolution path and full production build.
+- Next intended step:
+  - User can run `npm run dev`; `predev:electron` should prepare
+    `packages/xenesis/dist` before the app loads.
+
 ## 2026-06-30 Onboarding Provider Setup Entry
 
 - Current objective:

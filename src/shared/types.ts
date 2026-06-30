@@ -1,3 +1,4 @@
+import type { DockDragGhostOverlayPayload } from './dockDragGhost';
 import type { ExternalAppSettings } from './externalAppControl';
 import type { XenesisConnectionsStatus } from './xenesisConnections';
 
@@ -3421,6 +3422,10 @@ export interface FileApi {
   mergeTabToDetached(payload: DetachPayload, targetWindowId: number): Promise<void>;
   /** target 분리 창의 드롭 수신 오버레이 on/off */
   highlightDetachedWindow(targetWindowId: number, show: boolean): Promise<void>;
+  /** 앱 밖 dock drag ghost native overlay 표시/갱신 */
+  showDockDragGhostOverlay(payload: DockDragGhostOverlayPayload): Promise<void>;
+  /** 앱 밖 dock drag ghost native overlay 숨김 */
+  hideDockDragGhostOverlay(): Promise<void>;
   /** 분리 창: 다른 분리 창에서 탭이 전달됨 */
   onMergeReceiveTab(cb: (payload: DetachPayload) => void): () => void;
   /** 분리 창: 드롭 수신 오버레이 표시 구독 */

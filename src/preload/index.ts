@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
+import type { DockDragGhostOverlayPayload } from '../shared/dockDragGhost';
 import type {
   AppMenuApi,
   AppSettings,
@@ -508,6 +509,16 @@ const fileApi: FileApi = {
 
   highlightDetachedWindow(targetWindowId: number, show: boolean): Promise<void> {
     return ipcRenderer.invoke('window:highlight-detached', targetWindowId, show);
+  },
+
+  showDockDragGhostOverlay(payload: DockDragGhostOverlayPayload): Promise<void> {
+    ipcRenderer.send('window:dock-drag-ghost-show', payload);
+    return Promise.resolve();
+  },
+
+  hideDockDragGhostOverlay(): Promise<void> {
+    ipcRenderer.send('window:dock-drag-ghost-hide');
+    return Promise.resolve();
   },
 
   onMergeReceiveTab(cb: (payload: DetachPayload) => void): () => void {

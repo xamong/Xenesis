@@ -398,6 +398,7 @@ import {
   resolveDetachedWindowPlacement,
   type DisplayWorkArea,
 } from './detachedWindowPlacement';
+import { createDockDragGhostOverlayController } from './dockDragGhostOverlay';
 import {
   exportOnboardingDemoRouteStoryboard,
   openOnboardingDemoRouteTarget,
@@ -1547,6 +1548,7 @@ async function resetOnboardingSampleWorkspaceAndBroadcast() {
 
 // 화면 영역 캡처 오버레이 창 목록 (모니터별 1개씩)
 let captureWindows: BrowserWindow[] = [];
+const dockDragGhostOverlay = createDockDragGhostOverlayController();
 
 // 네이티브 폴더 선택 다이얼로그 중복 생성을 막는 single-flight 상태
 let selectCwdDialogPromise: Promise<string | null> | null = null;
@@ -23120,6 +23122,14 @@ function setupIpc(): void {
   );
 
   // ── 탭 분리 창 ──
+  ipcMain.on('window:dock-drag-ghost-show', (_event, payload) => {
+    dockDragGhostOverlay.show(payload);
+  });
+
+  ipcMain.on('window:dock-drag-ghost-hide', () => {
+    dockDragGhostOverlay.hide();
+  });
+
   ipcMain.handle('window:detach-tab', (_event, payload: DetachPayload) => {
     if (!payload || !payload.id) return;
     const win = createDetachedWindow(payload.title || 'Xenesis Desk', {
@@ -23912,6 +23922,7 @@ if (!gotSingleInstanceLock) {
       return;
     }
     killAllSessions();
+    dockDragGhostOverlay.destroy();
     stopMcpBridgeServer();
     stopInternalServer();
     stopXamongCodeServer();
@@ -23921,6 +23932,7 @@ if (!gotSingleInstanceLock) {
 
   app.on('window-all-closed', () => {
     killAllSessions();
+    dockDragGhostOverlay.destroy();
     stopMcpBridgeServer();
     stopXamongCodeServer();
     stopXenesisRuntime();
