@@ -9,6 +9,7 @@ export interface MetaManagementTreeViewProps {
   onAddGroup: () => void | Promise<void>;
   onRefresh: () => void | Promise<void>;
   onReconnect: () => void | Promise<void>;
+  onSyncCrMetadata: () => void | Promise<void>;
   onSelect: (node: TreeNode) => void;
   onToggle: (node: TreeNode) => void;
   t: (key: string, values?: Record<string, string>) => string;
@@ -23,6 +24,7 @@ export function MetaManagementTreeView({
   onAddGroup,
   onRefresh,
   onReconnect,
+  onSyncCrMetadata,
   onSelect,
   onToggle,
   t,
@@ -39,6 +41,14 @@ export function MetaManagementTreeView({
           </button>
           <button className="mm-icon-btn" title={t('meta.refreshTitle')} onClick={onRefresh} disabled={isLoading}>
             <span className={isLoading ? 'mm-spin' : ''}>R</span>
+          </button>
+          <button
+            className="mm-icon-btn"
+            title={t('meta.syncCrMetadata')}
+            onClick={onSyncCrMetadata}
+            disabled={isLoading}
+          >
+            CR
           </button>
         </div>
       </div>

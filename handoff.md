@@ -87,6 +87,22 @@
   - `packages/xenesis/src/workflows/runner.ts`
   - `packages/xenesis/src/workflows/types.ts`
   - `src/main/index.ts`
+  - `src/renderer/extensions/xenesis-desk.data-tools/metaManagementProvider.ts`
+  - `src/renderer/extensions/xenesis-desk.data-tools/useMetaManagementGridSave.ts`
+  - `src/renderer/extensions/xenesis-desk.data-tools/metaManagementAssistPanelModel.ts`
+  - `src/renderer/extensions/xenesis-desk.data-tools/metaManagementRelationGraph.ts`
+  - `src/renderer/extensions/xenesis-desk.data-tools/metaManagementRelationTabs.ts`
+  - `src/renderer/extensions/xenesis-desk.data-tools/panes/MetaManagementPane.tsx`
+  - `src/renderer/extensions/xenesis-desk.data-tools/panes/MetaManagementAssistPanel.tsx`
+  - `src/renderer/extensions/xenesis-desk.data-tools/panes/MetaManagementRelationsView.tsx`
+  - `src/renderer/extensions/xenesis-desk.data-tools/panes/MetaManagementStatusBar.tsx`
+  - `src/renderer/extensions/xenesis-desk.data-tools/panes/MetaManagementTreeView.tsx`
+  - `src/renderer/extensions/xenesis-desk.data-tools/panes/MetaManagementActivityView.tsx`
+  - `src/renderer/extensions/xenesis-desk.data-tools/panes/MetaManagementRelationGraphView.tsx`
+  - `src/renderer/extensions/xenesis-desk.data-tools/panes/MetaManagementValidationModal.tsx`
+  - `src/renderer/extensions/xenesis-desk.data-tools/styles.css`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
   - `src/main/xenesisWorkbenchApprovals.mjs`
   - `src/preload/index.ts`
   - `src/renderer/extensions/xenesis-desk.core-tools/renderer.tsx`
@@ -25883,3 +25899,114 @@ Verification so far:
   - No live Electron click-through smoke was run for Tools > XD Blaster.
 - Next intended step:
   - Await PR review for https://github.com/xamong/Xenesis/pull/12.
+
+## 2026-06-30 Meta Management Full Port
+
+- Objective:
+  - Replace current Meta Management internals with sibling
+    `xenesis-desk.data-tools` and adapt CR metadata sync to this repo.
+- Branch:
+  - `mini`
+- Design spec:
+  - `docs/superpowers/specs/2026-06-30-meta-management-full-port-design.md`
+- Implementation plan:
+  - `docs/superpowers/plans/2026-06-30-meta-management-full-port.md`
+- Touched files:
+  - `handoff.md`
+  - `docs/capability-registry-audit.md` (baseline timestamp refresh)
+  - `src/shared/crMetadata.test.ts`
+  - `src/shared/crMetadataCapabilities.test.ts`
+  - `src/shared/crMetadata.ts`
+  - `src/main/crMetadataBridge.test.ts`
+  - `src/main/crMetadataBridge.ts`
+  - `src/main/index.ts`
+  - `src/renderer/extensions/xenesis-desk.data-tools/metaManagementAssistPanelModel.test.ts`
+  - `src/renderer/extensions/xenesis-desk.data-tools/metaManagementRelationGraph.test.ts`
+  - `src/renderer/extensions/xenesis-desk.data-tools/metaManagementRelationTabs.test.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+- Commands run:
+  - `git status --short --branch`: `## mini...origin/mini [ahead 1]`
+    with `handoff.md` modified before baseline.
+  - `npm run docs:capabilities:audit`: passed and regenerated
+    `docs/capability-registry-audit.md`; audit summary reported 855 nodes and
+    695 coverage path references.
+  - `Select-String -Path docs\capability-registry-audit.md -Pattern "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods"`:
+    confirmed missing registered paths 0, missing dispatched coverage paths 0,
+    undispatched static callable methods 0.
+  - `npm test`: passed 588/588.
+  - RED:
+    `node --import tsx --test src/shared/crMetadata.test.ts src/shared/crMetadataCapabilities.test.ts src/main/crMetadataBridge.test.ts src/renderer/extensions/xenesis-desk.data-tools/metaManagementAssistPanelModel.test.ts src/renderer/extensions/xenesis-desk.data-tools/metaManagementRelationGraph.test.ts src/renderer/extensions/xenesis-desk.data-tools/metaManagementRelationTabs.test.ts`
+    failed as expected. Missing implementation modules were
+    `./crMetadata`, `./crMetadataBridge`,
+    `./metaManagementAssistPanelModel`, `./metaManagementRelationGraph`, and
+    `./metaManagementRelationTabs`; registry assertion also failed because
+    `xd.cr.metadata.*` paths are not registered yet.
+  - GREEN:
+    `node --import tsx --test src/shared/crMetadata.test.ts src/main/crMetadataBridge.test.ts`
+    passed 7/7 after porting `src/shared/crMetadata.ts` and
+    `src/main/crMetadataBridge.ts`.
+  - Registry wiring first check:
+    `node --import tsx --test src/shared/crMetadataCapabilities.test.ts`
+    failed because the new test used the plan snippet's wrong
+    `callDeskBridgeCapability(request, api)` argument order. This repo's
+    signature is `callDeskBridgeCapability(api, request)`.
+  - Registry wiring GREEN:
+    `node --import tsx --test src/shared/crMetadataCapabilities.test.ts`
+    passed 1/1 after correcting the test call order and using
+    `source: 'internal'` for the write-path sync call.
+  - `npm run docs:capabilities:audit`: passed after adding
+    `xd.cr.metadata.sync`, `xd.cr.metadata.capabilities`,
+    `xd.cr.metadata.snapshots`, and `xd.cr.metadata.runs`; generated audit
+    reported 860 nodes and 695 coverage path references.
+  - Main bridge GREEN:
+    `node --import tsx --test src/main/crMetadataBridge.test.ts src/shared/crMetadataCapabilities.test.ts`
+    passed 3/3 after wiring `createCrMetadataBridge` into
+    `src/main/index.ts`.
+  - Renderer helper GREEN:
+    `node --import tsx --test src/renderer/extensions/xenesis-desk.data-tools/metaManagementAssistPanelModel.test.ts src/renderer/extensions/xenesis-desk.data-tools/metaManagementRelationGraph.test.ts src/renderer/extensions/xenesis-desk.data-tools/metaManagementRelationTabs.test.ts`
+    passed 8/8 after porting selected sibling renderer files and preserving
+    `DEFAULT_META_API_URL = 'https://ai.xamong.com'`.
+  - `npm run typecheck`: passed after adding Meta Management CR metadata i18n
+    keys to `en.ts` and `ko.ts`.
+  - Full focused tests:
+    `node --import tsx --test src/shared/crMetadata.test.ts src/shared/crMetadataCapabilities.test.ts src/main/crMetadataBridge.test.ts src/renderer/extensions/xenesis-desk.data-tools/metaManagementAssistPanelModel.test.ts src/renderer/extensions/xenesis-desk.data-tools/metaManagementRelationGraph.test.ts src/renderer/extensions/xenesis-desk.data-tools/metaManagementRelationTabs.test.ts`
+    passed 16/16.
+  - `npm test`: passed 604/604.
+  - `npm run typecheck`: passed.
+  - `npm run lint`: failed on pre-existing repo-wide diagnostics outside this
+    port, including `extensions/sample.file-helper/main.js`,
+    `mcp/xenesis-desk-mcp-server.mjs`, and several `packages/xenesis/*`
+    files.
+  - Touched-file Biome:
+    `npx biome check --write ...` over the exact files touched by this port
+    formatted 26 files and exited 0; follow-up `npx biome check ...` over the
+    same touched-file list exited 0 with warnings only.
+  - `npm run docs:capabilities:audit`: passed; generated audit confirms
+    missing registered paths 0, missing dispatched coverage paths 0,
+    undispatched static callable methods 0, dispatcher paths missing from tree
+    0.
+  - `npm run build`: passed, including `npm --prefix packages/xenesis run
+    build`, root typecheck, and `electron-vite build`. Build emitted existing
+    Vite/Rollup warnings for D3 namespace resolution, `hwp.js` browser
+    externalization, and a dynamic/static import chunk warning for
+    `deskBridge.ts`.
+  - Live Electron smoke:
+    launched the built app with temporary `XENIS_HOME`, temporary user data,
+    and a temporary local Meta API server. Passed 6/6 checks:
+    `xd.cr.metadata.capabilities` returned the fake CR row,
+    `xd.tools.data.metaManagement.open` returned ok, and rendered UI contained
+    Meta title/sidebar/main. Observed API requests included
+    `GET /api/cr/capabilities?limit=5`, `POST /api/cr/runs`,
+    `GET /api/health`, and `GET /api/codes/tree`.
+- Exact verification result:
+  - Implementation is functionally verified by focused tests, root tests,
+    typecheck, CR audit, build, and live Electron smoke.
+  - Repo-wide lint remains red due to unrelated existing diagnostics; the
+    touched-file scoped Biome check exits 0.
+- Known gaps:
+  - No real remote `https://ai.xamong.com` Meta API smoke was run; live smoke
+    used a temporary local API server.
+  - Repo-wide `npm run lint` is not green because of unrelated existing
+    diagnostics outside this port.
+- Next intended step:
+  - Review diff, commit, push `mini`, and update PR.

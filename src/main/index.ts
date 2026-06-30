@@ -93,7 +93,6 @@ import {
   verifyDeskBridgeCapabilityApprovalProof,
 } from '../shared/deskBridgeCapabilities';
 import { normalizeExternalAppSettings } from '../shared/externalAppControl';
-import { scanLocalVault } from './vault/vaultLocalScanner';
 import {
   canUseXenisPhase5XamongCodeCommand,
   isXenisPhase5Visible,
@@ -359,6 +358,13 @@ import {
 import { prepareCodexIsolatedHome, readCodexModel } from './codexIsolatedHome.mjs';
 import { createComputerUseService } from './computerUse/computerUseService';
 import { setConnectorObservabilitySink } from './connectors/connectorObservability';
+import { createCrMetadataBridge } from './crMetadataBridge';
+import {
+  type DisplayWorkArea,
+  normalizeDetachedWindowBounds,
+  resolveDetachedWindowPlacement,
+} from './detachedWindowPlacement';
+import { createDockDragGhostOverlayController } from './dockDragGhostOverlay';
 import { ExtensionHost } from './extensions/extensionHost';
 import { createInputControlService } from './inputControl/inputControlService';
 import {
@@ -402,12 +408,6 @@ import {
   summarizeMainObservabilityPayload,
 } from './observabilityBridge';
 import {
-  normalizeDetachedWindowBounds,
-  resolveDetachedWindowPlacement,
-  type DisplayWorkArea,
-} from './detachedWindowPlacement';
-import { createDockDragGhostOverlayController } from './dockDragGhostOverlay';
-import {
   exportOnboardingDemoRouteStoryboard,
   openOnboardingDemoRouteTarget,
   readOnboardingDemoRoute,
@@ -434,6 +434,7 @@ import { applySafeTextFileWrite, previewSafeTextFileWrite, restoreSafeTextFileBa
 import { type TerminalImageOptions, writeTerminalImage } from './terminalImageWriter';
 import { buildTerminalWarmupLaunch, shouldTerminalWarmupRun } from './terminalWarmup.mjs';
 import { renderXconToPng, writeTerminalXconImage, type XconRenderOptions } from './terminalXconRenderer';
+import { scanLocalVault } from './vault/vaultLocalScanner';
 import {
   buildXamongCodeApiLaunch,
   buildXamongCodeTerminalEnv,
@@ -454,10 +455,6 @@ import {
   type XenesisRunProviderRuntimeOverride,
 } from './xenesisRunProviderRuntime';
 import {
-  createXenesisWorkbenchApprovalController,
-  projectXenesisApprovalRequests,
-} from './xenesisWorkbenchApprovals.mjs';
-import {
   buildXenesisProviderRuntimeStatus as buildResolvedXenesisProviderRuntimeStatus,
   buildXenesisGatewayLaunch,
   buildXenesisGatewayRunPayload,
@@ -473,6 +470,10 @@ import {
   waitForGatewayReady,
 } from './xenesisService.mjs';
 import { buildXenesisTuiTerminalRequest } from './xenesisTuiLaunch';
+import {
+  createXenesisWorkbenchApprovalController,
+  projectXenesisApprovalRequests,
+} from './xenesisWorkbenchApprovals.mjs';
 import {
   getDefaultCaptureDir,
   getDefaultDiagnosticsDir,
@@ -671,7 +672,8 @@ interface ActiveXenesisRunEventScope {
 let activeXenesisRunEventScope: ActiveXenesisRunEventScope | null = null;
 
 const xenesisWorkbenchApprovals = createXenesisWorkbenchApprovalController({
-  applyActionInboxRequest: (raw: unknown) => applyMcpActionInboxRequest(mcpActionInboxState, raw) as McpBridgeActionInboxItem,
+  applyActionInboxRequest: (raw: unknown) =>
+    applyMcpActionInboxRequest(mcpActionInboxState, raw) as McpBridgeActionInboxItem,
   resolveActionInboxRequest: (request: McpBridgeActionInboxResolveRequest) => resolveMcpActionInboxRequest(request),
   listActionInboxItems: () => listMcpActionInboxSnapshot(),
   emitChanged: () => emitMcpActionInboxChanged(),
@@ -13184,6 +13186,10 @@ function getMetaBridgeApiUrl(settings = loadSettings()): string {
 }
 
 const metaBridge = createMetaBridge({ apiUrl: getMetaBridgeApiUrl() });
+const crMetadataBridge = createCrMetadataBridge({
+  getApiUrl: getMetaBridgeApiUrl,
+  listCapabilities: () => listDeskBridgeCapabilities(undefined, getXenisPhase5VisibilityOptions()),
+});
 
 async function dispatchMetaBridgeCapability(path: string, args: unknown): Promise<unknown> {
   metaBridge.setApiUrl(getMetaBridgeApiUrl());
@@ -16096,6 +16102,14 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     exportMetaSnapshot: (args: unknown) => dispatchMetaBridgeCapability('xd.meta.snapshot.export', args),
     importMetaSnapshot: (args: unknown) => dispatchMetaBridgeCapability('xd.meta.snapshot.import', args),
     getMetaRelationsGraph: (args: unknown) => dispatchMetaBridgeCapability('xd.meta.relations.graph', args),
+    syncCrMetadata: (args: unknown) => crMetadataBridge.sync(normalizeMcpCapabilityArgs(args)),
+    listCrMetadataCapabilities: (args: unknown) => crMetadataBridge.listCapabilities(normalizeMcpCapabilityArgs(args)),
+    listCrMetadataSnapshots: (args: unknown) => crMetadataBridge.listSnapshots(normalizeMcpCapabilityArgs(args)),
+    listCrMetadataRuns: (args: unknown) => crMetadataBridge.listRuns(normalizeMcpCapabilityArgs(args)),
+    recordCrRun: (record, result) => {
+      void crMetadataBridge.recordRunFromAudit(record, result);
+      return { ok: true };
+    },
     appMenuRole: executeAppMenuRoleForCapability,
     openFile: openMcpFileCapability,
     openBrowser: openMcpBrowserCapability,
@@ -20519,7 +20533,9 @@ async function runXenesisRequest(
 ): Promise<XenesisRunResult> {
   const previousScope = activeXenesisRunEventScope;
   const scope = createActiveXenesisRunEventScope(request);
-  const scopedEmitEvent = emitEvent ? (event: XenesisRunEvent) => emitEvent(scopeXenesisRunEvent(event, scope)) : undefined;
+  const scopedEmitEvent = emitEvent
+    ? (event: XenesisRunEvent) => emitEvent(scopeXenesisRunEvent(event, scope))
+    : undefined;
   activeXenesisRunEventScope = scope;
   try {
     if (getXenesisRuntimeMode() === 'externalGateway') {

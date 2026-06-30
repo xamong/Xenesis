@@ -1811,6 +1811,14 @@ export interface DeskBridgeCapabilityAdapter {
   exportMetaSnapshot?: (args: unknown) => Promise<unknown> | unknown;
   importMetaSnapshot?: (args: unknown) => Promise<unknown> | unknown;
   getMetaRelationsGraph?: (args: unknown) => Promise<unknown> | unknown;
+  syncCrMetadata?: (args: unknown) => Promise<unknown> | unknown;
+  listCrMetadataCapabilities?: (args: unknown) => Promise<unknown> | unknown;
+  listCrMetadataSnapshots?: (args: unknown) => Promise<unknown> | unknown;
+  listCrMetadataRuns?: (args: unknown) => Promise<unknown> | unknown;
+  recordCrRun?: (
+    record: DeskBridgeCapabilityAuditRecord,
+    result: DeskBridgeCapabilityCallResult,
+  ) => Promise<unknown> | unknown;
   openFile?: (args: unknown) => Promise<unknown> | unknown;
   openBrowser?: (args: unknown) => Promise<unknown> | unknown;
   browserAction?: (args: unknown) => Promise<unknown> | unknown;
@@ -10149,6 +10157,23 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           },
         ),
       ]),
+      group('xd.cr.metadata', 'CR metadata', 'Capability Registry metadata sync and readback.', [
+        method(
+          'xd.cr.metadata.sync',
+          'Sync CR metadata',
+          'Capture the current Capability Registry and send it to the configured metadata API.',
+          'write',
+          {
+            type: 'object',
+            properties: {
+              reason: { type: 'string', title: 'Reason' },
+            },
+          },
+        ),
+        method('xd.cr.metadata.capabilities', 'List CR capabilities', 'Read synced CR capability records.', 'read'),
+        method('xd.cr.metadata.snapshots', 'List CR snapshots', 'Read synced CR registry snapshots.', 'read'),
+        method('xd.cr.metadata.runs', 'List CR runs', 'Read synced CR execution records.', 'read'),
+      ]),
     ]),
     group('xd.extensions', 'Extensions', 'Extension command and panel control surface.', [
       method(
@@ -13803,6 +13828,18 @@ export async function callDeskBridgeCapability(
       if (path === 'xd.cr.smoke.latest') {
         return callAdapter(path, api?.getCrSmokeLatest, request.args);
       }
+      if (path === 'xd.cr.metadata.sync') {
+        return callAdapter(path, api?.syncCrMetadata, request.args);
+      }
+      if (path === 'xd.cr.metadata.capabilities') {
+        return callAdapter(path, api?.listCrMetadataCapabilities, request.args);
+      }
+      if (path === 'xd.cr.metadata.snapshots') {
+        return callAdapter(path, api?.listCrMetadataSnapshots, request.args);
+      }
+      if (path === 'xd.cr.metadata.runs') {
+        return callAdapter(path, api?.listCrMetadataRuns, request.args);
+      }
       if (path === 'xd.mcp.actionInbox.list') {
         return callAdapter(path, api?.listMcpActionInbox);
       }
@@ -14139,6 +14176,14 @@ async function finalizeDeskBridgeCapabilityAudit(
     await api.recordAudit(record);
   } catch {
     // Audit logging must never break the capability call path.
+  }
+
+  if (api?.recordCrRun && !node.path.startsWith('xd.cr.metadata.')) {
+    try {
+      await api.recordCrRun(record, normalizedResult);
+    } catch {
+      // CR metadata capture must never break the capability call path.
+    }
   }
 
   return normalizedResult;
