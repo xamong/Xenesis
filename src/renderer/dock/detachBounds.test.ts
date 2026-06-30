@@ -8,10 +8,7 @@ import {
 } from './detachBounds';
 
 test('drop point plus remembered size yields requested bounds near the pointer', () => {
-  const result = buildRequestedDetachedWindowBounds(
-    { screenX: 1200, screenY: 700 },
-    { width: 1100, height: 750 },
-  );
+  const result = buildRequestedDetachedWindowBounds({ screenX: 1200, screenY: 700 }, { width: 1100, height: 750 });
 
   assert.deepEqual(result, {
     x: 1216,
