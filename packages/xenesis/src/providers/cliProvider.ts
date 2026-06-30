@@ -207,20 +207,18 @@ function messageLabel(message: AgentMessage) {
 }
 
 function formatPrompt(messages: AgentMessage[]) {
-  return (
-    messages
-      .map((message) => {
-        const details =
-          message.role === 'tool'
-            ? `toolCallId: ${message.toolCallId}\n${message.content}`
-            : message.role === 'system'
-              ? stripSystemPromptDynamicBoundary(message.content)
-              : message.content;
-        return `## ${messageLabel(message)}\n${details}`;
-      })
-      .join('\n\n')
-      .trimEnd() + '\n'
-  );
+  return `${messages
+    .map((message) => {
+      const details =
+        message.role === 'tool'
+          ? `toolCallId: ${message.toolCallId}\n${message.content}`
+          : message.role === 'system'
+            ? stripSystemPromptDynamicBoundary(message.content)
+            : message.content;
+      return `## ${messageLabel(message)}\n${details}`;
+    })
+    .join('\n\n')
+    .trimEnd()}\n`;
 }
 
 function parseArgsFromEnv(value: string | undefined, fallback: string[]) {
@@ -1070,6 +1068,45 @@ function codexAppServerRawPayload(input: {
     records: input.records,
     ...(input.completed !== undefined ? { completed: input.completed } : {}),
   };
+}
+
+function codexAppServerErrorText(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (!isJsonRecord(value)) return '';
+  return (
+    jsonStringField(value, 'message') ||
+    jsonStringField(value, 'detail') ||
+    jsonStringField(value, 'reason') ||
+    codexAppServerErrorText(value.error)
+  );
+}
+
+function codexAppServerTurnFailureMessage(raw: unknown): string | undefined {
+  if (!isJsonRecord(raw)) return undefined;
+  const completed = isJsonRecord(raw.completed) ? raw.completed : undefined;
+  const completedTurn = isJsonRecord(completed?.turn) ? completed.turn : undefined;
+  if (jsonStringField(completedTurn, 'status') === 'failed') {
+    const message =
+      codexAppServerErrorText(completedTurn?.error) ||
+      codexAppServerErrorText(completed?.error) ||
+      'turn completed with failed status';
+    return `Codex app-server turn failed: ${message}`;
+  }
+
+  const records = Array.isArray(raw.records) ? raw.records.filter(isJsonRecord) : [];
+  const errorRecord = records.find((record) => record.method === 'error');
+  if (errorRecord) {
+    const params = isJsonRecord(errorRecord.params) ? errorRecord.params : undefined;
+    const message = codexAppServerErrorText(params?.error) || codexAppServerErrorText(params) || 'error event';
+    return `Codex app-server turn failed: ${message}`;
+  }
+
+  return undefined;
+}
+
+function assertCodexAppServerTurnSucceeded(result: CodexAppServerTurnResult) {
+  const failureMessage = codexAppServerTurnFailureMessage(result.raw);
+  if (failureMessage) throw new Error(failureMessage);
 }
 
 function messageError(message: Record<string, unknown>) {
@@ -1957,6 +1994,7 @@ export class CodexAppServerProvider implements AgentProvider {
         signal: operation.signal,
         onDelta,
       });
+      assertCodexAppServerTurnSucceeded(result);
       return {
         ...result,
         threadId: this.session.threadId,

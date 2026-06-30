@@ -25,6 +25,7 @@ import type {
   ToolRegistry,
 } from '../tools/types.js';
 import { assertInsideWorkspace } from '../utils/workspace.js';
+import { durableApprovalPendingEvent, durableApprovalResolvedEvent } from './agentSafety/index.js';
 import { estimateContextTokens } from './context/ContextRecord.js';
 import { compactConversation, shouldThrash } from './context/compaction/compactConversation.js';
 import { pruneOlderMessages } from './context/compaction/pruneToolResults.js';
@@ -4216,6 +4217,7 @@ export class AgentRunner {
 
     // 2. durable records FIRST.
     yield await this.record({ type: 'permission_request', request });
+    await this.record(durableApprovalPendingEvent(request));
     await this.record({
       type: 'run_snapshot',
       state: this.buildSnapshotWithPendingApproval(request),
@@ -4235,6 +4237,7 @@ export class AgentRunner {
         decision: injected.decision,
         resolvedAt,
       });
+      await this.record(durableApprovalResolvedEvent(toolCall.id, injected.approved));
       this.markTurnLedgerApprovalResolved({
         approvalId: request.approvalId,
         approved: injected.approved,
@@ -4260,6 +4263,7 @@ export class AgentRunner {
         decision: decided.decision,
         resolvedAt,
       });
+      await this.record(durableApprovalResolvedEvent(toolCall.id, decided.approved));
       this.markTurnLedgerApprovalResolved({
         approvalId: request.approvalId,
         approved: decided.approved,

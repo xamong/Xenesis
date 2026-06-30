@@ -1,5 +1,147 @@
 # Xenesis Desk Work Handoff
 
+## 2026-06-30 Xenesis TUI Full Port
+
+- Current objective:
+  - Port the mature TUI surface from sibling
+    `D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk\packages\xenesis`
+    into this repo's `packages/xenesis`, while preserving the existing provider
+    schema/tool-name fixes and current provider policy.
+- Worktree:
+  - Isolated worktree:
+    `D:\CodeTruck\CodeBox\Xamong\06 XCON\Xenesis\.worktrees\xenesis-tui-full-port`
+  - Branch: `xenesis-tui-full-port`
+- Current implementation checkpoint:
+  - TUI full port is implemented and committed through durable approval
+    coverage.
+  - Final verification found a provider smoke regression where failed Codex
+    app-server turns were surfaced as empty successful assistant replies; that
+    failure handling is fixed with focused test coverage.
+  - Final package/root verification is complete except repo-wide lint, which
+    remains blocked by existing out-of-scope Biome baseline diagnostics.
+- Touched files:
+  - `handoff.md`
+  - `packages/xenesis/src/core/AgentRunner.ts`
+  - `packages/xenesis/src/core/AgentRuntimeFactory.ts`
+  - `packages/xenesis/src/providers/index.ts`
+  - `packages/xenesis/src/providers/cliProvider.ts`
+  - `packages/xenesis/src/providers/openaiProvider.ts`
+  - `packages/xenesis/src/core/events.ts`
+  - `packages/xenesis/src/core/agentSafety/durableApprovalBridge.ts`
+  - `packages/xenesis/src/core/agentSafety/index.ts`
+  - `packages/xenesis/src/runtime/agentRuntimeState.ts`
+  - `packages/xenesis/src/tools/manifest.ts`
+  - `packages/xenesis/src/cli/renderEvents.ts`
+  - `packages/xenesis/src/cli/tui/*`
+  - `packages/xenesis/tests/cli/tui*.test.ts`
+  - `packages/xenesis/tests/s3s4/*.test.ts`
+- Commands run:
+  - Read required AGENTS.md instructions supplied by the user.
+  - Read Obsidian context:
+    `docs/obsidian/Xenesis-desk.md`,
+    `docs/obsidian/Xenesis-desk/00_System/AI Agent Rules.md`,
+    `docs/obsidian/Xenesis-desk/00_System/Graph Schema.md`,
+    `docs/obsidian/Xenesis-desk/00_System/Review Policy.md`,
+    `docs/obsidian/Xenesis-desk/10_Repo Map/Source of Truth Map.md`,
+    `docs/obsidian/Xenesis-desk/_Indexes/Module Index.md`,
+    `docs/obsidian/Xenesis-desk/_Indexes/Verification Map.md`,
+    `docs/obsidian/Xenesis-desk/10_Repo Map/Repo Overview.md`,
+    `docs/obsidian/Xenesis-desk/20_Architecture/Xenesis Agent Runtime.md`,
+    `docs/obsidian/Xenesis-desk/30_Modules/module-provider-runtime.md`,
+    `docs/obsidian/Xenesis-desk/30_Modules/module-approval-system.md`,
+    `docs/obsidian/Xenesis-desk/20_Architecture/Provider Model.md`, and
+    `docs/obsidian/Xenesis-desk/20_Architecture/Approval Flow.md`.
+  - `npm --prefix packages/xenesis test -- tests/s3s4/openaiProviderStrictSchema.test.ts tests/s3s4/agentRunnerToolDedupe.test.ts tests/s3s4/providerFactoryWiring.test.ts`
+    -> PASS, 3 files and 17 tests.
+  - `npm --prefix packages/xenesis test -- tests/cli/tuiInputBufferWidth.test.ts tests/cli/tuiScrollback.test.ts tests/cli/tuiScrollbackRenderer.test.ts`
+    -> PASS, 3 files and 24 tests.
+  - `npm --prefix packages/xenesis test -- tests/cli/tuiRuntimeControllerStructure.test.ts`
+    -> expected RED before runtime modules were ported.
+  - `npm --prefix packages/xenesis run typecheck`
+    -> PASS after support facade work.
+  - `npm --prefix packages/xenesis test -- tests/cli/tuiCommandCatalog.test.ts tests/cli/tuiInputBuffer.test.ts tests/cli/tuiInputBufferWidth.test.ts tests/cli/tuiSlashCommandSuggestions.test.ts tests/cli/tuiState.test.ts tests/cli/tuiViewModel.test.ts tests/cli/tuiScrollback.test.ts`
+    -> current RED in provider suggestion expectation and scrollback behavior.
+  - `npm --prefix packages/xenesis test -- tests/cli/tuiCommandCatalog.test.ts tests/cli/tuiInputBuffer.test.ts tests/cli/tuiInputBufferWidth.test.ts tests/cli/tuiSlashCommandSuggestions.test.ts tests/cli/tuiState.test.ts tests/cli/tuiViewModel.test.ts tests/cli/tuiScrollback.test.ts`
+    after Task 3 compatibility fixes -> PASS, 7 files and 60 tests.
+  - `npm --prefix packages/xenesis run typecheck`
+    after Task 3 compatibility fixes -> PASS.
+  - `npm --prefix packages/xenesis test -- tests/cli/tuiRuntimeCommandRouter.test.ts tests/cli/tuiSlashCommandDispatcher.test.ts`
+    after Task 4 router compatibility fixes -> PASS, 2 files and 10 tests.
+  - `npm --prefix packages/xenesis run typecheck`
+    after Task 4 router compatibility fixes -> PASS.
+  - `npm --prefix packages/xenesis test -- tests/cli/tuiRuntimeControllerStructure.test.ts`
+    after Task 4 -> still RED because `runtimeController.ts` is intentionally
+    deferred to Task 5.
+  - `npm --prefix packages/xenesis test -- tests/cli/tuiRuntimeControllerStructure.test.ts tests/cli/tuiRuntimeCommands.test.ts tests/cli/tuiRuntimeIntegration.test.ts`
+    after Task 5 runtimeController/main wiring -> PASS, 3 files and 19 tests.
+  - `npm --prefix packages/xenesis run typecheck`
+    after Task 5 runtimeController/main wiring -> PASS.
+  - `npm --prefix packages/xenesis test -- tests/cli/tuiCommandCatalog.test.ts tests/cli/tuiInputBuffer.test.ts tests/cli/tuiInputBufferWidth.test.ts tests/cli/tuiSlashCommandSuggestions.test.ts tests/cli/tuiState.test.ts tests/cli/tuiViewModel.test.ts tests/cli/tuiScrollback.test.ts tests/cli/tuiRuntimeCommandRouter.test.ts tests/cli/tuiSlashCommandDispatcher.test.ts tests/cli/tuiRuntimeControllerStructure.test.ts tests/cli/tuiRuntimeCommands.test.ts tests/cli/tuiRuntimeIntegration.test.ts`
+    after Task 5 -> PASS, 12 files and 89 tests.
+  - `npm --prefix packages/xenesis test -- tests/cli/tuiInkRenderer.test.ts tests/cli/tuiSmoke.test.ts tests/cli/tuiScrollbackRenderer.test.ts`
+    after Task 6 Ink renderer port -> PASS, 3 files and 24 tests.
+  - `npm --prefix packages/xenesis run typecheck`
+    after Task 6 Ink renderer port -> PASS.
+  - `npm --prefix packages/xenesis test -- tests/cli/tuiDurableApproval.test.ts tests/cli/tuiRuntimeControllerApproval.test.ts`
+    after Task 7 durable approval test port -> PASS, 2 files and 9 tests.
+  - `npm --prefix packages/xenesis run typecheck`
+    after Task 7 durable approval test port -> PASS.
+  - `npm --prefix packages/xenesis test`
+    final package run -> PASS, 129 files and 676 tests.
+  - `npm --prefix packages/xenesis run typecheck`
+    final package typecheck -> PASS.
+  - `npm --prefix packages/xenesis run build`
+    final package build -> PASS.
+  - `npm run typecheck`
+    final root typecheck -> PASS.
+  - `npm run docs:capabilities:audit`
+    final CR audit -> PASS; wrote `docs/capability-registry-audit.md`;
+    854 nodes and 692 coverage path references.
+  - `npm run check:public-release`
+    final public-release safety check -> PASS.
+  - `npm --prefix packages/xenesis run provider:smoke`
+    final provider smoke -> PASS, 7/7; report
+    `C:\Users\dmkim\.xenesis\reports\provider-live-20260630T114943171Z.json`.
+  - `npm --prefix packages/xenesis run dev -- tui --print --provider mock --model mock-model`
+    manual TUI print smoke -> PASS; rendered Xenesis TUI preview frame.
+  - `npx biome check packages/xenesis/src/cli/main.ts packages/xenesis/src/cli/renderEvents.ts packages/xenesis/src/cli/tui packages/xenesis/src/core/AgentRunner.ts packages/xenesis/src/core/agentSafety/durableApprovalBridge.ts packages/xenesis/src/core/agentSafety/index.ts packages/xenesis/src/core/events.ts packages/xenesis/src/providers/cliProvider.ts packages/xenesis/src/providers/index.ts packages/xenesis/src/providers/openaiProvider.ts packages/xenesis/src/runtime/agentRuntimeState.ts packages/xenesis/src/tools/manifest.ts packages/xenesis/tests/cli packages/xenesis/tests/s3s4/codexAppServerProviderFailure.test.ts packages/xenesis/tests/s3s4/agentRunnerToolDedupe.test.ts packages/xenesis/tests/s3s4/openaiProviderStrictSchema.test.ts packages/xenesis/tests/s3s4/providerFactoryWiring.test.ts`
+    scoped Biome check -> PASS with warnings only.
+  - `npm run lint`
+    final repo-wide lint -> FAIL from existing out-of-scope Biome baseline:
+    latest output reported 15 errors, 393 warnings, and 85 infos.
+- Exact verification result:
+  - Provider regression baseline is green and committed.
+  - Existing TUI baseline tests are green before the full port.
+  - Support facades typecheck successfully.
+  - Task 3 core TUI model/input/state/viewModel tests now pass, and the package
+    typecheck is green.
+  - Task 4 modular runtime/output/image/agent slash command routers pass their
+    focused tests, and the package typecheck remains green.
+  - Task 5 runtime controller and `main.ts` TUI entry wiring pass structure,
+    runtime command, integration, and combined focused TUI tests.
+  - Task 6 Ink renderer, smoke, and scrollback renderer tests pass, and the
+    package typecheck remains green.
+  - Task 7 durable approval restore and runtime approval replacement tests pass,
+    and the package typecheck remains green.
+  - Package tests, package typecheck, package build, root typecheck, CR audit,
+    public-release safety, provider smoke, scoped Biome check, and manual TUI
+    print smoke all pass on the final implementation.
+  - Codex app-server failed-turn handling is covered by
+    `packages/xenesis/tests/s3s4/codexAppServerProviderFailure.test.ts`.
+- Known gaps:
+  - Repo-wide `npm run lint` still fails from existing baseline diagnostics
+    outside this TUI/provider fix scope. Examples include
+    `extensions\sample.file-helper\main.js`,
+    `packages\xenesis\src\db\tableStore.ts`,
+    `packages\xenesis\src\extensions\embedding.ts`, and
+    `mcp\xenesis-desk-mcp-server.mjs`.
+  - Live Electron Agent-pane verification was not run for this TUI CLI port.
+    Verified scope is package tests/build/typecheck, root typecheck, CR audit,
+    public-release safety, provider smoke, and manual CLI TUI print smoke.
+- Next intended step:
+  - Commit the final provider failure handling and verification log update,
+    then preserve the worktree/branch for review or PR creation.
+
 ## 2026-06-30 Input Control Layer Mini Implementation
 
 - Current objective:

@@ -1,6 +1,8 @@
 #!/usr/bin/env node
+import { existsSync, readFileSync } from 'node:fs';
 import { access, appendFile, mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
-import { basename, dirname, resolve } from 'node:path';
+import { homedir } from 'node:os';
+import { basename, dirname, extname, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { pathToFileURL } from 'node:url';
 import { FileArtifactStore } from '../artifacts/index.js';
@@ -158,21 +160,12 @@ import {
   type SetupPolicyCommandName,
 } from './setupPolicyCommands.js';
 import { looksLikeSlashCommandName, parseSlashCommandLine, renderSlashCommandHelp } from './slashCommands.js';
-import type { InkTuiController } from './tui/inkRenderer.js';
-import { createInitialTuiState, renderTuiFrameLines } from './tui/runTui.js';
 import {
-  appendTuiNotice,
-  clearTuiCommandOutput,
-  reduceTuiEvent,
-  resolveTuiApproval,
-  scrollTuiCommandOutput,
-  setTuiCommandOutput,
-  setTuiCommandOutputExpanded,
-  setTuiCommandOutputOffset,
-  setTuiCommandOutputSavedPath,
-  setTuiSessionContext,
-  setTuiSuggestionContext,
-} from './tui/state.js';
+  createInitialTuiState,
+  createTuiRuntimeController,
+  renderTuiFrameLines,
+  type TuiTerminalImageRequest,
+} from './tui/index.js';
 import {
   renderCostCommand,
   renderLoginStatusCommand,
@@ -489,6 +482,10 @@ function parseMaxTurns(value: string) {
 function parseProviderName(value: string): ProviderName {
   if ((providerNames as readonly string[]).includes(value)) return value as ProviderName;
   throw new Error(`Option "--provider" must be one of ${providerNames.join(', ')}; got ${value}.`);
+}
+
+function isProviderName(value: string): value is ProviderName {
+  return (providerNames as readonly string[]).includes(value);
 }
 
 function parsePositiveInteger(value: string, name: string) {
@@ -4374,6 +4371,213 @@ async function runSchedulesCommand(parsed: ParsedArgs, cwd: string, env: NodeJS.
   return 1;
 }
 
+const TUI_SUPPORTED_IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp']);
+
+function tokenizeTuiCommandArgs(value: string) {
+  const tokens: string[] = [];
+  let current = '';
+  let quote: '"' | "'" | undefined;
+  for (let index = 0; index < value.length; index += 1) {
+    const char = value[index];
+    if (quote) {
+      if (char === quote) {
+        quote = undefined;
+      } else if (char === '\\' && value[index + 1] === quote) {
+        current += quote;
+        index += 1;
+      } else {
+        current += char;
+      }
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      quote = char;
+      continue;
+    }
+    if (/\s/.test(char)) {
+      if (current) {
+        tokens.push(current);
+        current = '';
+      }
+      continue;
+    }
+    current += char;
+  }
+  if (quote) throw new Error('Unclosed quote in command.');
+  if (current) tokens.push(current);
+  return tokens;
+}
+
+function normalizeTuiImageOptionKey(value: string) {
+  const key = value.replace(/^-+/, '').replace(/-([a-zA-Z0-9])/g, (_, char: string) => char.toUpperCase());
+  if (key === 'term' || key === 'id' || key === 'termId') return 'termId';
+  return key;
+}
+
+function parseTuiImageOptions(tokens: string[], allowedKeys: readonly string[]) {
+  const options: Record<string, string> = {};
+  const allowed = new Set(allowedKeys);
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index];
+    if (!token.startsWith('--')) {
+      throw new Error(`Unknown extra argument: ${token}`);
+    }
+    const equalsIndex = token.indexOf('=');
+    const rawKey = equalsIndex >= 0 ? token.slice(2, equalsIndex) : token.slice(2);
+    const key = normalizeTuiImageOptionKey(rawKey);
+    if (!allowed.has(key)) throw new Error(`Unknown image option: --${rawKey}`);
+    let optionValue = '';
+    if (equalsIndex >= 0) {
+      optionValue = token.slice(equalsIndex + 1);
+    } else if (tokens[index + 1] && !tokens[index + 1].startsWith('--')) {
+      optionValue = tokens[index + 1];
+      index += 1;
+    }
+    options[key] = optionValue;
+  }
+  return options;
+}
+
+function isHttpImageSource(value: string) {
+  return /^https?:\/\//i.test(value);
+}
+
+function isSupportedTuiImageFileName(value: string) {
+  return TUI_SUPPORTED_IMAGE_EXTENSIONS.has(extname(value).toLowerCase());
+}
+
+function quoteTuiCommandArg(value: string) {
+  if (!/\s/.test(value)) return value;
+  return `"${value.replace(/"/g, '\\"')}"`;
+}
+
+async function resolveTuiImageSource(source: string, cwd: string) {
+  if (isHttpImageSource(source)) return source;
+  const resolved = resolve(cwd, source);
+  try {
+    await access(resolved);
+  } catch (error) {
+    if (isNodeError(error) && error.code === 'ENOENT') {
+      throw new Error(`Image file not found: ${resolved}. Use /image recent or /image <path-or-url>.`);
+    }
+    throw error;
+  }
+  const extension = extname(resolved).toLowerCase();
+  if (extension && !TUI_SUPPORTED_IMAGE_EXTENSIONS.has(extension)) {
+    throw new Error(`Unsupported image file type: ${extension}. Supported types: png, jpg, jpeg, gif, webp.`);
+  }
+  return resolved;
+}
+
+async function createTuiTerminalImageRequest(
+  commandName: 'image' | 'xcon-image',
+  rest: string,
+  cwd: string,
+): Promise<TuiTerminalImageRequest> {
+  const tokens = tokenizeTuiCommandArgs(rest);
+  const source = tokens.shift() ?? '';
+  if (!source || source === '--help' || source === '-h') {
+    throw new Error(
+      commandName === 'image'
+        ? 'Usage: /image <path-or-url> [--width=80%] [--height=auto] [--term-id id]'
+        : 'Usage: /xcon-image <file-or-inline> [--width=80%] [--height=auto] [--term-id id] [--theme=dark] [--title title]',
+    );
+  }
+
+  if (commandName === 'image') {
+    const options = parseTuiImageOptions(tokens, ['width', 'height', 'termId']);
+    const resolvedSource = await resolveTuiImageSource(source, cwd);
+    return {
+      path: 'xd.terminals.image.show',
+      args: {
+        source: resolvedSource,
+        ...options,
+      },
+      label: resolvedSource,
+    };
+  }
+
+  const options = parseTuiImageOptions(tokens, ['width', 'height', 'termId', 'theme', 'title']);
+  let xcon = source;
+  const maybePath = resolve(cwd, source);
+  try {
+    await access(maybePath);
+    xcon = await readFile(maybePath, 'utf8');
+  } catch {
+    xcon = source;
+  }
+  return {
+    path: 'xd.terminals.image.showXcon',
+    args: {
+      xcon,
+      ...options,
+    },
+    label: source,
+  };
+}
+
+function friendlyTuiImageError(error: unknown) {
+  const message = errorMessage(error);
+  if (/fetch failed|ECONNREFUSED|ECONNRESET|ENOTFOUND/i.test(message)) {
+    return 'Xenesis Desk bridge is not reachable. Start Xenesis Desk or check XENIS_MCP_BRIDGE_URL.';
+  }
+  if (/bridge.*not.*configured|XENIS_MCP_BRIDGE_URL/i.test(message)) {
+    return 'Xenesis Desk bridge is not configured. Open Xenesis Desk or set XENIS_MCP_BRIDGE_URL.';
+  }
+  if (/approval|denied|rejected/i.test(message)) {
+    return 'Image command was not approved in Xenesis Desk.';
+  }
+  if (/terminal|term/i.test(message) && /not found|missing|available/i.test(message)) {
+    return 'No Desk terminal is available. Open or create a terminal first.';
+  }
+  return message;
+}
+
+function resolveTuiDeskBridgeStatus(config: XenesisConfig, env: NodeJS.ProcessEnv) {
+  if (firstNonEmptyText(env.XENIS_MCP_BRIDGE_URL, env.XENESIS_MCP_BRIDGE_URL)) return 'configured' as const;
+  for (const stateFile of tuiBridgeStateFileCandidates(config, env)) {
+    if (!existsSync(stateFile)) continue;
+    try {
+      const parsed = JSON.parse(readFileSync(stateFile, 'utf8')) as unknown;
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) continue;
+      const record = parsed as Record<string, unknown>;
+      if (firstNonEmptyText(record.bridgeUrl, record.url)) return 'configured' as const;
+    } catch {}
+  }
+  return 'missing' as const;
+}
+
+function tuiBridgeStateFileCandidates(config: XenesisConfig, env: NodeJS.ProcessEnv) {
+  const explicit = firstNonEmptyText(env.XENIS_MCP_STATE_FILE, env.XENESIS_MCP_STATE_FILE);
+  if (explicit) return [explicit];
+  const home = firstNonEmptyText(env.XENIS_HOME, env.XENESIS_HOME, config.xenesisHome);
+  return [...(home ? [resolve(home, 'mcp', 'bridge.json')] : []), resolve(homedir(), '.xenis', 'mcp', 'bridge.json')];
+}
+
+function firstNonEmptyText(...values: unknown[]) {
+  for (const value of values) {
+    const text = String(value ?? '').trim();
+    if (text) return text;
+  }
+  return '';
+}
+
+function bridgeCallFailed(value: unknown): string | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const record = value as Record<string, unknown>;
+  if (record.ok === false) return String(record.error ?? 'Xenesis Desk bridge call failed.');
+  const result = record.result;
+  if (
+    result &&
+    typeof result === 'object' &&
+    !Array.isArray(result) &&
+    (result as Record<string, unknown>).ok === false
+  ) {
+    return String((result as Record<string, unknown>).error ?? 'Xenesis Desk bridge call failed.');
+  }
+  return undefined;
+}
+
 function isApprovalMode(value: string): value is ApprovalMode {
   return value === 'safe' || value === 'auto' || value === 'readonly';
 }
@@ -4703,497 +4907,62 @@ async function runTuiCommand(
     env,
     cli: cliOverrides(parsed),
   });
-  let state = createInitialTuiState({
-    provider: parsed.provider ?? config.provider,
-    model: parsed.model ?? config.model,
-    approvalMode: parsed.approvalMode ?? config.approvalMode,
-    workspace: config.workspace,
-  });
-  let chatHistoryMessages: AgentMessage[] = [];
-  let lastSessionId: string | undefined;
-  const chatSessionId = `session-${Date.now()}`;
-  state = setTuiSessionContext(state, {
-    activeSessionId: chatSessionId,
-    historyMessageCount: chatHistoryMessages.length,
-  });
-  const tuiCommandHelp =
-    '/help /commands /status /provider <name> /workspace /tools /session /clear /reset /model <name> /approval <safe|auto|readonly> /memory <add|list|search> /skills <list|show> /plugins list /sessions list /compact [session-id] /output <up|down|top|bottom|expand|compact|clear|save> /plan <prompt> /work <prompt> /resume <session-id> <prompt> /exit /quit';
-
-  if (parsed.print || !isTtyInput(io.stdin ?? process.stdin)) {
-    emitTuiFrame(io, state, false);
-    return 0;
-  }
-
-  const stdin = io.stdin ?? process.stdin;
-  let activeRunController: AbortController | undefined;
-  let pendingApprovalResolver: ((approved: boolean) => void) | undefined;
-  const listeners = new Set<(next: typeof state) => void>();
-  const publish = () => {
-    for (const listener of listeners) listener(state);
-  };
-  const notify = (message: string, kind: 'info' | 'warning' | 'error' = 'info') => {
-    state = appendTuiNotice(state, { kind, message });
-    publish();
-  };
-  const setTuiSessionWriter: SessionWriterSetter = (writer, sessionId) => {
-    lastSessionId = sessionId;
-    setSessionWriter(writer, sessionId);
-    state = setTuiSessionContext(
-      setTuiSuggestionContext(state, {
-        sessionIds: [sessionId, ...state.suggestionContext.sessionIds.filter((existing) => existing !== sessionId)],
+  const runtime = createTuiRuntimeController({
+    parsed,
+    cwd,
+    env,
+    io,
+    config,
+    setSessionWriter,
+    loadRuntimeConfig: () =>
+      loadConfig({
+        cwd,
+        configPath: parsed.configPath,
+        env,
+        cli: cliOverrides(parsed),
       }),
-      {
-        lastSessionId: sessionId,
-      },
-    );
-    publish();
-  };
-  const setCapturedCommandOutput = (command: string, stdout: string[], stderr: string[]) => {
-    const lines = [...stdout, ...stderr];
-    state = setTuiCommandOutput(state, {
-      command,
-      kind: stderr.length > 0 ? 'error' : 'info',
-      lines: lines.length > 0 ? lines : ['(no output)'],
-    });
-    publish();
-    if (stderr.length > 0) notify(`Command failed: ${command}`, 'error');
-  };
-  const refreshTuiSuggestionContext = async () => {
-    let sessionIds: string[] = [];
-    try {
-      const files = await readdir(sessionDir(config), { withFileTypes: true });
-      const sessions = await Promise.all(
-        files
-          .filter((file) => file.isFile() && file.name.endsWith('.jsonl'))
-          .map(async (file) => {
-            const path = resolve(sessionDir(config), file.name);
-            return {
-              id: file.name.slice(0, -'.jsonl'.length),
-              mtimeMs: (await stat(path)).mtimeMs,
-            };
-          }),
-      );
-      sessionIds = sessions.sort((left, right) => right.mtimeMs - left.mtimeMs).map((session) => session.id);
-    } catch (error) {
-      if (!isNodeError(error) || error.code !== 'ENOENT') throw error;
-    }
-    if (lastSessionId) {
-      sessionIds = [lastSessionId, ...sessionIds.filter((sessionId) => sessionId !== lastSessionId)];
-    }
-    state = setTuiSuggestionContext(state, { sessionIds });
-    publish();
-  };
-  const resetVisibleState = () => {
-    const currentSessionContext = state.sessionContext;
-    state = createInitialTuiState({
-      provider: parsed.provider ?? config.provider,
-      model: parsed.model ?? config.model,
-      approvalMode: parsed.approvalMode ?? config.approvalMode,
-      workspace: config.workspace,
-    });
-    state = setTuiSessionContext(state, {
-      activeSessionId: currentSessionContext.activeSessionId ?? chatSessionId,
-      lastSessionId: currentSessionContext.lastSessionId,
-      resumedFromSessionId: undefined,
-      historyMessageCount: chatHistoryMessages.length,
-    });
-    publish();
-  };
-  const setRuntimeState = () => {
-    state = {
-      ...state,
-      runtime: {
-        provider: parsed.provider ?? config.provider,
-        model: parsed.model ?? config.model,
-        approvalMode: parsed.approvalMode ?? config.approvalMode,
-        workspace: config.workspace,
-      },
-    };
-    publish();
-  };
-  const resolvePendingApproval = (approved: boolean) => {
-    const resolver = pendingApprovalResolver;
-    if (!resolver) {
-      notify('No approval request is pending.', 'warning');
-      return;
-    }
-    pendingApprovalResolver = undefined;
-    state = resolveTuiApproval(state, approved);
-    publish();
-    resolver(approved);
-  };
-  const tuiApprovalHandler: ApprovalHandler = (request) =>
-    new Promise((resolve) => {
-      pendingApprovalResolver = resolve;
-      if (state.pendingApproval?.toolCallId !== request.toolCallId) {
-        state = reduceTuiEvent(state, { type: 'permission_request', request });
-        publish();
-      }
-    });
-  const runTuiAgentPrompt = async (
-    runParsed: ParsedArgs,
-    visibleInput: string,
-    prompt: string,
-    historyMessages: AgentMessage[],
-  ) => {
-    await appendChatHistory(config, visibleInput);
-    const controller = new AbortController();
-    activeRunController = controller;
-    state = reduceTuiInput(state, prompt);
-    publish();
-    try {
-      const exitCode = await runPrompt(runParsed, cwd, env, io, prompt, setTuiSessionWriter, historyMessages, {
-        sessionId: chatSessionId,
-        onEvent: (event) => {
-          state = reduceTuiEvent(state, event);
-          publish();
-        },
-        onMessages: (messages) => {
-          chatHistoryMessages = messages;
-          state = setTuiSessionContext(state, {
-            historyMessageCount: chatHistoryMessages.length,
-          });
-          publish();
-        },
-        onNotice: (notice) => notify(notice),
-        approvalHandler: tuiApprovalHandler,
-        abortSignal: controller.signal,
-        preserveManagedServers: true,
-      });
-      if (exitCode !== 0) {
-        notify(`Run exited with code ${exitCode}.`, 'error');
-      }
-    } finally {
-      if (activeRunController === controller) activeRunController = undefined;
-    }
-  };
-  // S7 — event-sourced resume for the TUI `/resume` path. Delegates to
-  // `resumePrompt` -> `resumeAgentPipeline`, rehydrating the conversation +
-  // per-run state from the existing session log and appending to the SAME log
-  // (the resumed `sessionId`), instead of replaying message-only history into a
-  // fresh turn-0 run.
-  const runTuiAgentResume = async (runParsed: ParsedArgs, visibleInput: string, resumeSessionId: string) => {
-    await appendChatHistory(config, visibleInput);
-    const controller = new AbortController();
-    activeRunController = controller;
-    publish();
-    try {
-      const exitCode = await resumePrompt(runParsed, cwd, env, io, resumeSessionId, setTuiSessionWriter, {
-        onEvent: (event) => {
-          state = reduceTuiEvent(state, event);
-          publish();
-        },
-        onMessages: (messages) => {
-          chatHistoryMessages = messages;
-          state = setTuiSessionContext(state, {
-            historyMessageCount: chatHistoryMessages.length,
-          });
-          publish();
-        },
-        onNotice: (notice) => notify(notice),
-        approvalHandler: tuiApprovalHandler,
-        abortSignal: controller.signal,
-        preserveManagedServers: true,
-      });
-      if (exitCode !== 0) {
-        notify(`Run exited with code ${exitCode}.`, 'error');
-      }
-    } finally {
-      if (activeRunController === controller) activeRunController = undefined;
-    }
-  };
-  const capturedTuiSlashCommandNames = new Set(['memory', 'skills', 'plugins', 'sessions', 'compact']);
-  const runCapturedTuiSlashCommand = async (input: string) => {
-    const stdout: string[] = [];
-    const stderr: string[] = [];
-    const capturedIo: CliIo = {
-      ...io,
-      stdout: (line) => stdout.push(line),
-      stderr: (line) => stderr.push(line),
-    };
-    try {
+    createRuntimeTools: createCliRuntimeTools,
+    selectTools,
+    runPrompt,
+    runCapturedSlashCommand: async (input, capturedIo, setTuiSessionWriter, getLastSessionId, resetVisibleState) => {
       await runChatSlashCommand(
         parsed,
         cwd,
         env,
-        capturedIo,
+        capturedIo as CliIo,
         input,
         setTuiSessionWriter,
-        () => lastSessionId,
-        () => {
-          chatHistoryMessages = [];
-          resetVisibleState();
-        },
+        getLastSessionId,
+        resetVisibleState,
       );
-    } catch (error) {
-      stderr.push(`error: ${errorMessage(error)}`);
-    }
-    setCapturedCommandOutput(input, stdout, stderr);
-  };
-  const outputScrollStep = 4;
-  const bottomOutputOffset = () => {
-    if (!state.commandOutput) return 0;
-    const visibleLimit = state.commandOutput.expanded ? 20 : 6;
-    return Math.max(0, state.commandOutput.lines.length - visibleLimit);
-  };
-  const saveCommandOutput = async () => {
-    if (!state.commandOutput) {
-      notify('No command output to save.', 'warning');
-      return;
-    }
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const outputPath = statePath(config, 'outputs', `xenesis-output-${timestamp}.txt`);
-    await mkdir(dirname(outputPath), { recursive: true });
-    await writeFile(
-      outputPath,
-      [
-        `command: ${state.commandOutput.command}`,
-        `kind: ${state.commandOutput.kind}`,
-        '',
-        ...state.commandOutput.lines,
-      ].join('\n'),
-      'utf8',
-    );
-    state = setTuiCommandOutputSavedPath(state, outputPath);
-    publish();
-    notify(`Output saved: ${outputPath}`);
-  };
-  const handleOutputCommand = async (input: string) => {
-    const command = parseSlashCommandLine(input);
-    if (!command || command.name !== 'output') return false;
-    const action = command.args[0];
-    if (!state.commandOutput && action !== 'clear') {
-      notify('No command output to control.', 'warning');
-      return true;
-    }
-    if (!action) {
-      notify('Use /output up, down, top, bottom, expand, compact, clear, or save.');
-      return true;
-    }
-    if (action === 'up') {
-      state = scrollTuiCommandOutput(state, -outputScrollStep);
-      publish();
-      return true;
-    }
-    if (action === 'down') {
-      state = scrollTuiCommandOutput(state, outputScrollStep);
-      publish();
-      return true;
-    }
-    if (action === 'top') {
-      state = setTuiCommandOutputOffset(state, 0);
-      publish();
-      return true;
-    }
-    if (action === 'bottom') {
-      state = setTuiCommandOutputOffset(state, bottomOutputOffset());
-      publish();
-      return true;
-    }
-    if (action === 'expand') {
-      state = setTuiCommandOutputExpanded(state, true);
-      publish();
-      return true;
-    }
-    if (action === 'compact') {
-      state = setTuiCommandOutputExpanded(state, false);
-      publish();
-      return true;
-    }
-    if (action === 'clear') {
-      state = clearTuiCommandOutput(state);
-      publish();
-      notify('Output cleared.');
-      return true;
-    }
-    if (action === 'save') {
-      await saveCommandOutput();
-      return true;
-    }
-    notify('Command "/output" requires up, down, top, bottom, expand, compact, clear, or save.', 'error');
-    return true;
-  };
-  const controller: InkTuiController = {
-    getState: () => state,
-    subscribe(listener) {
-      listeners.add(listener);
-      listener(state);
-      return () => {
-        listeners.delete(listener);
-      };
     },
-    cancel() {
-      if (pendingApprovalResolver) {
-        resolvePendingApproval(false);
-        return;
-      }
-      activeRunController?.abort();
-      notify('Run cancellation requested.', 'warning');
-    },
-    resolveApproval(approved) {
-      resolvePendingApproval(approved);
-    },
-    async submit(input: string) {
-      if (input === '/help' || input === '/commands') {
-        notify(tuiCommandHelp);
-        return;
-      }
-      if (input === '/exit' || input === '/quit') {
-        notify('Exit requested. The interactive renderer closes these commands immediately.');
-        return;
-      }
-      if (input === '/status') {
-        setRuntimeState();
-        notify(
-          `provider=${state.runtime.provider} model=${state.runtime.model} approval=${state.runtime.approvalMode} session=${state.sessionContext.activeSessionId ?? 'none'} latest=${state.sessionContext.lastSessionId ?? 'none'} resumedFrom=${state.sessionContext.resumedFromSessionId ?? 'none'} context=${state.sessionContext.historyMessageCount}`,
-        );
-        return;
-      }
-      if (input === '/provider') {
-        setRuntimeState();
-        notify(`provider=${state.runtime.provider}`);
-        return;
-      }
-      if (input.startsWith('/provider ')) {
-        const provider = input.slice('/provider '.length).trim();
-        if (!(providerNames as readonly string[]).includes(provider)) {
-          notify(`Command "/provider" requires one of ${providerNames.join(', ')}.`, 'error');
-          return;
-        }
-        parsed.provider = provider as ProviderName;
-        setRuntimeState();
-        notify(`Provider set to ${provider}.`);
-        return;
-      }
-      if (input === '/workspace') {
-        setRuntimeState();
-        notify(`workspace=${state.runtime.workspace}`);
-        return;
-      }
-      if (input === '/tools') {
-        const runtimeConfig = await loadConfig({
-          cwd,
-          configPath: parsed.configPath,
-          env,
-          cli: cliOverrides(parsed),
-        });
-        const tools = Array.from(
-          selectTools(runtimeConfig, await createCliRuntimeTools(runtimeConfig, env)).keys(),
-        ).sort();
-        notify(tools.length === 0 ? 'tools: none' : `tools: ${tools.join(', ')}`);
-        return;
-      }
-      if (input === '/session') {
-        notify(
-          `session=${state.sessionContext.activeSessionId ?? chatSessionId} latest=${state.sessionContext.lastSessionId ?? 'none'} resumedFrom=${state.sessionContext.resumedFromSessionId ?? 'none'} status=${state.status} turns=${state.turns} context=${state.sessionContext.historyMessageCount}`,
-        );
-        return;
-      }
-      if (input === '/clear' || input === '/reset') {
-        chatHistoryMessages = [];
-        resetVisibleState();
-        notify('Visible transcript and conversation context cleared.');
-        return;
-      }
-      if (input.startsWith('/model ')) {
-        parsed.model = input.slice('/model '.length).trim();
-        setRuntimeState();
-        notify(`Model set to ${parsed.model}.`);
-        return;
-      }
-      if (input.startsWith('/approval ')) {
-        const approvalMode = input.slice('/approval '.length).trim();
-        if (!isApprovalMode(approvalMode)) {
-          notify('Command "/approval" requires safe, auto, or readonly.', 'error');
-          return;
-        }
-        parsed.approvalMode = approvalMode;
-        setRuntimeState();
-        notify(`Approval mode set to ${approvalMode}.`);
-        return;
-      }
+    loadInputHistory: () => loadChatHistory(config),
+    appendInputHistory: (line) => appendChatHistory(config, line),
+    statePath: (...parts) => statePath(config, ...parts),
+    sessionDir: () => sessionDir(config),
+    resolveDeskBridgeStatus: () => resolveTuiDeskBridgeStatus(config, env),
+    createTerminalImageRequest: createTuiTerminalImageRequest,
+    friendlyImageError: friendlyTuiImageError,
+    bridgeCallFailed,
+    isProviderName,
+    isApprovalMode,
+    isSupportedImageFileName: isSupportedTuiImageFileName,
+    quoteCommandArg: quoteTuiCommandArg,
+  });
 
-      const command = parseSlashCommandLine(input);
-      if (command && command.name === 'output' && (await handleOutputCommand(input))) {
-        return;
-      }
-      if (command && capturedTuiSlashCommandNames.has(command.name)) {
-        await appendChatHistory(config, input);
-        await runCapturedTuiSlashCommand(input);
-        return;
-      }
-      if (command?.name === 'plan' || command?.name === 'work') {
-        const prompt = command.rest.trim();
-        if (!prompt) {
-          notify(`Command "/${command.name}" requires a prompt.`, 'error');
-          return;
-        }
-        const mode = command.name === 'plan' ? 'plan' : 'work';
-        await runTuiAgentPrompt(
-          {
-            ...parsed,
-            command: mode,
-            prompt,
-          },
-          input,
-          prompt,
-          chatHistoryMessages,
-        );
-        return;
-      }
-      if (command?.name === 'resume') {
-        const [sessionId] = command.args;
-        if (!sessionId) {
-          notify('Command "/resume" requires a session id.', 'error');
-          return;
-        }
-        try {
-          // S7 — event-sourced resume: rehydrate state from the existing session
-          // log and continue at the last turn boundary. The triggering prompt is
-          // recovered from the log, so `/resume <sessionId>` is sufficient.
-          const validatedSessionId = validateSessionId(sessionId);
-          const resumeConfig = await loadConfig({
-            cwd,
-            configPath: parsed.configPath,
-            env,
-            cli: cliOverrides(parsed),
-          });
-          const historyMessages = eventsToMessages(await readSessionLog(resumeConfig.xenesisHome, validatedSessionId));
-          state = setTuiSessionContext(state, {
-            resumedFromSessionId: sessionId,
-            historyMessageCount: historyMessages.length,
-          });
-          publish();
-          await runTuiAgentResume(
-            {
-              ...parsed,
-              command: 'sessions',
-              sessionCommand: 'resume',
-              sessionId: validatedSessionId,
-            },
-            input,
-            validatedSessionId,
-          );
-        } catch (error) {
-          notify(`Command "/resume" failed: ${errorMessage(error)}`, 'error');
-        }
-        return;
-      }
-      if (command) {
-        notify(`Unknown or unsupported TUI slash command "/${command.name}". Type /help.`, 'error');
-        return;
-      }
+  if (parsed.print || !isTtyInput(io.stdin ?? process.stdin)) {
+    emitTuiFrame(io, runtime.getState(), false);
+    return 0;
+  }
 
-      await runTuiAgentPrompt(parsed, input, input, chatHistoryMessages);
-    },
-  };
-
-  await refreshTuiSuggestionContext();
+  const stdin = io.stdin ?? process.stdin;
+  await runtime.initialize();
+  const inputHistory = await runtime.loadInputHistory();
 
   try {
     const { runInkTui } = await import('./tui/inkRenderer.js');
     await runInkTui(
-      { controller },
+      { controller: runtime.controller, inputHistory },
       {
         stdin: stdin as NodeJS.ReadStream,
         stdout: process.stdout,
@@ -5205,13 +4974,6 @@ async function runTuiCommand(
   }
 
   return 0;
-}
-
-function reduceTuiInput(state: ReturnType<typeof createInitialTuiState>, content: string) {
-  return reduceTuiEvent(state, {
-    type: 'user_message',
-    message: { role: 'user', content },
-  });
 }
 
 async function runChat(

@@ -263,6 +263,17 @@ export type ApprovalResolvedEvent = {
   resolvedAt: string;
 };
 
+export type DurableApprovalPendingEvent = {
+  type: 'durable_approval_pending';
+  request: ApprovalRequest;
+};
+
+export type DurableApprovalResolvedEvent = {
+  type: 'durable_approval_resolved';
+  toolCallId: string;
+  approved: boolean;
+};
+
 export type PermissionAuditEvent = {
   type: 'permission_audit';
   toolCallId: string;
@@ -391,6 +402,8 @@ export type SessionEvent =
   | PermissionAuditEvent
   | PermissionRequestEvent
   | ApprovalResolvedEvent
+  | DurableApprovalPendingEvent
+  | DurableApprovalResolvedEvent
   | DoneEvent
   | IncompleteRunEvent
   | StoppedEvent
