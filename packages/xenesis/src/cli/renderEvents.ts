@@ -66,6 +66,10 @@ export function renderEvent(event: AgentRunEvent): string {
       return `approval required for ${event.request.name}: ${event.request.reason} risk=${event.request.riskLevel}; target=${event.request.summary}`;
     case 'approval_resolved':
       return `approval ${event.decision} for tool call ${event.toolCallId} (approved=${event.approved})`;
+    case 'durable_approval_pending':
+      return '';
+    case 'durable_approval_resolved':
+      return '';
     case 'permission_audit':
       return '';
     case 'tool_event':
