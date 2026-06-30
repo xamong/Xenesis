@@ -23,22 +23,18 @@ test('provider smoke uses connect readiness before live prompt checks', () => {
 
 test('provider smoke authenticates gateway run checks', () => {
   const xenesisHome = mkdtempSync(join(tmpdir(), 'xenesis-provider-smoke-'));
-  const result = spawnSync(
-    process.execPath,
-    [providerSmokeScript, '--mode', 'gateway-auth'],
-    {
-      cwd: packageRoot,
-      env: {
-        ...process.env,
-        XENESIS_HOME: xenesisHome,
-        XENESIS_MODEL: 'mock-model',
-        XENESIS_PROVIDER: 'mock',
-        XENESIS_ENABLE_TEST_MOCK_PROVIDER: 'true',
-      },
-      encoding: 'utf8',
-      timeout: 120000,
+  const result = spawnSync(process.execPath, [providerSmokeScript, '--mode', 'gateway-auth'], {
+    cwd: packageRoot,
+    env: {
+      ...process.env,
+      XENESIS_HOME: xenesisHome,
+      XENESIS_MODEL: 'mock-model',
+      XENESIS_PROVIDER: 'mock',
+      XENESIS_ENABLE_TEST_MOCK_PROVIDER: 'true',
     },
-  );
+    encoding: 'utf8',
+    timeout: 120000,
+  });
   const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
   try {
     assert.equal(result.status, 0, output);

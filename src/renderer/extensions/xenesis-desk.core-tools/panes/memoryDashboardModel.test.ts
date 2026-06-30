@@ -163,13 +163,26 @@ test('builds grouped memory dashboard sections from governed CR payloads', () =>
   assert.equal(model.counts.pendingProposals, 1);
   assert.equal(model.recent[0].id, 'mem-project-decision');
   assert.equal(model.pendingProposals.map((proposal) => proposal.id).join(','), 'memprop-1');
-  assert.deepEqual(model.projects.map((project) => [project.key, project.count]), [['atlas', 1]]);
-  assert.deepEqual(model.people.map((person) => [person.key, person.count]), [
-    ['ceo', 1],
-  ]);
-  assert.deepEqual(model.decisions.map((record) => record.id), ['mem-project-decision']);
-  assert.deepEqual(model.conflicts.map((record) => record.id), ['mem-conflict']);
-  assert.deepEqual(model.sensitive.map((record) => record.id), ['mem-secret']);
+  assert.deepEqual(
+    model.projects.map((project) => [project.key, project.count]),
+    [['atlas', 1]],
+  );
+  assert.deepEqual(
+    model.people.map((person) => [person.key, person.count]),
+    [['ceo', 1]],
+  );
+  assert.deepEqual(
+    model.decisions.map((record) => record.id),
+    ['mem-project-decision'],
+  );
+  assert.deepEqual(
+    model.conflicts.map((record) => record.id),
+    ['mem-conflict'],
+  );
+  assert.deepEqual(
+    model.sensitive.map((record) => record.id),
+    ['mem-secret'],
+  );
   assert.equal(model.evidenceByMemory['mem-project-decision'][0].id, 'ev-low');
   assert.equal(model.frequentUse[0].id, 'mem-project-decision');
 });

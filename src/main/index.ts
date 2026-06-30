@@ -49,22 +49,28 @@ import { createTurnLedger, type XenesisTurnRecord } from '../../packages/xenesis
 import {
   classifyMemoryWrite,
   defaultMemoryWriteContext,
-  MemoryLedger,
-  SqliteMemoryLedgerStore,
-  SqliteMemoryStore,
-  writeMemoryObsidianProjection,
   type MemoryApprovalProof,
   type MemoryEvidenceRecord,
   type MemoryInput,
+  MemoryLedger,
   type MemoryProposal,
   type MemoryRecord,
   type MemorySensitivity,
   type MemoryWriteContext,
+  SqliteMemoryLedgerStore,
+  SqliteMemoryStore,
+  writeMemoryObsidianProjection,
 } from '../../packages/xenesis/src/extensions/index';
 import {
   getRecommendedMcpServer,
   resolveRecommendedServer,
 } from '../../packages/xenesis/src/extensions/recommendedMcpServers';
+import {
+  type AgentActionNeededListFilter,
+  type AgentWorkflowReceiptKind,
+  type AgentWorkflowReceiptListFilter,
+  createAgentActionRecordStore,
+} from '../shared/agentActionRecords';
 import {
   APP_MENU_MODEL,
   type AppMenuActionNode,
@@ -72,13 +78,6 @@ import {
   type AppMenuGroupNode,
   type AppMenuNode,
 } from '../shared/appMenuModel';
-import { createComputerUseService } from './computerUse/computerUseService';
-import {
-  createAgentActionRecordStore,
-  type AgentActionNeededListFilter,
-  type AgentWorkflowReceiptKind,
-  type AgentWorkflowReceiptListFilter,
-} from '../shared/agentActionRecords';
 import {
   callDeskBridgeCapability,
   createDeskBridgeCapabilityApprovalArgsHash,
@@ -94,13 +93,6 @@ import {
   verifyDeskBridgeCapabilityApprovalProof,
 } from '../shared/deskBridgeCapabilities';
 import { normalizeExternalAppSettings } from '../shared/externalAppControl';
-import { resolveExistingRepoRootForObsidianProjection } from './memoryObsidianProjectionRoot';
-import {
-  redactMemoryEvidenceForCr,
-  redactMemoryLedgerEventForCr,
-  redactMemoryProposalForCr,
-  redactMemoryRecordForCr,
-} from './memoryRedaction';
 import {
   canUseXenisPhase5XamongCodeCommand,
   isXenisPhase5Visible,
@@ -343,7 +335,9 @@ import {
   buildXenesisProviderProfileDraftApplySettings,
   redactXenesisProviderProfileDraftApplySettings,
 } from '../shared/xenesisProviderProfileApply';
+import { createLinkedApprovalActionNeeded, createLinkedApprovalReceipt } from './agentActionRecordBridge.mjs';
 import { createAgentControlLockManager } from './agentControlLock';
+import { createAgentTurnLedgerReadbackApi } from './agentTurnLedgerService';
 import { createAppControlService } from './appControl/appControlService';
 import { createAuditLogger } from './audit/auditLogger';
 import { AutomationController } from './automation/automationController';
@@ -355,6 +349,8 @@ import {
   isCapabilityApprovalItem,
   parseCapabilityApprovalCommand,
 } from './capabilityActionApproval.mjs';
+import { prepareCodexIsolatedHome, readCodexModel } from './codexIsolatedHome.mjs';
+import { createComputerUseService } from './computerUse/computerUseService';
 import { setConnectorObservabilitySink } from './connectors/connectorObservability';
 import { ExtensionHost } from './extensions/extensionHost';
 import {
@@ -382,6 +378,13 @@ import {
 import { normalizeBotBridgeEvent } from './mcpBridgeBot.mjs';
 import { normalizeBridgePathFields, normalizeBridgePathForPlatform } from './mcpBridgePaths.mjs';
 import { buildMcpTerminalSessionList } from './mcpTerminalSessionList';
+import { resolveExistingRepoRootForObsidianProjection } from './memoryObsidianProjectionRoot';
+import {
+  redactMemoryEvidenceForCr,
+  redactMemoryLedgerEventForCr,
+  redactMemoryProposalForCr,
+  redactMemoryRecordForCr,
+} from './memoryRedaction';
 import { createMetaBridge } from './metaBridge';
 import {
   emitMainInstantOperation,
@@ -416,9 +419,6 @@ import {
 import { applySafeTextFileWrite, previewSafeTextFileWrite, restoreSafeTextFileBackup } from './safeFileEdit';
 import { type TerminalImageOptions, writeTerminalImage } from './terminalImageWriter';
 import { buildTerminalWarmupLaunch, shouldTerminalWarmupRun } from './terminalWarmup.mjs';
-import { prepareCodexIsolatedHome, readCodexModel } from './codexIsolatedHome.mjs';
-import { createAgentTurnLedgerReadbackApi } from './agentTurnLedgerService';
-import { createLinkedApprovalActionNeeded, createLinkedApprovalReceipt } from './agentActionRecordBridge.mjs';
 import { renderXconToPng, writeTerminalXconImage, type XconRenderOptions } from './terminalXconRenderer';
 import {
   buildXamongCodeApiLaunch,
@@ -3513,12 +3513,15 @@ interface ResolvedShell {
   label: string;
 }
 
-function resolveWindowsShell(kind: ShellKind): ResolvedShell {
-  const systemRoot = process.env.SystemRoot || 'C:\\Windows';
+function resolveWindowsSystemCommand(fallbackCommand: string, relativeParts: string[]): string {
+  const systemRoot = String(process.env.SystemRoot || process.env.windir || '').trim();
+  return systemRoot ? path.win32.join(systemRoot, ...relativeParts) : fallbackCommand;
+}
 
+function resolveWindowsShell(kind: ShellKind): ResolvedShell {
   if (kind === 'cmd') {
     return {
-      command: process.env.ComSpec || path.join(systemRoot, 'System32', 'cmd.exe'),
+      command: process.env.ComSpec || resolveWindowsSystemCommand('cmd.exe', ['System32', 'cmd.exe']),
       args: [],
       label: 'Command Prompt',
     };
@@ -3541,7 +3544,7 @@ function resolveWindowsShell(kind: ShellKind): ResolvedShell {
   }
 
   return {
-    command: path.join(systemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe'),
+    command: resolveWindowsSystemCommand('powershell.exe', ['System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe']),
     args: ['-NoLogo', '-NoExit', '-Command', POWERSHELL_CWD_HOOK],
     label: 'Windows PowerShell',
   };

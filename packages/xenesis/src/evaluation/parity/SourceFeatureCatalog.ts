@@ -84,7 +84,7 @@ const referenceToolMappedWithoutOracleAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/agentTool.ts; src/orchestration/agentTasks.ts',
-    referencePath: 'E:/agent-anal/src/tools/AgentTool/agentColorManager.ts',
+    referencePath: 'reference-src/tools/AgentTool/agentColorManager.ts',
   },
   {
     id: 'reference.tool.enter_plan_mode',
@@ -95,7 +95,7 @@ const referenceToolMappedWithoutOracleAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/planModeTools.ts',
-    referencePath: 'E:/agent-anal/src/tools/EnterPlanModeTool/constants.ts',
+    referencePath: 'reference-src/tools/EnterPlanModeTool/constants.ts',
   },
   {
     id: 'reference.tool.exit_plan_mode',
@@ -106,7 +106,7 @@ const referenceToolMappedWithoutOracleAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/planModeTools.ts',
-    referencePath: 'E:/agent-anal/src/tools/ExitPlanModeTool/constants.ts',
+    referencePath: 'reference-src/tools/ExitPlanModeTool/constants.ts',
   },
   {
     id: 'reference.tool.enter_worktree',
@@ -117,7 +117,7 @@ const referenceToolMappedWithoutOracleAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/worktreeTools.ts',
-    referencePath: 'E:/agent-anal/src/tools/EnterWorktreeTool/constants.ts',
+    referencePath: 'reference-src/tools/EnterWorktreeTool/constants.ts',
   },
   {
     id: 'reference.tool.exit_worktree',
@@ -128,7 +128,7 @@ const referenceToolMappedWithoutOracleAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/worktreeTools.ts',
-    referencePath: 'E:/agent-anal/src/tools/ExitWorktreeTool/constants.ts',
+    referencePath: 'reference-src/tools/ExitWorktreeTool/constants.ts',
   },
   {
     id: 'reference.tool.send_message',
@@ -139,7 +139,7 @@ const referenceToolMappedWithoutOracleAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/sendMessageTool.ts; src/orchestration/agentTasks.ts',
-    referencePath: 'E:/agent-anal/src/tools/SendMessageTool/constants.ts',
+    referencePath: 'reference-src/tools/SendMessageTool/constants.ts',
   },
   {
     id: 'reference.tool.task_create',
@@ -150,7 +150,7 @@ const referenceToolMappedWithoutOracleAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/agentTaskTool.ts; src/orchestration/agentTasks.ts',
-    referencePath: 'E:/agent-anal/src/tools/TaskCreateTool/constants.ts',
+    referencePath: 'reference-src/tools/TaskCreateTool/constants.ts',
   },
   {
     id: 'reference.tool.task_get',
@@ -161,7 +161,7 @@ const referenceToolMappedWithoutOracleAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/agentTaskTool.ts; src/orchestration/agentTasks.ts',
-    referencePath: 'E:/agent-anal/src/tools/TaskGetTool/constants.ts',
+    referencePath: 'reference-src/tools/TaskGetTool/constants.ts',
   },
   {
     id: 'reference.tool.task_list',
@@ -172,7 +172,7 @@ const referenceToolMappedWithoutOracleAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/agentTaskTool.ts; src/orchestration/agentTasks.ts',
-    referencePath: 'E:/agent-anal/src/tools/TaskListTool/constants.ts',
+    referencePath: 'reference-src/tools/TaskListTool/constants.ts',
   },
   {
     id: 'reference.tool.task_output',
@@ -183,7 +183,7 @@ const referenceToolMappedWithoutOracleAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/agentTaskTool.ts; src/orchestration/agentTasks.ts',
-    referencePath: 'E:/agent-anal/src/tools/TaskOutputTool/constants.ts',
+    referencePath: 'reference-src/tools/TaskOutputTool/constants.ts',
   },
   {
     id: 'reference.tool.task_stop',
@@ -194,7 +194,7 @@ const referenceToolMappedWithoutOracleAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/agentTaskTool.ts; src/orchestration/agentTasks.ts',
-    referencePath: 'E:/agent-anal/src/tools/TaskStopTool/prompt.ts',
+    referencePath: 'reference-src/tools/TaskStopTool/prompt.ts',
   },
   {
     id: 'reference.tool.task_update',
@@ -205,7 +205,7 @@ const referenceToolMappedWithoutOracleAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/agentTaskTool.ts; src/orchestration/agentTasks.ts',
-    referencePath: 'E:/agent-anal/src/tools/TaskUpdateTool/constants.ts',
+    referencePath: 'reference-src/tools/TaskUpdateTool/constants.ts',
   },
   {
     id: 'reference.tool.team_create',
@@ -216,7 +216,7 @@ const referenceToolMappedWithoutOracleAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/teamTools.ts',
-    referencePath: 'E:/agent-anal/src/tools/TeamCreateTool/constants.ts',
+    referencePath: 'reference-src/tools/TeamCreateTool/constants.ts',
   },
   {
     id: 'reference.tool.team_delete',
@@ -227,7 +227,7 @@ const referenceToolMappedWithoutOracleAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/teamTools.ts',
-    referencePath: 'E:/agent-anal/src/tools/TeamDeleteTool/constants.ts',
+    referencePath: 'reference-src/tools/TeamDeleteTool/constants.ts',
   },
   {
     id: 'reference.tool.todo_write',
@@ -238,7 +238,7 @@ const referenceToolMappedWithoutOracleAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/runtimeTools.ts',
-    referencePath: 'E:/agent-anal/src/tools/TodoWriteTool/constants.ts',
+    referencePath: 'reference-src/tools/TodoWriteTool/constants.ts',
   },
 ];
 
@@ -254,7 +254,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     parityStatus: 'parity_ready',
     mappedTo: 'src/tools/agentTool.ts; src/tools/agentTaskTool.ts; src/orchestration/agentTasks.ts',
     referencePath:
-      'E:/agent-anal/src/tools/AgentTool/agentColorManager.ts; E:/agent-anal/src/tools/TaskCreateTool/constants.ts',
+      'reference-src/tools/AgentTool/agentColorManager.ts; reference-src/tools/TaskCreateTool/constants.ts',
     parityEvidence: {
       behaviorContractIds: ['tool.agent_task.lifecycle'],
       referenceOracleFixtures: ['tests/fixtures/parity/tool-agent-task-lifecycle.oracle.json'],
@@ -275,7 +275,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     parityStatus: 'parity_ready',
     mappedTo: 'src/tools/worktreeTools.ts; src/tools/worktreeSessionStore.ts; src/core/isolation/gitWorktree.ts',
     referencePath:
-      'E:/agent-anal/src/tools/EnterWorktreeTool/constants.ts; E:/agent-anal/src/tools/ExitWorktreeTool/constants.ts',
+      'reference-src/tools/EnterWorktreeTool/constants.ts; reference-src/tools/ExitWorktreeTool/constants.ts',
     parityEvidence: {
       behaviorContractIds: ['tool.worktree.lifecycle'],
       referenceOracleFixtures: ['tests/fixtures/parity/tool-worktree-lifecycle.oracle.json'],
@@ -296,7 +296,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     parityStatus: 'parity_ready',
     mappedTo: 'src/tools/planModeTools.ts; src/tools/planSessionStore.ts',
     referencePath:
-      'E:/agent-anal/src/tools/EnterPlanModeTool/constants.ts; E:/agent-anal/src/tools/ExitPlanModeTool/constants.ts',
+      'reference-src/tools/EnterPlanModeTool/constants.ts; reference-src/tools/ExitPlanModeTool/constants.ts',
     parityEvidence: {
       behaviorContractIds: ['tool.plan_mode.lifecycle'],
       referenceOracleFixtures: ['tests/fixtures/parity/tool-plan-mode-lifecycle.oracle.json'],
@@ -316,7 +316,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     parityStatus: 'parity_ready',
     mappedTo:
       'src/core/prompt/PromptComposer.ts; src/core/prompt/Section13PromptPack.ts; src/core/AgentRuntimeFactory.ts; src/providers/anthropicProvider.ts',
-    referencePath: 'E:/agent-anal/src/constants/prompts.ts',
+    referencePath: 'reference-src/constants/prompts.ts',
     parityEvidence: {
       behaviorContractIds: ['prompt.section13.trace'],
       referenceOracleFixtures: ['tests/fixtures/parity/prompt-section13.oracle.json'],
@@ -338,7 +338,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     parityStatus: 'parity_ready',
     mappedTo:
       'src/core/prompt/PromptComposer.ts; src/core/prompt/Section13PromptPack.ts; src/core/AgentRuntimeFactory.ts; src/providers/anthropicProvider.ts',
-    referencePath: 'E:/agent-anal/src/constants/prompts.ts',
+    referencePath: 'reference-src/constants/prompts.ts',
     parityEvidence: {
       behaviorContractIds: ['prompt.prompts.runtime_projection_cache'],
       referenceOracleFixtures: ['tests/fixtures/parity/prompt-prompts.oracle.json'],
@@ -359,7 +359,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'parity_ready',
     mappedTo: 'src/cli/slashCommands.ts; src/cli/main.ts; src/extensions/skills.ts',
-    referencePath: 'E:/agent-anal/src/utils/processUserInput/processSlashCommand.tsx',
+    referencePath: 'reference-src/utils/processUserInput/processSlashCommand.tsx',
     parityEvidence: {
       behaviorContractIds: ['cli.slash_commands.command_scope'],
       referenceOracleFixtures: ['tests/fixtures/parity/slash-command.oracle.json'],
@@ -379,7 +379,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'parity_ready',
     mappedTo: 'src/cli/help.ts; src/cli/main.ts',
-    referencePath: 'E:/agent-anal/src/commands/help/help.tsx',
+    referencePath: 'reference-src/commands/help/help.tsx',
     parityEvidence: {
       behaviorContractIds: ['cli.command.help.explicit_route'],
       referenceOracleFixtures: ['tests/fixtures/parity/cli-basic.oracle.json'],
@@ -395,7 +395,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'parity_ready',
     mappedTo: 'src/cli/main.ts; src/config/loadConfig.ts',
-    referencePath: 'E:/agent-anal/src/commands/status/index.ts',
+    referencePath: 'reference-src/commands/status/index.ts',
     parityEvidence: {
       behaviorContractIds: ['cli.command.status.local_runtime_snapshot'],
       referenceOracleFixtures: ['tests/fixtures/parity/cli-basic.oracle.json'],
@@ -411,7 +411,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/doctor.ts; src/cli/main.ts; src/cli/help.ts',
-    referencePath: 'E:/agent-anal/src/commands/doctor/doctor.tsx',
+    referencePath: 'reference-src/commands/doctor/doctor.tsx',
   },
   {
     id: 'reference.cli.command.usage',
@@ -422,7 +422,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/usageCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/usage/usage.tsx',
+    referencePath: 'reference-src/commands/usage/usage.tsx',
   },
   {
     id: 'reference.cli.command.cost',
@@ -433,7 +433,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/usageCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/cost/cost.ts',
+    referencePath: 'reference-src/commands/cost/cost.ts',
   },
   {
     id: 'reference.cli.command.stats',
@@ -444,7 +444,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/usageCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/stats/stats.tsx',
+    referencePath: 'reference-src/commands/stats/stats.tsx',
   },
   {
     id: 'reference.cli.command.login',
@@ -455,7 +455,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/usageCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/login/login.tsx',
+    referencePath: 'reference-src/commands/login/login.tsx',
   },
   {
     id: 'reference.cli.command.logout',
@@ -466,7 +466,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/usageCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/logout/index.ts',
+    referencePath: 'reference-src/commands/logout/index.ts',
   },
   {
     id: 'reference.cli.command.rate_limit_options',
@@ -477,7 +477,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/usageCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/rate-limit-options/rate-limit-options.tsx',
+    referencePath: 'reference-src/commands/rate-limit-options/rate-limit-options.tsx',
   },
   {
     id: 'reference.cli.command.config',
@@ -488,7 +488,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/config/loadConfig.ts',
-    referencePath: 'E:/agent-anal/src/commands/config/config.tsx',
+    referencePath: 'reference-src/commands/config/config.tsx',
   },
   {
     id: 'reference.cli.command.model',
@@ -499,7 +499,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/config/loadConfig.ts',
-    referencePath: 'E:/agent-anal/src/commands/model/index.ts',
+    referencePath: 'reference-src/commands/model/index.ts',
   },
   {
     id: 'reference.cli.command.env',
@@ -510,7 +510,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/config/loadConfig.ts; src/providers/registry.ts',
-    referencePath: 'E:/agent-anal/src/commands/env/index.js',
+    referencePath: 'reference-src/commands/env/index.js',
   },
   {
     id: 'reference.cli.command.effort',
@@ -521,7 +521,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/config/loadConfig.ts',
-    referencePath: 'E:/agent-anal/src/commands/effort/effort.tsx',
+    referencePath: 'reference-src/commands/effort/effort.tsx',
   },
   {
     id: 'reference.cli.command.plan',
@@ -532,7 +532,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/core/AgentRuntimeFactory.ts',
-    referencePath: 'E:/agent-anal/src/commands/plan/index.ts',
+    referencePath: 'reference-src/commands/plan/index.ts',
   },
   {
     id: 'reference.cli.command.ultraplan',
@@ -543,7 +543,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/modePromptCommands.ts; src/cli/main.ts; src/cli/help.ts',
-    referencePath: 'E:/agent-anal/src/commands/ultraplan.tsx',
+    referencePath: 'reference-src/commands/ultraplan.tsx',
   },
   {
     id: 'reference.cli.command.fast',
@@ -554,7 +554,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/modePromptCommands.ts; src/cli/main.ts; src/cli/help.ts',
-    referencePath: 'E:/agent-anal/src/commands/fast/fast.tsx',
+    referencePath: 'reference-src/commands/fast/fast.tsx',
   },
   {
     id: 'reference.cli.command.thinkback',
@@ -565,7 +565,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/modePromptCommands.ts; src/cli/main.ts; src/cli/help.ts',
-    referencePath: 'E:/agent-anal/src/commands/thinkback/index.ts',
+    referencePath: 'reference-src/commands/thinkback/index.ts',
   },
   {
     id: 'reference.cli.command.thinkback_play',
@@ -576,7 +576,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/modePromptCommands.ts; src/cli/main.ts; src/cli/help.ts',
-    referencePath: 'E:/agent-anal/src/commands/thinkback-play/index.ts',
+    referencePath: 'reference-src/commands/thinkback-play/index.ts',
   },
   {
     id: 'reference.cli.command.init',
@@ -587,7 +587,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/setupPolicyCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/init.ts',
+    referencePath: 'reference-src/commands/init.ts',
   },
   {
     id: 'reference.cli.command.init_verifiers',
@@ -598,7 +598,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/setupPolicyCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/init-verifiers.ts',
+    referencePath: 'reference-src/commands/init-verifiers.ts',
   },
   {
     id: 'reference.cli.command.install',
@@ -609,7 +609,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/setupPolicyCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/install.tsx',
+    referencePath: 'reference-src/commands/install.tsx',
   },
   {
     id: 'reference.cli.command.install_github_app',
@@ -621,7 +621,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/setupPolicyCommands.ts',
     referencePath:
-      'E:/agent-anal/src/commands/install-github-app/index.ts; E:/agent-anal/src/commands/install-github-app/ApiKeyStep.tsx',
+      'reference-src/commands/install-github-app/index.ts; reference-src/commands/install-github-app/ApiKeyStep.tsx',
   },
   {
     id: 'reference.cli.command.install_slack_app',
@@ -632,7 +632,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/setupPolicyCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/install-slack-app/index.ts',
+    referencePath: 'reference-src/commands/install-slack-app/index.ts',
   },
   {
     id: 'reference.cli.command.oauth_refresh',
@@ -643,7 +643,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/setupPolicyCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/oauth-refresh/index.js',
+    referencePath: 'reference-src/commands/oauth-refresh/index.js',
   },
   {
     id: 'reference.cli.command.onboarding',
@@ -654,7 +654,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/setupPolicyCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/onboarding/index.js',
+    referencePath: 'reference-src/commands/onboarding/index.js',
   },
   {
     id: 'reference.cli.command.passes',
@@ -665,7 +665,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/setupPolicyCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/passes/index.ts',
+    referencePath: 'reference-src/commands/passes/index.ts',
   },
   {
     id: 'reference.cli.command.permissions',
@@ -676,7 +676,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts',
-    referencePath: 'E:/agent-anal/src/commands/permissions/index.ts',
+    referencePath: 'reference-src/commands/permissions/index.ts',
   },
   {
     id: 'reference.cli.command.hooks',
@@ -687,7 +687,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/hooks/index.ts',
-    referencePath: 'E:/agent-anal/src/commands/hooks/hooks.tsx',
+    referencePath: 'reference-src/commands/hooks/hooks.tsx',
   },
   {
     id: 'reference.cli.command.privacy_settings',
@@ -698,7 +698,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/setupPolicyCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/privacy-settings/index.ts',
+    referencePath: 'reference-src/commands/privacy-settings/index.ts',
   },
   {
     id: 'reference.cli.command.sandbox_toggle',
@@ -709,7 +709,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/setupPolicyCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/sandbox-toggle/index.ts',
+    referencePath: 'reference-src/commands/sandbox-toggle/index.ts',
   },
   {
     id: 'reference.cli.command.memory',
@@ -720,7 +720,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/extensions/memory.ts',
-    referencePath: 'E:/agent-anal/src/commands/memory/index.ts',
+    referencePath: 'reference-src/commands/memory/index.ts',
   },
   {
     id: 'reference.cli.command.tasks',
@@ -731,7 +731,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/orchestration/index.ts',
-    referencePath: 'E:/agent-anal/src/commands/tasks/index.ts',
+    referencePath: 'reference-src/commands/tasks/index.ts',
   },
   {
     id: 'reference.cli.command.upgrade',
@@ -742,7 +742,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/setupPolicyCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/upgrade/index.ts',
+    referencePath: 'reference-src/commands/upgrade/index.ts',
   },
   {
     id: 'reference.cli.command.clear',
@@ -753,7 +753,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/preferenceCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/clear/caches.ts',
+    referencePath: 'reference-src/commands/clear/caches.ts',
   },
   {
     id: 'reference.cli.command.color',
@@ -764,7 +764,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/preferenceCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/color/color.ts',
+    referencePath: 'reference-src/commands/color/color.ts',
   },
   {
     id: 'reference.cli.command.theme',
@@ -775,7 +775,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/preferenceCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/theme/index.ts',
+    referencePath: 'reference-src/commands/theme/index.ts',
   },
   {
     id: 'reference.cli.command.vim',
@@ -786,7 +786,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/preferenceCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/vim/index.ts',
+    referencePath: 'reference-src/commands/vim/index.ts',
   },
   {
     id: 'reference.cli.command.keybindings',
@@ -797,7 +797,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/preferenceCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/keybindings/index.ts',
+    referencePath: 'reference-src/commands/keybindings/index.ts',
   },
   {
     id: 'reference.cli.command.statusline',
@@ -808,7 +808,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/preferenceCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/statusline.tsx',
+    referencePath: 'reference-src/commands/statusline.tsx',
   },
   {
     id: 'reference.cli.command.output_style',
@@ -819,7 +819,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/preferenceCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/output-style/index.ts',
+    referencePath: 'reference-src/commands/output-style/index.ts',
   },
   {
     id: 'reference.cli.command.exit',
@@ -830,7 +830,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/preferenceCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/exit/exit.tsx',
+    referencePath: 'reference-src/commands/exit/exit.tsx',
   },
   {
     id: 'reference.cli.command.bridge',
@@ -841,7 +841,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/remoteBridgeCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/bridge/bridge.tsx',
+    referencePath: 'reference-src/commands/bridge/bridge.tsx',
   },
   {
     id: 'reference.cli.command.bridge_kick',
@@ -852,7 +852,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/remoteBridgeCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/bridge-kick.ts',
+    referencePath: 'reference-src/commands/bridge-kick.ts',
   },
   {
     id: 'reference.cli.command.chrome',
@@ -863,7 +863,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/remoteBridgeCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/chrome/chrome.tsx',
+    referencePath: 'reference-src/commands/chrome/chrome.tsx',
   },
   {
     id: 'reference.cli.command.desktop',
@@ -874,7 +874,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/remoteBridgeCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/desktop/desktop.tsx',
+    referencePath: 'reference-src/commands/desktop/desktop.tsx',
   },
   {
     id: 'reference.cli.command.mobile',
@@ -885,7 +885,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/remoteBridgeCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/mobile/index.ts',
+    referencePath: 'reference-src/commands/mobile/index.ts',
   },
   {
     id: 'reference.cli.command.teleport',
@@ -896,7 +896,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/remoteBridgeCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/teleport/index.js',
+    referencePath: 'reference-src/commands/teleport/index.js',
   },
   {
     id: 'reference.cli.command.remote_env',
@@ -907,7 +907,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/remoteBridgeCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/remote-env/index.ts',
+    referencePath: 'reference-src/commands/remote-env/index.ts',
   },
   {
     id: 'reference.cli.command.remote_setup',
@@ -918,7 +918,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/remoteBridgeCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/remote-setup/api.ts',
+    referencePath: 'reference-src/commands/remote-setup/api.ts',
   },
   {
     id: 'reference.cli.command.terminal_setup',
@@ -929,7 +929,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/remoteBridgeCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/terminalSetup/index.ts',
+    referencePath: 'reference-src/commands/terminalSetup/index.ts',
   },
   {
     id: 'reference.cli.command.ide',
@@ -940,7 +940,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/remoteBridgeCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/ide/ide.tsx',
+    referencePath: 'reference-src/commands/ide/ide.tsx',
   },
   {
     id: 'reference.cli.command.voice',
@@ -951,7 +951,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/remoteBridgeCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/voice/index.ts',
+    referencePath: 'reference-src/commands/voice/index.ts',
   },
   {
     id: 'reference.cli.command.version',
@@ -962,7 +962,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'parity_ready',
     mappedTo: 'src/cli/main.ts; package.json',
-    referencePath: 'E:/agent-anal/src/commands/version.ts',
+    referencePath: 'reference-src/commands/version.ts',
     parityEvidence: {
       behaviorContractIds: ['cli.command.version.package_metadata'],
       referenceOracleFixtures: ['tests/fixtures/parity/cli-basic.oracle.json'],
@@ -978,7 +978,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/workspaceCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/files/files.ts',
+    referencePath: 'reference-src/commands/files/files.ts',
     parityEvidence: {
       behaviorContractIds: ['cli.command.files.local_workspace_listing'],
       referenceOracleFixtures: ['tests/fixtures/parity/cli-workspace-git.oracle.json'],
@@ -994,7 +994,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/workspaceCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/diff/diff.tsx',
+    referencePath: 'reference-src/commands/diff/diff.tsx',
     parityEvidence: {
       behaviorContractIds: ['cli.command.diff.local_git_summary'],
       referenceOracleFixtures: ['tests/fixtures/parity/cli-workspace-git.oracle.json'],
@@ -1010,7 +1010,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/workspaceCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/branch/branch.ts',
+    referencePath: 'reference-src/commands/branch/branch.ts',
     parityEvidence: {
       behaviorContractIds: ['cli.command.branch.local_git_head'],
       referenceOracleFixtures: ['tests/fixtures/parity/cli-workspace-git.oracle.json'],
@@ -1026,7 +1026,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/workspaceCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/add-dir/add-dir.tsx',
+    referencePath: 'reference-src/commands/add-dir/add-dir.tsx',
     parityEvidence: {
       behaviorContractIds: ['cli.command.add_dir.local_directory_validation'],
       referenceOracleFixtures: ['tests/fixtures/parity/cli-workspace-git.oracle.json'],
@@ -1042,7 +1042,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'parity_ready',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/workspaceCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/commit.ts',
+    referencePath: 'reference-src/commands/commit.ts',
     parityEvidence: {
       behaviorContractIds: ['cli.command.commit.prompt_handoff'],
       referenceOracleFixtures: ['tests/fixtures/parity/cli-workspace-git.oracle.json'],
@@ -1058,7 +1058,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/reviewCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/review/reviewRemote.ts',
+    referencePath: 'reference-src/commands/review/reviewRemote.ts',
   },
   {
     id: 'reference.cli.command.security_review',
@@ -1069,7 +1069,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/reviewCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/security-review.ts',
+    referencePath: 'reference-src/commands/security-review.ts',
   },
   {
     id: 'reference.cli.command.perf_issue',
@@ -1080,7 +1080,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/reviewCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/perf-issue/index.js',
+    referencePath: 'reference-src/commands/perf-issue/index.js',
   },
   {
     id: 'reference.cli.command.bughunter',
@@ -1091,7 +1091,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/reviewCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/bughunter/index.js',
+    referencePath: 'reference-src/commands/bughunter/index.js',
   },
   {
     id: 'reference.cli.command.autofix_pr',
@@ -1102,7 +1102,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/reviewCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/autofix-pr/index.js',
+    referencePath: 'reference-src/commands/autofix-pr/index.js',
   },
   {
     id: 'reference.cli.command.issue',
@@ -1113,7 +1113,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/reviewCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/issue/index.js',
+    referencePath: 'reference-src/commands/issue/index.js',
   },
   {
     id: 'reference.cli.command.pr_comments',
@@ -1124,7 +1124,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/reviewCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/pr_comments/index.ts',
+    referencePath: 'reference-src/commands/pr_comments/index.ts',
   },
   {
     id: 'reference.cli.command.commit_push_pr',
@@ -1135,7 +1135,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/reviewCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/commit-push-pr.ts',
+    referencePath: 'reference-src/commands/commit-push-pr.ts',
   },
   {
     id: 'reference.cli.command.advisor',
@@ -1146,7 +1146,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/reviewCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/advisor.ts',
+    referencePath: 'reference-src/commands/advisor.ts',
   },
   {
     id: 'reference.cli.command.agents',
@@ -1157,7 +1157,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/cli/reviewCommands.ts',
-    referencePath: 'E:/agent-anal/src/commands/agents/agents.tsx',
+    referencePath: 'reference-src/commands/agents/agents.tsx',
   },
   {
     id: 'reference.cli.command.session',
@@ -1168,7 +1168,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'parity_ready',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/sessions/history.ts',
-    referencePath: 'E:/agent-anal/src/commands/session/index.ts',
+    referencePath: 'reference-src/commands/session/index.ts',
     parityEvidence: {
       behaviorContractIds: ['cli.command.session.bounded_local_session_routing'],
       referenceOracleFixtures: ['tests/fixtures/parity/cli-session.oracle.json'],
@@ -1188,7 +1188,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'parity_ready',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/sessions/history.ts',
-    referencePath: 'E:/agent-anal/src/commands/resume/index.ts',
+    referencePath: 'reference-src/commands/resume/index.ts',
     parityEvidence: {
       behaviorContractIds: ['cli.command.resume.bounded_local_session_routing'],
       referenceOracleFixtures: ['tests/fixtures/parity/cli-session.oracle.json'],
@@ -1208,7 +1208,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'parity_ready',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/sessions/history.ts',
-    referencePath: 'E:/agent-anal/src/commands/compact/compact.ts',
+    referencePath: 'reference-src/commands/compact/compact.ts',
     parityEvidence: {
       behaviorContractIds: ['cli.command.compact.bounded_local_session_routing'],
       referenceOracleFixtures: ['tests/fixtures/parity/cli-session.oracle.json'],
@@ -1228,7 +1228,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'parity_ready',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/sessions/history.ts',
-    referencePath: 'E:/agent-anal/src/commands/rewind/index.ts',
+    referencePath: 'reference-src/commands/rewind/index.ts',
     parityEvidence: {
       behaviorContractIds: ['cli.command.rewind.bounded_local_session_routing'],
       referenceOracleFixtures: ['tests/fixtures/parity/cli-session.oracle.json'],
@@ -1248,7 +1248,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/contentCommands.ts; src/cli/main.ts; src/cli/help.ts',
-    referencePath: 'E:/agent-anal/src/commands/brief.ts',
+    referencePath: 'reference-src/commands/brief.ts',
   },
   {
     id: 'reference.cli.command.copy',
@@ -1259,7 +1259,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/contentCommands.ts; src/cli/main.ts; src/cli/help.ts',
-    referencePath: 'E:/agent-anal/src/commands/copy/copy.tsx',
+    referencePath: 'reference-src/commands/copy/copy.tsx',
   },
   {
     id: 'reference.cli.command.export',
@@ -1270,7 +1270,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/contentCommands.ts; src/cli/main.ts; src/cli/help.ts',
-    referencePath: 'E:/agent-anal/src/commands/export/export.tsx',
+    referencePath: 'reference-src/commands/export/export.tsx',
   },
   {
     id: 'reference.cli.command.share',
@@ -1281,7 +1281,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/contentCommands.ts; src/cli/main.ts; src/cli/help.ts; src/artifacts/index.ts',
-    referencePath: 'E:/agent-anal/src/commands/share/index.js',
+    referencePath: 'reference-src/commands/share/index.js',
   },
   {
     id: 'reference.cli.command.summary',
@@ -1292,7 +1292,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/contentCommands.ts; src/cli/main.ts; src/cli/help.ts; src/sessions/history.ts',
-    referencePath: 'E:/agent-anal/src/commands/summary/index.js',
+    referencePath: 'reference-src/commands/summary/index.js',
   },
   {
     id: 'reference.cli.command.rename',
@@ -1303,7 +1303,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/contentCommands.ts; src/cli/main.ts; src/cli/help.ts',
-    referencePath: 'E:/agent-anal/src/commands/rename/generateSessionName.ts',
+    referencePath: 'reference-src/commands/rename/generateSessionName.ts',
   },
   {
     id: 'reference.cli.command.tag',
@@ -1314,7 +1314,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/contentCommands.ts; src/cli/main.ts; src/cli/help.ts',
-    referencePath: 'E:/agent-anal/src/commands/tag/index.ts',
+    referencePath: 'reference-src/commands/tag/index.ts',
   },
   {
     id: 'reference.cli.command.context',
@@ -1325,7 +1325,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/context/index.ts',
-    referencePath: 'E:/agent-anal/src/commands/context/context-noninteractive.ts',
+    referencePath: 'reference-src/commands/context/context-noninteractive.ts',
   },
   {
     id: 'reference.cli.command.ctx_viz',
@@ -1336,7 +1336,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/contentCommands.ts; src/cli/main.ts; src/cli/help.ts; src/context/index.ts',
-    referencePath: 'E:/agent-anal/src/commands/ctx_viz/index.js',
+    referencePath: 'reference-src/commands/ctx_viz/index.js',
   },
   {
     id: 'reference.cli.command.btw',
@@ -1347,7 +1347,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/miscCompatibilityCommands.ts; src/cli/main.ts; src/cli/help.ts',
-    referencePath: 'E:/agent-anal/src/commands/btw/btw.tsx',
+    referencePath: 'reference-src/commands/btw/btw.tsx',
   },
   {
     id: 'reference.cli.command.create_moved_to_plugin_command',
@@ -1358,7 +1358,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/miscCompatibilityCommands.ts; src/cli/main.ts; src/cli/help.ts',
-    referencePath: 'E:/agent-anal/src/commands/createMovedToPluginCommand.ts',
+    referencePath: 'reference-src/commands/createMovedToPluginCommand.ts',
   },
   {
     id: 'reference.cli.command.feedback',
@@ -1369,7 +1369,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/miscCompatibilityCommands.ts; src/cli/main.ts; src/cli/help.ts',
-    referencePath: 'E:/agent-anal/src/commands/feedback/feedback.tsx',
+    referencePath: 'reference-src/commands/feedback/feedback.tsx',
   },
   {
     id: 'reference.cli.command.stickers',
@@ -1380,7 +1380,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/miscCompatibilityCommands.ts; src/cli/main.ts; src/cli/help.ts',
-    referencePath: 'E:/agent-anal/src/commands/stickers/index.ts',
+    referencePath: 'reference-src/commands/stickers/index.ts',
   },
   {
     id: 'reference.cli.command.ant_trace',
@@ -1391,7 +1391,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/diagnosticCommands.ts; src/cli/main.ts; src/cli/help.ts',
-    referencePath: 'E:/agent-anal/src/commands/ant-trace/index.js',
+    referencePath: 'reference-src/commands/ant-trace/index.js',
   },
   {
     id: 'reference.cli.command.backfill_sessions',
@@ -1402,7 +1402,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/diagnosticCommands.ts; src/cli/main.ts; src/cli/help.ts',
-    referencePath: 'E:/agent-anal/src/commands/backfill-sessions/index.js',
+    referencePath: 'reference-src/commands/backfill-sessions/index.js',
   },
   {
     id: 'reference.cli.command.break_cache',
@@ -1413,7 +1413,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/diagnosticCommands.ts; src/cli/main.ts; src/cli/help.ts',
-    referencePath: 'E:/agent-anal/src/commands/break-cache/index.js',
+    referencePath: 'reference-src/commands/break-cache/index.js',
   },
   {
     id: 'reference.cli.command.debug_tool_call',
@@ -1424,7 +1424,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/diagnosticCommands.ts; src/cli/main.ts; src/cli/help.ts',
-    referencePath: 'E:/agent-anal/src/commands/debug-tool-call/index.js',
+    referencePath: 'reference-src/commands/debug-tool-call/index.js',
   },
   {
     id: 'reference.cli.command.heapdump',
@@ -1435,7 +1435,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/diagnosticCommands.ts; src/cli/main.ts; src/cli/help.ts',
-    referencePath: 'E:/agent-anal/src/commands/heapdump/heapdump.ts',
+    referencePath: 'reference-src/commands/heapdump/heapdump.ts',
   },
   {
     id: 'reference.cli.command.insights',
@@ -1446,7 +1446,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/diagnosticCommands.ts; src/cli/main.ts; src/cli/help.ts',
-    referencePath: 'E:/agent-anal/src/commands/insights.ts',
+    referencePath: 'reference-src/commands/insights.ts',
   },
   {
     id: 'reference.cli.command.mock_limits',
@@ -1457,7 +1457,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/diagnosticCommands.ts; src/cli/main.ts; src/cli/help.ts',
-    referencePath: 'E:/agent-anal/src/commands/mock-limits/index.js',
+    referencePath: 'reference-src/commands/mock-limits/index.js',
   },
   {
     id: 'reference.cli.command.reset_limits',
@@ -1468,7 +1468,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/diagnosticCommands.ts; src/cli/main.ts; src/cli/help.ts',
-    referencePath: 'E:/agent-anal/src/commands/reset-limits/index.js',
+    referencePath: 'reference-src/commands/reset-limits/index.js',
   },
   {
     id: 'reference.cli.command.extra_usage',
@@ -1479,7 +1479,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/diagnosticCommands.ts; src/cli/main.ts; src/cli/help.ts',
-    referencePath: 'E:/agent-anal/src/commands/extra-usage/extra-usage-core.ts',
+    referencePath: 'reference-src/commands/extra-usage/extra-usage-core.ts',
   },
   {
     id: 'reference.cli.command.good_claude',
@@ -1490,7 +1490,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/diagnosticCommands.ts; src/cli/main.ts; src/cli/help.ts',
-    referencePath: 'E:/agent-anal/src/commands/good-claude/index.js',
+    referencePath: 'reference-src/commands/good-claude/index.js',
   },
   {
     id: 'reference.cli.command.release_notes',
@@ -1501,7 +1501,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/cli/diagnosticCommands.ts; src/cli/main.ts; src/cli/help.ts',
-    referencePath: 'E:/agent-anal/src/commands/release-notes/index.ts',
+    referencePath: 'reference-src/commands/release-notes/index.ts',
   },
   {
     id: 'reference.cli.command.plugin',
@@ -1512,7 +1512,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'parity_ready',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/extensions/plugins.ts',
-    referencePath: 'E:/agent-anal/src/commands/plugin/AddMarketplace.tsx',
+    referencePath: 'reference-src/commands/plugin/AddMarketplace.tsx',
     parityEvidence: {
       behaviorContractIds: ['cli.command.plugin.local_alias_lifecycle'],
       referenceOracleFixtures: ['tests/fixtures/parity/cli-extension.oracle.json'],
@@ -1528,7 +1528,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'parity_ready',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/extensions/skills.ts',
-    referencePath: 'E:/agent-anal/src/commands/skills/index.ts',
+    referencePath: 'reference-src/commands/skills/index.ts',
     parityEvidence: {
       behaviorContractIds: ['cli.command.skills.local_alias_registry'],
       referenceOracleFixtures: ['tests/fixtures/parity/cli-extension.oracle.json'],
@@ -1544,7 +1544,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'parity_ready',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/config/loadConfig.ts; src/extensions/mcp.ts',
-    referencePath: 'E:/agent-anal/src/commands/mcp/addCommand.ts',
+    referencePath: 'reference-src/commands/mcp/addCommand.ts',
     parityEvidence: {
       behaviorContractIds: ['cli.command.mcp.local_config_list'],
       referenceOracleFixtures: ['tests/fixtures/parity/cli-extension.oracle.json'],
@@ -1560,7 +1560,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'parity_ready',
     mappedTo: 'src/cli/main.ts; src/cli/help.ts; src/extensions/plugins.ts',
-    referencePath: 'E:/agent-anal/src/commands/reload-plugins/index.ts',
+    referencePath: 'reference-src/commands/reload-plugins/index.ts',
     parityEvidence: {
       behaviorContractIds: ['cli.command.reload_plugins.local_reload_alias'],
       referenceOracleFixtures: ['tests/fixtures/parity/cli-extension.oracle.json'],
@@ -1576,7 +1576,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     parityStatus: 'parity_ready',
     mappedTo:
       'src/core/input/InputNormalizer.ts; src/cli/main.ts; src/cli/slashCommands.ts; src/core/AgentRunPipeline.ts',
-    referencePath: 'E:/agent-anal/src/utils/processUserInput/processUserInput.ts',
+    referencePath: 'reference-src/utils/processUserInput/processUserInput.ts',
     parityEvidence: {
       behaviorContractIds: ['input.processing.normalization'],
       referenceOracleFixtures: ['tests/fixtures/parity/input-processing.oracle.json'],
@@ -1597,7 +1597,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'parity_ready',
     mappedTo: 'src/core/input/InputNormalizer.ts',
-    referencePath: 'E:/agent-anal/src/utils/processUserInput/processBashCommand.tsx',
+    referencePath: 'reference-src/utils/processUserInput/processBashCommand.tsx',
     parityEvidence: {
       behaviorContractIds: ['input.process_user_input.bash_output_mapping'],
       referenceOracleFixtures: ['tests/fixtures/parity/input-process-user-input.oracle.json'],
@@ -1613,7 +1613,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'parity_ready',
     mappedTo: 'src/config/loadConfig.ts; src/config/profiles.ts; src/core/config/RuntimeConfigSnapshot.ts',
-    referencePath: 'E:/agent-anal/src/utils/config.ts',
+    referencePath: 'reference-src/utils/config.ts',
     parityEvidence: {
       behaviorContractIds: ['config.core.layered_snapshot_validation'],
       referenceOracleFixtures: ['tests/fixtures/parity/config-core.oracle.json'],
@@ -1634,7 +1634,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'parity_ready',
     mappedTo: 'src/providers/queryConfig.ts; src/providers/types.ts; src/core/AgentRunner.ts',
-    referencePath: 'E:/agent-anal/src/query/config.ts',
+    referencePath: 'reference-src/query/config.ts',
     parityEvidence: {
       behaviorContractIds: ['provider.query.request_projection'],
       referenceOracleFixtures: ['tests/fixtures/parity/provider-query.oracle.json'],
@@ -1653,7 +1653,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'parity_ready',
     mappedTo: 'src/core/providerFailurePolicy.ts; src/core/AgentRunner.ts; src/config/loadConfig.ts',
-    referencePath: 'E:/agent-anal/src/query.ts',
+    referencePath: 'reference-src/query.ts',
     parityEvidence: {
       behaviorContractIds: ['provider.retry_budget.recovery'],
       referenceOracleFixtures: ['tests/fixtures/parity/provider-retry-budget.oracle.json'],
@@ -1673,7 +1673,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'parity_ready',
     mappedTo: 'src/extensions/plugins.ts; src/cli/main.ts; src/cli/help.ts',
-    referencePath: 'E:/agent-anal/src/commands.ts',
+    referencePath: 'reference-src/commands.ts',
     parityEvidence: {
       behaviorContractIds: ['plugin.lifecycle.state_cache_diagnostics'],
       referenceOracleFixtures: ['tests/fixtures/parity/plugin-lifecycle.oracle.json'],
@@ -1693,7 +1693,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'parity_ready',
     mappedTo: 'src/extensions/plugins.ts; src/extensions/skills.ts; src/extensions/types.ts',
-    referencePath: 'E:/agent-anal/src/plugins/builtinPlugins.ts',
+    referencePath: 'reference-src/plugins/builtinPlugins.ts',
     parityEvidence: {
       behaviorContractIds: ['plugin.runtime.builtin_visibility', 'plugin.runtime.bundled_skill_projection'],
       referenceOracleFixtures: ['tests/fixtures/parity/plugin-runtime.oracle.json'],
@@ -1710,7 +1710,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     parityStatus: 'parity_ready',
     mappedTo: 'src/extensions/skills.ts; src/extensions/types.ts',
     referencePath:
-      'E:/agent-anal/src/skills/bundled/batch.ts; E:/agent-anal/src/skills/bundledSkills.ts; E:/agent-anal/src/skills/loadSkillsDir.ts',
+      'reference-src/skills/bundled/batch.ts; reference-src/skills/bundledSkills.ts; reference-src/skills/loadSkillsDir.ts',
     parityEvidence: {
       behaviorContractIds: ['plugin.skills.bundled_batch_prompt', 'plugin.skills.bundled_files'],
       referenceOracleFixtures: ['tests/fixtures/parity/plugin-skills.oracle.json'],
@@ -1726,7 +1726,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'parity_ready',
     mappedTo: 'src/sessions/history.ts; src/sessions/JsonlSessionWriter.ts; src/cli/main.ts; src/core/AgentRunner.ts',
-    referencePath: 'E:/agent-anal/src/assistant/sessionHistory.ts',
+    referencePath: 'reference-src/assistant/sessionHistory.ts',
     parityEvidence: {
       behaviorContractIds: ['replay.session_messages.jsonl_remote_compact'],
       referenceOracleFixtures: ['tests/fixtures/parity/replay-session-messages.oracle.json'],
@@ -1748,7 +1748,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'parity_ready',
     mappedTo: 'src/api/headless.ts; src/api/embedded.ts; src/core/AgentRunPipeline.ts',
-    referencePath: 'E:/agent-anal/src/entrypoints/sdk/controlSchemas.ts',
+    referencePath: 'reference-src/entrypoints/sdk/controlSchemas.ts',
     parityEvidence: {
       behaviorContractIds: ['sdk.entrypoints.headless_embedded_pipeline'],
       referenceOracleFixtures: ['tests/fixtures/parity/sdk-entrypoints.oracle.json'],
@@ -1769,7 +1769,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'parity_ready',
     mappedTo: 'src/core/messages.ts',
-    referencePath: 'E:/agent-anal/src/utils/messages.ts',
+    referencePath: 'reference-src/utils/messages.ts',
     parityEvidence: {
       behaviorContractIds: ['replay.corrupt_repair.tool_result_pairing'],
       referenceOracleFixtures: ['tests/fixtures/parity/replay-corrupt-repair.oracle.json'],
@@ -1786,7 +1786,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     parityStatus: 'parity_ready',
     mappedTo:
       'src/db/startupImports.ts; src/channels/SqliteChannelSessionStore.ts; src/evaluation/replay/LegacySessionMigrationReplay.ts',
-    referencePath: 'E:/agent-anal/src/assistant/sessionHistory.ts',
+    referencePath: 'reference-src/assistant/sessionHistory.ts',
     parityEvidence: {
       behaviorContractIds: ['replay.legacy_session_migration.channel_sessions_sqlite'],
       referenceOracleFixtures: ['tests/fixtures/parity/legacy-session-migration.oracle.json'],
@@ -1802,7 +1802,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/shellTool.ts',
-    referencePath: 'E:/agent-anal/src/tools/BashTool/bashCommandHelpers.ts',
+    referencePath: 'reference-src/tools/BashTool/bashCommandHelpers.ts',
   },
   {
     id: 'reference.tool.power_shell',
@@ -1813,7 +1813,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/shellTool.ts',
-    referencePath: 'E:/agent-anal/src/tools/PowerShellTool/clmTypes.ts',
+    referencePath: 'reference-src/tools/PowerShellTool/clmTypes.ts',
   },
   {
     id: 'reference.tool.config',
@@ -1824,7 +1824,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/configTool.ts',
-    referencePath: 'E:/agent-anal/src/tools/ConfigTool/ConfigTool.ts',
+    referencePath: 'reference-src/tools/ConfigTool/ConfigTool.ts',
   },
   {
     id: 'reference.tool.file_read',
@@ -1835,7 +1835,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/fileTools.ts',
-    referencePath: 'E:/agent-anal/src/tools/FileReadTool/FileReadTool.ts',
+    referencePath: 'reference-src/tools/FileReadTool/FileReadTool.ts',
   },
   {
     id: 'reference.tool.file_write',
@@ -1846,7 +1846,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/fileTools.ts',
-    referencePath: 'E:/agent-anal/src/tools/FileWriteTool/FileWriteTool.ts',
+    referencePath: 'reference-src/tools/FileWriteTool/FileWriteTool.ts',
   },
   {
     id: 'reference.tool.file_edit',
@@ -1857,7 +1857,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/fileTools.ts',
-    referencePath: 'E:/agent-anal/src/tools/FileEditTool/constants.ts',
+    referencePath: 'reference-src/tools/FileEditTool/constants.ts',
   },
   {
     id: 'reference.tool.file_edit.read_state_guard',
@@ -1868,7 +1868,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'parity_ready',
     mappedTo: 'src/tools/fileTools.ts',
-    referencePath: 'E:/agent-anal/src/tools/FileEditTool/constants.ts',
+    referencePath: 'reference-src/tools/FileEditTool/constants.ts',
     parityEvidence: {
       behaviorContractIds: ['tool.file_edit.read_state_guard'],
       referenceOracleFixtures: ['tests/fixtures/parity/tool-file-edit-read-state.oracle.json'],
@@ -1884,7 +1884,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/workspaceTools.ts',
-    referencePath: 'E:/agent-anal/src/tools/GlobTool/GlobTool.ts',
+    referencePath: 'reference-src/tools/GlobTool/GlobTool.ts',
   },
   {
     id: 'reference.tool.grep',
@@ -1895,7 +1895,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/searchTool.ts',
-    referencePath: 'E:/agent-anal/src/tools/GrepTool/GrepTool.ts',
+    referencePath: 'reference-src/tools/GrepTool/GrepTool.ts',
   },
   {
     id: 'reference.tool.lsp',
@@ -1906,7 +1906,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/lspTool.ts',
-    referencePath: 'E:/agent-anal/src/tools/LSPTool/formatters.ts',
+    referencePath: 'reference-src/tools/LSPTool/formatters.ts',
   },
   {
     id: 'reference.tool.notebook_edit',
@@ -1917,7 +1917,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/notebookEditTool.ts; src/tools/registry.ts',
-    referencePath: 'E:/agent-anal/src/tools/NotebookEditTool/constants.ts',
+    referencePath: 'reference-src/tools/NotebookEditTool/constants.ts',
   },
   {
     id: 'reference.tool.schedule_cron',
@@ -1928,7 +1928,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/scheduleCronTool.ts; src/orchestration/schedules.ts; src/orchestration/taskScheduler.ts',
-    referencePath: 'E:/agent-anal/src/tools/ScheduleCronTool/CronCreateTool.ts',
+    referencePath: 'reference-src/tools/ScheduleCronTool/CronCreateTool.ts',
   },
   {
     id: 'reference.tool.sleep',
@@ -1939,7 +1939,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'intentionally_upgraded',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/sleepTool.ts; src/tools/registry.ts; src/core/AgentRunner.ts',
-    referencePath: 'E:/agent-anal/src/tools/SleepTool/prompt.ts',
+    referencePath: 'reference-src/tools/SleepTool/prompt.ts',
   },
   {
     id: 'reference.tool.synthetic_output',
@@ -1949,7 +1949,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
       'Reference-style synthetic output pseudo-tool is intentionally excluded. Xenesis should model structured artifact results through Agent/CR artifact capabilities instead of keeping a dormant provider-visible legacy structured-output tool.',
     status: 'intentionally_excluded',
     parityStatus: 'inventory_only',
-    referencePath: 'E:/agent-anal/src/tools/SyntheticOutputTool/SyntheticOutputTool.ts',
+    referencePath: 'reference-src/tools/SyntheticOutputTool/SyntheticOutputTool.ts',
   },
   {
     id: 'reference.tool.ask_user_question',
@@ -1960,7 +1960,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'parity_ready',
     mappedTo: 'src/tools/askTool.ts; src/tools/types.ts',
-    referencePath: 'E:/agent-anal/src/tools/AskUserQuestionTool/AskUserQuestionTool.tsx',
+    referencePath: 'reference-src/tools/AskUserQuestionTool/AskUserQuestionTool.tsx',
     parityEvidence: {
       behaviorContractIds: ['tool.ask_user_question.multiple_choice_interaction'],
       referenceOracleFixtures: ['tests/fixtures/parity/ask-user-question.oracle.json'],
@@ -1976,7 +1976,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'parity_ready',
     mappedTo: 'src/tools/toolSearchTool.ts; src/tools/types.ts',
-    referencePath: 'E:/agent-anal/src/tools/ToolSearchTool/ToolSearchTool.ts',
+    referencePath: 'reference-src/tools/ToolSearchTool/ToolSearchTool.ts',
     parityEvidence: {
       behaviorContractIds: ['tool.tool_search.deferred_schema_fetch'],
       referenceOracleFixtures: ['tests/fixtures/parity/tool-search.oracle.json'],
@@ -1992,7 +1992,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'parity_ready',
     mappedTo: 'src/tools/briefTool.ts; src/tools/registry.ts; src/tools/types.ts',
-    referencePath: 'E:/agent-anal/src/tools/BriefTool/attachments.ts',
+    referencePath: 'reference-src/tools/BriefTool/attachments.ts',
     parityEvidence: {
       behaviorContractIds: ['tool.brief.attachments_delivery'],
       referenceOracleFixtures: ['tests/fixtures/parity/reference-tools-wave1.oracle.json'],
@@ -2016,7 +2016,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
       'Reference-style MCP auth pseudo-tool is intentionally excluded from the built-in Agent tool package. MCP auth/connect work should be routed through Xenesis MCP/runtime setup capabilities instead of a provider-shaped pseudo-tool.',
     status: 'intentionally_excluded',
     parityStatus: 'inventory_only',
-    referencePath: 'E:/agent-anal/src/tools/McpAuthTool/McpAuthTool.ts',
+    referencePath: 'reference-src/tools/McpAuthTool/McpAuthTool.ts',
   },
   {
     id: 'reference.tool.remote_trigger',
@@ -2036,7 +2036,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'parity_ready',
     mappedTo: 'src/tools/replTool.ts',
-    referencePath: 'E:/agent-anal/src/tools/REPLTool/constants.ts',
+    referencePath: 'reference-src/tools/REPLTool/constants.ts',
     parityEvidence: {
       behaviorContractIds: ['tool.repl.mode_gate_hidden_tools'],
       referenceOracleFixtures: ['tests/fixtures/parity/reference-tools-wave1.oracle.json'],
@@ -2053,7 +2053,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     parityStatus: 'mapped_without_oracle',
     mappedTo:
       'src/tools/skillTool.ts; src/extensions/skills.ts; src/tools/registry.ts; src/core/AgentRunner.ts; src/core/AgentRunnerBuilder.ts',
-    referencePath: 'E:/agent-anal/src/tools/SkillTool/constants.ts',
+    referencePath: 'reference-src/tools/SkillTool/constants.ts',
   },
   {
     id: 'reference.mcp.entrypoint',
@@ -2064,7 +2064,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/extensions/mcp.ts',
-    referencePath: 'E:/agent-anal/src/entrypoints/mcp.ts',
+    referencePath: 'reference-src/entrypoints/mcp.ts',
   },
   {
     id: 'reference.mcp.runtime',
@@ -2076,7 +2076,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     parityStatus: 'mapped_without_oracle',
     mappedTo:
       'src/extensions/mcp.ts; src/core/AgentRuntimeFactory.ts; src/tools/toolSearchTool.ts; src/workflows/builtins.ts',
-    referencePath: 'E:/agent-anal/src/services/mcp/auth.ts',
+    referencePath: 'reference-src/services/mcp/auth.ts',
   },
   {
     id: 'reference.tool.list_mcp_resources',
@@ -2087,7 +2087,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/extensions/mcp.ts; src/core/AgentRuntimeFactory.ts; src/cli/main.ts',
-    referencePath: 'E:/agent-anal/src/tools/ListMcpResourcesTool/ListMcpResourcesTool.ts',
+    referencePath: 'reference-src/tools/ListMcpResourcesTool/ListMcpResourcesTool.ts',
   },
   {
     id: 'reference.tool.read_mcp_resource',
@@ -2098,7 +2098,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/extensions/mcp.ts; src/core/AgentRuntimeFactory.ts; src/cli/main.ts',
-    referencePath: 'E:/agent-anal/src/tools/ReadMcpResourceTool/prompt.ts',
+    referencePath: 'reference-src/tools/ReadMcpResourceTool/prompt.ts',
   },
   {
     id: 'reference.tool.mcp_resources.local_catalog',
@@ -2110,7 +2110,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     parityStatus: 'parity_ready',
     mappedTo: 'src/extensions/mcp.ts',
     referencePath:
-      'E:/agent-anal/src/tools/ListMcpResourcesTool/ListMcpResourcesTool.ts; E:/agent-anal/src/tools/ReadMcpResourceTool/prompt.ts',
+      'reference-src/tools/ListMcpResourcesTool/ListMcpResourcesTool.ts; reference-src/tools/ReadMcpResourceTool/prompt.ts',
     parityEvidence: {
       behaviorContractIds: ['tool.mcp_resources.local_catalog'],
       referenceOracleFixtures: ['tests/fixtures/parity/tool-mcp-resources.oracle.json'],
@@ -2126,7 +2126,7 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/webTools.ts; src/tools/registry.ts',
-    referencePath: 'E:/agent-anal/src/tools/WebFetchTool/preapproved.ts',
+    referencePath: 'reference-src/tools/WebFetchTool/preapproved.ts',
   },
   {
     id: 'reference.tool.web_search',
@@ -2137,11 +2137,11 @@ const referenceRequiredAnchors: SourceFeatureItem[] = [
     status: 'mapped',
     parityStatus: 'mapped_without_oracle',
     mappedTo: 'src/tools/webTools.ts; src/tools/registry.ts',
-    referencePath: 'E:/agent-anal/src/tools/WebSearchTool/prompt.ts',
+    referencePath: 'reference-src/tools/WebSearchTool/prompt.ts',
   },
 ];
 
-const referenceSourceRoot = 'E:/agent-anal/src';
+const referenceSourceRoot = 'reference-src';
 const referenceSourceExtensions = new Set(['.ts', '.tsx', '.js', '.jsx']);
 
 function normalizeReferenceRoot(referenceRoot: string): string {

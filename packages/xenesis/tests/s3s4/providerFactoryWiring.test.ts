@@ -169,10 +169,11 @@ describe('createProvider <-> registerProviderFactory wiring (Spec section 5)', (
 
   it('CLI provider construction delegates to the core provider factory', async () => {
     const source = await readFile(new URL('../../src/cli/main.ts', import.meta.url), 'utf8');
+    const runtimeFactoryImport = source.match(/import \{([^}]+)\} from ["']\.\.\/core\/AgentRuntimeFactory\.js["']/);
 
-    expect(source).toMatch(
-      /import \{ createProvider, resolveRuntimeMcpServers, type AgentRunMode \} from ["']\.\.\/core\/AgentRuntimeFactory\.js["']/,
-    );
+    expect(runtimeFactoryImport?.[1]).toContain('createProvider');
+    expect(runtimeFactoryImport?.[1]).toContain('resolveRuntimeMcpServers');
+    expect(runtimeFactoryImport?.[1]).toContain('type AgentRunMode');
     expect(source).toMatch(/provider:\s*\(\)\s*=>\s*createProvider\(config,\s*env\)/);
   });
 

@@ -13,7 +13,8 @@ test('linked approval action-needed records keep internals in refs only', () => 
       args: { path: 'E:\\secret' },
       source: 'mcp',
     }),
-    description: 'Capability requires approval for mcp: xd.apps.launch approvalRequired=true actionInboxItem.id=ain_secret',
+    description:
+      'Capability requires approval for mcp: xd.apps.launch approvalRequired=true actionInboxItem.id=ain_secret',
     source: 'Xenesis Desk Capability Registry',
     sessionId: 'xenesis-capability',
     approvalSessionKey: 'capability-always:mcp:xd.apps.launch:secret',
@@ -30,7 +31,14 @@ test('linked approval action-needed records keep internals in refs only', () => 
   assert.equal(actionNeeded.refs.approvalSessionKey, item.approvalSessionKey);
   assert.equal(actionNeeded.refs.capabilityPath, 'xd.apps.launch');
 
-  for (const internal of ['xd.apps.launch', 'E:\\secret', 'approvalRequired', 'actionInboxItem', 'ain_secret', item.id]) {
+  for (const internal of [
+    'xd.apps.launch',
+    'E:\\secret',
+    'approvalRequired',
+    'actionInboxItem',
+    'ain_secret',
+    item.id,
+  ]) {
     assert.equal(actionNeeded.productMessage.includes(internal), false, `${internal} should not be in product text`);
     assert.equal(actionNeeded.title.includes(internal), false, `${internal} should not be in title`);
   }

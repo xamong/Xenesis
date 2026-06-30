@@ -1,5 +1,5 @@
-import type { McpBridgeActionInboxItem, XenesisRunResult, XenesisStatus } from '../../../../shared/types';
 import type { AgentActionNeeded } from '../../../../shared/agentActionRecords';
+import type { McpBridgeActionInboxItem, XenesisRunResult, XenesisStatus } from '../../../../shared/types';
 import type { XenesisAgentAttachment } from './xenesisAgentAttachments';
 import type { XenesisDeskActionExecutionResult, XenesisDeskActionRequest } from './xenesisAgentDeskControl';
 import type { XenesisPolicyNotice, XenesisPolicySnapshot } from './xenesisPolicyNotices';

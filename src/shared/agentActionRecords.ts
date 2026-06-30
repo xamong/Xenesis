@@ -179,10 +179,7 @@ export function createAgentActionRecordStore(options: AgentActionRecordStoreOpti
     return { ok: true, actionNeeded: clonePlain(record), receipt };
   }
 
-  function dismissActionNeeded(
-    id: string,
-    input: AgentActionNeededDismissInput = {},
-  ): AgentActionRecordMutationResult {
+  function dismissActionNeeded(id: string, input: AgentActionNeededDismissInput = {}): AgentActionRecordMutationResult {
     const record = actionNeededRecords.find((item) => item.id === id);
     if (!record) return { ok: false, error: `Action-needed record not found: ${id}` };
     if (record.status !== 'open') return { ok: false, error: `Action-needed record is not open: ${id}` };

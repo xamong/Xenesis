@@ -1088,6 +1088,12 @@ export default function App() {
   const onboardingFolderPendingRef = useRef(false);
   const onboardingSampleWorkspacePathRef = useRef('');
   const onboardingWorkspaceProfilePathRef = useRef('');
+  const onboardingSettingsTargetRef = useRef({
+    category: '',
+    mode: '',
+    section: '',
+    focusConnectionDetail: '',
+  });
   const [terminalGroups, setTerminalGroups] = useState<TerminalProfileGroup[]>([]);
   const [remoteProfiles, setRemoteProfiles] = useState<RemoteTerminalProfile[]>([]);
   const [localProfiles, setLocalProfiles] = useState<LocalTerminalProfile[]>([]);
@@ -2670,6 +2676,12 @@ export default function App() {
 
   const openSettingsCategory = useCallback(
     (category: string) => {
+      onboardingSettingsTargetRef.current = {
+        category: String(category || '').trim(),
+        mode: '',
+        section: '',
+        focusConnectionDetail: '',
+      };
       openSettingsPane();
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent('settings-open-category', { detail: category }));
@@ -2692,6 +2704,13 @@ export default function App() {
       targetPaneId?: string | null;
     }) => {
       const { placement, targetPaneId, ...targetDetail } = target;
+      onboardingSettingsTargetRef.current = {
+        category: typeof targetDetail.category === 'string' ? targetDetail.category.trim() : '',
+        mode: typeof targetDetail.mode === 'string' ? targetDetail.mode.trim() : '',
+        section: typeof targetDetail.section === 'string' ? targetDetail.section.trim() : '',
+        focusConnectionDetail:
+          typeof targetDetail.focusConnectionDetail === 'string' ? targetDetail.focusConnectionDetail.trim() : '',
+      };
       openSettingsPane(placement, targetPaneId);
       const detail = {
         ...targetDetail,
@@ -4328,6 +4347,7 @@ export default function App() {
           contents: [...pane.contents],
           activeContentId: pane.activeContentId,
         })),
+        settingsTarget: onboardingSettingsTargetRef.current,
       };
     },
     [defaultCwd, engine, workspacePath],
@@ -4374,6 +4394,60 @@ export default function App() {
   const handleOnboardingOpenWorkspace = useCallback(() => {
     openSettingsCategory('workspace');
   }, [openSettingsCategory]);
+
+  const handleOnboardingOpenAiProviderSettings = useCallback(() => {
+    openSettingsTarget({ category: 'run-model', section: 'provider-connection', ensureVisible: true });
+  }, [openSettingsTarget]);
+
+  const handleOnboardingOpenProviderSetupPlan = useCallback(() => {
+    openSettingsTarget({
+      category: 'xenesis-agent',
+      mode: 'connections',
+      section: 'xenesis-connections',
+      focusConnectionDetail: 'provider-setup-plan',
+      ensureVisible: true,
+    });
+  }, [openSettingsTarget]);
+
+  const handleOnboardingOpenExternalToolSetup = useCallback(() => {
+    openSettingsTarget({
+      category: 'xenesis-agent',
+      mode: 'connections',
+      section: 'xenesis-connections',
+      focusConnectionDetail: 'tool-setup-plan',
+      ensureVisible: true,
+    });
+  }, [openSettingsTarget]);
+
+  const handleOnboardingOpenToolConnectors = useCallback(() => {
+    openSettingsTarget({
+      category: 'xenesis-agent',
+      mode: 'connections',
+      section: 'xenesis-connections',
+      focusConnectionDetail: 'tool-connector',
+      ensureVisible: true,
+    });
+  }, [openSettingsTarget]);
+
+  const handleOnboardingOpenMcpSetup = useCallback(() => {
+    openSettingsTarget({
+      category: 'xenesis-agent',
+      mode: 'connections',
+      section: 'xenesis-connections',
+      focusConnectionDetail: 'mcp-install-draft',
+      ensureVisible: true,
+    });
+  }, [openSettingsTarget]);
+
+  const handleOnboardingOpenMcpOauth = useCallback(() => {
+    openSettingsTarget({
+      category: 'xenesis-agent',
+      mode: 'connections',
+      section: 'xenesis-connections',
+      focusConnectionDetail: 'tool-mcp-oauth',
+      ensureVisible: true,
+    });
+  }, [openSettingsTarget]);
 
   const handleOnboardingOpenKeyboardShortcuts = useCallback(() => {
     openSettingsCategory('keyboard-shortcuts');
@@ -4505,17 +4579,12 @@ export default function App() {
         const result = await window.onboardingAPI.prepareSampleWorkspace();
         sampleWorkspacePath = result.path;
         await handleOnboardingUseWorkspacePath(sampleWorkspacePath);
-      } else if (normalizedStepId === 'open-terminal') {
-        createTerminalSession(defaultShell, sampleWorkspacePath ? { cwd: sampleWorkspacePath } : undefined);
-      } else if (normalizedStepId === 'open-file-preview') {
-        if (!sampleWorkspacePath) {
-          return { passed: false, ran: false, message: 'sampleWorkspacePath is required for open-file-preview.' };
-        }
-        await openFileByPath(getOnboardingSampleFilePath(sampleWorkspacePath, ONBOARDING_SAMPLE_WELCOME_FILE_NAME));
-      } else if (normalizedStepId === 'arrange-panes') {
-        handleOnboardingArrangePanes();
-      } else if (normalizedStepId === 'use-command-center') {
-        handleOnboardingOpenCommandCenter();
+      } else if (normalizedStepId === 'configure-ai-provider') {
+        handleOnboardingOpenProviderSetupPlan();
+      } else if (normalizedStepId === 'connect-external-tools') {
+        handleOnboardingOpenExternalToolSetup();
+      } else if (normalizedStepId === 'configure-mcp') {
+        handleOnboardingOpenMcpSetup();
       } else if (normalizedStepId === 'open-settings-diagnostics') {
         handleOnboardingOpenWorkspace();
         handleOnboardingOpenDiagnostics();
@@ -4540,6 +4609,9 @@ export default function App() {
       handleOnboardingArrangePanes,
       handleOnboardingOpenCommandCenter,
       handleOnboardingOpenDiagnostics,
+      handleOnboardingOpenExternalToolSetup,
+      handleOnboardingOpenMcpSetup,
+      handleOnboardingOpenProviderSetupPlan,
       handleOnboardingOpenWorkspace,
       handleOnboardingRestoreWorkspace,
       handleOnboardingSaveWorkspace,
@@ -7077,6 +7149,12 @@ export default function App() {
               onOnboardingOpenTerminal={handleOnboardingOpenTerminal}
               onOnboardingOpenFile={handleOnboardingOpenFile}
               onOnboardingOpenWorkspace={handleOnboardingOpenWorkspace}
+              onOnboardingOpenAiProviderSettings={handleOnboardingOpenAiProviderSettings}
+              onOnboardingOpenProviderSetupPlan={handleOnboardingOpenProviderSetupPlan}
+              onOnboardingOpenExternalToolSetup={handleOnboardingOpenExternalToolSetup}
+              onOnboardingOpenToolConnectors={handleOnboardingOpenToolConnectors}
+              onOnboardingOpenMcpSetup={handleOnboardingOpenMcpSetup}
+              onOnboardingOpenMcpOauth={handleOnboardingOpenMcpOauth}
               onOnboardingOpenKeyboardShortcuts={handleOnboardingOpenKeyboardShortcuts}
               onOnboardingOpenExtensions={handleOnboardingOpenExtensions}
               onOnboardingOpenDiagnostics={handleOnboardingOpenDiagnostics}

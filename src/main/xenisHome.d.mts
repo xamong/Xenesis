@@ -1,6 +1,6 @@
 export declare const XENIS_HOME_ENV = 'XENIS_HOME';
 export declare const XENIS_HOME_DIR_NAME = '.xenis';
-export declare const LEGACY_XAMONG_CODE_CONFIG_DIR = 'E:\\Xamong\\agent';
+export declare const LEGACY_XAMONG_CODE_CONFIG_DIR_ENV = 'XAMONG_CODE_LEGACY_CONFIG_DIRS';
 export declare const MIGRATABLE_USER_DATA_ITEMS: string[];
 
 export interface XenisHomeOptions {

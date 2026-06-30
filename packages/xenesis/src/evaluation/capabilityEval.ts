@@ -819,7 +819,7 @@ function toolOrderFailures(toolCalls: string[], requiredOrder: string[]) {
 
 function scenarioHasAcceptanceRequirements(scenario: CapabilityScenario) {
   return Boolean(
-      scenario.requiredProvider ||
+    scenario.requiredProvider ||
       scenario.requiredProcessModel ||
       (scenario.requiredAcceptanceToolCalls?.length ?? 0) > 0 ||
       (scenario.requiredCapabilityPaths?.length ?? 0) > 0 ||

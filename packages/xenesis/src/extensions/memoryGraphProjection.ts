@@ -3,11 +3,11 @@ import {
   classifyGraphitiMemoryRecordSensitivity,
   type GraphitiMemoryClient,
   type GraphitiMemoryConfig,
-  validateGraphitiMemoryConfig
-} from "./graphitiMemoryAdapter.js";
-import type { MemoryLedger } from "./MemoryLedger.js";
-import type { MemoryEvidenceRecord } from "./memoryTypes.js";
-import type { MemoryRecord } from "./types.js";
+  validateGraphitiMemoryConfig,
+} from './graphitiMemoryAdapter.js';
+import type { MemoryLedger } from './MemoryLedger.js';
+import type { MemoryEvidenceRecord } from './memoryTypes.js';
+import type { MemoryRecord } from './types.js';
 
 export type MemoryGraphProjectionConfig = GraphitiMemoryConfig;
 
@@ -18,7 +18,7 @@ export interface MemoryGraphProjectionItem {
 
 export interface MemoryGraphProjectionSkip {
   memoryId: string;
-  reason: "disabled" | "archived" | "sensitive";
+  reason: 'disabled' | 'archived' | 'sensitive';
 }
 
 export interface MemoryGraphProjectionFailure {
@@ -41,27 +41,25 @@ export interface ProjectAcceptedMemoryRecordsResult {
 }
 
 function isSensitive(value: ReturnType<typeof classifyGraphitiMemoryRecordSensitivity>): boolean {
-  return value === "high" || value === "restricted";
+  return value === 'high' || value === 'restricted';
 }
 
 function skippedReason(
   record: MemoryRecord,
   config: MemoryGraphProjectionConfig,
-): MemoryGraphProjectionSkip["reason"] | undefined {
-  if (!config.enabled) return "disabled";
-  if ((record.status ?? "active") === "archived") return "archived";
-  if (!config.allowSensitiveProjection && isSensitive(classifyGraphitiMemoryRecordSensitivity(record))) return "sensitive";
+): MemoryGraphProjectionSkip['reason'] | undefined {
+  if (!config.enabled) return 'disabled';
+  if ((record.status ?? 'active') === 'archived') return 'archived';
+  if (!config.allowSensitiveProjection && isSensitive(classifyGraphitiMemoryRecordSensitivity(record)))
+    return 'sensitive';
   return undefined;
 }
 
-async function collectRecordEvidence(
-  ledger: MemoryLedger,
-  record: MemoryRecord,
-): Promise<MemoryEvidenceRecord[]> {
+async function collectRecordEvidence(ledger: MemoryLedger, record: MemoryRecord): Promise<MemoryEvidenceRecord[]> {
   const evidence: MemoryEvidenceRecord[] = [];
   for (const evidenceId of record.evidenceIds ?? []) {
     const found = await ledger.getEvidence(evidenceId);
-    if (!found || (found.status ?? "active") !== "active") continue;
+    if (!found || (found.status ?? 'active') !== 'active') continue;
     evidence.push(found);
   }
   return evidence;
@@ -78,13 +76,15 @@ export async function projectAcceptedMemoryRecords(
   const result: ProjectAcceptedMemoryRecordsResult = {
     projected: [],
     skipped: [],
-    failed: []
+    failed: [],
   };
   if (!config.enabled) return result;
-  const records = (await input.ledger.listRecords({
-    includeHistorical: true,
-    at: input.at ?? new Date().toISOString()
-  })).slice(0, input.limit ?? Number.POSITIVE_INFINITY);
+  const records = (
+    await input.ledger.listRecords({
+      includeHistorical: true,
+      at: input.at ?? new Date().toISOString(),
+    })
+  ).slice(0, input.limit ?? Number.POSITIVE_INFINITY);
 
   for (const record of records) {
     const skip = skippedReason(record, config);
@@ -95,15 +95,15 @@ export async function projectAcceptedMemoryRecords(
     try {
       const evidence = await collectRecordEvidence(input.ledger, record);
       const payload = buildGraphitiMemoryPayload(record, evidence, {
-        redactEvidence: config.redactEvidence
+        redactEvidence: config.redactEvidence,
       });
       const response = await input.client.projectMemory(payload);
       await input.ledger.recordGraphProjection({
         memoryId: record.id,
         projectionId: response.projectionId,
-        endpoint: config.endpoint ?? "",
+        endpoint: config.endpoint ?? '',
         evidenceIds: record.evidenceIds ?? [],
-        ...(input.at ? { createdAt: input.at } : {})
+        ...(input.at ? { createdAt: input.at } : {}),
       });
       result.projected.push({ memoryId: record.id, projectionId: response.projectionId });
     } catch (error) {

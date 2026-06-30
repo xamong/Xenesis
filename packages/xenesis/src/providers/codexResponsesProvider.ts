@@ -1,8 +1,8 @@
-import { readCodexAuth, type CodexAuth } from "./codexAuth.js";
-import { buildCodexClient, type CodexReasoningEffort, type CodexResponsesClient } from "./codexClient.js";
-import { OpenAIProvider } from "./openaiProvider.js";
-import { registerProviderFactory } from "./providerFactory.js";
-import type { ProviderCapabilities } from "./registry.js";
+import { type CodexAuth, readCodexAuth } from './codexAuth.js';
+import { buildCodexClient, type CodexReasoningEffort, type CodexResponsesClient } from './codexClient.js';
+import { OpenAIProvider } from './openaiProvider.js';
+import { registerProviderFactory } from './providerFactory.js';
+import type { ProviderCapabilities } from './registry.js';
 
 // Option B: the embedded Desk agent runs codex as a pure MODEL via the ChatGPT
 // Codex backend Responses API. Xenesis owns the loop/tools/approvals; this
@@ -23,32 +23,32 @@ export function createCodexResponsesProvider(opts: CodexResponsesProviderOptions
   const auth = opts.auth ?? readCodexAuth(opts.authPath);
   const client = buildCodexClient({
     auth,
-    originator: opts.originator ?? "xenesis",
+    originator: opts.originator ?? 'xenesis',
     reasoningEffort: opts.reasoningEffort,
-    openaiFactory: opts.openaiFactory
+    openaiFactory: opts.openaiFactory,
   });
-  return new OpenAIProvider({ name: opts.name ?? "codex-responses", model: opts.model, client });
+  return new OpenAIProvider({ name: opts.name ?? 'codex-responses', model: opts.model, client });
 }
 
 export const CODEX_RESPONSES_CAPABILITIES: ProviderCapabilities = {
   supportsTools: true,
   requiresApiKey: false,
-  transport: "http-streaming",
+  transport: 'http-streaming',
   streaming: true,
-  persistentSession: false
+  persistentSession: false,
 };
 
 export function registerCodexResponsesProvider(defaults?: Partial<CodexResponsesProviderOptions>): void {
   registerProviderFactory(
-    "codex-responses",
+    'codex-responses',
     ({ name, model, env }) =>
       createCodexResponsesProvider({
         ...defaults,
         name,
         model,
         reasoningEffort:
-          defaults?.reasoningEffort ?? (env.XENESIS_CODEX_REASONING_EFFORT as CodexReasoningEffort | undefined)
+          defaults?.reasoningEffort ?? (env.XENESIS_CODEX_REASONING_EFFORT as CodexReasoningEffort | undefined),
       }),
-    CODEX_RESPONSES_CAPABILITIES
+    CODEX_RESPONSES_CAPABILITIES,
   );
 }

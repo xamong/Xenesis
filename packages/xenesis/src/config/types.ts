@@ -1,57 +1,55 @@
-import type { IsolationMode } from "../core/isolation/types.js";
+import type { IsolationMode } from '../core/isolation/types.js';
 
-export type SecretRef =
-  | string
-  | { source: "env" | "file" | "exec"; provider?: string; id: string };
+export type SecretRef = string | { source: 'env' | 'file' | 'exec'; provider?: string; id: string };
 
 export const providerNames = [
-  "auto",
-  "openai",
-  "mock",
-  "anthropic",
-  "claude",
-  "openai-compatible",
-  "gemini",
-  "ollama",
-  "openrouter",
-  "groq",
-  "deepseek",
-  "qwen",
-  "mistral",
-  "xai",
-  "codex-app-server",
-  "codex-cli",
-  "codex-responses",
-  "claude-interactive",
-  "claude-cli"
+  'auto',
+  'openai',
+  'mock',
+  'anthropic',
+  'claude',
+  'openai-compatible',
+  'gemini',
+  'ollama',
+  'openrouter',
+  'groq',
+  'deepseek',
+  'qwen',
+  'mistral',
+  'xai',
+  'codex-app-server',
+  'codex-cli',
+  'codex-responses',
+  'claude-interactive',
+  'claude-cli',
 ] as const;
 
-export type ProviderName = typeof providerNames[number];
-export type ApprovalMode = "safe" | "auto" | "readonly";
-export type ToolPolicyAction = "allow" | "ask" | "deny";
-export type PermissionRiskLevel = "low" | "medium" | "high";
-export type WorkflowMode = "agent" | "plan" | "work";
-export type WorkflowStepInput = "original" | "previous";
+export type ProviderName = (typeof providerNames)[number];
+export type ApprovalMode = 'safe' | 'auto' | 'readonly';
+export type ToolPolicyAction = 'allow' | 'ask' | 'deny';
+export type PermissionRiskLevel = 'low' | 'medium' | 'high';
+export type WorkflowMode = 'agent' | 'plan' | 'work';
+export type WorkflowStepInput = 'original' | 'previous';
 
 export interface McpStdioServerConfig {
   enabled?: boolean;
-  type?: "stdio";
+  type?: 'stdio';
   command: string;
   args: string[];
   env: Record<string, string>;
   cwd?: string;
-  transport?: "stdio";
+  transport?: 'stdio';
   toolFilter?: { include?: string[]; exclude?: string[] };
   connectionTimeoutMs?: number;
   requestTimeoutMs?: number;
 }
 export interface McpHttpServerConfig {
   enabled?: boolean;
-  type: "http" | "sse";
+  type: 'http' | 'sse';
   url: string;
   headers?: Record<string, string>;
-  transport?: "http" | "sse";
-  auth?: "oauth" | "none";
+  transport?: 'http' | 'sse';
+  auth?: 'oauth' | 'none';
   oauth?: {
     clientId?: string;
     clientSecret?: SecretRef;
@@ -66,7 +64,7 @@ export interface McpHttpServerConfig {
 export type McpServerConfig = McpStdioServerConfig | McpHttpServerConfig;
 
 export interface EmbedderConfig {
-  provider: "deterministic";
+  provider: 'deterministic';
   dimensions?: number;
   minScore?: number;
 }
@@ -107,7 +105,7 @@ export interface PluginConfig {
 export interface SkillConfig {
   paths: string[];
   autoLoad: boolean;
-  disclosure: "catalog" | "full";
+  disclosure: 'catalog' | 'full';
 }
 
 export interface ExtensionsConfig {
@@ -126,7 +124,7 @@ export interface ToolPolicyConfig {
 }
 
 export interface PathRuleConfig {
-  action: "allow" | "deny";
+  action: 'allow' | 'deny';
   path: string;
   reason?: string;
 }
@@ -308,14 +306,14 @@ export interface CommitmentsConfig {
 export interface IsolationConfig {
   autoIsolateConcurrent: boolean;
   defaultMode: IsolationMode;
-  keepWorktree: "if-changed" | "always" | "never";
+  keepWorktree: 'if-changed' | 'always' | 'never';
   scrubShellSecrets: boolean;
   shellSecretAllowlist: string[];
 }
 
 export interface ApprovalConfig {
   timeoutMs: number;
-  timeoutBehavior: "allow" | "deny";
+  timeoutBehavior: 'allow' | 'deny';
 }
 
 export interface HookSpec {
@@ -469,8 +467,8 @@ export interface LoadConfigOptions {
 }
 
 export const defaultConfig = {
-  provider: "openai",
-  model: "gpt-5.4-mini",
+  provider: 'openai',
+  model: 'gpt-5.4-mini',
   providerRetries: 1,
   providerFallbacks: [],
   hooks: {
@@ -478,7 +476,7 @@ export const defaultConfig = {
     preToolUse: [],
     stop: [],
     maxStopHookContinuations: 3,
-    commandTimeoutMs: 5000
+    commandTimeoutMs: 5000,
   },
   context: {
     autoCompact: true,
@@ -490,14 +488,14 @@ export const defaultConfig = {
       maxReports: 3,
       maxRunReports: 3,
       maxTasks: 4,
-      maxItems: 8
+      maxItems: 8,
     },
     llmSummary: true,
-    summarizationModel: "claude-haiku-4-5",
+    summarizationModel: 'claude-haiku-4-5',
     pruneToolResults: true,
     pruneToolResultThreshold: 2000,
     stripOldImages: true,
-    compactTokenThresholdRatio: 0.8
+    compactTokenThresholdRatio: 0.8,
   },
   verification: {
     commands: [],
@@ -507,99 +505,122 @@ export const defaultConfig = {
     maxOutputChars: 12000,
     maxRepairAttempts: 1,
     acceptOnPass: false,
-    rollbackFailedRepairs: true
+    rollbackFailedRepairs: true,
   },
   guard: {
     enabled: true,
     useDefault: true,
     priorityTools: [],
     requiredBefore: {},
-    requiredBeforeAny: {}
+    requiredBeforeAny: {},
   },
-  workflow: "default",
+  workflow: 'default',
   workflows: {
     default: {
-      handler: "default",
-      description: "Default agent workflow."
-    }
+      handler: 'default',
+      description: 'Default agent workflow.',
+    },
   },
   worker: {
     enabled: true,
     pollIntervalMs: 3000,
     concurrency: 1,
     defaults: {
-      approvalMode: "safe",
+      approvalMode: 'safe',
       maxTurns: 16,
-      maxTokens: 200000
-    }
+      maxTokens: 200000,
+    },
   },
   isolation: {
     autoIsolateConcurrent: false,
-    defaultMode: "worktree",
-    keepWorktree: "if-changed",
+    defaultMode: 'worktree',
+    keepWorktree: 'if-changed',
     scrubShellSecrets: true,
-    shellSecretAllowlist: []
+    shellSecretAllowlist: [],
   },
   channels: {},
   browser: {
     enabled: true,
     headless: true,
     allowedHosts: [],
-    idleTimeoutMs: 300000
+    idleTimeoutMs: 300000,
   },
   shell: {
     persistent: true,
-    idleTimeoutMs: 300000
+    idleTimeoutMs: 300000,
   },
   maxTurns: 16,
-  workspace: ".",
-  approvalMode: "safe",
+  workspace: '.',
+  approvalMode: 'safe',
   extensions: {
     mcpServers: {},
     recommendedMcpServers: [],
     memory: {
       enabled: false,
-      path: ".xenesis/memory.json",
+      path: '.xenesis/memory.json',
       graph: {
         enabled: false,
-        allowedEndpoints: ["http://127.0.0.1:8000", "http://localhost:8000"],
+        allowedEndpoints: ['http://127.0.0.1:8000', 'http://localhost:8000'],
         localOnly: true,
         allowSensitiveProjection: false,
         redactEvidence: true,
-        timeoutMs: 15000
-      }
+        timeoutMs: 15000,
+      },
     },
     subagents: {
       enabled: false,
       maxConcurrent: 2,
       definitions: {
         researcher: {
-          approvalMode: "readonly",
+          approvalMode: 'readonly',
           maxTurns: 8,
-          tools: ["tree", "glob", "list", "read", "search", "code_symbols", "lsp", "file_info", "web_search", "web_fetch"]
+          tools: [
+            'tree',
+            'glob',
+            'list',
+            'read',
+            'search',
+            'code_symbols',
+            'lsp',
+            'file_info',
+            'web_search',
+            'web_fetch',
+          ],
         },
         implementer: {
-          approvalMode: "safe",
+          approvalMode: 'safe',
           maxTurns: 12,
-          tools: ["tree", "glob", "list", "read", "search", "code_symbols", "lsp", "diff", "patch", "json", "diagnostics"]
+          tools: [
+            'tree',
+            'glob',
+            'list',
+            'read',
+            'search',
+            'code_symbols',
+            'lsp',
+            'diff',
+            'patch',
+            'json',
+            'diagnostics',
+          ],
         },
         verifier: {
-          approvalMode: "readonly",
+          approvalMode: 'readonly',
           maxTurns: 8,
-          tools: ["read", "search", "diagnostics", "shell", "agent_task", "task_handoff"]
-        }
-      }
+          tools: ['read', 'search', 'diagnostics', 'shell', 'agent_task', 'task_handoff'],
+        },
+      },
     },
     plugins: { paths: [] },
-    skills: { paths: [], autoLoad: false, disclosure: "catalog" }
+    skills: { paths: [], autoLoad: false, disclosure: 'catalog' },
   },
   permissions: {
     blockedTools: [],
     toolPolicies: {},
-    pathRules: []
+    pathRules: [],
   },
   approval: {
     timeoutMs: 300000,
-    timeoutBehavior: "deny"
-  }
-} satisfies Omit<XenesisConfig, "workspace" | "xenesisHome"> & { workspace: string };
+    timeoutBehavior: 'deny',
+  },
+} satisfies Omit<XenesisConfig, 'workspace' | 'xenesisHome'> & { workspace: string };

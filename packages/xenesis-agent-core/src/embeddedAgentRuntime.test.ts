@@ -3,14 +3,14 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
+import { createTurnLedger } from '../../xenesis/src/core/turnLedger';
+import { closeAllDatabases } from '../../xenesis/src/db/database';
 import { DeskEmbeddedAgentRuntime, mapDeskEmbeddedPromptResult } from './embeddedAgentRuntime';
 import {
   createDeskEmbeddedPromptOptions,
-  normalizeDeskProviderName,
   type DeskEmbeddedPromptResult,
+  normalizeDeskProviderName,
 } from './embeddedRuntime';
-import { closeAllDatabases } from '../../xenesis/src/db/database';
-import { createTurnLedger } from '../../xenesis/src/core/turnLedger';
 
 test('mapDeskEmbeddedPromptResult preserves final doneContent from embedded runtime', () => {
   const result = mapDeskEmbeddedPromptResult({

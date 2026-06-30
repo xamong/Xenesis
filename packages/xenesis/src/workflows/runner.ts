@@ -130,14 +130,14 @@ export async function runResolvedWorkflow(options: RunResolvedWorkflowOptions) {
         applyConfiguredWorkflow: false,
         ...(hasExplicitSteps
           ? {
-          workflowStep: {
-            workflow: stepRun.workflow,
-            step: stepRun.step,
-            index: stepRun.index,
-            total: stepRun.total,
+              workflowStep: {
+                workflow: stepRun.workflow,
+                step: stepRun.step,
+                index: stepRun.index,
+                total: stepRun.total,
                 startedAt: stepRun.startedAt,
               },
-          }
+            }
           : {}),
         onSessionWriter: (_writer, createdSessionId) => {
           sessionId = createdSessionId;

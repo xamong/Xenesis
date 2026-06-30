@@ -87,8 +87,18 @@ test('refreshes auth.json on every call (token rotation)', () => {
   const iso = path.join(tmp(), 'codex-home');
   fs.writeFileSync(path.join(real, 'config.toml'), 'model = "gpt-5.5"\n');
   fs.writeFileSync(path.join(real, 'auth.json'), '{"v":1}');
-  prepareCodexIsolatedHome({ realCodexHome: real, isolatedHome: iso, reasoningEffort: 'medium', workspaceCwd: 'E:\\x' });
+  prepareCodexIsolatedHome({
+    realCodexHome: real,
+    isolatedHome: iso,
+    reasoningEffort: 'medium',
+    workspaceCwd: 'E:\\x',
+  });
   fs.writeFileSync(path.join(real, 'auth.json'), '{"v":2}');
-  prepareCodexIsolatedHome({ realCodexHome: real, isolatedHome: iso, reasoningEffort: 'medium', workspaceCwd: 'E:\\x' });
+  prepareCodexIsolatedHome({
+    realCodexHome: real,
+    isolatedHome: iso,
+    reasoningEffort: 'medium',
+    workspaceCwd: 'E:\\x',
+  });
   assert.equal(fs.readFileSync(path.join(iso, 'auth.json'), 'utf8'), '{"v":2}');
 });

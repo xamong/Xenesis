@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   BUILTIN_EXTERNAL_APP_PROFILES,
+  classifyExternalAppApproval,
   createExternalAppProfileFromTemplate,
   EXTERNAL_APP_PROFILE_TEMPLATES,
   externalAppActionDecision,
-  classifyExternalAppApproval,
   normalizeExternalAppAction,
   normalizeExternalAppSettings,
 } from './externalAppControl';
@@ -62,7 +62,10 @@ test('external app profile templates create editable profiles without changing d
   const settings = normalizeExternalAppSettings(undefined);
   const templateIds = EXTERNAL_APP_PROFILE_TEMPLATES.map((profile) => profile.id);
 
-  assert.deepEqual(settings.profiles.map((profile) => profile.id), ['notepad']);
+  assert.deepEqual(
+    settings.profiles.map((profile) => profile.id),
+    ['notepad'],
+  );
   assert.ok(templateIds.includes('paint'));
   assert.ok(templateIds.includes('powershell'));
 
@@ -111,7 +114,10 @@ test('KakaoTalk template is disabled by default and blocks send-style behavior',
   assert.equal(kakao?.enabled, false);
   assert.equal(kakao?.allowedActions.includes('typeText'), false);
 
-  const decision = externalAppActionDecision({ action: 'typeText', appId: 'kakaotalk', text: 'hello' }, kakao || undefined);
+  const decision = externalAppActionDecision(
+    { action: 'typeText', appId: 'kakaotalk', text: 'hello' },
+    kakao || undefined,
+  );
 
   assert.equal(decision.allowed, false);
   assert.equal(decision.reason, 'External app profile is disabled: kakaotalk');

@@ -1,19 +1,19 @@
-import { createServer } from 'node:http';
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
 import { relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { FileWorkspaceChangeStore } from '../changes/index.js';
-import type { ApprovalMode, PermissionsConfig } from '../config/types.js';
-import type { HookEmitter, HookName } from '../hooks/index.js';
-import type { HookRegistry } from '../hooks/HookRegistry.js';
-import type { HandoffPriorityPolicy } from '../orchestration/index.js';
-import { evaluatePermission, workspacePathForToolInput } from '../permissions/policy.js';
-import type { AgentProvider, ProviderRequest, ProviderResponse } from '../providers/types.js';
-import { buildProviderQueryConfig, type ProviderQueryConfig } from '../providers/queryConfig.js';
-import { coerceToolArguments, buildSchemaGuidance } from '../providers/toolArgCoercion.js';
 import type { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
+import { FileWorkspaceChangeStore } from '../changes/index.js';
+import type { ApprovalMode, PermissionsConfig } from '../config/types.js';
+import type { HookRegistry } from '../hooks/HookRegistry.js';
+import type { HookEmitter, HookName } from '../hooks/index.js';
+import type { HandoffPriorityPolicy } from '../orchestration/index.js';
+import { evaluatePermission, workspacePathForToolInput } from '../permissions/policy.js';
+import { buildProviderQueryConfig, type ProviderQueryConfig } from '../providers/queryConfig.js';
+import { buildSchemaGuidance, coerceToolArguments } from '../providers/toolArgCoercion.js';
+import type { AgentProvider, ProviderRequest, ProviderResponse } from '../providers/types.js';
 import type { SessionWriter } from '../sessions/types.js';
 import type {
   TodoItem,
@@ -25,6 +25,11 @@ import type {
   ToolRegistry,
 } from '../tools/types.js';
 import { assertInsideWorkspace } from '../utils/workspace.js';
+import { estimateContextTokens } from './context/ContextRecord.js';
+import { compactConversation, shouldThrash } from './context/compaction/compactConversation.js';
+import { pruneOlderMessages } from './context/compaction/pruneToolResults.js';
+import { stripStaleImageAttachments } from './context/compaction/stripStaleImages.js';
+import { computeContextTokenBudget } from './context/modelMetadata.js';
 import type {
   AgentRunEvent,
   ApprovalDecision,
@@ -33,28 +38,23 @@ import type {
   SessionEvent,
   ToolResultStoredEvent,
 } from './events.js';
-import { ApprovalPauseSignal } from './hitl/ApprovalPauseSignal.js';
 import {
   classifyVerificationFailure,
   renderVerificationFailureClassification,
   type VerificationFailureClassification,
   type VerificationToolName,
 } from './failureClassification.js';
-import { compactConversation, shouldThrash } from './context/compaction/compactConversation.js';
-import { stripStaleImageAttachments } from './context/compaction/stripStaleImages.js';
-import { pruneOlderMessages } from './context/compaction/pruneToolResults.js';
-import { estimateContextTokens } from './context/ContextRecord.js';
-import { computeContextTokenBudget } from './context/modelMetadata.js';
-import { repairToolResultPairing, type AgentMessage, type ToolCall } from './messages.js';
-import { buildRunSnapshot, type ResumableRunState, type RunSnapshotInput } from './resume/ResumableRunState.js';
-import { wrapExternalContent, type WrappedExternalContent } from './prompt/index.js';
+import { ApprovalPauseSignal } from './hitl/ApprovalPauseSignal.js';
+import { type ExecutionBackend, LOCAL_BACKEND } from './isolation/executionBackend.js';
+import { type AgentMessage, repairToolResultPairing, type ToolCall } from './messages.js';
+import { type WrappedExternalContent, wrapExternalContent } from './prompt/index.js';
 import {
   classifyProviderFailure,
-  decideProviderAttempt,
   computeRetryDelayMs,
+  decideProviderAttempt,
   extractRetryAfterMs,
 } from './providerFailurePolicy.js';
-import { LOCAL_BACKEND, type ExecutionBackend } from './isolation/executionBackend.js';
+import { buildRunSnapshot, type ResumableRunState, type RunSnapshotInput } from './resume/ResumableRunState.js';
 import type { XenesisTurnApprovalResolutionInput, XenesisTurnLedger, XenesisTurnProcessModel } from './turnLedger.js';
 
 type UserMessage = Extract<AgentMessage, { role: 'user' }>;
@@ -629,7 +629,7 @@ function userRequestedComplexImplementationTracking(content: string) {
     );
   if (explicitPlanningOnly) return false;
 
-  const numberedStepCount = content.match(/(?:^|\s)\d+[\).]/g)?.length ?? 0;
+  const numberedStepCount = content.match(/(?:^|\s)\d+[).]/g)?.length ?? 0;
   const sequencedWork =
     /먼저[^.!?\n]{0,120}(?:그\s*다음|이후|후)|(?:그\s*다음|이후|후)[^.!?\n]{0,120}(?:검증|실행|보고)|then|after(?:ward)?/i.test(
       content,
@@ -735,7 +735,7 @@ function userRequestedDocumentViewOrLayoutControl(content: string) {
       content,
     );
   const hasViewModeIntent =
-    /(?:편집\s*[+\/&]\s*미리보기|미리보기\s*[+\/&]\s*편집|분할\s*(?:모드|보기)|미리보기|보기\s*모드|문서\s*모드|\bsplit\s*(?:mode|view)?\b|\bpreview\b|\bviewer\b|\bedit\s*mode\b|\bsource\s*mode\b)/i.test(
+    /(?:편집\s*[+/&]\s*미리보기|미리보기\s*[+/&]\s*편집|분할\s*(?:모드|보기)|미리보기|보기\s*모드|문서\s*모드|\bsplit\s*(?:mode|view)?\b|\bpreview\b|\bviewer\b|\bedit\s*mode\b|\bsource\s*mode\b)/i.test(
       content,
     );
   const hasLayoutIntent =

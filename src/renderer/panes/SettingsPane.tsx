@@ -612,14 +612,14 @@ const WINDOW_SIZER_COORDINATE_OPTIONS: Array<{ value: WindowSizerCoordinateMode;
 
 const GENERIC_ENV_PLACEHOLDERS = [
   { key: 'NODE_ENV', value: 'development' },
-  { key: 'PROJECT_ROOT', value: 'C:\\Projects\\demo' },
+  { key: 'PROJECT_ROOT', value: '<workspace-root>' },
 ];
 
 const LOCAL_CLI_MCP_ENV_PLACEHOLDERS = [
-  { key: 'XENIS_MCP_CONFIG_FILE', value: 'XENIS_HOME\\mcp\\xenesis-mcp-config.json' },
+  { key: 'XENIS_MCP_CONFIG_FILE', value: '<XENIS_HOME>/mcp/xenesis-mcp-config.json' },
   {
     key: 'XENIS_MCP_SERVER_PATH',
-    value: 'C:\\Program Files\\Xenesis Desk\\resources\\app.asar.unpacked\\mcp\\xenesis-desk-mcp-server.mjs',
+    value: '<app-resources>/app.asar.unpacked/mcp/xenesis-desk-mcp-server.mjs',
   },
 ];
 

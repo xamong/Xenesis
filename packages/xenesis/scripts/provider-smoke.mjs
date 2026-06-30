@@ -53,7 +53,13 @@ export function buildSmokeAcceptanceRecord(input) {
   const readbacks = Array.isArray(input.observedReadbacks) ? input.observedReadbacks : [];
   const approvalRecords = Array.isArray(input.observedApprovalRecords) ? input.observedApprovalRecords : [];
   const errors = [];
-  if (input.expectedProvider && input.observedProvider !== input.expectedProvider) {
+  if (input.expectedProvider === 'auto') {
+    if (!input.observedProvider) {
+      errors.push('missing resolved provider for auto');
+    } else if (input.observedProvider === 'auto') {
+      errors.push('auto provider did not resolve to a concrete provider');
+    }
+  } else if (input.expectedProvider && input.observedProvider !== input.expectedProvider) {
     errors.push(`provider mismatch: ${input.observedProvider} !== ${input.expectedProvider}`);
   }
   if (input.expectedProcessModel && input.observedProcessModel !== input.expectedProcessModel) {
@@ -324,7 +330,10 @@ export async function buildCrReadSmokeAcceptanceRecord({
           ? payload.capabilityPath
           : undefined;
     const accepted =
-      payload?.ok === true && payload?.approvalRequired !== true && responsePath === path && hasBridgeResultPayload(payload);
+      payload?.ok === true &&
+      payload?.approvalRequired !== true &&
+      responsePath === path &&
+      hasBridgeResultPayload(payload);
     return buildSmokeAcceptanceRecord({
       ...base,
       observedCapabilityPaths: accepted ? [path] : [],
@@ -390,7 +399,9 @@ export async function buildApprovalStopSmokeAcceptanceRecord({
           })
         : undefined;
     const inspectable =
-      readbackPayload !== undefined && readbackPayload?.ok === true && approvalRecordIsInspectable(readbackPayload, records);
+      readbackPayload !== undefined &&
+      readbackPayload?.ok === true &&
+      approvalRecordIsInspectable(readbackPayload, records);
     return buildSmokeAcceptanceRecord({
       ...base,
       observedCapabilityPaths: [path],
@@ -524,16 +535,20 @@ async function main() {
   console.log(`provider-smoke: model=${model}`);
 
   try {
-    const connectArgs = ["--provider", provider, "--model", model, "connect", "check"];
-    requireOutput(
-      runCli(connectArgs),
-      'connect check',
-      'connect: passed',
-    );
+    const connectArgs = ['--provider', provider, '--model', model, 'connect', 'check'];
+    requireOutput(runCli(connectArgs), 'connect check', 'connect: passed');
     appendCheck('connect-probe', true, { provider, model });
 
     const promptOutput = requireOutput(
-      runCli(['--provider', provider, '--model', model, '--json', '--print', 'Reply exactly: xenesis-provider-live-ok']),
+      runCli([
+        '--provider',
+        provider,
+        '--model',
+        model,
+        '--json',
+        '--print',
+        'Reply exactly: xenesis-provider-live-ok',
+      ]),
       'prompt',
       'xenesis-provider-live-ok',
     );

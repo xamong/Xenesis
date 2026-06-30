@@ -10,8 +10,8 @@ function hasFlag(name: string) {
   return process.argv.includes(name);
 }
 
-const referenceRoot = process.env.XENESIS_REFERENCE_SRC ?? 'E:/agent-anal/src';
-const analysisPath = process.env.XENESIS_REFERENCE_ANALYSIS ?? 'E:/agent-anal/agent-internals-analysis.md';
+const referenceRoot = process.env.XENESIS_REFERENCE_SRC ?? 'reference-src';
+const analysisPath = process.env.XENESIS_REFERENCE_ANALYSIS ?? 'reference-analysis/agent-internals-analysis.md';
 const allowUnmapped = hasFlag('--allow-unmapped');
 const allowUnverified = allowUnmapped || hasFlag('--allow-unverified');
 const strictVerified = hasFlag('--strict-verified') || hasFlag('--fail-unverified');

@@ -22,6 +22,7 @@ export interface BuildXenesisTuiTerminalRequestOptions {
   execPath: string;
   env?: NodeJS.ProcessEnv;
   existsSync?: (path: string) => boolean;
+  platform?: NodeJS.Platform;
 }
 
 export interface XenesisTuiTerminalRequest {
@@ -55,6 +56,10 @@ function quoteCmdCliArg(value: string): string {
 
 function buildCmdShellCommand(parts: string[]): string {
   return `cmd /d /s /c "${parts.join(' ')}"`;
+}
+
+function pathForPlatform(platform: NodeJS.Platform): path.PlatformPath {
+  return platform === 'win32' ? path.win32 : path;
 }
 
 export function buildElectronRunAsNodeCommand(options: BuildElectronRunAsNodeCommandOptions): string {
@@ -108,9 +113,10 @@ export function resolveNodeExecutablePath(
   if (!pathEnv) return null;
 
   const names = platform === 'win32' ? ['node.exe', 'node.cmd', 'node.bat', 'node'] : ['node'];
+  const pathImpl = pathForPlatform(platform);
   for (const dir of splitPathEntries(pathEnv, delimiter)) {
     for (const name of names) {
-      const candidate = path.join(dir, name);
+      const candidate = pathImpl.join(dir, name);
       if (existsSync(candidate)) return candidate;
     }
   }
@@ -125,13 +131,14 @@ export function buildXenesisTuiTerminalRequest(
   const existsSync = options.existsSync ?? fs.existsSync;
   if (!runtimePath) throw new Error('Xenesis runtime path is not configured.');
 
-  const entrypoint = path.join(runtimePath, 'dist', 'cli', 'main.js');
+  const platform = options.platform ?? process.platform;
+  const entrypoint = pathForPlatform(platform).join(runtimePath, 'dist', 'cli', 'main.js');
   if (!existsSync(entrypoint)) {
     throw new Error(`Xenesis CLI entrypoint was not found: ${entrypoint}`);
   }
 
   const cliArgs = ['tui', '--cwd', '.'];
-  const nodePath = resolveNodeExecutablePath({ env: options.env, existsSync });
+  const nodePath = resolveNodeExecutablePath({ env: options.env, existsSync, platform });
   const command = nodePath
     ? buildNodeRunCommand({ nodePath, entrypoint, args: cliArgs })
     : buildElectronRunAsNodeCommand({

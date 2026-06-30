@@ -58,7 +58,7 @@ const commandSpecs: Record<RemoteBridgeCommandName, RemoteBridgeCommandSpec> = {
   bridge: {
     command: 'bridge',
     surface: 'remote control bridge',
-    referencePath: 'E:/agent-anal/src/commands/bridge/bridge.tsx',
+    referencePath: 'reference-src/commands/bridge/bridge.tsx',
     referenceBehavior:
       'Checks remote-control policy, bridge version, access token, and toggles bidirectional bridge AppState.',
     localBehavior:
@@ -75,7 +75,7 @@ const commandSpecs: Record<RemoteBridgeCommandName, RemoteBridgeCommandSpec> = {
   'bridge-kick': {
     command: 'bridge-kick',
     surface: 'bridge recovery fault injection',
-    referencePath: 'E:/agent-anal/src/commands/bridge-kick.ts',
+    referencePath: 'reference-src/commands/bridge-kick.ts',
     referenceBehavior:
       'Injects bridge debug fault states into a live Remote Control session for manual recovery testing.',
     localBehavior:
@@ -92,7 +92,7 @@ const commandSpecs: Record<RemoteBridgeCommandName, RemoteBridgeCommandSpec> = {
   chrome: {
     command: 'chrome',
     surface: 'Chrome browser integration',
-    referencePath: 'E:/agent-anal/src/commands/chrome/chrome.tsx',
+    referencePath: 'reference-src/commands/chrome/chrome.tsx',
     referenceBehavior:
       'Inspects Chrome extension state, opens extension URLs, toggles default config, and reports MCP connection state.',
     localBehavior:
@@ -109,7 +109,7 @@ const commandSpecs: Record<RemoteBridgeCommandName, RemoteBridgeCommandSpec> = {
   desktop: {
     command: 'desktop',
     surface: 'desktop handoff',
-    referencePath: 'E:/agent-anal/src/commands/desktop/desktop.tsx',
+    referencePath: 'reference-src/commands/desktop/desktop.tsx',
     referenceBehavior: 'Shows the DesktopHandoff flow for transferring work to a desktop application surface.',
     localBehavior: 'Prints desktop handoff setup intent without opening a desktop app or IPC channel.',
     setupIntent:
@@ -124,7 +124,7 @@ const commandSpecs: Record<RemoteBridgeCommandName, RemoteBridgeCommandSpec> = {
   mobile: {
     command: 'mobile',
     surface: 'mobile app handoff',
-    referencePath: 'E:/agent-anal/src/commands/mobile/index.ts',
+    referencePath: 'reference-src/commands/mobile/index.ts',
     referenceBehavior:
       'Shows a QR-code flow for downloading or opening the Claude mobile app; aliases include ios and android.',
     localBehavior: 'Prints mobile handoff setup intent without generating QR codes or contacting app stores.',
@@ -139,7 +139,7 @@ const commandSpecs: Record<RemoteBridgeCommandName, RemoteBridgeCommandSpec> = {
   teleport: {
     command: 'teleport',
     surface: 'teleport sessions',
-    referencePath: 'E:/agent-anal/src/commands/teleport/index.js',
+    referencePath: 'reference-src/commands/teleport/index.js',
     referenceBehavior: 'Reference command is a hidden disabled stub in the inspected source.',
     localBehavior:
       'Reports teleport as local diagnostic intent only and does not emulate hidden remote session behavior.',
@@ -151,7 +151,7 @@ const commandSpecs: Record<RemoteBridgeCommandName, RemoteBridgeCommandSpec> = {
   'remote-env': {
     command: 'remote-env',
     surface: 'remote environment defaults',
-    referencePath: 'E:/agent-anal/src/commands/remote-env/index.ts',
+    referencePath: 'reference-src/commands/remote-env/index.ts',
     referenceBehavior:
       'Gates a local JSX flow by subscription and policy to configure the default remote environment for teleport sessions.',
     localBehavior:
@@ -167,7 +167,7 @@ const commandSpecs: Record<RemoteBridgeCommandName, RemoteBridgeCommandSpec> = {
   'remote-setup': {
     command: 'remote-setup',
     surface: 'remote setup',
-    referencePath: 'E:/agent-anal/src/commands/remote-setup/api.ts',
+    referencePath: 'reference-src/commands/remote-setup/api.ts',
     referenceBehavior:
       'Imports GitHub tokens, checks OAuth credentials, fetches environments, and creates cloud defaults through remote APIs.',
     localBehavior:
@@ -184,7 +184,7 @@ const commandSpecs: Record<RemoteBridgeCommandName, RemoteBridgeCommandSpec> = {
   'terminal-setup': {
     command: 'terminal-setup',
     surface: 'terminal keybinding setup',
-    referencePath: 'E:/agent-anal/src/commands/terminalSetup/index.ts',
+    referencePath: 'reference-src/commands/terminalSetup/index.ts',
     referenceBehavior:
       'Opens a terminal-specific setup flow for Shift+Enter or Option+Enter behavior unless the terminal natively supports CSI u.',
     localBehavior: 'Prints terminal setup intent without editing shell, terminal, or keyboard configuration files.',
@@ -199,7 +199,7 @@ const commandSpecs: Record<RemoteBridgeCommandName, RemoteBridgeCommandSpec> = {
   ide: {
     command: 'ide',
     surface: 'IDE integration',
-    referencePath: 'E:/agent-anal/src/commands/ide/ide.tsx',
+    referencePath: 'reference-src/commands/ide/ide.tsx',
     referenceBehavior:
       'Detects IDEs, can install extensions, opens projects, and mutates dynamic IDE MCP configuration.',
     localBehavior:
@@ -215,7 +215,7 @@ const commandSpecs: Record<RemoteBridgeCommandName, RemoteBridgeCommandSpec> = {
   voice: {
     command: 'voice',
     surface: 'voice mode',
-    referencePath: 'E:/agent-anal/src/commands/voice/index.ts',
+    referencePath: 'reference-src/commands/voice/index.ts',
     referenceBehavior: 'Toggles voice mode when the growth-book and mode gates enable the command.',
     localBehavior: 'Prints voice setup intent without starting audio capture, voice services, or feature-gate checks.',
     setupIntent:

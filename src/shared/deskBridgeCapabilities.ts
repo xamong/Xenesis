@@ -4739,7 +4739,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                 type: 'string',
                 title: 'Workspace path',
                 description: 'Absolute local workspace path for Xenesis.',
-                examples: ['D:\\Workspace'],
+                examples: ['<workspace-root>'],
                 'ui:widget': 'directory',
               },
             },
@@ -4896,7 +4896,12 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
     ]),
     group('xd.memory', 'Memory', 'Evidence-governed long-term memory ledger, proposals, evidence, and policy.', [
       group('xd.memory.ledger', 'Ledger', 'Governed long-term memory records and audit history.', [
-        method('xd.memory.ledger.list', 'List memory records', 'List governed memory records with redaction applied.', 'read'),
+        method(
+          'xd.memory.ledger.list',
+          'List memory records',
+          'List governed memory records with redaction applied.',
+          'read',
+        ),
         method(
           'xd.memory.ledger.search',
           'Search memory records',
@@ -4990,31 +4995,36 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           'read',
         ),
       ]),
-      group('xd.memory.obsidian', 'Obsidian projection', 'Repo-local Obsidian projection generated from the memory ledger.', [
-        method(
-          'xd.memory.obsidian.project',
-          'Project memory to Obsidian',
-          'Write a regenerable memory projection under the repo-local docs/obsidian vault output areas.',
-          'write',
-          {
-            type: 'object',
-            required: ['area', 'fileName'],
-            properties: {
-              area: {
-                type: 'string',
-                title: 'Projection area',
-                enum: ['working-notes', 'outputs', 'review', 'tasks'],
-                default: 'outputs',
-              },
-              fileName: {
-                type: 'string',
-                title: 'Markdown filename',
-                examples: ['memory-dashboard.md'],
+      group(
+        'xd.memory.obsidian',
+        'Obsidian projection',
+        'Repo-local Obsidian projection generated from the memory ledger.',
+        [
+          method(
+            'xd.memory.obsidian.project',
+            'Project memory to Obsidian',
+            'Write a regenerable memory projection under the repo-local docs/obsidian vault output areas.',
+            'write',
+            {
+              type: 'object',
+              required: ['area', 'fileName'],
+              properties: {
+                area: {
+                  type: 'string',
+                  title: 'Projection area',
+                  enum: ['working-notes', 'outputs', 'review', 'tasks'],
+                  default: 'outputs',
+                },
+                fileName: {
+                  type: 'string',
+                  title: 'Markdown filename',
+                  examples: ['memory-dashboard.md'],
+                },
               },
             },
-          },
-        ),
-      ]),
+          ),
+        ],
+      ),
       group('xd.memory.policy', 'Policy', 'Memory sensitivity and write-policy classification.', [
         method(
           'xd.memory.policy.classify',
@@ -5137,57 +5147,40 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             },
           },
         ),
-        method(
-          'xd.agent.receipts.get',
-          'Get Agent receipt',
-          'Read one Agent workflow receipt by id.',
-          'read',
-          {
-            type: 'object',
-            required: ['id'],
-            properties: {
-              id: {
-                type: 'string',
-                title: 'Receipt id',
-                examples: ['receipt-1'],
-              },
+        method('xd.agent.receipts.get', 'Get Agent receipt', 'Read one Agent workflow receipt by id.', 'read', {
+          type: 'object',
+          required: ['id'],
+          properties: {
+            id: {
+              type: 'string',
+              title: 'Receipt id',
+              examples: ['receipt-1'],
             },
           },
-        ),
+        }),
       ]),
     ]),
     group('xd.agent', 'Agent', 'Agent runtime read surfaces for Xenesis Desk.', [
       group('xd.agent.turns', 'Turns', 'Read-only Agent turn ledger records and evidence events.', [
-        method(
-          'xd.agent.turns.list',
-          'List agent turns',
-          'List recent Agent turn ledger records.',
-          'read',
-        ),
+        method('xd.agent.turns.list', 'List agent turns', 'List recent Agent turn ledger records.', 'read'),
         method(
           'xd.agent.turns.current',
           'Read current agent turn',
           'Read the current or most recent Agent turn ledger record.',
           'read',
         ),
-        method(
-          'xd.agent.turns.get',
-          'Get agent turn',
-          'Read one Agent turn ledger record by id.',
-          'read',
-          {
-            type: 'object',
-            required: ['id'],
-            properties: {
-              id: {
-                type: 'string',
-                title: 'Turn id',
-                description: 'Agent turn ledger id.',
-                examples: ['turn-1'],
-              },
+        method('xd.agent.turns.get', 'Get agent turn', 'Read one Agent turn ledger record by id.', 'read', {
+          type: 'object',
+          required: ['id'],
+          properties: {
+            id: {
+              type: 'string',
+              title: 'Turn id',
+              description: 'Agent turn ledger id.',
+              examples: ['turn-1'],
             },
           },
-        ),
+        }),
         method(
           'xd.agent.turns.events',
           'List agent turn events',
@@ -5234,7 +5227,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                 type: 'string',
                 title: 'Working directory',
                 description: 'Desk workspace directory used when launching Xenesis TUI.',
-                examples: ['D:\\Workspace\\xenesis-desk'],
+                examples: ['<workspace-root>/xenesis-desk'],
                 'ui:widget': 'directory',
               },
               shell: {
@@ -6147,7 +6140,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                 type: 'string',
                 title: 'Workspace path',
                 description: 'Absolute local workspace path for Xenesis.',
-                examples: ['D:\\Workspace'],
+                examples: ['<workspace-root>'],
                 'ui:widget': 'directory',
               },
             },
@@ -7044,16 +7037,16 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           'Navigate an existing Xenesis Desk browser pane.',
           'control',
           {
-          type: 'object',
-          properties: {
+            type: 'object',
+            properties: {
               contentId: {
                 type: 'string',
                 description: 'Optional browser content id. Defaults to the active browser pane.',
               },
-            paneId: { type: 'string', description: 'Optional pane id containing a browser content.' },
-            url: { type: 'string', description: 'URL or search text to load in the Desk browser pane.' },
-          },
-          required: ['url'],
+              paneId: { type: 'string', description: 'Optional pane id containing a browser content.' },
+              url: { type: 'string', description: 'URL or search text to load in the Desk browser pane.' },
+            },
+            required: ['url'],
           },
           { approval: 'never' },
         ),
@@ -7101,21 +7094,21 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           'Read visible text, links, and form controls from an existing Desk browser pane.',
           'read',
           {
-          type: 'object',
-          properties: {
+            type: 'object',
+            properties: {
               contentId: {
                 type: 'string',
                 description: 'Optional browser content id. Defaults to the active browser pane.',
               },
-            paneId: { type: 'string', description: 'Optional pane id containing a browser content.' },
+              paneId: { type: 'string', description: 'Optional pane id containing a browser content.' },
               maxChars: {
                 type: 'number',
                 default: 20000,
                 minimum: 1,
                 description: 'Maximum body text characters to return.',
               },
-            maxLinks: { type: 'number', default: 100, minimum: 0, description: 'Maximum links to return.' },
-          },
+              maxLinks: { type: 'number', default: 100, minimum: 0, description: 'Maximum links to return.' },
+            },
           },
         ),
         method(
@@ -7124,20 +7117,20 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           'Read a bounded DOM structure summary from an existing Desk browser pane.',
           'read',
           {
-          type: 'object',
-          properties: {
+            type: 'object',
+            properties: {
               contentId: {
                 type: 'string',
                 description: 'Optional browser content id. Defaults to the active browser pane.',
               },
-            paneId: { type: 'string', description: 'Optional pane id containing a browser content.' },
-            maxNodes: { type: 'number', default: 250, minimum: 1, description: 'Maximum DOM nodes to return.' },
+              paneId: { type: 'string', description: 'Optional pane id containing a browser content.' },
+              maxNodes: { type: 'number', default: 250, minimum: 1, description: 'Maximum DOM nodes to return.' },
               maxTextChars: {
                 type: 'number',
                 default: 5000,
                 minimum: 1,
                 description: 'Maximum cumulative text characters to return.',
-          },
+              },
             },
           },
         ),
@@ -7147,23 +7140,23 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           'Run a bounded click, fill, select, or key press against a visible Desk browser pane. Prefer this over xd.automation.ui.run for simple visible Desk browser form fill, click, select, and press actions.',
           'control',
           {
-          type: 'object',
-          properties: {
+            type: 'object',
+            properties: {
               contentId: {
                 type: 'string',
                 description: 'Optional browser content id. Defaults to the active browser pane.',
               },
-            paneId: { type: 'string', description: 'Optional pane id containing a browser content.' },
-            elementAction: {
-              type: 'string',
-              enum: ['fill', 'click', 'select', 'press'],
-              description: 'Bounded element action to run in the visible browser pane.',
+              paneId: { type: 'string', description: 'Optional pane id containing a browser content.' },
+              elementAction: {
+                type: 'string',
+                enum: ['fill', 'click', 'select', 'press'],
+                description: 'Bounded element action to run in the visible browser pane.',
+              },
+              selector: { type: 'string', description: 'CSS selector for the target element.' },
+              text: { type: 'string', description: 'Optional visible text fallback when selector is omitted.' },
+              value: { type: 'string', description: 'Value used by fill or select actions.' },
+              key: { type: 'string', description: 'Keyboard key used by press actions.' },
             },
-            selector: { type: 'string', description: 'CSS selector for the target element.' },
-            text: { type: 'string', description: 'Optional visible text fallback when selector is omitted.' },
-            value: { type: 'string', description: 'Value used by fill or select actions.' },
-            key: { type: 'string', description: 'Keyboard key used by press actions.' },
-          },
           },
           { approval: 'never' },
         ),
@@ -7218,7 +7211,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                   stepId: {
                     type: 'string',
                     title: 'Step id',
-                    examples: ['choose-workspace-folder', 'open-terminal', 'open-file-preview'],
+                    examples: ['choose-workspace-folder', 'configure-ai-provider', 'configure-mcp'],
                   },
                   sampleWorkspacePath: {
                     type: 'string',
@@ -7240,7 +7233,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                   stepId: {
                     type: 'string',
                     title: 'Step id',
-                    examples: ['choose-workspace-folder', 'open-terminal', 'open-file-preview'],
+                    examples: ['choose-workspace-folder', 'configure-ai-provider', 'configure-mcp'],
                   },
                   sampleWorkspacePath: {
                     type: 'string',
@@ -7612,7 +7605,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               type: 'string',
               title: 'File path',
               description: 'Absolute local file path for file, markdown, image, code, or xcon views.',
-              examples: ['D:\\Workspace\\README.md'],
+              examples: ['<workspace-root>/README.md'],
             },
             toolId: {
               type: 'string',
@@ -7637,7 +7630,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               type: 'string',
               title: 'Working directory',
               description: 'Terminal working directory.',
-              examples: ['D:\\Workspace'],
+              examples: ['<workspace-root>'],
             },
           },
         },
@@ -8157,14 +8150,14 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                 type: 'string',
                 title: 'Root path',
                 description: 'Absolute local directory path to use as the explorer root.',
-                examples: ['D:\\Workspace'],
+                examples: ['<workspace-root>'],
                 'ui:widget': 'directoryPath',
               },
               selectPath: {
                 type: 'string',
                 title: 'Selected path',
                 description: 'Optional file or directory path to select after navigating.',
-                examples: ['D:\\Workspace\\README.md'],
+                examples: ['<workspace-root>/README.md'],
                 'ui:widget': 'filePath',
               },
             },
@@ -8220,7 +8213,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                 type: 'string',
                 title: 'Path',
                 description: 'File or folder path to select.',
-                examples: ['D:\\Workspace\\README.md'],
+                examples: ['<workspace-root>/README.md'],
                 'ui:widget': 'filePath',
               },
             },
@@ -8466,7 +8459,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             type: 'string',
             title: 'Favorite path',
             description: 'File path, folder path, URL, or terminal path to store as a favorite.',
-            examples: ['D:\\Workspace', 'https://xconviewer.dev'],
+            examples: ['<workspace-root>', 'https://xconviewer.dev'],
           },
           kind: {
             type: 'string',
@@ -8537,7 +8530,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               type: 'string',
               title: 'Path',
               description: 'Optional local path to open in terminal when id is not supplied.',
-              examples: ['D:\\Workspace'],
+              examples: ['<workspace-root>'],
               'ui:widget': 'directoryPath',
             },
             shell: {
@@ -8568,7 +8561,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               type: 'string',
               title: 'Path',
               description: 'Optional path or URL to copy when id is not supplied.',
-              examples: ['D:\\Workspace\\README.md'],
+              examples: ['<workspace-root>/README.md'],
             },
           },
         },
@@ -8737,13 +8730,19 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           text: { type: 'string', title: 'Text' },
         },
       }),
-      method('xd.computer.key', 'Send native key', 'Send a keyboard shortcut to the active verified native target.', 'execute', {
-        type: 'object',
-        required: ['keys'],
-        properties: {
-          keys: { type: 'string', title: 'Keys', examples: ['Ctrl+S'] },
+      method(
+        'xd.computer.key',
+        'Send native key',
+        'Send a keyboard shortcut to the active verified native target.',
+        'execute',
+        {
+          type: 'object',
+          required: ['keys'],
+          properties: {
+            keys: { type: 'string', title: 'Keys', examples: ['Ctrl+S'] },
+          },
         },
-      }),
+      ),
       method(
         'xd.computer.scroll',
         'Scroll native target',
@@ -8783,13 +8782,19 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           'List computer-use action records.',
           'read',
         ),
-        method('xd.computer.actions.get', 'Read computer-use action record', 'Read one computer-use action record.', 'read', {
-          type: 'object',
-          required: ['id'],
-          properties: {
-            id: { type: 'string', title: 'Action record id', examples: ['cu-1'] },
+        method(
+          'xd.computer.actions.get',
+          'Read computer-use action record',
+          'Read one computer-use action record.',
+          'read',
+          {
+            type: 'object',
+            required: ['id'],
+            properties: {
+              id: { type: 'string', title: 'Action record id', examples: ['cu-1'] },
+            },
           },
-        }),
+        ),
       ]),
     ]),
     group('xd.files', 'Files', 'Local file open, preview, and safe-write control surface.', [
@@ -8801,7 +8806,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             type: 'string',
             title: 'File path',
             description: 'Absolute local file path to open in Xenesis Desk.',
-            examples: ['D:\\Workspace\\demo.md'],
+            examples: ['<workspace-root>/demo.md'],
             'ui:widget': 'filePath',
           },
           placement: {
@@ -8932,7 +8937,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               type: 'string',
               title: 'File path',
               description: 'Absolute local text file path to preview.',
-              examples: ['D:\\Workspace\\demo.md'],
+              examples: ['<workspace-root>/demo.md'],
               'ui:widget': 'filePath',
             },
             content: {
@@ -8966,7 +8971,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               type: 'string',
               title: 'File path',
               description: 'Absolute local text file path to write.',
-              examples: ['D:\\Workspace\\demo.md'],
+              examples: ['<workspace-root>/demo.md'],
               'ui:widget': 'filePath',
             },
             content: {
@@ -8980,7 +8985,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               type: 'string',
               title: 'Backup root',
               description: 'Optional absolute backup root.',
-              examples: ['C:\\Users\\devuser\\.xenis\\bot-backups'],
+              examples: ['<xenis-home>/bot-backups'],
               'ui:widget': 'directory',
             },
             maxBytes: {
@@ -9007,14 +9012,14 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               type: 'string',
               title: 'Backup path',
               description: 'Absolute .bak path returned by a previous safe text write.',
-              examples: ['C:\\Users\\devuser\\.xenis\\bot-backups\\demo.md.bak'],
+              examples: ['<xenis-home>/bot-backups/demo.md.bak'],
               'ui:widget': 'filePath',
             },
             filePath: {
               type: 'string',
               title: 'File path',
               description: 'Optional restore target. Must match backup metadata when provided.',
-              examples: ['D:\\Workspace\\demo.md'],
+              examples: ['<workspace-root>/demo.md'],
               'ui:widget': 'filePath',
             },
           },
@@ -9211,7 +9216,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               type: 'string',
               title: 'Working directory',
               description: 'Optional local working directory for the terminal session.',
-              examples: ['D:\\Workspace'],
+              examples: ['<workspace-root>'],
               'ui:widget': 'directory',
             },
             shell: {
@@ -9251,7 +9256,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               type: 'string',
               title: 'Working directory',
               description: 'Optional local working directory for the terminal session.',
-              examples: ['D:\\Workspace'],
+              examples: ['<workspace-root>'],
               'ui:widget': 'directory',
             },
             shell: {
@@ -9292,7 +9297,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               type: 'string',
               title: 'Working directory',
               description: 'Optional local working directory for the terminal sessions.',
-              examples: ['D:\\Workspace'],
+              examples: ['<workspace-root>'],
               'ui:widget': 'directory',
             },
             shell: {
@@ -12110,40 +12115,100 @@ export async function callDeskBridgeCapability(
         });
       }
       if (path === 'xd.computer.capture') {
-        return callComputerUseCapability(path, api?.computerUseCall, normalizeCapabilityArgs(request.args), computerUseCallOptions);
+        return callComputerUseCapability(
+          path,
+          api?.computerUseCall,
+          normalizeCapabilityArgs(request.args),
+          computerUseCallOptions,
+        );
       }
       if (path === 'xd.computer.list_apps') {
-        return callComputerUseCapability(path, api?.computerUseCall, normalizeCapabilityArgs(request.args), computerUseCallOptions);
+        return callComputerUseCapability(
+          path,
+          api?.computerUseCall,
+          normalizeCapabilityArgs(request.args),
+          computerUseCallOptions,
+        );
       }
       if (path === 'xd.computer.focus_app') {
-        return callComputerUseCapability(path, api?.computerUseCall, normalizeCapabilityArgs(request.args), computerUseCallOptions);
+        return callComputerUseCapability(
+          path,
+          api?.computerUseCall,
+          normalizeCapabilityArgs(request.args),
+          computerUseCallOptions,
+        );
       }
       if (path === 'xd.computer.click') {
-        return callComputerUseCapability(path, api?.computerUseCall, normalizeCapabilityArgs(request.args), computerUseCallOptions);
+        return callComputerUseCapability(
+          path,
+          api?.computerUseCall,
+          normalizeCapabilityArgs(request.args),
+          computerUseCallOptions,
+        );
       }
       if (path === 'xd.computer.type') {
-        return callComputerUseCapability(path, api?.computerUseCall, normalizeCapabilityArgs(request.args), computerUseCallOptions);
+        return callComputerUseCapability(
+          path,
+          api?.computerUseCall,
+          normalizeCapabilityArgs(request.args),
+          computerUseCallOptions,
+        );
       }
       if (path === 'xd.computer.key') {
-        return callComputerUseCapability(path, api?.computerUseCall, normalizeCapabilityArgs(request.args), computerUseCallOptions);
+        return callComputerUseCapability(
+          path,
+          api?.computerUseCall,
+          normalizeCapabilityArgs(request.args),
+          computerUseCallOptions,
+        );
       }
       if (path === 'xd.computer.scroll') {
-        return callComputerUseCapability(path, api?.computerUseCall, normalizeCapabilityArgs(request.args), computerUseCallOptions);
+        return callComputerUseCapability(
+          path,
+          api?.computerUseCall,
+          normalizeCapabilityArgs(request.args),
+          computerUseCallOptions,
+        );
       }
       if (path === 'xd.computer.drag') {
-        return callComputerUseCapability(path, api?.computerUseCall, normalizeCapabilityArgs(request.args), computerUseCallOptions);
+        return callComputerUseCapability(
+          path,
+          api?.computerUseCall,
+          normalizeCapabilityArgs(request.args),
+          computerUseCallOptions,
+        );
       }
       if (path === 'xd.computer.set_value') {
-        return callComputerUseCapability(path, api?.computerUseCall, normalizeCapabilityArgs(request.args), computerUseCallOptions);
+        return callComputerUseCapability(
+          path,
+          api?.computerUseCall,
+          normalizeCapabilityArgs(request.args),
+          computerUseCallOptions,
+        );
       }
       if (path === 'xd.computer.stop') {
-        return callComputerUseCapability(path, api?.computerUseCall, normalizeCapabilityArgs(request.args), computerUseCallOptions);
+        return callComputerUseCapability(
+          path,
+          api?.computerUseCall,
+          normalizeCapabilityArgs(request.args),
+          computerUseCallOptions,
+        );
       }
       if (path === 'xd.computer.actions.list') {
-        return callComputerUseCapability(path, api?.computerUseCall, normalizeCapabilityArgs(request.args), computerUseCallOptions);
+        return callComputerUseCapability(
+          path,
+          api?.computerUseCall,
+          normalizeCapabilityArgs(request.args),
+          computerUseCallOptions,
+        );
       }
       if (path === 'xd.computer.actions.get') {
-        return callComputerUseCapability(path, api?.computerUseCall, normalizeCapabilityArgs(request.args), computerUseCallOptions);
+        return callComputerUseCapability(
+          path,
+          api?.computerUseCall,
+          normalizeCapabilityArgs(request.args),
+          computerUseCallOptions,
+        );
       }
       if (path === 'xd.diagnostics.state') {
         return callAdapter(path, api?.status);
@@ -12769,10 +12834,16 @@ export async function callDeskBridgeCapability(
         return callAdapter(path, api?.agentActionNeededDismiss, request.args);
       }
       if (path === 'xd.agent.receipts.list') {
-        return redactAgentActionRecordRefsForExternal(source, await callAdapter(path, api?.agentReceiptsList, request.args));
+        return redactAgentActionRecordRefsForExternal(
+          source,
+          await callAdapter(path, api?.agentReceiptsList, request.args),
+        );
       }
       if (path === 'xd.agent.receipts.get') {
-        return redactAgentActionRecordRefsForExternal(source, await callAdapter(path, api?.agentReceiptsGet, request.args));
+        return redactAgentActionRecordRefsForExternal(
+          source,
+          await callAdapter(path, api?.agentReceiptsGet, request.args),
+        );
       }
       if (path === 'xd.xenesis.connections.status') {
         return callAdapter(path, api?.getXenesisConnectionsStatus);
@@ -13802,9 +13873,7 @@ export function evaluateDeskBridgeCapabilityApproval(
   args?: unknown,
 ): DeskBridgeCapabilityApprovalDecision {
   const trustedApproval =
-    approved &&
-    (source !== 'mcp' ||
-      isValidDeskBridgeCapabilityApprovalProof(node, source, args, approvalProof));
+    approved && (source !== 'mcp' || isValidDeskBridgeCapabilityApprovalProof(node, source, args, approvalProof));
   if (node.approval === 'never') {
     return { allowed: true, approvalRequired: false };
   }
@@ -14053,10 +14122,7 @@ function isCapabilityCallResultLike(
   value: unknown,
 ): value is { ok: boolean; path?: unknown; result?: unknown; error?: unknown; approvalRequired?: unknown } {
   return Boolean(
-    value &&
-      typeof value === 'object' &&
-      !Array.isArray(value) &&
-      typeof (value as { ok?: unknown }).ok === 'boolean',
+    value && typeof value === 'object' && !Array.isArray(value) && typeof (value as { ok?: unknown }).ok === 'boolean',
   );
 }
 

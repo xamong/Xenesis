@@ -23,10 +23,9 @@ type OpenPath = (targetPath: string) => Promise<string>;
 
 const BASIC_DESK_ONBOARDING_DEMO_SCENES = [
   { stepId: 'choose-workspace-folder', title: 'Choose a sample workspace' },
-  { stepId: 'open-terminal', title: 'Open a terminal' },
-  { stepId: 'open-file-preview', title: 'Open and preview a sample file' },
-  { stepId: 'arrange-panes', title: 'Arrange panes' },
-  { stepId: 'use-command-center', title: 'Send a command from Command Center' },
+  { stepId: 'configure-ai-provider', title: 'Connect the Agent provider' },
+  { stepId: 'connect-external-tools', title: 'Connect external tools' },
+  { stepId: 'configure-mcp', title: 'Prepare MCP connections' },
   { stepId: 'open-settings-diagnostics', title: 'Open settings and diagnostics' },
   { stepId: 'save-restore-workspace', title: 'Save and restore the workspace layout' },
 ];

@@ -1,12 +1,8 @@
-import type { MemoryConflict, MemorySupersedePatch } from "./memoryTypes.js";
-import type { MemoryInput, MemoryRecord } from "./types.js";
+import type { MemoryConflict, MemorySupersedePatch } from './memoryTypes.js';
+import type { MemoryInput, MemoryRecord } from './types.js';
 
-const POSITIVE_PREFERENCE_PATTERNS = [
-  /선호|좋아|허용|가능|prefer|like|allow|accept/i
-];
-const NEGATIVE_PREFERENCE_PATTERNS = [
-  /피한다|싫어|거부|금지|선호하지|avoid|dislike|reject|forbid|do not prefer/i
-];
+const POSITIVE_PREFERENCE_PATTERNS = [/선호|좋아|허용|가능|prefer|like|allow|accept/i];
+const NEGATIVE_PREFERENCE_PATTERNS = [/피한다|싫어|거부|금지|선호하지|avoid|dislike|reject|forbid|do not prefer/i];
 
 function parseTime(value: string | undefined, fallback: number): number {
   if (!value) return fallback;
@@ -26,13 +22,13 @@ function hasPreferencePolarity(text: string, patterns: RegExp[]): boolean {
   return patterns.some((pattern) => pattern.test(text));
 }
 
-function preferencePolarity(text: string): "positive" | "negative" | "mixed" | "unknown" {
+function preferencePolarity(text: string): 'positive' | 'negative' | 'mixed' | 'unknown' {
   const positive = hasPreferencePolarity(text, POSITIVE_PREFERENCE_PATTERNS);
   const negative = hasPreferencePolarity(text, NEGATIVE_PREFERENCE_PATTERNS);
-  if (positive && negative) return "mixed";
-  if (positive) return "positive";
-  if (negative) return "negative";
-  return "unknown";
+  if (positive && negative) return 'mixed';
+  if (positive) return 'positive';
+  if (negative) return 'negative';
+  return 'unknown';
 }
 
 function tagsOverlap(left: readonly string[] | undefined, right: readonly string[] | undefined): boolean {
@@ -82,25 +78,27 @@ export function sortCurrentBeforeHistorical(records: MemoryRecord[], at: string)
 
 export function findTemporalConflicts(candidate: MemoryInput, active: MemoryRecord[], at: string): MemoryConflict[] {
   const candidatePolarity = preferencePolarity(candidate.text);
-  if (candidatePolarity === "unknown" || candidatePolarity === "mixed") return [];
+  if (candidatePolarity === 'unknown' || candidatePolarity === 'mixed') return [];
 
   return active.flatMap((existing) => {
     if (existing.id === candidate.id) return [];
-    if ((existing.status ?? "active") === "archived") return [];
+    if ((existing.status ?? 'active') === 'archived') return [];
     if (!tagsOverlap(candidate.tags, existing.tags)) return [];
     if (!temporalWindowsOverlap(candidate, existing, at)) return [];
 
     const existingPolarity = preferencePolarity(existing.text);
-    if (existingPolarity === "unknown" || existingPolarity === "mixed") return [];
+    if (existingPolarity === 'unknown' || existingPolarity === 'mixed') return [];
     if (existingPolarity === candidatePolarity) return [];
 
-    return [{
-      candidateId: candidate.id,
-      existingId: existing.id,
-      severity: "inferred" as const,
-      reason: "same-period opposite preference",
-      at
-    }];
+    return [
+      {
+        candidateId: candidate.id,
+        existingId: existing.id,
+        severity: 'inferred' as const,
+        reason: 'same-period opposite preference',
+        at,
+      },
+    ];
   });
 }
 
@@ -108,16 +106,18 @@ export function buildPartialSupersede(base: MemoryRecord, exception: MemoryInput
   const partialSupersededBy = Array.from(new Set([...(base.partialSupersededBy ?? []), exception.id]));
   const supersedes = Array.from(new Set([...(exception.supersedes ?? []), base.id]));
   return {
-    mode: "partial",
+    mode: 'partial',
     basePatch: {
       id: base.id,
-      partialSupersededBy
+      partialSupersededBy,
     },
     nextInput: {
       ...exception,
       supersedes,
-      ...(boundedValidTo(base.validTo, exception.validTo) ? { validTo: boundedValidTo(base.validTo, exception.validTo) } : {}),
-      supersedeMode: "partial"
-    }
+      ...(boundedValidTo(base.validTo, exception.validTo)
+        ? { validTo: boundedValidTo(base.validTo, exception.validTo) }
+        : {}),
+      supersedeMode: 'partial',
+    },
   };
 }

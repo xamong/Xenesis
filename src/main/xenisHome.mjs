@@ -4,7 +4,7 @@ import path from 'node:path';
 
 export const XENIS_HOME_ENV = 'XENIS_HOME';
 export const XENIS_HOME_DIR_NAME = '.xenis';
-export const LEGACY_XAMONG_CODE_CONFIG_DIR = 'E:\\Xamong\\agent';
+export const LEGACY_XAMONG_CODE_CONFIG_DIR_ENV = 'XAMONG_CODE_LEGACY_CONFIG_DIRS';
 
 export const MIGRATABLE_USER_DATA_ITEMS = [
   'settings.json',
@@ -96,9 +96,16 @@ export function pathsEqual(left, right) {
   return path.resolve(leftPath).toLowerCase() === path.resolve(rightPath).toLowerCase();
 }
 
+function legacyXamongCodeConfigDirs({ env = process.env } = {}) {
+  return String(env?.[LEGACY_XAMONG_CODE_CONFIG_DIR_ENV] || '')
+    .split(';')
+    .map(trimPath)
+    .filter(Boolean);
+}
+
 export function resolveDefaultedXamongCodeConfigDir(value, options = {}) {
   const normalized = normalizeUserPath(value);
-  if (!normalized || pathsEqual(normalized, LEGACY_XAMONG_CODE_CONFIG_DIR)) {
+  if (!normalized || legacyXamongCodeConfigDirs(options).some((candidate) => pathsEqual(normalized, candidate))) {
     return getDefaultXamongCodeConfigDir(options);
   }
   return normalized;

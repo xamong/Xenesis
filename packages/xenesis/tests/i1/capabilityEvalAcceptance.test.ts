@@ -63,9 +63,7 @@ describe('capability eval acceptance checks', () => {
         requiredProcessModel: 'persistent-process',
       },
       exitCode: 0,
-      stdout: [
-        'Desk 상태 확인 완료',
-      ].join('\n'),
+      stdout: ['Desk 상태 확인 완료'].join('\n'),
       stderr: '',
       durationMs: 100,
       acceptanceEvidence: {

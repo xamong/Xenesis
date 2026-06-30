@@ -348,5 +348,7 @@ test('app control service forwards targeted window status to the adapter', async
 
   assert.equal(result.ok, true);
   assert.equal(result.policy?.approval, 'never');
-  assert.deepEqual(statusInputs, [{ executable: '', processName: undefined, titleContains: undefined, windowId: '1001' }]);
+  assert.deepEqual(statusInputs, [
+    { executable: '', processName: undefined, titleContains: undefined, windowId: '1001' },
+  ]);
 });

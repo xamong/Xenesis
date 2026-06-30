@@ -22,10 +22,7 @@ import path from 'node:path';
 // ~/.codex (and their interactive codex CLI) is never touched. Returns the
 // isolated home path, or null if it could not be prepared (no credentials, fs
 // error) — the caller then leaves CODEX_HOME unset and codex uses the real home.
-export function prepareCodexIsolatedHome(
-  { realCodexHome, isolatedHome, reasoningEffort, workspaceCwd },
-  fs = fsSync
-) {
+export function prepareCodexIsolatedHome({ realCodexHome, isolatedHome, reasoningEffort, workspaceCwd }, fs = fsSync) {
   try {
     if (!realCodexHome || !isolatedHome) return null;
     const realAuth = path.join(realCodexHome, 'auth.json');
@@ -47,11 +44,7 @@ export function prepareCodexIsolatedHome(
       reasoningEffort && reasoningEffort !== 'default'
         ? `# Desk pins model_reasoning_effort=${reasoningEffort} via -c at launch.\n`
         : '';
-    fs.writeFileSync(
-      path.join(isolatedHome, 'config.toml'),
-      `${header}${kept.trimEnd()}\n${trustBlock}`,
-      'utf8'
-    );
+    fs.writeFileSync(path.join(isolatedHome, 'config.toml'), `${header}${kept.trimEnd()}\n${trustBlock}`, 'utf8');
     return isolatedHome;
   } catch {
     return null;

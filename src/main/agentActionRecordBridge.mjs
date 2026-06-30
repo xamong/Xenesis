@@ -44,7 +44,10 @@ export function createLinkedApprovalActionNeeded({ turnId, item } = {}) {
   const title = rawTitle && rawTitle !== 'Approve Xenesis Desk capability:' ? rawTitle : 'Desk approval required';
   const description = sanitizeApprovalProductText(record.description);
   const source = sanitizeApprovalProductText(record.source);
-  const productMessage = [description || '이 작업을 계속하려면 데스크 승인이 필요합니다.', source ? `Source: ${source}` : '']
+  const productMessage = [
+    description || '이 작업을 계속하려면 데스크 승인이 필요합니다.',
+    source ? `Source: ${source}` : '',
+  ]
     .filter(Boolean)
     .join(' ')
     .trim();

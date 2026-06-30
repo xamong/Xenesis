@@ -1,4 +1,4 @@
-import { sanitizeAgentProductMessage, type AgentActionNeeded } from '../../../../shared/agentActionRecords';
+import { type AgentActionNeeded, sanitizeAgentProductMessage } from '../../../../shared/agentActionRecords';
 import type { McpBridgeActionInboxItem } from '../../../../shared/types';
 
 export type XenesisAgentActionNeededStatus = AgentActionNeeded['status'] | 'mixed';
@@ -47,7 +47,9 @@ export function mergeXenesisAgentActionNeeded(
   return [...byId.values()];
 }
 
-export function xenesisAgentActionNeededStatus(records: AgentActionNeeded[]): XenesisAgentActionNeededStatus | undefined {
+export function xenesisAgentActionNeededStatus(
+  records: AgentActionNeeded[],
+): XenesisAgentActionNeededStatus | undefined {
   if (records.length === 0) return undefined;
   const statuses = new Set(records.map((record) => record.status));
   return statuses.size === 1 ? records[0]?.status : 'mixed';

@@ -792,7 +792,7 @@ Options:
   --height <value>   Inline image height, usually auto.
 
 Examples:
-  xd --dev image "D:\\Workspace\\sample-image.png" --width=80% --height=auto
+  xd --dev image "<workspace-root>/sample-image.png" --width=80% --height=auto
   xd image https://example.test/image.png --term-id term-123
 `);
 }
@@ -1045,7 +1045,7 @@ Examples:
   xd files
   xd capability xd.files.listOpen
   xd call xd.terminals.sessions.term-a.tail {"maxBytes":128}
-  xd --dev image "D:\\Workspace\\sample-image.png" --width=80% --height=auto
+  xd --dev image "<workspace-root>/sample-image.png" --width=80% --height=auto
   xd xcon-image ".\\artifact.xcon.md" --theme=dark --title=Preview
   xd trace on --clear
   xd trace capture --wait-ms 15000 -- "Render a small XCON card"

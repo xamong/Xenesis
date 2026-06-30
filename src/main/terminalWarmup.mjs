@@ -22,6 +22,11 @@ function normalizeCwd(value) {
   return cwd || process.cwd();
 }
 
+function resolveWindowsSystemCommand(env, fallbackCommand, relativeParts, systemRoot) {
+  const root = String(systemRoot || env.SystemRoot || env.windir || '').trim();
+  return root ? path.win32.join(root, ...relativeParts) : fallbackCommand;
+}
+
 export function shouldTerminalWarmupRun(env = process.env) {
   const disabled = String(env.XENIS_DISABLE_TERMINAL_WARMUP || '')
     .trim()
@@ -33,7 +38,7 @@ export function buildTerminalWarmupLaunch({
   shell,
   platform = process.platform,
   env = process.env,
-  systemRoot = env.SystemRoot || 'C:\\Windows',
+  systemRoot,
   cwd = process.cwd(),
 } = {}) {
   const resolvedShell = normalizeShell(shell, platform);
@@ -43,7 +48,7 @@ export function buildTerminalWarmupLaunch({
     if (resolvedShell === 'cmd') {
       return {
         shell: resolvedShell,
-        command: env.ComSpec || path.win32.join(systemRoot, 'System32', 'cmd.exe'),
+        command: env.ComSpec || resolveWindowsSystemCommand(env, 'cmd.exe', ['System32', 'cmd.exe'], systemRoot),
         args: ['/d', '/c', 'exit'],
         cwd: resolvedCwd,
       };
@@ -66,7 +71,12 @@ export function buildTerminalWarmupLaunch({
     }
     return {
       shell: 'powershell',
-      command: path.win32.join(systemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe'),
+      command: resolveWindowsSystemCommand(
+        env,
+        'powershell.exe',
+        ['System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe'],
+        systemRoot,
+      ),
       args: ['-NoLogo', '-NoProfile', '-Command', 'exit'],
       cwd: resolvedCwd,
     };

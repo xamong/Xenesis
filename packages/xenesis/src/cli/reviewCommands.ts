@@ -81,7 +81,7 @@ const sharedAllowedTools = [
 const commandSpecs: Record<ReviewPromptCommandName, ReviewCommandSpec> = {
   review: {
     title: 'Local Code Review',
-    referencePath: 'E:/agent-anal/src/commands/review/reviewRemote.ts',
+    referencePath: 'reference-src/commands/review/reviewRemote.ts',
     summary: 'Builds a local review handoff from workspace git state instead of launching a remote review session.',
     objective:
       'Review the changed code for concrete correctness, maintainability, testing, and regression risks introduced by the current local changes.',
@@ -98,7 +98,7 @@ const commandSpecs: Record<ReviewPromptCommandName, ReviewCommandSpec> = {
   },
   'security-review': {
     title: 'Local Security Review',
-    referencePath: 'E:/agent-anal/src/commands/security-review.ts',
+    referencePath: 'reference-src/commands/security-review.ts',
     summary:
       'Builds a security-focused local review prompt with git diagnostics and no plugin marketplace or remote task dependency.',
     objective: 'Identify high-confidence security vulnerabilities introduced by the current local changes.',
@@ -116,7 +116,7 @@ const commandSpecs: Record<ReviewPromptCommandName, ReviewCommandSpec> = {
   },
   'perf-issue': {
     title: 'Local Performance Issue Review',
-    referencePath: 'E:/agent-anal/src/commands/perf-issue/index.js',
+    referencePath: 'reference-src/commands/perf-issue/index.js',
     summary:
       'Provides a Xenesis-owned diagnostic handoff for performance regressions; the reference command is a disabled stub.',
     objective:
@@ -134,7 +134,7 @@ const commandSpecs: Record<ReviewPromptCommandName, ReviewCommandSpec> = {
   },
   bughunter: {
     title: 'Local Bug Hunt',
-    referencePath: 'E:/agent-anal/src/commands/bughunter/index.js',
+    referencePath: 'reference-src/commands/bughunter/index.js',
     summary: 'Provides a local bug-hunt handoff over changed code; the reference command is a disabled stub.',
     objective:
       'Search the changed code and nearby behavior for concrete bugs, edge-case failures, and missing verification.',
@@ -151,7 +151,7 @@ const commandSpecs: Record<ReviewPromptCommandName, ReviewCommandSpec> = {
   },
   'autofix-pr': {
     title: 'Local PR Autofix Planning',
-    referencePath: 'E:/agent-anal/src/commands/autofix-pr/index.js',
+    referencePath: 'reference-src/commands/autofix-pr/index.js',
     summary:
       'Creates a local remediation prompt for PR feedback without fetching GitHub state; the reference command is a disabled stub.',
     objective:
@@ -169,7 +169,7 @@ const commandSpecs: Record<ReviewPromptCommandName, ReviewCommandSpec> = {
   },
   issue: {
     title: 'Local Issue Triage',
-    referencePath: 'E:/agent-anal/src/commands/issue/index.js',
+    referencePath: 'reference-src/commands/issue/index.js',
     summary:
       'Turns a supplied issue description into a local triage and implementation handoff; the reference command is a disabled stub.',
     objective:
@@ -183,7 +183,7 @@ const commandSpecs: Record<ReviewPromptCommandName, ReviewCommandSpec> = {
   },
   'pr-comments': {
     title: 'Local PR Comments Review',
-    referencePath: 'E:/agent-anal/src/commands/pr_comments/index.ts',
+    referencePath: 'reference-src/commands/pr_comments/index.ts',
     summary: 'Formats or acts on user-supplied PR comments without running gh or GitHub API calls.',
     objective:
       'Summarize and respond to PR comments supplied in the prompt or local fixtures while using local code context for accuracy.',
@@ -200,7 +200,7 @@ const commandSpecs: Record<ReviewPromptCommandName, ReviewCommandSpec> = {
   },
   'commit-push-pr': {
     title: 'Local Commit And PR Draft',
-    referencePath: 'E:/agent-anal/src/commands/commit-push-pr.ts',
+    referencePath: 'reference-src/commands/commit-push-pr.ts',
     summary: 'Drafts commit and PR material from local git context without pushing branches or creating remote PRs.',
     objective:
       'Prepare a safe local commit plan, push-readiness summary, and PR title/body draft from current workspace changes.',

@@ -40,7 +40,7 @@ interface SetupPolicyMetadata {
 const setupPolicyMetadata: Record<SetupPolicyRouteName, SetupPolicyMetadata> = {
   init: {
     surface: 'xenesis init claude',
-    sourcePath: 'E:/agent-anal/src/commands/init.ts',
+    sourcePath: 'reference-src/commands/init.ts',
     sourceBehavior: 'prompt command that guides CLAUDE.md, optional skills, hooks, and onboarding-state setup',
     localBehavior: 'reports setup scope only; bare `xenesis init` still creates xenesis.config.json',
     skippedEffects: [
@@ -51,7 +51,7 @@ const setupPolicyMetadata: Record<SetupPolicyRouteName, SetupPolicyMetadata> = {
   },
   'init-verifiers': {
     surface: 'xenesis init-verifiers',
-    sourcePath: 'E:/agent-anal/src/commands/init-verifiers.ts',
+    sourcePath: 'reference-src/commands/init-verifiers.ts',
     sourceBehavior: 'prompt command that detects project areas and creates verifier skills',
     localBehavior: 'prints verifier setup guidance for web, CLI, and API projects without changing files',
     skippedEffects: [
@@ -62,7 +62,7 @@ const setupPolicyMetadata: Record<SetupPolicyRouteName, SetupPolicyMetadata> = {
   },
   install: {
     surface: 'xenesis install [target] [--force]',
-    sourcePath: 'E:/agent-anal/src/commands/install.tsx',
+    sourcePath: 'reference-src/commands/install.tsx',
     sourceBehavior: 'native installer that downloads/sets up Claude Code and cleans old npm installs',
     localBehavior: 'records a dry local installer plan only',
     skippedEffects: [
@@ -74,7 +74,7 @@ const setupPolicyMetadata: Record<SetupPolicyRouteName, SetupPolicyMetadata> = {
   'install-github-app': {
     surface: 'xenesis install-github-app',
     sourcePath:
-      'E:/agent-anal/src/commands/install-github-app/index.ts; E:/agent-anal/src/commands/install-github-app/ApiKeyStep.tsx',
+      'reference-src/commands/install-github-app/index.ts; reference-src/commands/install-github-app/ApiKeyStep.tsx',
     sourceBehavior: 'interactive GitHub app/actions setup with API key or OAuth token selection',
     localBehavior: 'prints repository automation setup boundaries only',
     skippedEffects: [
@@ -85,7 +85,7 @@ const setupPolicyMetadata: Record<SetupPolicyRouteName, SetupPolicyMetadata> = {
   },
   'install-slack-app': {
     surface: 'xenesis install-slack-app',
-    sourcePath: 'E:/agent-anal/src/commands/install-slack-app/index.ts',
+    sourcePath: 'reference-src/commands/install-slack-app/index.ts',
     sourceBehavior: 'interactive Claude Slack app installation command',
     localBehavior: 'prints Slack app installation boundary only',
     skippedEffects: [
@@ -96,7 +96,7 @@ const setupPolicyMetadata: Record<SetupPolicyRouteName, SetupPolicyMetadata> = {
   },
   'oauth-refresh': {
     surface: 'xenesis oauth-refresh',
-    sourcePath: 'E:/agent-anal/src/commands/oauth-refresh/index.js',
+    sourcePath: 'reference-src/commands/oauth-refresh/index.js',
     sourceBehavior: 'hidden disabled stub',
     localBehavior: 'preserves a visible no-op compatibility route',
     skippedEffects: [
@@ -107,7 +107,7 @@ const setupPolicyMetadata: Record<SetupPolicyRouteName, SetupPolicyMetadata> = {
   },
   onboarding: {
     surface: 'xenesis onboarding',
-    sourcePath: 'E:/agent-anal/src/commands/onboarding/index.js',
+    sourcePath: 'reference-src/commands/onboarding/index.js',
     sourceBehavior: 'hidden disabled stub',
     localBehavior: 'preserves a visible no-op compatibility route',
     skippedEffects: [
@@ -118,7 +118,7 @@ const setupPolicyMetadata: Record<SetupPolicyRouteName, SetupPolicyMetadata> = {
   },
   passes: {
     surface: 'xenesis passes',
-    sourcePath: 'E:/agent-anal/src/commands/passes/index.ts; E:/agent-anal/src/commands/passes/passes.tsx',
+    sourcePath: 'reference-src/commands/passes/index.ts; reference-src/commands/passes/passes.tsx',
     sourceBehavior: 'guest-pass/referral UI gated by cached eligibility and referral reward state',
     localBehavior: 'reports that pass/referral checks are out of scope for local CLI',
     skippedEffects: [
@@ -129,7 +129,7 @@ const setupPolicyMetadata: Record<SetupPolicyRouteName, SetupPolicyMetadata> = {
   },
   'privacy-settings': {
     surface: 'xenesis privacy-settings',
-    sourcePath: 'E:/agent-anal/src/commands/privacy-settings/index.ts',
+    sourcePath: 'reference-src/commands/privacy-settings/index.ts',
     sourceBehavior: 'consumer-subscriber privacy settings UI',
     localBehavior: 'reports privacy-settings boundaries without account reads or writes',
     skippedEffects: [
@@ -141,7 +141,7 @@ const setupPolicyMetadata: Record<SetupPolicyRouteName, SetupPolicyMetadata> = {
   sandbox: {
     surface: 'xenesis sandbox [exclude <pattern>]',
     sourcePath:
-      'E:/agent-anal/src/commands/sandbox-toggle/index.ts; E:/agent-anal/src/commands/sandbox-toggle/sandbox-toggle.tsx',
+      'reference-src/commands/sandbox-toggle/index.ts; reference-src/commands/sandbox-toggle/sandbox-toggle.tsx',
     sourceBehavior: 'interactive sandbox settings UI and local excluded-command mutation',
     localBehavior: 'prints local sandbox-policy guidance without changing settings',
     skippedEffects: [
@@ -152,7 +152,7 @@ const setupPolicyMetadata: Record<SetupPolicyRouteName, SetupPolicyMetadata> = {
   },
   upgrade: {
     surface: 'xenesis upgrade',
-    sourcePath: 'E:/agent-anal/src/commands/upgrade/index.ts',
+    sourcePath: 'reference-src/commands/upgrade/index.ts',
     sourceBehavior: 'Claude Max subscription upgrade UI gated by account type',
     localBehavior: 'reports upgrade boundaries only',
     skippedEffects: [

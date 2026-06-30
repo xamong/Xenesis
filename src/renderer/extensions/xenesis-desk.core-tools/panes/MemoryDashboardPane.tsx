@@ -27,7 +27,9 @@ function unwrapCapabilityPayload(value: unknown): Record<string, unknown> {
 function readArrayPayload(result: unknown, key: string): Record<string, unknown>[] {
   const payload = unwrapCapabilityPayload(result);
   const value = payload[key];
-  return Array.isArray(value) ? value.filter((item) => item && typeof item === 'object') as Record<string, unknown>[] : [];
+  return Array.isArray(value)
+    ? (value.filter((item) => item && typeof item === 'object') as Record<string, unknown>[])
+    : [];
 }
 
 function formatTime(value: string | undefined): string {
@@ -72,7 +74,7 @@ export function MemoryDashboardPane() {
   );
   const visibleRecords = useMemo(() => recordsForTab(model, activeTab), [model, activeTab]);
   const selected = selectedId ? model.recordsById[selectedId] : undefined;
-  const selectedEvidence = selected ? model.evidenceByMemory[selected.id] ?? [] : [];
+  const selectedEvidence = selected ? (model.evidenceByMemory[selected.id] ?? []) : [];
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -112,7 +114,10 @@ export function MemoryDashboardPane() {
     setCorrectionReason(selected ? `memory dashboard correction for ${selected.id}` : '');
   }, [selected]);
 
-  async function requestProposalResolution(path: 'xd.memory.proposals.accept' | 'xd.memory.proposals.reject', id: string) {
+  async function requestProposalResolution(
+    path: 'xd.memory.proposals.accept' | 'xd.memory.proposals.reject',
+    id: string,
+  ) {
     setBusyId(id);
     setNotice('');
     try {
@@ -195,7 +200,9 @@ export function MemoryDashboardPane() {
       <header className="xd-memory-dashboard-header">
         <div className="xd-memory-dashboard-title">
           <strong>Memory Dashboard</strong>
-          <span>{loading ? 'Loading' : `${model.counts.records} memories / ${model.counts.pendingProposals} pending`}</span>
+          <span>
+            {loading ? 'Loading' : `${model.counts.records} memories / ${model.counts.pendingProposals} pending`}
+          </span>
         </div>
         <div className="xd-memory-dashboard-actions">
           <button type="button" onClick={() => void load()} disabled={loading}>
@@ -262,7 +269,9 @@ export function MemoryDashboardPane() {
               <div className="xd-memory-dashboard-detail-head">
                 <div>
                   <strong>{selected.id}</strong>
-                  <span>{selected.kind || 'memory'} / {selected.sensitivity || 'unknown'}</span>
+                  <span>
+                    {selected.kind || 'memory'} / {selected.sensitivity || 'unknown'}
+                  </span>
                 </div>
                 {selected.redacted ? <span className="xd-memory-dashboard-pill is-redacted">redacted</span> : null}
               </div>
@@ -274,7 +283,10 @@ export function MemoryDashboardPane() {
                 </div>
                 <div>
                   <dt>Valid</dt>
-                  <dd>{selected.validFrom || '-'}{selected.validTo ? ` -> ${selected.validTo}` : ''}</dd>
+                  <dd>
+                    {selected.validFrom || '-'}
+                    {selected.validTo ? ` -> ${selected.validTo}` : ''}
+                  </dd>
                 </div>
                 <div>
                   <dt>Tags</dt>
@@ -334,12 +346,16 @@ export function MemoryDashboardPane() {
             <span>{model.pendingProposals.length}</span>
           </header>
           <div className="xd-memory-dashboard-proposal-list">
-            {model.pendingProposals.length === 0 ? <div className="xd-memory-dashboard-empty">No pending proposals.</div> : null}
+            {model.pendingProposals.length === 0 ? (
+              <div className="xd-memory-dashboard-empty">No pending proposals.</div>
+            ) : null}
             {model.pendingProposals.map((proposal) => (
               <article key={proposal.id} className={proposal.redacted ? 'is-redacted' : ''}>
                 <div className="xd-memory-dashboard-proposal-head">
                   <strong>{proposal.id}</strong>
-                  <span>{proposal.decision.sensitivity || 'unknown'} / {proposal.decision.reason || 'pending'}</span>
+                  <span>
+                    {proposal.decision.sensitivity || 'unknown'} / {proposal.decision.reason || 'pending'}
+                  </span>
                 </div>
                 <p>{proposal.displayText}</p>
                 <div className="xd-memory-dashboard-proposal-actions">

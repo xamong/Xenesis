@@ -20,7 +20,7 @@ test('buildElectronRunAsNodeCommand wraps a packaged Electron runtime for shell 
 
 test('buildXenesisTuiTerminalRequest uses bundled Xenesis entrypoint instead of workspace node_modules', () => {
   const runtimePath = 'C:\\Program Files\\Xenesis Desk\\resources\\app.asar.unpacked\\node_modules\\xenesis';
-  const entrypoint = path.join(runtimePath, 'dist', 'cli', 'main.js');
+  const entrypoint = path.win32.join(runtimePath, 'dist', 'cli', 'main.js');
 
   const request = buildXenesisTuiTerminalRequest({
     args: {
@@ -30,6 +30,7 @@ test('buildXenesisTuiTerminalRequest uses bundled Xenesis entrypoint instead of 
     },
     runtimePath,
     execPath: 'C:\\Program Files\\Xenesis Desk\\Xenesis Desk.exe',
+    platform: 'win32',
     existsSync: (candidate) => candidate === entrypoint,
   });
 
@@ -47,7 +48,7 @@ test('buildXenesisTuiTerminalRequest uses bundled Xenesis entrypoint instead of 
 
 test('buildXenesisTuiTerminalRequest prefers PATH node.exe for interactive release TUI', () => {
   const runtimePath = 'C:\\Program Files\\Xenesis Desk\\resources\\app.asar.unpacked\\node_modules\\xenesis';
-  const entrypoint = path.join(runtimePath, 'dist', 'cli', 'main.js');
+  const entrypoint = path.win32.join(runtimePath, 'dist', 'cli', 'main.js');
   const nodePath = 'C:\\Program Files\\nodejs\\node.exe';
 
   const request = buildXenesisTuiTerminalRequest({
@@ -58,6 +59,7 @@ test('buildXenesisTuiTerminalRequest prefers PATH node.exe for interactive relea
     runtimePath,
     execPath: 'C:\\Program Files\\Xenesis Desk\\Xenesis Desk.exe',
     env: { PATH: 'C:\\Program Files\\nodejs' },
+    platform: 'win32',
     existsSync: (candidate) => candidate === entrypoint || candidate === nodePath,
   } as Parameters<typeof buildXenesisTuiTerminalRequest>[0] & { env: NodeJS.ProcessEnv });
 

@@ -1,29 +1,29 @@
-import { mkdtemp } from "node:fs/promises";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { AgentProvider, ProviderRequest, ProviderResponse } from "../../src/providers/types.js";
+import { mkdtemp } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { AgentProvider, ProviderRequest, ProviderResponse } from '../../src/providers/types.js';
 
 const { createProviderMock } = vi.hoisted(() => ({
-  createProviderMock: vi.fn()
+  createProviderMock: vi.fn(),
 }));
 
-vi.mock("../../src/core/AgentRuntimeFactory.js", () => ({
-  createProvider: createProviderMock
+vi.mock('../../src/core/AgentRuntimeFactory.js', () => ({
+  createProvider: createProviderMock,
 }));
 
-import { runConnectionCheck } from "../../src/connect/report.js";
+import { runConnectionCheck } from '../../src/connect/report.js';
 
 function response(content: string): ProviderResponse {
   return {
     message: {
-      role: "assistant",
-      content
-    }
+      role: 'assistant',
+      content,
+    },
   };
 }
 
-describe("runConnectionCheck provider probe lifecycle", () => {
+describe('runConnectionCheck provider probe lifecycle', () => {
   beforeEach(() => {
     createProviderMock.mockReset();
   });
@@ -32,26 +32,26 @@ describe("runConnectionCheck provider probe lifecycle", () => {
     vi.useRealTimers();
   });
 
-  it("disposes a disposable provider after a probe so persistent CLI children do not keep connect check alive", async () => {
-    const complete = vi.fn(async (_request: ProviderRequest) => response("ok"));
+  it('disposes a disposable provider after a probe so persistent CLI children do not keep connect check alive', async () => {
+    const complete = vi.fn(async (_request: ProviderRequest) => response('ok'));
     const dispose = vi.fn();
     const provider = {
-      name: "codex-app-server",
+      name: 'codex-app-server',
       complete,
-      dispose
+      dispose,
     } as AgentProvider & { dispose(): void };
     createProviderMock.mockReturnValue(provider);
-    const cwd = await mkdtemp(join(tmpdir(), "xenesis-connect-probe-"));
-    const xenesisHome = await mkdtemp(join(tmpdir(), "xenesis-connect-home-"));
+    const cwd = await mkdtemp(join(tmpdir(), 'xenesis-connect-probe-'));
+    const xenesisHome = await mkdtemp(join(tmpdir(), 'xenesis-connect-home-'));
 
     const result = await runConnectionCheck({
       cwd,
       env: { ...process.env, XENESIS_HOME: xenesisHome },
       cli: {
-        provider: "codex-app-server",
-        model: "test-model"
+        provider: 'codex-app-server',
+        model: 'test-model',
       },
-      probe: true
+      probe: true,
     });
 
     expect(result.exitCode).toBe(0);
@@ -59,24 +59,27 @@ describe("runConnectionCheck provider probe lifecycle", () => {
     expect(dispose).toHaveBeenCalledTimes(1);
   });
 
-  it("honors XENESIS_CONNECT_PROBE_TIMEOUT_MS for slow persistent providers", async () => {
+  it('honors XENESIS_CONNECT_PROBE_TIMEOUT_MS for slow persistent providers', async () => {
     let markCompleteStarted!: () => void;
     const completeStarted = new Promise<void>((resolve) => {
       markCompleteStarted = resolve;
     });
-    const complete = vi.fn((request: ProviderRequest) => new Promise<ProviderResponse>((resolve, reject) => {
-      markCompleteStarted();
-      request.signal?.addEventListener("abort", () => reject(new Error("probe aborted")));
-      setTimeout(() => resolve(response("slow ok")), 31_000);
-    }));
+    const complete = vi.fn(
+      (request: ProviderRequest) =>
+        new Promise<ProviderResponse>((resolve, reject) => {
+          markCompleteStarted();
+          request.signal?.addEventListener('abort', () => reject(new Error('probe aborted')));
+          setTimeout(() => resolve(response('slow ok')), 31_000);
+        }),
+    );
     const dispose = vi.fn();
     createProviderMock.mockReturnValue({
-      name: "codex-app-server",
+      name: 'codex-app-server',
       complete,
-      dispose
+      dispose,
     } as AgentProvider & { dispose(): void });
-    const cwd = await mkdtemp(join(tmpdir(), "xenesis-connect-probe-"));
-    const xenesisHome = await mkdtemp(join(tmpdir(), "xenesis-connect-home-"));
+    const cwd = await mkdtemp(join(tmpdir(), 'xenesis-connect-probe-'));
+    const xenesisHome = await mkdtemp(join(tmpdir(), 'xenesis-connect-home-'));
     vi.useFakeTimers();
 
     const pending = runConnectionCheck({
@@ -84,14 +87,14 @@ describe("runConnectionCheck provider probe lifecycle", () => {
       env: {
         ...process.env,
         XENESIS_HOME: xenesisHome,
-        XENESIS_CONNECT_PROBE_TIMEOUT_MS: "60000"
+        XENESIS_CONNECT_PROBE_TIMEOUT_MS: '60000',
       },
       cli: {
-        provider: "codex-app-server",
-        model: "test-model"
+        provider: 'codex-app-server',
+        model: 'test-model',
       },
       probe: true,
-      now: () => new Date("2026-06-28T13:45:00.000Z")
+      now: () => new Date('2026-06-28T13:45:00.000Z'),
     });
 
     await completeStarted;
@@ -99,7 +102,7 @@ describe("runConnectionCheck provider probe lifecycle", () => {
     const result = await pending;
 
     expect(result.exitCode).toBe(0);
-    expect(result.report.checks[0]?.message).toBe("probe ok: slow ok");
+    expect(result.report.checks[0]?.message).toBe('probe ok: slow ok');
     expect(dispose).toHaveBeenCalledTimes(1);
   });
 });

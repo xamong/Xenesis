@@ -144,5 +144,8 @@ test('external action-needed readbacks redact internal refs while internal reads
 
   assert.equal((externalList.result as { actionNeeded: Array<{ refs?: unknown }> }).actionNeeded[0]?.refs, undefined);
   assert.equal((externalGet.result as { actionNeeded: { refs?: unknown } }).actionNeeded.refs, undefined);
-  assert.deepEqual((internalList.result as { actionNeeded: Array<{ refs?: unknown }> }).actionNeeded[0]?.refs, record.refs);
+  assert.deepEqual(
+    (internalList.result as { actionNeeded: Array<{ refs?: unknown }> }).actionNeeded[0]?.refs,
+    record.refs,
+  );
 });

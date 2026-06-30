@@ -165,7 +165,13 @@ const ACTION_POLICY_DEFAULTS: Record<ExternalAppActionName, ExternalAppActionPol
 };
 
 const TERMINAL_KEYBOARD_PROFILE_IDS = new Set(['powershell', 'pwsh', 'cmd', 'windows-terminal']);
-const TERMINAL_KEYBOARD_EXECUTABLES = new Set(['powershell.exe', 'pwsh.exe', 'cmd.exe', 'wt.exe', 'windowsterminal.exe']);
+const TERMINAL_KEYBOARD_EXECUTABLES = new Set([
+  'powershell.exe',
+  'pwsh.exe',
+  'cmd.exe',
+  'wt.exe',
+  'windowsterminal.exe',
+]);
 
 export function normalizeExternalAppSettings(raw: ExternalAppSettingsInput | undefined): ExternalAppSettings {
   const builtInIds = new Set(BUILTIN_EXTERNAL_APP_PROFILES.map((profile) => profile.id));

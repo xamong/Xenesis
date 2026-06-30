@@ -1,15 +1,15 @@
-import type { CliConfigOverrides } from "../config/index.js";
+import type { CliConfigOverrides } from '../config/index.js';
 import {
-  runAgentPipeline,
   type AgentRunPipelineOptions,
-  type AgentRunPipelineResult
-} from "../core/AgentRunPipeline.js";
-import type { AgentRunEvent } from "../core/events.js";
-import type { AgentMessage, AgentMessageAttachment } from "../core/messages.js";
-import type { RuntimeSurfaceDescriptor } from "../core/runtime/index.js";
-import type { XenesisTurnLedger } from "../core/turnLedger.js";
-import type { IdeContextInput } from "../ide/index.js";
-import { resolveWorkflow, runResolvedWorkflow, type WorkflowSelection } from "../workflows/index.js";
+  type AgentRunPipelineResult,
+  runAgentPipeline,
+} from '../core/AgentRunPipeline.js';
+import type { AgentRunEvent } from '../core/events.js';
+import type { AgentMessage, AgentMessageAttachment } from '../core/messages.js';
+import type { RuntimeSurfaceDescriptor } from '../core/runtime/index.js';
+import type { XenesisTurnLedger } from '../core/turnLedger.js';
+import type { IdeContextInput } from '../ide/index.js';
+import { resolveWorkflow, runResolvedWorkflow, type WorkflowSelection } from '../workflows/index.js';
 
 export type EmbeddedRunPipeline = (options: AgentRunPipelineOptions) => Promise<AgentRunPipelineResult>;
 
@@ -19,7 +19,7 @@ export interface EmbeddedPromptOptions {
   prompt: string;
   attachments?: AgentMessageAttachment[];
   workflow?: string;
-  mode?: "chat" | "plan" | "work";
+  mode?: 'chat' | 'plan' | 'work';
   configPath?: string;
   cli?: CliConfigOverrides;
   traceId?: string;
@@ -56,32 +56,29 @@ export interface EmbeddedPromptResult {
 }
 
 const embeddedSurface: RuntimeSurfaceDescriptor = {
-  name: "embedded",
-  outputMode: "stream-json",
-  interactive: true
+  name: 'embedded',
+  outputMode: 'stream-json',
+  interactive: true,
 };
 
 function embeddedIdeContext(options: EmbeddedPromptOptions): IdeContextInput | undefined {
   if (options.ideContext) return options.ideContext;
   if (!options.source && !options.workspace && !options.context) return undefined;
   return {
-    source: options.source ?? "xenesis-embedded",
+    source: options.source ?? 'xenesis-embedded',
     workspace: options.workspace ?? options.cwd,
-    context: options.context ?? {}
+    context: options.context ?? {},
   };
 }
 
-function withModeOverride(
-  workflow: WorkflowSelection,
-  mode: EmbeddedPromptOptions["mode"]
-): WorkflowSelection {
-  if (!mode || mode === "chat") return workflow;
+function withModeOverride(workflow: WorkflowSelection, mode: EmbeddedPromptOptions['mode']): WorkflowSelection {
+  if (!mode || mode === 'chat') return workflow;
   return {
     ...workflow,
     pipeline: {
       ...workflow.pipeline,
-      mode
-    }
+      mode,
+    },
   };
 }
 
@@ -91,16 +88,19 @@ export async function runEmbeddedPrompt(options: EmbeddedPromptOptions): Promise
   const stream = options.stream ?? true;
 
   try {
-    const workflow = withModeOverride(await resolveWorkflow({
-      body: {
-        prompt: options.prompt,
-        workflow: options.workflow ?? "xenis",
-        configPath: options.configPath,
-        ideContext: embeddedIdeContext(options)
-      },
-      stream,
-      env: options.env
-    }), options.mode);
+    const workflow = withModeOverride(
+      await resolveWorkflow({
+        body: {
+          prompt: options.prompt,
+          workflow: options.workflow ?? 'xenis',
+          configPath: options.configPath,
+          ideContext: embeddedIdeContext(options),
+        },
+        stream,
+        env: options.env,
+      }),
+      options.mode,
+    );
     const result = await runResolvedWorkflow({
       workflow,
       cwd: options.cwd,
@@ -117,7 +117,7 @@ export async function runEmbeddedPrompt(options: EmbeddedPromptOptions): Promise
       turnLedger: options.turnLedger,
       onEvent: options.onEvent,
       onSession: options.onSession,
-      onMessages: options.onMessages
+      onMessages: options.onMessages,
     });
 
     return {
@@ -127,11 +127,11 @@ export async function runEmbeddedPrompt(options: EmbeddedPromptOptions): Promise
       traceId,
       sessionId: result.sessionId,
       output: result.output,
-      errors: "",
+      errors: '',
       ...(result.doneContent !== undefined ? { doneContent: result.doneContent } : {}),
       events: result.events,
       ...(options.profile ? { profile: options.profile } : {}),
-      ...(options.profilePolicy ? { profilePolicy: options.profilePolicy } : {})
+      ...(options.profilePolicy ? { profilePolicy: options.profilePolicy } : {}),
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -140,12 +140,12 @@ export async function runEmbeddedPrompt(options: EmbeddedPromptOptions): Promise
       exitCode: 1,
       surface: embeddedSurface,
       traceId,
-      output: "",
+      output: '',
       errors: `error: ${message}`,
       error: message,
       events: [],
       ...(options.profile ? { profile: options.profile } : {}),
-      ...(options.profilePolicy ? { profilePolicy: options.profilePolicy } : {})
+      ...(options.profilePolicy ? { profilePolicy: options.profilePolicy } : {}),
     };
   }
 }

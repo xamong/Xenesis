@@ -120,28 +120,25 @@ describe('provider acceptance', () => {
     expect(record.errors).toContain('failed acceptance check: forbid-internal-approval-text');
   });
 
-  test.each(['args: {"path":"C:/secret"}', 'args={"path":"C:/secret"}'])(
-    'detects bare raw args marker %s',
-    (text) => {
-      const record = buildProviderAcceptanceRecord({
-        scenarioId: 'approval-stop',
-        prompt: '외부 폴더 열어줘',
-        expected: { forbidsInternalLeak: true },
-        observed: {
-          provider: 'codex-cli',
-          profileSource: 'profile:codex',
-          toolCalls: [],
-          capabilityPaths: [],
-          readbacks: [],
-          approvalRecords: ['approval-1'],
-          text,
-        },
-      });
+  test.each(['args: {"path":"C:/secret"}', 'args={"path":"C:/secret"}'])('detects bare raw args marker %s', (text) => {
+    const record = buildProviderAcceptanceRecord({
+      scenarioId: 'approval-stop',
+      prompt: '외부 폴더 열어줘',
+      expected: { forbidsInternalLeak: true },
+      observed: {
+        provider: 'codex-cli',
+        profileSource: 'profile:codex',
+        toolCalls: [],
+        capabilityPaths: [],
+        readbacks: [],
+        approvalRecords: ['approval-1'],
+        text,
+      },
+    });
 
-      expect(record.status).toBe('failed');
-      expect(record.errors).toContain('failed acceptance check: forbid-internal-approval-text');
-    },
-  );
+    expect(record.status).toBe('failed');
+    expect(record.errors).toContain('failed acceptance check: forbid-internal-approval-text');
+  });
 
   test('fails keyed provider runs that silently fall back to mock', () => {
     const record = buildProviderAcceptanceRecord({

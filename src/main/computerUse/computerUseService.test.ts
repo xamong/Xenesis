@@ -84,7 +84,10 @@ test('service stop prevents later computer-use actions and records the denial', 
   const click = await service.call('xd.computer.click', { element: 1 }, { approved: true });
   assert.equal(click.ok, false);
   assert.match(click.error || '', /stopped/i);
-  assert.equal((click.result as { record?: { policy?: { allowed?: unknown }; result?: unknown } }).record?.policy?.allowed, false);
+  assert.equal(
+    (click.result as { record?: { policy?: { allowed?: unknown }; result?: unknown } }).record?.policy?.allowed,
+    false,
+  );
   assert.equal((click.result as { record?: { result?: unknown } }).record?.result, 'denied');
   assert.deepEqual(actions, []);
 });

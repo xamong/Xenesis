@@ -5,12 +5,12 @@ import {
   buildAgentPaneLiveSmokeAcceptanceRecord,
   buildApprovalStopSmokeAcceptanceRecord,
   buildCrReadSmokeAcceptanceRecord,
-  parseProviderStatusOutput,
-  parseProviderExecutionEvidence,
-  resolveRuntimeSmokeEvidence,
   buildSmokeAcceptanceRecord,
   buildSmokeSummary,
+  parseProviderExecutionEvidence,
+  parseProviderStatusOutput,
   parseSmokeArgs,
+  resolveRuntimeSmokeEvidence,
   resolveSmokeGatewayToken,
   smokeGatewayHeaders,
 } from './provider-smoke.mjs';
@@ -68,6 +68,29 @@ test('provider smoke acceptance passes with observed capability and readback evi
   assert.deepEqual(record.errors, []);
 });
 
+test('provider smoke acceptance allows auto to resolve to a concrete provider', () => {
+  const record = buildSmokeAcceptanceRecord({
+    scenarioId: 'provider-identity',
+    expectedProvider: 'auto',
+    observedProvider: 'codex-app-server',
+    observedProcessModel: 'persistent-process',
+  });
+
+  assert.equal(record.status, 'passed');
+  assert.deepEqual(record.errors, []);
+});
+
+test('provider smoke acceptance fails auto when runtime provider stays unresolved', () => {
+  const record = buildSmokeAcceptanceRecord({
+    scenarioId: 'provider-identity',
+    expectedProvider: 'auto',
+    observedProvider: 'auto',
+  });
+
+  assert.equal(record.status, 'failed');
+  assert.ok(record.errors.includes('auto provider did not resolve to a concrete provider'));
+});
+
 test('provider smoke acceptance can require a real approval record', () => {
   const record = buildSmokeAcceptanceRecord({
     scenarioId: 'approval-stop',
@@ -95,11 +118,14 @@ test('provider smoke gateway uses a stable bearer token for protected routes', (
 });
 
 test('provider smoke parses observed provider from status json', () => {
-  assert.deepEqual(parseProviderStatusOutput('{"provider":"codex-cli","model":"gpt-test","processModel":"process-per-turn"}'), {
-    provider: 'codex-cli',
-    model: 'gpt-test',
-    processModel: 'process-per-turn',
-  });
+  assert.deepEqual(
+    parseProviderStatusOutput('{"provider":"codex-cli","model":"gpt-test","processModel":"process-per-turn"}'),
+    {
+      provider: 'codex-cli',
+      model: 'gpt-test',
+      processModel: 'process-per-turn',
+    },
+  );
 });
 
 test('provider smoke parses actual provider runtime from assistant json event metadata', () => {
@@ -354,10 +380,13 @@ test('approval-stop smoke fails when approval readback payload is not ok', async
           headers: { 'content-type': 'application/json' },
         });
       }
-      return new Response(JSON.stringify({ ok: false, approvalRequired: true, actionInboxItem: { id: 'approval-1' } }), {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({ ok: false, approvalRequired: true, actionInboxItem: { id: 'approval-1' } }),
+        {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        },
+      );
     },
   });
 
