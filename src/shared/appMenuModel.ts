@@ -111,6 +111,7 @@ export const INTERNAL_MENU_EXTENSION_IDS = new Set([
   'xenesis-desk.core-tools',
   'xenesis-desk.workflow-runner',
   'xenesis-desk.data-tools',
+  'xenesis-desk.obsidian-vault',
 ]);
 
 export const APP_MENU_MODEL: AppMenuGroupNode[] = [
@@ -288,6 +289,13 @@ export const APP_MENU_MODEL: AppMenuGroupNode[] = [
       command('ai-workbench', 'Xenesis Desk AI Workbench', 'xenesis-desk.core-tools.openAiWorkbench', undefined, 'AI'),
       command('action-inbox', 'Action Inbox', 'xenesis-desk.core-tools.openHermesActionInbox', undefined, 'A'),
       command('artifact-library', 'Artifact Library', 'xenesis-desk.core-tools.openArtifactLibrary', undefined, 'L'),
+      command(
+        'obsidian-vault',
+        'Obsidian Vault Viewer',
+        'xenesis-desk.obsidian-vault.openViewer',
+        'app.toolsObsidianVault',
+        'vault',
+      ),
       command('process-viewer', 'Process Viewer', 'xenesis-desk.core-tools.openProcessViewer', undefined, 'P'),
       command(
         'remote-sync-planner',
