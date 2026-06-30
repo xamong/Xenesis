@@ -12,7 +12,7 @@
     `D:\CodeTruck\CodeBox\Xamong\06 XCON\Xenesis\.worktrees\input-control-mini`
   - Branch: `input-control-mini`
 - Current implementation checkpoint:
-  - Starting Task 5 focused verification and CR audit for `xd.input.*`.
+  - Completed Task 6 final review and fresh verification.
 - Touched files:
   - `handoff.md`
   - `src/shared/inputControl.ts`
@@ -78,6 +78,22 @@
   - `node scripts/assertCapabilityAuditZero.mjs` -> PASS; verified 4 counters
     in `docs\capability-registry-audit.md`.
   - `npm test` -> PASS, 547 tests.
+  - Re-read
+    `docs/superpowers/specs/2026-06-30-input-control-layer-mini-design.md`
+    and the original checkout plan
+    `docs/superpowers/plans/2026-06-30-input-control-layer-mini.md`.
+  - `git status --short --branch`; `git log --oneline -8`;
+    `git diff --stat mini...HEAD` -> confirmed branch diff is scoped to
+    input-control source/tests, CR audit, and handoff.
+  - Final fresh `node --import tsx --test src/shared/inputControl.test.ts src/main/inputControl/inputControlService.test.ts src/shared/inputControlCapabilities.test.ts`
+    -> PASS, 19 tests.
+  - Final fresh `npm run typecheck` -> PASS.
+  - Final fresh `npm run docs:capabilities:audit` -> PASS; wrote
+    `docs\capability-registry-audit.md`, 854 registered nodes, 692 coverage
+    path references.
+  - Final fresh `node scripts/assertCapabilityAuditZero.mjs` -> PASS; verified
+    4 counters.
+  - Final fresh `npm test` -> PASS, 547 tests.
 - Exact verification result:
   - Baseline test suite in the isolated worktree passed before input-control
     implementation started.
@@ -89,14 +105,16 @@
     helper typing root cause.
   - Task 5 focused verification, related external app regression tests,
     typecheck, CR audit zero assertion, and the full root test suite all passed.
+  - Task 6 final verification passed with fresh focused tests, typecheck, CR
+    audit, audit zero assertion, and full test suite.
 - Known gaps:
   - Browser coordinate execution remains deferred by design.
   - Full desktop automation remains disabled by design.
   - `xd.input.screenshot` will return unsupported until a real screenshot
     adapter exists.
 - Next intended step:
-  - Commit Task 5 verification artifacts, then perform final review and
-    integration decision.
+  - Commit final handoff/audit timestamp updates, then use
+    `superpowers:finishing-a-development-branch` for integration choice.
 
 ## 2026-06-30 Dock Drag Ghost Native Overlay
 
