@@ -24221,6 +24221,18 @@ Verification so far:
     footer provider `codex-app-server`; requested provider `auto`; source
     `auto-detect`; process model `persistent-process`; provider CR/MCP
     evidence true; CR readback after prompt true; no chat-only approval.
+  - `git commit -m "Prepare onboarding setup and provider validation"`:
+    passed; commit `36f8833`.
+  - `git push -u origin uno`: passed; pushed `uno` to
+    `git@github.com:xamong/Xenesis.git`.
+  - `gh pr list --head uno --base main --json number,url,state,title`: passed;
+    returned no existing PRs.
+  - `gh pr create --draft --base main --head uno ...`: failed with GitHub
+    `createPullRequest` permission error:
+    `Resource not accessible by personal access token`.
+  - GitHub app connector `_create_pull_request` for `xamong/Xenesis`
+    (`head=uno`, `base=main`, draft): failed with GitHub 403:
+    `Resource not accessible by integration`.
 - Known gaps:
   - Lint has no blocking errors now, but the repo still has 391 Biome warnings
     and 86 infos. Do not describe lint as warning-free.
@@ -24232,6 +24244,10 @@ Verification so far:
   - The Windows path hardcoding scan excludes docs, tests, PowerShell fixtures,
     lockfiles, generated build output, and public static assets. Windows fixture
     paths remain acceptable in tests/docs where they describe platform behavior.
+  - PR creation is blocked by GitHub auth/app permissions, not by local branch
+    state. The pushed compare URL is
+    `https://github.com/xamong/Xenesis/compare/main...uno?quick_pull=1`.
 - Next intended step:
-  - Inspect final diff/status, commit the full requested `uno` workspace, push
-    `uno`, and create or update the PR targeting `main`.
+  - Re-run PR creation after GitHub token/app permissions allow
+    `createPullRequest`, or open the compare URL above from an authorized
+    GitHub session.
