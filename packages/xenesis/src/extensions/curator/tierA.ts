@@ -13,7 +13,7 @@
 // TODO P5c: Tier-B LLM umbrella consolidation on aux model (dry-run/approval gated). The
 // autonomous LLM consolidation pass (Hermes' CURATOR_REVIEW_PROMPT umbrella-ification) is
 // DEFERRED — see curator/README note. Do NOT wire an aux model here; Tier-A stays pure/no-LLM.
-import type { MemoryRecord, MemoryStatus } from "../types.js";
+import type { MemoryRecord, MemoryStatus } from '../types.js';
 
 export interface TierAThresholds {
   /** Days of inactivity after which an active record becomes stale. */
@@ -36,7 +36,7 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /** A record with no explicit status is treated as "active". */
 function currentStatus(record: MemoryRecord): MemoryStatus {
-  return record.status ?? "active";
+  return record.status ?? 'active';
 }
 
 /**
@@ -65,7 +65,7 @@ function anchorMs(record: MemoryRecord): number {
 export function computeMemoryTransitions(
   records: MemoryRecord[],
   now: Date,
-  thresholds: TierAThresholds = {}
+  thresholds: TierAThresholds = {},
 ): MemoryTransition[] {
   const staleAfterDays = thresholds.staleAfterDays ?? DEFAULT_STALE_AFTER_DAYS;
   const archiveAfterDays = thresholds.archiveAfterDays ?? DEFAULT_ARCHIVE_AFTER_DAYS;
@@ -80,19 +80,19 @@ export function computeMemoryTransitions(
     const anchor = anchorMs(record);
     if (Number.isNaN(anchor)) continue; // undatable → leave alone
 
-    if (anchor <= archiveCutoff && from !== "archived") {
+    if (anchor <= archiveCutoff && from !== 'archived') {
       transitions.push({
         id: record.id,
         from,
-        to: "archived",
-        reason: `tier-a archive recommendation: inactive for at least ${archiveAfterDays} days`
+        to: 'archived',
+        reason: `tier-a archive recommendation: inactive for at least ${archiveAfterDays} days`,
       });
-    } else if (anchor <= staleCutoff && from === "active") {
+    } else if (anchor <= staleCutoff && from === 'active') {
       transitions.push({
         id: record.id,
         from,
-        to: "stale",
-        reason: `tier-a stale recommendation: inactive for at least ${staleAfterDays} days`
+        to: 'stale',
+        reason: `tier-a stale recommendation: inactive for at least ${staleAfterDays} days`,
       });
     }
   }

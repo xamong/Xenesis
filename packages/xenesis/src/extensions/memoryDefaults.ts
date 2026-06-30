@@ -1,5 +1,5 @@
-import type { MemoryInput } from "./types.js";
-import type { MemorySourceKind, MemoryTrustLevel, MemoryWriteContext } from "./memoryTypes.js";
+import type { MemorySourceKind, MemoryTrustLevel, MemoryWriteContext } from './memoryTypes.js';
+import type { MemoryInput } from './types.js';
 
 function randomSuffix() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -17,30 +17,30 @@ export function createMemoryLedgerEventId(): string {
   return `mevt-${randomSuffix()}`;
 }
 
-export function nowIso(context?: Pick<MemoryWriteContext, "now">): string {
+export function nowIso(context?: Pick<MemoryWriteContext, 'now'>): string {
   return (context?.now?.() ?? new Date()).toISOString();
 }
 
 export function defaultMemoryWriteContext(overrides: Partial<MemoryWriteContext> = {}): MemoryWriteContext {
   return {
-    sourceKind: "unknown",
-    trust: "unknown",
+    sourceKind: 'unknown',
+    trust: 'unknown',
     externalTaint: false,
-    actor: "agent",
-    runtime: "unknown",
-    ...overrides
+    actor: 'agent',
+    runtime: 'unknown',
+    ...overrides,
   };
 }
 
 export function trustedMemoryWriteContext(
   runtime: string,
-  sourceKind: Exclude<MemorySourceKind, "unknown" | "external_document"> = "conversation",
+  sourceKind: Exclude<MemorySourceKind, 'unknown' | 'external_document'> = 'conversation',
 ): MemoryWriteContext {
   return defaultMemoryWriteContext({
     runtime,
     sourceKind,
-    trust: "trusted",
-    externalTaint: false
+    trust: 'trusted',
+    externalTaint: false,
   });
 }
 
@@ -61,11 +61,11 @@ export function normalizeMemoryInput(input: MemoryInput): MemoryInput {
   return {
     ...input,
     text: input.text.trim(),
-    tags: normalizeMemoryTags(input.tags)
+    tags: normalizeMemoryTags(input.tags),
   };
 }
 
 export function isTrustedMemoryContext(context: MemoryWriteContext): boolean {
   const trust: MemoryTrustLevel = context.trust;
-  return trust === "trusted" && context.sourceKind !== "unknown" && context.externalTaint !== true;
+  return trust === 'trusted' && context.sourceKind !== 'unknown' && context.externalTaint !== true;
 }

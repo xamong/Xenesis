@@ -1,6 +1,6 @@
-import type { ContextRecord } from "./ContextRecord.js";
+import type { ContextRecord } from './ContextRecord.js';
 
-export type ContextDropReason = "expired" | "conflict_replaced" | "token_budget";
+export type ContextDropReason = 'expired' | 'conflict_replaced' | 'token_budget';
 
 export interface ContextDropAudit {
   id: string;
@@ -17,7 +17,7 @@ export interface ContextBudgetSelection {
 
 export function selectContextWithinBudget(
   records: readonly ContextRecord[],
-  tokenBudget: number
+  tokenBudget: number,
 ): ContextBudgetSelection {
   const selected: ContextRecord[] = [];
   const dropped: ContextDropAudit[] = [];
@@ -25,7 +25,7 @@ export function selectContextWithinBudget(
 
   for (const record of records) {
     if (usedTokens + record.tokenEstimate > tokenBudget) {
-      dropped.push({ id: record.id, reason: "token_budget" });
+      dropped.push({ id: record.id, reason: 'token_budget' });
       continue;
     }
 
@@ -37,6 +37,6 @@ export function selectContextWithinBudget(
     selected,
     dropped,
     usedTokens,
-    tokenBudget
+    tokenBudget,
   };
 }

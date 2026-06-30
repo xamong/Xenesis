@@ -218,7 +218,7 @@ function normalizeRecord(record: Record<string, unknown>, useCount: number): Mem
     validFrom: asString(record.validFrom) || undefined,
     validTo: asString(record.validTo) || undefined,
     useCount,
-    ...(redacted ? { redacted: true } : {})
+    ...(redacted ? { redacted: true } : {}),
   };
 }
 
@@ -238,19 +238,20 @@ function normalizeProposal(proposal: Record<string, unknown>): MemoryDashboardPr
     status: asString(proposal.status),
     input: {
       ...input,
-      text: displayText
+      text: displayText,
     },
     decision: {
       action: asString(decision.action) || undefined,
       sensitivity,
       requiresApproval: decision.requiresApproval === true,
-      reason: asString(decision.reason) || undefined
+      reason: asString(decision.reason) || undefined,
     },
-    context: proposal.context && typeof proposal.context === 'object' ? (proposal.context as Record<string, unknown>) : {},
+    context:
+      proposal.context && typeof proposal.context === 'object' ? (proposal.context as Record<string, unknown>) : {},
     createdAt: asString(proposal.createdAt) || undefined,
     updatedAt: asString(proposal.updatedAt) || undefined,
     displayText,
-    ...(redacted ? { redacted: true } : {})
+    ...(redacted ? { redacted: true } : {}),
   };
 }
 
@@ -270,7 +271,7 @@ function normalizeEvidence(evidence: Record<string, unknown>): MemoryDashboardEv
     summary: redacted ? `[redacted: ${sensitivity} evidence summary]` : asString(evidence.summary) || undefined,
     createdAt: asString(evidence.createdAt) || undefined,
     updatedAt: asString(evidence.updatedAt) || undefined,
-    ...(redacted ? { redacted: true } : {})
+    ...(redacted ? { redacted: true } : {}),
   };
 }
 
@@ -284,18 +285,16 @@ export function buildMemoryDashboardModel(input: MemoryDashboardModelInput): Mem
   const records = (input.records ?? [])
     .map((record) => normalizeRecord(record, counts.get(asString(record.id)) ?? 0))
     .filter((record) => Boolean(record.id));
-  const evidence = (input.evidence ?? [])
-    .map(normalizeEvidence)
-    .filter((item) => Boolean(item.id));
-  const proposals = (input.proposals ?? [])
-    .map(normalizeProposal)
-    .filter((proposal) => Boolean(proposal.id));
+  const evidence = (input.evidence ?? []).map(normalizeEvidence).filter((item) => Boolean(item.id));
+  const proposals = (input.proposals ?? []).map(normalizeProposal).filter((proposal) => Boolean(proposal.id));
   const pendingProposals = sortByTimeDesc(proposals.filter((proposal) => proposal.status === 'pending'));
   const recordsById = Object.fromEntries(records.map((record) => [record.id, record]));
   const evidenceById = new Map(evidence.map((item) => [item.id, item]));
   const evidenceByMemory: Record<string, MemoryDashboardEvidence[]> = {};
   for (const record of records) {
-    const linked = (record.evidenceIds ?? []).map((id) => evidenceById.get(id)).filter(Boolean) as MemoryDashboardEvidence[];
+    const linked = (record.evidenceIds ?? [])
+      .map((id) => evidenceById.get(id))
+      .filter(Boolean) as MemoryDashboardEvidence[];
     if (linked.length > 0) evidenceByMemory[record.id] = linked;
   }
   const conflicts = records.filter((record) => (record.conflictsWith ?? []).length > 0);
@@ -306,7 +305,7 @@ export function buildMemoryDashboardModel(input: MemoryDashboardModelInput): Mem
       pendingProposals: pendingProposals.length,
       sensitive: sensitive.length,
       evidence: evidence.length,
-      conflicts: conflicts.length
+      conflicts: conflicts.length,
     },
     records,
     recordsById,
@@ -322,11 +321,13 @@ export function buildMemoryDashboardModel(input: MemoryDashboardModelInput): Mem
     frequentUse: [...records]
       .sort((left, right) => right.useCount - left.useCount || (right.priority ?? 0) - (left.priority ?? 0))
       .filter((record) => record.useCount > 0 || (record.priority ?? 0) > 0)
-      .slice(0, 10)
+      .slice(0, 10),
   };
 }
 
-export function buildMemoryCorrectionProposalArgs(input: MemoryCorrectionProposalArgsInput): MemoryCorrectionProposalArgs {
+export function buildMemoryCorrectionProposalArgs(
+  input: MemoryCorrectionProposalArgsInput,
+): MemoryCorrectionProposalArgs {
   const baseId = asString(input.base.id);
   const tags = asStringArray(input.base.tags);
   const source = asString(input.base.source);
@@ -341,7 +342,7 @@ export function buildMemoryCorrectionProposalArgs(input: MemoryCorrectionProposa
       ...(source ? { source } : {}),
       ...(sensitivity ? { sensitivity } : {}),
       supersedes: [baseId],
-      validFrom: new Date().toISOString()
+      validFrom: new Date().toISOString(),
     },
     context: {
       actor: 'user',
@@ -350,7 +351,7 @@ export function buildMemoryCorrectionProposalArgs(input: MemoryCorrectionProposa
       reason: input.reason.trim() || `memory dashboard correction for ${baseId}`,
       runtime: 'desk-memory-dashboard',
       sourceKind: 'manual_note',
-      trust: 'trusted'
-    }
+      trust: 'trusted',
+    },
   };
 }

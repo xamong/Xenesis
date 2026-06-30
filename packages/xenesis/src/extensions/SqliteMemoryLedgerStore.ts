@@ -1,5 +1,5 @@
-import { openDatabase } from "../db/database.js";
-import { TableStore } from "../db/tableStore.js";
+import { openDatabase } from '../db/database.js';
+import { TableStore } from '../db/tableStore.js';
 import type {
   MemoryEvidenceFilter,
   MemoryEvidenceRecord,
@@ -7,8 +7,8 @@ import type {
   MemoryLedgerEventFilter,
   MemoryLedgerStore,
   MemoryProposal,
-  MemoryProposalFilter
-} from "./memoryTypes.js";
+  MemoryProposalFilter,
+} from './memoryTypes.js';
 
 export class SqliteMemoryLedgerStore implements MemoryLedgerStore {
   private readonly proposals: TableStore<MemoryProposal>;
@@ -18,36 +18,36 @@ export class SqliteMemoryLedgerStore implements MemoryLedgerStore {
   constructor(options: { xenesisHome: string }) {
     const db = openDatabase(options.xenesisHome);
     this.proposals = new TableStore<MemoryProposal>(db, {
-      table: "memory_proposals",
+      table: 'memory_proposals',
       id: (record) => record.id,
-      indexColumns: ["status", "created_at", "updated_at"],
+      indexColumns: ['status', 'created_at', 'updated_at'],
       derive: (record) => ({
         status: record.status,
         created_at: record.createdAt,
-        updated_at: record.updatedAt
-      })
+        updated_at: record.updatedAt,
+      }),
     });
     this.evidence = new TableStore<MemoryEvidenceRecord>(db, {
-      table: "memory_evidence",
+      table: 'memory_evidence',
       id: (record) => record.id,
-      indexColumns: ["kind", "sensitivity", "created_at"],
+      indexColumns: ['kind', 'sensitivity', 'created_at'],
       derive: (record) => ({
         kind: record.kind,
         sensitivity: record.sensitivity,
-        created_at: record.createdAt
-      })
+        created_at: record.createdAt,
+      }),
     });
     this.events = new TableStore<MemoryLedgerEvent>(db, {
-      table: "memory_ledger_events",
+      table: 'memory_ledger_events',
       id: (record) => record.id,
-      indexColumns: ["target_id", "memory_id", "proposal_id", "evidence_id", "created_at"],
+      indexColumns: ['target_id', 'memory_id', 'proposal_id', 'evidence_id', 'created_at'],
       derive: (record) => ({
         target_id: record.targetId,
         memory_id: record.memoryId ?? null,
         proposal_id: record.proposalId ?? null,
         evidence_id: record.evidenceId ?? null,
-        created_at: record.createdAt
-      })
+        created_at: record.createdAt,
+      }),
     });
   }
 
@@ -65,7 +65,7 @@ export class SqliteMemoryLedgerStore implements MemoryLedgerStore {
   }
 
   async listProposals(filter: MemoryProposalFilter = {}): Promise<MemoryProposal[]> {
-    const rows = filter.status ? this.proposals.list("status = ?", [filter.status]) : this.proposals.list();
+    const rows = filter.status ? this.proposals.list('status = ?', [filter.status]) : this.proposals.list();
     return rows.sort((left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt));
   }
 
@@ -90,14 +90,14 @@ export class SqliteMemoryLedgerStore implements MemoryLedgerStore {
     const clauses: string[] = [];
     const params: string[] = [];
     if (filter.kind) {
-      clauses.push("kind = ?");
+      clauses.push('kind = ?');
       params.push(filter.kind);
     }
     if (filter.sensitivity) {
-      clauses.push("sensitivity = ?");
+      clauses.push('sensitivity = ?');
       params.push(filter.sensitivity);
     }
-    const rows = this.evidence.list(clauses.join(" AND "), params);
+    const rows = this.evidence.list(clauses.join(' AND '), params);
     return rows.sort((left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt));
   }
 
@@ -110,18 +110,18 @@ export class SqliteMemoryLedgerStore implements MemoryLedgerStore {
     const clauses: string[] = [];
     const params: string[] = [];
     if (filter.memoryId) {
-      clauses.push("memory_id = ?");
+      clauses.push('memory_id = ?');
       params.push(filter.memoryId);
     }
     if (filter.proposalId) {
-      clauses.push("proposal_id = ?");
+      clauses.push('proposal_id = ?');
       params.push(filter.proposalId);
     }
     if (filter.evidenceId) {
-      clauses.push("evidence_id = ?");
+      clauses.push('evidence_id = ?');
       params.push(filter.evidenceId);
     }
-    const rows = this.events.list(clauses.join(" AND "), params);
+    const rows = this.events.list(clauses.join(' AND '), params);
     return rows.sort((left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt));
   }
 }

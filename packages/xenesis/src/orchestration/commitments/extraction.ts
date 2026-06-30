@@ -11,7 +11,7 @@
  *
  * Adapted from OpenClaw `src/commitments/extraction.ts` (no heartbeat/embedded-agent coupling).
  */
-import { resolveCommitmentsConfig, type ResolvedCommitmentsConfig } from "./config.js";
+import { type ResolvedCommitmentsConfig, resolveCommitmentsConfig } from './config.js';
 import type {
   CommitmentCandidate,
   CommitmentExtractionBatchResult,
@@ -19,32 +19,27 @@ import type {
   CommitmentKind,
   CommitmentSensitivity,
   CommitmentSource,
-} from "./types.js";
+} from './types.js';
 
-const KIND_VALUES = new Set<CommitmentKind>([
-  "event_check_in",
-  "deadline_check",
-  "care_check_in",
-  "open_loop",
-]);
-const SENSITIVITY_VALUES = new Set<CommitmentSensitivity>(["routine", "personal", "care"]);
-const SOURCE_VALUES = new Set<CommitmentSource>(["inferred_user_context", "agent_promise"]);
+const KIND_VALUES = new Set<CommitmentKind>(['event_check_in', 'deadline_check', 'care_check_in', 'open_loop']);
+const SENSITIVITY_VALUES = new Set<CommitmentSensitivity>(['routine', 'personal', 'care']);
+const SOURCE_VALUES = new Set<CommitmentSource>(['inferred_user_context', 'agent_promise']);
 
 const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function asString(value: unknown): string | undefined {
-  if (typeof value !== "string") return undefined;
+  if (typeof value !== 'string') return undefined;
   const trimmed = value.trim();
   return trimmed ? trimmed : undefined;
 }
 
 function asNumber(value: unknown): number | undefined {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string") {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
     const parsed = Number(value);
     if (Number.isFinite(parsed)) return parsed;
   }
@@ -53,11 +48,11 @@ function asNumber(value: unknown): number | undefined {
 
 function parseCandidate(raw: unknown): CommitmentCandidate | undefined {
   if (!isRecord(raw)) return undefined;
-  if (raw.action === "skip") return undefined;
+  if (raw.action === 'skip') return undefined;
   const itemId = asString(raw.itemId);
   const kind = asString(raw.kind);
   const sensitivity = asString(raw.sensitivity);
-  const source = asString(raw.source) ?? "inferred_user_context";
+  const source = asString(raw.source) ?? 'inferred_user_context';
   const reason = asString(raw.reason);
   const suggestedText = asString(raw.suggestedText);
   const dedupeKey = asString(raw.dedupeKey);
@@ -106,12 +101,12 @@ function extractJsonObjectCandidates(raw: string): string[] {
   let inString = false;
   let escaped = false;
   for (let idx = 0; idx < raw.length; idx += 1) {
-    const char = raw[idx] ?? "";
+    const char = raw[idx] ?? '';
     if (escaped) {
       escaped = false;
       continue;
     }
-    if (char === "\\") {
+    if (char === '\\') {
       if (inString) escaped = true;
       continue;
     }
@@ -120,12 +115,12 @@ function extractJsonObjectCandidates(raw: string): string[] {
       continue;
     }
     if (inString) continue;
-    if (char === "{") {
+    if (char === '{') {
       if (depth === 0) start = idx;
       depth += 1;
       continue;
     }
-    if (char === "}" && depth > 0) {
+    if (char === '}' && depth > 0) {
       depth -= 1;
       if (depth === 0 && start >= 0) {
         out.push(raw.slice(start, idx + 1));
@@ -139,7 +134,7 @@ function extractJsonObjectCandidates(raw: string): string[] {
 /** Tolerant parser: accepts a clean JSON object, or recovers `{...}` fragments from prose/fences. */
 export function parseCommitmentExtractionOutput(raw: string): CommitmentExtractionBatchResult {
   const candidates: CommitmentCandidate[] = [];
-  const trimmed = (raw ?? "").trim();
+  const trimmed = (raw ?? '').trim();
   if (!trimmed) return { candidates };
   const records: Record<string, unknown>[] = [];
   try {
@@ -192,15 +187,13 @@ function formatExistingPending(item: CommitmentExtractionItem) {
  * existing-pending context — never the routing scope. It is told, in no uncertain terms, to
  * SKIP explicit reminder/scheduling requests (cron owns those).
  */
-export function buildCommitmentExtractionPrompt(params: {
-  items: CommitmentExtractionItem[];
-}): string {
+export function buildCommitmentExtractionPrompt(params: { items: CommitmentExtractionItem[] }): string {
   const items = params.items.map((item) => ({
     itemId: item.itemId,
     now: isoString(item.nowMs),
     timezone: item.timezone,
     latestUserMessage: item.userText,
-    assistantResponse: item.assistantText ?? "",
+    assistantResponse: item.assistantText ?? '',
     existingPendingCommitments: formatExistingPending(item),
   }));
   return `You are Xenesis's internal commitment extractor. This is a hidden background classification run. Do not address the user.
@@ -265,7 +258,7 @@ export function validateCommitmentCandidates(params: {
     const item = itemsById.get(candidate.itemId);
     if (!item) continue;
     const threshold =
-      candidate.kind === "care_check_in" || candidate.sensitivity === "care"
+      candidate.kind === 'care_check_in' || candidate.sensitivity === 'care'
         ? resolved.extraction.careConfidenceThreshold
         : resolved.extraction.confidenceThreshold;
     if (candidate.confidence < threshold) continue;
@@ -273,9 +266,7 @@ export function validateCommitmentCandidates(params: {
     if (earliestMs === undefined || earliestMs <= item.nowMs) continue; // must be future-due
     const latestRawMs = parseDueMs(candidate.dueWindow.latest);
     const latestMs =
-      latestRawMs !== undefined && latestRawMs >= earliestMs
-        ? latestRawMs
-        : earliestMs + TWELVE_HOURS_MS;
+      latestRawMs !== undefined && latestRawMs >= earliestMs ? latestRawMs : earliestMs + TWELVE_HOURS_MS;
     validated.push({
       item,
       candidate,

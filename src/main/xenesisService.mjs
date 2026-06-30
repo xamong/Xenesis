@@ -198,6 +198,32 @@ function trimmed(value) {
   return String(value || '').trim();
 }
 
+const PROVIDER_LOCAL_CLI_BOUNDARY = 'provider identity is separate from local CLI integration';
+const KEYED_PROVIDER_ENV = {
+  openai: 'OPENAI_API_KEY',
+  anthropic: 'ANTHROPIC_API_KEY',
+  gemini: 'GEMINI_API_KEY',
+  openrouter: 'OPENROUTER_API_KEY',
+  groq: 'GROQ_API_KEY',
+  deepseek: 'DEEPSEEK_API_KEY',
+  qwen: 'DASHSCOPE_API_KEY',
+  mistral: 'MISTRAL_API_KEY',
+  xai: 'XAI_API_KEY',
+};
+const LOCAL_LOGIN_PROVIDERS = new Set(['codex-cli', 'codex-app-server', 'claude-cli', 'claude-interactive']);
+const NO_AUTH_PROVIDERS = new Set(['ollama', 'lmstudio']);
+const KNOWN_RUNTIME_PROVIDERS = new Set([
+  'auto',
+  ...Object.keys(KEYED_PROVIDER_ENV),
+  ...LOCAL_LOGIN_PROVIDERS,
+  ...NO_AUTH_PROVIDERS,
+  'openai-compatible',
+  'codex-responses',
+  'together',
+  'fireworks',
+  'azure',
+]);
+
 function plainContext(value) {
   return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 }
@@ -275,6 +301,91 @@ export function buildXenesisGatewayRunPayload({
   };
 }
 
+function providerProcessModel(provider) {
+  if (provider === 'codex-app-server' || provider === 'claude-interactive') return 'persistent-process';
+  if (provider === 'codex-cli' || provider === 'claude-cli') return 'process-per-turn';
+  if (provider === 'ollama' || provider === 'lmstudio') return 'local-http';
+  if (provider) return 'http-streaming';
+  return 'none';
+}
+
+function providerAuthMode(provider, requestedProvider) {
+  if (requestedProvider === 'auto' || requestedProvider === '') return 'auto-detect';
+  if (LOCAL_LOGIN_PROVIDERS.has(provider)) return 'local-login';
+  if (NO_AUTH_PROVIDERS.has(provider)) return 'none';
+  return 'api-key';
+}
+
+function providerFallback(provider) {
+  return provider === 'codex-app-server' ? 'codex-cli' : '';
+}
+
+function runtimeProviderBase({
+  requestedProvider,
+  provider,
+  model,
+  profile,
+  baseURL = '',
+  apiKeyEnv = '',
+  env = {},
+  source,
+  authMode,
+  credentialState,
+  credentialSource,
+  safeForReasoning,
+  diagnostics = [],
+}) {
+  return {
+    provider,
+    model,
+    profile,
+    baseURL,
+    apiKeyEnv,
+    env,
+    requestedProvider,
+    source,
+    authMode,
+    credentialState,
+    credentialSource,
+    processModel: providerProcessModel(provider),
+    fallbackProvider: providerFallback(provider),
+    safeForReasoning,
+    diagnostics,
+    localCliBoundary: PROVIDER_LOCAL_CLI_BOUNDARY,
+  };
+}
+
+function configuredKeyedProvider({
+  provider,
+  requestedProvider,
+  model,
+  profile,
+  baseURL,
+  apiKey,
+  apiKeyEnv,
+  env,
+  source,
+  credentialSource,
+}) {
+  const envHasKey = Boolean(trimmed(env?.[apiKeyEnv]));
+  const hasKey = Boolean(apiKey || envHasKey);
+  return runtimeProviderBase({
+    requestedProvider,
+    provider,
+    model,
+    profile,
+    baseURL,
+    apiKeyEnv,
+    env: apiKey ? { [apiKeyEnv]: apiKey } : {},
+    source,
+    authMode: source === 'auto-detect' ? 'auto-detect' : 'api-key',
+    credentialState: hasKey ? 'configured' : 'missing',
+    credentialSource: credentialSource || (apiKey ? `settings-secret:${apiKeyEnv}` : `env:${apiKeyEnv}`),
+    safeForReasoning: hasKey,
+    diagnostics: hasKey ? [] : [`Missing provider credential ${apiKeyEnv} for ${provider}.`],
+  });
+}
+
 // 'auto' credential scan (hermes-style): when the user has NOT pinned a provider,
 // pick the first AVAILABLE backend by scanning credentials — local CLI logins first
 // (no API key needed), then keyed BYOK env vars. This NEVER silently overrides an
@@ -288,19 +399,32 @@ function resolveAutoProvider(env = {}) {
   // once instead of per turn. CodexAppServerProvider falls back to one-shot
   // `codex exec` (codex-cli) automatically if app-server startup fails.
   if (codexHome && fs.existsSync(path.join(codexHome, 'auth.json'))) {
-    // Opt-in Option B: talk to the ChatGPT Codex backend directly (no codex
-    // binary, Xenesis owns the loop). XENESIS_CODEX_TRANSPORT=responses selects it.
-    return trimmed(env.XENESIS_CODEX_TRANSPORT) === 'responses' ? 'codex-responses' : 'codex-app-server';
+    return {
+      provider: trimmed(env.XENESIS_CODEX_TRANSPORT) === 'responses' ? 'codex-responses' : 'codex-app-server',
+      credentialSource: 'codex-auth-json',
+      credentialState: 'configured',
+    };
   }
-  if (home && fs.existsSync(path.join(home, '.claude', '.credentials.json'))) return 'claude-cli';
-  if (trimmed(env.ANTHROPIC_API_KEY)) return 'anthropic';
-  if (trimmed(env.OPENAI_API_KEY)) return 'openai';
-  if (trimmed(env.GEMINI_API_KEY)) return 'gemini';
-  if (trimmed(env.GROQ_API_KEY)) return 'groq';
-  if (trimmed(env.DEEPSEEK_API_KEY)) return 'deepseek';
-  if (trimmed(env.DASHSCOPE_API_KEY)) return 'qwen';
-  // Last resort: the Desk-native local CLI (works once the user logs into Codex).
-  return 'codex-cli';
+  if (home && fs.existsSync(path.join(home, '.claude', '.credentials.json'))) {
+    return {
+      provider: 'claude-interactive',
+      credentialSource: 'claude-credentials-json',
+      credentialState: 'configured',
+    };
+  }
+  for (const [provider, apiKeyEnv] of Object.entries(KEYED_PROVIDER_ENV)) {
+    if (trimmed(env[apiKeyEnv])) {
+      return { provider, credentialSource: `env:${apiKeyEnv}`, credentialState: 'configured', apiKeyEnv };
+    }
+  }
+  return {
+    provider: 'auto',
+    credentialSource: 'none',
+    credentialState: 'missing',
+    diagnostics: [
+      'No provider credentials found for auto provider resolution. Configure Codex login, Claude credentials, or a provider API key.',
+    ],
+  };
 }
 
 export function buildXenesisProviderRuntimeOptions({ xenesisSettings = {}, aiProvider = {}, env = process.env } = {}) {
@@ -309,44 +433,140 @@ export function buildXenesisProviderRuntimeOptions({ xenesisSettings = {}, aiPro
   const requested = trimmed(aiProvider.provider);
   // 'auto' (or unset) → scan credentials for the first available backend. An
   // explicit, recognized provider choice is ALWAYS respected (never overridden).
-  const resolvedProvider = requested === 'auto' || requested === '' ? resolveAutoProvider(env) : requested;
-  // Option B opt-in: XENESIS_CODEX_TRANSPORT=responses redirects ANY codex variant
-  // (auto-resolved or explicitly pinned) to the direct-backend codex-responses provider.
+  const requestedProvider = requested || 'auto';
+  const autoResolution = requestedProvider === 'auto' ? resolveAutoProvider(env) : undefined;
+  const resolvedProvider = autoResolution?.provider ?? requestedProvider;
+  // Option B opt-in: XENESIS_CODEX_TRANSPORT=responses redirects any Codex variant
+  // to the direct-backend codex-responses provider without changing other providers.
   const provider =
     trimmed(env.XENESIS_CODEX_TRANSPORT) === 'responses' && /^codex/.test(String(resolvedProvider))
       ? 'codex-responses'
       : resolvedProvider;
   const apiKey = trimmed(aiProvider.apiKey);
   const baseURL = trimmed(aiProvider.baseUrl);
+  const source = requestedProvider === 'auto' ? 'auto-detect' : 'user-settings-profile';
+
+  if (!KNOWN_RUNTIME_PROVIDERS.has(provider)) {
+    return runtimeProviderBase({
+      requestedProvider,
+      provider,
+      model: preferredModel,
+      profile,
+      baseURL: '',
+      apiKeyEnv: '',
+      env: {},
+      source,
+      authMode: 'api-key',
+      credentialState: 'missing',
+      credentialSource: 'none',
+      safeForReasoning: false,
+      diagnostics: [`Unknown provider "${provider}". Choose a supported provider instead of falling back implicitly.`],
+    });
+  }
+
+  if (requestedProvider === 'auto' && autoResolution?.credentialState === 'missing') {
+    return runtimeProviderBase({
+      requestedProvider,
+      provider: 'auto',
+      model: preferredModel,
+      profile,
+      baseURL: '',
+      apiKeyEnv: '',
+      env: {},
+      source,
+      authMode: 'auto-detect',
+      credentialState: 'missing',
+      credentialSource: 'none',
+      safeForReasoning: false,
+      diagnostics: autoResolution.diagnostics ?? [],
+    });
+  }
 
   // Respect the chosen keyed (BYOK) provider even when no key is present: surface a
   // real auth error downstream rather than silently switching to another provider.
-  const keyedProvider = (name, apiKeyEnv) => ({
-    provider: name,
-    model: preferredModel,
-    profile,
-    baseURL,
-    apiKeyEnv,
-    env: apiKey ? { [apiKeyEnv]: apiKey } : {},
-  });
+  const keyedProvider = (name, apiKeyEnv, credentialSource = '') =>
+    configuredKeyedProvider({
+      provider: name,
+      requestedProvider,
+      model: preferredModel,
+      profile,
+      baseURL,
+      apiKey,
+      apiKeyEnv,
+      env,
+      source,
+      credentialSource,
+    });
 
-  if (provider === 'openai') return keyedProvider('openai', 'OPENAI_API_KEY');
-  if (provider === 'anthropic') return keyedProvider('anthropic', 'ANTHROPIC_API_KEY');
-  if (provider === 'gemini') return keyedProvider('gemini', 'GEMINI_API_KEY');
-  if (provider === 'groq') return keyedProvider('groq', 'GROQ_API_KEY');
-  if (provider === 'deepseek') return keyedProvider('deepseek', 'DEEPSEEK_API_KEY');
-  if (provider === 'qwen') return keyedProvider('qwen', 'DASHSCOPE_API_KEY');
+  if (KEYED_PROVIDER_ENV[provider]) {
+    return keyedProvider(provider, KEYED_PROVIDER_ENV[provider], autoResolution?.credentialSource);
+  }
+  const compatibleProvider = {
+    lmstudio: {
+      apiKeyEnv: 'LMSTUDIO_API_KEY',
+      baseURL: 'http://127.0.0.1:1234/v1',
+      defaultApiKey: 'xenesis-local',
+    },
+    together: {
+      apiKeyEnv: 'TOGETHER_API_KEY',
+      baseURL: 'https://api.together.xyz/v1',
+    },
+    fireworks: {
+      apiKeyEnv: 'FIREWORKS_API_KEY',
+      baseURL: 'https://api.fireworks.ai/inference/v1',
+    },
+    azure: {
+      apiKeyEnv: 'AZURE_OPENAI_API_KEY',
+      baseURL: '',
+    },
+  }[provider];
+  if (compatibleProvider) {
+    const key = apiKey || env?.[compatibleProvider.apiKeyEnv] || compatibleProvider.defaultApiKey || '';
+    return runtimeProviderBase({
+      requestedProvider,
+      provider: 'openai-compatible',
+      model: preferredModel,
+      profile,
+      baseURL: baseURL || compatibleProvider.baseURL,
+      apiKeyEnv: compatibleProvider.apiKeyEnv,
+      env: key ? { [compatibleProvider.apiKeyEnv]: key } : {},
+      source,
+      authMode: providerAuthMode('openai-compatible', requestedProvider),
+      credentialState: key ? 'configured' : 'missing',
+      credentialSource: apiKey
+        ? `settings-secret:${compatibleProvider.apiKeyEnv}`
+        : env?.[compatibleProvider.apiKeyEnv]
+          ? `env:${compatibleProvider.apiKeyEnv}`
+          : compatibleProvider.defaultApiKey
+            ? 'local-default'
+            : 'none',
+      safeForReasoning: Boolean(key),
+      diagnostics: key ? [] : [`Missing provider credential ${compatibleProvider.apiKeyEnv} for ${provider}.`],
+    });
+  }
   if (provider === 'ollama') {
+    const localKey = apiKey || env?.OLLAMA_API_KEY || 'xenesis-local';
     return {
       provider: 'ollama',
       model: preferredModel,
       profile,
       baseURL,
       apiKeyEnv: 'OLLAMA_API_KEY',
-      env:
-        env?.OLLAMA_API_KEY || apiKey
-          ? { OLLAMA_API_KEY: apiKey || env.OLLAMA_API_KEY }
-          : { OLLAMA_API_KEY: 'xenesis-local' },
+      env: { OLLAMA_API_KEY: localKey },
+      requestedProvider,
+      source,
+      authMode: providerAuthMode('ollama', requestedProvider),
+      credentialState: 'not-required',
+      credentialSource: apiKey
+        ? 'settings-secret:OLLAMA_API_KEY'
+        : env?.OLLAMA_API_KEY
+          ? 'env:OLLAMA_API_KEY'
+          : 'local-default',
+      processModel: providerProcessModel('ollama'),
+      fallbackProvider: '',
+      safeForReasoning: true,
+      diagnostics: [],
+      localCliBoundary: PROVIDER_LOCAL_CLI_BOUNDARY,
     };
   }
 
@@ -356,14 +576,22 @@ export function buildXenesisProviderRuntimeOptions({ xenesisSettings = {}, aiPro
   if (provider === 'codex-responses') {
     const cxHome = trimmed(env.USERPROFILE) || trimmed(env.HOME) || '';
     const codexHome = trimmed(env.CODEX_HOME) || (cxHome ? path.join(cxHome, '.codex') : '');
-    return {
+    const hasCodexAuth = Boolean(codexHome && fs.existsSync(path.join(codexHome, 'auth.json')));
+    return runtimeProviderBase({
+      requestedProvider,
       provider: 'codex-responses',
       model: preferredModel || readCodexModel(codexHome) || 'gpt-5.5',
       profile,
       baseURL: '',
       apiKeyEnv: '',
       env: {},
-    };
+      source,
+      authMode: 'local-login',
+      credentialState: hasCodexAuth ? 'configured' : 'missing',
+      credentialSource: hasCodexAuth ? 'codex-auth-json' : 'none',
+      safeForReasoning: hasCodexAuth,
+      diagnostics: hasCodexAuth ? [] : ['Missing Codex ChatGPT login for codex-responses provider.'],
+    });
   }
 
   // Local CLI providers (codex/claude) authenticate via their own CLI (e.g.
@@ -375,35 +603,78 @@ export function buildXenesisProviderRuntimeOptions({ xenesisSettings = {}, aiPro
     provider === 'claude-cli' ||
     provider === 'claude-interactive'
   ) {
-    return {
+    return runtimeProviderBase({
+      requestedProvider,
       provider,
       model: preferredModel,
       profile,
       baseURL: '',
       apiKeyEnv: '',
       env: {},
-    };
+      source,
+      authMode: providerAuthMode(provider, requestedProvider),
+      credentialState: 'not-required',
+      credentialSource: autoResolution?.credentialSource ?? 'local-login',
+      safeForReasoning: true,
+    });
   }
 
   if (baseURL) {
-    return {
+    return runtimeProviderBase({
+      requestedProvider,
       provider: 'openai-compatible',
       model: preferredModel,
       profile,
       baseURL,
       apiKeyEnv: 'XENESIS_API_KEY',
       env: { XENESIS_API_KEY: apiKey || env?.XENESIS_API_KEY || 'xenesis-local' },
-    };
+      source,
+      authMode: providerAuthMode('openai-compatible', requestedProvider),
+      credentialState: apiKey || env?.XENESIS_API_KEY ? 'configured' : 'not-required',
+      credentialSource: apiKey
+        ? 'settings-secret:XENESIS_API_KEY'
+        : env?.XENESIS_API_KEY
+          ? 'env:XENESIS_API_KEY'
+          : 'local-default',
+      safeForReasoning: true,
+    });
   }
 
-  // Unknown provider string → fall back to the Desk-native local CLI (no key).
-  return {
-    provider: 'codex-cli',
+  return runtimeProviderBase({
+    requestedProvider,
+    provider,
     model: preferredModel,
     profile,
     baseURL: '',
     apiKeyEnv: '',
     env: {},
+    source,
+    authMode: providerAuthMode(provider, requestedProvider),
+    credentialState: 'missing',
+    credentialSource: 'none',
+    safeForReasoning: false,
+    diagnostics: [`Provider "${provider}" is not ready for reasoning.`],
+  });
+}
+
+export function buildXenesisProviderRuntimeStatus({ xenesisSettings = {}, aiProvider = {}, env = process.env } = {}) {
+  const providerRuntime = buildXenesisProviderRuntimeOptions({ xenesisSettings, aiProvider, env });
+  return {
+    provider: providerRuntime.provider,
+    model: providerRuntime.model,
+    profile: providerRuntime.profile,
+    baseURL: providerRuntime.baseURL,
+    apiKeyEnv: providerRuntime.apiKeyEnv,
+    requestedProvider: providerRuntime.requestedProvider,
+    source: providerRuntime.source,
+    authMode: providerRuntime.authMode,
+    credentialState: providerRuntime.credentialState,
+    credentialSource: providerRuntime.credentialSource,
+    processModel: providerRuntime.processModel,
+    fallbackProvider: providerRuntime.fallbackProvider,
+    safeForReasoning: providerRuntime.safeForReasoning,
+    diagnostics: Array.isArray(providerRuntime.diagnostics) ? providerRuntime.diagnostics : [],
+    localCliBoundary: providerRuntime.localCliBoundary,
   };
 }
 

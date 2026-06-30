@@ -1,6 +1,6 @@
-import type { z } from "zod";
-import type { AgentMessage, AgentMessageAttachment } from "../core/messages.js";
-import type { ExecutionBackend } from "../core/isolation/executionBackend.js";
+import type { z } from 'zod';
+import type { ExecutionBackend } from '../core/isolation/executionBackend.js';
+import type { AgentMessage, AgentMessageAttachment } from '../core/messages.js';
 
 export interface TodoItem {
   id: number;
@@ -9,7 +9,7 @@ export interface TodoItem {
 }
 
 export interface ToolAskEvent {
-  type: "ask";
+  type: 'ask';
   question: string;
   questions?: Array<{
     question: string;
@@ -27,8 +27,8 @@ export interface ToolAskEvent {
 }
 
 export interface ToolExternalContentWarningEvent {
-  type: "external_content_warning";
-  source: "tool_result";
+  type: 'external_content_warning';
+  source: 'tool_result';
   toolCallId: string;
   toolName: string;
   warnings: string[];
@@ -92,26 +92,32 @@ export interface Tool<I = unknown, O = unknown> {
   isConcurrencySafe?(input: I): boolean;
   requiresUserInteraction?(): boolean;
   toAutoClassifierInput?(input: I): string;
-  validateInput?(input: I, context?: ToolContext): Promise<{ result: true } | { result: false; message: string; errorCode?: number }>;
-  checkPermissions?(input: I, context?: ToolContext): Promise<{
-    behavior: "ask" | "allow" | "deny";
+  validateInput?(
+    input: I,
+    context?: ToolContext,
+  ): Promise<{ result: true } | { result: false; message: string; errorCode?: number }>;
+  checkPermissions?(
+    input: I,
+    context?: ToolContext,
+  ): Promise<{
+    behavior: 'ask' | 'allow' | 'deny';
     message?: string;
     updatedInput: I;
     suggestions?: Array<{
-      type: "addRules";
+      type: 'addRules';
       rules: Array<{
         toolName: string;
         ruleContent: string;
       }>;
-      behavior: "allow" | "deny";
-      destination: "localSettings";
+      behavior: 'allow' | 'deny';
+      destination: 'localSettings';
     }>;
     metadata?: Record<string, unknown>;
   }>;
   mapToolResultToToolResultBlockParam?(
     result: O,
-    toolUseId: string
-  ): { type: "tool_result"; content: string; tool_use_id: string };
+    toolUseId: string,
+  ): { type: 'tool_result'; content: string; tool_use_id: string };
   run(input: I, context: ToolContext): Promise<ToolResult<O>>;
   cleanupSession?(sessionId: string): Promise<void>;
 }

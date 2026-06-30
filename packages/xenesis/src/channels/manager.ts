@@ -1,4 +1,4 @@
-import type { ChannelAdapter, ChannelMessage, ChannelOutgoingMessage } from "./types.js";
+import type { ChannelAdapter, ChannelMessage, ChannelOutgoingMessage } from './types.js';
 
 export interface ChannelRunRequest {
   prompt: string;
@@ -97,7 +97,8 @@ export class ChannelManager {
     const commandMessage: ChannelCommandMessage = {
       ...message,
       text,
-      send: (outgoing: Exclude<ChannelCommandResponse, undefined>) => this.sendResponse(message.conversationId, outgoing)
+      send: (outgoing: Exclude<ChannelCommandResponse, undefined>) =>
+        this.sendResponse(message.conversationId, outgoing),
     };
     for (const router of this.options.commandRouters ?? []) {
       if (!router.canHandle(text, commandMessage)) continue;
@@ -106,15 +107,15 @@ export class ChannelManager {
       return;
     }
 
-    if (text === "/new") {
+    if (text === '/new') {
       await this.options.sessionStore.clear(this.sessionKey(message.conversationId));
       await this.clearQueuedMessages(message.conversationId);
-      await this.options.adapter.send(message.conversationId, "Session reset.");
+      await this.options.adapter.send(message.conversationId, 'Session reset.');
       return;
     }
-    if (text === "/status") {
+    if (text === '/status') {
       const running = this.state(message.conversationId).running;
-      await this.options.adapter.send(message.conversationId, running ? "Working on your last message." : "Idle.");
+      await this.options.adapter.send(message.conversationId, running ? 'Working on your last message.' : 'Idle.');
       return;
     }
 
@@ -129,7 +130,7 @@ export class ChannelManager {
   private async runConversation(
     conversationId: string,
     prompt: string,
-    ack: () => Promise<void> = async () => undefined
+    ack: () => Promise<void> = async () => undefined,
   ): Promise<void> {
     const state = this.state(conversationId);
     state.running = true;
@@ -161,7 +162,7 @@ export class ChannelManager {
       busyTimer.unref?.();
       try {
         const result = await this.options.runPrompt({ prompt, sessionId, conversationId });
-        await this.options.adapter.send(conversationId, result.content || "(no output)");
+        await this.options.adapter.send(conversationId, result.content || '(no output)');
       } finally {
         clearInterval(busyTimer);
       }
@@ -181,12 +182,12 @@ export class ChannelManager {
   private queueStore(): (ChannelSessionStore & ChannelMessageQueueStore) | undefined {
     const store = this.options.sessionStore;
     if (
-      typeof (store as Partial<ChannelMessageQueueStore>).enqueueMessage === "function" &&
-      typeof (store as Partial<ChannelMessageQueueStore>).peekMessages === "function" &&
-      typeof (store as Partial<ChannelMessageQueueStore>).deleteMessages === "function" &&
-      typeof (store as Partial<ChannelMessageQueueStore>).drainMessages === "function" &&
-      typeof (store as Partial<ChannelMessageQueueStore>).clearMessages === "function" &&
-      typeof (store as Partial<ChannelMessageQueueStore>).listQueuedConversations === "function"
+      typeof (store as Partial<ChannelMessageQueueStore>).enqueueMessage === 'function' &&
+      typeof (store as Partial<ChannelMessageQueueStore>).peekMessages === 'function' &&
+      typeof (store as Partial<ChannelMessageQueueStore>).deleteMessages === 'function' &&
+      typeof (store as Partial<ChannelMessageQueueStore>).drainMessages === 'function' &&
+      typeof (store as Partial<ChannelMessageQueueStore>).clearMessages === 'function' &&
+      typeof (store as Partial<ChannelMessageQueueStore>).listQueuedConversations === 'function'
     ) {
       return store as ChannelSessionStore & ChannelMessageQueueStore;
     }
@@ -227,16 +228,16 @@ export class ChannelManager {
       if (messages.length === 0) return undefined;
       const ids = messages.map((message) => message.id);
       return {
-        prompt: messages.map((message) => message.text).join("\n"),
-        ack: () => store.deleteMessages(ids)
+        prompt: messages.map((message) => message.text).join('\n'),
+        ack: () => store.deleteMessages(ids),
       };
     }
     const state = this.state(conversationId);
     const queued = state.queue.splice(0, state.queue.length);
     if (queued.length === 0) return undefined;
     return {
-      prompt: queued.join("\n"),
-      ack: async () => undefined
+      prompt: queued.join('\n'),
+      ack: async () => undefined,
     };
   }
 
@@ -273,7 +274,7 @@ export class ChannelManager {
 
   private async sendResponse(conversationId: string, response: ChannelCommandResponse): Promise<void> {
     if (!response) return;
-    if (typeof response === "string") {
+    if (typeof response === 'string') {
       await this.options.adapter.send(conversationId, response);
       return;
     }
@@ -288,9 +289,7 @@ export class ChannelManager {
 function formatOutgoingFallback(message: ChannelOutgoingMessage): string {
   const actions = message.actions ?? [];
   if (actions.length === 0) return message.text;
-  return [
-    message.text,
-    "",
-    ...actions.map((action, index) => `${index + 1}. ${action.label} - ${action.value}`)
-  ].join("\n");
+  return [message.text, '', ...actions.map((action, index) => `${index + 1}. ${action.label} - ${action.value}`)].join(
+    '\n',
+  );
 }

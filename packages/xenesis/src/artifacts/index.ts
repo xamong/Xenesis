@@ -1,5 +1,5 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { dirname, resolve } from 'node:path';
 
 export interface ArtifactRecord {
   id: string;
@@ -28,15 +28,15 @@ export interface FileArtifactStoreOptions {
 }
 
 function timestampId(date: Date) {
-  return date.toISOString().replace(/[-:.]/g, "");
+  return date.toISOString().replace(/[-:.]/g, '');
 }
 
 function slugify(value: string) {
   const slug = value
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return slug || "artifact";
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return slug || 'artifact';
 }
 
 export class FileArtifactStore {
@@ -45,8 +45,8 @@ export class FileArtifactStore {
   private readonly now: () => Date;
 
   constructor(options: FileArtifactStoreOptions) {
-    this.root = resolve(options.xenesisHome, "artifacts");
-    this.indexPath = resolve(this.root, "index.json");
+    this.root = resolve(options.xenesisHome, 'artifacts');
+    this.indexPath = resolve(this.root, 'index.json');
     this.now = options.now ?? (() => new Date());
   }
 
@@ -66,24 +66,24 @@ export class FileArtifactStore {
     const record: ArtifactRecord = {
       id,
       title: input.title,
-      kind: input.kind ?? "text",
+      kind: input.kind ?? 'text',
       createdAt,
       path: relativePath,
-      bytes: Buffer.byteLength(input.content, "utf8"),
-      ...(input.sessionId ? { sessionId: input.sessionId } : {})
+      bytes: Buffer.byteLength(input.content, 'utf8'),
+      ...(input.sessionId ? { sessionId: input.sessionId } : {}),
     };
 
     await mkdir(dirname(path), { recursive: true });
-    await writeFile(path, input.content, "utf8");
+    await writeFile(path, input.content, 'utf8');
     await this.writeIndex([record, ...records]);
     return record;
   }
 
   async list(): Promise<ArtifactRecord[]> {
     try {
-      return JSON.parse(await readFile(this.indexPath, "utf8")) as ArtifactRecord[];
+      return JSON.parse(await readFile(this.indexPath, 'utf8')) as ArtifactRecord[];
     } catch (error) {
-      if (error instanceof Error && "code" in error && error.code === "ENOENT") return [];
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return [];
       throw error;
     }
   }
@@ -91,15 +91,15 @@ export class FileArtifactStore {
   async read(id: string): Promise<Artifact | undefined> {
     const record = (await this.list()).find((candidate) => candidate.id === id);
     if (!record) return undefined;
-    const content = await readFile(resolve(this.root, record.path), "utf8");
+    const content = await readFile(resolve(this.root, record.path), 'utf8');
     return {
       ...record,
-      content
+      content,
     };
   }
 
   private async writeIndex(records: ArtifactRecord[]) {
     await mkdir(dirname(this.indexPath), { recursive: true });
-    await writeFile(this.indexPath, `${JSON.stringify(records, null, 2)}\n`, "utf8");
+    await writeFile(this.indexPath, `${JSON.stringify(records, null, 2)}\n`, 'utf8');
   }
 }

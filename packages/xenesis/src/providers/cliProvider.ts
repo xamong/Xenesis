@@ -1,17 +1,17 @@
-import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from "node:child_process";
-import { randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { delimiter, dirname, extname, isAbsolute, join } from "node:path";
-import { StringDecoder } from "node:string_decoder";
-import type { AgentMessage } from "../core/messages.js";
-import { stripSystemPromptDynamicBoundary } from "../core/prompt/index.js";
+import { type ChildProcessWithoutNullStreams, spawn, spawnSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { delimiter, dirname, extname, isAbsolute, join } from 'node:path';
+import { StringDecoder } from 'node:string_decoder';
+import type { AgentMessage } from '../core/messages.js';
+import { stripSystemPromptDynamicBoundary } from '../core/prompt/index.js';
 import type {
   AgentProvider,
   ProviderRequest,
   ProviderResponse,
   ProviderRuntimeCapabilities,
-  ProviderStreamEvent
-} from "./types.js";
+  ProviderStreamEvent,
+} from './types.js';
 
 export interface CliRunRequest {
   command: string;
@@ -32,7 +32,7 @@ export interface CliRunResult {
 
 export type CliRunner = (request: CliRunRequest) => Promise<CliRunResult>;
 
-export type CliPreflightAuthStatus = "env-configured" | "unknown" | "unavailable";
+export type CliPreflightAuthStatus = 'env-configured' | 'unknown' | 'unavailable';
 
 export interface CliPreflightRequest {
   provider: string;
@@ -106,9 +106,17 @@ export interface CodexAppServerTurnResult {
   raw?: unknown;
 }
 
+export interface CodexAppServerThreadRequest {
+  model?: string;
+  cwd?: string;
+  signal?: AbortSignal;
+  developerInstructions?: string;
+  config?: Record<string, unknown>;
+}
+
 export interface CodexAppServerClient {
   initialize(signal?: AbortSignal): Promise<void>;
-  startThread(request: { model?: string; cwd?: string; signal?: AbortSignal }): Promise<{ threadId: string; raw?: unknown }>;
+  startThread(request: CodexAppServerThreadRequest): Promise<{ threadId: string; raw?: unknown }>;
   startTurn(request: CodexAppServerTurnRequest): Promise<CodexAppServerTurnResult>;
   dispose(): void;
 }
@@ -169,7 +177,7 @@ export interface ClaudeInteractiveProviderOptions {
 }
 
 interface CliProviderDefaults {
-  providerName: "codex-cli" | "claude-cli";
+  providerName: 'codex-cli' | 'claude-cli';
   defaultCommand: string;
   defaultArgs: string[];
   commandEnv: string;
@@ -192,32 +200,35 @@ interface CliSessionHandle {
 }
 
 function messageLabel(message: AgentMessage) {
-  if (message.role === "system") return "System";
-  if (message.role === "user") return "User";
-  if (message.role === "assistant") return "Assistant";
+  if (message.role === 'system') return 'System';
+  if (message.role === 'user') return 'User';
+  if (message.role === 'assistant') return 'Assistant';
   return `Tool (${message.name})`;
 }
 
 function formatPrompt(messages: AgentMessage[]) {
-  return messages
-    .map((message) => {
-      const details = message.role === "tool"
-        ? `toolCallId: ${message.toolCallId}\n${message.content}`
-        : message.role === "system"
-          ? stripSystemPromptDynamicBoundary(message.content)
-          : message.content;
-      return `## ${messageLabel(message)}\n${details}`;
-    })
-    .join("\n\n")
-    .trimEnd() + "\n";
+  return (
+    messages
+      .map((message) => {
+        const details =
+          message.role === 'tool'
+            ? `toolCallId: ${message.toolCallId}\n${message.content}`
+            : message.role === 'system'
+              ? stripSystemPromptDynamicBoundary(message.content)
+              : message.content;
+        return `## ${messageLabel(message)}\n${details}`;
+      })
+      .join('\n\n')
+      .trimEnd() + '\n'
+  );
 }
 
 function parseArgsFromEnv(value: string | undefined, fallback: string[]) {
-  const text = String(value || "").trim();
+  const text = String(value || '').trim();
   if (!text) return fallback;
   try {
     const parsed = JSON.parse(text);
-    if (Array.isArray(parsed) && parsed.every((item) => typeof item === "string")) {
+    if (Array.isArray(parsed) && parsed.every((item) => typeof item === 'string')) {
       return parsed;
     }
   } catch {
@@ -227,7 +238,7 @@ function parseArgsFromEnv(value: string | undefined, fallback: string[]) {
 }
 
 function textEnv(value: unknown) {
-  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
 function positiveInteger(value: unknown): number | undefined {
@@ -236,17 +247,17 @@ function positiveInteger(value: unknown): number | undefined {
 }
 
 function isEnvFalse(value: unknown) {
-  return typeof value === "string" && /^(?:0|false|no|off)$/i.test(value.trim());
+  return typeof value === 'string' && /^(?:0|false|no|off)$/i.test(value.trim());
 }
 
 function safeSessionKey(value: string) {
-  return value.replace(/[^a-zA-Z0-9._-]+/g, "_").slice(0, 160) || "default";
+  return value.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 160) || 'default';
 }
 
 function outputToString(value: unknown) {
-  if (typeof value === "string") return value;
-  if (Buffer.isBuffer(value)) return value.toString("utf8");
-  return value == null ? "" : String(value);
+  if (typeof value === 'string') return value;
+  if (Buffer.isBuffer(value)) return value.toString('utf8');
+  return value == null ? '' : String(value);
 }
 
 function firstOutputLine(stdout: string, stderr: string) {
@@ -257,42 +268,42 @@ function firstOutputLine(stdout: string, stderr: string) {
 }
 
 function providerAuthProbe(provider: string, env: NodeJS.ProcessEnv | undefined) {
-  const names = provider === "claude-cli" || provider === "claude-interactive"
-    ? ["ANTHROPIC_API_KEY"]
-    : provider === "codex-cli" || provider === "codex-app-server"
-      ? ["OPENAI_API_KEY", "CODEX_API_KEY"]
-      : [];
+  const names =
+    provider === 'claude-cli' || provider === 'claude-interactive'
+      ? ['ANTHROPIC_API_KEY']
+      : provider === 'codex-cli' || provider === 'codex-app-server'
+        ? ['OPENAI_API_KEY', 'CODEX_API_KEY']
+        : [];
   const configured = names.find((name) => textEnv(env?.[name] ?? process.env[name]));
   if (configured) {
     return {
-      authStatus: "env-configured" as const,
-      authSource: configured
+      authStatus: 'env-configured' as const,
+      authSource: configured,
     };
   }
-  return { authStatus: "unknown" as const };
+  return { authStatus: 'unknown' as const };
 }
 
 function preflightCacheMs(env: NodeJS.ProcessEnv | undefined) {
-  return positiveInteger(env?.XENESIS_CLI_PREFLIGHT_CACHE_MS)
-    ?? positiveInteger(process.env.XENESIS_CLI_PREFLIGHT_CACHE_MS)
-    ?? 5 * 60 * 1000;
+  return (
+    positiveInteger(env?.XENESIS_CLI_PREFLIGHT_CACHE_MS) ??
+    positiveInteger(process.env.XENESIS_CLI_PREFLIGHT_CACHE_MS) ??
+    5 * 60 * 1000
+  );
 }
 
 function preflightTimeoutMs(env: NodeJS.ProcessEnv | undefined) {
-  return positiveInteger(env?.XENESIS_CLI_PREFLIGHT_TIMEOUT_MS)
-    ?? positiveInteger(process.env.XENESIS_CLI_PREFLIGHT_TIMEOUT_MS)
-    ?? 2500;
+  return (
+    positiveInteger(env?.XENESIS_CLI_PREFLIGHT_TIMEOUT_MS) ??
+    positiveInteger(process.env.XENESIS_CLI_PREFLIGHT_TIMEOUT_MS) ??
+    2500
+  );
 }
 
 function preflightCacheKey(provider: string, command: string, env: NodeJS.ProcessEnv | undefined) {
-  const pathEnv = env?.Path ?? env?.PATH ?? process.env.Path ?? process.env.PATH ?? "";
-  const pathExt = env?.PATHEXT ?? process.env.PATHEXT ?? "";
-  return [
-    provider,
-    command,
-    pathEnv,
-    pathExt
-  ].map((part) => safeSessionKey(String(part || ""))).join("|");
+  const pathEnv = env?.Path ?? env?.PATH ?? process.env.Path ?? process.env.PATH ?? '';
+  const pathExt = env?.PATHEXT ?? process.env.PATHEXT ?? '';
+  return [provider, command, pathEnv, pathExt].map((part) => safeSessionKey(String(part || ''))).join('|');
 }
 
 const cliPreflightCache = new Map<string, { expiresAt: number; status: CliPreflightStatus }>();
@@ -303,23 +314,23 @@ function defaultCliPreflightRunner(request: CliPreflightRequest): CliPreflightRu
   try {
     const result = spawnSync(request.resolvedCommand, request.resolvedArgs, {
       env: { ...process.env, ...(request.env ?? {}) },
-      encoding: "utf8",
+      encoding: 'utf8',
       timeout: request.timeoutMs,
       shell: false,
-      windowsHide: true
+      windowsHide: true,
     });
     return {
       stdout: outputToString(result.stdout),
       stderr: outputToString(result.stderr),
       status: result.status,
-      ...(result.error ? { error: result.error.message } : {})
+      ...(result.error ? { error: result.error.message } : {}),
     };
   } catch (error) {
     return {
-      stdout: "",
-      stderr: "",
+      stdout: '',
+      stderr: '',
       status: null,
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
     };
   }
 }
@@ -332,7 +343,7 @@ export function resolveCliPreflightStatus(
   provider: string,
   command: string,
   env: NodeJS.ProcessEnv | undefined,
-  options: { runner?: CliPreflightRunner; now?: number } = {}
+  options: { runner?: CliPreflightRunner; now?: number } = {},
 ): CliPreflightStatus | undefined {
   if (isEnvFalse(env?.XENESIS_CLI_PREFLIGHT ?? process.env.XENESIS_CLI_PREFLIGHT)) return undefined;
   const cacheTtlMs = preflightCacheMs(env);
@@ -342,14 +353,14 @@ export function resolveCliPreflightStatus(
   if (cached && cached.expiresAt > now) {
     return {
       ...cached.status,
-      cacheHit: true
+      cacheHit: true,
     };
   }
 
   const spawnRequest = resolveCliSpawnRequest({
     command,
-    args: ["--version"],
-    env
+    args: ['--version'],
+    env,
   });
   const run = options.runner ?? defaultCliPreflightRunner;
   const probe = run({
@@ -358,13 +369,13 @@ export function resolveCliPreflightStatus(
     resolvedCommand: spawnRequest.command,
     resolvedArgs: spawnRequest.args,
     env,
-    timeoutMs: preflightTimeoutMs(env)
+    timeoutMs: preflightTimeoutMs(env),
   });
   const missingCommand = probe.error ? /\bENOENT\b|not found|cannot find/i.test(probe.error) : false;
   const timedOut = probe.error ? /timed? ?out|ETIMEDOUT/i.test(probe.error) : false;
   const versionLine = firstOutputLine(probe.stdout, probe.stderr);
   const installed = !missingCommand && (probe.status === 0 || Boolean(versionLine) || timedOut);
-  const auth = installed ? providerAuthProbe(provider, env) : { authStatus: "unavailable" as const };
+  const auth = installed ? providerAuthProbe(provider, env) : { authStatus: 'unavailable' as const };
   const status: CliPreflightStatus = {
     provider,
     command,
@@ -376,11 +387,11 @@ export function resolveCliPreflightStatus(
     checkedAt: new Date(now).toISOString(),
     cacheKey,
     cacheTtlMs,
-    ...(probe.error ? { error: probe.error } : {})
+    ...(probe.error ? { error: probe.error } : {}),
   };
   cliPreflightCache.set(cacheKey, {
     expiresAt: now + cacheTtlMs,
-    status
+    status,
   });
   return status;
 }
@@ -390,7 +401,7 @@ function createTimeoutSignal(signal: AbortSignal | undefined, timeoutMs: number 
     return {
       signal,
       cleanup: () => {},
-      timedOut: () => false
+      timedOut: () => false,
     };
   }
   const controller = new AbortController();
@@ -403,29 +414,29 @@ function createTimeoutSignal(signal: AbortSignal | undefined, timeoutMs: number 
   if (signal?.aborted) {
     abortFromSignal();
   } else {
-    signal?.addEventListener("abort", abortFromSignal, { once: true });
+    signal?.addEventListener('abort', abortFromSignal, { once: true });
   }
   return {
     signal: controller.signal,
     cleanup: () => {
       clearTimeout(timeout);
-      signal?.removeEventListener("abort", abortFromSignal);
+      signal?.removeEventListener('abort', abortFromSignal);
     },
-    timedOut: () => timedOut
+    timedOut: () => timedOut,
   };
 }
 
 function readCliSessionState(filePath: string): CliSessionState | undefined {
   if (!existsSync(filePath)) return undefined;
   try {
-    const parsed = JSON.parse(readFileSync(filePath, "utf8")) as Partial<CliSessionState>;
-    if (typeof parsed.provider !== "string" || typeof parsed.sessionKey !== "string") return undefined;
+    const parsed = JSON.parse(readFileSync(filePath, 'utf8')) as Partial<CliSessionState>;
+    if (typeof parsed.provider !== 'string' || typeof parsed.sessionKey !== 'string') return undefined;
     return {
       provider: parsed.provider,
       sessionKey: parsed.sessionKey,
-      ...(typeof parsed.sessionId === "string" && parsed.sessionId ? { sessionId: parsed.sessionId } : {}),
+      ...(typeof parsed.sessionId === 'string' && parsed.sessionId ? { sessionId: parsed.sessionId } : {}),
       ...(parsed.initialized === true ? { initialized: true } : {}),
-      ...(typeof parsed.updatedAt === "string" ? { updatedAt: parsed.updatedAt } : {})
+      ...(typeof parsed.updatedAt === 'string' ? { updatedAt: parsed.updatedAt } : {}),
     };
   } catch {
     return undefined;
@@ -434,24 +445,35 @@ function readCliSessionState(filePath: string): CliSessionState | undefined {
 
 function writeCliSessionState(filePath: string, state: CliSessionState) {
   mkdirSync(dirname(filePath), { recursive: true });
-  writeFileSync(filePath, JSON.stringify({
-    ...state,
-    updatedAt: new Date().toISOString()
-  }, null, 2), "utf8");
+  writeFileSync(
+    filePath,
+    JSON.stringify(
+      {
+        ...state,
+        updatedAt: new Date().toISOString(),
+      },
+      null,
+      2,
+    ),
+    'utf8',
+  );
 }
 
-function resolveCliSessionHandle(providerName: string, env: NodeJS.ProcessEnv | undefined): CliSessionHandle | undefined {
+function resolveCliSessionHandle(
+  providerName: string,
+  env: NodeJS.ProcessEnv | undefined,
+): CliSessionHandle | undefined {
   if (!env || isEnvFalse(env.XENESIS_CLI_SESSION_REUSE)) return undefined;
   const home = textEnv(env.XENESIS_HOME) ?? textEnv(env.XENIS_HOME);
   const sessionKey = textEnv(env.XENESIS_CLI_SESSION_KEY);
   if (!home || !sessionKey) return undefined;
-  const filePath = join(home, "provider-sessions", `${providerName}-${safeSessionKey(sessionKey)}.json`);
+  const filePath = join(home, 'provider-sessions', `${providerName}-${safeSessionKey(sessionKey)}.json`);
   return {
     path: filePath,
     state: readCliSessionState(filePath) ?? {
       provider: providerName,
-      sessionKey
-    }
+      sessionKey,
+    },
   };
 }
 
@@ -475,13 +497,13 @@ function tomlString(value: string) {
 }
 
 function tomlStringArray(values: string[]) {
-  return `[${values.map(tomlString).join(",")}]`;
+  return `[${values.map(tomlString).join(',')}]`;
 }
 
 function readServerPathFromBridgeState(stateFilePath: string | undefined): string | undefined {
   if (!stateFilePath || !existsSync(stateFilePath)) return undefined;
   try {
-    const parsed = JSON.parse(readFileSync(stateFilePath, "utf8")) as { serverPath?: unknown };
+    const parsed = JSON.parse(readFileSync(stateFilePath, 'utf8')) as { serverPath?: unknown };
     return textEnv(parsed.serverPath);
   } catch {
     return undefined;
@@ -493,16 +515,16 @@ function hasWindowsPathSeparator(value: string) {
 }
 
 function windowsPathEnv(env: NodeJS.ProcessEnv | undefined) {
-  return env?.Path ?? env?.PATH ?? process.env.Path ?? process.env.PATH ?? "";
+  return env?.Path ?? env?.PATH ?? process.env.Path ?? process.env.PATH ?? '';
 }
 
 function windowsPathExts(env: NodeJS.ProcessEnv | undefined) {
-  const value = env?.PATHEXT ?? process.env.PATHEXT ?? ".COM;.EXE;.BAT;.CMD";
+  const value = env?.PATHEXT ?? process.env.PATHEXT ?? '.COM;.EXE;.BAT;.CMD';
   const extensions = value
-    .split(";")
+    .split(';')
     .map((item) => item.trim().toLowerCase())
     .filter(Boolean);
-  return extensions.length > 0 ? extensions : [".com", ".exe", ".bat", ".cmd"];
+  return extensions.length > 0 ? extensions : ['.com', '.exe', '.bat', '.cmd'];
 }
 
 function windowsCommandCandidates(command: string, env: NodeJS.ProcessEnv | undefined) {
@@ -518,9 +540,7 @@ function windowsCommandCandidates(command: string, env: NodeJS.ProcessEnv | unde
     .split(delimiter)
     .map((item) => item.trim())
     .filter(Boolean);
-  const names = extension
-    ? [trimmed]
-    : windowsPathExts(env).map((candidateExt) => `${trimmed}${candidateExt}`);
+  const names = extension ? [trimmed] : windowsPathExts(env).map((candidateExt) => `${trimmed}${candidateExt}`);
   return dirs.flatMap((dir) => names.map((name) => join(dir, name)));
 }
 
@@ -529,22 +549,21 @@ function resolveWindowsCommandPath(command: string, env: NodeJS.ProcessEnv | und
 }
 
 function nodeCommandForNpmShim(shimPath: string) {
-  const localNode = join(dirname(shimPath), "node.exe");
-  return existsSync(localNode) ? localNode : "node";
+  const localNode = join(dirname(shimPath), 'node.exe');
+  return existsSync(localNode) ? localNode : 'node';
 }
 
 function npmShimEntrypointFromContent(content: string) {
-  const match = content.match(/%dp0%\\([^"\r\n]+?\.js)/i)
-    ?? content.match(/\$basedir[\\/]+([^"\r\n]+?\.js)/i);
-  return match?.[1]?.replace(/[\\/]+/g, "\\");
+  const match = content.match(/%dp0%\\([^"\r\n]+?\.js)/i) ?? content.match(/\$basedir[\\/]+([^"\r\n]+?\.js)/i);
+  return match?.[1]?.replace(/[\\/]+/g, '\\');
 }
 
 function resolveWindowsNpmShim(commandPath: string, args: string[]): CliSpawnRequest | undefined {
   const extension = extname(commandPath).toLowerCase();
-  if (extension !== ".cmd" && extension !== ".bat" && extension !== ".ps1") return undefined;
-  let content = "";
+  if (extension !== '.cmd' && extension !== '.bat' && extension !== '.ps1') return undefined;
+  let content = '';
   try {
-    content = readFileSync(commandPath, "utf8");
+    content = readFileSync(commandPath, 'utf8');
   } catch {
     return undefined;
   }
@@ -555,17 +574,17 @@ function resolveWindowsNpmShim(commandPath: string, args: string[]): CliSpawnReq
   return {
     command: nodeCommandForNpmShim(commandPath),
     args: [entrypoint, ...args],
-    shell: false
+    shell: false,
   };
 }
 
 export function resolveCliSpawnRequest(input: CliSpawnRequestInput): CliSpawnRequest {
   const platform = input.platform ?? process.platform;
-  if (platform !== "win32") {
+  if (platform !== 'win32') {
     return {
       command: input.command,
       args: input.args,
-      shell: false
+      shell: false,
     };
   }
 
@@ -576,53 +595,59 @@ export function resolveCliSpawnRequest(input: CliSpawnRequestInput): CliSpawnReq
   return {
     command: resolvedPath,
     args: input.args,
-    shell: false
+    shell: false,
   };
 }
 
 const DESK_MCP_TOOL_NAMES = [
-  "xenesis_desk_capabilities",
-  "xenesis_desk_capability",
-  "xenesis_desk_call_capability"
+  'xenesis_desk_capabilities',
+  'xenesis_desk_capability',
+  'xenesis_desk_call_capability',
+  'xenesis_desk_state',
+  'xenesis_desk_active_context',
+  'xenesis_desk_context_actions',
+  'xenesis_desk_recent_diagnostics',
 ];
 
-const CLAUDE_DESK_MCP_SERVER_KEY = "xenesis-dev";
-const CLAUDE_DESK_MCP_TOOL_NAMES = DESK_MCP_TOOL_NAMES.map((toolName) =>
-  `mcp__${CLAUDE_DESK_MCP_SERVER_KEY}__${toolName}`
+const CLAUDE_DESK_MCP_SERVER_KEY = 'xenesis-dev';
+const CLAUDE_DESK_MCP_TOOL_NAMES = DESK_MCP_TOOL_NAMES.map(
+  (toolName) => `mcp__${CLAUDE_DESK_MCP_SERVER_KEY}__${toolName}`,
 );
 
 function resolveDeskMcpConfig(env: NodeJS.ProcessEnv, autoConfigEnvName: string) {
-  if (textEnv(env[autoConfigEnvName])?.toLowerCase() === "false") return undefined;
-  const stateFilePath = textEnv(env.XENIS_MCP_STATE_FILE)
-    ?? (textEnv(env.XENIS_HOME) ? join(textEnv(env.XENIS_HOME)!, "mcp", "bridge.json") : undefined);
+  if (textEnv(env[autoConfigEnvName])?.toLowerCase() === 'false') return undefined;
+  const stateFilePath =
+    textEnv(env.XENIS_MCP_STATE_FILE) ??
+    (textEnv(env.XENIS_HOME) ? join(textEnv(env.XENIS_HOME)!, 'mcp', 'bridge.json') : undefined);
   const serverPath = textEnv(env.XENIS_MCP_SERVER_PATH) ?? readServerPathFromBridgeState(stateFilePath);
-  if (!stateFilePath || !serverPath) return undefined;
+  const bridgeUrl = textEnv(env.XENIS_MCP_BRIDGE_URL);
+  const bridgeToken = textEnv(env.XENIS_MCP_BRIDGE_TOKEN);
+  if (!serverPath || (!stateFilePath && !bridgeUrl)) return undefined;
   return {
     stateFilePath,
     serverPath,
-    nodeCommand: textEnv(env.XENIS_MCP_NODE_COMMAND) ?? "node",
-    xenisHome: textEnv(env.XENIS_HOME)
+    nodeCommand: textEnv(env.XENIS_MCP_NODE_COMMAND) ?? 'node',
+    xenisHome: textEnv(env.XENIS_HOME),
+    bridgeUrl,
+    bridgeToken,
   };
 }
 
 function argsAlreadyConfigureDeskMcp(args: string[]) {
-  return args.some((arg) =>
-    arg.includes("mcp_servers.xenesis_dev") ||
-    arg.includes("mcp_servers.xenesis-dev") ||
-    arg.includes("xenesis-dev") ||
-    arg.includes("xenesis_desk_call_capability") ||
-    arg.includes("xenesis-desk-mcp-server")
+  return args.some(
+    (arg) =>
+      arg.includes('mcp_servers.xenesis_dev') ||
+      arg.includes('mcp_servers.xenesis-dev') ||
+      arg.includes('xenesis-dev') ||
+      arg.includes('xenesis_desk_call_capability') ||
+      arg.includes('xenesis-desk-mcp-server'),
   );
 }
 
 function insertCliOptionsBeforeStdinPrompt(args: string[], extraArgs: string[]) {
-  const stdinPromptIndex = args.lastIndexOf("-");
+  const stdinPromptIndex = args.lastIndexOf('-');
   if (stdinPromptIndex < 0) return [...args, ...extraArgs];
-  return [
-    ...args.slice(0, stdinPromptIndex),
-    ...extraArgs,
-    ...args.slice(stdinPromptIndex)
-  ];
+  return [...args.slice(0, stdinPromptIndex), ...extraArgs, ...args.slice(stdinPromptIndex)];
 }
 
 function hasAnyArg(args: readonly string[], names: readonly string[]) {
@@ -630,21 +655,19 @@ function hasAnyArg(args: readonly string[], names: readonly string[]) {
 }
 
 function claudeSessionArgs(args: string[], handle: CliSessionHandle) {
-  if (hasAnyArg(args, ["--session-id", "--resume", "-r", "--continue", "-c"])) return args;
+  if (hasAnyArg(args, ['--session-id', '--resume', '-r', '--continue', '-c'])) return args;
   const sessionId = ensureClaudeSessionId(handle);
-  return handle.state.initialized
-    ? [...args, "--resume", sessionId]
-    : [...args, "--session-id", sessionId];
+  return handle.state.initialized ? [...args, '--resume', sessionId] : [...args, '--session-id', sessionId];
 }
 
 function codexExecResumeArgs(args: string[], handle: CliSessionHandle) {
   if (!handle.state.initialized) return args;
-  if (args[0] !== "exec" || args[1] === "resume") return args;
+  if (args[0] !== 'exec' || args[1] === 'resume') return args;
   const resumeArgs: string[] = [];
   let sandbox: string | undefined;
   for (let index = 1; index < args.length; index += 1) {
     const arg = args[index];
-    if (arg === "--sandbox" || arg === "-s") {
+    if (arg === '--sandbox' || arg === '-s') {
       sandbox = args[index + 1];
       index += 1;
       continue;
@@ -652,22 +675,22 @@ function codexExecResumeArgs(args: string[], handle: CliSessionHandle) {
     resumeArgs.push(arg);
   }
   if (sandbox) {
-    resumeArgs.unshift("-c", `sandbox=${tomlString(sandbox)}`);
+    resumeArgs.unshift('-c', `sandbox=${tomlString(sandbox)}`);
   }
-  return [args[0], "resume", "--last", ...resumeArgs];
+  return [args[0], 'resume', '--last', ...resumeArgs];
 }
 
 function sessionArgs(providerName: string, args: string[], handle: CliSessionHandle | undefined) {
   if (!handle) return args;
-  if (providerName === "claude-cli") return claudeSessionArgs(args, handle);
-  if (providerName === "codex-cli") return codexExecResumeArgs(args, handle);
+  if (providerName === 'claude-cli') return claudeSessionArgs(args, handle);
+  if (providerName === 'codex-cli') return codexExecResumeArgs(args, handle);
   return args;
 }
 
 function continuationMessages(messages: AgentMessage[]) {
   const lastAssistantIndex = messages.reduce(
-    (lastIndex, message, index) => message.role === "assistant" ? index : lastIndex,
-    -1
+    (lastIndex, message, index) => (message.role === 'assistant' ? index : lastIndex),
+    -1,
   );
   if (lastAssistantIndex < 0) return messages;
   const tail = messages.slice(lastAssistantIndex + 1);
@@ -675,28 +698,48 @@ function continuationMessages(messages: AgentMessage[]) {
 }
 
 function codexDeskMcpArgs(env: NodeJS.ProcessEnv) {
-  const config = resolveDeskMcpConfig(env, "XENESIS_CODEX_MCP_AUTO_CONFIG");
+  const config = resolveDeskMcpConfig(env, 'XENESIS_CODEX_MCP_AUTO_CONFIG');
   if (!config) return [];
-  const serverKey = "xenesis_dev";
+  const serverKey = 'xenesis_dev';
   const args = [
-    "-c", `mcp_servers.${serverKey}.enabled=true`,
-    "-c", `mcp_servers.${serverKey}.command=${tomlString(config.nodeCommand)}`,
-    "-c", `mcp_servers.${serverKey}.args=${tomlStringArray([config.serverPath])}`,
-    "-c", `mcp_servers.${serverKey}.env.XENIS_MCP_STATE_FILE=${tomlString(config.stateFilePath)}`,
-    "-c", `mcp_servers.${serverKey}.enabled_tools=${tomlStringArray(DESK_MCP_TOOL_NAMES)}`,
-    "-c", `mcp_servers.${serverKey}.default_tools_approval_mode='approve'`,
-    "-c", `mcp_servers.${serverKey}.tools.xenesis_desk_capabilities.approval_mode='approve'`,
-    "-c", `mcp_servers.${serverKey}.tools.xenesis_desk_capability.approval_mode='approve'`,
-    "-c", `mcp_servers.${serverKey}.tools.xenesis_desk_call_capability.approval_mode='approve'`
+    '-c',
+    `mcp_servers.${serverKey}.enabled=true`,
+    '-c',
+    `mcp_servers.${serverKey}.command=${tomlString(config.nodeCommand)}`,
+    '-c',
+    `mcp_servers.${serverKey}.args=${tomlStringArray([config.serverPath])}`,
+    '-c',
+    `mcp_servers.${serverKey}.enabled_tools=${tomlStringArray(DESK_MCP_TOOL_NAMES)}`,
+    '-c',
+    `mcp_servers.${serverKey}.default_tools_approval_mode='approve'`,
+    '-c',
+    `mcp_servers.${serverKey}.tools.xenesis_desk_capabilities.approval_mode='approve'`,
+    '-c',
+    `mcp_servers.${serverKey}.tools.xenesis_desk_capability.approval_mode='approve'`,
+    '-c',
+    `mcp_servers.${serverKey}.tools.xenesis_desk_call_capability.approval_mode='approve'`,
   ];
+  if (config.stateFilePath) {
+    args.push('-c', `mcp_servers.${serverKey}.env.XENIS_MCP_STATE_FILE=${tomlString(config.stateFilePath)}`);
+  }
+  if (config.bridgeUrl) {
+    args.push('-c', `mcp_servers.${serverKey}.env.XENIS_MCP_BRIDGE_URL=${tomlString(config.bridgeUrl)}`);
+  }
+  if (config.bridgeToken) {
+    args.push('-c', `mcp_servers.${serverKey}.env.XENIS_MCP_BRIDGE_TOKEN=${tomlString(config.bridgeToken)}`);
+  }
   if (config.xenisHome) {
-    args.push("-c", `mcp_servers.${serverKey}.env.XENIS_HOME=${tomlString(config.xenisHome)}`);
+    args.push('-c', `mcp_servers.${serverKey}.env.XENIS_HOME=${tomlString(config.xenisHome)}`);
   }
   return args;
 }
 
-function claudeDeskMcpArgs(providerName: "claude-cli" | "claude-interactive", env: NodeJS.ProcessEnv, baseArgs: string[]) {
-  const config = resolveDeskMcpConfig(env, "XENESIS_CLAUDE_MCP_AUTO_CONFIG");
+function claudeDeskMcpArgs(
+  providerName: 'claude-cli' | 'claude-interactive',
+  env: NodeJS.ProcessEnv,
+  baseArgs: string[],
+) {
+  const config = resolveDeskMcpConfig(env, 'XENESIS_CLAUDE_MCP_AUTO_CONFIG');
   if (!config) return [];
   const mcpConfig = {
     mcpServers: {
@@ -704,39 +747,41 @@ function claudeDeskMcpArgs(providerName: "claude-cli" | "claude-interactive", en
         command: config.nodeCommand,
         args: [config.serverPath],
         env: {
-          XENIS_MCP_STATE_FILE: config.stateFilePath,
-          ...(config.xenisHome ? { XENIS_HOME: config.xenisHome } : {})
-        }
-      }
-    }
+          ...(config.stateFilePath ? { XENIS_MCP_STATE_FILE: config.stateFilePath } : {}),
+          ...(config.bridgeUrl ? { XENIS_MCP_BRIDGE_URL: config.bridgeUrl } : {}),
+          ...(config.bridgeToken ? { XENIS_MCP_BRIDGE_TOKEN: config.bridgeToken } : {}),
+          ...(config.xenisHome ? { XENIS_HOME: config.xenisHome } : {}),
+        },
+      },
+    },
   };
-  const args = ["--mcp-config", JSON.stringify(mcpConfig), "--strict-mcp-config"];
-  if (providerName === "claude-cli" && !hasAnyArg(baseArgs, ["--tools"])) {
-    args.push("--tools", "");
+  const args = ['--mcp-config', JSON.stringify(mcpConfig), '--strict-mcp-config'];
+  if (providerName === 'claude-cli' && !hasAnyArg(baseArgs, ['--tools'])) {
+    args.push('--tools', '');
   }
-  if (!hasAnyArg(baseArgs, ["--allowedTools", "--allowed-tools"])) {
-    args.push("--allowedTools", CLAUDE_DESK_MCP_TOOL_NAMES.join(","));
+  if (!hasAnyArg(baseArgs, ['--allowedTools', '--allowed-tools'])) {
+    args.push('--allowedTools', CLAUDE_DESK_MCP_TOOL_NAMES.join(','));
   }
   return args;
 }
 
 function claudeDisableNativeToolArgs(args: string[]) {
-  if (hasAnyArg(args, ["--tools"])) return args;
-  return insertCliOptionsBeforeStdinPrompt(args, ["--tools", ""]);
+  if (hasAnyArg(args, ['--tools'])) return args;
+  return insertCliOptionsBeforeStdinPrompt(args, ['--tools', '']);
 }
 
-type DeskMcpCliProviderName = CliProviderDefaults["providerName"] | "claude-interactive";
+type DeskMcpCliProviderName = CliProviderDefaults['providerName'] | 'claude-interactive';
 
 function isClaudeCliProviderName(providerName: string) {
-  return providerName === "claude-cli" || providerName === "claude-interactive";
+  return providerName === 'claude-cli' || providerName === 'claude-interactive';
 }
 
 function maybeAddDeskMcpArgs(providerName: DeskMcpCliProviderName, args: string[], env: NodeJS.ProcessEnv) {
-  if (providerName !== "codex-cli" && !isClaudeCliProviderName(providerName)) return { args, configured: false };
+  if (providerName !== 'codex-cli' && !isClaudeCliProviderName(providerName)) return { args, configured: false };
   if (argsAlreadyConfigureDeskMcp(args)) {
     return {
-      args: providerName === "claude-cli" ? claudeDisableNativeToolArgs(args) : args,
-      configured: true
+      args: providerName === 'claude-cli' ? claudeDisableNativeToolArgs(args) : args,
+      configured: true,
     };
   }
   const extraArgs = isClaudeCliProviderName(providerName)
@@ -745,19 +790,41 @@ function maybeAddDeskMcpArgs(providerName: DeskMcpCliProviderName, args: string[
   if (extraArgs.length === 0) return { args, configured: false };
   return {
     args: insertCliOptionsBeforeStdinPrompt(args, extraArgs),
-    configured: true
+    configured: true,
   };
 }
 
 function codexAppServerArgs(env: NodeJS.ProcessEnv) {
-  const args = parseArgsFromEnv(env.XENESIS_CODEX_APP_SERVER_ARGS, ["app-server", "--stdio"]);
-  if (argsAlreadyConfigureDeskMcp(args)) return { args, configured: true };
+  const args = parseArgsFromEnv(env.XENESIS_CODEX_APP_SERVER_ARGS, ['app-server', '--stdio']);
+  const nativeToolDisableArgs = codexAppServerDeskMcpNativeToolDisableArgs();
+  if (argsAlreadyConfigureDeskMcp(args)) return { args: [...args, ...nativeToolDisableArgs], configured: true };
   const extraArgs = codexDeskMcpArgs(env);
   if (extraArgs.length === 0) return { args, configured: false };
   return {
-    args: [...args, ...extraArgs],
-    configured: true
+    args: [...args, ...nativeToolDisableArgs, ...extraArgs],
+    configured: true,
   };
+}
+
+function codexAppServerDeskMcpNativeToolDisableArgs() {
+  const disabledFeatures = [
+    'apps',
+    'plugins',
+    'tool_suggest',
+    'multi_agent',
+    'standalone_web_search',
+    'web_search_request',
+    'web_search_cached',
+    'search_tool',
+    'browser_use',
+    'browser_use_external',
+    'browser_use_full_cdp_access',
+    'in_app_browser',
+    'shell_tool',
+    'shell_snapshot',
+    'unified_exec',
+  ].flatMap((feature) => ['--disable', feature]);
+  return ['-c', 'tools.web_search=false', '-c', 'tools.web_search.enabled=false', ...disabledFeatures];
 }
 
 function codexAppServerModel(env: NodeJS.ProcessEnv, requestModel: string) {
@@ -771,67 +838,99 @@ function codexAppServerModel(env: NodeJS.ProcessEnv, requestModel: string) {
 function deskMcpPromptTools(providerName: string) {
   if (isClaudeCliProviderName(providerName)) {
     return {
-      callTool: "mcp__xenesis-dev__xenesis_desk_call_capability",
-      capabilitiesTool: "mcp__xenesis-dev__xenesis_desk_capabilities",
-      capabilityTool: "mcp__xenesis-dev__xenesis_desk_capability"
+      callTool: 'mcp__xenesis-dev__xenesis_desk_call_capability',
+      capabilitiesTool: 'mcp__xenesis-dev__xenesis_desk_capabilities',
+      capabilityTool: 'mcp__xenesis-dev__xenesis_desk_capability',
+      stateTool: 'mcp__xenesis-dev__xenesis_desk_state',
+      activeContextTool: 'mcp__xenesis-dev__xenesis_desk_active_context',
+      contextActionsTool: 'mcp__xenesis-dev__xenesis_desk_context_actions',
+      recentDiagnosticsTool: 'mcp__xenesis-dev__xenesis_desk_recent_diagnostics',
     };
   }
   return {
-    callTool: "xenesis_dev.xenesis_desk_call_capability",
-    capabilitiesTool: "xenesis_dev.xenesis_desk_capabilities",
-    capabilityTool: "xenesis_dev.xenesis_desk_capability"
+    callTool: 'xenesis_dev.xenesis_desk_call_capability',
+    capabilitiesTool: 'xenesis_dev.xenesis_desk_capabilities',
+    capabilityTool: 'xenesis_dev.xenesis_desk_capability',
+    stateTool: 'xenesis_dev.xenesis_desk_state',
+    activeContextTool: 'xenesis_dev.xenesis_desk_active_context',
+    contextActionsTool: 'xenesis_dev.xenesis_desk_context_actions',
+    recentDiagnosticsTool: 'xenesis_dev.xenesis_desk_recent_diagnostics',
   };
 }
 
 export function deskMcpSystemMessage(providerName: string): AgentMessage {
   const tools = deskMcpPromptTools(providerName);
   return {
-    role: "system",
+    role: 'system',
     content: [
-      "Private execution interface: Xenesis Desk CR MCP tools are configured for this provider run.",
+      'Private execution interface: Xenesis Desk CR MCP tools are configured for this provider run.',
       `Use the fully qualified MCP tool \`${tools.callTool}\` for Capability Registry calls.`,
       `Use \`${tools.capabilitiesTool}\` to discover paths, \`${tools.capabilityTool}\` to inspect schemas/approval, and \`${tools.callTool}\` as the generic caller for every callable CR method.`,
+      `For common readback, use read-only Desk wrappers directly when they match the request: \`${tools.stateTool}\`, \`${tools.activeContextTool}\`, \`${tools.contextActionsTool}\`, and \`${tools.recentDiagnosticsTool}\`. These wrappers map back to Desk read paths and are preferred for current pane, selected file, diagnostics, and state questions.`,
       `For a known path such as \`xd.app.status\`, call \`${tools.callTool}\` with input \`{ "path": "xd.app.status", "args": {} }\`.`,
       `Desk capability families: status, explorer, terminal, browser, document, layout, office, ui.automation, agent.artifact, multi_step. Do not assume xd.* paths — discover the exact path and arg schema on demand with ${tools.capabilitiesTool} and ${tools.capabilityTool} before calling ${tools.callTool}.`,
-      "Do not use shell or `tool_search` for CR calls when these fully qualified MCP tool names are configured.",
-      "When this provider run has Desk CR MCP tools configured, do not use native provider file-editing tools such as apply_patch, shell redirection, filesystem writes, or local JSON/write/edit helpers to satisfy Desk file, document, terminal, browser, workspace, or UI mutations. Mutating Desk state must go through the CR MCP caller so approval, readback, and audit state stay aligned.",
+      `For Xenesis Agent setup work, discover provider setup/profile draft, external tool setup/profile draft, and messenger channel setup/profile draft capability families with ${tools.capabilitiesTool} and ${tools.capabilityTool}; do not hardcode natural-language keywords or exact profileDrafts paths.`,
+      `When the user explicitly asks for CR, MCP, Capability Registry, or xd.* readback, privately call ${tools.capabilitiesTool}, ${tools.capabilityTool}, or ${tools.callTool} before answering. Saying you cannot directly check is invalid while these tools are configured.`,
+      'Do not use shell, commandExecution, webSearch, web_search, web_fetch, file/workspace search, or `tool_search` for CR calls when these fully qualified MCP tool names are configured.',
+      'When this provider run has Desk CR MCP tools configured, do not use native provider file-editing tools such as apply_patch, shell redirection, filesystem writes, or local JSON/write/edit helpers to satisfy Desk file, document, terminal, browser, workspace, or UI mutations. Mutating Desk state must go through the CR MCP caller so approval, readback, and audit state stay aligned.',
       `When the user asks for an approval-required Desk action, call \`${tools.callTool}\` with approved=false so Desk creates the real approval record, then report that Desk approval is needed (omit diagnostic ids unless asked).`,
-      "If that approved=false call returns a pending approval, approvalRequired, or an actionInboxItem, stop this provider turn after the real approval record is created. Do not wait for the user to approve it, do not call follow-up readback/verify/inspect/export, and do not issue a second mutation in the same provider turn unless the tool result says the action already executed.",
-      "For text file generation or updates, do not set `maxBytes` from requested character count, document length, or design complexity requirements. Omit `maxBytes` unless the user explicitly asks for a file-size safety cap.",
-      "For Desk calls that execute immediately, and for read-only Desk calls, verify with another CR/MCP read such as state, active context, diagnostics, captures, or open content before reporting a completed result.",
-      "Do not mention MCP, CR, Capability Registry, bridge, tool names, `xd.*` paths, approval ids, or skill names in user-facing progress or final answers unless the user explicitly asks for diagnostics.",
-      "Translate internal calls into Desk product language: browser tab count, browser URLs, file explorer open/closed state, current workspace, selected path, pane state, terminal output, web page state, document/file open state, pane layout, or approval needed."
-    ].join("\n")
+      'If that approved=false call returns a pending approval, approvalRequired, or an actionInboxItem, stop this provider turn after the real approval record is created. Do not wait for the user to approve it, do not call follow-up readback/verify/inspect/export, and do not issue a second mutation in the same provider turn unless the tool result says the action already executed.',
+      'For text file generation or updates, do not set `maxBytes` from requested character count, document length, or design complexity requirements. Omit `maxBytes` unless the user explicitly asks for a file-size safety cap.',
+      'For Desk calls that execute immediately, and for read-only Desk calls, verify with another CR/MCP read such as state, active context, diagnostics, captures, or open content before reporting a completed result.',
+      'Do not mention MCP, CR, Capability Registry, bridge, tool names, `xd.*` paths, approval ids, or skill names in user-facing progress or final answers unless the user explicitly asks for diagnostics.',
+      'Translate internal calls into Desk product language: browser tab count, browser URLs, file explorer open/closed state, current workspace, selected path, pane state, terminal output, web page state, document/file open state, pane layout, or approval needed.',
+    ].join('\n'),
   };
 }
 
 const providerVisibleOutputContractMessage: AgentMessage = {
-  role: "system",
+  role: 'system',
   content: [
-    "Assistant output contract for this turn:",
-    "Use private Desk tools silently.",
-    "For Desk file/document generation or edits, do not use native patch/write/shell filesystem mutation when a private Desk CR bridge is available; create the real private Desk mutation/approval. If it executes immediately, verify readback before answering. If it returns pending approval, stop with approval-needed product language only.",
-    "Do not narrate tool choice, discovery, schema lookup, path lookup, or verification steps.",
-    "The first visible assistant text should be the final user answer. If a progress update is unavoidable, say only: 상태를 확인 중입니다.",
-    "For natural Desk status or control requests, answer in short product language only: browser tab count, browser URLs if asked, file explorer open/closed state, current workspace, selected path, pane state, terminal output, web page state, or that Desk approval is needed.",
-    "Never report a requested completion marker, success word, or done/완료 for a Desk control task until the required private Desk call has actually run and required approval/readback has been observed.",
-    "For web form tasks that ask you to type, click, submit, or verify page text, do not infer success from the prompt. Run the browser interaction through private Desk tools first, then verify with page text/readback; if the call returns pending approval, say only that Desk approval is needed and stop.",
-    "For visible terminal tasks that ask you to open a terminal, run a command, or verify output, do not infer success from the prompt. Create the real Desk terminal approval request when required; if approval is pending, say only that Desk approval is needed and stop.",
-    "Saying Desk approval is needed without first making the private Desk call that creates the approval record is invalid.",
-    "Pending approval is a valid stop state only after the private Desk call created the real approval record. Do not perform same-turn post-approval verification; the Agent pane or a later turn will verify after approval execution.",
-    "Do not report terminal command output until the terminal command has actually run and output readback matched.",
-    "If the user asks to only confirm a previously opened, executed, or submitted Desk state, answer with a concise confirmation only. Do not restate URLs, local file paths, script names, hidden markers, codes, raw terminal output, or other readback identifiers unless the user explicitly asks for those details.",
-    "If the user says `확인했다고만`, `확인만`, `준비됐다고만`, or equivalent answer-only wording, the visible answer should be just the requested short confirmation, for example `확인했습니다.`",
-    "Do not mention MCP, CR, Capability Registry, bridge/브리지, tool names, `xd.*` paths, approval ids, `approvalRequired`, `actionInboxItem`, `superpowers:*`, skill names, shell fallback attempts, or raw process errors in visible text unless the user explicitly asks for diagnostics.",
-    "If a Desk read lacks a requested field, say the field is not currently returned by Desk. Do not identify the underlying path, API, schema, or registry entry."
-  ].join("\n")
+    'Assistant output contract for this turn:',
+    'Use private Desk tools silently.',
+    'For Desk file/document generation or edits, do not use native patch/write/shell filesystem mutation when a private Desk CR bridge is available; create the real private Desk mutation/approval. If it executes immediately, verify readback before answering. If it returns pending approval, stop with approval-needed product language only.',
+    'Do not narrate tool choice, discovery, schema lookup, path lookup, or verification steps.',
+    'The first visible assistant text should be the final user answer. If a progress update is unavoidable, say only: 상태를 확인 중입니다.',
+    'For natural Desk status or control requests, answer in short product language only: browser tab count, browser URLs if asked, file explorer open/closed state, current workspace, selected path, pane state, terminal output, web page state, or that Desk approval is needed.',
+    'Never report a requested completion marker, success word, or done/완료 for a Desk control task until the required private Desk call has actually run and required approval/readback has been observed.',
+    'For web form tasks that ask you to type, click, submit, or verify page text, do not infer success from the prompt. Run the browser interaction through private Desk tools first, then verify with page text/readback; if the call returns pending approval, say only that Desk approval is needed and stop.',
+    'For visible terminal tasks that ask you to open a terminal, run a command, or verify output, do not infer success from the prompt. Create the real Desk terminal approval request when required; if approval is pending, say only that Desk approval is needed and stop.',
+    'Saying Desk approval is needed without first making the private Desk call that creates the approval record is invalid.',
+    'Pending approval is a valid stop state only after the private Desk call created the real approval record. Do not perform same-turn post-approval verification; the Agent pane or a later turn will verify after approval execution.',
+    'Do not report terminal command output until the terminal command has actually run and output readback matched.',
+    'If the user asks to only confirm a previously opened, executed, or submitted Desk state, answer with a concise confirmation only. Do not restate URLs, local file paths, script names, hidden markers, codes, raw terminal output, or other readback identifiers unless the user explicitly asks for those details.',
+    'If the user says `확인했다고만`, `확인만`, `준비됐다고만`, or equivalent answer-only wording, the visible answer should be just the requested short confirmation, for example `확인했습니다.`',
+    'Do not mention MCP, CR, Capability Registry, bridge/브리지, tool names, `xd.*` paths, approval ids, `approvalRequired`, `actionInboxItem`, `superpowers:*`, skill names, shell fallback attempts, or raw process errors in visible text unless the user explicitly asks for diagnostics.',
+    'If a Desk read lacks a requested field, say the field is not currently returned by Desk. Do not identify the underlying path, API, schema, or registry entry.',
+  ].join('\n'),
 };
 
-function providerTurnMessages(messages: AgentMessage[], options: { deskMcpConfigured?: boolean; providerName?: string } = {}) {
+function providerInstructionMessages(options: { deskMcpConfigured?: boolean; providerName?: string } = {}) {
   return [
-    ...(options.deskMcpConfigured ? [deskMcpSystemMessage(options.providerName ?? "codex-cli")] : []),
+    ...(options.deskMcpConfigured ? [deskMcpSystemMessage(options.providerName ?? 'codex-cli')] : []),
+    providerVisibleOutputContractMessage,
+  ];
+}
+
+function providerDeveloperInstructions(options: { deskMcpConfigured?: boolean; providerName?: string } = {}) {
+  return providerInstructionMessages(options)
+    .map((message) => message.content)
+    .join('\n\n');
+}
+
+function providerTurnMessages(
+  messages: AgentMessage[],
+  options: {
+    deskMcpConfigured?: boolean;
+    providerName?: string;
+    includeProviderInstructions?: boolean;
+  } = {},
+) {
+  if (options.includeProviderInstructions === false) return messages;
+  return [
+    ...(options.deskMcpConfigured ? [deskMcpSystemMessage(options.providerName ?? 'codex-cli')] : []),
     ...messages,
-    providerVisibleOutputContractMessage
+    providerVisibleOutputContractMessage,
   ];
 }
 
@@ -841,19 +940,19 @@ function defaultCliRunner(request: CliRunRequest): Promise<CliRunResult> {
     const spawnRequest = resolveCliSpawnRequest({
       command: request.command,
       args: request.args,
-      env
+      env,
     });
     const child = spawn(spawnRequest.command, spawnRequest.args, {
       cwd: request.cwd,
       env,
       shell: spawnRequest.shell,
       windowsHide: true,
-      stdio: ["pipe", "pipe", "pipe"]
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
     const stdout: Buffer[] = [];
     const stderr: Buffer[] = [];
-    const stdoutDecoder = new StringDecoder("utf8");
-    const stderrDecoder = new StringDecoder("utf8");
+    const stdoutDecoder = new StringDecoder('utf8');
+    const stderrDecoder = new StringDecoder('utf8');
     let settled = false;
 
     const flushDecoders = () => {
@@ -866,7 +965,7 @@ function defaultCliRunner(request: CliRunRequest): Promise<CliRunResult> {
     const finish = (callback: () => void) => {
       if (settled) return;
       settled = true;
-      request.signal?.removeEventListener("abort", abort);
+      request.signal?.removeEventListener('abort', abort);
       callback();
     };
     const abort = () => {
@@ -878,30 +977,32 @@ function defaultCliRunner(request: CliRunRequest): Promise<CliRunResult> {
       abort();
       return;
     }
-    request.signal?.addEventListener("abort", abort, { once: true });
+    request.signal?.addEventListener('abort', abort, { once: true });
 
-    child.stdout.on("data", (chunk: Buffer | string) => {
+    child.stdout.on('data', (chunk: Buffer | string) => {
       const buffer = Buffer.from(chunk);
       stdout.push(buffer);
       const text = stdoutDecoder.write(buffer);
       if (text) request.onStdout?.(text);
     });
-    child.stderr.on("data", (chunk: Buffer | string) => {
+    child.stderr.on('data', (chunk: Buffer | string) => {
       const buffer = Buffer.from(chunk);
       stderr.push(buffer);
       const text = stderrDecoder.write(buffer);
       if (text) request.onStderr?.(text);
     });
-    child.on("error", (error) => finish(() => reject(error)));
-    child.on("close", (exitCode) => finish(() => {
-      flushDecoders();
-      resolve({
-        stdout: Buffer.concat(stdout).toString("utf8"),
-        stderr: Buffer.concat(stderr).toString("utf8"),
-        exitCode
-      });
-    }));
-    child.stdin.end(request.stdin, "utf8");
+    child.on('error', (error) => finish(() => reject(error)));
+    child.on('close', (exitCode) =>
+      finish(() => {
+        flushDecoders();
+        resolve({
+          stdout: Buffer.concat(stdout).toString('utf8'),
+          stderr: Buffer.concat(stderr).toString('utf8'),
+          exitCode,
+        });
+      }),
+    );
+    child.stdin.end(request.stdin, 'utf8');
   });
 }
 
@@ -917,51 +1018,81 @@ interface PendingCodexTurn {
   turnId: string;
   content: string;
   raw?: unknown;
+  records: Record<string, unknown>[];
   onDelta?: (delta: string) => void;
   resolve: (result: CodexAppServerTurnResult) => void;
   reject: (error: Error) => void;
 }
 
 function isJsonRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
 function jsonStringField(record: Record<string, unknown> | undefined, key: string) {
-  if (!record) return "";
+  if (!record) return '';
   const value = record[key];
-  return typeof value === "string" ? value : "";
+  return typeof value === 'string' ? value : '';
 }
 
 function agentTextFromTurn(turn: unknown) {
-  if (!isJsonRecord(turn) || !Array.isArray(turn.items)) return "";
+  if (!isJsonRecord(turn) || !Array.isArray(turn.items)) return '';
   return turn.items
     .filter(isJsonRecord)
-    .filter((item) => item.type === "agentMessage")
-    .map((item) => jsonStringField(item, "text"))
+    .filter((item) => item.type === 'agentMessage')
+    .map((item) => jsonStringField(item, 'text'))
     .filter(Boolean)
-    .join("\n")
+    .join('\n')
     .trim();
+}
+
+function codexAppServerTurnIdFromMessage(message: Record<string, unknown>) {
+  const params = isJsonRecord(message.params) ? message.params : undefined;
+  const direct = jsonStringField(params, 'turnId');
+  if (direct) return direct;
+  const turn = isJsonRecord(params?.turn) ? params.turn : undefined;
+  const turnId = jsonStringField(turn, 'id');
+  if (turnId) return turnId;
+  const item = isJsonRecord(params?.item) ? params.item : undefined;
+  return jsonStringField(item, 'turnId');
+}
+
+function shouldStoreCodexAppServerRecord(message: Record<string, unknown>) {
+  return message.method !== 'item/agentMessage/delta';
+}
+
+function codexAppServerRawPayload(input: {
+  initial?: unknown;
+  records: Record<string, unknown>[];
+  completed?: unknown;
+}) {
+  return {
+    ...(input.initial !== undefined ? { initial: input.initial } : {}),
+    records: input.records,
+    ...(input.completed !== undefined ? { completed: input.completed } : {}),
+  };
 }
 
 function messageError(message: Record<string, unknown>) {
   const error = isJsonRecord(message.error) ? message.error : undefined;
-  const code = error && typeof error.code === "number" ? ` ${String(error.code)}` : "";
-  const text = jsonStringField(error, "message") || "unknown JSON-RPC error";
+  const code = error && typeof error.code === 'number' ? ` ${String(error.code)}` : '';
+  const text = jsonStringField(error, 'message') || 'unknown JSON-RPC error';
   return new Error(`Codex app-server JSON-RPC error${code}: ${text}`);
 }
 
 function isCodexServerRequest(message: Record<string, unknown>) {
-  return Object.prototype.hasOwnProperty.call(message, "id")
-    && typeof message.method === "string"
-    && !Object.prototype.hasOwnProperty.call(message, "result")
-    && !Object.prototype.hasOwnProperty.call(message, "error");
+  return (
+    Object.hasOwn(message, 'id') &&
+    typeof message.method === 'string' &&
+    !Object.hasOwn(message, 'result') &&
+    !Object.hasOwn(message, 'error')
+  );
 }
 
 class CodexAppServerProcessClient implements CodexAppServerClient {
   private child?: ChildProcessWithoutNullStreams;
   private nextId = 1;
-  private stdoutBuffer = "";
-  private lastStderr = "";
+  private stdoutBuffer = '';
+  private lastStderr = '';
   private initialized?: Promise<void>;
   private readonly pending = new Map<JsonRpcId, PendingJsonRpcRequest>();
   private readonly turns = new Map<string, PendingCodexTurn>();
@@ -969,84 +1100,101 @@ class CodexAppServerProcessClient implements CodexAppServerClient {
   constructor(
     private readonly command: string,
     private readonly args: string[],
-    private readonly options: { cwd?: string; env?: NodeJS.ProcessEnv } = {}
+    private readonly options: { cwd?: string; env?: NodeJS.ProcessEnv } = {},
   ) {}
 
   initialize(signal?: AbortSignal): Promise<void> {
     if (!this.initialized) {
-      this.initialized = this.request("initialize", {
-        clientInfo: { name: "xenesis", version: "0.1.0" },
-        capabilities: { experimentalApi: true, requestAttestation: false }
-      }, signal).then(() => {
-        this.notify("initialized");
-      }).catch((error) => {
-        this.initialized = undefined;
-        throw error;
-      });
+      this.initialized = this.request(
+        'initialize',
+        {
+          clientInfo: { name: 'xenesis', version: '0.1.0' },
+          capabilities: { experimentalApi: true, requestAttestation: false },
+        },
+        signal,
+      )
+        .then(() => {
+          this.notify('initialized');
+        })
+        .catch((error) => {
+          this.initialized = undefined;
+          throw error;
+        });
     }
     return this.initialized;
   }
 
-  async startThread(request: { model?: string; cwd?: string; signal?: AbortSignal }): Promise<{ threadId: string; raw?: unknown }> {
+  async startThread(request: CodexAppServerThreadRequest): Promise<{ threadId: string; raw?: unknown }> {
     await this.initialize(request.signal);
-    const result = await this.request("thread/start", {
-      ...(request.model ? { model: request.model } : {}),
-      cwd: request.cwd ?? this.options.cwd ?? null,
-      approvalPolicy: "never",
-      sandbox: "read-only",
-      ephemeral: false,
-      threadSource: "api"
-    }, request.signal);
+    const result = await this.request(
+      'thread/start',
+      {
+        ...(request.model ? { model: request.model } : {}),
+        ...(request.developerInstructions ? { developerInstructions: request.developerInstructions } : {}),
+        ...(request.config ? { config: request.config } : {}),
+        cwd: request.cwd ?? this.options.cwd ?? null,
+        approvalPolicy: 'never',
+        sandbox: 'read-only',
+        ephemeral: false,
+        threadSource: 'api',
+      },
+      request.signal,
+    );
     const thread = isJsonRecord(result) && isJsonRecord(result.thread) ? result.thread : undefined;
-    const threadId = jsonStringField(thread, "id");
-    if (!threadId) throw new Error("Codex app-server thread/start did not return thread.id.");
+    const threadId = jsonStringField(thread, 'id');
+    if (!threadId) throw new Error('Codex app-server thread/start did not return thread.id.');
     return { threadId, raw: result };
   }
 
   async startTurn(request: CodexAppServerTurnRequest): Promise<CodexAppServerTurnResult> {
     await this.initialize(request.signal);
-    const result = await this.request("turn/start", {
-      threadId: request.threadId,
-      input: [{ type: "text", text: request.inputText, text_elements: [] }],
-      cwd: request.cwd ?? this.options.cwd ?? null,
-      ...(request.model ? { model: request.model } : {})
-    }, request.signal);
+    const result = await this.request(
+      'turn/start',
+      {
+        threadId: request.threadId,
+        input: [{ type: 'text', text: request.inputText, text_elements: [] }],
+        cwd: request.cwd ?? this.options.cwd ?? null,
+        ...(request.model ? { model: request.model } : {}),
+      },
+      request.signal,
+    );
     const turn = isJsonRecord(result) && isJsonRecord(result.turn) ? result.turn : undefined;
-    const turnId = jsonStringField(turn, "id");
-    if (!turnId) throw new Error("Codex app-server turn/start did not return turn.id.");
-    if (turn?.status === "completed") {
+    const turnId = jsonStringField(turn, 'id');
+    if (!turnId) throw new Error('Codex app-server turn/start did not return turn.id.');
+    if (turn?.status === 'completed') {
       return {
         content: agentTextFromTurn(turn),
         turnId,
-        raw: result
+        raw: result,
       };
     }
     return await new Promise<CodexAppServerTurnResult>((resolve, reject) => {
       const pending: PendingCodexTurn = {
         threadId: request.threadId,
         turnId,
-        content: "",
+        content: '',
         raw: result,
+        records: [],
         onDelta: request.onDelta,
         resolve,
-        reject
+        reject,
       };
       this.turns.set(turnId, pending);
       const abort = () => {
         this.turns.delete(turnId);
-        reject(new Error("Codex app-server turn aborted."));
+        reject(new Error('Codex app-server turn aborted.'));
       };
       if (request.signal?.aborted) {
         abort();
         return;
       }
-      request.signal?.addEventListener("abort", abort, { once: true });
+      request.signal?.addEventListener('abort', abort, { once: true });
     });
   }
 
   dispose(): void {
-    for (const pending of this.pending.values()) pending.reject(new Error("Codex app-server client disposed."));
-    for (const turn of this.turns.values()) turn.reject(new Error("Codex app-server client disposed."));
+    for (const pending of this.pending.values()) pending.reject(new Error('Codex app-server client disposed.'));
+    for (const turn of this.turns.values()) turn.reject(new Error('Codex app-server client disposed.'));
     this.pending.clear();
     this.turns.clear();
     this.child?.kill();
@@ -1067,25 +1215,25 @@ class CodexAppServerProcessClient implements CodexAppServerClient {
         abort();
         return;
       }
-      signal?.addEventListener("abort", abort, { once: true });
+      signal?.addEventListener('abort', abort, { once: true });
       this.pending.set(id, {
         resolve: (value) => {
-          signal?.removeEventListener("abort", abort);
+          signal?.removeEventListener('abort', abort);
           resolve(value);
         },
         reject: (error) => {
-          signal?.removeEventListener("abort", abort);
+          signal?.removeEventListener('abort', abort);
           reject(error);
-        }
+        },
       });
-      this.child!.stdin.write(`${JSON.stringify(message)}\n`, "utf8");
+      this.child!.stdin.write(`${JSON.stringify(message)}\n`, 'utf8');
     });
   }
 
   private notify(method: string, params?: unknown): void {
     this.ensureStarted();
     const message = params === undefined ? { method } : { method, params };
-    this.child!.stdin.write(`${JSON.stringify(message)}\n`, "utf8");
+    this.child!.stdin.write(`${JSON.stringify(message)}\n`, 'utf8');
   }
 
   private ensureStarted() {
@@ -1094,27 +1242,30 @@ class CodexAppServerProcessClient implements CodexAppServerClient {
     const spawnRequest = resolveCliSpawnRequest({
       command: this.command,
       args: this.args,
-      env
+      env,
     });
     const child = spawn(spawnRequest.command, spawnRequest.args, {
       cwd: this.options.cwd,
       env,
       shell: spawnRequest.shell,
       windowsHide: true,
-      stdio: ["pipe", "pipe", "pipe"]
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
     this.child = child;
-    child.stdout.on("data", (chunk: Buffer | string) => this.handleStdout(String(chunk)));
-    child.stderr.on("data", (chunk: Buffer | string) => {
+    child.stdout.on('data', (chunk: Buffer | string) => this.handleStdout(String(chunk)));
+    child.stderr.on('data', (chunk: Buffer | string) => {
       const text = String(chunk).trim();
       if (text) this.lastStderr = text;
     });
-    child.on("error", (error) => this.failAll(error));
-    child.on("close", (code) => {
-      this.failAll(new Error([
-        `Codex app-server exited with code ${String(code)}.`,
-        this.lastStderr ? `stderr: ${this.lastStderr}` : ""
-      ].filter(Boolean).join(" ")));
+    child.on('error', (error) => this.failAll(error));
+    child.on('close', (code) => {
+      this.failAll(
+        new Error(
+          [`Codex app-server exited with code ${String(code)}.`, this.lastStderr ? `stderr: ${this.lastStderr}` : '']
+            .filter(Boolean)
+            .join(' '),
+        ),
+      );
       this.child = undefined;
       this.initialized = undefined;
     });
@@ -1123,7 +1274,7 @@ class CodexAppServerProcessClient implements CodexAppServerClient {
   private handleStdout(chunk: string) {
     this.stdoutBuffer += chunk;
     for (;;) {
-      const newlineIndex = this.stdoutBuffer.indexOf("\n");
+      const newlineIndex = this.stdoutBuffer.indexOf('\n');
       if (newlineIndex < 0) break;
       const line = this.stdoutBuffer.slice(0, newlineIndex).trim();
       this.stdoutBuffer = this.stdoutBuffer.slice(newlineIndex + 1);
@@ -1138,13 +1289,12 @@ class CodexAppServerProcessClient implements CodexAppServerClient {
   }
 
   private handleMessage(message: Record<string, unknown>) {
-    if (Object.prototype.hasOwnProperty.call(message, "id")
-      && (Object.prototype.hasOwnProperty.call(message, "result") || Object.prototype.hasOwnProperty.call(message, "error"))) {
+    if (Object.hasOwn(message, 'id') && (Object.hasOwn(message, 'result') || Object.hasOwn(message, 'error'))) {
       const id = message.id as JsonRpcId;
       const pending = this.pending.get(id);
       if (!pending) return;
       this.pending.delete(id);
-      if (Object.prototype.hasOwnProperty.call(message, "error")) {
+      if (Object.hasOwn(message, 'error')) {
         pending.reject(messageError(message));
         return;
       }
@@ -1152,17 +1302,22 @@ class CodexAppServerProcessClient implements CodexAppServerClient {
       return;
     }
 
+    this.recordTurnMessage(message);
+
     if (isCodexServerRequest(message)) {
-      this.child?.stdin.write(`${JSON.stringify({
-        id: message.id,
-        error: { code: -32601, message: `Unsupported Codex app-server request: ${String(message.method)}` }
-      })}\n`, "utf8");
+      this.child?.stdin.write(
+        `${JSON.stringify({
+          id: message.id,
+          error: { code: -32601, message: `Unsupported Codex app-server request: ${String(message.method)}` },
+        })}\n`,
+        'utf8',
+      );
       return;
     }
 
-    if (message.method === "item/agentMessage/delta" && isJsonRecord(message.params)) {
-      const turnId = jsonStringField(message.params, "turnId");
-      const delta = jsonStringField(message.params, "delta");
+    if (message.method === 'item/agentMessage/delta' && isJsonRecord(message.params)) {
+      const turnId = jsonStringField(message.params, 'turnId');
+      const delta = jsonStringField(message.params, 'delta');
       const turn = this.turns.get(turnId);
       if (turn && delta) {
         turn.content += delta;
@@ -1171,15 +1326,32 @@ class CodexAppServerProcessClient implements CodexAppServerClient {
       return;
     }
 
-    if (message.method === "turn/completed" && isJsonRecord(message.params)) {
+    if (message.method === 'turn/completed' && isJsonRecord(message.params)) {
       const turnRecord = isJsonRecord(message.params.turn) ? message.params.turn : undefined;
-      const turnId = jsonStringField(turnRecord, "id");
+      const turnId = jsonStringField(turnRecord, 'id');
       const turn = this.turns.get(turnId);
       if (!turn) return;
       this.turns.delete(turnId);
       const content = agentTextFromTurn(turnRecord) || turn.content;
-      turn.resolve({ content, turnId, raw: message.params });
+      turn.resolve({
+        content,
+        turnId,
+        raw: codexAppServerRawPayload({
+          initial: turn.raw,
+          records: turn.records,
+          completed: message.params,
+        }),
+      });
     }
+  }
+
+  private recordTurnMessage(message: Record<string, unknown>) {
+    if (!shouldStoreCodexAppServerRecord(message)) return;
+    const turnId = codexAppServerTurnIdFromMessage(message);
+    const turn = turnId ? this.turns.get(turnId) : this.turns.size === 1 ? [...this.turns.values()][0] : undefined;
+    if (!turn) return;
+    turn.records.push(message);
+    while (turn.records.length > 200) turn.records.shift();
   }
 
   private failAll(error: Error) {
@@ -1202,11 +1374,11 @@ interface PendingClaudeInteractiveTurn {
 
 function claudeInteractiveInputLine(inputText: string) {
   return `${JSON.stringify({
-    type: "user",
+    type: 'user',
     message: {
-      role: "user",
-      content: [{ type: "text", text: inputText }]
-    }
+      role: 'user',
+      content: [{ type: 'text', text: inputText }],
+    },
   })}\n`;
 }
 
@@ -1231,45 +1403,48 @@ function appendClaudeInteractiveText(turn: PendingClaudeInteractiveTurn, text: s
 
 class ClaudeInteractiveProcessClient implements ClaudeInteractiveClient {
   private child?: ChildProcessWithoutNullStreams;
-  private stdoutBuffer = "";
-  private lastStderr = "";
+  private stdoutBuffer = '';
+  private lastStderr = '';
   private activeTurn?: PendingClaudeInteractiveTurn;
   private queue: Promise<void> = Promise.resolve();
 
   constructor(
     private readonly command: string,
     private readonly args: string[],
-    private readonly options: { cwd?: string; env?: NodeJS.ProcessEnv } = {}
+    private readonly options: { cwd?: string; env?: NodeJS.ProcessEnv } = {},
   ) {}
 
   startTurn(request: ClaudeInteractiveTurnRequest): Promise<ClaudeInteractiveTurnResult> {
     const next = this.queue.then(
       () => this.runTurn(request),
-      () => this.runTurn(request)
+      () => this.runTurn(request),
     );
-    this.queue = next.then(() => undefined, () => undefined);
+    this.queue = next.then(
+      () => undefined,
+      () => undefined,
+    );
     return next;
   }
 
   dispose(): void {
-    this.failActive(new Error("Claude interactive client disposed."));
+    this.failActive(new Error('Claude interactive client disposed.'));
     this.child?.kill();
     this.child = undefined;
   }
 
   private runTurn(request: ClaudeInteractiveTurnRequest): Promise<ClaudeInteractiveTurnResult> {
     this.ensureStarted();
-    if (this.activeTurn) throw new Error("Claude interactive client already has an active turn.");
+    if (this.activeTurn) throw new Error('Claude interactive client already has an active turn.');
     return new Promise<ClaudeInteractiveTurnResult>((resolve, reject) => {
       const pending: PendingClaudeInteractiveTurn = {
         records: [],
-        emitted: "",
+        emitted: '',
         onDelta: request.onDelta,
         resolve,
-        reject
+        reject,
       };
       const abort = () => {
-        this.failActive(new Error("Claude interactive turn aborted."));
+        this.failActive(new Error('Claude interactive turn aborted.'));
         this.child?.kill();
         this.child = undefined;
       };
@@ -1279,10 +1454,10 @@ class ClaudeInteractiveProcessClient implements ClaudeInteractiveClient {
         abort();
         return;
       }
-      request.signal?.addEventListener("abort", abort, { once: true });
-      this.child!.stdin.write(claudeInteractiveInputLine(request.inputText), "utf8", (error) => {
+      request.signal?.addEventListener('abort', abort, { once: true });
+      this.child!.stdin.write(claudeInteractiveInputLine(request.inputText), 'utf8', (error) => {
         if (!error) return;
-        request.signal?.removeEventListener("abort", abort);
+        request.signal?.removeEventListener('abort', abort);
         this.failActive(error);
       });
     });
@@ -1294,39 +1469,45 @@ class ClaudeInteractiveProcessClient implements ClaudeInteractiveClient {
     const spawnRequest = resolveCliSpawnRequest({
       command: this.command,
       args: this.args,
-      env
+      env,
     });
     const child = spawn(spawnRequest.command, spawnRequest.args, {
       cwd: this.options.cwd,
       env,
       shell: spawnRequest.shell,
       windowsHide: true,
-      stdio: ["pipe", "pipe", "pipe"]
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
     this.child = child;
-    child.stdout.on("data", (chunk: Buffer | string) => this.handleStdout(String(chunk)));
-    child.stderr.on("data", (chunk: Buffer | string) => {
+    child.stdout.on('data', (chunk: Buffer | string) => this.handleStdout(String(chunk)));
+    child.stderr.on('data', (chunk: Buffer | string) => {
       const text = String(chunk).trim();
       if (text) this.lastStderr = text;
     });
-    child.on("error", (error) => {
+    child.on('error', (error) => {
       this.failActive(error);
       this.child = undefined;
     });
-    child.on("close", (code) => {
-      this.failActive(new Error([
-        `Claude interactive process exited with code ${String(code)}.`,
-        this.lastStderr ? `stderr: ${this.lastStderr}` : ""
-      ].filter(Boolean).join(" ")));
+    child.on('close', (code) => {
+      this.failActive(
+        new Error(
+          [
+            `Claude interactive process exited with code ${String(code)}.`,
+            this.lastStderr ? `stderr: ${this.lastStderr}` : '',
+          ]
+            .filter(Boolean)
+            .join(' '),
+        ),
+      );
       this.child = undefined;
-      this.stdoutBuffer = "";
+      this.stdoutBuffer = '';
     });
   }
 
   private handleStdout(chunk: string) {
     this.stdoutBuffer += chunk;
     for (;;) {
-      const newlineIndex = this.stdoutBuffer.indexOf("\n");
+      const newlineIndex = this.stdoutBuffer.indexOf('\n');
       if (newlineIndex < 0) break;
       const line = this.stdoutBuffer.slice(0, newlineIndex).trim();
       this.stdoutBuffer = this.stdoutBuffer.slice(newlineIndex + 1);
@@ -1344,21 +1525,21 @@ class ClaudeInteractiveProcessClient implements ClaudeInteractiveClient {
     const turn = this.activeTurn;
     if (!turn) return;
     turn.records.push(record);
-    if (typeof record.session_id === "string" && record.session_id) {
+    if (typeof record.session_id === 'string' && record.session_id) {
       turn.sessionId = record.session_id;
     }
-    if (record.type === "assistant") {
+    if (record.type === 'assistant') {
       appendClaudeInteractiveText(turn, textFromClaudeContent(record));
       return;
     }
-    if (record.type !== "result") return;
-    const result = jsonStringField(record, "result") || turn.emitted;
-    const message = result.trim() || this.lastStderr || "Claude interactive turn failed without a result.";
+    if (record.type !== 'result') return;
+    const result = jsonStringField(record, 'result') || turn.emitted;
+    const message = result.trim() || this.lastStderr || 'Claude interactive turn failed without a result.';
     const isError = record.is_error === true;
     this.finishActiveTurn(isError ? new Error(message) : undefined, {
       content: message,
       ...(turn.sessionId ? { sessionId: turn.sessionId } : {}),
-      raw: turn.records
+      raw: turn.records,
     });
   }
 
@@ -1384,19 +1565,23 @@ class ClaudeInteractiveProcessClient implements ClaudeInteractiveClient {
 }
 
 function stripCodexTranscriptEnvelope(output: string, options: { requireAssistantMarker?: boolean } = {}) {
-  const normalized = output.replace(/\r\n/g, "\n").trim();
+  const normalized = output.replace(/\r\n/g, '\n').trim();
   if (!normalized) return normalized;
-  const lines = normalized.split("\n");
-  const lastCodexLine = lines.map((line) => line.trim()).lastIndexOf("codex");
-  if (options.requireAssistantMarker && lastCodexLine < 0) return "";
+  const lines = normalized.split('\n');
+  const lastCodexLine = lines.map((line) => line.trim()).lastIndexOf('codex');
+  if (options.requireAssistantMarker && lastCodexLine < 0) return '';
   const answerLines = lastCodexLine >= 0 ? lines.slice(lastCodexLine + 1) : lines;
   const tokensIndex = answerLines.findIndex((line) => /^tokens used\b/i.test(line.trim()));
-  return (tokensIndex >= 0 ? answerLines.slice(0, tokensIndex) : answerLines).join("\n").trim();
+  return (tokensIndex >= 0 ? answerLines.slice(0, tokensIndex) : answerLines).join('\n').trim();
 }
 
 function parseJsonLines(output: string): Record<string, unknown>[] | undefined {
   const records: Record<string, unknown>[] = [];
-  const lines = output.replace(/\r\n/g, "\n").split("\n").map((line) => line.trim()).filter(Boolean);
+  const lines = output
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
   if (lines.length === 0) return undefined;
   for (const line of lines) {
     let parsed: unknown;
@@ -1412,21 +1597,21 @@ function parseJsonLines(output: string): Record<string, unknown>[] | undefined {
 }
 
 function textFromClaudeContent(value: unknown): string {
-  if (typeof value === "string") return value;
+  if (typeof value === 'string') return value;
   if (Array.isArray(value)) {
-    return value.map(textFromClaudeContent).filter(Boolean).join("");
+    return value.map(textFromClaudeContent).filter(Boolean).join('');
   }
-  if (!isJsonRecord(value)) return "";
-  if (typeof value.text === "string") return value.text;
-  if (typeof value.result === "string") return value.result;
-  if (isJsonRecord(value.delta) && typeof value.delta.text === "string") return value.delta.text;
+  if (!isJsonRecord(value)) return '';
+  if (typeof value.text === 'string') return value.text;
+  if (typeof value.result === 'string') return value.result;
+  if (isJsonRecord(value.delta) && typeof value.delta.text === 'string') return value.delta.text;
   if (isJsonRecord(value.message)) return textFromClaudeContent(value.message);
-  if (Object.prototype.hasOwnProperty.call(value, "content")) return textFromClaudeContent(value.content);
-  return "";
+  if (Object.hasOwn(value, 'content')) return textFromClaudeContent(value.content);
+  return '';
 }
 
 function mergeClaudeStreamText(chunks: string[]) {
-  let merged = "";
+  let merged = '';
   for (const chunk of chunks) {
     const text = chunk.trimEnd();
     if (!text) continue;
@@ -1447,39 +1632,33 @@ function mergeClaudeStreamText(chunks: string[]) {
 function normalizeClaudeJsonStreamOutput(output: string) {
   const records = parseJsonLines(output);
   if (!records) return undefined;
-  const resultRecord = [...records].reverse().find((record) =>
-    record.type === "result" && typeof record.result === "string"
-  );
-  if (resultRecord && typeof resultRecord.result === "string") return resultRecord.result.trim();
-  const chunks = records
-    .map((record) => textFromClaudeContent(record))
-    .filter(Boolean);
+  const resultRecord = [...records]
+    .reverse()
+    .find((record) => record.type === 'result' && typeof record.result === 'string');
+  if (resultRecord && typeof resultRecord.result === 'string') return resultRecord.result.trim();
+  const chunks = records.map((record) => textFromClaudeContent(record)).filter(Boolean);
   const merged = mergeClaudeStreamText(chunks);
   return merged || undefined;
 }
 
 function normalizeCliOutput(providerName: string, stdout: string, stderr: string) {
   const output = stdout.trim() || stderr.trim();
-  if (providerName === "codex-cli") return stripCodexTranscriptEnvelope(output);
-  if (providerName === "claude-cli") return normalizeClaudeJsonStreamOutput(output) ?? output.trim();
+  if (providerName === 'codex-cli') return stripCodexTranscriptEnvelope(output);
+  if (providerName === 'claude-cli') return normalizeClaudeJsonStreamOutput(output) ?? output.trim();
   return output.trim();
 }
 
 function normalizeCliStreamingOutput(providerName: string, stdout: string, stderr: string) {
-  if (providerName === "codex-cli") {
+  if (providerName === 'codex-cli') {
     return stripCodexTranscriptEnvelope(stdout, { requireAssistantMarker: true });
   }
-  if (providerName === "claude-cli") {
+  if (providerName === 'claude-cli') {
     return normalizeClaudeJsonStreamOutput(stdout) ?? normalizeCliOutput(providerName, stdout, stderr);
   }
   return normalizeCliOutput(providerName, stdout, stderr);
 }
 
-function appendDeltaFromNormalized(
-  normalized: string,
-  emitted: string,
-  enqueue: (delta: string) => void
-) {
+function appendDeltaFromNormalized(normalized: string, emitted: string, enqueue: (delta: string) => void) {
   if (!normalized || normalized.length <= emitted.length) return emitted;
   if (!normalized.startsWith(emitted)) return emitted;
   const delta = normalized.slice(emitted.length);
@@ -1497,12 +1676,12 @@ function cliResponse(
   options: {
     sessionReuse?: boolean;
     preflight?: CliPreflightStatus;
-  } = {}
+  } = {},
 ): ProviderResponse {
   const content = normalizeCliOutput(providerName, result.stdout, result.stderr);
   return {
     message: {
-      role: "assistant",
+      role: 'assistant',
       content,
       providerMetadata: {
         cli: {
@@ -1511,22 +1690,22 @@ function cliResponse(
           args,
           exitCode: result.exitCode ?? undefined,
           transport: runtime.transport,
-          processModel: runtime.persistentSession ? "persistent-process" : "process-per-turn",
+          processModel: runtime.persistentSession ? 'persistent-process' : 'process-per-turn',
           streaming: runtime.streaming,
           persistentSession: runtime.persistentSession,
           sessionReuse: options.sessionReuse || undefined,
-          sessionReuseMode: options.sessionReuse ? "provider-resume-args" : undefined,
+          sessionReuseMode: options.sessionReuse ? 'provider-resume-args' : undefined,
           preflight: options.preflight,
           xenesisDeskMcpConfigured: codexDeskMcpConfigured || undefined,
-          stderr: result.stderr.trim() || undefined
-        }
-      }
-    }
+          stderr: result.stderr.trim() || undefined,
+        },
+      },
+    },
   };
 }
 
 function cliFailure(providerName: string, result: CliRunResult) {
-  const detail = result.stderr.trim() || result.stdout.trim() || "no CLI output";
+  const detail = result.stderr.trim() || result.stdout.trim() || 'no CLI output';
   return new Error(`${providerName} failed with exit code ${String(result.exitCode)}: ${detail}`);
 }
 
@@ -1540,47 +1719,47 @@ function codexAppServerResponse(
     codexDeskMcpConfigured: boolean;
     preflight?: CliPreflightStatus;
     raw?: unknown;
-  }
+  },
 ): ProviderResponse {
   return {
     message: {
-      role: "assistant",
+      role: 'assistant',
       content: content.trim(),
       providerMetadata: {
         cli: {
-          provider: "codex-app-server",
-          transport: "app-server",
-          runtimeTransport: "cli-interactive",
+          provider: 'codex-app-server',
+          transport: 'app-server',
+          runtimeTransport: 'cli-interactive',
           command: metadata.command,
           args: metadata.args,
           threadId: metadata.threadId,
           turnId: metadata.turnId,
           streaming: true,
           persistentSession: true,
-          processModel: "persistent-process",
+          processModel: 'persistent-process',
           preflight: metadata.preflight,
           xenesisDeskMcpConfigured: metadata.codexDeskMcpConfigured || undefined,
-          raw: metadata.raw
-        }
-      }
-    }
+          raw: metadata.raw,
+        },
+      },
+    },
   };
 }
 
 const codexAppServerSessions = new Map<string, CodexAppServerSession>();
 
 function codexAppServerSessionKey(env: NodeJS.ProcessEnv, command: string, args: string[], cwd?: string) {
-  const home = textEnv(env.XENESIS_HOME) ?? textEnv(env.XENIS_HOME) ?? "";
-  const sessionKey = textEnv(env.XENESIS_CLI_SESSION_KEY) ?? cwd ?? "default";
-  return [home, sessionKey, command, ...args].map((part) => safeSessionKey(part)).join("|");
+  const home = textEnv(env.XENESIS_HOME) ?? textEnv(env.XENIS_HOME) ?? '';
+  const sessionKey = textEnv(env.XENESIS_CLI_SESSION_KEY) ?? cwd ?? 'default';
+  return [home, sessionKey, command, ...args].map((part) => safeSessionKey(part)).join('|');
 }
 
 export class CodexAppServerProvider implements AgentProvider {
-  name = "codex-app-server";
+  name = 'codex-app-server';
   readonly capabilities: ProviderRuntimeCapabilities = {
-    transport: "cli-interactive",
+    transport: 'cli-interactive',
     streaming: true,
-    persistentSession: true
+    persistentSession: true,
   };
   private readonly command: string;
   private readonly args: string[];
@@ -1595,33 +1774,47 @@ export class CodexAppServerProvider implements AgentProvider {
   constructor(options: CodexAppServerProviderOptions = {}) {
     const env = options.env ?? process.env;
     this.env = env;
-    this.command = options.command ?? env.XENESIS_CODEX_APP_SERVER_COMMAND ?? env.XENESIS_CODEX_CLI_COMMAND ?? "codex";
-    this.timeoutMs = positiveInteger(options.timeoutMs)
-      ?? positiveInteger(env.XENESIS_CODEX_APP_SERVER_TIMEOUT_MS)
-      ?? positiveInteger(env.XENESIS_CODEX_CLI_TIMEOUT_MS)
-      ?? positiveInteger(env.XENESIS_CLI_TIMEOUT_MS)
-      ?? DEFAULT_PERSISTENT_CLI_TURN_TIMEOUT_MS;
+    this.command = options.command ?? env.XENESIS_CODEX_APP_SERVER_COMMAND ?? env.XENESIS_CODEX_CLI_COMMAND ?? 'codex';
+    this.timeoutMs =
+      positiveInteger(options.timeoutMs) ??
+      positiveInteger(env.XENESIS_CODEX_APP_SERVER_TIMEOUT_MS) ??
+      positiveInteger(env.XENESIS_CODEX_CLI_TIMEOUT_MS) ??
+      positiveInteger(env.XENESIS_CLI_TIMEOUT_MS) ??
+      DEFAULT_PERSISTENT_CLI_TURN_TIMEOUT_MS;
+    const optionsArgsConfigureDeskMcp = options.args ? argsAlreadyConfigureDeskMcp(options.args) : false;
     const appServerArgs = options.args
-      ? { args: options.args, configured: argsAlreadyConfigureDeskMcp(options.args) }
+      ? {
+          args: optionsArgsConfigureDeskMcp
+            ? [...options.args, ...codexAppServerDeskMcpNativeToolDisableArgs()]
+            : options.args,
+          configured: optionsArgsConfigureDeskMcp,
+        }
       : codexAppServerArgs(env);
     this.args = appServerArgs.args;
     this.cwd = options.cwd;
     this.codexDeskMcpConfigured = appServerArgs.configured;
-    this.preflight = resolveCliPreflightStatus("codex-app-server", this.command, env, {
-      runner: options.preflightRunner
+    this.preflight = resolveCliPreflightStatus('codex-app-server', this.command, env, {
+      runner: options.preflightRunner,
     });
-    this.session = options.session ?? codexAppServerSessions.get(codexAppServerSessionKey(env, this.command, this.args, this.cwd)) ?? {};
+    this.session =
+      options.session ??
+      codexAppServerSessions.get(codexAppServerSessionKey(env, this.command, this.args, this.cwd)) ??
+      {};
     if (!options.session) {
       codexAppServerSessions.set(codexAppServerSessionKey(env, this.command, this.args, this.cwd), this.session);
     }
-    this.session.client ??= options.client ?? new CodexAppServerProcessClient(this.command, this.args, {
-      cwd: this.cwd,
-      env: this.env
-    });
-    this.fallbackProvider = options.fallbackProvider ?? new CodexCliProvider({
-      cwd: options.cwd,
-      env
-    });
+    this.session.client ??=
+      options.client ??
+      new CodexAppServerProcessClient(this.command, this.args, {
+        cwd: this.cwd,
+        env: this.env,
+      });
+    this.fallbackProvider =
+      options.fallbackProvider ??
+      new CodexCliProvider({
+        cwd: options.cwd,
+        env,
+      });
   }
 
   async complete(request: ProviderRequest): Promise<ProviderResponse> {
@@ -1634,7 +1827,7 @@ export class CodexAppServerProvider implements AgentProvider {
         turnId: result.turnId,
         codexDeskMcpConfigured: this.codexDeskMcpConfigured,
         preflight: this.preflight,
-        raw: result.raw
+        raw: result.raw,
       });
     } catch (error) {
       return await this.completeWithFallback(request, error);
@@ -1645,7 +1838,7 @@ export class CodexAppServerProvider implements AgentProvider {
     const queue: ProviderStreamEvent[] = [];
     let wake: (() => void) | undefined;
     let done = false;
-    let result: Awaited<ReturnType<CodexAppServerProvider["runAppServerTurn"]>> | undefined;
+    let result: Awaited<ReturnType<CodexAppServerProvider['runAppServerTurn']>> | undefined;
     let failure: unknown;
     let emittedAppServerDelta = false;
 
@@ -1661,12 +1854,12 @@ export class CodexAppServerProvider implements AgentProvider {
 
     void this.runAppServerTurn(request, (delta) => {
       emittedAppServerDelta = true;
-      enqueue({ type: "text_delta", delta });
+      enqueue({ type: 'text_delta', delta });
     })
       .then((value) => {
         result = value;
         enqueue({
-          type: "response",
+          type: 'response',
           response: codexAppServerResponse(value.content, {
             command: this.command,
             args: this.args,
@@ -1674,8 +1867,8 @@ export class CodexAppServerProvider implements AgentProvider {
             turnId: value.turnId,
             codexDeskMcpConfigured: this.codexDeskMcpConfigured,
             preflight: this.preflight,
-            raw: value.raw
-          })
+            raw: value.raw,
+          }),
         });
       })
       .catch((error) => {
@@ -1707,12 +1900,12 @@ export class CodexAppServerProvider implements AgentProvider {
         return;
       }
       if (this.fallbackProvider) {
-        yield { type: "response", response: await this.completeWithFallback(request, failure) };
+        yield { type: 'response', response: await this.completeWithFallback(request, failure) };
         return;
       }
       throw failure;
     }
-    if (!result) throw new Error("Codex app-server stream ended without a provider result.");
+    if (!result) throw new Error('Codex app-server stream ended without a provider result.');
   }
 
   dispose(): void {
@@ -1726,11 +1919,11 @@ export class CodexAppServerProvider implements AgentProvider {
 
   private async runAppServerTurn(request: ProviderRequest, onDelta?: (delta: string) => void) {
     if (this.session.unavailable) {
-      throw new Error(this.session.lastError || "Codex app-server is unavailable.");
+      throw new Error(this.session.lastError || 'Codex app-server is unavailable.');
     }
     const client = this.session.client;
-    if (!client) throw new Error("Codex app-server client is not configured.");
-    const operation = createTimeoutSignal(request.signal, this.timeoutMs, "Codex app-server turn");
+    if (!client) throw new Error('Codex app-server client is not configured.');
+    const operation = createTimeoutSignal(request.signal, this.timeoutMs, 'Codex app-server turn');
     try {
       if (!this.session.initialized) {
         await client.initialize(operation.signal);
@@ -1740,8 +1933,12 @@ export class CodexAppServerProvider implements AgentProvider {
       if (!this.session.threadId) {
         const thread = await client.startThread({
           ...(model ? { model } : {}),
+          developerInstructions: providerDeveloperInstructions({
+            deskMcpConfigured: this.codexDeskMcpConfigured,
+            providerName: 'codex-cli',
+          }),
           cwd: this.cwd,
-          signal: operation.signal
+          signal: operation.signal,
         });
         this.session.threadId = thread.threadId;
         this.session.initialized = true;
@@ -1749,7 +1946,8 @@ export class CodexAppServerProvider implements AgentProvider {
       const requestMessages = resumed ? continuationMessages(request.messages) : request.messages;
       const inputMessages = providerTurnMessages(requestMessages, {
         deskMcpConfigured: this.codexDeskMcpConfigured,
-        providerName: "codex-cli"
+        providerName: 'codex-cli',
+        includeProviderInstructions: false,
       });
       const result = await client.startTurn({
         threadId: this.session.threadId,
@@ -1757,19 +1955,22 @@ export class CodexAppServerProvider implements AgentProvider {
         ...(model ? { model } : {}),
         cwd: this.cwd,
         signal: operation.signal,
-        onDelta
+        onDelta,
       });
       return {
         ...result,
-        threadId: this.session.threadId
+        threadId: this.session.threadId,
       };
     } catch (error) {
       client.dispose();
       this.session.client = undefined;
       this.session.unavailable = true;
-      this.session.lastError = operation.timedOut() && this.timeoutMs
-        ? `Codex app-server turn timed out after ${this.timeoutMs}ms.`
-        : error instanceof Error ? error.message : String(error);
+      this.session.lastError =
+        operation.timedOut() && this.timeoutMs
+          ? `Codex app-server turn timed out after ${this.timeoutMs}ms.`
+          : error instanceof Error
+            ? error.message
+            : String(error);
       throw new Error(this.session.lastError);
     } finally {
       operation.cleanup();
@@ -1791,46 +1992,46 @@ function claudeInteractiveResponse(
     claudeDeskMcpConfigured: boolean;
     preflight?: CliPreflightStatus;
     raw?: unknown;
-  }
+  },
 ): ProviderResponse {
   return {
     message: {
-      role: "assistant",
+      role: 'assistant',
       content: content.trim(),
       providerMetadata: {
         cli: {
-          provider: "claude-interactive",
-          transport: "stream-json",
-          runtimeTransport: "cli-interactive",
+          provider: 'claude-interactive',
+          transport: 'stream-json',
+          runtimeTransport: 'cli-interactive',
           command: metadata.command,
           args: metadata.args,
           sessionId: metadata.sessionId,
           streaming: true,
           persistentSession: true,
-          processModel: "persistent-process",
+          processModel: 'persistent-process',
           preflight: metadata.preflight,
           xenesisDeskMcpConfigured: metadata.claudeDeskMcpConfigured || undefined,
-          raw: metadata.raw
-        }
-      }
-    }
+          raw: metadata.raw,
+        },
+      },
+    },
   };
 }
 
 const claudeInteractiveSessions = new Map<string, ClaudeInteractiveSession>();
 
 function claudeInteractiveSessionKey(env: NodeJS.ProcessEnv, command: string, args: string[], cwd?: string) {
-  const home = textEnv(env.XENESIS_HOME) ?? textEnv(env.XENIS_HOME) ?? "";
-  const sessionKey = textEnv(env.XENESIS_CLI_SESSION_KEY) ?? cwd ?? "default";
-  return [home, sessionKey, command, ...args].map((part) => safeSessionKey(part)).join("|");
+  const home = textEnv(env.XENESIS_HOME) ?? textEnv(env.XENIS_HOME) ?? '';
+  const sessionKey = textEnv(env.XENESIS_CLI_SESSION_KEY) ?? cwd ?? 'default';
+  return [home, sessionKey, command, ...args].map((part) => safeSessionKey(part)).join('|');
 }
 
 export class ClaudeInteractiveProvider implements AgentProvider {
-  name = "claude-interactive";
+  name = 'claude-interactive';
   readonly capabilities: ProviderRuntimeCapabilities = {
-    transport: "cli-interactive",
+    transport: 'cli-interactive',
     streaming: true,
-    persistentSession: true
+    persistentSession: true,
   };
   private readonly command: string;
   private readonly args: string[];
@@ -1844,40 +2045,47 @@ export class ClaudeInteractiveProvider implements AgentProvider {
   constructor(options: ClaudeInteractiveProviderOptions = {}) {
     const env = options.env ?? process.env;
     this.env = env;
-    this.command = options.command ?? env.XENESIS_CLAUDE_INTERACTIVE_COMMAND ?? env.XENESIS_CLAUDE_CLI_COMMAND ?? "claude";
-    this.timeoutMs = positiveInteger(options.timeoutMs)
-      ?? positiveInteger(env.XENESIS_CLAUDE_INTERACTIVE_TIMEOUT_MS)
-      ?? positiveInteger(env.XENESIS_CLAUDE_CLI_TIMEOUT_MS)
-      ?? positiveInteger(env.XENESIS_CLI_TIMEOUT_MS)
-      ?? DEFAULT_PERSISTENT_CLI_TURN_TIMEOUT_MS;
-    const baseArgs = options.args ?? parseArgsFromEnv(env.XENESIS_CLAUDE_INTERACTIVE_ARGS, [
-      "-p",
-      "--setting-sources",
-      "project,local",
-      "--output-format",
-      "stream-json",
-      "--input-format",
-      "stream-json",
-      "--include-partial-messages",
-      "--verbose"
-    ]);
-    const mcpArgs = maybeAddDeskMcpArgs("claude-interactive", baseArgs, env);
+    this.command =
+      options.command ?? env.XENESIS_CLAUDE_INTERACTIVE_COMMAND ?? env.XENESIS_CLAUDE_CLI_COMMAND ?? 'claude';
+    this.timeoutMs =
+      positiveInteger(options.timeoutMs) ??
+      positiveInteger(env.XENESIS_CLAUDE_INTERACTIVE_TIMEOUT_MS) ??
+      positiveInteger(env.XENESIS_CLAUDE_CLI_TIMEOUT_MS) ??
+      positiveInteger(env.XENESIS_CLI_TIMEOUT_MS) ??
+      DEFAULT_PERSISTENT_CLI_TURN_TIMEOUT_MS;
+    const baseArgs =
+      options.args ??
+      parseArgsFromEnv(env.XENESIS_CLAUDE_INTERACTIVE_ARGS, [
+        '-p',
+        '--setting-sources',
+        'project,local',
+        '--output-format',
+        'stream-json',
+        '--input-format',
+        'stream-json',
+        '--include-partial-messages',
+        '--verbose',
+      ]);
+    const mcpArgs = maybeAddDeskMcpArgs('claude-interactive', baseArgs, env);
     this.args = mcpArgs.args;
     this.cwd = options.cwd;
     this.claudeDeskMcpConfigured = mcpArgs.configured;
-    this.preflight = resolveCliPreflightStatus("claude-interactive", this.command, env, {
-      runner: options.preflightRunner
+    this.preflight = resolveCliPreflightStatus('claude-interactive', this.command, env, {
+      runner: options.preflightRunner,
     });
-    this.session = options.session
-      ?? claudeInteractiveSessions.get(claudeInteractiveSessionKey(env, this.command, this.args, this.cwd))
-      ?? {};
+    this.session =
+      options.session ??
+      claudeInteractiveSessions.get(claudeInteractiveSessionKey(env, this.command, this.args, this.cwd)) ??
+      {};
     if (!options.session) {
       claudeInteractiveSessions.set(claudeInteractiveSessionKey(env, this.command, this.args, this.cwd), this.session);
     }
-    this.session.client ??= options.client ?? new ClaudeInteractiveProcessClient(this.command, this.args, {
-      cwd: this.cwd,
-      env: this.env
-    });
+    this.session.client ??=
+      options.client ??
+      new ClaudeInteractiveProcessClient(this.command, this.args, {
+        cwd: this.cwd,
+        env: this.env,
+      });
   }
 
   async complete(request: ProviderRequest): Promise<ProviderResponse> {
@@ -1888,7 +2096,7 @@ export class ClaudeInteractiveProvider implements AgentProvider {
       sessionId: result.sessionId ?? this.session.sessionId,
       claudeDeskMcpConfigured: this.claudeDeskMcpConfigured,
       preflight: this.preflight,
-      raw: result.raw
+      raw: result.raw,
     });
   }
 
@@ -1909,19 +2117,19 @@ export class ClaudeInteractiveProvider implements AgentProvider {
       notify();
     };
 
-    void this.runInteractiveTurn(request, (delta) => enqueue({ type: "text_delta", delta }))
+    void this.runInteractiveTurn(request, (delta) => enqueue({ type: 'text_delta', delta }))
       .then((value) => {
         result = value;
         enqueue({
-          type: "response",
+          type: 'response',
           response: claudeInteractiveResponse(value.content, {
             command: this.command,
             args: this.args,
             sessionId: value.sessionId ?? this.session.sessionId,
             claudeDeskMcpConfigured: this.claudeDeskMcpConfigured,
             preflight: this.preflight,
-            raw: value.raw
-          })
+            raw: value.raw,
+          }),
         });
       })
       .catch((error) => {
@@ -1945,7 +2153,7 @@ export class ClaudeInteractiveProvider implements AgentProvider {
     }
 
     if (failure) throw failure instanceof Error ? failure : new Error(String(failure));
-    if (!result) throw new Error("Claude interactive stream ended without a provider result.");
+    if (!result) throw new Error('Claude interactive stream ended without a provider result.');
   }
 
   dispose(): void {
@@ -1958,22 +2166,22 @@ export class ClaudeInteractiveProvider implements AgentProvider {
 
   private async runInteractiveTurn(request: ProviderRequest, onDelta?: (delta: string) => void) {
     if (this.session.unavailable) {
-      throw new Error(this.session.lastError || "Claude interactive provider is unavailable.");
+      throw new Error(this.session.lastError || 'Claude interactive provider is unavailable.');
     }
     const client = this.session.client;
-    if (!client) throw new Error("Claude interactive client is not configured.");
-    const operation = createTimeoutSignal(request.signal, this.timeoutMs, "Claude interactive turn");
+    if (!client) throw new Error('Claude interactive client is not configured.');
+    const operation = createTimeoutSignal(request.signal, this.timeoutMs, 'Claude interactive turn');
     try {
       const resumed = Boolean(this.session.sessionId);
       const requestMessages = resumed ? continuationMessages(request.messages) : request.messages;
       const inputMessages = providerTurnMessages(requestMessages, {
         deskMcpConfigured: this.claudeDeskMcpConfigured,
-        providerName: this.name
+        providerName: this.name,
       });
       const result = await client.startTurn({
         inputText: formatPrompt(inputMessages),
         signal: operation.signal,
-        onDelta
+        onDelta,
       });
       if (result.sessionId) this.session.sessionId = result.sessionId;
       return result;
@@ -1996,9 +2204,9 @@ export class ClaudeInteractiveProvider implements AgentProvider {
 class BaseCliProvider implements AgentProvider {
   name: string;
   readonly capabilities: ProviderRuntimeCapabilities = {
-    transport: "cli-oneshot",
+    transport: 'cli-oneshot',
     streaming: true,
-    persistentSession: false
+    persistentSession: false,
   };
   private readonly command: string;
   private readonly args: string[];
@@ -2014,10 +2222,11 @@ class BaseCliProvider implements AgentProvider {
     this.name = defaults.providerName;
     const env = options.env ?? process.env;
     this.command = options.command ?? env[defaults.commandEnv] ?? defaults.defaultCommand;
-    this.timeoutMs = positiveInteger(options.timeoutMs)
-      ?? positiveInteger(env[defaults.timeoutEnv])
-      ?? positiveInteger(env.XENESIS_CLI_TIMEOUT_MS)
-      ?? defaults.defaultTimeoutMs;
+    this.timeoutMs =
+      positiveInteger(options.timeoutMs) ??
+      positiveInteger(env[defaults.timeoutEnv]) ??
+      positiveInteger(env.XENESIS_CLI_TIMEOUT_MS) ??
+      defaults.defaultTimeoutMs;
     const baseArgs = options.args ?? parseArgsFromEnv(env[defaults.argsEnv], defaults.defaultArgs);
     const codexMcpArgs = maybeAddDeskMcpArgs(defaults.providerName, baseArgs, env);
     this.args = codexMcpArgs.args;
@@ -2027,7 +2236,7 @@ class BaseCliProvider implements AgentProvider {
     this.codexDeskMcpConfigured = codexMcpArgs.configured;
     this.cliSessionHandle = resolveCliSessionHandle(defaults.providerName, env);
     this.preflight = resolveCliPreflightStatus(defaults.providerName, this.command, env, {
-      runner: options.preflightRunner
+      runner: options.preflightRunner,
     });
   }
 
@@ -2035,7 +2244,7 @@ class BaseCliProvider implements AgentProvider {
     const requestMessages = resumed ? continuationMessages(request.messages) : request.messages;
     return providerTurnMessages(requestMessages, {
       deskMcpConfigured: this.codexDeskMcpConfigured,
-      providerName: this.name
+      providerName: this.name,
     });
   }
 
@@ -2044,7 +2253,7 @@ class BaseCliProvider implements AgentProvider {
     const resumed = Boolean(this.cliSessionHandle?.state.initialized);
     return {
       args,
-      messages: this.messagesForRequest(request, resumed)
+      messages: this.messagesForRequest(request, resumed),
     };
   }
 
@@ -2058,7 +2267,7 @@ class BaseCliProvider implements AgentProvider {
         stdin: formatPrompt(plan.messages),
         cwd: this.cwd,
         env: this.env,
-        signal: operation.signal
+        signal: operation.signal,
       });
       if (result.exitCode !== 0) {
         throw cliFailure(this.name, result);
@@ -2067,7 +2276,7 @@ class BaseCliProvider implements AgentProvider {
       markCliSessionInitialized(this.cliSessionHandle);
       return cliResponse(this.name, this.command, plan.args, this.codexDeskMcpConfigured, result, this.capabilities, {
         sessionReuse: Boolean(this.cliSessionHandle),
-        preflight: this.preflight
+        preflight: this.preflight,
       });
     } catch (error) {
       if (operation.timedOut() && this.timeoutMs) {
@@ -2084,9 +2293,9 @@ class BaseCliProvider implements AgentProvider {
     const operation = createTimeoutSignal(request.signal, this.timeoutMs, `${this.name} CLI turn`);
     const queue: ProviderStreamEvent[] = [];
     let wake: (() => void) | undefined;
-    let stdout = "";
-    let stderr = "";
-    let emitted = "";
+    let stdout = '';
+    let stderr = '';
+    let emitted = '';
     let done = false;
     let result: CliRunResult | undefined;
     let failure: unknown;
@@ -2101,18 +2310,12 @@ class BaseCliProvider implements AgentProvider {
       notify();
     };
     const emitAvailableDelta = () => {
-      emitted = appendDeltaFromNormalized(
-        normalizeCliStreamingOutput(this.name, stdout, stderr),
-        emitted,
-        (delta) => enqueue({ type: "text_delta", delta })
+      emitted = appendDeltaFromNormalized(normalizeCliStreamingOutput(this.name, stdout, stderr), emitted, (delta) =>
+        enqueue({ type: 'text_delta', delta }),
       );
     };
     const emitFinalDelta = (content: string) => {
-      emitted = appendDeltaFromNormalized(
-        content,
-        emitted,
-        (delta) => enqueue({ type: "text_delta", delta })
-      );
+      emitted = appendDeltaFromNormalized(content, emitted, (delta) => enqueue({ type: 'text_delta', delta }));
     };
 
     void this.run({
@@ -2129,24 +2332,28 @@ class BaseCliProvider implements AgentProvider {
       onStderr: (chunk) => {
         stderr += chunk;
         emitAvailableDelta();
-      }
-    }).then((value) => {
-      result = value;
-      stdout = value.stdout;
-      stderr = value.stderr;
-      if (value.exitCode === 0) {
-        markCliSessionInitialized(this.cliSessionHandle);
-        emitFinalDelta(normalizeCliOutput(this.name, value.stdout, value.stderr));
-      }
-    }).catch((error) => {
-      failure = operation.timedOut() && this.timeoutMs
-        ? new Error(`${this.name} CLI turn timed out after ${this.timeoutMs}ms.`)
-        : error;
-    }).finally(() => {
-      operation.cleanup();
-      done = true;
-      notify();
-    });
+      },
+    })
+      .then((value) => {
+        result = value;
+        stdout = value.stdout;
+        stderr = value.stderr;
+        if (value.exitCode === 0) {
+          markCliSessionInitialized(this.cliSessionHandle);
+          emitFinalDelta(normalizeCliOutput(this.name, value.stdout, value.stderr));
+        }
+      })
+      .catch((error) => {
+        failure =
+          operation.timedOut() && this.timeoutMs
+            ? new Error(`${this.name} CLI turn timed out after ${this.timeoutMs}ms.`)
+            : error;
+      })
+      .finally(() => {
+        operation.cleanup();
+        done = true;
+        notify();
+      });
 
     while (!done || queue.length > 0) {
       const next = queue.shift();
@@ -2168,39 +2375,61 @@ class BaseCliProvider implements AgentProvider {
     if (result.exitCode !== 0) throw cliFailure(this.name, result);
 
     yield {
-      type: "response",
-      response: cliResponse(this.name, this.command, plan.args, this.codexDeskMcpConfigured, result, this.capabilities, {
-        sessionReuse: Boolean(this.cliSessionHandle),
-        preflight: this.preflight
-      })
+      type: 'response',
+      response: cliResponse(
+        this.name,
+        this.command,
+        plan.args,
+        this.codexDeskMcpConfigured,
+        result,
+        this.capabilities,
+        {
+          sessionReuse: Boolean(this.cliSessionHandle),
+          preflight: this.preflight,
+        },
+      ),
     };
   }
 }
 
 export class CodexCliProvider extends BaseCliProvider {
   constructor(options: CliProviderOptions = {}) {
-    super({
-      providerName: "codex-cli",
-      defaultCommand: "codex",
-      defaultArgs: ["exec", "--skip-git-repo-check", "--sandbox", "read-only", "-"],
-      commandEnv: "XENESIS_CODEX_CLI_COMMAND",
-      argsEnv: "XENESIS_CODEX_CLI_ARGS",
-      timeoutEnv: "XENESIS_CODEX_CLI_TIMEOUT_MS",
-      defaultTimeoutMs: DEFAULT_ONESHOT_CLI_TURN_TIMEOUT_MS
-    }, options);
+    super(
+      {
+        providerName: 'codex-cli',
+        defaultCommand: 'codex',
+        defaultArgs: ['exec', '--skip-git-repo-check', '--sandbox', 'read-only', '-'],
+        commandEnv: 'XENESIS_CODEX_CLI_COMMAND',
+        argsEnv: 'XENESIS_CODEX_CLI_ARGS',
+        timeoutEnv: 'XENESIS_CODEX_CLI_TIMEOUT_MS',
+        defaultTimeoutMs: DEFAULT_ONESHOT_CLI_TURN_TIMEOUT_MS,
+      },
+      options,
+    );
   }
 }
 
 export class ClaudeCliProvider extends BaseCliProvider {
   constructor(options: CliProviderOptions = {}) {
-    super({
-      providerName: "claude-cli",
-      defaultCommand: "claude",
-      defaultArgs: ["-p", "--setting-sources", "project,local", "--output-format", "stream-json", "--include-partial-messages", "--verbose"],
-      commandEnv: "XENESIS_CLAUDE_CLI_COMMAND",
-      argsEnv: "XENESIS_CLAUDE_CLI_ARGS",
-      timeoutEnv: "XENESIS_CLAUDE_CLI_TIMEOUT_MS",
-      defaultTimeoutMs: DEFAULT_ONESHOT_CLI_TURN_TIMEOUT_MS
-    }, options);
+    super(
+      {
+        providerName: 'claude-cli',
+        defaultCommand: 'claude',
+        defaultArgs: [
+          '-p',
+          '--setting-sources',
+          'project,local',
+          '--output-format',
+          'stream-json',
+          '--include-partial-messages',
+          '--verbose',
+        ],
+        commandEnv: 'XENESIS_CLAUDE_CLI_COMMAND',
+        argsEnv: 'XENESIS_CLAUDE_CLI_ARGS',
+        timeoutEnv: 'XENESIS_CLAUDE_CLI_TIMEOUT_MS',
+        defaultTimeoutMs: DEFAULT_ONESHOT_CLI_TURN_TIMEOUT_MS,
+      },
+      options,
+    );
   }
 }

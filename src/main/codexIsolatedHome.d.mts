@@ -7,12 +7,9 @@ export interface PrepareCodexIsolatedHomeOptions {
 
 export declare function prepareCodexIsolatedHome(
   options: PrepareCodexIsolatedHomeOptions,
-  fs?: typeof import('node:fs')
+  fs?: typeof import('node:fs'),
 ): string | null;
 
 export declare function filterCodexConfig(text: string): string;
 
-export declare function readCodexModel(
-  realCodexHome: string,
-  fs?: typeof import('node:fs')
-): string;
+export declare function readCodexModel(realCodexHome: string, fs?: typeof import('node:fs')): string;

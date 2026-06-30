@@ -1,7 +1,7 @@
-import type { ToolExecutionPolicy } from "../AgentRunner.js";
-import type { ToolCall } from "../messages.js";
-import type { ToolRegistry } from "../../tools/types.js";
-import type { ToolConcurrencyClassifier, ToolConcurrencyMetadata } from "./ToolScheduler.js";
+import type { ToolRegistry } from '../../tools/types.js';
+import type { ToolExecutionPolicy } from '../AgentRunner.js';
+import type { ToolCall } from '../messages.js';
+import type { ToolConcurrencyClassifier, ToolConcurrencyMetadata } from './ToolScheduler.js';
 
 export interface ToolRegistryConcurrencyClassifierOptions {
   registry: ToolRegistry;
@@ -19,32 +19,32 @@ function result(isConcurrent: boolean, reason: string): ToolConcurrencyMetadata 
 }
 
 export function createToolRegistryConcurrencyClassifier(
-  options: ToolRegistryConcurrencyClassifierOptions
+  options: ToolRegistryConcurrencyClassifierOptions,
 ): ToolConcurrencyClassifier {
   return (toolCall: ToolCall) => {
     const tool = options.registry.get(toolCall.name);
-    if (!tool) return result(false, "tool is unavailable");
+    if (!tool) return result(false, 'tool is unavailable');
 
     if (blockedByPolicy(tool.name, options.toolExecutionPolicy)) {
-      return result(false, "tool has required predecessor policy");
+      return result(false, 'tool has required predecessor policy');
     }
 
     let parsed;
     try {
       parsed = tool.inputSchema.safeParse(toolCall.input);
     } catch {
-      return result(false, "tool input validation failed");
+      return result(false, 'tool input validation failed');
     }
-    if (!parsed.success) return result(false, "tool input is invalid");
+    if (!parsed.success) return result(false, 'tool input is invalid');
 
     try {
-      if (!tool.isReadOnly(parsed.data)) return result(false, "tool is not read-only");
+      if (!tool.isReadOnly(parsed.data)) return result(false, 'tool is not read-only');
       if (tool.isConcurrencySafe?.(parsed.data) !== true) {
-        return result(false, "tool is not concurrency safe");
+        return result(false, 'tool is not concurrency safe');
       }
-      return result(true, "tool is read-only and concurrency safe");
+      return result(true, 'tool is read-only and concurrency safe');
     } catch {
-      return result(false, "tool concurrency metadata failed");
+      return result(false, 'tool concurrency metadata failed');
     }
   };
 }

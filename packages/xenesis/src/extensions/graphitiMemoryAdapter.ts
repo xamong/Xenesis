@@ -1,9 +1,6 @@
-import {
-  classifyMemoryEvidenceSensitivity,
-  classifyMemorySensitivity
-} from "./memoryPolicy.js";
-import type { MemoryEvidenceRecord, MemorySensitivity } from "./memoryTypes.js";
-import type { MemoryRecord } from "./types.js";
+import { classifyMemoryEvidenceSensitivity, classifyMemorySensitivity } from './memoryPolicy.js';
+import type { MemoryEvidenceRecord, MemorySensitivity } from './memoryTypes.js';
+import type { MemoryRecord } from './types.js';
 
 export interface GraphitiMemoryConfig {
   enabled: boolean;
@@ -17,9 +14,9 @@ export interface GraphitiMemoryConfig {
 
 export interface GraphitiMemoryEvidencePayload {
   id: string;
-  kind: MemoryEvidenceRecord["kind"];
-  sensitivity: MemoryEvidenceRecord["sensitivity"];
-  status: MemoryEvidenceRecord["status"];
+  kind: MemoryEvidenceRecord['kind'];
+  sensitivity: MemoryEvidenceRecord['sensitivity'];
+  status: MemoryEvidenceRecord['status'];
   contentHash?: string;
   summary?: string;
 }
@@ -34,7 +31,7 @@ export interface GraphitiMemoryProjectionPayload {
   validTo?: string;
   supersedes?: string[];
   supersededBy?: string;
-  supersedeMode?: MemoryRecord["supersedeMode"];
+  supersedeMode?: MemoryRecord['supersedeMode'];
   evidenceIds: string[];
   evidence: GraphitiMemoryEvidencePayload[];
 }
@@ -54,10 +51,7 @@ export interface GraphitiMemorySearchResult {
 
 export interface GraphitiMemoryClient {
   projectMemory(payload: GraphitiMemoryProjectionPayload): Promise<GraphitiMemoryProjectionResponse>;
-  searchMemory?(
-    query: string,
-    options?: { limit?: number; at?: string }
-  ): Promise<GraphitiMemorySearchResult[]>;
+  searchMemory?(query: string, options?: { limit?: number; at?: string }): Promise<GraphitiMemorySearchResult[]>;
 }
 
 export interface BuildGraphitiMemoryPayloadOptions {
@@ -65,22 +59,22 @@ export interface BuildGraphitiMemoryPayloadOptions {
 }
 
 function normalizeEndpoint(value: string): string {
-  return value.replace(/\/+$/u, "");
+  return value.replace(/\/+$/u, '');
 }
 
 function isLocalHost(hostname: string): boolean {
-  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1" || hostname === "[::1]";
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' || hostname === '[::1]';
 }
 
 function isSensitive(value: MemorySensitivity | undefined): boolean {
-  return value === "high" || value === "restricted";
+  return value === 'high' || value === 'restricted';
 }
 
 const SENSITIVITY_RANK: Record<MemorySensitivity, number> = {
   low: 0,
   medium: 1,
   high: 2,
-  restricted: 3
+  restricted: 3,
 };
 
 function maxSensitivity(left: MemorySensitivity, right: MemorySensitivity): MemorySensitivity {
@@ -88,12 +82,12 @@ function maxSensitivity(left: MemorySensitivity, right: MemorySensitivity): Memo
 }
 
 export function classifyGraphitiMemoryRecordSensitivity(record: MemoryRecord): MemorySensitivity {
-  return maxSensitivity(record.sensitivity ?? "low", classifyMemorySensitivity(record));
+  return maxSensitivity(record.sensitivity ?? 'low', classifyMemorySensitivity(record));
 }
 
 export function validateGraphitiMemoryConfig(config: GraphitiMemoryConfig): GraphitiMemoryConfig {
   if (!config.enabled) return config;
-  if (!config.endpoint) throw new Error("graph endpoint required when graph projection is enabled");
+  if (!config.endpoint) throw new Error('graph endpoint required when graph projection is enabled');
   const endpoint = normalizeEndpoint(config.endpoint);
   const allowedEndpoints = config.allowedEndpoints.map(normalizeEndpoint);
   if (!allowedEndpoints.includes(endpoint)) {
@@ -106,7 +100,7 @@ export function validateGraphitiMemoryConfig(config: GraphitiMemoryConfig): Grap
   return {
     ...config,
     endpoint,
-    allowedEndpoints
+    allowedEndpoints,
   };
 }
 
@@ -115,7 +109,7 @@ function visibleEvidenceSummary(
   options: BuildGraphitiMemoryPayloadOptions,
 ): string | undefined {
   if (!evidence.summary) return undefined;
-  if (options.redactEvidence !== false && isSensitive(classifyMemoryEvidenceSensitivity(evidence))) return "[redacted]";
+  if (options.redactEvidence !== false && isSensitive(classifyMemoryEvidenceSensitivity(evidence))) return '[redacted]';
   return evidence.summary;
 }
 
@@ -156,11 +150,13 @@ export function buildGraphitiMemoryPayload(
           id: item.id,
           kind: item.kind,
           sensitivity: evidenceSensitivity,
-          status: item.status ?? "active",
-          ...(visibleEvidenceContentHash(item, options) ? { contentHash: visibleEvidenceContentHash(item, options) } : {}),
-          ...(visibleEvidenceSummary(item, options) ? { summary: visibleEvidenceSummary(item, options) } : {})
+          status: item.status ?? 'active',
+          ...(visibleEvidenceContentHash(item, options)
+            ? { contentHash: visibleEvidenceContentHash(item, options) }
+            : {}),
+          ...(visibleEvidenceSummary(item, options) ? { summary: visibleEvidenceSummary(item, options) } : {}),
         };
-      })
+      }),
   };
 }
 
@@ -174,33 +170,36 @@ export class GraphitiHttpMemoryClient implements GraphitiMemoryClient {
   }
 
   async projectMemory(payload: GraphitiMemoryProjectionPayload): Promise<GraphitiMemoryProjectionResponse> {
-    if (!this.config.endpoint) throw new Error("graph endpoint required when graph projection is enabled");
+    if (!this.config.endpoint) throw new Error('graph endpoint required when graph projection is enabled');
     const response = await this.fetchImpl(`${this.config.endpoint}/memory`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(this.config.timeoutMs)
+      signal: AbortSignal.timeout(this.config.timeoutMs),
     });
     if (!response.ok) {
       throw new Error(`Graphiti projection failed: ${response.status} ${response.statusText}`);
     }
-    const parsed = await response.json() as Partial<GraphitiMemoryProjectionResponse>;
-    if (!parsed.projectionId) throw new Error("Graphiti projection response missing projectionId");
+    const parsed = (await response.json()) as Partial<GraphitiMemoryProjectionResponse>;
+    if (!parsed.projectionId) throw new Error('Graphiti projection response missing projectionId');
     return { projectionId: parsed.projectionId, metadata: parsed.metadata };
   }
 
-  async searchMemory(query: string, options: { limit?: number; at?: string } = {}): Promise<GraphitiMemorySearchResult[]> {
-    if (!this.config.endpoint) throw new Error("graph endpoint required when graph projection is enabled");
+  async searchMemory(
+    query: string,
+    options: { limit?: number; at?: string } = {},
+  ): Promise<GraphitiMemorySearchResult[]> {
+    if (!this.config.endpoint) throw new Error('graph endpoint required when graph projection is enabled');
     const response = await this.fetchImpl(`${this.config.endpoint}/search`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ query, ...options }),
-      signal: AbortSignal.timeout(this.config.timeoutMs)
+      signal: AbortSignal.timeout(this.config.timeoutMs),
     });
     if (!response.ok) {
       throw new Error(`Graphiti search failed: ${response.status} ${response.statusText}`);
     }
-    const parsed = await response.json() as { results?: GraphitiMemorySearchResult[] };
+    const parsed = (await response.json()) as { results?: GraphitiMemorySearchResult[] };
     return parsed.results ?? [];
   }
 }

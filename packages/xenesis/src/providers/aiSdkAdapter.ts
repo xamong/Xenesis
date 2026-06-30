@@ -13,8 +13,8 @@
  *   const object = await adapter.generateObject({ prompt: '...', schema: z.object({...}) });
  */
 
-import type { ZodSchema } from 'zod';
 import type { LanguageModelUsage } from 'ai';
+import type { ZodSchema } from 'zod';
 
 export type AiSdkProviderName = 'openai' | 'anthropic' | 'google';
 
@@ -35,7 +35,9 @@ export interface AiSdkObjectResult<T> {
   usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
 }
 
-function normalizeAiSdkUsage(usage: LanguageModelUsage | undefined): { promptTokens: number; completionTokens: number; totalTokens: number } | undefined {
+function normalizeAiSdkUsage(
+  usage: LanguageModelUsage | undefined,
+): { promptTokens: number; completionTokens: number; totalTokens: number } | undefined {
   if (!usage) return undefined;
   const promptTokens = usage.inputTokens ?? 0;
   const completionTokens = usage.outputTokens ?? 0;

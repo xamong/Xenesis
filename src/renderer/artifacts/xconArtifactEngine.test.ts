@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import type { AppSettings } from '../../shared/types';
 import {
@@ -8,7 +9,6 @@ import {
   prepareXconArtifactResult,
   runXconArtifactAutomaticRepair,
   runXconArtifactProvider,
-  shouldRouteXenesisInputToArtifact,
 } from './xconArtifactEngine';
 
 test('XCON artifact engine builds Gowoori-compatible prompt plans for Xenesis', () => {
@@ -344,12 +344,12 @@ test('XCON artifact engine repairs from semantic prompt instead of prompt-pack e
   assert.doesNotMatch(repairPrompts[0], /weather-weekly|제주|날씨|weekly weather/i);
 });
 
-test('XCON artifact engine only auto-routes strong visual artifact prompts', () => {
-  assert.equal(shouldRouteXenesisInputToArtifact('차트와 그리드가 있는 영업 대시보드 만들어줘'), true);
-  assert.equal(shouldRouteXenesisInputToArtifact('이번주 제주 날씨를 지도와 표로 보여줘'), true);
-  assert.equal(shouldRouteXenesisInputToArtifact('내일 서울 날씨를 요약해줘'), false);
-  assert.equal(shouldRouteXenesisInputToArtifact('오늘 날씨 어때?'), false);
-  assert.equal(shouldRouteXenesisInputToArtifact('TypeScript 타입 에러를 고쳐줘'), false);
+test('XCON artifact engine does not expose natural prompt auto-routing', () => {
+  const source = readFileSync(new URL('./xconArtifactEngine.ts', import.meta.url), 'utf8');
+
+  assert.doesNotMatch(source, /shouldRouteXenesisInputToArtifact/);
+  assert.doesNotMatch(source, /STRONG_ARTIFACT_TERMS/);
+  assert.doesNotMatch(source, /routeGowooriUserPrompt\(input,\s*'generate'\)/);
 });
 
 test('XCON artifact engine executes selected real provider through injected Gowoori runner options', async () => {

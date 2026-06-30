@@ -335,9 +335,12 @@ const PROVIDER_LABEL: Record<AiProviderKind, string> = {
   openai: 'OpenAI',
   anthropic: 'Anthropic',
   gemini: 'Google Gemini',
+  openrouter: 'OpenRouter',
   groq: 'Groq',
   deepseek: 'DeepSeek',
   qwen: 'Qwen',
+  mistral: 'Mistral',
+  xai: 'xAI',
   ollama: 'Ollama',
   lmstudio: 'LM Studio',
   together: 'Together AI',
@@ -354,9 +357,12 @@ const XC_PROVIDER_ID: Partial<Record<AiProviderKind, string>> = {
   openai: 'openai',
   anthropic: 'claude',
   gemini: 'gemini',
+  openrouter: 'openrouter',
   groq: 'groq',
   deepseek: 'deepseek',
   qwen: 'qwen',
+  mistral: 'mistral',
+  xai: 'xai',
   ollama: 'ollama',
   lmstudio: 'lmstudio',
   together: 'together',
@@ -2058,14 +2064,14 @@ async function xcAgentDeleteSession(xcAgentApiUrl: string, sessionId: string, wo
 
 interface WorkspaceEntry {
   id: string; // e.g. "projects"
-  path?: string; // GET /workspaces response field, e.g. "F:\\Projects"
+  path?: string; // GET /workspaces response field.
   root?: string; // legacy/local fallback field
   name?: string;
   aliases?: string[];
 }
 
 interface RuntimeConfig {
-  workspaceRoot: string; // e.g. "F:\\Projects"
+  workspaceRoot: string;
   defaultWorkspace: string; // e.g. "projects"
 }
 
@@ -2113,7 +2119,7 @@ function toWorkspacePath(absolutePath: string, workspaceRoot: string): string | 
 
 /**
  * 파일 경로이면 부모 폴더 반환 (spec: pickWorkingFolderFromPath).
- * 예) "F:\Projects\music\index.html" → "F:\Projects\music"
+ * 예) 입력된 절대 파일 경로 → 해당 부모 폴더
  */
 function pickFolderFromPath(inputPath: string): string {
   const normalized = inputPath.replace(/\//g, '\\');
@@ -2139,7 +2145,7 @@ function trimPromptTextFromPath(candidate: string): string {
 
 /**
  * 프롬프트 문자열에서 드라이브 절대경로 추출.
- * 예) "D:\Workspace\sample-app\index.html 을 읽어줘" → "D:\Workspace\sample-app\index.html"
+ * 예) 절대 파일 경로가 포함된 요청 → 해당 경로
  */
 function detectAbsPathInPrompt(prompt: string): string | undefined {
   const match = prompt.match(/[A-Za-z]:[\\/][^\n\r"'<>|?*]+/);
@@ -2151,9 +2157,9 @@ function detectAbsPathInPrompt(prompt: string): string | undefined {
  * 절대 경로(absPath)에서 매칭되는 workspace.id + 상대 workspacePath를 도출한다.
  * workspaceRoot 를 알고 있으면 toWorkspacePath() 를 우선 사용한다.
  *
- * 예) absPath = "D:\\Workspace\\sample-app"
- *   workspaceEntry.root = "F:\\Projects"
- *   → workspace = "projects", workspacePath = "music/mongna"
+ * 예) absPath = "<workspace-root>/sample-app"
+ *   workspaceEntry.root = "<workspace-root>"
+ *   → workspace = "projects", workspacePath = "sample-app"
  */
 async function resolveWorkspaceFromPath(
   base: string,

@@ -1,4 +1,4 @@
-import type { ToolCall } from "../messages.js";
+import type { ToolCall } from '../messages.js';
 
 export interface ScheduledToolCall {
   sequence: number;
@@ -31,14 +31,14 @@ export function scheduleToolCalls(toolCalls: readonly ToolCall[]): ScheduledTool
     seen.add(toolCall.id);
     return {
       sequence: index + 1,
-      toolCall: structuredClone(toolCall)
+      toolCall: structuredClone(toolCall),
     };
   });
 }
 
 export function scheduleToolCallBlocks(
   toolCalls: readonly ToolCall[],
-  options: ScheduleToolCallBlocksOptions = {}
+  options: ScheduleToolCallBlocksOptions = {},
 ): ScheduledToolCallBlock[] {
   const scheduledToolCalls = scheduleToolCalls(toolCalls);
   const blocks: ScheduledToolCallBlock[] = [];
@@ -54,7 +54,7 @@ export function scheduleToolCallBlocks(
     blocks.push({
       blockId: blocks.length + 1,
       concurrent,
-      toolCalls: [scheduled]
+      toolCalls: [scheduled],
     });
   }
 

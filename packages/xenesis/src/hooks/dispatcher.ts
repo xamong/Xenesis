@@ -1,4 +1,4 @@
-import type { HookEmitter, HookEvent, HookHandler, HookName, HookResult, HookSubscription } from "./types.js";
+import type { HookEmitter, HookEvent, HookHandler, HookName, HookResult, HookSubscription } from './types.js';
 
 interface HandlerRegistration {
   handler: HookHandler;
@@ -18,16 +18,13 @@ export class HookDispatcher implements HookEmitter {
     this.handlers.set(subscription, registrations);
   }
 
-  async emit(event: Omit<HookEvent, "timestamp">): Promise<HookResult[]> {
+  async emit(event: Omit<HookEvent, 'timestamp'>): Promise<HookResult[]> {
     const timestamp = new Date().toISOString();
     const fullEvent: HookEvent = {
       ...event,
-      timestamp
+      timestamp,
     };
-    const registrations = [
-      ...this.registrationsFor("*"),
-      ...this.registrationsFor(event.name)
-    ];
+    const registrations = [...this.registrationsFor('*'), ...this.registrationsFor(event.name)];
     const results: HookResult[] = [];
 
     for (const registration of registrations) {
@@ -51,14 +48,14 @@ export class HookDispatcher implements HookEmitter {
     timestamp: string,
     registration: HandlerRegistration,
     ok: boolean,
-    error?: string
+    error?: string,
   ): HookResult {
     return {
       name,
       timestamp,
       handler: registration.label,
       ok,
-      error
+      error,
     };
   }
 }

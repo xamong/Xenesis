@@ -4,7 +4,7 @@ export class ProviderHttpError extends Error {
 
   constructor(message: string, opts: { status: number; retryAfterMs?: number }) {
     super(message);
-    this.name = "ProviderHttpError";
+    this.name = 'ProviderHttpError';
     this.status = opts.status;
     this.retryAfterMs = opts.retryAfterMs;
   }

@@ -31,6 +31,8 @@ import type {
   McpBridgeBotEvent,
   McpBridgeBotSession,
   McpBridgeBotSessionSaveResult,
+  McpBridgeBrowserActionPayload,
+  McpBridgeBrowserActionResult,
   McpBridgeCapabilityApprovalRememberEntry,
   McpBridgeCapabilityApprovalRememberResult,
   McpBridgeCapabilityCallRequest,
@@ -39,8 +41,6 @@ import type {
   McpBridgeCaptureActivePaneResult,
   McpBridgeDemoLabPlaybackControlPayload,
   McpBridgeDemoLabPlaybackControlResult,
-  McpBridgeBrowserActionPayload,
-  McpBridgeBrowserActionResult,
   McpBridgeDockActionPayload,
   McpBridgeDockActionResult,
   McpBridgeExplorerActionPayload,
@@ -918,6 +918,9 @@ const xenesisApi: XenesisApi = {
   gatewayOpenDashboard() {
     return ipcRenderer.invoke('xenesis:gateway-open-dashboard');
   },
+  connectionsStatus() {
+    return ipcRenderer.invoke('xenesis:connections-status');
+  },
   start() {
     return ipcRenderer.invoke('xenesis:start');
   },
@@ -1012,6 +1015,7 @@ const mcpBridgeApi: McpBridgeApi = {
           category: payload?.category,
           mode: payload?.mode,
           section: payload?.section,
+          focusConnectionId: payload?.focusConnectionId,
           ensureVisible: payload?.ensureVisible,
           error: error instanceof Error ? error.message : String(error),
         });

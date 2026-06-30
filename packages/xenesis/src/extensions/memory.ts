@@ -1,13 +1,13 @@
-import type { AgentMessage } from "../core/messages.js";
-import { wrapExternalContent } from "../core/prompt/ExternalContentPolicy.js";
-import type { Embedder } from "./embedding.js";
-import { semanticSearch } from "./embedding.js";
-import { memoryRunbookSearchText, validateMemoryRunbookInput } from "./memoryRunbook.js";
-import type { MemoryInput, MemoryRecord, MemoryStore } from "./types.js";
+import type { AgentMessage } from '../core/messages.js';
+import { wrapExternalContent } from '../core/prompt/ExternalContentPolicy.js';
+import type { Embedder } from './embedding.js';
+import { semanticSearch } from './embedding.js';
+import { memoryRunbookSearchText, validateMemoryRunbookInput } from './memoryRunbook.js';
+import type { MemoryInput, MemoryRecord, MemoryStore } from './types.js';
 
 const DEFAULT_MIN_SCORE = 0.25;
 
-type SystemMessage = Extract<AgentMessage, { role: "system" }>;
+type SystemMessage = Extract<AgentMessage, { role: 'system' }>;
 
 function normalizeText(value: string) {
   return value.trim().toLowerCase();
@@ -36,34 +36,30 @@ function optionalRecordField<K extends keyof MemoryRecord>(
 ): Pick<MemoryRecord, K> | Record<string, never> {
   if (hasOwn(input, key as keyof MemoryInput)) {
     const value = input[key as keyof MemoryInput] as MemoryRecord[K] | undefined;
-    return value !== undefined ? { [key]: value } as Pick<MemoryRecord, K> : {};
+    return value !== undefined ? ({ [key]: value } as Pick<MemoryRecord, K>) : {};
   }
   const value = existing?.[key];
-  return value !== undefined ? { [key]: value } as Pick<MemoryRecord, K> : {};
+  return value !== undefined ? ({ [key]: value } as Pick<MemoryRecord, K>) : {};
 }
 
 function evidenceFields(
   input: MemoryInput,
   existing: MemoryRecord | undefined,
-): Pick<MemoryRecord, "evidenceIds" | "noEvidenceReason"> | Record<string, never> {
-  if (hasOwn(input, "evidenceIds")) {
+): Pick<MemoryRecord, 'evidenceIds' | 'noEvidenceReason'> | Record<string, never> {
+  if (hasOwn(input, 'evidenceIds')) {
     return input.evidenceIds !== undefined ? { evidenceIds: input.evidenceIds } : {};
   }
-  if (hasOwn(input, "noEvidenceReason")) {
+  if (hasOwn(input, 'noEvidenceReason')) {
     return input.noEvidenceReason !== undefined ? { noEvidenceReason: input.noEvidenceReason } : {};
   }
   return {
     ...(existing?.evidenceIds ? { evidenceIds: existing.evidenceIds } : {}),
-    ...(existing?.noEvidenceReason ? { noEvidenceReason: existing.noEvidenceReason } : {})
+    ...(existing?.noEvidenceReason ? { noEvidenceReason: existing.noEvidenceReason } : {}),
   };
 }
 
 function escapeMemoryAttribute(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 export function scoreRecord(record: MemoryRecord, query: string) {
@@ -75,8 +71,8 @@ export function scoreRecord(record: MemoryRecord, query: string) {
   const text = normalizeText(record.text);
   const runbookText = normalizeText(memoryRunbookSearchText(record));
   const tags = record.tags.map(normalizeText);
-  const source = normalizeText(record.source ?? "");
-  const haystack = [id, text, runbookText, source, ...tags].join(" ");
+  const source = normalizeText(record.source ?? '');
+  const haystack = [id, text, runbookText, source, ...tags].join(' ');
   let score = 0;
 
   score += record.priority ?? 0;
@@ -149,25 +145,29 @@ export class InMemoryMemoryStore implements MemoryStore {
       id: normalizedInput.id,
       text: normalizedInput.text,
       tags: normalizedInput.tags ?? [],
-      ...optionalRecordField(normalizedInput, existing, "kind"),
-      ...optionalRecordField(normalizedInput, existing, "runbook"),
-      ...optionalRecordField(normalizedInput, existing, "source"),
-      ...optionalRecordField(normalizedInput, existing, "priority"),
+      ...optionalRecordField(normalizedInput, existing, 'kind'),
+      ...optionalRecordField(normalizedInput, existing, 'runbook'),
+      ...optionalRecordField(normalizedInput, existing, 'source'),
+      ...optionalRecordField(normalizedInput, existing, 'priority'),
       updatedAt: this.now().toISOString(),
       createdAt: normalizedInput.createdAt ?? existing?.createdAt ?? this.now().toISOString(),
-      ...(normalizedInput.status ? { status: normalizedInput.status } : existing?.status ? { status: existing.status } : { status: "active" }),
-      ...optionalRecordField(normalizedInput, existing, "pinned"),
-      ...optionalRecordField(normalizedInput, existing, "lastAccessedAt"),
-      ...optionalRecordField(normalizedInput, existing, "sensitivity"),
-      ...optionalRecordField(normalizedInput, existing, "conflictsWith"),
-      ...optionalRecordField(normalizedInput, existing, "validFrom"),
-      ...optionalRecordField(normalizedInput, existing, "validTo"),
-      ...optionalRecordField(normalizedInput, existing, "supersedes"),
-      ...optionalRecordField(normalizedInput, existing, "supersededBy"),
-      ...optionalRecordField(normalizedInput, existing, "partialSupersededBy"),
-      ...optionalRecordField(normalizedInput, existing, "supersedeMode"),
+      ...(normalizedInput.status
+        ? { status: normalizedInput.status }
+        : existing?.status
+          ? { status: existing.status }
+          : { status: 'active' }),
+      ...optionalRecordField(normalizedInput, existing, 'pinned'),
+      ...optionalRecordField(normalizedInput, existing, 'lastAccessedAt'),
+      ...optionalRecordField(normalizedInput, existing, 'sensitivity'),
+      ...optionalRecordField(normalizedInput, existing, 'conflictsWith'),
+      ...optionalRecordField(normalizedInput, existing, 'validFrom'),
+      ...optionalRecordField(normalizedInput, existing, 'validTo'),
+      ...optionalRecordField(normalizedInput, existing, 'supersedes'),
+      ...optionalRecordField(normalizedInput, existing, 'supersededBy'),
+      ...optionalRecordField(normalizedInput, existing, 'partialSupersededBy'),
+      ...optionalRecordField(normalizedInput, existing, 'supersedeMode'),
       ...evidenceFields(normalizedInput, existing),
-      ...optionalRecordField(normalizedInput, existing, "archivedAt")
+      ...optionalRecordField(normalizedInput, existing, 'archivedAt'),
     };
     if (this.embedder) record.embedding = await this.embedder.embed(record.text);
     this.records.set(record.id, record);
@@ -198,21 +198,21 @@ export function buildMemorySystemMessage(records: MemoryRecord[]): SystemMessage
 
   const sections = records.map((record) => {
     const wrapped = wrapExternalContent({
-      kind: "memory",
-      source: record.source ?? "memory",
-      authority: "untrusted",
-      content: record.text
+      kind: 'memory',
+      source: record.source ?? 'memory',
+      authority: 'untrusted',
+      content: record.text,
     });
-    const tags = record.tags.map(escapeMemoryAttribute).join(",");
+    const tags = record.tags.map(escapeMemoryAttribute).join(',');
     return [
-      `<memory id="${escapeMemoryAttribute(record.id)}" tags="${tags}"${record.source ? ` source="${escapeMemoryAttribute(record.source)}"` : ""}${record.priority !== undefined ? ` priority="${record.priority}"` : ""} updatedAt="${escapeMemoryAttribute(record.updatedAt)}">`,
+      `<memory id="${escapeMemoryAttribute(record.id)}" tags="${tags}"${record.source ? ` source="${escapeMemoryAttribute(record.source)}"` : ''}${record.priority !== undefined ? ` priority="${record.priority}"` : ''} updatedAt="${escapeMemoryAttribute(record.updatedAt)}">`,
       wrapped.content,
-      "</memory>"
-    ].join("\n");
+      '</memory>',
+    ].join('\n');
   });
 
   return {
-    role: "system",
-    content: ["Xenesis relevant memory:", "", sections.join("\n\n")].join("\n")
+    role: 'system',
+    content: ['Xenesis relevant memory:', '', sections.join('\n\n')].join('\n'),
   };
 }

@@ -21,12 +21,12 @@ import type {
   ExtensionHostAction,
   ExtensionPanelPlacement,
   LocalTerminalProfile,
+  McpBridgeBrowserActionPayload,
+  McpBridgeBrowserActionResult,
   McpBridgeCaptureActivePanePayload,
   McpBridgeCaptureActivePaneResult,
   McpBridgeDemoLabPlaybackControlPayload,
   McpBridgeDemoLabPlaybackControlResult,
-  McpBridgeBrowserActionPayload,
-  McpBridgeBrowserActionResult,
   McpBridgeDockActionPayload,
   McpBridgeDockActionResult,
   McpBridgeExplorerActionPayload,
@@ -134,6 +134,8 @@ declare global {
       category?: unknown;
       mode?: unknown;
       section?: unknown;
+      focusConnectionId?: unknown;
+      focusConnectionDetail?: unknown;
       ensureVisible?: unknown;
       selectedTerminalProfileId?: unknown;
       pendingLocalTerminalProfile?: unknown;
@@ -144,7 +146,6 @@ declare global {
 }
 
 import { deskBridge, getDeskBridgeApi } from './deskBridge';
-import { runBrowserPaneAction } from './panes/BrowserPane';
 import { openExtensionTool, useRendererExtensionEvents } from './extensions/registry';
 import {
   buildFileBotContextMessage,
@@ -170,6 +171,7 @@ import {
   installRendererProducerObservability,
   uninstallRendererProducerObservability,
 } from './observability/rendererProducerObservability';
+import { runBrowserPaneAction } from './panes/BrowserPane';
 import type {
   CommandCenterPaneProps,
   CommandCenterTargetGroup,
@@ -582,6 +584,13 @@ const AI_PROVIDERS: Record<AiProviderKind, ProviderMeta> = {
     needsKey: true,
     defaultBaseUrl: '',
   },
+  openrouter: {
+    label: 'OpenRouter',
+    defaultModel: 'openai/gpt-4o-mini',
+    models: ['openai/gpt-4o-mini', 'openai/gpt-4o', 'anthropic/claude-3.5-sonnet'],
+    needsKey: true,
+    defaultBaseUrl: 'https://openrouter.ai/api/v1',
+  },
   groq: {
     label: 'Groq',
     defaultModel: 'llama-3.1-8b-instant',
@@ -602,6 +611,20 @@ const AI_PROVIDERS: Record<AiProviderKind, ProviderMeta> = {
     models: ['qwen-plus', 'qwen-turbo', 'qwen-max'],
     needsKey: true,
     defaultBaseUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+  },
+  mistral: {
+    label: 'Mistral',
+    defaultModel: 'mistral-large-latest',
+    models: ['mistral-large-latest', 'mistral-small-latest', 'codestral-latest'],
+    needsKey: true,
+    defaultBaseUrl: 'https://api.mistral.ai/v1',
+  },
+  xai: {
+    label: 'xAI',
+    defaultModel: 'grok-2-latest',
+    models: ['grok-2-latest'],
+    needsKey: true,
+    defaultBaseUrl: 'https://api.x.ai/v1',
   },
   ollama: {
     label: 'Ollama (Local)',
@@ -1065,6 +1088,12 @@ export default function App() {
   const onboardingFolderPendingRef = useRef(false);
   const onboardingSampleWorkspacePathRef = useRef('');
   const onboardingWorkspaceProfilePathRef = useRef('');
+  const onboardingSettingsTargetRef = useRef({
+    category: '',
+    mode: '',
+    section: '',
+    focusConnectionDetail: '',
+  });
   const [terminalGroups, setTerminalGroups] = useState<TerminalProfileGroup[]>([]);
   const [remoteProfiles, setRemoteProfiles] = useState<RemoteTerminalProfile[]>([]);
   const [localProfiles, setLocalProfiles] = useState<LocalTerminalProfile[]>([]);
@@ -2647,6 +2676,12 @@ export default function App() {
 
   const openSettingsCategory = useCallback(
     (category: string) => {
+      onboardingSettingsTargetRef.current = {
+        category: String(category || '').trim(),
+        mode: '',
+        section: '',
+        focusConnectionDetail: '',
+      };
       openSettingsPane();
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent('settings-open-category', { detail: category }));
@@ -2660,6 +2695,8 @@ export default function App() {
       category?: unknown;
       mode?: unknown;
       section?: unknown;
+      focusConnectionId?: unknown;
+      focusConnectionDetail?: unknown;
       ensureVisible?: unknown;
       selectedTerminalProfileId?: unknown;
       pendingLocalTerminalProfile?: unknown;
@@ -2667,10 +2704,17 @@ export default function App() {
       targetPaneId?: string | null;
     }) => {
       const { placement, targetPaneId, ...targetDetail } = target;
+      onboardingSettingsTargetRef.current = {
+        category: typeof targetDetail.category === 'string' ? targetDetail.category.trim() : '',
+        mode: typeof targetDetail.mode === 'string' ? targetDetail.mode.trim() : '',
+        section: typeof targetDetail.section === 'string' ? targetDetail.section.trim() : '',
+        focusConnectionDetail:
+          typeof targetDetail.focusConnectionDetail === 'string' ? targetDetail.focusConnectionDetail.trim() : '',
+      };
       openSettingsPane(placement, targetPaneId);
       const detail = {
         ...targetDetail,
-        expiresAt: Date.now() + 5000,
+        expiresAt: Date.now() + 30000,
         nonce: Date.now(),
       };
       window.__xenesisSettingsOpenTarget = detail;
@@ -2680,6 +2724,7 @@ export default function App() {
       setTimeout(dispatchTarget, 0);
       setTimeout(dispatchTarget, 100);
       setTimeout(dispatchTarget, 300);
+      setTimeout(dispatchTarget, 1000);
     },
     [openSettingsPane],
   );
@@ -2731,17 +2776,26 @@ export default function App() {
         category: payload.category,
         mode: payload.mode,
         section: payload.section,
+        focusConnectionId: payload.focusConnectionId,
+        focusConnectionDetail: payload.focusConnectionDetail,
         ensureVisible: payload.ensureVisible,
       };
       if (payload.kind === 'settings') {
         const hasSettingsTarget = Boolean(
-          payload.category || payload.mode || payload.section || typeof payload.ensureVisible === 'boolean',
+          payload.category ||
+            payload.mode ||
+            payload.section ||
+            payload.focusConnectionId ||
+            payload.focusConnectionDetail ||
+            typeof payload.ensureVisible === 'boolean',
         );
         if (hasSettingsTarget) {
           openSettingsTarget({
             category: payload.category,
             mode: payload.mode,
             section: payload.section,
+            focusConnectionId: payload.focusConnectionId,
+            focusConnectionDetail: payload.focusConnectionDetail,
             ensureVisible: payload.ensureVisible,
             placement: payload.placement,
             targetPaneId: payload.targetPaneId,
@@ -3284,30 +3338,33 @@ export default function App() {
     return getDeskBridgeApi()?.onDockAction?.((payload) => handleMcpDockAction(payload));
   }, [handleMcpDockAction]);
 
-  const handleMcpBrowserAction = useCallback(async (payload: McpBridgeBrowserActionPayload): Promise<McpBridgeBrowserActionResult> => {
-    const explicitContentId = String(payload.contentId || '').trim();
-    const paneId = String(payload.paneId || '').trim();
-    const resolveBrowserContentId = (): string | undefined => {
-      const explicit = explicitContentId ? engine.contents.get(explicitContentId) : undefined;
-      if (explicit?.contentType === 'browser') return explicitContentId;
+  const handleMcpBrowserAction = useCallback(
+    async (payload: McpBridgeBrowserActionPayload): Promise<McpBridgeBrowserActionResult> => {
+      const explicitContentId = String(payload.contentId || '').trim();
+      const paneId = String(payload.paneId || '').trim();
+      const resolveBrowserContentId = (): string | undefined => {
+        const explicit = explicitContentId ? engine.contents.get(explicitContentId) : undefined;
+        if (explicit?.contentType === 'browser') return explicitContentId;
 
-      const pane = paneId ? engine.panes.get(paneId) : undefined;
-      if (pane) {
-        const active = pane.activeContentId ? engine.contents.get(pane.activeContentId) : undefined;
-        if (active?.contentType === 'browser') return pane.activeContentId ?? undefined;
-        const firstBrowser = pane.contents.find((id) => engine.contents.get(id)?.contentType === 'browser');
-        if (firstBrowser) return firstBrowser;
-      }
+        const pane = paneId ? engine.panes.get(paneId) : undefined;
+        if (pane) {
+          const active = pane.activeContentId ? engine.contents.get(pane.activeContentId) : undefined;
+          if (active?.contentType === 'browser') return pane.activeContentId ?? undefined;
+          const firstBrowser = pane.contents.find((id) => engine.contents.get(id)?.contentType === 'browser');
+          if (firstBrowser) return firstBrowser;
+        }
 
-      const activePane = engine.activePaneId ? engine.panes.get(engine.activePaneId) : undefined;
-      const activeContent = activePane?.activeContentId ? engine.contents.get(activePane.activeContentId) : undefined;
-      if (activeContent?.contentType === 'browser') return activePane?.activeContentId ?? undefined;
+        const activePane = engine.activePaneId ? engine.panes.get(engine.activePaneId) : undefined;
+        const activeContent = activePane?.activeContentId ? engine.contents.get(activePane.activeContentId) : undefined;
+        if (activeContent?.contentType === 'browser') return activePane?.activeContentId ?? undefined;
 
-      const firstBrowser = [...engine.contents.values()].find((content) => content.contentType === 'browser');
-      return firstBrowser?.id;
-    };
-    return runBrowserPaneAction(payload, resolveBrowserContentId());
-  }, [engine]);
+        const firstBrowser = [...engine.contents.values()].find((content) => content.contentType === 'browser');
+        return firstBrowser?.id;
+      };
+      return runBrowserPaneAction(payload, resolveBrowserContentId());
+    },
+    [engine],
+  );
 
   useEffect(() => {
     return getDeskBridgeApi()?.onBrowserAction?.((payload) => handleMcpBrowserAction(payload));
@@ -4290,6 +4347,7 @@ export default function App() {
           contents: [...pane.contents],
           activeContentId: pane.activeContentId,
         })),
+        settingsTarget: onboardingSettingsTargetRef.current,
       };
     },
     [defaultCwd, engine, workspacePath],
@@ -4336,6 +4394,60 @@ export default function App() {
   const handleOnboardingOpenWorkspace = useCallback(() => {
     openSettingsCategory('workspace');
   }, [openSettingsCategory]);
+
+  const handleOnboardingOpenAiProviderSettings = useCallback(() => {
+    openSettingsTarget({ category: 'run-model', section: 'provider-connection', ensureVisible: true });
+  }, [openSettingsTarget]);
+
+  const handleOnboardingOpenProviderSetupPlan = useCallback(() => {
+    openSettingsTarget({
+      category: 'xenesis-agent',
+      mode: 'connections',
+      section: 'xenesis-connections',
+      focusConnectionDetail: 'provider-setup-plan',
+      ensureVisible: true,
+    });
+  }, [openSettingsTarget]);
+
+  const handleOnboardingOpenExternalToolSetup = useCallback(() => {
+    openSettingsTarget({
+      category: 'xenesis-agent',
+      mode: 'connections',
+      section: 'xenesis-connections',
+      focusConnectionDetail: 'tool-setup-plan',
+      ensureVisible: true,
+    });
+  }, [openSettingsTarget]);
+
+  const handleOnboardingOpenToolConnectors = useCallback(() => {
+    openSettingsTarget({
+      category: 'xenesis-agent',
+      mode: 'connections',
+      section: 'xenesis-connections',
+      focusConnectionDetail: 'tool-connector',
+      ensureVisible: true,
+    });
+  }, [openSettingsTarget]);
+
+  const handleOnboardingOpenMcpSetup = useCallback(() => {
+    openSettingsTarget({
+      category: 'xenesis-agent',
+      mode: 'connections',
+      section: 'xenesis-connections',
+      focusConnectionDetail: 'mcp-install-draft',
+      ensureVisible: true,
+    });
+  }, [openSettingsTarget]);
+
+  const handleOnboardingOpenMcpOauth = useCallback(() => {
+    openSettingsTarget({
+      category: 'xenesis-agent',
+      mode: 'connections',
+      section: 'xenesis-connections',
+      focusConnectionDetail: 'tool-mcp-oauth',
+      ensureVisible: true,
+    });
+  }, [openSettingsTarget]);
 
   const handleOnboardingOpenKeyboardShortcuts = useCallback(() => {
     openSettingsCategory('keyboard-shortcuts');
@@ -4467,17 +4579,12 @@ export default function App() {
         const result = await window.onboardingAPI.prepareSampleWorkspace();
         sampleWorkspacePath = result.path;
         await handleOnboardingUseWorkspacePath(sampleWorkspacePath);
-      } else if (normalizedStepId === 'open-terminal') {
-        createTerminalSession(defaultShell, sampleWorkspacePath ? { cwd: sampleWorkspacePath } : undefined);
-      } else if (normalizedStepId === 'open-file-preview') {
-        if (!sampleWorkspacePath) {
-          return { passed: false, ran: false, message: 'sampleWorkspacePath is required for open-file-preview.' };
-        }
-        await openFileByPath(getOnboardingSampleFilePath(sampleWorkspacePath, ONBOARDING_SAMPLE_WELCOME_FILE_NAME));
-      } else if (normalizedStepId === 'arrange-panes') {
-        handleOnboardingArrangePanes();
-      } else if (normalizedStepId === 'use-command-center') {
-        handleOnboardingOpenCommandCenter();
+      } else if (normalizedStepId === 'configure-ai-provider') {
+        handleOnboardingOpenProviderSetupPlan();
+      } else if (normalizedStepId === 'connect-external-tools') {
+        handleOnboardingOpenExternalToolSetup();
+      } else if (normalizedStepId === 'configure-mcp') {
+        handleOnboardingOpenMcpSetup();
       } else if (normalizedStepId === 'open-settings-diagnostics') {
         handleOnboardingOpenWorkspace();
         handleOnboardingOpenDiagnostics();
@@ -4502,6 +4609,9 @@ export default function App() {
       handleOnboardingArrangePanes,
       handleOnboardingOpenCommandCenter,
       handleOnboardingOpenDiagnostics,
+      handleOnboardingOpenExternalToolSetup,
+      handleOnboardingOpenMcpSetup,
+      handleOnboardingOpenProviderSetupPlan,
       handleOnboardingOpenWorkspace,
       handleOnboardingRestoreWorkspace,
       handleOnboardingSaveWorkspace,
@@ -7039,6 +7149,12 @@ export default function App() {
               onOnboardingOpenTerminal={handleOnboardingOpenTerminal}
               onOnboardingOpenFile={handleOnboardingOpenFile}
               onOnboardingOpenWorkspace={handleOnboardingOpenWorkspace}
+              onOnboardingOpenAiProviderSettings={handleOnboardingOpenAiProviderSettings}
+              onOnboardingOpenProviderSetupPlan={handleOnboardingOpenProviderSetupPlan}
+              onOnboardingOpenExternalToolSetup={handleOnboardingOpenExternalToolSetup}
+              onOnboardingOpenToolConnectors={handleOnboardingOpenToolConnectors}
+              onOnboardingOpenMcpSetup={handleOnboardingOpenMcpSetup}
+              onOnboardingOpenMcpOauth={handleOnboardingOpenMcpOauth}
               onOnboardingOpenKeyboardShortcuts={handleOnboardingOpenKeyboardShortcuts}
               onOnboardingOpenExtensions={handleOnboardingOpenExtensions}
               onOnboardingOpenDiagnostics={handleOnboardingOpenDiagnostics}

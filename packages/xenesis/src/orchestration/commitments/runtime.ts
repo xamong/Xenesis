@@ -13,20 +13,20 @@
  *    `scheduleId` (`commitment:<id>`). That routes it through the SAME unattended isolated-run +
  *    [SILENT] path as a scheduled run (see taskExecutor.ts), and respects approval gates.
  */
-import type { AgentTask, CreateAgentTaskInput } from "../agentTasks.js";
-import { resolveCommitmentsConfig, resolveCommitmentTimezone } from "./config.js";
+import type { AgentTask, CreateAgentTaskInput } from '../agentTasks.js';
+import { resolveCommitmentsConfig, resolveCommitmentTimezone } from './config.js';
 import {
   buildCommitmentExtractionPrompt,
   parseCommitmentExtractionOutput,
   validateCommitmentCandidates,
-} from "./extraction.js";
-import type { CommitmentStore } from "./store.js";
+} from './extraction.js';
+import type { CommitmentStore } from './store.js';
 import type {
   CommitmentExtractionBatchResult,
   CommitmentExtractionItem,
   CommitmentRecord,
   CommitmentScope,
-} from "./types.js";
+} from './types.js';
 
 type TimerHandle = ReturnType<typeof setTimeout>;
 
@@ -59,7 +59,7 @@ export interface CommitmentRuntimeOptions {
   logger?: (message: string) => void;
 }
 
-type QueueEntry = Omit<CommitmentExtractionItem, "existingPending">;
+type QueueEntry = Omit<CommitmentExtractionItem, 'existingPending'>;
 
 export type EnqueueCommitmentInput = CommitmentScope & {
   userText: string;
@@ -88,7 +88,7 @@ export class CommitmentRuntime {
 
   private setTimer(cb: () => void, ms: number): TimerHandle {
     const handle = this.options.setTimer ? this.options.setTimer(cb, ms) : setTimeout(cb, ms);
-    if (typeof handle === "object" && handle && "unref" in handle && typeof handle.unref === "function") {
+    if (typeof handle === 'object' && handle && 'unref' in handle && typeof handle.unref === 'function') {
       handle.unref();
     }
     return handle;
@@ -112,15 +112,15 @@ export class CommitmentRuntime {
     const resolved = resolveCommitmentsConfig(this.options.config);
     if (!resolved.enabled) return false;
     const nowMs = input.nowMs ?? this.now();
-    const agentId = input.agentId?.trim() ?? "";
-    const sessionKey = input.sessionKey?.trim() ?? "";
-    const channel = input.channel?.trim() ?? "";
-    const userText = input.userText?.trim() ?? "";
-    const assistantText = input.assistantText?.trim() ?? "";
+    const agentId = input.agentId?.trim() ?? '';
+    const sessionKey = input.sessionKey?.trim() ?? '';
+    const channel = input.channel?.trim() ?? '';
+    const userText = input.userText?.trim() ?? '';
+    const assistantText = input.assistantText?.trim() ?? '';
     if (!agentId || !sessionKey || !channel || !userText || !assistantText) return false;
     if (this.queue.length >= resolved.extraction.queueMaxItems) {
       if (!this.overflowWarned) {
-        this.options.logger?.("commitment extraction queue full; dropping hidden extraction request");
+        this.options.logger?.('commitment extraction queue full; dropping hidden extraction request');
         this.overflowWarned = true;
       }
       return false;
@@ -254,10 +254,10 @@ export class CommitmentRuntime {
  */
 export function buildCommitmentSurfacePrompt(commitment: CommitmentRecord): string {
   return [
-    "A previously-inferred follow-up is now due. Decide whether it is still worth surfacing to the user.",
+    'A previously-inferred follow-up is now due. Decide whether it is still worth surfacing to the user.',
     `Follow-up: ${commitment.suggestedText}`,
     `Context for this follow-up (do not quote verbatim): ${commitment.reason}`,
-  ].join("\n");
+  ].join('\n');
 }
 
 /** Synthetic scheduleId for a commitment-surfacing task → unattended [SILENT]/isolated path. */
@@ -299,11 +299,11 @@ export async function surfaceDueCommitments(options: SurfaceDueOptions): Promise
     const task = await options.createTask({
       prompt: buildCommitmentSurfacePrompt(commitment),
       scheduleId: commitmentTaskScheduleId(commitment.id),
-      source: "commitment",
+      source: 'commitment',
       metadata: { commitmentId: commitment.id, channel: commitment.channel },
     });
     await options.store.setTaskId(commitment.id, task.id, nowMs);
-    await options.store.markStatus([commitment.id], "sent", nowMs);
+    await options.store.markStatus([commitment.id], 'sent', nowMs);
     created.push(task);
   }
   return created;

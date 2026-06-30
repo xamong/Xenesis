@@ -2,7 +2,7 @@ export interface RemoteDeskBridge {
   callCapability(
     path: string,
     args?: Record<string, unknown>,
-    options?: { approved?: boolean; timeoutMs?: number }
+    options?: { approved?: boolean; timeoutMs?: number },
   ): Promise<unknown>;
 }
 

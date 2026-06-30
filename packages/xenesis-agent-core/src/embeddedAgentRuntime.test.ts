@@ -3,13 +3,14 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
+import { createTurnLedger } from '../../xenesis/src/core/turnLedger';
+import { closeAllDatabases } from '../../xenesis/src/db/database';
 import { DeskEmbeddedAgentRuntime, mapDeskEmbeddedPromptResult } from './embeddedAgentRuntime';
 import {
   createDeskEmbeddedPromptOptions,
-  normalizeDeskProviderName,
   type DeskEmbeddedPromptResult,
+  normalizeDeskProviderName,
 } from './embeddedRuntime';
-import { closeAllDatabases } from '../../xenesis/src/db/database';
 
 test('mapDeskEmbeddedPromptResult preserves final doneContent from embedded runtime', () => {
   const result = mapDeskEmbeddedPromptResult({
@@ -159,8 +160,9 @@ test('DeskEmbeddedAgentRuntime status exposes sanitized effective provider runti
 
 test('DeskEmbeddedAgentRuntime reuses session and history across embedded mock provider turns', async () => {
   const workspace = await mkdtemp(join(tmpdir(), 'xenesis-desk-agent-runtime-'));
+  let runtime: DeskEmbeddedAgentRuntime | undefined;
   try {
-    const runtime = new DeskEmbeddedAgentRuntime({
+    runtime = new DeskEmbeddedAgentRuntime({
       enabled: true,
       xenesisHome: join(workspace, '.xenesis'),
       runtimePath: 'embedded',
@@ -196,7 +198,53 @@ test('DeskEmbeddedAgentRuntime reuses session and history across embedded mock p
     assert.match(second.doneContent || '', /assistant: mock response: 첫 질문/);
     assert.match(second.doneContent || '', /user: mock:messages/);
   } finally {
+    runtime?.stop();
     closeAllDatabases();
-    await rm(workspace, { recursive: true, force: true });
+    await rm(workspace, { recursive: true, force: true }).catch(() => undefined);
+  }
+});
+
+test('DeskEmbeddedAgentRuntime writes embedded mock provider turns to the injected turn ledger', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'xenesis-desk-agent-runtime-ledger-'));
+  const turnLedger = createTurnLedger({
+    now: () => '2026-06-28T00:00:00.000Z',
+    idFactory: () => 'turn-runtime-ledger-1',
+  });
+  let runtime: DeskEmbeddedAgentRuntime | undefined;
+
+  try {
+    runtime = new DeskEmbeddedAgentRuntime({
+      enabled: true,
+      xenesisHome: join(workspace, '.xenesis'),
+      runtimePath: 'embedded',
+      workspace,
+      env: {},
+      providerRuntime: {
+        provider: 'mock',
+        model: 'mock-model',
+        profile: '',
+        baseURL: '',
+        apiKeyEnv: '',
+        env: {},
+      },
+      approvalMode: 'safe',
+      maxTurns: 4,
+      turnLedger,
+    });
+
+    runtime.start();
+    const result = await runtime.run({
+      prompt: 'ledger check',
+      stream: false,
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(turnLedger.current()?.id, 'turn-runtime-ledger-1');
+    assert.equal(turnLedger.current()?.sessionId, result.sessionId);
+    assert.equal(turnLedger.current()?.status, 'completed');
+  } finally {
+    runtime?.stop();
+    closeAllDatabases();
+    await rm(workspace, { recursive: true, force: true }).catch(() => undefined);
   }
 });

@@ -19,9 +19,10 @@ async function collectNodeTestFiles(dir) {
   return files;
 }
 
-const files = await collectNodeTestFiles('src');
+const roots = ['src', 'scripts'];
+const files = (await Promise.all(roots.map((root) => collectNodeTestFiles(root)))).flat();
 if (files.length === 0) {
-  console.error('root-test: no node:test files found under src');
+  console.error(`root-test: no node:test files found under ${roots.join(', ')}`);
   process.exit(1);
 }
 

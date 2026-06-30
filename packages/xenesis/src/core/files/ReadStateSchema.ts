@@ -1,5 +1,5 @@
-import { z } from "zod";
-import type { ReadSnapshot } from "./ReadStateGuard.js";
+import { z } from 'zod';
+import type { ReadSnapshot } from './ReadStateGuard.js';
 
 export const readSnapshotInputSchema = z.object({
   path: z.string().min(1),
@@ -7,11 +7,11 @@ export const readSnapshotInputSchema = z.object({
   contentHash: z.string().min(1),
   mtimeMs: z.number(),
   size: z.number().int().nonnegative(),
-  encoding: z.literal("utf8"),
-  lineEndings: z.enum(["lf", "crlf", "mixed", "none"]),
+  encoding: z.literal('utf8'),
+  lineEndings: z.enum(['lf', 'crlf', 'mixed', 'none']),
   offset: z.number().int().nonnegative().nullable().optional(),
   limit: z.number().int().positive().nullable().optional(),
-  isPartialView: z.boolean()
+  isPartialView: z.boolean(),
 });
 
 export type ReadSnapshotInput = z.infer<typeof readSnapshotInputSchema>;
@@ -27,6 +27,6 @@ export function normalizeReadSnapshotInput(readState: ReadSnapshotInput): ReadSn
     lineEndings: readState.lineEndings,
     ...(readState.offset != null ? { offset: readState.offset } : {}),
     ...(readState.limit != null ? { limit: readState.limit } : {}),
-    isPartialView: readState.isPartialView
+    isPartialView: readState.isPartialView,
   };
 }

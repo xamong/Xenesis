@@ -1,14 +1,14 @@
-import type { MemoryRunbook, MemoryRunbookPermissionLevel } from "./memoryTypes.js";
-import type { MemoryInput } from "./types.js";
+import type { MemoryRunbook, MemoryRunbookPermissionLevel } from './memoryTypes.js';
+import type { MemoryInput } from './types.js';
 
 const PERMISSION_LEVELS = new Set<MemoryRunbookPermissionLevel>([
-  "read",
-  "draft",
-  "suggest",
-  "execute_requires_approval"
+  'read',
+  'draft',
+  'suggest',
+  'execute_requires_approval',
 ]);
 
-export type MemoryRunbookInput = Partial<MemoryRunbook> & Pick<MemoryRunbook, "trigger" | "steps">;
+export type MemoryRunbookInput = Partial<MemoryRunbook> & Pick<MemoryRunbook, 'trigger' | 'steps'>;
 
 export interface CreateRunbookMemoryInputOptions {
   id: string;
@@ -31,7 +31,7 @@ function assertIsoDate(value: string | undefined, field: string): void {
 }
 
 export function normalizeMemoryRunbook(input: MemoryRunbookInput): MemoryRunbook {
-  const permissionLevel = input.permissionLevel ?? "draft";
+  const permissionLevel = input.permissionLevel ?? 'draft';
   const runbook: MemoryRunbook = {
     trigger: input.trigger.trim(),
     steps: normalizeList(input.steps),
@@ -40,59 +40,59 @@ export function normalizeMemoryRunbook(input: MemoryRunbookInput): MemoryRunbook
     permissionLevel,
     ...(input.lastUsedAt ? { lastUsedAt: input.lastUsedAt } : {}),
     ...(input.validFrom ? { validFrom: input.validFrom } : {}),
-    ...(input.validTo ? { validTo: input.validTo } : {})
+    ...(input.validTo ? { validTo: input.validTo } : {}),
   };
   assertValidMemoryRunbook(runbook);
   return runbook;
 }
 
 export function assertValidMemoryRunbook(runbook: MemoryRunbook): void {
-  if (!runbook.trigger.trim()) throw new Error("Invalid runbook: trigger must be non-empty");
+  if (!runbook.trigger.trim()) throw new Error('Invalid runbook: trigger must be non-empty');
   if (!Array.isArray(runbook.steps) || runbook.steps.map((step) => step.trim()).filter(Boolean).length === 0) {
-    throw new Error("Invalid runbook: steps must include at least one step");
+    throw new Error('Invalid runbook: steps must include at least one step');
   }
   if (!PERMISSION_LEVELS.has(runbook.permissionLevel)) {
     throw new Error(`Invalid runbook: unsupported permissionLevel ${runbook.permissionLevel}`);
   }
-  assertIsoDate(runbook.lastUsedAt, "lastUsedAt");
-  assertIsoDate(runbook.validFrom, "validFrom");
-  assertIsoDate(runbook.validTo, "validTo");
+  assertIsoDate(runbook.lastUsedAt, 'lastUsedAt');
+  assertIsoDate(runbook.validFrom, 'validFrom');
+  assertIsoDate(runbook.validTo, 'validTo');
   if (runbook.validFrom && runbook.validTo && Date.parse(runbook.validTo) <= Date.parse(runbook.validFrom)) {
-    throw new Error("Invalid runbook: validTo must be after validFrom");
+    throw new Error('Invalid runbook: validTo must be after validFrom');
   }
 }
 
 export function isProcedureMemoryInput(input: MemoryInput): boolean {
-  return input.kind === "procedure" || input.runbook !== undefined;
+  return input.kind === 'procedure' || input.runbook !== undefined;
 }
 
 export function validateMemoryRunbookInput(input: MemoryInput): MemoryInput {
   if (!isProcedureMemoryInput(input)) return input;
-  if (!input.runbook) throw new Error("Invalid runbook memory: procedure memories require runbook");
+  if (!input.runbook) throw new Error('Invalid runbook memory: procedure memories require runbook');
   const runbook = normalizeMemoryRunbook({
     ...input.runbook,
     validFrom: input.runbook.validFrom ?? input.validFrom,
-    validTo: input.runbook.validTo ?? input.validTo
+    validTo: input.runbook.validTo ?? input.validTo,
   });
   return {
     ...input,
-    kind: "procedure",
+    kind: 'procedure',
     runbook,
     validFrom: input.validFrom ?? runbook.validFrom,
-    validTo: input.validTo ?? runbook.validTo
+    validTo: input.validTo ?? runbook.validTo,
   };
 }
 
-export function memoryRunbookSearchText(input: Pick<MemoryInput, "runbook">): string {
+export function memoryRunbookSearchText(input: Pick<MemoryInput, 'runbook'>): string {
   const runbook = input.runbook;
-  if (!runbook) return "";
+  if (!runbook) return '';
   return [
     runbook.trigger,
     ...runbook.steps,
     ...runbook.preferredFormat,
     ...runbook.evidenceRequired,
-    runbook.permissionLevel
-  ].join(" ");
+    runbook.permissionLevel,
+  ].join(' ');
 }
 
 export function runbooksEquivalent(left: MemoryRunbook | undefined, right: MemoryRunbook | undefined): boolean {
@@ -105,23 +105,24 @@ export function createRunbookMemoryInput(options: CreateRunbookMemoryInputOption
   const runbook = normalizeMemoryRunbook({
     ...options.runbook,
     validFrom: options.runbook.validFrom ?? options.validFrom,
-    validTo: options.runbook.validTo ?? options.validTo
+    validTo: options.runbook.validTo ?? options.validTo,
   });
-  const tags = Array.from(new Set(["procedure", "runbook", ...(options.tags ?? [])]));
-  const text = options.text ?? [
-    `Procedure runbook: ${runbook.trigger}`,
-    ...runbook.steps.map((step, index) => `${index + 1}. ${step}`)
-  ].join("\n");
+  const tags = Array.from(new Set(['procedure', 'runbook', ...(options.tags ?? [])]));
+  const text =
+    options.text ??
+    [`Procedure runbook: ${runbook.trigger}`, ...runbook.steps.map((step, index) => `${index + 1}. ${step}`)].join(
+      '\n',
+    );
   return {
     id: options.id,
     text,
     tags,
-    kind: "procedure",
+    kind: 'procedure',
     runbook,
     ...(options.priority !== undefined ? { priority: options.priority } : {}),
     ...(options.source ? { source: options.source } : {}),
-    ...(options.validFrom ?? runbook.validFrom ? { validFrom: options.validFrom ?? runbook.validFrom } : {}),
-    ...(options.validTo ?? runbook.validTo ? { validTo: options.validTo ?? runbook.validTo } : {})
+    ...((options.validFrom ?? runbook.validFrom) ? { validFrom: options.validFrom ?? runbook.validFrom } : {}),
+    ...((options.validTo ?? runbook.validTo) ? { validTo: options.validTo ?? runbook.validTo } : {}),
   };
 }
 

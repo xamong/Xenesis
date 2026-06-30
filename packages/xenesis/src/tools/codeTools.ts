@@ -1,11 +1,11 @@
-import { readdir, readFile, stat } from "node:fs/promises";
-import { extname, join, relative } from "node:path";
-import { z } from "zod";
-import { assertExistingPathInsideWorkspace } from "../utils/workspace.js";
-import type { Tool } from "./types.js";
+import { readdir, readFile, stat } from 'node:fs/promises';
+import { extname, join, relative } from 'node:path';
+import { z } from 'zod';
+import { assertExistingPathInsideWorkspace } from '../utils/workspace.js';
+import type { Tool } from './types.js';
 
 const symbolsInput = z.object({
-  path: z.string().min(1)
+  path: z.string().min(1),
 });
 
 interface SymbolRecord {
@@ -16,11 +16,11 @@ interface SymbolRecord {
 }
 
 const patterns: Array<{ kind: string; pattern: RegExp }> = [
-  { kind: "class", pattern: /^(?:export\s+)?(?:abstract\s+)?class\s+([A-Za-z_$][\w$]*)/ },
-  { kind: "function", pattern: /^(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/ },
-  { kind: "interface", pattern: /^(?:export\s+)?interface\s+([A-Za-z_$][\w$]*)/ },
-  { kind: "type", pattern: /^(?:export\s+)?type\s+([A-Za-z_$][\w$]*)/ },
-  { kind: "const", pattern: /^(?:export\s+)?const\s+([A-Za-z_$][\w$]*)/ }
+  { kind: 'class', pattern: /^(?:export\s+)?(?:abstract\s+)?class\s+([A-Za-z_$][\w$]*)/ },
+  { kind: 'function', pattern: /^(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/ },
+  { kind: 'interface', pattern: /^(?:export\s+)?interface\s+([A-Za-z_$][\w$]*)/ },
+  { kind: 'type', pattern: /^(?:export\s+)?type\s+([A-Za-z_$][\w$]*)/ },
+  { kind: 'const', pattern: /^(?:export\s+)?const\s+([A-Za-z_$][\w$]*)/ },
 ];
 
 function extractSymbols(content: string): SymbolRecord[] {
@@ -33,16 +33,11 @@ function extractSymbols(content: string): SymbolRecord[] {
   });
 }
 
-const codeExtensions = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
-const ignoredDirectories = new Set([".git", ".xenesis", "dist", "node_modules"]);
+const codeExtensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']);
+const ignoredDirectories = new Set(['.git', '.xenesis', 'dist', 'node_modules']);
 const MAX_SYMBOL_FILES = 200;
 
-async function collectCodeFiles(
-  workspaceRoot: string,
-  root: string,
-  current: string,
-  files: string[]
-): Promise<void> {
+async function collectCodeFiles(workspaceRoot: string, root: string, current: string, files: string[]): Promise<void> {
   if (files.length >= MAX_SYMBOL_FILES) return;
 
   const entries = await readdir(current, { withFileTypes: true });
@@ -67,13 +62,13 @@ async function collectCodeFiles(
 }
 
 function formatSymbol(symbol: SymbolRecord) {
-  const prefix = symbol.path ? `${symbol.path}:` : "";
+  const prefix = symbol.path ? `${symbol.path}:` : '';
   return `${prefix}${symbol.line}: ${symbol.kind} ${symbol.name}`;
 }
 
 export const codeSymbolsTool: Tool<z.infer<typeof symbolsInput>, SymbolRecord[]> = {
-  name: "code_symbols",
-  description: "List top-level code symbols in a workspace file or directory with line numbers.",
+  name: 'code_symbols',
+  description: 'List top-level code symbols in a workspace file or directory with line numbers.',
   inputSchema: symbolsInput,
   isReadOnly: () => true,
   isConcurrencySafe: () => true,
@@ -85,23 +80,25 @@ export const codeSymbolsTool: Tool<z.infer<typeof symbolsInput>, SymbolRecord[]>
     if (pathStat.isDirectory()) {
       const files: string[] = [];
       await collectCodeFiles(context.workspaceRoot, path, path, files);
-      symbols = (await Promise.all(files.map(async (file) => {
-        const relativePath = relative(context.workspaceRoot, file).replace(/\\/g, "/");
-        return extractSymbols(await readFile(file, "utf8")).map((symbol) => ({
-          ...symbol,
-          path: relativePath
-        }));
-      }))).flat();
+      symbols = (
+        await Promise.all(
+          files.map(async (file) => {
+            const relativePath = relative(context.workspaceRoot, file).replace(/\\/g, '/');
+            return extractSymbols(await readFile(file, 'utf8')).map((symbol) => ({
+              ...symbol,
+              path: relativePath,
+            }));
+          }),
+        )
+      ).flat();
     } else {
-      symbols = extractSymbols(await readFile(path, "utf8"));
+      symbols = extractSymbols(await readFile(path, 'utf8'));
     }
 
     return {
       ok: true,
-      content: symbols.length > 0
-        ? symbols.map(formatSymbol).join("\n")
-        : "No symbols.",
-      data: symbols
+      content: symbols.length > 0 ? symbols.map(formatSymbol).join('\n') : 'No symbols.',
+      data: symbols,
     };
-  }
+  },
 };

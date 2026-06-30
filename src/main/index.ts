@@ -45,21 +45,32 @@ import {
   readProfiles,
   writeProfiles,
 } from '../../packages/xenesis/src/config/index';
+import { createTurnLedger, type XenesisTurnRecord } from '../../packages/xenesis/src/core/turnLedger';
 import {
   classifyMemoryWrite,
   defaultMemoryWriteContext,
-  MemoryLedger,
-  SqliteMemoryLedgerStore,
-  SqliteMemoryStore,
-  writeMemoryObsidianProjection,
   type MemoryApprovalProof,
   type MemoryEvidenceRecord,
   type MemoryInput,
+  MemoryLedger,
   type MemoryProposal,
   type MemoryRecord,
   type MemorySensitivity,
   type MemoryWriteContext,
+  SqliteMemoryLedgerStore,
+  SqliteMemoryStore,
+  writeMemoryObsidianProjection,
 } from '../../packages/xenesis/src/extensions/index';
+import {
+  getRecommendedMcpServer,
+  resolveRecommendedServer,
+} from '../../packages/xenesis/src/extensions/recommendedMcpServers';
+import {
+  type AgentActionNeededListFilter,
+  type AgentWorkflowReceiptKind,
+  type AgentWorkflowReceiptListFilter,
+  createAgentActionRecordStore,
+} from '../shared/agentActionRecords';
 import {
   APP_MENU_MODEL,
   type AppMenuActionNode,
@@ -67,7 +78,6 @@ import {
   type AppMenuGroupNode,
   type AppMenuNode,
 } from '../shared/appMenuModel';
-import { createAppControlService } from './appControl/appControlService';
 import {
   callDeskBridgeCapability,
   createDeskBridgeCapabilityApprovalArgsHash,
@@ -83,14 +93,6 @@ import {
   verifyDeskBridgeCapabilityApprovalProof,
 } from '../shared/deskBridgeCapabilities';
 import { normalizeExternalAppSettings } from '../shared/externalAppControl';
-import { buildMcpTerminalSessionList } from './mcpTerminalSessionList';
-import { resolveExistingRepoRootForObsidianProjection } from './memoryObsidianProjectionRoot';
-import {
-  redactMemoryEvidenceForCr,
-  redactMemoryLedgerEventForCr,
-  redactMemoryProposalForCr,
-  redactMemoryRecordForCr,
-} from './memoryRedaction';
 import {
   canUseXenisPhase5XamongCodeCommand,
   isXenisPhase5Visible,
@@ -138,17 +140,17 @@ import type {
   McpBridgeBotEvent,
   McpBridgeBotSession,
   McpBridgeBotSessionSaveResult,
-  McpBridgeCapabilityCallRequest,
-  McpBridgeCapabilityCallResult,
+  McpBridgeBrowserActionPayload,
+  McpBridgeBrowserActionResult,
   McpBridgeCapabilityApprovalRememberEntry,
   McpBridgeCapabilityApprovalRememberResult,
+  McpBridgeCapabilityCallRequest,
+  McpBridgeCapabilityCallResult,
   McpBridgeCaptureActivePanePayload,
   McpBridgeCaptureActivePaneResult,
   McpBridgeDemoLabPlaybackControlAction,
   McpBridgeDemoLabPlaybackControlPayload,
   McpBridgeDemoLabPlaybackControlResult,
-  McpBridgeBrowserActionPayload,
-  McpBridgeBrowserActionResult,
   McpBridgeDockActionPayload,
   McpBridgeDockActionResult,
   McpBridgeExplorerActionPayload,
@@ -297,7 +299,46 @@ import type {
   XenesisTaskStatus,
   XenesisTaskSummary,
 } from '../shared/types';
+import {
+  buildXenesisChannelProfileDraftApplyChannels,
+  isXenesisChannelProfileDraftApplyChannel,
+} from '../shared/xenesisChannelProfileApply';
+import {
+  buildXenesisConnectionCenterOpenArgs,
+  buildXenesisConnectionSetupApprovalSessionKey,
+  buildXenesisConnectionsStatus,
+  isXenesisConnectionCenterDetailFocus,
+  isXenesisConnectionMessengerViewSectionId,
+  isXenesisConnectionProviderViewSectionId,
+  isXenesisConnectionToolViewSectionId,
+  withXenesisConnectionSetupRequestReviews,
+  XENESIS_CONNECTION_CENTER_ROOT_SELECTOR,
+  XENESIS_CONNECTION_GUIDE_IDS,
+  XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS,
+  XENESIS_CONNECTION_MESSENGER_IDS,
+  XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_IDS,
+  XENESIS_CONNECTION_ONBOARDING_STEP_IDS,
+  XENESIS_CONNECTION_PROVIDER_IDS,
+  XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_IDS,
+  XENESIS_CONNECTION_TOOL_IDS,
+  XENESIS_CONNECTION_TOOL_OAUTH_DRAFT_IDS,
+  XENESIS_CONNECTION_TOOL_VIEW_SECTION_IDS,
+  type XenesisConnectionCenterDetailFocus,
+  type XenesisConnectionItem,
+  type XenesisConnectionKind,
+  type XenesisConnectionsStatus,
+  xenesisMessengerViewSectionDetailFocus,
+  xenesisProviderViewSectionDetailFocus,
+  xenesisToolViewSectionDetailFocus,
+} from '../shared/xenesisConnections';
+import {
+  buildXenesisProviderProfileDraftApplySettings,
+  redactXenesisProviderProfileDraftApplySettings,
+} from '../shared/xenesisProviderProfileApply';
+import { createLinkedApprovalActionNeeded, createLinkedApprovalReceipt } from './agentActionRecordBridge.mjs';
 import { createAgentControlLockManager } from './agentControlLock';
+import { createAgentTurnLedgerReadbackApi } from './agentTurnLedgerService';
+import { createAppControlService } from './appControl/appControlService';
 import { createAuditLogger } from './audit/auditLogger';
 import { AutomationController } from './automation/automationController';
 import { JsonlAutomationEventLogSink } from './automation/automationEventLog';
@@ -308,6 +349,8 @@ import {
   isCapabilityApprovalItem,
   parseCapabilityApprovalCommand,
 } from './capabilityActionApproval.mjs';
+import { prepareCodexIsolatedHome, readCodexModel } from './codexIsolatedHome.mjs';
+import { createComputerUseService } from './computerUse/computerUseService';
 import { setConnectorObservabilitySink } from './connectors/connectorObservability';
 import { ExtensionHost } from './extensions/extensionHost';
 import {
@@ -334,6 +377,14 @@ import {
 } from './mcpBotSessions.mjs';
 import { normalizeBotBridgeEvent } from './mcpBridgeBot.mjs';
 import { normalizeBridgePathFields, normalizeBridgePathForPlatform } from './mcpBridgePaths.mjs';
+import { buildMcpTerminalSessionList } from './mcpTerminalSessionList';
+import { resolveExistingRepoRootForObsidianProjection } from './memoryObsidianProjectionRoot';
+import {
+  redactMemoryEvidenceForCr,
+  redactMemoryLedgerEventForCr,
+  redactMemoryProposalForCr,
+  redactMemoryRecordForCr,
+} from './memoryRedaction';
 import { createMetaBridge } from './metaBridge';
 import {
   emitMainInstantOperation,
@@ -362,12 +413,12 @@ import {
 import {
   getProviderIntegrationStatus,
   installCliIntegration,
+  installExternalMcpServer,
   installHermesPlugins,
 } from './providerIntegrationInstaller.mjs';
 import { applySafeTextFileWrite, previewSafeTextFileWrite, restoreSafeTextFileBackup } from './safeFileEdit';
 import { type TerminalImageOptions, writeTerminalImage } from './terminalImageWriter';
 import { buildTerminalWarmupLaunch, shouldTerminalWarmupRun } from './terminalWarmup.mjs';
-import { prepareCodexIsolatedHome, readCodexModel } from './codexIsolatedHome.mjs';
 import { renderXconToPng, writeTerminalXconImage, type XconRenderOptions } from './terminalXconRenderer';
 import {
   buildXamongCodeApiLaunch,
@@ -377,9 +428,19 @@ import {
   DEFAULT_XAMONG_CODE_CONFIG_DIR,
   resolveXamongCodeRuntimePath,
 } from './xamongCodeSidecar.mjs';
+import {
+  redactXenesisChannelTargetList,
+  sanitizeXenesisChannelSendError,
+  type XenesisChannelSendSensitiveValues,
+} from './xenesisChannelSafety';
 import { XenesisEmbeddedAgentService, type XenesisEmbeddedAgentServiceOptions } from './xenesisEmbeddedService';
 import { createXenesisRunEventObservation } from './xenesisRunObservability';
 import {
+  normalizeXenesisRunProviderRuntimeRequest,
+  type XenesisRunProviderRuntimeOverride,
+} from './xenesisRunProviderRuntime';
+import {
+  buildXenesisProviderRuntimeStatus as buildResolvedXenesisProviderRuntimeStatus,
   buildXenesisGatewayLaunch,
   buildXenesisGatewayRunPayload,
   buildXenesisProviderRuntimeOptions,
@@ -416,7 +477,10 @@ import {
 app.commandLine.appendSwitch('enable-features', 'AllowWgcScreenCapturer');
 
 const defaultElectronUserDataDir = app.getPath('userData');
-if (!app.isPackaged) {
+const configuredUserDataDir = String(process.env.XENESIS_DESK_USER_DATA_DIR || '').trim();
+if (configuredUserDataDir) {
+  app.setPath('userData', path.resolve(configuredUserDataDir));
+} else if (!app.isPackaged) {
   const devUserData = `${defaultElectronUserDataDir}-dev`;
   app.setPath('userData', devUserData);
 }
@@ -424,6 +488,10 @@ const xenisHomeDir = resolveXenisHomeDir();
 fs.mkdirSync(xenisHomeDir, { recursive: true });
 const automationEventLogSink = new JsonlAutomationEventLogSink(path.join(xenisHomeDir, 'automation-logs'));
 const capabilityAuditLogger = createAuditLogger(path.join(xenisHomeDir, 'audit'));
+const agentTurnLedger = createTurnLedger();
+const agentTurnLedgerReadbackApi = createAgentTurnLedgerReadbackApi(agentTurnLedger);
+const agentActionRecordStore = createAgentActionRecordStore();
+const computerUseService = createComputerUseService();
 try {
   migrateLegacyUserData({
     legacyDirs: legacyUserDataMigrationCandidates({
@@ -3445,12 +3513,15 @@ interface ResolvedShell {
   label: string;
 }
 
-function resolveWindowsShell(kind: ShellKind): ResolvedShell {
-  const systemRoot = process.env.SystemRoot || 'C:\\Windows';
+function resolveWindowsSystemCommand(fallbackCommand: string, relativeParts: string[]): string {
+  const systemRoot = String(process.env.SystemRoot || process.env.windir || '').trim();
+  return systemRoot ? path.win32.join(systemRoot, ...relativeParts) : fallbackCommand;
+}
 
+function resolveWindowsShell(kind: ShellKind): ResolvedShell {
   if (kind === 'cmd') {
     return {
-      command: process.env.ComSpec || path.join(systemRoot, 'System32', 'cmd.exe'),
+      command: process.env.ComSpec || resolveWindowsSystemCommand('cmd.exe', ['System32', 'cmd.exe']),
       args: [],
       label: 'Command Prompt',
     };
@@ -3473,7 +3544,7 @@ function resolveWindowsShell(kind: ShellKind): ResolvedShell {
   }
 
   return {
-    command: path.join(systemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe'),
+    command: resolveWindowsSystemCommand('powershell.exe', ['System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe']),
     args: ['-NoLogo', '-NoExit', '-Command', POWERSHELL_CWD_HOOK],
     label: 'Windows PowerShell',
   };
@@ -4815,6 +4886,4030 @@ function getMcpSettingsStatus(): McpSettingsStatus {
   };
 }
 
+async function getXenesisConnectionsStatus(): Promise<XenesisConnectionsStatus> {
+  const settings = loadSettings();
+  const [xenesis, activeProfile] = await Promise.all([getXenesisStatusPayload(), readActiveXenesisProfileConfig()]);
+  const status = buildXenesisConnectionsStatus({
+    aiProvider: settings.aiProvider,
+    mcp: getMcpSettingsStatus(),
+    providerIntegration: getProviderIntegrationStatusSnapshot(),
+    xenesis,
+    providerFallbacks: activeProfile?.providerFallbacks ?? [],
+    env: process.env,
+    repoRoot: app.isPackaged ? app.getAppPath() : process.cwd(),
+    guideFileExists: (guideOpenPath) => fs.existsSync(guideOpenPath),
+  });
+  return withXenesisConnectionSetupRequestReviews(status, listMcpActionInboxSnapshot());
+}
+
+function readXenesisConnectionDetailFocus(
+  body: Record<string, unknown>,
+  fallback?: XenesisConnectionCenterDetailFocus,
+): XenesisConnectionCenterDetailFocus | undefined {
+  const requested = readCapabilityString(body, ['focusConnectionDetail', 'detail', 'detailFocus']);
+  if (requested && isXenesisConnectionCenterDetailFocus(requested)) return requested;
+  return fallback;
+}
+
+const XENESIS_CONNECTION_KINDS: readonly XenesisConnectionKind[] = [
+  'onboarding',
+  'provider',
+  'local-cli',
+  'mcp',
+  'gateway',
+  'tool',
+  'messenger',
+  'guide',
+];
+
+function isXenesisConnectionKind(value: string): value is XenesisConnectionKind {
+  return (XENESIS_CONNECTION_KINDS as readonly string[]).includes(value);
+}
+
+function listXenesisConnectionItems(status: XenesisConnectionsStatus): XenesisConnectionItem[] {
+  return Object.values(status.sections).flatMap((section) => section.items);
+}
+
+function xenesisConnectionDiagnosticRunbookStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    kind: item.kind,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    readiness: item.diagnosticRunbook?.readiness,
+    scope: item.diagnosticRunbook?.scope,
+    primarySurface: item.diagnosticRunbook?.primarySurface,
+    setupSurface: item.diagnosticRunbook?.setupSurface,
+    steps: item.diagnosticRunbook?.steps ?? [],
+    readPaths: item.diagnosticRunbook?.readPaths ?? [],
+    controlPaths: item.diagnosticRunbook?.controlPaths ?? [],
+    diagnostics: item.diagnosticRunbook?.diagnostics ?? [],
+    safetyBoundaries: item.diagnosticRunbook?.safetyBoundaries ?? [],
+    diagnosticRunbook: item.diagnosticRunbook,
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisConnectionDiagnosticRunbooksStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'connection', 'connectionId', 'name']);
+  const kind = readCapabilityString(body, ['kind', 'scope']);
+  if (kind && !isXenesisConnectionKind(kind)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis connection kind: ${kind}`,
+      allowedKinds: XENESIS_CONNECTION_KINDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = listXenesisConnectionItems(status)
+    .filter((item) => item.diagnosticRunbook)
+    .filter((item) => !id || item.id === id)
+    .filter((item) => !kind || item.kind === kind)
+    .map((item) => xenesisConnectionDiagnosticRunbookStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    ...(kind ? { kind } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisConnectionDiagnosticRunbook(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'connection', 'connectionId', 'name']);
+
+  const status = await getXenesisConnectionsStatus();
+  const catalogItems = listXenesisConnectionItems(status).filter((item) => item.diagnosticRunbook);
+  const item = id ? catalogItems.find((candidate) => candidate.id === id) : undefined;
+  if (id && !item) {
+    return { ok: false, id, error: `Xenesis connection diagnostic runbook is not available: ${id}` };
+  }
+
+  const rendererArgs = buildXenesisConnectionCenterOpenArgs({
+    ensureVisible: body.ensureVisible !== false,
+    focusConnectionDetail: readXenesisConnectionDetailFocus(body, 'diagnostic-runbook'),
+    ...(item ? { focusConnectionId: item.id } : {}),
+  });
+
+  const renderer = await openMcpBuiltinPaneCapability(rendererArgs);
+  if (!item) {
+    return {
+      ok: renderer.ok !== false,
+      updatedAt: status.updatedAt,
+      total: catalogItems.length,
+      items: catalogItems.map((candidate) => xenesisConnectionDiagnosticRunbookStatusItem(candidate)),
+      renderer,
+    };
+  }
+
+  return {
+    ok: renderer.ok !== false,
+    id: item.id,
+    item: xenesisConnectionDiagnosticRunbookStatusItem(item),
+    renderer,
+  };
+}
+
+function xenesisConnectionSetupRequestStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    kind: item.kind,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    readiness: item.setupRequest?.readiness,
+    requestType: item.setupRequest?.requestType,
+    actionInboxKind: item.setupRequest?.actionInboxKind,
+    title: item.setupRequest?.title,
+    description: item.setupRequest?.description,
+    setupSurface: item.setupRequest?.setupSurface,
+    reviewSurface: item.setupRequest?.reviewSurface,
+    review: item.setupRequest?.review,
+    steps: item.setupRequest?.steps ?? [],
+    readPaths: item.setupRequest?.readPaths ?? [],
+    controlPaths: item.setupRequest?.controlPaths ?? [],
+    diagnostics: item.setupRequest?.diagnostics ?? [],
+    blockedActions: item.setupRequest?.blockedActions ?? [],
+    safetyBoundaries: item.setupRequest?.safetyBoundaries ?? [],
+    setupRequest: item.setupRequest,
+    diagnosticRunbook: item.diagnosticRunbook,
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisConnectionSetupRequestsStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'connection', 'connectionId', 'name']);
+  const kind = readCapabilityString(body, ['kind', 'scope']);
+  if (kind && !isXenesisConnectionKind(kind)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis connection kind: ${kind}`,
+      allowedKinds: XENESIS_CONNECTION_KINDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = listXenesisConnectionItems(status)
+    .filter((item) => item.setupRequest)
+    .filter((item) => !id || item.id === id)
+    .filter((item) => !kind || item.kind === kind)
+    .map((item) => xenesisConnectionSetupRequestStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    ...(kind ? { kind } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisConnectionSetupRequest(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'connection', 'connectionId', 'name']);
+
+  const status = await getXenesisConnectionsStatus();
+  const catalogItems = listXenesisConnectionItems(status).filter((item) => item.setupRequest);
+  const item = id ? catalogItems.find((candidate) => candidate.id === id) : undefined;
+  if (id && !item) {
+    return { ok: false, id, error: `Xenesis connection setup request is not available: ${id}` };
+  }
+
+  const rendererArgs = buildXenesisConnectionCenterOpenArgs({
+    ensureVisible: body.ensureVisible !== false,
+    focusConnectionDetail: readXenesisConnectionDetailFocus(body, 'setup-request'),
+    ...(item ? { focusConnectionId: item.id } : {}),
+  });
+
+  const renderer = await openMcpBuiltinPaneCapability(rendererArgs);
+  if (!item) {
+    return {
+      ok: renderer.ok !== false,
+      updatedAt: status.updatedAt,
+      total: catalogItems.length,
+      items: catalogItems.map((candidate) => xenesisConnectionSetupRequestStatusItem(candidate)),
+      renderer,
+    };
+  }
+
+  return {
+    ok: renderer.ok !== false,
+    id: item.id,
+    item: xenesisConnectionSetupRequestStatusItem(item),
+    renderer,
+  };
+}
+
+async function requestXenesisConnectionSetup(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'connection', 'connectionId', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Connection id is required.' };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = listXenesisConnectionItems(status).find((candidate) => candidate.id === id && candidate.setupRequest);
+  if (!item?.setupRequest) {
+    return { ok: false, id, error: `Xenesis connection setup request is not available: ${id}` };
+  }
+
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+  const requester = readCapabilityString(body, ['requester', 'user', 'userName']) || 'Xenesis Desk';
+  const description = [
+    item.setupRequest.description,
+    '',
+    'Steps:',
+    ...item.setupRequest.steps.map((step) => `- ${step}`),
+    '',
+    'Blocked actions:',
+    ...item.setupRequest.blockedActions.map((action) => `- ${action}`),
+    note ? '' : undefined,
+    note ? `Note: ${note}` : undefined,
+  ]
+    .filter((line): line is string => typeof line === 'string')
+    .join('\n');
+
+  const actionInboxItem = recordMcpActionInboxRequest({
+    kind: item.setupRequest.actionInboxKind,
+    title: item.setupRequest.title,
+    command: `Review setup request for ${item.id}`,
+    description,
+    source: 'Xenesis Connection Center',
+    sessionId: 'xenesis-connection-setup',
+    approvalSessionKey: buildXenesisConnectionSetupApprovalSessionKey(item.id),
+    requester,
+    risk: item.setupRequest.readiness,
+    approveText: `Approve setup request for ${item.label}`,
+    rejectText: `Reject setup request for ${item.label}`,
+  });
+
+  const enrichedStatus = withXenesisConnectionSetupRequestReviews(status, [actionInboxItem]);
+  const enrichedItem =
+    listXenesisConnectionItems(enrichedStatus).find(
+      (candidate) => candidate.id === item.id && candidate.setupRequest,
+    ) ?? item;
+
+  return {
+    ok: true,
+    id: item.id,
+    item: xenesisConnectionSetupRequestStatusItem(enrichedItem),
+    actionInboxItem,
+  };
+}
+
+function xenesisConnectionSetupApplyDelegate(
+  item: XenesisConnectionItem,
+): { path: string; apply: (args?: unknown) => Promise<Record<string, unknown>> } | null {
+  if (!item.setupRequest?.controlPaths.includes('xd.xenesis.connections.setupRequests.apply')) return null;
+
+  if (
+    item.mcpInstallDraft?.draftStatus === 'ready' &&
+    item.mcpInstallDraft.controlPaths.includes('xd.xenesis.tools.mcpInstallDrafts.apply')
+  ) {
+    return {
+      path: 'xd.xenesis.tools.mcpInstallDrafts.apply',
+      apply: applyXenesisToolMcpInstallDraft,
+    };
+  }
+
+  if (item.channelProfileDraft?.controlPaths.includes('xd.xenesis.channels.profileDrafts.apply')) {
+    return {
+      path: 'xd.xenesis.channels.profileDrafts.apply',
+      apply: applyXenesisChannelProfileDraft,
+    };
+  }
+
+  if (item.providerProfileDraft?.controlPaths.includes('xd.xenesis.providers.profileDrafts.apply')) {
+    return {
+      path: 'xd.xenesis.providers.profileDrafts.apply',
+      apply: applyXenesisProviderProfileDraft,
+    };
+  }
+
+  return null;
+}
+
+async function applyXenesisConnectionSetupRequest(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'connection', 'connectionId', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Connection id is required.' };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = listXenesisConnectionItems(status).find((candidate) => candidate.id === id && candidate.setupRequest);
+  if (!item?.setupRequest) {
+    return { ok: false, id, error: `Xenesis connection setup request is not available: ${id}` };
+  }
+
+  const delegate = xenesisConnectionSetupApplyDelegate(item);
+  if (!delegate) {
+    return {
+      ok: false,
+      id,
+      readiness: item.setupRequest.readiness,
+      diagnostics: item.setupRequest.diagnostics,
+      error: `Xenesis connection setup request is not ready for apply: ${id}`,
+      item: xenesisConnectionSetupRequestStatusItem(item),
+    };
+  }
+
+  const result = await delegate.apply(body);
+  const ok = !(result && typeof result === 'object' && 'ok' in result && result.ok === false);
+  const nextStatus = await getXenesisConnectionsStatus();
+  const nextItem =
+    listXenesisConnectionItems(nextStatus).find((candidate) => candidate.id === item.id && candidate.setupRequest) ??
+    item;
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+
+  return {
+    ok,
+    id: item.id,
+    delegatedPath: delegate.path,
+    item: xenesisConnectionSetupRequestStatusItem(nextItem),
+    result,
+    ...(note ? { note } : {}),
+  };
+}
+
+const XENESIS_ONBOARDING_STEP_IDS = XENESIS_CONNECTION_ONBOARDING_STEP_IDS;
+
+function isXenesisOnboardingStepId(value: string): value is (typeof XENESIS_ONBOARDING_STEP_IDS)[number] {
+  return (XENESIS_ONBOARDING_STEP_IDS as readonly string[]).includes(value);
+}
+
+function xenesisOnboardingStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    setupSteps: item.setupSteps ?? [],
+    sourceDocs: item.sourceDocs ?? [],
+    settingsAction: item.settingsAction,
+    settingsTarget: item.settingsTarget,
+    crActions: item.crActions ?? [],
+    phase: item.onboardingPlan?.phase,
+    primarySurface: item.onboardingPlan?.primarySurface,
+    setupSurface: item.onboardingPlan?.setupSurface,
+    statusReadPaths: item.onboardingPlan?.statusReadPaths ?? [],
+    controlPaths: item.onboardingPlan?.controlPaths ?? [],
+    validationChecks: item.onboardingPlan?.validationChecks ?? [],
+    diagnostics: item.onboardingPlan?.diagnostics ?? [],
+    safetyBoundaries: item.onboardingPlan?.safetyBoundaries ?? [],
+    onboardingPlan: item.onboardingPlan,
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisOnboardingStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'step', 'name']);
+  if (id && !isXenesisOnboardingStepId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis onboarding step: ${id}`,
+      allowedSteps: XENESIS_ONBOARDING_STEP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.onboarding.items
+    .filter((item) => item.onboardingPlan)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisOnboardingStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisOnboardingStep(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'step', 'name']);
+  if (id && !isXenesisOnboardingStepId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis onboarding step: ${id}`,
+      allowedSteps: XENESIS_ONBOARDING_STEP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const catalogItems = status.sections.onboarding.items.filter((item) => item.onboardingPlan);
+  const item = id ? catalogItems.find((candidate) => candidate.id === id) : undefined;
+  if (id && !item) {
+    return { ok: false, id, error: `Xenesis onboarding step is not available: ${id}` };
+  }
+
+  const rendererArgs = buildXenesisConnectionCenterOpenArgs({
+    ensureVisible: body.ensureVisible !== false,
+    focusConnectionDetail: readXenesisConnectionDetailFocus(body, 'onboarding-plan'),
+    ...(item ? { focusConnectionId: item.id } : {}),
+  });
+
+  const renderer = await openMcpBuiltinPaneCapability(rendererArgs);
+  if (!item) {
+    return {
+      ok: renderer.ok !== false,
+      updatedAt: status.updatedAt,
+      total: catalogItems.length,
+      items: catalogItems.map((candidate) => xenesisOnboardingStatusItem(candidate)),
+      renderer,
+    };
+  }
+
+  return {
+    ok: renderer.ok !== false,
+    id: item.id,
+    item: xenesisOnboardingStatusItem(item),
+    renderer,
+  };
+}
+
+function xenesisChannelRoutingStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    summary: item.summary,
+    routeBinding: item.channelTemplate?.routing?.routeBinding,
+    allowlistFields: item.channelTemplate?.routing?.allowlistFields ?? [],
+    pairing: item.channelTemplate?.routing?.pairing,
+    defaultAgent: item.channelTemplate?.routing?.defaultAgent,
+    sessionScope: item.channelTemplate?.routing?.sessionScope,
+    diagnostics: item.channelTemplate?.routing?.diagnostics ?? [],
+    deliveryFeatures: item.channelTemplate?.routing?.deliveryFeatures ?? [],
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function openXenesisMessengerCatalogSurface<TContext = undefined>(
+  args: unknown,
+  options: {
+    selectorKey: 'channel' | 'id';
+    selectorKeys: string[];
+    allowedKey: 'allowedChannels' | 'allowedMessengers';
+    unsupportedMessage: (selector: string) => string;
+    itemPredicate: (item: XenesisConnectionItem) => boolean;
+    toStatusItem: (item: XenesisConnectionItem, context: TContext) => Record<string, unknown>;
+    unavailableMessage: (selector: string) => string;
+    focusConnectionDetail: XenesisConnectionCenterDetailFocus;
+    prepareContext?: () => Promise<TContext>;
+  },
+): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const selector = readCapabilityString(body, options.selectorKeys);
+  if (selector && !isXenesisMessengerViewId(selector)) {
+    return {
+      ok: false,
+      error: options.unsupportedMessage(selector),
+      [options.allowedKey]: XENESIS_MESSENGER_VIEW_IDS,
+    };
+  }
+
+  const [status, context] = await Promise.all([
+    getXenesisConnectionsStatus(),
+    options.prepareContext ? options.prepareContext() : Promise.resolve(undefined as TContext),
+  ]);
+  const catalogItems = status.sections.messengers.items.filter(options.itemPredicate);
+  const item = selector ? catalogItems.find((candidate) => candidate.id === selector) : undefined;
+  if (selector && !item) {
+    return { ok: false, [options.selectorKey]: selector, error: options.unavailableMessage(selector) };
+  }
+
+  const rendererArgs = buildXenesisConnectionCenterOpenArgs({
+    ensureVisible: body.ensureVisible !== false,
+    focusConnectionDetail: readXenesisConnectionDetailFocus(body, options.focusConnectionDetail),
+    ...(item ? { focusConnectionId: item.id } : {}),
+  });
+
+  const renderer = await openMcpBuiltinPaneCapability(rendererArgs);
+  if (selector && item) {
+    const selectorPayload = options.selectorKey === 'channel' ? { channel: item.id, id: item.id } : { id: item.id };
+    return {
+      ok: renderer.ok !== false,
+      ...selectorPayload,
+      item: options.toStatusItem(item, context),
+      renderer,
+    };
+  }
+
+  return {
+    ok: renderer.ok !== false,
+    updatedAt: status.updatedAt,
+    total: catalogItems.length,
+    items: catalogItems.map((candidate) => options.toStatusItem(candidate, context)),
+    renderer,
+  };
+}
+
+async function getXenesisChannelRoutingStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const channel = readCapabilityString(body, ['channel', 'id', 'name']);
+  if (channel && !isXenesisMessengerViewId(channel)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis channel: ${channel}`,
+      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.messengers.items
+    .filter((item) => item.channelTemplate?.routing)
+    .filter((item) => !channel || item.id === channel)
+    .map((item: XenesisConnectionItem) => xenesisChannelRoutingStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(channel ? { channel } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisChannelRouting(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisMessengerCatalogSurface(args, {
+    selectorKey: 'channel',
+    selectorKeys: ['channel', 'id', 'name'],
+    allowedKey: 'allowedChannels',
+    unsupportedMessage: (channel) => `Unsupported Xenesis channel: ${channel}`,
+    itemPredicate: (item) => Boolean(item.channelTemplate?.routing),
+    toStatusItem: (item) => xenesisChannelRoutingStatusItem(item),
+    unavailableMessage: (channel) => `Xenesis channel routing is not available: ${channel}`,
+    focusConnectionDetail: 'channel-routing',
+  });
+}
+
+function xenesisChannelSafetyStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    summary: item.summary,
+    safetyControls: item.channelTemplate?.safetyControls ?? [],
+    accessModel: item.channelTemplate?.safety?.accessModel,
+    accessGroupFields: item.channelTemplate?.safety?.accessGroupFields ?? [],
+    inboundBoundary: item.channelTemplate?.safety?.inboundBoundary,
+    outboundBoundary: item.channelTemplate?.safety?.outboundBoundary,
+    loopProtection: item.channelTemplate?.safety?.loopProtection ?? [],
+    approvalGuardrails: item.channelTemplate?.safety?.approvalGuardrails ?? [],
+    troubleshooting: item.channelTemplate?.safety?.troubleshooting ?? [],
+    readPaths: item.channelTemplate?.safety?.readPaths ?? [],
+    controlPaths: item.channelTemplate?.safety?.controlPaths ?? [],
+    safetyBoundaries: item.channelTemplate?.safety?.safetyBoundaries ?? [],
+    safety: item.channelTemplate?.safety,
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisChannelSafetyStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const channel = readCapabilityString(body, ['channel', 'id', 'name']);
+  if (channel && !isXenesisMessengerViewId(channel)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis channel: ${channel}`,
+      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.messengers.items
+    .filter((item) => item.channelTemplate?.safety)
+    .filter((item) => !channel || item.id === channel)
+    .map((item: XenesisConnectionItem) => xenesisChannelSafetyStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(channel ? { channel } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisChannelSafety(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisMessengerCatalogSurface(args, {
+    selectorKey: 'channel',
+    selectorKeys: ['channel', 'id', 'name'],
+    allowedKey: 'allowedChannels',
+    unsupportedMessage: (channel) => `Unsupported Xenesis channel: ${channel}`,
+    itemPredicate: (item) => Boolean(item.channelTemplate?.safety),
+    toStatusItem: (item) => xenesisChannelSafetyStatusItem(item),
+    unavailableMessage: (channel) => `Xenesis channel safety is not available: ${channel}`,
+    focusConnectionDetail: 'channel-safety',
+  });
+}
+
+type XenesisChannelAccessGroupValueState = 'configured' | 'empty' | 'unknown';
+
+function readChannelAccessGroupValueState(
+  settings: XenesisStatus['profile']['channelSettings'] | undefined,
+  channel: string,
+  field: string,
+): XenesisChannelAccessGroupValueState {
+  const settingsByChannel = settings as Record<string, Record<string, unknown> | undefined> | undefined;
+  const channelSettings = settingsByChannel?.[channel];
+  const value = channelSettings?.[field];
+  if (typeof value !== 'string') return 'unknown';
+  return value.trim() ? 'configured' : 'empty';
+}
+
+function xenesisChannelAccessGroupsStatusItem(
+  item: XenesisConnectionItem,
+  profileSettings: XenesisStatus['profile']['channelSettings'] | undefined,
+  runtime: { runtimeStatus?: unknown; safeToDeliver?: unknown } | undefined,
+): Record<string, unknown> {
+  const channelName = item.id as XenesisProfileChannelName;
+  const template = item.channelTemplate?.accessGroups;
+  const bindings = (template?.bindings ?? []).map((binding) => {
+    const valueState = readChannelAccessGroupValueState(profileSettings, channelName, binding.field);
+    return {
+      ...binding,
+      valueState,
+      failClosed: binding.required && valueState !== 'configured',
+    };
+  });
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    summary: item.summary,
+    model: template?.model,
+    groupScope: template?.groupScope,
+    failClosed: bindings.some((binding) => binding.failClosed),
+    bindings,
+    diagnostics: template?.diagnostics ?? [],
+    readPaths: template?.readPaths ?? [],
+    controlPaths: template?.controlPaths ?? [],
+    safetyBoundaries: template?.safetyBoundaries ?? [],
+    runtimeStatus: runtime?.runtimeStatus,
+    safeToDeliver: runtime?.safeToDeliver,
+    runtimeWarnings: item.warnings ?? [],
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+  };
+}
+
+async function getXenesisChannelAccessGroupsStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const channel = readCapabilityString(body, ['channel', 'id', 'name']);
+  if (channel && !isXenesisMessengerViewId(channel)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis channel: ${channel}`,
+      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
+    };
+  }
+
+  const [status, xenesis] = await Promise.all([getXenesisConnectionsStatus(), getXenesisStatusPayload()]);
+  const profileSettings = xenesis.profile.channelSettings;
+  const items = status.sections.messengers.items
+    .filter((item) => item.channelTemplate?.accessGroups)
+    .filter((item) => !channel || item.id === channel)
+    .map((item: XenesisConnectionItem) => {
+      const runtime = xenesis.gateway.channels?.[item.id as XenesisProfileChannelName];
+      return xenesisChannelAccessGroupsStatusItem(item, profileSettings, runtime);
+    });
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(channel ? { channel } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisChannelAccessGroups(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisMessengerCatalogSurface(args, {
+    selectorKey: 'channel',
+    selectorKeys: ['channel', 'id', 'name'],
+    allowedKey: 'allowedChannels',
+    unsupportedMessage: (channel) => `Unsupported Xenesis channel: ${channel}`,
+    itemPredicate: (item) => Boolean(item.channelTemplate?.accessGroups),
+    prepareContext: async () => getXenesisStatusPayload(),
+    toStatusItem: (item, xenesis) => {
+      const channelName = item.id as XenesisProfileChannelName;
+      return xenesisChannelAccessGroupsStatusItem(
+        item,
+        xenesis.profile.channelSettings,
+        xenesis.gateway.channels?.[channelName],
+      );
+    },
+    unavailableMessage: (channel) => `Xenesis channel access groups are not available: ${channel}`,
+    focusConnectionDetail: 'channel-access-groups',
+  });
+}
+
+const XENESIS_GUIDE_IDS = XENESIS_CONNECTION_GUIDE_IDS;
+
+function isXenesisGuideId(value: string): value is (typeof XENESIS_GUIDE_IDS)[number] {
+  return (XENESIS_GUIDE_IDS as readonly string[]).includes(value);
+}
+
+function xenesisGuideStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    guidePath: item.guidePath,
+    guideOpenPath: item.guideOpenPath,
+    guideFile: item.guideFile,
+    sourceDocs: item.sourceDocs ?? [],
+    guideType: item.guideCatalog?.guideType,
+    audience: item.guideCatalog?.audience,
+    primarySurface: item.guideCatalog?.primarySurface,
+    coveredSurfaces: item.guideCatalog?.coveredSurfaces ?? [],
+    prerequisites: item.guideCatalog?.prerequisites ?? [],
+    validationChecks: item.guideCatalog?.validationChecks ?? [],
+    readPaths: item.guideCatalog?.readPaths ?? [],
+    controlPaths: item.guideCatalog?.controlPaths ?? [],
+    userStoryTemplates: item.guideCatalog?.userStoryTemplates ?? [],
+    safetyBoundaries: item.guideCatalog?.safetyBoundaries ?? [],
+    guideCatalog: item.guideCatalog,
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisGuidesStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'guide', 'name']);
+  if (id && !isXenesisGuideId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis guide: ${id}`,
+      allowedGuides: XENESIS_GUIDE_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.guides.items
+    .filter((item) => item.guideCatalog)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisGuideStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisGuide(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'guide', 'name']);
+  if (id && !isXenesisGuideId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis guide: ${id}`,
+      allowedGuides: XENESIS_GUIDE_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const catalogItems = status.sections.guides.items.filter((item) => item.guideCatalog);
+  const item = id ? catalogItems.find((candidate) => candidate.id === id) : undefined;
+  if (id && !item) {
+    return { ok: false, id, error: `Xenesis guide is not available: ${id}` };
+  }
+
+  const rendererArgs = buildXenesisConnectionCenterOpenArgs({
+    ensureVisible: body.ensureVisible !== false,
+    focusConnectionDetail: readXenesisConnectionDetailFocus(body, 'guide-catalog'),
+    ...(item ? { focusConnectionId: item.id } : {}),
+  });
+
+  const renderer = await openMcpBuiltinPaneCapability(rendererArgs);
+  if (!item) {
+    return {
+      ok: renderer.ok !== false,
+      updatedAt: status.updatedAt,
+      total: catalogItems.length,
+      items: catalogItems.map((candidate) => xenesisGuideStatusItem(candidate)),
+      renderer,
+    };
+  }
+
+  const guideFilePath = item.guideOpenPath || item.guidePath;
+  const file =
+    body.openFile === true && guideFilePath
+      ? openMcpFileCapability({ filePath: guideFilePath, placement: 'tab' })
+      : undefined;
+
+  return {
+    ok: renderer.ok !== false && (!file || file.ok !== false),
+    id,
+    item: xenesisGuideStatusItem(item),
+    file,
+    renderer,
+  };
+}
+
+const XENESIS_MESSENGER_VIEW_IDS = XENESIS_CONNECTION_MESSENGER_IDS;
+
+function isXenesisMessengerViewId(value: string): value is (typeof XENESIS_MESSENGER_VIEW_IDS)[number] {
+  return (XENESIS_MESSENGER_VIEW_IDS as readonly string[]).includes(value);
+}
+
+function xenesisChannelPairingStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    model: item.channelTemplate?.pairing?.model,
+    runtimeSupport: item.channelTemplate?.pairing?.runtimeSupport,
+    accountScope: item.channelTemplate?.pairing?.accountScope,
+    credentialRefs: item.channelTemplate?.pairing?.credentialRefs ?? [],
+    pairingState: item.channelTemplate?.pairing?.pairingState,
+    setupSurface: item.channelTemplate?.pairing?.setupSurface,
+    validationChecks: item.channelTemplate?.pairing?.validationChecks ?? [],
+    readPaths: item.channelTemplate?.pairing?.readPaths ?? [],
+    controlPaths: item.channelTemplate?.pairing?.controlPaths ?? [],
+    diagnostics: item.channelTemplate?.pairing?.diagnostics ?? [],
+    safetyBoundaries: item.channelTemplate?.pairing?.safetyBoundaries ?? [],
+    channelTemplate: item.channelTemplate,
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisChannelPairingStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['channel', 'id', 'messenger', 'name']);
+  if (id && !isXenesisMessengerViewId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis messenger channel: ${id}`,
+      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.messengers.items
+    .filter((item) => item.channelTemplate?.pairing)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisChannelPairingStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { channel: id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisChannelPairing(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisMessengerCatalogSurface(args, {
+    selectorKey: 'channel',
+    selectorKeys: ['channel', 'id', 'messenger', 'name'],
+    allowedKey: 'allowedChannels',
+    unsupportedMessage: (id) => `Unsupported Xenesis messenger channel: ${id}`,
+    itemPredicate: (item) => Boolean(item.channelTemplate?.pairing),
+    toStatusItem: (item) => xenesisChannelPairingStatusItem(item),
+    unavailableMessage: (id) => `Xenesis channel pairing is not available: ${id}`,
+    focusConnectionDetail: 'channel-pairing',
+  });
+}
+
+function xenesisChannelRuntimeStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    runtimeStatus: item.channelRuntime?.runtimeStatus,
+    actionInboxKind: item.channelRuntime?.actionInboxKind,
+    channel: item.channelRuntime?.channel,
+    displayName: item.channelRuntime?.displayName,
+    adapter: item.channelRuntime?.adapter,
+    runtimeSupport: item.channelRuntime?.runtimeSupport,
+    primarySurface: item.channelRuntime?.primarySurface,
+    setupSurface: item.channelRuntime?.setupSurface,
+    reviewSurface: item.channelRuntime?.reviewSurface,
+    gatewayRequirement: item.channelRuntime?.gatewayRequirement,
+    readinessChecks: item.channelRuntime?.readinessChecks ?? [],
+    readPaths: item.channelRuntime?.readPaths ?? [],
+    controlPaths: item.channelRuntime?.controlPaths ?? [],
+    diagnostics: item.channelRuntime?.diagnostics ?? [],
+    blockedActions: item.channelRuntime?.blockedActions ?? [],
+    safetyBoundaries: item.channelRuntime?.safetyBoundaries ?? [],
+    channelRuntime: item.channelRuntime,
+    channelTemplate: item.channelTemplate,
+    channelProfileDraft: item.channelProfileDraft,
+    messengerView: item.messengerView,
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisChannelRuntimeStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const channel = readCapabilityString(body, ['channel', 'id', 'messenger', 'name']);
+  if (channel && !isXenesisMessengerViewId(channel)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis messenger channel: ${channel}`,
+      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.messengers.items
+    .filter((item) => item.channelRuntime)
+    .filter((item) => !channel || item.id === channel)
+    .map((item) => xenesisChannelRuntimeStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(channel ? { channel } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisChannelRuntime(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisMessengerCatalogSurface(args, {
+    selectorKey: 'channel',
+    selectorKeys: ['channel', 'id', 'messenger', 'name'],
+    allowedKey: 'allowedChannels',
+    unsupportedMessage: (channel) => `Unsupported Xenesis messenger channel: ${channel}`,
+    itemPredicate: (item) => Boolean(item.channelRuntime),
+    toStatusItem: (item) => xenesisChannelRuntimeStatusItem(item),
+    unavailableMessage: (channel) => `Xenesis channel runtime readiness is not available: ${channel}`,
+    focusConnectionDetail: 'channel-runtime',
+  });
+}
+
+async function requestXenesisChannelRuntime(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const channel = readCapabilityString(body, ['channel', 'id', 'messenger', 'name']);
+  if (!channel) {
+    return { ok: false, error: 'Channel is required.' };
+  }
+  if (!isXenesisMessengerViewId(channel)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis messenger channel: ${channel}`,
+      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.messengers.items.find(
+    (candidate) => candidate.id === channel && candidate.channelRuntime,
+  );
+  if (!item?.channelRuntime) {
+    return { ok: false, channel, error: `Xenesis channel runtime readiness is not available: ${channel}` };
+  }
+
+  const runtime = item.channelRuntime;
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+  const requester = readCapabilityString(body, ['requester', 'user', 'userName']) || 'Xenesis Desk';
+  const description = [
+    `Review ${runtime.runtimeStatus} channel runtime readiness for ${item.label}.`,
+    `Channel: ${runtime.channel}`,
+    `Runtime support: ${runtime.runtimeSupport}`,
+    `Adapter: ${runtime.adapter}`,
+    `Gateway requirement: ${runtime.gatewayRequirement}`,
+    `Setup surface: ${runtime.setupSurface}`,
+    '',
+    'Readiness checks:',
+    ...runtime.readinessChecks.map((check) => `- ${check}`),
+    '',
+    'Read paths:',
+    ...runtime.readPaths.map((path) => `- ${path}`),
+    '',
+    'Control paths:',
+    ...runtime.controlPaths.map((path) => `- ${path}`),
+    '',
+    'Diagnostics:',
+    ...runtime.diagnostics.map((diagnostic) => `- ${diagnostic}`),
+    '',
+    'Blocked actions:',
+    ...runtime.blockedActions.map((action) => `- ${action}`),
+    '',
+    'Safety boundaries:',
+    ...runtime.safetyBoundaries.map((boundary) => `- ${boundary}`),
+    note ? '' : undefined,
+    note ? `Note: ${note}` : undefined,
+  ]
+    .filter((line): line is string => typeof line === 'string')
+    .join('\n');
+
+  const actionInboxItem = recordMcpActionInboxRequest({
+    kind: runtime.actionInboxKind,
+    title: `Review ${item.label} channel runtime readiness`,
+    command: `Review channel runtime readiness for ${item.id}`,
+    description,
+    source: 'Xenesis Connection Center',
+    sessionId: 'xenesis-channel-runtime-readiness',
+    approvalSessionKey: `xenesis-channel-runtime-readiness:${item.id}`,
+    requester,
+    risk: runtime.runtimeStatus,
+    approveText: `Approve channel runtime readiness review for ${item.label}`,
+    rejectText: `Reject channel runtime readiness review for ${item.label}`,
+  });
+
+  return {
+    ok: true,
+    channel: item.id,
+    item: xenesisChannelRuntimeStatusItem(item),
+    actionInboxItem,
+  };
+}
+
+function xenesisChannelUserStoryStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    workflowType: item.channelTemplate?.userStory?.workflowType,
+    runtimeSupport: item.channelTemplate?.userStory?.runtimeSupport,
+    primarySurface: item.channelTemplate?.userStory?.primarySurface,
+    setupSurface: item.channelTemplate?.userStory?.setupSurface,
+    userStories: item.channelTemplate?.userStory?.userStories ?? [],
+    prerequisiteSetup: item.channelTemplate?.userStory?.prerequisiteSetup ?? [],
+    readPaths: item.channelTemplate?.userStory?.readPaths ?? [],
+    controlPaths: item.channelTemplate?.userStory?.controlPaths ?? [],
+    diagnostics: item.channelTemplate?.userStory?.diagnostics ?? [],
+    safetyBoundaries: item.channelTemplate?.userStory?.safetyBoundaries ?? [],
+    channelTemplate: item.channelTemplate,
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisChannelUserStoriesStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['channel', 'id', 'messenger', 'name']);
+  if (id && !isXenesisMessengerViewId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis messenger channel: ${id}`,
+      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.messengers.items
+    .filter((item) => item.channelTemplate?.userStory)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisChannelUserStoryStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { channel: id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisChannelUserStory(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisMessengerCatalogSurface(args, {
+    selectorKey: 'id',
+    selectorKeys: ['id', 'messenger', 'channel', 'name'],
+    allowedKey: 'allowedChannels',
+    unsupportedMessage: (id) => `Unsupported Xenesis messenger channel: ${id}`,
+    itemPredicate: (item) => Boolean(item.channelTemplate?.userStory),
+    toStatusItem: (item) => xenesisChannelUserStoryStatusItem(item),
+    unavailableMessage: (id) => `Xenesis channel user story is not available: ${id}`,
+    focusConnectionDetail: 'channel-user-story',
+  });
+}
+
+function xenesisChannelProfileDraftStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    draftStatus: item.channelProfileDraft?.draftStatus,
+    actionInboxKind: item.channelProfileDraft?.actionInboxKind,
+    channel: item.channelProfileDraft?.channel,
+    displayName: item.channelProfileDraft?.displayName,
+    description: item.channelProfileDraft?.description,
+    setupSurface: item.channelProfileDraft?.setupSurface,
+    reviewSurface: item.channelProfileDraft?.reviewSurface,
+    profileFields: item.channelProfileDraft?.profileFields ?? [],
+    missingRequiredFields: item.channelProfileDraft?.missingRequiredFields ?? [],
+    guardrails: item.channelProfileDraft?.guardrails,
+    readPaths: item.channelProfileDraft?.readPaths ?? [],
+    controlPaths: item.channelProfileDraft?.controlPaths ?? [],
+    diagnostics: item.channelProfileDraft?.diagnostics ?? [],
+    blockedActions: item.channelProfileDraft?.blockedActions ?? [],
+    safetyBoundaries: item.channelProfileDraft?.safetyBoundaries ?? [],
+    channelProfileDraft: item.channelProfileDraft,
+    channelTemplate: item.channelTemplate,
+    messengerView: item.messengerView,
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisChannelProfileDraftsStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const channel = readCapabilityString(body, ['channel', 'id', 'name']);
+  if (channel && !isXenesisMessengerViewId(channel)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis channel: ${channel}`,
+      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.messengers.items
+    .filter((item) => item.channelProfileDraft)
+    .filter((item) => !channel || item.id === channel)
+    .map((item) => xenesisChannelProfileDraftStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(channel ? { channel } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisChannelProfileDraft(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisMessengerCatalogSurface(args, {
+    selectorKey: 'channel',
+    selectorKeys: ['channel', 'id', 'name'],
+    allowedKey: 'allowedChannels',
+    unsupportedMessage: (channel) => `Unsupported Xenesis channel: ${channel}`,
+    itemPredicate: (item) => Boolean(item.channelProfileDraft),
+    toStatusItem: (item) => xenesisChannelProfileDraftStatusItem(item),
+    unavailableMessage: (channel) => `Xenesis channel profile draft is not available: ${channel}`,
+    focusConnectionDetail: 'channel-profile-draft',
+  });
+}
+
+async function requestXenesisChannelProfileDraft(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const channel = readCapabilityString(body, ['channel', 'id', 'name']);
+  if (!channel) {
+    return { ok: false, error: 'Channel is required.' };
+  }
+  if (!isXenesisMessengerViewId(channel)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis channel: ${channel}`,
+      allowedChannels: XENESIS_MESSENGER_VIEW_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.messengers.items.find(
+    (candidate) => candidate.id === channel && candidate.channelProfileDraft,
+  );
+  if (!item?.channelProfileDraft) {
+    return { ok: false, channel, error: `Xenesis channel profile draft is not available: ${channel}` };
+  }
+
+  const draft = item.channelProfileDraft;
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+  const requester = readCapabilityString(body, ['requester', 'user', 'userName']) || 'Xenesis Desk';
+  const fieldLines = draft.profileFields.map(
+    (field) => `- ${field.field}: ${field.valueState}${field.required ? ' (required)' : ''}`,
+  );
+  const description = [
+    `Review the ${draft.draftStatus} channel profile draft for ${item.label}.`,
+    `Channel: ${draft.channel}`,
+    `Setup surface: ${draft.setupSurface}`,
+    `Missing required fields: ${draft.missingRequiredFields.join(', ') || 'none'}`,
+    `Guardrails: ${draft.guardrails.approvalMode}, maxTurns ${draft.guardrails.maxTurns}, maxTokens ${draft.guardrails.maxTokens}`,
+    '',
+    'Profile field state:',
+    ...fieldLines,
+    '',
+    'Read paths:',
+    ...draft.readPaths.map((path) => `- ${path}`),
+    '',
+    'Control paths:',
+    ...draft.controlPaths.map((path) => `- ${path}`),
+    '',
+    'Diagnostics:',
+    ...draft.diagnostics.map((diagnostic) => `- ${diagnostic}`),
+    '',
+    'Blocked actions:',
+    ...draft.blockedActions.map((action) => `- ${action}`),
+    note ? '' : undefined,
+    note ? `Note: ${note}` : undefined,
+  ]
+    .filter((line): line is string => typeof line === 'string')
+    .join('\n');
+
+  const actionInboxItem = recordMcpActionInboxRequest({
+    kind: draft.actionInboxKind,
+    title: `Review ${item.label} channel profile draft`,
+    command: `Review channel profile draft for ${item.id}`,
+    description,
+    source: 'Xenesis Connection Center',
+    sessionId: 'xenesis-channel-profile-draft',
+    approvalSessionKey: `xenesis-channel-profile-draft:${item.id}`,
+    requester,
+    risk: draft.draftStatus,
+    approveText: `Approve channel profile draft for ${item.label}`,
+    rejectText: `Reject channel profile draft for ${item.label}`,
+  });
+
+  return {
+    ok: true,
+    channel: item.id,
+    item: xenesisChannelProfileDraftStatusItem(item),
+    actionInboxItem,
+  };
+}
+
+async function applyXenesisChannelProfileDraft(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const channel = readCapabilityString(body, ['channel', 'id', 'name']);
+  if (!channel) {
+    return { ok: false, error: 'Channel is required.' };
+  }
+  if (!isXenesisChannelProfileDraftApplyChannel(channel)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis channel profile draft apply channel: ${channel}`,
+      allowedChannels: XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.messengers.items.find(
+    (candidate) => candidate.id === channel && candidate.channelProfileDraft,
+  );
+  if (!item?.channelProfileDraft) {
+    return { ok: false, channel, error: `Xenesis channel profile draft is not available: ${channel}` };
+  }
+  if (!item.channelProfileDraft.controlPaths.includes('xd.xenesis.channels.profileDrafts.apply')) {
+    return {
+      ok: false,
+      channel,
+      draftStatus: item.channelProfileDraft.draftStatus,
+      error: `Xenesis channel profile draft cannot be applied: ${channel}`,
+      item: xenesisChannelProfileDraftStatusItem(item),
+    };
+  }
+
+  const profileName = readCapabilityString(body, ['profile', 'profileName']);
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+  const profileState = await getXenesisProfileState();
+  const profiles = await readProfiles(getXenesisStateHome());
+  const targetProfileName = profileName || profileState.active;
+  const targetProfile = profiles.profiles[targetProfileName];
+  if (!targetProfile) {
+    return {
+      ok: false,
+      channel,
+      profile: targetProfileName,
+      error: `Xenesis profile not found: ${targetProfileName}`,
+      item: xenesisChannelProfileDraftStatusItem(item),
+    };
+  }
+  const applyDraft = buildXenesisChannelProfileDraftApplyChannels({
+    channel,
+    currentChannels: summarizeXenesisProfileChannelSettings(targetProfile),
+    args: body,
+  });
+
+  if (applyDraft.missingRequiredFields.length > 0) {
+    return {
+      ok: false,
+      channel,
+      profile: targetProfileName,
+      missingRequiredFields: applyDraft.missingRequiredFields,
+      error: `Channel profile draft is missing required fields: ${applyDraft.missingRequiredFields.join(', ')}`,
+      item: xenesisChannelProfileDraftStatusItem(item),
+    };
+  }
+
+  const nextState = await updateXenesisProfileChannels({
+    profile: targetProfileName,
+    channels: applyDraft.channels,
+  });
+  const nextStatus = await getXenesisConnectionsStatus();
+  const nextItem =
+    nextStatus.sections.messengers.items.find(
+      (candidate) => candidate.id === channel && candidate.channelProfileDraft,
+    ) ?? item;
+
+  return {
+    ok: true,
+    channel,
+    profile: nextState.active,
+    item: xenesisChannelProfileDraftStatusItem(nextItem),
+    state: {
+      active: nextState.active,
+      channelSettings: nextState.channelSettings,
+    },
+    ...(note ? { note } : {}),
+  };
+}
+
+function xenesisMessengerViewStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    viewType: item.messengerView?.viewType,
+    runtimeSupport: item.messengerView?.runtimeSupport,
+    primarySurface: item.messengerView?.primarySurface,
+    setupSurface: item.messengerView?.setupSurface,
+    openPath: item.messengerView?.openPath,
+    openArgs: item.messengerView?.openArgs,
+    connectionCardId: item.messengerView?.connectionCardId,
+    internalViews: item.messengerView?.internalViews ?? [],
+    viewSections: item.messengerView?.viewSections ?? [],
+    readPaths: item.messengerView?.readPaths ?? [],
+    controlPaths: item.messengerView?.controlPaths ?? [],
+    diagnostics: item.messengerView?.diagnostics ?? [],
+    safetyBoundaries: item.messengerView?.safetyBoundaries ?? [],
+    channelTemplate: item.channelTemplate,
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisMessengerViewsStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'messenger', 'channel', 'name']);
+  if (id && !isXenesisMessengerViewId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis messenger connection: ${id}`,
+      allowedMessengers: XENESIS_MESSENGER_VIEW_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.messengers.items
+    .filter((item) => item.messengerView)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisMessengerViewStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisMessengerView(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const section = readCapabilityString(body, ['section', 'viewSection', 'messengerViewSection']);
+  if (section && !isXenesisConnectionMessengerViewSectionId(section)) {
+    return {
+      ok: false,
+      section,
+      error: `Unsupported Xenesis messenger view section: ${section}`,
+      allowedSections: XENESIS_CONNECTION_MESSENGER_VIEW_SECTION_IDS,
+    };
+  }
+
+  const focusConnectionDetail = xenesisMessengerViewSectionDetailFocus(section) ?? 'messenger-view';
+  const result = await openXenesisMessengerCatalogSurface(body, {
+    selectorKey: 'id',
+    selectorKeys: ['id', 'messenger', 'channel', 'name'],
+    allowedKey: 'allowedMessengers',
+    unsupportedMessage: (id) => `Unsupported Xenesis messenger connection: ${id}`,
+    itemPredicate: (item) => Boolean(item.messengerView),
+    toStatusItem: (item) => xenesisMessengerViewStatusItem(item),
+    unavailableMessage: (id) => `Xenesis messenger view is not available: ${id}`,
+    focusConnectionDetail,
+  });
+
+  return section
+    ? {
+        ...result,
+        section,
+        focusConnectionDetail,
+      }
+    : result;
+}
+
+function xenesisChannelSetupPlanStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    planStatus: item.channelSetupPlan?.planStatus,
+    runtimeSupport: item.channelSetupPlan?.runtimeSupport,
+    guideId: item.channelSetupPlan?.guideId,
+    guidePath: item.channelSetupPlan?.guidePath,
+    primarySurface: item.channelSetupPlan?.primarySurface,
+    setupSurface: item.channelSetupPlan?.setupSurface,
+    reviewSurface: item.channelSetupPlan?.reviewSurface,
+    steps: item.channelSetupPlan?.steps ?? [],
+    readPaths: item.channelSetupPlan?.readPaths ?? [],
+    controlPaths: item.channelSetupPlan?.controlPaths ?? [],
+    diagnostics: item.channelSetupPlan?.diagnostics ?? [],
+    blockedActions: item.channelSetupPlan?.blockedActions ?? [],
+    safetyBoundaries: item.channelSetupPlan?.safetyBoundaries ?? [],
+    channelSetupPlan: item.channelSetupPlan,
+    messengerView: item.messengerView,
+    channelTemplate: item.channelTemplate,
+    channelProfileDraft: item.channelProfileDraft,
+    diagnosticRunbook: item.diagnosticRunbook,
+    setupRequest: item.setupRequest,
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisChannelSetupPlansStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'messenger', 'channel', 'name']);
+  if (id && !isXenesisMessengerViewId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis messenger connection: ${id}`,
+      allowedMessengers: XENESIS_MESSENGER_VIEW_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.messengers.items
+    .filter((item) => item.channelSetupPlan)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisChannelSetupPlanStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisChannelSetupPlan(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisMessengerCatalogSurface(args, {
+    selectorKey: 'id',
+    selectorKeys: ['id', 'messenger', 'channel', 'name'],
+    allowedKey: 'allowedMessengers',
+    unsupportedMessage: (id) => `Unsupported Xenesis messenger connection: ${id}`,
+    itemPredicate: (item) => Boolean(item.channelSetupPlan),
+    toStatusItem: (item) => xenesisChannelSetupPlanStatusItem(item),
+    unavailableMessage: (id) => `Xenesis channel setup plan is not available: ${id}`,
+    focusConnectionDetail: 'channel-setup-plan',
+  });
+}
+
+const XENESIS_TOOL_SETUP_IDS = XENESIS_CONNECTION_TOOL_IDS;
+
+function isXenesisToolSetupId(value: string): value is (typeof XENESIS_TOOL_SETUP_IDS)[number] {
+  return (XENESIS_TOOL_SETUP_IDS as readonly string[]).includes(value);
+}
+
+const XENESIS_TOOL_OAUTH_DRAFT_IDS = XENESIS_CONNECTION_TOOL_OAUTH_DRAFT_IDS;
+
+function isXenesisToolOAuthDraftId(value: string): value is (typeof XENESIS_TOOL_OAUTH_DRAFT_IDS)[number] {
+  return (XENESIS_TOOL_OAUTH_DRAFT_IDS as readonly string[]).includes(value);
+}
+
+const XENESIS_MCP_INSTALL_DRAFT_APPLY_TARGET_IDS = ['codex', 'claude', 'cursor', 'all'] as const;
+
+function readXenesisMcpInstallDraftApplyTargetIds(body: Record<string, unknown>): string[] {
+  const rawTargets = body.targets;
+  const targets = Array.isArray(rawTargets)
+    ? rawTargets.map((value) => (typeof value === 'string' ? value.trim().toLowerCase() : '')).filter(Boolean)
+    : [];
+  const target = readCapabilityString(body, ['target', 'targetId']).toLowerCase();
+  const selected = targets.length > 0 ? targets : target ? [target] : ['codex'];
+  const invalid = selected.filter(
+    (value) => !(XENESIS_MCP_INSTALL_DRAFT_APPLY_TARGET_IDS as readonly string[]).includes(value),
+  );
+  if (invalid.length > 0) {
+    throw new Error(`Unsupported MCP install target: ${invalid.join(', ')}`);
+  }
+  return [...new Set(selected)];
+}
+
+function xenesisToolSetupStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    connection: item.toolSetup?.connection,
+    authMode: item.toolSetup?.authMode,
+    dataScopes: item.toolSetup?.dataScopes ?? [],
+    writeScopes: item.toolSetup?.writeScopes ?? [],
+    credentialStorage: item.toolSetup?.credentialStorage,
+    setupSurface: item.toolSetup?.setupSurface,
+    verification: item.toolSetup?.verification ?? [],
+    crReadPaths: item.toolSetup?.crReadPaths ?? [],
+    riskControls: item.toolSetup?.riskControls ?? [],
+    mcpTemplate: item.mcpTemplate,
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisToolSetupStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (id && !isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.tools.items
+    .filter((item) => item.toolSetup)
+    .filter((item) => !id || item.id === id)
+    .map((item: XenesisConnectionItem) => xenesisToolSetupStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisToolCatalogSurface(
+  args: unknown,
+  options: {
+    allowedTools: readonly string[];
+    isAllowedId: (id: string) => boolean;
+    itemPredicate: (item: XenesisConnectionItem) => boolean;
+    toStatusItem: (item: XenesisConnectionItem) => Record<string, unknown>;
+    unsupportedMessage: (id: string) => string;
+    unavailableMessage: (id: string) => string;
+    focusConnectionDetail: XenesisConnectionCenterDetailFocus;
+  },
+): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (id && !options.isAllowedId(id)) {
+    return {
+      ok: false,
+      error: options.unsupportedMessage(id),
+      allowedTools: options.allowedTools,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const catalogItems = status.sections.tools.items.filter(options.itemPredicate);
+  const item = id ? catalogItems.find((candidate) => candidate.id === id) : undefined;
+  if (id && !item) {
+    return { ok: false, id, error: options.unavailableMessage(id) };
+  }
+
+  const rendererArgs = buildXenesisConnectionCenterOpenArgs({
+    ensureVisible: body.ensureVisible !== false,
+    focusConnectionDetail: readXenesisConnectionDetailFocus(body, options.focusConnectionDetail),
+    ...(id ? { focusConnectionId: id } : {}),
+  });
+
+  const renderer = await openMcpBuiltinPaneCapability(rendererArgs);
+
+  if (id && item) {
+    return {
+      ok: renderer.ok !== false,
+      id,
+      item: options.toStatusItem(item),
+      renderer,
+    };
+  }
+
+  return {
+    ok: renderer.ok !== false,
+    updatedAt: status.updatedAt,
+    total: catalogItems.length,
+    items: catalogItems.map(options.toStatusItem),
+    renderer,
+  };
+}
+
+async function openXenesisToolSetup(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisToolCatalogSurface(args, {
+    allowedTools: XENESIS_TOOL_SETUP_IDS,
+    isAllowedId: isXenesisToolSetupId,
+    itemPredicate: (item) => Boolean(item.toolSetup),
+    toStatusItem: xenesisToolSetupStatusItem,
+    unsupportedMessage: (id) => `Unsupported Xenesis tool connection: ${id}`,
+    unavailableMessage: (id) => `Xenesis tool setup is not available: ${id}`,
+    focusConnectionDetail: 'tool-setup',
+  });
+}
+
+function xenesisToolSetupPlanStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    planStatus: item.toolSetupPlan?.planStatus,
+    runtimeSupport: item.toolSetupPlan?.runtimeSupport,
+    guideId: item.toolSetupPlan?.guideId,
+    guidePath: item.toolSetupPlan?.guidePath,
+    primarySurface: item.toolSetupPlan?.primarySurface,
+    setupSurface: item.toolSetupPlan?.setupSurface,
+    reviewSurface: item.toolSetupPlan?.reviewSurface,
+    steps: item.toolSetupPlan?.steps ?? [],
+    readPaths: item.toolSetupPlan?.readPaths ?? [],
+    controlPaths: item.toolSetupPlan?.controlPaths ?? [],
+    diagnostics: item.toolSetupPlan?.diagnostics ?? [],
+    blockedActions: item.toolSetupPlan?.blockedActions ?? [],
+    safetyBoundaries: item.toolSetupPlan?.safetyBoundaries ?? [],
+    toolSetupPlan: item.toolSetupPlan,
+    toolSetup: item.toolSetup,
+    toolConnector: item.toolConnector,
+    toolInstallPlan: item.toolInstallPlan,
+    mcpInstallDraft: item.mcpInstallDraft,
+    toolMcpOAuth: item.toolMcpOAuth,
+    toolOAuthDraft: item.toolOAuthDraft,
+    toolActionCatalog: item.toolActionCatalog,
+    toolUserStory: item.toolUserStory,
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisToolSetupPlansStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (id && !isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.tools.items
+    .filter((item) => item.toolSetupPlan)
+    .filter((item) => !id || item.id === id)
+    .map((item: XenesisConnectionItem) => xenesisToolSetupPlanStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisToolSetupPlan(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisToolCatalogSurface(args, {
+    allowedTools: XENESIS_TOOL_SETUP_IDS,
+    isAllowedId: isXenesisToolSetupId,
+    itemPredicate: (item) => Boolean(item.toolSetupPlan),
+    toStatusItem: xenesisToolSetupPlanStatusItem,
+    unsupportedMessage: (id) => `Unsupported Xenesis tool connection: ${id}`,
+    unavailableMessage: (id) => `Xenesis tool setup plan is not available: ${id}`,
+    focusConnectionDetail: 'tool-setup-plan',
+  });
+}
+
+function xenesisToolConnectorStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    connectorType: item.toolConnector?.connectorType,
+    authMode: item.toolConnector?.authMode,
+    runtimeSupport: item.toolConnector?.runtimeSupport,
+    credentialRefs: item.toolConnector?.credentialRefs ?? [],
+    credentialState: item.toolConnector?.credentialState,
+    dataScopes: item.toolConnector?.dataScopes ?? [],
+    writeScopes: item.toolConnector?.writeScopes ?? [],
+    setupSurface: item.toolConnector?.setupSurface,
+    validationChecks: item.toolConnector?.validationChecks ?? [],
+    readPaths: item.toolConnector?.readPaths ?? [],
+    controlPaths: item.toolConnector?.controlPaths ?? [],
+    diagnostics: item.toolConnector?.diagnostics ?? [],
+    safetyBoundaries: item.toolConnector?.safetyBoundaries ?? [],
+    settingsAction: item.settingsAction,
+    mcpTemplate: item.mcpTemplate,
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisToolConnectorsStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (id && !isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.tools.items
+    .filter((item) => item.toolConnector)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisToolConnectorStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisToolConnector(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisToolCatalogSurface(args, {
+    allowedTools: XENESIS_TOOL_SETUP_IDS,
+    isAllowedId: isXenesisToolSetupId,
+    itemPredicate: (item) => Boolean(item.toolConnector),
+    toStatusItem: xenesisToolConnectorStatusItem,
+    unsupportedMessage: (id) => `Unsupported Xenesis tool connection: ${id}`,
+    unavailableMessage: (id) => `Xenesis tool connector is not available: ${id}`,
+    focusConnectionDetail: 'tool-connector',
+  });
+}
+
+function xenesisToolViewStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    viewType: item.toolView?.viewType,
+    primarySurface: item.toolView?.primarySurface,
+    setupSurface: item.toolView?.setupSurface,
+    openPath: item.toolView?.openPath,
+    openArgs: item.toolView?.openArgs,
+    connectionCardId: item.toolView?.connectionCardId,
+    internalViews: item.toolView?.internalViews ?? [],
+    viewSections: item.toolView?.viewSections ?? [],
+    readPaths: item.toolView?.readPaths ?? [],
+    controlPaths: item.toolView?.controlPaths ?? [],
+    diagnostics: item.toolView?.diagnostics ?? [],
+    safetyBoundaries: item.toolView?.safetyBoundaries ?? [],
+    settingsAction: item.settingsAction,
+    mcpTemplate: item.mcpTemplate,
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisToolViewsStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (id && !isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.tools.items
+    .filter((item) => item.toolView)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisToolViewStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisToolView(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const section = readCapabilityString(body, ['section', 'viewSection', 'toolViewSection']);
+  if (section && !isXenesisConnectionToolViewSectionId(section)) {
+    return {
+      ok: false,
+      section,
+      error: `Unsupported Xenesis tool view section: ${section}`,
+      allowedSections: XENESIS_CONNECTION_TOOL_VIEW_SECTION_IDS,
+    };
+  }
+
+  const focusConnectionDetail = xenesisToolViewSectionDetailFocus(section) ?? 'tool-view';
+  const result = await openXenesisToolCatalogSurface(body, {
+    allowedTools: XENESIS_TOOL_SETUP_IDS,
+    isAllowedId: isXenesisToolSetupId,
+    itemPredicate: (item) => Boolean(item.toolView),
+    toStatusItem: xenesisToolViewStatusItem,
+    unsupportedMessage: (id) => `Unsupported Xenesis tool connection: ${id}`,
+    unavailableMessage: (id) => `Xenesis tool view is not available: ${id}`,
+    focusConnectionDetail,
+  });
+
+  return section
+    ? {
+        ...result,
+        section,
+        focusConnectionDetail,
+      }
+    : result;
+}
+
+function xenesisToolUserStoryStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    workflowType: item.toolUserStory?.workflowType,
+    runtimeSupport: item.toolUserStory?.runtimeSupport,
+    primarySurface: item.toolUserStory?.primarySurface,
+    setupSurface: item.toolUserStory?.setupSurface,
+    userStories: item.toolUserStory?.userStories ?? [],
+    prerequisiteConnectors: item.toolUserStory?.prerequisiteConnectors ?? [],
+    requiredScopes: item.toolUserStory?.requiredScopes ?? [],
+    readPaths: item.toolUserStory?.readPaths ?? [],
+    controlPaths: item.toolUserStory?.controlPaths ?? [],
+    diagnostics: item.toolUserStory?.diagnostics ?? [],
+    safetyBoundaries: item.toolUserStory?.safetyBoundaries ?? [],
+    settingsAction: item.settingsAction,
+    mcpTemplate: item.mcpTemplate,
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisToolUserStoriesStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (id && !isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.tools.items
+    .filter((item) => item.toolUserStory)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisToolUserStoryStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisToolUserStory(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisToolCatalogSurface(args, {
+    allowedTools: XENESIS_TOOL_SETUP_IDS,
+    isAllowedId: isXenesisToolSetupId,
+    itemPredicate: (item) => Boolean(item.toolUserStory),
+    toStatusItem: xenesisToolUserStoryStatusItem,
+    unsupportedMessage: (id) => `Unsupported Xenesis tool connection: ${id}`,
+    unavailableMessage: (id) => `Xenesis tool user-story workflow is not available: ${id}`,
+    focusConnectionDetail: 'tool-user-story',
+  });
+}
+
+function xenesisToolInstallPlanStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    installMode: item.toolInstallPlan?.installMode,
+    runtimeSupport: item.toolInstallPlan?.runtimeSupport,
+    primarySurface: item.toolInstallPlan?.primarySurface,
+    setupSurface: item.toolInstallPlan?.setupSurface,
+    installSurface: item.toolInstallPlan?.installSurface,
+    installActions: item.toolInstallPlan?.installActions ?? [],
+    installSteps: item.toolInstallPlan?.installSteps ?? [],
+    configTargets: item.toolInstallPlan?.configTargets ?? [],
+    requiredEnv: item.toolInstallPlan?.requiredEnv ?? [],
+    readPaths: item.toolInstallPlan?.readPaths ?? [],
+    controlPaths: item.toolInstallPlan?.controlPaths ?? [],
+    diagnostics: item.toolInstallPlan?.diagnostics ?? [],
+    safetyBoundaries: item.toolInstallPlan?.safetyBoundaries ?? [],
+    settingsAction: item.settingsAction,
+    mcpTemplate: item.mcpTemplate,
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisToolInstallPlansStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (id && !isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.tools.items
+    .filter((item) => item.toolInstallPlan)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisToolInstallPlanStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisToolInstallPlan(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisToolCatalogSurface(args, {
+    allowedTools: XENESIS_TOOL_SETUP_IDS,
+    isAllowedId: isXenesisToolSetupId,
+    itemPredicate: (item) => Boolean(item.toolInstallPlan),
+    toStatusItem: xenesisToolInstallPlanStatusItem,
+    unsupportedMessage: (id) => `Unsupported Xenesis tool connection: ${id}`,
+    unavailableMessage: (id) => `Xenesis tool install plan is not available: ${id}`,
+    focusConnectionDetail: 'tool-install-plan',
+  });
+}
+
+async function requestXenesisToolInstallPlan(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Tool id is required.' };
+  }
+  if (!isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.tools.items.find((candidate) => candidate.id === id && candidate.toolInstallPlan);
+  if (!item?.toolInstallPlan) {
+    return { ok: false, id, error: `Xenesis tool install plan is not available: ${id}` };
+  }
+
+  const plan = item.toolInstallPlan;
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+  const requester = readCapabilityString(body, ['requester', 'user', 'userName']) || 'Xenesis Desk';
+  const description = [
+    `Review the ${plan.installMode} install plan for ${item.label}.`,
+    `Runtime support: ${plan.runtimeSupport}`,
+    `Primary surface: ${plan.primarySurface}`,
+    `Setup surface: ${plan.setupSurface}`,
+    `Install surface: ${plan.installSurface}`,
+    `Config targets: ${plan.configTargets.join(', ') || 'none'}`,
+    `Required env: ${plan.requiredEnv.join(', ') || 'none'}`,
+    '',
+    'Install actions:',
+    ...plan.installActions.map((action) => `- ${action}`),
+    '',
+    'Install steps:',
+    ...plan.installSteps.map((step) => `- ${step}`),
+    '',
+    'Read paths:',
+    ...plan.readPaths.map((path) => `- ${path}`),
+    '',
+    'Control paths:',
+    ...plan.controlPaths.map((path) => `- ${path}`),
+    '',
+    'Diagnostics:',
+    ...plan.diagnostics.map((diagnostic) => `- ${diagnostic}`),
+    '',
+    'Safety boundaries:',
+    ...plan.safetyBoundaries.map((boundary) => `- ${boundary}`),
+    note ? '' : undefined,
+    note ? `Note: ${note}` : undefined,
+  ]
+    .filter((line): line is string => typeof line === 'string')
+    .join('\n');
+
+  const actionInboxItem = recordMcpActionInboxRequest({
+    kind: 'xenesis-tool-install-plan',
+    title: `Review ${item.label} tool install plan`,
+    command: `Review tool install plan for ${item.id}`,
+    description,
+    source: 'Xenesis Connection Center',
+    sessionId: 'xenesis-tool-install-plan',
+    approvalSessionKey: `xenesis-tool-install-plan:${item.id}`,
+    requester,
+    risk: plan.runtimeSupport,
+    approveText: `Approve tool install plan for ${item.label}`,
+    rejectText: `Reject tool install plan for ${item.label}`,
+  });
+
+  return {
+    ok: true,
+    id: item.id,
+    item: xenesisToolInstallPlanStatusItem(item),
+    actionInboxItem,
+  };
+}
+
+function xenesisToolMcpInstallDraftStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    draftStatus: item.mcpInstallDraft?.draftStatus,
+    actionInboxKind: item.mcpInstallDraft?.actionInboxKind,
+    serverName: item.mcpInstallDraft?.serverName,
+    displayName: item.mcpInstallDraft?.displayName,
+    description: item.mcpInstallDraft?.description,
+    transport: item.mcpInstallDraft?.transport,
+    auth: item.mcpInstallDraft?.auth,
+    installSurface: item.mcpInstallDraft?.installSurface,
+    reviewSurface: item.mcpInstallDraft?.reviewSurface,
+    configTargets: item.mcpInstallDraft?.configTargets ?? [],
+    requiredEnv: item.mcpInstallDraft?.requiredEnv ?? [],
+    missingEnv: item.mcpInstallDraft?.missingEnv ?? [],
+    installSteps: item.mcpInstallDraft?.installSteps ?? [],
+    readPaths: item.mcpInstallDraft?.readPaths ?? [],
+    controlPaths: item.mcpInstallDraft?.controlPaths ?? [],
+    diagnostics: item.mcpInstallDraft?.diagnostics ?? [],
+    blockedActions: item.mcpInstallDraft?.blockedActions ?? [],
+    safetyBoundaries: item.mcpInstallDraft?.safetyBoundaries ?? [],
+    configSnippets: item.mcpInstallDraft?.configSnippets,
+    mcpInstallDraft: item.mcpInstallDraft,
+    mcpTemplate: item.mcpTemplate,
+    toolInstallPlan: item.toolInstallPlan,
+    settingsAction: item.settingsAction,
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisToolMcpInstallDraftsStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (id && !isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.tools.items
+    .filter((item) => item.mcpInstallDraft)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisToolMcpInstallDraftStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisToolMcpInstallDraft(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisToolCatalogSurface(args, {
+    allowedTools: XENESIS_TOOL_SETUP_IDS,
+    isAllowedId: isXenesisToolSetupId,
+    itemPredicate: (item) => Boolean(item.mcpInstallDraft),
+    toStatusItem: xenesisToolMcpInstallDraftStatusItem,
+    unsupportedMessage: (id) => `Unsupported Xenesis tool connection: ${id}`,
+    unavailableMessage: (id) => `Xenesis MCP install draft is not available: ${id}`,
+    focusConnectionDetail: 'mcp-install-draft',
+  });
+}
+
+async function requestXenesisToolMcpInstallDraft(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Tool id is required.' };
+  }
+  if (!isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.tools.items.find((candidate) => candidate.id === id && candidate.mcpInstallDraft);
+  if (!item?.mcpInstallDraft) {
+    return { ok: false, id, error: `Xenesis MCP install draft is not available: ${id}` };
+  }
+
+  const draft = item.mcpInstallDraft;
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+  const requester = readCapabilityString(body, ['requester', 'user', 'userName']) || 'Xenesis Desk';
+  const description = [
+    `Review the ${draft.draftStatus} MCP install draft for ${item.label}.`,
+    draft.serverName ? `Server: ${draft.serverName}` : 'Server: verified template not selected',
+    draft.transport ? `Transport: ${draft.transport}` : undefined,
+    draft.auth ? `Auth: ${draft.auth}` : undefined,
+    `Install surface: ${draft.installSurface}`,
+    `Config targets: ${draft.configTargets.join(', ') || 'none'}`,
+    `Required env: ${draft.requiredEnv.join(', ') || 'none'}`,
+    `Missing env: ${draft.missingEnv.join(', ') || 'none'}`,
+    '',
+    'Install draft steps:',
+    ...draft.installSteps.map((step) => `- ${step}`),
+    '',
+    'Blocked actions:',
+    ...draft.blockedActions.map((action) => `- ${action}`),
+    note ? '' : undefined,
+    note ? `Note: ${note}` : undefined,
+  ]
+    .filter((line): line is string => typeof line === 'string')
+    .join('\n');
+
+  const actionInboxItem = recordMcpActionInboxRequest({
+    kind: draft.actionInboxKind,
+    title: `Review ${item.label} MCP install draft`,
+    command: `Review MCP install draft for ${item.id}`,
+    description,
+    source: 'Xenesis Connection Center',
+    sessionId: 'xenesis-mcp-install-draft',
+    approvalSessionKey: `xenesis-mcp-install-draft:${item.id}`,
+    requester,
+    risk: draft.draftStatus,
+    approveText: `Approve MCP install draft for ${item.label}`,
+    rejectText: `Reject MCP install draft for ${item.label}`,
+  });
+
+  return {
+    ok: true,
+    id: item.id,
+    item: xenesisToolMcpInstallDraftStatusItem(item),
+    actionInboxItem,
+  };
+}
+
+async function applyXenesisToolMcpInstallDraft(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Tool id is required.' };
+  }
+  if (!isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  let targetIds: string[];
+  try {
+    targetIds = readXenesisMcpInstallDraftApplyTargetIds(body);
+  } catch (error) {
+    return {
+      ok: false,
+      id,
+      error: error instanceof Error ? error.message : 'Unsupported MCP install target.',
+      allowedTargets: XENESIS_MCP_INSTALL_DRAFT_APPLY_TARGET_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.tools.items.find((candidate) => candidate.id === id && candidate.mcpInstallDraft);
+  if (!item?.mcpInstallDraft) {
+    return { ok: false, id, error: `Xenesis MCP install draft is not available: ${id}` };
+  }
+
+  const draft = item.mcpInstallDraft;
+  if (draft.draftStatus !== 'ready') {
+    return {
+      ok: false,
+      id,
+      draftStatus: draft.draftStatus,
+      missingEnv: draft.missingEnv,
+      error: `Xenesis MCP install draft is not ready: ${id}`,
+    };
+  }
+  if (!draft.controlPaths.includes('xd.xenesis.tools.mcpInstallDrafts.apply')) {
+    return {
+      ok: false,
+      id,
+      draftStatus: draft.draftStatus,
+      error: `Xenesis MCP install draft cannot be applied: ${id}`,
+    };
+  }
+  if (!draft.serverName) {
+    return {
+      ok: false,
+      id,
+      draftStatus: draft.draftStatus,
+      error: `Xenesis MCP install draft has no recommended server template: ${id}`,
+    };
+  }
+
+  const recommended = getRecommendedMcpServer(draft.serverName);
+  if (!recommended) {
+    return {
+      ok: false,
+      id,
+      serverName: draft.serverName,
+      error: `Recommended MCP server template is not available: ${draft.serverName}`,
+    };
+  }
+
+  const workspaceRoot = loadSettings().workspace.currentPath || process.cwd();
+  const resolved = resolveRecommendedServer(recommended, { workspaceRoot, env: process.env });
+  if (resolved.missingEnv.length > 0) {
+    return {
+      ok: false,
+      id,
+      serverName: recommended.name,
+      missingEnv: resolved.missingEnv,
+      error: `Required environment variables are missing for ${recommended.name}: ${resolved.missingEnv.join(', ')}`,
+    };
+  }
+
+  const { missingEnv: _missingEnv, ...config } = resolved;
+  const result = installExternalMcpServer({
+    serverName: recommended.name,
+    config,
+    targetIds,
+    backupRoot: path.join(getMcpDir(), 'external-mcp-config-backups'),
+  });
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+
+  return {
+    ok: true,
+    id: item.id,
+    serverName: recommended.name,
+    draftStatus: draft.draftStatus,
+    targets: result.targets,
+    item: xenesisToolMcpInstallDraftStatusItem(item),
+    ...(note ? { note } : {}),
+  };
+}
+
+function xenesisToolMcpOAuthStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    readinessStatus: item.toolMcpOAuth?.status,
+    actionInboxKind: item.toolMcpOAuth?.actionInboxKind,
+    tool: item.toolMcpOAuth?.tool,
+    displayName: item.toolMcpOAuth?.displayName,
+    serverName: item.toolMcpOAuth?.serverName,
+    transport: item.toolMcpOAuth?.transport,
+    authMode: item.toolMcpOAuth?.authMode,
+    runtimeSupport: item.toolMcpOAuth?.runtimeSupport,
+    authSurface: item.toolMcpOAuth?.authSurface,
+    reviewSurface: item.toolMcpOAuth?.reviewSurface,
+    credentialRefs: item.toolMcpOAuth?.credentialRefs ?? [],
+    missingRequiredFields: item.toolMcpOAuth?.missingRequiredFields ?? [],
+    scopes: item.toolMcpOAuth?.scopes ?? [],
+    tokenStore: item.toolMcpOAuth?.tokenStore,
+    consentMode: item.toolMcpOAuth?.consentMode,
+    readPaths: item.toolMcpOAuth?.readPaths ?? [],
+    controlPaths: item.toolMcpOAuth?.controlPaths ?? [],
+    diagnostics: item.toolMcpOAuth?.diagnostics ?? [],
+    blockedActions: item.toolMcpOAuth?.blockedActions ?? [],
+    safetyBoundaries: item.toolMcpOAuth?.safetyBoundaries ?? [],
+    toolMcpOAuth: item.toolMcpOAuth,
+    toolConnector: item.toolConnector,
+    mcpInstallDraft: item.mcpInstallDraft,
+    mcpTemplate: item.mcpTemplate,
+    settingsAction: item.settingsAction,
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisToolMcpOAuthStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (id && !isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.tools.items
+    .filter((item) => item.toolMcpOAuth)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisToolMcpOAuthStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisToolMcpOAuth(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisToolCatalogSurface(args, {
+    allowedTools: XENESIS_TOOL_SETUP_IDS,
+    isAllowedId: isXenesisToolSetupId,
+    itemPredicate: (item) => Boolean(item.toolMcpOAuth),
+    toStatusItem: xenesisToolMcpOAuthStatusItem,
+    unsupportedMessage: (id) => `Unsupported Xenesis tool connection: ${id}`,
+    unavailableMessage: (id) => `Xenesis MCP OAuth readiness is not available: ${id}`,
+    focusConnectionDetail: 'tool-mcp-oauth',
+  });
+}
+
+async function requestXenesisToolMcpOAuth(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Tool id is required.' };
+  }
+  if (!isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.tools.items.find((candidate) => candidate.id === id && candidate.toolMcpOAuth);
+  if (!item?.toolMcpOAuth) {
+    return { ok: false, id, error: `Xenesis MCP OAuth readiness is not available: ${id}` };
+  }
+
+  const oauth = item.toolMcpOAuth;
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+  const requester = readCapabilityString(body, ['requester', 'user', 'userName']) || 'Xenesis Desk';
+  const description = [
+    `Review the ${oauth.status} MCP OAuth readiness surface for ${item.label}.`,
+    `Tool: ${oauth.tool}`,
+    `Server: ${oauth.serverName}`,
+    `Transport: ${oauth.transport}`,
+    `Runtime support: ${oauth.runtimeSupport}`,
+    `Auth surface: ${oauth.authSurface}`,
+    `Review surface: ${oauth.reviewSurface}`,
+    `Consent mode: ${oauth.consentMode}`,
+    `Token store: ${oauth.tokenStore}`,
+    `Missing required fields: ${oauth.missingRequiredFields.join(', ') || 'none'}`,
+    '',
+    'Credential references:',
+    ...oauth.credentialRefs.map((credential) => `- ${credential.ref}: ${credential.state}`),
+    '',
+    'Scopes:',
+    ...oauth.scopes.map((scope) => `- ${scope}`),
+    '',
+    'Read paths:',
+    ...oauth.readPaths.map((path) => `- ${path}`),
+    '',
+    'Control paths:',
+    ...oauth.controlPaths.map((path) => `- ${path}`),
+    '',
+    'Diagnostics:',
+    ...oauth.diagnostics.map((diagnostic) => `- ${diagnostic}`),
+    '',
+    'Blocked actions:',
+    ...oauth.blockedActions.map((action) => `- ${action}`),
+    '',
+    'Safety boundaries:',
+    ...oauth.safetyBoundaries.map((boundary) => `- ${boundary}`),
+    note ? '' : undefined,
+    note ? `Note: ${note}` : undefined,
+  ]
+    .filter((line): line is string => typeof line === 'string')
+    .join('\n');
+
+  const actionInboxItem = recordMcpActionInboxRequest({
+    kind: oauth.actionInboxKind,
+    title: `Review ${item.label} MCP OAuth readiness`,
+    command: `Review MCP OAuth readiness for ${item.id}`,
+    description,
+    source: 'Xenesis Connection Center',
+    sessionId: 'xenesis-tool-mcp-oauth',
+    approvalSessionKey: `xenesis-tool-mcp-oauth:${item.id}`,
+    requester,
+    risk: oauth.status,
+    approveText: `Approve MCP OAuth readiness for ${item.label}`,
+    rejectText: `Reject MCP OAuth readiness for ${item.label}`,
+  });
+
+  return {
+    ok: true,
+    id: item.id,
+    item: xenesisToolMcpOAuthStatusItem(item),
+    actionInboxItem,
+  };
+}
+
+function xenesisToolOAuthDraftStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    draftStatus: item.toolOAuthDraft?.draftStatus,
+    actionInboxKind: item.toolOAuthDraft?.actionInboxKind,
+    tool: item.toolOAuthDraft?.tool,
+    displayName: item.toolOAuthDraft?.displayName,
+    description: item.toolOAuthDraft?.description,
+    runtimeSupport: item.toolOAuthDraft?.runtimeSupport,
+    authSurface: item.toolOAuthDraft?.authSurface,
+    reviewSurface: item.toolOAuthDraft?.reviewSurface,
+    profileFields: item.toolOAuthDraft?.profileFields ?? [],
+    missingRequiredFields: item.toolOAuthDraft?.missingRequiredFields ?? [],
+    scopes: item.toolOAuthDraft?.scopes ?? [],
+    tokenStore: item.toolOAuthDraft?.tokenStore,
+    consentMode: item.toolOAuthDraft?.consentMode,
+    setupPacket: item.toolOAuthDraft?.setupPacket,
+    readPaths: item.toolOAuthDraft?.readPaths ?? [],
+    controlPaths: item.toolOAuthDraft?.controlPaths ?? [],
+    diagnostics: item.toolOAuthDraft?.diagnostics ?? [],
+    blockedActions: item.toolOAuthDraft?.blockedActions ?? [],
+    safetyBoundaries: item.toolOAuthDraft?.safetyBoundaries ?? [],
+    toolOAuthDraft: item.toolOAuthDraft,
+    toolConnector: item.toolConnector,
+    toolInstallPlan: item.toolInstallPlan,
+    toolActionCatalog: item.toolActionCatalog,
+    settingsAction: item.settingsAction,
+    warnings: item.warnings ?? [],
+  };
+}
+
+function xenesisToolOAuthSetupPacketStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    draftStatus: item.toolOAuthDraft?.draftStatus,
+    setupPacket: item.toolOAuthDraft?.setupPacket,
+    toolOAuthDraft: item.toolOAuthDraft,
+    toolConnector: item.toolConnector,
+    settingsAction: item.settingsAction,
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisToolOAuthDraftsStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (id && !isXenesisToolOAuthDraftId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool OAuth draft: ${id}`,
+      allowedTools: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.tools.items
+    .filter((item) => item.toolOAuthDraft)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisToolOAuthDraftStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function getXenesisToolOAuthSetupPacket(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (id && !isXenesisToolOAuthDraftId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool OAuth setup packet: ${id}`,
+      allowedTools: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.tools.items
+    .filter((item) => item.toolOAuthDraft?.setupPacket)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisToolOAuthSetupPacketStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisToolOAuthDraft(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisToolCatalogSurface(args, {
+    allowedTools: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+    isAllowedId: isXenesisToolOAuthDraftId,
+    itemPredicate: (item) => Boolean(item.toolOAuthDraft),
+    toStatusItem: xenesisToolOAuthDraftStatusItem,
+    unsupportedMessage: (id) => `Unsupported Xenesis tool OAuth draft: ${id}`,
+    unavailableMessage: (id) => `Xenesis tool OAuth draft is not available: ${id}`,
+    focusConnectionDetail: 'tool-oauth-draft',
+  });
+}
+
+async function openXenesisToolOAuthSetupPacket(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisToolCatalogSurface(args, {
+    allowedTools: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+    isAllowedId: isXenesisToolOAuthDraftId,
+    itemPredicate: (item) => Boolean(item.toolOAuthDraft?.setupPacket),
+    toStatusItem: xenesisToolOAuthSetupPacketStatusItem,
+    unsupportedMessage: (id) => `Unsupported Xenesis tool OAuth setup packet: ${id}`,
+    unavailableMessage: (id) => `Xenesis tool OAuth setup packet is not available: ${id}`,
+    focusConnectionDetail: 'tool-oauth-setup-packet',
+  });
+}
+
+async function requestXenesisToolOAuthDraft(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Tool id is required.' };
+  }
+  if (!isXenesisToolOAuthDraftId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool OAuth draft: ${id}`,
+      allowedTools: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.tools.items.find((candidate) => candidate.id === id && candidate.toolOAuthDraft);
+  if (!item?.toolOAuthDraft) {
+    return { ok: false, id, error: `Xenesis tool OAuth draft is not available: ${id}` };
+  }
+
+  const draft = item.toolOAuthDraft;
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+  const requester = readCapabilityString(body, ['requester', 'user', 'userName']) || 'Xenesis Desk';
+  const fieldLines = draft.profileFields.map(
+    (field) => `- ${field.field}: ${field.valueState}${field.required ? ' (required)' : ''}`,
+  );
+  const description = [
+    `Review the ${draft.draftStatus} OAuth draft for ${item.label}.`,
+    `Tool: ${draft.tool}`,
+    `Runtime support: ${draft.runtimeSupport}`,
+    `Auth surface: ${draft.authSurface}`,
+    `Review surface: ${draft.reviewSurface}`,
+    `Consent mode: ${draft.consentMode}`,
+    `Token store: ${draft.tokenStore}`,
+    `Missing required fields: ${draft.missingRequiredFields.join(', ') || 'none'}`,
+    '',
+    'Profile field state:',
+    ...fieldLines,
+    '',
+    'Scopes:',
+    ...draft.scopes.map((scope) => `- ${scope}`),
+    '',
+    'Read paths:',
+    ...draft.readPaths.map((path) => `- ${path}`),
+    '',
+    'Control paths:',
+    ...draft.controlPaths.map((path) => `- ${path}`),
+    '',
+    'Diagnostics:',
+    ...draft.diagnostics.map((diagnostic) => `- ${diagnostic}`),
+    '',
+    'Blocked actions:',
+    ...draft.blockedActions.map((action) => `- ${action}`),
+    '',
+    'Safety boundaries:',
+    ...draft.safetyBoundaries.map((boundary) => `- ${boundary}`),
+    note ? '' : undefined,
+    note ? `Note: ${note}` : undefined,
+  ]
+    .filter((line): line is string => typeof line === 'string')
+    .join('\n');
+
+  const actionInboxItem = recordMcpActionInboxRequest({
+    kind: draft.actionInboxKind,
+    title: `Review ${item.label} OAuth draft`,
+    command: `Review OAuth draft for ${item.id}`,
+    description,
+    source: 'Xenesis Connection Center',
+    sessionId: 'xenesis-tool-oauth-draft',
+    approvalSessionKey: `xenesis-tool-oauth-draft:${item.id}`,
+    requester,
+    risk: draft.draftStatus,
+    approveText: `Approve OAuth draft for ${item.label}`,
+    rejectText: `Reject OAuth draft for ${item.label}`,
+  });
+
+  return {
+    ok: true,
+    id: item.id,
+    item: xenesisToolOAuthDraftStatusItem(item),
+    actionInboxItem,
+  };
+}
+
+function xenesisToolOAuthRuntimeStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    runtimeStatus: item.toolOAuthRuntime?.runtimeStatus,
+    actionInboxKind: item.toolOAuthRuntime?.actionInboxKind,
+    tool: item.toolOAuthRuntime?.tool,
+    displayName: item.toolOAuthRuntime?.displayName,
+    runtimeSupport: item.toolOAuthRuntime?.runtimeSupport,
+    authSurface: item.toolOAuthRuntime?.authSurface,
+    reviewSurface: item.toolOAuthRuntime?.reviewSurface,
+    callbackPolicy: item.toolOAuthRuntime?.callbackPolicy,
+    callbackUriCandidates: item.toolOAuthRuntime?.callbackUriCandidates ?? [],
+    credentialRefs: item.toolOAuthRuntime?.credentialRefs ?? [],
+    missingRequiredFields: item.toolOAuthRuntime?.missingRequiredFields ?? [],
+    scopes: item.toolOAuthRuntime?.scopes ?? [],
+    tokenStore: item.toolOAuthRuntime?.tokenStore,
+    tokenStoreOwner: item.toolOAuthRuntime?.tokenStoreOwner,
+    consentMode: item.toolOAuthRuntime?.consentMode,
+    readbackChecks: item.toolOAuthRuntime?.readbackChecks ?? [],
+    readPaths: item.toolOAuthRuntime?.readPaths ?? [],
+    controlPaths: item.toolOAuthRuntime?.controlPaths ?? [],
+    diagnostics: item.toolOAuthRuntime?.diagnostics ?? [],
+    blockedActions: item.toolOAuthRuntime?.blockedActions ?? [],
+    safetyBoundaries: item.toolOAuthRuntime?.safetyBoundaries ?? [],
+    toolOAuthRuntime: item.toolOAuthRuntime,
+    toolOAuthDraft: item.toolOAuthDraft,
+    toolConnector: item.toolConnector,
+    settingsAction: item.settingsAction,
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisToolOAuthRuntimeStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (id && !isXenesisToolOAuthDraftId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool OAuth runtime readiness: ${id}`,
+      allowedTools: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.tools.items
+    .filter((item) => item.toolOAuthRuntime)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisToolOAuthRuntimeStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisToolOAuthRuntime(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisToolCatalogSurface(args, {
+    allowedTools: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+    isAllowedId: isXenesisToolOAuthDraftId,
+    itemPredicate: (item) => Boolean(item.toolOAuthRuntime),
+    toStatusItem: xenesisToolOAuthRuntimeStatusItem,
+    unsupportedMessage: (id) => `Unsupported Xenesis tool OAuth runtime readiness: ${id}`,
+    unavailableMessage: (id) => `Xenesis tool OAuth runtime readiness is not available: ${id}`,
+    focusConnectionDetail: 'tool-oauth-runtime',
+  });
+}
+
+async function requestXenesisToolOAuthRuntime(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Tool id is required.' };
+  }
+  if (!isXenesisToolOAuthDraftId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool OAuth runtime readiness: ${id}`,
+      allowedTools: XENESIS_TOOL_OAUTH_DRAFT_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.tools.items.find((candidate) => candidate.id === id && candidate.toolOAuthRuntime);
+  if (!item?.toolOAuthRuntime) {
+    return { ok: false, id, error: `Xenesis tool OAuth runtime readiness is not available: ${id}` };
+  }
+
+  const runtime = item.toolOAuthRuntime;
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+  const requester = readCapabilityString(body, ['requester', 'user', 'userName']) || 'Xenesis Desk';
+  const credentialLines = runtime.credentialRefs.map(
+    (credential) => `- ${credential.ref}: ${credential.valueState}${credential.required ? ' (required)' : ''}`,
+  );
+  const description = [
+    `Review the ${runtime.runtimeStatus} OAuth runtime readiness surface for ${item.label}.`,
+    `Tool: ${runtime.tool}`,
+    `Runtime support: ${runtime.runtimeSupport}`,
+    `Auth surface: ${runtime.authSurface}`,
+    `Review surface: ${runtime.reviewSurface}`,
+    `Consent mode: ${runtime.consentMode}`,
+    `Callback policy: ${runtime.callbackPolicy}`,
+    `Callback URI candidates: ${runtime.callbackUriCandidates.join(', ') || 'none'}`,
+    `Token store: ${runtime.tokenStore}`,
+    `Token-store owner: ${runtime.tokenStoreOwner}`,
+    `Missing required fields: ${runtime.missingRequiredFields.join(', ') || 'none'}`,
+    '',
+    'Credential references:',
+    ...credentialLines,
+    '',
+    'Scopes:',
+    ...runtime.scopes.map((scope) => `- ${scope}`),
+    '',
+    'Readback checks:',
+    ...runtime.readbackChecks.map((check) => `- ${check}`),
+    '',
+    'Read paths:',
+    ...runtime.readPaths.map((path) => `- ${path}`),
+    '',
+    'Control paths:',
+    ...runtime.controlPaths.map((path) => `- ${path}`),
+    '',
+    'Diagnostics:',
+    ...runtime.diagnostics.map((diagnostic) => `- ${diagnostic}`),
+    '',
+    'Blocked actions:',
+    ...runtime.blockedActions.map((action) => `- ${action}`),
+    '',
+    'Safety boundaries:',
+    ...runtime.safetyBoundaries.map((boundary) => `- ${boundary}`),
+    note ? '' : undefined,
+    note ? `Note: ${note}` : undefined,
+  ]
+    .filter((line): line is string => typeof line === 'string')
+    .join('\n');
+
+  const actionInboxItem = recordMcpActionInboxRequest({
+    kind: runtime.actionInboxKind,
+    title: `Review ${item.label} OAuth runtime readiness`,
+    command: `Review OAuth runtime readiness for ${item.id}`,
+    description,
+    source: 'Xenesis Connection Center',
+    sessionId: 'xenesis-tool-oauth-runtime',
+    approvalSessionKey: `xenesis-tool-oauth-runtime:${item.id}`,
+    requester,
+    risk: runtime.runtimeStatus,
+    approveText: `Approve OAuth runtime readiness for ${item.label}`,
+    rejectText: `Reject OAuth runtime readiness for ${item.label}`,
+  });
+
+  return {
+    ok: true,
+    id: item.id,
+    item: xenesisToolOAuthRuntimeStatusItem(item),
+    actionInboxItem,
+  };
+}
+
+function xenesisToolRuntimeStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    runtimeStatus: item.toolRuntime?.runtimeStatus,
+    actionInboxKind: item.toolRuntime?.actionInboxKind,
+    tool: item.toolRuntime?.tool,
+    displayName: item.toolRuntime?.displayName,
+    runtimeSupport: item.toolRuntime?.runtimeSupport,
+    authMode: item.toolRuntime?.authMode,
+    installSurface: item.toolRuntime?.installSurface,
+    runtimeSurface: item.toolRuntime?.runtimeSurface,
+    reviewSurface: item.toolRuntime?.reviewSurface,
+    credentialState: item.toolRuntime?.credentialState,
+    requiredEnv: item.toolRuntime?.requiredEnv ?? [],
+    missingEnv: item.toolRuntime?.missingEnv ?? [],
+    readbackChecks: item.toolRuntime?.readbackChecks ?? [],
+    readPaths: item.toolRuntime?.readPaths ?? [],
+    controlPaths: item.toolRuntime?.controlPaths ?? [],
+    diagnostics: item.toolRuntime?.diagnostics ?? [],
+    blockedActions: item.toolRuntime?.blockedActions ?? [],
+    safetyBoundaries: item.toolRuntime?.safetyBoundaries ?? [],
+    toolRuntime: item.toolRuntime,
+    toolConnector: item.toolConnector,
+    toolInstallPlan: item.toolInstallPlan,
+    mcpInstallDraft: item.mcpInstallDraft,
+    toolOAuthRuntime: item.toolOAuthRuntime,
+    toolActionCatalog: item.toolActionCatalog,
+    settingsAction: item.settingsAction,
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisToolRuntimeStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (id && !isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool runtime readiness: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.tools.items
+    .filter((item) => item.toolRuntime)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisToolRuntimeStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisToolRuntime(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisToolCatalogSurface(args, {
+    allowedTools: XENESIS_TOOL_SETUP_IDS,
+    isAllowedId: isXenesisToolSetupId,
+    itemPredicate: (item) => Boolean(item.toolRuntime),
+    toStatusItem: xenesisToolRuntimeStatusItem,
+    unsupportedMessage: (id) => `Unsupported Xenesis tool runtime readiness: ${id}`,
+    unavailableMessage: (id) => `Xenesis tool runtime readiness is not available: ${id}`,
+    focusConnectionDetail: 'tool-runtime',
+  });
+}
+
+async function requestXenesisToolRuntime(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Tool id is required.' };
+  }
+  if (!isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool runtime readiness: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.tools.items.find((candidate) => candidate.id === id && candidate.toolRuntime);
+  if (!item?.toolRuntime) {
+    return { ok: false, id, error: `Xenesis tool runtime readiness is not available: ${id}` };
+  }
+
+  const runtime = item.toolRuntime;
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+  const requester = readCapabilityString(body, ['requester', 'user', 'userName']) || 'Xenesis Desk';
+  const description = [
+    `Review the ${runtime.runtimeStatus} tool runtime readiness surface for ${item.label}.`,
+    `Tool: ${runtime.tool}`,
+    `Runtime support: ${runtime.runtimeSupport}`,
+    `Auth mode: ${runtime.authMode}`,
+    `Install surface: ${runtime.installSurface}`,
+    `Runtime surface: ${runtime.runtimeSurface}`,
+    `Review surface: ${runtime.reviewSurface}`,
+    `Credential state: ${runtime.credentialState}`,
+    `Required env: ${runtime.requiredEnv.join(', ') || 'none'}`,
+    `Missing env: ${runtime.missingEnv.join(', ') || 'none'}`,
+    '',
+    'Readback checks:',
+    ...runtime.readbackChecks.map((check) => `- ${check}`),
+    '',
+    'Read paths:',
+    ...runtime.readPaths.map((path) => `- ${path}`),
+    '',
+    'Control paths:',
+    ...runtime.controlPaths.map((path) => `- ${path}`),
+    '',
+    'Diagnostics:',
+    ...runtime.diagnostics.map((diagnostic) => `- ${diagnostic}`),
+    '',
+    'Blocked actions:',
+    ...runtime.blockedActions.map((action) => `- ${action}`),
+    '',
+    'Safety boundaries:',
+    ...runtime.safetyBoundaries.map((boundary) => `- ${boundary}`),
+    note ? '' : undefined,
+    note ? `Note: ${note}` : undefined,
+  ]
+    .filter((line): line is string => typeof line === 'string')
+    .join('\n');
+
+  const actionInboxItem = recordMcpActionInboxRequest({
+    kind: runtime.actionInboxKind,
+    title: `Review ${item.label} tool runtime readiness`,
+    command: `Review tool runtime readiness for ${item.id}`,
+    description,
+    source: 'Xenesis Connection Center',
+    sessionId: 'xenesis-tool-runtime-readiness',
+    approvalSessionKey: `xenesis-tool-runtime-readiness:${item.id}`,
+    requester,
+    risk: runtime.runtimeStatus,
+    approveText: `Approve tool runtime readiness for ${item.label}`,
+    rejectText: `Reject tool runtime readiness for ${item.label}`,
+  });
+
+  return {
+    ok: true,
+    id: item.id,
+    item: xenesisToolRuntimeStatusItem(item),
+    actionInboxItem,
+  };
+}
+
+function xenesisToolProfileDraftStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    draftStatus: item.toolProfileDraft?.draftStatus,
+    actionInboxKind: item.toolProfileDraft?.actionInboxKind,
+    tool: item.toolProfileDraft?.tool,
+    displayName: item.toolProfileDraft?.displayName,
+    runtimeSupport: item.toolProfileDraft?.runtimeSupport,
+    authMode: item.toolProfileDraft?.authMode,
+    setupSurface: item.toolProfileDraft?.setupSurface,
+    reviewSurface: item.toolProfileDraft?.reviewSurface,
+    profileFields: item.toolProfileDraft?.profileFields ?? [],
+    missingRequiredFields: item.toolProfileDraft?.missingRequiredFields ?? [],
+    scopes: item.toolProfileDraft?.scopes ?? [],
+    reviewSteps: item.toolProfileDraft?.reviewSteps ?? [],
+    readPaths: item.toolProfileDraft?.readPaths ?? [],
+    controlPaths: item.toolProfileDraft?.controlPaths ?? [],
+    diagnostics: item.toolProfileDraft?.diagnostics ?? [],
+    blockedActions: item.toolProfileDraft?.blockedActions ?? [],
+    safetyBoundaries: item.toolProfileDraft?.safetyBoundaries ?? [],
+    toolProfileDraft: item.toolProfileDraft,
+    toolConnector: item.toolConnector,
+    toolRuntime: item.toolRuntime,
+    toolOAuthDraft: item.toolOAuthDraft,
+    mcpInstallDraft: item.mcpInstallDraft,
+    toolActionCatalog: item.toolActionCatalog,
+    settingsAction: item.settingsAction,
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisToolProfileDraftsStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (id && !isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool profile draft: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.tools.items
+    .filter((item) => item.toolProfileDraft)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisToolProfileDraftStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisToolProfileDraft(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisToolCatalogSurface(args, {
+    allowedTools: XENESIS_TOOL_SETUP_IDS,
+    isAllowedId: isXenesisToolSetupId,
+    itemPredicate: (item) => Boolean(item.toolProfileDraft),
+    toStatusItem: xenesisToolProfileDraftStatusItem,
+    unsupportedMessage: (id) => `Unsupported Xenesis tool profile draft: ${id}`,
+    unavailableMessage: (id) => `Xenesis tool profile draft is not available: ${id}`,
+    focusConnectionDetail: 'tool-profile-draft',
+  });
+}
+
+async function requestXenesisToolProfileDraft(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Tool id is required.' };
+  }
+  if (!isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool profile draft: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.tools.items.find((candidate) => candidate.id === id && candidate.toolProfileDraft);
+  if (!item?.toolProfileDraft) {
+    return { ok: false, id, error: `Xenesis tool profile draft is not available: ${id}` };
+  }
+
+  const draft = item.toolProfileDraft;
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+  const requester = readCapabilityString(body, ['requester', 'user', 'userName']) || 'Xenesis Desk';
+  const description = [
+    `Review the ${draft.draftStatus} tool profile draft for ${item.label}.`,
+    `Tool: ${draft.tool}`,
+    `Runtime support: ${draft.runtimeSupport}`,
+    `Auth mode: ${draft.authMode}`,
+    `Setup surface: ${draft.setupSurface}`,
+    `Review surface: ${draft.reviewSurface}`,
+    `Missing required fields: ${draft.missingRequiredFields.join(', ') || 'none'}`,
+    `Scopes: ${draft.scopes.join(', ') || 'none'}`,
+    '',
+    'Profile fields:',
+    ...draft.profileFields.map(
+      (field) =>
+        `- ${field.field}: ${field.valueState}${field.required ? ' required' : ''}${
+          field.secretRef ? ' secret-ref' : ''
+        } - ${field.description}`,
+    ),
+    '',
+    'Review steps:',
+    ...draft.reviewSteps.map((step) => `- ${step.id}: ${step.expectedState}`),
+    '',
+    'Read paths:',
+    ...draft.readPaths.map((path) => `- ${path}`),
+    '',
+    'Control paths:',
+    ...draft.controlPaths.map((path) => `- ${path}`),
+    '',
+    'Diagnostics:',
+    ...draft.diagnostics.map((diagnostic) => `- ${diagnostic}`),
+    '',
+    'Blocked actions:',
+    ...draft.blockedActions.map((action) => `- ${action}`),
+    '',
+    'Safety boundaries:',
+    ...draft.safetyBoundaries.map((boundary) => `- ${boundary}`),
+    note ? '' : undefined,
+    note ? `Note: ${note}` : undefined,
+  ]
+    .filter((line): line is string => typeof line === 'string')
+    .join('\n');
+
+  const actionInboxItem = recordMcpActionInboxRequest({
+    kind: draft.actionInboxKind,
+    title: `Review ${item.label} tool profile draft`,
+    command: `Review tool profile draft for ${item.id}`,
+    description,
+    source: 'Xenesis Connection Center',
+    sessionId: 'xenesis-tool-profile-draft',
+    approvalSessionKey: `xenesis-tool-profile-draft:${item.id}`,
+    requester,
+    risk: draft.draftStatus,
+    approveText: `Approve tool profile draft for ${item.label}`,
+    rejectText: `Reject tool profile draft for ${item.label}`,
+  });
+
+  return {
+    ok: true,
+    id: item.id,
+    item: xenesisToolProfileDraftStatusItem(item),
+    actionInboxItem,
+  };
+}
+
+async function applyXenesisToolProfileDraft(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Tool id is required.' };
+  }
+  if (!isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool profile draft: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.tools.items.find((candidate) => candidate.id === id && candidate.toolProfileDraft);
+  if (!item?.toolProfileDraft) {
+    return { ok: false, id, error: `Xenesis tool profile draft is not available: ${id}` };
+  }
+
+  const draft = item.toolProfileDraft;
+  if (draft.draftStatus !== 'ready') {
+    return {
+      ok: false,
+      id,
+      draftStatus: draft.draftStatus,
+      missingRequiredFields: draft.missingRequiredFields,
+      diagnostics: draft.diagnostics,
+      error: `Xenesis tool profile draft is not ready: ${id}`,
+      item: xenesisToolProfileDraftStatusItem(item),
+    };
+  }
+  if (!draft.controlPaths.includes('xd.xenesis.tools.profileDrafts.apply')) {
+    return {
+      ok: false,
+      id,
+      draftStatus: draft.draftStatus,
+      diagnostics: draft.diagnostics,
+      error: `Xenesis tool profile draft cannot be applied: ${id}`,
+      item: xenesisToolProfileDraftStatusItem(item),
+    };
+  }
+
+  const result = await applyXenesisToolMcpInstallDraft(body);
+  const ok = !(result && typeof result === 'object' && 'ok' in result && result.ok === false);
+  const nextStatus = await getXenesisConnectionsStatus();
+  const nextItem =
+    nextStatus.sections.tools.items.find((candidate) => candidate.id === item.id && candidate.toolProfileDraft) ?? item;
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+
+  return {
+    ok,
+    id: item.id,
+    delegatedPath: 'xd.xenesis.tools.mcpInstallDrafts.apply',
+    item: xenesisToolProfileDraftStatusItem(nextItem),
+    result,
+    ...(note ? { note } : {}),
+  };
+}
+
+function xenesisToolActionCatalogStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    runtimeSupport: item.toolActionCatalog?.runtimeSupport,
+    actionInboxKind: item.toolActionCatalog?.actionInboxKind,
+    primarySurface: item.toolActionCatalog?.primarySurface,
+    reviewSurface: item.toolActionCatalog?.reviewSurface,
+    groups: item.toolActionCatalog?.groups ?? [],
+    readPaths: item.toolActionCatalog?.readPaths ?? [],
+    controlPaths: item.toolActionCatalog?.controlPaths ?? [],
+    diagnostics: item.toolActionCatalog?.diagnostics ?? [],
+    blockedActions: item.toolActionCatalog?.blockedActions ?? [],
+    safetyBoundaries: item.toolActionCatalog?.safetyBoundaries ?? [],
+    toolActionCatalog: item.toolActionCatalog,
+    toolConnector: item.toolConnector,
+    toolUserStory: item.toolUserStory,
+    toolInstallPlan: item.toolInstallPlan,
+    mcpInstallDraft: item.mcpInstallDraft,
+    settingsAction: item.settingsAction,
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisToolActionCatalogStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (id && !isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.tools.items
+    .filter((item) => item.toolActionCatalog)
+    .filter((item) => !id || item.id === id)
+    .map((item) => xenesisToolActionCatalogStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(id ? { id } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisToolActionCatalog(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisToolCatalogSurface(args, {
+    allowedTools: XENESIS_TOOL_SETUP_IDS,
+    isAllowedId: isXenesisToolSetupId,
+    itemPredicate: (item) => Boolean(item.toolActionCatalog),
+    toStatusItem: xenesisToolActionCatalogStatusItem,
+    unsupportedMessage: (id) => `Unsupported Xenesis tool connection: ${id}`,
+    unavailableMessage: (id) => `Xenesis tool action catalog is not available: ${id}`,
+    focusConnectionDetail: 'tool-action-catalog',
+  });
+}
+
+async function requestXenesisToolActionCatalog(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id', 'tool', 'name']);
+  if (!id) {
+    return { ok: false, error: 'Tool id is required.' };
+  }
+  if (!isXenesisToolSetupId(id)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis tool connection: ${id}`,
+      allowedTools: XENESIS_TOOL_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.tools.items.find((candidate) => candidate.id === id && candidate.toolActionCatalog);
+  if (!item?.toolActionCatalog) {
+    return { ok: false, id, error: `Xenesis tool action catalog is not available: ${id}` };
+  }
+
+  const catalog = item.toolActionCatalog;
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+  const requester = readCapabilityString(body, ['requester', 'user', 'userName']) || 'Xenesis Desk';
+  const description = [
+    `Review the tool action policy catalog for ${item.label}.`,
+    `Runtime support: ${catalog.runtimeSupport}`,
+    `Primary surface: ${catalog.primarySurface}`,
+    `Review surface: ${catalog.reviewSurface}`,
+    '',
+    'Action groups:',
+    ...catalog.groups.map((group) => {
+      const actions =
+        group.actions
+          .map((action) => `${action.label} [${action.risk}] via ${action.toolNames.join(', ') || 'none'}`)
+          .join('; ') || 'none';
+      return `- ${group.kind}: ${group.label} (${group.approvalPolicy}) - ${actions}`;
+    }),
+    '',
+    'Diagnostics:',
+    ...catalog.diagnostics.map((diagnostic) => `- ${diagnostic}`),
+    '',
+    'Blocked actions:',
+    ...catalog.blockedActions.map((action) => `- ${action}`),
+    '',
+    'Safety boundaries:',
+    ...catalog.safetyBoundaries.map((boundary) => `- ${boundary}`),
+    note ? '' : undefined,
+    note ? `Note: ${note}` : undefined,
+  ]
+    .filter((line): line is string => typeof line === 'string')
+    .join('\n');
+
+  const actionInboxItem = recordMcpActionInboxRequest({
+    kind: catalog.actionInboxKind,
+    title: `Review ${item.label} tool action policy`,
+    command: `Review tool action policy for ${item.id}`,
+    description,
+    source: 'Xenesis Connection Center',
+    sessionId: 'xenesis-tool-action-policy',
+    approvalSessionKey: `xenesis-tool-action-policy:${item.id}`,
+    requester,
+    risk: catalog.runtimeSupport,
+    approveText: `Approve tool action policy for ${item.label}`,
+    rejectText: `Reject tool action policy for ${item.label}`,
+  });
+
+  return {
+    ok: true,
+    id: item.id,
+    item: xenesisToolActionCatalogStatusItem(item),
+    actionInboxItem,
+  };
+}
+
+const XENESIS_PROVIDER_SETUP_IDS = XENESIS_CONNECTION_PROVIDER_IDS;
+
+function isXenesisProviderSetupId(value: string): value is (typeof XENESIS_PROVIDER_SETUP_IDS)[number] {
+  return (XENESIS_PROVIDER_SETUP_IDS as readonly string[]).includes(value);
+}
+
+function xenesisProviderSetupStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    source: item.providerSetup?.source,
+    provider: item.providerSetup?.provider,
+    model: item.providerSetup?.model,
+    authMode: item.providerSetup?.authMode,
+    credentialState: item.providerSetup?.credentialState,
+    credentialStorage: item.providerSetup?.credentialStorage,
+    endpoint: item.providerSetup?.endpoint,
+    runtimeProfile: item.providerSetup?.runtimeProfile,
+    runtimeProvider: item.providerSetup?.runtimeProvider,
+    runtimeModel: item.providerSetup?.runtimeModel,
+    providerRetries: item.providerSetup?.providerRetries ?? 0,
+    fallbackPolicy: item.providerSetup?.fallbackPolicy,
+    localCliBoundary: item.providerSetup?.localCliBoundary,
+    verification: item.providerSetup?.verification ?? [],
+    crReadPaths: item.providerSetup?.crReadPaths ?? [],
+    riskControls: item.providerSetup?.riskControls ?? [],
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisProviderSetupStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const provider = readCapabilityString(body, ['provider', 'id', 'name']);
+  if (provider && !isXenesisProviderSetupId(provider)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis provider: ${provider}`,
+      allowedProviders: XENESIS_PROVIDER_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.provider.items
+    .filter((item) => item.providerSetup)
+    .filter((item) => !provider || item.providerSetup?.provider === provider)
+    .map((item: XenesisConnectionItem) => xenesisProviderSetupStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(provider ? { provider } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisProviderCatalogSurface(
+  args: unknown,
+  options: {
+    isAllowedProvider: (provider: string) => boolean;
+    itemPredicate: (item: XenesisConnectionItem) => boolean;
+    itemMatchesProvider: (item: XenesisConnectionItem, provider: string) => boolean;
+    providerForItem: (item: XenesisConnectionItem) => string | undefined;
+    toStatusItem: (item: XenesisConnectionItem) => Record<string, unknown>;
+    unavailableMessage: (provider: string) => string;
+    focusConnectionDetail: XenesisConnectionCenterDetailFocus;
+  },
+): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const provider = readCapabilityString(body, ['provider', 'id', 'name']);
+  if (provider && !options.isAllowedProvider(provider)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis provider: ${provider}`,
+      allowedProviders: XENESIS_PROVIDER_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const catalogItems = status.sections.provider.items.filter(options.itemPredicate);
+  const item = provider
+    ? catalogItems.find((candidate) => options.itemMatchesProvider(candidate, provider))
+    : undefined;
+  if (provider && !item) {
+    return { ok: false, provider, error: options.unavailableMessage(provider) };
+  }
+
+  const rendererArgs = buildXenesisConnectionCenterOpenArgs({
+    ensureVisible: body.ensureVisible !== false,
+    focusConnectionDetail: readXenesisConnectionDetailFocus(body, options.focusConnectionDetail),
+    ...(item ? { focusConnectionId: item.id } : {}),
+  });
+
+  const renderer = await openMcpBuiltinPaneCapability(rendererArgs);
+
+  if (provider && item) {
+    return {
+      ok: renderer.ok !== false,
+      provider: options.providerForItem(item),
+      id: item.id,
+      item: options.toStatusItem(item),
+      renderer,
+    };
+  }
+
+  return {
+    ok: renderer.ok !== false,
+    updatedAt: status.updatedAt,
+    total: catalogItems.length,
+    items: catalogItems.map(options.toStatusItem),
+    renderer,
+  };
+}
+
+async function openXenesisProviderSetup(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisProviderCatalogSurface(args, {
+    isAllowedProvider: isXenesisProviderSetupId,
+    itemPredicate: (item) => Boolean(item.providerSetup),
+    itemMatchesProvider: (item, provider) => item.providerSetup?.provider === provider,
+    providerForItem: (item) => item.providerSetup?.provider,
+    toStatusItem: xenesisProviderSetupStatusItem,
+    unavailableMessage: (provider) => `Xenesis provider setup is not available: ${provider}`,
+    focusConnectionDetail: 'provider-setup',
+  });
+}
+
+function xenesisProviderRoutingStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    provider: item.providerRouting?.activeProvider,
+    activeProvider: item.providerRouting?.activeProvider,
+    activeModel: item.providerRouting?.activeModel,
+    runtimeProfile: item.providerRouting?.runtimeProfile,
+    runtimeProvider: item.providerRouting?.runtimeProvider,
+    runtimeModel: item.providerRouting?.runtimeModel,
+    retryPolicy: item.providerRouting?.retryPolicy,
+    fallbackPolicy: item.providerRouting?.fallbackPolicy,
+    fallbackChainSource: item.providerRouting?.fallbackChainSource,
+    fallbackChainVisible: item.providerRouting?.fallbackChainVisible,
+    fallbackChain: item.providerRouting?.fallbackChain ?? [],
+    credentialPools: item.providerRouting?.credentialPools ?? [],
+    readPaths: item.providerRouting?.readPaths ?? [],
+    diagnostics: item.providerRouting?.diagnostics ?? [],
+    safetyBoundaries: item.providerRouting?.safetyBoundaries ?? [],
+    providerRouting: item.providerRouting,
+    settingsAction: item.settingsAction,
+    crActions: item.crActions ?? [],
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisProviderRoutingStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const provider = readCapabilityString(body, ['provider', 'id', 'name']);
+  if (provider && !isXenesisProviderSetupId(provider)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis provider: ${provider}`,
+      allowedProviders: XENESIS_PROVIDER_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.provider.items
+    .filter((item) => item.providerRouting)
+    .filter((item) => !provider || item.providerRouting?.activeProvider === provider)
+    .map((item: XenesisConnectionItem) => xenesisProviderRoutingStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(provider ? { provider } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+function isXenesisProviderRoutingSelector(provider: string): boolean {
+  return isXenesisProviderSetupId(provider) || provider.startsWith('provider-');
+}
+
+async function openXenesisProviderRouting(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const provider = readCapabilityString(body, ['provider', 'id', 'name']);
+  if (provider && !isXenesisProviderRoutingSelector(provider)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis provider: ${provider}`,
+      allowedProviders: XENESIS_PROVIDER_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.provider.items.find(
+    (candidate) =>
+      Boolean(candidate.providerRouting) &&
+      (!provider || candidate.providerRouting?.activeProvider === provider || candidate.id === provider),
+  );
+  if (!item) {
+    return {
+      ok: false,
+      ...(provider ? { provider } : {}),
+      error: provider
+        ? `Xenesis provider routing is not available: ${provider}`
+        : 'Xenesis provider routing is not available.',
+    };
+  }
+
+  const renderer = await openMcpBuiltinPaneCapability(
+    buildXenesisConnectionCenterOpenArgs({
+      ensureVisible: body.ensureVisible !== false,
+      focusConnectionDetail: readXenesisConnectionDetailFocus(body, 'provider-routing'),
+      focusConnectionId: item.id,
+    }),
+  );
+
+  return {
+    ok: renderer.ok !== false,
+    provider: item.providerRouting?.activeProvider,
+    id: item.id,
+    item: xenesisProviderRoutingStatusItem(item),
+    renderer,
+  };
+}
+
+function xenesisProviderViewStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    provider: item.providerSetup?.provider,
+    providerSetup: item.providerSetup,
+    viewType: item.providerView?.viewType,
+    primarySurface: item.providerView?.primarySurface,
+    setupSurface: item.providerView?.setupSurface,
+    openPath: item.providerView?.openPath,
+    openArgs: item.providerView?.openArgs,
+    connectionCardId: item.providerView?.connectionCardId,
+    internalViews: item.providerView?.internalViews ?? [],
+    viewSections: item.providerView?.viewSections ?? [],
+    readPaths: item.providerView?.readPaths ?? [],
+    controlPaths: item.providerView?.controlPaths ?? [],
+    diagnostics: item.providerView?.diagnostics ?? [],
+    safetyBoundaries: item.providerView?.safetyBoundaries ?? [],
+    providerView: item.providerView,
+    settingsAction: item.settingsAction,
+    warnings: item.warnings ?? [],
+  };
+}
+
+function isXenesisProviderViewSelector(provider: string): boolean {
+  return isXenesisProviderSetupId(provider) || provider.startsWith('provider-');
+}
+
+async function getXenesisProviderViewsStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const provider = readCapabilityString(body, ['provider', 'id', 'name']);
+  if (provider && !isXenesisProviderViewSelector(provider)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis provider: ${provider}`,
+      allowedProviders: XENESIS_PROVIDER_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.provider.items
+    .filter((item) => item.providerView)
+    .filter((item) => !provider || item.providerSetup?.provider === provider || item.id === provider)
+    .map((item) => xenesisProviderViewStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(provider ? { provider } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisProviderView(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const section = readCapabilityString(body, ['section', 'viewSection', 'providerViewSection']);
+  if (section && !isXenesisConnectionProviderViewSectionId(section)) {
+    return {
+      ok: false,
+      section,
+      error: `Unsupported Xenesis provider view section: ${section}`,
+      allowedSections: XENESIS_CONNECTION_PROVIDER_VIEW_SECTION_IDS,
+    };
+  }
+
+  const focusConnectionDetail = xenesisProviderViewSectionDetailFocus(section) ?? 'provider-view';
+  const result = await openXenesisProviderCatalogSurface(body, {
+    isAllowedProvider: isXenesisProviderViewSelector,
+    itemPredicate: (item) => Boolean(item.providerView),
+    itemMatchesProvider: (item, provider) => item.providerSetup?.provider === provider || item.id === provider,
+    providerForItem: (item) => item.providerSetup?.provider,
+    toStatusItem: xenesisProviderViewStatusItem,
+    unavailableMessage: (provider) => `Xenesis provider view is not available: ${provider}`,
+    focusConnectionDetail,
+  });
+
+  return section
+    ? {
+        ...result,
+        section,
+        focusConnectionDetail,
+      }
+    : result;
+}
+
+function xenesisProviderSetupPlanStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    provider: item.providerSetup?.provider ?? item.providerProfileDraft?.provider,
+    planStatus: item.providerSetupPlan?.planStatus,
+    runtimeSupport: item.providerSetupPlan?.runtimeSupport,
+    guideId: item.providerSetupPlan?.guideId,
+    guidePath: item.providerSetupPlan?.guidePath,
+    primarySurface: item.providerSetupPlan?.primarySurface,
+    setupSurface: item.providerSetupPlan?.setupSurface,
+    reviewSurface: item.providerSetupPlan?.reviewSurface,
+    steps: item.providerSetupPlan?.steps ?? [],
+    readPaths: item.providerSetupPlan?.readPaths ?? [],
+    controlPaths: item.providerSetupPlan?.controlPaths ?? [],
+    diagnostics: item.providerSetupPlan?.diagnostics ?? [],
+    blockedActions: item.providerSetupPlan?.blockedActions ?? [],
+    safetyBoundaries: item.providerSetupPlan?.safetyBoundaries ?? [],
+    providerSetupPlan: item.providerSetupPlan,
+    providerSetup: item.providerSetup,
+    providerRouting: item.providerRouting,
+    providerView: item.providerView,
+    providerProfileDraft: item.providerProfileDraft,
+    settingsAction: item.settingsAction,
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisProviderSetupPlansStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const provider = readCapabilityString(body, ['provider', 'id', 'name']);
+  if (provider && !isXenesisProviderViewSelector(provider)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis provider: ${provider}`,
+      allowedProviders: XENESIS_PROVIDER_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.provider.items
+    .filter((item) => item.providerSetupPlan)
+    .filter(
+      (item) =>
+        !provider ||
+        item.providerSetup?.provider === provider ||
+        item.providerProfileDraft?.provider === provider ||
+        item.id === provider,
+    )
+    .map((item) => xenesisProviderSetupPlanStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(provider ? { provider } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisProviderSetupPlan(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisProviderCatalogSurface(args, {
+    isAllowedProvider: isXenesisProviderViewSelector,
+    itemPredicate: (item) => Boolean(item.providerSetupPlan),
+    itemMatchesProvider: (item, provider) =>
+      item.providerSetup?.provider === provider ||
+      item.providerProfileDraft?.provider === provider ||
+      item.id === provider,
+    providerForItem: (item) => item.providerSetup?.provider ?? item.providerProfileDraft?.provider,
+    toStatusItem: xenesisProviderSetupPlanStatusItem,
+    unavailableMessage: (provider) => `Xenesis provider setup plan is not available: ${provider}`,
+    focusConnectionDetail: 'provider-setup-plan',
+  });
+}
+
+function xenesisProviderProfileDraftStatusItem(item: XenesisConnectionItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    supportLevel: item.supportLevel,
+    summary: item.summary,
+    draftStatus: item.providerProfileDraft?.draftStatus,
+    actionInboxKind: item.providerProfileDraft?.actionInboxKind,
+    provider: item.providerProfileDraft?.provider,
+    displayName: item.providerProfileDraft?.displayName,
+    description: item.providerProfileDraft?.description,
+    setupSurface: item.providerProfileDraft?.setupSurface,
+    reviewSurface: item.providerProfileDraft?.reviewSurface,
+    profileFields: item.providerProfileDraft?.profileFields ?? [],
+    missingRequiredFields: item.providerProfileDraft?.missingRequiredFields ?? [],
+    guardrails: item.providerProfileDraft?.guardrails,
+    readPaths: item.providerProfileDraft?.readPaths ?? [],
+    controlPaths: item.providerProfileDraft?.controlPaths ?? [],
+    diagnostics: item.providerProfileDraft?.diagnostics ?? [],
+    blockedActions: item.providerProfileDraft?.blockedActions ?? [],
+    safetyBoundaries: item.providerProfileDraft?.safetyBoundaries ?? [],
+    providerProfileDraft: item.providerProfileDraft,
+    providerSetup: item.providerSetup,
+    providerRouting: item.providerRouting,
+    providerView: item.providerView,
+    settingsAction: item.settingsAction,
+    warnings: item.warnings ?? [],
+  };
+}
+
+async function getXenesisProviderProfileDraftsStatus(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const provider = readCapabilityString(body, ['provider', 'id', 'name']);
+  if (provider && !isXenesisProviderViewSelector(provider)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis provider: ${provider}`,
+      allowedProviders: XENESIS_PROVIDER_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const items = status.sections.provider.items
+    .filter((item) => item.providerProfileDraft)
+    .filter((item) => !provider || item.providerProfileDraft?.provider === provider || item.id === provider)
+    .map((item) => xenesisProviderProfileDraftStatusItem(item));
+
+  return {
+    ok: true,
+    updatedAt: status.updatedAt,
+    ...(provider ? { provider } : {}),
+    total: items.length,
+    items,
+  };
+}
+
+async function openXenesisProviderProfileDraft(args?: unknown): Promise<Record<string, unknown>> {
+  return openXenesisProviderCatalogSurface(args, {
+    isAllowedProvider: isXenesisProviderViewSelector,
+    itemPredicate: (item) => Boolean(item.providerProfileDraft),
+    itemMatchesProvider: (item, provider) => item.providerProfileDraft?.provider === provider || item.id === provider,
+    providerForItem: (item) => item.providerProfileDraft?.provider,
+    toStatusItem: xenesisProviderProfileDraftStatusItem,
+    unavailableMessage: (provider) => `Xenesis provider profile draft is not available: ${provider}`,
+    focusConnectionDetail: 'provider-profile-draft',
+  });
+}
+
+async function requestXenesisProviderProfileDraft(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const provider = readCapabilityString(body, ['provider', 'id', 'name']);
+  if (!provider) {
+    return { ok: false, error: 'Provider is required.' };
+  }
+  if (!isXenesisProviderViewSelector(provider)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis provider: ${provider}`,
+      allowedProviders: XENESIS_PROVIDER_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.provider.items.find(
+    (candidate) =>
+      Boolean(candidate.providerProfileDraft) &&
+      (candidate.providerProfileDraft?.provider === provider || candidate.id === provider),
+  );
+  if (!item?.providerProfileDraft) {
+    return { ok: false, provider, error: `Xenesis provider profile draft is not available: ${provider}` };
+  }
+
+  const draft = item.providerProfileDraft;
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+  const requester = readCapabilityString(body, ['requester', 'user', 'userName']) || 'Xenesis Desk';
+  const fieldLines = draft.profileFields.map(
+    (field) => `- ${field.field}: ${field.valueState}${field.required ? ' (required)' : ''}`,
+  );
+  const description = [
+    `Review the ${draft.draftStatus} provider profile draft for ${item.label}.`,
+    `Provider: ${draft.provider}`,
+    `Setup surface: ${draft.setupSurface}`,
+    `Missing required fields: ${draft.missingRequiredFields.join(', ') || 'none'}`,
+    `Guardrails: ${draft.guardrails.approvalMode}, retries ${draft.guardrails.providerRetries}, ${draft.guardrails.fallbackPolicy}`,
+    `Local CLI boundary: ${draft.guardrails.localCliBoundary}`,
+    '',
+    'Profile field state:',
+    ...fieldLines,
+    '',
+    'Read paths:',
+    ...draft.readPaths.map((path) => `- ${path}`),
+    '',
+    'Control paths:',
+    ...draft.controlPaths.map((path) => `- ${path}`),
+    '',
+    'Diagnostics:',
+    ...draft.diagnostics.map((diagnostic) => `- ${diagnostic}`),
+    '',
+    'Blocked actions:',
+    ...draft.blockedActions.map((action) => `- ${action}`),
+    '',
+    'Safety boundaries:',
+    ...draft.safetyBoundaries.map((boundary) => `- ${boundary}`),
+    note ? '' : undefined,
+    note ? `Note: ${note}` : undefined,
+  ]
+    .filter((line): line is string => typeof line === 'string')
+    .join('\n');
+
+  const actionInboxItem = recordMcpActionInboxRequest({
+    kind: draft.actionInboxKind,
+    title: `Review ${draft.provider} provider profile draft`,
+    command: `Review provider profile draft for ${draft.provider}`,
+    description,
+    source: 'Xenesis Connection Center',
+    sessionId: 'xenesis-provider-profile-draft',
+    approvalSessionKey: `xenesis-provider-profile-draft:${draft.provider}`,
+    requester,
+    risk: draft.draftStatus,
+    approveText: `Approve provider profile draft for ${draft.provider}`,
+    rejectText: `Reject provider profile draft for ${draft.provider}`,
+  });
+
+  return {
+    ok: true,
+    provider: draft.provider,
+    id: item.id,
+    item: xenesisProviderProfileDraftStatusItem(item),
+    actionInboxItem,
+  };
+}
+
+async function applyXenesisProviderProfileDraft(args?: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const provider = readCapabilityString(body, ['provider', 'id', 'name']);
+  if (!provider) {
+    return { ok: false, error: 'Provider is required.' };
+  }
+  if (!isXenesisProviderViewSelector(provider)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis provider: ${provider}`,
+      allowedProviders: XENESIS_PROVIDER_SETUP_IDS,
+    };
+  }
+
+  const status = await getXenesisConnectionsStatus();
+  const item = status.sections.provider.items.find(
+    (candidate) =>
+      Boolean(candidate.providerProfileDraft) &&
+      (candidate.providerProfileDraft?.provider === provider || candidate.id === provider),
+  );
+  if (!item?.providerProfileDraft) {
+    return { ok: false, provider, error: `Xenesis provider profile draft is not available: ${provider}` };
+  }
+
+  const draft = item.providerProfileDraft;
+  if (draft.draftStatus !== 'ready') {
+    return {
+      ok: false,
+      provider,
+      draftStatus: draft.draftStatus,
+      missingRequiredFields: draft.missingRequiredFields,
+      error: `Xenesis provider profile draft is not ready: ${provider}`,
+      item: xenesisProviderProfileDraftStatusItem(item),
+    };
+  }
+  if (!draft.controlPaths.includes('xd.xenesis.providers.profileDrafts.apply')) {
+    return {
+      ok: false,
+      provider,
+      draftStatus: draft.draftStatus,
+      error: `Xenesis provider profile draft cannot be applied: ${provider}`,
+      item: xenesisProviderProfileDraftStatusItem(item),
+    };
+  }
+
+  const currentSettings = loadSettings();
+  const applyState = buildXenesisProviderProfileDraftApplySettings({
+    current: normalizeAiProviderSettings(currentSettings.aiProvider),
+    args: body,
+  });
+  if (!applyState.ok) {
+    return {
+      ok: false,
+      provider,
+      error: applyState.error,
+      ...(applyState.allowedProviders ? { allowedProviders: applyState.allowedProviders } : {}),
+      ...(applyState.allowedReasoningEfforts ? { allowedReasoningEfforts: applyState.allowedReasoningEfforts } : {}),
+      item: xenesisProviderProfileDraftStatusItem(item),
+    };
+  }
+
+  const nextSettings = normalizeAiProviderSettings(applyState.settings);
+  const updatedSettings = persistSettings({ aiProvider: nextSettings });
+  const activeProfile =
+    updatedSettings.aiProviderProfiles.find((profile) => profile.id === updatedSettings.activeAiProviderProfileId) ??
+    updatedSettings.aiProviderProfiles[0];
+  const nextStatus = await getXenesisConnectionsStatus();
+  const nextItem =
+    nextStatus.sections.provider.items.find(
+      (candidate) =>
+        Boolean(candidate.providerProfileDraft) &&
+        (candidate.providerProfileDraft?.provider === provider || candidate.id === provider),
+    ) ?? item;
+  const note = readCapabilityString(body, ['note', 'description', 'comment']);
+
+  return {
+    ok: true,
+    provider: applyState.provider,
+    activeAiProviderProfileId: updatedSettings.activeAiProviderProfileId,
+    appliedFields: applyState.appliedFields,
+    item: xenesisProviderProfileDraftStatusItem(nextItem),
+    state: {
+      aiProvider: redactXenesisProviderProfileDraftApplySettings(updatedSettings.aiProvider),
+      activeProfile: activeProfile
+        ? {
+            id: activeProfile.id,
+            name: activeProfile.name,
+            settings: redactXenesisProviderProfileDraftApplySettings(activeProfile.settings),
+          }
+        : null,
+    },
+    ...(note ? { note } : {}),
+  };
+}
+
 function getProviderIntegrationAssetRoot(): string {
   if (app.isPackaged) {
     return path.join(process.resourcesPath, 'provider-assets');
@@ -5222,6 +9317,8 @@ function sendMcpOpenBuiltinPaneToRenderer(
       category: payload.category,
       mode: payload.mode,
       section: payload.section,
+      focusConnectionId: payload.focusConnectionId,
+      focusConnectionDetail: payload.focusConnectionDetail,
       ensureVisible: payload.ensureVisible,
       error: 'Xenesis Desk renderer window is not available',
     });
@@ -5240,6 +9337,8 @@ function sendMcpOpenBuiltinPaneToRenderer(
         category: payload.category,
         mode: payload.mode,
         section: payload.section,
+        focusConnectionId: payload.focusConnectionId,
+        focusConnectionDetail: payload.focusConnectionDetail,
         ensureVisible: payload.ensureVisible,
         error: 'Xenesis Desk built-in pane open timed out',
       });
@@ -5313,7 +9412,11 @@ function capabilityApprovalAllowKey(pathValue: string, args: unknown, source: De
   return createCapabilityApprovalAllowKey({ path: pathValue, args: keyArgs, source });
 }
 
-function isMcpCapabilityApprovalRemembered(pathValue: string, args: unknown, source: DeskBridgeCapabilitySource): boolean {
+function isMcpCapabilityApprovalRemembered(
+  pathValue: string,
+  args: unknown,
+  source: DeskBridgeCapabilitySource,
+): boolean {
   return mcpCapabilityApprovalAllowKeys.has(capabilityApprovalAllowKey(pathValue, args, source));
 }
 
@@ -5322,11 +9425,15 @@ function persistMcpCapabilityApprovalsSafely(): void {
     fs.mkdirSync(getMcpDir(), { recursive: true });
     fs.writeFileSync(
       getMcpCapabilityApprovalsStorePath(),
-      `${JSON.stringify({
-        version: 1,
-        savedAt: new Date().toISOString(),
-        keys: [...mcpCapabilityApprovalAllowKeys].sort(),
-      }, null, 2)}\n`,
+      `${JSON.stringify(
+        {
+          version: 1,
+          savedAt: new Date().toISOString(),
+          keys: [...mcpCapabilityApprovalAllowKeys].sort(),
+        },
+        null,
+        2,
+      )}\n`,
       'utf8',
     );
   } catch (error) {
@@ -5365,11 +9472,7 @@ function loadPersistedMcpCapabilityApprovals(): void {
 
 function rememberMcpCapabilityApproval(item: McpBridgeActionInboxItem): string {
   const command = parseCapabilityApprovalCommand(item.command);
-  const key = capabilityApprovalAllowKey(
-    command.path,
-    command.args,
-    command.source as DeskBridgeCapabilitySource,
-  );
+  const key = capabilityApprovalAllowKey(command.path, command.args, command.source as DeskBridgeCapabilitySource);
   mcpCapabilityApprovalAllowKeys.add(key);
   persistMcpCapabilityApprovalsSafely();
   return key;
@@ -5502,12 +9605,97 @@ function emitMcpActionInboxChanged(): void {
   sendToRenderer(targetWindow, 'mcp:action-inbox-changed', listMcpActionInboxSnapshot());
 }
 
+function currentAgentActionTurnId(): string {
+  return agentTurnLedger.current()?.id || 'unknown-turn';
+}
+
+function getLinkedApprovalActionNeeded(item: McpBridgeActionInboxItem): { id?: string } | null {
+  return (
+    agentActionRecordStore
+      .listActionNeeded()
+      .find((record) => record.refs?.actionInboxItemId === item.id && record.kind === 'approval') ?? null
+  );
+}
+
+function recordLinkedApprovalActionNeeded(item: McpBridgeActionInboxItem): void {
+  if (!isCapabilityApprovalItem(item)) return;
+  if (getLinkedApprovalActionNeeded(item)) return;
+  const turnId = currentAgentActionTurnId();
+  const actionNeeded = agentActionRecordStore.createActionNeeded(createLinkedApprovalActionNeeded({ turnId, item }));
+  agentActionRecordStore.appendReceipt(createLinkedApprovalReceipt({ turnId, actionNeededId: actionNeeded.id, item }));
+}
+
 function recordMcpActionInboxRequest(raw: unknown): McpBridgeActionInboxItem {
   const item = applyMcpActionInboxRequest(mcpActionInboxState, raw) as McpBridgeActionInboxItem;
+  recordLinkedApprovalActionNeeded(item);
   pruneMcpInventoryMap(mcpActionInboxState.items);
   persistMcpActionInboxStateSafely();
   emitMcpActionInboxChanged();
   return item;
+}
+
+function readAgentActionNeededStatus(value: unknown): AgentActionNeededListFilter['status'] | undefined {
+  return value === 'open' || value === 'resolved' || value === 'dismissed' ? value : undefined;
+}
+
+function readAgentReceiptKind(value: unknown): AgentWorkflowReceiptKind | undefined {
+  return value === 'action-needed-replied' || value === 'action-needed-dismissed' || value === 'workflow-receipt'
+    ? value
+    : undefined;
+}
+
+function listAgentActionNeededForCapability(args?: unknown): Record<string, unknown> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const filter: AgentActionNeededListFilter = {};
+  const status = readAgentActionNeededStatus(body.status);
+  if (status) filter.status = status;
+  const turnId = readCapabilityString(body, ['turnId']);
+  if (turnId) filter.turnId = turnId;
+  return { ok: true, actionNeeded: agentActionRecordStore.listActionNeeded(filter) };
+}
+
+function getAgentActionNeededForCapability(args?: unknown): Record<string, unknown> {
+  const id = readCapabilityString(normalizeMcpCapabilityArgs(args), ['id']);
+  if (!id) return { ok: false, error: 'id is required' };
+  return { ok: true, actionNeeded: agentActionRecordStore.getActionNeeded(id) };
+}
+
+function replyAgentActionNeededForCapability(args?: unknown): Record<string, unknown> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id']);
+  const text = readCapabilityString(body, ['text', 'reply']);
+  if (!id) return { ok: false, error: 'id is required' };
+  if (!text) return { ok: false, error: 'text is required' };
+  return agentActionRecordStore.replyActionNeeded(id, {
+    text,
+    repliedBy: readCapabilityString(body, ['repliedBy', 'userId', 'userName']) || 'user',
+  }) as unknown as Record<string, unknown>;
+}
+
+function dismissAgentActionNeededForCapability(args?: unknown): Record<string, unknown> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const id = readCapabilityString(body, ['id']);
+  if (!id) return { ok: false, error: 'id is required' };
+  return agentActionRecordStore.dismissActionNeeded(id, {
+    reason: readCapabilityString(body, ['reason']),
+    dismissedBy: readCapabilityString(body, ['dismissedBy', 'userId', 'userName']) || 'user',
+  }) as unknown as Record<string, unknown>;
+}
+
+function listAgentReceiptsForCapability(args?: unknown): Record<string, unknown> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const filter: AgentWorkflowReceiptListFilter = {};
+  const turnId = readCapabilityString(body, ['turnId']);
+  if (turnId) filter.turnId = turnId;
+  const kind = readAgentReceiptKind(body.kind);
+  if (kind) filter.kind = kind;
+  return { ok: true, receipts: agentActionRecordStore.listReceipts(filter) };
+}
+
+function getAgentReceiptForCapability(args?: unknown): Record<string, unknown> {
+  const id = readCapabilityString(normalizeMcpCapabilityArgs(args), ['id']);
+  if (!id) return { ok: false, error: 'id is required' };
+  return { ok: true, receipt: agentActionRecordStore.getReceipt(id) };
 }
 
 async function postMcpActionInboxCallback(item: McpBridgeActionInboxItem, text: string): Promise<string> {
@@ -5639,6 +9827,60 @@ async function resolveCapabilityActionInboxRequest(
     });
     return { ok: false, item: failedItem, error: message };
   }
+}
+
+function findPendingCapabilityApprovalActionInboxItem(
+  pathValue: string,
+  args: unknown,
+  source: DeskBridgeCapabilitySource,
+): McpBridgeActionInboxItem | null {
+  const expectedAllowKey = capabilityApprovalAllowKey(pathValue, args, source);
+  for (const item of listMcpActionInboxSnapshot()) {
+    if (item.status !== 'pending' || !isCapabilityApprovalItem(item)) continue;
+    try {
+      const command = parseCapabilityApprovalCommand(item.command);
+      const itemAllowKey = capabilityApprovalAllowKey(
+        command.path,
+        command.args,
+        command.source as DeskBridgeCapabilitySource,
+      );
+      const itemSourceAllowKey = capabilityApprovalAllowKey(
+        pathValue,
+        args,
+        command.source as DeskBridgeCapabilitySource,
+      );
+      if (itemAllowKey === expectedAllowKey || itemAllowKey === itemSourceAllowKey) return item;
+    } catch {}
+  }
+  return null;
+}
+
+function resolveApprovedCapabilityActionInboxItem(
+  pathValue: string,
+  args: unknown,
+  source: DeskBridgeCapabilitySource,
+): McpBridgeActionInboxResolveResult | null {
+  const existing = findPendingCapabilityApprovalActionInboxItem(pathValue, args, source);
+  if (!existing) return null;
+
+  const now = new Date().toISOString();
+  const resolved = resolveMcpActionInboxItem(mcpActionInboxState, {
+    id: existing.id,
+    resolution: 'approve',
+    result: `Capability call approved and executed: ${pathValue}`,
+    at: now,
+    lastCallbackAt: now,
+  }) as McpBridgeActionInboxResolveResult;
+  persistMcpActionInboxStateSafely();
+  emitMcpActionInboxChanged();
+  recordDiagnosticLog({
+    level: 'info',
+    source: 'main',
+    scope: 'mcp',
+    message: `Capability approval marked approved after inline execution: ${pathValue}`,
+    detail: JSON.stringify({ id: existing.id, sessionId: existing.sessionId }),
+  });
+  return resolved;
 }
 
 async function resolveMcpActionInboxRequest(
@@ -6414,6 +10656,8 @@ function sanitizeMcpOpenBuiltinPaneResult(value: unknown): McpBridgeOpenBuiltinP
     category: sanitizeMcpDockActionText(raw.category, 120) || undefined,
     mode: sanitizeMcpDockActionText(raw.mode, 120) || undefined,
     section: sanitizeMcpDockActionText(raw.section, 120) || undefined,
+    focusConnectionId: sanitizeMcpDockActionText(raw.focusConnectionId, 120) || undefined,
+    focusConnectionDetail: sanitizeMcpDockActionText(raw.focusConnectionDetail, 120) || undefined,
     ensureVisible: typeof raw.ensureVisible === 'boolean' ? raw.ensureVisible : undefined,
     message: sanitizeMcpDockActionText(raw.message, 500) || undefined,
     error: sanitizeMcpDockActionText(raw.error, 500) || undefined,
@@ -7847,7 +12091,7 @@ function sanitizeMcpBrowserAction(value: unknown): McpBridgeBrowserActionPayload
 }
 
 function sanitizeMcpBrowserActionRequest(body: unknown): Omit<McpBridgeBrowserActionPayload, 'requestId'> {
-  const raw = body && typeof body === 'object' && !Array.isArray(body) ? body as Record<string, unknown> : {};
+  const raw = body && typeof body === 'object' && !Array.isArray(body) ? (body as Record<string, unknown>) : {};
   const action = sanitizeMcpBrowserAction(raw.action);
   const request: Omit<McpBridgeBrowserActionPayload, 'requestId'> = { action };
   const contentId = sanitizeMcpDockActionText(raw.contentId, 200);
@@ -7861,7 +12105,8 @@ function sanitizeMcpBrowserActionRequest(body: unknown): Omit<McpBridgeBrowserAc
   const maxChars = typeof raw.maxChars === 'number' && Number.isFinite(raw.maxChars) ? raw.maxChars : undefined;
   const maxLinks = typeof raw.maxLinks === 'number' && Number.isFinite(raw.maxLinks) ? raw.maxLinks : undefined;
   const maxNodes = typeof raw.maxNodes === 'number' && Number.isFinite(raw.maxNodes) ? raw.maxNodes : undefined;
-  const maxTextChars = typeof raw.maxTextChars === 'number' && Number.isFinite(raw.maxTextChars) ? raw.maxTextChars : undefined;
+  const maxTextChars =
+    typeof raw.maxTextChars === 'number' && Number.isFinite(raw.maxTextChars) ? raw.maxTextChars : undefined;
   if (contentId) request.contentId = contentId;
   if (paneId) request.paneId = paneId;
   if (url) request.url = url;
@@ -7903,7 +12148,7 @@ function sanitizeMcpBrowserActionResult(value: unknown): McpBridgeBrowserActionR
     canGoForward: typeof raw.canGoForward === 'boolean' ? raw.canGoForward : undefined,
     title: sanitizeMcpDockActionText(raw.title, 500) || undefined,
     text: typeof raw.text === 'string' ? raw.text : undefined,
-    links: Array.isArray(raw.links) ? raw.links as Array<{ text?: string; href?: string }> : undefined,
+    links: Array.isArray(raw.links) ? (raw.links as Array<{ text?: string; href?: string }>) : undefined,
     forms: Array.isArray(raw.forms) ? raw.forms : undefined,
     dom: raw.dom,
     elementAction: raw.elementAction,
@@ -8534,7 +12779,10 @@ function resolveOneShotShellSpawn(shellKind: ShellKind, command: string): { comm
   if (process.platform === 'win32') {
     if (shellKind === 'cmd') return { command: resolved.command, args: ['/d', '/s', '/c', command] };
     if (shellKind === 'wsl') return { command: resolved.command, args: ['sh', '-lc', command] };
-    return { command: resolved.command, args: ['-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', command] };
+    return {
+      command: resolved.command,
+      args: ['-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', command],
+    };
   }
   if (shellKind === 'pwsh') return { command: resolved.command, args: ['-NoLogo', '-NoProfile', '-Command', command] };
   const shellCommand = resolved.command || (shellKind === 'sh' ? '/bin/sh' : '/bin/bash');
@@ -8543,16 +12791,12 @@ function resolveOneShotShellSpawn(shellKind: ShellKind, command: string): { comm
 
 function normalizeMcpTerminalRunAndWaitTimeout(value: unknown): number {
   const requested = Number(value);
-  return Number.isFinite(requested)
-    ? clamp(Math.trunc(requested), 1000, 30 * 60 * 1000, 120_000)
-    : 120_000;
+  return Number.isFinite(requested) ? clamp(Math.trunc(requested), 1000, 30 * 60 * 1000, 120_000) : 120_000;
 }
 
 function normalizeMcpTerminalRunAndWaitMaxBytes(value: unknown): number {
   const requested = Number(value);
-  return Number.isFinite(requested)
-    ? clamp(Math.trunc(requested), 1024, SCROLLBACK_MAX_BYTES, 64 * 1024)
-    : 64 * 1024;
+  return Number.isFinite(requested) ? clamp(Math.trunc(requested), 1024, SCROLLBACK_MAX_BYTES, 64 * 1024) : 64 * 1024;
 }
 
 function trimCapturedOutput(value: string, maxBytes: number): string {
@@ -8583,7 +12827,12 @@ async function runMcpTerminalCommandAndWait(args: unknown): Promise<McpTerminalR
     let timedOut = false;
     let child: ChildProcess;
 
-    const finish = (result: Omit<McpTerminalRunAndWaitResult, 'ok' | 'command' | 'cwd' | 'shell' | 'durationMs' | 'output' | 'stdout' | 'stderr' | 'timedOut'>) => {
+    const finish = (
+      result: Omit<
+        McpTerminalRunAndWaitResult,
+        'ok' | 'command' | 'cwd' | 'shell' | 'durationMs' | 'output' | 'stdout' | 'stderr' | 'timedOut'
+      >,
+    ) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
@@ -8606,7 +12855,11 @@ async function runMcpTerminalCommandAndWait(args: unknown): Promise<McpTerminalR
 
     const timer = setTimeout(() => {
       timedOut = true;
-      try { child?.kill(); } catch { /* process already exited */ }
+      try {
+        child?.kill();
+      } catch {
+        /* process already exited */
+      }
       finish({ exitCode: null, signal: 'timeout', error: `Command timed out after ${timeoutMs}ms` });
     }, timeoutMs);
 
@@ -9073,6 +13326,8 @@ async function openMcpBuiltinPaneCapability(args: unknown): Promise<Record<strin
   const category = kind === 'settings' ? normalizeMcpSettingsCategory(body.category) : undefined;
   const mode = kind === 'settings' ? normalizeMcpSettingsTargetText(body.mode) : undefined;
   const section = kind === 'settings' ? normalizeMcpSettingsTargetText(body.section) : undefined;
+  const focusConnectionId = kind === 'settings' ? normalizeMcpSettingsTargetText(body.focusConnectionId) : undefined;
+  const focusConnectionDetail = kind === 'settings' ? readXenesisConnectionDetailFocus(body) : undefined;
   const ensureVisible = kind === 'settings' && typeof body.ensureVisible === 'boolean' ? body.ensureVisible : undefined;
   const result = await sendMcpOpenBuiltinPaneToRenderer({
     kind,
@@ -9081,6 +13336,8 @@ async function openMcpBuiltinPaneCapability(args: unknown): Promise<Record<strin
     category,
     mode,
     section,
+    focusConnectionId,
+    focusConnectionDetail,
     ensureVisible,
   });
   if (!result.ok) return { ...result };
@@ -9090,9 +13347,31 @@ async function openMcpBuiltinPaneCapability(args: unknown): Promise<Record<strin
     source: 'main',
     scope: 'mcp',
     message: 'MCP opened built-in pane through capability',
-    detail: JSON.stringify({ kind, placement, targetPaneId, category, mode, section, ensureVisible }),
+    detail: JSON.stringify({
+      kind,
+      placement,
+      targetPaneId,
+      category,
+      mode,
+      section,
+      focusConnectionId,
+      focusConnectionDetail,
+      ensureVisible,
+    }),
   });
-  return { ok: true, kind, placement, targetPaneId, category, mode, section, ensureVisible, renderer: result };
+  return {
+    ok: true,
+    kind,
+    placement,
+    targetPaneId,
+    category,
+    mode,
+    section,
+    focusConnectionId,
+    focusConnectionDetail,
+    ensureVisible,
+    renderer: result,
+  };
 }
 
 function openMcpFileCapability(args: unknown): Record<string, unknown> {
@@ -9164,7 +13443,9 @@ function readCapabilityStringArray(body: Record<string, unknown>, keys: string[]
 }
 
 function isMemoryKind(value: unknown): value is NonNullable<MemoryInput['kind']> {
-  return value === 'fact' || value === 'preference' || value === 'event' || value === 'decision' || value === 'procedure';
+  return (
+    value === 'fact' || value === 'preference' || value === 'event' || value === 'decision' || value === 'procedure'
+  );
 }
 
 function isMemoryStatus(value: unknown): value is NonNullable<MemoryInput['status']> {
@@ -9205,7 +13486,8 @@ function normalizeMemoryInputArgs(body: Record<string, unknown>): MemoryInput {
   const tags = Array.isArray(record.tags) ? record.tags.filter((tag): tag is string => typeof tag === 'string') : [];
   const source = readCapabilityString(record, ['source']);
   const priority = readCapabilityNumber(record, ['priority']);
-  const runbook = record.runbook && typeof record.runbook === 'object' && !Array.isArray(record.runbook) ? record.runbook : undefined;
+  const runbook =
+    record.runbook && typeof record.runbook === 'object' && !Array.isArray(record.runbook) ? record.runbook : undefined;
   const validFrom = readCapabilityString(record, ['validFrom']);
   const validTo = readCapabilityString(record, ['validTo']);
   const lastAccessedAt = readCapabilityString(record, ['lastAccessedAt']);
@@ -9244,7 +13526,8 @@ function normalizeMemoryInputArgs(body: Record<string, unknown>): MemoryInput {
 }
 
 function normalizeMemoryWriteContextArgs(body: Record<string, unknown>): MemoryWriteContext {
-  const context = body.context && typeof body.context === 'object' && !Array.isArray(body.context) ? body.context : body;
+  const context =
+    body.context && typeof body.context === 'object' && !Array.isArray(body.context) ? body.context : body;
   const record = context as Record<string, unknown>;
   return defaultMemoryWriteContext({
     runtime: readCapabilityString(record, ['runtime'], 'desk-cr'),
@@ -9264,7 +13547,8 @@ function normalizeMemoryWriteContextArgs(body: Record<string, unknown>): MemoryW
         : 'unknown',
     externalTaint: record.externalTaint === true,
     actor: record.actor === 'user' || record.actor === 'agent' || record.actor === 'system' ? record.actor : 'agent',
-    intent: record.intent === 'save' || record.intent === 'propose' || record.intent === 'delete' ? record.intent : 'propose',
+    intent:
+      record.intent === 'save' || record.intent === 'propose' || record.intent === 'delete' ? record.intent : 'propose',
     sourceId: readCapabilityString(record, ['sourceId']) || undefined,
     reason: readCapabilityString(record, ['reason']) || undefined,
   });
@@ -9337,7 +13621,10 @@ async function memoryLedgerHistoryCapability(args: unknown): Promise<Record<stri
 
 async function memoryProposalCreateCapability(args: unknown): Promise<Record<string, unknown>> {
   const body = normalizeMcpCapabilityArgs(args);
-  const proposal = await createDeskMemoryLedger().propose(normalizeMemoryInputArgs(body), normalizeMemoryWriteContextArgs(body));
+  const proposal = await createDeskMemoryLedger().propose(
+    normalizeMemoryInputArgs(body),
+    normalizeMemoryWriteContextArgs(body),
+  );
   return { ok: true, proposal: redactMemoryProposalForCr(proposal) };
 }
 
@@ -10536,6 +14823,222 @@ ${XENESIS_AGENT_PROGRESS_SANITIZER_SCRIPT}
   }
 }
 
+async function snapshotConnectionCenterForCapability(args: unknown): Promise<Record<string, unknown>> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const includeBodyText = typeof body.includeBodyText === 'boolean' ? body.includeBodyText : false;
+  const maxTextLength = clamp(Number(body.maxTextLength), 200, 10000, 2400);
+  const timeoutMs = clamp(Number(body.timeoutMs), 0, 10000, 3000);
+  if (app.isPackaged) {
+    return {
+      ok: false,
+      present: false,
+      error: 'xd.testing.connectionCenter.snapshot is only available in the development Electron app.',
+    };
+  }
+
+  const targetWindow = getMcpTargetWindow();
+  if (!targetWindow || targetWindow.isDestroyed()) {
+    return { ok: false, present: false, error: 'No Xenesis Desk window is available.' };
+  }
+
+  const script = `
+(async () => {
+  const config = ${JSON.stringify({
+    includeBodyText,
+    maxTextLength,
+    rootSelector: XENESIS_CONNECTION_CENTER_ROOT_SELECTOR,
+    timeoutMs,
+  })};
+  const startedAt = Date.now();
+  const rootSelector = String(config.rootSelector || '');
+  const checks = [
+    { id: 'reference-baseline:connection-center-root', selector: rootSelector },
+    { id: 'reference-baseline:connection-center-title', selector: rootSelector + ' h2', text: 'Connection Center' },
+    { id: 'reference-baseline:onboarding-guided-steps', selector: '[data-xenesis-onboarding-plan]', text: 'guided step' },
+    { id: 'reference-baseline:provider-profile-review-steps', selector: '[data-xenesis-provider-profile-draft]', text: 'review step' },
+    { id: 'reference-baseline:tool-profile-review-steps', selector: '[data-xenesis-tool-profile-draft]', text: 'review step' },
+    { id: 'reference-baseline:tool-oauth-review-steps', selector: '[data-xenesis-tool-oauth-draft]', text: 'review step' },
+    { id: 'reference-baseline:tool-oauth-runtime-readback', selector: '[data-xenesis-tool-oauth-runtime]', text: 'oauth-runtime-readiness' },
+    { id: 'reference-baseline:external-tool-notion-mcp-readiness', selector: '[data-xenesis-connection="notion"]', text: 'xd.xenesis.tools.mcpInstallDrafts.status' },
+    {
+      id: 'reference-baseline:external-tool-google-calendar-oauth-setup-packet',
+      selector: '[data-xenesis-tool-oauth-draft="google-calendar"]',
+      text: 'GOOGLE_OAUTH_CLIENT_SECRET',
+    },
+    { id: 'reference-baseline:external-tool-google-calendar-oauth-runtime', selector: '[data-xenesis-tool-oauth-runtime="google-calendar"]', text: 'oauth-runtime-readiness' },
+    { id: 'reference-baseline:external-tool-linear-mcp-oauth-readiness', selector: '[data-xenesis-tool-mcp-oauth="linear"]', text: 'linear:read-issues' },
+    { id: 'reference-baseline:external-tool-no-oauth-side-effect-boundary', selector: '[data-xenesis-tool-oauth-draft="google-calendar"]', text: 'does not complete OAuth' },
+    { id: 'reference-baseline:channel-runtime-readback', selector: '[data-xenesis-channel-runtime]', text: 'channel-runtime-readiness' },
+    { id: 'reference-baseline:channel-profile-review-steps', selector: '[data-xenesis-channel-profile-draft]', text: 'review step' },
+    {
+      id: 'slice04:messenger-implemented-set',
+      selectors: [
+        '[data-xenesis-connection="telegram"]',
+        '[data-xenesis-connection="slack"]',
+        '[data-xenesis-connection="discord"]',
+        '[data-xenesis-connection="webhook"]',
+      ],
+      texts: ['Telegram', 'Slack', 'Discord', 'Webhook'],
+    },
+    {
+      id: 'slice04:telegram-route-session-readback',
+      selector: '[data-xenesis-channel-routing="telegram"]',
+      label: 'routeBinding/sessionScope metadata',
+      texts: ['라우트 바인딩', 'telegram.allowedChatIds'],
+      textSequences: [['세션 범위', 'chat']],
+      absentTexts: ['prompt keyword routing', 'keyword routing'],
+    },
+    {
+      id: 'slice04:telegram-access-pairing-readback',
+      selectors: [
+        '[data-xenesis-channel-access-groups="telegram"]',
+        '[data-xenesis-channel-pairing="telegram"]',
+      ],
+      texts: ['fail-closed', 'allowedChatIds', 'tokenEnv', 'profile-env-field', 'credential values are never returned'],
+    },
+    {
+      id: 'slice04:messenger-planned-channel-no-runtime',
+      selector: '[data-xenesis-connection="signal"]',
+      texts: [
+        'planned-adapter',
+        'planned channel delivery remains disabled',
+        'xd.xenesis.channels.runtime.request',
+      ],
+      absentTexts: [
+        'xd.xenesis.profiles.testChannel',
+        'xd.xenesis.channels.profileDrafts.apply',
+        'xd.xenesis.profiles.updateChannels',
+        'xd.xenesis.gateway.start',
+        'xd.xenesis.gateway.restart',
+      ],
+    },
+    {
+      id: 'slice04:messenger-test-send-approval-boundary',
+      selectors: ['[data-xenesis-connection="test-send"]', '[data-xenesis-channel-setup-plan="telegram"]'],
+      texts: [
+        'xd.xenesis.profiles.testChannel',
+        'approval-gated profile channel test path',
+        'test-send onboarding status does not send messages',
+      ],
+      absentTexts: [
+        'sendTelegramChannelTest',
+        'sendSlackChannelTest',
+        'sendDiscordChannelTest',
+        'sendWebhookChannelTest',
+      ],
+    },
+  ];
+  const truncate = (value, fallback = '') => String(value || fallback || '').trim().slice(0, Number(config.maxTextLength || 2400));
+  const delay = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+  const normalizeList = (value) => Array.isArray(value) ? value.map((item) => String(item || '')).filter(Boolean) : [];
+  const normalizeTextSequences = (value) => Array.isArray(value)
+    ? value
+        .map((sequence) =>
+          Array.isArray(sequence) ? sequence.map((item) => String(item || '')).filter(Boolean) : []
+        )
+        .filter((sequence) => sequence.length > 0)
+    : [];
+  const hasTextSequence = (text, sequence) => {
+    let offset = 0;
+    for (const token of sequence) {
+      const index = text.indexOf(token.toLowerCase(), offset);
+      if (index < 0) return false;
+      offset = index + token.length;
+    }
+    return true;
+  };
+  const readSnapshot = () => {
+    const root = document.querySelector(rootSelector);
+    const rootText = root ? String(root.textContent || '') : '';
+    const bodyText = String(document.body?.innerText || '');
+    const rect = root?.getBoundingClientRect();
+    const activeTabs = Array.from(document.querySelectorAll('[data-settings-xenesis-tab].is-active')).map((element) => ({
+      tab: element.getAttribute('data-settings-xenesis-tab') || '',
+      text: truncate(element.textContent, ''),
+    }));
+    const checkResults = checks.map((check) => {
+      const selectors = normalizeList(check.selectors).length ? normalizeList(check.selectors) : normalizeList([check.selector]);
+      const elements = selectors.map((selector) => document.querySelector(selector));
+      const text = elements.map((element) => String(element?.textContent || '')).join('\\n');
+      const expectedTexts = [...normalizeList(check.texts), ...(check.text ? [String(check.text)] : [])];
+      const absentTexts = normalizeList(check.absentTexts);
+      const textSequences = normalizeTextSequences(check.textSequences);
+      const lowerText = text.toLowerCase();
+      const missingTexts = expectedTexts.filter((expectedText) => !lowerText.includes(expectedText.toLowerCase()));
+      const missingSequences = textSequences
+        .filter((sequence) => !hasTextSequence(lowerText, sequence))
+        .map((sequence) => sequence.join(' -> '));
+      const forbiddenTexts = absentTexts.filter((absentText) => lowerText.includes(absentText.toLowerCase()));
+      const textPresent = missingTexts.length === 0 && missingSequences.length === 0 && forbiddenTexts.length === 0;
+      const expectedText = [
+        ...expectedTexts,
+        ...textSequences.map((sequence) => 'sequence:' + sequence.join(' -> ')),
+        ...absentTexts.map((absentText) => 'not:' + absentText),
+      ].join(' | ');
+      return {
+        id: check.id,
+        selector: check.selector || selectors.join(', '),
+        present: selectors.length > 0 && elements.every(Boolean),
+        textPresent,
+        expectedText,
+        text: truncate(text, ''),
+        missingTexts,
+        missingSequences,
+        forbiddenTexts,
+      };
+    });
+    const failedChecks = checkResults.filter((check) => !check.present || !check.textPresent);
+    const result = {
+      ok: Boolean(root) && failedChecks.length === 0,
+      present: Boolean(root),
+      rootSelector,
+      rootText: truncate(rootText, ''),
+      activeTabs,
+      rootRect: rect ? {
+        x: rect.x,
+        y: rect.y,
+        width: rect.width,
+        height: rect.height,
+      } : null,
+      summary: {
+        total: checkResults.length,
+        passed: checkResults.length - failedChecks.length,
+        failed: failedChecks.length,
+      },
+      checks: checkResults,
+      waitedMs: Date.now() - startedAt,
+      timedOut: false,
+    };
+    if (config.includeBodyText) {
+      result.bodyTextPreview = bodyText.slice(0, 1200);
+      result.bodyTextTail = bodyText.slice(-2000);
+    }
+    return result;
+  };
+  const deadline = startedAt + Number(config.timeoutMs || 0);
+  let result = readSnapshot();
+  while (!result.ok && Date.now() < deadline) {
+    await delay(Math.min(100, Math.max(1, deadline - Date.now())));
+    result = readSnapshot();
+  }
+  result.timedOut = !result.ok && Date.now() >= deadline;
+  return result;
+})()
+`;
+
+  try {
+    const result = (await targetWindow.webContents.executeJavaScript(script, true)) as Record<string, unknown>;
+    return { ...result, windowId: targetWindow.id };
+  } catch (error) {
+    return {
+      ok: false,
+      present: false,
+      windowId: targetWindow.id,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 async function submitXenesisAgentPromptForCapability(args: unknown): Promise<Record<string, unknown>> {
   const body = normalizeMcpCapabilityArgs(args);
   const prompt = readCapabilityRawString(body, ['prompt', 'text', 'message']);
@@ -10553,13 +15056,14 @@ async function submitXenesisAgentPromptForCapability(args: unknown): Promise<Rec
   const expectedText = readCapabilityRawString(body, ['expectedText', 'waitForText', 'contains']);
   const expectedTextScope = readCapabilityString(body, ['expectedTextScope', 'textScope'], 'newResponse').toLowerCase();
   const matchBodyText = body.matchBodyText === true || expectedTextScope === 'body' || expectedTextScope === 'anywhere';
-  const clickApprovalButton = body.clickApprovalButton !== false;
+  const approvePendingAction = body.approvePendingAction === true || body.approvePendingDeskAction === true;
+  const approvalActionInput = readCapabilityString(body, ['approvalAction', 'approvalChoice'], 'once').toLowerCase();
+  const approvalAction = approvalActionInput === 'always' ? 'always' : 'once';
   const timeoutMs = clamp(Number(body.timeoutMs), 250, 600000, 30000);
   const typeDelayMs = clamp(Number(body.typeDelayMs), 0, 1000, 0);
   const progressIntervalMs = clamp(Number(body.progressIntervalMs), 0, 60000, 0);
   const progressSampleLimit = clamp(Number(body.progressSampleLimit), 1, 100, 20);
   const bypassDirectDeskRouting = body.bypassDirectDeskRouting === true;
-  const bypassNaturalDeskRouting = body.bypassNaturalDeskRouting === true;
   const attachments = normalizeXenesisRunAttachments(body.attachments) || [];
   const rawExpectedComponents = Array.isArray(body.expectedComponents)
     ? body.expectedComponents
@@ -10584,7 +15088,7 @@ async function submitXenesisAgentPromptForCapability(args: unknown): Promise<Rec
   showMcpTargetWindow(targetWindow);
   const script = `
 (() => {
-  const config = ${JSON.stringify({ prompt, submitMode, expectedText, matchBodyText, clickApprovalButton, timeoutMs, attachments, typeDelayMs, progressIntervalMs, progressSampleLimit, bypassDirectDeskRouting, bypassNaturalDeskRouting })};
+  const config = ${JSON.stringify({ prompt, submitMode, expectedText, matchBodyText, approvePendingAction, approvalAction, timeoutMs, attachments, typeDelayMs, progressIntervalMs, progressSampleLimit, bypassDirectDeskRouting })};
 ${XENESIS_AGENT_PROGRESS_SANITIZER_SCRIPT}
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const nextFrame = () => new Promise((resolve) => {
@@ -10686,16 +15190,21 @@ ${XENESIS_AGENT_PROGRESS_SANITIZER_SCRIPT}
     const diagnostics = getXenesisAgentRootDiagnostics();
     return diagnostics.visibleRoots[0]?.root || null;
   };
-  const isApprovalPrompt = () => /^(?:승인|허용|진행|좋아|네|예|응|오케이|ok|okay|yes|approve|approved)(?:\\s*(?:승인)?(?:합니다|해|할게|진행해|저장|apply|please|it)?)?[.!。！]*$/i.test(String(config.prompt || '').trim());
   const findLatestDeskActionApproveButton = (agentRoot) => {
-    if (!agentRoot || !config.clickApprovalButton || !isApprovalPrompt()) return null;
-    const buttons = Array.from(agentRoot.querySelectorAll('[data-xenesis-agent-desk-action-approve="true"], .xd-xenesis-desk-action-card.is-pending button'));
-    return buttons.reverse().find((button) => (
+    if (!agentRoot || !config.approvePendingAction) return null;
+    const approveSelector = config.approvalAction === 'always'
+      ? '[data-xenesis-agent-desk-action-approve-always="true"]'
+      : '[data-xenesis-agent-desk-action-approve="true"]';
+    const findEligible = (buttons) => buttons.reverse().find((button) => (
       button instanceof HTMLButtonElement
       && !button.disabled
       && elementVisibleArea(button) > 0
-      && /승인|approve|실행|run/i.test(button.innerText || button.textContent || '')
+      && button.matches(approveSelector)
     )) || null;
+    const approvalButtons = Array.from(agentRoot.querySelectorAll(approveSelector));
+    const fallbackButtons = Array.from(agentRoot.querySelectorAll('.xd-xenesis-desk-action-card.is-pending button'))
+      .filter((button) => button instanceof HTMLButtonElement && button.matches(approveSelector));
+    return findEligible(approvalButtons) || findEligible(fallbackButtons);
   };
   const readTranscriptLines = (agentRoot) => {
     if (!agentRoot) return [];
@@ -10904,6 +15413,7 @@ ${XENESIS_AGENT_PROGRESS_SANITIZER_SCRIPT}
     const artifactBefore = readLatestArtifactSource();
     const approvalButton = findLatestDeskActionApproveButton(root);
     if (approvalButton) {
+      const approvalButtonText = approvalButton.innerText || approvalButton.textContent || '';
       approvalButton.click();
       const waitResult = await waitForRenderedText(config.expectedText, config.timeoutMs, transcriptBefore.length, root);
       const artifact = chooseArtifactSource(artifactBefore, waitResult.responseText);
@@ -10914,6 +15424,8 @@ ${XENESIS_AGENT_PROGRESS_SANITIZER_SCRIPT}
         valueAfterInput: beforeValue,
         afterValue: input.value,
         approvalButtonClicked: true,
+        approvalButtonText,
+        approvalAction: config.approvalAction,
         customEventSubmitted: false,
         shouldFallbackSubmit: false,
         enterPrevented: false,
@@ -10953,7 +15465,6 @@ ${XENESIS_AGENT_PROGRESS_SANITIZER_SCRIPT}
       prompt: config.prompt,
       source: 'xd.testing.xenesisAgent.submitPrompt',
       bypassDirectDeskRouting: config.bypassDirectDeskRouting === true,
-      bypassNaturalDeskRouting: config.bypassNaturalDeskRouting === true,
     };
     if (Array.isArray(config.attachments) && config.attachments.length > 0) {
       submitDetail.attachments = config.attachments;
@@ -11460,6 +15971,16 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
       capabilityAuditLogger.clear();
       return { ok: true, records: [] };
     },
+    agentTurnsList: agentTurnLedgerReadbackApi.agentTurnsList,
+    agentTurnsCurrent: agentTurnLedgerReadbackApi.agentTurnsCurrent,
+    agentTurnsGet: agentTurnLedgerReadbackApi.agentTurnsGet,
+    agentTurnEvents: agentTurnLedgerReadbackApi.agentTurnEvents,
+    agentActionNeededList: listAgentActionNeededForCapability,
+    agentActionNeededGet: getAgentActionNeededForCapability,
+    agentActionNeededReply: replyAgentActionNeededForCapability,
+    agentActionNeededDismiss: dismissAgentActionNeededForCapability,
+    agentReceiptsList: listAgentReceiptsForCapability,
+    agentReceiptsGet: getAgentReceiptForCapability,
     memoryLedgerList: (args: unknown) => memoryLedgerListCapability(args),
     memoryLedgerSearch: (args: unknown) => memoryLedgerSearchCapability(args),
     memoryLedgerGet: (args: unknown) => memoryLedgerGetCapability(args),
@@ -11518,6 +16039,8 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     browserAction: (args: unknown) => sendMcpBrowserActionToRenderer(sanitizeMcpBrowserActionRequest(args)),
     openBuiltinPane: openMcpBuiltinPaneCapability,
     runExternalAppAction: (args: unknown) => appControlService.run(args),
+    computerUseCall: (path: string, args?: unknown, options?: { approved?: boolean }) =>
+      computerUseService.call(path, args, options),
     getOnboardingSampleWorkspaceStatus: () => getOnboardingSampleWorkspaceStatus(),
     prepareOnboardingSampleWorkspace: () => prepareOnboardingSampleWorkspaceAndBroadcast(),
     resetOnboardingSampleWorkspace: () => resetOnboardingSampleWorkspaceAndBroadcast(),
@@ -12061,6 +16584,88 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     isXenisPhase5Enabled: () => isXenisPhase5Enabled(),
     getXenesisStatus: () =>
       getXenesisStatusPayload().then((status) => ({ ok: true, status: redactXenesisStatusForCapability(status) })),
+    getXenesisConnectionsStatus: () => getXenesisConnectionsStatus().then((status) => ({ ok: true, status })),
+    getXenesisConnectionDiagnosticRunbooksStatus: (args: unknown) => getXenesisConnectionDiagnosticRunbooksStatus(args),
+    openXenesisConnectionDiagnosticRunbook: (args: unknown) => openXenesisConnectionDiagnosticRunbook(args),
+    getXenesisConnectionSetupRequestsStatus: (args: unknown) => getXenesisConnectionSetupRequestsStatus(args),
+    openXenesisConnectionSetupRequest: (args: unknown) => openXenesisConnectionSetupRequest(args),
+    requestXenesisConnectionSetup: (args: unknown) => requestXenesisConnectionSetup(args),
+    applyXenesisConnectionSetupRequest: (args: unknown) => applyXenesisConnectionSetupRequest(args),
+    getXenesisOnboardingStatus: (args: unknown) => getXenesisOnboardingStatus(args),
+    openXenesisOnboardingStep: (args: unknown) => openXenesisOnboardingStep(args),
+    getXenesisChannelRoutingStatus: (args: unknown) => getXenesisChannelRoutingStatus(args),
+    openXenesisChannelRouting: (args: unknown) => openXenesisChannelRouting(args),
+    getXenesisChannelSafetyStatus: (args: unknown) => getXenesisChannelSafetyStatus(args),
+    openXenesisChannelSafety: (args: unknown) => openXenesisChannelSafety(args),
+    getXenesisChannelAccessGroupsStatus: (args: unknown) => getXenesisChannelAccessGroupsStatus(args),
+    openXenesisChannelAccessGroups: (args: unknown) => openXenesisChannelAccessGroups(args),
+    getXenesisChannelPairingStatus: (args: unknown) => getXenesisChannelPairingStatus(args),
+    openXenesisChannelPairing: (args: unknown) => openXenesisChannelPairing(args),
+    getXenesisChannelRuntimeStatus: (args: unknown) => getXenesisChannelRuntimeStatus(args),
+    openXenesisChannelRuntime: (args: unknown) => openXenesisChannelRuntime(args),
+    requestXenesisChannelRuntime: (args: unknown) => requestXenesisChannelRuntime(args),
+    getXenesisChannelUserStoriesStatus: (args: unknown) => getXenesisChannelUserStoriesStatus(args),
+    openXenesisChannelUserStory: (args: unknown) => openXenesisChannelUserStory(args),
+    getXenesisChannelSetupPlansStatus: (args: unknown) => getXenesisChannelSetupPlansStatus(args),
+    openXenesisChannelSetupPlan: (args: unknown) => openXenesisChannelSetupPlan(args),
+    getXenesisChannelProfileDraftsStatus: (args: unknown) => getXenesisChannelProfileDraftsStatus(args),
+    openXenesisChannelProfileDraft: (args: unknown) => openXenesisChannelProfileDraft(args),
+    requestXenesisChannelProfileDraft: (args: unknown) => requestXenesisChannelProfileDraft(args),
+    applyXenesisChannelProfileDraft: (args: unknown) => applyXenesisChannelProfileDraft(args),
+    getXenesisGuidesStatus: (args: unknown) => getXenesisGuidesStatus(args),
+    openXenesisGuide: (args: unknown) => openXenesisGuide(args),
+    getXenesisToolSetupStatus: (args: unknown) => getXenesisToolSetupStatus(args),
+    openXenesisToolSetup: (args: unknown) => openXenesisToolSetup(args),
+    getXenesisToolSetupPlansStatus: (args: unknown) => getXenesisToolSetupPlansStatus(args),
+    openXenesisToolSetupPlan: (args: unknown) => openXenesisToolSetupPlan(args),
+    getXenesisToolConnectorsStatus: (args: unknown) => getXenesisToolConnectorsStatus(args),
+    openXenesisToolConnector: (args: unknown) => openXenesisToolConnector(args),
+    getXenesisToolViewsStatus: (args: unknown) => getXenesisToolViewsStatus(args),
+    openXenesisToolView: (args: unknown) => openXenesisToolView(args),
+    getXenesisToolUserStoriesStatus: (args: unknown) => getXenesisToolUserStoriesStatus(args),
+    openXenesisToolUserStory: (args: unknown) => openXenesisToolUserStory(args),
+    getXenesisToolInstallPlansStatus: (args: unknown) => getXenesisToolInstallPlansStatus(args),
+    openXenesisToolInstallPlan: (args: unknown) => openXenesisToolInstallPlan(args),
+    requestXenesisToolInstallPlan: (args: unknown) => requestXenesisToolInstallPlan(args),
+    getXenesisToolMcpInstallDraftsStatus: (args: unknown) => getXenesisToolMcpInstallDraftsStatus(args),
+    openXenesisToolMcpInstallDraft: (args: unknown) => openXenesisToolMcpInstallDraft(args),
+    requestXenesisToolMcpInstallDraft: (args: unknown) => requestXenesisToolMcpInstallDraft(args),
+    applyXenesisToolMcpInstallDraft: (args: unknown) => applyXenesisToolMcpInstallDraft(args),
+    getXenesisToolMcpOAuthStatus: (args: unknown) => getXenesisToolMcpOAuthStatus(args),
+    openXenesisToolMcpOAuth: (args: unknown) => openXenesisToolMcpOAuth(args),
+    requestXenesisToolMcpOAuth: (args: unknown) => requestXenesisToolMcpOAuth(args),
+    getXenesisToolOAuthDraftsStatus: (args: unknown) => getXenesisToolOAuthDraftsStatus(args),
+    getXenesisToolOAuthSetupPacket: (args: unknown) => getXenesisToolOAuthSetupPacket(args),
+    openXenesisToolOAuthDraft: (args: unknown) => openXenesisToolOAuthDraft(args),
+    openXenesisToolOAuthSetupPacket: (args: unknown) => openXenesisToolOAuthSetupPacket(args),
+    requestXenesisToolOAuthDraft: (args: unknown) => requestXenesisToolOAuthDraft(args),
+    getXenesisToolOAuthRuntimeStatus: (args: unknown) => getXenesisToolOAuthRuntimeStatus(args),
+    openXenesisToolOAuthRuntime: (args: unknown) => openXenesisToolOAuthRuntime(args),
+    requestXenesisToolOAuthRuntime: (args: unknown) => requestXenesisToolOAuthRuntime(args),
+    getXenesisToolRuntimeStatus: (args: unknown) => getXenesisToolRuntimeStatus(args),
+    openXenesisToolRuntime: (args: unknown) => openXenesisToolRuntime(args),
+    requestXenesisToolRuntime: (args: unknown) => requestXenesisToolRuntime(args),
+    getXenesisToolProfileDraftsStatus: (args: unknown) => getXenesisToolProfileDraftsStatus(args),
+    openXenesisToolProfileDraft: (args: unknown) => openXenesisToolProfileDraft(args),
+    requestXenesisToolProfileDraft: (args: unknown) => requestXenesisToolProfileDraft(args),
+    applyXenesisToolProfileDraft: (args: unknown) => applyXenesisToolProfileDraft(args),
+    getXenesisToolActionCatalogStatus: (args: unknown) => getXenesisToolActionCatalogStatus(args),
+    openXenesisToolActionCatalog: (args: unknown) => openXenesisToolActionCatalog(args),
+    requestXenesisToolActionCatalog: (args: unknown) => requestXenesisToolActionCatalog(args),
+    getXenesisMessengerViewsStatus: (args: unknown) => getXenesisMessengerViewsStatus(args),
+    openXenesisMessengerView: (args: unknown) => openXenesisMessengerView(args),
+    getXenesisProviderSetupStatus: (args: unknown) => getXenesisProviderSetupStatus(args),
+    openXenesisProviderSetup: (args: unknown) => openXenesisProviderSetup(args),
+    getXenesisProviderRoutingStatus: (args: unknown) => getXenesisProviderRoutingStatus(args),
+    openXenesisProviderRouting: (args: unknown) => openXenesisProviderRouting(args),
+    getXenesisProviderViewsStatus: (args: unknown) => getXenesisProviderViewsStatus(args),
+    openXenesisProviderView: (args: unknown) => openXenesisProviderView(args),
+    getXenesisProviderSetupPlansStatus: (args: unknown) => getXenesisProviderSetupPlansStatus(args),
+    openXenesisProviderSetupPlan: (args: unknown) => openXenesisProviderSetupPlan(args),
+    getXenesisProviderProfileDraftsStatus: (args: unknown) => getXenesisProviderProfileDraftsStatus(args),
+    openXenesisProviderProfileDraft: (args: unknown) => openXenesisProviderProfileDraft(args),
+    requestXenesisProviderProfileDraft: (args: unknown) => requestXenesisProviderProfileDraft(args),
+    applyXenesisProviderProfileDraft: (args: unknown) => applyXenesisProviderProfileDraft(args),
     getXenesisDiagnostics: () => getXenesisOperationalDiagnostics().then((diagnostics) => ({ ok: true, diagnostics })),
     listXenesisReports: (args: unknown) =>
       listXenesisReports(
@@ -12133,6 +16738,7 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     submitXenesisAgentMessage: submitXenesisAgentMessageForCapability,
     listXenesisAgentEvents: listXenesisAgentEventsForCapability,
     snapshotXenesisAgent: snapshotXenesisAgentForCapability,
+    snapshotConnectionCenter: snapshotConnectionCenterForCapability,
     submitXenesisAgentPrompt: submitXenesisAgentPromptForCapability,
     dropXenesisAgentAttachments: dropXenesisAgentAttachmentsForCapability,
     submitGowooriChatPrompt: submitGowooriChatPromptForCapability,
@@ -12500,8 +17106,14 @@ async function callMcpBridgeCapabilityFromRequest(
   // Executed (no approval prompt). Tag HOW it cleared the gate so downstream
   // reports "already ran" instead of a phantom "approval needed" for the
   // common case where the user previously approved this capability.
-  const approvalResolution: McpBridgeCapabilityCallResult['approvalResolution'] =
-    preApproved ? 'pre-approved' : rememberedHit ? 'auto-approved' : 'not-required';
+  const approvalResolution: McpBridgeCapabilityCallResult['approvalResolution'] = preApproved
+    ? 'pre-approved'
+    : rememberedHit
+      ? 'auto-approved'
+      : 'not-required';
+  if (result.ok && (preApproved || rememberedHit)) {
+    resolveApprovedCapabilityActionInboxItem(capabilityPath, capabilityArgs, source);
+  }
   return { ...result, approvalResolution };
 }
 
@@ -14186,6 +18798,18 @@ function cloneXenesisProfileConfig<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
+async function readActiveXenesisProfileConfig(): Promise<ProfileConfig | undefined> {
+  const settings = loadSettings().xenesis;
+  const profiles = await readProfiles(getXenesisStateHome());
+  const active = settings.profile || profiles.active || DEFAULT_XENESIS_PROFILE_TEMPLATE;
+  return (
+    profiles.profiles[active] ??
+    (active === DEFAULT_XENESIS_PROFILE_TEMPLATE
+      ? getOperatingProfileTemplate(DEFAULT_XENESIS_PROFILE_TEMPLATE)?.profile
+      : undefined)
+  );
+}
+
 function xenesisProfileTemplates(): XenesisProfileTemplate[] {
   return listOperatingProfileTemplates().map((template) => ({
     name: template.name,
@@ -14217,13 +18841,9 @@ function redactXenesisChannelCredentialReference(value: string): string {
   return isXenesisEnvName(value) ? value : '<secret>';
 }
 
-function redactXenesisChannelTargetList(value: string): string {
-  return value.trim() ? '<configured>' : '';
-}
-
 function summarizeXenesisProfileChannels(profile: ProfileConfig | undefined): XenesisChannelState[] {
   const channels = isPlainRecord(profile?.channels) ? profile.channels : {};
-  return (['telegram', 'slack', 'discord', 'webhook'] satisfies XenesisChannelState['name'][]).map((name) => {
+  return (XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS satisfies XenesisChannelState['name'][]).map((name) => {
     const channel = isPlainRecord(channels[name]) ? channels[name] : {};
     const env = xenesisChannelEnvNames(name, channel);
     return {
@@ -14239,6 +18859,42 @@ function csvFromValues(values: unknown): string {
   return Array.isArray(values) ? values.map((value) => String(value)).join(', ') : '';
 }
 
+const DEFAULT_XENESIS_CHANNEL_APPROVAL_MODE: XenesisApprovalMode = 'safe';
+const DEFAULT_XENESIS_CHANNEL_MAX_TURNS = 12;
+const DEFAULT_XENESIS_CHANNEL_MAX_TOKENS = 120000;
+
+function normalizeXenesisChannelApprovalMode(
+  value: unknown,
+  fallback: XenesisApprovalMode = DEFAULT_XENESIS_CHANNEL_APPROVAL_MODE,
+): XenesisApprovalMode {
+  return value === 'readonly' || value === 'safe' || value === 'auto' ? value : fallback;
+}
+
+function normalizeXenesisChannelPositiveInteger(value: unknown, fallback: number): number {
+  const numeric = typeof value === 'number' ? value : Number(value);
+  return Number.isSafeInteger(numeric) && numeric > 0 ? numeric : fallback;
+}
+
+function xenesisChannelGuardrailSettings(
+  channel: Record<string, unknown>,
+  fallback?: Partial<XenesisChannelRunLimits>,
+): XenesisChannelRunLimits {
+  const approvalModeFallback = fallback?.approvalMode ?? DEFAULT_XENESIS_CHANNEL_APPROVAL_MODE;
+  const maxTurnsFallback = normalizeXenesisChannelPositiveInteger(
+    fallback?.maxTurns,
+    DEFAULT_XENESIS_CHANNEL_MAX_TURNS,
+  );
+  const maxTokensFallback = normalizeXenesisChannelPositiveInteger(
+    fallback?.maxTokens,
+    DEFAULT_XENESIS_CHANNEL_MAX_TOKENS,
+  );
+  return {
+    approvalMode: normalizeXenesisChannelApprovalMode(channel.approvalMode, approvalModeFallback),
+    maxTurns: normalizeXenesisChannelPositiveInteger(channel.maxTurns, maxTurnsFallback),
+    maxTokens: normalizeXenesisChannelPositiveInteger(channel.maxTokens, maxTokensFallback),
+  };
+}
+
 function summarizeXenesisProfileChannelSettings(profile: ProfileConfig | undefined): XenesisProfileChannelSettings {
   const channels = isPlainRecord(profile?.channels) ? profile.channels : {};
   const telegram = isPlainRecord(channels.telegram) ? channels.telegram : {};
@@ -14248,6 +18904,7 @@ function summarizeXenesisProfileChannelSettings(profile: ProfileConfig | undefin
   return {
     telegram: {
       enabled: telegram.enabled === true,
+      ...xenesisChannelGuardrailSettings(telegram),
       tokenEnv:
         typeof telegram.tokenEnv === 'string' && telegram.tokenEnv.trim()
           ? telegram.tokenEnv.trim()
@@ -14256,6 +18913,7 @@ function summarizeXenesisProfileChannelSettings(profile: ProfileConfig | undefin
     },
     slack: {
       enabled: slack.enabled === true,
+      ...xenesisChannelGuardrailSettings(slack),
       botTokenEnv:
         typeof slack.botTokenEnv === 'string' && slack.botTokenEnv.trim()
           ? slack.botTokenEnv.trim()
@@ -14272,6 +18930,7 @@ function summarizeXenesisProfileChannelSettings(profile: ProfileConfig | undefin
     },
     discord: {
       enabled: discord.enabled === true,
+      ...xenesisChannelGuardrailSettings(discord),
       botTokenEnv:
         typeof discord.botTokenEnv === 'string' && discord.botTokenEnv.trim()
           ? discord.botTokenEnv.trim()
@@ -14285,6 +18944,7 @@ function summarizeXenesisProfileChannelSettings(profile: ProfileConfig | undefin
     },
     webhook: {
       enabled: webhook.enabled === true,
+      ...xenesisChannelGuardrailSettings(webhook),
       urlEnv:
         typeof webhook.urlEnv === 'string' && webhook.urlEnv.trim() ? webhook.urlEnv.trim() : 'XENESIS_WEBHOOK_URL',
     },
@@ -14373,63 +19033,44 @@ type NormalizedXenesisProfileChannels = {
 
 function normalizeXenesisProfileChannelSettings(
   request: XenesisProfileChannelsUpdateRequest,
+  previousChannels?: ProfileConfig['channels'],
 ): ProfileConfig['channels'] {
-  const channels = request.channels;
+  const channels = (isPlainRecord(request?.channels) ? request.channels : {}) as Record<string, unknown>;
+  const telegram = isPlainRecord(channels.telegram) ? channels.telegram : {};
+  const slack = isPlainRecord(channels.slack) ? channels.slack : {};
+  const discord = isPlainRecord(channels.discord) ? channels.discord : {};
+  const webhook = isPlainRecord(channels.webhook) ? channels.webhook : {};
   const normalized: NormalizedXenesisProfileChannels = {
     telegram: {
-      enabled: channels.telegram.enabled === true,
-      tokenEnv: envName(channels.telegram.tokenEnv, 'TELEGRAM_BOT_TOKEN'),
-      allowedChatIds: csvToSafeIntegers(channels.telegram.allowedChatIds),
-      approvalMode: 'safe',
-      maxTurns: 12,
-      maxTokens: 120000,
+      enabled: telegram.enabled === true,
+      tokenEnv: envName(telegram.tokenEnv, 'TELEGRAM_BOT_TOKEN'),
+      allowedChatIds: csvToSafeIntegers(telegram.allowedChatIds),
+      ...xenesisChannelGuardrailSettings(telegram, previousChannels?.telegram),
     },
     slack: {
-      enabled: channels.slack.enabled === true,
-      botTokenEnv: envName(channels.slack.botTokenEnv, 'SLACK_BOT_TOKEN'),
-      signingSecretEnv: envName(channels.slack.signingSecretEnv, 'SLACK_SIGNING_SECRET'),
-      allowedChannelIds: csvToStrings(channels.slack.allowedChannelIds),
-      webhookUrlEnv: envName(channels.slack.webhookUrlEnv, 'SLACK_WEBHOOK_URL'),
-      approvalMode: 'safe',
-      maxTurns: 12,
-      maxTokens: 120000,
+      enabled: slack.enabled === true,
+      botTokenEnv: envName(slack.botTokenEnv, 'SLACK_BOT_TOKEN'),
+      signingSecretEnv: envName(slack.signingSecretEnv, 'SLACK_SIGNING_SECRET'),
+      allowedChannelIds: csvToStrings(slack.allowedChannelIds),
+      webhookUrlEnv: envName(slack.webhookUrlEnv, 'SLACK_WEBHOOK_URL'),
+      ...xenesisChannelGuardrailSettings(slack, previousChannels?.slack),
     },
     discord: {
-      enabled: channels.discord.enabled === true,
-      botTokenEnv: envName(channels.discord.botTokenEnv, 'DISCORD_BOT_TOKEN'),
-      allowedChannelIds: csvToStrings(channels.discord.allowedChannelIds),
-      allowedGuildIds: csvToStrings(channels.discord.allowedGuildIds),
-      webhookUrlEnv: envName(channels.discord.webhookUrlEnv, 'DISCORD_WEBHOOK_URL'),
-      approvalMode: 'safe',
-      maxTurns: 12,
-      maxTokens: 120000,
+      enabled: discord.enabled === true,
+      botTokenEnv: envName(discord.botTokenEnv, 'DISCORD_BOT_TOKEN'),
+      allowedChannelIds: csvToStrings(discord.allowedChannelIds),
+      allowedGuildIds: csvToStrings(discord.allowedGuildIds),
+      webhookUrlEnv: envName(discord.webhookUrlEnv, 'DISCORD_WEBHOOK_URL'),
+      ...xenesisChannelGuardrailSettings(discord, previousChannels?.discord),
     },
     webhook: {
-      enabled: channels.webhook.enabled === true,
-      urlEnv: envName(channels.webhook.urlEnv, 'XENESIS_WEBHOOK_URL'),
+      enabled: webhook.enabled === true,
+      urlEnv: envName(webhook.urlEnv, 'XENESIS_WEBHOOK_URL'),
       headers: {},
-      approvalMode: 'safe',
-      maxTurns: 12,
-      maxTokens: 120000,
+      ...xenesisChannelGuardrailSettings(webhook, previousChannels?.webhook),
     },
   };
   return normalized;
-}
-
-function preserveXenesisChannelRunLimits<T extends XenesisChannelRunLimits>(
-  next: T,
-  previous: Partial<XenesisChannelRunLimits> | undefined,
-): T {
-  return {
-    ...next,
-    approvalMode: previous?.approvalMode ?? next.approvalMode,
-    maxTurns:
-      typeof previous?.maxTurns === 'number' && Number.isFinite(previous.maxTurns) ? previous.maxTurns : next.maxTurns,
-    maxTokens:
-      typeof previous?.maxTokens === 'number' && Number.isFinite(previous.maxTokens)
-        ? previous.maxTokens
-        : next.maxTokens,
-  };
 }
 
 function summarizeXenesisProfilePolicy(profile: ProfileConfig | undefined): XenesisProfilePolicyState {
@@ -14590,15 +19231,17 @@ async function updateXenesisProfileChannels(
   if (!profile) {
     throw new Error(`Xenesis profile not found: ${profileName}`);
   }
-  const nextChannels = normalizeXenesisProfileChannelSettings(request) as NormalizedXenesisProfileChannels;
-  const previousChannels = profile.channels;
+  const nextChannels = normalizeXenesisProfileChannelSettings(
+    request,
+    profile.channels,
+  ) as NormalizedXenesisProfileChannels;
   profiles.profiles[profileName] = {
     ...profile,
     channels: {
-      telegram: preserveXenesisChannelRunLimits(nextChannels.telegram, previousChannels?.telegram),
-      slack: preserveXenesisChannelRunLimits(nextChannels.slack, previousChannels?.slack),
-      discord: preserveXenesisChannelRunLimits(nextChannels.discord, previousChannels?.discord),
-      webhook: preserveXenesisChannelRunLimits(nextChannels.webhook, previousChannels?.webhook),
+      telegram: nextChannels.telegram,
+      slack: nextChannels.slack,
+      discord: nextChannels.discord,
+      webhook: nextChannels.webhook,
     },
   };
   profiles.active = profileName;
@@ -14608,7 +19251,8 @@ async function updateXenesisProfileChannels(
   return getXenesisProfileState();
 }
 
-const XENESIS_PROFILE_CHANNEL_NAMES = ['telegram', 'slack', 'discord', 'webhook'] satisfies XenesisProfileChannelName[];
+const XENESIS_PROFILE_CHANNEL_NAMES =
+  XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS satisfies XenesisProfileChannelName[];
 const XENESIS_ENV_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 function isXenesisProfileChannelName(value: unknown): value is XenesisProfileChannelName {
@@ -14646,19 +19290,15 @@ function readOptionalXenesisChannelSecret(value: unknown, fallback: string): { s
   };
 }
 
-function sanitizeXenesisChannelSendError(error: unknown, secrets: string[], label: string): Error {
-  let message = error instanceof Error ? error.message : String(error);
-  for (const secret of secrets) {
-    if (secret) message = message.split(secret).join('[secret]');
-  }
-  return new Error(`${label}: ${message}`);
-}
-
-async function runXenesisChannelSend(label: string, secrets: string[], send: () => Promise<void>): Promise<void> {
+async function runXenesisChannelSend(
+  label: string,
+  sensitiveValues: XenesisChannelSendSensitiveValues,
+  send: () => Promise<void>,
+): Promise<void> {
   try {
     await send();
   } catch (error) {
-    throw sanitizeXenesisChannelSendError(error, secrets, label);
+    throw sanitizeXenesisChannelSendError(label, error, sensitiveValues);
   }
 }
 
@@ -14701,7 +19341,9 @@ async function sendTelegramChannelTest(
   const token = readXenesisChannelSecret(channel.tokenEnv, 'TELEGRAM_BOT_TOKEN', 'Telegram token');
   const target = firstXenesisIntegerCsvValue(channel.allowedChatIds, 'Telegram chat id');
   const adapter = new TelegramAdapter({ token: token.value, allowedChatIds: [Number(target)] });
-  await runXenesisChannelSend('Telegram test send failed', [token.value], () => adapter.send(target, message));
+  await runXenesisChannelSend('Telegram test send failed', { secrets: [token.value], targets: [target] }, () =>
+    adapter.send(target, message),
+  );
   return target;
 }
 
@@ -14709,14 +19351,18 @@ async function sendSlackChannelTest(channel: XenesisProfileChannelSettings['slac
   const webhook = readOptionalXenesisChannelSecret(channel.webhookUrlEnv, 'SLACK_WEBHOOK_URL');
   if (webhook.value) {
     const adapter = new SlackAdapter({ webhookUrl: webhook.value });
-    await runXenesisChannelSend('Slack test send failed', [webhook.value], () => adapter.send('webhook', message));
+    await runXenesisChannelSend('Slack test send failed', { secrets: [webhook.value], targets: ['webhook'] }, () =>
+      adapter.send('webhook', message),
+    );
     return `webhook:${webhook.source}`;
   }
 
   const botToken = readXenesisChannelSecret(channel.botTokenEnv, 'SLACK_BOT_TOKEN', 'Slack bot token');
   const target = firstXenesisCsvValue(channel.allowedChannelIds, 'Slack channel id');
   const adapter = new SlackAdapter({ botToken: botToken.value, allowedChannelIds: [target] });
-  await runXenesisChannelSend('Slack test send failed', [botToken.value], () => adapter.send(target, message));
+  await runXenesisChannelSend('Slack test send failed', { secrets: [botToken.value], targets: [target] }, () =>
+    adapter.send(target, message),
+  );
   return target;
 }
 
@@ -14727,18 +19373,27 @@ async function sendDiscordChannelTest(
   const webhook = readOptionalXenesisChannelSecret(channel.webhookUrlEnv, 'DISCORD_WEBHOOK_URL');
   if (webhook.value) {
     const adapter = new DiscordAdapter({ webhookUrl: webhook.value });
-    await runXenesisChannelSend('Discord test send failed', [webhook.value], () => adapter.send('webhook', message));
+    await runXenesisChannelSend(
+      'Discord test send failed',
+      { secrets: [webhook.value], targets: ['webhook', ...csvToStrings(channel.allowedGuildIds)] },
+      () => adapter.send('webhook', message),
+    );
     return `webhook:${webhook.source}`;
   }
 
   const botToken = readXenesisChannelSecret(channel.botTokenEnv, 'DISCORD_BOT_TOKEN', 'Discord bot token');
   const target = firstXenesisCsvValue(channel.allowedChannelIds, 'Discord channel id');
+  const guildIds = csvToStrings(channel.allowedGuildIds);
   const adapter = new DiscordAdapter({
     botToken: botToken.value,
     allowedChannelIds: [target],
-    allowedGuildIds: csvToStrings(channel.allowedGuildIds),
+    allowedGuildIds: guildIds,
   });
-  await runXenesisChannelSend('Discord test send failed', [botToken.value], () => adapter.send(target, message));
+  await runXenesisChannelSend(
+    'Discord test send failed',
+    { secrets: [botToken.value], targets: [target, ...guildIds] },
+    () => adapter.send(target, message),
+  );
   return target;
 }
 
@@ -14748,7 +19403,9 @@ async function sendWebhookChannelTest(
 ): Promise<string> {
   const url = readXenesisChannelSecret(channel.urlEnv, 'XENESIS_WEBHOOK_URL', 'Webhook URL');
   const adapter = new WebhookAdapter({ url: url.value });
-  await runXenesisChannelSend('Webhook test send failed', [url.value], () => adapter.send('test', message));
+  await runXenesisChannelSend('Webhook test send failed', { secrets: [url.value], targets: ['test'] }, () =>
+    adapter.send('test', message),
+  );
   return `webhook:${url.source}`;
 }
 
@@ -14759,35 +19416,47 @@ async function testXenesisProfileChannel(
   if (!isXenesisProfileChannelName(channel)) {
     throw new Error('Xenesis profile channel is required.');
   }
-  if (!isPlainRecord(request?.channels) || !isPlainRecord(request.channels[channel])) {
-    throw new Error(`Xenesis ${channel} channel settings are required.`);
-  }
 
+  await ensureDefaultXenesisProfile();
   const profiles = await readProfiles(getXenesisStateHome());
   const profile =
     normalizeXenesisProfileName(request?.profile) ||
     loadSettings().xenesis.profile ||
     profiles.active ||
     DEFAULT_XENESIS_PROFILE_TEMPLATE;
+  const profileConfig = profiles.profiles[profile];
+  const channels =
+    isPlainRecord(request?.channels) && isPlainRecord(request.channels[channel])
+      ? request.channels
+      : summarizeXenesisProfileChannelSettings(profileConfig);
+  const channelSettings = channels[channel];
+  if (!profileConfig && !request?.channels) {
+    throw new Error(`Xenesis profile not found: ${profile}.`);
+  }
+  if (!channelSettings?.enabled) {
+    throw new Error(`Xenesis ${channel} channel is disabled.`);
+  }
+
   const testMessage = buildXenesisProfileChannelTestMessage(profile, channel, request?.message);
 
   let target: string;
   if (channel === 'telegram') {
-    target = await sendTelegramChannelTest(request.channels.telegram, testMessage);
+    target = await sendTelegramChannelTest(channels.telegram, testMessage);
   } else if (channel === 'slack') {
-    target = await sendSlackChannelTest(request.channels.slack, testMessage);
+    target = await sendSlackChannelTest(channels.slack, testMessage);
   } else if (channel === 'discord') {
-    target = await sendDiscordChannelTest(request.channels.discord, testMessage);
+    target = await sendDiscordChannelTest(channels.discord, testMessage);
   } else {
-    target = await sendWebhookChannelTest(request.channels.webhook, testMessage);
+    target = await sendWebhookChannelTest(channels.webhook, testMessage);
   }
 
+  const redactedTarget = redactXenesisChannelTargetList(target);
   return {
     ok: true,
     channel,
     profile,
-    target,
-    message: `Xenesis ${channel} test message sent to ${target}.`,
+    target: redactedTarget,
+    message: `Xenesis ${channel} test message sent to ${redactedTarget}.`,
   };
 }
 
@@ -14822,8 +19491,7 @@ function embeddedXenesisOptions(): XenesisEmbeddedAgentServiceOptions {
   // simple CR routing. 'default' -> no injection (codex config applies).
   const deskReasoningEffort = appSettings.aiProvider.reasoningEffort;
   const isCodexProvider = (providerRuntime.provider || '').startsWith('codex');
-  const realCodexHome =
-    (process.env.CODEX_HOME || '').trim() || path.join(os.homedir(), '.codex');
+  const realCodexHome = (process.env.CODEX_HOME || '').trim() || path.join(os.homedir(), '.codex');
 
   // Force model + reasoning effort at the AGENT level via -c flags, independent of
   // the global/isolated codex config. The model MUST be forced this way: in the
@@ -14849,8 +19517,7 @@ function embeddedXenesisOptions(): XenesisEmbeddedAgentServiceOptions {
           XENESIS_CODEX_APP_SERVER_ARGS:
             process.env.XENESIS_CODEX_APP_SERVER_ARGS ?? `app-server --stdio ${codexCArgs}`,
           XENESIS_CODEX_CLI_ARGS:
-            process.env.XENESIS_CODEX_CLI_ARGS ??
-            `exec --skip-git-repo-check --sandbox read-only ${codexCArgs} -`,
+            process.env.XENESIS_CODEX_CLI_ARGS ?? `exec --skip-git-repo-check --sandbox read-only ${codexCArgs} -`,
         }
       : {};
 
@@ -14905,14 +19572,14 @@ function embeddedXenesisOptions(): XenesisEmbeddedAgentServiceOptions {
             // 120000ms". Give codex+MCP turns a much larger ceiling so slow,
             // high-effort turns complete. (Lower effort in ~/.codex/config.toml to
             // make turns faster; this only raises the kill ceiling.)
-            XENESIS_CODEX_APP_SERVER_TIMEOUT_MS:
-              process.env.XENESIS_CODEX_APP_SERVER_TIMEOUT_MS ?? '600000',
+            XENESIS_CODEX_APP_SERVER_TIMEOUT_MS: process.env.XENESIS_CODEX_APP_SERVER_TIMEOUT_MS ?? '600000',
           }
         : {}),
       ...codexReasoningEnv,
       ...codexIsolatedHomeEnv,
     },
     providerRuntime,
+    turnLedger: agentTurnLedger,
     approvalMode: settings.approvalMode,
     maxTurns: settings.maxTurns,
     profileName: profileSnapshot.name,
@@ -14928,18 +19595,11 @@ function embeddedXenesisOptions(): XenesisEmbeddedAgentServiceOptions {
 
 function buildXenesisProviderRuntimeStatus(): XenesisProviderRuntimeStatus {
   const appSettings = loadSettings();
-  const providerRuntime = buildXenesisProviderRuntimeOptions({
+  return buildResolvedXenesisProviderRuntimeStatus({
     xenesisSettings: appSettings.xenesis,
     aiProvider: appSettings.aiProvider,
     env: process.env,
   });
-  return {
-    provider: providerRuntime.provider,
-    model: providerRuntime.model,
-    profile: providerRuntime.profile,
-    baseURL: providerRuntime.baseURL,
-    apiKeyEnv: providerRuntime.apiKeyEnv,
-  };
 }
 
 function getEmbeddedXenesisService(): XenesisEmbeddedAgentService {
@@ -15042,7 +19702,7 @@ async function probeXenesisGatewayReady(url: string): Promise<{ ready: boolean; 
   }
 }
 
-const XENESIS_GATEWAY_CHANNEL_NAMES: XenesisGatewayChannelName[] = ['telegram', 'slack', 'discord', 'webhook'];
+const XENESIS_GATEWAY_CHANNEL_NAMES: XenesisGatewayChannelName[] = [...XENESIS_CONNECTION_IMPLEMENTED_MESSENGER_IDS];
 const XENESIS_GATEWAY_CHANNEL_RUNTIME_STATUSES = new Set<XenesisGatewayChannelRuntimeStatus>([
   'disabled',
   'blocked',
@@ -15372,36 +20032,10 @@ async function resetXenesisSession(): Promise<XenesisStatus> {
 
 const xenesisRunModes = new Set<XenesisRunRequest['mode']>(['chat', 'plan', 'work']);
 
-interface XenesisRunProviderRuntimeOverride {
-  provider?: string;
-  model?: string;
-  profile?: string;
-  baseURL?: string;
-  apiKeyEnv?: string;
-}
-
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const prototype = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
-}
-
-function normalizeXenesisRunProviderRuntime(
-  raw: Record<string, unknown>,
-): XenesisRunProviderRuntimeOverride | undefined {
-  const provider = optionalXenesisText(raw.provider);
-  const model = optionalXenesisText(raw.model);
-  const profile = optionalXenesisText(raw.providerProfile) ?? optionalXenesisText(raw.profile);
-  const baseURL = optionalXenesisText(raw.baseURL) ?? optionalXenesisText(raw.baseUrl);
-  const apiKeyEnv = optionalXenesisText(raw.apiKeyEnv);
-  const providerRuntime: XenesisRunProviderRuntimeOverride = {
-    ...(provider ? { provider } : {}),
-    ...(model ? { model } : {}),
-    ...(profile ? { profile } : {}),
-    ...(baseURL ? { baseURL } : {}),
-    ...(apiKeyEnv ? { apiKeyEnv } : {}),
-  };
-  return Object.keys(providerRuntime).length > 0 ? providerRuntime : undefined;
 }
 
 function normalizeXenesisRunAttachments(raw: unknown): XenesisRunRequest['attachments'] | undefined {
@@ -15477,7 +20111,7 @@ function normalizeXenesisRunRequest(request: XenesisRunRequest):
         .slice(-24)
     : undefined;
   const context = isPlainRecord(raw.context) ? raw.context : {};
-  const providerRuntime = normalizeXenesisRunProviderRuntime(raw);
+  const providerRuntime = normalizeXenesisRunProviderRuntimeRequest(raw);
   const attachments = normalizeXenesisRunAttachments(raw.attachments);
   const stream = raw.stream === false ? false : true;
 
@@ -15574,6 +20208,55 @@ function recordXenesisRunFailure(message: string): void {
   });
 }
 
+function agentTurnStatusLabel(status: string): string {
+  if (status === 'waiting_for_approval') return 'Desk approval needed';
+  if (status === 'blocked') return 'Run blocked';
+  if (status === 'failed') return 'Run failed';
+  if (status === 'completed') return 'Run completed';
+  return 'Run in progress';
+}
+
+function buildAgentTurnLedgerEventPayload(turn = agentTurnLedger.current()): Record<string, unknown> | null {
+  if (!turn) return null;
+  return {
+    type: 'turn_ledger',
+    turnId: turn.id,
+    status: turn.status,
+    summary: agentTurnStatusLabel(turn.status),
+    provider: turn.provider.resolved || turn.provider.requested,
+    ...(turn.provider.processModel ? { processModel: turn.provider.processModel } : {}),
+    evidenceCount: turn.evidence.length,
+    toolCallCount: turn.toolCalls.length,
+    approvalCount: turn.approvals.length,
+    updatedAt: turn.updatedAt,
+  };
+}
+
+function latestAgentTurnForRun(
+  previousTurnIds: ReadonlySet<string>,
+  sessionId?: string,
+): XenesisTurnRecord | undefined {
+  const turns = agentTurnLedger.list();
+  const newTurns = turns.filter(
+    (turn) => !previousTurnIds.has(turn.id) && (sessionId === undefined || turn.sessionId === sessionId),
+  );
+  if (newTurns.length > 0) {
+    return newTurns.sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.updatedAt.localeCompare(a.updatedAt))[0];
+  }
+  if (sessionId !== undefined) {
+    return turns
+      .filter((turn) => turn.sessionId === sessionId)
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || b.createdAt.localeCompare(a.createdAt))[0];
+  }
+  return agentTurnLedger.current();
+}
+
+function emitAgentTurnLedgerEvent(emitEvent?: (event: XenesisRunEvent) => void, turn?: XenesisTurnRecord): void {
+  const payload = buildAgentTurnLedgerEventPayload(turn);
+  if (!payload) return;
+  emitEvent?.({ event: 'turn_ledger', data: payload });
+}
+
 async function runXenesisEmbeddedRequest(
   request: XenesisRunRequest,
   emitEvent?: (event: XenesisRunEvent) => void,
@@ -15593,6 +20276,7 @@ async function runXenesisEmbeddedRequest(
     return { ok: false, error: message };
   }
 
+  const previousTurnIds = new Set(agentTurnLedger.list().map((turn) => turn.id));
   const result = await getEmbeddedXenesisService().run({
     prompt: normalized.prompt,
     workspace: status.workspace,
@@ -15607,13 +20291,18 @@ async function runXenesisEmbeddedRequest(
     ...(normalized.providerRuntime ? { providerRuntime: normalized.providerRuntime } : {}),
   });
 
+  const resultSessionId =
+    typeof result.sessionId === 'string' && result.sessionId.trim() ? result.sessionId.trim() : normalized.sessionId;
+  const runTurn = latestAgentTurnForRun(previousTurnIds, resultSessionId);
   if (!result.ok) {
     const message = result.error || result.errors || 'Xenesis run failed.';
+    emitAgentTurnLedgerEvent(emitEvent, runTurn);
     emitEvent?.({ event: 'gateway_error', data: result });
     recordXenesisRunFailure(message);
     return result;
   }
 
+  emitAgentTurnLedgerEvent(emitEvent, runTurn);
   emitEvent?.({ event: 'gateway_done', data: result });
   recordXenesisRunSuccess(result);
   return result;
@@ -17846,6 +22535,7 @@ function setupIpc(): void {
     (): Promise<XenesisOperationalDiagnostics> => getXenesisOperationalDiagnostics(),
   );
   ipcMain.handle('xenesis:gateway-status', (): Promise<XenesisStatus> => getXenesisStatusPayload());
+  ipcMain.handle('xenesis:connections-status', (): Promise<XenesisConnectionsStatus> => getXenesisConnectionsStatus());
   ipcMain.handle('xenesis:gateway-start', (): Promise<XenesisStatus> => startXenesisGatewayRuntime());
   ipcMain.handle('xenesis:gateway-stop', (): Promise<XenesisStatus> => stopXenesisGatewayRuntime());
   ipcMain.handle('xenesis:gateway-restart', async (): Promise<XenesisStatus> => {

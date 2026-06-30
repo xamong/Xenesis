@@ -1,9 +1,5 @@
-import type { XenesisConfig } from "../../config/types.js";
-import {
-  DANGEROUS_ENV,
-  isDangerousEnvName,
-  stripDangerousEnv
-} from "../../utils/dangerousEnv.js";
+import type { XenesisConfig } from '../../config/types.js';
+import { DANGEROUS_ENV, isDangerousEnvName, stripDangerousEnv } from '../../utils/dangerousEnv.js';
 
 // Re-exported from the leaf guard so existing `core/isolation/secretScrub`
 // importers keep their public surface. The loader-injection guard itself lives
@@ -12,23 +8,23 @@ import {
 export { DANGEROUS_ENV, stripDangerousEnv };
 
 export const KNOWN_SECRET_ENV: readonly string[] = [
-  "ANTHROPIC_API_KEY",
-  "OPENAI_API_KEY",
-  "XENESIS_API_KEY",
-  "XENESIS_BASE_URL",
-  "GEMINI_API_KEY",
-  "OLLAMA_API_KEY",
-  "OPENROUTER_API_KEY",
-  "GROQ_API_KEY",
-  "DEEPSEEK_API_KEY",
-  "MISTRAL_API_KEY",
-  "XAI_API_KEY",
-  "TELEGRAM_BOT_TOKEN",
-  "SLACK_BOT_TOKEN",
-  "SLACK_SIGNING_SECRET",
-  "SLACK_WEBHOOK_URL",
-  "DISCORD_BOT_TOKEN",
-  "DISCORD_WEBHOOK_URL"
+  'ANTHROPIC_API_KEY',
+  'OPENAI_API_KEY',
+  'XENESIS_API_KEY',
+  'XENESIS_BASE_URL',
+  'GEMINI_API_KEY',
+  'OLLAMA_API_KEY',
+  'OPENROUTER_API_KEY',
+  'GROQ_API_KEY',
+  'DEEPSEEK_API_KEY',
+  'MISTRAL_API_KEY',
+  'XAI_API_KEY',
+  'TELEGRAM_BOT_TOKEN',
+  'SLACK_BOT_TOKEN',
+  'SLACK_SIGNING_SECRET',
+  'SLACK_WEBHOOK_URL',
+  'DISCORD_BOT_TOKEN',
+  'DISCORD_WEBHOOK_URL',
 ];
 
 const SECRET_PATTERN = /_(API_KEY|TOKEN|SECRET|SIGNING_SECRET|WEBHOOK_URL)$/i;
@@ -52,7 +48,7 @@ export function collectSecretEnvNames(config: XenesisConfig): Set<string> {
 
 export function buildScrubbedEnv(
   baseEnv: NodeJS.ProcessEnv,
-  opts: { secretNames: Set<string>; allowlist?: readonly string[] }
+  opts: { secretNames: Set<string>; allowlist?: readonly string[] },
 ): NodeJS.ProcessEnv {
   const allow = new Set(opts.allowlist ?? []);
   const result: NodeJS.ProcessEnv = {};
@@ -84,14 +80,18 @@ const SHELL_SECRET_NAMES = new Set<string>(KNOWN_SECRET_ENV);
  */
 export function computeShellEnv(sourceEnv: NodeJS.ProcessEnv): NodeJS.ProcessEnv | undefined {
   // Opt OUT only with an explicit "0"; everything else scrubs by default.
-  if (sourceEnv.XENESIS_ISOLATION_SCRUB === "0") return undefined;
-  const allowlist = (sourceEnv.XENESIS_ISOLATION_SCRUB_ALLOW ?? "")
-    .split(",").map((v) => v.trim()).filter(Boolean);
-  const configuredSecretNames = (sourceEnv.XENESIS_ISOLATION_SCRUB_NAMES ?? "")
-    .split(",").map((v) => v.trim()).filter(Boolean);
+  if (sourceEnv.XENESIS_ISOLATION_SCRUB === '0') return undefined;
+  const allowlist = (sourceEnv.XENESIS_ISOLATION_SCRUB_ALLOW ?? '')
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean);
+  const configuredSecretNames = (sourceEnv.XENESIS_ISOLATION_SCRUB_NAMES ?? '')
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean);
   const scrubbed = buildScrubbedEnv(sourceEnv, {
     secretNames: new Set([...SHELL_SECRET_NAMES, ...configuredSecretNames]),
-    allowlist
+    allowlist,
   });
   return stripDangerousEnv(scrubbed);
 }

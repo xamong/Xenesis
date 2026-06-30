@@ -19,7 +19,7 @@ interface CoreVersion {
 
 /** Parses `v?MAJOR[.MINOR[.PATCH]]` (zero-filling missing parts), ignoring prerelease/build. */
 function parseVersion(value: string): CoreVersion | null {
-  const trimmed = value.trim().replace(/^v/i, "");
+  const trimmed = value.trim().replace(/^v/i, '');
   // Drop prerelease (-...) and build (+...) metadata; compare by the core triple only.
   const core = trimmed.split(/[-+]/, 1)[0];
   const match = /^(\d+)(?:\.(\d+))?(?:\.(\d+))?$/.exec(core);
@@ -27,7 +27,7 @@ function parseVersion(value: string): CoreVersion | null {
   return {
     major: Number.parseInt(match[1], 10),
     minor: match[2] ? Number.parseInt(match[2], 10) : 0,
-    patch: match[3] ? Number.parseInt(match[3], 10) : 0
+    patch: match[3] ? Number.parseInt(match[3], 10) : 0,
   };
 }
 
@@ -42,20 +42,20 @@ function compare(a: CoreVersion, b: CoreVersion): number {
 function matchComparator(version: CoreVersion, comparator: string): boolean | null {
   const parsed = COMPARATOR.exec(comparator.trim());
   if (!parsed) return null;
-  const operator = (parsed[1] ?? "=") as ">=" | "<=" | ">" | "<" | "=";
+  const operator = (parsed[1] ?? '=') as '>=' | '<=' | '>' | '<' | '=';
   const target = parseVersion(parsed[2]);
   if (!target) return null;
   const cmp = compare(version, target);
   switch (operator) {
-    case ">=":
+    case '>=':
       return cmp >= 0;
-    case "<=":
+    case '<=':
       return cmp <= 0;
-    case ">":
+    case '>':
       return cmp > 0;
-    case "<":
+    case '<':
       return cmp < 0;
-    case "=":
+    case '=':
       return cmp === 0;
     default:
       return null;
@@ -71,17 +71,20 @@ function matchComparator(version: CoreVersion, comparator: string): boolean | nu
 export function satisfies(version: string, range: string | undefined | null): boolean {
   if (range === undefined || range === null) return true;
   const trimmedRange = range.trim();
-  if (trimmedRange === "" || trimmedRange === "*") return true;
+  if (trimmedRange === '' || trimmedRange === '*') return true;
 
   const parsedVersion = parseVersion(version);
   if (!parsedVersion) return false;
 
   // `||` splits independent ranges; ANY satisfied range passes.
-  const orGroups = trimmedRange.split("||").map((group) => group.trim()).filter(Boolean);
+  const orGroups = trimmedRange
+    .split('||')
+    .map((group) => group.trim())
+    .filter(Boolean);
   if (orGroups.length === 0) return false;
 
   for (const group of orGroups) {
-    if (group === "*") return true;
+    if (group === '*') return true;
     const comparators = group.split(/\s+/).filter(Boolean);
     if (comparators.length === 0) continue;
     let groupOk = true;

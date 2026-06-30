@@ -1,7 +1,7 @@
-import { createHash } from "node:crypto";
-import type { ComposedSystemPrompt, PromptCacheScope } from "./PromptComposer.js";
+import { createHash } from 'node:crypto';
+import type { ComposedSystemPrompt, PromptCacheScope } from './PromptComposer.js';
 
-export type PromptAuditCacheRegion = "stable" | "boundary" | "dynamic";
+export type PromptAuditCacheRegion = 'stable' | 'boundary' | 'dynamic';
 
 export interface PromptAuditBlock {
   id: string;
@@ -12,7 +12,7 @@ export interface PromptAuditBlock {
 }
 
 export interface PromptAuditReport {
-  type: "prompt_audit";
+  type: 'prompt_audit';
   renderedBlockIds: string[];
   boundaryIndex: number;
   staticPrefixFingerprint: string;
@@ -26,21 +26,21 @@ export interface AuditComposedSystemPromptOptions {
 }
 
 function fingerprintContent(content: string) {
-  return createHash("sha256").update(content).digest("hex");
+  return createHash('sha256').update(content).digest('hex');
 }
 
 function cacheRegion(index: number, boundaryIndex: number): PromptAuditCacheRegion {
-  if (index === boundaryIndex) return "boundary";
-  return index < boundaryIndex ? "stable" : "dynamic";
+  if (index === boundaryIndex) return 'boundary';
+  return index < boundaryIndex ? 'stable' : 'dynamic';
 }
 
 export function auditComposedSystemPrompt(
   prompt: ComposedSystemPrompt,
-  options: AuditComposedSystemPromptOptions = {}
+  options: AuditComposedSystemPromptOptions = {},
 ): PromptAuditReport {
-  const boundaryIndex = prompt.blocks.findIndex((block) => block.id === "prompt.dynamic_boundary");
+  const boundaryIndex = prompt.blocks.findIndex((block) => block.id === 'prompt.dynamic_boundary');
   return {
-    type: "prompt_audit",
+    type: 'prompt_audit',
     renderedBlockIds: prompt.blocks.map((block) => block.id),
     boundaryIndex,
     staticPrefixFingerprint: prompt.staticPrefixFingerprint,
@@ -51,7 +51,7 @@ export function auditComposedSystemPrompt(
       source: block.source,
       cacheScope: block.cacheScope,
       cacheRegion: cacheRegion(index, boundaryIndex),
-      contentFingerprint: fingerprintContent(block.content)
-    }))
+      contentFingerprint: fingerprintContent(block.content),
+    })),
   };
 }

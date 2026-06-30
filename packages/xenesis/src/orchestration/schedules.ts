@@ -1,9 +1,9 @@
-import type { ApprovalMode } from "../config/types.js";
+import type { ApprovalMode } from '../config/types.js';
 
 export type ScheduleTrigger =
-  | { type: "interval"; every: string }
-  | { type: "daily"; at: string }
-  | { type: "cron"; cron: string; recurring?: boolean; durable?: boolean };
+  | { type: 'interval'; every: string }
+  | { type: 'daily'; at: string }
+  | { type: 'cron'; cron: string; recurring?: boolean; durable?: boolean };
 
 export interface TaskScheduleDefaults {
   approvalMode?: ApprovalMode;
@@ -17,9 +17,7 @@ export interface TaskScheduleDefaults {
  *  - "command": spawn `run`; if its output ends with `{"wakeAgent":false}` → do not wake.
  *  - "file-changed": wake only when the file's mtime is newer than the schedule's lastFiredAt.
  */
-export type ScheduleWakeCheck =
-  | { type: "command"; run: string }
-  | { type: "file-changed"; path: string };
+export type ScheduleWakeCheck = { type: 'command'; run: string } | { type: 'file-changed'; path: string };
 
 export interface TaskSchedule {
   id: string;
@@ -71,7 +69,7 @@ function copySchedule(schedule: TaskSchedule): TaskSchedule {
   return {
     ...schedule,
     trigger: { ...schedule.trigger },
-    ...(schedule.defaults ? { defaults: { ...schedule.defaults } } : {})
+    ...(schedule.defaults ? { defaults: { ...schedule.defaults } } : {}),
   };
 }
 
@@ -84,11 +82,7 @@ export function parseEveryMs(value: string) {
 
   const unit = match[2];
   const multiplier =
-    unit === "ms" ? 1 :
-      unit === "s" ? 1000 :
-        unit === "m" ? 60_000 :
-          unit === "h" ? 3_600_000 :
-            86_400_000;
+    unit === 'ms' ? 1 : unit === 's' ? 1000 : unit === 'm' ? 60_000 : unit === 'h' ? 3_600_000 : 86_400_000;
   return amount * multiplier;
 }
 
@@ -97,7 +91,7 @@ export function parseDailyAt(value: string) {
   if (!match) throw new Error(`Invalid daily time: ${value}`);
   return {
     hours: Number(match[1]),
-    minutes: Number(match[2])
+    minutes: Number(match[2]),
   };
 }
 
@@ -130,7 +124,7 @@ const cronFieldRanges: CronFieldRange[] = [
   { min: 0, max: 23 },
   { min: 1, max: 31 },
   { min: 1, max: 12 },
-  { min: 0, max: 6, dayOfWeek: true }
+  { min: 0, max: 6, dayOfWeek: true },
 ];
 
 export const defaultCronJitterConfig: CronJitterConfig = {
@@ -138,7 +132,7 @@ export const defaultCronJitterConfig: CronJitterConfig = {
   recurringCapMs: 15 * 60 * 1000,
   oneShotMaxMs: 90 * 1000,
   oneShotFloorMs: 0,
-  oneShotMinuteMod: 30
+  oneShotMinuteMod: 30,
 };
 
 function parseCronNumber(value: string, range: CronFieldRange) {
@@ -161,7 +155,7 @@ function addCronRange(values: Set<number>, start: number, end: number, step: num
 
 function expandCronField(value: string, range: CronFieldRange) {
   const values = new Set<number>();
-  for (const rawPart of value.split(",")) {
+  for (const rawPart of value.split(',')) {
     const part = rawPart.trim();
     if (!part) return undefined;
 
@@ -200,7 +194,7 @@ export function parseCronExpression(expression: string): CronFields | undefined 
     hour,
     dayOfMonth,
     month,
-    dayOfWeek
+    dayOfWeek,
   };
 }
 
@@ -234,10 +228,13 @@ export function nextCronRunDate(expression: string, after: Date): Date | undefin
     const dom = cursor.getDate();
     const dow = cursor.getDay();
     const dayMatches =
-      domWildcard && dowWildcard ? true :
-        domWildcard ? dayOfWeek.has(dow) :
-          dowWildcard ? dayOfMonth.has(dom) :
-            dayOfMonth.has(dom) || dayOfWeek.has(dow);
+      domWildcard && dowWildcard
+        ? true
+        : domWildcard
+          ? dayOfWeek.has(dow)
+          : dowWildcard
+            ? dayOfMonth.has(dom)
+            : dayOfMonth.has(dom) || dayOfWeek.has(dow);
     if (!dayMatches) {
       cursor.setDate(cursor.getDate() + 1);
       cursor.setHours(0, 0, 0, 0);
@@ -261,13 +258,13 @@ export function nextCronRunDate(expression: string, after: Date): Date | undefin
 }
 
 function formatCronTime(hour: number, minute: number) {
-  return new Date(2000, 0, 1, hour, minute, 0, 0).toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit"
+  return new Date(2000, 0, 1, hour, minute, 0, 0).toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
   });
 }
 
-const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export function cronToHuman(expression: string) {
   const parts = expression.trim().split(/\s+/);
@@ -275,20 +272,20 @@ export function cronToHuman(expression: string) {
   const [minute, hour, dayOfMonth, month, dayOfWeek] = parts as [string, string, string, string, string];
 
   const everyMinute = /^\*\/(\d+)$/.exec(minute);
-  if (everyMinute && hour === "*" && dayOfMonth === "*" && month === "*" && dayOfWeek === "*") {
+  if (everyMinute && hour === '*' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
     const amount = Number(everyMinute[1]);
-    return amount === 1 ? "Every minute" : `Every ${amount} minutes`;
+    return amount === 1 ? 'Every minute' : `Every ${amount} minutes`;
   }
 
-  if (/^\d+$/.test(minute) && hour === "*" && dayOfMonth === "*" && month === "*" && dayOfWeek === "*") {
+  if (/^\d+$/.test(minute) && hour === '*' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
     const parsedMinute = Number(minute);
-    return parsedMinute === 0 ? "Every hour" : `Every hour at :${String(parsedMinute).padStart(2, "0")}`;
+    return parsedMinute === 0 ? 'Every hour' : `Every hour at :${String(parsedMinute).padStart(2, '0')}`;
   }
 
   const everyHour = /^\*\/(\d+)$/.exec(hour);
-  if (/^\d+$/.test(minute) && everyHour && dayOfMonth === "*" && month === "*" && dayOfWeek === "*") {
+  if (/^\d+$/.test(minute) && everyHour && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
     const parsedMinute = Number(minute);
-    const suffix = parsedMinute === 0 ? "" : ` at :${String(parsedMinute).padStart(2, "0")}`;
+    const suffix = parsedMinute === 0 ? '' : ` at :${String(parsedMinute).padStart(2, '0')}`;
     const amount = Number(everyHour[1]);
     return amount === 1 ? `Every hour${suffix}` : `Every ${amount} hours${suffix}`;
   }
@@ -297,15 +294,15 @@ export function cronToHuman(expression: string) {
   const parsedMinute = Number(minute);
   const parsedHour = Number(hour);
 
-  if (dayOfMonth === "*" && month === "*" && dayOfWeek === "*") {
+  if (dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
     return `Every day at ${formatCronTime(parsedHour, parsedMinute)}`;
   }
 
-  if (dayOfMonth === "*" && month === "*" && /^\d$/.test(dayOfWeek)) {
+  if (dayOfMonth === '*' && month === '*' && /^\d$/.test(dayOfWeek)) {
     return `Every ${weekdayNames[Number(dayOfWeek) % 7]} at ${formatCronTime(parsedHour, parsedMinute)}`;
   }
 
-  if (dayOfMonth === "*" && month === "*" && dayOfWeek === "1-5") {
+  if (dayOfMonth === '*' && month === '*' && dayOfWeek === '1-5') {
     return `Weekdays at ${formatCronTime(parsedHour, parsedMinute)}`;
   }
 
@@ -313,15 +310,15 @@ export function cronToHuman(expression: string) {
 }
 
 export function validateTrigger(trigger: ScheduleTrigger) {
-  if (trigger.type === "interval") {
+  if (trigger.type === 'interval') {
     parseEveryMs(trigger.every);
     return;
   }
-  if (trigger.type === "daily") {
+  if (trigger.type === 'daily') {
     parseDailyAt(trigger.at);
     return;
   }
-  if (trigger.type === "cron") {
+  if (trigger.type === 'cron') {
     if (!parseCronExpression(trigger.cron)) {
       throw new Error(`Invalid cron expression '${trigger.cron}'. Expected 5 fields: M H DoM Mon DoW.`);
     }
@@ -334,9 +331,11 @@ export function validateTrigger(trigger: ScheduleTrigger) {
 }
 
 function sameLocalDay(left: Date, right: Date) {
-  return left.getFullYear() === right.getFullYear() &&
+  return (
+    left.getFullYear() === right.getFullYear() &&
     left.getMonth() === right.getMonth() &&
-    left.getDate() === right.getDate();
+    left.getDate() === right.getDate()
+  );
 }
 
 function dateOrUndefined(value: string | undefined) {
@@ -355,7 +354,7 @@ function stableScheduleFraction(id: string) {
 }
 
 function jitteredCronRunDate(schedule: TaskSchedule, anchor: Date, config = defaultCronJitterConfig) {
-  if (schedule.trigger.type !== "cron") return undefined;
+  if (schedule.trigger.type !== 'cron') return undefined;
   const next = nextCronRunDate(schedule.trigger.cron, anchor);
   if (!next) return undefined;
 
@@ -370,7 +369,7 @@ function jitteredCronRunDate(schedule: TaskSchedule, anchor: Date, config = defa
   if (!following) return next;
   const delay = Math.min(
     fraction * config.recurringFrac * (following.getTime() - next.getTime()),
-    config.recurringCapMs
+    config.recurringCapMs,
   );
   return new Date(next.getTime() + delay);
 }
@@ -378,13 +377,13 @@ function jitteredCronRunDate(schedule: TaskSchedule, anchor: Date, config = defa
 export function shouldFireSchedule(schedule: TaskSchedule, at = new Date()) {
   if (!schedule.enabled) return false;
 
-  if (schedule.trigger.type === "interval") {
+  if (schedule.trigger.type === 'interval') {
     const lastFired = dateOrUndefined(schedule.lastFiredAt);
     if (!lastFired) return true;
     return at.getTime() - lastFired.getTime() >= parseEveryMs(schedule.trigger.every);
   }
 
-  if (schedule.trigger.type === "cron") {
+  if (schedule.trigger.type === 'cron') {
     const anchor = dateOrUndefined(schedule.lastFiredAt) ?? dateOrUndefined(schedule.createdAt);
     if (!anchor) return false;
     const next = jitteredCronRunDate(schedule, anchor);
@@ -421,7 +420,7 @@ export class SessionScheduleStore implements ScheduleStore {
 
   async create(input: CreateScheduleInput) {
     if (!this.options.sessionId) {
-      throw new Error("Session id is required to create a session schedule.");
+      throw new Error('Session id is required to create a session schedule.');
     }
     validateTrigger(input.trigger);
     const timestamp = now();
@@ -433,7 +432,7 @@ export class SessionScheduleStore implements ScheduleStore {
       sessionId: this.options.sessionId,
       defaults: input.defaults,
       createdAt: timestamp,
-      updatedAt: timestamp
+      updatedAt: timestamp,
     };
 
     const schedules = this.allSchedules();
@@ -450,7 +449,7 @@ export class SessionScheduleStore implements ScheduleStore {
     const updated: TaskSchedule = {
       ...schedules[index],
       ...input,
-      updatedAt: now()
+      updatedAt: now(),
     };
     schedules[index] = updated;
     this.writeAll(schedules);
@@ -480,7 +479,7 @@ export class CombinedScheduleStore implements ScheduleStore {
   constructor(private readonly stores: ScheduleStore[]) {}
 
   async create(input: CreateScheduleInput) {
-    if (this.stores.length === 0) throw new Error("No schedule stores configured.");
+    if (this.stores.length === 0) throw new Error('No schedule stores configured.');
     return await this.stores[0]!.create(input);
   }
 

@@ -8,7 +8,9 @@ import ts from 'typescript';
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, '..');
 const sourcePath = path.join(projectRoot, 'src', 'shared', 'deskBridgeCapabilities.ts');
-const outputPath = path.join(projectRoot, 'docs', 'capability-registry-audit.md');
+const outputPath = path.resolve(
+  process.env.XENESIS_CAPABILITY_AUDIT_OUTPUT || path.join(projectRoot, 'docs', 'capability-registry-audit.md'),
+);
 
 const tsModuleCache = new Map();
 
@@ -239,8 +241,8 @@ function buildDocument(audit) {
       `| \`${escapeTable(row.coverageName)}\` | \`${escapeTable(row.entryKey)}\` | \`${escapeTable(row.field)}\` | ${row.kind} | \`${escapeTable(row.path)}\` |`,
     );
   }
-  lines.push('');
 
+  while (lines.at(-1) === '') lines.pop();
   return `${lines.join('\n')}\n`;
 }
 
@@ -266,7 +268,11 @@ const audit = buildAudit();
 const markdown = buildDocument(audit);
 fs.writeFileSync(outputPath, markdown, 'utf8');
 
-const hasFailures = audit.missingRegistered.length > 0 || audit.dispatchMissingTree.length > 0;
+const hasFailures =
+  audit.missingRegistered.length > 0 ||
+  audit.missingDispatched.length > 0 ||
+  audit.undispatchedCallable.length > 0 ||
+  audit.dispatchMissingTree.length > 0;
 
 console.log(`Wrote ${path.relative(projectRoot, outputPath)}.`);
 console.log(`Capability audit: ${audit.nodes.length} nodes, ${audit.coverageRows.length} coverage path references.`);

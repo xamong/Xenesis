@@ -17,6 +17,7 @@ const publicRootFiles = [
 const scannedDirectories = ['docs', '.github'];
 
 const scannedExtensions = new Set(['.md', '.yml', '.yaml']);
+const excludedScannedDirectories = ['docs/superpowers', 'docs/obsidian'];
 
 const forbiddenPatterns = [
   {
@@ -62,7 +63,8 @@ function listFiles(directory, output = []) {
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
     const fullPath = path.join(directory, entry.name);
     if (entry.isDirectory()) {
-      if (path.relative(root, fullPath).replace(/\\/g, '/').startsWith('docs/superpowers')) continue;
+      const relativePath = path.relative(root, fullPath).replace(/\\/g, '/');
+      if (excludedScannedDirectories.some((excludedPath) => relativePath.startsWith(excludedPath))) continue;
       listFiles(fullPath, output);
       continue;
     }

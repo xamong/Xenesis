@@ -199,12 +199,11 @@ npm run check:public-release:ci
 
 | 주제 | 문서 |
 |---|---|
-| 전체 사용자 매뉴얼 | [docs/user-manual.md](docs/user-manual.md) |
-| 공개 영문 매뉴얼 | [docs/manual/README.md](docs/manual/README.md) |
-| MCP 설정과 도구 | [docs/mcp-integration.md](docs/mcp-integration.md), [docs/mcp-capabilities.md](docs/mcp-capabilities.md) |
-| Capability Registry 계약 | [docs/capability-registry.md](docs/capability-registry.md), [docs/capability-registry-list.md](docs/capability-registry-list.md) |
-| Provider와 Bot 연동 | [docs/xenesis-bot-hermes-setup.md](docs/xenesis-bot-hermes-setup.md) |
-| 릴리즈와 패키징 | [docs/deployment-and-update.md](docs/deployment-and-update.md), [docs/release-build-and-github-release.md](docs/release-build-and-github-release.md), [docs/macos-install.md](docs/macos-install.md) |
+| 전체 사용자 매뉴얼 | [docs/manual/README.md](docs/manual/README.md) |
+| Agent와 CR/MCP | [docs/manual/03-xenesis-agent.md](docs/manual/03-xenesis-agent.md), [docs/manual/05-cr-mcp-gateway-bots.md](docs/manual/05-cr-mcp-gateway-bots.md) |
+| Provider와 연결 설정 | [docs/manual/09-onboarding-connections.md](docs/manual/09-onboarding-connections.md), [docs/manual/11-external-tool-integrations.md](docs/manual/11-external-tool-integrations.md) |
+| Messenger 채널 | [docs/manual/10-openclaw-channel-setup.md](docs/manual/10-openclaw-channel-setup.md) |
+| Capability Registry 감사 | [docs/capability-registry-audit.md](docs/capability-registry-audit.md) |
 
 ## 스크립트 구성
 

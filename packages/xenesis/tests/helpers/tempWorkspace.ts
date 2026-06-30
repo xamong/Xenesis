@@ -1,16 +1,16 @@
-import { mkdtemp, rm } from "node:fs/promises";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { closeAllDatabases } from "../../src/db/database.js";
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { closeAllDatabases } from '../../src/db/database.js';
 
-export async function createTempWorkspace(prefix = "xenesis-") {
+export async function createTempWorkspace(prefix = 'xenesis-') {
   const root = await mkdtemp(join(tmpdir(), prefix));
 
   return {
     root,
     async cleanup() {
       await removeTempWorkspace(root);
-    }
+    },
   };
 }
 
@@ -23,10 +23,8 @@ async function removeTempWorkspace(root: string) {
       return;
     } catch (error) {
       lastError = error;
-      const code = error instanceof Error && "code" in error
-        ? (error as NodeJS.ErrnoException).code
-        : undefined;
-      if (code !== "EBUSY" && code !== "ENOTEMPTY" && code !== "EPERM") throw error;
+      const code = error instanceof Error && 'code' in error ? (error as NodeJS.ErrnoException).code : undefined;
+      if (code !== 'EBUSY' && code !== 'ENOTEMPTY' && code !== 'EPERM') throw error;
       closeAllDatabases();
       const delayMs = Math.min(1000, 100 * (attempt + 1));
       await new Promise((resolve) => setTimeout(resolve, delayMs));

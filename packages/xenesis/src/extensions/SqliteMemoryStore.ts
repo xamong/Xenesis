@@ -1,13 +1,13 @@
 // src/extensions/SqliteMemoryStore.ts
-import type { DatabaseSync } from "node:sqlite";
-import { openDatabase } from "../db/database.js";
-import { runStartupImports } from "../db/startupImports.js";
-import { TableStore } from "../db/tableStore.js";
-import type { Embedder } from "./embedding.js";
-import { semanticSearch } from "./embedding.js";
-import { rankRecords } from "./memory.js";
-import { validateMemoryRunbookInput } from "./memoryRunbook.js";
-import type { MemoryInput, MemoryRecord, MemoryStore } from "./types.js";
+import type { DatabaseSync } from 'node:sqlite';
+import { openDatabase } from '../db/database.js';
+import { runStartupImports } from '../db/startupImports.js';
+import { TableStore } from '../db/tableStore.js';
+import type { Embedder } from './embedding.js';
+import { semanticSearch } from './embedding.js';
+import { rankRecords } from './memory.js';
+import { validateMemoryRunbookInput } from './memoryRunbook.js';
+import type { MemoryInput, MemoryRecord, MemoryStore } from './types.js';
 
 const DEFAULT_MAX_RECORDS = 500;
 const DEFAULT_MIN_SCORE = 0.25;
@@ -23,25 +23,25 @@ function optionalRecordField<K extends keyof MemoryRecord>(
 ): Pick<MemoryRecord, K> | Record<string, never> {
   if (hasOwn(input, key as keyof MemoryInput)) {
     const value = input[key as keyof MemoryInput] as MemoryRecord[K] | undefined;
-    return value !== undefined ? { [key]: value } as Pick<MemoryRecord, K> : {};
+    return value !== undefined ? ({ [key]: value } as Pick<MemoryRecord, K>) : {};
   }
   const value = existing?.[key];
-  return value !== undefined ? { [key]: value } as Pick<MemoryRecord, K> : {};
+  return value !== undefined ? ({ [key]: value } as Pick<MemoryRecord, K>) : {};
 }
 
 function evidenceFields(
   input: MemoryInput,
   existing: MemoryRecord | undefined,
-): Pick<MemoryRecord, "evidenceIds" | "noEvidenceReason"> | Record<string, never> {
-  if (hasOwn(input, "evidenceIds")) {
+): Pick<MemoryRecord, 'evidenceIds' | 'noEvidenceReason'> | Record<string, never> {
+  if (hasOwn(input, 'evidenceIds')) {
     return input.evidenceIds !== undefined ? { evidenceIds: input.evidenceIds } : {};
   }
-  if (hasOwn(input, "noEvidenceReason")) {
+  if (hasOwn(input, 'noEvidenceReason')) {
     return input.noEvidenceReason !== undefined ? { noEvidenceReason: input.noEvidenceReason } : {};
   }
   return {
     ...(existing?.evidenceIds ? { evidenceIds: existing.evidenceIds } : {}),
-    ...(existing?.noEvidenceReason ? { noEvidenceReason: existing.noEvidenceReason } : {})
+    ...(existing?.noEvidenceReason ? { noEvidenceReason: existing.noEvidenceReason } : {}),
   };
 }
 
@@ -64,16 +64,23 @@ export class SqliteMemoryStore implements MemoryStore {
   private readonly maxRecords: number;
   private readonly embedder?: Embedder;
   private readonly minScore: number;
-  constructor(options: { xenesisHome: string; memoryPath?: string; now?: () => Date; maxRecords?: number; embedder?: Embedder; minScore?: number }) {
+  constructor(options: {
+    xenesisHome: string;
+    memoryPath?: string;
+    now?: () => Date;
+    maxRecords?: number;
+    embedder?: Embedder;
+    minScore?: number;
+  }) {
     this.now = options.now ?? (() => new Date());
     this.maxRecords = options.maxRecords ?? DEFAULT_MAX_RECORDS;
     this.embedder = options.embedder;
     this.minScore = options.minScore ?? DEFAULT_MIN_SCORE;
     this.db = openDatabase(options.xenesisHome);
     this.table = new TableStore<MemoryRecord>(this.db, {
-      table: "memory",
+      table: 'memory',
       id: (r) => r.id,
-      indexColumns: ["priority", "updated_at"],
+      indexColumns: ['priority', 'updated_at'],
       derive: (r) => ({ priority: r.priority ?? 0, updated_at: r.updatedAt }),
     });
     this.ready = runStartupImports(options.xenesisHome, { memoryPath: options.memoryPath });
@@ -99,12 +106,12 @@ export class SqliteMemoryStore implements MemoryStore {
     } catch {
       return;
     }
-    let cursor = ""; // every row id satisfies `id > ''`, so the first page starts at the lowest id
+    let cursor = ''; // every row id satisfies `id > ''`, so the first page starts at the lowest id
     for (;;) {
       let rows: Array<{ id: string; data: string }>;
       try {
         rows = this.db
-          .prepare("SELECT id, data FROM memory WHERE embedding IS NULL AND id > ? ORDER BY id LIMIT 50")
+          .prepare('SELECT id, data FROM memory WHERE embedding IS NULL AND id > ? ORDER BY id LIMIT 50')
           .all(cursor) as Array<{ id: string; data: string }>;
       } catch {
         return;
@@ -115,9 +122,11 @@ export class SqliteMemoryStore implements MemoryStore {
       for (const row of rows) {
         try {
           const record = JSON.parse(row.data) as MemoryRecord;
-          const text = typeof record.text === "string" ? record.text : "";
+          const text = typeof record.text === 'string' ? record.text : '';
           const vec = await embedder.embed(text);
-          this.db.prepare("UPDATE memory SET embedding = ? WHERE id = ?").run(Buffer.from(vec.buffer, vec.byteOffset, vec.byteLength), row.id);
+          this.db
+            .prepare('UPDATE memory SET embedding = ? WHERE id = ?')
+            .run(Buffer.from(vec.buffer, vec.byteOffset, vec.byteLength), row.id);
         } catch {
           // swallow: this row stays on the keyword fallback. The cursor has moved past it, so it is
           // not retried this process — no infinite re-selection of a persistently failing row.
@@ -132,33 +141,41 @@ export class SqliteMemoryStore implements MemoryStore {
     const existing = this.table.get(normalizedInput.id);
     const timestamp = this.now().toISOString();
     const record: MemoryRecord = {
-      id: normalizedInput.id, text: normalizedInput.text, tags: normalizedInput.tags ?? [],
-      ...optionalRecordField(normalizedInput, existing, "kind"),
-      ...optionalRecordField(normalizedInput, existing, "runbook"),
-      ...optionalRecordField(normalizedInput, existing, "source"),
-      ...optionalRecordField(normalizedInput, existing, "priority"),
+      id: normalizedInput.id,
+      text: normalizedInput.text,
+      tags: normalizedInput.tags ?? [],
+      ...optionalRecordField(normalizedInput, existing, 'kind'),
+      ...optionalRecordField(normalizedInput, existing, 'runbook'),
+      ...optionalRecordField(normalizedInput, existing, 'source'),
+      ...optionalRecordField(normalizedInput, existing, 'priority'),
       updatedAt: timestamp,
       createdAt: normalizedInput.createdAt ?? existing?.createdAt ?? timestamp,
-      ...(normalizedInput.status ? { status: normalizedInput.status } : existing?.status ? { status: existing.status } : { status: "active" }),
-      ...optionalRecordField(normalizedInput, existing, "pinned"),
-      ...optionalRecordField(normalizedInput, existing, "lastAccessedAt"),
-      ...optionalRecordField(normalizedInput, existing, "sensitivity"),
-      ...optionalRecordField(normalizedInput, existing, "conflictsWith"),
-      ...optionalRecordField(normalizedInput, existing, "validFrom"),
-      ...optionalRecordField(normalizedInput, existing, "validTo"),
-      ...optionalRecordField(normalizedInput, existing, "supersedes"),
-      ...optionalRecordField(normalizedInput, existing, "supersededBy"),
-      ...optionalRecordField(normalizedInput, existing, "partialSupersededBy"),
-      ...optionalRecordField(normalizedInput, existing, "supersedeMode"),
+      ...(normalizedInput.status
+        ? { status: normalizedInput.status }
+        : existing?.status
+          ? { status: existing.status }
+          : { status: 'active' }),
+      ...optionalRecordField(normalizedInput, existing, 'pinned'),
+      ...optionalRecordField(normalizedInput, existing, 'lastAccessedAt'),
+      ...optionalRecordField(normalizedInput, existing, 'sensitivity'),
+      ...optionalRecordField(normalizedInput, existing, 'conflictsWith'),
+      ...optionalRecordField(normalizedInput, existing, 'validFrom'),
+      ...optionalRecordField(normalizedInput, existing, 'validTo'),
+      ...optionalRecordField(normalizedInput, existing, 'supersedes'),
+      ...optionalRecordField(normalizedInput, existing, 'supersededBy'),
+      ...optionalRecordField(normalizedInput, existing, 'partialSupersededBy'),
+      ...optionalRecordField(normalizedInput, existing, 'supersedeMode'),
       ...evidenceFields(normalizedInput, existing),
-      ...optionalRecordField(normalizedInput, existing, "archivedAt"),
+      ...optionalRecordField(normalizedInput, existing, 'archivedAt'),
     };
     this.table.upsert(record);
     // Embedding lives in its own BLOB column (TableStore only writes the JSON `data` + index cols),
     // so persist it with a supplementary UPDATE after the row exists.
     if (this.embedder) {
       const vec = await this.embedder.embed(record.text);
-      this.db.prepare("UPDATE memory SET embedding = ? WHERE id = ?").run(Buffer.from(vec.buffer, vec.byteOffset, vec.byteLength), record.id);
+      this.db
+        .prepare('UPDATE memory SET embedding = ? WHERE id = ?')
+        .run(Buffer.from(vec.buffer, vec.byteOffset, vec.byteLength), record.id);
       record.embedding = vec;
     }
     this.prune();
@@ -173,7 +190,10 @@ export class SqliteMemoryStore implements MemoryStore {
     const deleted = this.table.delete(id);
     if (!deleted) throw new Error(`Memory record not found: ${id}`);
   }
-  async list(): Promise<MemoryRecord[]> { await this.ready; return this.table.list(); }
+  async list(): Promise<MemoryRecord[]> {
+    await this.ready;
+    return this.table.list();
+  }
   async search(query: string): Promise<MemoryRecord[]> {
     const records = await this.list();
     if (!this.embedder) return rankRecords(records, query);
@@ -187,7 +207,10 @@ export class SqliteMemoryStore implements MemoryStore {
     return semanticSearch(withEmbeddings, query, this.embedder, this.minScore);
   }
   private loadEmbeddings(): Map<string, Float32Array> {
-    const rows = this.db.prepare("SELECT id, embedding FROM memory WHERE embedding IS NOT NULL").all() as Array<{ id: string; embedding: Uint8Array }>;
+    const rows = this.db.prepare('SELECT id, embedding FROM memory WHERE embedding IS NOT NULL').all() as Array<{
+      id: string;
+      embedding: Uint8Array;
+    }>;
     const map = new Map<string, Float32Array>();
     for (const row of rows) {
       const buf = row.embedding;

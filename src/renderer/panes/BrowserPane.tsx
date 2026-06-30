@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import type { McpBridgeBrowserActionPayload, McpBridgeBrowserActionResult } from '../../shared/types';
 import { usePaneRefresh } from '../hooks/usePaneRefresh';
 import { useI18n } from '../i18n';
-import type { McpBridgeBrowserActionPayload, McpBridgeBrowserActionResult } from '../../shared/types';
 
 interface BrowserPaneProps {
   contentId?: string;
@@ -43,7 +43,9 @@ export function runBrowserPaneAction(
       ok: false,
       contentId: targetContentId || payload.contentId,
       paneId: payload.paneId,
-      error: targetContentId ? `Browser pane is not mounted: ${targetContentId}` : 'No browser pane target is available',
+      error: targetContentId
+        ? `Browser pane is not mounted: ${targetContentId}`
+        : 'No browser pane target is available',
     };
   }
   return controller.run(payload);
@@ -61,7 +63,13 @@ function normalizeBrowserUrl(url: string): string {
   return 'https://www.google.com/search?q=' + encodeURIComponent(trimmed);
 }
 
-export function BrowserPane({ contentId, initialUrl = DEFAULT_URL, onUrlChange, onTitleChange, onOpenInDesk }: BrowserPaneProps) {
+export function BrowserPane({
+  contentId,
+  initialUrl = DEFAULT_URL,
+  onUrlChange,
+  onTitleChange,
+  onOpenInDesk,
+}: BrowserPaneProps) {
   const { t } = useI18n();
   const webviewRef = useRef<
     HTMLElement & {
@@ -207,7 +215,11 @@ export function BrowserPane({ contentId, initialUrl = DEFAULT_URL, onUrlChange, 
 
   useEffect(() => {
     if (!contentId) return undefined;
-    const snapshot = (payload: McpBridgeBrowserActionPayload, ok = true, error?: string): McpBridgeBrowserActionResult => ({
+    const snapshot = (
+      payload: McpBridgeBrowserActionPayload,
+      ok = true,
+      error?: string,
+    ): McpBridgeBrowserActionResult => ({
       requestId: payload.requestId,
       action: payload.action,
       ok,
@@ -225,12 +237,13 @@ export function BrowserPane({ contentId, initialUrl = DEFAULT_URL, onUrlChange, 
       script: string,
     ): Promise<McpBridgeBrowserActionResult> => {
       const webview = webviewRef.current;
-      if (!webview?.executeJavaScript) return snapshot(payload, false, 'Browser webview JavaScript execution is not available');
+      if (!webview?.executeJavaScript)
+        return snapshot(payload, false, 'Browser webview JavaScript execution is not available');
       try {
         const result = await webview.executeJavaScript(script, true);
         return {
           ...snapshot(payload),
-          ...(result && typeof result === 'object' ? result as Record<string, unknown> : { snapshot: result }),
+          ...(result && typeof result === 'object' ? (result as Record<string, unknown>) : { snapshot: result }),
         };
       } catch (error) {
         return snapshot(payload, false, error instanceof Error ? error.message : String(error));

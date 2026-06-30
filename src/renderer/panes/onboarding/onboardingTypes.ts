@@ -4,6 +4,12 @@ export type OnboardingMode = 'learn' | 'demo';
 
 export type OnboardingActionId =
   | 'choose-folder'
+  | 'open-ai-provider-settings'
+  | 'open-provider-setup-plan'
+  | 'open-external-tool-setup'
+  | 'open-tool-connectors'
+  | 'open-mcp-setup'
+  | 'open-mcp-oauth'
   | 'open-terminal'
   | 'open-file'
   | 'arrange-panes'

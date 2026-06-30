@@ -1,39 +1,39 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from 'vitest';
 import type {
   GraphitiMemoryClient,
   GraphitiMemoryProjectionPayload,
-  GraphitiMemoryProjectionResponse
-} from "../../src/extensions/graphitiMemoryAdapter.js";
-import type { MemoryWriteContext } from "../../src/extensions/index.js";
-import { InMemoryMemoryLedgerStore, MemoryLedger } from "../../src/extensions/MemoryLedger.js";
-import { InMemoryMemoryStore } from "../../src/extensions/memory.js";
-import { hashMemoryEvidenceContent } from "../../src/extensions/memoryEvidenceVault.js";
+  GraphitiMemoryProjectionResponse,
+} from '../../src/extensions/graphitiMemoryAdapter.js';
+import type { MemoryWriteContext } from '../../src/extensions/index.js';
+import { InMemoryMemoryLedgerStore, MemoryLedger } from '../../src/extensions/MemoryLedger.js';
+import { InMemoryMemoryStore } from '../../src/extensions/memory.js';
+import { hashMemoryEvidenceContent } from '../../src/extensions/memoryEvidenceVault.js';
 import {
   type MemoryGraphProjectionConfig,
-  projectAcceptedMemoryRecords
-} from "../../src/extensions/memoryGraphProjection.js";
-import { MemoryRetrievalPlanner } from "../../src/extensions/memoryRetrievalPlanner.js";
+  projectAcceptedMemoryRecords,
+} from '../../src/extensions/memoryGraphProjection.js';
+import { MemoryRetrievalPlanner } from '../../src/extensions/memoryRetrievalPlanner.js';
 
-const now = "2026-06-01T00:00:00.000Z";
+const now = '2026-06-01T00:00:00.000Z';
 
 function trustedAt(iso = now): MemoryWriteContext {
   return {
-    sourceKind: "conversation",
-    trust: "trusted",
+    sourceKind: 'conversation',
+    trust: 'trusted',
     externalTaint: false,
-    actor: "agent",
-    runtime: "test",
-    now: () => new Date(iso)
+    actor: 'agent',
+    runtime: 'test',
+    now: () => new Date(iso),
   };
 }
 
 function externalAt(iso = now): MemoryWriteContext {
   return {
     ...trustedAt(iso),
-    sourceKind: "external_document",
-    trust: "external_untrusted",
+    sourceKind: 'external_document',
+    trust: 'external_untrusted',
     externalTaint: true,
-    sourceId: "https://example.test/source"
+    sourceId: 'https://example.test/source',
   };
 }
 
@@ -47,13 +47,13 @@ function createLedger() {
 function graphConfig(overrides: Partial<MemoryGraphProjectionConfig> = {}): MemoryGraphProjectionConfig {
   return {
     enabled: true,
-    endpoint: "http://127.0.0.1:8000",
-    allowedEndpoints: ["http://127.0.0.1:8000"],
+    endpoint: 'http://127.0.0.1:8000',
+    allowedEndpoints: ['http://127.0.0.1:8000'],
     localOnly: true,
     allowSensitiveProjection: false,
     redactEvidence: true,
     timeoutMs: 1000,
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -70,42 +70,42 @@ class FakeGraphitiClient implements GraphitiMemoryClient {
   }
 }
 
-describe("memory graph projection", () => {
-  it("projects only accepted policy-allowed ledger records and stores projection IDs in ledger events", async () => {
+describe('memory graph projection', () => {
+  it('projects only accepted policy-allowed ledger records and stores projection IDs in ledger events', async () => {
     const { ledger, memoryStore } = createLedger();
     await ledger.recordEvidence(
       {
-        id: "evidence-decision",
-        kind: "conversation",
-        source: "chat",
-        sensitivity: "low",
-        contentHash: hashMemoryEvidenceContent("A 프로젝트 Graphiti projection decision")
+        id: 'evidence-decision',
+        kind: 'conversation',
+        source: 'chat',
+        sensitivity: 'low',
+        contentHash: hashMemoryEvidenceContent('A 프로젝트 Graphiti projection decision'),
       },
-      trustedAt()
+      trustedAt(),
     );
     await ledger.write(
       {
-        id: "decision-low",
-        text: "A 프로젝트는 Graphiti projection을 사용하기로 결정했다",
-        tags: ["project", "decision"],
-        evidenceIds: ["evidence-decision"]
+        id: 'decision-low',
+        text: 'A 프로젝트는 Graphiti projection을 사용하기로 결정했다',
+        tags: ['project', 'decision'],
+        evidenceIds: ['evidence-decision'],
       },
-      trustedAt()
+      trustedAt(),
     );
     await ledger.write(
       {
-        id: "pending-external",
-        text: "외부 문서에서 온 제안은 pending이어야 한다",
-        tags: ["project"]
+        id: 'pending-external',
+        text: '외부 문서에서 온 제안은 pending이어야 한다',
+        tags: ['project'],
       },
-      externalAt()
+      externalAt(),
     );
     await memoryStore.upsert({
-      id: "high-accepted",
-      text: "건강 관련 민감 기록은 graph projection으로 나가면 안 된다",
-      tags: ["health"],
-      sensitivity: "high",
-      status: "active"
+      id: 'high-accepted',
+      text: '건강 관련 민감 기록은 graph projection으로 나가면 안 된다',
+      tags: ['health'],
+      sensitivity: 'high',
+      status: 'active',
     });
     const client = new FakeGraphitiClient();
 
@@ -113,57 +113,54 @@ describe("memory graph projection", () => {
       ledger,
       client,
       config: graphConfig(),
-      at: now
+      at: now,
     });
 
-    expect(result.projected.map((item) => item.memoryId)).toEqual(["decision-low"]);
-    expect(result.skipped.map((item) => item.memoryId)).toEqual(expect.arrayContaining(["high-accepted"]));
-    expect(client.payloads.map((payload) => payload.memoryId)).toEqual(["decision-low"]);
-    expect(client.payloads[0]?.evidence.map((item) => item.id)).toEqual(["evidence-decision"]);
+    expect(result.projected.map((item) => item.memoryId)).toEqual(['decision-low']);
+    expect(result.skipped.map((item) => item.memoryId)).toEqual(expect.arrayContaining(['high-accepted']));
+    expect(client.payloads.map((payload) => payload.memoryId)).toEqual(['decision-low']);
+    expect(client.payloads[0]?.evidence.map((item) => item.id)).toEqual(['evidence-decision']);
 
-    const events = await ledger.history({ memoryId: "decision-low" });
-    expect(events.some((event) =>
-      event.type === "graph_projected" &&
-      event.metadata?.projectionId === "graph-decision-low" &&
-      event.metadata?.endpoint === "http://127.0.0.1:8000"
-    )).toBe(true);
+    const events = await ledger.history({ memoryId: 'decision-low' });
+    expect(
+      events.some(
+        (event) =>
+          event.type === 'graph_projected' &&
+          event.metadata?.projectionId === 'graph-decision-low' &&
+          event.metadata?.endpoint === 'http://127.0.0.1:8000',
+      ),
+    ).toBe(true);
   });
 
-  it("isolates projection failures without corrupting accepted memory", async () => {
+  it('isolates projection failures without corrupting accepted memory', async () => {
     const { ledger } = createLedger();
-    await ledger.write(
-      { id: "project-ok", text: "project ok memory", tags: ["project"] },
-      trustedAt()
-    );
-    await ledger.write(
-      { id: "project-fails", text: "project fails memory", tags: ["project"] },
-      trustedAt()
-    );
+    await ledger.write({ id: 'project-ok', text: 'project ok memory', tags: ['project'] }, trustedAt());
+    await ledger.write({ id: 'project-fails', text: 'project fails memory', tags: ['project'] }, trustedAt());
     const client = new FakeGraphitiClient();
-    client.failMemoryIds.add("project-fails");
+    client.failMemoryIds.add('project-fails');
 
     const result = await projectAcceptedMemoryRecords({
       ledger,
       client,
       config: graphConfig(),
-      at: now
+      at: now,
     });
 
-    expect(result.projected.map((item) => item.memoryId)).toEqual(["project-ok"]);
-    expect(result.failed.map((item) => item.memoryId)).toEqual(["project-fails"]);
-    expect(await ledger.getRecord("project-fails")).toMatchObject({
-      id: "project-fails",
-      status: "active"
+    expect(result.projected.map((item) => item.memoryId)).toEqual(['project-ok']);
+    expect(result.failed.map((item) => item.memoryId)).toEqual(['project-fails']);
+    expect(await ledger.getRecord('project-fails')).toMatchObject({
+      id: 'project-fails',
+      status: 'active',
     });
   });
 
-  it("reclassifies unlabelled direct memory rows before projection", async () => {
+  it('reclassifies unlabelled direct memory rows before projection', async () => {
     const { ledger, memoryStore } = createLedger();
     await memoryStore.upsert({
-      id: "legacy-secret",
-      text: "API_KEY=sk-legacy-secret was imported before governance labels existed",
-      tags: ["legacy"],
-      status: "active"
+      id: 'legacy-secret',
+      text: 'API_KEY=sk-legacy-secret was imported before governance labels existed',
+      tags: ['legacy'],
+      status: 'active',
     });
     const client = new FakeGraphitiClient();
 
@@ -171,35 +168,35 @@ describe("memory graph projection", () => {
       ledger,
       client,
       config: graphConfig(),
-      at: now
+      at: now,
     });
 
     expect(result.projected).toEqual([]);
-    expect(result.skipped).toContainEqual({ memoryId: "legacy-secret", reason: "sensitive" });
+    expect(result.skipped).toContainEqual({ memoryId: 'legacy-secret', reason: 'sensitive' });
     expect(client.payloads).toEqual([]);
   });
 
-  it("reclassifies low-labelled sensitive evidence before sending Graphiti payloads", async () => {
+  it('reclassifies low-labelled sensitive evidence before sending Graphiti payloads', async () => {
     const { ledger } = createLedger();
     await ledger.recordEvidence(
       {
-        id: "evidence-secret",
-        kind: "manual_note",
-        source: "password vault sk-live-graph-secret",
-        sensitivity: "low",
-        contentHash: hashMemoryEvidenceContent("non-secret snapshot body"),
-        summary: "API key sk-live-graph-secret"
+        id: 'evidence-secret',
+        kind: 'manual_note',
+        source: 'password vault sk-live-graph-secret',
+        sensitivity: 'low',
+        contentHash: hashMemoryEvidenceContent('non-secret snapshot body'),
+        summary: 'API key sk-live-graph-secret',
       },
-      trustedAt()
+      trustedAt(),
     );
     await ledger.write(
       {
-        id: "project-safe",
-        text: "A 프로젝트는 Graphiti projection을 사용한다",
-        tags: ["project"],
-        evidenceIds: ["evidence-secret"]
+        id: 'project-safe',
+        text: 'A 프로젝트는 Graphiti projection을 사용한다',
+        tags: ['project'],
+        evidenceIds: ['evidence-secret'],
       },
-      trustedAt()
+      trustedAt(),
     );
     const client = new FakeGraphitiClient();
 
@@ -207,26 +204,25 @@ describe("memory graph projection", () => {
       ledger,
       client,
       config: graphConfig(),
-      at: now
+      at: now,
     });
 
-    expect(result.projected.map((item) => item.memoryId)).toEqual(["project-safe"]);
+    expect(result.projected.map((item) => item.memoryId)).toEqual(['project-safe']);
     expect(client.payloads).toHaveLength(1);
-    expect(JSON.stringify(client.payloads[0])).not.toContain("sk-live-graph-secret");
+    expect(JSON.stringify(client.payloads[0])).not.toContain('sk-live-graph-secret');
     expect(client.payloads[0]?.evidence[0]).toMatchObject({
-      id: "evidence-secret",
-      sensitivity: "restricted"
+      id: 'evidence-secret',
+      sensitivity: 'restricted',
     });
-    expect(client.payloads[0]?.evidence[0]?.summary).toBe("[redacted]");
+    expect(client.payloads[0]?.evidence[0]?.summary).toBe('[redacted]');
     expect(client.payloads[0]?.evidence[0]?.contentHash).toBeUndefined();
   });
 
-
-  it("leaves ledger retrieval working when graph projection is disabled", async () => {
+  it('leaves ledger retrieval working when graph projection is disabled', async () => {
     const { ledger } = createLedger();
     await ledger.write(
-      { id: "project-memory", text: "A 프로젝트 현재 상태는 진행 중이다", tags: ["project"] },
-      trustedAt()
+      { id: 'project-memory', text: 'A 프로젝트 현재 상태는 진행 중이다', tags: ['project'] },
+      trustedAt(),
     );
     const client = new FakeGraphitiClient();
 
@@ -234,87 +230,89 @@ describe("memory graph projection", () => {
       ledger,
       client,
       config: graphConfig({ enabled: false }),
-      at: now
+      at: now,
     });
     const pack = await new MemoryRetrievalPlanner({
       ledger,
       graph: {
         enabled: false,
-        search: async () => [{ memoryId: "project-memory", projectionId: "graph-project-memory" }]
-      }
+        search: async () => [{ memoryId: 'project-memory', projectionId: 'graph-project-memory' }],
+      },
     }).retrieve({
-      query: "A 프로젝트 현재 상태",
-      at: now
+      query: 'A 프로젝트 현재 상태',
+      at: now,
     });
 
     expect(projection.projected).toEqual([]);
     expect(client.payloads).toEqual([]);
-    expect(pack.records.map((record) => record.id)).toEqual(["project-memory"]);
+    expect(pack.records.map((record) => record.id)).toEqual(['project-memory']);
   });
 
-  it("uses graph search hits only as ledger readback pointers in retrieval planning", async () => {
+  it('uses graph search hits only as ledger readback pointers in retrieval planning', async () => {
     const { ledger } = createLedger();
     await ledger.write(
       {
-        id: "relation-memory",
-        text: "김OO은 A 프로젝트 backend prototype owner다",
-        tags: ["person", "project"]
+        id: 'relation-memory',
+        text: '김OO은 A 프로젝트 backend prototype owner다',
+        tags: ['person', 'project'],
       },
-      trustedAt()
+      trustedAt(),
     );
 
     const pack = await new MemoryRetrievalPlanner({
       ledger,
       graph: {
         enabled: true,
-        search: async () => [{
-          memoryId: "relation-memory",
-          projectionId: "graph-relation-memory",
-          fact: "김OO --owns--> A 프로젝트 backend prototype"
-        }]
-      }
+        search: async () => [
+          {
+            memoryId: 'relation-memory',
+            projectionId: 'graph-relation-memory',
+            fact: '김OO --owns--> A 프로젝트 backend prototype',
+          },
+        ],
+      },
     }).retrieve({
-      query: "owner 관계 그래프로 찾아줘",
-      at: now
+      query: 'owner 관계 그래프로 찾아줘',
+      at: now,
     });
 
-    expect(pack.records.map((record) => record.id)).toEqual(["relation-memory"]);
-    expect(JSON.stringify(pack)).not.toContain("김OO --owns-->");
+    expect(pack.records.map((record) => record.id)).toEqual(['relation-memory']);
+    expect(JSON.stringify(pack)).not.toContain('김OO --owns-->');
   });
 
-  it("filters graph readback through temporal validity for current queries", async () => {
+  it('filters graph readback through temporal validity for current queries', async () => {
     const { ledger } = createLedger();
     await ledger.write(
       {
-        id: "pref-old",
-        text: "대표님은 오전 미팅을 피한다",
-        tags: ["preference", "meeting"],
-        validFrom: "2026-01-01T00:00:00.000Z"
+        id: 'pref-old',
+        text: '대표님은 오전 미팅을 피한다',
+        tags: ['preference', 'meeting'],
+        validFrom: '2026-01-01T00:00:00.000Z',
       },
-      trustedAt("2026-01-01T00:00:00.000Z")
+      trustedAt('2026-01-01T00:00:00.000Z'),
     );
     await ledger.supersedeRecord(
-      "pref-old",
+      'pref-old',
       {
-        id: "pref-current",
-        text: "대표님은 화요일 오전 미팅을 허용한다",
-        tags: ["preference", "meeting"],
-        validFrom: "2026-05-01T00:00:00.000Z"
+        id: 'pref-current',
+        text: '대표님은 화요일 오전 미팅을 허용한다',
+        tags: ['preference', 'meeting'],
+        validFrom: '2026-05-01T00:00:00.000Z',
       },
-      trustedAt("2026-05-01T00:00:00.000Z")
+      trustedAt('2026-05-01T00:00:00.000Z'),
     );
 
     const pack = await new MemoryRetrievalPlanner({
       ledger,
       graph: {
         enabled: true,
-        search: async () => [{ memoryId: "pref-old", projectionId: "graph-pref-old" }]
-      }
+        search: async () => [{ memoryId: 'pref-old', projectionId: 'graph-pref-old' }],
+      },
     }).retrieve({
-      query: "오전 미팅 선호",
-      at: now
+      query: '오전 미팅 선호',
+      at: now,
     });
 
-    expect(pack.records.map((record) => record.id)).toEqual(["pref-current"]);
+    expect(pack.records.map((record) => record.id)).toEqual(['pref-current']);
   });
 });

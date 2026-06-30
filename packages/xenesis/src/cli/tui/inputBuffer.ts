@@ -7,18 +7,18 @@ export interface TuiInputBuffer {
 }
 
 export type TuiInputAction =
-  | { type: "insert"; value: string }
-  | { type: "replaceValue"; value: string }
-  | { type: "backspace" }
-  | { type: "delete" }
-  | { type: "clear" }
-  | { type: "moveLeft" }
-  | { type: "moveRight" }
-  | { type: "moveHome" }
-  | { type: "moveEnd" }
-  | { type: "historyPrevious" }
-  | { type: "historyNext" }
-  | { type: "submit" };
+  | { type: 'insert'; value: string }
+  | { type: 'replaceValue'; value: string }
+  | { type: 'backspace' }
+  | { type: 'delete' }
+  | { type: 'clear' }
+  | { type: 'moveLeft' }
+  | { type: 'moveRight' }
+  | { type: 'moveHome' }
+  | { type: 'moveEnd' }
+  | { type: 'historyPrevious' }
+  | { type: 'historyNext' }
+  | { type: 'submit' };
 
 export interface TuiInputResult {
   state: TuiInputBuffer;
@@ -31,23 +31,23 @@ export function createTuiInputBuffer(history: string[] = []): TuiInputBuffer {
     cursor: 0,
     history: history.filter((entry) => entry.trim()).slice(-100),
     historyIndex: undefined,
-    draftBeforeHistory: ""
+    draftBeforeHistory: '',
   };
 }
 
 export function renderTuiInputValue(buffer: TuiInputBuffer) {
-  return buffer.chars.join("");
+  return buffer.chars.join('');
 }
 
 export function renderTuiInputWithCursor(buffer: TuiInputBuffer) {
-  const before = buffer.chars.slice(0, buffer.cursor).join("");
-  const at = buffer.chars[buffer.cursor] ?? " ";
-  const after = buffer.chars.slice(buffer.cursor + 1).join("");
+  const before = buffer.chars.slice(0, buffer.cursor).join('');
+  const at = buffer.chars[buffer.cursor] ?? ' ';
+  const after = buffer.chars.slice(buffer.cursor + 1).join('');
   return `${before}${at}${after}`;
 }
 
 export function getTuiInputCursorCellOffset(buffer: TuiInputBuffer) {
-  return measureTerminalCellWidth(buffer.chars.slice(0, buffer.cursor).join(""));
+  return measureTerminalCellWidth(buffer.chars.slice(0, buffer.cursor).join(''));
 }
 
 /**
@@ -98,131 +98,132 @@ function isFullWidthCodePoint(codePoint: number) {
 export function commitTuiInputHistory(buffer: TuiInputBuffer, submitted: string): TuiInputBuffer {
   const value = submitted.trim();
   if (!value) return buffer;
-  const history = buffer.history.at(-1) === value
-    ? buffer.history
-    : [...buffer.history, value].slice(-100);
+  const history = buffer.history.at(-1) === value ? buffer.history : [...buffer.history, value].slice(-100);
   return {
     ...buffer,
     history,
     historyIndex: undefined,
-    draftBeforeHistory: ""
+    draftBeforeHistory: '',
   };
 }
 
-export function reduceTuiInputBuffer(buffer: TuiInputBuffer, action: TuiInputAction): TuiInputBuffer & { submitted?: string } {
-  if (action.type === "insert") {
+export function reduceTuiInputBuffer(
+  buffer: TuiInputBuffer,
+  action: TuiInputAction,
+): TuiInputBuffer & { submitted?: string } {
+  if (action.type === 'insert') {
     const inserted = Array.from(action.value);
-    const chars = [
-      ...buffer.chars.slice(0, buffer.cursor),
-      ...inserted,
-      ...buffer.chars.slice(buffer.cursor)
-    ];
+    const chars = [...buffer.chars.slice(0, buffer.cursor), ...inserted, ...buffer.chars.slice(buffer.cursor)];
     return {
       ...buffer,
       chars,
       cursor: buffer.cursor + inserted.length,
-      historyIndex: undefined
+      historyIndex: undefined,
     };
   }
 
-  if (action.type === "replaceValue") {
-    return withValue({
-      ...buffer,
-      historyIndex: undefined,
-      draftBeforeHistory: ""
-    }, action.value);
+  if (action.type === 'replaceValue') {
+    return withValue(
+      {
+        ...buffer,
+        historyIndex: undefined,
+        draftBeforeHistory: '',
+      },
+      action.value,
+    );
   }
 
-  if (action.type === "backspace") {
+  if (action.type === 'backspace') {
     if (buffer.cursor <= 0) return buffer;
     return {
       ...buffer,
-      chars: [
-        ...buffer.chars.slice(0, buffer.cursor - 1),
-        ...buffer.chars.slice(buffer.cursor)
-      ],
+      chars: [...buffer.chars.slice(0, buffer.cursor - 1), ...buffer.chars.slice(buffer.cursor)],
       cursor: buffer.cursor - 1,
-      historyIndex: undefined
+      historyIndex: undefined,
     };
   }
 
-  if (action.type === "delete") {
+  if (action.type === 'delete') {
     if (buffer.cursor >= buffer.chars.length) return buffer;
     return {
       ...buffer,
-      chars: [
-        ...buffer.chars.slice(0, buffer.cursor),
-        ...buffer.chars.slice(buffer.cursor + 1)
-      ],
-      historyIndex: undefined
+      chars: [...buffer.chars.slice(0, buffer.cursor), ...buffer.chars.slice(buffer.cursor + 1)],
+      historyIndex: undefined,
     };
   }
 
-  if (action.type === "clear") {
+  if (action.type === 'clear') {
     return {
       ...buffer,
       chars: [],
       cursor: 0,
       historyIndex: undefined,
-      draftBeforeHistory: ""
+      draftBeforeHistory: '',
     };
   }
 
-  if (action.type === "moveLeft") {
+  if (action.type === 'moveLeft') {
     return { ...buffer, cursor: Math.max(0, buffer.cursor - 1) };
   }
 
-  if (action.type === "moveRight") {
+  if (action.type === 'moveRight') {
     return { ...buffer, cursor: Math.min(buffer.chars.length, buffer.cursor + 1) };
   }
 
-  if (action.type === "moveHome") {
+  if (action.type === 'moveHome') {
     return { ...buffer, cursor: 0 };
   }
 
-  if (action.type === "moveEnd") {
+  if (action.type === 'moveEnd') {
     return { ...buffer, cursor: buffer.chars.length };
   }
 
-  if (action.type === "historyPrevious") {
+  if (action.type === 'historyPrevious') {
     if (buffer.history.length === 0) return buffer;
     const currentIndex = buffer.historyIndex;
-    const nextIndex = currentIndex === undefined
-      ? buffer.history.length - 1
-      : Math.max(0, currentIndex - 1);
+    const nextIndex = currentIndex === undefined ? buffer.history.length - 1 : Math.max(0, currentIndex - 1);
     const draftBeforeHistory = currentIndex === undefined ? renderTuiInputValue(buffer) : buffer.draftBeforeHistory;
-    return withValue({
-      ...buffer,
-      historyIndex: nextIndex,
-      draftBeforeHistory
-    }, buffer.history[nextIndex]);
+    return withValue(
+      {
+        ...buffer,
+        historyIndex: nextIndex,
+        draftBeforeHistory,
+      },
+      buffer.history[nextIndex],
+    );
   }
 
-  if (action.type === "historyNext") {
+  if (action.type === 'historyNext') {
     if (buffer.historyIndex === undefined) return buffer;
     const nextIndex = buffer.historyIndex + 1;
     if (nextIndex >= buffer.history.length) {
-      return withValue({
-        ...buffer,
-        historyIndex: undefined,
-        draftBeforeHistory: ""
-      }, buffer.draftBeforeHistory);
+      return withValue(
+        {
+          ...buffer,
+          historyIndex: undefined,
+          draftBeforeHistory: '',
+        },
+        buffer.draftBeforeHistory,
+      );
     }
-    return withValue({
-      ...buffer,
-      historyIndex: nextIndex
-    }, buffer.history[nextIndex]);
+    return withValue(
+      {
+        ...buffer,
+        historyIndex: nextIndex,
+      },
+      buffer.history[nextIndex],
+    );
   }
 
-  if (action.type === "submit") {
+  if (action.type === 'submit') {
     const submitted = renderTuiInputValue(buffer).trim();
     return {
       ...buffer,
       chars: [],
       cursor: 0,
       historyIndex: undefined,
-      draftBeforeHistory: "",
-      ...(submitted ? { submitted } : {})
+      draftBeforeHistory: '',
+      ...(submitted ? { submitted } : {}),
     };
   }
 
@@ -234,6 +235,6 @@ function withValue(buffer: TuiInputBuffer, value: string): TuiInputBuffer {
   return {
     ...buffer,
     chars,
-    cursor: chars.length
+    cursor: chars.length,
   };
 }

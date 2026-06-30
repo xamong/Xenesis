@@ -1,20 +1,25 @@
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { join, resolve } from 'node:path';
 import {
+  type CliConfigOverrides,
   displayXenesisStatePath,
   loadConfig,
-  type CliConfigOverrides,
   type McpServerConfig,
   type ProviderName,
   type XenesisConfig,
-  xenesisStatePath
-} from "../config/index.js";
-import { createMcpClient, type McpToolClient } from "../extensions/index.js";
-import { resolveProviderSettings } from "../providers/index.js";
-import { createProvider } from "../core/AgentRuntimeFactory.js";
+  xenesisStatePath,
+} from '../config/index.js';
+import { createProvider } from '../core/AgentRuntimeFactory.js';
+import { createMcpClient, type McpToolClient } from '../extensions/index.js';
+import {
+  type AgentProvider,
+  assertRuntimeProviderReady,
+  type RuntimeProviderResolutionOptions,
+  resolveRuntimeProviderSelection,
+} from '../providers/index.js';
 
-export type ConnectionCheckStatus = "passed" | "failed";
-export type ConnectionCheckKind = "provider" | "mcp";
+export type ConnectionCheckStatus = 'passed' | 'failed';
+export type ConnectionCheckKind = 'provider' | 'mcp';
 
 export interface ConnectionCheckResult {
   name: string;
@@ -52,7 +57,7 @@ export interface ConnectionReport {
 export type ConnectionCheckMcpClientFactory = (
   serverName: string,
   config: McpServerConfig,
-  cwd: string
+  cwd: string,
 ) => McpToolClient;
 
 export interface RunConnectionCheckOptions {
@@ -63,6 +68,7 @@ export interface RunConnectionCheckOptions {
   probe?: boolean;
   now?: () => Date;
   mcpClientFactory?: ConnectionCheckMcpClientFactory;
+  providerResolution?: RuntimeProviderResolutionOptions;
 }
 
 export interface RunConnectionCheckResult {
@@ -82,7 +88,7 @@ function errorMessage(error: unknown) {
 }
 
 function reportStamp(date: Date) {
-  return date.toISOString().replace(/[-:.]/g, "");
+  return date.toISOString().replace(/[-:.]/g, '');
 }
 
 function connectionReportId(date: Date) {
@@ -90,7 +96,7 @@ function connectionReportId(date: Date) {
 }
 
 function reportsDir(xenesisHome: string) {
-  return xenesisStatePath(xenesisHome, "reports");
+  return xenesisStatePath(xenesisHome, 'reports');
 }
 
 function displayPath(xenesisHome: string, path: string) {
@@ -98,83 +104,116 @@ function displayPath(xenesisHome: string, path: string) {
 }
 
 function connectionStatus(report: ConnectionReport) {
-  return report.summary.failed === 0 ? "passed" : "failed";
+  return report.summary.failed === 0 ? 'passed' : 'failed';
 }
 
 function connectionReportPathFromTarget(xenesisHome: string, target: string) {
   if (/[\\/]/.test(target)) return resolve(target);
-  const fileName = target.endsWith(".json")
+  const fileName = target.endsWith('.json')
     ? target
-    : `${target.startsWith("connect-") ? target : `connect-${target}`}.json`;
+    : `${target.startsWith('connect-') ? target : `connect-${target}`}.json`;
   return join(reportsDir(xenesisHome), fileName);
 }
 
 function summarize(checks: ConnectionCheckResult[]) {
-  const passed = checks.filter((check) => check.status === "passed").length;
+  const passed = checks.filter((check) => check.status === 'passed').length;
   return {
     total: checks.length,
     passed,
-    failed: checks.length - passed
+    failed: checks.length - passed,
   };
 }
 
-async function runProviderProbe(config: XenesisConfig, env: NodeJS.ProcessEnv) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30_000);
-  try {
-    // Registry-aware construction: routes codex-responses and any registered
-    // provider factory through the single canonical path (no local duplicate).
-    const response = await createProvider(config, env).complete({
-      model: config.model,
-      messages: [{ role: "user", content: "connection probe" }],
-      tools: [],
-      signal: controller.signal
-    });
-    return response.message.content || "provider returned an empty response";
-  } finally {
-    clearTimeout(timeout);
+const DEFAULT_PROVIDER_PROBE_TIMEOUT_MS = 90_000;
+
+function positiveIntegerEnv(env: NodeJS.ProcessEnv, name: string, fallback: number) {
+  const raw = env[name];
+  if (raw === undefined || raw.trim() === '') return fallback;
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new Error(`${name} must be a positive integer, got ${raw}`);
+  }
+  return value;
+}
+
+async function disposeProbeProvider(provider: AgentProvider) {
+  const disposable = provider as AgentProvider & {
+    dispose?: () => void | Promise<void>;
+    close?: () => void | Promise<void>;
+  };
+  if (typeof disposable.dispose === 'function') {
+    await disposable.dispose();
+    return;
+  }
+  if (typeof disposable.close === 'function') {
+    await disposable.close();
   }
 }
 
-async function checkProvider(config: XenesisConfig, env: NodeJS.ProcessEnv, probe: boolean): Promise<ConnectionCheckResult> {
+async function runProviderProbe(
+  config: XenesisConfig,
+  env: NodeJS.ProcessEnv,
+  providerResolution: RuntimeProviderResolutionOptions | undefined,
+) {
+  const controller = new AbortController();
+  const timeoutMs = positiveIntegerEnv(env, 'XENESIS_CONNECT_PROBE_TIMEOUT_MS', DEFAULT_PROVIDER_PROBE_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const provider = createProvider(config, env, providerResolution);
+  try {
+    const response = await provider.complete({
+      model: provider.model ?? config.model,
+      messages: [{ role: 'user', content: 'connection probe' }],
+      tools: [],
+      signal: controller.signal,
+    });
+    return response.message.content || 'provider returned an empty response';
+  } finally {
+    clearTimeout(timeout);
+    await disposeProbeProvider(provider);
+  }
+}
+
+function readinessMessage(authMode: string | undefined) {
+  return authMode === 'test-mock' ? 'test mock provider configured; probe skipped' : 'provider ready; probe skipped';
+}
+
+async function checkProvider(
+  config: XenesisConfig,
+  env: NodeJS.ProcessEnv,
+  probe: boolean,
+  providerResolution: RuntimeProviderResolutionOptions | undefined,
+): Promise<ConnectionCheckResult> {
   const startedAt = Date.now();
-  const settings = resolveProviderSettings(config, env);
-  const base: Omit<ConnectionCheckResult, "status" | "durationMs" | "message"> = {
+  const selection = resolveRuntimeProviderSelection(config, env, providerResolution);
+  const base: Omit<ConnectionCheckResult, 'status' | 'durationMs' | 'message'> = {
     name: `provider:${config.provider}`,
-    kind: "provider",
+    kind: 'provider',
     provider: config.provider,
-    model: config.model,
-    apiKeyEnv: settings.apiKeyEnv,
-    baseURL: settings.baseURL,
-    probed: probe
+    model: selection.model ?? config.model,
+    apiKeyEnv: selection.apiKeyEnv,
+    baseURL: selection.baseURL,
+    probed: probe,
   };
 
   try {
-    if (config.provider !== "mock" && settings.apiKeyEnv && !settings.apiKey) {
-      throw new Error(`${settings.apiKeyEnv} missing`);
-    }
-    if (config.provider === "openai-compatible" && !settings.baseURL) {
-      throw new Error("baseURL missing for openai-compatible provider");
-    }
+    assertRuntimeProviderReady(selection);
 
     const message = probe
-      ? `probe ok: ${await runProviderProbe(config, env)}`
-      : config.provider === "mock"
-        ? "mock provider configured"
-        : "credentials present; probe skipped";
+      ? `probe ok: ${await runProviderProbe(config, env, providerResolution)}`
+      : readinessMessage(selection.authMode);
 
     return {
       ...base,
-      status: "passed",
+      status: 'passed',
       durationMs: Date.now() - startedAt,
-      message
+      message,
     };
   } catch (error) {
     return {
       ...base,
-      status: "failed",
+      status: 'failed',
       durationMs: Date.now() - startedAt,
-      message: errorMessage(error)
+      message: errorMessage(error),
     };
   }
 }
@@ -188,21 +227,22 @@ async function checkMcpServer(
   workspaceRoot: string,
   serverName: string,
   server: McpServerConfig,
-  factory?: ConnectionCheckMcpClientFactory
+  factory?: ConnectionCheckMcpClientFactory,
 ): Promise<ConnectionCheckResult> {
   const startedAt = Date.now();
   const client = factory
     ? factory(serverName, server, workspaceRoot)
     : createMcpClient(serverName, server, workspaceRoot);
-  const base: Omit<ConnectionCheckResult, "status" | "durationMs" | "message"> = {
+  const base: Omit<ConnectionCheckResult, 'status' | 'durationMs' | 'message'> = {
     name: `mcp:${serverName}`,
-    kind: "mcp",
+    kind: 'mcp',
     serverName,
-    command: "url" in server && (server.type === "http" || server.type === "sse")
-      ? server.url
-      : "command" in server
-        ? [server.command, ...server.args].join(" ")
-        : serverName
+    command:
+      'url' in server && (server.type === 'http' || server.type === 'sse')
+        ? server.url
+        : 'command' in server
+          ? [server.command, ...server.args].join(' ')
+          : serverName,
   };
 
   try {
@@ -211,19 +251,19 @@ async function checkMcpServer(
     const prompts = await optionalCount(client.listPrompts?.bind(client));
     return {
       ...base,
-      status: "passed",
+      status: 'passed',
       durationMs: Date.now() - startedAt,
       message: `${tools.length} tools, ${resources} resources, ${prompts} prompts`,
       tools: tools.length,
       resources,
-      prompts
+      prompts,
     };
   } catch (error) {
     return {
       ...base,
-      status: "failed",
+      status: 'failed',
       durationMs: Date.now() - startedAt,
-      message: errorMessage(error)
+      message: errorMessage(error),
     };
   } finally {
     await client.close().catch(() => undefined);
@@ -235,25 +275,25 @@ function renderConnectionLines(report: ConnectionReport, xenesisHome: string, re
   return [
     `connect: report ${displayPath(xenesisHome, reportPath)}`,
     `connect: ${status} ${report.summary.passed}/${report.summary.total}`,
-    ...report.checks.map((check) => check.status === "passed"
-      ? `connect: ${check.name} passed`
-      : `connect: ${check.name} failed - ${check.message}`)
+    ...report.checks.map((check) =>
+      check.status === 'passed' ? `connect: ${check.name} passed` : `connect: ${check.name} failed - ${check.message}`,
+    ),
   ];
 }
 
 export function renderConnectionReportDetails(
   entry: ConnectionReportEntry,
   xenesisHome: string,
-  summaryLabel: "latest" | "summary"
+  summaryLabel: 'latest' | 'summary',
 ) {
   const report = entry.report;
   const status = connectionStatus(report);
   return [
     `connect: report ${displayPath(xenesisHome, entry.path)}`,
     `connect: ${summaryLabel} ${status} ${report.summary.passed}/${report.summary.total} (${report.createdAt})`,
-    ...report.checks.map((check) => check.status === "passed"
-      ? `connect: ${check.name} passed`
-      : `connect: ${check.name} failed - ${check.message}`)
+    ...report.checks.map((check) =>
+      check.status === 'passed' ? `connect: ${check.name} passed` : `connect: ${check.name} failed - ${check.message}`,
+    ),
   ];
 }
 
@@ -263,17 +303,19 @@ export async function runConnectionCheck(options: RunConnectionCheckOptions): Pr
     cwd: options.cwd,
     configPath: options.configPath,
     env: options.env,
-    cli: options.cli
+    cli: options.cli,
   });
   const workspaceRoot = config.workspace;
   const env = options.env ?? process.env;
   const probe = options.probe === true;
 
   const checks = [
-    await checkProvider(config, env, probe),
-    ...await Promise.all(Object.entries(config.extensions.mcpServers).map(([serverName, server]) => (
-      checkMcpServer(workspaceRoot, serverName, server, options.mcpClientFactory)
-    )))
+    await checkProvider(config, env, probe, options.providerResolution),
+    ...(await Promise.all(
+      Object.entries(config.extensions.mcpServers).map(([serverName, server]) =>
+        checkMcpServer(workspaceRoot, serverName, server, options.mcpClientFactory),
+      ),
+    )),
   ];
   const summary = summarize(checks);
   const exitCode = summary.failed === 0 ? 0 : 1;
@@ -285,18 +327,18 @@ export async function runConnectionCheck(options: RunConnectionCheckOptions): Pr
     probe,
     summary,
     exitCode,
-    checks
+    checks,
   };
   const dir = reportsDir(config.xenesisHome);
   const reportPath = join(dir, `${report.id}.json`);
   await mkdir(dir, { recursive: true });
-  await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+  await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
 
   return {
     exitCode,
     report,
     reportPath,
-    lines: renderConnectionLines(report, config.xenesisHome, reportPath)
+    lines: renderConnectionLines(report, config.xenesisHome, reportPath),
   };
 }
 
@@ -305,7 +347,7 @@ export async function readLatestConnectionReportEntry(xenesisHome: string): Prom
   try {
     files = await readdir(reportsDir(xenesisHome), { withFileTypes: true });
   } catch (error) {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT") return undefined;
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return undefined;
     throw error;
   }
 
@@ -319,22 +361,22 @@ export async function readLatestConnectionReportEntry(xenesisHome: string): Prom
   const path = join(reportsDir(xenesisHome), latest);
   return {
     path,
-    report: JSON.parse(await readFile(path, "utf8")) as ConnectionReport
+    report: JSON.parse(await readFile(path, 'utf8')) as ConnectionReport,
   };
 }
 
 export async function readConnectionReportEntry(
   xenesisHome: string,
-  target: string
+  target: string,
 ): Promise<ConnectionReportEntry | undefined> {
   const path = connectionReportPathFromTarget(xenesisHome, target);
   try {
     return {
       path,
-      report: JSON.parse(await readFile(path, "utf8")) as ConnectionReport
+      report: JSON.parse(await readFile(path, 'utf8')) as ConnectionReport,
     };
   } catch (error) {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT") return undefined;
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return undefined;
     throw error;
   }
 }

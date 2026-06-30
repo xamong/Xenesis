@@ -35,6 +35,7 @@
     "dev": "tsx src/cli/main.ts",
     "doctor": "tsx src/cli/main.ts doctor",
     "package:smoke": "npm run build && node scripts/package-smoke.mjs",
+    "provider:desk-mcp-prompt-smoke": "npm run build --silent && node scripts/provider-desk-mcp-prompt-smoke.mjs",
     "provider:matrix": "tsx scripts/provider-matrix.ts",
     "provider:smoke": "npm run build && node scripts/provider-smoke.mjs",
     "test": "vitest run",

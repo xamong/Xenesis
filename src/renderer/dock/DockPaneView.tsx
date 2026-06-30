@@ -50,6 +50,12 @@ interface DockPaneViewProps {
   onOnboardingOpenTerminal?: () => void;
   onOnboardingOpenFile?: () => void;
   onOnboardingOpenWorkspace?: () => void;
+  onOnboardingOpenAiProviderSettings?: () => void;
+  onOnboardingOpenProviderSetupPlan?: () => void;
+  onOnboardingOpenExternalToolSetup?: () => void;
+  onOnboardingOpenToolConnectors?: () => void;
+  onOnboardingOpenMcpSetup?: () => void;
+  onOnboardingOpenMcpOauth?: () => void;
   onOnboardingOpenKeyboardShortcuts?: () => void;
   onOnboardingOpenExtensions?: () => void;
   onOnboardingOpenDiagnostics?: () => void;
@@ -145,6 +151,12 @@ function ContentView({
   onOnboardingOpenTerminal,
   onOnboardingOpenFile,
   onOnboardingOpenWorkspace,
+  onOnboardingOpenAiProviderSettings,
+  onOnboardingOpenProviderSetupPlan,
+  onOnboardingOpenExternalToolSetup,
+  onOnboardingOpenToolConnectors,
+  onOnboardingOpenMcpSetup,
+  onOnboardingOpenMcpOauth,
   onOnboardingOpenKeyboardShortcuts,
   onOnboardingOpenExtensions,
   onOnboardingOpenDiagnostics,
@@ -168,6 +180,12 @@ function ContentView({
   onOnboardingOpenTerminal?: () => void;
   onOnboardingOpenFile?: () => void;
   onOnboardingOpenWorkspace?: () => void;
+  onOnboardingOpenAiProviderSettings?: () => void;
+  onOnboardingOpenProviderSetupPlan?: () => void;
+  onOnboardingOpenExternalToolSetup?: () => void;
+  onOnboardingOpenToolConnectors?: () => void;
+  onOnboardingOpenMcpSetup?: () => void;
+  onOnboardingOpenMcpOauth?: () => void;
   onOnboardingOpenKeyboardShortcuts?: () => void;
   onOnboardingOpenExtensions?: () => void;
   onOnboardingOpenDiagnostics?: () => void;
@@ -559,6 +577,12 @@ function ContentView({
         onOpenTerminal={onOnboardingOpenTerminal ?? (() => {})}
         onOpenFile={onOnboardingOpenFile ?? (() => {})}
         onOpenWorkspace={onOnboardingOpenWorkspace ?? (() => {})}
+        onOpenAiProviderSettings={onOnboardingOpenAiProviderSettings ?? (() => {})}
+        onOpenProviderSetupPlan={onOnboardingOpenProviderSetupPlan ?? (() => {})}
+        onOpenExternalToolSetup={onOnboardingOpenExternalToolSetup ?? (() => {})}
+        onOpenToolConnectors={onOnboardingOpenToolConnectors ?? (() => {})}
+        onOpenMcpSetup={onOnboardingOpenMcpSetup ?? (() => {})}
+        onOpenMcpOauth={onOnboardingOpenMcpOauth ?? (() => {})}
         onOpenKeyboardShortcuts={onOnboardingOpenKeyboardShortcuts ?? (() => {})}
         onOpenExtensions={onOnboardingOpenExtensions ?? (() => {})}
         onOpenDiagnostics={onOnboardingOpenDiagnostics ?? (() => {})}
@@ -808,6 +832,12 @@ export default function DockPaneView({
   onOnboardingOpenTerminal,
   onOnboardingOpenFile,
   onOnboardingOpenWorkspace,
+  onOnboardingOpenAiProviderSettings,
+  onOnboardingOpenProviderSetupPlan,
+  onOnboardingOpenExternalToolSetup,
+  onOnboardingOpenToolConnectors,
+  onOnboardingOpenMcpSetup,
+  onOnboardingOpenMcpOauth,
   onOnboardingOpenKeyboardShortcuts,
   onOnboardingOpenExtensions,
   onOnboardingOpenDiagnostics,
@@ -1406,6 +1436,12 @@ export default function DockPaneView({
                     onOnboardingOpenTerminal={onOnboardingOpenTerminal}
                     onOnboardingOpenFile={onOnboardingOpenFile}
                     onOnboardingOpenWorkspace={onOnboardingOpenWorkspace}
+                    onOnboardingOpenAiProviderSettings={onOnboardingOpenAiProviderSettings}
+                    onOnboardingOpenProviderSetupPlan={onOnboardingOpenProviderSetupPlan}
+                    onOnboardingOpenExternalToolSetup={onOnboardingOpenExternalToolSetup}
+                    onOnboardingOpenToolConnectors={onOnboardingOpenToolConnectors}
+                    onOnboardingOpenMcpSetup={onOnboardingOpenMcpSetup}
+                    onOnboardingOpenMcpOauth={onOnboardingOpenMcpOauth}
                     onOnboardingOpenKeyboardShortcuts={onOnboardingOpenKeyboardShortcuts}
                     onOnboardingOpenExtensions={onOnboardingOpenExtensions}
                     onOnboardingOpenDiagnostics={onOnboardingOpenDiagnostics}

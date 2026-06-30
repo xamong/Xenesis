@@ -185,13 +185,14 @@ function listRelativeFiles(rootDir, currentDir = rootDir) {
   return entries;
 }
 
-function listPublicMarkdownFiles() {
+export function listPublicMarkdownFiles() {
   return [
     'README.md',
     'README.ko.md',
     ...listRelativeFiles(path.join(root, 'docs'))
       .filter((file) => file.endsWith('.md'))
       .filter((file) => !file.startsWith('superpowers/'))
+      .filter((file) => !file.startsWith('obsidian/'))
       .map((file) => `docs/${file}`),
   ];
 }

@@ -56,16 +56,16 @@ export interface ResumableRunState {
  * crashing on a malformed snapshot.
  */
 export function isResumableRunState(value: unknown): value is ResumableRunState {
-  if (!value || typeof value !== "object") return false;
+  if (!value || typeof value !== 'object') return false;
   const v = value as Record<string, unknown>;
-  const num = (x: unknown) => typeof x === "number" && Number.isFinite(x);
-  const strArr = (x: unknown) => Array.isArray(x) && x.every((s) => typeof s === "string");
+  const num = (x: unknown) => typeof x === 'number' && Number.isFinite(x);
+  const strArr = (x: unknown) => Array.isArray(x) && x.every((s) => typeof s === 'string');
   if (!num(v.turns) || !num(v.messageSeq) || !num(v.stopHookContinuationCount)) return false;
   if (!num(v.successfulEvidenceToolCount) || !num(v.successfulMutationCount)) return false;
-  if (!v.usage || typeof v.usage !== "object") return false;
+  if (!v.usage || typeof v.usage !== 'object') return false;
   const u = v.usage as Record<string, unknown>;
   if (!num(u.inputTokens) || !num(u.outputTokens) || !num(u.totalTokens)) return false;
-  if (!v.recovery || typeof v.recovery !== "object") return false;
+  if (!v.recovery || typeof v.recovery !== 'object') return false;
   const r = v.recovery as Record<string, unknown>;
   if (
     !num(r.projectAnalysisEvidenceRecoveryCount) ||
@@ -77,8 +77,8 @@ export function isResumableRunState(value: unknown): value is ResumableRunState 
     return false;
   }
   if (
-    typeof r.repositoryRecommendationRecoveryUsed !== "boolean" ||
-    typeof r.falseUnavailableToolRecoveryUsed !== "boolean"
+    typeof r.repositoryRecommendationRecoveryUsed !== 'boolean' ||
+    typeof r.falseUnavailableToolRecoveryUsed !== 'boolean'
   ) {
     return false;
   }
@@ -91,15 +91,13 @@ export function isResumableRunState(value: unknown): value is ResumableRunState 
     return false;
   }
   if (!Array.isArray(v.verificationRecoveryCounts) || !Array.isArray(v.recentCompactionSavedRatios)) return false;
-  if (
-    typeof v.verificationRepairExtensionActive !== "boolean" ||
-    typeof v.mutationSinceLastRead !== "boolean"
-  ) {
+  if (typeof v.verificationRepairExtensionActive !== 'boolean' || typeof v.mutationSinceLastRead !== 'boolean') {
     return false;
   }
-  if (v.previousCompactSummary !== undefined && typeof v.previousCompactSummary !== "string") return false;
+  if (v.previousCompactSummary !== undefined && typeof v.previousCompactSummary !== 'string') return false;
   if (v.alwaysAllowedTools !== undefined && !strArr(v.alwaysAllowedTools)) return false;
-  if (v.pendingApproval !== undefined && (typeof v.pendingApproval !== "object" || v.pendingApproval === null)) return false;
+  if (v.pendingApproval !== undefined && (typeof v.pendingApproval !== 'object' || v.pendingApproval === null))
+    return false;
   return true;
 }
 
@@ -135,7 +133,7 @@ export interface RunSnapshotInput {
   stopHookContinuationCount: number;
   messageSeq: number;
   alwaysAllowedTools?: Set<string>;
-  pendingApproval?: ResumableRunState["pendingApproval"];
+  pendingApproval?: ResumableRunState['pendingApproval'];
 }
 
 export function buildRunSnapshot(input: RunSnapshotInput): ResumableRunState {
@@ -144,7 +142,7 @@ export function buildRunSnapshot(input: RunSnapshotInput): ResumableRunState {
     usage: {
       inputTokens: input.usage.inputTokens,
       outputTokens: input.usage.outputTokens,
-      totalTokens: input.usage.totalTokens
+      totalTokens: input.usage.totalTokens,
     },
     recovery: {
       projectAnalysisEvidenceRecoveryCount: input.projectAnalysisEvidenceRecoveryCount,
@@ -153,7 +151,7 @@ export function buildRunSnapshot(input: RunSnapshotInput): ResumableRunState {
       maxOutputTokensRecoveryCount: input.maxOutputTokensRecoveryCount,
       toolRecoveryFinalizationRecoveryCount: input.toolRecoveryFinalizationRecoveryCount,
       repositoryRecommendationRecoveryUsed: input.repositoryRecommendationRecoveryUsed,
-      falseUnavailableToolRecoveryUsed: input.falseUnavailableToolRecoveryUsed
+      falseUnavailableToolRecoveryUsed: input.falseUnavailableToolRecoveryUsed,
     },
     successfulToolNames: Array.from(input.successfulToolNames),
     attemptedToolNames: Array.from(input.attemptedToolNames),
@@ -165,12 +163,10 @@ export function buildRunSnapshot(input: RunSnapshotInput): ResumableRunState {
     autoVerificationRepairSignatures: Array.from(input.autoVerificationRepairSignatures),
     verificationRepairExtensionActive: input.verificationRepairExtensionActive,
     recentCompactionSavedRatios: [...input.recentCompactionSavedRatios],
-    ...(input.previousCompactSummary !== undefined
-      ? { previousCompactSummary: input.previousCompactSummary }
-      : {}),
+    ...(input.previousCompactSummary !== undefined ? { previousCompactSummary: input.previousCompactSummary } : {}),
     stopHookContinuationCount: input.stopHookContinuationCount,
     messageSeq: input.messageSeq,
     alwaysAllowedTools: Array.from(input.alwaysAllowedTools ?? []),
-    ...(input.pendingApproval ? { pendingApproval: input.pendingApproval } : {})
+    ...(input.pendingApproval ? { pendingApproval: input.pendingApproval } : {}),
   };
 }

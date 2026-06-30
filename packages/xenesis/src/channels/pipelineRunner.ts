@@ -1,12 +1,12 @@
-import type { ApprovalMode, CliConfigOverrides } from "../config/index.js";
+import type { ApprovalMode, CliConfigOverrides } from '../config/index.js';
 import {
-  runAgentPipeline,
   type AgentRunPipelineOptions,
-  type AgentRunPipelineResult
-} from "../core/AgentRunPipeline.js";
-import type { AgentMessage } from "../core/messages.js";
-import { eventsToMessages, readSessionLog } from "../sessions/index.js";
-import type { ChannelRunPrompt } from "./manager.js";
+  type AgentRunPipelineResult,
+  runAgentPipeline,
+} from '../core/AgentRunPipeline.js';
+import type { AgentMessage } from '../core/messages.js';
+import { eventsToMessages, readSessionLog } from '../sessions/index.js';
+import type { ChannelRunPrompt } from './manager.js';
 
 export interface ChannelGuardrails {
   approvalMode: ApprovalMode;
@@ -26,15 +26,17 @@ export interface ChannelPipelineRunnerOptions {
 }
 
 function isNotFound(error: unknown) {
-  return typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT";
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT';
 }
 
 export function createChannelPipelineRunner(options: ChannelPipelineRunnerOptions): ChannelRunPrompt {
   const run = options.runPipeline ?? runAgentPipeline;
-  const loadHistory = options.loadHistory ?? (async (sessionId: string) => {
-    if (!options.xenesisHome) return [];
-    return eventsToMessages(await readSessionLog(options.xenesisHome, sessionId));
-  });
+  const loadHistory =
+    options.loadHistory ??
+    (async (sessionId: string) => {
+      if (!options.xenesisHome) return [];
+      return eventsToMessages(await readSessionLog(options.xenesisHome, sessionId));
+    });
 
   return async (request) => {
     let historyMessages: AgentMessage[] = [];
@@ -51,7 +53,7 @@ export function createChannelPipelineRunner(options: ChannelPipelineRunnerOption
       cli: {
         ...options.cli,
         approvalMode: options.channel.approvalMode,
-        maxTurns: options.channel.maxTurns
+        maxTurns: options.channel.maxTurns,
       },
       prompt: request.prompt,
       sessionId: request.sessionId,
@@ -69,11 +71,11 @@ export function createChannelPipelineRunner(options: ChannelPipelineRunnerOption
       // (readonly/blocked tools) are unaffected — they never reach this handler.
       approvalHandler: () => false,
       maxTokensBudget: options.channel.maxTokens,
-      stream: false
+      stream: false,
     });
     if (result.exitCode !== 0) {
       throw new Error(`channel run exited with code ${result.exitCode}`);
     }
-    return { content: result.doneContent ?? "" };
+    return { content: result.doneContent ?? '' };
   };
 }

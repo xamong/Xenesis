@@ -675,7 +675,7 @@ interface MarkdownPaneProps {
 /**
  * 현재 파일 경로 기준으로 상대 href를 절대 경로로 변환한다.
  * URL API를 사용해 .. 등의 경로 조각도 정규화한다.
- * Windows 경로(C:\...)도 지원한다.
+ * Windows drive-letter paths are supported.
  */
 function resolveFilePath(currentFilePath: string, href: string): string | null {
   if (!currentFilePath) return null;
@@ -686,7 +686,7 @@ function resolveFilePath(currentFilePath: string, href: string): string | null {
     const resolved = new URL(href, baseUrl);
     if (resolved.protocol !== 'file:') return null;
     let result = decodeURIComponent(resolved.pathname);
-    // Windows: /C:/path → C:\path
+    // Convert file URL drive-letter paths back to native Windows separators.
     if (/^\/[A-Za-z]:\//.test(result)) {
       result = result.slice(1).replace(/\//g, '\\');
     }

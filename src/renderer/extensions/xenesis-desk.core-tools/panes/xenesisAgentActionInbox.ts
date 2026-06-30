@@ -7,7 +7,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isMcpActionInboxStatus(value: unknown): value is McpBridgeActionInboxItem['status'] {
-  return value === 'pending' || value === 'approved' || value === 'rejected' || value === 'failed' || value === 'expired';
+  return (
+    value === 'pending' || value === 'approved' || value === 'rejected' || value === 'failed' || value === 'expired'
+  );
 }
 
 export function isMcpBridgeActionInboxItem(value: unknown): value is McpBridgeActionInboxItem {

@@ -7,11 +7,7 @@
  *
  * Ported/adapted from OpenClaw `src/commitments/config.ts` (no heartbeat coupling here).
  */
-import type {
-  CommitmentsConfig,
-  CommitmentsExtractionConfig,
-  XenesisConfig,
-} from "../../config/types.js";
+import type { CommitmentsConfig, CommitmentsExtractionConfig, XenesisConfig } from '../../config/types.js';
 
 export const DEFAULT_COMMITMENT_EXTRACTION_DEBOUNCE_MS = 15_000;
 export const DEFAULT_COMMITMENT_BATCH_MAX_ITEMS = 8;
@@ -42,15 +38,11 @@ export const DEFAULT_COMMITMENTS_CONFIG: CommitmentsConfig = {
 };
 
 function positiveInt(value: unknown, fallback: number): number {
-  return typeof value === "number" && Number.isFinite(value) && value > 0
-    ? Math.floor(value)
-    : fallback;
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
 }
 
 function confidence(value: unknown, fallback: number): number {
-  return typeof value === "number" && Number.isFinite(value) && value > 0 && value <= 1
-    ? value
-    : fallback;
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 && value <= 1 ? value : fallback;
 }
 
 export interface ResolvedCommitmentsConfig {
@@ -74,7 +66,7 @@ export interface ResolvedCommitmentsConfig {
  * (tolerant of test fixtures / older config files); `enabled` is true ONLY when explicitly set.
  */
 export function resolveCommitmentsConfig(
-  cfg?: Pick<XenesisConfig, "commitments"> | { commitments?: Partial<CommitmentsConfig> },
+  cfg?: Pick<XenesisConfig, 'commitments'> | { commitments?: Partial<CommitmentsConfig> },
 ): ResolvedCommitmentsConfig {
   const raw = cfg?.commitments;
   const extraction = raw?.extraction;
@@ -87,22 +79,13 @@ export function resolveCommitmentsConfig(
       ...(extraction?.model ? { model: extraction.model } : {}),
       debounceMs: positiveInt(extraction?.debounceMs, DEFAULT_COMMITMENT_EXTRACTION_DEBOUNCE_MS),
       batchMaxItems: positiveInt(extraction?.batchMaxItems, DEFAULT_COMMITMENT_BATCH_MAX_ITEMS),
-      queueMaxItems: positiveInt(
-        extraction?.queueMaxItems,
-        DEFAULT_COMMITMENT_EXTRACTION_QUEUE_MAX_ITEMS,
-      ),
-      confidenceThreshold: confidence(
-        extraction?.confidenceThreshold,
-        DEFAULT_COMMITMENT_CONFIDENCE_THRESHOLD,
-      ),
+      queueMaxItems: positiveInt(extraction?.queueMaxItems, DEFAULT_COMMITMENT_EXTRACTION_QUEUE_MAX_ITEMS),
+      confidenceThreshold: confidence(extraction?.confidenceThreshold, DEFAULT_COMMITMENT_CONFIDENCE_THRESHOLD),
       careConfidenceThreshold: confidence(
         extraction?.careConfidenceThreshold,
         DEFAULT_COMMITMENT_CARE_CONFIDENCE_THRESHOLD,
       ),
-      timeoutSeconds: positiveInt(
-        extraction?.timeoutSeconds,
-        DEFAULT_COMMITMENT_EXTRACTION_TIMEOUT_SECONDS,
-      ),
+      timeoutSeconds: positiveInt(extraction?.timeoutSeconds, DEFAULT_COMMITMENT_EXTRACTION_TIMEOUT_SECONDS),
     },
   };
 }
@@ -112,8 +95,8 @@ export function resolveCommitmentTimezone(timezone?: string): string {
   const trimmed = timezone?.trim();
   if (trimmed) return trimmed;
   try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   } catch {
-    return "UTC";
+    return 'UTC';
   }
 }

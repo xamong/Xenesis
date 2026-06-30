@@ -27,10 +27,17 @@ test('settings save is blocked when the initial settings payload was not loaded'
 test('initial settings load failures are shown instead of silently ignored', () => {
   assert.doesNotMatch(
     settingsPane,
-    /window\.terminalAPI\.getSettings\(\)\s*\.then\(applySettingsToState\)\s*\.catch\(\(\) => \{\}\)/,
+    /window\.terminalAPI\s*\.getSettings\(\)\s*\.then\(applySettingsToState\)\s*\.catch\(\(\) => \{\}\)/,
   );
   assert.match(
     settingsPane,
-    /window\.terminalAPI\.getSettings\(\)\s*\.then\(applySettingsToState\)\s*\.catch\(error => \{\s*setSettingsSaveError\(t\('settings\.settingsSaveFailed'/,
+    /window\.terminalAPI\s*\.getSettings\(\)\s*\.then\(applySettingsToState\)\s*\.catch\(\(?error\)? => \{\s*setSettingsSaveError\(t\('settings\.settingsSaveFailed'/,
   );
+});
+
+test('AI provider settings include extended keyed providers exposed by the Desk runtime schema', () => {
+  for (const provider of ['openrouter', 'mistral', 'xai']) {
+    assert.match(settingsPane, new RegExp(`${provider}:\\s*\\{`), `${provider} metadata exists`);
+    assert.match(settingsPane, new RegExp(`PROVIDER_ORDER[\\s\\S]*'${provider}'`), `${provider} is selectable`);
+  }
 });

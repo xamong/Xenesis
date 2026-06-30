@@ -284,61 +284,23 @@ export function buildXenesisVisibleSubagentTerminalArgs(
   };
 }
 
-function normalizeVisibleSubagentInput(value: string): string {
-  return String(value || '')
-    .normalize('NFKC')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .toLowerCase();
-}
-
-function hasAnyTerm(value: string, terms: readonly string[]): boolean {
-  return terms.some((term) => value.includes(term));
-}
-
-function extractSeconds(value: string): number | null {
-  const normalized = normalizeVisibleSubagentInput(value);
-  const koreanSeconds = normalized.match(/(\d+)\s*초/);
-  const englishSeconds = normalized.match(/(\d+)\s*(?:sec|secs|second|seconds)\b/);
-  const match = koreanSeconds || englishSeconds;
-  if (!match?.[1]) return null;
-  const seconds = Number.parseInt(match[1], 10);
-  if (!Number.isFinite(seconds)) return null;
-  return Math.max(1, Math.min(60, seconds));
-}
-
-function hasKeepOpenIntent(normalized: string): boolean {
-  return (
-    hasAnyTerm(normalized, ['계속', '유지', '열어둬', '열어 두', 'keep open', 'leave open']) ||
-    /\bkeep\b.{0,64}\bopen\b/.test(normalized)
-  );
-}
-
-function hasControlDemoExecutionIntent(normalized: string): boolean {
-  return hasAnyTerm(normalized, ['데모', 'demo', '보여', 'show', 'run', '실행', '진행']);
-}
-
-function hasControlDemoExplanationIntent(normalized: string): boolean {
-  return hasAnyTerm(normalized, ['설명', '무슨 기능', '어떤 기능', '뭔지', 'what is', 'explain', 'how does']);
-}
-
 export function parseXenesisVisibleSubagentRunOptions(
   input: string,
   options: { defaultTask?: string } = {},
 ): XenesisVisibleSubagentRunOptions {
   const normalizedInput = input.trim();
-  const keepOpen = /(?:^|\s)(?:--keep-open|keep-open)(?:\s|$)/i.test(normalizedInput);
-  const closeAfter = !keepOpen && /(?:^|\s)(?:--close-after|close-after)(?:\s|$)/i.test(normalizedInput);
-  const showMsMatch = normalizedInput.match(/(?:--show-ms|show-ms)\s*=?\s*(\d+)/i);
-  const sleepMatch = normalizedInput.match(/(?:--sleep-sec|--sleep|sleep)\s*=?\s*(\d+)/i);
+  const keepOpen = /(?:^|\s)--keep-open(?:\s|$)/i.test(normalizedInput);
+  const closeAfter = !keepOpen && /(?:^|\s)--close-after(?:\s|$)/i.test(normalizedInput);
+  const showMsMatch = normalizedInput.match(/--show-ms\s*=?\s*(\d+)/i);
+  const sleepMatch = normalizedInput.match(/(?:--sleep-sec|--sleep)\s*=?\s*(\d+)/i);
   const showMs = showMsMatch?.[1] ? Math.max(0, Math.min(60000, Number.parseInt(showMsMatch[1], 10))) : 6000;
   const sleepSeconds = sleepMatch?.[1] ? Number.parseInt(sleepMatch[1], 10) : 45;
   const taskInput =
     normalizedInput
-      .replace(/(?:^|\s)(?:--keep-open|keep-open)(?=\s|$)/gi, ' ')
-      .replace(/(?:^|\s)(?:--close-after|close-after)(?=\s|$)/gi, ' ')
-      .replace(/(?:^|\s)(?:--show-ms|show-ms)\s*=?\s*\d+/gi, ' ')
-      .replace(/(?:^|\s)(?:--sleep-sec|--sleep|sleep)\s*=?\s*\d+/gi, ' ')
+      .replace(/(?:^|\s)--keep-open(?=\s|$)/gi, ' ')
+      .replace(/(?:^|\s)--close-after(?=\s|$)/gi, ' ')
+      .replace(/(?:^|\s)--show-ms\s*=?\s*\d+/gi, ' ')
+      .replace(/(?:^|\s)(?:--sleep-sec|--sleep)\s*=?\s*\d+/gi, ' ')
       .replace(/\s+/g, ' ')
       .trim() ||
     options.defaultTask?.trim() ||
@@ -353,143 +315,16 @@ export function parseXenesisVisibleSubagentRunOptions(
   };
 }
 
-export function shouldRouteXenesisInputToVisibleSubagentsDemo(input: string): boolean {
-  const normalized = normalizeVisibleSubagentInput(input);
-  if (!normalized || normalized.startsWith('/')) return false;
-
-  const hasSubagent = hasAnyTerm(normalized, ['subagent', 'sub agent', '서브에이전트', '서브 에이전트']);
-  if (!hasSubagent) return false;
-
-  const hasVisibleTerminalIntent = hasAnyTerm(normalized, [
-    '터미널',
-    'terminal',
-    'visible',
-    '보여',
-    '띄워',
-    '열어',
-    '실행',
-    '바둑판',
-    'grid',
-    'tile',
-  ]);
-  if (!hasVisibleTerminalIntent) return false;
-
-  const isOnlyExplanation =
-    hasAnyTerm(normalized, ['설명', '무슨 기능', '어떤 기능', '문서', 'explain', 'what is', 'how does']) &&
-    !hasAnyTerm(normalized, ['실행', '띄워', '열어', 'run', 'start', 'show']);
-
-  return !isOnlyExplanation;
-}
-
-export function buildXenesisVisibleSubagentsDemoArgsFromInput(input: string): string {
-  const normalized = normalizeVisibleSubagentInput(input);
-  const seconds = extractSeconds(input);
-  const showMs = seconds ? seconds * 1000 : 6000;
-  const keepOpen = hasKeepOpenIntent(normalized);
-  const closeAfter = !keepOpen && hasAnyTerm(normalized, ['닫아', '닫기', '정리', 'close after', 'cleanup']);
-
-  return [`--show-ms ${showMs}`, keepOpen ? '--keep-open' : '', closeAfter ? '--close-after' : '']
-    .filter(Boolean)
-    .join(' ');
-}
-
-export function shouldRouteXenesisInputToVisibleSubagentWork(input: string): boolean {
-  const normalized = normalizeVisibleSubagentInput(input);
-  if (!normalized || normalized.startsWith('/')) return false;
-
-  const hasSubagent = hasAnyTerm(normalized, ['subagent', 'sub agent', '서브에이전트', '서브 에이전트']);
-  if (!hasSubagent) return false;
-
-  const hasWorkIntent = hasAnyTerm(normalized, [
-    '분석',
-    '검증',
-    '점검',
-    '확인',
-    '요약',
-    '상태',
-    '릴리즈',
-    '준비',
-    'check',
-    'analyze',
-    'analyse',
-    'audit',
-    'verify',
-    'inspect',
-    'report',
-    'summarize',
-    'summarise',
-    'readiness',
-    'release',
-  ]);
-  if (!hasWorkIntent) return false;
-
-  const isExplicitDemoOnly =
-    hasAnyTerm(normalized, ['데모', 'demo']) &&
-    !hasAnyTerm(normalized, [
-      '분석',
-      '검증',
-      '점검',
-      '확인',
-      '상태',
-      'check',
-      'analyze',
-      'audit',
-      'verify',
-      'inspect',
-      'readiness',
-      'release',
-    ]);
-
-  return !isExplicitDemoOnly;
-}
-
-export function shouldRouteXenesisInputToControlDemoSuite(input: string): boolean {
-  const normalized = normalizeVisibleSubagentInput(input);
-  if (!normalized || normalized.startsWith('/')) return false;
-  if (hasControlDemoExplanationIntent(normalized) && !hasControlDemoExecutionIntent(normalized)) return false;
-
-  const hasXenesis = hasAnyTerm(normalized, ['xenesis', '제니스', '제네시스']);
-  const hasDesk = hasAnyTerm(normalized, ['desk', '데스크']);
-  const hasControl = hasAnyTerm(normalized, ['제어', '통제', '컨트롤', 'control', 'orchestrate', 'orchestration']);
-
-  return hasXenesis && hasDesk && hasControl && hasControlDemoExecutionIntent(normalized);
-}
-
-export function buildXenesisControlDemoWorkArgsFromInput(input: string): string {
-  const normalized = normalizeVisibleSubagentInput(input);
+export function buildXenesisControlDemoWorkArgs(input: string): string {
   const parsedOptions = parseXenesisVisibleSubagentRunOptions(input);
-  const seconds = extractSeconds(input);
-  const showMs = parsedOptions.showMs !== 6000 ? parsedOptions.showMs : seconds ? seconds * 1000 : 6000;
-  const keepOpen = parsedOptions.keepOpen || hasKeepOpenIntent(normalized);
-  const closeAfter = !keepOpen;
+  const closeAfter = parsedOptions.closeAfter || !parsedOptions.keepOpen;
 
   return [
     XENESIS_CONTROL_DEMO_WORK_TASK,
-    `--show-ms ${showMs}`,
-    keepOpen ? '--keep-open' : '',
+    `--show-ms ${parsedOptions.showMs}`,
+    parsedOptions.keepOpen ? '--keep-open' : '',
     closeAfter ? '--close-after' : '',
   ]
-    .filter(Boolean)
-    .join(' ');
-}
-
-function stripKoreanVisibleSubagentPrefix(input: string): string {
-  return input
-    .replace(/^\s*서브\s*에이전트\s*\d*\s*개\s*(?:로|가|를|을|에게|와|과)?\s*/i, '')
-    .replace(/^\s*서브에이전트\s*\d*\s*개\s*(?:로|가|를|을|에게|와|과)?\s*/i, '')
-    .trim();
-}
-
-export function buildXenesisVisibleSubagentWorkArgsFromInput(input: string): string {
-  const normalized = normalizeVisibleSubagentInput(input);
-  const seconds = extractSeconds(input);
-  const showMs = seconds ? seconds * 1000 : 6000;
-  const keepOpen = hasKeepOpenIntent(normalized);
-  const closeAfter = !keepOpen && hasAnyTerm(normalized, ['닫아', '닫기', '정리', 'close after', 'cleanup']);
-  const task =
-    stripKoreanVisibleSubagentPrefix(input) || 'Inspect the current Xenesis Desk workspace and report status.';
-
-  return [task, `--show-ms ${showMs}`, keepOpen ? '--keep-open' : '', closeAfter ? '--close-after' : '']
     .filter(Boolean)
     .join(' ');
 }

@@ -1,8 +1,4 @@
-import {
-  runAgentPrompt,
-  type AgentRunServiceOptions,
-  type AgentRunServiceResult
-} from "../AgentRunService.js";
+import { type AgentRunServiceOptions, type AgentRunServiceResult, runAgentPrompt } from '../AgentRunService.js';
 
 export type RuntimeCompatRunOptions = AgentRunServiceOptions;
 export type RuntimeCompatRunResult = AgentRunServiceResult;

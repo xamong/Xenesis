@@ -11,9 +11,9 @@
 // chatty long-lived process can't grow memory without bound. A concurrent-session
 // cap (MAX_BACKGROUND_SESSIONS) prunes finished sessions LRU-style.
 
-import { spawn, type ChildProcess } from "node:child_process";
-import { randomUUID } from "node:crypto";
-import { buildShellInvocation, killProcessTree } from "../utils/command.js";
+import { type ChildProcess, spawn } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
+import { buildShellInvocation, killProcessTree } from '../utils/command.js';
 
 // Single source of truth for the output cap; matches command.ts DEFAULT_MAX_OUTPUT_CHARS.
 export const DEFAULT_MAX_OUTPUT_CHARS = 100_000;
@@ -22,7 +22,7 @@ export const DEFAULT_MAX_OUTPUT_CHARS = 100_000;
 // total would exceed this, finished sessions are pruned oldest-first (LRU) to make room.
 export const MAX_BACKGROUND_SESSIONS = 64;
 
-export type ShellCompletionReason = "exited" | "killed" | "failed_start";
+export type ShellCompletionReason = 'exited' | 'killed' | 'failed_start';
 
 export interface ShellSession {
   id: string;
@@ -51,7 +51,7 @@ export interface ShellSpawnOptions {
 }
 
 export interface ShellPollResult {
-  status: "running" | "exited";
+  status: 'running' | 'exited';
   sessionId: string;
   id: string;
   command: string;
@@ -65,14 +65,14 @@ export interface ShellPollResult {
 
 export interface ShellLogResult {
   id: string;
-  status: "running" | "exited";
+  status: 'running' | 'exited';
   output: string;
   totalLines: number;
   showing: number;
 }
 
 export interface ShellWaitResult {
-  status: "exited" | "timeout";
+  status: 'exited' | 'timeout';
   id: string;
   exited: boolean;
   exitCode: number | null;
@@ -101,8 +101,8 @@ export class ShellProcessRegistry {
       startedAt: Date.now(),
       exited: false,
       exitCode: null,
-      outputBuffer: "",
-      notifyOnComplete: opts.notifyOnComplete ?? false
+      outputBuffer: '',
+      notifyOnComplete: opts.notifyOnComplete ?? false,
     };
 
     let child: ChildProcess;
@@ -110,13 +110,13 @@ export class ShellProcessRegistry {
       child = spawn(shell, args, {
         cwd: opts.cwd,
         windowsHide: true,
-        detached: process.platform !== "win32",
-        ...(opts.env ? { env: opts.env } : {})
+        detached: process.platform !== 'win32',
+        ...(opts.env ? { env: opts.env } : {}),
       });
     } catch (error) {
       session.exited = true;
       session.exitCode = null;
-      session.reason = "failed_start";
+      session.reason = 'failed_start';
       session.outputBuffer = error instanceof Error ? error.message : String(error);
       this.track(session);
       return session;
@@ -139,17 +139,17 @@ export class ShellProcessRegistry {
       }
     };
 
-    child.stdout?.setEncoding("utf8");
-    child.stderr?.setEncoding("utf8");
-    child.stdout?.on("data", (chunk: string) => append(chunk));
-    child.stderr?.on("data", (chunk: string) => append(chunk));
+    child.stdout?.setEncoding('utf8');
+    child.stderr?.setEncoding('utf8');
+    child.stdout?.on('data', (chunk: string) => append(chunk));
+    child.stderr?.on('data', (chunk: string) => append(chunk));
 
     const finalize = (exitCode: number | null, reason: ShellCompletionReason) => {
       if (session.exited) return;
       session.exited = true;
       // A kill() pre-sets reason "killed"; do not clobber it on the close event.
       session.reason = session.reason ?? reason;
-      session.exitCode = session.reason === "killed" ? (exitCode ?? null) : exitCode;
+      session.exitCode = session.reason === 'killed' ? (exitCode ?? null) : exitCode;
       if (session.notifyOnComplete && opts.onComplete) {
         void Promise.resolve()
           .then(() => opts.onComplete!(session))
@@ -157,13 +157,13 @@ export class ShellProcessRegistry {
       }
     };
 
-    child.on("error", (error) => {
+    child.on('error', (error) => {
       if (session.exited) return;
       append(error instanceof Error ? error.message : String(error));
-      finalize(null, "failed_start");
+      finalize(null, 'failed_start');
     });
-    child.on("close", (code) => {
-      finalize(code, "exited");
+    child.on('close', (code) => {
+      finalize(code, 'exited');
     });
 
     return session;
@@ -185,7 +185,7 @@ export class ShellProcessRegistry {
     const dead = child.exitCode !== null || child.signalCode !== null;
     if (!dead) return;
     session.exited = true;
-    session.reason = session.reason ?? "exited";
+    session.reason = session.reason ?? 'exited';
     session.exitCode = child.exitCode ?? null;
   }
 
@@ -194,7 +194,7 @@ export class ShellProcessRegistry {
     if (!session) return undefined;
     this.reconcile(session);
     return {
-      status: session.exited ? "exited" : "running",
+      status: session.exited ? 'exited' : 'running',
       sessionId: session.sessionId,
       id: session.id,
       command: session.command,
@@ -203,22 +203,22 @@ export class ShellProcessRegistry {
       outputPreview: session.outputBuffer.slice(-1000),
       exited: session.exited,
       exitCode: session.exitCode,
-      reason: session.reason
+      reason: session.reason,
     };
   }
 
   readLog(id: string, offset = 0, limit = 200): ShellLogResult | undefined {
     const session = this.sessions.get(id);
     if (!session) return undefined;
-    const lines = session.outputBuffer.split("\n");
+    const lines = session.outputBuffer.split('\n');
     const totalLines = lines.length;
     const selected = offset === 0 && limit > 0 ? lines.slice(-limit) : lines.slice(offset, offset + limit);
     return {
       id: session.id,
-      status: session.exited ? "exited" : "running",
-      output: selected.join("\n"),
+      status: session.exited ? 'exited' : 'running',
+      output: selected.join('\n'),
       totalLines,
-      showing: selected.length
+      showing: selected.length,
     };
   }
 
@@ -254,12 +254,12 @@ export class ShellProcessRegistry {
     }
 
     return {
-      status: session.exited ? "exited" : "timeout",
+      status: session.exited ? 'exited' : 'timeout',
       id: session.id,
       exited: session.exited,
       exitCode: session.exitCode,
       reason: session.reason,
-      output: session.outputBuffer.slice(-2000)
+      output: session.outputBuffer.slice(-2000),
     };
   }
 
@@ -269,11 +269,11 @@ export class ShellProcessRegistry {
     if (!session) return false;
     if (session.exited) return true;
     // Pre-set the reason so the close handler doesn't relabel it "exited".
-    session.reason = "killed";
+    session.reason = 'killed';
     // killProcessTree first: it walks the whole tree atomically (taskkill /t on Windows,
     // killpg on POSIX) while the grandchild (e.g. the node child under the PowerShell
     // wrapper) is still parented, so it is reaped too — no orphan left holding the cwd.
-    await killProcessTree(session.pid, "force");
+    await killProcessTree(session.pid, 'force');
     // Then signal the direct child handle as a backstop so Node emits 'close' promptly
     // (the awaited taskkill alone was observed to delay the close event under load).
     try {
@@ -286,9 +286,7 @@ export class ShellProcessRegistry {
 
   /** Kill every running session owned by an agent session. Used by shellTool.cleanupSession. */
   async killAllForSession(sessionId: string): Promise<number> {
-    const targets = Array.from(this.sessions.values()).filter(
-      (s) => s.sessionId === sessionId && !s.exited
-    );
+    const targets = Array.from(this.sessions.values()).filter((s) => s.sessionId === sessionId && !s.exited);
     // Kill in parallel so a contended taskkill on one process does not serialize the rest.
     const results = await Promise.all(targets.map((session) => this.kill(session.id)));
     return results.filter(Boolean).length;

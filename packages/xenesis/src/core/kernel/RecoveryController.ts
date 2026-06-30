@@ -1,11 +1,11 @@
-import type { ToolCall } from "../messages.js";
-import type { LedgerRecoveryOverlay } from "../messages/index.js";
+import type { LedgerRecoveryOverlay } from '../messages/index.js';
+import type { ToolCall } from '../messages.js';
 
 export type KernelFailureReason =
-  | "missing_tool_executor"
-  | "tool_execution_failed"
-  | "tool_unavailable"
-  | "invalid_tool_input";
+  | 'missing_tool_executor'
+  | 'tool_execution_failed'
+  | 'tool_unavailable'
+  | 'invalid_tool_input';
 
 export interface KernelFailureOverlayOptions {
   id: string;
@@ -14,40 +14,38 @@ export interface KernelFailureOverlayOptions {
   errorMessage?: string;
 }
 
-export function recoveryOverlayForKernelFailure(
-  options: KernelFailureOverlayOptions
-): LedgerRecoveryOverlay {
+export function recoveryOverlayForKernelFailure(options: KernelFailureOverlayOptions): LedgerRecoveryOverlay {
   const base = {
-    kind: "recovery_overlay" as const,
+    kind: 'recovery_overlay' as const,
     id: options.id,
     reason: options.reason,
     toolCallId: options.toolCall.id,
-    toolName: options.toolCall.name
+    toolName: options.toolCall.name,
   };
 
-  if (options.reason === "missing_tool_executor") {
+  if (options.reason === 'missing_tool_executor') {
     return {
       ...base,
-      content: `Tool \`${options.toolCall.name}\` could not run because no kernel tool executor is configured.`
+      content: `Tool \`${options.toolCall.name}\` could not run because no kernel tool executor is configured.`,
     };
   }
 
-  if (options.reason === "tool_unavailable") {
+  if (options.reason === 'tool_unavailable') {
     return {
       ...base,
-      content: `Tool \`${options.toolCall.name}\` is not available to the kernel tool registry executor.`
+      content: `Tool \`${options.toolCall.name}\` is not available to the kernel tool registry executor.`,
     };
   }
 
-  if (options.reason === "invalid_tool_input") {
+  if (options.reason === 'invalid_tool_input') {
     return {
       ...base,
-      content: `Tool \`${options.toolCall.name}\` received invalid input before execution: ${options.errorMessage ?? "unknown validation error"}`
+      content: `Tool \`${options.toolCall.name}\` received invalid input before execution: ${options.errorMessage ?? 'unknown validation error'}`,
     };
   }
 
   return {
     ...base,
-    content: `Tool \`${options.toolCall.name}\` failed before a result could be committed: ${options.errorMessage ?? "unknown error"}`
+    content: `Tool \`${options.toolCall.name}\` failed before a result could be committed: ${options.errorMessage ?? 'unknown error'}`,
   };
 }

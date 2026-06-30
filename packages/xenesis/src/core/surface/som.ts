@@ -1,4 +1,4 @@
-import type { SurfaceBBox } from "./types.js";
+import type { SurfaceBBox } from './types.js';
 
 export interface MarkInput {
   index: number;

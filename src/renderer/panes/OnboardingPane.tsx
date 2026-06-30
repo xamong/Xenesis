@@ -39,6 +39,12 @@ export interface OnboardingPaneProps {
   onOpenTerminal: () => void;
   onOpenFile: () => void;
   onOpenWorkspace: () => void;
+  onOpenAiProviderSettings: () => void;
+  onOpenProviderSetupPlan: () => void;
+  onOpenExternalToolSetup: () => void;
+  onOpenToolConnectors: () => void;
+  onOpenMcpSetup: () => void;
+  onOpenMcpOauth: () => void;
   onOpenKeyboardShortcuts: () => void;
   onOpenExtensions: () => void;
   onOpenDiagnostics: () => void;
@@ -171,6 +177,12 @@ export function OnboardingPane({
   onOpenTerminal,
   onOpenFile,
   onOpenWorkspace,
+  onOpenAiProviderSettings,
+  onOpenProviderSetupPlan,
+  onOpenExternalToolSetup,
+  onOpenToolConnectors,
+  onOpenMcpSetup,
+  onOpenMcpOauth,
   onOpenKeyboardShortcuts,
   onOpenExtensions,
   onOpenDiagnostics,
@@ -839,6 +851,12 @@ export function OnboardingPane({
       'choose-folder': onOpenFolder,
       'open-terminal': onOpenTerminal,
       'open-file': onOpenFile,
+      'open-ai-provider-settings': onOpenAiProviderSettings,
+      'open-provider-setup-plan': onOpenProviderSetupPlan,
+      'open-external-tool-setup': onOpenExternalToolSetup,
+      'open-tool-connectors': onOpenToolConnectors,
+      'open-mcp-setup': onOpenMcpSetup,
+      'open-mcp-oauth': onOpenMcpOauth,
       'arrange-panes': onArrangePanes,
       'open-command-center': onOpenCommandCenter,
       'open-settings': onOpenWorkspace,
@@ -896,17 +914,17 @@ export function OnboardingPane({
             <span className="onboarding-action-title">{t('app.onboardingSimplePrimary')}</span>
             <span className="onboarding-action-desc">{t('app.onboardingSimplePrimaryDesc')}</span>
           </button>
-          <button type="button" className="onboarding-simple-card" onClick={onOpenTerminal}>
-            <span className="onboarding-action-title">{t('app.onboardingSimpleTerminalTitle')}</span>
-            <span className="onboarding-action-desc">{t('app.onboardingSimpleTerminalDesc')}</span>
+          <button type="button" className="onboarding-simple-card" onClick={onOpenAiProviderSettings}>
+            <span className="onboarding-action-title">{t('app.onboardingSimpleProviderTitle')}</span>
+            <span className="onboarding-action-desc">{t('app.onboardingSimpleProviderDesc')}</span>
           </button>
-          <button type="button" className="onboarding-simple-card" onClick={onOpenFile}>
-            <span className="onboarding-action-title">{t('app.onboardingSimpleFileTitle')}</span>
-            <span className="onboarding-action-desc">{t('app.onboardingSimpleFileDesc')}</span>
+          <button type="button" className="onboarding-simple-card" onClick={onOpenExternalToolSetup}>
+            <span className="onboarding-action-title">{t('app.onboardingSimpleExternalToolsTitle')}</span>
+            <span className="onboarding-action-desc">{t('app.onboardingSimpleExternalToolsDesc')}</span>
           </button>
-          <button type="button" className="onboarding-simple-card" onClick={onOpenCommandCenter}>
-            <span className="onboarding-action-title">{t('app.onboardingSimpleCommandTitle')}</span>
-            <span className="onboarding-action-desc">{t('app.onboardingSimpleCommandDesc')}</span>
+          <button type="button" className="onboarding-simple-card" onClick={onOpenMcpSetup}>
+            <span className="onboarding-action-title">{t('app.onboardingSimpleMcpTitle')}</span>
+            <span className="onboarding-action-desc">{t('app.onboardingSimpleMcpDesc')}</span>
           </button>
         </div>
 

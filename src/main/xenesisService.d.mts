@@ -111,6 +111,16 @@ export interface XenesisProviderRuntimeOptions {
   baseURL: string;
   apiKeyEnv: string;
   env: NodeJS.ProcessEnv;
+  requestedProvider?: string;
+  source?: string;
+  authMode?: string;
+  credentialState?: string;
+  credentialSource?: string;
+  processModel?: string;
+  fallbackProvider?: string;
+  safeForReasoning?: boolean;
+  diagnostics?: string[];
+  localCliBoundary?: string;
 }
 
 export type XenesisGatewayLaunch =
@@ -190,6 +200,10 @@ export declare function findOpenPort(host?: string): Promise<number>;
 export declare function buildXenesisProviderRuntimeOptions(
   options?: BuildXenesisProviderRuntimeOptionsOptions,
 ): XenesisProviderRuntimeOptions;
+
+export declare function buildXenesisProviderRuntimeStatus(
+  options?: BuildXenesisProviderRuntimeOptionsOptions,
+): Omit<XenesisProviderRuntimeOptions, 'env'>;
 
 export declare function buildXenesisGatewayRunPayload(
   options?: BuildXenesisGatewayRunPayloadOptions,

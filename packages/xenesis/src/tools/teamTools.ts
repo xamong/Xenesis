@@ -1,23 +1,23 @@
-import { mkdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { randomBytes } from "node:crypto";
-import { z } from "zod";
-import { xenesisStatePath } from "../config/index.js";
-import { SqliteAgentTaskStore, type AgentTask } from "../orchestration/index.js";
-import type { Tool, ToolContext } from "./types.js";
+import { randomBytes } from 'node:crypto';
+import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
+import { z } from 'zod';
+import { xenesisStatePath } from '../config/index.js';
+import { type AgentTask, SqliteAgentTaskStore } from '../orchestration/index.js';
+import type { Tool, ToolContext } from './types.js';
 
-export const TEAM_LEAD_NAME = "team-lead";
+export const TEAM_LEAD_NAME = 'team-lead';
 
 const teamCreateInputSchema = z.object({
   team_name: z.string(),
   description: z.string().nullable().optional(),
-  agent_type: z.string().nullable().optional()
+  agent_type: z.string().nullable().optional(),
 });
 
 const teamCreateOpenAIInputSchema = z.object({
   team_name: z.string().nullable(),
   description: z.string().nullable(),
-  agent_type: z.string().nullable()
+  agent_type: z.string().nullable(),
 });
 
 const teamDeleteInputSchema = z.object({});
@@ -47,11 +47,14 @@ export interface TeamFile {
 }
 
 interface TeamSessionIndex {
-  sessions: Record<string, {
-    teamName: string;
-    teamFilePath: string;
-    leadAgentId: string;
-  }>;
+  sessions: Record<
+    string,
+    {
+      teamName: string;
+      teamFilePath: string;
+      leadAgentId: string;
+    }
+  >;
 }
 
 interface TeamCreateOutput {
@@ -66,21 +69,21 @@ interface TeamDeleteOutput {
   team_name?: string;
 }
 
-const terminalStatuses = new Set<AgentTask["status"]>(["completed", "failed", "cancelled", "blocked"]);
+const terminalStatuses = new Set<AgentTask['status']>(['completed', 'failed', 'cancelled', 'blocked']);
 
 function requireXenesisHome(context: ToolContext) {
   if (!context.xenesisHome) {
-    throw new Error("Xenesis home is required for durable team state.");
+    throw new Error('Xenesis home is required for durable team state.');
   }
   return context.xenesisHome;
 }
 
 function sanitizeName(name: string) {
-  return name.replace(/[^a-zA-Z0-9]/gu, "-").toLowerCase();
+  return name.replace(/[^a-zA-Z0-9]/gu, '-').toLowerCase();
 }
 
 function sanitizeAgentName(name: string) {
-  return name.replace(/@/gu, "-");
+  return name.replace(/@/gu, '-');
 }
 
 export function formatTeamAgentId(agentName: string, teamName: string) {
@@ -88,7 +91,7 @@ export function formatTeamAgentId(agentName: string, teamName: string) {
 }
 
 function teamsRoot(context: ToolContext) {
-  return xenesisStatePath(requireXenesisHome(context), "teams");
+  return xenesisStatePath(requireXenesisHome(context), 'teams');
 }
 
 function teamDir(context: ToolContext, teamName: string) {
@@ -96,27 +99,27 @@ function teamDir(context: ToolContext, teamName: string) {
 }
 
 function teamFilePath(context: ToolContext, teamName: string) {
-  return join(teamDir(context, teamName), "config.json");
+  return join(teamDir(context, teamName), 'config.json');
 }
 
 function taskListDir(context: ToolContext, teamName: string) {
-  return xenesisStatePath(requireXenesisHome(context), "tasks", sanitizeName(teamName));
+  return xenesisStatePath(requireXenesisHome(context), 'tasks', sanitizeName(teamName));
 }
 
 function taskListPath(context: ToolContext, teamName: string) {
-  return join(taskListDir(context, teamName), "tasks.json");
+  return join(taskListDir(context, teamName), 'tasks.json');
 }
 
 function sessionIndexPath(context: ToolContext) {
-  return xenesisStatePath(requireXenesisHome(context), "team_sessions.json");
+  return xenesisStatePath(requireXenesisHome(context), 'team_sessions.json');
 }
 
 function agentTasksPath(context: ToolContext) {
-  return xenesisStatePath(requireXenesisHome(context), "agent_tasks.json");
+  return xenesisStatePath(requireXenesisHome(context), 'agent_tasks.json');
 }
 
 function temporaryWritePath(path: string) {
-  return `${path}.${process.pid}.${Date.now()}.${randomBytes(4).toString("hex")}.tmp`;
+  return `${path}.${process.pid}.${Date.now()}.${randomBytes(4).toString('hex')}.tmp`;
 }
 
 async function pathExists(path: string) {
@@ -124,7 +127,7 @@ async function pathExists(path: string) {
     await stat(path);
     return true;
   } catch (error) {
-    if (error instanceof Error && "code" in error && (error as NodeJS.ErrnoException).code === "ENOENT") {
+    if (error instanceof Error && 'code' in error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
       return false;
     }
     throw error;
@@ -133,9 +136,9 @@ async function pathExists(path: string) {
 
 async function readJsonFile<T>(path: string, fallback: T): Promise<T> {
   try {
-    return JSON.parse(await readFile(path, "utf8")) as T;
+    return JSON.parse(await readFile(path, 'utf8')) as T;
   } catch (error) {
-    if (error instanceof Error && "code" in error && (error as NodeJS.ErrnoException).code === "ENOENT") {
+    if (error instanceof Error && 'code' in error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
       return fallback;
     }
     throw error;
@@ -145,7 +148,7 @@ async function readJsonFile<T>(path: string, fallback: T): Promise<T> {
 async function writeJsonFile(path: string, data: unknown) {
   await mkdir(dirname(path), { recursive: true });
   const tempPath = temporaryWritePath(path);
-  await writeFile(tempPath, `${JSON.stringify(data, null, 2)}\n`, "utf8");
+  await writeFile(tempPath, `${JSON.stringify(data, null, 2)}\n`, 'utf8');
   await rename(tempPath, path);
 }
 
@@ -167,9 +170,9 @@ async function readCurrentTeam(context: ToolContext) {
   return undefined;
 }
 
-const adjectives = ["adaptive", "bright", "composed", "durable", "focused", "modular", "parallel", "steady"];
-const verbs = ["mapping", "planning", "routing", "shaping", "testing", "tracing", "weaving", "working"];
-const nouns = ["beacon", "branch", "kernel", "ledger", "matrix", "signal", "thread", "vector"];
+const adjectives = ['adaptive', 'bright', 'composed', 'durable', 'focused', 'modular', 'parallel', 'steady'];
+const verbs = ['mapping', 'planning', 'routing', 'shaping', 'testing', 'tracing', 'weaving', 'working'];
+const nouns = ['beacon', 'branch', 'kernel', 'ledger', 'matrix', 'signal', 'thread', 'vector'];
 
 function randomItem(items: string[]) {
   return items[randomBytes(4).readUInt32BE(0) % items.length]!;
@@ -180,12 +183,12 @@ function generateWordSlug() {
 }
 
 async function generateUniqueTeamName(context: ToolContext, providedName: string) {
-  if (!await pathExists(teamDir(context, providedName))) return providedName;
+  if (!(await pathExists(teamDir(context, providedName)))) return providedName;
   for (let attempt = 0; attempt < 20; attempt += 1) {
     const candidate = generateWordSlug();
-    if (!await pathExists(teamDir(context, candidate))) return candidate;
+    if (!(await pathExists(teamDir(context, candidate)))) return candidate;
   }
-  return `team-${Date.now()}-${randomBytes(3).toString("hex")}`;
+  return `team-${Date.now()}-${randomBytes(3).toString('hex')}`;
 }
 
 function teamLeadMember(input: TeamCreateInput, context: ToolContext, teamName: string): TeamMember {
@@ -193,23 +196,23 @@ function teamLeadMember(input: TeamCreateInput, context: ToolContext, teamName: 
     agentId: formatTeamAgentId(TEAM_LEAD_NAME, teamName),
     name: TEAM_LEAD_NAME,
     agentType: input.agent_type || TEAM_LEAD_NAME,
-    model: "default",
+    model: 'default',
     joinedAt: Date.now(),
-    tmuxPaneId: "",
+    tmuxPaneId: '',
     cwd: context.cwd,
-    subscriptions: []
+    subscriptions: [],
   };
 }
 
 async function writeTaskList(context: ToolContext, teamName: string) {
   await writeJsonFile(taskListPath(context, teamName), {
     teamName,
-    tasks: []
+    tasks: [],
   });
 }
 
 function requestedTeamName(input: TeamCreateInput) {
-  return input.team_name?.trim() ?? "";
+  return input.team_name?.trim() ?? '';
 }
 
 async function createTeam(input: TeamCreateInput, context: ToolContext) {
@@ -217,7 +220,7 @@ async function createTeam(input: TeamCreateInput, context: ToolContext) {
   if (requestedName.length === 0) {
     return {
       ok: false,
-      content: "team_name is required for TeamCreate"
+      content: 'team_name is required for TeamCreate',
     };
   }
 
@@ -225,7 +228,7 @@ async function createTeam(input: TeamCreateInput, context: ToolContext) {
   if (current) {
     return {
       ok: false,
-      content: `Already leading team "${current.teamName}". A leader can only manage one team at a time. Use TeamDelete to end the current team before creating a new one.`
+      content: `Already leading team "${current.teamName}". A leader can only manage one team at a time. Use TeamDelete to end the current team before creating a new one.`,
     };
   }
 
@@ -238,7 +241,7 @@ async function createTeam(input: TeamCreateInput, context: ToolContext) {
     createdAt: Date.now(),
     leadAgentId,
     leadSessionId: context.sessionId,
-    members: [teamLeadMember(input, context, teamName)]
+    members: [teamLeadMember(input, context, teamName)],
   };
 
   await writeJsonFile(configPath, teamFile);
@@ -247,19 +250,19 @@ async function createTeam(input: TeamCreateInput, context: ToolContext) {
   index.sessions[context.sessionId] = {
     teamName,
     teamFilePath: configPath,
-    leadAgentId
+    leadAgentId,
   };
   await writeSessionIndex(context, index);
 
   const data: TeamCreateOutput = {
     team_name: teamName,
     team_file_path: configPath,
-    lead_agent_id: leadAgentId
+    lead_agent_id: leadAgentId,
   };
   return {
     ok: true,
     content: `Created team "${teamName}" with lead agent ${leadAgentId}.`,
-    data
+    data,
   };
 }
 
@@ -278,7 +281,7 @@ export async function registerTeamMember(
     cwd?: string;
     isActive?: boolean;
     mode?: string;
-  }
+  },
 ) {
   const teamFile = await readTeamFile(context, teamName);
   if (!teamFile) {
@@ -292,14 +295,15 @@ export async function registerTeamMember(
     agentType: member.agentType,
     ...(member.model ? { model: member.model } : {}),
     joinedAt: Date.now(),
-    tmuxPaneId: "",
+    tmuxPaneId: '',
     cwd: member.cwd ?? context.cwd,
     subscriptions: [],
     ...(member.isActive !== undefined ? { isActive: member.isActive } : {}),
-    ...(member.mode ? { mode: member.mode } : {})
+    ...(member.mode ? { mode: member.mode } : {}),
   };
-  const existingIndex = teamFile.members.findIndex((current) =>
-    current.agentId === agentId || current.name === nextMember.name);
+  const existingIndex = teamFile.members.findIndex(
+    (current) => current.agentId === agentId || current.name === nextMember.name,
+  );
   const members = [...teamFile.members];
   if (existingIndex === -1) {
     members.push(nextMember);
@@ -307,12 +311,12 @@ export async function registerTeamMember(
     members[existingIndex] = {
       ...members[existingIndex],
       ...nextMember,
-      joinedAt: members[existingIndex]!.joinedAt
+      joinedAt: members[existingIndex]!.joinedAt,
     };
   }
   await writeJsonFile(teamFilePath(context, teamName), {
     ...teamFile,
-    members
+    members,
   });
   return nextMember;
 }
@@ -323,30 +327,30 @@ function memberIsActive(member: TeamMember) {
 
 function metadataString(task: AgentTask, key: string) {
   const value = task.metadata?.[key];
-  return typeof value === "string" ? value : undefined;
+  return typeof value === 'string' ? value : undefined;
 }
 
 function metadataBoolean(task: AgentTask, key: string) {
   const value = task.metadata?.[key];
-  return typeof value === "boolean" ? value : undefined;
+  return typeof value === 'boolean' ? value : undefined;
 }
 
 async function activeTaskMembers(context: ToolContext, teamName: string) {
   const tasks = await new SqliteAgentTaskStore({ xenesisHome: requireXenesisHome(context) }).list();
   return tasks
-    .filter((task) => metadataString(task, "teamName") === teamName)
-    .filter((task) => metadataString(task, "name") && metadataString(task, "name") !== TEAM_LEAD_NAME)
-    .filter((task) => metadataBoolean(task, "isActive") !== false)
+    .filter((task) => metadataString(task, 'teamName') === teamName)
+    .filter((task) => metadataString(task, 'name') && metadataString(task, 'name') !== TEAM_LEAD_NAME)
+    .filter((task) => metadataBoolean(task, 'isActive') !== false)
     .filter((task) => !terminalStatuses.has(task.status))
-    .map((task) => metadataString(task, "name")!);
+    .map((task) => metadataString(task, 'name')!);
 }
 
 async function latestTeamTaskByMember(context: ToolContext, teamName: string) {
   const tasks = await new SqliteAgentTaskStore({ xenesisHome: requireXenesisHome(context) }).list();
   const byMember = new Map<string, AgentTask>();
   for (const task of tasks) {
-    if (metadataString(task, "teamName") !== teamName) continue;
-    const name = metadataString(task, "name");
+    if (metadataString(task, 'teamName') !== teamName) continue;
+    const name = metadataString(task, 'name');
     if (!name || name === TEAM_LEAD_NAME) continue;
     const current = byMember.get(name);
     if (!current || task.updatedAt.localeCompare(current.updatedAt) > 0) {
@@ -358,7 +362,7 @@ async function latestTeamTaskByMember(context: ToolContext, teamName: string) {
 
 function taskMarksMemberInactive(task: AgentTask | undefined) {
   if (!task) return false;
-  return metadataBoolean(task, "isActive") === false || terminalStatuses.has(task.status);
+  return metadataBoolean(task, 'isActive') === false || terminalStatuses.has(task.status);
 }
 
 async function activeTeamMembers(context: ToolContext, teamName: string) {
@@ -383,12 +387,12 @@ async function deleteTeam(_input: Record<string, never>, context: ToolContext) {
   if (!current) {
     const data: TeamDeleteOutput = {
       success: true,
-      message: "No active team is attached to this session; cleanup skipped."
+      message: 'No active team is attached to this session; cleanup skipped.',
     };
     return {
       ok: true,
       content: data.message,
-      data
+      data,
     };
   }
 
@@ -396,13 +400,13 @@ async function deleteTeam(_input: Record<string, never>, context: ToolContext) {
   if (activeMembers.length > 0) {
     const data: TeamDeleteOutput = {
       success: false,
-      message: `Cannot cleanup team with ${activeMembers.length} active member(s): ${activeMembers.join(", ")}. Use requestShutdown to gracefully terminate teammates first.`,
-      team_name: current.teamName
+      message: `Cannot cleanup team with ${activeMembers.length} active member(s): ${activeMembers.join(', ')}. Use requestShutdown to gracefully terminate teammates first.`,
+      team_name: current.teamName,
     };
     return {
       ok: false,
       content: data.message,
-      data
+      data,
     };
   }
 
@@ -413,18 +417,18 @@ async function deleteTeam(_input: Record<string, never>, context: ToolContext) {
   const data: TeamDeleteOutput = {
     success: true,
     message: `Cleaned up team "${current.teamName}"`,
-    team_name: current.teamName
+    team_name: current.teamName,
   };
   return {
     ok: true,
     content: data.message,
-    data
+    data,
   };
 }
 
 export const teamCreateTool: Tool<TeamCreateInput, TeamCreateOutput> = {
-  name: "team_create",
-  description: "Create a durable Xenesis agent team with a shared task list.",
+  name: 'team_create',
+  description: 'Create a durable Xenesis agent team with a shared task list.',
   inputSchema: teamCreateInputSchema,
   openaiInputSchema: teamCreateOpenAIInputSchema,
   isReadOnly: () => false,
@@ -435,15 +439,15 @@ export const teamCreateTool: Tool<TeamCreateInput, TeamCreateOutput> = {
     } catch (error) {
       return {
         ok: false,
-        content: `TeamCreate tool failed: ${error instanceof Error ? error.message : String(error)}`
+        content: `TeamCreate tool failed: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
-  }
+  },
 };
 
 export const teamDeleteTool: Tool<Record<string, never>, TeamDeleteOutput> = {
-  name: "team_delete",
-  description: "Delete the current durable Xenesis team after all teammates are inactive.",
+  name: 'team_delete',
+  description: 'Delete the current durable Xenesis team after all teammates are inactive.',
   inputSchema: teamDeleteInputSchema,
   openaiInputSchema: teamDeleteInputSchema,
   isReadOnly: () => false,
@@ -454,8 +458,8 @@ export const teamDeleteTool: Tool<Record<string, never>, TeamDeleteOutput> = {
     } catch (error) {
       return {
         ok: false,
-        content: `TeamDelete tool failed: ${error instanceof Error ? error.message : String(error)}`
+        content: `TeamDelete tool failed: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
-  }
+  },
 };

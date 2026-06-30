@@ -1,33 +1,28 @@
-import type { AgentRunEvent } from "../core/events.js";
+import type { AgentRunEvent } from '../core/events.js';
+import { summarizeWorkflow } from './resolver.js';
 import type {
   RunResolvedWorkflowOptions,
   WorkflowPipelineOverrides,
   WorkflowSelection,
   WorkflowStep,
   WorkflowStepRun,
-  WorkflowSummary
-} from "./types.js";
-import { summarizeWorkflow } from "./resolver.js";
+  WorkflowSummary,
+} from './types.js';
 
 export function formatWorkflowStepPrompt(
   workflow: WorkflowSelection,
   step: WorkflowStep,
-  previousContent: string | undefined
+  previousContent: string | undefined,
 ) {
   if (step.prompt !== undefined) return step.prompt;
-  const input = step.input === "previous"
-    ? previousContent ?? workflow.prompt
-    : workflow.prompt;
-  return `${step.promptPrefix ?? ""}${input}${step.promptSuffix ?? ""}`;
+  const input = step.input === 'previous' ? (previousContent ?? workflow.prompt) : workflow.prompt;
+  return `${step.promptPrefix ?? ''}${input}${step.promptSuffix ?? ''}`;
 }
 
-export function workflowStepPipeline(
-  workflow: WorkflowSelection,
-  step: WorkflowStep
-): WorkflowPipelineOverrides {
+export function workflowStepPipeline(workflow: WorkflowSelection, step: WorkflowStep): WorkflowPipelineOverrides {
   return {
     ...workflow.pipeline,
-    ...(step.pipeline ?? {})
+    ...(step.pipeline ?? {}),
   };
 }
 
@@ -35,7 +30,7 @@ function workflowStepSummary(step: WorkflowStep) {
   return {
     name: step.name,
     ...(step.description ? { description: step.description } : {}),
-    ...(step.metadata ? { metadata: step.metadata } : {})
+    ...(step.metadata ? { metadata: step.metadata } : {}),
   };
 }
 
@@ -43,24 +38,21 @@ export function createWorkflowStepRun(
   workflow: WorkflowSummary,
   step: WorkflowStep,
   index: number,
-  total: number
+  total: number,
 ): WorkflowStepRun {
   return {
     workflow,
     step: workflowStepSummary(step),
     index: index + 1,
     total,
-    status: "running",
-    startedAt: new Date().toISOString()
+    status: 'running',
+    startedAt: new Date().toISOString(),
   };
 }
 
-export function completeWorkflowStepRun(
-  stepRun: WorkflowStepRun,
-  result: { exitCode: number; sessionId: string }
-) {
+export function completeWorkflowStepRun(stepRun: WorkflowStepRun, result: { exitCode: number; sessionId: string }) {
   const endedAt = new Date().toISOString();
-  stepRun.status = result.exitCode === 0 ? "completed" : "failed";
+  stepRun.status = result.exitCode === 0 ? 'completed' : 'failed';
   stepRun.endedAt = endedAt;
   stepRun.durationMs = Math.max(0, Date.parse(endedAt) - Date.parse(stepRun.startedAt));
   stepRun.sessionId = result.sessionId;
@@ -69,7 +61,7 @@ export function completeWorkflowStepRun(
 
 export function failWorkflowStepRun(stepRun: WorkflowStepRun, error: unknown) {
   const endedAt = new Date().toISOString();
-  stepRun.status = "failed";
+  stepRun.status = 'failed';
   stepRun.endedAt = endedAt;
   stepRun.durationMs = Math.max(0, Date.parse(endedAt) - Date.parse(stepRun.startedAt));
   stepRun.error = error instanceof Error ? error.message : String(error);
@@ -81,7 +73,7 @@ export function singleWorkflowStep(workflow: WorkflowSelection): WorkflowStep {
     description: workflow.description,
     prompt: workflow.prompt,
     pipeline: workflow.pipeline,
-    ...(workflow.metadata ? { metadata: workflow.metadata } : {})
+    ...(workflow.metadata ? { metadata: workflow.metadata } : {}),
   };
 }
 
@@ -90,12 +82,7 @@ export function workflowSteps(workflow: WorkflowSelection) {
 }
 
 export function isWorkflowClientEvent(event: AgentRunEvent) {
-  return (
-    event.type !== "intent_route" &&
-    event.type !== "context_source" &&
-    event.type !== "run_stage" &&
-    event.type !== "repair_decision"
-  );
+  return event.type !== 'context_source' && event.type !== 'run_stage' && event.type !== 'repair_decision';
 }
 
 export async function runResolvedWorkflow(options: RunResolvedWorkflowOptions) {
@@ -133,21 +120,25 @@ export async function runResolvedWorkflow(options: RunResolvedWorkflowOptions) {
         attachments: index === 0 ? options.attachments : undefined,
         abortSignal: options.abortSignal,
         stream: options.stream,
+        disposeRunner: options.disposeRunner,
         ideContext: options.workflow.ideContext,
         traceId: options.traceId,
         sessionId: options.sessionId ?? sessionId,
         historyMessages: index === 0 ? options.historyMessages : undefined,
+        turnLedger: options.turnLedger,
         ...workflowStepPipeline(options.workflow, step),
         applyConfiguredWorkflow: false,
-        ...(hasExplicitSteps ? {
-          workflowStep: {
-            workflow: stepRun.workflow,
-            step: stepRun.step,
-            index: stepRun.index,
-            total: stepRun.total,
-            startedAt: stepRun.startedAt
-          }
-        } : {}),
+        ...(hasExplicitSteps
+          ? {
+              workflowStep: {
+                workflow: stepRun.workflow,
+                step: stepRun.step,
+                index: stepRun.index,
+                total: stepRun.total,
+                startedAt: stepRun.startedAt,
+              },
+            }
+          : {}),
         onSessionWriter: (_writer, createdSessionId) => {
           sessionId = createdSessionId;
           void options.onSession?.(createdSessionId);
@@ -161,7 +152,7 @@ export async function runResolvedWorkflow(options: RunResolvedWorkflowOptions) {
           stdout.push(line);
           await options.onNotice?.(line);
         },
-        onMessages: index === 0 ? options.onMessages : undefined
+        onMessages: index === 0 ? options.onMessages : undefined,
       });
     } catch (error) {
       if (hasExplicitSteps) failWorkflowStepRun(stepRun, error);
@@ -194,6 +185,6 @@ export async function runResolvedWorkflow(options: RunResolvedWorkflowOptions) {
     ...(doneContent !== undefined ? { doneContent } : {}),
     turns,
     workflowSteps: workflowStepRuns,
-    output: stdout.join("\n")
+    output: stdout.join('\n'),
   };
 }

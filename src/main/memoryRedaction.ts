@@ -72,12 +72,7 @@ export function redactMemoryRecordForCr(record: MemoryRecord): Record<string, un
   const { embedding: _embedding, ...safeRecord } = record;
   const sensitivity = effectiveMemoryRecordSensitivity(record);
   if (!isSensitiveMemory(sensitivity)) return { ...safeRecord, sensitivity };
-  const {
-    source: _source,
-    runbook: _runbook,
-    noEvidenceReason: _noEvidenceReason,
-    ...redactedRecord
-  } = safeRecord;
+  const { source: _source, runbook: _runbook, noEvidenceReason: _noEvidenceReason, ...redactedRecord } = safeRecord;
   return {
     ...redactedRecord,
     text: `[redacted: ${sensitivity} memory]`,
@@ -102,12 +97,7 @@ export function redactMemoryProposalForCr(proposal: MemoryProposal): MemoryPropo
       },
     };
   }
-  const {
-    source: _source,
-    runbook: _runbook,
-    noEvidenceReason: _noEvidenceReason,
-    ...safeInput
-  } = proposal.input;
+  const { source: _source, runbook: _runbook, noEvidenceReason: _noEvidenceReason, ...safeInput } = proposal.input;
   const input: MemoryInput = {
     ...safeInput,
     text: `[redacted: ${sensitivity} memory proposal]`,
@@ -138,12 +128,7 @@ export function redactMemoryEvidenceForCr(record: MemoryEvidenceRecord): MemoryE
       sensitivity,
     };
   }
-  const {
-    contentHash: _contentHash,
-    uri: _uri,
-    metadata: _metadata,
-    ...safeRecord
-  } = record;
+  const { contentHash: _contentHash, uri: _uri, metadata: _metadata, ...safeRecord } = record;
   return {
     ...safeRecord,
     source: `[redacted: ${sensitivity} evidence source]`,
@@ -154,11 +139,7 @@ export function redactMemoryEvidenceForCr(record: MemoryEvidenceRecord): MemoryE
 }
 
 export function redactMemoryLedgerEventForCr(event: MemoryLedgerEvent): MemoryLedgerEvent {
-  const {
-    metadata: _metadata,
-    reason: _reason,
-    ...safeEvent
-  } = event;
+  const { metadata: _metadata, reason: _reason, ...safeEvent } = event;
   return {
     ...safeEvent,
     ...(event.reason ? { reason: '[redacted: ledger event reason]' } : {}),

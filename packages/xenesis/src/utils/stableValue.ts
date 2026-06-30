@@ -14,7 +14,7 @@ function createStableValueContext(): StableValueContext {
     nextObjectRef: 1,
     nextSymbolRef: 1,
     objectRefs: new WeakMap(),
-    symbolRefs: new Map()
+    symbolRefs: new Map(),
   };
 }
 
@@ -52,7 +52,7 @@ function symbolRef(value: symbol, context: StableValueContext): number {
 }
 
 function stablePropertyKey(key: string | symbol, context: StableValueContext): string {
-  if (typeof key === "symbol") return `symbol:${symbolRef(key, context)}`;
+  if (typeof key === 'symbol') return `symbol:${symbolRef(key, context)}`;
   return `string:${JSON.stringify(key)}`;
 }
 
@@ -64,28 +64,28 @@ function isPlainObject(value: object): boolean {
 export function stableValueKey(
   value: unknown,
   context: StableValueContext = createStableValueContext(),
-  visiting: WeakSet<object> = new WeakSet()
+  visiting: WeakSet<object> = new WeakSet(),
 ): string {
-  if (value === null) return "null";
+  if (value === null) return 'null';
 
   switch (typeof value) {
-    case "bigint":
+    case 'bigint':
       return `bigint:${value.toString()}`;
-    case "boolean":
+    case 'boolean':
       return `boolean:${value}`;
-    case "function":
+    case 'function':
       return `function:${functionRef(value, context)}`;
-    case "number":
-      if (Object.is(value, -0)) return "number:-0";
-      if (Number.isNaN(value)) return "number:NaN";
+    case 'number':
+      if (Object.is(value, -0)) return 'number:-0';
+      if (Number.isNaN(value)) return 'number:NaN';
       return `number:${value}`;
-    case "string":
+    case 'string':
       return `string:${JSON.stringify(value)}`;
-    case "symbol":
+    case 'symbol':
       return `symbol:${symbolRef(value, context)}`;
-    case "undefined":
-      return "undefined";
-    case "object":
+    case 'undefined':
+      return 'undefined';
+    case 'object':
       break;
   }
 
@@ -96,13 +96,13 @@ export function stableValueKey(
     try {
       const children: string[] = [];
       for (let index = 0; index < value.length; index += 1) {
-        if (Object.prototype.hasOwnProperty.call(value, index)) {
+        if (Object.hasOwn(value, index)) {
           children.push(stableValueKey(value[index], context, visiting));
         } else {
-          children.push("array-hole");
+          children.push('array-hole');
         }
       }
-      return `array:[${children.join(",")}]`;
+      return `array:[${children.join(',')}]`;
     } finally {
       visiting.delete(value);
     }
@@ -116,13 +116,16 @@ export function stableValueKey(
   try {
     return `object:{${Reflect.ownKeys(value)
       .filter((key) => Object.prototype.propertyIsEnumerable.call(value, key))
-      .map((key) => [
-        stablePropertyKey(key, context),
-        stableValueKey((value as Record<PropertyKey, unknown>)[key], context, visiting)
-      ] as const)
+      .map(
+        (key) =>
+          [
+            stablePropertyKey(key, context),
+            stableValueKey((value as Record<PropertyKey, unknown>)[key], context, visiting),
+          ] as const,
+      )
       .sort(([left], [right]) => compareBinary(left, right))
       .map(([key, child]) => `${key}:${child}`)
-      .join(",")}}`;
+      .join(',')}}`;
   } finally {
     visiting.delete(value);
   }

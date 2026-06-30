@@ -15,18 +15,18 @@
 </p>
 
 <p>
-  <a href="https://github.com/xamong/Xenesis"><b>🛰️ Repo</b></a> &nbsp;·&nbsp;
+  <a href="https://github.com/xamong/xenesis-desk"><b>🛰️ Repo</b></a> &nbsp;·&nbsp;
   <a href="docs/manual/README.md"><b>📖 Manual</b></a> &nbsp;·&nbsp;
   <a href="#-capability-registry"><b>🗂️ Capability Registry</b></a> &nbsp;·&nbsp;
-  <a href="https://github.com/xamong/Xenesis/discussions"><b>💬 Discussions</b></a> &nbsp;·&nbsp;
-  <a href="https://github.com/xamong/Xenesis/issues/new/choose"><b>🐛 Issues</b></a>
+  <a href="https://github.com/xamong/xenesis-desk/discussions"><b>💬 Discussions</b></a> &nbsp;·&nbsp;
+  <a href="https://github.com/xamong/xenesis-desk/issues/new/choose"><b>🐛 Issues</b></a>
 </p>
 
 <p>🌐 <b>English</b> | <a href="README.ko.md">한국어</a></p>
 
 <p>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge"></a>
-  <a href="https://github.com/xamong/Xenesis/releases"><img alt="Status: early alpha" src="https://img.shields.io/badge/status-early%20alpha-orange?style=for-the-badge"></a>
+  <a href="https://github.com/xamong/xenesis-desk/releases"><img alt="Status: Early alpha" src="https://img.shields.io/badge/status-Early%20alpha-orange?style=for-the-badge"></a>
   <img alt="Platforms: Windows, macOS, Linux" src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-2ea44f?style=for-the-badge">
 </p>
 
@@ -46,7 +46,7 @@ Most agent products stop at chat. **Xenesis Desk gives agents a workbench** — 
 
 When an agent answers, it doesn't have to send only text. Through **Gowoori** and **XCON**, the answer can become a live chart, table, map, network diagram, dashboard, or workflow surface — streamed directly inside the conversation as tokens arrive.
 
-## ✨ Features
+## ✨ What Makes It Different
 
 - **🖥️ Agent workbench, not a prompt box**
   - Agents get terminals (`@xterm` + node-pty / ConPTY), a file workspace (CodeMirror 6), viewers, docking panes, and full app control across a 5-zone desktop.
@@ -74,7 +74,7 @@ When an agent answers, it doesn't have to send only text. Through **Gowoori** an
 | Data-bound dashboards that stay live | ❌ | **✅ XCON fixtures / chains / workflows** |
 
 > [!NOTE]
-> Xenesis Desk is **early alpha**. The workbench, Capability Registry, MCP bridge, and live UI rendering work today; the public API, packaging, and some provider installers are still moving.
+> Xenesis Desk is **Early alpha**. The workbench, Capability Registry, MCP bridge, and live UI rendering work today; the public API, packaging, and some provider installers are still moving.
 
 ## 🧠 How it works
 
@@ -109,13 +109,13 @@ flowchart LR
   D --> Z5[Approvals]
 ```
 
-## 🚀 Quick start
+## 🚀 What To Try First
 
-Xenesis Desk is an **early-alpha** desktop app. There is no published installer yet — run the development shell:
+Xenesis Desk is an **Early alpha** desktop app. There is no published installer yet — run the development shell:
 
 ```bash
-git clone https://github.com/xamong/Xenesis.git
-cd Xenesis
+git clone https://github.com/xamong/xenesis-desk.git
+cd xenesis-desk
 npm install
 npm run dev        # launches the Electron desktop shell
 ```
@@ -369,6 +369,7 @@ npm run pack:win               # Windows unpacked build
 npm run dist:win               # Windows installer (NSIS + portable)
 npm run dist:mac               # macOS build (dmg + zip)
 npm run check:public-release   # public source boundary check
+npm run check:public-release:ci
 ```
 
 ### Requirements
@@ -422,18 +423,18 @@ The full user manual lives in [`docs/manual/`](docs/manual/README.md):
 
 ## 🙌 Community & Contributing
 
-Xenesis Desk is early alpha and we are looking for active community participation: try it, break it, open issues, propose demos, improve docs, add provider integrations, and help shape the agent workbench model. **Pull requests are welcome** — especially small, focused PRs with clear reproduction steps or release-check coverage.
+Xenesis Desk is Early alpha and we are looking for active community participation: try it, break it, open issues, propose demos, improve docs, add provider integrations, and help shape the agent workbench model. **Pull requests are welcome** — especially small, focused PRs with clear reproduction steps or release-check coverage.
 
 - 📖 Contributing guide — [CONTRIBUTING.md](CONTRIBUTING.md)
 - 🔒 Security policy — [SECURITY.md](SECURITY.md)
 - 💬 Support routes — [SUPPORT.md](SUPPORT.md)
 - 🤝 Code of conduct — [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 - 📝 Changelog — [CHANGELOG.md](CHANGELOG.md)
-- 🐛 Issues — <https://github.com/xamong/Xenesis/issues>
-- 🗨️ Discussions — <https://github.com/xamong/Xenesis/discussions>
+- 🐛 Issues — <https://github.com/xamong/xenesis-desk/issues>
+- 🗨️ Discussions — <https://github.com/xamong/xenesis-desk/discussions>
 
-<a href="https://github.com/xamong/Xenesis/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=xamong/Xenesis" alt="Contributors" />
+<a href="https://github.com/xamong/xenesis-desk/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=xamong/xenesis-desk" alt="Contributors" />
 </a>
 
 ## ⚖️ License

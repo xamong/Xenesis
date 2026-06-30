@@ -129,6 +129,12 @@ interface DockHostProps {
   onOnboardingOpenTerminal?: () => void;
   onOnboardingOpenFile?: () => void;
   onOnboardingOpenWorkspace?: () => void;
+  onOnboardingOpenAiProviderSettings?: () => void;
+  onOnboardingOpenProviderSetupPlan?: () => void;
+  onOnboardingOpenExternalToolSetup?: () => void;
+  onOnboardingOpenToolConnectors?: () => void;
+  onOnboardingOpenMcpSetup?: () => void;
+  onOnboardingOpenMcpOauth?: () => void;
   onOnboardingOpenKeyboardShortcuts?: () => void;
   onOnboardingOpenExtensions?: () => void;
   onOnboardingOpenDiagnostics?: () => void;
@@ -160,6 +166,12 @@ export default function DockHost({
   onOnboardingOpenTerminal,
   onOnboardingOpenFile,
   onOnboardingOpenWorkspace,
+  onOnboardingOpenAiProviderSettings,
+  onOnboardingOpenProviderSetupPlan,
+  onOnboardingOpenExternalToolSetup,
+  onOnboardingOpenToolConnectors,
+  onOnboardingOpenMcpSetup,
+  onOnboardingOpenMcpOauth,
   onOnboardingOpenKeyboardShortcuts,
   onOnboardingOpenExtensions,
   onOnboardingOpenDiagnostics,
@@ -247,6 +259,12 @@ export default function DockHost({
                       onOnboardingOpenTerminal={onOnboardingOpenTerminal}
                       onOnboardingOpenFile={onOnboardingOpenFile}
                       onOnboardingOpenWorkspace={onOnboardingOpenWorkspace}
+                      onOnboardingOpenAiProviderSettings={onOnboardingOpenAiProviderSettings}
+                      onOnboardingOpenProviderSetupPlan={onOnboardingOpenProviderSetupPlan}
+                      onOnboardingOpenExternalToolSetup={onOnboardingOpenExternalToolSetup}
+                      onOnboardingOpenToolConnectors={onOnboardingOpenToolConnectors}
+                      onOnboardingOpenMcpSetup={onOnboardingOpenMcpSetup}
+                      onOnboardingOpenMcpOauth={onOnboardingOpenMcpOauth}
                       onOnboardingOpenKeyboardShortcuts={onOnboardingOpenKeyboardShortcuts}
                       onOnboardingOpenExtensions={onOnboardingOpenExtensions}
                       onOnboardingOpenDiagnostics={onOnboardingOpenDiagnostics}
@@ -351,6 +369,12 @@ export default function DockHost({
               onOnboardingOpenTerminal={onOnboardingOpenTerminal}
               onOnboardingOpenFile={onOnboardingOpenFile}
               onOnboardingOpenWorkspace={onOnboardingOpenWorkspace}
+              onOnboardingOpenAiProviderSettings={onOnboardingOpenAiProviderSettings}
+              onOnboardingOpenProviderSetupPlan={onOnboardingOpenProviderSetupPlan}
+              onOnboardingOpenExternalToolSetup={onOnboardingOpenExternalToolSetup}
+              onOnboardingOpenToolConnectors={onOnboardingOpenToolConnectors}
+              onOnboardingOpenMcpSetup={onOnboardingOpenMcpSetup}
+              onOnboardingOpenMcpOauth={onOnboardingOpenMcpOauth}
               onOnboardingOpenKeyboardShortcuts={onOnboardingOpenKeyboardShortcuts}
               onOnboardingOpenExtensions={onOnboardingOpenExtensions}
               onOnboardingOpenDiagnostics={onOnboardingOpenDiagnostics}

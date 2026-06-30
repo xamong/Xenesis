@@ -1,12 +1,13 @@
-import { createHash } from "node:crypto";
-import { readFile, stat } from "node:fs/promises";
-import { dirname, isAbsolute, join, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
-import { z } from "zod";
-import { mcpServerConfigSchema } from "../config/loadConfig.js";
-import type { Tool, ToolRegistry } from "../tools/index.js";
-import { assertExistingPathInsideWorkspace, assertInsideWorkspace, isPathInside } from "../utils/workspace.js";
-import { createBundledSkillCommand } from "./skills.js";
+import { createHash } from 'node:crypto';
+import { readFile, stat } from 'node:fs/promises';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { z } from 'zod';
+import { mcpServerConfigSchema } from '../config/loadConfig.js';
+import { type ProviderFactory, registerProviderFactory } from '../providers/providerFactory.js';
+import type { Tool, ToolRegistry } from '../tools/index.js';
+import { assertExistingPathInsideWorkspace, assertInsideWorkspace, isPathInside } from '../utils/workspace.js';
+import { createBundledSkillCommand } from './skills.js';
 import type {
   BuiltinPluginDefinition,
   BuiltinPluginSettings,
@@ -19,49 +20,55 @@ import type {
   PluginStateRecord,
   PluginToolDescriptor,
   PluginWorkflowDescriptor,
-  SkillCommand
-} from "./types.js";
-import { registerProviderFactory, type ProviderFactory } from "../providers/providerFactory.js";
+  SkillCommand,
+} from './types.js';
 
-export const BUILTIN_MARKETPLACE_NAME = "builtin";
+export const BUILTIN_MARKETPLACE_NAME = 'builtin';
 
 const builtinPlugins = new Map<string, BuiltinPluginDefinition>();
 
 const pluginToolSchema = z.object({
   name: z.string().min(1),
   entry: z.string().min(1),
-  exportName: z.string().min(1).default("default"),
-  description: z.string().optional()
+  exportName: z.string().min(1).default('default'),
+  description: z.string().optional(),
 });
 
 const pluginWorkflowStepSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
-  mode: z.enum(["plan", "work"]).optional(),
-  input: z.enum(["original", "previous"]).optional(),
+  mode: z.enum(['plan', 'work']).optional(),
+  input: z.enum(['original', 'previous']).optional(),
   prompt: z.string().optional(),
   promptPrefix: z.string().optional(),
   promptSuffix: z.string().optional(),
-  metadata: z.record(z.unknown()).optional()
+  metadata: z.record(z.unknown()).optional(),
 });
 
 const pluginWorkflowSchema = pluginWorkflowStepSchema.extend({
-  steps: z.array(pluginWorkflowStepSchema).optional()
+  steps: z.array(pluginWorkflowStepSchema).optional(),
 });
 
 const pluginProviderCapabilitiesSchema = z.object({
   supportsTools: z.boolean(),
   requiresApiKey: z.boolean(),
-  transport: z.enum(["http-streaming", "http-nonstreaming", "cli-oneshot", "cli-interactive", "local-server", "mcp-agent"]),
+  transport: z.enum([
+    'http-streaming',
+    'http-nonstreaming',
+    'cli-oneshot',
+    'cli-interactive',
+    'local-server',
+    'mcp-agent',
+  ]),
   streaming: z.boolean(),
-  persistentSession: z.boolean()
+  persistentSession: z.boolean(),
 });
 
 const pluginProviderSchema = z.object({
   name: z.string().min(1),
   entry: z.string().min(1),
   exportName: z.string().min(1),
-  capabilities: pluginProviderCapabilitiesSchema
+  capabilities: pluginProviderCapabilitiesSchema,
 });
 
 const pluginManifestSchema = z.object({
@@ -70,12 +77,12 @@ const pluginManifestSchema = z.object({
   tools: z.array(pluginToolSchema).default([]),
   workflows: z.array(pluginWorkflowSchema).default([]),
   mcpServers: z.record(mcpServerConfigSchema).default({}),
-  providers: z.array(pluginProviderSchema).default([])
+  providers: z.array(pluginProviderSchema).default([]),
 });
 
 async function resolveManifestPath(path: string) {
   const fileStat = await stat(path);
-  return fileStat.isDirectory() ? join(path, "xenesis.plugin.json") : path;
+  return fileStat.isDirectory() ? join(path, 'xenesis.plugin.json') : path;
 }
 
 function isNodeError(error: unknown): error is NodeJS.ErrnoException {
@@ -87,20 +94,20 @@ function errorMessage(error: unknown) {
 }
 
 function isNotFoundError(error: unknown) {
-  return typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT";
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT';
 }
 
 function isTool(value: unknown): value is Tool {
-  if (typeof value !== "object" || value === null) return false;
+  if (typeof value !== 'object' || value === null) return false;
   const candidate = value as Record<string, unknown>;
   const inputSchema = candidate.inputSchema as { safeParse?: unknown } | undefined;
   return (
-    typeof candidate.name === "string" &&
+    typeof candidate.name === 'string' &&
     candidate.name.length > 0 &&
-    typeof candidate.description === "string" &&
-    typeof inputSchema?.safeParse === "function" &&
-    typeof candidate.isReadOnly === "function" &&
-    typeof candidate.run === "function"
+    typeof candidate.description === 'string' &&
+    typeof inputSchema?.safeParse === 'function' &&
+    typeof candidate.isReadOnly === 'function' &&
+    typeof candidate.run === 'function'
   );
 }
 
@@ -137,15 +144,13 @@ export function getBuiltinPlugins(settings: BuiltinPluginSettings = {}): {
 
     const pluginId = `${name}@${BUILTIN_MARKETPLACE_NAME}`;
     const userSetting = settings.enabledPlugins?.[pluginId];
-    const isEnabled = userSetting !== undefined
-      ? userSetting === true
-      : (definition.defaultEnabled ?? true);
+    const isEnabled = userSetting !== undefined ? userSetting === true : (definition.defaultEnabled ?? true);
     const plugin: LoadedBuiltinPlugin = {
       name,
       manifest: {
         name,
         description: definition.description,
-        ...(definition.version ? { version: definition.version } : {})
+        ...(definition.version ? { version: definition.version } : {}),
       },
       path: BUILTIN_MARKETPLACE_NAME,
       source: pluginId,
@@ -153,7 +158,7 @@ export function getBuiltinPlugins(settings: BuiltinPluginSettings = {}): {
       enabled: isEnabled,
       isBuiltin: true,
       ...(definition.hooks ? { hooksConfig: definition.hooks } : {}),
-      ...(definition.mcpServers ? { mcpServers: definition.mcpServers } : {})
+      ...(definition.mcpServers ? { mcpServers: definition.mcpServers } : {}),
     };
 
     if (isEnabled) enabled.push(plugin);
@@ -169,10 +174,14 @@ export function getBuiltinPluginSkillCommands(settings: BuiltinPluginSettings = 
   for (const plugin of enabled) {
     const definition = builtinPlugins.get(plugin.name);
     if (!definition?.skills) continue;
-    commands.push(...definition.skills.map((skill) => createBundledSkillCommand({
-      ...skill,
-      isEnabled: skill.isEnabled ?? (() => true)
-    })));
+    commands.push(
+      ...definition.skills.map((skill) =>
+        createBundledSkillCommand({
+          ...skill,
+          isEnabled: skill.isEnabled ?? (() => true),
+        }),
+      ),
+    );
   }
   return commands;
 }
@@ -184,14 +193,12 @@ async function readPluginBundle(workspaceRoot: string, path: string) {
   return {
     manifest,
     manifestPath,
-    pluginRoot: dirname(manifestPath)
+    pluginRoot: dirname(manifestPath),
   };
 }
 
 function resolveEntryPath(pluginRoot: string, descriptor: { entry: string; name: string }) {
-  const entryPath = isAbsolute(descriptor.entry)
-    ? resolve(descriptor.entry)
-    : resolve(pluginRoot, descriptor.entry);
+  const entryPath = isAbsolute(descriptor.entry) ? resolve(descriptor.entry) : resolve(pluginRoot, descriptor.entry);
   if (!isPathInside(pluginRoot, entryPath)) {
     throw new Error(`Plugin entry is outside the plugin directory: ${descriptor.entry}`);
   }
@@ -201,7 +208,7 @@ function resolveEntryPath(pluginRoot: string, descriptor: { entry: string; name:
 async function loadToolExport(pluginRoot: string, descriptor: PluginToolDescriptor): Promise<Tool> {
   const entryPath = resolveEntryPath(pluginRoot, descriptor);
   const source = await readFile(entryPath);
-  const cacheKey = createHash("sha256").update(source).digest("hex").slice(0, 16);
+  const cacheKey = createHash('sha256').update(source).digest('hex').slice(0, 16);
   const module = await import(`${pathToFileURL(entryPath).href}?v=${cacheKey}`);
   const exported = (module as Record<string, unknown>)[descriptor.exportName];
   if (!isTool(exported)) {
@@ -215,7 +222,7 @@ async function loadToolExport(pluginRoot: string, descriptor: PluginToolDescript
 
 export async function readPluginManifest(path: string): Promise<PluginManifest> {
   const manifestPath = await resolveManifestPath(path);
-  const raw = await readFile(manifestPath, "utf8");
+  const raw = await readFile(manifestPath, 'utf8');
   const parsed = JSON.parse(raw) as unknown;
   return pluginManifestSchema.parse(parsed);
 }
@@ -258,23 +265,25 @@ export async function loadPluginWorkflows(options: LoadPluginToolsOptions): Prom
 }
 
 function isProviderFactory(value: unknown): value is ProviderFactory {
-  return typeof value === "function";
+  return typeof value === 'function';
 }
 
 async function loadProviderExport(pluginRoot: string, descriptor: PluginProviderDescriptor): Promise<ProviderFactory> {
   const entryPath = resolveEntryPath(pluginRoot, descriptor);
   const source = await readFile(entryPath);
-  const cacheKey = createHash("sha256").update(source).digest("hex").slice(0, 16);
+  const cacheKey = createHash('sha256').update(source).digest('hex').slice(0, 16);
   const module = await import(`${pathToFileURL(entryPath).href}?v=${cacheKey}`);
   const exported = (module as Record<string, unknown>)[descriptor.exportName];
   if (!isProviderFactory(exported)) {
-    throw new Error(`Plugin provider "${descriptor.name}" export "${descriptor.exportName}" is not a function (ProviderFactory).`);
+    throw new Error(
+      `Plugin provider "${descriptor.name}" export "${descriptor.exportName}" is not a function (ProviderFactory).`,
+    );
   }
   return exported;
 }
 
 export async function loadPluginProviders(options: LoadPluginToolsOptions): Promise<void> {
-  const tolerant = options.pluginLoadPolicy === "tolerant";
+  const tolerant = options.pluginLoadPolicy === 'tolerant';
   const seen = new Set<string>();
   for (const path of options.paths) {
     try {
@@ -302,12 +311,14 @@ export async function createRuntimeToolRegistry(options: CreateRuntimeToolRegist
   const pluginTools: Tool[] = [];
   for (const path of options.pluginPaths) {
     try {
-      pluginTools.push(...await loadPluginTools({
-        workspaceRoot: options.workspaceRoot,
-        paths: [path]
-      }));
+      pluginTools.push(
+        ...(await loadPluginTools({
+          workspaceRoot: options.workspaceRoot,
+          paths: [path],
+        })),
+      );
     } catch (error) {
-      if (options.pluginLoadPolicy !== "tolerant") throw error;
+      if (options.pluginLoadPolicy !== 'tolerant') throw error;
     }
   }
 
@@ -330,7 +341,7 @@ export async function diagnosePluginRuntime(options: LoadPluginToolsOptions): Pr
       const bundle = await readPluginBundle(options.workspaceRoot, path);
       const tools = await loadPluginTools({
         workspaceRoot: options.workspaceRoot,
-        paths: [path]
+        paths: [path],
       });
       diagnostics.push({
         path,
@@ -340,16 +351,16 @@ export async function diagnosePluginRuntime(options: LoadPluginToolsOptions): Pr
         toolCount: tools.length,
         toolNames: tools.map((tool) => tool.name).sort((left, right) => left.localeCompare(right)),
         workflowCount: bundle.manifest.workflows.length,
-        workflowNames: bundle.manifest.workflows.map((workflow) => workflow.name).sort((left, right) => left.localeCompare(right)),
-        mcpServerCount: Object.keys(bundle.manifest.mcpServers).length
+        workflowNames: bundle.manifest.workflows
+          .map((workflow) => workflow.name)
+          .sort((left, right) => left.localeCompare(right)),
+        mcpServerCount: Object.keys(bundle.manifest.mcpServers).length,
       });
     } catch (error) {
       diagnostics.push({
         path,
         ok: false,
-        message: isNodeError(error) && error.code === "ENOENT"
-          ? `not found: ${path}`
-          : errorMessage(error)
+        message: isNodeError(error) && error.code === 'ENOENT' ? `not found: ${path}` : errorMessage(error),
       });
     }
   }

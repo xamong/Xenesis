@@ -31,6 +31,16 @@ export interface DeskProviderRuntimeOptions {
   baseURL: string;
   apiKeyEnv: string;
   env: NodeJS.ProcessEnv;
+  requestedProvider?: string;
+  source?: string;
+  authMode?: string;
+  credentialState?: string;
+  credentialSource?: string;
+  processModel?: string;
+  fallbackProvider?: string;
+  safeForReasoning?: boolean;
+  diagnostics?: string[];
+  localCliBoundary?: string;
 }
 
 export interface DeskProviderRuntimeOverride {
@@ -79,6 +89,7 @@ export interface CreateDeskEmbeddedPromptOptionsInput {
   bridgeToken?: string;
   request: DeskEmbeddedRunRequest;
   abortSignal?: AbortSignal;
+  turnLedger?: XenesisEmbeddedPromptOptions['turnLedger'];
   onEvent?: XenesisEmbeddedPromptOptions['onEvent'];
   onSession?: XenesisEmbeddedPromptOptions['onSession'];
   onMessages?: XenesisEmbeddedPromptOptions['onMessages'];
@@ -172,6 +183,7 @@ export function createDeskEmbeddedPromptOptions(
     profile: input.profileName,
     profilePolicy: input.profilePolicy,
     abortSignal: input.abortSignal,
+    turnLedger: input.turnLedger,
     cli: {
       xenesisHome: input.xenesisHome,
       ...(provider ? { provider } : {}),

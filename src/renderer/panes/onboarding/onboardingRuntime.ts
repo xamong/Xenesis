@@ -22,12 +22,20 @@ export interface OnboardingRuntimePane {
   activeContentId: string | null;
 }
 
+export interface OnboardingRuntimeSettingsTarget {
+  category: string;
+  mode: string;
+  section: string;
+  focusConnectionDetail: string;
+}
+
 export interface OnboardingRuntimeSnapshot {
   defaultCwd: string;
   sampleWorkspacePath: string;
   workspacePath: string;
   contents: OnboardingRuntimeContent[];
   panes: OnboardingRuntimePane[];
+  settingsTarget?: OnboardingRuntimeSettingsTarget | null;
 }
 
 export interface OnboardingRuntimeVerification {
@@ -77,6 +85,83 @@ function contentPathMatches(pathValue: string | undefined, expectedPath: string)
   return Boolean(path && expected && path === expected);
 }
 
+function normalizeTargetToken(value: string | undefined): string {
+  return String(value || '')
+    .trim()
+    .toLowerCase();
+}
+
+function hasConnectionCenterDetailTarget(snapshot: OnboardingRuntimeSnapshot, detailIds: Set<string>): boolean {
+  const target = snapshot.settingsTarget ?? null;
+  const category = normalizeTargetToken(target?.category);
+  const mode = normalizeTargetToken(target?.mode);
+  const section = normalizeTargetToken(target?.section);
+  const focusConnectionDetail = normalizeTargetToken(target?.focusConnectionDetail);
+  return (
+    category === 'xenesis-agent' &&
+    (mode === 'connections' || section === 'xenesis-connections') &&
+    detailIds.has(focusConnectionDetail)
+  );
+}
+
+function hasProviderSettingsTarget(snapshot: OnboardingRuntimeSnapshot): boolean {
+  const target = snapshot.settingsTarget ?? null;
+  const category = normalizeTargetToken(target?.category);
+  const section = normalizeTargetToken(target?.section);
+  const runModelSections = new Set([
+    '',
+    'default',
+    'provider-connection',
+    'xamong-runtime',
+    'hermes-provider',
+    'local-cli',
+    'byok-provider',
+  ]);
+  const providerConnectionDetails = new Set([
+    'provider-setup',
+    'provider-setup-plan',
+    'provider-routing',
+    'provider-view',
+    'provider-profile-draft',
+  ]);
+
+  if (category === 'run-model' || category === 'ai-provider') {
+    return runModelSections.has(section);
+  }
+  return hasConnectionCenterDetailTarget(snapshot, providerConnectionDetails);
+}
+
+function hasExternalToolSettingsTarget(snapshot: OnboardingRuntimeSnapshot): boolean {
+  return hasConnectionCenterDetailTarget(
+    snapshot,
+    new Set([
+      'tool-setup',
+      'tool-setup-plan',
+      'tool-install-plan',
+      'tool-connector',
+      'tool-runtime',
+      'tool-profile-draft',
+      'tool-action-catalog',
+      'tool-view',
+      'tool-user-story',
+    ]),
+  );
+}
+
+function hasMcpSettingsTarget(snapshot: OnboardingRuntimeSnapshot): boolean {
+  return hasConnectionCenterDetailTarget(
+    snapshot,
+    new Set([
+      'mcp-install-draft',
+      'mcp-template',
+      'tool-mcp-oauth',
+      'tool-oauth-draft',
+      'tool-oauth-setup-packet',
+      'tool-oauth-runtime',
+    ]),
+  );
+}
+
 export function verifyBasicDeskOnboardingStep(
   stepId: string,
   snapshot: OnboardingRuntimeSnapshot,
@@ -89,6 +174,27 @@ export function verifyBasicDeskOnboardingStep(
       passed: Boolean(preparedSamplePath),
       reasonKey: preparedSamplePath ? 'app.onboardingVerifyPassed' : 'app.onboardingVerifyWorkspaceMissing',
     };
+  }
+
+  if (stepId === 'configure-ai-provider') {
+    const hasSettings = hasVisibleContent(snapshot, (content) => content.contentType === 'settings');
+    const passed = hasSettings && hasProviderSettingsTarget(snapshot);
+    return { passed, reasonKey: passed ? 'app.onboardingVerifyPassed' : 'app.onboardingVerifyProviderMissing' };
+  }
+
+  if (stepId === 'connect-external-tools') {
+    const hasSettings = hasVisibleContent(snapshot, (content) => content.contentType === 'settings');
+    const passed = hasSettings && hasExternalToolSettingsTarget(snapshot);
+    return {
+      passed,
+      reasonKey: passed ? 'app.onboardingVerifyPassed' : 'app.onboardingVerifyExternalToolsMissing',
+    };
+  }
+
+  if (stepId === 'configure-mcp') {
+    const hasSettings = hasVisibleContent(snapshot, (content) => content.contentType === 'settings');
+    const passed = hasSettings && hasMcpSettingsTarget(snapshot);
+    return { passed, reasonKey: passed ? 'app.onboardingVerifyPassed' : 'app.onboardingVerifyMcpMissing' };
   }
 
   if (stepId === 'open-terminal') {

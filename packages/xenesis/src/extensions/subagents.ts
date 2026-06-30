@@ -1,4 +1,4 @@
-import type { SubagentDefinition } from "./types.js";
+import type { SubagentDefinition } from './types.js';
 
 export class SubagentRegistry {
   private readonly definitions = new Map<string, SubagentDefinition>();
@@ -9,7 +9,7 @@ export class SubagentRegistry {
     }
     this.definitions.set(definition.name, {
       ...definition,
-      tools: [...definition.tools]
+      tools: [...definition.tools],
     });
   }
 

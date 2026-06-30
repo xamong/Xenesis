@@ -1,6 +1,5 @@
-import {
-  randomBytes
-} from "node:crypto";
+import { randomBytes } from 'node:crypto';
+import { readWorktreeSession, writeWorktreeSession } from '../../tools/worktreeSessionStore.js';
 import {
   addWorktree,
   countDirtyFiles,
@@ -12,21 +11,20 @@ import {
   isGitRepo,
   removeWorktree,
   worktreeBranchName,
-  worktreePathFor
-} from "./gitWorktree.js";
+  worktreePathFor,
+} from './gitWorktree.js';
 import type {
   IsolationMode,
   IsolationOutcome,
-  ProvisionRequest,
   ProvisionedWorkspace,
+  ProvisionRequest,
   WorkspaceProvisioner,
-  WorktreeSessionState
-} from "./types.js";
-import { readWorktreeSession, writeWorktreeSession } from "../../tools/worktreeSessionStore.js";
+  WorktreeSessionState,
+} from './types.js';
 
 export interface ProvisionerDeps {
   xenesisHome?: string;
-  keepWorktree: "if-changed" | "always" | "never";
+  keepWorktree: 'if-changed' | 'always' | 'never';
 }
 
 function nowIso() {
@@ -35,11 +33,11 @@ function nowIso() {
 
 function worktreeNameForTask(taskId: string) {
   const slug = taskId
-    .replace(/[^a-zA-Z0-9._-]/gu, "-")
-    .replace(/-+/gu, "-")
-    .replace(/^-|-$/gu, "");
-  const base = slug.length > 0 ? slug.slice(0, 54) : "task";
-  return `${base}-${randomBytes(4).toString("hex")}`;
+    .replace(/[^a-zA-Z0-9._-]/gu, '-')
+    .replace(/-+/gu, '-')
+    .replace(/^-|-$/gu, '');
+  const base = slug.length > 0 ? slug.slice(0, 54) : 'task';
+  return `${base}-${randomBytes(4).toString('hex')}`;
 }
 
 function errorMessage(error: unknown) {
@@ -51,10 +49,10 @@ export class SharedWorkspaceProvisioner implements WorkspaceProvisioner {
     return {
       workspaceRoot: req.baseWorkspace,
       cwd: req.baseCwd,
-      mode: "shared",
+      mode: 'shared',
       async cleanup(): Promise<IsolationOutcome> {
-        return { mode: "shared", changedFiles: 0, newCommits: 0, kept: false };
-      }
+        return { mode: 'shared', changedFiles: 0, newCommits: 0, kept: false };
+      },
     };
   }
 }
@@ -63,12 +61,12 @@ export class GitWorktreeProvisioner implements WorkspaceProvisioner {
   constructor(private readonly deps: ProvisionerDeps) {}
 
   async provision(req: ProvisionRequest): Promise<ProvisionedWorkspace> {
-    if (!await isGitRepo(req.baseCwd)) {
-      throw new Error("worktree isolation requires a git repository");
+    if (!(await isGitRepo(req.baseCwd))) {
+      throw new Error('worktree isolation requires a git repository');
     }
     const xenesisHome = this.deps.xenesisHome ?? req.xenesisHome;
     if (!xenesisHome) {
-      throw new Error("worktree isolation requires xenesisHome");
+      throw new Error('worktree isolation requires xenesisHome');
     }
 
     const root = await gitRoot(req.baseCwd);
@@ -92,7 +90,7 @@ export class GitWorktreeProvisioner implements WorkspaceProvisioner {
       ...(originalBranch ? { originalBranch } : {}),
       originalHeadCommit,
       enteredAt: timestamp,
-      updatedAt: timestamp
+      updatedAt: timestamp,
     };
     await writeWorktreeSession(xenesisHome, req.sessionId, session);
 
@@ -100,7 +98,7 @@ export class GitWorktreeProvisioner implements WorkspaceProvisioner {
     return {
       workspaceRoot: path,
       cwd: path,
-      mode: "worktree",
+      mode: 'worktree',
       worktreeBranch: branch,
       async cleanup(): Promise<IsolationOutcome> {
         let changedFiles = 0;
@@ -111,7 +109,7 @@ export class GitWorktreeProvisioner implements WorkspaceProvisioner {
           changedFiles = await countDirtyFiles(path);
           newCommits = await countNewCommits(path, originalHeadCommit);
           const changed = changedFiles > 0 || newCommits > 0;
-          kept = keepWorktree === "always" || (keepWorktree === "if-changed" && changed);
+          kept = keepWorktree === 'always' || (keepWorktree === 'if-changed' && changed);
           if (!kept) {
             await removeWorktree(root, path);
             await deleteBranchIfExists(root, branch);
@@ -129,24 +127,24 @@ export class GitWorktreeProvisioner implements WorkspaceProvisioner {
             updatedAt: nowIso(),
             ...(cleanupError ? { cleanupError: errorMessage(cleanupError) } : {}),
             discardedFiles: kept ? 0 : changedFiles,
-            discardedCommits: kept ? 0 : newCommits
+            discardedCommits: kept ? 0 : newCommits,
           });
         }
         if (cleanupError) throw cleanupError;
         return {
-          mode: "worktree",
+          mode: 'worktree',
           worktreePath: path,
           worktreeBranch: branch,
           changedFiles,
           newCommits,
-          kept
+          kept,
         };
-      }
+      },
     };
   }
 }
 
 export function resolveProvisioner(mode: IsolationMode, deps: ProvisionerDeps): WorkspaceProvisioner {
-  if (mode === "worktree") return new GitWorktreeProvisioner(deps);
+  if (mode === 'worktree') return new GitWorktreeProvisioner(deps);
   return new SharedWorkspaceProvisioner();
 }

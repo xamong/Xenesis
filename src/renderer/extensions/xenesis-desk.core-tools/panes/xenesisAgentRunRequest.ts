@@ -1,5 +1,5 @@
 import type { XenesisRunAttachment, XenesisRunRequest } from '../../../../shared/types';
-import { buildXenesisAgentHistoryMessages, buildXenesisContextualPrompt } from './xenesisAgentChatHistory';
+import { buildXenesisAgentHistoryMessages } from './xenesisAgentChatHistory';
 import type { XenesisChatMessage, XenesisMode } from './xenesisAgentTypes';
 
 export interface BuildXenesisAgentRunRequestInput {
@@ -15,14 +15,10 @@ export interface BuildXenesisAgentRunRequestInput {
 
 export function buildXenesisAgentRunRequest(input: BuildXenesisAgentRunRequestInput): XenesisRunRequest {
   const runHistoryMessages = buildXenesisAgentHistoryMessages(input.contextMessages);
-  const runPromptContext = buildXenesisContextualPrompt({
-    prompt: input.prompt,
-    messages: input.contextMessages,
-  });
   // Standing Desk-control framing lives in the system prompt (built once), not on
   // the user turn — re-stamping it here makes the agent treat every input (even a
   // greeting) as a Desk action. The user turn carries only the user text.
-  const prompt = runPromptContext.prompt;
+  const prompt = input.prompt;
 
   return {
     prompt,
@@ -37,13 +33,9 @@ export function buildXenesisAgentRunRequest(input: BuildXenesisAgentRunRequestIn
   };
 }
 
-export function buildXenesisAgentRunContextDetail(input: {
+export function buildXenesisAgentRunContextDetail(_input: {
   prompt: string;
   contextMessages: XenesisChatMessage[];
 }): string {
-  const runPromptContext = buildXenesisContextualPrompt({
-    prompt: input.prompt,
-    messages: input.contextMessages,
-  });
-  return runPromptContext.contextApplied ? runPromptContext.prompt : '';
+  return '';
 }

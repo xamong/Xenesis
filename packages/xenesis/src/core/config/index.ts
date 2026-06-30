@@ -1,1 +1,1 @@
-export * from "./RuntimeConfigSnapshot.js";
+export * from './RuntimeConfigSnapshot.js';

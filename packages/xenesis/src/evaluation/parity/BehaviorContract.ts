@@ -1,20 +1,20 @@
 export type ParityStatus =
-  | "not_started"
-  | "designed"
-  | "implemented"
-  | "unit_tested"
-  | "scenario_tested"
-  | "parity_verified"
-  | "intentionally_upgraded"
-  | "intentionally_excluded";
+  | 'not_started'
+  | 'designed'
+  | 'implemented'
+  | 'unit_tested'
+  | 'scenario_tested'
+  | 'parity_verified'
+  | 'intentionally_upgraded'
+  | 'intentionally_excluded';
 
-export type ParityRisk = "low" | "medium" | "high" | "critical";
+export type ParityRisk = 'low' | 'medium' | 'high' | 'critical';
 
 export interface BehaviorContract {
   id: string;
   given: string;
   when: string;
-  then: string;
+  expected: string;
   observable: string[];
   forbidden: string[];
   reference: string[];

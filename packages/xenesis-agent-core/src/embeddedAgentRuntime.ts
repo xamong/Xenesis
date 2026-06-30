@@ -4,6 +4,7 @@ import {
   createDeskEmbeddedPromptOptions,
   type DeskApprovalMode,
   type DeskEmbeddedProfilePolicyState,
+  type DeskEmbeddedPromptOptions,
   type DeskEmbeddedPromptResult,
   type DeskEmbeddedRunRequest,
   type DeskProviderRuntimeOptions,
@@ -41,6 +42,7 @@ export interface DeskEmbeddedAgentRuntimeOptions {
   profilePolicy?: DeskEmbeddedProfilePolicyState;
   bridgeUrl?: string;
   bridgeToken?: string;
+  turnLedger?: DeskEmbeddedPromptOptions['turnLedger'];
   onEvent?: (event: DeskEmbeddedAgentRunEvent) => void;
 }
 
@@ -50,6 +52,16 @@ export interface DeskProviderRuntimeStatus {
   profile: string;
   baseURL: string;
   apiKeyEnv: string;
+  requestedProvider?: string;
+  source?: string;
+  authMode?: string;
+  credentialState?: string;
+  credentialSource?: string;
+  processModel?: string;
+  fallbackProvider?: string;
+  safeForReasoning?: boolean;
+  diagnostics?: string[];
+  localCliBoundary?: string;
 }
 
 export interface DeskEmbeddedAgentStatus {
@@ -238,6 +250,7 @@ export class DeskEmbeddedAgentRuntime {
           bridgeToken: this.options.bridgeToken,
           request: requestWithSession,
           abortSignal: controller.signal,
+          turnLedger: this.options.turnLedger,
           onSession: (sessionId) => {
             this.activeSessionId = sessionId;
           },
@@ -286,12 +299,23 @@ export class DeskEmbeddedAgentRuntime {
   }
 
   private statusProviderRuntime(): DeskProviderRuntimeStatus {
+    const runtime = this.options.providerRuntime;
     return {
-      provider: this.options.providerRuntime.provider,
-      model: this.options.providerRuntime.model,
-      profile: this.options.providerRuntime.profile,
-      baseURL: this.options.providerRuntime.baseURL,
-      apiKeyEnv: this.options.providerRuntime.apiKeyEnv,
+      provider: runtime.provider,
+      model: runtime.model,
+      profile: runtime.profile,
+      baseURL: runtime.baseURL,
+      apiKeyEnv: runtime.apiKeyEnv,
+      ...(runtime.requestedProvider !== undefined ? { requestedProvider: runtime.requestedProvider } : {}),
+      ...(runtime.source !== undefined ? { source: runtime.source } : {}),
+      ...(runtime.authMode !== undefined ? { authMode: runtime.authMode } : {}),
+      ...(runtime.credentialState !== undefined ? { credentialState: runtime.credentialState } : {}),
+      ...(runtime.credentialSource !== undefined ? { credentialSource: runtime.credentialSource } : {}),
+      ...(runtime.processModel !== undefined ? { processModel: runtime.processModel } : {}),
+      ...(runtime.fallbackProvider !== undefined ? { fallbackProvider: runtime.fallbackProvider } : {}),
+      ...(runtime.safeForReasoning !== undefined ? { safeForReasoning: runtime.safeForReasoning } : {}),
+      ...(Array.isArray(runtime.diagnostics) ? { diagnostics: [...runtime.diagnostics] } : {}),
+      ...(runtime.localCliBoundary !== undefined ? { localCliBoundary: runtime.localCliBoundary } : {}),
     };
   }
 

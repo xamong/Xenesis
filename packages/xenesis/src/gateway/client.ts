@@ -1,9 +1,9 @@
-import type { AgentRunEvent } from "../core/events.js";
-import type { gatewayOpenApiSpec } from "./openapi.js";
-import type { GatewayWorkflowStepRun, GatewayWorkflowSummary } from "./workflows.js";
+import type { AgentRunEvent } from '../core/events.js';
+import type { gatewayOpenApiSpec } from './openapi.js';
+import type { GatewayWorkflowStepRun, GatewayWorkflowSummary } from './workflows.js';
 
 export type GatewayFetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
-export type GatewayReportKind = "smoke" | "scenario" | "connect" | "provider-live";
+export type GatewayReportKind = 'smoke' | 'scenario' | 'connect' | 'provider-live';
 export type GatewayOpenApiSpec = typeof gatewayOpenApiSpec;
 
 export interface XenesisGatewayClientOptions {
@@ -28,7 +28,7 @@ export type GatewayClientRetryObserver = (event: GatewayClientRetryEvent) => voi
 export type GatewayClientErrorObserver = (event: GatewayClientErrorEvent) => void;
 
 export interface GatewayClientRequestEvent {
-  method: "GET" | "POST";
+  method: 'GET' | 'POST';
   path: string;
   url: string;
   attempt: number;
@@ -62,17 +62,17 @@ export interface GatewayClientObservabilityContext {
 }
 
 export type GatewayClientObservabilityEvent =
-  | ({ kind: "request" } & GatewayClientRequestEvent)
-  | ({ kind: "response" } & GatewayClientResponseEvent)
-  | ({ kind: "retry" } & GatewayClientRetryEvent)
-  | ({ kind: "error" } & GatewayClientErrorEvent)
+  | ({ kind: 'request' } & GatewayClientRequestEvent)
+  | ({ kind: 'response' } & GatewayClientResponseEvent)
+  | ({ kind: 'retry' } & GatewayClientRetryEvent)
+  | ({ kind: 'error' } & GatewayClientErrorEvent)
   | GatewayClientTaskEvent;
 
 export interface GatewayClientTaskEvent {
-  kind: "task";
+  kind: 'task';
   traceId?: string;
   taskId: string;
-  phase: "started" | "retry" | "completed" | "failed" | "blocked" | "cancelled";
+  phase: 'started' | 'retry' | 'completed' | 'failed' | 'blocked' | 'cancelled';
   taskStatus: string;
   attempt?: number;
   maxAttempts?: number;
@@ -90,7 +90,7 @@ export interface GatewayClientTaskEvent {
 export interface GatewayObservedEvent {
   id: string;
   timestamp: string;
-  kind: "request" | "response" | "retry" | "error" | "task";
+  kind: 'request' | 'response' | 'retry' | 'error' | 'task';
   method?: string;
   path?: string;
   url?: string;
@@ -136,7 +136,7 @@ export interface GatewayRecordObservabilityResponse extends GatewayObservability
 }
 
 export interface GatewayObservabilityQuery {
-  kind?: GatewayObservedEvent["kind"];
+  kind?: GatewayObservedEvent['kind'];
   traceId?: string;
   limit?: number;
 }
@@ -187,7 +187,7 @@ export interface GatewayActiveRun {
   traceId: string;
   sessionId?: string;
   workflow: GatewayWorkflowSummary;
-  status: "running";
+  status: 'running';
   prompt: string;
   startedAt: string;
   workflowSteps: GatewayWorkflowStepRun[];
@@ -238,7 +238,7 @@ export interface GatewayTraceVerificationSummary {
 }
 
 export interface GatewayTraceDiagnostics {
-  status: "ok" | "warning" | "failed";
+  status: 'ok' | 'warning' | 'failed';
   retryCount: number;
   fallbackCount: number;
   failedToolCallCount: number;
@@ -311,7 +311,7 @@ export interface GatewayTraceDetail {
 
 export interface GatewayTraceSummary {
   traceId: string;
-  status: GatewayTraceDiagnostics["status"];
+  status: GatewayTraceDiagnostics['status'];
   updatedAt: string;
   activeRunCount: number;
   sessionCount: number;
@@ -399,7 +399,7 @@ export interface GatewayTask {
 export interface GatewayCancelResult {
   ok: boolean;
   id: string;
-  status: "cancelled";
+  status: 'cancelled';
 }
 
 export class GatewayClientError extends Error {
@@ -408,7 +408,7 @@ export class GatewayClientError extends Error {
 
   constructor(status: number, message: string, body: unknown) {
     super(message);
-    this.name = "GatewayClientError";
+    this.name = 'GatewayClientError';
     this.status = status;
     this.body = body;
   }
@@ -419,7 +419,7 @@ export class GatewayTimeoutError extends Error {
 
   constructor(timeoutMs: number) {
     super(`Gateway request timed out after ${timeoutMs}ms.`);
-    this.name = "GatewayTimeoutError";
+    this.name = 'GatewayTimeoutError';
     this.timeoutMs = timeoutMs;
   }
 }
@@ -451,7 +451,7 @@ export class XenesisGatewayClient {
   };
 
   constructor(options: XenesisGatewayClientOptions) {
-    this.baseUrl = options.baseUrl.replace(/\/+$/, "");
+    this.baseUrl = options.baseUrl.replace(/\/+$/, '');
     this.token = options.token;
     this.timeoutMs = options.timeoutMs;
     this.retries = normalizeNonNegativeInteger(options.retries ?? 0);
@@ -464,32 +464,32 @@ export class XenesisGatewayClient {
       onRequest: options.onRequest,
       onResponse: options.onResponse,
       onRetry: options.onRetry,
-      onError: options.onError
+      onError: options.onError,
     };
   }
 
   async openApi(signal?: AbortSignal): Promise<GatewayOpenApiSpec> {
-    return await this.get("/openapi.json", signal);
+    return await this.get('/openapi.json', signal);
   }
 
   async health(signal?: AbortSignal): Promise<unknown> {
-    return await this.get("/health", signal);
+    return await this.get('/health', signal);
   }
 
   async status(signal?: AbortSignal): Promise<unknown> {
-    return await this.get("/status", signal);
+    return await this.get('/status', signal);
   }
 
   async run(body: GatewayRunRequest, signal?: AbortSignal): Promise<GatewayRunResponse> {
-    return await this.post("/run", body, signal);
+    return await this.post('/run', body, signal);
   }
 
   async activeRuns(signal?: AbortSignal): Promise<{ runs: GatewayActiveRun[] }> {
-    return await this.get("/runs", signal);
+    return await this.get('/runs', signal);
   }
 
   async workflows(signal?: AbortSignal): Promise<{ workflows: GatewayWorkflowSummary[] }> {
-    return await this.get("/workflows", signal);
+    return await this.get('/workflows', signal);
   }
 
   async cancelRun(id: string, signal?: AbortSignal): Promise<GatewayCancelResult> {
@@ -497,35 +497,35 @@ export class XenesisGatewayClient {
   }
 
   async reports(signal?: AbortSignal): Promise<{ reports: GatewayReportSummary[] }> {
-    return await this.get("/reports", signal);
+    return await this.get('/reports', signal);
   }
 
   async report<TReport = unknown>(
     kind: GatewayReportKind,
     id: string,
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ): Promise<GatewayReportDetail<TReport>> {
     return await this.get(`/reports/${kind}/${encodeURIComponent(id)}`, signal);
   }
 
   async profiles(signal?: AbortSignal): Promise<GatewayProfileState> {
-    return await this.get("/profiles", signal);
+    return await this.get('/profiles', signal);
   }
 
   async useProfile(name: string, signal?: AbortSignal): Promise<GatewayProfileState> {
-    return await this.post("/profiles/use", { name }, signal);
+    return await this.post('/profiles/use', { name }, signal);
   }
 
   async clearProfile(signal?: AbortSignal): Promise<GatewayProfileState> {
-    return await this.post("/profiles/clear", undefined, signal);
+    return await this.post('/profiles/clear', undefined, signal);
   }
 
   async sessions(signal?: AbortSignal): Promise<{ sessions: string[] }> {
-    return await this.get("/sessions", signal);
+    return await this.get('/sessions', signal);
   }
 
   async sessionStatuses(signal?: AbortSignal): Promise<{ sessions: GatewaySessionStatus[] }> {
-    return await this.get("/sessions/status", signal);
+    return await this.get('/sessions/status', signal);
   }
 
   async trace(traceId: string, signal?: AbortSignal): Promise<GatewayTraceDetail> {
@@ -541,15 +541,15 @@ export class XenesisGatewayClient {
   }
 
   async traces(signal?: AbortSignal): Promise<GatewayTraceList> {
-    return await this.get("/traces", signal);
+    return await this.get('/traces', signal);
   }
 
   async context(signal?: AbortSignal): Promise<unknown> {
-    return await this.get("/context", signal);
+    return await this.get('/context', signal);
   }
 
   async artifacts(signal?: AbortSignal): Promise<{ artifacts: unknown[] }> {
-    return await this.get("/artifacts", signal);
+    return await this.get('/artifacts', signal);
   }
 
   async artifact<TArtifact = unknown>(id: string, signal?: AbortSignal): Promise<TArtifact> {
@@ -557,7 +557,7 @@ export class XenesisGatewayClient {
   }
 
   async tasks(signal?: AbortSignal): Promise<{ tasks: GatewayTask[] }> {
-    return await this.get("/tasks", signal);
+    return await this.get('/tasks', signal);
   }
 
   async runTask(id: string, signal?: AbortSignal): Promise<GatewayActionResult> {
@@ -572,12 +572,12 @@ export class XenesisGatewayClient {
 
   async observabilityEvents(
     query?: GatewayObservabilityQuery,
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ): Promise<GatewayObservabilityEventsResponse>;
 
   async observabilityEvents(
     queryOrSignal?: GatewayObservabilityQuery | AbortSignal,
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ): Promise<GatewayObservabilityEventsResponse> {
     const query = isAbortSignalInput(queryOrSignal) ? undefined : queryOrSignal;
     const requestSignal = isAbortSignalInput(queryOrSignal) ? queryOrSignal : signal;
@@ -586,54 +586,56 @@ export class XenesisGatewayClient {
 
   async recordObservabilityEvents(
     events: GatewayClientObservabilityEvent[],
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ): Promise<GatewayRecordObservabilityResponse> {
-    return await this.post("/observability/events", { events: events.map(serializeObservabilityEvent) }, signal);
+    return await this.post('/observability/events', { events: events.map(serializeObservabilityEvent) }, signal);
   }
 
   async exportObservabilityEvents(signal?: AbortSignal): Promise<GatewayObservabilityExport> {
-    return await this.get("/observability/events/export", signal);
+    return await this.get('/observability/events/export', signal);
   }
 
   async clearObservabilityEvents(signal?: AbortSignal): Promise<GatewayClearObservabilityResponse> {
-    return await this.post("/observability/events/clear", undefined, signal);
+    return await this.post('/observability/events/clear', undefined, signal);
   }
 
   async smoke(signal?: AbortSignal): Promise<GatewayActionResult> {
-    return await this.post("/checks/smoke", undefined, signal);
+    return await this.post('/checks/smoke', undefined, signal);
   }
 
   async scenario(signal?: AbortSignal): Promise<GatewayActionResult> {
-    return await this.post("/checks/scenario", undefined, signal);
+    return await this.post('/checks/scenario', undefined, signal);
   }
 
   async connect(options: { probe?: boolean } = {}, signal?: AbortSignal): Promise<GatewayActionResult> {
-    return await this.post("/checks/connect", options.probe === undefined ? undefined : options, signal);
+    return await this.post('/checks/connect', options.probe === undefined ? undefined : options, signal);
   }
 
-  async *streamRun(
-    body: GatewayRunRequest,
-    signal?: AbortSignal
-  ): AsyncGenerator<GatewayStreamEvent, void, void> {
+  async *streamRun(body: GatewayRunRequest, signal?: AbortSignal): AsyncGenerator<GatewayStreamEvent, void, void> {
     const operation = createOperationSignal(signal, this.timeoutMs, { startPaused: true });
     let response: Response;
     try {
-      response = await this.fetchResponseWithRetry("/run/stream", {
-        method: "POST",
-        body,
-        signal: operation.signal
-      }, operation);
+      response = await this.fetchResponseWithRetry(
+        '/run/stream',
+        {
+          method: 'POST',
+          body,
+          signal: operation.signal,
+        },
+        operation,
+      );
       operation.resetTimeout();
     } catch (error) {
       if (operation.timedOut() || isAbortError(error, operation.signal)) return;
       throw error;
     }
 
-    if (!response.body) throw new GatewayClientError(response.status, "Gateway stream response has no body.", undefined);
+    if (!response.body)
+      throw new GatewayClientError(response.status, 'Gateway stream response has no body.', undefined);
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
-    let buffer = "";
+    let buffer = '';
 
     try {
       while (true) {
@@ -645,7 +647,7 @@ export class XenesisGatewayClient {
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
         const chunks = buffer.split(/\n\n/);
-        buffer = chunks.pop() ?? "";
+        buffer = chunks.pop() ?? '';
         for (const chunk of chunks) {
           if (operation.signal?.aborted) return;
           const parsed = parseSseChunk(chunk);
@@ -669,25 +671,26 @@ export class XenesisGatewayClient {
   }
 
   private async get<T>(path: string, signal?: AbortSignal): Promise<T> {
-    const response = await this.request(path, { method: "GET", signal });
+    const response = await this.request(path, { method: 'GET', signal });
     return await readJson<T>(response);
   }
 
   private async post<T>(path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
-    const response = await this.request(path, { method: "POST", body, signal });
+    const response = await this.request(path, { method: 'POST', body, signal });
     return await readJson<T>(response);
   }
 
-  private async request(
-    path: string,
-    options: { method: "GET" | "POST"; body?: unknown; signal?: AbortSignal }
-  ) {
+  private async request(path: string, options: { method: 'GET' | 'POST'; body?: unknown; signal?: AbortSignal }) {
     const operation = createOperationSignal(options.signal, this.timeoutMs);
     try {
-      return await this.fetchResponseWithRetry(path, {
-        ...options,
-        signal: operation.signal
-      }, operation);
+      return await this.fetchResponseWithRetry(
+        path,
+        {
+          ...options,
+          signal: operation.signal,
+        },
+        operation,
+      );
     } catch (error) {
       if (operation.timedOut()) throw new GatewayTimeoutError(this.timeoutMs!);
       throw error;
@@ -698,8 +701,8 @@ export class XenesisGatewayClient {
 
   private async fetchResponseWithRetry(
     path: string,
-    options: { method: "GET" | "POST"; body?: unknown; signal?: AbortSignal },
-    operation: GatewayOperationSignal
+    options: { method: 'GET' | 'POST'; body?: unknown; signal?: AbortSignal },
+    operation: GatewayOperationSignal,
   ) {
     let attempt = 0;
     const url = this.url(path);
@@ -707,33 +710,39 @@ export class XenesisGatewayClient {
 
     while (true) {
       const startedAt = Date.now();
-      const requestEvent: GatewayClientRequestEvent = { method: options.method, path, url, attempt, ...observabilityContext };
-      await this.emitObservabilityEvent("request", requestEvent);
+      const requestEvent: GatewayClientRequestEvent = {
+        method: options.method,
+        path,
+        url,
+        attempt,
+        ...observabilityContext,
+      };
+      await this.emitObservabilityEvent('request', requestEvent);
       try {
         const response = await this.fetchResponse(url, options);
-        await this.emitObservabilityEvent("response", {
+        await this.emitObservabilityEvent('response', {
           ...requestEvent,
           status: response.status,
           ok: response.ok,
-          durationMs: Date.now() - startedAt
+          durationMs: Date.now() - startedAt,
         });
         if (response.ok) return response;
 
         const body = await readResponseBody(response);
         const error = new GatewayClientError(response.status, errorMessage(body, response.statusText), body);
         if (!this.canRetryResponse(response.status, attempt, operation)) {
-          await this.emitObservabilityEvent("error", {
+          await this.emitObservabilityEvent('error', {
             ...requestEvent,
             error,
-            durationMs: Date.now() - startedAt
+            durationMs: Date.now() - startedAt,
           });
           throw error;
         }
-        await this.emitObservabilityEvent("retry", {
+        await this.emitObservabilityEvent('retry', {
           ...requestEvent,
           nextAttempt: attempt + 1,
           delayMs: this.retryDelayMs,
-          status: response.status
+          status: response.status,
         });
         await this.delayBeforeRetry(operation);
         attempt += 1;
@@ -742,18 +751,18 @@ export class XenesisGatewayClient {
           throw error;
         }
         if (!this.canRetryNetworkError(attempt, operation)) {
-          await this.emitObservabilityEvent("error", {
+          await this.emitObservabilityEvent('error', {
             ...requestEvent,
             error,
-            durationMs: Date.now() - startedAt
+            durationMs: Date.now() - startedAt,
           });
           throw error;
         }
-        await this.emitObservabilityEvent("retry", {
+        await this.emitObservabilityEvent('retry', {
           ...requestEvent,
           nextAttempt: attempt + 1,
           delayMs: this.retryDelayMs,
-          error
+          error,
         });
         await this.delayBeforeRetry(operation);
         attempt += 1;
@@ -761,41 +770,30 @@ export class XenesisGatewayClient {
     }
   }
 
-  private createObservabilityContext(): Required<Pick<GatewayClientRequestEvent, "traceId">> & Pick<GatewayClientRequestEvent, "runId" | "taskId"> {
+  private createObservabilityContext(): Required<Pick<GatewayClientRequestEvent, 'traceId'>> &
+    Pick<GatewayClientRequestEvent, 'runId' | 'taskId'> {
     return {
       ...this.observabilityContext,
-      traceId: this.observabilityContext?.traceId ?? createGatewayClientTraceId()
+      traceId: this.observabilityContext?.traceId ?? createGatewayClientTraceId(),
     };
   }
 
-  private async emitObservabilityEvent(
-    kind: "request",
-    event: GatewayClientRequestEvent
-  ): Promise<void>;
+  private async emitObservabilityEvent(kind: 'request', event: GatewayClientRequestEvent): Promise<void>;
+
+  private async emitObservabilityEvent(kind: 'response', event: GatewayClientResponseEvent): Promise<void>;
+
+  private async emitObservabilityEvent(kind: 'retry', event: GatewayClientRetryEvent): Promise<void>;
+
+  private async emitObservabilityEvent(kind: 'error', event: GatewayClientErrorEvent): Promise<void>;
 
   private async emitObservabilityEvent(
-    kind: "response",
-    event: GatewayClientResponseEvent
-  ): Promise<void>;
-
-  private async emitObservabilityEvent(
-    kind: "retry",
-    event: GatewayClientRetryEvent
-  ): Promise<void>;
-
-  private async emitObservabilityEvent(
-    kind: "error",
-    event: GatewayClientErrorEvent
-  ): Promise<void>;
-
-  private async emitObservabilityEvent(
-    kind: GatewayClientObservabilityEvent["kind"],
-    event: GatewayClientRequestEvent | GatewayClientResponseEvent | GatewayClientRetryEvent | GatewayClientErrorEvent
+    kind: GatewayClientObservabilityEvent['kind'],
+    event: GatewayClientRequestEvent | GatewayClientResponseEvent | GatewayClientRetryEvent | GatewayClientErrorEvent,
   ) {
-    if (kind === "request") this.observers.onRequest?.(event as GatewayClientRequestEvent);
-    if (kind === "response") this.observers.onResponse?.(event as GatewayClientResponseEvent);
-    if (kind === "retry") this.observers.onRetry?.(event as GatewayClientRetryEvent);
-    if (kind === "error") this.observers.onError?.(event as GatewayClientErrorEvent);
+    if (kind === 'request') this.observers.onRequest?.(event as GatewayClientRequestEvent);
+    if (kind === 'response') this.observers.onResponse?.(event as GatewayClientResponseEvent);
+    if (kind === 'retry') this.observers.onRetry?.(event as GatewayClientRetryEvent);
+    if (kind === 'error') this.observers.onError?.(event as GatewayClientErrorEvent);
     await this.publishObservabilityEvent({ kind, ...event } as GatewayClientObservabilityEvent);
   }
 
@@ -804,15 +802,15 @@ export class XenesisGatewayClient {
     if (!url) return;
 
     const headers: Record<string, string> = {
-      "content-type": "application/json"
+      'content-type': 'application/json',
     };
     if (this.token) headers.authorization = `Bearer ${this.token}`;
 
     try {
       await this.fetchImpl(url, {
-        method: "POST",
+        method: 'POST',
         headers,
-        body: JSON.stringify({ events: [serializeObservabilityEvent(event)] })
+        body: JSON.stringify({ events: [serializeObservabilityEvent(event)] }),
       });
     } catch {
       // Observability is best-effort and must not change the primary request result.
@@ -824,37 +822,36 @@ export class XenesisGatewayClient {
     try {
       return new URL(this.observabilityEndpoint).toString();
     } catch {
-      return this.url(this.observabilityEndpoint.startsWith("/")
-        ? this.observabilityEndpoint
-        : `/${this.observabilityEndpoint}`);
+      return this.url(
+        this.observabilityEndpoint.startsWith('/') ? this.observabilityEndpoint : `/${this.observabilityEndpoint}`,
+      );
     }
   }
 
-  private async fetchResponse(
-    url: string,
-    options: { method: "GET" | "POST"; body?: unknown; signal?: AbortSignal }
-  ) {
+  private async fetchResponse(url: string, options: { method: 'GET' | 'POST'; body?: unknown; signal?: AbortSignal }) {
     const hasBody = options.body !== undefined;
     const headers: Record<string, string> = {};
     if (this.token) headers.authorization = `Bearer ${this.token}`;
-    if (hasBody) headers["content-type"] = "application/json";
+    if (hasBody) headers['content-type'] = 'application/json';
 
     const response = await this.fetchImpl(url, {
       method: options.method,
       headers,
       body: hasBody ? JSON.stringify(options.body) : undefined,
-      signal: options.signal
+      signal: options.signal,
     });
 
     return response;
   }
 
   private url(path: string) {
-    return `${this.baseUrl}${path.startsWith("/") ? path : `/${path}`}`;
+    return `${this.baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
   }
 
   private canRetryResponse(status: number, attempt: number, operation: GatewayOperationSignal) {
-    return !operation.timedOut() && !operation.signal?.aborted && attempt < this.retries && this.retryStatuses.has(status);
+    return (
+      !operation.timedOut() && !operation.signal?.aborted && attempt < this.retries && this.retryStatuses.has(status)
+    );
   }
 
   private canRetryNetworkError(attempt: number, operation: GatewayOperationSignal) {
@@ -868,26 +865,28 @@ export class XenesisGatewayClient {
 }
 
 function normalizeObservabilityEndpoint(value: boolean | string | undefined) {
-  if (value === true) return "/observability/events";
+  if (value === true) return '/observability/events';
   if (value === false || value === undefined) return undefined;
   return value.trim() || undefined;
 }
 
 function isAbortSignalInput(value: unknown): value is AbortSignal {
-  return typeof value === "object" &&
+  return (
+    typeof value === 'object' &&
     value !== null &&
-    typeof (value as AbortSignal).aborted === "boolean" &&
-    typeof (value as AbortSignal).addEventListener === "function";
+    typeof (value as AbortSignal).aborted === 'boolean' &&
+    typeof (value as AbortSignal).addEventListener === 'function'
+  );
 }
 
 function observabilityEventsPath(query: GatewayObservabilityQuery | undefined) {
-  if (!query) return "/observability/events";
+  if (!query) return '/observability/events';
   const params = new URLSearchParams();
-  if (query.kind) params.set("kind", query.kind);
-  if (query.traceId) params.set("traceId", query.traceId);
-  if (query.limit !== undefined) params.set("limit", String(query.limit));
+  if (query.kind) params.set('kind', query.kind);
+  if (query.traceId) params.set('traceId', query.traceId);
+  if (query.limit !== undefined) params.set('limit', String(query.limit));
   const suffix = params.toString();
-  return suffix ? `/observability/events?${suffix}` : "/observability/events";
+  return suffix ? `/observability/events?${suffix}` : '/observability/events';
 }
 
 function createGatewayClientTraceId() {
@@ -900,13 +899,13 @@ function serializeUnknownError(error: unknown) {
       name: error.name,
       message: error.message,
       status: error.status,
-      body: error.body
+      body: error.body,
     };
   }
   if (error instanceof Error) {
     return {
       name: error.name,
-      message: error.message
+      message: error.message,
     };
   }
   return error;
@@ -914,30 +913,30 @@ function serializeUnknownError(error: unknown) {
 
 function serializeObservabilityEvent(event: GatewayClientObservabilityEvent): Record<string, unknown> {
   const serialized: Record<string, unknown> = { ...event };
-  if ("error" in serialized && serialized.error !== undefined) {
+  if ('error' in serialized && serialized.error !== undefined) {
     serialized.error = serializeUnknownError(serialized.error);
   }
   return serialized;
 }
 
 async function readJson<T>(response: Response): Promise<T> {
-  return await response.json() as T;
+  return (await response.json()) as T;
 }
 
 async function readResponseBody(response: Response) {
-  const contentType = response.headers.get("content-type") ?? "";
-  if (contentType.includes("application/json")) {
-    return await response.json() as unknown;
+  const contentType = response.headers.get('content-type') ?? '';
+  if (contentType.includes('application/json')) {
+    return (await response.json()) as unknown;
   }
   return await response.text();
 }
 
 function errorMessage(body: unknown, fallback: string) {
-  if (typeof body === "object" && body !== null && typeof (body as { error?: unknown }).error === "string") {
+  if (typeof body === 'object' && body !== null && typeof (body as { error?: unknown }).error === 'string') {
     return (body as { error: string }).error;
   }
-  if (typeof body === "string" && body.trim()) return body;
-  return fallback || "Gateway request failed.";
+  if (typeof body === 'string' && body.trim()) return body;
+  return fallback || 'Gateway request failed.';
 }
 
 function normalizeNonNegativeInteger(value: number) {
@@ -946,44 +945,44 @@ function normalizeNonNegativeInteger(value: number) {
 }
 
 async function delay(ms: number, signal?: AbortSignal) {
-  if (signal?.aborted) throw signal.reason ?? new DOMException("Aborted", "AbortError");
+  if (signal?.aborted) throw signal.reason ?? new DOMException('Aborted', 'AbortError');
   await new Promise<void>((resolve, reject) => {
     const timeout = setTimeout(resolve, ms);
     const onAbort = () => {
       clearTimeout(timeout);
-      reject(signal?.reason ?? new DOMException("Aborted", "AbortError"));
+      reject(signal?.reason ?? new DOMException('Aborted', 'AbortError'));
     };
-    signal?.addEventListener("abort", onAbort, { once: true });
+    signal?.addEventListener('abort', onAbort, { once: true });
     timeout.unref?.();
   });
 }
 
 function parseSseChunk(chunk: string): GatewayStreamEvent | undefined {
   const lines = chunk.split(/\r?\n/);
-  const event = lines.find((line) => line.startsWith("event: "))?.slice("event: ".length) ?? "message";
+  const event = lines.find((line) => line.startsWith('event: '))?.slice('event: '.length) ?? 'message';
   const data = lines
-    .filter((line) => line.startsWith("data: "))
-    .map((line) => line.slice("data: ".length))
-    .join("\n");
+    .filter((line) => line.startsWith('data: '))
+    .map((line) => line.slice('data: '.length))
+    .join('\n');
 
   if (!data) return undefined;
   return {
     event,
-    data: JSON.parse(data) as unknown
+    data: JSON.parse(data) as unknown,
   };
 }
 
 function createOperationSignal(
   signal: AbortSignal | undefined,
   timeoutMs: number | undefined,
-  options: { startPaused?: boolean } = {}
+  options: { startPaused?: boolean } = {},
 ): GatewayOperationSignal {
   if (timeoutMs === undefined || !Number.isFinite(timeoutMs) || timeoutMs <= 0) {
     return {
       signal,
       timedOut: () => false,
       resetTimeout: () => undefined,
-      cleanup: () => undefined
+      cleanup: () => undefined,
     };
   }
 
@@ -998,7 +997,7 @@ function createOperationSignal(
   if (signal?.aborted) {
     abortFromInput();
   } else {
-    signal?.addEventListener("abort", abortFromInput, { once: true });
+    signal?.addEventListener('abort', abortFromInput, { once: true });
   }
 
   const scheduleTimeout = () => {
@@ -1022,13 +1021,14 @@ function createOperationSignal(
     },
     cleanup: () => {
       if (timeout) clearTimeout(timeout);
-      signal?.removeEventListener("abort", abortFromInput);
-    }
+      signal?.removeEventListener('abort', abortFromInput);
+    },
   };
 }
 
 function isAbortError(error: unknown, signal?: AbortSignal) {
-  return Boolean(signal?.aborted) || (
-    error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError")
+  return (
+    Boolean(signal?.aborted) ||
+    (error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError'))
   );
 }

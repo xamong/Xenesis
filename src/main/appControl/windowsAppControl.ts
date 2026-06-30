@@ -21,6 +21,7 @@ export interface WindowsLaunchInput {
 }
 
 export interface WindowsFindInput {
+  windowId?: string;
   executable?: string;
   processName?: string;
   titleContains?: string;
@@ -72,8 +73,10 @@ export function createWindowsAppControlAdapter(runner?: WindowsAppControlRunner)
     status: (input) => runAction(runPowerShell, 'status', buildFindScript(input, 'status')),
     focus: (input) => runAction(runPowerShell, 'focus', buildWindowScript('focus', input)),
     resize: (input) => runAction(runPowerShell, 'resize', buildResizeScript(input)),
-    typeText: (input) => runAction(runPowerShell, 'typeText', buildSendKeysScript('typeText', input, sendKeysText(input.text))),
-    hotkey: (input) => runAction(runPowerShell, 'hotkey', buildSendKeysScript('hotkey', input, sendKeysHotkey(input.keys))),
+    typeText: (input) =>
+      runAction(runPowerShell, 'typeText', buildSendKeysScript('typeText', input, sendKeysText(input.text))),
+    hotkey: (input) =>
+      runAction(runPowerShell, 'hotkey', buildSendKeysScript('hotkey', input, sendKeysHotkey(input.keys))),
     close: (input) => runAction(runPowerShell, 'close', buildCloseScript(input)),
   };
 }
@@ -110,7 +113,8 @@ function normalizeActionResult(output: string, fallbackAction: ExternalAppAction
       approvalLevel: parsed.approvalLevel ?? 'medium',
       processId: typeof parsed.processId === 'number' ? parsed.processId : undefined,
       windows: normalizeWindows(parsed.windows),
-      message: typeof parsed.message === 'string' ? parsed.message : defaultActionMessage(fallbackAction, parsed.ok === true),
+      message:
+        typeof parsed.message === 'string' ? parsed.message : defaultActionMessage(fallbackAction, parsed.ok === true),
       error: typeof parsed.error === 'string' ? parsed.error : undefined,
     };
   } catch {
@@ -166,7 +170,7 @@ Write-OutputJson @{ ok = $true; action = 'launch'; processId = $process.Id; wind
 
 function buildFindScript(input: WindowsFindInput, action: 'find' | 'status'): string {
   return `${jsonHelpers()}
-$windows = Get-AppWindows -ProcessName ${psString(resolveProcessName(input))} -TitleContains ${psString(input.titleContains ?? '')}
+$windows = Get-AppWindows -WindowId ${psString(input.windowId ?? '')} -ProcessName ${psString(resolveProcessName(input))} -TitleContains ${psString(input.titleContains ?? '')}
 Write-OutputJson @{ ok = $true; action = ${psString(action)}; windows = @($windows); message = 'External app status completed.' }`;
 }
 
@@ -222,8 +226,9 @@ function Write-OutputJson($value) {
   $value | ConvertTo-Json -Depth 8 -Compress
 }
 function Get-AppWindows {
-  param([string]$ProcessName = '', [int]$ProcessId = 0, [string]$TitleContains = '')
+  param([string]$WindowId = '', [string]$ProcessName = '', [int]$ProcessId = 0, [string]$TitleContains = '')
   $items = Get-Process | Where-Object { $_.MainWindowHandle -ne 0 }
+  if ($WindowId) { $items = $items | Where-Object { "$($_.MainWindowHandle)" -eq $WindowId } }
   if ($ProcessId -gt 0) { $items = $items | Where-Object { $_.Id -eq $ProcessId } }
   if ($ProcessName) { $items = $items | Where-Object { $_.ProcessName -eq $ProcessName } }
   if ($TitleContains) { $items = $items | Where-Object { $_.MainWindowTitle -like "*$TitleContains*" } }

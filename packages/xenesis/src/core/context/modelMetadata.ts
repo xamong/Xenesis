@@ -10,15 +10,15 @@ const DEFAULT_LIMITS: ModelContextLimits = {
 };
 
 const PREFIX_LIMITS: Array<{ prefix: string; limits: ModelContextLimits }> = [
-  { prefix: "claude-opus-4", limits: { contextWindow: 1_000_000, maxOutputTokens: 128_000 } },
-  { prefix: "claude-fable-5", limits: { contextWindow: 1_000_000, maxOutputTokens: 128_000 } },
-  { prefix: "claude-mythos-5", limits: { contextWindow: 1_000_000, maxOutputTokens: 128_000 } },
-  { prefix: "claude-sonnet-4", limits: { contextWindow: 1_000_000, maxOutputTokens: 64_000 } },
-  { prefix: "claude-haiku-4-5", limits: { contextWindow: 200_000, maxOutputTokens: 64_000 } },
+  { prefix: 'claude-opus-4', limits: { contextWindow: 1_000_000, maxOutputTokens: 128_000 } },
+  { prefix: 'claude-fable-5', limits: { contextWindow: 1_000_000, maxOutputTokens: 128_000 } },
+  { prefix: 'claude-mythos-5', limits: { contextWindow: 1_000_000, maxOutputTokens: 128_000 } },
+  { prefix: 'claude-sonnet-4', limits: { contextWindow: 1_000_000, maxOutputTokens: 64_000 } },
+  { prefix: 'claude-haiku-4-5', limits: { contextWindow: 200_000, maxOutputTokens: 64_000 } },
 ];
 
 export function modelContextWindow(modelId: string): ModelContextLimits {
-  const id = (modelId ?? "").toLowerCase();
+  const id = (modelId ?? '').toLowerCase();
   for (const entry of PREFIX_LIMITS) {
     if (id.startsWith(entry.prefix)) return entry.limits;
   }

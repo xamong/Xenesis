@@ -1,8 +1,8 @@
-import { Ajv, type ErrorObject } from "ajv";
-import { z } from "zod";
-import type { Tool } from "./types.js";
+import { Ajv, type ErrorObject } from 'ajv';
+import { z } from 'zod';
+import type { Tool } from './types.js';
 
-export const SYNTHETIC_OUTPUT_TOOL_NAME = "StructuredOutput";
+export const SYNTHETIC_OUTPUT_TOOL_NAME = 'StructuredOutput';
 
 type CreateSyntheticOutputToolResult =
   | { tool: Tool<Record<string, unknown>, { structured_output: Record<string, unknown> }> }
@@ -27,7 +27,7 @@ export function createSyntheticOutputTool(jsonSchema: Record<string, unknown>): 
     return result;
   }
 
-  let validateSchema: ReturnType<Ajv["compile"]>;
+  let validateSchema: ReturnType<Ajv['compile']>;
   try {
     validateSchema = ajv.compile(jsonSchema);
   } catch (error) {
@@ -38,7 +38,7 @@ export function createSyntheticOutputTool(jsonSchema: Record<string, unknown>): 
   const result: CreateSyntheticOutputToolResult = {
     tool: {
       name: SYNTHETIC_OUTPUT_TOOL_NAME,
-      description: "Return structured output in the requested format",
+      description: 'Return structured output in the requested format',
       inputSchema,
       isReadOnly: () => true,
       isConcurrencySafe: () => true,
@@ -46,20 +46,20 @@ export function createSyntheticOutputTool(jsonSchema: Record<string, unknown>): 
         const isValid = validateSchema(input);
         if (!isValid) {
           const errors = validateSchema.errors
-            ?.map((error: ErrorObject) => `${error.instancePath || "root"}: ${error.message}`)
-            .join(", ");
+            ?.map((error: ErrorObject) => `${error.instancePath || 'root'}: ${error.message}`)
+            .join(', ');
           return {
             ok: false,
-            content: `Output does not match required schema: ${errors}`
+            content: `Output does not match required schema: ${errors}`,
           };
         }
         return {
           ok: true,
-          content: "Structured output provided successfully",
-          data: { structured_output: input }
+          content: 'Structured output provided successfully',
+          data: { structured_output: input },
         };
-      }
-    }
+      },
+    },
   };
   toolCache.set(jsonSchema, result);
   return result;

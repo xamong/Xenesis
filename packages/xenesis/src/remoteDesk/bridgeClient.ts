@@ -1,4 +1,4 @@
-import type { RemoteDeskBridge } from "./types.js";
+import type { RemoteDeskBridge } from './types.js';
 
 export interface RemoteDeskBridgeClientOptions {
   baseUrl?: string;
@@ -14,33 +14,39 @@ export class RemoteDeskBridgeClient implements RemoteDeskBridge {
   private readonly timeoutMs: number;
 
   constructor(options: RemoteDeskBridgeClientOptions = {}) {
-    this.baseUrl = String(options.baseUrl ?? "").trim().replace(/\/+$/, "");
-    this.token = String(options.token ?? "").trim();
+    this.baseUrl = String(options.baseUrl ?? '')
+      .trim()
+      .replace(/\/+$/, '');
+    this.token = String(options.token ?? '').trim();
     this.fetchImpl = options.fetchImpl ?? fetch;
     this.timeoutMs = options.timeoutMs ?? 10_000;
   }
 
-  async callCapability(path: string, args: Record<string, unknown> = {}, options: { approved?: boolean; timeoutMs?: number } = {}) {
+  async callCapability(
+    path: string,
+    args: Record<string, unknown> = {},
+    options: { approved?: boolean; timeoutMs?: number } = {},
+  ) {
     if (!this.baseUrl) {
-      return { ok: false, error: "Xenesis Desk bridge URL is not configured." };
+      return { ok: false, error: 'Xenesis Desk bridge URL is not configured.' };
     }
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? this.timeoutMs);
     try {
       const response = await this.fetchImpl(`${this.baseUrl}/capabilities/call`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "content-type": "application/json",
-          ...(this.token ? { authorization: `Bearer ${this.token}` } : {})
+          'content-type': 'application/json',
+          ...(this.token ? { authorization: `Bearer ${this.token}` } : {}),
         },
         body: JSON.stringify({
           path,
           args,
-          source: "xenesis-remote-desk",
-          approved: options.approved === true
+          source: 'xenesis-remote-desk',
+          approved: options.approved === true,
         }),
-        signal: controller.signal
+        signal: controller.signal,
       });
       const text = await response.text();
       const payload = parsePayload(text);
@@ -58,7 +64,7 @@ function parsePayload(text: string): Record<string, unknown> {
   if (!text.trim()) return {};
   try {
     const parsed = JSON.parse(text) as unknown;
-    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
       return parsed as Record<string, unknown>;
     }
     return { ok: false, error: String(parsed) };
@@ -70,6 +76,6 @@ function parsePayload(text: string): Record<string, unknown> {
 export function createRemoteDeskBridgeFromEnv(env: NodeJS.ProcessEnv | undefined): RemoteDeskBridgeClient {
   return new RemoteDeskBridgeClient({
     baseUrl: env?.XENIS_MCP_BRIDGE_URL,
-    token: env?.XENIS_MCP_BRIDGE_TOKEN
+    token: env?.XENIS_MCP_BRIDGE_TOKEN,
   });
 }
