@@ -256,9 +256,9 @@ function readString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-function copyString(source: Record<string, unknown>, target: Record<string, unknown>, key: string): void {
+function copyString(source: Record<string, unknown>, target: object, key: string): void {
   const value = readString(source[key]);
-  if (value) target[key] = value;
+  if (value) (target as Record<string, unknown>)[key] = value;
 }
 
 function readRequiredNormalizedCoordinate(value: unknown, field: string, action: InputActionType): number {

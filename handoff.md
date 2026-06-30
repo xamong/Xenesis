@@ -12,7 +12,7 @@
     `D:\CodeTruck\CodeBox\Xamong\06 XCON\Xenesis\.worktrees\input-control-mini`
   - Branch: `input-control-mini`
 - Current implementation checkpoint:
-  - Starting Task 3 CR registration, dispatch, approval, and audit redaction.
+  - Completed Task 4 Electron main bridge wiring and typecheck.
 - Touched files:
   - `handoff.md`
   - `src/shared/inputControl.ts`
@@ -21,6 +21,9 @@
   - `src/main/inputControl/inputControlService.test.ts`
   - Planned: `src/shared/deskBridgeCapabilities.ts`
   - Planned: `src/shared/inputControlCapabilities.test.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/shared/inputControlCapabilities.test.ts`
+  - `src/main/index.ts`
 - Commands run:
   - Read `superpowers:executing-plans`,
     `superpowers:test-driven-development`,
@@ -50,6 +53,20 @@
     after CR registration/dispatch/audit redaction -> PASS, 4 tests.
   - `node --import tsx --test src/shared/inputControl.test.ts src/main/inputControl/inputControlService.test.ts src/shared/inputControlCapabilities.test.ts`
     -> PASS, 19 tests.
+  - `node --import tsx --test src/shared/inputControl.test.ts src/main/inputControl/inputControlService.test.ts src/shared/inputControlCapabilities.test.ts`
+    after main bridge wiring -> PASS, 19 tests.
+  - `npm run typecheck` after main bridge wiring -> FAIL with
+    `src/shared/inputControl.ts` index signature errors in `copyString()`.
+  - Root cause:
+    - `copyString()` accepted `Record<string, unknown>` as the target, but
+      `InputControlTarget` and `InputControlAction` are interfaces without an
+      index signature.
+  - Fix:
+    - Changed `copyString()` target to `object` and cast only at the assignment
+      site.
+  - `node --import tsx --test src/shared/inputControl.test.ts src/main/inputControl/inputControlService.test.ts src/shared/inputControlCapabilities.test.ts`
+    after the type fix -> PASS, 19 tests.
+  - `npm run typecheck` after the type fix -> PASS.
 - Exact verification result:
   - Baseline test suite in the isolated worktree passed before input-control
     implementation started.
@@ -57,13 +74,15 @@
   - Task 2 input-control service tests passed after a verified RED failure.
   - Task 3 `xd.input.*` capability registration, approval gating, dispatch, and
     audit redaction tests passed after a verified RED failure.
+  - Task 4 main bridge wiring typechecked successfully after fixing the shared
+    helper typing root cause.
 - Known gaps:
   - Browser coordinate execution remains deferred by design.
   - Full desktop automation remains disabled by design.
   - `xd.input.screenshot` will return unsupported until a real screenshot
     adapter exists.
 - Next intended step:
-  - Commit Task 3, then start Task 4 main bridge wiring.
+  - Commit Task 4, then start Task 5 focused verification and CR audit.
 
 ## 2026-06-30 Dock Drag Ghost Native Overlay
 
