@@ -1,5 +1,79 @@
 # Xenesis Desk Work Handoff
 
+## 2026-06-30 Final Review Hardening for Native Integrations
+
+- Current objective:
+  - Address the final whole-slice review findings for the native external
+    integration/onboarding/provider cleanup work before pushing `uno`.
+  - Keep Hermes out of the agent provider runtime surface, keep integration
+    import previews secret-safe, and make onboarding external-tool completion
+    depend on native integration readback/doctor readiness rather than only
+    opening Settings.
+- Touched files:
+  - `handoff.md`
+  - `docs/capability-registry-audit.md`
+  - `src/main/index.ts`
+  - `src/renderer/App.tsx`
+  - `src/renderer/panes/onboarding/onboardingRuntime.ts`
+  - `src/renderer/panes/onboarding/onboardingRuntime.test.ts`
+  - `src/renderer/panes/onboarding/onboardingTypes.ts`
+  - `src/shared/externalIntegrations.ts`
+  - `src/shared/externalIntegrations.test.ts`
+  - `src/shared/xenesisConnectionCapabilities.test.ts`
+- Material design decision:
+  - Import preview summaries should expose only known integration credential
+    key names for the selected import source, never arbitrary environment key
+    inventory. `mcp-client` import previews now report no env keys.
+  - The onboarding `connect-external-tools` verifier now requires native
+    integration status and doctor readback to be green with zero blocking
+    findings, in addition to opening the relevant Connection Center target.
+  - Raw Xenesis run CR calls now validate provider runtime overrides against an
+    allowlist and reject `hermes`/unknown provider strings before dispatch.
+- Commands run:
+  - `npx -y -p node@22.12.0 -p npm@10.9.0 node --import tsx --test src/shared/externalIntegrations.test.ts src/shared/xenesisConnectionCapabilities.test.ts src/renderer/panes/onboarding/onboardingRuntime.test.ts`
+    -> passed 72/72.
+  - `npx -y -p node@22.12.0 -p npm@10.9.0 npm run typecheck`
+    -> initially failed after making onboarding verification async because two
+    call sites still used a Promise as a result; passed after adding `await`.
+  - `npx biome check --max-diagnostics=60 src/shared/externalIntegrations.ts src/shared/externalIntegrations.test.ts src/shared/xenesisConnectionCapabilities.test.ts src/renderer/panes/onboarding/onboardingRuntime.ts src/renderer/panes/onboarding/onboardingTypes.ts src/renderer/panes/onboarding/onboardingRuntime.test.ts src/renderer/App.tsx src/main/index.ts`
+    -> passed with existing warnings/infos in long-lived files.
+  - `npx -y -p node@22.12.0 -p npm@10.9.0 npm run lint`
+    -> passed; Biome reported existing repo-wide warnings/infos.
+  - `npx -y -p node@22.12.0 -p npm@10.9.0 npm run docs:capabilities:audit`
+    -> passed; wrote `docs/capability-registry-audit.md` with 857 nodes and
+    692 coverage path references.
+  - `npx -y -p node@22.12.0 -p npm@10.9.0 npm run build`
+    -> passed; includes root typecheck and `electron-vite build`. Existing
+    Vite warnings remain for browser-externalized `fs` from `hwp.js` and
+    dynamic/static `deskBridge.ts` import chunking.
+  - `npx -y -p node@22.12.0 -p npm@10.9.0 npm --prefix packages/xenesis test`
+    -> failed before running sqlite-backed suites because Node 22.12.0 lacks
+    `node:sqlite` without `--experimental-sqlite`.
+  - `npm --prefix packages/xenesis test`
+    -> passed on system Node v26.0.0; 112 files and 574 tests passed.
+  - `npm --prefix packages/xenesis run typecheck`
+    -> passed.
+  - `npm --prefix packages/xenesis run build`
+    -> passed.
+  - `npm --prefix packages/xenesis run provider:smoke`
+    -> passed 7/7; report written under `~/.xenesis/reports/`.
+  - `npm run check:public-release`
+    -> passed.
+- Exact verification result:
+  - Final review fixes pass the focused regression tests, root typecheck,
+    scoped Biome, repo lint, CR audit, root build, package tests/typecheck/build,
+    provider smoke, and public-release check.
+  - Node 22.12.0 package-test failure is an environment flag issue for
+    `node:sqlite`; the same package test suite passes under the machine's
+    Node v26.0.0 runtime.
+- Known gaps:
+  - Need final whole-implementation re-review after this hardening commit.
+  - Live Agent-pane natural-language verification was not rerun in this final
+    hardening pass; previous known infra gap still applies.
+- Next intended step:
+  - Commit this hardening patch, request final reviewer re-check, close the
+    final review subagent, then push `uno`.
+
 ## 2026-06-30 Native External Integrations Design
 
 - Current objective:

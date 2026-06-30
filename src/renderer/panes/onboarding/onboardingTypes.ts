@@ -72,6 +72,7 @@ export interface OnboardingProgressState {
 
 export interface OnboardingVerificationContext {
   sampleWorkspacePath: string;
+  externalIntegrationReadiness?: import('./onboardingRuntime').OnboardingRuntimeExternalIntegrationReadiness | null;
 }
 
 export interface OnboardingStepVerificationResult {

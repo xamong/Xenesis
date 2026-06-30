@@ -29,6 +29,13 @@ export interface OnboardingRuntimeSettingsTarget {
   focusConnectionDetail: string;
 }
 
+export interface OnboardingRuntimeExternalIntegrationReadiness {
+  checked: boolean;
+  statusOk: boolean;
+  doctorOk: boolean;
+  blockingFindings: number;
+}
+
 export interface OnboardingRuntimeSnapshot {
   defaultCwd: string;
   sampleWorkspacePath: string;
@@ -36,6 +43,7 @@ export interface OnboardingRuntimeSnapshot {
   contents: OnboardingRuntimeContent[];
   panes: OnboardingRuntimePane[];
   settingsTarget?: OnboardingRuntimeSettingsTarget | null;
+  externalIntegrationReadiness?: OnboardingRuntimeExternalIntegrationReadiness | null;
 }
 
 export interface OnboardingRuntimeVerification {
@@ -148,6 +156,16 @@ function hasExternalToolSettingsTarget(snapshot: OnboardingRuntimeSnapshot): boo
   );
 }
 
+function hasNativeExternalIntegrationReadiness(snapshot: OnboardingRuntimeSnapshot): boolean {
+  const readiness = snapshot.externalIntegrationReadiness ?? null;
+  return (
+    readiness?.checked === true &&
+    readiness.statusOk === true &&
+    readiness.doctorOk === true &&
+    readiness.blockingFindings === 0
+  );
+}
+
 function hasMcpSettingsTarget(snapshot: OnboardingRuntimeSnapshot): boolean {
   return hasConnectionCenterDetailTarget(
     snapshot,
@@ -184,7 +202,8 @@ export function verifyBasicDeskOnboardingStep(
 
   if (stepId === 'connect-external-tools') {
     const hasSettings = hasVisibleContent(snapshot, (content) => content.contentType === 'settings');
-    const passed = hasSettings && hasExternalToolSettingsTarget(snapshot);
+    const passed =
+      hasSettings && hasExternalToolSettingsTarget(snapshot) && hasNativeExternalIntegrationReadiness(snapshot);
     return {
       passed,
       reasonKey: passed ? 'app.onboardingVerifyPassed' : 'app.onboardingVerifyExternalToolsMissing',

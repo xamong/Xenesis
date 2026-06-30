@@ -6,11 +6,18 @@ import {
   getOnboardingWorkspaceProfilePath,
   ONBOARDING_SAMPLE_WELCOME_FILE_NAME,
   ONBOARDING_SAMPLE_WORKSPACE_FILE_NAME,
+  type OnboardingRuntimeExternalIntegrationReadiness,
   type OnboardingRuntimeSnapshot,
   verifyBasicDeskOnboardingStep,
 } from './onboardingRuntime';
 
 const samplePath = 'C:\\Users\\tester\\.xenis-dev\\onboarding\\basic-desk';
+const readyExternalIntegrations: OnboardingRuntimeExternalIntegrationReadiness = {
+  checked: true,
+  statusOk: true,
+  doctorOk: true,
+  blockingFindings: 0,
+};
 
 function snapshot(overrides: Partial<OnboardingRuntimeSnapshot> = {}): OnboardingRuntimeSnapshot {
   return {
@@ -155,6 +162,7 @@ test('Basic Desk verifier checks initial setup settings targets', () => {
           mode: 'connections',
           focusConnectionDetail: 'tool-setup-plan',
         },
+        externalIntegrationReadiness: readyExternalIntegrations,
       }),
     ).passed,
     true,
@@ -170,6 +178,7 @@ test('Basic Desk verifier checks initial setup settings targets', () => {
           mode: 'connections',
           focusConnectionDetail: 'tool-runtime',
         },
+        externalIntegrationReadiness: readyExternalIntegrations,
       }),
     ).passed,
     true,
@@ -218,6 +227,54 @@ test('Basic Desk verifier checks initial setup settings targets', () => {
       }),
     ).passed,
     false,
+  );
+});
+
+test('Basic Desk verifier requires native integration readback readiness for external tools', () => {
+  const settingsContent = { id: 'settings', title: 'Settings', contentType: 'settings', state: 'document' } as const;
+  const externalToolTarget = {
+    category: 'xenesis-agent',
+    section: 'xenesis-connections',
+    mode: 'connections',
+    focusConnectionDetail: 'tool-setup-plan',
+  };
+
+  assert.equal(
+    verifyBasicDeskOnboardingStep(
+      'connect-external-tools',
+      snapshot({
+        contents: [settingsContent],
+        settingsTarget: externalToolTarget,
+      }),
+    ).passed,
+    false,
+  );
+  assert.equal(
+    verifyBasicDeskOnboardingStep(
+      'connect-external-tools',
+      snapshot({
+        contents: [settingsContent],
+        settingsTarget: externalToolTarget,
+        externalIntegrationReadiness: {
+          checked: true,
+          statusOk: true,
+          doctorOk: true,
+          blockingFindings: 1,
+        },
+      }),
+    ).passed,
+    false,
+  );
+  assert.equal(
+    verifyBasicDeskOnboardingStep(
+      'connect-external-tools',
+      snapshot({
+        contents: [settingsContent],
+        settingsTarget: externalToolTarget,
+        externalIntegrationReadiness: readyExternalIntegrations,
+      }),
+    ).passed,
+    true,
   );
 });
 

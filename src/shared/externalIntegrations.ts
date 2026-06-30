@@ -699,8 +699,9 @@ export function buildExternalIntegrationImportPreview(
 ): ExternalIntegrationImportPreview {
   const env = request.env ?? {};
   const shouldScanMcpClientHints = request.source === 'mcp-client';
+  const importEnvKeys = buildKnownImportEnvKeys(request.source);
   const scan: ExternalIntegrationImportScan = {
-    envKeys: new Set(Object.keys(env).filter((key) => isNonEmptyImportEnvValue(env[key]))),
+    envKeys: new Set(Object.keys(env).filter((key) => importEnvKeys.has(key) && isNonEmptyImportEnvValue(env[key]))),
     mcpServerNames: new Set(
       shouldScanMcpClientHints
         ? Object.keys(request.mcpServers ?? {})
@@ -852,6 +853,22 @@ function hasImportKeyMatch(
   if (scan.pluginIds.has(normalizedKey)) return true;
   if (normalizedKey === normalizeImportHint(integrationId) && scan.pluginIds.has(normalizedKey)) return true;
   return false;
+}
+
+function buildKnownImportEnvKeys(source: ExternalIntegrationImportSource): Set<string> {
+  const envKeys = new Set<string>();
+  if (source === 'mcp-client') return envKeys;
+  for (const definition of EXTERNAL_INTEGRATIONS) {
+    const importMapping = definition.importMappings.find((mapping) => mapping.source === source);
+    if (!importMapping) continue;
+    for (const key of importMapping.keys) {
+      if (!key.startsWith('mcp_servers.')) envKeys.add(key);
+    }
+    for (const ref of importMapping.requiredRefs) {
+      if (!ref.startsWith('mcp_servers.')) envKeys.add(ref);
+    }
+  }
+  return envKeys;
 }
 
 function buildExternalIntegrationImportScannedSummary(

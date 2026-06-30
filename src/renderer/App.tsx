@@ -4348,10 +4348,50 @@ export default function App() {
           activeContentId: pane.activeContentId,
         })),
         settingsTarget: onboardingSettingsTargetRef.current,
+        externalIntegrationReadiness: context.externalIntegrationReadiness ?? null,
       };
     },
     [defaultCwd, engine, workspacePath],
   );
+
+  const readOnboardingExternalIntegrationReadiness = useCallback(async () => {
+    try {
+      const [statusReadback, doctorReadback] = await Promise.all([
+        deskBridge.call('xd.xenesis.integrations.status'),
+        deskBridge.call('xd.xenesis.integrations.doctor.status'),
+      ]);
+      const statusResult =
+        statusReadback.result && typeof statusReadback.result === 'object' && !Array.isArray(statusReadback.result)
+          ? (statusReadback.result as Record<string, unknown>)
+          : {};
+      const doctorResult =
+        doctorReadback.result && typeof doctorReadback.result === 'object' && !Array.isArray(doctorReadback.result)
+          ? (doctorReadback.result as Record<string, unknown>)
+          : {};
+      const findings = Array.isArray(doctorResult.findings) ? doctorResult.findings : [];
+      const blockingFindings = findings.filter(
+        (finding) =>
+          finding &&
+          typeof finding === 'object' &&
+          !Array.isArray(finding) &&
+          ((finding as Record<string, unknown>).severity === 'error' ||
+            (finding as Record<string, unknown>).severity === 'critical'),
+      ).length;
+      return {
+        checked: true,
+        statusOk: statusReadback.ok === true && statusResult.ok === true,
+        doctorOk: doctorReadback.ok === true && doctorResult.ok === true,
+        blockingFindings,
+      };
+    } catch {
+      return {
+        checked: true,
+        statusOk: false,
+        doctorOk: false,
+        blockingFindings: 1,
+      };
+    }
+  }, []);
 
   const handleOnboardingOpenFolder = useCallback(async () => {
     if (onboardingFolderPendingRef.current) return;
@@ -4548,14 +4588,19 @@ export default function App() {
   );
 
   const handleOnboardingVerifyStep = useCallback(
-    (stepId: string, context: OnboardingVerificationContext): OnboardingStepVerificationResult => {
-      const result = verifyBasicDeskOnboardingStep(stepId, buildOnboardingRuntimeSnapshot(context));
+    async (stepId: string, context: OnboardingVerificationContext): Promise<OnboardingStepVerificationResult> => {
+      const externalIntegrationReadiness =
+        stepId === 'connect-external-tools' ? await readOnboardingExternalIntegrationReadiness() : undefined;
+      const result = verifyBasicDeskOnboardingStep(
+        stepId,
+        buildOnboardingRuntimeSnapshot({ ...context, externalIntegrationReadiness }),
+      );
       return {
         passed: result.passed,
         message: t(result.reasonKey),
       };
     },
-    [buildOnboardingRuntimeSnapshot, t],
+    [buildOnboardingRuntimeSnapshot, readOnboardingExternalIntegrationReadiness, t],
   );
 
   const runOnboardingStepAction = useCallback(
@@ -4598,7 +4643,7 @@ export default function App() {
       await new Promise<void>((resolve) => {
         window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve()));
       });
-      const verification = handleOnboardingVerifyStep(normalizedStepId, { sampleWorkspacePath });
+      const verification = await handleOnboardingVerifyStep(normalizedStepId, { sampleWorkspacePath });
       return { ...verification, ran: true, sampleWorkspacePath };
     },
     [
@@ -4678,7 +4723,7 @@ export default function App() {
           let stepResult: OnboardingStepVerificationResult & { ran?: boolean; sampleWorkspacePath?: string };
           if (request.verifyOnly) {
             stepResult = {
-              ...handleOnboardingVerifyStep(stepId, { sampleWorkspacePath }),
+              ...(await handleOnboardingVerifyStep(stepId, { sampleWorkspacePath })),
               ran: false,
               sampleWorkspacePath,
             };
@@ -4792,7 +4837,7 @@ export default function App() {
             sampleWorkspacePath: result.sampleWorkspacePath || sampleWorkspacePath || undefined,
           };
         }
-        const result = handleOnboardingVerifyStep(stepId, { sampleWorkspacePath });
+        const result = await handleOnboardingVerifyStep(stepId, { sampleWorkspacePath });
         return {
           ...base,
           ok: true,

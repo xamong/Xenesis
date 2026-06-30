@@ -292,6 +292,10 @@ test('Hermes is not exposed as a Xenesis agent provider surface', () => {
   assert.doesNotMatch(gowooriProvidersSource, /id:\s*'hermes'/);
   assert.doesNotMatch(mainSource, /MCP_GOWOORI_CHAT_SLOW_LOCAL_CLI_PROVIDERS\s*=\s*new Set\([^;]*'hermes'/s);
   assert.doesNotMatch(mainSource, /validProviders\s*=\s*new Set\([^;]*'hermes'/s);
+  assert.doesNotMatch(mainSource, /XENESIS_RUN_PROVIDER_RUNTIME_PROVIDER_IDS\s*=\s*new Set\([^;]*'hermes'/s);
+  assert.match(mainSource, /function isXenesisRunProviderRuntimeProvider/);
+  assert.match(mainSource, /Unsupported Xenesis runtime provider/);
+  assert.match(mainSource, /providerRuntime\?\.provider && !isXenesisRunProviderRuntimeProvider/);
   assert.doesNotMatch(
     mainSource,
     /provider:\s*provider as McpBridgeGowooriChatRunPayload\['provider'\]/,

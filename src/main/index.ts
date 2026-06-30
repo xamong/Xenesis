@@ -20134,6 +20134,24 @@ async function resetXenesisSession(): Promise<XenesisStatus> {
 }
 
 const xenesisRunModes = new Set<XenesisRunRequest['mode']>(['chat', 'plan', 'work']);
+const XENESIS_RUN_PROVIDER_RUNTIME_PROVIDER_IDS = new Set([
+  'openai',
+  'anthropic',
+  'claude',
+  'openai-compatible',
+  'gemini',
+  'ollama',
+  'openrouter',
+  'groq',
+  'deepseek',
+  'qwen',
+  'mistral',
+  'xai',
+]);
+
+function isXenesisRunProviderRuntimeProvider(provider: string): boolean {
+  return XENESIS_RUN_PROVIDER_RUNTIME_PROVIDER_IDS.has(provider);
+}
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
@@ -20215,6 +20233,12 @@ function normalizeXenesisRunRequest(request: XenesisRunRequest):
     : undefined;
   const context = isPlainRecord(raw.context) ? raw.context : {};
   const providerRuntime = normalizeXenesisRunProviderRuntimeRequest(raw);
+  if (providerRuntime?.provider && !isXenesisRunProviderRuntimeProvider(providerRuntime.provider)) {
+    return {
+      ok: false,
+      error: `Unsupported Xenesis runtime provider: ${providerRuntime.provider}`,
+    };
+  }
   const attachments = normalizeXenesisRunAttachments(raw.attachments);
   const stream = raw.stream === false ? false : true;
 

@@ -107,6 +107,7 @@ test('Hermes import preview returns candidates, readiness, and summary without l
     source: 'hermes',
     env: {
       NOTION_API_KEY: 'secret_notion_value',
+      UNRELATED_VENDOR_SECRET: 'unrelated-secret',
       SLACK_BOT_TOKEN: 'xoxb-secret',
     },
     mcpServers: {
@@ -144,7 +145,9 @@ test('Hermes import preview returns candidates, readiness, and summary without l
   assert.deepEqual(preview.summary.scanned.envKeys, ['NOTION_API_KEY', 'SLACK_BOT_TOKEN']);
   assert.deepEqual(preview.summary.scanned.mcpServers, []);
   assert.deepEqual(preview.summary.scanned.pluginIds, []);
+  assert.equal(preview.summary.scanned.envKeys.includes('UNRELATED_VENDOR_SECRET'), false);
   assert.equal(JSON.stringify(preview).includes('secret_notion_value'), false);
+  assert.equal(JSON.stringify(preview).includes('unrelated-secret'), false);
   assert.equal(JSON.stringify(preview).includes('xoxb-secret'), false);
 });
 
@@ -219,12 +222,7 @@ test('MCP client import preview ignores env-only credential hints', () => {
 
   assert.equal(preview.ok, true);
   assert.deepEqual(preview.candidates, []);
-  assert.deepEqual(preview.summary.scanned.envKeys, [
-    'LINEAR_API_KEY',
-    'TAVILY_API_KEY',
-    'linear',
-    'mcp_servers.linear',
-  ]);
+  assert.deepEqual(preview.summary.scanned.envKeys, []);
   assert.equal(JSON.stringify(preview).includes('linear-secret'), false);
   assert.equal(JSON.stringify(preview).includes('linear-id-secret'), false);
   assert.equal(JSON.stringify(preview).includes('linear-server-secret'), false);
