@@ -13,7 +13,7 @@ import {
 } from './gowooriRichComponentStrategy';
 import { findForcedMockScenario, findMockScenario, generateMockScenarioResponse } from './mockScenarios/index';
 
-export type GowooriProvider = 'mock' | 'codex' | 'claude' | 'hermes' | 'byok';
+export type GowooriProvider = 'mock' | 'codex' | 'claude' | 'byok';
 export type GowooriProviderKind = 'local' | 'cli' | 'api';
 export type GowooriRequestMode = 'generate' | 'repair' | 'continue' | 'explain';
 
@@ -99,15 +99,6 @@ export const GOWOORI_PROVIDER_DEFINITIONS: GowooriProviderDefinition[] = [
     ],
     promptMode: 'stdin',
     description: 'Run Claude Code as a no-tools artifact generator and stream the generated Gowoori artifact.',
-  },
-  {
-    id: 'hermes',
-    label: 'Hermes',
-    kind: 'cli',
-    command: 'hermes',
-    defaultArgs: ['run', '--stdin'],
-    promptMode: 'stdin',
-    description: 'Prepare a Hermes gateway request for streaming into Gowoori.',
   },
   {
     id: 'byok',

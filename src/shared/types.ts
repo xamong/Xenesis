@@ -395,7 +395,7 @@ export interface LocalCliSettings {
 }
 
 export type GowooriChatPromptMode = 'argument' | 'stdin';
-export type GowooriChatProviderId = 'mock' | 'codex' | 'claude' | 'hermes' | 'byok';
+export type GowooriChatProviderId = 'mock' | 'codex' | 'claude' | 'byok';
 
 export interface GowooriChatSettings {
   /** GowooriChat에서 사용할 기본 LLM provider. byok은 설정된 AI 프로필을 직접 호출한다. */

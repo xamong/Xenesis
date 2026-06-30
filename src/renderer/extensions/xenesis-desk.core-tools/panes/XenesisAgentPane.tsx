@@ -472,7 +472,7 @@ const XENESIS_SLASH_COMMANDS: XenesisSlashCommandDescriptor[] = [
   { name: 'model', usage: '/model', description: 'Show the provider/model boundary used by Xenesis.' },
   {
     name: 'provider',
-    usage: '/provider [mock|byok|codex|claude|hermes]',
+    usage: '/provider [mock|byok|codex|claude]',
     description: 'Show or switch the artifact provider used by /artifact.',
   },
   { name: 'tools', usage: '/tools', description: 'Show the active tool surfaces available to Xenesis.' },

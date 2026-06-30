@@ -20,7 +20,7 @@ export const DEFAULT_PROVIDER_TIMEOUT_MS = 300000;
 export const SLOW_LOCAL_CLI_PROVIDER_TIMEOUT_MS = 420000;
 const DEFAULT_PROVIDER_LONG_RUNNING_AFTER_MS = 45000;
 const SLOW_LOCAL_CLI_PROVIDER_LONG_RUNNING_AFTER_MS = 90000;
-const SLOW_LOCAL_CLI_PROVIDERS = new Set<GowooriProvider>(['codex', 'claude', 'hermes']);
+const SLOW_LOCAL_CLI_PROVIDERS = new Set<GowooriProvider>(['codex', 'claude']);
 
 export interface GowooriProviderTimeoutProfile {
   provider: GowooriProvider;

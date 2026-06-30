@@ -6737,7 +6737,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                   type: 'string',
                   title: 'Provider',
                   description: 'Optional provider id to select before typing. Use mock for deterministic preset demos.',
-                  enum: ['mock', 'codex', 'claude', 'hermes', 'byok'],
+                  enum: ['mock', 'codex', 'claude', 'byok'],
                   default: 'mock',
                 },
                 uiMode: {
@@ -7561,31 +7561,14 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               type: 'string',
               title: 'Settings mode',
               description:
-                'Optional category-specific mode. For xenesis-agent, agent/gateway/external-bots/gowoori selects the Xenesis Agent section tab. For run-model, xamong, hermes, local, or byok selects provider and CLI connection modes.',
-              examples: [
-                'xenesis',
-                'agent',
-                'gateway',
-                'external-bots',
-                'gowoori',
-                'xamong',
-                'hermes',
-                'local',
-                'byok',
-              ],
+                'Optional category-specific mode. For xenesis-agent, agent/gateway/external-bots/gowoori selects the Xenesis Agent section tab. For run-model, xamong, local, or byok selects provider and CLI connection modes.',
+              examples: ['xenesis', 'agent', 'gateway', 'external-bots', 'gowoori', 'xamong', 'local', 'byok'],
             },
             section: {
               type: 'string',
               title: 'Settings section',
               description: 'Optional section anchor to reveal after opening the category and mode.',
-              examples: [
-                'default',
-                'xenesis-runtime',
-                'xenesis-gateway',
-                'external-bot-channels',
-                'gowoori-agent',
-                'hermes-provider',
-              ],
+              examples: ['default', 'xenesis-runtime', 'xenesis-gateway', 'external-bot-channels', 'gowoori-agent'],
             },
             ensureVisible: {
               type: 'boolean',
@@ -7658,31 +7641,14 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
               type: 'string',
               title: 'Settings mode',
               description:
-                'Optional category-specific mode when kind is settings. For xenesis-agent, agent/gateway/external-bots/gowoori selects the Xenesis Agent section tab. For run-model, xamong, hermes, local, or byok selects provider and CLI connection modes.',
-              examples: [
-                'xenesis',
-                'agent',
-                'gateway',
-                'external-bots',
-                'gowoori',
-                'xamong',
-                'hermes',
-                'local',
-                'byok',
-              ],
+                'Optional category-specific mode when kind is settings. For xenesis-agent, agent/gateway/external-bots/gowoori selects the Xenesis Agent section tab. For run-model, xamong, local, or byok selects provider and CLI connection modes.',
+              examples: ['xenesis', 'agent', 'gateway', 'external-bots', 'gowoori', 'xamong', 'local', 'byok'],
             },
             section: {
               type: 'string',
               title: 'Settings section',
               description: 'Optional settings section anchor to reveal after opening the category and mode.',
-              examples: [
-                'default',
-                'xenesis-runtime',
-                'xenesis-gateway',
-                'external-bot-channels',
-                'gowoori-agent',
-                'hermes-provider',
-              ],
+              examples: ['default', 'xenesis-runtime', 'xenesis-gateway', 'external-bot-channels', 'gowoori-agent'],
             },
             ensureVisible: {
               type: 'boolean',
@@ -10570,7 +10536,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                 type: 'string',
                 title: 'Provider',
                 description: 'Optional GowooriChat provider id.',
-                enum: ['mock', 'codex', 'claude', 'hermes', 'byok'],
+                enum: ['mock', 'codex', 'claude', 'byok'],
                 examples: ['codex', 'byok'],
               },
               requestMode: {
@@ -10966,7 +10932,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                 provider: {
                   type: 'string',
                   title: 'Provider',
-                  enum: ['mock', 'byok', 'codex', 'claude', 'hermes'],
+                  enum: ['mock', 'byok', 'codex', 'claude'],
                   description: 'Optional provider target for prompt planning.',
                 },
                 mode: {
@@ -11012,7 +10978,7 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                 provider: {
                   type: 'string',
                   title: 'Provider',
-                  enum: ['mock', 'byok', 'codex', 'claude', 'hermes'],
+                  enum: ['mock', 'byok', 'codex', 'claude'],
                   description: 'Optional provider that produced the content.',
                 },
                 autoApply: {

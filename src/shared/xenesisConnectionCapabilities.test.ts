@@ -276,6 +276,44 @@ test('xenesis runtime provider schemas do not expose mock as a reasoning provide
   assert.equal(runProviderEnum.includes('mock'), false);
 });
 
+test('Hermes is not exposed as a Xenesis agent provider surface', () => {
+  const agentPaneSource = readFileSync(
+    new URL('../renderer/extensions/xenesis-desk.core-tools/panes/XenesisAgentPane.tsx', import.meta.url),
+    'utf8',
+  );
+  const gowooriProvidersSource = readFileSync(
+    new URL('../renderer/extensions/xenesis-desk.workflow-runner/gowoori/agent/gowooriProviders.ts', import.meta.url),
+    'utf8',
+  );
+  const sharedTypesSource = readFileSync(new URL('./types.ts', import.meta.url), 'utf8');
+
+  assert.doesNotMatch(agentPaneSource, /\/provider \[mock\|byok\|codex\|claude\|hermes\]/);
+  assert.doesNotMatch(gowooriProvidersSource, /id:\s*'hermes'/);
+  assert.doesNotMatch(
+    sharedTypesSource,
+    /type GowooriChatProviderId\s*=\s*[^;]*'hermes'/,
+    'shared GowooriChat provider id type does not expose Hermes',
+  );
+
+  for (const path of [
+    'xd.services.xenesis.run',
+    'xd.xenesis.runs.start',
+    'xd.testing.gowooriChat.submitPrompt',
+    'xd.gowoori.chat.run',
+    'xd.artifacts.engine.route',
+    'xd.artifacts.engine.prepare',
+  ]) {
+    const providerEnum = schemaProperties(findDeskBridgeCapability(path)).provider?.enum;
+    assert.equal(Array.isArray(providerEnum), true, `${path} exposes a provider enum`);
+    assert.equal((providerEnum as string[]).includes('hermes'), false, `${path} does not expose Hermes`);
+  }
+
+  const importSourceEnum = schemaProperties(findDeskBridgeCapability('xd.xenesis.integrations.import.preview')).source
+    ?.enum;
+  assert.equal(Array.isArray(importSourceEnum), true);
+  assert.equal((importSourceEnum as string[]).includes('hermes'), true, 'Hermes remains an import source');
+});
+
 test('xenesis connection detail focus propagates through main and renderer bridge source', () => {
   const mainSource = readFileSync(new URL('../main/index.ts', import.meta.url), 'utf8');
   const appSource = readFileSync(new URL('../renderer/App.tsx', import.meta.url), 'utf8');
