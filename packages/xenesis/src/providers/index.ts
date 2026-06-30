@@ -6,6 +6,7 @@ export * from './codexResponsesProvider.js';
 export * from './mockProvider.js';
 export * from './openaiChatProvider.js';
 export * from './openaiProvider.js';
+export * from './openaiChatProvider.js';
 export * from './providerFactory.js';
 export * from './providerHttpError.js';
 export * from './queryConfig.js';
