@@ -55,6 +55,7 @@ import {
   capabilitiesFor,
   getProviderFactory,
   MockProvider,
+  OpenAIChatProvider,
   OpenAIProvider,
   PROVIDER_CAPABILITIES,
   presetApiKeyEnv,
@@ -242,6 +243,17 @@ export function createProvider(
       apiKey,
       baseURL: settings.baseURL,
     });
+  }
+  if (settings.provider === 'deepseek') {
+    return withProviderModel(
+      new OpenAIChatProvider({
+        name: settings.provider,
+        model: selectedModel,
+        apiKey,
+        baseURL: settings.baseURL,
+      }),
+      selectedModel,
+    );
   }
   return new OpenAIProvider({
     name: settings.provider,

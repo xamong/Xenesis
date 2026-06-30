@@ -397,7 +397,12 @@ function sleep(ms: number, signal?: AbortSignal) {
 
 function toolArray(tools: Tool[] | ToolRegistry | undefined) {
   if (!tools) return [];
-  return Array.isArray(tools) ? tools : Array.from(tools.values());
+  const values = Array.isArray(tools) ? tools : Array.from(tools.values());
+  const byName = new Map<string, Tool>();
+  for (const tool of values) {
+    if (!byName.has(tool.name)) byName.set(tool.name, tool);
+  }
+  return Array.from(byName.values());
 }
 
 function toolResultMessage(toolCall: ToolCall, content: string): ToolMessage {

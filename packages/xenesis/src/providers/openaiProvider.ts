@@ -109,16 +109,27 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function normalizeOpenAISchema(value: unknown, key?: string): unknown {
-  if (Array.isArray(value)) return value.map((item) => normalizeOpenAISchema(item));
-  if (!isRecord(value)) return value;
-
   if (key === 'additionalProperties') {
     return false;
   }
+  if (Array.isArray(value)) return value.map((item) => normalizeOpenAISchema(item));
+  if (!isRecord(value)) return value;
 
-  return Object.fromEntries(
+  const normalized = Object.fromEntries(
     Object.entries(value).map(([entryKey, entryValue]) => [entryKey, normalizeOpenAISchema(entryValue, entryKey)]),
   );
+
+  const properties = normalized.properties;
+  const isObjectSchema =
+    normalized.type === 'object' || (isRecord(properties) && !Array.isArray(properties));
+  if (isObjectSchema) {
+    return {
+      ...normalized,
+      additionalProperties: false,
+    };
+  }
+
+  return normalized;
 }
 
 function toOpenAITool(tool: Tool) {
