@@ -112,6 +112,7 @@ test('Hermes import preview returns candidates, readiness, and summary without l
     mcpServers: {
       linear: { url: 'https://mcp.linear.app/mcp' },
     },
+    pluginIds: ['tavily'],
   });
 
   assert.equal(preview.ok, true);
@@ -126,6 +127,7 @@ test('Hermes import preview returns candidates, readiness, and summary without l
   const notion = preview.candidates.find((item) => item.integrationId === 'notion');
   const slack = preview.candidates.find((item) => item.integrationId === 'slack');
   const linear = preview.candidates.find((item) => item.integrationId === 'linear');
+  const tavily = preview.candidates.find((item) => item.integrationId === 'tavily');
   assert.equal(notion?.ready, true);
   assert.equal(notion?.readiness, 'ready');
   assert.deepEqual(notion?.requiredRefs, ['NOTION_API_KEY']);
@@ -134,14 +136,14 @@ test('Hermes import preview returns candidates, readiness, and summary without l
   assert.equal(slack?.ready, false);
   assert.equal(slack?.readiness, 'missing-required-refs');
   assert.equal(slack?.missingRefs.includes('SLACK_SIGNING_SECRET'), true);
-  assert.equal(linear?.ready, false);
-  assert.equal(linear?.matchedKeys.includes('mcp_servers.linear'), true);
-  assert.equal(linear?.missingRefs.includes('LINEAR_API_KEY'), true);
-  assert.equal(preview.summary.candidateCount, 3);
+  assert.equal(linear, undefined);
+  assert.equal(tavily, undefined);
+  assert.equal(preview.summary.candidateCount, 2);
   assert.equal(preview.summary.readyCount, 1);
-  assert.equal(preview.summary.missingCount, 2);
+  assert.equal(preview.summary.missingCount, 1);
   assert.deepEqual(preview.summary.scanned.envKeys, ['NOTION_API_KEY', 'SLACK_BOT_TOKEN']);
-  assert.deepEqual(preview.summary.scanned.mcpServers, ['linear']);
+  assert.deepEqual(preview.summary.scanned.mcpServers, []);
+  assert.deepEqual(preview.summary.scanned.pluginIds, []);
   assert.equal(JSON.stringify(preview).includes('secret_notion_value'), false);
   assert.equal(JSON.stringify(preview).includes('xoxb-secret'), false);
 });
@@ -161,15 +163,16 @@ test('OpenClaw import preview maps channel and web provider env keys', () => {
   const discord = preview.candidates.find((item) => item.integrationId === 'discord');
   assert.equal(tavily?.ready, true);
   assert.equal(tavily?.matchedKeys.includes('TAVILY_API_KEY'), true);
-  assert.equal(tavily?.matchedKeys.includes('tavily'), true);
+  assert.equal(tavily?.matchedKeys.includes('tavily'), false);
   assert.deepEqual(tavily?.missingRefs, []);
   assert.equal(discord?.ready, true);
   assert.equal(discord?.matchedKeys.includes('DISCORD_BOT_TOKEN'), true);
-  assert.equal(discord?.matchedKeys.includes('discord'), true);
+  assert.equal(discord?.matchedKeys.includes('discord'), false);
   assert.deepEqual(discord?.missingRefs, []);
   assert.equal(preview.summary.candidateCount, 2);
   assert.equal(preview.summary.readyCount, 2);
   assert.equal(preview.summary.missingCount, 0);
+  assert.deepEqual(preview.summary.scanned.pluginIds, []);
   assert.equal(JSON.stringify(preview).includes('tvly-secret'), false);
   assert.equal(JSON.stringify(preview).includes('discord-secret'), false);
 });

@@ -698,10 +698,13 @@ export function buildExternalIntegrationImportPreview(
   request: ExternalIntegrationImportPreviewRequest,
 ): ExternalIntegrationImportPreview {
   const env = request.env ?? {};
+  const shouldScanMcpClientHints = request.source === 'mcp-client';
   const scan: ExternalIntegrationImportScan = {
     envKeys: new Set(Object.keys(env).filter((key) => isNonEmptyImportEnvValue(env[key]))),
-    mcpServerNames: new Set(Object.keys(request.mcpServers ?? {})),
-    pluginIds: new Set((request.pluginIds ?? []).map((item) => item.trim()).filter(Boolean)),
+    mcpServerNames: new Set(shouldScanMcpClientHints ? Object.keys(request.mcpServers ?? {}) : []),
+    pluginIds: new Set(
+      shouldScanMcpClientHints ? (request.pluginIds ?? []).map((item) => item.trim()).filter(Boolean) : [],
+    ),
   };
 
   const candidates = EXTERNAL_INTEGRATIONS.flatMap((definition) => {
