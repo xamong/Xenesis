@@ -26010,3 +26010,38 @@ Verification so far:
     diagnostics outside this port.
 - Next intended step:
   - Review diff, commit, push `mini`, and update PR.
+
+## 2026-07-01 Non-Package Parity Roadmap Design
+
+- Current objective:
+  - Document the remaining feature parity work from the sibling
+    `D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk` project into this repo,
+    explicitly excluding all `packages/xenesis` changes.
+  - Move the Workbench Subagent slice to the final priority because the sibling
+    implementation is still moving.
+- Touched files:
+  - Planned: `docs/superpowers/specs/2026-07-01-non-package-parity-roadmap-design.md`
+  - Planned slice specs under `docs/superpowers/specs/2026-07-01-*-slice-design.md`
+- Commands run:
+  - `git status --short --branch`: clean, `mini...origin/mini`.
+  - Listed existing design specs under `docs/superpowers/specs`.
+  - Compared sibling-only files outside `packages/xenesis` across `src`,
+    `server`, `mcp`, `providers`, `tools`, `scripts`, `docs`, `extensions`,
+    and `tests`.
+  - Added the master roadmap and six slice design specs under
+    `docs/superpowers/specs`.
+  - Self-review placeholder scan over `docs/superpowers/specs/2026-07-01-*.md`:
+    no `TBD`, `TODO`, `FIXME`, `placeholder`, or `ambiguous` hits.
+  - `packages/xenesis` scan over the new specs only found intentional
+    out-of-scope statements.
+  - `git diff --check`: passed with LF-to-CRLF warnings only for `handoff.md`.
+- Exact verification result:
+  - Design docs are internally scoped, include the user-requested order change,
+    and contain no placeholder markers.
+  - No code verification is required because no implementation changed.
+- Known gaps:
+  - No implementation has started for the roadmap slices.
+  - Workbench Subagent remains intentionally last until sibling stabilization.
+- Next intended step:
+  - Add and commit the master roadmap plus slice design specs, then ask the user
+    to review before creating implementation plans.
