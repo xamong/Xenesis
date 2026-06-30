@@ -1,9 +1,11 @@
+import { telegramBotCommandsFromSurface } from './commandSurface.js';
 import type { ChannelSendLogEntry, ChannelSendLogger } from './sendLog.js';
 import type { ChannelAdapter, ChannelMessageHandler, ChannelOutgoingMessage } from './types.js';
 
 export interface TelegramAdapterOptions {
   token: string;
   allowedChatIds: number[];
+  botUsername?: string;
   fetchImpl?: typeof fetch;
   pollTimeoutSeconds?: number;
   backoffMinMs?: number;
@@ -46,9 +48,11 @@ export class TelegramAdapter implements ChannelAdapter {
   private backoffMs = 0;
   private loop?: Promise<void>;
   private pollAbortController?: AbortController;
+  private botUsername?: string;
 
   constructor(private readonly options: TelegramAdapterOptions) {
     this.fetchImpl = options.fetchImpl ?? fetch;
+    this.botUsername = options.botUsername;
   }
 
   async start(onMessage: ChannelMessageHandler): Promise<void> {
@@ -56,6 +60,8 @@ export class TelegramAdapter implements ChannelAdapter {
     if (this.options.allowedChatIds.length === 0) {
       throw new Error('Telegram adapter requires a non-empty allowedChatIds allowlist.');
     }
+    await this.resolveBotUsername();
+    await this.registerBotCommands();
     this.stopped = false;
     this.loop = this.pollLoop(onMessage);
   }
@@ -209,10 +215,15 @@ export class TelegramAdapter implements ChannelAdapter {
             this.log(`telegram: ignored message from unauthorized chat ${chatId}`);
             continue;
           }
+          if (this.isCommandAddressedToAnotherBot(text)) {
+            this.log(`telegram: ignored command addressed to another bot from chat ${chatId}`);
+            continue;
+          }
           await onMessage({
             conversationId: String(chatId),
             senderId: String(update.message?.from?.id ?? chatId),
             text,
+            botUsername: this.botUsername,
           });
         }
         for (const update of body.result ?? []) {
@@ -245,6 +256,10 @@ export class TelegramAdapter implements ChannelAdapter {
       this.log(`telegram: ignored callback from unauthorized chat ${chatId}`);
       return;
     }
+    if (this.isCommandAddressedToAnotherBot(text)) {
+      this.log(`telegram: ignored callback command addressed to another bot from chat ${chatId}`);
+      return;
+    }
     if (callback.id) {
       await this.fetchImpl(this.api('answerCallbackQuery'), {
         method: 'POST',
@@ -256,7 +271,49 @@ export class TelegramAdapter implements ChannelAdapter {
       conversationId: String(chatId),
       senderId: String(callback.from?.id ?? chatId),
       text,
+      botUsername: this.botUsername,
     });
+  }
+
+  private isCommandAddressedToAnotherBot(text: string) {
+    const commandToken = text.trim().split(/\s+/, 1)[0] ?? '';
+    if (!commandToken.startsWith('/')) return false;
+    const mentionIndex = commandToken.indexOf('@');
+    if (mentionIndex < 0) return false;
+    const botUsername = this.botUsername;
+    if (!botUsername) return true;
+    const mentionedUsername = commandToken.slice(mentionIndex + 1);
+    return mentionedUsername.length > 0 && mentionedUsername.toLowerCase() !== botUsername.toLowerCase();
+  }
+
+  private async resolveBotUsername() {
+    if (this.botUsername) return;
+    try {
+      const response = await this.fetchImpl(this.api('getMe'), { method: 'GET' });
+      if (!response.ok) throw new Error(`getMe HTTP ${response.status}`);
+      const body = (await response.json()) as { ok?: boolean; result?: { username?: unknown } };
+      const username = body.ok === true && typeof body.result?.username === 'string' ? body.result.username : undefined;
+      if (username) this.botUsername = username;
+    } catch (error) {
+      this.log(`telegram: getMe failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  private async registerBotCommands() {
+    try {
+      const response = await this.fetchImpl(this.api('setMyCommands'), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ commands: telegramBotCommandsFromSurface() }),
+      });
+      if (!response.ok) throw new Error(`setMyCommands HTTP ${response.status}`);
+      const body = (await response.json()) as { ok?: boolean; description?: unknown };
+      if (body.ok === false) {
+        throw new Error(typeof body.description === 'string' ? body.description : 'setMyCommands returned ok=false');
+      }
+    } catch (error) {
+      this.log(`telegram: setMyCommands failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   private async sleep(ms: number) {
