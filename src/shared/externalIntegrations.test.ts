@@ -211,14 +211,23 @@ test('MCP client import preview ignores env-only credential hints', () => {
     source: 'mcp-client',
     env: {
       LINEAR_API_KEY: 'linear-secret',
+      linear: 'linear-id-secret',
+      'mcp_servers.linear': 'linear-server-secret',
       TAVILY_API_KEY: 'tavily-secret',
     },
   });
 
   assert.equal(preview.ok, true);
   assert.deepEqual(preview.candidates, []);
-  assert.deepEqual(preview.summary.scanned.envKeys, ['LINEAR_API_KEY', 'TAVILY_API_KEY']);
+  assert.deepEqual(preview.summary.scanned.envKeys, [
+    'LINEAR_API_KEY',
+    'TAVILY_API_KEY',
+    'linear',
+    'mcp_servers.linear',
+  ]);
   assert.equal(JSON.stringify(preview).includes('linear-secret'), false);
+  assert.equal(JSON.stringify(preview).includes('linear-id-secret'), false);
+  assert.equal(JSON.stringify(preview).includes('linear-server-secret'), false);
   assert.equal(JSON.stringify(preview).includes('tavily-secret'), false);
 });
 

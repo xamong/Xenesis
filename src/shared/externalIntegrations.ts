@@ -717,12 +717,12 @@ export function buildExternalIntegrationImportPreview(
     const importMapping = definition.importMappings.find((mapping) => mapping.source === request.source);
     if (!importMapping) return [];
 
-    const matchedKeys = importMapping.keys.filter((key) => hasImportKeyMatch(key, definition.id, scan));
+    const matchedKeys = importMapping.keys.filter((key) => hasImportKeyMatch(request.source, key, definition.id, scan));
     if (matchedKeys.length === 0) return [];
 
     const requiredRefs = [...importMapping.requiredRefs].sort();
-    const matchedRefs = requiredRefs.filter((ref) => hasImportKeyMatch(ref, definition.id, scan));
-    const missingRefs = requiredRefs.filter((ref) => !hasImportKeyMatch(ref, definition.id, scan));
+    const matchedRefs = requiredRefs.filter((ref) => hasImportKeyMatch(request.source, ref, definition.id, scan));
+    const missingRefs = requiredRefs.filter((ref) => !hasImportKeyMatch(request.source, ref, definition.id, scan));
     const ready = missingRefs.length === 0;
 
     return [
@@ -838,8 +838,13 @@ function buildDefaultRequiredImportRefs(
   return [...refs];
 }
 
-function hasImportKeyMatch(key: string, integrationId: string, scan: ExternalIntegrationImportScan): boolean {
-  if (scan.envKeys.has(key)) return true;
+function hasImportKeyMatch(
+  source: ExternalIntegrationImportSource,
+  key: string,
+  integrationId: string,
+  scan: ExternalIntegrationImportScan,
+): boolean {
+  if (source !== 'mcp-client' && scan.envKeys.has(key)) return true;
   const normalizedKey = normalizeImportHint(key);
   if (normalizedKey.startsWith('mcp_servers.')) {
     return scan.mcpServerNames.has(normalizedKey.slice('mcp_servers.'.length));
