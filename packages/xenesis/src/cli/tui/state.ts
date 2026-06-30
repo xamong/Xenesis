@@ -7,6 +7,7 @@ export interface TuiRuntimeSummary {
   model: string;
   approvalMode: ApprovalMode;
   workspace: string;
+  deskBridgeStatus?: 'configured' | 'missing';
 }
 
 export type TuiToolStatus = 'running' | 'completed' | 'failed';
@@ -36,6 +37,7 @@ export type TuiCommandOutputInput = Omit<TuiCommandOutput, 'offset' | 'expanded'
 
 export interface TuiSuggestionContext {
   sessionIds: string[];
+  imageSources: string[];
 }
 
 export interface TuiSessionContext {
@@ -52,6 +54,7 @@ export interface TuiApprovalRequest {
   summary: string;
   reason: string;
   preview?: string;
+  restored?: boolean;
 }
 
 export interface TuiState {
@@ -77,7 +80,7 @@ export function createTuiState(runtime: TuiRuntimeSummary): TuiState {
     tools: [],
     notices: [],
     commandOutput: undefined,
-    suggestionContext: { sessionIds: [] },
+    suggestionContext: { sessionIds: [], imageSources: [] },
     sessionContext: { historyMessageCount: 0 },
     pendingApproval: undefined,
     turns: 0,
@@ -170,6 +173,7 @@ export function setTuiSuggestionContext(state: TuiState, context: Partial<TuiSug
       ...state.suggestionContext,
       ...context,
       sessionIds: (context.sessionIds ?? state.suggestionContext.sessionIds).slice(0, 5),
+      imageSources: (context.imageSources ?? state.suggestionContext.imageSources).slice(0, 10),
     },
   };
 }
@@ -354,7 +358,7 @@ export function renderTuiSnapshot(state: TuiState) {
   return lines.join('\n');
 }
 
-function toTuiApprovalRequest(request: ApprovalRequest): TuiApprovalRequest {
+export function toTuiApprovalRequest(request: ApprovalRequest): TuiApprovalRequest {
   return {
     toolCallId: request.toolCallId,
     name: request.name,
@@ -363,6 +367,23 @@ function toTuiApprovalRequest(request: ApprovalRequest): TuiApprovalRequest {
     reason: request.reason,
     preview: request.preview,
   };
+}
+
+export function restoreTuiApproval(state: TuiState, request: ApprovalRequest): TuiState {
+  return appendTuiNotice(
+    {
+      ...state,
+      status: 'awaiting_approval',
+      pendingApproval: {
+        ...toTuiApprovalRequest(request),
+        restored: true,
+      },
+    },
+    {
+      kind: 'warning',
+      message: `Restored approval required for ${request.name}: ${request.summary}`,
+    },
+  );
 }
 
 function inputSummary(input: unknown) {

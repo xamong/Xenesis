@@ -1,15 +1,11 @@
 import { providerNames } from '../../config/index.js';
+import { TUI_COMMAND_CATALOG, type TuiSlashCommandSuggestion } from './commandCatalog.js';
 
-export interface TuiSlashCommandSuggestion {
-  command: string;
-  usage: string;
-  description: string;
-  completion: string;
-  aliases?: string[];
-}
+export type { TuiSlashCommandSuggestion };
 
 export interface TuiSlashCommandSuggestionContext {
   sessionIds?: string[];
+  imageSources?: string[];
 }
 
 const NO_MATCH_SUGGESTION: TuiSlashCommandSuggestion = {
@@ -26,130 +22,7 @@ const NO_SESSION_SUGGESTION: TuiSlashCommandSuggestion = {
   completion: '',
 };
 
-export const TUI_SLASH_COMMAND_SUGGESTIONS: TuiSlashCommandSuggestion[] = [
-  {
-    command: '/help',
-    usage: '/help',
-    description: 'Show TUI commands. 도움말 명령 목록',
-    completion: '/help',
-    aliases: ['/?', '/commands'],
-  },
-  {
-    command: '/status',
-    usage: '/status',
-    description: 'Show provider, model, approval mode, and workspace. 상태 확인',
-    completion: '/status',
-  },
-  {
-    command: '/clear',
-    usage: '/clear',
-    description: 'Clear visible transcript and conversation context. 대화 초기화',
-    completion: '/clear',
-  },
-  {
-    command: '/model',
-    usage: '/model <name>',
-    description: 'Change model for subsequent prompts. 모델 변경',
-    completion: '/model ',
-  },
-  {
-    command: '/provider',
-    usage: '/provider <name>',
-    description: 'Show or change provider for subsequent prompts. 프로바이더 변경',
-    completion: '/provider ',
-  },
-  {
-    command: '/approval',
-    usage: '/approval <safe|auto|readonly>',
-    description: 'Change approval mode for tool calls. 승인 모드 변경',
-    completion: '/approval ',
-  },
-  {
-    command: '/workspace',
-    usage: '/workspace',
-    description: 'Show the active workspace. 작업 폴더 확인',
-    completion: '/workspace',
-  },
-  {
-    command: '/tools',
-    usage: '/tools',
-    description: 'List available runtime tools. 도구 목록',
-    completion: '/tools',
-  },
-  {
-    command: '/session',
-    usage: '/session',
-    description: 'Show TUI session id, status, and turns. 세션 상태',
-    completion: '/session',
-  },
-  {
-    command: '/memory',
-    usage: '/memory <add|list|search>',
-    description: 'Save, list, or search workspace memory. 메모리 관리',
-    completion: '/memory ',
-  },
-  {
-    command: '/skills',
-    usage: '/skills <list|show>',
-    description: 'List or show configured skills. 스킬 확인',
-    completion: '/skills ',
-  },
-  {
-    command: '/plugins',
-    usage: '/plugins list',
-    description: 'List configured and installed plugins. 플러그인 확인',
-    completion: '/plugins list',
-  },
-  {
-    command: '/sessions',
-    usage: '/sessions list',
-    description: 'List saved session logs. 세션 목록',
-    completion: '/sessions list',
-  },
-  {
-    command: '/compact',
-    usage: '/compact [session-id]',
-    description: 'Compact the latest or selected session log. 세션 요약',
-    completion: '/compact ',
-  },
-  {
-    command: '/output',
-    usage: '/output <up|down|top|bottom|expand|compact|clear|save>',
-    description: 'Inspect or control the latest command output. 출력 제어',
-    completion: '/output ',
-  },
-  {
-    command: '/plan',
-    usage: '/plan <prompt>',
-    description: 'Run one prompt in plan mode. 계획 모드 실행',
-    completion: '/plan ',
-  },
-  {
-    command: '/work',
-    usage: '/work <prompt>',
-    description: 'Run one prompt in work mode. 작업 모드 실행',
-    completion: '/work ',
-  },
-  {
-    command: '/resume',
-    usage: '/resume <session-id> <prompt>',
-    description: 'Continue from a prior session. 이전 세션 이어가기',
-    completion: '/resume ',
-  },
-  {
-    command: '/reset',
-    usage: '/reset',
-    description: 'Reset visible transcript and conversation context. 대화 초기화',
-    completion: '/reset',
-  },
-  {
-    command: '/exit',
-    usage: '/exit',
-    description: 'Exit the TUI. 종료',
-    completion: '/exit',
-    aliases: ['/quit'],
-  },
-];
+export const TUI_SLASH_COMMAND_SUGGESTIONS: TuiSlashCommandSuggestion[] = TUI_COMMAND_CATALOG;
 
 export function getTuiSlashCommandSuggestions(
   input: string,
@@ -270,6 +143,41 @@ function getArgumentSuggestions(
       limit,
     );
   }
+  if (command === 'image') {
+    if (prefix.startsWith('--')) {
+      return valueSuggestions(
+        '/image',
+        ['--width=80%', '--height=auto', '--term-id='],
+        prefix,
+        '/image',
+        'Image option. 이미지 옵션',
+        false,
+        limit,
+      );
+    }
+    return imageSuggestions(prefix, context.imageSources, limit);
+  }
+  if (command === 'xcon-image') {
+    if (prefix.startsWith('--')) {
+      return valueSuggestions(
+        '/xcon-image',
+        ['--width=80%', '--height=auto', '--term-id=', '--theme=dark', '--title='],
+        prefix,
+        '/xcon-image',
+        'XCON image option. XCON 이미지 옵션',
+        false,
+        limit,
+      );
+    }
+    return [
+      {
+        command: '/xcon-image',
+        usage: '<file-or-inline>',
+        description: 'Type an XCON file path or inline snippet after this space. XCON 이미지 입력',
+        completion: '/xcon-image ',
+      },
+    ];
+  }
   if (command === 'compact') {
     return sessionSuggestions('/compact', prefix, context.sessionIds, false, limit);
   }
@@ -298,6 +206,49 @@ function getArgumentSuggestions(
   }
 
   return undefined;
+}
+
+function imageSuggestions(prefix: string, imageSources: string[] | undefined, limit: number) {
+  const subcommands = ['recent', 'info', 'clear'];
+  const query = stripWrappingQuote(prefix);
+  const subcommandSuggestions = subcommands
+    .filter((value) => value.startsWith(query))
+    .map(
+      (value): TuiSlashCommandSuggestion => ({
+        command: '/image',
+        usage: value,
+        description: 'Image command. 이미지 명령',
+        completion: `/image ${value}${value === 'clear' ? ' ' : ''}`,
+      }),
+    );
+  const sourceSuggestions = (imageSources ?? [])
+    .filter((source) => !query || (query.length >= 2 && source.toLowerCase().includes(query)))
+    .map(
+      (source): TuiSlashCommandSuggestion => ({
+        command: '/image',
+        usage: source,
+        description: 'Recent or captured image. 최근/캡처 이미지',
+        completion: `/image ${quoteTuiSuggestionValue(source)} `,
+      }),
+    );
+  const matches = [...subcommandSuggestions, ...sourceSuggestions].slice(0, limit);
+  return matches.length > 0 ? matches : [NO_MATCH_SUGGESTION];
+}
+
+function stripWrappingQuote(value: string) {
+  const trimmed = value.toLowerCase().trim();
+  if ((trimmed.startsWith('"') && !trimmed.endsWith('"')) || (trimmed.startsWith("'") && !trimmed.endsWith("'"))) {
+    return trimmed.slice(1);
+  }
+  if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
+
+function quoteTuiSuggestionValue(value: string) {
+  if (!/\s/.test(value)) return value;
+  return `"${value.replace(/"/g, '\\"')}"`;
 }
 
 function valueSuggestions(
