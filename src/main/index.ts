@@ -343,6 +343,7 @@ import {
 import { withXenesisRunEventScope } from '../shared/xenesisRunEventScope';
 import { createLinkedApprovalActionNeeded, createLinkedApprovalReceipt } from './agentActionRecordBridge.mjs';
 import { createAgentControlLockManager } from './agentControlLock';
+import { createAgentSessionService } from './agentSessions/service';
 import { createAgentTurnLedgerReadbackApi } from './agentTurnLedgerService';
 import { createAppControlService } from './appControl/appControlService';
 import { createAuditLogger } from './audit/auditLogger';
@@ -1545,6 +1546,18 @@ const localCliAgentIds = new Set<LocalCliAgentId>([
   'github-copilot',
   'pi',
 ]);
+
+const agentSessionService = createAgentSessionService({
+  xenisHomeDir,
+  installedLocalCliAgents: scanLocalCliAgents({
+    env: process.env,
+    existsSync: fs.existsSync,
+    spawnSync,
+    includeVersions: false,
+  })
+    .filter((agent) => agent.installed && localCliAgentIds.has(agent.id))
+    .map((agent) => agent.id),
+});
 
 // 탭 분리 창에 전달할 pending payload (windowId → payload, 1회성)
 const detachPayloads = new Map<number, DetachPayload>();
@@ -16088,6 +16101,101 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
         }),
       ),
     }),
+    agentSessionsStatus: () => agentSessionService.status(),
+    agentSessionsScan: (args: unknown) =>
+      agentSessionService.scan(normalizeMcpCapabilityArgs(args) as Parameters<typeof agentSessionService.scan>[0]),
+    agentSessionsList: (args: unknown) =>
+      agentSessionService.list(normalizeMcpCapabilityArgs(args) as Parameters<typeof agentSessionService.list>[0]),
+    agentSessionsSearch: (args: unknown) =>
+      agentSessionService.search(
+        normalizeMcpCapabilityArgs(args) as unknown as Parameters<typeof agentSessionService.search>[0],
+      ),
+    agentSessionsPin: (args: unknown) =>
+      agentSessionService.pin(
+        normalizeMcpCapabilityArgs(args) as unknown as Parameters<typeof agentSessionService.pin>[0],
+      ),
+    agentSessionsHide: (args: unknown) =>
+      agentSessionService.hide(
+        normalizeMcpCapabilityArgs(args) as unknown as Parameters<typeof agentSessionService.hide>[0],
+      ),
+    agentSessionsAttachTerminal: (args: unknown) => ({
+      ok: true,
+      args: normalizeMcpCapabilityArgs(args),
+      message: 'Agent session terminal linking is not persisted yet.',
+    }),
+    agentSessionsResume: async (args: unknown) => {
+      const body = normalizeMcpCapabilityArgs(args);
+      const sessionId = readCapabilityString(body, ['sessionId', 'id']);
+      const query = readCapabilityString(body, ['query', 'q']);
+      const source = readCapabilityString(body, ['source']);
+      const target = body.target === 'new' || body.target === 'active' ? body.target : 'smart';
+      const requestBase = {
+        ...body,
+        includeHidden: true,
+        limit: query ? 50 : 200,
+        ...(source ? { sources: [source] } : {}),
+      };
+      const matchingSessions = query
+        ? await agentSessionService.search(requestBase as Parameters<typeof agentSessionService.search>[0])
+        : await agentSessionService.list(requestBase as Parameters<typeof agentSessionService.list>[0]);
+      const selectedSession = matchingSessions.find((session) => (sessionId ? session.id === sessionId : true));
+      if (!selectedSession) return { ok: false, error: 'Agent session not found.' };
+
+      const command = selectedSession.resumeCommand?.trim() ?? '';
+      if (!command) return { ok: false, error: 'Selected agent session has no resume command.' };
+
+      const requestedTermId = readCapabilityString(body, ['termId', 'terminalId']);
+      const reusableTermId = requestedTermId || selectedSession.terminalId || selectedSession.terminal?.termId || '';
+      const preview = {
+        session: selectedSession,
+        command,
+        cwd: selectedSession.projectPath,
+        target,
+        termId: reusableTermId || undefined,
+      };
+      if (body.previewOnly === true) return { ok: true, preview };
+
+      if (target !== 'new' && reusableTermId) {
+        const terminal = sessions.get(reusableTermId);
+        if (terminal) {
+          const shell = terminal.shell ?? normalizeShellKindForPlatform(loadSettings().defaultShell);
+          const data = formatShellStartupInput(shell, command);
+          trackTerminalInput(terminal, data);
+          automationControllers.get(terminal.id)?.recordTerminalInput(data);
+          terminal.backend.write(data);
+          return {
+            ok: true,
+            session: selectedSession,
+            preview,
+            termId: terminal.id,
+            reusedTerminal: true,
+            message: 'Agent session resume command sent to the existing terminal.',
+          };
+        }
+      }
+
+      const spawnResult = createMcpTerminalSession({
+        kind: 'shell',
+        cwd: selectedSession.projectPath,
+        command,
+        title: `${selectedSession.sourceLabel}: ${selectedSession.projectName}`,
+        placement: sanitizeMcpExtensionPanelPlacement(body.placement) ?? 'tab',
+        targetPaneId: readCapabilityString(body, ['targetPaneId']),
+        metadata: {
+          kind: 'agent-session-resume',
+          agent: selectedSession.sourceLabel,
+          task: selectedSession.title,
+          command,
+        },
+      });
+      return {
+        ok: true,
+        session: selectedSession,
+        preview,
+        spawnResult,
+        message: 'Agent session resume command opened in a terminal.',
+      };
+    },
     loadMetaTree: (args: unknown) => dispatchMetaBridgeCapability('xd.meta.tree.load', args),
     searchMetaTree: (args: unknown) => dispatchMetaBridgeCapability('xd.meta.tree.search', args),
     listMetaCodes: (args: unknown) => dispatchMetaBridgeCapability('xd.meta.codes.list', args),
@@ -22248,6 +22356,12 @@ function setupIpc(): void {
     'safe-file:restore',
     (_event, request: SafeFileRestoreRequest): Promise<SafeFileRestoreResult> => restoreSafeTextFileBackup(request),
   );
+  ipcMain.handle('agent-sessions:status', () => agentSessionService.status());
+  ipcMain.handle('agent-sessions:scan', (_event, request) => agentSessionService.scan(request));
+  ipcMain.handle('agent-sessions:list', (_event, request) => agentSessionService.list(request));
+  ipcMain.handle('agent-sessions:search', (_event, request) => agentSessionService.search(request));
+  ipcMain.handle('agent-sessions:pin', (_event, request) => agentSessionService.pin(request));
+  ipcMain.handle('agent-sessions:hide', (_event, request) => agentSessionService.hide(request));
 
   ipcMain.handle('app:save-settings', async (_event, settings: Partial<AppSettings>) => {
     await saveApplicationSettings(settings);

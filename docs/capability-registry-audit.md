@@ -1,16 +1,16 @@
 # Xenesis Desk Capability Registry Audit
 
-Generated: 2026-07-01, 12:06 a.m. KST
+Generated: 2026-07-01, 01:29 a.m. KST
 
 This audit checks that coverage metadata points to registered capability nodes and that callable method paths are wired in `callDeskBridgeCapability()`. It runs with Phase 5 capability visibility enabled so staged XamongCode wiring is audited without exposing it in the default registry list.
 
 ## Summary
 
-- Registered nodes: 860
-- Callable methods: 542
+- Registered nodes: 870
+- Callable methods: 551
 - Subscribable events: 54
-- Coverage path references: 695
-- Dispatcher paths: 522
+- Coverage path references: 703
+- Dispatcher paths: 531
 - Missing registered paths: 0
 - Missing dispatched coverage paths: 0
 - Undispatched static callable methods: 0
@@ -204,6 +204,7 @@ None.
 | `DESK_BRIDGE_DOCK_CONTENT_CAPABILITY_COVERAGE` | `xamong-chat` | `contentCapabilityPath` | method | `xd.tools.core.xamongCode.open` |
 | `DESK_BRIDGE_DOCK_CONTENT_CAPABILITY_COVERAGE` | `xapp-preview` | `contentCapabilityPath` | method | `xd.tools.core.xappPreview.open` |
 | `DESK_BRIDGE_DOCK_CONTENT_CAPABILITY_COVERAGE` | `xcon-viewer` | `contentCapabilityPath` | method | `xd.files.open` |
+| `DESK_BRIDGE_DOCK_CONTENT_CAPABILITY_COVERAGE` | `xd-agent-sessions` | `contentCapabilityPath` | method | `xd.tools.core.agentSessions.open` |
 | `DESK_BRIDGE_DOCK_CONTENT_CAPABILITY_COVERAGE` | `xd-ai-workbench` | `contentCapabilityPath` | method | `xd.tools.core.aiWorkbench.open` |
 | `DESK_BRIDGE_DOCK_CONTENT_CAPABILITY_COVERAGE` | `xd-artifact-library` | `contentCapabilityPath` | method | `xd.tools.core.artifactLibrary.open` |
 | `DESK_BRIDGE_DOCK_CONTENT_CAPABILITY_COVERAGE` | `xd-blaster` | `contentCapabilityPath` | method | `xd.tools.core.xdBlaster.open` |
@@ -251,6 +252,7 @@ None.
 | `DESK_BRIDGE_EXTENSION_HOST_ACTION_CAPABILITY_COVERAGE` | `openTool` | `actionCapabilityPath` | method | `xd.tools.open` |
 | `DESK_BRIDGE_EXTENSION_TOOL_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.activity-timeline` | `toolCapabilityPath` | method | `xd.tools.core.activityTimeline.open` |
 | `DESK_BRIDGE_EXTENSION_TOOL_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.agent-performance` | `toolCapabilityPath` | method | `xd.tools.core.agentPerformance.open` |
+| `DESK_BRIDGE_EXTENSION_TOOL_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.agent-sessions` | `toolCapabilityPath` | method | `xd.tools.core.agentSessions.open` |
 | `DESK_BRIDGE_EXTENSION_TOOL_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.ai-workbench` | `toolCapabilityPath` | method | `xd.tools.core.aiWorkbench.open` |
 | `DESK_BRIDGE_EXTENSION_TOOL_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.artifact-library` | `toolCapabilityPath` | method | `xd.tools.core.artifactLibrary.open` |
 | `DESK_BRIDGE_EXTENSION_TOOL_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.audit-log` | `toolCapabilityPath` | method | `xd.tools.core.auditLog.open` |
@@ -400,6 +402,12 @@ None.
 | `DESK_BRIDGE_HTTP_CAPABILITY_COVERAGE` | `/xcon/export-pdf` | `httpPathCapabilityPath` | method | `xd.artifacts.xconMarkdown.exportPdf` |
 | `DESK_BRIDGE_HTTP_CAPABILITY_COVERAGE` | `/xcon/render-to-png` | `httpPathCapabilityPath` | method | `xd.xcon.renderToPng` |
 | `DESK_BRIDGE_HTTP_CAPABILITY_COVERAGE` | `/xcon/validate` | `httpPathCapabilityPath` | method | `xd.artifacts.xconMarkdown.validate` |
+| `DESK_BRIDGE_IPC_CAPABILITY_COVERAGE` | `agent-sessions:hide` | `capabilityPath` | method | `xd.agentSessions.hide` |
+| `DESK_BRIDGE_IPC_CAPABILITY_COVERAGE` | `agent-sessions:list` | `capabilityPath` | method | `xd.agentSessions.list` |
+| `DESK_BRIDGE_IPC_CAPABILITY_COVERAGE` | `agent-sessions:pin` | `capabilityPath` | method | `xd.agentSessions.pin` |
+| `DESK_BRIDGE_IPC_CAPABILITY_COVERAGE` | `agent-sessions:scan` | `capabilityPath` | method | `xd.agentSessions.scan` |
+| `DESK_BRIDGE_IPC_CAPABILITY_COVERAGE` | `agent-sessions:search` | `capabilityPath` | method | `xd.agentSessions.search` |
+| `DESK_BRIDGE_IPC_CAPABILITY_COVERAGE` | `agent-sessions:status` | `capabilityPath` | method | `xd.agentSessions.status` |
 | `DESK_BRIDGE_IPC_CAPABILITY_COVERAGE` | `app:export-settings` | `capabilityPath` | method | `xd.settings.export` |
 | `DESK_BRIDGE_IPC_CAPABILITY_COVERAGE` | `app:get-settings` | `capabilityPath` | method | `xd.settings.read` |
 | `DESK_BRIDGE_IPC_CAPABILITY_COVERAGE` | `app:import-settings` | `capabilityPath` | method | `xd.settings.import` |

@@ -968,6 +968,9 @@ function buildRestoredTerminalSpawnConfig(
   } = { remoteProfiles: [], localProfiles: [] },
 ): TerminalSpawnConfig {
   const spawnConfig = structuredClone(snapshot.spawnConfig) as TerminalSpawnConfig;
+  if (snapshot.metadata && !spawnConfig.metadata) {
+    spawnConfig.metadata = snapshot.metadata;
+  }
   if ('profile' in spawnConfig && spawnConfig.profile) {
     if (spawnConfig.kind === 'ssh' || spawnConfig.kind === 'telnet') {
       const profile = spawnConfig.profile as RemoteTerminalProfile;
@@ -3635,6 +3638,7 @@ export default function App() {
         kind: 'shell',
         shell: payload.shell || defaultShell,
         cwd: payload.cwd || defaultCwd || undefined,
+        metadata: payload.metadata,
       };
       const terminalRestore = createTerminalSessionSnapshot(spawnConfig);
       if (payload.metadata) terminalRestore.metadata = payload.metadata;
@@ -4049,8 +4053,7 @@ export default function App() {
         fileName: content.fileName,
         fileContent: content.fileContent,
         fileExt: content.fileExt,
-        requestedWindowBounds:
-          mode === 'detach' ? buildRequestedDetachedWindowBounds(metadata?.dropPoint) : undefined,
+        requestedWindowBounds: mode === 'detach' ? buildRequestedDetachedWindowBounds(metadata?.dropPoint) : undefined,
       };
 
       // 탭 이동 후 현재 창에 탭이 없으면 창 닫기 (분리 창 전용)
@@ -4065,21 +4068,18 @@ export default function App() {
           ? {
               unavailable: t('app.reattachFailed', { e: 'Reattach IPC is not available.' }),
               success: t('app.tabReattachedMainContent', { title: content.title }),
-              failure: (error: unknown) =>
-                t('app.reattachFailed', { e: (error as Error)?.message ?? String(error) }),
+              failure: (error: unknown) => t('app.reattachFailed', { e: (error as Error)?.message ?? String(error) }),
             }
           : mode === 'merge-to-detached'
             ? {
                 unavailable: t('app.mergeFailed', { e: 'Detached merge IPC is not available.' }),
                 success: t('app.tabMergedOther', { title: content.title }),
-                failure: (error: unknown) =>
-                  t('app.mergeFailed', { e: (error as Error)?.message ?? String(error) }),
+                failure: (error: unknown) => t('app.mergeFailed', { e: (error as Error)?.message ?? String(error) }),
               }
             : {
                 unavailable: t('app.detachRequiresRestart'),
                 success: t('app.tabDetachedNew', { title: content.title }),
-                failure: (error: unknown) =>
-                  t('app.detachFailed', { e: (error as Error)?.message ?? String(error) }),
+                failure: (error: unknown) => t('app.detachFailed', { e: (error as Error)?.message ?? String(error) }),
               };
 
       void runDockTransfer({

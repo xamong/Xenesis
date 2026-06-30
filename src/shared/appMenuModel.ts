@@ -318,6 +318,7 @@ export const APP_MENU_MODEL: AppMenuGroupNode[] = [
         undefined,
         'E',
       ),
+      command('agent-sessions', 'Agent Sessions', 'xenesis-desk.core-tools.openAgentSessions', undefined, 'AS'),
       command('run-task-panel', 'Run Task Panel', 'xenesis-desk.core-tools.openRunTaskPanel', undefined, 'R'),
       command(
         'activity-timeline',

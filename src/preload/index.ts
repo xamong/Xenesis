@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
 import type { DockDragGhostOverlayPayload } from '../shared/dockDragGhost';
 import type {
+  AgentSessionsApi,
   AppMenuApi,
   AppSettings,
   AutomationApi,
@@ -661,6 +662,34 @@ const safeFileApi: SafeFileApi = {
 };
 
 contextBridge.exposeInMainWorld('safeFileAPI', safeFileApi);
+
+const agentSessionsApi: AgentSessionsApi = {
+  status() {
+    return ipcRenderer.invoke('agent-sessions:status');
+  },
+
+  scan(request) {
+    return ipcRenderer.invoke('agent-sessions:scan', request);
+  },
+
+  list(request) {
+    return ipcRenderer.invoke('agent-sessions:list', request);
+  },
+
+  search(request) {
+    return ipcRenderer.invoke('agent-sessions:search', request);
+  },
+
+  pin(request) {
+    return ipcRenderer.invoke('agent-sessions:pin', request);
+  },
+
+  hide(request) {
+    return ipcRenderer.invoke('agent-sessions:hide', request);
+  },
+};
+
+contextBridge.exposeInMainWorld('agentSessionsAPI', agentSessionsApi);
 
 const remoteFileApi: RemoteFileApi = {
   test(profile: RemoteFileProfile) {

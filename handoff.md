@@ -26081,3 +26081,287 @@ Verification so far:
 - Next intended step:
   - Commit the Agent Sessions implementation plan and ask the user to choose the
     execution approach.
+
+## 2026-07-01 Agent Sessions Implementation
+
+- Current objective:
+  - Execute `docs/superpowers/plans/2026-07-01-agent-sessions.md` inline on
+    branch `mini`, using TDD and without touching `packages/xenesis`.
+- Touched files:
+  - Planned implementation files are listed in
+    `docs/superpowers/plans/2026-07-01-agent-sessions.md`.
+  - This log: `handoff.md`.
+- Commands run:
+  - Read `superpowers:executing-plans`, `superpowers:test-driven-development`,
+    and `superpowers:using-git-worktrees` instructions.
+  - Worktree check:
+    `git rev-parse --git-dir` and `git rev-parse --git-common-dir` both
+    returned `.git`; current branch is `mini`. User selected inline execution,
+    so no additional worktree was created.
+  - Re-read `AGENTS.md`.
+  - Read repo-local Obsidian notes under the actual vault root
+    `docs/obsidian/Xenesis-desk/...`, including Final Goal, AI Agent Rules,
+    Graph Schema, Review Policy, Source of Truth Map, Repo Overview, Module
+    Index, High Risk Areas, Verification Map, CR Surface Index, IPC surface,
+    Capability Registry Architecture, MCP Bridge Architecture, Approval Flow,
+    Provider Model, Xenesis Agent Runtime, and related module/test notes.
+  - Baseline `npm test`: passed 604/604.
+  - Added `src/shared/agentSessions.test.ts`.
+  - RED `node --import tsx --test src/shared/agentSessions.test.ts`: failed as
+    expected with `Cannot find module './agentSessions'`.
+  - Added `src/shared/agentSessions.ts`.
+  - GREEN `node --import tsx --test src/shared/agentSessions.test.ts`: passed
+    9/9.
+  - Added `src/main/agentSessions/jsonl.test.ts` and
+    `src/main/agentSessions/indexStore.test.ts`.
+  - RED
+    `node --import tsx --test src/main/agentSessions/jsonl.test.ts src/main/agentSessions/indexStore.test.ts`:
+    failed as expected with missing `./jsonl` and `./indexStore` modules.
+  - Added `src/main/agentSessions/jsonl.ts` and
+    `src/main/agentSessions/indexStore.ts`.
+  - GREEN
+    `node --import tsx --test src/main/agentSessions/jsonl.test.ts src/main/agentSessions/indexStore.test.ts`:
+    passed 6/6.
+  - Added `src/main/agentSessions/adapters.test.ts` and
+    `src/main/agentSessions/service.test.ts`.
+  - RED
+    `node --import tsx --test src/main/agentSessions/adapters.test.ts src/main/agentSessions/service.test.ts`:
+    failed as expected with missing `./adapters` and `./service` modules.
+  - Added `src/main/agentSessions/pathUtils.ts`,
+    `src/main/agentSessions/adapters.ts`, and
+    `src/main/agentSessions/service.ts`.
+  - GREEN
+    `node --import tsx --test src/main/agentSessions/adapters.test.ts src/main/agentSessions/service.test.ts`:
+    passed 8/8.
+  - Added `src/shared/agentSessionsCapabilities.test.ts`.
+  - RED `node --import tsx --test src/shared/agentSessionsCapabilities.test.ts`:
+    failed as expected because `xd.agentSessions.*` paths and dispatch were
+    missing.
+  - Updated `src/shared/deskBridgeCapabilities.ts` with Agent Sessions adapter
+    methods, root `xd.agentSessions` group, `xd.tools.core.agentSessions.open`,
+    dock/tool coverage entries, and dispatcher branches.
+  - GREEN `node --import tsx --test src/shared/agentSessionsCapabilities.test.ts`:
+    passed 4/4.
+- Exact verification result:
+  - Baseline tests are green before implementation.
+  - Shared Agent Sessions model tests are green.
+  - JSONL tail reader and Agent Sessions index store tests are green.
+  - Agent Sessions scanners and cache/overlay service tests are green.
+  - Agent Sessions CR registration, approval metadata, adapter dispatch, and
+    tool-open dispatch tests are green.
+- Known gaps:
+  - `AGENTS.md` lists Obsidian notes as if they are directly under
+    `docs/obsidian`, but this checkout stores them under
+    `docs/obsidian/Xenesis-desk`.
+  - Implementation has not started yet.
+- Next intended step:
+  - Wire shared types, preload IPC, main IPC handlers, and main CR adapter
+    methods to the Agent Sessions service.
+
+## 2026-07-01 Agent Sessions IPC/Main Wiring
+
+- Current objective:
+  - Connect the Agent Sessions service to preload IPC, main IPC handlers, and
+    main CR adapter methods without touching `packages/xenesis`.
+- Touched files:
+  - `src/shared/types.ts`
+  - `src/renderer/env.d.ts`
+  - `src/preload/index.ts`
+  - `src/main/index.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `handoff.md`
+- Commands run:
+  - `node --import tsx --test src/shared/agentSessionsCapabilities.test.ts src/main/agentSessions/service.test.ts`:
+    passed 5/5.
+  - First `npm run typecheck`: failed on direct `Record<string, unknown>` casts
+    for required Agent Sessions CR request shapes.
+  - Updated those casts through `unknown`.
+  - Second `npm run typecheck`: passed.
+- Exact verification result:
+  - Agent Sessions CR tests remain green after main/preload wiring.
+  - TypeScript passes after the typed CR request cast fix.
+- Known gaps:
+  - Renderer tool panel, app menu/tool registration, and Agent pane routing are
+    still pending.
+- Next intended step:
+  - Add renderer-side Agent Sessions terminal linking and panel model tests,
+    then implement the panel and extension registration.
+
+## 2026-07-01 Agent Sessions Renderer Panel
+
+- Current objective:
+  - Add Agent Sessions renderer linking logic, panel model, panel UI, tool
+    registration, manifest command, and app menu entry.
+- Touched files:
+  - `src/renderer/agentSessions/terminalLinker.test.ts`
+  - `src/renderer/agentSessions/terminalLinker.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/AgentSessionsPane.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/renderer.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/styles.css`
+  - `src/renderer/terminal/terminalHost.ts`
+  - `src/renderer/App.tsx`
+  - `src/shared/types.ts`
+  - `src/main/extensions/extensionHost.ts`
+  - `extensions/xenesis-desk.core-tools/plugin.json`
+  - `extensions/xenesis-desk.core-tools/main.js`
+  - `src/shared/appMenuModel.ts`
+  - `handoff.md`
+- Commands run:
+  - RED `node --import tsx --test src/renderer/agentSessions/terminalLinker.test.ts`:
+    failed as expected with missing `./terminalLinker`.
+  - GREEN `node --import tsx --test src/renderer/agentSessions/terminalLinker.test.ts`:
+    passed 3/3.
+  - RED
+    `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.test.ts`:
+    failed as expected with missing `./agentSessionsPanelModel`.
+  - GREEN focused renderer/CR tests:
+    `node --import tsx --test src/renderer/agentSessions/terminalLinker.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.test.ts src/shared/agentSessionsCapabilities.test.ts`
+    passed 9/9.
+  - `npm run typecheck`: passed.
+- Exact verification result:
+  - Terminal reuse planning handles local CLI sessions, unsafe alternate-buffer
+    terminals, and MCP metadata-matched sessions.
+  - Panel counts/action-state model is covered by tests.
+  - Core Tools can expose `xenesis-desk.core-tools.openAgentSessions` through
+    manifest, extension main, renderer tool dispatch, app menu, and CR tool-open
+    dispatch.
+- Known gaps:
+  - Agent pane natural-language routing is still pending.
+  - Full audit/build/live Electron verification has not run yet.
+- Next intended step:
+  - Inspect existing Agent pane routing tests before deciding whether to add a
+    narrow Agent Sessions route or keep all natural language routing inside the
+    provider path.
+
+## 2026-07-01 Agent Sessions Agent Pane Hinting
+
+- Current objective:
+  - Make Agent Sessions CR paths available to the Xenesis Agent provider prompt
+    without reintroducing pre-provider natural-language Desk routing.
+- Touched files:
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `src/shared/xenesisDeskControlPromptHintCatalog.ts`
+  - `handoff.md`
+- Commands run:
+  - RED
+    `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`:
+    failed as expected because `xd.agentSessions.search` and
+    `xd.tools.core.agentSessions.open` were absent from the prompt hint.
+  - Added Agent Sessions discovery prefixes to the Desk-control prompt hint
+    catalog.
+  - GREEN same command: passed 11/11.
+- Exact verification result:
+  - The prompt hint now discovers Agent Sessions CR paths for provider-generated
+    `xenesis-desk-action` blocks.
+  - The existing test asserting pre-provider natural Desk heuristic routing is
+    absent still passes.
+- Known gaps:
+  - Full audit/build/live Electron verification has not run yet.
+- Next intended step:
+  - Run focused Agent Sessions test bundle, CR audit, full tests, typecheck, and
+    build.
+
+## 2026-07-01 Agent Sessions Final Verification
+
+- Current objective:
+  - Finish the approved Agent Sessions slice from the sibling roadmap while
+    keeping `packages/xenesis` untouched.
+- Touched files:
+  - `src/shared/agentSessions.ts`
+  - `src/shared/agentSessions.test.ts`
+  - `src/main/agentSessions/*`
+  - `src/shared/agentSessionsCapabilities.test.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/shared/types.ts`
+  - `src/preload/index.ts`
+  - `src/main/index.ts`
+  - `src/renderer/env.d.ts`
+  - `src/renderer/agentSessions/*`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/AgentSessionsPane.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/renderer.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/styles.css`
+  - `src/renderer/terminal/terminalHost.ts`
+  - `src/renderer/App.tsx`
+  - `src/main/extensions/extensionHost.ts`
+  - `extensions/xenesis-desk.core-tools/plugin.json`
+  - `extensions/xenesis-desk.core-tools/main.js`
+  - `src/shared/appMenuModel.ts`
+  - `src/shared/xenesisDeskControlPromptHintCatalog.ts`
+  - `docs/capability-registry-audit.md`
+  - `handoff.md`
+- Commands run:
+  - Focused Agent Sessions bundle:
+    `node --import tsx --test src/shared/agentSessions.test.ts src/main/agentSessions/jsonl.test.ts src/main/agentSessions/indexStore.test.ts src/main/agentSessions/adapters.test.ts src/main/agentSessions/service.test.ts src/shared/agentSessionsCapabilities.test.ts src/renderer/agentSessions/terminalLinker.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `npm run typecheck`
+  - `npm run docs:capabilities:audit`
+  - `npm test`
+  - `npm run build`
+  - `npm --prefix packages/xenesis test`
+  - `npm --prefix packages/xenesis run typecheck`
+  - `npm run check:public-release`
+  - `npm run lint`
+  - Targeted Biome check for new/small touched files:
+    `npx biome check src/renderer/extensions/xenesis-desk.core-tools/panes/AgentSessionsPane.tsx src/main/agentSessions/adapters.ts src/main/agentSessions/service.ts src/shared/agentSessions.test.ts src/shared/agentSessionsCapabilities.test.ts src/renderer/extensions/xenesis-desk.core-tools/renderer.tsx src/shared/xenesisDeskControlPromptHintCatalog.ts extensions/xenesis-desk.core-tools/main.js extensions/xenesis-desk.core-tools/plugin.json --max-diagnostics=200`
+  - Live Electron CR smoke with isolated temp `XENIS_HOME` and user data dir:
+    opened `xd.tools.core.agentSessions.open`, waited for `.xd-agent-sessions`,
+    then called `xd.agentSessions.status`.
+  - `git diff --name-only -- packages/xenesis`
+- Exact verification result:
+  - Focused Agent Sessions bundle passed 43/43.
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit` passed with:
+    registered nodes 870, coverage path references 703, missing registered
+    paths 0, missing dispatched coverage paths 0, undispatched static callable
+    methods 0, dispatcher paths missing from tree 0.
+  - `npm test` passed 636/636.
+  - `npm run build` passed. Build still reports existing Vite warnings for d3
+    namespace resolution, `hwp.js` `fs` externalization, and mixed
+    dynamic/static imports of `deskBridge.ts`.
+  - `npm --prefix packages/xenesis test` passed 698/698.
+  - `npm --prefix packages/xenesis run typecheck` passed.
+  - `npm run check:public-release` passed.
+  - `npm run lint` remains blocked by existing repo-wide Biome diagnostics,
+    including `packages/xenesis` and large legacy files. Latest run reported
+    47 errors, 394 warnings, and 85 infos before Biome truncated additional
+    diagnostics. New Agent Sessions files passed the targeted Biome check after
+    formatting fixes.
+  - Live Electron CR smoke returned `ok: true`, opened the Agent Sessions pane,
+    and returned Agent Sessions status successfully.
+  - `git diff --name-only -- packages/xenesis` returned no files.
+- Known gaps:
+  - Full repo lint is not clean because of pre-existing broad diagnostics
+    outside this slice.
+  - I verified the live CR/panel path, not a full natural-language provider
+    turn through the Agent pane.
+- Next intended step:
+  - If accepted, commit this Agent Sessions slice on `mini` and then open/update
+    the PR.
+
+## 2026-07-01 Agent Sessions Pre-PR Check
+
+- Current objective:
+  - Commit the approved Agent Sessions slice on `mini`, push it, and create or
+    update the GitHub PR.
+- Touched files:
+  - `handoff.md`
+- Commands run:
+  - `npm test`
+  - `npm run typecheck`
+  - `npm run docs:capabilities:audit`
+  - `npx biome check src/shared/agentSessions.ts src/shared/agentSessions.test.ts src/shared/agentSessionsCapabilities.test.ts src/main/agentSessions src/renderer/agentSessions src/renderer/extensions/xenesis-desk.core-tools/panes/AgentSessionsPane.tsx src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.ts src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.test.ts --max-diagnostics=200`
+- Exact verification result:
+  - `npm test` passed 636/636.
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit` passed with 870 nodes and 703 coverage
+    path references.
+  - Targeted Biome check for new Agent Sessions files passed.
+- Known gaps:
+  - Full `npm run lint` still has the existing repo-wide Biome diagnostics
+    recorded above.
+- Next intended step:
+  - Stage, commit, push `mini`, then create or update the PR.

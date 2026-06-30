@@ -3,6 +3,19 @@ import type { ExternalAppSettings } from './externalAppControl';
 import type { XenesisConnectionsStatus } from './xenesisConnections';
 
 export type {
+  AgentSession,
+  AgentSessionDiagnostic,
+  AgentSessionsApi,
+  AgentSessionsHideRequest,
+  AgentSessionsListRequest,
+  AgentSessionsPinRequest,
+  AgentSessionsScanRequest,
+  AgentSessionsScanResult,
+  AgentSessionsSearchRequest,
+  AgentSessionsStatus,
+} from './agentSessions';
+
+export type {
   XenesisConnectionChannelAccessGroupBinding,
   XenesisConnectionChannelAccessGroupsTemplate,
   XenesisConnectionChannelPairingCredentialRef,
@@ -595,6 +608,7 @@ export type DockContentType =
   | 'xd-remote-sync-planner'
   | 'xd-run-task-panel'
   | 'xd-safe-file-edit-center'
+  | 'xd-agent-sessions'
   | 'xenesis-agent'
   | 'hermes-status'
   | 'hermes-action-inbox'
@@ -710,6 +724,7 @@ export type ExtensionTool =
   | 'xenesis-desk.core-tools.remote-sync-planner'
   | 'xenesis-desk.core-tools.run-task-panel'
   | 'xenesis-desk.core-tools.safe-file-edit-center'
+  | 'xenesis-desk.core-tools.agent-sessions'
   | 'xenesis-desk.core-tools.xenesis-agent'
   | 'xenesis-desk.core-tools.hermes-status'
   | 'xenesis-desk.core-tools.hermes-action-inbox'
@@ -1552,6 +1567,7 @@ export interface ShellTerminalSpawnRequest {
   rows: number;
   cwd?: string;
   profile?: LocalTerminalProfile;
+  metadata?: McpBridgeTerminalMetadata;
 }
 
 export interface SshTerminalSpawnRequest {
@@ -1560,6 +1576,7 @@ export interface SshTerminalSpawnRequest {
   profile: RemoteTerminalProfile;
   cols: number;
   rows: number;
+  metadata?: McpBridgeTerminalMetadata;
 }
 
 export interface TelnetTerminalSpawnRequest {
@@ -1568,6 +1585,7 @@ export interface TelnetTerminalSpawnRequest {
   profile: RemoteTerminalProfile;
   cols: number;
   rows: number;
+  metadata?: McpBridgeTerminalMetadata;
 }
 
 export type TerminalSpawnRequest = ShellTerminalSpawnRequest | SshTerminalSpawnRequest | TelnetTerminalSpawnRequest;

@@ -2101,6 +2101,14 @@ export interface DeskBridgeCapabilityAdapter {
   agentActionNeededDismiss?: (args?: unknown) => Promise<unknown> | unknown;
   agentReceiptsList?: (args?: unknown) => Promise<unknown> | unknown;
   agentReceiptsGet?: (args?: unknown) => Promise<unknown> | unknown;
+  agentSessionsStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  agentSessionsScan?: (args?: unknown) => Promise<unknown> | unknown;
+  agentSessionsList?: (args?: unknown) => Promise<unknown> | unknown;
+  agentSessionsSearch?: (args?: unknown) => Promise<unknown> | unknown;
+  agentSessionsResume?: (args?: unknown) => Promise<unknown> | unknown;
+  agentSessionsAttachTerminal?: (args?: unknown) => Promise<unknown> | unknown;
+  agentSessionsPin?: (args?: unknown) => Promise<unknown> | unknown;
+  agentSessionsHide?: (args?: unknown) => Promise<unknown> | unknown;
   setXenesisWorkspace?: (args: unknown) => Promise<unknown> | unknown;
   listXenesisProfiles?: () => Promise<unknown> | unknown;
   installXenesisProfile?: (args: unknown) => Promise<unknown> | unknown;
@@ -2137,6 +2145,12 @@ export const DESK_BRIDGE_IPC_CAPABILITY_COVERAGE = {
   'app:list-settings-backups': { capabilityPath: 'xd.settings.backups.list' },
   'app:restore-settings-backup': { capabilityPath: 'xd.settings.backups.restore' },
   'app:save-settings': { capabilityPath: 'xd.settings.save' },
+  'agent-sessions:hide': { capabilityPath: 'xd.agentSessions.hide' },
+  'agent-sessions:list': { capabilityPath: 'xd.agentSessions.list' },
+  'agent-sessions:pin': { capabilityPath: 'xd.agentSessions.pin' },
+  'agent-sessions:scan': { capabilityPath: 'xd.agentSessions.scan' },
+  'agent-sessions:search': { capabilityPath: 'xd.agentSessions.search' },
+  'agent-sessions:status': { capabilityPath: 'xd.agentSessions.status' },
   'automation:clear-events': { capabilityPath: 'xd.automation.terminals.clearEvents' },
   'automation:get-events': { capabilityPath: 'xd.automation.terminals.events' },
   'automation:get-status': { capabilityPath: 'xd.automation.terminals.status' },
@@ -3100,6 +3114,9 @@ export const DESK_BRIDGE_DOCK_CONTENT_CAPABILITY_COVERAGE = {
   'xd-safe-file-edit-center': {
     contentCapabilityPath: 'xd.tools.core.safeFileEditCenter.open',
   },
+  'xd-agent-sessions': {
+    contentCapabilityPath: 'xd.tools.core.agentSessions.open',
+  },
   'xenesis-agent': {
     contentCapabilityPath: 'xd.tools.core.xenesisAgent.open',
   },
@@ -3363,6 +3380,11 @@ export const DESK_BRIDGE_EXTENSION_TOOL_CAPABILITY_COVERAGE = {
     toolCapabilityPath: 'xd.tools.core.safeFileEditCenter.open',
     commandId: 'xenesis-desk.core-tools.openSafeFileEditCenter',
     notes: 'Open Safe File Edit Center as a first-class core tool capability.',
+  },
+  'xenesis-desk.core-tools.agent-sessions': {
+    toolCapabilityPath: 'xd.tools.core.agentSessions.open',
+    commandId: 'xenesis-desk.core-tools.openAgentSessions',
+    notes: 'Open Agent Sessions as a first-class core tool capability.',
   },
   'xenesis-desk.core-tools.xenesis-agent': {
     toolCapabilityPath: 'xd.tools.core.xenesisAgent.open',
@@ -5222,6 +5244,177 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           },
         ),
       ]),
+    ]),
+    group('xd.agentSessions', 'Agent Sessions', 'Search, inspect, link, and resume local agent sessions.', [
+      method('xd.agentSessions.status', 'Read Agent Sessions status', 'Read scanner cache and source status.', 'read'),
+      method(
+        'xd.agentSessions.scan',
+        'Scan Agent Sessions',
+        'Scan supported local agent transcript stores into the Agent Sessions cache.',
+        'read',
+        {
+          type: 'object',
+          properties: {
+            sources: {
+              type: 'array',
+              title: 'Sources',
+              items: {
+                type: 'string',
+                enum: ['xenesis', 'codex', 'claude', 'gemini'],
+              },
+            },
+            force: {
+              type: 'boolean',
+              title: 'Force scan',
+              default: false,
+            },
+          },
+        },
+      ),
+      method('xd.agentSessions.list', 'List Agent Sessions', 'List cached local agent sessions.', 'read', {
+        type: 'object',
+        properties: {
+          includeHidden: {
+            type: 'boolean',
+            title: 'Include hidden',
+            default: false,
+          },
+          limit: {
+            type: 'number',
+            title: 'Limit',
+            minimum: 0,
+            maximum: 500,
+            default: 100,
+          },
+        },
+      }),
+      method('xd.agentSessions.search', 'Search Agent Sessions', 'Search cached local agent sessions.', 'read', {
+        type: 'object',
+        required: ['query'],
+        properties: {
+          query: {
+            type: 'string',
+            title: 'Query',
+          },
+          includeHidden: {
+            type: 'boolean',
+            title: 'Include hidden',
+            default: false,
+          },
+          limit: {
+            type: 'number',
+            title: 'Limit',
+            minimum: 0,
+            maximum: 500,
+            default: 50,
+          },
+        },
+      }),
+      method(
+        'xd.agentSessions.resume',
+        'Resume Agent Session',
+        'Open a terminal with the selected local agent session resume command.',
+        'execute',
+        {
+          type: 'object',
+          properties: {
+            sessionId: {
+              type: 'string',
+              title: 'Session id',
+            },
+            query: {
+              type: 'string',
+              title: 'Query',
+            },
+            source: {
+              type: 'string',
+              title: 'Source',
+              enum: ['xenesis', 'codex', 'claude', 'gemini'],
+            },
+            target: {
+              type: 'string',
+              title: 'Terminal target',
+              enum: ['smart', 'new', 'active'],
+              default: 'smart',
+            },
+            termId: {
+              type: 'string',
+              title: 'Terminal id',
+            },
+            previewOnly: {
+              type: 'boolean',
+              title: 'Preview only',
+              default: false,
+            },
+            placement: {
+              type: 'string',
+              title: 'Placement',
+              enum: ['tab', 'left', 'right', 'top', 'bottom'],
+              default: 'tab',
+            },
+          },
+        },
+      ),
+      method(
+        'xd.agentSessions.attachTerminal',
+        'Attach Agent Session Terminal',
+        'Attach a known terminal session to a cached Agent Session record.',
+        'control',
+        {
+          type: 'object',
+          required: ['sessionId', 'termId'],
+          properties: {
+            sessionId: {
+              type: 'string',
+              title: 'Session id',
+            },
+            termId: {
+              type: 'string',
+              title: 'Terminal id',
+            },
+          },
+        },
+      ),
+      method(
+        'xd.agentSessions.pin',
+        'Pin Agent Session',
+        'Pin or unpin an Agent Session in the local overlay.',
+        'write',
+        {
+          type: 'object',
+          required: ['sessionId', 'pinned'],
+          properties: {
+            sessionId: {
+              type: 'string',
+              title: 'Session id',
+            },
+            pinned: {
+              type: 'boolean',
+              title: 'Pinned',
+            },
+          },
+        },
+      ),
+      method(
+        'xd.agentSessions.hide',
+        'Hide Agent Session',
+        'Hide or unhide an Agent Session in the local overlay.',
+        'write',
+        {
+          type: 'object',
+          required: ['sessionId', 'hidden'],
+          properties: {
+            sessionId: {
+              type: 'string',
+              title: 'Session id',
+            },
+            hidden: {
+              type: 'boolean',
+              title: 'Hidden',
+            },
+          },
+        },
+      ),
     ]),
     group('xd.xenesis', 'Xenesis', 'Xenesis agent and gateway control surface for Xenesis Desk orchestration.', [
       method(
@@ -10325,6 +10518,12 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           'control',
         ),
         method(
+          'xd.tools.core.agentSessions.open',
+          'Open Agent Sessions',
+          'Open the Agent Sessions tool panel.',
+          'control',
+        ),
+        method(
           'xd.tools.core.xenesisAgent.open',
           'Open Xenesis Agent',
           'Open the Xenesis Agent tool panel.',
@@ -13052,6 +13251,30 @@ export async function callDeskBridgeCapability(
           await callAdapter(path, api?.agentReceiptsGet, request.args),
         );
       }
+      if (path === 'xd.agentSessions.status') {
+        return callAdapter(path, api?.agentSessionsStatus, request.args);
+      }
+      if (path === 'xd.agentSessions.scan') {
+        return callAdapter(path, api?.agentSessionsScan, request.args);
+      }
+      if (path === 'xd.agentSessions.list') {
+        return callAdapter(path, api?.agentSessionsList, request.args);
+      }
+      if (path === 'xd.agentSessions.search') {
+        return callAdapter(path, api?.agentSessionsSearch, request.args);
+      }
+      if (path === 'xd.agentSessions.resume') {
+        return callAdapter(path, api?.agentSessionsResume, request.args);
+      }
+      if (path === 'xd.agentSessions.attachTerminal') {
+        return callAdapter(path, api?.agentSessionsAttachTerminal, request.args);
+      }
+      if (path === 'xd.agentSessions.pin') {
+        return callAdapter(path, api?.agentSessionsPin, request.args);
+      }
+      if (path === 'xd.agentSessions.hide') {
+        return callAdapter(path, api?.agentSessionsHide, request.args);
+      }
       if (path === 'xd.xenesis.connections.status') {
         return callAdapter(path, api?.getXenesisConnectionsStatus);
       }
@@ -13976,6 +14199,9 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.tools.core.safeFileEditCenter.open') {
         return toolOpenArgs('xenesis-desk.core-tools.openSafeFileEditCenter');
+      }
+      if (path === 'xd.tools.core.agentSessions.open') {
+        return toolOpenArgs('xenesis-desk.core-tools.openAgentSessions');
       }
       if (path === 'xd.tools.core.xenesisAgent.open') {
         return toolOpenArgs('xenesis-desk.core-tools.openXenesisAgent');

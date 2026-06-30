@@ -9321,3 +9321,216 @@
     width: 100%;
   }
 }
+
+.xd-agent-sessions {
+  display: grid;
+  grid-template-rows: auto auto auto auto minmax(0, 1fr);
+  gap: 12px;
+  min-height: 100%;
+  padding: 16px;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.xd-agent-sessions-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+}
+
+.xd-agent-sessions-head h2 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.xd-agent-sessions-head p {
+  margin: 6px 0 0;
+  color: var(--text-mute);
+  font-size: 12px;
+}
+
+.xd-agent-sessions-toolbar {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(128px, auto) minmax(128px, auto) auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.xd-agent-sessions-toolbar input,
+.xd-agent-sessions-toolbar select {
+  min-width: 0;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0 10px;
+  background: rgba(15, 23, 42, 0.74);
+  color: var(--text);
+}
+
+.xd-agent-sessions-toolbar label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-mute);
+  font-size: 12px;
+}
+
+.xd-agent-sessions-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.xd-agent-sessions-counts span,
+.xd-agent-session-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  border: 1px solid rgba(14, 165, 233, 0.34);
+  border-radius: 999px;
+  padding: 0 8px;
+  color: #67e8f9;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.xd-agent-sessions-status,
+.xd-agent-sessions-error,
+.xd-agent-sessions-empty {
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 7px;
+  padding: 10px 12px;
+  color: var(--text-mute);
+  background: rgba(15, 23, 42, 0.52);
+}
+
+.xd-agent-sessions-error {
+  border-color: rgba(248, 113, 113, 0.5);
+  color: #fecaca;
+}
+
+.xd-agent-sessions-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.44fr) minmax(0, 0.56fr);
+  gap: 12px;
+  min-height: 0;
+}
+
+.xd-agent-sessions-list {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-height: 0;
+  overflow: auto;
+}
+
+.xd-agent-session-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 7px;
+  padding: 8px;
+  background: rgba(15, 23, 42, 0.42);
+  color: var(--text);
+  text-align: left;
+}
+
+.xd-agent-session-row:hover,
+.xd-agent-session-row.is-selected {
+  border-color: rgba(34, 211, 238, 0.58);
+  background: rgba(14, 165, 233, 0.14);
+}
+
+.xd-agent-session-row strong,
+.xd-agent-session-row small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.xd-agent-session-row small {
+  color: var(--text-mute);
+}
+
+.xd-agent-session-detail {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 8px;
+  padding: 14px;
+  background: rgba(15, 23, 42, 0.34);
+}
+
+.xd-agent-session-detail h3 {
+  margin: 8px 0 0;
+  font-size: 17px;
+}
+
+.xd-agent-session-detail p {
+  margin: 8px 0 0;
+  color: var(--text-mute);
+  line-height: 1.45;
+}
+
+.xd-agent-session-detail dl {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 7px 12px;
+  margin: 0;
+}
+
+.xd-agent-session-detail dt {
+  color: var(--text-mute);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.xd-agent-session-detail dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.xd-agent-session-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.xd-agent-session-detail pre {
+  max-height: 220px;
+  margin: 0;
+  overflow: auto;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 7px;
+  padding: 10px;
+  color: #cbd5e1;
+  background: rgba(2, 6, 23, 0.44);
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Courier New", monospace;
+  font-size: 11px;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 920px) {
+  .xd-agent-sessions-toolbar,
+  .xd-agent-sessions-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .xd-agent-session-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+}

@@ -39,6 +39,10 @@ exports.activate = function activate(api) {
     api.openTool('xenesis-desk.core-tools.safe-file-edit-center');
   });
 
+  api.registerCommand('xenesis-desk.core-tools.openAgentSessions', function openAgentSessions() {
+    api.openTool('xenesis-desk.core-tools.agent-sessions');
+  });
+
   api.registerCommand('xenesis-desk.core-tools.openXenesisAgent', function openXenesisAgent() {
     api.openTool('xenesis-desk.core-tools.xenesis-agent');
   });

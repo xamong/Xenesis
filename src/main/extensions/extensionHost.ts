@@ -92,6 +92,7 @@ const EXTENSION_TOOLS: ExtensionTool[] = [
   'xenesis-desk.core-tools.remote-sync-planner',
   'xenesis-desk.core-tools.run-task-panel',
   'xenesis-desk.core-tools.safe-file-edit-center',
+  'xenesis-desk.core-tools.agent-sessions',
   'xenesis-desk.core-tools.xenesis-agent',
   'xenesis-desk.core-tools.hermes-status',
   'xenesis-desk.core-tools.hermes-action-inbox',

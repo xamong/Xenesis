@@ -62,6 +62,11 @@
         "icon": "E"
       },
       {
+        "command": "xenesis-desk.core-tools.openAgentSessions",
+        "title": "Agent Sessions",
+        "icon": "AS"
+      },
+      {
         "command": "xenesis-desk.core-tools.openXenesisAgent",
         "title": "Xenesis Agent",
         "titleKey": "app.toolsXenesisAgent",
@@ -141,6 +146,7 @@
         "xenesis-desk.core-tools.openRemoteSyncPlanner",
         "xenesis-desk.core-tools.openRunTaskPanel",
         "xenesis-desk.core-tools.openSafeFileEditCenter",
+        "xenesis-desk.core-tools.openAgentSessions",
         "xenesis-desk.core-tools.openXenesisAgent",
         "xenesis-desk.core-tools.openHermesStatus",
         "xenesis-desk.core-tools.openHermesActionInbox",
@@ -166,6 +172,7 @@
         "xenesis-desk.core-tools.openRemoteSyncPlanner",
         "xenesis-desk.core-tools.openRunTaskPanel",
         "xenesis-desk.core-tools.openSafeFileEditCenter",
+        "xenesis-desk.core-tools.openAgentSessions",
         "xenesis-desk.core-tools.openXenesisAgent",
         "xenesis-desk.core-tools.openHermesStatus",
         "xenesis-desk.core-tools.openHermesActionInbox",

@@ -7,6 +7,7 @@ import { XENESIS_AGENT_COMMAND_EVENT, type XenesisAgentCommandDetail } from '../
 import { ActionInboxPane } from './panes/ActionInboxPane';
 import ActivityTimelinePane from './panes/ActivityTimelinePane';
 import AgentPerformancePane from './panes/AgentPerformancePane';
+import { AgentSessionsPane } from './panes/AgentSessionsPane';
 import { AiWorkbenchPane } from './panes/AiWorkbenchPane';
 import { ArtifactLibraryPane } from './panes/ArtifactLibraryPane';
 import AuditLogPane from './panes/AuditLogPane';
@@ -23,8 +24,8 @@ import { SafeFileEditCenterPane } from './panes/SafeFileEditCenterPane';
 import { TerminalInspectorPane } from './panes/TerminalInspectorPane';
 import { XAppPreviewPane } from './panes/XAppPreviewPane';
 import { XamongCodeChatPane } from './panes/XamongCodeChatPane';
-import { XdBlasterPane } from './panes/XdBlasterPane';
 import { XconAgentWorkbenchPane } from './panes/XconAgentWorkbenchPane';
+import { XdBlasterPane } from './panes/XdBlasterPane';
 import { XenesisAgentPane } from './panes/XenesisAgentPane';
 import { XenisBotPane } from './panes/XenisBotPane';
 import { hydrateXenisBotSessions, recordXenisBotEvent } from './xenisBotStore';
@@ -42,6 +43,7 @@ const TOOL_IDS = {
   remoteSyncPlanner: 'xenesis-desk.core-tools.remote-sync-planner',
   runTaskPanel: 'xenesis-desk.core-tools.run-task-panel',
   safeFileEditCenter: 'xenesis-desk.core-tools.safe-file-edit-center',
+  agentSessions: 'xenesis-desk.core-tools.agent-sessions',
   xenesisAgent: 'xenesis-desk.core-tools.xenesis-agent',
   hermesStatus: 'xenesis-desk.core-tools.hermes-status',
   hermesActionInbox: 'xenesis-desk.core-tools.hermes-action-inbox',
@@ -224,6 +226,16 @@ function safeFileEditCenterContent(): DockContentOptions {
     state: 'document',
     html: '',
     contentType: 'xd-safe-file-edit-center',
+  };
+}
+
+function agentSessionsContent(): DockContentOptions {
+  return {
+    id: `xd-agent-sessions-${crypto.randomUUID()}`,
+    title: 'Agent Sessions',
+    state: 'document',
+    html: '',
+    contentType: 'xd-agent-sessions',
   };
 }
 
@@ -432,6 +444,14 @@ const contribution: RendererExtensionContribution = {
         context.openContent(safeFileEditCenterContent(), context.requestedPlacement ?? 'tab');
       }
       context.onStatus('Safe File Edit Center opened');
+      return true;
+    }
+
+    if (tool === TOOL_IDS.agentSessions) {
+      if (!focusExistingContent(context.engine, 'xd-agent-sessions')) {
+        context.openContent(agentSessionsContent(), context.requestedPlacement ?? 'tab');
+      }
+      context.onStatus('Agent Sessions opened');
       return true;
     }
 
@@ -742,6 +762,9 @@ const contribution: RendererExtensionContribution = {
     if (content.contentType === 'xd-safe-file-edit-center') {
       return <SafeFileEditCenterPane />;
     }
+    if (content.contentType === 'xd-agent-sessions') {
+      return <AgentSessionsPane />;
+    }
     if (content.contentType === 'xenesis-agent') {
       return <XenesisAgentPane contentId={content.id} />;
     }
@@ -799,6 +822,7 @@ const contribution: RendererExtensionContribution = {
       'xd-remote-sync-planner': 'S',
       'xd-run-task-panel': 'R',
       'xd-safe-file-edit-center': 'E',
+      'xd-agent-sessions': 'AS',
       'xenesis-agent': 'XG',
       'hermes-status': 'H',
       'hermes-action-inbox': 'A',
@@ -830,6 +854,7 @@ const contribution: RendererExtensionContribution = {
       contentType === 'xd-remote-sync-planner' ||
       contentType === 'xd-run-task-panel' ||
       contentType === 'xd-safe-file-edit-center' ||
+      contentType === 'xd-agent-sessions' ||
       contentType === 'xenesis-agent' ||
       contentType === 'hermes-action-inbox' ||
       contentType === 'capability-explorer' ||
