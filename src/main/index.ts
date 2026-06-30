@@ -94,6 +94,13 @@ import {
 } from '../shared/deskBridgeCapabilities';
 import { normalizeExternalAppSettings } from '../shared/externalAppControl';
 import {
+  buildExternalIntegrationCatalogStatus,
+  buildExternalIntegrationDoctorStatus,
+  buildExternalIntegrationImportPreview,
+  buildExternalIntegrationStatus,
+  type ExternalIntegrationImportSource,
+} from '../shared/externalIntegrations';
+import {
   canUseXenisPhase5XamongCodeCommand,
   isXenisPhase5Visible,
   isXenisPhase5Enabled as resolveXenisPhase5Enabled,
@@ -4900,6 +4907,79 @@ async function getXenesisConnectionsStatus(): Promise<XenesisConnectionsStatus> 
     guideFileExists: (guideOpenPath) => fs.existsSync(guideOpenPath),
   });
   return withXenesisConnectionSetupRequestReviews(status, listMcpActionInboxSnapshot());
+}
+
+const XENESIS_EXTERNAL_INTEGRATION_IMPORT_SOURCES: readonly ExternalIntegrationImportSource[] = [
+  'hermes',
+  'openclaw',
+  'mcp-client',
+];
+
+function readXenesisExternalIntegrationId(args?: unknown): string {
+  const body = normalizeMcpCapabilityArgs(args);
+  return readCapabilityString(body, ['id', 'integration', 'name']);
+}
+
+function getXenesisExternalIntegrationCatalogStatus(_args?: unknown): Record<string, unknown> {
+  return { ...buildExternalIntegrationCatalogStatus() };
+}
+
+function getXenesisExternalIntegrationStatus(args?: unknown): Record<string, unknown> {
+  const id = readXenesisExternalIntegrationId(args);
+  return { ...buildExternalIntegrationStatus({ ...(id ? { id } : {}), env: process.env }) };
+}
+
+function getXenesisExternalIntegrationDoctorStatus(args?: unknown): Record<string, unknown> {
+  const id = readXenesisExternalIntegrationId(args);
+  return { ...buildExternalIntegrationDoctorStatus({ ...(id ? { id } : {}), env: process.env }) };
+}
+
+function isXenesisExternalIntegrationImportSource(source: string): source is ExternalIntegrationImportSource {
+  return (XENESIS_EXTERNAL_INTEGRATION_IMPORT_SOURCES as readonly string[]).includes(source);
+}
+
+function readXenesisExternalIntegrationPluginIds(body: Record<string, unknown>): string[] | undefined {
+  const value = body.pluginIds;
+  if (!Array.isArray(value)) return undefined;
+
+  const pluginIds: string[] = [];
+  for (const item of value) {
+    if (typeof item !== 'string') return undefined;
+    const trimmed = item.trim();
+    if (trimmed) pluginIds.push(trimmed);
+  }
+  return pluginIds;
+}
+
+function readXenesisExternalIntegrationMcpServers(body: Record<string, unknown>): Record<string, unknown> | undefined {
+  const value = body.mcpServers;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null) return undefined;
+  return value as Record<string, unknown>;
+}
+
+function previewXenesisExternalIntegrationImport(args?: unknown): Record<string, unknown> {
+  const body = normalizeMcpCapabilityArgs(args);
+  const source = readCapabilityString(body, ['source', 'kind']);
+  if (!isXenesisExternalIntegrationImportSource(source)) {
+    return {
+      ok: false,
+      error: `Unsupported external integration import source: ${source || '(missing)'}`,
+      allowedSources: XENESIS_EXTERNAL_INTEGRATION_IMPORT_SOURCES,
+    };
+  }
+
+  const mcpServers = readXenesisExternalIntegrationMcpServers(body);
+  const pluginIds = readXenesisExternalIntegrationPluginIds(body);
+  return {
+    ...buildExternalIntegrationImportPreview({
+      source,
+      env: process.env,
+      ...(mcpServers ? { mcpServers } : {}),
+      ...(pluginIds ? { pluginIds } : {}),
+    }),
+  };
 }
 
 function readXenesisConnectionDetailFocus(
@@ -16614,6 +16694,10 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     applyXenesisChannelProfileDraft: (args: unknown) => applyXenesisChannelProfileDraft(args),
     getXenesisGuidesStatus: (args: unknown) => getXenesisGuidesStatus(args),
     openXenesisGuide: (args: unknown) => openXenesisGuide(args),
+    getXenesisExternalIntegrationCatalogStatus: (args: unknown) => getXenesisExternalIntegrationCatalogStatus(args),
+    getXenesisExternalIntegrationStatus: (args: unknown) => getXenesisExternalIntegrationStatus(args),
+    getXenesisExternalIntegrationDoctorStatus: (args: unknown) => getXenesisExternalIntegrationDoctorStatus(args),
+    previewXenesisExternalIntegrationImport: (args: unknown) => previewXenesisExternalIntegrationImport(args),
     getXenesisToolSetupStatus: (args: unknown) => getXenesisToolSetupStatus(args),
     openXenesisToolSetup: (args: unknown) => openXenesisToolSetup(args),
     getXenesisToolSetupPlansStatus: (args: unknown) => getXenesisToolSetupPlansStatus(args),
