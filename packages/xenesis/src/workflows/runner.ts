@@ -120,6 +120,7 @@ export async function runResolvedWorkflow(options: RunResolvedWorkflowOptions) {
         attachments: index === 0 ? options.attachments : undefined,
         abortSignal: options.abortSignal,
         stream: options.stream,
+        approvalHandler: options.approvalHandler,
         disposeRunner: options.disposeRunner,
         ideContext: options.workflow.ideContext,
         traceId: options.traceId,

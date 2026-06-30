@@ -37,6 +37,7 @@ test('renderer tools menu resolves primary, grouped, and public extension comman
     command('xenesis-desk.core-tools.openXenesisAgent'),
     command('xenesis-desk.core-tools.openCapabilityExplorer'),
     command('xenesis-desk.core-tools.openAiWorkbench'),
+    command('xenesis-desk.core-tools.openXenesisAgentWorkbench'),
     command('xenesis-desk.obsidian-vault.openViewer', 'xenesis-desk.obsidian-vault'),
     command('xenesis-desk.workflow-runner.openGowoori', 'xenesis-desk.workflow-runner'),
     command('sample.hello-world.openPanel', 'sample.hello-world'),
@@ -49,6 +50,11 @@ test('renderer tools menu resolves primary, grouped, and public extension comman
   assert.equal(
     commandIds(menu.groups.find((group) => group.id === 'tools')?.items)[0],
     'xenesis-desk.core-tools.openAiWorkbench',
+  );
+  assert.ok(
+    commandIds(menu.groups.find((group) => group.id === 'tools')?.items).includes(
+      'xenesis-desk.core-tools.openXenesisAgentWorkbench',
+    ),
   );
   assert.ok(
     commandIds(menu.groups.find((group) => group.id === 'tools')?.items).includes(
@@ -71,6 +77,7 @@ test('native menu items include built-in actions and extension commands but skip
   assert.ok(nativeItems.some((item) => item.actionId === 'open-command-center'));
   assert.ok(nativeItems.some((item) => item.actionId === 'open-xenesis-tui'));
   assert.ok(nativeItems.some((item) => item.commandId === 'xenesis-desk.core-tools.openXenesisAgent'));
+  assert.ok(nativeItems.some((item) => item.commandId === 'xenesis-desk.core-tools.openXenesisAgentWorkbench'));
   assert.ok(nativeItems.some((item) => item.commandId === 'xenesis-desk.obsidian-vault.openViewer'));
   assert.ok(commandIds.includes('xenesis-desk.workflow-runner.openDemoLabPlayer'));
   assert.equal(
@@ -126,6 +133,7 @@ test('tools menu exposes command-palette-only operator panels by feature group',
   const menu = resolveRendererToolsMenu([
     command('xenesis-desk.core-tools.openActivityTimeline'),
     command('xenesis-desk.core-tools.openNetworkMonitor'),
+    command('xenesis-desk.core-tools.openXdBlaster'),
     command('xenesis-desk.core-tools.openAuditLog'),
     command('xenesis-desk.core-tools.openAgentPerformance'),
     command('xenesis-desk.core-tools.openMemoryDashboard'),
@@ -137,6 +145,7 @@ test('tools menu exposes command-palette-only operator panels by feature group',
   assert.deepEqual(commandIds(menu.groups.find((group) => group.id === 'tools')?.items), [
     'xenesis-desk.core-tools.openActivityTimeline',
     'xenesis-desk.core-tools.openNetworkMonitor',
+    'xenesis-desk.core-tools.openXdBlaster',
     'xenesis-desk.core-tools.openAuditLog',
     'xenesis-desk.core-tools.openAgentPerformance',
     'xenesis-desk.core-tools.openMemoryDashboard',
@@ -151,6 +160,7 @@ test('tools menu exposes command-palette-only operator panels by feature group',
   for (const commandId of [
     'xenesis-desk.core-tools.openActivityTimeline',
     'xenesis-desk.core-tools.openNetworkMonitor',
+    'xenesis-desk.core-tools.openXdBlaster',
     'xenesis-desk.core-tools.openAuditLog',
     'xenesis-desk.core-tools.openAgentPerformance',
     'xenesis-desk.core-tools.openMemoryDashboard',

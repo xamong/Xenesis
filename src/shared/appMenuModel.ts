@@ -287,6 +287,13 @@ export const APP_MENU_MODEL: AppMenuGroupNode[] = [
     icon: 'T',
     children: [
       command('ai-workbench', 'Xenesis Desk AI Workbench', 'xenesis-desk.core-tools.openAiWorkbench', undefined, 'AI'),
+      command(
+        'xenesis-agent-workbench',
+        'Xenesis Agent Workbench',
+        'xenesis-desk.core-tools.openXenesisAgentWorkbench',
+        undefined,
+        'XG',
+      ),
       command('action-inbox', 'Action Inbox', 'xenesis-desk.core-tools.openHermesActionInbox', undefined, 'A'),
       command('artifact-library', 'Artifact Library', 'xenesis-desk.core-tools.openArtifactLibrary', undefined, 'L'),
       command(
@@ -320,6 +327,7 @@ export const APP_MENU_MODEL: AppMenuGroupNode[] = [
         'TL',
       ),
       command('network-monitor', 'Network Monitor', 'xenesis-desk.core-tools.openNetworkMonitor', undefined, 'N'),
+      command('xd-blaster', 'XD Blaster', 'xenesis-desk.core-tools.openXdBlaster', undefined, 'XB'),
       command('audit-log', 'Audit Log', 'xenesis-desk.core-tools.openAuditLog', undefined, 'AU'),
       command(
         'agent-performance',

@@ -271,6 +271,9 @@ import type {
   XamongCodeRuntimeSettings,
   XamongCodeServerStatus,
   XenesisApprovalMode,
+  XenesisApprovalRequest,
+  XenesisApprovalResolveRequest,
+  XenesisApprovalResolveResult,
   XenesisChannelState,
   XenesisGatewayChannelName,
   XenesisGatewayChannelRuntimeStatus,
@@ -338,6 +341,7 @@ import {
   buildXenesisProviderProfileDraftApplySettings,
   redactXenesisProviderProfileDraftApplySettings,
 } from '../shared/xenesisProviderProfileApply';
+import { withXenesisRunEventScope } from '../shared/xenesisRunEventScope';
 import { createLinkedApprovalActionNeeded, createLinkedApprovalReceipt } from './agentActionRecordBridge.mjs';
 import { createAgentControlLockManager } from './agentControlLock';
 import { createAgentTurnLedgerReadbackApi } from './agentTurnLedgerService';
@@ -449,6 +453,10 @@ import {
   normalizeXenesisRunProviderRuntimeRequest,
   type XenesisRunProviderRuntimeOverride,
 } from './xenesisRunProviderRuntime';
+import {
+  createXenesisWorkbenchApprovalController,
+  projectXenesisApprovalRequests,
+} from './xenesisWorkbenchApprovals.mjs';
 import {
   buildXenesisProviderRuntimeStatus as buildResolvedXenesisProviderRuntimeStatus,
   buildXenesisGatewayLaunch,
@@ -652,6 +660,23 @@ const mcpActionInboxState = createMcpActionInboxState();
 const mcpBotSessionsState = createMcpBotSessionsState();
 const mcpCapabilityApprovalAllowKeys = new Set<string>();
 let latestMcpRendererState: McpBridgeRendererStateSnapshot | null = null;
+
+interface ActiveXenesisRunEventScope {
+  source: string;
+  sessionId?: string;
+  runId: string;
+  context: Record<string, unknown>;
+}
+
+let activeXenesisRunEventScope: ActiveXenesisRunEventScope | null = null;
+
+const xenesisWorkbenchApprovals = createXenesisWorkbenchApprovalController({
+  applyActionInboxRequest: (raw: unknown) => applyMcpActionInboxRequest(mcpActionInboxState, raw) as McpBridgeActionInboxItem,
+  resolveActionInboxRequest: (request: McpBridgeActionInboxResolveRequest) => resolveMcpActionInboxRequest(request),
+  listActionInboxItems: () => listMcpActionInboxSnapshot(),
+  emitChanged: () => emitMcpActionInboxChanged(),
+});
+
 const MCP_DOCK_ACTION_TIMEOUT_MS = 5_000;
 const pendingMcpOpenBuiltinPaneRequests = new Map<
   string,
@@ -9615,7 +9640,9 @@ function listMcpActionInboxSnapshot(): McpBridgeActionInboxItem[] {
 function emitMcpActionInboxChanged(): void {
   const targetWindow = getMcpTargetWindow();
   if (!targetWindow) return;
-  sendToRenderer(targetWindow, 'mcp:action-inbox-changed', listMcpActionInboxSnapshot());
+  const items = listMcpActionInboxSnapshot();
+  sendToRenderer(targetWindow, 'mcp:action-inbox-changed', items);
+  sendToRenderer(targetWindow, 'xenesis:approvals-changed', projectXenesisApprovalRequests(items));
 }
 
 function currentAgentActionTurnId(): string {
@@ -9908,6 +9935,26 @@ async function resolveMcpActionInboxRequest(
   }
   if (isCapabilityApprovalItem(existing)) {
     return resolveCapabilityActionInboxRequest(existing, request);
+  }
+  if (existing.kind === 'runtime-tool') {
+    const now = new Date().toISOString();
+    const resolved = resolveMcpActionInboxItem(mcpActionInboxState, {
+      ...request,
+      at: now,
+      lastCallbackAt: now,
+      result: request.resolution === 'approve' ? 'Xenesis runtime tool approved.' : '',
+      error: request.resolution === 'reject' ? 'Xenesis runtime tool rejected.' : '',
+    }) as McpBridgeActionInboxResolveResult;
+    persistMcpActionInboxStateSafely();
+    emitMcpActionInboxChanged();
+    recordDiagnosticLog({
+      level: 'info',
+      source: 'main',
+      scope: 'mcp',
+      message: `Xenesis runtime approval ${request.resolution}: ${existing.title}`,
+      detail: JSON.stringify({ id: existing.id, sessionId: existing.sessionId }),
+    });
+    return resolved;
   }
   const text = request.resolution === 'approve' ? existing.approveText : existing.rejectText;
   try {
@@ -19651,9 +19698,19 @@ function embeddedXenesisOptions(): XenesisEmbeddedAgentServiceOptions {
     profilePolicy: profileSnapshot.policy,
     bridgeUrl: mcpBridgeReady ? getMcpBridgeUrl() : '',
     bridgeToken: mcpBridgeReady ? mcpBridgeToken : '',
+    approvalHandler: (request) =>
+      xenesisWorkbenchApprovals.requestApproval(request, {
+        source: activeXenesisRunEventScope?.source || 'xenesis-xenesis-agent',
+        sessionId: activeXenesisRunEventScope?.sessionId,
+        runId: activeXenesisRunEventScope?.runId,
+        context: activeXenesisRunEventScope?.context ?? {},
+      }),
     onEvent: (event) => {
-      recordXenesisRunEventObservation(mainWindowRef, event);
-      mainWindowRef?.webContents.send('xenesis:run-event', event);
+      const scopedEvent = activeXenesisRunEventScope
+        ? withXenesisRunEventScope(event, activeXenesisRunEventScope, activeXenesisRunEventScope.runId)
+        : event;
+      recordXenesisRunEventObservation(mainWindowRef, scopedEvent);
+      mainWindowRef?.webContents.send('xenesis:run-event', scopedEvent);
     },
   };
 }
@@ -20439,14 +20496,39 @@ async function runXenesisExternalGatewayRequest(
   }
 }
 
+function createActiveXenesisRunEventScope(request: XenesisRunRequest): ActiveXenesisRunEventScope {
+  const raw: Record<string, unknown> = isPlainRecord(request) ? request : {};
+  const source = typeof raw.source === 'string' && raw.source.trim() ? raw.source.trim() : 'xenesis-desk';
+  const sessionId = typeof raw.sessionId === 'string' && raw.sessionId.trim() ? raw.sessionId.trim() : undefined;
+  const context = isPlainRecord(raw.context) ? raw.context : {};
+  return {
+    source,
+    ...(sessionId ? { sessionId } : {}),
+    runId: `xenesis-run-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    context,
+  };
+}
+
+function scopeXenesisRunEvent(event: XenesisRunEvent, scope: ActiveXenesisRunEventScope): XenesisRunEvent {
+  return withXenesisRunEventScope(event, scope, scope.runId);
+}
+
 async function runXenesisRequest(
   request: XenesisRunRequest,
   emitEvent?: (event: XenesisRunEvent) => void,
 ): Promise<XenesisRunResult> {
-  if (getXenesisRuntimeMode() === 'externalGateway') {
-    return runXenesisExternalGatewayRequest(request, emitEvent);
+  const previousScope = activeXenesisRunEventScope;
+  const scope = createActiveXenesisRunEventScope(request);
+  const scopedEmitEvent = emitEvent ? (event: XenesisRunEvent) => emitEvent(scopeXenesisRunEvent(event, scope)) : undefined;
+  activeXenesisRunEventScope = scope;
+  try {
+    if (getXenesisRuntimeMode() === 'externalGateway') {
+      return runXenesisExternalGatewayRequest(request, scopedEmitEvent);
+    }
+    return runXenesisEmbeddedRequest(request, scopedEmitEvent);
+  } finally {
+    activeXenesisRunEventScope = previousScope;
   }
-  return runXenesisEmbeddedRequest(request, emitEvent);
 }
 
 // ─── 애플리케이션 메뉴 ────────────────────────────────────────────────────────
@@ -22437,6 +22519,12 @@ function setupIpc(): void {
   });
   ipcMain.handle('mcp:bridge-status', (): McpBridgeStatus => buildMcpBridgeStatusSnapshot());
   ipcMain.handle('mcp:action-inbox-list', (): McpBridgeActionInboxItem[] => listMcpActionInboxSnapshot());
+  ipcMain.handle('xenesis:approvals-list', (): XenesisApprovalRequest[] => xenesisWorkbenchApprovals.listApprovals());
+  ipcMain.handle(
+    'xenesis:approvals-resolve',
+    async (_event, request: XenesisApprovalResolveRequest): Promise<XenesisApprovalResolveResult> =>
+      xenesisWorkbenchApprovals.resolveApproval(request),
+  );
   ipcMain.handle(
     'mcp:action-inbox-resolve',
     (_event, request: McpBridgeActionInboxResolveRequest): Promise<McpBridgeActionInboxResolveResult> =>

@@ -2753,6 +2753,10 @@ export const DESK_BRIDGE_COMMAND_CAPABILITY_COVERAGE = {
     commandCapabilityPath: 'xd.extensions.runCommand',
     notes: 'Built-in core tool panel opened through the extension command host.',
   },
+  'xenesis-desk.core-tools.openXenesisAgentWorkbench': {
+    commandCapabilityPath: 'xd.extensions.runCommand',
+    notes: 'Xenesis Agent Workbench panel opened through the extension command host.',
+  },
   'xenesis-desk.core-tools.openArtifactLibrary': {
     commandCapabilityPath: 'xd.extensions.runCommand',
     notes: 'Built-in core tool panel opened through the extension command host.',
@@ -3067,6 +3071,9 @@ export const DESK_BRIDGE_DOCK_CONTENT_CAPABILITY_COVERAGE = {
   'xd-ai-workbench': {
     contentCapabilityPath: 'xd.tools.core.aiWorkbench.open',
   },
+  'xd-xenesis-agent-workbench': {
+    contentCapabilityPath: 'xd.tools.core.xenesisAgentWorkbench.open',
+  },
   'xd-artifact-library': {
     contentCapabilityPath: 'xd.tools.core.artifactLibrary.open',
   },
@@ -3313,6 +3320,11 @@ export const DESK_BRIDGE_EXTENSION_TOOL_CAPABILITY_COVERAGE = {
     toolCapabilityPath: 'xd.tools.core.aiWorkbench.open',
     commandId: 'xenesis-desk.core-tools.openAiWorkbench',
     notes: 'Open AI Workbench as a first-class core tool capability.',
+  },
+  'xenesis-desk.core-tools.xenesis-agent-workbench': {
+    toolCapabilityPath: 'xd.tools.core.xenesisAgentWorkbench.open',
+    commandId: 'xenesis-desk.core-tools.openXenesisAgentWorkbench',
+    notes: 'Open Xenesis Agent Workbench as a first-class core tool capability.',
   },
   'xenesis-desk.core-tools.artifact-library': {
     toolCapabilityPath: 'xd.tools.core.artifactLibrary.open',
@@ -10246,6 +10258,12 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
         method('xd.tools.core.bot.open', 'Open Xenesis Bot', 'Open the Xenesis Bot tool panel.', 'control'),
         method('xd.tools.core.aiWorkbench.open', 'Open AI Workbench', 'Open the AI Workbench tool panel.', 'control'),
         method(
+          'xd.tools.core.xenesisAgentWorkbench.open',
+          'Open Xenesis Agent Workbench',
+          'Open the Xenesis Agent Workbench tool panel.',
+          'control',
+        ),
+        method(
           'xd.tools.core.artifactLibrary.open',
           'Open Artifact Library',
           'Open the Artifact Library tool panel.',
@@ -13900,6 +13918,9 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.tools.core.aiWorkbench.open') {
         return toolOpenArgs('xenesis-desk.core-tools.openAiWorkbench');
+      }
+      if (path === 'xd.tools.core.xenesisAgentWorkbench.open') {
+        return toolOpenArgs('xenesis-desk.core-tools.openXenesisAgentWorkbench');
       }
       if (path === 'xd.tools.core.artifactLibrary.open') {
         return toolOpenArgs('xenesis-desk.core-tools.openArtifactLibrary');

@@ -4,6 +4,7 @@ import {
   type AgentRunPipelineResult,
   runAgentPipeline,
 } from '../core/AgentRunPipeline.js';
+import type { ApprovalHandler } from '../core/AgentRunner.js';
 import type { AgentRunEvent } from '../core/events.js';
 import type { AgentMessage, AgentMessageAttachment } from '../core/messages.js';
 import type { RuntimeSurfaceDescriptor } from '../core/runtime/index.js';
@@ -34,6 +35,7 @@ export interface EmbeddedPromptOptions {
   abortSignal?: AbortSignal;
   stream?: boolean;
   turnLedger?: XenesisTurnLedger;
+  approvalHandler?: ApprovalHandler;
   runPipeline?: EmbeddedRunPipeline;
   onEvent?: (event: AgentRunEvent) => void | Promise<void>;
   onSession?: (sessionId: string) => void | Promise<void>;
@@ -113,6 +115,7 @@ export async function runEmbeddedPrompt(options: EmbeddedPromptOptions): Promise
       attachments: options.attachments,
       abortSignal: options.abortSignal,
       stream,
+      approvalHandler: options.approvalHandler,
       runPipeline,
       turnLedger: options.turnLedger,
       onEvent: options.onEvent,

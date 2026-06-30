@@ -77,6 +77,30 @@ test('createDeskEmbeddedPromptOptions preserves explicit stream false override',
   assert.equal(options.stream, false);
 });
 
+test('createDeskEmbeddedPromptOptions forwards runtime approvalHandler to embedded prompt options', () => {
+  const approvalHandler = () => true;
+  const options = createDeskEmbeddedPromptOptions({
+    workspace: 'D:/workspace',
+    xenesisHome: 'C:/Users/example/.xenesis-dev',
+    providerRuntime: {
+      provider: 'mock',
+      model: '',
+      profile: '',
+      baseURL: '',
+      apiKeyEnv: '',
+      env: {},
+    },
+    approvalMode: 'safe',
+    maxTurns: 4,
+    approvalHandler,
+    request: {
+      prompt: '안녕',
+    },
+  });
+
+  assert.equal(options.approvalHandler, approvalHandler);
+});
+
 test('createDeskEmbeddedPromptOptions preserves Qwen provider override for embedded Xenesis runs', () => {
   const options = createDeskEmbeddedPromptOptions({
     workspace: 'D:/workspace',

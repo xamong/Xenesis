@@ -1,16 +1,16 @@
 # Xenesis Desk Capability Registry Audit
 
-Generated: 2026-06-30, 08:48 p.m. KST
+Generated: 2026-06-30, 11:31 p.m. KST
 
 This audit checks that coverage metadata points to registered capability nodes and that callable method paths are wired in `callDeskBridgeCapability()`. It runs with Phase 5 capability visibility enabled so staged XamongCode wiring is audited without exposing it in the default registry list.
 
 ## Summary
 
-- Registered nodes: 854
-- Callable methods: 537
+- Registered nodes: 855
+- Callable methods: 538
 - Subscribable events: 54
-- Coverage path references: 692
-- Dispatcher paths: 517
+- Coverage path references: 695
+- Dispatcher paths: 518
 - Missing registered paths: 0
 - Missing dispatched coverage paths: 0
 - Undispatched static callable methods: 0
@@ -115,6 +115,7 @@ None.
 | `DESK_BRIDGE_COMMAND_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.openXamongCode` | `commandCapabilityPath` | method | `xd.extensions.runCommand` |
 | `DESK_BRIDGE_COMMAND_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.openXdBlaster` | `commandCapabilityPath` | method | `xd.extensions.runCommand` |
 | `DESK_BRIDGE_COMMAND_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.openXenesisAgent` | `commandCapabilityPath` | method | `xd.extensions.runCommand` |
+| `DESK_BRIDGE_COMMAND_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.openXenesisAgentWorkbench` | `commandCapabilityPath` | method | `xd.extensions.runCommand` |
 | `DESK_BRIDGE_COMMAND_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.openXenisBot` | `commandCapabilityPath` | method | `xd.extensions.runCommand` |
 | `DESK_BRIDGE_COMMAND_CAPABILITY_COVERAGE` | `xenesis-desk.data-tools.openMetaManagement` | `commandCapabilityPath` | method | `xd.extensions.runCommand` |
 | `DESK_BRIDGE_COMMAND_CAPABILITY_COVERAGE` | `xenesis-desk.data-tools.openQueryAnalyzer` | `commandCapabilityPath` | method | `xd.extensions.runCommand` |
@@ -211,6 +212,7 @@ None.
 | `DESK_BRIDGE_DOCK_CONTENT_CAPABILITY_COVERAGE` | `xd-run-task-panel` | `contentCapabilityPath` | method | `xd.tools.core.runTaskPanel.open` |
 | `DESK_BRIDGE_DOCK_CONTENT_CAPABILITY_COVERAGE` | `xd-safe-file-edit-center` | `contentCapabilityPath` | method | `xd.tools.core.safeFileEditCenter.open` |
 | `DESK_BRIDGE_DOCK_CONTENT_CAPABILITY_COVERAGE` | `xd-terminal-inspector` | `contentCapabilityPath` | method | `xd.tools.core.terminalInspector.open` |
+| `DESK_BRIDGE_DOCK_CONTENT_CAPABILITY_COVERAGE` | `xd-xenesis-agent-workbench` | `contentCapabilityPath` | method | `xd.tools.core.xenesisAgentWorkbench.open` |
 | `DESK_BRIDGE_DOCK_CONTENT_CAPABILITY_COVERAGE` | `xenesis-agent` | `contentCapabilityPath` | method | `xd.tools.core.xenesisAgent.open` |
 | `DESK_BRIDGE_DOCK_CONTENT_CAPABILITY_COVERAGE` | `xenesis-bot` | `contentCapabilityPath` | method | `xd.tools.core.bot.open` |
 | `DESK_BRIDGE_DOCK_TAB_MENU_CAPABILITY_COVERAGE` | `arrangeGroupGrid` | `dockTabMenuCapabilityPath` | method | `xd.dock.arrangeGrid` |
@@ -268,6 +270,7 @@ None.
 | `DESK_BRIDGE_EXTENSION_TOOL_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.xapp-preview` | `toolCapabilityPath` | method | `xd.tools.core.xappPreview.open` |
 | `DESK_BRIDGE_EXTENSION_TOOL_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.xd-blaster` | `toolCapabilityPath` | method | `xd.tools.core.xdBlaster.open` |
 | `DESK_BRIDGE_EXTENSION_TOOL_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.xenesis-agent` | `toolCapabilityPath` | method | `xd.tools.core.xenesisAgent.open` |
+| `DESK_BRIDGE_EXTENSION_TOOL_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.xenesis-agent-workbench` | `toolCapabilityPath` | method | `xd.tools.core.xenesisAgentWorkbench.open` |
 | `DESK_BRIDGE_EXTENSION_TOOL_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.xenesis-bot` | `toolCapabilityPath` | method | `xd.tools.core.bot.open` |
 | `DESK_BRIDGE_EXTENSION_TOOL_CAPABILITY_COVERAGE` | `xenesis-desk.data-tools.meta-management` | `toolCapabilityPath` | method | `xd.tools.data.metaManagement.open` |
 | `DESK_BRIDGE_EXTENSION_TOOL_CAPABILITY_COVERAGE` | `xenesis-desk.data-tools.query-analyzer` | `toolCapabilityPath` | method | `xd.tools.data.queryAnalyzer.open` |

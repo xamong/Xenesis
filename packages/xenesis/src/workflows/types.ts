@@ -100,6 +100,7 @@ export interface RunResolvedWorkflowOptions {
   abortSignal?: AbortSignal;
   stream?: boolean;
   disposeRunner?: AgentRunPipelineOptions['disposeRunner'];
+  approvalHandler?: AgentRunPipelineOptions['approvalHandler'];
   runPipeline: WorkflowRunPipeline;
   turnLedger?: AgentRunPipelineOptions['turnLedger'];
   onEvent?: (event: AgentRunPipelineResult['events'][number]) => void | Promise<void>;
