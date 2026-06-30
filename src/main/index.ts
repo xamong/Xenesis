@@ -394,6 +394,11 @@ import {
   summarizeMainObservabilityPayload,
 } from './observabilityBridge';
 import {
+  normalizeDetachedWindowBounds,
+  resolveDetachedWindowPlacement,
+  type DisplayWorkArea,
+} from './detachedWindowPlacement';
+import {
   exportOnboardingDemoRouteStoryboard,
   openOnboardingDemoRouteTarget,
   readOnboardingDemoRoute,
@@ -1514,6 +1519,8 @@ const detachPayloads = new Map<number, DetachPayload>();
 
 // 분리 창 레지스트리 (windowId → BrowserWindow) — 창 간 합치기에 사용
 const detachedWindows = new Map<number, BrowserWindow>();
+
+let lastDetachedWindowBounds: WindowBounds | null = null;
 
 // 메인 창 참조 (재결합 IPC 전달용)
 let mainWindowRef: BrowserWindow | null = null;
@@ -16194,7 +16201,9 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     detachWindowTab: (args: unknown) => {
       const payload = normalizeMcpCapabilityArgs(args) as unknown as DetachPayload;
       if (!payload || !payload.id) return { ok: false, error: 'detach payload id is required' };
-      const win = createDetachedWindow(payload.title || 'Xenesis Desk');
+      const win = createDetachedWindow(payload.title || 'Xenesis Desk', {
+        requestedBounds: payload.requestedWindowBounds,
+      });
       detachPayloads.set(win.id, payload);
       return { ok: true, windowId: win.id };
     },
@@ -17985,6 +17994,52 @@ function attachWindowBoundsEvents(win: BrowserWindow): void {
       pendingTimer = null;
     }
   });
+}
+
+function getDetachedDisplayWorkAreas(): DisplayWorkArea[] {
+  return screen.getAllDisplays().map((display) => ({
+    id: display.id,
+    workArea: {
+      x: Math.round(display.workArea.x),
+      y: Math.round(display.workArea.y),
+      width: Math.round(display.workArea.width),
+      height: Math.round(display.workArea.height),
+    },
+  }));
+}
+
+function getRememberableDetachedWindowBounds(win: BrowserWindow): WindowBounds | null {
+  if (win.isDestroyed() || win.isMinimized() || win.isFullScreen()) {
+    return null;
+  }
+  return normalizeDetachedWindowBounds(win.isMaximized() ? win.getNormalBounds() : win.getBounds());
+}
+
+function attachDetachedWindowBoundsMemory(win: BrowserWindow): void {
+  let pendingTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const clearPendingTimer = () => {
+    if (!pendingTimer) return;
+    clearTimeout(pendingTimer);
+    pendingTimer = null;
+  };
+
+  const rememberBounds = () => {
+    clearPendingTimer();
+    const bounds = getRememberableDetachedWindowBounds(win);
+    if (bounds) lastDetachedWindowBounds = bounds;
+  };
+
+  const scheduleRemember = () => {
+    if (win.isDestroyed()) return;
+    if (pendingTimer) return;
+    pendingTimer = setTimeout(rememberBounds, 120);
+  };
+
+  win.on('resize', scheduleRemember);
+  win.on('move', scheduleRemember);
+  win.on('close', rememberBounds);
+  win.on('closed', clearPendingTimer);
 }
 
 function getPersistableWindowBounds(win: BrowserWindow): WindowBounds | null {
@@ -20753,12 +20808,15 @@ function createWindow(): BrowserWindow {
 
 // ─── 분리 창 생성 ─────────────────────────────────────────────────────────────
 
-function createDetachedWindow(title: string): BrowserWindow {
+function createDetachedWindow(title: string, options?: { requestedBounds?: WindowBounds }): BrowserWindow {
+  const placement = resolveDetachedWindowPlacement({
+    requestedBounds: options?.requestedBounds,
+    rememberedBounds: lastDetachedWindowBounds,
+    displays: getDetachedDisplayWorkAreas(),
+  });
+
   const win = new BrowserWindow({
-    width: 960,
-    height: 680,
-    minWidth: 480,
-    minHeight: 320,
+    ...placement,
     title: title || 'Xenesis Desk',
     backgroundColor: '#0f172a',
     webPreferences: {
@@ -20772,6 +20830,7 @@ function createDetachedWindow(title: string): BrowserWindow {
   });
 
   attachWindowBoundsEvents(win);
+  attachDetachedWindowBoundsMemory(win);
 
   win.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url).catch(() => undefined);
@@ -23063,7 +23122,9 @@ function setupIpc(): void {
   // ── 탭 분리 창 ──
   ipcMain.handle('window:detach-tab', (_event, payload: DetachPayload) => {
     if (!payload || !payload.id) return;
-    const win = createDetachedWindow(payload.title || 'Xenesis Desk');
+    const win = createDetachedWindow(payload.title || 'Xenesis Desk', {
+      requestedBounds: payload.requestedWindowBounds,
+    });
     detachPayloads.set(win.id, payload);
   });
 

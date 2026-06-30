@@ -3357,6 +3357,8 @@ export interface DetachPayload {
   botInputUrl?: string;
   botSource?: string;
   botChannel?: McpBridgeBotChannelName;
+  /** Optional initial detached-window bounds requested by pointer tear-off. */
+  requestedWindowBounds?: WindowBounds;
 }
 
 /** 분리 창 하나의 windowId + 화면 좌표 bounds */

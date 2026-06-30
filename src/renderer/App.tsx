@@ -94,7 +94,9 @@ import {
   type SavedLayout,
   STORAGE_KEY,
 } from './dock/engine';
-import { type DetachMode } from './dock/useDragManager';
+import { buildRequestedDetachedWindowBounds } from './dock/detachBounds';
+import { runDockTransfer } from './dock/detachTransfer';
+import { type DetachIntentMetadata, type DetachMode } from './dock/useDragManager';
 import { useI18n } from './i18n';
 import {
   type CmdShortcut,
@@ -3989,13 +3991,12 @@ export default function App() {
 
   // ── 탭 분리 창 (tear-off) ────────────────────────────────────────────────────
   const handleDetach = useCallback(
-    (payload: DropPayload, mode: DetachMode, targetWindowId?: number) => {
+    (payload: DropPayload, mode: DetachMode, metadata?: DetachIntentMetadata) => {
       let contentId: string | null = null;
 
       if (payload.type === 'content') {
         contentId = payload.contentId;
       } else {
-        // 패인 드래그 시 active content를 대상으로 함
         const pane = engine.panes.get(payload.paneId);
         contentId = pane?.activeContentId ?? null;
       }
@@ -4004,15 +4005,10 @@ export default function App() {
       const content = engine.contents.get(contentId);
       if (!content) return;
 
-      // 터미널 탭: 새 PTY 스폰 없이 xterm 인스턴스만 해제하고 PTY를 유지한다.
-      // 대상 창에서 adoptTerminal()로 PTY에 재연결된다.
-      if (content.contentType === 'terminal') {
-        const termId = content.termId;
-        if (!termId) {
-          handleStatus(t('app.terminalDetachError'));
-          return;
-        }
-        terminalHost.release(termId);
+      const terminalTermId = content.contentType === 'terminal' ? content.termId : undefined;
+      if (content.contentType === 'terminal' && !terminalTermId) {
+        handleStatus(t('app.terminalDetachError'));
+        return;
       }
 
       const detachData: DetachPayload = {
@@ -4029,6 +4025,8 @@ export default function App() {
         fileName: content.fileName,
         fileContent: content.fileContent,
         fileExt: content.fileExt,
+        requestedWindowBounds:
+          mode === 'detach' ? buildRequestedDetachedWindowBounds(metadata?.dropPoint) : undefined,
       };
 
       // 탭 이동 후 현재 창에 탭이 없으면 창 닫기 (분리 창 전용)
@@ -4038,43 +4036,51 @@ export default function App() {
         }
       };
 
-      if (mode === 'reattach') {
-        // 분리 창 → 메인 창으로 재결합
-        if (typeof window.fileAPI?.reattachDrop === 'function') {
-          window.fileAPI
-            .reattachDrop(detachData)
-            .catch((err: unknown) =>
-              handleStatus(t('app.reattachFailed', { e: (err as Error)?.message ?? String(err) })),
-            );
-          engine.closeContent(contentId);
-          handleStatus(t('app.tabReattachedMainContent', { title: content.title }));
-          closeCurrentWindowIfEmpty();
-        }
-      } else if (mode === 'merge-to-detached' && targetWindowId != null) {
-        // 분리 창 → 다른 분리 창으로 탭 합치기
-        if (typeof window.fileAPI?.mergeTabToDetached === 'function') {
-          window.fileAPI
-            .mergeTabToDetached(detachData, targetWindowId)
-            .catch((err: unknown) => handleStatus(t('app.mergeFailed', { e: (err as Error)?.message ?? String(err) })));
-          engine.closeContent(contentId);
-          handleStatus(t('app.tabMergedOther', { title: content.title }));
-          closeCurrentWindowIfEmpty();
-        }
-      } else {
-        // 새 분리 창 생성 (메인 창 → 새 창, 또는 분리 창 → 새 창)
-        if (typeof window.fileAPI?.detachTab !== 'function') {
-          handleStatus(t('app.detachRequiresRestart'));
-          return;
-        }
-        window.fileAPI
-          .detachTab(detachData)
-          .catch((err: unknown) => handleStatus(t('app.detachFailed', { e: (err as Error)?.message ?? String(err) })));
-        engine.closeContent(contentId);
-        handleStatus(t('app.tabDetachedNew', { title: content.title }));
-        closeCurrentWindowIfEmpty();
-      }
+      const labels =
+        mode === 'reattach'
+          ? {
+              unavailable: t('app.reattachFailed', { e: 'Reattach IPC is not available.' }),
+              success: t('app.tabReattachedMainContent', { title: content.title }),
+              failure: (error: unknown) =>
+                t('app.reattachFailed', { e: (error as Error)?.message ?? String(error) }),
+            }
+          : mode === 'merge-to-detached'
+            ? {
+                unavailable: t('app.mergeFailed', { e: 'Detached merge IPC is not available.' }),
+                success: t('app.tabMergedOther', { title: content.title }),
+                failure: (error: unknown) =>
+                  t('app.mergeFailed', { e: (error as Error)?.message ?? String(error) }),
+              }
+            : {
+                unavailable: t('app.detachRequiresRestart'),
+                success: t('app.tabDetachedNew', { title: content.title }),
+                failure: (error: unknown) =>
+                  t('app.detachFailed', { e: (error as Error)?.message ?? String(error) }),
+              };
+
+      void runDockTransfer({
+        mode,
+        targetWindowId: metadata?.targetWindowId,
+        payload: detachData,
+        contentId,
+        terminalTermId,
+        api: {
+          detachTab: window.fileAPI?.detachTab,
+          reattachDrop: window.fileAPI?.reattachDrop,
+          mergeTabToDetached: window.fileAPI?.mergeTabToDetached,
+        },
+        closeContent: (id) => {
+          engine.closeContent(id);
+        },
+        releaseTerminal: (termId) => {
+          terminalHost.release(termId);
+        },
+        closeCurrentWindowIfEmpty,
+        onStatus: handleStatus,
+        labels,
+      });
     },
-    [engine, handleStatus, isDetachedWindow],
+    [engine, handleStatus, isDetachedWindow, t],
   );
 
   // ── 터미널 세션 생성 ──────────────────────────────────────────────────────────

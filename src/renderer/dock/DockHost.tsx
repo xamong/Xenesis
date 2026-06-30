@@ -15,7 +15,7 @@ import {
   WindowState,
 } from './engine';
 import FloatWindow from './FloatWindow';
-import { type DetachMode, useDragManager } from './useDragManager';
+import { type DetachIntentMetadata, type DetachMode, useDragManager } from './useDragManager';
 
 const DROP_ZONE_LABELS: Record<string, string> = {
   left: '◀',
@@ -120,7 +120,7 @@ function computeDockWindowFrames(engine: DockEngine): DockFrameResult {
 interface DockHostProps {
   engine: DockEngine;
   onStatus: (msg: string) => void;
-  onDetach: (payload: DropPayload, mode: DetachMode) => void;
+  onDetach: (payload: DropPayload, mode: DetachMode, metadata?: DetachIntentMetadata) => void;
   isDetachedWindow: boolean;
   onExtFileDrop?: (files: File[], pane: import('./engine').DockPane) => void;
   onOpenAutomationMonitor?: (termId: string) => void;
