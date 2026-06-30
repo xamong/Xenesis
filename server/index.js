@@ -7,6 +7,7 @@
  * 환경변수:
  *   PORT    — 수신 포트 (기본값: 3001)
  *   DB_PATH — database.db 파일 경로 (기본값: <server 디렉터리>/database.db)
+ *   CR_PAYLOAD_DIR — CR payload 캐시 경로 (기본값: <server 디렉터리>/cr-payloads)
  *
  * 실행:
  *   node index.js            # 기본 실행
@@ -20,11 +21,14 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const AdmZip = require('adm-zip');
+const { createCrMetadataStore } = require('./crMetadataStore');
+const { createMetaManagementStore } = require('./metaManagementStore');
 
 // ─── 경로 설정 ────────────────────────────────────────────────────────────────
 
 const SERVER_DIR = __dirname;
 const DB_PATH = process.env.DB_PATH || path.join(SERVER_DIR, 'database.db');
+const CR_PAYLOAD_DIR = process.env.CR_PAYLOAD_DIR || path.join(SERVER_DIR, 'cr-payloads');
 const ASSETS_APPS = path.join(SERVER_DIR, '..', '..', '..', 'assets', 'apps');
 const PORT = Number(process.env.PORT) || 3001;
 
@@ -38,6 +42,8 @@ app.use(express.static(path.join(SERVER_DIR, 'public')));
 // ─── 데이터베이스 초기화 ──────────────────────────────────────────────────────
 
 const db = new Database(DB_PATH);
+const crMetadataStore = createCrMetadataStore(db, { payloadDir: CR_PAYLOAD_DIR });
+const metaManagementStore = createMetaManagementStore(db);
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
@@ -1082,6 +1088,149 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
+function normalizeCrQuery(query = {}) {
+  const normalized = { ...query };
+  for (const key of ['callable', 'ok', 'approved']) {
+    if (normalized[key] !== undefined) normalized[key] = parseBooleanQueryValue(normalized[key]);
+  }
+  if (normalized.limit !== undefined) normalized.limit = Number(normalized.limit);
+  return normalized;
+}
+
+function parseBooleanQueryValue(value) {
+  if (value === true || value === 'true' || value === '1' || value === 1) return true;
+  if (value === false || value === 'false' || value === '0' || value === 0) return false;
+  return Boolean(value);
+}
+
+// ─── API: Capability Registry metadata ───────────────────────────────────────
+
+app.post('/api/cr/sync', (req, res) => {
+  try {
+    const result = crMetadataStore.syncRegistry(req.body);
+    metaManagementStore.recordChange({
+      entityTable: 'CR_CAPABILITY',
+      action: 'cr.sync',
+      source: 'cr-metadata',
+      summary: `CR sync stored ${result.capabilities ?? 0} capabilities.`,
+      afterJson: {
+        capabilities: result.capabilities,
+        snapshots: result.snapshots,
+      },
+    });
+    res.json({ success: true, data: result });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+app.get('/api/cr/capabilities', (req, res) => {
+  try {
+    res.json({ success: true, data: crMetadataStore.listCapabilities(normalizeCrQuery(req.query)) });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+app.get('/api/cr/capabilities/:path', (req, res) => {
+  try {
+    const row = crMetadataStore.getCapability(req.params.path);
+    if (!row) return res.status(404).json({ success: false, error: 'Capability metadata not found.' });
+    res.json({ success: true, data: row });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+app.get('/api/cr/snapshots', (req, res) => {
+  try {
+    res.json({ success: true, data: crMetadataStore.listSnapshots(normalizeCrQuery(req.query)) });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+app.get('/api/cr/runs', (req, res) => {
+  try {
+    res.json({ success: true, data: crMetadataStore.listRuns(normalizeCrQuery(req.query)) });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+app.post('/api/cr/runs', (req, res) => {
+  try {
+    const result = crMetadataStore.recordRun(req.body);
+    try {
+      metaManagementStore.recordChange({
+        entityTable: 'CR_RUN',
+        entityUid: result.runId || req.body?.runId,
+        entityKey: req.body?.path,
+        action: 'cr.run',
+        source: 'cr-metadata',
+        summary: `${req.body?.path || 'CR run'} ${req.body?.ok ? 'completed' : 'failed'}`,
+        ok: req.body?.ok !== false,
+        error: req.body?.error || null,
+      });
+    } catch {}
+    res.json({ success: true, data: result });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+app.get('/api/cr/runs/:runId', (req, res) => {
+  try {
+    const row = crMetadataStore.getRun(req.params.runId);
+    if (!row) return res.status(404).json({ success: false, error: 'CR run metadata not found.' });
+    res.json({ success: true, data: row });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+app.post('/api/cr/runs/:runId/events', (req, res) => {
+  try {
+    const events = Array.isArray(req.body?.events) ? req.body.events : Array.isArray(req.body) ? req.body : [];
+    res.json({ success: true, data: crMetadataStore.recordRunEvents(req.params.runId, events) });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+app.post('/api/meta/validate', (req, res) => {
+  try {
+    const result = metaManagementStore.validateCodeBatch(req.body || {});
+    res.json({ success: true, data: result });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+app.get('/api/meta/changelog', (req, res) => {
+  try {
+    res.json({ success: true, data: metaManagementStore.listChangelog(req.query || {}) });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+app.get('/api/meta/activity', (req, res) => {
+  try {
+    res.json({ success: true, data: metaManagementStore.listActivity(req.query || {}) });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+app.get('/api/meta/summary', (_req, res) => {
+  try {
+    res.json({ success: true, data: metaManagementStore.getSummary({ dbPath: DB_PATH }) });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 // ─── API: 초기 데이터 ─────────────────────────────────────────────────────────
 
 /**
@@ -1881,8 +2030,29 @@ app.post('/api/codes/import-snapshot', (req, res) => {
       dryRun: req.body?.dryRun === true,
       conflictPolicy: req.body?.conflictPolicy,
     });
+    metaManagementStore.recordChange({
+      entityTable: 'TB_CODE_INFO_NEW',
+      action: req.body?.dryRun === true ? 'import.preview' : 'import.apply',
+      source: 'meta-management',
+      summary:
+        req.body?.dryRun === true
+          ? `Import preview: ${result.inserted ?? 0} insert candidates, ${result.conflicts?.length ?? 0} conflicts.`
+          : `Import applied: ${result.inserted ?? 0} inserted, ${result.reusedConflicts ?? 0} reused.`,
+      afterJson: result,
+      ok: true,
+    });
     res.json({ success: true, data: result });
   } catch (e) {
+    try {
+      metaManagementStore.recordChange({
+        entityTable: 'TB_CODE_INFO_NEW',
+        action: req.body?.dryRun === true ? 'import.preview' : 'import.apply',
+        source: 'meta-management',
+        summary: 'Import failed.',
+        ok: false,
+        error: e.message,
+      });
+    } catch {}
     res.status(500).json({ success: false, error: e.message });
   }
 });
@@ -1891,57 +2061,91 @@ app.post('/api/codes/batch', (req, res) => {
   const { items } = req.body;
   if (!Array.isArray(items)) return res.status(400).json({ success: false, error: '유효하지 않은 데이터입니다.' });
 
-  const ins = db.prepare(`
-    INSERT INTO TB_CODE_INFO_NEW
-      (PID,PCODE,AID,ACODE,CODE,NAME,VALUE,TYPE,FORMORDER,DESCRIPTION,SHOW_YN,CID,RID,RIX,TARGET,RESERVE,RESERV1,RESERV2,RESERV3,USE_YN,TTSHINT)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-  `);
-  const upd = db.prepare(`
-    UPDATE TB_CODE_INFO_NEW SET
-      PID=?,PCODE=?,AID=?,ACODE=?,CODE=?,NAME=?,VALUE=?,TYPE=?,FORMORDER=?,DESCRIPTION=?,SHOW_YN=?,CID=?,RID=?,RIX=?,TARGET=?,RESERVE=?,RESERV1=?,RESERV2=?,RESERV3=?,USE_YN=?,TTSHINT=?
-    WHERE UID=?
-  `);
-  const del = db.prepare('UPDATE TB_CODE_INFO_NEW SET DEL_YN=? WHERE UID=?');
-
-  const run = db.transaction((list) =>
-    list.map((item) => {
-      if (item._deleted) {
-        del.run('Y', item.UID);
-        return { UID: item.UID, action: 'deleted' };
-      }
-      const p = [
-        item.PID ?? 0,
-        item.PCODE ?? '',
-        item.AID,
-        item.ACODE,
-        item.CODE,
-        item.NAME,
-        item.VALUE,
-        item.TYPE,
-        item.FORMORDER,
-        item.DESCRIPTION,
-        item.SHOW_YN ?? 'N',
-        item.CID,
-        item.RID,
-        item.RIX,
-        item.TARGET,
-        item.RESERVE,
-        item.RESERV1,
-        item.RESERV2,
-        item.RESERV3,
-        item.USE_YN ?? 'Y',
-        item.TTSHINT,
-      ];
-      if (item.UID) {
-        upd.run(...p, item.UID);
-        return { UID: item.UID, action: 'updated' };
-      }
-      return { UID: ins.run(...p).lastInsertRowid, action: 'inserted' };
-    }),
-  );
-
   try {
-    res.json({ success: true, data: run(items) });
+    const validation = metaManagementStore.validateCodeBatch({
+      scope: 'batch',
+      target: req.body?.target || null,
+      items,
+    });
+    if (validation.errorCount > 0) {
+      metaManagementStore.recordChange({
+        entityTable: 'TB_CODE_INFO_NEW',
+        action: 'validation.failed',
+        source: 'meta-management',
+        summary: `${validation.errorCount} validation errors blocked metadata save.`,
+        ok: false,
+        error: validation.errors.map((item) => item.message).join('; '),
+      });
+      return res.status(400).json({ success: false, error: 'Metadata validation failed.', data: validation });
+    }
+    if (
+      validation.warningCount > 0 &&
+      req.body?.requireWarningConfirmation === true &&
+      req.body?.allowWarnings !== true
+    ) {
+      return res
+        .status(409)
+        .json({ success: false, error: 'Metadata validation warnings require confirmation.', data: validation });
+    }
+
+    const ins = db.prepare(`
+      INSERT INTO TB_CODE_INFO_NEW
+        (PID,PCODE,AID,ACODE,CODE,NAME,VALUE,TYPE,FORMORDER,DESCRIPTION,SHOW_YN,CID,RID,RIX,TARGET,RESERVE,RESERV1,RESERV2,RESERV3,USE_YN,TTSHINT)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    `);
+    const upd = db.prepare(`
+      UPDATE TB_CODE_INFO_NEW SET
+        PID=?,PCODE=?,AID=?,ACODE=?,CODE=?,NAME=?,VALUE=?,TYPE=?,FORMORDER=?,DESCRIPTION=?,SHOW_YN=?,CID=?,RID=?,RIX=?,TARGET=?,RESERVE=?,RESERV1=?,RESERV2=?,RESERV3=?,USE_YN=?,TTSHINT=?
+      WHERE UID=?
+    `);
+    const del = db.prepare('UPDATE TB_CODE_INFO_NEW SET DEL_YN=? WHERE UID=?');
+
+    const run = db.transaction((list) =>
+      list.map((item, index) => {
+        if (item._deleted === true) {
+          del.run('Y', item.UID);
+          return { UID: item.UID, action: 'deleted', _sourceIndex: index };
+        }
+        const p = [
+          item.PID ?? 0,
+          item.PCODE ?? '',
+          item.AID,
+          item.ACODE,
+          item.CODE,
+          item.NAME,
+          item.VALUE,
+          item.TYPE,
+          item.FORMORDER,
+          item.DESCRIPTION,
+          item.SHOW_YN ?? 'N',
+          item.CID,
+          item.RID,
+          item.RIX,
+          item.TARGET,
+          item.RESERVE,
+          item.RESERV1,
+          item.RESERV2,
+          item.RESERV3,
+          item.USE_YN ?? 'Y',
+          item.TTSHINT,
+        ];
+        if (item.UID) {
+          upd.run(...p, item.UID);
+          return { UID: item.UID, action: 'updated', _sourceIndex: index };
+        }
+        return { UID: ins.run(...p).lastInsertRowid, action: 'inserted', _sourceIndex: index };
+      }),
+    );
+
+    const auditSaved = run(items);
+    const saved = auditSaved.map(({ _sourceIndex, ...row }) => row);
+    const grouped = {
+      inserted: auditSaved.filter((row) => row.action === 'inserted'),
+      updated: auditSaved.filter((row) => row.action === 'updated'),
+      deleted: auditSaved.filter((row) => row.action === 'deleted'),
+    };
+    const changes = metaManagementStore.recordBatchChanges(grouped, items);
+    res.json({ success: true, data: saved, meta: { validation, changes } });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
   }
@@ -2581,9 +2785,12 @@ app.get('/api/database/tables/:tableName/data', (req, res) => {
 
 app.post('/api/database/query', (req, res) => {
   try {
-    const { sql, params: p = [] } = req.body;
+    const { sql, params: p = [], readOnly = false } = req.body;
     if (!sql || typeof sql !== 'string')
       return res.status(400).json({ success: false, error: 'SQL 쿼리가 필요합니다.' });
+    if (readOnly === true) {
+      return res.json({ success: true, data: metaManagementStore.runReadOnlyQuery(sql, p) });
+    }
     const t = sql.trim().toLowerCase();
     if (t.startsWith('select')) {
       const rows = db.prepare(sql).all(...p);

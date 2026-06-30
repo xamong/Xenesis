@@ -26390,3 +26390,91 @@ Verification so far:
 - Next intended step:
   - Continue with the next sibling-parity priority after the Agent Sessions
     slice is reviewed.
+
+## 2026-07-01 Meta Local Server Start
+
+- Current objective:
+  - Implement roadmap priority 2, Meta Local Server, by adding local CR metadata
+    and Meta Management stores/routes while keeping `packages/xenesis`
+    untouched.
+- Touched files:
+  - `docs/superpowers/plans/2026-07-01-meta-local-server.md`
+  - `handoff.md`
+- Commands run:
+  - Read `superpowers:executing-plans`.
+  - `git status --short --branch`
+  - Inspected current `server/index.js`, current Meta/CR bridge/provider files,
+    and sibling `server/crMetadataStore.js`,
+    `server/metaManagementStore.js`, related tests, and route sections.
+- Exact verification result:
+  - Working tree was clean before adding the Meta Local Server plan.
+  - The next implementation slice is confirmed as Meta Local Server from
+    `docs/superpowers/specs/2026-07-01-non-package-parity-roadmap-design.md`.
+  - `packages/xenesis` remains out of scope for this slice.
+- Known gaps:
+  - No Meta Local Server implementation has been added yet.
+- Next intended step:
+  - Start Task 1 from the plan: add the failing route smoke test and verify
+    RED before porting stores/routes.
+
+## 2026-07-01 Meta Local Server Verification
+
+- Current objective:
+  - Finish roadmap priority 2, Meta Local Server, by adding local CR metadata
+    and Meta Management SQLite stores plus HTTP routes without touching
+    `packages/xenesis`.
+- Touched files:
+  - `server/crMetadataStore.js`
+  - `server/crMetadataStore.test.mjs`
+  - `server/metaManagementStore.js`
+  - `server/metaManagementStore.test.mjs`
+  - `server/metaLocalServerRoutes.test.mjs`
+  - `server/index.js`
+  - `docs/superpowers/plans/2026-07-01-meta-local-server.md`
+  - `docs/capability-registry-audit.md`
+  - `handoff.md`
+- Commands run:
+  - RED route smoke: `node --test server/metaLocalServerRoutes.test.mjs`
+  - RED/green CR store: `node --test server/crMetadataStore.test.mjs`
+  - RED/green Meta store: `node --test server/metaManagementStore.test.mjs`
+  - Focused server bundle:
+    `node --test server/crMetadataStore.test.mjs server/metaManagementStore.test.mjs server/metaLocalServerRoutes.test.mjs`
+  - Existing CR metadata focused tests:
+    `node --import tsx --test src/shared/crMetadata.test.ts src/shared/crMetadataCapabilities.test.ts src/main/crMetadataBridge.test.ts`
+  - `npm run typecheck`
+  - `npm run docs:capabilities:audit`
+  - `npm test`
+  - `npm run build`
+  - `npm run check:public-release`
+  - New server file Biome check:
+    `npx biome check server/crMetadataStore.js server/crMetadataStore.test.mjs server/metaManagementStore.js server/metaManagementStore.test.mjs server/metaLocalServerRoutes.test.mjs --max-diagnostics=200`
+  - Existing large server file Biome check:
+    `npx biome check server/index.js --max-diagnostics=40`
+  - `git diff --name-only -- packages/xenesis`
+- Exact verification result:
+  - Route smoke first failed at `/api/cr/sync` before the routes existed, then
+    passed after server wiring.
+  - CR store and Meta store tests first failed with missing modules, then
+    passed after implementation.
+  - Focused server bundle passed 27/27.
+  - Existing CR metadata focused tests passed 8/8.
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit` passed with 870 nodes and 703 coverage
+    path references.
+  - `npm test` passed 636/636.
+  - `npm run build` passed. It still reports existing Vite warnings for d3
+    namespace resolution, `hwp.js` `fs` externalization, and mixed
+    dynamic/static imports of `deskBridge.ts`.
+  - `npm run check:public-release` passed.
+  - New server file Biome check passed with no diagnostics.
+  - `server/index.js` Biome check exited 0 after CRLF normalization, with 4
+    existing warnings and 6 infos in legacy sections.
+  - `git diff --name-only -- packages/xenesis` returned no files.
+- Known gaps:
+  - Full repo `npm run lint` is still not clean due to the pre-existing
+    repo-wide Biome diagnostics recorded in prior handoff sections.
+  - No live Electron Agent-pane natural-language prompt was run for this local
+    server slice; verification is HTTP/store/build/test focused.
+- Next intended step:
+  - Stage the Meta Local Server files, commit on `mini`, push, and update PR
+    #13.
