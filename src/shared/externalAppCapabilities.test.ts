@@ -120,3 +120,12 @@ test('external app profile status remains read-only', () => {
     'windowId',
   ]);
 });
+
+test('external app launch schema exposes optional placement', () => {
+  const launch = findDeskBridgeCapability('xd.apps.launch');
+  const properties = (launch?.schema?.properties as Record<string, unknown>) || {};
+  const placement = properties.placement as { type?: string; properties?: Record<string, unknown> } | undefined;
+
+  assert.equal(placement?.type, 'object');
+  assert.deepEqual(Object.keys(placement?.properties || {}).sort(), ['height', 'width', 'x', 'y']);
+});

@@ -28,6 +28,13 @@ export interface ExternalAppProfile {
   enabled: boolean;
 }
 
+export interface ExternalAppPlacement {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+}
+
 export interface ExternalAppSettings {
   enabled: boolean;
   profiles: ExternalAppProfile[];
@@ -50,6 +57,7 @@ export interface ExternalAppAction {
   y?: number;
   width?: number;
   height?: number;
+  placement?: ExternalAppPlacement;
   text?: string;
   keys?: string[];
   mode?: 'window' | 'process';
@@ -278,6 +286,7 @@ export function normalizeExternalAppAction(raw: unknown): ExternalAppAction {
   if (action === 'hotkey' && (!keys || keys.length === 0)) {
     throw new Error('keys are required for hotkey.');
   }
+  const placement = normalizeExternalAppPlacement(input.placement);
 
   return {
     action,
@@ -292,6 +301,7 @@ export function normalizeExternalAppAction(raw: unknown): ExternalAppAction {
     ...(Number.isFinite(Number(input.y)) ? { y: Number(input.y) } : {}),
     ...(Number.isFinite(Number(input.width)) ? { width: Number(input.width) } : {}),
     ...(Number.isFinite(Number(input.height)) ? { height: Number(input.height) } : {}),
+    ...(placement ? { placement } : {}),
     ...(text !== undefined ? { text } : {}),
     ...(keys ? { keys } : {}),
     ...(input.mode === 'process'
@@ -300,6 +310,16 @@ export function normalizeExternalAppAction(raw: unknown): ExternalAppAction {
         ? { mode: 'window' as const }
         : {}),
   };
+}
+
+function normalizeExternalAppPlacement(raw: unknown): ExternalAppPlacement | undefined {
+  const input = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+  const placement: ExternalAppPlacement = {};
+  for (const key of ['x', 'y', 'width', 'height'] as const) {
+    const value = Number(input[key]);
+    if (Number.isFinite(value)) placement[key] = value;
+  }
+  return Object.keys(placement).length > 0 ? placement : undefined;
 }
 
 export function classifyExternalAppApproval(

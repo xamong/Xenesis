@@ -84,6 +84,19 @@ test('external app actions normalize aliases and reject missing targets', () => 
     appId: 'notepad',
   });
 
+  assert.deepEqual(
+    normalizeExternalAppAction({
+      action: 'launch',
+      appId: 'notepad',
+      placement: { x: 20, y: 30, width: 800, height: 600 },
+    }),
+    {
+      action: 'launch',
+      appId: 'notepad',
+      placement: { x: 20, y: 30, width: 800, height: 600 },
+    },
+  );
+
   assert.deepEqual(normalizeExternalAppAction({ action: 'focus', titleContains: 'Untitled' }), {
     action: 'focus',
     titleContains: 'Untitled',

@@ -2,7 +2,10 @@
 // Operates imperatively on DOM refs; triggers engine.notify() on drop.
 
 import { useRef } from 'react';
+import type { DockDragGhostMode } from '../../shared/dockDragGhost';
 import type { SiblingWindowBounds } from '../../shared/types';
+import type { DetachScreenPoint } from './detachBounds';
+import { resolveDragGhostPosition } from './dragGhostPosition';
 import { Bounds, DockEngine, DockPane, DropPayload, PaneDropTarget, SideState } from './engine';
 
 interface DragState {
@@ -12,6 +15,11 @@ interface DragState {
 
 export type DetachMode = 'detach' | 'reattach' | 'merge-to-detached';
 
+export interface DetachIntentMetadata {
+  targetWindowId?: number;
+  dropPoint?: DetachScreenPoint;
+}
+
 export function useDragManager(
   engine: DockEngine,
   rootRef: React.RefObject<HTMLDivElement | null>,
@@ -20,7 +28,7 @@ export function useDragManager(
   ghostRef: React.RefObject<HTMLDivElement | null>,
   floatBoundsRef: React.MutableRefObject<Map<string, Bounds>>,
   onStatus: (msg: string) => void,
-  onDetach: (payload: DropPayload, mode: DetachMode, targetWindowId?: number) => void,
+  onDetach: (payload: DropPayload, mode: DetachMode, metadata?: DetachIntentMetadata) => void,
   isDetachedWindow: boolean,
 ): { beginResize: (edge: SideState, event: PointerEvent) => void } {
   const stateRef = useRef<DragState>({ currentDropZone: null, currentDropTarget: null });
@@ -137,10 +145,21 @@ export function useDragManager(
   // ── Core drag ─────────────────────────────────────────────────────────────────
   function beginDrag(payload: DropPayload, event: PointerEvent): void {
     event.preventDefault();
+    const pointerCaptureTarget =
+      event.target instanceof Element && typeof event.target.setPointerCapture === 'function' ? event.target : null;
+    if (pointerCaptureTarget) {
+      try {
+        pointerCaptureTarget.setPointerCapture(event.pointerId);
+      } catch {
+        // Pointer capture can fail if the pointer is no longer active; drag still works without it.
+      }
+    }
     const ds = stateRef.current;
     const start = { x: event.clientX, y: event.clientY };
     let active = false;
     let reattachStarted = false;
+    let nativeDragGhostVisible = false;
+    let lastScreenPoint: DetachScreenPoint = { screenX: event.screenX, screenY: event.screenY };
 
     // 분리 창 드래그: 시작 시 이웃 창(메인+다른 분리 창) bounds를 한 번 조회
     let siblingBounds: SiblingWindowBounds = { mainWindow: null, detachedWindows: [] };
@@ -155,7 +174,54 @@ export function useDragManager(
         .catch(() => {});
     }
 
+    const updateGhostPosition = (pointerEvent: PointerEvent): void => {
+      const ghost = ghostRef.current;
+      if (!ghost) return;
+      const rect = ghost.getBoundingClientRect();
+      const position = resolveDragGhostPosition({
+        clientX: pointerEvent.clientX,
+        clientY: pointerEvent.clientY,
+        viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight,
+        ghostWidth: rect.width,
+        ghostHeight: rect.height,
+      });
+      ghost.style.left = `${position.left}px`;
+      ghost.style.top = `${position.top}px`;
+    };
+
+    const hideNativeDragGhost = (): void => {
+      if (!nativeDragGhostVisible) return;
+      nativeDragGhostVisible = false;
+      window.fileAPI?.hideDockDragGhostOverlay?.().catch(() => {});
+    };
+
+    const showNativeDragGhost = (mode: DockDragGhostMode, text: string, pointerEvent: PointerEvent): void => {
+      const ghost = ghostRef.current;
+      applyGhostMode(ghost, mode === 'default' ? '' : mode, text);
+      if (typeof window.fileAPI?.showDockDragGhostOverlay === 'function') {
+        if (ghost) ghost.hidden = true;
+        nativeDragGhostVisible = true;
+        window.fileAPI
+          .showDockDragGhostOverlay({
+            label: text,
+            mode,
+            screenX: pointerEvent.screenX,
+            screenY: pointerEvent.screenY,
+          })
+          .catch(() => {
+            nativeDragGhostVisible = false;
+            if (ghost) ghost.hidden = false;
+            updateGhostPosition(pointerEvent);
+          });
+        return;
+      }
+      if (ghost) ghost.hidden = false;
+      updateGhostPosition(pointerEvent);
+    };
+
     const move = (mv: PointerEvent) => {
+      lastScreenPoint = { screenX: mv.screenX, screenY: mv.screenY };
       const distance = Math.abs(mv.clientX - start.x) + Math.abs(mv.clientY - start.y);
       if (!active && distance < 6) return;
       if (!active) {
@@ -168,8 +234,6 @@ export function useDragManager(
       const ghost = ghostRef.current;
       if (ghost) {
         ghost.hidden = false;
-        ghost.style.left = `${mv.clientX + 12}px`;
-        ghost.style.top = `${mv.clientY + 12}px`;
       }
 
       // ── 윈도우 밖으로 나간 경우 ────────────────────────────────────────────────
@@ -202,7 +266,7 @@ export function useDragManager(
               window.fileAPI?.highlightDetachedWindow?.(mergeTargetId, true).catch(() => {});
               lastMergeTargetId = mergeTargetId;
             }
-            applyGhostMode(ghost, 'merge', `⊞ Merge tabs: ${payload.label}`);
+            showNativeDragGhost('merge', `⊞ Merge tabs: ${payload.label}`, mv);
             ds.currentDropZone = `__merge_to_detached__:${mergeTargetId}`;
           } else if (isOverMain) {
             // ② 메인 창 위 → 메인으로 재결합
@@ -214,7 +278,7 @@ export function useDragManager(
               reattachStarted = true;
               window.fileAPI.reattachStart().catch(() => {});
             }
-            applyGhostMode(ghost, 'reattach', `↩ Back to main: ${payload.label}`);
+            showNativeDragGhost('reattach', `↩ Back to main: ${payload.label}`, mv);
             ds.currentDropZone = '__reattach__';
           } else {
             // ③ 빈 공간 → 새 분리 창으로 분리
@@ -226,16 +290,18 @@ export function useDragManager(
               reattachStarted = false;
               window.fileAPI.reattachCancel().catch(() => {});
             }
-            applyGhostMode(ghost, 'detach', `↗ Detach to new window: ${payload.label}`);
+            showNativeDragGhost('detach', `↗ Detach to new window: ${payload.label}`, mv);
             ds.currentDropZone = '__detach__';
           }
         } else {
-          applyGhostMode(ghost, 'detach', `↗ Detach to new window: ${payload.label}`);
+          showNativeDragGhost('detach', `↗ Detach to new window: ${payload.label}`, mv);
           ds.currentDropZone = '__detach__';
         }
         ds.currentDropTarget = null;
         return;
       }
+
+      hideNativeDragGhost();
 
       // ── 창 안으로 다시 진입 ─────────────────────────────────────────────────────
       const prevZone = ds.currentDropZone ?? '';
@@ -257,6 +323,7 @@ export function useDragManager(
       // ── 일반 창 내부 드래그 ─────────────────────────────────────────────────────
       if (overlay) overlay.classList.add('is-active');
       applyGhostMode(ghost, '', payload.label);
+      updateGhostPosition(mv);
       if (overlay) overlay.classList.remove('is-pane-target');
       const rootZone = hitDropZone(mv.clientX, mv.clientY);
 
@@ -306,6 +373,16 @@ export function useDragManager(
     const cleanup = (opts?: { cancelReattach?: boolean }) => {
       // 드래그 종료: webview 이벤트 차단막 해제
       rootRef.current?.classList.remove('is-dragging');
+      hideNativeDragGhost();
+      if (pointerCaptureTarget) {
+        try {
+          if (pointerCaptureTarget.hasPointerCapture(event.pointerId)) {
+            pointerCaptureTarget.releasePointerCapture(event.pointerId);
+          }
+        } catch {
+          // Best-effort cleanup only; release can throw after pointer cancellation.
+        }
+      }
       if ((opts?.cancelReattach ?? true) && reattachStarted) {
         reattachStarted = false;
         window.fileAPI.reattachCancel().catch(() => {});
@@ -343,14 +420,18 @@ export function useDragManager(
         const targetWindowId = Number(zone.replace('__merge_to_detached__:', ''));
         ds.currentDropZone = null;
         ds.currentDropTarget = null;
-        onDetach(payload, 'merge-to-detached', targetWindowId);
+        onDetach(payload, 'merge-to-detached', { targetWindowId });
         return;
       }
 
       if (active && (zone === '__detach__' || isReattach)) {
         ds.currentDropZone = null;
         ds.currentDropTarget = null;
-        onDetach(payload, isReattach ? 'reattach' : 'detach');
+        onDetach(
+          payload,
+          isReattach ? 'reattach' : 'detach',
+          zone === '__detach__' ? { dropPoint: lastScreenPoint } : undefined,
+        );
         return;
       }
 

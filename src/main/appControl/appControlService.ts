@@ -60,11 +60,7 @@ export function createAppControlService(options: AppControlServiceOptions): AppC
 
       const result =
         action.action === 'launch'
-          ? await adapter.launch({
-              executable,
-              args: action.args ?? profile?.defaultArgs ?? [],
-              cwd: action.cwd ?? profile?.defaultCwd ?? '',
-            })
+          ? await runLaunchAction(adapter, action, executable, profile)
           : action.action === 'find'
             ? await adapter.find(common)
             : action.action === 'status'
@@ -97,6 +93,43 @@ export function createAppControlService(options: AppControlServiceOptions): AppC
         },
       };
     },
+  };
+}
+
+async function runLaunchAction(
+  adapter: WindowsAppControlAdapter,
+  action: ExternalAppAction,
+  executable: string,
+  profile: ExternalAppProfile | undefined,
+): Promise<ExternalAppActionResult> {
+  const launchResult = await adapter.launch({
+    executable,
+    args: action.args ?? profile?.defaultArgs ?? [],
+    cwd: action.cwd ?? profile?.defaultCwd ?? '',
+  });
+
+  if (!launchResult.ok || !action.placement) return launchResult;
+
+  const resizeResult = await adapter.resize({
+    executable,
+    processName: action.processName,
+    titleContains: action.titleContains,
+    windowId: action.windowId ?? launchResult.windows[0]?.windowId,
+    ...action.placement,
+  });
+
+  if (resizeResult.ok) {
+    return {
+      ...launchResult,
+      windows: resizeResult.windows.length ? resizeResult.windows : launchResult.windows,
+      message: 'External app launched and placed.',
+    };
+  }
+
+  return {
+    ...launchResult,
+    message: 'External app launched; placement failed.',
+    error: resizeResult.error ?? resizeResult.message,
   };
 }
 
