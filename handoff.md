@@ -33,6 +33,7 @@
 - Touched files:
   - `handoff.md`
   - `docs/superpowers/specs/2026-06-30-xenesis-native-external-integrations-design.md`
+  - `docs/superpowers/plans/2026-06-30-native-external-integrations-slice-1.md`
 - Commands run:
   - `git status --short --branch` -> `## uno...origin/uno`.
   - `rg`/`sed`/`find` inspections for Xenesis provider assets, Hermes bridge
@@ -46,12 +47,17 @@
     rollout, and self-review sections.
   - `wc -l docs/superpowers/specs/2026-06-30-xenesis-native-external-integrations-design.md handoff.md`
     -> spec has 355 lines after self-review.
+  - `rg -n "TBD|TODO|FIXME|PLACEHOLDER|placeholder|implement later|fill in|Similar to|similar to|appropriate error|edge cases|if needed|If .*required|If .*finds" docs/superpowers/plans/2026-06-30-native-external-integrations-slice-1.md`
+    -> no matches after plan self-review cleanup.
 - Exact verification result:
   - Design/context analysis only so far. No implementation tests or build runs
     have been executed for this new design scope.
   - Spec self-review passed placeholder scan, consistency check, scope check,
     and ambiguity check. The spec explicitly phases implementation and excludes
     model providers from the external integration scope.
+  - Implementation plan self-review passed. The plan is intentionally scoped to
+    Slice 1: native registry, read-only CR status/doctor/import preview,
+    onboarding readiness bridge, and Hermes provider-surface cleanup.
 - Material design decision:
   - External tools mean external services/integrations such as Google, Notion,
     Linear, Slack, browser/search providers, media providers, channel adapters,
@@ -68,8 +74,8 @@
   - Need to decide exact migration compatibility for existing Hermes bridge UI
     panes after Hermes provider removal.
 - Next intended step:
-  - Commit the design spec and handoff update, then wait for user review before
-    implementation planning.
+  - Commit the Slice 1 implementation plan and handoff update, then ask the
+    user to choose subagent-driven or inline execution.
 
 ## 2026-06-30 Onboarding Provider Setup Entry
 
