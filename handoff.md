@@ -12,11 +12,13 @@
     `D:\CodeTruck\CodeBox\Xamong\06 XCON\Xenesis\.worktrees\input-control-mini`
   - Branch: `input-control-mini`
 - Current implementation checkpoint:
-  - Starting Task 1 shared input-control DSL model with TDD.
+  - Starting Task 2 main input-control service with fake app adapters.
 - Touched files:
   - `handoff.md`
-  - Planned: `src/shared/inputControl.ts`
-  - Planned: `src/shared/inputControl.test.ts`
+  - `src/shared/inputControl.ts`
+  - `src/shared/inputControl.test.ts`
+  - Planned: `src/main/inputControl/inputControlService.ts`
+  - Planned: `src/main/inputControl/inputControlService.test.ts`
 - Commands run:
   - Read `superpowers:executing-plans`,
     `superpowers:test-driven-development`,
@@ -32,18 +34,26 @@
     only the test file -> RED failed with `Cannot find module './inputControl'`.
   - `node --import tsx --test src/shared/inputControl.test.ts` after shared
     implementation -> PASS, 8 tests.
+  - `node --import tsx --test src/main/inputControl/inputControlService.test.ts`
+    after adding only the service test file -> RED failed with
+    `Cannot find module './inputControlService'`.
+  - `node --import tsx --test src/main/inputControl/inputControlService.test.ts`
+    after service implementation -> PASS, 7 tests.
+  - `node --import tsx --test src/shared/inputControl.test.ts src/main/inputControl/inputControlService.test.ts`
+    -> PASS, 15 tests.
 - Exact verification result:
   - Baseline test suite in the isolated worktree passed before input-control
     implementation started.
   - Task 1 shared input-control DSL test passed after a verified RED failure.
+  - Task 2 input-control service tests passed after a verified RED failure.
 - Known gaps:
   - Browser coordinate execution remains deferred by design.
   - Full desktop automation remains disabled by design.
   - `xd.input.screenshot` will return unsupported until a real screenshot
     adapter exists.
 - Next intended step:
-  - Commit Task 1, then start Task 2 main `InputControlService` with failing
-    service tests.
+  - Commit Task 2, then start Task 3 CR registration and dispatch with failing
+    capability tests.
 
 ## 2026-06-30 Dock Drag Ghost Native Overlay
 
