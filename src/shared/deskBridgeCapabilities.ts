@@ -269,6 +269,46 @@ const XENESIS_CONNECTION_DIAGNOSTIC_STATUS_SCHEMA = {
   },
 } as const;
 
+const XENESIS_EXTERNAL_INTEGRATION_STATUS_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Integration id',
+      description: 'Optional native Xenesis external integration id to filter.',
+    },
+    integration: {
+      type: 'string',
+      title: 'Integration id',
+      description: 'Alias for id.',
+    },
+  },
+} as const;
+
+const XENESIS_EXTERNAL_INTEGRATION_IMPORT_PREVIEW_SCHEMA = {
+  type: 'object',
+  required: ['source'],
+  properties: {
+    source: {
+      type: 'string',
+      title: 'Import source',
+      enum: ['hermes', 'openclaw', 'mcp-client'],
+      description: 'External configuration source to preview before approval-gated import.',
+    },
+    pluginIds: {
+      type: 'array',
+      title: 'Plugin ids',
+      description: 'Optional plugin ids to scan while building the read-only import preview.',
+      items: { type: 'string' },
+    },
+    mcpServers: {
+      type: 'object',
+      title: 'MCP servers',
+      description: 'Optional MCP server map to scan while building the read-only import preview.',
+    },
+  },
+} as const;
+
 const XENESIS_CONNECTION_SETUP_REQUEST_SCHEMA = {
   type: 'object',
   required: ['id'],
@@ -1992,6 +2032,10 @@ export interface DeskBridgeCapabilityAdapter {
   isXenisPhase5Enabled?: () => boolean;
   getXenesisStatus?: () => Promise<unknown> | unknown;
   getXenesisConnectionsStatus?: () => Promise<unknown> | unknown;
+  getXenesisExternalIntegrationCatalogStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisExternalIntegrationStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  getXenesisExternalIntegrationDoctorStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  previewXenesisExternalIntegrationImport?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisConnectionDiagnosticRunbooksStatus?: (args?: unknown) => Promise<unknown> | unknown;
   openXenesisConnectionDiagnosticRunbook?: (args?: unknown) => Promise<unknown> | unknown;
   getXenesisConnectionSetupRequestsStatus?: (args?: unknown) => Promise<unknown> | unknown;
@@ -5332,6 +5376,52 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           },
         ),
       ]),
+      group(
+        'xd.xenesis.integrations',
+        'Native integrations',
+        'Read-only native Xenesis external integration catalog, status, doctor, and import preview surfaces.',
+        [
+          group('xd.xenesis.integrations.catalog', 'Catalog', 'Native Xenesis external integration catalog metadata.', [
+            method(
+              'xd.xenesis.integrations.catalog.status',
+              'Read native integration catalog',
+              'Read native Xenesis external integration catalog metadata without executing provider tools, starting OAuth, writing tokens, or mutating external systems.',
+              'read',
+              XENESIS_EXTERNAL_INTEGRATION_STATUS_SCHEMA,
+            ),
+          ]),
+          method(
+            'xd.xenesis.integrations.status',
+            'Read native integration status',
+            'Read native Xenesis external integration credential readiness, runtime routes, source references, and read-only action policy without executing provider tools, starting OAuth, writing tokens, or mutating external systems.',
+            'read',
+            XENESIS_EXTERNAL_INTEGRATION_STATUS_SCHEMA,
+          ),
+          group('xd.xenesis.integrations.doctor', 'Doctor', 'Native Xenesis external integration readiness findings.', [
+            method(
+              'xd.xenesis.integrations.doctor.status',
+              'Read native integration doctor',
+              'Read native Xenesis external integration doctor findings for missing credentials and readiness gaps without executing provider tools, starting OAuth, writing tokens, or mutating external systems.',
+              'read',
+              XENESIS_EXTERNAL_INTEGRATION_STATUS_SCHEMA,
+            ),
+          ]),
+          group(
+            'xd.xenesis.integrations.import',
+            'Import preview',
+            'Read-only native Xenesis external integration import preview surfaces.',
+            [
+              method(
+                'xd.xenesis.integrations.import.preview',
+                'Preview native integration import',
+                'Preview native Xenesis external integration import candidates from Hermes, OpenClaw, or MCP client hints before any approval-gated import; does not execute provider tools, start OAuth, write tokens, or mutate external systems.',
+                'read',
+                XENESIS_EXTERNAL_INTEGRATION_IMPORT_PREVIEW_SCHEMA,
+              ),
+            ],
+          ),
+        ],
+      ),
       group('xd.xenesis.connections', 'Connections', 'Xenesis onboarding and connection readiness.', [
         method(
           'xd.xenesis.connections.status',
@@ -11422,7 +11512,6 @@ export function describeDeskBridgeCapability(
   return findDeskBridgeCapability(path, createDeskBridgeCapabilityTree(options), options);
 }
 
-const TERMINAL_DYNAMIC_ROOT = 'xd.terminals';
 const TERMINAL_DYNAMIC_SESSIONS_ROOT = 'xd.terminals.sessions';
 const TERMINAL_DYNAMIC_STATIC_SEGMENTS = new Set([
   'list',
@@ -11657,7 +11746,7 @@ function describeTerminalDynamicCapabilityPath(path: string): DeskBridgeCapabili
 
 function describeDockDynamicCapabilityPath(path: string): DeskBridgeCapabilityNode | null {
   const parsed = parseDockDynamicCapabilityPath(path);
-  if (!parsed || !parsed.ref) return null;
+  if (!parsed?.ref) return null;
   if (!parsed.member) {
     return createDockDynamicCapabilityNode(
       parsed.path,
@@ -12847,6 +12936,18 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.xenesis.connections.status') {
         return callAdapter(path, api?.getXenesisConnectionsStatus);
+      }
+      if (path === 'xd.xenesis.integrations.catalog.status') {
+        return callAdapter(path, api?.getXenesisExternalIntegrationCatalogStatus, request.args);
+      }
+      if (path === 'xd.xenesis.integrations.status') {
+        return callAdapter(path, api?.getXenesisExternalIntegrationStatus, request.args);
+      }
+      if (path === 'xd.xenesis.integrations.doctor.status') {
+        return callAdapter(path, api?.getXenesisExternalIntegrationDoctorStatus, request.args);
+      }
+      if (path === 'xd.xenesis.integrations.import.preview') {
+        return callAdapter(path, api?.previewXenesisExternalIntegrationImport, request.args);
       }
       if (path === 'xd.xenesis.connections.open') {
         const args = normalizeCapabilityArgs(request.args);

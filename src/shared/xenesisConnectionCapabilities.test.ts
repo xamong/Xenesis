@@ -110,6 +110,134 @@ test('xenesis connection status capability is registered as a read path', () => 
   assert.equal(schemaRequiredFields(findDeskBridgeCapability('xd.xenesis.connections.open')).includes('id'), false);
 });
 
+test('xenesis native integration capabilities are registered and dispatch to the adapter', async () => {
+  const paths = new Set(listDeskBridgeCapabilities().map((node) => node.path));
+  const requiredPaths = [
+    'xd.xenesis.integrations',
+    'xd.xenesis.integrations.catalog',
+    'xd.xenesis.integrations.catalog.status',
+    'xd.xenesis.integrations.status',
+    'xd.xenesis.integrations.doctor',
+    'xd.xenesis.integrations.doctor.status',
+    'xd.xenesis.integrations.import',
+    'xd.xenesis.integrations.import.preview',
+  ];
+
+  for (const path of requiredPaths) {
+    assert.equal(paths.has(path), true, `${path} is registered`);
+  }
+
+  for (const path of [
+    'xd.xenesis.integrations.catalog.status',
+    'xd.xenesis.integrations.status',
+    'xd.xenesis.integrations.doctor.status',
+    'xd.xenesis.integrations.import.preview',
+  ]) {
+    const capability = findDeskBridgeCapability(path);
+    assert.equal(capability?.permission, 'read', `${path} is read-only`);
+    assert.equal(capability?.approval, 'never', `${path} does not require approval`);
+  }
+
+  const statusSchemaProperties = schemaProperties(findDeskBridgeCapability('xd.xenesis.integrations.status'));
+  assert.equal(statusSchemaProperties.id?.type, 'string');
+  assert.equal(statusSchemaProperties.integration?.type, 'string');
+
+  const previewCapability = findDeskBridgeCapability('xd.xenesis.integrations.import.preview');
+  const previewSchemaProperties = schemaProperties(previewCapability);
+  assert.deepEqual(schemaRequiredFields(previewCapability), ['source']);
+  assert.equal(previewSchemaProperties.source?.enum.includes('hermes'), true);
+  assert.equal(previewSchemaProperties.source?.enum.includes('openclaw'), true);
+  assert.equal(previewSchemaProperties.source?.enum.includes('mcp-client'), true);
+
+  const calls: Array<{ method: string; args: unknown }> = [];
+  const api: DeskBridgeCapabilityAdapter = {
+    getXenesisExternalIntegrationCatalogStatus: (args) => {
+      calls.push({ method: 'catalog', args });
+      return {
+        ok: true,
+        marker: 'external-integration-catalog',
+      };
+    },
+    getXenesisExternalIntegrationStatus: (args) => {
+      calls.push({ method: 'status', args });
+      return {
+        ok: true,
+        marker: 'external-integration-status',
+      };
+    },
+    getXenesisExternalIntegrationDoctorStatus: (args) => {
+      calls.push({ method: 'doctor', args });
+      return {
+        ok: true,
+        marker: 'external-integration-doctor',
+      };
+    },
+    previewXenesisExternalIntegrationImport: (args) => {
+      calls.push({ method: 'preview', args });
+      return {
+        ok: true,
+        marker: 'external-integration-import-preview',
+      };
+    },
+  };
+
+  const catalogArgs = { id: 'notion' };
+  const statusArgs = { integration: 'notion' };
+  const doctorArgs = { id: 'slack' };
+  const previewArgs = {
+    source: 'mcp-client',
+    pluginIds: ['linear'],
+    mcpServers: { linear: { url: 'https://mcp.linear.app/mcp' } },
+  };
+  const catalogResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.integrations.catalog.status',
+    args: catalogArgs,
+    source: 'xenesis',
+  });
+  const statusResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.integrations.status',
+    args: statusArgs,
+    source: 'xenesis',
+  });
+  const doctorResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.integrations.doctor.status',
+    args: doctorArgs,
+    source: 'xenesis',
+  });
+  const previewResult = await callDeskBridgeCapability(api, {
+    path: 'xd.xenesis.integrations.import.preview',
+    args: previewArgs,
+    source: 'xenesis',
+  });
+
+  assert.equal(catalogResult.ok, true);
+  assert.equal(statusResult.ok, true);
+  assert.equal(doctorResult.ok, true);
+  assert.equal(previewResult.ok, true);
+  assert.deepEqual(calls, [
+    { method: 'catalog', args: catalogArgs },
+    { method: 'status', args: statusArgs },
+    { method: 'doctor', args: doctorArgs },
+    { method: 'preview', args: previewArgs },
+  ]);
+  assert.deepEqual(catalogResult.result, {
+    ok: true,
+    marker: 'external-integration-catalog',
+  });
+  assert.deepEqual(statusResult.result, {
+    ok: true,
+    marker: 'external-integration-status',
+  });
+  assert.deepEqual(doctorResult.result, {
+    ok: true,
+    marker: 'external-integration-doctor',
+  });
+  assert.deepEqual(previewResult.result, {
+    ok: true,
+    marker: 'external-integration-import-preview',
+  });
+});
+
 test('xenesis connection open capabilities expose detail focus selectors', () => {
   assertOpenCapabilityDetailFocus('xd.xenesis.connections.open', 'diagnostic-runbook');
   assertOpenCapabilityDetailFocus('xd.xenesis.onboarding.open', 'onboarding-plan');
