@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   buildExternalIntegrationCatalogStatus,
   buildExternalIntegrationDoctorStatus,
+  buildExternalIntegrationImportPreview,
   buildExternalIntegrationStatus,
   EXTERNAL_INTEGRATION_IDS,
   findExternalIntegration,
@@ -99,4 +100,57 @@ test('doctor status reports missing credentials without executing provider tools
     doctor.findings.some((item) => item.severity === 'error'),
     true,
   );
+});
+
+test('Hermes import preview maps known env and MCP keys without leaking secret values', () => {
+  const preview = buildExternalIntegrationImportPreview({
+    source: 'hermes',
+    env: {
+      NOTION_API_KEY: 'secret_notion_value',
+      SLACK_BOT_TOKEN: 'xoxb-secret',
+    },
+    mcpServers: {
+      linear: { url: 'https://mcp.linear.app/mcp' },
+    },
+  });
+
+  assert.equal(preview.ok, true);
+  assert.equal(preview.source, 'hermes');
+  assert.equal(
+    preview.mappings.some((item) => item.integrationId === 'notion'),
+    true,
+  );
+  assert.equal(
+    preview.mappings.some((item) => item.integrationId === 'slack'),
+    true,
+  );
+  assert.equal(
+    preview.mappings.some((item) => item.integrationId === 'linear'),
+    true,
+  );
+  assert.equal(JSON.stringify(preview).includes('secret_notion_value'), false);
+  assert.equal(JSON.stringify(preview).includes('xoxb-secret'), false);
+});
+
+test('OpenClaw import preview maps channel and web provider env keys', () => {
+  const preview = buildExternalIntegrationImportPreview({
+    source: 'openclaw',
+    env: {
+      TAVILY_API_KEY: 'tvly-secret',
+      DISCORD_BOT_TOKEN: 'discord-secret',
+    },
+    pluginIds: ['tavily', 'discord'],
+  });
+
+  assert.equal(preview.ok, true);
+  assert.equal(
+    preview.mappings.some((item) => item.integrationId === 'tavily'),
+    true,
+  );
+  assert.equal(
+    preview.mappings.some((item) => item.integrationId === 'discord'),
+    true,
+  );
+  assert.equal(JSON.stringify(preview).includes('tvly-secret'), false);
+  assert.equal(JSON.stringify(preview).includes('discord-secret'), false);
 });

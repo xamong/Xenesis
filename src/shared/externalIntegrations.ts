@@ -18,6 +18,12 @@ export type ExternalRuntimeRoute =
   | 'local-automation'
   | 'browser-session'
   | 'lan-api';
+export type ExternalIntegrationImportSource = 'hermes' | 'openclaw' | 'mcp-client';
+
+export interface ExternalIntegrationImportMapping {
+  source: ExternalIntegrationImportSource;
+  keys: readonly string[];
+}
 
 export interface ExternalCredentialRequirement {
   id: string;
@@ -51,6 +57,7 @@ export interface ExternalIntegrationDefinition {
     label: string;
     url?: string;
   }[];
+  importMappings: readonly ExternalIntegrationImportMapping[];
 }
 
 export interface ExternalCredentialState {
@@ -93,6 +100,33 @@ export interface ExternalIntegrationStatusItem {
 export interface ExternalIntegrationStatusRequest {
   id?: string;
   env?: Record<string, string | undefined | null>;
+}
+
+export interface ExternalIntegrationImportPreviewRequest {
+  source: ExternalIntegrationImportSource;
+  env?: Record<string, string | undefined>;
+  mcpServers?: Record<string, unknown>;
+  pluginIds?: string[];
+}
+
+export interface ExternalIntegrationImportPreview {
+  ok: true;
+  source: ExternalIntegrationImportSource;
+  scanned: {
+    envKeys: string[];
+    mcpServers: string[];
+    pluginIds: string[];
+  };
+  total: number;
+  mappings: {
+    integrationId: string;
+    label: string;
+    category: ExternalIntegrationCategory;
+    source: ExternalIntegrationImportSource;
+    matchedKeys: string[];
+    secretValuesIncluded: false;
+    applyRequiresApproval: true;
+  }[];
 }
 
 export interface ExternalIntegrationCatalogStatus {
@@ -140,6 +174,10 @@ export interface ExternalIntegrationDoctorStatus {
     secret: boolean;
   }[];
 }
+
+type ExternalIntegrationDefinitionSeed = Omit<ExternalIntegrationDefinition, 'importMappings'> & {
+  importMappings?: readonly ExternalIntegrationImportMapping[];
+};
 
 const READ_ONLY_ACTION_POLICY: ExternalActionPolicy = {
   statusOnly: true,
@@ -558,12 +596,14 @@ const EXTERNAL_INTEGRATION_DEFINITIONS = [
     sourceRuntimeDependency: false,
     sourceReferences: [OPENCLAW_REFERENCE, HERMES_REFERENCE],
   },
-] as const satisfies readonly ExternalIntegrationDefinition[];
+] as const satisfies readonly ExternalIntegrationDefinitionSeed[];
 
 export type ExternalIntegrationId = (typeof EXTERNAL_INTEGRATION_DEFINITIONS)[number]['id'];
 
-export const EXTERNAL_INTEGRATIONS: readonly ExternalIntegrationDefinition[] = EXTERNAL_INTEGRATION_DEFINITIONS;
-export const EXTERNAL_INTEGRATION_IDS: readonly string[] = EXTERNAL_INTEGRATION_DEFINITIONS.map((item) => item.id);
+export const EXTERNAL_INTEGRATIONS: readonly ExternalIntegrationDefinition[] = EXTERNAL_INTEGRATION_DEFINITIONS.map(
+  (definition) => withExternalIntegrationImportMappings(definition),
+);
+export const EXTERNAL_INTEGRATION_IDS: readonly string[] = EXTERNAL_INTEGRATIONS.map((item) => item.id);
 
 export function findExternalIntegration(id: string): ExternalIntegrationDefinition | undefined {
   return EXTERNAL_INTEGRATIONS.find((item) => item.id === id);
@@ -629,6 +669,113 @@ export function buildExternalIntegrationDoctorStatus(
     total: status.total,
     findings,
   };
+}
+
+export function buildExternalIntegrationImportPreview(
+  request: ExternalIntegrationImportPreviewRequest,
+): ExternalIntegrationImportPreview {
+  const env = request.env ?? {};
+  const envKeys = new Set(Object.keys(env).filter((key) => isNonEmptyImportEnvValue(env[key])));
+  const mcpServerNames = new Set(Object.keys(request.mcpServers ?? {}));
+  const pluginIds = new Set((request.pluginIds ?? []).map((item) => item.trim()).filter(Boolean));
+
+  const mappings = EXTERNAL_INTEGRATIONS.flatMap((definition) => {
+    const importMapping = definition.importMappings.find((mapping) => mapping.source === request.source);
+    if (!importMapping) return [];
+
+    const matchedKeys = importMapping.keys.filter((key) =>
+      hasImportKeyMatch(key, definition.id, envKeys, mcpServerNames, pluginIds),
+    );
+    if (matchedKeys.length === 0) return [];
+
+    return [
+      {
+        integrationId: definition.id,
+        label: definition.label,
+        category: definition.category,
+        source: request.source,
+        matchedKeys,
+        secretValuesIncluded: false as const,
+        applyRequiresApproval: true as const,
+      },
+    ];
+  });
+
+  return {
+    ok: true,
+    source: request.source,
+    scanned: {
+      envKeys: [...envKeys].sort(),
+      mcpServers: [...mcpServerNames].sort(),
+      pluginIds: [...pluginIds].sort(),
+    },
+    total: mappings.length,
+    mappings,
+  };
+}
+
+function withExternalIntegrationImportMappings(
+  definition: ExternalIntegrationDefinitionSeed,
+): ExternalIntegrationDefinition {
+  return {
+    ...definition,
+    importMappings: definition.importMappings ?? buildDefaultImportMappings(definition),
+  };
+}
+
+function buildDefaultImportMappings(
+  definition: ExternalIntegrationDefinitionSeed,
+): readonly ExternalIntegrationImportMapping[] {
+  const keys = buildDefaultImportKeys(definition);
+  return [...buildDefaultImportSources(definition)].map((source) => ({ source, keys }));
+}
+
+function buildDefaultImportSources(
+  definition: ExternalIntegrationDefinitionSeed,
+): Set<ExternalIntegrationImportSource> {
+  const sources = new Set<ExternalIntegrationImportSource>();
+  for (const reference of definition.sourceReferences) {
+    sources.add(reference.name === 'Hermes' ? 'hermes' : 'openclaw');
+  }
+  if (definition.runtimeRoutes.includes('mcp')) {
+    sources.add('mcp-client');
+  }
+  if (definition.category === 'web-search') {
+    sources.add('openclaw');
+  }
+  return sources;
+}
+
+function buildDefaultImportKeys(definition: ExternalIntegrationDefinitionSeed): readonly string[] {
+  const keys = new Set<string>();
+  for (const credential of definition.credentialRequirements) {
+    for (const ref of credential.refs) {
+      keys.add(ref);
+    }
+  }
+  if (definition.runtimeRoutes.includes('mcp')) {
+    keys.add(`mcp_servers.${definition.id}`);
+  }
+  keys.add(definition.id);
+  return [...keys];
+}
+
+function hasImportKeyMatch(
+  key: string,
+  integrationId: string,
+  envKeys: ReadonlySet<string>,
+  mcpServerNames: ReadonlySet<string>,
+  pluginIds: ReadonlySet<string>,
+): boolean {
+  if (envKeys.has(key)) return true;
+  if (key.startsWith('mcp_servers.')) return mcpServerNames.has(key.slice('mcp_servers.'.length));
+  if (pluginIds.has(key)) return true;
+  if (key === integrationId && pluginIds.has(integrationId)) return true;
+  return false;
+}
+
+function isNonEmptyImportEnvValue(value: string | undefined): boolean {
+  return typeof value === 'string' && value.trim().length > 0;
 }
 
 function buildCategoryStatus(
