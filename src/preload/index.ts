@@ -135,6 +135,9 @@ import type {
   XamongCodeApi,
   XamongCodeServerStatus,
   XenesisApi,
+  XenesisApprovalRequest,
+  XenesisApprovalResolveRequest,
+  XenesisApprovalResolveResult,
   XenesisProfileChannelsUpdateRequest,
   XenesisProfileChannelTestRequest,
   XenesisProfileInstallRequest,
@@ -986,8 +989,14 @@ const mcpBridgeApi: McpBridgeApi = {
   listActionInbox(): Promise<McpBridgeActionInboxItem[]> {
     return ipcRenderer.invoke('mcp:action-inbox-list');
   },
+  listApprovals(): Promise<XenesisApprovalRequest[]> {
+    return ipcRenderer.invoke('xenesis:approvals-list');
+  },
   resolveActionInboxItem(request: McpBridgeActionInboxResolveRequest): Promise<McpBridgeActionInboxResolveResult> {
     return ipcRenderer.invoke('mcp:action-inbox-resolve', request);
+  },
+  resolveApproval(request: XenesisApprovalResolveRequest): Promise<XenesisApprovalResolveResult> {
+    return ipcRenderer.invoke('xenesis:approvals-resolve', request);
   },
   callCapability(request: McpBridgeCapabilityCallRequest): Promise<McpBridgeCapabilityCallResult> {
     return ipcRenderer.invoke('mcp:capability-call', request);
@@ -1007,6 +1016,11 @@ const mcpBridgeApi: McpBridgeApi = {
     const listener = (_event: Electron.IpcRendererEvent, items: McpBridgeActionInboxItem[]) => callback(items);
     ipcRenderer.on('mcp:action-inbox-changed', listener);
     return () => ipcRenderer.removeListener('mcp:action-inbox-changed', listener);
+  },
+  onApprovalsChanged(callback: (items: XenesisApprovalRequest[]) => void): () => void {
+    const listener = (_event: Electron.IpcRendererEvent, items: XenesisApprovalRequest[]) => callback(items);
+    ipcRenderer.on('xenesis:approvals-changed', listener);
+    return () => ipcRenderer.removeListener('xenesis:approvals-changed', listener);
   },
   onOpenFile(callback: (payload: McpBridgeOpenFilePayload) => void): () => void {
     const listener = (_event: Electron.IpcRendererEvent, payload: McpBridgeOpenFilePayload) => callback(payload);

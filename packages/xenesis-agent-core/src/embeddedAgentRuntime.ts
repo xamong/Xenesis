@@ -43,6 +43,7 @@ export interface DeskEmbeddedAgentRuntimeOptions {
   bridgeUrl?: string;
   bridgeToken?: string;
   turnLedger?: DeskEmbeddedPromptOptions['turnLedger'];
+  approvalHandler?: DeskEmbeddedPromptOptions['approvalHandler'];
   onEvent?: (event: DeskEmbeddedAgentRunEvent) => void;
 }
 
@@ -251,6 +252,7 @@ export class DeskEmbeddedAgentRuntime {
           request: requestWithSession,
           abortSignal: controller.signal,
           turnLedger: this.options.turnLedger,
+          approvalHandler: this.options.approvalHandler,
           onSession: (sessionId) => {
             this.activeSessionId = sessionId;
           },

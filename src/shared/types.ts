@@ -588,6 +588,7 @@ export type DockContentType =
   | 'xamong-chat'
   | 'xenesis-bot'
   | 'xd-ai-workbench'
+  | 'xd-xenesis-agent-workbench'
   | 'xd-artifact-library'
   | 'xd-terminal-inspector'
   | 'xd-process-viewer'
@@ -702,6 +703,7 @@ export type ExtensionTool =
   | 'xenesis-desk.core-tools.xamong-code-chat'
   | 'xenesis-desk.core-tools.xenesis-bot'
   | 'xenesis-desk.core-tools.ai-workbench'
+  | 'xenesis-desk.core-tools.xenesis-agent-workbench'
   | 'xenesis-desk.core-tools.artifact-library'
   | 'xenesis-desk.core-tools.terminal-inspector'
   | 'xenesis-desk.core-tools.process-viewer'
@@ -2149,6 +2151,9 @@ export interface XenesisRunRequest {
 export interface XenesisRunEvent {
   event: string;
   data: unknown;
+  runId?: string;
+  source?: string;
+  sessionId?: string;
 }
 
 export interface XenesisToolPolicyIssue {
@@ -3142,6 +3147,56 @@ export interface McpBridgeActionInboxItem {
   error: string;
 }
 
+export type XenesisApprovalStatus = 'pending' | 'approved' | 'rejected' | 'failed' | 'expired';
+export type XenesisApprovalResolution = 'approve' | 'reject';
+export type XenesisApprovalPermission = 'read' | 'write' | 'execute' | 'control' | (string & {});
+export type XenesisApprovalRisk = 'low' | 'medium' | 'high' | 'critical' | 'unknown';
+
+export interface XenesisApprovalRequest {
+  id: string;
+  title: string;
+  kind: string;
+  permission: XenesisApprovalPermission;
+  risk: XenesisApprovalRisk;
+  command: string;
+  description: string;
+  source: string;
+  sourceChannel: string;
+  sourceAgent: string;
+  sessionId: string;
+  approvalSessionKey: string;
+  requester: string;
+  capabilityPath: string;
+  capabilityArgs?: unknown;
+  status: XenesisApprovalStatus;
+  callbackUrl: string;
+  approveText: string;
+  rejectText: string;
+  createdAt: string;
+  updatedAt: string;
+  expiresAt: string;
+  resolvedAt: string;
+  lastCallbackAt: string;
+  result: string;
+  error: string;
+  migratedFrom: string;
+  legacy: Record<string, unknown>;
+}
+
+export interface XenesisApprovalResolveRequest {
+  id: string;
+  resolution: XenesisApprovalResolution;
+  note?: string;
+  scope?: 'once' | 'always';
+  createdAt?: string;
+}
+
+export interface XenesisApprovalResolveResult {
+  ok: boolean;
+  item?: XenesisApprovalRequest;
+  error?: string;
+}
+
 export interface McpBridgeActionInboxResolveRequest {
   id: string;
   resolution: McpBridgeActionInboxResolution;
@@ -3214,7 +3269,9 @@ export interface McpBridgeCaptureActivePaneResult {
 export interface McpBridgeApi {
   status(): Promise<McpBridgeStatus>;
   listActionInbox(): Promise<McpBridgeActionInboxItem[]>;
+  listApprovals(): Promise<XenesisApprovalRequest[]>;
   resolveActionInboxItem(request: McpBridgeActionInboxResolveRequest): Promise<McpBridgeActionInboxResolveResult>;
+  resolveApproval(request: XenesisApprovalResolveRequest): Promise<XenesisApprovalResolveResult>;
   callCapability(request: McpBridgeCapabilityCallRequest): Promise<McpBridgeCapabilityCallResult>;
   agentTurnsList?: (args?: unknown) => Promise<unknown> | unknown;
   agentTurnsCurrent?: (args?: unknown) => Promise<unknown> | unknown;
@@ -3237,6 +3294,7 @@ export interface McpBridgeApi {
   listBotSessions(): Promise<McpBridgeBotSession[]>;
   saveBotSession(session: McpBridgeBotSession): Promise<McpBridgeBotSessionSaveResult>;
   onActionInboxChanged(callback: (items: McpBridgeActionInboxItem[]) => void): () => void;
+  onApprovalsChanged(callback: (items: XenesisApprovalRequest[]) => void): () => void;
   onOpenFile(callback: (payload: McpBridgeOpenFilePayload) => void): () => void;
   onOpenBrowser(callback: (payload: McpBridgeOpenBrowserPayload) => void): () => void;
   onOpenBuiltinPane(

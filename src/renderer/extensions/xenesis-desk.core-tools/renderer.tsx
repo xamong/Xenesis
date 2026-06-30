@@ -24,6 +24,7 @@ import { TerminalInspectorPane } from './panes/TerminalInspectorPane';
 import { XAppPreviewPane } from './panes/XAppPreviewPane';
 import { XamongCodeChatPane } from './panes/XamongCodeChatPane';
 import { XdBlasterPane } from './panes/XdBlasterPane';
+import { XconAgentWorkbenchPane } from './panes/XconAgentWorkbenchPane';
 import { XenesisAgentPane } from './panes/XenesisAgentPane';
 import { XenisBotPane } from './panes/XenisBotPane';
 import { hydrateXenisBotSessions, recordXenisBotEvent } from './xenisBotStore';
@@ -34,6 +35,7 @@ const TOOL_IDS = {
   xamongCodeChat: 'xenesis-desk.core-tools.xamong-code-chat',
   xenisBot: 'xenesis-desk.core-tools.xenesis-bot',
   aiWorkbench: 'xenesis-desk.core-tools.ai-workbench',
+  xenesisAgentWorkbench: 'xenesis-desk.core-tools.xenesis-agent-workbench',
   artifactLibrary: 'xenesis-desk.core-tools.artifact-library',
   terminalInspector: 'xenesis-desk.core-tools.terminal-inspector',
   processViewer: 'xenesis-desk.core-tools.process-viewer',
@@ -152,6 +154,16 @@ function aiWorkbenchContent(): DockContentOptions {
     state: 'document',
     html: '',
     contentType: 'xd-ai-workbench',
+  };
+}
+
+function xenesisAgentWorkbenchContent(): DockContentOptions {
+  return {
+    id: `xd-xenesis-agent-workbench-${crypto.randomUUID()}`,
+    title: 'Xenesis Agent Workbench',
+    state: 'document',
+    html: '',
+    contentType: 'xd-xenesis-agent-workbench',
   };
 }
 
@@ -364,6 +376,14 @@ const contribution: RendererExtensionContribution = {
         context.openContent(aiWorkbenchContent(), context.requestedPlacement ?? 'tab');
       }
       context.onStatus('AI Workbench opened');
+      return true;
+    }
+
+    if (tool === TOOL_IDS.xenesisAgentWorkbench) {
+      if (!focusExistingContent(context.engine, 'xd-xenesis-agent-workbench')) {
+        context.openContent(xenesisAgentWorkbenchContent(), context.requestedPlacement ?? 'tab');
+      }
+      context.onStatus('Xenesis Agent Workbench opened');
       return true;
     }
 
@@ -701,6 +721,9 @@ const contribution: RendererExtensionContribution = {
     if (content.contentType === 'xd-ai-workbench') {
       return <AiWorkbenchPane />;
     }
+    if (content.contentType === 'xd-xenesis-agent-workbench') {
+      return <XconAgentWorkbenchPane />;
+    }
     if (content.contentType === 'xd-artifact-library') {
       return <ArtifactLibraryPane />;
     }
@@ -769,6 +792,7 @@ const contribution: RendererExtensionContribution = {
       'xamong-chat': 'X',
       'xenesis-bot': 'B',
       'xd-ai-workbench': 'AI',
+      'xd-xenesis-agent-workbench': '◇',
       'xd-artifact-library': 'L',
       'xd-terminal-inspector': 'T',
       'xd-process-viewer': 'P',
@@ -799,6 +823,7 @@ const contribution: RendererExtensionContribution = {
       contentType === 'xapp-preview' ||
       contentType === 'hermes-status' ||
       contentType === 'xd-ai-workbench' ||
+      contentType === 'xd-xenesis-agent-workbench' ||
       contentType === 'xd-artifact-library' ||
       contentType === 'xd-terminal-inspector' ||
       contentType === 'xd-process-viewer' ||

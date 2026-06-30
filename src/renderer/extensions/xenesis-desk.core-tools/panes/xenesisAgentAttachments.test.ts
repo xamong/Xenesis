@@ -6,6 +6,8 @@ import {
   classifyXenesisAttachment,
   dedupeXenesisAttachments,
   formatXenesisAttachmentSize,
+  getXenesisLocalExplorerDropPath,
+  hasXenesisAttachmentDropPayload,
   toXenesisProviderAttachments,
   type XenesisAgentAttachment,
 } from './xenesisAgentAttachments';
@@ -113,4 +115,23 @@ test('converts UI attachments into provider request attachments', () => {
       text: '# Brief\nUse this data.',
     },
   ]);
+});
+
+test('detects local Explorer drag payloads and extracts a filesystem path', () => {
+  const dataTransfer = {
+    types: ['Files', 'text/uri-list'],
+    getData(type: string) {
+      if (type === 'text/uri-list') return 'file:///C:/tmp/design.md';
+      return '';
+    },
+    files: [
+      {
+        path: 'C:\\tmp\\design.md',
+        name: 'design.md',
+      },
+    ],
+  };
+
+  assert.equal(hasXenesisAttachmentDropPayload(dataTransfer), true);
+  assert.equal(getXenesisLocalExplorerDropPath(dataTransfer), 'C:\\tmp\\design.md');
 });

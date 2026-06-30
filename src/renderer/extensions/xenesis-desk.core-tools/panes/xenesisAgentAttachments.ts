@@ -28,7 +28,15 @@ export interface XenesisAttachmentLikeFile {
   size?: number;
 }
 
+export interface XenesisAttachmentDropDataTransferLike {
+  types?: ArrayLike<string> | readonly string[] | null;
+  files?: ArrayLike<{ path?: string; name?: string }> | null;
+  getData?: (format: string) => string;
+}
+
 const IMAGE_EXTENSION_PATTERN = /\.(?:apng|avif|bmp|gif|jpe?g|png|svg|webp)$/i;
+const LOCAL_EXPLORER_PATH_TYPE = 'application/xamong-path';
+const LOCAL_EXPLORER_IS_DIRECTORY_TYPE = 'application/xamong-is-directory';
 const MAX_PROMPT_PREVIEW_CHARS = 4000;
 
 export function classifyXenesisAttachment(file: XenesisAttachmentLikeFile): XenesisAgentAttachmentKind {
@@ -46,6 +54,53 @@ export function formatXenesisAttachmentSize(bytes: number): string {
   const mb = kb / 1024;
   if (mb < 1024) return `${formatOneDecimal(mb)} MB`;
   return `${formatOneDecimal(mb / 1024)} GB`;
+}
+
+export function getXenesisLocalExplorerDropPath(
+  dataTransfer: XenesisAttachmentDropDataTransferLike | null | undefined,
+): string | null {
+  if (!dataTransfer) return null;
+  const firstFilePath = dataTransfer.files?.length ? dataTransfer.files[0]?.path?.trim() : '';
+  if (firstFilePath) return firstFilePath;
+  if (!dataTransfer.getData) return null;
+  const typeSet = new Set(readDataTransferTypes(dataTransfer));
+  const hasLocalExplorerType = typeSet.has(LOCAL_EXPLORER_PATH_TYPE) || typeSet.has(LOCAL_EXPLORER_IS_DIRECTORY_TYPE);
+  const hasUriList = typeSet.has('text/uri-list');
+  if (!hasLocalExplorerType && !hasUriList) return null;
+  const isDirectory = dataTransfer.getData(LOCAL_EXPLORER_IS_DIRECTORY_TYPE).trim().toLowerCase() === 'true';
+  if (isDirectory) return null;
+  const explicitPath = dataTransfer.getData(LOCAL_EXPLORER_PATH_TYPE).trim() || dataTransfer.getData('text/plain').trim();
+  if (explicitPath) return explicitPath;
+  const uriPath = fileUriToLocalPath(dataTransfer.getData('text/uri-list').trim());
+  return uriPath || null;
+}
+
+export function hasXenesisAttachmentDropPayload(
+  dataTransfer: XenesisAttachmentDropDataTransferLike | null | undefined,
+): boolean {
+  if (dataTransfer?.files?.length) return true;
+  return getXenesisLocalExplorerDropPath(dataTransfer) !== null;
+}
+
+function readDataTransferTypes(dataTransfer: XenesisAttachmentDropDataTransferLike): string[] {
+  const types = dataTransfer.types;
+  if (!types) return [];
+  return Array.from(types, (type) => String(type));
+}
+
+function fileUriToLocalPath(uriList: string): string {
+  const uri = uriList
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find((line) => line && !line.startsWith('#'));
+  if (!uri || !uri.toLowerCase().startsWith('file://')) return '';
+  try {
+    const parsed = decodeURIComponent(uri.replace(/^file:\/+/, ''));
+    const normalized = parsed.replace(/\//g, '\\');
+    return /^[A-Za-z]:\\/.test(normalized) ? normalized : `\\${normalized}`;
+  } catch {
+    return '';
+  }
 }
 
 function formatOneDecimal(value: number): string {

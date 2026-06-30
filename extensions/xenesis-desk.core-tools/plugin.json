@@ -27,6 +27,11 @@
         "icon": "AI"
       },
       {
+        "command": "xenesis-desk.core-tools.openXenesisAgentWorkbench",
+        "title": "Xenesis Agent Workbench",
+        "icon": "xenesis-agent"
+      },
+      {
         "command": "xenesis-desk.core-tools.openArtifactLibrary",
         "title": "Artifact Library",
         "icon": "L"
@@ -129,6 +134,7 @@
         "xenesis-desk.core-tools.openXamongCode",
         "xenesis-desk.core-tools.openXenisBot",
         "xenesis-desk.core-tools.openAiWorkbench",
+        "xenesis-desk.core-tools.openXenesisAgentWorkbench",
         "xenesis-desk.core-tools.openArtifactLibrary",
         "xenesis-desk.core-tools.openTerminalInspector",
         "xenesis-desk.core-tools.openProcessViewer",
@@ -153,6 +159,7 @@
         "xenesis-desk.core-tools.openXamongCode",
         "xenesis-desk.core-tools.openXenisBot",
         "xenesis-desk.core-tools.openAiWorkbench",
+        "xenesis-desk.core-tools.openXenesisAgentWorkbench",
         "xenesis-desk.core-tools.openArtifactLibrary",
         "xenesis-desk.core-tools.openTerminalInspector",
         "xenesis-desk.core-tools.openProcessViewer",

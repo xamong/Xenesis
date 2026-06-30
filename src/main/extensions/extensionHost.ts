@@ -85,6 +85,7 @@ const EXTENSION_TOOLS: ExtensionTool[] = [
   'xenesis-desk.core-tools.xamong-code-chat',
   'xenesis-desk.core-tools.xenesis-bot',
   'xenesis-desk.core-tools.ai-workbench',
+  'xenesis-desk.core-tools.xenesis-agent-workbench',
   'xenesis-desk.core-tools.artifact-library',
   'xenesis-desk.core-tools.terminal-inspector',
   'xenesis-desk.core-tools.process-viewer',

@@ -11,6 +11,10 @@ exports.activate = function activate(api) {
     api.openTool('xenesis-desk.core-tools.ai-workbench');
   });
 
+  api.registerCommand('xenesis-desk.core-tools.openXenesisAgentWorkbench', function openXenesisAgentWorkbench() {
+    api.openTool('xenesis-desk.core-tools.xenesis-agent-workbench');
+  });
+
   api.registerCommand('xenesis-desk.core-tools.openArtifactLibrary', function openArtifactLibrary() {
     api.openTool('xenesis-desk.core-tools.artifact-library');
   });

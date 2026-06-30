@@ -1,5 +1,113 @@
 # Xenesis Desk Work Handoff
 
+## 2026-06-30 Xcon Agent Workbench Port
+
+- Current objective:
+  - Port
+    `D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk\src\renderer\extensions\xenesis-desk.core-tools\panes\XconAgentWorkbenchPane.tsx`
+    into this repo with its required settings/provider/runtime wiring.
+  - Preserve this repo's provider policy: active provider comes from settings/profile,
+    and `localCli` remains orthogonal to provider selection.
+- Scope checkpoint:
+  - The current repo has no `xenesis-agent-workbench`,
+    `XconAgentWorkbenchPane`, `xconAgentWorkbenchModel`,
+    `xenesisWorkbenchStream`, or `xenesisAgentRouteClient` wiring yet.
+  - The sibling `xenesis-desk` repo wires the workbench through the core-tools
+    plugin manifest/main entry, renderer content factory, app menu model,
+    shared content/tool types, Desk Capability Registry coverage, extension host
+    allowlist, and Xenesis run-event source filtering.
+- Commands run:
+  - `git status --short --branch --untracked-files=all`
+  - `rg -n "xenesis-agent-workbench|openXenesisAgentWorkbench|XconAgentWorkbench|xconAgentWorkbench|xenesisWorkbenchStream|xenesisAgentRouteClient|XENESIS_AGENT_WORKBENCH" "D:/CodeTruck/CodeBox/Xamong/06 XCON/xenesis-desk"`
+  - `rg -n "xenesis-agent-workbench|openXenesisAgentWorkbench|XconAgentWorkbench|xconAgentWorkbench|xenesisWorkbenchStream|xenesisAgentRouteClient|XENESIS_AGENT_WORKBENCH" .`
+  - `node --import tsx --test src/shared/xenesisRunEventScope.test.ts src/shared/appMenuModel.test.ts`
+  - `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentAttachments.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchModel.test.ts`
+  - `node --test src/main/xenesisWorkbenchApprovals.test.mjs`
+  - `node --import tsx --test src/shared/xenesisRunEventScope.test.ts src/shared/appMenuModel.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentAttachments.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchModel.test.ts`
+  - `node --test src/main/xenesisWorkbenchApprovals.test.mjs`
+  - `node --import tsx --test-name-pattern "approvalHandler" packages/xenesis-agent-core/src/embeddedAgentRuntime.test.ts`
+  - `npm --prefix packages/xenesis run typecheck`
+  - `npm run docs:capabilities:audit`
+  - `npm run typecheck`
+  - `npm test`
+  - `npm run build`
+  - Inline Playwright `_electron.launch` live smoke with temporary user data dir:
+    CR call `xd.tools.core.xenesisAgentWorkbench.open` and wait for
+    `.xd-agent-workbench`.
+  - Re-run verification before handoff:
+    - `npm run typecheck`
+    - `npm test`
+    - `npm --prefix packages/xenesis run typecheck`
+    - `npm run docs:capabilities:audit`
+    - `npm run build`
+    - Inline Playwright `_electron.launch` live smoke with temporary user data
+      dir; wait for renderer readiness, call
+      `xd.tools.core.xenesisAgentWorkbench.open`, observe
+      `mcp:extension-actions`, and check `.xd-agent-workbench`.
+  - Commit/PR verification re-run after user requested commit and PR:
+    - `npm run typecheck`
+    - `npm test`
+    - `npm --prefix packages/xenesis run typecheck`
+    - `npm run docs:capabilities:audit`
+    - `npm run build`
+    - Inline Playwright `_electron.launch` live smoke with temporary user data
+      dir; wait for renderer readiness, call
+      `xd.tools.core.xenesisAgentWorkbench.open`, observe
+      `mcp:extension-actions`, and check `.xd-agent-workbench`.
+- Verification result:
+  - Exploration/design approved by user.
+  - RED tests verified. Failures are the expected missing Workbench contracts:
+    missing `xenesisRunEventScope`, missing `xconAgentWorkbenchModel`, missing
+    Explorer drop helper exports, missing `xenesisWorkbenchApprovals`, and
+    missing app menu Workbench command.
+  - Focused root tests: PASS, 21 tests.
+  - Approval adapter test: PASS, 3 tests.
+  - Agent-core approvalHandler forwarding test: PASS, 1 filtered test.
+  - `npm --prefix packages/xenesis run typecheck`: PASS.
+  - `npm run docs:capabilities:audit`: PASS; generated audit reports 855
+    nodes, 695 coverage path references, and all missing counters 0.
+  - `npm run typecheck`: PASS.
+  - `npm test`: PASS; 588 tests.
+  - `npm run build`: PASS; Vite emitted existing large-bundle/externalization
+    warnings but exited 0.
+  - Live smoke: initial immediate selector wait timed out when called before
+    renderer extension listeners were ready. Re-run after waiting for the
+    default `xenesis-agent` content and `onExtensionActions` readiness: PASS;
+    `xd.tools.core.xenesisAgentWorkbench.open` emitted the Workbench
+    `openTool` payload and `.xd-agent-workbench` rendered.
+  - Commit/PR verification re-run: PASS for root typecheck, root tests
+    (588/588), Xenesis package typecheck, CR audit (855 nodes, 695 coverage
+    references), production build, and Electron Workbench CR open/render smoke.
+- Touched files:
+  - `extensions/xenesis-desk.core-tools/main.js`
+  - `extensions/xenesis-desk.core-tools/plugin.json`
+  - `packages/xenesis-agent-core/src/embeddedAgentRuntime.ts`
+  - `packages/xenesis-agent-core/src/embeddedRuntime.ts`
+  - `packages/xenesis/src/api/embedded.ts`
+  - `packages/xenesis/src/workflows/runner.ts`
+  - `packages/xenesis/src/workflows/types.ts`
+  - `src/main/index.ts`
+  - `src/main/xenesisWorkbenchApprovals.mjs`
+  - `src/preload/index.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/renderer.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/XconAgentWorkbenchPane.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchModel.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchExamples.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisWorkbenchStream.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentAttachments.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/styles.css`
+  - `src/shared/appMenuModel.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/shared/types.ts`
+  - Tests/declarations and generated audit/handoff files adjacent to those
+    changes.
+- Known gaps:
+  - Live smoke covered CR open/rendering. It did not submit a real provider turn
+    from Workbench because that depends on configured provider credentials and
+    would spend model runtime.
+- Next intended step:
+  - Commit the Workbench port, push `mini`, and open a PR.
+
 ## 2026-06-30 Xenesis TUI Full Port
 
 - Current objective:
@@ -141,7 +249,121 @@
 - Next intended step:
   - Commit the final provider failure handling and verification log update,
     then preserve the worktree/branch for review or PR creation.
+## 2026-06-30 Channel Command Surface Mini Design
 
+- Current objective:
+  - Design the selected mini slice for
+    `D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk\docs\superpowers\specs\2026-06-26-channel-command-surface-design.md`
+    in this repo.
+  - User selected scope 2: shared command surface, mobile aliases,
+    Telegram bottom menu registration, Telegram bot mention handling, and
+    Gateway Agent router wiring.
+- Scope:
+  - Brainstorming/design and implementation planning only in this phase.
+  - Preserve this repo's current `ChannelManager` queue/session behavior.
+  - Do not port backup rate limit, file session store, or `/stop` behavior in
+    this slice.
+- Current planning checkpoint:
+  - Design spec committed as
+    `70d6515 Add channel command surface mini design`.
+  - Implementation plan saved to
+    `docs/superpowers/plans/2026-06-30-channel-command-surface-mini.md`.
+  - Plan file is ignored by the repo's `docs/superpowers` ignore rule and was
+    not committed.
+- Current implementation checkpoint:
+  - Completed shared command surface, ChannelManager routing, Telegram command
+    registration, Telegram bot mention handling, and Gateway Agent router
+    wiring.
+  - Implementation commits:
+    - `d353b28 Add channel command surface`
+    - `7333a8e Route shared channel commands`
+    - `2cff4c7 Register Telegram channel commands`
+    - `367f805 Wire gateway channel command routers`
+- Touched files:
+  - `handoff.md`
+  - `docs/superpowers/specs/2026-06-30-channel-command-surface-mini-design.md`
+  - `docs/superpowers/plans/2026-06-30-channel-command-surface-mini.md`
+- Commands run:
+  - Read `superpowers:brainstorming`.
+  - Read the source design document from the sibling `xenesis-desk` workspace.
+  - Read `AGENTS.md` and required repo-local Obsidian context under
+    `docs/obsidian/Xenesis-desk`.
+  - Inspected current `packages/xenesis/src/channels`,
+    `packages/xenesis/src/remoteDesk`, and `packages/xenesis/src/gateway`
+    source.
+  - Compared the sibling backup implementation for `commandSurface`,
+    `ChannelManager`, `TelegramAdapter`, and Gateway router wiring.
+  - Wrote the channel command surface mini implementation plan with
+    `superpowers:writing-plans`.
+  - `rg -n 'TBD|TODO|PLACEHOLDER|FIXME|\?\?\?|implement later|fill in details|Add appropriate|add appropriate|handle edge cases|Write tests for the above|Similar to|similar to|copy sibling body|copy sibling signature|<record count>|git add handoff\.md|Record channel command surface verification' docs\superpowers\plans\2026-06-30-channel-command-surface-mini.md`
+    -> no matches.
+  - `git diff --check -- docs\superpowers\plans\2026-06-30-channel-command-surface-mini.md handoff.md`
+    -> PASS; only warning was existing `handoff.md` LF-to-CRLF notice.
+  - `npm --prefix packages/xenesis test -- tests/channels/commandSurface.test.ts`
+    after adding only the command surface test -> RED, 5 failed because the new
+    helpers were not exported.
+  - `npm --prefix packages/xenesis test -- tests/channels/commandSurface.test.ts`
+    after shared command surface implementation -> PASS, 1 file, 5 tests.
+  - `npm --prefix packages/xenesis test -- tests/channels/manager.test.ts`
+    after adding only manager tests -> RED, 2 failed because `/help`, `/desk`,
+    and short aliases still reached agent/router paths.
+  - `npm --prefix packages/xenesis test -- tests/channels/commandSurface.test.ts tests/channels/manager.test.ts`
+    after ChannelManager routing -> PASS, 2 files, 8 tests.
+  - `npm --prefix packages/xenesis test -- tests/channels/telegram.test.ts`
+    after adding only Telegram tests -> RED, 4 failed because `getMe`,
+    `setMyCommands`, other-bot mention filtering, and `botUsername` metadata
+    were missing.
+  - `npm --prefix packages/xenesis test -- tests/channels/commandSurface.test.ts tests/channels/manager.test.ts tests/channels/telegram.test.ts`
+    after Telegram implementation -> PASS, 3 files, 13 tests.
+  - `npm --prefix packages/xenesis run typecheck` after Telegram
+    implementation -> PASS.
+  - `npm --prefix packages/xenesis test -- tests/channels/gatewayCommandSurface.test.ts`
+    after adding the Gateway test -> initial harness timeout. Root cause:
+    default Telegram polling plus immediate empty fake `getUpdates` responses
+    starved timer-based waits. Fixed the test fake with a short delayed empty
+    poll response and disabled Gateway worker through test config.
+  - `npm --prefix packages/xenesis test -- tests/channels/gatewayCommandSurface.test.ts`
+    after the harness fix and before Gateway wiring -> RED, Agent list text was
+    missing.
+  - `npm --prefix packages/xenesis test -- tests/channels/gatewayCommandSurface.test.ts`
+    after Gateway router wiring and terminal-router agent-command exclusion ->
+    PASS, 1 file, 1 test.
+  - `npm --prefix packages/xenesis test -- tests/channels/commandSurface.test.ts tests/channels/manager.test.ts tests/channels/telegram.test.ts tests/channels/gatewayCommandSurface.test.ts`
+    final focused verification -> PASS; Test Files 4 passed (4), Tests 14
+    passed (14).
+  - `npm --prefix packages/xenesis run typecheck` final verification -> PASS.
+  - `npm --prefix packages/xenesis test` final verification -> PASS; Test Files
+    118 passed (118), Tests 591 passed (591).
+- Exact verification result:
+  - Confirmed this repo is missing `channels/commandSurface.ts`, Telegram
+    `setMyCommands` registration, and Gateway `RemoteDeskAgentSessionManager`
+    wiring.
+  - Confirmed existing unrelated local provider/runtime changes are present and
+    outside this design scope.
+  - Plan self-review covered shared command surface, Telegram bottom menu,
+    Telegram bot mention handling, mobile aliases, Gateway Agent router wiring,
+    and focused/package verification commands.
+  - Implemented changes touched only channel, remoteDesk, gateway source and
+    channel tests.
+  - `git diff --stat HEAD~4..HEAD` shows 11 implementation files changed.
+  - `git diff --name-only HEAD~4..HEAD` shows only:
+    `packages/xenesis/src/channels/commandSurface.ts`,
+    `packages/xenesis/src/channels/index.ts`,
+    `packages/xenesis/src/channels/manager.ts`,
+    `packages/xenesis/src/channels/telegram.ts`,
+    `packages/xenesis/src/channels/types.ts`,
+    `packages/xenesis/src/gateway/server.ts`,
+    `packages/xenesis/src/remoteDesk/sessionManager.ts`, and
+    `packages/xenesis/tests/channels/*.test.ts`.
+- Known gaps:
+  - Slack slash command registration and Discord application command
+    registration remain outside this slice.
+  - Backup channel rate limit, file session store, and `/stop` behavior remain
+    outside this slice.
+  - `handoff.md` remains dirty and was not committed because it contains
+    pre-existing unrelated work-log content.
+- Next intended step:
+  - Run final completion review and decide whether to push/update the PR.
 ## 2026-06-30 Input Control Layer Mini Implementation
 
 - Current objective:
@@ -257,6 +479,362 @@
 - Next intended step:
   - Commit final handoff/audit timestamp updates, then use
     `superpowers:finishing-a-development-branch` for integration choice.
+
+## 2026-06-30 Xenesis TUI Full Port Design
+
+- Current objective:
+  - Design the full `packages/xenesis` TUI upgrade by porting the stronger TUI
+    structure from
+    `D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk\packages\xenesis`
+    into this repo without overwriting current provider fixes.
+- Scope:
+  - Brainstorming and design only in this phase.
+  - User selected the full TUI upgrade scope: runtime controller, command
+    catalog, slash dispatcher, image/output commands, durable approval restore,
+    enhanced Ink UX, and sibling-level TUI tests.
+  - No implementation code is touched before the written spec is reviewed and
+    approved.
+- Touched files:
+  - `handoff.md`
+  - Planned:
+    `docs/superpowers/specs/2026-06-30-xenesis-tui-full-port-design.md`
+- Commands run:
+  - Read `superpowers:brainstorming`.
+  - After user approved the committed spec, read `superpowers:writing-plans`.
+  - Read `AGENTS.md` and the repo-local Obsidian context under
+    `docs/obsidian/Xenesis-desk`.
+  - Inspected current and sibling TUI source/test file lists.
+  - Inspected `packages/xenesis/package.json` differences to avoid overwriting
+    current provider smoke and `ajv` changes.
+  - Compared current `main.ts` TUI ownership with sibling
+    `createTuiRuntimeController` ownership.
+  - Wrote
+    `docs/superpowers/specs/2026-06-30-xenesis-tui-full-port-design.md`.
+  - `rg -n "TBD|TODO|PLACEHOLDER|FIXME|\?\?\?|later maybe|implement later|fill in" "docs\superpowers\specs\2026-06-30-xenesis-tui-full-port-design.md"`
+    -> no matches.
+  - `git diff --check -- "docs\superpowers\specs\2026-06-30-xenesis-tui-full-port-design.md"`
+    -> PASS, no output.
+  - `git add -f -- "docs\superpowers\specs\2026-06-30-xenesis-tui-full-port-design.md"`.
+  - `git diff --cached --name-status` -> only
+    `A docs/superpowers/specs/2026-06-30-xenesis-tui-full-port-design.md`.
+  - `git diff --cached --check -- "docs\superpowers\specs\2026-06-30-xenesis-tui-full-port-design.md"`
+    -> PASS, no output.
+  - `git commit -m "Add Xenesis TUI full port design"` -> commit
+    `294c86b`.
+  - Wrote
+    `docs/superpowers/plans/2026-06-30-xenesis-tui-full-port.md`.
+  - `rg -n "TBD|TODO|PLACEHOLDER|FIXME|\?\?\?|implement later|fill in details|Add appropriate|add appropriate|handle edge cases|Write tests for the above|Similar to|similar to|copy sibling body|copy sibling signature|detectModelCapabilities" "docs\superpowers\plans\2026-06-30-xenesis-tui-full-port.md"`
+    -> no matches.
+  - `git diff --check -- "docs\superpowers\plans\2026-06-30-xenesis-tui-full-port.md"`
+    -> PASS, no output.
+- Exact verification result:
+  - Design sections for architecture, components, data flow/error handling, and
+    tests/verification were presented and approved by the user.
+  - Spec self-review found no placeholder markers or whitespace errors.
+  - The design document was committed as `294c86b` with only the spec file in
+    that commit.
+  - Implementation plan self-review found no blocked markers or whitespace
+    errors and adjusted current-project differences for `supportsVision`,
+    `isProviderName`, and scoped support-facade commits.
+  - No implementation verification has run in this design phase.
+- Known gaps:
+  - Existing unrelated local changes remain in provider/runtime files,
+    generated audit docs, `server/.node-version-built`, and untracked provider
+    tests.
+  - The final implementation must preserve the current OpenAI strict schema and
+    DeepSeek provider/tool-name fixes while porting TUI code.
+- Next intended step:
+  - Ask the user to choose plan execution mode:
+    `superpowers:subagent-driven-development` or
+    `superpowers:executing-plans`.
+
+## 2026-06-30 Input Control Layer Mini Design
+
+- Current objective:
+  - Design the first implementation slice for
+    `D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk\docs\superpowers\specs\2026-06-26-input-control-layer-design.md`
+    in this repo, using the approved A scope:
+    `xd.input.*` contract, validation, CR dispatcher, and registered desktop
+    app execution first.
+- Scope:
+  - Add a design spec only in this phase, per `superpowers:brainstorming`.
+  - First implementation slice will prefer a new `InputControlService`, reuse
+    existing `xd.apps.*`/app-control behavior for registered external apps, and
+    leave browser coordinate execution for a later slice.
+  - No implementation code is touched before the written spec is reviewed and
+    approved.
+- Touched files:
+  - `handoff.md`
+  - Planned: `docs/superpowers/specs/2026-06-30-input-control-layer-mini-design.md`
+- Commands run:
+  - Read `superpowers:brainstorming` and
+    `superpowers:verification-before-completion`.
+  - After user approved the committed spec, read `superpowers:writing-plans`.
+  - Read required repo/Obsidian context for CR, MCP bridge, approval flow,
+    Agent runtime, module ownership, and verification map.
+  - Inspected existing CR surfaces and dispatch for `xd.apps.*`,
+    `xd.computer.*`, `xd.panes.browser.*`, and `xd.playwright.*`.
+  - `git status --short --branch` showed existing unrelated local changes in
+    provider/runtime files, generated audit docs, `server/.node-version-built`,
+    and untracked package tests. Those are not part of this design commit.
+  - Wrote
+    `docs/superpowers/specs/2026-06-30-input-control-layer-mini-design.md`.
+  - Read back the full spec file for self-review.
+  - `rg -n "TBD|TODO|PLACEHOLDER|FIXME|\?\?\?" "docs/superpowers/specs/2026-06-30-input-control-layer-mini-design.md"`
+    -> no matches.
+  - `git diff --cached --name-status` before staging -> no staged files.
+  - `git add -f -- "docs/superpowers/specs/2026-06-30-input-control-layer-mini-design.md"`
+    because `docs/superpowers` is ignored.
+  - `git diff --cached --name-status` -> only
+    `A docs/superpowers/specs/2026-06-30-input-control-layer-mini-design.md`.
+  - `git diff --cached --check -- "docs/superpowers/specs/2026-06-30-input-control-layer-mini-design.md"`
+    -> PASS, no output.
+  - `git commit -m "Add input control layer mini design"` -> commit
+    `3ec187d`.
+  - Wrote
+    `docs/superpowers/plans/2026-06-30-input-control-layer-mini.md`.
+  - `rg -n "TBD|TODO|PLACEHOLDER|FIXME|implement later|add appropriate|similar to|Write tests for the above|fill in details" "docs/superpowers/plans/2026-06-30-input-control-layer-mini.md"`
+    -> no matches.
+  - `git diff --check -- "docs/superpowers/plans/2026-06-30-input-control-layer-mini.md"`
+    -> PASS, no output.
+- Exact verification result:
+  - Spec self-review found no placeholders, incomplete markers, or whitespace
+    errors.
+  - The design document was committed as `3ec187d` with only the spec file in
+    that commit.
+  - Implementation plan self-review maps the approved spec to six task groups:
+    shared DSL model, main service, CR registration/dispatch, main bridge
+    wiring, verification, and final integration review.
+  - Plan placeholder scan and whitespace check passed.
+- Known gaps:
+  - Browser visible-pane coordinate execution requires renderer browser action
+    expansion and is intentionally deferred from the first implementation slice.
+  - External app screenshot capture is not present in the current app-control
+    layer, so `xd.input.screenshot` must return an honest unsupported result
+    until a real screenshot adapter exists.
+- Next intended step:
+  - Ask the user to choose plan execution mode:
+    `superpowers:subagent-driven-development` or
+    `superpowers:executing-plans`.
+
+## 2026-06-30 External App Control Design Alignment
+
+- Current objective:
+  - Apply the actionable parts of
+    `D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk\docs\superpowers\specs\2026-06-25-external-app-control-design.md`
+    to the current Xenesis repo without disturbing unrelated local changes.
+- Scope:
+  - Improve Windows external app observed results with actual window bounds and
+    foreground state.
+  - Add `xd.apps.launch` placement support so a launch can request initial
+    visible window placement through the existing external app service.
+  - Add a repeatable Notepad external app live smoke entrypoint for the approved
+    scenario.
+- Touched files:
+  - `handoff.md`
+  - `docs/superpowers/plans/2026-06-30-external-app-control-alignment.md`
+  - Planned: `src/shared/externalAppControl.ts`,
+    `src/shared/externalAppControl.test.ts`,
+    `src/shared/deskBridgeCapabilities.ts`,
+    `src/shared/externalAppCapabilities.test.ts`,
+    `src/main/appControl/appControlService.ts`,
+    `src/main/appControl/appControlService.test.ts`,
+    `src/main/appControl/windowsAppControl.ts`,
+    `src/main/appControl/windowsAppControl.test.ts`,
+    `scripts/xenesisExternalAppNotepadLiveSmoke.mjs`, and matching tests if
+    needed.
+- Commands run:
+  - Read relevant superpower skills: brainstorming, writing-plans, TDD.
+  - Read required repo/Obsidian context for CR, approval, Agent runtime, module
+    ownership, and verification map.
+  - `git status --short --branch` showed existing unrelated local changes in
+    `packages/xenesis/src/providers/openaiProvider.ts`,
+    `packages/xenesis/tests/s3s4/openaiProviderStrictSchema.test.ts`,
+    `docs/capability-registry-audit.md`, and `server/.node-version-built`.
+  - `node --import tsx --test src/shared/externalAppControl.test.ts src/shared/externalAppCapabilities.test.ts src/main/appControl/appControlService.test.ts src/main/appControl/windowsAppControl.test.ts`
+    -> RED failed on missing launch placement normalization/schema/service
+    behavior and missing Windows `GetWindowRect`/`GetForegroundWindow`
+    readback.
+  - `node --import tsx --test src/shared/externalAppControl.test.ts src/shared/externalAppCapabilities.test.ts src/main/appControl/appControlService.test.ts src/main/appControl/windowsAppControl.test.ts`
+    after implementation -> PASS, 30 tests.
+  - `node --test scripts/xenesisExternalAppNotepadLiveSmoke.test.mjs`
+    -> RED failed because the smoke script did not exist.
+  - `node --test scripts/xenesisExternalAppNotepadLiveSmoke.test.mjs`
+    after implementation -> PASS, 2 tests.
+  - `node --import tsx --test src/shared/externalAppControl.test.ts src/shared/externalAppCapabilities.test.ts src/main/appControl/appControlService.test.ts src/main/appControl/windowsAppControl.test.ts src/shared/mcpApprovalHardening.test.ts`
+    -> PASS, 38 tests.
+  - `npx biome check --write ...` on focused external app files and smoke
+    scripts -> formatted 9 files.
+  - `npx biome check src/shared/externalAppControl.ts src/shared/externalAppControl.test.ts src/shared/externalAppCapabilities.test.ts src/main/appControl/appControlService.ts src/main/appControl/appControlService.test.ts src/main/appControl/windowsAppControl.ts src/main/appControl/windowsAppControl.test.ts scripts/xenesisExternalAppNotepadLiveSmoke.mjs scripts/xenesisExternalAppNotepadLiveSmoke.test.mjs --max-diagnostics 40`
+    -> PASS.
+  - `npm run typecheck` -> PASS.
+  - `npm run docs:capabilities:audit` -> PASS; wrote
+    `docs\capability-registry-audit.md`, 849 registered nodes, 692 coverage path
+    references.
+  - `node scripts/assertCapabilityAuditZero.mjs` -> PASS; verified 4 zero
+    counters in `docs\capability-registry-audit.md`.
+  - `npm test` -> PASS, 528 tests.
+  - `npm run build` -> PASS; existing Vite/Rollup bundle warnings remain.
+  - `node scripts/xenesisExternalAppNotepadLiveSmoke.mjs --plan` -> printed the
+    registered-profile CR sequence without arbitrary executable paths.
+  - `node scripts/xenesisExternalAppNotepadLiveSmoke.mjs --json --timeout=60000`
+    -> PASS, 8/8 checks: `xd.apps.launch`, `find`, `status`, `focus`,
+    `resize`, `typeText`, `hotkey`, and `close`.
+- Exact verification result:
+  - Launch placement is normalized, exposed in the CR schema, and applied by the
+    app-control service via `adapter.resize()` after successful launch.
+  - Windows app-control results now include observed window bounds and
+    foreground state from User32 readback when available.
+  - Notepad registered-profile live smoke passed through CR for launch, find,
+    status, focus, resize, typeText, hotkey, and close.
+  - CR audit release-gate counters are all 0.
+- Known gaps:
+  - Live smoke used direct CR calls through the Electron Desk bridge, not a
+    provider natural-language Agent prompt. The runtime/provider policy already
+    points natural-language Desk control at CR tools, but this pass did not
+    spend an external model call to prove provider tool selection.
+  - Existing unrelated local changes remain in provider files and server marker
+    files; they were not modified for this external app pass.
+- Next intended step:
+  - Review the external app changes and decide whether to commit only this
+    scoped file set or include the unrelated provider work separately.
+
+## 2026-06-30 Xenesis Provider Tool Name Deduplication
+
+- Current objective:
+  - Fix DeepSeek Chat Completions failing after provider routing with
+    `400 Tool names must be unique.`
+- User evidence:
+  - Screenshot showed `DeepSeek provider stream request failed for model
+    "deepseek-v4-pro": 400 Tool names must be unique.`
+- Root cause:
+  - Built-in tools are registered by canonical name and by legacy aliases. The
+    registry alias entries point to the same `Tool` object, but `AgentRunner`
+    converted registry values directly to an array. Provider requests therefore
+    contained duplicate canonical tool names such as `wait`, `user_message`,
+    `xenesis_skill`, `planning_start`, and `planning_finish`.
+- Touched files:
+  - `handoff.md`
+  - `packages/xenesis/src/core/AgentRunner.ts`
+  - `packages/xenesis/tests/s3s4/agentRunnerToolDedupe.test.ts`
+- Commands run:
+  - Read `systematic-debugging`, `test-driven-development`, and
+    `verification-before-completion` skills.
+  - Fake DeepSeek Chat Completions request capture before the fix showed
+    duplicate tool names: `wait`, `user_message`, `xenesis_skill`,
+    `planning_start`, and `planning_finish`.
+  - `npm --prefix packages/xenesis test -- tests/s3s4/agentRunnerToolDedupe.test.ts`
+    -> RED failed with duplicate `canonical_tool` names.
+  - `npm --prefix packages/xenesis test -- tests/s3s4/agentRunnerToolDedupe.test.ts`
+    after the fix -> PASS.
+  - Fake DeepSeek request capture after the fix showed `duplicates: []` and
+    `total: 82`.
+  - `npm --prefix packages/xenesis test -- tests/s3s4/agentRunnerToolDedupe.test.ts tests/s3s4/providerFactoryWiring.test.ts tests/s3s4/openaiProviderStrictSchema.test.ts`
+    -> PASS, 17 tests.
+  - `npm --prefix packages/xenesis run typecheck` -> PASS.
+  - `npm --prefix packages/xenesis test` -> PASS, 114 files and 577 tests.
+- Exact verification result:
+  - AgentRunner alias-deduplication regression test passes.
+  - Local DeepSeek request payload capture has no duplicate tool function names.
+  - Xenesis package typecheck passes.
+  - Xenesis package vitest suite passes.
+- Known gaps:
+  - Did not run a live DeepSeek API call to avoid spending an external model
+    call during local verification. The failing payload shape was reproduced and
+    corrected locally.
+- Next intended step:
+  - Re-run the user's DeepSeek chat command with a real `DEEPSEEK_API_KEY`.
+    The previous duplicate-tool-name 400 should no longer occur.
+
+## 2026-06-30 Xenesis DeepSeek Chat Completions Provider
+
+- Current objective:
+  - Fix `npm --prefix packages/xenesis run dev -- --provider deepseek
+    --model deepseek-v4-pro chat` failing with a DeepSeek 404 during streaming.
+- User evidence:
+  - Screenshot showed `deepseek provider stream request failed for model
+    "deepseek-v4-pro": 404 status code (no body)`.
+- Root cause:
+  - `deepseek-v4-pro` is a valid DeepSeek model, and DeepSeek's API contract is
+    OpenAI-compatible Chat Completions. The Xenesis provider factory was falling
+    through to `OpenAIProvider`, which uses the Responses API, so DeepSeek was
+    called through the wrong endpoint family.
+- Touched files:
+  - `handoff.md`
+  - `packages/xenesis/src/core/AgentRuntimeFactory.ts`
+  - `packages/xenesis/src/providers/index.ts`
+  - `packages/xenesis/tests/s3s4/providerFactoryWiring.test.ts`
+- Commands run:
+  - Read `systematic-debugging`, `test-driven-development`, and
+    `verification-before-completion` skills.
+  - `rg -n "deepseek|openai-compatible|OpenAIChatProvider|OpenAIProvider|baseURL|api.deepseek" packages\xenesis\src\providers packages\xenesis\src\config packages\xenesis\tests -S`
+  - Checked official DeepSeek docs for `deepseek-v4-pro` and Chat Completions.
+  - `npm --prefix packages/xenesis test -- tests/s3s4/providerFactoryWiring.test.ts -t "constructs deepseek"`
+    -> RED failed because DeepSeek was not an `OpenAIChatProvider`.
+  - `npm --prefix packages/xenesis test -- tests/s3s4/providerFactoryWiring.test.ts -t "constructs deepseek"`
+    after the fix -> PASS.
+  - `npm --prefix packages/xenesis test -- tests/s3s4/providerFactoryWiring.test.ts`
+    -> PASS, 15 tests.
+  - `npm --prefix packages/xenesis run typecheck` -> PASS.
+  - `npm --prefix packages/xenesis test` -> PASS, 113 files and 576 tests.
+  - Local factory probe showed `deepseek` + `deepseek-v4-pro` now constructs
+    `OpenAIChatProvider`.
+- Exact verification result:
+  - DeepSeek provider factory regression test passes.
+  - Xenesis package typecheck passes.
+  - Xenesis package vitest suite passes.
+- Known gaps:
+  - Did not run a live DeepSeek API call to avoid spending an external model
+    call during local verification. Endpoint-family routing was verified locally.
+- Next intended step:
+  - Re-run the user's DeepSeek chat command with a real `DEEPSEEK_API_KEY`.
+    The previous Responses API 404 should no longer occur.
+
+## 2026-06-30 Xenesis OpenAI Planning Tool Strict Schema
+
+- Current objective:
+  - Fix `npm --prefix packages/xenesis run dev -- chat` failing on OpenAI
+    Responses tool validation for `planning_finish`.
+- User evidence:
+  - Screenshot showed `400 Invalid schema for function 'planning_finish':
+    In context=(), 'additionalProperties' is required to be supplied and to be
+    false.`
+- Root cause:
+  - `packages/xenesis/src/providers/openaiProvider.ts` normalized
+    `additionalProperties` only after returning primitive values, so
+    `additionalProperties: true` from the `planning_finish` passthrough schema
+    was sent unchanged. It also did not add `additionalProperties: false` when
+    an object schema omitted the field.
+- Touched files:
+  - `handoff.md`
+  - `packages/xenesis/src/providers/openaiProvider.ts`
+  - `packages/xenesis/tests/s3s4/openaiProviderStrictSchema.test.ts`
+- Commands run:
+  - Read `systematic-debugging`, `test-driven-development`, and
+    `verification-before-completion` skills.
+  - `rg -n "planning_finish|planningFinish|finish.*planning|additionalProperties|strict" packages\xenesis\src packages\xenesis\tests packages\xenesis\scripts`
+  - Fake-client schema probe showed `planning_finish.parameters.additionalProperties`
+    was `true` before the fix.
+  - `npm --prefix packages/xenesis test -- tests/s3s4/openaiProviderStrictSchema.test.ts`
+    -> RED failed with `additionalProperties: true`.
+  - `npm --prefix packages/xenesis test -- tests/s3s4/openaiProviderStrictSchema.test.ts`
+    after the fix -> PASS.
+  - `npm --prefix packages/xenesis run typecheck` -> PASS.
+  - `npm --prefix packages/xenesis test` -> PASS, 113 files and 575 tests.
+  - Fake-client schema probe after the fix showed
+    `planning_finish.parameters.additionalProperties` is `false`.
+- Exact verification result:
+  - OpenAI Responses stream-path regression test passes for
+    `planning_finish`.
+  - Xenesis package typecheck passes.
+  - Xenesis package vitest suite passes.
+- Known gaps:
+  - Did not run a live OpenAI chat prompt to avoid spending an external model
+    call during local verification. The failed request payload was reproduced
+    and verified locally with an injected fake Responses client.
+- Next intended step:
+  - Re-run `npm --prefix packages/xenesis run dev -- chat` and send `안녕`;
+    the previous `planning_finish` schema 400 should no longer occur.
 
 ## 2026-06-30 Dock Drag Ghost Native Overlay
 
@@ -24826,3 +25404,482 @@ Verification so far:
   - Re-run PR creation after GitHub token/app permissions allow
     `createPullRequest`, or open the compare URL above from an authorized
     GitHub session.
+
+## 2026-06-30 Native Tools Packaging Port
+
+- Current objective:
+  - Port sibling `xenesis-desk/tools` into this repo as source plus build and
+    packaging wiring only.
+- User decision:
+  - Approved option 1: copy native helper sources and wire helper build/package
+    configuration, without runtime app-control or Office-control integration.
+- Touched files in this step:
+  - `docs/superpowers/specs/2026-06-30-native-tools-packaging-port-design.md`
+- Commands run:
+  - `rg --files` and `Get-Content` inspections across sibling `tools`, current
+    `appControl`, package scripts, `.gitignore`, public release checks, and
+    Obsidian graph notes.
+- Exact verification result:
+  - Design-only step. No implementation verification has run yet.
+- Known gaps:
+  - Runtime host clients, expanded `xd.apps.*` actions, macOS adapter selection,
+    and `officeControl` are intentionally out of scope for this slice.
+  - Current worktree already had unrelated provider/runtime dirty files before
+    this task; they must not be included in this slice commit.
+- Next intended step:
+  - Commit the approved design spec only, ask the user to review it, then move
+    to implementation planning after review approval.
+  - Implementation plan written at
+    `docs/superpowers/plans/2026-06-30-native-tools-packaging-port.md`.
+    Self-review placeholder scan passed. Waiting for execution approach choice:
+    subagent-driven or inline execution.
+  - Native tools packaging port boundary check:
+    - `src/main/appControl`, `src/shared/externalAppControl.ts`, and
+      `src/main/index.ts` have no diff for this slice.
+    - `src/main/officeControl` was not created.
+    - Runtime host clients and expanded app-control actions remain out of
+      scope.
+  - Native tools packaging port final verification:
+    - `node --import tsx --test scripts/nativeToolsPackaging.test.ts`: passed
+      5/5 after stabilizing the generated-output guard to check Git tracking,
+      not local build-directory existence.
+    - `npm run typecheck`: passed.
+    - `npm run check:public-release`: passed.
+    - `dotnet --version`: passed, `9.0.200`.
+    - `npm run build:helpers:win:x64`: passed; produced ignored publish/bin
+      outputs for `tools/windows-control-host` and `tools/office-control-host`.
+    - `git status --short -- tools/windows-control-host/publish
+      tools/office-control-host/publish tools/macos-control-host/publish
+      tools/macos-control-host/.build tools/windows-control-host/bin
+      tools/windows-control-host/obj tools/office-control-host/bin
+      tools/office-control-host/obj`: no output, generated outputs remain
+      untracked.
+    - `git diff --summary 2>$null | rg "mode change|old mode|new mode"`: no
+      output; `rg` exited 1 because there were no matches.
+    - `npm test`: passed root suite, 552/552 tests.
+  - Native tools packaging commits created:
+    - `0167bfd Add native tools packaging guards`
+    - `24fce41 Port native helper source projects`
+    - `1bf2602 Add macOS native helper build script`
+    - `0bf7435 Wire native helper packaging scripts`
+    - `f64f729 Stabilize native tools generated output guard`
+  - Observed unrelated branch state change:
+    - `2861626 Fix provider tool schema regressions` appeared in reflog during
+      execution between the native-tools guard and source-project commits. It
+      touches only `packages/xenesis` provider/runtime test files and is outside
+      this native tools packaging scope.
+
+## 2026-06-30 Obsidian Vault Extension Port
+
+- Current objective:
+  - Port sibling `src/renderer/extensions/xenesis-desk.obsidian-vault` into
+    this repository as a working integrated Desk extension.
+- User decision:
+  - Approved the integrated port approach: copy the extension source plus only
+    the required shared types, preload/main IPC scanner, Dock persistence,
+    menu/tool registration, File Explorer entry point, packaging entry, and
+    focused tests.
+- Touched files in this step:
+  - `docs/superpowers/specs/2026-06-30-obsidian-vault-extension-port-design.md`
+  - `handoff.md`
+- Commands run:
+  - `rg --files`, `rg -n`, `Get-Content`, `Test-Path`, and small `node -e`
+    package inspections across the sibling Obsidian extension folder, current
+    extension registry, Dock engine, main/preload IPC, File Explorer, app menu,
+    package build files, public release guard, and Obsidian graph notes.
+  - Task 1 RED:
+    `node --import tsx --test src/main/vault/vaultLocalScanner.test.ts src/renderer/dock/engineVaultContent.test.ts`
+    failed as expected. `vaultLocalScanner.test.ts` cannot import
+    `./vaultLocalScanner`; Dock persistence tests fail because `obsidianVault`
+    payload is not saved or updated yet.
+  - Task 2 GREEN:
+    `node --import tsx --test src/main/vault/vaultLocalScanner.test.ts`
+    passed 3/3 after adding shared vault scan/viewer state types and
+    `src/main/vault/vaultLocalScanner.ts`.
+  - Task 3 scanner IPC verification:
+    `node --import tsx --test src/main/vault/vaultLocalScanner.test.ts`
+    passed 3/3 after adding `vault:scan-local`, `window.vaultAPI`, and renderer
+    env typing.
+  - Task 3 broad check:
+    `npm run typecheck` failed on the already-planned Task 4 gap:
+    `obsidianVault` is not yet present on `DockContentOptions`, `SavedContent`,
+    `DockContent`, or `DockEngine.updateContentPayload`.
+  - Task 4 Dock persistence GREEN:
+    `node --import tsx --test src/renderer/dock/engineVaultContent.test.ts`
+    passed 2/2 after adding `obsidianVault` to Dock content options, runtime
+    content, saved layout, restore, and payload update.
+  - Task 4 broad check:
+    `npm run typecheck` passed.
+  - Task 5 extension source port:
+    copied sibling `src/renderer/extensions/xenesis-desk.obsidian-vault`,
+    `src/renderer/extensions/xconViewerCssScope.ts`, and the minimal dependent
+    `src/renderer/editing` layer because the Obsidian panes use editable
+    surface adapters.
+  - Task 5 focused tests:
+    `node --import tsx --test src/renderer/extensions/xenesis-desk.obsidian-vault/vaultIndex.test.ts src/renderer/extensions/xenesis-desk.obsidian-vault/vaultGraph.test.ts src/renderer/extensions/xenesis-desk.obsidian-vault/vaultPanelLayout.test.ts src/renderer/extensions/xenesis-desk.obsidian-vault/xconViewerCssScope.test.ts src/renderer/editing/nativeTextAdapter.test.ts src/renderer/editing/editCommandModel.test.ts`
+    passed 18/18.
+  - Task 5 broad check:
+    `npm run typecheck` failed only on the planned Task 6 render context gap:
+    `RendererExtensionContribution.renderContent` still accepts one argument,
+    while the Obsidian renderer needs `{ engine, openFileByPath }`.
+  - Task 6 render context:
+    added `RendererExtensionRenderContext`, passed it through
+    `renderExtensionContent`, and supplied `{ engine, openFileByPath }` from
+    `DockPaneView`.
+  - Task 6 verification:
+    `npm run typecheck` passed, and the Task 5 focused extension/editing test
+    command passed 18/18 again.
+  - Task 7 manifest/menu registration:
+    copied `extensions/xenesis-desk.obsidian-vault`, added
+    `xenesis-desk.obsidian-vault.viewer` to the extension host tool allowlist,
+    and exposed `xenesis-desk.obsidian-vault.openViewer` as an internal Tools
+    menu command.
+  - Task 7 package/public-release decision:
+    adding `extensions/xenesis-desk.obsidian-vault/*` to `package.json`
+    `build.files` failed `npm run check:public-release` with
+    `build.files must not include extensions/xenesis-desk.obsidian-vault/*`.
+    The package file was restored to match this repo's current public-release
+    policy.
+  - Task 7 verification:
+    `node --import tsx --test src/shared/appMenuModel.test.ts` passed 6/6,
+    `npm run check:public-release` passed after restoring `package.json`, and
+    `npm run typecheck` passed.
+  - Task 8 File Explorer entry point:
+    added `onOpenVault` to `FileExplorerPane`, exposed "Open as Vault" in both
+    row context menus and the action menu for selected folders, wired
+    `openVaultByPath` in `App.tsx`, and added English/Korean i18n keys.
+  - Task 8 verification:
+    `npm run typecheck` passed, and
+    `node --import tsx --test src/shared/appMenuModel.test.ts src/renderer/dock/engineVaultContent.test.ts`
+    passed 8/8.
+  - Task 9 editable-surface coverage:
+    the sibling integration test originally expected full CodePane/MarkdownPane/
+    XconViewer/SafeFile integration that is outside this Obsidian extension
+    port. It was narrowed to the shared edit context menu/hook plus Obsidian
+    search and preview surfaces, and the missing portal menu CSS was ported to
+    `src/renderer/styles.css`.
+  - Task 9 verification:
+    `node --import tsx --test src/renderer/editing/editableSurfaceIntegration.test.ts`
+    passed 3/3, and `npm run typecheck` passed.
+  - Task 10 focused verification:
+    `node --import tsx --test src/main/vault/vaultLocalScanner.test.ts src/renderer/dock/engineVaultContent.test.ts src/renderer/extensions/xenesis-desk.obsidian-vault/vaultIndex.test.ts src/renderer/extensions/xenesis-desk.obsidian-vault/vaultGraph.test.ts src/renderer/extensions/xenesis-desk.obsidian-vault/vaultPanelLayout.test.ts src/renderer/extensions/xenesis-desk.obsidian-vault/xconViewerCssScope.test.ts src/shared/appMenuModel.test.ts src/renderer/editing/editableSurfaceIntegration.test.ts src/renderer/editing/nativeTextAdapter.test.ts src/renderer/editing/editCommandModel.test.ts`
+    initially passed 32/32 before formatting cleanup.
+  - Task 10 lint/format cleanup:
+    `npm run lint` failed on existing repo-wide Biome debt and previous
+    non-Obsidian files. After formatting the Obsidian port files,
+    `npx biome check src/main/vault src/renderer/dock/engineVaultContent.test.ts src/renderer/extensions/xconViewerCssScope.ts src/renderer/extensions/xenesis-desk.obsidian-vault src/renderer/editing`
+    passed with no diagnostics.
+  - Task 10 final verification:
+    focused Obsidian/editing test subset passed 26/26 after formatting,
+    `npm run typecheck` passed, `npm test` passed 578/578, and
+    `npm run check:public-release` passed.
+- Exact verification result:
+  - Task 1 RED and Task 2 GREEN are committed.
+  - Task 3 scanner IPC is committed and scanner tests pass.
+  - Task 4 Dock payload persistence is committed and typecheck passes.
+  - Task 5 extension/editing source is committed and focused pure tests pass.
+  - Task 6 render context is committed and typecheck passes.
+  - Task 7 manifest/menu registration is committed and public-release guard
+    passes.
+  - Task 8 File Explorer open-as-vault action is implemented locally and
+    typecheck passes.
+  - Task 9 Obsidian editable-surface integration coverage is committed and
+    typecheck passes.
+  - Task 10 focused and broad verification passed except root lint, which is
+    blocked by existing repo-wide Biome diagnostics outside this port.
+- Known gaps:
+  - Current public-release package rules intentionally exclude
+    `extensions/xenesis-desk.obsidian-vault/*`; the manifest remains a repo/dev
+    builtin extension registration, not a public build file entry.
+  - Root `npm run lint` still fails because the repo has existing Biome errors
+    and warnings outside this Obsidian port. The Obsidian port's independent
+    source/test files pass `npx biome check` as listed above.
+  - The sibling and current app menu/public release guard have diverged, so the
+    implementation must avoid wholesale file replacement.
+- Next intended step:
+  - Design spec committed as
+    `9531974 Add Obsidian vault extension port design`.
+  - Implementation plan written at
+    `docs/superpowers/plans/2026-06-30-obsidian-vault-extension-port.md`.
+  - Plan self-review passed:
+    - Placeholder scan against the plan returned no matches.
+    - `git diff --check` against the plan and `handoff.md` reported only the
+      existing `handoff.md` LF-to-CRLF warning.
+  - Run completion review/branch finishing workflow and decide whether to push
+    the updated `mini` branch.
+
+## 2026-06-30 Provider Message Integrity Hardening
+
+- Objective:
+  - Implement provider-bound `AgentMessage[]` integrity hardening from the
+    approved design and execution plan.
+- Current step:
+  - Task 1: add pure message integrity tests and utility with TDD.
+- Files planned:
+  - `packages/xenesis/src/core/messageIntegrity.ts`
+  - `packages/xenesis/tests/core/messageIntegrity.test.ts`
+  - `packages/xenesis/src/core/AgentRunner.ts`
+  - `packages/xenesis/tests/core/agentRunnerProviderMessageIntegrity.test.ts`
+- Commands run:
+  - Read `superpowers:executing-plans`, `superpowers:test-driven-development`,
+    `superpowers:using-git-worktrees`, AGENTS.md, approved spec, execution
+    plan, and relevant Obsidian repo/provider/runtime/approval/test notes.
+  - Baseline:
+    `npm --prefix packages/xenesis test -- tests/s6/resumeApproval.test.ts tests/s7/resumePipeline.test.ts`
+    passed 2 files / 12 tests before code edits.
+  - Task 1 RED:
+    `npm --prefix packages/xenesis test -- tests/core/messageIntegrity.test.ts`
+    failed as expected because `../../src/core/messageIntegrity.js` does not
+    exist yet.
+  - Task 1 GREEN:
+    `npm --prefix packages/xenesis test -- tests/core/messageIntegrity.test.ts`
+    passed 1 file / 5 tests after adding `messageIntegrity.ts`.
+  - Task 1 typecheck:
+    `npm --prefix packages/xenesis run typecheck` passed.
+  - Task 1 commit:
+    `cfe4249 Add provider message integrity helpers`.
+- Exact verification result:
+  - Task 1 RED/GREEN and typecheck are confirmed; Task 1 committed.
+- Known gaps:
+  - Current checkout is a normal `mini` branch checkout, not a linked worktree;
+    user selected inline execution, so work proceeds in place.
+  - Existing unrelated changes remain outside this slice and must not be staged.
+- Next intended step:
+  - Add AgentRunner provider-boundary RED tests.
+
+- Current step:
+  - Task 2: wire `AgentRunner` provider request boundary to assert
+    provider-bound message integrity.
+- Expected behavior:
+  - Repaired provider-bound messages pass.
+  - Malformed direct provider-bound requests throw before provider invocation.
+- Commands run:
+  - Task 2 RED:
+    `npm --prefix packages/xenesis test -- tests/core/agentRunnerProviderMessageIntegrity.test.ts`
+    failed as expected: malformed provider-bound messages resolved with the
+    mock provider response instead of rejecting before provider invocation.
+  - Task 2 GREEN:
+    `npm --prefix packages/xenesis test -- tests/core/agentRunnerProviderMessageIntegrity.test.ts`
+    passed 1 file / 3 tests after wiring `AgentRunner` provider-boundary
+    assertions.
+  - Task 2 focused combined:
+    `npm --prefix packages/xenesis test -- tests/core/messageIntegrity.test.ts tests/core/agentRunnerProviderMessageIntegrity.test.ts`
+    passed 2 files / 8 tests.
+  - Task 2 commit:
+    `0f547b9 Harden AgentRunner provider message boundary`.
+- Exact verification result:
+  - Task 2 RED/GREEN and focused combined tests are confirmed; Task 2
+    committed.
+- Next intended step:
+  - Run approval/resume regressions and package verification.
+
+- Current step:
+  - Task 3: running approval/resume regressions and package-level verification
+    for provider message integrity hardening.
+- Commands run:
+  - Task 3 approval/resume regression:
+    `npm --prefix packages/xenesis test -- tests/s6/resumeApproval.test.ts tests/s7/resumePipeline.test.ts`
+    passed 2 files / 12 tests.
+  - Task 3 package typecheck:
+    `npm --prefix packages/xenesis run typecheck` passed.
+  - Task 3 full package tests:
+    `npm --prefix packages/xenesis test` passed 120 files / 599 tests.
+  - Task 3 whitespace check:
+    `git diff --check` exited 0; output contained only CRLF conversion
+    warnings for modified local files, no whitespace errors.
+  - Task 3 status:
+    `git status --short --branch` showed branch `mini...origin/mini [ahead
+    10]` with unstaged `handoff.md` and unrelated Obsidian extension files.
+- Exact verification result:
+  - Focused tests, approval/resume regressions, package typecheck, full package
+    tests, and diff whitespace check passed.
+- Known gaps:
+  - Repo-wide lint remains outside this slice per approved design because of
+    existing baseline issues.
+  - Live Agent-pane verification was not part of this package-level hardening
+    slice; no CR or Electron UI surface was changed.
+- Next intended step:
+  - Final review: confirm implementation files are committed and no task files
+    remain unstaged.
+
+- Final review:
+  - Implementation commits:
+    - `cfe4249 Add provider message integrity helpers`
+    - `0f547b9 Harden AgentRunner provider message boundary`
+  - `git diff --name-only -- packages/xenesis/src/core/messageIntegrity.ts packages/xenesis/src/core/AgentRunner.ts packages/xenesis/tests/core/messageIntegrity.test.ts packages/xenesis/tests/core/agentRunnerProviderMessageIntegrity.test.ts`
+    returned no files; implementation files have no remaining unstaged diff.
+  - Fresh completion verification:
+    - `npm --prefix packages/xenesis run typecheck`: PASS
+    - `npm --prefix packages/xenesis test`: PASS, 120 files / 599 tests.
+    - `git diff --check`: exit 0, only CRLF conversion warnings for local
+      modified files.
+  - Environment:
+    - Normal checkout, `GIT_DIR == GIT_COMMON`, branch `mini`.
+    - Base merge target detection found `main`.
+  - Remaining local changes:
+    - `handoff.md`
+    - `package.json`
+    - `src/main/extensions/extensionHost.ts`
+    - `src/shared/appMenuModel.test.ts`
+    - `src/shared/appMenuModel.ts`
+    - `extensions/xenesis-desk.obsidian-vault/`
+  - These remaining files were not staged for the provider message integrity
+    hardening commits.
+
+- Current step:
+  - Finish Obsidian vault extension port branch via option 2: push `mini` and
+    create a Pull Request to `main`.
+- Commands run:
+  - `git status --short --branch`: `mini...origin/mini [ahead 1]` with only
+    unstaged `handoff.md` before push.
+  - `npm run typecheck`: passed.
+  - `npm test`: passed, 578 tests / 0 failed.
+  - `npm run check:public-release`: passed.
+  - `npx biome check src/main/vault src/renderer/dock/engineVaultContent.test.ts src/renderer/extensions/xconViewerCssScope.ts src/renderer/extensions/xenesis-desk.obsidian-vault src/renderer/editing`:
+    passed, 29 files checked.
+  - First `git push -u origin mini`: failed with GitHub remote
+    `fatal error in commit_refs`.
+  - Root-cause check: `git fetch origin mini`, `git ls-remote origin
+    refs/heads/mini`, `git log --oneline origin/mini..mini`, and
+    `git rev-parse mini origin/mini` confirmed local `mini` was exactly one
+    commit ahead of remote and the remote ref was still at `6a69c80`.
+  - Retry `git push -u origin mini`: passed, pushed `6a69c80..ec29010`.
+  - `gh pr create --base main --head mini --title "Merge mini branch into main"`:
+    created PR https://github.com/xamong/Xenesis/pull/11.
+- Exact verification result:
+  - Fresh PR verification passed for typecheck, full root tests,
+    public-release safety, and scoped Biome check on the Obsidian port/editing
+    paths.
+- Known gaps:
+  - Full repo lint is not claimed as passing; this branch has existing
+    repo-wide Biome debt outside the Obsidian port scope.
+  - Live Electron smoke was not run for the Obsidian vault UI.
+- Next intended step:
+  - Await PR review and iterate on feedback from
+    https://github.com/xamong/Xenesis/pull/11.
+
+- Current step:
+  - Port/check `XdBlasterPane.tsx` and related files from
+    `D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk`.
+- Context gathered:
+  - Compared `src/renderer/extensions/xenesis-desk.core-tools/panes/XdBlasterPane.tsx`
+    with the source repo copy; no content diff beyond line-ending warnings.
+  - Compared `xdBlasterModel.ts` and `xenesisActivityBlaster.ts`; no content
+    diff beyond line-ending warnings.
+  - Confirmed current repo already has renderer, manifest, extension command,
+    shared type, and CR coverage for:
+    - `xenesis-desk.core-tools.openXdBlaster`
+    - `xenesis-desk.core-tools.xd-blaster`
+    - `xd.tools.core.xdBlaster.open`
+  - Found the remaining user-visible gap: `src/shared/appMenuModel.ts` Tools
+    group omits `xenesis-desk.core-tools.openXdBlaster`, while the source repo
+    exposes it between Network Monitor and Audit Log.
+- Design decision:
+  - Do not bulk-copy the source repo `core-tools` extension. The source repo
+    contains unrelated newer/older differences for Agent Sessions, App Control
+    Lab, Stash naming, and removed Memory Dashboard behavior that would conflict
+    with this repo's current state.
+  - Scope implementation to shared app menu model/test coverage so XD Blaster is
+    reachable from the same Tools menu surface without altering already matching
+    XdBlaster runtime files.
+- Next intended step:
+  - Write and commit the XdBlaster menu port design spec, then wait for written
+    spec approval before implementation planning.
+
+- Current step:
+  - Wrote and committed XdBlaster menu port design spec.
+- Touched files:
+  - `docs/superpowers/specs/2026-06-30-xd-blaster-menu-port-design.md`
+  - `handoff.md`
+- Commands run:
+  - `rg -n "TBD|TODO|placeholder|implement later|fill in" docs/superpowers/specs/2026-06-30-xd-blaster-menu-port-design.md`
+    returned no matches.
+  - `git check-ignore -v docs/superpowers/specs/2026-06-30-xd-blaster-menu-port-design.md`
+    showed the spec path is ignored by `.gitignore:41:docs/superpowers/`.
+  - `git add -f docs/superpowers/specs/2026-06-30-xd-blaster-menu-port-design.md`
+    staged only the spec.
+  - `git commit -m "Add XD Blaster menu port design"` created commit
+    `33e2e95`.
+- Exact verification result:
+  - Spec self-review found no placeholder markers.
+  - Design spec is committed; implementation has not started.
+- Next intended step:
+  - Wait for written spec approval, then write the implementation plan and
+    proceed with TDD implementation.
+
+- Current step:
+  - Implemented XD Blaster Tools menu exposure from the approved design.
+- Touched files:
+  - `docs/superpowers/plans/2026-06-30-xd-blaster-menu-port.md` (ignored plan)
+  - `src/shared/appMenuModel.ts`
+  - `src/shared/appMenuModel.test.ts`
+  - `handoff.md`
+- Commands run:
+  - Plan placeholder scan:
+    `rg -n "TBD|TODO|placeholder|implement later|fill in|appropriate error handling|Write tests for the above|Similar to Task" docs/superpowers/plans/2026-06-30-xd-blaster-menu-port.md`
+    returned no matches.
+  - RED:
+    `node --import tsx --test src/shared/appMenuModel.test.ts` failed as
+    expected in `tools menu exposes command-palette-only operator panels by
+    feature group`; actual Tools group omitted
+    `xenesis-desk.core-tools.openXdBlaster`.
+  - GREEN:
+    `node --import tsx --test src/shared/appMenuModel.test.ts` passed 6/6
+    after adding `command('xd-blaster', 'XD Blaster',
+    'xenesis-desk.core-tools.openXdBlaster', undefined, 'XB')` to the Tools
+    group.
+  - Focused XD Blaster:
+    `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/xdBlasterModel.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisActivityBlaster.test.ts`
+    passed 11/11.
+  - `npm run typecheck` passed.
+  - Initial `npx biome check src/shared/appMenuModel.ts src/shared/appMenuModel.test.ts`
+    failed with two formatter diagnostics; `npx biome check --write ...`
+    fixed both files.
+  - Post-format:
+    `npx biome check src/shared/appMenuModel.ts src/shared/appMenuModel.test.ts`
+    passed.
+  - `npm test` passed 578/578.
+  - `git diff --check` exited 0; output only included a CRLF warning for
+    `handoff.md`.
+  - Commit:
+    `8c2bf03 Expose XD Blaster in tools menu`.
+- Exact verification result:
+  - TDD RED/GREEN verified the missing Tools menu exposure.
+  - Focused XD Blaster tests, typecheck, scoped Biome, full root test suite,
+    and diff whitespace check passed.
+- Known gaps:
+  - No live Electron smoke was run to manually click Tools > XD Blaster.
+  - Full repo lint was not run; this slice used scoped Biome for touched files.
+- Next intended step:
+  - Finish branch handling decision for local merge, PR update, keep-as-is, or
+    discard.
+
+- Current step:
+  - Finish XD Blaster menu port via option 2: push `mini` and create a new PR.
+- Commands run:
+  - `git fetch origin main mini`: updated `origin/main` to `ee382bc` and
+    confirmed current branch `mini` is two commits ahead of `origin/mini`.
+  - `gh pr view 11 --json number,url,state,title,baseRefName,headRefName`:
+    PR #11 is `MERGED`.
+  - `git log --oneline origin/main..mini`: showed only
+    `8c2bf03 Expose XD Blaster in tools menu` and
+    `33e2e95 Add XD Blaster menu port design`.
+  - Fresh PR verification:
+    - `npm run typecheck`: passed.
+    - `node --import tsx --test src/shared/appMenuModel.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xdBlasterModel.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisActivityBlaster.test.ts`:
+      passed 17/17.
+    - `npx biome check src/shared/appMenuModel.ts src/shared/appMenuModel.test.ts`:
+      passed.
+    - `npm test`: passed 578/578.
+  - `gh pr list --head mini --state open --json number,url,state,title,baseRefName,headRefName`:
+    no open PR existed before creation.
+  - `git push -u origin mini`: pushed `ec29010..8c2bf03`.
+  - `gh pr create --base main --head mini --title "Expose XD Blaster in Tools menu"`:
+    created PR https://github.com/xamong/Xenesis/pull/12.
+- Exact verification result:
+  - PR #12 was created from `mini` to `main` with fresh typecheck, focused
+    tests, scoped Biome, and full root test evidence.
+- Known gaps:
+  - No live Electron click-through smoke was run for Tools > XD Blaster.
+- Next intended step:
+  - Await PR review for https://github.com/xamong/Xenesis/pull/12.

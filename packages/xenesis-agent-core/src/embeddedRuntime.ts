@@ -90,6 +90,7 @@ export interface CreateDeskEmbeddedPromptOptionsInput {
   request: DeskEmbeddedRunRequest;
   abortSignal?: AbortSignal;
   turnLedger?: XenesisEmbeddedPromptOptions['turnLedger'];
+  approvalHandler?: XenesisEmbeddedPromptOptions['approvalHandler'];
   onEvent?: XenesisEmbeddedPromptOptions['onEvent'];
   onSession?: XenesisEmbeddedPromptOptions['onSession'];
   onMessages?: XenesisEmbeddedPromptOptions['onMessages'];
@@ -184,6 +185,7 @@ export function createDeskEmbeddedPromptOptions(
     profilePolicy: input.profilePolicy,
     abortSignal: input.abortSignal,
     turnLedger: input.turnLedger,
+    approvalHandler: input.approvalHandler,
     cli: {
       xenesisHome: input.xenesisHome,
       ...(provider ? { provider } : {}),
