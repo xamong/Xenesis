@@ -5,6 +5,7 @@ export type SettingsCategoryId =
   | 'remote-files'
   | 'automation'
   | 'external-apps'
+  | 'office-control'
   | 'connectors'
   | 'extensions'
   | 'workspace'

@@ -142,10 +142,7 @@ test('package scripts build native helpers before platform packaging', () => {
     scripts['pack:win'],
     'npm run build:helpers:win:x64 && npm run build && electron-builder --win --x64 --dir',
   );
-  assert.equal(
-    scripts['dist:win'],
-    'npm run build:helpers:win:x64 && npm run build && electron-builder --win --x64',
-  );
+  assert.equal(scripts['dist:win'], 'npm run build:helpers:win:x64 && npm run build && electron-builder --win --x64');
   assert.equal(
     scripts['dist:win:arm64'],
     'npm run build:helpers:win:arm64 && npm run build && electron-builder --win --arm64',
@@ -187,13 +184,23 @@ test('electron-builder packages native helper publish directories as platform re
   ]);
 });
 
-test('app-control runtime remains on the existing PowerShell baseline for this slice', () => {
+test('app-control runtime keeps PowerShell baseline and wires platform control hosts', () => {
   const windowsAppControl = read('src/main/appControl/windowsAppControl.ts');
   const appControlService = read('src/main/appControl/appControlService.ts');
+  const platformFactory = read('src/main/appControl/createPlatformAppControlAdapter.ts');
+  const officeControlService = read('src/main/officeControl/officeControlService.ts');
+  const mainIndex = read('src/main/index.ts');
+  const deskBridgeCapabilities = read('src/shared/deskBridgeCapabilities.ts');
 
   assert.match(windowsAppControl, /runPowerShell/);
   assert.match(windowsAppControl, /powershell\.exe/);
-  assert.doesNotMatch(windowsAppControl, /createWindowsControlHostClient|windowsControlHost/);
-  assert.doesNotMatch(appControlService, /createPlatformAppControlAdapter|officeControl/);
-  assert.equal(exists('src/main/officeControl'), false);
+  assert.match(windowsAppControl, /createWindowsControlHostClient/);
+  assert.match(appControlService, /createPlatformAppControlAdapter/);
+  assert.match(platformFactory, /createWindowsAppControlAdapter/);
+  assert.match(platformFactory, /createMacosAppControlAdapter/);
+  assert.match(officeControlService, /createWindowsOfficeComAdapter/);
+  assert.match(officeControlService, /createMacosOfficeAppleEventsAdapter/);
+  assert.match(mainIndex, /createOfficeControlService/);
+  assert.match(mainIndex, /runOfficeAction/);
+  assert.match(deskBridgeCapabilities, /xd\.office\.excel\.writeRange/);
 });

@@ -6,6 +6,8 @@ import type {
   ExternalAppActionResult,
   ExternalAppWindowInfo,
 } from '../../shared/externalAppControl';
+import type { AppControlAdapter } from './appControlAdapter';
+import { createWindowsControlHostClient, type WindowsControlHostClient } from './windowsControlHost';
 
 const execFileAsync = promisify(execFile);
 
@@ -52,18 +54,12 @@ export interface WindowsCloseInput extends WindowsWindowInput {
   mode?: 'window' | 'process';
 }
 
-export interface WindowsAppControlAdapter {
-  launch(input: WindowsLaunchInput): Promise<ExternalAppActionResult>;
-  find(input: WindowsFindInput): Promise<ExternalAppActionResult>;
-  status(input: WindowsFindInput): Promise<ExternalAppActionResult>;
-  focus(input: WindowsWindowInput): Promise<ExternalAppActionResult>;
-  resize(input: WindowsResizeInput): Promise<ExternalAppActionResult>;
-  typeText(input: WindowsTextInput): Promise<ExternalAppActionResult>;
-  hotkey(input: WindowsHotkeyInput): Promise<ExternalAppActionResult>;
-  close(input: WindowsCloseInput): Promise<ExternalAppActionResult>;
-}
+export interface WindowsAppControlAdapter extends AppControlAdapter {}
 
-export function createWindowsAppControlAdapter(runner?: WindowsAppControlRunner): WindowsAppControlAdapter {
+export function createWindowsAppControlAdapter(
+  runner?: WindowsAppControlRunner,
+  hostClient: WindowsControlHostClient = createWindowsControlHostClient(),
+): WindowsAppControlAdapter {
   const runPowerShell = runner?.runPowerShell ?? defaultRunPowerShell;
 
   return {
@@ -77,6 +73,22 @@ export function createWindowsAppControlAdapter(runner?: WindowsAppControlRunner)
     hotkey: (input) =>
       runAction(runPowerShell, 'hotkey', buildSendKeysScript('hotkey', input, sendKeysHotkey(input.keys))),
     close: (input) => runAction(runPowerShell, 'close', buildCloseScript(input)),
+    click: (input) => hostClient.run({ action: 'click', ...input }),
+    doubleClick: (input) => hostClient.run({ action: 'doubleClick', ...input }),
+    tripleClick: (input) => hostClient.run({ action: 'tripleClick', ...input }),
+    middleClick: (input) => hostClient.run({ action: 'middleClick', ...input }),
+    rightClick: (input) => hostClient.run({ action: 'rightClick', ...input }),
+    move: (input) => hostClient.run({ action: 'move', ...input }),
+    mouseDown: (input) => hostClient.run({ action: 'mouseDown', ...input }),
+    mouseUp: (input) => hostClient.run({ action: 'mouseUp', ...input }),
+    dragAndDrop: (input) => hostClient.run({ action: 'dragAndDrop', ...input }),
+    screenshot: () => unsupportedWindowsAction('screenshot'),
+    inspect: (input) => hostClient.run({ action: 'inspect', ...input }),
+    elementFromPoint: (input) => hostClient.run({ action: 'elementFromPoint', ...input }),
+    tree: (input) => hostClient.run({ action: 'tree', ...input }),
+    menuExplore: (input) => hostClient.run({ action: 'menuExplore', ...input }),
+    highlight: (input) => hostClient.run({ action: 'highlight', ...input }),
+    captureElement: (input) => hostClient.run({ action: 'captureElement', ...input }),
   };
 }
 
@@ -152,6 +164,14 @@ function failedResult(action: ExternalAppActionName, error: string): ExternalApp
     message: defaultActionMessage(action, false),
     error,
   };
+}
+
+function unsupportedWindowsAction(action: ExternalAppActionName): Promise<ExternalAppActionResult> {
+  return Promise.resolve({
+    ...failedResult(action, 'Windows control host is not configured.'),
+    approvalLevel: 'low',
+    code: 'provider_unavailable',
+  });
 }
 
 function defaultActionMessage(action: ExternalAppActionName, ok: boolean): string {

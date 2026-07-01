@@ -1,5 +1,5 @@
 import { type Dispatch, type MutableRefObject, type SetStateAction, useCallback } from 'react';
-import type { MetaManagementProvider, MetaRecord } from './metaManagementProvider';
+import type { MetaManagementProvider, MetaRecord, MetaValidationResult } from './metaManagementProvider';
 import type {
   AttrRow,
   ColDef,
@@ -10,6 +10,11 @@ import type {
   TplRow,
   TreeNode,
 } from './useMetaManagementData';
+
+export interface MetaPendingWarningSave {
+  grid: MetaGridKind;
+  validation: MetaValidationResult;
+}
 
 export interface UseMetaManagementGridSaveArgs {
   changed: MutableRefObject<MetaGridChanges>;
@@ -23,12 +28,14 @@ export interface UseMetaManagementGridSaveArgs {
   visCols: ColDef[];
   loadGridData: (node: TreeNode) => Promise<void>;
   setIsLoading: Dispatch<SetStateAction<boolean>>;
+  setValidationResult: Dispatch<SetStateAction<MetaValidationResult | null>>;
+  setPendingWarningSave: Dispatch<SetStateAction<MetaPendingWarningSave | null>>;
   showMsg: (msg: string, ok?: boolean) => void;
   t: (key: string, values?: Record<string, string>) => string;
 }
 
 export interface UseMetaManagementGridSaveResult {
-  saveGrid: (grid: MetaGridKind) => Promise<void>;
+  saveGrid: (grid: MetaGridKind, options?: { allowWarnings?: boolean }) => Promise<void>;
 }
 
 export function useMetaManagementGridSave({
@@ -43,6 +50,8 @@ export function useMetaManagementGridSave({
   visCols,
   loadGridData,
   setIsLoading,
+  setValidationResult,
+  setPendingWarningSave,
   showMsg,
   t,
 }: UseMetaManagementGridSaveArgs): UseMetaManagementGridSaveResult {
@@ -198,8 +207,9 @@ export function useMetaManagementGridSave({
           (Array.isArray(rows) ? rows : []).forEach((item: MetaRecord) =>
             items.push({ UID: item.UID, _deleted: true }),
           );
-        } catch {
-          // Preserve the previous best-effort delete behavior.
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          throw new Error(`Failed to resolve instance rows for RID ${rid}: ${message}`);
         }
       }
     } else {
@@ -244,7 +254,7 @@ export function useMetaManagementGridSave({
   }, [changed, deleted, instances, providerRef, rawAttrs, selectedNode, visCols]);
 
   const saveGrid = useCallback(
-    async (grid: MetaGridKind) => {
+    async (grid: MetaGridKind, options?: { allowWarnings?: boolean }) => {
       setIsLoading(true);
       try {
         let items: MetaRecord[] = [];
@@ -252,12 +262,40 @@ export function useMetaManagementGridSave({
         if (grid === 'attr') items = buildAttrItems();
         if (grid === 'inst') items = await buildInstItems();
 
-        if (items.length > 0) await providerRef.current.batchCodes(items);
+        if (items.length > 0) {
+          setPendingWarningSave(null);
+          const validation = await providerRef.current.validateMeta({ scope: 'batch', target: selectedNode, items });
+          setValidationResult(validation);
+
+          if (validation.errorCount > 0) {
+            showMsg(t('meta.saveFailed', { e: `${validation.errorCount} validation error(s)` }), false);
+            return;
+          }
+
+          if (validation.warningCount > 0 && options?.allowWarnings !== true) {
+            setPendingWarningSave({ grid, validation });
+            return;
+          }
+
+          await providerRef.current.batchCodes(items, {
+            allowWarnings: validation.warningCount > 0,
+            requireWarningConfirmation: false,
+            target: selectedNode,
+          });
+        }
         changed.current[grid].clear();
         if (grid === 'tpl') deleted.current.tpl.clear();
         if (grid === 'attr') deleted.current.attr.clear();
         if (grid === 'inst') deleted.current.inst.clear();
-        if (selectedNode) await loadGridData(selectedNode);
+        if (selectedNode) {
+          try {
+            await loadGridData(selectedNode);
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            showMsg(`Saved, but refresh failed: ${message}`, false);
+            return;
+          }
+        }
         showMsg(t('meta.saved'));
       } catch (error: any) {
         showMsg(t('meta.saveFailed', { e: error.message }), false);
@@ -275,6 +313,8 @@ export function useMetaManagementGridSave({
       providerRef,
       selectedNode,
       setIsLoading,
+      setPendingWarningSave,
+      setValidationResult,
       showMsg,
       t,
     ],

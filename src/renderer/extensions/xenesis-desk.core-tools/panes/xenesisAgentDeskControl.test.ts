@@ -282,6 +282,8 @@ test('buildXenesisDeskControlPromptHint describes real CR paths without natural 
   assert.match(hint, /xd\.automation\.workflow\.preview/);
   assert.match(hint, /xd\.automation\.workflow\.run/);
   assert.match(hint, /xd\.xenesis\.connections\.open/);
+  assert.match(hint, /xd\.agentSessions\.search/);
+  assert.match(hint, /xd\.tools\.core\.agentSessions\.open/);
   assert.match(hint, /xd\.dock\.panes\.list/);
   assert.match(hint, /xenesis-desk-action/);
   assert.doesNotMatch(hint, /natural-language|natural Desk routing/i);

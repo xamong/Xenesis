@@ -3,6 +3,7 @@ export const DEFAULT_META_API_URL = 'https://ai.xamong.com';
 export type MetaRecord = Record<string, any>;
 
 export interface MetaCodeQuery {
+  [key: string]: string | number | boolean | undefined;
   PID?: string | number;
   PCODE?: string | number;
   CODE?: string | number;
@@ -17,6 +18,51 @@ export interface MetaQueryResult {
   rowCount?: number;
   changes?: number;
   message?: string;
+  [key: string]: any;
+}
+
+export interface MetaValidationIssue {
+  severity?: 'error' | 'warning';
+  code: string;
+  message: string;
+  index: number;
+  uid?: string | number | null;
+  key?: string;
+}
+
+export interface MetaValidationResult {
+  runId: string;
+  scope: string;
+  target: MetaRecord | null;
+  status: 'ok' | 'warning' | 'error';
+  errorCount: number;
+  warningCount: number;
+  errors: MetaValidationIssue[];
+  warnings: MetaValidationIssue[];
+}
+
+export interface MetaSummary {
+  dbPath: string;
+  totalRows: number;
+  templateRows: number;
+  dataRows: number;
+  crCapabilities: number;
+  recentFailedCrRuns: number;
+  lastSaveAt: string | null;
+  lastValidationStatus: string | null;
+  lastValidationAt: string | null;
+}
+
+export interface MetaActivityItem {
+  kind: 'meta' | 'cr';
+  id: string;
+  action?: string;
+  source?: string;
+  title?: string;
+  summary?: string;
+  ok: 0 | 1 | boolean;
+  error?: string | null;
+  createdAt: string;
   [key: string]: any;
 }
 
@@ -53,8 +99,17 @@ export interface MetaManagementProvider {
   health(signal?: AbortSignal): Promise<boolean>;
   loadTree(): Promise<MetaRecord[]>;
   listCodes(query?: MetaCodeQuery): Promise<MetaRecord[]>;
+  listCrCapabilities(query?: MetaRecord): Promise<MetaRecord[]>;
+  listCrSnapshots(query?: MetaRecord): Promise<MetaRecord[]>;
+  listCrRuns(query?: MetaRecord): Promise<MetaRecord[]>;
   listAttributes(): Promise<MetaRecord[]>;
-  batchCodes(items: MetaRecord[]): Promise<unknown>;
+  validateMeta(payload: MetaRecord): Promise<MetaValidationResult>;
+  loadMetaSummary(): Promise<MetaSummary>;
+  listMetaActivity(query?: MetaRecord): Promise<MetaActivityItem[]>;
+  batchCodes(
+    items: MetaRecord[],
+    options?: { allowWarnings?: boolean; requireWarningConfirmation?: boolean; target?: MetaRecord | null },
+  ): Promise<unknown>;
   previewImportSnapshot(
     snapshot: MetaRecord,
     target?: MetaImportSnapshotTarget,
@@ -77,7 +132,21 @@ interface MetaApiEnvelope<T> {
   [key: string]: any;
 }
 
-export function encodeMetaQueryParams(params: MetaCodeQuery = {}): string {
+export class MetaApiError extends Error {
+  status: number;
+  data?: unknown;
+
+  constructor(message: string, status: number, data?: unknown) {
+    super(message);
+    this.name = 'MetaApiError';
+    this.status = status;
+    this.data = data;
+  }
+}
+
+export function encodeMetaQueryParams(
+  params: Record<string, string | number | boolean | undefined | null> = {},
+): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value === undefined || value === null || value === '') continue;
@@ -88,9 +157,18 @@ export function encodeMetaQueryParams(params: MetaCodeQuery = {}): string {
 }
 
 async function readMetaJson<T>(response: Response): Promise<T> {
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  const json = (await response.json()) as MetaApiEnvelope<T>;
-  if (json.success === false) throw new Error(json.error ?? 'API error');
+  let json: MetaApiEnvelope<T>;
+  try {
+    json = (await response.json()) as MetaApiEnvelope<T>;
+  } catch (error) {
+    if (!response.ok) throw new MetaApiError(`HTTP ${response.status}`, response.status);
+    throw error;
+  }
+
+  if (!response.ok || json.success === false) {
+    throw new MetaApiError(json.error ?? `HTTP ${response.status}`, response.status, json.data);
+  }
+
   return json.data as T;
 }
 
@@ -123,14 +201,49 @@ export function createHttpMetaManagementProvider(base: string): MetaManagementPr
       return apiFetch<MetaRecord[]>(`/api/codes${encodeMetaQueryParams(query)}`);
     },
 
+    listCrCapabilities(query?: MetaRecord): Promise<MetaRecord[]> {
+      return apiFetch<MetaRecord[]>(`/api/cr/capabilities${encodeMetaQueryParams(query ?? {})}`);
+    },
+
+    listCrSnapshots(query?: MetaRecord): Promise<MetaRecord[]> {
+      return apiFetch<MetaRecord[]>(`/api/cr/snapshots${encodeMetaQueryParams(query ?? {})}`);
+    },
+
+    listCrRuns(query?: MetaRecord): Promise<MetaRecord[]> {
+      return apiFetch<MetaRecord[]>(`/api/cr/runs${encodeMetaQueryParams(query ?? {})}`);
+    },
+
     listAttributes(): Promise<MetaRecord[]> {
       return apiFetch<MetaRecord[]>('/api/codes/attributes');
     },
 
-    batchCodes(items: MetaRecord[]): Promise<unknown> {
+    validateMeta(payload: MetaRecord): Promise<MetaValidationResult> {
+      return apiFetch<MetaValidationResult>('/api/meta/validate', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+
+    loadMetaSummary(): Promise<MetaSummary> {
+      return apiFetch<MetaSummary>('/api/meta/summary');
+    },
+
+    listMetaActivity(query?: MetaRecord): Promise<MetaActivityItem[]> {
+      return apiFetch<MetaActivityItem[]>(`/api/meta/activity${encodeMetaQueryParams(query ?? {})}`);
+    },
+
+    batchCodes(
+      items: MetaRecord[],
+      options?: { allowWarnings?: boolean; requireWarningConfirmation?: boolean; target?: MetaRecord | null },
+    ): Promise<unknown> {
       return apiFetch<unknown>('/api/codes/batch', {
         method: 'POST',
-        body: JSON.stringify({ items }),
+        body: JSON.stringify({
+          items,
+          allowWarnings: options?.allowWarnings === true,
+          requireWarningConfirmation: options?.requireWarningConfirmation === true,
+          target: options?.target ?? null,
+        }),
       });
     },
 
@@ -173,7 +286,7 @@ export function createHttpMetaManagementProvider(base: string): MetaManagementPr
     runQuery(sql: string): Promise<MetaQueryResult> {
       return apiFetch<MetaQueryResult>('/api/database/query', {
         method: 'POST',
-        body: JSON.stringify({ sql }),
+        body: JSON.stringify({ sql, readOnly: true }),
       });
     },
   };

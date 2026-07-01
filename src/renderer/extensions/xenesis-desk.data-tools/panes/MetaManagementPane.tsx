@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { deskBridge } from '../../../deskBridge';
 import { useI18n } from '../../../i18n';
 import {
   buildAttributeGridColumns,
@@ -6,11 +7,17 @@ import {
   buildTemplateGridColumns,
 } from '../metaManagementGridColumns';
 import { buildMetaGridPendingSummary } from '../metaManagementGridStatus';
-import { type MetaImportSnapshotOptions } from '../metaManagementProvider';
+import {
+  type MetaActivityItem,
+  type MetaImportSnapshotOptions,
+  type MetaRecord,
+  type MetaSummary,
+  type MetaValidationResult,
+} from '../metaManagementProvider';
 import { type MetaGridKind, type TreeNode, useMetaManagementData } from '../useMetaManagementData';
 import { useMetaManagementGridEditing } from '../useMetaManagementGridEditing';
 import { useMetaManagementGridRows } from '../useMetaManagementGridRows';
-import { useMetaManagementGridSave } from '../useMetaManagementGridSave';
+import { type MetaPendingWarningSave, useMetaManagementGridSave } from '../useMetaManagementGridSave';
 import { useMetaManagementGridTracking } from '../useMetaManagementGridTracking';
 import { useMetaManagementGroupModal } from '../useMetaManagementGroupModal';
 import { useMetaManagementProvider } from '../useMetaManagementProvider';
@@ -23,6 +30,7 @@ import { MetaManagementNewGroupModal } from './MetaManagementNewGroupModal';
 import { MetaManagementQueryPanel } from './MetaManagementQueryPanel';
 import { MetaManagementStatusBar } from './MetaManagementStatusBar';
 import { MetaManagementTreeView } from './MetaManagementTreeView';
+import { MetaManagementValidationModal } from './MetaManagementValidationModal';
 
 export default function MetaManagementPane() {
   const { t } = useI18n();
@@ -31,8 +39,15 @@ export default function MetaManagementPane() {
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<{ msg: string; ok: boolean } | null>(null);
   const [ctxMenu, setCtxMenu] = useState<MetaManagementGridContextMenuState | null>(null);
+  const [validationResult, setValidationResult] = useState<MetaValidationResult | null>(null);
+  const [pendingWarningSave, setPendingWarningSave] = useState<MetaPendingWarningSave | null>(null);
+  const [metaSummary, setMetaSummary] = useState<MetaSummary | null>(null);
+  const [activityItems, setActivityItems] = useState<MetaActivityItem[]>([]);
+  const [isActivityLoading, setIsActivityLoading] = useState(false);
 
   const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const metaSummaryRequestSeq = useRef(0);
+  const metaActivityRequestSeq = useRef(0);
   const tplContainerRef = useRef<HTMLDivElement>(null);
   const attrContainerRef = useRef<HTMLDivElement>(null);
   const instContainerRef = useRef<HTMLDivElement>(null);
@@ -107,6 +122,33 @@ export default function MetaManagementPane() {
     t,
   });
 
+  const loadMetaSummary = useCallback(async () => {
+    const requestSeq = ++metaSummaryRequestSeq.current;
+    try {
+      const summary = await providerRef.current.loadMetaSummary();
+      if (requestSeq === metaSummaryRequestSeq.current) setMetaSummary(summary);
+    } catch {
+      if (requestSeq === metaSummaryRequestSeq.current) setMetaSummary(null);
+    }
+  }, [providerRef]);
+
+  const loadMetaActivity = useCallback(async () => {
+    const requestSeq = ++metaActivityRequestSeq.current;
+    setIsActivityLoading(true);
+    try {
+      const activity = await providerRef.current.listMetaActivity();
+      if (requestSeq === metaActivityRequestSeq.current) setActivityItems(Array.isArray(activity) ? activity : []);
+    } catch {
+      if (requestSeq === metaActivityRequestSeq.current) setActivityItems([]);
+    } finally {
+      if (requestSeq === metaActivityRequestSeq.current) setIsActivityLoading(false);
+    }
+  }, [providerRef]);
+
+  const refreshMetaStatus = useCallback(async () => {
+    await Promise.all([loadMetaSummary(), loadMetaActivity()]);
+  }, [loadMetaActivity, loadMetaSummary]);
+
   const confirmGridDelete = useCallback((message: string) => window.confirm(message), []);
 
   const {
@@ -160,6 +202,8 @@ export default function MetaManagementPane() {
     visCols,
     loadGridData,
     setIsLoading,
+    setValidationResult,
+    setPendingWarningSave,
     showMsg,
     t,
   });
@@ -174,6 +218,23 @@ export default function MetaManagementPane() {
     showMsg,
     t,
   });
+
+  const saveGridAndRefresh = useCallback(
+    async (grid: MetaGridKind) => {
+      await saveGrid(grid);
+      await refreshMetaStatus();
+    },
+    [refreshMetaStatus, saveGrid],
+  );
+
+  const confirmWarningSave = useCallback(
+    async (grid: MetaGridKind) => {
+      setPendingWarningSave(null);
+      await saveGrid(grid, { allowWarnings: true });
+      await refreshMetaStatus();
+    },
+    [refreshMetaStatus, saveGrid],
+  );
 
   const tplHandle = useMetaManagementSpanGrid(
     tplContainerRef,
@@ -220,6 +281,22 @@ export default function MetaManagementPane() {
     }
   }, [apiUrl, providerRef, setConnected]);
 
+  const syncCrMetadata = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const result = await deskBridge.call('xd.cr.metadata.sync', { reason: 'manual' }, { approved: true });
+      if (!result.ok) throw new Error(result.error ?? 'CR metadata sync failed.');
+      const data = result.result && typeof result.result === 'object' ? (result.result as MetaRecord) : {};
+      showMsg(t('meta.crMetadataSynced', { n: String(data.capabilities ?? 0) }));
+      await loadTree();
+      await refreshMetaStatus();
+    } catch (error) {
+      showMsg(t('meta.crMetadataSyncFailed', { e: error instanceof Error ? error.message : String(error) }), false);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [loadTree, refreshMetaStatus, showMsg, t]);
+
   const handleNodeSelect = useCallback(
     (node: TreeNode) => {
       setSelectedNode(node);
@@ -255,8 +332,8 @@ export default function MetaManagementPane() {
   const handleCtxSave = useCallback(() => {
     if (!ctxMenu) return;
     setCtxMenu(null);
-    saveGrid(ctxMenu.gridType);
-  }, [ctxMenu, saveGrid]);
+    saveGridAndRefresh(ctxMenu.gridType);
+  }, [ctxMenu, saveGridAndRefresh]);
 
   const handleCtxDelete = useCallback(() => {
     if (!ctxMenu?.rowId) return;
@@ -325,6 +402,7 @@ export default function MetaManagementPane() {
         const inserted = result.inserted ?? 0;
         const conflictPolicy = options?.conflictPolicy ?? 'insert';
         showMsg(`Import applied (${conflictPolicy}): ${inserted} rows inserted.`);
+        await refreshMetaStatus();
         return result;
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
@@ -334,7 +412,7 @@ export default function MetaManagementPane() {
         setIsLoading(false);
       }
     },
-    [providerRef, selectedNode, loadTree, loadGridData, showMsg],
+    [providerRef, selectedNode, loadTree, loadGridData, refreshMetaStatus, showMsg],
   );
 
   const getNodePath = useCallback(
@@ -364,6 +442,10 @@ export default function MetaManagementPane() {
   );
 
   useEffect(() => {
+    refreshMetaStatus();
+  }, [refreshMetaStatus]);
+
+  useEffect(() => {
     let cancelled = false;
     let retries = 0;
     const tryConn = async () => {
@@ -371,6 +453,7 @@ export default function MetaManagementPane() {
       if (cancelled) return;
       if (ok) {
         loadTree();
+        refreshMetaStatus();
       } else if (retries++ < 3) {
         setTimeout(tryConn, 5000);
       }
@@ -379,7 +462,7 @@ export default function MetaManagementPane() {
     return () => {
       cancelled = true;
     };
-  }, [checkConn, loadTree]);
+  }, [checkConn, loadTree, refreshMetaStatus]);
 
   return (
     <div className="mm-pane">
@@ -393,9 +476,13 @@ export default function MetaManagementPane() {
         onRefresh={loadTree}
         onReconnect={() =>
           checkConn().then((ok) => {
-            if (ok) loadTree();
+            if (ok) {
+              loadTree();
+              refreshMetaStatus();
+            }
           })
         }
+        onSyncCrMetadata={syncCrMetadata}
         onSelect={handleNodeSelect}
         onToggle={toggleNode}
         t={t}
@@ -418,8 +505,11 @@ export default function MetaManagementPane() {
           rawAttrs={rawAttrs}
           instances={instances}
           colDefs={colDefs as any}
+          activityItems={activityItems}
+          isActivityLoading={isActivityLoading}
           onPreviewImportSnapshot={handlePreviewImportSnapshot}
           onImportSnapshot={handleImportSnapshot}
+          onRefreshActivity={loadMetaActivity}
         />
 
         <MetaManagementGridWorkspace
@@ -433,7 +523,7 @@ export default function MetaManagementPane() {
           pendingSummary={gridPendingSummary}
           isLoading={isLoading}
           onAddRow={addRow}
-          onSaveGrid={saveGrid}
+          onSaveGrid={saveGridAndRefresh}
           t={t}
         />
 
@@ -441,6 +531,9 @@ export default function MetaManagementPane() {
           selectedPath={getNodePath(selectedNode)}
           templatesCount={templates.length}
           pendingSummary={gridPendingSummary}
+          connected={connected}
+          summary={metaSummary}
+          validationStatus={validationResult?.status ?? null}
           t={t}
         />
       </main>
@@ -464,6 +557,12 @@ export default function MetaManagementPane() {
         onDelete={handleCtxDelete}
         onAutoFit={handleCtxAutoFit}
         t={t}
+      />
+
+      <MetaManagementValidationModal
+        pending={pendingWarningSave}
+        onCancel={() => setPendingWarningSave(null)}
+        onConfirm={confirmWarningSave}
       />
     </div>
   );

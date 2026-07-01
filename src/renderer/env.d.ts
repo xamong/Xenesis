@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 
 import type {
+  AgentSessionsApi,
   AppMenuApi,
   CaptureApi,
   DeskBridgeApi,
@@ -40,6 +41,7 @@ declare global {
     onboardingAPI: OnboardingApi;
     processViewerAPI: ProcessViewerApi;
     safeFileAPI: SafeFileApi;
+    agentSessionsAPI?: AgentSessionsApi;
     remoteFileAPI: RemoteFileApi;
     transferQueueAPI: TransferQueueApi;
     extensionAPI: ExtensionApi;

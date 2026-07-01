@@ -18,6 +18,7 @@ export type XenesisDeskControlPromptHintSection =
   | XenesisDeskControlPromptHintDiscoverySection;
 
 export const XENESIS_DESK_CONTROL_PROMPT_HINT_DISCOVERY_PREFIXES = {
+  agentSessions: ['xd.agentSessions', 'xd.tools.core.agentSessions'],
   connectionCenter: [
     'xd.xenesis.connections',
     'xd.xenesis.onboarding',
@@ -110,6 +111,12 @@ export const XENESIS_DESK_CONTROL_PROMPT_HINT_SECTIONS = [
     kind: 'discovery',
     linePrefix: '- Connection Center CR paths discovered from Capability Registry: ',
     prefixes: XENESIS_DESK_CONTROL_PROMPT_HINT_DISCOVERY_PREFIXES.connectionCenter,
+  },
+  {
+    id: 'agent-sessions-discovery',
+    kind: 'discovery',
+    linePrefix: '- Agent Sessions CR paths discovered from Capability Registry: ',
+    prefixes: XENESIS_DESK_CONTROL_PROMPT_HINT_DISCOVERY_PREFIXES.agentSessions,
   },
   {
     id: 'explicit-desk-action-examples',

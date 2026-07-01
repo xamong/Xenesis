@@ -16,6 +16,7 @@ import { WebLinksAddon } from '@xterm/addon-web-links';
 import { type ITheme, Terminal } from '@xterm/xterm';
 import type {
   LocalTerminalCliSelection,
+  McpBridgeTerminalMetadata,
   ShellKind,
   TerminalSessionKind,
   TerminalSpawnConfig,
@@ -52,6 +53,7 @@ export interface TerminalHostSessionInfo {
   initialCommand?: string;
   environmentText?: string;
   localCliAgentId?: LocalTerminalCliSelection;
+  terminalMetadata?: McpBridgeTerminalMetadata;
   lastSentCommand?: string;
   shellContext: TerminalShellContext;
   groupId: string;
@@ -979,6 +981,7 @@ class TerminalInstance {
       initialCommand: localProfile?.initialCommand || undefined,
       environmentText: localProfile?.environmentText,
       localCliAgentId: localProfile?.localCliAgentId,
+      terminalMetadata: this.spawnConfig.metadata,
       lastSentCommand: this.lastSentCommand || undefined,
       shellContext: {
         ...this.shellContext,

@@ -93,7 +93,7 @@ import {
   verifyDeskBridgeCapabilityApprovalProof,
 } from '../shared/deskBridgeCapabilities';
 import { normalizeExternalAppSettings } from '../shared/externalAppControl';
-import { scanLocalVault } from './vault/vaultLocalScanner';
+import { normalizeOfficeSettings } from '../shared/officeControl';
 import {
   canUseXenisPhase5XamongCodeCommand,
   isXenisPhase5Visible,
@@ -344,6 +344,7 @@ import {
 import { withXenesisRunEventScope } from '../shared/xenesisRunEventScope';
 import { createLinkedApprovalActionNeeded, createLinkedApprovalReceipt } from './agentActionRecordBridge.mjs';
 import { createAgentControlLockManager } from './agentControlLock';
+import { createAgentSessionService } from './agentSessions/service';
 import { createAgentTurnLedgerReadbackApi } from './agentTurnLedgerService';
 import { createAppControlService } from './appControl/appControlService';
 import { createAuditLogger } from './audit/auditLogger';
@@ -359,6 +360,13 @@ import {
 import { prepareCodexIsolatedHome, readCodexModel } from './codexIsolatedHome.mjs';
 import { createComputerUseService } from './computerUse/computerUseService';
 import { setConnectorObservabilitySink } from './connectors/connectorObservability';
+import { createCrMetadataBridge } from './crMetadataBridge';
+import {
+  type DisplayWorkArea,
+  normalizeDetachedWindowBounds,
+  resolveDetachedWindowPlacement,
+} from './detachedWindowPlacement';
+import { createDockDragGhostOverlayController } from './dockDragGhostOverlay';
 import { ExtensionHost } from './extensions/extensionHost';
 import { createInputControlService } from './inputControl/inputControlService';
 import {
@@ -401,12 +409,7 @@ import {
   observeMainAsyncOperation,
   summarizeMainObservabilityPayload,
 } from './observabilityBridge';
-import {
-  normalizeDetachedWindowBounds,
-  resolveDetachedWindowPlacement,
-  type DisplayWorkArea,
-} from './detachedWindowPlacement';
-import { createDockDragGhostOverlayController } from './dockDragGhostOverlay';
+import { createOfficeControlService } from './officeControl/officeControlService';
 import {
   exportOnboardingDemoRouteStoryboard,
   openOnboardingDemoRouteTarget,
@@ -434,6 +437,7 @@ import { applySafeTextFileWrite, previewSafeTextFileWrite, restoreSafeTextFileBa
 import { type TerminalImageOptions, writeTerminalImage } from './terminalImageWriter';
 import { buildTerminalWarmupLaunch, shouldTerminalWarmupRun } from './terminalWarmup.mjs';
 import { renderXconToPng, writeTerminalXconImage, type XconRenderOptions } from './terminalXconRenderer';
+import { scanLocalVault } from './vault/vaultLocalScanner';
 import {
   buildXamongCodeApiLaunch,
   buildXamongCodeTerminalEnv,
@@ -454,10 +458,6 @@ import {
   type XenesisRunProviderRuntimeOverride,
 } from './xenesisRunProviderRuntime';
 import {
-  createXenesisWorkbenchApprovalController,
-  projectXenesisApprovalRequests,
-} from './xenesisWorkbenchApprovals.mjs';
-import {
   buildXenesisProviderRuntimeStatus as buildResolvedXenesisProviderRuntimeStatus,
   buildXenesisGatewayLaunch,
   buildXenesisGatewayRunPayload,
@@ -473,6 +473,10 @@ import {
   waitForGatewayReady,
 } from './xenesisService.mjs';
 import { buildXenesisTuiTerminalRequest } from './xenesisTuiLaunch';
+import {
+  createXenesisWorkbenchApprovalController,
+  projectXenesisApprovalRequests,
+} from './xenesisWorkbenchApprovals.mjs';
 import {
   getDefaultCaptureDir,
   getDefaultDiagnosticsDir,
@@ -671,7 +675,8 @@ interface ActiveXenesisRunEventScope {
 let activeXenesisRunEventScope: ActiveXenesisRunEventScope | null = null;
 
 const xenesisWorkbenchApprovals = createXenesisWorkbenchApprovalController({
-  applyActionInboxRequest: (raw: unknown) => applyMcpActionInboxRequest(mcpActionInboxState, raw) as McpBridgeActionInboxItem,
+  applyActionInboxRequest: (raw: unknown) =>
+    applyMcpActionInboxRequest(mcpActionInboxState, raw) as McpBridgeActionInboxItem,
   resolveActionInboxRequest: (request: McpBridgeActionInboxResolveRequest) => resolveMcpActionInboxRequest(request),
   listActionInboxItems: () => listMcpActionInboxSnapshot(),
   emitChanged: () => emitMcpActionInboxChanged(),
@@ -1544,6 +1549,18 @@ const localCliAgentIds = new Set<LocalCliAgentId>([
   'pi',
 ]);
 
+const agentSessionService = createAgentSessionService({
+  xenisHomeDir,
+  installedLocalCliAgents: scanLocalCliAgents({
+    env: process.env,
+    existsSync: fs.existsSync,
+    spawnSync,
+    includeVersions: false,
+  })
+    .filter((agent) => agent.installed && localCliAgentIds.has(agent.id))
+    .map((agent) => agent.id),
+});
+
 // 탭 분리 창에 전달할 pending payload (windowId → payload, 1회성)
 const detachPayloads = new Map<number, DetachPayload>();
 
@@ -1702,6 +1719,7 @@ const SETTINGS_DEFAULT: AppSettings = {
     autoConfigureTerminal: true,
   },
   externalApps: normalizeExternalAppSettings(undefined),
+  office: normalizeOfficeSettings(undefined),
   gowooriChat: {
     provider: 'byok',
     promptMode: 'stdin',
@@ -2588,6 +2606,7 @@ function loadSettings(): AppSettings {
       xenesis: normalizeXenesisRuntimeSettings({ ...SETTINGS_DEFAULT.xenesis, ...(saved.xenesis ?? {}) }),
       localCli: { ...SETTINGS_DEFAULT.localCli, ...(saved.localCli ?? {}) },
       externalApps: normalizeExternalAppSettings(saved.externalApps ?? SETTINGS_DEFAULT.externalApps),
+      office: normalizeOfficeSettings(saved.office ?? SETTINGS_DEFAULT.office),
       gowooriChat: { ...SETTINGS_DEFAULT.gowooriChat, ...(saved.gowooriChat ?? {}) },
       automation: normalizeAutomationSettings(saved.automation),
       terminalRestore: { ...SETTINGS_DEFAULT.terminalRestore, ...(saved.terminalRestore ?? {}) },
@@ -2635,6 +2654,7 @@ function loadSettings(): AppSettings {
     }
     merged.localCli.autoConfigureTerminal = merged.localCli.autoConfigureTerminal !== false;
     merged.externalApps = normalizeExternalAppSettings(merged.externalApps);
+    merged.office = normalizeOfficeSettings(merged.office);
     merged.gowooriChat.promptMode = merged.gowooriChat.promptMode === 'argument' ? 'argument' : 'stdin';
     merged.gowooriChat.commandArgs = String(merged.gowooriChat.commandArgs ?? '');
     merged.gowooriChat.timeoutMs = Number.isFinite(merged.gowooriChat.timeoutMs)
@@ -2713,6 +2733,7 @@ function persistSettings(settings: Partial<AppSettings>): AppSettings {
       externalApps: settings.externalApps
         ? normalizeExternalAppSettings({ ...current.externalApps, ...settings.externalApps })
         : current.externalApps,
+      office: settings.office ? normalizeOfficeSettings({ ...current.office, ...settings.office }) : current.office,
       gowooriChat: settings.gowooriChat ? { ...current.gowooriChat, ...settings.gowooriChat } : current.gowooriChat,
       automation: settings.automation ? { ...current.automation, ...settings.automation } : current.automation,
       terminalRestore: settings.terminalRestore
@@ -2763,6 +2784,7 @@ function persistSettings(settings: Partial<AppSettings>): AppSettings {
     };
     updated.xenesis = normalizeXenesisRuntimeSettings(updated.xenesis);
     updated.externalApps = normalizeExternalAppSettings(updated.externalApps);
+    updated.office = normalizeOfficeSettings(updated.office);
     updated.captureDir = resolveDefaultedDir(updated.captureDir, getDefaultCaptureDir());
     updated.extensions = {
       ...updated.extensions,
@@ -13184,6 +13206,10 @@ function getMetaBridgeApiUrl(settings = loadSettings()): string {
 }
 
 const metaBridge = createMetaBridge({ apiUrl: getMetaBridgeApiUrl() });
+const crMetadataBridge = createCrMetadataBridge({
+  getApiUrl: getMetaBridgeApiUrl,
+  listCapabilities: () => listDeskBridgeCapabilities(undefined, getXenisPhase5VisibilityOptions()),
+});
 
 async function dispatchMetaBridgeCapability(path: string, args: unknown): Promise<unknown> {
   metaBridge.setApiUrl(getMetaBridgeApiUrl());
@@ -16017,6 +16043,9 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
   const appControlService = createAppControlService({
     getSettings: () => loadSettings().externalApps,
   });
+  const officeControlService = createOfficeControlService({
+    getSettings: () => loadSettings().office,
+  });
   const inputControlService = createInputControlService({
     runExternalAppAction: (args: unknown) => appControlService.run(args),
   });
@@ -16082,6 +16111,101 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
         }),
       ),
     }),
+    agentSessionsStatus: () => agentSessionService.status(),
+    agentSessionsScan: (args: unknown) =>
+      agentSessionService.scan(normalizeMcpCapabilityArgs(args) as Parameters<typeof agentSessionService.scan>[0]),
+    agentSessionsList: (args: unknown) =>
+      agentSessionService.list(normalizeMcpCapabilityArgs(args) as Parameters<typeof agentSessionService.list>[0]),
+    agentSessionsSearch: (args: unknown) =>
+      agentSessionService.search(
+        normalizeMcpCapabilityArgs(args) as unknown as Parameters<typeof agentSessionService.search>[0],
+      ),
+    agentSessionsPin: (args: unknown) =>
+      agentSessionService.pin(
+        normalizeMcpCapabilityArgs(args) as unknown as Parameters<typeof agentSessionService.pin>[0],
+      ),
+    agentSessionsHide: (args: unknown) =>
+      agentSessionService.hide(
+        normalizeMcpCapabilityArgs(args) as unknown as Parameters<typeof agentSessionService.hide>[0],
+      ),
+    agentSessionsAttachTerminal: (args: unknown) => ({
+      ok: true,
+      args: normalizeMcpCapabilityArgs(args),
+      message: 'Agent session terminal linking is not persisted yet.',
+    }),
+    agentSessionsResume: async (args: unknown) => {
+      const body = normalizeMcpCapabilityArgs(args);
+      const sessionId = readCapabilityString(body, ['sessionId', 'id']);
+      const query = readCapabilityString(body, ['query', 'q']);
+      const source = readCapabilityString(body, ['source']);
+      const target = body.target === 'new' || body.target === 'active' ? body.target : 'smart';
+      const requestBase = {
+        ...body,
+        includeHidden: true,
+        limit: query ? 50 : 200,
+        ...(source ? { sources: [source] } : {}),
+      };
+      const matchingSessions = query
+        ? await agentSessionService.search(requestBase as Parameters<typeof agentSessionService.search>[0])
+        : await agentSessionService.list(requestBase as Parameters<typeof agentSessionService.list>[0]);
+      const selectedSession = matchingSessions.find((session) => (sessionId ? session.id === sessionId : true));
+      if (!selectedSession) return { ok: false, error: 'Agent session not found.' };
+
+      const command = selectedSession.resumeCommand?.trim() ?? '';
+      if (!command) return { ok: false, error: 'Selected agent session has no resume command.' };
+
+      const requestedTermId = readCapabilityString(body, ['termId', 'terminalId']);
+      const reusableTermId = requestedTermId || selectedSession.terminalId || selectedSession.terminal?.termId || '';
+      const preview = {
+        session: selectedSession,
+        command,
+        cwd: selectedSession.projectPath,
+        target,
+        termId: reusableTermId || undefined,
+      };
+      if (body.previewOnly === true) return { ok: true, preview };
+
+      if (target !== 'new' && reusableTermId) {
+        const terminal = sessions.get(reusableTermId);
+        if (terminal) {
+          const shell = terminal.shell ?? normalizeShellKindForPlatform(loadSettings().defaultShell);
+          const data = formatShellStartupInput(shell, command);
+          trackTerminalInput(terminal, data);
+          automationControllers.get(terminal.id)?.recordTerminalInput(data);
+          terminal.backend.write(data);
+          return {
+            ok: true,
+            session: selectedSession,
+            preview,
+            termId: terminal.id,
+            reusedTerminal: true,
+            message: 'Agent session resume command sent to the existing terminal.',
+          };
+        }
+      }
+
+      const spawnResult = createMcpTerminalSession({
+        kind: 'shell',
+        cwd: selectedSession.projectPath,
+        command,
+        title: `${selectedSession.sourceLabel}: ${selectedSession.projectName}`,
+        placement: sanitizeMcpExtensionPanelPlacement(body.placement) ?? 'tab',
+        targetPaneId: readCapabilityString(body, ['targetPaneId']),
+        metadata: {
+          kind: 'agent-session-resume',
+          agent: selectedSession.sourceLabel,
+          task: selectedSession.title,
+          command,
+        },
+      });
+      return {
+        ok: true,
+        session: selectedSession,
+        preview,
+        spawnResult,
+        message: 'Agent session resume command opened in a terminal.',
+      };
+    },
     loadMetaTree: (args: unknown) => dispatchMetaBridgeCapability('xd.meta.tree.load', args),
     searchMetaTree: (args: unknown) => dispatchMetaBridgeCapability('xd.meta.tree.search', args),
     listMetaCodes: (args: unknown) => dispatchMetaBridgeCapability('xd.meta.codes.list', args),
@@ -16096,12 +16220,21 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     exportMetaSnapshot: (args: unknown) => dispatchMetaBridgeCapability('xd.meta.snapshot.export', args),
     importMetaSnapshot: (args: unknown) => dispatchMetaBridgeCapability('xd.meta.snapshot.import', args),
     getMetaRelationsGraph: (args: unknown) => dispatchMetaBridgeCapability('xd.meta.relations.graph', args),
+    syncCrMetadata: (args: unknown) => crMetadataBridge.sync(normalizeMcpCapabilityArgs(args)),
+    listCrMetadataCapabilities: (args: unknown) => crMetadataBridge.listCapabilities(normalizeMcpCapabilityArgs(args)),
+    listCrMetadataSnapshots: (args: unknown) => crMetadataBridge.listSnapshots(normalizeMcpCapabilityArgs(args)),
+    listCrMetadataRuns: (args: unknown) => crMetadataBridge.listRuns(normalizeMcpCapabilityArgs(args)),
+    recordCrRun: (record, result) => {
+      void crMetadataBridge.recordRunFromAudit(record, result);
+      return { ok: true };
+    },
     appMenuRole: executeAppMenuRoleForCapability,
     openFile: openMcpFileCapability,
     openBrowser: openMcpBrowserCapability,
     browserAction: (args: unknown) => sendMcpBrowserActionToRenderer(sanitizeMcpBrowserActionRequest(args)),
     openBuiltinPane: openMcpBuiltinPaneCapability,
     runExternalAppAction: (args: unknown) => appControlService.run(args),
+    runOfficeAction: (path: string, args?: unknown) => officeControlService.run(path, args),
     inputControlCall: (path: string, args?: unknown) => inputControlService.call(path, args),
     computerUseCall: (path: string, args?: unknown, options?: { approved?: boolean }) =>
       computerUseService.call(path, args, options),
@@ -20519,7 +20652,9 @@ async function runXenesisRequest(
 ): Promise<XenesisRunResult> {
   const previousScope = activeXenesisRunEventScope;
   const scope = createActiveXenesisRunEventScope(request);
-  const scopedEmitEvent = emitEvent ? (event: XenesisRunEvent) => emitEvent(scopeXenesisRunEvent(event, scope)) : undefined;
+  const scopedEmitEvent = emitEvent
+    ? (event: XenesisRunEvent) => emitEvent(scopeXenesisRunEvent(event, scope))
+    : undefined;
   activeXenesisRunEventScope = scope;
   try {
     if (getXenesisRuntimeMode() === 'externalGateway') {
@@ -20563,6 +20698,11 @@ const NATIVE_MENU_LABELS: Record<string, { ko: string; en: string }> = {
   'settings.category.externalAppsDesc': {
     ko: '외부 데스크톱 앱 실행 및 제어 프로필',
     en: 'Profiles for launching and controlling external desktop apps',
+  },
+  'settings.category.officeControl': { ko: 'Office 제어', en: 'Office Control' },
+  'settings.category.officeControlDesc': {
+    ko: 'Excel 자동화 provider와 문서 안전 정책',
+    en: 'Excel automation providers and document safety policy',
   },
   'app.toolsMenuDemoLabEditor': { ko: 'Demo Lab Editor', en: 'Demo Lab Editor' },
   'app.toolsXenisBot': { ko: 'Xenesis Bot', en: 'Xenesis Bot' },
@@ -22232,6 +22372,12 @@ function setupIpc(): void {
     'safe-file:restore',
     (_event, request: SafeFileRestoreRequest): Promise<SafeFileRestoreResult> => restoreSafeTextFileBackup(request),
   );
+  ipcMain.handle('agent-sessions:status', () => agentSessionService.status());
+  ipcMain.handle('agent-sessions:scan', (_event, request) => agentSessionService.scan(request));
+  ipcMain.handle('agent-sessions:list', (_event, request) => agentSessionService.list(request));
+  ipcMain.handle('agent-sessions:search', (_event, request) => agentSessionService.search(request));
+  ipcMain.handle('agent-sessions:pin', (_event, request) => agentSessionService.pin(request));
+  ipcMain.handle('agent-sessions:hide', (_event, request) => agentSessionService.hide(request));
 
   ipcMain.handle('app:save-settings', async (_event, settings: Partial<AppSettings>) => {
     await saveApplicationSettings(settings);

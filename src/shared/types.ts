@@ -1,6 +1,20 @@
 import type { DockDragGhostOverlayPayload } from './dockDragGhost';
 import type { ExternalAppSettings } from './externalAppControl';
+import type { OfficeControlSettings } from './officeControl';
 import type { XenesisConnectionsStatus } from './xenesisConnections';
+
+export type {
+  AgentSession,
+  AgentSessionDiagnostic,
+  AgentSessionsApi,
+  AgentSessionsHideRequest,
+  AgentSessionsListRequest,
+  AgentSessionsPinRequest,
+  AgentSessionsScanRequest,
+  AgentSessionsScanResult,
+  AgentSessionsSearchRequest,
+  AgentSessionsStatus,
+} from './agentSessions';
 
 export type {
   XenesisConnectionChannelAccessGroupBinding,
@@ -595,6 +609,7 @@ export type DockContentType =
   | 'xd-remote-sync-planner'
   | 'xd-run-task-panel'
   | 'xd-safe-file-edit-center'
+  | 'xd-agent-sessions'
   | 'xenesis-agent'
   | 'hermes-status'
   | 'hermes-action-inbox'
@@ -604,6 +619,7 @@ export type DockContentType =
   | 'activity-timeline'
   | 'network-monitor'
   | 'xd-blaster'
+  | 'xd-app-control-lab'
   | 'audit-log'
   | 'agent-performance'
   | 'memory-dashboard'
@@ -710,6 +726,7 @@ export type ExtensionTool =
   | 'xenesis-desk.core-tools.remote-sync-planner'
   | 'xenesis-desk.core-tools.run-task-panel'
   | 'xenesis-desk.core-tools.safe-file-edit-center'
+  | 'xenesis-desk.core-tools.agent-sessions'
   | 'xenesis-desk.core-tools.xenesis-agent'
   | 'xenesis-desk.core-tools.hermes-status'
   | 'xenesis-desk.core-tools.hermes-action-inbox'
@@ -729,6 +746,7 @@ export type ExtensionTool =
   | 'xenesis-desk.core-tools.activity-timeline'
   | 'xenesis-desk.core-tools.network-monitor'
   | 'xenesis-desk.core-tools.xd-blaster'
+  | 'xenesis-desk.core-tools.app-control-lab'
   | 'xenesis-desk.core-tools.audit-log'
   | 'xenesis-desk.core-tools.agent-performance'
   | 'xenesis-desk.core-tools.memory-dashboard'
@@ -1552,6 +1570,7 @@ export interface ShellTerminalSpawnRequest {
   rows: number;
   cwd?: string;
   profile?: LocalTerminalProfile;
+  metadata?: McpBridgeTerminalMetadata;
 }
 
 export interface SshTerminalSpawnRequest {
@@ -1560,6 +1579,7 @@ export interface SshTerminalSpawnRequest {
   profile: RemoteTerminalProfile;
   cols: number;
   rows: number;
+  metadata?: McpBridgeTerminalMetadata;
 }
 
 export interface TelnetTerminalSpawnRequest {
@@ -1568,6 +1588,7 @@ export interface TelnetTerminalSpawnRequest {
   profile: RemoteTerminalProfile;
   cols: number;
   rows: number;
+  metadata?: McpBridgeTerminalMetadata;
 }
 
 export type TerminalSpawnRequest = ShellTerminalSpawnRequest | SshTerminalSpawnRequest | TelnetTerminalSpawnRequest;
@@ -1880,6 +1901,8 @@ export interface AppSettings {
   localCli: LocalCliSettings;
   /** 외부 데스크톱 앱 실행 및 제어 프로필 */
   externalApps: ExternalAppSettings;
+  /** Office 문서 자동화 설정 */
+  office: OfficeControlSettings;
   /** GowooriChat CLI/API provider 실행 설정 */
   gowooriChat: GowooriChatSettings;
   /** 화면 캡처 저장 폴더 (비어 있으면 Xenesis Desk 홈의 captures) */

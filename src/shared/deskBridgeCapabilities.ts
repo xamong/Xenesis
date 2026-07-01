@@ -1811,11 +1811,20 @@ export interface DeskBridgeCapabilityAdapter {
   exportMetaSnapshot?: (args: unknown) => Promise<unknown> | unknown;
   importMetaSnapshot?: (args: unknown) => Promise<unknown> | unknown;
   getMetaRelationsGraph?: (args: unknown) => Promise<unknown> | unknown;
+  syncCrMetadata?: (args: unknown) => Promise<unknown> | unknown;
+  listCrMetadataCapabilities?: (args: unknown) => Promise<unknown> | unknown;
+  listCrMetadataSnapshots?: (args: unknown) => Promise<unknown> | unknown;
+  listCrMetadataRuns?: (args: unknown) => Promise<unknown> | unknown;
+  recordCrRun?: (
+    record: DeskBridgeCapabilityAuditRecord,
+    result: DeskBridgeCapabilityCallResult,
+  ) => Promise<unknown> | unknown;
   openFile?: (args: unknown) => Promise<unknown> | unknown;
   openBrowser?: (args: unknown) => Promise<unknown> | unknown;
   browserAction?: (args: unknown) => Promise<unknown> | unknown;
   openBuiltinPane?: (args: unknown) => Promise<unknown> | unknown;
   runExternalAppAction?: (args: unknown) => Promise<unknown> | unknown;
+  runOfficeAction?: (path: string, args?: unknown) => Promise<unknown> | unknown;
   inputControlCall?: (path: string, args?: unknown) => Promise<unknown> | unknown;
   computerUseCall?: (
     path: string,
@@ -2093,6 +2102,14 @@ export interface DeskBridgeCapabilityAdapter {
   agentActionNeededDismiss?: (args?: unknown) => Promise<unknown> | unknown;
   agentReceiptsList?: (args?: unknown) => Promise<unknown> | unknown;
   agentReceiptsGet?: (args?: unknown) => Promise<unknown> | unknown;
+  agentSessionsStatus?: (args?: unknown) => Promise<unknown> | unknown;
+  agentSessionsScan?: (args?: unknown) => Promise<unknown> | unknown;
+  agentSessionsList?: (args?: unknown) => Promise<unknown> | unknown;
+  agentSessionsSearch?: (args?: unknown) => Promise<unknown> | unknown;
+  agentSessionsResume?: (args?: unknown) => Promise<unknown> | unknown;
+  agentSessionsAttachTerminal?: (args?: unknown) => Promise<unknown> | unknown;
+  agentSessionsPin?: (args?: unknown) => Promise<unknown> | unknown;
+  agentSessionsHide?: (args?: unknown) => Promise<unknown> | unknown;
   setXenesisWorkspace?: (args: unknown) => Promise<unknown> | unknown;
   listXenesisProfiles?: () => Promise<unknown> | unknown;
   installXenesisProfile?: (args: unknown) => Promise<unknown> | unknown;
@@ -2129,6 +2146,12 @@ export const DESK_BRIDGE_IPC_CAPABILITY_COVERAGE = {
   'app:list-settings-backups': { capabilityPath: 'xd.settings.backups.list' },
   'app:restore-settings-backup': { capabilityPath: 'xd.settings.backups.restore' },
   'app:save-settings': { capabilityPath: 'xd.settings.save' },
+  'agent-sessions:hide': { capabilityPath: 'xd.agentSessions.hide' },
+  'agent-sessions:list': { capabilityPath: 'xd.agentSessions.list' },
+  'agent-sessions:pin': { capabilityPath: 'xd.agentSessions.pin' },
+  'agent-sessions:scan': { capabilityPath: 'xd.agentSessions.scan' },
+  'agent-sessions:search': { capabilityPath: 'xd.agentSessions.search' },
+  'agent-sessions:status': { capabilityPath: 'xd.agentSessions.status' },
   'automation:clear-events': { capabilityPath: 'xd.automation.terminals.clearEvents' },
   'automation:get-events': { capabilityPath: 'xd.automation.terminals.events' },
   'automation:get-status': { capabilityPath: 'xd.automation.terminals.status' },
@@ -2773,6 +2796,10 @@ export const DESK_BRIDGE_COMMAND_CAPABILITY_COVERAGE = {
     commandCapabilityPath: 'xd.extensions.runCommand',
     notes: 'Built-in core tool panel opened through the extension command host.',
   },
+  'xenesis-desk.core-tools.openAppControlLab': {
+    commandCapabilityPath: 'xd.extensions.runCommand',
+    notes: 'Built-in core tool panel opened through the extension command host.',
+  },
   'xenesis-desk.core-tools.openAuditLog': {
     commandCapabilityPath: 'xd.extensions.runCommand',
     notes: 'Built-in core tool panel opened through the extension command host.',
@@ -3092,6 +3119,9 @@ export const DESK_BRIDGE_DOCK_CONTENT_CAPABILITY_COVERAGE = {
   'xd-safe-file-edit-center': {
     contentCapabilityPath: 'xd.tools.core.safeFileEditCenter.open',
   },
+  'xd-agent-sessions': {
+    contentCapabilityPath: 'xd.tools.core.agentSessions.open',
+  },
   'xenesis-agent': {
     contentCapabilityPath: 'xd.tools.core.xenesisAgent.open',
   },
@@ -3150,6 +3180,9 @@ export const DESK_BRIDGE_DOCK_CONTENT_CAPABILITY_COVERAGE = {
   },
   'xd-blaster': {
     contentCapabilityPath: 'xd.tools.core.xdBlaster.open',
+  },
+  'xd-app-control-lab': {
+    contentCapabilityPath: 'xd.tools.core.appControlLab.open',
   },
   'audit-log': {
     contentCapabilityPath: 'xd.tools.core.auditLog.open',
@@ -3356,6 +3389,11 @@ export const DESK_BRIDGE_EXTENSION_TOOL_CAPABILITY_COVERAGE = {
     commandId: 'xenesis-desk.core-tools.openSafeFileEditCenter',
     notes: 'Open Safe File Edit Center as a first-class core tool capability.',
   },
+  'xenesis-desk.core-tools.agent-sessions': {
+    toolCapabilityPath: 'xd.tools.core.agentSessions.open',
+    commandId: 'xenesis-desk.core-tools.openAgentSessions',
+    notes: 'Open Agent Sessions as a first-class core tool capability.',
+  },
   'xenesis-desk.core-tools.xenesis-agent': {
     toolCapabilityPath: 'xd.tools.core.xenesisAgent.open',
     commandId: 'xenesis-desk.core-tools.openXenesisAgent',
@@ -3450,6 +3488,11 @@ export const DESK_BRIDGE_EXTENSION_TOOL_CAPABILITY_COVERAGE = {
     toolCapabilityPath: 'xd.tools.core.xdBlaster.open',
     commandId: 'xenesis-desk.core-tools.openXdBlaster',
     notes: 'Open XD Blaster panel.',
+  },
+  'xenesis-desk.core-tools.app-control-lab': {
+    toolCapabilityPath: 'xd.tools.core.appControlLab.open',
+    commandId: 'xenesis-desk.core-tools.openAppControlLab',
+    notes: 'Open App Control Lab panel.',
   },
   'xenesis-desk.core-tools.audit-log': {
     toolCapabilityPath: 'xd.tools.core.auditLog.open',
@@ -4508,6 +4551,28 @@ function phase5Only(node: DeskBridgeCapabilityNode): DeskBridgeCapabilityNode {
   return { ...node, phase5Only: true };
 }
 
+const OFFICE_ACTION_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    provider: { type: 'string', enum: ['file', 'windows-com', 'macos-apple-events'] },
+    path: { type: 'string' },
+    outputPath: { type: 'string' },
+    overwrite: { type: 'boolean' },
+    openAfterCreate: { type: 'boolean' },
+    visible: { type: 'boolean' },
+    readOnly: { type: 'boolean' },
+    reuseExisting: { type: 'boolean' },
+    save: { type: 'boolean' },
+    sheets: { type: 'array' },
+    sheetName: { type: 'string' },
+    range: { type: 'string' },
+    startCell: { type: 'string' },
+    rows: { type: 'array' },
+    saveAsPath: { type: 'string' },
+  },
+} as const;
+
 function filterPhase5CapabilityTree(
   node: DeskBridgeCapabilityNode,
   options: XenisPhase5VisibilityOptions = {},
@@ -5214,6 +5279,177 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           },
         ),
       ]),
+    ]),
+    group('xd.agentSessions', 'Agent Sessions', 'Search, inspect, link, and resume local agent sessions.', [
+      method('xd.agentSessions.status', 'Read Agent Sessions status', 'Read scanner cache and source status.', 'read'),
+      method(
+        'xd.agentSessions.scan',
+        'Scan Agent Sessions',
+        'Scan supported local agent transcript stores into the Agent Sessions cache.',
+        'read',
+        {
+          type: 'object',
+          properties: {
+            sources: {
+              type: 'array',
+              title: 'Sources',
+              items: {
+                type: 'string',
+                enum: ['xenesis', 'codex', 'claude', 'gemini'],
+              },
+            },
+            force: {
+              type: 'boolean',
+              title: 'Force scan',
+              default: false,
+            },
+          },
+        },
+      ),
+      method('xd.agentSessions.list', 'List Agent Sessions', 'List cached local agent sessions.', 'read', {
+        type: 'object',
+        properties: {
+          includeHidden: {
+            type: 'boolean',
+            title: 'Include hidden',
+            default: false,
+          },
+          limit: {
+            type: 'number',
+            title: 'Limit',
+            minimum: 0,
+            maximum: 500,
+            default: 100,
+          },
+        },
+      }),
+      method('xd.agentSessions.search', 'Search Agent Sessions', 'Search cached local agent sessions.', 'read', {
+        type: 'object',
+        required: ['query'],
+        properties: {
+          query: {
+            type: 'string',
+            title: 'Query',
+          },
+          includeHidden: {
+            type: 'boolean',
+            title: 'Include hidden',
+            default: false,
+          },
+          limit: {
+            type: 'number',
+            title: 'Limit',
+            minimum: 0,
+            maximum: 500,
+            default: 50,
+          },
+        },
+      }),
+      method(
+        'xd.agentSessions.resume',
+        'Resume Agent Session',
+        'Open a terminal with the selected local agent session resume command.',
+        'execute',
+        {
+          type: 'object',
+          properties: {
+            sessionId: {
+              type: 'string',
+              title: 'Session id',
+            },
+            query: {
+              type: 'string',
+              title: 'Query',
+            },
+            source: {
+              type: 'string',
+              title: 'Source',
+              enum: ['xenesis', 'codex', 'claude', 'gemini'],
+            },
+            target: {
+              type: 'string',
+              title: 'Terminal target',
+              enum: ['smart', 'new', 'active'],
+              default: 'smart',
+            },
+            termId: {
+              type: 'string',
+              title: 'Terminal id',
+            },
+            previewOnly: {
+              type: 'boolean',
+              title: 'Preview only',
+              default: false,
+            },
+            placement: {
+              type: 'string',
+              title: 'Placement',
+              enum: ['tab', 'left', 'right', 'top', 'bottom'],
+              default: 'tab',
+            },
+          },
+        },
+      ),
+      method(
+        'xd.agentSessions.attachTerminal',
+        'Attach Agent Session Terminal',
+        'Attach a known terminal session to a cached Agent Session record.',
+        'control',
+        {
+          type: 'object',
+          required: ['sessionId', 'termId'],
+          properties: {
+            sessionId: {
+              type: 'string',
+              title: 'Session id',
+            },
+            termId: {
+              type: 'string',
+              title: 'Terminal id',
+            },
+          },
+        },
+      ),
+      method(
+        'xd.agentSessions.pin',
+        'Pin Agent Session',
+        'Pin or unpin an Agent Session in the local overlay.',
+        'write',
+        {
+          type: 'object',
+          required: ['sessionId', 'pinned'],
+          properties: {
+            sessionId: {
+              type: 'string',
+              title: 'Session id',
+            },
+            pinned: {
+              type: 'boolean',
+              title: 'Pinned',
+            },
+          },
+        },
+      ),
+      method(
+        'xd.agentSessions.hide',
+        'Hide Agent Session',
+        'Hide or unhide an Agent Session in the local overlay.',
+        'write',
+        {
+          type: 'object',
+          required: ['sessionId', 'hidden'],
+          properties: {
+            sessionId: {
+              type: 'string',
+              title: 'Session id',
+            },
+            hidden: {
+              type: 'boolean',
+              title: 'Hidden',
+            },
+          },
+        },
+      ),
     ]),
     group('xd.xenesis', 'Xenesis', 'Xenesis agent and gateway control surface for Xenesis Desk orchestration.', [
       method(
@@ -8617,6 +8853,160 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           },
         },
       ),
+      method(
+        'xd.apps.inspect',
+        'Inspect external app',
+        'Inspect a visible external app window and return observation metadata.',
+        'read',
+        {
+          type: 'object',
+          anyOf: [
+            { required: ['appId'] },
+            { required: ['path'] },
+            { required: ['windowId'] },
+            { required: ['processName'] },
+            { required: ['titleContains'] },
+          ],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            path: { type: 'string', title: 'Executable path' },
+            windowId: { type: 'string', title: 'Window handle' },
+            processName: { type: 'string', title: 'Process name', examples: ['notepad'] },
+            titleContains: { type: 'string', title: 'Window title contains' },
+            includeTreePreview: { type: 'boolean', title: 'Include tree preview' },
+          },
+        },
+      ),
+      method(
+        'xd.apps.elementFromPoint',
+        'Read external app element at point',
+        'Read UI automation element metadata at screen coordinates.',
+        'read',
+        {
+          type: 'object',
+          required: ['x', 'y'],
+          properties: {
+            x: { type: 'number', title: 'Screen X' },
+            y: { type: 'number', title: 'Screen Y' },
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            path: { type: 'string', title: 'Executable path' },
+            windowId: { type: 'string', title: 'Window handle' },
+            processName: { type: 'string', title: 'Process name', examples: ['notepad'] },
+            titleContains: { type: 'string', title: 'Window title contains' },
+          },
+        },
+      ),
+      method(
+        'xd.apps.tree',
+        'Read external app UI tree',
+        'Read the UI automation tree for a visible external app window.',
+        'read',
+        {
+          type: 'object',
+          anyOf: [
+            { required: ['appId'] },
+            { required: ['path'] },
+            { required: ['windowId'] },
+            { required: ['processName'] },
+            { required: ['titleContains'] },
+          ],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            path: { type: 'string', title: 'Executable path' },
+            windowId: { type: 'string', title: 'Window handle' },
+            processName: { type: 'string', title: 'Process name', examples: ['notepad'] },
+            titleContains: { type: 'string', title: 'Window title contains' },
+            depth: { type: 'integer', title: 'Tree depth', minimum: 1, maximum: 20, default: 3 },
+            limit: { type: 'integer', title: 'Node limit', minimum: 1, maximum: 1000, default: 200 },
+            includeValues: { type: 'boolean', title: 'Include values' },
+            includeFullTree: { type: 'boolean', title: 'Include full tree' },
+          },
+        },
+      ),
+      method(
+        'xd.apps.menuExplore',
+        'Explore external app menus',
+        'Read menu bars, menu items, and submenu hierarchy for a visible external app window without invoking commands.',
+        'read',
+        {
+          type: 'object',
+          anyOf: [
+            { required: ['appId'] },
+            { required: ['path'] },
+            { required: ['windowId'] },
+            { required: ['processName'] },
+            { required: ['titleContains'] },
+          ],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            path: { type: 'string', title: 'Executable path' },
+            windowId: { type: 'string', title: 'Window handle' },
+            processName: { type: 'string', title: 'Process name', examples: ['notepad'] },
+            titleContains: { type: 'string', title: 'Window title contains' },
+            depth: { type: 'integer', title: 'Menu depth', minimum: 1, maximum: 20, default: 3 },
+            limit: { type: 'integer', title: 'Node limit', minimum: 1, maximum: 1000, default: 200 },
+            includeValues: { type: 'boolean', title: 'Include values' },
+          },
+        },
+      ),
+      method(
+        'xd.apps.highlight',
+        'Highlight external app window',
+        'Highlight a resolved visible external app window or element.',
+        'control',
+        {
+          type: 'object',
+          anyOf: [
+            { required: ['appId'] },
+            { required: ['path'] },
+            { required: ['windowId'] },
+            { required: ['processName'] },
+            { required: ['titleContains'] },
+            { required: ['elementRef'] },
+          ],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            path: { type: 'string', title: 'Executable path' },
+            windowId: { type: 'string', title: 'Window handle' },
+            processName: { type: 'string', title: 'Process name', examples: ['notepad'] },
+            titleContains: { type: 'string', title: 'Window title contains' },
+            elementRef: { type: 'string', title: 'Element reference' },
+            durationMs: {
+              type: 'integer',
+              title: 'Duration in milliseconds',
+              minimum: 100,
+              maximum: 10000,
+              default: 1200,
+            },
+          },
+        },
+      ),
+      method(
+        'xd.apps.captureElement',
+        'Capture external app window',
+        'Capture a screenshot of a resolved visible external app window or element.',
+        'read',
+        {
+          type: 'object',
+          anyOf: [
+            { required: ['appId'] },
+            { required: ['path'] },
+            { required: ['windowId'] },
+            { required: ['processName'] },
+            { required: ['titleContains'] },
+            { required: ['elementRef'] },
+          ],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            path: { type: 'string', title: 'Executable path' },
+            windowId: { type: 'string', title: 'Window handle' },
+            processName: { type: 'string', title: 'Process name', examples: ['notepad'] },
+            titleContains: { type: 'string', title: 'Window title contains' },
+            elementRef: { type: 'string', title: 'Element reference' },
+            screenshotPath: { type: 'string', title: 'Screenshot path' },
+          },
+        },
+      ),
       method('xd.apps.find', 'Find external app windows', 'Find visible external desktop app windows.', 'read', {
         type: 'object',
         properties: {
@@ -8695,6 +9085,166 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
         },
       ),
       method(
+        'xd.apps.click',
+        'Click external app',
+        'Click a visible external app window at screen coordinates.',
+        'execute',
+        {
+          type: 'object',
+          required: ['x', 'y'],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            windowId: { type: 'string', title: 'Window handle' },
+            x: { type: 'number', title: 'Screen X' },
+            y: { type: 'number', title: 'Screen Y' },
+          },
+        },
+      ),
+      method(
+        'xd.apps.doubleClick',
+        'Double-click external app',
+        'Double-click a visible external app window at screen coordinates.',
+        'execute',
+        {
+          type: 'object',
+          required: ['x', 'y'],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            windowId: { type: 'string', title: 'Window handle' },
+            x: { type: 'number', title: 'Screen X' },
+            y: { type: 'number', title: 'Screen Y' },
+          },
+        },
+      ),
+      method(
+        'xd.apps.tripleClick',
+        'Triple-click external app',
+        'Triple-click a visible external app window at screen coordinates.',
+        'execute',
+        {
+          type: 'object',
+          required: ['x', 'y'],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            windowId: { type: 'string', title: 'Window handle' },
+            x: { type: 'number', title: 'Screen X' },
+            y: { type: 'number', title: 'Screen Y' },
+          },
+        },
+      ),
+      method(
+        'xd.apps.middleClick',
+        'Middle-click external app',
+        'Middle-click a visible external app window at screen coordinates.',
+        'execute',
+        {
+          type: 'object',
+          required: ['x', 'y'],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            windowId: { type: 'string', title: 'Window handle' },
+            x: { type: 'number', title: 'Screen X' },
+            y: { type: 'number', title: 'Screen Y' },
+          },
+        },
+      ),
+      method(
+        'xd.apps.rightClick',
+        'Right-click external app',
+        'Right-click a visible external app window at screen coordinates.',
+        'execute',
+        {
+          type: 'object',
+          required: ['x', 'y'],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            windowId: { type: 'string', title: 'Window handle' },
+            x: { type: 'number', title: 'Screen X' },
+            y: { type: 'number', title: 'Screen Y' },
+          },
+        },
+      ),
+      method(
+        'xd.apps.move',
+        'Move pointer over external app',
+        'Move the pointer over a visible external app window.',
+        'control',
+        {
+          type: 'object',
+          required: ['x', 'y'],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            windowId: { type: 'string', title: 'Window handle' },
+            x: { type: 'number', title: 'Screen X' },
+            y: { type: 'number', title: 'Screen Y' },
+          },
+        },
+      ),
+      method(
+        'xd.apps.mouseDown',
+        'Mouse down in external app',
+        'Press the mouse button over a visible external app window.',
+        'execute',
+        {
+          type: 'object',
+          required: ['x', 'y'],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            windowId: { type: 'string', title: 'Window handle' },
+            x: { type: 'number', title: 'Screen X' },
+            y: { type: 'number', title: 'Screen Y' },
+          },
+        },
+      ),
+      method(
+        'xd.apps.mouseUp',
+        'Mouse up in external app',
+        'Release the mouse button over a visible external app window.',
+        'execute',
+        {
+          type: 'object',
+          required: ['x', 'y'],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            windowId: { type: 'string', title: 'Window handle' },
+            x: { type: 'number', title: 'Screen X' },
+            y: { type: 'number', title: 'Screen Y' },
+          },
+        },
+      ),
+      method(
+        'xd.apps.dragAndDrop',
+        'Drag in external app',
+        'Drag between screen coordinates over a visible external app window.',
+        'execute',
+        {
+          type: 'object',
+          required: ['startX', 'startY', 'endX', 'endY'],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            windowId: { type: 'string', title: 'Window handle' },
+            startX: { type: 'number', title: 'Start screen X' },
+            startY: { type: 'number', title: 'Start screen Y' },
+            endX: { type: 'number', title: 'End screen X' },
+            endY: { type: 'number', title: 'End screen Y' },
+          },
+        },
+      ),
+      method(
+        'xd.apps.screenshot',
+        'Capture external app',
+        'Capture a screenshot of a visible external app window.',
+        'read',
+        {
+          type: 'object',
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            windowId: { type: 'string', title: 'Window handle' },
+            screenshotPath: { type: 'string', title: 'Screenshot path' },
+          },
+        },
+      ),
+      method(
         'xd.apps.close',
         'Close external app window',
         'Close a visible external app window or process.',
@@ -8708,6 +9258,75 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           },
         },
         { approval: 'when-external' },
+      ),
+    ]),
+    group('xd.office', 'Office Control', 'Inspect and automate Office documents through governed providers.', [
+      method('xd.office.status', 'Read Office provider status', 'Read Office Control provider availability.', 'read', {
+        type: 'object',
+        additionalProperties: false,
+        properties: {},
+      }),
+      method(
+        'xd.office.excel.createWorkbook',
+        'Create Excel workbook',
+        'Create a new Excel workbook using the governed file-backed provider.',
+        'write',
+        OFFICE_ACTION_SCHEMA,
+        { approval: 'when-external' },
+      ),
+      method(
+        'xd.office.excel.inspectWorkbook',
+        'Inspect Excel workbook',
+        'Inspect sheets and dimensions in an Excel workbook without modifying it.',
+        'read',
+        OFFICE_ACTION_SCHEMA,
+      ),
+      method(
+        'xd.office.excel.openWorkbook',
+        'Open Excel workbook',
+        'Open an Excel workbook through an installed Office provider.',
+        'write',
+        OFFICE_ACTION_SCHEMA,
+        { approval: 'when-external' },
+      ),
+      method(
+        'xd.office.excel.readRange',
+        'Read Excel range',
+        'Read a bounded range from an Excel workbook.',
+        'read',
+        OFFICE_ACTION_SCHEMA,
+      ),
+      method(
+        'xd.office.excel.writeRange',
+        'Write Excel range',
+        'Write cells into an Excel workbook through a governed Office provider.',
+        'write',
+        OFFICE_ACTION_SCHEMA,
+        { approval: 'when-external' },
+      ),
+      method(
+        'xd.office.excel.saveWorkbook',
+        'Save Excel workbook',
+        'Save an open Excel workbook through an installed Office provider.',
+        'write',
+        OFFICE_ACTION_SCHEMA,
+        { approval: 'always' },
+      ),
+      method(
+        'xd.office.excel.closeWorkbook',
+        'Close Excel workbook',
+        'Close an open Excel workbook through an installed Office provider.',
+        'write',
+        OFFICE_ACTION_SCHEMA,
+        { approval: 'always' },
+      ),
+      method(
+        'xd.office.excel.exportPdf',
+        'Export Excel workbook to PDF',
+        'Export an Excel workbook to PDF through an installed Office provider.',
+        'write',
+        OFFICE_ACTION_SCHEMA,
+        { approval: 'always' },
       ),
     ]),
     group('xd.input', 'Input control', 'Unified browser and desktop input DSL control surface.', [
@@ -8807,6 +9426,8 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                     enum: [
                       'click',
                       'double_click',
+                      'triple_click',
+                      'middle_click',
                       'right_click',
                       'move',
                       'mouse_down',
@@ -10149,6 +10770,23 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           },
         ),
       ]),
+      group('xd.cr.metadata', 'CR metadata', 'Capability Registry metadata sync and readback.', [
+        method(
+          'xd.cr.metadata.sync',
+          'Sync CR metadata',
+          'Capture the current Capability Registry and send it to the configured metadata API.',
+          'write',
+          {
+            type: 'object',
+            properties: {
+              reason: { type: 'string', title: 'Reason' },
+            },
+          },
+        ),
+        method('xd.cr.metadata.capabilities', 'List CR capabilities', 'Read synced CR capability records.', 'read'),
+        method('xd.cr.metadata.snapshots', 'List CR snapshots', 'Read synced CR registry snapshots.', 'read'),
+        method('xd.cr.metadata.runs', 'List CR runs', 'Read synced CR execution records.', 'read'),
+      ]),
     ]),
     group('xd.extensions', 'Extensions', 'Extension command and panel control surface.', [
       method(
@@ -10300,6 +10938,12 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           'control',
         ),
         method(
+          'xd.tools.core.agentSessions.open',
+          'Open Agent Sessions',
+          'Open the Agent Sessions tool panel.',
+          'control',
+        ),
+        method(
           'xd.tools.core.xenesisAgent.open',
           'Open Xenesis Agent',
           'Open the Xenesis Agent tool panel.',
@@ -10349,6 +10993,12 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           'control',
         ),
         method('xd.tools.core.xdBlaster.open', 'Open XD Blaster', 'Open the XD Blaster panel.', 'control'),
+        method(
+          'xd.tools.core.appControlLab.open',
+          'Open App Control Lab',
+          'Open the App Control Lab panel.',
+          'control',
+        ),
         method('xd.tools.core.auditLog.open', 'Open Audit Log', 'Open the Audit Log panel.', 'control'),
         method(
           'xd.tools.core.agentPerformance.open',
@@ -12277,12 +12927,128 @@ export async function callDeskBridgeCapability(
           action: 'close',
         });
       }
-      if (path.startsWith('xd.apps.')) {
-        const action = path.slice('xd.apps.'.length);
+      if (path === 'xd.apps.inspect') {
         return callAdapter(path, api?.runExternalAppAction, {
           ...normalizeCapabilityArgs(request.args),
-          action,
+          action: 'inspect',
         });
+      }
+      if (path === 'xd.apps.elementFromPoint') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'elementFromPoint',
+        });
+      }
+      if (path === 'xd.apps.tree') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'tree',
+        });
+      }
+      if (path === 'xd.apps.menuExplore') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'menuExplore',
+        });
+      }
+      if (path === 'xd.apps.highlight') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'highlight',
+        });
+      }
+      if (path === 'xd.apps.captureElement') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'captureElement',
+        });
+      }
+      if (path === 'xd.apps.click') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'click',
+        });
+      }
+      if (path === 'xd.apps.doubleClick') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'doubleClick',
+        });
+      }
+      if (path === 'xd.apps.tripleClick') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'tripleClick',
+        });
+      }
+      if (path === 'xd.apps.middleClick') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'middleClick',
+        });
+      }
+      if (path === 'xd.apps.rightClick') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'rightClick',
+        });
+      }
+      if (path === 'xd.apps.move') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'move',
+        });
+      }
+      if (path === 'xd.apps.mouseDown') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'mouseDown',
+        });
+      }
+      if (path === 'xd.apps.mouseUp') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'mouseUp',
+        });
+      }
+      if (path === 'xd.apps.dragAndDrop') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'dragAndDrop',
+        });
+      }
+      if (path === 'xd.apps.screenshot') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'screenshot',
+        });
+      }
+      if (path === 'xd.office.status') {
+        return callOfficeCapability(path, api?.runOfficeAction, normalizeCapabilityArgs(request.args));
+      }
+      if (path === 'xd.office.excel.createWorkbook') {
+        return callOfficeCapability(path, api?.runOfficeAction, normalizeCapabilityArgs(request.args));
+      }
+      if (path === 'xd.office.excel.inspectWorkbook') {
+        return callOfficeCapability(path, api?.runOfficeAction, normalizeCapabilityArgs(request.args));
+      }
+      if (path === 'xd.office.excel.openWorkbook') {
+        return callOfficeCapability(path, api?.runOfficeAction, normalizeCapabilityArgs(request.args));
+      }
+      if (path === 'xd.office.excel.readRange') {
+        return callOfficeCapability(path, api?.runOfficeAction, normalizeCapabilityArgs(request.args));
+      }
+      if (path === 'xd.office.excel.writeRange') {
+        return callOfficeCapability(path, api?.runOfficeAction, normalizeCapabilityArgs(request.args));
+      }
+      if (path === 'xd.office.excel.saveWorkbook') {
+        return callOfficeCapability(path, api?.runOfficeAction, normalizeCapabilityArgs(request.args));
+      }
+      if (path === 'xd.office.excel.closeWorkbook') {
+        return callOfficeCapability(path, api?.runOfficeAction, normalizeCapabilityArgs(request.args));
+      }
+      if (path === 'xd.office.excel.exportPdf') {
+        return callOfficeCapability(path, api?.runOfficeAction, normalizeCapabilityArgs(request.args));
       }
       if (path === 'xd.input.targets') {
         return callInputControlCapability(path, api?.inputControlCall, normalizeCapabilityArgs(request.args));
@@ -13026,6 +13792,30 @@ export async function callDeskBridgeCapability(
           source,
           await callAdapter(path, api?.agentReceiptsGet, request.args),
         );
+      }
+      if (path === 'xd.agentSessions.status') {
+        return callAdapter(path, api?.agentSessionsStatus, request.args);
+      }
+      if (path === 'xd.agentSessions.scan') {
+        return callAdapter(path, api?.agentSessionsScan, request.args);
+      }
+      if (path === 'xd.agentSessions.list') {
+        return callAdapter(path, api?.agentSessionsList, request.args);
+      }
+      if (path === 'xd.agentSessions.search') {
+        return callAdapter(path, api?.agentSessionsSearch, request.args);
+      }
+      if (path === 'xd.agentSessions.resume') {
+        return callAdapter(path, api?.agentSessionsResume, request.args);
+      }
+      if (path === 'xd.agentSessions.attachTerminal') {
+        return callAdapter(path, api?.agentSessionsAttachTerminal, request.args);
+      }
+      if (path === 'xd.agentSessions.pin') {
+        return callAdapter(path, api?.agentSessionsPin, request.args);
+      }
+      if (path === 'xd.agentSessions.hide') {
+        return callAdapter(path, api?.agentSessionsHide, request.args);
       }
       if (path === 'xd.xenesis.connections.status') {
         return callAdapter(path, api?.getXenesisConnectionsStatus);
@@ -13803,6 +14593,18 @@ export async function callDeskBridgeCapability(
       if (path === 'xd.cr.smoke.latest') {
         return callAdapter(path, api?.getCrSmokeLatest, request.args);
       }
+      if (path === 'xd.cr.metadata.sync') {
+        return callAdapter(path, api?.syncCrMetadata, request.args);
+      }
+      if (path === 'xd.cr.metadata.capabilities') {
+        return callAdapter(path, api?.listCrMetadataCapabilities, request.args);
+      }
+      if (path === 'xd.cr.metadata.snapshots') {
+        return callAdapter(path, api?.listCrMetadataSnapshots, request.args);
+      }
+      if (path === 'xd.cr.metadata.runs') {
+        return callAdapter(path, api?.listCrMetadataRuns, request.args);
+      }
       if (path === 'xd.mcp.actionInbox.list') {
         return callAdapter(path, api?.listMcpActionInbox);
       }
@@ -13940,6 +14742,9 @@ export async function callDeskBridgeCapability(
       if (path === 'xd.tools.core.safeFileEditCenter.open') {
         return toolOpenArgs('xenesis-desk.core-tools.openSafeFileEditCenter');
       }
+      if (path === 'xd.tools.core.agentSessions.open') {
+        return toolOpenArgs('xenesis-desk.core-tools.openAgentSessions');
+      }
       if (path === 'xd.tools.core.xenesisAgent.open') {
         return toolOpenArgs('xenesis-desk.core-tools.openXenesisAgent');
       }
@@ -13969,6 +14774,9 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.tools.core.xdBlaster.open') {
         return toolOpenArgs('xenesis-desk.core-tools.openXdBlaster');
+      }
+      if (path === 'xd.tools.core.appControlLab.open') {
+        return toolOpenArgs('xenesis-desk.core-tools.openAppControlLab');
       }
       if (path === 'xd.tools.core.auditLog.open') {
         return toolOpenArgs('xenesis-desk.core-tools.openAuditLog');
@@ -14059,6 +14867,13 @@ export function evaluateDeskBridgeCapabilityApproval(
 ): DeskBridgeCapabilityApprovalDecision {
   const trustedApproval =
     approved && (source !== 'mcp' || isValidDeskBridgeCapabilityApprovalProof(node, source, args, approvalProof));
+  if (requiresExternalAppObservationApproval(node.path, args, source, trustedApproval)) {
+    return {
+      allowed: false,
+      approvalRequired: true,
+      reason: `Capability requires approval for ${source}: ${node.path}`,
+    };
+  }
   if (node.approval === 'never') {
     return { allowed: true, approvalRequired: false };
   }
@@ -14077,6 +14892,26 @@ export function evaluateDeskBridgeCapabilityApproval(
     };
   }
   return { allowed: true, approvalRequired: false };
+}
+
+function requiresExternalAppObservationApproval(
+  path: string,
+  rawArgs: unknown,
+  source: DeskBridgeCapabilitySource,
+  approved: boolean,
+): boolean {
+  if (source === 'internal' || approved || !path.startsWith('xd.apps.')) return false;
+  const action = path.slice('xd.apps.'.length);
+  if (
+    !['inspect', 'tree', 'menuExplore', 'captureElement', 'elementFromPoint', 'highlight', 'screenshot'].includes(
+      action,
+    )
+  ) {
+    return false;
+  }
+  const args = normalizeCapabilityArgs(rawArgs);
+  if (readString(args.path).length > 0) return true;
+  return (action === 'captureElement' || action === 'screenshot') && readString(args.screenshotPath).length > 0;
 }
 
 function isComputerUseCapabilityPath(path: string): boolean {
@@ -14139,6 +14974,14 @@ async function finalizeDeskBridgeCapabilityAudit(
     await api.recordAudit(record);
   } catch {
     // Audit logging must never break the capability call path.
+  }
+
+  if (api?.recordCrRun && !node.path.startsWith('xd.cr.metadata.')) {
+    try {
+      await api.recordCrRun(record, normalizedResult);
+    } catch {
+      // CR metadata capture must never break the capability call path.
+    }
   }
 
   return normalizedResult;
@@ -14214,6 +15057,35 @@ async function callAdapter(
       path,
       result,
       error: typeof result.error === 'string' && result.error.trim() ? result.error : `Capability call failed: ${path}`,
+    };
+  }
+  return { ok: true, path, result };
+}
+
+async function callOfficeCapability(
+  path: string,
+  adapter: ((path: string, args?: unknown) => Promise<unknown> | unknown) | undefined,
+  args?: unknown,
+): Promise<DeskBridgeCapabilityCallResult> {
+  if (!adapter) return { ok: false, path, error: 'Desk bridge API is unavailable.' };
+  const result = await adapter(path, args);
+  if (isCapabilityCallResultLike(result)) {
+    const resultPath = result.path;
+    return {
+      ok: result.ok !== false,
+      path: typeof resultPath === 'string' && resultPath.trim() ? resultPath : path,
+      result: result.result,
+      error: typeof result.error === 'string' ? result.error : undefined,
+      approvalRequired: result.approvalRequired === true ? true : undefined,
+    };
+  }
+  if (isFailurePayload(result)) {
+    return {
+      ok: false,
+      path,
+      result,
+      error:
+        typeof result.error === 'string' && result.error.trim() ? result.error : `Office capability failed: ${path}`,
     };
   }
   return { ok: true, path, result };
@@ -14335,8 +15207,13 @@ function isFailurePayload(value: unknown): value is { ok: false; error?: unknown
 function isCapabilityCallResultLike(
   value: unknown,
 ): value is { ok: boolean; path?: unknown; result?: unknown; error?: unknown; approvalRequired?: unknown } {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const resultPath = (value as { path?: unknown }).path;
+  if (typeof resultPath !== 'string') return false;
+  const normalizedPath = normalizeCapabilityPath(resultPath);
   return Boolean(
-    value && typeof value === 'object' && !Array.isArray(value) && typeof (value as { ok?: unknown }).ok === 'boolean',
+    typeof (value as { ok?: unknown }).ok === 'boolean' &&
+      (normalizedPath === DESK_BRIDGE_ROOT_PATH || normalizedPath.startsWith(`${DESK_BRIDGE_ROOT_PATH}.`)),
   );
 }
 

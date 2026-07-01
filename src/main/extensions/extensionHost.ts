@@ -92,6 +92,7 @@ const EXTENSION_TOOLS: ExtensionTool[] = [
   'xenesis-desk.core-tools.remote-sync-planner',
   'xenesis-desk.core-tools.run-task-panel',
   'xenesis-desk.core-tools.safe-file-edit-center',
+  'xenesis-desk.core-tools.agent-sessions',
   'xenesis-desk.core-tools.xenesis-agent',
   'xenesis-desk.core-tools.hermes-status',
   'xenesis-desk.core-tools.hermes-action-inbox',
@@ -109,6 +110,8 @@ const EXTENSION_TOOLS: ExtensionTool[] = [
   'xenesis-desk.workflow-runner.gowoori-chat',
   'xenesis-desk.core-tools.activity-timeline',
   'xenesis-desk.core-tools.network-monitor',
+  'xenesis-desk.core-tools.app-control-lab',
+  'xenesis-desk.core-tools.xd-blaster',
   'xenesis-desk.core-tools.audit-log',
   'xenesis-desk.core-tools.agent-performance',
   'xenesis-desk.core-tools.memory-dashboard',
@@ -331,7 +334,7 @@ export class ExtensionHost {
       };
     }
     const command = this.commands.get(commandId);
-    if (!command || !command.extension.enabled) {
+    if (!command?.extension.enabled) {
       return {
         ok: false,
         commandId,

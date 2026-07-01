@@ -5,6 +5,8 @@ export type InputRunSupport = 'full' | 'partial' | 'none';
 export const INPUT_ACTION_TYPES = [
   'click',
   'double_click',
+  'triple_click',
+  'middle_click',
   'right_click',
   'move',
   'mouse_down',
@@ -78,6 +80,8 @@ const TARGET_KINDS = new Set<InputTargetKind>(['active', 'browser', 'desktop', '
 const COORDINATE_ACTIONS = new Set<InputActionType>([
   'click',
   'double_click',
+  'triple_click',
+  'middle_click',
   'right_click',
   'move',
   'mouse_down',
@@ -210,7 +214,21 @@ export function supportedInputActionsForTarget(
   target: InputControlTarget,
 ): InputActionType[] {
   if (environment === 'desktop' && target.kind === 'app' && target.appId) {
-    return ['type', 'hotkey', 'wait'];
+    return [
+      'click',
+      'double_click',
+      'triple_click',
+      'middle_click',
+      'right_click',
+      'move',
+      'mouse_down',
+      'mouse_up',
+      'drag_and_drop',
+      'type',
+      'hotkey',
+      'wait',
+      'take_screenshot',
+    ];
   }
   return [];
 }
@@ -229,9 +247,7 @@ export function looksSecretShapedInputText(text: string): boolean {
 export function looksDangerousInputHotkey(keys: readonly string[]): boolean {
   const normalized = keys.map(normalizeKeyToken).filter(Boolean);
   const joined = normalized.join('+');
-  return (
-    joined === 'win+l' || joined === 'meta+l' || joined === 'ctrl+alt+delete' || joined === 'ctrl+alt+del'
-  );
+  return joined === 'win+l' || joined === 'meta+l' || joined === 'ctrl+alt+delete' || joined === 'ctrl+alt+del';
 }
 
 export function redactInputAuditValue(value: unknown): unknown {
@@ -271,7 +287,11 @@ function readRequiredNormalizedCoordinate(value: unknown, field: string, action:
 }
 
 function normalizeInputKeys(value: unknown): string[] {
-  if (Array.isArray(value)) return value.map(String).map((item) => item.trim()).filter(Boolean);
+  if (Array.isArray(value))
+    return value
+      .map(String)
+      .map((item) => item.trim())
+      .filter(Boolean);
   if (typeof value === 'string') {
     return value
       .split('+')

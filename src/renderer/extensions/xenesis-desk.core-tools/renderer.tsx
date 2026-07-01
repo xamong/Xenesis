@@ -7,7 +7,9 @@ import { XENESIS_AGENT_COMMAND_EVENT, type XenesisAgentCommandDetail } from '../
 import { ActionInboxPane } from './panes/ActionInboxPane';
 import ActivityTimelinePane from './panes/ActivityTimelinePane';
 import AgentPerformancePane from './panes/AgentPerformancePane';
+import { AgentSessionsPane } from './panes/AgentSessionsPane';
 import { AiWorkbenchPane } from './panes/AiWorkbenchPane';
+import { AppControlLabPane } from './panes/AppControlLabPane';
 import { ArtifactLibraryPane } from './panes/ArtifactLibraryPane';
 import AuditLogPane from './panes/AuditLogPane';
 import { CapabilityExplorerPane } from './panes/CapabilityExplorerPane';
@@ -23,13 +25,14 @@ import { SafeFileEditCenterPane } from './panes/SafeFileEditCenterPane';
 import { TerminalInspectorPane } from './panes/TerminalInspectorPane';
 import { XAppPreviewPane } from './panes/XAppPreviewPane';
 import { XamongCodeChatPane } from './panes/XamongCodeChatPane';
-import { XdBlasterPane } from './panes/XdBlasterPane';
 import { XconAgentWorkbenchPane } from './panes/XconAgentWorkbenchPane';
+import { XdBlasterPane } from './panes/XdBlasterPane';
 import { XenesisAgentPane } from './panes/XenesisAgentPane';
 import { XenisBotPane } from './panes/XenisBotPane';
 import { hydrateXenisBotSessions, recordXenisBotEvent } from './xenisBotStore';
 
 const XENESIS_AGENT_CONTENT_ID = 'xenesis-agent-default';
+const APP_CONTROL_LAB_CONTENT_TYPE = 'xd-app-control-lab';
 
 const TOOL_IDS = {
   xamongCodeChat: 'xenesis-desk.core-tools.xamong-code-chat',
@@ -42,6 +45,7 @@ const TOOL_IDS = {
   remoteSyncPlanner: 'xenesis-desk.core-tools.remote-sync-planner',
   runTaskPanel: 'xenesis-desk.core-tools.run-task-panel',
   safeFileEditCenter: 'xenesis-desk.core-tools.safe-file-edit-center',
+  agentSessions: 'xenesis-desk.core-tools.agent-sessions',
   xenesisAgent: 'xenesis-desk.core-tools.xenesis-agent',
   hermesStatus: 'xenesis-desk.core-tools.hermes-status',
   hermesActionInbox: 'xenesis-desk.core-tools.hermes-action-inbox',
@@ -52,6 +56,7 @@ const TOOL_IDS = {
   activityTimeline: 'xenesis-desk.core-tools.activity-timeline',
   networkMonitor: 'xenesis-desk.core-tools.network-monitor',
   xdBlaster: 'xenesis-desk.core-tools.xd-blaster',
+  appControlLab: 'xenesis-desk.core-tools.app-control-lab',
   auditLog: 'xenesis-desk.core-tools.audit-log',
   agentPerformance: 'xenesis-desk.core-tools.agent-performance',
   memoryDashboard: 'xenesis-desk.core-tools.memory-dashboard',
@@ -227,6 +232,16 @@ function safeFileEditCenterContent(): DockContentOptions {
   };
 }
 
+function agentSessionsContent(): DockContentOptions {
+  return {
+    id: `xd-agent-sessions-${crypto.randomUUID()}`,
+    title: 'Agent Sessions',
+    state: 'document',
+    html: '',
+    contentType: 'xd-agent-sessions',
+  };
+}
+
 function xdBlasterContent(): DockContentOptions {
   return {
     id: `xd-blaster-${crypto.randomUUID()}`,
@@ -234,6 +249,16 @@ function xdBlasterContent(): DockContentOptions {
     state: 'document',
     html: '',
     contentType: 'xd-blaster',
+  };
+}
+
+function appControlLabContent(): DockContentOptions {
+  return {
+    id: `app-control-lab-${crypto.randomUUID()}`,
+    title: 'App Control Lab',
+    state: 'document',
+    html: '',
+    contentType: APP_CONTROL_LAB_CONTENT_TYPE,
   };
 }
 
@@ -435,6 +460,14 @@ const contribution: RendererExtensionContribution = {
       return true;
     }
 
+    if (tool === TOOL_IDS.agentSessions) {
+      if (!focusExistingContent(context.engine, 'xd-agent-sessions')) {
+        context.openContent(agentSessionsContent(), context.requestedPlacement ?? 'tab');
+      }
+      context.onStatus('Agent Sessions opened');
+      return true;
+    }
+
     if (tool === TOOL_IDS.xenesisAgent) {
       if (!focusExistingContent(context.engine, 'xenesis-agent')) {
         context.openContent(xenesisAgentContent(), context.requestedPlacement ?? 'tab');
@@ -518,6 +551,14 @@ const contribution: RendererExtensionContribution = {
     if (tool === TOOL_IDS.xdBlaster) {
       context.openContent(xdBlasterContent(), context.requestedPlacement ?? 'tab');
       context.onStatus('XD Blaster opened');
+      return true;
+    }
+
+    if (tool === TOOL_IDS.appControlLab) {
+      if (!focusExistingContent(context.engine, APP_CONTROL_LAB_CONTENT_TYPE)) {
+        context.openContent(appControlLabContent(), context.requestedPlacement ?? 'tab');
+      }
+      context.onStatus('App Control Lab opened');
       return true;
     }
 
@@ -742,6 +783,9 @@ const contribution: RendererExtensionContribution = {
     if (content.contentType === 'xd-safe-file-edit-center') {
       return <SafeFileEditCenterPane />;
     }
+    if (content.contentType === 'xd-agent-sessions') {
+      return <AgentSessionsPane />;
+    }
     if (content.contentType === 'xenesis-agent') {
       return <XenesisAgentPane contentId={content.id} />;
     }
@@ -775,6 +819,9 @@ const contribution: RendererExtensionContribution = {
     if (content.contentType === 'xd-blaster') {
       return <XdBlasterPane />;
     }
+    if (content.contentType === APP_CONTROL_LAB_CONTENT_TYPE) {
+      return <AppControlLabPane />;
+    }
     if (content.contentType === 'audit-log') {
       return <AuditLogPane />;
     }
@@ -799,6 +846,7 @@ const contribution: RendererExtensionContribution = {
       'xd-remote-sync-planner': 'S',
       'xd-run-task-panel': 'R',
       'xd-safe-file-edit-center': 'E',
+      'xd-agent-sessions': 'AS',
       'xenesis-agent': 'XG',
       'hermes-status': 'H',
       'hermes-action-inbox': 'A',
@@ -809,6 +857,7 @@ const contribution: RendererExtensionContribution = {
       'activity-timeline': 'TL',
       'network-monitor': 'N',
       'xd-blaster': 'XB',
+      [APP_CONTROL_LAB_CONTENT_TYPE]: 'APP',
       'audit-log': 'AU',
       'agent-performance': 'AP',
       'memory-dashboard': 'MD',
@@ -830,6 +879,7 @@ const contribution: RendererExtensionContribution = {
       contentType === 'xd-remote-sync-planner' ||
       contentType === 'xd-run-task-panel' ||
       contentType === 'xd-safe-file-edit-center' ||
+      contentType === 'xd-agent-sessions' ||
       contentType === 'xenesis-agent' ||
       contentType === 'hermes-action-inbox' ||
       contentType === 'capability-explorer' ||
@@ -838,6 +888,7 @@ const contribution: RendererExtensionContribution = {
       contentType === 'activity-timeline' ||
       contentType === 'network-monitor' ||
       contentType === 'xd-blaster' ||
+      contentType === APP_CONTROL_LAB_CONTENT_TYPE ||
       contentType === 'audit-log' ||
       contentType === 'agent-performance' ||
       contentType === 'memory-dashboard'

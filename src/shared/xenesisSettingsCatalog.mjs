@@ -36,6 +36,12 @@ export const SETTINGS_CATEGORIES = [
     descriptionKey: 'settings.category.externalAppsDesc',
   },
   {
+    id: 'office-control',
+    icon: 'XLS',
+    titleKey: 'settings.category.officeControl',
+    descriptionKey: 'settings.category.officeControlDesc',
+  },
+  {
     id: 'connectors',
     icon: '☷',
     titleKey: 'settings.category.connectors',

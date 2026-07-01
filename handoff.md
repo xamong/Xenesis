@@ -1,5 +1,108 @@
 # Xenesis Desk Work Handoff
 
+## 2026-07-01 App Control Lab / Extended Apps Port
+
+- Current objective:
+  - Port the sibling `App Control Lab / Extended Apps` slice into this repo
+    without touching `packages/xenesis`.
+  - Extend the CR-backed external app surface from the current 8 actions to the
+    sibling observation, pointer, screenshot, menu exploration, and App Control
+    Lab tool paths.
+  - Preserve this repo's existing behavior that is not present in the sibling
+    snapshot: external app profile status readback, approval policy metadata,
+    `launch.placement`, the disabled `kakaotalk` template, and the existing
+    Memory Dashboard/core-tools wiring.
+- Scope checkpoint:
+  - Current repo has `xd.apps.status/find/launch/focus/resize/typeText/hotkey/close`
+    plus a generic dispatcher fallback, but does not register the extended
+    `xd.apps.*` paths, platform app-control adapters, host clients, macOS
+    adapter, or App Control Lab pane/model.
+  - Sibling repo adds `xd.apps.inspect`, `elementFromPoint`, `tree`,
+    `menuExplore`, `highlight`, `captureElement`, pointer actions,
+    screenshot, platform adapters, Windows/macOS control host clients, and
+    `xd.tools.core.appControlLab.open`.
+  - `menuExplore` is included in this slice because sibling App Control Lab,
+    model tests, and host clients treat it as part of the read-only observation
+    set, even though the first slice summary listed only the most visible
+    observation paths.
+- Commands run:
+  - `git status --short --branch`
+  - `rg -n "AppControlLab|openAppControlLab|appControl|xd\\.apps|xconViewerCssScope|@xcon-viewer|contentType|core-tools" ...`
+  - Targeted `Get-Content` reads of current and sibling
+    `src/shared/deskBridgeCapabilities.ts`,
+    `src/renderer/extensions/xenesis-desk.core-tools/renderer.tsx`,
+    `src/shared/appMenuModel.ts`, extension manifests, and app-control files.
+  - Required context already read for this multi-step Agent/CR work:
+    `AGENTS.md`, repo-local Obsidian index/rules/schema/review/source maps,
+    CR/approval architecture notes, and the approved
+    `2026-07-01-app-control-lab-slice-design.md`.
+  - Created local ignored implementation plan:
+    `docs/superpowers/plans/2026-07-01-app-control-lab-extended-apps.md`.
+  - Plan placeholder scan:
+    `rg -n "TBD|TODO|implement later|fill in details|Similar to|appropriate error handling|handle edge cases|Write tests for the above" docs/superpowers/plans/2026-07-01-app-control-lab-extended-apps.md`
+    -> no matches.
+- Verification result:
+  - Pre-edit worktree is clean on `mini`.
+  - Implementation plan is written. Code implementation has not started yet for
+    this slice.
+  - Task 1 RED:
+    `node --import tsx --test src/shared/externalAppControl.test.ts` failed as
+    expected on missing extended Notepad actions, unsupported `tree`, and
+    missing macOS `bundleId` normalization.
+  - Task 1 first GREEN attempt found a regression in existing
+    `titleContains`-only `focus` normalization; target validation was widened
+    to preserve existing behavior.
+  - Task 1 GREEN:
+    `node --import tsx --test src/shared/externalAppControl.test.ts` -> PASS,
+    12/12 tests.
+  - Task 2 RED:
+    `node --import tsx --test src/shared/externalAppCapabilities.test.ts src/shared/appMenuModel.test.ts`
+    failed as expected on missing `xd.apps.inspect`, missing App Control Lab
+    menu/tool capability, and missing path-based observation approval stop.
+  - Task 2 GREEN:
+    `node --import tsx --test src/shared/externalAppCapabilities.test.ts src/shared/appMenuModel.test.ts`
+    -> PASS, 14/14 tests.
+  - Task 3 RED:
+    `node --import tsx --test src/main/appControl/appControlService.test.ts src/main/appControl/createPlatformAppControlAdapter.test.ts`
+    failed on missing factory and missing extended adapter routing. Host tests
+    then failed on missing Windows/macOS host modules.
+  - Task 3 GREEN:
+    `node --import tsx --test src/main/appControl/appControlService.test.ts src/main/appControl/createPlatformAppControlAdapter.test.ts src/main/appControl/windowsControlHost.test.ts src/main/appControl/macosControlHost.test.ts`
+    -> PASS, 27/27 tests.
+  - Existing adapter regression:
+    `node --import tsx --test src/main/appControl/windowsAppControl.test.ts`
+    -> PASS, 5/5 tests.
+- Touched files:
+  - `handoff.md`
+  - `src/shared/externalAppControl.test.ts`
+  - `src/shared/externalAppControl.ts`
+  - `src/shared/externalAppCapabilities.test.ts`
+  - `src/shared/appMenuModel.test.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/shared/appMenuModel.ts`
+  - `src/main/appControl/appControlAdapter.ts`
+  - `src/main/appControl/appControlService.ts`
+  - `src/main/appControl/appControlService.test.ts`
+  - `src/main/appControl/createPlatformAppControlAdapter.ts`
+  - `src/main/appControl/createPlatformAppControlAdapter.test.ts`
+  - `src/main/appControl/unsupportedAppControl.ts`
+  - `src/main/appControl/windowsAppControl.ts`
+  - `src/main/appControl/windowsControlHost.ts`
+  - `src/main/appControl/windowsControlHost.test.ts`
+  - `src/main/appControl/macosAppControl.ts`
+  - `src/main/appControl/macosControlHost.ts`
+  - `src/main/appControl/macosControlHost.test.ts`
+- Known gaps:
+  - Full App Control live smoke depends on Electron launch and local Windows
+    control host availability. Verification will at minimum prove CR open/render
+    for App Control Lab and focused app-control tests; Notepad live actions will
+    be attempted only after the registered safe profile and approval behavior
+    are in place.
+- Next intended step:
+  - Write the executable implementation plan, then proceed TDD-first through
+    shared contracts, CR coverage, main adapters/services, renderer Lab wiring,
+    focused tests, CR audit, build/typecheck, commit, push, and PR update.
+
 ## 2026-06-30 Xcon Agent Workbench Port
 
 - Current objective:
@@ -87,6 +190,22 @@
   - `packages/xenesis/src/workflows/runner.ts`
   - `packages/xenesis/src/workflows/types.ts`
   - `src/main/index.ts`
+  - `src/renderer/extensions/xenesis-desk.data-tools/metaManagementProvider.ts`
+  - `src/renderer/extensions/xenesis-desk.data-tools/useMetaManagementGridSave.ts`
+  - `src/renderer/extensions/xenesis-desk.data-tools/metaManagementAssistPanelModel.ts`
+  - `src/renderer/extensions/xenesis-desk.data-tools/metaManagementRelationGraph.ts`
+  - `src/renderer/extensions/xenesis-desk.data-tools/metaManagementRelationTabs.ts`
+  - `src/renderer/extensions/xenesis-desk.data-tools/panes/MetaManagementPane.tsx`
+  - `src/renderer/extensions/xenesis-desk.data-tools/panes/MetaManagementAssistPanel.tsx`
+  - `src/renderer/extensions/xenesis-desk.data-tools/panes/MetaManagementRelationsView.tsx`
+  - `src/renderer/extensions/xenesis-desk.data-tools/panes/MetaManagementStatusBar.tsx`
+  - `src/renderer/extensions/xenesis-desk.data-tools/panes/MetaManagementTreeView.tsx`
+  - `src/renderer/extensions/xenesis-desk.data-tools/panes/MetaManagementActivityView.tsx`
+  - `src/renderer/extensions/xenesis-desk.data-tools/panes/MetaManagementRelationGraphView.tsx`
+  - `src/renderer/extensions/xenesis-desk.data-tools/panes/MetaManagementValidationModal.tsx`
+  - `src/renderer/extensions/xenesis-desk.data-tools/styles.css`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
   - `src/main/xenesisWorkbenchApprovals.mjs`
   - `src/preload/index.ts`
   - `src/renderer/extensions/xenesis-desk.core-tools/renderer.tsx`
@@ -25883,3 +26002,1219 @@ Verification so far:
   - No live Electron click-through smoke was run for Tools > XD Blaster.
 - Next intended step:
   - Await PR review for https://github.com/xamong/Xenesis/pull/12.
+
+## 2026-06-30 Meta Management Full Port
+
+- Objective:
+  - Replace current Meta Management internals with sibling
+    `xenesis-desk.data-tools` and adapt CR metadata sync to this repo.
+- Branch:
+  - `mini`
+- Design spec:
+  - `docs/superpowers/specs/2026-06-30-meta-management-full-port-design.md`
+- Implementation plan:
+  - `docs/superpowers/plans/2026-06-30-meta-management-full-port.md`
+- Touched files:
+  - `handoff.md`
+  - `docs/capability-registry-audit.md` (baseline timestamp refresh)
+  - `src/shared/crMetadata.test.ts`
+  - `src/shared/crMetadataCapabilities.test.ts`
+  - `src/shared/crMetadata.ts`
+  - `src/main/crMetadataBridge.test.ts`
+  - `src/main/crMetadataBridge.ts`
+  - `src/main/index.ts`
+  - `src/renderer/extensions/xenesis-desk.data-tools/metaManagementAssistPanelModel.test.ts`
+  - `src/renderer/extensions/xenesis-desk.data-tools/metaManagementRelationGraph.test.ts`
+  - `src/renderer/extensions/xenesis-desk.data-tools/metaManagementRelationTabs.test.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+- Commands run:
+  - `git status --short --branch`: `## mini...origin/mini [ahead 1]`
+    with `handoff.md` modified before baseline.
+  - `npm run docs:capabilities:audit`: passed and regenerated
+    `docs/capability-registry-audit.md`; audit summary reported 855 nodes and
+    695 coverage path references.
+  - `Select-String -Path docs\capability-registry-audit.md -Pattern "Missing registered paths|Missing dispatched coverage paths|Undispatched static callable methods"`:
+    confirmed missing registered paths 0, missing dispatched coverage paths 0,
+    undispatched static callable methods 0.
+  - `npm test`: passed 588/588.
+  - RED:
+    `node --import tsx --test src/shared/crMetadata.test.ts src/shared/crMetadataCapabilities.test.ts src/main/crMetadataBridge.test.ts src/renderer/extensions/xenesis-desk.data-tools/metaManagementAssistPanelModel.test.ts src/renderer/extensions/xenesis-desk.data-tools/metaManagementRelationGraph.test.ts src/renderer/extensions/xenesis-desk.data-tools/metaManagementRelationTabs.test.ts`
+    failed as expected. Missing implementation modules were
+    `./crMetadata`, `./crMetadataBridge`,
+    `./metaManagementAssistPanelModel`, `./metaManagementRelationGraph`, and
+    `./metaManagementRelationTabs`; registry assertion also failed because
+    `xd.cr.metadata.*` paths are not registered yet.
+  - GREEN:
+    `node --import tsx --test src/shared/crMetadata.test.ts src/main/crMetadataBridge.test.ts`
+    passed 7/7 after porting `src/shared/crMetadata.ts` and
+    `src/main/crMetadataBridge.ts`.
+  - Registry wiring first check:
+    `node --import tsx --test src/shared/crMetadataCapabilities.test.ts`
+    failed because the new test used the plan snippet's wrong
+    `callDeskBridgeCapability(request, api)` argument order. This repo's
+    signature is `callDeskBridgeCapability(api, request)`.
+  - Registry wiring GREEN:
+    `node --import tsx --test src/shared/crMetadataCapabilities.test.ts`
+    passed 1/1 after correcting the test call order and using
+    `source: 'internal'` for the write-path sync call.
+  - `npm run docs:capabilities:audit`: passed after adding
+    `xd.cr.metadata.sync`, `xd.cr.metadata.capabilities`,
+    `xd.cr.metadata.snapshots`, and `xd.cr.metadata.runs`; generated audit
+    reported 860 nodes and 695 coverage path references.
+  - Main bridge GREEN:
+    `node --import tsx --test src/main/crMetadataBridge.test.ts src/shared/crMetadataCapabilities.test.ts`
+    passed 3/3 after wiring `createCrMetadataBridge` into
+    `src/main/index.ts`.
+  - Renderer helper GREEN:
+    `node --import tsx --test src/renderer/extensions/xenesis-desk.data-tools/metaManagementAssistPanelModel.test.ts src/renderer/extensions/xenesis-desk.data-tools/metaManagementRelationGraph.test.ts src/renderer/extensions/xenesis-desk.data-tools/metaManagementRelationTabs.test.ts`
+    passed 8/8 after porting selected sibling renderer files and preserving
+    `DEFAULT_META_API_URL = 'https://ai.xamong.com'`.
+  - `npm run typecheck`: passed after adding Meta Management CR metadata i18n
+    keys to `en.ts` and `ko.ts`.
+  - Full focused tests:
+    `node --import tsx --test src/shared/crMetadata.test.ts src/shared/crMetadataCapabilities.test.ts src/main/crMetadataBridge.test.ts src/renderer/extensions/xenesis-desk.data-tools/metaManagementAssistPanelModel.test.ts src/renderer/extensions/xenesis-desk.data-tools/metaManagementRelationGraph.test.ts src/renderer/extensions/xenesis-desk.data-tools/metaManagementRelationTabs.test.ts`
+    passed 16/16.
+  - `npm test`: passed 604/604.
+  - `npm run typecheck`: passed.
+  - `npm run lint`: failed on pre-existing repo-wide diagnostics outside this
+    port, including `extensions/sample.file-helper/main.js`,
+    `mcp/xenesis-desk-mcp-server.mjs`, and several `packages/xenesis/*`
+    files.
+  - Touched-file Biome:
+    `npx biome check --write ...` over the exact files touched by this port
+    formatted 26 files and exited 0; follow-up `npx biome check ...` over the
+    same touched-file list exited 0 with warnings only.
+  - `npm run docs:capabilities:audit`: passed; generated audit confirms
+    missing registered paths 0, missing dispatched coverage paths 0,
+    undispatched static callable methods 0, dispatcher paths missing from tree
+    0.
+  - `npm run build`: passed, including `npm --prefix packages/xenesis run
+    build`, root typecheck, and `electron-vite build`. Build emitted existing
+    Vite/Rollup warnings for D3 namespace resolution, `hwp.js` browser
+    externalization, and a dynamic/static import chunk warning for
+    `deskBridge.ts`.
+  - Live Electron smoke:
+    launched the built app with temporary `XENIS_HOME`, temporary user data,
+    and a temporary local Meta API server. Passed 6/6 checks:
+    `xd.cr.metadata.capabilities` returned the fake CR row,
+    `xd.tools.data.metaManagement.open` returned ok, and rendered UI contained
+    Meta title/sidebar/main. Observed API requests included
+    `GET /api/cr/capabilities?limit=5`, `POST /api/cr/runs`,
+    `GET /api/health`, and `GET /api/codes/tree`.
+- Exact verification result:
+  - Implementation is functionally verified by focused tests, root tests,
+    typecheck, CR audit, build, and live Electron smoke.
+  - Repo-wide lint remains red due to unrelated existing diagnostics; the
+    touched-file scoped Biome check exits 0.
+- Known gaps:
+  - No real remote `https://ai.xamong.com` Meta API smoke was run; live smoke
+    used a temporary local API server.
+  - Repo-wide `npm run lint` is not green because of unrelated existing
+    diagnostics outside this port.
+- Next intended step:
+  - Review diff, commit, push `mini`, and update PR.
+
+## 2026-07-01 Non-Package Parity Roadmap Design
+
+- Current objective:
+  - Document the remaining feature parity work from the sibling
+    `D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk` project into this repo,
+    explicitly excluding all `packages/xenesis` changes.
+  - Move the Workbench Subagent slice to the final priority because the sibling
+    implementation is still moving.
+- Touched files:
+  - Planned: `docs/superpowers/specs/2026-07-01-non-package-parity-roadmap-design.md`
+  - Planned slice specs under `docs/superpowers/specs/2026-07-01-*-slice-design.md`
+- Commands run:
+  - `git status --short --branch`: clean, `mini...origin/mini`.
+  - Listed existing design specs under `docs/superpowers/specs`.
+  - Compared sibling-only files outside `packages/xenesis` across `src`,
+    `server`, `mcp`, `providers`, `tools`, `scripts`, `docs`, `extensions`,
+    and `tests`.
+  - Added the master roadmap and six slice design specs under
+    `docs/superpowers/specs`.
+  - Self-review placeholder scan over `docs/superpowers/specs/2026-07-01-*.md`:
+    no `TBD`, `TODO`, `FIXME`, `placeholder`, or `ambiguous` hits.
+  - `packages/xenesis` scan over the new specs only found intentional
+    out-of-scope statements.
+  - `git diff --check`: passed with LF-to-CRLF warnings only for `handoff.md`.
+- Exact verification result:
+  - Design docs are internally scoped, include the user-requested order change,
+    and contain no placeholder markers.
+  - No code verification is required because no implementation changed.
+- Known gaps:
+  - No implementation has started for the roadmap slices.
+  - Workbench Subagent remains intentionally last until sibling stabilization.
+- Next intended step:
+  - Add and commit the master roadmap plus slice design specs, then ask the user
+    to review before creating implementation plans.
+
+## 2026-07-01 Agent Sessions Implementation Plan
+
+- Current objective:
+  - Create a concrete implementation plan for priority 1, Agent Sessions,
+    based on sibling `D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk`
+    while explicitly excluding `packages/xenesis`.
+- Touched files:
+  - Planned: `docs/superpowers/plans/2026-07-01-agent-sessions.md`
+  - This log: `handoff.md`
+- Commands run:
+  - Read `docs/superpowers/specs/2026-07-01-agent-sessions-slice-design.md`.
+  - Inspected sibling Agent Sessions shared model, service, adapters, store,
+    renderer panel model, terminal linker, Agent-pane routing helper, CR
+    registration tests, preload API, and main IPC/CR bridge wiring.
+  - Inspected current repo extension registration, app menu, types, preload,
+    main bridge, and CR dispatcher wiring points.
+  - Wrote `docs/superpowers/plans/2026-07-01-agent-sessions.md`.
+  - Placeholder scan over the plan found no `TBD`, `TODO`, `FIXME`,
+    `PLACEHOLDER`, `???`, `implement later`, `fill in`, or similar markers.
+  - Scope scan found `packages/xenesis` only in intentional out-of-scope
+    statements.
+  - `git diff --check`: passed with the existing LF-to-CRLF warning for
+    `handoff.md`.
+- Exact verification result:
+  - Plan covers shared model, main scanner/service, CR registry/dispatch,
+    preload IPC, renderer pane, app menu/tool registration, Agent-pane routing,
+    verification gates, and final review criteria.
+  - No implementation has been changed.
+- Known gaps:
+  - No runtime tests are required until implementation begins.
+  - Plan file is under ignored `docs/superpowers/`, so it must be staged with
+    `git add -f`.
+- Next intended step:
+  - Commit the Agent Sessions implementation plan and ask the user to choose the
+    execution approach.
+
+## 2026-07-01 Agent Sessions Implementation
+
+- Current objective:
+  - Execute `docs/superpowers/plans/2026-07-01-agent-sessions.md` inline on
+    branch `mini`, using TDD and without touching `packages/xenesis`.
+- Touched files:
+  - Planned implementation files are listed in
+    `docs/superpowers/plans/2026-07-01-agent-sessions.md`.
+  - This log: `handoff.md`.
+- Commands run:
+  - Read `superpowers:executing-plans`, `superpowers:test-driven-development`,
+    and `superpowers:using-git-worktrees` instructions.
+  - Worktree check:
+    `git rev-parse --git-dir` and `git rev-parse --git-common-dir` both
+    returned `.git`; current branch is `mini`. User selected inline execution,
+    so no additional worktree was created.
+  - Re-read `AGENTS.md`.
+  - Read repo-local Obsidian notes under the actual vault root
+    `docs/obsidian/Xenesis-desk/...`, including Final Goal, AI Agent Rules,
+    Graph Schema, Review Policy, Source of Truth Map, Repo Overview, Module
+    Index, High Risk Areas, Verification Map, CR Surface Index, IPC surface,
+    Capability Registry Architecture, MCP Bridge Architecture, Approval Flow,
+    Provider Model, Xenesis Agent Runtime, and related module/test notes.
+  - Baseline `npm test`: passed 604/604.
+  - Added `src/shared/agentSessions.test.ts`.
+  - RED `node --import tsx --test src/shared/agentSessions.test.ts`: failed as
+    expected with `Cannot find module './agentSessions'`.
+  - Added `src/shared/agentSessions.ts`.
+  - GREEN `node --import tsx --test src/shared/agentSessions.test.ts`: passed
+    9/9.
+  - Added `src/main/agentSessions/jsonl.test.ts` and
+    `src/main/agentSessions/indexStore.test.ts`.
+  - RED
+    `node --import tsx --test src/main/agentSessions/jsonl.test.ts src/main/agentSessions/indexStore.test.ts`:
+    failed as expected with missing `./jsonl` and `./indexStore` modules.
+  - Added `src/main/agentSessions/jsonl.ts` and
+    `src/main/agentSessions/indexStore.ts`.
+  - GREEN
+    `node --import tsx --test src/main/agentSessions/jsonl.test.ts src/main/agentSessions/indexStore.test.ts`:
+    passed 6/6.
+  - Added `src/main/agentSessions/adapters.test.ts` and
+    `src/main/agentSessions/service.test.ts`.
+  - RED
+    `node --import tsx --test src/main/agentSessions/adapters.test.ts src/main/agentSessions/service.test.ts`:
+    failed as expected with missing `./adapters` and `./service` modules.
+  - Added `src/main/agentSessions/pathUtils.ts`,
+    `src/main/agentSessions/adapters.ts`, and
+    `src/main/agentSessions/service.ts`.
+  - GREEN
+    `node --import tsx --test src/main/agentSessions/adapters.test.ts src/main/agentSessions/service.test.ts`:
+    passed 8/8.
+  - Added `src/shared/agentSessionsCapabilities.test.ts`.
+  - RED `node --import tsx --test src/shared/agentSessionsCapabilities.test.ts`:
+    failed as expected because `xd.agentSessions.*` paths and dispatch were
+    missing.
+  - Updated `src/shared/deskBridgeCapabilities.ts` with Agent Sessions adapter
+    methods, root `xd.agentSessions` group, `xd.tools.core.agentSessions.open`,
+    dock/tool coverage entries, and dispatcher branches.
+  - GREEN `node --import tsx --test src/shared/agentSessionsCapabilities.test.ts`:
+    passed 4/4.
+- Exact verification result:
+  - Baseline tests are green before implementation.
+  - Shared Agent Sessions model tests are green.
+  - JSONL tail reader and Agent Sessions index store tests are green.
+  - Agent Sessions scanners and cache/overlay service tests are green.
+  - Agent Sessions CR registration, approval metadata, adapter dispatch, and
+    tool-open dispatch tests are green.
+- Known gaps:
+  - `AGENTS.md` lists Obsidian notes as if they are directly under
+    `docs/obsidian`, but this checkout stores them under
+    `docs/obsidian/Xenesis-desk`.
+  - Implementation has not started yet.
+- Next intended step:
+  - Wire shared types, preload IPC, main IPC handlers, and main CR adapter
+    methods to the Agent Sessions service.
+
+## 2026-07-01 Agent Sessions IPC/Main Wiring
+
+- Current objective:
+  - Connect the Agent Sessions service to preload IPC, main IPC handlers, and
+    main CR adapter methods without touching `packages/xenesis`.
+- Touched files:
+  - `src/shared/types.ts`
+  - `src/renderer/env.d.ts`
+  - `src/preload/index.ts`
+  - `src/main/index.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `handoff.md`
+- Commands run:
+  - `node --import tsx --test src/shared/agentSessionsCapabilities.test.ts src/main/agentSessions/service.test.ts`:
+    passed 5/5.
+  - First `npm run typecheck`: failed on direct `Record<string, unknown>` casts
+    for required Agent Sessions CR request shapes.
+  - Updated those casts through `unknown`.
+  - Second `npm run typecheck`: passed.
+- Exact verification result:
+  - Agent Sessions CR tests remain green after main/preload wiring.
+  - TypeScript passes after the typed CR request cast fix.
+- Known gaps:
+  - Renderer tool panel, app menu/tool registration, and Agent pane routing are
+    still pending.
+- Next intended step:
+  - Add renderer-side Agent Sessions terminal linking and panel model tests,
+    then implement the panel and extension registration.
+
+## 2026-07-01 Agent Sessions Renderer Panel
+
+- Current objective:
+  - Add Agent Sessions renderer linking logic, panel model, panel UI, tool
+    registration, manifest command, and app menu entry.
+- Touched files:
+  - `src/renderer/agentSessions/terminalLinker.test.ts`
+  - `src/renderer/agentSessions/terminalLinker.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/AgentSessionsPane.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/renderer.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/styles.css`
+  - `src/renderer/terminal/terminalHost.ts`
+  - `src/renderer/App.tsx`
+  - `src/shared/types.ts`
+  - `src/main/extensions/extensionHost.ts`
+  - `extensions/xenesis-desk.core-tools/plugin.json`
+  - `extensions/xenesis-desk.core-tools/main.js`
+  - `src/shared/appMenuModel.ts`
+  - `handoff.md`
+- Commands run:
+  - RED `node --import tsx --test src/renderer/agentSessions/terminalLinker.test.ts`:
+    failed as expected with missing `./terminalLinker`.
+  - GREEN `node --import tsx --test src/renderer/agentSessions/terminalLinker.test.ts`:
+    passed 3/3.
+  - RED
+    `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.test.ts`:
+    failed as expected with missing `./agentSessionsPanelModel`.
+  - GREEN focused renderer/CR tests:
+    `node --import tsx --test src/renderer/agentSessions/terminalLinker.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.test.ts src/shared/agentSessionsCapabilities.test.ts`
+    passed 9/9.
+  - `npm run typecheck`: passed.
+- Exact verification result:
+  - Terminal reuse planning handles local CLI sessions, unsafe alternate-buffer
+    terminals, and MCP metadata-matched sessions.
+  - Panel counts/action-state model is covered by tests.
+  - Core Tools can expose `xenesis-desk.core-tools.openAgentSessions` through
+    manifest, extension main, renderer tool dispatch, app menu, and CR tool-open
+    dispatch.
+- Known gaps:
+  - Agent pane natural-language routing is still pending.
+  - Full audit/build/live Electron verification has not run yet.
+- Next intended step:
+  - Inspect existing Agent pane routing tests before deciding whether to add a
+    narrow Agent Sessions route or keep all natural language routing inside the
+    provider path.
+
+## 2026-07-01 Agent Sessions Agent Pane Hinting
+
+- Current objective:
+  - Make Agent Sessions CR paths available to the Xenesis Agent provider prompt
+    without reintroducing pre-provider natural-language Desk routing.
+- Touched files:
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `src/shared/xenesisDeskControlPromptHintCatalog.ts`
+  - `handoff.md`
+- Commands run:
+  - RED
+    `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`:
+    failed as expected because `xd.agentSessions.search` and
+    `xd.tools.core.agentSessions.open` were absent from the prompt hint.
+  - Added Agent Sessions discovery prefixes to the Desk-control prompt hint
+    catalog.
+  - GREEN same command: passed 11/11.
+- Exact verification result:
+  - The prompt hint now discovers Agent Sessions CR paths for provider-generated
+    `xenesis-desk-action` blocks.
+  - The existing test asserting pre-provider natural Desk heuristic routing is
+    absent still passes.
+- Known gaps:
+  - Full audit/build/live Electron verification has not run yet.
+- Next intended step:
+  - Run focused Agent Sessions test bundle, CR audit, full tests, typecheck, and
+    build.
+
+## 2026-07-01 Agent Sessions Final Verification
+
+- Current objective:
+  - Finish the approved Agent Sessions slice from the sibling roadmap while
+    keeping `packages/xenesis` untouched.
+- Touched files:
+  - `src/shared/agentSessions.ts`
+  - `src/shared/agentSessions.test.ts`
+  - `src/main/agentSessions/*`
+  - `src/shared/agentSessionsCapabilities.test.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/shared/types.ts`
+  - `src/preload/index.ts`
+  - `src/main/index.ts`
+  - `src/renderer/env.d.ts`
+  - `src/renderer/agentSessions/*`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/AgentSessionsPane.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/renderer.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/styles.css`
+  - `src/renderer/terminal/terminalHost.ts`
+  - `src/renderer/App.tsx`
+  - `src/main/extensions/extensionHost.ts`
+  - `extensions/xenesis-desk.core-tools/plugin.json`
+  - `extensions/xenesis-desk.core-tools/main.js`
+  - `src/shared/appMenuModel.ts`
+  - `src/shared/xenesisDeskControlPromptHintCatalog.ts`
+  - `docs/capability-registry-audit.md`
+  - `handoff.md`
+- Commands run:
+  - Focused Agent Sessions bundle:
+    `node --import tsx --test src/shared/agentSessions.test.ts src/main/agentSessions/jsonl.test.ts src/main/agentSessions/indexStore.test.ts src/main/agentSessions/adapters.test.ts src/main/agentSessions/service.test.ts src/shared/agentSessionsCapabilities.test.ts src/renderer/agentSessions/terminalLinker.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentDeskControl.test.ts`
+  - `npm run typecheck`
+  - `npm run docs:capabilities:audit`
+  - `npm test`
+  - `npm run build`
+  - `npm --prefix packages/xenesis test`
+  - `npm --prefix packages/xenesis run typecheck`
+  - `npm run check:public-release`
+  - `npm run lint`
+  - Targeted Biome check for new/small touched files:
+    `npx biome check src/renderer/extensions/xenesis-desk.core-tools/panes/AgentSessionsPane.tsx src/main/agentSessions/adapters.ts src/main/agentSessions/service.ts src/shared/agentSessions.test.ts src/shared/agentSessionsCapabilities.test.ts src/renderer/extensions/xenesis-desk.core-tools/renderer.tsx src/shared/xenesisDeskControlPromptHintCatalog.ts extensions/xenesis-desk.core-tools/main.js extensions/xenesis-desk.core-tools/plugin.json --max-diagnostics=200`
+  - Live Electron CR smoke with isolated temp `XENIS_HOME` and user data dir:
+    opened `xd.tools.core.agentSessions.open`, waited for `.xd-agent-sessions`,
+    then called `xd.agentSessions.status`.
+  - `git diff --name-only -- packages/xenesis`
+- Exact verification result:
+  - Focused Agent Sessions bundle passed 43/43.
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit` passed with:
+    registered nodes 870, coverage path references 703, missing registered
+    paths 0, missing dispatched coverage paths 0, undispatched static callable
+    methods 0, dispatcher paths missing from tree 0.
+  - `npm test` passed 636/636.
+  - `npm run build` passed. Build still reports existing Vite warnings for d3
+    namespace resolution, `hwp.js` `fs` externalization, and mixed
+    dynamic/static imports of `deskBridge.ts`.
+  - `npm --prefix packages/xenesis test` passed 698/698.
+  - `npm --prefix packages/xenesis run typecheck` passed.
+  - `npm run check:public-release` passed.
+  - `npm run lint` remains blocked by existing repo-wide Biome diagnostics,
+    including `packages/xenesis` and large legacy files. Latest run reported
+    47 errors, 394 warnings, and 85 infos before Biome truncated additional
+    diagnostics. New Agent Sessions files passed the targeted Biome check after
+    formatting fixes.
+  - Live Electron CR smoke returned `ok: true`, opened the Agent Sessions pane,
+    and returned Agent Sessions status successfully.
+  - `git diff --name-only -- packages/xenesis` returned no files.
+- Known gaps:
+  - Full repo lint is not clean because of pre-existing broad diagnostics
+    outside this slice.
+  - I verified the live CR/panel path, not a full natural-language provider
+    turn through the Agent pane.
+- Next intended step:
+  - If accepted, commit this Agent Sessions slice on `mini` and then open/update
+    the PR.
+
+## 2026-07-01 Agent Sessions Pre-PR Check
+
+- Current objective:
+  - Commit the approved Agent Sessions slice on `mini`, push it, and create or
+    update the GitHub PR.
+- Touched files:
+  - `handoff.md`
+- Commands run:
+  - `npm test`
+  - `npm run typecheck`
+  - `npm run docs:capabilities:audit`
+  - `npx biome check src/shared/agentSessions.ts src/shared/agentSessions.test.ts src/shared/agentSessionsCapabilities.test.ts src/main/agentSessions src/renderer/agentSessions src/renderer/extensions/xenesis-desk.core-tools/panes/AgentSessionsPane.tsx src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.ts src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.test.ts --max-diagnostics=200`
+- Exact verification result:
+  - `npm test` passed 636/636.
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit` passed with 870 nodes and 703 coverage
+    path references.
+  - Targeted Biome check for new Agent Sessions files passed.
+- Known gaps:
+  - Full `npm run lint` still has the existing repo-wide Biome diagnostics
+    recorded above.
+- Next intended step:
+  - Stage, commit, push `mini`, then create or update the PR.
+
+## 2026-07-01 Agent Sessions PR Update
+
+- Current objective:
+  - Record the Agent Sessions commit and GitHub PR update.
+- Touched files:
+  - `handoff.md`
+- Commands run:
+  - `git commit -m "Add Agent Sessions core tool"`
+  - `git push -u origin mini`
+  - `gh pr list --head mini --base main --json number,title,url,state`
+  - `gh pr view 13 --json number,title,body,url,headRefName,baseRefName,state`
+  - `gh pr edit 13 --title "Port Meta Management and Agent Sessions" --body ...`
+- Exact verification result:
+  - Created commit `247ade6` (`Add Agent Sessions core tool`).
+  - Pushed `mini` to `origin/mini`.
+  - Existing PR #13 was open for `mini -> main`, so it was updated instead of
+    creating a duplicate PR.
+  - PR URL: `https://github.com/xamong/Xenesis/pull/13`
+- Known gaps:
+  - Same as the pre-PR check: full repo lint remains blocked by existing
+    repo-wide Biome diagnostics.
+- Next intended step:
+  - Continue with the next sibling-parity priority after the Agent Sessions
+    slice is reviewed.
+
+## 2026-07-01 Meta Local Server Start
+
+- Current objective:
+  - Implement roadmap priority 2, Meta Local Server, by adding local CR metadata
+    and Meta Management stores/routes while keeping `packages/xenesis`
+    untouched.
+- Touched files:
+  - `docs/superpowers/plans/2026-07-01-meta-local-server.md`
+  - `handoff.md`
+- Commands run:
+  - Read `superpowers:executing-plans`.
+  - `git status --short --branch`
+  - Inspected current `server/index.js`, current Meta/CR bridge/provider files,
+    and sibling `server/crMetadataStore.js`,
+    `server/metaManagementStore.js`, related tests, and route sections.
+- Exact verification result:
+  - Working tree was clean before adding the Meta Local Server plan.
+  - The next implementation slice is confirmed as Meta Local Server from
+    `docs/superpowers/specs/2026-07-01-non-package-parity-roadmap-design.md`.
+  - `packages/xenesis` remains out of scope for this slice.
+- Known gaps:
+  - No Meta Local Server implementation has been added yet.
+- Next intended step:
+  - Start Task 1 from the plan: add the failing route smoke test and verify
+    RED before porting stores/routes.
+
+## 2026-07-01 Meta Local Server Verification
+
+- Current objective:
+  - Finish roadmap priority 2, Meta Local Server, by adding local CR metadata
+    and Meta Management SQLite stores plus HTTP routes without touching
+    `packages/xenesis`.
+- Touched files:
+  - `server/crMetadataStore.js`
+  - `server/crMetadataStore.test.mjs`
+  - `server/metaManagementStore.js`
+  - `server/metaManagementStore.test.mjs`
+  - `server/metaLocalServerRoutes.test.mjs`
+  - `server/index.js`
+  - `docs/superpowers/plans/2026-07-01-meta-local-server.md`
+  - `docs/capability-registry-audit.md`
+  - `handoff.md`
+- Commands run:
+  - RED route smoke: `node --test server/metaLocalServerRoutes.test.mjs`
+  - RED/green CR store: `node --test server/crMetadataStore.test.mjs`
+  - RED/green Meta store: `node --test server/metaManagementStore.test.mjs`
+  - Focused server bundle:
+    `node --test server/crMetadataStore.test.mjs server/metaManagementStore.test.mjs server/metaLocalServerRoutes.test.mjs`
+  - Existing CR metadata focused tests:
+    `node --import tsx --test src/shared/crMetadata.test.ts src/shared/crMetadataCapabilities.test.ts src/main/crMetadataBridge.test.ts`
+  - `npm run typecheck`
+  - `npm run docs:capabilities:audit`
+  - `npm test`
+  - `npm run build`
+  - `npm run check:public-release`
+  - New server file Biome check:
+    `npx biome check server/crMetadataStore.js server/crMetadataStore.test.mjs server/metaManagementStore.js server/metaManagementStore.test.mjs server/metaLocalServerRoutes.test.mjs --max-diagnostics=200`
+  - Existing large server file Biome check:
+    `npx biome check server/index.js --max-diagnostics=40`
+  - `git diff --name-only -- packages/xenesis`
+- Exact verification result:
+  - Route smoke first failed at `/api/cr/sync` before the routes existed, then
+    passed after server wiring.
+  - CR store and Meta store tests first failed with missing modules, then
+    passed after implementation.
+  - Focused server bundle passed 27/27.
+  - Existing CR metadata focused tests passed 8/8.
+  - `npm run typecheck` passed.
+  - `npm run docs:capabilities:audit` passed with 870 nodes and 703 coverage
+    path references.
+  - `npm test` passed 636/636.
+  - `npm run build` passed. It still reports existing Vite warnings for d3
+    namespace resolution, `hwp.js` `fs` externalization, and mixed
+    dynamic/static imports of `deskBridge.ts`.
+  - `npm run check:public-release` passed.
+  - New server file Biome check passed with no diagnostics.
+  - `server/index.js` Biome check exited 0 after CRLF normalization, with 4
+    existing warnings and 6 infos in legacy sections.
+  - `git diff --name-only -- packages/xenesis` returned no files.
+- Known gaps:
+  - Full repo `npm run lint` is still not clean due to the pre-existing
+    repo-wide Biome diagnostics recorded in prior handoff sections.
+  - No live Electron Agent-pane natural-language prompt was run for this local
+    server slice; verification is HTTP/store/build/test focused.
+- Next intended step:
+  - Stage the Meta Local Server files, commit on `mini`, push, and update PR
+    #13.
+
+## 2026-07-01 Meta Local Server PR Update
+
+- Current objective:
+  - Record the Meta Local Server commit, push, and PR update.
+- Touched files:
+  - `handoff.md`
+- Commands run:
+  - `git commit -m "Add Meta Local Server stores"`
+  - `git push origin mini`
+  - `gh pr list --head mini --base main --json number,title,url,state`
+  - `gh pr view 13 --json number,title,body,url,headRefName,baseRefName,state`
+  - `gh pr edit 13 --title "Port Meta Management, Agent Sessions, and Meta Local Server" --body ...`
+- Exact verification result:
+  - Created commit `7be3a23` (`Add Meta Local Server stores`).
+  - Pushed `mini` to `origin/mini`.
+  - Existing PR #13 remains open for `mini -> main`.
+  - PR URL: `https://github.com/xamong/Xenesis/pull/13`
+  - PR title/body now include the Meta Local Server stores/routes and fresh
+    verification commands.
+- Known gaps:
+  - Same as above: full repo lint still has pre-existing repo-wide Biome
+    diagnostics; this slice used focused server checks plus broad build/test
+    gates.
+- Next intended step:
+  - Continue with the next non-`packages/xenesis` sibling-parity priority after
+    PR review or user direction.
+
+## 2026-07-01 App Control Lab Extended Apps - Input Control Regression
+
+- Current objective:
+  - Continue the App Control Lab / Extended Apps port without touching
+    `packages/xenesis`, completing the desktop input-control regression slice
+    before renderer work.
+- Touched files:
+  - `src/shared/inputControl.ts`
+  - `src/shared/inputControl.test.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/main/inputControl/inputControlService.ts`
+  - `src/main/inputControl/inputControlService.test.ts`
+  - `docs/superpowers/plans/2026-07-01-app-control-lab-extended-apps.md`
+  - `handoff.md`
+- Commands run:
+  - RED:
+    `node --import tsx --test src/main/inputControl/inputControlService.test.ts`
+  - GREEN:
+    `node --import tsx --test src/main/inputControl/inputControlService.test.ts`
+  - Focused regression bundle:
+    `node --import tsx --test src/shared/inputControl.test.ts src/shared/inputControlCapabilities.test.ts src/main/inputControl/inputControlService.test.ts src/shared/externalAppCapabilities.test.ts`
+- Exact verification result:
+  - RED failed as expected because desktop app supported actions only exposed
+    `type`, `hotkey`, and `wait`, and click/drag/screenshot did not dispatch.
+  - GREEN passed 9/9 for `src/main/inputControl/inputControlService.test.ts`.
+  - Focused regression bundle passed 29/29.
+  - Desktop app input now supports click, double/triple/middle/right click,
+    move, mouse down/up, drag-and-drop, type, hotkey, wait, and
+    `take_screenshot`.
+  - Pointer and drag input resolves target window bounds via `xd.apps.status`
+    and converts normalized `0..999` coordinates to screen pixels before
+    calling `xd.apps.*`.
+  - `xd.input.run` schema now includes `triple_click` and `middle_click`.
+  - `packages/xenesis` remains untouched.
+- Known gaps:
+  - Top-level `xd.input.screenshot` still returns the existing unsupported
+    result; this slice only mapped `take_screenshot` inside `xd.input.run`.
+  - Full repo gates and live Electron smoke have not been run yet for this
+    App Control Lab / Extended Apps slice.
+- Next intended step:
+  - Port the App Control Lab renderer model, pane, extension command wiring,
+    and focused renderer tests.
+
+## 2026-07-01 App Control Lab Extended Apps - Renderer Port
+
+- Current objective:
+  - Complete Task 5 by porting the App Control Lab renderer/model/extension
+    wiring while continuing to leave `packages/xenesis` untouched.
+- Touched files:
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/appControlLabModel.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/appControlLabModel.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/AppControlLabNetworkDiagram.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/AppControlLabPane.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/renderer.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/styles.css`
+  - `extensions/xenesis-desk.core-tools/main.js`
+  - `extensions/xenesis-desk.core-tools/plugin.json`
+  - `src/main/extensions/extensionHost.ts`
+  - `src/shared/types.ts`
+  - `docs/superpowers/plans/2026-07-01-app-control-lab-extended-apps.md`
+  - `handoff.md`
+- Commands run:
+  - RED:
+    `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/appControlLabModel.test.ts`
+  - GREEN:
+    `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/appControlLabModel.test.ts`
+  - Focused renderer/style/manifest check:
+    `npx biome check src/renderer/extensions/xenesis-desk.core-tools/panes/appControlLabModel.ts src/renderer/extensions/xenesis-desk.core-tools/panes/appControlLabModel.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/AppControlLabPane.tsx src/renderer/extensions/xenesis-desk.core-tools/panes/AppControlLabNetworkDiagram.tsx src/renderer/extensions/xenesis-desk.core-tools/renderer.tsx extensions/xenesis-desk.core-tools/main.js extensions/xenesis-desk.core-tools/plugin.json src/main/extensions/extensionHost.ts src/shared/types.ts --max-diagnostics=200`
+  - Focused CR/menu/input/model bundle:
+    `node --import tsx --test src/shared/externalAppCapabilities.test.ts src/shared/appMenuModel.test.ts src/shared/inputControl.test.ts src/shared/inputControlCapabilities.test.ts src/main/inputControl/inputControlService.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/appControlLabModel.test.ts`
+- Exact verification result:
+  - Model RED first failed with missing `appControlLabModel`.
+  - Model GREEN passed 4/4.
+  - Focused Biome check initially failed on formatting and an
+    `extensionHost.ts` optional-chain diagnostic; after formatting touched
+    files and applying the optional-chain fix, it passed.
+  - Focused CR/menu/input/model bundle passed 39/39.
+  - Renderer now registers tool id
+    `xenesis-desk.core-tools.app-control-lab`, opens content type
+    `xd-app-control-lab`, renders `.app-control-lab`, and exposes icon `APP`.
+  - Extension manifest/main now expose
+    `xenesis-desk.core-tools.openAppControlLab`.
+  - Main extension allowlist now includes App Control Lab; the existing
+    `xenesis-desk.core-tools.xd-blaster` allowlist entry was also restored
+    because the command already existed but the allowlist omitted it.
+  - `packages/xenesis` remains untouched.
+- Known gaps:
+  - Full repo gates and live Electron smoke are still pending.
+  - The App Control Lab calls CR paths with `{ approved: true }`, matching the
+    existing operator-lab pattern; real external approval behavior remains in
+    the CR layer for normal Agent/provider calls.
+- Next intended step:
+  - Run focused full-slice regression, broad typecheck/test/audit/build gates,
+    then live smoke if feasible before commit/push/PR update.
+
+## 2026-07-01 App Control Lab Extended Apps - Final Verification
+
+- Current objective:
+  - Finish the App Control Lab / Extended Apps port, verify the cross-surface
+    CR/App/Input/renderer behavior, and prepare the `mini` branch for PR update
+    without touching `packages/xenesis`.
+- Touched files:
+  - `docs/capability-registry-audit.md`
+  - `extensions/xenesis-desk.core-tools/main.js`
+  - `extensions/xenesis-desk.core-tools/plugin.json`
+  - `scripts/nativeToolsPackaging.test.ts`
+  - `src/main/appControl/*`
+  - `src/main/extensions/extensionHost.ts`
+  - `src/main/inputControl/inputControlService.ts`
+  - `src/main/inputControl/inputControlService.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/renderer.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/styles.css`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/AppControlLab*`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/appControlLabModel*`
+  - `src/shared/appMenuModel.ts`
+  - `src/shared/appMenuModel.test.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/shared/externalAppCapabilities.test.ts`
+  - `src/shared/externalAppControl.ts`
+  - `src/shared/externalAppControl.test.ts`
+  - `src/shared/inputControl.ts`
+  - `src/shared/inputControl.test.ts`
+  - `src/shared/types.ts`
+  - `docs/superpowers/plans/2026-07-01-app-control-lab-extended-apps.md`
+  - `handoff.md`
+- Commands run:
+  - Focused full-slice regression:
+    `node --import tsx --test src/shared/externalAppControl.test.ts src/shared/externalAppCapabilities.test.ts src/shared/appMenuModel.test.ts src/shared/crMetadataCapabilities.test.ts src/shared/inputControl.test.ts src/shared/inputControlCapabilities.test.ts src/main/appControl/appControlService.test.ts src/main/appControl/windowsAppControl.test.ts src/main/appControl/createPlatformAppControlAdapter.test.ts src/main/appControl/windowsControlHost.test.ts src/main/appControl/macosControlHost.test.ts src/main/inputControl/inputControlService.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/appControlLabModel.test.ts`
+  - Focused changed-file Biome check:
+    `npx biome check src/main/appControl/appControlService.ts src/main/appControl/appControlService.test.ts src/main/appControl/windowsAppControl.ts src/main/appControl/windowsControlHost.ts src/main/appControl/windowsControlHost.test.ts src/main/appControl/macosAppControl.ts src/main/appControl/macosControlHost.ts src/main/appControl/macosControlHost.test.ts src/main/appControl/createPlatformAppControlAdapter.ts src/main/appControl/createPlatformAppControlAdapter.test.ts src/main/appControl/appControlAdapter.ts src/main/appControl/unsupportedAppControl.ts src/main/inputControl/inputControlService.ts src/main/inputControl/inputControlService.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/AppControlLabPane.tsx src/renderer/extensions/xenesis-desk.core-tools/panes/AppControlLabNetworkDiagram.tsx src/renderer/extensions/xenesis-desk.core-tools/panes/appControlLabModel.ts src/renderer/extensions/xenesis-desk.core-tools/panes/appControlLabModel.test.ts src/renderer/extensions/xenesis-desk.core-tools/renderer.tsx src/shared/externalAppControl.ts src/shared/externalAppControl.test.ts src/shared/inputControl.ts src/shared/inputControl.test.ts src/shared/types.ts scripts/nativeToolsPackaging.test.ts --max-diagnostics=200`
+  - Full repo lint attempt: `npm run lint`
+  - `npm run typecheck`
+  - `npm test`
+  - `npm run docs:capabilities:audit`
+  - `npm run build`
+  - `npm run check:public-release`
+  - App Control Lab live Electron smoke through CR path
+    `xd.tools.core.appControlLab.open`
+  - Safe app-control smoke:
+    `node --import tsx --eval "... createAppControlService().run({ action: 'status' }) ..."`
+  - Safe Notepad observation smoke:
+    `node --import tsx --eval "... createAppControlService().run({ action: 'inspect', appId: 'notepad' }) ..."`
+  - `git diff --name-only -- packages/xenesis`
+- Exact verification result:
+  - Focused full-slice regression passed 84/84 before the final default-service
+    fix.
+  - A safe status smoke exposed that `createAppControlService()` required an
+    options object. The service now defaults `options = {}` and
+    `getSettings?.()`, with a new regression test proving built-in status
+    readback works.
+  - `node --import tsx --test src/main/appControl/appControlService.test.ts`
+    passed 17/17 after the fix.
+  - Focused changed-file Biome check passed with no diagnostics.
+  - `npm run lint` still fails on existing repo-wide Biome diagnostics outside
+    this slice, including `packages/xenesis`, `mcp`, sample extensions, and
+    legacy CSS sections. This was not fixed because `packages/xenesis` is out of
+    scope and unrelated repo-wide lint debt is pre-existing.
+  - `npm run typecheck` passed.
+  - `npm test` passed 665/665 after the final fix.
+  - `npm run docs:capabilities:audit` passed with 887 nodes and 706 coverage
+    path references; missing registered paths, missing dispatched coverage
+    paths, and undispatched static callable methods are all 0.
+  - `npm run build` passed. Existing Vite warnings remain for d3 ambiguous
+    namespace resolution, `hwp.js` `fs` externalization, and mixed
+    dynamic/static imports of `deskBridge.ts`.
+  - `npm run check:public-release` passed.
+  - App Control Lab live smoke passed with marker:
+    `APP_CONTROL_LAB_SMOKE_PASS {"openPath":"xd.tools.core.appControlLab.open","marker":{"visible":true,"title":"App Control Lab","status":"ready"}}`
+  - Safe status smoke returned `ok: true`, `action: "status"`,
+    `profileIds: ["notepad"]`, and `controlEnabled: true`.
+  - Notepad was already running, so `inspect` was attempted without input or
+    close actions. It returned `ok: true`, `action: "inspect"`, provider `uia`,
+    and the active Notepad target title.
+  - `git diff --name-only -- packages/xenesis` returned no files.
+- Known gaps:
+  - Full repo `npm run lint` is still blocked by existing repo-wide Biome
+    diagnostics; changed TypeScript files pass focused Biome check.
+  - Top-level `xd.input.screenshot` still returns the existing unsupported
+    result. This slice maps `take_screenshot` inside `xd.input.run` through
+    registered app control.
+  - Windows `xd.apps.screenshot` remains conservative in the adapter when a
+    host-backed capture path is unavailable; observation smoke verified
+    `inspect`, not screenshot capture.
+- Next intended step:
+  - Stage the App Control Lab / Extended Apps files, commit on `mini`, push,
+    and update existing PR #13.
+
+## 2026-07-01 App Control Lab Extended Apps - PR Update
+
+- Current objective:
+  - Record the App Control Lab / Extended Apps commit, push, and PR update.
+- Touched files:
+  - `handoff.md`
+- Commands run:
+  - `git commit -m "Port App Control Lab external app controls"`
+  - `git push origin mini`
+  - `gh pr list --head mini --base main --json number,title,url,state`
+  - `gh pr view 13 --json number,title,body,url,headRefName,baseRefName,state`
+  - `gh pr edit 13 --title "Port Meta, Agent Sessions, and App Control Lab" --body-file -`
+- Exact verification result:
+  - Created commit `6c023bd` (`Port App Control Lab external app controls`).
+  - Pushed `mini` to `origin/mini`.
+  - Existing PR #13 remains open for `mini -> main`.
+  - PR URL: `https://github.com/xamong/Xenesis/pull/13`
+  - PR title/body now include the App Control Lab / Extended Apps slice and
+    latest verification commands.
+- Known gaps:
+  - Same as the final verification section: full repo lint remains blocked by
+    pre-existing repo-wide Biome diagnostics, while changed TypeScript files
+    pass targeted Biome checks.
+- Next intended step:
+  - Continue with the next non-`packages/xenesis` sibling-parity priority after
+    PR review or user direction.
+
+## 2026-07-01 Office Control Slice Design Update
+
+- Current objective:
+  - Start roadmap priority 4, Office Control, by validating the full-slice
+    design before implementation.
+- Touched files:
+  - `docs/superpowers/specs/2026-07-01-office-control-slice-design.md`
+  - `handoff.md`
+- Commands run:
+  - Read `superpowers:brainstorming`, `superpowers:writing-plans`, and
+    `superpowers:test-driven-development`.
+  - Read `AGENTS.md`.
+  - Read repo-local Obsidian index and required system/CR/approval notes from
+    `docs/obsidian/Xenesis-desk`.
+  - Read existing Office slice design and non-package parity roadmap.
+  - Inspected current repo Office baseline with `rg --files`.
+  - Inspected sibling Office shared model, CR tests, service, adapters, and
+    adapter tests under
+    `D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk`.
+  - Inspected current CR/settings/main wiring around External Apps and App
+    Control.
+  - Placeholder scan:
+    `Select-String -Path docs/superpowers/specs/2026-07-01-office-control-slice-design.md -Pattern 'TBD|TODO|placeholder|later|fill in' -CaseSensitive:$false`
+- Exact verification result:
+  - User approved the full Office Control slice scope.
+  - Existing spec was expanded to a detailed CR-first design covering shared
+    model, settings, CR paths, main service, file provider, Windows COM helper,
+    macOS Apple Events adapter, tests, live smoke, risks, and acceptance
+    criteria.
+  - Placeholder scan returned no matches.
+  - Current repo has only `tools/office-control-host` packaging/helper files;
+    shared/main/CR/settings Office runtime files are not present yet.
+  - Current native packaging test intentionally expects `src/main/officeControl`
+    to be absent; this is recorded as a test expectation that must change
+    during implementation.
+- Known gaps:
+  - No Office implementation code has been added yet.
+  - Full repo lint remains known-broken from pre-existing repo-wide Biome
+    diagnostics; future Office work should use targeted Biome plus broad gates.
+- Next intended step:
+  - Commit the Office Control slice design, ask for user review of the written
+    spec, then create the implementation plan only after review approval.
+
+## 2026-07-01 Office Control Implementation Plan
+
+- Current objective:
+  - Create a TDD-oriented implementation plan for the approved Office Control
+    slice design.
+- Touched files:
+  - `docs/superpowers/plans/2026-07-01-office-control.md`
+  - `handoff.md`
+- Commands run:
+  - Read `superpowers:writing-plans`.
+  - Read `docs/superpowers/specs/2026-07-01-office-control-slice-design.md`.
+  - Checked existing plan tracking with `git ls-files docs/superpowers/plans`.
+  - Created `docs/superpowers/plans/2026-07-01-office-control.md`.
+  - Plan red-flag scan:
+    `Select-String -Path docs/superpowers/plans/2026-07-01-office-control.md -Pattern 'TBD|TODO|placeholder|later|fill in|Similar to|appropriate' -CaseSensitive:$false`
+- Exact verification result:
+  - User approved the written Office Control slice spec.
+  - Implementation plan now covers shared model, CR surface, Excel file
+    provider, installed Office adapters, Office service, settings/main wiring,
+    focused verification, live smoke, and PR update.
+  - Red-flag scan returned no matches after adjusting the self-review wording.
+- Known gaps:
+  - No Office implementation code has been added yet.
+  - `docs/superpowers/plans` is ignored by `.gitignore`; this approved plan must
+    be force-added when committing the documentation artifact.
+- Next intended step:
+  - Offer execution choice: subagent-driven execution or inline execution.
+
+## 2026-07-01 Office Control Inline Implementation Start
+
+- Current objective:
+  - Execute the approved Office Control implementation plan inline, starting
+    with the shared Office model and preserving the `packages/xenesis` no-touch
+    constraint.
+- Touched files:
+  - `handoff.md`
+- Commands run:
+  - Read `superpowers:executing-plans`.
+  - Read `superpowers:test-driven-development`.
+  - Read `docs/superpowers/plans/2026-07-01-office-control.md`.
+  - Checked branch/worktree with `git status --short --branch`.
+  - Checked existing Office-related files with
+    `rg --files src | rg "officeControl|officeCapabilities|deskBridgeCapabilities|types.ts|SettingsPane|i18n|xenesisSettingsCatalog"`.
+- Exact verification result:
+  - User selected inline execution option `2`.
+  - Current branch is `mini`, ahead of `origin/mini` by 2 documentation commits.
+  - No `src/shared/officeControl.ts` or `src/main/officeControl` runtime files
+    exist yet.
+- Known gaps:
+  - No implementation test has been run in this execution phase yet.
+- Next intended step:
+  - Add the failing shared Office model tests and run the RED check.
+
+## 2026-07-01 Office Control Task 1 Shared Model
+
+- Current objective:
+  - Add the shared Office Control model with TDD coverage for defaults, action
+    normalization, validation, and approval classification.
+- Touched files:
+  - `src/shared/officeControl.test.ts`
+  - `src/shared/officeControl.ts`
+  - `handoff.md`
+- Commands run:
+  - RED: `node --import tsx --test src/shared/officeControl.test.ts`
+  - GREEN: `node --import tsx --test src/shared/officeControl.test.ts`
+  - No-package check: `git diff --name-only -- packages/xenesis`
+- Exact verification result:
+  - RED failed as expected with `Cannot find module './officeControl'`.
+  - GREEN passed 7/7 tests.
+  - `git diff --name-only -- packages/xenesis` printed nothing.
+- Known gaps:
+  - Office CR paths and main-process providers are not implemented yet.
+- Next intended step:
+  - Add failing Capability Registry tests for the `xd.office.*` surface.
+
+## 2026-07-01 Office Control Task 2 Capability Registry Surface
+
+- Current objective:
+  - Register the `xd.office.*` Capability Registry surface and route Office
+    calls through an explicit `runOfficeAction(path, args)` adapter seam.
+- Touched files:
+  - `src/shared/officeCapabilities.test.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `docs/capability-registry-audit.md`
+  - `handoff.md`
+- Commands run:
+  - RED:
+    `node --import tsx --test src/shared/officeControl.test.ts src/shared/officeCapabilities.test.ts`
+  - GREEN:
+    `node --import tsx --test src/shared/officeControl.test.ts src/shared/officeCapabilities.test.ts`
+  - CR audit: `npm run docs:capabilities:audit`
+  - Audit summary read:
+    `Get-Content -Path docs\capability-registry-audit.md -TotalCount 80`
+  - No-package check: `git diff --name-only -- packages/xenesis`
+- Exact verification result:
+  - RED failed as expected because `xd.office` was not registered.
+  - GREEN passed 9/9 focused shared/CR tests.
+  - CR audit exited 0 and regenerated
+    `docs/capability-registry-audit.md`.
+  - Audit summary: Missing registered paths 0, Missing dispatched coverage
+    paths 0, Undispatched static callable methods 0.
+  - `git diff --name-only -- packages/xenesis` printed nothing.
+- Known gaps:
+  - Main-process Office providers and service routing are not implemented yet.
+- Next intended step:
+  - Add the failing Excel file provider tests.
+
+## 2026-07-01 Office Control Task 3 Excel File Provider
+
+- Current objective:
+  - Add the file-backed Excel provider for safe workbook creation, inspection,
+    and bounded range reads.
+- Touched files:
+  - `src/main/officeControl/excelFileAdapter.test.ts`
+  - `src/main/officeControl/excelFileAdapter.ts`
+  - `handoff.md`
+- Commands run:
+  - RED:
+    `node --import tsx --test src/main/officeControl/excelFileAdapter.test.ts`
+  - GREEN:
+    `node --import tsx --test src/main/officeControl/excelFileAdapter.test.ts`
+  - No-package check: `git diff --name-only -- packages/xenesis`
+- Exact verification result:
+  - RED failed as expected with `Cannot find module './excelFileAdapter'`.
+  - GREEN passed 2/2 Excel file adapter tests.
+  - `git diff --name-only -- packages/xenesis` printed nothing.
+- Known gaps:
+  - Installed Office adapters and service-level policy routing are not
+    implemented yet.
+- Next intended step:
+  - Add failing Windows COM and macOS Apple Events adapter tests.
+
+## 2026-07-01 Office Control Task 4 Installed Office Adapters
+
+- Current objective:
+  - Add Windows COM and macOS Apple Events Office adapter seams with stable
+    host invocation payloads and failure-code mapping.
+- Touched files:
+  - `src/main/officeControl/windowsOfficeComAdapter.test.ts`
+  - `src/main/officeControl/windowsOfficeComAdapter.ts`
+  - `src/main/officeControl/macosOfficeAppleEventsAdapter.test.ts`
+  - `src/main/officeControl/macosOfficeAppleEventsAdapter.ts`
+  - `handoff.md`
+- Commands run:
+  - RED:
+    `node --import tsx --test src/main/officeControl/windowsOfficeComAdapter.test.ts src/main/officeControl/macosOfficeAppleEventsAdapter.test.ts`
+  - GREEN:
+    `node --import tsx --test src/main/officeControl/windowsOfficeComAdapter.test.ts src/main/officeControl/macosOfficeAppleEventsAdapter.test.ts`
+  - No-package check: `git diff --name-only -- packages/xenesis`
+- Exact verification result:
+  - RED failed as expected with missing `windowsOfficeComAdapter` and
+    `macosOfficeAppleEventsAdapter` modules.
+  - GREEN passed 10/10 installed adapter tests.
+  - Host unavailable behavior is fail-closed: missing Windows host returns
+    provider unavailable/`host_not_found`; non-macOS Apple Events status returns
+    unavailable without invoking automation.
+  - `git diff --name-only -- packages/xenesis` printed nothing.
+- Known gaps:
+  - Office service policy/routing and app settings integration are not wired
+    yet.
+- Next intended step:
+  - Add failing Office Control service tests.
+
+## 2026-07-01 Office Control Task 5 Service Routing
+
+- Current objective:
+  - Add the main-process Office Control service that enforces settings policy,
+    reads provider status, routes file-backed Excel reads, and selects installed
+    providers for automation actions.
+- Touched files:
+  - `src/main/officeControl/officeControlService.test.ts`
+  - `src/main/officeControl/officeControlService.ts`
+  - `handoff.md`
+- Commands run:
+  - RED:
+    `node --import tsx --test src/main/officeControl/officeControlService.test.ts`
+  - GREEN:
+    `node --import tsx --test src/main/officeControl/officeControlService.test.ts`
+  - Office bundle:
+    `node --import tsx --test src/shared/officeControl.test.ts src/main/officeControl/excelFileAdapter.test.ts src/main/officeControl/windowsOfficeComAdapter.test.ts src/main/officeControl/macosOfficeAppleEventsAdapter.test.ts src/main/officeControl/officeControlService.test.ts`
+  - No-package check: `git diff --name-only -- packages/xenesis`
+- Exact verification result:
+  - RED failed as expected with `Cannot find module './officeControlService'`.
+  - GREEN passed 7/7 service tests, including the optional `getSettings`
+    default path.
+  - Office bundle passed 26/26 tests.
+  - `git diff --name-only -- packages/xenesis` printed nothing.
+- Known gaps:
+  - App settings, Settings pane UI, and main CR adapter wiring are not connected
+    yet.
+- Next intended step:
+  - Add failing native packaging wiring expectations, then wire settings/main UI.
+
+## 2026-07-01 Office Control Task 6 Settings And Main Wiring
+
+- Current objective:
+  - Wire Office Control through app settings, renderer Settings pane, main
+    settings persistence, and the main Capability Registry adapter.
+- Touched files:
+  - `scripts/nativeToolsPackaging.test.ts`
+  - `src/shared/types.ts`
+  - `src/main/index.ts`
+  - `src/shared/xenesisSettingsCatalog.mjs`
+  - `src/shared/xenesisSettingsCatalog.d.ts`
+  - `src/shared/xenesisSettingsCatalog.d.mts`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
+  - `handoff.md`
+- Commands run:
+  - RED: `node --test scripts/nativeToolsPackaging.test.ts`
+  - GREEN: `node --test scripts/nativeToolsPackaging.test.ts`
+  - Typecheck: `npm run typecheck`
+  - No-package check: `git diff --name-only -- packages/xenesis`
+- Exact verification result:
+  - RED failed as expected because `src/main/index.ts` did not yet contain
+    `createOfficeControlService` / `runOfficeAction`.
+  - Packaging test passed 5/5 after wiring.
+  - `npm run typecheck` exited 0.
+  - `git diff --name-only -- packages/xenesis` printed nothing.
+- Known gaps:
+  - Focused Office test bundle, targeted Biome, broad repo gates, and live
+    Electron smoke still need to run.
+- Next intended step:
+  - Run focused Office verification and broad gates.
+
+## 2026-07-01 Office Control Task 7 Verification And Live Smoke
+
+- Current objective:
+  - Verify the Office Control CR surface end to end, including live Electron
+    bridge calls and read-only installed Office automation.
+- Touched files:
+  - `src/shared/officeCapabilities.test.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `docs/capability-registry-audit.md`
+  - `handoff.md`
+- Commands run:
+  - RED regression 1:
+    `node --import tsx --test src/shared/officeCapabilities.test.ts`
+  - GREEN regression 1:
+    `node --import tsx --test src/shared/officeCapabilities.test.ts`
+  - RED regression 2:
+    `node --import tsx --test src/shared/officeCapabilities.test.ts`
+  - GREEN regression 2:
+    `node --import tsx --test src/shared/officeCapabilities.test.ts`
+  - Wrapper coverage:
+    `node --import tsx --test src/shared/inputControlCapabilities.test.ts src/shared/computerUseCapabilities.test.ts`
+  - Focused Office bundle:
+    `node --import tsx --test src/shared/officeControl.test.ts src/shared/officeCapabilities.test.ts src/main/officeControl/excelFileAdapter.test.ts src/main/officeControl/windowsOfficeComAdapter.test.ts src/main/officeControl/macosOfficeAppleEventsAdapter.test.ts src/main/officeControl/officeControlService.test.ts`
+  - Native packaging: `node --test scripts/nativeToolsPackaging.test.ts`
+  - Targeted Biome:
+    `npx biome check src/shared/officeControl.ts src/shared/officeControl.test.ts src/shared/officeCapabilities.test.ts src/main/officeControl/excelFileAdapter.ts src/main/officeControl/excelFileAdapter.test.ts src/main/officeControl/windowsOfficeComAdapter.ts src/main/officeControl/windowsOfficeComAdapter.test.ts src/main/officeControl/macosOfficeAppleEventsAdapter.ts src/main/officeControl/macosOfficeAppleEventsAdapter.test.ts src/main/officeControl/officeControlService.ts src/main/officeControl/officeControlService.test.ts src/shared/types.ts src/shared/xenesisSettingsCatalog.mjs scripts/nativeToolsPackaging.test.ts --max-diagnostics=200`
+  - Touched large-file Biome:
+    `npx biome check src/main/index.ts src/shared/deskBridgeCapabilities.ts src/renderer/panes/SettingsPane.tsx src/renderer/i18n/en.ts src/renderer/i18n/ko.ts src/shared/xenesisSettingsCatalog.d.ts src/shared/xenesisSettingsCatalog.d.mts --max-diagnostics=200`
+  - Typecheck: `npm run typecheck`
+  - Root tests: `npm test`
+  - CR audit: `npm run docs:capabilities:audit`
+  - Public release: `npm run check:public-release`
+  - Build: `npm run build`
+  - No-package check: `git diff --name-only -- packages/xenesis`
+  - Live Electron smoke:
+    ad-hoc Playwright `_electron.launch` with `xd.office.status`.
+  - Installed Office smoke:
+    ad-hoc Playwright `_electron.launch` creating a temp workbook with the file
+    provider, then reading `A1:B2` through `provider: 'windows-com'`.
+- Exact verification result:
+  - Regression 1 failed as expected with `status.result` missing. Root cause:
+    `isCapabilityCallResultLike()` treated any `{ ok: boolean }` Office payload
+    as an already-wrapped CR result.
+  - Regression 2 failed as expected because `excel.createWorkbook` payload path
+    (`C:/work/generated.xlsx`) was mistaken for the top-level CR path.
+  - Fix: `isCapabilityCallResultLike()` now only unwraps results whose `path`
+    is in the CR namespace (`xd` or `xd.*`), preserving Office payloads with
+    file paths under `result`.
+  - Office bundle passed 28/28 tests.
+  - Wrapper coverage passed 8/8 input/computer-use tests.
+  - Native packaging passed 5/5 tests. Node emitted the existing
+    `MODULE_TYPELESS_PACKAGE_JSON` warning.
+  - Targeted Office Biome passed with no diagnostics.
+  - Touched large-file Biome exited 0 with existing warnings only: 15 warnings
+    and 8 infos in `src/main/index.ts` / `src/shared/deskBridgeCapabilities.ts`.
+  - `npm run typecheck` exited 0.
+  - `npm test` passed 693/693 tests.
+  - CR audit exited 0 and regenerated `docs/capability-registry-audit.md`:
+    Registered nodes 897, Callable methods 577, Coverage path references 706,
+    Dispatcher paths 557, Missing registered paths 0, Missing dispatched
+    coverage paths 0, Undispatched static callable methods 0, Dispatcher paths
+    missing from tree 0.
+  - `npm run check:public-release` exited 0.
+  - `npm run build` exited 0. Build retained known Vite/D3/hwp warnings.
+  - Live marker passed:
+    `OFFICE_CONTROL_SMOKE_PASS {"path":"xd.office.status","fileProvider":true,...}`.
+  - Installed Office marker passed:
+    `OFFICE_CONTROL_INSTALLED_SMOKE_PASS {"provider":"windows-com","path":"xd.office.excel.readRange","action":"excel.readRange","rows":[["Name","Value"],["A",1]]}`.
+  - `git diff --name-only -- packages/xenesis` printed nothing.
+- Known gaps:
+  - macOS Apple Events provider is unavailable on this Windows host and was
+    verified only through automated unit tests.
+  - Full touched-file Biome still reports pre-existing lint warnings, but exits
+    0; no new formatter errors remain.
+- Next intended step:
+  - Commit the Office Control implementation, push `mini`, and update PR #13.
+
+## 2026-07-01 Office Control Task 8 Commit Push PR
+
+- Current objective:
+  - Publish the Office Control implementation on `mini` and update the open PR.
+- Touched files:
+  - `handoff.md`
+- Commands run:
+  - Branch/status:
+    `git rev-parse --abbrev-ref HEAD`
+  - Worktree detection:
+    `git rev-parse --git-dir; git rev-parse --git-common-dir; git rev-parse --show-toplevel`
+  - Final status: `git status --short`
+  - No-package check: `git diff --name-only -- packages/xenesis`
+  - Whitespace check: `git diff --check`
+  - Stage:
+    `git add docs/capability-registry-audit.md handoff.md scripts/nativeToolsPackaging.test.ts src/shared/officeControl.ts src/shared/officeControl.test.ts src/shared/officeCapabilities.test.ts src/shared/deskBridgeCapabilities.ts src/shared/types.ts src/shared/xenesisSettingsCatalog.mjs src/shared/xenesisSettingsCatalog.d.ts src/shared/xenesisSettingsCatalog.d.mts src/main/officeControl src/main/index.ts src/renderer/panes/SettingsPane.tsx src/renderer/i18n/en.ts src/renderer/i18n/ko.ts`
+  - Staged diff:
+    `git diff --cached --stat`
+  - Staged no-package check:
+    `git diff --cached --name-only -- packages/xenesis`
+  - Commit:
+    `git commit -m "Add Office Control CR surface"`
+  - Push:
+    `git push origin mini`
+  - PR read:
+    `gh pr view 13 --json number,title,url,headRefName,baseRefName,state`
+  - PR update:
+    `gh pr edit 13 --title "Port Meta, Agent Sessions, App Control, and Office Control" --body-file -`
+- Exact verification result:
+  - Current branch was `mini`; normal repo state (`.git` equals common dir).
+  - `git diff --name-only -- packages/xenesis` printed nothing before commit.
+  - `git diff --check` exited 0 with only LF-to-CRLF warnings for
+    `docs/capability-registry-audit.md` and `handoff.md`.
+  - Staged diff included only Office Control files, settings/UI wiring,
+    generated audit, and `handoff.md`; staged `packages/xenesis` diff was empty.
+  - Implementation commit created:
+    `b7f0600 Add Office Control CR surface`.
+  - `git push origin mini` succeeded:
+    `981a909..b7f0600 mini -> mini`.
+  - PR #13 was open for `mini -> main`:
+    `https://github.com/xamong/Xenesis/pull/13`.
+  - PR title/body were updated with Office Control summary, verification
+    commands, live smoke markers, full-lint warning state, and
+    `packages/xenesis` no-diff result.
+- Known gaps:
+  - This section itself still needs to be committed and pushed as the final
+    handoff-only update.
+- Next intended step:
+  - Commit and push the handoff-only PR update record.

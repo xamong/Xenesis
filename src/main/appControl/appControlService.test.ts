@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import type { ExternalAppActionResult } from '../../shared/externalAppControl';
-import { createAppControlService } from './appControlService';
+import {
+  EXTERNAL_APP_ACTIONS,
+  type ExternalAppAction,
+  type ExternalAppActionResult,
+} from '../../shared/externalAppControl';
+import type { AppControlAdapter } from './appControlAdapter';
+import { __appControlServiceTestInternals, createAppControlService } from './appControlService';
 import type { WindowsAppControlAdapter } from './windowsAppControl';
 
 function okResult(action: ExternalAppActionResult['action']): ExternalAppActionResult {
@@ -23,7 +28,38 @@ const adapter: WindowsAppControlAdapter = {
   typeText: async () => okResult('typeText'),
   hotkey: async () => okResult('hotkey'),
   close: async () => okResult('close'),
+  click: async () => okResult('click'),
+  doubleClick: async () => okResult('doubleClick'),
+  tripleClick: async () => okResult('tripleClick'),
+  middleClick: async () => okResult('middleClick'),
+  rightClick: async () => okResult('rightClick'),
+  move: async () => okResult('move'),
+  mouseDown: async () => okResult('mouseDown'),
+  mouseUp: async () => okResult('mouseUp'),
+  dragAndDrop: async () => okResult('dragAndDrop'),
+  screenshot: async () => okResult('screenshot'),
+  inspect: async () => okResult('inspect'),
+  elementFromPoint: async () => okResult('elementFromPoint'),
+  tree: async () => okResult('tree'),
+  menuExplore: async () => okResult('menuExplore'),
+  highlight: async () => okResult('highlight'),
+  captureElement: async () => okResult('captureElement'),
 };
+
+test('app control service defaults to built-in settings for status readback', async () => {
+  const service = createAppControlService({
+    adapter,
+  });
+
+  const result = await service.run({ action: 'status' });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.action, 'status');
+  assert.equal(
+    result.profiles?.some((profile) => profile.id === 'notepad'),
+    true,
+  );
+});
 
 test('app control service honors profile approval level', async () => {
   const service = createAppControlService({
@@ -261,6 +297,329 @@ test('app control service applies launch placement after the app opens', async (
   assert.deepEqual(result.windows[0]?.bounds, { x: 20, y: 30, width: 800, height: 600 });
 });
 
+test('app control service passes macOS profile bundleId to the adapter', async () => {
+  const calls: unknown[] = [];
+  const routeAdapter: AppControlAdapter = {
+    ...adapter,
+    status: async (input) => {
+      calls.push(input);
+      return okResult('status');
+    },
+  };
+  const service = createAppControlService({
+    adapter: routeAdapter,
+    getSettings: () => ({
+      enabled: true,
+      profiles: [
+        {
+          id: 'textedit',
+          label: 'TextEdit',
+          platform: 'macos',
+          bundleId: 'com.apple.TextEdit',
+          executable: '/Applications/TextEdit.app',
+          allowedActions: ['status'],
+          approvalLevel: 'medium',
+          enabled: true,
+        },
+      ],
+    }),
+  });
+
+  const result = await service.run({ action: 'status', appId: 'textedit' });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(calls, [
+    {
+      executable: '/Applications/TextEdit.app',
+      bundleId: 'com.apple.TextEdit',
+      processName: undefined,
+      titleContains: undefined,
+      windowId: undefined,
+    },
+  ]);
+});
+
+test('app control service routes pointer drag and screenshot actions to the adapter', async () => {
+  const calls: unknown[] = [];
+  const routeAdapter: WindowsAppControlAdapter = {
+    ...adapter,
+    click: async (input) => {
+      calls.push({ method: 'click', input });
+      return okResult('click');
+    },
+    dragAndDrop: async (input) => {
+      calls.push({ method: 'dragAndDrop', input });
+      return okResult('dragAndDrop');
+    },
+    screenshot: async (input) => {
+      calls.push({ method: 'screenshot', input });
+      return okResult('screenshot');
+    },
+  };
+  const service = createAppControlService({
+    adapter: routeAdapter,
+    getSettings: () => ({ enabled: true, profiles: [] }),
+  });
+
+  await service.run({ action: 'click', appId: 'notepad', windowId: '1001', x: 10, y: 20 });
+  await service.run({
+    action: 'dragAndDrop',
+    appId: 'notepad',
+    windowId: '1001',
+    startX: 10,
+    startY: 20,
+    endX: 110,
+    endY: 120,
+  });
+  await service.run({
+    action: 'screenshot',
+    appId: 'notepad',
+    windowId: '1001',
+    screenshotPath: 'C:\\Temp\\notepad.png',
+  });
+
+  assert.deepEqual(calls, [
+    {
+      method: 'click',
+      input: {
+        executable: 'notepad.exe',
+        processName: undefined,
+        titleContains: undefined,
+        windowId: '1001',
+        x: 10,
+        y: 20,
+      },
+    },
+    {
+      method: 'dragAndDrop',
+      input: {
+        executable: 'notepad.exe',
+        processName: undefined,
+        titleContains: undefined,
+        windowId: '1001',
+        startX: 10,
+        startY: 20,
+        endX: 110,
+        endY: 120,
+      },
+    },
+    {
+      method: 'screenshot',
+      input: {
+        executable: 'notepad.exe',
+        processName: undefined,
+        titleContains: undefined,
+        windowId: '1001',
+        screenshotPath: 'C:\\Temp\\notepad.png',
+      },
+    },
+  ]);
+});
+
+test('app control service routes observation actions to the adapter', async () => {
+  const calls: unknown[] = [];
+  const routeAdapter: WindowsAppControlAdapter = {
+    ...adapter,
+    inspect: async (input) => {
+      calls.push({ method: 'inspect', input });
+      return okResult('inspect');
+    },
+    elementFromPoint: async (input) => {
+      calls.push({ method: 'elementFromPoint', input });
+      return okResult('elementFromPoint');
+    },
+    tree: async (input) => {
+      calls.push({ method: 'tree', input });
+      return okResult('tree');
+    },
+    menuExplore: async (input) => {
+      calls.push({ method: 'menuExplore', input });
+      return okResult('menuExplore');
+    },
+    highlight: async (input) => {
+      calls.push({ method: 'highlight', input });
+      return okResult('highlight');
+    },
+    captureElement: async (input) => {
+      calls.push({ method: 'captureElement', input });
+      return okResult('captureElement');
+    },
+  };
+  const service = createAppControlService({
+    adapter: routeAdapter,
+    getSettings: () => ({ enabled: true, profiles: [] }),
+  });
+
+  const inspectResult = await service.run({
+    action: 'inspect',
+    appId: 'notepad',
+    windowId: '1001',
+    includeTreePreview: true,
+  });
+  await service.run({ action: 'elementFromPoint', appId: 'notepad', windowId: '1001', x: 10, y: 20 });
+  await service.run({
+    action: 'tree',
+    appId: 'notepad',
+    windowId: '1001',
+    depth: 3,
+    limit: 50,
+    includeValues: true,
+    includeFullTree: false,
+  });
+  await service.run({ action: 'menuExplore', appId: 'notepad', windowId: '1001', depth: 3, limit: 50 });
+  await service.run({ action: 'highlight', appId: 'notepad', elementRef: 'uia:button:1', durationMs: 700 });
+  await service.run({
+    action: 'captureElement',
+    appId: 'notepad',
+    elementRef: 'uia:button:1',
+    screenshotPath: 'C:\\Temp\\element.png',
+  });
+
+  assert.equal(inspectResult.ok, true);
+  assert.equal(inspectResult.action, 'inspect');
+  assert.equal(inspectResult.appId, 'notepad');
+  assert.deepEqual(calls, [
+    {
+      method: 'inspect',
+      input: {
+        executable: 'notepad.exe',
+        processName: undefined,
+        titleContains: undefined,
+        windowId: '1001',
+        appId: 'notepad',
+        includeTreePreview: true,
+      },
+    },
+    {
+      method: 'elementFromPoint',
+      input: {
+        executable: 'notepad.exe',
+        processName: undefined,
+        titleContains: undefined,
+        windowId: '1001',
+        appId: 'notepad',
+        x: 10,
+        y: 20,
+      },
+    },
+    {
+      method: 'tree',
+      input: {
+        executable: 'notepad.exe',
+        processName: undefined,
+        titleContains: undefined,
+        windowId: '1001',
+        appId: 'notepad',
+        depth: 3,
+        limit: 50,
+        includeValues: true,
+        includeFullTree: false,
+      },
+    },
+    {
+      method: 'menuExplore',
+      input: {
+        executable: 'notepad.exe',
+        processName: undefined,
+        titleContains: undefined,
+        windowId: '1001',
+        appId: 'notepad',
+        depth: 3,
+        limit: 50,
+        includeValues: undefined,
+      },
+    },
+    {
+      method: 'highlight',
+      input: {
+        executable: 'notepad.exe',
+        processName: undefined,
+        titleContains: undefined,
+        windowId: undefined,
+        appId: 'notepad',
+        elementRef: 'uia:button:1',
+        durationMs: 700,
+      },
+    },
+    {
+      method: 'captureElement',
+      input: {
+        executable: 'notepad.exe',
+        processName: undefined,
+        titleContains: undefined,
+        windowId: undefined,
+        appId: 'notepad',
+        elementRef: 'uia:button:1',
+        screenshotPath: 'C:\\Temp\\element.png',
+      },
+    },
+  ]);
+});
+
+test('app control service denies profile-disallowed observation actions before adapter routing', async () => {
+  let inspectCalled = false;
+  const routeAdapter: WindowsAppControlAdapter = {
+    ...adapter,
+    inspect: async () => {
+      inspectCalled = true;
+      return okResult('inspect');
+    },
+  };
+  const service = createAppControlService({
+    adapter: routeAdapter,
+    getSettings: () => ({
+      enabled: true,
+      profiles: [
+        {
+          id: 'locked',
+          label: 'Locked App',
+          platform: 'windows',
+          executable: 'locked.exe',
+          allowedActions: ['status'],
+          approvalLevel: 'high',
+          enabled: true,
+        },
+      ],
+    }),
+  });
+
+  const result = await service.run({ action: 'inspect', appId: 'locked', includeTreePreview: true });
+
+  assert.equal(inspectCalled, false);
+  assert.equal(result.ok, false);
+  assert.equal(result.action, 'inspect');
+  assert.equal(result.approvalLevel, 'high');
+  assert.match(result.error || '', /not allowed/i);
+});
+
+test('app control service fails closed for unrouted normalized actions without closing', async () => {
+  let closeCalled = false;
+  const routeAdapter: WindowsAppControlAdapter = {
+    ...adapter,
+    close: async () => {
+      closeCalled = true;
+      return okResult('close');
+    },
+  };
+
+  const result = await __appControlServiceTestInternals.runAdapterAction(
+    routeAdapter,
+    {
+      action: 'futureAction',
+      appId: 'notepad',
+      windowId: '1001',
+    } as unknown as ExternalAppAction,
+    { executable: 'notepad.exe' },
+    'medium',
+  );
+
+  assert.equal(closeCalled, false);
+  assert.equal(result.ok, false);
+  assert.equal(result.action, 'futureAction');
+  assert.equal(result.code, 'unsupported_action');
+  assert.match(result.error || '', /not routed/i);
+});
+
 test('app control service returns profile status readback without a target or adapter execution', async () => {
   let called = false;
   const service = createAppControlService({
@@ -309,7 +668,7 @@ test('app control service returns profile status readback without a target or ad
       label: 'Notepad',
       enabled: true,
       approvalLevel: 'medium',
-      allowedActions: ['launch', 'focus', 'resize', 'typeText', 'hotkey', 'close', 'status', 'find'],
+      allowedActions: EXTERNAL_APP_ACTIONS,
     },
     {
       id: 'custom-editor',
