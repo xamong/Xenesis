@@ -1969,6 +1969,7 @@ export interface DeskBridgeCapabilityAdapter {
   highlightDetachedWindow?: (args: unknown) => Promise<unknown> | unknown;
   closeSelfWindow?: () => Promise<unknown> | unknown;
   captureActivePane?: (args: unknown) => Promise<unknown> | unknown;
+  workbenchSubagentAction?: (args: unknown) => Promise<unknown> | unknown;
   rendererPerformanceTrace?: (args: unknown) => Promise<unknown> | unknown;
   playwrightSnapshot?: (args: unknown) => Promise<unknown> | unknown;
   playwrightRun?: (args: unknown) => Promise<unknown> | unknown;
@@ -2198,6 +2199,10 @@ export const DESK_BRIDGE_IPC_CAPABILITY_COVERAGE = {
   'mcp:bridge-status': { capabilityPath: 'xd.mcp.bridge.status' },
   'mcp:capability-call': { internal: true, reason: 'Renderer transport used to call this capability registry.' },
   'mcp:capture-active-pane-result': { internal: true, reason: 'Renderer response channel for xd.capture.activePane.' },
+  'mcp:workbench-subagent-action-result': {
+    internal: true,
+    reason: 'Renderer response channel for xd.workbench.subagents actions.',
+  },
   'mcp:dock-action-result': { internal: true, reason: 'Renderer response channel for xd.dock actions.' },
   'mcp:open-builtin-pane-result': {
     internal: true,
@@ -2396,6 +2401,10 @@ export const DESK_BRIDGE_IPC_EVENT_COVERAGE = {
   'mcp:capture-active-pane': {
     internal: true,
     reason: 'Main-to-renderer request event backing xd.capture.activePane.',
+  },
+  'mcp:workbench-subagent-action': {
+    internal: true,
+    reason: 'Main-to-renderer request event backing xd.workbench.subagents actions.',
   },
   'mcp:dock-action': { internal: true, reason: 'Main-to-renderer request event backing xd.dock actions.' },
   'mcp:explorer-action': {
@@ -4648,6 +4657,130 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
         'Clear recent workspaces',
         'Clear the recent workspace profile list.',
         'write',
+      ),
+    ]),
+    group('xd.workbench', 'Workbench', 'Workbench state and orchestration surfaces.', [
+      group(
+        'xd.workbench.subagents',
+        'Workbench subagents',
+        'First-class Xenesis Agent Workbench subagent state and control operations.',
+        [
+          method(
+            'xd.workbench.subagents.status',
+            'Read Workbench subagents',
+            'Read the open Xenesis Agent Workbench subagent workers and pending assignments.',
+            'read',
+          ),
+          method(
+            'xd.workbench.subagents.attachActiveTerminal',
+            'Attach active terminal',
+            'Attach the active terminal pane as a Xenesis Agent Workbench subagent worker.',
+            'control',
+            {
+              type: 'object',
+              properties: {
+                profileName: {
+                  type: 'string',
+                  title: 'Profile name',
+                  description: 'Optional subagent profile name to bind to the attached worker.',
+                },
+                terminalId: {
+                  type: 'string',
+                  title: 'Terminal id',
+                  description: 'Optional terminal id; when omitted the Workbench chooses the active terminal.',
+                },
+              },
+            },
+          ),
+          method(
+            'xd.workbench.subagents.startManaged',
+            'Start managed subagent',
+            'Start a managed CLI terminal and register it as a Workbench subagent worker.',
+            'execute',
+            {
+              type: 'object',
+              properties: {
+                cliKind: {
+                  type: 'string',
+                  title: 'CLI',
+                  enum: ['codex', 'claude', 'gemini'],
+                  default: 'codex',
+                },
+                profileName: {
+                  type: 'string',
+                  title: 'Profile name',
+                },
+              },
+            },
+          ),
+          method(
+            'xd.workbench.subagents.plan',
+            'Plan subagent assignments',
+            'Create pending Workbench subagent assignments without writing them to worker terminals.',
+            'control',
+            {
+              type: 'object',
+              required: ['prompt'],
+              properties: {
+                prompt: {
+                  type: 'string',
+                  title: 'Assignment prompt',
+                  'ui:widget': 'textarea',
+                },
+              },
+            },
+          ),
+          method(
+            'xd.workbench.subagents.dispatch',
+            'Dispatch subagent assignments',
+            'Write pending or supplied Workbench subagent assignments into worker terminals.',
+            'execute',
+            {
+              type: 'object',
+              properties: {
+                prompt: {
+                  type: 'string',
+                  title: 'Assignment prompt',
+                  description: 'Optional prompt used to create assignments immediately before dispatch.',
+                  'ui:widget': 'textarea',
+                },
+              },
+            },
+          ),
+          method(
+            'xd.workbench.subagents.stop',
+            'Stop subagent',
+            'Stop or detach a Workbench subagent worker.',
+            'control',
+            {
+              type: 'object',
+              properties: {
+                workerId: { type: 'string', title: 'Worker id' },
+                terminalId: { type: 'string', title: 'Terminal id' },
+              },
+            },
+          ),
+          method(
+            'xd.workbench.subagents.resolveApproval',
+            'Resolve subagent approval',
+            'Send an approval or rejection decision back to a Workbench subagent worker.',
+            'control',
+            {
+              type: 'object',
+              required: ['approvalId', 'decision'],
+              properties: {
+                workerId: { type: 'string', title: 'Worker id' },
+                terminalId: { type: 'string', title: 'Terminal id' },
+                approvalId: { type: 'string', title: 'Approval id' },
+                decision: {
+                  type: 'string',
+                  title: 'Decision',
+                  enum: ['approve', 'reject'],
+                },
+              },
+            },
+          ),
+        ],
       ),
     ]),
     group('xd.window', 'Window', 'Window bounds and window sizing controls.', [
@@ -14157,6 +14290,29 @@ export async function callDeskBridgeCapability(
       }
       if (path === 'xd.context.actions') {
         return callAdapter(path, api?.contextActions);
+      }
+      const workbenchSubagentAction = (action: string) =>
+        callAdapter(path, api?.workbenchSubagentAction, { action, ...normalizeCapabilityArgs(request.args) });
+      if (path === 'xd.workbench.subagents.status') {
+        return workbenchSubagentAction('status');
+      }
+      if (path === 'xd.workbench.subagents.attachActiveTerminal') {
+        return workbenchSubagentAction('attachActiveTerminal');
+      }
+      if (path === 'xd.workbench.subagents.startManaged') {
+        return workbenchSubagentAction('startManaged');
+      }
+      if (path === 'xd.workbench.subagents.plan') {
+        return workbenchSubagentAction('plan');
+      }
+      if (path === 'xd.workbench.subagents.dispatch') {
+        return workbenchSubagentAction('dispatch');
+      }
+      if (path === 'xd.workbench.subagents.stop') {
+        return workbenchSubagentAction('stop');
+      }
+      if (path === 'xd.workbench.subagents.resolveApproval') {
+        return workbenchSubagentAction('resolveApproval');
       }
       if (path === 'xd.dock.panes.list') {
         return callAdapter(path, api?.listDockPanes);
