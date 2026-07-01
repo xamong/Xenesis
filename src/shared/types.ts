@@ -2283,9 +2283,29 @@ export interface ProviderIntegrationHermesStatus {
   items: ProviderIntegrationHermesPluginStatus[];
 }
 
+export interface ProviderIntegrationXenesisPluginStatus {
+  id: string;
+  label: string;
+  sourcePath: string;
+  destinationPath: string;
+  sourceAvailable: boolean;
+  installed: boolean;
+  enabled: boolean;
+}
+
+export interface ProviderIntegrationXenesisStatus {
+  assetRoot: string;
+  xenesisHome: string;
+  assetAvailable: boolean;
+  rootConfigured: boolean;
+  pluginsInstalled: boolean;
+  items: ProviderIntegrationXenesisPluginStatus[];
+}
+
 export interface ProviderIntegrationStatus {
   cliTargets: ProviderIntegrationCliTargetStatus[];
   hermes: ProviderIntegrationHermesStatus;
+  xenesis?: ProviderIntegrationXenesisStatus;
 }
 
 export interface ProviderIntegrationStatusRequest {
@@ -2299,7 +2319,7 @@ export interface ProviderIntegrationCliInstallRequest {
 }
 
 export interface ProviderIntegrationInstallChange {
-  kind: 'mcp' | 'skill';
+  kind: 'mcp' | 'skill' | 'skill-reference';
   path: string;
   changed: boolean;
   backupPath?: string;
@@ -2328,12 +2348,26 @@ export interface ProviderIntegrationHermesInstallResult {
   error?: string;
 }
 
+export interface ProviderIntegrationXenesisInstallResult {
+  ok: boolean;
+  xenesisHome?: string;
+  installed?: Array<{
+    id: string;
+    label: string;
+    sourcePath: string;
+    destinationPath: string;
+    manifestPath: string;
+  }>;
+  error?: string;
+}
+
 export interface ProviderIntegrationApi {
   status(request?: ProviderIntegrationStatusRequest): Promise<ProviderIntegrationStatus>;
   installCliIntegration(request: ProviderIntegrationCliInstallRequest): Promise<ProviderIntegrationCliInstallResult>;
   installHermesPlugins(
     request: ProviderIntegrationHermesInstallRequest,
   ): Promise<ProviderIntegrationHermesInstallResult>;
+  installXenesisPlugins(): Promise<ProviderIntegrationXenesisInstallResult>;
 }
 
 export interface McpBridgeOpenFilePayload {

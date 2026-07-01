@@ -1550,6 +1550,9 @@ const providerIntegrationApi: ProviderIntegrationApi = {
   installHermesPlugins(request) {
     return ipcRenderer.invoke('provider-integration:install-hermes-plugins', request);
   },
+  installXenesisPlugins() {
+    return ipcRenderer.invoke('provider-integration:install-xenesis-plugins');
+  },
 };
 
 contextBridge.exposeInMainWorld('providerIntegrationAPI', providerIntegrationApi);

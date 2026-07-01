@@ -101,3 +101,98 @@ test('installExternalMcpServer writes selected local CLI config with a backup an
   assert.match(written, /NOTION_TOKEN = "secret-token"/);
   assert.equal(JSON.stringify(result).includes('secret-token'), false);
 });
+
+test('renderXenesisDeskSkill default XCON flow saves only on explicit request', () => {
+  const actual = installer.renderXenesisDeskSkill();
+
+  assert.match(actual, /For inline chat or Workbench responses, prefer `workbench-response`/);
+  assert.doesNotMatch(actual, /Save\/open with `xenesis_desk_create_xcon_markdown_from_content`/);
+  assert.match(actual, /Skip validation for inline chat and Workbench responses/);
+  assert.match(actual, /Return generated Markdown inline/);
+  assert.match(actual, /Use renderer partial rendering and visible render errors/);
+  assert.match(actual, /Validate only when the user explicitly asks to save, export, open, or validate/);
+  assert.match(actual, /Save with `xenesis_desk_create_xcon_markdown_from_content` only when the user explicitly asks/);
+});
+
+test('installXenesisNativePlugins installs and enables the XCON/SKETCH plugin', () => {
+  assert.equal(typeof installer.installXenesisNativePlugins, 'function');
+
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'xenesis-native-plugin-'));
+
+  try {
+    const assetRoot = path.join(root, 'provider-assets');
+    const pluginAssetRoot = path.join(assetRoot, 'xenesis', 'plugins', 'xcon-sketch');
+    const skillRoot = path.join(pluginAssetRoot, 'skills', 'xcon-sketch');
+    const xenisHome = path.join(root, '.xenis');
+    const xenesisHome = path.join(xenisHome, 'xenesis');
+    const serverPath = path.join(root, 'mcp', 'xenesis-desk-mcp-server.mjs');
+
+    fs.mkdirSync(skillRoot, { recursive: true });
+    fs.writeFileSync(
+      path.join(skillRoot, 'SKILL.md'),
+      [
+        '---',
+        'name: xcon-sketch',
+        'description: Installed XCON/SKETCH generation skill',
+        '---',
+        '',
+        'Use the plugin MCP server.',
+      ].join('\n'),
+      'utf8',
+    );
+    fs.writeFileSync(
+      path.join(pluginAssetRoot, 'xenesis.plugin.json'),
+      JSON.stringify(
+        {
+          name: 'xcon-sketch',
+          version: '0.1.0',
+          skills: ['skills/xcon-sketch'],
+          mcpServers: {
+            xcon_sketch: {
+              command: 'node',
+              args: ['{{XENESIS_DESK_MCP_SERVER}}'],
+              env: {
+                XENIS_HOME: '{{XENIS_HOME}}',
+              },
+            },
+          },
+        },
+        null,
+        2,
+      ),
+      'utf8',
+    );
+
+    const result = installer.installXenesisNativePlugins({
+      assetRoot,
+      xenesisHome,
+      xenisHome,
+      serverPath,
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.installed?.[0]?.id, 'xcon-sketch');
+
+    const pluginDestination = path.join(xenesisHome, 'plugins', 'xcon-sketch');
+    const manifest = JSON.parse(fs.readFileSync(path.join(pluginDestination, 'xenesis.plugin.json'), 'utf8'));
+    assert.equal(manifest.mcpServers.xcon_sketch.args[0], serverPath);
+    assert.equal(manifest.mcpServers.xcon_sketch.env.XENIS_HOME, xenisHome);
+    assert.equal(
+      fs
+        .readFileSync(path.join(pluginDestination, 'skills', 'xcon-sketch', 'SKILL.md'), 'utf8')
+        .includes('Use the plugin MCP server.'),
+      true,
+    );
+
+    const pluginState = JSON.parse(fs.readFileSync(path.join(xenesisHome, 'plugins.json'), 'utf8'));
+    assert.equal(pluginState.plugins[0].path, pluginDestination);
+    assert.equal(pluginState.plugins[0].name, 'xcon-sketch');
+    assert.equal(pluginState.plugins[0].enabled, true);
+
+    const status = installer.getProviderIntegrationStatus({ assetRoot, xenesisHome });
+    assert.equal(status.xenesis.pluginsInstalled, true);
+    assert.equal(status.xenesis.items[0].enabled, true);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

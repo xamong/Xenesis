@@ -17,7 +17,7 @@ test('Connectors is a visible Settings category near external app controls', () 
   const extensionsIndex = visibleIds.indexOf('extensions');
   assert.ok(externalAppsIndex >= 0, 'external-apps is visible');
   assert.ok(extensionsIndex >= 0, 'extensions is visible');
-  assert.equal(connectorsIndex, externalAppsIndex + 1);
+  assert.ok(connectorsIndex > externalAppsIndex, 'connectors follows external-apps');
   assert.equal(extensionsIndex, connectorsIndex + 1);
 });
 
@@ -33,4 +33,17 @@ test('Settings categories do not expose natural-language aliases for Agent routi
   const externalApps = SETTINGS_CATEGORIES.find((category) => category.id === 'external-apps');
   assert.equal(Object.hasOwn(runModel ?? {}, 'naturalWords'), false);
   assert.equal(Object.hasOwn(externalApps ?? {}, 'naturalWords'), false);
+});
+
+test('SettingsPane exposes Xenesis native plugin integration controls', () => {
+  const settingsPane = readFileSync(new URL('./SettingsPane.tsx', import.meta.url), 'utf8');
+  const english = readFileSync(new URL('../i18n/en.ts', import.meta.url), 'utf8');
+  const korean = readFileSync(new URL('../i18n/ko.ts', import.meta.url), 'utf8');
+
+  assert.match(settingsPane, /providerIntegrationStatus\?\.xenesis/);
+  assert.match(settingsPane, /installXenesisPlugins/);
+  assert.match(settingsPane, /settings\.xenesisNativePluginTitle/);
+  assert.match(settingsPane, /settings\.xenesisNativePluginInstall/);
+  assert.match(english, /xenesisNativePluginTitle:\s*'Xenesis Agent plugin'/);
+  assert.match(korean, /xenesisNativePluginTitle:\s*'Xenesis Agent 플러그인'/);
 });

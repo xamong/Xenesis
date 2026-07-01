@@ -71,6 +71,109 @@ function normalizeWaitMs(value, fallback = 1000) {
   return Math.max(0, Math.min(Math.floor(parsed), 30000));
 }
 
+function normalizeNormalizedCoordinate(value, field) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0 || parsed > 999) {
+    throw new Error(`${field} must be an integer from 0 to 999.`);
+  }
+  return parsed;
+}
+
+function normalizeActionInteger(value, field, fallback, min, max) {
+  if (value === undefined || value === null || value === '') return fallback;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < min || parsed > max) {
+    throw new Error(`${field} must be an integer from ${min} to ${max}.`);
+  }
+  return parsed;
+}
+
+function normalizeActionNumber(value, field, fallback, min, max) {
+  if (value === undefined || value === null || value === '') return fallback;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < min || parsed > max) {
+    throw new Error(`${field} must be a number from ${min} to ${max}.`);
+  }
+  return parsed;
+}
+
+function normalizeMouseButton(value) {
+  const button = String(value || 'left')
+    .trim()
+    .toLowerCase();
+  if (!['left', 'middle', 'right'].includes(button)) {
+    throw new Error('button must be left, middle, or right.');
+  }
+  return button;
+}
+
+function normalizedPoint(action, dimensions) {
+  const x = normalizeNormalizedCoordinate(action.x, 'x');
+  const y = normalizeNormalizedCoordinate(action.y, 'y');
+  const width = Math.max(1, Math.floor(Number(dimensions?.width) || 1280));
+  const height = Math.max(1, Math.floor(Number(dimensions?.height) || 720));
+  return {
+    x: Math.max(0, Math.min(width - 1, Math.round((x / 999) * (width - 1)))),
+    y: Math.max(0, Math.min(height - 1, Math.round((y / 999) * (height - 1)))),
+  };
+}
+
+function normalizedDragPoints(action, dimensions) {
+  const start = {
+    x: action.startX ?? action.start_x,
+    y: action.startY ?? action.start_y,
+  };
+  const end = {
+    x: action.endX ?? action.end_x,
+    y: action.endY ?? action.end_y,
+  };
+  return {
+    normalized: {
+      start: {
+        x: normalizeNormalizedCoordinate(start.x, 'startX'),
+        y: normalizeNormalizedCoordinate(start.y, 'startY'),
+      },
+      end: {
+        x: normalizeNormalizedCoordinate(end.x, 'endX'),
+        y: normalizeNormalizedCoordinate(end.y, 'endY'),
+      },
+    },
+    pixel: {
+      start: normalizedPoint(start, dimensions),
+      end: normalizedPoint(end, dimensions),
+    },
+  };
+}
+
+function normalizeKeys(value) {
+  const keys = Array.isArray(value)
+    ? value.map((item) => String(item || '').trim()).filter(Boolean)
+    : String(value || '')
+        .split('+')
+        .map((item) => item.trim())
+        .filter(Boolean);
+  if (!keys.length) throw new Error('keys must contain at least one key.');
+  return keys;
+}
+
+function scrollDelta(action) {
+  const magnitudeInPixels = normalizeActionInteger(
+    action.magnitudeInPixels ?? action.magnitude_in_pixels,
+    'magnitudeInPixels',
+    300,
+    0,
+    30000,
+  );
+  const direction = String(action.direction || 'down')
+    .trim()
+    .toLowerCase();
+  if (direction === 'up') return { direction, magnitudeInPixels, dx: 0, dy: -magnitudeInPixels };
+  if (direction === 'down') return { direction, magnitudeInPixels, dx: 0, dy: magnitudeInPixels };
+  if (direction === 'left') return { direction, magnitudeInPixels, dx: -magnitudeInPixels, dy: 0 };
+  if (direction === 'right') return { direction, magnitudeInPixels, dx: magnitudeInPixels, dy: 0 };
+  throw new Error('direction must be up, down, left, or right.');
+}
+
 function normalizeDimension(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? Math.max(1, Math.min(Math.floor(parsed), 10000)) : undefined;
@@ -135,15 +238,21 @@ function resolveTargetUrl(args = {}) {
   try {
     targetUrl = new URL(inputUrl);
   } catch {
-    throw new Error('url must be an absolute http/https URL.');
+    throw new Error('url must be an absolute http/https URL, data URL, or about:blank.');
   }
 
-  if (!['http:', 'https:'].includes(targetUrl.protocol)) {
-    throw new Error('url must be an http or https URL.');
+  if (targetUrl.protocol === 'about:' && targetUrl.href !== 'about:blank') {
+    throw new Error('about URLs are limited to about:blank.');
+  }
+  if (!['http:', 'https:', 'data:', 'about:'].includes(targetUrl.protocol)) {
+    throw new Error('url must be an http/https URL, data URL, or about:blank.');
   }
 
   const allowedHosts = normalizeHosts(args.allowedHosts);
-  if (!isHostAllowed(targetUrl.hostname, allowedHosts)) {
+  if (allowedHosts.length && targetUrl.protocol !== 'http:' && targetUrl.protocol !== 'https:') {
+    throw new Error('allowedHosts can only be used with http/https URLs.');
+  }
+  if (targetUrl.hostname && !isHostAllowed(targetUrl.hostname, allowedHosts)) {
     throw new Error(`Target host is not allowed: ${targetUrl.hostname}`);
   }
   return targetUrl;
@@ -278,15 +387,30 @@ function normalizeActions(value) {
     .slice(0, 50);
 }
 
-async function performAction(page, action = {}, index, defaultTimeoutMs) {
+async function performAction(page, action = {}, index, defaultTimeoutMs, allowedHosts = []) {
   const type = String(action.type || action.action || '').trim();
   const timeout = normalizeTimeout(action.timeoutMs, defaultTimeoutMs);
   const selector = String(action.selector || '').trim();
+  const viewport = page.viewportSize();
 
   if (type === 'click') {
-    if (!selector) throw new Error(`actions[${index}].selector is required for click.`);
-    await page.locator(selector).first().click({ timeout });
-    return { index, type, selector };
+    if (selector) {
+      await page.locator(selector).first().click({ timeout });
+      return { index, type, selector };
+    }
+    const point = normalizedPoint(action, viewport);
+    const button = normalizeMouseButton(action.button);
+    const clickCount = normalizeActionInteger(action.clickCount ?? action.click_count, 'clickCount', 1, 1, 10);
+    await page.mouse.click(point.x, point.y, { button, clickCount });
+    return {
+      index,
+      type,
+      normalized: { x: Number(action.x), y: Number(action.y) },
+      pixel: point,
+      ...(button === 'left' ? {} : { button }),
+      ...(clickCount === 1 ? {} : { clickCount }),
+      ...(action.intent ? { intent: String(action.intent) } : {}),
+    };
   }
 
   if (type === 'fill') {
@@ -304,6 +428,141 @@ async function performAction(page, action = {}, index, defaultTimeoutMs) {
     if (selector) await page.locator(selector).first().press(key, { timeout });
     else await page.keyboard.press(key);
     return { index, type, selector, key };
+  }
+
+  if (type === 'mouseDown' || type === 'mouse_down') {
+    const point = normalizedPoint(action, viewport);
+    await page.mouse.move(point.x, point.y);
+    await page.mouse.down({ button: normalizeMouseButton(action.button) });
+    return {
+      index,
+      type: 'mouseDown',
+      normalized: { x: Number(action.x), y: Number(action.y) },
+      pixel: point,
+      ...(action.intent ? { intent: String(action.intent) } : {}),
+    };
+  }
+
+  if (type === 'mouseUp' || type === 'mouse_up') {
+    const point = normalizedPoint(action, viewport);
+    await page.mouse.move(point.x, point.y);
+    await page.mouse.up({ button: normalizeMouseButton(action.button) });
+    return {
+      index,
+      type: 'mouseUp',
+      normalized: { x: Number(action.x), y: Number(action.y) },
+      pixel: point,
+      ...(action.intent ? { intent: String(action.intent) } : {}),
+    };
+  }
+
+  if (type === 'move') {
+    const point = normalizedPoint(action, viewport);
+    await page.mouse.move(point.x, point.y);
+    return {
+      index,
+      type,
+      normalized: { x: Number(action.x), y: Number(action.y) },
+      pixel: point,
+      ...(action.intent ? { intent: String(action.intent) } : {}),
+    };
+  }
+
+  if (type === 'dragAndDrop' || type === 'drag_and_drop') {
+    const points = normalizedDragPoints(action, viewport);
+    const steps = normalizeActionInteger(action.steps, 'steps', 12, 1, 100);
+    await page.mouse.move(points.pixel.start.x, points.pixel.start.y);
+    await page.mouse.down({ button: normalizeMouseButton(action.button) });
+    await page.mouse.move(points.pixel.end.x, points.pixel.end.y, { steps });
+    await page.mouse.up({ button: normalizeMouseButton(action.button) });
+    return {
+      index,
+      type: 'dragAndDrop',
+      normalized: points.normalized,
+      pixel: points.pixel,
+      ...(steps === 12 ? {} : { steps }),
+      ...(action.intent ? { intent: String(action.intent) } : {}),
+    };
+  }
+
+  if (type === 'type') {
+    if (typeof action.text !== 'string') throw new Error(`actions[${index}].text is required for type.`);
+    const delay = normalizeActionNumber(action.delayMs ?? action.delay_ms, 'delayMs', 0, 0, 1000);
+    await page.keyboard.type(action.text, { delay });
+    if (action.pressEnter === true || action.press_enter === true) await page.keyboard.press('Enter');
+    return {
+      index,
+      type,
+      textLength: action.text.length,
+      ...(delay ? { delayMs: delay } : {}),
+      ...(action.pressEnter === true || action.press_enter === true ? { pressEnter: true } : {}),
+      ...(action.intent ? { intent: String(action.intent) } : {}),
+    };
+  }
+
+  if (type === 'keyDown' || type === 'key_down') {
+    const key = String(action.key || action.value || '').trim();
+    if (!key) throw new Error(`actions[${index}].key is required for keyDown.`);
+    await page.keyboard.down(key);
+    return { index, type: 'keyDown', key, ...(action.intent ? { intent: String(action.intent) } : {}) };
+  }
+
+  if (type === 'keyUp' || type === 'key_up') {
+    const key = String(action.key || action.value || '').trim();
+    if (!key) throw new Error(`actions[${index}].key is required for keyUp.`);
+    await page.keyboard.up(key);
+    return { index, type: 'keyUp', key, ...(action.intent ? { intent: String(action.intent) } : {}) };
+  }
+
+  if (type === 'hotkey') {
+    let keys;
+    try {
+      keys = normalizeKeys(action.keys);
+    } catch (error) {
+      throw new Error(`actions[${index}].${error instanceof Error ? error.message : String(error)}`);
+    }
+    await page.keyboard.press(keys.join('+'));
+    return { index, type, keys, ...(action.intent ? { intent: String(action.intent) } : {}) };
+  }
+
+  if (type === 'scroll') {
+    const delta = scrollDelta(action);
+    await page.mouse.wheel(delta.dx, delta.dy);
+    return {
+      index,
+      type,
+      direction: delta.direction,
+      magnitudeInPixels: delta.magnitudeInPixels,
+      ...(action.intent ? { intent: String(action.intent) } : {}),
+    };
+  }
+
+  if (type === 'navigate') {
+    const nextUrl = resolveTargetUrl({ url: action.url, allowedHosts });
+    await page.goto(nextUrl.toString(), { waitUntil: 'domcontentloaded', timeout });
+    return { index, type, url: nextUrl.href, ...(action.intent ? { intent: String(action.intent) } : {}) };
+  }
+
+  if (type === 'goBack' || type === 'go_back') {
+    const response = await page.goBack({ waitUntil: 'domcontentloaded', timeout }).catch(() => null);
+    return {
+      index,
+      type: 'goBack',
+      url: page.url(),
+      navigated: response !== null,
+      ...(action.intent ? { intent: String(action.intent) } : {}),
+    };
+  }
+
+  if (type === 'goForward' || type === 'go_forward') {
+    const response = await page.goForward({ waitUntil: 'domcontentloaded', timeout }).catch(() => null);
+    return {
+      index,
+      type: 'goForward',
+      url: page.url(),
+      navigated: response !== null,
+      ...(action.intent ? { intent: String(action.intent) } : {}),
+    };
   }
 
   if (type === 'waitForSelector') {
@@ -371,7 +630,7 @@ async function runActions(args = {}) {
         actionResults.push({ index, type: 'screenshot', filePath: artifact.filePath, selector: artifact.selector });
         continue;
       }
-      actionResults.push(await performAction(page, action, index, opened.timeoutMs));
+      actionResults.push(await performAction(page, action, index, opened.timeoutMs, normalizeHosts(args.allowedHosts)));
     }
 
     if (args.screenshot === true) {
@@ -405,6 +664,8 @@ async function runActions(args = {}) {
     return {
       ok: true,
       url: targetUrl.href,
+      finalUrl: page.url(),
+      title: await page.title().catch(() => ''),
       outDir,
       actions: actionResults,
       artifacts,

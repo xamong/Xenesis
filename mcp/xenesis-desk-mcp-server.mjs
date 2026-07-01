@@ -123,6 +123,12 @@ const promptFiles = [
     name: 'Strict generation profile',
     description: 'Generate the smallest reliable renderable SKETCH artifact for validation-first flows.',
   },
+  {
+    key: 'workbench-natural-xcon-response',
+    fileName: '17-workbench-natural-xcon-response.md',
+    name: 'Workbench natural XCON response',
+    description: 'Answer naturally in an inline Workbench and use XCON/SKETCH only when a visual response helps.',
+  },
 ];
 
 const promptTemplates = [
@@ -187,16 +193,35 @@ const promptTemplates = [
     ],
   },
   {
+    name: 'xcon.workbench-response',
+    description: 'Generate a natural inline Workbench response that uses XCON/SKETCH only when helpful.',
+    files: [
+      'shared-xcon-contract',
+      'workbench-natural-xcon-response',
+      'showcase-component-catalog',
+      'dashboard-chart-map-network-recipes',
+      'domain-blueprints',
+    ],
+  },
+  {
     name: 'xcon.strict-sketch',
     description: 'Generate one minimal validation-first XCON/SKETCH screen.',
     files: ['shared-xcon-contract', 'strict-generation-profile'],
   },
 ];
 
+const READ_ONLY_TOOL_ANNOTATIONS = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: false,
+};
+
 const tools = [
   {
     name: 'xenesis_desk_get_xcon_prompt',
     description: 'Return Xenesis Desk XCON/SKETCH generation guidance assembled from the bundled prompt files.',
+    annotations: READ_ONLY_TOOL_ANNOTATIONS,
     inputSchema: {
       type: 'object',
       properties: {
@@ -210,6 +235,7 @@ const tools = [
             'family-template',
             'review-repair',
             'chat-artifact',
+            'workbench-response',
             'chain',
             'workflow',
             'template-lab',
@@ -1444,6 +1470,13 @@ function promptFilesForKind(kind, task) {
       'auto-layout-layer-recipes',
       'rich-list-xlist-recipes',
     ],
+    'workbench-response': [
+      'shared-xcon-contract',
+      'workbench-natural-xcon-response',
+      'showcase-component-catalog',
+      'dashboard-chart-map-network-recipes',
+      'domain-blueprints',
+    ],
     chain: ['shared-xcon-contract', 'xcon-chain-generation'],
     workflow: ['shared-xcon-contract', 'xcon-workflow-generation'],
     'template-lab': [
@@ -1475,8 +1508,9 @@ async function assemblePromptText({ files, brief, audience, task }) {
     [
       '## Xenesis Desk MCP Output Rule',
       '',
-      'Return the complete artifact content only. For Markdown documents, include the Markdown and every required `xcon-chain`, `xcon-chain-fixture`, `xcon-workflow`, and `xcon-sketch` fence directly in the document.',
-      'After generating content, call `xenesis_desk_validate_xcon_markdown` when the output includes XCON/SKETCH fences, then call `xenesis_desk_create_xcon_markdown_from_content` to save it in Xenesis Desk. Set `openInDesk` to true only when the user explicitly asks to open a separate Xenesis Desk pane or window.',
+      'Return the complete artifact content inline. For Markdown documents, include the Markdown and every required `xcon-chain`, `xcon-chain-fixture`, `xcon-workflow`, and `xcon-sketch` fence directly in the document.',
+      'For inline chat or Workbench responses, do not call validation tools before or after returning generated XCON/SKETCH. Return the Markdown inline immediately; the Workbench renderer handles partial rendering and visible render errors. Validate only when the user explicitly asks to save, export, open, or validate an artifact, or when the task is specifically repair/validation.',
+      'Call `xenesis_desk_create_xcon_markdown_from_content` only when the user explicitly asks to save, create a file, export, or open a separate Desk artifact. If saving without opening, set `openInDesk` to false. Set `openInDesk` to true only when the user explicitly asks to open a separate Xenesis Desk pane or window.',
     ].join('\n'),
   );
 

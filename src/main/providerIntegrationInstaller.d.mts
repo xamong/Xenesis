@@ -4,6 +4,7 @@ import type {
   ProviderIntegrationHermesInstallRequest,
   ProviderIntegrationHermesInstallResult,
   ProviderIntegrationStatus,
+  ProviderIntegrationXenesisInstallResult,
 } from '../shared/types';
 
 export declare function mergeCodexMcpConfig(
@@ -40,7 +41,11 @@ export declare function mergeJsonExternalMcpConfig(
   },
 ): string;
 
-export declare function renderXenesisDeskSkill(options?: { serverName?: string }): string;
+export declare function renderXenesisDeskSkill(options?: {
+  serverName?: string;
+  targetId?: string;
+  templateText?: string;
+}): string;
 
 export declare function buildCliIntegrationTargets(options?: {
   homeDir?: string;
@@ -58,11 +63,23 @@ export declare function resolveHermesPluginPlan(options?: { assetRoot?: string; 
   }>;
 };
 
+export declare function resolveXenesisNativePluginPlan(options?: { assetRoot?: string; xenesisHome?: string }): {
+  assetRoot: string;
+  xenesisHome: string;
+  items: Array<{
+    id: string;
+    label: string;
+    sourcePath: string;
+    destinationPath: string;
+  }>;
+};
+
 export declare function getProviderIntegrationStatus(options?: {
   homeDir?: string;
   appDataDir?: string;
   assetRoot?: string;
   hermesRoot?: string;
+  xenesisHome?: string;
   fsImpl?: unknown;
 }): ProviderIntegrationStatus;
 
@@ -71,6 +88,7 @@ export declare function installCliIntegration(
     serverName?: string;
     serverPath?: string;
     xenisHome?: string;
+    assetRoot?: string;
     homeDir?: string;
     appDataDir?: string;
     backupRoot?: string;
@@ -105,3 +123,11 @@ export declare function installHermesPlugins(
     fsImpl?: unknown;
   },
 ): ProviderIntegrationHermesInstallResult;
+
+export declare function installXenesisNativePlugins(options?: {
+  assetRoot?: string;
+  xenesisHome?: string;
+  xenisHome?: string;
+  serverPath?: string;
+  fsImpl?: unknown;
+}): ProviderIntegrationXenesisInstallResult;

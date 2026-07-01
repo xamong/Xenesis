@@ -259,6 +259,17 @@
           "!**/*.pyo",
           "!**/*.test.*"
         ]
+      },
+      {
+        "from": "providers/xenesis/plugins/xcon-sketch",
+        "to": "provider-assets/xenesis/plugins/xcon-sketch",
+        "filter": [
+          "**/*",
+          "!**/__pycache__/**",
+          "!**/*.pyc",
+          "!**/*.pyo",
+          "!**/*.test.*"
+        ]
       }
     ],
     "asar": true,

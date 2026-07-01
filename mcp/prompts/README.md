@@ -29,6 +29,7 @@ append the task-specific prompt that matches the artifact you want.
 | [14-family-binding-workflow-recipes.md](14-family-binding-workflow-recipes.md) | Generate fixture, chain, sketch, and workflow artifacts that stay data-bound. |
 | [15-domain-blueprints.md](15-domain-blueprints.md) | Choose XCON component patterns for common operational and product domains. |
 | [16-strict-generation-profile.md](16-strict-generation-profile.md) | Generate the smallest reliable renderable SKETCH artifact for validation-first flows. |
+| [17-workbench-natural-xcon-response.md](17-workbench-natural-xcon-response.md) | Generate natural inline Workbench responses that use XCON/SKETCH only when a visual answer helps. |
 
 Files `10` through `15` are distilled from the richer XCON/SKETCH examples in
 `examples/showcase/*.xcon.sketch` and from the binding/workflow presets in
@@ -38,6 +39,11 @@ component subset.
 
 File `16` is a validation-first profile for smoke tests, small models, and
 repair loops that need a minimal renderable artifact before visual ambition.
+
+File `17` is for inline Workbench chat responses. It defaults to Markdown and
+uses XCON/SKETCH only when a focused visual block makes the answer clearer. It
+does not ask the model to validate, save, export, or open a separate Desk pane
+unless the user explicitly requests persistence.
 
 ## Recommended Assembly
 

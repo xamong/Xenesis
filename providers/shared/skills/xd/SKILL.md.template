@@ -131,6 +131,8 @@ Only use the image viewer, Playwright screenshot tools, or file-open tools when 
 
 For Hermes gateway/Bot artifact generation, prefer the dedicated XCON tools over generic file writes:
 
+- For inline chat or Workbench responses, call `xenesis_desk_get_xcon_prompt` with `kind:"workbench-response"` and return Markdown inline. Do not validate, save, export, or open a separate Desk pane unless the user explicitly asks for persistence.
+- Use `markdown-xcon` for document/report artifacts, `dashboard-workflow` for monitoring dashboards, and `strict-sketch` for small validation-first screens.
 - Use `xenesis_desk_mobile_create_xcon_markdown_from_content` when the agent already has Markdown with XCON/SKETCH fences.
 - Use `xenesis_desk_mobile_create_xcon_markdown` for prompt-based XCON/SKETCH Markdown generation from a brief.
 - Use `xenesis_desk_mobile_export_xcon_pdf` to export an existing XCON Markdown file to PDF.
