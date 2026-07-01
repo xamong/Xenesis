@@ -26795,3 +26795,30 @@ Verification so far:
 - Next intended step:
   - Stage the App Control Lab / Extended Apps files, commit on `mini`, push,
     and update existing PR #13.
+
+## 2026-07-01 App Control Lab Extended Apps - PR Update
+
+- Current objective:
+  - Record the App Control Lab / Extended Apps commit, push, and PR update.
+- Touched files:
+  - `handoff.md`
+- Commands run:
+  - `git commit -m "Port App Control Lab external app controls"`
+  - `git push origin mini`
+  - `gh pr list --head mini --base main --json number,title,url,state`
+  - `gh pr view 13 --json number,title,body,url,headRefName,baseRefName,state`
+  - `gh pr edit 13 --title "Port Meta, Agent Sessions, and App Control Lab" --body-file -`
+- Exact verification result:
+  - Created commit `6c023bd` (`Port App Control Lab external app controls`).
+  - Pushed `mini` to `origin/mini`.
+  - Existing PR #13 remains open for `mini -> main`.
+  - PR URL: `https://github.com/xamong/Xenesis/pull/13`
+  - PR title/body now include the App Control Lab / Extended Apps slice and
+    latest verification commands.
+- Known gaps:
+  - Same as the final verification section: full repo lint remains blocked by
+    pre-existing repo-wide Biome diagnostics, while changed TypeScript files
+    pass targeted Biome checks.
+- Next intended step:
+  - Continue with the next non-`packages/xenesis` sibling-parity priority after
+    PR review or user direction.
