@@ -26865,3 +26865,31 @@ Verification so far:
 - Next intended step:
   - Commit the Office Control slice design, ask for user review of the written
     spec, then create the implementation plan only after review approval.
+
+## 2026-07-01 Office Control Implementation Plan
+
+- Current objective:
+  - Create a TDD-oriented implementation plan for the approved Office Control
+    slice design.
+- Touched files:
+  - `docs/superpowers/plans/2026-07-01-office-control.md`
+  - `handoff.md`
+- Commands run:
+  - Read `superpowers:writing-plans`.
+  - Read `docs/superpowers/specs/2026-07-01-office-control-slice-design.md`.
+  - Checked existing plan tracking with `git ls-files docs/superpowers/plans`.
+  - Created `docs/superpowers/plans/2026-07-01-office-control.md`.
+  - Plan red-flag scan:
+    `Select-String -Path docs/superpowers/plans/2026-07-01-office-control.md -Pattern 'TBD|TODO|placeholder|later|fill in|Similar to|appropriate' -CaseSensitive:$false`
+- Exact verification result:
+  - User approved the written Office Control slice spec.
+  - Implementation plan now covers shared model, CR surface, Excel file
+    provider, installed Office adapters, Office service, settings/main wiring,
+    focused verification, live smoke, and PR update.
+  - Red-flag scan returned no matches after adjusting the self-review wording.
+- Known gaps:
+  - No Office implementation code has been added yet.
+  - `docs/superpowers/plans` is ignored by `.gitignore`; this approved plan must
+    be force-added when committing the documentation artifact.
+- Next intended step:
+  - Offer execution choice: subagent-driven execution or inline execution.
