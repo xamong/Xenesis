@@ -346,7 +346,7 @@ class WorkerClient {
     let message;
     try {
       message = JSON.parse(line);
-    } catch (error) {
+    } catch {
       this.appendLog(`invalid worker JSON: ${line}`);
       return;
     }
@@ -533,7 +533,7 @@ async function handleApi(req, res, pathname) {
   }
 }
 
-function serveStatic(req, res, pathname) {
+function serveStatic(_req, res, pathname) {
   const relativePath = pathname === '/' ? 'index.html' : pathname.replace(/^\/+/, '');
   const filePath = path.resolve(staticRoot, relativePath);
   if (!filePath.startsWith(staticRoot)) {

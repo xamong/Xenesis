@@ -61,6 +61,9 @@ Do not assume Hermes `/xd` exists inside Pi, Codex, or Claude Code. In Pi, Codex
 | XCON markdown | `/xd xcon <prompt>` | `xenesis_desk_create_xcon_markdown` |
 | XCON markdown from content | n/a | `xenesis_desk_create_xcon_markdown_from_content` |
 | validate XCON markdown | `/xd validate` | `xenesis_desk_validate_xcon_markdown` |
+| Office status | n/a | `xd.office.status` through the Capability Registry |
+| Excel create/inspect/read | n/a | `xd.office.excel.createWorkbook`, `xd.office.excel.inspectWorkbook`, `xd.office.excel.readRange` |
+| Excel installed automation | n/a | `xd.office.excel.openWorkbook`, `xd.office.excel.writeRange`, `xd.office.excel.saveWorkbook`, `xd.office.excel.closeWorkbook`, `xd.office.excel.exportPdf` |
 | Playwright snapshot image | `/xd pw snapshot <url>` | `xenesis_desk_playwright_snapshot`; opens the image viewer by default, set `openInDesk:false` to only save |
 | Playwright actions | `/xd pw run <json-payload>` | `xenesis_desk_playwright_run` |
 | panels | `/xd panels` | `xenesis_desk_list_panels` |
@@ -115,6 +118,24 @@ When the user wants delegated Codex, Claude, Gemini, Xenesis, or custom agent wo
 
 Default commands are selected by `agent`: `codex exec <task>`, `claude -p <task>`, `gemini -p <task>`, or `xenesis run <task>`. Use `command` only when the user or project requires an explicit runner.
 
+Visible subagent sessions use the XD skill contract identity `skill: xd` and `contractVersion: visible-subagent-v1`. When you provide a custom command, include the same contract in the worker prompt: stay on the assigned task, use MCP tools only when needed, do not use GowooriChat as the control path, inspect output with `xenesis_desk_subagent_tail`, and summarize evidence before completion.
+
+## Windows Computer Use
+
+When controlling registered Windows apps, observe visible UI before acting. Use `xd.apps.inspect`, `xd.apps.tree`, and `xd.apps.elementFromPoint` to analyze, locate, and verify controls before `xd.apps.click` or `xd.apps.typeText`, especially before coordinate click/type guesses. Use `xd.apps.highlight` and `xd.apps.captureElement` for the resolved window target; do not pass `elementRef` to highlight/capture until element-bound capture is available.
+
+## Office Document Control
+
+For Microsoft Office document work, prefer `xd.office.*` over visible UI control.
+
+- Use `xd.office.status` before installed Office operations when availability matters.
+- Use `xd.office.excel.createWorkbook`, `xd.office.excel.inspectWorkbook`, and `xd.office.excel.readRange` for file-based workbook generation and bounded reads.
+- Use `xd.office.excel.openWorkbook`, `xd.office.excel.writeRange`, `xd.office.excel.saveWorkbook`, `xd.office.excel.closeWorkbook`, and `xd.office.excel.exportPdf` for installed Excel behavior, visible workbook sessions, Office save behavior, and PDF export.
+- On Windows, installed Excel operations route through the Windows COM provider. On macOS, they route through the macOS Apple Events provider when available and permitted.
+- Treat `xd.apps.*` as a fallback only when the user explicitly asks to operate the Office UI or when no `xd.office.*` capability can satisfy the task.
+- Never generate or run raw COM, VBA, macro, PowerShell, AppleScript, or JXA from caller text. Only call typed `xd.office.*` capabilities with bounded arguments.
+- If the user says "show in Gowoori", "거울이로 보여줘", or asks for a visual summary, Xenesis should create or transform the document/result first, then show the resulting artifact in Gowoori. Do not delegate Office document generation or control to GowooriChat unless the user explicitly asks to run GowooriChat.
+
 ## Terminal Inline Images
 
 When the user asks to show this image in the terminal, render this image inline, display this picture in the active Desk terminal, or says "이 이미지를 터미널에 보여줘", prefer the dedicated terminal image MCP tools.
@@ -129,7 +150,16 @@ Only use the image viewer, Playwright screenshot tools, or file-open tools when 
 
 ## XCON And PDF Flow
 
-For Hermes gateway/Bot artifact generation, prefer the dedicated XCON tools over generic file writes:
+For inline chat, Xenesis Agent Workbench, or Xenesis Bot answers, prefer prompt kind `workbench-response` when a visual answer would help:
+
+- Return the generated Markdown inline so the active chat/workbench surface can stream and render it directly.
+- Include complete `xcon-sketch`, `xcon-chain`, `xcon-chain-fixture`, or `xcon-workflow` fences only when the fetched prompt asks for them.
+- Skip validation for inline chat and Workbench responses. Use renderer partial rendering and visible render errors for inline XCON/SKETCH issues.
+- Validate only when the user explicitly asks to save, export, open, validate, or repair an artifact.
+- Do not call `xenesis_desk_create_xcon_markdown`, `xenesis_desk_create_xcon_markdown_from_content`, or safe file write tools unless the user explicitly asks for a saved file, export, or separate Desk pane/window.
+- If the user asks for a saved file, export, or separate Desk pane/window, then use the dedicated XCON creation/export tools and set `openInDesk` according to the request.
+
+For Hermes gateway/Bot saved artifact generation, prefer the dedicated XCON tools over generic file writes:
 
 - Use `xenesis_desk_mobile_create_xcon_markdown_from_content` when the agent already has Markdown with XCON/SKETCH fences.
 - Use `xenesis_desk_mobile_create_xcon_markdown` for prompt-based XCON/SKETCH Markdown generation from a brief.
@@ -140,8 +170,10 @@ For Hermes gateway/Bot artifact generation, prefer the dedicated XCON tools over
 - Prefer semantic data components when the request contains structured data. Do not emulate tables, charts, maps, or relationship diagrams with labels when XCON components exist for that job.
 - Use `spanGrid` for table-like rankings, standings, schedules, inventories, ledgers, and comparison rows.
 - Use `chart` for comparative values, trends, forecasts, distributions, scorecards, rankings, and numeric summaries.
+- For operational status data with service names, state/severity, latency, owner, priority, incident, SLA, queue, or health fields, prefer an inline XCON/SKETCH dashboard with summary panels plus `spanGrid` and/or `chart` instead of plain Markdown tables.
 - Use `map` for geographic, regional, route, venue, facility, weather-location, or site-status reports.
 - Use `networkDiagram` for dependencies, process flows, topology, handoffs, lineage, and incident blast-radius views.
+- Use only known public SKETCH component types. Do not invent convenience components such as `bulletList`, `timeline`, `kpiCard`, or `chartCard`; use Markdown bullets outside SKETCH, or valid `list`, `spanGrid`, `chart`, `panel`, and `label` compositions inside SKETCH.
 - XCON/SKETCH nested components use parent-local coordinates. A child inside a `panel`, `list` template cell, or another component starts at `0 0` inside that parent, not at the screen origin. Do not add the parent panel's screen x/y offset to child coordinates. For nested children, child x/y must fit inside the parent width/height unless the user explicitly asks for clipping or overflow.
 - Set `openInDesk:false` unless the user explicitly asks to open a separate Xenesis Desk pane/window. Xenesis Bot answers should include the generated Markdown with XCON/SKETCH fences inline so the chat surface renders it directly.
 - Set `exportPdf:true` when the user asks for a shareable PDF, Telegram PDF delivery, or an XCON Markdown result that should be returned as PDF.
@@ -185,15 +217,16 @@ Open core Xenesis Desk panels with `xenesis_desk_run_command_palette`:
 3. For terminal commands, preview first when the command is non-trivial, long-running, destructive, or touches broad paths.
 4. For terminal image requests, use `xenesis_desk_terminal_image_show`, `xenesis_desk_terminal_image_show_base64`, or `xenesis_desk_terminal_xcon_image_show`.
 5. For delegated agent work that the user wants to watch in Desk, use `xenesis_desk_subagent_start` instead of hiding it in an internal background worker.
-6. For file writes through Xenesis Desk, use `xenesis_desk_preview_text_file_write` before `xenesis_desk_apply_text_file_write`; keep the returned backup path for rollback.
-7. For file/XCON/panel actions, prefer the dedicated Xenesis Desk MCP tool over generic filesystem or terminal commands.
-8. For panel work, run the command palette ID and verify with `xenesis_desk_list_panels`.
-9. For mobile approval, action-token, and stash schedule/policy work, let the Hermes `xenesis_desk_gateway` plugin handle the flow through Xenesis Bot, Hermes Stash Operations, or the mobile gateway. Do not bypass that flow with direct bridge calls.
-10. After running actions, verify with `xenesis_desk_state`, `xenesis_desk_terminal_tail`, `xenesis_desk_subagent_tail`, `xenesis_desk_list_open_files`, `xenesis_desk_list_panels`, or `xenesis_desk_recent_diagnostics` as appropriate.
-11. For generated XCON Markdown, expect files to be created by the Xenesis Desk bridge/native MCP path, not by the Hermes plugin process. Omitted or relative `workspaceDir` values resolve under `XENIS_HOME/exports`.
-12. For file, XCON, and Playwright artifacts, check `xenesis_desk_state.artifactPaneId` when the user wants outputs away from the active terminal or Bot pane. Omit `targetPaneId` to use the configured artifact pane, or pass a specific pane id to override it for one tool call.
-13. For Xenesis Bot responses, render XCON/SKETCH inline in the Bot answer unless the user explicitly asks for a separate artifact pane. Use `openInDesk:false` for gateway XCON creation in that default chat flow.
-14. For Telegram or mobile requests that need a document, create the full Markdown first, then export that Markdown to PDF with `exportPdf:true` or `xenesis_desk_mobile_export_xcon_pdf`.
+6. For Office document operations, prefer typed `xd.office.*` capabilities. Use visible `xd.apps.*` UI control only as an explicit fallback.
+7. For file writes through Xenesis Desk, use `xenesis_desk_preview_text_file_write` before `xenesis_desk_apply_text_file_write`; keep the returned backup path for rollback.
+8. For file/XCON/panel actions, prefer the dedicated Xenesis Desk MCP tool over generic filesystem or terminal commands.
+9. For panel work, run the command palette ID and verify with `xenesis_desk_list_panels`.
+10. For mobile approval, action-token, and stash schedule/policy work, let the Hermes `xenesis_desk_gateway` plugin handle the flow through Xenesis Bot, Hermes Stash Operations, or the mobile gateway. Do not bypass that flow with direct bridge calls.
+11. After running actions, verify with `xenesis_desk_state`, `xenesis_desk_terminal_tail`, `xenesis_desk_subagent_tail`, `xenesis_desk_list_open_files`, `xenesis_desk_list_panels`, or `xenesis_desk_recent_diagnostics` as appropriate.
+12. For generated XCON Markdown, expect files to be created by the Xenesis Desk bridge/native MCP path, not by the Hermes plugin process. Omitted or relative `workspaceDir` values resolve under `XENIS_HOME/exports`.
+13. For file, XCON, and Playwright artifacts, check `xenesis_desk_state.artifactPaneId` when the user wants outputs away from the active terminal or Bot pane. Omit `targetPaneId` to use the configured artifact pane, or pass a specific pane id to override it for one tool call.
+14. For Xenesis Bot responses, render XCON/SKETCH inline in the Bot answer unless the user explicitly asks for a separate artifact pane. Use `openInDesk:false` for gateway XCON creation in that default chat flow.
+15. For Telegram or mobile requests that need a document, create the full Markdown first, then export that Markdown to PDF with `exportPdf:true` or `xenesis_desk_mobile_export_xcon_pdf`.
 
 ## Windows and WSL2
 

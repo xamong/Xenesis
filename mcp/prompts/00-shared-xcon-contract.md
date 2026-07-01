@@ -30,7 +30,9 @@ For Markdown documents, visible syntax should be:
 - Do not put partial component snippets in an `xcon-sketch` fence.
 - If you need to show a partial snippet, use a plain `code` fence.
 - Root screen must always include width and height.
-- Use `screen "Name" 402x812 bg @surface` or `screen 402x812 bg @surface`.
+- Screen dimensions must use compact `WIDTHxHEIGHT` syntax.
+- Use `screen "Name" 390x240 bg @surface` or `screen 390x240 bg @surface`.
+- Do not write `screen "Name" size 390 240`; the `size W H` form is invalid.
 - All visual components must have stable dimensions using `at x y width height`.
 - Do not rely on implicit sizing for primary layout.
 - Nested components use parent-local coordinates. A child inside a `panel`,
@@ -96,8 +98,23 @@ Prefer these public-safe component types:
 - `list`
 - `spanGrid`
 - `chart`
+- `dataViz`
 - `networkDiagram`
 - `map`
+- `badge`
+- `alert`
+- `progressBar`
+- `tabs`
+- `select`
+- `switch`
+- `slider`
+- `rating`
+- `qrCode`
+
+Do not invent convenience component types. For example, do not use `bulletList`,
+`timeline`, `kpiCard`, or `chartCard` unless that exact type is explicitly
+introduced in the prompt or component catalog. Use Markdown bullets outside
+SKETCH, or use `label` rows, a valid `list`, or `spanGrid` inside SKETCH.
 
 ## Semantic Data Component Selection
 
@@ -109,6 +126,8 @@ diagrams with labels when an XCON component exists for that job.
   rows, standings, ledgers, checklists, and dense records.
 - Use `chart` for comparative values, trends, distributions, forecasts,
   scorecards, rankings, and numeric summaries that benefit from scale.
+- Use `dataViz` for advanced visualizations that need a specialized layout:
+  treemap, sankey, sunburst, chord, forceGraph, or plot.
 - Use `map` for geographic, route, regional, weather, venue, facility, or
   location-aware reports.
 - Use `networkDiagram` for dependencies, flows, topology, handoffs, ownership,
@@ -125,6 +144,10 @@ Do not generate removed or unsafe components such as:
 - `filePicker`
 - `imagePicker`
 - `signaturePad`
+- `bulletList`
+- `timeline`
+- `kpiCard`
+- `chartCard`
 - custom components
 
 ## List Contract
@@ -171,6 +194,34 @@ screen "SpanGrid Example" 420x260 bg @surface
     readonly true
     data [["Team","Owner","Status"],["Sales","Mina","Ready"],["Ops","Ari","Launch"]]
     columns [{"id":"team","title":"Team","width":140},{"id":"owner","title":"Owner","width":110},{"id":"status","title":"Status","width":110}]
+```
+
+## DataViz Contract
+
+Use `dataViz` when the answer needs an advanced visualization beyond a standard
+chart or relationship graph.
+
+Known `vizType` values:
+
+- `vizType "treemap"` for nested allocation, portfolio share, storage usage, or
+  category weight.
+- `vizType "sankey"` for flow volume, conversion paths, pipeline handoffs, or
+  source-to-destination movement.
+- `vizType "sunburst"` for hierarchical breakdowns and radial composition.
+- `vizType "chord"` for module-to-module, team-to-team, or category interaction
+  matrices.
+- `vizType "forceGraph"` for lightweight relationship exploration when a full
+  `networkDiagram` is not necessary.
+- `vizType "plot"` for Observable Plot style bar, line, dot, and grid-backed
+  analytical charts.
+
+Keep the `data` JSON compact and shaped for the selected `vizType`.
+
+```xcon-sketch
+screen "Flow Example" 760x460 bg @surface
+  flow: dataViz at 24 80 700 320
+    vizType "sankey"
+    data {"nodes":[{"id":"input","label":"Input"},{"id":"process","label":"Process"},{"id":"output","label":"Output"}],"links":[{"source":"input","target":"process","value":18},{"source":"process","target":"output","value":12}]}
 ```
 
 ## Markdown + Chain + Sketch Contract
@@ -222,6 +273,7 @@ Before returning, verify:
 
 - Every `xcon-sketch` fence starts with `screen`.
 - Root screen has explicit width and height.
+- Root screen dimensions use compact `WIDTHxHEIGHT` syntax, not `size W H`.
 - Nested children use parent-local coordinates and fit within their parent
   bounds.
 - Lists have `dataTemplate` and named `templates.cell` layout.

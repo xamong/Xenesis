@@ -194,6 +194,7 @@ WORKFLOW_TEMPLATES: tuple[dict[str, Any], ...] = (
     },
 )
 XCON_PROMPT_KINDS = {
+    "workbench-response",
     "sketch-ui",
     "markdown-xcon",
     "dashboard-workflow",
@@ -10640,6 +10641,5 @@ def register(ctx) -> None:
     ctx.register_hook("post_tool_call", handle_post_tool_call)
     ctx.register_hook("transform_tool_result", handle_transform_tool_result)
     ctx.register_hook("transform_llm_output", handle_transform_llm_output)
-
 
 

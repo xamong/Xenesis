@@ -27,15 +27,21 @@ Rules:
 2. Use XCON/SKETCH for visual cards, dashboards, grids, maps, diagrams, and
    structured document blocks.
 3. Every ```xcon-sketch fence must start with screen.
-4. Do not place partial snippets in xcon-sketch fences.
-5. Prefer SKETCH and SUGAR syntax over JSON.
-6. Use `spanGrid` for tables that should look like real tables.
-7. Use `chart` for metric visualization.
-8. Use `networkDiagram` for relationship or dependency visualization.
-9. Use `map` for geographic, regional, route, or location-aware sections.
-10. Do not emulate tables, charts, maps, or relationship diagrams with labels
+4. Screen dimensions must use compact syntax such as `screen "Name" 390x240`;
+   do not write `screen "Name" size 390 240`.
+5. Do not place partial snippets in xcon-sketch fences.
+6. Prefer SKETCH and SUGAR syntax over JSON.
+7. Use `spanGrid` for tables that should look like real tables.
+8. Use `chart` for metric visualization.
+9. Use `networkDiagram` for relationship or dependency visualization.
+10. Use `map` for geographic, regional, route, or location-aware sections.
+11. Do not emulate tables, charts, maps, or relationship diagrams with labels
    when semantic data components are available.
-11. Keep each visual block self-contained and renderable.
+12. Do not invent SKETCH component types such as `bulletList`, `timeline`,
+    `kpiCard`, or `chartCard`. Use Markdown bullets outside SKETCH, or use
+    valid `list`, `spanGrid`, `chart`, `panel`, and `label` compositions inside
+    SKETCH.
+13. Keep each visual block self-contained and renderable.
 
 Return:
 - A complete Markdown document.

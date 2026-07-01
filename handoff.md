@@ -1,5 +1,84 @@
 # Xenesis Desk Work Handoff
 
+## 2026-07-01 MCP / Providers Folder Sync
+
+- Current objective:
+  - Replace this repo's `mcp` and `providers` source content with the sibling
+    `D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk` versions after comparing
+    differences and receiving user approval to proceed.
+  - Exclude generated Python bytecode (`__pycache__`, `*.pyc`) from the
+    provider copy.
+  - Regenerate provider `xd` skill files from the shared template after copying.
+- Source checkpoint:
+  - `mcp` file lists match exactly; sibling content carries newer XCON/SKETCH
+    validation, prompt, and visible-subagent metadata updates.
+  - `providers` source file lists match after excluding sibling `__pycache__`
+    bytecode; sibling content carries newer Workbench inline XCON, Office,
+    App Control, and visible-subagent instructions plus Hermes
+    `workbench-response` prompt kind support.
+  - Current repo already has the referenced CR paths
+    `xd.office.*`, extended `xd.apps.*`, and `xd.workbench.subagents.*`.
+- Commands run before edit:
+  - Compared file lists and normalized text diffs for both folders.
+  - Sibling syntax checks passed for `mcp/xenesis-desk-mcp-server.mjs`,
+    `mcp/playwright-worker.mjs`, and key Hermes Python modules.
+  - Sibling focused tests passed:
+    `node --test mcp/playwright-worker-source.test.mjs mcp/playwright-worker-input-actions.test.mjs providers/hermes/plugins/xenesis_desk_gateway/e2e_bot/simulator.test.mjs`
+    -> PASS, 14/14.
+  - Current focused test showed one stale expectation in
+    `providers/hermes/plugins/xenesis_desk_gateway/e2e_bot/simulator.test.mjs`
+    that matches the sibling update.
+- Touched files:
+  - `mcp/`: copied sibling prompt pack and MCP server/file-safety/Playwright
+    worker updates, then formatted changed JS with Biome.
+  - `providers/`: copied sibling provider assets excluding `__pycache__` and
+    `*.pyc`, then regenerated provider `xd` skills from
+    `providers/shared/skills/xd/SKILL.md.template`.
+  - `mcp/xenesis-desk-mcp-server.mjs`: kept this repo's product-safe approval
+    text instead of the raw sibling wording that exposed CR path and approval id
+    in the human-readable MCP result.
+  - `handoff.md`: recorded the sync plan, verification, and known gaps.
+- Verification result:
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File providers/scripts/sync-provider-skills.ps1 -ProvidersRoot providers -Check`
+    -> PASS.
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File providers/scripts/sync-hermes-plugins.ps1 -ProvidersRoot providers -Check`
+    -> exit 0, skipped because the local draft Hermes root is missing.
+  - Node syntax checks for `mcp/xenesis-desk-mcp-server.mjs`,
+    `mcp/xenesis-desk-file-safety.mjs`, `mcp/playwright-worker.mjs`,
+    `providers/hermes/plugins/xenesis_desk_gateway/e2e_bot/server.mjs`, and
+    `providers/hermes/plugins/xenesis_desk_gateway/e2e_bot/static/app.js`
+    -> PASS.
+  - Python syntax compile for key Hermes modules -> PASS.
+  - Focused MCP/provider tests:
+    `node --test mcp/playwright-worker-source.test.mjs mcp/playwright-worker-input-actions.test.mjs providers/hermes/plugins/xenesis_desk_gateway/e2e_bot/simulator.test.mjs`
+    -> PASS, 14/14.
+  - Approval output regression:
+    `node --import tsx --test src/main/mcpApprovalOutput.test.ts`
+    -> PASS.
+  - `npx biome check --write ...changed Biome-supported files...` -> PASS.
+  - `npm run typecheck` -> PASS.
+  - `npm test` -> PASS, 709/709.
+  - `npm run check:docs-public` -> PASS.
+  - `npm run check:public-release` -> PASS.
+  - `git diff --check` -> PASS.
+  - `git diff --name-only -- packages/xenesis` -> no output; `packages/xenesis`
+    production code remains untouched.
+  - `Get-ChildItem providers -Recurse -File -Filter *.pyc` -> no provider bytecode
+    files remain after cleanup.
+- Known gaps:
+  - Raw sibling `xenesis_desk_call_capability` approval output failed this
+    repo's policy test because it exposed an internal CR path and approval id in
+    human text. This was intentionally corrected while keeping the payload
+    shape.
+  - Full `npm run lint` still fails on repo-wide pre-existing diagnostics
+    outside this task, including `packages/xenesis` and sample extension files.
+    The changed Biome-supported files pass `npx biome check --write`.
+  - Hermes plugin sync check cannot compare against
+    `D:\CodeTruck\CodeBox\Xamong\06 XCON\draft\hermes-agent-main\plugins`
+    because that local draft root is not present.
+- Next intended step:
+  - User review, then commit and PR if approved.
+
 ## 2026-07-01 Workbench Subagent Port
 
 - Current objective:

@@ -22,16 +22,21 @@ Target:
 Output requirements:
 1. Return a short Markdown heading and one complete ```xcon-sketch fence.
 2. The xcon-sketch fence must start with screen.
-3. Use concrete dimensions and stable layout.
-4. Use actual public image URLs when a visual card, hero, product, place, or
+3. Use compact screen dimensions such as `screen "Name" 390x240`; do not write
+   `screen "Name" size 390 240`.
+4. Use concrete dimensions and stable layout.
+5. Use actual public image URLs when a visual card, hero, product, place, or
    media area is needed.
-5. Use icons for icon-only buttons by setting the button icon name.
-6. Use `spanGrid` for table/spreadsheet-like content.
-7. Use `chart` for metrics when appropriate.
-8. Use `networkDiagram` for relationship maps when appropriate.
-9. Use `map` only when a static location preview is useful.
-10. Do not use unsupported components.
-11. Do not include app-host actions unless explicitly requested.
+6. Use icons for icon-only buttons by setting the button icon name.
+7. Use `spanGrid` for table/spreadsheet-like content.
+8. Use `chart` for metrics when appropriate.
+9. Use `networkDiagram` for relationship maps when appropriate.
+10. Use `map` only when a static location preview is useful.
+11. Do not use unsupported components.
+12. Do not invent convenience components such as `bulletList`, `timeline`,
+    `kpiCard`, or `chartCard`; use valid `list`, `spanGrid`, `chart`, `panel`,
+    and `label` compositions instead.
+13. Do not include app-host actions unless explicitly requested.
 
 When generating lists:
 - Include backgroundColor.
@@ -85,4 +90,3 @@ screen "Local Market Home" 402x812 bg @surface
       radius 20
 ```
 ````
-
