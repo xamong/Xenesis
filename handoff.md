@@ -1,5 +1,106 @@
 # Xenesis Desk Work Handoff
 
+## 2026-07-01 Plugin MCP Docs Port
+
+- Current objective:
+  - Continue the non-`packages/xenesis` sibling-parity roadmap with priority 5,
+    `Plugin / MCP / Docs`.
+  - Port XCON/SKETCH plugin assets, Workbench MCP prompt registration, selected
+    Playwright worker input-action tests, and provider installer/package checks.
+  - Keep `packages/xenesis` untouched; Workbench Subagent remains intentionally
+    last by user direction.
+- Scope checkpoint:
+  - Roadmap priority 1 through 4 are already committed on `mini`: Agent Sessions,
+    Meta Local Server, App Control Lab / Extended Apps, and Office Control.
+  - `docs/superpowers/specs/2026-07-01-plugin-mcp-docs-slice-design.md`
+    identifies the next slice source files.
+  - Current repo is missing `providers/xenesis/plugins/xcon-sketch`,
+    `mcp/prompts/17-workbench-natural-xcon-response.md`, and the sibling
+    Playwright worker action tests.
+  - Current `mcp/playwright-worker.mjs` lacks sibling coordinate mouse actions,
+    keyboard hotkeys, data/about URL support, and final URL/title run metadata.
+- Commands run:
+  - `git status --short --branch`
+  - `Get-ChildItem docs\superpowers\plans | Sort-Object Name`
+  - `Get-Content docs\superpowers\specs\2026-07-01-non-package-parity-roadmap-design.md`
+  - `Get-Content docs\superpowers\specs\2026-07-01-plugin-mcp-docs-slice-design.md`
+  - Source reads from sibling
+    `providers/xenesis/plugins/xcon-sketch`,
+    `mcp/prompts/17-workbench-natural-xcon-response.md`,
+    `mcp/playwright-worker-input-actions.test.mjs`,
+    `mcp/playwright-worker-source.test.mjs`,
+    `src/main/providerIntegrationInstaller.mjs`, and package resource config.
+  - Source reads from current `mcp/xenesis-desk-mcp-server.mjs`,
+    `mcp/playwright-worker.mjs`, `src/main/providerIntegrationInstaller.mjs`,
+    `src/main/providerIntegrationInstaller.test.mjs`, `scripts/publicReleaseCheck.mjs`,
+    and `package.json`.
+  - Created implementation plan
+    `docs/superpowers/plans/2026-07-01-plugin-mcp-docs.md`.
+- Verification result:
+  - Pre-slice worktree was clean on `mini`.
+  - Plan placeholder scan:
+    `rg -n "TBD|TODO|implement later|fill in details|Similar to|appropriate error handling|handle edge cases|Write tests for the above" docs\superpowers\plans\2026-07-01-plugin-mcp-docs.md`
+    -> no matches after removing a self-matching scan command from the plan.
+  - RED:
+    `node --test mcp/playwright-worker-source.test.mjs mcp/playwright-worker-input-actions.test.mjs src/main/providerIntegrationInstaller.test.mjs src/renderer/panes/settingsCatalog.test.mjs`
+    failed as expected on worker `data:` URL support, missing final URL/title
+    metadata, old XCON skill flow text, missing `installXenesisNativePlugins`,
+    and missing SettingsPane native plugin controls. It also exposed a stale
+    existing settings category adjacency assertion after the Office Control
+    category landed between external apps and connectors.
+  - GREEN:
+    `node --test mcp/playwright-worker-source.test.mjs mcp/playwright-worker-input-actions.test.mjs src/main/providerIntegrationInstaller.test.mjs src/renderer/panes/settingsCatalog.test.mjs`
+    -> PASS, 10/10 tests.
+  - MCP prompt smoke:
+    inline stdio call to `xenesis_desk_get_xcon_prompt` with
+    `kind: "workbench-response"` -> PASS, printed
+    `workbench-response prompt smoke passed`.
+  - `git diff --check` -> PASS, whitespace warnings only for Windows CRLF
+    normalization.
+  - `git diff -- packages/xenesis` -> no diff; this slice kept
+    `packages/xenesis` untouched.
+  - `npx biome check` on touched non-package files -> exit 0; remaining
+    diagnostics are existing warning/info-level suggestions in broad touched
+    files such as `src/main/index.ts`.
+  - `npm run lint` -> FAIL on the existing root lint baseline, including
+    format/import diagnostics under `packages/xenesis` and earlier Workbench
+    files. This was not fixed in this slice because the approved roadmap says
+    not to touch `packages/xenesis`.
+  - `npm run typecheck` -> PASS.
+  - `npm run check:docs-public` -> PASS.
+  - `npm run check:public-release` -> PASS.
+  - Final `npm test` -> PASS, 693/693 tests.
+- Touched files:
+  - `handoff.md`
+  - `docs/superpowers/plans/2026-07-01-plugin-mcp-docs.md`
+  - `providers/xenesis/plugins/xcon-sketch/xenesis.plugin.json`
+  - `providers/xenesis/plugins/xcon-sketch/skills/xcon-sketch/SKILL.md`
+  - `providers/shared/skills/xd/SKILL.md.template`
+  - `mcp/prompts/17-workbench-natural-xcon-response.md`
+  - `mcp/prompts/README.md`
+  - `mcp/xenesis-desk-mcp-server.mjs`
+  - `mcp/playwright-worker.mjs`
+  - `mcp/playwright-worker-input-actions.test.mjs`
+  - `mcp/playwright-worker-source.test.mjs`
+  - `package.json`
+  - `scripts/publicReleaseCheck.mjs`
+  - `src/main/providerIntegrationInstaller.mjs`
+  - `src/main/providerIntegrationInstaller.d.mts`
+  - `src/main/providerIntegrationInstaller.test.mjs`
+  - `src/main/index.ts`
+  - `src/preload/index.ts`
+  - `src/shared/types.ts`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/renderer/panes/settingsCatalog.test.mjs`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
+- Known gaps:
+  - Root `npm run lint` still fails on the repository's existing lint/format
+    baseline, including `packages/xenesis`, which is intentionally out of scope
+    for this non-package port.
+- Next intended step:
+  - Stage the plugin/MCP docs port, commit, push `mini`, and update PR #13.
+
 ## 2026-07-01 App Control Lab / Extended Apps Port
 
 - Current objective:

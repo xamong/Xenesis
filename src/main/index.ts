@@ -213,6 +213,7 @@ import type {
   ProviderIntegrationHermesInstallResult,
   ProviderIntegrationStatus,
   ProviderIntegrationStatusRequest,
+  ProviderIntegrationXenesisInstallResult,
   RemoteFileEncoding,
   RemoteFileEntry,
   RemoteFileOperationResult,
@@ -432,6 +433,7 @@ import {
   installCliIntegration,
   installExternalMcpServer,
   installHermesPlugins,
+  installXenesisNativePlugins,
 } from './providerIntegrationInstaller.mjs';
 import { applySafeTextFileWrite, previewSafeTextFileWrite, restoreSafeTextFileBackup } from './safeFileEdit';
 import { type TerminalImageOptions, writeTerminalImage } from './terminalImageWriter';
@@ -8985,6 +8987,7 @@ function getProviderIntegrationStatusSnapshot(request?: ProviderIntegrationStatu
   return getProviderIntegrationStatus({
     assetRoot: getProviderIntegrationAssetRoot(),
     hermesRoot: typeof request?.hermesRoot === 'string' ? request.hermesRoot : '',
+    xenesisHome: getXenesisStateHome(),
   });
 }
 
@@ -9005,6 +9008,7 @@ function runProviderIntegrationCliInstall(
       installSkill: request?.installSkill !== false,
       serverPath: getMcpServerScriptPath(),
       xenisHome: xenisHomeDir,
+      assetRoot: getProviderIntegrationAssetRoot(),
       backupRoot: getProviderIntegrationBackupRoot(),
     });
   } catch (error) {
@@ -9022,6 +9026,22 @@ function runProviderIntegrationHermesInstall(
     return installHermesPlugins({
       assetRoot: getProviderIntegrationAssetRoot(),
       hermesRoot: typeof request?.hermesRoot === 'string' ? request.hermesRoot : '',
+    });
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+function runProviderIntegrationXenesisInstall(): ProviderIntegrationXenesisInstallResult {
+  try {
+    return installXenesisNativePlugins({
+      assetRoot: getProviderIntegrationAssetRoot(),
+      xenesisHome: getXenesisStateHome(),
+      xenisHome: xenisHomeDir,
+      serverPath: getMcpServerScriptPath(),
     });
   } catch (error) {
     return {
@@ -22485,6 +22505,10 @@ function setupIpc(): void {
     'provider-integration:install-hermes-plugins',
     (_event, request?: ProviderIntegrationHermesInstallRequest): ProviderIntegrationHermesInstallResult =>
       runProviderIntegrationHermesInstall(request),
+  );
+  ipcMain.handle(
+    'provider-integration:install-xenesis-plugins',
+    (): ProviderIntegrationXenesisInstallResult => runProviderIntegrationXenesisInstall(),
   );
   ipcMain.handle('mcp:renderer-state', (_event, snapshot: unknown): { ok: boolean } => {
     latestMcpRendererState = sanitizeMcpRendererStateSnapshot(snapshot);

@@ -1343,6 +1343,7 @@ export default function SettingsPane() {
   const [providerIntegrationMessage, setProviderIntegrationMessage] = useState('');
   const [hermesInstallRoot, setHermesInstallRoot] = useState('');
   const [hermesInstalling, setHermesInstalling] = useState(false);
+  const [xenesisPluginInstalling, setXenesisPluginInstalling] = useState(false);
   const [cliIntegrationBusyTarget, setCliIntegrationBusyTarget] = useState<ProviderIntegrationCliTargetId | ''>('');
 
   const [automationSettings, setAutomationSettings] = useState<AutomationSettings>({
@@ -7487,6 +7488,28 @@ export default function SettingsPane() {
     [loadProviderIntegrationStatus, t],
   );
 
+  const handleXenesisPluginInstall = useCallback(async () => {
+    setXenesisPluginInstalling(true);
+    setProviderIntegrationMessage('');
+    try {
+      const result = await window.providerIntegrationAPI.installXenesisPlugins();
+      setProviderIntegrationMessage(
+        result.ok
+          ? t('settings.xenesisNativePluginInstallSuccess')
+          : t('settings.xenesisNativePluginInstallFailed', { message: result.error || t('common.unknownError') }),
+      );
+      await loadProviderIntegrationStatus();
+    } catch (error) {
+      setProviderIntegrationMessage(
+        t('settings.xenesisNativePluginInstallFailed', {
+          message: error instanceof Error ? error.message : String(error),
+        }),
+      );
+    } finally {
+      setXenesisPluginInstalling(false);
+    }
+  }, [loadProviderIntegrationStatus, t]);
+
   const renderXenesisDeskSection = () => (
     <div className="sp-stack" data-settings-section="xenesis-desk">
       <section className="sp-section">
@@ -8217,6 +8240,7 @@ export default function SettingsPane() {
     const installedCount = localCliAgents.filter((agent) => agent.installed).length;
     const selected = localCliAgents.find((agent) => agent.id === localCliSelectedId);
     const integrationTargets = providerIntegrationStatus?.cliTargets ?? [];
+    const xenesisIntegration = providerIntegrationStatus?.xenesis;
 
     return (
       <div className="sp-stack" data-settings-section="local-cli">
@@ -8310,6 +8334,47 @@ export default function SettingsPane() {
             </button>
           </div>
           <div className="sp-grid two">
+            {xenesisIntegration && (
+              <div className="sp-info-card">
+                <strong>{t('settings.xenesisNativePluginTitle')}</strong>
+                <span>{t('settings.xenesisNativePluginDesc')}</span>
+                <span>
+                  {t('settings.xenesisNativePluginHome')}: <code>{xenesisIntegration.xenesisHome || '-'}</code>
+                </span>
+                <span className={cls('sp-pill', xenesisIntegration.assetAvailable && 'sp-pill-on')}>
+                  {xenesisIntegration.assetAvailable
+                    ? t('settings.integrationReady')
+                    : t('settings.integrationMissing')}
+                </span>
+                <div className="sp-info-list sp-info-list-compact">
+                  {xenesisIntegration.items.map((item) => (
+                    <div key={item.id}>
+                      <strong>{item.label}</strong>
+                      <span>
+                        <code>{item.destinationPath || '-'}</code>
+                      </span>
+                      <span className={cls('sp-pill', item.installed && item.enabled && 'sp-pill-on')}>
+                        {item.installed && item.enabled
+                          ? t('settings.xenesisNativePluginEnabled')
+                          : item.installed
+                            ? t('settings.integrationInstalled')
+                            : t('settings.integrationPending')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  className="sp-btn sp-btn-sm"
+                  type="button"
+                  disabled={xenesisPluginInstalling || providerIntegrationBusy || !xenesisIntegration.assetAvailable}
+                  onClick={handleXenesisPluginInstall}
+                >
+                  {xenesisPluginInstalling
+                    ? t('settings.xenesisNativePluginInstalling')
+                    : t('settings.xenesisNativePluginInstall')}
+                </button>
+              </div>
+            )}
             {integrationTargets.map((target) => {
               const busy = cliIntegrationBusyTarget === target.id;
               return (

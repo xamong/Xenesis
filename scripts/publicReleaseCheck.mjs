@@ -224,6 +224,10 @@ function assertWinUnpackedProviderAssets() {
     'release/win-unpacked must include shared skill provider asset',
   );
   assert(
+    existsSync(path.join(providerAssetsRoot, 'xenesis', 'plugins', 'xcon-sketch', 'xenesis.plugin.json')),
+    'release/win-unpacked must include XCON/SKETCH Xenesis plugin provider asset',
+  );
+  assert(
     !existsSync(path.join(resourcesRoot, 'app.asar.unpacked', 'providers')),
     'release/win-unpacked must not include the full providers tree',
   );
@@ -650,6 +654,11 @@ export function runPublicReleaseCheck() {
     'provider-assets/hermes/plugins/platforms/xenesis_desk_bot',
   );
   const skillProviderAssetSet = findFileSet(extraResources, 'providers/shared/skills/xd', 'provider-assets/skills/xd');
+  const xconSketchProviderAssetSet = findFileSet(
+    extraResources,
+    'providers/xenesis/plugins/xcon-sketch',
+    'provider-assets/xenesis/plugins/xcon-sketch',
+  );
   const providerAssetRequiredExcludes = ['!**/__pycache__/**', '!**/*.pyc', '!**/*.pyo', '!**/*.test.*'];
   assert(
     Boolean(hermesGatewayProviderAssetSet),
@@ -660,6 +669,7 @@ export function runPublicReleaseCheck() {
     'public package must include the Hermes bot platform plugin as provider-assets',
   );
   assert(Boolean(skillProviderAssetSet), 'public package must include shared provider skills as provider-assets');
+  assert(Boolean(xconSketchProviderAssetSet), 'public package must include XCON/SKETCH plugin as provider-assets');
   if (hermesGatewayProviderAssetSet) {
     assertFileSetFilters(
       hermesGatewayProviderAssetSet,
@@ -672,6 +682,9 @@ export function runPublicReleaseCheck() {
   }
   if (skillProviderAssetSet) {
     assertFileSetFilters(skillProviderAssetSet, providerAssetRequiredExcludes, 'shared skill provider asset set');
+  }
+  if (xconSketchProviderAssetSet) {
+    assertFileSetFilters(xconSketchProviderAssetSet, providerAssetRequiredExcludes, 'XCON/SKETCH provider asset set');
   }
   assert(
     !includesExact(extraResources, 'providers/**/*'),

@@ -1,0 +1,14 @@
+{
+  "name": "xcon-sketch",
+  "version": "0.1.0",
+  "skills": ["skills/xcon-sketch"],
+  "mcpServers": {
+    "xcon_sketch": {
+      "command": "node",
+      "args": ["{{XENESIS_DESK_MCP_SERVER}}"],
+      "env": {
+        "XENIS_HOME": "{{XENIS_HOME}}"
+      }
+    }
+  }
+}

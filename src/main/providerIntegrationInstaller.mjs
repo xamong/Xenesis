@@ -19,6 +19,43 @@ const HERMES_PLUGIN_ITEMS = [
   },
 ];
 
+const XENESIS_NATIVE_PLUGIN_ITEMS = [
+  {
+    id: 'xcon-sketch',
+    label: 'XCON/SKETCH Agent Plugin',
+    sourceParts: ['xenesis', 'plugins', 'xcon-sketch'],
+    destinationParts: ['plugins', 'xcon-sketch'],
+  },
+];
+
+const PROVIDER_SKILL_VALUES = {
+  codex: {
+    PRIMARY_HOST: 'Codex',
+    SECONDARY_HOST: 'Claude Code',
+    HOST_PAIR_OR: 'Codex or Claude Code',
+    HOST_PAIR_AND: 'Codex and Claude Code',
+    HOST_PAIR_SLASH: 'Codex/Claude',
+    SKILL_VARIABLE_SENTENCE: ' In hosts that use skill variables, invoke it as `$xd`.',
+  },
+  claude: {
+    PRIMARY_HOST: 'Claude Code',
+    SECONDARY_HOST: 'Codex',
+    HOST_PAIR_OR: 'Claude Code or Codex',
+    HOST_PAIR_AND: 'Claude Code and Codex',
+    HOST_PAIR_SLASH: 'Claude/Codex',
+    SKILL_VARIABLE_SENTENCE: '',
+  },
+};
+
+const DEFAULT_PROVIDER_SKILL_VALUES = {
+  PRIMARY_HOST: 'local CLI agents',
+  SECONDARY_HOST: 'Xenesis Desk',
+  HOST_PAIR_OR: 'local CLI agents',
+  HOST_PAIR_AND: 'local CLI agents',
+  HOST_PAIR_SLASH: 'local CLI',
+  SKILL_VARIABLE_SENTENCE: '',
+};
+
 function normalizeText(value) {
   return String(value || '').trim();
 }
@@ -56,6 +93,43 @@ function mcpServerEntry({ serverPath, xenisHome }) {
   const normalizedHome = normalizeText(xenisHome);
   if (normalizedHome) entry.env.XENIS_HOME = normalizedHome;
   return entry;
+}
+
+function renderTemplate(template, values) {
+  let rendered = String(template || '');
+  for (const [key, value] of Object.entries(values)) {
+    rendered = rendered.replaceAll(`{{${key}}}`, String(value));
+  }
+
+  const unresolved = Array.from(new Set(rendered.match(/\{\{[A-Z_]+\}\}/g) ?? []));
+  if (unresolved.length > 0) {
+    throw new Error(`Unresolved provider skill template tokens: ${unresolved.join(', ')}`);
+  }
+
+  return rendered;
+}
+
+function providerSkillValuesForTarget(targetId) {
+  return PROVIDER_SKILL_VALUES[normalizeText(targetId)] ?? DEFAULT_PROVIDER_SKILL_VALUES;
+}
+
+function resolveProviderSkillRoot(assetRoot, fsImpl = fs) {
+  const normalizedAssetRoot = normalizeText(assetRoot);
+  if (!normalizedAssetRoot) return '';
+
+  const candidates = [
+    joinForRoot(normalizedAssetRoot, 'skills', 'xd'),
+    joinForRoot(normalizedAssetRoot, 'shared', 'skills', 'xd'),
+  ];
+
+  return candidates.find((candidate) => safeExists(candidate, fsImpl)) || candidates[0];
+}
+
+function readProviderSkillTemplate(assetRoot, fsImpl = fs) {
+  const skillRoot = resolveProviderSkillRoot(assetRoot, fsImpl);
+  if (!skillRoot) return '';
+  const templatePath = joinForRoot(skillRoot, 'SKILL.md.template');
+  return safeExists(templatePath, fsImpl) ? fsImpl.readFileSync(templatePath, 'utf8') : '';
 }
 
 export function mergeCodexMcpConfig(
@@ -286,8 +360,13 @@ export function installExternalMcpServer({
   };
 }
 
-export function renderXenesisDeskSkill({ serverName = DEFAULT_SERVER_NAME } = {}) {
+export function renderXenesisDeskSkill({ serverName = DEFAULT_SERVER_NAME, targetId = '', templateText = '' } = {}) {
   const normalizedServerName = normalizeText(serverName) || DEFAULT_SERVER_NAME;
+  const normalizedTemplate = String(templateText || '');
+  if (normalizeText(normalizedTemplate)) {
+    return renderTemplate(normalizedTemplate, providerSkillValuesForTarget(targetId));
+  }
+
   return `---
 name: xenesis-desk
 description: Use when controlling Xenesis Desk, generating XCON/SKETCH artifacts, using Gowoori, Xenesis Agent, Capability Registry, MCP prompt packs, or validating/rendering XCON documents.
@@ -300,9 +379,15 @@ Use the \`${normalizedServerName}\` MCP server when available.
 ## XCON/SKETCH generation
 
 1. Call \`xenesis_desk_get_xcon_prompt\` with the appropriate kind.
-2. Generate Markdown with fenced \`xcon-sketch\` blocks.
-3. Validate with \`xenesis_desk_validate_xcon_markdown\`.
-4. Save/open with \`xenesis_desk_create_xcon_markdown_from_content\`.
+2. For inline chat or Workbench responses, prefer \`workbench-response\` so XCON/SKETCH is used only when a visual answer helps.
+3. Use \`markdown-xcon\` for document/report artifacts, \`dashboard-workflow\` for monitoring dashboards, and \`strict-sketch\` for minimal validation-first screens.
+4. Generate Markdown with fenced \`xcon-sketch\` blocks only when the fetched prompt asks for them.
+5. Skip validation for inline chat and Workbench responses.
+6. Return generated Markdown inline for chat/workbench surfaces.
+7. Use renderer partial rendering and visible render errors for inline XCON/SKETCH issues.
+8. Validate only when the user explicitly asks to save, export, open, or validate an artifact.
+9. Save with \`xenesis_desk_create_xcon_markdown_from_content\` only when the user explicitly asks for a file, export, or Desk pane.
+10. Set \`openInDesk:false\` when saving without opening, and \`openInDesk:true\` only when the user explicitly asks to open a separate Desk pane/window.
 
 ## Desk control
 
@@ -367,6 +452,21 @@ export function resolveHermesPluginPlan({ assetRoot, hermesRoot } = {}) {
   };
 }
 
+export function resolveXenesisNativePluginPlan({ assetRoot, xenesisHome } = {}) {
+  const normalizedAssetRoot = normalizeText(assetRoot);
+  const normalizedXenesisHome = normalizeText(xenesisHome);
+  return {
+    assetRoot: normalizedAssetRoot,
+    xenesisHome: normalizedXenesisHome,
+    items: XENESIS_NATIVE_PLUGIN_ITEMS.map((item) => ({
+      id: item.id,
+      label: item.label,
+      sourcePath: normalizedAssetRoot ? joinForRoot(normalizedAssetRoot, ...item.sourceParts) : '',
+      destinationPath: normalizedXenesisHome ? joinForRoot(normalizedXenesisHome, ...item.destinationParts) : '',
+    })),
+  };
+}
+
 function safeExists(filePath, fsImpl = fs) {
   try {
     return !!filePath && fsImpl.existsSync(filePath);
@@ -397,8 +497,29 @@ function targetStatus(target, fsImpl = fs) {
       target.supportsMcp && fileIncludes(target.mcpConfigPath, `[mcp_servers.${DEFAULT_SERVER_NAME}]`, fsImpl)
         ? true
         : target.supportsMcp && fileIncludes(target.mcpConfigPath, `"${DEFAULT_SERVER_NAME}"`, fsImpl),
-    skillInstalled: target.supportsSkill ? fileIncludes(target.skillPath, 'name: xenesis-desk', fsImpl) : false,
+    skillInstalled: target.supportsSkill
+      ? fileIncludes(target.skillPath, 'name: xenesis-desk', fsImpl) ||
+        fileIncludes(target.skillPath, 'name: xd', fsImpl)
+      : false,
   };
+}
+
+function readPluginState(xenesisHome, fsImpl = fs) {
+  if (!normalizeText(xenesisHome)) return [];
+  const statePath = joinForRoot(xenesisHome, 'plugins.json');
+  try {
+    const parsed = JSON.parse(fsImpl.readFileSync(statePath, 'utf8'));
+    return Array.isArray(parsed?.plugins) ? parsed.plugins : [];
+  } catch {
+    return [];
+  }
+}
+
+function pluginStateEnabled(stateRecords, pluginPath) {
+  const resolvedPluginPath = path.resolve(pluginPath);
+  return stateRecords.some(
+    (record) => path.resolve(String(record?.path || '')) === resolvedPluginPath && record.enabled,
+  );
 }
 
 export function getProviderIntegrationStatus({
@@ -406,10 +527,13 @@ export function getProviderIntegrationStatus({
   appDataDir = process.env.APPDATA || joinForRoot(homeDir, 'AppData', 'Roaming'),
   assetRoot = '',
   hermesRoot = '',
+  xenesisHome = '',
   fsImpl = fs,
 } = {}) {
   const cliTargets = buildCliIntegrationTargets({ homeDir, appDataDir }).map((target) => targetStatus(target, fsImpl));
   const hermesPlan = resolveHermesPluginPlan({ assetRoot, hermesRoot });
+  const xenesisPlan = resolveXenesisNativePluginPlan({ assetRoot, xenesisHome });
+  const xenesisPluginState = readPluginState(xenesisPlan.xenesisHome, fsImpl);
   return {
     cliTargets,
     hermes: {
@@ -421,6 +545,18 @@ export function getProviderIntegrationStatus({
         ...item,
         sourceAvailable: safeExists(item.sourcePath, fsImpl),
         installed: safeExists(item.destinationPath, fsImpl),
+      })),
+    },
+    xenesis: {
+      ...xenesisPlan,
+      assetAvailable: xenesisPlan.items.every((item) => safeExists(item.sourcePath, fsImpl)),
+      rootConfigured: !!normalizeText(xenesisHome),
+      pluginsInstalled: xenesisPlan.items.every((item) => safeExists(item.destinationPath, fsImpl)),
+      items: xenesisPlan.items.map((item) => ({
+        ...item,
+        sourceAvailable: safeExists(item.sourcePath, fsImpl),
+        installed: safeExists(item.destinationPath, fsImpl),
+        enabled: pluginStateEnabled(xenesisPluginState, item.destinationPath),
       })),
     },
   };
@@ -443,6 +579,47 @@ function writeTextWithBackup(filePath, content, { backupRoot, fsImpl = fs } = {}
   return backupPath;
 }
 
+function listReferenceFiles(rootPath, fsImpl = fs, currentPath = rootPath) {
+  if (!safeExists(currentPath, fsImpl)) return [];
+
+  const files = [];
+  for (const entry of fsImpl.readdirSync(currentPath, { withFileTypes: true })) {
+    const entryPath = path.join(currentPath, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...listReferenceFiles(rootPath, fsImpl, entryPath));
+    } else if (entry.isFile()) {
+      files.push(path.relative(rootPath, entryPath));
+    }
+  }
+  return files.sort((left, right) => left.localeCompare(right));
+}
+
+function copySkillReferences({ assetRoot, skillPath, backupRoot, fsImpl = fs } = {}) {
+  const skillRoot = resolveProviderSkillRoot(assetRoot, fsImpl);
+  if (!skillRoot || !skillPath) return [];
+
+  const sourceRoot = joinForRoot(skillRoot, 'references');
+  if (!safeExists(sourceRoot, fsImpl)) return [];
+
+  const destinationRoot = path.join(path.dirname(skillPath), 'references');
+  const changes = [];
+  for (const relativePath of listReferenceFiles(sourceRoot, fsImpl)) {
+    const sourcePath = path.join(sourceRoot, relativePath);
+    const destinationPath = path.join(destinationRoot, relativePath);
+    const content = fsImpl.readFileSync(sourcePath, 'utf8');
+    const existing = readTextIfExists(destinationPath, fsImpl);
+    const backupPath =
+      content === existing ? '' : writeTextWithBackup(destinationPath, content, { backupRoot, fsImpl });
+    changes.push({
+      kind: 'skill-reference',
+      path: destinationPath,
+      changed: content !== existing,
+      backupPath,
+    });
+  }
+  return changes;
+}
+
 function findCliTarget(targetId, options = {}) {
   const target = buildCliIntegrationTargets(options).find((item) => item.id === normalizeText(targetId));
   if (!target) throw new Error(`Unsupported CLI integration target: ${targetId}`);
@@ -456,6 +633,7 @@ export function installCliIntegration({
   serverName = DEFAULT_SERVER_NAME,
   serverPath,
   xenisHome,
+  assetRoot = '',
   homeDir = os.homedir(),
   appDataDir = process.env.APPDATA || joinForRoot(homeDir, 'AppData', 'Roaming'),
   backupRoot,
@@ -476,9 +654,14 @@ export function installCliIntegration({
 
   if (installSkill && target.supportsSkill && target.skillPath) {
     const existing = readTextIfExists(target.skillPath, fsImpl);
-    const next = renderXenesisDeskSkill({ serverName });
+    const next = renderXenesisDeskSkill({
+      serverName,
+      targetId,
+      templateText: readProviderSkillTemplate(assetRoot, fsImpl),
+    });
     const backupPath = next === existing ? '' : writeTextWithBackup(target.skillPath, next, { backupRoot, fsImpl });
     changes.push({ kind: 'skill', path: target.skillPath, changed: next !== existing, backupPath });
+    changes.push(...copySkillReferences({ assetRoot, skillPath: target.skillPath, backupRoot, fsImpl }));
   }
 
   return {
@@ -505,6 +688,99 @@ function copyDirectory(sourcePath, destinationPath, fsImpl = fs) {
     force: true,
     errorOnExist: false,
   });
+}
+
+function replaceManifestTokens(value, replacements) {
+  if (typeof value === 'string') {
+    let next = value;
+    for (const [token, replacement] of Object.entries(replacements)) {
+      next = next.replaceAll(`{{${token}}}`, String(replacement ?? ''));
+    }
+    return next;
+  }
+  if (Array.isArray(value)) return value.map((item) => replaceManifestTokens(item, replacements));
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, nestedValue]) => [key, replaceManifestTokens(nestedValue, replacements)]),
+    );
+  }
+  return value;
+}
+
+function renderXenesisPluginManifest(manifestPath, replacements, fsImpl = fs) {
+  const raw = fsImpl.readFileSync(manifestPath, 'utf8');
+  const parsed = JSON.parse(raw);
+  const rendered = replaceManifestTokens(parsed, replacements);
+  fsImpl.writeFileSync(manifestPath, `${JSON.stringify(rendered, null, 2)}\n`, 'utf8');
+  return rendered;
+}
+
+function writeEnabledPluginState({ xenesisHome, pluginPath, pluginName, fsImpl = fs }) {
+  const statePath = joinForRoot(xenesisHome, 'plugins.json');
+  const records = readPluginState(xenesisHome, fsImpl);
+  const resolvedPluginPath = path.resolve(pluginPath);
+  const index = records.findIndex((record) => path.resolve(String(record?.path || '')) === resolvedPluginPath);
+  const timestamp = new Date().toISOString();
+  const record =
+    index === -1
+      ? {
+          path: pluginPath,
+          name: pluginName,
+          enabled: true,
+          installedAt: timestamp,
+          updatedAt: timestamp,
+        }
+      : {
+          ...records[index],
+          name: pluginName,
+          enabled: true,
+          updatedAt: timestamp,
+        };
+  if (index === -1) records.push(record);
+  else records[index] = record;
+  fsImpl.mkdirSync(path.dirname(statePath), { recursive: true });
+  fsImpl.writeFileSync(statePath, `${JSON.stringify({ plugins: records }, null, 2)}\n`, 'utf8');
+  return record;
+}
+
+export function installXenesisNativePlugins({ assetRoot, xenesisHome, xenisHome, serverPath, fsImpl = fs } = {}) {
+  const plan = resolveXenesisNativePluginPlan({ assetRoot, xenesisHome });
+  if (!plan.xenesisHome) throw new Error('Xenesis home is required.');
+
+  const installed = [];
+  for (const item of plan.items) {
+    if (!safeExists(item.sourcePath, fsImpl)) {
+      throw new Error(`Missing provider asset: ${item.sourcePath}`);
+    }
+    assertPathInside(plan.xenesisHome, item.destinationPath);
+    copyDirectory(item.sourcePath, item.destinationPath, fsImpl);
+    const manifestPath = joinForRoot(item.destinationPath, 'xenesis.plugin.json');
+    const manifest = renderXenesisPluginManifest(
+      manifestPath,
+      {
+        XENESIS_DESK_MCP_SERVER: serverPath,
+        XENIS_HOME: xenisHome,
+      },
+      fsImpl,
+    );
+    const record = writeEnabledPluginState({
+      xenesisHome: plan.xenesisHome,
+      pluginPath: item.destinationPath,
+      pluginName: manifest.name || item.id,
+      fsImpl,
+    });
+    installed.push({
+      ...item,
+      manifestPath,
+      record,
+    });
+  }
+
+  return {
+    ok: true,
+    xenesisHome: plan.xenesisHome,
+    installed,
+  };
 }
 
 export function installHermesPlugins({ assetRoot, hermesRoot, fsImpl = fs } = {}) {
