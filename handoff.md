@@ -1,5 +1,132 @@
 # Xenesis Desk Work Handoff
 
+## 2026-07-01 Workbench Subagent Port
+
+- Current objective:
+  - Port priority 6, `Workbench Subagent`, from the sibling project into this
+    repo after explicit user approval to take the current sibling state.
+  - Keep `packages/xenesis` untouched.
+  - Include the renderer Workbench subagent model/UI and the CR-first
+    `xd.workbench.subagents.*` bridge path set.
+- Source checkpoint:
+  - Sibling source path:
+    `D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk`.
+  - Sibling commit range inspected:
+    `d5dadef feat: add workbench subagent profiles` through
+    `676baf1 Recover Workbench subagent results from scrollback`.
+  - Relevant sibling files:
+    `xconAgentWorkbenchSubagents.ts`,
+    `xconAgentWorkbenchSubagents.test.ts`,
+    `XconAgentWorkbenchPane.tsx`,
+    `xconAgentWorkbenchModel.ts`,
+    `src/shared/types.ts`,
+    `src/shared/deskBridgeCapabilities.ts`,
+    `src/main/index.ts`, and `src/preload/index.ts`.
+  - Current repo already has base XCON Agent Workbench and visible subagent demo
+    support, but does not have `xconAgentWorkbenchSubagents.ts` or
+    `xd.workbench.subagents.*`.
+- Commands run:
+  - `git rev-parse --git-dir`
+  - `git rev-parse --git-common-dir`
+  - `git branch --show-current`
+  - `Get-Content AGENTS.md`
+  - `Get-Content docs\obsidian\Xenesis-desk.md`
+  - Required Obsidian notes under
+    `docs\obsidian\Xenesis-desk\00_System`,
+    `_Indexes`, `10_Repo Map`, `20_Architecture`, and `30_Modules`.
+  - `Get-Content docs\superpowers\specs\2026-07-01-workbench-subagent-slice-design.md`
+  - `git -C D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk log --oneline --decorate -n 20 -- ...`
+  - `rg` scans for sibling/current Workbench Subagent, bridge, and CR paths.
+  - `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchSubagents.test.ts`
+  - `node --import tsx --test src/shared/workbenchSubagentCapabilities.test.ts`
+  - `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchSubagents.test.ts src/shared/workbenchSubagentCapabilities.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchModel.test.ts`
+  - `npm run docs:capabilities:audit`
+  - `npm run typecheck`
+  - `npm test`
+  - `npm run check:public-release`
+  - `npm run lint`
+  - `npx biome check --max-diagnostics=40 ...touched files...`
+  - `mcp__xenesis_dev.xenesis_desk_capability(path: xd.workbench.subagents.status)`
+  - `mcp__xenesis_dev.xenesis_desk_call_capability(path: xd.workbench.subagents.status, args: {})`
+  - Started current-worktree dev Electron app with `npm run dev` for live
+    verification.
+  - Dev bridge direct POST `/command-palette` query `workbench`.
+  - Dev bridge direct POST `/command-palette/run` with
+    `xenesis-desk.core-tools.openXenesisAgentWorkbench`.
+  - Dev bridge direct POST `/capabilities/call` with
+    `xd.workbench.subagents.status`.
+  - Dev bridge direct POST `/capabilities/call` with
+    `xd.testing.xenesisAgent.submitPrompt` and a natural-language Workbench
+    subagent smoke prompt.
+- Material decisions:
+  - Treat the user's "승인 Workbench subagent 진행해" as the readiness gate for
+    current sibling state.
+  - Include CR bridge paths because the latest sibling adds them and this repo's
+    AGENTS.md requires CR-first control surfaces.
+  - Use file-backed assignment transport under
+    `<XENIS_HOME>/xenesis/subagents/tasks` when `fsAPI.writeFileBase64` is
+    available; fallback to direct terminal envelope input.
+  - Keep the new orchestration in renderer/shared/main/preload code only; do
+    not port or edit `packages/xenesis` production code for this slice.
+  - Extend `McpBridgeTerminalMetadata` with managed-worker metadata because the
+    current repo type was narrower than the sibling Workbench subagent shape.
+- Touched files:
+  - `handoff.md`
+  - `docs/capability-registry-audit.md`
+  - `docs/superpowers/specs/2026-07-01-workbench-subagent-slice-design.md`
+  - `docs/superpowers/plans/2026-07-01-workbench-subagent.md`
+  - `src/main/index.ts`
+  - `src/preload/index.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/XconAgentWorkbenchPane.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchSubagents.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchSubagents.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/styles.css`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/shared/types.ts`
+  - `src/shared/workbenchSubagentCapabilities.test.ts`
+- Verification result:
+  - Initial focused tests were run RED before implementation and failed on the
+    expected missing subagent model/CR paths.
+  - Focused Workbench suite passed:
+    `node --import tsx --test ...xconAgentWorkbenchSubagents.test.ts ...workbenchSubagentCapabilities.test.ts ...xconAgentWorkbenchModel.test.ts`
+    -> PASS, 22/22 tests.
+  - `npm run docs:capabilities:audit` -> PASS. Audit counts after the new
+    paths: registered nodes 906, coverage path references 706, missing
+    registered paths 0, missing dispatched coverage paths 0, undispatched static
+    callable methods 0, dispatcher paths missing from tree 0.
+  - `npm run typecheck` -> PASS after extending the shared terminal metadata
+    type.
+  - `npm test` -> PASS, 709/709 tests.
+  - `npm run check:public-release` -> PASS.
+  - `npx biome check --max-diagnostics=40 ...touched files...` -> exit 0; only
+    existing warning/info diagnostics remain in broad files.
+  - `npm run lint` -> FAIL on the existing repository baseline: 43 errors, 393
+    warnings, 85 infos. The failures include unrelated broad files and
+    `packages/xenesis`, which remains out of scope.
+  - Current-worktree dev Electron smoke -> PASS for direct CR bridge:
+    opened `xenesis-desk.core-tools.openXenesisAgentWorkbench`, then
+    `xd.workbench.subagents.status` returned renderer Workbench state with zero
+    workers, zero pending assignments, three builtin profiles
+    (`implementer`, `researcher`, `verifier`), selected profile `researcher`,
+    and selected managed CLI `codex`.
+  - Natural-language Agent-pane provider smoke -> ATTEMPTED but not a pass:
+    the dev helper submitted the prompt to a visible Xenesis Agent pane, the
+    pane provider was `codex`, and the transcript showed the provider starting
+    the CR call flow, but the run stopped in approval/queued state and did not
+    emit the expected `WORKBENCH_SUBAGENT_STATUS_OK` marker within 180 seconds.
+  - `git diff --name-only` shows no `packages/xenesis` changes.
+- Known gaps:
+  - Natural-language Agent-pane provider smoke remains incomplete. The live CR
+    bridge reaches the renderer Workbench, but do not claim provider
+    natural-language control until an Agent-pane prompt finishes and proves the
+    provider called the CR/MCP path.
+  - Existing root `npm run lint` baseline still fails; do not fix unrelated
+    package or legacy lint issues in this slice unless explicitly approved.
+- Next intended step:
+  - Run the natural-language Agent-pane provider smoke if release-level Agent
+    evidence is required, then stage the forced `docs/superpowers/*` plan/spec
+    files together with the code and commit/push/update the PR when approved.
+
 ## 2026-07-01 Plugin MCP Docs Port
 
 - Current objective:

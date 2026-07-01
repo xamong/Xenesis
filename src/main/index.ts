@@ -197,6 +197,9 @@ import type {
   McpBridgeTerminalMetadata,
   McpBridgeTerminalUiActionPayload,
   McpBridgeTerminalUiActionResult,
+  McpBridgeWorkbenchSubagentAction,
+  McpBridgeWorkbenchSubagentActionPayload,
+  McpBridgeWorkbenchSubagentActionResult,
   McpSettingsStatus,
   OnboardingDemoRouteOpenRequest,
   OnboardingDemoRouteSaveRequest,
@@ -780,6 +783,13 @@ const pendingMcpCaptureActivePaneRequests = new Map<
   string,
   {
     resolve: (result: McpBridgeCaptureActivePaneResult) => void;
+    timeout: NodeJS.Timeout;
+  }
+>();
+const pendingMcpWorkbenchSubagentActions = new Map<
+  string,
+  {
+    resolve: (result: McpBridgeWorkbenchSubagentActionResult) => void;
     timeout: NodeJS.Timeout;
   }
 >();
@@ -11438,6 +11448,70 @@ function sanitizeMcpCaptureActivePaneRequest(value: unknown): Omit<McpBridgeCapt
   };
 }
 
+const MCP_WORKBENCH_SUBAGENT_ACTIONS = new Set<McpBridgeWorkbenchSubagentAction>([
+  'status',
+  'attachActiveTerminal',
+  'startManaged',
+  'plan',
+  'dispatch',
+  'stop',
+  'resolveApproval',
+]);
+
+function sanitizeMcpWorkbenchSubagentAction(
+  value: unknown,
+): Omit<McpBridgeWorkbenchSubagentActionPayload, 'requestId'> {
+  const raw = value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+  const rawAction = sanitizeMcpDockActionText(raw.action, 80);
+  const action = MCP_WORKBENCH_SUBAGENT_ACTIONS.has(rawAction as McpBridgeWorkbenchSubagentAction)
+    ? (rawAction as McpBridgeWorkbenchSubagentAction)
+    : 'status';
+  const prompt = sanitizeMcpDockActionText(raw.prompt, 20_000);
+  const workerId = sanitizeMcpDockActionText(raw.workerId, 200);
+  const terminalId = sanitizeMcpDockActionText(raw.terminalId, 200);
+  const profileName = sanitizeMcpDockActionText(raw.profileName, 200);
+  const cliKind = sanitizeMcpDockActionText(raw.cliKind, 80);
+  const approvalId = sanitizeMcpDockActionText(raw.approvalId, 200);
+  const decision = sanitizeMcpDockActionText(raw.decision, 40);
+  const note = sanitizeMcpDockActionText(raw.note, 1000);
+  return {
+    action,
+    ...(prompt ? { prompt } : {}),
+    ...(workerId ? { workerId } : {}),
+    ...(terminalId ? { terminalId } : {}),
+    ...(profileName ? { profileName } : {}),
+    ...(cliKind ? { cliKind } : {}),
+    ...(approvalId ? { approvalId } : {}),
+    ...(decision ? { decision } : {}),
+    ...(note ? { note } : {}),
+  };
+}
+
+function sanitizeMcpWorkbenchSubagentActionResult(value: unknown): McpBridgeWorkbenchSubagentActionResult | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const raw = value as Record<string, unknown>;
+  const requestId = sanitizeMcpDockActionText(raw.requestId, 120);
+  if (!requestId) return null;
+  const rawAction = sanitizeMcpDockActionText(raw.action, 80);
+  const action = MCP_WORKBENCH_SUBAGENT_ACTIONS.has(rawAction as McpBridgeWorkbenchSubagentAction)
+    ? (rawAction as McpBridgeWorkbenchSubagentAction)
+    : 'status';
+  return {
+    requestId,
+    action,
+    ok: raw.ok === true,
+    workers: Array.isArray(raw.workers) ? raw.workers.slice(0, 100) : undefined,
+    pendingAssignments: Array.isArray(raw.pendingAssignments) ? raw.pendingAssignments.slice(0, 100) : undefined,
+    profiles: Array.isArray(raw.profiles) ? raw.profiles.slice(0, 100) : undefined,
+    selectedProfileName: sanitizeMcpDockActionText(raw.selectedProfileName, 200) || undefined,
+    selectedManagedCli: sanitizeMcpDockActionText(raw.selectedManagedCli, 80) || undefined,
+    worker: raw.worker,
+    assignments: Array.isArray(raw.assignments) ? raw.assignments.slice(0, 100) : undefined,
+    message: sanitizeMcpDockActionText(raw.message, 1000) || undefined,
+    error: sanitizeMcpDockActionText(raw.error, 1000) || undefined,
+  };
+}
+
 function sanitizeMcpGowooriArtifactVisibilityRequest(
   value: unknown,
 ): Omit<McpBridgeGowooriArtifactVisibilityPayload, 'requestId'> {
@@ -12597,6 +12671,36 @@ async function sendMcpCaptureActivePaneToRenderer(
     pendingMcpCaptureActivePaneRequests.set(requestId, { resolve, timeout });
   });
   sendToRenderer(targetWindow, 'mcp:capture-active-pane', payload);
+  return resultPromise;
+}
+
+async function sendMcpWorkbenchSubagentActionToRenderer(
+  request: Omit<McpBridgeWorkbenchSubagentActionPayload, 'requestId'>,
+): Promise<McpBridgeWorkbenchSubagentActionResult> {
+  const targetWindow = getMcpTargetWindow();
+  const requestId = crypto.randomUUID();
+  if (!targetWindow) {
+    return {
+      requestId,
+      action: request.action,
+      ok: false,
+      error: 'Xenesis Desk renderer window is not available',
+    };
+  }
+
+  showMcpTargetWindow(targetWindow);
+  const payload: McpBridgeWorkbenchSubagentActionPayload = { requestId, ...request };
+  const resultPromise = new Promise<McpBridgeWorkbenchSubagentActionResult>((resolve) => {
+    const timeout = setTimeout(
+      () => {
+        pendingMcpWorkbenchSubagentActions.delete(requestId);
+        resolve({ requestId, action: request.action, ok: false, error: 'Workbench subagent action timed out' });
+      },
+      Math.max(MCP_DOCK_ACTION_TIMEOUT_MS, 15_000),
+    );
+    pendingMcpWorkbenchSubagentActions.set(requestId, { resolve, timeout });
+  });
+  sendToRenderer(targetWindow, 'mcp:workbench-subagent-action', payload);
   return resultPromise;
 }
 
@@ -17197,6 +17301,8 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     },
     captureActivePane: async (args: unknown) =>
       sendMcpCaptureActivePaneToRenderer(sanitizeMcpCaptureActivePaneRequest(args)),
+    workbenchSubagentAction: async (args: unknown) =>
+      sendMcpWorkbenchSubagentActionToRenderer(sanitizeMcpWorkbenchSubagentAction(args)),
     rendererPerformanceTrace: async (args: unknown) =>
       sendMcpRendererPerformanceTraceToRenderer(sanitizeMcpRendererPerformanceTraceRequest(args)),
     playwrightSnapshot: async (args: unknown) =>
@@ -22651,6 +22757,16 @@ function setupIpc(): void {
     if (!pending) return { ok: false };
     clearTimeout(pending.timeout);
     pendingMcpCaptureActivePaneRequests.delete(sanitized.requestId);
+    pending.resolve(sanitized);
+    return { ok: true };
+  });
+  ipcMain.handle('mcp:workbench-subagent-action-result', (_event, result: unknown): { ok: boolean } => {
+    const sanitized = sanitizeMcpWorkbenchSubagentActionResult(result);
+    if (!sanitized) return { ok: false };
+    const pending = pendingMcpWorkbenchSubagentActions.get(sanitized.requestId);
+    if (!pending) return { ok: false };
+    clearTimeout(pending.timeout);
+    pendingMcpWorkbenchSubagentActions.delete(sanitized.requestId);
     pending.resolve(sanitized);
     return { ok: true };
   });

@@ -40,21 +40,41 @@ Do not start implementation until:
 - The exact source commit range is recorded in `handoff.md`.
 - Existing Workbench tests in this repo are green before porting.
 
+Current run readiness:
+
+- User explicitly approved taking the current sibling state on 2026-07-01.
+- Sibling source commit range inspected for this slice:
+  `d5dadef feat: add workbench subagent profiles` through
+  `676baf1 Recover Workbench subagent results from scrollback`.
+- `packages/xenesis` remains excluded. Any sibling behavior that requires
+  package runtime changes is treated as out of scope.
+
 ## Architecture
 
-The slice stays renderer-focused and uses existing terminal CR paths rather than
-adding provider runtime behavior. Profiles describe worker roles, permissions,
+The slice stays centered on the renderer Workbench and terminal bridge. It does
+not add provider runtime behavior. Profiles describe worker roles, permissions,
 preferred CLI kinds, and result schema. Attached terminals become visible
-workers with explicit state. Assignments are sent as text envelopes with a
-required fenced `xenesis-subagent-result` JSON block.
+workers with explicit state. Assignments are persisted to Xenesis home task
+files when the filesystem bridge is available, then a short terminal instruction
+points the worker to that file. The fallback is direct terminal envelope input.
+Workers return a required fenced `xenesis-subagent-result` JSON block.
+
+CR-first control is included through `xd.workbench.subagents.*` paths. Those
+paths dispatch to main-process bridge code, which sends a request to the
+renderer Workbench pane and waits for a sanitized result. This makes subagent
+state and control discoverable through the Capability Registry without adding a
+hidden background subagent runtime.
 
 The Workbench owns:
 
 - Profile loading and merging.
 - Worker attach/detach/status.
+- Managed local CLI terminal spawning for installed `codex`, `claude`, and
+  `gemini` CLI agents.
 - Assignment plan creation.
-- Assignment dispatch to terminal input.
+- Assignment dispatch through file-backed transport when possible.
 - Tail/result parsing.
+- Approval decision envelopes sent back to worker terminals.
 - Result summaries in the Workbench UI.
 
 ## Data Flow
@@ -62,9 +82,13 @@ The Workbench owns:
 1. User attaches one or more visible terminal sessions as workers.
 2. Workbench selects a profile for each worker.
 3. User prompt is converted into bounded assignment envelopes.
-4. Workbench dispatches envelopes to terminal sessions.
-5. Worker output is tailed or pasted back into the Workbench.
-6. Result blocks are parsed and reflected in worker state and summaries.
+4. Workbench writes each assignment envelope under
+   `<XENIS_HOME>/xenesis/subagents/tasks` when possible.
+5. Workbench dispatches a short instruction to each terminal session.
+6. Worker output is streamed or recovered from terminal scrollback.
+7. Result blocks are parsed and reflected in worker state and summaries.
+8. CR callers can read status, attach/start workers, plan, dispatch, stop, and
+   resolve worker approval requests through `xd.workbench.subagents.*`.
 
 ## Error Handling
 
@@ -73,15 +97,24 @@ The Workbench owns:
 - Invalid result JSON becomes a failed worker result with a visible error.
 - Any write or risky action requested by a worker remains a request in
   `requiresApproval`; Workbench does not execute it automatically.
+- Missing renderer, terminal, or filesystem bridge APIs return explicit error
+  results rather than silently falling back to hidden behavior.
+- Managed worker terminal exits mark the worker failed unless it had already
+  completed.
 
 ## Tests
 
 Focused tests:
 
 - Subagent profile normalization and merging.
+- Managed worker spawn plan construction.
 - Worker attach/detach/status transitions.
 - Assignment envelope creation.
+- File-backed assignment transport path and terminal input.
 - Result block parsing.
+- Scrollback result recovery.
+- CR path listing and dispatcher routing to the `workbenchSubagentAction`
+  adapter.
 - Workbench model tests for response preservation and subagent metadata guards.
 
 Broader gates:

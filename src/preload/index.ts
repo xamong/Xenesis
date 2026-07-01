@@ -79,6 +79,8 @@ import type {
   McpBridgeStatus,
   McpBridgeTerminalUiActionPayload,
   McpBridgeTerminalUiActionResult,
+  McpBridgeWorkbenchSubagentActionPayload,
+  McpBridgeWorkbenchSubagentActionResult,
   McpSettingsApi,
   OnboardingApi,
   OnboardingSampleWorkspaceStatus,
@@ -1414,6 +1416,30 @@ const mcpBridgeApi: McpBridgeApi = {
   },
   reportCaptureActivePaneResult(result: McpBridgeCaptureActivePaneResult): Promise<void> {
     return ipcRenderer.invoke('mcp:capture-active-pane-result', result);
+  },
+  onWorkbenchSubagentAction(
+    callback: (
+      payload: McpBridgeWorkbenchSubagentActionPayload,
+    ) => McpBridgeWorkbenchSubagentActionResult | Promise<McpBridgeWorkbenchSubagentActionResult>,
+  ): () => void {
+    const listener = async (_event: Electron.IpcRendererEvent, payload: McpBridgeWorkbenchSubagentActionPayload) => {
+      try {
+        const result = await callback(payload);
+        await ipcRenderer.invoke('mcp:workbench-subagent-action-result', result);
+      } catch (error) {
+        await ipcRenderer.invoke('mcp:workbench-subagent-action-result', {
+          requestId: payload?.requestId || '',
+          action: payload?.action || 'status',
+          ok: false,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    };
+    ipcRenderer.on('mcp:workbench-subagent-action', listener);
+    return () => ipcRenderer.removeListener('mcp:workbench-subagent-action', listener);
+  },
+  reportWorkbenchSubagentActionResult(result: McpBridgeWorkbenchSubagentActionResult): Promise<void> {
+    return ipcRenderer.invoke('mcp:workbench-subagent-action-result', result);
   },
   onGowooriChatRun(callback: (payload: McpBridgeGowooriChatRunPayload) => void): () => void {
     const listener = (_event: Electron.IpcRendererEvent, payload: McpBridgeGowooriChatRunPayload) => callback(payload);

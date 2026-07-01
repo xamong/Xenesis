@@ -2534,10 +2534,15 @@ export interface McpBridgeExtensionActionsPayload {
 export interface McpBridgeTerminalMetadata {
   kind?: string;
   subagentId?: string;
+  workerId?: string;
+  workerProfile?: string;
+  workerContractVersion?: string;
   parentTermId?: string;
   agent?: string;
+  provider?: string;
   task?: string;
   command?: string;
+  projectPath?: string;
 }
 
 export interface McpBridgeOpenTerminalPayload {
@@ -3323,6 +3328,43 @@ export interface McpBridgeCaptureActivePaneResult {
   error?: string;
 }
 
+export type McpBridgeWorkbenchSubagentAction =
+  | 'status'
+  | 'attachActiveTerminal'
+  | 'startManaged'
+  | 'plan'
+  | 'dispatch'
+  | 'stop'
+  | 'resolveApproval';
+
+export interface McpBridgeWorkbenchSubagentActionPayload {
+  requestId: string;
+  action: McpBridgeWorkbenchSubagentAction;
+  prompt?: string;
+  workerId?: string;
+  terminalId?: string;
+  profileName?: string;
+  cliKind?: string;
+  approvalId?: string;
+  decision?: string;
+  note?: string;
+}
+
+export interface McpBridgeWorkbenchSubagentActionResult {
+  requestId: string;
+  action: McpBridgeWorkbenchSubagentAction;
+  ok: boolean;
+  workers?: unknown[];
+  pendingAssignments?: unknown[];
+  profiles?: unknown[];
+  selectedProfileName?: string;
+  selectedManagedCli?: string;
+  worker?: unknown;
+  assignments?: unknown[];
+  message?: string;
+  error?: string;
+}
+
 export interface McpBridgeApi {
   status(): Promise<McpBridgeStatus>;
   listActionInbox(): Promise<McpBridgeActionInboxItem[]>;
@@ -3432,6 +3474,12 @@ export interface McpBridgeApi {
     ) => McpBridgeCaptureActivePaneResult | Promise<McpBridgeCaptureActivePaneResult>,
   ): () => void;
   reportCaptureActivePaneResult(result: McpBridgeCaptureActivePaneResult): Promise<void>;
+  onWorkbenchSubagentAction(
+    callback: (
+      payload: McpBridgeWorkbenchSubagentActionPayload,
+    ) => McpBridgeWorkbenchSubagentActionResult | Promise<McpBridgeWorkbenchSubagentActionResult>,
+  ): () => void;
+  reportWorkbenchSubagentActionResult(result: McpBridgeWorkbenchSubagentActionResult): Promise<void>;
   onGowooriChatRun(callback: (payload: McpBridgeGowooriChatRunPayload) => void): () => void;
   onGowooriChatRunCancel(callback: (payload: McpBridgeGowooriChatCancelPayload) => void): () => void;
   onGowooriArtifactVisibility(

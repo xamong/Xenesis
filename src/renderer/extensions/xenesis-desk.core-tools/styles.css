@@ -8265,6 +8265,133 @@
   align-self: center;
 }
 
+.xd-agent-workbench-workers {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.xd-agent-workbench-workers-head,
+.xd-agent-workbench-worker-actions,
+.xd-agent-workbench-worker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.xd-agent-workbench-workers-head strong,
+.xd-agent-workbench-worker strong {
+  font-size: 12px;
+}
+
+.xd-agent-workbench-worker-actions button,
+.xd-agent-workbench-worker-actions select,
+.xd-agent-workbench-worker button {
+  min-height: 24px;
+  padding: 3px 7px;
+  border-radius: 6px;
+  font-size: 10px;
+}
+
+.xd-agent-workbench-worker-actions select {
+  max-width: 120px;
+  border: 1px solid rgba(51, 65, 85, 0.9);
+  background: rgba(15, 23, 42, 0.82);
+  color: #dbeafe;
+}
+
+.xd-agent-workbench-worker-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.xd-agent-workbench-worker {
+  flex-wrap: wrap;
+  padding: 8px;
+  border: 1px solid rgba(51, 65, 85, 0.85);
+  border-radius: 8px;
+  background: rgba(2, 6, 23, 0.45);
+}
+
+.xd-agent-workbench-worker div {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.xd-agent-workbench-worker small,
+.xd-agent-workbench-worker-empty,
+.xd-agent-workbench-worker-error,
+.xd-agent-workbench-worker-note {
+  margin: 0;
+  overflow: hidden;
+  color: #8aa0c2;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.xd-agent-workbench-worker-error {
+  color: #fca5a5;
+}
+
+.xd-agent-workbench-worker-note {
+  color: #93c5fd;
+}
+
+.xd-agent-workbench-worker > span {
+  flex: 0 0 auto;
+  color: #67e8f9;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.xd-agent-workbench-worker-approvals {
+  display: flex;
+  flex: 1 0 100%;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding-top: 4px;
+}
+
+.xd-agent-workbench-worker-approval {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid rgba(250, 204, 21, 0.38);
+  border-radius: 8px;
+  background: rgba(113, 63, 18, 0.18);
+}
+
+.xd-agent-workbench-worker-approval div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.xd-agent-workbench-worker-approval p {
+  margin: 0;
+  color: #fde68a;
+  font-size: 11px;
+}
+
+.xd-agent-workbench-worker-approval-actions {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
 .xd-agent-workbench-examples {
   display: flex;
   flex-direction: column;
@@ -8876,6 +9003,76 @@
 .xd-agent-workbench-approval-actions .is-reject {
   border-color: rgba(248, 113, 113, 0.55);
   color: #fecaca;
+}
+
+.xd-agent-workbench-assignment-plan {
+  grid-area: assignments;
+  display: grid;
+  gap: 8px;
+  max-height: 180px;
+  min-width: 0;
+  overflow: auto;
+  padding: 10px 16px;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.xd-agent-workbench-assignment-plan-head,
+.xd-agent-workbench-assignment-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.xd-agent-workbench-assignment-plan-head strong {
+  color: #e2e8f0;
+  font-size: 12px;
+}
+
+.xd-agent-workbench-assignment-plan-head span {
+  color: var(--text-mute);
+  font-size: 11px;
+}
+
+.xd-agent-workbench-assignment-list {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.xd-agent-workbench-assignment-list article {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid rgba(34, 211, 238, 0.22);
+  border-radius: 8px;
+  background: rgba(8, 145, 178, 0.09);
+}
+
+.xd-agent-workbench-assignment-list span {
+  width: fit-content;
+  border: 1px solid rgba(34, 211, 238, 0.32);
+  border-radius: 999px;
+  padding: 2px 7px;
+  color: #67e8f9;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.xd-agent-workbench-assignment-list p {
+  margin: 0;
+  overflow: hidden;
+  color: #cbd5e1;
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.xd-agent-workbench-assignment-actions {
+  justify-content: flex-end;
 }
 
 .xd-agent-workbench-progress-bar {
