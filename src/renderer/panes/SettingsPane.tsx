@@ -6,6 +6,7 @@ import {
   type ExternalAppProfile,
   normalizeExternalAppSettings,
 } from '../../shared/externalAppControl';
+import { normalizeOfficeSettings, type OfficeControlSettings } from '../../shared/officeControl';
 import { filterXenisPhase5SecretVaultItems, isXenisPhase5EnabledFromSettings } from '../../shared/phase5';
 import type {
   AiProviderKind,
@@ -1336,6 +1337,7 @@ export default function SettingsPane() {
   const [localCliAutoConfigure, setLocalCliAutoConfigure] = useState(true);
   const [externalAppProfiles, setExternalAppProfiles] = useState<ExternalAppProfile[]>([]);
   const [externalAppsEnabled, setExternalAppsEnabled] = useState(true);
+  const [officeSettings, setOfficeSettings] = useState<OfficeControlSettings>(() => normalizeOfficeSettings(undefined));
   const [providerIntegrationStatus, setProviderIntegrationStatus] = useState<ProviderIntegrationStatus | null>(null);
   const [providerIntegrationBusy, setProviderIntegrationBusy] = useState(false);
   const [providerIntegrationMessage, setProviderIntegrationMessage] = useState('');
@@ -1560,6 +1562,7 @@ export default function SettingsPane() {
     const normalizedExternalApps = normalizeExternalAppSettings(s.externalApps);
     setExternalAppsEnabled(normalizedExternalApps.enabled);
     setExternalAppProfiles(normalizedExternalApps.profiles);
+    setOfficeSettings(normalizeOfficeSettings(s.office));
     setApiUrl(s.apiUrl ?? DEFAULT_API_URL);
     setUpdaterSettings(normalizeUpdaterSettings(s.updater));
     setSecretVaultMode(s.secretVault?.mode === 'os-protected' ? 'os-protected' : 'plain');
@@ -2516,6 +2519,18 @@ export default function SettingsPane() {
     setSettingsSaveError('');
     setSaved(true);
   }, [externalAppProfiles, externalAppsEnabled, saveUpdatedSettings]);
+
+  const patchOfficeSettings = useCallback((patch: Partial<OfficeControlSettings>) => {
+    setOfficeSettings((current) => normalizeOfficeSettings({ ...current, ...patch }));
+  }, []);
+
+  const saveOfficeSettings = useCallback(async () => {
+    const office = normalizeOfficeSettings(officeSettings);
+    await saveUpdatedSettings({ office });
+    setOfficeSettings(office);
+    setSettingsSaveError('');
+    setSaved(true);
+  }, [officeSettings, saveUpdatedSettings]);
 
   const patchExternalAppProfile = useCallback((id: string, patch: Partial<ExternalAppProfile>) => {
     setExternalAppProfiles((profiles) =>
@@ -10937,6 +10952,138 @@ export default function SettingsPane() {
     </div>
   );
 
+  const renderOfficeControl = () => (
+    <div className="sp-stack" data-settings-section="settings-office-control">
+      <section className="sp-section">
+        <div className="sp-section-heading">
+          <div>
+            <h2>{t('settings.category.officeControl')}</h2>
+            <p>{t('settings.category.officeControlDesc')}</p>
+          </div>
+          <div className="sp-actions-row">
+            <button
+              className="sp-btn sp-btn-primary"
+              onClick={() => {
+                void saveOfficeSettings().catch((error) => {
+                  setSettingsSaveError(t('settings.settingsSaveFailed', { e: getSettingsErrorMessage(error) }));
+                });
+              }}
+            >
+              {t('settings.settingsSave')}
+            </button>
+          </div>
+        </div>
+
+        <div className="sp-grid two">
+          <div className="sp-field">
+            <label className="sp-inline-check" htmlFor="sp-office-enabled">
+              <input
+                id="sp-office-enabled"
+                type="checkbox"
+                checked={officeSettings.enabled}
+                onChange={(event) => patchOfficeSettings({ enabled: event.target.checked })}
+              />
+              <span>Enable Office Control</span>
+            </label>
+          </div>
+          <div className="sp-field">
+            <label className="sp-inline-check" htmlFor="sp-office-windows-com">
+              <input
+                id="sp-office-windows-com"
+                type="checkbox"
+                checked={officeSettings.enableWindowsComProvider}
+                onChange={(event) => patchOfficeSettings({ enableWindowsComProvider: event.target.checked })}
+              />
+              <span>Enable Windows COM provider</span>
+            </label>
+          </div>
+          <div className="sp-field">
+            <label className="sp-inline-check" htmlFor="sp-office-apple-events">
+              <input
+                id="sp-office-apple-events"
+                type="checkbox"
+                checked={officeSettings.enableMacosAppleEventsProvider}
+                onChange={(event) => patchOfficeSettings({ enableMacosAppleEventsProvider: event.target.checked })}
+              />
+              <span>Enable macOS Apple Events provider</span>
+            </label>
+          </div>
+          <div className="sp-field">
+            <label className="sp-inline-check" htmlFor="sp-office-modify-existing">
+              <input
+                id="sp-office-modify-existing"
+                type="checkbox"
+                checked={officeSettings.allowModifyExistingDocuments}
+                onChange={(event) => patchOfficeSettings({ allowModifyExistingDocuments: event.target.checked })}
+              />
+              <span>Allow modifying existing documents</span>
+            </label>
+          </div>
+          <div className="sp-field">
+            <label className="sp-inline-check" htmlFor="sp-office-pdf-export">
+              <input
+                id="sp-office-pdf-export"
+                type="checkbox"
+                checked={officeSettings.allowPdfExport}
+                onChange={(event) => patchOfficeSettings({ allowPdfExport: event.target.checked })}
+              />
+              <span>Allow PDF export</span>
+            </label>
+          </div>
+          <div className="sp-field">
+            <label className="sp-inline-check" htmlFor="sp-office-visible-automation">
+              <input
+                id="sp-office-visible-automation"
+                type="checkbox"
+                checked={officeSettings.allowVisibleOfficeAutomation}
+                onChange={(event) => patchOfficeSettings({ allowVisibleOfficeAutomation: event.target.checked })}
+              />
+              <span>Allow visible Office automation</span>
+            </label>
+          </div>
+          <label className="sp-label" htmlFor="sp-office-max-read-cells">
+            Max read cells
+            <input
+              id="sp-office-max-read-cells"
+              className="sp-input"
+              type="number"
+              min={1}
+              step={1}
+              value={officeSettings.maxReadCells}
+              onChange={(event) =>
+                patchOfficeSettings({ maxReadCells: Math.max(1, Math.round(Number(event.target.value) || 1)) })
+              }
+            />
+          </label>
+          <label className="sp-label" htmlFor="sp-office-max-write-cells">
+            Max write cells
+            <input
+              id="sp-office-max-write-cells"
+              className="sp-input"
+              type="number"
+              min={1}
+              step={1}
+              value={officeSettings.maxWriteCells}
+              onChange={(event) =>
+                patchOfficeSettings({ maxWriteCells: Math.max(1, Math.round(Number(event.target.value) || 1)) })
+              }
+            />
+          </label>
+        </div>
+
+        <label className="sp-label" htmlFor="sp-office-default-output-dir">
+          Default output directory
+          <input
+            id="sp-office-default-output-dir"
+            className="sp-input"
+            value={officeSettings.defaultOutputDir}
+            onChange={(event) => patchOfficeSettings({ defaultOutputDir: event.target.value })}
+          />
+        </label>
+      </section>
+    </div>
+  );
+
   const renderPlaceholder = (title: string, description: string) => (
     <section className="sp-section">
       <div className="sp-section-heading">
@@ -11020,6 +11167,8 @@ export default function SettingsPane() {
         return renderExtensions();
       case 'external-apps':
         return renderExternalApps();
+      case 'office-control':
+        return renderOfficeControl();
       case 'secret-vault':
         return renderSecretVault();
       case 'about':

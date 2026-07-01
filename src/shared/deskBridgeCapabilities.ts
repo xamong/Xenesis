@@ -1824,6 +1824,7 @@ export interface DeskBridgeCapabilityAdapter {
   browserAction?: (args: unknown) => Promise<unknown> | unknown;
   openBuiltinPane?: (args: unknown) => Promise<unknown> | unknown;
   runExternalAppAction?: (args: unknown) => Promise<unknown> | unknown;
+  runOfficeAction?: (path: string, args?: unknown) => Promise<unknown> | unknown;
   inputControlCall?: (path: string, args?: unknown) => Promise<unknown> | unknown;
   computerUseCall?: (
     path: string,
@@ -4549,6 +4550,28 @@ function event(path: string, label: string, description: string): DeskBridgeCapa
 function phase5Only(node: DeskBridgeCapabilityNode): DeskBridgeCapabilityNode {
   return { ...node, phase5Only: true };
 }
+
+const OFFICE_ACTION_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    provider: { type: 'string', enum: ['file', 'windows-com', 'macos-apple-events'] },
+    path: { type: 'string' },
+    outputPath: { type: 'string' },
+    overwrite: { type: 'boolean' },
+    openAfterCreate: { type: 'boolean' },
+    visible: { type: 'boolean' },
+    readOnly: { type: 'boolean' },
+    reuseExisting: { type: 'boolean' },
+    save: { type: 'boolean' },
+    sheets: { type: 'array' },
+    sheetName: { type: 'string' },
+    range: { type: 'string' },
+    startCell: { type: 'string' },
+    rows: { type: 'array' },
+    saveAsPath: { type: 'string' },
+  },
+} as const;
 
 function filterPhase5CapabilityTree(
   node: DeskBridgeCapabilityNode,
@@ -9237,6 +9260,75 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
         { approval: 'when-external' },
       ),
     ]),
+    group('xd.office', 'Office Control', 'Inspect and automate Office documents through governed providers.', [
+      method('xd.office.status', 'Read Office provider status', 'Read Office Control provider availability.', 'read', {
+        type: 'object',
+        additionalProperties: false,
+        properties: {},
+      }),
+      method(
+        'xd.office.excel.createWorkbook',
+        'Create Excel workbook',
+        'Create a new Excel workbook using the governed file-backed provider.',
+        'write',
+        OFFICE_ACTION_SCHEMA,
+        { approval: 'when-external' },
+      ),
+      method(
+        'xd.office.excel.inspectWorkbook',
+        'Inspect Excel workbook',
+        'Inspect sheets and dimensions in an Excel workbook without modifying it.',
+        'read',
+        OFFICE_ACTION_SCHEMA,
+      ),
+      method(
+        'xd.office.excel.openWorkbook',
+        'Open Excel workbook',
+        'Open an Excel workbook through an installed Office provider.',
+        'write',
+        OFFICE_ACTION_SCHEMA,
+        { approval: 'when-external' },
+      ),
+      method(
+        'xd.office.excel.readRange',
+        'Read Excel range',
+        'Read a bounded range from an Excel workbook.',
+        'read',
+        OFFICE_ACTION_SCHEMA,
+      ),
+      method(
+        'xd.office.excel.writeRange',
+        'Write Excel range',
+        'Write cells into an Excel workbook through a governed Office provider.',
+        'write',
+        OFFICE_ACTION_SCHEMA,
+        { approval: 'when-external' },
+      ),
+      method(
+        'xd.office.excel.saveWorkbook',
+        'Save Excel workbook',
+        'Save an open Excel workbook through an installed Office provider.',
+        'write',
+        OFFICE_ACTION_SCHEMA,
+        { approval: 'always' },
+      ),
+      method(
+        'xd.office.excel.closeWorkbook',
+        'Close Excel workbook',
+        'Close an open Excel workbook through an installed Office provider.',
+        'write',
+        OFFICE_ACTION_SCHEMA,
+        { approval: 'always' },
+      ),
+      method(
+        'xd.office.excel.exportPdf',
+        'Export Excel workbook to PDF',
+        'Export an Excel workbook to PDF through an installed Office provider.',
+        'write',
+        OFFICE_ACTION_SCHEMA,
+        { approval: 'always' },
+      ),
+    ]),
     group('xd.input', 'Input control', 'Unified browser and desktop input DSL control surface.', [
       method(
         'xd.input.targets',
@@ -12931,6 +13023,33 @@ export async function callDeskBridgeCapability(
           action: 'screenshot',
         });
       }
+      if (path === 'xd.office.status') {
+        return callOfficeCapability(path, api?.runOfficeAction, normalizeCapabilityArgs(request.args));
+      }
+      if (path === 'xd.office.excel.createWorkbook') {
+        return callOfficeCapability(path, api?.runOfficeAction, normalizeCapabilityArgs(request.args));
+      }
+      if (path === 'xd.office.excel.inspectWorkbook') {
+        return callOfficeCapability(path, api?.runOfficeAction, normalizeCapabilityArgs(request.args));
+      }
+      if (path === 'xd.office.excel.openWorkbook') {
+        return callOfficeCapability(path, api?.runOfficeAction, normalizeCapabilityArgs(request.args));
+      }
+      if (path === 'xd.office.excel.readRange') {
+        return callOfficeCapability(path, api?.runOfficeAction, normalizeCapabilityArgs(request.args));
+      }
+      if (path === 'xd.office.excel.writeRange') {
+        return callOfficeCapability(path, api?.runOfficeAction, normalizeCapabilityArgs(request.args));
+      }
+      if (path === 'xd.office.excel.saveWorkbook') {
+        return callOfficeCapability(path, api?.runOfficeAction, normalizeCapabilityArgs(request.args));
+      }
+      if (path === 'xd.office.excel.closeWorkbook') {
+        return callOfficeCapability(path, api?.runOfficeAction, normalizeCapabilityArgs(request.args));
+      }
+      if (path === 'xd.office.excel.exportPdf') {
+        return callOfficeCapability(path, api?.runOfficeAction, normalizeCapabilityArgs(request.args));
+      }
       if (path === 'xd.input.targets') {
         return callInputControlCapability(path, api?.inputControlCall, normalizeCapabilityArgs(request.args));
       }
@@ -14943,6 +15062,35 @@ async function callAdapter(
   return { ok: true, path, result };
 }
 
+async function callOfficeCapability(
+  path: string,
+  adapter: ((path: string, args?: unknown) => Promise<unknown> | unknown) | undefined,
+  args?: unknown,
+): Promise<DeskBridgeCapabilityCallResult> {
+  if (!adapter) return { ok: false, path, error: 'Desk bridge API is unavailable.' };
+  const result = await adapter(path, args);
+  if (isCapabilityCallResultLike(result)) {
+    const resultPath = result.path;
+    return {
+      ok: result.ok !== false,
+      path: typeof resultPath === 'string' && resultPath.trim() ? resultPath : path,
+      result: result.result,
+      error: typeof result.error === 'string' ? result.error : undefined,
+      approvalRequired: result.approvalRequired === true ? true : undefined,
+    };
+  }
+  if (isFailurePayload(result)) {
+    return {
+      ok: false,
+      path,
+      result,
+      error:
+        typeof result.error === 'string' && result.error.trim() ? result.error : `Office capability failed: ${path}`,
+    };
+  }
+  return { ok: true, path, result };
+}
+
 async function callInputControlCapability(
   path: string,
   adapter: ((path: string, args?: unknown) => Promise<unknown> | unknown) | undefined,
@@ -15059,8 +15207,13 @@ function isFailurePayload(value: unknown): value is { ok: false; error?: unknown
 function isCapabilityCallResultLike(
   value: unknown,
 ): value is { ok: boolean; path?: unknown; result?: unknown; error?: unknown; approvalRequired?: unknown } {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const resultPath = (value as { path?: unknown }).path;
+  if (typeof resultPath !== 'string') return false;
+  const normalizedPath = normalizeCapabilityPath(resultPath);
   return Boolean(
-    value && typeof value === 'object' && !Array.isArray(value) && typeof (value as { ok?: unknown }).ok === 'boolean',
+    typeof (value as { ok?: unknown }).ok === 'boolean' &&
+      (normalizedPath === DESK_BRIDGE_ROOT_PATH || normalizedPath.startsWith(`${DESK_BRIDGE_ROOT_PATH}.`)),
   );
 }
 

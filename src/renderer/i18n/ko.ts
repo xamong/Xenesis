@@ -719,6 +719,8 @@ export const ko = {
       automationDesc: '터미널 자동화 규칙 및 차단 패턴 관리',
       externalApps: '외부 앱',
       externalAppsDesc: '외부 데스크톱 앱 실행 및 제어 프로필',
+      officeControl: 'Office 제어',
+      officeControlDesc: 'Excel 자동화 provider와 문서 안전 정책',
       keyboardShortcuts: '키보드 단축키',
       keyboardShortcutsDesc: '커맨드 팔레트와 확장 명령의 전역 단축키를 관리합니다',
       workspace: '워크스페이스',

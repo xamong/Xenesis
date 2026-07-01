@@ -725,6 +725,8 @@ export const en = {
       automationDesc: 'Terminal automation rules and block patterns',
       externalApps: 'External Apps',
       externalAppsDesc: 'Profiles for launching and controlling external desktop apps',
+      officeControl: 'Office Control',
+      officeControlDesc: 'Excel automation providers and document safety policy',
       keyboardShortcuts: 'Keyboard Shortcuts',
       keyboardShortcutsDesc: 'Manage global shortcuts for command palette and extension commands',
       workspace: 'Workspace',

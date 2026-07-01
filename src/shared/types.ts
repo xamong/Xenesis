@@ -1,5 +1,6 @@
 import type { DockDragGhostOverlayPayload } from './dockDragGhost';
 import type { ExternalAppSettings } from './externalAppControl';
+import type { OfficeControlSettings } from './officeControl';
 import type { XenesisConnectionsStatus } from './xenesisConnections';
 
 export type {
@@ -1900,6 +1901,8 @@ export interface AppSettings {
   localCli: LocalCliSettings;
   /** 외부 데스크톱 앱 실행 및 제어 프로필 */
   externalApps: ExternalAppSettings;
+  /** Office 문서 자동화 설정 */
+  office: OfficeControlSettings;
   /** GowooriChat CLI/API provider 실행 설정 */
   gowooriChat: GowooriChatSettings;
   /** 화면 캡처 저장 폴더 (비어 있으면 Xenesis Desk 홈의 captures) */

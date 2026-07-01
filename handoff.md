@@ -26893,3 +26893,278 @@ Verification so far:
     be force-added when committing the documentation artifact.
 - Next intended step:
   - Offer execution choice: subagent-driven execution or inline execution.
+
+## 2026-07-01 Office Control Inline Implementation Start
+
+- Current objective:
+  - Execute the approved Office Control implementation plan inline, starting
+    with the shared Office model and preserving the `packages/xenesis` no-touch
+    constraint.
+- Touched files:
+  - `handoff.md`
+- Commands run:
+  - Read `superpowers:executing-plans`.
+  - Read `superpowers:test-driven-development`.
+  - Read `docs/superpowers/plans/2026-07-01-office-control.md`.
+  - Checked branch/worktree with `git status --short --branch`.
+  - Checked existing Office-related files with
+    `rg --files src | rg "officeControl|officeCapabilities|deskBridgeCapabilities|types.ts|SettingsPane|i18n|xenesisSettingsCatalog"`.
+- Exact verification result:
+  - User selected inline execution option `2`.
+  - Current branch is `mini`, ahead of `origin/mini` by 2 documentation commits.
+  - No `src/shared/officeControl.ts` or `src/main/officeControl` runtime files
+    exist yet.
+- Known gaps:
+  - No implementation test has been run in this execution phase yet.
+- Next intended step:
+  - Add the failing shared Office model tests and run the RED check.
+
+## 2026-07-01 Office Control Task 1 Shared Model
+
+- Current objective:
+  - Add the shared Office Control model with TDD coverage for defaults, action
+    normalization, validation, and approval classification.
+- Touched files:
+  - `src/shared/officeControl.test.ts`
+  - `src/shared/officeControl.ts`
+  - `handoff.md`
+- Commands run:
+  - RED: `node --import tsx --test src/shared/officeControl.test.ts`
+  - GREEN: `node --import tsx --test src/shared/officeControl.test.ts`
+  - No-package check: `git diff --name-only -- packages/xenesis`
+- Exact verification result:
+  - RED failed as expected with `Cannot find module './officeControl'`.
+  - GREEN passed 7/7 tests.
+  - `git diff --name-only -- packages/xenesis` printed nothing.
+- Known gaps:
+  - Office CR paths and main-process providers are not implemented yet.
+- Next intended step:
+  - Add failing Capability Registry tests for the `xd.office.*` surface.
+
+## 2026-07-01 Office Control Task 2 Capability Registry Surface
+
+- Current objective:
+  - Register the `xd.office.*` Capability Registry surface and route Office
+    calls through an explicit `runOfficeAction(path, args)` adapter seam.
+- Touched files:
+  - `src/shared/officeCapabilities.test.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `docs/capability-registry-audit.md`
+  - `handoff.md`
+- Commands run:
+  - RED:
+    `node --import tsx --test src/shared/officeControl.test.ts src/shared/officeCapabilities.test.ts`
+  - GREEN:
+    `node --import tsx --test src/shared/officeControl.test.ts src/shared/officeCapabilities.test.ts`
+  - CR audit: `npm run docs:capabilities:audit`
+  - Audit summary read:
+    `Get-Content -Path docs\capability-registry-audit.md -TotalCount 80`
+  - No-package check: `git diff --name-only -- packages/xenesis`
+- Exact verification result:
+  - RED failed as expected because `xd.office` was not registered.
+  - GREEN passed 9/9 focused shared/CR tests.
+  - CR audit exited 0 and regenerated
+    `docs/capability-registry-audit.md`.
+  - Audit summary: Missing registered paths 0, Missing dispatched coverage
+    paths 0, Undispatched static callable methods 0.
+  - `git diff --name-only -- packages/xenesis` printed nothing.
+- Known gaps:
+  - Main-process Office providers and service routing are not implemented yet.
+- Next intended step:
+  - Add the failing Excel file provider tests.
+
+## 2026-07-01 Office Control Task 3 Excel File Provider
+
+- Current objective:
+  - Add the file-backed Excel provider for safe workbook creation, inspection,
+    and bounded range reads.
+- Touched files:
+  - `src/main/officeControl/excelFileAdapter.test.ts`
+  - `src/main/officeControl/excelFileAdapter.ts`
+  - `handoff.md`
+- Commands run:
+  - RED:
+    `node --import tsx --test src/main/officeControl/excelFileAdapter.test.ts`
+  - GREEN:
+    `node --import tsx --test src/main/officeControl/excelFileAdapter.test.ts`
+  - No-package check: `git diff --name-only -- packages/xenesis`
+- Exact verification result:
+  - RED failed as expected with `Cannot find module './excelFileAdapter'`.
+  - GREEN passed 2/2 Excel file adapter tests.
+  - `git diff --name-only -- packages/xenesis` printed nothing.
+- Known gaps:
+  - Installed Office adapters and service-level policy routing are not
+    implemented yet.
+- Next intended step:
+  - Add failing Windows COM and macOS Apple Events adapter tests.
+
+## 2026-07-01 Office Control Task 4 Installed Office Adapters
+
+- Current objective:
+  - Add Windows COM and macOS Apple Events Office adapter seams with stable
+    host invocation payloads and failure-code mapping.
+- Touched files:
+  - `src/main/officeControl/windowsOfficeComAdapter.test.ts`
+  - `src/main/officeControl/windowsOfficeComAdapter.ts`
+  - `src/main/officeControl/macosOfficeAppleEventsAdapter.test.ts`
+  - `src/main/officeControl/macosOfficeAppleEventsAdapter.ts`
+  - `handoff.md`
+- Commands run:
+  - RED:
+    `node --import tsx --test src/main/officeControl/windowsOfficeComAdapter.test.ts src/main/officeControl/macosOfficeAppleEventsAdapter.test.ts`
+  - GREEN:
+    `node --import tsx --test src/main/officeControl/windowsOfficeComAdapter.test.ts src/main/officeControl/macosOfficeAppleEventsAdapter.test.ts`
+  - No-package check: `git diff --name-only -- packages/xenesis`
+- Exact verification result:
+  - RED failed as expected with missing `windowsOfficeComAdapter` and
+    `macosOfficeAppleEventsAdapter` modules.
+  - GREEN passed 10/10 installed adapter tests.
+  - Host unavailable behavior is fail-closed: missing Windows host returns
+    provider unavailable/`host_not_found`; non-macOS Apple Events status returns
+    unavailable without invoking automation.
+  - `git diff --name-only -- packages/xenesis` printed nothing.
+- Known gaps:
+  - Office service policy/routing and app settings integration are not wired
+    yet.
+- Next intended step:
+  - Add failing Office Control service tests.
+
+## 2026-07-01 Office Control Task 5 Service Routing
+
+- Current objective:
+  - Add the main-process Office Control service that enforces settings policy,
+    reads provider status, routes file-backed Excel reads, and selects installed
+    providers for automation actions.
+- Touched files:
+  - `src/main/officeControl/officeControlService.test.ts`
+  - `src/main/officeControl/officeControlService.ts`
+  - `handoff.md`
+- Commands run:
+  - RED:
+    `node --import tsx --test src/main/officeControl/officeControlService.test.ts`
+  - GREEN:
+    `node --import tsx --test src/main/officeControl/officeControlService.test.ts`
+  - Office bundle:
+    `node --import tsx --test src/shared/officeControl.test.ts src/main/officeControl/excelFileAdapter.test.ts src/main/officeControl/windowsOfficeComAdapter.test.ts src/main/officeControl/macosOfficeAppleEventsAdapter.test.ts src/main/officeControl/officeControlService.test.ts`
+  - No-package check: `git diff --name-only -- packages/xenesis`
+- Exact verification result:
+  - RED failed as expected with `Cannot find module './officeControlService'`.
+  - GREEN passed 7/7 service tests, including the optional `getSettings`
+    default path.
+  - Office bundle passed 26/26 tests.
+  - `git diff --name-only -- packages/xenesis` printed nothing.
+- Known gaps:
+  - App settings, Settings pane UI, and main CR adapter wiring are not connected
+    yet.
+- Next intended step:
+  - Add failing native packaging wiring expectations, then wire settings/main UI.
+
+## 2026-07-01 Office Control Task 6 Settings And Main Wiring
+
+- Current objective:
+  - Wire Office Control through app settings, renderer Settings pane, main
+    settings persistence, and the main Capability Registry adapter.
+- Touched files:
+  - `scripts/nativeToolsPackaging.test.ts`
+  - `src/shared/types.ts`
+  - `src/main/index.ts`
+  - `src/shared/xenesisSettingsCatalog.mjs`
+  - `src/shared/xenesisSettingsCatalog.d.ts`
+  - `src/shared/xenesisSettingsCatalog.d.mts`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
+  - `handoff.md`
+- Commands run:
+  - RED: `node --test scripts/nativeToolsPackaging.test.ts`
+  - GREEN: `node --test scripts/nativeToolsPackaging.test.ts`
+  - Typecheck: `npm run typecheck`
+  - No-package check: `git diff --name-only -- packages/xenesis`
+- Exact verification result:
+  - RED failed as expected because `src/main/index.ts` did not yet contain
+    `createOfficeControlService` / `runOfficeAction`.
+  - Packaging test passed 5/5 after wiring.
+  - `npm run typecheck` exited 0.
+  - `git diff --name-only -- packages/xenesis` printed nothing.
+- Known gaps:
+  - Focused Office test bundle, targeted Biome, broad repo gates, and live
+    Electron smoke still need to run.
+- Next intended step:
+  - Run focused Office verification and broad gates.
+
+## 2026-07-01 Office Control Task 7 Verification And Live Smoke
+
+- Current objective:
+  - Verify the Office Control CR surface end to end, including live Electron
+    bridge calls and read-only installed Office automation.
+- Touched files:
+  - `src/shared/officeCapabilities.test.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `docs/capability-registry-audit.md`
+  - `handoff.md`
+- Commands run:
+  - RED regression 1:
+    `node --import tsx --test src/shared/officeCapabilities.test.ts`
+  - GREEN regression 1:
+    `node --import tsx --test src/shared/officeCapabilities.test.ts`
+  - RED regression 2:
+    `node --import tsx --test src/shared/officeCapabilities.test.ts`
+  - GREEN regression 2:
+    `node --import tsx --test src/shared/officeCapabilities.test.ts`
+  - Wrapper coverage:
+    `node --import tsx --test src/shared/inputControlCapabilities.test.ts src/shared/computerUseCapabilities.test.ts`
+  - Focused Office bundle:
+    `node --import tsx --test src/shared/officeControl.test.ts src/shared/officeCapabilities.test.ts src/main/officeControl/excelFileAdapter.test.ts src/main/officeControl/windowsOfficeComAdapter.test.ts src/main/officeControl/macosOfficeAppleEventsAdapter.test.ts src/main/officeControl/officeControlService.test.ts`
+  - Native packaging: `node --test scripts/nativeToolsPackaging.test.ts`
+  - Targeted Biome:
+    `npx biome check src/shared/officeControl.ts src/shared/officeControl.test.ts src/shared/officeCapabilities.test.ts src/main/officeControl/excelFileAdapter.ts src/main/officeControl/excelFileAdapter.test.ts src/main/officeControl/windowsOfficeComAdapter.ts src/main/officeControl/windowsOfficeComAdapter.test.ts src/main/officeControl/macosOfficeAppleEventsAdapter.ts src/main/officeControl/macosOfficeAppleEventsAdapter.test.ts src/main/officeControl/officeControlService.ts src/main/officeControl/officeControlService.test.ts src/shared/types.ts src/shared/xenesisSettingsCatalog.mjs scripts/nativeToolsPackaging.test.ts --max-diagnostics=200`
+  - Touched large-file Biome:
+    `npx biome check src/main/index.ts src/shared/deskBridgeCapabilities.ts src/renderer/panes/SettingsPane.tsx src/renderer/i18n/en.ts src/renderer/i18n/ko.ts src/shared/xenesisSettingsCatalog.d.ts src/shared/xenesisSettingsCatalog.d.mts --max-diagnostics=200`
+  - Typecheck: `npm run typecheck`
+  - Root tests: `npm test`
+  - CR audit: `npm run docs:capabilities:audit`
+  - Public release: `npm run check:public-release`
+  - Build: `npm run build`
+  - No-package check: `git diff --name-only -- packages/xenesis`
+  - Live Electron smoke:
+    ad-hoc Playwright `_electron.launch` with `xd.office.status`.
+  - Installed Office smoke:
+    ad-hoc Playwright `_electron.launch` creating a temp workbook with the file
+    provider, then reading `A1:B2` through `provider: 'windows-com'`.
+- Exact verification result:
+  - Regression 1 failed as expected with `status.result` missing. Root cause:
+    `isCapabilityCallResultLike()` treated any `{ ok: boolean }` Office payload
+    as an already-wrapped CR result.
+  - Regression 2 failed as expected because `excel.createWorkbook` payload path
+    (`C:/work/generated.xlsx`) was mistaken for the top-level CR path.
+  - Fix: `isCapabilityCallResultLike()` now only unwraps results whose `path`
+    is in the CR namespace (`xd` or `xd.*`), preserving Office payloads with
+    file paths under `result`.
+  - Office bundle passed 28/28 tests.
+  - Wrapper coverage passed 8/8 input/computer-use tests.
+  - Native packaging passed 5/5 tests. Node emitted the existing
+    `MODULE_TYPELESS_PACKAGE_JSON` warning.
+  - Targeted Office Biome passed with no diagnostics.
+  - Touched large-file Biome exited 0 with existing warnings only: 15 warnings
+    and 8 infos in `src/main/index.ts` / `src/shared/deskBridgeCapabilities.ts`.
+  - `npm run typecheck` exited 0.
+  - `npm test` passed 693/693 tests.
+  - CR audit exited 0 and regenerated `docs/capability-registry-audit.md`:
+    Registered nodes 897, Callable methods 577, Coverage path references 706,
+    Dispatcher paths 557, Missing registered paths 0, Missing dispatched
+    coverage paths 0, Undispatched static callable methods 0, Dispatcher paths
+    missing from tree 0.
+  - `npm run check:public-release` exited 0.
+  - `npm run build` exited 0. Build retained known Vite/D3/hwp warnings.
+  - Live marker passed:
+    `OFFICE_CONTROL_SMOKE_PASS {"path":"xd.office.status","fileProvider":true,...}`.
+  - Installed Office marker passed:
+    `OFFICE_CONTROL_INSTALLED_SMOKE_PASS {"provider":"windows-com","path":"xd.office.excel.readRange","action":"excel.readRange","rows":[["Name","Value"],["A",1]]}`.
+  - `git diff --name-only -- packages/xenesis` printed nothing.
+- Known gaps:
+  - macOS Apple Events provider is unavailable on this Windows host and was
+    verified only through automated unit tests.
+  - Full touched-file Biome still reports pre-existing lint warnings, but exits
+    0; no new formatter errors remain.
+- Next intended step:
+  - Commit the Office Control implementation, push `mini`, and update PR #13.

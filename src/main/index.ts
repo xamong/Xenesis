@@ -93,6 +93,7 @@ import {
   verifyDeskBridgeCapabilityApprovalProof,
 } from '../shared/deskBridgeCapabilities';
 import { normalizeExternalAppSettings } from '../shared/externalAppControl';
+import { normalizeOfficeSettings } from '../shared/officeControl';
 import {
   canUseXenisPhase5XamongCodeCommand,
   isXenisPhase5Visible,
@@ -408,6 +409,7 @@ import {
   observeMainAsyncOperation,
   summarizeMainObservabilityPayload,
 } from './observabilityBridge';
+import { createOfficeControlService } from './officeControl/officeControlService';
 import {
   exportOnboardingDemoRouteStoryboard,
   openOnboardingDemoRouteTarget,
@@ -1717,6 +1719,7 @@ const SETTINGS_DEFAULT: AppSettings = {
     autoConfigureTerminal: true,
   },
   externalApps: normalizeExternalAppSettings(undefined),
+  office: normalizeOfficeSettings(undefined),
   gowooriChat: {
     provider: 'byok',
     promptMode: 'stdin',
@@ -2603,6 +2606,7 @@ function loadSettings(): AppSettings {
       xenesis: normalizeXenesisRuntimeSettings({ ...SETTINGS_DEFAULT.xenesis, ...(saved.xenesis ?? {}) }),
       localCli: { ...SETTINGS_DEFAULT.localCli, ...(saved.localCli ?? {}) },
       externalApps: normalizeExternalAppSettings(saved.externalApps ?? SETTINGS_DEFAULT.externalApps),
+      office: normalizeOfficeSettings(saved.office ?? SETTINGS_DEFAULT.office),
       gowooriChat: { ...SETTINGS_DEFAULT.gowooriChat, ...(saved.gowooriChat ?? {}) },
       automation: normalizeAutomationSettings(saved.automation),
       terminalRestore: { ...SETTINGS_DEFAULT.terminalRestore, ...(saved.terminalRestore ?? {}) },
@@ -2650,6 +2654,7 @@ function loadSettings(): AppSettings {
     }
     merged.localCli.autoConfigureTerminal = merged.localCli.autoConfigureTerminal !== false;
     merged.externalApps = normalizeExternalAppSettings(merged.externalApps);
+    merged.office = normalizeOfficeSettings(merged.office);
     merged.gowooriChat.promptMode = merged.gowooriChat.promptMode === 'argument' ? 'argument' : 'stdin';
     merged.gowooriChat.commandArgs = String(merged.gowooriChat.commandArgs ?? '');
     merged.gowooriChat.timeoutMs = Number.isFinite(merged.gowooriChat.timeoutMs)
@@ -2728,6 +2733,7 @@ function persistSettings(settings: Partial<AppSettings>): AppSettings {
       externalApps: settings.externalApps
         ? normalizeExternalAppSettings({ ...current.externalApps, ...settings.externalApps })
         : current.externalApps,
+      office: settings.office ? normalizeOfficeSettings({ ...current.office, ...settings.office }) : current.office,
       gowooriChat: settings.gowooriChat ? { ...current.gowooriChat, ...settings.gowooriChat } : current.gowooriChat,
       automation: settings.automation ? { ...current.automation, ...settings.automation } : current.automation,
       terminalRestore: settings.terminalRestore
@@ -2778,6 +2784,7 @@ function persistSettings(settings: Partial<AppSettings>): AppSettings {
     };
     updated.xenesis = normalizeXenesisRuntimeSettings(updated.xenesis);
     updated.externalApps = normalizeExternalAppSettings(updated.externalApps);
+    updated.office = normalizeOfficeSettings(updated.office);
     updated.captureDir = resolveDefaultedDir(updated.captureDir, getDefaultCaptureDir());
     updated.extensions = {
       ...updated.extensions,
@@ -16036,6 +16043,9 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
   const appControlService = createAppControlService({
     getSettings: () => loadSettings().externalApps,
   });
+  const officeControlService = createOfficeControlService({
+    getSettings: () => loadSettings().office,
+  });
   const inputControlService = createInputControlService({
     runExternalAppAction: (args: unknown) => appControlService.run(args),
   });
@@ -16224,6 +16234,7 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
     browserAction: (args: unknown) => sendMcpBrowserActionToRenderer(sanitizeMcpBrowserActionRequest(args)),
     openBuiltinPane: openMcpBuiltinPaneCapability,
     runExternalAppAction: (args: unknown) => appControlService.run(args),
+    runOfficeAction: (path: string, args?: unknown) => officeControlService.run(path, args),
     inputControlCall: (path: string, args?: unknown) => inputControlService.call(path, args),
     computerUseCall: (path: string, args?: unknown, options?: { approved?: boolean }) =>
       computerUseService.call(path, args, options),
@@ -20687,6 +20698,11 @@ const NATIVE_MENU_LABELS: Record<string, { ko: string; en: string }> = {
   'settings.category.externalAppsDesc': {
     ko: '외부 데스크톱 앱 실행 및 제어 프로필',
     en: 'Profiles for launching and controlling external desktop apps',
+  },
+  'settings.category.officeControl': { ko: 'Office 제어', en: 'Office Control' },
+  'settings.category.officeControlDesc': {
+    ko: 'Excel 자동화 provider와 문서 안전 정책',
+    en: 'Excel automation providers and document safety policy',
   },
   'app.toolsMenuDemoLabEditor': { ko: 'Demo Lab Editor', en: 'Demo Lab Editor' },
   'app.toolsXenisBot': { ko: 'Xenesis Bot', en: 'Xenesis Bot' },
