@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { AI_PROVIDER_API_ORDER, AI_PROVIDERS, coerceApiAiProviderKind } from '../shared/aiProviderCatalog';
 import {
   type AppMenuActionId,
   type AppMenuActionNode,
@@ -11,7 +12,6 @@ import {
 import { resolveAppMenuIcon } from '../shared/menuIcons';
 import { filterXenisPhase5ExtensionCommands, isXenisPhase5EnabledFromSettings } from '../shared/phase5';
 import type {
-  AiProviderKind,
   AiProviderSettings,
   AppSettings,
   AutomationApi,
@@ -87,6 +87,8 @@ import {
   authGetErrorMessage,
 } from './auth/authApi';
 import DockHost from './dock/DockHost';
+import { buildRequestedDetachedWindowBounds } from './dock/detachBounds';
+import { runDockTransfer } from './dock/detachTransfer';
 import {
   type Bounds,
   type DockContent,
@@ -95,10 +97,9 @@ import {
   type SavedLayout,
   STORAGE_KEY,
 } from './dock/engine';
-import { buildRequestedDetachedWindowBounds } from './dock/detachBounds';
-import { runDockTransfer } from './dock/detachTransfer';
 import { type DetachIntentMetadata, type DetachMode } from './dock/useDragManager';
 import { useI18n } from './i18n';
+import { shouldPersistRendererSettings } from './settingsAutosavePolicy';
 import {
   type CmdShortcut,
   createWorkBlock,
@@ -548,155 +549,9 @@ const FALLBACK_SHELL_DESCRIPTORS: ShellDescriptor[] = [
   { kind: 'wsl', label: 'WSL', command: 'wsl.exe', available: false },
 ];
 
-// ─── AI 프로바이더 메타데이터 ────────────────────────────────────────────────
-
-interface ProviderMeta {
-  label: string;
-  defaultModel: string;
-  models: string[];
-  needsKey: boolean;
-  defaultBaseUrl: string;
-}
-
-const AI_PROVIDERS: Record<AiProviderKind, ProviderMeta> = {
-  auto: {
-    label: 'Auto (detect)',
-    defaultModel: '',
-    models: [],
-    needsKey: false,
-    defaultBaseUrl: '',
-  },
-  openai: {
-    label: 'OpenAI',
-    defaultModel: 'gpt-4o',
-    models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo', 'o1', 'o3-mini'],
-    needsKey: true,
-    defaultBaseUrl: '',
-  },
-  anthropic: {
-    label: 'Anthropic',
-    defaultModel: 'claude-opus-4-5',
-    models: ['claude-opus-4-5', 'claude-sonnet-4-5', 'claude-3-5-haiku-20241022'],
-    needsKey: true,
-    defaultBaseUrl: '',
-  },
-  gemini: {
-    label: 'Google Gemini',
-    defaultModel: 'gemini-2.0-flash',
-    models: ['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'],
-    needsKey: true,
-    defaultBaseUrl: '',
-  },
-  openrouter: {
-    label: 'OpenRouter',
-    defaultModel: 'openai/gpt-4o-mini',
-    models: ['openai/gpt-4o-mini', 'openai/gpt-4o', 'anthropic/claude-3.5-sonnet'],
-    needsKey: true,
-    defaultBaseUrl: 'https://openrouter.ai/api/v1',
-  },
-  groq: {
-    label: 'Groq',
-    defaultModel: 'llama-3.1-8b-instant',
-    models: ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile', 'mixtral-8x7b-32768'],
-    needsKey: true,
-    defaultBaseUrl: '',
-  },
-  deepseek: {
-    label: 'DeepSeek',
-    defaultModel: 'deepseek-chat',
-    models: ['deepseek-chat', 'deepseek-reasoner'],
-    needsKey: true,
-    defaultBaseUrl: 'https://api.deepseek.com',
-  },
-  qwen: {
-    label: 'Qwen',
-    defaultModel: 'qwen-plus',
-    models: ['qwen-plus', 'qwen-turbo', 'qwen-max'],
-    needsKey: true,
-    defaultBaseUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
-  },
-  mistral: {
-    label: 'Mistral',
-    defaultModel: 'mistral-large-latest',
-    models: ['mistral-large-latest', 'mistral-small-latest', 'codestral-latest'],
-    needsKey: true,
-    defaultBaseUrl: 'https://api.mistral.ai/v1',
-  },
-  xai: {
-    label: 'xAI',
-    defaultModel: 'grok-2-latest',
-    models: ['grok-2-latest'],
-    needsKey: true,
-    defaultBaseUrl: 'https://api.x.ai/v1',
-  },
-  ollama: {
-    label: 'Ollama (Local)',
-    defaultModel: 'llama3.2',
-    models: ['llama3.2', 'llama3.1', 'mistral', 'gemma2', 'phi3', 'qwen2.5'],
-    needsKey: false,
-    defaultBaseUrl: 'http://localhost:11434',
-  },
-  lmstudio: {
-    label: 'LM Studio',
-    defaultModel: 'local-model',
-    models: ['local-model'],
-    needsKey: false,
-    defaultBaseUrl: 'http://localhost:1234',
-  },
-  together: {
-    label: 'Together AI',
-    defaultModel: 'meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo',
-    models: ['meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo', 'mistralai/Mixtral-8x7B-Instruct-v0.1'],
-    needsKey: true,
-    defaultBaseUrl: '',
-  },
-  fireworks: {
-    label: 'Fireworks AI',
-    defaultModel: 'accounts/fireworks/models/llama-v3p1-8b-instruct',
-    models: ['accounts/fireworks/models/llama-v3p1-8b-instruct'],
-    needsKey: true,
-    defaultBaseUrl: '',
-  },
-  azure: {
-    label: 'Azure OpenAI',
-    defaultModel: 'gpt-4o',
-    models: ['gpt-4o', 'gpt-4-turbo'],
-    needsKey: true,
-    defaultBaseUrl: '',
-  },
-  'codex-cli': {
-    label: 'Codex CLI (Local)',
-    defaultModel: 'gpt-5.5',
-    models: ['gpt-5.5', 'gpt-5-codex'],
-    needsKey: false,
-    defaultBaseUrl: '',
-  },
-  'codex-app-server': {
-    label: 'Codex App Server (Local)',
-    defaultModel: 'gpt-5.5',
-    models: ['gpt-5.5'],
-    needsKey: false,
-    defaultBaseUrl: '',
-  },
-  'claude-cli': {
-    label: 'Claude CLI (Local)',
-    defaultModel: 'claude-sonnet-4-5',
-    models: ['claude-sonnet-4-5', 'claude-opus-4-5'],
-    needsKey: false,
-    defaultBaseUrl: '',
-  },
-  'claude-interactive': {
-    label: 'Claude Interactive (Local)',
-    defaultModel: 'claude-sonnet-4-5',
-    models: ['claude-sonnet-4-5'],
-    needsKey: false,
-    defaultBaseUrl: '',
-  },
-};
-
 const DEFAULT_AI_PROVIDER: AiProviderSettings = {
-  provider: 'auto',
-  model: '',
+  provider: 'openai',
+  model: AI_PROVIDERS.openai.defaultModel,
   apiKey: '',
   baseUrl: '',
   xcAgentApiUrl: '',
@@ -1119,6 +974,8 @@ export default function App() {
   const [aiProvider, setAiProvider] = useState<AiProviderSettings>(DEFAULT_AI_PROVIDER);
   // AI 설정 편집용 임시 state (설정 모달에서 수정 후 저장 시 aiProvider로 반영)
   const [aiEdit, setAiEdit] = useState<AiProviderSettings>(DEFAULT_AI_PROVIDER);
+  const aiEditProvider = coerceApiAiProviderKind(aiEdit.provider, DEFAULT_AI_PROVIDER.provider);
+  const aiEditProviderMeta = AI_PROVIDERS[aiEditProvider];
   const [showApiKey, setShowApiKey] = useState(false);
   // 현재 저장된 apiUrl 추적 — AI 모달 이벤트에 포함하여 MetaManagement/QueryAnalyzer
   // 가 apiUrl 없는 이벤트를 수신할 때 DEFAULT_URL 로 덮어쓰지 않도록 한다.
@@ -1679,9 +1536,15 @@ export default function App() {
         settingsApiUrlRef.current = settings.apiUrl ?? '';
         if (settings.aiProvider) {
           const raw = settings.aiProvider;
+          const provider = coerceApiAiProviderKind(raw.provider, DEFAULT_AI_PROVIDER.provider);
+          const meta = AI_PROVIDERS[provider];
+          const shouldKeepModel = provider === raw.provider && typeof raw.model === 'string' && raw.model.trim();
           const merged: AiProviderSettings = {
             ...DEFAULT_AI_PROVIDER,
             ...raw,
+            provider,
+            model: shouldKeepModel ? raw.model : meta.defaultModel,
+            baseUrl: raw.baseUrl ?? meta.defaultBaseUrl,
             xcAgentApiUrl: raw.xcAgentApiUrl || '',
             xcApiUrl: raw.xcApiUrl || '',
             labApiUrl: raw.labApiUrl || 'http://127.0.0.1:3845',
@@ -1997,7 +1860,8 @@ export default function App() {
     terminalHost.updateAllSettings(theme, fontSize);
     document.documentElement.style.setProperty('--xd-terminal-font-size', `${fontSize}px`);
 
-    if (!settingsLoadedRef.current) return undefined;
+    if (!shouldPersistRendererSettings({ settingsLoaded: settingsLoadedRef.current, isDetachedWindow }))
+      return undefined;
 
     const timer = setTimeout(() => {
       window.terminalAPI.saveSettings({ theme, fontSize, defaultShell, defaultCwd, aiProvider }).catch((error) => {
@@ -2005,13 +1869,14 @@ export default function App() {
       });
     }, 600);
     return () => clearTimeout(timer);
-  }, [theme, fontSize, defaultShell, defaultCwd, aiProvider, handleStatus]);
+  }, [theme, fontSize, defaultShell, defaultCwd, aiProvider, handleStatus, isDetachedWindow]);
 
   // ── Debounce-save command-related settings to userData/settings.json ─
   // localStorage 는 URL origin 종속 → 재시작 시 초기화될 수 있음.
   // settings.json 은 앱 userData 에 저장되므로 origin 무관하게 영속됨.
   useEffect(() => {
-    if (!settingsLoadedRef.current) return undefined;
+    if (!shouldPersistRendererSettings({ settingsLoaded: settingsLoadedRef.current, isDetachedWindow }))
+      return undefined;
 
     const timer = setTimeout(() => {
       window.terminalAPI
@@ -2025,7 +1890,7 @@ export default function App() {
         });
     }, 800);
     return () => clearTimeout(timer);
-  }, [cmdHistory, shortcuts, workBlocks, handleStatus]);
+  }, [cmdHistory, shortcuts, workBlocks, handleStatus, isDetachedWindow]);
 
   // ── 셸 사용 가능 여부 확인 ────────────────────────────────────────────────────
   const shellAvailable = useCallback(
@@ -7404,9 +7269,9 @@ export default function App() {
                     <label className="settings-ai-label">{t('app.miniSettingsProvider')}</label>
                     <select
                       className="settings-select settings-ai-select"
-                      value={aiEdit.provider}
+                      value={aiEditProvider}
                       onChange={(e) => {
-                        const p = e.target.value as AiProviderKind;
+                        const p = coerceApiAiProviderKind(e.target.value);
                         const meta = AI_PROVIDERS[p];
                         setAiEdit((prev) => ({
                           ...prev,
@@ -7416,7 +7281,7 @@ export default function App() {
                         }));
                       }}
                     >
-                      {(Object.keys(AI_PROVIDERS) as AiProviderKind[]).map((p) => (
+                      {AI_PROVIDER_API_ORDER.map((p) => (
                         <option key={p} value={p}>
                           {AI_PROVIDERS[p].label}
                         </option>
@@ -7433,7 +7298,7 @@ export default function App() {
                         value={aiEdit.model}
                         onChange={(e) => setAiEdit((prev) => ({ ...prev, model: e.target.value }))}
                       >
-                        {AI_PROVIDERS[aiEdit.provider].models.map((m) => (
+                        {aiEditProviderMeta.models.map((m) => (
                           <option key={m} value={m}>
                             {m}
                           </option>
@@ -7443,7 +7308,7 @@ export default function App() {
                         className="settings-path-input"
                         type="text"
                         placeholder={t('app.miniSettingsModelCustomPlaceholder')}
-                        value={AI_PROVIDERS[aiEdit.provider].models.includes(aiEdit.model) ? '' : aiEdit.model}
+                        value={aiEditProviderMeta.models.includes(aiEdit.model) ? '' : aiEdit.model}
                         onChange={(e) => e.target.value && setAiEdit((prev) => ({ ...prev, model: e.target.value }))}
                         style={{ width: '180px', marginLeft: '6px' }}
                         title={t('app.miniSettingsModelCustomTitle')}
@@ -7452,7 +7317,7 @@ export default function App() {
                   </div>
 
                   {/* API 키 */}
-                  {AI_PROVIDERS[aiEdit.provider].needsKey && (
+                  {aiEditProviderMeta.needsKey && (
                     <div className="settings-ai-row">
                       <label className="settings-ai-label">{t('app.miniSettingsApiKey')}</label>
                       <div className="settings-cwd-row">
@@ -7461,7 +7326,7 @@ export default function App() {
                           type={showApiKey ? 'text' : 'password'}
                           value={aiEdit.apiKey}
                           onChange={(e) => setAiEdit((prev) => ({ ...prev, apiKey: e.target.value }))}
-                          placeholder={`${AI_PROVIDERS[aiEdit.provider].label} API Key`}
+                          placeholder={`${aiEditProviderMeta.label} API Key`}
                           spellCheck={false}
                           autoComplete="off"
                           style={{ flex: 1, fontFamily: showApiKey ? 'monospace' : undefined }}
@@ -7498,18 +7363,14 @@ export default function App() {
                         type="text"
                         value={aiEdit.baseUrl}
                         onChange={(e) => setAiEdit((prev) => ({ ...prev, baseUrl: e.target.value }))}
-                        placeholder={
-                          AI_PROVIDERS[aiEdit.provider].defaultBaseUrl || t('app.miniSettingsEndpointPlaceholder')
-                        }
+                        placeholder={aiEditProviderMeta.defaultBaseUrl || t('app.miniSettingsEndpointPlaceholder')}
                         spellCheck={false}
                         style={{ flex: 1 }}
                       />
                       {aiEdit.baseUrl && (
                         <button
                           className="settings-clear-btn"
-                          onClick={() =>
-                            setAiEdit((prev) => ({ ...prev, baseUrl: AI_PROVIDERS[aiEdit.provider].defaultBaseUrl }))
-                          }
+                          onClick={() => setAiEdit((prev) => ({ ...prev, baseUrl: aiEditProviderMeta.defaultBaseUrl }))}
                           title={t('app.miniSettingsEndpointResetTitle')}
                         >
                           ↺
@@ -7519,9 +7380,9 @@ export default function App() {
                   </div>
 
                   <p className="settings-hint">
-                    {AI_PROVIDERS[aiEdit.provider].needsKey
-                      ? t('app.miniSettingsApiKeyRequired', { provider: AI_PROVIDERS[aiEdit.provider].label })
-                      : t('app.miniSettingsLocalNoKey', { provider: AI_PROVIDERS[aiEdit.provider].label })}
+                    {aiEditProviderMeta.needsKey
+                      ? t('app.miniSettingsApiKeyRequired', { provider: aiEditProviderMeta.label })
+                      : t('app.miniSettingsLocalNoKey', { provider: aiEditProviderMeta.label })}
                   </p>
 
                   {xenisPhase5Enabled && (
@@ -7643,12 +7504,19 @@ export default function App() {
                     className="settings-pick-btn"
                     style={{ marginTop: '6px', padding: '4px 14px', fontSize: '12px' }}
                     onClick={() => {
-                      setAiProvider(aiEdit);
+                      const nextAiProvider: AiProviderSettings = {
+                        ...aiEdit,
+                        provider: aiEditProvider,
+                        model: aiEdit.model || aiEditProviderMeta.defaultModel,
+                        baseUrl: aiEdit.baseUrl ?? aiEditProviderMeta.defaultBaseUrl,
+                      };
+                      setAiProvider(nextAiProvider);
+                      setAiEdit(nextAiProvider);
                       // settingsApiUrlRef.current 를 포함해 MetaManagement/QueryAnalyzer 가
                       // apiUrl 없는 이벤트를 수신해도 DEFAULT_API_URL 로 덮어쓰지 않도록 한다.
                       window.dispatchEvent(
                         new CustomEvent('app-settings-changed', {
-                          detail: { apiUrl: settingsApiUrlRef.current, aiProvider: aiEdit },
+                          detail: { apiUrl: settingsApiUrlRef.current, aiProvider: nextAiProvider },
                         }),
                       );
                     }}

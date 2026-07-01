@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  AI_PROVIDER_API_ORDER,
+  AI_PROVIDERS,
+  coerceApiAiProviderKind,
+  type ProviderMeta,
+} from '../../shared/aiProviderCatalog';
 import {
   BUILTIN_EXTERNAL_APP_PROFILES,
   createExternalAppProfileFromTemplate,
@@ -226,15 +232,6 @@ function xenesisSecretInputType(value: string): 'text' | 'password' {
   return trimmed === '' || XENESIS_ENV_NAME_PATTERN.test(trimmed) ? 'text' : 'password';
 }
 
-interface ProviderMeta {
-  label: string;
-  shortLabel: string;
-  defaultModel: string;
-  models: string[];
-  needsKey: boolean;
-  defaultBaseUrl: string;
-}
-
 interface XamongInteractiveWorker {
   key: string;
   ownerId?: string;
@@ -294,183 +291,6 @@ const GOWOORI_SPORTS_STANDINGS_TEST_TIMEOUT_MS = 8000;
 const PORT_MIN = 1024;
 const PORT_MAX = 65535;
 
-const AI_PROVIDERS: Record<AiProviderKind, ProviderMeta> = {
-  auto: {
-    label: 'Auto (detect)',
-    shortLabel: 'Auto',
-    defaultModel: '',
-    models: [],
-    needsKey: false,
-    defaultBaseUrl: '',
-  },
-  openai: {
-    label: 'OpenAI',
-    shortLabel: 'OpenAI',
-    defaultModel: 'gpt-4o',
-    models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo', 'o1', 'o3-mini'],
-    needsKey: true,
-    defaultBaseUrl: 'https://api.openai.com/v1',
-  },
-  anthropic: {
-    label: 'Anthropic',
-    shortLabel: 'Anthropic',
-    defaultModel: 'claude-opus-4-5',
-    models: ['claude-opus-4-5', 'claude-sonnet-4-5', 'claude-3-5-haiku-20241022'],
-    needsKey: true,
-    defaultBaseUrl: '',
-  },
-  azure: {
-    label: 'Azure OpenAI',
-    shortLabel: 'Azure OpenAI',
-    defaultModel: 'gpt-4o',
-    models: ['gpt-4o', 'gpt-4-turbo'],
-    needsKey: true,
-    defaultBaseUrl: '',
-  },
-  'codex-cli': {
-    label: 'Codex CLI (Local)',
-    shortLabel: 'Codex',
-    defaultModel: 'gpt-5.5',
-    models: ['gpt-5.5', 'gpt-5-codex'],
-    needsKey: false,
-    defaultBaseUrl: '',
-  },
-  'codex-app-server': {
-    label: 'Codex App Server (Local)',
-    shortLabel: 'Codex',
-    defaultModel: 'gpt-5.5',
-    models: ['gpt-5.5'],
-    needsKey: false,
-    defaultBaseUrl: '',
-  },
-  'claude-cli': {
-    label: 'Claude CLI (Local)',
-    shortLabel: 'Claude',
-    defaultModel: 'claude-sonnet-4-5',
-    models: ['claude-sonnet-4-5', 'claude-opus-4-5'],
-    needsKey: false,
-    defaultBaseUrl: '',
-  },
-  'claude-interactive': {
-    label: 'Claude Interactive (Local)',
-    shortLabel: 'Claude',
-    defaultModel: 'claude-sonnet-4-5',
-    models: ['claude-sonnet-4-5'],
-    needsKey: false,
-    defaultBaseUrl: '',
-  },
-  gemini: {
-    label: 'Google Gemini',
-    shortLabel: 'Google Gemini',
-    defaultModel: 'gemini-2.0-flash',
-    models: ['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'],
-    needsKey: true,
-    defaultBaseUrl: '',
-  },
-  openrouter: {
-    label: 'OpenRouter',
-    shortLabel: 'OpenRouter',
-    defaultModel: 'openai/gpt-4o-mini',
-    models: ['openai/gpt-4o-mini', 'openai/gpt-4o', 'anthropic/claude-3.5-sonnet'],
-    needsKey: true,
-    defaultBaseUrl: 'https://openrouter.ai/api/v1',
-  },
-  groq: {
-    label: 'Groq',
-    shortLabel: 'Groq',
-    defaultModel: 'llama-3.1-8b-instant',
-    models: ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile', 'mixtral-8x7b-32768'],
-    needsKey: true,
-    defaultBaseUrl: '',
-  },
-  deepseek: {
-    label: 'DeepSeek',
-    shortLabel: 'DeepSeek',
-    defaultModel: 'deepseek-chat',
-    models: ['deepseek-chat', 'deepseek-reasoner'],
-    needsKey: true,
-    defaultBaseUrl: 'https://api.deepseek.com',
-  },
-  qwen: {
-    label: 'Qwen',
-    shortLabel: 'Qwen',
-    defaultModel: 'qwen-plus',
-    models: ['qwen-plus', 'qwen-turbo', 'qwen-max'],
-    needsKey: true,
-    defaultBaseUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
-  },
-  mistral: {
-    label: 'Mistral',
-    shortLabel: 'Mistral',
-    defaultModel: 'mistral-large-latest',
-    models: ['mistral-large-latest', 'mistral-small-latest', 'codestral-latest'],
-    needsKey: true,
-    defaultBaseUrl: 'https://api.mistral.ai/v1',
-  },
-  xai: {
-    label: 'xAI',
-    shortLabel: 'xAI',
-    defaultModel: 'grok-2-latest',
-    models: ['grok-2-latest'],
-    needsKey: true,
-    defaultBaseUrl: 'https://api.x.ai/v1',
-  },
-  ollama: {
-    label: 'Ollama',
-    shortLabel: 'Ollama',
-    defaultModel: 'llama3.2',
-    models: ['llama3.2', 'llama3.1', 'mistral', 'gemma2', 'phi3', 'qwen2.5'],
-    needsKey: false,
-    defaultBaseUrl: 'http://localhost:11434',
-  },
-  lmstudio: {
-    label: 'LM Studio',
-    shortLabel: 'LM Studio',
-    defaultModel: 'local-model',
-    models: ['local-model'],
-    needsKey: false,
-    defaultBaseUrl: 'http://localhost:1234',
-  },
-  together: {
-    label: 'Together AI',
-    shortLabel: 'Together',
-    defaultModel: 'meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo',
-    models: ['meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo', 'mistralai/Mixtral-8x7B-Instruct-v0.1'],
-    needsKey: true,
-    defaultBaseUrl: '',
-  },
-  fireworks: {
-    label: 'Fireworks AI',
-    shortLabel: 'Fireworks',
-    defaultModel: 'accounts/fireworks/models/llama-v3p1-8b-instruct',
-    models: ['accounts/fireworks/models/llama-v3p1-8b-instruct'],
-    needsKey: true,
-    defaultBaseUrl: '',
-  },
-};
-
-const PROVIDER_ORDER: AiProviderKind[] = [
-  'auto',
-  'codex-cli',
-  'codex-app-server',
-  'claude-cli',
-  'claude-interactive',
-  'openai',
-  'anthropic',
-  'gemini',
-  'openrouter',
-  'azure',
-  'groq',
-  'deepseek',
-  'qwen',
-  'mistral',
-  'xai',
-  'ollama',
-  'lmstudio',
-  'together',
-  'fireworks',
-];
-
 function getAiProviderModelLabelKey(provider: AiProviderKind): string {
   return provider === 'azure' ? 'settings.aiDeploymentLabel' : 'settings.aiModelLabel';
 }
@@ -502,7 +322,7 @@ function getAiProviderEndpointHintKey(provider: AiProviderKind): string {
 
 const DEFAULT_AI_PROVIDER: AiProviderSettings = {
   provider: 'openai',
-  model: 'gpt-4o',
+  model: AI_PROVIDERS.openai.defaultModel,
   apiKey: '',
   baseUrl: '',
   xcAgentApiUrl: '',
@@ -1180,7 +1000,7 @@ function getInfoTabForSection(section: string): SettingsInfoTab | null {
 }
 
 function normalizeAiProvider(raw?: Partial<AiProviderSettings>): AiProviderSettings {
-  const provider = raw?.provider && AI_PROVIDERS[raw.provider] ? raw.provider : DEFAULT_AI_PROVIDER.provider;
+  const provider = coerceApiAiProviderKind(raw?.provider, DEFAULT_AI_PROVIDER.provider);
   const meta = AI_PROVIDERS[provider];
   return {
     ...DEFAULT_AI_PROVIDER,
@@ -3729,7 +3549,10 @@ export default function SettingsPane() {
 
   const activeMeta =
     VISIBLE_SETTINGS_CATEGORIES.find((category) => category.id === activeCategory) ?? VISIBLE_SETTINGS_CATEGORIES[0];
-  const activeProviderMeta = AI_PROVIDERS[aiProvider.provider];
+  const renderedActiveCategory = useDeferredValue(activeCategory);
+  const settingsContentPending = renderedActiveCategory !== activeCategory;
+  const activeProvider = coerceApiAiProviderKind(aiProvider.provider, DEFAULT_AI_PROVIDER.provider);
+  const activeProviderMeta = AI_PROVIDERS[activeProvider];
   const visibleSecretVaultItems = useMemo(
     () => filterXenisPhase5SecretVaultItems(secretVaultStatus?.items ?? [], { xenisPhase5: xenisPhase5Enabled }),
     [secretVaultStatus?.items, xenisPhase5Enabled],
@@ -8540,10 +8363,10 @@ export default function SettingsPane() {
       </div>
 
       <div className="sp-provider-tabs" role="tablist" aria-label="LLM provider">
-        {PROVIDER_ORDER.map((provider) => (
+        {AI_PROVIDER_API_ORDER.map((provider) => (
           <button
             key={provider}
-            className={cls('sp-provider-tab', aiProvider.provider === provider && 'is-active')}
+            className={cls('sp-provider-tab', activeProvider === provider && 'is-active')}
             onClick={() => handleProviderChange(provider)}
           >
             {AI_PROVIDERS[provider].shortLabel}
@@ -8553,7 +8376,7 @@ export default function SettingsPane() {
 
       <div className="sp-section-heading">
         <div>
-          <h2>{getProviderLabel(aiProvider.provider)} API</h2>
+          <h2>{getProviderLabel(activeProvider)} API</h2>
           <p>{t('settings.aiProviderHint')}</p>
         </div>
         <button
@@ -8574,10 +8397,10 @@ export default function SettingsPane() {
         <select
           id="sp-provider-quick"
           className="sp-input"
-          value={aiProvider.provider}
-          onChange={(e) => handleProviderChange(e.target.value as AiProviderKind)}
+          value={activeProvider}
+          onChange={(e) => handleProviderChange(coerceApiAiProviderKind(e.target.value))}
         >
-          {PROVIDER_ORDER.map((provider) => (
+          {AI_PROVIDER_API_ORDER.map((provider) => (
             <option key={provider} value={provider}>
               {getProviderLabel(provider)}
             </option>
@@ -8597,7 +8420,7 @@ export default function SettingsPane() {
               type={showApiKey ? 'text' : 'password'}
               value={aiProvider.apiKey}
               onChange={(e) => patchAiProvider({ apiKey: e.target.value })}
-              placeholder={`${getProviderLabel(aiProvider.provider)} API Key`}
+              placeholder={`${getProviderLabel(activeProvider)} API Key`}
               spellCheck={false}
               autoComplete="off"
             />
@@ -8625,7 +8448,7 @@ export default function SettingsPane() {
       <div className="sp-grid two">
         <div className="sp-field">
           <label className="sp-label" htmlFor="sp-provider-model">
-            {t(getAiProviderModelLabelKey(aiProvider.provider))}
+            {t(getAiProviderModelLabelKey(activeProvider))}
           </label>
           <select
             id="sp-provider-model"
@@ -8643,14 +8466,14 @@ export default function SettingsPane() {
 
         <div className="sp-field">
           <label className="sp-label" htmlFor="sp-provider-model-custom">
-            {t(getAiProviderModelCustomLabelKey(aiProvider.provider))}
+            {t(getAiProviderModelCustomLabelKey(activeProvider))}
           </label>
           <input
             id="sp-provider-model-custom"
             className="sp-input"
             type="text"
             value={activeProviderMeta.models.includes(aiProvider.model) ? '' : aiProvider.model}
-            placeholder={t(getAiProviderModelCustomPlaceholderKey(aiProvider.provider))}
+            placeholder={t(getAiProviderModelCustomPlaceholderKey(activeProvider))}
             onChange={(e) => patchAiProvider({ model: e.target.value || activeProviderMeta.defaultModel })}
             spellCheck={false}
           />
@@ -8659,7 +8482,7 @@ export default function SettingsPane() {
 
       <div className="sp-field">
         <label className="sp-label" htmlFor="sp-provider-base">
-          {t(getAiProviderBaseUrlLabelKey(aiProvider.provider))}
+          {t(getAiProviderBaseUrlLabelKey(activeProvider))}
         </label>
         <div className="sp-input-row">
           <input
@@ -8668,7 +8491,7 @@ export default function SettingsPane() {
             type="text"
             value={aiProvider.baseUrl}
             onChange={(e) => patchAiProvider({ baseUrl: e.target.value })}
-            placeholder={getAiProviderBaseUrlPlaceholder(aiProvider.provider, activeProviderMeta, t)}
+            placeholder={getAiProviderBaseUrlPlaceholder(activeProvider, activeProviderMeta, t)}
             spellCheck={false}
           />
           {aiProvider.baseUrl &&
@@ -8676,7 +8499,7 @@ export default function SettingsPane() {
               patchAiProvider({ baseUrl: activeProviderMeta.defaultBaseUrl }),
             )}
         </div>
-        <p className="sp-hint">{t(getAiProviderEndpointHintKey(aiProvider.provider))}</p>
+        <p className="sp-hint">{t(getAiProviderEndpointHintKey(activeProvider))}</p>
       </div>
 
       {xenisPhase5Enabled && (
@@ -11161,8 +10984,8 @@ export default function SettingsPane() {
     </section>
   );
 
-  const renderActiveCategory = () => {
-    switch (activeCategory as string) {
+  const renderActiveCategory = (category: SettingsCategoryId = renderedActiveCategory) => {
+    switch (category as string) {
       case 'general':
         return renderGeneral();
       case 'xenesis-agent':
@@ -11277,7 +11100,9 @@ export default function SettingsPane() {
           <p>{getCatDesc(activeMeta.id)}</p>
         </div>
 
-        <div className="sp-content">{renderActiveCategory()}</div>
+        <div className={cls('sp-content', settingsContentPending && 'is-switching')} aria-busy={settingsContentPending}>
+          {renderActiveCategory(renderedActiveCategory)}
+        </div>
 
         <div className="sp-footer">
           {settingsSaveError && <p className="sp-error sp-footer-error">{settingsSaveError}</p>}

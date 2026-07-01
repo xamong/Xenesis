@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { AppSettings, ServerStatus } from '../../../../shared/types';
 import { useI18n } from '../../../i18n';
 
-const DEFAULT_API_URL = 'https://ai.xamong.com';
+const DEFAULT_API_URL = 'http://localhost:3001';
 const DEFAULT_PORT = 3001;
 const PORT_MIN = 1024;
 const PORT_MAX = 65535;
@@ -62,20 +62,13 @@ export function SqliteServerSettingsPane(): React.ReactElement {
   }, [applySettings, pollStatus]);
 
   useEffect(() => {
-    if (!devMode) {
-      if (pollRef.current) {
-        clearInterval(pollRef.current);
-        pollRef.current = null;
-      }
-      return;
-    }
     pollStatus();
     pollRef.current = setInterval(pollStatus, 3000);
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
       pollRef.current = null;
     };
-  }, [devMode, pollStatus]);
+  }, [pollStatus]);
 
   const saveUpdatedSettings = useCallback(
     async (updated: Partial<AppSettings>) => {
@@ -252,32 +245,30 @@ export function SqliteServerSettingsPane(): React.ReactElement {
         </div>
       </div>
 
-      {devMode && (
-        <div className="sp-server-status-row">
-          <span className={cls('sp-server-dot', srvStatus.running ? 'sp-dot-on' : 'sp-dot-off')} />
-          <span className="sp-server-status-text">
-            {srvStatus.running
-              ? `${t('settings.agentApiStatusRunning')} (${t('settings.developerPortLabel')} ${srvStatus.port}${srvStatus.pid != null ? `, PID ${srvStatus.pid}` : ''})`
-              : t('settings.developerServerStopped')}
-          </span>
-          <button
-            className={cls('sp-btn', srvStatus.running ? 'sp-btn-danger' : 'sp-btn-success')}
-            disabled={busy}
-            onClick={handleServerToggle}
-          >
-            {busy
-              ? t('settings.developerServerProcessing')
-              : srvStatus.running
-                ? t('settings.developerServerStop')
-                : t('settings.developerServerStart')}
+      <div className="sp-server-status-row">
+        <span className={cls('sp-server-dot', srvStatus.running ? 'sp-dot-on' : 'sp-dot-off')} />
+        <span className="sp-server-status-text">
+          {srvStatus.running
+            ? `${t('settings.agentApiStatusRunning')} (${t('settings.developerPortLabel')} ${srvStatus.port}${srvStatus.pid != null ? `, PID ${srvStatus.pid}` : ''})`
+            : t('settings.developerServerStopped')}
+        </span>
+        <button
+          className={cls('sp-btn', srvStatus.running ? 'sp-btn-danger' : 'sp-btn-success')}
+          disabled={busy}
+          onClick={handleServerToggle}
+        >
+          {busy
+            ? t('settings.developerServerProcessing')
+            : srvStatus.running
+              ? t('settings.developerServerStop')
+              : t('settings.developerServerStart')}
+        </button>
+        {srvStatus.running && (
+          <button className="sp-btn-ghost sp-btn-sm" onClick={() => setApiUrl(`http://localhost:${srvStatus.port}`)}>
+            {t('settings.developerSetApiUrl')}
           </button>
-          {srvStatus.running && (
-            <button className="sp-btn-ghost sp-btn-sm" onClick={() => setApiUrl(`http://localhost:${srvStatus.port}`)}>
-              {t('settings.developerSetApiUrl')}
-            </button>
-          )}
-        </div>
-      )}
+        )}
+      </div>
     </section>
   );
 }
