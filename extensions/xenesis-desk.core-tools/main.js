@@ -47,12 +47,16 @@ exports.activate = function activate(api) {
     api.openTool('xenesis-desk.core-tools.xenesis-agent');
   });
 
+  api.registerCommand('xenesis-desk.core-tools.openAgentApprovals', function openAgentApprovals() {
+    api.openTool('xenesis-desk.core-tools.agent-approvals');
+  });
+
   api.registerCommand('xenesis-desk.core-tools.openHermesStatus', function openHermesStatus() {
     api.openTool('xenesis-desk.core-tools.hermes-status');
   });
 
   api.registerCommand('xenesis-desk.core-tools.openHermesActionInbox', function openHermesActionInbox() {
-    api.openTool('xenesis-desk.core-tools.hermes-action-inbox');
+    api.openTool('xenesis-desk.core-tools.agent-approvals');
   });
 
   api.registerCommand('xenesis-desk.core-tools.openCapabilityExplorer', function openCapabilityExplorer() {
@@ -63,8 +67,12 @@ exports.activate = function activate(api) {
     api.openTool('xenesis-desk.core-tools.hermes-timeline');
   });
 
+  api.registerCommand('xenesis-desk.core-tools.openStashOperations', function openStashOperations() {
+    api.openTool('xenesis-desk.core-tools.stash-operations');
+  });
+
   api.registerCommand('xenesis-desk.core-tools.openHermesStashOps', function openHermesStashOps() {
-    api.openTool('xenesis-desk.core-tools.hermes-stash-ops');
+    api.openTool('xenesis-desk.core-tools.stash-operations');
   });
 
   api.registerCommand('xenesis-desk.core-tools.openPreview', function openPreview() {
@@ -79,12 +87,12 @@ exports.activate = function activate(api) {
     api.openTool('xenesis-desk.core-tools.network-monitor');
   });
 
-  api.registerCommand('xenesis-desk.core-tools.openXdBlaster', function openXdBlaster() {
-    api.openTool('xenesis-desk.core-tools.xd-blaster');
-  });
-
   api.registerCommand('xenesis-desk.core-tools.openAppControlLab', function openAppControlLab() {
     api.openTool('xenesis-desk.core-tools.app-control-lab');
+  });
+
+  api.registerCommand('xenesis-desk.core-tools.openXdBlaster', function openXdBlaster() {
+    api.openTool('xenesis-desk.core-tools.xd-blaster');
   });
 
   api.registerCommand('xenesis-desk.core-tools.openAuditLog', function openAuditLog() {
@@ -93,9 +101,5 @@ exports.activate = function activate(api) {
 
   api.registerCommand('xenesis-desk.core-tools.openAgentPerformance', function openAgentPerformance() {
     api.openTool('xenesis-desk.core-tools.agent-performance');
-  });
-
-  api.registerCommand('xenesis-desk.core-tools.openMemoryDashboard', function openMemoryDashboard() {
-    api.openTool('xenesis-desk.core-tools.memory-dashboard');
   });
 };

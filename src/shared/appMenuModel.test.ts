@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import type { ResolvedRendererMenuItem } from './appMenuModel';
+import type { AppMenuGroupNode, AppMenuNode, ResolvedRendererMenuItem } from './appMenuModel';
 import {
   APP_MENU_MODEL,
   collectAppMenuCommandIds,
@@ -28,8 +28,59 @@ function commandIds(items: ResolvedRendererMenuItem[] | undefined): string[] {
 test('app menu model exposes the Xenesis Desk feature taxonomy in order', () => {
   assert.deepEqual(
     APP_MENU_MODEL.map((item) => item.id),
-    ['primary', 'desk', 'xenesis', 'automation', 'gowoori', 'hermes', 'tools', 'developer', 'extensions', 'help'],
+    [
+      'primary',
+      'desk',
+      'xenesis',
+      'automation',
+      'gowoori',
+      'hermes',
+      'tools',
+      'extensions',
+      'lab',
+      'developer',
+      'help',
+    ],
   );
+});
+
+test('app menu model uses semantic icon keys instead of raw debug labels', () => {
+  const rawDebugIconPattern = /^[A-Z>]{1,3}$/;
+  const icons: string[] = [];
+
+  const visit = (node: AppMenuNode): void => {
+    if ('icon' in node && node.icon) {
+      icons.push(node.icon);
+    }
+    if (node.kind === 'group') {
+      for (const child of node.children) {
+        visit(child);
+      }
+    }
+  };
+
+  for (const group of APP_MENU_MODEL) {
+    visit(group);
+  }
+
+  assert.deepEqual(
+    icons.filter((icon) => rawDebugIconPattern.test(icon)),
+    [],
+  );
+});
+
+test('lab group owns meta management and demo lab commands', () => {
+  const lab = findGroup('lab');
+  const gowoori = findGroup('gowoori');
+  const developer = findGroup('developer');
+
+  assert.deepEqual(commandIdsFromGroup(lab), [
+    'xenesis-desk.data-tools.openMetaManagement',
+    'xenesis-desk.workflow-runner.openDemoLabMaker',
+    'xenesis-desk.workflow-runner.openDemoLabPlayer',
+  ]);
+  assert.equal(commandIdsFromGroup(gowoori).includes('xenesis-desk.workflow-runner.openDemoLabMaker'), false);
+  assert.equal(commandIdsFromGroup(developer).includes('xenesis-desk.data-tools.openMetaManagement'), false);
 });
 
 test('renderer tools menu resolves primary, grouped, and public extension commands', () => {
@@ -38,6 +89,7 @@ test('renderer tools menu resolves primary, grouped, and public extension comman
     command('xenesis-desk.core-tools.openCapabilityExplorer'),
     command('xenesis-desk.core-tools.openAiWorkbench'),
     command('xenesis-desk.core-tools.openXenesisAgentWorkbench'),
+    command('xenesis-desk.core-tools.openAgentApprovals'),
     command('xenesis-desk.obsidian-vault.openViewer', 'xenesis-desk.obsidian-vault'),
     command('xenesis-desk.workflow-runner.openGowoori', 'xenesis-desk.workflow-runner'),
     command('sample.hello-world.openPanel', 'sample.hello-world'),
@@ -51,11 +103,11 @@ test('renderer tools menu resolves primary, grouped, and public extension comman
     commandIds(menu.groups.find((group) => group.id === 'tools')?.items)[0],
     'xenesis-desk.core-tools.openAiWorkbench',
   );
-  assert.ok(
-    commandIds(menu.groups.find((group) => group.id === 'tools')?.items).includes(
-      'xenesis-desk.core-tools.openXenesisAgentWorkbench',
-    ),
-  );
+  assert.deepEqual(commandIds(menu.groups.find((group) => group.id === 'tools')?.items).slice(0, 3), [
+    'xenesis-desk.core-tools.openAiWorkbench',
+    'xenesis-desk.core-tools.openXenesisAgentWorkbench',
+    'xenesis-desk.core-tools.openAgentApprovals',
+  ]);
   assert.ok(
     commandIds(menu.groups.find((group) => group.id === 'tools')?.items).includes(
       'xenesis-desk.obsidian-vault.openViewer',
@@ -78,7 +130,6 @@ test('native menu items include built-in actions and extension commands but skip
   assert.ok(nativeItems.some((item) => item.actionId === 'open-xenesis-tui'));
   assert.ok(nativeItems.some((item) => item.commandId === 'xenesis-desk.core-tools.openXenesisAgent'));
   assert.ok(nativeItems.some((item) => item.commandId === 'xenesis-desk.core-tools.openXenesisAgentWorkbench'));
-  assert.ok(nativeItems.some((item) => item.commandId === 'xenesis-desk.obsidian-vault.openViewer'));
   assert.ok(commandIds.includes('xenesis-desk.workflow-runner.openDemoLabPlayer'));
   assert.equal(
     nativeItems.some((item) => item.groupId === 'extensions'),
@@ -133,11 +184,13 @@ test('tools menu exposes command-palette-only operator panels by feature group',
   const menu = resolveRendererToolsMenu([
     command('xenesis-desk.core-tools.openActivityTimeline'),
     command('xenesis-desk.core-tools.openNetworkMonitor'),
+    command('xenesis-desk.core-tools.openStashOperations'),
     command('xenesis-desk.core-tools.openAppControlLab'),
+    command('xenesis-desk.core-tools.openAgentSessions'),
     command('xenesis-desk.core-tools.openXdBlaster'),
     command('xenesis-desk.core-tools.openAuditLog'),
     command('xenesis-desk.core-tools.openAgentPerformance'),
-    command('xenesis-desk.core-tools.openMemoryDashboard'),
+    command('xenesis-desk.obsidian-vault.openViewer', 'xenesis-desk.obsidian-vault'),
     command('xenesis-desk.workflow-runner.openAlertRules', 'xenesis-desk.workflow-runner'),
     command('xenesis-desk.workflow-runner.openTemplateCatalog', 'xenesis-desk.workflow-runner'),
     command('xenesis-desk.workflow-runner.openArtifactVersions', 'xenesis-desk.workflow-runner'),
@@ -146,11 +199,13 @@ test('tools menu exposes command-palette-only operator panels by feature group',
   assert.deepEqual(commandIds(menu.groups.find((group) => group.id === 'tools')?.items), [
     'xenesis-desk.core-tools.openActivityTimeline',
     'xenesis-desk.core-tools.openNetworkMonitor',
+    'xenesis-desk.core-tools.openStashOperations',
     'xenesis-desk.core-tools.openAppControlLab',
+    'xenesis-desk.core-tools.openAgentSessions',
     'xenesis-desk.core-tools.openXdBlaster',
     'xenesis-desk.core-tools.openAuditLog',
     'xenesis-desk.core-tools.openAgentPerformance',
-    'xenesis-desk.core-tools.openMemoryDashboard',
+    'xenesis-desk.obsidian-vault.openViewer',
   ]);
   assert.deepEqual(commandIds(menu.groups.find((group) => group.id === 'gowoori')?.items), [
     'xenesis-desk.workflow-runner.openAlertRules',
@@ -162,11 +217,12 @@ test('tools menu exposes command-palette-only operator panels by feature group',
   for (const commandId of [
     'xenesis-desk.core-tools.openActivityTimeline',
     'xenesis-desk.core-tools.openNetworkMonitor',
+    'xenesis-desk.core-tools.openStashOperations',
     'xenesis-desk.core-tools.openAppControlLab',
+    'xenesis-desk.core-tools.openAgentSessions',
     'xenesis-desk.core-tools.openXdBlaster',
     'xenesis-desk.core-tools.openAuditLog',
     'xenesis-desk.core-tools.openAgentPerformance',
-    'xenesis-desk.core-tools.openMemoryDashboard',
     'xenesis-desk.workflow-runner.openAlertRules',
     'xenesis-desk.workflow-runner.openTemplateCatalog',
     'xenesis-desk.workflow-runner.openArtifactVersions',
@@ -177,3 +233,13 @@ test('tools menu exposes command-palette-only operator panels by feature group',
     );
   }
 });
+
+function findGroup(id: string): AppMenuGroupNode {
+  const group = APP_MENU_MODEL.find((item): item is AppMenuGroupNode => item.id === id && item.kind === 'group');
+  assert.ok(group, id);
+  return group;
+}
+
+function commandIdsFromGroup(group: AppMenuGroupNode): string[] {
+  return group.children.filter((item) => item.kind === 'command').map((item) => item.commandId);
+}

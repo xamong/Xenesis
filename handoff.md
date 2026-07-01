@@ -1,5 +1,60 @@
 # Xenesis Desk Work Handoff
 
+## 2026-07-01 Toolbar Tools Menu Parity
+
+- Current objective:
+  - Align the top toolbar Tools menu with the sibling
+    `D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk` ordering and icon
+    behavior after user approval.
+  - Keep `packages/xenesis` untouched.
+- Touched files:
+  - `src/shared/appMenuModel.ts`
+  - `src/shared/appMenuModel.test.ts`
+  - `src/shared/menuIcons.ts`
+  - `src/shared/menuIcons.test.ts`
+  - `src/shared/coreToolsToolbarCommands.test.ts`
+  - `src/renderer/App.tsx`
+  - `extensions/xenesis-desk.core-tools/plugin.json`
+  - `extensions/xenesis-desk.core-tools/main.js`
+  - `src/main/extensions/extensionHost.ts`
+  - `src/shared/types.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/renderer.tsx`
+  - `docs/superpowers/specs/2026-07-01-toolbar-tools-menu-parity-design.md`
+- Material decisions:
+  - Use semantic icon keys in the menu model and resolve them at render time
+    through `src/shared/menuIcons.ts`.
+  - Reorder groups to sibling parity:
+    `primary`, `desk`, `xenesis`, `automation`, `gowoori`, `hermes`, `tools`,
+    `extensions`, `lab`, `developer`, `help`.
+  - Move Meta Management and Demo Lab entries into a dedicated Lab group.
+  - Present `Agent Approvals` and `Stash Operations` in Tools while keeping
+    legacy command IDs (`openHermesActionInbox`, `openHermesStashOps`) as
+    runtime aliases to the renamed tools.
+  - Remove Memory Dashboard from the top toolbar/menu contribution surface, but
+    leave the existing pane code/type support in place for internal continuity.
+- Verification result:
+  - RED:
+    `node --import tsx --test src/shared/appMenuModel.test.ts src/shared/menuIcons.test.ts src/shared/coreToolsToolbarCommands.test.ts`
+    failed as expected on menu order, missing Lab group, missing semantic icon
+    resolver, and missing renamed core-tools commands.
+  - GREEN focused tests:
+    same command -> PASS, 11/11 tests.
+  - Scoped Biome:
+    `npx biome check ...menu/core-tools touched files except App.tsx...` ->
+    PASS. A broader check including `src/renderer/App.tsx` still reports
+    pre-existing unrelated lint findings in that large file.
+  - `npm run typecheck` -> PASS.
+  - `npm test` -> PASS, 714/714 tests.
+  - `npm run check:public-release` -> PASS.
+  - `git diff --check` -> exit 0, with only the usual Windows line-ending
+    normalization warning for `src/renderer/App.tsx`.
+- Known gaps:
+  - No live Electron visual smoke was run for the toolbar dropdown in this
+    slice. The behavior is covered by menu model/runtime alias tests and root
+    type/test verification.
+- Next intended step:
+  - User review, then commit/PR if requested.
+
 ## 2026-07-01 MCP / Providers Folder Sync
 
 - Current objective:

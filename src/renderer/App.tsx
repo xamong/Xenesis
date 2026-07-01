@@ -8,6 +8,7 @@ import {
   type ResolvedRendererMenuItem,
   resolveRendererToolsMenu,
 } from '../shared/appMenuModel';
+import { resolveAppMenuIcon } from '../shared/menuIcons';
 import { filterXenisPhase5ExtensionCommands, isXenisPhase5EnabledFromSettings } from '../shared/phase5';
 import type {
   AiProviderKind,
@@ -6677,7 +6678,9 @@ export default function App() {
         title={`${command.extensionName} · ${nativeTitle}`}
         type="button"
       >
-        <span className="tools-item-icon">{spec?.icon || command.icon || '▣'}</span>
+        <span className="tools-item-icon" aria-hidden="true">
+          {resolveAppMenuIcon(spec?.icon ?? command.icon)}
+        </span>
         <span className="tools-item-label">{title}</span>
       </button>
     );
@@ -6693,7 +6696,9 @@ export default function App() {
         title={title}
         type="button"
       >
-        <span className="tools-item-icon">{spec.icon || '>'}</span>
+        <span className="tools-item-icon" aria-hidden="true">
+          {resolveAppMenuIcon(spec.icon, '›')}
+        </span>
         <span className="tools-item-label">{title}</span>
       </button>
     );
@@ -6708,7 +6713,9 @@ export default function App() {
     return (
       <div className="tools-submenu-group" key={group.id}>
         <button className="tools-item tools-submenu-trigger" type="button" aria-haspopup="menu">
-          <span className="tools-item-icon">{group.icon}</span>
+          <span className="tools-item-icon" aria-hidden="true">
+            {resolveAppMenuIcon(group.icon)}
+          </span>
           <span className="tools-item-label">{groupLabel}</span>
           <span className="tools-submenu-arrow">›</span>
         </button>
@@ -6717,7 +6724,9 @@ export default function App() {
             group.items.map((item) => renderToolsMenuItem(item))
           ) : (
             <div className="tools-item tools-item--disabled" role="menuitem" aria-disabled="true">
-              <span className="tools-item-icon">·</span>
+              <span className="tools-item-icon" aria-hidden="true">
+                ·
+              </span>
               <span className="tools-item-label">{emptyLabel}</span>
             </div>
           )}

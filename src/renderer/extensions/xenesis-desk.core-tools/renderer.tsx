@@ -32,6 +32,7 @@ import { XenisBotPane } from './panes/XenisBotPane';
 import { hydrateXenisBotSessions, recordXenisBotEvent } from './xenisBotStore';
 
 const XENESIS_AGENT_CONTENT_ID = 'xenesis-agent-default';
+const AGENT_APPROVALS_CONTENT_TYPE = 'xenesis-agent-approvals';
 const APP_CONTROL_LAB_CONTENT_TYPE = 'xd-app-control-lab';
 
 const TOOL_IDS = {
@@ -47,10 +48,12 @@ const TOOL_IDS = {
   safeFileEditCenter: 'xenesis-desk.core-tools.safe-file-edit-center',
   agentSessions: 'xenesis-desk.core-tools.agent-sessions',
   xenesisAgent: 'xenesis-desk.core-tools.xenesis-agent',
+  agentApprovals: 'xenesis-desk.core-tools.agent-approvals',
   hermesStatus: 'xenesis-desk.core-tools.hermes-status',
   hermesActionInbox: 'xenesis-desk.core-tools.hermes-action-inbox',
   capabilityExplorer: 'xenesis-desk.core-tools.capability-explorer',
   hermesTimeline: 'xenesis-desk.core-tools.hermes-timeline',
+  stashOperations: 'xenesis-desk.core-tools.stash-operations',
   hermesStashOps: 'xenesis-desk.core-tools.hermes-stash-ops',
   xappPreview: 'xenesis-desk.core-tools.xapp-preview',
   activityTimeline: 'xenesis-desk.core-tools.activity-timeline',
@@ -313,11 +316,11 @@ function hermesStatusContent(): DockContentOptions {
 
 function hermesActionInboxContent(): DockContentOptions {
   return {
-    id: `hermes-action-inbox-${crypto.randomUUID()}`,
-    title: 'Action Inbox',
+    id: `${AGENT_APPROVALS_CONTENT_TYPE}-${crypto.randomUUID()}`,
+    title: 'Xenesis Agent Approvals',
     state: 'document',
     html: '',
-    contentType: 'hermes-action-inbox',
+    contentType: AGENT_APPROVALS_CONTENT_TYPE,
   };
 }
 
@@ -343,11 +346,11 @@ function hermesTimelineContent(): DockContentOptions {
 
 function hermesStashOpsContent(): DockContentOptions {
   return {
-    id: `hermes-stash-ops-${crypto.randomUUID()}`,
-    title: 'Hermes Stash Operations',
+    id: `stash-operations-${crypto.randomUUID()}`,
+    title: 'Stash Operations',
     state: 'document',
     html: '',
-    contentType: 'hermes-stash-ops',
+    contentType: 'stash-operations',
   };
 }
 
@@ -484,11 +487,14 @@ const contribution: RendererExtensionContribution = {
       return true;
     }
 
-    if (tool === TOOL_IDS.hermesActionInbox) {
-      if (!focusExistingContent(context.engine, 'hermes-action-inbox')) {
+    if (tool === TOOL_IDS.agentApprovals || tool === TOOL_IDS.hermesActionInbox) {
+      if (
+        !focusExistingContent(context.engine, AGENT_APPROVALS_CONTENT_TYPE) &&
+        !focusExistingContent(context.engine, 'hermes-action-inbox')
+      ) {
         context.openContent(hermesActionInboxContent(), context.requestedPlacement ?? 'tab');
       }
-      context.onStatus('Action Inbox opened');
+      context.onStatus('Agent Approvals opened');
       return true;
     }
 
@@ -508,11 +514,14 @@ const contribution: RendererExtensionContribution = {
       return true;
     }
 
-    if (tool === TOOL_IDS.hermesStashOps) {
-      if (!focusExistingContent(context.engine, 'hermes-stash-ops')) {
+    if (tool === TOOL_IDS.stashOperations || tool === TOOL_IDS.hermesStashOps) {
+      if (
+        !focusExistingContent(context.engine, 'stash-operations') &&
+        !focusExistingContent(context.engine, 'hermes-stash-ops')
+      ) {
         context.openContent(hermesStashOpsContent(), context.requestedPlacement ?? 'tab');
       }
-      context.onStatus('Hermes Stash Operations opened');
+      context.onStatus('Stash Operations opened');
       return true;
     }
 
@@ -795,7 +804,7 @@ const contribution: RendererExtensionContribution = {
     if (content.contentType === 'hermes-status') {
       return <HermesStatusPane />;
     }
-    if (content.contentType === 'hermes-action-inbox') {
+    if (content.contentType === AGENT_APPROVALS_CONTENT_TYPE || content.contentType === 'hermes-action-inbox') {
       return <ActionInboxPane />;
     }
     if (content.contentType === 'capability-explorer') {
@@ -804,7 +813,7 @@ const contribution: RendererExtensionContribution = {
     if (content.contentType === 'hermes-timeline') {
       return <HermesTimelinePane />;
     }
-    if (content.contentType === 'hermes-stash-ops') {
+    if (content.contentType === 'stash-operations' || content.contentType === 'hermes-stash-ops') {
       return <HermesStashOpsPane />;
     }
     if (content.contentType === 'xamong-chat') {
@@ -848,10 +857,12 @@ const contribution: RendererExtensionContribution = {
       'xd-safe-file-edit-center': 'E',
       'xd-agent-sessions': 'AS',
       'xenesis-agent': 'XG',
+      [AGENT_APPROVALS_CONTENT_TYPE]: '✓',
       'hermes-status': 'H',
       'hermes-action-inbox': 'A',
       'capability-explorer': 'C',
       'hermes-timeline': 'T',
+      'stash-operations': 'S',
       'hermes-stash-ops': 'S',
       'xapp-preview': 'P',
       'activity-timeline': 'TL',
@@ -881,9 +892,11 @@ const contribution: RendererExtensionContribution = {
       contentType === 'xd-safe-file-edit-center' ||
       contentType === 'xd-agent-sessions' ||
       contentType === 'xenesis-agent' ||
+      contentType === AGENT_APPROVALS_CONTENT_TYPE ||
       contentType === 'hermes-action-inbox' ||
       contentType === 'capability-explorer' ||
       contentType === 'hermes-timeline' ||
+      contentType === 'stash-operations' ||
       contentType === 'hermes-stash-ops' ||
       contentType === 'activity-timeline' ||
       contentType === 'network-monitor' ||
