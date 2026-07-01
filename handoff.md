@@ -26822,3 +26822,46 @@ Verification so far:
 - Next intended step:
   - Continue with the next non-`packages/xenesis` sibling-parity priority after
     PR review or user direction.
+
+## 2026-07-01 Office Control Slice Design Update
+
+- Current objective:
+  - Start roadmap priority 4, Office Control, by validating the full-slice
+    design before implementation.
+- Touched files:
+  - `docs/superpowers/specs/2026-07-01-office-control-slice-design.md`
+  - `handoff.md`
+- Commands run:
+  - Read `superpowers:brainstorming`, `superpowers:writing-plans`, and
+    `superpowers:test-driven-development`.
+  - Read `AGENTS.md`.
+  - Read repo-local Obsidian index and required system/CR/approval notes from
+    `docs/obsidian/Xenesis-desk`.
+  - Read existing Office slice design and non-package parity roadmap.
+  - Inspected current repo Office baseline with `rg --files`.
+  - Inspected sibling Office shared model, CR tests, service, adapters, and
+    adapter tests under
+    `D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk`.
+  - Inspected current CR/settings/main wiring around External Apps and App
+    Control.
+  - Placeholder scan:
+    `Select-String -Path docs/superpowers/specs/2026-07-01-office-control-slice-design.md -Pattern 'TBD|TODO|placeholder|later|fill in' -CaseSensitive:$false`
+- Exact verification result:
+  - User approved the full Office Control slice scope.
+  - Existing spec was expanded to a detailed CR-first design covering shared
+    model, settings, CR paths, main service, file provider, Windows COM helper,
+    macOS Apple Events adapter, tests, live smoke, risks, and acceptance
+    criteria.
+  - Placeholder scan returned no matches.
+  - Current repo has only `tools/office-control-host` packaging/helper files;
+    shared/main/CR/settings Office runtime files are not present yet.
+  - Current native packaging test intentionally expects `src/main/officeControl`
+    to be absent; this is recorded as a test expectation that must change
+    during implementation.
+- Known gaps:
+  - No Office implementation code has been added yet.
+  - Full repo lint remains known-broken from pre-existing repo-wide Biome
+    diagnostics; future Office work should use targeted Biome plus broad gates.
+- Next intended step:
+  - Commit the Office Control slice design, ask for user review of the written
+    spec, then create the implementation plan only after review approval.
