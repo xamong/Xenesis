@@ -8119,7 +8119,6 @@
   margin-top: 6px;
 }
 
-
 .xd-agent-workbench {
   display: grid;
   grid-template-columns: minmax(420px, 1fr);
@@ -8183,7 +8182,7 @@
 }
 
 .xd-agent-workbench-panel-splitter::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 12px;
   bottom: 12px;
@@ -9532,5 +9531,431 @@
 
   .xd-agent-session-row {
     grid-template-columns: auto minmax(0, 1fr);
+  }
+}
+
+/* App Control Lab */
+.xd-app-control-lab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg-pane);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.xd-app-control-lab-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 42px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-toolbar);
+}
+
+.xd-app-control-lab-head h2 {
+  margin: 0;
+  color: var(--accent);
+  font-size: 14px;
+  letter-spacing: 0;
+}
+
+.xd-app-control-lab-head span,
+.xd-app-control-lab-section-head span,
+.xd-app-control-lab label span,
+.xd-app-control-lab-facts span,
+.xd-app-control-lab-capture span,
+.xd-app-control-lab-history-row span {
+  color: var(--text-mute);
+  font-size: 11px;
+}
+
+.xd-app-control-lab code,
+.xd-app-control-lab pre {
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Courier New", monospace;
+}
+
+.xd-app-control-lab-layout {
+  display: grid;
+  grid-template-columns: minmax(360px, 0.42fr) minmax(460px, 0.58fr);
+  flex: 1;
+  min-height: 0;
+}
+
+.xd-app-control-lab-console,
+.xd-app-control-lab-results {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.xd-app-control-lab-console {
+  display: grid;
+  grid-template-rows: auto auto auto minmax(320px, 1fr);
+  gap: 8px;
+  padding: 8px;
+  border-right: 1px solid var(--border);
+}
+
+.xd-app-control-lab-results {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 8px;
+}
+
+.xd-app-control-lab-section,
+.xd-app-control-lab-status,
+.xd-app-control-lab-capture,
+.xd-app-control-lab-graph,
+.xd-app-control-lab-table-wrap,
+.xd-app-control-lab-raw label,
+.xd-app-control-lab-history {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.xd-app-control-lab-section {
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+}
+
+.xd-app-control-lab-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.xd-app-control-lab-note {
+  margin: 0;
+  padding: 6px 8px;
+  border: 1px solid rgba(250, 204, 21, 0.32);
+  border-radius: 6px;
+  background: rgba(250, 204, 21, 0.08);
+  color: #fde68a;
+  font-size: 11px;
+}
+
+.xd-app-control-lab-grid,
+.xd-app-control-lab-inline-grid,
+.xd-app-control-lab-options,
+.xd-app-control-lab-raw,
+.xd-app-control-lab-facts,
+.xd-app-control-lab-capture {
+  display: grid;
+  gap: 8px;
+}
+
+.xd-app-control-lab-grid,
+.xd-app-control-lab-options,
+.xd-app-control-lab-raw {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.xd-app-control-lab-inline-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.xd-app-control-lab-facts {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.xd-app-control-lab-capture {
+  grid-template-columns: minmax(220px, 0.42fr) minmax(0, 0.58fr);
+  padding: 8px;
+}
+
+.xd-app-control-lab label,
+.xd-app-control-lab-capture div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.xd-app-control-lab input {
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 4px 7px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.xd-app-control-lab input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--accent);
+}
+
+.xd-app-control-lab-checks {
+  display: grid;
+  gap: 5px;
+}
+
+.xd-app-control-lab-checks label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.xd-app-control-lab-actions {
+  display: grid;
+  gap: 7px;
+}
+
+.xd-app-control-lab-action-group {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 6px;
+  padding: 7px;
+  background: rgba(2, 6, 23, 0.2);
+}
+
+.xd-app-control-lab-action-group div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-width: 0;
+}
+
+.xd-app-control-lab button {
+  min-height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 4px 8px;
+  background: var(--bg-toolbar);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.xd-app-control-lab button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.xd-app-control-lab button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.xd-app-control-lab .xd-app-control-lab-mini-btn {
+  min-height: 24px;
+  padding: 3px 8px;
+  font-size: 11px;
+}
+
+.xd-app-control-lab-graph {
+  display: grid;
+  grid-template-rows: auto auto minmax(280px, 1fr);
+  gap: 7px;
+  min-height: 320px;
+  padding: 8px;
+  overflow: hidden;
+}
+
+.xd-app-control-lab-graph-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.xd-app-control-lab-graph-meta span,
+.xd-app-control-lab-graph-meta strong {
+  border: 1px solid rgba(56, 189, 248, 0.24);
+  border-radius: 999px;
+  padding: 2px 7px;
+  color: #93c5fd;
+  font-size: 10px;
+}
+
+.xd-app-control-lab-graph-host {
+  min-width: 0;
+  min-height: 280px;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  border-radius: 6px;
+  background: #0f1117;
+}
+
+.xd-app-control-lab-graph-error,
+.xd-app-control-lab-status.is-error {
+  border-color: rgba(248, 113, 113, 0.4);
+  background: rgba(127, 29, 29, 0.16);
+  color: #fecaca;
+}
+
+.xd-app-control-lab-status {
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+}
+
+.xd-app-control-lab-status.is-ok {
+  border-color: rgba(34, 197, 94, 0.38);
+  background: rgba(20, 83, 45, 0.16);
+}
+
+.xd-app-control-lab-facts div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 6px;
+  padding: 7px;
+  background: rgba(2, 6, 23, 0.22);
+}
+
+.xd-app-control-lab-facts strong,
+.xd-app-control-lab-history-row strong,
+.xd-app-control-lab-history-row code,
+.xd-app-control-lab-history-row p {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.xd-app-control-lab-capture img {
+  max-width: 100%;
+  max-height: 240px;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  border-radius: 5px;
+  object-fit: contain;
+}
+
+.xd-app-control-lab-table-wrap {
+  overflow: auto;
+}
+
+.xd-app-control-lab table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+
+.xd-app-control-lab th,
+.xd-app-control-lab td {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  padding: 5px 6px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.xd-app-control-lab th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg-toolbar);
+  color: #cbd5e1;
+  font-size: 11px;
+}
+
+.xd-app-control-lab tbody tr {
+  cursor: pointer;
+}
+
+.xd-app-control-lab tbody tr:hover {
+  background: rgba(96, 165, 250, 0.08);
+}
+
+.xd-app-control-lab tbody tr.is-selected {
+  background: rgba(37, 99, 235, 0.18);
+  box-shadow: inset 3px 0 0 rgba(96, 165, 250, 0.82);
+}
+
+.xd-app-control-lab td code {
+  color: #93c5fd;
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+
+.xd-app-control-lab-raw label {
+  overflow: hidden;
+}
+
+.xd-app-control-lab-raw label span {
+  display: block;
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.xd-app-control-lab pre {
+  min-height: 120px;
+  max-height: 220px;
+  margin: 0;
+  overflow: auto;
+  padding: 8px;
+  background: rgba(2, 6, 23, 0.44);
+  color: #bfdbfe;
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.xd-app-control-lab-history {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+}
+
+.xd-app-control-lab-history-row {
+  display: grid;
+  grid-template-columns: 72px 96px minmax(120px, 0.7fr) minmax(160px, 1fr);
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 5px;
+  padding: 6px;
+  background: rgba(2, 6, 23, 0.24);
+}
+
+.xd-app-control-lab-history-row.is-ok {
+  border-color: rgba(34, 197, 94, 0.24);
+}
+
+.xd-app-control-lab-history-row.is-error {
+  border-color: rgba(248, 113, 113, 0.28);
+}
+
+@media (max-width: 1180px) {
+  .xd-app-control-lab-layout,
+  .xd-app-control-lab-options,
+  .xd-app-control-lab-raw {
+    grid-template-columns: 1fr;
+  }
+
+  .xd-app-control-lab-console {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+}
+
+@media (max-width: 720px) {
+  .xd-app-control-lab-grid,
+  .xd-app-control-lab-inline-grid,
+  .xd-app-control-lab-facts,
+  .xd-app-control-lab-capture,
+  .xd-app-control-lab-action-group,
+  .xd-app-control-lab-history-row {
+    grid-template-columns: 1fr;
   }
 }

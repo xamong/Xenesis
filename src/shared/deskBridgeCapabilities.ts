@@ -2795,6 +2795,10 @@ export const DESK_BRIDGE_COMMAND_CAPABILITY_COVERAGE = {
     commandCapabilityPath: 'xd.extensions.runCommand',
     notes: 'Built-in core tool panel opened through the extension command host.',
   },
+  'xenesis-desk.core-tools.openAppControlLab': {
+    commandCapabilityPath: 'xd.extensions.runCommand',
+    notes: 'Built-in core tool panel opened through the extension command host.',
+  },
   'xenesis-desk.core-tools.openAuditLog': {
     commandCapabilityPath: 'xd.extensions.runCommand',
     notes: 'Built-in core tool panel opened through the extension command host.',
@@ -3176,6 +3180,9 @@ export const DESK_BRIDGE_DOCK_CONTENT_CAPABILITY_COVERAGE = {
   'xd-blaster': {
     contentCapabilityPath: 'xd.tools.core.xdBlaster.open',
   },
+  'xd-app-control-lab': {
+    contentCapabilityPath: 'xd.tools.core.appControlLab.open',
+  },
   'audit-log': {
     contentCapabilityPath: 'xd.tools.core.auditLog.open',
   },
@@ -3480,6 +3487,11 @@ export const DESK_BRIDGE_EXTENSION_TOOL_CAPABILITY_COVERAGE = {
     toolCapabilityPath: 'xd.tools.core.xdBlaster.open',
     commandId: 'xenesis-desk.core-tools.openXdBlaster',
     notes: 'Open XD Blaster panel.',
+  },
+  'xenesis-desk.core-tools.app-control-lab': {
+    toolCapabilityPath: 'xd.tools.core.appControlLab.open',
+    commandId: 'xenesis-desk.core-tools.openAppControlLab',
+    notes: 'Open App Control Lab panel.',
   },
   'xenesis-desk.core-tools.audit-log': {
     toolCapabilityPath: 'xd.tools.core.auditLog.open',
@@ -8818,6 +8830,160 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           },
         },
       ),
+      method(
+        'xd.apps.inspect',
+        'Inspect external app',
+        'Inspect a visible external app window and return observation metadata.',
+        'read',
+        {
+          type: 'object',
+          anyOf: [
+            { required: ['appId'] },
+            { required: ['path'] },
+            { required: ['windowId'] },
+            { required: ['processName'] },
+            { required: ['titleContains'] },
+          ],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            path: { type: 'string', title: 'Executable path' },
+            windowId: { type: 'string', title: 'Window handle' },
+            processName: { type: 'string', title: 'Process name', examples: ['notepad'] },
+            titleContains: { type: 'string', title: 'Window title contains' },
+            includeTreePreview: { type: 'boolean', title: 'Include tree preview' },
+          },
+        },
+      ),
+      method(
+        'xd.apps.elementFromPoint',
+        'Read external app element at point',
+        'Read UI automation element metadata at screen coordinates.',
+        'read',
+        {
+          type: 'object',
+          required: ['x', 'y'],
+          properties: {
+            x: { type: 'number', title: 'Screen X' },
+            y: { type: 'number', title: 'Screen Y' },
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            path: { type: 'string', title: 'Executable path' },
+            windowId: { type: 'string', title: 'Window handle' },
+            processName: { type: 'string', title: 'Process name', examples: ['notepad'] },
+            titleContains: { type: 'string', title: 'Window title contains' },
+          },
+        },
+      ),
+      method(
+        'xd.apps.tree',
+        'Read external app UI tree',
+        'Read the UI automation tree for a visible external app window.',
+        'read',
+        {
+          type: 'object',
+          anyOf: [
+            { required: ['appId'] },
+            { required: ['path'] },
+            { required: ['windowId'] },
+            { required: ['processName'] },
+            { required: ['titleContains'] },
+          ],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            path: { type: 'string', title: 'Executable path' },
+            windowId: { type: 'string', title: 'Window handle' },
+            processName: { type: 'string', title: 'Process name', examples: ['notepad'] },
+            titleContains: { type: 'string', title: 'Window title contains' },
+            depth: { type: 'integer', title: 'Tree depth', minimum: 1, maximum: 20, default: 3 },
+            limit: { type: 'integer', title: 'Node limit', minimum: 1, maximum: 1000, default: 200 },
+            includeValues: { type: 'boolean', title: 'Include values' },
+            includeFullTree: { type: 'boolean', title: 'Include full tree' },
+          },
+        },
+      ),
+      method(
+        'xd.apps.menuExplore',
+        'Explore external app menus',
+        'Read menu bars, menu items, and submenu hierarchy for a visible external app window without invoking commands.',
+        'read',
+        {
+          type: 'object',
+          anyOf: [
+            { required: ['appId'] },
+            { required: ['path'] },
+            { required: ['windowId'] },
+            { required: ['processName'] },
+            { required: ['titleContains'] },
+          ],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            path: { type: 'string', title: 'Executable path' },
+            windowId: { type: 'string', title: 'Window handle' },
+            processName: { type: 'string', title: 'Process name', examples: ['notepad'] },
+            titleContains: { type: 'string', title: 'Window title contains' },
+            depth: { type: 'integer', title: 'Menu depth', minimum: 1, maximum: 20, default: 3 },
+            limit: { type: 'integer', title: 'Node limit', minimum: 1, maximum: 1000, default: 200 },
+            includeValues: { type: 'boolean', title: 'Include values' },
+          },
+        },
+      ),
+      method(
+        'xd.apps.highlight',
+        'Highlight external app window',
+        'Highlight a resolved visible external app window or element.',
+        'control',
+        {
+          type: 'object',
+          anyOf: [
+            { required: ['appId'] },
+            { required: ['path'] },
+            { required: ['windowId'] },
+            { required: ['processName'] },
+            { required: ['titleContains'] },
+            { required: ['elementRef'] },
+          ],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            path: { type: 'string', title: 'Executable path' },
+            windowId: { type: 'string', title: 'Window handle' },
+            processName: { type: 'string', title: 'Process name', examples: ['notepad'] },
+            titleContains: { type: 'string', title: 'Window title contains' },
+            elementRef: { type: 'string', title: 'Element reference' },
+            durationMs: {
+              type: 'integer',
+              title: 'Duration in milliseconds',
+              minimum: 100,
+              maximum: 10000,
+              default: 1200,
+            },
+          },
+        },
+      ),
+      method(
+        'xd.apps.captureElement',
+        'Capture external app window',
+        'Capture a screenshot of a resolved visible external app window or element.',
+        'read',
+        {
+          type: 'object',
+          anyOf: [
+            { required: ['appId'] },
+            { required: ['path'] },
+            { required: ['windowId'] },
+            { required: ['processName'] },
+            { required: ['titleContains'] },
+            { required: ['elementRef'] },
+          ],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            path: { type: 'string', title: 'Executable path' },
+            windowId: { type: 'string', title: 'Window handle' },
+            processName: { type: 'string', title: 'Process name', examples: ['notepad'] },
+            titleContains: { type: 'string', title: 'Window title contains' },
+            elementRef: { type: 'string', title: 'Element reference' },
+            screenshotPath: { type: 'string', title: 'Screenshot path' },
+          },
+        },
+      ),
       method('xd.apps.find', 'Find external app windows', 'Find visible external desktop app windows.', 'read', {
         type: 'object',
         properties: {
@@ -8892,6 +9058,166 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
             appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
             windowId: { type: 'string', title: 'Window handle' },
             keys: { type: 'array', items: { type: 'string' }, examples: [['CTRL', 'S']] },
+          },
+        },
+      ),
+      method(
+        'xd.apps.click',
+        'Click external app',
+        'Click a visible external app window at screen coordinates.',
+        'execute',
+        {
+          type: 'object',
+          required: ['x', 'y'],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            windowId: { type: 'string', title: 'Window handle' },
+            x: { type: 'number', title: 'Screen X' },
+            y: { type: 'number', title: 'Screen Y' },
+          },
+        },
+      ),
+      method(
+        'xd.apps.doubleClick',
+        'Double-click external app',
+        'Double-click a visible external app window at screen coordinates.',
+        'execute',
+        {
+          type: 'object',
+          required: ['x', 'y'],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            windowId: { type: 'string', title: 'Window handle' },
+            x: { type: 'number', title: 'Screen X' },
+            y: { type: 'number', title: 'Screen Y' },
+          },
+        },
+      ),
+      method(
+        'xd.apps.tripleClick',
+        'Triple-click external app',
+        'Triple-click a visible external app window at screen coordinates.',
+        'execute',
+        {
+          type: 'object',
+          required: ['x', 'y'],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            windowId: { type: 'string', title: 'Window handle' },
+            x: { type: 'number', title: 'Screen X' },
+            y: { type: 'number', title: 'Screen Y' },
+          },
+        },
+      ),
+      method(
+        'xd.apps.middleClick',
+        'Middle-click external app',
+        'Middle-click a visible external app window at screen coordinates.',
+        'execute',
+        {
+          type: 'object',
+          required: ['x', 'y'],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            windowId: { type: 'string', title: 'Window handle' },
+            x: { type: 'number', title: 'Screen X' },
+            y: { type: 'number', title: 'Screen Y' },
+          },
+        },
+      ),
+      method(
+        'xd.apps.rightClick',
+        'Right-click external app',
+        'Right-click a visible external app window at screen coordinates.',
+        'execute',
+        {
+          type: 'object',
+          required: ['x', 'y'],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            windowId: { type: 'string', title: 'Window handle' },
+            x: { type: 'number', title: 'Screen X' },
+            y: { type: 'number', title: 'Screen Y' },
+          },
+        },
+      ),
+      method(
+        'xd.apps.move',
+        'Move pointer over external app',
+        'Move the pointer over a visible external app window.',
+        'control',
+        {
+          type: 'object',
+          required: ['x', 'y'],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            windowId: { type: 'string', title: 'Window handle' },
+            x: { type: 'number', title: 'Screen X' },
+            y: { type: 'number', title: 'Screen Y' },
+          },
+        },
+      ),
+      method(
+        'xd.apps.mouseDown',
+        'Mouse down in external app',
+        'Press the mouse button over a visible external app window.',
+        'execute',
+        {
+          type: 'object',
+          required: ['x', 'y'],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            windowId: { type: 'string', title: 'Window handle' },
+            x: { type: 'number', title: 'Screen X' },
+            y: { type: 'number', title: 'Screen Y' },
+          },
+        },
+      ),
+      method(
+        'xd.apps.mouseUp',
+        'Mouse up in external app',
+        'Release the mouse button over a visible external app window.',
+        'execute',
+        {
+          type: 'object',
+          required: ['x', 'y'],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            windowId: { type: 'string', title: 'Window handle' },
+            x: { type: 'number', title: 'Screen X' },
+            y: { type: 'number', title: 'Screen Y' },
+          },
+        },
+      ),
+      method(
+        'xd.apps.dragAndDrop',
+        'Drag in external app',
+        'Drag between screen coordinates over a visible external app window.',
+        'execute',
+        {
+          type: 'object',
+          required: ['startX', 'startY', 'endX', 'endY'],
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            windowId: { type: 'string', title: 'Window handle' },
+            startX: { type: 'number', title: 'Start screen X' },
+            startY: { type: 'number', title: 'Start screen Y' },
+            endX: { type: 'number', title: 'End screen X' },
+            endY: { type: 'number', title: 'End screen Y' },
+          },
+        },
+      ),
+      method(
+        'xd.apps.screenshot',
+        'Capture external app',
+        'Capture a screenshot of a visible external app window.',
+        'read',
+        {
+          type: 'object',
+          properties: {
+            appId: { type: 'string', title: 'App profile id', examples: ['notepad'] },
+            windowId: { type: 'string', title: 'Window handle' },
+            screenshotPath: { type: 'string', title: 'Screenshot path' },
           },
         },
       ),
@@ -9008,6 +9334,8 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
                     enum: [
                       'click',
                       'double_click',
+                      'triple_click',
+                      'middle_click',
                       'right_click',
                       'move',
                       'mouse_down',
@@ -10573,6 +10901,12 @@ function createDeskBridgeCapabilityTreeNodes(): DeskBridgeCapabilityNode[] {
           'control',
         ),
         method('xd.tools.core.xdBlaster.open', 'Open XD Blaster', 'Open the XD Blaster panel.', 'control'),
+        method(
+          'xd.tools.core.appControlLab.open',
+          'Open App Control Lab',
+          'Open the App Control Lab panel.',
+          'control',
+        ),
         method('xd.tools.core.auditLog.open', 'Open Audit Log', 'Open the Audit Log panel.', 'control'),
         method(
           'xd.tools.core.agentPerformance.open',
@@ -12501,11 +12835,100 @@ export async function callDeskBridgeCapability(
           action: 'close',
         });
       }
-      if (path.startsWith('xd.apps.')) {
-        const action = path.slice('xd.apps.'.length);
+      if (path === 'xd.apps.inspect') {
         return callAdapter(path, api?.runExternalAppAction, {
           ...normalizeCapabilityArgs(request.args),
-          action,
+          action: 'inspect',
+        });
+      }
+      if (path === 'xd.apps.elementFromPoint') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'elementFromPoint',
+        });
+      }
+      if (path === 'xd.apps.tree') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'tree',
+        });
+      }
+      if (path === 'xd.apps.menuExplore') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'menuExplore',
+        });
+      }
+      if (path === 'xd.apps.highlight') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'highlight',
+        });
+      }
+      if (path === 'xd.apps.captureElement') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'captureElement',
+        });
+      }
+      if (path === 'xd.apps.click') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'click',
+        });
+      }
+      if (path === 'xd.apps.doubleClick') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'doubleClick',
+        });
+      }
+      if (path === 'xd.apps.tripleClick') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'tripleClick',
+        });
+      }
+      if (path === 'xd.apps.middleClick') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'middleClick',
+        });
+      }
+      if (path === 'xd.apps.rightClick') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'rightClick',
+        });
+      }
+      if (path === 'xd.apps.move') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'move',
+        });
+      }
+      if (path === 'xd.apps.mouseDown') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'mouseDown',
+        });
+      }
+      if (path === 'xd.apps.mouseUp') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'mouseUp',
+        });
+      }
+      if (path === 'xd.apps.dragAndDrop') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'dragAndDrop',
+        });
+      }
+      if (path === 'xd.apps.screenshot') {
+        return callAdapter(path, api?.runExternalAppAction, {
+          ...normalizeCapabilityArgs(request.args),
+          action: 'screenshot',
         });
       }
       if (path === 'xd.input.targets') {
@@ -14233,6 +14656,9 @@ export async function callDeskBridgeCapability(
       if (path === 'xd.tools.core.xdBlaster.open') {
         return toolOpenArgs('xenesis-desk.core-tools.openXdBlaster');
       }
+      if (path === 'xd.tools.core.appControlLab.open') {
+        return toolOpenArgs('xenesis-desk.core-tools.openAppControlLab');
+      }
       if (path === 'xd.tools.core.auditLog.open') {
         return toolOpenArgs('xenesis-desk.core-tools.openAuditLog');
       }
@@ -14322,6 +14748,13 @@ export function evaluateDeskBridgeCapabilityApproval(
 ): DeskBridgeCapabilityApprovalDecision {
   const trustedApproval =
     approved && (source !== 'mcp' || isValidDeskBridgeCapabilityApprovalProof(node, source, args, approvalProof));
+  if (requiresExternalAppObservationApproval(node.path, args, source, trustedApproval)) {
+    return {
+      allowed: false,
+      approvalRequired: true,
+      reason: `Capability requires approval for ${source}: ${node.path}`,
+    };
+  }
   if (node.approval === 'never') {
     return { allowed: true, approvalRequired: false };
   }
@@ -14340,6 +14773,26 @@ export function evaluateDeskBridgeCapabilityApproval(
     };
   }
   return { allowed: true, approvalRequired: false };
+}
+
+function requiresExternalAppObservationApproval(
+  path: string,
+  rawArgs: unknown,
+  source: DeskBridgeCapabilitySource,
+  approved: boolean,
+): boolean {
+  if (source === 'internal' || approved || !path.startsWith('xd.apps.')) return false;
+  const action = path.slice('xd.apps.'.length);
+  if (
+    !['inspect', 'tree', 'menuExplore', 'captureElement', 'elementFromPoint', 'highlight', 'screenshot'].includes(
+      action,
+    )
+  ) {
+    return false;
+  }
+  const args = normalizeCapabilityArgs(rawArgs);
+  if (readString(args.path).length > 0) return true;
+  return (action === 'captureElement' || action === 'screenshot') && readString(args.screenshotPath).length > 0;
 }
 
 function isComputerUseCapabilityPath(path: string): boolean {

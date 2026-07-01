@@ -1,5 +1,29 @@
-export type ExternalAppPlatform = 'windows';
-export type ExternalAppActionName = 'launch' | 'find' | 'focus' | 'resize' | 'typeText' | 'hotkey' | 'close' | 'status';
+export type ExternalAppPlatform = 'windows' | 'macos';
+export type ExternalAppActionName =
+  | 'launch'
+  | 'find'
+  | 'focus'
+  | 'resize'
+  | 'typeText'
+  | 'hotkey'
+  | 'close'
+  | 'status'
+  | 'click'
+  | 'doubleClick'
+  | 'tripleClick'
+  | 'middleClick'
+  | 'rightClick'
+  | 'move'
+  | 'mouseDown'
+  | 'mouseUp'
+  | 'dragAndDrop'
+  | 'screenshot'
+  | 'inspect'
+  | 'elementFromPoint'
+  | 'tree'
+  | 'menuExplore'
+  | 'highlight'
+  | 'captureElement';
 export type ExternalAppApprovalLevel = 'low' | 'medium' | 'high';
 export type ExternalAppActionApproval = 'never' | 'once' | 'always';
 
@@ -20,6 +44,7 @@ export interface ExternalAppProfile {
   id: string;
   label: string;
   platform: ExternalAppPlatform;
+  bundleId?: string;
   executable: string;
   defaultArgs?: string[];
   defaultCwd?: string;
@@ -35,6 +60,80 @@ export interface ExternalAppPlacement {
   height?: number;
 }
 
+export interface ExternalAppBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export type ExternalAppObservationProvider =
+  | 'uia'
+  | 'msaa'
+  | 'win32'
+  | 'workspace'
+  | 'cgwindow'
+  | 'ax'
+  | 'cg-event'
+  | 'screencapturekit'
+  | 'apple-events';
+
+export type ExternalAppObservationMode =
+  | 'inspect'
+  | 'tree'
+  | 'menuExplore'
+  | 'captureElement'
+  | 'highlight'
+  | 'elementFromPoint';
+
+export interface ExternalAppElementInfo {
+  elementRef?: string;
+  provider?: ExternalAppObservationProvider;
+  name?: string;
+  role?: string;
+  value?: string;
+  automationId?: string;
+  className?: string;
+  controlType?: string;
+  state?: string[];
+  bounds?: ExternalAppBounds;
+  children?: ExternalAppElementInfo[];
+  childCount?: number;
+  truncated?: boolean;
+  source?: ExternalAppObservationProvider;
+  confidence?: number;
+}
+
+export interface ExternalAppObservationTarget {
+  appId?: string;
+  windowId?: string;
+  processId?: number;
+  processName?: string;
+  title?: string;
+  className?: string;
+  bounds?: ExternalAppBounds;
+}
+
+export interface ExternalAppScreenshotInfo {
+  path?: string;
+  dataUrl?: string;
+  mimeType?: string;
+  width?: number;
+  height?: number;
+  bounds?: ExternalAppBounds;
+  elementRef?: string;
+  source?: ExternalAppObservationProvider;
+  confidence?: number;
+}
+
+export interface ExternalAppHighlightInfo {
+  bounds?: ExternalAppBounds;
+  elementRef?: string;
+  durationMs?: number;
+  source?: ExternalAppObservationProvider;
+  confidence?: number;
+}
+
 export interface ExternalAppSettings {
   enabled: boolean;
   profiles: ExternalAppProfile[];
@@ -48,6 +147,7 @@ export interface ExternalAppAction {
   action: ExternalAppActionName;
   appId?: string;
   path?: string;
+  bundleId?: string;
   args?: string[];
   cwd?: string;
   processName?: string;
@@ -57,17 +157,29 @@ export interface ExternalAppAction {
   y?: number;
   width?: number;
   height?: number;
+  startX?: number;
+  startY?: number;
+  endX?: number;
+  endY?: number;
   placement?: ExternalAppPlacement;
   text?: string;
   keys?: string[];
+  screenshotPath?: string;
   mode?: 'window' | 'process';
+  elementRef?: string;
+  depth?: number;
+  limit?: number;
+  includeValues?: boolean;
+  includeFullTree?: boolean;
+  includeTreePreview?: boolean;
+  durationMs?: number;
 }
 
 export interface ExternalAppWindowInfo {
   windowId: string;
   processId?: number;
   title: string;
-  bounds?: { x: number; y: number; width: number; height: number };
+  bounds?: ExternalAppBounds;
   isForeground?: boolean;
 }
 
@@ -93,8 +205,20 @@ export interface ExternalAppActionResult {
   };
   processId?: number;
   windows: ExternalAppWindowInfo[];
+  screenshotPath?: string;
   message: string;
   error?: string;
+  code?: string;
+  target?: ExternalAppObservationTarget;
+  observationMode?: ExternalAppObservationMode;
+  observation?: Record<string, unknown> | ExternalAppElementInfo;
+  element?: ExternalAppElementInfo;
+  tree?: ExternalAppElementInfo | ExternalAppElementInfo[];
+  screenshot?: ExternalAppScreenshotInfo;
+  highlight?: ExternalAppHighlightInfo;
+  truncated?: boolean;
+  nextHint?: string;
+  warnings?: string[];
 }
 
 export const EXTERNAL_APP_ACTIONS: ExternalAppActionName[] = [
@@ -106,6 +230,22 @@ export const EXTERNAL_APP_ACTIONS: ExternalAppActionName[] = [
   'close',
   'status',
   'find',
+  'click',
+  'doubleClick',
+  'tripleClick',
+  'middleClick',
+  'rightClick',
+  'move',
+  'mouseDown',
+  'mouseUp',
+  'dragAndDrop',
+  'screenshot',
+  'inspect',
+  'elementFromPoint',
+  'tree',
+  'menuExplore',
+  'highlight',
+  'captureElement',
 ];
 
 export const BUILTIN_EXTERNAL_APP_PROFILES: ExternalAppProfile[] = [
@@ -126,7 +266,22 @@ export const EXTERNAL_APP_PROFILE_TEMPLATES: ExternalAppProfile[] = [
     label: 'Paint',
     platform: 'windows',
     executable: 'mspaint.exe',
-    allowedActions: ['launch', 'focus', 'resize', 'hotkey', 'close', 'status', 'find'],
+    allowedActions: [
+      'launch',
+      'focus',
+      'resize',
+      'hotkey',
+      'close',
+      'status',
+      'find',
+      'screenshot',
+      'inspect',
+      'elementFromPoint',
+      'tree',
+      'menuExplore',
+      'highlight',
+      'captureElement',
+    ],
     approvalLevel: 'medium',
     enabled: true,
   },
@@ -135,7 +290,23 @@ export const EXTERNAL_APP_PROFILE_TEMPLATES: ExternalAppProfile[] = [
     label: 'PowerShell',
     platform: 'windows',
     executable: 'powershell.exe',
-    allowedActions: ['launch', 'focus', 'resize', 'typeText', 'hotkey', 'close', 'status', 'find'],
+    allowedActions: [
+      'launch',
+      'focus',
+      'resize',
+      'typeText',
+      'hotkey',
+      'close',
+      'status',
+      'find',
+      'screenshot',
+      'inspect',
+      'elementFromPoint',
+      'tree',
+      'menuExplore',
+      'highlight',
+      'captureElement',
+    ],
     approvalLevel: 'high',
     enabled: true,
   },
@@ -144,7 +315,23 @@ export const EXTERNAL_APP_PROFILE_TEMPLATES: ExternalAppProfile[] = [
     label: 'Command Prompt',
     platform: 'windows',
     executable: 'cmd.exe',
-    allowedActions: ['launch', 'focus', 'resize', 'typeText', 'hotkey', 'close', 'status', 'find'],
+    allowedActions: [
+      'launch',
+      'focus',
+      'resize',
+      'typeText',
+      'hotkey',
+      'close',
+      'status',
+      'find',
+      'screenshot',
+      'inspect',
+      'elementFromPoint',
+      'tree',
+      'menuExplore',
+      'highlight',
+      'captureElement',
+    ],
     approvalLevel: 'high',
     enabled: true,
   },
@@ -170,7 +357,53 @@ const ACTION_POLICY_DEFAULTS: Record<ExternalAppActionName, ExternalAppActionPol
   hotkey: { allowed: true, approval: 'always', sensitivity: 'medium' },
   close: { allowed: true, approval: 'once', sensitivity: 'medium' },
   status: { allowed: true, approval: 'never', sensitivity: 'low' },
+  click: { allowed: true, approval: 'once', sensitivity: 'medium' },
+  doubleClick: { allowed: true, approval: 'once', sensitivity: 'medium' },
+  tripleClick: { allowed: true, approval: 'once', sensitivity: 'medium' },
+  middleClick: { allowed: true, approval: 'once', sensitivity: 'medium' },
+  rightClick: { allowed: true, approval: 'once', sensitivity: 'medium' },
+  move: { allowed: true, approval: 'once', sensitivity: 'medium' },
+  mouseDown: { allowed: true, approval: 'once', sensitivity: 'medium' },
+  mouseUp: { allowed: true, approval: 'once', sensitivity: 'medium' },
+  dragAndDrop: { allowed: true, approval: 'once', sensitivity: 'medium' },
+  screenshot: { allowed: true, approval: 'never', sensitivity: 'low' },
+  inspect: { allowed: true, approval: 'never', sensitivity: 'low' },
+  elementFromPoint: { allowed: true, approval: 'never', sensitivity: 'low' },
+  tree: { allowed: true, approval: 'never', sensitivity: 'low' },
+  menuExplore: { allowed: true, approval: 'never', sensitivity: 'low' },
+  highlight: { allowed: true, approval: 'once', sensitivity: 'low' },
+  captureElement: { allowed: true, approval: 'never', sensitivity: 'low' },
 };
+
+const TARGETED_OBSERVATION_ACTIONS = new Set<ExternalAppActionName>(['inspect', 'tree', 'menuExplore']);
+const ELEMENT_TARGET_ACTIONS = new Set<ExternalAppActionName>(['highlight', 'captureElement']);
+const POINTER_ACTIONS = new Set<ExternalAppActionName>([
+  'click',
+  'doubleClick',
+  'tripleClick',
+  'middleClick',
+  'rightClick',
+  'move',
+  'mouseDown',
+  'mouseUp',
+]);
+const TARGET_REQUIRED_ACTIONS = new Set<ExternalAppActionName>([
+  'focus',
+  'resize',
+  'typeText',
+  'hotkey',
+  'close',
+  'click',
+  'doubleClick',
+  'tripleClick',
+  'middleClick',
+  'rightClick',
+  'move',
+  'mouseDown',
+  'mouseUp',
+  'dragAndDrop',
+  'screenshot',
+]);
 
 const TERMINAL_KEYBOARD_PROFILE_IDS = new Set(['powershell', 'pwsh', 'cmd', 'windows-terminal']);
 const TERMINAL_KEYBOARD_EXECUTABLES = new Set([
@@ -206,11 +439,13 @@ export function normalizeExternalAppProfile(profile: Partial<ExternalAppProfile>
         VALID_ACTIONS.has(action as ExternalAppActionName),
       )
     : [];
+  const bundleId = typeof profile.bundleId === 'string' ? profile.bundleId.trim() : '';
 
   return {
     id: String(profile.id || '').trim(),
     label: String(profile.label || profile.id || '').trim(),
-    platform: 'windows',
+    platform: normalizeExternalAppPlatform(profile.platform),
+    ...(bundleId ? { bundleId } : {}),
     executable: String(profile.executable || '').trim(),
     defaultArgs: Array.isArray(profile.defaultArgs) ? profile.defaultArgs.map(String) : undefined,
     defaultCwd: typeof profile.defaultCwd === 'string' ? profile.defaultCwd.trim() : undefined,
@@ -219,6 +454,10 @@ export function normalizeExternalAppProfile(profile: Partial<ExternalAppProfile>
       profile.approvalLevel === 'low' || profile.approvalLevel === 'high' ? profile.approvalLevel : 'medium',
     enabled: profile.enabled !== false,
   };
+}
+
+function normalizeExternalAppPlatform(value: unknown): ExternalAppPlatform {
+  return value === 'macos' || value === 'darwin' ? 'macos' : 'windows';
 }
 
 export function createExternalAppProfileFromTemplate(
@@ -263,18 +502,46 @@ export function normalizeExternalAppAction(raw: unknown): ExternalAppAction {
     throw new Error(`Unsupported external app action: ${action || '(missing)'}`);
   }
 
-  const appId = typeof input.appId === 'string' ? input.appId.trim() : undefined;
-  const path = typeof input.path === 'string' ? input.path.trim() : undefined;
-  const windowId = typeof input.windowId === 'string' ? input.windowId.trim() : undefined;
-  const processName = typeof input.processName === 'string' ? input.processName.trim() : undefined;
-  const titleContains = typeof input.titleContains === 'string' ? input.titleContains.trim() : undefined;
-  const hasTarget = Boolean(appId || path || processName || titleContains || windowId);
+  const appId = trimString(input.appId);
+  const path = trimString(input.path);
+  const bundleId = trimString(input.bundleId);
+  const windowId = trimString(input.windowId);
+  const processName = trimString(input.processName);
+  const titleContains = trimString(input.titleContains);
+  const elementRef = trimString(input.elementRef);
+  const hasTarget = Boolean(appId || path || bundleId || processName || titleContains || windowId);
+  const hasElementTarget = Boolean(hasTarget || elementRef);
 
-  if (action === 'launch' && !appId && !path) {
+  if (action === 'launch' && !appId && !path && !bundleId) {
     throw new Error('appId or path is required for launch.');
   }
-  if (['focus', 'resize', 'typeText', 'hotkey', 'close'].includes(action) && !hasTarget) {
+  if (TARGETED_OBSERVATION_ACTIONS.has(action) && !hasTarget) {
+    throw new Error(`target is required for ${action}.`);
+  }
+  if (ELEMENT_TARGET_ACTIONS.has(action) && !hasElementTarget) {
+    throw new Error(`target is required for ${action}.`);
+  }
+  if (TARGET_REQUIRED_ACTIONS.has(action) && !hasTarget) {
     throw new Error(`appId, path, or windowId is required for ${action}.`);
+  }
+
+  const x = normalizeOptionalCoordinate(input.x, 'x');
+  const y = normalizeOptionalCoordinate(input.y, 'y');
+  const width = normalizeOptionalNumber(input.width, 'width');
+  const height = normalizeOptionalNumber(input.height, 'height');
+  const startX = normalizeOptionalCoordinate(input.startX, 'startX');
+  const startY = normalizeOptionalCoordinate(input.startY, 'startY');
+  const endX = normalizeOptionalCoordinate(input.endX, 'endX');
+  const endY = normalizeOptionalCoordinate(input.endY, 'endY');
+
+  if (action === 'elementFromPoint' && (x === undefined || y === undefined)) {
+    throw new Error('x and y are required for elementFromPoint.');
+  }
+  if (POINTER_ACTIONS.has(action) && (x === undefined || y === undefined)) {
+    throw new Error(`x and y are required for ${action}.`);
+  }
+  if (action === 'dragAndDrop' && [startX, startY, endX, endY].some((value) => value === undefined)) {
+    throw new Error('startX, startY, endX, and endY are required for dragAndDrop.');
   }
 
   const text = typeof input.text === 'string' ? input.text : undefined;
@@ -286,30 +553,61 @@ export function normalizeExternalAppAction(raw: unknown): ExternalAppAction {
   if (action === 'hotkey' && (!keys || keys.length === 0)) {
     throw new Error('keys are required for hotkey.');
   }
+
+  const screenshotPath = trimString(input.screenshotPath);
+  if (input.screenshotPath !== undefined && !screenshotPath) {
+    throw new Error('screenshotPath must be a non-empty string when provided.');
+  }
+
+  const depth = normalizeClampedInteger(input.depth, 'depth', 1, 20);
+  const limit = normalizeClampedInteger(input.limit, 'limit', 1, 1000);
+  const durationMs = normalizeStrictInteger(input.durationMs, 'durationMs', 100, 10000);
+  validateOptionalBoolean(input.includeValues, 'includeValues');
+  validateOptionalBoolean(input.includeFullTree, 'includeFullTree');
+  validateOptionalBoolean(input.includeTreePreview, 'includeTreePreview');
   const placement = normalizeExternalAppPlacement(input.placement);
 
   return {
     action,
     ...(appId ? { appId } : {}),
     ...(path ? { path } : {}),
+    ...(bundleId ? { bundleId } : {}),
     ...(Array.isArray(input.args) ? { args: input.args.map(String) } : {}),
     ...(typeof input.cwd === 'string' && input.cwd.trim() ? { cwd: input.cwd.trim() } : {}),
     ...(processName ? { processName } : {}),
     ...(titleContains ? { titleContains } : {}),
     ...(windowId ? { windowId } : {}),
-    ...(Number.isFinite(Number(input.x)) ? { x: Number(input.x) } : {}),
-    ...(Number.isFinite(Number(input.y)) ? { y: Number(input.y) } : {}),
-    ...(Number.isFinite(Number(input.width)) ? { width: Number(input.width) } : {}),
-    ...(Number.isFinite(Number(input.height)) ? { height: Number(input.height) } : {}),
+    ...(x !== undefined ? { x } : {}),
+    ...(y !== undefined ? { y } : {}),
+    ...(width !== undefined ? { width } : {}),
+    ...(height !== undefined ? { height } : {}),
+    ...(startX !== undefined ? { startX } : {}),
+    ...(startY !== undefined ? { startY } : {}),
+    ...(endX !== undefined ? { endX } : {}),
+    ...(endY !== undefined ? { endY } : {}),
     ...(placement ? { placement } : {}),
     ...(text !== undefined ? { text } : {}),
     ...(keys ? { keys } : {}),
+    ...(screenshotPath ? { screenshotPath } : {}),
     ...(input.mode === 'process'
       ? { mode: 'process' as const }
       : input.mode === 'window'
         ? { mode: 'window' as const }
         : {}),
+    ...(elementRef ? { elementRef } : {}),
+    ...(depth !== undefined ? { depth } : {}),
+    ...(limit !== undefined ? { limit } : {}),
+    ...(typeof input.includeValues === 'boolean' ? { includeValues: input.includeValues } : {}),
+    ...(typeof input.includeFullTree === 'boolean' ? { includeFullTree: input.includeFullTree } : {}),
+    ...(typeof input.includeTreePreview === 'boolean' ? { includeTreePreview: input.includeTreePreview } : {}),
+    ...(durationMs !== undefined ? { durationMs } : {}),
   };
+}
+
+function trimString(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed || undefined;
 }
 
 function normalizeExternalAppPlacement(raw: unknown): ExternalAppPlacement | undefined {
@@ -322,12 +620,91 @@ function normalizeExternalAppPlacement(raw: unknown): ExternalAppPlacement | und
   return Object.keys(placement).length > 0 ? placement : undefined;
 }
 
+function normalizeOptionalCoordinate(
+  value: unknown,
+  fieldName: 'x' | 'y' | 'startX' | 'startY' | 'endX' | 'endY',
+): number | undefined {
+  const number = normalizeOptionalNumber(value, fieldName);
+  return number === undefined ? undefined : Math.trunc(number);
+}
+
+function normalizeOptionalNumber(
+  value: unknown,
+  fieldName: 'x' | 'y' | 'width' | 'height' | 'startX' | 'startY' | 'endX' | 'endY',
+): number | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value === 'number') {
+    if (Number.isFinite(value)) return value;
+    throw new Error(`${fieldName} must be a valid number.`);
+  }
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new Error(`${fieldName} must be a valid number.`);
+  }
+  const normalized = Number(value);
+  if (Number.isFinite(normalized)) return normalized;
+  throw new Error(`${fieldName} must be a valid number.`);
+}
+
+function validateOptionalBoolean(
+  value: unknown,
+  fieldName: 'includeValues' | 'includeFullTree' | 'includeTreePreview',
+): void {
+  if (value !== undefined && typeof value !== 'boolean') {
+    throw new Error(`${fieldName} must be a boolean.`);
+  }
+}
+
+function normalizeClampedInteger(
+  value: unknown,
+  fieldName: 'depth' | 'limit',
+  min: number,
+  max: number,
+): number | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'number' && (typeof value !== 'string' || value.trim() === '')) {
+    throw new Error(`${fieldName} must be an integer from ${min} to ${max}.`);
+  }
+  const normalized = Number(value);
+  if (!Number.isFinite(normalized)) {
+    throw new Error(`${fieldName} must be an integer from ${min} to ${max}.`);
+  }
+  return Math.min(max, Math.max(min, Math.trunc(normalized)));
+}
+
+function normalizeStrictInteger(value: unknown, fieldName: 'durationMs', min: number, max: number): number | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'number' && (typeof value !== 'string' || value.trim() === '')) {
+    throw new Error(`${fieldName} must be an integer from ${min} to ${max}.`);
+  }
+  const normalized = Number(value);
+  if (!Number.isInteger(normalized) || normalized < min || normalized > max) {
+    throw new Error(`${fieldName} must be an integer from ${min} to ${max}.`);
+  }
+  return normalized;
+}
+
 export function classifyExternalAppApproval(
   action: ExternalAppAction,
   registeredProfile: boolean,
 ): ExternalAppApprovalLevel {
+  if (action.action === 'captureElement') {
+    if (action.path) return 'high';
+    if (action.screenshotPath) return 'medium';
+    return 'low';
+  }
+  if (action.action === 'inspect' || action.action === 'elementFromPoint') {
+    return action.path ? 'high' : 'low';
+  }
+  if (action.action === 'tree') {
+    if (action.path) return 'high';
+    if (action.includeFullTree) return 'medium';
+    return 'low';
+  }
+  if (action.action === 'menuExplore' || action.action === 'highlight') {
+    return action.path ? 'high' : 'low';
+  }
   if (!registeredProfile || action.path) return 'high';
-  if (['status', 'find', 'focus', 'resize'].includes(action.action)) return 'low';
+  if (['status', 'find', 'focus', 'resize', 'screenshot'].includes(action.action)) return 'low';
   if (action.action === 'typeText' && (action.text?.length ?? 0) > 5000) return 'high';
   return 'medium';
 }
@@ -408,7 +785,8 @@ function externalAppApproval(
 ): ExternalAppActionApproval {
   const base = ACTION_POLICY_DEFAULTS[action.action];
   if (base.approval === 'never') return 'never';
-  if (approvalLevel === 'high' || base.approval === 'always') return 'always';
+  if (approvalLevel === 'high') return 'always';
+  if (base.approval === 'always') return 'always';
   return base.approval;
 }
 

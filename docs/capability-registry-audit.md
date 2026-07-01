@@ -1,16 +1,16 @@
 # Xenesis Desk Capability Registry Audit
 
-Generated: 2026-07-01, 02:34 a.m. KST
+Generated: 2026-07-01, 11:45 a.m. KST
 
 This audit checks that coverage metadata points to registered capability nodes and that callable method paths are wired in `callDeskBridgeCapability()`. It runs with Phase 5 capability visibility enabled so staged XamongCode wiring is audited without exposing it in the default registry list.
 
 ## Summary
 
-- Registered nodes: 870
-- Callable methods: 551
+- Registered nodes: 887
+- Callable methods: 568
 - Subscribable events: 54
-- Coverage path references: 703
-- Dispatcher paths: 531
+- Coverage path references: 706
+- Dispatcher paths: 548
 - Missing registered paths: 0
 - Missing dispatched coverage paths: 0
 - Undispatched static callable methods: 0
@@ -97,6 +97,7 @@ None.
 | `DESK_BRIDGE_COMMAND_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.openActivityTimeline` | `commandCapabilityPath` | method | `xd.extensions.runCommand` |
 | `DESK_BRIDGE_COMMAND_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.openAgentPerformance` | `commandCapabilityPath` | method | `xd.extensions.runCommand` |
 | `DESK_BRIDGE_COMMAND_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.openAiWorkbench` | `commandCapabilityPath` | method | `xd.extensions.runCommand` |
+| `DESK_BRIDGE_COMMAND_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.openAppControlLab` | `commandCapabilityPath` | method | `xd.extensions.runCommand` |
 | `DESK_BRIDGE_COMMAND_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.openArtifactLibrary` | `commandCapabilityPath` | method | `xd.extensions.runCommand` |
 | `DESK_BRIDGE_COMMAND_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.openAuditLog` | `commandCapabilityPath` | method | `xd.extensions.runCommand` |
 | `DESK_BRIDGE_COMMAND_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.openCapabilityExplorer` | `commandCapabilityPath` | method | `xd.extensions.runCommand` |
@@ -206,6 +207,7 @@ None.
 | `DESK_BRIDGE_DOCK_CONTENT_CAPABILITY_COVERAGE` | `xcon-viewer` | `contentCapabilityPath` | method | `xd.files.open` |
 | `DESK_BRIDGE_DOCK_CONTENT_CAPABILITY_COVERAGE` | `xd-agent-sessions` | `contentCapabilityPath` | method | `xd.tools.core.agentSessions.open` |
 | `DESK_BRIDGE_DOCK_CONTENT_CAPABILITY_COVERAGE` | `xd-ai-workbench` | `contentCapabilityPath` | method | `xd.tools.core.aiWorkbench.open` |
+| `DESK_BRIDGE_DOCK_CONTENT_CAPABILITY_COVERAGE` | `xd-app-control-lab` | `contentCapabilityPath` | method | `xd.tools.core.appControlLab.open` |
 | `DESK_BRIDGE_DOCK_CONTENT_CAPABILITY_COVERAGE` | `xd-artifact-library` | `contentCapabilityPath` | method | `xd.tools.core.artifactLibrary.open` |
 | `DESK_BRIDGE_DOCK_CONTENT_CAPABILITY_COVERAGE` | `xd-blaster` | `contentCapabilityPath` | method | `xd.tools.core.xdBlaster.open` |
 | `DESK_BRIDGE_DOCK_CONTENT_CAPABILITY_COVERAGE` | `xd-process-viewer` | `contentCapabilityPath` | method | `xd.tools.core.processViewer.open` |
@@ -254,6 +256,7 @@ None.
 | `DESK_BRIDGE_EXTENSION_TOOL_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.agent-performance` | `toolCapabilityPath` | method | `xd.tools.core.agentPerformance.open` |
 | `DESK_BRIDGE_EXTENSION_TOOL_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.agent-sessions` | `toolCapabilityPath` | method | `xd.tools.core.agentSessions.open` |
 | `DESK_BRIDGE_EXTENSION_TOOL_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.ai-workbench` | `toolCapabilityPath` | method | `xd.tools.core.aiWorkbench.open` |
+| `DESK_BRIDGE_EXTENSION_TOOL_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.app-control-lab` | `toolCapabilityPath` | method | `xd.tools.core.appControlLab.open` |
 | `DESK_BRIDGE_EXTENSION_TOOL_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.artifact-library` | `toolCapabilityPath` | method | `xd.tools.core.artifactLibrary.open` |
 | `DESK_BRIDGE_EXTENSION_TOOL_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.audit-log` | `toolCapabilityPath` | method | `xd.tools.core.auditLog.open` |
 | `DESK_BRIDGE_EXTENSION_TOOL_CAPABILITY_COVERAGE` | `xenesis-desk.core-tools.capability-explorer` | `toolCapabilityPath` | method | `xd.tools.core.capabilityExplorer.open` |

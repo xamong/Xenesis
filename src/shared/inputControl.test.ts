@@ -4,18 +4,36 @@ import {
   INPUT_ACTION_TYPES,
   looksDangerousInputHotkey,
   looksSecretShapedInputText,
+  normalizedPointToPixel,
   normalizeInputAction,
   normalizeInputRunRequest,
   normalizeInputTarget,
-  normalizedPointToPixel,
   redactInputAuditValue,
   supportedInputActionsForTarget,
 } from './inputControl';
 
-test('input action list keeps the approved first-slice DSL names', () => {
+const DESKTOP_APP_SUPPORTED_ACTIONS = [
+  'click',
+  'double_click',
+  'triple_click',
+  'middle_click',
+  'right_click',
+  'move',
+  'mouse_down',
+  'mouse_up',
+  'drag_and_drop',
+  'type',
+  'hotkey',
+  'wait',
+  'take_screenshot',
+];
+
+test('input action list keeps the approved desktop-control DSL names', () => {
   assert.deepEqual(INPUT_ACTION_TYPES, [
     'click',
     'double_click',
+    'triple_click',
+    'middle_click',
     'right_click',
     'move',
     'mouse_down',
@@ -52,6 +70,16 @@ test('validates normalized coordinates as integers in 0..999', () => {
     type: 'click',
     x: 0,
     y: 999,
+  });
+  assert.deepEqual(normalizeInputAction({ type: 'middle_click', x: 5, y: 6 }), {
+    type: 'middle_click',
+    x: 5,
+    y: 6,
+  });
+  assert.deepEqual(normalizeInputAction({ type: 'triple_click', x: 7, y: 8 }), {
+    type: 'triple_click',
+    x: 7,
+    y: 8,
   });
 
   assert.throws(() => normalizeInputAction({ type: 'click', x: -1, y: 10 }), /x must be an integer from 0 to 999/i);
@@ -108,12 +136,11 @@ test('converts normalized coordinates to target-local pixels', () => {
   });
 });
 
-test('classifies first-slice target action support', () => {
-  assert.deepEqual(supportedInputActionsForTarget('desktop', { kind: 'app', appId: 'notepad' }), [
-    'type',
-    'hotkey',
-    'wait',
-  ]);
+test('classifies desktop app target action support', () => {
+  assert.deepEqual(
+    supportedInputActionsForTarget('desktop', { kind: 'app', appId: 'notepad' }),
+    DESKTOP_APP_SUPPORTED_ACTIONS,
+  );
   assert.deepEqual(supportedInputActionsForTarget('browser', { kind: 'browser' }), []);
   assert.deepEqual(supportedInputActionsForTarget('desktop', { kind: 'desktop' }), []);
 });

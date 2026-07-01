@@ -26,6 +26,22 @@ test('external app settings include the built-in Notepad profile', () => {
     'close',
     'status',
     'find',
+    'click',
+    'doubleClick',
+    'tripleClick',
+    'middleClick',
+    'rightClick',
+    'move',
+    'mouseDown',
+    'mouseUp',
+    'dragAndDrop',
+    'screenshot',
+    'inspect',
+    'elementFromPoint',
+    'tree',
+    'menuExplore',
+    'highlight',
+    'captureElement',
   ]);
 });
 
@@ -108,6 +124,76 @@ test('external app actions normalize aliases and reject missing targets', () => 
     () => normalizeExternalAppAction({ action: 'typeText', appId: 'notepad', text: '' }),
     /text is required/i,
   );
+});
+
+test('external app actions normalize observation and pointer inputs', () => {
+  assert.deepEqual(
+    normalizeExternalAppAction({
+      action: 'tree',
+      appId: 'notepad',
+      depth: 50,
+      limit: 5000,
+      includeValues: true,
+      includeFullTree: true,
+    }),
+    {
+      action: 'tree',
+      appId: 'notepad',
+      depth: 20,
+      limit: 1000,
+      includeValues: true,
+      includeFullTree: true,
+    },
+  );
+
+  assert.deepEqual(normalizeExternalAppAction({ action: 'elementFromPoint', x: 12.9, y: 34.2 }), {
+    action: 'elementFromPoint',
+    x: 12,
+    y: 34,
+  });
+
+  assert.deepEqual(
+    normalizeExternalAppAction({
+      action: 'dragAndDrop',
+      appId: 'notepad',
+      startX: 1.9,
+      startY: 2.1,
+      endX: 300.8,
+      endY: 400.2,
+    }),
+    { action: 'dragAndDrop', appId: 'notepad', startX: 1, startY: 2, endX: 300, endY: 400 },
+  );
+
+  assert.throws(() => normalizeExternalAppAction({ action: 'inspect' }), /target is required/i);
+  assert.throws(
+    () => normalizeExternalAppAction({ action: 'highlight', appId: 'notepad', durationMs: 10 }),
+    /duration/i,
+  );
+  assert.throws(
+    () => normalizeExternalAppAction({ action: 'captureElement', appId: 'notepad', screenshotPath: '' }),
+    /screenshotPath/i,
+  );
+});
+
+test('external app profile normalization supports macOS bundle ids without dropping Windows profiles', () => {
+  const settings = normalizeExternalAppSettings({
+    profiles: [
+      {
+        id: 'textedit',
+        label: 'TextEdit',
+        platform: 'macos',
+        executable: 'TextEdit',
+        bundleId: 'com.apple.TextEdit',
+        allowedActions: ['launch', 'status', 'inspect'],
+        approvalLevel: 'medium',
+        enabled: true,
+      },
+    ],
+  });
+
+  assert.equal(settings.profiles.find((profile) => profile.id === 'textedit')?.platform, 'macos');
+  assert.equal(settings.profiles.find((profile) => profile.id === 'textedit')?.bundleId, 'com.apple.TextEdit');
+  assert.equal(settings.profiles.find((profile) => profile.id === 'notepad')?.platform, 'windows');
 });
 
 test('external app approval classification separates registered and arbitrary path control', () => {

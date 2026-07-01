@@ -1,5 +1,108 @@
 # Xenesis Desk Work Handoff
 
+## 2026-07-01 App Control Lab / Extended Apps Port
+
+- Current objective:
+  - Port the sibling `App Control Lab / Extended Apps` slice into this repo
+    without touching `packages/xenesis`.
+  - Extend the CR-backed external app surface from the current 8 actions to the
+    sibling observation, pointer, screenshot, menu exploration, and App Control
+    Lab tool paths.
+  - Preserve this repo's existing behavior that is not present in the sibling
+    snapshot: external app profile status readback, approval policy metadata,
+    `launch.placement`, the disabled `kakaotalk` template, and the existing
+    Memory Dashboard/core-tools wiring.
+- Scope checkpoint:
+  - Current repo has `xd.apps.status/find/launch/focus/resize/typeText/hotkey/close`
+    plus a generic dispatcher fallback, but does not register the extended
+    `xd.apps.*` paths, platform app-control adapters, host clients, macOS
+    adapter, or App Control Lab pane/model.
+  - Sibling repo adds `xd.apps.inspect`, `elementFromPoint`, `tree`,
+    `menuExplore`, `highlight`, `captureElement`, pointer actions,
+    screenshot, platform adapters, Windows/macOS control host clients, and
+    `xd.tools.core.appControlLab.open`.
+  - `menuExplore` is included in this slice because sibling App Control Lab,
+    model tests, and host clients treat it as part of the read-only observation
+    set, even though the first slice summary listed only the most visible
+    observation paths.
+- Commands run:
+  - `git status --short --branch`
+  - `rg -n "AppControlLab|openAppControlLab|appControl|xd\\.apps|xconViewerCssScope|@xcon-viewer|contentType|core-tools" ...`
+  - Targeted `Get-Content` reads of current and sibling
+    `src/shared/deskBridgeCapabilities.ts`,
+    `src/renderer/extensions/xenesis-desk.core-tools/renderer.tsx`,
+    `src/shared/appMenuModel.ts`, extension manifests, and app-control files.
+  - Required context already read for this multi-step Agent/CR work:
+    `AGENTS.md`, repo-local Obsidian index/rules/schema/review/source maps,
+    CR/approval architecture notes, and the approved
+    `2026-07-01-app-control-lab-slice-design.md`.
+  - Created local ignored implementation plan:
+    `docs/superpowers/plans/2026-07-01-app-control-lab-extended-apps.md`.
+  - Plan placeholder scan:
+    `rg -n "TBD|TODO|implement later|fill in details|Similar to|appropriate error handling|handle edge cases|Write tests for the above" docs/superpowers/plans/2026-07-01-app-control-lab-extended-apps.md`
+    -> no matches.
+- Verification result:
+  - Pre-edit worktree is clean on `mini`.
+  - Implementation plan is written. Code implementation has not started yet for
+    this slice.
+  - Task 1 RED:
+    `node --import tsx --test src/shared/externalAppControl.test.ts` failed as
+    expected on missing extended Notepad actions, unsupported `tree`, and
+    missing macOS `bundleId` normalization.
+  - Task 1 first GREEN attempt found a regression in existing
+    `titleContains`-only `focus` normalization; target validation was widened
+    to preserve existing behavior.
+  - Task 1 GREEN:
+    `node --import tsx --test src/shared/externalAppControl.test.ts` -> PASS,
+    12/12 tests.
+  - Task 2 RED:
+    `node --import tsx --test src/shared/externalAppCapabilities.test.ts src/shared/appMenuModel.test.ts`
+    failed as expected on missing `xd.apps.inspect`, missing App Control Lab
+    menu/tool capability, and missing path-based observation approval stop.
+  - Task 2 GREEN:
+    `node --import tsx --test src/shared/externalAppCapabilities.test.ts src/shared/appMenuModel.test.ts`
+    -> PASS, 14/14 tests.
+  - Task 3 RED:
+    `node --import tsx --test src/main/appControl/appControlService.test.ts src/main/appControl/createPlatformAppControlAdapter.test.ts`
+    failed on missing factory and missing extended adapter routing. Host tests
+    then failed on missing Windows/macOS host modules.
+  - Task 3 GREEN:
+    `node --import tsx --test src/main/appControl/appControlService.test.ts src/main/appControl/createPlatformAppControlAdapter.test.ts src/main/appControl/windowsControlHost.test.ts src/main/appControl/macosControlHost.test.ts`
+    -> PASS, 27/27 tests.
+  - Existing adapter regression:
+    `node --import tsx --test src/main/appControl/windowsAppControl.test.ts`
+    -> PASS, 5/5 tests.
+- Touched files:
+  - `handoff.md`
+  - `src/shared/externalAppControl.test.ts`
+  - `src/shared/externalAppControl.ts`
+  - `src/shared/externalAppCapabilities.test.ts`
+  - `src/shared/appMenuModel.test.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/shared/appMenuModel.ts`
+  - `src/main/appControl/appControlAdapter.ts`
+  - `src/main/appControl/appControlService.ts`
+  - `src/main/appControl/appControlService.test.ts`
+  - `src/main/appControl/createPlatformAppControlAdapter.ts`
+  - `src/main/appControl/createPlatformAppControlAdapter.test.ts`
+  - `src/main/appControl/unsupportedAppControl.ts`
+  - `src/main/appControl/windowsAppControl.ts`
+  - `src/main/appControl/windowsControlHost.ts`
+  - `src/main/appControl/windowsControlHost.test.ts`
+  - `src/main/appControl/macosAppControl.ts`
+  - `src/main/appControl/macosControlHost.ts`
+  - `src/main/appControl/macosControlHost.test.ts`
+- Known gaps:
+  - Full App Control live smoke depends on Electron launch and local Windows
+    control host availability. Verification will at minimum prove CR open/render
+    for App Control Lab and focused app-control tests; Notepad live actions will
+    be attempted only after the registered safe profile and approval behavior
+    are in place.
+- Next intended step:
+  - Write the executable implementation plan, then proceed TDD-first through
+    shared contracts, CR coverage, main adapters/services, renderer Lab wiring,
+    focused tests, CR audit, build/typecheck, commit, push, and PR update.
+
 ## 2026-06-30 Xcon Agent Workbench Port
 
 - Current objective:
@@ -26505,3 +26608,190 @@ Verification so far:
 - Next intended step:
   - Continue with the next non-`packages/xenesis` sibling-parity priority after
     PR review or user direction.
+
+## 2026-07-01 App Control Lab Extended Apps - Input Control Regression
+
+- Current objective:
+  - Continue the App Control Lab / Extended Apps port without touching
+    `packages/xenesis`, completing the desktop input-control regression slice
+    before renderer work.
+- Touched files:
+  - `src/shared/inputControl.ts`
+  - `src/shared/inputControl.test.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/main/inputControl/inputControlService.ts`
+  - `src/main/inputControl/inputControlService.test.ts`
+  - `docs/superpowers/plans/2026-07-01-app-control-lab-extended-apps.md`
+  - `handoff.md`
+- Commands run:
+  - RED:
+    `node --import tsx --test src/main/inputControl/inputControlService.test.ts`
+  - GREEN:
+    `node --import tsx --test src/main/inputControl/inputControlService.test.ts`
+  - Focused regression bundle:
+    `node --import tsx --test src/shared/inputControl.test.ts src/shared/inputControlCapabilities.test.ts src/main/inputControl/inputControlService.test.ts src/shared/externalAppCapabilities.test.ts`
+- Exact verification result:
+  - RED failed as expected because desktop app supported actions only exposed
+    `type`, `hotkey`, and `wait`, and click/drag/screenshot did not dispatch.
+  - GREEN passed 9/9 for `src/main/inputControl/inputControlService.test.ts`.
+  - Focused regression bundle passed 29/29.
+  - Desktop app input now supports click, double/triple/middle/right click,
+    move, mouse down/up, drag-and-drop, type, hotkey, wait, and
+    `take_screenshot`.
+  - Pointer and drag input resolves target window bounds via `xd.apps.status`
+    and converts normalized `0..999` coordinates to screen pixels before
+    calling `xd.apps.*`.
+  - `xd.input.run` schema now includes `triple_click` and `middle_click`.
+  - `packages/xenesis` remains untouched.
+- Known gaps:
+  - Top-level `xd.input.screenshot` still returns the existing unsupported
+    result; this slice only mapped `take_screenshot` inside `xd.input.run`.
+  - Full repo gates and live Electron smoke have not been run yet for this
+    App Control Lab / Extended Apps slice.
+- Next intended step:
+  - Port the App Control Lab renderer model, pane, extension command wiring,
+    and focused renderer tests.
+
+## 2026-07-01 App Control Lab Extended Apps - Renderer Port
+
+- Current objective:
+  - Complete Task 5 by porting the App Control Lab renderer/model/extension
+    wiring while continuing to leave `packages/xenesis` untouched.
+- Touched files:
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/appControlLabModel.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/appControlLabModel.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/AppControlLabNetworkDiagram.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/AppControlLabPane.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/renderer.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/styles.css`
+  - `extensions/xenesis-desk.core-tools/main.js`
+  - `extensions/xenesis-desk.core-tools/plugin.json`
+  - `src/main/extensions/extensionHost.ts`
+  - `src/shared/types.ts`
+  - `docs/superpowers/plans/2026-07-01-app-control-lab-extended-apps.md`
+  - `handoff.md`
+- Commands run:
+  - RED:
+    `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/appControlLabModel.test.ts`
+  - GREEN:
+    `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/appControlLabModel.test.ts`
+  - Focused renderer/style/manifest check:
+    `npx biome check src/renderer/extensions/xenesis-desk.core-tools/panes/appControlLabModel.ts src/renderer/extensions/xenesis-desk.core-tools/panes/appControlLabModel.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/AppControlLabPane.tsx src/renderer/extensions/xenesis-desk.core-tools/panes/AppControlLabNetworkDiagram.tsx src/renderer/extensions/xenesis-desk.core-tools/renderer.tsx extensions/xenesis-desk.core-tools/main.js extensions/xenesis-desk.core-tools/plugin.json src/main/extensions/extensionHost.ts src/shared/types.ts --max-diagnostics=200`
+  - Focused CR/menu/input/model bundle:
+    `node --import tsx --test src/shared/externalAppCapabilities.test.ts src/shared/appMenuModel.test.ts src/shared/inputControl.test.ts src/shared/inputControlCapabilities.test.ts src/main/inputControl/inputControlService.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/appControlLabModel.test.ts`
+- Exact verification result:
+  - Model RED first failed with missing `appControlLabModel`.
+  - Model GREEN passed 4/4.
+  - Focused Biome check initially failed on formatting and an
+    `extensionHost.ts` optional-chain diagnostic; after formatting touched
+    files and applying the optional-chain fix, it passed.
+  - Focused CR/menu/input/model bundle passed 39/39.
+  - Renderer now registers tool id
+    `xenesis-desk.core-tools.app-control-lab`, opens content type
+    `xd-app-control-lab`, renders `.app-control-lab`, and exposes icon `APP`.
+  - Extension manifest/main now expose
+    `xenesis-desk.core-tools.openAppControlLab`.
+  - Main extension allowlist now includes App Control Lab; the existing
+    `xenesis-desk.core-tools.xd-blaster` allowlist entry was also restored
+    because the command already existed but the allowlist omitted it.
+  - `packages/xenesis` remains untouched.
+- Known gaps:
+  - Full repo gates and live Electron smoke are still pending.
+  - The App Control Lab calls CR paths with `{ approved: true }`, matching the
+    existing operator-lab pattern; real external approval behavior remains in
+    the CR layer for normal Agent/provider calls.
+- Next intended step:
+  - Run focused full-slice regression, broad typecheck/test/audit/build gates,
+    then live smoke if feasible before commit/push/PR update.
+
+## 2026-07-01 App Control Lab Extended Apps - Final Verification
+
+- Current objective:
+  - Finish the App Control Lab / Extended Apps port, verify the cross-surface
+    CR/App/Input/renderer behavior, and prepare the `mini` branch for PR update
+    without touching `packages/xenesis`.
+- Touched files:
+  - `docs/capability-registry-audit.md`
+  - `extensions/xenesis-desk.core-tools/main.js`
+  - `extensions/xenesis-desk.core-tools/plugin.json`
+  - `scripts/nativeToolsPackaging.test.ts`
+  - `src/main/appControl/*`
+  - `src/main/extensions/extensionHost.ts`
+  - `src/main/inputControl/inputControlService.ts`
+  - `src/main/inputControl/inputControlService.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/renderer.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/styles.css`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/AppControlLab*`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/appControlLabModel*`
+  - `src/shared/appMenuModel.ts`
+  - `src/shared/appMenuModel.test.ts`
+  - `src/shared/deskBridgeCapabilities.ts`
+  - `src/shared/externalAppCapabilities.test.ts`
+  - `src/shared/externalAppControl.ts`
+  - `src/shared/externalAppControl.test.ts`
+  - `src/shared/inputControl.ts`
+  - `src/shared/inputControl.test.ts`
+  - `src/shared/types.ts`
+  - `docs/superpowers/plans/2026-07-01-app-control-lab-extended-apps.md`
+  - `handoff.md`
+- Commands run:
+  - Focused full-slice regression:
+    `node --import tsx --test src/shared/externalAppControl.test.ts src/shared/externalAppCapabilities.test.ts src/shared/appMenuModel.test.ts src/shared/crMetadataCapabilities.test.ts src/shared/inputControl.test.ts src/shared/inputControlCapabilities.test.ts src/main/appControl/appControlService.test.ts src/main/appControl/windowsAppControl.test.ts src/main/appControl/createPlatformAppControlAdapter.test.ts src/main/appControl/windowsControlHost.test.ts src/main/appControl/macosControlHost.test.ts src/main/inputControl/inputControlService.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/appControlLabModel.test.ts`
+  - Focused changed-file Biome check:
+    `npx biome check src/main/appControl/appControlService.ts src/main/appControl/appControlService.test.ts src/main/appControl/windowsAppControl.ts src/main/appControl/windowsControlHost.ts src/main/appControl/windowsControlHost.test.ts src/main/appControl/macosAppControl.ts src/main/appControl/macosControlHost.ts src/main/appControl/macosControlHost.test.ts src/main/appControl/createPlatformAppControlAdapter.ts src/main/appControl/createPlatformAppControlAdapter.test.ts src/main/appControl/appControlAdapter.ts src/main/appControl/unsupportedAppControl.ts src/main/inputControl/inputControlService.ts src/main/inputControl/inputControlService.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/AppControlLabPane.tsx src/renderer/extensions/xenesis-desk.core-tools/panes/AppControlLabNetworkDiagram.tsx src/renderer/extensions/xenesis-desk.core-tools/panes/appControlLabModel.ts src/renderer/extensions/xenesis-desk.core-tools/panes/appControlLabModel.test.ts src/renderer/extensions/xenesis-desk.core-tools/renderer.tsx src/shared/externalAppControl.ts src/shared/externalAppControl.test.ts src/shared/inputControl.ts src/shared/inputControl.test.ts src/shared/types.ts scripts/nativeToolsPackaging.test.ts --max-diagnostics=200`
+  - Full repo lint attempt: `npm run lint`
+  - `npm run typecheck`
+  - `npm test`
+  - `npm run docs:capabilities:audit`
+  - `npm run build`
+  - `npm run check:public-release`
+  - App Control Lab live Electron smoke through CR path
+    `xd.tools.core.appControlLab.open`
+  - Safe app-control smoke:
+    `node --import tsx --eval "... createAppControlService().run({ action: 'status' }) ..."`
+  - Safe Notepad observation smoke:
+    `node --import tsx --eval "... createAppControlService().run({ action: 'inspect', appId: 'notepad' }) ..."`
+  - `git diff --name-only -- packages/xenesis`
+- Exact verification result:
+  - Focused full-slice regression passed 84/84 before the final default-service
+    fix.
+  - A safe status smoke exposed that `createAppControlService()` required an
+    options object. The service now defaults `options = {}` and
+    `getSettings?.()`, with a new regression test proving built-in status
+    readback works.
+  - `node --import tsx --test src/main/appControl/appControlService.test.ts`
+    passed 17/17 after the fix.
+  - Focused changed-file Biome check passed with no diagnostics.
+  - `npm run lint` still fails on existing repo-wide Biome diagnostics outside
+    this slice, including `packages/xenesis`, `mcp`, sample extensions, and
+    legacy CSS sections. This was not fixed because `packages/xenesis` is out of
+    scope and unrelated repo-wide lint debt is pre-existing.
+  - `npm run typecheck` passed.
+  - `npm test` passed 665/665 after the final fix.
+  - `npm run docs:capabilities:audit` passed with 887 nodes and 706 coverage
+    path references; missing registered paths, missing dispatched coverage
+    paths, and undispatched static callable methods are all 0.
+  - `npm run build` passed. Existing Vite warnings remain for d3 ambiguous
+    namespace resolution, `hwp.js` `fs` externalization, and mixed
+    dynamic/static imports of `deskBridge.ts`.
+  - `npm run check:public-release` passed.
+  - App Control Lab live smoke passed with marker:
+    `APP_CONTROL_LAB_SMOKE_PASS {"openPath":"xd.tools.core.appControlLab.open","marker":{"visible":true,"title":"App Control Lab","status":"ready"}}`
+  - Safe status smoke returned `ok: true`, `action: "status"`,
+    `profileIds: ["notepad"]`, and `controlEnabled: true`.
+  - Notepad was already running, so `inspect` was attempted without input or
+    close actions. It returned `ok: true`, `action: "inspect"`, provider `uia`,
+    and the active Notepad target title.
+  - `git diff --name-only -- packages/xenesis` returned no files.
+- Known gaps:
+  - Full repo `npm run lint` is still blocked by existing repo-wide Biome
+    diagnostics; changed TypeScript files pass focused Biome check.
+  - Top-level `xd.input.screenshot` still returns the existing unsupported
+    result. This slice maps `take_screenshot` inside `xd.input.run` through
+    registered app control.
+  - Windows `xd.apps.screenshot` remains conservative in the adapter when a
+    host-backed capture path is unavailable; observation smoke verified
+    `inspect`, not screenshot capture.
+- Next intended step:
+  - Stage the App Control Lab / Extended Apps files, commit on `mini`, push,
+    and update existing PR #13.

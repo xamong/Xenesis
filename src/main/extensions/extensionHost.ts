@@ -110,6 +110,8 @@ const EXTENSION_TOOLS: ExtensionTool[] = [
   'xenesis-desk.workflow-runner.gowoori-chat',
   'xenesis-desk.core-tools.activity-timeline',
   'xenesis-desk.core-tools.network-monitor',
+  'xenesis-desk.core-tools.app-control-lab',
+  'xenesis-desk.core-tools.xd-blaster',
   'xenesis-desk.core-tools.audit-log',
   'xenesis-desk.core-tools.agent-performance',
   'xenesis-desk.core-tools.memory-dashboard',
@@ -332,7 +334,7 @@ export class ExtensionHost {
       };
     }
     const command = this.commands.get(commandId);
-    if (!command || !command.extension.enabled) {
+    if (!command?.extension.enabled) {
       return {
         ok: false,
         commandId,

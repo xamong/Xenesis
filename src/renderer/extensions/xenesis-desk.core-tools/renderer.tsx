@@ -9,6 +9,7 @@ import ActivityTimelinePane from './panes/ActivityTimelinePane';
 import AgentPerformancePane from './panes/AgentPerformancePane';
 import { AgentSessionsPane } from './panes/AgentSessionsPane';
 import { AiWorkbenchPane } from './panes/AiWorkbenchPane';
+import { AppControlLabPane } from './panes/AppControlLabPane';
 import { ArtifactLibraryPane } from './panes/ArtifactLibraryPane';
 import AuditLogPane from './panes/AuditLogPane';
 import { CapabilityExplorerPane } from './panes/CapabilityExplorerPane';
@@ -31,6 +32,7 @@ import { XenisBotPane } from './panes/XenisBotPane';
 import { hydrateXenisBotSessions, recordXenisBotEvent } from './xenisBotStore';
 
 const XENESIS_AGENT_CONTENT_ID = 'xenesis-agent-default';
+const APP_CONTROL_LAB_CONTENT_TYPE = 'xd-app-control-lab';
 
 const TOOL_IDS = {
   xamongCodeChat: 'xenesis-desk.core-tools.xamong-code-chat',
@@ -54,6 +56,7 @@ const TOOL_IDS = {
   activityTimeline: 'xenesis-desk.core-tools.activity-timeline',
   networkMonitor: 'xenesis-desk.core-tools.network-monitor',
   xdBlaster: 'xenesis-desk.core-tools.xd-blaster',
+  appControlLab: 'xenesis-desk.core-tools.app-control-lab',
   auditLog: 'xenesis-desk.core-tools.audit-log',
   agentPerformance: 'xenesis-desk.core-tools.agent-performance',
   memoryDashboard: 'xenesis-desk.core-tools.memory-dashboard',
@@ -246,6 +249,16 @@ function xdBlasterContent(): DockContentOptions {
     state: 'document',
     html: '',
     contentType: 'xd-blaster',
+  };
+}
+
+function appControlLabContent(): DockContentOptions {
+  return {
+    id: `app-control-lab-${crypto.randomUUID()}`,
+    title: 'App Control Lab',
+    state: 'document',
+    html: '',
+    contentType: APP_CONTROL_LAB_CONTENT_TYPE,
   };
 }
 
@@ -541,6 +554,14 @@ const contribution: RendererExtensionContribution = {
       return true;
     }
 
+    if (tool === TOOL_IDS.appControlLab) {
+      if (!focusExistingContent(context.engine, APP_CONTROL_LAB_CONTENT_TYPE)) {
+        context.openContent(appControlLabContent(), context.requestedPlacement ?? 'tab');
+      }
+      context.onStatus('App Control Lab opened');
+      return true;
+    }
+
     if (tool === TOOL_IDS.auditLog) {
       context.openContent(
         {
@@ -798,6 +819,9 @@ const contribution: RendererExtensionContribution = {
     if (content.contentType === 'xd-blaster') {
       return <XdBlasterPane />;
     }
+    if (content.contentType === APP_CONTROL_LAB_CONTENT_TYPE) {
+      return <AppControlLabPane />;
+    }
     if (content.contentType === 'audit-log') {
       return <AuditLogPane />;
     }
@@ -833,6 +857,7 @@ const contribution: RendererExtensionContribution = {
       'activity-timeline': 'TL',
       'network-monitor': 'N',
       'xd-blaster': 'XB',
+      [APP_CONTROL_LAB_CONTENT_TYPE]: 'APP',
       'audit-log': 'AU',
       'agent-performance': 'AP',
       'memory-dashboard': 'MD',
@@ -863,6 +888,7 @@ const contribution: RendererExtensionContribution = {
       contentType === 'activity-timeline' ||
       contentType === 'network-monitor' ||
       contentType === 'xd-blaster' ||
+      contentType === APP_CONTROL_LAB_CONTENT_TYPE ||
       contentType === 'audit-log' ||
       contentType === 'agent-performance' ||
       contentType === 'memory-dashboard'

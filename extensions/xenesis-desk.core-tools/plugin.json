@@ -119,6 +119,11 @@
         "icon": "XB"
       },
       {
+        "command": "xenesis-desk.core-tools.openAppControlLab",
+        "title": "App Control Lab",
+        "icon": "APP"
+      },
+      {
         "command": "xenesis-desk.core-tools.openAuditLog",
         "title": "Audit Log",
         "icon": "AU"
@@ -157,6 +162,7 @@
         "xenesis-desk.core-tools.openActivityTimeline",
         "xenesis-desk.core-tools.openNetworkMonitor",
         "xenesis-desk.core-tools.openXdBlaster",
+        "xenesis-desk.core-tools.openAppControlLab",
         "xenesis-desk.core-tools.openAuditLog",
         "xenesis-desk.core-tools.openAgentPerformance",
         "xenesis-desk.core-tools.openMemoryDashboard"
@@ -183,6 +189,7 @@
         "xenesis-desk.core-tools.openActivityTimeline",
         "xenesis-desk.core-tools.openNetworkMonitor",
         "xenesis-desk.core-tools.openXdBlaster",
+        "xenesis-desk.core-tools.openAppControlLab",
         "xenesis-desk.core-tools.openAuditLog",
         "xenesis-desk.core-tools.openAgentPerformance",
         "xenesis-desk.core-tools.openMemoryDashboard"

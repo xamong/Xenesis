@@ -328,6 +328,7 @@ export const APP_MENU_MODEL: AppMenuGroupNode[] = [
         'TL',
       ),
       command('network-monitor', 'Network Monitor', 'xenesis-desk.core-tools.openNetworkMonitor', undefined, 'N'),
+      command('app-control-lab', 'App Control Lab', 'xenesis-desk.core-tools.openAppControlLab', undefined, 'APP'),
       command('xd-blaster', 'XD Blaster', 'xenesis-desk.core-tools.openXdBlaster', undefined, 'XB'),
       command('audit-log', 'Audit Log', 'xenesis-desk.core-tools.openAuditLog', undefined, 'AU'),
       command(

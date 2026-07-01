@@ -83,6 +83,10 @@ exports.activate = function activate(api) {
     api.openTool('xenesis-desk.core-tools.xd-blaster');
   });
 
+  api.registerCommand('xenesis-desk.core-tools.openAppControlLab', function openAppControlLab() {
+    api.openTool('xenesis-desk.core-tools.app-control-lab');
+  });
+
   api.registerCommand('xenesis-desk.core-tools.openAuditLog', function openAuditLog() {
     api.openTool('xenesis-desk.core-tools.audit-log');
   });
