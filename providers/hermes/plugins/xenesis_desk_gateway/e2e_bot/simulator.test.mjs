@@ -371,11 +371,19 @@ test('/desk channel simulation preserves terminal session state and uses Desk br
           const terminals = await send({ ...basePayload, text: '/desk terminals' });
           assert.equal(terminals.ok, true);
           assert.equal(terminals.mode, 'desk-channel-sim');
-          assert.match(terminals.outbound, /1\. term-abc-12345678 - mongna/);
+          assert.match(terminals.outbound, /Terminals/);
+          assert.doesNotMatch(terminals.outbound, /No \| ID \| Title \| State \| Context/);
+          assert.match(terminals.outbound, /1\. term-abc · mongna/);
+          assert.match(terminals.outbound, /status: active/);
           assert.match(terminals.outbound, /cwd: D:\\Workspace\\sample-app/);
+          assert.doesNotMatch(terminals.outbound, /shell: pwsh\.exe/);
 
-          const attach = await send({ ...basePayload, text: '/desk attach term-abc-12345678' });
+          const attach = await send({ ...basePayload, text: '/desk attach 1' });
           assert.match(attach.outbound, /Attached to terminal term-abc-12345678/);
+          assert.deepEqual(attach.actions, [
+            { label: 'Watch', value: '/desk watch' },
+            { label: 'Detach', value: '/desk detach' },
+          ]);
 
           const watch = await send({ ...basePayload, text: '/desk watch' });
           assert.match(watch.outbound, /Automation enabled for term-abc-12345678/);
@@ -641,9 +649,15 @@ test('/desk agent simulation attaches to Xenesis Agent panes, relays final event
             assert.equal(agents.mode, 'desk-channel-sim');
             assert.match(agents.outbound, /1\. xenis-a3f91c20 - Xenesis Agent/);
             assert.match(agents.outbound, /provider: Codex CLI/);
+            assert.deepEqual(agents.actions, [{ label: 'Attach 1', value: '/desk agent attach 1' }]);
 
             const attach = await send({ ...basePayload, text: '/desk agent attach 1' });
             assert.match(attach.outbound, /Attached to Xenesis Agent xenis-a3f91c20/);
+            assert.deepEqual(attach.actions, [
+              { label: 'Watch', value: '/desk agent watch' },
+              { label: 'Events', value: '/desk agent events' },
+              { label: 'Detach', value: '/desk agent detach' },
+            ]);
 
             const watch = await send({ ...basePayload, text: '/desk agent watch' });
             assert.match(watch.outbound, /Watching Xenesis Agent xenis-a3f91c20/);

@@ -6,7 +6,7 @@ import path from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import { parseBySyntax } from '@xcon-viewer/core';
-import { getDefaultExportsDir, getMcpDir, resolveXenisHomeDir, XENIS_HOME_ENV } from '../src/main/xenisHome.mjs';
+import { getDefaultExportsDir, getMcpDir, resolveXenisHomeDir } from '../src/main/xenisHome.mjs';
 import { applyTextFileWrite, previewTextFileWrite, restoreTextFileBackup } from './xenesis-desk-file-safety.mjs';
 
 const SERVER_NAME = 'xenesis-mcp';
@@ -262,6 +262,7 @@ const tools = [
   {
     name: 'xenesis_desk_validate_xcon_markdown',
     description: 'Validate Markdown content that contains one or more renderable XCON/SKETCH fences.',
+    annotations: READ_ONLY_TOOL_ANNOTATIONS,
     inputSchema: {
       type: 'object',
       properties: {
@@ -1123,7 +1124,7 @@ const tools = [
   {
     name: 'xenesis_desk_subagent_start',
     description:
-      'Start a Desk-visible subagent session in a separate Xenesis Desk terminal tab. Use this when a parent Codex, Claude, Gemini, or Xenesis session wants delegated work to be visible in its own terminal.',
+      'Start a Desk-visible subagent session in a separate Xenesis Desk terminal tab. Use this when a parent Codex, Claude, Gemini, or Xenesis session wants delegated work to be visible in its own terminal. Started sessions are tagged with the xd visible-subagent skill contract identity.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1611,6 +1612,14 @@ function numericXconPos(value) {
   return pos.every(Number.isFinite) ? pos : null;
 }
 
+function hasLegacyScreenSizeSyntax(source) {
+  const firstLine =
+    String(source || '')
+      .trimStart()
+      .split(/\r?\n/, 1)[0] || '';
+  return /^\s*screen\b[^\r\n]*\bsize\s+\d+\s+\d+\b/i.test(firstLine);
+}
+
 function findNestedCoordinateLayoutErrors(component, pathName = 'root', parent = null, errors = []) {
   const pos = numericXconPos(xconGet(component, 'pos'));
   const parentPos = parent ? numericXconPos(xconGet(parent, 'pos')) : null;
@@ -1655,6 +1664,15 @@ function validateXconMarkdownContent(content) {
         line: fence.line,
         valid: false,
         error: 'xcon-sketch fence must start with screen.',
+      };
+    }
+    if (hasLegacyScreenSizeSyntax(fence.code)) {
+      return {
+        index: fence.index,
+        line: fence.line,
+        valid: false,
+        error:
+          'xcon-sketch screen uses legacy size keyword syntax. Use screen "Name" 390x240, not screen "Name" size 390 240.',
       };
     }
     try {
@@ -1738,10 +1756,6 @@ function bridgeStateFilePathCandidates() {
     process.env.XENIS_DEV_BRIDGE_STATE,
     path.join(getMcpDir(homeOptions) || path.join(homeDir, 'mcp'), 'bridge.json'),
   ]);
-}
-
-function defaultStateFilePath() {
-  return bridgeStateFilePathCandidates()[0] || '';
 }
 
 function readBridgeState() {
@@ -2910,6 +2924,9 @@ function normalizeSubagentAgent(value) {
   return ['codex', 'claude', 'gemini', 'xenesis', 'custom'].includes(agent) ? agent : 'custom';
 }
 
+const XENESIS_VISIBLE_SUBAGENT_SKILL = 'xd';
+const XENESIS_VISIBLE_SUBAGENT_CONTRACT_VERSION = 'visible-subagent-v1';
+
 function buildDefaultSubagentCommand(agent, task) {
   const prompt = quoteSubagentCommandArg(task);
   if (agent === 'claude') return `claude -p ${prompt}`;
@@ -2938,6 +2955,9 @@ function buildSubagentStartRequest(args = {}) {
       kind: 'xenesis-desk-subagent',
       subagentId,
       agent,
+      provider: agent,
+      skill: XENESIS_VISIBLE_SUBAGENT_SKILL,
+      contractVersion: XENESIS_VISIBLE_SUBAGENT_CONTRACT_VERSION,
       task,
       command,
       ...(args.parentTermId === undefined ? {} : { parentTermId: String(args.parentTermId || '').trim() }),

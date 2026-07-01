@@ -26,6 +26,10 @@ when an XCON component exists for that job.
   comparison rows should use `spanGrid`.
 - Comparative values, trends, distributions, forecasts, and rankings should use
   `chart` with the chart type that matches the question.
+- Advanced visualizations should use `dataViz` when a standard chart is too
+  simple: `treemap` for allocation, `sankey` for flow volume, `sunburst` for
+  hierarchy, `chord` for interaction matrices, `forceGraph` for lightweight
+  relations, and `plot` for flexible analytical marks.
 - Sports, league, market, or score standings should combine both: a `spanGrid`
   for the ranked rows and a `chart` for wins, points, percentage, score, or
   rank comparison.
@@ -51,6 +55,26 @@ Known chart types from the XCON family examples include:
 
 Put chart values in `chartData` when the chart is data-bound through Chain or a
 fixture. Keep labels short.
+
+## DataViz Recipes
+
+Use `dataViz` for high-density visual structures that are more expressive than a
+standard chart:
+
+- `vizType "treemap"` for workspace allocation, budget share, portfolio area,
+  storage use, or category weight.
+- `vizType "sankey"` for funnel movement, pipeline handoffs, document flow,
+  dependency transfer, or source-to-target volume.
+- `vizType "sunburst"` for hierarchical breakdowns where each level matters.
+- `vizType "chord"` for reciprocal relationships, module coupling, team
+  interactions, or category cross-impact.
+- `vizType "forceGraph"` for compact relationship exploration when the graph is
+  small and does not need the richer `networkDiagram` controls.
+- `vizType "plot"` for Observable Plot style bar, line, dot, area, or grid
+  marks when a custom analytical chart is clearer than a built-in `chart`.
+
+Keep `dataViz` blocks focused. If the question is about ownership, dependencies,
+topology, impact radius, or process relationships, prefer `networkDiagram`.
 
 ## Map And Network Recipes
 

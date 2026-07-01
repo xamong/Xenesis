@@ -171,6 +171,7 @@ GET_XCON_PROMPT_SCHEMA = _schema(
         "kind": {
             "type": "string",
             "enum": [
+                "workbench-response",
                 "sketch-ui",
                 "markdown-xcon",
                 "dashboard-workflow",

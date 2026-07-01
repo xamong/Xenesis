@@ -25,12 +25,16 @@ screen "Strict Operations Status" 720x480 bg #f8fafc
 
 - The first line inside the `xcon-sketch` fence must be a complete `screen`
   declaration with width and height.
+- Use compact screen dimensions such as `screen "Name" 390x240`.
+- Do not write `screen "Name" size 390 240`; the `size W H` form is invalid.
 - Use one screen only.
 - Every component must have explicit bounds with `at x y width height`.
 - Prefer `panel`, `label`, `button`, `shape`, `line`, `chart`, and `spanGrid`.
 - Do not use lists, xList, chain aliases, workflow actions, API calls, or data
   binding unless the user explicitly asks for them.
 - Do not invent component types or properties.
+- Do not use convenience component names such as `bulletList`, `timeline`,
+  `kpiCard`, or `chartCard`. Compose with supported primitives instead.
 - Keep text short enough to fit the declared bounds.
 - Avoid nested layout tricks when fixed coordinates are enough.
 - Keep the visual hierarchy simple: title, summary, one or two cards, optional
@@ -95,5 +99,6 @@ Before returning, verify:
 - There is one Markdown heading.
 - There is exactly one complete `xcon-sketch` fence.
 - The fence starts with `screen`.
+- The screen line uses compact `WIDTHxHEIGHT` dimensions, not `size W H`.
 - No component lacks bounds.
 - No unsupported or guessed component type is present.

@@ -1,5 +1,84 @@
 # Xenesis Desk Work Handoff
 
+## 2026-07-01 MCP / Providers Folder Sync
+
+- Current objective:
+  - Replace this repo's `mcp` and `providers` source content with the sibling
+    `D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk` versions after comparing
+    differences and receiving user approval to proceed.
+  - Exclude generated Python bytecode (`__pycache__`, `*.pyc`) from the
+    provider copy.
+  - Regenerate provider `xd` skill files from the shared template after copying.
+- Source checkpoint:
+  - `mcp` file lists match exactly; sibling content carries newer XCON/SKETCH
+    validation, prompt, and visible-subagent metadata updates.
+  - `providers` source file lists match after excluding sibling `__pycache__`
+    bytecode; sibling content carries newer Workbench inline XCON, Office,
+    App Control, and visible-subagent instructions plus Hermes
+    `workbench-response` prompt kind support.
+  - Current repo already has the referenced CR paths
+    `xd.office.*`, extended `xd.apps.*`, and `xd.workbench.subagents.*`.
+- Commands run before edit:
+  - Compared file lists and normalized text diffs for both folders.
+  - Sibling syntax checks passed for `mcp/xenesis-desk-mcp-server.mjs`,
+    `mcp/playwright-worker.mjs`, and key Hermes Python modules.
+  - Sibling focused tests passed:
+    `node --test mcp/playwright-worker-source.test.mjs mcp/playwright-worker-input-actions.test.mjs providers/hermes/plugins/xenesis_desk_gateway/e2e_bot/simulator.test.mjs`
+    -> PASS, 14/14.
+  - Current focused test showed one stale expectation in
+    `providers/hermes/plugins/xenesis_desk_gateway/e2e_bot/simulator.test.mjs`
+    that matches the sibling update.
+- Touched files:
+  - `mcp/`: copied sibling prompt pack and MCP server/file-safety/Playwright
+    worker updates, then formatted changed JS with Biome.
+  - `providers/`: copied sibling provider assets excluding `__pycache__` and
+    `*.pyc`, then regenerated provider `xd` skills from
+    `providers/shared/skills/xd/SKILL.md.template`.
+  - `mcp/xenesis-desk-mcp-server.mjs`: kept this repo's product-safe approval
+    text instead of the raw sibling wording that exposed CR path and approval id
+    in the human-readable MCP result.
+  - `handoff.md`: recorded the sync plan, verification, and known gaps.
+- Verification result:
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File providers/scripts/sync-provider-skills.ps1 -ProvidersRoot providers -Check`
+    -> PASS.
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File providers/scripts/sync-hermes-plugins.ps1 -ProvidersRoot providers -Check`
+    -> exit 0, skipped because the local draft Hermes root is missing.
+  - Node syntax checks for `mcp/xenesis-desk-mcp-server.mjs`,
+    `mcp/xenesis-desk-file-safety.mjs`, `mcp/playwright-worker.mjs`,
+    `providers/hermes/plugins/xenesis_desk_gateway/e2e_bot/server.mjs`, and
+    `providers/hermes/plugins/xenesis_desk_gateway/e2e_bot/static/app.js`
+    -> PASS.
+  - Python syntax compile for key Hermes modules -> PASS.
+  - Focused MCP/provider tests:
+    `node --test mcp/playwright-worker-source.test.mjs mcp/playwright-worker-input-actions.test.mjs providers/hermes/plugins/xenesis_desk_gateway/e2e_bot/simulator.test.mjs`
+    -> PASS, 14/14.
+  - Approval output regression:
+    `node --import tsx --test src/main/mcpApprovalOutput.test.ts`
+    -> PASS.
+  - `npx biome check --write ...changed Biome-supported files...` -> PASS.
+  - `npm run typecheck` -> PASS.
+  - `npm test` -> PASS, 709/709.
+  - `npm run check:docs-public` -> PASS.
+  - `npm run check:public-release` -> PASS.
+  - `git diff --check` -> PASS.
+  - `git diff --name-only -- packages/xenesis` -> no output; `packages/xenesis`
+    production code remains untouched.
+  - `Get-ChildItem providers -Recurse -File -Filter *.pyc` -> no provider bytecode
+    files remain after cleanup.
+- Known gaps:
+  - Raw sibling `xenesis_desk_call_capability` approval output failed this
+    repo's policy test because it exposed an internal CR path and approval id in
+    human text. This was intentionally corrected while keeping the payload
+    shape.
+  - Full `npm run lint` still fails on repo-wide pre-existing diagnostics
+    outside this task, including `packages/xenesis` and sample extension files.
+    The changed Biome-supported files pass `npx biome check --write`.
+  - Hermes plugin sync check cannot compare against
+    `D:\CodeTruck\CodeBox\Xamong\06 XCON\draft\hermes-agent-main\plugins`
+    because that local draft root is not present.
+- Next intended step:
+  - User review, then commit and PR if approved.
+
 ## 2026-07-01 Workbench Subagent Port
 
 - Current objective:
@@ -58,6 +137,13 @@
   - Dev bridge direct POST `/capabilities/call` with
     `xd.testing.xenesisAgent.submitPrompt` and a natural-language Workbench
     subagent smoke prompt.
+  - `npm run build`
+  - Inline Playwright/Electron Workbench natural-language smoke using
+    `xd.tools.core.xenesisAgentWorkbench.open`, direct Workbench DOM composer
+    submission, and `xd.workbench.subagents.status` readback before/after.
+  - Inline Playwright/Electron strict Workbench readback smoke requiring
+    `workers=<n>`, `pendingAssignments=<n>`, and `profiles=<names>` in the
+    assistant response.
 - Material decisions:
   - Treat the user's "승인 Workbench subagent 진행해" as the readiness gate for
     current sibling state.
@@ -114,18 +200,57 @@
     pane provider was `codex`, and the transcript showed the provider starting
     the CR call flow, but the run stopped in approval/queued state and did not
     emit the expected `WORKBENCH_SUBAGENT_STATUS_OK` marker within 180 seconds.
+  - `npm run build` -> PASS. Build updated Electron output and emitted existing
+    Vite warnings about D3 namespace guessing, browser-externalized `fs` in
+    `hwp.js`, mixed static/dynamic imports of `src/renderer/deskBridge.ts`,
+    and large renderer chunks. Build side effects in `server/.node-version-built`
+    and `server/database.db` were reverted after verification.
+  - Workbench-specific natural-language smoke -> PARTIAL PASS:
+    Playwright launched the current built Electron app, opened
+    `Xenesis Agent Workbench` via `xd.tools.core.xenesisAgentWorkbench.open`,
+    submitted the natural-language prompt through
+    `.xd-agent-workbench-composer`, and the run completed in 30.150s with the
+    active provider shown as `BYOK (deepseek · deepseek-chat)`. Direct
+    pre/post CR readback of `xd.workbench.subagents.status` passed and returned
+    zero workers, zero pending assignments, and builtin profiles
+    `implementer`, `researcher`, `verifier`. The assistant response included
+    the requested `workbench-subagents-readback-ok` marker and described a
+    Workbench pane path, but it incorrectly summarized the profile list as
+    absent despite the direct CR readback.
+  - Workbench-specific strict readback smoke -> FAIL:
+    the same Workbench path completed in 30.108s and emitted the requested
+    `workbench-subagents-strict-readback-ok` marker, but the assistant did not
+    include `workers=0`, `pendingAssignments=0`, or the direct CR profile names
+    `implementer`, `researcher`, `verifier`. Instead it claimed the structured
+    capability result was only available in the renderer. Direct
+    `xd.workbench.subagents.status` readback in the same smoke still returned
+    the expected structured data, so the remaining gap is provider/Workbench
+    natural-language result fidelity rather than the CR path itself.
+  - The Playwright smoke temporarily moved the MCP bridge to ephemeral local
+    ports (`http://127.0.0.1:59889` and `http://127.0.0.1:59919`) because the
+    packaged Desk app already owned `127.0.0.1:3847`. The script backed up and
+    restored `~/.xenis/mcp/bridge.json` and `xenesis-mcp-config.json`; final
+    bridge state again points at the running packaged app on
+    `http://127.0.0.1:3847`.
   - `git diff --name-only` shows no `packages/xenesis` changes.
 - Known gaps:
   - Natural-language Agent-pane provider smoke remains incomplete. The live CR
     bridge reaches the renderer Workbench, but do not claim provider
     natural-language control until an Agent-pane prompt finishes and proves the
     provider called the CR/MCP path.
+  - Workbench-specific natural-language routing is now proven to open and run
+    from `Xenesis Agent Workbench`, but strict result readback is not proven:
+    the assistant can emit the marker and mention the path while failing to
+    reproduce the structured `xd.workbench.subagents.status` result. Investigate
+    Workbench/provider tool-result propagation and/or add a Workbench testing
+    snapshot helper before claiming full natural-language CR fidelity.
   - Existing root `npm run lint` baseline still fails; do not fix unrelated
     package or legacy lint issues in this slice unless explicitly approved.
 - Next intended step:
-  - Run the natural-language Agent-pane provider smoke if release-level Agent
-    evidence is required, then stage the forced `docs/superpowers/*` plan/spec
-    files together with the code and commit/push/update the PR when approved.
+  - Investigate why Workbench provider responses do not faithfully surface the
+    structured `xd.workbench.subagents.status` result, then rerun the strict
+    Workbench natural-language smoke. If broader release evidence is required,
+    also rerun the normal Agent-pane natural-language smoke separately.
 
 ## 2026-07-01 Plugin MCP Docs Port
 

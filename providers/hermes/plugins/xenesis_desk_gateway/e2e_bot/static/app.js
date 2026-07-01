@@ -203,7 +203,7 @@ function addMessage(role, text, meta = {}) {
     bubble.appendChild(sender);
   }
 
-  if (meta.image && meta.image.base64) {
+  if (meta.image?.base64) {
     const img = document.createElement('img');
     img.className = 'message-image';
     img.src = `data:${meta.image.mimeType || 'image/png'};base64,${meta.image.base64}`;

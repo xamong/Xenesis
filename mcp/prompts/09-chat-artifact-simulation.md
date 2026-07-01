@@ -19,11 +19,16 @@ Rules:
 2. The chat answer should read naturally.
 3. Include one complete `xcon-sketch` fence for the visual artifact.
 4. The xcon-sketch fence must start with `screen`.
-5. The visual artifact should feel like a finished card or mini-dashboard.
-6. Use Markdown before the fence for summary and key points.
-7. Use Chain or Workflow fences only if the answer needs live data binding or
+5. Screen dimensions must use compact syntax such as `screen "Name" 390x240`;
+   do not write `screen "Name" size 390 240`.
+6. The visual artifact should feel like a finished card or mini-dashboard.
+7. Use Markdown before the fence for summary and key points.
+8. Use Chain or Workflow fences only if the answer needs live data binding or
    process visualization.
-8. Do not expose implementation logs in the chat answer.
+9. Do not invent SKETCH component types such as `bulletList`, `timeline`,
+   `kpiCard`, or `chartCard`. Use Markdown bullets outside SKETCH, or use valid
+   `list`, `spanGrid`, `chart`, `panel`, and `label` compositions inside SKETCH.
+10. Do not expose implementation logs in the chat answer.
 
 Return:
 - A conversational Markdown answer.
@@ -64,4 +69,3 @@ screen "Seoul Weather Brief" 720x520 bg #f8fafc
         weight 800
 ```
 ````
-
