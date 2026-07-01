@@ -27168,3 +27168,53 @@ Verification so far:
     0; no new formatter errors remain.
 - Next intended step:
   - Commit the Office Control implementation, push `mini`, and update PR #13.
+
+## 2026-07-01 Office Control Task 8 Commit Push PR
+
+- Current objective:
+  - Publish the Office Control implementation on `mini` and update the open PR.
+- Touched files:
+  - `handoff.md`
+- Commands run:
+  - Branch/status:
+    `git rev-parse --abbrev-ref HEAD`
+  - Worktree detection:
+    `git rev-parse --git-dir; git rev-parse --git-common-dir; git rev-parse --show-toplevel`
+  - Final status: `git status --short`
+  - No-package check: `git diff --name-only -- packages/xenesis`
+  - Whitespace check: `git diff --check`
+  - Stage:
+    `git add docs/capability-registry-audit.md handoff.md scripts/nativeToolsPackaging.test.ts src/shared/officeControl.ts src/shared/officeControl.test.ts src/shared/officeCapabilities.test.ts src/shared/deskBridgeCapabilities.ts src/shared/types.ts src/shared/xenesisSettingsCatalog.mjs src/shared/xenesisSettingsCatalog.d.ts src/shared/xenesisSettingsCatalog.d.mts src/main/officeControl src/main/index.ts src/renderer/panes/SettingsPane.tsx src/renderer/i18n/en.ts src/renderer/i18n/ko.ts`
+  - Staged diff:
+    `git diff --cached --stat`
+  - Staged no-package check:
+    `git diff --cached --name-only -- packages/xenesis`
+  - Commit:
+    `git commit -m "Add Office Control CR surface"`
+  - Push:
+    `git push origin mini`
+  - PR read:
+    `gh pr view 13 --json number,title,url,headRefName,baseRefName,state`
+  - PR update:
+    `gh pr edit 13 --title "Port Meta, Agent Sessions, App Control, and Office Control" --body-file -`
+- Exact verification result:
+  - Current branch was `mini`; normal repo state (`.git` equals common dir).
+  - `git diff --name-only -- packages/xenesis` printed nothing before commit.
+  - `git diff --check` exited 0 with only LF-to-CRLF warnings for
+    `docs/capability-registry-audit.md` and `handoff.md`.
+  - Staged diff included only Office Control files, settings/UI wiring,
+    generated audit, and `handoff.md`; staged `packages/xenesis` diff was empty.
+  - Implementation commit created:
+    `b7f0600 Add Office Control CR surface`.
+  - `git push origin mini` succeeded:
+    `981a909..b7f0600 mini -> mini`.
+  - PR #13 was open for `mini -> main`:
+    `https://github.com/xamong/Xenesis/pull/13`.
+  - PR title/body were updated with Office Control summary, verification
+    commands, live smoke markers, full-lint warning state, and
+    `packages/xenesis` no-diff result.
+- Known gaps:
+  - This section itself still needs to be committed and pushed as the final
+    handoff-only update.
+- Next intended step:
+  - Commit and push the handoff-only PR update record.
