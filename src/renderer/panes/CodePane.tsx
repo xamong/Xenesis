@@ -8,8 +8,10 @@ import { xml } from '@codemirror/lang-xml';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { EditorView } from '@codemirror/view';
 import CodeMirror, { type ReactCodeMirrorRef } from '@uiw/react-codemirror';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { RemoteFileProfile } from '../../shared/types';
+import { createCodeMirrorAdapter } from '../editing/codeMirrorAdapter';
+import { useEditableSurface } from '../editing/useEditableSurface';
 import { usePaneRefresh } from '../hooks/usePaneRefresh';
 import { useI18n } from '../i18n';
 import { readEditableText, saveEditableText } from '../utils/editableFileIo';
@@ -142,16 +144,19 @@ export function CodePane({
     }
   }, [content, t]);
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        handleSave();
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [handleSave]);
+  const codeEditAdapter = useMemo(
+    () =>
+      createCodeMirrorAdapter({
+        id: `code:${filePath || fileName}`,
+        label: fileName,
+        getView: () => editorRef.current?.view,
+        readOnly: () => isReadOnly,
+        canSave: () => isModified && !isSaving,
+        onSave: handleSave,
+      }),
+    [fileName, filePath, handleSave, isModified, isReadOnly, isSaving],
+  );
+  const codeEditSurface = useEditableSurface({ adapter: codeEditAdapter, includeSave: true });
 
   const extensions = [
     ...(langExt ? [langExt] : []),
@@ -207,7 +212,13 @@ export function CodePane({
       </div>
 
       {/* height 지정 없이 렌더 — CSS position:absolute+inset:0 이 크기를 담당 */}
-      <div className="code-editor-wrap">
+      <div
+        className="code-editor-wrap"
+        onFocusCapture={codeEditSurface.onFocusCapture}
+        onPointerDownCapture={codeEditSurface.onPointerDownCapture}
+        onContextMenu={codeEditSurface.onContextMenu}
+        onKeyDown={codeEditSurface.onKeyDown}
+      >
         <CodeMirror
           ref={editorRef}
           value={content}
@@ -238,6 +249,7 @@ export function CodePane({
           }}
         />
       </div>
+      {codeEditSurface.menuElement}
 
       <div className="code-statusbar">
         <span>{t('code.lineCol', { line: String(cursorPos.line), col: String(cursorPos.col) })}</span>

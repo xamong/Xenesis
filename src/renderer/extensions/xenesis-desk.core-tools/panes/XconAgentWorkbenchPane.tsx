@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import type {
   FsEntry,
   LocalCliAgentStatus,
@@ -16,6 +15,8 @@ import {
   shouldConsumeXenesisRunEvent,
   XENESIS_AGENT_WORKBENCH_RUN_SOURCE,
 } from '../../../../shared/xenesisRunEventScope';
+import { createNativeTextAdapter } from '../../../editing/nativeTextAdapter';
+import { useEditableSurface } from '../../../editing/useEditableSurface';
 import { StreamingXconMarkdown } from '../../../markdown/StreamingXconMarkdown';
 import {
   appendXconWorkbenchAssistantDelta,
@@ -167,15 +168,6 @@ interface XconAgentWorkbenchPaneCacheState {
   subagentWorkers: XconWorkbenchSubagentWorker[];
   workerAttachError: string;
   pendingSubagentAssignments: XconWorkbenchSubagentAssignment[];
-}
-
-type ComposerContextAction = 'cut' | 'copy' | 'paste' | 'selectAll';
-
-interface ComposerContextMenuState {
-  x: number;
-  y: number;
-  canEdit: boolean;
-  hasSelection: boolean;
 }
 
 interface DispatchXconWorkbenchSubagentAssignmentResult {
@@ -372,26 +364,6 @@ function approvalPreview(item: XenesisApprovalRequest): string {
     }
   }
   return item.command;
-}
-
-async function writeComposerClipboardText(text: string): Promise<boolean> {
-  if (!text) return false;
-  if (!navigator.clipboard?.writeText) return document.execCommand('copy');
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    return document.execCommand('copy');
-  }
-}
-
-async function readComposerClipboardText(): Promise<string> {
-  if (!navigator.clipboard?.readText) return '';
-  try {
-    return (await navigator.clipboard.readText()) || '';
-  } catch {
-    return '';
-  }
 }
 
 function sleep(ms: number): Promise<void> {
@@ -674,7 +646,6 @@ export function XconAgentWorkbenchPane() {
     () => restoredPaneState.pendingSubagentAssignments,
   );
   const [attachmentDropActive, setAttachmentDropActive] = useState(false);
-  const [composerContextMenu, setComposerContextMenu] = useState<ComposerContextMenuState | null>(null);
   const runningRef = useRef(restoredPaneState.running);
   const exampleRunningRef = useRef(false);
   const exampleRunTokenRef = useRef(0);
@@ -690,6 +661,17 @@ export function XconAgentWorkbenchPane() {
   const attachmentInputRef = useRef<HTMLInputElement>(null);
   const attachmentDragDepthRef = useRef(0);
   const recoveredManagedWorkerTerminalsRef = useRef<Set<string>>(new Set());
+
+  const workbenchPromptAdapter = useMemo(
+    () =>
+      createNativeTextAdapter({
+        id: 'xcon-agent-workbench-prompt',
+        label: 'Xenesis Agent Workbench prompt',
+        getElement: () => promptTextAreaRef.current,
+      }),
+    [],
+  );
+  const workbenchPromptSurface = useEditableSurface({ adapter: workbenchPromptAdapter, includeSave: false });
 
   if (!refsRestoredRef.current) {
     activeAssistantIdRef.current = restoredPaneState.activeAssistantId;
@@ -1159,26 +1141,6 @@ export function XconAgentWorkbenchPane() {
     textarea.style.height = `${nextHeight}px`;
     textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
   }, [prompt]);
-
-  useEffect(() => {
-    if (!composerContextMenu) return undefined;
-
-    const closeMenu = () => setComposerContextMenu(null);
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closeMenu();
-    };
-
-    window.addEventListener('pointerdown', closeMenu);
-    window.addEventListener('resize', closeMenu);
-    window.addEventListener('scroll', closeMenu, true);
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('pointerdown', closeMenu);
-      window.removeEventListener('resize', closeMenu);
-      window.removeEventListener('scroll', closeMenu, true);
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [composerContextMenu]);
 
   const addAttachmentFiles = useCallback(
     async (files: FileList | File[]): Promise<void> => {
@@ -1912,70 +1874,6 @@ export function XconAgentWorkbenchPane() {
       void addAttachmentFiles(event.dataTransfer.files);
     } else if (localExplorerPath) {
       void addAttachmentPaths([localExplorerPath]);
-    }
-  }
-
-  function handleComposerContextMenu(event: React.MouseEvent<HTMLTextAreaElement>): void {
-    const textarea = event.currentTarget;
-    event.preventDefault();
-    event.stopPropagation();
-    const selectionStart = textarea.selectionStart ?? 0;
-    const selectionEnd = textarea.selectionEnd ?? selectionStart;
-    setComposerContextMenu({
-      x: event.clientX,
-      y: event.clientY,
-      canEdit: !textarea.disabled && !textarea.readOnly,
-      hasSelection: selectionEnd > selectionStart,
-    });
-    textarea.focus();
-  }
-
-  async function runComposerContextAction(action: ComposerContextAction): Promise<void> {
-    const textarea = promptTextAreaRef.current;
-    setComposerContextMenu(null);
-    if (!textarea) return;
-
-    const selectionStart = textarea.selectionStart ?? 0;
-    const selectionEnd = textarea.selectionEnd ?? selectionStart;
-    const selectedText = textarea.value.slice(selectionStart, selectionEnd);
-    const canEdit = !textarea.disabled && !textarea.readOnly;
-    textarea.focus();
-
-    if (action === 'selectAll') {
-      textarea.select();
-      return;
-    }
-
-    if (action === 'copy') {
-      if (selectedText) await writeComposerClipboardText(selectedText);
-      return;
-    }
-
-    if (action === 'cut') {
-      if (!selectedText || !canEdit) return;
-      await writeComposerClipboardText(selectedText);
-      const nextPrompt = `${textarea.value.slice(0, selectionStart)}${textarea.value.slice(selectionEnd)}`;
-      setPrompt(nextPrompt);
-      window.requestAnimationFrame(() => {
-        promptTextAreaRef.current?.setSelectionRange(selectionStart, selectionStart);
-        promptTextAreaRef.current?.focus();
-      });
-      return;
-    }
-
-    if (action === 'paste') {
-      if (!canEdit) return;
-      const clipboardText = await readComposerClipboardText();
-      if (!clipboardText) return;
-      const nextPrompt = `${textarea.value.slice(0, selectionStart)}${clipboardText}${textarea.value.slice(
-        selectionEnd,
-      )}`;
-      const nextCaret = selectionStart + clipboardText.length;
-      setPrompt(nextPrompt);
-      window.requestAnimationFrame(() => {
-        promptTextAreaRef.current?.setSelectionRange(nextCaret, nextCaret);
-        promptTextAreaRef.current?.focus();
-      });
     }
   }
 
@@ -3022,8 +2920,13 @@ export function XconAgentWorkbenchPane() {
             ref={promptTextAreaRef}
             value={prompt}
             onChange={(event) => setPrompt(event.target.value)}
-            onKeyDown={handlePromptKeyDown}
-            onContextMenu={handleComposerContextMenu}
+            onFocusCapture={workbenchPromptSurface.onFocusCapture}
+            onPointerDownCapture={workbenchPromptSurface.onPointerDownCapture}
+            onContextMenu={workbenchPromptSurface.onContextMenu}
+            onKeyDown={(event) => {
+              workbenchPromptSurface.onKeyDown(event);
+              if (!event.defaultPrevented) handlePromptKeyDown(event);
+            }}
             placeholder={
               pendingApprovalCount > 0
                 ? 'Type 승인 or 거절, or use the approval buttons...'
@@ -3032,51 +2935,7 @@ export function XconAgentWorkbenchPane() {
             disabled={composerDisabled}
             rows={2}
           />
-          {composerContextMenu
-            ? createPortal(
-                <div
-                  className="xd-agent-workbench-context-menu"
-                  role="menu"
-                  style={{ left: composerContextMenu.x, top: composerContextMenu.y }}
-                  onPointerDown={(event) => event.stopPropagation()}
-                  onContextMenu={(event) => event.preventDefault()}
-                >
-                  <button
-                    type="button"
-                    role="menuitem"
-                    disabled={!composerContextMenu.canEdit || !composerContextMenu.hasSelection}
-                    onClick={() => void runComposerContextAction('cut')}
-                  >
-                    Cut
-                  </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    disabled={!composerContextMenu.hasSelection}
-                    onClick={() => void runComposerContextAction('copy')}
-                  >
-                    Copy
-                  </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    disabled={!composerContextMenu.canEdit}
-                    onClick={() => void runComposerContextAction('paste')}
-                  >
-                    Paste
-                  </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    disabled={!prompt}
-                    onClick={() => void runComposerContextAction('selectAll')}
-                  >
-                    Select all
-                  </button>
-                </div>,
-                document.body,
-              )
-            : null}
+          {workbenchPromptSurface.menuElement}
           <button
             type="button"
             className="xd-agent-workbench-attachment-button is-attach"

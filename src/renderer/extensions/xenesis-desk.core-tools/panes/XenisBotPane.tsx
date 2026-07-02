@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { McpBridgeBotApprovalUi, McpBridgeBotArtifact, McpBridgeBotChannelName } from '../../../../shared/types';
+import { createNativeTextAdapter } from '../../../editing/nativeTextAdapter';
+import { useEditableSurface } from '../../../editing/useEditableSurface';
 import { StreamingXconMarkdown } from '../../../markdown/StreamingXconMarkdown';
 import {
   getRendererPerformanceTraceDuration,
@@ -492,9 +494,20 @@ export function XenisBotPane({ sessionId = 'xenesis-bot', inputUrl, source, chan
   const [starterMenuOpen, setStarterMenuOpen] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const starterMenuRef = useRef<HTMLDivElement>(null);
+  const composerTextAreaRef = useRef<HTMLTextAreaElement>(null);
   const messageRefs = useRef<Map<string, HTMLElement>>(new Map());
   const shouldStickToBottomRef = useRef(true);
   const highlightTimerRef = useRef<number | undefined>(undefined);
+  const xenisBotComposerAdapter = useMemo(
+    () =>
+      createNativeTextAdapter({
+        id: `xenis-bot-composer:${resolvedSessionId}`,
+        label: 'Xenesis Bot composer',
+        getElement: () => composerTextAreaRef.current,
+      }),
+    [resolvedSessionId],
+  );
+  const xenisBotComposerSurface = useEditableSurface({ adapter: xenisBotComposerAdapter, includeSave: false });
 
   useEffect(() => subscribeXenisBotSession(resolvedSessionId, setSession), [resolvedSessionId]);
 
@@ -778,13 +791,21 @@ export function XenisBotPane({ sessionId = 'xenesis-bot', inputUrl, source, chan
       />
       <form className="xdbot-composer" onSubmit={sendMessage}>
         <textarea
+          ref={composerTextAreaRef}
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
-          onKeyDown={handleComposerKeyDown}
+          onFocusCapture={xenisBotComposerSurface.onFocusCapture}
+          onPointerDownCapture={xenisBotComposerSurface.onPointerDownCapture}
+          onContextMenu={xenisBotComposerSurface.onContextMenu}
+          onKeyDown={(event) => {
+            xenisBotComposerSurface.onKeyDown(event);
+            if (!event.defaultPrevented) handleComposerKeyDown(event);
+          }}
           aria-label={`Message ${channelLabel}`}
           placeholder={`Message ${channelLabel}`}
           rows={3}
         />
+        {xenisBotComposerSurface.menuElement}
         <button type="submit" disabled={!canSend}>
           Send
         </button>

@@ -150,6 +150,7 @@ declare global {
 }
 
 import { deskBridge, getDeskBridgeApi } from './deskBridge';
+import { GlobalNativeEditSurface } from './editing/globalNativeEditSurface';
 import { openExtensionTool, useRendererExtensionEvents } from './extensions/registry';
 import {
   buildFileBotContextMessage,
@@ -6759,6 +6760,7 @@ export default function App() {
             </div>
           </div>
         )}
+        <GlobalNativeEditSurface />
         <GowooriGlobalOverlay overlay={gowooriOverlay} onClose={closeGowooriOverlay} />
         {/* ── 분리 창 모드: 간소화된 툴바 ──────────────────────────────────── */}
         {isDetachedWindow ? (
