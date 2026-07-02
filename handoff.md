@@ -1,5 +1,64 @@
 # Xenesis Desk Work Handoff
 
+## 2026-07-02 Linux Core Support Packaging
+
+- Current objective:
+  - Apply the remaining sibling Linux core support spec slice after PR #18 and
+    PR #19 were merged and `mini` was synced to `origin/main`.
+  - Keep the scope to experimental Electron core packaging and public docs.
+  - Do not add Linux external app-control or installed Office automation.
+- Source checkpoint:
+  - Sibling spec:
+    `D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk\docs\superpowers\specs\2026-06-29-linux-core-support-design.md`.
+  - Current `package.json` already has `build:helpers:linux`, but lacks
+    `pack:linux`, `dist:linux`, and `build.linux`.
+  - Current README files list Linux generally, but do not state the
+    experimental core-support boundary or Linux package commands.
+  - Meta Management Commercialization was rechecked separately and already has
+    the required `/api/meta/*`, validation, changelog, activity, summary, and
+    read-only SQL guardrails.
+- Touched files planned:
+  - `scripts/nativeToolsPackaging.test.ts`
+  - `package.json`
+  - `README.md`
+  - `README.ko.md`
+  - `docs/superpowers/outputs/2026-07-02-sibling-spec-adoption-audit.md`
+  - Local ignored:
+    `docs/superpowers/plans/2026-07-02-linux-core-support.md`
+- Verification so far:
+  - Worktree setup: `npm install` completed; existing npm audit result reports
+    12 vulnerabilities.
+  - Baseline:
+    `node --import tsx --test scripts/nativeToolsPackaging.test.ts` -> PASS,
+    5/5 tests before Linux guard additions.
+  - RED:
+    `node --import tsx --test scripts/nativeToolsPackaging.test.ts` -> FAIL
+    as expected before implementation because `pack:linux`, `dist:linux`,
+    `build.linux`, and Linux experimental docs were absent.
+  - GREEN focused:
+    `node --import tsx --test scripts/nativeToolsPackaging.test.ts` -> PASS,
+    7/7 tests after Linux package/docs changes.
+  - Meta focused server tests:
+    `node --test server/metaManagementStore.test.mjs server/crMetadataStore.test.mjs server/metaLocalServerRoutes.test.mjs`
+    -> PASS, 27/27 tests.
+  - Meta focused renderer tests:
+    `node --import tsx --test src/renderer/extensions/xenesis-desk.data-tools/metaManagementAssistPanelModel.test.ts src/renderer/extensions/xenesis-desk.data-tools/metaManagementRelationGraph.test.ts src/renderer/extensions/xenesis-desk.data-tools/metaManagementRelationTabs.test.ts src/renderer/extensions/xenesis-desk.data-tools/panes/SqliteServerSettingsPane.test.ts`
+    -> PASS, 10/10 tests.
+  - `npm run typecheck` -> PASS.
+  - `npm test` -> PASS, 729/729 tests.
+  - `npm run check:public-release` -> PASS.
+  - `git diff --check` -> exit 0 with Windows LF/CRLF normalization warnings
+    only.
+- Material decisions:
+  - Keep Linux support explicitly scoped to Electron core behavior and
+    AppImage/deb packaging.
+  - Do not route Linux packaging through Windows or macOS helper builds.
+  - Document that Linux excludes `xd.apps.*` external app control and installed
+    Office automation in this slice.
+- Next intended step:
+  - Commit the Linux core support slice, push `linux-core-support`, and open a
+    PR to `main`.
+
 ## 2026-07-01 Settings Section Switch Responsiveness
 
 - Current objective:

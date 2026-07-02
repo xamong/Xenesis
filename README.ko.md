@@ -159,7 +159,7 @@ xenesis-desk/
 
 | 항목 | 요구사항 |
 |---|---|
-| OS | Windows 10 1809+ / Windows 11 / macOS / Linux |
+| OS | Windows 10 1809+ / Windows 11 / macOS / Linux 실험적 코어 지원 |
 | Node.js | 22.12 이상 |
 | npm | 10 이상 |
 | C++ 빌드 도구 | `better-sqlite3` 컴파일 시 필요 (Windows: Visual Studio Build Tools 2022) |
@@ -188,10 +188,20 @@ npm run build                  # 타입 체크 + 프로덕션 빌드
 npm run pack:win               # Windows 언패키지 빌드
 npm run dist:win               # Windows 인스톨러 (NSIS + portable)
 npm run dist:mac               # macOS 빌드 (dmg + zip)
+npm run pack:linux             # Linux: 실험적 코어 지원 언패키지 빌드
+npm run dist:linux             # Linux: 실험적 코어 지원 빌드 (AppImage + deb)
 npm run check:docs-public      # 공개 문서의 로컬 경로/토큰 패턴 검사
 npm run check:public-release   # 공개 소스 경계 검사
 npm run check:public-release:ci
 ```
+
+### 플랫폼 지원 범위
+
+| 플랫폼 | 지원 단계 | 비고 |
+|---|---|---|
+| Windows | 기본 지원 | 코어 앱, 터미널, 워크스페이스 UI, 내장 서버, 네이티브 앱 제어, 설치된 Office 자동화. |
+| macOS | 부분 지원 | 코어 앱과 사용 가능한 macOS 앱 제어 호스트. |
+| Linux | Linux: 실험적 코어 지원 | Electron shell, 워크스페이스 UI, 터미널, 파일, 브라우저 pane, MCP/Capability Registry, Gowoori/XCON 렌더링, AppImage/deb 패키징. Linux에서는 현재 `xd.apps.*` 외부 앱 제어와 설치된 Office 자동화가 제외됩니다. |
 
 ---
 
