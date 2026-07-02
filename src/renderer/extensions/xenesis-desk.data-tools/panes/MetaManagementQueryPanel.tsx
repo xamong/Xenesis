@@ -1,3 +1,6 @@
+import { useMemo, useRef } from 'react';
+import { createNativeTextAdapter } from '../../../editing/nativeTextAdapter';
+import { useEditableSurface } from '../../../editing/useEditableSurface';
 import type { UseMetaManagementQueryResult } from '../useMetaManagementQuery';
 
 export interface MetaManagementQueryPanelProps {
@@ -7,6 +10,17 @@ export interface MetaManagementQueryPanelProps {
 }
 
 export function MetaManagementQueryPanel({ queryTools, isLoading, t }: MetaManagementQueryPanelProps) {
+  const queryTextAreaRef = useRef<HTMLTextAreaElement>(null);
+  const metaQueryAdapter = useMemo(
+    () =>
+      createNativeTextAdapter({
+        id: 'meta-management-query',
+        label: 'Meta Management query',
+        getElement: () => queryTextAreaRef.current,
+      }),
+    [],
+  );
+  const metaQuerySurface = useEditableSurface({ adapter: metaQueryAdapter, includeSave: false });
   const sampleCats = [t('meta.sampleCatDefault'), t('meta.sampleCatMeta')];
 
   return (
@@ -21,17 +35,24 @@ export function MetaManagementQueryPanel({ queryTools, isLoading, t }: MetaManag
         <div className="mm-query-body">
           <div className="mm-query-row">
             <textarea
+              ref={queryTextAreaRef}
               className="mm-query-textarea"
               value={queryTools.query}
               onChange={(event) => queryTools.setQuery(event.target.value)}
               placeholder={t('meta.sqlPlaceholder')}
+              onFocusCapture={metaQuerySurface.onFocusCapture}
+              onPointerDownCapture={metaQuerySurface.onPointerDownCapture}
+              onContextMenu={metaQuerySurface.onContextMenu}
               onKeyDown={(event) => {
+                metaQuerySurface.onKeyDown(event);
+                if (event.defaultPrevented) return;
                 if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
                   event.preventDefault();
                   queryTools.executeQuery();
                 }
               }}
             />
+            {metaQuerySurface.menuElement}
             <div className="mm-query-actions">
               <button
                 className="mm-btn primary"

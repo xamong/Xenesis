@@ -40,3 +40,75 @@ test('Obsidian vault viewer uses shared edit surfaces for search and preview', (
   assert.match(previewSource, /createPreviewAdapter/);
   assert.match(previewSource, /vaultMarkdownPreviewSurface\.onContextMenu/);
 });
+
+test('saveable document panes use shared editable surfaces', () => {
+  const codePane = readFileSync('src/renderer/panes/CodePane.tsx', 'utf8');
+  const markdownPane = readFileSync('src/renderer/panes/MarkdownPane.tsx', 'utf8');
+  const xconViewerPane = readFileSync('src/renderer/panes/XconViewerPane.tsx', 'utf8');
+  const safeFileEditCenterPane = readFileSync(
+    'src/renderer/extensions/xenesis-desk.core-tools/panes/SafeFileEditCenterPane.tsx',
+    'utf8',
+  );
+
+  assert.match(codePane, /createCodeMirrorAdapter/);
+  assert.match(codePane, /useEditableSurface/);
+  assert.match(codePane, /codeEditSurface\.onContextMenu/);
+
+  assert.match(markdownPane, /createCodeMirrorAdapter/);
+  assert.match(markdownPane, /createPreviewAdapter/);
+  assert.match(markdownPane, /markdownEditSurface\.onContextMenu/);
+  assert.match(markdownPane, /markdownPreviewSurface\.onContextMenu/);
+
+  assert.match(xconViewerPane, /createCodeMirrorAdapter/);
+  assert.match(xconViewerPane, /createPreviewAdapter/);
+  assert.match(xconViewerPane, /xconSourceSurface\.onContextMenu/);
+  assert.match(xconViewerPane, /xconPreviewSurface\.onContextMenu/);
+
+  assert.match(safeFileEditCenterPane, /createNativeTextAdapter/);
+  assert.match(safeFileEditCenterPane, /safeFileDraftSurface\.onContextMenu/);
+});
+
+test('high-traffic input composers use shared native editable surfaces', () => {
+  const workbenchPane = readFileSync(
+    'src/renderer/extensions/xenesis-desk.core-tools/panes/XconAgentWorkbenchPane.tsx',
+    'utf8',
+  );
+  const agentPane = readFileSync('src/renderer/extensions/xenesis-desk.core-tools/panes/XenesisAgentPane.tsx', 'utf8');
+  const botPane = readFileSync('src/renderer/extensions/xenesis-desk.core-tools/panes/XenisBotPane.tsx', 'utf8');
+  const commandCenterPane = readFileSync('src/renderer/panes/CommandCenterPane.tsx', 'utf8');
+  const metaQueryPanel = readFileSync(
+    'src/renderer/extensions/xenesis-desk.data-tools/panes/MetaManagementQueryPanel.tsx',
+    'utf8',
+  );
+
+  assert.match(workbenchPane, /createNativeTextAdapter/);
+  assert.match(workbenchPane, /workbenchPromptSurface\.onContextMenu/);
+  assert.doesNotMatch(workbenchPane, /ComposerContextMenuState/);
+
+  assert.match(agentPane, /createNativeTextAdapter/);
+  assert.match(agentPane, /xenesisPromptSurface\.onContextMenu/);
+
+  assert.match(botPane, /createNativeTextAdapter/);
+  assert.match(botPane, /xenisBotComposerSurface\.onContextMenu/);
+
+  assert.match(commandCenterPane, /createNativeTextAdapter/);
+  assert.match(commandCenterPane, /commandCenterInputSurface\.onContextMenu/);
+
+  assert.match(metaQueryPanel, /createNativeTextAdapter/);
+  assert.match(metaQueryPanel, /metaQuerySurface\.onContextMenu/);
+});
+
+test('remaining safe native text inputs use a global shared edit surface', () => {
+  const appSource = readFileSync('src/renderer/App.tsx', 'utf8');
+  const globalSurface = readFileSync('src/renderer/editing/globalNativeEditSurface.tsx', 'utf8');
+
+  assert.match(appSource, /GlobalNativeEditSurface/);
+  assert.match(globalSurface, /createNativeTextAdapter/);
+  assert.match(globalSurface, /EditContextMenu/);
+  assert.match(globalSurface, /resolveEditShortcut/);
+  assert.match(globalSurface, /isEligibleGlobalNativeEditElement/);
+  assert.match(globalSurface, /SECRET_FIELD_PATTERN/);
+  assert.match(globalSurface, /password/);
+  assert.match(globalSurface, /api-?key/);
+  assert.match(globalSurface, /contenteditable/i);
+});

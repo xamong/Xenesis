@@ -150,6 +150,7 @@ declare global {
 }
 
 import { deskBridge, getDeskBridgeApi } from './deskBridge';
+import { GlobalNativeEditSurface } from './editing/globalNativeEditSurface';
 import { openExtensionTool, useRendererExtensionEvents } from './extensions/registry';
 import {
   buildFileBotContextMessage,
@@ -1616,6 +1617,7 @@ export default function App() {
             fileName: payload.fileName,
             fileContent: payload.fileContent,
             fileExt: payload.fileExt,
+            browserSourceKind: payload.browserSourceKind,
             state: 'document',
           });
         } catch (err) {
@@ -1657,6 +1659,7 @@ export default function App() {
           fileName: payload.fileName,
           fileContent: payload.fileContent,
           fileExt: payload.fileExt,
+          browserSourceKind: payload.browserSourceKind,
           state: 'document',
         });
       } catch (err) {
@@ -1699,6 +1702,7 @@ export default function App() {
           fileName: payload.fileName,
           fileContent: payload.fileContent,
           fileExt: payload.fileExt,
+          browserSourceKind: payload.browserSourceKind,
           state: 'document',
         });
       } catch (err) {
@@ -2696,6 +2700,7 @@ export default function App() {
 
       // SVG / HTML / HTM: 브라우저 패인에서 file:// URL로 열기
       if (result.ext === 'svg' || result.ext === 'html' || result.ext === 'htm') {
+        const isHtml = result.ext === 'html' || result.ext === 'htm';
         const fileUrl = 'file:///' + result.filePath.replace(/\\/g, '/');
         const label = result.ext === 'svg' ? t('app.svgBrowser') : t('app.webBrowser');
         engine.addContent({
@@ -2705,6 +2710,15 @@ export default function App() {
           html: '',
           contentType: 'browser',
           url: fileUrl,
+          ...(isHtml
+            ? {
+                filePath: result.filePath,
+                fileName: result.fileName,
+                fileContent: result.content,
+                fileExt: result.ext,
+                browserSourceKind: 'local-file' as const,
+              }
+            : {}),
         });
         handleStatus(t('app.fileOpenedLabel', { fileName: result.fileName, label }));
         return;
@@ -2781,6 +2795,7 @@ export default function App() {
         }
 
         if (ext === 'svg' || ext === 'html' || ext === 'htm') {
+          const isHtml = ext === 'html' || ext === 'htm';
           const fileUrl = 'file:///' + filePath.replace(/\\/g, '/');
           engine.addContentWithPlacement(
             {
@@ -2790,6 +2805,15 @@ export default function App() {
               html: '',
               contentType: 'browser',
               url: fileUrl,
+              ...(isHtml
+                ? {
+                    filePath: result.filePath,
+                    fileName: result.fileName,
+                    fileContent: result.content,
+                    fileExt: result.ext,
+                    browserSourceKind: 'local-file' as const,
+                  }
+                : {}),
               renderOptions,
             },
             placement,
@@ -3618,9 +3642,26 @@ export default function App() {
 
       // SVG / HTML / HTM → blob URL로 브라우저 패인
       if (['svg', 'html', 'htm'].includes(ext)) {
-        const blob = new Blob([await file.text()], { type: file.type || 'text/html' });
+        const content = await file.text();
+        const blob = new Blob([content], { type: file.type || 'text/html' });
         const blobUrl = URL.createObjectURL(blob);
-        engine.addContent({ id, title: name, state: 'document', html: '', contentType: 'browser', url: blobUrl });
+        const isHtml = ext === 'html' || ext === 'htm';
+        engine.addContent({
+          id,
+          title: name,
+          state: 'document',
+          html: '',
+          contentType: 'browser',
+          url: blobUrl,
+          fileName: name,
+          fileExt: ext,
+          ...(isHtml
+            ? {
+                fileContent: content,
+                browserSourceKind: 'dropped-file' as const,
+              }
+            : {}),
+        });
         handleStatus(t('app.openedBrowser', { name }));
         return;
       }
@@ -3919,6 +3960,7 @@ export default function App() {
         fileName: content.fileName,
         fileContent: content.fileContent,
         fileExt: content.fileExt,
+        browserSourceKind: content.browserSourceKind,
         requestedWindowBounds: mode === 'detach' ? buildRequestedDetachedWindowBounds(metadata?.dropPoint) : undefined,
       };
 
@@ -6718,6 +6760,7 @@ export default function App() {
             </div>
           </div>
         )}
+        <GlobalNativeEditSurface />
         <GowooriGlobalOverlay overlay={gowooriOverlay} onClose={closeGowooriOverlay} />
         {/* ── 분리 창 모드: 간소화된 툴바 ──────────────────────────────────── */}
         {isDetachedWindow ? (

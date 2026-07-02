@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { createNativeTextAdapter } from '../editing/nativeTextAdapter';
+import { useEditableSurface } from '../editing/useEditableSurface';
 import { useI18n } from '../i18n';
 import type { CommandInputMode, CommandLineEnding } from './commandCenterModel';
 
@@ -100,6 +102,16 @@ export function CommandCenterPane({
   sendingSequence,
 }: CommandCenterPaneProps) {
   const { t } = useI18n();
+  const commandCenterInputAdapter = useMemo(
+    () =>
+      createNativeTextAdapter({
+        id: 'command-center-input',
+        label: 'Command Center input',
+        getElement: () => inputRef.current,
+      }),
+    [inputRef],
+  );
+  const commandCenterInputSurface = useEditableSurface({ adapter: commandCenterInputAdapter, includeSave: false });
   const activeTerminalText = hasActiveTerminal
     ? t('app.activeTerminalTitle', { id: activeTermId.slice(0, 8) })
     : t('app.noActiveTerminalTitle');
@@ -279,11 +291,18 @@ export function CommandCenterPane({
           className="cmd-bar-input command-center-input"
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          onKeyDown={onKeyDown}
+          onFocusCapture={commandCenterInputSurface.onFocusCapture}
+          onPointerDownCapture={commandCenterInputSurface.onPointerDownCapture}
+          onContextMenu={commandCenterInputSurface.onContextMenu}
+          onKeyDown={(event) => {
+            commandCenterInputSurface.onKeyDown(event);
+            if (!event.defaultPrevented) onKeyDown(event);
+          }}
           placeholder={resolvedTargetCount > 0 ? t('app.cmdInputMultilinePlaceholder') : t('app.cmdInputNoTerminal')}
           aria-label={t('app.cmdInputAriaLabel')}
           spellCheck={false}
         />
+        {commandCenterInputSurface.menuElement}
         <button
           className="cmd-bar-btn cmd-bar-send command-center-send"
           onClick={onSend}

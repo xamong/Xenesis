@@ -1,5 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SafeFileApplyResult, SafeFilePreviewResult, SafeFileRestoreResult } from '../../../../shared/types';
+import { createNativeTextAdapter } from '../../../editing/nativeTextAdapter';
+import { useEditableSurface } from '../../../editing/useEditableSurface';
 import { sendXenesisAgentCommand } from '../../../utils/xenesisContextSend';
 import {
   buildSafeFileBotPrompt,
@@ -55,11 +57,23 @@ export function SafeFileEditCenterPane() {
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const draftTextAreaRef = useRef<HTMLTextAreaElement>(null);
 
   const diffCounts = useMemo(
     () => (preview ? countDiffLines(preview.diff) : { additions: 0, deletions: 0 }),
     [preview],
   );
+
+  const safeFileDraftAdapter = useMemo(
+    () =>
+      createNativeTextAdapter({
+        id: 'safe-file-draft',
+        label: 'Safe file draft',
+        getElement: () => draftTextAreaRef.current,
+      }),
+    [],
+  );
+  const safeFileDraftSurface = useEditableSurface({ adapter: safeFileDraftAdapter, includeSave: false });
 
   async function loadFile(pathOverride?: string, options: { preserveRestoreResult?: boolean } = {}): Promise<void> {
     const targetPath = (pathOverride ?? filePath).trim();
@@ -278,10 +292,15 @@ export function SafeFileEditCenterPane() {
             </div>
           </div>
           <textarea
+            ref={draftTextAreaRef}
             value={draftContent}
             onChange={(event) => setDraftContent(event.target.value)}
             spellCheck={false}
             placeholder="Open a text file or paste draft content here."
+            onFocusCapture={safeFileDraftSurface.onFocusCapture}
+            onPointerDownCapture={safeFileDraftSurface.onPointerDownCapture}
+            onContextMenu={safeFileDraftSurface.onContextMenu}
+            onKeyDown={safeFileDraftSurface.onKeyDown}
           />
         </div>
 
@@ -303,6 +322,7 @@ export function SafeFileEditCenterPane() {
           <pre>{preview?.diff || 'Run Preview Diff to inspect the pending safe write.'}</pre>
         </div>
       </section>
+      {safeFileDraftSurface.menuElement}
     </div>
   );
 }

@@ -244,7 +244,8 @@ function ContentView({
         const id = `file-${crypto.randomUUID()}`;
         const ext = result.ext;
         if (ext === 'svg' || ext === 'html' || ext === 'htm') {
-          const fileUrl = 'file:///' + absolutePath.replace(/\\/g, '/');
+          const isHtml = ext === 'html' || ext === 'htm';
+          const fileUrl = `file:///${absolutePath.replace(/\\/g, '/')}`;
           engine.addContent({
             id,
             title: result.fileName,
@@ -252,6 +253,15 @@ function ContentView({
             html: '',
             contentType: 'browser',
             url: fileUrl,
+            ...(isHtml
+              ? {
+                  filePath: result.filePath,
+                  fileName: result.fileName,
+                  fileContent: result.content,
+                  fileExt: result.ext,
+                  browserSourceKind: 'local-file' as const,
+                }
+              : {}),
           });
         } else {
           const isXcon = ext === 'xcon' || ext === 'xconj' || ext === 'xcon.json' || ext === 'xcon.xml';
@@ -309,6 +319,12 @@ function ContentView({
       <BrowserPane
         contentId={content.id}
         initialUrl={content.url ?? 'https://www.google.com'}
+        filePath={content.filePath}
+        fileName={content.fileName}
+        fileExt={content.fileExt}
+        initialSource={content.fileContent}
+        sourceKind={content.browserSourceKind}
+        onSourceUpdate={onContentUpdate}
         onUrlChange={onUrlChange}
         onTitleChange={onTitleChange}
         onOpenInDesk={onBrowserPopupOpen}

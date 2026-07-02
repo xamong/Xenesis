@@ -79,6 +79,7 @@ import {
   type AppMenuGroupNode,
   type AppMenuNode,
 } from '../shared/appMenuModel';
+import { loadBrowserResponseSource } from './browserSource';
 import {
   callDeskBridgeCapability,
   createDeskBridgeCapabilityApprovalArgsHash,
@@ -113,6 +114,7 @@ import type {
   AutomationSettings,
   AutomationStage,
   AutomationStreamFilterProfile,
+  BrowserSourceResult,
   CaptureItem,
   CapturePaneRequest,
   CapturePaneResult,
@@ -23331,6 +23333,10 @@ function setupIpc(): void {
     if (!url || typeof url !== 'string') return;
     if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('mailto:')) return;
     await shell.openExternal(url).catch(() => undefined);
+  });
+
+  ipcMain.handle('browser-source:load-response-source', async (_event, request): Promise<BrowserSourceResult> => {
+    return loadBrowserResponseSource(request);
   });
 
   // ── 파일 API ──

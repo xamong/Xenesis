@@ -2,9 +2,12 @@ import { json } from '@codemirror/lang-json';
 import { xml } from '@codemirror/lang-xml';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { EditorView } from '@codemirror/view';
-import CodeMirror from '@uiw/react-codemirror';
+import CodeMirror, { type ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { RemoteFileProfile, RenderOptions } from '../../shared/types';
+import { createCodeMirrorAdapter } from '../editing/codeMirrorAdapter';
+import { createPreviewAdapter } from '../editing/previewAdapter';
+import { useEditableSurface } from '../editing/useEditableSurface';
 import { usePaneRefresh } from '../hooks/usePaneRefresh';
 import { useSplitter } from '../hooks/useSplitter';
 import { useStreamingText } from '../hooks/useStreamingText';
@@ -71,7 +74,7 @@ function xStr(x: XconLike, key: string): string {
 /** XCON 색상 문자열("R,G,B,A") → CSS rgba() */
 function xconColorToCss(colorStr: string): string {
   const parts = colorStr.split(',').map((p) => parseInt(p.trim(), 10));
-  if (parts.length >= 3 && !parts.some(isNaN)) {
+  if (parts.length >= 3 && !parts.some(Number.isNaN)) {
     const a = parts[3] !== undefined ? (parts[3] / 255).toFixed(2) : '1';
     return `rgba(${parts[0]},${parts[1]},${parts[2]},${a})`;
   }
@@ -591,7 +594,6 @@ function XconInfoPanel({ xcon, defaultTab = 'config' }: { xcon: XconLike | null;
   const apis = extractApiEndpoints(xcon);
   const arraySections = extractArraySections(xcon);
 
-  const hasStyle = colors.length > 0 || styleSections.length > 0;
   const hasDb = tables.length > 0;
   const hasApi = apis.length > 0;
   const hasArrays = arraySections.length > 0;
@@ -1155,7 +1157,7 @@ function getCurrentTheme(): 'dark' | 'light' {
 /** xcon-viewer.html 의 URL (개발: localhost, 배포: file://) */
 function getViewerUrl(): string {
   const base = window.location.href.replace(/\/[^/]*$/, '/');
-  return base + 'xcon-viewer.html';
+  return `${base}xcon-viewer.html`;
 }
 
 /** 확장자 → SourceFormat 매핑 (.xcon 제외 — 내용으로 판별) */
@@ -1285,6 +1287,8 @@ export function XconViewerPane({
   /** 웹뷰 렌더러가 아닌 전용 패널(XconInfoPanel)을 사용하는지 여부 */
   const isSpecialFile = xconViewType !== 'ui';
 
+  const sourceEditorRef = useRef<ReactCodeMirrorRef>(null);
+  const previewPanelRef = useRef<HTMLDivElement>(null);
   const webviewRef = useRef<XconWebviewEl>(null);
   /** content를 sourceFormat에 맞게 파싱한 XCON 객체 캐시 */
   const xconRef = useRef<XconLike | null>(xconObj);
@@ -1446,16 +1450,29 @@ export function XconViewerPane({
     }
   }, [content, filePath, isModified, isSaving, remoteFilePath, remoteFileProfile, t18n]);
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        handleSave();
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [handleSave]);
+  const xconSourceAdapter = useMemo(
+    () =>
+      createCodeMirrorAdapter({
+        id: `xcon-source:${filePath || fileName}`,
+        label: `${fileName} source`,
+        getView: () => sourceEditorRef.current?.view,
+        canSave: () => isModified && !isSaving,
+        onSave: handleSave,
+      }),
+    [fileName, filePath, handleSave, isModified, isSaving],
+  );
+  const xconSourceSurface = useEditableSurface({ adapter: xconSourceAdapter, includeSave: true });
+
+  const xconPreviewAdapter = useMemo(
+    () =>
+      createPreviewAdapter({
+        id: `xcon-preview:${filePath || fileName}`,
+        label: `${fileName} preview`,
+        getElement: () => previewPanelRef.current,
+      }),
+    [fileName, filePath],
+  );
+  const xconPreviewSurface = useEditableSurface({ adapter: xconPreviewAdapter, includeSave: false });
 
   const handleRefresh = useCallback(() => {
     renderInViewer(content, sourceFormat);
@@ -1616,9 +1633,14 @@ export function XconViewerPane({
         <div
           className="xd-source-panel"
           style={mode === 'split' ? { width: `${splitRatio * 100}%`, flex: 'none' } : undefined}
+          onFocusCapture={xconSourceSurface.onFocusCapture}
+          onPointerDownCapture={xconSourceSurface.onPointerDownCapture}
+          onContextMenu={xconSourceSurface.onContextMenu}
+          onKeyDown={xconSourceSurface.onKeyDown}
         >
           <div className="xd-editor-wrap">
             <CodeMirror
+              ref={sourceEditorRef}
               value={content}
               theme={oneDark}
               extensions={editorExts}
@@ -1650,7 +1672,15 @@ export function XconViewerPane({
         {mode === 'split' && <div className="pane-splitter" onMouseDown={onSplitterMouseDown} />}
 
         {/* 미리보기 패널: 파일 타입에 따라 전용 뷰어 또는 웹뷰 */}
-        <div className="xd-preview-panel" style={{ position: 'relative' }}>
+        <div
+          ref={previewPanelRef}
+          className="xd-preview-panel"
+          style={{ position: 'relative' }}
+          onFocusCapture={xconPreviewSurface.onFocusCapture}
+          onPointerDownCapture={xconPreviewSurface.onPointerDownCapture}
+          onContextMenu={xconPreviewSurface.onContextMenu}
+          onKeyDown={xconPreviewSurface.onKeyDown}
+        >
           {/* 스플리터 드래그 중 webview/iframe의 마우스 이벤트 차단 커버 */}
           {isSplitDragging && <div style={{ position: 'absolute', inset: 0, zIndex: 9999, cursor: 'col-resize' }} />}
           {isSpecialFile ? (
@@ -1679,6 +1709,8 @@ export function XconViewerPane({
           )}
         </div>
       </div>
+      {xconSourceSurface.menuElement}
+      {xconPreviewSurface.menuElement}
 
       {/* ── 상태바 ── */}
       <div className="xd-statusbar">

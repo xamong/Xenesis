@@ -1,5 +1,75 @@
 # Xenesis Desk Work Handoff
 
+## 2026-07-02 HTML Browser Source View Port
+
+- Current objective:
+  - Port the remaining sibling spec
+    `D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk\docs\superpowers\specs\2026-07-02-html-browser-source-view-design.md`.
+  - Preserve this repo's existing browser CR/MCP controller path in
+    `src/renderer/panes/BrowserPane.tsx` while adding source/split mode,
+    local HTML source persistence, remote source fallback, and browser context
+    menu behavior.
+- Source checkpoint:
+  - Current sibling spec adoption audit covered 20 files and did not include
+    the new 2026-07-02 HTML browser source view spec.
+  - Current repo already has CodeMirror, `useSplitter`, editable surface
+    adapters, and file save helpers.
+  - Current `BrowserPane` still lacks source/split mode and source IPC, but it
+    has the `contentId`-based browser action controller that must not be
+    removed.
+- Planned touched files:
+  - `src/shared/types.ts`
+  - `src/main/browserSource.ts`
+  - `src/main/browserSource.test.ts`
+  - `src/main/index.ts`
+  - `src/preload/index.ts`
+  - `src/renderer/env.d.ts`
+  - `src/renderer/dock/engine.ts`
+  - `src/renderer/dock/DockPaneView.tsx`
+  - `src/renderer/dock/browserHtmlRouting.test.ts`
+  - `src/renderer/panes/BrowserPane.tsx`
+  - `src/renderer/panes/browserSourceModel.ts`
+  - `src/renderer/panes/browserSourceModel.test.ts`
+  - `src/renderer/panes/browserPaneSourceIntegration.test.ts`
+  - `src/renderer/styles.css`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
+  - `src/renderer/App.tsx`
+  - `docs/superpowers/outputs/2026-07-02-sibling-spec-adoption-audit.md`
+- Verification plan:
+  - RED then GREEN:
+    `node --import tsx --test src/main/browserSource.test.ts src/renderer/panes/browserSourceModel.test.ts src/renderer/panes/browserPaneSourceIntegration.test.ts src/renderer/dock/browserHtmlRouting.test.ts`
+  - Focused integration/type checks:
+    `npm run typecheck`
+  - Broader regression if focused checks pass:
+    `npm test`
+    `npm run check:public-release`
+- Known gaps:
+  - RED verification ran before implementation and failed as expected because
+    `src/main/browserSource.ts` and
+    `src/renderer/panes/browserSourceModel.ts` were missing, and BrowserPane /
+    App / DockPaneView source-mode routing patterns were absent.
+  - Focused GREEN verification:
+    `node --import tsx --test src/main/browserSource.test.ts src/renderer/panes/browserSourceModel.test.ts src/renderer/panes/browserPaneSourceIntegration.test.ts src/renderer/dock/browserHtmlRouting.test.ts`
+    passed with 17/17 tests after adding source model, browser source IPC,
+    BrowserPane source/split UI, context menu wiring, and local HTML routing.
+  - `npm run typecheck` passed after the integration changes.
+  - `npx biome format --write` on the touched TS/TSX files formatted 16 files.
+  - Focused verification re-run after formatting passed with 17/17 tests.
+  - `npm run typecheck` re-run after formatting passed.
+  - `npm test` passed with 746/746 tests after the final DockPaneView style
+    adjustment.
+  - `npm run check:public-release` passed after the final adjustment.
+  - `git diff --check` exited 0; it reported only Windows LF/CRLF
+    normalization warnings for touched text files.
+  - `npx biome check` on the small/new browser source files plus related
+    shared/preload/dock/i18n files exited 0. It still reported existing
+    warnings in `src/renderer/dock/engine.ts` and existing unused-parameter /
+    optional-chain warnings in `DockPaneView.tsx`.
+  - `git diff --name-only -- packages/xenesis` returned no output.
+- Next intended step:
+  - User review, then commit/PR if requested.
+
 ## 2026-07-02 Linux Core Support Packaging
 
 - Current objective:
@@ -28068,3 +28138,206 @@ Verification so far:
       LF-to-CRLF warning.
   - Pushed `mini` to `origin/mini`.
   - Created PR: `https://github.com/xamong/Xenesis/pull/18`.
+
+## 2026-07-02 Browser source view spec adoption pre-PR handoff
+
+- Current objective:
+  - Commit and open/update a PR for the adopted browser source view work from
+    sibling spec `2026-07-02-html-browser-source-view-design.md`.
+- Touched files:
+  - `docs/superpowers/outputs/2026-07-02-sibling-spec-adoption-audit.md`
+  - `handoff.md`
+  - `src/main/browserSource.ts`
+  - `src/main/browserSource.test.ts`
+  - `src/main/index.ts`
+  - `src/preload/index.ts`
+  - `src/shared/types.ts`
+  - `src/renderer/App.tsx`
+  - `src/renderer/dock/DockPaneView.tsx`
+  - `src/renderer/dock/browserHtmlRouting.test.ts`
+  - `src/renderer/dock/engine.ts`
+  - `src/renderer/env.d.ts`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
+  - `src/renderer/panes/BrowserPane.tsx`
+  - `src/renderer/panes/browserPaneSourceIntegration.test.ts`
+  - `src/renderer/panes/browserSourceModel.ts`
+  - `src/renderer/panes/browserSourceModel.test.ts`
+  - `src/renderer/styles.css`
+- Commands run:
+  - `git status --short --branch`
+  - `git diff --name-only`
+  - `git diff --check`
+  - `npm run typecheck`
+  - `npm run check:public-release`
+  - `npm test`
+- Exact verification result:
+  - `git diff --check` exited 0 with LF-to-CRLF warnings only.
+  - `npm run typecheck` exited 0.
+  - `npm run check:public-release` exited 0 with
+    `Public release check passed.`
+  - `npm test` exited 0 with 746/746 passed.
+- Known gaps:
+  - `server/.node-version-built` and `server/database.db` are dirty local
+    generated/runtime files and are intentionally excluded from this commit.
+- Next intended step:
+  - Stage only the browser source view adoption files, commit, push `mini`, and
+    open or update the GitHub PR.
+
+## 2026-07-02 Editable surface context menu phase 1 handoff
+
+- Current objective:
+  - Apply sibling spec `2026-06-30-editable-surface-context-menu-design.md`
+    Phase 1 to saveable document/file edit surfaces using the existing shared
+    renderer edit command layer.
+- Touched files:
+  - `handoff.md`
+  - `src/renderer/editing/editableSurfaceIntegration.test.ts`
+  - `src/renderer/panes/CodePane.tsx`
+  - `src/renderer/panes/MarkdownPane.tsx`
+  - `src/renderer/panes/XconViewerPane.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/SafeFileEditCenterPane.tsx`
+- Commands run:
+  - `node --import tsx --test src/renderer/editing/editableSurfaceIntegration.test.ts`
+  - `npm run typecheck`
+  - `npx biome check --write handoff.md src/renderer/editing/editableSurfaceIntegration.test.ts src/renderer/panes/CodePane.tsx src/renderer/panes/MarkdownPane.tsx src/renderer/panes/XconViewerPane.tsx src/renderer/extensions/xenesis-desk.core-tools/panes/SafeFileEditCenterPane.tsx --max-diagnostics=80`
+  - `npx biome format --write handoff.md src/renderer/editing/editableSurfaceIntegration.test.ts src/renderer/panes/CodePane.tsx src/renderer/panes/MarkdownPane.tsx src/renderer/panes/XconViewerPane.tsx src/renderer/extensions/xenesis-desk.core-tools/panes/SafeFileEditCenterPane.tsx`
+  - `npx biome check handoff.md src/renderer/editing/editableSurfaceIntegration.test.ts src/renderer/panes/CodePane.tsx src/renderer/panes/MarkdownPane.tsx src/renderer/panes/XconViewerPane.tsx src/renderer/extensions/xenesis-desk.core-tools/panes/SafeFileEditCenterPane.tsx --max-diagnostics=80`
+  - `git diff --check`
+  - `npm test`
+- Exact verification result:
+  - RED exited 1 as expected. The new guard failed because `CodePane` did not
+    yet import/use `createCodeMirrorAdapter`.
+  - Focused GREEN rerun exited 0 with 4/4 passed after wiring Code, Markdown,
+    XCON, and Safe File surfaces.
+  - `npm run typecheck` exited 0.
+  - Initial changed-file Biome check exited 1 on formatting and simple
+    diagnostics in changed files. After formatting and small cleanup, final
+    changed-file Biome check exited 0.
+  - `git diff --check` exited 0 with only the existing `handoff.md`
+    LF-to-CRLF warning.
+  - Fresh `npm test` exited 0 with 747/747 passed.
+- Known gaps:
+  - Phase 2 surfaces such as Agent Workbench composer, Xenesis Agent, Bot,
+    Command Center, and Meta Management text inputs still use their existing
+    per-surface edit/context-menu behavior.
+  - Existing dirty local runtime files remain outside this slice:
+    `server/.node-version-built`, `server/database.db`.
+- Next intended step:
+  - Review the diff, then either continue with Phase 2 or commit this Phase 1
+    slice when requested.
+
+## 2026-07-02 Editable surface context menu phase 2 handoff
+
+- Current objective:
+  - Extend the shared edit surface layer from document panes to high-traffic
+    text-entry surfaces: Xenesis Agent Workbench composer, Xenesis Agent
+    composer, Xenesis Bot composer, Command Center input, and Meta Management
+    query input.
+- Touched files:
+  - `handoff.md`
+  - `src/renderer/editing/editableSurfaceIntegration.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/XconAgentWorkbenchPane.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/XenesisAgentPane.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/XenisBotPane.tsx`
+  - `src/renderer/extensions/xenesis-desk.data-tools/panes/MetaManagementQueryPanel.tsx`
+  - `src/renderer/panes/CommandCenterPane.tsx`
+- Commands run:
+  - `node --import tsx --test src/renderer/editing/editableSurfaceIntegration.test.ts`
+  - `npx biome format --write src/renderer/editing/editableSurfaceIntegration.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/XconAgentWorkbenchPane.tsx src/renderer/extensions/xenesis-desk.core-tools/panes/XenesisAgentPane.tsx src/renderer/extensions/xenesis-desk.core-tools/panes/XenisBotPane.tsx src/renderer/panes/CommandCenterPane.tsx src/renderer/extensions/xenesis-desk.data-tools/panes/MetaManagementQueryPanel.tsx`
+  - `npx biome check src/renderer/editing/editableSurfaceIntegration.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/XconAgentWorkbenchPane.tsx src/renderer/extensions/xenesis-desk.core-tools/panes/XenesisAgentPane.tsx src/renderer/extensions/xenesis-desk.core-tools/panes/XenisBotPane.tsx src/renderer/panes/CommandCenterPane.tsx src/renderer/extensions/xenesis-desk.data-tools/panes/MetaManagementQueryPanel.tsx --max-diagnostics=80`
+  - `npm run typecheck`
+  - `git diff --check`
+  - `npm test`
+- Exact verification result:
+  - RED exited 1 as expected before implementation. The new guard failed
+    because `XconAgentWorkbenchPane.tsx` did not yet use
+    `createNativeTextAdapter`.
+  - Focused GREEN rerun exited 0 with 5/5 passed after wiring Workbench,
+    Xenesis Agent, Xenesis Bot, Command Center, and Meta query textareas to the
+    shared native editable surface layer.
+  - Targeted Biome formatting fixed the 6 changed Phase 2 files.
+  - Final targeted Biome check exited 0. It still reported 3 pre-existing
+    warnings in `XenesisAgentPane.tsx` unrelated to this slice:
+    one unused helper and two optional-chain suggestions.
+  - `npm run typecheck` exited 0.
+  - `git diff --check` exited 0 with only the existing `handoff.md`
+    LF-to-CRLF warning.
+  - Fresh `npm test` exited 0 with 748/748 passed.
+- Known gaps:
+  - Meta Management read-only form preview fields are not included in this
+    first Phase 2 pass because they are preview surfaces, not active input
+    composers.
+  - No live Electron context-menu smoke was run in this slice; coverage is via
+    static integration guard, typecheck, and root tests.
+  - Existing dirty local runtime files remain outside this slice:
+    `server/.node-version-built`, `server/database.db`.
+- Next intended step:
+  - Review the combined Phase 1/Phase 2 editable-surface diff, then commit when
+    requested.
+
+## 2026-07-02 Editable surface context menu phase 3 handoff
+
+- Current objective:
+  - Finish the editable-surface context menu rollout by covering remaining safe
+    native text-entry surfaces without editing every pane individually.
+- Touched files:
+  - `docs/superpowers/specs/2026-07-02-editable-surface-context-menu-phase3-design.md`
+  - `docs/superpowers/plans/2026-07-02-editable-surface-context-menu-phase3.md`
+  - `handoff.md`
+  - `src/renderer/App.tsx`
+  - `src/renderer/editing/editableSurfaceIntegration.test.ts`
+  - `src/renderer/editing/globalNativeEditSurface.tsx`
+  - `src/renderer/editing/globalNativeEditSurface.test.ts`
+- Commands run:
+  - `rg -n "<textarea|<input|contentEditable|contenteditable" src/renderer -g "*.tsx"`
+  - `rg -n "useEditableSurface|createNativeTextAdapter|createCodeMirrorAdapter|createPreviewAdapter" src/renderer -g "*.tsx"`
+  - `node --import tsx --test src/renderer/editing/globalNativeEditSurface.test.ts src/renderer/editing/editableSurfaceIntegration.test.ts`
+  - `npx biome format --write src/renderer/editing/globalNativeEditSurface.tsx src/renderer/editing/globalNativeEditSurface.test.ts src/renderer/editing/editableSurfaceIntegration.test.ts src/renderer/App.tsx docs/superpowers/specs/2026-07-02-editable-surface-context-menu-phase3-design.md docs/superpowers/plans/2026-07-02-editable-surface-context-menu-phase3.md`
+  - `npx biome check src/renderer/editing/globalNativeEditSurface.tsx src/renderer/editing/globalNativeEditSurface.test.ts src/renderer/editing/editableSurfaceIntegration.test.ts src/renderer/App.tsx docs/superpowers/specs/2026-07-02-editable-surface-context-menu-phase3-design.md docs/superpowers/plans/2026-07-02-editable-surface-context-menu-phase3.md --max-diagnostics=80`
+  - `npm run typecheck`
+  - `git diff --check`
+  - `npm test`
+- Exact verification result:
+  - RED exited 1 as expected. The focused run failed because
+    `globalNativeEditSurface.tsx` did not exist and `App.tsx` did not render
+    `GlobalNativeEditSurface`.
+  - GREEN focused rerun exited 0 with 8/8 passed after adding the global native
+    edit surface, eligibility tests, and App root render.
+  - Initial `npm run typecheck` exited 1 because the test mock textarea needed
+    an `unknown` intermediate cast. After fixing the test cast, rerun exited 0.
+  - Targeted Biome formatting fixed the 4 changed TypeScript files.
+  - Targeted Biome check exited 0. It reported 4 warnings and 2 infos in
+    `App.tsx`; these are pre-existing style/unused/optional-chain diagnostics
+    outside this slice.
+  - `git diff --check` exited 0 with only the existing `handoff.md`
+    LF-to-CRLF warning.
+  - Fresh `npm test` exited 0 with 751/751 passed.
+- Pre-commit verification on 2026-07-02:
+  - `npm run typecheck` exited 0.
+  - Changed-file `npx biome check ... --max-diagnostics=120` exited 0. It
+    reported 7 warnings and 2 infos in existing `App.tsx` and
+    `XenesisAgentPane.tsx` diagnostics outside this slice.
+  - `git diff --check` exited 0 with only the existing `handoff.md`
+    LF-to-CRLF warning.
+  - Fresh `npm test` exited 0 with 751/751 passed.
+- Known gaps:
+  - Secret-like fields are intentionally excluded from the global menu when
+    `id`, `name`, `placeholder`, `aria-label`, `autocomplete`, `data-secret`,
+    or `data-sensitive` include password/secret/token/API key/credential/bearer
+    terms.
+  - Specialized native controls such as checkbox, radio, file, color, date,
+    time, number, and range inputs are excluded.
+  - Rich `contenteditable` composers, including XamongCode-style custom
+    editors, are not handled by this native text adapter. They need a separate
+    contenteditable adapter if they are promoted into this shared edit layer.
+  - No live Electron context-menu smoke was run in this slice; verification is
+    static/model tests, typecheck, and root tests.
+  - The Phase 3 spec and plan files exist under `docs/superpowers/...`, but
+    `.gitignore` ignores `docs/superpowers/`; include them with `git add -f` if
+    they should be committed.
+  - Existing dirty local runtime files remain outside this slice:
+    `server/.node-version-built`, `server/database.db`.
+- Next intended step:
+  - Review the combined Phase 1/2/3 editable-surface diff, then commit when
+    requested.

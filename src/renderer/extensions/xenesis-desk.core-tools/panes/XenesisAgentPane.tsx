@@ -27,6 +27,8 @@ import {
   type XconArtifactProviderExecutionOptions,
 } from '../../../artifacts/xconArtifactEngine';
 import { callGowooriDeskCapability, createDeskBridgeFacade, getDeskBridgeApi } from '../../../deskBridge';
+import { createNativeTextAdapter } from '../../../editing/nativeTextAdapter';
+import { useEditableSurface } from '../../../editing/useEditableSurface';
 import { StreamingXconMarkdown } from '../../../markdown/StreamingXconMarkdown';
 import { createDefaultGowooriAgentTools } from '../../xenesis-desk.workflow-runner/gowoori/agent/gowooriAgentTools';
 import { resolveGowooriDevByokRuntimeFromSettings } from '../../xenesis-desk.workflow-runner/gowoori/agent/gowooriChatE2e';
@@ -1247,6 +1249,16 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
   const suppressNextDrainRef = useRef(false);
   const drainPrevBusyRef = useRef(false);
   const initialProviderSettings = useMemo(() => normalizeProviderSettings(loadLegacyProviderSettings()), []);
+  const xenesisPromptAdapter = useMemo(
+    () =>
+      createNativeTextAdapter({
+        id: `xenesis-agent-prompt:${contentId ?? 'default'}`,
+        label: 'Xenesis Agent prompt',
+        getElement: () => promptInputRef.current,
+      }),
+    [contentId],
+  );
+  const xenesisPromptSurface = useEditableSurface({ adapter: xenesisPromptAdapter, includeSave: false });
   const [terminalFocused, setTerminalFocused] = useState(false);
   const [attachments, setAttachments] = useState<XenesisAgentAttachment[]>([]);
   const [attachmentDropActive, setAttachmentDropActive] = useState(false);
@@ -4478,7 +4490,13 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
                     className="xd-xenesis-terminal-input"
                     value={prompt}
                     onChange={handlePromptChange}
-                    onKeyDown={handlePromptKeyDown}
+                    onFocusCapture={xenesisPromptSurface.onFocusCapture}
+                    onPointerDownCapture={xenesisPromptSurface.onPointerDownCapture}
+                    onContextMenu={xenesisPromptSurface.onContextMenu}
+                    onKeyDown={(event) => {
+                      xenesisPromptSurface.onKeyDown(event);
+                      if (!event.defaultPrevented) handlePromptKeyDown(event);
+                    }}
                     onFocus={() => setTerminalFocused(true)}
                     onBlur={handlePromptBlur}
                     rows={1}
@@ -4496,6 +4514,7 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
                     {prompt || '\u00a0'}
                     <span className="xd-xenesis-terminal-cursor" />
                   </span>
+                  {xenesisPromptSurface.menuElement}
                 </span>
                 <button
                   type="button"

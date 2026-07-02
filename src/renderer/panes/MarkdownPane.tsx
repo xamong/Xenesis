@@ -13,6 +13,9 @@ import { oneDark } from '@codemirror/theme-one-dark';
 import { EditorView } from '@codemirror/view';
 import CodeMirror, { type ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import type { RemoteFileProfile, RenderOptions, ThemeName } from '../../shared/types';
+import { createCodeMirrorAdapter } from '../editing/codeMirrorAdapter';
+import { createPreviewAdapter } from '../editing/previewAdapter';
+import { useEditableSurface } from '../editing/useEditableSurface';
 import { initMermaid } from '../hooks/useMermaidTheme';
 import { useI18n } from '../i18n';
 import {
@@ -681,8 +684,8 @@ function resolveFilePath(currentFilePath: string, href: string): string | null {
   if (!currentFilePath) return null;
   try {
     const normalized = currentFilePath.replace(/\\/g, '/');
-    const withSlash = normalized.startsWith('/') ? normalized : '/' + normalized;
-    const baseUrl = new URL('file://' + withSlash);
+    const withSlash = normalized.startsWith('/') ? normalized : `/${normalized}`;
+    const baseUrl = new URL(`file://${withSlash}`);
     const resolved = new URL(href, baseUrl);
     if (resolved.protocol !== 'file:') return null;
     let result = decodeURIComponent(resolved.pathname);
@@ -717,6 +720,7 @@ export function MarkdownPane({
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const [isModified, setIsModified] = useState(false);
   const editorRef = useRef<ReactCodeMirrorRef>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const { ratio: splitRatio, onSplitterMouseDown } = useSplitter(bodyRef);
   const editorExts = useMemo(
@@ -755,16 +759,29 @@ export function MarkdownPane({
     }
   }, [content, filePath, isModified, isSaving, remoteFilePath, remoteFileProfile, t]);
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        handleSave();
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [handleSave]);
+  const markdownEditAdapter = useMemo(
+    () =>
+      createCodeMirrorAdapter({
+        id: `markdown-edit:${filePath || fileName}`,
+        label: `${fileName} source`,
+        getView: () => editorRef.current?.view,
+        canSave: () => isModified && !isSaving,
+        onSave: handleSave,
+      }),
+    [fileName, filePath, handleSave, isModified, isSaving],
+  );
+  const markdownEditSurface = useEditableSurface({ adapter: markdownEditAdapter, includeSave: true });
+
+  const markdownPreviewAdapter = useMemo(
+    () =>
+      createPreviewAdapter({
+        id: `markdown-preview:${filePath || fileName}`,
+        label: `${fileName} preview`,
+        getElement: () => previewRef.current,
+      }),
+    [fileName, filePath],
+  );
+  const markdownPreviewSurface = useEditableSurface({ adapter: markdownPreviewAdapter, includeSave: false });
 
   const handleRefresh = useCallback(async () => {
     const result = await readEditableText({ filePath, remoteFileProfile, remoteFilePath });
@@ -912,6 +929,10 @@ export function MarkdownPane({
           <div
             className="md-editor"
             style={mode === 'split' ? { width: `${splitRatio * 100}%`, flex: 'none' } : undefined}
+            onFocusCapture={markdownEditSurface.onFocusCapture}
+            onPointerDownCapture={markdownEditSurface.onPointerDownCapture}
+            onContextMenu={markdownEditSurface.onContextMenu}
+            onKeyDown={markdownEditSurface.onKeyDown}
           >
             <CodeMirror
               ref={editorRef}
@@ -944,7 +965,15 @@ export function MarkdownPane({
         )}
         {mode === 'split' && <div className="pane-splitter" onMouseDown={onSplitterMouseDown} />}
         {(mode === 'preview' || mode === 'split') && (
-          <div className="md-preview" style={{ zoom: `${zoom}%` }}>
+          <div
+            ref={previewRef}
+            className="md-preview"
+            style={{ zoom: `${zoom}%` }}
+            onFocusCapture={markdownPreviewSurface.onFocusCapture}
+            onPointerDownCapture={markdownPreviewSurface.onPointerDownCapture}
+            onContextMenu={markdownPreviewSurface.onContextMenu}
+            onKeyDown={markdownPreviewSurface.onKeyDown}
+          >
             <ReactMarkdown
               remarkPlugins={[remarkGfm, remarkMath]}
               rehypePlugins={[rehypeKatex]}
@@ -1008,6 +1037,8 @@ export function MarkdownPane({
           </div>
         )}
       </div>
+      {markdownEditSurface.menuElement}
+      {markdownPreviewSurface.menuElement}
     </div>
   );
 }

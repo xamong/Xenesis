@@ -5680,6 +5680,108 @@ button:disabled {
   min-height: 0;
 }
 
+.browser-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+.browser-source-panel {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.browser-preview-panel {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.browser-source-panel .cm-editor {
+  flex: 1;
+  min-height: 0;
+}
+
+.browser-source-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 26px;
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-panel);
+  color: var(--text-mute);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.browser-source-status span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.browser-source-save {
+  margin-left: auto;
+  padding: 2px 8px;
+  font-size: 11px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text);
+}
+
+.browser-source-save.modified {
+  border-color: var(--accent);
+}
+
+.browser-source-save:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.browser-mode-btns {
+  display: flex;
+  gap: 2px;
+  margin-left: 2px;
+}
+
+.browser-mode-btn {
+  flex-shrink: 0;
+  width: 34px;
+  height: 26px;
+  padding: 0;
+  font-size: 11px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-mute);
+  cursor: pointer;
+}
+
+.browser-mode-btn.active {
+  color: var(--text);
+  background: var(--bg-tab-act);
+  border-color: var(--border-focus);
+}
+
+.browser-webview-cover {
+  position: absolute;
+  inset: 0;
+  z-index: 9999;
+  cursor: col-resize;
+}
+
 /* ─── 마크다운 패인 ──────────────────────────────────────────────────────────── */
 .md-pane {
   display: flex;

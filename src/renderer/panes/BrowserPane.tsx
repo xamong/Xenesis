@@ -1,11 +1,39 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import type { McpBridgeBrowserActionPayload, McpBridgeBrowserActionResult } from '../../shared/types';
+import { html } from '@codemirror/lang-html';
+import { oneDark } from '@codemirror/theme-one-dark';
+import { EditorView } from '@codemirror/view';
+import CodeMirror, { type ReactCodeMirrorRef } from '@uiw/react-codemirror';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type {
+  BrowserSourceKind,
+  McpBridgeBrowserActionPayload,
+  McpBridgeBrowserActionResult,
+} from '../../shared/types';
+import { ContextMenu, type ContextMenuItem, useContextMenu } from '../components/ContextMenu';
+import { createCodeMirrorAdapter } from '../editing/codeMirrorAdapter';
+import { useEditableSurface } from '../editing/useEditableSurface';
 import { usePaneRefresh } from '../hooks/usePaneRefresh';
+import { useSplitter } from '../hooks/useSplitter';
 import { useI18n } from '../i18n';
+import { saveEditableText } from '../utils/editableFileIo';
+import {
+  type BrowserSourceState,
+  type BrowserViewMode,
+  canEditBrowserSource,
+  canSaveBrowserSource,
+  createLocalBrowserSourceState,
+  markBrowserSourceStale,
+  resolveRemoteBrowserSource,
+} from './browserSourceModel';
 
 interface BrowserPaneProps {
   contentId?: string;
   initialUrl?: string;
+  filePath?: string;
+  fileName?: string;
+  fileExt?: string;
+  initialSource?: string;
+  sourceKind?: BrowserSourceKind;
+  onSourceUpdate?: (content: string) => void;
   onUrlChange?: (url: string) => void;
   /** 페이지 타이틀 변경 시 호출 — 도킹 탭 제목 갱신에 사용 */
   onTitleChange?: (title: string) => void;
@@ -17,11 +45,35 @@ const DEFAULT_URL = 'https://www.google.com';
 // Typed wrapper to avoid JSX IntrinsicElements issues with webview
 const WebviewEl = 'webview' as React.ElementType;
 
+type WebviewElement = HTMLElement & {
+  loadURL: (url: string) => void;
+  goBack: () => void;
+  goForward: () => void;
+  reload: () => void;
+  stop: () => void;
+  canGoBack: () => boolean;
+  canGoForward: () => boolean;
+  getURL: () => string;
+  executeJavaScript?: (code: string, userGesture?: boolean) => Promise<unknown>;
+};
+
 type WebviewPopupEvent = Event & {
   url?: string;
   targetUrl?: string;
   detail?: { url?: string };
   newGuest?: { destroy?: () => void; close?: () => void };
+};
+
+type WebviewContextMenuEvent = Event & {
+  params?: {
+    x: number;
+    y: number;
+    linkURL?: string;
+    pageURL?: string;
+    srcURL?: string;
+    selectionText?: string;
+    isEditable?: boolean;
+  };
 };
 
 type BrowserPaneController = {
@@ -58,44 +110,90 @@ function popupUrlFromEvent(event: WebviewPopupEvent): string {
 function normalizeBrowserUrl(url: string): string {
   const trimmed = url.trim();
   if (!trimmed) return '';
-  if (/^https?:\/\//i.test(trimmed) || trimmed.startsWith('file://')) return trimmed;
-  if (trimmed.includes('.') && !trimmed.includes(' ')) return 'https://' + trimmed;
-  return 'https://www.google.com/search?q=' + encodeURIComponent(trimmed);
+  if (/^https?:\/\//i.test(trimmed) || trimmed.startsWith('file://') || trimmed.startsWith('view-source:')) {
+    return trimmed;
+  }
+  if (trimmed.includes('.') && !trimmed.includes(' ')) return `https://${trimmed}`;
+  return `https://www.google.com/search?q=${encodeURIComponent(trimmed)}`;
+}
+
+function createInitialBrowserSourceState(
+  initialUrl: string,
+  initialSource: string | undefined,
+  sourceKind: BrowserSourceKind | undefined,
+): BrowserSourceState {
+  if (!initialSource) {
+    return { text: '', kind: 'unavailable', url: initialUrl, loading: false };
+  }
+  if (sourceKind === 'dropped-file') {
+    return createLocalBrowserSourceState({ text: initialSource, url: initialUrl, kind: 'dropped-file' });
+  }
+  if (!sourceKind || sourceKind === 'local-file') {
+    return createLocalBrowserSourceState({ text: initialSource, url: initialUrl, kind: 'local-file' });
+  }
+  return { text: initialSource, kind: sourceKind, url: initialUrl, loading: false };
 }
 
 export function BrowserPane({
   contentId,
   initialUrl = DEFAULT_URL,
+  filePath,
+  fileName,
+  fileExt,
+  initialSource,
+  sourceKind,
+  onSourceUpdate,
   onUrlChange,
   onTitleChange,
   onOpenInDesk,
 }: BrowserPaneProps) {
   const { t } = useI18n();
-  const webviewRef = useRef<
-    HTMLElement & {
-      loadURL: (url: string) => void;
-      goBack: () => void;
-      goForward: () => void;
-      reload: () => void;
-      stop: () => void;
-      canGoBack: () => boolean;
-      canGoForward: () => boolean;
-      getURL: () => string;
-      executeJavaScript?: (code: string, userGesture?: boolean) => Promise<unknown>;
-    }
-  >(null);
+  const webviewRef = useRef<WebviewElement>(null);
+  const editorRef = useRef<ReactCodeMirrorRef>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const { ratio: splitRatio, isDragging: isSplitDragging, onSplitterMouseDown } = useSplitter(bodyRef);
 
+  const [mode, setMode] = useState<BrowserViewMode>('preview');
   const [inputUrl, setInputUrl] = useState(initialUrl);
   const [displayUrl, setDisplayUrl] = useState(initialUrl);
   const [isLoading, setIsLoading] = useState(false);
   const [canBack, setCanBack] = useState(false);
   const [canForward, setCanForward] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [sourceText, setSourceText] = useState(initialSource ?? '');
+  const [sourceState, setSourceState] = useState<BrowserSourceState>(() =>
+    createInitialBrowserSourceState(initialUrl, initialSource, sourceKind),
+  );
+  const [isModified, setIsModified] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState<string | null>(null);
 
   const stateRef = useRef({ displayUrl, isLoading, canBack, canForward });
   useEffect(() => {
     stateRef.current = { displayUrl, isLoading, canBack, canForward };
   }, [displayUrl, isLoading, canBack, canForward]);
+
+  const sourceLabel =
+    sourceState.kind === 'local-file'
+      ? t('browser.localFileSource')
+      : sourceState.kind === 'dropped-file'
+        ? t('browser.droppedFileSource')
+        : sourceState.kind === 'response-source'
+          ? t('browser.responseSource')
+          : sourceState.kind === 'dom-snapshot'
+            ? t('browser.domSnapshotSource')
+            : t('browser.unavailableSource');
+  const canSaveSource = canSaveBrowserSource(sourceState.kind, filePath);
+
+  const editorExts = useMemo(
+    () => [
+      html(),
+      EditorView.theme({
+        '.cm-scroller': { fontFamily: 'var(--font-mono, "Cascadia Code", Consolas, monospace)' },
+      }),
+    ],
+    [],
+  );
 
   const handleBrowserRefresh = useCallback(() => {
     if (isLoading) {
@@ -138,6 +236,234 @@ export function BrowserPane({
     [inputUrl, displayUrl, navigate],
   );
 
+  const readDomSnapshot = useCallback(async () => {
+    const wv = webviewRef.current;
+    if (!wv?.executeJavaScript) throw new Error('Webview JavaScript execution is unavailable.');
+    return String(
+      await wv.executeJavaScript(
+        "document.documentElement ? '<!doctype html>\\n' + document.documentElement.outerHTML : ''",
+        false,
+      ),
+    );
+  }, []);
+
+  const loadSourceForCurrentUrl = useCallback(
+    async (nextMode: BrowserViewMode = 'source') => {
+      const url = webviewRef.current?.getURL?.() || displayUrl || inputUrl;
+      if (!url.trim()) return;
+      setMode(nextMode);
+      if (sourceState.kind === 'local-file' || sourceState.kind === 'dropped-file') {
+        setSourceState((state) => ({ ...state, stale: false }));
+        return;
+      }
+
+      setSourceState((state) => ({ ...state, url, loading: true, stale: false, error: undefined }));
+      const next = await resolveRemoteBrowserSource({
+        url,
+        loadResponseSource: (currentUrl) => window.browserSourceAPI.loadResponseSource({ url: currentUrl }),
+        readDomSnapshot,
+      });
+      setSourceState(next);
+      setSourceText(next.text);
+    },
+    [displayUrl, inputUrl, readDomSnapshot, sourceState.kind],
+  );
+
+  const handleSourceChange = useCallback(
+    (value: string) => {
+      if (!canEditBrowserSource(sourceState.kind)) return;
+      setSourceText(value);
+      setSourceState((state) => ({ ...state, text: value }));
+      setIsModified(true);
+      onSourceUpdate?.(value);
+    },
+    [onSourceUpdate, sourceState.kind],
+  );
+
+  const handleSaveSource = useCallback(async () => {
+    if (!canSaveSource || !filePath || !isModified || isSaving) return;
+    try {
+      setIsSaving(true);
+      const result = await saveEditableText({ filePath }, sourceText);
+      setSaveMsg(result.saved ? t('common.saved') : t('common.saveFailed'));
+      if (result.saved) {
+        setIsModified(false);
+        webviewRef.current?.reload();
+      }
+    } catch {
+      setSaveMsg(t('common.saveError'));
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => setSaveMsg(null), 2000);
+    }
+  }, [canSaveSource, filePath, isModified, isSaving, sourceText, t]);
+
+  const sourceEditAdapter = useMemo(
+    () =>
+      createCodeMirrorAdapter({
+        id: `browser-source:${filePath || displayUrl}`,
+        label: `${fileName || displayUrl} source`,
+        getView: () => editorRef.current?.view,
+        readOnly: () => !canEditBrowserSource(sourceState.kind),
+        canSave: () => canSaveSource && isModified && !isSaving,
+        onSave: handleSaveSource,
+      }),
+    [canSaveSource, displayUrl, fileName, filePath, handleSaveSource, isModified, isSaving, sourceState.kind],
+  );
+  const sourceSurface = useEditableSurface({ adapter: sourceEditAdapter, includeSave: canSaveSource });
+  const { menu, open: openContextMenu, close: closeContextMenu } = useContextMenu();
+
+  const copyText = useCallback(async (text: string) => {
+    if (!text) return;
+    await navigator.clipboard.writeText(text);
+  }, []);
+
+  const openViewSourceInDesk = useCallback(
+    (url: string) => {
+      const targetUrl = url.trim();
+      if (!targetUrl) return;
+      const viewSourceUrl = targetUrl.startsWith('view-source:') ? targetUrl : `view-source:${targetUrl}`;
+      if (onOpenInDesk) {
+        onOpenInDesk(viewSourceUrl);
+        return;
+      }
+      navigate(viewSourceUrl);
+    },
+    [navigate, onOpenInDesk],
+  );
+
+  const buildPreviewContextMenuItems = useCallback(
+    (params: NonNullable<WebviewContextMenuEvent['params']>): ContextMenuItem[] => {
+      const pageUrl = params.pageURL || webviewRef.current?.getURL?.() || displayUrl;
+      const linkUrl = params.linkURL?.trim() || '';
+      const srcUrl = params.srcURL?.trim() || '';
+      const selectionText = params.selectionText?.trim() || '';
+      const items: ContextMenuItem[] = [
+        {
+          kind: 'action',
+          icon: '<',
+          label: t('browser.backTitle'),
+          action: () => webviewRef.current?.goBack(),
+          disabled: !canBack,
+        },
+        {
+          kind: 'action',
+          icon: '>',
+          label: t('browser.forwardTitle'),
+          action: () => webviewRef.current?.goForward(),
+          disabled: !canForward,
+        },
+        {
+          kind: 'action',
+          icon: isLoading ? 'x' : 'R',
+          label: isLoading ? t('browser.stopTitle') : t('browser.refreshTitle'),
+          action: () => (isLoading ? webviewRef.current?.stop() : webviewRef.current?.reload()),
+        },
+        { kind: 'divider' },
+        {
+          kind: 'action',
+          icon: 'C',
+          label: t('browser.copyUrlTitle'),
+          action: () => void copyText(pageUrl),
+          disabled: !pageUrl,
+        },
+        {
+          kind: 'action',
+          icon: '^',
+          label: t('browser.openExternalTitle'),
+          action: () => void window.fileAPI.openExternal(pageUrl),
+          disabled: !/^https?:\/\//i.test(pageUrl),
+        },
+        {
+          kind: 'action',
+          icon: '+',
+          label: t('browser.openInDeskTitle'),
+          action: () => onOpenInDesk?.(pageUrl),
+          disabled: !pageUrl || !onOpenInDesk,
+        },
+        { kind: 'divider' },
+        {
+          kind: 'action',
+          icon: '</>',
+          label: t('browser.viewSourceTitle'),
+          action: () => void loadSourceForCurrentUrl(),
+        },
+        {
+          kind: 'action',
+          icon: '^',
+          label: t('browser.openViewSourceTitle'),
+          action: () => openViewSourceInDesk(pageUrl),
+          disabled: !/^https?:\/\//i.test(pageUrl),
+        },
+        {
+          kind: 'action',
+          icon: 'C',
+          label: t('browser.copySourceTitle'),
+          action: () => void copyText(sourceState.text),
+          disabled: !sourceState.text,
+        },
+      ];
+
+      if (linkUrl) {
+        items.push(
+          { kind: 'divider' },
+          {
+            kind: 'action',
+            icon: '+',
+            label: t('browser.openInDeskTitle'),
+            action: () => onOpenInDesk?.(linkUrl),
+            disabled: !onOpenInDesk,
+          },
+          {
+            kind: 'action',
+            icon: '^',
+            label: t('browser.openExternalTitle'),
+            action: () => void window.fileAPI.openExternal(linkUrl),
+            disabled: !/^https?:\/\//i.test(linkUrl),
+          },
+          {
+            kind: 'action',
+            icon: 'C',
+            label: t('browser.copyUrlTitle'),
+            action: () => void copyText(linkUrl),
+          },
+        );
+      }
+
+      if (srcUrl) {
+        items.push({
+          kind: 'action',
+          icon: 'C',
+          label: t('browser.copyUrlTitle'),
+          action: () => void copyText(srcUrl),
+        });
+      }
+
+      if (selectionText) {
+        items.push({
+          kind: 'action',
+          icon: 'C',
+          label: t('common.copy'),
+          action: () => void copyText(selectionText),
+        });
+      }
+
+      return items;
+    },
+    [
+      canBack,
+      canForward,
+      copyText,
+      displayUrl,
+      isLoading,
+      loadSourceForCurrentUrl,
+      onOpenInDesk,
+      openViewSourceInDesk,
+      sourceState.text,
+      t,
+    ],
+  );
+
   // 앱 종료 시 webview가 로딩 중이면 ERR_ABORTED (-3) 에러가 콘솔에 출력됨.
   // beforeunload에서 미리 stop()을 호출해 정상 중단 처리.
   useEffect(() => {
@@ -170,6 +496,9 @@ export function BrowserPane({
       onUrlChange?.(url);
       setCanBack(wv.canGoBack?.() ?? false);
       setCanForward(wv.canGoForward?.() ?? false);
+      setSourceState((state) =>
+        state.kind === 'local-file' || state.kind === 'dropped-file' ? state : markBrowserSourceStale(state, url),
+      );
     };
     const onLoadFail = (e: Event & { errorDescription?: string }) => {
       setIsLoading(false);
@@ -181,10 +510,9 @@ export function BrowserPane({
       setCanBack(wv.canGoBack?.() ?? false);
       setCanForward(wv.canGoForward?.() ?? false);
     };
-    // 페이지 타이틀 변경 → 도킹 탭 제목 갱신
     const onPageTitle = (e: Event & { title?: string }) => {
-      const t = e.title?.trim();
-      if (t) onTitleChange?.(t);
+      const nextTitle = e.title?.trim();
+      if (nextTitle) onTitleChange?.(nextTitle);
     };
     const onPopupOpen = (event: Event) => {
       const e = event as WebviewPopupEvent;
@@ -192,6 +520,20 @@ export function BrowserPane({
       e.newGuest?.destroy?.();
       e.newGuest?.close?.();
       handlePopupOpen(popupUrlFromEvent(e));
+    };
+    const onContextMenu = (event: Event) => {
+      const e = event as WebviewContextMenuEvent;
+      const params = e.params;
+      if (!params) return;
+      openContextMenu(
+        {
+          preventDefault: () => e.preventDefault?.(),
+          stopPropagation: () => e.stopPropagation?.(),
+          clientX: params.x,
+          clientY: params.y,
+        } as React.MouseEvent,
+        buildPreviewContextMenuItems(params),
+      );
     };
 
     wv.addEventListener('did-start-loading', onLoadStart);
@@ -201,6 +543,7 @@ export function BrowserPane({
     wv.addEventListener('page-title-updated', onPageTitle);
     wv.addEventListener('new-window', onPopupOpen);
     wv.addEventListener('did-create-window', onPopupOpen);
+    wv.addEventListener('context-menu', onContextMenu);
 
     return () => {
       wv.removeEventListener('did-start-loading', onLoadStart);
@@ -210,8 +553,9 @@ export function BrowserPane({
       wv.removeEventListener('page-title-updated', onPageTitle);
       wv.removeEventListener('new-window', onPopupOpen);
       wv.removeEventListener('did-create-window', onPopupOpen);
+      wv.removeEventListener('context-menu', onContextMenu);
     };
-  }, [handlePopupOpen, onUrlChange, onTitleChange, t]);
+  }, [buildPreviewContextMenuItems, handlePopupOpen, onUrlChange, onTitleChange, openContextMenu, t]);
 
   useEffect(() => {
     if (!contentId) return undefined;
@@ -454,6 +798,15 @@ export function BrowserPane({
     };
   }, [contentId, navigate]);
 
+  const browserWebview = (
+    <WebviewEl
+      ref={webviewRef}
+      src={displayUrl || initialUrl}
+      className="browser-webview"
+      webpreferences="contextIsolation=true"
+    />
+  );
+
   return (
     <div className="browser-pane">
       <div className="browser-toolbar">
@@ -462,23 +815,26 @@ export function BrowserPane({
           onClick={() => webviewRef.current?.goBack()}
           disabled={!canBack}
           title={t('browser.backTitle')}
+          aria-label={t('browser.backTitle')}
         >
-          ◀
+          {'<'}
         </button>
         <button
           className="browser-nav-btn"
           onClick={() => webviewRef.current?.goForward()}
           disabled={!canForward}
           title={t('browser.forwardTitle')}
+          aria-label={t('browser.forwardTitle')}
         >
-          ▶
+          {'>'}
         </button>
         <button
           className="browser-nav-btn"
           onClick={() => (isLoading ? webviewRef.current?.stop() : webviewRef.current?.reload())}
           title={isLoading ? t('browser.stopTitle') : t('browser.refreshTitle')}
+          aria-label={isLoading ? t('browser.stopTitle') : t('browser.refreshTitle')}
         >
-          {isLoading ? '✕' : '↺'}
+          {isLoading ? 'x' : 'R'}
         </button>
         <input
           className="browser-url-bar"
@@ -494,19 +850,125 @@ export function BrowserPane({
           className="browser-nav-btn browser-go-btn"
           onClick={() => navigate(inputUrl)}
           title={t('browser.goTitle')}
+          aria-label={t('browser.goTitle')}
         >
-          →
+          Go
         </button>
+        <button
+          className="browser-nav-btn"
+          onClick={() => {
+            if (/^https?:\/\//i.test(displayUrl)) window.fileAPI.openExternal(displayUrl).catch(() => {});
+          }}
+          disabled={!/^https?:\/\//i.test(displayUrl)}
+          title={t('browser.openExternalTitle')}
+          aria-label={t('browser.openExternalTitle')}
+        >
+          ^
+        </button>
+        <div className="browser-mode-btns">
+          <button
+            className={`browser-mode-btn${mode === 'preview' ? ' active' : ''}`}
+            onClick={() => setMode('preview')}
+            title={t('browser.previewModeTitle')}
+            aria-label={t('browser.previewModeTitle')}
+          >
+            P
+          </button>
+          <button
+            className={`browser-mode-btn${mode === 'source' ? ' active' : ''}`}
+            onClick={() => void loadSourceForCurrentUrl('source')}
+            title={t('browser.sourceModeTitle')}
+            aria-label={t('browser.sourceModeTitle')}
+          >
+            &lt;/&gt;
+          </button>
+          <button
+            className={`browser-mode-btn${mode === 'split' ? ' active' : ''}`}
+            onClick={() => void loadSourceForCurrentUrl('split')}
+            title={t('browser.splitModeTitle')}
+            aria-label={t('browser.splitModeTitle')}
+          >
+            S
+          </button>
+        </div>
       </div>
 
       {loadError && (
         <div className="browser-error">
-          <span>⚠ {loadError}</span>
+          <span>! {loadError}</span>
           <button onClick={() => navigate(inputUrl)}>{t('browser.retry')}</button>
         </div>
       )}
 
-      <WebviewEl ref={webviewRef} src={initialUrl} className="browser-webview" webpreferences="contextIsolation=true" />
+      <div ref={bodyRef} className={`browser-body mode-${mode}`}>
+        {(mode === 'source' || mode === 'split') && (
+          <div
+            className="browser-source-panel"
+            style={mode === 'split' ? { width: `${splitRatio * 100}%`, flex: 'none' } : undefined}
+            onFocusCapture={sourceSurface.onFocusCapture}
+            onPointerDownCapture={sourceSurface.onPointerDownCapture}
+            onContextMenu={sourceSurface.onContextMenu}
+            onKeyDown={sourceSurface.onKeyDown}
+          >
+            <div className="browser-source-status">
+              <span>{sourceLabel}</span>
+              {fileExt && <span>.{fileExt}</span>}
+              {sourceState.loading && <span>{t('browser.sourceLoading')}</span>}
+              {sourceState.stale && <span>{t('browser.sourceStale')}</span>}
+              {sourceState.error && <span title={sourceState.error}>{sourceState.error}</span>}
+              <button
+                className={`browser-source-save${isModified ? ' modified' : ''}`}
+                onClick={handleSaveSource}
+                disabled={!canSaveSource || !isModified || isSaving}
+                title={
+                  !canSaveSource && sourceState.kind === 'dropped-file'
+                    ? t('browser.saveDisabledDroppedFile')
+                    : t('common.saveCtrlS')
+                }
+              >
+                {isSaving ? t('common.saving') : (saveMsg ?? t('common.save'))}
+              </button>
+            </div>
+            <CodeMirror
+              ref={editorRef}
+              value={sourceText}
+              theme={oneDark}
+              extensions={editorExts}
+              readOnly={!canEditBrowserSource(sourceState.kind)}
+              onChange={handleSourceChange}
+              basicSetup={{
+                lineNumbers: true,
+                foldGutter: true,
+                highlightActiveLineGutter: true,
+                highlightSpecialChars: true,
+                history: true,
+                drawSelection: true,
+                dropCursor: false,
+                allowMultipleSelections: true,
+                indentOnInput: true,
+                syntaxHighlighting: true,
+                bracketMatching: true,
+                closeBrackets: true,
+                autocompletion: false,
+                rectangularSelection: true,
+                crosshairCursor: false,
+                highlightActiveLine: true,
+                highlightSelectionMatches: true,
+                searchKeymap: true,
+              }}
+            />
+          </div>
+        )}
+        {mode === 'split' && <div className="pane-splitter" onMouseDown={onSplitterMouseDown} />}
+        {(mode === 'preview' || mode === 'split') && (
+          <div className="browser-preview-panel">
+            {isSplitDragging && <div className="browser-webview-cover" />}
+            {browserWebview}
+          </div>
+        )}
+      </div>
+      {sourceSurface.menuElement}
+      {menu && <ContextMenu x={menu.x} y={menu.y} items={menu.items} onClose={closeContextMenu} />}
     </div>
   );
 }
