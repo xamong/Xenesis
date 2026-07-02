@@ -71,6 +71,11 @@ import {
   type AgentWorkflowReceiptListFilter,
   createAgentActionRecordStore,
 } from '../shared/agentActionRecords';
+import { buildAgentSessionTerminalMetadata } from '../shared/agentSessions';
+import {
+  type AgentSessionTerminalMatchInfo,
+  planAgentSessionResumeTarget,
+} from '../shared/agentSessionTerminalLinker';
 import { AI_PROVIDER_KINDS as SHARED_AI_PROVIDER_KINDS } from '../shared/aiProviderCatalog';
 import {
   APP_MENU_MODEL,
@@ -79,7 +84,6 @@ import {
   type AppMenuGroupNode,
   type AppMenuNode,
 } from '../shared/appMenuModel';
-import { loadBrowserResponseSource } from './browserSource';
 import {
   callDeskBridgeCapability,
   createDeskBridgeCapabilityApprovalArgsHash,
@@ -94,7 +98,6 @@ import {
   shouldTrustDeskBridgeCallerApproval,
   verifyDeskBridgeCapabilityApprovalProof,
 } from '../shared/deskBridgeCapabilities';
-import { buildAgentSessionTerminalMetadata } from '../shared/agentSessions';
 import { normalizeExternalAppSettings } from '../shared/externalAppControl';
 import { normalizeOfficeSettings } from '../shared/officeControl';
 import {
@@ -359,6 +362,7 @@ import { createAuditLogger } from './audit/auditLogger';
 import { AutomationController } from './automation/automationController';
 import { JsonlAutomationEventLogSink } from './automation/automationEventLog';
 import { createAutomationSemanticObservation } from './automation/automationObservability';
+import { loadBrowserResponseSource } from './browserSource';
 import {
   createCapabilityApprovalAllowKey,
   createCapabilityApprovalRequest,
@@ -13303,6 +13307,28 @@ function listMcpTerminalSessions(): Array<Record<string, unknown>> {
   return buildMcpTerminalSessionList(sessions.values(), latestMcpRendererState);
 }
 
+function activeMcpTerminalId(): string {
+  const activePaneId = latestMcpRendererState?.activePaneId ?? '';
+  const activePane = latestMcpRendererState?.panes.find((pane) => pane.id === activePaneId);
+  const activeContentId = activePane?.activeContentId ?? '';
+  const activeContent = latestMcpRendererState?.contents.find((content) => content.id === activeContentId);
+  return activeContent?.contentType === 'terminal' && activeContent.termId ? activeContent.termId : '';
+}
+
+function agentSessionTerminalMatchInfo(session: SessionRecord): AgentSessionTerminalMatchInfo {
+  return {
+    id: session.id,
+    kind: session.kind,
+    cwd: session.cwd,
+    shellCwd: session.cwd,
+    terminalMetadata: session.mcpMetadata,
+    lastSentCommand: session.lastCommand ?? session.mcpCommand,
+    lastCommand: session.lastCommand,
+    active: session.id === activeMcpTerminalId(),
+    exited: false,
+  };
+}
+
 function normalizeMcpCapabilityArgs(args: unknown): Record<string, unknown> {
   return args && typeof args === 'object' && !Array.isArray(args) ? (args as Record<string, unknown>) : {};
 }
@@ -16298,18 +16324,27 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
       if (!command) return { ok: false, error: 'Selected agent session has no resume command.' };
 
       const requestedTermId = readCapabilityString(body, ['termId', 'terminalId']);
-      const reusableTermId = requestedTermId || selectedSession.terminalId || selectedSession.terminal?.termId || '';
+      const terminalPlan = planAgentSessionResumeTarget(
+        selectedSession,
+        [...sessions.values()].map(agentSessionTerminalMatchInfo),
+        {
+          target,
+          termId: requestedTermId,
+          activeTermId: activeMcpTerminalId(),
+        },
+      );
       const preview = {
         session: selectedSession,
         command,
         cwd: selectedSession.projectPath,
         target,
-        termId: reusableTermId || undefined,
+        termId: terminalPlan.termId,
+        targetPlan: terminalPlan,
       };
       if (body.previewOnly === true) return { ok: true, preview };
 
-      if (target !== 'new' && reusableTermId) {
-        const terminal = sessions.get(reusableTermId);
+      if (terminalPlan.target === 'existing' && terminalPlan.termId) {
+        const terminal = sessions.get(terminalPlan.termId);
         if (terminal) {
           const shell = terminal.shell ?? normalizeShellKindForPlatform(loadSettings().defaultShell);
           const data = formatShellStartupInput(shell, command);
@@ -16331,6 +16366,7 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
             session: attachResult.ok && attachResult.session ? attachResult.session : selectedSession,
             preview,
             termId: terminal.id,
+            targetPlan: terminalPlan,
             reusedTerminal: true,
             message: 'Agent session resume command sent to the existing terminal.',
           };
@@ -16354,6 +16390,7 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
         ok: true,
         session: attachResult.ok && attachResult.session ? attachResult.session : selectedSession,
         preview,
+        targetPlan: terminalPlan,
         spawnResult,
         message: 'Agent session resume command opened in a terminal.',
       };

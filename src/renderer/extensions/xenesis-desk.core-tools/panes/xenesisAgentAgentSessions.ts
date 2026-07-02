@@ -166,7 +166,13 @@ function renderResume(payload: unknown): string {
       : typeof asRecord(record.spawnResult).id === 'string'
         ? String(asRecord(record.spawnResult).id)
         : '-';
-  return ['Agent Session resume requested:', `- session: ${title}`, `- terminal: ${termId}`].join('\n');
+  const targetReason = textOr(asRecord(record.targetPlan).reason, '');
+  return [
+    'Agent Session resume requested:',
+    `- session: ${title}`,
+    `- terminal: ${termId}`,
+    ...(targetReason ? [`- target: ${targetReason}`] : []),
+  ].join('\n');
 }
 
 function renderAttach(payload: unknown): string {

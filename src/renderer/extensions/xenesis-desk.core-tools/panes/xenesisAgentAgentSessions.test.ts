@@ -124,3 +124,30 @@ test('renderXenesisAgentSessionsSlashResult summarizes status, lists, and approv
     'Desk approval is required before resuming the Agent Session.',
   );
 });
+
+test('renderXenesisAgentSessionsSlashResult includes resume target plan reason when available', () => {
+  assert.equal(
+    renderXenesisAgentSessionsSlashResult(
+      { action: 'resume' },
+      {
+        ok: true,
+        path: 'xd.agentSessions.resume',
+        result: {
+          session: { title: 'Terminal layout' },
+          termId: 'term-2',
+          targetPlan: {
+            target: 'existing',
+            termId: 'term-2',
+            reason: 'Idle matching terminal selected.',
+          },
+        },
+      },
+    ),
+    [
+      'Agent Session resume requested:',
+      '- session: Terminal layout',
+      '- terminal: term-2',
+      '- target: Idle matching terminal selected.',
+    ].join('\n'),
+  );
+});

@@ -28547,3 +28547,84 @@ Verification so far:
   - Existing unrelated dirty local/runtime files remain outside this slice: `build/icon.ico`, `build/icon.svg`, `server/.node-version-built`, `server/database.db`.
 - Next intended step:
   - Review and commit only the Agent Sessions code/test/handoff files. Exclude unrelated icon/runtime files unless explicitly requested.
+
+### 2026-07-02 Agent Sessions smart terminal matching plan
+
+- Current objective:
+  - Finish the remaining Agent Sessions smart-terminal matcher gap: `xd.agentSessions.resume` should reuse only a safe matching terminal by default, skip busy/TUI/app-managed candidates, and spawn a new terminal when reuse is unsafe.
+- Touched files planned:
+  - `src/shared/agentSessionTerminalLinker.ts`
+  - `src/shared/agentSessionTerminalLinker.test.ts`
+  - `src/renderer/agentSessions/terminalLinker.ts`
+  - `src/renderer/agentSessions/terminalLinker.test.ts`
+  - `src/main/index.ts`
+  - `handoff.md`
+- Commands run:
+  - Context reads only so far: AGENTS/Obsidian required notes, Agent Sessions plan, existing terminal linker, main CR resume adapter, and main terminal session list helpers.
+- Exact verification result:
+  - Existing renderer linker currently returns `new` immediately when the first matching candidate is unsafe, even if a later candidate is reusable.
+  - Existing main CR resume currently reuses an explicit or linked `termId` without running the same smart safety policy.
+  - No new tests or code changes have been applied for this slice yet.
+- Design decision:
+  - Move the pure resume-target policy into shared code with a main/renderer-neutral terminal snapshot type.
+  - Keep explicit `termId` and `target=active` as operator-directed reuse.
+  - For `target=smart`, rank linked terminals first, then same source/project terminals, then compatible same-project terminals; skip unsafe candidates and keep scanning.
+  - Treat exited, alt-buffer, active recent-command, and visible subagent/app-managed TUI metadata as unsafe for automatic reuse.
+- Known gaps:
+  - Main process does not currently receive renderer alt-buffer state in `buildMcpTerminalSessionList`; main matching will enforce the safe signals available in main records and metadata, while renderer tests keep alt-buffer coverage.
+  - Existing unrelated dirty local/runtime files remain outside this slice: `build/icon.ico`, `build/icon.svg`, `server/.node-version-built`, `server/database.db`.
+- Next intended step:
+  - Add RED shared matcher tests for candidate skipping, linked-terminal safety, explicit override, metadata matching, and visible subagent avoidance.
+
+### 2026-07-02 Agent Sessions smart terminal matching implementation update
+
+- Touched files:
+  - `src/shared/agentSessionTerminalLinker.ts`
+  - `src/shared/agentSessionTerminalLinker.test.ts`
+  - `src/renderer/agentSessions/terminalLinker.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentAgentSessions.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentAgentSessions.test.ts`
+  - `src/main/index.ts`
+  - `handoff.md`
+- Commands run:
+  - RED: `node --import tsx --test src/shared/agentSessionTerminalLinker.test.ts` exited 1 because `./agentSessionTerminalLinker` did not exist.
+  - GREEN: `node --import tsx --test src/shared/agentSessionTerminalLinker.test.ts` exited 0 with 6/6 passed.
+  - Focused compatibility: `node --import tsx --test src/shared/agentSessionTerminalLinker.test.ts src/renderer/agentSessions/terminalLinker.test.ts` exited 0 with 9/9 passed.
+  - Focused aggregate: `node --import tsx --test src/shared/agentSessionTerminalLinker.test.ts src/renderer/agentSessions/terminalLinker.test.ts src/shared/agentSessions.test.ts src/main/agentSessions/service.test.ts` exited 0 with 21/21 passed.
+  - `npm run typecheck` exited 0.
+  - RED: `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentAgentSessions.test.ts` exited 1 because resume result rendering omitted `targetPlan.reason`.
+  - GREEN: `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentAgentSessions.test.ts src/shared/agentSessionTerminalLinker.test.ts src/renderer/agentSessions/terminalLinker.test.ts` exited 0 with 14/14 passed.
+- Exact implementation result:
+  - The smart resume-target policy now lives in shared code and is re-exported from the previous renderer path.
+  - Smart matching ranks linked terminals first, then same source/project terminals, skips unsafe candidates, and continues scanning for a safe match.
+  - Smart matching avoids exited, alt-buffer, active recent-command, and visible subagent/app-managed terminal metadata unless an explicit terminal is requested.
+  - `xd.agentSessions.resume` now builds a terminal target plan from current main terminal sessions and reuses an existing terminal only when the shared plan returns `existing`.
+  - Resume results now include `targetPlan`, and `/agent-sessions resume` output shows the target reason when present.
+- Known gaps:
+  - Main process still lacks renderer-only alt-buffer state in its terminal records; renderer-side tests cover that policy, while main applies the safe signals it owns (`lastCommand`, active terminal, metadata, cwd, and session link).
+  - Existing unrelated dirty local/runtime files remain outside this slice: `build/icon.ico`, `build/icon.svg`, `server/.node-version-built`, `server/database.db`.
+- Next intended step:
+  - Run CR audit, broader tests/build, and a live Agent Sessions smoke through the Xenesis Agent pane before committing.
+
+### 2026-07-02 Agent Sessions smart terminal matching verification update
+
+- Commands run:
+  - Scoped Biome: `npx biome check src/shared/agentSessionTerminalLinker.ts src/shared/agentSessionTerminalLinker.test.ts src/renderer/agentSessions/terminalLinker.ts src/renderer/agentSessions/terminalLinker.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentAgentSessions.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentAgentSessions.test.ts` exited 0.
+  - Main-file Biome probe: `npx biome check src/main/index.ts --max-diagnostics 20` exited 1 with existing diagnostics in `src/main/index.ts` such as `noUselessSwitchCase`, `noUselessTernary`, stale unused imports/functions, and optional-chain suggestions. The new import-order diagnostic was removed by moving `loadBrowserResponseSource` back into the local import group.
+  - `npm run docs:capabilities:audit` exited 0: `Capability audit: 906 nodes, 706 coverage path references.` The generated timestamp-only diff in `docs/capability-registry-audit.md` was reverted.
+  - Focused aggregate: `node --import tsx --test src/shared/agentSessionTerminalLinker.test.ts src/renderer/agentSessions/terminalLinker.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentAgentSessions.test.ts src/shared/agentSessions.test.ts src/main/agentSessions/service.test.ts src/shared/agentSessionsCapabilities.test.ts` exited 0 with 30/30 passed.
+  - `npm run typecheck` exited 0.
+  - `npm test` exited 0 with 771/771 passed.
+  - `npm run build` exited 0 after `packages/xenesis` build, root typecheck, and Electron build. Vite emitted existing bundle/externalization warnings.
+  - Live Agent pane smoke exited 0: Electron launched with temporary `XENIS_HOME`/userData, opened `xd.tools.core.xenesisAgent.open`, submitted `/agent-sessions status` through `xd.testing.xenesisAgent.submitPrompt`, and matched `Agent Sessions status:` in the new response.
+  - First live resume smoke attempt exited 1 because setting `USERPROFILE` to a temp directory caused Electron to fail resolving the `userData` path. This was a smoke harness environment issue, not an app runtime assertion.
+  - Live resume targetPlan smoke rerun exited 0: seeded `XENIS_HOME/sessions/run-live-smart.jsonl`, scanned `xd.agentSessions.scan`, previewed `xd.agentSessions.resume` for `xenesis:run-live-smart`, confirmed `targetPlan.target === "new"` with reason `No safe matching terminal found.`, then executed resume and confirmed a spawned terminal id.
+  - `npm run lint` exited 1 with existing repo-wide Biome diagnostics outside this slice, including `packages/xenesis/*`, `extensions/sample.file-helper/main.js`, untracked `build/icon.svg`, and existing `src/main/index.ts` cleanup warnings.
+  - `git diff --check` exited 0 with only LF-to-CRLF warnings for `handoff.md` and `src/main/index.ts`.
+- Exact verification result:
+  - Shared smart-terminal matching, renderer slash result rendering, Agent Sessions service, CR registration, typecheck, full tests, build, Agent pane status smoke, and live resume targetPlan smoke are verified.
+- Known gaps:
+  - Full repo `npm run lint` remains blocked by known pre-existing/unrelated diagnostics.
+  - Existing unrelated dirty local/runtime files remain outside this slice: `build/icon.ico`, `build/icon.svg`, `server/.node-version-built`, `server/database.db`.
+- Next intended step:
+  - Commit only the smart terminal matching files and `handoff.md`, then push/update PR on `mini`.
