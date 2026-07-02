@@ -2547,6 +2547,10 @@ export interface McpBridgeTerminalMetadata {
   task?: string;
   command?: string;
   projectPath?: string;
+  agentSessionId?: string;
+  agentSessionSource?: string;
+  sourceSessionId?: string;
+  resumeCommand?: string;
 }
 
 export interface McpBridgeOpenTerminalPayload {

@@ -169,6 +169,12 @@ export interface AgentSessionsAttachRequest {
   termId: string;
 }
 
+export interface AgentSessionsAttachResult {
+  ok: boolean;
+  session?: AgentSession;
+  error?: string;
+}
+
 export interface AgentSessionsPinRequest {
   sessionId: string;
   pinned: boolean;
@@ -191,6 +197,7 @@ export interface AgentSessionsApi {
   scan(request?: AgentSessionsScanRequest): Promise<AgentSessionsScanResult>;
   list(request?: AgentSessionsListRequest): Promise<AgentSession[]>;
   search(request: AgentSessionsSearchRequest): Promise<AgentSession[]>;
+  attachTerminal(request: AgentSessionsAttachRequest): Promise<AgentSessionsAttachResult>;
   pin(request: AgentSessionsPinRequest): Promise<AgentSession[]>;
   hide(request: AgentSessionsHideRequest): Promise<AgentSession[]>;
 }
@@ -247,6 +254,23 @@ export function normalizeAgentProjectName(projectPath: string, fallback = 'Unkno
 
 export function isVisibleSubagentTerminalMetadata(metadata: McpBridgeTerminalMetadata | undefined): boolean {
   return metadata?.kind === 'xenesis-desk-subagent' || metadata?.kind === 'xenesis-desk-subagent-plan';
+}
+
+export function buildAgentSessionTerminalMetadata(
+  session: AgentSession,
+  command = session.resumeCommand,
+): McpBridgeTerminalMetadata {
+  const normalizedCommand = compactAgentSessionText(command, 2000);
+  return {
+    kind: 'agent-session-resume',
+    agent: compactAgentSessionText(session.sourceLabel, 200),
+    task: compactAgentSessionText(session.title, 2000),
+    ...(normalizedCommand ? { command: normalizedCommand, resumeCommand: normalizedCommand } : {}),
+    ...(session.projectPath ? { projectPath: compactAgentSessionText(session.projectPath, 200) } : {}),
+    agentSessionId: compactAgentSessionText(session.id, 200),
+    agentSessionSource: compactAgentSessionText(session.source, 200),
+    sourceSessionId: compactAgentSessionText(session.sourceSessionId, 200),
+  };
 }
 
 export function normalizeAgentSession(input: AgentSessionInput): AgentSession {

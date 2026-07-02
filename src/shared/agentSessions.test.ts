@@ -6,6 +6,7 @@ import {
   AGENT_SESSION_PROVIDER_LABELS,
   type AgentSession,
   applyAgentSessionListFilters,
+  buildAgentSessionTerminalMetadata,
   createAgentSessionId,
   isVisibleSubagentTerminalMetadata,
   normalizeAgentProjectName,
@@ -100,6 +101,31 @@ test('summarizeAgentSession produces compact operator text', () => {
   assert.equal(summary.title, 'Xenesis session term-1');
   assert.equal(summary.subtitle, 'Xenesis · xenesis-desk · 12 messages · terminal term-1');
   assert.equal(summary.canResume, true);
+});
+
+test('buildAgentSessionTerminalMetadata preserves the CR terminal link contract', () => {
+  const metadata = buildAgentSessionTerminalMetadata(
+    normalizeAgentSession({
+      source: 'codex',
+      provider: 'codex',
+      sourceSessionId: 'session-abc',
+      projectPath: 'D:\\Code\\xenesis-desk',
+      title: 'Fix agent session terminal metadata',
+      resumeCommand: 'codex resume session-abc',
+    }),
+  );
+
+  assert.deepEqual(metadata, {
+    kind: 'agent-session-resume',
+    agent: 'Codex',
+    task: 'Fix agent session terminal metadata',
+    command: 'codex resume session-abc',
+    projectPath: 'D:\\Code\\xenesis-desk',
+    agentSessionId: 'codex:session-abc',
+    agentSessionSource: 'codex',
+    sourceSessionId: 'session-abc',
+    resumeCommand: 'codex resume session-abc',
+  });
 });
 
 test('normalizeAgentProjectName derives basename from Windows and POSIX paths', () => {

@@ -28447,3 +28447,103 @@ Verification so far:
   - Review the visible subagent plan-session diff, then commit/PR when
     requested. Exclude unrelated local runtime/icon changes unless explicitly
     requested.
+
+## 2026-07-02 Agent Sessions Hub gap hardening handoff
+
+- Current objective:
+  - Continue the sibling Agent Session Hub adoption by closing the remaining
+    MVP gaps that are safe and scoped for this repo: persisted terminal attach
+    links, CR resume/attach metadata consistency, Agent pane `/agent-sessions`
+    commands, and panel link visibility.
+- Touched files:
+  - `handoff.md`
+- Commands run:
+  - `Get-Content -Raw "D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk\docs\superpowers\specs\2026-06-29-agent-session-hub-design.md"`
+  - `rg -n "Agent Session|AgentSessions|session hub|agent session hub|agent-session|sessions tool|turn ledger|session resume" src packages docs scripts -S`
+  - `Get-Content -Raw src/shared/agentSessions.ts`
+  - `Get-Content -Raw src/main/agentSessions/service.ts`
+  - `Get-Content -Raw src/main/agentSessions/indexStore.ts`
+  - `Get-Content -Raw src/main/agentSessions/service.test.ts`
+  - `Get-Content -Raw src/renderer/extensions/xenesis-desk.core-tools/panes/AgentSessionsPane.tsx`
+  - `Get-Content -Raw src/renderer/agentSessions/terminalLinker.ts`
+  - `Get-Content -Raw src/renderer/agentSessions/terminalLinker.test.ts`
+  - `rg -n "xd\.agentSessions|agent-sessions:(resume|attach)|resumeAgentSession|attachTerminal|AgentSessionsResume|AgentSessionsAttach" src/shared src/main src/preload src/renderer -S`
+- Exact verification result:
+  - The sibling spec is already partly adopted in this repo. Existing coverage
+    includes `src/shared/agentSessions.ts`, `src/main/agentSessions/*`,
+    `AgentSessionsPane.tsx`, menu/tool open coverage, and CR path registration.
+  - `xd.agentSessions.resume` is implemented in the main CR adapter and can
+    preview or open/send a resume command.
+  - `xd.agentSessions.attachTerminal` is currently a placeholder response and
+    does not persist overlay state.
+  - `AgentSessionOverlayFile` already has a `links` map, but service overlay
+    application ignores it.
+  - The preload `agentSessionsAPI` currently exposes status/scan/list/search/
+    pin/hide only. Panel resume uses CR directly.
+  - No `/agent-sessions` slash command is present in `XenesisAgentPane.tsx`.
+- Known gaps:
+  - Existing unrelated dirty files remain outside this slice:
+    `build/icon.ico`, `build/icon.svg`, `server/.node-version-built`,
+    `server/database.db`.
+  - Live Agent proof has not yet been run for the Agent Sessions gap-hardening
+    slice.
+- Next intended step:
+  - Follow TDD: add RED service overlay-link test, implement attach persistence,
+    then continue through CR/pane/panel focused tests.
+
+### 2026-07-02 Agent Sessions Hub implementation update
+
+- Touched files:
+  - `src/shared/agentSessions.ts`
+  - `src/shared/agentSessions.test.ts`
+  - `src/shared/types.ts`
+  - `src/main/agentSessions/service.ts`
+  - `src/main/agentSessions/service.test.ts`
+  - `src/main/index.ts`
+  - `src/preload/index.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/AgentSessionsPane.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentAgentSessions.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentAgentSessions.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/XenesisAgentPane.tsx`
+  - `handoff.md`
+- Commands run:
+  - RED: `node --import tsx --test src/main/agentSessions/service.test.ts` exited 1 before `service.attachTerminal` existed.
+  - GREEN: `node --import tsx --test src/main/agentSessions/service.test.ts` exited 0 with 2/2 passed.
+  - RED: `node --import tsx --test src/shared/agentSessions.test.ts` exited 1 before `buildAgentSessionTerminalMetadata` existed.
+  - GREEN: `node --import tsx --test src/shared/agentSessions.test.ts` exited 0 with 10/10 passed.
+  - RED: `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentAgentSessions.test.ts` exited 1 before the helper module existed.
+  - GREEN: `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentAgentSessions.test.ts` exited 0 with 4/4 passed.
+  - RED: `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.test.ts` exited 1 before `formatAgentSessionTerminalLink` existed.
+  - GREEN: `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.test.ts` exited 0 with 3/3 passed.
+  - Focused aggregate: `node --import tsx --test src/main/agentSessions/service.test.ts src/shared/agentSessions.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentAgentSessions.test.ts` exited 0 with 19/19 passed.
+  - `npm run typecheck` exited 0.
+  - `npx biome check` on the 11 scoped non-legacy changed files exited 0.
+  - `npm run docs:capabilities:audit` exited 0 and wrote a timestamp-only audit doc change; the timestamp was reverted.
+  - `npm test` exited 0 with 764/764 passed.
+  - `npm run lint` exited 1 with existing repo-wide Biome diagnostics outside this slice, including `packages/xenesis/*`, `extensions/sample.file-helper/main.js`, and untracked `build/icon.svg`.
+  - First live Agent smoke failed because `out` was stale and the built app did not yet know `/agent-sessions`.
+  - `npm run build` exited 0 after `packages/xenesis` build, root typecheck, and Electron build. Vite emitted existing bundle/externalization warnings.
+  - Live Agent smoke rerun exited 0: opened Xenesis Agent with `xd.tools.core.xenesisAgent.open`, submitted `/agent-sessions status` through `xd.testing.xenesisAgent.submitPrompt`, and matched `Agent Sessions status:`.
+  - Pre-commit rerun after approval:
+    - `npm run typecheck` exited 0.
+    - `npm test` exited 0 with 764/764 passed.
+    - `npm run build` exited 0 with the same existing Vite bundle/externalization warnings.
+    - `git diff --check` exited 0 with only the existing `handoff.md` LF-to-CRLF warning.
+    - Live Agent smoke exited 0 again with `/agent-sessions status` submitted through `xd.testing.xenesisAgent.submitPrompt`.
+- Exact implementation result:
+  - `AgentSessionOverlayFile.links` is now applied by the service and persisted by `service.attachTerminal`.
+  - Preload exposes `agentSessionsAPI.attachTerminal`.
+  - `xd.agentSessions.attachTerminal` now validates the terminal id, persists the overlay link, and writes safe agent-session metadata to the terminal.
+  - `xd.agentSessions.resume` now persists the session link and metadata for both reused and newly spawned terminals.
+  - Shared terminal metadata now includes `projectPath`, `agentSessionId`, `agentSessionSource`, `sourceSessionId`, and `resumeCommand`.
+  - `XenesisAgentPane` now supports `/agent-sessions status|scan|list|search|resume|attach|open` as explicit CR-backed slash commands.
+  - `AgentSessionsPane` now shows linked terminal state and can attach the selected session to the active terminal through CR.
+- Known gaps:
+  - The default smart-terminal matcher policy from the sibling spec remains partial. This slice persists explicit/reused/spawned links but does not implement full alternate-buffer/recent-command avoidance beyond existing resume behavior.
+  - Natural-language routing for Agent Sessions remains provider-led; this slice intentionally adds explicit slash commands only, so explanation prompts do not trigger terminal commands.
+  - Repo-wide `npm run lint` is still blocked by existing diagnostics outside this slice.
+  - Existing unrelated dirty local/runtime files remain outside this slice: `build/icon.ico`, `build/icon.svg`, `server/.node-version-built`, `server/database.db`.
+- Next intended step:
+  - Review and commit only the Agent Sessions code/test/handoff files. Exclude unrelated icon/runtime files unless explicitly requested.

@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import type { AgentSession } from '../../../../shared/agentSessions';
-import { buildAgentSessionPanelCounts, getAgentSessionActionState } from './agentSessionsPanelModel';
+import {
+  buildAgentSessionPanelCounts,
+  formatAgentSessionTerminalLink,
+  getAgentSessionActionState,
+} from './agentSessionsPanelModel';
 
 function session(overrides: Partial<AgentSession> = {}): AgentSession {
   return {
@@ -64,4 +68,24 @@ test('getAgentSessionActionState disables resume without a command or source', (
   const unavailable = getAgentSessionActionState(session({ state: 'unavailable' }));
   assert.equal(unavailable.canResume, false);
   assert.match(unavailable.resumeReason, /unavailable/i);
+});
+
+test('formatAgentSessionTerminalLink summarizes linked terminal state for the inspector', () => {
+  assert.equal(formatAgentSessionTerminalLink(session()), 'No linked terminal.');
+
+  assert.equal(
+    formatAgentSessionTerminalLink(
+      session({
+        terminalId: 'term-42',
+        terminal: {
+          termId: 'term-42',
+          cwd: 'D:\\Work\\Project',
+          shell: 'powershell',
+          active: true,
+          linkedAt: '2026-07-02T00:00:00.000Z',
+        },
+      }),
+    ),
+    'term-42 · active · powershell · D:\\Work\\Project · linked 2026-07-02T00:00:00.000Z',
+  );
 });

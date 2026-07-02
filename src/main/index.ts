@@ -94,6 +94,7 @@ import {
   shouldTrustDeskBridgeCallerApproval,
   verifyDeskBridgeCapabilityApprovalProof,
 } from '../shared/deskBridgeCapabilities';
+import { buildAgentSessionTerminalMetadata } from '../shared/agentSessions';
 import { normalizeExternalAppSettings } from '../shared/externalAppControl';
 import { normalizeOfficeSettings } from '../shared/officeControl';
 import {
@@ -12945,10 +12946,22 @@ function normalizeMcpTerminalMetadata(value: unknown): McpBridgeTerminalMetadata
   if (!value || typeof value !== 'object') return undefined;
   const input = value as Record<string, unknown>;
   const metadata: McpBridgeTerminalMetadata = {};
-  for (const key of ['kind', 'subagentId', 'parentTermId', 'agent', 'task', 'command'] as const) {
+  for (const key of [
+    'kind',
+    'subagentId',
+    'parentTermId',
+    'agent',
+    'task',
+    'command',
+    'projectPath',
+    'agentSessionId',
+    'agentSessionSource',
+    'sourceSessionId',
+    'resumeCommand',
+  ] as const) {
     const raw = input[key];
     if (typeof raw === 'string' && raw.trim())
-      metadata[key] = raw.trim().slice(0, key === 'task' || key === 'command' ? 2000 : 200);
+      metadata[key] = raw.trim().slice(0, key === 'task' || key === 'command' || key === 'resumeCommand' ? 2000 : 200);
   }
   return Object.keys(metadata).length > 0 ? metadata : undefined;
 }
@@ -16242,11 +16255,27 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
       agentSessionService.hide(
         normalizeMcpCapabilityArgs(args) as unknown as Parameters<typeof agentSessionService.hide>[0],
       ),
-    agentSessionsAttachTerminal: (args: unknown) => ({
-      ok: true,
-      args: normalizeMcpCapabilityArgs(args),
-      message: 'Agent session terminal linking is not persisted yet.',
-    }),
+    agentSessionsAttachTerminal: async (args: unknown) => {
+      const body = normalizeMcpCapabilityArgs(args);
+      const sessionId = readCapabilityString(body, ['sessionId', 'id']);
+      const termId = readCapabilityString(body, ['termId', 'terminalId']);
+      if (!sessionId) return { ok: false, error: 'sessionId is required.' };
+      if (!termId) return { ok: false, error: 'termId is required.' };
+      const terminal = sessions.get(termId);
+      if (!terminal) return { ok: false, error: `Terminal session not found: ${termId}` };
+      const result = await agentSessionService.attachTerminal({ sessionId, termId });
+      if (!result.ok || !result.session) return result;
+      terminal.mcpMetadata = {
+        ...terminal.mcpMetadata,
+        ...buildAgentSessionTerminalMetadata(result.session),
+      };
+      return {
+        ok: true,
+        session: result.session,
+        termId,
+        message: 'Agent session terminal link persisted.',
+      };
+    },
     agentSessionsResume: async (args: unknown) => {
       const body = normalizeMcpCapabilityArgs(args);
       const sessionId = readCapabilityString(body, ['sessionId', 'id']);
@@ -16287,9 +16316,19 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
           trackTerminalInput(terminal, data);
           automationControllers.get(terminal.id)?.recordTerminalInput(data);
           terminal.backend.write(data);
+          const attachResult = await agentSessionService.attachTerminal({
+            sessionId: selectedSession.id,
+            termId: terminal.id,
+          });
+          if (attachResult.ok && attachResult.session) {
+            terminal.mcpMetadata = {
+              ...terminal.mcpMetadata,
+              ...buildAgentSessionTerminalMetadata(attachResult.session, command),
+            };
+          }
           return {
             ok: true,
-            session: selectedSession,
+            session: attachResult.ok && attachResult.session ? attachResult.session : selectedSession,
             preview,
             termId: terminal.id,
             reusedTerminal: true,
@@ -16305,16 +16344,15 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
         title: `${selectedSession.sourceLabel}: ${selectedSession.projectName}`,
         placement: sanitizeMcpExtensionPanelPlacement(body.placement) ?? 'tab',
         targetPaneId: readCapabilityString(body, ['targetPaneId']),
-        metadata: {
-          kind: 'agent-session-resume',
-          agent: selectedSession.sourceLabel,
-          task: selectedSession.title,
-          command,
-        },
+        metadata: buildAgentSessionTerminalMetadata(selectedSession, command),
+      });
+      const attachResult = await agentSessionService.attachTerminal({
+        sessionId: selectedSession.id,
+        termId: spawnResult.id,
       });
       return {
         ok: true,
-        session: selectedSession,
+        session: attachResult.ok && attachResult.session ? attachResult.session : selectedSession,
         preview,
         spawnResult,
         message: 'Agent session resume command opened in a terminal.',
@@ -22494,6 +22532,7 @@ function setupIpc(): void {
   ipcMain.handle('agent-sessions:scan', (_event, request) => agentSessionService.scan(request));
   ipcMain.handle('agent-sessions:list', (_event, request) => agentSessionService.list(request));
   ipcMain.handle('agent-sessions:search', (_event, request) => agentSessionService.search(request));
+  ipcMain.handle('agent-sessions:attach-terminal', (_event, request) => agentSessionService.attachTerminal(request));
   ipcMain.handle('agent-sessions:pin', (_event, request) => agentSessionService.pin(request));
   ipcMain.handle('agent-sessions:hide', (_event, request) => agentSessionService.hide(request));
 

@@ -68,6 +68,7 @@ import {
   xenesisAgentActionNeededStatus,
   xenesisAgentActionNeededStatusLabel,
 } from './xenesisAgentActionNeeded';
+import { buildXenesisAgentSessionsSlashPlan, renderXenesisAgentSessionsSlashResult } from './xenesisAgentAgentSessions';
 import { hasRenderableXconArtifact, shouldAutoOpenXenesisArtifactInGowoori } from './xenesisAgentArtifactActions';
 import { buildXenesisArtifactPromptWithContext } from './xenesisAgentArtifactContext';
 import {
@@ -491,6 +492,11 @@ const XENESIS_SLASH_COMMANDS: XenesisSlashCommandDescriptor[] = [
   },
   { name: 'tasks', usage: '/tasks [status] [handoff]', description: 'Show persisted agent task lifecycle state.' },
   { name: 'sessions', usage: '/sessions', description: 'Show the current embedded session summary.' },
+  {
+    name: 'agent-sessions',
+    usage: '/agent-sessions [status|scan|list|search|resume|attach|open]',
+    description: 'Search, resume, attach, or open the Agent Sessions Hub through CR.',
+  },
   { name: 'resume', usage: '/resume [prompt]', description: 'Continue from the active embedded transcript context.' },
   { name: 'history', usage: '/history', description: 'Show recent terminal prompt history.' },
   { name: 'doctor', usage: '/doctor', description: 'Check the embedded Xenesis runtime connection.' },
@@ -3163,6 +3169,56 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
     }
   }
 
+  async function runAgentSessionsSlashCommand(input: string, displayInput = '/agent-sessions'): Promise<void> {
+    appendChatMessage({ role: 'user', content: displayInput.trim() || '/agent-sessions', kind: 'command' });
+    const plan = buildXenesisAgentSessionsSlashPlan(input);
+    if (!plan.ok) {
+      appendChatMessage({ role: 'system', kind: 'error', content: plan.error, error: true });
+      return;
+    }
+
+    const assistantMessageId = appendChatMessage({
+      role: 'assistant',
+      content: plan.pendingMessage,
+      streaming: true,
+    });
+    setActiveXenesisAssistantMessage(assistantMessageId);
+    appendRawStreamEntry({
+      kind: 'desk_tool_call',
+      summary: `Desk tool call: ${plan.path}`,
+      detail: stringifyDetail(plan.args),
+    });
+
+    try {
+      const result = await callGowooriDeskCapability(plan.path, plan.args, { approved: plan.approved });
+      appendRawStreamEntry({
+        kind: result.ok ? 'desk_tool_result' : 'desk_tool_error',
+        summary: `Desk tool result: ${plan.path} ${result.ok ? 'ok' : 'failed'}`,
+        detail: stringifyDetail(result),
+        error: !result.ok,
+      });
+      replaceChatMessage(assistantMessageId, {
+        role: 'system',
+        kind: result.approvalRequired ? 'approval' : result.ok ? 'status' : 'error',
+        content: renderXenesisAgentSessionsSlashResult(plan, result),
+        error: !result.ok && !result.approvalRequired,
+        streaming: false,
+      });
+    } catch (agentSessionsError) {
+      const message = agentSessionsError instanceof Error ? agentSessionsError.message : String(agentSessionsError);
+      appendRawStreamEntry({ kind: 'desk_tool_error', summary: message, error: true });
+      replaceChatMessage(assistantMessageId, {
+        role: 'system',
+        kind: 'error',
+        content: `Agent Sessions command failed: ${message}`,
+        error: true,
+        streaming: false,
+      });
+    } finally {
+      clearActiveXenesisAssistantMessage(assistantMessageId);
+    }
+  }
+
   async function runSlashCommand(
     line: string,
     displayLine = line,
@@ -3328,6 +3384,9 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
             'Use /reset to reset the embedded runtime session.',
           ].join('\n'),
         });
+        return;
+      case 'agent-sessions':
+        await runAgentSessionsSlashCommand(command.rest, displayLine);
         return;
       case 'resume':
         if (command.rest) {
