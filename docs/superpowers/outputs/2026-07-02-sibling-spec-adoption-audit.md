@@ -26,5 +26,6 @@ Policy: `packages/xenesis` may change for UI/utility interaction behavior. Agent
 | 18 | `2026-06-30-editable-surface-context-menu-design.md` | adopted | `src/renderer/editing/*`, Code/Markdown/XCON/Safe File integration tests | No action. |
 | 19 | `2026-06-30-xenesis-terminal-subagents-design.md` | adopted | `xconAgentWorkbenchSubagents.ts`, `xd.workbench.subagents.*` | No action. |
 | 20 | `2026-07-01-menu-explore-design.md` | adopted | `xd.apps.menuExplore`, App Control Lab model tests | No action. |
+| 21 | `2026-07-02-html-browser-source-view-design.md` | adopted | `BrowserPane` preview/source/split modes, `browserSourceAPI`, local HTML source payload routing, browser context menu wiring, focused source/routing tests | Optional live Electron smoke for editing a local HTML file before release. |
 
-Current status: channel rich rendering parity, meta management commercialization, and Linux core support are now classified as adopted based on local source/test evidence. A full Linux package build should still be run on a Linux host before publishing Linux artifacts.
+Current status: all 21 sibling specs currently present in the sibling spec folder are classified as adopted based on local source/test evidence. A full Linux package build should still be run on a Linux host before publishing Linux artifacts. Browser HTML source editing has focused automated coverage; optional live Electron smoke can further verify the user interaction.

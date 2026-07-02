@@ -1,6 +1,7 @@
 // ─── Xenesis Desk — Core Dock Engine ───────────────────────────────────────
 
 import type {
+  BrowserSourceKind,
   DockContentType,
   McpBridgeBotChannelName,
   ObsidianVaultContentState,
@@ -89,6 +90,7 @@ export interface DockContentOptions {
   fileName?: string;
   fileContent?: string;
   fileExt?: string;
+  browserSourceKind?: BrowserSourceKind;
   fileOrigin?: 'local' | 'remote';
   remoteFileProfile?: RemoteFileProfile;
   remoteFilePath?: string;
@@ -123,6 +125,7 @@ export class DockContent {
   fileName?: string;
   fileContent?: string;
   fileExt?: string;
+  browserSourceKind?: BrowserSourceKind;
   fileOrigin?: 'local' | 'remote';
   remoteFileProfile?: RemoteFileProfile;
   remoteFilePath?: string;
@@ -157,6 +160,7 @@ export class DockContent {
     this.fileName = options.fileName;
     this.fileContent = options.fileContent;
     this.fileExt = options.fileExt;
+    this.browserSourceKind = options.browserSourceKind;
     this.fileOrigin = options.fileOrigin ?? (options.remoteFileProfile ? 'remote' : 'local');
     this.remoteFileProfile = options.remoteFileProfile;
     this.remoteFilePath = options.remoteFilePath;
@@ -348,6 +352,7 @@ interface SavedContent {
   fileName?: string;
   fileContent?: string;
   fileExt?: string;
+  browserSourceKind?: BrowserSourceKind;
   fileOrigin?: 'local' | 'remote';
   remoteFileProfile?: RemoteFileProfile;
   remoteFilePath?: string;
@@ -1395,6 +1400,7 @@ export class DockEngine {
             ? content.fileContent
             : undefined,
         fileExt: content.fileExt,
+        browserSourceKind: content.browserSourceKind,
         fileOrigin: content.fileOrigin,
         remoteFileProfile: content.remoteFileProfile,
         remoteFilePath: content.remoteFilePath,

@@ -9,6 +9,7 @@ import type {
   AutomationStage,
   AutomationStatus,
   AutomationStreamFilterProfile,
+  BrowserSourceApi,
   CaptureApi,
   CaptureItem,
   CapturePaneRequest,
@@ -568,6 +569,14 @@ const fileApi: FileApi = {
 };
 
 contextBridge.exposeInMainWorld('fileAPI', fileApi);
+
+const browserSourceApi: BrowserSourceApi = {
+  loadResponseSource(request) {
+    return ipcRenderer.invoke('browser-source:load-response-source', request);
+  },
+};
+
+contextBridge.exposeInMainWorld('browserSourceAPI', browserSourceApi);
 
 const fsApi: FsApi = {
   listDir(dirPath: string): Promise<FsEntry[]> {

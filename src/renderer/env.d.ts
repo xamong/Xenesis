@@ -3,6 +3,7 @@
 import type {
   AgentSessionsApi,
   AppMenuApi,
+  BrowserSourceApi,
   CaptureApi,
   DeskBridgeApi,
   DiagnosticsApi,
@@ -35,6 +36,7 @@ declare global {
   interface Window {
     terminalAPI: TerminalApi;
     appMenuAPI?: AppMenuApi;
+    browserSourceAPI: BrowserSourceApi;
     fileAPI: FileApi;
     fsAPI: FsApi;
     vaultAPI: VaultApi;

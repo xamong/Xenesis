@@ -3555,6 +3555,30 @@ export interface SaveTextAsResult {
   path?: string;
 }
 
+export type BrowserSourceKind = 'local-file' | 'dropped-file' | 'response-source' | 'dom-snapshot' | 'unavailable';
+
+export interface BrowserSourceRequest {
+  url: string;
+  timeoutMs?: number;
+  maxBytes?: number;
+  userAgent?: string;
+}
+
+export interface BrowserSourceResult {
+  ok: boolean;
+  kind: BrowserSourceKind;
+  url: string;
+  finalUrl: string;
+  source?: string;
+  contentType?: string;
+  byteCount?: number;
+  error?: string;
+}
+
+export interface BrowserSourceApi {
+  loadResponseSource(request: BrowserSourceRequest): Promise<BrowserSourceResult>;
+}
+
 /** 탭을 새 윈도우로 분리할 때 전달되는 content 직렬화 데이터 */
 export interface DetachPayload {
   id: string;
@@ -3571,6 +3595,7 @@ export interface DetachPayload {
   fileName?: string;
   fileContent?: string;
   fileExt?: string;
+  browserSourceKind?: BrowserSourceKind;
   botSessionId?: string;
   botInputUrl?: string;
   botSource?: string;

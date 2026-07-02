@@ -1,5 +1,75 @@
 # Xenesis Desk Work Handoff
 
+## 2026-07-02 HTML Browser Source View Port
+
+- Current objective:
+  - Port the remaining sibling spec
+    `D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk\docs\superpowers\specs\2026-07-02-html-browser-source-view-design.md`.
+  - Preserve this repo's existing browser CR/MCP controller path in
+    `src/renderer/panes/BrowserPane.tsx` while adding source/split mode,
+    local HTML source persistence, remote source fallback, and browser context
+    menu behavior.
+- Source checkpoint:
+  - Current sibling spec adoption audit covered 20 files and did not include
+    the new 2026-07-02 HTML browser source view spec.
+  - Current repo already has CodeMirror, `useSplitter`, editable surface
+    adapters, and file save helpers.
+  - Current `BrowserPane` still lacks source/split mode and source IPC, but it
+    has the `contentId`-based browser action controller that must not be
+    removed.
+- Planned touched files:
+  - `src/shared/types.ts`
+  - `src/main/browserSource.ts`
+  - `src/main/browserSource.test.ts`
+  - `src/main/index.ts`
+  - `src/preload/index.ts`
+  - `src/renderer/env.d.ts`
+  - `src/renderer/dock/engine.ts`
+  - `src/renderer/dock/DockPaneView.tsx`
+  - `src/renderer/dock/browserHtmlRouting.test.ts`
+  - `src/renderer/panes/BrowserPane.tsx`
+  - `src/renderer/panes/browserSourceModel.ts`
+  - `src/renderer/panes/browserSourceModel.test.ts`
+  - `src/renderer/panes/browserPaneSourceIntegration.test.ts`
+  - `src/renderer/styles.css`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
+  - `src/renderer/App.tsx`
+  - `docs/superpowers/outputs/2026-07-02-sibling-spec-adoption-audit.md`
+- Verification plan:
+  - RED then GREEN:
+    `node --import tsx --test src/main/browserSource.test.ts src/renderer/panes/browserSourceModel.test.ts src/renderer/panes/browserPaneSourceIntegration.test.ts src/renderer/dock/browserHtmlRouting.test.ts`
+  - Focused integration/type checks:
+    `npm run typecheck`
+  - Broader regression if focused checks pass:
+    `npm test`
+    `npm run check:public-release`
+- Known gaps:
+  - RED verification ran before implementation and failed as expected because
+    `src/main/browserSource.ts` and
+    `src/renderer/panes/browserSourceModel.ts` were missing, and BrowserPane /
+    App / DockPaneView source-mode routing patterns were absent.
+  - Focused GREEN verification:
+    `node --import tsx --test src/main/browserSource.test.ts src/renderer/panes/browserSourceModel.test.ts src/renderer/panes/browserPaneSourceIntegration.test.ts src/renderer/dock/browserHtmlRouting.test.ts`
+    passed with 17/17 tests after adding source model, browser source IPC,
+    BrowserPane source/split UI, context menu wiring, and local HTML routing.
+  - `npm run typecheck` passed after the integration changes.
+  - `npx biome format --write` on the touched TS/TSX files formatted 16 files.
+  - Focused verification re-run after formatting passed with 17/17 tests.
+  - `npm run typecheck` re-run after formatting passed.
+  - `npm test` passed with 746/746 tests after the final DockPaneView style
+    adjustment.
+  - `npm run check:public-release` passed after the final adjustment.
+  - `git diff --check` exited 0; it reported only Windows LF/CRLF
+    normalization warnings for touched text files.
+  - `npx biome check` on the small/new browser source files plus related
+    shared/preload/dock/i18n files exited 0. It still reported existing
+    warnings in `src/renderer/dock/engine.ts` and existing unused-parameter /
+    optional-chain warnings in `DockPaneView.tsx`.
+  - `git diff --name-only -- packages/xenesis` returned no output.
+- Next intended step:
+  - User review, then commit/PR if requested.
+
 ## 2026-07-02 Linux Core Support Packaging
 
 - Current objective:
@@ -28068,3 +28138,48 @@ Verification so far:
       LF-to-CRLF warning.
   - Pushed `mini` to `origin/mini`.
   - Created PR: `https://github.com/xamong/Xenesis/pull/18`.
+
+## 2026-07-02 Browser source view spec adoption pre-PR handoff
+
+- Current objective:
+  - Commit and open/update a PR for the adopted browser source view work from
+    sibling spec `2026-07-02-html-browser-source-view-design.md`.
+- Touched files:
+  - `docs/superpowers/outputs/2026-07-02-sibling-spec-adoption-audit.md`
+  - `handoff.md`
+  - `src/main/browserSource.ts`
+  - `src/main/browserSource.test.ts`
+  - `src/main/index.ts`
+  - `src/preload/index.ts`
+  - `src/shared/types.ts`
+  - `src/renderer/App.tsx`
+  - `src/renderer/dock/DockPaneView.tsx`
+  - `src/renderer/dock/browserHtmlRouting.test.ts`
+  - `src/renderer/dock/engine.ts`
+  - `src/renderer/env.d.ts`
+  - `src/renderer/i18n/en.ts`
+  - `src/renderer/i18n/ko.ts`
+  - `src/renderer/panes/BrowserPane.tsx`
+  - `src/renderer/panes/browserPaneSourceIntegration.test.ts`
+  - `src/renderer/panes/browserSourceModel.ts`
+  - `src/renderer/panes/browserSourceModel.test.ts`
+  - `src/renderer/styles.css`
+- Commands run:
+  - `git status --short --branch`
+  - `git diff --name-only`
+  - `git diff --check`
+  - `npm run typecheck`
+  - `npm run check:public-release`
+  - `npm test`
+- Exact verification result:
+  - `git diff --check` exited 0 with LF-to-CRLF warnings only.
+  - `npm run typecheck` exited 0.
+  - `npm run check:public-release` exited 0 with
+    `Public release check passed.`
+  - `npm test` exited 0 with 746/746 passed.
+- Known gaps:
+  - `server/.node-version-built` and `server/database.db` are dirty local
+    generated/runtime files and are intentionally excluded from this commit.
+- Next intended step:
+  - Stage only the browser source view adoption files, commit, push `mini`, and
+    open or update the GitHub PR.
