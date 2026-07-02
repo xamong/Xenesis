@@ -1,5 +1,64 @@
 # Xenesis Desk Work Handoff
 
+## 2026-07-02 Workbench Terminal Subagents Follow-up
+
+- Current objective:
+  - Apply the approved follow-up from
+    `D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk\docs\superpowers\specs\2026-06-30-xenesis-terminal-subagents-design.md`.
+  - Keep the scope to the remaining Workbench subagent gaps found during the
+    spec review: native session link modeling and metadata kind compatibility.
+- Source checkpoint:
+  - `xconAgentWorkbenchSubagents.ts` already covers profiles, attach,
+    managed-spawn plans, assignment envelopes, result parsing, approval
+    envelopes, file-backed assignment transport, and scrollback recovery.
+  - `XconAgentWorkbenchPane.tsx` already exposes Workbench worker controls and
+    CR-backed `xd.workbench.subagents.*` actions.
+  - `src/main/agentSessions/adapters.ts` already scans Codex, Claude, Gemini,
+    and Xenesis native session logs separately.
+- Material decision:
+  - Do not replace the existing `xenesis-workbench-subagent` metadata kind.
+    Add compatibility helpers so both the current kind and the sibling spec
+    kind `xenesis-agent-worker` are recognized.
+  - Add a worker-level `sessionLink` data shape and matching helper so
+    Workbench can retain native Codex/Claude/Gemini/Xenesis session references
+    without coupling the model to the scanner implementation.
+- Planned touched files:
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchSubagents.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchSubagents.test.ts`
+  - Possibly `src/renderer/extensions/xenesis-desk.core-tools/panes/XconAgentWorkbenchPane.tsx`
+- Verification plan:
+  - RED then GREEN:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xconAgentWorkbenchSubagents.test.ts src\shared\workbenchSubagentCapabilities.test.ts`
+  - Focused typecheck:
+    `npm run typecheck`
+- Verification result:
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xconAgentWorkbenchSubagents.test.ts src\shared\workbenchSubagentCapabilities.test.ts`
+    failed as expected before implementation on missing
+    `isXconWorkbenchSubagentWorkerMetadata`,
+    `linkXconWorkbenchSubagentSessions`, and missing native-session context in
+    assignment envelopes.
+  - GREEN focused:
+    same command -> PASS, 19/19 tests after adding metadata-kind compatibility,
+    worker `sessionLink`, native session matching, assignment context, and
+    Workbench status-path link refresh.
+  - `npx biome format --write src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchSubagents.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchSubagents.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/XconAgentWorkbenchPane.tsx`
+    formatted the 3 touched files.
+  - Focused test re-run after formatting -> PASS, 19/19 tests.
+  - `npm run typecheck` -> PASS.
+  - `npm test` -> PASS, 774/774 tests.
+  - `npm run docs:capabilities:audit` -> PASS, 906 nodes and 706 coverage path
+    references. Generated audit timestamp-only diff was reverted from the commit
+    scope.
+- Known local dirty files excluded from this slice:
+  - `build/icon.ico`
+  - `build/icon.svg`
+  - `server/.node-version-built`
+  - `server/database.db`
+- Next intended step:
+  - Inspect final diff/status, commit the Workbench subagent follow-up, push
+    `mini`, and update the existing PR.
+
 ## 2026-07-02 Channel Rich Rendering Parity Verification
 
 - Current objective:

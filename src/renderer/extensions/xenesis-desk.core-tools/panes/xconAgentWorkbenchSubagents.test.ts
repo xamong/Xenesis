@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { normalizeAgentSession } from '../../../../shared/agentSessions';
 import {
   applyXconWorkbenchSubagentResults,
   attachXconWorkbenchSubagentWorker,
@@ -14,6 +15,8 @@ import {
   createXconWorkbenchSubagentProfileTemplateFiles,
   DEFAULT_XCON_WORKBENCH_SUBAGENT_PROFILES,
   detachXconWorkbenchSubagentWorker,
+  isXconWorkbenchSubagentWorkerMetadata,
+  linkXconWorkbenchSubagentSessions,
   loadXconWorkbenchSubagentProfilesFromJsonFiles,
   mergeXconWorkbenchSubagentProfileLayers,
   mergeXconWorkbenchSubagentProfiles,
@@ -187,6 +190,13 @@ test('creates a managed subagent worker spawn plan for installed local CLI termi
   assert.equal(plan.request.metadata?.workerId, plan.worker.workerId);
 });
 
+test('recognizes current and spec Workbench worker metadata kinds', () => {
+  assert.equal(isXconWorkbenchSubagentWorkerMetadata({ kind: 'xenesis-workbench-subagent' }), true);
+  assert.equal(isXconWorkbenchSubagentWorkerMetadata({ kind: 'xenesis-agent-worker' }), true);
+  assert.equal(isXconWorkbenchSubagentWorkerMetadata({ kind: 'xenesis-desk-subagent' }), false);
+  assert.equal(isXconWorkbenchSubagentWorkerMetadata(undefined), false);
+});
+
 test('attaches, reattaches, updates, and detaches terminal workers predictably', () => {
   const first = attachXconWorkbenchSubagentWorker([], {
     terminalId: 'term-1',
@@ -212,6 +222,60 @@ test('attaches, reattaches, updates, and detaches terminal workers predictably',
   assert.equal(second[0]?.terminalTitle, 'Claude');
   assert.equal(running[0]?.status, 'running');
   assert.equal(detached[0]?.status, 'detached');
+});
+
+test('links terminal workers to the latest matching native agent session', () => {
+  const [worker] = attachXconWorkbenchSubagentWorker([], {
+    terminalId: 'term-1',
+    terminalTitle: 'Codex',
+    cwd: 'D:\\Work\\Project\\',
+    cliKind: 'codex',
+    profileName: 'researcher',
+    now: '2026-07-02T00:00:00.000Z',
+  });
+
+  const linked = linkXconWorkbenchSubagentSessions(
+    [worker!],
+    [
+      normalizeAgentSession({
+        source: 'claude',
+        sourceSessionId: 'claude-1',
+        projectPath: 'D:/Work/Project',
+        title: 'Wrong provider',
+        summary: '',
+        updatedAt: '2026-07-02T00:03:00.000Z',
+        resumeCommand: 'claude --resume claude-1',
+        sourceDetails: { sourcePaths: ['C:/Users/tester/.claude/history.jsonl'] },
+      }),
+      normalizeAgentSession({
+        source: 'codex',
+        sourceSessionId: 'codex-old',
+        projectPath: 'D:/Work/Project',
+        title: 'Older Codex task',
+        summary: '',
+        updatedAt: '2026-07-02T00:01:00.000Z',
+        resumeCommand: 'codex resume codex-old',
+        sourceDetails: { sourcePaths: ['C:/Users/tester/.codex/sessions/old.jsonl'] },
+      }),
+      normalizeAgentSession({
+        source: 'codex',
+        sourceSessionId: 'codex-new',
+        projectPath: 'D:/Work/Project',
+        title: 'Latest Codex task',
+        summary: '',
+        updatedAt: '2026-07-02T00:04:00.000Z',
+        resumeCommand: 'codex resume codex-new',
+        sourceDetails: { sourcePaths: ['C:/Users/tester/.codex/sessions/new.jsonl'] },
+      }),
+    ],
+    '2026-07-02T00:05:00.000Z',
+  );
+
+  assert.equal(linked[0]?.sessionLink?.sessionId, 'codex:codex-new');
+  assert.equal(linked[0]?.sessionLink?.source, 'codex');
+  assert.equal(linked[0]?.sessionLink?.sourcePath, 'C:/Users/tester/.codex/sessions/new.jsonl');
+  assert.equal(linked[0]?.sessionLink?.resumeCommand, 'codex resume codex-new');
+  assert.equal(linked[0]?.updatedAt, '2026-07-02T00:05:00.000Z');
 });
 
 test('builds assignment envelopes with central approval constraints', () => {
@@ -243,6 +307,43 @@ test('builds assignment envelopes with central approval constraints', () => {
   assert.match(envelope, /permission: readonly/);
   assert.match(envelope, /Do not modify files directly/);
   assert.match(envelope, /```xenesis-subagent-result/);
+});
+
+test('builds assignment envelopes with linked native session context', () => {
+  const envelope = buildXconWorkbenchSubagentAssignmentEnvelope({
+    worker: {
+      workerId: 'worker-1',
+      terminalId: 'term-1',
+      terminalTitle: 'Codex',
+      cwd: 'D:/work/project',
+      cliKind: 'codex',
+      profileName: 'researcher',
+      status: 'idle',
+      sessionLink: {
+        sessionId: 'codex:codex-new',
+        source: 'codex',
+        sourceSessionId: 'codex-new',
+        sourcePath: 'C:/Users/tester/.codex/sessions/new.jsonl',
+        resumeCommand: 'codex resume codex-new',
+        title: 'Latest Codex task',
+        updatedAt: '2026-07-02T00:04:00.000Z',
+      },
+      attachedAt: '2026-06-30T00:00:00.000Z',
+      updatedAt: '2026-06-30T00:00:00.000Z',
+    },
+    profile: normalizeXconWorkbenchSubagentProfile({
+      name: 'researcher',
+      systemPrompt: 'Collect evidence.',
+      permissionMode: 'readonly',
+    }),
+    taskId: 'subtask-1',
+    objective: 'Inspect terminal APIs.',
+    context: 'Workspace: D:/work/project',
+  });
+
+  assert.match(envelope, /Native session:/);
+  assert.match(envelope, /codex:codex-new/);
+  assert.match(envelope, /C:\/Users\/tester\/\.codex\/sessions\/new\.jsonl/);
 });
 
 test('creates file-backed assignment transport with short terminal input', () => {
@@ -432,7 +533,9 @@ test('Workbench pane exposes subagent profile, worker, transport, and bridge con
   assert.match(source, /createXconWorkbenchManagedSubagentSpawnPlan/);
   assert.match(source, /createXconWorkbenchSubagentAssignmentFileTransport/);
   assert.match(source, /buildXconWorkbenchSubagentApprovalEnvelope/);
+  assert.match(source, /linkXconWorkbenchSubagentSessions/);
   assert.match(source, /recoverXconWorkbenchSubagentWorkerOutput/);
+  assert.match(source, /window\.agentSessionsAPI\?\.list/);
   assert.match(source, /window\.mcpBridgeAPI\.onWorkbenchSubagentAction/);
   assert.match(source, /statusWorkbenchSubagentFromPayload/);
   assert.match(source, /terminalAPI\.spawn/);
