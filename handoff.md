@@ -59,6 +59,60 @@
   - Commit the Linux core support slice, push `linux-core-support`, and open a
     PR to `main`.
 
+## 2026-07-02 Sibling Spec Adoption Audit Design
+
+- Current objective:
+  - Audit sibling specs under
+    `D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk\docs\superpowers\specs`
+    in chronological order.
+  - Classify each spec as completed, partially adopted, missing, or deferred
+    against this repo's actual code, tests, CR paths, and renderer surfaces.
+  - Implement only confirmed missing slices after the brainstorming design and
+    spec gates are approved.
+- Source checkpoint:
+  - Sibling spec folder contains 20 dated spec files from 2026-06-25 through
+    2026-07-01.
+  - Current repo already has many later local adoption specs under
+    `docs/superpowers/specs`, but that folder is ignored by git policy.
+  - User clarified that `packages/xenesis` may be changed for UI and utility
+    interaction features such as channel command surfaces, rich rendering, and
+    buttons. Pure AI Agent reasoning/runtime/provider quality remains protected
+    and should not be downgraded from this repo's implementation.
+- Touched files:
+  - `handoff.md`
+  - `docs/superpowers/specs/2026-07-02-sibling-spec-adoption-audit-design.md`
+- Commands run:
+  - `Get-ChildItem` over sibling specs sorted by name.
+  - `git status --short --branch`
+  - `git log --oneline --decorate -n 12`
+  - Required Obsidian entrypoint/system/index reads.
+  - `rg` scans for external app, channel, input control, Office, Agent
+    Sessions, editable surface, macOS host, and Linux support evidence.
+  - `git diff --no-index --stat` comparisons for high-signal sibling/current
+    folders.
+- Current design decision:
+  - Use an audit-first adoption flow, then implement small slices.
+  - Do not wholesale copy sibling code.
+  - Permit `packages/xenesis` edits only when the feature is a UI/interaction
+    utility and not a reasoning/runtime regression.
+- Audit artifact:
+  - `docs/superpowers/outputs/2026-07-02-sibling-spec-adoption-audit.md`
+  - Initial status: 17 adopted, 3 partial.
+  - macOS host row is adopted from source/package evidence; no live macOS
+    machine verification was run.
+  - First implementation slice selected: channel rich rendering parity.
+- Verification result:
+  - Design phase only. No implementation verification has run yet.
+- Known gaps:
+  - `package.json` and `package-lock.json` remain dirty from the prior
+    `@xcon-viewer/core` / `@xcon-viewer/viewer` 0.2.1 update and are not part
+    of this design-doc commit.
+  - `server/.node-version-built`, `server/database.db`, and
+    `server/cr-payloads/` are local generated/dirty state and remain excluded.
+- Next intended step:
+  - Write and commit the ignored design spec with `git add -f`, then ask the
+    user to review it before implementation planning.
+
 ## 2026-07-01 Settings Section Switch Responsiveness
 
 - Current objective:
@@ -27877,3 +27931,140 @@ Verification so far:
 - Next intended step:
   - User review of the Settings > AI Provider BYOK UI; if accepted, stage only
     the BYOK provider catalog files plus `handoff.md` for commit.
+
+## 2026-07-02 Sibling Spec Adoption Audit Plan
+
+- Current objective:
+  - Audit sibling `xenesis-desk/docs/superpowers/specs` chronologically, decide
+    adoption status for each spec, and prepare the first implementation slice
+    for unported UI/utility behavior.
+- Touched files:
+  - `docs/superpowers/specs/2026-07-02-sibling-spec-adoption-audit-design.md`
+  - `docs/superpowers/plans/2026-07-02-sibling-spec-adoption-audit.md`
+  - `handoff.md`
+- Commands run:
+  - Design marker scan:
+    `Select-String -Path 'docs/superpowers/specs/2026-07-02-sibling-spec-adoption-audit-design.md' -Pattern 'TBD|TODO|\?\?\?|PLACEHOLDER' -CaseSensitive:$false`
+  - Design whitespace check:
+    `git diff --check -- 'docs/superpowers/specs/2026-07-02-sibling-spec-adoption-audit-design.md' 'handoff.md'`
+  - Design commit:
+    `git add -f docs/superpowers/specs/2026-07-02-sibling-spec-adoption-audit-design.md`
+    and `git commit -m "Plan sibling spec adoption audit"`
+  - Plan existence check:
+    `Test-Path 'docs/superpowers/plans/2026-07-02-sibling-spec-adoption-audit.md'`
+  - Plan marker scan:
+    `$markers = @('T' + 'BD', 'TO' + 'DO', '\?' + '\?' + '\?', 'PLACE' + 'HOLDER'); Select-String -Path 'docs/superpowers/plans/2026-07-02-sibling-spec-adoption-audit.md' -Pattern ($markers -join '|') -CaseSensitive:$false`
+  - Plan whitespace check:
+    `git diff --check -- 'docs/superpowers/plans/2026-07-02-sibling-spec-adoption-audit.md' 'handoff.md'`
+- Exact verification result:
+  - Design marker scan returned only the self-review word before it was
+    reworded; final design review had no unresolved markers.
+  - Design whitespace check exited 0 with the existing LF-to-CRLF warning for
+    `handoff.md`.
+  - Design doc was committed as `ae256af Plan sibling spec adoption audit`.
+  - Plan file exists and contains the required agentic-worker header, exact
+    file list, task checklist, commands, and expected results.
+  - Plan marker scan printed no lines after replacing literal marker examples
+    with concatenated PowerShell strings.
+  - Plan whitespace check exited 0 with the existing LF-to-CRLF warning for
+    `handoff.md`.
+- Known gaps:
+  - Implementation has not started yet. The first approved slice in the plan is
+    channel rich rendering parity for `packages/xenesis/src/channels`.
+  - Existing unrelated dirty files remain: package dependency updates,
+    server-generated files, and `handoff.md`.
+- Next intended step:
+  - Ask the user to choose subagent-driven or inline execution for
+    `docs/superpowers/plans/2026-07-02-sibling-spec-adoption-audit.md`.
+
+## 2026-07-02 Channel Rich Rendering Parity
+
+- Current objective:
+  - Implement the first sibling-spec adoption slice: rich outbound rendering
+    parity for Telegram, Slack, and Discord channels.
+- Touched files:
+  - `packages/xenesis/src/channels/types.ts`
+  - `packages/xenesis/src/channels/sendLog.ts`
+  - `packages/xenesis/src/channels/telegram.ts`
+  - `packages/xenesis/src/channels/slack.ts`
+  - `packages/xenesis/src/channels/discord.ts`
+  - `packages/xenesis/tests/channels/telegram.test.ts`
+  - `packages/xenesis/tests/channels/slack.test.ts`
+  - `packages/xenesis/tests/channels/discord.test.ts`
+  - `handoff.md`
+- Commands run:
+  - RED:
+    `npm --prefix packages/xenesis test -- tests/channels/telegram.test.ts tests/channels/slack.test.ts tests/channels/discord.test.ts`
+  - Contract typecheck:
+    `npm --prefix packages/xenesis run typecheck`
+  - Telegram focused GREEN:
+    `npm --prefix packages/xenesis test -- tests/channels/telegram.test.ts`
+  - Slack focused GREEN:
+    `npm --prefix packages/xenesis test -- tests/channels/slack.test.ts`
+  - Discord focused GREEN:
+    `npm --prefix packages/xenesis test -- tests/channels/discord.test.ts`
+  - Focused channel regression:
+    `npm --prefix packages/xenesis test -- tests/channels/telegram.test.ts tests/channels/slack.test.ts tests/channels/discord.test.ts tests/channels/commandSurface.test.ts tests/channels/gatewayCommandSurface.test.ts tests/channels/manager.test.ts`
+  - Package typecheck:
+    `npm --prefix packages/xenesis run typecheck`
+  - Package full tests:
+    `npm --prefix packages/xenesis test`
+  - Root typecheck:
+    `npm run typecheck`
+  - Root tests:
+    `npm test`
+  - Public release check:
+    `npm run check:public-release`
+  - Global lint:
+    `npm run lint`
+  - Targeted changed-file Biome:
+    `npx biome check --write packages/xenesis/src/channels/types.ts packages/xenesis/src/channels/sendLog.ts packages/xenesis/src/channels/telegram.ts packages/xenesis/src/channels/slack.ts packages/xenesis/src/channels/discord.ts packages/xenesis/tests/channels/telegram.test.ts packages/xenesis/tests/channels/slack.test.ts packages/xenesis/tests/channels/discord.test.ts --max-diagnostics=80`
+  - Final changed-file Biome:
+    `npx biome check packages/xenesis/src/channels/types.ts packages/xenesis/src/channels/sendLog.ts packages/xenesis/src/channels/telegram.ts packages/xenesis/src/channels/slack.ts packages/xenesis/src/channels/discord.ts packages/xenesis/tests/channels/telegram.test.ts packages/xenesis/tests/channels/slack.test.ts packages/xenesis/tests/channels/discord.test.ts --max-diagnostics=80`
+  - Whitespace check:
+    `git diff --check`
+- Exact verification result:
+  - RED exited 1 with 7 expected failures. Failures showed existing adapters
+    still used plain text, Telegram did not call `sendPhoto`, and Discord did
+    not split long action messages.
+  - Contract typecheck exited 0 after adding optional `image` and `rendering`
+    fields plus optional send-log chunk fields.
+  - Telegram focused test exited 0 with 7/7 passed.
+  - Slack focused test exited 0 with 2/2 passed.
+  - Discord focused test exited 0 with 3/3 passed.
+  - First package typecheck failed on `BodyInit` because the package type
+    environment exposes `RequestInit` but not the direct `BodyInit` global. The
+    fix changed the cast to `RequestInit['body']`; rerun exited 0.
+  - Focused channel regression exited 0 with 21/21 passed.
+  - Package full tests exited 0 with 705/705 passed.
+  - Root typecheck exited 0.
+  - Root tests exited 0 with 727/727 passed.
+  - Public release check exited 0 with `Public release check passed.`
+  - Global lint exited 1 with pre-existing repo-wide diagnostics. Targeted
+    changed-file Biome was run instead, fixed formatting in the 8 changed files,
+    and the final changed-file Biome check exited 0.
+  - `git diff --check` exited 0 with only existing LF-to-CRLF warnings.
+- Known gaps:
+  - Global `npm run lint` remains blocked by pre-existing repo-wide diagnostics
+    outside this slice.
+  - Existing unrelated dirty files remain outside this slice.
+- Next intended step:
+  - Channel parity files were committed as
+    `b46ecd9 Improve channel rich rendering parity`.
+  - User chose push/create PR.
+  - Fresh pre-PR verification:
+    - `npm test` exited 0 with 727/727 passed.
+    - `npm --prefix packages/xenesis test` first failed while running in
+      parallel with root tests/typechecks on two timing-sensitive tests:
+      `tests/s10/shellTool.session.test.ts` and
+      `tests/cli/tuiRuntimeIntegration.test.ts`. Standalone rerun exited 0
+      with 705/705 passed.
+    - `npm run typecheck` exited 0.
+    - `npm --prefix packages/xenesis run typecheck` exited 0.
+    - `npm run check:public-release` exited 0 with `Public release check
+      passed.`
+    - Changed-file Biome check exited 0.
+    - `git diff --check` exited 0 with only the existing `handoff.md`
+      LF-to-CRLF warning.
+  - Pushed `mini` to `origin/mini`.
+  - Created PR: `https://github.com/xamong/Xenesis/pull/18`.
