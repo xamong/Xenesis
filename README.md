@@ -368,15 +368,25 @@ npm run build                  # typecheck + production build
 npm run pack:win               # Windows unpacked build
 npm run dist:win               # Windows installer (NSIS + portable)
 npm run dist:mac               # macOS build (dmg + zip)
+npm run pack:linux             # Linux experimental core support unpacked build
+npm run dist:linux             # Linux experimental core support build (AppImage + deb)
 npm run check:public-release   # public source boundary check
 npm run check:public-release:ci
 ```
+
+### Platform Support
+
+| Platform | Support tier | Notes |
+|---|---|---|
+| Windows | Primary | Full core app, terminals, workspace UI, bundled server, native app control, and installed Office automation. |
+| macOS | Partial | Core app plus macOS app-control host where available. |
+| Linux | Linux experimental core support | Electron shell, workspace UI, terminals, files, browser panes, MCP/Capability Registry surfaces, Gowoori/XCON rendering, and AppImage/deb packaging. Linux currently excludes `xd.apps.*` external app control and installed Office automation. |
 
 ### Requirements
 
 | Item | Requirement |
 |---|---|
-| OS | Windows 10 1809+ / Windows 11 / macOS / Linux |
+| OS | Windows 10 1809+ / Windows 11 / macOS / Linux experimental core support |
 | Node.js | 22.12 or later |
 | npm | 10 or later |
 | C++ build tools | Required for `better-sqlite3` (Visual Studio Build Tools 2022 on Windows) |

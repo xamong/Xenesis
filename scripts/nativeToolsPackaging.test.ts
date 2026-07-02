@@ -31,6 +31,11 @@ function readPackageJson(): {
   build?: {
     win?: { extraResources?: unknown };
     mac?: { extraResources?: unknown };
+    linux?: {
+      target?: unknown;
+      category?: unknown;
+      artifactName?: unknown;
+    };
   };
 } {
   return JSON.parse(read('package.json'));
@@ -160,6 +165,26 @@ test('package scripts build native helpers before platform packaging', () => {
   assert.equal(scripts['dist:mac:x64'], 'npm run build:helpers:mac && npm run build && electron-builder --mac --x64');
 });
 
+test('linux package scripts build experimental core support without native helper payloads', () => {
+  const { scripts = {}, build = {} } = readPackageJson();
+
+  assert.equal(
+    scripts['pack:linux'],
+    'npm run build:helpers:linux && npm run build && electron-builder --linux --x64 --dir',
+  );
+  assert.equal(scripts['dist:linux'], 'npm run build:helpers:linux && npm run build && electron-builder --linux --x64');
+
+  for (const scriptName of ['pack:linux', 'dist:linux']) {
+    const script = scripts[scriptName] ?? '';
+    assert.doesNotMatch(script, /build:helpers:win|build:helpers:mac/);
+    assert.doesNotMatch(script, /windows-control-host|office-control-host|macos-control-host/);
+  }
+
+  assert.deepEqual(build.linux?.target, ['AppImage', 'deb']);
+  assert.equal(build.linux?.category, 'Development');
+  assert.equal(build.linux?.artifactName, '${productName}-${version}-linux-${arch}.${ext}');
+});
+
 test('electron-builder packages native helper publish directories as platform resources', () => {
   const build = readPackageJson().build ?? {};
 
@@ -182,6 +207,24 @@ test('electron-builder packages native helper publish directories as platform re
       filter: ['**/*'],
     },
   ]);
+});
+
+test('public docs describe Linux as experimental core support', () => {
+  const readme = read('README.md');
+  const koreanReadme = read('README.ko.md');
+
+  assert.match(readme, /Linux experimental core support/);
+  assert.match(readme, /pack:linux/);
+  assert.match(readme, /dist:linux/);
+  assert.match(readme, /AppImage/);
+  assert.match(readme, /deb/);
+  assert.match(readme, /xd\.apps\.\*/);
+  assert.match(koreanReadme, /Linux: \uC2E4\uD5D8\uC801 \uCF54\uC5B4 \uC9C0\uC6D0/);
+  assert.match(koreanReadme, /pack:linux/);
+  assert.match(koreanReadme, /dist:linux/);
+  assert.match(koreanReadme, /AppImage/);
+  assert.match(koreanReadme, /deb/);
+  assert.match(koreanReadme, /xd\.apps\.\*/);
 });
 
 test('app-control runtime keeps PowerShell baseline and wires platform control hosts', () => {

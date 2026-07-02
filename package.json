@@ -59,6 +59,8 @@
     "dist:mac:universal": "npm run build:helpers:mac && npm run build && electron-builder --mac --universal",
     "dist:mac:arm64": "npm run build:helpers:mac && npm run build && electron-builder --mac --arm64",
     "dist:mac:x64": "npm run build:helpers:mac && npm run build && electron-builder --mac --x64",
+    "pack:linux": "npm run build:helpers:linux && npm run build && electron-builder --linux --x64 --dir",
+    "dist:linux": "npm run build:helpers:linux && npm run build && electron-builder --linux --x64",
     "clean": "node ./scripts/clean.mjs",
     "docs:capabilities": "node ./scripts/generateCapabilityRegistryDocs.mjs",
     "docs:capabilities:audit": "node ./scripts/capabilityCoverageAudit.mjs",
@@ -333,6 +335,14 @@
         }
       ],
       "artifactName": "${productName}-${version}-mac-${arch}.${ext}"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Development",
+      "artifactName": "${productName}-${version}-linux-${arch}.${ext}"
     },
     "dmg": {
       "artifactName": "${productName}-${version}-mac-${arch}.${ext}"
