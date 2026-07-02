@@ -106,10 +106,37 @@ export interface DeskEmbeddedAgentRunResult {
   profilePolicy?: DeskEmbeddedProfilePolicyState;
 }
 
+interface DeskEmbeddedAgentRunState {
+  activeController: AbortController | null;
+  activeTraceId: string;
+  activeSessionId: string;
+  historyMessages: NonNullable<DeskEmbeddedRunRequest['historyMessages']>;
+}
+
 function normalizePath(value: unknown): string {
   return String(value || '')
     .trim()
     .replace(/[\\/]+$/, '');
+}
+
+function normalizeText(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function createRunState(): DeskEmbeddedAgentRunState {
+  return {
+    activeController: null,
+    activeTraceId: '',
+    activeSessionId: '',
+    historyMessages: [],
+  };
+}
+
+function runStateKey(request: DeskEmbeddedAgentRunRequest): string {
+  const source = normalizeText(request.source);
+  if (source) return source;
+  const context = request.context && typeof request.context === 'object' ? request.context : {};
+  return normalizeText((context as Record<string, unknown>).responseSurface) || 'default';
 }
 
 export function mapDeskEmbeddedPromptResult(result: DeskEmbeddedPromptResult): DeskEmbeddedAgentRunResult {
@@ -132,10 +159,7 @@ export class DeskEmbeddedAgentRuntime {
   private options: DeskEmbeddedAgentRuntimeOptions;
   private workspace: string;
   private started = false;
-  private activeController: AbortController | null = null;
-  private activeTraceId = '';
-  private activeSessionId = '';
-  private historyMessages: NonNullable<DeskEmbeddedRunRequest['historyMessages']> = [];
+  private runStates = new Map<string, DeskEmbeddedAgentRunState>();
   private lastError = '';
   private updatedAt = new Date().toISOString();
   private capabilityRegistryClient: DeskCapabilityRegistryClient;
@@ -169,24 +193,26 @@ export class DeskEmbeddedAgentRuntime {
   }
 
   stop(): DeskEmbeddedAgentStatus {
-    this.activeController?.abort();
-    this.activeController = null;
+    for (const state of this.runStates.values()) {
+      state.activeController?.abort();
+      state.activeController = null;
+    }
     this.started = false;
     this.touch();
     return this.status();
   }
 
   cancel(): DeskEmbeddedAgentStatus {
-    this.activeController?.abort();
-    this.activeController = null;
+    for (const state of this.runStates.values()) {
+      state.activeController?.abort();
+      state.activeController = null;
+    }
     this.touch();
     return this.status();
   }
 
   resetSession(): DeskEmbeddedAgentStatus {
-    this.activeSessionId = '';
-    this.activeTraceId = '';
-    this.historyMessages = [];
+    this.runStates = new Map();
     this.lastError = '';
     this.touch();
     return this.status();
@@ -215,7 +241,8 @@ export class DeskEmbeddedAgentRuntime {
       this.lastError = 'Xenesis is disabled in settings.';
       return { ok: false, exitCode: 1, output: '', errors: this.lastError, error: this.lastError };
     }
-    if (this.activeController) {
+    const state = this.stateForKey(runStateKey(request));
+    if (state.activeController) {
       return {
         ok: false,
         exitCode: 1,
@@ -228,14 +255,14 @@ export class DeskEmbeddedAgentRuntime {
     this.started = true;
     this.lastError = '';
     const controller = new AbortController();
-    this.activeController = controller;
+    state.activeController = controller;
     this.touch();
 
     try {
       const requestWithSession: DeskEmbeddedAgentRunRequest = {
         ...request,
-        sessionId: request.sessionId || this.activeSessionId || undefined,
-        historyMessages: request.historyMessages ?? this.historyMessages,
+        sessionId: request.sessionId || state.activeSessionId || undefined,
+        historyMessages: request.historyMessages ?? state.historyMessages,
       };
       const result = await runDeskEmbeddedPrompt(
         createDeskEmbeddedPromptOptions({
@@ -252,19 +279,21 @@ export class DeskEmbeddedAgentRuntime {
           request: requestWithSession,
           abortSignal: controller.signal,
           turnLedger: this.options.turnLedger,
-          approvalHandler: this.options.approvalHandler,
+          approvalHandler: request.approvalHandler ?? this.options.approvalHandler,
           onSession: (sessionId) => {
-            this.activeSessionId = sessionId;
+            state.activeSessionId = sessionId;
           },
           onMessages: (messages: NonNullable<DeskEmbeddedRunRequest['historyMessages']>) => {
-            this.historyMessages = messages;
+            state.historyMessages = messages;
           },
           onEvent: (event) => {
-            this.options.onEvent?.({ event: event.type, data: event });
+            const runEvent = { event: event.type, data: event };
+            if (request.onRunEvent) request.onRunEvent(runEvent);
+            else this.options.onEvent?.(runEvent);
           },
         }),
       );
-      this.activeTraceId = result.traceId ?? this.activeTraceId;
+      state.activeTraceId = result.traceId ?? state.activeTraceId;
       const mapped = {
         ...mapDeskEmbeddedPromptResult(result),
         profile: this.options.profileName,
@@ -279,7 +308,7 @@ export class DeskEmbeddedAgentRuntime {
       this.lastError = message;
       return { ok: false, exitCode: 1, output: '', errors: `error: ${message}`, error: message };
     } finally {
-      this.activeController = null;
+      state.activeController = null;
       this.touch();
     }
   }
@@ -298,6 +327,15 @@ export class DeskEmbeddedAgentRuntime {
 
   private touch(): void {
     this.updatedAt = new Date().toISOString();
+  }
+
+  private stateForKey(key: string): DeskEmbeddedAgentRunState {
+    let state = this.runStates.get(key);
+    if (!state) {
+      state = createRunState();
+      this.runStates.set(key, state);
+    }
+    return state;
   }
 
   private statusProviderRuntime(): DeskProviderRuntimeStatus {

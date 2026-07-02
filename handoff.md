@@ -28725,3 +28725,90 @@ Verification so far:
   - Existing unrelated dirty local/runtime files remain outside this slice: `build/icon.ico`, `build/icon.svg`, `server/.node-version-built`, `server/database.db`.
 - Next intended step:
   - Commit only the smart terminal matching files and `handoff.md`, then push/update PR on `mini`.
+
+### 2026-07-02 Gateway/Agent surface isolation hardening
+
+- Current objective:
+  - Ensure Xenesis Agent, Xenesis Agent Workbench, and external bot channel terminal automation do not leak run events, sessions, history, or approvals across surfaces.
+- Touched files planned:
+  - `packages/xenesis-agent-core/src/embeddedAgentRuntime.ts`
+  - `packages/xenesis-agent-core/src/embeddedAgentRuntime.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/XenesisAgentPane.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentRunEvents.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentRunEvents.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchModel.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchModel.test.ts`
+  - `src/main/index.ts`
+  - `handoff.md`
+- Design decision:
+  - Filter main Agent pane run events by `xenesis-xenesis-agent`, allowing only legacy unscoped events as a compatibility exception.
+  - Keep embedded runtime session/history/active controller state keyed by run source or response surface, so Workbench first runs cannot inherit Agent state.
+  - Tighten Workbench approval filtering to require Workbench source or exact active session ownership.
+  - Avoid changing external bot channel command routing; terminal automation remains isolated by conversation attachment plus `termId`.
+- Commands run:
+  - Pre-change audit commands only so far; focused tests for existing scoping/channel/automation passed before edits.
+- Known gaps:
+  - Existing unrelated dirty local/runtime files remain outside this slice: `build/icon.ico`, `build/icon.svg`, `server/.node-version-built`, `server/database.db`.
+- Next intended step:
+  - Add RED tests for embedded runtime source isolation, Agent pane event source filtering, and Workbench approval filter tightening.
+
+### 2026-07-02 Gateway/Agent surface isolation implementation update
+
+- Touched files:
+  - `packages/xenesis-agent-core/src/embeddedRuntime.ts`
+  - `packages/xenesis-agent-core/src/embeddedAgentRuntime.ts`
+  - `packages/xenesis-agent-core/src/embeddedAgentRuntime.test.ts`
+  - `src/main/index.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/XenesisAgentPane.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentRunEvents.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentRunEvents.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchModel.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchModel.test.ts`
+  - `handoff.md`
+- Commands run:
+  - RED: `node --import tsx --test packages/xenesis-agent-core/src/embeddedAgentRuntime.test.ts` initially failed the new source-isolation test because Workbench inherited the Agent session.
+  - RED: `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentRunEvents.test.ts` initially failed because the Agent-pane event source filter did not exist.
+  - RED: `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchModel.test.ts` initially failed because an unrelated Agent runtime approval could appear in Workbench when no active session existed.
+  - Focused aggregate: `node --import tsx --test src/shared/xenesisRunEventScope.test.ts src/main/xenesisWorkbenchApprovals.test.mjs src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentRunEvents.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchModel.test.ts packages/xenesis-agent-core/src/embeddedAgentRuntime.test.ts` exited 0 with 36/36 passed.
+  - `npm run typecheck` exited 0.
+  - `npm test` exited 0 with 775/775 passed.
+  - `npm run docs:capabilities:audit` exited 0: `Capability audit: 906 nodes, 706 coverage path references.` The generated timestamp-only diff in `docs/capability-registry-audit.md` was reverted.
+  - Scoped Biome for the non-monolithic touched files exited 0: `npx biome check packages/xenesis-agent-core/src/embeddedAgentRuntime.ts packages/xenesis-agent-core/src/embeddedAgentRuntime.test.ts packages/xenesis-agent-core/src/embeddedRuntime.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentRunEvents.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentRunEvents.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchModel.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchModel.test.ts`.
+  - `git diff --check` exited 0 with only LF-to-CRLF warnings.
+- Exact implementation result:
+  - Main Xenesis Agent pane now consumes only `xenesis-xenesis-agent` scoped run events, with legacy unscoped events still accepted for compatibility.
+  - Embedded runtime session id, trace id, history, and active controller state are now keyed by run source or response surface, so Xenesis Agent and Xenesis Agent Workbench do not inherit each other's embedded runtime state.
+  - `runXenesisEmbeddedRequest` now passes per-run event and approval callbacks into the embedded runtime, avoiding global run-event scope leakage for normal embedded Agent/Workbench runs.
+  - Workbench pending approval filtering now requires Workbench source ownership or an exact active-session match for runtime-tool approvals.
+  - External bot channel terminal automation was left unchanged because the audited routing is already isolated by conversation attachment plus terminal id.
+- Known gaps:
+  - `xenesis:cancel`, `xenesis:stop`, and `xenesis:resetSession` remain global runtime controls by existing API design.
+  - Live Electron smoke for this specific Agent/Workbench/channel isolation slice has not been run yet.
+  - Full repo `npm run lint` remains blocked by existing unrelated Biome diagnostics in monolithic files and generated/local files.
+  - Existing unrelated dirty local/runtime files remain outside this slice: `build/icon.ico`, `build/icon.svg`, `server/.node-version-built`, `server/database.db`.
+- Next intended step:
+  - If live validation is required before commit, add/run a narrow Electron smoke that opens Xenesis Agent and Xenesis Agent Workbench concurrently and asserts source-scoped event/approval visibility.
+
+### 2026-07-02 Gateway/Agent surface isolation live verification update
+
+- Commands run:
+  - `npm run build` exited 0 after `packages/xenesis` build, root typecheck, and Electron build. Vite emitted existing bundle/externalization warnings.
+  - `npm run smoke:xenesis:provider-onboarding -- --timeout=120000` exited 1 with 8/9 checks passed. App launch, provider status, footer provider, prompt submission, CR readback, and no chat-only approval passed; `provider-cr-mcp-evidence` failed because DeepSeek HTTP streaming produced Desk tool events but no provider raw MCP metadata records for the harness to count.
+  - `npm run smoke:xenesis:provider-onboarding -- --timeout=120000 --json` confirmed the runtime was `deepseek`/`deepseek-chat`, prompt submission matched `provider-routing-readback-ok`, raw stream included `desk_tool_call: desk_state` and `desk_capabilities`, and only the raw provider MCP evidence check failed.
+  - Live isolation smoke via Playwright `_electron.launch` with temporary `XENIS_HOME`, temporary user data, and `XENESIS_ENABLE_TEST_MOCK_PROVIDER=true` exited 0. It opened Xenesis Agent and Xenesis Agent Workbench, ran a `source: xenesis-agent-workbench` embedded mock turn, observed 6 run events, and every event source was `xenesis-agent-workbench`; no missing or wrong source appeared.
+  - Live session isolation smoke via Playwright `_electron.launch` with the same temporary/mock setup exited 0. Agent first run and Workbench first run received different session ids, the Workbench `mock:messages` response did not include the Agent-only marker, and the Agent second run reused the original Agent session and included the Agent-only marker.
+  - Channel/automation focused aggregate: `node --import tsx --test src/main/automation/automationController.test.ts src/main/automation/automationObservability.test.ts src/main/xenesisChannelSafety.test.ts src/shared/xenesisRunEventScope.test.ts src/shared/xenesisConnectionCapabilities.test.ts scripts/xenesisChannelNaturalLanguageLiveSmoke.test.mjs scripts/xenesisChannelApprovalLiveSmoke.test.mjs` exited 0 with 139/139 passed.
+  - Xenesis package channel/terminal tests: `npm --prefix packages/xenesis test -- tests/channels/gatewayCommandSurface.test.ts tests/s1/remoteDeskTerminalSelector.test.ts` exited 0 with 2 files and 7/7 tests passed.
+  - Test-generated untracked `server/cr-payloads/` was removed after verifying its resolved path was inside the workspace.
+- Exact verification result:
+  - Built app verifies with the source-scoped embedded run path.
+  - Live Workbench-source run events are scoped only to Workbench source and do not appear in the Agent pane DOM.
+  - Live embedded Agent and Workbench sessions remain isolated by source.
+  - Existing channel readback/approval models, channel safety redaction, terminal automation stream/manual-send behavior, and Xenesis gateway terminal selector tests pass.
+- Known gaps:
+  - Existing provider onboarding live smoke is still not fully green for DeepSeek because the harness requires provider raw MCP metadata evidence that this runtime path does not expose, even though Desk tool events and CR readback are present.
+  - `xenesis:cancel`, `xenesis:stop`, and `xenesis:resetSession` remain global runtime controls by existing API design.
+  - Full repo `npm run lint` remains blocked by existing unrelated Biome diagnostics in monolithic files and generated/local files.
+  - Existing unrelated dirty local/runtime files remain outside this slice: `build/icon.ico`, `build/icon.svg`, `server/.node-version-built`, `server/database.db`.
+- Next intended step:
+  - Decide whether to adjust the provider onboarding smoke harness for HTTP/BYOK providers that expose Desk tool events but not provider raw MCP metadata, or keep the stricter proof requirement for Codex app-server style runs only.

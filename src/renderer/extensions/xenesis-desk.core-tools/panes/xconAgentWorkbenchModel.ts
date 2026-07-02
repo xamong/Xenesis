@@ -97,7 +97,12 @@ export function isXconWorkbenchPendingApproval(
 ): boolean {
   if (item.status !== 'pending') return false;
   if (isXconWorkbenchRuntimeApproval(item, input.activeSessionId || '')) {
-    return item.sourceAgent === XENESIS_AGENT_WORKBENCH_RUN_SOURCE || Boolean(item.sessionId);
+    const activeSessionId = String(input.activeSessionId || '').trim();
+    const itemSessionId = String(item.sessionId || '').trim();
+    return (
+      item.sourceAgent === XENESIS_AGENT_WORKBENCH_RUN_SOURCE ||
+      Boolean(activeSessionId && itemSessionId === activeSessionId)
+    );
   }
   return isXconWorkbenchCapabilityApproval(item, input);
 }

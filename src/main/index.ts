@@ -72,10 +72,7 @@ import {
   createAgentActionRecordStore,
 } from '../shared/agentActionRecords';
 import { buildAgentSessionTerminalMetadata } from '../shared/agentSessions';
-import {
-  type AgentSessionTerminalMatchInfo,
-  planAgentSessionResumeTarget,
-} from '../shared/agentSessionTerminalLinker';
+import { type AgentSessionTerminalMatchInfo, planAgentSessionResumeTarget } from '../shared/agentSessionTerminalLinker';
 import { AI_PROVIDER_KINDS as SHARED_AI_PROVIDER_KINDS } from '../shared/aiProviderCatalog';
 import {
   APP_MENU_MODEL,
@@ -20708,6 +20705,7 @@ function emitAgentTurnLedgerEvent(emitEvent?: (event: XenesisRunEvent) => void, 
 async function runXenesisEmbeddedRequest(
   request: XenesisRunRequest,
   emitEvent?: (event: XenesisRunEvent) => void,
+  scope?: ActiveXenesisRunEventScope,
 ): Promise<XenesisRunResult> {
   const normalized = normalizeXenesisRunRequest(request);
   if (!normalized.ok) {
@@ -20737,6 +20735,14 @@ async function runXenesisEmbeddedRequest(
     stream: normalized.stream,
     context: normalized.context,
     ...(normalized.providerRuntime ? { providerRuntime: normalized.providerRuntime } : {}),
+    approvalHandler: (approvalRequest) =>
+      xenesisWorkbenchApprovals.requestApproval(approvalRequest, {
+        source: scope?.source || normalized.source || 'xenesis-xenesis-agent',
+        sessionId: scope?.sessionId || normalized.sessionId,
+        runId: scope?.runId,
+        context: scope?.context ?? normalized.context ?? {},
+      }),
+    ...(emitEvent ? { onRunEvent: emitEvent } : {}),
   });
 
   const resultSessionId =
@@ -20853,7 +20859,7 @@ async function runXenesisRequest(
     if (getXenesisRuntimeMode() === 'externalGateway') {
       return runXenesisExternalGatewayRequest(request, scopedEmitEvent);
     }
-    return runXenesisEmbeddedRequest(request, scopedEmitEvent);
+    return runXenesisEmbeddedRequest(request, scopedEmitEvent, scope);
   } finally {
     activeXenesisRunEventScope = previousScope;
   }

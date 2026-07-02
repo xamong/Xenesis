@@ -1,4 +1,5 @@
 import type { XenesisRunEvent, XenesisRunResult } from '../../../../shared/types';
+import { shouldConsumeXenesisRunEvent, XENESIS_AGENT_RUN_SOURCE } from '../../../../shared/xenesisRunEventScope';
 import {
   isRecord,
   isXenesisCliTransportNoise,
@@ -69,6 +70,10 @@ export function extractAssistantDeltaFromRunEvent(event: XenesisRunEvent): strin
   const delta = textDeltaFromPayload(data);
   if (!delta || isXenesisCliTransportNoise(delta)) return '';
   return sanitizeXenesisAssistantTextCandidate(delta);
+}
+
+export function shouldXenesisAgentPaneConsumeRunEvent(event: XenesisRunEvent): boolean {
+  return shouldConsumeXenesisRunEvent(event, XENESIS_AGENT_RUN_SOURCE, { allowUnscoped: true });
 }
 
 export function extractAssistantTextFromRunEvent(event: XenesisRunEvent): string {

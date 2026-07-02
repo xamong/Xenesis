@@ -4,9 +4,36 @@ import type { XenesisRunEvent } from '../../../../shared/types';
 import {
   extractAssistantDeltaFromRunEvent,
   extractAssistantTextFromRunEvent,
+  shouldXenesisAgentPaneConsumeRunEvent,
   summarizeXenesisRunEvent,
   terminalMessageFromRunEventSummary,
 } from './xenesisAgentRunEvents';
+
+test('shouldXenesisAgentPaneConsumeRunEvent accepts only Agent-scoped or legacy unscoped events', () => {
+  assert.equal(
+    shouldXenesisAgentPaneConsumeRunEvent({
+      event: 'delta',
+      source: 'xenesis-xenesis-agent',
+      data: {},
+    }),
+    true,
+  );
+  assert.equal(
+    shouldXenesisAgentPaneConsumeRunEvent({
+      event: 'delta',
+      source: 'xenesis-agent-workbench',
+      data: {},
+    }),
+    false,
+  );
+  assert.equal(
+    shouldXenesisAgentPaneConsumeRunEvent({
+      event: 'assistant_message',
+      data: {},
+    }),
+    true,
+  );
+});
 
 test('extractAssistantTextFromRunEvent reads assistant_message event content', () => {
   const event: XenesisRunEvent = {

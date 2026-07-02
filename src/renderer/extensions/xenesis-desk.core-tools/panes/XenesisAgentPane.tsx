@@ -107,6 +107,7 @@ import {
   deskActionAuditEntries,
   extractAssistantDeltaFromRunEvent,
   extractAssistantTextFromRunEvent,
+  shouldXenesisAgentPaneConsumeRunEvent,
   summarizeXenesisRunEvent,
   taskLifecycleAuditEntries,
   terminalMessageFromRunEventSummary,
@@ -348,6 +349,7 @@ function getOrCreateActiveXenesisAssistantMessage(): string {
 }
 
 function handleXenesisRunEvent(event: XenesisRunEvent): void {
+  if (!shouldXenesisAgentPaneConsumeRunEvent(event)) return;
   const actionInboxItems = collectXenesisMcpActionInboxItems(event);
   if (actionInboxItems.length > 0) {
     flushXenesisAssistantStream();

@@ -66,6 +66,8 @@ export interface DeskEmbeddedRunRequest {
   attachments?: XenesisEmbeddedPromptOptions['attachments'];
   providerRuntime?: DeskProviderRuntimeOverride;
   stream?: boolean;
+  approvalHandler?: XenesisEmbeddedPromptOptions['approvalHandler'];
+  onRunEvent?: (event: { event: string; data: unknown }) => void;
 }
 
 export interface CreateDeskEmbeddedEnvInput {

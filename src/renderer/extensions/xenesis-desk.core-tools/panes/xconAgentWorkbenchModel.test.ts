@@ -138,6 +138,25 @@ test('isXconWorkbenchPendingApproval filters runtime approvals by Workbench sess
     }),
     false,
   );
+  assert.equal(
+    isXconWorkbenchPendingApproval(
+      runtimeApproval({ sourceAgent: 'xenesis-xenesis-agent', sessionId: 'agent-session' }),
+      {
+        activeSessionId: '',
+        workspace: 'D:\\Workspace\\Demo',
+        runStartedAt: '2026-06-30T00:00:00.000Z',
+      },
+    ),
+    false,
+  );
+  assert.equal(
+    isXconWorkbenchPendingApproval(runtimeApproval({ sourceAgent: 'xenesis-xenesis-agent', sessionId: 'session-1' }), {
+      activeSessionId: 'session-1',
+      workspace: 'D:\\Workspace\\Demo',
+      runStartedAt: '2026-06-30T00:00:00.000Z',
+    }),
+    true,
+  );
 });
 
 test('parseXconWorkbenchApprovalResolution maps natural approval commands to bridge resolutions', () => {
