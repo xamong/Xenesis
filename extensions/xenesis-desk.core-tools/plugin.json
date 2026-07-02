@@ -73,14 +73,14 @@
         "icon": "XG"
       },
       {
+        "command": "xenesis-desk.core-tools.openAgentApprovals",
+        "title": "Agent Approvals",
+        "icon": "✓"
+      },
+      {
         "command": "xenesis-desk.core-tools.openHermesStatus",
         "title": "Hermes Status",
         "icon": "H"
-      },
-      {
-        "command": "xenesis-desk.core-tools.openHermesActionInbox",
-        "title": "Action Inbox",
-        "icon": "A"
       },
       {
         "command": "xenesis-desk.core-tools.openCapabilityExplorer",
@@ -93,9 +93,9 @@
         "icon": "T"
       },
       {
-        "command": "xenesis-desk.core-tools.openHermesStashOps",
-        "title": "Hermes Stash Operations",
-        "icon": "S"
+        "command": "xenesis-desk.core-tools.openStashOperations",
+        "title": "Stash Operations",
+        "icon": "stash"
       },
       {
         "command": "xenesis-desk.core-tools.openPreview",
@@ -114,14 +114,14 @@
         "icon": "N"
       },
       {
-        "command": "xenesis-desk.core-tools.openXdBlaster",
-        "title": "XD Blaster",
-        "icon": "XB"
-      },
-      {
         "command": "xenesis-desk.core-tools.openAppControlLab",
         "title": "App Control Lab",
         "icon": "APP"
+      },
+      {
+        "command": "xenesis-desk.core-tools.openXdBlaster",
+        "title": "XD Blaster",
+        "icon": "XB"
       },
       {
         "command": "xenesis-desk.core-tools.openAuditLog",
@@ -132,11 +132,6 @@
         "command": "xenesis-desk.core-tools.openAgentPerformance",
         "title": "Agent Performance",
         "icon": "AP"
-      },
-      {
-        "command": "xenesis-desk.core-tools.openMemoryDashboard",
-        "title": "Memory Dashboard",
-        "icon": "MD"
       }
     ],
     "menus": {
@@ -153,19 +148,18 @@
         "xenesis-desk.core-tools.openSafeFileEditCenter",
         "xenesis-desk.core-tools.openAgentSessions",
         "xenesis-desk.core-tools.openXenesisAgent",
+        "xenesis-desk.core-tools.openAgentApprovals",
         "xenesis-desk.core-tools.openHermesStatus",
-        "xenesis-desk.core-tools.openHermesActionInbox",
         "xenesis-desk.core-tools.openCapabilityExplorer",
         "xenesis-desk.core-tools.openHermesTimeline",
-        "xenesis-desk.core-tools.openHermesStashOps",
+        "xenesis-desk.core-tools.openStashOperations",
         "xenesis-desk.core-tools.openPreview",
         "xenesis-desk.core-tools.openActivityTimeline",
         "xenesis-desk.core-tools.openNetworkMonitor",
-        "xenesis-desk.core-tools.openXdBlaster",
         "xenesis-desk.core-tools.openAppControlLab",
+        "xenesis-desk.core-tools.openXdBlaster",
         "xenesis-desk.core-tools.openAuditLog",
-        "xenesis-desk.core-tools.openAgentPerformance",
-        "xenesis-desk.core-tools.openMemoryDashboard"
+        "xenesis-desk.core-tools.openAgentPerformance"
       ],
       "commandPalette": [
         "xenesis-desk.core-tools.openXamongCode",
@@ -180,19 +174,18 @@
         "xenesis-desk.core-tools.openSafeFileEditCenter",
         "xenesis-desk.core-tools.openAgentSessions",
         "xenesis-desk.core-tools.openXenesisAgent",
+        "xenesis-desk.core-tools.openAgentApprovals",
         "xenesis-desk.core-tools.openHermesStatus",
-        "xenesis-desk.core-tools.openHermesActionInbox",
         "xenesis-desk.core-tools.openCapabilityExplorer",
         "xenesis-desk.core-tools.openHermesTimeline",
-        "xenesis-desk.core-tools.openHermesStashOps",
+        "xenesis-desk.core-tools.openStashOperations",
         "xenesis-desk.core-tools.openPreview",
         "xenesis-desk.core-tools.openActivityTimeline",
         "xenesis-desk.core-tools.openNetworkMonitor",
-        "xenesis-desk.core-tools.openXdBlaster",
         "xenesis-desk.core-tools.openAppControlLab",
+        "xenesis-desk.core-tools.openXdBlaster",
         "xenesis-desk.core-tools.openAuditLog",
-        "xenesis-desk.core-tools.openAgentPerformance",
-        "xenesis-desk.core-tools.openMemoryDashboard"
+        "xenesis-desk.core-tools.openAgentPerformance"
       ]
     }
   }

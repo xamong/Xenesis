@@ -71,6 +71,7 @@ import {
   type AgentWorkflowReceiptListFilter,
   createAgentActionRecordStore,
 } from '../shared/agentActionRecords';
+import { AI_PROVIDER_KINDS as SHARED_AI_PROVIDER_KINDS } from '../shared/aiProviderCatalog';
 import {
   APP_MENU_MODEL,
   type AppMenuActionNode,
@@ -379,6 +380,13 @@ import {
   resolveLocalCliAgentStatus,
   scanLocalCliAgents,
 } from './localCliAgents.mjs';
+import {
+  LOCAL_SQLITE_DEFAULT_PORT,
+  localSqliteApiUrl,
+  normalizeLocalSqliteServerSettings,
+  resolveInternalServerLaunchOptions,
+  shouldUseInternalSqliteServer,
+} from './localSqliteServer';
 import {
   applyMcpActionInboxRequest,
   createMcpActionInboxState,
@@ -1626,24 +1634,7 @@ const DEFAULT_AI_PROVIDER_SETTINGS: AiProviderSettings = {
   reasoningEffort: 'medium',
 };
 const AI_REASONING_EFFORTS = new Set<AiReasoningEffort>(['default', 'low', 'medium', 'high', 'xhigh']);
-const AI_PROVIDER_KINDS = new Set<AiProviderKind>([
-  'auto',
-  'openai',
-  'anthropic',
-  'gemini',
-  'groq',
-  'deepseek',
-  'qwen',
-  'ollama',
-  'lmstudio',
-  'together',
-  'fireworks',
-  'azure',
-  'codex-cli',
-  'codex-app-server',
-  'claude-cli',
-  'claude-interactive',
-]);
+const AI_PROVIDER_KINDS = new Set<AiProviderKind>(SHARED_AI_PROVIDER_KINDS);
 
 const SETTINGS_DEFAULT: AppSettings = {
   theme: 'dark' as ThemeName,
@@ -1676,10 +1667,10 @@ const SETTINGS_DEFAULT: AppSettings = {
   featureFlags: {
     xenisPhase5: false,
   },
-  // 개발 빌드는 내부 서버(localhost:3001)를 기본으로, 배포 빌드는 운영 서버 사용
-  apiUrl: app.isPackaged ? 'https://ai.xamong.com' : 'http://localhost:3001',
-  devMode: !app.isPackaged, // 개발 빌드는 개발 모드 기본 ON
-  serverPort: 3001,
+  // 메타 관리는 번들 SQLite 서버를 기본으로 사용한다.
+  apiUrl: localSqliteApiUrl(LOCAL_SQLITE_DEFAULT_PORT),
+  devMode: true,
+  serverPort: LOCAL_SQLITE_DEFAULT_PORT,
   aiProvider: DEFAULT_AI_PROVIDER_SETTINGS,
   aiProviderProfiles: [
     {
@@ -2646,8 +2637,9 @@ function loadSettings(): AppSettings {
     merged.defaultShell = normalizeShellKindForPlatform(merged.defaultShell);
     // serverPort 유효성 검사
     if (!Number.isInteger(merged.serverPort) || merged.serverPort < 1024 || merged.serverPort > 65535) {
-      merged.serverPort = 3001;
+      merged.serverPort = LOCAL_SQLITE_DEFAULT_PORT;
     }
+    Object.assign(merged, normalizeLocalSqliteServerSettings(merged));
     if (!Number.isInteger(merged.xamongCode.port) || merged.xamongCode.port < 1024 || merged.xamongCode.port > 65535) {
       merged.xamongCode.port = DEFAULT_XAMONG_CODE_API_PORT;
     }
@@ -2704,11 +2696,6 @@ function loadSettings(): AppSettings {
     merged.terminalWorkBlocks = Array.isArray(merged.terminalWorkBlocks) ? merged.terminalWorkBlocks : [];
     merged.onboarding = normalizeOnboardingSettings(merged.onboarding);
     merged.updater = normalizeUpdaterSettings(merged.updater);
-    // 개발 빌드에서 저장된 apiUrl이 운영 서버 URL이면 로컬 서버로 자동 전환
-    if (!app.isPackaged && merged.apiUrl === 'https://ai.xamong.com') {
-      merged.apiUrl = `http://localhost:${merged.serverPort}`;
-      merged.devMode = true;
-    }
     merged.featureFlags = normalizeAppFeatureFlags(merged.featureFlags, true);
     return resolveSettingsSecrets(merged);
   } catch {
@@ -13324,9 +13311,10 @@ function normalizeAuditQueryArgs(args: unknown): {
 const agentControlLockManager = createAgentControlLockManager();
 
 function getMetaBridgeApiUrl(settings = loadSettings()): string {
-  const configured = String(settings.apiUrl || '').trim();
+  const normalized = normalizeLocalSqliteServerSettings(settings);
+  const configured = String(normalized.apiUrl || '').trim();
   if (configured) return configured.replace(/\/+$/, '');
-  return app.isPackaged ? 'https://ai.xamong.com' : `http://localhost:${settings.serverPort}`;
+  return localSqliteApiUrl(normalized.serverPort);
 }
 
 const metaBridge = createMetaBridge({ apiUrl: getMetaBridgeApiUrl() });
@@ -18582,11 +18570,11 @@ let internalServer: null = null; // 미사용 (하위 호환 유지용)
 let internalServerProcess: ChildProcess | null = null;
 let internalServerPid: number | undefined;
 // 실제 기동 포트 — 앱 시작 시 설정 파일에서 읽어 초기화, 이후 변경 시 갱신
-let internalServerPort: number = (() => loadSettings().serverPort ?? 3001)();
+let internalServerPort: number = (() => loadSettings().serverPort ?? LOCAL_SQLITE_DEFAULT_PORT)();
 
 /** 현재 설정에서 서버 포트를 읽어 반환 */
 function getServerPort(): number {
-  return loadSettings().serverPort ?? 3001;
+  return loadSettings().serverPort ?? LOCAL_SQLITE_DEFAULT_PORT;
 }
 
 function getServerScriptPath(): string {
@@ -18641,18 +18629,20 @@ function startInternalServer(): Promise<ServerStatus> {
     return Promise.resolve({ running: false, port: internalServerPort });
   }
 
-  const serverEnv = { ...process.env, PORT: String(internalServerPort) };
-
-  // ── 개발/배포 공통: 시스템 node 로 서버 기동 ────────────────────────────
-  // better-sqlite3 는 시스템 Node.js 용으로 컴파일된 네이티브 모듈이므로
-  // 항상 시스템 node 를 사용한다.
   return isPortListening(internalServerPort).then((already) => {
     if (already) return getInternalServerStatus();
 
-    const nodePath = process.platform === 'win32' ? 'node.exe' : 'node';
-    internalServerProcess = spawn(nodePath, [scriptPath], {
-      env: serverEnv,
-      cwd: path.dirname(scriptPath),
+    const launch = resolveInternalServerLaunchOptions({
+      isPackaged: app.isPackaged,
+      platform: process.platform,
+      electronExecPath: process.execPath,
+      scriptPath,
+      port: internalServerPort,
+      baseEnv: process.env,
+    });
+    internalServerProcess = spawn(launch.command, launch.args, {
+      env: launch.env as NodeJS.ProcessEnv,
+      cwd: launch.cwd,
       stdio: 'pipe',
       windowsHide: true,
     });
@@ -24171,6 +24161,12 @@ if (!gotSingleInstanceLock) {
       const mcpBridgeReadyPromise = startMcpBridgeServer();
       setupApplicationMenu();
       setupIpc();
+      const startupSettings = loadSettings();
+      if (shouldUseInternalSqliteServer(startupSettings)) {
+        startInternalServer().catch((error) => {
+          console.error('Failed to start bundled SQLite server:', error);
+        });
+      }
       createWindow();
       scheduleTerminalWarmup();
       setupAutoUpdater();
@@ -24190,7 +24186,7 @@ if (!gotSingleInstanceLock) {
         return;
       }
 
-      if (isXenisPhase5Enabled() && loadSettings().xamongCode.autoStart) {
+      if (isXenisPhase5Enabled() && startupSettings.xamongCode.autoStart) {
         startXamongCodeServer().catch((error) => {
           xamongCodeLastError = error instanceof Error ? error.message : String(error);
         });

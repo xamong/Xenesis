@@ -47,3 +47,16 @@ test('SettingsPane exposes Xenesis native plugin integration controls', () => {
   assert.match(english, /xenesisNativePluginTitle:\s*'Xenesis Agent plugin'/);
   assert.match(korean, /xenesisNativePluginTitle:\s*'Xenesis Agent 플러그인'/);
 });
+
+test('SettingsPane updates category chrome before rendering heavy category content', () => {
+  const settingsPane = readFileSync(new URL('./SettingsPane.tsx', import.meta.url), 'utf8');
+
+  assert.match(settingsPane, /useDeferredValue/);
+  assert.match(settingsPane, /const renderedActiveCategory = useDeferredValue\(activeCategory\)/);
+  assert.match(settingsPane, /const settingsContentPending = renderedActiveCategory !== activeCategory/);
+  assert.match(settingsPane, /const renderActiveCategory = \(category: SettingsCategoryId = renderedActiveCategory\)/);
+  assert.match(settingsPane, /switch \(category as string\)/);
+  assert.match(settingsPane, /className=\{cls\('sp-content', settingsContentPending && 'is-switching'\)\}/);
+  assert.match(settingsPane, /aria-busy=\{settingsContentPending\}/);
+  assert.match(settingsPane, /renderActiveCategory\(renderedActiveCategory\)/);
+});

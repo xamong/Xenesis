@@ -1,5 +1,175 @@
 # Xenesis Desk Work Handoff
 
+## 2026-07-01 Settings Section Switch Responsiveness
+
+- Current objective:
+  - Re-check Settings pane behavior because clicking a settings section shows a
+    noticeable delay before the section responds.
+  - Keep `packages/xenesis` untouched.
+- Source checkpoint:
+  - `activateSettingsCategory` has no intentional timer or persistence call on
+    normal sidebar clicks.
+  - Settings sidebar/title and heavy active-section body were both driven by
+    the same `activeCategory` state, so a large target section could delay the
+    visible click response.
+  - This repo's `SettingsPane.tsx` is substantially larger than the sibling
+    `xenesis-desk` settings pane after recent feature ports, making the shared
+    state/render path more sensitive to heavy category content.
+- Touched files:
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/renderer/panes/settingsCatalog.test.mjs`
+- Material decisions:
+  - Keep the user's selected category (`activeCategory`) as the immediate source
+    for sidebar active state and title copy.
+  - Render the heavy settings body from a deferred category
+    (`renderedActiveCategory`) so React can commit the lightweight chrome first
+    and then render the target section body.
+  - Add `aria-busy` and an `is-switching` marker while the deferred body catches
+    up.
+- Verification result:
+  - RED:
+    `node --test src/renderer/panes/settingsCatalog.test.mjs` failed as
+    expected before implementation because deferred category rendering did not
+    exist.
+  - Focused GREEN:
+    `node --test src/renderer/panes/SettingsPane.remoteAutosave.test.mjs src/renderer/panes/settingsCatalog.test.mjs`
+    -> PASS, 9/9 tests.
+  - `npm run typecheck` -> PASS.
+  - `npm test` -> PASS, 725/725 tests.
+  - `npm run check:public-release` -> PASS.
+  - `npx biome check --write src/renderer/panes/SettingsPane.tsx src/renderer/panes/settingsCatalog.test.mjs --max-diagnostics 80`
+    -> PASS after formatting the two touched files.
+  - `git diff --check` -> exit 0, with only Windows LF/CRLF normalization
+    warnings.
+  - `git diff --name-only -- packages/xenesis` -> no output.
+- Known gaps:
+  - No live Electron visual/performance smoke was run for the Settings pane in
+    this slice. If the user still sees a delay after this patch, the next
+    investigation target is section-specific data loading or autosave effects.
+- Next intended step:
+  - User review, then commit/PR if requested.
+
+## 2026-07-01 Settings Storage Hardening
+
+- Current objective:
+  - Compare sibling `D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk`
+    settings/storage behavior against this repo and apply only missing,
+    compatible improvements.
+  - Prioritize settings save behavior, local SQLite server defaults/migration,
+    and detached-window autosave protection.
+  - Keep `packages/xenesis` untouched.
+- Source checkpoint:
+  - This repo already has the shared settings category catalog and a more
+    flexible `xenisHome` legacy path resolver, so those sibling differences are
+    intentionally excluded.
+  - Candidate gaps are sibling `src/main/localSqliteServer.ts`,
+    startup/meta-bridge normalization in `src/main/index.ts`, SQLite settings
+    pane defaults/status visibility, and detached-window save guards in
+    `src/renderer/App.tsx`.
+- Touched files:
+  - `src/main/localSqliteServer.ts`
+  - `src/main/localSqliteServer.test.ts`
+  - `src/main/localSqliteServerWiring.test.ts`
+  - `src/main/index.ts`
+  - `src/renderer/settingsAutosavePolicy.ts`
+  - `src/renderer/settingsAutosavePolicy.test.ts`
+  - `src/renderer/App.tsx`
+  - `src/renderer/extensions/xenesis-desk.data-tools/panes/SqliteServerSettingsPane.test.ts`
+  - `src/renderer/extensions/xenesis-desk.data-tools/panes/SqliteServerSettingsPane.tsx`
+  - Local ignored:
+    `docs/superpowers/specs/2026-07-01-settings-storage-hardening-design.md`
+  - Local ignored:
+    `docs/superpowers/plans/2026-07-01-settings-storage-hardening.md`
+- Material decisions:
+  - Preserve this repo's shared settings category catalog and flexible
+    `xenisHome` resolver.
+  - Use a new focused `localSqliteServer` helper rather than spreading
+    historical URL migration and packaged launch logic through `main/index.ts`.
+  - Treat `https://ai.xamong.com` as the historical default metadata API URL and
+    migrate it to local SQLite, but preserve explicitly configured custom remote
+    URLs.
+  - Block renderer settings persistence from detached windows while still
+    allowing detached windows to apply local UI settings.
+- Verification result:
+  - RED:
+    `node --import tsx --test src/main/localSqliteServer.test.ts src/main/localSqliteServerWiring.test.ts src/renderer/extensions/xenesis-desk.data-tools/panes/SqliteServerSettingsPane.test.ts src/renderer/settingsAutosavePolicy.test.ts`
+    failed as expected because `localSqliteServer` and
+    `settingsAutosavePolicy` helpers were missing and main/pane/App wiring did
+    not exist.
+  - Focused GREEN:
+    same command -> PASS, 11/11 tests.
+  - `npm run typecheck` -> PASS.
+  - `npm test` -> PASS, 725/725 tests.
+  - `npm run check:public-release` -> PASS.
+  - `npx biome check` on the 7 small/new touched files and the SQLite pane ->
+    PASS.
+  - Broader Biome check including `src/main/index.ts` and `src/renderer/App.tsx`
+    still reports existing unrelated diagnostics in those large files; the new
+    App import order was manually corrected.
+  - `git diff --check` -> exit 0, with only Windows LF/CRLF normalization
+    warnings for `handoff.md`, `src/main/index.ts`, and `src/renderer/App.tsx`.
+  - `git diff --name-only -- packages/xenesis` -> no output.
+- Known gaps:
+  - `handoff.md` and `docs/superpowers/` are ignored by repo policy, so these
+    notes remain local work logs unless the ignore policy is changed.
+- Next intended step:
+  - User review, then commit/PR if requested.
+
+## 2026-07-01 Toolbar Tools Menu Parity
+
+- Current objective:
+  - Align the top toolbar Tools menu with the sibling
+    `D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk` ordering and icon
+    behavior after user approval.
+  - Keep `packages/xenesis` untouched.
+- Touched files:
+  - `src/shared/appMenuModel.ts`
+  - `src/shared/appMenuModel.test.ts`
+  - `src/shared/menuIcons.ts`
+  - `src/shared/menuIcons.test.ts`
+  - `src/shared/coreToolsToolbarCommands.test.ts`
+  - `src/renderer/App.tsx`
+  - `extensions/xenesis-desk.core-tools/plugin.json`
+  - `extensions/xenesis-desk.core-tools/main.js`
+  - `src/main/extensions/extensionHost.ts`
+  - `src/shared/types.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/renderer.tsx`
+  - `docs/superpowers/specs/2026-07-01-toolbar-tools-menu-parity-design.md`
+- Material decisions:
+  - Use semantic icon keys in the menu model and resolve them at render time
+    through `src/shared/menuIcons.ts`.
+  - Reorder groups to sibling parity:
+    `primary`, `desk`, `xenesis`, `automation`, `gowoori`, `hermes`, `tools`,
+    `extensions`, `lab`, `developer`, `help`.
+  - Move Meta Management and Demo Lab entries into a dedicated Lab group.
+  - Present `Agent Approvals` and `Stash Operations` in Tools while keeping
+    legacy command IDs (`openHermesActionInbox`, `openHermesStashOps`) as
+    runtime aliases to the renamed tools.
+  - Remove Memory Dashboard from the top toolbar/menu contribution surface, but
+    leave the existing pane code/type support in place for internal continuity.
+- Verification result:
+  - RED:
+    `node --import tsx --test src/shared/appMenuModel.test.ts src/shared/menuIcons.test.ts src/shared/coreToolsToolbarCommands.test.ts`
+    failed as expected on menu order, missing Lab group, missing semantic icon
+    resolver, and missing renamed core-tools commands.
+  - GREEN focused tests:
+    same command -> PASS, 11/11 tests.
+  - Scoped Biome:
+    `npx biome check ...menu/core-tools touched files except App.tsx...` ->
+    PASS. A broader check including `src/renderer/App.tsx` still reports
+    pre-existing unrelated lint findings in that large file.
+  - `npm run typecheck` -> PASS.
+  - `npm test` -> PASS, 714/714 tests.
+  - `npm run check:public-release` -> PASS.
+  - `git diff --check` -> exit 0, with only the usual Windows line-ending
+    normalization warning for `src/renderer/App.tsx`.
+- Known gaps:
+  - No live Electron visual smoke was run for the toolbar dropdown in this
+    slice. The behavior is covered by menu model/runtime alias tests and root
+    type/test verification.
+- Next intended step:
+  - User review, then commit/PR if requested.
+
 ## 2026-07-01 MCP / Providers Folder Sync
 
 - Current objective:
@@ -27571,3 +27741,80 @@ Verification so far:
     handoff-only update.
 - Next intended step:
   - Commit and push the handoff-only PR update record.
+
+## 2026-07-01 BYOK API Provider Catalog
+
+- Current objective:
+  - Clean up Settings > AI Provider BYOK so the provider picker shows only real
+    API/local-API providers, keeps local CLI provider selection separate, and
+    refreshes model defaults/options to current provider catalogs.
+- Touched files:
+  - `src/shared/aiProviderCatalog.ts`
+  - `src/shared/aiProviderCatalog.test.ts`
+  - `src/renderer/panes/aiProviderUiCatalog.test.mjs`
+  - `src/main/aiProviderCatalogWiring.test.mjs`
+  - `src/renderer/panes/SettingsPane.tsx`
+  - `src/renderer/App.tsx`
+  - `src/main/index.ts`
+  - `handoff.md`
+- Commands run:
+  - RED shared catalog:
+    `node --import tsx --test src/shared/aiProviderCatalog.test.ts`
+  - GREEN shared catalog:
+    `node --import tsx --test src/shared/aiProviderCatalog.test.ts`
+  - RED renderer guard:
+    `node --test src/renderer/panes/aiProviderUiCatalog.test.mjs`
+  - RED main wiring:
+    `node --test src/main/aiProviderCatalogWiring.test.mjs`
+  - GREEN focused bundle:
+    `node --import tsx --test src/shared/aiProviderCatalog.test.ts`
+  - GREEN renderer guard:
+    `node --test src/renderer/panes/aiProviderUiCatalog.test.mjs`
+  - GREEN main wiring:
+    `node --test src/main/aiProviderCatalogWiring.test.mjs`
+  - Targeted Biome:
+    `npx biome check --write src/shared/aiProviderCatalog.ts src/shared/aiProviderCatalog.test.ts src/renderer/panes/aiProviderUiCatalog.test.mjs src/main/aiProviderCatalogWiring.test.mjs src/renderer/panes/SettingsPane.tsx src/renderer/App.tsx src/main/index.ts --max-diagnostics=80`
+  - Typecheck: `npm run typecheck`
+  - Root tests: `npm test`
+  - Public release: `npm run check:public-release`
+  - Provider smoke: `npm --prefix packages/xenesis run provider:smoke`
+  - No-package check: `git diff --name-only -- packages/xenesis`
+  - Whitespace check: `git diff --check`
+- Exact verification result:
+  - Shared catalog RED failed first because `src/shared/aiProviderCatalog.ts`
+    was missing, then passed 2/2 after adding the catalog.
+  - Renderer guard RED failed first because SettingsPane/App still used the
+    local provider lists, then passed 2/2 after switching to
+    `AI_PROVIDER_API_ORDER`.
+  - Main wiring RED failed first because `src/main/index.ts` still had an
+    inline provider-kind set, then passed 2/2 after importing
+    `SHARED_AI_PROVIDER_KINDS`.
+  - Focused provider UI/catalog tests passed 6/6 after formatting.
+  - Targeted Biome exited 0, fixed formatting/import order, and reported only
+    existing warnings in large files.
+  - `npm run typecheck` exited 0.
+  - `npm test` exited 0 with 727/727 tests passed.
+  - `npm run check:public-release` exited 0.
+  - `git diff --name-only -- packages/xenesis` printed nothing.
+  - `git diff --check` exited 0 with the existing LF-to-CRLF warning for
+    `handoff.md`.
+  - `npm --prefix packages/xenesis run provider:smoke` built
+    `packages/xenesis` successfully, then failed 4/5 at the gateway step with
+    report `C:\Users\dmkim\.xenesis\reports\provider-live-20260701T132604520Z.json`.
+    The report shows connect, prompt, stream, and fallback passed/skipped, then
+    `error: fetch failed` during `runGatewayChecks()`. No `packages/xenesis`
+    files were changed by this task.
+- Known gaps:
+  - Provider smoke gateway failure remains unresolved because the failure is in
+    the live package gateway smoke path, outside the modified BYOK UI/shared
+    catalog files. Treat it as a current environment/live-gateway gap until
+    separately debugged.
+  - No live Electron Agent-pane smoke was run for this slice because the change
+    is Settings BYOK provider catalog/rendering plus main settings validation,
+    not runtime Agent CR behavior.
+  - Worktree still contains unrelated prior SQLite/server/settings changes and
+    generated `server/database.db`; they were not reverted or folded into this
+    task.
+- Next intended step:
+  - User review of the Settings > AI Provider BYOK UI; if accepted, stage only
+    the BYOK provider catalog files plus `handoff.md` for commit.
