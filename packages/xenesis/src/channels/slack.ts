@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import type { ChannelSendLogEntry, ChannelSendLogger } from './sendLog.js';
 import type { ChannelAdapter, ChannelMessageHandler, ChannelOutgoingMessage } from './types.js';
 
 export interface SlackAdapterOptions {
@@ -9,6 +10,7 @@ export interface SlackAdapterOptions {
   fetchImpl?: typeof fetch;
   now?: () => number;
   signatureToleranceSeconds?: number;
+  sendLogger?: ChannelSendLogger;
 }
 
 export interface SlackEventHttpResponse {
@@ -120,17 +122,18 @@ export class SlackAdapter implements ChannelAdapter {
 
   async sendMessage(conversationId: string, message: ChannelOutgoingMessage): Promise<void> {
     const actions = message.actions ?? [];
+    const text = slackMessageText(message);
     if (actions.length === 0) {
-      await this.send(conversationId, message.text);
+      await this.send(conversationId, text);
       return;
     }
     if (!this.options.botToken) {
-      await this.send(conversationId, formatActionFallback(message));
+      await this.send(conversationId, formatActionFallback({ ...message, text }));
       return;
     }
-    await this.postSlackMessage(conversationId, message.text, {
+    await this.postSlackMessage(conversationId, text, {
       blocks: [
-        { type: 'section', text: { type: 'mrkdwn', text: message.text } },
+        { type: 'section', text: { type: 'mrkdwn', text } },
         {
           type: 'actions',
           elements: actions.map((action) => ({
@@ -144,17 +147,66 @@ export class SlackAdapter implements ChannelAdapter {
   }
 
   private async postSlackMessage(channel: string, text: string, extra: Record<string, unknown> = {}) {
-    const response = await this.fetchImpl(slackApiUrl, {
-      method: 'POST',
-      headers: {
-        authorization: `Bearer ${this.options.botToken}`,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({ channel, text, ...extra }),
-    });
-    if (!response.ok) throw new Error(`slack chat.postMessage HTTP ${response.status}`);
-    const body = (await response.json().catch(() => undefined)) as { ok?: boolean; error?: string } | undefined;
-    if (body && body.ok === false) throw new Error(`slack chat.postMessage failed: ${body.error ?? 'unknown error'}`);
+    let response: Response | undefined;
+    try {
+      response = await this.fetchImpl(slackApiUrl, {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${this.options.botToken}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ channel, text, ...extra }),
+      });
+      if (!response.ok) {
+        const message = `slack chat.postMessage HTTP ${response.status}`;
+        this.logSend({
+          conversationId: channel,
+          method: 'sendMessage',
+          text,
+          ok: false,
+          status: response.status,
+          error: message,
+        });
+        throw new Error(message);
+      }
+      const body = (await response.json().catch(() => undefined)) as { ok?: boolean; error?: string } | undefined;
+      if (body && body.ok === false) {
+        const message = `slack chat.postMessage failed: ${body.error ?? 'unknown error'}`;
+        this.logSend({
+          conversationId: channel,
+          method: 'sendMessage',
+          text,
+          ok: false,
+          status: response.status,
+          error: message,
+        });
+        throw new Error(message);
+      }
+      this.logSend({ conversationId: channel, method: 'sendMessage', text, ok: true, status: response.status });
+    } catch (error) {
+      if (!response) {
+        this.logSend({
+          conversationId: channel,
+          method: 'sendMessage',
+          text,
+          ok: false,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+      throw error;
+    }
+  }
+
+  private logSend(entry: Omit<ChannelSendLogEntry, 'channel' | 'at'>) {
+    try {
+      this.options.sendLogger?.({
+        channel: this.name,
+        at: new Date().toISOString(),
+        ...entry,
+      });
+    } catch {
+      // Ignore diagnostic logger failures.
+    }
   }
 
   private verifySignature(headers: SlackHeaderMap, rawBody: string) {
@@ -216,6 +268,10 @@ export class SlackAdapter implements ChannelAdapter {
     const allowed = this.options.allowedChannelIds ?? [];
     return allowed.length === 0 || allowed.includes(channel);
   }
+}
+
+function slackMessageText(message: ChannelOutgoingMessage) {
+  return message.rendering?.slackMrkdwn ?? message.text;
 }
 
 function formatActionFallback(message: ChannelOutgoingMessage) {

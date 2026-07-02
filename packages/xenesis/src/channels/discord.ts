@@ -1,3 +1,4 @@
+import type { ChannelSendLogEntry, ChannelSendLogger } from './sendLog.js';
 import type { ChannelAdapter, ChannelMessageHandler, ChannelOutgoingMessage } from './types.js';
 
 export interface DiscordWebSocketLike {
@@ -20,6 +21,7 @@ export interface DiscordAdapterOptions {
   fetchImpl?: typeof fetch;
   webSocketFactory?: DiscordWebSocketFactory;
   gatewayUrl?: string;
+  sendLogger?: ChannelSendLogger;
 }
 
 const discordApiBaseUrl = 'https://discord.com/api/v10';
@@ -30,10 +32,49 @@ const discordMessageIntents = 512 + 4096 + 32768;
 function splitDiscordMessage(text: string) {
   if (text.length === 0) return [''];
   const chunks: string[] = [];
-  for (let offset = 0; offset < text.length; offset += discordMessageLimit) {
-    chunks.push(text.slice(offset, offset + discordMessageLimit));
+  let offset = 0;
+  while (offset < text.length) {
+    const limitEnd = Math.min(offset + discordMessageLimit, text.length);
+    const end = limitEnd < text.length ? safeDiscordChunkEnd(text, offset, limitEnd) : limitEnd;
+    chunks.push(text.slice(offset, end));
+    offset = end;
   }
   return chunks;
+}
+
+function safeDiscordChunkEnd(text: string, start: number, limitEnd: number) {
+  let end = limitEnd;
+  let changed = true;
+  while (changed && end > start) {
+    changed = false;
+    if (splitsSurrogatePair(text, end)) {
+      end -= 1;
+      changed = true;
+    }
+    if (endsWithOddBackslashRun(text, start, end)) {
+      end -= 1;
+      changed = true;
+    }
+  }
+  return end > start ? end : limitEnd;
+}
+
+function splitsSurrogatePair(text: string, end: number) {
+  return isHighSurrogate(text.charCodeAt(end - 1)) && isLowSurrogate(text.charCodeAt(end));
+}
+
+function isHighSurrogate(code: number) {
+  return code >= 0xd800 && code <= 0xdbff;
+}
+
+function isLowSurrogate(code: number) {
+  return code >= 0xdc00 && code <= 0xdfff;
+}
+
+function endsWithOddBackslashRun(text: string, start: number, end: number) {
+  let count = 0;
+  for (let index = end - 1; index >= start && text[index] === '\\'; index -= 1) count += 1;
+  return count % 2 === 1;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -116,52 +157,73 @@ export class DiscordAdapter implements ChannelAdapter {
       return;
     }
     if (this.options.webhookUrl) {
-      const response = await this.fetchImpl(this.options.webhookUrl, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ content: text }),
-      });
-      if (!response.ok) throw new Error(`discord webhook HTTP ${response.status}`);
+      for (const chunk of splitDiscordMessage(text)) {
+        const response = await this.fetchImpl(this.options.webhookUrl, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ content: chunk }),
+        });
+        if (!response.ok) throw new Error(`discord webhook HTTP ${response.status}`);
+      }
       return;
     }
     throw new Error('Discord adapter requires botToken or webhookUrl to send messages.');
   }
 
   async sendMessage(conversationId: string, message: ChannelOutgoingMessage): Promise<void> {
+    const text = discordMessageText(message);
     const actions = message.actions ?? [];
     if (actions.length === 0) {
-      await this.send(conversationId, message.text);
+      await this.send(conversationId, text);
       return;
     }
     if (!this.options.botToken) {
-      await this.send(conversationId, formatActionFallback(message));
+      await this.send(conversationId, formatActionFallback({ ...message, text }));
       return;
     }
-    const response = await this.fetchImpl(
-      `${discordApiBaseUrl}/channels/${encodeURIComponent(conversationId)}/messages`,
-      {
-        method: 'POST',
-        headers: {
-          authorization: `Bot ${this.options.botToken}`,
-          'content-type': 'application/json',
+    const chunks = splitDiscordMessage(text);
+    for (const [index, chunk] of chunks.entries()) {
+      const isFinalChunk = index === chunks.length - 1;
+      const response = await this.fetchImpl(
+        `${discordApiBaseUrl}/channels/${encodeURIComponent(conversationId)}/messages`,
+        {
+          method: 'POST',
+          headers: {
+            authorization: `Bot ${this.options.botToken}`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            content: chunk,
+            ...(isFinalChunk
+              ? {
+                  components: [
+                    {
+                      type: 1,
+                      components: actions.map((action) => ({
+                        type: 2,
+                        style: 1,
+                        label: action.label,
+                        custom_id: action.value,
+                      })),
+                    },
+                  ],
+                }
+              : {}),
+          }),
         },
-        body: JSON.stringify({
-          content: message.text,
-          components: [
-            {
-              type: 1,
-              components: actions.map((action) => ({
-                type: 2,
-                style: 1,
-                label: action.label,
-                custom_id: action.value,
-              })),
-            },
-          ],
-        }),
-      },
-    );
-    if (!response.ok) throw new Error(`discord create message HTTP ${response.status}`);
+      );
+      this.logSend({
+        conversationId,
+        method: 'sendMessage',
+        text: chunk,
+        chunkIndex: index,
+        chunkCount: chunks.length,
+        ok: response.ok,
+        status: response.status,
+        actionCount: isFinalChunk ? actions.length : 0,
+      });
+      if (!response.ok) throw new Error(`discord create message HTTP ${response.status}`);
+    }
   }
 
   async notifyBusy(conversationId: string): Promise<void> {
@@ -170,6 +232,18 @@ export class DiscordAdapter implements ChannelAdapter {
       method: 'POST',
       headers: { authorization: `Bot ${this.options.botToken}` },
     }).catch(() => undefined);
+  }
+
+  private logSend(entry: Omit<ChannelSendLogEntry, 'channel' | 'at'>) {
+    try {
+      this.options.sendLogger?.({
+        channel: this.name,
+        at: new Date().toISOString(),
+        ...entry,
+      });
+    } catch {
+      // Ignore diagnostic logger failures.
+    }
   }
 
   private addSocketListener(
@@ -298,6 +372,10 @@ export class DiscordAdapter implements ChannelAdapter {
     const allowed = this.options.allowedGuildIds ?? [];
     return allowed.length === 0 || (guildId !== undefined && allowed.includes(guildId));
   }
+}
+
+function discordMessageText(message: ChannelOutgoingMessage) {
+  return message.rendering?.discordMarkdown ?? message.text;
 }
 
 function formatActionFallback(message: ChannelOutgoingMessage) {
