@@ -29,6 +29,16 @@ test('visible subagent helpers do not classify natural prompt text', () => {
   assert.doesNotMatch(paneSource, /buildXenesisControlDemoWorkArgsFromInput/);
 });
 
+test('Xenesis Agent exposes visible subagent plan sessions without GowooriChat control', () => {
+  const paneSource = readFileSync(new URL('./XenesisAgentPane.tsx', import.meta.url), 'utf8');
+
+  assert.match(paneSource, /subagents-plan/);
+  assert.match(paneSource, /runVisibleSubagentPlanSession/);
+  assert.match(paneSource, /formatVisibleSubagentPlanSessionForAgent/);
+  assert.match(paneSource, /formatVisibleSubagentPlanSessionForTerminal/);
+  assert.doesNotMatch(paneSource, /runGowooriChat.*subagents-plan/);
+});
+
 test('builds four visible subagent demo workers with stable markers', () => {
   const workers = buildXenesisVisibleSubagentsDemoWorkers({
     runId: 'demo-run',
@@ -371,9 +381,10 @@ test('selects only visible Xenesis subagent sessions for cleanup', () => {
       { id: 'xw-work-w1' },
       { id: 'normal-terminal' },
       { id: 'custom-worker', metadata: { kind: 'xenesis-desk-subagent' } },
+      { id: 'vp-demo-plan', metadata: { kind: 'xenesis-desk-subagent-plan' } },
       { id: '' },
     ]),
-    ['xv-demo-s1', 'xw-work-w1', 'custom-worker'],
+    ['xv-demo-s1', 'xw-work-w1', 'custom-worker', 'vp-demo-plan'],
   );
 });
 

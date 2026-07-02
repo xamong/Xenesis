@@ -42,7 +42,7 @@ test('createDeskEmbeddedPromptOptions enables provider streaming by default', ()
       profile: '',
       baseURL: '',
       apiKeyEnv: '',
-      env: {},
+      env: { XENESIS_ENABLE_TEST_MOCK_PROVIDER: 'true' },
     },
     approvalMode: 'safe',
     maxTurns: 4,
@@ -64,7 +64,7 @@ test('createDeskEmbeddedPromptOptions preserves explicit stream false override',
       profile: '',
       baseURL: '',
       apiKeyEnv: '',
-      env: {},
+      env: { XENESIS_ENABLE_TEST_MOCK_PROVIDER: 'true' },
     },
     approvalMode: 'safe',
     maxTurns: 4,
@@ -88,7 +88,7 @@ test('createDeskEmbeddedPromptOptions forwards runtime approvalHandler to embedd
       profile: '',
       baseURL: '',
       apiKeyEnv: '',
-      env: {},
+      env: { XENESIS_ENABLE_TEST_MOCK_PROVIDER: 'true' },
     },
     approvalMode: 'safe',
     maxTurns: 4,
@@ -198,7 +198,7 @@ test('DeskEmbeddedAgentRuntime reuses session and history across embedded mock p
         profile: '',
         baseURL: '',
         apiKeyEnv: '',
-        env: {},
+        env: { XENESIS_ENABLE_TEST_MOCK_PROVIDER: 'true' },
       },
       approvalMode: 'safe',
       maxTurns: 4,
@@ -228,6 +228,61 @@ test('DeskEmbeddedAgentRuntime reuses session and history across embedded mock p
   }
 });
 
+test('DeskEmbeddedAgentRuntime isolates session and history by run source', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'xenesis-desk-agent-runtime-sources-'));
+  let runtime: DeskEmbeddedAgentRuntime | undefined;
+  try {
+    runtime = new DeskEmbeddedAgentRuntime({
+      enabled: true,
+      xenesisHome: join(workspace, '.xenesis'),
+      runtimePath: 'embedded',
+      workspace,
+      env: {},
+      providerRuntime: {
+        provider: 'mock',
+        model: 'mock-model',
+        profile: '',
+        baseURL: '',
+        apiKeyEnv: '',
+        env: { XENESIS_ENABLE_TEST_MOCK_PROVIDER: 'true' },
+      },
+      approvalMode: 'safe',
+      maxTurns: 4,
+    });
+
+    runtime.start();
+    const agentFirst = await runtime.run({
+      prompt: 'agent only context',
+      source: 'xenesis-xenesis-agent',
+      stream: false,
+    });
+    const workbenchFirst = await runtime.run({
+      prompt: 'mock:messages',
+      source: 'xenesis-agent-workbench',
+      stream: false,
+    });
+    const agentSecond = await runtime.run({
+      prompt: 'mock:messages',
+      source: 'xenesis-xenesis-agent',
+      stream: false,
+    });
+
+    assert.equal(agentFirst.ok, true);
+    assert.equal(workbenchFirst.ok, true);
+    assert.equal(agentSecond.ok, true);
+    assert.ok(agentFirst.sessionId);
+    assert.ok(workbenchFirst.sessionId);
+    assert.notEqual(workbenchFirst.sessionId, agentFirst.sessionId);
+    assert.doesNotMatch(workbenchFirst.doneContent || '', /agent only context/);
+    assert.equal(agentSecond.sessionId, agentFirst.sessionId);
+    assert.match(agentSecond.doneContent || '', /agent only context/);
+  } finally {
+    runtime?.stop();
+    closeAllDatabases();
+    await rm(workspace, { recursive: true, force: true }).catch(() => undefined);
+  }
+});
+
 test('DeskEmbeddedAgentRuntime writes embedded mock provider turns to the injected turn ledger', async () => {
   const workspace = await mkdtemp(join(tmpdir(), 'xenesis-desk-agent-runtime-ledger-'));
   const turnLedger = createTurnLedger({
@@ -249,7 +304,7 @@ test('DeskEmbeddedAgentRuntime writes embedded mock provider turns to the inject
         profile: '',
         baseURL: '',
         apiKeyEnv: '',
-        env: {},
+        env: { XENESIS_ENABLE_TEST_MOCK_PROVIDER: 'true' },
       },
       approvalMode: 'safe',
       maxTurns: 4,

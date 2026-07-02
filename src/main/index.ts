@@ -71,6 +71,8 @@ import {
   type AgentWorkflowReceiptListFilter,
   createAgentActionRecordStore,
 } from '../shared/agentActionRecords';
+import { buildAgentSessionTerminalMetadata } from '../shared/agentSessions';
+import { type AgentSessionTerminalMatchInfo, planAgentSessionResumeTarget } from '../shared/agentSessionTerminalLinker';
 import { AI_PROVIDER_KINDS as SHARED_AI_PROVIDER_KINDS } from '../shared/aiProviderCatalog';
 import {
   APP_MENU_MODEL,
@@ -79,7 +81,6 @@ import {
   type AppMenuGroupNode,
   type AppMenuNode,
 } from '../shared/appMenuModel';
-import { loadBrowserResponseSource } from './browserSource';
 import {
   callDeskBridgeCapability,
   createDeskBridgeCapabilityApprovalArgsHash,
@@ -358,6 +359,7 @@ import { createAuditLogger } from './audit/auditLogger';
 import { AutomationController } from './automation/automationController';
 import { JsonlAutomationEventLogSink } from './automation/automationEventLog';
 import { createAutomationSemanticObservation } from './automation/automationObservability';
+import { loadBrowserResponseSource } from './browserSource';
 import {
   createCapabilityApprovalAllowKey,
   createCapabilityApprovalRequest,
@@ -12945,10 +12947,22 @@ function normalizeMcpTerminalMetadata(value: unknown): McpBridgeTerminalMetadata
   if (!value || typeof value !== 'object') return undefined;
   const input = value as Record<string, unknown>;
   const metadata: McpBridgeTerminalMetadata = {};
-  for (const key of ['kind', 'subagentId', 'parentTermId', 'agent', 'task', 'command'] as const) {
+  for (const key of [
+    'kind',
+    'subagentId',
+    'parentTermId',
+    'agent',
+    'task',
+    'command',
+    'projectPath',
+    'agentSessionId',
+    'agentSessionSource',
+    'sourceSessionId',
+    'resumeCommand',
+  ] as const) {
     const raw = input[key];
     if (typeof raw === 'string' && raw.trim())
-      metadata[key] = raw.trim().slice(0, key === 'task' || key === 'command' ? 2000 : 200);
+      metadata[key] = raw.trim().slice(0, key === 'task' || key === 'command' || key === 'resumeCommand' ? 2000 : 200);
   }
   return Object.keys(metadata).length > 0 ? metadata : undefined;
 }
@@ -13288,6 +13302,28 @@ function stopMcpTerminalSession(id: string): boolean {
 
 function listMcpTerminalSessions(): Array<Record<string, unknown>> {
   return buildMcpTerminalSessionList(sessions.values(), latestMcpRendererState);
+}
+
+function activeMcpTerminalId(): string {
+  const activePaneId = latestMcpRendererState?.activePaneId ?? '';
+  const activePane = latestMcpRendererState?.panes.find((pane) => pane.id === activePaneId);
+  const activeContentId = activePane?.activeContentId ?? '';
+  const activeContent = latestMcpRendererState?.contents.find((content) => content.id === activeContentId);
+  return activeContent?.contentType === 'terminal' && activeContent.termId ? activeContent.termId : '';
+}
+
+function agentSessionTerminalMatchInfo(session: SessionRecord): AgentSessionTerminalMatchInfo {
+  return {
+    id: session.id,
+    kind: session.kind,
+    cwd: session.cwd,
+    shellCwd: session.cwd,
+    terminalMetadata: session.mcpMetadata,
+    lastSentCommand: session.lastCommand ?? session.mcpCommand,
+    lastCommand: session.lastCommand,
+    active: session.id === activeMcpTerminalId(),
+    exited: false,
+  };
 }
 
 function normalizeMcpCapabilityArgs(args: unknown): Record<string, unknown> {
@@ -16242,11 +16278,27 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
       agentSessionService.hide(
         normalizeMcpCapabilityArgs(args) as unknown as Parameters<typeof agentSessionService.hide>[0],
       ),
-    agentSessionsAttachTerminal: (args: unknown) => ({
-      ok: true,
-      args: normalizeMcpCapabilityArgs(args),
-      message: 'Agent session terminal linking is not persisted yet.',
-    }),
+    agentSessionsAttachTerminal: async (args: unknown) => {
+      const body = normalizeMcpCapabilityArgs(args);
+      const sessionId = readCapabilityString(body, ['sessionId', 'id']);
+      const termId = readCapabilityString(body, ['termId', 'terminalId']);
+      if (!sessionId) return { ok: false, error: 'sessionId is required.' };
+      if (!termId) return { ok: false, error: 'termId is required.' };
+      const terminal = sessions.get(termId);
+      if (!terminal) return { ok: false, error: `Terminal session not found: ${termId}` };
+      const result = await agentSessionService.attachTerminal({ sessionId, termId });
+      if (!result.ok || !result.session) return result;
+      terminal.mcpMetadata = {
+        ...terminal.mcpMetadata,
+        ...buildAgentSessionTerminalMetadata(result.session),
+      };
+      return {
+        ok: true,
+        session: result.session,
+        termId,
+        message: 'Agent session terminal link persisted.',
+      };
+    },
     agentSessionsResume: async (args: unknown) => {
       const body = normalizeMcpCapabilityArgs(args);
       const sessionId = readCapabilityString(body, ['sessionId', 'id']);
@@ -16269,29 +16321,49 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
       if (!command) return { ok: false, error: 'Selected agent session has no resume command.' };
 
       const requestedTermId = readCapabilityString(body, ['termId', 'terminalId']);
-      const reusableTermId = requestedTermId || selectedSession.terminalId || selectedSession.terminal?.termId || '';
+      const terminalPlan = planAgentSessionResumeTarget(
+        selectedSession,
+        [...sessions.values()].map(agentSessionTerminalMatchInfo),
+        {
+          target,
+          termId: requestedTermId,
+          activeTermId: activeMcpTerminalId(),
+        },
+      );
       const preview = {
         session: selectedSession,
         command,
         cwd: selectedSession.projectPath,
         target,
-        termId: reusableTermId || undefined,
+        termId: terminalPlan.termId,
+        targetPlan: terminalPlan,
       };
       if (body.previewOnly === true) return { ok: true, preview };
 
-      if (target !== 'new' && reusableTermId) {
-        const terminal = sessions.get(reusableTermId);
+      if (terminalPlan.target === 'existing' && terminalPlan.termId) {
+        const terminal = sessions.get(terminalPlan.termId);
         if (terminal) {
           const shell = terminal.shell ?? normalizeShellKindForPlatform(loadSettings().defaultShell);
           const data = formatShellStartupInput(shell, command);
           trackTerminalInput(terminal, data);
           automationControllers.get(terminal.id)?.recordTerminalInput(data);
           terminal.backend.write(data);
+          const attachResult = await agentSessionService.attachTerminal({
+            sessionId: selectedSession.id,
+            termId: terminal.id,
+          });
+          if (attachResult.ok && attachResult.session) {
+            terminal.mcpMetadata = {
+              ...terminal.mcpMetadata,
+              ...buildAgentSessionTerminalMetadata(attachResult.session, command),
+            };
+          }
           return {
             ok: true,
-            session: selectedSession,
+            session: attachResult.ok && attachResult.session ? attachResult.session : selectedSession,
             preview,
             termId: terminal.id,
+            targetPlan: terminalPlan,
             reusedTerminal: true,
             message: 'Agent session resume command sent to the existing terminal.',
           };
@@ -16305,17 +16377,17 @@ function createMcpBridgeCapabilityAdapter(): DeskBridgeCapabilityAdapter {
         title: `${selectedSession.sourceLabel}: ${selectedSession.projectName}`,
         placement: sanitizeMcpExtensionPanelPlacement(body.placement) ?? 'tab',
         targetPaneId: readCapabilityString(body, ['targetPaneId']),
-        metadata: {
-          kind: 'agent-session-resume',
-          agent: selectedSession.sourceLabel,
-          task: selectedSession.title,
-          command,
-        },
+        metadata: buildAgentSessionTerminalMetadata(selectedSession, command),
+      });
+      const attachResult = await agentSessionService.attachTerminal({
+        sessionId: selectedSession.id,
+        termId: spawnResult.id,
       });
       return {
         ok: true,
-        session: selectedSession,
+        session: attachResult.ok && attachResult.session ? attachResult.session : selectedSession,
         preview,
+        targetPlan: terminalPlan,
         spawnResult,
         message: 'Agent session resume command opened in a terminal.',
       };
@@ -20633,6 +20705,7 @@ function emitAgentTurnLedgerEvent(emitEvent?: (event: XenesisRunEvent) => void, 
 async function runXenesisEmbeddedRequest(
   request: XenesisRunRequest,
   emitEvent?: (event: XenesisRunEvent) => void,
+  scope?: ActiveXenesisRunEventScope,
 ): Promise<XenesisRunResult> {
   const normalized = normalizeXenesisRunRequest(request);
   if (!normalized.ok) {
@@ -20662,6 +20735,14 @@ async function runXenesisEmbeddedRequest(
     stream: normalized.stream,
     context: normalized.context,
     ...(normalized.providerRuntime ? { providerRuntime: normalized.providerRuntime } : {}),
+    approvalHandler: (approvalRequest) =>
+      xenesisWorkbenchApprovals.requestApproval(approvalRequest, {
+        source: scope?.source || normalized.source || 'xenesis-xenesis-agent',
+        sessionId: scope?.sessionId || normalized.sessionId,
+        runId: scope?.runId,
+        context: scope?.context ?? normalized.context ?? {},
+      }),
+    ...(emitEvent ? { onRunEvent: emitEvent } : {}),
   });
 
   const resultSessionId =
@@ -20778,7 +20859,7 @@ async function runXenesisRequest(
     if (getXenesisRuntimeMode() === 'externalGateway') {
       return runXenesisExternalGatewayRequest(request, scopedEmitEvent);
     }
-    return runXenesisEmbeddedRequest(request, scopedEmitEvent);
+    return runXenesisEmbeddedRequest(request, scopedEmitEvent, scope);
   } finally {
     activeXenesisRunEventScope = previousScope;
   }
@@ -22494,6 +22575,7 @@ function setupIpc(): void {
   ipcMain.handle('agent-sessions:scan', (_event, request) => agentSessionService.scan(request));
   ipcMain.handle('agent-sessions:list', (_event, request) => agentSessionService.list(request));
   ipcMain.handle('agent-sessions:search', (_event, request) => agentSessionService.search(request));
+  ipcMain.handle('agent-sessions:attach-terminal', (_event, request) => agentSessionService.attachTerminal(request));
   ipcMain.handle('agent-sessions:pin', (_event, request) => agentSessionService.pin(request));
   ipcMain.handle('agent-sessions:hide', (_event, request) => agentSessionService.hide(request));
 

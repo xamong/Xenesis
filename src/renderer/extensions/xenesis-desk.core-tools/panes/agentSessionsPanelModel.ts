@@ -55,3 +55,18 @@ export function getAgentSessionActionState(session: AgentSession): {
     canHide: true,
   };
 }
+
+export function formatAgentSessionTerminalLink(session: AgentSession): string {
+  const terminal = session.terminal;
+  const termId = terminal?.termId || session.terminalId;
+  if (!termId) return 'No linked terminal.';
+
+  const parts = [
+    termId,
+    terminal?.active ? 'active' : 'inactive',
+    terminal?.shell,
+    terminal?.cwd,
+    terminal?.linkedAt ? `linked ${terminal.linkedAt}` : '',
+  ].filter(Boolean);
+  return parts.join(' · ');
+}

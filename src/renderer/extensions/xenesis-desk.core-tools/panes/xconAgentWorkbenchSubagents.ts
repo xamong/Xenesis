@@ -1,4 +1,10 @@
-import type { LocalCliAgentStatus, ShellKind, TerminalSpawnRequest } from '../../../../shared/types';
+import type { AgentSession, AgentSessionSource } from '../../../../shared/agentSessions';
+import type {
+  LocalCliAgentStatus,
+  McpBridgeTerminalMetadata,
+  ShellKind,
+  TerminalSpawnRequest,
+} from '../../../../shared/types';
 
 export type XconWorkbenchSubagentCliKind = 'codex' | 'claude' | 'gemini' | 'xenesis' | 'custom';
 export type XconWorkbenchManagedSubagentCliKind = Extract<XconWorkbenchSubagentCliKind, 'codex' | 'claude' | 'gemini'>;
@@ -25,6 +31,15 @@ const XCON_WORKBENCH_MANAGED_SUBAGENT_CLI_KINDS = new Set<XconWorkbenchManagedSu
   'claude',
   'gemini',
 ]);
+export const XCON_WORKBENCH_SUBAGENT_METADATA_KIND = 'xenesis-workbench-subagent';
+export const XCON_WORKBENCH_SUBAGENT_SPEC_METADATA_KIND = 'xenesis-agent-worker';
+
+export function isXconWorkbenchSubagentWorkerMetadata(metadata: McpBridgeTerminalMetadata | undefined): boolean {
+  return (
+    metadata?.kind === XCON_WORKBENCH_SUBAGENT_METADATA_KIND ||
+    metadata?.kind === XCON_WORKBENCH_SUBAGENT_SPEC_METADATA_KIND
+  );
+}
 
 export interface XconWorkbenchSubagentProfile {
   name: string;
@@ -315,9 +330,20 @@ export interface XconWorkbenchSubagentWorker {
   currentTaskSummary?: string;
   lastOutput?: string;
   lastResultSummary?: string;
+  sessionLink?: XconWorkbenchSubagentSessionLink;
   pendingApprovals?: XconWorkbenchSubagentApprovalRequest[];
   attachedAt: string;
   updatedAt: string;
+}
+
+export interface XconWorkbenchSubagentSessionLink {
+  sessionId: string;
+  source: AgentSessionSource;
+  sourceSessionId: string;
+  sourcePath?: string;
+  resumeCommand?: string;
+  title?: string;
+  updatedAt?: string;
 }
 
 export interface XconWorkbenchSubagentApprovalRequest {
@@ -350,6 +376,7 @@ export interface AttachXconWorkbenchSubagentWorkerInput {
   cwd: string;
   cliKind: XconWorkbenchSubagentCliKind;
   profileName: string;
+  sessionLink?: XconWorkbenchSubagentSessionLink;
   now?: string;
 }
 
@@ -451,7 +478,7 @@ export function createXconWorkbenchManagedSubagentSpawnPlan(
         updatedAt: timestamp,
       },
       metadata: {
-        kind: 'xenesis-workbench-subagent',
+        kind: XCON_WORKBENCH_SUBAGENT_METADATA_KIND,
         subagentId: workerId,
         workerId,
         workerProfile: input.profile.name,
@@ -484,11 +511,66 @@ export function attachXconWorkbenchSubagentWorker(
     currentTaskSummary: existing?.currentTaskSummary,
     lastOutput: existing?.lastOutput,
     lastResultSummary: existing?.lastResultSummary,
+    sessionLink: input.sessionLink ?? existing?.sessionLink,
     attachedAt: existing?.attachedAt ?? now,
     updatedAt: now,
   };
   const remaining = workers.filter((worker) => worker.terminalId !== input.terminalId);
   return [...remaining, next].sort((left, right) => left.attachedAt.localeCompare(right.attachedAt));
+}
+
+function normalizeSubagentSessionPath(value: string | undefined): string {
+  return String(value ?? '')
+    .trim()
+    .replace(/\\/g, '/')
+    .replace(/\/+$/g, '')
+    .toLowerCase();
+}
+
+function sourceMatchesWorkerCli(source: AgentSessionSource, cliKind: XconWorkbenchSubagentCliKind): boolean {
+  return cliKind !== 'custom' && source === cliKind;
+}
+
+function compareAgentSessionUpdatedAt(left: AgentSession, right: AgentSession): number {
+  const leftTime = Date.parse(left.updatedAt);
+  const rightTime = Date.parse(right.updatedAt);
+  return (Number.isFinite(rightTime) ? rightTime : 0) - (Number.isFinite(leftTime) ? leftTime : 0);
+}
+
+function createXconWorkbenchSubagentSessionLink(session: AgentSession): XconWorkbenchSubagentSessionLink {
+  return {
+    sessionId: session.id,
+    source: session.source,
+    sourceSessionId: session.sourceSessionId,
+    sourcePath: session.sourceDetails.sourcePaths[0],
+    resumeCommand: session.resumeCommand,
+    title: session.title,
+    updatedAt: session.updatedAt,
+  };
+}
+
+export function linkXconWorkbenchSubagentSessions(
+  workers: readonly XconWorkbenchSubagentWorker[],
+  sessions: readonly AgentSession[],
+  now = new Date().toISOString(),
+): XconWorkbenchSubagentWorker[] {
+  return workers.map((worker) => {
+    const workerPath = normalizeSubagentSessionPath(worker.cwd);
+    if (!workerPath) return worker;
+    const session = sessions
+      .filter(
+        (candidate) =>
+          sourceMatchesWorkerCli(candidate.source, worker.cliKind) &&
+          normalizeSubagentSessionPath(candidate.projectPath) === workerPath,
+      )
+      .sort(compareAgentSessionUpdatedAt)[0];
+    if (!session) return worker;
+    return {
+      ...worker,
+      sessionLink: createXconWorkbenchSubagentSessionLink(session),
+      updatedAt: now,
+    };
+  });
 }
 
 export function updateXconWorkbenchSubagentWorkerStatus(
@@ -556,6 +638,8 @@ export function buildXconWorkbenchSubagentAssignmentEnvelope(
     2,
   );
 
+  const context = formatXconWorkbenchSubagentAssignmentContext(input.context, input.worker.sessionLink);
+
   return [
     '[XENESIS SUBAGENT ASSIGNMENT]',
     `worker: ${input.profile.name}`,
@@ -571,7 +655,7 @@ export function buildXconWorkbenchSubagentAssignmentEnvelope(
     input.objective,
     '',
     'Context:',
-    input.context,
+    context,
     '',
     'Constraints:',
     '- Work as a delegated analysis worker for Xenesis Agent Workbench.',
@@ -584,6 +668,24 @@ export function buildXconWorkbenchSubagentAssignmentEnvelope(
     resultExample,
     '```',
   ].join('\n');
+}
+
+function formatXconWorkbenchSubagentAssignmentContext(
+  context: string,
+  sessionLink: XconWorkbenchSubagentSessionLink | undefined,
+): string {
+  if (!sessionLink) return context;
+  return [
+    context,
+    '',
+    `Native session: ${sessionLink.sessionId}`,
+    `source: ${sessionLink.source}`,
+    `source_session_id: ${sessionLink.sourceSessionId}`,
+    sessionLink.sourcePath ? `source_path: ${sessionLink.sourcePath}` : '',
+    sessionLink.resumeCommand ? `resume_command: ${sessionLink.resumeCommand}` : '',
+  ]
+    .filter((line) => line !== '')
+    .join('\n');
 }
 
 function normalizeResultStatus(value: unknown): XconWorkbenchSubagentResultStatus {

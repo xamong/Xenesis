@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type { AgentSessionSource } from '../../../../shared/agentSessions';
 import type {
   FsEntry,
   LocalCliAgentStatus,
@@ -57,6 +58,7 @@ import {
   createXconWorkbenchSubagentProfileTemplateFiles,
   DEFAULT_XCON_WORKBENCH_SUBAGENT_PROFILES,
   detachXconWorkbenchSubagentWorker,
+  linkXconWorkbenchSubagentSessions,
   loadXconWorkbenchSubagentProfilesFromJsonFiles,
   mergeXconWorkbenchSubagentProfileLayers,
   parseXconWorkbenchSubagentResultBlocks,
@@ -589,6 +591,10 @@ function inferXconWorkbenchSubagentCliKind(content: McpBridgeRendererContentSnap
 
 function normalizeManagedSubagentCliKind(value: unknown): XconWorkbenchManagedSubagentCliKind | null {
   return value === 'codex' || value === 'claude' || value === 'gemini' ? value : null;
+}
+
+function subagentCliKindToAgentSessionSource(cliKind: XconWorkbenchSubagentCliKind): AgentSessionSource | null {
+  return cliKind === 'codex' || cliKind === 'claude' || cliKind === 'gemini' || cliKind === 'xenesis' ? cliKind : null;
 }
 
 function normalizeSubagentApprovalDecision(value: unknown): XconWorkbenchSubagentApprovalDecision {
@@ -1538,9 +1544,30 @@ export function XconAgentWorkbenchPane() {
           now: nowIso(),
         });
       }
-      if (nextWorkers !== subagentWorkers) setSubagentWorkers(nextWorkers);
     }
+    nextWorkers = await linkWorkbenchSubagentNativeSessions(nextWorkers);
+    if (nextWorkers !== subagentWorkers) setSubagentWorkers(nextWorkers);
     return createWorkbenchSubagentActionStatus(payload, { workers: nextWorkers });
+  }
+
+  async function linkWorkbenchSubagentNativeSessions(
+    workers: readonly XconWorkbenchSubagentWorker[],
+  ): Promise<XconWorkbenchSubagentWorker[]> {
+    if (!window.agentSessionsAPI?.list || workers.length === 0) return [...workers];
+    const sources = Array.from(
+      new Set(
+        workers
+          .map((worker) => subagentCliKindToAgentSessionSource(worker.cliKind))
+          .filter((source): source is AgentSessionSource => Boolean(source)),
+      ),
+    );
+    if (sources.length === 0) return [...workers];
+    try {
+      const sessions = await window.agentSessionsAPI.list({ sources, includeHidden: true, limit: 200 });
+      return linkXconWorkbenchSubagentSessions(workers, sessions, nowIso());
+    } catch {
+      return [...workers];
+    }
   }
 
   async function attachWorkbenchSubagentFromPayload(
@@ -2422,6 +2449,11 @@ export function XconAgentWorkbenchPane() {
                       {worker.managed ? ' / managed' : ''}
                     </small>
                     <small title={worker.cwd}>{worker.cwd || 'cwd unknown'}</small>
+                    {worker.sessionLink ? (
+                      <small title={worker.sessionLink.sourcePath || worker.sessionLink.sessionId}>
+                        session {worker.sessionLink.source}:{worker.sessionLink.sourceSessionId}
+                      </small>
+                    ) : null}
                   </div>
                   <span>{worker.status}</span>
                   <button type="button" onClick={() => stopWorker(worker)} disabled={running}>

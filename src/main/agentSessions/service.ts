@@ -4,6 +4,8 @@ import {
   type AgentSession,
   type AgentSessionDiagnostic,
   type AgentSessionSource,
+  type AgentSessionsAttachRequest,
+  type AgentSessionsAttachResult,
   type AgentSessionsHideRequest,
   type AgentSessionsListRequest,
   type AgentSessionsPinRequest,
@@ -30,15 +32,36 @@ function uniq(values: string[]): string[] {
   return [...new Set(values.filter(Boolean))];
 }
 
-function applyOverlay(sessions: AgentSession[], pinned: string[], hidden: string[]): AgentSession[] {
+function applyOverlay(
+  sessions: AgentSession[],
+  pinned: string[],
+  hidden: string[],
+  links: Record<string, { termId: string; linkedAt: string }>,
+): AgentSession[] {
   const pinnedSet = new Set(pinned);
   const hiddenSet = new Set(hidden);
-  return sessions.map((session) => ({
-    ...session,
-    pinned: pinnedSet.has(session.id),
-    hidden: hiddenSet.has(session.id),
-    state: hiddenSet.has(session.id) ? ('hidden' as const) : session.state,
-  }));
+  return sessions.map((session) => {
+    const link = links[session.id];
+    const linkedSession = link
+      ? {
+          ...session,
+          terminalId: link.termId,
+          terminal: {
+            termId: link.termId,
+            cwd: session.projectPath,
+            active: false,
+            linkedAt: link.linkedAt,
+          },
+          state: 'linked' as const,
+        }
+      : session;
+    return {
+      ...linkedSession,
+      pinned: pinnedSet.has(session.id),
+      hidden: hiddenSet.has(session.id),
+      state: hiddenSet.has(session.id) ? ('hidden' as const) : linkedSession.state,
+    };
+  });
 }
 
 export function createAgentSessionService(options: AgentSessionServiceOptions) {
@@ -60,7 +83,7 @@ export function createAgentSessionService(options: AgentSessionServiceOptions) {
     const cache = await store.loadCache();
     const overlay = await loadOverlay();
     return {
-      sessions: applyOverlay(cache.sessions, overlay.pinned, overlay.hidden),
+      sessions: applyOverlay(cache.sessions, overlay.pinned, overlay.hidden, overlay.links),
       diagnostics: cache.diagnostics,
       savedAt: cache.savedAt,
     };
@@ -106,7 +129,12 @@ export function createAgentSessionService(options: AgentSessionServiceOptions) {
     const scannedAt = new Date().toISOString();
     await store.saveCache({ version: AGENT_SESSION_CACHE_VERSION, savedAt: scannedAt, sessions, diagnostics });
     const overlay = await loadOverlay();
-    return { ok: true, sessions: applyOverlay(sessions, overlay.pinned, overlay.hidden), diagnostics, scannedAt };
+    return {
+      ok: true,
+      sessions: applyOverlay(sessions, overlay.pinned, overlay.hidden, overlay.links),
+      diagnostics,
+      scannedAt,
+    };
   }
 
   async function list(request: AgentSessionsListRequest = {}): Promise<AgentSession[]> {
@@ -117,6 +145,23 @@ export function createAgentSessionService(options: AgentSessionServiceOptions) {
   async function search(request: AgentSessionsSearchRequest): Promise<AgentSession[]> {
     const listed = await list(request);
     return rankAgentSessions(listed, request.query);
+  }
+
+  async function attachTerminal(request: AgentSessionsAttachRequest): Promise<AgentSessionsAttachResult> {
+    const sessionId = String(request.sessionId || '').trim();
+    const termId = String(request.termId || '').trim();
+    if (!sessionId) return { ok: false, error: 'sessionId is required.' };
+    if (!termId) return { ok: false, error: 'termId is required.' };
+
+    const overlay = await loadOverlay();
+    const current = await currentSessions();
+    const session = current.sessions.find((item) => item.id === sessionId);
+    if (!session) return { ok: false, error: `Agent session not found: ${sessionId}` };
+
+    const links = { ...overlay.links, [sessionId]: { termId, linkedAt: new Date().toISOString() } };
+    await store.saveOverlay({ ...overlay, links });
+    const [linkedSession] = applyOverlay([session], overlay.pinned, overlay.hidden, links);
+    return { ok: true, session: linkedSession };
   }
 
   async function pin(request: AgentSessionsPinRequest): Promise<AgentSession[]> {
@@ -137,7 +182,7 @@ export function createAgentSessionService(options: AgentSessionServiceOptions) {
     return list({ includeHidden: true });
   }
 
-  return { status, scan, list, search, pin, hide };
+  return { status, scan, list, search, attachTerminal, pin, hide };
 }
 
 export type AgentSessionService = ReturnType<typeof createAgentSessionService>;

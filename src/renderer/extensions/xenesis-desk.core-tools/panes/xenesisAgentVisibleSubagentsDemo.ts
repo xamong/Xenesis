@@ -337,7 +337,10 @@ export function selectXenesisVisibleSubagentSessionIds(sessions: unknown): strin
     if (!id) return [];
     const metadata = isPlainRecord(session.metadata) ? session.metadata : null;
     const isVisibleSubagent =
-      id.startsWith('xv-') || id.startsWith('xw-') || metadata?.kind === 'xenesis-desk-subagent';
+      id.startsWith('xv-') ||
+      id.startsWith('xw-') ||
+      metadata?.kind === 'xenesis-desk-subagent' ||
+      metadata?.kind === 'xenesis-desk-subagent-plan';
     return isVisibleSubagent ? [id] : [];
   });
 }

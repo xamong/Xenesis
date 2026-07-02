@@ -1,5 +1,102 @@
 # Xenesis Desk Work Handoff
 
+## 2026-07-02 Workbench Terminal Subagents Follow-up
+
+- Current objective:
+  - Apply the approved follow-up from
+    `D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk\docs\superpowers\specs\2026-06-30-xenesis-terminal-subagents-design.md`.
+  - Keep the scope to the remaining Workbench subagent gaps found during the
+    spec review: native session link modeling and metadata kind compatibility.
+- Source checkpoint:
+  - `xconAgentWorkbenchSubagents.ts` already covers profiles, attach,
+    managed-spawn plans, assignment envelopes, result parsing, approval
+    envelopes, file-backed assignment transport, and scrollback recovery.
+  - `XconAgentWorkbenchPane.tsx` already exposes Workbench worker controls and
+    CR-backed `xd.workbench.subagents.*` actions.
+  - `src/main/agentSessions/adapters.ts` already scans Codex, Claude, Gemini,
+    and Xenesis native session logs separately.
+- Material decision:
+  - Do not replace the existing `xenesis-workbench-subagent` metadata kind.
+    Add compatibility helpers so both the current kind and the sibling spec
+    kind `xenesis-agent-worker` are recognized.
+  - Add a worker-level `sessionLink` data shape and matching helper so
+    Workbench can retain native Codex/Claude/Gemini/Xenesis session references
+    without coupling the model to the scanner implementation.
+- Planned touched files:
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchSubagents.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchSubagents.test.ts`
+  - Possibly `src/renderer/extensions/xenesis-desk.core-tools/panes/XconAgentWorkbenchPane.tsx`
+- Verification plan:
+  - RED then GREEN:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xconAgentWorkbenchSubagents.test.ts src\shared\workbenchSubagentCapabilities.test.ts`
+  - Focused typecheck:
+    `npm run typecheck`
+- Verification result:
+  - RED:
+    `npx tsx --test src\renderer\extensions\xenesis-desk.core-tools\panes\xconAgentWorkbenchSubagents.test.ts src\shared\workbenchSubagentCapabilities.test.ts`
+    failed as expected before implementation on missing
+    `isXconWorkbenchSubagentWorkerMetadata`,
+    `linkXconWorkbenchSubagentSessions`, and missing native-session context in
+    assignment envelopes.
+  - GREEN focused:
+    same command -> PASS, 19/19 tests after adding metadata-kind compatibility,
+    worker `sessionLink`, native session matching, assignment context, and
+    Workbench status-path link refresh.
+  - `npx biome format --write src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchSubagents.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchSubagents.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/XconAgentWorkbenchPane.tsx`
+    formatted the 3 touched files.
+  - Focused test re-run after formatting -> PASS, 19/19 tests.
+  - `npm run typecheck` -> PASS.
+  - `npm test` -> PASS, 774/774 tests.
+  - `npm run docs:capabilities:audit` -> PASS, 906 nodes and 706 coverage path
+    references. Generated audit timestamp-only diff was reverted from the commit
+    scope.
+- Known local dirty files excluded from this slice:
+  - `build/icon.ico`
+  - `build/icon.svg`
+  - `server/.node-version-built`
+  - `server/database.db`
+- Next intended step:
+  - Inspect final diff/status, commit the Workbench subagent follow-up, push
+    `mini`, and update the existing PR.
+
+## 2026-07-02 Channel Rich Rendering Parity Verification
+
+- Current objective:
+  - Continue the approved sibling-spec adoption sequence with the channel rich
+    rendering parity slice.
+  - Re-check current source before editing because the audit document and
+    package channel tests already indicate this slice may have been adopted.
+- Source checkpoint:
+  - `packages/xenesis/src/channels/types.ts` already defines optional
+    `image` and per-platform `rendering` fields.
+  - `telegram.ts`, `slack.ts`, and `discord.ts` already consume platform
+    rendering fields.
+  - `packages/xenesis/tests/channels/telegram.test.ts`,
+    `slack.test.ts`, and `discord.test.ts` already cover the rich rendering
+    and Discord split-safety behavior.
+  - `docs/superpowers/outputs/2026-07-02-sibling-spec-adoption-audit.md`
+    currently marks channel rich rendering parity as adopted.
+- Material decision:
+  - Do not duplicate edits. Treat this pass as verification and only patch if
+    the focused tests or typecheck reveal drift.
+- Verification plan:
+  - Focused channel tests.
+  - `npm --prefix packages/xenesis run typecheck`.
+  - Broaden only if a change is required.
+- Verification result:
+  - `npm --prefix packages/xenesis test -- tests/channels/telegram.test.ts tests/channels/slack.test.ts tests/channels/discord.test.ts tests/channels/commandSurface.test.ts tests/channels/gatewayCommandSurface.test.ts tests/channels/manager.test.ts`
+    -> PASS, 6 files and 21 tests.
+  - `npm --prefix packages/xenesis run typecheck` -> PASS.
+  - `npm --prefix packages/xenesis test` -> PASS, 137 files and 705 tests.
+- Known local dirty files excluded from this slice:
+  - `build/icon.ico`
+  - `build/icon.svg`
+  - `server/.node-version-built`
+  - `server/database.db`
+- Next intended step:
+  - Check git status/diff. If only `handoff.md` and pre-existing local generated
+    files are dirty, do not create a code commit for this already-adopted slice.
+
 ## 2026-07-02 HTML Browser Source View Port
 
 - Current objective:
@@ -28192,6 +28289,15 @@ Verification so far:
     renderer edit command layer.
 - Touched files:
   - `handoff.md`
+  - `docs/superpowers/plans/2026-07-02-visible-subagent-plan-session.md`
+  - `package.json`
+  - `scripts/xenesisVisibleSubagentPlanSessionLiveSmoke.mjs`
+  - `scripts/xenesisVisibleSubagentPlanSessionLiveSmoke.test.mjs`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/XenesisAgentPane.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentPlanSession.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentPlanSession.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentsDemo.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentsDemo.test.ts`
   - `src/renderer/editing/editableSurfaceIntegration.test.ts`
   - `src/renderer/panes/CodePane.tsx`
   - `src/renderer/panes/MarkdownPane.tsx`
@@ -28341,3 +28447,368 @@ Verification so far:
 - Next intended step:
   - Review the combined Phase 1/2/3 editable-surface diff, then commit when
     requested.
+
+## 2026-07-02 Visible subagent plan session handoff
+
+- Current objective:
+  - Port the approved sibling spec
+    `2026-06-27-visible-subagent-plan-session-design.md` into this repo by
+    adding a product-level plan-session layer above the existing visible
+    subagent CR execution path.
+- Touched files:
+  - `handoff.md`
+- Commands run:
+  - `Get-Content -Raw "D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk\docs\superpowers\specs\2026-06-27-visible-subagent-plan-session-design.md"`
+  - `rg -n "VisibleSubagentPlanSession|visible subagent plan|subagents-plan|021\.visible|plan session|awaiting-selection|manualSelection" src scripts packages docs -S`
+  - `rg -n "subagents-demo|subagents-work|desk_subagent|desk_subagents|visibleSubagent" src scripts packages -S`
+  - `Get-Content -Raw AGENTS.md`
+  - `Get-Content -Raw docs/obsidian/Xenesis-desk.md`
+  - `Get-Content -Raw docs/obsidian/Xenesis-desk/00_System/AI Agent Rules.md`
+  - `Get-Content -Raw docs/obsidian/Xenesis-desk/00_System/Graph Schema.md`
+  - `Get-Content -Raw docs/obsidian/Xenesis-desk/00_System/Review Policy.md`
+  - `Get-Content -Raw docs/obsidian/Xenesis-desk/10_Repo Map/Source of Truth Map.md`
+  - `Get-Content -Raw docs/obsidian/Xenesis-desk/10_Repo Map/Repo Overview.md`
+  - `Get-Content -Raw docs/obsidian/Xenesis-desk/_Indexes/Verification Map.md`
+  - `Get-Content -Raw docs/obsidian/Xenesis-desk/_Indexes/High Risk Areas.md`
+  - `Get-Content -Raw docs/obsidian/Xenesis-desk/30_Modules/module-xenesis-agent-pane.md`
+  - `Get-Content -Raw docs/obsidian/Xenesis-desk/20_Architecture/Xenesis Agent Runtime.md`
+  - `Get-Content -Raw src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentsDemo.ts`
+  - `Get-Content -Raw src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentsDemo.test.ts`
+  - `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentPlanSession.test.ts`
+  - `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentPlanSession.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentsDemo.test.ts`
+  - `node --test scripts/xenesisVisibleSubagentPlanSessionLiveSmoke.test.mjs`
+  - `node scripts/xenesisVisibleSubagentPlanSessionLiveSmoke.mjs --dry-run --json --task="현재 상태" --show-ms=3000 --sleep=2 --keep-open --close-after --right-width=900 --timeout-ms=1000`
+  - `npx biome format --write package.json scripts/xenesisVisibleSubagentPlanSessionLiveSmoke.mjs scripts/xenesisVisibleSubagentPlanSessionLiveSmoke.test.mjs src/renderer/extensions/xenesis-desk.core-tools/panes/XenesisAgentPane.tsx src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentPlanSession.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentPlanSession.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentsDemo.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentsDemo.test.ts`
+  - `npm run typecheck`
+  - `npx biome check package.json scripts/xenesisVisibleSubagentPlanSessionLiveSmoke.mjs scripts/xenesisVisibleSubagentPlanSessionLiveSmoke.test.mjs src/renderer/extensions/xenesis-desk.core-tools/panes/XenesisAgentPane.tsx src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentPlanSession.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentPlanSession.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentsDemo.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentsDemo.test.ts --max-diagnostics=120`
+  - `npm run build`
+  - `node scripts/xenesisVisibleSubagentPlanSessionLiveSmoke.mjs --json --task="현재 변경사항을 분담해서 점검해줘" --manual --show-ms=1000 --sleep=1 --right-width=760 --timeout-ms=45000`
+  - `npm test`
+  - `git diff --check`
+- Exact verification result:
+  - Current repo already has `desk_subagent_*` package tools,
+    `/subagents-demo`, `/subagents-work`, visible worker builders, CR terminal
+    execution, tail marker summaries, cleanup, and tests.
+  - Current repo does not have a `VisibleSubagentPlanSession` layer,
+    `/subagents-plan`, plan terminal formatting, manual awaiting-selection
+    state, or a `021` demo script.
+  - Current repo does not have `scripts/demo`; live smoke scripts live directly
+    under `scripts/`.
+  - RED helper test exited 1 as expected before
+    `xenesisAgentVisibleSubagentPlanSession.ts` existed.
+  - RED integration test exited 1 as expected before `/subagents-plan` was
+    wired in `XenesisAgentPane.tsx`.
+  - GREEN focused renderer tests exited 0 with 26/26 passed after adding the
+    plan-session helper, slash command, coordinator terminal call, and cleanup
+    classification for `xenesis-desk-subagent-plan` terminals.
+  - RED smoke test exited 1 as expected before
+    `scripts/xenesisVisibleSubagentPlanSessionLiveSmoke.mjs` existed.
+  - GREEN smoke test exited 0 with 7/7 passed after adding the script and
+    `smoke:xenesis:visible-subagent-plan`.
+  - Dry-run smoke command exited 0 and produced prompt
+    `/subagents-plan 현재 상태 --manual --show-ms 3000 --sleep 2 --keep-open`.
+  - `npm run typecheck` exited 0.
+  - Changed-file Biome check exited 0 with 3 existing warnings in
+    `XenesisAgentPane.tsx` (`latestPendingMcpActionInboxMessage` unused and two
+    optional-chain suggestions).
+  - `npm run build` exited 0 after `packages/xenesis` build, root typecheck, and
+    Electron build. Vite emitted existing bundle/externalization warnings for
+    D3, `hwp.js` browser externalization, and `deskBridge.ts` dynamic/static
+    import chunking.
+  - Live smoke exited 0. It opened the Xenesis Agent pane through
+    `xd.tools.core.xenesisAgent.open`, set dock size, submitted
+    `/subagents-plan 현재 변경사항을 분담해서 점검해줘 --manual --show-ms 1000 --sleep 1`
+    through `xd.testing.xenesisAgent.submitPrompt`, matched
+    `Visible Subagent Plan Session`, and cleaned up with `/subagents-cleanup`.
+    Report summary: 4/4 checks passed.
+  - `npm test` exited 0 with 757/757 passed.
+  - `git diff --check` exited 0 with only the existing `handoff.md` LF-to-CRLF
+    warning.
+  - Pre-commit rerun on 2026-07-02:
+    - `npm run build` exited 0 with the same existing Vite bundle warnings.
+    - `npm test` exited 0 with 757/757 passed.
+    - `git diff --check` exited 0 with only the existing `handoff.md`
+      LF-to-CRLF warning.
+- Known gaps:
+  - Existing dirty local runtime files remain outside this slice:
+    `server/.node-version-built`, `server/database.db`.
+  - Existing dirty icon files remain outside this slice: `build/icon.ico`,
+    `build/icon.svg`.
+  - Live Electron proof was run for manual plan-session display and cleanup.
+    Auto mode that starts the four workers is covered by focused helper/static
+    tests and by the existing `/subagents-work` tests, but was not separately
+    live-smoked in this slice.
+  - `docs/superpowers/plans/2026-07-02-visible-subagent-plan-session.md` is
+    ignored by `.gitignore`; force-add it if the plan should be committed.
+- Next intended step:
+  - Review the visible subagent plan-session diff, then commit/PR when
+    requested. Exclude unrelated local runtime/icon changes unless explicitly
+    requested.
+
+## 2026-07-02 Agent Sessions Hub gap hardening handoff
+
+- Current objective:
+  - Continue the sibling Agent Session Hub adoption by closing the remaining
+    MVP gaps that are safe and scoped for this repo: persisted terminal attach
+    links, CR resume/attach metadata consistency, Agent pane `/agent-sessions`
+    commands, and panel link visibility.
+- Touched files:
+  - `handoff.md`
+- Commands run:
+  - `Get-Content -Raw "D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk\docs\superpowers\specs\2026-06-29-agent-session-hub-design.md"`
+  - `rg -n "Agent Session|AgentSessions|session hub|agent session hub|agent-session|sessions tool|turn ledger|session resume" src packages docs scripts -S`
+  - `Get-Content -Raw src/shared/agentSessions.ts`
+  - `Get-Content -Raw src/main/agentSessions/service.ts`
+  - `Get-Content -Raw src/main/agentSessions/indexStore.ts`
+  - `Get-Content -Raw src/main/agentSessions/service.test.ts`
+  - `Get-Content -Raw src/renderer/extensions/xenesis-desk.core-tools/panes/AgentSessionsPane.tsx`
+  - `Get-Content -Raw src/renderer/agentSessions/terminalLinker.ts`
+  - `Get-Content -Raw src/renderer/agentSessions/terminalLinker.test.ts`
+  - `rg -n "xd\.agentSessions|agent-sessions:(resume|attach)|resumeAgentSession|attachTerminal|AgentSessionsResume|AgentSessionsAttach" src/shared src/main src/preload src/renderer -S`
+- Exact verification result:
+  - The sibling spec is already partly adopted in this repo. Existing coverage
+    includes `src/shared/agentSessions.ts`, `src/main/agentSessions/*`,
+    `AgentSessionsPane.tsx`, menu/tool open coverage, and CR path registration.
+  - `xd.agentSessions.resume` is implemented in the main CR adapter and can
+    preview or open/send a resume command.
+  - `xd.agentSessions.attachTerminal` is currently a placeholder response and
+    does not persist overlay state.
+  - `AgentSessionOverlayFile` already has a `links` map, but service overlay
+    application ignores it.
+  - The preload `agentSessionsAPI` currently exposes status/scan/list/search/
+    pin/hide only. Panel resume uses CR directly.
+  - No `/agent-sessions` slash command is present in `XenesisAgentPane.tsx`.
+- Known gaps:
+  - Existing unrelated dirty files remain outside this slice:
+    `build/icon.ico`, `build/icon.svg`, `server/.node-version-built`,
+    `server/database.db`.
+  - Live Agent proof has not yet been run for the Agent Sessions gap-hardening
+    slice.
+- Next intended step:
+  - Follow TDD: add RED service overlay-link test, implement attach persistence,
+    then continue through CR/pane/panel focused tests.
+
+### 2026-07-02 Agent Sessions Hub implementation update
+
+- Touched files:
+  - `src/shared/agentSessions.ts`
+  - `src/shared/agentSessions.test.ts`
+  - `src/shared/types.ts`
+  - `src/main/agentSessions/service.ts`
+  - `src/main/agentSessions/service.test.ts`
+  - `src/main/index.ts`
+  - `src/preload/index.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/AgentSessionsPane.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentAgentSessions.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentAgentSessions.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/XenesisAgentPane.tsx`
+  - `handoff.md`
+- Commands run:
+  - RED: `node --import tsx --test src/main/agentSessions/service.test.ts` exited 1 before `service.attachTerminal` existed.
+  - GREEN: `node --import tsx --test src/main/agentSessions/service.test.ts` exited 0 with 2/2 passed.
+  - RED: `node --import tsx --test src/shared/agentSessions.test.ts` exited 1 before `buildAgentSessionTerminalMetadata` existed.
+  - GREEN: `node --import tsx --test src/shared/agentSessions.test.ts` exited 0 with 10/10 passed.
+  - RED: `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentAgentSessions.test.ts` exited 1 before the helper module existed.
+  - GREEN: `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentAgentSessions.test.ts` exited 0 with 4/4 passed.
+  - RED: `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.test.ts` exited 1 before `formatAgentSessionTerminalLink` existed.
+  - GREEN: `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.test.ts` exited 0 with 3/3 passed.
+  - Focused aggregate: `node --import tsx --test src/main/agentSessions/service.test.ts src/shared/agentSessions.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/agentSessionsPanelModel.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentAgentSessions.test.ts` exited 0 with 19/19 passed.
+  - `npm run typecheck` exited 0.
+  - `npx biome check` on the 11 scoped non-legacy changed files exited 0.
+  - `npm run docs:capabilities:audit` exited 0 and wrote a timestamp-only audit doc change; the timestamp was reverted.
+  - `npm test` exited 0 with 764/764 passed.
+  - `npm run lint` exited 1 with existing repo-wide Biome diagnostics outside this slice, including `packages/xenesis/*`, `extensions/sample.file-helper/main.js`, and untracked `build/icon.svg`.
+  - First live Agent smoke failed because `out` was stale and the built app did not yet know `/agent-sessions`.
+  - `npm run build` exited 0 after `packages/xenesis` build, root typecheck, and Electron build. Vite emitted existing bundle/externalization warnings.
+  - Live Agent smoke rerun exited 0: opened Xenesis Agent with `xd.tools.core.xenesisAgent.open`, submitted `/agent-sessions status` through `xd.testing.xenesisAgent.submitPrompt`, and matched `Agent Sessions status:`.
+  - Pre-commit rerun after approval:
+    - `npm run typecheck` exited 0.
+    - `npm test` exited 0 with 764/764 passed.
+    - `npm run build` exited 0 with the same existing Vite bundle/externalization warnings.
+    - `git diff --check` exited 0 with only the existing `handoff.md` LF-to-CRLF warning.
+    - Live Agent smoke exited 0 again with `/agent-sessions status` submitted through `xd.testing.xenesisAgent.submitPrompt`.
+- Exact implementation result:
+  - `AgentSessionOverlayFile.links` is now applied by the service and persisted by `service.attachTerminal`.
+  - Preload exposes `agentSessionsAPI.attachTerminal`.
+  - `xd.agentSessions.attachTerminal` now validates the terminal id, persists the overlay link, and writes safe agent-session metadata to the terminal.
+  - `xd.agentSessions.resume` now persists the session link and metadata for both reused and newly spawned terminals.
+  - Shared terminal metadata now includes `projectPath`, `agentSessionId`, `agentSessionSource`, `sourceSessionId`, and `resumeCommand`.
+  - `XenesisAgentPane` now supports `/agent-sessions status|scan|list|search|resume|attach|open` as explicit CR-backed slash commands.
+  - `AgentSessionsPane` now shows linked terminal state and can attach the selected session to the active terminal through CR.
+- Known gaps:
+  - The default smart-terminal matcher policy from the sibling spec remains partial. This slice persists explicit/reused/spawned links but does not implement full alternate-buffer/recent-command avoidance beyond existing resume behavior.
+  - Natural-language routing for Agent Sessions remains provider-led; this slice intentionally adds explicit slash commands only, so explanation prompts do not trigger terminal commands.
+  - Repo-wide `npm run lint` is still blocked by existing diagnostics outside this slice.
+  - Existing unrelated dirty local/runtime files remain outside this slice: `build/icon.ico`, `build/icon.svg`, `server/.node-version-built`, `server/database.db`.
+- Next intended step:
+  - Review and commit only the Agent Sessions code/test/handoff files. Exclude unrelated icon/runtime files unless explicitly requested.
+
+### 2026-07-02 Agent Sessions smart terminal matching plan
+
+- Current objective:
+  - Finish the remaining Agent Sessions smart-terminal matcher gap: `xd.agentSessions.resume` should reuse only a safe matching terminal by default, skip busy/TUI/app-managed candidates, and spawn a new terminal when reuse is unsafe.
+- Touched files planned:
+  - `src/shared/agentSessionTerminalLinker.ts`
+  - `src/shared/agentSessionTerminalLinker.test.ts`
+  - `src/renderer/agentSessions/terminalLinker.ts`
+  - `src/renderer/agentSessions/terminalLinker.test.ts`
+  - `src/main/index.ts`
+  - `handoff.md`
+- Commands run:
+  - Context reads only so far: AGENTS/Obsidian required notes, Agent Sessions plan, existing terminal linker, main CR resume adapter, and main terminal session list helpers.
+- Exact verification result:
+  - Existing renderer linker currently returns `new` immediately when the first matching candidate is unsafe, even if a later candidate is reusable.
+  - Existing main CR resume currently reuses an explicit or linked `termId` without running the same smart safety policy.
+  - No new tests or code changes have been applied for this slice yet.
+- Design decision:
+  - Move the pure resume-target policy into shared code with a main/renderer-neutral terminal snapshot type.
+  - Keep explicit `termId` and `target=active` as operator-directed reuse.
+  - For `target=smart`, rank linked terminals first, then same source/project terminals, then compatible same-project terminals; skip unsafe candidates and keep scanning.
+  - Treat exited, alt-buffer, active recent-command, and visible subagent/app-managed TUI metadata as unsafe for automatic reuse.
+- Known gaps:
+  - Main process does not currently receive renderer alt-buffer state in `buildMcpTerminalSessionList`; main matching will enforce the safe signals available in main records and metadata, while renderer tests keep alt-buffer coverage.
+  - Existing unrelated dirty local/runtime files remain outside this slice: `build/icon.ico`, `build/icon.svg`, `server/.node-version-built`, `server/database.db`.
+- Next intended step:
+  - Add RED shared matcher tests for candidate skipping, linked-terminal safety, explicit override, metadata matching, and visible subagent avoidance.
+
+### 2026-07-02 Agent Sessions smart terminal matching implementation update
+
+- Touched files:
+  - `src/shared/agentSessionTerminalLinker.ts`
+  - `src/shared/agentSessionTerminalLinker.test.ts`
+  - `src/renderer/agentSessions/terminalLinker.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentAgentSessions.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentAgentSessions.test.ts`
+  - `src/main/index.ts`
+  - `handoff.md`
+- Commands run:
+  - RED: `node --import tsx --test src/shared/agentSessionTerminalLinker.test.ts` exited 1 because `./agentSessionTerminalLinker` did not exist.
+  - GREEN: `node --import tsx --test src/shared/agentSessionTerminalLinker.test.ts` exited 0 with 6/6 passed.
+  - Focused compatibility: `node --import tsx --test src/shared/agentSessionTerminalLinker.test.ts src/renderer/agentSessions/terminalLinker.test.ts` exited 0 with 9/9 passed.
+  - Focused aggregate: `node --import tsx --test src/shared/agentSessionTerminalLinker.test.ts src/renderer/agentSessions/terminalLinker.test.ts src/shared/agentSessions.test.ts src/main/agentSessions/service.test.ts` exited 0 with 21/21 passed.
+  - `npm run typecheck` exited 0.
+  - RED: `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentAgentSessions.test.ts` exited 1 because resume result rendering omitted `targetPlan.reason`.
+  - GREEN: `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentAgentSessions.test.ts src/shared/agentSessionTerminalLinker.test.ts src/renderer/agentSessions/terminalLinker.test.ts` exited 0 with 14/14 passed.
+- Exact implementation result:
+  - The smart resume-target policy now lives in shared code and is re-exported from the previous renderer path.
+  - Smart matching ranks linked terminals first, then same source/project terminals, skips unsafe candidates, and continues scanning for a safe match.
+  - Smart matching avoids exited, alt-buffer, active recent-command, and visible subagent/app-managed terminal metadata unless an explicit terminal is requested.
+  - `xd.agentSessions.resume` now builds a terminal target plan from current main terminal sessions and reuses an existing terminal only when the shared plan returns `existing`.
+  - Resume results now include `targetPlan`, and `/agent-sessions resume` output shows the target reason when present.
+- Known gaps:
+  - Main process still lacks renderer-only alt-buffer state in its terminal records; renderer-side tests cover that policy, while main applies the safe signals it owns (`lastCommand`, active terminal, metadata, cwd, and session link).
+  - Existing unrelated dirty local/runtime files remain outside this slice: `build/icon.ico`, `build/icon.svg`, `server/.node-version-built`, `server/database.db`.
+- Next intended step:
+  - Run CR audit, broader tests/build, and a live Agent Sessions smoke through the Xenesis Agent pane before committing.
+
+### 2026-07-02 Agent Sessions smart terminal matching verification update
+
+- Commands run:
+  - Scoped Biome: `npx biome check src/shared/agentSessionTerminalLinker.ts src/shared/agentSessionTerminalLinker.test.ts src/renderer/agentSessions/terminalLinker.ts src/renderer/agentSessions/terminalLinker.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentAgentSessions.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentAgentSessions.test.ts` exited 0.
+  - Main-file Biome probe: `npx biome check src/main/index.ts --max-diagnostics 20` exited 1 with existing diagnostics in `src/main/index.ts` such as `noUselessSwitchCase`, `noUselessTernary`, stale unused imports/functions, and optional-chain suggestions. The new import-order diagnostic was removed by moving `loadBrowserResponseSource` back into the local import group.
+  - `npm run docs:capabilities:audit` exited 0: `Capability audit: 906 nodes, 706 coverage path references.` The generated timestamp-only diff in `docs/capability-registry-audit.md` was reverted.
+  - Focused aggregate: `node --import tsx --test src/shared/agentSessionTerminalLinker.test.ts src/renderer/agentSessions/terminalLinker.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentAgentSessions.test.ts src/shared/agentSessions.test.ts src/main/agentSessions/service.test.ts src/shared/agentSessionsCapabilities.test.ts` exited 0 with 30/30 passed.
+  - `npm run typecheck` exited 0.
+  - `npm test` exited 0 with 771/771 passed.
+  - `npm run build` exited 0 after `packages/xenesis` build, root typecheck, and Electron build. Vite emitted existing bundle/externalization warnings.
+  - Live Agent pane smoke exited 0: Electron launched with temporary `XENIS_HOME`/userData, opened `xd.tools.core.xenesisAgent.open`, submitted `/agent-sessions status` through `xd.testing.xenesisAgent.submitPrompt`, and matched `Agent Sessions status:` in the new response.
+  - First live resume smoke attempt exited 1 because setting `USERPROFILE` to a temp directory caused Electron to fail resolving the `userData` path. This was a smoke harness environment issue, not an app runtime assertion.
+  - Live resume targetPlan smoke rerun exited 0: seeded `XENIS_HOME/sessions/run-live-smart.jsonl`, scanned `xd.agentSessions.scan`, previewed `xd.agentSessions.resume` for `xenesis:run-live-smart`, confirmed `targetPlan.target === "new"` with reason `No safe matching terminal found.`, then executed resume and confirmed a spawned terminal id.
+  - `npm run lint` exited 1 with existing repo-wide Biome diagnostics outside this slice, including `packages/xenesis/*`, `extensions/sample.file-helper/main.js`, untracked `build/icon.svg`, and existing `src/main/index.ts` cleanup warnings.
+  - `git diff --check` exited 0 with only LF-to-CRLF warnings for `handoff.md` and `src/main/index.ts`.
+- Exact verification result:
+  - Shared smart-terminal matching, renderer slash result rendering, Agent Sessions service, CR registration, typecheck, full tests, build, Agent pane status smoke, and live resume targetPlan smoke are verified.
+- Known gaps:
+  - Full repo `npm run lint` remains blocked by known pre-existing/unrelated diagnostics.
+  - Existing unrelated dirty local/runtime files remain outside this slice: `build/icon.ico`, `build/icon.svg`, `server/.node-version-built`, `server/database.db`.
+- Next intended step:
+  - Commit only the smart terminal matching files and `handoff.md`, then push/update PR on `mini`.
+
+### 2026-07-02 Gateway/Agent surface isolation hardening
+
+- Current objective:
+  - Ensure Xenesis Agent, Xenesis Agent Workbench, and external bot channel terminal automation do not leak run events, sessions, history, or approvals across surfaces.
+- Touched files planned:
+  - `packages/xenesis-agent-core/src/embeddedAgentRuntime.ts`
+  - `packages/xenesis-agent-core/src/embeddedAgentRuntime.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/XenesisAgentPane.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentRunEvents.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentRunEvents.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchModel.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchModel.test.ts`
+  - `src/main/index.ts`
+  - `handoff.md`
+- Design decision:
+  - Filter main Agent pane run events by `xenesis-xenesis-agent`, allowing only legacy unscoped events as a compatibility exception.
+  - Keep embedded runtime session/history/active controller state keyed by run source or response surface, so Workbench first runs cannot inherit Agent state.
+  - Tighten Workbench approval filtering to require Workbench source or exact active session ownership.
+  - Avoid changing external bot channel command routing; terminal automation remains isolated by conversation attachment plus `termId`.
+- Commands run:
+  - Pre-change audit commands only so far; focused tests for existing scoping/channel/automation passed before edits.
+- Known gaps:
+  - Existing unrelated dirty local/runtime files remain outside this slice: `build/icon.ico`, `build/icon.svg`, `server/.node-version-built`, `server/database.db`.
+- Next intended step:
+  - Add RED tests for embedded runtime source isolation, Agent pane event source filtering, and Workbench approval filter tightening.
+
+### 2026-07-02 Gateway/Agent surface isolation implementation update
+
+- Touched files:
+  - `packages/xenesis-agent-core/src/embeddedRuntime.ts`
+  - `packages/xenesis-agent-core/src/embeddedAgentRuntime.ts`
+  - `packages/xenesis-agent-core/src/embeddedAgentRuntime.test.ts`
+  - `src/main/index.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/XenesisAgentPane.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentRunEvents.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentRunEvents.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchModel.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchModel.test.ts`
+  - `handoff.md`
+- Commands run:
+  - RED: `node --import tsx --test packages/xenesis-agent-core/src/embeddedAgentRuntime.test.ts` initially failed the new source-isolation test because Workbench inherited the Agent session.
+  - RED: `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentRunEvents.test.ts` initially failed because the Agent-pane event source filter did not exist.
+  - RED: `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchModel.test.ts` initially failed because an unrelated Agent runtime approval could appear in Workbench when no active session existed.
+  - Focused aggregate: `node --import tsx --test src/shared/xenesisRunEventScope.test.ts src/main/xenesisWorkbenchApprovals.test.mjs src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentRunEvents.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchModel.test.ts packages/xenesis-agent-core/src/embeddedAgentRuntime.test.ts` exited 0 with 36/36 passed.
+  - `npm run typecheck` exited 0.
+  - `npm test` exited 0 with 775/775 passed.
+  - `npm run docs:capabilities:audit` exited 0: `Capability audit: 906 nodes, 706 coverage path references.` The generated timestamp-only diff in `docs/capability-registry-audit.md` was reverted.
+  - Scoped Biome for the non-monolithic touched files exited 0: `npx biome check packages/xenesis-agent-core/src/embeddedAgentRuntime.ts packages/xenesis-agent-core/src/embeddedAgentRuntime.test.ts packages/xenesis-agent-core/src/embeddedRuntime.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentRunEvents.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentRunEvents.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchModel.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xconAgentWorkbenchModel.test.ts`.
+  - `git diff --check` exited 0 with only LF-to-CRLF warnings.
+- Exact implementation result:
+  - Main Xenesis Agent pane now consumes only `xenesis-xenesis-agent` scoped run events, with legacy unscoped events still accepted for compatibility.
+  - Embedded runtime session id, trace id, history, and active controller state are now keyed by run source or response surface, so Xenesis Agent and Xenesis Agent Workbench do not inherit each other's embedded runtime state.
+  - `runXenesisEmbeddedRequest` now passes per-run event and approval callbacks into the embedded runtime, avoiding global run-event scope leakage for normal embedded Agent/Workbench runs.
+  - Workbench pending approval filtering now requires Workbench source ownership or an exact active-session match for runtime-tool approvals.
+  - External bot channel terminal automation was left unchanged because the audited routing is already isolated by conversation attachment plus terminal id.
+- Known gaps:
+  - `xenesis:cancel`, `xenesis:stop`, and `xenesis:resetSession` remain global runtime controls by existing API design.
+  - Live Electron smoke for this specific Agent/Workbench/channel isolation slice has not been run yet.
+  - Full repo `npm run lint` remains blocked by existing unrelated Biome diagnostics in monolithic files and generated/local files.
+  - Existing unrelated dirty local/runtime files remain outside this slice: `build/icon.ico`, `build/icon.svg`, `server/.node-version-built`, `server/database.db`.
+- Next intended step:
+  - If live validation is required before commit, add/run a narrow Electron smoke that opens Xenesis Agent and Xenesis Agent Workbench concurrently and asserts source-scoped event/approval visibility.
+
+### 2026-07-02 Gateway/Agent surface isolation live verification update
+
+- Commands run:
+  - `npm run build` exited 0 after `packages/xenesis` build, root typecheck, and Electron build. Vite emitted existing bundle/externalization warnings.
+  - `npm run smoke:xenesis:provider-onboarding -- --timeout=120000` exited 1 with 8/9 checks passed. App launch, provider status, footer provider, prompt submission, CR readback, and no chat-only approval passed; `provider-cr-mcp-evidence` failed because DeepSeek HTTP streaming produced Desk tool events but no provider raw MCP metadata records for the harness to count.
+  - `npm run smoke:xenesis:provider-onboarding -- --timeout=120000 --json` confirmed the runtime was `deepseek`/`deepseek-chat`, prompt submission matched `provider-routing-readback-ok`, raw stream included `desk_tool_call: desk_state` and `desk_capabilities`, and only the raw provider MCP evidence check failed.
+  - Live isolation smoke via Playwright `_electron.launch` with temporary `XENIS_HOME`, temporary user data, and `XENESIS_ENABLE_TEST_MOCK_PROVIDER=true` exited 0. It opened Xenesis Agent and Xenesis Agent Workbench, ran a `source: xenesis-agent-workbench` embedded mock turn, observed 6 run events, and every event source was `xenesis-agent-workbench`; no missing or wrong source appeared.
+  - Live session isolation smoke via Playwright `_electron.launch` with the same temporary/mock setup exited 0. Agent first run and Workbench first run received different session ids, the Workbench `mock:messages` response did not include the Agent-only marker, and the Agent second run reused the original Agent session and included the Agent-only marker.
+  - Channel/automation focused aggregate: `node --import tsx --test src/main/automation/automationController.test.ts src/main/automation/automationObservability.test.ts src/main/xenesisChannelSafety.test.ts src/shared/xenesisRunEventScope.test.ts src/shared/xenesisConnectionCapabilities.test.ts scripts/xenesisChannelNaturalLanguageLiveSmoke.test.mjs scripts/xenesisChannelApprovalLiveSmoke.test.mjs` exited 0 with 139/139 passed.
+  - Xenesis package channel/terminal tests: `npm --prefix packages/xenesis test -- tests/channels/gatewayCommandSurface.test.ts tests/s1/remoteDeskTerminalSelector.test.ts` exited 0 with 2 files and 7/7 tests passed.
+  - Test-generated untracked `server/cr-payloads/` was removed after verifying its resolved path was inside the workspace.
+- Exact verification result:
+  - Built app verifies with the source-scoped embedded run path.
+  - Live Workbench-source run events are scoped only to Workbench source and do not appear in the Agent pane DOM.
+  - Live embedded Agent and Workbench sessions remain isolated by source.
+  - Existing channel readback/approval models, channel safety redaction, terminal automation stream/manual-send behavior, and Xenesis gateway terminal selector tests pass.
+- Known gaps:
+  - Existing provider onboarding live smoke is still not fully green for DeepSeek because the harness requires provider raw MCP metadata evidence that this runtime path does not expose, even though Desk tool events and CR readback are present.
+  - `xenesis:cancel`, `xenesis:stop`, and `xenesis:resetSession` remain global runtime controls by existing API design.
+  - Full repo `npm run lint` remains blocked by existing unrelated Biome diagnostics in monolithic files and generated/local files.
+  - Existing unrelated dirty local/runtime files remain outside this slice: `build/icon.ico`, `build/icon.svg`, `server/.node-version-built`, `server/database.db`.
+- Next intended step:
+  - Decide whether to adjust the provider onboarding smoke harness for HTTP/BYOK providers that expose Desk tool events but not provider raw MCP metadata, or keep the stricter proof requirement for Codex app-server style runs only.

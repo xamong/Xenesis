@@ -691,6 +691,10 @@ const agentSessionsApi: AgentSessionsApi = {
     return ipcRenderer.invoke('agent-sessions:search', request);
   },
 
+  attachTerminal(request) {
+    return ipcRenderer.invoke('agent-sessions:attach-terminal', request);
+  },
+
   pin(request) {
     return ipcRenderer.invoke('agent-sessions:pin', request);
   },

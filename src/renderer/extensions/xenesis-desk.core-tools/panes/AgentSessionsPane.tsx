@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 
 import type { AgentSession, AgentSessionsStatus } from '../../../../shared/agentSessions';
 import { deskBridge } from '../../../deskBridge';
-import { buildAgentSessionPanelCounts, getAgentSessionActionState } from './agentSessionsPanelModel';
+import {
+  buildAgentSessionPanelCounts,
+  formatAgentSessionTerminalLink,
+  getAgentSessionActionState,
+} from './agentSessionsPanelModel';
 
 type SourceFilter = 'all' | AgentSession['source'];
 type StateFilter = 'all' | AgentSession['state'];
@@ -90,6 +94,40 @@ export function AgentSessionsPane() {
       setLastAction('Desk approval required');
     } else {
       setLastAction(result.ok ? 'Resume requested' : result.error || 'Resume failed');
+    }
+    await refresh(false);
+  }
+
+  async function attachSelectedToActiveTerminal(): Promise<void> {
+    if (!selected) return;
+    const listResult = await deskBridge.call('xd.terminals.list', {}, { approved: false });
+    if (!listResult.ok) {
+      setLastAction(listResult.error || 'Terminal list failed');
+      return;
+    }
+    const payload = listResult.result && typeof listResult.result === 'object' ? listResult.result : {};
+    const terminalSessions = Array.isArray((payload as { sessions?: unknown }).sessions)
+      ? (payload as { sessions: Array<Record<string, unknown>> }).sessions
+      : Array.isArray(listResult.result)
+        ? (listResult.result as Array<Record<string, unknown>>)
+        : [];
+    const terminal =
+      terminalSessions.find((item) => item.active === true) ??
+      terminalSessions.find((item) => typeof item.id === 'string' && item.id);
+    const termId = typeof terminal?.id === 'string' ? terminal.id : '';
+    if (!termId) {
+      setLastAction('No terminal is available to attach');
+      return;
+    }
+    const result = await deskBridge.call(
+      'xd.agentSessions.attachTerminal',
+      { sessionId: selected.id, termId },
+      { approved: false },
+    );
+    if (result.approvalRequired) {
+      setLastAction('Desk approval required');
+    } else {
+      setLastAction(result.ok ? `Linked terminal ${termId}` : result.error || 'Attach failed');
     }
     await refresh(false);
   }
@@ -194,6 +232,8 @@ export function AgentSessionsPane() {
                 <dd>{selected.sourceDetails.scanStatus}</dd>
                 <dt>Resume</dt>
                 <dd>{selected.resumeCommand || actionState?.resumeReason}</dd>
+                <dt>Terminal</dt>
+                <dd>{formatAgentSessionTerminalLink(selected)}</dd>
               </dl>
               <div className="xd-agent-session-detail-actions">
                 <button type="button" disabled={!actionState?.canResume} onClick={() => void previewResume()}>
@@ -201,6 +241,13 @@ export function AgentSessionsPane() {
                 </button>
                 <button type="button" disabled={!actionState?.canResume} onClick={() => void resumeSelected()}>
                   Resume
+                </button>
+                <button
+                  type="button"
+                  disabled={!actionState?.canAttach}
+                  onClick={() => void attachSelectedToActiveTerminal()}
+                >
+                  Attach Active Terminal
                 </button>
                 <button
                   type="button"
