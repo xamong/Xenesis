@@ -1,5 +1,43 @@
 # Xenesis Desk Work Handoff
 
+## 2026-07-02 Channel Rich Rendering Parity Verification
+
+- Current objective:
+  - Continue the approved sibling-spec adoption sequence with the channel rich
+    rendering parity slice.
+  - Re-check current source before editing because the audit document and
+    package channel tests already indicate this slice may have been adopted.
+- Source checkpoint:
+  - `packages/xenesis/src/channels/types.ts` already defines optional
+    `image` and per-platform `rendering` fields.
+  - `telegram.ts`, `slack.ts`, and `discord.ts` already consume platform
+    rendering fields.
+  - `packages/xenesis/tests/channels/telegram.test.ts`,
+    `slack.test.ts`, and `discord.test.ts` already cover the rich rendering
+    and Discord split-safety behavior.
+  - `docs/superpowers/outputs/2026-07-02-sibling-spec-adoption-audit.md`
+    currently marks channel rich rendering parity as adopted.
+- Material decision:
+  - Do not duplicate edits. Treat this pass as verification and only patch if
+    the focused tests or typecheck reveal drift.
+- Verification plan:
+  - Focused channel tests.
+  - `npm --prefix packages/xenesis run typecheck`.
+  - Broaden only if a change is required.
+- Verification result:
+  - `npm --prefix packages/xenesis test -- tests/channels/telegram.test.ts tests/channels/slack.test.ts tests/channels/discord.test.ts tests/channels/commandSurface.test.ts tests/channels/gatewayCommandSurface.test.ts tests/channels/manager.test.ts`
+    -> PASS, 6 files and 21 tests.
+  - `npm --prefix packages/xenesis run typecheck` -> PASS.
+  - `npm --prefix packages/xenesis test` -> PASS, 137 files and 705 tests.
+- Known local dirty files excluded from this slice:
+  - `build/icon.ico`
+  - `build/icon.svg`
+  - `server/.node-version-built`
+  - `server/database.db`
+- Next intended step:
+  - Check git status/diff. If only `handoff.md` and pre-existing local generated
+    files are dirty, do not create a code commit for this already-adopted slice.
+
 ## 2026-07-02 HTML Browser Source View Port
 
 - Current objective:
