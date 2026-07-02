@@ -5,10 +5,10 @@ export interface ChannelSendLogEntry {
   channel: string;
   at: string;
   conversationId: string;
-  method: 'send' | 'sendMessage';
+  method: 'send' | 'sendMessage' | 'sendPhoto';
   text: string;
-  chunkIndex: number;
-  chunkCount: number;
+  chunkIndex?: number;
+  chunkCount?: number;
   ok: boolean;
   status?: number;
   actionCount?: number;

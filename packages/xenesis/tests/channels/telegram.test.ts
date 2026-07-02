@@ -27,7 +27,7 @@ function fakeTelegramFetch(updates: unknown[][], options: { username?: string; s
   let updateIndex = 0;
   const fetchImpl: typeof fetch = async (input, init) => {
     const url = String(input);
-    const body = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined;
+    const body = typeof init?.body === 'string' ? JSON.parse(init.body) : init?.body;
     calls.push({ url, method: init?.method, body });
     if (url.includes('/getMe')) {
       return jsonResponse({ ok: true, result: { username: options.username ?? 'XenesisBot' } });
@@ -40,7 +40,12 @@ function fakeTelegramFetch(updates: unknown[][], options: { username?: string; s
       updateIndex += 1;
       return jsonResponse({ ok: true, result });
     }
-    if (url.includes('/sendMessage') || url.includes('/answerCallbackQuery') || url.includes('/sendChatAction')) {
+    if (
+      url.includes('/sendMessage') ||
+      url.includes('/sendPhoto') ||
+      url.includes('/answerCallbackQuery') ||
+      url.includes('/sendChatAction')
+    ) {
       return jsonResponse({ ok: true, result: true });
     }
     return jsonResponse({ ok: true, result: true });
@@ -48,7 +53,7 @@ function fakeTelegramFetch(updates: unknown[][], options: { username?: string; s
   return { calls, fetchImpl };
 }
 
-async function waitFor(assertion: () => void | boolean, timeoutMs = 1000) {
+async function waitFor(assertion: () => undefined | boolean, timeoutMs = 1000) {
   const start = Date.now();
   let lastError: unknown;
   while (Date.now() - start < timeoutMs) {
@@ -192,5 +197,48 @@ describe('TelegramAdapter command surface', () => {
         inline_keyboard: [[{ text: 'Terminals', callback_data: '/desk terminals' }]],
       },
     });
+  });
+
+  test('uses Telegram HTML rendering when provided', async () => {
+    const { calls, fetchImpl } = fakeTelegramFetch([], { username: 'XenesisBot' });
+    const adapter = new TelegramAdapter({
+      token: 'tok',
+      allowedChatIds: [100],
+      fetchImpl,
+    });
+
+    await adapter.sendMessage('100', {
+      text: '1. term-alp · PowerShell <Main>',
+      rendering: { telegramHtml: '1. <b>term-alp</b> · PowerShell &lt;Main&gt;' },
+      actions: [{ label: 'Attach 1', value: '/desk attach 1' }],
+    });
+
+    const call = calls.find((item) => item.url.includes('/sendMessage'));
+    expect(call?.body).toEqual({
+      chat_id: 100,
+      text: '1. <b>term-alp</b> · PowerShell &lt;Main&gt;',
+      parse_mode: 'HTML',
+      reply_markup: {
+        inline_keyboard: [[{ text: 'Attach 1', callback_data: '/desk attach 1' }]],
+      },
+    });
+  });
+
+  test('sends image messages through Telegram sendPhoto', async () => {
+    const { calls, fetchImpl } = fakeTelegramFetch([], { username: 'XenesisBot' });
+    const adapter = new TelegramAdapter({
+      token: 'tok',
+      allowedChatIds: [100],
+      fetchImpl,
+    });
+
+    await adapter.sendMessage('100', {
+      text: 'diagram',
+      image: { data: Buffer.from('image-bytes'), mimeType: 'image/png', filename: 'diagram.png', caption: 'diagram' },
+    });
+
+    const call = calls.find((item) => item.url.includes('/sendPhoto'));
+    expect(call?.method).toBe('POST');
+    expect(String(call?.body ?? '')).toContain('diagram.png');
   });
 });

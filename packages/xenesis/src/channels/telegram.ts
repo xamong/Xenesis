@@ -110,7 +110,14 @@ export class TelegramAdapter implements ChannelAdapter {
   }
 
   async sendMessage(conversationId: string, message: ChannelOutgoingMessage): Promise<void> {
-    const chunks = splitTelegramMessage(message.text);
+    if (message.image?.data) {
+      await this.sendImageMessage(conversationId, message);
+      return;
+    }
+
+    const text = message.rendering?.telegramHtml ?? message.text;
+    const parseMode = message.rendering?.telegramHtml ? 'HTML' : undefined;
+    const chunks = splitTelegramMessage(text);
     const actions = message.actions ?? [];
     for (const [index, chunk] of chunks.entries()) {
       const attachActions = actions.length > 0 && index === chunks.length - 1;
@@ -122,6 +129,7 @@ export class TelegramAdapter implements ChannelAdapter {
           body: JSON.stringify({
             chat_id: Number(conversationId),
             text: chunk,
+            ...(parseMode ? { parse_mode: parseMode } : {}),
             ...(attachActions
               ? {
                   reply_markup: {
@@ -162,6 +170,59 @@ export class TelegramAdapter implements ChannelAdapter {
         }
         throw error;
       }
+    }
+  }
+
+  private async sendImageMessage(conversationId: string, message: ChannelOutgoingMessage): Promise<void> {
+    const image = message.image!;
+    const caption = image.caption || message.text || '';
+    const truncatedCaption = caption.length > 1024 ? `${caption.slice(0, 1021)}...` : caption;
+    const filename = image.filename || 'image.png';
+    const boundary = `----XenesisBoundary${Date.now()}`;
+    const parts: (string | Buffer)[] = [];
+    parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="chat_id"\r\n\r\n${Number(conversationId)}\r\n`);
+    if (truncatedCaption) {
+      parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="caption"\r\n\r\n${truncatedCaption}\r\n`);
+    }
+    parts.push(
+      `--${boundary}\r\nContent-Disposition: form-data; name="photo"; filename="${filename}"\r\nContent-Type: ${image.mimeType || 'image/png'}\r\n\r\n`,
+    );
+    parts.push(image.data);
+    parts.push(`\r\n--${boundary}--\r\n`);
+    const body = Buffer.concat(parts.map((part) => (typeof part === 'string' ? Buffer.from(part, 'utf8') : part)));
+
+    let response: Response | undefined;
+    try {
+      response = await this.fetchImpl(this.api('sendPhoto'), {
+        method: 'POST',
+        headers: { 'content-type': `multipart/form-data; boundary=${boundary}` },
+        body: body as unknown as RequestInit['body'],
+      });
+      this.logSend({
+        conversationId,
+        method: 'sendPhoto',
+        text: truncatedCaption,
+        ok: response.ok,
+        status: response.status,
+      });
+      if (!response.ok) throw new Error(`sendPhoto HTTP ${response.status}`);
+    } catch (error) {
+      if (!response) {
+        this.logSend({
+          conversationId,
+          method: 'sendPhoto',
+          text: truncatedCaption,
+          ok: false,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+      throw error;
+    }
+
+    if (caption.length > 1024) {
+      await this.sendMessage(conversationId, { text: caption.slice(1024), actions: message.actions });
+    } else if (message.actions && message.actions.length > 0) {
+      await this.sendMessage(conversationId, { text: 'Options:', actions: message.actions });
     }
   }
 

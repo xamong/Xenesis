@@ -12,9 +12,24 @@ export interface ChannelMessageAction {
   value: string;
 }
 
+export interface ChannelOutgoingImage {
+  data: Buffer;
+  mimeType?: string;
+  filename?: string;
+  caption?: string;
+}
+
+export interface ChannelOutgoingRendering {
+  telegramHtml?: string;
+  slackMrkdwn?: string;
+  discordMarkdown?: string;
+}
+
 export interface ChannelOutgoingMessage {
   text: string;
   actions?: ChannelMessageAction[];
+  image?: ChannelOutgoingImage;
+  rendering?: ChannelOutgoingRendering;
 }
 
 export interface ChannelAdapter {
