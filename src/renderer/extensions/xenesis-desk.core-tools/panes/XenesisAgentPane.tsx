@@ -165,6 +165,12 @@ import {
   type XenesisTerminalLineKind,
 } from './xenesisAgentTypes';
 import {
+  buildVisibleSubagentPlanSession,
+  formatVisibleSubagentPlanSessionForAgent,
+  formatVisibleSubagentPlanSessionForTerminal,
+  parseVisibleSubagentPlanSessionOptions,
+} from './xenesisAgentVisibleSubagentPlanSession';
+import {
   buildXenesisControlDemoWorkArgs,
   buildXenesisVisibleSubagentsDemoWorkers,
   buildXenesisVisibleSubagentTerminalArgs,
@@ -522,6 +528,11 @@ const XENESIS_SLASH_COMMANDS: XenesisSlashCommandDescriptor[] = [
     usage: '/subagents-work <task> [--keep-open]',
     description:
       'Use CR to start four visible Xenesis work subagents, arrange them, run checks, summarize, and clean up.',
+  },
+  {
+    name: 'subagents-plan',
+    usage: '/subagents-plan <task> [--manual] [--keep-open]',
+    description: 'Show a visible subagent plan session before starting work subagents.',
   },
   {
     name: 'subagents-cleanup',
@@ -2722,9 +2733,15 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
     }
   }
 
-  async function runVisibleSubagentsWork(input: string, displayInput = '/subagents-work'): Promise<void> {
+  async function runVisibleSubagentsWork(
+    input: string,
+    displayInput = '/subagents-work',
+    options: { skipUserMessage?: boolean } = {},
+  ): Promise<void> {
     if (running) {
-      appendChatMessage({ role: 'user', content: displayInput.trim() || '/subagents-work', kind: 'command' });
+      if (!options.skipUserMessage) {
+        appendChatMessage({ role: 'user', content: displayInput.trim() || '/subagents-work', kind: 'command' });
+      }
       appendChatMessage({
         role: 'system',
         kind: 'error',
@@ -2746,7 +2763,9 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
       });
 
     xenesisAgentStateStore.update({ running: true, error: '', prompt: '' });
-    appendChatMessage({ role: 'user', content: displayInput.trim() || '/subagents-work', kind: 'command' });
+    if (!options.skipUserMessage) {
+      appendChatMessage({ role: 'user', content: displayInput.trim() || '/subagents-work', kind: 'command' });
+    }
     const assistantMessageId = appendChatMessage({
       role: 'assistant',
       content: 'Starting four visible Xenesis work subagents through Capability Registry...',
@@ -2905,6 +2924,120 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
       clearActiveXenesisAssistantMessage(assistantMessageId);
       xenesisAgentStateStore.update({ running: false });
     }
+  }
+
+  function quoteVisibleSubagentPlanPowerShellString(value: string): string {
+    return `'${value.replace(/'/g, "''")}'`;
+  }
+
+  function buildVisibleSubagentPlanTerminalCommand(text: string): string {
+    return [
+      "$ErrorActionPreference = 'Continue'",
+      ...text.split(/\r?\n/).map((line) => `Write-Host ${quoteVisibleSubagentPlanPowerShellString(line)}`),
+      'Start-Sleep -Seconds 45',
+    ].join('; ');
+  }
+
+  function buildVisibleSubagentPlanWorkArgs(
+    options: ReturnType<typeof parseVisibleSubagentPlanSessionOptions>,
+  ): string {
+    return [
+      options.taskInput,
+      `--show-ms ${options.showMs}`,
+      `--sleep ${options.sleepSeconds}`,
+      options.keepOpen ? '--keep-open' : '',
+      options.closeAfter ? '--close-after' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+  }
+
+  async function runVisibleSubagentPlanSession(input: string, displayInput = '/subagents-plan'): Promise<void> {
+    if (running) {
+      appendChatMessage({ role: 'user', content: displayInput.trim() || '/subagents-plan', kind: 'command' });
+      appendChatMessage({
+        role: 'system',
+        kind: 'error',
+        content: 'Xenesis is already running. Use /cancel to stop the active run.',
+        error: true,
+      });
+      return;
+    }
+
+    const parsed = parseVisibleSubagentPlanSessionOptions(input);
+    const session = buildVisibleSubagentPlanSession(parsed.taskInput, {
+      manualSelection: parsed.manualSelection,
+      keepOpen: parsed.keepOpen,
+      closeAfter: parsed.closeAfter,
+      showMs: parsed.showMs,
+      sleepSeconds: parsed.sleepSeconds,
+    });
+    const terminalPlan = formatVisibleSubagentPlanSessionForTerminal(session);
+    const workspace = status?.workspace || undefined;
+
+    xenesisAgentStateStore.update({ running: true, error: '', prompt: '' });
+    appendChatMessage({ role: 'user', content: displayInput.trim() || '/subagents-plan', kind: 'command' });
+    appendChatMessage({
+      role: 'assistant',
+      content: [
+        formatVisibleSubagentPlanSessionForAgent(session),
+        '',
+        parsed.manualSelection
+          ? 'Manual mode is awaiting an execution-mode selection; workers were not started.'
+          : 'Auto mode selected subagent-driven execution. Starting visible workers next.',
+      ].join('\n'),
+      streaming: false,
+    });
+    appendRawStreamEntry({
+      kind: 'visible_subagent_plan',
+      summary: `Visible subagent plan session: ${session.id}`,
+      detail: terminalPlan,
+    });
+
+    try {
+      const terminalArgs = {
+        id: `${session.id}-plan`,
+        title: 'Visible Subagent Plan',
+        command: buildVisibleSubagentPlanTerminalCommand(terminalPlan),
+        placement: 'tab',
+        ...(workspace ? { cwd: workspace } : {}),
+        shell: 'powershell',
+        rows: 24,
+        cols: 120,
+        metadata: {
+          kind: 'xenesis-desk-subagent-plan',
+          planSessionId: session.id,
+          agent: 'xenesis',
+          task: session.userTask,
+          demo: 'visible-subagents',
+        },
+      };
+      appendRawStreamEntry({
+        kind: 'desk_tool_call',
+        summary: 'Desk tool call: xd.terminals.run visible subagent plan',
+        detail: stringifyDetail(terminalArgs),
+      });
+      const terminalResult = await callGowooriDeskCapability('xd.terminals.run', terminalArgs, { approved: true });
+      appendRawStreamEntry({
+        kind: terminalResult.ok ? 'desk_tool_result' : 'desk_tool_error',
+        summary: `Desk tool result: xd.terminals.run visible subagent plan ${terminalResult.ok ? 'ok' : 'failed'}`,
+        detail: stringifyDetail(terminalResult),
+        error: !terminalResult.ok,
+      });
+    } catch (planTerminalError) {
+      const message = planTerminalError instanceof Error ? planTerminalError.message : String(planTerminalError);
+      appendRawStreamEntry({
+        kind: 'desk_tool_error',
+        summary: `Visible subagent plan terminal failed: ${message}`,
+        error: true,
+      });
+    } finally {
+      xenesisAgentStateStore.update({ running: false });
+    }
+
+    if (parsed.manualSelection) return;
+
+    await runVisibleSubagentsWork(buildVisibleSubagentPlanWorkArgs(parsed), displayInput, { skipUserMessage: true });
   }
 
   async function runXenesisControlDemo(input: string, displayInput = '/control-demo'): Promise<void> {
@@ -3466,6 +3599,20 @@ export function XenesisAgentPane({ contentId }: XenesisAgentPaneProps = {}) {
           return;
         }
         await runVisibleSubagentsWork(command.rest, line);
+        return;
+      }
+      case 'subagents-plan': {
+        if (!command.rest) {
+          appendChatMessage({ role: 'user', content: displayLine, kind: 'command' });
+          appendChatMessage({
+            role: 'system',
+            kind: 'error',
+            content: 'usage: /subagents-plan <task> [--manual] [--keep-open]',
+            error: true,
+          });
+          return;
+        }
+        await runVisibleSubagentPlanSession(command.rest, line);
         return;
       }
       case 'subagents-cleanup': {

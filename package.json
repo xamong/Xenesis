@@ -70,6 +70,7 @@
     "smoke:xenesis:channel-approval": "node ./scripts/xenesisChannelApprovalLiveSmoke.mjs",
     "smoke:xenesis:channel-natural-language": "node ./scripts/xenesisChannelNaturalLanguageLiveSmoke.mjs",
     "smoke:xenesis:provider-onboarding": "node ./scripts/xenesisProviderOnboardingLiveSmoke.mjs",
+    "smoke:xenesis:visible-subagent-plan": "node ./scripts/xenesisVisibleSubagentPlanSessionLiveSmoke.mjs",
     "check:docs-public": "node ./scripts/checkDocsPublicSafety.mjs",
     "check:public-release": "node ./scripts/publicReleaseCheck.mjs",
     "check:public-release:ci": "npm run check:public-release",

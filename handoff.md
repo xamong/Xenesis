@@ -28192,6 +28192,15 @@ Verification so far:
     renderer edit command layer.
 - Touched files:
   - `handoff.md`
+  - `docs/superpowers/plans/2026-07-02-visible-subagent-plan-session.md`
+  - `package.json`
+  - `scripts/xenesisVisibleSubagentPlanSessionLiveSmoke.mjs`
+  - `scripts/xenesisVisibleSubagentPlanSessionLiveSmoke.test.mjs`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/XenesisAgentPane.tsx`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentPlanSession.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentPlanSession.test.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentsDemo.ts`
+  - `src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentsDemo.test.ts`
   - `src/renderer/editing/editableSurfaceIntegration.test.ts`
   - `src/renderer/panes/CodePane.tsx`
   - `src/renderer/panes/MarkdownPane.tsx`
@@ -28340,4 +28349,101 @@ Verification so far:
     `server/.node-version-built`, `server/database.db`.
 - Next intended step:
   - Review the combined Phase 1/2/3 editable-surface diff, then commit when
+    requested.
+
+## 2026-07-02 Visible subagent plan session handoff
+
+- Current objective:
+  - Port the approved sibling spec
+    `2026-06-27-visible-subagent-plan-session-design.md` into this repo by
+    adding a product-level plan-session layer above the existing visible
+    subagent CR execution path.
+- Touched files:
+  - `handoff.md`
+- Commands run:
+  - `Get-Content -Raw "D:\CodeTruck\CodeBox\Xamong\06 XCON\xenesis-desk\docs\superpowers\specs\2026-06-27-visible-subagent-plan-session-design.md"`
+  - `rg -n "VisibleSubagentPlanSession|visible subagent plan|subagents-plan|021\.visible|plan session|awaiting-selection|manualSelection" src scripts packages docs -S`
+  - `rg -n "subagents-demo|subagents-work|desk_subagent|desk_subagents|visibleSubagent" src scripts packages -S`
+  - `Get-Content -Raw AGENTS.md`
+  - `Get-Content -Raw docs/obsidian/Xenesis-desk.md`
+  - `Get-Content -Raw docs/obsidian/Xenesis-desk/00_System/AI Agent Rules.md`
+  - `Get-Content -Raw docs/obsidian/Xenesis-desk/00_System/Graph Schema.md`
+  - `Get-Content -Raw docs/obsidian/Xenesis-desk/00_System/Review Policy.md`
+  - `Get-Content -Raw docs/obsidian/Xenesis-desk/10_Repo Map/Source of Truth Map.md`
+  - `Get-Content -Raw docs/obsidian/Xenesis-desk/10_Repo Map/Repo Overview.md`
+  - `Get-Content -Raw docs/obsidian/Xenesis-desk/_Indexes/Verification Map.md`
+  - `Get-Content -Raw docs/obsidian/Xenesis-desk/_Indexes/High Risk Areas.md`
+  - `Get-Content -Raw docs/obsidian/Xenesis-desk/30_Modules/module-xenesis-agent-pane.md`
+  - `Get-Content -Raw docs/obsidian/Xenesis-desk/20_Architecture/Xenesis Agent Runtime.md`
+  - `Get-Content -Raw src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentsDemo.ts`
+  - `Get-Content -Raw src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentsDemo.test.ts`
+  - `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentPlanSession.test.ts`
+  - `node --import tsx --test src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentPlanSession.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentsDemo.test.ts`
+  - `node --test scripts/xenesisVisibleSubagentPlanSessionLiveSmoke.test.mjs`
+  - `node scripts/xenesisVisibleSubagentPlanSessionLiveSmoke.mjs --dry-run --json --task="현재 상태" --show-ms=3000 --sleep=2 --keep-open --close-after --right-width=900 --timeout-ms=1000`
+  - `npx biome format --write package.json scripts/xenesisVisibleSubagentPlanSessionLiveSmoke.mjs scripts/xenesisVisibleSubagentPlanSessionLiveSmoke.test.mjs src/renderer/extensions/xenesis-desk.core-tools/panes/XenesisAgentPane.tsx src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentPlanSession.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentPlanSession.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentsDemo.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentsDemo.test.ts`
+  - `npm run typecheck`
+  - `npx biome check package.json scripts/xenesisVisibleSubagentPlanSessionLiveSmoke.mjs scripts/xenesisVisibleSubagentPlanSessionLiveSmoke.test.mjs src/renderer/extensions/xenesis-desk.core-tools/panes/XenesisAgentPane.tsx src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentPlanSession.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentPlanSession.test.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentsDemo.ts src/renderer/extensions/xenesis-desk.core-tools/panes/xenesisAgentVisibleSubagentsDemo.test.ts --max-diagnostics=120`
+  - `npm run build`
+  - `node scripts/xenesisVisibleSubagentPlanSessionLiveSmoke.mjs --json --task="현재 변경사항을 분담해서 점검해줘" --manual --show-ms=1000 --sleep=1 --right-width=760 --timeout-ms=45000`
+  - `npm test`
+  - `git diff --check`
+- Exact verification result:
+  - Current repo already has `desk_subagent_*` package tools,
+    `/subagents-demo`, `/subagents-work`, visible worker builders, CR terminal
+    execution, tail marker summaries, cleanup, and tests.
+  - Current repo does not have a `VisibleSubagentPlanSession` layer,
+    `/subagents-plan`, plan terminal formatting, manual awaiting-selection
+    state, or a `021` demo script.
+  - Current repo does not have `scripts/demo`; live smoke scripts live directly
+    under `scripts/`.
+  - RED helper test exited 1 as expected before
+    `xenesisAgentVisibleSubagentPlanSession.ts` existed.
+  - RED integration test exited 1 as expected before `/subagents-plan` was
+    wired in `XenesisAgentPane.tsx`.
+  - GREEN focused renderer tests exited 0 with 26/26 passed after adding the
+    plan-session helper, slash command, coordinator terminal call, and cleanup
+    classification for `xenesis-desk-subagent-plan` terminals.
+  - RED smoke test exited 1 as expected before
+    `scripts/xenesisVisibleSubagentPlanSessionLiveSmoke.mjs` existed.
+  - GREEN smoke test exited 0 with 7/7 passed after adding the script and
+    `smoke:xenesis:visible-subagent-plan`.
+  - Dry-run smoke command exited 0 and produced prompt
+    `/subagents-plan 현재 상태 --manual --show-ms 3000 --sleep 2 --keep-open`.
+  - `npm run typecheck` exited 0.
+  - Changed-file Biome check exited 0 with 3 existing warnings in
+    `XenesisAgentPane.tsx` (`latestPendingMcpActionInboxMessage` unused and two
+    optional-chain suggestions).
+  - `npm run build` exited 0 after `packages/xenesis` build, root typecheck, and
+    Electron build. Vite emitted existing bundle/externalization warnings for
+    D3, `hwp.js` browser externalization, and `deskBridge.ts` dynamic/static
+    import chunking.
+  - Live smoke exited 0. It opened the Xenesis Agent pane through
+    `xd.tools.core.xenesisAgent.open`, set dock size, submitted
+    `/subagents-plan 현재 변경사항을 분담해서 점검해줘 --manual --show-ms 1000 --sleep 1`
+    through `xd.testing.xenesisAgent.submitPrompt`, matched
+    `Visible Subagent Plan Session`, and cleaned up with `/subagents-cleanup`.
+    Report summary: 4/4 checks passed.
+  - `npm test` exited 0 with 757/757 passed.
+  - `git diff --check` exited 0 with only the existing `handoff.md` LF-to-CRLF
+    warning.
+  - Pre-commit rerun on 2026-07-02:
+    - `npm run build` exited 0 with the same existing Vite bundle warnings.
+    - `npm test` exited 0 with 757/757 passed.
+    - `git diff --check` exited 0 with only the existing `handoff.md`
+      LF-to-CRLF warning.
+- Known gaps:
+  - Existing dirty local runtime files remain outside this slice:
+    `server/.node-version-built`, `server/database.db`.
+  - Existing dirty icon files remain outside this slice: `build/icon.ico`,
+    `build/icon.svg`.
+  - Live Electron proof was run for manual plan-session display and cleanup.
+    Auto mode that starts the four workers is covered by focused helper/static
+    tests and by the existing `/subagents-work` tests, but was not separately
+    live-smoked in this slice.
+  - `docs/superpowers/plans/2026-07-02-visible-subagent-plan-session.md` is
+    ignored by `.gitignore`; force-add it if the plan should be committed.
+- Next intended step:
+  - Review the visible subagent plan-session diff, then commit/PR when
+    requested. Exclude unrelated local runtime/icon changes unless explicitly
     requested.
